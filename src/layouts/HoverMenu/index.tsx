@@ -116,6 +116,7 @@ const HoverMenu: React.FC = () => {
         style={{
           width: '100%',
           padding: '12px 0',
+          '--xagi-layout-second-menu-text-color': token.colorTextSecondary, // 悬浮菜单文字颜色 覆写
         }}
       >
         <div

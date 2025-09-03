@@ -1,8 +1,9 @@
 import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import type { TabItemProps } from '@/types/interfaces/layouts';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -20,10 +21,19 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
   // 获取当前导航风格
   const { navigationStyle } = useLayoutStyle();
 
-  // 在开发环境下输出调试信息
-  if (process.env.NODE_ENV === 'development') {
-    console.log('TabItem - 当前导航风格:', navigationStyle);
-  }
+  const navStyle: React.CSSProperties = useMemo(() => {
+    return navigationStyle === ThemeNavigationStyleType.STYLE2
+      ? {
+          width: '64px',
+          height: '64px',
+        }
+      : {
+          width: '40px',
+          height: '40px',
+          padding: 0,
+        };
+  }, [navigationStyle]);
+
   // 当二级菜单收起时，不显示Tooltip，避免与悬浮菜单冲突
   if (isSecondMenuCollapsed) {
     return (
@@ -41,16 +51,21 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
           { [styles.active]: active },
         )}
       >
-        <div className={cx(styles['active-icon-container'])}>{icon}</div>
-        <span
-          className={cx(styles.text)}
-          style={{
-            display: navigationStyle === 'style2' ? 'block' : 'none',
-            // transform: navigationStyle === 'style2' ? 'translateY(0)' : 'translateY(-5px)'
-          }}
-        >
-          {text}
-        </span>
+        <div className={cx(styles['active-box'])} style={navStyle}>
+          <div className={cx(styles['active-icon-container'])}>{icon}</div>
+          <span
+            className={cx(styles.text)}
+            style={{
+              display:
+                navigationStyle === ThemeNavigationStyleType.STYLE2
+                  ? 'block'
+                  : 'none',
+              // transform: navigationStyle === 'style2' ? 'translateY(0)' : 'translateY(-5px)'
+            }}
+          >
+            {text}
+          </span>
+        </div>
       </div>
     );
   }
@@ -76,16 +91,18 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
           'content-center',
           'cursor-pointer',
           styles.box,
-          navigationStyle === 'style2' ? styles.style2 : styles.style1,
           { [styles.active]: active },
         )}
       >
-        <div className={cx(styles['active-box'])}>
+        <div className={cx(styles['active-box'])} style={navStyle}>
           <div className={cx(styles['active-icon-container'])}>{icon}</div>
           <span
             className={cx(styles.text)}
             style={{
-              display: navigationStyle === 'style2' ? 'block' : 'none',
+              display:
+                navigationStyle === ThemeNavigationStyleType.STYLE2
+                  ? 'block'
+                  : 'none',
               // transform:
               //   navigationStyle === 'style2'
               //     ? 'translateY(0)'

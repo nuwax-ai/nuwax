@@ -6,47 +6,34 @@
   color: @navFirstMenuTextSecondary;
   transition: background-color 0.3s, color 0.3s;
   user-select: none; /* 禁止选中 */
-  
+
   .active-icon-container {
     display: flex;
     justify-content: center;
     align-items: center;
   }
-  &.style2{
-    .active-box {
-      height: 64px;
-      width: 64px;
-    }
-  }
-  &.style1{
-    .active-box {
-      padding: 0;
-      height: 40px;
-      width: 40px;
-    }
-  }
-  .active-box{
+
+  .active-box {
     border-radius: @borderRadius;
     transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-   
   }
+
   &:hover {
     color: @colorTextSecondary;
-    
+
     .active-box {
       background: @navItemHoverBg;
       box-shadow: @navShadow;
-
     }
   }
 
   &.active {
     color: @colorPrimary;
-    
+
     .active-box {
       background: @navItemActiveBg;
       box-shadow: @navShadow;

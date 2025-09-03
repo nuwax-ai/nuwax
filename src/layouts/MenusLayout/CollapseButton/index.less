@@ -9,35 +9,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: @navFirstMenuBg;
-  border: @lineWidth solid @navBorderColor;
+  background-color: @colorBgElevated;
+  border: @lineWidth solid @colorSplit;
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   z-index: 10;
   transform: translateX(-50%);
-  box-shadow: @navShadow;
 
   &:hover {
-    background-color: @navItemHoverBg;
-    box-shadow: @navFirstMenuShadow;
     transform: translateX(-50%) scale(1.1);
   }
 
   .icon {
-    color: @navFirstMenuTextSecondary;
+    color: @colorTextSecondary;
     transition: color 0.2s ease-in-out;
   }
 
   &:hover .icon {
-    color: @navFirstMenuText;
+    color: @colorText;
   }
 
   // 收起状态时的样式调整
   &.collapsed {
     &:hover {
       .icon {
-        color: @navFirstMenuText;
+        color: @colorText;
       }
     }
   }
