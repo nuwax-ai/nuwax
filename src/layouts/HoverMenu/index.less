@@ -7,10 +7,11 @@
   height: 100%;
   // 使用与 layout 一致的背景色
   background: @navSecondMenuBg;
-  border-right: 1px solid var(--xagi-layout-border-primary, @navBorderColor);
+  border-right: @lineWidth solid
+    var(--xagi-layout-border-primary, @navBorderColor);
   z-index: 998; // 比一级菜单层级低一点
   transition: opacity 0.2s ease-in-out, background-color 0.3s ease;
-  box-shadow: var(--xagi-layout-shadow, @navSecondMenuShadow);
+  // box-shadow: var(--xagi-layout-shadow, @navSecondMenuShadow);
   color: var(--xagi-layout-second-menu-text-color, @navSecondMenuText);
 
   &.hidden {
@@ -49,14 +50,7 @@
   }
 
   .menu-title {
-    padding: 22px 12px;
-    margin-bottom: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--xagi-layout-second-menu-text-color, @navSecondMenuText);
-    border-bottom: 1px solid
-      var(--xagi-layout-border-secondary, @navDividerColor);
-    transition: color 0.3s ease;
+    color: @colorTextSecondary;
   }
 }
 
