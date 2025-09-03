@@ -115,14 +115,18 @@ const Login: React.FC = () => {
   // 账号密码登录
   const handlerPasswordLogin = (captchaVerifyParam: string) => {
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
-    const { phoneOrEmail, areaCode, password } = form.getFieldsValue() || {};
+    const {
+      phoneOrEmail,
+      areaCode = '86',
+      password,
+    } = form.getFieldsValue() || {};
     run({ phoneOrEmail, areaCode, password, captchaVerifyParam });
   };
 
   // 验证码登录
   const handlerCodeLogin = (captchaVerifyParam: string) => {
     // 为了避免 formValues 为 undefined 的情况，添加空值检查
-    const { phoneOrEmail, areaCode } = form.getFieldsValue() || {};
+    const { phoneOrEmail, areaCode = '86' } = form.getFieldsValue() || {};
     history.push('/verify-code', {
       phoneOrEmail,
       areaCode,
