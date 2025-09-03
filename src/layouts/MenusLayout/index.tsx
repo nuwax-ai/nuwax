@@ -208,6 +208,14 @@ const MenusLayout: React.FC<{
     }
     return 'transparent';
   }, [isMobile]);
+  const secondaryBackgroundColor = useMemo(() => {
+    if (isMobile) {
+      return token.colorBgContainer;
+    }
+    return navigationStyle === 'style2'
+      ? 'var(--xagi-layout-bg-container, rgba(255, 255, 255, 0.95))'
+      : 'transparent';
+  }, [isMobile, navigationStyle]);
 
   // 导航容器样式类名（使用独立的布局风格类）
   const navigationClassName = useMemo(() => {
@@ -248,7 +256,7 @@ const MenusLayout: React.FC<{
           width: isSecondMenuCollapsed ? 0 : SECOND_MENU_WIDTH,
           paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
           opacity: isSecondMenuCollapsed ? 0 : 1,
-          backgroundColor,
+          backgroundColor: secondaryBackgroundColor,
         }}
       >
         {!isSecondMenuCollapsed && (

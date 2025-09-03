@@ -500,16 +500,22 @@
 // 页面容器相关Token
 @pageContainerMargin: var(--xagi-page-container-margin, 16px);
 @pageContainerBorderRadius: var(--xagi-page-container-border-radius, 12px);
-@pageContainerBg: var(--xagi-color-bg-container, rgba(255, 255, 255, 0.9));
+@pageContainerBg: var(--xagi-layout-bg-container, rgba(255, 255, 255, 0.95));
 
 // 导航文字颜色（使用独立的布局风格变量）
-@navFirstMenuText: var(--xagi-layout-text-primary, rgba(0, 0, 0, 0.88));
+@navFirstMenuText: var(--xagi-layout-text-secondary, rgba(0, 0, 0, 0.88));
 @navFirstMenuTextSecondary: var(
   --xagi-layout-text-secondary,
   rgba(0, 0, 0, 0.65)
 );
-@navFirstMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(0, 0, 0, 0.45));
-@navSecondMenuText: var(--xagi-layout-text-primary, rgba(0, 0, 0, 0.88));
+@navFirstMenuTextTertiary: var(
+  --xagi-layout-text-tertiary,
+  rgba(0, 0, 0, 0.45)
+);
+@navSecondMenuText: var(
+  --xagi-layout-second-menu-text-color,
+  rgba(0, 0, 0, 0.88)
+);
 @navSecondMenuTextSecondary: var(
   --xagi-layout-text-secondary,
   rgba(0, 0, 0, 0.65)
@@ -539,7 +545,7 @@
   :root {
     --xagi-nav-first-menu-width: 60px !important;
   }
-  
+
   // 隐藏移动端的文字显示
   .xagi-nav-style2 {
     .text {
@@ -547,7 +553,7 @@
       transform: translateY(-5px) !important;
     }
   }
-  
+
   // 移动端页面容器适配
   .page-container {
     margin: 0 !important;
@@ -559,40 +565,44 @@
 // 布局风格适配类（独立于Ant Design主题）
 // ================================
 
-// 深色布局风格适配
-.xagi-layout-dark {
-  // 导航文字颜色覆盖
-  @navFirstMenuText: var(--xagi-layout-text-primary, #ffffff);
-  @navFirstMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(255, 255, 255, 0.85));
-  @navFirstMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(255, 255, 255, 0.65));
-  @navSecondMenuText: var(--xagi-layout-text-primary, #ffffff);
-  @navSecondMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(255, 255, 255, 0.85));
-  @navSecondMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(255, 255, 255, 0.65));
-  
-  // 导航背景色覆盖
-  @navFirstMenuBg: var(--xagi-layout-bg-card, rgba(0, 0, 0, 0.45));
-  @navSecondMenuBg: var(--xagi-layout-bg-secondary, rgba(0, 0, 0, 0.65));
-  
-  // 边框和分割线覆盖
-  @navBorderColor: var(--xagi-layout-border-primary, rgba(255, 255, 255, 0.15));
-  @navDividerColor: var(--xagi-layout-border-secondary, rgba(255, 255, 255, 0.1));
-}
+// // 深色布局风格适配
+// .xagi-layout-dark {
+//   // 导航文字颜色覆盖
+//   @navFirstMenuText: var(--xagi-layout-text-primary, #ffffff);
+//   @navFirstMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(255, 255, 255, 0.85));
+//   @navFirstMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(255, 255, 255, 0.65));
+//   @navSecondMenuText: var(--xagi-layout-text-primary, #ffffff);
+//   @navSecondMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(255, 255, 255, 0.85));
+//   @navSecondMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(255, 255, 255, 0.65));
 
-// 浅色布局风格适配
-.xagi-layout-light {
-  // 使用默认的浅色变量
-  @navFirstMenuText: var(--xagi-layout-text-primary, #000000);
-  @navFirstMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(0, 0, 0, 0.85));
-  @navFirstMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(0, 0, 0, 0.65));
-  @navSecondMenuText: var(--xagi-layout-text-primary, #000000);
-  @navSecondMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(0, 0, 0, 0.85));
-  @navSecondMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(0, 0, 0, 0.65));
-  
-  // 导航背景色覆盖
-  @navFirstMenuBg: var(--xagi-layout-bg-card, rgba(255, 255, 255, 0.65));
-  @navSecondMenuBg: var(--xagi-layout-bg-secondary, rgba(255, 255, 255, 0.85));
-  
-  // 边框和分割线覆盖
-  @navBorderColor: var(--xagi-layout-border-primary, rgba(0, 0, 0, 0.15));
-  @navDividerColor: var(--xagi-layout-border-secondary, rgba(0, 0, 0, 0.1));
-}
+//   // 导航背景色覆盖
+//   @navFirstMenuBg: var(--xagi-layout-bg-card, rgba(0, 0, 0, 0.45));
+//   @navSecondMenuBg: var(--xagi-layout-bg-secondary, rgba(0, 0, 0, 0.65));
+
+//   // 边框和分割线覆盖
+//   @navBorderColor: var(--xagi-layout-border-primary, rgba(255, 255, 255, 0.15));
+//   @navDividerColor: var(--xagi-layout-border-secondary, rgba(255, 255, 255, 0.1));
+
+//   @pageContainerBg: var(--xagi-color-bg-container, #ffffff);
+// }
+
+// // 浅色布局风格适配
+// .xagi-layout-light {
+//   // 使用默认的浅色变量
+//   @navFirstMenuText: var(--xagi-layout-text-secondary, #000000);
+//   @navFirstMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(0, 0, 0, 0.85));
+//   @navFirstMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(0, 0, 0, 0.65));
+//   @navSecondMenuText: var(--xagi-layout-text-secondary, #000000);
+//   @navSecondMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(0, 0, 0, 0.85));
+//   @navSecondMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(0, 0, 0, 0.65));
+
+//   // 导航背景色覆盖
+//   @navFirstMenuBg: var(--xagi-layout-bg-card, rgba(255, 255, 255, 0.65));
+//   @navSecondMenuBg: var(--xagi-layout-bg-secondary, rgba(255, 255, 255, 0.85));
+
+//   // 边框和分割线覆盖
+//   @navBorderColor: var(--xagi-layout-border-primary, rgba(0, 0, 0, 0.15));
+//   @navDividerColor: var(--xagi-layout-border-secondary, rgba(0, 0, 0, 0.1));
+
+//    @pageContainerBg: var(--xagi-layout-bg-secondary, rgba(255, 255, 255, 0.9));
+// }

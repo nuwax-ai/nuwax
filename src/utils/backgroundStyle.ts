@@ -1,4 +1,5 @@
 import React from 'react';
+import { cloneDeep } from './common';
 
 /**
  * 布局深浅色风格管理工具类
@@ -100,13 +101,15 @@ const darkLayoutStyleVariables = {
   '--xagi-layout-text-tertiary': 'rgba(255, 255, 255, 0.65)',
   '--xagi-layout-text-disabled': 'rgba(255, 255, 255, 0.25)',
 
+  '--xagi-layout-second-menu-text-color': 'rgba(255, 255, 255, 0.85)',
+
   '--xagi-layout-bg-primary': 'rgba(0, 0, 0, 0.85)',
   '--xagi-layout-bg-secondary': 'rgba(0, 0, 0, 0.65)',
   '--xagi-layout-bg-card': 'rgba(0, 0, 0, 0.45)',
   '--xagi-layout-bg-input': 'rgba(0, 0, 0, 0.25)',
 
-  '--xagi-layout-border-primary': 'rgba(255, 255, 255, 0.15)',
-  '--xagi-layout-border-secondary': 'rgba(255, 255, 255, 0.1)',
+  '--xagi-layout-border-primary': 'rgba(0, 0, 0, 0.15)',
+  '--xagi-layout-border-secondary': 'rgba(0, 0, 0, 0.1)',
 
   '--xagi-layout-shadow': 'rgba(0, 0, 0, 0.6)',
   '--xagi-layout-overlay': 'rgba(0, 0, 0, 0.7)',
@@ -123,6 +126,8 @@ const lightLayoutStyleVariables = {
   '--xagi-layout-text-secondary': 'rgba(0, 0, 0, 0.85)',
   '--xagi-layout-text-tertiary': 'rgba(0, 0, 0, 0.65)',
   '--xagi-layout-text-disabled': 'rgba(0, 0, 0, 0.25)',
+
+  '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.85)',
 
   '--xagi-layout-bg-primary': 'rgba(255, 255, 255, 0.95)',
   '--xagi-layout-bg-secondary': 'rgba(255, 255, 255, 0.85)',
@@ -266,15 +271,29 @@ export class LayoutStyleManager {
    * 注意：这些变量只影响自定义布局组件，不影响 Ant Design 组件
    */
   private applyLayoutStyle(style: LayoutColorStyle): void {
-    const variables =
-      style === 'dark' ? darkLayoutStyleVariables : lightLayoutStyleVariables;
+    const variables = cloneDeep(
+      style === 'dark' ? darkLayoutStyleVariables : lightLayoutStyleVariables,
+    );
 
     // 如果 当前的 nav style 是 style2，则--xagi-layout-bg-secondary 应该是黑色
-    if (this.getCurrentNavigationStyle() === 'style2') {
-      //这里需要取当前真实的导航风格 navstyle
-      variables['--xagi-layout-bg-secondary'] = 'rgba(0, 0, 0, 0.85)';
+    const data = JSON.parse(localStorage.getItem('xagi-layout-style') || '{}');
+    if (data.navigationStyle === 'style2') {
+      variables['--xagi-layout-second-menu-text-color'] =
+        style === 'dark' ? 'rgba(0, 0, 0, 0.85)' : 'rgba(0, 0, 0, 0.85)';
+      variables['--xagi-layout-text-secondary'] =
+        style === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)';
+    }
+    if (data.navigationStyle === 'style1') {
+      variables['--xagi-layout-second-menu-text-color'] =
+        variables['--xagi-layout-text-secondary'];
     }
 
+    // if (data.navigationStyle === 'style1') {
+    //   variables['--xagi-layout-text-secondary'] =
+    //     style === 'dark'
+    //       ? 'rgba(255, 255, 255, 0.85)'
+    //       : 'rgba(255, 255, 255, 0.85)';
+    // }
     Object.entries(variables).forEach(([key, value]) => {
       document.documentElement.style.setProperty(key, value);
     });
@@ -310,8 +329,15 @@ export class LayoutStyleManager {
 
     // 如果导航风格是 style2，则设置 --xagi-layout-bg-secondary 为黑色
     if (navStyle === 'style2') {
+      const currentLayoutStyle = this.getCurrentLayoutStyle();
       rootElement.style.setProperty(
         '--xagi-layout-bg-secondary',
+        currentLayoutStyle === 'dark'
+          ? 'rgba(0, 0, 0, 0.85)'
+          : 'rgba(255, 255, 255, 0.85)',
+      );
+      rootElement.style.setProperty(
+        '--xagi-layout-second-menu-text-color',
         'rgba(0, 0, 0, 0.85)',
       );
     } else {
@@ -324,6 +350,10 @@ export class LayoutStyleManager {
       rootElement.style.setProperty(
         '--xagi-layout-bg-secondary',
         variables['--xagi-layout-bg-secondary'],
+      );
+      rootElement.style.setProperty(
+        '--xagi-layout-second-menu-text-color',
+        variables['--xagi-layout-second-menu-text-color'],
       );
     }
 
@@ -402,13 +432,14 @@ export class LayoutStyleManager {
           }
         }
 
-        if (data.navigationStyle) {
-          this.currentNavStyle = data.navigationStyle;
-          this.applyNavigationStyle(data.navigationStyle);
-        }
         if (data.layoutStyle) {
           this.currentLayoutStyle = data.layoutStyle;
           this.applyLayoutStyle(data.layoutStyle);
+        }
+
+        if (data.navigationStyle) {
+          this.currentNavStyle = data.navigationStyle;
+          this.applyNavigationStyle(data.navigationStyle);
         }
       }
     } catch (error) {

@@ -1,5 +1,5 @@
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
-import { useBackgroundStyle } from '@/utils/backgroundStyle';
+import { backgroundConfigs, useBackgroundStyle } from '@/utils/backgroundStyle';
 import { Button, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -38,6 +38,16 @@ const ThemeConfig: React.FC = () => {
     setIsNavigationDarkMode(layoutStyle === 'dark');
   }, [layoutStyle]);
 
+  // 根据背景图片ID获取对应的布局风格
+  const getLayoutStyleByBackgroundId = (
+    backgroundId: string,
+  ): 'light' | 'dark' => {
+    const backgroundConfig = backgroundConfigs.find(
+      (config) => config.id === backgroundId,
+    );
+    return backgroundConfig?.layoutStyle || 'light';
+  };
+
   // 从本地存储恢复配置
   useEffect(() => {
     try {
@@ -73,6 +83,27 @@ const ThemeConfig: React.FC = () => {
   // 处理导航风格变更
   const handleNavigationStyleChange = (styleId: string) => {
     console.log('主题配置页面收到导航风格变更:', styleId);
+  };
+
+  // 背景图片切换处理（带联动逻辑）
+  const handleBackgroundChange = (backgroundId: string) => {
+    // 设置背景图片
+    setBackgroundImage(backgroundId);
+
+    // 根据背景图片自动切换导航栏深浅色
+    const newLayoutStyle = getLayoutStyleByBackgroundId(backgroundId);
+    setLayoutStyle(newLayoutStyle);
+    setIsNavigationDarkMode(newLayoutStyle === 'dark');
+
+    // 显示联动提示
+    const backgroundConfig = backgroundConfigs.find(
+      (config) => config.id === backgroundId,
+    );
+    if (backgroundConfig) {
+      message.info(
+        `已自动切换为${newLayoutStyle === 'dark' ? '深色' : '浅色'}导航栏`,
+      );
+    }
   };
 
   // 切换导航栏深浅色（集成到布局风格管理）
@@ -135,7 +166,7 @@ const ThemeConfig: React.FC = () => {
             <BackgroundImagePanel
               backgroundImages={backgroundImages}
               currentBackground={backgroundImageId}
-              onBackgroundChange={setBackgroundImage}
+              onBackgroundChange={handleBackgroundChange}
             />
           </div>
         </div>

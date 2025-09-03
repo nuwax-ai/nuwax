@@ -1,4 +1,3 @@
-import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { useBackgroundStyle } from '@/utils/backgroundStyle';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -219,8 +218,8 @@ const Layout: React.FC = () => {
         'flex-1',
         'overflow-y',
         styles['page-container'],
-        `xagi-layout-${layoutStyle}`,
-        `xagi-nav-${navigationStyle}`,
+        styles[`xagi-layout-${layoutStyle}`],
+        styles[`xagi-nav-${navigationStyle}`],
       ),
     [layoutStyle, navigationStyle],
   );
