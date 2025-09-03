@@ -1,7 +1,10 @@
 import { backgroundConfigs } from '@/constants/theme.constants';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { useLayoutStyle } from '@/hooks/useLayoutStyle';
-import { ThemeLayoutColorStyle } from '@/types/enums/theme';
+import {
+  ThemeLayoutColorStyle,
+  ThemeNavigationStyleType,
+} from '@/types/enums/theme';
 import { TenantThemeConfig } from '@/types/tenant';
 import { message } from 'antd';
 import classNames from 'classnames';
@@ -31,11 +34,12 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   } = useGlobalSettings();
 
   // 集成布局风格管理
-  const { layoutStyle, setLayoutStyle } = useLayoutStyle();
+  const { layoutStyle, setLayoutStyle, navigationStyle, setNavigationStyle } =
+    useLayoutStyle();
 
   // 导航栏风格状态管理
   const [currentNavigationStyle, setCurrentNavigationStyle] = useState<string>(
-    tenantThemeConfig.defaultNavigationStyleId,
+    navigationStyle || tenantThemeConfig.defaultNavigationStyleId,
   );
 
   // 导航栏深浅色状态管理（独立于Ant Design主题）
@@ -47,6 +51,11 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   useEffect(() => {
     setIsNavigationDarkMode(layoutStyle === ThemeLayoutColorStyle.DARK);
   }, [layoutStyle]);
+
+  // 同步全局导航风格状态
+  useEffect(() => {
+    setCurrentNavigationStyle(navigationStyle);
+  }, [navigationStyle]);
 
   // 处理主题色切换
   const handleThemeColorChange = (color: string) => {
@@ -91,9 +100,18 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
 
   // 处理导航栏风格切换
   const handleNavigationStyleChange = (styleId: string) => {
+    const newStyleId = styleId as ThemeNavigationStyleType;
     setCurrentNavigationStyle(styleId);
-    // 这里可以添加导航栏风格切换的逻辑
-    console.log('切换导航栏风格:', styleId);
+
+    // 更新全局导航风格状态
+    setNavigationStyle(newStyleId);
+
+    console.log(
+      'ThemeSwitchPanel - 切换导航栏风格:',
+      styleId,
+      '-> 实际应用:',
+      newStyleId,
+    );
   };
 
   // 处理导航栏深浅色切换（集成到布局风格管理，带背景自动匹配）
@@ -178,7 +196,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
 
         {/* 导航栏风格样式选择 */}
         <div className={cx(styles.navigationStyleOptions)}>
-          <h5>风格样式</h5>
+          <h4>风格样式</h4>
           <div className={cx(styles.styleOptions)}>
             {tenantThemeConfig.navigationStyles.map((style) => (
               <div
@@ -189,12 +207,28 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
                 onClick={() => handleNavigationStyleChange(style.id)}
                 title={style.description}
               >
-                <div className={cx(styles.stylePreview)}>
-                  <div className={cx(styles.navbarPreview, styles.lightNavbar)}>
+                <div
+                  className={cx(styles.stylePreview, {
+                    [styles.active]: currentNavigationStyle === style.id,
+                  })}
+                >
+                  <div
+                    className={cx(
+                      styles.navbarPreview,
+                      // 根据风格动态调整预览样式
+                      style.id === 'style1'
+                        ? styles.compactNavbar
+                        : styles.expandedNavbar,
+                    )}
+                  >
                     <div className={cx(styles.navbarContent)}>
                       <div className={cx(styles.navbarItem)}></div>
                       <div className={cx(styles.navbarItem)}></div>
                       <div className={cx(styles.navbarItem)}></div>
+                      {/* 风格2显示文字提示 */}
+                      {style.id === 'style2' && (
+                        <div className={cx(styles.styleText)}>有文字</div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -207,45 +241,37 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
         {/* 导航栏深浅色选择 */}
         {tenantThemeConfig.supportDarkMode && (
           <div className={cx(styles.navigationColorOptions)}>
-            <h5>深浅色</h5>
+            <h4>深浅色</h4>
             <div className={cx(styles.styleOptions)}>
               {/* 浅色模式 */}
-              <div
-                className={cx(styles.styleOption, {
-                  [styles.active]: !isNavigationDarkMode,
-                })}
-                onClick={() =>
-                  !isNavigationDarkMode || handleNavigationThemeToggle()
-                }
-              >
-                <div className={cx(styles.stylePreview)}>
+              <div className={cx(styles.styleOption)}>
+                <div
+                  className={cx(styles.stylePreview, {
+                    [styles.active]: !isNavigationDarkMode,
+                  })}
+                  onClick={() =>
+                    isNavigationDarkMode && handleNavigationThemeToggle()
+                  }
+                >
                   <div className={cx(styles.navbarPreview, styles.lightNavbar)}>
-                    <div className={cx(styles.navbarContent)}>
-                      <div className={cx(styles.navbarItem)}></div>
-                      <div className={cx(styles.navbarItem)}></div>
-                      <div className={cx(styles.navbarItem)}></div>
-                    </div>
+                    <div className={cx(styles.navbarContent)}></div>
                   </div>
                 </div>
                 <div className={cx(styles.styleLabel)}>浅色</div>
               </div>
 
               {/* 深色模式 */}
-              <div
-                className={cx(styles.styleOption, {
-                  [styles.active]: isNavigationDarkMode,
-                })}
-                onClick={() =>
-                  isNavigationDarkMode || handleNavigationThemeToggle()
-                }
-              >
-                <div className={cx(styles.stylePreview)}>
+              <div className={cx(styles.styleOption)}>
+                <div
+                  className={cx(styles.stylePreview, {
+                    [styles.active]: isNavigationDarkMode,
+                  })}
+                  onClick={() =>
+                    !isNavigationDarkMode && handleNavigationThemeToggle()
+                  }
+                >
                   <div className={cx(styles.navbarPreview, styles.darkNavbar)}>
-                    <div className={cx(styles.navbarContent)}>
-                      <div className={cx(styles.navbarItem)}></div>
-                      <div className={cx(styles.navbarItem)}></div>
-                      <div className={cx(styles.navbarItem)}></div>
-                    </div>
+                    <div className={cx(styles.navbarContent)}></div>
                   </div>
                 </div>
                 <div className={cx(styles.styleLabel)}>深色</div>
