@@ -5,12 +5,13 @@
   position: fixed;
   top: 0;
   height: 100%;
-  background: @navSecondMenuBg;
-  border-right: 1px solid @navBorderColor;
+  // 使用与 layout 一致的背景色
+  background: var(--xagi-layout-bg-secondary, @navSecondMenuBg);
+  border-right: 1px solid var(--xagi-layout-border-primary, @navBorderColor);
   z-index: 998; // 比一级菜单层级低一点
   transition: opacity 0.2s ease-in-out, background-color 0.3s ease;
-  box-shadow: @navSecondMenuShadow;
-  color: @navSecondMenuText;
+  box-shadow: var(--xagi-layout-shadow, @navSecondMenuShadow);
+  color: var(--xagi-layout-second-menu-text-color, @navSecondMenuText);
 
   &.hidden {
     opacity: 0;
@@ -26,7 +27,7 @@
     height: 100%;
     padding: 12px 0;
     overflow-y: auto;
-    
+
     // 二级菜单项样式
     .menu-item {
       padding: @paddingXs @paddingSm;
@@ -34,15 +35,15 @@
       border-radius: @borderRadiusSm;
       transition: all 0.3s ease;
       cursor: pointer;
-      
+
       &:hover {
-        background: @navItemHoverBg;
-        color: @navSecondMenuText;
+        background: var(--xagi-layout-bg-card, @navItemHoverBg);
+        color: var(--xagi-layout-second-menu-text-color, @navSecondMenuText);
       }
-      
+
       &.active {
-        background: @navItemActiveBg;
-        color: @navSecondMenuText;
+        background: var(--xagi-layout-bg-primary, @navItemActiveBg);
+        color: var(--xagi-layout-second-menu-text-color, @navSecondMenuText);
       }
     }
   }
@@ -52,8 +53,9 @@
     margin-bottom: 0;
     font-size: 18px;
     font-weight: 600;
-    color: @navSecondMenuText;
-    border-bottom: 1px solid @navDividerColor;
+    color: var(--xagi-layout-second-menu-text-color, @navSecondMenuText);
+    border-bottom: 1px solid
+      var(--xagi-layout-border-secondary, @navDividerColor);
     transition: color 0.3s ease;
   }
 }
