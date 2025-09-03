@@ -6,6 +6,10 @@ import { ACCESS_TOKEN } from './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';
 import useEventPolling from './hooks/useEventPolling';
 import { request as requestCommon } from './services/common';
+import {
+  initializeLayoutStyle,
+  initializeWithFallback,
+} from './utils/styleInitializer';
 import { getCurrentTheme, isCurrentDarkMode } from './utils/theme';
 
 /**
@@ -71,6 +75,14 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
       }
     };
 
+    // 应用启动时立即初始化 layout navigation CSS 变量
+    // 先初始化样式，再应用主题配置
+    try {
+      initializeLayoutStyle('应用启动');
+    } catch (error) {
+      console.error('应用启动时样式初始化失败，使用兜底方案:', error);
+      initializeWithFallback('应用启动失败');
+    }
     applyFromStorage();
 
     const handler = () => applyFromStorage();
