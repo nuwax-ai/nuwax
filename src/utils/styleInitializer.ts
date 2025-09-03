@@ -1,3 +1,4 @@
+import { GIF_DEFAULT_GRAY } from '@/constants/images.constants';
 import {
   DEFAULT_THEME_CONFIG,
   STORAGE_KEYS,
@@ -120,7 +121,7 @@ export class StyleInitializer {
 
       // 设置默认背景图 CSS 变量
       const defaultBackgroundVars = {
-        '--xagi-background-image': 'url(/bg/bg-variant-1.png)', // 默认背景图
+        '--xagi-background-image': `url(${GIF_DEFAULT_GRAY})`, // 默认背景图
       };
 
       // 应用导航变量
@@ -133,7 +134,7 @@ export class StyleInitializer {
         rootElement.style.setProperty(key, value);
       });
 
-      // 应用主题色变量
+      // // 应用主题色变量
       Object.entries(defaultThemeVars).forEach(([key, value]) => {
         rootElement.style.setProperty(key, value);
       });

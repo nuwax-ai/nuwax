@@ -17,6 +17,12 @@ import {
  * 布局深浅色风格管理工具类
  * 注意：此风格系统与 Ant Design 的主题系统完全独立
  * 仅控制布局容器、导航栏等自定义组件的视觉风格
+ *
+ * 主题配置优先级：
+ * 1. 用户本地配置 (STORAGE_KEYS.USER_THEME_CONFIG) - 优先级最高
+ * 2. 租户配置数据 (TENANT_CONFIG_INFO.templateConfig) - 兜底方案
+ * 3. 布局样式本地存储 (STORAGE_KEYS.LAYOUT_STYLE) - 最后兜底
+ * 4. 系统默认配置 - 兜底的兜底
  */
 
 /**
@@ -301,18 +307,166 @@ export class LayoutStyleManager {
   }
 
   /**
+   * 同步主题颜色到全局设置
+   * 支持预设颜色和自定义颜色
+   * @param themeConfig 主题配置数据
+   */
+  public syncThemeColorToGlobalSettings(themeConfig: any): void {
+    if (!themeConfig?.selectedThemeColor) return;
+
+    try {
+      // 验证颜色格式（支持 hex、rgb、rgba 等格式）
+      const colorValue = themeConfig.selectedThemeColor;
+      if (!this.isValidColor(colorValue)) {
+        console.warn('无效的主题颜色格式:', colorValue);
+        return;
+      }
+
+      // 获取当前全局设置
+      const { STORAGE_KEYS } = require('@/constants/theme.constants');
+      const currentSettingsStr = localStorage.getItem(
+        STORAGE_KEYS.GLOBAL_SETTINGS,
+      );
+      let currentSettings = currentSettingsStr
+        ? JSON.parse(currentSettingsStr)
+        : {};
+
+      // 更新主题颜色（支持任何有效的颜色值）
+      const newSettings = {
+        ...currentSettings,
+        primaryColor: colorValue,
+      };
+
+      // 保存到本地存储
+      localStorage.setItem(
+        STORAGE_KEYS.GLOBAL_SETTINGS,
+        JSON.stringify(newSettings),
+      );
+
+      // 触发全局设置变更事件
+      const event = new CustomEvent('xagi-global-settings-changed', {
+        detail: newSettings,
+      });
+      window.dispatchEvent(event);
+
+      console.log('已同步主题颜色到全局设置 (支持自定义颜色):', colorValue);
+    } catch (error) {
+      console.warn('同步主题颜色到全局设置失败:', error);
+    }
+  }
+
+  /**
+   * 验证颜色值是否有效
+   * 支持 hex、rgb、rgba、hsl、hsla 等格式
+   * @param color 颜色值
+   * @returns 是否为有效颜色
+   */
+  private isValidColor(color: string): boolean {
+    if (!color || typeof color !== 'string') return false;
+
+    // 创建一个临时元素来验证颜色
+    const tempElement = document.createElement('div');
+    tempElement.style.color = color;
+
+    // 如果浏览器能解析这个颜色，style.color 不会为空
+    return tempElement.style.color !== '';
+  }
+
+  /**
+   * 获取主题配置数据（按优先级）
+   * 优先级：用户本地数据 > 租户配置数据 > 默认值
+   * @returns 主题配置数据或null
+   */
+  public getThemeConfigData(): any {
+    try {
+      // 1. 优先从用户主题配置本地存储获取
+      const userThemeConfig = localStorage.getItem(
+        STORAGE_KEYS.USER_THEME_CONFIG,
+      );
+      if (userThemeConfig) {
+        try {
+          const templateConfig = JSON.parse(userThemeConfig);
+          console.log(
+            '从用户本地配置加载主题配置 (优先级最高):',
+            templateConfig,
+          );
+          return templateConfig; // 直接返回原始格式的主题配置
+        } catch (error) {
+          console.warn('解析用户本地主题配置失败:', error);
+        }
+      }
+
+      // 2. 如果用户本地没有，则从租户配置中获取主题配置
+      const tenantConfigString = localStorage.getItem('TENANT_CONFIG_INFO');
+      if (tenantConfigString) {
+        try {
+          const tenantConfig = JSON.parse(tenantConfigString);
+          if (tenantConfig.templateConfig) {
+            const templateConfig = JSON.parse(tenantConfig.templateConfig);
+            console.log('从租户配置加载主题配置 (兜底方案):', templateConfig);
+            return templateConfig; // 直接返回原始格式的主题配置
+          }
+        } catch (error) {
+          console.warn('解析租户主题配置失败:', error);
+        }
+      }
+
+      console.log('未找到任何主题配置，将使用默认值');
+      return null;
+    } catch (error) {
+      console.warn('Failed to get theme config data:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 从主题配置数据转换为布局样式数据
+   * @param themeConfig 主题配置数据
+   */
+  private convertThemeConfigToLayoutData(themeConfig: any): any {
+    return {
+      backgroundId: themeConfig.selectedBackgroundId,
+      layoutStyle:
+        themeConfig.navigationStyle === 'dark'
+          ? ThemeLayoutColorStyle.DARK
+          : ThemeLayoutColorStyle.LIGHT,
+      navigationStyle:
+        themeConfig.navigationStyleId === 'style2'
+          ? ThemeNavigationStyleType.STYLE2
+          : ThemeNavigationStyleType.STYLE1,
+    };
+  }
+
+  /**
    * 从本地存储加载
    */
-  private loadFromStorage(): void {
+  public loadFromStorage(): void {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.LAYOUT_STYLE);
-      if (stored) {
-        const data = JSON.parse(stored);
+      let themeData: any = null;
 
+      // 1. 尝试获取主题配置数据
+      const themeConfig = this.getThemeConfigData();
+      if (themeConfig) {
+        themeData = this.convertThemeConfigToLayoutData(themeConfig);
+        // 同步主题颜色到全局设置
+        this.syncThemeColorToGlobalSettings(themeConfig);
+      }
+
+      // 2. 如果没有主题配置，则从布局样式本地存储获取（最后的兜底方案）
+      if (!themeData) {
+        const stored = localStorage.getItem(STORAGE_KEYS.LAYOUT_STYLE);
+        if (stored) {
+          themeData = JSON.parse(stored);
+          console.log('从布局样式本地存储加载配置 (最后兜底):', themeData);
+        }
+      }
+
+      // 3. 应用加载的配置或使用默认值
+      if (themeData) {
         // 加载背景配置
-        if (data.backgroundId) {
+        if (themeData.backgroundId) {
           const config = backgroundConfigs.find(
-            (bg) => bg.id === data.backgroundId,
+            (bg) => bg.id === themeData.backgroundId,
           );
           if (config) {
             this.currentBackground = config;
@@ -321,20 +475,26 @@ export class LayoutStyleManager {
         }
 
         // 加载布局风格
-        if (data.layoutStyle) {
-          this.currentLayoutStyle = data.layoutStyle;
+        if (themeData.layoutStyle) {
+          this.currentLayoutStyle = themeData.layoutStyle;
         }
 
         // 加载导航风格
-        if (data.navigationStyle) {
-          this.currentNavStyle = data.navigationStyle;
+        if (themeData.navigationStyle) {
+          this.currentNavStyle = themeData.navigationStyle;
         }
 
         // 应用完整的样式配置
         this.applyStyleConfig();
+      } else {
+        console.log('没有找到主题配置，使用默认设置');
+        // 使用默认配置
+        this.applyStyleConfig();
       }
     } catch (error) {
       console.warn('Failed to load layout style from storage:', error);
+      // 出错时使用默认配置
+      this.applyStyleConfig();
     }
   }
 }

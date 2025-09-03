@@ -17,6 +17,8 @@ interface ThemeColorPanelProps {
   enableCustomColor?: boolean;
   /** 自定义颜色选择器的默认值 */
   customColorDefault?: string;
+  /** 额外的颜色选项（用于显示自定义颜色等） */
+  extraColors?: string[];
 }
 
 const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
@@ -24,19 +26,41 @@ const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
   onColorChange,
   enableCustomColor = true,
   customColorDefault = '#CBCED6',
+  extraColors = [],
 }) => {
+  // 自定义颜色状态
+  const [customColor, setCustomColor] = useState<string>(
+    extraColors.length > 0
+      ? extraColors[extraColors.length - 1]
+      : customColorDefault,
+  );
+
   // 使用统一的主题色配置
   const presetColors = THEME_COLOR_CONFIGS;
+  // 合并预设颜色和额外颜色，去重并过滤掉已存在的颜色
+  const allColors = [
+    ...presetColors,
+    ...(enableCustomColor
+      ? []
+      : extraColors
+          .filter(
+            (color) => !presetColors.find((preset) => preset.color === color),
+          )
+          .map((color) => ({
+            color,
+            name: '自定义',
+            isCustom: true,
+          }))),
+  ];
 
   const handleColorChange = (color: Color, hex: string) => {
     onColorChange(hex);
+    setCustomColor(hex);
   };
 
   const handlePresetColorClick = (color: string) => {
     onColorChange(color);
   };
-
-  const [customColor] = useState<string>(customColorDefault);
 
   return (
     <div className={cx(styles.themeColorPanel)}>
@@ -45,7 +69,7 @@ const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
       {/* 预设颜色选择 */}
       <div className={cx(styles.presetColorsSection)}>
         <div className={cx(styles.presetColorsGrid)}>
-          {presetColors.map((item) => (
+          {allColors.map((item) => (
             <div
               className={cx(styles.colorPreviewItemContainer)}
               key={item.color}
@@ -84,6 +108,9 @@ const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
                 className={cx(
                   styles.colorPreviewItem,
                   styles.customColorSection,
+                  {
+                    [styles.active]: currentColor === customColor,
+                  },
                 )}
                 style={
                   {

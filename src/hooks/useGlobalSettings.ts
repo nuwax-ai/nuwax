@@ -38,7 +38,7 @@ export const defaultSettings: GlobalSettings = {
   theme: 'light',
   language: 'zh-CN',
   primaryColor: '#5147ff',
-  backgroundImageId: 'bg-variant-1', // 使用固定默认值，避免循环依赖
+  backgroundImageId: '', // 使用固定默认值，避免循环依赖
 };
 
 /**

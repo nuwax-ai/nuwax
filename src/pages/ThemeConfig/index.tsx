@@ -3,11 +3,15 @@ import NavigationStylePanel from '@/components/business-component/ThemeConfig/Na
 import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
 import { backgroundConfigs, STORAGE_KEYS } from '@/constants/theme.constants';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
-import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { useExtraColors, useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { apiSystemConfigUpdate } from '@/services/systemManage';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
+import { ThemeConfigData } from '@/types/interfaces/systemManage';
+import { layoutStyleManager } from '@/utils/backgroundStyle';
 import { Button, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 // 使用统一的存储键名
@@ -32,6 +36,12 @@ const ThemeConfig: React.FC = () => {
   const { navigationStyle, setNavigationStyle, layoutStyle, setLayoutStyle } =
     useLayoutStyle();
 
+  // 获取额外的颜色（包括自定义颜色）
+  const extraColors = useExtraColors();
+
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
   // 导航栏深浅色状态管理（独立于Ant Design主题）
   const [isNavigationDarkMode, setIsNavigationDarkMode] = useState<boolean>(
     layoutStyle === ThemeLayoutColorStyle.DARK,
@@ -53,32 +63,57 @@ const ThemeConfig: React.FC = () => {
     return backgroundConfig?.layoutStyle || ThemeLayoutColorStyle.LIGHT;
   };
 
-  // 从本地存储恢复配置
+  // 从租户配置和本地存储恢复配置
   useEffect(() => {
     try {
-      const savedConfig = localStorage.getItem(STORAGE_KEYS.USER_THEME_CONFIG);
-      if (savedConfig) {
-        const config = JSON.parse(savedConfig);
+      // 使用布局样式管理器的公共方法获取主题配置
+      const themeConfig: ThemeConfigData | null =
+        layoutStyleManager.getThemeConfigData();
+
+      // 应用恢复的配置
+      if (themeConfig) {
+        console.log('主题配置页面恢复配置:', themeConfig);
+
+        // 恢复主题色
+        if (
+          themeConfig.selectedThemeColor &&
+          themeConfig.selectedThemeColor !== primaryColor
+        ) {
+          setPrimaryColor(themeConfig.selectedThemeColor);
+        }
+
+        // 恢复背景图片
+        if (
+          themeConfig.selectedBackgroundId &&
+          themeConfig.selectedBackgroundId !== backgroundImageId
+        ) {
+          setBackgroundImage(themeConfig.selectedBackgroundId);
+        }
 
         // 恢复导航风格
-        if (config.navigationStyleId) {
-          if (config.navigationStyleId !== navigationStyle) {
-            setNavigationStyle(config.navigationStyleId);
-          }
+        if (
+          themeConfig.navigationStyleId &&
+          themeConfig.navigationStyleId !== navigationStyle
+        ) {
+          setNavigationStyle(themeConfig.navigationStyleId as any);
         }
 
         // 恢复导航深浅色
-        if (config.navigationStyle) {
-          const navLayoutStyle = config.navigationStyle;
-          if (navLayoutStyle !== layoutStyle) {
-            setLayoutStyle(navLayoutStyle);
-          }
+        if (
+          themeConfig.navigationStyle &&
+          themeConfig.navigationStyle !== layoutStyle
+        ) {
+          const layoutStyleEnum =
+            themeConfig.navigationStyle === 'dark'
+              ? ThemeLayoutColorStyle.DARK
+              : ThemeLayoutColorStyle.LIGHT;
+          setLayoutStyle(layoutStyleEnum);
         }
       }
     } catch (error) {
-      console.warn('Failed to restore theme config from storage:', error);
+      console.warn('Failed to restore theme config:', error);
     }
-  }, []);
+  }, [tenantConfigInfo]);
 
   // 处理导航风格变更
   const handleNavigationStyleChange = (styleId: string) => {
@@ -141,10 +176,10 @@ const ThemeConfig: React.FC = () => {
     }
   };
 
-  // 保存配置到本地存储
+  // 保存配置到后端
   const handleSave = async () => {
     try {
-      const themeConfig = {
+      const themeConfig: ThemeConfigData = {
         selectedThemeColor: primaryColor,
         selectedBackgroundId: backgroundImageId,
         antdTheme: isDarkMode
@@ -155,12 +190,18 @@ const ThemeConfig: React.FC = () => {
         timestamp: Date.now(),
       };
 
+      // 保存到后端
+      await apiSystemConfigUpdate({
+        templateConfig: JSON.stringify(themeConfig),
+      });
+
+      // 同时保存到本地存储作为缓存
       localStorage.setItem(
         STORAGE_KEYS.USER_THEME_CONFIG,
         JSON.stringify(themeConfig),
       );
-      message.success('主题配置保存成功');
 
+      message.success('主题配置保存成功');
       console.log('保存的配置:', themeConfig);
     } catch (error) {
       console.error('Save theme config error:', error);
@@ -186,6 +227,7 @@ const ThemeConfig: React.FC = () => {
             <ThemeColorPanel
               currentColor={primaryColor}
               onColorChange={setPrimaryColor}
+              extraColors={extraColors}
             />
           </div>
           <div className={cx(styles.configItem)}>
