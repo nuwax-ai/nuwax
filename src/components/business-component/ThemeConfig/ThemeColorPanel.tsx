@@ -108,6 +108,9 @@ const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
                 className={cx(
                   styles.colorPreviewItem,
                   styles.customColorSection,
+                  {
+                    [styles.active]: currentColor === customColor,
+                  },
                 )}
                 style={
                   {
