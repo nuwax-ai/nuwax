@@ -1,3 +1,4 @@
+import { THEME_BACKGROUND_CONFIGS } from '@/constants/theme.constants';
 import { TenantInfo, TenantThemeConfig } from '@/types/tenant';
 
 /**
@@ -24,39 +25,13 @@ export const getTenantInfo = async (): Promise<TenantInfo> => {
             { color: '#722ed1', name: '紫色' },
             { color: '#eb2f96', name: '粉色' },
           ],
-          backgroundImages: [
-            {
-              id: 'bg-variant-1',
-              name: '背景1',
-              preview: '/bg/bg-variant-1.png',
-              url: '/bg/bg-variant-1.png',
-              isDefault: true,
-            },
-            {
-              id: 'bg-variant-2',
-              name: '背景2',
-              preview: '/bg/bg-variant-2.png',
-              url: '/bg/bg-variant-2.png',
-            },
-            {
-              id: 'bg-variant-3',
-              name: '背景3',
-              preview: '/bg/bg-variant-3.png',
-              url: '/bg/bg-variant-3.png',
-            },
-            {
-              id: 'bg-variant-4',
-              name: '背景4',
-              preview: '/bg/bg-variant-4.png',
-              url: '/bg/bg-variant-4.png',
-            },
-            {
-              id: 'bg-variant-5',
-              name: '背景5',
-              preview: '/bg/bg-variant-5.png',
-              url: '/bg/bg-variant-5.png',
-            },
-          ],
+          backgroundImages: THEME_BACKGROUND_CONFIGS.map((config) => ({
+            id: `bg-${config.id}`,
+            name: config.name,
+            preview: config.url,
+            url: config.url,
+            isDefault: config.id === 'variant-1',
+          })),
           navigationStyles: [
             {
               id: 'style1',
