@@ -44,7 +44,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
 
   // 导航栏深浅色状态管理（独立于Ant Design主题）
   const [isNavigationDarkMode, setIsNavigationDarkMode] = useState<boolean>(
-    tenantThemeConfig.defaultIsDarkMode,
+    layoutStyle === ThemeLayoutColorStyle.DARK,
   );
 
   // 同步布局风格状态到导航深浅色状态

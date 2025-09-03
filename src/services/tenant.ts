@@ -59,20 +59,22 @@ export const getTenantInfo = async (): Promise<TenantInfo> => {
           ],
           navigationStyles: [
             {
-              id: 'nav-style-1',
+              id: 'style1',
               name: '风格1',
-              description: '当前默认风格',
+              description:
+                '紧凑模式：60px宽度，无文字显示，页面容器有外边距和圆角',
               isDefault: true,
             },
             {
-              id: 'nav-style-2',
+              id: 'style2',
               name: '风格2',
-              description: '简洁风格',
+              description:
+                '展开模式：88px宽度，显示文字，页面容器无外边距和圆角',
             },
           ],
           defaultThemeColor: '#5147ff',
           defaultBackgroundId: 'bg-variant-1',
-          defaultNavigationStyleId: 'nav-style-1',
+          defaultNavigationStyleId: 'style1',
           supportDarkMode: true,
           defaultIsDarkMode: false,
         },
