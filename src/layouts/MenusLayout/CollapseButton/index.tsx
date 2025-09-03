@@ -1,9 +1,11 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
+import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';
-import { FIRST_MENU_WIDTH, MENU_WIDTH } from '../../layout.constants';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -14,6 +16,15 @@ const cx = classNames.bind(styles);
 const CollapseButton: React.FC = () => {
   const { isSecondMenuCollapsed, toggleSecondMenuCollapse } =
     useModel('layout');
+  const { navigationStyle } = useLayoutStyle();
+
+  // 计算动态导航宽度
+  const firstMenuWidth =
+    navigationStyle === ThemeNavigationStyleType.STYLE2
+      ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2
+      : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1;
+  const menuTotalWidth =
+    NAVIGATION_LAYOUT_SIZES.getTotalMenuWidth(navigationStyle);
 
   return (
     <Tooltip
@@ -27,7 +38,7 @@ const CollapseButton: React.FC = () => {
         })}
         onClick={toggleSecondMenuCollapse}
         style={{
-          left: isSecondMenuCollapsed ? FIRST_MENU_WIDTH : MENU_WIDTH,
+          left: isSecondMenuCollapsed ? firstMenuWidth : menuTotalWidth,
         }}
       >
         <SvgIcon

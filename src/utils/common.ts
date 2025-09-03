@@ -156,7 +156,7 @@ function formatTimeAgo(targetTime: string) {
     if (monthsDifference >= 1) {
       return `${monthsDifference} 月前`;
     }
-    return null;
+    return '';
   } else if (diffDays > 6) {
     return `${diffDays}天前`;
   } else if (diffDays > 2) {

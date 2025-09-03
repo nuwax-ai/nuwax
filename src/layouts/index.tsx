@@ -1,17 +1,15 @@
-import ThemeControlPanel from '@/components/ThemeControlPanel';
-import { useGlobalSettings } from '@/hooks/useGlobalSettings';
-import { theme } from 'antd';
+import {
+  ANIMATION_DURATION,
+  MOBILE_BREAKPOINT,
+  MOBILE_MENU_TOP_PADDING,
+} from '@/constants/layout.constants';
+import { useLayoutStyle } from '@/hooks/useLayoutStyle';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Outlet, useModel } from 'umi';
 import HistoryConversation from './HistoryConversation';
 import HoverMenu from './HoverMenu';
 import styles from './index.less';
-import {
-  ANIMATION_DURATION,
-  MOBILE_BREAKPOINT,
-  MOBILE_MENU_TOP_PADDING,
-} from './layout.constants';
 import MenusLayout from './MenusLayout';
 import Message from './Message';
 import MobileMenu from './MobileMenu';
@@ -32,17 +30,19 @@ const Layout: React.FC = () => {
   // 使用 useRef 避免重复获取 DOM 元素
   const mobileMenuContainerRef = useRef<HTMLDivElement>(null);
   // 全局主题与语言（已在 app.tsx 统一注入，这里仅保留使用场景需要时可读取）
-  const {
-    language,
-    toggleTheme,
-    toggleLanguage,
-    primaryColor,
-    setPrimaryColor,
-    isDarkMode,
-    backgroundImageId,
-    setBackgroundImage,
-    getBackgroundImageStyle,
-  } = useGlobalSettings();
+  // const {
+  //   language,
+  //   toggleTheme,
+  //   toggleLanguage,
+  //   primaryColor,
+  //   setPrimaryColor,
+  //   isDarkMode,
+  //   backgroundImageId,
+  //   setBackgroundImage,
+  // } = useGlobalSettings();
+
+  // 导航风格管理（使用独立的布局风格系统）
+  const { navigationStyle, layoutStyle } = useLayoutStyle();
 
   // 状态管理
   const {
@@ -192,17 +192,43 @@ const Layout: React.FC = () => {
     () => (isMobile ? { paddingTop: MOBILE_MENU_TOP_PADDING } : {}),
     [isMobile],
   );
-  const token = theme.useToken();
-  console.log('token', token);
+  /**
+   * 主容器样式类名（使用独立的布局风格类）
+   * 包含导航风格和布局风格类
+   */
+  const mainContainerClassName = useMemo(
+    () =>
+      cx(
+        'flex',
+        'h-full',
+        styles.container,
+        `xagi-layout-${layoutStyle}`, // 布局风格类（独立于Ant Design）
+        `xagi-nav-${navigationStyle}`, // 导航风格类
+      ),
+    [layoutStyle, navigationStyle],
+  );
+
+  /**
+   * 页面容器样式类名（使用独立的布局风格类）
+   * 根据导航风格动态调整
+   */
+  const pageContainerClassName = useMemo(
+    () =>
+      cx(
+        'flex-1',
+        'overflow-y',
+        styles['page-container'],
+        styles[`xagi-layout-${layoutStyle}`],
+        styles[`xagi-nav-${navigationStyle}`],
+      ),
+    [layoutStyle, navigationStyle],
+  );
 
   return (
-    <div
-      className={cx('flex', 'h-full', styles.container)}
-      style={getBackgroundImageStyle}
-    >
+    <div className={mainContainerClassName}>
       {/* 顶部右侧全局操作：主题、语言、主色 */}
 
-      <ThemeControlPanel
+      {/* <ThemeControlPanel
         isDarkMode={isDarkMode}
         toggleTheme={toggleTheme}
         language={language}
@@ -211,7 +237,7 @@ const Layout: React.FC = () => {
         setPrimaryColor={setPrimaryColor}
         backgroundImageId={backgroundImageId}
         setBackgroundImage={setBackgroundImage}
-      />
+      /> */}
 
       {/* 侧边菜单栏及弹窗区域 */}
       <div
@@ -249,7 +275,7 @@ const Layout: React.FC = () => {
       </div>
 
       {/* 主内容区 */}
-      <div className={cx('flex-1', 'overflow-y', styles['page-container'])}>
+      <div className={pageContainerClassName}>
         <Outlet />
       </div>
     </div>

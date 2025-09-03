@@ -56,6 +56,12 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
           theme: {
             algorithm,
             token: tokens as any,
+            components: {
+              Segmented: {
+                /* 这里是你的组件 token */
+                itemSelectedColor: colorPrimary,
+              },
+            },
             cssVar: { prefix: 'xagi' },
           },
           appConfig: {},

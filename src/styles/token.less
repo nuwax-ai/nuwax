@@ -375,8 +375,8 @@
 // 主题色相关
 @colorPrimaryBg: var(--xagi-color-primary-bg);
 @colorPrimaryBgHover: var(--xagi-color-primary-bg-hover);
-@colorPrimaryBorder: var(--xagi-color-primary-border);
-@colorPrimaryBorderHover: var(--xagi-color-primary-border-hover);
+@colorPrimaryBorder: var(--xagi-color-primary); // TODO: 修改过
+@colorPrimaryBorderHover: @colorPrimaryActive; // TODO: 修改过
 @colorPrimaryHover: var(--xagi-color-primary-hover);
 @colorPrimaryActive: var(--xagi-color-primary-active);
 @colorPrimaryTextHover: var(--xagi-color-primary-text-hover);
@@ -386,8 +386,8 @@
 // 成功色相关
 @colorSuccessBg: var(--xagi-color-success-bg);
 @colorSuccessBgHover: var(--xagi-color-success-bg-hover);
-@colorSuccessBorder: var(--xagi-color-success-border);
-@colorSuccessBorderHover: var(--xagi-color-success-border-hover);
+@colorSuccessBorder: var(--xagi-color-success); // TODO: 修改过
+@colorSuccessBorderHover: @colorSuccessActive; // TODO: 修改过
 @colorSuccessHover: var(--xagi-color-success-hover);
 @colorSuccessActive: var(--xagi-color-success-active);
 @colorSuccessTextHover: var(--xagi-color-success-text-hover);
@@ -399,8 +399,8 @@
 @colorErrorBgHover: var(--xagi-color-error-bg-hover);
 @colorErrorBgFilledHover: var(--xagi-color-error-bg-filled-hover);
 @colorErrorBgActive: var(--xagi-color-error-bg-active);
-@colorErrorBorder: var(--xagi-color-error-border);
-@colorErrorBorderHover: var(--xagi-color-error-border-hover);
+@colorErrorBorder: var(--xagi-color-error); // TODO: 修改过
+@colorErrorBorderHover: @colorErrorActive; // TODO: 修改过
 @colorErrorHover: var(--xagi-color-error-hover);
 @colorErrorActive: var(--xagi-color-error-active);
 @colorErrorTextHover: var(--xagi-color-error-text-hover);
@@ -411,8 +411,8 @@
 // 警告色相关
 @colorWarningBg: var(--xagi-color-warning-bg);
 @colorWarningBgHover: var(--xagi-color-warning-bg-hover);
-@colorWarningBorder: var(--xagi-color-warning-border);
-@colorWarningBorderHover: var(--xagi-color-warning-border-hover);
+@colorWarningBorder: var(--xagi-color-warning); // TODO: 修改过
+@colorWarningBorderHover: @colorWarningActive; // TODO: 修改过
 @colorWarningHover: var(--xagi-color-warning-hover);
 @colorWarningActive: var(--xagi-color-warning-active);
 @colorWarningTextHover: var(--xagi-color-warning-text-hover);
@@ -423,8 +423,8 @@
 // 信息色相关
 @colorInfoBg: var(--xagi-color-info-bg);
 @colorInfoBgHover: var(--xagi-color-info-bg-hover);
-@colorInfoBorder: var(--xagi-color-info-border);
-@colorInfoBorderHover: var(--xagi-color-info-border-hover);
+@colorInfoBorder: var(--xagi-color-info); // TODO: 修改过
+@colorInfoBorderHover: @colorInfoActive; // TODO: 修改过
 @colorInfoHover: var(--xagi-color-info-hover);
 @colorInfoActive: var(--xagi-color-info-active);
 @colorInfoTextHover: var(--xagi-color-info-text-hover);
@@ -477,4 +477,129 @@
 @linkDecoration: var(--xagi-link-decoration);
 @linkHoverDecoration: var(--xagi-link-hover-decoration);
 @linkFocusDecoration: var(--xagi-link-focus-decoration);
-@backgroundImage: var(--xagi-background-image, none);
+
+@backgroundImage: var(--xagi-background-image, none); // TODO 新增全局背景
+
+// ================================
+// 导航相关的专用变量 (Navigation Tokens)
+// 基于Ant Design的CSS变量系统和独立的布局风格系统
+// ===============================
+
+// 导航尺寸配置（直接使用动态CSS变量）
+@navFirstMenuWidth: var(--xagi-nav-first-menu-width, 60px);
+@navFirstMenuWidthStyle2: 88px; // 展开模式宽度
+@navFirstMenuFontSize: @fontSizeSm;
+
+// 导航背景色（使用Ant Design的动态颜色）
+@navFirstMenuBg: var(--xagi-color-bg-container, rgba(255, 255, 255, 0.95));
+@navSecondMenuBg: var(--xagi-color-bg-layout, rgba(255, 255, 255, 0.85));
+
+// 页面容器相关Token
+@pageContainerMargin: var(--xagi-page-container-margin, 16px);
+@pageContainerBorderRadius: var(--xagi-page-container-border-radius, 12px);
+@pageContainerBg: var(--xagi-layout-bg-container, rgba(255, 255, 255, 0.95));
+
+// 导航文字颜色（使用独立的布局风格变量）
+@navFirstMenuText: var(--xagi-layout-text-secondary, rgba(0, 0, 0, 0.88));
+@navFirstMenuTextSecondary: var(
+  --xagi-layout-text-secondary,
+  rgba(0, 0, 0, 0.65)
+);
+@navFirstMenuTextTertiary: var(
+  --xagi-layout-text-tertiary,
+  rgba(0, 0, 0, 0.45)
+);
+@navSecondMenuText: var(
+  --xagi-layout-second-menu-text-color,
+  rgba(0, 0, 0, 0.88)
+);
+@navSecondMenuTextSecondary: var(
+  --xagi-layout-text-secondary,
+  rgba(0, 0, 0, 0.65)
+);
+@navSecondMenuTextTertiary: var(
+  --xagi-layout-text-tertiary,
+  rgba(0, 0, 0, 0.45)
+);
+
+// 导航交互状态颜色（使用主题色）
+@navItemHoverBg: #ffffff;
+@navItemActiveBg: #ffffff;
+@navItemSelectedBg: #ffffff;
+
+// 导航边框和分割线（使用独立的布局风格变量）
+@navBorderColor: var(--xagi-layout-border-primary, rgba(0, 0, 0, 0.15));
+@navDividerColor: var(--xagi-layout-border-secondary, rgba(0, 0, 0, 0.06));
+
+// 导航阴影（使用独立的布局风格变量）
+@navShadow: var(--xagi-layout-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
+@navFirstMenuShadow: none;
+@navSecondMenuShadow: none;
+
+// 移动端响应式适配
+// 在移动端强制使用紧凑模式，忽略导航风格设置
+@media (max-width: 768px) {
+  :root {
+    --xagi-nav-first-menu-width: 60px !important;
+  }
+
+  // 隐藏移动端的文字显示
+  .xagi-nav-style2 {
+    .text {
+      opacity: 0 !important;
+      transform: translateY(-5px) !important;
+    }
+  }
+
+  // 移动端页面容器适配
+  .page-container {
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+}
+
+// ================================
+// 布局风格适配类（独立于Ant Design主题）
+// ================================
+
+// // 深色布局风格适配
+// .xagi-layout-dark {
+//   // 导航文字颜色覆盖
+//   @navFirstMenuText: var(--xagi-layout-text-primary, #ffffff);
+//   @navFirstMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(255, 255, 255, 0.85));
+//   @navFirstMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(255, 255, 255, 0.65));
+//   @navSecondMenuText: var(--xagi-layout-text-primary, #ffffff);
+//   @navSecondMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(255, 255, 255, 0.85));
+//   @navSecondMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(255, 255, 255, 0.65));
+
+//   // 导航背景色覆盖
+//   @navFirstMenuBg: var(--xagi-layout-bg-card, rgba(0, 0, 0, 0.45));
+//   @navSecondMenuBg: var(--xagi-layout-bg-secondary, rgba(0, 0, 0, 0.65));
+
+//   // 边框和分割线覆盖
+//   @navBorderColor: var(--xagi-layout-border-primary, rgba(255, 255, 255, 0.15));
+//   @navDividerColor: var(--xagi-layout-border-secondary, rgba(255, 255, 255, 0.1));
+
+//   @pageContainerBg: var(--xagi-color-bg-container, #ffffff);
+// }
+
+// // 浅色布局风格适配
+// .xagi-layout-light {
+//   // 使用默认的浅色变量
+//   @navFirstMenuText: var(--xagi-layout-text-secondary, #000000);
+//   @navFirstMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(0, 0, 0, 0.85));
+//   @navFirstMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(0, 0, 0, 0.65));
+//   @navSecondMenuText: var(--xagi-layout-text-secondary, #000000);
+//   @navSecondMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(0, 0, 0, 0.85));
+//   @navSecondMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(0, 0, 0, 0.65));
+
+//   // 导航背景色覆盖
+//   @navFirstMenuBg: var(--xagi-layout-bg-card, rgba(255, 255, 255, 0.65));
+//   @navSecondMenuBg: var(--xagi-layout-bg-secondary, rgba(255, 255, 255, 0.85));
+
+//   // 边框和分割线覆盖
+//   @navBorderColor: var(--xagi-layout-border-primary, rgba(0, 0, 0, 0.15));
+//   @navDividerColor: var(--xagi-layout-border-secondary, rgba(0, 0, 0, 0.1));
+
+//    @pageContainerBg: var(--xagi-layout-bg-secondary, rgba(255, 255, 255, 0.9));
+// }

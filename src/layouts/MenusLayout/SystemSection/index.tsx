@@ -40,6 +40,10 @@ const SystemSection: React.FC<{
       case SystemManageListEnum.System_Config:
         history.push('/system/config');
         break;
+      // 主题配置
+      case SystemManageListEnum.Theme_Config:
+        history.push('/system/theme/config');
+        break;
       // Markdown 测试
       case 'markdown-test':
         history.push('/markdown-test');
@@ -59,7 +63,10 @@ const SystemSection: React.FC<{
       (type === SystemManageListEnum.Global_Model_Manage &&
         pathname.includes('model')) ||
       (type === SystemManageListEnum.System_Config &&
-        pathname.includes('config')) ||
+        pathname.includes('config') &&
+        !pathname.includes('theme')) ||
+      (type === SystemManageListEnum.Theme_Config &&
+        pathname.includes('theme/config')) ||
       (type === 'markdown-test' && pathname.includes('markdown-test'))
     );
   };

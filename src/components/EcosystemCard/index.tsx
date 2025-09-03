@@ -7,7 +7,6 @@ import {
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
-// import NewVersionIcon from './NewVersionIcon';
 import SharedIcon from './SharedIcon';
 
 const cx = classNames.bind(styles);
@@ -108,8 +107,6 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
     });
   };
 
-  console.log('isNewVersion', isNewVersion);
-
   return (
     <div
       className={cx('flex', 'flex-col', 'gap-4', styles.container, className)}
@@ -118,7 +115,23 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
       }}
       onClick={handleClickCard}
     >
-      {isEnabled && <div className={cx(styles['activated-text'])}>已启用</div>}
+      {isEnabled && (
+        <div
+          className={cx(styles['position-top-right'], styles['activated-text'])}
+        >
+          已启用
+        </div>
+      )}
+      {isNewVersion && (
+        <div
+          className={cx(
+            styles['position-top-right'],
+            styles['new-version-text'],
+          )}
+        >
+          有版本更新
+        </div>
+      )}
       <header className={cx('flex', styles.header)}>
         <img
           className={cx(styles.image)}

@@ -1,25 +1,23 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
-// .title {
-//   margin-bottom: 6px;
-//   padding-left: 8px;
-//   font-size: 14px;
-//   line-height: 22px;
-//   color: @GRAY05;
-// }
-
 .row {
-  // height: @lineHeight;
   line-height: @lineHeight;
   padding: 0 @paddingXs;
   box-sizing: border-box;
-  color: @colorTextTertiary;
+  color: @navSecondMenuTextTertiary;
   font-size: @fontSize;
+  transition: all 0.3s ease;
+  border-radius: @borderRadiusSm;
+  
+  &:hover {
+    background: @navItemHoverBg;
+    color: @navSecondMenuText;
+  }
 
   &.active {
-    // background-color: @BLANK01;
-    color: @colorText;
+    background: @navItemActiveBg;
+    color: @navSecondMenuText;
   }
 }
 
@@ -33,24 +31,30 @@
   padding: @paddingXs;
   line-height: @fontHeightSm;
   box-sizing: border-box;
+  border-radius: @borderRadiusSm;
+  transition: background-color 0.3s ease;
 
   &:first-child {
     margin-top: 0;
   }
+  
+  // &:hover {
+  //   background: @navItemHoverBg;
+  // }
 }
 
 .more-conversation {
   line-height: @lineHeight;
   padding: 0;
-  color: @colorTextTertiary;
+  color: @navSecondMenuTextSecondary;
   font-size: @fontSizeSm;
   cursor: pointer;
-  transition: color 0.3s;
+  transition: color 0.3s ease;
   white-space: nowrap;
   user-select: none;
 
   &:hover {
-    color: @colorText;
+    color: @navSecondMenuText;
   }
 }
 
@@ -58,7 +62,7 @@
   line-height: @lineHeight;
   padding: 0 @paddingXs;
   font-size: @fontSize;
-  color: @colorTextTertiary;
+  color: @navSecondMenuTextTertiary;
 }
 
 .title {
@@ -67,7 +71,8 @@
   line-height: 20px;
   font-size: 14px;
   font-weight: 400;
-  color: @colorTextSecondary;
+  color: @navSecondMenuTextSecondary;
   flex: 1;
   user-select: none;
+  transition: color 0.3s ease;
 }

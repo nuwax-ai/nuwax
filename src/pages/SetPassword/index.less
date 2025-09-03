@@ -1,47 +1,59 @@
-@import '@/styles/color';
+@import '@/styles/token';
 
 .container {
-  background-color: @WHITE06;
-
-  .logo {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-  }
+  width: 100%; /* 宽度自适应 */
+  max-width: 520px;
+  max-height: 680px;
+  min-height: 680px;
+  padding: 48px 64px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 60%);
+  background: rgba(255, 255, 255, 85%);
+  box-shadow: 0 8px 48px 0 rgba(0, 0, 0, 16%);
+  backdrop-filter: blur(12px);
 
   .form {
-    position: relative;
-    width: 479px;
-    height: 488px;
-    padding: 50px 65px 36px;
-    box-sizing: border-box;
-    border-radius: 20px;
-    background-color: @WHITE;
+    margin-top: 72px;
   }
 
   .title {
-    margin-bottom: 40px;
-    font-size: 24px;
-    font-weight: 900;
-    color: @BLANK04;
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 38px;
+    color: @colorText;
+    text-align: center;
+  }
+
+  .sub-title {
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+    color: @colorTextSecondary;
     text-align: center;
   }
 
   .input {
-    height: 40px;
+    // height: 40px;
+    padding: 12px 16px;
+    border: none !important;
+    border-radius: 8px !important;
+    background-color: @colorFillTertiary !important;
+
+    &:focus,
+    &:focus-within {
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+    }
   }
 
   .login {
-    margin-bottom: 5px;
-
     .btn {
-      height: 40px;
-      line-height: 40px;
-      padding: 0;
-      border: none;
+      margin-top: 20px;
+      padding: 25px;
+      border: 0;
+      border-radius: 8px;
     }
   }
 }

@@ -78,6 +78,7 @@ const routes = [
         component: '@/pages/PublishedManage',
       },
       { path: '/system/config', component: '@/pages/SystemConfig' },
+      { path: '/system/theme/config', component: '@/pages/ThemeConfig' },
       { path: '/system/user/manage', component: '@/pages/UserManage' },
       {
         path: '/system/model/manage',
@@ -140,6 +141,11 @@ const routes = [
   {
     path: '/examples/antd-showcase',
     component: '@/examples/AntdComponentsShowcase',
+    layout: false,
+  },
+  {
+    path: '/examples/navigation-token',
+    component: '@/examples/NavigationTokenExample',
     layout: false,
   },
 ];

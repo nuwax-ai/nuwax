@@ -1,8 +1,10 @@
 import ConditionRender from '@/components/ConditionRender';
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import { DOCUMENT_URL, SITE_DOCUMENT_URL } from '@/constants/common.constants';
+import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import useCategory from '@/hooks/useCategory';
 import useConversation from '@/hooks/useConversation';
+import { useLayoutStyle } from '@/hooks/useLayoutStyle';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -10,7 +12,6 @@ import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
-import { FIRST_MENU_WIDTH, SECOND_MENU_WIDTH } from '../layout.constants';
 import CollapseButton from './CollapseButton';
 import EcosystemMarketSection from './EcosystemMarketSection';
 import Header from './Header';
@@ -45,6 +46,8 @@ const MenusLayout: React.FC<{
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  // 导航风格管理（使用独立的布局风格系统）
+  const { navigationStyle, layoutStyle } = useLayoutStyle();
 
   const handleCreateChat = async () => {
     if (tenantConfigInfo) {
@@ -179,14 +182,55 @@ const MenusLayout: React.FC<{
     }
     return true;
   }, [tabType]);
+  // 计算导航宽度（基于导航风格）
+  const firstMenuWidth = useMemo(() => {
+    if (isMobile) {
+      return NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1; // 移动端保持固定宽度
+    }
+    const width =
+      navigationStyle === 'style2'
+        ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2
+        : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1; // 风格2展开模式88px，风格1紧凑模式60px
+
+    // 开发环境下添加日志
+    if (process.env.NODE_ENV === 'development') {
+      console.log(
+        'MenusLayout - 导航风格:',
+        navigationStyle,
+        '-> 宽度:',
+        width,
+      );
+    }
+
+    return width;
+  }, [navigationStyle, isMobile]);
+
   const backgroundColor = useMemo(() => {
     if (isMobile) {
       return token.colorBgContainer;
     }
     return 'transparent';
   }, [isMobile]);
+  const secondaryBackgroundColor = useMemo(() => {
+    if (isMobile) {
+      return token.colorBgContainer;
+    }
+    return navigationStyle === 'style2'
+      ? 'var(--xagi-layout-bg-container, rgba(255, 255, 255, 0.95))'
+      : 'transparent';
+  }, [isMobile, navigationStyle]);
+
+  // 导航容器样式类名（使用独立的布局风格类）
+  const navigationClassName = useMemo(() => {
+    return cx(
+      styles.container,
+      'flex',
+      `xagi-layout-${layoutStyle}`, // 布局风格类（独立于Ant Design）
+      `xagi-nav-${navigationStyle}`, // 导航风格类
+    );
+  }, [layoutStyle, navigationStyle]);
   return (
-    <div className={cx(styles.container, 'flex')}>
+    <div className={navigationClassName}>
       {/*一级导航菜单栏*/}
       <div
         className={cx(
@@ -196,7 +240,7 @@ const MenusLayout: React.FC<{
           'items-center',
         )}
         style={{
-          width: FIRST_MENU_WIDTH,
+          width: firstMenuWidth,
           backgroundColor,
         }}
       >
@@ -212,16 +256,20 @@ const MenusLayout: React.FC<{
       <div
         className={cx(styles['nav-menus'])}
         style={{
-          width: isSecondMenuCollapsed ? 0 : SECOND_MENU_WIDTH,
+          width: isSecondMenuCollapsed
+            ? 0
+            : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
           paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
           opacity: isSecondMenuCollapsed ? 0 : 1,
-          backgroundColor,
+          backgroundColor: secondaryBackgroundColor,
         }}
       >
         {!isSecondMenuCollapsed && (
           <HoverScrollbar
             className={cx('h-full')}
-            bodyWidth={SECOND_MENU_WIDTH - token.padding * 2}
+            bodyWidth={
+              NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
+            }
             style={{
               width: '100%',
               padding: `${token.paddingSM} 0`,
@@ -237,7 +285,11 @@ const MenusLayout: React.FC<{
             >
               <ConditionRender condition={isShowTitle}>
                 <div style={{ padding: '22px 12px' }}>
-                  <Typography.Title level={4} style={{ marginBottom: 0 }}>
+                  <Typography.Title
+                    level={4}
+                    style={{ marginBottom: 0 }}
+                    className={cx(styles['menu-title'])}
+                  >
                     {title}
                   </Typography.Title>
                 </div>

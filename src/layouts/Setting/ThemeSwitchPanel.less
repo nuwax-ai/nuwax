@@ -1,0 +1,38 @@
+@import '@/styles/token';
+
+.container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.title {
+  font-weight: @fontWeightStrong;
+  font-size: 18px;
+  padding: @padding @paddingLg;
+  border-bottom: @lineWidth solid @colorSplit;
+  color: @colorText;
+  z-index: 1001;
+  box-sizing: border-box;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: @paddingLg;
+
+  .configContainer {
+    margin-bottom: @paddingXl;
+  }
+
+  .configItem {
+    margin-bottom: @paddingMd;
+    padding: 0;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}

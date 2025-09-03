@@ -5,11 +5,12 @@
   position: fixed;
   top: 0;
   height: 100%;
-  background-color: @colorBgLayout;
-  border-right: 1px solid @GRAY02;
+  background: @navSecondMenuBg;
+  border-right: 1px solid @navBorderColor;
   z-index: 998; // 比一级菜单层级低一点
-  transition: opacity 0.2s ease-in-out;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 10%);
+  transition: opacity 0.2s ease-in-out, background-color 0.3s ease;
+  box-shadow: @navSecondMenuShadow;
+  color: @navSecondMenuText;
 
   &.hidden {
     opacity: 0;
@@ -25,6 +26,25 @@
     height: 100%;
     padding: 12px 0;
     overflow-y: auto;
+    
+    // 二级菜单项样式
+    .menu-item {
+      padding: @paddingXs @paddingSm;
+      margin: 2px @paddingXs;
+      border-radius: @borderRadiusSm;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      
+      &:hover {
+        background: @navItemHoverBg;
+        color: @navSecondMenuText;
+      }
+      
+      &.active {
+        background: @navItemActiveBg;
+        color: @navSecondMenuText;
+      }
+    }
   }
 
   .menu-title {
@@ -32,7 +52,9 @@
     margin-bottom: 0;
     font-size: 18px;
     font-weight: 600;
-    color: @colorText;
+    color: @navSecondMenuText;
+    border-bottom: 1px solid @navDividerColor;
+    transition: color 0.3s ease;
   }
 }
 

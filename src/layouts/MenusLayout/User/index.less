@@ -1,23 +1,49 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .container {
   width: 140px;
   padding-top: 6px;
+  background: @navFirstMenuBg;
+  color: @navFirstMenuText;
+  border: 1px solid @navBorderColor;
+  border-radius: @borderRadius;
+  box-shadow: @navShadow;
 
   .divider-horizontal {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 50px;
-    border-bottom: 1px solid @GRAY02;
+    border-bottom: 1px solid @navDividerColor;
   }
 
   .log-out {
     height: 51px;
+    
+    &:hover {
+      background: @navItemHoverBg;
+      color: @colorError;
+    }
+  }
+  
+  // 每个菜单项的默认样式
+  .item {
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background: @navItemHoverBg;
+      color: @navFirstMenuText;
+    }
   }
 }
 
 .user-avatar-container {
   margin-bottom: 32px;
   margin-top: 24px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
 }

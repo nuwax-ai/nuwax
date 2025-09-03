@@ -289,7 +289,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
         }
         open={open}
         width={710}
-        destroyOnClose
+        destroyOnHidden
         footer={null}
         onCancel={handleCancel}
       >
@@ -320,7 +320,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
       </Modal>
       <Modal
         open={qrCodeVisible}
-        destroyOnClose
+        destroyOnHidden
         footer={null}
         className={styles['qr-code-modal']}
         onCancel={() => setQrCodeVisible(false)}

@@ -13,6 +13,8 @@ export interface AgentSidebarProps {
   loading?: boolean;
   agentDetail?: AgentDetailDto | null;
   onToggleCollectSuccess: (isCollect: boolean) => void;
+  // 可见性变化回调
+  onVisibleChange?: (visible: boolean) => void;
 }
 
 // 定时任务组件属性

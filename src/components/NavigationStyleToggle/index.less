@@ -1,0 +1,288 @@
+@import '@/styles/token.less';
+
+.navigation-style-toggle {
+  padding: 24px;
+  min-height: 100vh;
+  background-image: var(--xagi-background-image);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+
+  .control-panel {
+    margin-bottom: 24px;
+
+    .control-section {
+      .style-description {
+        margin-top: 8px;
+        padding: 8px 12px;
+        background: var(--xagi-layout-bg-secondary);
+        border-radius: 6px;
+        border-left: 3px solid var(--xagi-color-primary);
+      }
+    }
+
+    .ant-card-head-title {
+      color: var(--xagi-layout-text-primary);
+    }
+
+    .ant-card-body {
+      background: var(--xagi-layout-bg-card);
+    }
+  }
+
+  .preview-panel {
+    margin-bottom: 24px;
+
+    .navigation-preview {
+      .first-menu {
+        display: inline-flex;
+        flex-direction: column;
+        width: @navFirstMenuWidth;
+        background: @navFirstMenuBg;
+        border-radius: 8px;
+        padding: 12px 8px;
+        box-shadow: @navShadow;
+        transition: width 0.3s ease;
+
+        .xagi-nav-style2 & {
+          width: @navFirstMenuWidthStyle2;
+        }
+
+        .menu-item {
+          display: flex;
+          align-items: center;
+          padding: 12px;
+          margin-bottom: 8px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          color: @navFirstMenuText;
+
+          &:hover {
+            background: @navItemHoverBg;
+          }
+
+          &.active {
+            background: @navItemActiveBg;
+            color: var(--xagi-color-primary);
+          }
+
+          .menu-icon {
+            font-size: 16px;
+            min-width: 16px;
+          }
+
+          .menu-text {
+            margin-left: 12px;
+            font-size: @navFirstMenuFontSize;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s ease;
+
+            .xagi-nav-style2 & {
+              opacity: 1;
+              transform: translateX(0);
+            }
+          }
+        }
+      }
+    }
+
+    .second-menu {
+      background: @navSecondMenuBg;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: @navShadow;
+      transition: background 0.3s ease;
+
+      .xagi-nav-style2 & {
+        background: var(--xagi-color-bg-container);
+      }
+
+      .second-menu-item {
+        padding: 8px 0;
+        border-bottom: 1px solid @navDividerColor;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .primary-text {
+          color: @navSecondMenuText;
+        }
+
+        .secondary-text {
+          color: @navSecondMenuTextSecondary;
+        }
+
+        .tertiary-text {
+          color: @navSecondMenuTextTertiary;
+        }
+      }
+    }
+
+    .page-container-preview {
+      margin: @pageContainerMargin;
+      border-radius: @pageContainerBorderRadius;
+      background: @pageContainerBg;
+      border: 2px dashed @navBorderColor;
+      padding: 24px;
+      transition: all 0.3s ease;
+
+      .xagi-nav-style2 & {
+        margin: 0;
+        border-radius: 0;
+        background: var(--xagi-color-bg-container);
+      }
+
+      .mock-content {
+        text-align: center;
+        color: var(--xagi-color-text);
+
+        .content-box {
+          margin-top: 16px;
+          padding: 16px;
+          background: var(--xagi-color-bg-layout);
+          border-radius: 8px;
+        }
+      }
+    }
+  }
+
+  .usage-panel {
+    .code-block {
+      background: var(--xagi-layout-bg-input);
+      border: 1px solid @navBorderColor;
+      border-radius: 6px;
+      padding: 16px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--xagi-layout-text-primary);
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .ant-typography h5 {
+      color: var(--xagi-layout-text-primary);
+      margin-bottom: 12px;
+    }
+  }
+
+  // 全局文字颜色适配
+  .ant-typography {
+    color: var(--xagi-layout-text-primary);
+  }
+
+    .ant-card {
+      background: var(--xagi-layout-bg-card);
+      border: 1px solid @navBorderColor;
+
+      .ant-card-head {
+        background: var(--xagi-layout-bg-secondary);
+        border-bottom: 1px solid @navBorderColor;
+      }
+
+      .ant-card-head-title {
+        color: var(--xagi-layout-text-primary);
+      }
+
+      .ant-card-body {
+        background: var(--xagi-layout-bg-card);
+      }
+    }
+
+  .ant-switch {
+    &.ant-switch-checked {
+      background-color: @colorPrimary;
+    }
+  }
+
+  .ant-btn {
+    border-color: @navBorderColor;
+
+    &:hover {
+      background: @navItemHoverBg;
+      border-color: @colorPrimary;
+    }
+  }
+}
+
+// 深色布局风格适配（独立于Ant Design主题）
+.xagi-layout-dark {
+  .navigation-style-toggle {
+    .ant-typography {
+      color: var(--xagi-layout-text-primary) !important;
+    }
+
+    .ant-card {
+      background: var(--xagi-layout-bg-card) !important;
+      border-color: var(--xagi-layout-border-primary) !important;
+
+      .ant-card-head {
+        background: var(--xagi-layout-bg-secondary) !important;
+        border-bottom-color: var(--xagi-layout-border-primary) !important;
+      }
+    }
+
+    .code-block {
+      background: var(--xagi-layout-bg-input) !important;
+      border-color: var(--xagi-layout-border-primary) !important;
+      color: var(--xagi-layout-text-primary) !important;
+    }
+
+    .ant-btn {
+      background: var(--xagi-layout-bg-secondary) !important;
+      border-color: var(--xagi-layout-border-primary) !important;
+      color: var(--xagi-layout-text-primary) !important;
+
+      &:hover {
+        background: var(--xagi-layout-bg-primary) !important;
+        border-color: @colorPrimary !important;
+      }
+    }
+  }
+}
+
+// 浅色布局风格适配（独立于Ant Design主题）
+.xagi-layout-light {
+  .navigation-style-toggle {
+    .ant-typography {
+      color: var(--xagi-layout-text-primary) !important;
+    }
+  }
+}
+
+// 响应式适配
+@media (max-width: 768px) {
+  .navigation-style-toggle {
+    padding: 12px;
+
+    .control-panel,
+    .preview-panel,
+    .usage-panel {
+      margin-bottom: 16px;
+    }
+
+    .navigation-preview {
+      .first-menu {
+        width: 100% !important;
+        flex-direction: row !important;
+        justify-content: space-around;
+
+        .menu-item {
+          margin-bottom: 0;
+          margin-right: 8px;
+
+          .menu-text {
+            display: none;
+          }
+        }
+      }
+    }
+
+    .code-block {
+      font-size: 10px;
+      padding: 12px;
+    }
+  }
+}

@@ -1,7 +1,7 @@
 @import '@/styles/token';
 
 .container {
-  background-color: @colorBgLayout;
+  // background-color: @colorBgLayout;
   position: relative;
 
   // 背景图片样式
@@ -28,20 +28,51 @@
 }
 
 .page-container {
-  background-color: @colorBgContainer;
-  border: @lineWidth solid @colorBorderSecondary;
-  margin: @marginSm @marginSm @marginSm 0;
-  border-radius: 12px;
+  background: @pageContainerBg;
+  border-left: @lineWidth solid @colorBorderSecondary;
+  margin: @pageContainerMargin;
+  margin-left: 0;
+  border-radius: @pageContainerBorderRadius;
   box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 8%);
   z-index: 1;
   // 确保内容区域有半透明背景，提高可读性
   backdrop-filter: blur(2px);
+  transition: all 0.3s ease;
+
+  // 风格2的适配
+  &.xagi-nav-style2 {
+    margin: 0;
+    border-radius: 0;
+    // background: var(--xagi-color-bg-container);
+    box-shadow: none;
+  }
 }
 
-// 暗色主题下的背景适配
-[data-theme='dark'] {
-  .page-container {
-    background-color: rgba(0, 0, 0, 70%);
+// 深色布局风格适配（独立于Ant Design主题）
+// TODO: 浅色布局风格适配
+.xagi-layout-dark {
+  &.page-container {
+    // background: rgba(0, 0, 0, 70%);
     backdrop-filter: blur(4px);
+    border-color: var(--xagi-layout-border-primary);
+
+    &.xagi-nav-style2 {
+      // background: var(--xagi-layout-bg-card);
+      box-shadow: none;
+    }
+  }
+}
+
+// 浅色布局风格适配（独立于Ant Design主题）
+// TODO: 浅色布局风格适配
+.xagi-layout-light {
+  &.page-container {
+    // background: @pageContainerBg;
+    border-color: var(--xagi-layout-border-primary);
+
+    &.xagi-nav-style2 {
+      // background: var(--xagi-layout-bg-card);
+      box-shadow: none;
+    }
   }
 }

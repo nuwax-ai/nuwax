@@ -111,7 +111,7 @@ const ServerExportModal: React.FC<ServerExportModalProps> = ({
         body: cx(styles.container),
       }}
       open={open}
-      destroyOnClose
+      destroyOnHidden
       footer={null}
       onCancel={onCancel}
     >

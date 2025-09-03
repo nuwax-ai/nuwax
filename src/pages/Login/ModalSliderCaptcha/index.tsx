@@ -64,7 +64,7 @@ const ModalSliderCaptcha: React.FC<ModalSliderCaptchaType> = ({
       onCancel={() => onCancel(false)}
       title="请完成下列验证后继续"
       footer={false}
-      destroyOnClose
+      destroyOnHidden
       width={318}
       centered
     >

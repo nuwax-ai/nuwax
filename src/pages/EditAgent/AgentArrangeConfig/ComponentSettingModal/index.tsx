@@ -285,7 +285,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
       centered
       open={open}
       onCancel={onCancel}
-      destroyOnClose
+      destroyOnHidden
       className={cx(styles['modal-container'])}
       modalRender={() => (
         <div className={cx(styles.container, 'flex', 'overflow-hide')}>

@@ -24,13 +24,20 @@ import {
   EcosystemUseStatusEnum,
 } from '@/types/interfaces/ecosystem';
 import { Page } from '@/types/interfaces/request';
-import { Empty, Input, message, Select, Tabs } from 'antd';
+import { Empty, Input, message, Segmented, Select, Space } from 'antd';
 import classNames from 'classnames';
 import { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+// 生态市场 MCP 标签页
+const SPACE_SQUARE_SEGMENTED_LIST =
+  ECO_MCP_TAB_ITEMS?.map((item) => ({
+    label: item.label,
+    value: item.key,
+  })) || [];
 
 const { Search } = Input;
 
@@ -296,20 +303,22 @@ export default function EcosystemMcp() {
           'overflow-hide',
         )}
       >
-        <h3 className={cx(styles.title)}>MCP</h3>
         <header className={cx(styles.header)}>
-          <Tabs
-            className={cx(styles.tabs)}
-            activeKey={activeTab}
-            items={ECO_MCP_TAB_ITEMS}
-            onChange={handleTabChange}
-          />
-          <Select
-            options={ECO_MCP_CATEGORY_OPTIONS}
-            value={categoryCode}
-            onChange={(value) => handleChangeCategory(value)}
-            className={cx(styles['select-category'])}
-          />
+          <Space>
+            <h3 className={cx(styles.title)}>MCP</h3>
+            <Segmented
+              className={cx(styles.segmented)}
+              options={SPACE_SQUARE_SEGMENTED_LIST}
+              value={activeTab}
+              onChange={handleTabChange}
+            />
+            <Select
+              options={ECO_MCP_CATEGORY_OPTIONS}
+              value={categoryCode}
+              onChange={(value) => handleChangeCategory(value)}
+              className={cx(styles['select-category'])}
+            />
+          </Space>
           <Search
             className={cx(styles.searchInput)}
             placeholder="搜索MCP"

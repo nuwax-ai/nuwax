@@ -109,9 +109,12 @@ export const SETTING_ACTIONS = [
     type: SettingActionEnum.Email_Bind,
     label: '邮箱绑定',
   },
-
   {
     type: SettingActionEnum.Reset_Password,
     label: '重置密码',
+  },
+  {
+    type: SettingActionEnum.Theme_Switch,
+    label: '主题切换',
   },
 ];

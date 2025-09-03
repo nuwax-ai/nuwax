@@ -7,7 +7,7 @@
   z-index: 1000;
   transition: margin-left 0.3s;
   border-radius: 50%;
-  border: @lineWidth solid @colorBorder;
+  border: @lineWidth solid @navBorderColor;
   width: 20px;
   height: 20px;
   padding: 4px;
@@ -15,9 +15,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  background: @navFirstMenuBg;
+  color: @navFirstMenuText;
+  box-shadow: @navShadow;
+  
+  &:hover {
+    background: @navItemHoverBg;
+    transform: scale(1.1);
+  }
+  
+  &:active {
+    background: @navItemActiveBg;
+  }
 }
 
 .mobileMenuMask {
   flex: 1;
-  background: 'transparent';
+  background: transparent;
 }

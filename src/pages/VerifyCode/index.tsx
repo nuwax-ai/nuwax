@@ -1,15 +1,15 @@
-import logo from '@/assets/images/logo.png';
 import AliyunCaptcha from '@/components/AliyunCaptcha';
-import SiteFooter from '@/components/SiteFooter';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
 import useSendCode from '@/hooks/useSendCode';
+import BasicLayout from '@/pages/Login/BasicLayout';
 import { apiLoginCode } from '@/services/account';
 import { SendCodeEnum } from '@/types/enums/login';
 import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
 import { getNumbersOnly } from '@/utils/common';
+import { LeftOutlined } from '@ant-design/icons';
 import type { InputRef } from 'antd';
 import { Button, Input } from 'antd';
 import classNames from 'classnames';
@@ -49,7 +49,7 @@ const VerifyCode: React.FC = () => {
   };
 
   // 验证码登录
-  const { run: runLoginCode, loadingLoginCode } = useRequest(apiLoginCode, {
+  const { run: runLoginCode } = useRequest(apiLoginCode, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: ILoginResult, params: CodeLogin[]) => {
@@ -91,8 +91,19 @@ const VerifyCode: React.FC = () => {
       if (_codeString.length < VERIFICATION_CODE_LEN && errorString) {
         setErrorString('');
       }
+      // 验证码输入完毕后自动触发登录
+      if (_codeString.length === VERIFICATION_CODE_LEN && !sendLoading) {
+        // 使用setTimeout确保状态更新完成后再执行登录
+        setTimeout(() => {
+          const data = {
+            code: _codeString,
+            phoneOrEmail,
+          };
+          runLoginCode(data);
+        }, 100);
+      }
     },
-    [errorString],
+    [errorString, sendLoading, phoneOrEmail, runLoginCode],
   );
 
   // 发送验证码
@@ -129,6 +140,9 @@ const VerifyCode: React.FC = () => {
   };
 
   const handleClickReSendCode = useCallback(() => {
+    if (countDown > 0) {
+      return;
+    }
     const { captchaSceneId, captchaPrefix, openCaptcha } =
       tenantConfigInfo || {};
     // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
@@ -167,31 +181,28 @@ const VerifyCode: React.FC = () => {
   }, [handleEnter]);
 
   return (
-    <div
-      className={cx(
-        styles.container,
-        'h-full',
-        'flex',
-        'flex-col',
-        'overflow-y',
-      )}
-    >
-      <img
-        src={tenantConfigInfo?.siteLogo || (logo as string)}
-        className={cx(styles.logo)}
-        alt=""
-      />
-      <div className={cx('flex-1', 'flex', 'items-center', 'content-center')}>
+    <BasicLayout>
+      <div className={cx(styles.container)}>
         <div className={cx(styles.inner, 'flex', 'flex-col', 'items-center')}>
+          <div className={cx(styles.back)}>
+            <Button
+              color="default"
+              variant="filled"
+              size="large"
+              shape="circle"
+              icon={<LeftOutlined />}
+              onClick={() => history.back()}
+            />
+          </div>
           <h3>
             {phoneOrEmail?.includes('@') ? '输入邮箱验证码' : '输入短信验证码'}
           </h3>
-          <p>{`验证码已发送至${
-            phoneOrEmail?.includes('@') ? '你的邮箱' : '手机号'
-          }`}</p>
-          <span className={styles.phone}>{`${
-            !phoneOrEmail?.includes('@') ? areaCode : ''
-          } ${phoneOrEmail}`}</span>
+          <p>
+            {`验证码已发送至${
+              phoneOrEmail?.includes('@') ? '你的邮箱 ' : '手机号 '
+            }`}
+            {`${!phoneOrEmail?.includes('@') ? areaCode : ''} ${phoneOrEmail}`}
+          </p>
           <div className={cx(styles['code-container'])}>
             {codes.map((code, index) => {
               return (
@@ -200,7 +211,7 @@ const VerifyCode: React.FC = () => {
                   key={index}
                   className={cx(
                     styles['code-item'],
-                    codeIndex === index ? styles.active : null,
+                    codeIndex === index && !code ? styles.active : null,
                     errorString ? styles.error : null,
                   )}
                 >
@@ -209,56 +220,37 @@ const VerifyCode: React.FC = () => {
               );
             })}
           </div>
-          {countDown > 0 ? (
-            <span className={styles['count-down']}>{countDown}s</span>
-          ) : (
+          <div className={cx(styles['count-down-container'])}>
+            {countDown > 0 && (
+              <span className={styles['count-down']}>{countDown}s后</span>
+            )}
             <span
-              className={cx(styles['resend-btn'], 'cursor-pointer')}
+              className={cx(
+                styles['resend-btn'],
+                countDown > 0 ? null : styles.active,
+                'cursor-pointer',
+              )}
               onClick={handleClickReSendCode}
             >
-              重新发送
+              重新获取
             </span>
-          )}
-          {/* <div className={cx(styles.tips)}>
-            您秒内收到验证码语音电话，可能会被手机标记为稍扰电话，请放心接听。
-          </div> */}
-          <div
-            className={cx('flex', 'content-between', 'w-full', styles.footer)}
-          >
-            <Button className={cx('flex-1')} onClick={() => history.back()}>
-              上一步
-            </Button>
-            <Button
-              loading={loadingLoginCode}
-              className={cx(
-                'flex-1',
-                codeString?.length !== VERIFICATION_CODE_LEN &&
-                  styles['next-step'],
-              )}
-              type="primary"
-              disabled={codeString?.length !== VERIFICATION_CODE_LEN}
-              onClick={handleVerify}
-            >
-              下一步
-            </Button>
           </div>
         </div>
+        <Input
+          ref={inputRef}
+          onChange={handleChange}
+          className={cx(styles.input)}
+          autoComplete="off"
+          value={codes.join('')}
+        />
+        <Button id="aliyun-captcha-sms" style={{ display: 'none' }} />
+        <AliyunCaptcha
+          config={tenantConfigInfo}
+          doAction={handlerSuccess}
+          elementId="aliyun-captcha-sms"
+        />
       </div>
-      <Input
-        ref={inputRef}
-        onChange={handleChange}
-        className={cx(styles.input)}
-        autoComplete="off"
-        value={codes.join('')}
-      />
-      <SiteFooter text={tenantConfigInfo?.pageFooterText} />
-      <Button id="aliyun-captcha-sms" style={{ display: 'none' }} />
-      <AliyunCaptcha
-        config={tenantConfigInfo}
-        doAction={handlerSuccess}
-        elementId="aliyun-captcha-sms"
-      />
-    </div>
+    </BasicLayout>
   );
 };
 

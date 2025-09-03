@@ -1,8 +1,221 @@
+/**
+ * 主题配置常量
+ * 定义布局风格和导航风格的所有CSS变量配置
+ */
+
+import { ThemeLayoutColorStyle } from '@/types/enums/theme';
+import {
+  ThemeBackgroundConfig,
+  ThemeStyleConfig,
+} from '@/types/interfaces/theme';
 // 主题令牌常量配置
 // 为主题配置添加类型
 import type { ThemeConfig } from 'antd/es/config-provider';
 import type { AliasToken, ComponentTokenMap } from 'antd/es/theme/interface';
 
+/**
+ * 预设主题色配置
+ * 定义可选择的主题色选项
+ */
+export const THEME_COLOR_CONFIGS = [
+  { color: '#5147ff', name: '蓝色', isDefault: true },
+  { color: '#ff4d4f', name: '红色' },
+  { color: '#fa8c16', name: '橙色' },
+  { color: '#52c41a', name: '绿色' },
+  { color: '#722ed1', name: '紫色' },
+  { color: '#eb2f96', name: '粉色' },
+] as const;
+
+/**
+ * 预定义的背景配置
+ * 根据背景图的明暗程度来确定适合的布局风格
+ */
+export const THEME_BACKGROUND_CONFIGS: ThemeBackgroundConfig[] = [
+  {
+    id: 'variant-1',
+    name: '星空夜景',
+    url: '/bg/bg-variant-1.png',
+    layoutStyle: ThemeLayoutColorStyle.LIGHT,
+    description: '深色背景，适合深色布局风格',
+  },
+  {
+    id: 'variant-2',
+    name: '云朵白天',
+    url: '/bg/bg-variant-2.png',
+    layoutStyle: ThemeLayoutColorStyle.LIGHT,
+    description: '浅色背景，适合浅色布局风格',
+  },
+  {
+    id: 'variant-3',
+    name: '森林晨光',
+    url: '/bg/bg-variant-3.png',
+    layoutStyle: ThemeLayoutColorStyle.DARK,
+    description: '明亮背景，适合浅色布局风格',
+  },
+  {
+    id: 'variant-4',
+    name: '深海夜色',
+    url: '/bg/bg-variant-4.png',
+    layoutStyle: ThemeLayoutColorStyle.DARK,
+    description: '深色背景，适合深色布局风格',
+  },
+  {
+    id: 'variant-5',
+    name: '梦幻紫色',
+    url: '/bg/bg-variant-5.png',
+    layoutStyle: ThemeLayoutColorStyle.LIGHT,
+    description: '深色调背景，适合深色布局风格',
+  },
+  {
+    id: 'variant-6',
+    name: '温暖阳光',
+    url: '/bg/bg-variant-6.png',
+    layoutStyle: ThemeLayoutColorStyle.DARK,
+    description: '温暖色调，适合浅色布局风格',
+  },
+  {
+    id: 'variant-7',
+    name: '夜晚都市',
+    url: '/bg/bg-variant-7.png',
+    layoutStyle: ThemeLayoutColorStyle.DARK,
+    description: '都市夜景，适合深色布局风格',
+  },
+  {
+    id: 'variant-8',
+    name: '清新蓝天',
+    url: '/bg/bg-variant-8.png',
+    layoutStyle: ThemeLayoutColorStyle.LIGHT,
+    description: '清新明亮，适合浅色布局风格',
+  },
+];
+
+/**
+ * 四个样式配置：light-style1, light-style2, dark-style1, dark-style2
+ * 注意：这些变量仅用于自定义布局组件，不影响 Ant Design 组件
+ */
+export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
+  // 浅色 + 紧凑模式
+  'light-style1': {
+    layout: {
+      '--xagi-layout-text-primary': '#000000',
+      '--xagi-layout-text-secondary': 'rgba(0, 0, 0, 0.85)',
+      '--xagi-layout-text-tertiary': 'rgba(0, 0, 0, 0.65)',
+      '--xagi-layout-text-disabled': 'rgba(0, 0, 0, 0.25)',
+      '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.85)',
+      '--xagi-layout-bg-primary': 'rgba(255, 255, 255, 0.95)',
+      '--xagi-layout-bg-secondary': 'rgba(255, 255, 255, 0.85)',
+      '--xagi-layout-bg-card': 'rgba(255, 255, 255, 0.65)',
+      '--xagi-layout-bg-input': 'rgba(255, 255, 255, 0.45)',
+      '--xagi-layout-border-primary': 'rgba(0, 0, 0, 0.15)',
+      '--xagi-layout-border-secondary': 'rgba(0, 0, 0, 0.1)',
+      '--xagi-layout-shadow': 'rgba(0, 0, 0, 0.1)',
+      '--xagi-layout-overlay': 'rgba(255, 255, 255, 0.7)',
+      '--xagi-layout-bg-container': 'rgba(255, 255, 255, 0.95)',
+    },
+    navigation: {
+      '--xagi-nav-first-menu-width': '60px',
+      '--xagi-page-container-margin': '16px',
+      '--xagi-page-container-border-radius': '12px',
+    },
+  },
+  // 浅色 + 展开模式
+  'light-style2': {
+    layout: {
+      '--xagi-layout-text-primary': '#000000',
+      '--xagi-layout-text-secondary': 'rgba(0, 0, 0, 0.85)',
+      '--xagi-layout-text-tertiary': 'rgba(0, 0, 0, 0.65)',
+      '--xagi-layout-text-disabled': 'rgba(0, 0, 0, 0.25)',
+      '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.85)',
+      '--xagi-layout-bg-primary': 'rgba(255, 255, 255, 0.95)',
+      '--xagi-layout-bg-secondary': 'rgba(255, 255, 255, 0.85)',
+      '--xagi-layout-bg-card': 'rgba(255, 255, 255, 0.65)',
+      '--xagi-layout-bg-input': 'rgba(255, 255, 255, 0.45)',
+      '--xagi-layout-border-primary': 'rgba(0, 0, 0, 0.15)',
+      '--xagi-layout-border-secondary': 'rgba(0, 0, 0, 0.1)',
+      '--xagi-layout-shadow': 'rgba(0, 0, 0, 0.1)',
+      '--xagi-layout-overlay': 'rgba(255, 255, 255, 0.7)',
+      '--xagi-layout-bg-container': 'rgba(255, 255, 255, 0.95)',
+    },
+    navigation: {
+      '--xagi-nav-first-menu-width': '88px',
+      '--xagi-page-container-margin': '0px',
+      '--xagi-page-container-border-radius': '0px',
+    },
+  },
+  // 深色 + 紧凑模式
+  'dark-style1': {
+    layout: {
+      '--xagi-layout-text-primary': '#ffffff',
+      '--xagi-layout-text-secondary': 'rgba(255, 255, 255, 0.85)',
+      '--xagi-layout-text-tertiary': 'rgba(255, 255, 255, 0.65)',
+      '--xagi-layout-text-disabled': 'rgba(255, 255, 255, 0.25)',
+      '--xagi-layout-second-menu-text-color': 'rgba(255, 255, 255, 0.85)',
+      '--xagi-layout-bg-primary': 'rgba(0, 0, 0, 0.85)',
+      '--xagi-layout-bg-secondary': 'rgba(0, 0, 0, 0.65)',
+      '--xagi-layout-bg-card': 'rgba(0, 0, 0, 0.45)',
+      '--xagi-layout-bg-input': 'rgba(0, 0, 0, 0.25)',
+      '--xagi-layout-border-primary': 'rgba(0, 0, 0, 0.15)',
+      '--xagi-layout-border-secondary': 'rgba(0, 0, 0, 0.1)',
+      '--xagi-layout-shadow': 'rgba(0, 0, 0, 0.6)',
+      '--xagi-layout-overlay': 'rgba(0, 0, 0, 0.7)',
+      '--xagi-layout-bg-container': '#ffffff',
+    },
+    navigation: {
+      '--xagi-nav-first-menu-width': '60px',
+      '--xagi-page-container-margin': '16px',
+      '--xagi-page-container-border-radius': '12px',
+    },
+  },
+  // 深色 + 展开模式
+  'dark-style2': {
+    layout: {
+      '--xagi-layout-text-primary': '#ffffff',
+      '--xagi-layout-text-secondary': 'rgba(255, 255, 255, 0.85)',
+      '--xagi-layout-text-tertiary': 'rgba(255, 255, 255, 0.65)',
+      '--xagi-layout-text-disabled': 'rgba(255, 255, 255, 0.25)',
+      '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.85)',
+      '--xagi-layout-bg-primary': 'rgba(0, 0, 0, 0.85)',
+      '--xagi-layout-bg-secondary': 'rgba(0, 0, 0, 0.85)',
+      '--xagi-layout-bg-card': 'rgba(0, 0, 0, 0.45)',
+      '--xagi-layout-bg-input': 'rgba(0, 0, 0, 0.25)',
+      '--xagi-layout-border-primary': 'rgba(0, 0, 0, 0.15)',
+      '--xagi-layout-border-secondary': 'rgba(0, 0, 0, 0.1)',
+      '--xagi-layout-shadow': 'rgba(0, 0, 0, 0.6)',
+      '--xagi-layout-overlay': 'rgba(0, 0, 0, 0.7)',
+      '--xagi-layout-bg-container': '#ffffff',
+    },
+    navigation: {
+      '--xagi-nav-first-menu-width': '88px',
+      '--xagi-page-container-margin': '0px',
+      '--xagi-page-container-border-radius': '0px',
+    },
+  },
+};
+
+/**
+ * 样式配置键名常量
+ */
+export const STYLE_CONFIG_KEYS = {
+  LIGHT_STYLE1: 'light-style1',
+  LIGHT_STYLE2: 'light-style2',
+  DARK_STYLE1: 'dark-style1',
+  DARK_STYLE2: 'dark-style2',
+} as const;
+
+/**
+ * 所有样式配置键名数组
+ */
+export const ALL_STYLE_CONFIG_KEYS = Object.keys(STYLE_CONFIGS);
+
+/**
+ * 样式配置键名类型
+ */
+export type StyleConfigKey = keyof typeof STYLE_CONFIGS;
+
+/**
+ * Ant Design 主题 tokens
+ * 用于配置 Ant Design 组件的主题
+ */
 export const themeTokens: Partial<AliasToken> = {
   // 品牌主色 - 项目主色调
   colorPrimary: '#5147ff',
@@ -14,7 +227,7 @@ export const themeTokens: Partial<AliasToken> = {
   colorInfo: '#0077fa',
 
   // 基础色 - 用于派生文本和背景色
-  colorTextBase: '#15171f',
+  colorTextBase: '#000000',
   colorBgBase: '#ffffff',
 
   // 超链接颜色
@@ -81,12 +294,27 @@ export const themeTokens: Partial<AliasToken> = {
   geekblue: '#2f54eb',
   lime: '#a0d911',
   gold: '#faad14',
+  // 填充颜色 浅色
+  colorFill: 'rgba(12,20,40,0.1)',
+  colorFillSecondary: 'rgba(12,20,40,0.06)',
+  colorFillTertiary: 'rgba(12,20,40,0.04)',
+  colorFillQuaternary: 'rgba(12,20,40,0.02)',
+  // border radius
+  borderRadiusSM: 4,
+  borderRadiusLG: 12,
 };
 
 export const darkThemeTokens = {
   ...themeTokens,
   colorBgBase: '#000',
   colorTextBase: '#fff',
+  // TODO 填充颜色 深色 缺少
+
+  // 导航深色主题适配
+  colorFill: 'rgba(255, 255, 255, 0.08)',
+  colorFillSecondary: 'rgba(255, 255, 255, 0.04)',
+  colorFillTertiary: 'rgba(255, 255, 255, 0.02)',
+  colorFillQuaternary: 'rgba(255, 255, 255, 0.01)',
 };
 
 // 组件主题类型定义
@@ -278,5 +506,10 @@ export const componentThemes: ThemeConfig['components'] = {
     trackBg: '#f9f9f9',
   } as SegmentedToken,
 };
+
+// 向后兼容的导出
+export const backgroundConfigs = THEME_BACKGROUND_CONFIGS;
+export type BackgroundConfig = ThemeBackgroundConfig;
+export type StyleConfig = ThemeStyleConfig;
 
 export default themeTokens;

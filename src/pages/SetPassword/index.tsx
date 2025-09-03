@@ -1,12 +1,12 @@
-import ConditionRender from '@/components/ConditionRender';
-import SiteFooter from '@/components/SiteFooter';
+import BasicLayout from '@/pages/Login/BasicLayout';
 import { apiSetPassword } from '@/services/account';
 import type { SetPasswordFieldType } from '@/types/interfaces/login';
 import { validatePassword } from '@/utils/common';
+import { LeftOutlined } from '@ant-design/icons';
 import { Button, Form, FormProps, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
-import { useModel, useNavigate, useRequest } from 'umi';
+import { history, useModel, useNavigate, useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -16,7 +16,7 @@ const cx = classNames.bind(styles);
  */
 const SetPassword: React.FC = () => {
   const navigate = useNavigate();
-  const { tenantConfigInfo, setTitle } = useModel('tenantConfigInfo');
+  const { setTitle } = useModel('tenantConfigInfo');
 
   const { run, loading } = useRequest(apiSetPassword, {
     manual: true,
@@ -37,31 +37,18 @@ const SetPassword: React.FC = () => {
   };
 
   return (
-    <div
-      className={cx(
-        styles.container,
-        'h-full',
-        'flex',
-        'flex-col',
-        'overflow-y',
-      )}
-    >
-      <ConditionRender condition={!!tenantConfigInfo?.siteLogo}>
-        <img
-          src={tenantConfigInfo?.siteLogo}
-          className={cx(styles.logo)}
-          alt=""
-        />
-      </ConditionRender>
-      <div
-        className={cx(
-          'flex-1',
-          'flex',
-          'flex-col',
-          'content-center',
-          'items-center',
-        )}
-      >
+    <BasicLayout>
+      <div className={cx(styles.container)}>
+        <div className={cx(styles.back)}>
+          <Button
+            color="default"
+            variant="filled"
+            size="large"
+            shape="circle"
+            icon={<LeftOutlined />}
+            onClick={() => history.push('/login')}
+          />
+        </div>
         <Form
           rootClassName={cx(styles.form, 'flex', 'flex-col')}
           name="login"
@@ -70,6 +57,9 @@ const SetPassword: React.FC = () => {
         >
           <Form.Item>
             <h3 className={cx(styles.title)}>密码设置</h3>
+            <p className={cx(styles['sub-title'])}>
+              请至少使用6个字符。请勿使用您登录其他网站的密码或容易被猜到的密码
+            </p>
           </Form.Item>
           <Form.Item
             name="password"
@@ -86,6 +76,7 @@ const SetPassword: React.FC = () => {
             ]}
           >
             <Input.Password
+              size={'large'}
               rootClassName={cx(styles.input)}
               placeholder="请输入6位以上密码"
               autoComplete="off"
@@ -113,6 +104,7 @@ const SetPassword: React.FC = () => {
             ]}
           >
             <Input.Password
+              size={'large'}
               rootClassName={cx(styles.input)}
               placeholder="请再次输入密码"
               autoComplete="off"
@@ -125,14 +117,14 @@ const SetPassword: React.FC = () => {
               type="primary"
               loading={loading}
               htmlType="submit"
+              size={'large'}
             >
               确定
             </Button>
           </Form.Item>
         </Form>
       </div>
-      <SiteFooter text={tenantConfigInfo?.pageFooterText} />
-    </div>
+    </BasicLayout>
   );
 };
 

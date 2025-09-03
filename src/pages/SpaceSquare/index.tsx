@@ -13,7 +13,7 @@ import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { Page } from '@/types/interfaces/request';
 import { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { EllipsisOutlined, ExclamationCircleFilled } from '@ant-design/icons';
-import { Empty, Modal, Tabs } from 'antd';
+import { Empty, Modal, Segmented, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
@@ -25,6 +25,13 @@ import TemplateItem from '../Square/TemplateItem';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+// 空间广场-分类
+const SPACE_SQUARE_SEGMENTED_LIST =
+  SPACE_SQUARE_TABS?.map((item) => ({
+    label: item.label,
+    value: item.key,
+  })) || [];
 
 // 空间广场
 const SpaceSection: React.FC = () => {
@@ -246,14 +253,15 @@ const SpaceSection: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
-      <h3 className={cx(styles.title)}>空间广场</h3>
-      <Tabs
-        rootClassName={cx(styles.tab)}
-        tabBarGutter={50}
-        activeKey={activeKey}
-        items={SPACE_SQUARE_TABS}
-        onTabClick={handleTabClick}
-      />
+      <Space style={{ marginBottom: 20 }}>
+        <h3 className={cx(styles.title)}>空间广场</h3>
+        <Segmented
+          className={cx(styles.segmented)}
+          options={SPACE_SQUARE_SEGMENTED_LIST}
+          value={activeKey}
+          onChange={handleTabClick}
+        />
+      </Space>
       {loading ? (
         <Loading />
       ) : squareComponentList?.length > 0 ? (

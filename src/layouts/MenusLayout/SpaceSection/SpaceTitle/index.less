@@ -3,9 +3,14 @@
 
 .header {
   gap: @marginXs;
-
+  color: @navSecondMenuText;
   .icon-down {
-    color: @colorTextSecondary;
+    color: @navSecondMenuText;
     font-size: @fontSize;
+  }
+  :global {
+    .ant-typography {
+      color: @navSecondMenuText;
+    }
   }
 }

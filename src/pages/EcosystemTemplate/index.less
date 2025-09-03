@@ -19,32 +19,7 @@
   align-items: center;
   gap: 16px;
   border-bottom: none;
-  padding-left: 24px;
-  padding-right: 24px;
-}
-
-.tabs {
-  flex: 1;
-
-  :global {
-    .ant-tabs-nav {
-      margin-bottom: 0;
-
-      &::before {
-        content: none;
-        display: none;
-      }
-    }
-
-    .ant-tabs-tab {
-      font-size: 14px;
-      line-height: 1.2;
-    }
-
-    .ant-tabs-ink-bar {
-      background-color: @BLUE08;
-    }
-  }
+  padding: 16px 24px;
 }
 
 .searchInput {
@@ -58,7 +33,7 @@
 }
 
 .pluginList {
-  padding: 16px 24px;
+  padding: 0 16px 24px;
 }
 
 .list-section {
@@ -71,12 +46,18 @@
 }
 
 .title {
-  padding-left: 24px;
-  padding-top: 16px;
-  padding-bottom: 16px;
+  margin-right: 20px;
   font-size: 16px;
   font-weight: 500;
   color: #333;
+}
+
+.segmented {
+  :global {
+    .ant-segmented-item-selected {
+      font-weight: bold !important;
+    }
+  }
 }
 
 .createShareButton {

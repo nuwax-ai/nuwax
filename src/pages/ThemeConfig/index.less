@@ -1,0 +1,91 @@
+@import '@/styles/token';
+
+.container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  // background-color: @colorBgContainer;
+}
+
+.title {
+  font-weight: @fontWeightStrong;
+  font-size: 18px;
+  padding: @padding @paddingLg;
+  // background-color: @colorBgContainer;
+  border-bottom: @lineWidth solid @colorSplit;
+  color: @colorText;
+  z-index: 1001;
+  box-sizing: border-box;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: @paddingLg;
+
+  .configContainer {
+    margin-bottom: @paddingXl;
+  }
+
+  .configItem {
+    margin-bottom: @paddingMd;
+    padding: 0;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: @padding @paddingLg;
+  // background-color: @colorBgContainer;
+  border-top: @lineWidth solid @colorSplit;
+  z-index: 1000;
+  box-sizing: border-box;
+}
+
+// 响应式设计
+// @media (max-width: @screenLg) {
+//   .content {
+//     .configItem {
+//       margin-bottom: @paddingMd;
+//     }
+//   }
+// }
+
+// @media (max-width: @screenMd) {
+//   .title {
+//     padding: 16px;
+//   }
+
+//   .content {
+//     padding: 16px;
+//     padding-top: 70px; // 调整移动端标题高度
+//     padding-bottom: 70px; // 调整移动端底部高度
+
+//     .configItem {
+//       margin-bottom: @paddingSm;
+//       padding: 0;
+//     }
+//   }
+
+//   .footer {
+//     display: flex;
+//     justify-content: flex-start;
+//     align-items: center;
+//     flex-direction: column;
+//     gap: @paddingMd;
+//     padding: 16px;
+
+//     :global(.ant-btn) {
+//       width: 100%;
+//       max-width: 200px;
+//     }
+//   }
+// }

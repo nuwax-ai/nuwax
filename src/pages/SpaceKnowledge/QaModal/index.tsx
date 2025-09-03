@@ -62,7 +62,7 @@ const QaModal: React.FC<QaModalProps> = ({
       onCancel={handleCancel}
       onOk={handleConfirm}
       maskClosable
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}

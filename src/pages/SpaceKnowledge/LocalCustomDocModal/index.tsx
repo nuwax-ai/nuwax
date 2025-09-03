@@ -319,7 +319,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
   return (
     <Modal
       title="添加内容"
-      destroyOnClose
+      destroyOnHidden
       classNames={{
         content: cx(styles.container),
         header: cx(styles.header),

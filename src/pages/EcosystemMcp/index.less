@@ -2,12 +2,18 @@
 
 .container {
   .title {
-    padding-left: 24px;
-    padding-top: 16px;
-    padding-bottom: 16px;
     font-size: 16px;
     font-weight: 500;
     color: #333;
+    margin-right: 20px;
+  }
+
+  .segmented {
+    :global {
+      .ant-segmented-item-selected {
+        font-weight: bold !important;
+      }
+    }
   }
 
   .header {
@@ -17,32 +23,7 @@
     align-items: center;
     gap: 16px;
     border-bottom: none;
-    padding-left: 24px;
-    padding-right: 24px;
-  }
-
-  .tabs {
-    flex: 1;
-
-    :global {
-      .ant-tabs-nav {
-        margin-bottom: 0;
-
-        &::before {
-          content: none;
-          display: none;
-        }
-      }
-
-      .ant-tabs-tab {
-        font-size: 14px;
-        line-height: 1.2;
-      }
-
-      .ant-tabs-ink-bar {
-        background-color: @BLUE08;
-      }
-    }
+    padding: 16px 24px;
   }
 
   .select-category {
@@ -54,7 +35,7 @@
   }
 
   .main-container {
-    padding: 16px 24px;
+    padding: 0 24px 16px;
   }
 
   .list-section {

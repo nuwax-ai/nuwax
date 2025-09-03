@@ -1,5 +1,20 @@
-@import '@/styles/color';
+@import '@/styles/token';
 
 .span {
-  color: @BLANK28;
+  color: @colorTextTertiary;
+}
+
+.a {
+  color: @colorTextTertiary;
+  font-weight: bold;
+  // 文本添加下划线
+  text-decoration: underline;
+  // 下划线距离文字顶部
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: @colorTextTertiary;
+    // 文本添加下划线
+    text-decoration: underline;
+  }
 }

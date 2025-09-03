@@ -5,7 +5,7 @@
   padding: @paddingXs;
   margin-top: @marginXxs;
   cursor: default;
-
+  color: @navSecondMenuText;
   &.first {
     margin-top: 0;
   }
@@ -13,7 +13,7 @@
   &.menuItem {
     cursor: pointer;
     .name {
-      color: @colorTextSecondary;
+      color: @navSecondMenuText;
     }
     &.has-icon {
       :global {
@@ -49,9 +49,15 @@
     background-color: @colorBgContainer;
     border-radius: @borderRadius;
     box-shadow: @boxShadowTertiary;
-
+    color: @colorTextSecondary;
+    :global {
+      .ant-typography {
+        color: @colorTextSecondary;
+      }
+    }
     .collectIcon {
       visibility: visible;
+      color: @colorTextSecondary;
     }
   }
 
@@ -66,7 +72,7 @@
   }
 
   .collectIcon {
-    color: @colorTextSecondary;
+    color: @navSecondMenuText;
     visibility: hidden;
     // border-radius: @borderRadiusXs;
     transition: background-color ease-in-out 0.2s;
