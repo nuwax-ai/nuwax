@@ -3,7 +3,7 @@ import NavigationStylePanel from '@/components/business-component/ThemeConfig/Na
 import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
 import { backgroundConfigs, STORAGE_KEYS } from '@/constants/theme.constants';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
-import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { useExtraColors, useLayoutStyle } from '@/hooks/useLayoutStyle';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { ThemeConfigData } from '@/types/interfaces/systemManage';
 import { TenantThemeConfig } from '@/types/tenant';
@@ -164,6 +164,9 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     setTimeout(updateLocalThemeCache, 100);
   };
 
+  // 获取额外的颜色（包括自定义颜色）
+  const extraColors = useExtraColors();
+
   return (
     <div className={cx(styles.container)}>
       <div className={cx(styles.title)}>主题切换</div>
@@ -174,6 +177,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
             <ThemeColorPanel
               currentColor={primaryColor}
               onColorChange={handleColorChange}
+              extraColors={extraColors}
               enableCustomColor={false}
             />
           </div>

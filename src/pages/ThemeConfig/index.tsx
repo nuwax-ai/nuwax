@@ -3,7 +3,7 @@ import NavigationStylePanel from '@/components/business-component/ThemeConfig/Na
 import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
 import { backgroundConfigs, STORAGE_KEYS } from '@/constants/theme.constants';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
-import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { useExtraColors, useLayoutStyle } from '@/hooks/useLayoutStyle';
 import { apiSystemConfigUpdate } from '@/services/systemManage';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { ThemeConfigData } from '@/types/interfaces/systemManage';
@@ -35,6 +35,9 @@ const ThemeConfig: React.FC = () => {
   // 集成导航风格管理
   const { navigationStyle, setNavigationStyle, layoutStyle, setLayoutStyle } =
     useLayoutStyle();
+
+  // 获取额外的颜色（包括自定义颜色）
+  const extraColors = useExtraColors();
 
   // 获取租户配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -224,6 +227,7 @@ const ThemeConfig: React.FC = () => {
             <ThemeColorPanel
               currentColor={primaryColor}
               onColorChange={setPrimaryColor}
+              extraColors={extraColors}
             />
           </div>
           <div className={cx(styles.configItem)}>

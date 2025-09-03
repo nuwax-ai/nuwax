@@ -17,6 +17,12 @@ import {
  * 布局深浅色风格管理工具类
  * 注意：此风格系统与 Ant Design 的主题系统完全独立
  * 仅控制布局容器、导航栏等自定义组件的视觉风格
+ *
+ * 主题配置优先级：
+ * 1. 用户本地配置 (STORAGE_KEYS.USER_THEME_CONFIG) - 优先级最高
+ * 2. 租户配置数据 (TENANT_CONFIG_INFO.templateConfig) - 兜底方案
+ * 3. 布局样式本地存储 (STORAGE_KEYS.LAYOUT_STYLE) - 最后兜底
+ * 4. 系统默认配置 - 兜底的兜底
  */
 
 /**
@@ -302,12 +308,20 @@ export class LayoutStyleManager {
 
   /**
    * 同步主题颜色到全局设置
+   * 支持预设颜色和自定义颜色
    * @param themeConfig 主题配置数据
    */
   public syncThemeColorToGlobalSettings(themeConfig: any): void {
     if (!themeConfig?.selectedThemeColor) return;
 
     try {
+      // 验证颜色格式（支持 hex、rgb、rgba 等格式）
+      const colorValue = themeConfig.selectedThemeColor;
+      if (!this.isValidColor(colorValue)) {
+        console.warn('无效的主题颜色格式:', colorValue);
+        return;
+      }
+
       // 获取当前全局设置
       const { STORAGE_KEYS } = require('@/constants/theme.constants');
       const currentSettingsStr = localStorage.getItem(
@@ -317,10 +331,10 @@ export class LayoutStyleManager {
         ? JSON.parse(currentSettingsStr)
         : {};
 
-      // 更新主题颜色
+      // 更新主题颜色（支持任何有效的颜色值）
       const newSettings = {
         ...currentSettings,
-        primaryColor: themeConfig.selectedThemeColor,
+        primaryColor: colorValue,
       };
 
       // 保存到本地存储
@@ -335,28 +349,61 @@ export class LayoutStyleManager {
       });
       window.dispatchEvent(event);
 
-      console.log('已同步主题颜色到全局设置:', themeConfig.selectedThemeColor);
+      console.log('已同步主题颜色到全局设置 (支持自定义颜色):', colorValue);
     } catch (error) {
       console.warn('同步主题颜色到全局设置失败:', error);
     }
   }
 
   /**
+   * 验证颜色值是否有效
+   * 支持 hex、rgb、rgba、hsl、hsla 等格式
+   * @param color 颜色值
+   * @returns 是否为有效颜色
+   */
+  private isValidColor(color: string): boolean {
+    if (!color || typeof color !== 'string') return false;
+
+    // 创建一个临时元素来验证颜色
+    const tempElement = document.createElement('div');
+    tempElement.style.color = color;
+
+    // 如果浏览器能解析这个颜色，style.color 不会为空
+    return tempElement.style.color !== '';
+  }
+
+  /**
    * 获取主题配置数据（按优先级）
+   * 优先级：用户本地数据 > 租户配置数据 > 默认值
    * @returns 主题配置数据或null
    */
   public getThemeConfigData(): any {
     try {
-      let themeData: any = null;
+      // 1. 优先从用户主题配置本地存储获取
+      const userThemeConfig = localStorage.getItem(
+        STORAGE_KEYS.USER_THEME_CONFIG,
+      );
+      if (userThemeConfig) {
+        try {
+          const templateConfig = JSON.parse(userThemeConfig);
+          console.log(
+            '从用户本地配置加载主题配置 (优先级最高):',
+            templateConfig,
+          );
+          return templateConfig; // 直接返回原始格式的主题配置
+        } catch (error) {
+          console.warn('解析用户本地主题配置失败:', error);
+        }
+      }
 
-      // 1. 优先从租户配置中获取主题配置
+      // 2. 如果用户本地没有，则从租户配置中获取主题配置
       const tenantConfigString = localStorage.getItem('TENANT_CONFIG_INFO');
       if (tenantConfigString) {
         try {
           const tenantConfig = JSON.parse(tenantConfigString);
           if (tenantConfig.templateConfig) {
             const templateConfig = JSON.parse(tenantConfig.templateConfig);
-            console.log('从租户配置加载主题配置:', templateConfig);
+            console.log('从租户配置加载主题配置 (兜底方案):', templateConfig);
             return templateConfig; // 直接返回原始格式的主题配置
           }
         } catch (error) {
@@ -364,18 +411,7 @@ export class LayoutStyleManager {
         }
       }
 
-      // 2. 如果租户配置中没有，则从用户主题配置本地存储获取
-      if (!themeData) {
-        const userThemeConfig = localStorage.getItem(
-          STORAGE_KEYS.USER_THEME_CONFIG,
-        );
-        if (userThemeConfig) {
-          const templateConfig = JSON.parse(userThemeConfig);
-          console.log('从用户主题配置本地存储加载配置:', templateConfig);
-          return templateConfig; // 直接返回原始格式的主题配置
-        }
-      }
-
+      console.log('未找到任何主题配置，将使用默认值');
       return null;
     } catch (error) {
       console.warn('Failed to get theme config data:', error);
@@ -416,12 +452,12 @@ export class LayoutStyleManager {
         this.syncThemeColorToGlobalSettings(themeConfig);
       }
 
-      // 2. 如果没有主题配置，则从布局样式本地存储获取
+      // 2. 如果没有主题配置，则从布局样式本地存储获取（最后的兜底方案）
       if (!themeData) {
         const stored = localStorage.getItem(STORAGE_KEYS.LAYOUT_STYLE);
         if (stored) {
           themeData = JSON.parse(stored);
-          console.log('从布局样式本地存储加载配置:', themeData);
+          console.log('从布局样式本地存储加载配置 (最后兜底):', themeData);
         }
       }
 
