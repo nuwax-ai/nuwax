@@ -1,5 +1,7 @@
+import { backgroundConfigs } from '@/constants/theme.constants';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
-import { backgroundConfigs, useBackgroundStyle } from '@/utils/backgroundStyle';
+import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { Button, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -26,28 +28,28 @@ const ThemeConfig: React.FC = () => {
 
   // 集成导航风格管理
   const { navigationStyle, setNavigationStyle, layoutStyle, setLayoutStyle } =
-    useBackgroundStyle();
+    useLayoutStyle();
 
   // 导航栏深浅色状态管理（独立于Ant Design主题）
   const [isNavigationDarkMode, setIsNavigationDarkMode] = useState<boolean>(
-    layoutStyle === 'dark',
+    layoutStyle === ThemeLayoutColorStyle.DARK,
   );
 
   // 同步布局风格状态到导航深浅色状态
   useEffect(() => {
-    setIsNavigationDarkMode(layoutStyle === 'dark');
+    setIsNavigationDarkMode(layoutStyle === ThemeLayoutColorStyle.DARK);
   }, [layoutStyle]);
 
   // 根据背景图片ID获取对应的布局风格
   const getLayoutStyleByBackgroundId = (
     backgroundId: string,
-  ): 'light' | 'dark' => {
+  ): ThemeLayoutColorStyle => {
     // 将背景服务ID格式转换为布局风格管理器ID格式
     const layoutBackgroundId = backgroundId.replace('bg-', '');
     const backgroundConfig = backgroundConfigs.find(
       (config) => config.id === layoutBackgroundId,
     );
-    return backgroundConfig?.layoutStyle || 'light';
+    return backgroundConfig?.layoutStyle || ThemeLayoutColorStyle.LIGHT;
   };
 
   // 从本地存储恢复配置
@@ -58,11 +60,7 @@ const ThemeConfig: React.FC = () => {
         const config = JSON.parse(savedConfig);
 
         // 恢复导航风格
-        if (
-          config.navigationStyleId &&
-          (config.navigationStyleId === 'style1' ||
-            config.navigationStyleId === 'style2')
-        ) {
+        if (config.navigationStyleId) {
           if (config.navigationStyleId !== navigationStyle) {
             setNavigationStyle(config.navigationStyleId);
           }
@@ -70,8 +68,7 @@ const ThemeConfig: React.FC = () => {
 
         // 恢复导航深浅色
         if (config.navigationStyle) {
-          const navLayoutStyle =
-            config.navigationStyle === 'dark' ? 'dark' : 'light';
+          const navLayoutStyle = config.navigationStyle;
           if (navLayoutStyle !== layoutStyle) {
             setLayoutStyle(navLayoutStyle);
           }
@@ -95,7 +92,7 @@ const ThemeConfig: React.FC = () => {
     // 根据背景图片自动切换导航栏深浅色
     const newLayoutStyle = getLayoutStyleByBackgroundId(backgroundId);
     setLayoutStyle(newLayoutStyle);
-    setIsNavigationDarkMode(newLayoutStyle === 'dark');
+    setIsNavigationDarkMode(newLayoutStyle === ThemeLayoutColorStyle.DARK);
 
     // 显示联动提示
     const backgroundConfig = backgroundConfigs.find(
@@ -103,16 +100,18 @@ const ThemeConfig: React.FC = () => {
     );
     if (backgroundConfig) {
       message.info(
-        `已自动切换为${newLayoutStyle === 'dark' ? '深色' : '浅色'}导航栏`,
+        `已自动切换为${
+          newLayoutStyle === ThemeLayoutColorStyle.DARK ? '深色' : '浅色'
+        }导航栏`,
       );
     }
   };
 
   // 切换导航栏深浅色（集成到布局风格管理，带背景自动匹配）
   const handleNavigationThemeToggle = () => {
-    const newLayoutStyle = layoutStyle === 'light' ? 'dark' : 'light';
+    const newLayoutStyle = layoutStyle;
     setLayoutStyle(newLayoutStyle);
-    setIsNavigationDarkMode(newLayoutStyle === 'dark');
+    setIsNavigationDarkMode(newLayoutStyle === ThemeLayoutColorStyle.DARK);
 
     // 检查当前背景是否与新的导航栏深浅色匹配
     const currentBackgroundLayoutStyle =
@@ -131,7 +130,7 @@ const ThemeConfig: React.FC = () => {
         // 显示背景自动匹配提示
         message.info(
           `已自动切换为${matchingBackgroundId.name}以匹配${
-            newLayoutStyle === 'dark' ? '深色' : '浅色'
+            newLayoutStyle === ThemeLayoutColorStyle.DARK ? '深色' : '浅色'
           }导航栏`,
         );
       }
@@ -144,7 +143,9 @@ const ThemeConfig: React.FC = () => {
       const themeConfig = {
         selectedThemeColor: primaryColor,
         selectedBackgroundId: backgroundImageId,
-        antdTheme: isDarkMode ? 'dark' : 'light', // Ant Design主题
+        antdTheme: isDarkMode
+          ? ThemeLayoutColorStyle.DARK
+          : ThemeLayoutColorStyle.LIGHT, // Ant Design主题
         navigationStyle: layoutStyle, // 导航栏深浅色（使用布局风格）
         navigationStyleId: navigationStyle, // 导航风格 ID（style1 或 style2）
         timestamp: Date.now(),

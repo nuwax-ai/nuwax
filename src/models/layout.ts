@@ -1,7 +1,4 @@
-import {
-  FIRST_MENU_WIDTH,
-  SECOND_MENU_WIDTH,
-} from '@/layouts/layout.constants';
+import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useRef, useState } from 'react';
 
 const useLayout = () => {
@@ -111,8 +108,8 @@ const useLayout = () => {
   // 动态计算菜单宽度
   const getCurrentMenuWidth = () => {
     return isSecondMenuCollapsed
-      ? FIRST_MENU_WIDTH
-      : FIRST_MENU_WIDTH + SECOND_MENU_WIDTH;
+      ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1
+      : NAVIGATION_LAYOUT_SIZES.getTotalMenuWidth('style1');
   };
 
   return {

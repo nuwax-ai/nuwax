@@ -1,4 +1,4 @@
-import { useBackgroundStyle } from '@/utils/backgroundStyle';
+import { useLayoutStyle } from '@/hooks/useLayoutStyle';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import styles from './NavigationStylePanel.less';
@@ -25,8 +25,7 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
   onNavigationStyleChange,
 }) => {
   // 使用全局导航风格管理
-  const { navigationStyle, setNavigationStyle, layoutStyle, setLayoutStyle } =
-    useBackgroundStyle();
+  const { navigationStyle, setNavigationStyle, layoutStyle } = useLayoutStyle();
 
   // 导航栏风格配置
   const navigationStyles: NavigationStyle[] = [

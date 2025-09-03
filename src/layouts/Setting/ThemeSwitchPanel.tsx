@@ -1,6 +1,8 @@
+import { backgroundConfigs } from '@/constants/theme.constants';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
+import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { TenantThemeConfig } from '@/types/tenant';
-import { backgroundConfigs, useBackgroundStyle } from '@/utils/backgroundStyle';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -29,7 +31,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   } = useGlobalSettings();
 
   // 集成布局风格管理
-  const { layoutStyle, setLayoutStyle } = useBackgroundStyle();
+  const { layoutStyle, setLayoutStyle } = useLayoutStyle();
 
   // 导航栏风格状态管理
   const [currentNavigationStyle, setCurrentNavigationStyle] = useState<string>(
@@ -43,7 +45,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
 
   // 同步布局风格状态到导航深浅色状态
   useEffect(() => {
-    setIsNavigationDarkMode(layoutStyle === 'dark');
+    setIsNavigationDarkMode(layoutStyle === ThemeLayoutColorStyle.DARK);
   }, [layoutStyle]);
 
   // 处理主题色切换
@@ -54,13 +56,13 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   // 根据背景图片ID获取对应的布局风格
   const getLayoutStyleByBackgroundId = (
     backgroundId: string,
-  ): 'light' | 'dark' => {
+  ): ThemeLayoutColorStyle => {
     // 将背景服务ID格式转换为布局风格管理器ID格式
     const layoutBackgroundId = backgroundId.replace('bg-', '');
     const backgroundConfig = backgroundConfigs.find(
       (config) => config.id === layoutBackgroundId,
     );
-    return backgroundConfig?.layoutStyle || 'light';
+    return backgroundConfig?.layoutStyle || ThemeLayoutColorStyle.LIGHT;
   };
 
   // 处理背景图片切换（带联动逻辑）
@@ -71,7 +73,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     // 根据背景图片自动切换导航栏深浅色
     const newLayoutStyle = getLayoutStyleByBackgroundId(backgroundId);
     setLayoutStyle(newLayoutStyle);
-    setIsNavigationDarkMode(newLayoutStyle === 'dark');
+    setIsNavigationDarkMode(newLayoutStyle === ThemeLayoutColorStyle.DARK);
 
     // 显示联动提示
     const layoutBackgroundId = backgroundId.replace('bg-', '');
@@ -80,7 +82,9 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     );
     if (backgroundConfig) {
       message.info(
-        `已自动切换为${newLayoutStyle === 'dark' ? '深色' : '浅色'}导航栏`,
+        `已自动切换为${
+          newLayoutStyle === ThemeLayoutColorStyle.DARK ? '深色' : '浅色'
+        }导航栏`,
       );
     }
   };
@@ -94,9 +98,12 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
 
   // 处理导航栏深浅色切换（集成到布局风格管理，带背景自动匹配）
   const handleNavigationThemeToggle = () => {
-    const newLayoutStyle = layoutStyle === 'light' ? 'dark' : 'light';
+    const newLayoutStyle =
+      layoutStyle === ThemeLayoutColorStyle.LIGHT
+        ? ThemeLayoutColorStyle.DARK
+        : ThemeLayoutColorStyle.LIGHT;
     setLayoutStyle(newLayoutStyle);
-    setIsNavigationDarkMode(newLayoutStyle === 'dark');
+    setIsNavigationDarkMode(newLayoutStyle === ThemeLayoutColorStyle.DARK);
 
     // 检查当前背景是否与新的导航栏深浅色匹配
     const currentBackgroundLayoutStyle =
@@ -115,7 +122,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
         // 显示背景自动匹配提示
         message.info(
           `已自动切换为${matchingBackgroundId.name}以匹配${
-            newLayoutStyle === 'dark' ? '深色' : '浅色'
+            newLayoutStyle === ThemeLayoutColorStyle.DARK ? '深色' : '浅色'
           }导航栏`,
         );
       }

@@ -1,5 +1,13 @@
-import React from 'react';
-import { cloneDeep } from './common';
+import { STYLE_CONFIGS, backgroundConfigs } from '@/constants/theme.constants';
+import {
+  ThemeLayoutColorStyle,
+  ThemeNavigationStyleType,
+} from '@/types/enums/theme';
+import {
+  type BackgroundConfig,
+  type LayoutColorStyle,
+  type NavigationStyleType,
+} from '@/types/interfaces/theme';
 
 /**
  * 布局深浅色风格管理工具类
@@ -8,150 +16,15 @@ import { cloneDeep } from './common';
  */
 
 /**
- * 布局深浅色风格类型
- * 注意：这与 Ant Design 的 theme 无关，仅用于布局风格
- */
-export type LayoutColorStyle = 'light' | 'dark';
-
-/**
- * 导航风格类型
- * style1: 紧凑模式（无文字导航，有外边距和圆角）
- * style2: 展开模式（有文字导航，无外边距和圆角）
- */
-export type NavigationStyleType = 'style1' | 'style2';
-
-export interface BackgroundConfig {
-  id: string;
-  name: string;
-  url: string;
-  layoutStyle: LayoutColorStyle; // 重命名：明确这是布局风格，非Ant Design主题
-  description?: string;
-}
-
-/**
- * 预定义的背景配置
- * 根据背景图的明暗程度来确定适合的布局风格
- */
-export const backgroundConfigs: BackgroundConfig[] = [
-  {
-    id: 'variant-1',
-    name: '星空夜景',
-    url: '/bg/bg-variant-1.png',
-    layoutStyle: 'light',
-    description: '深色背景，适合深色布局风格',
-  },
-  {
-    id: 'variant-2',
-    name: '云朵白天',
-    url: '/bg/bg-variant-2.png',
-    layoutStyle: 'light',
-    description: '浅色背景，适合浅色布局风格',
-  },
-  {
-    id: 'variant-3',
-    name: '森林晨光',
-    url: '/bg/bg-variant-3.png',
-    layoutStyle: 'dark',
-    description: '明亮背景，适合浅色布局风格',
-  },
-  {
-    id: 'variant-4',
-    name: '深海夜色',
-    url: '/bg/bg-variant-4.png',
-    layoutStyle: 'dark',
-    description: '深色背景，适合深色布局风格',
-  },
-  {
-    id: 'variant-5',
-    name: '梦幻紫色',
-    url: '/bg/bg-variant-5.png',
-    layoutStyle: 'light',
-    description: '深色调背景，适合深色布局风格',
-  },
-  {
-    id: 'variant-6',
-    name: '温暖阳光',
-    url: '/bg/bg-variant-6.png',
-    layoutStyle: 'dark',
-    description: '温暖色调，适合浅色布局风格',
-  },
-  {
-    id: 'variant-7',
-    name: '夜晚都市',
-    url: '/bg/bg-variant-7.png',
-    layoutStyle: 'dark',
-    description: '都市夜景，适合深色布局风格',
-  },
-  {
-    id: 'variant-8',
-    name: '清新蓝天',
-    url: '/bg/bg-variant-8.png',
-    layoutStyle: 'light',
-    description: '清新明亮，适合浅色布局风格',
-  },
-];
-
-/**
- * 深色布局风格的CSS变量值
- * 注意：这些变量仅用于自定义布局组件，不影响 Ant Design 组件
- */
-const darkLayoutStyleVariables = {
-  '--xagi-layout-text-primary': '#ffffff',
-  '--xagi-layout-text-secondary': 'rgba(255, 255, 255, 0.85)',
-  '--xagi-layout-text-tertiary': 'rgba(255, 255, 255, 0.65)',
-  '--xagi-layout-text-disabled': 'rgba(255, 255, 255, 0.25)',
-
-  '--xagi-layout-second-menu-text-color': 'rgba(255, 255, 255, 0.85)',
-
-  '--xagi-layout-bg-primary': 'rgba(0, 0, 0, 0.85)',
-  '--xagi-layout-bg-secondary': 'rgba(0, 0, 0, 0.65)',
-  '--xagi-layout-bg-card': 'rgba(0, 0, 0, 0.45)',
-  '--xagi-layout-bg-input': 'rgba(0, 0, 0, 0.25)',
-
-  '--xagi-layout-border-primary': 'rgba(0, 0, 0, 0.15)',
-  '--xagi-layout-border-secondary': 'rgba(0, 0, 0, 0.1)',
-
-  '--xagi-layout-shadow': 'rgba(0, 0, 0, 0.6)',
-  '--xagi-layout-overlay': 'rgba(0, 0, 0, 0.7)',
-
-  '--xagi-layout-bg-container': '#ffffff',
-};
-
-/**
- * 浅色布局风格的CSS变量值
- * 注意：这些变量仅用于自定义布局组件，不影响 Ant Design 组件
- */
-const lightLayoutStyleVariables = {
-  '--xagi-layout-text-primary': '#000000',
-  '--xagi-layout-text-secondary': 'rgba(0, 0, 0, 0.85)',
-  '--xagi-layout-text-tertiary': 'rgba(0, 0, 0, 0.65)',
-  '--xagi-layout-text-disabled': 'rgba(0, 0, 0, 0.25)',
-
-  '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.85)',
-
-  '--xagi-layout-bg-primary': 'rgba(255, 255, 255, 0.95)',
-  '--xagi-layout-bg-secondary': 'rgba(255, 255, 255, 0.85)',
-  '--xagi-layout-bg-card': 'rgba(255, 255, 255, 0.65)',
-  '--xagi-layout-bg-input': 'rgba(255, 255, 255, 0.45)',
-
-  '--xagi-layout-border-primary': 'rgba(0, 0, 0, 0.15)',
-  '--xagi-layout-border-secondary': 'rgba(0, 0, 0, 0.1)',
-
-  '--xagi-layout-shadow': 'rgba(0, 0, 0, 0.1)',
-  '--xagi-layout-overlay': 'rgba(255, 255, 255, 0.7)',
-
-  '--xagi-layout-bg-container': 'rgba(255, 255, 255, 0.95)',
-};
-
-/**
  * 布局风格管理类
  * 注意：完全独立于 Ant Design 主题系统
  */
 export class LayoutStyleManager {
   private static instance: LayoutStyleManager;
   private currentBackground: BackgroundConfig | null = null;
-  private currentLayoutStyle: LayoutColorStyle = 'light';
-  private currentNavStyle: NavigationStyleType = 'style1';
+  private currentLayoutStyle: LayoutColorStyle = ThemeLayoutColorStyle.LIGHT;
+  private currentNavStyle: NavigationStyleType =
+    ThemeNavigationStyleType.STYLE1;
 
   private constructor() {
     this.loadFromStorage();
@@ -183,8 +56,8 @@ export class LayoutStyleManager {
     // 设置背景图
     this.setBackgroundImage(config.url);
 
-    // 应用对应布局风格
-    this.applyLayoutStyle(config.layoutStyle);
+    // 应用完整的样式配置
+    this.applyStyleConfig();
 
     // 保存到本地存储
     this.saveToStorage();
@@ -198,7 +71,9 @@ export class LayoutStyleManager {
    */
   toggleLayoutStyle(): void {
     const newStyle: LayoutColorStyle =
-      this.currentLayoutStyle === 'light' ? 'dark' : 'light';
+      this.currentLayoutStyle === ThemeLayoutColorStyle.LIGHT
+        ? ThemeLayoutColorStyle.DARK
+        : ThemeLayoutColorStyle.LIGHT;
     this.setLayoutStyle(newStyle);
   }
 
@@ -207,7 +82,7 @@ export class LayoutStyleManager {
    */
   setLayoutStyle(style: LayoutColorStyle): void {
     this.currentLayoutStyle = style;
-    this.applyLayoutStyle(style);
+    this.applyStyleConfig();
     this.saveToStorage();
     this.dispatchStyleChangeEvent();
   }
@@ -245,7 +120,7 @@ export class LayoutStyleManager {
    */
   setNavigationStyle(navStyle: NavigationStyleType): void {
     this.currentNavStyle = navStyle;
-    this.applyNavigationStyle(navStyle);
+    this.applyStyleConfig();
     this.saveToStorage();
     this.dispatchNavigationStyleChangeEvent();
   }
@@ -262,104 +137,111 @@ export class LayoutStyleManager {
    */
   toggleNavigationStyle(): void {
     const newNavStyle: NavigationStyleType =
-      this.currentNavStyle === 'style1' ? 'style2' : 'style1';
+      this.currentNavStyle === ThemeNavigationStyleType.STYLE1
+        ? ThemeNavigationStyleType.STYLE2
+        : ThemeNavigationStyleType.STYLE1;
     this.setNavigationStyle(newNavStyle);
   }
 
   /**
-   * 应用布局风格CSS变量
-   * 注意：这些变量只影响自定义布局组件，不影响 Ant Design 组件
+   * 获取当前样式配置键名（公共方法）
    */
-  private applyLayoutStyle(style: LayoutColorStyle): void {
-    const variables = cloneDeep(
-      style === 'dark' ? darkLayoutStyleVariables : lightLayoutStyleVariables,
-    );
-
-    // 如果 当前的 nav style 是 style2，则--xagi-layout-bg-secondary 应该是黑色
-    const data = JSON.parse(localStorage.getItem('xagi-layout-style') || '{}');
-    if (data.navigationStyle === 'style2') {
-      variables['--xagi-layout-second-menu-text-color'] =
-        style === 'dark' ? 'rgba(0, 0, 0, 0.85)' : 'rgba(0, 0, 0, 0.85)';
-      variables['--xagi-layout-text-secondary'] =
-        style === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)';
-    }
-    if (data.navigationStyle === 'style1') {
-      variables['--xagi-layout-second-menu-text-color'] =
-        variables['--xagi-layout-text-secondary'];
-    }
-
-    // if (data.navigationStyle === 'style1') {
-    //   variables['--xagi-layout-text-secondary'] =
-    //     style === 'dark'
-    //       ? 'rgba(255, 255, 255, 0.85)'
-    //       : 'rgba(255, 255, 255, 0.85)';
-    // }
-    Object.entries(variables).forEach(([key, value]) => {
-      document.documentElement.style.setProperty(key, value);
-    });
-
-    // 添加布局风格类名到body
-    document.body.classList.remove('xagi-layout-light', 'xagi-layout-dark');
-    document.body.classList.add(`xagi-layout-${style}`);
+  getCurrentStyleConfigKey(): string {
+    return `${this.currentLayoutStyle}-${this.currentNavStyle}`;
   }
 
   /**
-   * 应用导航风格
+   * 获取所有可用的样式配置键名
    */
-  private applyNavigationStyle(navStyle: NavigationStyleType): void {
+  getAllStyleConfigKeys(): string[] {
+    return Object.keys(STYLE_CONFIGS);
+  }
+
+  /**
+   * 根据样式配置键名直接设置样式
+   * @param configKey 样式配置键名，格式为 'layoutStyle-navStyle'
+   */
+  setStyleByConfigKey(configKey: string): void {
+    if (!STYLE_CONFIGS[configKey]) {
+      console.warn(`Invalid style config key: ${configKey}`);
+      return;
+    }
+
+    const [layoutStyle, navStyle] = configKey.split('-') as [
+      LayoutColorStyle,
+      NavigationStyleType,
+    ];
+
+    this.currentLayoutStyle = layoutStyle;
+    this.currentNavStyle = navStyle;
+
+    this.applyStyleConfig();
+    this.saveToStorage();
+    this.dispatchStyleChangeEvent();
+  }
+
+  /**
+   * 应用完整的样式配置（布局风格 + 导航风格）
+   * 注意：这些变量只影响自定义布局组件，不影响 Ant Design 组件
+   */
+  private applyStyleConfig(): void {
+    const configKey = this.getCurrentStyleConfigKey();
+    const config = STYLE_CONFIGS[configKey];
+
+    if (!config) {
+      console.warn(`Style config not found for key: ${configKey}`);
+      return;
+    }
+
     const rootElement = document.documentElement;
 
-    if (navStyle === 'style1') {
-      // 风格1：紧凑模式（60px，无文字）
-      rootElement.style.setProperty('--xagi-nav-first-menu-width', '60px');
-      rootElement.style.setProperty('--xagi-page-container-margin', '16px');
-      rootElement.style.setProperty(
-        '--xagi-page-container-border-radius',
-        '12px',
-      );
-    } else {
-      // 风格2：展开模式（88px，有文字）
-      rootElement.style.setProperty('--xagi-nav-first-menu-width', '88px');
-      rootElement.style.setProperty('--xagi-page-container-margin', '0px');
-      rootElement.style.setProperty(
-        '--xagi-page-container-border-radius',
-        '0px',
-      );
-    }
+    // 应用布局相关的CSS变量
+    Object.entries(config.layout).forEach(([key, value]) => {
+      rootElement.style.setProperty(key, value);
+    });
 
-    // 如果导航风格是 style2，则设置 --xagi-layout-bg-secondary 为黑色
-    if (navStyle === 'style2') {
-      const currentLayoutStyle = this.getCurrentLayoutStyle();
-      rootElement.style.setProperty(
-        '--xagi-layout-bg-secondary',
-        currentLayoutStyle === 'dark'
-          ? 'rgba(0, 0, 0, 0.85)'
-          : 'rgba(255, 255, 255, 0.85)',
-      );
-      rootElement.style.setProperty(
-        '--xagi-layout-second-menu-text-color',
-        'rgba(0, 0, 0, 0.85)',
-      );
-    } else {
-      // 风格1时恢复默认值（从布局风格变量中获取）
-      const currentLayoutStyle = this.getCurrentLayoutStyle();
-      const variables =
-        currentLayoutStyle === 'dark'
-          ? darkLayoutStyleVariables
-          : lightLayoutStyleVariables;
-      rootElement.style.setProperty(
-        '--xagi-layout-bg-secondary',
-        variables['--xagi-layout-bg-secondary'],
-      );
-      rootElement.style.setProperty(
-        '--xagi-layout-second-menu-text-color',
-        variables['--xagi-layout-second-menu-text-color'],
-      );
-    }
+    // 应用导航相关的CSS变量
+    Object.entries(config.navigation).forEach(([key, value]) => {
+      rootElement.style.setProperty(key, value);
+    });
 
-    // 添加导航风格类名到body
-    document.body.classList.remove('xagi-nav-style1', 'xagi-nav-style2');
-    document.body.classList.add(`xagi-nav-${navStyle}`);
+    // 添加样式类名到body
+    this.updateBodyClasses();
+  }
+
+  /**
+   * 更新body元素的样式类名
+   */
+  private updateBodyClasses(): void {
+    // 移除所有相关的类名
+    document.body.classList.remove(
+      'xagi-layout-light',
+      'xagi-layout-dark',
+      'xagi-nav-style1',
+      'xagi-nav-style2',
+    );
+
+    // 添加当前样式对应的类名
+    document.body.classList.add(`xagi-layout-${this.currentLayoutStyle}`);
+    document.body.classList.add(`xagi-nav-${this.currentNavStyle}`);
+  }
+
+  /**
+   * 应用布局风格（重构后的统一方法）
+   * @deprecated 使用 applyStyleConfig 替代
+   */
+  private applyLayoutStyle(style: LayoutColorStyle): void {
+    this.currentLayoutStyle = style;
+    this.applyStyleConfig();
+  }
+
+  /**
+   * 应用导航风格（重构后的统一方法）
+   * @deprecated 使用 applyStyleConfig 替代
+   */
+  private applyNavigationStyle(navStyle: NavigationStyleType): void {
+    this.currentNavStyle = navStyle;
+    this.applyStyleConfig();
   }
 
   /**
@@ -422,6 +304,8 @@ export class LayoutStyleManager {
       const stored = localStorage.getItem('xagi-layout-style');
       if (stored) {
         const data = JSON.parse(stored);
+
+        // 加载背景配置
         if (data.backgroundId) {
           const config = backgroundConfigs.find(
             (bg) => bg.id === data.backgroundId,
@@ -432,15 +316,18 @@ export class LayoutStyleManager {
           }
         }
 
+        // 加载布局风格
         if (data.layoutStyle) {
           this.currentLayoutStyle = data.layoutStyle;
-          this.applyLayoutStyle(data.layoutStyle);
         }
 
+        // 加载导航风格
         if (data.navigationStyle) {
           this.currentNavStyle = data.navigationStyle;
-          this.applyNavigationStyle(data.navigationStyle);
         }
+
+        // 应用完整的样式配置
+        this.applyStyleConfig();
       }
     } catch (error) {
       console.warn('Failed to load layout style from storage:', error);
@@ -459,74 +346,6 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   (window as any).backgroundStyleManager = layoutStyleManager; // 向后兼容别名
 }
 
-/**
- * React Hook 用于监听布局风格变化
- * 注意：这与 Ant Design 主题系统完全独立
- */
-export const useLayoutStyle = () => {
-  const [layoutStyle, setLayoutStyle] = React.useState<LayoutColorStyle>(
-    layoutStyleManager.getCurrentLayoutStyle(),
-  );
-  const [background, setBackground] = React.useState<BackgroundConfig | null>(
-    layoutStyleManager.getCurrentBackground(),
-  );
-  const [navigationStyle, setNavigationStyle] =
-    React.useState<NavigationStyleType>(
-      layoutStyleManager.getCurrentNavigationStyle(),
-    );
-
-  React.useEffect(() => {
-    const handleStyleChange = (event: CustomEvent) => {
-      setLayoutStyle(event.detail.layoutStyle);
-      setBackground(event.detail.background);
-      if (event.detail.navigationStyle) {
-        setNavigationStyle(event.detail.navigationStyle);
-      }
-    };
-
-    const handleNavigationStyleChange = (event: CustomEvent) => {
-      setNavigationStyle(event.detail.navigationStyle);
-    };
-
-    window.addEventListener(
-      'xagi-layout-style-changed',
-      handleStyleChange as EventListener,
-    );
-    window.addEventListener(
-      'xagi-navigation-style-changed',
-      handleNavigationStyleChange as EventListener,
-    );
-
-    return () => {
-      window.removeEventListener(
-        'xagi-layout-style-changed',
-        handleStyleChange as EventListener,
-      );
-      window.removeEventListener(
-        'xagi-navigation-style-changed',
-        handleNavigationStyleChange as EventListener,
-      );
-    };
-  }, []);
-
-  return {
-    layoutStyle,
-    background,
-    navigationStyle,
-    setBackground: (id: string) => layoutStyleManager.setBackground(id),
-    toggleLayoutStyle: () => layoutStyleManager.toggleLayoutStyle(),
-    setLayoutStyle: (newStyle: LayoutColorStyle) =>
-      layoutStyleManager.setLayoutStyle(newStyle),
-    setNavigationStyle: (navStyle: NavigationStyleType) =>
-      layoutStyleManager.setNavigationStyle(navStyle),
-    toggleNavigationStyle: () => layoutStyleManager.toggleNavigationStyle(),
-    getAllBackgrounds: () => layoutStyleManager.getAllBackgrounds(),
-    getBackgroundsByLayoutStyle: (filterStyle: LayoutColorStyle) =>
-      layoutStyleManager.getBackgroundsByLayoutStyle(filterStyle),
-  };
-};
-
 // 向后兼容：导出旧的别名
 export type BackgroundStyleType = LayoutColorStyle;
 export const backgroundStyleManager = layoutStyleManager;
-export const useBackgroundStyle = useLayoutStyle;

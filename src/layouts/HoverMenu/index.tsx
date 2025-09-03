@@ -1,7 +1,9 @@
 import ConditionRender from '@/components/ConditionRender';
 import HoverScrollbar from '@/components/base/HoverScrollbar';
+import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
+import { useLayoutStyle } from '@/hooks/useLayoutStyle';
 import { TabsEnum } from '@/types/enums/menus';
-import { useBackgroundStyle } from '@/utils/backgroundStyle';
+import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -11,7 +13,7 @@ import HomeSection from '../MenusLayout/HomeSection';
 import SpaceSection from '../MenusLayout/SpaceSection';
 import SquareSection from '../MenusLayout/SquareSection';
 import SystemSection from '../MenusLayout/SystemSection';
-import { FIRST_MENU_WIDTH, SECOND_MENU_WIDTH } from '../layout.constants';
+
 import styles from './index.less';
 const cx = classNames.bind(styles);
 
@@ -29,10 +31,13 @@ const HoverMenu: React.FC = () => {
     setMouseInHoverMenu,
   } = useModel('layout');
   const { token } = theme.useToken();
-  const { navigationStyle } = useBackgroundStyle();
-  
+  const { navigationStyle } = useLayoutStyle();
+
   // 计算动态导航宽度
-  const firstMenuWidth = navigationStyle === 'style2' ? 88 : 60;
+  const firstMenuWidth =
+    navigationStyle === ThemeNavigationStyleType.STYLE2
+      ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2
+      : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1;
   // 根据菜单类型渲染对应的内容
   const MenuContent: React.FC = useMemo(() => {
     const menuStyle = { paddingTop: 0 }; // 去除移动端的 paddingTop
@@ -98,14 +103,16 @@ const HoverMenu: React.FC = () => {
         handleImmediateHideHoverMenu();
       }}
       style={{
-        width: SECOND_MENU_WIDTH,
+        width: NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
         left: firstMenuWidth,
         paddingLeft: token.padding,
       }}
     >
       <HoverScrollbar
         className={cx('h-full')}
-        bodyWidth={SECOND_MENU_WIDTH - token.padding * 2}
+        bodyWidth={
+          NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
+        }
         style={{
           width: '100%',
           padding: '12px 0',

@@ -1,5 +1,5 @@
+import { useLayoutStyle } from '@/hooks/useLayoutStyle';
 import type { TabItemProps } from '@/types/interfaces/layouts';
-import { useBackgroundStyle } from '@/utils/backgroundStyle';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -18,7 +18,7 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
   isSecondMenuCollapsed = false,
 }) => {
   // 获取当前导航风格
-  const { navigationStyle } = useBackgroundStyle();
+  const { navigationStyle } = useLayoutStyle();
 
   // 在开发环境下输出调试信息
   if (process.env.NODE_ENV === 'development') {

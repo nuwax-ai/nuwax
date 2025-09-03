@@ -1,15 +1,15 @@
-import { useBackgroundStyle } from '@/utils/backgroundStyle';
+import {
+  ANIMATION_DURATION,
+  MOBILE_BREAKPOINT,
+  MOBILE_MENU_TOP_PADDING,
+} from '@/constants/layout.constants';
+import { useLayoutStyle } from '@/hooks/useLayoutStyle';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Outlet, useModel } from 'umi';
 import HistoryConversation from './HistoryConversation';
 import HoverMenu from './HoverMenu';
 import styles from './index.less';
-import {
-  ANIMATION_DURATION,
-  MOBILE_BREAKPOINT,
-  MOBILE_MENU_TOP_PADDING,
-} from './layout.constants';
 import MenusLayout from './MenusLayout';
 import Message from './Message';
 import MobileMenu from './MobileMenu';
@@ -42,7 +42,7 @@ const Layout: React.FC = () => {
   // } = useGlobalSettings();
 
   // 导航风格管理（使用独立的布局风格系统）
-  const { navigationStyle, layoutStyle } = useBackgroundStyle();
+  const { navigationStyle, layoutStyle } = useLayoutStyle();
 
   // 状态管理
   const {

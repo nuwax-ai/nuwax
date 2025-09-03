@@ -1,17 +1,17 @@
 import ConditionRender from '@/components/ConditionRender';
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import { DOCUMENT_URL, SITE_DOCUMENT_URL } from '@/constants/common.constants';
+import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import useCategory from '@/hooks/useCategory';
 import useConversation from '@/hooks/useConversation';
+import { useLayoutStyle } from '@/hooks/useLayoutStyle';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
-import { useBackgroundStyle } from '@/utils/backgroundStyle';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
-import { FIRST_MENU_WIDTH, SECOND_MENU_WIDTH } from '../layout.constants';
 import CollapseButton from './CollapseButton';
 import EcosystemMarketSection from './EcosystemMarketSection';
 import Header from './Header';
@@ -47,7 +47,7 @@ const MenusLayout: React.FC<{
   const { handleCreateConversation } = useConversation();
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   // 导航风格管理（使用独立的布局风格系统）
-  const { navigationStyle, layoutStyle } = useBackgroundStyle();
+  const { navigationStyle, layoutStyle } = useLayoutStyle();
 
   const handleCreateChat = async () => {
     if (tenantConfigInfo) {
@@ -185,9 +185,12 @@ const MenusLayout: React.FC<{
   // 计算导航宽度（基于导航风格）
   const firstMenuWidth = useMemo(() => {
     if (isMobile) {
-      return FIRST_MENU_WIDTH; // 移动端保持固定宽度
+      return NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1; // 移动端保持固定宽度
     }
-    const width = navigationStyle === 'style2' ? 88 : 60; // 风格2展开模式88px，风格1紧凑模式60px
+    const width =
+      navigationStyle === 'style2'
+        ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2
+        : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1; // 风格2展开模式88px，风格1紧凑模式60px
 
     // 开发环境下添加日志
     if (process.env.NODE_ENV === 'development') {
@@ -253,7 +256,9 @@ const MenusLayout: React.FC<{
       <div
         className={cx(styles['nav-menus'])}
         style={{
-          width: isSecondMenuCollapsed ? 0 : SECOND_MENU_WIDTH,
+          width: isSecondMenuCollapsed
+            ? 0
+            : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
           paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
           opacity: isSecondMenuCollapsed ? 0 : 1,
           backgroundColor: secondaryBackgroundColor,
@@ -262,7 +267,9 @@ const MenusLayout: React.FC<{
         {!isSecondMenuCollapsed && (
           <HoverScrollbar
             className={cx('h-full')}
-            bodyWidth={SECOND_MENU_WIDTH - token.padding * 2}
+            bodyWidth={
+              NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
+            }
             style={{
               width: '100%',
               padding: `${token.paddingSM} 0`,

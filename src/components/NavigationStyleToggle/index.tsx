@@ -1,4 +1,8 @@
-import { useBackgroundStyle } from '@/utils/backgroundStyle';
+import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import {
+  ThemeLayoutColorStyle,
+  ThemeNavigationStyleType,
+} from '@/types/enums/theme';
 import {
   AppstoreOutlined,
   HomeOutlined,
@@ -32,10 +36,12 @@ const NavigationStyleToggle: React.FC = () => {
     toggleNavigationStyle,
     layoutStyle,
     toggleLayoutStyle,
-  } = useBackgroundStyle();
+  } = useLayoutStyle();
 
   const handleNavigationModeChange = (checked: boolean) => {
-    const newMode = checked ? 'style2' : 'style1';
+    const newMode = checked
+      ? ThemeNavigationStyleType.STYLE2
+      : ThemeNavigationStyleType.STYLE1;
     setNavigationStyle(newMode);
   };
 
@@ -53,7 +59,7 @@ const NavigationStyleToggle: React.FC = () => {
             <Space>
               <Text>风格1（紧凑）</Text>
               <Switch
-                checked={navigationStyle === 'style2'}
+                checked={navigationStyle === ThemeNavigationStyleType.STYLE2}
                 onChange={handleNavigationModeChange}
                 size="small"
               />
@@ -61,7 +67,7 @@ const NavigationStyleToggle: React.FC = () => {
             </Space>
             <div className="style-description">
               <Text type="secondary">
-                {navigationStyle === 'style1'
+                {navigationStyle === ThemeNavigationStyleType.STYLE1
                   ? '紧凑模式：无文字导航，60px宽度，页面容器有外边距和圆角'
                   : '展开模式：有文字导航，88px宽度，页面容器无外边距和圆角，二级导航有背景色'}
               </Text>
@@ -76,7 +82,7 @@ const NavigationStyleToggle: React.FC = () => {
             <Space>
               <Text>浅色风格</Text>
               <Switch
-                checked={layoutStyle === 'dark'}
+                checked={layoutStyle === ThemeLayoutColorStyle.DARK}
                 onChange={handleColorStyleToggle}
                 size="small"
               />
@@ -84,7 +90,7 @@ const NavigationStyleToggle: React.FC = () => {
             </Space>
             <div className="style-description">
               <Text type="secondary">
-                {layoutStyle === 'light'
+                {layoutStyle === ThemeLayoutColorStyle.LIGHT
                   ? '浅色模式：黑色文字，白色背景（独立于Ant Design主题）'
                   : '深色模式：白色文字，深色背景（独立于Ant Design主题）'}
               </Text>
@@ -237,7 +243,7 @@ const NavigationStyleToggle: React.FC = () => {
           <div>
             <Title level={5}>React Hook使用（独立的布局风格系统）</Title>
             <pre className="code-block">
-              {`import { useBackgroundStyle } from '@/utils/backgroundStyle';
+              {`import { useLayoutStyle } from '@/hooks/useLayoutStyle';
 
 const MyComponent = () => {
   const { 
@@ -246,7 +252,7 @@ const MyComponent = () => {
     toggleNavigationStyle,
     layoutStyle, // 布局风格（非Ant Design主题）
     toggleLayoutStyle
-  } = useBackgroundStyle();
+  } = useLayoutStyle();
   
   return (
     <div className={\`nav-container nav-\${navigationStyle} xagi-layout-\${layoutStyle}\`}>
