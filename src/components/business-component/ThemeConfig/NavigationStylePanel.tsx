@@ -14,9 +14,11 @@ interface NavigationStyle {
 }
 
 interface NavigationStylePanelProps {
+  /** 当前导航栏是否为深色模式 */
   isNavigationDarkMode: boolean;
+  /** 导航栏深浅色切换回调 */
   onNavigationThemeToggle: () => void;
-  // 可选：如果需要外部获取当前选中的导航风格
+  /** 导航风格变更回调 */
   onNavigationStyleChange?: (styleId: string) => void;
 }
 

@@ -1,3 +1,6 @@
+import BackgroundImagePanel from '@/components/business-component/ThemeConfig/BackgroundImagePanel';
+import NavigationStylePanel from '@/components/business-component/ThemeConfig/NavigationStylePanel';
+import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
 import { backgroundConfigs } from '@/constants/theme.constants';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { useLayoutStyle } from '@/hooks/useLayoutStyle';
@@ -6,9 +9,6 @@ import { TenantThemeConfig } from '@/types/tenant';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import BackgroundImagePanel from './components/BackgroundImagePanel';
-import NavigationStylePanel from './components/NavigationStylePanel';
-import ThemeColorPanel from './components/ThemeColorPanel';
 import styles from './ThemeSwitchPanel.less';
 
 const cx = classNames.bind(styles);
@@ -128,6 +128,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = () => {
             <ThemeColorPanel
               currentColor={primaryColor}
               onColorChange={setPrimaryColor}
+              enableCustomColor={false}
             />
           </div>
           <div className={cx(styles.configItem)}>
@@ -142,6 +143,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = () => {
               backgroundImages={backgroundImages}
               currentBackground={backgroundImageId}
               onBackgroundChange={handleBackgroundChange}
+              enableCustomUpload={false}
             />
           </div>
         </div>

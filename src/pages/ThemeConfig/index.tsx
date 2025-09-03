@@ -1,3 +1,6 @@
+import BackgroundImagePanel from '@/components/business-component/ThemeConfig/BackgroundImagePanel';
+import NavigationStylePanel from '@/components/business-component/ThemeConfig/NavigationStylePanel';
+import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
 import { backgroundConfigs } from '@/constants/theme.constants';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { useLayoutStyle } from '@/hooks/useLayoutStyle';
@@ -5,9 +8,6 @@ import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { Button, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import BackgroundImagePanel from './components/BackgroundImagePanel';
-import NavigationStylePanel from './components/NavigationStylePanel';
-import ThemeColorPanel from './components/ThemeColorPanel';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

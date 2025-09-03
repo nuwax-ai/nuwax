@@ -9,13 +9,21 @@ import styles from './ThemeColorPanel.less';
 const cx = classNames.bind(styles);
 
 interface ThemeColorPanelProps {
+  /** 当前选中的主题色 */
   currentColor: string;
+  /** 主题色变更回调 */
   onColorChange: (color: string) => void;
+  /** 是否支持自定义颜色选择器，默认 true */
+  enableCustomColor?: boolean;
+  /** 自定义颜色选择器的默认值 */
+  customColorDefault?: string;
 }
 
 const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
   currentColor,
   onColorChange,
+  enableCustomColor = true,
+  customColorDefault = '#CBCED6',
 }) => {
   // 使用统一的主题色配置
   const presetColors = THEME_COLOR_CONFIGS;
@@ -28,7 +36,7 @@ const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
     onColorChange(color);
   };
 
-  const [customColor] = useState<string>('#CBCED6');
+  const [customColor] = useState<string>(customColorDefault);
 
   return (
     <div className={cx(styles.themeColorPanel)}>
@@ -69,39 +77,44 @@ const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
               </span>
             </div>
           ))}
-          {/* 自定义颜色选择器 */}
-          <div className={cx(styles.colorPreviewItemContainer)}>
-            <div
-              className={cx(styles.colorPreviewItem, styles.customColorSection)}
-              style={
-                {
-                  '--hover-border-color': customColor,
-                } as React.CSSProperties
-              }
-            >
-              <ColorPicker
-                value={customColor}
-                onChange={handleColorChange}
-                size="large"
-                format="hex"
-                className={cx(styles.customColorPicker)}
-                showText={() => (
-                  <SvgIcon
-                    name="icons-common-straw"
-                    className={cx(styles.customColorPickerIcon)}
-                  />
+          {/* 自定义颜色选择器 - 根据 enableCustomColor 决定是否显示 */}
+          {enableCustomColor && (
+            <div className={cx(styles.colorPreviewItemContainer)}>
+              <div
+                className={cx(
+                  styles.colorPreviewItem,
+                  styles.customColorSection,
                 )}
-              />
+                style={
+                  {
+                    '--hover-border-color': customColor,
+                  } as React.CSSProperties
+                }
+              >
+                <ColorPicker
+                  value={customColor}
+                  onChange={handleColorChange}
+                  size="large"
+                  format="hex"
+                  className={cx(styles.customColorPicker)}
+                  showText={() => (
+                    <SvgIcon
+                      name="icons-common-straw"
+                      className={cx(styles.customColorPickerIcon)}
+                    />
+                  )}
+                />
+              </div>
+              <span
+                className={cx(styles.colorPreviewItemText)}
+                style={{
+                  opacity: currentColor === customColor ? 1 : 0,
+                }}
+              >
+                自定义
+              </span>
             </div>
-            <span
-              className={cx(styles.colorPreviewItemText)}
-              style={{
-                opacity: currentColor === customColor ? 1 : 0,
-              }}
-            >
-              自定义
-            </span>
-          </div>
+          )}
         </div>
       </div>
     </div>
