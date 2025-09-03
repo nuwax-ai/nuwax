@@ -109,7 +109,10 @@ const ThemeConfig: React.FC = () => {
 
   // 切换导航栏深浅色（集成到布局风格管理，带背景自动匹配）
   const handleNavigationThemeToggle = () => {
-    const newLayoutStyle = layoutStyle;
+    const newLayoutStyle =
+      layoutStyle === ThemeLayoutColorStyle.DARK
+        ? ThemeLayoutColorStyle.LIGHT
+        : ThemeLayoutColorStyle.DARK;
     setLayoutStyle(newLayoutStyle);
     setIsNavigationDarkMode(newLayoutStyle === ThemeLayoutColorStyle.DARK);
 

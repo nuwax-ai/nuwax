@@ -1,4 +1,5 @@
 import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import styles from './NavigationStylePanel.less';
@@ -53,7 +54,7 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
 
   // 处理导航栏风格切换
   const handleNavigationStyleChange = (styleId: string) => {
-    const newStyleId = styleId as 'style1' | 'style2';
+    const newStyleId = styleId as ThemeNavigationStyleType;
     setCurrentNavigationStyle(styleId);
 
     // 更新全局导航风格状态
@@ -134,7 +135,7 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
               className={cx(styles.stylePreview, {
                 [styles.active]: !isNavigationDarkMode,
               })}
-              onClick={() => !isNavigationDarkMode || handleColorStyleToggle()}
+              onClick={() => isNavigationDarkMode && handleColorStyleToggle()}
             >
               <div className={cx(styles.navbarPreview, styles.lightNavbar)}>
                 <div className={cx(styles.navbarContent)}></div>
@@ -149,7 +150,7 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
               className={cx(styles.stylePreview, {
                 [styles.active]: isNavigationDarkMode,
               })}
-              onClick={() => isNavigationDarkMode || handleColorStyleToggle()}
+              onClick={() => !isNavigationDarkMode && handleColorStyleToggle()}
             >
               <div className={cx(styles.navbarPreview, styles.darkNavbar)}>
                 <div className={cx(styles.navbarContent)}></div>
