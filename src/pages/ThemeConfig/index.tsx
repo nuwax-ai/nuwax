@@ -1,7 +1,7 @@
 import BackgroundImagePanel from '@/components/business-component/ThemeConfig/BackgroundImagePanel';
 import NavigationStylePanel from '@/components/business-component/ThemeConfig/NavigationStylePanel';
 import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
-import { backgroundConfigs } from '@/constants/theme.constants';
+import { backgroundConfigs, STORAGE_KEYS } from '@/constants/theme.constants';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { useLayoutStyle } from '@/hooks/useLayoutStyle';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
@@ -9,6 +9,8 @@ import { Button, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
+
+// 使用统一的存储键名
 
 const cx = classNames.bind(styles);
 
@@ -44,10 +46,9 @@ const ThemeConfig: React.FC = () => {
   const getLayoutStyleByBackgroundId = (
     backgroundId: string,
   ): ThemeLayoutColorStyle => {
-    // 将背景服务ID格式转换为布局风格管理器ID格式
-    const layoutBackgroundId = backgroundId.replace('bg-', '');
+    // 直接使用背景ID查找配置（现在ID格式已统一）
     const backgroundConfig = backgroundConfigs.find(
-      (config) => config.id === layoutBackgroundId,
+      (config) => config.id === backgroundId,
     );
     return backgroundConfig?.layoutStyle || ThemeLayoutColorStyle.LIGHT;
   };
@@ -55,7 +56,7 @@ const ThemeConfig: React.FC = () => {
   // 从本地存储恢复配置
   useEffect(() => {
     try {
-      const savedConfig = localStorage.getItem('user-theme-config');
+      const savedConfig = localStorage.getItem(STORAGE_KEYS.USER_THEME_CONFIG);
       if (savedConfig) {
         const config = JSON.parse(savedConfig);
 
@@ -128,7 +129,7 @@ const ThemeConfig: React.FC = () => {
 
       if (matchingBackgroundId) {
         // 切换背景但不触发布局风格联动（避免循环）
-        setBackgroundImage(`bg-${matchingBackgroundId.id}`);
+        setBackgroundImage(matchingBackgroundId.id);
 
         // 显示背景自动匹配提示
         message.info(
@@ -154,7 +155,10 @@ const ThemeConfig: React.FC = () => {
         timestamp: Date.now(),
       };
 
-      localStorage.setItem('user-theme-config', JSON.stringify(themeConfig));
+      localStorage.setItem(
+        STORAGE_KEYS.USER_THEME_CONFIG,
+        JSON.stringify(themeConfig),
+      );
       message.success('主题配置保存成功');
 
       console.log('保存的配置:', themeConfig);

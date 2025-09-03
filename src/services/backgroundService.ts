@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from '@/constants/theme.constants';
 import { BackgroundImage } from '@/types/background';
 import { layoutStyleManager } from '@/utils/backgroundStyle';
 
@@ -424,7 +425,10 @@ class BackgroundService {
    */
   private saveToStorage(): void {
     try {
-      localStorage.setItem('xagi-background-id', this.currentBackgroundId);
+      localStorage.setItem(
+        STORAGE_KEYS.BACKGROUND_ID,
+        this.currentBackgroundId,
+      );
     } catch (error) {
       console.error('Failed to save background to localStorage:', error);
     }
@@ -435,7 +439,7 @@ class BackgroundService {
    */
   private restoreFromStorage(): void {
     try {
-      const saved = localStorage.getItem('xagi-background-id');
+      const saved = localStorage.getItem(STORAGE_KEYS.BACKGROUND_ID);
       if (saved && this.backgroundImages.some((bg) => bg.id === saved)) {
         this.currentBackgroundId = saved;
       }

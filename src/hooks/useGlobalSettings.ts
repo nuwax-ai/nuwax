@@ -1,3 +1,4 @@
+import { STORAGE_KEYS } from '@/constants/theme.constants';
 import backgroundService from '@/services/backgroundService';
 import { BackgroundImage } from '@/types/background';
 import { theme as antdTheme } from 'antd';
@@ -25,7 +26,8 @@ export interface GlobalSettings {
 }
 
 // 本地存储的键名
-export const SETTINGS_STORAGE_KEY = 'xagi-global-settings';
+// 使用统一的存储键名
+export const SETTINGS_STORAGE_KEY = STORAGE_KEYS.GLOBAL_SETTINGS;
 
 // 背景图片列表（从全局服务获取）
 export const getBackgroundImages = () =>

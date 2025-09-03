@@ -51,10 +51,9 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   const getLayoutStyleByBackgroundId = (
     backgroundId: string,
   ): ThemeLayoutColorStyle => {
-    // 将背景服务ID格式转换为布局风格管理器ID格式
-    const layoutBackgroundId = backgroundId.replace('bg-', '');
+    // 直接使用背景ID查找配置（现在ID格式已统一）
     const backgroundConfig = backgroundConfigs.find(
-      (config) => config.id === layoutBackgroundId,
+      (config) => config.id === backgroundId,
     );
     return backgroundConfig?.layoutStyle || ThemeLayoutColorStyle.LIGHT;
   };
@@ -108,7 +107,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
 
       if (matchingBackgroundId) {
         // 切换背景但不触发布局风格联动（避免循环）
-        setBackgroundImage(`bg-${matchingBackgroundId.id}`);
+        setBackgroundImage(matchingBackgroundId.id);
 
         // 显示背景自动匹配提示
         message.info(

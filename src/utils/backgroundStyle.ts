@@ -1,4 +1,8 @@
-import { STYLE_CONFIGS, backgroundConfigs } from '@/constants/theme.constants';
+import {
+  backgroundConfigs,
+  STORAGE_KEYS,
+  STYLE_CONFIGS,
+} from '@/constants/theme.constants';
 import {
   ThemeLayoutColorStyle,
   ThemeNavigationStyleType,
@@ -293,7 +297,7 @@ export class LayoutStyleManager {
       layoutStyle: this.currentLayoutStyle,
       navigationStyle: this.currentNavStyle,
     };
-    localStorage.setItem('xagi-layout-style', JSON.stringify(data));
+    localStorage.setItem(STORAGE_KEYS.LAYOUT_STYLE, JSON.stringify(data));
   }
 
   /**
@@ -301,7 +305,7 @@ export class LayoutStyleManager {
    */
   private loadFromStorage(): void {
     try {
-      const stored = localStorage.getItem('xagi-layout-style');
+      const stored = localStorage.getItem(STORAGE_KEYS.LAYOUT_STYLE);
       if (stored) {
         const data = JSON.parse(stored);
 

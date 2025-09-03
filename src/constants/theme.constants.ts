@@ -27,61 +27,91 @@ export const THEME_COLOR_CONFIGS = [
 ] as const;
 
 /**
+ * 本地存储键名配置
+ * 统一管理所有存储键名，确保各模块间的一致性
+ */
+export const STORAGE_KEYS = {
+  LAYOUT_STYLE: 'xagi-layout-style', // 布局样式配置
+  BACKGROUND_ID: 'xagi-background-id', // 背景图片ID
+  GLOBAL_SETTINGS: 'xagi-global-settings', // 全局设置
+  USER_THEME_CONFIG: 'xagi-user-theme-config', // 用户主题配置
+  TENANT_CONFIG_INFO: 'TENANT_CONFIG_INFO', // 租户配置信息
+  AUTH_TYPE: 'AUTH_TYPE', // 认证类型
+  ACCESS_TOKEN: 'ACCESS_TOKEN', // 访问令牌
+  USER_INFO: 'USER_INFO', // 用户信息
+  SPACE_ID: 'SPACE_ID', // 空间ID
+  SPACE_URL: 'SPACE_URL', // 空间URL
+} as const;
+
+/**
+ * 默认主题配置
+ * 统一管理所有默认值，确保各模块间的一致性
+ */
+export const DEFAULT_THEME_CONFIG = {
+  PRIMARY_COLOR: '#5147ff',
+  BACKGROUND_ID: 'bg-variant-1',
+  NAVIGATION_STYLE: 'style1',
+  LAYOUT_STYLE: 'light',
+  THEME: 'light',
+  LANGUAGE: 'zh-CN',
+} as const;
+
+/**
  * 预定义的背景配置
  * 根据背景图的明暗程度来确定适合的布局风格
  */
 export const THEME_BACKGROUND_CONFIGS: ThemeBackgroundConfig[] = [
   {
-    id: 'variant-1',
+    id: 'bg-variant-1',
     name: '星空夜景',
     url: '/bg/bg-variant-1.png',
     layoutStyle: ThemeLayoutColorStyle.LIGHT,
     description: '深色背景，适合深色布局风格',
   },
   {
-    id: 'variant-2',
+    id: 'bg-variant-2',
     name: '云朵白天',
     url: '/bg/bg-variant-2.png',
     layoutStyle: ThemeLayoutColorStyle.LIGHT,
     description: '浅色背景，适合浅色布局风格',
   },
   {
-    id: 'variant-3',
+    id: 'bg-variant-3',
     name: '森林晨光',
     url: '/bg/bg-variant-3.png',
     layoutStyle: ThemeLayoutColorStyle.DARK,
     description: '明亮背景，适合浅色布局风格',
   },
   {
-    id: 'variant-4',
+    id: 'bg-variant-4',
     name: '深海夜色',
     url: '/bg/bg-variant-4.png',
     layoutStyle: ThemeLayoutColorStyle.DARK,
     description: '深色背景，适合深色布局风格',
   },
   {
-    id: 'variant-5',
+    id: 'bg-variant-5',
     name: '梦幻紫色',
     url: '/bg/bg-variant-5.png',
     layoutStyle: ThemeLayoutColorStyle.LIGHT,
     description: '深色调背景，适合深色布局风格',
   },
   {
-    id: 'variant-6',
+    id: 'bg-variant-6',
     name: '温暖阳光',
     url: '/bg/bg-variant-6.png',
     layoutStyle: ThemeLayoutColorStyle.DARK,
     description: '温暖色调，适合浅色布局风格',
   },
   {
-    id: 'variant-7',
+    id: 'bg-variant-7',
     name: '夜晚都市',
     url: '/bg/bg-variant-7.png',
     layoutStyle: ThemeLayoutColorStyle.DARK,
     description: '都市夜景，适合深色布局风格',
   },
   {
-    id: 'variant-8',
+    id: 'bg-variant-8',
     name: '清新蓝天',
     url: '/bg/bg-variant-8.png',
     layoutStyle: ThemeLayoutColorStyle.LIGHT,
