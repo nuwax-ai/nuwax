@@ -40,9 +40,18 @@
     //     color: @navSecondMenuText;
     //   }
     // }
+
     // 风格2下的二级导航背景适配
     .xagi-nav-style2 & {
       background: var(--xagi-color-bg-container);
+    }
+  }
+}
+// 风格1下的二级导航样式适配
+:global(.xagi-nav-style1) {
+  .container {
+    .nav-menus {
+      border-radius: 0 !important; // 风格1时移除所有圆角，使用!important确保优先级
     }
   }
 }

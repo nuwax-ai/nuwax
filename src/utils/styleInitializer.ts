@@ -27,7 +27,7 @@ export class StyleInitializer {
         !forceDefault && localStorage.getItem(STORAGE_KEYS.LAYOUT_STYLE);
       if (!hasStyleConfig) {
         // 使用默认配置
-        this.applyDefaultStyleWithFallback(context);
+        StyleInitializer.applyDefaultStyleWithFallback(context);
       } else {
         // 如果有保存的配置，重新应用以确保 CSS 变量被正确设置
         try {
@@ -43,7 +43,7 @@ export class StyleInitializer {
             `${context}：应用已保存的样式配置失败，回退到默认配置:`,
             configError,
           );
-          this.applyDefaultStyleWithFallback(context);
+          StyleInitializer.applyDefaultStyleWithFallback(context);
         }
       }
 
@@ -54,7 +54,7 @@ export class StyleInitializer {
         error,
       );
       // 最终兜底方案
-      this.applyDefaultStyleWithFallback(context);
+      StyleInitializer.applyDefaultStyleWithFallback(context);
     }
   }
 
