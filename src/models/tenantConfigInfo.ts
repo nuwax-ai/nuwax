@@ -1,6 +1,7 @@
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import { apiTenantConfig } from '@/services/account';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
+import { layoutStyleManager } from '@/utils/backgroundStyle';
 import {
   initializeLayoutStyle,
   initializeWithFallback,
@@ -37,6 +38,21 @@ export default () => {
         // 获取head元素并添加link元素
         const head = document.head || document.getElementsByTagName('head')[0];
         head.appendChild(link);
+      }
+
+      // 租户信息保存到localStorage后，重新初始化布局样式管理器
+      // 让它重新读取包含templateConfig的租户配置
+      console.log('租户配置保存完成，重新初始化布局样式管理器');
+      layoutStyleManager.loadFromStorage();
+
+      // 额外同步主题颜色，确保及时生效
+      if (result.templateConfig) {
+        try {
+          const themeConfig = JSON.parse(result.templateConfig);
+          layoutStyleManager.syncThemeColorToGlobalSettings(themeConfig);
+        } catch (error) {
+          console.warn('同步租户主题颜色失败:', error);
+        }
       }
 
       // 租户信息初始化完成后，立即初始化 layout navigation 相关的 CSS 变量

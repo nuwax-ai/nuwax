@@ -215,6 +215,9 @@ export interface TenantConfigInfo {
   /* */
   authExpire: number;
 
+  /** 主题模板配置（JSON字符串） */
+  templateConfig?: string;
+
   /* */
   openCaptcha: number;
 

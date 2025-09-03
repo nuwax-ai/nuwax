@@ -1,14 +1,16 @@
 import BackgroundImagePanel from '@/components/business-component/ThemeConfig/BackgroundImagePanel';
 import NavigationStylePanel from '@/components/business-component/ThemeConfig/NavigationStylePanel';
 import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
-import { backgroundConfigs } from '@/constants/theme.constants';
+import { backgroundConfigs, STORAGE_KEYS } from '@/constants/theme.constants';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { useLayoutStyle } from '@/hooks/useLayoutStyle';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
+import { ThemeConfigData } from '@/types/interfaces/systemManage';
 import { TenantThemeConfig } from '@/types/tenant';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 import styles from './ThemeSwitchPanel.less';
 
 const cx = classNames.bind(styles);
@@ -32,10 +34,14 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     backgroundImages,
     backgroundImageId,
     setBackgroundImage,
+    isDarkMode,
   } = useGlobalSettings();
 
   // 集成导航风格管理
-  const { layoutStyle, setLayoutStyle } = useLayoutStyle();
+  const { navigationStyle, layoutStyle, setLayoutStyle } = useLayoutStyle();
+
+  // 获取租户配置信息（暂未使用，保留以备后续扩展）
+  const { tenantConfigInfo } = useModel('tenantConfigInfo'); // eslint-disable-line @typescript-eslint/no-unused-vars
 
   // 导航栏深浅色状态管理（独立于Ant Design主题）
   const [isNavigationDarkMode, setIsNavigationDarkMode] = useState<boolean>(
@@ -58,12 +64,45 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     return backgroundConfig?.layoutStyle || ThemeLayoutColorStyle.LIGHT;
   };
 
+  // 更新本地主题缓存（不保存到后端）
+  const updateLocalThemeCache = () => {
+    try {
+      const themeConfig: ThemeConfigData = {
+        selectedThemeColor: primaryColor,
+        selectedBackgroundId: backgroundImageId,
+        antdTheme: isDarkMode
+          ? ThemeLayoutColorStyle.DARK
+          : ThemeLayoutColorStyle.LIGHT,
+        navigationStyle: layoutStyle,
+        navigationStyleId: navigationStyle,
+        timestamp: Date.now(),
+      };
+
+      // 只保存到本地存储作为缓存，不提交后端
+      localStorage.setItem(
+        STORAGE_KEYS.USER_THEME_CONFIG,
+        JSON.stringify(themeConfig),
+      );
+
+      console.log('主题切换面板更新本地缓存:', themeConfig);
+    } catch (error) {
+      console.error('Update local theme cache error:', error);
+    }
+  };
+
   // 处理导航风格变更
   const handleNavigationStyleChange = (styleId: string) => {
     console.log('主题切换面板收到导航风格变更:', styleId);
   };
 
-  // 背景图片切换处理（带联动逻辑）
+  // 处理主题色变更（仅本地缓存）
+  const handleColorChange = (color: string) => {
+    setPrimaryColor(color);
+    // 更新本地缓存
+    updateLocalThemeCache();
+  };
+
+  // 背景图片切换处理（带联动逻辑，仅本地缓存）
   const handleBackgroundChange = (backgroundId: string) => {
     // 设置背景图片
     setBackgroundImage(backgroundId);
@@ -84,9 +123,12 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
         }导航栏`,
       );
     }
+
+    // 更新本地缓存
+    setTimeout(updateLocalThemeCache, 100);
   };
 
-  // 切换导航栏深浅色（集成到布局风格管理，带背景自动匹配）
+  // 切换导航栏深浅色（集成到布局风格管理，带背景自动匹配，仅本地缓存）
   const handleNavigationThemeToggle = () => {
     const newLayoutStyle =
       layoutStyle === ThemeLayoutColorStyle.DARK
@@ -117,6 +159,9 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
         );
       }
     }
+
+    // 延迟更新本地缓存，等待状态更新完成
+    setTimeout(updateLocalThemeCache, 100);
   };
 
   return (
@@ -128,7 +173,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
           <div className={cx(styles.configItem)}>
             <ThemeColorPanel
               currentColor={primaryColor}
-              onColorChange={setPrimaryColor}
+              onColorChange={handleColorChange}
               enableCustomColor={false}
             />
           </div>

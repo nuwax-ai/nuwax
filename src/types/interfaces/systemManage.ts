@@ -302,6 +302,26 @@ export interface TenantConfigDto {
   homeRecommendQuestions?: string[];
   /** 站点域名列表 */
   domainNames?: string[];
+  /** 主题模板配置（JSON字符串） */
+  templateConfig?: string;
+}
+
+/**
+ * 主题配置数据结构
+ */
+export interface ThemeConfigData {
+  /** 主题色 */
+  selectedThemeColor: string;
+  /** 背景图片ID */
+  selectedBackgroundId: string;
+  /** Ant Design主题（浅色/深色） */
+  antdTheme: 'light' | 'dark';
+  /** 导航栏风格（浅色/深色） */
+  navigationStyle: 'light' | 'dark';
+  /** 导航风格ID（style1/style2） */
+  navigationStyleId: string;
+  /** 时间戳 */
+  timestamp: number;
 }
 
 // 发送通知消息输入参数

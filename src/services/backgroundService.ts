@@ -8,7 +8,7 @@ import { layoutStyleManager } from '@/utils/backgroundStyle';
  */
 class BackgroundService {
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
-  private currentBackgroundId: string = 'bg-variant-1';
+  private currentBackgroundId: string = '';
 
   // 背景图片列表定义
   private backgroundImages: BackgroundImage[] = [

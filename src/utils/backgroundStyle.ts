@@ -301,18 +301,136 @@ export class LayoutStyleManager {
   }
 
   /**
+   * 同步主题颜色到全局设置
+   * @param themeConfig 主题配置数据
+   */
+  public syncThemeColorToGlobalSettings(themeConfig: any): void {
+    if (!themeConfig?.selectedThemeColor) return;
+
+    try {
+      // 获取当前全局设置
+      const { STORAGE_KEYS } = require('@/constants/theme.constants');
+      const currentSettingsStr = localStorage.getItem(
+        STORAGE_KEYS.GLOBAL_SETTINGS,
+      );
+      let currentSettings = currentSettingsStr
+        ? JSON.parse(currentSettingsStr)
+        : {};
+
+      // 更新主题颜色
+      const newSettings = {
+        ...currentSettings,
+        primaryColor: themeConfig.selectedThemeColor,
+      };
+
+      // 保存到本地存储
+      localStorage.setItem(
+        STORAGE_KEYS.GLOBAL_SETTINGS,
+        JSON.stringify(newSettings),
+      );
+
+      // 触发全局设置变更事件
+      const event = new CustomEvent('xagi-global-settings-changed', {
+        detail: newSettings,
+      });
+      window.dispatchEvent(event);
+
+      console.log('已同步主题颜色到全局设置:', themeConfig.selectedThemeColor);
+    } catch (error) {
+      console.warn('同步主题颜色到全局设置失败:', error);
+    }
+  }
+
+  /**
+   * 获取主题配置数据（按优先级）
+   * @returns 主题配置数据或null
+   */
+  public getThemeConfigData(): any {
+    try {
+      let themeData: any = null;
+
+      // 1. 优先从租户配置中获取主题配置
+      const tenantConfigString = localStorage.getItem('TENANT_CONFIG_INFO');
+      if (tenantConfigString) {
+        try {
+          const tenantConfig = JSON.parse(tenantConfigString);
+          if (tenantConfig.templateConfig) {
+            const templateConfig = JSON.parse(tenantConfig.templateConfig);
+            console.log('从租户配置加载主题配置:', templateConfig);
+            return templateConfig; // 直接返回原始格式的主题配置
+          }
+        } catch (error) {
+          console.warn('解析租户主题配置失败:', error);
+        }
+      }
+
+      // 2. 如果租户配置中没有，则从用户主题配置本地存储获取
+      if (!themeData) {
+        const userThemeConfig = localStorage.getItem(
+          STORAGE_KEYS.USER_THEME_CONFIG,
+        );
+        if (userThemeConfig) {
+          const templateConfig = JSON.parse(userThemeConfig);
+          console.log('从用户主题配置本地存储加载配置:', templateConfig);
+          return templateConfig; // 直接返回原始格式的主题配置
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.warn('Failed to get theme config data:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 从主题配置数据转换为布局样式数据
+   * @param themeConfig 主题配置数据
+   */
+  private convertThemeConfigToLayoutData(themeConfig: any): any {
+    return {
+      backgroundId: themeConfig.selectedBackgroundId,
+      layoutStyle:
+        themeConfig.navigationStyle === 'dark'
+          ? ThemeLayoutColorStyle.DARK
+          : ThemeLayoutColorStyle.LIGHT,
+      navigationStyle:
+        themeConfig.navigationStyleId === 'style2'
+          ? ThemeNavigationStyleType.STYLE2
+          : ThemeNavigationStyleType.STYLE1,
+    };
+  }
+
+  /**
    * 从本地存储加载
    */
-  private loadFromStorage(): void {
+  public loadFromStorage(): void {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.LAYOUT_STYLE);
-      if (stored) {
-        const data = JSON.parse(stored);
+      let themeData: any = null;
 
+      // 1. 尝试获取主题配置数据
+      const themeConfig = this.getThemeConfigData();
+      if (themeConfig) {
+        themeData = this.convertThemeConfigToLayoutData(themeConfig);
+        // 同步主题颜色到全局设置
+        this.syncThemeColorToGlobalSettings(themeConfig);
+      }
+
+      // 2. 如果没有主题配置，则从布局样式本地存储获取
+      if (!themeData) {
+        const stored = localStorage.getItem(STORAGE_KEYS.LAYOUT_STYLE);
+        if (stored) {
+          themeData = JSON.parse(stored);
+          console.log('从布局样式本地存储加载配置:', themeData);
+        }
+      }
+
+      // 3. 应用加载的配置或使用默认值
+      if (themeData) {
         // 加载背景配置
-        if (data.backgroundId) {
+        if (themeData.backgroundId) {
           const config = backgroundConfigs.find(
-            (bg) => bg.id === data.backgroundId,
+            (bg) => bg.id === themeData.backgroundId,
           );
           if (config) {
             this.currentBackground = config;
@@ -321,20 +439,26 @@ export class LayoutStyleManager {
         }
 
         // 加载布局风格
-        if (data.layoutStyle) {
-          this.currentLayoutStyle = data.layoutStyle;
+        if (themeData.layoutStyle) {
+          this.currentLayoutStyle = themeData.layoutStyle;
         }
 
         // 加载导航风格
-        if (data.navigationStyle) {
-          this.currentNavStyle = data.navigationStyle;
+        if (themeData.navigationStyle) {
+          this.currentNavStyle = themeData.navigationStyle;
         }
 
         // 应用完整的样式配置
         this.applyStyleConfig();
+      } else {
+        console.log('没有找到主题配置，使用默认设置');
+        // 使用默认配置
+        this.applyStyleConfig();
       }
     } catch (error) {
       console.warn('Failed to load layout style from storage:', error);
+      // 出错时使用默认配置
+      this.applyStyleConfig();
     }
   }
 }
