@@ -3,7 +3,7 @@ import { getTenantThemeConfig } from '@/services/tenant';
 import { SettingActionEnum } from '@/types/enums/menus';
 import { TenantThemeConfig } from '@/types/tenant';
 import { CloseOutlined } from '@ant-design/icons';
-import { Modal } from 'antd';
+import { Button, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
@@ -99,13 +99,15 @@ const Setting: React.FC = () => {
               ))}
             </ul>
           </div>
+          <Button
+            type="text"
+            className={cx(styles.close, 'cursor-pointer')}
+            icon={<CloseOutlined />}
+            onClick={() => setOpenSetting(false)}
+          />
           <div className={cx('flex-1', styles.right)}>
             <Content />
           </div>
-          <CloseOutlined
-            className={cx(styles.close, 'cursor-pointer')}
-            onClick={() => setOpenSetting(false)}
-          />
         </div>
       )}
     ></Modal>

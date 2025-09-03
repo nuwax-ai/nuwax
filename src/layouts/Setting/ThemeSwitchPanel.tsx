@@ -23,7 +23,9 @@ interface ThemeSwitchPanelProps {
  * 提供主题色、导航栏风格和背景图片的切换功能
  * 与ThemeConfig页面UI一致，但不支持自定义功能
  */
-const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = () => {
+const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
+  tenantThemeConfig, // eslint-disable-line @typescript-eslint/no-unused-vars
+}) => {
   const {
     primaryColor,
     setPrimaryColor,

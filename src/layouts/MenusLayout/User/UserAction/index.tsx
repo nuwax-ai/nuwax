@@ -23,7 +23,6 @@ const UserActionItem: React.FC<UserActionItemType> = ({
         'items-center',
         'hover-box',
         'cursor-pointer',
-        'px-16',
         className,
       )}
       onClick={() => onClick(type)}
