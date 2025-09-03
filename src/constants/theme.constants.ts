@@ -49,7 +49,7 @@ export const STORAGE_KEYS = {
  */
 export const DEFAULT_THEME_CONFIG = {
   PRIMARY_COLOR: '#5147ff',
-  BACKGROUND_ID: 'bg-variant-1',
+  BACKGROUND_ID: '',
   NAVIGATION_STYLE: 'style1',
   LAYOUT_STYLE: 'light',
   THEME: 'light',
