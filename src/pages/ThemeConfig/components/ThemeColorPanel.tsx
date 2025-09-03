@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { THEME_COLOR_CONFIGS } from '@/constants/theme.constants';
 import { ColorPicker } from 'antd';
 import { Color } from 'antd/es/color-picker';
 import classNames from 'classnames';
@@ -16,15 +17,8 @@ const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
   currentColor,
   onColorChange,
 }) => {
-  // 预设主题色 - 根据图片中的颜色调整
-  const presetColors = [
-    { color: '#5147ff', name: '蓝色' },
-    { color: '#ff4d4f', name: '红色' },
-    { color: '#fa8c16', name: '橙色' },
-    { color: '#52c41a', name: '绿色' },
-    { color: '#722ed1', name: '紫色' },
-    { color: '#eb2f96', name: '粉色' },
-  ];
+  // 使用统一的主题色配置
+  const presetColors = THEME_COLOR_CONFIGS;
 
   const handleColorChange = (color: Color, hex: string) => {
     onColorChange(hex);

@@ -1,4 +1,7 @@
-import { THEME_BACKGROUND_CONFIGS } from '@/constants/theme.constants';
+import {
+  THEME_BACKGROUND_CONFIGS,
+  THEME_COLOR_CONFIGS,
+} from '@/constants/theme.constants';
 import { TenantInfo, TenantThemeConfig } from '@/types/tenant';
 
 /**
@@ -17,14 +20,7 @@ export const getTenantInfo = async (): Promise<TenantInfo> => {
         id: 'tenant-001',
         name: '示例租户',
         themeConfig: {
-          themeColors: [
-            { color: '#5147ff', name: '蓝色', isDefault: true },
-            { color: '#ff4d4f', name: '红色' },
-            { color: '#fa8c16', name: '橙色' },
-            { color: '#52c41a', name: '绿色' },
-            { color: '#722ed1', name: '紫色' },
-            { color: '#eb2f96', name: '粉色' },
-          ],
+          themeColors: [...THEME_COLOR_CONFIGS],
           backgroundImages: THEME_BACKGROUND_CONFIGS.map((config) => ({
             id: `bg-${config.id}`,
             name: config.name,

@@ -14,6 +14,19 @@ import type { ThemeConfig } from 'antd/es/config-provider';
 import type { AliasToken, ComponentTokenMap } from 'antd/es/theme/interface';
 
 /**
+ * 预设主题色配置
+ * 定义可选择的主题色选项
+ */
+export const THEME_COLOR_CONFIGS = [
+  { color: '#5147ff', name: '蓝色', isDefault: true },
+  { color: '#ff4d4f', name: '红色' },
+  { color: '#fa8c16', name: '橙色' },
+  { color: '#52c41a', name: '绿色' },
+  { color: '#722ed1', name: '紫色' },
+  { color: '#eb2f96', name: '粉色' },
+] as const;
+
+/**
  * 预定义的背景配置
  * 根据背景图的明暗程度来确定适合的布局风格
  */
