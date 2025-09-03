@@ -42,8 +42,10 @@ const ThemeConfig: React.FC = () => {
   const getLayoutStyleByBackgroundId = (
     backgroundId: string,
   ): 'light' | 'dark' => {
+    // 将背景服务ID格式转换为布局风格管理器ID格式
+    const layoutBackgroundId = backgroundId.replace('bg-', '');
     const backgroundConfig = backgroundConfigs.find(
-      (config) => config.id === backgroundId,
+      (config) => config.id === layoutBackgroundId,
     );
     return backgroundConfig?.layoutStyle || 'light';
   };
@@ -106,11 +108,34 @@ const ThemeConfig: React.FC = () => {
     }
   };
 
-  // 切换导航栏深浅色（集成到布局风格管理）
+  // 切换导航栏深浅色（集成到布局风格管理，带背景自动匹配）
   const handleNavigationThemeToggle = () => {
     const newLayoutStyle = layoutStyle === 'light' ? 'dark' : 'light';
     setLayoutStyle(newLayoutStyle);
     setIsNavigationDarkMode(newLayoutStyle === 'dark');
+
+    // 检查当前背景是否与新的导航栏深浅色匹配
+    const currentBackgroundLayoutStyle =
+      getLayoutStyleByBackgroundId(backgroundImageId);
+
+    if (currentBackgroundLayoutStyle !== newLayoutStyle) {
+      // 当前背景不匹配，自动切换到匹配的背景
+      const matchingBackgroundId = backgroundConfigs.find(
+        (config) => config.layoutStyle === newLayoutStyle,
+      );
+
+      if (matchingBackgroundId) {
+        // 切换背景但不触发布局风格联动（避免循环）
+        setBackgroundImage(`bg-${matchingBackgroundId.id}`);
+
+        // 显示背景自动匹配提示
+        message.info(
+          `已自动切换为${matchingBackgroundId.name}以匹配${
+            newLayoutStyle === 'dark' ? '深色' : '浅色'
+          }导航栏`,
+        );
+      }
+    }
   };
 
   // 保存配置到本地存储

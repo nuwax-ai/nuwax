@@ -1,4 +1,5 @@
 import { BackgroundImage } from '@/types/background';
+import { layoutStyleManager } from '@/utils/backgroundStyle';
 
 /**
  * 背景图片管理服务
@@ -97,8 +98,12 @@ class BackgroundService {
   /**
    * 设置背景图片
    * @param backgroundId 背景图片ID
+   * @param enableAutoLayoutStyle 是否自动联动切换导航栏深浅色，默认为true
    */
-  setBackground(backgroundId: string): void {
+  setBackground(
+    backgroundId: string,
+    enableAutoLayoutStyle: boolean = true,
+  ): void {
     if (this.currentBackgroundId === backgroundId) {
       return;
     }
@@ -116,6 +121,11 @@ class BackgroundService {
 
     // 立即更新CSS变量，无需页面重新加载
     this.updateCSSVariable(background);
+
+    // 自动联动切换导航栏深浅色
+    if (enableAutoLayoutStyle) {
+      this.syncLayoutStyleWithBackground(backgroundId);
+    }
 
     this.notifyListeners('backgroundChanged', background);
   }
@@ -251,6 +261,114 @@ class BackgroundService {
     );
     const nextIndex = (currentIndex + 1) % this.backgroundImages.length;
     this.setBackground(this.backgroundImages[nextIndex].id);
+  }
+
+  /**
+   * 根据背景图片自动同步布局风格（导航栏深浅色）
+   * @param backgroundId 背景图片ID
+   */
+  private syncLayoutStyleWithBackground(backgroundId: string): void {
+    try {
+      // 将背景ID转换为布局风格管理器中的ID格式
+      const layoutBackgroundId = backgroundId.replace('bg-', '');
+
+      // 使用布局风格管理器设置背景，这会自动应用对应的布局风格
+      layoutStyleManager.setBackground(layoutBackgroundId);
+
+      console.log(`背景切换联动：${backgroundId} -> 自动切换导航栏深浅色`);
+    } catch (error) {
+      console.warn('背景切换联动失败:', error);
+    }
+  }
+
+  /**
+   * 根据布局风格查找匹配的背景图片
+   * @param layoutStyle 布局风格 ('light' | 'dark')
+   * @returns 匹配的背景图片ID，如果没有找到则返回null
+   */
+  findMatchingBackgroundByLayoutStyle(
+    layoutStyle: 'light' | 'dark',
+  ): string | null {
+    try {
+      // 获取所有背景配置
+      const allBackgrounds = layoutStyleManager.getAllBackgrounds();
+
+      // 查找匹配布局风格的第一个背景
+      const matchingBackground = allBackgrounds.find(
+        (bg) => bg.layoutStyle === layoutStyle,
+      );
+
+      if (matchingBackground) {
+        // 将布局风格管理器ID格式转换为背景服务ID格式
+        return `bg-${matchingBackground.id}`;
+      }
+
+      return null;
+    } catch (error) {
+      console.warn('查找匹配背景失败:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 检查当前背景是否与指定布局风格匹配
+   * @param layoutStyle 布局风格 ('light' | 'dark')
+   * @returns 是否匹配
+   */
+  isCurrentBackgroundMatchingLayoutStyle(
+    layoutStyle: 'light' | 'dark',
+  ): boolean {
+    try {
+      // 将当前背景ID转换为布局风格管理器中的ID格式
+      const layoutBackgroundId = this.currentBackgroundId.replace('bg-', '');
+
+      // 获取所有背景配置
+      const allBackgrounds = layoutStyleManager.getAllBackgrounds();
+
+      // 查找当前背景的配置
+      const currentBackgroundConfig = allBackgrounds.find(
+        (bg) => bg.id === layoutBackgroundId,
+      );
+
+      return currentBackgroundConfig?.layoutStyle === layoutStyle;
+    } catch (error) {
+      console.warn('检查背景匹配失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 根据布局风格自动切换匹配的背景图片
+   * @param layoutStyle 布局风格 ('light' | 'dark')
+   * @returns 是否成功切换了背景
+   */
+  autoSwitchBackgroundByLayoutStyle(layoutStyle: 'light' | 'dark'): boolean {
+    try {
+      // 检查当前背景是否已经匹配
+      if (this.isCurrentBackgroundMatchingLayoutStyle(layoutStyle)) {
+        console.log(`当前背景已匹配布局风格: ${layoutStyle}`);
+        return false;
+      }
+
+      // 查找匹配的背景
+      const matchingBackgroundId =
+        this.findMatchingBackgroundByLayoutStyle(layoutStyle);
+
+      if (matchingBackgroundId) {
+        // 切换背景但不触发布局风格联动（避免循环）
+        this.setBackground(matchingBackgroundId, false);
+        console.log(
+          `自动切换背景: ${matchingBackgroundId} 以匹配布局风格: ${layoutStyle}`,
+        );
+        return true;
+      } else {
+        console.warn(`未找到匹配布局风格 ${layoutStyle} 的背景图片`);
+        return false;
+      }
+    } catch (error) {
+      console.warn('自动切换背景失败:', error);
+      return false;
+    }
   }
 
   /**

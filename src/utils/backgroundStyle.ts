@@ -37,7 +37,7 @@ export const backgroundConfigs: BackgroundConfig[] = [
     id: 'variant-1',
     name: '星空夜景',
     url: '/bg/bg-variant-1.png',
-    layoutStyle: 'dark',
+    layoutStyle: 'light',
     description: '深色背景，适合深色布局风格',
   },
   {
@@ -51,7 +51,7 @@ export const backgroundConfigs: BackgroundConfig[] = [
     id: 'variant-3',
     name: '森林晨光',
     url: '/bg/bg-variant-3.png',
-    layoutStyle: 'light',
+    layoutStyle: 'dark',
     description: '明亮背景，适合浅色布局风格',
   },
   {
@@ -65,14 +65,14 @@ export const backgroundConfigs: BackgroundConfig[] = [
     id: 'variant-5',
     name: '梦幻紫色',
     url: '/bg/bg-variant-5.png',
-    layoutStyle: 'dark',
+    layoutStyle: 'light',
     description: '深色调背景，适合深色布局风格',
   },
   {
     id: 'variant-6',
     name: '温暖阳光',
     url: '/bg/bg-variant-6.png',
-    layoutStyle: 'light',
+    layoutStyle: 'dark',
     description: '温暖色调，适合浅色布局风格',
   },
   {
