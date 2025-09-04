@@ -1,4 +1,3 @@
-import { STORAGE_KEYS } from '@/constants/theme.constants';
 import { BackgroundImage } from '@/types/background';
 import { layoutStyleManager } from '@/utils/backgroundStyle';
 
@@ -63,8 +62,8 @@ class BackgroundService {
   ];
 
   constructor() {
-    // 从本地存储恢复背景设置
-    this.restoreFromStorage();
+    // // 从本地存储恢复背景设置
+    // this.restoreFromStorage();
 
     // 初始化时设置CSS变量
     const currentBg = this.getCurrentBackground();
@@ -118,7 +117,7 @@ class BackgroundService {
     }
 
     this.currentBackgroundId = backgroundId;
-    this.saveToStorage();
+    // this.saveToStorage();
 
     // 立即更新CSS变量，无需页面重新加载
     this.updateCSSVariable(background);
@@ -423,30 +422,30 @@ class BackgroundService {
   /**
    * 保存到本地存储
    */
-  private saveToStorage(): void {
-    try {
-      localStorage.setItem(
-        STORAGE_KEYS.BACKGROUND_ID,
-        this.currentBackgroundId,
-      );
-    } catch (error) {
-      console.error('Failed to save background to localStorage:', error);
-    }
-  }
+  // private saveToStorage(): void {
+  //   try {
+  //     localStorage.setItem(
+  //       STORAGE_KEYS.BACKGROUND_ID,
+  //       this.currentBackgroundId,
+  //     );
+  //   } catch (error) {
+  //     console.error('Failed to save background to localStorage:', error);
+  //   }
+  // }
 
   /**
    * 从本地存储恢复
    */
-  private restoreFromStorage(): void {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.BACKGROUND_ID);
-      if (saved && this.backgroundImages.some((bg) => bg.id === saved)) {
-        this.currentBackgroundId = saved;
-      }
-    } catch (error) {
-      console.error('Failed to restore background from localStorage:', error);
-    }
-  }
+  // private restoreFromStorage(): void {
+  //   try {
+  //     const saved = localStorage.getItem(STORAGE_KEYS.BACKGROUND_ID);
+  //     if (saved && this.backgroundImages.some((bg) => bg.id === saved)) {
+  //       this.currentBackgroundId = saved;
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to restore background from localStorage:', error);
+  //   }
+  // }
 
   /**
    * 获取背景图片的预览URL

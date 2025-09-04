@@ -17,6 +17,41 @@
   box-sizing: border-box;
 }
 
+.configSource {
+  display: flex;
+  align-items: center;
+  padding: @paddingSm @paddingLg;
+  background-color: @colorFillTertiary;
+  border-bottom: @lineWidth solid @colorSplit;
+  font-size: 14px;
+
+  .configSourceLabel {
+    color: @colorTextSecondary;
+    margin-right: @paddingXs;
+  }
+
+  .configSourceValue {
+    font-weight: normal;
+    padding: 2px @paddingXs;
+    border-radius: @borderRadius;
+
+    &.local {
+      color: @colorSuccess;
+      background-color: rgba(82, 196, 26, 10%);
+    }
+
+    &.tenant {
+      color: @colorInfo;
+      background-color: rgba(0, 119, 250, 10%);
+    }
+
+    &.default {
+      color: @colorTextTertiary;
+      background-color: rgba(0, 0, 0, 6%);
+    }
+  }
+}
+
 .content {
   flex: 1;
   overflow-y: auto;

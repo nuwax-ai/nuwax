@@ -21,6 +21,12 @@ const cx = classNames.bind(styles);
 /**
  * 主题配置页面
  * 提供主题色、导航栏风格和背景图片的配置功能
+ *
+ * 特点：
+ * - 所有切换都是临时预览效果，不会立即保存到本地缓存
+ * - 用户需要点击"保存配置"按钮才会真正保存到后端和本地缓存
+ * - 支持完整的自定义功能（自定义颜色、背景图片上传等）
+ * - 用于正式的配置管理，需要用户确认后保存
  */
 const ThemeConfig: React.FC = () => {
   const {
@@ -33,8 +39,13 @@ const ThemeConfig: React.FC = () => {
   } = useGlobalSettings();
 
   // 集成导航风格管理
-  const { navigationStyle, setNavigationStyle, layoutStyle, setLayoutStyle } =
-    useLayoutStyle();
+  const {
+    navigationStyle,
+    setNavigationStyle,
+    layoutStyle,
+    setLayoutStyle,
+    getCurrentConfigSource,
+  } = useLayoutStyle();
 
   // 获取额外的颜色（包括自定义颜色）
   const extraColors = useExtraColors();
@@ -115,17 +126,19 @@ const ThemeConfig: React.FC = () => {
     }
   }, [tenantConfigInfo]);
 
-  // 处理导航风格变更
+  // 处理导航风格变更（临时预览，不立即保存）
   const handleNavigationStyleChange = (styleId: string) => {
-    console.log('主题配置页面收到导航风格变更:', styleId);
+    console.log('主题配置页面收到导航风格变更（临时预览）:', styleId);
+    // 这里只是临时预览，不立即保存到本地缓存
+    // 用户需要点击"保存配置"按钮才会真正保存
   };
 
-  // 背景图片切换处理（带联动逻辑）
+  // 背景图片切换处理（临时预览，不立即保存）
   const handleBackgroundChange = (backgroundId: string) => {
-    // 设置背景图片
+    // 设置背景图片（临时预览）
     setBackgroundImage(backgroundId);
 
-    // 根据背景图片自动切换导航栏深浅色
+    // 根据背景图片自动切换导航栏深浅色（临时预览）
     const newLayoutStyle = getLayoutStyleByBackgroundId(backgroundId);
     setLayoutStyle(newLayoutStyle);
     setIsNavigationDarkMode(newLayoutStyle === ThemeLayoutColorStyle.DARK);
@@ -138,12 +151,15 @@ const ThemeConfig: React.FC = () => {
       message.info(
         `已自动切换为${
           newLayoutStyle === ThemeLayoutColorStyle.DARK ? '深色' : '浅色'
-        }导航栏`,
+        }导航栏（预览效果）`,
       );
     }
+
+    // 注意：这里不保存到本地缓存，只是临时预览
+    // 用户需要点击"保存配置"按钮才会真正保存
   };
 
-  // 切换导航栏深浅色（集成到布局风格管理，带背景自动匹配）
+  // 切换导航栏深浅色（临时预览，不立即保存）
   const handleNavigationThemeToggle = () => {
     const newLayoutStyle =
       layoutStyle === ThemeLayoutColorStyle.DARK
@@ -157,7 +173,7 @@ const ThemeConfig: React.FC = () => {
       getLayoutStyleByBackgroundId(backgroundImageId);
 
     if (currentBackgroundLayoutStyle !== newLayoutStyle) {
-      // 当前背景不匹配，自动切换到匹配的背景
+      // 当前背景不匹配，自动切换到匹配的背景（临时预览）
       const matchingBackgroundId = backgroundConfigs.find(
         (config) => config.layoutStyle === newLayoutStyle,
       );
@@ -170,10 +186,13 @@ const ThemeConfig: React.FC = () => {
         message.info(
           `已自动切换为${matchingBackgroundId.name}以匹配${
             newLayoutStyle === ThemeLayoutColorStyle.DARK ? '深色' : '浅色'
-          }导航栏`,
+          }导航栏（预览效果）`,
         );
       }
     }
+
+    // 注意：这里不保存到本地缓存，只是临时预览
+    // 用户需要点击"保存配置"按钮才会真正保存
   };
 
   // 保存配置到后端
@@ -217,9 +236,36 @@ const ThemeConfig: React.FC = () => {
   //   message.info('已重置为默认配置');
   // };
 
+  // 获取当前配置来源
+  const configSource = getCurrentConfigSource();
+  const getConfigSourceText = (source: string) => {
+    switch (source) {
+      case 'local':
+        return '本地配置（用户自定义）';
+      case 'tenant':
+        return '租户配置（默认主题）';
+      case 'default':
+        return '系统默认配置';
+      default:
+        return '未知配置';
+    }
+  };
+
   return (
     <div className={cx(styles.container)}>
       <div className={cx(styles.title)}>主题配置</div>
+      <div className={cx(styles.configSource)}>
+        <span className={cx(styles.configSourceLabel)}>当前配置来源：</span>
+        <span
+          className={cx(styles.configSourceValue, {
+            [styles.local]: configSource === 'local',
+            [styles.tenant]: configSource === 'tenant',
+            [styles.default]: configSource === 'default',
+          })}
+        >
+          {getConfigSourceText(configSource)}
+        </span>
+      </div>
       <div className={cx(styles.content)}>
         {/* 垂直布局的主题配置区域 */}
         <div className={cx(styles.configContainer)}>
