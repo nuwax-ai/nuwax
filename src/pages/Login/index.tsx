@@ -189,7 +189,7 @@ const Login: React.FC = () => {
   // 分段器切换登录方式
   const options: SegmentedItemType[] = [
     { label: '密码登录', value: LoginTypeEnum.Password + '' },
-    { label: '手机号登录', value: LoginTypeEnum.Code + '' },
+    { label: '验证码登录/注册', value: LoginTypeEnum.Code + '' },
   ];
 
   return (
@@ -212,15 +212,13 @@ const Login: React.FC = () => {
         <div>
           {loadEnd && (
             <div className={cx(styles['login-form-box'])}>
-              {tenantConfigInfo?.authType !== 3 && (
-                <Segmented
-                  options={options}
-                  value={loginType + ''}
-                  onChange={handleChangeType}
-                  size="large"
-                  block
-                />
-              )}
+              <Segmented
+                options={options}
+                value={loginType + ''}
+                onChange={handleChangeType}
+                size="large"
+                block
+              />
               <Form
                 form={form}
                 validateTrigger="onBlur"

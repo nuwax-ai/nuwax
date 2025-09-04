@@ -48,6 +48,13 @@
     }
   }
 
+  // 输入框自动填充样式
+  input:-webkit-autofill {
+    -webkit-text-fill-color: #000 !important; /* 保证字体颜色正常 */
+    box-shadow: 0 0 0 1000px transparent inset !important; /* 背景覆盖成透明 */
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
   .login {
     .btn {
       margin-top: 20px;
