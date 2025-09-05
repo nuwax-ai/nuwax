@@ -2,7 +2,6 @@ import { RequestConfig } from '@@/plugin-request/request';
 import { theme as antdTheme } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { useAntdConfigSetter } from 'umi';
-// ThemeErrorBoundary 已删除，改为简化的错误处理
 import { ACCESS_TOKEN } from './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';
 import useEventPolling from './hooks/useEventPolling';
