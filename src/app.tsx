@@ -2,11 +2,12 @@ import { RequestConfig } from '@@/plugin-request/request';
 import { theme as antdTheme } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { useAntdConfigSetter } from 'umi';
+// ThemeErrorBoundary 已删除，改为简化的错误处理
 import { ACCESS_TOKEN } from './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';
 import useEventPolling from './hooks/useEventPolling';
 import { request as requestCommon } from './services/common';
-import { getCurrentTheme, isCurrentDarkMode } from './utils/theme';
+import { unifiedThemeService } from './services/unifiedThemeService';
 
 /**
  * 全局轮询组件
@@ -29,21 +30,21 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   const setAntdConfig = useAntdConfigSetter();
   const lastAppliedRef = useRef<string>('');
 
-  // 初始化一次，并监听设置变更事件，动态更新 antd ConfigProvider
+  // 初始化统一主题配置，并监听主题配置变更事件
   useEffect(() => {
-    const applyFromStorage = () => {
+    const applyThemeConfig = () => {
       try {
-        const stored = getCurrentTheme();
-        const darkMode = isCurrentDarkMode();
+        const data = unifiedThemeService.getCurrentData();
+        const darkMode = data.antdTheme === 'dark';
 
         const algorithm = darkMode
           ? antdTheme.darkAlgorithm
           : antdTheme.defaultAlgorithm;
         const baseTokens = darkMode ? darkThemeTokens : themeTokens;
-        const colorPrimary = (stored as any)?.primaryColor;
-        const tokens = colorPrimary
-          ? { ...baseTokens, colorPrimary }
-          : baseTokens;
+        const tokens = {
+          ...baseTokens,
+          colorPrimary: data.primaryColor,
+        };
 
         const signature = JSON.stringify({
           mode: darkMode ? 'dark' : 'light',
@@ -58,28 +59,55 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
             token: tokens as any,
             components: {
               Segmented: {
-                /* 这里是你的组件 token */
-                itemSelectedColor: colorPrimary,
+                itemSelectedColor: data.primaryColor,
               },
             },
             cssVar: { prefix: 'xagi' },
           },
           appConfig: {},
         });
-      } catch {
-        // ignore
+
+        // 统一主题服务会自动应用DOM样式，这里只设置 data 属性
+        document.documentElement.setAttribute('data-theme', data.antdTheme);
+        document.documentElement.setAttribute(
+          'data-nav-theme',
+          data.layoutStyle,
+        );
+        document.documentElement.setAttribute(
+          'data-nav-style',
+          data.navigationStyle === 'style1' ? 'compact' : 'expanded',
+        );
+      } catch (error) {
+        console.error('应用主题配置失败:', error);
       }
     };
-    applyFromStorage();
 
-    const handler = () => applyFromStorage();
-    window.addEventListener('xagi-global-settings-changed', handler as any);
-    return () =>
+    // 初始应用
+    applyThemeConfig();
+
+    // 监听统一主题服务的配置变更
+    const handleThemeChange = () => applyThemeConfig();
+    unifiedThemeService.addListener(handleThemeChange);
+
+    // 兼容旧的事件监听（确保向后兼容）
+    window.addEventListener('unified-theme-changed', handleThemeChange as any);
+    window.addEventListener(
+      'xagi-theme-config-changed',
+      handleThemeChange as any,
+    );
+
+    return () => {
+      unifiedThemeService.removeListener(handleThemeChange);
       window.removeEventListener(
-        'xagi-global-settings-changed',
-        handler as any,
+        'unified-theme-changed',
+        handleThemeChange as any,
       );
-  }, []);
+      window.removeEventListener(
+        'xagi-theme-config-changed',
+        handleThemeChange as any,
+      );
+    };
+  }, [setAntdConfig]);
 
   return (
     <>

@@ -1,17 +1,15 @@
 import BackgroundImagePanel from '@/components/business-component/ThemeConfig/BackgroundImagePanel';
 import NavigationStylePanel from '@/components/business-component/ThemeConfig/NavigationStylePanel';
 import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
-import { backgroundConfigs, STORAGE_KEYS } from '@/constants/theme.constants';
-import { useGlobalSettings } from '@/hooks/useGlobalSettings';
-import { useExtraColors, useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { backgroundConfigs } from '@/constants/theme.constants';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { apiSystemConfigUpdate } from '@/services/systemManage';
+import { BackgroundImage } from '@/types/background';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { ThemeConfigData } from '@/types/interfaces/systemManage';
-import { layoutStyleManager } from '@/utils/backgroundStyle';
 import { Button, message } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
+import React, { useMemo, useState } from 'react';
 import styles from './index.less';
 
 // 使用统一的存储键名
@@ -19,129 +17,115 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
- * 主题配置页面
+ * 主题配置页面（重构版本）
  * 提供主题色、导航栏风格和背景图片的配置功能
  *
- * 特点：
+ * 重构特点：
+ * - 使用统一的主题数据管理服务
  * - 所有切换都是临时预览效果，不会立即保存到本地缓存
  * - 用户需要点击"保存配置"按钮才会真正保存到后端和本地缓存
  * - 支持完整的自定义功能（自定义颜色、背景图片上传等）
- * - 用于正式的配置管理，需要用户确认后保存
+ * - 配置优先级：用户设置 > 租户信息设置 > 默认配置
  */
 const ThemeConfig: React.FC = () => {
+  // 使用统一主题管理
   const {
     primaryColor,
-    setPrimaryColor,
-    backgroundImages,
-    backgroundImageId,
-    setBackgroundImage,
-    isDarkMode,
-  } = useGlobalSettings();
-
-  // 集成导航风格管理
-  const {
+    backgroundId,
     navigationStyle,
-    setNavigationStyle,
     layoutStyle,
-    setLayoutStyle,
-    getCurrentConfigSource,
-  } = useLayoutStyle();
+    isNavigationDark,
+    configSource,
+    configSourceText,
+    extraColors,
+    updatePrimaryColor,
+    updateBackground,
+    updateNavigationStyle,
+    updateLayoutStyle,
+  } = useUnifiedTheme();
 
-  // 获取额外的颜色（包括自定义颜色）
-  const extraColors = useExtraColors();
+  // 预览状态管理（临时预览，不立即保存）
+  const [previewPrimaryColor, setPreviewPrimaryColor] = useState(primaryColor);
+  const [previewBackgroundId, setPreviewBackgroundId] = useState(backgroundId);
+  const [previewNavigationStyle, setPreviewNavigationStyle] =
+    useState(navigationStyle);
+  const [previewLayoutStyle, setPreviewLayoutStyle] = useState(layoutStyle);
+  const [previewIsNavigationDark, setPreviewIsNavigationDark] =
+    useState(isNavigationDark);
 
-  // 获取租户配置信息
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
-
-  // 导航栏深浅色状态管理（独立于Ant Design主题）
-  const [isNavigationDarkMode, setIsNavigationDarkMode] = useState<boolean>(
-    layoutStyle === ThemeLayoutColorStyle.DARK,
-  );
-
-  // 同步布局风格状态到导航深浅色状态
-  useEffect(() => {
-    setIsNavigationDarkMode(layoutStyle === ThemeLayoutColorStyle.DARK);
-  }, [layoutStyle]);
+  // 转换背景配置为组件需要的格式
+  const backgroundImages: BackgroundImage[] = useMemo(() => {
+    return backgroundConfigs.map((config) => ({
+      id: config.id,
+      name: config.name,
+      path: config.url,
+      preview: config.url,
+    }));
+  }, []);
 
   // 根据背景图片ID获取对应的布局风格
   const getLayoutStyleByBackgroundId = (
     backgroundId: string,
   ): ThemeLayoutColorStyle => {
-    // 直接使用背景ID查找配置（现在ID格式已统一）
     const backgroundConfig = backgroundConfigs.find(
       (config) => config.id === backgroundId,
     );
     return backgroundConfig?.layoutStyle || ThemeLayoutColorStyle.LIGHT;
   };
 
-  // 从租户配置和本地存储恢复配置
-  useEffect(() => {
+  // 处理主题色变更（临时预览，但实时显示效果）
+  const handleColorChange = async (color: string) => {
+    setPreviewPrimaryColor(color);
+
+    // 立即应用主题色预览效果（不保存到localStorage）
     try {
-      // 使用布局样式管理器的公共方法获取主题配置
-      const themeConfig: ThemeConfigData | null =
-        layoutStyleManager.getThemeConfigData();
-
-      // 应用恢复的配置
-      if (themeConfig) {
-        console.log('主题配置页面恢复配置:', themeConfig);
-
-        // 恢复主题色
-        if (
-          themeConfig.selectedThemeColor &&
-          themeConfig.selectedThemeColor !== primaryColor
-        ) {
-          setPrimaryColor(themeConfig.selectedThemeColor);
-        }
-
-        // 恢复背景图片
-        if (
-          themeConfig.selectedBackgroundId &&
-          themeConfig.selectedBackgroundId !== backgroundImageId
-        ) {
-          setBackgroundImage(themeConfig.selectedBackgroundId);
-        }
-
-        // 恢复导航风格
-        if (
-          themeConfig.navigationStyleId &&
-          themeConfig.navigationStyleId !== navigationStyle
-        ) {
-          setNavigationStyle(themeConfig.navigationStyleId as any);
-        }
-
-        // 恢复导航深浅色
-        if (
-          themeConfig.navigationStyle &&
-          themeConfig.navigationStyle !== layoutStyle
-        ) {
-          const layoutStyleEnum =
-            themeConfig.navigationStyle === 'dark'
-              ? ThemeLayoutColorStyle.DARK
-              : ThemeLayoutColorStyle.LIGHT;
-          setLayoutStyle(layoutStyleEnum);
-        }
-      }
+      await updatePrimaryColor(color, { saveToStorage: false });
     } catch (error) {
-      console.warn('Failed to restore theme config:', error);
+      console.warn('预览主题色失败:', error);
     }
-  }, [tenantConfigInfo]);
-
-  // 处理导航风格变更（临时预览，不立即保存）
-  const handleNavigationStyleChange = (styleId: string) => {
-    console.log('主题配置页面收到导航风格变更（临时预览）:', styleId);
-    // 这里只是临时预览，不立即保存到本地缓存
-    // 用户需要点击"保存配置"按钮才会真正保存
   };
 
-  // 背景图片切换处理（临时预览，不立即保存）
-  const handleBackgroundChange = (backgroundId: string) => {
+  // 处理导航风格变更（临时预览，但实时显示效果）
+  const handleNavigationStyleChange = async (styleId: string) => {
+    setPreviewNavigationStyle(styleId as any);
+
+    // 立即应用导航风格预览效果（不保存到localStorage）
+    // 使用批量更新确保导航风格和布局风格同步应用
+    try {
+      // 导入 unifiedThemeService 进行批量更新
+      const { unifiedThemeService } = await import(
+        '@/services/unifiedThemeService'
+      );
+
+      // 批量更新导航风格和布局风格，确保CSS变量同步
+      await unifiedThemeService.updateData(
+        {
+          navigationStyle: styleId as any,
+          layoutStyle: previewLayoutStyle,
+        },
+        { saveToStorage: false },
+      );
+    } catch (error) {
+      console.warn('预览导航风格失败:', error);
+    }
+  };
+
+  // 背景图片切换处理（临时预览，但实时显示效果）
+  const handleBackgroundChange = async (backgroundId: string) => {
     // 设置背景图片（临时预览）
-    setBackgroundImage(backgroundId);
+    setPreviewBackgroundId(backgroundId);
 
     // 根据背景图片自动切换导航栏深浅色（临时预览）
     const newLayoutStyle = getLayoutStyleByBackgroundId(backgroundId);
-    setLayoutStyle(newLayoutStyle);
-    setIsNavigationDarkMode(newLayoutStyle === ThemeLayoutColorStyle.DARK);
+    setPreviewLayoutStyle(newLayoutStyle);
+    setPreviewIsNavigationDark(newLayoutStyle === ThemeLayoutColorStyle.DARK);
+
+    // 立即应用背景图预览效果（不保存到localStorage）
+    try {
+      await updateBackground(backgroundId, { saveToStorage: false });
+    } catch (error) {
+      console.warn('预览背景图失败:', error);
+    }
 
     // 显示联动提示
     const backgroundConfig = backgroundConfigs.find(
@@ -154,58 +138,73 @@ const ThemeConfig: React.FC = () => {
         }导航栏（预览效果）`,
       );
     }
-
-    // 注意：这里不保存到本地缓存，只是临时预览
-    // 用户需要点击"保存配置"按钮才会真正保存
   };
 
-  // 切换导航栏深浅色（临时预览，不立即保存）
-  const handleNavigationThemeToggle = () => {
+  // 切换导航栏深浅色（临时预览，但实时显示效果）
+  const handleNavigationThemeToggle = async () => {
     const newLayoutStyle =
-      layoutStyle === ThemeLayoutColorStyle.DARK
+      previewLayoutStyle === ThemeLayoutColorStyle.DARK
         ? ThemeLayoutColorStyle.LIGHT
         : ThemeLayoutColorStyle.DARK;
-    setLayoutStyle(newLayoutStyle);
-    setIsNavigationDarkMode(newLayoutStyle === ThemeLayoutColorStyle.DARK);
+    setPreviewLayoutStyle(newLayoutStyle);
+    setPreviewIsNavigationDark(newLayoutStyle === ThemeLayoutColorStyle.DARK);
+
+    // 立即应用布局风格预览效果（不保存到localStorage）
+    try {
+      await updateLayoutStyle(newLayoutStyle, { saveToStorage: false });
+    } catch (error) {
+      console.warn('预览布局风格失败:', error);
+    }
 
     // 检查当前背景是否与新的导航栏深浅色匹配
     const currentBackgroundLayoutStyle =
-      getLayoutStyleByBackgroundId(backgroundImageId);
+      getLayoutStyleByBackgroundId(previewBackgroundId);
 
     if (currentBackgroundLayoutStyle !== newLayoutStyle) {
       // 当前背景不匹配，自动切换到匹配的背景（临时预览）
-      const matchingBackgroundId = backgroundConfigs.find(
+      const matchingBackground = backgroundConfigs.find(
         (config) => config.layoutStyle === newLayoutStyle,
       );
 
-      if (matchingBackgroundId) {
+      if (matchingBackground) {
         // 切换背景但不触发布局风格联动（避免循环）
-        setBackgroundImage(matchingBackgroundId.id);
+        setPreviewBackgroundId(matchingBackground.id);
+
+        // 立即应用背景图预览效果（不保存到localStorage）
+        try {
+          await updateBackground(matchingBackground.id, {
+            saveToStorage: false,
+          });
+        } catch (error) {
+          console.warn('预览背景图失败:', error);
+        }
 
         // 显示背景自动匹配提示
         message.info(
-          `已自动切换为${matchingBackgroundId.name}以匹配${
+          `已自动切换为${matchingBackground.name}以匹配${
             newLayoutStyle === ThemeLayoutColorStyle.DARK ? '深色' : '浅色'
           }导航栏（预览效果）`,
         );
       }
     }
-
-    // 注意：这里不保存到本地缓存，只是临时预览
-    // 用户需要点击"保存配置"按钮才会真正保存
   };
 
   // 保存配置到后端
   const handleSave = async () => {
     try {
+      // 首先使用统一主题服务保存预览的配置
+      await updatePrimaryColor(previewPrimaryColor);
+      await updateBackground(previewBackgroundId);
+      await updateNavigationStyle(previewNavigationStyle);
+      await updateLayoutStyle(previewLayoutStyle);
+
+      // 构建后端所需的数据格式
       const themeConfig: ThemeConfigData = {
-        selectedThemeColor: primaryColor,
-        selectedBackgroundId: backgroundImageId,
-        antdTheme: isDarkMode
-          ? ThemeLayoutColorStyle.DARK
-          : ThemeLayoutColorStyle.LIGHT, // Ant Design主题
-        navigationStyle: layoutStyle, // 导航栏深浅色（使用布局风格）
-        navigationStyleId: navigationStyle, // 导航风格 ID（style1 或 style2）
+        selectedThemeColor: previewPrimaryColor,
+        selectedBackgroundId: previewBackgroundId,
+        antdTheme: previewLayoutStyle, // 这里应该使用实际的 Ant Design 主题状态
+        navigationStyle: previewLayoutStyle, // 导航栏深浅色
+        navigationStyleId: previewNavigationStyle, // 导航风格 ID
         timestamp: Date.now(),
       };
 
@@ -214,41 +213,27 @@ const ThemeConfig: React.FC = () => {
         templateConfig: JSON.stringify(themeConfig),
       });
 
-      // 同时保存到本地存储作为缓存
-      localStorage.setItem(
-        STORAGE_KEYS.USER_THEME_CONFIG,
-        JSON.stringify(themeConfig),
-      );
-
       message.success('主题配置保存成功');
       console.log('保存的配置:', themeConfig);
+
+      // 页面刷新后检查
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       console.error('Save theme config error:', error);
       message.error('保存失败，请重试');
     }
   };
 
-  // 重置为默认配置 (暂时注释掉，因为重置按钮被隐藏)
-  // const handleReset = () => {
-  //   setPrimaryColor('#5147ff'); // 默认蓝色
-  //   setBackgroundImage('bg-variant-1'); // 默认背景
-  //   localStorage.removeItem('user-theme-config');
-  //   message.info('已重置为默认配置');
-  // };
-
-  // 获取当前配置来源
-  const configSource = getCurrentConfigSource();
-  const getConfigSourceText = (source: string) => {
-    switch (source) {
-      case 'local':
-        return '本地配置（用户自定义）';
-      case 'tenant':
-        return '租户配置（默认主题）';
-      case 'default':
-        return '系统默认配置';
-      default:
-        return '未知配置';
-    }
+  // 重置为默认配置
+  const handleReset = () => {
+    setPreviewPrimaryColor('#5147ff'); // 默认蓝色
+    setPreviewBackgroundId('bg-variant-1'); // 默认背景
+    setPreviewNavigationStyle('style1' as any);
+    setPreviewLayoutStyle(ThemeLayoutColorStyle.LIGHT);
+    setPreviewIsNavigationDark(false);
+    message.info('已重置为默认配置（预览效果）');
   };
 
   return (
@@ -258,12 +243,12 @@ const ThemeConfig: React.FC = () => {
         <span className={cx(styles.configSourceLabel)}>当前配置来源：</span>
         <span
           className={cx(styles.configSourceValue, {
-            [styles.local]: configSource === 'local',
+            [styles.local]: configSource === 'user',
             [styles.tenant]: configSource === 'tenant',
             [styles.default]: configSource === 'default',
           })}
         >
-          {getConfigSourceText(configSource)}
+          {configSourceText}
         </span>
       </div>
       <div className={cx(styles.content)}>
@@ -271,22 +256,23 @@ const ThemeConfig: React.FC = () => {
         <div className={cx(styles.configContainer)}>
           <div className={cx(styles.configItem)}>
             <ThemeColorPanel
-              currentColor={primaryColor}
-              onColorChange={setPrimaryColor}
+              currentColor={previewPrimaryColor}
+              onColorChange={handleColorChange}
               extraColors={extraColors}
             />
           </div>
           <div className={cx(styles.configItem)}>
             <NavigationStylePanel
-              isNavigationDarkMode={isNavigationDarkMode}
+              isNavigationDarkMode={previewIsNavigationDark}
               onNavigationThemeToggle={handleNavigationThemeToggle}
               onNavigationStyleChange={handleNavigationStyleChange}
+              currentNavigationStyle={previewNavigationStyle}
             />
           </div>
           <div className={cx(styles.configItem)}>
             <BackgroundImagePanel
               backgroundImages={backgroundImages}
-              currentBackground={backgroundImageId}
+              currentBackground={previewBackgroundId}
               onBackgroundChange={handleBackgroundChange}
             />
           </div>
@@ -297,9 +283,9 @@ const ThemeConfig: React.FC = () => {
         <Button type="primary" size="large" onClick={handleSave}>
           保存配置
         </Button>
-        {/* <Button size="large" style={{ marginLeft: 12 }} onClick={handleReset}>
-            重置默认
-          </Button> */}
+        <Button size="large" style={{ marginLeft: 12 }} onClick={handleReset}>
+          重置默认
+        </Button>
       </div>
     </div>
   );
