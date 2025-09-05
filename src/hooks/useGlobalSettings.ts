@@ -42,27 +42,99 @@ export const defaultSettings: GlobalSettings = {
 };
 
 /**
+ * 获取主题配置数据（按优先级）
+ * 优先级：用户本地配置 > 租户配置 > 默认值
+ */
+const getThemeConfigData = () => {
+  try {
+    // 1. 优先从用户主题配置本地存储获取
+    const userThemeConfig = localStorage.getItem(
+      STORAGE_KEYS.USER_THEME_CONFIG,
+    );
+    if (userThemeConfig) {
+      const templateConfig = JSON.parse(userThemeConfig);
+      console.log('🎨 从用户主题配置加载 (优先级最高):', templateConfig);
+      return templateConfig;
+    }
+
+    // 2. 如果用户本地没有，则从租户配置中获取主题配置
+    const tenantConfigString = localStorage.getItem('TENANT_CONFIG_INFO');
+    if (tenantConfigString) {
+      const tenantConfig = JSON.parse(tenantConfigString);
+      if (tenantConfig.templateConfig) {
+        const templateConfig = JSON.parse(tenantConfig.templateConfig);
+        console.log('🏢 从租户配置加载主题配置 (兜底方案):', templateConfig);
+        return templateConfig;
+      }
+    }
+
+    console.log('⚠️ 未找到任何主题配置，将使用默认值');
+    return null;
+  } catch (error) {
+    console.warn('❌ 获取主题配置数据失败:', error);
+    return null;
+  }
+};
+
+/**
  * 全局设置管理 Hook
  * 提供主题切换和语言切换功能
+ *
+ * 配置优先级（严格按顺序）：
+ * 1. 用户主题配置 (STORAGE_KEYS.USER_THEME_CONFIG) - 优先级最高
+ * 2. 租户配置数据 (TENANT_CONFIG_INFO.templateConfig) - 兜底方案
+ * 3. 全局设置本地存储 (STORAGE_KEYS.GLOBAL_SETTINGS) - 最后兜底
+ * 4. 系统默认配置 - 兜底的兜底
+ *
+ * 重要说明：
+ * - 用户主题配置一旦存在，租户配置将被完全忽略
+ * - 这确保了用户的自定义主题设置不会被租户更新覆盖
  */
 export const useGlobalSettings = () => {
-  // 读取并持有全局设置（不使用 setInitialState，避免耦合）
+  // 读取并持有全局设置（优先使用用户配置）
   const [settings, setSettings] = useState<GlobalSettings>(() => {
+    // 1. 优先从主题配置数据获取（用户本地配置 > 租户配置 > 默认值）
+    const themeConfig = getThemeConfigData();
+    if (themeConfig) {
+      console.log('🎨 使用主题配置数据初始化全局设置:', themeConfig);
+      return {
+        ...defaultSettings,
+        primaryColor:
+          themeConfig.selectedThemeColor || defaultSettings.primaryColor,
+        backgroundImageId:
+          themeConfig.selectedBackgroundId || defaultSettings.backgroundImageId,
+        theme: themeConfig.antdTheme === 'dark' ? 'dark' : 'light',
+      };
+    }
+
+    // 2. 如果没有主题配置，尝试从全局设置获取
     try {
       const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
       if (saved) {
         const parsedSettings = JSON.parse(saved);
-        // 确保背景图片ID从backgroundService获取最新值
+        console.log('🎨 从全局设置加载用户配置:', parsedSettings);
+
+        // 优先使用用户配置中的背景图片ID
+        const userBackgroundId = parsedSettings.backgroundImageId;
         const currentBackgroundId = backgroundService.getCurrentBackgroundId();
+
         return {
           ...defaultSettings,
           ...parsedSettings,
-          backgroundImageId: currentBackgroundId,
+          // 优先使用用户配置的背景图片ID，如果用户配置为空则使用backgroundService的值
+          backgroundImageId: userBackgroundId || currentBackgroundId,
         };
       }
-    } catch {}
-    // 如果没有保存的设置，使用backgroundService的当前值
+    } catch (error) {
+      console.warn('❌ 解析全局设置失败:', error);
+    }
+
+    // 3. 最后使用默认设置和backgroundService的当前值
     const currentBackgroundId = backgroundService.getCurrentBackgroundId();
+    console.log(
+      '🎨 使用默认设置和backgroundService当前值:',
+      currentBackgroundId,
+    );
     return {
       ...defaultSettings,
       backgroundImageId: currentBackgroundId,

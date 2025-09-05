@@ -1,4 +1,5 @@
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
+import { STORAGE_KEYS } from '@/constants/theme.constants';
 import { apiTenantConfig } from '@/services/account';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
 import { layoutStyleManager } from '@/utils/backgroundStyle';
@@ -45,14 +46,21 @@ export default () => {
       console.log('租户配置保存完成，重新初始化布局样式管理器');
       layoutStyleManager.loadFromStorage();
 
-      // 额外同步主题颜色，确保及时生效
-      if (result.templateConfig) {
+      // 只有在本地没有主题配置时才同步租户配置
+      // 避免覆盖用户已保存的本地主题配置
+      const hasLocalThemeConfig = localStorage.getItem(
+        STORAGE_KEYS.USER_THEME_CONFIG,
+      );
+      if (result.templateConfig && !hasLocalThemeConfig) {
         try {
           const themeConfig = JSON.parse(result.templateConfig);
           layoutStyleManager.syncThemeColorToGlobalSettings(themeConfig);
+          console.log('已同步租户主题配置（本地无配置）:', themeConfig);
         } catch (error) {
           console.warn('同步租户主题颜色失败:', error);
         }
+      } else if (hasLocalThemeConfig) {
+        console.log('检测到本地主题配置，跳过租户配置同步');
       }
 
       // 租户信息初始化完成后，立即初始化 layout navigation 相关的 CSS 变量

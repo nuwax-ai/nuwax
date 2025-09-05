@@ -18,11 +18,24 @@ import {
  * 注意：此风格系统与 Ant Design 的主题系统完全独立
  * 仅控制布局容器、导航栏等自定义组件的视觉风格
  *
- * 主题配置优先级：
+ * 主题配置优先级（严格按顺序）：
  * 1. 用户本地配置 (STORAGE_KEYS.USER_THEME_CONFIG) - 优先级最高
+ *    - 来源：用户在主题配置页面保存的设置
+ *    - 特点：如果存在，完全忽略租户配置，确保用户偏好不被覆盖
  * 2. 租户配置数据 (TENANT_CONFIG_INFO.templateConfig) - 兜底方案
+ *    - 来源：后端租户配置接口返回的templateConfig
+ *    - 特点：仅在本地无配置时生效，提供租户级别的默认主题
  * 3. 布局样式本地存储 (STORAGE_KEYS.LAYOUT_STYLE) - 最后兜底
+ *    - 来源：布局风格管理器的本地缓存
+ *    - 特点：用于保持用户上次的布局风格选择
  * 4. 系统默认配置 - 兜底的兜底
+ *    - 来源：代码中定义的硬编码默认值
+ *    - 特点：确保系统始终有可用的主题配置
+ *
+ * 重要说明：
+ * - 本地主题配置一旦存在，租户配置将被完全忽略
+ * - 这确保了用户的自定义主题设置不会被租户更新覆盖
+ * - 租户配置仅在用户首次使用或清除本地配置后生效
  */
 
 /**
@@ -69,7 +82,7 @@ export class LayoutStyleManager {
     // 应用完整的样式配置
     this.applyStyleConfig();
 
-    // 保存到本地存储
+    // // 保存到本地存储
     this.saveToStorage();
 
     // 触发风格变更事件
@@ -373,6 +386,46 @@ export class LayoutStyleManager {
   }
 
   /**
+   * 获取当前配置来源
+   * @returns 配置来源类型
+   */
+  public getCurrentConfigSource(): 'local' | 'tenant' | 'default' {
+    try {
+      // 1. 检查用户本地配置
+      const userThemeConfig = localStorage.getItem(
+        STORAGE_KEYS.USER_THEME_CONFIG,
+      );
+      if (userThemeConfig) {
+        return 'local';
+      }
+
+      // 2. 检查租户配置
+      const tenantConfigString = localStorage.getItem('TENANT_CONFIG_INFO');
+      if (tenantConfigString) {
+        try {
+          const tenantConfig = JSON.parse(tenantConfigString);
+          if (tenantConfig.templateConfig) {
+            return 'tenant';
+          }
+        } catch (error) {
+          console.warn('解析租户配置失败:', error);
+        }
+      }
+
+      // 3. 检查布局样式本地存储
+      const layoutStyle = localStorage.getItem(STORAGE_KEYS.LAYOUT_STYLE);
+      if (layoutStyle) {
+        return 'tenant'; // 布局样式通常来自租户配置
+      }
+
+      return 'default';
+    } catch (error) {
+      console.warn('获取配置来源失败:', error);
+      return 'default';
+    }
+  }
+
+  /**
    * 获取主题配置数据（按优先级）
    * 优先级：用户本地数据 > 租户配置数据 > 默认值
    * @returns 主题配置数据或null
@@ -387,12 +440,13 @@ export class LayoutStyleManager {
         try {
           const templateConfig = JSON.parse(userThemeConfig);
           console.log(
-            '从用户本地配置加载主题配置 (优先级最高):',
+            '✅ 从用户本地配置加载主题配置 (优先级最高):',
             templateConfig,
           );
+          console.log('📝 注意：租户配置将被忽略，确保用户偏好不被覆盖');
           return templateConfig; // 直接返回原始格式的主题配置
         } catch (error) {
-          console.warn('解析用户本地主题配置失败:', error);
+          console.warn('❌ 解析用户本地主题配置失败:', error);
         }
       }
 
@@ -403,18 +457,22 @@ export class LayoutStyleManager {
           const tenantConfig = JSON.parse(tenantConfigString);
           if (tenantConfig.templateConfig) {
             const templateConfig = JSON.parse(tenantConfig.templateConfig);
-            console.log('从租户配置加载主题配置 (兜底方案):', templateConfig);
+            console.log(
+              '🏢 从租户配置加载主题配置 (兜底方案):',
+              templateConfig,
+            );
+            console.log('📝 注意：本地无配置，使用租户默认主题');
             return templateConfig; // 直接返回原始格式的主题配置
           }
         } catch (error) {
-          console.warn('解析租户主题配置失败:', error);
+          console.warn('❌ 解析租户主题配置失败:', error);
         }
       }
 
-      console.log('未找到任何主题配置，将使用默认值');
+      console.log('⚠️ 未找到任何主题配置，将使用系统默认值');
       return null;
     } catch (error) {
-      console.warn('Failed to get theme config data:', error);
+      console.warn('❌ Failed to get theme config data:', error);
       return null;
     }
   }

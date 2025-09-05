@@ -78,6 +78,8 @@ export const useLayoutStyle = () => {
     getAllStyleConfigKeys: () => layoutStyleManager.getAllStyleConfigKeys(),
     setStyleByConfigKey: (configKey: string) =>
       layoutStyleManager.setStyleByConfigKey(configKey),
+    // 配置来源检查
+    getCurrentConfigSource: () => layoutStyleManager.getCurrentConfigSource(),
   };
 };
 
