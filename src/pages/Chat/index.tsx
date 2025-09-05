@@ -295,7 +295,6 @@ const Chat: React.FC = () => {
     messageViewScrollToBottom();
     setShowScrollBtn(false);
   };
-  console.log('conversationInfo', conversationInfo);
 
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const sidebarRef = useRef<AgentSidebarRef>(null);
