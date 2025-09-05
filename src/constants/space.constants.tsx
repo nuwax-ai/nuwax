@@ -62,7 +62,7 @@ export const LIBRARY_ALL_TYPE = [
 
 // 过滤状态
 export const FILTER_STATUS = [
-  { value: FilterStatusEnum.All, label: '所有类型' },
+  { value: FilterStatusEnum.All, label: '全部' },
   { value: FilterStatusEnum.Published, label: '已发布' },
 ];
 
