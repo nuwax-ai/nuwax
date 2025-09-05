@@ -1,8 +1,7 @@
 import ChatInputHome from '@/components/ChatInputHome';
 import Loading from '@/components/custom/Loading';
-import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import useConversation from '@/hooks/useConversation';
-import useMarkdownRender from '@/hooks/useMarkdownRender';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import {
   apiCollectAgent,
@@ -25,7 +24,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const Home: React.FC<{ theme?: 'light' | 'dark' }> = ({ theme = 'light' }) => {
+const Home: React.FC = () => {
   const { message } = App.useApp();
   // 配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -90,12 +89,6 @@ const Home: React.FC<{ theme?: 'light' | 'dark' }> = ({ theme = 'light' }) => {
     onSuccess: (result: AgentDetailDto) => {
       setAgentDetail(result);
     },
-  });
-
-  const { markdownRef, messageIdRef } = useMarkdownRender({
-    answer: agentDetail?.openingChatMsg as string,
-    thinking: '',
-    id: agentDetail?.agentId || '',
   });
 
   useEffect(() => {
@@ -172,13 +165,12 @@ const Home: React.FC<{ theme?: 'light' | 'dark' }> = ({ theme = 'light' }) => {
         }}
       >
         <div className={cx(styles.title)}>
-          <MarkdownRenderer
-            key={`${messageIdRef.current}`}
-            id={`${messageIdRef.current}`}
-            headerActions={false}
-            markdownRef={markdownRef}
-            theme={theme}
-          />
+          <PureMarkdownRenderer
+            id={`${agentDetail?.agentId}`}
+            className={cx(styles.content)}
+          >
+            {agentDetail?.openingChatMsg as string}
+          </PureMarkdownRenderer>
         </div>
 
         <ChatInputHome
