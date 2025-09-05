@@ -1,21 +1,17 @@
 @import '@/styles/color';
-
-.loading-box {
-  padding: 0 42px;
-}
+@import '@/styles/token';
 
 .container {
-  padding: 0 42px;
-  gap: 10px;
+  gap: @marginXs;
 
   .box {
     width: fit-content;
     display: inline-block;
     line-height: 26px;
-    padding-top: 3px;
-    padding-bottom: 3px;
-    font-size: 14px;
-    color: @BLANK11;
-    border: 1px solid @GRAY14;
+    padding-top: @paddingXxs;
+    padding-bottom: @paddingXxs;
+    font-size: @fontSize;
+    color: @colorText;
+    border: @lineWidth solid @colorSplit;
   }
 }

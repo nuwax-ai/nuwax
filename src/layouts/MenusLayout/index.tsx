@@ -36,7 +36,7 @@ const MenusLayout: React.FC<{
   const { setOpenMessage, isSecondMenuCollapsed } = useModel('layout');
   const [tabType, setTabType] = useState<TabsEnum>();
   const { asyncSpaceListFun } = useModel('spaceModel');
-  const { runTenantConfig } = useModel('tenantConfigInfo');
+  const { runTenantConfig, tenantConfigInfo } = useModel('tenantConfigInfo');
   const { runEdit, runDevCollect } = useModel('devCollectAgent');
   const { runHistory, runUsed } = useModel('conversationHistory');
   // 关闭移动端菜单
@@ -45,16 +45,15 @@ const MenusLayout: React.FC<{
   const { token } = theme.useToken();
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
   // 导航风格管理（使用独立的布局风格系统）
   const { navigationStyle, layoutStyle } = useLayoutStyle();
 
-  const handleCreateChat = async () => {
+  const handleCreateChat = useCallback(async () => {
     if (tenantConfigInfo) {
       // 创建智能体会话
       await handleCreateConversation(tenantConfigInfo.defaultAgentId);
     }
-  };
+  }, [tenantConfigInfo]);
   // 点击主页
   const handleClickHome = () => {
     // 最近使用
@@ -83,34 +82,37 @@ const MenusLayout: React.FC<{
   };
 
   // 切换tab
-  const handleTabsClick = useCallback(async (type: TabsEnum) => {
-    // 关闭移动端菜单
-    handleCloseMobileMenu();
+  const handleTabsClick = useCallback(
+    async (type: TabsEnum) => {
+      // 关闭移动端菜单
+      handleCloseMobileMenu();
 
-    switch (type) {
-      case TabsEnum.NewChat:
-        handleCreateChat();
-        break;
-      case TabsEnum.Home:
-        handleClickHome();
-        break;
-      case TabsEnum.Space:
-        await handleClickSpace();
-        break;
-      case TabsEnum.Square:
-        history.push(`/square?cate_type=${SquareAgentTypeEnum.Agent}`);
-        break;
-      case TabsEnum.System_Manage:
-        history.push('/system/user/manage');
-        break;
-      case TabsEnum.Ecosystem_Market:
-        history.push('/ecosystem');
-        break;
-      case TabsEnum.Course_System:
-        window.open(DOCUMENT_URL);
-        break;
-    }
-  }, []);
+      switch (type) {
+        case TabsEnum.NewChat:
+          handleCreateChat();
+          break;
+        case TabsEnum.Home:
+          handleClickHome();
+          break;
+        case TabsEnum.Space:
+          await handleClickSpace();
+          break;
+        case TabsEnum.Square:
+          history.push(`/square?cate_type=${SquareAgentTypeEnum.Agent}`);
+          break;
+        case TabsEnum.System_Manage:
+          history.push('/system/user/manage');
+          break;
+        case TabsEnum.Ecosystem_Market:
+          history.push('/ecosystem');
+          break;
+        case TabsEnum.Course_System:
+          window.open(DOCUMENT_URL);
+          break;
+      }
+    },
+    [handleCreateChat],
+  );
 
   useEffect(() => {
     // 查询广场menus列表
