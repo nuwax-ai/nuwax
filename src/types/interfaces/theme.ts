@@ -50,6 +50,7 @@ export interface ThemeStyleConfig {
     '--xagi-nav-first-menu-width': string;
     '--xagi-page-container-margin': string;
     '--xagi-page-container-border-radius': string;
+    '--xagi-page-container-border-color': string;
   };
 }
 

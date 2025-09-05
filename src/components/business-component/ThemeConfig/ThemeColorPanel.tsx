@@ -3,7 +3,7 @@ import { THEME_COLOR_CONFIGS } from '@/constants/theme.constants';
 import { ColorPicker } from 'antd';
 import { Color } from 'antd/es/color-picker';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './ThemeColorPanel.less';
 
 const cx = classNames.bind(styles);
@@ -34,6 +34,14 @@ const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
       ? extraColors[extraColors.length - 1]
       : customColorDefault,
   );
+
+  useEffect(() => {
+    setCustomColor(
+      extraColors.length > 0
+        ? extraColors[extraColors.length - 1]
+        : customColorDefault,
+    );
+  }, [extraColors]);
 
   // 使用统一的主题色配置
   const presetColors = THEME_COLOR_CONFIGS;

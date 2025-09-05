@@ -1,4 +1,4 @@
-import useGlobalSettings from '@/hooks/useGlobalSettings';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import {
   AppstoreOutlined,
   BulbOutlined,
@@ -31,7 +31,8 @@ const { Title, Paragraph, Text } = Typography;
  * 展示所有可用的示例和演示页面
  */
 const ExamplesIndex: React.FC = () => {
-  const { isChineseLanguage } = useGlobalSettings();
+  const { data } = useUnifiedTheme();
+  const isChineseLanguage = data.language === 'zh-CN';
 
   // 示例列表数据
   const examples = [
@@ -56,25 +57,6 @@ const ExamplesIndex: React.FC = () => {
       ],
       icon: <AppstoreOutlined />,
       path: '/examples/antd-showcase',
-      featured: true,
-    },
-    {
-      id: 'navigation-token',
-      title: isChineseLanguage ? '导航Token使用指南' : 'Navigation Token Guide',
-      description: isChineseLanguage
-        ? '详细介绍新增的导航相关CSS变量token，展示两种导航风格的切换效果和使用方法。'
-        : 'Detailed introduction to the new navigation-related CSS variable tokens, showcasing two navigation styles switching effects and usage methods.',
-      tags: [
-        { text: isChineseLanguage ? '导航' : 'Navigation', color: 'blue' },
-        { text: isChineseLanguage ? 'Token' : 'Token', color: 'purple' },
-        {
-          text: isChineseLanguage ? 'CSS变量' : 'CSS Variables',
-          color: 'orange',
-        },
-        { text: isChineseLanguage ? '使用指南' : 'Guide', color: 'green' },
-      ],
-      icon: <CodeOutlined />,
-      path: '/examples/navigation-token',
       featured: true,
     },
     {

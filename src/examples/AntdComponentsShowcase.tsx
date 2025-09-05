@@ -1,4 +1,4 @@
-import useGlobalSettings from '@/hooks/useGlobalSettings';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import {
   AppstoreOutlined,
   BarChartOutlined,
@@ -73,7 +73,8 @@ const { useToken } = theme;
  * 展示各种组件在不同主题和语言下的效果
  */
 const AntdComponentsShowcase: React.FC = () => {
-  const { isChineseLanguage } = useGlobalSettings();
+  const { data } = useUnifiedTheme();
+  const isChineseLanguage = data.language === 'zh-CN';
   const { token } = useToken();
 
   // 组件状态

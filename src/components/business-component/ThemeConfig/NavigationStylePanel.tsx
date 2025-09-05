@@ -1,7 +1,5 @@
-import { useLayoutStyle } from '@/hooks/useLayoutStyle';
-import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import styles from './NavigationStylePanel.less';
 
 const cx = classNames.bind(styles);
@@ -20,16 +18,16 @@ interface NavigationStylePanelProps {
   onNavigationThemeToggle: () => void;
   /** 导航风格变更回调 */
   onNavigationStyleChange?: (styleId: string) => void;
+  /** 当前导航风格（可选，如果不提供则使用内部状态） */
+  currentNavigationStyle?: string;
 }
 
 const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
   isNavigationDarkMode,
   onNavigationThemeToggle,
   onNavigationStyleChange,
+  currentNavigationStyle = 'style1',
 }) => {
-  // 使用全局导航风格管理
-  const { navigationStyle, setNavigationStyle, layoutStyle } = useLayoutStyle();
-
   // 导航栏风格配置
   const navigationStyles: NavigationStyle[] = [
     {
@@ -45,33 +43,19 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
     },
   ];
 
-  // 导航栏风格状态管理（使用全局状态）
-  const [currentNavigationStyle, setCurrentNavigationStyle] =
-    useState<string>(navigationStyle);
-
-  // 同步全局导航风格状态
-  useEffect(() => {
-    setCurrentNavigationStyle(navigationStyle);
-  }, [navigationStyle]);
+  // 导航栏风格状态管理（使用传入的值或默认值）
+  const [localNavigationStyle, setLocalNavigationStyle] = useState<string>(
+    currentNavigationStyle,
+  );
 
   // 处理导航栏风格切换
   const handleNavigationStyleChange = (styleId: string) => {
-    const newStyleId = styleId as ThemeNavigationStyleType;
-    setCurrentNavigationStyle(styleId);
+    setLocalNavigationStyle(styleId);
 
-    // 更新全局导航风格状态
-    setNavigationStyle(newStyleId);
-
-    // 通知外部组件（如果需要）
+    // 通知外部组件
     onNavigationStyleChange?.(styleId);
 
-    console.log(
-      'NavigationStylePanel - 切换导航栏风格:',
-      styleId,
-      '-> 实际应用:',
-      newStyleId,
-    );
-    console.log('NavigationStylePanel - 当前布局风格:', layoutStyle);
+    console.log('NavigationStylePanel - 切换导航栏风格:', styleId);
   };
 
   // 处理深浅色风格切换（集成到导航深浅色管理中）
@@ -98,7 +82,7 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
             >
               <div
                 className={cx(styles.stylePreview, {
-                  [styles.active]: currentNavigationStyle === style.id,
+                  [styles.active]: localNavigationStyle === style.id,
                 })}
               >
                 <div
