@@ -1,7 +1,7 @@
 import BackgroundQuickSwitch from '@/components/BackgroundQuickSwitch';
 import GlobalBackgroundManager from '@/components/GlobalBackgroundManager';
-import useGlobalSettings from '@/hooks/useGlobalSettings';
 import useTexts from '@/hooks/useTexts';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import {
   BulbOutlined,
   HeartOutlined,
@@ -38,17 +38,33 @@ const { TabPane } = Tabs;
  */
 const ThemeDemo: React.FC = () => {
   const {
-    theme,
-    language,
-    isDarkMode,
-    isChineseLanguage,
-    toggleTheme,
-    toggleLanguage,
-    backgroundImageId,
-    setBackgroundImage,
-    backgroundImages,
-    getCurrentBackgroundImage,
-  } = useGlobalSettings();
+    data,
+    updateAntdTheme,
+    updateLanguage,
+    updateBackground,
+    backgroundConfigs,
+  } = useUnifiedTheme();
+
+  const isDarkMode = data.antdTheme === 'dark';
+  const isChineseLanguage = data.language === 'zh-CN';
+
+  const toggleTheme = async () => {
+    const newTheme = isDarkMode ? 'light' : 'dark';
+    await updateAntdTheme(newTheme);
+  };
+
+  const toggleLanguage = async () => {
+    const newLanguage = isChineseLanguage ? 'en-US' : 'zh-CN';
+    await updateLanguage(newLanguage);
+  };
+
+  const setBackgroundImage = async (backgroundId: string) => {
+    await updateBackground(backgroundId);
+  };
+
+  const getCurrentBackgroundImage = () => {
+    return backgroundConfigs.find((bg) => bg.id === data.backgroundId);
+  };
 
   const texts = useTexts();
 
@@ -75,11 +91,11 @@ const ThemeDemo: React.FC = () => {
         {isChineseLanguage ? '选择背景图片' : 'Select Background Image'}
       </div>
       <Radio.Group
-        value={backgroundImageId}
+        value={data.backgroundId}
         onChange={(e) => setBackgroundImage(e.target.value)}
       >
         <Space direction="vertical" size="small">
-          {backgroundImages.map((bg) => (
+          {backgroundConfigs.map((bg) => (
             <Radio key={bg.id} value={bg.id}>
               <div
                 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}

@@ -1,6 +1,6 @@
 import { getTexts } from '@/utils/locales';
 import { useMemo } from 'react';
-import useGlobalSettings from './useGlobalSettings';
+import { useUnifiedTheme } from './useUnifiedTheme';
 
 /**
  * 多语言文本 Hook
@@ -23,11 +23,11 @@ import useGlobalSettings from './useGlobalSettings';
  * ```
  */
 export const useTexts = () => {
-  const { language } = useGlobalSettings();
+  const { data } = useUnifiedTheme();
 
   const texts = useMemo(() => {
-    return getTexts(language);
-  }, [language]);
+    return getTexts(data.language);
+  }, [data.language]);
 
   return texts;
 };

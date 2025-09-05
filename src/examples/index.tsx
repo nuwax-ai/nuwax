@@ -1,4 +1,4 @@
-import useGlobalSettings from '@/hooks/useGlobalSettings';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import {
   AppstoreOutlined,
   BulbOutlined,
@@ -31,7 +31,8 @@ const { Title, Paragraph, Text } = Typography;
  * 展示所有可用的示例和演示页面
  */
 const ExamplesIndex: React.FC = () => {
-  const { isChineseLanguage } = useGlobalSettings();
+  const { data } = useUnifiedTheme();
+  const isChineseLanguage = data.language === 'zh-CN';
 
   // 示例列表数据
   const examples = [

@@ -1,4 +1,4 @@
-import { Language } from '@/hooks/useGlobalSettings';
+import { Language } from '@/types/theme.types';
 import type { Locale } from 'antd/es/locale';
 import enUS from 'antd/es/locale/en_US';
 import zhCN from 'antd/es/locale/zh_CN';
