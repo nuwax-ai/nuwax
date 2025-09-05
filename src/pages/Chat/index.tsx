@@ -5,6 +5,7 @@ import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
+import { SIDEBAR_WIDTH } from '@/constants/agent.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -303,6 +304,9 @@ const Chat: React.FC = () => {
     <div className={cx('flex', 'h-full')}>
       <div
         className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}
+        style={{
+          width: isSidebarVisible ? `calc(100% - ${SIDEBAR_WIDTH}px)` : '100%',
+        }}
         ref={messageViewRef}
       >
         <div

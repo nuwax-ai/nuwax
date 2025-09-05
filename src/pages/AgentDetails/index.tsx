@@ -5,6 +5,7 @@ import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
+import { SIDEBAR_WIDTH } from '@/constants/agent.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -34,7 +35,6 @@ import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
 /**
  * 主页咨询聊天页面
  */
@@ -201,12 +201,17 @@ const AgentDetails: React.FC = () => {
 
   return (
     <div className={cx('flex', 'h-full')}>
-      <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
+      <div
+        className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}
+        style={{
+          width: isSidebarVisible ? `calc(100% - ${SIDEBAR_WIDTH}px)` : '100%',
+        }}
+      >
         <div className={cx(styles['title-box'])}>
           <div className={cx(styles['title-container'])}>
             {/* 左侧标题 */}
             <Typography.Title
-              level={4}
+              level={5}
               className={cx(styles.title, 'clip-path-animation')}
               ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
             >
@@ -227,77 +232,85 @@ const AgentDetails: React.FC = () => {
             )}
           </div>
         </div>
-        <div className={cx(styles['chat-wrapper'], 'flex-1')}>
-          {loading ? (
-            <div
-              className={cx('flex', 'items-center', 'content-center', 'h-full')}
-            >
-              <LoadingOutlined className={cx(styles.loading)} />
-            </div>
-          ) : (
-            <>
-              {/* 新对话设置 */}
-              <NewConversationSet
-                key={agentId}
-                className="mb-16"
-                form={form}
-                isFilled
-                variables={variables}
-              />
-              {messageList?.length > 0 ? (
-                <>
-                  {messageList?.map((item: MessageInfo, index: number) => (
-                    <ChatView
-                      key={index}
-                      messageInfo={item}
-                      roleInfo={roleInfo}
-                      contentClassName={styles['chat-inner']}
-                      mode={'none'}
-                    />
-                  ))}
-                  {/*会话建议*/}
-                  <RecommendList
-                    itemClassName={styles['suggest-item']}
-                    chatSuggestList={chatSuggestList}
-                    onClick={handleMessageSend}
-                  />
-                </>
-              ) : (
-                isLoaded && (
-                  // Chat记录为空
-                  <AgentChatEmpty
-                    className={cx({ 'h-full': !variables?.length })}
-                    icon={agentDetail?.icon}
-                    name={agentDetail?.name || ''}
-                    // 会话建议
-                    extra={
-                      <RecommendList
-                        className="mt-16"
-                        itemClassName={cx(styles['suggest-item'])}
-                        chatSuggestList={chatSuggestList}
-                        onClick={handleMessageSend}
+        <div className={cx(styles['main-content-box'])}>
+          <div className={cx(styles['chat-wrapper'], 'flex-1')}>
+            {loading ? (
+              <div
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'h-full',
+                )}
+              >
+                <LoadingOutlined className={cx(styles.loading)} />
+              </div>
+            ) : (
+              <>
+                {/* 新对话设置 */}
+                <NewConversationSet
+                  key={agentId}
+                  className="mb-16"
+                  form={form}
+                  isFilled
+                  variables={variables}
+                />
+                {messageList?.length > 0 ? (
+                  <>
+                    {messageList?.map((item: MessageInfo, index: number) => (
+                      <ChatView
+                        key={index}
+                        messageInfo={item}
+                        roleInfo={roleInfo}
+                        contentClassName={styles['chat-inner']}
+                        mode={'none'}
                       />
-                    }
-                  />
-                )
-              )}
-            </>
-          )}
+                    ))}
+                    {/*会话建议*/}
+                    <RecommendList
+                      itemClassName={styles['suggest-item']}
+                      chatSuggestList={chatSuggestList}
+                      onClick={handleMessageSend}
+                    />
+                  </>
+                ) : (
+                  isLoaded && (
+                    // Chat记录为空
+                    <AgentChatEmpty
+                      className={cx({ 'h-full': !variables?.length })}
+                      icon={agentDetail?.icon}
+                      name={agentDetail?.name || ''}
+                      // 会话建议
+                      extra={
+                        <RecommendList
+                          className="mt-16"
+                          itemClassName={cx(styles['suggest-item'])}
+                          chatSuggestList={chatSuggestList}
+                          onClick={handleMessageSend}
+                        />
+                      }
+                    />
+                  )
+                )}
+              </>
+            )}
+          </div>
+          {/*会话输入框*/}
+          <ChatInputHome
+            className={cx(styles['chat-input-container'])}
+            key={`agent-details-${agentId}`}
+            onEnter={handleMessageSend}
+            isClearInput={false}
+            wholeDisabled={wholeDisabled}
+            manualComponents={agentDetail?.manualComponents || []}
+            selectedComponentList={selectedComponentList}
+            onSelectComponent={handleSelectComponent}
+          />
         </div>
-        {/*会话输入框*/}
-        <ChatInputHome
-          className={cx(styles['chat-input-container'])}
-          key={`agent-details-${agentId}`}
-          onEnter={handleMessageSend}
-          isClearInput={false}
-          wholeDisabled={wholeDisabled}
-          manualComponents={agentDetail?.manualComponents || []}
-          selectedComponentList={selectedComponentList}
-          onSelectComponent={handleSelectComponent}
-        />
       </div>
       <AgentSidebar
         ref={sidebarRef}
+        className={cx(styles['agent-sidebar'])}
         agentId={agentId}
         loading={loading}
         agentDetail={agentDetail}

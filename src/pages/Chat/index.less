@@ -1,13 +1,8 @@
 @import '@/styles/color';
 @import '@/styles/token';
-@sidebarWidth: 434px;
 
 .title-box {
-  // position: fixed;
-  // left: 0;
-  // top: 0;
-  // z-index: 99;
-  background-color: @colorBgContainer;
+  background-color: @pageContainerBg;
 
   .title-container {
     display: flex;
@@ -37,10 +32,11 @@
   // padding: 0 10px;
   height: 100%;
   position: relative;
-  min-width: 800px;
+  // min-width: 800px;
   width: 100%;
 
   .main-content-box {
+    padding: @padding @padding 0;
     //隐藏滚动条
     &::-webkit-scrollbar {
       display: none;
@@ -65,7 +61,7 @@
     }
 
     .chat-inner {
-      background-color: @colorBgContainer;
+      background-color: transparent;
     }
 
     .suggest-item {
@@ -82,9 +78,9 @@
   position: sticky;
   bottom: 0;
   z-index: 10;
+  background-color: transparent;
+  border-radius: @borderRadiusLg @borderRadiusLg 0 0;
   padding-bottom: 40px;
-  background-color: @colorBgContainer;
-  border-radius: 24px 24px 0 0;
   width: 100%;
 }
 
