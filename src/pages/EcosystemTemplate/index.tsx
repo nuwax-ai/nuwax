@@ -5,6 +5,7 @@ import SelectCategory from '@/components/EcosystemSelectCategory';
 import EcosystemShareModal, {
   EcosystemShareModalData,
 } from '@/components/EcosystemShareModal';
+import NoMoreDivider from '@/components/NoMoreDivider';
 import SelectComponent from '@/components/SelectComponent';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { TabItems, TabTypeEnum } from '@/constants/ecosystem.constants';
@@ -789,15 +790,20 @@ export default function EcosystemTemplate() {
           {loading && pluginData?.records?.length === 0 ? (
             <Loading className={cx('h-full')} />
           ) : pluginData?.records?.length ? (
-            <div className={cx(styles['list-section'])}>
-              {pluginData.records?.map((config) => (
-                <EcosystemCard
-                  key={config?.uid}
-                  {...convertToTemplateCard(config)}
-                  onClick={async () => await handleCardClick(config)}
-                />
-              ))}
-            </div>
+            <>
+              <div className={cx(styles['list-section'])}>
+                {pluginData.records?.map((config) => (
+                  <EcosystemCard
+                    key={config?.uid}
+                    {...convertToTemplateCard(config)}
+                    onClick={async () => await handleCardClick(config)}
+                  />
+                ))}
+              </div>
+              {!(pagination.current < (pluginData.pages || 0)) && (
+                <NoMoreDivider />
+              )}
+            </>
           ) : (
             <div
               className={cx('flex', 'h-full', 'items-center', 'content-center')}
