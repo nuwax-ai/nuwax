@@ -10,6 +10,7 @@ import { ReactComponent as PaletteSvgFile } from '@/assets/icons/nav/palette.svg
 import { ReactComponent as PluginsSvgFile } from '@/assets/icons/nav/plugins.svg';
 import { ReactComponent as PublishAuditSvgFile } from '@/assets/icons/nav/publish_audit.svg';
 import { ReactComponent as SettingsSvgFile } from '@/assets/icons/nav/settings.svg';
+import { ReactComponent as SidebarSvgFile } from '@/assets/icons/nav/sidebar.svg';
 import { ReactComponent as SpaceSquareSvgFile } from '@/assets/icons/nav/space_square.svg';
 import { ReactComponent as SquareSvgFile } from '@/assets/icons/nav/square.svg';
 import { ReactComponent as StarsSvgFile } from '@/assets/icons/nav/stars.svg';
@@ -39,6 +40,7 @@ const UserSvg = wrapSvg(UserSvgFile);
 const PublishAuditSvg = wrapSvg(PublishAuditSvgFile);
 const BackwardSvg = wrapSvg(BackwardSvgFile);
 const PaletteSvg = wrapSvg(PaletteSvgFile);
+const SidebarSvg = wrapSvg(SidebarSvgFile);
 export default {
   'icons-nav-home': HomeSvg,
   'icons-nav-workspace': WorkspaceSvg,
@@ -59,4 +61,5 @@ export default {
   'icons-nav-publish_audit': PublishAuditSvg,
   'icons-nav-backward': BackwardSvg,
   'icons-nav-palette': PaletteSvg,
+  'icons-nav-sidebar': SidebarSvg,
 } as Record<string, React.FC>;
