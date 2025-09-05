@@ -230,19 +230,6 @@ const Layout: React.FC = () => {
 
   return (
     <div className={mainContainerClassName}>
-      {/* 顶部右侧全局操作：主题、语言、主色 */}
-
-      {/* <ThemeControlPanel
-        isDarkMode={isDarkMode}
-        toggleTheme={toggleTheme}
-        language={language}
-        toggleLanguage={toggleLanguage}
-        primaryColor={primaryColor}
-        setPrimaryColor={setPrimaryColor}
-        backgroundImageId={backgroundImageId}
-        setBackgroundImage={setBackgroundImage}
-      /> */}
-
       {/* 侧边菜单栏及弹窗区域 */}
       <div
         ref={mobileMenuContainerRef}

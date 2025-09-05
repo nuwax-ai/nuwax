@@ -91,6 +91,7 @@ const HoverMenu: React.FC = () => {
       className={cx(
         styles['hover-menu'],
         showHoverMenu ? styles.visible : styles.hidden,
+        isSecondMenuCollapsed && styles['hover-menu-container-collapsed'],
       )}
       onMouseEnter={() => {
         // 鼠标进入悬浮菜单区域时，设置状态并取消隐藏定时器
@@ -116,31 +117,30 @@ const HoverMenu: React.FC = () => {
         style={{
           width: '100%',
           padding: '12px 0',
-          '--xagi-layout-second-menu-text-color': token.colorTextSecondary, // 悬浮菜单文字颜色 覆写
+          // 通过 style 设置 CSS 变量会导致类型报错，推荐通过 className + :root 或 styled 方案实现
+          // 这里临时用 as any 绕过类型检查，实际项目建议将变量写到全局 less 或 css module
+          ...({
+            ['--xagi-layout-second-menu-text-color']: token.colorTextSecondary, // 悬浮菜单文字颜色 覆写
+          } as React.CSSProperties),
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          minHeight: 0,
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            minHeight: 0,
-          }}
-        >
-          <ConditionRender condition={isShowTitle}>
-            <div style={{ padding: '22px 12px' }}>
-              <Typography.Title
-                level={4}
-                className={cx(styles['menu-title'])}
-                style={{ marginBottom: 0 }}
-              >
-                {menuTitle}
-              </Typography.Title>
-            </div>
-          </ConditionRender>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <MenuContent />
+        <ConditionRender condition={isShowTitle}>
+          <div style={{ padding: '22px 12px' }}>
+            <Typography.Title
+              level={4}
+              className={cx(styles['menu-title'])}
+              style={{ marginBottom: 0 }}
+            >
+              {menuTitle}
+            </Typography.Title>
           </div>
+        </ConditionRender>
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <MenuContent />
         </div>
       </HoverScrollbar>
     </div>

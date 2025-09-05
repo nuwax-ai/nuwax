@@ -14,6 +14,13 @@
   // box-shadow: var(--xagi-layout-shadow, @navSecondMenuShadow);
   color: var(--xagi-layout-second-menu-text-color, @navSecondMenuText);
 
+  &.hover-menu-container-collapsed {
+    border-radius: 0 @borderRadius @borderRadius 0;
+    background: @colorBgContainer;
+    border-right-width: 0;
+    box-shadow: 12px 0 24px -4px rgba(0, 0, 0, 12%);
+  }
+
   &.hidden {
     opacity: 0;
     pointer-events: none;
