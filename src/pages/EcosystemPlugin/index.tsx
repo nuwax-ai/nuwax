@@ -51,6 +51,7 @@ import EcosystemCard from '@/components/EcosystemCard';
 import NoMoreDivider from '@/components/NoMoreDivider';
 import Loading from '@/components/custom/Loading';
 import { CREATED_TABS } from '@/constants/common.constants';
+import { PlusOutlined } from '@ant-design/icons';
 const defaultTabs = CREATED_TABS.filter((item) =>
   [AgentComponentTypeEnum.Plugin].includes(item.key),
 );
@@ -621,7 +622,11 @@ export default function EcosystemPlugin() {
             />
 
             {activeTab === TabTypeEnum.SHARED && (
-              <Button type="primary" onClick={handleCreateShare}>
+              <Button
+                type="primary"
+                onClick={handleCreateShare}
+                icon={<PlusOutlined />}
+              >
                 创建分享
               </Button>
             )}

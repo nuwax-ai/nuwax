@@ -43,7 +43,7 @@ import {
   EcosystemSubTabTypeEnum,
   EcosystemUseStatusEnum,
 } from '@/types/interfaces/ecosystem';
-import { DownOutlined } from '@ant-design/icons';
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   App,
   Button,
@@ -675,8 +675,10 @@ export default function EcosystemTemplate() {
             allowClear
           />
           <Dropdown menu={menuProps}>
-            <Button type="primary" icon={<DownOutlined />} iconPosition="end">
+            <Button type="primary">
+              <PlusOutlined />
               创建分享
+              <DownOutlined />
             </Button>
           </Dropdown>
         </div>
