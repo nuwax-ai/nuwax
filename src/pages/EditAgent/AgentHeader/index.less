@@ -3,42 +3,45 @@
 
 .header {
   // gap: 10px;
-  padding: @padding @paddingLg;
+  padding: @paddingSm @paddingLg;
   // border-bottom: 1px solid @BLANK01;
   overflow-x: auto;
 
   .icon-backward {
-    padding: @paddingXs;
+    padding: @paddingXxs @paddingXs;
     margin-right: @marginLg;
   }
 
   .avatar {
-    width: 56px;
-    height: 56px;
+    width: 27px;
+    height: 27px;
     border-radius: @borderRadius;
   }
 
   .header-info {
     padding-left: @paddingSm;
-    // gap: 6px;
 
     .h-title {
       max-width: 360px;
       margin-right: @marginSm;
-      font-size: 20px;
+      font-size: 16px;
       font-weight: @fontWeightStrong;
+      line-height: 24px;
       color: @colorText;
       white-space: nowrap;
     }
 
     .edit-ico {
       color: @GRAY05;
+      font-size: 16px;
     }
 
     .agent-rel-info {
       gap: @marginXs;
       color: @colorTextTertiary;
-      font-size: @fontSize;
+      font-size: 12px;
+      margin-right: 10px;
+      line-height: 24px;
 
       img {
         width: 12px;
@@ -58,6 +61,15 @@
 
     .save-time {
       color: @colorTextTertiary;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 19px;
+    }
+
+    .volcano {
+      color: @colorWarningText;
+      background: @colorWarningBg;
+      padding: 4px 8px;
     }
 
     :global {
@@ -69,7 +81,7 @@
 
   .fold-box {
     margin-left: @marginLg;
-    padding: @paddingXs @paddingSm;
+    padding: 6px @paddingSm;
 
     .fold-btn {
       gap: @paddingXs;
