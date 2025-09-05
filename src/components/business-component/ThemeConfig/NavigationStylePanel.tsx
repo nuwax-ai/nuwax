@@ -110,15 +110,7 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
                       : styles.expandedNavbar,
                   )}
                 >
-                  <div className={cx(styles.navbarContent)}>
-                    <div className={cx(styles.navbarItem)}></div>
-                    <div className={cx(styles.navbarItem)}></div>
-                    <div className={cx(styles.navbarItem)}></div>
-                    {/* 风格2显示文字提示 */}
-                    {style.id === 'style2' && (
-                      <div className={cx(styles.styleText)}>有文字</div>
-                    )}
-                  </div>
+                  <div className={cx(styles.navbarContent)}></div>
                 </div>
               </div>
               <div className={cx(styles.styleLabel)}>{style.name}</div>
@@ -130,35 +122,35 @@ const NavigationStylePanel: React.FC<NavigationStylePanelProps> = ({
       {/* 导航栏深浅色选择 */}
       <div className={cx(styles.navigationColorOptions)}>
         <h4>深浅色</h4>
-        <div className={cx(styles.styleOptions)}>
+        <div className={cx(styles.colorOptions)}>
           {/* 浅色模式 */}
-          <div className={cx(styles.styleOption)}>
+          <div className={cx(styles.colorOption)}>
             <div
-              className={cx(styles.stylePreview, {
+              className={cx(styles.colorPreview, {
                 [styles.active]: !isNavigationDarkMode,
               })}
               onClick={() => isNavigationDarkMode && handleColorStyleToggle()}
             >
-              <div className={cx(styles.navbarPreview, styles.lightNavbar)}>
-                <div className={cx(styles.navbarContent)}></div>
+              <div className={cx(styles.colorItem, styles.lightNavbar)}>
+                <div className={cx(styles.colorItemContent)}></div>
               </div>
             </div>
-            <div className={cx(styles.styleLabel)}>浅色</div>
+            <div className={cx(styles.colorLabel)}>浅色</div>
           </div>
 
           {/* 深色模式 */}
-          <div className={cx(styles.styleOption)}>
+          <div className={cx(styles.colorOption)}>
             <div
-              className={cx(styles.stylePreview, {
+              className={cx(styles.colorPreview, {
                 [styles.active]: isNavigationDarkMode,
               })}
               onClick={() => !isNavigationDarkMode && handleColorStyleToggle()}
             >
-              <div className={cx(styles.navbarPreview, styles.darkNavbar)}>
-                <div className={cx(styles.navbarContent)}></div>
+              <div className={cx(styles.colorItem, styles.darkNavbar)}>
+                <div className={cx(styles.colorItemContent)}></div>
               </div>
             </div>
-            <div className={cx(styles.styleLabel)}>深色</div>
+            <div className={cx(styles.colorLabel)}>深色</div>
           </div>
         </div>
       </div>

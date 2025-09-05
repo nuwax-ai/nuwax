@@ -1,3 +1,4 @@
+import SiteFooter from '@/components/SiteFooter';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import { apiLogin } from '@/services/account';
 import { LoginTypeEnum } from '@/types/enums/login';
@@ -290,6 +291,7 @@ const Login: React.FC = () => {
                   </Checkbox>
                 </Form.Item>
               </Form>
+              <SiteFooter text={tenantConfigInfo?.pageFooterText}></SiteFooter>
             </div>
           )}
         </div>
