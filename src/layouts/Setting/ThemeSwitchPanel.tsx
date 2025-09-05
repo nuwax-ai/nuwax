@@ -122,7 +122,6 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   return (
     <div className={cx(styles.container)}>
       <div className={cx(styles.title)}>主题切换</div>
-
       <div className={cx(styles.content)}>
         {/* 垂直布局的主题配置区域 */}
         <div className={cx(styles.configContainer)}>

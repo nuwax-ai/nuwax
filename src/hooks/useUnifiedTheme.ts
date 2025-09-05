@@ -173,7 +173,6 @@ export const useUnifiedTheme = (): UseUnifiedThemeReturn => {
   const resetToDefault = createUpdateMethod(
     unifiedThemeService.resetToDefault.bind(unifiedThemeService),
   );
-
   // 衍生状态（保持与现有代码的兼容性）
   const isDarkMode = data.antdTheme === 'dark';
   const isNavigationDark = data.layoutStyle === ThemeLayoutColorStyle.DARK;
