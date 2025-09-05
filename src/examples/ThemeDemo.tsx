@@ -1,5 +1,3 @@
-import BackgroundQuickSwitch from '@/components/BackgroundQuickSwitch';
-import GlobalBackgroundManager from '@/components/GlobalBackgroundManager';
 import useTexts from '@/hooks/useTexts';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import {
@@ -317,102 +315,6 @@ const ThemeDemo: React.FC = () => {
                   isChineseLanguage: {isChineseLanguage.toString()}
                 </Text>
               </Space>
-            </Card>
-          </Space>
-        </TabPane>
-
-        <TabPane tab="背景管理" key="background">
-          <GlobalBackgroundManager />
-        </TabPane>
-
-        <TabPane tab="快速切换" key="quick-switch">
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <Card title="背景快速切换组件演示">
-              <Space
-                direction="vertical"
-                size="large"
-                style={{ width: '100%' }}
-              >
-                <div>
-                  <Text strong>默认样式：</Text>
-                  <BackgroundQuickSwitch />
-                </div>
-
-                <div>
-                  <Text strong>主要样式：</Text>
-                  <BackgroundQuickSwitch type="primary" />
-                </div>
-
-                <div>
-                  <Text strong>虚线样式：</Text>
-                  <BackgroundQuickSwitch type="dashed" />
-                </div>
-
-                <div>
-                  <Text strong>小尺寸：</Text>
-                  <BackgroundQuickSwitch size="small" />
-                </div>
-
-                <div>
-                  <Text strong>大尺寸：</Text>
-                  <BackgroundQuickSwitch size="large" />
-                </div>
-
-                <div>
-                  <Text strong>隐藏随机按钮：</Text>
-                  <BackgroundQuickSwitch showRandom={false} />
-                </div>
-
-                <div>
-                  <Text strong>隐藏设置按钮：</Text>
-                  <BackgroundQuickSwitch showSettings={false} />
-                </div>
-
-                <div>
-                  <Text strong>只显示背景选择：</Text>
-                  <BackgroundQuickSwitch
-                    showRandom={false}
-                    showSettings={false}
-                  />
-                </div>
-              </Space>
-            </Card>
-
-            <Card title="使用说明">
-              <Paragraph>
-                <Text strong>BackgroundQuickSwitch 组件特点：</Text>
-              </Paragraph>
-              <ul>
-                <li>轻量级：只包含必要的背景切换功能</li>
-                <li>可配置：支持显示/隐藏随机切换和设置按钮</li>
-                <li>多样式：支持不同的按钮类型和尺寸</li>
-                <li>响应式：自动适配不同屏幕尺寸</li>
-                <li>易集成：可以在任何页面或组件中使用</li>
-              </ul>
-
-              <Paragraph>
-                <Text strong>使用方式：</Text>
-              </Paragraph>
-              <pre
-                style={{
-                  background: '#f5f5f5',
-                  padding: '12px',
-                  borderRadius: '4px',
-                }}
-              >
-                {`import BackgroundQuickSwitch from '@/components/BackgroundQuickSwitch';
-
-// 基础使用
-<BackgroundQuickSwitch />
-
-// 自定义配置
-<BackgroundQuickSwitch 
-  type="primary"
-  size="large"
-  showRandom={false}
-  showSettings={true}
-/>`}
-              </pre>
             </Card>
           </Space>
         </TabPane>
