@@ -34,8 +34,6 @@ interface UseUnifiedThemeReturn {
 
   // 状态
   isLoading: boolean;
-  configSource: 'user' | 'tenant' | 'default';
-  configSourceText: string;
 
   // 更新方法
   updatePrimaryColor: (color: string, options?: UpdateOptions) => Promise<void>;
@@ -176,10 +174,6 @@ export const useUnifiedTheme = (): UseUnifiedThemeReturn => {
     unifiedThemeService.resetToDefault.bind(unifiedThemeService),
   );
 
-  // 获取配置信息
-  const configSource = unifiedThemeService.getConfigSource();
-  const configSourceText = unifiedThemeService.getConfigSourceText();
-
   // 衍生状态（保持与现有代码的兼容性）
   const isDarkMode = data.antdTheme === 'dark';
   const isNavigationDark = data.layoutStyle === ThemeLayoutColorStyle.DARK;
@@ -198,8 +192,6 @@ export const useUnifiedTheme = (): UseUnifiedThemeReturn => {
 
     // 状态
     isLoading,
-    configSource,
-    configSourceText,
 
     // 更新方法
     updatePrimaryColor,

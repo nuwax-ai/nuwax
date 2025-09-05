@@ -48,8 +48,6 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     backgroundId,
     navigationStyle,
     isNavigationDark,
-    configSource,
-    configSourceText,
     extraColors,
     updatePrimaryColor,
     updateBackground,
@@ -124,20 +122,6 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   return (
     <div className={cx(styles.container)}>
       <div className={cx(styles.title)}>主题切换</div>
-
-      {/* 配置来源信息 */}
-      <div className={cx(styles.configSource)}>
-        <span className={cx(styles.configSourceLabel)}>配置来源：</span>
-        <span
-          className={cx(styles.configSourceValue, {
-            [styles.local]: configSource === 'user',
-            [styles.tenant]: configSource === 'tenant',
-            [styles.default]: configSource === 'default',
-          })}
-        >
-          {configSourceText}
-        </span>
-      </div>
 
       <div className={cx(styles.content)}>
         {/* 垂直布局的主题配置区域 */}

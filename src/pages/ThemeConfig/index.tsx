@@ -35,8 +35,6 @@ const ThemeConfig: React.FC = () => {
     navigationStyle,
     layoutStyle,
     isNavigationDark,
-    configSource,
-    configSourceText,
     extraColors,
     updatePrimaryColor,
     updateBackground,
@@ -239,18 +237,6 @@ const ThemeConfig: React.FC = () => {
   return (
     <div className={cx(styles.container)}>
       <div className={cx(styles.title)}>主题配置</div>
-      <div className={cx(styles.configSource)}>
-        <span className={cx(styles.configSourceLabel)}>当前配置来源：</span>
-        <span
-          className={cx(styles.configSourceValue, {
-            [styles.local]: configSource === 'user',
-            [styles.tenant]: configSource === 'tenant',
-            [styles.default]: configSource === 'default',
-          })}
-        >
-          {configSourceText}
-        </span>
-      </div>
       <div className={cx(styles.content)}>
         {/* 垂直布局的主题配置区域 */}
         <div className={cx(styles.configContainer)}>
