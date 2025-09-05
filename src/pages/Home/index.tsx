@@ -18,13 +18,7 @@ import type {
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import { App } from 'antd';
 import classNames from 'classnames';
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useRequest } from 'umi';
 import DraggableHomeContent from './DraggableHomeContent';
 import styles from './index.less';
@@ -52,43 +46,10 @@ const Home: React.FC<{ theme?: 'light' | 'dark' }> = ({ theme = 'light' }) => {
 
   // 布局相关状态
   const containerRef = useRef<HTMLDivElement>(null);
-  const [inputSectionHeight, setInputSectionHeight] = useState<number>(432); // 输入框部分动态高度
 
   // 常量
   const MIN_INPUT_HEIGHT = 432; // 输入框部分最小高度
   const RECOMMEND_HEIGHT = 360; // 推荐部分固定高度
-
-  // 动态计算输入框区域高度（基于第一屏视口高度）
-  const calculateInputSectionHeight = useCallback(() => {
-    // 使用视口高度作为计算基准，而不是容器高度
-    const viewportHeight = window.innerHeight;
-
-    // 计算输入框区域高度：视口高度 - 推荐区域固定高度(360px)
-    const calculatedHeight = viewportHeight - RECOMMEND_HEIGHT;
-
-    // 确保输入框区域高度不小于最小值(432px)
-    const finalHeight = Math.max(calculatedHeight, MIN_INPUT_HEIGHT);
-
-    setInputSectionHeight(finalHeight);
-  }, []);
-
-  // 监听窗口大小变化
-  useLayoutEffect(() => {
-    const handleResize = () => {
-      calculateInputSectionHeight();
-    };
-
-    // 初始计算
-    calculateInputSectionHeight();
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [calculateInputSectionHeight]);
-
-  // 组件挂载后初始化计算
-  useEffect(() => {
-    calculateInputSectionHeight();
-  }, [calculateInputSectionHeight]);
 
   // 主页智能体分类列表
   const { run: runCategoryList } = useRequest(apiHomeCategoryList, {
@@ -207,7 +168,6 @@ const Home: React.FC<{ theme?: 'light' | 'dark' }> = ({ theme = 'light' }) => {
       <div
         className={cx(styles.inputSection)}
         style={{
-          height: `${inputSectionHeight}px`,
           minHeight: `${MIN_INPUT_HEIGHT}px`,
         }}
       >
