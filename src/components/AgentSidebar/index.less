@@ -1,9 +1,10 @@
 @import '@/styles/color';
 @import '@/styles/token';
-@sidebarWidth: 434px;
+@sidebarWidth: 368px + 32px;
 
 .rightSidebar {
   width: @sidebarWidth;
+  box-sizing: content-box;
   border-left: @lineWidth @lineType @colorBorderSecondary;
   visibility: visible;
   opacity: 1;
@@ -34,7 +35,7 @@
   .container-content {
     width: 100%;
     height: 100%;
-    padding: 0 10px;
+    padding: 0 @padding;
     overflow-x: hidden;
     overflow-y: hidden;
     position: relative;
