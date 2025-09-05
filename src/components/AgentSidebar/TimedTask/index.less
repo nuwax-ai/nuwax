@@ -1,27 +1,55 @@
 @import '@/styles/color.less';
+@import '@/styles/token.less';
 
 .container {
   min-height: 250px;
-  padding: 20px 0 0;
-  box-shadow: 0 -0.5px 0 @GRAY19;
+  padding: @padding 0;
+  gap: @marginXxs;
 
   .title {
-    font-size: 16px;
-    font-weight: bold;
-    color: @GRAY05;
+    margin-bottom: 0;
+  }
+
+  .titleBox {
+    padding: @paddingXs;
   }
 
   .create {
-    font-size: 14px;
-    color: @GRAY16;
+    color: @colorTextTertiary;
+    font-size: @fontSizeSm;
+    gap: 2px;
+    height: 20px;
+    line-height: 20px;
+    padding: 0;
+    border: none;
+
+    :global {
+      .ant-btn-icon {
+        height: 20px;
+        padding: 2px 0;
+      }
+    }
   }
 
   .tab {
     :global {
       .ant-tabs-tab {
-        font-size: 14px;
-        color: @GRAY05;
+        font-size: @fontSize;
+        color: @colorTextSecondary;
+        line-height: @lineHeight;
         user-select: none; // 禁止选中文字
+        padding: @paddingXs;
+        border-radius: @borderRadius;
+      }
+
+      .ant-tabs-tab-active {
+        background-color: @colorPrimaryBg;
+      }
+
+      .ant-tabs-nav {
+        &::before {
+          display: none;
+        }
       }
 
       .ant-tabs-tab.ant-tabs-tab-focus .ant-tabs-tab-btn {
@@ -29,14 +57,14 @@
       }
 
       .ant-tabs-tab-active .ant-tabs-tab-btn {
-        font-size: 14px;
-        font-weight: bold;
-        color: @GRAY15;
+        font-size: @fontSize;
+        font-weight: @fontWeightStrong;
+        color: @colorPrimaryText;
         text-shadow: none;
       }
 
       .ant-tabs-ink-bar {
-        background: @GRAY15;
+        display: none;
       }
     }
   }

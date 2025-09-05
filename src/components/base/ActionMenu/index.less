@@ -10,23 +10,24 @@
   display: flex;
   align-items: center;
   gap: @paddingXs;
-  padding: @paddingXs @paddingSm;
-  border-radius: @borderRadiusSm;
+  padding: @paddingXxs @paddingSm;
+  border-radius: @borderRadius;
+  background-color: @colorPrimaryBg;
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
   outline: none;
 
   &:hover {
-    background-color: @controlItemBgHover;
+    background-color: @colorPrimaryBgHover;
   }
 
   &:active {
-    background-color: @controlItemBgActive;
+    background-color: @colorPrimaryBgHover;
   }
 
   &:focus {
-    background-color: @controlItemBgActive;
+    background-color: @colorPrimaryBgHover;
   }
 
   .action-icon {
@@ -40,7 +41,7 @@
   }
 
   .action-text {
-    font-size: 14px;
+    font-size: @fontSize;
     color: @colorText;
     white-space: nowrap;
     transition: all 0.2s ease;
@@ -49,9 +50,9 @@
   // 更多按钮样式
   &.more-button {
     .more-arrow {
-      font-size: 12px;
+      font-size: @fontSizeSm;
       color: @colorText;
-      margin-left: 4px;
+      margin-left: @marginXxs;
       transition: all 0.2s ease;
     }
 
@@ -74,7 +75,7 @@
 
     .action-icon,
     .action-text {
-      color: @BLANK20;
+      color: @colorTextDisabled;
     }
   }
 }

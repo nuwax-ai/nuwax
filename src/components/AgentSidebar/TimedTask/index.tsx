@@ -1,3 +1,4 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { apiAgentTaskCancel, apiAgentTaskList } from '@/services/agentTask';
 import { TaskStatus } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
@@ -6,8 +7,7 @@ import {
   TimedConversationTaskParams,
   TimedTaskProps,
 } from '@/types/interfaces/agentTask';
-import { PlusOutlined } from '@ant-design/icons';
-import { message, Tabs, TabsProps } from 'antd';
+import { Button, message, Tabs, TabsProps, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel, useRequest } from 'umi';
@@ -156,14 +156,26 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
 
   return (
     <div className={cx(styles.container, 'flex-1', 'flex', 'flex-col')}>
-      <div className={cx('flex', 'items-center', 'content-between')}>
-        <h3 className={cx(styles.title)}>定时任务</h3>
-        <span
+      <div
+        className={cx(
+          'flex',
+          'items-center',
+          'content-between',
+          styles.titleBox,
+        )}
+      >
+        <Typography.Title className={cx(styles.title)} level={5}>
+          定时任务
+        </Typography.Title>
+        <Button
+          size="small"
           className={cx(styles.create, 'cursor-pointer')}
           onClick={handleTaskCreate}
+          icon={<SvgIcon name="icons-common-plus" style={{ fontSize: 16 }} />}
+          type="text"
         >
-          <PlusOutlined />
-        </span>
+          添加
+        </Button>
       </div>
       {/* 定时任务tab */}
       <Tabs

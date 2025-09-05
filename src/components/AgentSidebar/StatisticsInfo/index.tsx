@@ -19,7 +19,6 @@ const StatisticsInfo: React.FC<StatisticsInfoProps> = ({
         onClick={onClose}
         style={{
           display: visible ? 'block' : 'none',
-          fontSize: 24,
         }}
       />
     </header>

@@ -20,7 +20,7 @@ const AgentContent: React.FC<AgentContentProps> = ({ agentDetail }) => {
     <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
       <img className={styles.avatar} src={agentDetail?.icon || agentImage} />
       <Typography.Title
-        level={3}
+        level={5}
         className={styles.title}
         ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
       >
