@@ -228,7 +228,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           placeholder="直接输入指令；可通过回车发送"
           autoSize={{ minRows: 2, maxRows: 6 }}
         />
-        <footer className={cx('flex', styles.footer)}>
+        <footer className={cx('flex', 'flex-1', styles.footer)}>
           <ConditionRender condition={!!onClear}>
             <Tooltip title="清空会话记录">
               <span

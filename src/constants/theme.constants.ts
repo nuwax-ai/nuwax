@@ -124,14 +124,14 @@ export const THEME_BACKGROUND_CONFIGS: ThemeBackgroundConfig[] = [
  * 注意：这些变量仅用于自定义布局组件，不影响 Ant Design 组件
  */
 export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
-  // 浅色 + 紧凑模式
+  // 浅色 + 风格1
   'light-style1': {
     layout: {
       '--xagi-layout-text-primary': '#000000',
-      '--xagi-layout-text-secondary': 'rgba(0, 0, 0, 0.85)',
+      '--xagi-layout-text-secondary': 'rgba(0, 0, 0, 0.65)',
       '--xagi-layout-text-tertiary': 'rgba(0, 0, 0, 0.65)',
       '--xagi-layout-text-disabled': 'rgba(0, 0, 0, 0.25)',
-      '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.85)',
+      '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.65)',
       '--xagi-layout-bg-primary': 'rgba(255, 255, 255, 0.95)',
       '--xagi-layout-bg-secondary': 'rgba(255, 255, 255, 0.85)',
       '--xagi-layout-bg-card': 'rgba(255, 255, 255, 0.65)',
@@ -146,16 +146,17 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
       '--xagi-nav-first-menu-width': '60px',
       '--xagi-page-container-margin': '16px',
       '--xagi-page-container-border-radius': '12px',
+      '--xagi-page-container-border-color': 'transparent',
     },
   },
-  // 浅色 + 展开模式
+  // 浅色 + 风格2
   'light-style2': {
     layout: {
       '--xagi-layout-text-primary': '#000000',
-      '--xagi-layout-text-secondary': 'rgba(0, 0, 0, 0.85)',
+      '--xagi-layout-text-secondary': 'rgba(0, 0, 0, 0.65)',
       '--xagi-layout-text-tertiary': 'rgba(0, 0, 0, 0.65)',
       '--xagi-layout-text-disabled': 'rgba(0, 0, 0, 0.25)',
-      '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.85)',
+      '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.65)',
       '--xagi-layout-bg-primary': 'rgba(255, 255, 255, 0.95)',
       '--xagi-layout-bg-secondary': 'rgba(255, 255, 255, 0.85)',
       '--xagi-layout-bg-card': 'rgba(255, 255, 255, 0.65)',
@@ -169,10 +170,11 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
     navigation: {
       '--xagi-nav-first-menu-width': '88px',
       '--xagi-page-container-margin': '0px',
-      '--xagi-page-container-border-radius': '0px',
+      '--xagi-page-container-border-radius': '0',
+      '--xagi-page-container-border-color': 'rgba(0, 0, 0, 0.15)',
     },
   },
-  // 深色 + 紧凑模式
+  // 深色 + 风格1
   'dark-style1': {
     layout: {
       '--xagi-layout-text-primary': '#ffffff',
@@ -184,8 +186,8 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
       '--xagi-layout-bg-secondary': 'rgba(0, 0, 0, 0.65)',
       '--xagi-layout-bg-card': 'rgba(0, 0, 0, 0.45)',
       '--xagi-layout-bg-input': 'rgba(0, 0, 0, 0.25)',
-      '--xagi-layout-border-primary': 'rgba(0, 0, 0, 0.15)',
-      '--xagi-layout-border-secondary': 'rgba(0, 0, 0, 0.1)',
+      '--xagi-layout-border-primary': 'rgba(255, 255, 255, 0.12)',
+      '--xagi-layout-border-secondary': 'rgba(255, 255, 255, 0.08)',
       '--xagi-layout-shadow': 'rgba(0, 0, 0, 0.6)',
       '--xagi-layout-overlay': 'rgba(0, 0, 0, 0.7)',
       '--xagi-layout-bg-container': '#ffffff',
@@ -194,22 +196,23 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
       '--xagi-nav-first-menu-width': '60px',
       '--xagi-page-container-margin': '16px',
       '--xagi-page-container-border-radius': '12px',
+      '--xagi-page-container-border-color': 'transparent',
     },
   },
-  // 深色 + 展开模式
+  // 深色 + 风格2
   'dark-style2': {
     layout: {
       '--xagi-layout-text-primary': '#ffffff',
       '--xagi-layout-text-secondary': 'rgba(255, 255, 255, 0.85)',
       '--xagi-layout-text-tertiary': 'rgba(255, 255, 255, 0.65)',
       '--xagi-layout-text-disabled': 'rgba(255, 255, 255, 0.25)',
-      '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.85)',
+      '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.65)',
       '--xagi-layout-bg-primary': 'rgba(0, 0, 0, 0.85)',
       '--xagi-layout-bg-secondary': 'rgba(0, 0, 0, 0.85)',
       '--xagi-layout-bg-card': 'rgba(0, 0, 0, 0.45)',
       '--xagi-layout-bg-input': 'rgba(0, 0, 0, 0.25)',
-      '--xagi-layout-border-primary': 'rgba(0, 0, 0, 0.15)',
-      '--xagi-layout-border-secondary': 'rgba(0, 0, 0, 0.1)',
+      '--xagi-layout-border-primary': 'rgba(255, 255, 255, 0.12)',
+      '--xagi-layout-border-secondary': 'rgba(255, 255, 255, 0.08)',
       '--xagi-layout-shadow': 'rgba(0, 0, 0, 0.6)',
       '--xagi-layout-overlay': 'rgba(0, 0, 0, 0.7)',
       '--xagi-layout-bg-container': '#ffffff',
@@ -218,6 +221,7 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
       '--xagi-nav-first-menu-width': '88px',
       '--xagi-page-container-margin': '0px',
       '--xagi-page-container-border-radius': '0px',
+      '--xagi-page-container-border-color': 'rgba(0, 0, 0, 0.15)',
     },
   },
 };

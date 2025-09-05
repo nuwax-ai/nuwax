@@ -61,32 +61,39 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
           <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
             {agentConfigInfo?.name}
           </h3>
+
+          <div className={cx('flex', 'items-center', styles['agent-rel-info'])}>
+            <ConditionRender condition={agentConfigInfo?.space?.icon}>
+              <img src={agentConfigInfo?.space?.icon} alt="" />
+            </ConditionRender>
+            <span className={cx(styles['space-name'], 'text-ellipsis')}>
+              {agentConfigInfo?.space?.name}
+            </span>
+          </div>
+
           <FormOutlined
             className={cx(styles['edit-ico'])}
             onClick={onEditAgent}
           />
-        </div>
-        <div className={cx('flex', 'items-center', styles['agent-rel-info'])}>
-          <ConditionRender condition={agentConfigInfo?.space?.icon}>
-            <img src={agentConfigInfo?.space?.icon} alt="" />
-          </ConditionRender>
-          <span className={cx(styles['space-name'], 'text-ellipsis')}>
-            {agentConfigInfo?.space?.name}
-          </span>
         </div>
       </div>
       {/* <h2 className={cx('absolute', styles['header-title'])}>编排</h2> */}
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         <div className={cx('flex', 'items-center', styles['save-time-box'])}>
           <span className={cx(styles['save-time'])}>
-            草稿自动保存于{dayjs(agentConfigInfo?.modified).format('HH:mm')}
+            草稿自动保存于&nbsp;
+            {dayjs(agentConfigInfo?.modified).format('HH:mm')}
           </span>
           {/* 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布 */}
           {agentConfigInfo?.publishDate !== null &&
             dayjs(agentConfigInfo?.publishDate).isBefore(
               agentConfigInfo?.modified,
             ) && (
-              <Tag bordered={false} color="volcano">
+              <Tag
+                bordered={false}
+                color="volcano"
+                className={cx(styles['volcano'])}
+              >
                 有更新未发布
               </Tag>
             )}
@@ -110,7 +117,6 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
           type="primary"
           className={cx(styles['publish-btn'])}
           onClick={onPublish}
-          size="large"
           disabled={disabledBtn}
         >
           发布

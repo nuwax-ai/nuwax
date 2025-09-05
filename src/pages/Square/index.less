@@ -3,6 +3,12 @@
 .container {
   padding: 20px 26px 16px;
 
+  /* 隐藏滚动条但保持滚动功能 */
+  &::-webkit-scrollbar {
+    width: 0;
+    background: transparent;
+  }
+
   .header {
     margin-bottom: 30px;
     padding: 30px 60px;

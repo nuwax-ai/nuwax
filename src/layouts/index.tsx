@@ -43,6 +43,7 @@ const Layout: React.FC = () => {
 
   // 导航风格管理（使用独立的布局风格系统）
   const { navigationStyle, layoutStyle } = useLayoutStyle();
+  const { isSecondMenuCollapsed } = useModel('layout');
 
   // 状态管理
   const {
@@ -217,28 +218,18 @@ const Layout: React.FC = () => {
       cx(
         'flex-1',
         'overflow-y',
+        styles[
+          `xagi-layout-${isSecondMenuCollapsed ? 'collapsed' : 'expanded'}`
+        ],
         styles['page-container'],
         styles[`xagi-layout-${layoutStyle}`],
         styles[`xagi-nav-${navigationStyle}`],
       ),
-    [layoutStyle, navigationStyle],
+    [layoutStyle, navigationStyle, isSecondMenuCollapsed],
   );
 
   return (
     <div className={mainContainerClassName}>
-      {/* 顶部右侧全局操作：主题、语言、主色 */}
-
-      {/* <ThemeControlPanel
-        isDarkMode={isDarkMode}
-        toggleTheme={toggleTheme}
-        language={language}
-        toggleLanguage={toggleLanguage}
-        primaryColor={primaryColor}
-        setPrimaryColor={setPrimaryColor}
-        backgroundImageId={backgroundImageId}
-        setBackgroundImage={setBackgroundImage}
-      /> */}
-
       {/* 侧边菜单栏及弹窗区域 */}
       <div
         ref={mobileMenuContainerRef}

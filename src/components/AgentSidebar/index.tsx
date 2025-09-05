@@ -33,7 +33,7 @@ const AgentSidebar = forwardRef<AgentSidebarRef, AgentSidebarProps>(
     },
     ref,
   ) => {
-    const [visible, setVisible] = useState<boolean>(true);
+    const [visible, setVisible] = useState<boolean>(false);
     const [foldVisible, setFoldVisible] = useState<boolean>(false);
     const { showType } = useModel('conversationInfo');
 

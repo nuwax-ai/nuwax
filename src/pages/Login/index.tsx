@@ -291,7 +291,19 @@ const Login: React.FC = () => {
                   </Checkbox>
                 </Form.Item>
               </Form>
-              <SiteFooter text={tenantConfigInfo?.pageFooterText}></SiteFooter>
+
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  padding: '0 64px',
+                }}
+              >
+                <SiteFooter
+                  text={tenantConfigInfo?.pageFooterText}
+                ></SiteFooter>
+              </div>
             </div>
           )}
         </div>

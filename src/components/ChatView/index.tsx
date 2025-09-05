@@ -6,17 +6,17 @@ import MarkdownRenderer from '@/components/MarkdownRenderer';
 import CopyButton from '@/components/base/CopyButton';
 import { USER_INFO } from '@/constants/home.constants';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
   AttachmentFile,
   ChatViewProps,
 } from '@/types/interfaces/conversationInfo';
-import { isCurrentDarkMode } from '@/utils/theme';
-import { message, theme } from 'antd';
+import { message } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo } from 'react';
 import { useModel } from 'umi';
 import ChatBottomDebug from './ChatBottomDebug';
 import ChatBottomMore from './ChatBottomMore';
@@ -30,12 +30,9 @@ const cx = classNames.bind(styles);
 const ChatView: React.FC<ChatViewProps> = memo(
   ({ className, contentClassName, roleInfo, messageInfo, mode = 'chat' }) => {
     const { userInfo } = useModel('userInfo');
-    const { token } = theme.useToken();
-    const [isDarkMode, setIsDarkMode] = useState(isCurrentDarkMode());
+    const { data } = useUnifiedTheme();
+    const isDarkMode = data.antdTheme === 'dark';
 
-    useEffect(() => {
-      setIsDarkMode(isCurrentDarkMode());
-    }, [token.colorBgContainer]);
     useEffect(() => {
       console.log(isDarkMode);
     }, [isDarkMode]);

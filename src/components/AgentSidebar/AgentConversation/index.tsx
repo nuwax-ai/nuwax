@@ -1,9 +1,10 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import Loading from '@/components/custom/Loading';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { AgentConversationProps } from '@/types/interfaces/agentTask';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { formatTimeAgo } from '@/utils/common';
-import { Empty } from 'antd';
+import { Button, Empty, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { history, useModel, useRequest } from 'umi';
@@ -65,14 +66,32 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
   return (
     <div className={cx(styles.container)}>
       {!loadingHistory && (
-        <div className={cx('flex', 'items-center', 'content-between')}>
-          <h3 className={cx(styles.title)}>相关会话</h3>
-          <span
+        <div
+          className={cx(
+            'flex',
+            'items-center',
+            'content-between',
+            styles.titleBox,
+          )}
+        >
+          <Typography.Title className={cx(styles.title)} level={5}>
+            相关会话
+          </Typography.Title>
+          <Button
+            size="small"
             className={cx(styles.more, 'cursor-pointer')}
             onClick={handleMore}
+            icon={
+              <SvgIcon
+                name="icons-common-caret_right"
+                style={{ fontSize: 16 }}
+              />
+            }
+            iconPosition="end"
+            type="text"
           >
             查看更多
-          </span>
+          </Button>
         </div>
       )}
       <div className={cx(styles['chat-wrapper'])}>

@@ -5,6 +5,7 @@ import SelectCategory from '@/components/EcosystemSelectCategory';
 import EcosystemShareModal, {
   EcosystemShareModalData,
 } from '@/components/EcosystemShareModal';
+import NoMoreDivider from '@/components/NoMoreDivider';
 import SelectComponent from '@/components/SelectComponent';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { TabItems, TabTypeEnum } from '@/constants/ecosystem.constants';
@@ -42,7 +43,7 @@ import {
   EcosystemSubTabTypeEnum,
   EcosystemUseStatusEnum,
 } from '@/types/interfaces/ecosystem';
-import { DownOutlined } from '@ant-design/icons';
+import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   App,
   Button,
@@ -674,8 +675,10 @@ export default function EcosystemTemplate() {
             allowClear
           />
           <Dropdown menu={menuProps}>
-            <Button type="primary" icon={<DownOutlined />} iconPosition="end">
+            <Button type="primary">
+              <PlusOutlined />
               创建分享
+              <DownOutlined />
             </Button>
           </Dropdown>
         </div>
@@ -789,15 +792,20 @@ export default function EcosystemTemplate() {
           {loading && pluginData?.records?.length === 0 ? (
             <Loading className={cx('h-full')} />
           ) : pluginData?.records?.length ? (
-            <div className={cx(styles['list-section'])}>
-              {pluginData.records?.map((config) => (
-                <EcosystemCard
-                  key={config?.uid}
-                  {...convertToTemplateCard(config)}
-                  onClick={async () => await handleCardClick(config)}
-                />
-              ))}
-            </div>
+            <>
+              <div className={cx(styles['list-section'])}>
+                {pluginData.records?.map((config) => (
+                  <EcosystemCard
+                    key={config?.uid}
+                    {...convertToTemplateCard(config)}
+                    onClick={async () => await handleCardClick(config)}
+                  />
+                ))}
+              </div>
+              {!(pagination.current < (pluginData.pages || 0)) && (
+                <NoMoreDivider />
+              )}
+            </>
           ) : (
             <div
               className={cx('flex', 'h-full', 'items-center', 'content-center')}

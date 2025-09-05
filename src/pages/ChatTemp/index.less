@@ -5,7 +5,7 @@
   position: sticky;
   top: 0;
   z-index: 99;
-  background-color: @WHITE16;
+  background-color: @colorBgContainer;
 
   .title {
     position: sticky;
@@ -30,16 +30,17 @@
     box-sizing: border-box;
 
     .loading {
-      color: @BLUE08;
+      color: @colorPrimary;
     }
   }
 
   .chat-input-container {
     position: sticky;
     bottom: 0;
-    padding-bottom: 40px;
     width: 100%;
-    background-color: @colorBgContainer;
+    background-color: transparent;
+    border-radius: @borderRadiusLg @borderRadiusLg 0 0;
+    padding-bottom: 40px;
     z-index: 10;
     box-sizing: border-box;
 
@@ -47,7 +48,7 @@
       height: 40px;
       line-height: 40px;
       padding: 0 60px;
-      color: @GRAY27;
+      color: @colorTextSecondary;
       font-size: 12px;
       text-align: center;
     }

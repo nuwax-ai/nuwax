@@ -8,7 +8,7 @@
   .first-menus {
     // 使用动态导航宽度token
     width: @navFirstMenuWidth;
-    padding-top: 12px;
+    padding-top: 16px;
     background: @navFirstMenuBg;
     color: @navFirstMenuText;
     box-shadow: @navFirstMenuShadow;
@@ -21,9 +21,10 @@
   }
 
   .nav-menus {
+    padding-top: @paddingLg;
     // width: 200px;
     box-sizing: border-box;
-    border-left: @lineWidth solid @colorBorderSecondary;
+    border-left: @lineWidth solid var(--xagi-layout-border-primary);
     transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out,
       padding-left 0.3s ease-in-out, background-color 0.3s ease;
     overflow: hidden;

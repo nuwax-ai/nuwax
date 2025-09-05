@@ -48,7 +48,7 @@ const SpaceTitle: React.FC<SpaceTitleProps> = ({ name }) => {
             styles.header,
           )}
         >
-          <div className={cx('flex-1')}>
+          <div className={cx('flex-1', 'text-ellipsis')}>
             <Typography.Title
               level={4}
               style={{ marginBottom: 0 }}

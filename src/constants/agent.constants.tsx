@@ -222,3 +222,5 @@ export const BINDING_DEFAULT_JSON_DATA = {
     },
   ],
 };
+
+export const SIDEBAR_WIDTH = 368 + 32;

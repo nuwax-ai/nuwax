@@ -2,18 +2,14 @@
 @import '@/styles/token';
 
 .title-box {
-  position: sticky;
-  top: 0;
-  z-index: 99;
-  background-color: @colorBgContainer;
-  border-radius: 12px;
+  background-color: @pageContainerBg;
 
   .title-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 40px;
-    padding: 16px 24px;
+    height: 32px;
+    padding: 12px 24px;
     box-sizing: content-box;
   }
 
@@ -24,20 +20,22 @@
 
 .main-content {
   height: 100%;
-  overflow-y: auto;
   position: relative;
-  min-width: 800px;
+  // min-width: 800px;
   width: 100%;
 
-  //隐藏滚动条
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
   .main-content-box {
+    //隐藏滚动条
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    padding: @padding @padding 0;
+    overflow-y: auto;
     height: 100%;
     display: flex;
     flex-direction: column;
+    position: relative;
   }
 
   .chat-wrapper {
@@ -51,7 +49,7 @@
     }
 
     .chat-inner {
-      background-color: @colorBgContainer;
+      background-color: transparent;
     }
 
     .suggest-item {
@@ -62,13 +60,28 @@
       }
     }
   }
+}
 
-  .chat-input-container {
-    position: sticky;
-    bottom: 0;
-    z-index: 10;
-    padding-bottom: 40px;
-    background-color: @colorBgContainer;
+.chat-input-container {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  background-color: transparent;
+  border-radius: @borderRadiusLg @borderRadiusLg 0 0;
+  padding-bottom: 40px;
+  width: 100%;
+}
+
+.agent-sidebar {
+  position: sticky;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .agent-sidebar {
+    display: none;
   }
 }
 

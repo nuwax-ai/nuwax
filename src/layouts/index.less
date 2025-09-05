@@ -29,7 +29,7 @@
 
 .page-container {
   background: @pageContainerBg;
-  border-left: @lineWidth solid @colorBorderSecondary;
+  border-left: 0 solid @pageContainerBorderColor;
   margin: @pageContainerMargin;
   margin-left: 0;
   border-radius: @pageContainerBorderRadius;
@@ -43,36 +43,16 @@
   &.xagi-nav-style2 {
     margin: 0;
     border-radius: 0;
-    // background: var(--xagi-color-bg-container);
     box-shadow: none;
-  }
-}
-
-// 深色布局风格适配（独立于Ant Design主题）
-// TODO: 浅色布局风格适配
-.xagi-layout-dark {
-  &.page-container {
-    // background: rgba(0, 0, 0, 70%);
-    backdrop-filter: blur(4px);
-    border-color: var(--xagi-layout-border-primary);
-
-    &.xagi-nav-style2 {
-      // background: var(--xagi-layout-bg-card);
-      box-shadow: none;
+    // background: var(--xagi-color-bg-container);
+    &.xagi-layout-collapsed {
+      border-left-width: 0;
+      border-radius: 12px 0 0 12px;
     }
-  }
-}
 
-// 浅色布局风格适配（独立于Ant Design主题）
-// TODO: 浅色布局风格适配
-.xagi-layout-light {
-  &.page-container {
-    // background: @pageContainerBg;
-    border-color: var(--xagi-layout-border-primary);
-
-    &.xagi-nav-style2 {
-      // background: var(--xagi-layout-bg-card);
-      box-shadow: none;
+    &.xagi-layout-expanded {
+      border-left-width: @lineWidth;
+      border-radius: 0;
     }
   }
 }

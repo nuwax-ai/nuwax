@@ -33,6 +33,7 @@ const RecommendList: React.FC<RecommendListProps> = ({
               'cursor-pointer',
               'hover-box',
               itemClassName,
+              'text-ellipsis-2',
             )}
           >
             {item}

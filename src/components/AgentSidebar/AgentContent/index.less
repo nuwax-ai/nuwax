@@ -2,9 +2,9 @@
 @import '@/styles/token';
 
 .container {
-  padding: 70px 0 30px;
-  box-shadow: 0 0.5px 0 @GRAY19;
+  padding: @paddingLg 0;
   width: 100%;
+  border-bottom: @lineWidth @lineType @colorSplit;
 
   .avatar {
     width: 80px;
@@ -17,10 +17,7 @@
     // font-weight: bold;
     // color: @GRAY21;
     text-align: center;
-    font-size: 28px;
-    line-height: 40px;
     margin: @marginXs 0;
-    width: 100%;
   }
 
   .infoContainer {

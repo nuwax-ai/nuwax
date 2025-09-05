@@ -48,8 +48,10 @@ const { Search } = Input;
 const PAGE_SIZE = 24;
 
 import EcosystemCard from '@/components/EcosystemCard';
+import NoMoreDivider from '@/components/NoMoreDivider';
 import Loading from '@/components/custom/Loading';
 import { CREATED_TABS } from '@/constants/common.constants';
+import { PlusOutlined } from '@ant-design/icons';
 const defaultTabs = CREATED_TABS.filter((item) =>
   [AgentComponentTypeEnum.Plugin].includes(item.key),
 );
@@ -620,7 +622,11 @@ export default function EcosystemPlugin() {
             />
 
             {activeTab === TabTypeEnum.SHARED && (
-              <Button type="primary" onClick={handleCreateShare}>
+              <Button
+                type="primary"
+                onClick={handleCreateShare}
+                icon={<PlusOutlined />}
+              >
                 创建分享
               </Button>
             )}
@@ -643,15 +649,20 @@ export default function EcosystemPlugin() {
           {loading && pluginData?.records?.length === 0 ? (
             <Loading className={cx('h-full')} />
           ) : pluginData?.records?.length ? (
-            <div className={cx(styles['list-section'])}>
-              {pluginData.records?.map((config) => (
-                <EcosystemCard
-                  key={config?.uid}
-                  {...convertToPluginCard(config)}
-                  onClick={async () => await handleCardClick(config)}
-                />
-              ))}
-            </div>
+            <>
+              <div className={cx(styles['list-section'])}>
+                {pluginData.records?.map((config) => (
+                  <EcosystemCard
+                    key={config?.uid}
+                    {...convertToPluginCard(config)}
+                    onClick={async () => await handleCardClick(config)}
+                  />
+                ))}
+              </div>
+              {!(pagination.current < (pluginData.pages || 0)) && (
+                <NoMoreDivider />
+              )}
+            </>
           ) : (
             <div
               className={cx('flex', 'h-full', 'items-center', 'content-center')}
