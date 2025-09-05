@@ -1,5 +1,6 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
+import SvgIcon from '@/components/base/SvgIcon';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
@@ -17,7 +18,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { addBaseTarget, arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
-import { ArrowRightOutlined, LoadingOutlined } from '@ant-design/icons';
+import { LoadingOutlined } from '@ant-design/icons';
 import { Button, Form, Typography } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
@@ -27,7 +28,6 @@ import styles from './index.less';
 import ShowArea from './ShowArea';
 
 const cx = classNames.bind(styles);
-
 /**
  * 主页咨询聊天页面
  */
@@ -306,27 +306,31 @@ const Chat: React.FC = () => {
         className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}
         ref={messageViewRef}
       >
-        <div className={cx(styles['main-content-box'])}>
-          <div className={cx(styles['title-box'])}>
-            <div className={cx(styles['title-container'])}>
-              {/* 左侧标题 */}
-              <Typography.Title
-                level={4}
-                className={cx(styles.title, 'clip-path-animation')}
-                ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
-              >
-                {conversationInfo?.topic}
-              </Typography.Title>
-              {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
-              {!isSidebarVisible && (
-                <Button
-                  type="primary"
-                  icon={<ArrowRightOutlined />}
-                  onClick={() => sidebarRef.current?.open()}
-                />
-              )}
-            </div>
+        <div
+          className={cx(styles['title-box'])}
+          // style={{ right: isSidebarVisible ? SIDEBAR_WIDTH : 0 }}
+        >
+          <div className={cx(styles['title-container'])}>
+            {/* 左侧标题 */}
+            <Typography.Title
+              level={5}
+              className={cx(styles.title, 'clip-path-animation')}
+              ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
+            >
+              {conversationInfo?.topic}
+            </Typography.Title>
+            {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
+            {!isSidebarVisible && (
+              <Button
+                type="text"
+                className={cx(styles.sidebarButton)}
+                icon={<SvgIcon name="icons-nav-sidebar" />}
+                onClick={() => sidebarRef.current?.open()}
+              />
+            )}
           </div>
+        </div>
+        <div className={cx(styles['main-content-box'])}>
           <div className={cx(styles['chat-wrapper'], 'flex-1')}>
             {loadingConversation ? (
               <div
