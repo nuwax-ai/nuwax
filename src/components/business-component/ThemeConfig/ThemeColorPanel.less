@@ -24,11 +24,11 @@
 }
 
 .colorPreviewItem {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  box-sizing: content-box;
+  height: 40px;
+  width: 40px;
   cursor: pointer;
+  box-sizing: content-box;
+  border-radius: 50%;
   border: 2px solid transparent;
   transition: all 0.3s @motionEaseOut;
   position: relative;
@@ -75,11 +75,16 @@
 }
 
 .colorPreviewItemText {
-  display: block;
-  text-align: center;
   margin-top: @marginXxs;
-  font-size: @fontSizeSm;
+  display: block;
+  font-size: @fontSizeSm; // 使用更小的字号
   color: @colorTextSecondary;
+  text-align: center;
+  white-space: nowrap;
+  line-height: @lineHeight;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: normal;
   opacity: 0;
 }
 

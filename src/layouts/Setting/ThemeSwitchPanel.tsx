@@ -6,6 +6,7 @@ import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { useExtraColors, useLayoutStyle } from '@/hooks/useLayoutStyle';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { ThemeConfigData } from '@/types/interfaces/systemManage';
+import { ThemeBackgroundConfig } from '@/types/interfaces/theme';
 import { TenantThemeConfig } from '@/types/tenant';
 import { message } from 'antd';
 import classNames from 'classnames';
@@ -49,6 +50,8 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   // 集成导航风格管理
   const {
     navigationStyle,
+    background,
+    setBackground,
     layoutStyle,
     setLayoutStyle,
     setNavigationStyle,
@@ -82,7 +85,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   // 更新本地主题缓存（立即生效，不保存到后端）
   // 这是临时预览功能的核心：所有切换都会立即写入本地缓存
   // 用户可以在设置面板中实时预览效果，无需点击保存按钮
-  const updateLocalThemeCache = (config = {}) => {
+  const updateLocalThemeCache = (config: Partial<ThemeConfigData> = {}) => {
     try {
       const themeConfig: ThemeConfigData = {
         selectedThemeColor: primaryColor,
@@ -134,6 +137,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   const handleBackgroundChange = (backgroundId: string) => {
     // 设置背景图片
     setBackgroundImage(backgroundId);
+    setBackground(backgroundId);
 
     // 根据背景图片自动切换导航栏深浅色
     const newLayoutStyle = getLayoutStyleByBackgroundId(backgroundId);
@@ -141,9 +145,8 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     setIsNavigationDarkMode(newLayoutStyle === ThemeLayoutColorStyle.DARK);
 
     // 显示联动提示
-    const backgroundConfig = backgroundConfigs.find(
-      (config) => config.id === backgroundId,
-    );
+    const backgroundConfig: ThemeBackgroundConfig | undefined =
+      backgroundConfigs.find((config) => config.id === backgroundId);
     if (backgroundConfig) {
       message.info(
         `已自动切换为${
@@ -151,7 +154,6 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
         }导航栏`,
       );
     }
-
     // 更新本地缓存
     setTimeout(
       () =>
@@ -175,9 +177,10 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
 
     if (currentBackgroundLayoutStyle !== newLayoutStyle) {
       // 当前背景不匹配，自动切换到匹配的背景
-      const matchingBackgroundId = backgroundConfigs.find(
-        (config) => config.layoutStyle === newLayoutStyle,
-      );
+      const matchingBackgroundId: ThemeBackgroundConfig | undefined =
+        backgroundConfigs.find(
+          (config) => config.layoutStyle === newLayoutStyle,
+        );
 
       if (matchingBackgroundId) {
         // 切换背景但不触发布局风格联动（避免循环）
@@ -189,17 +192,16 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
             newLayoutStyle === ThemeLayoutColorStyle.DARK ? '深色' : '浅色'
           }导航栏`,
         );
+        // 延迟更新本地缓存，等待状态更新完成
+        setTimeout(
+          () =>
+            updateLocalThemeCache({
+              selectedBackgroundId: matchingBackgroundId?.id || '',
+            }),
+          100,
+        );
       }
     }
-
-    // 延迟更新本地缓存，等待状态更新完成
-    setTimeout(
-      () =>
-        updateLocalThemeCache({
-          selectedBackgroundId: matchingBackgroundId?.id,
-        }),
-      100,
-    );
   };
 
   // 获取额外的颜色（包括自定义颜色）
@@ -256,7 +258,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
           <div className={cx(styles.configItem)}>
             <BackgroundImagePanel
               backgroundImages={backgroundImages}
-              currentBackground={backgroundImageId}
+              currentBackground={background?.id || ''}
               onBackgroundChange={handleBackgroundChange}
               enableCustomUpload={false}
             />
