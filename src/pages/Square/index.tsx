@@ -199,6 +199,23 @@ const Square: React.FC = () => {
         hasMore={hasMore}
         onScroll={handleScroll}
       >
+        <div
+          className={cx(
+            'flex',
+            'items-center',
+            'content-between',
+            styles['title-box'],
+          )}
+        >
+          <h6 className={cx(styles['theme-title'])}>{title}</h6>
+          <Input.Search
+            className={cx(styles['search-input'])}
+            key={categoryNameRef.current}
+            placeholder="搜索"
+            allowClear
+            onSearch={onSearch}
+          />
+        </div>
         <header
           className={cx(styles.header)}
           onClick={handleLink}
@@ -218,23 +235,6 @@ const Square: React.FC = () => {
               '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API'}
           </p>
         </header>
-        <div
-          className={cx(
-            'flex',
-            'items-center',
-            'content-between',
-            styles['title-box'],
-          )}
-        >
-          <h6 className={cx(styles['theme-title'])}>{title}</h6>
-          <Input.Search
-            className={cx(styles['search-input'])}
-            key={categoryNameRef.current}
-            placeholder="搜索"
-            allowClear
-            onSearch={onSearch}
-          />
-        </div>
         {loading ? (
           <Loading className={cx(styles['min-height-300'])} />
         ) : squareComponentList?.length > 0 ? (
