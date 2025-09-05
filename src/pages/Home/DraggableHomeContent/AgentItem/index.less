@@ -118,8 +118,9 @@
       rgba(255, 193, 7, 5%) 100%
     );
     border-color: @orange1;
-    opacity: 1;
-    visibility: visible;
+    // 移除默认显示，让已收藏状态也遵循悬停显示规则
+    // opacity: 1;
+    // visibility: visible;
 
     &:hover {
       background: linear-gradient(
