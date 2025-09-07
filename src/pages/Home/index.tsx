@@ -43,12 +43,9 @@ const Home: React.FC = () => {
     initSelectedComponentList,
   } = useSelectedComponent();
 
-  // 布局相关状态
-  const containerRef = useRef<HTMLDivElement>(null);
-
   // 常量
-  const MIN_INPUT_HEIGHT = 432; // 输入框部分最小高度
-  const RECOMMEND_HEIGHT = 360; // 推荐部分固定高度
+  // const MIN_INPUT_HEIGHT = 432; // 输入框部分最小高度
+  // const RECOMMEND_HEIGHT = 360; // 推荐部分固定高度
 
   // 主页智能体分类列表
   const { run: runCategoryList } = useRequest(apiHomeCategoryList, {
@@ -143,27 +140,20 @@ const Home: React.FC = () => {
     history.push(`/agent/${targetId}`);
   };
 
+  const affixRef = useRef<AffixRef>(null);
+
+  useEffect(() => {
+    const handler = () => {
+      affixRef.current?.updatePosition();
+    };
+    window.addEventListener('scroll', handler, true);
+    return () => window.removeEventListener('scroll', handler, true);
+  }, []);
+
   return (
-    <div
-      ref={containerRef}
-      className={cx(
-        styles.container,
-        'flex',
-        'flex-col',
-        'items-center',
-        'overflow-y-auto',
-      )}
-      style={{
-        minHeight: `${MIN_INPUT_HEIGHT + RECOMMEND_HEIGHT}px`,
-      }}
-    >
+    <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
       {/* 输入框区域 */}
-      <div
-        className={cx(styles.inputSection)}
-        style={{
-          minHeight: `${MIN_INPUT_HEIGHT}px`,
-        }}
-      >
+      <div className={cx(styles.inputSection)}>
         <div className={cx(styles.title)}>
           <PureMarkdownRenderer
             id={`${agentDetail?.agentId}`}
@@ -209,7 +199,6 @@ const Home: React.FC = () => {
           )}
         </div>
       </div>
-
       {/* 推荐区域 */}
       <div className={cx(styles.recommendSection)}>
         <div className={cx(styles.wrapper)}>
