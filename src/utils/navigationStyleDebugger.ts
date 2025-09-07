@@ -3,16 +3,17 @@
  * 用于诊断 navigationStyle 相关的问题
  */
 
+import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
-import { layoutStyleManager } from './backgroundStyle';
 
 export class NavigationStyleDebugger {
   /**
    * 打印当前导航风格状态
    */
   static printCurrentState(): void {
-    const currentStyle = layoutStyleManager.getCurrentNavigationStyle();
-    const currentConfigKey = layoutStyleManager.getCurrentStyleConfigKey();
+    const currentData = unifiedThemeService.getCurrentData();
+    const currentStyle = currentData.navigationStyle;
+    const currentConfigKey = `${currentData.layoutStyle}-${currentData.navigationStyle}`;
 
     console.group('🔍 NavigationStyle 调试信息');
     console.log('当前导航风格:', currentStyle);
@@ -35,12 +36,18 @@ export class NavigationStyleDebugger {
   /**
    * 切换导航风格并打印状态
    */
-  static toggleAndDebug(): void {
+  static async toggleAndDebug(): Promise<void> {
     console.group('🔄 切换导航风格');
     console.log('切换前状态:');
     this.printCurrentState();
 
-    layoutStyleManager.toggleNavigationStyle();
+    // 使用统一主题服务切换导航风格
+    const currentData = unifiedThemeService.getCurrentData();
+    const newStyle =
+      currentData.navigationStyle === ThemeNavigationStyleType.STYLE1
+        ? ThemeNavigationStyleType.STYLE2
+        : ThemeNavigationStyleType.STYLE1;
+    await unifiedThemeService.updateNavigationStyle(newStyle);
 
     console.log('切换后状态:');
     this.printCurrentState();

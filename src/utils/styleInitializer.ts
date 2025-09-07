@@ -3,7 +3,7 @@ import {
   DEFAULT_THEME_CONFIG,
   STORAGE_KEYS,
 } from '@/constants/theme.constants';
-import { layoutStyleManager } from './backgroundStyle';
+import { unifiedThemeService } from '@/services/unifiedThemeService';
 
 /**
  * 样式初始化工具类
@@ -16,10 +16,10 @@ export class StyleInitializer {
    * @param context 调用上下文，用于日志记录
    * @param forceDefault 是否强制使用默认配置，忽略本地存储
    */
-  static initializeLayoutStyle(
+  static async initializeLayoutStyle(
     context: string = 'unknown',
     forceDefault: boolean = false,
-  ): void {
+  ): Promise<void> {
     try {
       console.log(`${context}，开始初始化 layout navigation CSS 变量`);
 
@@ -28,23 +28,23 @@ export class StyleInitializer {
         !forceDefault && localStorage.getItem(STORAGE_KEYS.LAYOUT_STYLE);
       if (!hasStyleConfig) {
         // 使用默认配置
-        StyleInitializer.applyDefaultStyleWithFallback(context);
+        await StyleInitializer.applyDefaultStyleWithFallback(context);
       } else {
         // 如果有保存的配置，重新应用以确保 CSS 变量被正确设置
         try {
-          const currentConfigKey =
-            layoutStyleManager.getCurrentStyleConfigKey();
-          layoutStyleManager.setStyleByConfigKey(currentConfigKey);
-          console.log(
-            `${context}：重新应用已保存的样式配置:`,
-            currentConfigKey,
-          );
+          // 使用统一主题服务重新应用当前配置
+          const currentData = unifiedThemeService.getCurrentData();
+          await unifiedThemeService.updateData(currentData, {
+            immediate: true,
+          });
+          const configKey = `${currentData.layoutStyle}-${currentData.navigationStyle}`;
+          console.log(`${context}：重新应用已保存的样式配置:`, configKey);
         } catch (configError) {
           console.warn(
             `${context}：应用已保存的样式配置失败，回退到默认配置:`,
             configError,
           );
-          StyleInitializer.applyDefaultStyleWithFallback(context);
+          await StyleInitializer.applyDefaultStyleWithFallback(context);
         }
       }
 
@@ -55,7 +55,7 @@ export class StyleInitializer {
         error,
       );
       // 最终兜底方案
-      StyleInitializer.applyDefaultStyleWithFallback(context);
+      await StyleInitializer.applyDefaultStyleWithFallback(context);
     }
   }
 
@@ -63,11 +63,14 @@ export class StyleInitializer {
    * 应用默认样式配置的兜底方法
    * @param context 调用上下文
    */
-  private static applyDefaultStyleWithFallback(context: string): void {
+  private static async applyDefaultStyleWithFallback(
+    context: string,
+  ): Promise<void> {
     try {
       // 使用统一的默认配置
       const defaultConfigKey = `${DEFAULT_THEME_CONFIG.LAYOUT_STYLE}-${DEFAULT_THEME_CONFIG.NAVIGATION_STYLE}`;
-      layoutStyleManager.setStyleByConfigKey(defaultConfigKey);
+      // 使用统一主题服务应用默认配置
+      await unifiedThemeService.resetToDefault();
       console.log(`${context}：使用默认样式配置: ${defaultConfigKey}`);
     } catch (fallbackError) {
       console.error(`${context}：应用默认样式配置失败:`, fallbackError);
@@ -168,7 +171,11 @@ export class StyleInitializer {
    * @returns 是否存在样式配置
    */
   static hasStyleConfig(): boolean {
-    return !!localStorage.getItem(STORAGE_KEYS.LAYOUT_STYLE);
+    // 检查是否有用户主题配置或统一主题数据
+    return (
+      !!localStorage.getItem(STORAGE_KEYS.USER_THEME_CONFIG) ||
+      !!localStorage.getItem(STORAGE_KEYS.LAYOUT_STYLE)
+    );
   }
 
   /**
@@ -176,16 +183,18 @@ export class StyleInitializer {
    * @returns 当前样式配置键名
    */
   static getCurrentStyleConfigKey(): string {
-    return layoutStyleManager.getCurrentStyleConfigKey();
+    const data = unifiedThemeService.getCurrentData();
+    return `${data.layoutStyle}-${data.navigationStyle}`;
   }
 
   /**
    * 强制应用默认样式配置
    * 用于错误恢复或重置场景
    */
-  static applyDefaultStyle(): void {
+  static async applyDefaultStyle(): Promise<void> {
     try {
-      layoutStyleManager.setStyleByConfigKey('light-style1');
+      // 使用统一主题服务应用默认样式
+      await unifiedThemeService.resetToDefault();
       console.log('已应用默认样式配置: light-style1');
     } catch (error) {
       console.error('应用默认样式配置失败:', error);
@@ -197,9 +206,11 @@ export class StyleInitializer {
    * 强制使用默认配置，忽略本地存储
    * @param context 调用上下文
    */
-  static initializeWithFallback(context: string = '接口失败'): void {
+  static async initializeWithFallback(
+    context: string = '接口失败',
+  ): Promise<void> {
     console.log(`${context}，使用兜底方案初始化 layout navigation CSS 变量`);
-    this.initializeLayoutStyle(context, true); // 强制使用默认配置
+    await this.initializeLayoutStyle(context, true); // 强制使用默认配置
   }
 }
 

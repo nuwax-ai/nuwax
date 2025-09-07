@@ -3,7 +3,7 @@ import {
   MOBILE_BREAKPOINT,
   MOBILE_MENU_TOP_PADDING,
 } from '@/constants/layout.constants';
-import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Outlet, useModel } from 'umi';
@@ -41,8 +41,8 @@ const Layout: React.FC = () => {
   //   setBackgroundImage,
   // } = useGlobalSettings();
 
-  // 导航风格管理（使用独立的布局风格系统）
-  const { navigationStyle, layoutStyle } = useLayoutStyle();
+  // 导航风格管理（使用统一主题系统）
+  const { navigationStyle, layoutStyle } = useUnifiedTheme();
   const { isSecondMenuCollapsed } = useModel('layout');
 
   // 状态管理

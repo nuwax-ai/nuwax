@@ -3,7 +3,7 @@ import {
   THEME_COLOR_CONFIGS,
 } from '@/constants/theme.constants';
 import { TenantInfo, TenantThemeConfig } from '@/types/tenant';
-import { layoutStyleManager } from '@/utils/backgroundStyle';
+import { unifiedThemeService } from './unifiedThemeService';
 
 /**
  * 租户相关API服务
@@ -16,11 +16,11 @@ import { layoutStyleManager } from '@/utils/backgroundStyle';
 export const getTenantInfo = async (): Promise<TenantInfo> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      // 从 backgroundStyle.ts 获取实际的主题配置数据
-      const themeConfig = layoutStyleManager.getThemeConfigData();
-      const currentBackground = layoutStyleManager.getCurrentBackground();
-      const currentLayoutStyle = layoutStyleManager.getCurrentLayoutStyle();
-      const currentNavStyle = layoutStyleManager.getCurrentNavigationStyle();
+      // 从 unifiedThemeService 获取实际的主题配置数据
+      const currentData = unifiedThemeService.getCurrentData();
+      const currentBackground = currentData.backgroundId;
+      const currentLayoutStyle = currentData.layoutStyle;
+      const currentNavStyle = currentData.navigationStyle;
 
       // 构建租户主题配置，优先使用实际配置数据
       const tenantThemeConfig: TenantThemeConfig = {
@@ -46,12 +46,11 @@ export const getTenantInfo = async (): Promise<TenantInfo> => {
             description: '展开模式：88px宽度，显示文字，页面容器无外边距和圆角',
           },
         ],
-        // 使用实际配置数据，如果没有则使用默认值
-        defaultThemeColor: themeConfig?.selectedThemeColor || '#5147ff',
-        defaultBackgroundId:
-          themeConfig?.selectedBackgroundId || currentBackground?.id || '',
+        // 使用统一主题数据，如果没有则使用默认值
+        defaultThemeColor: currentData.primaryColor || '#5147ff',
+        defaultBackgroundId: currentBackground || 'variant-1',
         defaultNavigationStyleId:
-          themeConfig?.navigationStyleId || currentNavStyle || 'style1',
+          currentNavStyle === 'style2' ? 'style2' : 'style1',
         supportDarkMode: true,
         defaultIsDarkMode: currentLayoutStyle === 'dark',
       };
@@ -62,8 +61,8 @@ export const getTenantInfo = async (): Promise<TenantInfo> => {
         themeConfig: tenantThemeConfig,
       };
 
-      console.log('租户信息基于实际主题配置构建:', {
-        themeConfig,
+      console.log('租户信息基于统一主题数据构建:', {
+        currentData,
         tenantThemeConfig,
       });
       resolve(mockTenantInfo);

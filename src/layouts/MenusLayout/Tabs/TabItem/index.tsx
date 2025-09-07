@@ -1,4 +1,4 @@
-import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import type { TabItemProps } from '@/types/interfaces/layouts';
 import { Tooltip } from 'antd';
@@ -19,7 +19,7 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
   isSecondMenuCollapsed = false,
 }) => {
   // 获取当前导航风格
-  const { navigationStyle } = useLayoutStyle();
+  const { navigationStyle } = useUnifiedTheme();
 
   const navStyle: React.CSSProperties = useMemo(() => {
     return navigationStyle === ThemeNavigationStyleType.STYLE2
