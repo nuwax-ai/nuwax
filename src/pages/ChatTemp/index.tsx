@@ -791,40 +791,29 @@ const ChatTemp: React.FC = () => {
   };
 
   return (
-    <div
-      className={cx(
-        styles.container,
-        'flex',
-        'flex-col',
-        'h-full',
-        'overflow-y',
-      )}
-      ref={messageViewRef}
-    >
+    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
+      <ConditionRender condition={messageList?.length > 0}>
+        <div className={cx(styles['title-box'])}>
+          <h3
+            className={cx(styles.title, 'text-ellipsis', 'clip-path-animation')}
+          >
+            {conversationInfo?.agent?.name
+              ? `和${conversationInfo?.agent?.name}开始会话`
+              : '开始会话'}
+          </h3>
+        </div>
+      </ConditionRender>
       <div
         className={cx(
           'w-full',
           'flex-1',
           'flex',
           'flex-col',
+          'overflow-y',
           styles['main-content'],
         )}
+        ref={messageViewRef}
       >
-        <ConditionRender condition={messageList?.length > 0}>
-          <div className={cx(styles['title-box'])}>
-            <h3
-              className={cx(
-                styles.title,
-                'text-ellipsis',
-                'clip-path-animation',
-              )}
-            >
-              {conversationInfo?.agent?.name
-                ? `和${conversationInfo?.agent?.name}开始会话`
-                : '开始会话'}
-            </h3>
-          </div>
-        </ConditionRender>
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
           {isLoadingConversation ? (
             <div
@@ -881,41 +870,41 @@ const ChatTemp: React.FC = () => {
             </>
           )}
         </div>
-        <div className={cx(styles['chat-input-container'])}>
-          {/*会话输入框*/}
-          <ChatInputHome
-            key={`chat-temp-${chatKey}`}
-            className={cx(styles['input-container'])}
-            clearDisabled={!messageList?.length}
-            onEnter={handleMessageSend}
-            onClear={handleClear}
-            visible={showScrollBtn}
-            wholeDisabled={wholeDisabled}
-            manualComponents={manualComponents}
-            selectedComponentList={selectedComponentList}
-            onSelectComponent={handleSelectComponent}
-            onScrollBottom={onScrollBottom}
-          />
-          {/*手机会话输入框*/}
-          <ChatInputPhone
-            className={cx(styles['phone-container'])}
-            clearDisabled={!messageList?.length}
-            onClear={handleClear}
-            wholeDisabled={wholeDisabled}
-            onEnter={handleMessageSend}
-            visible={showScrollBtn}
-            onScrollBottom={onScrollBottom}
-          />
-          <p
-            className={cx(
-              styles['welcome-text'],
-              'text-ellipsis',
-              'cursor-pointer',
-              'clip-path-animation',
-            )}
-            onClick={handleSiteLink}
-          >{`欢迎使用${tenantConfigInfo?.siteName}平台，快速搭建你的个性化智能体`}</p>
-        </div>
+      </div>
+      <div className={cx(styles['chat-input-container'])}>
+        {/*会话输入框*/}
+        <ChatInputHome
+          key={`chat-temp-${chatKey}`}
+          className={cx(styles['input-container'])}
+          clearDisabled={!messageList?.length}
+          onEnter={handleMessageSend}
+          onClear={handleClear}
+          visible={showScrollBtn}
+          wholeDisabled={wholeDisabled}
+          manualComponents={manualComponents}
+          selectedComponentList={selectedComponentList}
+          onSelectComponent={handleSelectComponent}
+          onScrollBottom={onScrollBottom}
+        />
+        {/*手机会话输入框*/}
+        <ChatInputPhone
+          className={cx(styles['phone-container'])}
+          clearDisabled={!messageList?.length}
+          onClear={handleClear}
+          wholeDisabled={wholeDisabled}
+          onEnter={handleMessageSend}
+          visible={showScrollBtn}
+          onScrollBottom={onScrollBottom}
+        />
+        <p
+          className={cx(
+            styles['welcome-text'],
+            'text-ellipsis',
+            'cursor-pointer',
+            'clip-path-animation',
+          )}
+          onClick={handleSiteLink}
+        >{`欢迎使用${tenantConfigInfo?.siteName}平台，快速搭建你的个性化智能体`}</p>
       </div>
       <button
         id={buttonId}
