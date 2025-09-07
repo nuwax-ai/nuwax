@@ -87,10 +87,12 @@
   padding: 0 @padding;
 }
 
-.stickyContainer {
-  background-color: @pageContainerBg;
-  padding: 0 @padding;
-  z-index: 10;
+.activedSticky {
+  :global {
+    .ant-affix {
+      background-color: @pageContainerBg;
+    }
+  }
 }
 
 .agentCard {

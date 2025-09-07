@@ -266,7 +266,7 @@ const Layout: React.FC = () => {
       </div>
 
       {/* 主内容区 */}
-      <div className={pageContainerClassName}>
+      <div className={pageContainerClassName} id="page-container-selector">
         <Outlet />
       </div>
     </div>
