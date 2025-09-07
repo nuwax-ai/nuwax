@@ -280,6 +280,7 @@ export const themeTokens: Partial<AliasToken> = {
 
   // 字号配置
   fontSize: 14,
+  fontWeightStrong: 400,
 
   // 线条配置
   lineWidth: 0.5,

@@ -1,4 +1,5 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .container {
   :global {
@@ -47,7 +48,7 @@
 
 .title {
   font-size: 16px;
-  font-weight: 500;
+  font-weight: @fontWeightStrong;
   color: #333;
   margin-right: 20px;
 }
@@ -55,7 +56,7 @@
 .segmented {
   :global {
     .ant-segmented-item-selected {
-      font-weight: bold !important;
+      font-weight: @fontWeightStrong !important;
     }
   }
 }
