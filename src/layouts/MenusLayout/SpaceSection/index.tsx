@@ -111,7 +111,7 @@ const SpaceSection: React.FC<{
 
   return (
     <div className={cx('h-full', 'overflow-y', styles.container)} style={style}>
-      <div style={{ padding: '22px 12px' }}>
+      <div style={{ padding: '14px 12px 22px 12px' }}>
         <SpaceTitle name={currentSpaceInfo?.name} />
       </div>
       <div>
