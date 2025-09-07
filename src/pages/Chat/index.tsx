@@ -307,7 +307,6 @@ const Chat: React.FC = () => {
         style={{
           width: isSidebarVisible ? `calc(100% - ${SIDEBAR_WIDTH}px)` : '100%',
         }}
-        ref={messageViewRef}
       >
         <div
           className={cx(styles['title-box'])}
@@ -333,7 +332,7 @@ const Chat: React.FC = () => {
             )}
           </div>
         </div>
-        <div className={cx(styles['main-content-box'])}>
+        <div className={cx(styles['main-content-box'])} ref={messageViewRef}>
           <div className={cx(styles['chat-wrapper'], 'flex-1')}>
             {loadingConversation ? (
               <div
