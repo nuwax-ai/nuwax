@@ -306,6 +306,7 @@ const AgentDetails: React.FC = () => {
           manualComponents={agentDetail?.manualComponents || []}
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
+          showAnnouncement={true}
         />
       </div>
       <AgentSidebar

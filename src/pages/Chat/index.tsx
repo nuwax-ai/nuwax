@@ -411,6 +411,7 @@ const Chat: React.FC = () => {
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
           onScrollBottom={onScrollBottom}
+          showAnnouncement={true}
         />
       </div>
       <AgentSidebar

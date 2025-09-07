@@ -502,6 +502,7 @@ export interface ChatInputProps extends ManualComponentItemProps {
   onScrollBottom?: () => void;
   onClear?: () => void;
   onEnter: (message: string, files: UploadFileInfo[]) => void;
+  showAnnouncement?: boolean;
 }
 
 // 聊天框底部更多操作组件

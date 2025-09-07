@@ -38,6 +38,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   isClearInput = true,
   manualComponents,
   onScrollBottom,
+  showAnnouncement = false,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -338,9 +339,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           )}
         </footer>
       </div>
-      <div className={cx(styles['announcement-box'])}>
-        内容由AI生成，请仔细甄别
-      </div>
+      {showAnnouncement && (
+        <div className={cx(styles['announcement-box'])}>
+          内容由AI生成，请仔细甄别
+        </div>
+      )}
       {/* 滚动到底部按钮 */}
       <div className={cx(styles['chat-action'])}>
         <div
