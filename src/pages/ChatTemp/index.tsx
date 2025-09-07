@@ -885,6 +885,7 @@ const ChatTemp: React.FC = () => {
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
           onScrollBottom={onScrollBottom}
+          showAnnouncement={true}
         />
         {/*手机会话输入框*/}
         <ChatInputPhone
