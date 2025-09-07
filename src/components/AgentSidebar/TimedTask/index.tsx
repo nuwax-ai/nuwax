@@ -152,6 +152,7 @@ const TimedTask: React.FC<TimedTaskProps> = ({ agentId }) => {
       // 重新查询"进行中"定时任务列表
       handleQueryTaskList(TaskStatus.EXECUTING);
     }
+    closeTimedTask();
   };
 
   return (

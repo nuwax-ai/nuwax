@@ -1,4 +1,5 @@
-@import '@/styles/color.less';
+@import '@/styles/color';
+@import '@/styles/token';
 
 .task-wrapper {
   max-height: 300px;
@@ -7,14 +8,32 @@
   padding-bottom: 10px;
 
   .task-item {
-    gap: 6px;
-    height: 28px;
-    font-size: 14px;
-    color: @GRAY15;
+    gap: 16px;
+    padding: @paddingXs;
+    border-radius: @borderRadius;
     transition: color 0.3s;
 
+    .topicBox {
+      min-width: 0; // 允许 flex 子项收缩到内容宽度以下
+      overflow: hidden; // 确保内容不会溢出
+    }
+
+    .iconBox {
+      gap: 16px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .topic {
+      margin-bottom: 0;
+      cursor: pointer;
+      color: @colorTextSecondary;
+    }
+
     &:hover {
-      color: @BLANK14;
+      background-color: @colorFillTertiary;
 
       .icon {
         visibility: visible;
@@ -22,21 +41,20 @@
       }
     }
 
+    .time {
+      font-size: @fontSizeSm;
+      color: @colorTextTertiary;
+    }
+
     .icon {
-      font-size: 15px;
-      color: @GRAY20;
+      color: @colorTextTertiary;
       visibility: hidden;
       opacity: 0;
       transition: visibility 0.3s, opacity 0.3s, color 0.3s;
 
       &:hover {
-        color: @BLANK03;
+        color: @colorTextSecondary;
       }
-    }
-
-    .time {
-      font-size: 12px;
-      color: @GRAY20;
     }
   }
 }

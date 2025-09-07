@@ -1,16 +1,11 @@
-import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
+import SvgIcon from '@/components/base/SvgIcon';
 import { TaskStatus } from '@/types/enums/agent';
 import {
   TaskListProps,
   TimedConversationTaskInfo,
 } from '@/types/interfaces/agentTask';
-import {
-  DeleteOutlined,
-  ExclamationCircleFilled,
-  FormOutlined,
-  LoadingOutlined,
-} from '@ant-design/icons';
-import { Empty, Modal } from 'antd';
+import { ExclamationCircleFilled, LoadingOutlined } from '@ant-design/icons';
+import { Empty, Modal, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { memo } from 'react';
 import { history } from 'umi';
@@ -89,24 +84,30 @@ const TaskList: React.FC<TaskListProps> = ({
             'cursor-pointer',
           )}
         >
-          <EllipsisTooltip
-            text={String(item?.topic)}
-            className={cx('flex-1')}
-            placement="topLeft"
-            onClick={() => handleClick(item)}
-          />
+          <div className={cx('flex-1', styles.topicBox)}>
+            <Typography.Title
+              level={5}
+              className={cx(styles.topic)}
+              onClick={() => handleClick(item)}
+              ellipsis={{ rows: 1, tooltip: item?.topic }}
+            >
+              {item?.topic}
+            </Typography.Title>
+            <span className={cx(styles.time)}>{item.taskCronDesc}</span>
+          </div>
           {item.taskStatus === TaskStatus.EXECUTING && (
-            <>
-              <FormOutlined
+            <div className={cx(styles.iconBox)}>
+              <SvgIcon
+                name="icons-common-edit"
                 className={cx(styles.icon)}
                 onClick={(e) => handleEditTask(e, item)}
               />
-              <DeleteOutlined
+              <SvgIcon
+                name="icons-common-delete"
                 className={cx(styles.icon)}
                 onClick={(e) => handleCancelTimedTask(e, item)}
               />
-              <span className={cx(styles.time)}>{item.taskCronDesc}</span>
-            </>
+            </div>
           )}
         </div>
       ))}
