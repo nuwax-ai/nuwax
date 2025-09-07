@@ -1,7 +1,7 @@
 import ConditionRender from '@/components/ConditionRender';
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
-import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { TabsEnum } from '@/types/enums/menus';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import { theme, Typography } from 'antd';
@@ -31,7 +31,7 @@ const HoverMenu: React.FC = () => {
     setMouseInHoverMenu,
   } = useModel('layout');
   const { token } = theme.useToken();
-  const { navigationStyle } = useLayoutStyle();
+  const { navigationStyle } = useUnifiedTheme();
 
   // 计算动态导航宽度
   const firstMenuWidth =

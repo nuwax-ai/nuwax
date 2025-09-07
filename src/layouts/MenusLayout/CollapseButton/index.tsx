@@ -1,6 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
-import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -16,7 +16,7 @@ const cx = classNames.bind(styles);
 const CollapseButton: React.FC = () => {
   const { isSecondMenuCollapsed, toggleSecondMenuCollapse } =
     useModel('layout');
-  const { navigationStyle } = useLayoutStyle();
+  const { navigationStyle } = useUnifiedTheme();
 
   // 计算动态导航宽度
   const firstMenuWidth =

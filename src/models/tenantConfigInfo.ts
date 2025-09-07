@@ -1,8 +1,8 @@
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import { STORAGE_KEYS } from '@/constants/theme.constants';
 import { apiTenantConfig } from '@/services/account';
+import { unifiedThemeService } from '@/services/unifiedThemeService';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
-import { layoutStyleManager } from '@/utils/backgroundStyle';
 import {
   initializeLayoutStyle,
   initializeWithFallback,
@@ -18,7 +18,7 @@ export default () => {
   const { run: runTenantConfig } = useRequest(apiTenantConfig, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: TenantConfigInfo) => {
+    onSuccess: async (result: TenantConfigInfo) => {
       setLoadEnd(true);
       setTenantConfigInfo(result);
       localStorage.setItem(TENANT_CONFIG_INFO, JSON.stringify(result));
@@ -41,10 +41,11 @@ export default () => {
         head.appendChild(link);
       }
 
-      // 租户信息保存到localStorage后，重新初始化布局样式管理器
+      // 租户信息保存到localStorage后，重新初始化统一主题服务
       // 让它重新读取包含templateConfig的租户配置
-      console.log('租户配置保存完成，重新初始化布局样式管理器');
-      layoutStyleManager.loadFromStorage();
+      console.log('租户配置保存完成，重新初始化统一主题服务');
+      // 统一主题服务会自动加载配置，不需要手动调用
+      // unifiedThemeService.loadConfiguration();
 
       // 只有在本地没有主题配置时才同步租户配置
       // 避免覆盖用户已保存的本地主题配置
@@ -54,7 +55,12 @@ export default () => {
       if (result.templateConfig && !hasLocalThemeConfig) {
         try {
           const themeConfig = JSON.parse(result.templateConfig);
-          layoutStyleManager.syncThemeColorToGlobalSettings(themeConfig);
+          // 使用统一主题服务同步主题颜色
+          if (themeConfig.selectedThemeColor) {
+            await unifiedThemeService.updatePrimaryColor(
+              themeConfig.selectedThemeColor,
+            );
+          }
           console.log('已同步租户主题配置（本地无配置）:', themeConfig);
         } catch (error) {
           console.warn('同步租户主题颜色失败:', error);
@@ -65,13 +71,13 @@ export default () => {
 
       // 租户信息初始化完成后，立即初始化 layout navigation 相关的 CSS 变量
       // 确保样式管理器已经加载了本地存储的配置并应用到页面
-      initializeLayoutStyle('租户信息初始化完成');
+      await initializeLayoutStyle('租户信息初始化完成');
     },
-    onError: () => {
+    onError: async () => {
       setLoadEnd(true);
 
       // 接口失败时也要初始化 layout navigation CSS 变量，使用兜底方案
-      initializeWithFallback('租户信息接口失败');
+      await initializeWithFallback('租户信息接口失败');
     },
   });
 

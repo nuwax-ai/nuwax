@@ -4,7 +4,7 @@ import { DOCUMENT_URL, SITE_DOCUMENT_URL } from '@/constants/common.constants';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import useCategory from '@/hooks/useCategory';
 import useConversation from '@/hooks/useConversation';
-import { useLayoutStyle } from '@/hooks/useLayoutStyle';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import SystemSection from '@/layouts/MenusLayout/SystemSection';
 import { TabsEnum, UserOperatorAreaEnum } from '@/types/enums/menus';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -45,8 +45,8 @@ const MenusLayout: React.FC<{
   const { token } = theme.useToken();
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
-  // 导航风格管理（使用独立的布局风格系统）
-  const { navigationStyle, layoutStyle } = useLayoutStyle();
+  // 导航风格管理（使用统一主题系统）
+  const { navigationStyle, layoutStyle } = useUnifiedTheme();
 
   const handleCreateChat = useCallback(async () => {
     if (tenantConfigInfo) {
