@@ -12,7 +12,7 @@
   z-index: 998; // 比一级菜单层级低一点
   transition: opacity 0.2s ease-in-out, background-color 0.3s ease;
   // box-shadow: var(--xagi-layout-shadow, @navSecondMenuShadow);
-  color: var(--xagi-layout-second-menu-text-color, @navSecondMenuText);
+  color: var(--xagi-layout-second-menu-text-color, @navSecondMenuTextSecondary);
 
   &.hover-menu-container-collapsed {
     border-radius: 0 @borderRadius @borderRadius 0;
@@ -46,18 +46,24 @@
 
       &:hover {
         background: var(--xagi-layout-bg-card, @navItemHoverBg);
-        color: var(--xagi-layout-second-menu-text-color, @navSecondMenuText);
+        color: var(
+          --xagi-layout-second-menu-text-color,
+          @navSecondMenuTextSecondary
+        );
       }
 
       &.active {
         background: var(--xagi-layout-bg-primary, @navItemActiveBg);
-        color: var(--xagi-layout-second-menu-text-color, @navSecondMenuText);
+        color: var(
+          --xagi-layout-second-menu-text-color,
+          @navSecondMenuTextSecondary
+        );
       }
     }
   }
 
   .menu-title {
-    color: @colorTextSecondary;
+    color: @colorText;
   }
 }
 

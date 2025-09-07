@@ -35,6 +35,7 @@ export interface ThemeStyleConfig {
     '--xagi-layout-text-tertiary': string;
     '--xagi-layout-text-disabled': string;
     '--xagi-layout-second-menu-text-color': string;
+    '--xagi-layout-second-menu-text-color-secondary': string;
     '--xagi-layout-bg-primary': string;
     '--xagi-layout-bg-secondary': string;
     '--xagi-layout-bg-card': string;

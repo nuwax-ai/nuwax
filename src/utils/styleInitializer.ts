@@ -87,7 +87,7 @@ export class StyleInitializer {
       // 设置默认的导航相关 CSS 变量
       const defaultNavVars = {
         '--xagi-nav-first-menu-width': '60px',
-        '--xagi-page-container-margin': '12px',
+        '--xagi-page-container-margin': '16px',
         '--xagi-page-container-border-radius': '12px',
         '--xagi-page-container-border-color': 'transparent',
       };
@@ -98,7 +98,8 @@ export class StyleInitializer {
         '--xagi-layout-text-secondary': 'rgba(0, 0, 0, 0.65)',
         '--xagi-layout-text-tertiary': 'rgba(0, 0, 0, 0.65)',
         '--xagi-layout-text-disabled': 'rgba(0, 0, 0, 0.25)',
-        '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.65)',
+        '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.88)',
+        '--xagi-layout-second-menu-text-color-secondary': 'rgba(0, 0, 0, 0.65)',
         '--xagi-layout-bg-primary': 'rgba(255, 255, 255, 0.95)',
         '--xagi-layout-bg-secondary': 'rgba(255, 255, 255, 0.85)',
         '--xagi-layout-bg-card': 'rgba(255, 255, 255, 0.65)',

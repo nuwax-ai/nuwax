@@ -50,7 +50,7 @@ const SpaceTitle: React.FC<SpaceTitleProps> = ({ name }) => {
         >
           <div className={cx('flex-1', 'text-ellipsis')}>
             <Typography.Title
-              level={4}
+              level={5}
               style={{ marginBottom: 0 }}
               ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
             >

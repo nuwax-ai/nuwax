@@ -5,10 +5,12 @@
   padding: @paddingXs;
   margin-top: @marginXxs;
   cursor: default;
-  color: @navSecondMenuText;
+  color: @navSecondMenuTextSecondary;
+
   .name {
-    color: @navSecondMenuText;
+    color: @navSecondMenuTextSecondary;
   }
+
   &.first {
     margin-top: 0;
   }
@@ -36,6 +38,7 @@
         color: @colorPrimary;
       }
     }
+
     .icon-dropdown {
       color: @colorTextSecondary;
     }
@@ -46,14 +49,17 @@
     border-radius: @borderRadius;
     box-shadow: @boxShadowTertiary;
     color: @colorTextSecondary;
+
     :global {
       .ant-typography {
         color: @colorTextSecondary;
       }
     }
+
     .collectIcon {
       visibility: visible;
     }
+
     .icon-dropdown {
       color: @colorTextSecondary;
     }
@@ -71,7 +77,7 @@
 
   .icon-dropdown {
     font-size: @fontSizeSm;
-    color: @navSecondMenuText;
+    color: @navSecondMenuTextSecondary;
   }
 
   &.open {

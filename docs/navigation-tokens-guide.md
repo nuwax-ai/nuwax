@@ -79,13 +79,13 @@
 
   .submenu {
     background: @navSecondMenuBg;
-    color: @navSecondMenuText;
+    color: @navSecondMenuTextSecondary;
 
     .submenu-item {
-      color: @navSecondMenuTextSecondary;
+      color: @navSecondMenuTextSecondarySecondary;
 
       &.tertiary {
-        color: @navSecondMenuTextTertiary;
+        color: @navSecondMenuTextSecondaryTertiary;
       }
     }
   }

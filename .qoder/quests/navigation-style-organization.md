@@ -191,13 +191,13 @@ graph LR
 
 .custom-second-nav {
   background-color: @navSecondMenuBg;
-  color: @navSecondMenuText;
+  color: @navSecondMenuTextSecondary;
 
   .nav-item {
-    color: @navSecondMenuTextSecondary;
+    color: @navSecondMenuTextSecondarySecondary;
 
     &.tertiary {
-      color: @navSecondMenuTextTertiary;
+      color: @navSecondMenuTextSecondaryTertiary;
     }
   }
 }

@@ -120,7 +120,9 @@ const HoverMenu: React.FC = () => {
           // 通过 style 设置 CSS 变量会导致类型报错，推荐通过 className + :root 或 styled 方案实现
           // 这里临时用 as any 绕过类型检查，实际项目建议将变量写到全局 less 或 css module
           ...({
-            ['--xagi-layout-second-menu-text-color']: token.colorTextSecondary, // 悬浮菜单文字颜色 覆写
+            ['--xagi-layout-second-menu-text-color']: token.colorText, // 悬浮菜单文字颜色 覆写
+            ['--xagi-layout-second-menu-text-color-secondary']:
+              token.colorTextSecondary, // 悬浮菜单文字颜色 覆写
           } as React.CSSProperties),
           display: 'flex',
           flexDirection: 'column',
