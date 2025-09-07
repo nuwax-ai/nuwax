@@ -2,6 +2,14 @@ import type { MarkdownCMDRef } from '@/types/interfaces/markdownRender';
 import { useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
+const GAP_TIME = 100;
+
+const handleProcessMessage = (callback: () => void) => {
+  setTimeout(() => {
+    callback();
+  }, GAP_TIME);
+};
+
 export default function useMarkdownRender({
   answer,
   thinking,
@@ -19,23 +27,27 @@ export default function useMarkdownRender({
   });
 
   useEffect(() => {
-    if (answer) {
-      //取出差量部分
-      const diffText = answer.slice(lastTextPos.current['answer']);
-      lastTextPos.current['answer'] = answer.length;
-      // 处理增量渲染
-      markdownRef.current?.push(diffText, 'answer');
-    }
+    handleProcessMessage(() => {
+      if (answer) {
+        //取出差量部分
+        const diffText = answer.slice(lastTextPos.current['answer']);
+        lastTextPos.current['answer'] = answer.length;
+        // 处理增量渲染
+        markdownRef.current?.push(diffText, 'answer');
+      }
+    });
   }, [answer]);
 
   useEffect(() => {
-    if (thinking) {
-      //取出差量部分
-      const diffText = thinking.slice(lastTextPos.current['thinking']);
-      lastTextPos.current['thinking'] = thinking.length;
-      // 处理增量渲染
-      markdownRef.current?.push(diffText, 'thinking');
-    }
+    handleProcessMessage(() => {
+      if (thinking) {
+        //取出差量部分
+        const diffText = thinking.slice(lastTextPos.current['thinking']);
+        lastTextPos.current['thinking'] = thinking.length;
+        // 处理增量渲染
+        markdownRef.current?.push(diffText, 'thinking');
+      }
+    });
   }, [thinking]);
 
   useEffect(() => {
