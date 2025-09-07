@@ -455,9 +455,27 @@ class UnifiedThemeService {
           ? 'compact'
           : 'expanded',
       );
+      this.updateBodyClasses();
     } catch (error) {
       console.error('应用主题数据到DOM失败:', error);
     }
+  }
+
+  /**
+   * 更新body元素的样式类名
+   */
+  private updateBodyClasses(): void {
+    // 移除所有相关的类名
+    document.body.classList.remove(
+      'xagi-layout-light',
+      'xagi-layout-dark',
+      'xagi-nav-style1',
+      'xagi-nav-style2',
+    );
+
+    // 添加当前样式对应的类名
+    document.body.classList.add(`xagi-layout-${this.currentData.layoutStyle}`);
+    document.body.classList.add(`xagi-nav-${this.currentData.navigationStyle}`);
   }
 
   /**
