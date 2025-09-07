@@ -28,7 +28,7 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
         <Button
           type="text"
           className={cx(styles.debug)}
-          icon={<SvgIcon name="icons-common-debug" />}
+          icon={<SvgIcon name="icons-common-debug" style={{ fontSize: 16 }} />}
           onClick={onPressDebug}
         >
           调试

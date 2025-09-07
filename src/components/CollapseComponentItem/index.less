@@ -5,7 +5,7 @@
   gap: @marginSm;
   // height: 48px;
   margin-bottom: @marginXxs;
-  padding: @paddingXs;
+  padding: @paddingXxs @paddingXs;
   border-radius: @borderRadius;
   cursor: default;
   background-color: @colorFillTertiary;
@@ -26,9 +26,10 @@
 
   .img-box {
     display: inline-block;
-    width: 48px;
-    height: 48px;
+    width: 24px;
+    height: 24px;
     overflow: hidden;
+    line-height: 20px;
 
     img {
       width: 100%;
@@ -44,14 +45,14 @@
   .name {
     display: inline-block;
     color: @colorText;
-    font-size: @fontSize;
+    font-size: @fontSizeSm;
     line-height: @lineHeight;
     font-weight: @fontWeightStrong;
   }
 
   .desc {
     color: @colorTextSecondary;
-    font-size: @fontSize;
+    font-size: @fontSizeSm;
     line-height: @lineHeight;
   }
 

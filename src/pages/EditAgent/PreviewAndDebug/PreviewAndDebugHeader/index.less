@@ -2,14 +2,16 @@
 @import '@/styles/token';
 
 .container {
-  height: 40px;
-  padding: @padding @paddingLg;
+  height: 32px;
+  padding: @paddingXs @paddingLg;
   box-sizing: content-box;
   border-bottom: @lineWidth solid @colorSplit;
 
   h3 {
-    font-size: 20px;
-    font-weight: @fontWeightStrong;
+    font-size: 16px;
+    //font-weight: @fontWeightStrong;
+    font-weight: 600;
+    line-height: 24px;
     color: @colorText;
   }
 
@@ -20,8 +22,9 @@
     .debug {
       border: none;
       padding: @paddingXs @paddingSm;
-      font-size: @fontSizeLg;
-      line-height: 24px;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 400;
       height: 24px;
       color: @colorText;
       gap: @paddingXs;
