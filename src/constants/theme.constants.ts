@@ -144,7 +144,7 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
     },
     navigation: {
       '--xagi-nav-first-menu-width': '60px',
-      '--xagi-page-container-margin': '16px',
+      '--xagi-page-container-margin': '12px',
       '--xagi-page-container-border-radius': '12px',
       '--xagi-page-container-border-color': 'transparent',
     },
@@ -194,7 +194,7 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
     },
     navigation: {
       '--xagi-nav-first-menu-width': '60px',
-      '--xagi-page-container-margin': '16px',
+      '--xagi-page-container-margin': '12px',
       '--xagi-page-container-border-radius': '12px',
       '--xagi-page-container-border-color': 'transparent',
     },

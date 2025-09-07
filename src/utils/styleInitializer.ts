@@ -87,7 +87,7 @@ export class StyleInitializer {
       // 设置默认的导航相关 CSS 变量
       const defaultNavVars = {
         '--xagi-nav-first-menu-width': '60px',
-        '--xagi-page-container-margin': '16px',
+        '--xagi-page-container-margin': '12px',
         '--xagi-page-container-border-radius': '12px',
         '--xagi-page-container-border-color': 'transparent',
       };
