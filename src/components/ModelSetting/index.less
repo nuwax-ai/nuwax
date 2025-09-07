@@ -1,3 +1,4 @@
+@import '@/styles/token';
 // 大模型节点
 .model-dispose-mode-style {
   display: flex;
@@ -5,7 +6,7 @@
   font-size: 12px;
 
   .model-title-style {
-    font-weight: 600;
+    font-weight: @fontWeightStrong;
     font-size: 18px;
     padding-bottom: 10px;
     letter-spacing: 4px;
@@ -19,7 +20,7 @@
       border: none;
       width: 100px;
       font-size: 12px;
-      font-weight: 520;
+      font-weight: @fontWeightStrong;
 
       &::before {
         width: 0;
@@ -28,7 +29,7 @@
   }
 
   .dispose-title-style {
-    font-weight: 550;
+    font-weight: @fontWeightStrong;
     font-size: 14px;
   }
 

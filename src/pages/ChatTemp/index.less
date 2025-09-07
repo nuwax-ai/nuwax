@@ -21,10 +21,14 @@
 }
 
 .main-content {
-  margin: 0 auto;
   box-sizing: border-box;
+  //隐藏滚动条
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   .chat-wrapper {
+    margin: 0 auto;
     padding-top: 30px;
     padding-bottom: 40px - 16px;
     box-sizing: border-box;
@@ -33,31 +37,31 @@
       color: @colorPrimary;
     }
   }
+}
 
-  .chat-input-container {
-    position: sticky;
-    bottom: 0;
-    width: 100%;
-    background-color: transparent;
-    border-radius: @borderRadiusLg @borderRadiusLg 0 0;
-    padding-bottom: 40px;
-    z-index: 10;
-    box-sizing: border-box;
+.chat-input-container {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  background-color: transparent;
+  border-radius: @borderRadiusLg @borderRadiusLg 0 0;
+  padding-bottom: 12px;
+  z-index: 10;
+  box-sizing: border-box;
+}
 
-    .welcome-text {
-      height: 40px;
-      line-height: 40px;
-      padding: 0 60px;
-      color: @colorTextSecondary;
-      font-size: 12px;
-      text-align: center;
-    }
-  }
+.welcome-text {
+  height: 40px;
+  line-height: 40px;
+  padding: 0 60px;
+  color: @colorTextSecondary;
+  font-size: 12px;
+  text-align: center;
 }
 
 /* 当屏幕宽度小于等于 720px 时应用的样式 */
 @media screen and (max-width: 720px) {
-  .main-content {
+  .chat-wrapper {
     width: 100%;
   }
 
@@ -88,7 +92,7 @@
 
 /* 当屏幕宽度大于 720px 且小于等于 900px 时应用的样式 */
 @media screen and (min-width: 721px) and (max-width: 1200px) {
-  .main-content {
+  .chat-wrapper {
     width: 80%;
   }
 
@@ -109,7 +113,7 @@
 
 /* 当屏幕宽度大于 1200px 时应用的样式 */
 @media screen and (min-width: 1200px) {
-  .main-content {
+  .chat-wrapper {
     max-width: 800px;
   }
 

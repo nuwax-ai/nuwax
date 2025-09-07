@@ -1,3 +1,5 @@
+@import '@/styles/token';
+
 /**
  * 导航组件示例样式
  * 使用导航相关的CSS变量token
@@ -52,7 +54,7 @@
 
         .logo-text {
           font-size: @navFirstMenuFontSize;
-          font-weight: 600;
+          font-weight: @fontWeightStrong;
           color: @navFirstMenuText;
           white-space: nowrap;
           opacity: 1;
@@ -198,7 +200,7 @@
           .username {
             color: @navFirstMenuText !important;
             font-size: @navFirstMenuFontSize !important;
-            font-weight: 500;
+            font-weight: @fontWeightStrong;
           }
 
           .user-role {
@@ -254,8 +256,8 @@
       .menu-title {
         display: block;
         color: @navSecondMenuTextSecondary !important;
-        font-size: 16px !important;
-        font-weight: 600;
+        font-size: @fontSize !important;
+        font-weight: @fontWeightStrong;
         margin-bottom: 4px;
       }
 
@@ -334,7 +336,7 @@
         display: block;
         color: #000 !important;
         font-size: 24px !important;
-        font-weight: 700;
+        font-weight: @fontWeightStrong;
         margin-bottom: 8px;
       }
 
@@ -360,7 +362,7 @@
           color: #000 !important;
           margin-bottom: 16px;
           font-size: 16px;
-          font-weight: 600;
+          font-weight: @fontWeightStrong;
         }
 
         ul {

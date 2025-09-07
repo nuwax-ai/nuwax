@@ -1,4 +1,5 @@
 @import '@/styles/color.less';
+@import '@/styles/token.less';
 
 .margin-bottom-20 {
   /* 在这里设置你想要的样式 */
@@ -16,14 +17,14 @@
 // 标题样式
 .node-title-style {
   font-size: 14px;
-  font-weight: bold;
+  font-weight: @fontWeightStrong;
   line-height: 22px;
   color: @BLANK04;
 }
 
 .node-title-bold-style {
   font-size: 14px;
-  font-weight: bold;
+  font-weight: @fontWeightStrong;
   line-height: 22px;
   color: @BLANK04;
 }
@@ -38,7 +39,7 @@
   }
 
   .ant-form-item-label > label {
-    font-weight: 400 !important;
+    font-weight: @fontWeightStrong !important;
   }
 }
 
@@ -73,7 +74,7 @@
   }
 
   .model-list-item-label {
-    font-weight: 500;
+    font-weight: @fontWeightStrong;
     font-size: 14px;
     line-height: 20px;
     margin-right: 10px;

@@ -1,4 +1,5 @@
 @import 'src/styles/color';
+@import 'src/styles/token';
 
 .ant-select-dropdown
   .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
@@ -87,7 +88,7 @@
   .ant-form-item:not(.ant-form-item-horizontal)
   .ant-form-item-label
   > label {
-  font-weight: 600;
+  font-weight: @fontWeightStrong;
 }
 
 .ant-checkbox-checked.ant-checkbox-disabled .ant-checkbox-inner {
