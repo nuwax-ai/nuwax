@@ -23,6 +23,10 @@
 .main-content {
   margin: 0 auto;
   box-sizing: border-box;
+  //隐藏滚动条
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   .chat-wrapper {
     padding-top: 30px;
@@ -33,26 +37,26 @@
       color: @colorPrimary;
     }
   }
+}
 
-  .chat-input-container {
-    position: sticky;
-    bottom: 0;
-    width: 100%;
-    background-color: transparent;
-    border-radius: @borderRadiusLg @borderRadiusLg 0 0;
-    padding-bottom: 40px;
-    z-index: 10;
-    box-sizing: border-box;
+.chat-input-container {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  background-color: transparent;
+  border-radius: @borderRadiusLg @borderRadiusLg 0 0;
+  padding-bottom: 12px;
+  z-index: 10;
+  box-sizing: border-box;
+}
 
-    .welcome-text {
-      height: 40px;
-      line-height: 40px;
-      padding: 0 60px;
-      color: @colorTextSecondary;
-      font-size: 12px;
-      text-align: center;
-    }
-  }
+.welcome-text {
+  height: 40px;
+  line-height: 40px;
+  padding: 0 60px;
+  color: @colorTextSecondary;
+  font-size: 12px;
+  text-align: center;
 }
 
 /* 当屏幕宽度小于等于 720px 时应用的样式 */
