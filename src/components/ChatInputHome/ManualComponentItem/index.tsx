@@ -1,3 +1,4 @@
+import HoverScrollbar from '@/components/base/HoverScrollbar';
 import SvgIcon from '@/components/base/SvgIcon';
 import { AgentManualComponentInfo } from '@/types/interfaces/agent';
 import { ManualComponentItemProps } from '@/types/interfaces/common';
@@ -41,39 +42,41 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
     }, [] as AgentManualComponentInfo[]);
   }, [manualComponents]);
   return (
-    <div
-      className={cx(
-        'flex-1',
-        'flex',
-        'items-center',
-        styles['manual-container'],
-      )}
-    >
-      {normalizeManualComponents?.map((item, index) => {
-        return (
-          <span
-            key={index}
-            className={cx(
-              styles['manual-box'],
-              'flex',
-              'items-center',
-              'cursor-pointer',
-              {
-                [styles.active]: selectedComponentList?.some(
-                  (c) => c.id === item.id,
-                ),
-              },
-            )}
-            onClick={() => onSelectComponent?.(item)}
-          >
-            <SvgIcon
-              name={item.icon}
-              style={{ marginRight: 8, width: 20, height: 20, borderRadius: 4 }}
-            />
-            {item.name}
-          </span>
-        );
-      })}
+    <div className={cx('flex-1')}>
+      <HoverScrollbar bodyWidth="100%" height="50px">
+        <div className={cx('flex', 'items-center', styles['manual-container'])}>
+          {normalizeManualComponents?.map((item, index) => {
+            return (
+              <span
+                key={index}
+                className={cx(
+                  styles['manual-box'],
+                  'flex',
+                  'items-center',
+                  'cursor-pointer',
+                  {
+                    [styles.active]: selectedComponentList?.some(
+                      (c) => c.id === item.id,
+                    ),
+                  },
+                )}
+                onClick={() => onSelectComponent?.(item)}
+              >
+                <SvgIcon
+                  name={item.icon}
+                  style={{
+                    marginRight: 8,
+                    width: 20,
+                    height: 20,
+                    borderRadius: 4,
+                  }}
+                />
+                {item.name}
+              </span>
+            );
+          })}
+        </div>
+      </HoverScrollbar>
     </div>
   );
 };
