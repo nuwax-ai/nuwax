@@ -108,3 +108,15 @@ body {
   background-color: #fff;
   display: none;
 }
+
+/* 「hover 时才显示滚动条，默认隐藏」 */
+.scroll-container {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+
+  /* 保持布局稳定 */
+}
+
+.scroll-container:hover {
+  overflow: auto;
+}

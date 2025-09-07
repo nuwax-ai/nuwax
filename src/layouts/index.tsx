@@ -217,7 +217,6 @@ const Layout: React.FC = () => {
     () =>
       cx(
         'flex-1',
-        'overflow-y',
         styles[
           `xagi-layout-${isSecondMenuCollapsed ? 'collapsed' : 'expanded'}`
         ],
@@ -266,7 +265,10 @@ const Layout: React.FC = () => {
       </div>
 
       {/* 主内容区 */}
-      <div className={pageContainerClassName} id="page-container-selector">
+      <div
+        className={`${pageContainerClassName} scroll-container`}
+        id="page-container-selector"
+      >
         <Outlet />
       </div>
     </div>
