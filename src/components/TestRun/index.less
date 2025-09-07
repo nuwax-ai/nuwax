@@ -1,4 +1,5 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .test-run-style {
   position: absolute;
@@ -30,7 +31,7 @@
 
 .test-run-content-label {
   font-size: 12px;
-  font-weight: bold;
+  font-weight: @fontWeightStrong;
   line-height: 22px;
   letter-spacing: 0;
 }
@@ -40,7 +41,7 @@
 }
 
 .collapse-title-style {
-  font-weight: 600;
+  font-weight: @fontWeightStrong;
   color: @BLANK14;
   margin-bottom: 10px;
 }
@@ -120,7 +121,7 @@
   border-radius: 10px;
 
   .ant-prompts-title {
-    font-weight: 550;
+    font-weight: @fontWeightStrong;
     font-size: 18px;
   }
 

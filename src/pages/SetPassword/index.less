@@ -1,4 +1,5 @@
 @import '@/styles/token';
+@import '@/styles/color';
 
 .container {
   width: 100%; /* 宽度自适应 */
@@ -18,7 +19,7 @@
 
   .title {
     font-size: 30px;
-    font-weight: 600;
+    font-weight: @fontWeightStrong;
     line-height: 38px;
     color: @colorText;
     text-align: center;
@@ -27,7 +28,7 @@
   .sub-title {
     margin-top: 10px;
     font-size: 14px;
-    font-weight: 400;
+    font-weight: @fontWeightStrong;
     line-height: 22px;
     color: @colorTextSecondary;
     text-align: center;

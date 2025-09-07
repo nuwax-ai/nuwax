@@ -1,5 +1,5 @@
 @import '@/styles/color.less';
-
+@import '@/styles/token.less';
 // 运行结果组件样式
 .runResultContainer {
   width: 100%;
@@ -43,7 +43,7 @@
 
 .statusText {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: @fontWeightStrong;
 }
 
 .runTime {
@@ -168,7 +168,7 @@
   font-size: 12px;
   background-color: #fafafa;
   border-bottom: 1px solid #f0f0f0;
-  font-weight: 500;
+  font-weight: @fontWeightStrong;
 }
 
 .runResultBatchContent {
@@ -192,7 +192,7 @@
   padding: 4px 8px;
   background-color: #fafafa;
   border-bottom: 1px solid #f0f0f0;
-  font-weight: 500;
+  font-weight: @fontWeightStrong;
 }
 
 .runResultSectionContent {
@@ -233,7 +233,7 @@
 .key {
   color: #6366f1;
   margin-right: 4px;
-  font-weight: 500;
+  font-weight: @fontWeightStrong;
 }
 
 .value {

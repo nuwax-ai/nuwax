@@ -1,3 +1,5 @@
+@import '@/styles/token';
+
 .theme-demo {
   padding: 24px;
   height: 100vh;
@@ -10,7 +12,7 @@
     border: 1px solid var(--xagi-color-border);
 
     .ant-card-head-title {
-      font-weight: 600;
+      font-weight: @fontWeightStrong;
       color: var(--xagi-color-text-heading);
     }
 
@@ -38,7 +40,7 @@
 
   .ant-btn {
     border-radius: var(--xagi-border-radius);
-    font-weight: 500;
+    font-weight: @fontWeightStrong;
     transition: all 0.3s ease;
 
     &:hover {
@@ -68,7 +70,7 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-weight: 500;
+    font-weight: @fontWeightStrong;
   }
 
   .ant-alert {
