@@ -295,18 +295,18 @@ const AgentDetails: React.FC = () => {
               </>
             )}
           </div>
-          {/*会话输入框*/}
-          <ChatInputHome
-            className={cx(styles['chat-input-container'])}
-            key={`agent-details-${agentId}`}
-            onEnter={handleMessageSend}
-            isClearInput={false}
-            wholeDisabled={wholeDisabled}
-            manualComponents={agentDetail?.manualComponents || []}
-            selectedComponentList={selectedComponentList}
-            onSelectComponent={handleSelectComponent}
-          />
         </div>
+        {/*会话输入框*/}
+        <ChatInputHome
+          className={cx(styles['chat-input-container'])}
+          key={`agent-details-${agentId}`}
+          onEnter={handleMessageSend}
+          isClearInput={false}
+          wholeDisabled={wholeDisabled}
+          manualComponents={agentDetail?.manualComponents || []}
+          selectedComponentList={selectedComponentList}
+          onSelectComponent={handleSelectComponent}
+        />
       </div>
       <AgentSidebar
         ref={sidebarRef}
