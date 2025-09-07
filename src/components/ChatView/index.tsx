@@ -13,7 +13,7 @@ import type {
   AttachmentFile,
   ChatViewProps,
 } from '@/types/interfaces/conversationInfo';
-import { message } from 'antd';
+import { message, theme } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
 import React, { memo, useCallback, useEffect, useMemo } from 'react';
@@ -78,6 +78,8 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const isUser = useMemo(() => {
       return messageInfo?.role === AssistantRoleEnum.USER;
     }, [messageInfo?.role]);
+
+    const { token } = theme.useToken();
 
     return (
       <div className={cx(styles.container, 'flex', className)}>
@@ -175,7 +177,14 @@ const ChatView: React.FC<ChatViewProps> = memo(
               }
             >
               {mode === 'chat' ? (
-                <div style={{ display: 'flex', flexDirection: 'row', gap: 12 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    gap: 12,
+                    padding: `0 ${token.paddingXS}px`,
+                  }}
+                >
                   <div style={{ flex: 1 }}>
                     <ChatBottomMore messageInfo={messageInfo} />
                   </div>
