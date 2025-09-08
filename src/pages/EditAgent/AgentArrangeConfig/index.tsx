@@ -1,10 +1,7 @@
 import Created from '@/components/Created';
-import SelectList from '@/components/custom/SelectList';
+// import SelectList from '@/components/custom/SelectList';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import {
-  COMPONENT_SETTING_ACTIONS,
-  ENABLE_LIST,
-} from '@/constants/space.constants';
+import { COMPONENT_SETTING_ACTIONS } from '@/constants/space.constants';
 import {
   apiAgentComponentAdd,
   apiAgentComponentDelete,
@@ -26,12 +23,13 @@ import type {
   DeleteComponentInfo,
   GroupMcpInfo,
 } from '@/types/interfaces/agentConfig';
+import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import VariableList from './VariableList';
 // import { CaretDownOutlined } from '@ant-design/icons';
 import ConfigOptionCollapse from '@/components/ConfigOptionCollapse';
 import { useRequest } from 'ahooks';
-import { CollapseProps, message } from 'antd';
+import { CollapseProps, message, Switch } from 'antd';
 import classNames from 'classnames';
 import React, {
   MouseEvent,
@@ -50,7 +48,6 @@ import LongMemoryContent from './LongMemoryContent';
 // import TriggerContent from './TriggerContent';
 import CollapseComponentList from '@/components/CollapseComponentList';
 import { CREATED_TABS } from '@/constants/common.constants';
-import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { loopSetBindValueType } from '@/utils/deepNode';
 import ComponentSettingModal from './ComponentSettingModal';
 import McpGroupComponentItem from './McpGroupComponentItem';
@@ -537,15 +534,32 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           openLongMemory={agentConfigInfo?.openLongMemory}
         />
       ),
+      // extra: (
+      //   <SelectList
+      //     className={cx(styles.select)}
+      //     size={'small'}
+      //     value={agentConfigInfo?.openLongMemory}
+      //     onChange={(value) =>
+      //       onChangeAgent(value as OpenCloseEnum, 'openLongMemory')
+      //     }
+      //     options={ENABLE_LIST}
+      //   />
+      // ),
       extra: (
-        <SelectList
-          className={cx(styles.select)}
-          size={'small'}
-          value={agentConfigInfo?.openLongMemory}
+        <Switch
+          // 阻止冒泡事件
+          value={agentConfigInfo?.openLongMemory === OpenCloseEnum.Open}
+          onClick={(_, e: any) => {
+            e.stopPropagation();
+          }}
           onChange={(value) =>
-            onChangeAgent(value as OpenCloseEnum, 'openLongMemory')
+            onChangeAgent(
+              value
+                ? OpenCloseEnum.Open
+                : (OpenCloseEnum.Close as OpenCloseEnum),
+              'openLongMemory',
+            )
           }
-          options={ENABLE_LIST}
         />
       ),
     },
@@ -588,15 +602,32 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           在每次智能体回复后，不会提供任何用户问题建议
         </p>
       ),
+      // extra: (
+      //   <SelectList
+      //     className={cx(styles.select)}
+      //     size={'small'}
+      //     value={agentConfigInfo?.openSuggest}
+      //     onChange={(value) =>
+      //       onChangeAgent(value as OpenCloseEnum, 'openSuggest')
+      //     }
+      //     options={ENABLE_LIST}
+      //   />
+      // ),
       extra: (
-        <SelectList
-          className={cx(styles.select)}
-          size={'small'}
-          value={agentConfigInfo?.openSuggest}
+        <Switch
+          // 阻止冒泡事件
+          value={agentConfigInfo?.openSuggest === OpenCloseEnum.Open}
+          onClick={(_, e: any) => {
+            e.stopPropagation();
+          }}
           onChange={(value) =>
-            onChangeAgent(value as OpenCloseEnum, 'openSuggest')
+            onChangeAgent(
+              value
+                ? OpenCloseEnum.Open
+                : (OpenCloseEnum.Close as OpenCloseEnum),
+              'openSuggest',
+            )
           }
-          options={ENABLE_LIST}
         />
       ),
     },
@@ -608,15 +639,32 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           开启后，用户可以通过设置定时任务的方式让智能体执行任务
         </p>
       ),
+      // extra: (
+      //   <SelectList
+      //     className={cx(styles.select)}
+      //     size={'small'}
+      //     value={agentConfigInfo?.openScheduledTask || OpenCloseEnum.Close}
+      //     onChange={(value) =>
+      //       onChangeAgent(value as OpenCloseEnum, 'openScheduledTask')
+      //     }
+      //     options={ENABLE_LIST}
+      //   />
+      // ),
       extra: (
-        <SelectList
-          className={cx(styles.select)}
-          size={'small'}
-          value={agentConfigInfo?.openScheduledTask || OpenCloseEnum.Close}
+        <Switch
+          // 阻止冒泡事件
+          value={agentConfigInfo?.openScheduledTask === OpenCloseEnum.Open}
+          onClick={(_, e: any) => {
+            e.stopPropagation();
+          }}
           onChange={(value) =>
-            onChangeAgent(value as OpenCloseEnum, 'openScheduledTask')
+            onChangeAgent(
+              value
+                ? OpenCloseEnum.Open
+                : (OpenCloseEnum.Close as OpenCloseEnum),
+              'openScheduledTask',
+            )
           }
-          options={ENABLE_LIST}
         />
       ),
     },

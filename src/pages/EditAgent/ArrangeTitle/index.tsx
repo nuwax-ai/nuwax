@@ -38,7 +38,7 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
           <img src={icon} alt="" />
         </ConditionRender>
         <span>{modelName}</span>
-        <SvgIcon name="icons-common-caret_down" />
+        <SvgIcon name="icons-common-caret_down" style={{ fontSize: 16 }} />
       </div>
     </div>
   );
