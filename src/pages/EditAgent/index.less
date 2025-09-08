@@ -2,7 +2,7 @@
 @import '@/styles/token';
 
 .container {
-  background: linear-gradient(0deg, #f7f7f9 0%, #f1effc 100%);
+  background: @backgroundImage;
 
   .edit-content {
     // 隐藏滚动条
@@ -14,7 +14,7 @@
   .section {
     // gap: 20px;
     overflow-x: hidden;
-    border-radius: 12px;
+    border-radius: @pageContainerBorderRadius;
     border: @lineWidth solid @colorSplit;
     margin: 0 @marginSm @marginSm;
     background-color: @colorBgContainer;
@@ -30,6 +30,14 @@
         margin-top: 10px;
         background-color: @colorSplit;
       }
+    }
+  }
+
+  :global {
+    // 风格2的适配
+    .xagi-nav-style2 {
+      margin: 0;
+      border-radius: 0;
     }
   }
 }

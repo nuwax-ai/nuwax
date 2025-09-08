@@ -2,6 +2,7 @@ import CreateAgent from '@/components/CreateAgent';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import ShowStand from '@/components/ShowStand';
 import VersionHistory from '@/components/VersionHistory';
+import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import {
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
@@ -42,6 +43,7 @@ const EditAgent: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
+  const { navigationStyle } = useUnifiedTheme();
   // 智能体配置信息
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
   const {
@@ -204,7 +206,14 @@ const EditAgent: React.FC = () => {
         // 点击发布按钮，打开发布智能体弹窗
         onPublish={() => setOpen(true)}
       />
-      <section className={cx('flex', 'flex-1', styles.section)}>
+      <section
+        className={cx(
+          'flex',
+          'flex-1',
+          styles.section,
+          `xagi-nav-${navigationStyle}`,
+        )}
+      >
         {/*编排*/}
         <div
           className={cx('radius-6', 'flex', 'flex-col', styles['edit-info'])}
