@@ -266,42 +266,40 @@ const MenusLayout: React.FC<{
           backgroundColor: secondaryBackgroundColor,
         }}
       >
-        {!isSecondMenuCollapsed && (
-          <HoverScrollbar
-            className={cx('h-full')}
-            bodyWidth={
-              NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
-            }
+        <HoverScrollbar
+          className={cx('h-full')}
+          bodyWidth={
+            NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
+          }
+          style={{
+            width: '100%',
+            padding: `${token.paddingSM} 0`,
+          }}
+        >
+          <div
             style={{
-              width: '100%',
-              padding: `${token.paddingSM} 0`,
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              minHeight: 0,
             }}
           >
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                minHeight: 0,
-              }}
-            >
-              <ConditionRender condition={isShowTitle}>
-                <div style={{ padding: '12px 12px 22px 12px' }}>
-                  <Typography.Title
-                    level={5}
-                    style={{ marginBottom: 0 }}
-                    className={cx(styles['menu-title'])}
-                  >
-                    {title}
-                  </Typography.Title>
-                </div>
-              </ConditionRender>
-              <div style={{ flex: 1, minHeight: 0 }}>
-                <Content />
+            <ConditionRender condition={isShowTitle}>
+              <div style={{ padding: '12px 12px 22px 12px' }}>
+                <Typography.Title
+                  level={5}
+                  style={{ marginBottom: 0 }}
+                  className={cx(styles['menu-title'])}
+                >
+                  {title}
+                </Typography.Title>
               </div>
+            </ConditionRender>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <Content />
             </div>
-          </HoverScrollbar>
-        )}
+          </div>
+        </HoverScrollbar>
       </div>
       {/* 收起/展开按钮 */}
       <CollapseButton />
