@@ -35,6 +35,7 @@ const cx = classNames.bind(styles);
 const Chat: React.FC = () => {
   const location = useLocation();
   const params = useParams();
+  const { isMobile } = useModel('layout');
   // 会话ID
   const id = Number(params.id);
   const agentId = Number(params.agentId);
@@ -322,7 +323,7 @@ const Chat: React.FC = () => {
               {conversationInfo?.topic}
             </Typography.Title>
             {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
-            {!isSidebarVisible && (
+            {!isSidebarVisible && !isMobile && (
               <Button
                 type="text"
                 className={cx(styles.sidebarButton)}

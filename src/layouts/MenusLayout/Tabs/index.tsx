@@ -51,7 +51,11 @@ const Tabs: React.FC<TabsType> = ({ onClick }) => {
             {...item}
             onClick={() => onClick(item.type)}
             active={handleActive(item.type)}
-            onMouseEnter={() => handleShowHoverMenu(item.type)}
+            onMouseEnter={() => {
+              if (item.type !== TabsEnum.NewChat) {
+                handleShowHoverMenu(item.type);
+              }
+            }}
             onMouseLeave={handleHideHoverMenu}
             isSecondMenuCollapsed={isSecondMenuCollapsed}
           />

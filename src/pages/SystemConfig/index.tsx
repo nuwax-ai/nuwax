@@ -2,7 +2,7 @@ import Loading from '@/components/custom/Loading';
 import { SYSTEM_SETTING_TABS } from '@/constants/system.constants';
 import { apiSystemConfigList } from '@/services/systemManage';
 import { ConfigObj, TabKey } from '@/types/interfaces/systemManage';
-import { ConfigProvider, Tabs } from 'antd';
+import { Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useModel } from 'umi';
@@ -49,33 +49,20 @@ const SystemConfig: React.FC = () => {
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       <div className={cx(styles.title)}>系统配置页面</div>
-      <ConfigProvider
-        theme={{
-          components: {
-            Tabs: {
-              itemActiveColor: '#5147FF',
-              inkBarColor: '#5147FF',
-              itemSelectedColor: '#5147FF',
-              itemHoverColor: '#5147FF',
-            },
-          },
-        }}
-      >
-        <Tabs
-          defaultActiveKey="BaseConfig"
-          items={SYSTEM_SETTING_TABS}
-          onChange={(key) => setTab(key as TabKey)}
+      <Tabs
+        defaultActiveKey="BaseConfig"
+        items={SYSTEM_SETTING_TABS}
+        onChange={(key) => setTab(key as TabKey)}
+      />
+      {loading ? (
+        <Loading />
+      ) : (
+        <BaseTab
+          currentTab={tab}
+          config={tabConfig}
+          refresh={runTenantConfig}
         />
-        {loading ? (
-          <Loading />
-        ) : (
-          <BaseTab
-            currentTab={tab}
-            config={tabConfig}
-            refresh={runTenantConfig}
-          />
-        )}
-      </ConfigProvider>
+      )}
     </div>
   );
 };

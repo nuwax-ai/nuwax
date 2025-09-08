@@ -287,7 +287,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
 
           <Form.Item name="dataParsingMethod" label="数据解析方式">
             <Select
-              style={{ width: '180px' }}
+              style={{ width: '100%' }}
               placeholder="请选择数据解析方式"
               options={[
                 { value: 'default', label: '系统默认' },

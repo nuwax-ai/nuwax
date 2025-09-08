@@ -8,7 +8,7 @@
 
   .group-mcp-item {
     gap: @marginSm;
-    padding: @paddingXs;
+    padding: @paddingXxs @paddingXs;
     // border: 1px solid transparent;
     cursor: default;
 
@@ -18,8 +18,9 @@
 
     .img-box {
       display: inline-block;
-      width: 48px;
-      height: 48px;
+      width: 24px;
+      height: 24px;
+      line-height: 20px;
       overflow: hidden;
 
       img {
@@ -32,13 +33,13 @@
     .name {
       display: inline-block;
       color: @colorText;
-      font-size: @fontSize;
+      font-size: @fontSizeSm;
       line-height: @lineHeight;
     }
 
     .desc {
       color: @colorTextTertiary;
-      font-size: @fontSize;
+      font-size: @fontSizeSm;
       line-height: @lineHeight;
     }
 
