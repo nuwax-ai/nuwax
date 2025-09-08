@@ -198,11 +198,11 @@ const ThemeConfig: React.FC = () => {
 
       // 构建后端所需的数据格式
       const themeConfig: ThemeConfigData = {
-        selectedThemeColor: previewPrimaryColor,
-        selectedBackgroundId: previewBackgroundId,
+        primaryColor: previewPrimaryColor,
+        backgroundId: previewBackgroundId,
         antdTheme: previewLayoutStyle, // 这里应该使用实际的 Ant Design 主题状态
-        navigationStyle: previewLayoutStyle, // 导航栏深浅色
-        navigationStyleId: previewNavigationStyle, // 导航风格 ID
+        layoutStyle: previewLayoutStyle, // 导航栏深浅色
+        navigationStyle: previewNavigationStyle, // 导航风格 ID
         timestamp: Date.now(),
       };
 

@@ -311,15 +311,15 @@ export interface TenantConfigDto {
  */
 export interface ThemeConfigData {
   /** 主题色 */
-  selectedThemeColor: string;
+  primaryColor: string;
   /** 背景图片ID */
-  selectedBackgroundId: string;
+  backgroundId: string;
   /** Ant Design主题（浅色/深色） */
   antdTheme: 'light' | 'dark';
   /** 导航栏风格（浅色/深色） */
-  navigationStyle: 'light' | 'dark';
+  layoutStyle: 'light' | 'dark';
   /** 导航风格ID（style1/style2） */
-  navigationStyleId: string;
+  navigationStyle: 'style1' | 'style2';
   /** 时间戳 */
   timestamp: number;
 }
