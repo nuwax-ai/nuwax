@@ -6,7 +6,7 @@
   width: 100%;
 
   .manual-box {
-    padding: @paddingXs;
+    padding: @paddingXxs @paddingXs;
     border-radius: @borderRadius;
     box-sizing: border-box;
     color: @colorTextSecondary;
@@ -14,6 +14,11 @@
     transition: background-color ease-in-out 0.3s;
     word-wrap: normal;
     white-space: nowrap;
+    border: @lineWidth solid @colorSplit;
+
+    .svg-icon {
+      color: @colorTextSecondary;
+    }
 
     &:hover {
       background-color: @colorPrimaryBg;

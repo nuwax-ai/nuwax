@@ -7,7 +7,6 @@ import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import { SIDEBAR_WIDTH } from '@/constants/agent.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
-import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
@@ -30,7 +29,7 @@ import { Button, Form, message, Typography } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useRequest } from 'umi';
+import { history, useParams, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
@@ -59,6 +58,8 @@ const AgentDetails: React.FC = () => {
     string | number
   > | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  // 会话ID
+  const [conversationId, setConversationId] = useState<number | null>(null);
 
   // 会话输入框已选择组件
   const {
@@ -67,8 +68,6 @@ const AgentDetails: React.FC = () => {
     handleSelectComponent,
     initSelectedComponentList,
   } = useSelectedComponent();
-  // 创建智能体会话
-  const { handleCreateConversation } = useConversation();
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
     useAgentDetails();
@@ -110,6 +109,7 @@ const AgentDetails: React.FC = () => {
     onSuccess: (result: AgentDetailDto) => {
       setLoading(false);
       setAgentDetail(result);
+      setConversationId(result?.conversationId || null);
       // 会话问题建议
       setChatSuggestList(result?.openingGuidQuestions || []);
       // 变量参数
@@ -143,7 +143,7 @@ const AgentDetails: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    runDetail(agentId);
+    runDetail(agentId, true);
 
     return () => {
       setIsLoaded(false);
@@ -187,8 +187,7 @@ const AgentDetails: React.FC = () => {
       return;
     }
 
-    // 创建智能体会话
-    handleCreateConversation(agentDetail.agentId, {
+    history.push(`/home/chat/${conversationId}/${agentId}`, {
       message: messageInfo,
       files,
       infos: selectedComponentList,
@@ -226,7 +225,12 @@ const AgentDetails: React.FC = () => {
               <Button
                 type="text"
                 className={cx(styles.sidebarButton)}
-                icon={<SvgIcon name="icons-nav-sidebar" />}
+                icon={
+                  <SvgIcon
+                    name="icons-nav-sidebar"
+                    className={cx(styles['icons-nav-sidebar'])}
+                  />
+                }
                 onClick={() => sidebarRef.current?.open()}
               />
             )}

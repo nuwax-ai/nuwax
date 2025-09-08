@@ -120,9 +120,13 @@ export async function apiHomeCategoryList(): Promise<
 // 已发布的智能体详情接口
 export function apiPublishedAgentInfo(
   agentId: number,
+  withConversationId: boolean = false,
 ): Promise<RequestResponse<AgentDetailDto>> {
   return request(`/api/published/agent/${agentId}`, {
     method: 'GET',
+    params: {
+      withConversationId,
+    },
   });
 }
 

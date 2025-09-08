@@ -24,6 +24,10 @@ const getIcon = (_item: AgentManualComponentInfo) => {
   return _item.icon;
 };
 
+const isShowIcon = (name: string) => {
+  return name.includes('思考') || name.includes('联网');
+};
+
 /**
  * 手动选择组件
  */
@@ -43,7 +47,7 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
   }, [manualComponents]);
   return (
     <div className={cx('flex-1')}>
-      <HoverScrollbar bodyWidth="100%" height="50px">
+      <HoverScrollbar bodyWidth="100%" height="45px" style={{ marginTop: 3 }}>
         <div className={cx('flex', 'items-center', styles['manual-container'])}>
           {normalizeManualComponents?.map((item, index) => {
             return (
@@ -62,15 +66,18 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
                 )}
                 onClick={() => onSelectComponent?.(item)}
               >
-                <SvgIcon
-                  name={item.icon}
-                  style={{
-                    marginRight: 8,
-                    width: 20,
-                    height: 20,
-                    borderRadius: 4,
-                  }}
-                />
+                {isShowIcon(item.name) && (
+                  <SvgIcon
+                    className={cx(styles['svg-icon'])}
+                    name={item.icon}
+                    style={{
+                      marginRight: 8,
+                      width: 20,
+                      height: 20,
+                      borderRadius: 4,
+                    }}
+                  />
+                )}
                 {item.name}
               </span>
             );

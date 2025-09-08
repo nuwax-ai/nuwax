@@ -256,7 +256,7 @@ const MenusLayout: React.FC<{
       </div>
       {/*二级导航菜单栏*/}
       <div
-        className={cx(styles['nav-menus'])}
+        className={cx(styles['nav-menus'], 'noselect')}
         style={{
           width: isSecondMenuCollapsed
             ? 0
@@ -286,7 +286,7 @@ const MenusLayout: React.FC<{
               }}
             >
               <ConditionRender condition={isShowTitle}>
-                <div style={{ padding: '14px 12px 22px 12px' }}>
+                <div style={{ padding: '12px 12px 22px 12px' }}>
                   <Typography.Title
                     level={5}
                     style={{ marginBottom: 0 }}

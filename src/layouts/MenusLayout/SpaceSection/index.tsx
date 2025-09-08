@@ -150,8 +150,8 @@ const SpaceSection: React.FC<{
         )}
       </div>
       <ConditionRender condition={editAgentList?.length}>
-        <h3 className={cx(styles['collection-title'])}>最近编辑</h3>
-        {editAgentList?.map((item: AgentInfo, index: number) => (
+        <h3 className={cx(styles['collection-title'])}>最近使用</h3>
+        {editAgentList?.slice(0, 5).map((item: AgentInfo, index: number) => (
           <MenuListItem
             key={item.id}
             isFirst={index === 0}
