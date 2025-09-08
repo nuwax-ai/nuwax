@@ -225,7 +225,12 @@ const AgentDetails: React.FC = () => {
               <Button
                 type="text"
                 className={cx(styles.sidebarButton)}
-                icon={<SvgIcon name="icons-nav-sidebar" />}
+                icon={
+                  <SvgIcon
+                    name="icons-nav-sidebar"
+                    className={cx(styles['icons-nav-sidebar'])}
+                  />
+                }
                 onClick={() => sidebarRef.current?.open()}
               />
             )}
