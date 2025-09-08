@@ -455,6 +455,8 @@ export interface AgentSelectedComponentInfo {
 
 // Agent信息，已发布过的agent才有此信息
 export interface AgentDetailDto extends AgentBaseInfo {
+  // 会话ID
+  conversationId: number;
   spaceId: number;
   // 智能体ID
   agentId: number;
