@@ -29,7 +29,7 @@ import { Button, Form, message, Typography } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { history, useParams, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
@@ -42,7 +42,7 @@ const AgentDetails: React.FC = () => {
   const params = useParams();
   const agentId = Number(params.agentId);
   const [form] = Form.useForm();
-
+  const { isMobile } = useModel('layout');
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
@@ -221,7 +221,7 @@ const AgentDetails: React.FC = () => {
             </Typography.Title>
 
             {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
-            {!isSidebarVisible && (
+            {!isSidebarVisible && !isMobile && (
               <Button
                 type="text"
                 className={cx(styles.sidebarButton)}
