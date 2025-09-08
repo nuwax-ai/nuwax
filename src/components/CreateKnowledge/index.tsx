@@ -1,28 +1,44 @@
 import knowledgeIcon from '@/assets/images/knowledge_image.png';
+import Created from '@/components/Created';
+import SkillListItem from '@/components/CreateKnowledge/SkillListItem';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
+import { CREATED_TABS } from '@/constants/common.constants';
 import {
   apiKnowledgeConfigAdd,
+  apiKnowledgeConfigDetail,
   apiKnowledgeConfigUpdate,
 } from '@/services/knowledge';
 import { apiModelList } from '@/services/modelConfig';
+import {
+  AgentAddComponentStatusEnum,
+  AgentComponentTypeEnum,
+} from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { KnowledgeDataTypeEnum } from '@/types/enums/library';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
-import type { CreateKnowledgeProps, option } from '@/types/interfaces/common';
+import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
+import type {
+  CreatedNodeItem,
+  CreateKnowledgeProps,
+  option,
+} from '@/types/interfaces/common';
 import type {
   KnowledgeBaseInfo,
   KnowledgeConfigUpdateParams,
+  KnowledgeInfo,
 } from '@/types/interfaces/knowledge';
 import { ModelConfigInfo } from '@/types/interfaces/model';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, FormProps, Input, message } from 'antd';
+import { Form, FormProps, Input, message, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { history, useRequest } from 'umi';
 import SelectList from '../custom/SelectList';
 import styles from './index.less';
+import SkillListEmpty from './SkillListEmpty';
 
 const cx = classNames.bind(styles);
 
@@ -45,6 +61,19 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
   );
   // 模型列表
   const [modelConfigList, setModelConfigList] = useState<option[]>([]);
+
+  // 数据解析方式
+  const [dataParsingMethod, setDataParsingMethod] = useState('default');
+  const [dataParsingMethodItem, setDataParsingMethodItem] = useState<any>(null);
+  // 打开、关闭组件选择弹窗
+  const [show, setShow] = useState<boolean>(false);
+  const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
+    AgentComponentTypeEnum.Plugin,
+  );
+  // 处于loading状态的组件列表
+  const [addComponents, setAddComponents] = useState<
+    AgentAddComponentStatusInfo[]
+  >([]);
 
   // 数据新增接口
   const { run } = useRequest(apiKnowledgeConfigAdd, {
@@ -75,6 +104,31 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
       setLoading(false);
     },
   });
+  // 数据详情接口
+  const { run: runGetDetail } = useRequest(apiKnowledgeConfigDetail, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (knowledgeInfo: KnowledgeInfo) => {
+      setImageUrl(knowledgeInfo.icon);
+      setResourceFormat(knowledgeInfo.dataType);
+      form.setFieldsValue({
+        name: knowledgeInfo.name,
+        description: knowledgeInfo.description,
+        embeddingModelId: knowledgeInfo.embeddingModelId,
+        dataParsingMethod: knowledgeInfo.workflowId ? 'workflow' : 'default',
+      });
+      if (knowledgeInfo.workflowId) {
+        setDataParsingMethod(knowledgeInfo.workflowId ? 'workflow' : 'default');
+        setDataParsingMethodItem({
+          id: knowledgeInfo.workflowId,
+          name: knowledgeInfo.workflowName,
+          icon: knowledgeInfo.workflowIcon,
+          description: knowledgeInfo.workflowDescription,
+        });
+      }
+    },
+    onError: () => {},
+  });
 
   // 查询可使用模型列表接口
   const { run: runMode } = useRequest(apiModelList, {
@@ -97,14 +151,13 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
         spaceId,
         modelType: ModelTypeEnum.Embeddings,
       });
+      // 初始化默认数据
+      setDataParsingMethod('default');
+      setDataParsingMethodItem(null);
+
+      // 初始化详情接口的数据
       if (knowledgeInfo) {
-        setImageUrl(knowledgeInfo.icon);
-        setResourceFormat(knowledgeInfo.dataType);
-        form.setFieldsValue({
-          name: knowledgeInfo.name,
-          description: knowledgeInfo.description,
-          embeddingModelId: knowledgeInfo.embeddingModelId,
-        });
+        runGetDetail(knowledgeInfo.id);
       }
     }
   }, [spaceId, open, knowledgeInfo]);
@@ -117,6 +170,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
       embeddingModelId: values.embeddingModelId,
       icon: imageUrl,
       dataType: resourceFormat,
+      workflowId: dataParsingMethodItem?.id ?? null,
     };
     setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
@@ -129,64 +183,153 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     }
   };
 
+  // 监听值变化（只包含变化的值）
+  const onValuesChange = (changedValues: { dataParsingMethod: string }) => {
+    setDataParsingMethod(changedValues.dataParsingMethod);
+  };
+  // 工作流
+  const handleAddComponent = (info: CreatedNodeItem) => {
+    setAddComponents(() => {
+      return [
+        {
+          type: info.targetType,
+          targetId: info.targetId,
+          status: AgentAddComponentStatusEnum.Added,
+          toolName: info.toolName || '',
+        },
+      ];
+    });
+
+    flushSync(() => {
+      setDataParsingMethodItem({
+        id: info.targetId,
+        name: info.name,
+        icon: info.icon,
+        description: info.description,
+      });
+    });
+    setShow(false);
+  };
+  // 工作流
+  const handlerComponentPlus = (
+    e: React.MouseEvent<HTMLElement>,
+    type: AgentComponentTypeEnum,
+  ) => {
+    e.stopPropagation();
+    setCheckTag(type);
+    setShow(true);
+  };
+
+  const handleCheckItem = (e: React.MouseEvent<HTMLElement>) => {
+    handlerComponentPlus(e, AgentComponentTypeEnum.Workflow);
+  };
+
+  const handleDeleteItem = () => {
+    setDataParsingMethodItem(null);
+    setAddComponents([]);
+  };
+
   const handlerSubmit = () => {
     form.submit();
   };
 
   return (
-    <CustomFormModal
-      form={form}
-      title={mode === CreateUpdateModeEnum.Create ? '创建知识库' : '更新知识库'}
-      open={open}
-      loading={loading}
-      onCancel={onCancel}
-      onConfirm={handlerSubmit}
-    >
-      <Form
+    <>
+      <CustomFormModal
         form={form}
-        className={cx('mt-16')}
-        requiredMark={customizeRequiredMark}
-        layout="vertical"
-        onFinish={onFinish}
-        preserve={false}
-        autoComplete="off"
+        title={
+          mode === CreateUpdateModeEnum.Create ? '创建知识库' : '更新知识库'
+        }
+        open={open}
+        loading={loading}
+        onCancel={onCancel}
+        onConfirm={handlerSubmit}
       >
-        <Form.Item
-          name="name"
-          label="名称"
-          rules={[{ required: true, message: '输入知识库名称' }]}
+        <Form
+          form={form}
+          className={cx('mt-16')}
+          requiredMark={customizeRequiredMark}
+          layout="vertical"
+          onFinish={onFinish}
+          onValuesChange={onValuesChange}
+          preserve={false}
+          autoComplete="off"
+          initialValues={{
+            dataParsingMethod: 'default',
+          }}
         >
-          <Input placeholder="输入知识库名称" showCount maxLength={100} />
-        </Form.Item>
-        <OverrideTextArea
-          name="description"
-          label="描述"
-          initialValue={knowledgeInfo?.description}
-          placeholder="输入知识库内容的描述"
-          maxLength={100}
+          <Form.Item
+            name="name"
+            label="名称"
+            rules={[{ required: true, message: '输入知识库名称' }]}
+          >
+            <Input placeholder="输入知识库名称" showCount maxLength={100} />
+          </Form.Item>
+          <OverrideTextArea
+            name="description"
+            label="描述"
+            initialValue={knowledgeInfo?.description}
+            placeholder="输入知识库内容的描述"
+            maxLength={100}
+          />
+          <Form.Item
+            name="embeddingModelId"
+            label="向量模型"
+            rules={[{ required: true, message: '请选择向量模型' }]}
+          >
+            <SelectList
+              placeholder="请选择向量模型"
+              disabled={mode === CreateUpdateModeEnum.Update}
+              options={modelConfigList}
+              allowClear
+            />
+          </Form.Item>
+
+          <Form.Item name="dataParsingMethod" label="数据解析方式">
+            <Select
+              style={{ width: '180px' }}
+              placeholder="请选择数据解析方式"
+              options={[
+                { value: 'default', label: '系统默认' },
+                { value: 'workflow', label: '自定义工作流' },
+              ]}
+            />
+          </Form.Item>
+          {dataParsingMethod === 'workflow' && (
+            <Form.Item style={{ marginTop: '-15px' }}>
+              {dataParsingMethodItem ? (
+                <SkillListItem
+                  item={dataParsingMethodItem}
+                  onDelete={handleDeleteItem}
+                />
+              ) : (
+                <SkillListEmpty onClick={handleCheckItem} />
+              )}
+            </Form.Item>
+          )}
+
+          <Form.Item name="icon" label="图标">
+            <UploadAvatar
+              className={cx(styles['upload-box'])}
+              onUploadSuccess={setImageUrl}
+              imageUrl={imageUrl}
+              defaultImage={knowledgeIcon as string}
+            />
+          </Form.Item>
+        </Form>
+        {/*添加插件、工作流、知识库、数据库弹窗*/}
+        <Created
+          open={show}
+          onCancel={() => setShow(false)}
+          checkTag={checkTag}
+          addComponents={addComponents}
+          onAdded={handleAddComponent}
+          tabs={CREATED_TABS.filter(
+            (item) => item.key === AgentComponentTypeEnum.Workflow,
+          )}
         />
-        <Form.Item
-          name="embeddingModelId"
-          label="向量模型"
-          rules={[{ required: true, message: '请选择向量模型' }]}
-        >
-          <SelectList
-            placeholder="请选择向量模型"
-            disabled={mode === CreateUpdateModeEnum.Update}
-            options={modelConfigList}
-            allowClear
-          />
-        </Form.Item>
-        <Form.Item name="icon" label="图标">
-          <UploadAvatar
-            className={cx(styles['upload-box'])}
-            onUploadSuccess={setImageUrl}
-            imageUrl={imageUrl}
-            defaultImage={knowledgeIcon as string}
-          />
-        </Form.Item>
-      </Form>
-    </CustomFormModal>
+      </CustomFormModal>
+    </>
   );
 };
 
