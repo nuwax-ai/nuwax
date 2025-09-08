@@ -3,10 +3,7 @@ import { STORAGE_KEYS } from '@/constants/theme.constants';
 import { apiTenantConfig } from '@/services/account';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
-import {
-  initializeLayoutStyle,
-  initializeWithFallback,
-} from '@/utils/styleInitializer';
+import { initializeWithFallback } from '@/utils/styleInitializer';
 import { useState } from 'react';
 import { useRequest } from 'umi';
 
@@ -65,16 +62,14 @@ export default () => {
               immediate: true,
             },
           );
+          console.log('已同步租户主题配置（本地无配置）:', templateConfig);
         } catch (error) {
           console.warn('同步租户主题颜色失败:', error);
         }
       } else if (hasLocalThemeConfig) {
         console.log('检测到本地主题配置，跳过租户配置同步');
+        unifiedThemeService.updateData(null, { immediate: true });
       }
-
-      // 租户信息初始化完成后，立即初始化 layout navigation 相关的 CSS 变量
-      // 确保样式管理器已经加载了本地存储的配置并应用到页面
-      await initializeLayoutStyle('租户信息初始化完成');
     },
     onError: async () => {
       setLoadEnd(true);

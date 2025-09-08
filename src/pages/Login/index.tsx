@@ -1,6 +1,7 @@
 import SiteFooter from '@/components/SiteFooter';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import { apiLogin } from '@/services/account';
+import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { LoginTypeEnum } from '@/types/enums/login';
 import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
 import {
@@ -72,6 +73,9 @@ const Login: React.FC = () => {
   });
 
   useEffect(() => {
+    // 清除主题本地缓存
+    unifiedThemeService.clearUserThemeConfig();
+
     // 租户配置信息查询接口
     runTenantConfig();
   }, []);
