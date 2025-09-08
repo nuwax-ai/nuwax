@@ -25,7 +25,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
       className={styles.mobileMenuBtn}
       style={{
         left: menuWidth,
-        marginLeft: isOpen ? '-14px' : '14px', // 建议迁移到less
+        marginLeft: isOpen ? '-14px' : '-10px', // 建议迁移到less
         transition: 'margin-left 0.3s',
       }}
     >
