@@ -256,7 +256,7 @@ const MenusLayout: React.FC<{
       </div>
       {/*二级导航菜单栏*/}
       <div
-        className={cx(styles['nav-menus'])}
+        className={cx(styles['nav-menus'], 'noselect')}
         style={{
           width: isSecondMenuCollapsed
             ? 0
