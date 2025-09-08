@@ -68,6 +68,7 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
               >
                 {isShowIcon(item.name) && (
                   <SvgIcon
+                    className={cx(styles['svg-icon'])}
                     name={item.icon}
                     style={{
                       marginRight: 8,

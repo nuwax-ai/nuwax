@@ -244,7 +244,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 )}
                 onClick={handleClear}
               >
-                <SvgIcon name="icons-chat-clear" />
+                <SvgIcon
+                  name="icons-chat-clear"
+                  className={cx(styles['svg-icon'])}
+                />
               </span>
             </Tooltip>
           </ConditionRender>
@@ -275,7 +278,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   { [styles['upload-box-disabled']]: wholeDisabled },
                 )}
               >
-                <SvgIcon name="icons-chat-add" />
+                <SvgIcon
+                  name="icons-chat-add"
+                  className={cx(styles['svg-icon'])}
+                />
               </span>
             </Tooltip>
           </Upload>
