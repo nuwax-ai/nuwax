@@ -73,6 +73,14 @@ export interface KnowledgeInfo extends KnowledgeConfigAddParams {
   modifiedId: number;
   // 最后修改人
   modifiedName: string;
+  // 工作流id
+  workflowId?: string;
+  // 工作流名称
+  workflowName?: string;
+  // 工作流图标
+  workflowIcon?: string;
+  // 工作流描述
+  workflowDescription?: string;
 }
 
 // 分段配置
