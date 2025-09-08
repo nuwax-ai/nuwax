@@ -54,14 +54,17 @@ export default () => {
       );
       if (result.templateConfig && !hasLocalThemeConfig) {
         try {
-          const themeConfig = JSON.parse(result.templateConfig);
-          // 使用统一主题服务同步主题颜色
-          if (themeConfig.selectedThemeColor) {
-            await unifiedThemeService.updatePrimaryColor(
-              themeConfig.selectedThemeColor,
-            );
-          }
-          console.log('已同步租户主题配置（本地无配置）:', themeConfig);
+          const templateConfig = JSON.parse(result.templateConfig);
+          const currentData = unifiedThemeService.getCurrentData();
+          await unifiedThemeService.updateData(
+            {
+              ...currentData,
+              ...templateConfig,
+            },
+            {
+              immediate: true,
+            },
+          );
         } catch (error) {
           console.warn('同步租户主题颜色失败:', error);
         }
