@@ -58,7 +58,7 @@ interface UpdateOptions {
 class UnifiedThemeService {
   private currentData: UnifiedThemeData;
   private listeners: Set<(data: UnifiedThemeData) => void> = new Set();
-
+  private clearThemeFlag: boolean = false;
   constructor() {
     this.currentData = this.loadConfiguration();
     this.initializeEventHandlers();
@@ -214,7 +214,9 @@ class UnifiedThemeService {
           e.key as any,
         )
       ) {
-        this.reloadConfiguration();
+        const needNotify = !this.clearThemeFlag;
+        this.reloadConfiguration(needNotify);
+        this.clearThemeFlag = false; // 清除标志
       }
     });
   }
@@ -222,11 +224,13 @@ class UnifiedThemeService {
   /**
    * 重新加载配置
    */
-  private reloadConfiguration(): void {
+  private reloadConfiguration(needNotify: boolean = true): void {
     const newData = this.loadConfiguration();
     if (JSON.stringify(newData) !== JSON.stringify(this.currentData)) {
       this.currentData = newData;
-      this.notifyListeners();
+      if (needNotify) {
+        this.notifyListeners();
+      }
     }
   }
 
@@ -313,7 +317,7 @@ class UnifiedThemeService {
    * 批量更新配置
    */
   async updateData(
-    updates: Partial<UnifiedThemeData>,
+    updates: Partial<UnifiedThemeData> | null,
     options: UpdateOptions = {},
   ): Promise<void> {
     const {
@@ -325,7 +329,7 @@ class UnifiedThemeService {
     // 更新内存中的数据
     this.currentData = {
       ...this.currentData,
-      ...updates,
+      ...(updates || {}),
       timestamp: Date.now(),
       source: 'user', // 用户操作都标记为用户来源
     };
@@ -625,6 +629,15 @@ class UnifiedThemeService {
   dispose(): void {
     this.listeners.clear();
   }
+
+  /**
+   * 清除用户主题配置
+   */
+  clearUserThemeConfig(): void {
+    this.clearThemeFlag = true;
+    localStorage.removeItem(STORAGE_KEYS.USER_THEME_CONFIG);
+    localStorage.removeItem(STORAGE_KEYS.GLOBAL_SETTINGS);
+  }
 }
 
 // 创建并导出单例实例
@@ -650,6 +663,7 @@ export const {
   getConfigSource,
   getConfigSourceText,
   getExtraColors,
+  clearUserThemeConfig,
 } = unifiedThemeService;
 
 export default unifiedThemeService;
