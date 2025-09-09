@@ -188,7 +188,6 @@ const VerifyCode: React.FC = () => {
             <Button
               color="default"
               variant="filled"
-              size="large"
               shape="circle"
               icon={<LeftOutlined />}
               onClick={() => history.back()}

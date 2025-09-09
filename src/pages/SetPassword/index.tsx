@@ -43,7 +43,6 @@ const SetPassword: React.FC = () => {
           <Button
             color="default"
             variant="filled"
-            size="large"
             shape="circle"
             icon={<LeftOutlined />}
             onClick={() => history.push('/login')}
@@ -76,7 +75,6 @@ const SetPassword: React.FC = () => {
             ]}
           >
             <Input.Password
-              size={'large'}
               rootClassName={cx(styles.input)}
               placeholder="请输入6位以上密码"
               autoComplete="off"
@@ -104,7 +102,6 @@ const SetPassword: React.FC = () => {
             ]}
           >
             <Input.Password
-              size={'large'}
               rootClassName={cx(styles.input)}
               placeholder="请再次输入密码"
               autoComplete="off"
@@ -117,7 +114,6 @@ const SetPassword: React.FC = () => {
               type="primary"
               loading={loading}
               htmlType="submit"
-              size={'large'}
             >
               确定
             </Button>
