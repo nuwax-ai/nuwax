@@ -1,12 +1,12 @@
 import Loading from '@/components/custom/Loading';
-import { SPACE_ID, SPACE_URL } from '@/constants/home.constants';
+import { SPACE_URL } from '@/constants/home.constants';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum } from '@/types/enums/space';
 import React, { useEffect } from 'react';
 import { history, useModel } from 'umi';
 
 const Space: React.FC = () => {
-  const { currentSpaceInfo, loadingSpaceList, asyncSpaceListFun } =
+  const { currentSpaceInfo, loadingSpaceList, asyncSpaceListFun, getSpaceId } =
     useModel('spaceModel');
 
   useEffect(() => {
@@ -18,7 +18,7 @@ const Space: React.FC = () => {
   // 开发者功能如果关闭，首次进入空间菜单选中“空间广场”；管理员还是全部可见
 
   useEffect(() => {
-    const spaceId = localStorage.getItem(SPACE_ID) ?? currentSpaceInfo?.id;
+    const spaceId = getSpaceId();
     if (!spaceId) {
       return;
     }
