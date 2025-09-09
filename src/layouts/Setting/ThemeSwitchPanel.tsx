@@ -14,6 +14,7 @@ import NavigationStylePanel from '@/components/business-component/ThemeConfig/Na
 import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
 import { backgroundConfigs } from '@/constants/theme.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import unifiedThemeService from '@/services/unifiedThemeService';
 import { BackgroundImage } from '@/types/background';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { TenantThemeConfig } from '@/types/tenant';
@@ -65,6 +66,16 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     }));
   }, []);
 
+  // 根据背景图片ID获取对应的布局风格
+  const getLayoutStyleByBackgroundId = (
+    backgroundId: string,
+  ): ThemeLayoutColorStyle => {
+    const backgroundConfig = backgroundConfigs.find(
+      (config) => config.id === backgroundId,
+    );
+    return backgroundConfig?.layoutStyle || ThemeLayoutColorStyle.LIGHT;
+  };
+
   // 处理主题色变更
   const handleColorChange = async (color: string) => {
     try {
@@ -113,6 +124,36 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   const handleNavigationThemeToggle = async () => {
     try {
       await toggleNavigationTheme();
+      const themeData = unifiedThemeService.getCurrentData();
+      // 检查当前背景是否与新的导航栏深浅色匹配
+      const currentBackgroundLayoutStyle = getLayoutStyleByBackgroundId(
+        themeData.backgroundId,
+      );
+
+      if (currentBackgroundLayoutStyle !== themeData.layoutStyle) {
+        // 当前背景不匹配，自动切换到匹配的背景（临时预览）
+        const matchingBackground = backgroundConfigs.find(
+          (config) => config.layoutStyle === themeData.layoutStyle,
+        );
+
+        if (matchingBackground) {
+          // 立即应用背景图预览效果（不保存到localStorage）
+          try {
+            await updateBackground(matchingBackground.id);
+          } catch (error) {
+            console.warn('预览背景图失败:', error);
+          }
+
+          // 显示背景自动匹配提示
+          message.info(
+            `已自动切换为${matchingBackground.name}以匹配${
+              themeData.layoutStyle === ThemeLayoutColorStyle.DARK
+                ? '深色'
+                : '浅色'
+            }导航栏`,
+          );
+        }
+      }
     } catch (error) {
       console.error('切换导航主题失败:', error);
       message.error('导航主题切换失败');
