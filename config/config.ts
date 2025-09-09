@@ -36,10 +36,54 @@ export default defineConfig({
   request: {},
   routes,
   npmClient: 'pnpm',
-  // 添加阿里云验证码脚本
+  // 添加阿里云验证码脚本和双向跳转脚本
   headScripts: [
     {
       src: 'https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js',
+      type: 'text/javascript',
+    },
+    {
+      content: `
+        (function() {
+          if(typeof window === 'undefined') {
+            return;
+          }
+
+          // 开发模式检测 - 如果是开发环境则不执行跳转
+          if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+            console.log('开发模式检测到，跳过双向跳转逻辑');
+            return;
+          }
+          
+          const { protocol, host, href } = window.location;
+          const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
+          const baseUrl = protocol + '//' + host;
+          
+          // PC 端访问 M 页面 => 跳转 PC
+          if (!isMobile && href.includes('/m/')) {
+            const match = href.match(/agent-detail\\?id=([^&]+)/);
+            if (match) {
+              const agentId = match[1];
+              window.location.replace(baseUrl + '/agent/' + agentId);
+              return;
+            }
+            window.location.replace(baseUrl + '/');
+            return;
+          }
+          
+          // 移动端访问 PC 页面 => 跳转 M
+          if (isMobile && !href.includes('/m/')) {
+            const match = href.match(/\\/agent\\/([^/?#]+)/);
+            if (match) {
+              const agentId = match[1];
+              window.location.replace(baseUrl + '/m/#/pages/agent-detail/agent-detail?id=' + agentId);
+              return;
+            }
+            window.location.replace(baseUrl + '/m/');
+            return;
+          }
+        })();
+      `,
       type: 'text/javascript',
     },
   ],
