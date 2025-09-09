@@ -1,4 +1,4 @@
-import squareBannerImage from '@/assets/images/square_banner_image.png';
+import squareBannerImage from '@/assets/images/square_banner_image2.png';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
