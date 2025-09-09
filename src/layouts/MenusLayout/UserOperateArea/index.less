@@ -8,6 +8,7 @@
   user-select: none;
 
   .active-icon-container {
+    color: @navFirstMenuTextSecondary;
     display: flex;
     width: 40px;
     height: 40px;
@@ -22,6 +23,7 @@
     color: @colorTextSecondary;
 
     .active-icon-container {
+      color: @colorTextSecondary;
       background: @navItemHoverBg;
       box-shadow: @navShadow;
     }
@@ -32,17 +34,12 @@
   }
 
   :global {
-    .ant-badge {
-      color: @navFirstMenuTextSecondary;
-      transition: color 0.3s ease;
-    }
-
     .ant-badge-count {
       top: 10px;
       right: 10px;
       background: @colorError;
       color: @colorWhite;
-      border: 1px solid @navBorderColor;
+      border: @lineWidth solid @navBorderColor;
     }
 
     sup {
@@ -60,10 +57,5 @@
       right: 8px;
       font-size: 10px;
     }
-  }
-
-  // 消息通知圈点特殊样式
-  &:hover :global .ant-badge {
-    color: @navFirstMenuText;
   }
 }
