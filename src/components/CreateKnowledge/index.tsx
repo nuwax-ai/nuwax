@@ -190,9 +190,11 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
 
   // 监听值变化（只包含变化的值）
   const onValuesChange = (changedValues: { dataParsingMethod: string }) => {
-    setDataParsingMethod(
-      changedValues.dataParsingMethod as 'default' | 'workflow',
-    );
+    if (changedValues.dataParsingMethod) {
+      setDataParsingMethod(
+        changedValues.dataParsingMethod as 'default' | 'workflow',
+      );
+    }
   };
   // 工作流
   const handleAddComponent = (info: CreatedNodeItem) => {
