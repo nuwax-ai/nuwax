@@ -1,6 +1,7 @@
 import McpInstallType from '@/components/base/McpInstallType';
 import McpStatus from '@/components/base/McpStatus';
 import CardWrapper from '@/components/business-component/CardWrapper';
+import ConditionRender from '@/components/ConditionRender';
 import CustomPopover from '@/components/CustomPopover';
 import { ICON_MORE } from '@/constants/images.constants';
 import { MCP_MORE_ACTION } from '@/constants/mcp.constants';
@@ -61,6 +62,8 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
 
   useEffect(() => {
     const list = getActionList(mcpInfo);
+    console.log('list', list);
+    console.log('mcpInfo', mcpInfo);
     setActionList(list);
   }, [mcpInfo]);
 
@@ -93,9 +96,11 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
         <footer className={cx('flex', 'items-center', 'content-between')}>
           <McpInstallType installType={mcpInfo.installType} />
           {/*更多操作*/}
-          <CustomPopover list={actionList} onClick={onClickMore}>
-            <ICON_MORE />
-          </CustomPopover>
+          <ConditionRender condition={actionList.length > 0}>
+            <CustomPopover list={actionList} onClick={onClickMore}>
+              <ICON_MORE />
+            </CustomPopover>
+          </ConditionRender>
         </footer>
       }
     />
