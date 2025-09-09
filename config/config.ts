@@ -48,9 +48,9 @@ export default defineConfig({
           if(typeof window === 'undefined') {
             return;
           }
-            
+
           // 开发模式检测 - 如果是开发环境则不执行跳转
-          if (process && process.env && process.env.NODE_ENV === 'development') {
+          if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
             console.log('开发模式检测到，跳过双向跳转逻辑');
             return;
           }
