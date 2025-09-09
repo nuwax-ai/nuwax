@@ -20,7 +20,7 @@ export default function useMarkdownRender({
   thinking: string;
 }) {
   const markdownRef = useRef<MarkdownCMDRef>(null);
-  const messageIdRef = useRef<string>(uuidv4());
+  const messageIdRef = useRef<string>(id ? String(id) : uuidv4());
   const lastTextPos = useRef<{ thinking: number; answer: number }>({
     thinking: 0,
     answer: 0,
@@ -66,6 +66,7 @@ export default function useMarkdownRender({
       messageIdRef.current = '';
     };
   }, []);
+
   return {
     markdownRef,
     messageIdRef,
