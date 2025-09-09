@@ -285,7 +285,7 @@ const MenusLayout: React.FC<{
             }}
           >
             <ConditionRender condition={isShowTitle}>
-              <div style={{ padding: '12px 12px 22px 12px' }}>
+              <div style={{ padding: '12px 12px' }}>
                 <Typography.Title
                   level={5}
                   style={{ marginBottom: 0 }}

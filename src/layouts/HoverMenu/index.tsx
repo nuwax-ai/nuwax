@@ -131,7 +131,7 @@ const HoverMenu: React.FC = () => {
         }}
       >
         <ConditionRender condition={isShowTitle}>
-          <div style={{ padding: '22px 12px' }}>
+          <div style={{ padding: '14px 12px' }}>
             <Typography.Title
               level={4}
               className={cx(styles['menu-title'])}
