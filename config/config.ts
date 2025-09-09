@@ -36,10 +36,49 @@ export default defineConfig({
   request: {},
   routes,
   npmClient: 'pnpm',
-  // 添加阿里云验证码脚本
+  // 添加阿里云验证码脚本和双向跳转脚本
   headScripts: [
     {
       src: 'https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js',
+      type: 'text/javascript',
+    },
+    {
+      content: `
+        (function() {
+          // 开发模式检测 - 如果是开发环境则不执行跳转
+          if (typeof window !== 'undefined' && process?.env?.NODE_ENV === 'development') {
+            console.log('开发模式检测到，跳过双向跳转逻辑');
+            return;
+          }
+          
+          const { protocol, host, href } = window.location;
+          const baseUrl = protocol + '//' + host;
+          
+          // 移动端转PC
+          if (href.includes('/m/')) {
+            const match = href.match(/agent-detail\\?id=([^&]+)/);
+            if (match) {
+              const agentId = match[1];
+              window.location.replace(baseUrl + '/agent/' + agentId);
+              return;
+            }
+            window.location.replace(baseUrl + '/');
+            return;
+          }
+          
+          // PC端转移动端
+          if (!href.includes('/m/')) {
+            const match = href.match(/\\/agent\\/([^/?#]+)/);
+            if (match) {
+              const agentId = match[1];
+              window.location.replace(baseUrl + '/m/#/pages/agent-detail/agent-detail?id=' + agentId);
+              return;
+            }
+            window.location.replace(baseUrl + '/m/');
+            return;
+          }
+        })();
+      `,
       type: 'text/javascript',
     },
   ],
