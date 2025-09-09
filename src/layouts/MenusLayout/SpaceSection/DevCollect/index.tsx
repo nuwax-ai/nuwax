@@ -30,16 +30,18 @@ const DevCollect: React.FC = () => {
   };
 
   return devCollectAgentList?.length > 0 ? (
-    devCollectAgentList?.map((item: AgentInfo, index: number) => (
-      <MenuListItem
-        key={item.id}
-        isFirst={index === 0}
-        onClick={() => handleDevCollect(item.agentId, item.spaceId)}
-        icon={item.icon || (agentImage as string)}
-        name={item.name}
-        onCancelCollect={() => handleCancelCollect(item.agentId)}
-      />
-    ))
+    devCollectAgentList
+      ?.slice(0, 5)
+      .map((item: AgentInfo, index: number) => (
+        <MenuListItem
+          key={item.id}
+          isFirst={index === 0}
+          onClick={() => handleDevCollect(item.agentId, item.spaceId)}
+          icon={item.icon || (agentImage as string)}
+          name={item.name}
+          onCancelCollect={() => handleCancelCollect(item.agentId)}
+        />
+      ))
   ) : (
     <>
       <div className={cx(styles['no-dev-collect'])}>还没有收藏任何内容</div>

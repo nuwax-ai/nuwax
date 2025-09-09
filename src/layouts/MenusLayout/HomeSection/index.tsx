@@ -54,15 +54,17 @@ const HomeSection: React.FC<{
           </h3>
         </div>
         {usedAgentList?.length ? (
-          usedAgentList?.map((info: AgentInfo, index: number) => (
-            <MenuListItem
-              key={info.id}
-              onClick={() => handleAgentHome(info.agentId)}
-              icon={info.icon}
-              name={info.name}
-              isFirst={index === 0}
-            />
-          ))
+          usedAgentList
+            ?.slice(0, 5)
+            .map((info: AgentInfo, index: number) => (
+              <MenuListItem
+                key={info.id}
+                onClick={() => handleAgentHome(info.agentId)}
+                icon={info.icon}
+                name={info.name}
+                isFirst={index === 0}
+              />
+            ))
         ) : (
           <>
             <div className={cx(styles['no-used'])}>你还没有使用任何智能体</div>
