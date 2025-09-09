@@ -44,7 +44,7 @@
       .flex-item {
         flex: 1 1 0; /* 允许收缩，防止被内容撑爆 */
         min-width: 0; /* 关键：让 flex 子项可以小于内容宽度 */
-        display: box;
+        display: -webkit-box;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 2;
         overflow: hidden;
