@@ -16,6 +16,10 @@
   }
 }
 
+.stickyContainer {
+  padding: 0 @padding;
+}
+
 .category-name {
   margin: 30px 0 16px;
   color: @BLANK31;
@@ -87,10 +91,12 @@
   padding: 0 @padding;
 }
 
-.activedSticky {
+.activeSticky {
   :global {
     .ant-affix {
       background-color: @pageContainerBg;
+      margin-left: calc(0px - @padding);
+      padding-left: @padding;
     }
   }
 }
