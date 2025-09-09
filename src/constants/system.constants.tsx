@@ -65,8 +65,8 @@ export const SYSTEM_SETTING_TABS: TabsProps['items'] = [
     key: 'AgentSetting',
     label: '站点智能体设置',
   },
-  {
-    key: 'DomainBind',
-    label: '域名绑定',
-  },
+  // {
+  //   key: 'DomainBind',
+  //   label: '域名绑定',
+  // },
 ];
