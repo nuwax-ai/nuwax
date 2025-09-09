@@ -16,7 +16,7 @@ import type {
 import { message, theme } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
-import React, { memo, useCallback, useEffect, useMemo } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { useModel } from 'umi';
 import ChatBottomDebug from './ChatBottomDebug';
 import ChatBottomMore from './ChatBottomMore';
@@ -32,10 +32,6 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const { userInfo } = useModel('userInfo');
     const { data } = useUnifiedTheme();
     const isDarkMode = data.antdTheme === 'dark';
-
-    useEffect(() => {
-      console.log(isDarkMode);
-    }, [isDarkMode]);
 
     const { markdownRef, messageIdRef } = useMarkdownRender({
       answer: messageInfo?.text || '',
