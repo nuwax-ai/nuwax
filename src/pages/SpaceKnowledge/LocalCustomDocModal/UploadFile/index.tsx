@@ -56,7 +56,9 @@ const UploadFile: React.FC<UploadFileProps> = ({
     const suffix = splitList[splitList.length - 1].toLowerCase();
     const isFile = UPLOAD_FILE_SUFFIX.includes(suffix);
     if (!isFile) {
-      message.error('请上传 PDF、TXT、DOC、DOCX、MD、JSON 类型文件!');
+      message.error(
+        '请上传 PDF、TXT、DOC、DOCX、MD、JSON 、jpg、png、gif、webp、svg、heic、mp4、mkv、mov、webm、mp3、aac、wav、flac、ogg、opus类型文件!',
+      );
     }
     const isLt100M = size / 1024 / 1024 < 100;
     if (!isLt100M) {

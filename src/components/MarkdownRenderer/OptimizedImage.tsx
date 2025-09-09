@@ -56,11 +56,15 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
     // }, []);
 
     return (
-      <div
+      <span
         key={dataKey}
         data-key={dataKey}
         className={containerClassName || stylesInner['image-container']}
-        style={containerStyles}
+        style={{
+          ...containerStyles,
+          display: 'inline-block', // 确保span表现为块级元素
+          width: '100%',
+        }}
         onClick={() => {
           setShowPreview(true);
         }}
@@ -81,7 +85,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
               : false
           }
         />
-      </div>
+      </span>
     );
   },
   (prevProps, nextProps) => {

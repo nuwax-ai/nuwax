@@ -57,6 +57,7 @@ export default () => {
             key={listKey}
             data-key={listKey}
             className={styles['table-wrapper']}
+            style={{ display: 'block' }} // 确保表格作为块级元素显示
           >
             <div className={`md-code-block md-code-block-${theme}`}>
               {headerActions && (
