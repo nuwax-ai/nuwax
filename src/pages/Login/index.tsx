@@ -218,10 +218,10 @@ const Login: React.FC = () => {
           {loadEnd && (
             <div className={cx(styles['login-form-box'])}>
               <Segmented
+                className={cx(styles.segmented)}
                 options={options}
                 value={loginType + ''}
                 onChange={handleChangeType}
-                size="large"
                 block
               />
               <Form
@@ -233,7 +233,7 @@ const Login: React.FC = () => {
                 onFinish={onFinish}
               >
                 <Form.Item>
-                  <Title level={2} style={{ marginTop: 72 }}>
+                  <Title level={3} style={{ marginTop: 48 }}>
                     {`欢迎使用${tenantConfigInfo?.siteName || ''}`}
                   </Title>
                 </Form.Item>
@@ -242,7 +242,6 @@ const Login: React.FC = () => {
                     <Input
                       rootClassName={cx(styles.input)}
                       placeholder="请输入邮箱地址"
-                      size={'large'}
                     />
                   ) : (
                     <Input
@@ -256,7 +255,6 @@ const Login: React.FC = () => {
                           />
                         </div>
                       }
-                      size={'large'}
                     />
                   )}
                 </Form.Item>
@@ -264,7 +262,6 @@ const Login: React.FC = () => {
                   <Form.Item name="password" rules={passwordRules}>
                     <Input.Password
                       rootClassName={cx(styles.input)}
-                      size={'large'}
                       autoComplete="off"
                       placeholder="请输入6位以上密码"
                     />
@@ -277,7 +274,6 @@ const Login: React.FC = () => {
                     block
                     type="primary"
                     htmlType="submit"
-                    size="large"
                     loading={loading}
                   >
                     {loginType === LoginTypeEnum.Password ? '登录' : '下一步'}

@@ -4,7 +4,7 @@ import { apiTenantConfig } from '@/services/account';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
 import { initializeWithFallback } from '@/utils/styleInitializer';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 
 export default () => {
@@ -90,6 +90,20 @@ export default () => {
         : siteName;
     }
   };
+
+  //初始化 从本地缓存里取出租户配置信息
+  const initTenantConfigInfo = useCallback(() => {
+    const tenantConfigInfoString = localStorage.getItem(TENANT_CONFIG_INFO);
+    if (!!tenantConfigInfoString) {
+      const tenantConfigInfo = JSON.parse(tenantConfigInfoString);
+      setTenantConfigInfo(tenantConfigInfo);
+    }
+  }, [setTenantConfigInfo]);
+
+  useEffect(() => {
+    //初始化
+    initTenantConfigInfo();
+  }, []);
 
   return {
     loadEnd,
