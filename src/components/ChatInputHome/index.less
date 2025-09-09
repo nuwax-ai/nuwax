@@ -35,22 +35,22 @@
   }
 
   .footer {
-    gap: @marginXs;
+    gap: @marginSm;
     width: 100%;
 
     .svg-icon {
-      color: @colorTextSecondary;
+      color: @colorTextDescription;
     }
 
     .clear {
-      color: @colorTextSecondary;
+      color: @colorTextDescription;
       font-size: @fontSize;
       transition: color ease-in-out 0.2s;
-      margin-bottom: 14px;
+      //margin-bottom: 14px;
 
       &.disabled {
         cursor: not-allowed;
-        color: @colorTextSecondary;
+        color: @colorTextDescription;
         background-color: @colorBgContainerDisabled;
       }
 
@@ -65,9 +65,13 @@
       height: 36px;
 
       &.plus-box {
-        color: @colorTextSecondary;
+        color: @colorTextDescription;
         font-size: @fontSize;
         transition: color ease-in-out 0.2s;
+        border-radius: 50% !important;
+        height: 32px !important;
+        width: 32px !important;
+        border: 1px solid @colorSplit;
 
         &:hover {
           background-color: @colorPrimaryBg;
@@ -89,10 +93,12 @@
       }
 
       &.send-box {
-        font-size: @fontSize;
+        font-size: @fontSizeSm;
         transition: color ease-in-out 0.2s;
         color: @colorWhite;
         background-color: @colorPrimary;
+        width: 36px;
+        height: 36px;
 
         &.disabled {
           color: @colorIcon;
