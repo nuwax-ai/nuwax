@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<link rel="stylesheet" href="/umi.57141086.css">
+<script type="text/javascript" src="https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js"></script>
+<script type="text/javascript">
+        (function() {
+          if(typeof window === 'undefined') {
+            return;
+          }
+
+          // 开发模式检测 - 如果是开发环境则不执行跳转
+          if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+            console.log('开发模式检测到，跳过双向跳转逻辑');
+            return;
+          }
+          
+          const { protocol, host, href, hash } = window.location;
+          const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
+          const baseUrl = protocol + '//' + host;
+
+          // PC 端访问 M 页面 => 跳转 PC
+          if (!isMobile && href.includes('/m/')) {
+            if (hash && hash.indexOf("#/pages/agent-detail/agent-detail") !== -1) {
+              const match = hash.match(/[?&]id=([^&#]+)/);
+              if (match && match[1]) {
+                const agentId = match[1];
+                window.location.replace(baseUrl + '/agent/' + agentId);
+                return;
+              }
+              window.location.replace(baseUrl + '/');
+              return;
+            }
+          }
+
+          // 移动端访问 PC 页面 => 跳转 M
+          if (isMobile && !href.includes('/m/')) {
+            const match = href.match(/\/agent\/([^/?#]+)/);
+            if (match) {
+              const agentId = match[1];
+              window.location.replace(baseUrl + '/m/#/pages/agent-detail/agent-detail?id=' + agentId);
+              return;
+            }
+            window.location.replace(baseUrl + '/m/');
+            return;
+          }
+        })();
+      </script>
+</head>
+<body>
+<div id="root"></div>
+<script src="/umi.f976d94a.js"></script>
+</body>
+</html>
