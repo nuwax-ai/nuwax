@@ -1,11 +1,13 @@
-import SvgIcon from '@/components/base/SvgIcon';
 import {
-  ICON_DATABASE,
+  // ICON_AGENT,
   ICON_KNOWLEDGE,
   ICON_MODEL,
   ICON_PLUGIN,
+  ICON_TABLE,
   ICON_WORKFLOW,
-} from '@/constants/images.constants';
+} from '@/components/base/AgentType/images.constants';
+import SvgIcon from '@/components/base/SvgIcon';
+
 import { InputTypeEnum, TriggerComponentType } from '@/types/enums/agent';
 import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
 import {
@@ -41,7 +43,7 @@ export const LIBRARY_ALL_RESOURCE = [
   {
     value: ComponentTypeEnum.Table,
     label: '数据表',
-    icon: <ICON_DATABASE />,
+    icon: <ICON_TABLE />,
   },
   {
     value: ComponentTypeEnum.Model,
