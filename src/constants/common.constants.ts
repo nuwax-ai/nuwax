@@ -23,8 +23,27 @@ export const DOCUMENT_URL = 'https://nlp-book.swufenlp.group';
 // 平台文档地址
 export const SITE_DOCUMENT_URL = 'https://nuwax.com/user-manual.html';
 
-// 可上传文件后缀类型：doc docx pdf md json txt
-export const UPLOAD_FILE_SUFFIX = ['doc', 'docx', 'pdf', 'md', 'json', 'txt'];
+// 图片后缀
+export const IMAGES = ['jpg', 'png', 'gif', 'webp', 'svg', 'heic'];
+
+// 可上传视频后缀类型
+export const VIDEOS = ['mp4', 'mkv', 'mov', 'webm'];
+
+// 可上传音频后缀类型
+export const AUDIOS = ['mp3', 'aac', 'wav', 'flac', 'ogg', 'opus'];
+
+// 可上传文件后缀类型：doc docx pdf md json txt AND 图片后缀/可上传图片后缀类型
+export const UPLOAD_FILE_SUFFIX = [
+  'doc',
+  'docx',
+  'pdf',
+  'md',
+  'json',
+  'txt',
+  ...IMAGES,
+  ...VIDEOS,
+  ...AUDIOS,
+];
 
 // 验证码长度
 export const VERIFICATION_CODE_LEN = 6;
