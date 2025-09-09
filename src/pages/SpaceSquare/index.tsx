@@ -253,7 +253,7 @@ const SpaceSection: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
-      <Space style={{ marginBottom: 10 }}>
+      <Space style={{ marginBottom: 15 }}>
         <h3 className={cx(styles.title)}>空间广场</h3>
         <Segmented
           className={cx(styles.segmented)}

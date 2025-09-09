@@ -62,8 +62,10 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
   // 模型列表
   const [modelConfigList, setModelConfigList] = useState<option[]>([]);
 
-  // 数据解析方式
-  const [dataParsingMethod, setDataParsingMethod] = useState('default');
+  // 文档内容提取方式
+  const [dataParsingMethod, setDataParsingMethod] = useState<
+    'default' | 'workflow' | null
+  >('default');
   const [dataParsingMethodItem, setDataParsingMethodItem] = useState<any>(null);
   // 打开、关闭组件选择弹窗
   const [show, setShow] = useState<boolean>(false);
@@ -163,15 +165,18 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
   }, [spaceId, open, knowledgeInfo]);
 
   const onFinish: FormProps<KnowledgeBaseInfo>['onFinish'] = (values) => {
-    const params = {
+    const params: any = {
       spaceId,
       name: values.name,
       description: values.description,
       embeddingModelId: values.embeddingModelId,
       icon: imageUrl,
       dataType: resourceFormat,
-      workflowId: dataParsingMethodItem?.id ?? null,
     };
+    if (dataParsingMethod === 'workflow') {
+      params.workflowId = dataParsingMethodItem?.id;
+    }
+
     setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
       run(params);
@@ -185,7 +190,9 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
 
   // 监听值变化（只包含变化的值）
   const onValuesChange = (changedValues: { dataParsingMethod: string }) => {
-    setDataParsingMethod(changedValues.dataParsingMethod);
+    setDataParsingMethod(
+      changedValues.dataParsingMethod as 'default' | 'workflow',
+    );
   };
   // 工作流
   const handleAddComponent = (info: CreatedNodeItem) => {
@@ -285,10 +292,14 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
             />
           </Form.Item>
 
-          <Form.Item name="dataParsingMethod" label="数据解析方式">
+          <Form.Item
+            name="dataParsingMethod"
+            label="文档内容提取方式"
+            tooltip="选择工作流后所有文档、图片等都将通过工作流解析，设计工作流时请注意固定入参为：file_url，出参请在“结束”节点选择“返回文本”，并在“输出内容”区域设置返回的变量。"
+          >
             <Select
               style={{ width: '100%' }}
-              placeholder="请选择数据解析方式"
+              placeholder="请选择文档内容提取方式"
               options={[
                 { value: 'default', label: '系统默认' },
                 { value: 'workflow', label: '自定义工作流' },

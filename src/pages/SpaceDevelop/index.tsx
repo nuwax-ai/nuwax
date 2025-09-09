@@ -346,7 +346,10 @@ const SpaceDevelop: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <div className={cx('flex', 'content-between')}>
+      <div
+        className={cx('flex', 'content-between')}
+        style={{ marginBottom: 5 }}
+      >
         <div>
           <Space>
             <h3 className={cx(styles.title)}>智能体开发</h3>

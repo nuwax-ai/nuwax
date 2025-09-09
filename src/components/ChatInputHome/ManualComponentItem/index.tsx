@@ -47,7 +47,7 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
   }, [manualComponents]);
   return (
     <div className={cx('flex-1')}>
-      <HoverScrollbar bodyWidth="100%" height="45px" style={{ marginTop: 3 }}>
+      <HoverScrollbar bodyWidth="100%" height="40px" style={{ marginTop: 3 }}>
         <div className={cx('flex', 'items-center', styles['manual-container'])}>
           {normalizeManualComponents?.map((item, index) => {
             return (
@@ -71,9 +71,9 @@ const ManualComponentItem: React.FC<ManualComponentItemProps> = ({
                     className={cx(styles['svg-icon'])}
                     name={item.icon}
                     style={{
-                      marginRight: 8,
-                      width: 20,
-                      height: 20,
+                      marginRight: 5,
+                      width: 12,
+                      height: 12,
                       borderRadius: 4,
                     }}
                   />

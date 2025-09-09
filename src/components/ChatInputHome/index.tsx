@@ -240,12 +240,14 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   'content-center',
                   'cursor-pointer',
                   styles.box,
+                  styles['plus-box'],
                   { [styles.disabled]: clearDisabled || wholeDisabled },
                 )}
                 onClick={handleClear}
               >
                 <SvgIcon
                   name="icons-chat-clear"
+                  style={{ fontSize: '14px' }}
                   className={cx(styles['svg-icon'])}
                 />
               </span>
@@ -280,6 +282,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               >
                 <SvgIcon
                   name="icons-chat-add"
+                  style={{ fontSize: '14px' }}
                   className={cx(styles['svg-icon'])}
                 />
               </span>
@@ -339,7 +342,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   { [styles.disabled]: disabledSend || wholeDisabled },
                 )}
               >
-                <SvgIcon name="icons-chat-send" />
+                <SvgIcon name="icons-chat-send" style={{ fontSize: '14px' }} />
               </span>
             </Tooltip>
           )}
