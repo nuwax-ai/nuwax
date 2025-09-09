@@ -36,6 +36,7 @@ export const STORAGE_KEYS = {
   BACKGROUND_ID: 'xagi-background-id', // 背景图片ID
   GLOBAL_SETTINGS: 'xagi-global-settings', // 全局设置
   USER_THEME_CONFIG: 'xagi-user-theme-config', // 用户主题配置
+  HAS_USER_SWITCH_THEME: 'xagi-has-user-switch-theme', // 用户主题配置是否用户切换过
   TENANT_CONFIG_INFO: 'TENANT_CONFIG_INFO', // 租户配置信息
   AUTH_TYPE: 'AUTH_TYPE', // 认证类型
   ACCESS_TOKEN: 'ACCESS_TOKEN', // 访问令牌

@@ -12,7 +12,7 @@
 import BackgroundImagePanel from '@/components/business-component/ThemeConfig/BackgroundImagePanel';
 import NavigationStylePanel from '@/components/business-component/ThemeConfig/NavigationStylePanel';
 import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
-import { backgroundConfigs } from '@/constants/theme.constants';
+import { backgroundConfigs, STORAGE_KEYS } from '@/constants/theme.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import unifiedThemeService from '@/services/unifiedThemeService';
 import { BackgroundImage } from '@/types/background';
@@ -20,7 +20,7 @@ import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { TenantThemeConfig } from '@/types/tenant';
 import { message } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import styles from './ThemeSwitchPanel.less';
 
 const cx = classNames.bind(styles);
@@ -66,6 +66,10 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
     }));
   }, []);
 
+  const setHasUserSwitchThemeFlag = useCallback(() => {
+    localStorage.setItem(STORAGE_KEYS.HAS_USER_SWITCH_THEME, '1');
+  }, []);
+
   // 根据背景图片ID获取对应的布局风格
   const getLayoutStyleByBackgroundId = (
     backgroundId: string,
@@ -80,6 +84,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   const handleColorChange = async (color: string) => {
     try {
       await updatePrimaryColor(color);
+      setHasUserSwitchThemeFlag();
     } catch (error) {
       console.error('更新主题色失败:', error);
       message.error('主题色更新失败');
@@ -103,6 +108,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
             layoutStyle === ThemeLayoutColorStyle.DARK ? '深色' : '浅色'
           }导航栏`,
         );
+        setHasUserSwitchThemeFlag();
       }
     } catch (error) {
       console.error('更新背景图失败:', error);
@@ -114,6 +120,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
   const handleNavigationStyleChange = async (styleId: string) => {
     try {
       await updateNavigationStyle(styleId as any);
+      setHasUserSwitchThemeFlag();
     } catch (error) {
       console.error('更新导航风格失败:', error);
       message.error('导航风格更新失败');
@@ -131,7 +138,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
       );
 
       if (currentBackgroundLayoutStyle !== themeData.layoutStyle) {
-        // 当前背景不匹配，自动切换到匹配的背景（临时预览）
+        // 当前背景不匹配，自动切换到匹配的背景
         const matchingBackground = backgroundConfigs.find(
           (config) => config.layoutStyle === themeData.layoutStyle,
         );
@@ -152,6 +159,7 @@ const ThemeSwitchPanel: React.FC<ThemeSwitchPanelProps> = ({
                 : '浅色'
             }导航栏`,
           );
+          setHasUserSwitchThemeFlag();
         }
       }
     } catch (error) {
