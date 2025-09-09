@@ -69,7 +69,6 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
           src={src}
           fallback={IMAGE_FALLBACK}
           onError={handleError}
-          width="100%"
           style={styles}
           alt={alt}
           preview={
