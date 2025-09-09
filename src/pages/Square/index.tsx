@@ -1,4 +1,4 @@
-import squareBannerImage from '@/assets/images/square_banner_image.png';
+import squareBannerImage from '@/assets/images/square_banner_image2.png';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
@@ -220,11 +220,9 @@ const Square: React.FC = () => {
           className={cx(styles.header)}
           onClick={handleLink}
           style={{
-            background: `url(${
+            backgroundImage: `url(${
               configInfo?.squareBanner || (squareBannerImage as string)
-            }) no-repeat center center`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center center',
+            })`,
           }}
         >
           <h3 className={cx('text-ellipsis-2')}>

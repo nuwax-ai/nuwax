@@ -55,22 +55,24 @@ export default defineConfig({
             return;
           }
           
-          const { protocol, host, href } = window.location;
+          const { protocol, host, href, hash } = window.location;
           const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
           const baseUrl = protocol + '//' + host;
-          
+
           // PC 端访问 M 页面 => 跳转 PC
           if (!isMobile && href.includes('/m/')) {
-            const match = href.match(/agent-detail\\?id=([^&]+)/);
-            if (match) {
-              const agentId = match[1];
-              window.location.replace(baseUrl + '/agent/' + agentId);
+            if (hash && hash.indexOf("#/pages/agent-detail/agent-detail") !== -1) {
+              const match = hash.match(/[?&]id=([^&#]+)/);
+              if (match && match[1]) {
+                const agentId = match[1];
+                window.location.replace(baseUrl + '/agent/' + agentId);
+                return;
+              }
+              window.location.replace(baseUrl + '/');
               return;
             }
-            window.location.replace(baseUrl + '/');
-            return;
           }
-          
+
           // 移动端访问 PC 页面 => 跳转 M
           if (isMobile && !href.includes('/m/')) {
             const match = href.match(/\\/agent\\/([^/?#]+)/);
