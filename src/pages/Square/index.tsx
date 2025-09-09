@@ -220,11 +220,9 @@ const Square: React.FC = () => {
           className={cx(styles.header)}
           onClick={handleLink}
           style={{
-            background: `url(${
+            backgroundImage: `url(${
               configInfo?.squareBanner || (squareBannerImage as string)
-            }) no-repeat center center`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center center',
+            })`,
           }}
         >
           <h3 className={cx('text-ellipsis-2')}>
