@@ -213,7 +213,7 @@ const DraggableHomeContent: React.FC<DraggableHomeContentProps> = ({
 
       {/* 内容区域 */}
       {isEmpty ? (
-        <div className={cx('empty-container')}>
+        <div className={cx(styles.emptyContainer)}>
           <a onClick={handleLinkToSquare} className={cx('empty-link')}>
             暂无数据，立即探索 {'>'} {'>'}
           </a>
