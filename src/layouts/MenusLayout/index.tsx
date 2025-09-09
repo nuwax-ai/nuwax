@@ -207,12 +207,13 @@ const MenusLayout: React.FC<{
     return width;
   }, [navigationStyle, isMobile]);
 
-  const backgroundColor = useMemo(() => {
+  const firstMenuBackground = useMemo(() => {
     if (isMobile) {
-      return token.colorBgContainer;
+      return `var(--xagi-background-image) ${token.colorBgContainer}`;
     }
     return 'transparent';
   }, [isMobile]);
+
   const secondaryBackgroundColor = useMemo(() => {
     if (isMobile) {
       return token.colorBgContainer;
@@ -229,8 +230,9 @@ const MenusLayout: React.FC<{
       'flex',
       `xagi-layout-${layoutStyle}`, // 布局风格类（独立于Ant Design）
       `xagi-nav-${navigationStyle}`, // 导航风格类
+      isMobile && styles['mobile-container'],
     );
-  }, [layoutStyle, navigationStyle]);
+  }, [layoutStyle, navigationStyle, isMobile]);
   return (
     <div className={navigationClassName}>
       {/*一级导航菜单栏*/}
@@ -243,7 +245,7 @@ const MenusLayout: React.FC<{
         )}
         style={{
           width: firstMenuWidth,
-          backgroundColor,
+          background: firstMenuBackground,
         }}
       >
         <Header />
