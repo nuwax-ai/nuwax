@@ -7,7 +7,7 @@ import type {
   HomeAgentCategoryInfo,
 } from '@/types/interfaces/agentConfig';
 import type { DragEndEvent } from '@dnd-kit/core';
-import { Affix, App, Space, theme, Typography } from 'antd';
+import { Affix, App, Space, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
 import { history, useRequest } from 'umi';
@@ -55,8 +55,7 @@ const DraggableHomeContent: React.FC<DraggableHomeContentProps> = ({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragHoverText, setDragHoverText] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [activedSticky, setActivedSticky] = useState<boolean>(false);
-
+  const [activeSticky, setActiveSticky] = useState<boolean>(false);
   // 使用滚动同步 Hook
   const {
     sectionRefs,
@@ -175,7 +174,6 @@ const DraggableHomeContent: React.FC<DraggableHomeContentProps> = ({
       </div>
     );
   }
-  const { token } = theme.useToken();
 
   return (
     <div className={styles.draggableContainer}>
@@ -183,15 +181,11 @@ const DraggableHomeContent: React.FC<DraggableHomeContentProps> = ({
         target={() => document.getElementById('page-container-selector')}
         offsetTop={0}
         className={cx(
-          'sticky-container-selector',
-          activedSticky ? styles.activedSticky : '',
+          styles.stickyContainer,
+          activeSticky ? styles.activeSticky : '',
         )}
         onChange={(result) => {
-          console.log('onStickyChange', result);
-          setActivedSticky(result || false);
-        }}
-        style={{
-          padding: `0 ${token.padding}px`,
+          setActiveSticky(result || false);
         }}
       >
         <div>

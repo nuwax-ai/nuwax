@@ -12,7 +12,7 @@ import {
 } from '@/types/enums/space';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import DevCollect from './DevCollect';
 import styles from './index.less';
@@ -27,18 +27,22 @@ const SpaceSection: React.FC<{
   const { spaceId } = useParams();
   const { pathname } = location;
 
-  const { spaceList, currentSpaceInfo, handleCurrentSpaceInfo } =
+  const { spaceList, currentSpaceInfo, handleCurrentSpaceInfo, getSpaceId } =
     useModel('spaceModel');
   const { editAgentList, runEdit, runDevCollect } = useModel('devCollectAgent');
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
 
+  const finalSpaceId = useMemo(() => {
+    return spaceId ?? getSpaceId();
+  }, [spaceId, getSpaceId]);
+
   useEffect(() => {
-    // 根据url地址中的spaceId来重置当前空间信息，因为用户可能手动修改url地址栏中的空间id，也可能是复制来的url
-    if (spaceId && !!spaceList?.length) {
-      handleCurrentSpaceInfo(spaceList, Number(spaceId));
+    // 根据url地址中的finalSpaceId来重置当前空间信息，因为用户可能手动修改url地址栏中的空间id，也可能是复制来的url
+    if (finalSpaceId && !!spaceList?.length) {
+      handleCurrentSpaceInfo(spaceList, Number(finalSpaceId));
     }
-  }, [spaceList, spaceId]);
+  }, [spaceList, finalSpaceId]);
 
   useEffect(() => {
     // 最近编辑
@@ -52,37 +56,40 @@ const SpaceSection: React.FC<{
     });
   }, []);
 
-  const handlerApplication = (type: SpaceApplicationListEnum) => {
-    let url = '';
-    switch (type) {
-      // 应用开发
-      case SpaceApplicationListEnum.Application_Develop:
-        url = 'develop';
-        break;
-      // 组件库
-      case SpaceApplicationListEnum.Component_Library:
-        url = 'library';
-        break;
-      // 组件库
-      case SpaceApplicationListEnum.MCP_Manage:
-        url = 'mcp';
-        break;
-      // 空间广场
-      case SpaceApplicationListEnum.Space_Square:
-        url = 'space-square';
-        break;
-      // 成员与设置
-      case SpaceApplicationListEnum.Team_Setting:
-        url = 'team';
-        break;
-      default:
-        url = 'develop';
-    }
-    // 关闭移动端菜单
-    handleCloseMobileMenu();
-    history.push(`/space/${spaceId}/${url}`);
-    localStorage.setItem(SPACE_URL, url);
-  };
+  const handlerApplication = useCallback(
+    (type: SpaceApplicationListEnum) => {
+      let url = '';
+      switch (type) {
+        // 应用开发
+        case SpaceApplicationListEnum.Application_Develop:
+          url = 'develop';
+          break;
+        // 组件库
+        case SpaceApplicationListEnum.Component_Library:
+          url = 'library';
+          break;
+        // 组件库
+        case SpaceApplicationListEnum.MCP_Manage:
+          url = 'mcp';
+          break;
+        // 空间广场
+        case SpaceApplicationListEnum.Space_Square:
+          url = 'space-square';
+          break;
+        // 成员与设置
+        case SpaceApplicationListEnum.Team_Setting:
+          url = 'team';
+          break;
+        default:
+          url = 'develop';
+      }
+      // 关闭移动端菜单
+      handleCloseMobileMenu();
+      history.push(`/space/${finalSpaceId}/${url}`);
+      localStorage.setItem(SPACE_URL, url);
+    },
+    [handleCloseMobileMenu, finalSpaceId],
+  );
 
   // 判断是否active
   const handleActive = (type: SpaceApplicationListEnum) => {

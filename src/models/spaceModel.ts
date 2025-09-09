@@ -58,7 +58,12 @@ function Space() {
     setLoadingSpaceList(false);
   };
 
+  const getSpaceId = useCallback(() => {
+    return localStorage.getItem(SPACE_ID) ?? currentSpaceInfo?.id;
+  }, [currentSpaceInfo]);
+
   return {
+    getSpaceId,
     spaceList,
     setSpaceList,
     runSpace,
