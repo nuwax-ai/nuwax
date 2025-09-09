@@ -20,11 +20,12 @@ import type {
 import { addBaseTarget, arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Button, Form, Typography } from 'antd';
+import { Button, Form } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
+import DropdownChangeName from './DropdownChangeName';
 import styles from './index.less';
 import ShowArea from './ShowArea';
 
@@ -92,6 +93,7 @@ const Chat: React.FC = () => {
     variables,
     requiredNameList,
     userFillVariables,
+    setConversationInfo,
   } = useModel('conversationInfo');
 
   const values = Form.useWatch([], { form, preserve: true });
@@ -315,13 +317,19 @@ const Chat: React.FC = () => {
         >
           <div className={cx(styles['title-container'])}>
             {/* 左侧标题 */}
-            <Typography.Title
-              level={5}
-              className={cx(styles.title, 'clip-path-animation')}
-              ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
-            >
-              {conversationInfo?.topic}
-            </Typography.Title>
+            {/*<Typography.Title*/}
+            {/*  level={5}*/}
+            {/*  className={cx(styles.title, 'clip-path-animation')}*/}
+            {/*  ellipsis={{ rows: 1, expandable: false, symbol: '...' }}*/}
+            {/*>*/}
+            {/*  {conversationInfo?.topic}*/}
+            {/*</Typography.Title>*/}
+
+            <DropdownChangeName
+              conversationInfo={conversationInfo}
+              setConversationInfo={setConversationInfo}
+            />
+
             {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
             {!isSidebarVisible && !isMobile && (
               <Button
