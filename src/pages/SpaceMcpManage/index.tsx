@@ -351,7 +351,9 @@ const SpaceLibrary: React.FC = () => {
       {loading ? (
         <Loading />
       ) : listLength > 0 ? (
-        <div className={cx(styles['main-container'], 'flex-1', 'overflow-y')}>
+        <div
+          className={cx(styles['main-container'], 'flex-1', 'scroll-container')}
+        >
           {mcpList?.map((info) => (
             <McpComponentItem
               key={info.id}

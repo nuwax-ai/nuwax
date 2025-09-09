@@ -313,7 +313,7 @@ const PublishAudit: React.FC = () => {
   ];
 
   return (
-    <div className={cx(styles['system-manage-container'], 'overflow-y')}>
+    <div className={cx(styles['system-manage-container'], 'scroll-container')}>
       <h3 className={cx(styles['system-manage-title'])}>发布审核</h3>
       <section className={cx('flex', 'content-between')}>
         <div className={cx('flex')}>
