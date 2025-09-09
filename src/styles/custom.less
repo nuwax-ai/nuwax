@@ -9,11 +9,15 @@
 
 each(range(2, 3, 1), {
   .text-ellipsis-@{value} {
-       overflow: hidden;
-       text-overflow: ellipsis;
-       display:-webkit-box;
-       -webkit-line-clamp: @value;
-       -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display:-webkit-box;
+    -webkit-line-clamp: @value;
+    -webkit-box-orient: vertical;
+
+    /* 关键点：让长单词/数字能换行 */
+    word-break: break-all;     /* 或者 break-word */
+    white-space: normal;       /* 保证多行显示 */
   }
 });
 
