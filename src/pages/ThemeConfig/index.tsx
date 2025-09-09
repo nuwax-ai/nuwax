@@ -263,6 +263,7 @@ const ThemeConfig: React.FC = () => {
               backgroundImages={backgroundImages}
               currentBackground={previewBackgroundId}
               onBackgroundChange={handleBackgroundChange}
+              enableCustomUpload={false} //先关闭后期考虑开启
             />
           </div>
         </div>
