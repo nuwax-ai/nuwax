@@ -1,7 +1,10 @@
 import BackgroundImagePanel from '@/components/business-component/ThemeConfig/BackgroundImagePanel';
 import NavigationStylePanel from '@/components/business-component/ThemeConfig/NavigationStylePanel';
 import ThemeColorPanel from '@/components/business-component/ThemeConfig/ThemeColorPanel';
-import { backgroundConfigs } from '@/constants/theme.constants';
+import {
+  backgroundConfigs,
+  DEFAULT_THEME_CONFIG,
+} from '@/constants/theme.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { apiSystemConfigUpdate } from '@/services/systemManage';
 import { BackgroundImage } from '@/types/background';
@@ -200,7 +203,7 @@ const ThemeConfig: React.FC = () => {
       const themeConfig: ThemeConfigData = {
         primaryColor: previewPrimaryColor,
         backgroundId: previewBackgroundId,
-        antdTheme: previewLayoutStyle, // 这里应该使用实际的 Ant Design 主题状态
+        antdTheme: DEFAULT_THEME_CONFIG.THEME, // 目前没有支持切换Ant Design主题
         layoutStyle: previewLayoutStyle, // 导航栏深浅色
         navigationStyle: previewNavigationStyle, // 导航风格 ID
         timestamp: Date.now(),
