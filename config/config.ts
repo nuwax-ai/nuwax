@@ -45,17 +45,22 @@ export default defineConfig({
     {
       content: `
         (function() {
+          if(typeof window === 'undefined') {
+            return;
+          }
+            
           // 开发模式检测 - 如果是开发环境则不执行跳转
-          if (typeof window !== 'undefined' && process?.env?.NODE_ENV === 'development') {
+          if (process && process.env && process.env.NODE_ENV === 'development') {
             console.log('开发模式检测到，跳过双向跳转逻辑');
             return;
           }
           
           const { protocol, host, href } = window.location;
+          const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
           const baseUrl = protocol + '//' + host;
           
-          // 移动端转PC
-          if (href.includes('/m/')) {
+          // PC 端访问 M 页面 => 跳转 PC
+          if (!isMobile && href.includes('/m/')) {
             const match = href.match(/agent-detail\\?id=([^&]+)/);
             if (match) {
               const agentId = match[1];
@@ -66,8 +71,8 @@ export default defineConfig({
             return;
           }
           
-          // PC端转移动端
-          if (!href.includes('/m/')) {
+          // 移动端访问 PC 页面 => 跳转 M
+          if (isMobile && !href.includes('/m/')) {
             const match = href.match(/\\/agent\\/([^/?#]+)/);
             if (match) {
               const agentId = match[1];
