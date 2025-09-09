@@ -57,7 +57,7 @@ const UploadFile: React.FC<UploadFileProps> = ({
     const isFile = UPLOAD_FILE_SUFFIX.includes(suffix);
     if (!isFile) {
       message.error(
-        '请上传 PDF、TXT、DOC、DOCX、MD、JSON 、jpg、png、gif、webp、svg、heic、mp4、mkv、mov、webm、mp3、aac、wav、flac、ogg、opus类型文件!',
+        '请上传 PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS 类型文件!',
       );
     }
     const isLt100M = size / 1024 / 1024 < 100;
@@ -91,8 +91,9 @@ const UploadFile: React.FC<UploadFileProps> = ({
         </p>
         <p className="ant-upload-text">点击上传或拖拽文档到这里</p>
         <p className="ant-upload-hint">
-          支持 PDF、TXT、DOC、DOCX、MD、JSON，最多可上传 300
-          个文件，每个文件不超过 100MB， PDF 最多 500 页
+          支持
+          PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS，最多可上传
+          300 个文件，每个文件不超过 100MB， PDF 最多 500 页
         </p>
       </Dragger>
     </div>
