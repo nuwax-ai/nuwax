@@ -13,7 +13,7 @@ import mermaidPlugin, {
 import DsMarkdown, { ConfigProvider, MarkdownCMD } from 'ds-markdown'; // 新增：引入ds-markdown
 import 'ds-markdown/katex.css';
 import { katexPlugin } from 'ds-markdown/plugins'; // 新增：引入插件创建方法
-import 'ds-markdown/style.css';
+import './ds-markdown.css';
 import genCustomPlugin from './genCustomPlugin';
 import { replaceMathBracket } from './utils';
 

@@ -41,7 +41,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { jumpTo, jumpToPlugin, jumpToWorkflow } from '@/utils/router';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Empty, Input, message, Space } from 'antd';
+import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
@@ -553,60 +553,81 @@ const SpaceLibrary: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <div
-        className={cx('flex', 'content-between')}
-        style={{ marginBottom: 5 }}
-      >
-        <div>
-          <Space>
-            <h3 className={cx(styles.title)}>组件库</h3>
-            <SelectList
-              value={type}
-              options={LIBRARY_ALL_TYPE}
-              onChange={handlerChangeType}
+      <Row>
+        <Col
+          xs={24}
+          sm={24}
+          md={24}
+          lg={24}
+          xl={14}
+          xxl={12}
+          style={{ marginBottom: 5 }}
+        >
+          <div>
+            <Space>
+              <h3 className={cx(styles.title)}>组件库</h3>
+              <SelectList
+                value={type}
+                options={LIBRARY_ALL_TYPE}
+                onChange={handlerChangeType}
+              />
+              {/* 单选模式 */}
+              <ButtonToggle
+                options={CREATE_LIST}
+                value={create}
+                onChange={(value) => handlerChangeCreate(value as React.Key)}
+              />
+              <ButtonToggle
+                options={FILTER_STATUS}
+                value={status}
+                onChange={(value) => handlerChangeStatus(value as React.Key)}
+              />
+            </Space>
+          </div>
+        </Col>
+        <Col
+          xs={24}
+          sm={24}
+          md={24}
+          lg={24}
+          xl={10}
+          xxl={12}
+          style={{ marginBottom: 5 }}
+        >
+          <div className={cx('flex', 'gap-10', 'justify-content-end')}>
+            <Input
+              rootClassName={cx(styles.input)}
+              placeholder="搜索组件"
+              value={keyword}
+              onChange={handleQueryAgent}
+              prefix={<SearchOutlined />}
+              allowClear
+              onClear={handleClearKeyword}
+              style={{ width: 214 }}
             />
-            {/* 单选模式 */}
-            <ButtonToggle
-              options={CREATE_LIST}
-              value={create}
-              onChange={(value) => handlerChangeCreate(value as React.Key)}
+            <UploadImportConfig
+              spaceId={spaceId}
+              onUploadSuccess={handleImportConfig}
             />
-            <ButtonToggle
-              options={FILTER_STATUS}
-              value={status}
-              onChange={(value) => handlerChangeStatus(value as React.Key)}
-            />
-          </Space>
-        </div>
-        <div className={cx('flex', 'gap-10')}>
-          <Input
-            rootClassName={cx(styles.input)}
-            placeholder="搜索组件"
-            value={keyword}
-            onChange={handleQueryAgent}
-            prefix={<SearchOutlined />}
-            allowClear
-            onClear={handleClearKeyword}
-          />
-          <UploadImportConfig
-            spaceId={spaceId}
-            onUploadSuccess={handleImportConfig}
-          />
-          {/*添加资源*/}
-          <CustomPopover
-            list={LIBRARY_ALL_RESOURCE}
-            onClick={handleClickPopoverItem}
-          >
-            <Button type="primary" icon={<PlusOutlined />}>
-              组件
-            </Button>
-          </CustomPopover>
-        </div>
-      </div>
+            {/*添加资源*/}
+            <CustomPopover
+              list={LIBRARY_ALL_RESOURCE}
+              onClick={handleClickPopoverItem}
+            >
+              <Button type="primary" icon={<PlusOutlined />}>
+                组件
+              </Button>
+            </CustomPopover>
+          </div>
+        </Col>
+      </Row>
+
       {loading ? (
         <Loading />
       ) : componentList?.length > 0 ? (
-        <div className={cx(styles['main-container'], 'flex-1', 'overflow-y')}>
+        <div
+          className={cx(styles['main-container'], 'flex-1', 'scroll-container')}
+        >
           {componentList?.map((info) => (
             <ComponentItem
               key={`${info.id}${info.type}`}

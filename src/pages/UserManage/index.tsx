@@ -246,7 +246,7 @@ const UserManage: React.FC = () => {
   ];
 
   return (
-    <div className={cx(styles['system-manage-container'], 'overflow-y')}>
+    <div className={cx(styles['system-manage-container'], 'scroll-container')}>
       <h3 className={cx(styles['system-manage-title'])}>用户管理</h3>
       <section className={cx('flex', 'content-between', 'flex-wrap', 'gap-10')}>
         <Select

@@ -272,7 +272,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
         {/* 新对话设置 */}
         <NewConversationSet form={form} variables={variables} isFilled />
         <div
-          className={cx(styles['chat-wrapper'], 'flex-1')}
+          className={cx(styles['chat-wrapper'], 'scroll-container', 'flex-1')}
           ref={messageViewRef}
         >
           {loadingConversation ? (

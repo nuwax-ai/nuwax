@@ -25,7 +25,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { jumpToAgent } from '@/utils/router';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Empty, Input, message, Space, Upload } from 'antd';
+import { Button, Col, Empty, Input, message, Row, Space, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
@@ -346,56 +346,77 @@ const SpaceDevelop: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <div
-        className={cx('flex', 'content-between')}
-        style={{ marginBottom: 5 }}
-      >
-        <div>
-          <Space>
-            <h3 className={cx(styles.title)}>智能体开发</h3>
-            <SelectList
-              value={status}
-              options={FILTER_STATUS}
-              onChange={handlerChangeStatus}
-              size="middle"
-            />
-            {/* 单选模式 */}
-            <ButtonToggle
-              options={CREATE_LIST}
-              value={create}
-              onChange={(value) => handlerChangeCreate(value as React.Key)}
-            />
-          </Space>
-        </div>
-        <div className={cx('flex', 'gap-10')}>
-          <Input
-            rootClassName={cx(styles.input)}
-            placeholder="搜索智能体"
-            value={keyword}
-            onChange={handleQueryAgent}
-            prefix={<SearchOutlined />}
-            allowClear
-            onClear={handleClearKeyword}
-          />
-          <UploadImportConfig
-            spaceId={spaceId}
-            onUploadSuccess={handleImportConfig}
-            beforeUpload={beforeUploadDefault}
-          />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setOpenCreateAgent(true)}
+      <Row>
+        <Col
+          xs={24}
+          sm={24}
+          md={12}
+          lg={12}
+          xl={12}
+          style={{ marginBottom: 5 }}
+        >
+          <div>
+            <Space>
+              <h3 className={cx(styles.title)}>智能体开发</h3>
+              <SelectList
+                value={status}
+                options={FILTER_STATUS}
+                onChange={handlerChangeStatus}
+                size="middle"
+              />
+              {/* 单选模式 */}
+              <ButtonToggle
+                options={CREATE_LIST}
+                value={create}
+                onChange={(value) => handlerChangeCreate(value as React.Key)}
+              />
+            </Space>
+          </div>
+        </Col>
+        <Col
+          xs={24}
+          sm={24}
+          md={12}
+          lg={12}
+          xl={12}
+          style={{ marginBottom: 5 }}
+        >
+          <div
+            className={cx('flex', 'gap-10', 'justify-content-end')}
+            style={{ textAlign: 'right' }}
           >
-            创建智能体
-          </Button>
-        </div>
-      </div>
+            <Input
+              rootClassName={cx(styles.input)}
+              placeholder="搜索智能体"
+              value={keyword}
+              onChange={handleQueryAgent}
+              prefix={<SearchOutlined />}
+              allowClear
+              onClear={handleClearKeyword}
+              style={{ width: 214 }}
+            />
+            <UploadImportConfig
+              spaceId={spaceId}
+              onUploadSuccess={handleImportConfig}
+              beforeUpload={beforeUploadDefault}
+            />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setOpenCreateAgent(true)}
+            >
+              创建智能体
+            </Button>
+          </div>
+        </Col>
+      </Row>
       {/* <div className={cx('flex', styles['select-search-area'])}></div> */}
       {loading ? (
         <Loading />
       ) : agentList?.length > 0 ? (
-        <div className={cx(styles['main-container'], 'flex-1', 'overflow-y')}>
+        <div
+          className={cx(styles['main-container'], 'flex-1', 'scroll-container')}
+        >
           {agentList?.map((item: AgentConfigInfo, index: number) => (
             <ApplicationItem
               key={item.id}
