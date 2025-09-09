@@ -106,7 +106,11 @@ const ChatView: React.FC<ChatViewProps> = memo(
             </div>
           )}
           {!!messageInfo?.attachments?.length && (
-            <AttachFile files={messageInfo?.attachments as AttachmentFile[]} />
+            <div className={cx(styles['attach-file-container'])}>
+              <AttachFile
+                files={messageInfo?.attachments as AttachmentFile[]}
+              />
+            </div>
           )}
           {isUser && !!messageInfo?.text && (
             <div className={cx(styles['user-content'])}>
