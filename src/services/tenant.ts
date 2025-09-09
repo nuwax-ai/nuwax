@@ -43,7 +43,7 @@ export const getTenantInfo = async (): Promise<TenantInfo> => {
           {
             id: 'style2',
             name: '风格2',
-            description: '展开模式：88px宽度，显示文字，页面容器无外边距和圆角',
+            description: '展开模式：73px宽度，显示文字，页面容器无外边距和圆角',
           },
         ],
         // 使用统一主题数据，如果没有则使用默认值

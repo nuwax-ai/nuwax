@@ -9,6 +9,10 @@
  */
 
 import {
+  FIRST_MENU_WIDTH,
+  FIRST_MENU_WIDTH_STYLE2,
+} from '@/constants/layout.constants';
+import {
   DEFAULT_THEME_CONFIG,
   STORAGE_KEYS,
   STYLE_CONFIGS,
@@ -445,8 +449,8 @@ class UnifiedThemeService {
         // 设置导航栏宽度（兜底）
         const navWidth =
           this.currentData.navigationStyle === ThemeNavigationStyleType.STYLE1
-            ? '60px'
-            : '88px';
+            ? `${FIRST_MENU_WIDTH}px`
+            : `${FIRST_MENU_WIDTH_STYLE2}px`;
         root.style.setProperty('--xagi-nav-first-menu-width', navWidth);
       }
 

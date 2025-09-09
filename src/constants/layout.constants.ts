@@ -9,7 +9,7 @@ export const NAVIGATION_LAYOUT_SIZES = {
   // 一级菜单宽度配置
   FIRST_MENU_WIDTH: {
     STYLE1: 60, // 紧凑模式：无文字导航
-    STYLE2: 88, // 展开模式：有文字导航
+    STYLE2: 73, // 展开模式：有文字导航
   },
 
   // 二级菜单宽度配置

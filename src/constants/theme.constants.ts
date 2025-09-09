@@ -12,6 +12,7 @@ import {
 // 为主题配置添加类型
 import type { ThemeConfig } from 'antd/es/config-provider';
 import type { AliasToken, ComponentTokenMap } from 'antd/es/theme/interface';
+import { FIRST_MENU_WIDTH_STYLE2 } from './layout.constants';
 
 /**
  * 预设主题色配置
@@ -170,8 +171,8 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
       '--xagi-layout-bg-container': 'rgba(255, 255, 255, 0.95)',
     },
     navigation: {
-      '--xagi-nav-first-menu-width': '88px',
-      '--xagi-page-container-margin': '0px',
+      '--xagi-nav-first-menu-width': `${FIRST_MENU_WIDTH_STYLE2}px`,
+      '--xagi-page-container-margin': '0',
       '--xagi-page-container-border-radius': '0',
       '--xagi-page-container-border-color': 'rgba(0, 0, 0, 0.15)',
     },
@@ -223,9 +224,9 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
       '--xagi-layout-bg-container': '#ffffff',
     },
     navigation: {
-      '--xagi-nav-first-menu-width': '88px',
-      '--xagi-page-container-margin': '0px',
-      '--xagi-page-container-border-radius': '0px',
+      '--xagi-nav-first-menu-width': `${FIRST_MENU_WIDTH_STYLE2}px`,
+      '--xagi-page-container-margin': '0',
+      '--xagi-page-container-border-radius': '0',
       '--xagi-page-container-border-color': 'rgba(0, 0, 0, 0.15)',
     },
   },
