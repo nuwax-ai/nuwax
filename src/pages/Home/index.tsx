@@ -1,6 +1,6 @@
 import ChatInputHome from '@/components/ChatInputHome';
 import Loading from '@/components/custom/Loading';
-import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
+// import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import {
@@ -15,7 +15,7 @@ import type {
   HomeAgentCategoryInfo,
 } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import { App } from 'antd';
+import { AffixRef, App } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useRequest } from 'umi';
@@ -154,14 +154,15 @@ const Home: React.FC = () => {
     <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
       {/* 输入框区域 */}
       <div className={cx(styles.inputSection)}>
-        <div className={cx(styles.title)}>
+        <h2 className={cx(styles.title)}>{tenantConfigInfo?.homeSlogan}</h2>
+        {/*<div className={cx(styles.title)}>
           <PureMarkdownRenderer
             id={`${agentDetail?.agentId}`}
             className={cx(styles.content)}
           >
             {agentDetail?.openingChatMsg as string}
           </PureMarkdownRenderer>
-        </div>
+        </div>*/}
 
         <ChatInputHome
           key={`home-${tenantConfigInfo?.defaultAgentId}`}

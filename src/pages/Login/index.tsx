@@ -302,6 +302,7 @@ const Login: React.FC = () => {
                   bottom: 0,
                   left: 0,
                   padding: '0 64px',
+                  width: '100%',
                 }}
               >
                 <SiteFooter
