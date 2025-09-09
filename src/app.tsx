@@ -76,6 +76,12 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
           'data-nav-style',
           data.navigationStyle === 'style1' ? 'compact' : 'expanded',
         );
+
+        unifiedThemeService.updateData(data, {
+          immediate: true,
+          saveToStorage: false,
+          emitEvent: false,
+        }); //初始化挂载 layout navigation CSS 变量
       } catch (error) {
         console.error('应用主题配置失败:', error);
       }
