@@ -409,7 +409,9 @@ export interface AgentConversationUpdateParams {
   // 会话ID
   id: number;
   // 用户第一条消息
-  firstMessage: string;
+  firstMessage?: string;
+  // 会话主题
+  topic?: string;
 }
 
 // 卡片列表参数

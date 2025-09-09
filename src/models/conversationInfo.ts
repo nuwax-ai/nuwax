@@ -766,5 +766,6 @@ export default () => {
     isTimedTaskOpen,
     openTimedTask,
     closeTimedTask,
+    setConversationInfo,
   };
 };
