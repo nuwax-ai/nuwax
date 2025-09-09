@@ -109,7 +109,6 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
               )}
             >
               <SvgIcon name="icons-common-more" />
-              更多
             </span>
           </Dropdown>
         </div>
