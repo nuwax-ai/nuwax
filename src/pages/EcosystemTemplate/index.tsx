@@ -776,7 +776,7 @@ export default function EcosystemTemplate() {
           {renderExtraContent()}
         </div>
         <div
-          className={cx(styles.pluginList, 'flex-1', 'overflow-y')}
+          className={cx(styles.pluginList, 'flex-1', 'scroll-container')}
           onScroll={(e) => {
             // 当滚动到距离底部100px时加载更多
             const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;

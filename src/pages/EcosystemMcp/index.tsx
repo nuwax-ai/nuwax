@@ -334,7 +334,11 @@ export default function EcosystemMcp() {
           <Loading />
         ) : mcpList.length ? (
           <div
-            className={cx('flex-1', 'overflow-y', styles['main-container'])}
+            className={cx(
+              'flex-1',
+              'scroll-container',
+              styles['main-container'],
+            )}
             id="scrollableDiv"
           >
             <InfiniteScrollDiv

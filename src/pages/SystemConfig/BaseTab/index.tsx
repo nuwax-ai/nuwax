@@ -70,7 +70,7 @@ export default function BaseTab({
   };
 
   return (
-    <div className={cx(styles.container, 'overflow-y', 'flex-1')}>
+    <div className={cx(styles.container, 'scroll-container', 'flex-1')}>
       <Form
         layout="vertical"
         style={{ width: '520px' }}

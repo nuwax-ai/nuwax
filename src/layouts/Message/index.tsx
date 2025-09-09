@@ -128,7 +128,7 @@ const Message: React.FC = () => {
           {/*  </Tooltip>*/}
           {/*</div>*/}
           {/*内容区域*/}
-          <div className={cx(styles['message-list'], 'overflow-y')}>
+          <div className={cx(styles['message-list'], 'scroll-container')}>
             {messageList?.length > 0 ? (
               messageList.map((item, index) => {
                 return <MessageItem key={index} info={item} />;
