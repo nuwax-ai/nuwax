@@ -161,11 +161,11 @@ const DropdownChangeName: React.FC<Porps> = ({
     <>
       <Dropdown menu={menuProps}>
         <div className={cx(styles['dropdown-container'])}>
-          <Space>
+          <Space size={4}>
             {conversationInfo?.id && (
               <>
                 {conversationInfo.topic}
-                <DownOutlined />
+                <DownOutlined style={{ fontSize: '12px' }} />
               </>
             )}
           </Space>
