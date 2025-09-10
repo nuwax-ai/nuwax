@@ -44,12 +44,13 @@ export default () => {
       // 统一主题服务会自动加载配置，不需要手动调用
       // unifiedThemeService.loadConfiguration();
 
-      // 只有在本地没有主题配置时才同步租户配置
-      // 避免覆盖用户已保存的本地主题配置
+      const hasUserSwitchTheme = localStorage.getItem(
+        STORAGE_KEYS.HAS_USER_SWITCH_THEME,
+      );
       const hasLocalThemeConfig = localStorage.getItem(
         STORAGE_KEYS.USER_THEME_CONFIG,
       );
-      if (result.templateConfig && !hasLocalThemeConfig) {
+      if (result.templateConfig && !hasUserSwitchTheme) {
         try {
           const templateConfig = JSON.parse(result.templateConfig);
           const currentData = unifiedThemeService.getCurrentData();
