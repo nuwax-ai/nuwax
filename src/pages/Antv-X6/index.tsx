@@ -1738,6 +1738,7 @@ const Workflow: React.FC = () => {
       setIsValidLoading(true);
     }, 300);
     const valid = await validPublishWorkflow();
+    await getDetails();
     if (valid) {
       setShowPublish(true);
       setErrorParams({ ...errorParams, errorList: [], show: false });
