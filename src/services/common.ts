@@ -111,7 +111,8 @@ const errorHandler = (error: any, opts: any) => {
     }
   } else if (error.response) {
     // 处理HTTP错误
-    message.error(`请求错误 ${error.response.status}`);
+    // message.error(`请求错误 ${error.response.status}`);
+    message.error(`网络异常`);
     return Promise.reject();
   } else if (error.request) {
     // 处理请求超时
