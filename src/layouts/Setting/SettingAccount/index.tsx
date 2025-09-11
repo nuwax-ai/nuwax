@@ -86,6 +86,8 @@ const SettingAccount: React.FC = () => {
             <Input
               rootClassName={cx(styles.input)}
               placeholder="请输入用户名"
+              showCount
+              maxLength={50}
             />
           </Form.Item>
           <Form.Item noStyle>
@@ -99,6 +101,8 @@ const SettingAccount: React.FC = () => {
             <Input
               rootClassName={cx(styles.input)}
               placeholder="请输入用户昵称"
+              showCount
+              maxLength={50}
             />
           </Form.Item>
           <Form.Item noStyle>
