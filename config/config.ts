@@ -48,10 +48,14 @@ export default defineConfig({
           if(typeof window === 'undefined') {
             return;
           }
-
           // 开发模式检测 - 如果是开发环境则不执行跳转
           if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
             console.log('开发模式检测到，跳过双向跳转逻辑');
+            return;
+          }
+            
+          const isChatTempPage = window.location.pathname.includes('/chat-temp/');
+          if(isChatTempPage) { // 临时会话页面不进行跳转
             return;
           }
           
@@ -68,9 +72,9 @@ export default defineConfig({
                 window.location.replace(baseUrl + '/agent/' + agentId);
                 return;
               }
-              window.location.replace(baseUrl + '/');
-              return;
             }
+            window.location.replace(baseUrl + '/');
+            return;
           }
 
           // 移动端访问 PC 页面 => 跳转 M
