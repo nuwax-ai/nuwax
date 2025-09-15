@@ -99,8 +99,7 @@ const SvgIconShowcase: React.FC = () => {
       prefix: 'icons-workspace-',
       icons: [
         'icons-workspace-agent',
-        'icons-workspace-caret_down',
-        'icons-workspace-knowlege',
+        'icons-workspace-knowledge',
         'icons-workspace-llm',
         'icons-workspace-mcp',
         'icons-workspace-plugin',
@@ -361,9 +360,7 @@ const SvgIconShowcase: React.FC = () => {
               name="icons-nav-palette"
               style={{ fontSize: 20, color: 'var(--xagi-color-primary)' }}
             />
-            {isChineseLanguage
-              ? 'Layout 图标颜色调试'
-              : 'Layout Icon Color Debug'}
+            {isChineseLanguage ? '图标颜色调试' : 'Icon Color Debug'}
           </Space>
         }
         className="color-debug-section"
@@ -376,8 +373,8 @@ const SvgIconShowcase: React.FC = () => {
               </Title>
               <Paragraph>
                 {isChineseLanguage
-                  ? '测试 layout.svg 图标在不同颜色设置下的显示效果：'
-                  : 'Test the display effect of layout.svg icon under different color settings:'}
+                  ? '测试图标在不同颜色设置下的显示效果：'
+                  : 'Test the display effect of icons under different color settings:'}
               </Paragraph>
               <div className="color-test-grid">
                 <div className="color-test-item">
@@ -392,7 +389,31 @@ const SvgIconShowcase: React.FC = () => {
                         '0 3px 24px color-mix(in srgb, var(--xagi-color-primary)  0%, var(--xagi-color-primary)  30%)',
                     }}
                   />
-                  <Text code>#1890ff (Primary)</Text>
+                  <Text code>Layout (Primary)</Text>
+                </div>
+                <div className="color-test-item">
+                  <SvgIcon
+                    name="icons-workspace-agent"
+                    viewBox="0 0 38 38"
+                    style={{ fontSize: 34, color: '#1890ff' }}
+                  />
+                  <Text code>Agent (Blue)</Text>
+                </div>
+                <div className="color-test-item">
+                  <SvgIcon
+                    name="icons-workspace-llm"
+                    viewBox="0 0 38 38"
+                    style={{ fontSize: 34, color: '#52c41a' }}
+                  />
+                  <Text code>LLM (Green)</Text>
+                </div>
+                <div className="color-test-item">
+                  <SvgIcon
+                    name="icons-workspace-workflow"
+                    viewBox="0 0 38 38"
+                    style={{ fontSize: 34, color: '#fa8c16' }}
+                  />
+                  <Text code>Workflow (Orange)</Text>
                 </div>
                 <div className="color-test-item">
                   <SvgIcon
@@ -466,57 +487,57 @@ const SvgIconShowcase: React.FC = () => {
               </Title>
               <Paragraph>
                 {isChineseLanguage
-                  ? '测试 layout.svg 图标在不同尺寸下的显示效果：'
-                  : 'Test the display effect of layout.svg icon at different sizes:'}
+                  ? '测试图标在不同尺寸下的显示效果：'
+                  : 'Test the display effect of icons at different sizes:'}
               </Paragraph>
               <div className="size-test-grid">
                 <div className="size-test-item">
                   <SvgIcon
-                    name="icons-nav-layout"
-                    viewBox="0 0 34 34"
+                    name="icons-workspace-agent"
+                    viewBox="0 0 38 38"
                     style={{ fontSize: 16, color: 'var(--xagi-color-primary)' }}
                   />
-                  <Text code>16px</Text>
+                  <Text code>Agent 16px</Text>
                 </div>
                 <div className="size-test-item">
                   <SvgIcon
-                    name="icons-nav-layout"
-                    viewBox="0 0 34 34"
+                    name="icons-workspace-llm"
+                    viewBox="0 0 38 38"
                     style={{ fontSize: 24, color: 'var(--xagi-color-primary)' }}
                   />
-                  <Text code>24px</Text>
+                  <Text code>LLM 24px</Text>
                 </div>
                 <div className="size-test-item">
                   <SvgIcon
-                    name="icons-nav-layout"
-                    viewBox="0 0 34 34"
+                    name="icons-workspace-workflow"
+                    viewBox="0 0 38 38"
                     style={{ fontSize: 32, color: 'var(--xagi-color-primary)' }}
                   />
-                  <Text code>32px</Text>
+                  <Text code>Workflow 32px</Text>
                 </div>
                 <div className="size-test-item">
                   <SvgIcon
-                    name="icons-nav-layout"
-                    viewBox="0 0 34 34"
+                    name="icons-workspace-mcp"
+                    viewBox="0 0 38 36"
                     style={{ fontSize: 48, color: 'var(--xagi-color-primary)' }}
                   />
-                  <Text code>48px</Text>
+                  <Text code>MCP 48px</Text>
                 </div>
                 <div className="size-test-item">
                   <SvgIcon
-                    name="icons-nav-layout"
-                    viewBox="0 0 34 34"
+                    name="icons-workspace-plugin"
+                    viewBox="0 0 32 36"
                     style={{ fontSize: 64, color: 'var(--xagi-color-primary)' }}
                   />
-                  <Text code>64px</Text>
+                  <Text code>Plugin 64px</Text>
                 </div>
                 <div className="size-test-item">
                   <SvgIcon
-                    name="icons-nav-layout"
+                    name="icons-workspace-table"
                     viewBox="0 0 34 34"
                     style={{ fontSize: 96, color: 'var(--xagi-color-primary)' }}
                   />
-                  <Text code>96px</Text>
+                  <Text code>Table 96px</Text>
                 </div>
               </div>
             </div>
