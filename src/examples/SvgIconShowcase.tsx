@@ -467,7 +467,6 @@ const SvgIconShowcase: React.FC = () => {
                       style={{
                         color: 'rgb(250, 140, 22)',
                         fontSize: 40,
-                        borderRadius: 16,
                         filter:
                           'drop-shadow(0 3px 12px color-mix(in srgb, rgb(250, 140, 22) 60%, rgb(250, 140, 22) 60%))',
                       }}
@@ -492,7 +491,6 @@ const SvgIconShowcase: React.FC = () => {
                       style={{
                         color: 'rgb(82, 196, 26)',
                         fontSize: 40,
-                        borderRadius: 16,
                         filter:
                           'drop-shadow(0 3px 12px color-mix(in srgb, rgb(82, 196, 26) 60%, rgb(82, 196, 26) 60%))',
                       }}
@@ -517,7 +515,6 @@ const SvgIconShowcase: React.FC = () => {
                       style={{
                         color: 'rgb(250, 140, 22)',
                         fontSize: 40,
-                        borderRadius: 16,
                         filter:
                           'drop-shadow(0 3px 12px color-mix(in srgb, rgb(250, 140, 22) 60%, rgb(250, 140, 22) 60%))',
                       }}
@@ -542,7 +539,6 @@ const SvgIconShowcase: React.FC = () => {
                       style={{
                         color: 'rgb(245, 34, 45)',
                         fontSize: 40,
-                        borderRadius: 16,
                         filter:
                           'drop-shadow(0 3px 12px color-mix(in srgb, rgb(245, 34, 45) 60%, rgb(245, 34, 45) 60%))',
                       }}
@@ -567,7 +563,6 @@ const SvgIconShowcase: React.FC = () => {
                       style={{
                         color: 'rgb(114, 46, 209)',
                         fontSize: 40,
-                        borderRadius: 16,
                         filter:
                           'drop-shadow(0 3px 12px color-mix(in srgb, rgb(114, 46, 209) 60%, rgb(114, 46, 209) 60%))',
                       }}
@@ -592,7 +587,6 @@ const SvgIconShowcase: React.FC = () => {
                       style={{
                         color: 'rgb(19, 194, 194)',
                         fontSize: 40,
-                        borderRadius: 16,
                         filter:
                           'drop-shadow(0 3px 12px color-mix(in srgb, rgb(19, 194, 194) 60%, rgb(19, 194, 194) 60%))',
                       }}
