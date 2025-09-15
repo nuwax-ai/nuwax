@@ -43,19 +43,26 @@ const SquareSection: React.FC<{
   }, []);
 
   const handleClick = (cateType: string, cateName?: string) => {
-    setActiveKey(cateName ?? cateType);
-    if (visibleMenu) {
-      setVisibleMenu(visibleMenu === cateType ? '' : cateType);
-    } else {
-      setVisibleMenu(cateType);
-    }
     // 关闭移动端菜单
     handleCloseMobileMenu();
+
+    // 设置active项
+    setActiveKey(cateName ?? cateType);
+    // 控制menu显隐
+    setVisibleMenu(cateType);
 
     const url = cateName
       ? `/square?cate_type=${cateType}&cate_name=${cateName}`
       : `/square?cate_type=${cateType}`;
     history.push(url);
+  };
+
+  const handleToggle = (info: SquareMenuComponentInfo) => {
+    if (visibleMenu === info.type) {
+      setVisibleMenu('');
+    } else {
+      setVisibleMenu(info.type);
+    }
   };
 
   // 菜单列表
@@ -98,6 +105,7 @@ const SquareSection: React.FC<{
             isActive={activeKey === info.type}
             isOpen={visibleMenu === info.type}
             onClick={() => handleClick(info.type)}
+            onToggle={() => handleToggle(info)}
           />
           <div
             className={cx(styles['box-hidden'], {

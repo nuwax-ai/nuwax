@@ -16,6 +16,7 @@ export interface SecondMenuItemProps {
   isActive?: boolean;
   isDown?: boolean;
   onClick: () => void;
+  onToggle?: () => void;
 }
 
 // 二级菜单项组件
@@ -27,6 +28,7 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
   isDown,
   isOpen = false,
   onClick,
+  onToggle,
 }) => {
   return (
     <div
@@ -58,6 +60,10 @@ const SecondMenuItem: React.FC<SecondMenuItemProps> = ({
         <SvgIcon
           name="icons-common-caret_down"
           className={cx(styles['icon-dropdown'])}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle?.();
+          }}
         />
       ) : null}
     </div>
