@@ -18,6 +18,7 @@ import { ReactComponent as TemplateSvgFile } from '@/assets/icons/nav/template.s
 import { ReactComponent as UserSvgFile } from '@/assets/icons/nav/user.svg';
 import { ReactComponent as WorkflowSvgFile } from '@/assets/icons/nav/workflow.svg';
 import { ReactComponent as WorkspaceSvgFile } from '@/assets/icons/nav/workspace.svg';
+import { ReactComponent as LayoutSvgFile } from '@/assets/layout.svg';
 import React from 'react';
 import { wrapSvg } from './utils';
 
@@ -26,6 +27,7 @@ const WorkspaceSvg = wrapSvg(WorkspaceSvgFile);
 const SquareSvg = wrapSvg(SquareSvgFile);
 const EcosystemSvg = wrapSvg(EcosystemSvgFile);
 const DocSvg = wrapSvg(DocSvgFile);
+const LayoutSvg = wrapSvg(LayoutSvgFile);
 const SettingsSvg = wrapSvg(SettingsSvgFile);
 const StarsSvg = wrapSvg(StarsSvgFile);
 const PluginsSvg = wrapSvg(PluginsSvgFile);
@@ -47,6 +49,7 @@ export default {
   'icons-nav-ecosystem': EcosystemSvg,
   'icons-nav-square': SquareSvg,
   'icons-nav-doc': DocSvg,
+  'icons-nav-layout': LayoutSvg,
   'icons-nav-settings': SettingsSvg,
   'icons-nav-stars': StarsSvg,
   'icons-nav-plugins': PluginsSvg,

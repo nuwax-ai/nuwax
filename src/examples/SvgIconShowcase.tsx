@@ -48,6 +48,7 @@ const SvgIconShowcase: React.FC = () => {
         'icons-nav-ecosystem',
         'icons-nav-square',
         'icons-nav-doc',
+        'icons-nav-layout',
         'icons-nav-settings',
         'icons-nav-stars',
         'icons-nav-plugins',
@@ -335,6 +336,151 @@ const SvgIconShowcase: React.FC = () => {
           />
         </Card>
       )}
+
+      {/* 颜色调试区域 */}
+      <Card
+        title={
+          <Space>
+            <SvgIcon
+              name="icons-nav-palette"
+              style={{ fontSize: 20, color: 'var(--xagi-color-primary)' }}
+            />
+            {isChineseLanguage
+              ? 'Layout 图标颜色调试'
+              : 'Layout Icon Color Debug'}
+          </Space>
+        }
+        className="color-debug-section"
+      >
+        <Row gutter={[24, 24]}>
+          <Col xs={24} md={12}>
+            <div className="debug-item">
+              <Title level={5}>
+                {isChineseLanguage ? '不同颜色测试' : 'Different Color Tests'}
+              </Title>
+              <Paragraph>
+                {isChineseLanguage
+                  ? '测试 layout.svg 图标在不同颜色设置下的显示效果：'
+                  : 'Test the display effect of layout.svg icon under different color settings:'}
+              </Paragraph>
+              <div className="color-test-grid">
+                <div className="color-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 32, color: '#1890ff' }}
+                  />
+                  <Text code>#1890ff (Primary)</Text>
+                </div>
+                <div className="color-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 32, color: '#52c41a' }}
+                  />
+                  <Text code>#52c41a (Success)</Text>
+                </div>
+                <div className="color-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 32, color: '#fa8c16' }}
+                  />
+                  <Text code>#fa8c16 (Warning)</Text>
+                </div>
+                <div className="color-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 32, color: '#f5222d' }}
+                  />
+                  <Text code>#f5222d (Error)</Text>
+                </div>
+                <div className="color-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 32, color: '#722ed1' }}
+                  />
+                  <Text code>#722ed1 (Purple)</Text>
+                </div>
+                <div className="color-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 32, color: '#13c2c2' }}
+                  />
+                  <Text code>#13c2c2 (Cyan)</Text>
+                </div>
+                <div className="color-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 32, color: '#eb2f96' }}
+                  />
+                  <Text code>#eb2f96 (Magenta)</Text>
+                </div>
+                <div className="color-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 32, color: '#fa541c' }}
+                  />
+                  <Text code>#fa541c (Orange)</Text>
+                </div>
+              </div>
+            </div>
+          </Col>
+          <Col xs={24} md={12}>
+            <div className="debug-item">
+              <Title level={5}>
+                {isChineseLanguage ? '不同尺寸测试' : 'Different Size Tests'}
+              </Title>
+              <Paragraph>
+                {isChineseLanguage
+                  ? '测试 layout.svg 图标在不同尺寸下的显示效果：'
+                  : 'Test the display effect of layout.svg icon at different sizes:'}
+              </Paragraph>
+              <div className="size-test-grid">
+                <div className="size-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 16, color: 'var(--xagi-color-primary)' }}
+                  />
+                  <Text code>16px</Text>
+                </div>
+                <div className="size-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 24, color: 'var(--xagi-color-primary)' }}
+                  />
+                  <Text code>24px</Text>
+                </div>
+                <div className="size-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 32, color: 'var(--xagi-color-primary)' }}
+                  />
+                  <Text code>32px</Text>
+                </div>
+                <div className="size-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 48, color: 'var(--xagi-color-primary)' }}
+                  />
+                  <Text code>48px</Text>
+                </div>
+                <div className="size-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 64, color: 'var(--xagi-color-primary)' }}
+                  />
+                  <Text code>64px</Text>
+                </div>
+                <div className="size-test-item">
+                  <SvgIcon
+                    name="icons-nav-layout"
+                    style={{ fontSize: 96, color: 'var(--xagi-color-primary)' }}
+                  />
+                  <Text code>96px</Text>
+                </div>
+              </div>
+            </div>
+          </Col>
+        </Row>
+      </Card>
 
       {/* 使用说明 */}
       <Card

@@ -91,6 +91,82 @@
     }
   }
 
+  /* 颜色调试区域 */
+  .color-debug-section {
+    margin-top: 32px;
+
+    .debug-item {
+      padding: 16px;
+      border: 1px solid var(--xagi-color-border);
+      border-radius: 8px;
+      background: var(--xagi-color-bg-container);
+
+      .ant-typography {
+        margin-bottom: 12px;
+      }
+    }
+
+    .color-test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .color-test-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--xagi-color-border);
+      border-radius: 6px;
+      background: var(--xagi-color-bg-container);
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: var(--xagi-color-primary);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 10%);
+      }
+
+      .ant-typography {
+        margin-top: 8px;
+        margin-bottom: 0;
+        font-size: 11px;
+        text-align: center;
+      }
+    }
+
+    .size-test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .size-test-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--xagi-color-border);
+      border-radius: 6px;
+      background: var(--xagi-color-bg-container);
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: var(--xagi-color-primary);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 10%);
+      }
+
+      .ant-typography {
+        margin-top: 8px;
+        margin-bottom: 0;
+        font-size: 11px;
+        text-align: center;
+      }
+    }
+  }
+
   /* 使用说明区域 */
   .usage-section {
     margin-top: 32px;
