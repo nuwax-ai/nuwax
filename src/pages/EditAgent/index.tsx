@@ -3,25 +3,34 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import ShowStand from '@/components/ShowStand';
 import VersionHistory from '@/components/VersionHistory';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
+import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
+import CreateTempChatModal from '@/pages/SpaceDevelop/CreateTempChatModal';
 import {
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
-import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
+import {
+  ApplicationMoreActionEnum,
+  EditAgentShowType,
+  OpenCloseEnum,
+} from '@/types/enums/space';
 import {
   AgentBaseInfo,
   AgentComponentInfo,
   AgentConfigInfo,
   ComponentModelBindConfig,
 } from '@/types/interfaces/agent';
+import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
+import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
+import { exportConfigFile } from '@/utils/exportImportFile';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
-import { useModel, useParams, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest } from 'umi';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
 import AgentModelSetting from './AgentModelSetting';
@@ -192,6 +201,77 @@ const EditAgent: React.FC = () => {
     } as AgentConfigInfo;
     setAgentConfigInfo(_agentConfigInfo);
   };
+  const [agentStatistics, setAgentStatistics] = useState<
+    AnalyzeStatisticsItem[]
+  >([]);
+  // 打开分析弹窗
+  const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
+  // 打开创建临时会话弹窗
+  const [openTempChat, setOpenTempChat] = useState<boolean>(false);
+
+  // 设置统计信息
+  const handleSetStatistics = (agentInfo: AgentConfigInfo) => {
+    const {
+      userCount = 0,
+      convCount = 0,
+      collectCount = 0,
+      likeCount = 0,
+    } = agentInfo?.agentStatistics || {};
+    const analyzeList = [
+      {
+        label: '对话人数',
+        value: userCount,
+      },
+      {
+        label: '对话次数',
+        value: convCount,
+      },
+      {
+        label: '收藏用户数',
+        value: collectCount,
+      },
+      {
+        label: '点赞次数',
+        value: likeCount,
+      },
+    ];
+    setAgentStatistics(analyzeList);
+  };
+
+  const handlerClickMore = (type: ApplicationMoreActionEnum) => {
+    switch (type) {
+      // 分析
+      case ApplicationMoreActionEnum.Analyze:
+        handleSetStatistics(agentConfigInfo as AgentConfigInfo);
+        setOpenAnalyze(true);
+        break;
+      // 临时会话
+      case ApplicationMoreActionEnum.Temporary_Session:
+        setOpenTempChat(true);
+        break;
+      // 导出配置
+      case ApplicationMoreActionEnum.Export_Config:
+        modalConfirm(
+          `导出配置 - ${agentConfigInfo?.name}`,
+          '如果内部包含数据表或知识库，数据本身不会导出',
+          () => {
+            exportConfigFile(
+              agentConfigInfo?.id as number,
+              AgentComponentTypeEnum.Agent,
+            );
+            return new Promise((resolve) => {
+              setTimeout(resolve, 1000);
+            });
+          },
+        );
+
+        break;
+      // 日志
+      case ApplicationMoreActionEnum.Log:
+        history.push(`/space/${spaceId}/${agentConfigInfo?.id}/log`);
+        break;
+    }
+  };
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
@@ -205,6 +285,7 @@ const EditAgent: React.FC = () => {
         onEditAgent={() => setOpenEditAgent(true)}
         // 点击发布按钮，打开发布智能体弹窗
         onPublish={() => setOpen(true)}
+        onOtherAction={handlerClickMore}
       />
       <section
         className={cx(
@@ -302,6 +383,20 @@ const EditAgent: React.FC = () => {
         open={openAgentModel}
         devConversationId={agentConfigInfo?.devConversationId}
         onCancel={handleSetModel}
+      />
+      {/*分析统计弹窗*/}
+      <AnalyzeStatistics
+        open={openAnalyze}
+        onCancel={() => setOpenAnalyze(false)}
+        title="智能体概览"
+        list={agentStatistics}
+      />
+      {/* 临时会话弹窗 */}
+      <CreateTempChatModal
+        agentId={agentConfigInfo?.id}
+        open={openTempChat}
+        name={agentConfigInfo?.name}
+        onCancel={() => setOpenTempChat(false)}
       />
     </div>
   );

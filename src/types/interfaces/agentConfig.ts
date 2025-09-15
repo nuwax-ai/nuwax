@@ -7,6 +7,7 @@ import {
 } from '@/types/enums/agent';
 import type { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
 import type { ComponentSettingEnum, OpenCloseEnum } from '@/types/enums/space';
+import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
   AgentComponentInfo,
@@ -19,6 +20,7 @@ import type {
 import type {
   BindConfigWithSub,
   CreatedNodeItem,
+  NativeUploadFile,
   VariableSelectConfig,
 } from '@/types/interfaces/common';
 import type {
@@ -35,6 +37,7 @@ export interface AgentHeaderProps {
   onToggleVersionHistory: () => void;
   onEditAgent: () => void;
   onPublish: () => void;
+  onOtherAction: (key: ApplicationMoreActionEnum) => void;
 }
 
 // 编配title组件
