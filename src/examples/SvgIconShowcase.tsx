@@ -48,7 +48,6 @@ const SvgIconShowcase: React.FC = () => {
         'icons-nav-ecosystem',
         'icons-nav-square',
         'icons-nav-doc',
-        'icons-nav-layout',
         'icons-nav-settings',
         'icons-nav-stars',
         'icons-nav-plugins',
@@ -369,7 +368,9 @@ const SvgIconShowcase: React.FC = () => {
           <Col xs={24} md={12}>
             <div className="debug-item">
               <Title level={5}>
-                {isChineseLanguage ? '不同颜色测试' : 'Different Color Tests'}
+                {isChineseLanguage
+                  ? '不同颜色测试和阴影'
+                  : 'Different Color Tests'}
               </Title>
               <Paragraph>
                 {isChineseLanguage
@@ -378,104 +379,226 @@ const SvgIconShowcase: React.FC = () => {
               </Paragraph>
               <div className="color-test-grid">
                 <div className="color-test-item">
-                  <SvgIcon
-                    name="icons-nav-layout"
-                    viewBox="0 0 34 34"
+                  <div
                     style={{
-                      fontSize: 34,
-                      borderRadius: 16,
-                      color: 'var(--xagi-color-primary)',
-                      boxShadow:
-                        '0 3px 24px color-mix(in srgb, var(--xagi-color-primary)  0%, var(--xagi-color-primary)  30%)',
+                      width: 72,
+                      height: 72,
+                      borderRadius: 12,
+                      backgroundColor: 'var(--xagi-color-primary-bg)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
-                  />
+                  >
+                    <SvgIcon
+                      name="icons-workspace-table"
+                      style={{
+                        fontSize: 40,
+                        color: 'var(--xagi-color-primary)',
+                        filter:
+                          'drop-shadow(0 2px 12px color-mix(in srgb, var(--xagi-color-primary) 60%, var(--xagi-color-primary)  60%))',
+                      }}
+                    />
+                  </div>
                   <Text code>Layout (Primary)</Text>
                 </div>
                 <div className="color-test-item">
-                  <SvgIcon
-                    name="icons-workspace-agent"
-                    viewBox="0 0 38 38"
-                    style={{ fontSize: 34, color: '#1890ff' }}
-                  />
+                  <div
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(24, 144, 255, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <SvgIcon
+                      name="icons-workspace-agent"
+                      style={{
+                        fontSize: 40,
+                        color: 'rgb(24, 144, 255)',
+                        filter:
+                          'drop-shadow(0 3px 12px color-mix(in srgb, rgb(24, 144, 255) 60%, rgb(24, 144, 255) 60%))',
+                      }}
+                    />
+                  </div>
                   <Text code>Agent (Blue)</Text>
                 </div>
                 <div className="color-test-item">
-                  <SvgIcon
-                    name="icons-workspace-llm"
-                    viewBox="0 0 38 38"
-                    style={{ fontSize: 34, color: '#52c41a' }}
-                  />
+                  <div
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(82, 196, 26, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <SvgIcon
+                      name="icons-workspace-llm"
+                      style={{
+                        color: 'rgb(82, 196, 26)',
+                        fontSize: 40,
+                        filter:
+                          'drop-shadow(0 3px 12px color-mix(in srgb, rgb(82, 196, 26) 60%, rgb(82, 196, 26)  60%))',
+                      }}
+                    />
+                  </div>
                   <Text code>LLM (Green)</Text>
                 </div>
                 <div className="color-test-item">
-                  <SvgIcon
-                    name="icons-workspace-workflow"
-                    viewBox="0 0 38 38"
-                    style={{ fontSize: 34, color: '#fa8c16' }}
-                  />
+                  <div
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(250, 140, 22, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <SvgIcon
+                      name="icons-workspace-workflow"
+                      style={{
+                        color: 'rgb(250, 140, 22)',
+                        fontSize: 40,
+                        borderRadius: 16,
+                        filter:
+                          'drop-shadow(0 3px 12px color-mix(in srgb, rgb(250, 140, 22) 60%, rgb(250, 140, 22) 60%))',
+                      }}
+                    />
+                  </div>
                   <Text code>Workflow (Orange)</Text>
                 </div>
                 <div className="color-test-item">
-                  <SvgIcon
-                    name="icons-nav-layout"
-                    viewBox="0 0 34 34"
-                    style={{ fontSize: 68, color: '#52c41a' }}
-                  />
-                  <Text code>#52c41a (Success)</Text>
-                </div>
-                <div className="color-test-item">
-                  <SvgIcon
-                    name="icons-nav-layout"
-                    viewBox="0 0 34 34"
-                    style={{ fontSize: 68, color: '#fa8c16' }}
-                  />
-                  <Text code>#fa8c16 (Warning)</Text>
-                </div>
-                <div className="color-test-item">
-                  <SvgIcon
-                    name="icons-nav-layout"
-                    viewBox="0 0 34 34"
-                    style={{ fontSize: 68, color: '#f5222d' }}
-                  />
-                  <Text code>#f5222d (Error)</Text>
-                </div>
-                <div className="color-test-item">
-                  <SvgIcon
-                    name="icons-nav-layout"
-                    viewBox="0 0 34 34"
-                    style={{ fontSize: 68, color: '#722ed1' }}
-                  />
-                  <Text code>#722ed1 (Purple)</Text>
-                </div>
-                <div className="color-test-item">
-                  <SvgIcon
-                    name="icons-nav-layout"
-                    viewBox="0 0 34 34"
-                    style={{ fontSize: 68, color: '#13c2c2' }}
-                  />
-                  <Text code>#13c2c2 (Cyan)</Text>
-                </div>
-                <div className="color-test-item">
-                  <SvgIcon
-                    name="icons-nav-layout"
-                    viewBox="0 0 34 34"
-                    style={{ fontSize: 68, color: '#eb2f96' }}
-                  />
-                  <Text code>#eb2f96 (Magenta)</Text>
-                </div>
-                <div className="color-test-item">
-                  <SvgIcon
-                    name="icons-nav-layout"
-                    viewBox="0 0 34 34"
+                  <div
                     style={{
-                      fontSize: 68,
-                      color: '#fa541c',
-                      borderRadius: 16,
-                      overflow: 'hidden',
-                      boxShadow: 'var(--xagi-box-shadow)',
+                      width: 72,
+                      height: 72,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(82, 196, 26, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
-                  />
-                  <Text code>#fa541c (Orange)</Text>
+                  >
+                    <SvgIcon
+                      name="icons-workspace-mcp"
+                      style={{
+                        color: 'rgb(82, 196, 26)',
+                        fontSize: 40,
+                        borderRadius: 16,
+                        filter:
+                          'drop-shadow(0 3px 12px color-mix(in srgb, rgb(82, 196, 26) 60%, rgb(82, 196, 26) 60%))',
+                      }}
+                    />
+                  </div>
+                  <Text code>MCP (Success)</Text>
+                </div>
+                <div className="color-test-item">
+                  <div
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(250, 140, 22, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <SvgIcon
+                      name="icons-workspace-plugin"
+                      style={{
+                        color: 'rgb(250, 140, 22)',
+                        fontSize: 40,
+                        borderRadius: 16,
+                        filter:
+                          'drop-shadow(0 3px 12px color-mix(in srgb, rgb(250, 140, 22) 60%, rgb(250, 140, 22) 60%))',
+                      }}
+                    />
+                  </div>
+                  <Text code>Plugin (Warning)</Text>
+                </div>
+                <div className="color-test-item">
+                  <div
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(245, 34, 45, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <SvgIcon
+                      name="icons-workspace-knowledge"
+                      style={{
+                        color: 'rgb(245, 34, 45)',
+                        fontSize: 40,
+                        borderRadius: 16,
+                        filter:
+                          'drop-shadow(0 3px 12px color-mix(in srgb, rgb(245, 34, 45) 60%, rgb(245, 34, 45) 60%))',
+                      }}
+                    />
+                  </div>
+                  <Text code>Knowledge (Error)</Text>
+                </div>
+                <div className="color-test-item">
+                  <div
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(114, 46, 209, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <SvgIcon
+                      name="icons-workspace-table"
+                      style={{
+                        color: 'rgb(114, 46, 209)',
+                        fontSize: 40,
+                        borderRadius: 16,
+                        filter:
+                          'drop-shadow(0 3px 12px color-mix(in srgb, rgb(114, 46, 209) 60%, rgb(114, 46, 209) 60%))',
+                      }}
+                    />
+                  </div>
+                  <Text code>Table (Purple)</Text>
+                </div>
+                <div className="color-test-item">
+                  <div
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(19, 194, 194, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <SvgIcon
+                      name="icons-workspace-agent"
+                      style={{
+                        color: 'rgb(19, 194, 194)',
+                        fontSize: 40,
+                        borderRadius: 16,
+                        filter:
+                          'drop-shadow(0 3px 12px color-mix(in srgb, rgb(19, 194, 194) 60%, rgb(19, 194, 194) 60%))',
+                      }}
+                    />
+                  </div>
+                  <Text code>Agent (Cyan)</Text>
                 </div>
               </div>
             </div>
@@ -494,7 +617,6 @@ const SvgIconShowcase: React.FC = () => {
                 <div className="size-test-item">
                   <SvgIcon
                     name="icons-workspace-agent"
-                    viewBox="0 0 38 38"
                     style={{ fontSize: 16, color: 'var(--xagi-color-primary)' }}
                   />
                   <Text code>Agent 16px</Text>
@@ -502,7 +624,6 @@ const SvgIconShowcase: React.FC = () => {
                 <div className="size-test-item">
                   <SvgIcon
                     name="icons-workspace-llm"
-                    viewBox="0 0 38 38"
                     style={{ fontSize: 24, color: 'var(--xagi-color-primary)' }}
                   />
                   <Text code>LLM 24px</Text>
@@ -510,7 +631,6 @@ const SvgIconShowcase: React.FC = () => {
                 <div className="size-test-item">
                   <SvgIcon
                     name="icons-workspace-workflow"
-                    viewBox="0 0 38 38"
                     style={{ fontSize: 32, color: 'var(--xagi-color-primary)' }}
                   />
                   <Text code>Workflow 32px</Text>
@@ -518,7 +638,6 @@ const SvgIconShowcase: React.FC = () => {
                 <div className="size-test-item">
                   <SvgIcon
                     name="icons-workspace-mcp"
-                    viewBox="0 0 38 36"
                     style={{ fontSize: 48, color: 'var(--xagi-color-primary)' }}
                   />
                   <Text code>MCP 48px</Text>
@@ -526,7 +645,6 @@ const SvgIconShowcase: React.FC = () => {
                 <div className="size-test-item">
                   <SvgIcon
                     name="icons-workspace-plugin"
-                    viewBox="0 0 32 36"
                     style={{ fontSize: 64, color: 'var(--xagi-color-primary)' }}
                   />
                   <Text code>Plugin 64px</Text>
@@ -534,7 +652,6 @@ const SvgIconShowcase: React.FC = () => {
                 <div className="size-test-item">
                   <SvgIcon
                     name="icons-workspace-table"
-                    viewBox="0 0 34 34"
                     style={{ fontSize: 96, color: 'var(--xagi-color-primary)' }}
                   />
                   <Text code>Table 96px</Text>
