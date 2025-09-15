@@ -143,6 +143,11 @@ const routes = [
     component: '@/examples/AntdComponentsShowcase',
     layout: false,
   },
+  {
+    path: '/examples/svg-icon-showcase',
+    component: '@/examples/SvgIconShowcase',
+    layout: false,
+  },
 ];
 
 export default routes;

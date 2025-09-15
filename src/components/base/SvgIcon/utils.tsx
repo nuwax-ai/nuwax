@@ -13,13 +13,17 @@ const cx = classNames.bind(styles);
 // 使用文件方式（SVGR）导入 SVG，并包装以便注入统一的 className
 export type SvgFactory = React.FC<React.SVGProps<SVGSVGElement>>;
 export const wrapSvg =
-  (Comp: SvgFactory): SvgFactory =>
+  (
+    Comp: SvgFactory,
+    overrideProps?: React.SVGProps<SVGSVGElement>,
+  ): SvgFactory =>
   (props) =>
     (
       <Comp
-        {...props}
         viewBox="0 0 24 24"
+        {...props}
         className={cx(styles['xagi-svg-icon'], props.className)}
         style={{ ...(props.style || {}) }}
+        {...overrideProps}
       />
     );

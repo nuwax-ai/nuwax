@@ -3,11 +3,13 @@ import React from 'react';
 import CHAT_ICON_MAP from './chat.constants';
 import COMMON_ICON_MAP from './common.constants';
 import NAV_ICON_MAP from './nav.constants';
+import WORKSPACE_ICON_MAP from './workspace.constants';
 
 const nameToComponent: Record<string, React.FC> = {
   ...NAV_ICON_MAP,
   ...CHAT_ICON_MAP,
   ...COMMON_ICON_MAP,
+  ...WORKSPACE_ICON_MAP,
 };
 
 export interface SvgIconProps
