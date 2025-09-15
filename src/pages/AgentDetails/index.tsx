@@ -193,6 +193,7 @@ const AgentDetails: React.FC = () => {
       infos: selectedComponentList,
       defaultAgentDetail: agentDetail,
       variableParams,
+      variables,
     });
   };
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
