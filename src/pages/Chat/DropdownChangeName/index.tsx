@@ -20,7 +20,7 @@ import {
 import { ModalFuncProps } from 'antd/es/modal/interface';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { useNavigate } from 'umi';
+import { useModel, useNavigate } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -39,6 +39,7 @@ const DropdownChangeName: React.FC<Porps> = ({
   setConversationInfo,
 }) => {
   const navigate = useNavigate();
+  const { runHistory } = useModel('conversationHistory');
 
   const [modalOpenEdit, setModalOpenEdit] = useState<boolean>(false);
   const [form] = Form.useForm();
@@ -73,6 +74,10 @@ const DropdownChangeName: React.FC<Porps> = ({
           topic: result.data.topic,
         });
         message.success('修改成功');
+        // 如果是会话聊天页（chat页），同步更新会话记录
+        runHistory({
+          agentId: null,
+        });
       }
     },
   });
@@ -84,6 +89,10 @@ const DropdownChangeName: React.FC<Porps> = ({
     onSuccess: (result: RequestResponse<null>) => {
       if (result.success) {
         message.success('删除成功');
+        // 如果是会话聊天页（chat页），同步更新会话记录
+        runHistory({
+          agentId: null,
+        });
         navigate('/', { replace: true });
       }
     },
