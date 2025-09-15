@@ -46,8 +46,6 @@ const Chat: React.FC = () => {
   const infos = location.state?.infos;
   // 用户填写的变量参数，此处用于第一次发送消息时，传递变量参数
   const firstVariableParams = location.state?.variableParams;
-  // 智能体设置的变量
-  const variables = location.state?.variables;
   // 默认的智能体详情信息
   const defaultAgentDetail = location.state?.defaultAgentDetail;
 
@@ -94,6 +92,7 @@ const Chat: React.FC = () => {
     resetInit,
     requiredNameList,
     setConversationInfo,
+    variables,
   } = useModel('conversationInfo');
 
   const values = Form.useWatch([], { form, preserve: true });
