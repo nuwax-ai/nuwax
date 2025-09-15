@@ -40,11 +40,15 @@ const SquareSection: React.FC<{
     setActiveKey(cate_name ?? cate_type);
     // 控制menu显隐
     setVisibleMenu(cate_type);
-  }, [params]);
+  }, []);
 
   const handleClick = (cateType: string, cateName?: string) => {
     setActiveKey(cateName ?? cateType);
-    setVisibleMenu(cateType);
+    if (visibleMenu) {
+      setVisibleMenu(visibleMenu === cateType ? '' : cateType);
+    } else {
+      setVisibleMenu(cateType);
+    }
     // 关闭移动端菜单
     handleCloseMobileMenu();
 
