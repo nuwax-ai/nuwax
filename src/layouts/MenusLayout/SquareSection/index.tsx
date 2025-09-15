@@ -70,25 +70,37 @@ const SquareSection: React.FC<{
     {
       name: '智能体',
       icon: <SvgIcon name="icons-nav-stars" />,
-      list: agentInfoList,
+      list: agentInfoList.map((item: any) => ({
+        ...item,
+        name: SquareAgentTypeEnum.Agent + item.name,
+      })),
       type: SquareAgentTypeEnum.Agent,
     },
     {
       name: '插件',
       icon: <SvgIcon name="icons-nav-plugins" />,
-      list: pluginInfoList,
+      list: pluginInfoList.map((item: any) => ({
+        ...item,
+        name: SquareAgentTypeEnum.Plugin + item.name,
+      })),
       type: SquareAgentTypeEnum.Plugin,
     },
     {
       name: '工作流',
       icon: <SvgIcon name="icons-nav-workflow" />,
-      list: workflowInfoList,
+      list: workflowInfoList.map((item: any) => ({
+        ...item,
+        name: SquareAgentTypeEnum.Workflow + item.name,
+      })),
       type: SquareAgentTypeEnum.Workflow,
     },
     {
       name: '模板',
       icon: <SvgIcon name="icons-nav-template" />,
-      list: templateList,
+      list: templateList.map((item: any) => ({
+        ...item,
+        name: SquareAgentTypeEnum.Template + item.name,
+      })),
       type: SquareAgentTypeEnum.Template,
     },
   ];
