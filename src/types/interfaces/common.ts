@@ -642,6 +642,7 @@ export interface NewConversationSetProps {
   // 是否展示重置按钮
   showSubmitButton?: boolean;
   variables: BindConfigWithSub[];
+  userFillVariables?: Record<string, string | number> | null;
   onConfirm?: (variableParams: Record<string, string | number>) => void;
 }
 

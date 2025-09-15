@@ -46,6 +46,8 @@ const Chat: React.FC = () => {
   const infos = location.state?.infos;
   // 用户填写的变量参数，此处用于第一次发送消息时，传递变量参数
   const firstVariableParams = location.state?.variableParams;
+  // 智能体设置的变量
+  const variables = location.state?.variables;
   // 默认的智能体详情信息
   const defaultAgentDetail = location.state?.defaultAgentDetail;
 
@@ -90,9 +92,7 @@ const Chat: React.FC = () => {
     showScrollBtn,
     setShowScrollBtn,
     resetInit,
-    variables,
     requiredNameList,
-    userFillVariables,
     setConversationInfo,
   } = useModel('conversationInfo');
 
@@ -109,12 +109,12 @@ const Chat: React.FC = () => {
       .catch(() => setVariableParams(null));
   }, [form, values]);
 
+  // 用户在智能体主页填写的变量信息
   useEffect(() => {
-    if (!!userFillVariables) {
-      form.setFieldsValue(userFillVariables);
-      setVariableParams(userFillVariables);
+    if (!!firstVariableParams) {
+      setVariableParams(firstVariableParams);
     }
-  }, [userFillVariables]);
+  }, [firstVariableParams]);
 
   // 聊天会话框是否禁用，不能发送消息
   const wholeDisabled = useMemo(() => {
@@ -366,9 +366,10 @@ const Chat: React.FC = () => {
                   className="mb-16"
                   form={form}
                   variables={variables}
+                  userFillVariables={firstVariableParams}
                   // 是否已填写表单
-                  isFilled={!!userFillVariables}
-                  disabled={!!userFillVariables || isSendMessageRef.current}
+                  isFilled={!!variableParams}
+                  disabled={!!firstVariableParams || isSendMessageRef.current}
                 />
                 {messageList?.length > 0 ? (
                   <>

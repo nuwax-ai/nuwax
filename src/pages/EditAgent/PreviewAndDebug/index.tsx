@@ -96,7 +96,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
 
   useEffect(() => {
     if (!!userFillVariables) {
-      form.setFieldsValue(userFillVariables);
       setVariableParams(userFillVariables);
     }
   }, [userFillVariables]);
@@ -270,7 +269,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
         )}
       >
         {/* 新对话设置 */}
-        <NewConversationSet form={form} variables={variables} isFilled />
+        <NewConversationSet
+          form={form}
+          variables={variables}
+          isFilled
+          userFillVariables={userFillVariables}
+        />
         <div
           className={cx(styles['chat-wrapper'], 'scroll-container', 'flex-1')}
           ref={messageViewRef}
