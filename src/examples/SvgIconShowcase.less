@@ -1,0 +1,242 @@
+.svg-icon-showcase {
+  padding: 24px;
+  background: var(--xagi-color-bg-container);
+  min-height: 100vh;
+
+  /* 页面标题区域 */
+  .showcase-header {
+    margin-bottom: 24px;
+    text-align: center;
+
+    .ant-typography {
+      margin-bottom: 16px;
+    }
+  }
+
+  /* 搜索区域 */
+  .search-section {
+    margin-bottom: 24px;
+
+    .stats {
+      text-align: right;
+
+      @media (max-width: 768px) {
+        text-align: left;
+        margin-top: 8px;
+      }
+    }
+  }
+
+  /* 分类卡片 */
+  .category-card {
+    margin-bottom: 24px;
+
+    .ant-card-head {
+      border-bottom: 2px solid var(--xagi-color-border);
+
+      .category-indicator {
+        width: 4px;
+        height: 20px;
+        border-radius: 2px;
+        display: inline-block;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+    }
+  }
+
+  /* 图标卡片 */
+  .icon-card {
+    height: 100%;
+    transition: all 0.3s ease;
+    animation: fade-in-up 0.3s ease-out;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 10%);
+    }
+
+    .ant-card-body {
+      padding: 16px;
+      text-align: center;
+    }
+
+    .ant-card-actions {
+      background: var(--xagi-color-bg-container);
+      border-top: 1px solid var(--xagi-color-border);
+
+      .ant-btn {
+        border: none;
+        box-shadow: none;
+
+        &:hover {
+          background: var(--xagi-color-primary-bg);
+          color: var(--xagi-color-primary);
+        }
+      }
+    }
+  }
+
+  /* 图标预览区域 */
+  .icon-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+
+    .ant-typography {
+      margin: 0;
+      line-height: 1.4;
+    }
+  }
+
+  /* 使用说明区域 */
+  .usage-section {
+    margin-top: 32px;
+
+    .usage-item {
+      padding: 16px;
+      border: 1px solid var(--xagi-color-border);
+      border-radius: 8px;
+      background: var(--xagi-color-bg-container);
+
+      .ant-typography {
+        margin-bottom: 12px;
+      }
+
+      .code-block {
+        background: var(--xagi-color-fill-quaternary);
+        border: 1px solid var(--xagi-color-border);
+        border-radius: 6px;
+        padding: 12px;
+        margin: 0;
+        font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+
+        code {
+          background: none;
+          border: none;
+          padding: 0;
+          color: var(--xagi-color-text);
+        }
+      }
+    }
+  }
+
+  /* 响应式设计 */
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .showcase-header {
+      margin-bottom: 16px;
+
+      .ant-typography {
+        font-size: 24px;
+      }
+    }
+
+    .search-section {
+      .ant-col {
+        margin-bottom: 8px;
+      }
+    }
+
+    .icon-card {
+      .ant-card-body {
+        padding: 12px;
+      }
+    }
+
+    .icon-preview {
+      min-height: 60px;
+
+      .ant-typography {
+        font-size: 11px;
+      }
+    }
+  }
+
+  /* 暗色主题适配 */
+  .xagi-theme-dark & {
+    .icon-card {
+      &:hover {
+        box-shadow: 0 4px 12px rgba(255, 255, 255, 10%);
+      }
+    }
+
+    .usage-item {
+      background: var(--xagi-color-bg-elevated);
+      border-color: var(--xagi-color-border-secondary);
+    }
+
+    .code-block {
+      background: var(--xagi-color-fill-tertiary);
+      border-color: var(--xagi-color-border-secondary);
+    }
+  }
+
+  /* 动画效果 */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* 空状态样式 */
+  .ant-empty {
+    padding: 40px 20px;
+
+    .ant-empty-description {
+      color: var(--xagi-color-text-tertiary);
+    }
+  }
+
+  /* 标签样式优化 */
+  .ant-tag {
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 20px;
+    padding: 0 8px;
+  }
+
+  /* 按钮样式优化 */
+  .ant-btn {
+    border-radius: 6px;
+    font-weight: 500;
+
+    &.ant-btn-primary {
+      background: var(--xagi-color-primary);
+      border-color: var(--xagi-color-primary);
+
+      &:hover {
+        background: var(--xagi-color-primary-hover);
+        border-color: var(--xagi-color-primary-hover);
+      }
+    }
+  }
+
+  /* 卡片样式优化 */
+  .ant-card {
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 10%);
+
+    .ant-card-head {
+      border-bottom: 1px solid var(--xagi-color-border);
+
+      .ant-card-head-title {
+        font-weight: 600;
+      }
+    }
+  }
+}
