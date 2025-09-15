@@ -2,7 +2,12 @@
 @import '@/styles/token';
 
 .container {
-  background: @backgroundImage;
+  background-image: @backgroundImage;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  transition: background-image 0.3s ease;
 
   .edit-content {
     // 隐藏滚动条
