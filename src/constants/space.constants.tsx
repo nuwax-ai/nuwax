@@ -86,6 +86,14 @@ export const APPLICATION_MORE_ACTION = [
   { type: ApplicationMoreActionEnum.Del, label: '删除', isDel: true },
 ];
 
+// 应用开发更多操作（详情页）
+export const APPLICATION_MORE_ACTION_DETAIL = [
+  { type: ApplicationMoreActionEnum.Analyze, label: '分析' },
+  { type: ApplicationMoreActionEnum.Temporary_Session, label: '临时会话' },
+  { type: ApplicationMoreActionEnum.Export_Config, label: '导出配置' },
+  { type: ApplicationMoreActionEnum.Log, label: '日志' },
+];
+
 // 工作空间应用列表（layout二级菜单）
 export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
   {

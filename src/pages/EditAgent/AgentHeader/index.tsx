@@ -1,7 +1,9 @@
 import agentImage from '@/assets/images/agent_image.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
+import { APPLICATION_MORE_ACTION_DETAIL } from '@/constants/space.constants';
 import { PermissionsEnum } from '@/types/enums/common';
+import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { AgentHeaderProps } from '@/types/interfaces/agentConfig';
 import { jumpBack } from '@/utils/router';
 import { FormOutlined } from '@ant-design/icons';
@@ -23,6 +25,7 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
   onToggleVersionHistory,
   onEditAgent,
   onPublish,
+  onOtherAction,
 }) => {
   const { spaceId } = useParams();
 
@@ -34,6 +37,44 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
       return false;
     }
   }, [agentConfigInfo]);
+
+  // 提取权限检查逻辑
+  const hasPermission = (permission: PermissionsEnum) => {
+    return agentConfigInfo?.permissions?.includes(permission);
+  };
+
+  // 更多操作列表
+  const actionList = useMemo(() => {
+    return APPLICATION_MORE_ACTION_DETAIL.filter((item) => {
+      const type = item.type as ApplicationMoreActionEnum;
+
+      switch (type) {
+        // 临时会话
+        case ApplicationMoreActionEnum.Temporary_Session:
+          return hasPermission(PermissionsEnum.TempChat);
+        case ApplicationMoreActionEnum.Export_Config:
+          // 导出配置操作：只有空间创建者、空间管理员和智能体本身的创建者可导出
+          return hasPermission(PermissionsEnum.Export);
+        default:
+          // 其他操作默认展示
+          return true;
+      }
+    }).map((item) => {
+      return {
+        key: item.type,
+        label: (
+          <div
+            onClick={() => {
+              onOtherAction(item.type as ApplicationMoreActionEnum);
+            }}
+          >
+            {item.label}
+          </div>
+        ),
+      };
+    });
+  }, [agentConfigInfo]);
+
   const items: MenuProps['items'] = [
     {
       key: 'showStand',
@@ -43,6 +84,7 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
       key: 'versionHistory',
       label: <div onClick={onToggleVersionHistory}>版本历史</div>,
     },
+    ...actionList,
   ];
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
