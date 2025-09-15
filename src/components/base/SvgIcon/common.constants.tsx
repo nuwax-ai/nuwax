@@ -23,6 +23,7 @@ const PlusSvg = wrapSvg(PlusSvgFile);
 const StrawSvg = wrapSvg(StrawSvgFile);
 const DeleteSvg = wrapSvg(DeleteSvgFile);
 const EditSvg = wrapSvg(EditSvgFile);
+
 export default {
   'icons-common-caret_down': CaretDownSvg,
   'icons-common-caret_up': CaretUpSvg,
