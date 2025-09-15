@@ -94,6 +94,22 @@ const SvgIconShowcase: React.FC = () => {
       color: '#52c41a',
     },
     {
+      name: isChineseLanguage ? '工作区图标' : 'Workspace Icons',
+      key: 'workspace',
+      prefix: 'icons-workspace-',
+      icons: [
+        'icons-workspace-agent',
+        'icons-workspace-caret_down',
+        'icons-workspace-knowlege',
+        'icons-workspace-llm',
+        'icons-workspace-mcp',
+        'icons-workspace-plugin',
+        'icons-workspace-table',
+        'icons-workspace-workflow',
+      ],
+      color: '#722ed1',
+    },
+    {
       name: isChineseLanguage ? '通用图标' : 'Common Icons',
       key: 'common',
       prefix: 'icons-common-',
@@ -367,56 +383,76 @@ const SvgIconShowcase: React.FC = () => {
                 <div className="color-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
-                    style={{ fontSize: 32, color: '#1890ff' }}
+                    viewBox="0 0 34 34"
+                    style={{
+                      fontSize: 34,
+                      borderRadius: 16,
+                      color: 'var(--xagi-color-primary)',
+                      boxShadow:
+                        '0 3px 24px color-mix(in srgb, var(--xagi-color-primary)  0%, var(--xagi-color-primary)  30%)',
+                    }}
                   />
                   <Text code>#1890ff (Primary)</Text>
                 </div>
                 <div className="color-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
-                    style={{ fontSize: 32, color: '#52c41a' }}
+                    viewBox="0 0 34 34"
+                    style={{ fontSize: 68, color: '#52c41a' }}
                   />
                   <Text code>#52c41a (Success)</Text>
                 </div>
                 <div className="color-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
-                    style={{ fontSize: 32, color: '#fa8c16' }}
+                    viewBox="0 0 34 34"
+                    style={{ fontSize: 68, color: '#fa8c16' }}
                   />
                   <Text code>#fa8c16 (Warning)</Text>
                 </div>
                 <div className="color-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
-                    style={{ fontSize: 32, color: '#f5222d' }}
+                    viewBox="0 0 34 34"
+                    style={{ fontSize: 68, color: '#f5222d' }}
                   />
                   <Text code>#f5222d (Error)</Text>
                 </div>
                 <div className="color-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
-                    style={{ fontSize: 32, color: '#722ed1' }}
+                    viewBox="0 0 34 34"
+                    style={{ fontSize: 68, color: '#722ed1' }}
                   />
                   <Text code>#722ed1 (Purple)</Text>
                 </div>
                 <div className="color-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
-                    style={{ fontSize: 32, color: '#13c2c2' }}
+                    viewBox="0 0 34 34"
+                    style={{ fontSize: 68, color: '#13c2c2' }}
                   />
                   <Text code>#13c2c2 (Cyan)</Text>
                 </div>
                 <div className="color-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
-                    style={{ fontSize: 32, color: '#eb2f96' }}
+                    viewBox="0 0 34 34"
+                    style={{ fontSize: 68, color: '#eb2f96' }}
                   />
                   <Text code>#eb2f96 (Magenta)</Text>
                 </div>
                 <div className="color-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
-                    style={{ fontSize: 32, color: '#fa541c' }}
+                    viewBox="0 0 34 34"
+                    style={{
+                      fontSize: 68,
+                      color: '#fa541c',
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      boxShadow: 'var(--xagi-box-shadow)',
+                    }}
                   />
                   <Text code>#fa541c (Orange)</Text>
                 </div>
@@ -437,6 +473,7 @@ const SvgIconShowcase: React.FC = () => {
                 <div className="size-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
+                    viewBox="0 0 34 34"
                     style={{ fontSize: 16, color: 'var(--xagi-color-primary)' }}
                   />
                   <Text code>16px</Text>
@@ -444,6 +481,7 @@ const SvgIconShowcase: React.FC = () => {
                 <div className="size-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
+                    viewBox="0 0 34 34"
                     style={{ fontSize: 24, color: 'var(--xagi-color-primary)' }}
                   />
                   <Text code>24px</Text>
@@ -451,6 +489,7 @@ const SvgIconShowcase: React.FC = () => {
                 <div className="size-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
+                    viewBox="0 0 34 34"
                     style={{ fontSize: 32, color: 'var(--xagi-color-primary)' }}
                   />
                   <Text code>32px</Text>
@@ -458,6 +497,7 @@ const SvgIconShowcase: React.FC = () => {
                 <div className="size-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
+                    viewBox="0 0 34 34"
                     style={{ fontSize: 48, color: 'var(--xagi-color-primary)' }}
                   />
                   <Text code>48px</Text>
@@ -465,6 +505,7 @@ const SvgIconShowcase: React.FC = () => {
                 <div className="size-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
+                    viewBox="0 0 34 34"
                     style={{ fontSize: 64, color: 'var(--xagi-color-primary)' }}
                   />
                   <Text code>64px</Text>
@@ -472,6 +513,7 @@ const SvgIconShowcase: React.FC = () => {
                 <div className="size-test-item">
                   <SvgIcon
                     name="icons-nav-layout"
+                    viewBox="0 0 34 34"
                     style={{ fontSize: 96, color: 'var(--xagi-color-primary)' }}
                   />
                   <Text code>96px</Text>
