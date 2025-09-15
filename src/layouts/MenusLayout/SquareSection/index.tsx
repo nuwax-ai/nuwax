@@ -37,7 +37,12 @@ const SquareSection: React.FC<{
 
   useEffect(() => {
     const { cate_type, cate_name } = params;
-    setActiveKey(cate_name ?? cate_type);
+    // setActiveKey(cate_name ?? cate_type);
+    if (cate_name) {
+      setActiveKey(cate_type + cate_name);
+    } else {
+      setActiveKey(cate_type);
+    }
     // 控制menu显隐
     setVisibleMenu(cate_type);
   }, []);
@@ -52,7 +57,7 @@ const SquareSection: React.FC<{
     setVisibleMenu(cateType);
 
     const url = cateName
-      ? `/square?cate_type=${cateType}&cate_name=${cateName}`
+      ? `/square?cate_type=${cateType}&cate_name=${cateName.split(cateType)[1]}`
       : `/square?cate_type=${cateType}`;
     history.push(url);
   };
