@@ -10,7 +10,7 @@ const cx = classNames.bind(styles);
 const isInfoContains = (item: AgentManualComponentInfo, keywords: string[]) => {
   return keywords.some(
     (keyword) =>
-      item.name.includes(keyword) || item.description.includes(keyword),
+      item.name?.includes(keyword) || item.description?.includes(keyword),
   );
 };
 
