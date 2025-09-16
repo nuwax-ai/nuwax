@@ -338,6 +338,7 @@ const Workflow: React.FC = () => {
     });
 
     if (newNodeIds) {
+      changeUpdateTime();
       updateCurrentNodeRef('sourceNode', {
         nextNodeIds: newNodeIds,
       });
