@@ -813,7 +813,7 @@ const ChatTemp: React.FC = () => {
         )}
         ref={messageViewRef}
       >
-        <div className={cx(styles['chat-wrapper'], 'flex-1')}>
+        <div className={cx(styles['chat-wrapper'], 'flex-1', 'w-full')}>
           {isLoadingConversation ? (
             <div
               className={cx('flex', 'items-center', 'content-center', 'h-full')}
