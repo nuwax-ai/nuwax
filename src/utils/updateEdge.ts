@@ -81,6 +81,11 @@ export const updateNodeEdges = async ({
       ...sourceNode,
       nextNodeIds: beforeNextNodeIds,
     });
+    if (isCreated) {
+      // 如果是通过边创建的节点，那么就需要删除边
+      // 接口返回失败就是把之前添加的边删除
+      graphDeleteEdge(String(id));
+    }
     return false;
   }
 };
