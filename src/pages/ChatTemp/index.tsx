@@ -905,7 +905,7 @@ const ChatTemp: React.FC = () => {
             'clip-path-animation',
           )}
           onClick={handleSiteLink}
-        >{`欢迎使用${tenantConfigInfo?.siteName}平台，快速搭建你的个性化智能体`}</p>
+        >{`欢迎使用${tenantConfigInfo?.siteName}，快速搭建你的个性化智能体`}</p>
       </div>
       <button
         id={buttonId}
