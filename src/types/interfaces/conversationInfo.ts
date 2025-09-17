@@ -293,6 +293,10 @@ export interface ConversationInfo {
 // 查询用户历史会话输入参数
 export interface ConversationListParams {
   agentId: number;
+  // 上一次查询结果的会话ID
+  lastId?: number;
+  // 返回会话数量
+  limit?: number;
 }
 
 // 聊天用户信息

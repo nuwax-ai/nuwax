@@ -1,7 +1,7 @@
-import CustomPopover from '@/components/CustomPopover';
+// import CustomPopover from '@/components/CustomPopover';
 import { apiAgentConversationDelete } from '@/services/agentConfig';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import { LoadingOutlined } from '@ant-design/icons';
+import { DeleteOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Empty, message, Modal } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -61,7 +61,7 @@ const HistoryConversation: React.FC = () => {
       open={openHistoryModal}
       onCancel={() => setOpenHistoryModal(false)}
     >
-      <div className={cx(styles.container, 'overflow-y')}>
+      <div className={cx(styles.container, 'scroll-container')}>
         {loadingHistory ? (
           <div
             className={cx('flex', 'items-center', 'content-center', 'h-full')}
@@ -71,26 +71,35 @@ const HistoryConversation: React.FC = () => {
         ) : conversationList?.length > 0 ? (
           <>
             {conversationList?.map((item: ConversationInfo) => (
-              <CustomPopover
+              <div
                 key={item.id}
-                list={[{ label: '删除' }]}
-                onClick={() => runDel(item.id)}
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'radius-6',
+                  'hover-box',
+                  styles.row,
+                )}
               >
-                <div
-                  className={cx(
-                    'flex',
-                    'items-center',
-                    'radius-6',
-                    'cursor-pointer',
-                    'hover-box',
-                    styles.row,
-                  )}
+                <p
+                  className={cx('flex-1', 'text-ellipsis', 'cursor-pointer')}
                   onClick={() => handleLink(item.id, item.agentId)}
                 >
-                  <p className={cx('flex-1', 'text-ellipsis')}>{item.topic}</p>
-                  <span>{dayjs(item.created).format('MM-DD HH:mm')}</span>
+                  <span style={{ marginRight: 5, width: 75 }}>
+                    {dayjs(item.created).format('MM-DD HH:mm')}
+                  </span>
+                  {item.topic}
+                </p>
+                <div
+                  className={cx(styles.icon, 'cursor-pointer')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    runDel(item.id);
+                  }}
+                >
+                  <DeleteOutlined />
                 </div>
-              </CustomPopover>
+              </div>
             ))}
           </>
         ) : (
