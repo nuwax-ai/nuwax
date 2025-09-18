@@ -138,7 +138,7 @@ const SvgIconShowcase: React.FC = () => {
       .map((category) => ({
         ...category,
         icons: category.icons.filter((iconName) =>
-          iconName.toLowerCase().includes(searchText.toLowerCase()),
+          iconName?.toLowerCase().includes(searchText?.toLowerCase()),
         ),
       }))
       .filter((category) => category.icons.length > 0);

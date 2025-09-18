@@ -53,7 +53,7 @@ const UploadFile: React.FC<UploadFileProps> = ({
     }
     const splitList = name.split('.');
     // 取后缀（文件名可能包含多个点号）
-    const suffix = splitList[splitList.length - 1].toLowerCase();
+    const suffix = splitList[splitList.length - 1]?.toLowerCase();
     const isFile = UPLOAD_FILE_SUFFIX.includes(suffix);
     if (!isFile) {
       message.error(

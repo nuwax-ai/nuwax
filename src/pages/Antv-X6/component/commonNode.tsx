@@ -337,7 +337,7 @@ export const MultiSelectWithCheckbox: React.FC<
         option?.props.children
           ?.toString()
           .toLowerCase()
-          .includes(input.toLowerCase())
+          .includes(input?.toLowerCase())
       }
       dropdownRender={(menu) => (
         <div className="custom-dropdown">
