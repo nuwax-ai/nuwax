@@ -34,6 +34,7 @@ const AgentConversation = forwardRef<
     closeHistoryConversation,
     openHistoryConversation,
   } = useModel('conversationInfo');
+  const conversationHistory = useModel('conversationHistory');
 
   const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
   // 历史会话列表
@@ -84,6 +85,10 @@ const AgentConversation = forwardRef<
   const handleDel = (id: number) => {
     setConversationList((list) => {
       return list?.filter((item) => item.id !== id);
+    });
+
+    conversationHistory?.setConversationList?.((list: any[]) => {
+      return list?.filter((item: { id: number }) => item.id !== id);
     });
   };
 
