@@ -109,7 +109,7 @@ const CodeEditor: React.FC<Props> = ({
     };
 
     // 如果是JSON语言，关闭代码输入提示相关功能
-    if (codeLanguage.toLowerCase() === 'json') {
+    if (codeLanguage?.toLowerCase() === 'json') {
       return {
         ...baseOptions,
         // 关闭智能感知和自动完成
@@ -148,7 +148,7 @@ const CodeEditor: React.FC<Props> = ({
           <Editor
             className={className}
             height={height}
-            language={codeLanguage.toLowerCase()}
+            language={codeLanguage?.toLowerCase()}
             theme="vs-dark"
             value={value}
             onChange={handleCodeChange}
@@ -159,7 +159,7 @@ const CodeEditor: React.FC<Props> = ({
         <Editor
           className={className}
           height={height}
-          language={codeLanguage.toLowerCase()}
+          language={codeLanguage?.toLowerCase()}
           theme="vs-dark"
           value={value}
           onChange={handleCodeChange}

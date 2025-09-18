@@ -159,7 +159,7 @@ const SelectComponent: React.FC<CreatedProp> = ({
 
   // 收藏和取消收藏
   const collectAndUnCollect = async (item: CreatedNodeItem) => {
-    const _type = selected.key.toLowerCase();
+    const _type = selected.key?.toLowerCase();
     // 使用计算属性名定义对象
 
     let _res;

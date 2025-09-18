@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 const useDisableSaveShortcut = (onSave?: () => void) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      if ((e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === 's') {
         e.preventDefault();
         if (onSave) onSave();
       }
