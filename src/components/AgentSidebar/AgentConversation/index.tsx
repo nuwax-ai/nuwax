@@ -6,15 +6,28 @@ import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { formatTimeAgo } from '@/utils/common';
 import { Button, Empty, Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from 'react';
 import { history, useModel, useRequest } from 'umi';
 import HistoryConversation from './HistoryConversation';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+export type AgentConversationRef = {
+  updateList: (info: ConversationInfo) => void;
+};
+
 // 智能体相关会话
-const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
+const AgentConversation = forwardRef<
+  AgentConversationRef,
+  AgentConversationProps
+>(({ agentId }, ref) => {
   // 使用 model 中的历史会话弹窗状态，而不是本地状态
   const {
     isHistoryConversationOpen,
@@ -39,6 +52,23 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
       setLoadingHistory(false);
     },
   });
+
+  // 暴露方法给父组件
+  useImperativeHandle(
+    ref,
+    () => ({
+      updateList: (info: ConversationInfo) => {
+        const list = conversationList?.map((item) => {
+          if (item.id === info.id) {
+            item.topic = info.topic;
+          }
+          return item;
+        });
+        setConversationList(list);
+      },
+    }),
+    [conversationList],
+  );
 
   useEffect(() => {
     setLoadingHistory(true);
@@ -115,13 +145,15 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
         )}
       </div>
       <HistoryConversation
+        agentId={agentId}
         conversationList={conversationList}
+        setConversationList={setConversationList}
         isOpen={isHistoryConversationOpen}
         onCancel={closeHistoryConversation}
         onDel={handleDel}
       />
     </div>
   );
-};
+});
 
 export default AgentConversation;

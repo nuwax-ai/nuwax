@@ -326,7 +326,10 @@ const Chat: React.FC = () => {
 
             <DropdownChangeName
               conversationInfo={conversationInfo}
-              setConversationInfo={setConversationInfo}
+              setConversationInfo={(value) => {
+                setConversationInfo(value);
+                sidebarRef.current?.updateList(value);
+              }}
             />
 
             {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
