@@ -2,8 +2,15 @@ import Loading from '@/components/custom/Loading';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import { AgentSidebarProps } from '@/types/interfaces/agentTask';
+import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import StickyBox from 'react-sticky-box';
 import { useModel } from 'umi';
 import AgentContent from './AgentContent';
@@ -19,6 +26,11 @@ export type AgentSidebarRef = {
   open: () => void;
   close: () => void;
   toggle: () => void;
+  updateList: (info: ConversationInfo) => void;
+};
+
+export type AgentConversationRef = {
+  updateList: (info: ConversationInfo) => void;
 };
 
 const AgentSidebar = forwardRef<AgentSidebarRef, AgentSidebarProps>(
@@ -36,6 +48,7 @@ const AgentSidebar = forwardRef<AgentSidebarRef, AgentSidebarProps>(
     const [visible, setVisible] = useState<boolean>(false);
     const [foldVisible, setFoldVisible] = useState<boolean>(false);
     const { showType } = useModel('conversationInfo');
+    const agentConversationRef = useRef<AgentConversationRef>(null);
 
     const handleClose = () => {
       setVisible(!visible);
@@ -59,6 +72,9 @@ const AgentSidebar = forwardRef<AgentSidebarRef, AgentSidebarProps>(
         toggle: () => {
           setVisible((v) => !v);
           setFoldVisible((f) => !f);
+        },
+        updateList: (info: ConversationInfo) => {
+          agentConversationRef.current?.updateList(info);
         },
       }),
       [],
@@ -110,7 +126,10 @@ const AgentSidebar = forwardRef<AgentSidebarRef, AgentSidebarProps>(
                       onToggleCollectSuccess={onToggleCollectSuccess}
                     />
                     {/* 智能体相关会话 */}
-                    <AgentConversation agentId={agentId} />
+                    <AgentConversation
+                      ref={agentConversationRef}
+                      agentId={agentId}
+                    />
                     {/* 定时任务 */}
                     {agentDetail?.openScheduledTask === OpenCloseEnum.Open && (
                       <TimedTask agentId={agentId} />
