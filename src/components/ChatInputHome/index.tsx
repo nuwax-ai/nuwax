@@ -39,6 +39,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   manualComponents,
   onScrollBottom,
   showAnnouncement = false,
+  onTempChatStop,
+  loadingStopTempConversation,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -82,9 +84,17 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   // 停止按钮disabled - 只有在会话进行中时才可停止，与输入框内容无关
   const disabledStop = useMemo(() => {
     return (
-      !isConversationActive || isStoppingConversation || loadingStopConversation
+      !isConversationActive ||
+      isStoppingConversation ||
+      loadingStopConversation ||
+      loadingStopTempConversation
     );
-  }, [isConversationActive, isStoppingConversation, loadingStopConversation]);
+  }, [
+    isConversationActive,
+    isStoppingConversation,
+    loadingStopConversation,
+    loadingStopTempConversation,
+  ]);
 
   // 点击发送事件
   const handleSendMessage = () => {
@@ -163,17 +173,21 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
     // 获取当前会话请求ID
     const requestId = getCurrentConversationRequestId();
-    console.log('requestId', requestId);
 
     if (requestId) {
-      // 调用停止会话方法
-      runStopConversation(requestId);
+      if (onTempChatStop) {
+        onTempChatStop(requestId);
+      } else {
+        // 调用停止会话方法
+        runStopConversation(requestId);
+      }
     }
   }, [
     disabledStop,
     wholeDisabled,
     getCurrentConversationRequestId,
     runStopConversation,
+    onTempChatStop,
   ]);
 
   // 获取按钮提示文本
@@ -198,7 +212,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     if (!isConversationActive) {
       return '当前无进行中的会话';
     }
-    if (isStoppingConversation || loadingStopConversation) {
+    if (
+      isStoppingConversation ||
+      loadingStopConversation ||
+      loadingStopTempConversation
+    ) {
       return '正在停止会话...';
     }
     return '点击停止当前会话';

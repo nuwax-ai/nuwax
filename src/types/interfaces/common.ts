@@ -503,6 +503,9 @@ export interface ChatInputProps extends ManualComponentItemProps {
   onClear?: () => void;
   onEnter: (message: string, files: UploadFileInfo[]) => void;
   showAnnouncement?: boolean;
+  // 临时会话停止方法
+  onTempChatStop?: (requestId: string) => void;
+  loadingStopTempConversation?: boolean;
 }
 
 // 聊天框底部更多操作组件

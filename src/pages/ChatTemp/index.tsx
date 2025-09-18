@@ -11,6 +11,7 @@ import {
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
+import { apiTempChatConversationStop } from '@/services/agentConfig';
 import {
   apiTempChatConversationCreate,
   apiTempChatConversationQuery,
@@ -148,6 +149,12 @@ const ChatTemp: React.FC = () => {
       setVariableParams(userFillVariables);
     }
   }, [userFillVariables]);
+
+  // 停止临时会话
+  const { run: runStopTempConversation, loading: loadingStopTempConversation } =
+    useRequest(apiTempChatConversationStop, {
+      manual: true,
+    });
 
   // 聊天会话框是否禁用，不能发送消息
   const wholeDisabled = useMemo(() => {
@@ -886,6 +893,9 @@ const ChatTemp: React.FC = () => {
           onSelectComponent={handleSelectComponent}
           onScrollBottom={onScrollBottom}
           showAnnouncement={true}
+          // 临时会话停止
+          onTempChatStop={runStopTempConversation}
+          loadingStopTempConversation={loadingStopTempConversation}
         />
         {/*手机会话输入框*/}
         <ChatInputPhone
