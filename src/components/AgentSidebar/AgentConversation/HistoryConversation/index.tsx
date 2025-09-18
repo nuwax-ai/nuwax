@@ -6,7 +6,7 @@ import {
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { message, Modal } from 'antd';
 import React from 'react';
-import { history, useRequest } from 'umi';
+import { history, useParams, useRequest } from 'umi';
 
 // 历史会话弹窗
 export interface HistoryConversationProps {
@@ -31,29 +31,23 @@ const HistoryConversation: React.FC<HistoryConversationProps> = ({
   onCancel,
   onDel,
 }) => {
+  const params = useParams();
+  const id = Number(params.id);
+
   // 删除会话
   const { run: runDel } = useRequest(apiAgentConversationDelete, {
     manual: true,
     debounceInterval: 500,
     onSuccess: (_: null, params: number[]) => {
       const conversationId = params[0];
-      setConversationList?.((list) => {
-        const arr = list?.filter((item) => item.id !== conversationId);
-        // 跳转到删除的会话
-        const item = arr?.find((item) => item.id === conversationId);
-
-        if (!item) {
-          if (arr?.length) {
-            // 如果当前会话已删除，跳转到第一个会话
-            history.push(`/home/chat/${arr[0].id}/${arr[0].agentId}`);
-          } else {
-            history.push('/');
-          }
-        }
-        return arr;
-      });
-
+      setConversationList?.((list) =>
+        list?.filter((item) => item.id !== conversationId),
+      );
       onDel(conversationId);
+      // 删除自己跳转至新会话
+      if (conversationId === id) {
+        history.push('/agent/' + agentId);
+      }
       message.success('删除成功');
     },
   });
