@@ -420,6 +420,7 @@ export interface UploadAvatarProps {
   defaultImage: string;
   imageUrl?: string;
   beforeUpload?: (file: FileType) => void;
+  svgIconName?: string | null | undefined;
 }
 
 // 上传导入配置

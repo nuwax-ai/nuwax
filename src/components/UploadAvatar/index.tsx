@@ -1,3 +1,4 @@
+import { SvgIconGoodTheme } from '@/components/base';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
@@ -14,8 +15,14 @@ const cx = classNames.bind(styles);
  * 上传头像
  */
 const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
-  const { className, onUploadSuccess, defaultImage, imageUrl, beforeUpload } =
-    props;
+  const {
+    className,
+    onUploadSuccess,
+    defaultImage,
+    imageUrl,
+    beforeUpload,
+    svgIconName,
+  } = props;
 
   const handleChange: UploadProps['onChange'] = (info) => {
     if (info.file.status === 'uploading') {
@@ -74,11 +81,15 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
         >
           <FormOutlined />
         </div>
-        <img
-          className={cx(styles.image)}
-          src={imageUrl || defaultImage}
-          alt=""
-        />
+        {svgIconName && !imageUrl ? (
+          <SvgIconGoodTheme name={svgIconName} />
+        ) : (
+          <img
+            className={cx(styles.image)}
+            src={imageUrl || defaultImage}
+            alt=""
+          />
+        )}
       </div>
     </Upload>
   );

@@ -433,6 +433,7 @@ export const generatePorts = (data: ChildNode): PortsConfig => {
           tagName: 'circle',
           selector: 'circle',
           attrs: {
+            // @ts-ignore
             magnet: true, // 显式声明磁吸源
             pointerEvents: 'auto',
           },
@@ -441,6 +442,7 @@ export const generatePorts = (data: ChildNode): PortsConfig => {
           tagName: 'image',
           selector: 'icon',
           attrs: {
+            // @ts-ignore
             magnet: false,
           },
         },
@@ -452,6 +454,7 @@ export const generatePorts = (data: ChildNode): PortsConfig => {
             opacity: 0, // 完全透明
             pointerEvents: 'visiblePainted', // 允许鼠标事件
             zIndex: -1, // 置于底层，避免覆盖主要元素
+            // @ts-ignore
             magnet: false,
           },
         },

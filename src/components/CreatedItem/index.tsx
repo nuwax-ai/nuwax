@@ -119,6 +119,7 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
                 }}
                 imageUrl={form.getFieldValue('icon') || imageUrl} // 传入imageUrl作为默认图片，或者使用getDefaultImage()作为默认图片提供
                 defaultImage={getDefaultImage()}
+                svgIconName="icons-workspace-table"
               />
             </div>
           </Form.Item>
@@ -167,6 +168,7 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
                 }}
                 imageUrl={imageUrl}
                 defaultImage={getDefaultImage()}
+                svgIconName="icons-workspace-knowledge"
               />
             </div>
           </Form.Item>
