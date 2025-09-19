@@ -1,22 +1,13 @@
 import InfiniteList from '@/layouts/InfiniteList';
-import {
-  apiAgentConversationDelete,
-  apiAgentConversationList,
-} from '@/services/agentConfig';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import { message, Modal } from 'antd';
+import { apiAgentConversationList } from '@/services/agentConfig';
+import { Modal } from 'antd';
 import React from 'react';
-import { history, useParams, useRequest } from 'umi';
+import { history, useModel, useParams } from 'umi';
 
 // 历史会话弹窗
 export interface HistoryConversationProps {
   agentId: number;
-  conversationList?: ConversationInfo[];
-  setConversationList?: React.Dispatch<
-    React.SetStateAction<ConversationInfo[] | undefined>
-  >;
   isOpen?: boolean;
-  onDel: (id: number) => void;
   onCancel?: () => void;
 }
 
@@ -25,32 +16,26 @@ export interface HistoryConversationProps {
  */
 const HistoryConversation: React.FC<HistoryConversationProps> = ({
   agentId,
-  conversationList,
-  setConversationList,
   isOpen,
   onCancel,
-  onDel,
 }) => {
+  const { conversationListItem, setConversationListItem, runDel } = useModel(
+    'conversationHistory',
+  );
+
   const params = useParams();
   const id = Number(params.id);
 
-  // 删除会话
-  const { run: runDel } = useRequest(apiAgentConversationDelete, {
-    manual: true,
-    debounceInterval: 500,
-    onSuccess: (_: null, params: number[]) => {
-      const conversationId = params[0];
-      setConversationList?.((list) =>
-        list?.filter((item) => item.id !== conversationId),
-      );
-      onDel(conversationId);
-      // 删除自己跳转至新会话
-      if (conversationId === id) {
+  const handleDelete = async (currentId: number) => {
+    try {
+      await runDel(currentId);
+      if (id === currentId) {
+        onCancel?.();
+        // 删除自己跳转至新会话
         history.push('/agent/' + agentId);
       }
-      message.success('删除成功');
-    },
-  });
+    } catch (e) {}
+  };
 
   const handleLink = (id: number, agentId: number) => {
     onCancel?.();
@@ -82,11 +67,11 @@ const HistoryConversation: React.FC<HistoryConversationProps> = ({
       <InfiniteList
         height={500}
         pageSize={20}
-        conversationList={conversationList}
-        setConversationList={setConversationList}
+        conversationList={conversationListItem}
+        setConversationList={setConversationListItem}
         loadData={fetchApi}
         handleLink={handleLink}
-        runDel={runDel}
+        runDel={handleDelete}
       />
     </Modal>
   );

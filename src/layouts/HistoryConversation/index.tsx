@@ -49,6 +49,7 @@ const HistoryConversation: React.FC = () => {
       );
       // 删除自己跳转至新会话
       if (conversationId === id) {
+        setOpenHistoryModal(false);
         history.push('/agent/' + agentId);
       }
       message.success('删除成功');

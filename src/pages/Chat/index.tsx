@@ -37,6 +37,7 @@ const Chat: React.FC = () => {
   const location = useLocation();
   const params = useParams();
   const { isMobile } = useModel('layout');
+  const { runHistoryItem } = useModel('conversationHistory');
   // 会话ID
   const id = Number(params.id);
   const agentId = Number(params.agentId);
@@ -215,10 +216,25 @@ const Chat: React.FC = () => {
           (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
         // 如果message或者附件不为空,可以发送消息，但刷新页面时，不重新发送消息
         if (isCanMessage && (message || files?.length > 0)) {
-          onMessageSend(id, message, files, infos, firstVariableParams);
+          onMessageSend(
+            id,
+            message,
+            files,
+            infos,
+            firstVariableParams,
+            false,
+            true,
+            data,
+          );
         }
       };
       asyncFun();
+
+      // 获取当前智能体的历史记录
+      runHistoryItem({
+        agentId,
+        limit: 20,
+      });
     }
 
     return () => {
@@ -329,7 +345,6 @@ const Chat: React.FC = () => {
               conversationInfo={conversationInfo}
               setConversationInfo={(value) => {
                 setConversationInfo(value);
-                sidebarRef.current?.updateList(value);
               }}
             />
 

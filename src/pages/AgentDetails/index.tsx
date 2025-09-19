@@ -43,6 +43,7 @@ const AgentDetails: React.FC = () => {
   const agentId = Number(params.agentId);
   const [form] = Form.useForm();
   const { isMobile } = useModel('layout');
+  const { runHistoryItem } = useModel('conversationHistory');
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
@@ -144,6 +145,12 @@ const AgentDetails: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     runDetail(agentId, true);
+
+    // 获取当前智能体的历史记录
+    runHistoryItem({
+      agentId,
+      limit: 20,
+    });
 
     return () => {
       setIsLoaded(false);
