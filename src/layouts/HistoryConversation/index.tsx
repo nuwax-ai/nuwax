@@ -1,19 +1,15 @@
 import InfiniteList from '@/layouts/InfiniteList';
-import {
-  apiAgentConversationDelete,
-  apiAgentConversationList,
-} from '@/services/agentConfig';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import { message, Modal } from 'antd';
+import { apiAgentConversationList } from '@/services/agentConfig';
+import { Modal } from 'antd';
 import React from 'react';
-import { history, useModel, useParams, useRequest } from 'umi';
+import { history, useModel, useParams } from 'umi';
 
 /**
  * 历史会话弹窗
  */
 const HistoryConversation: React.FC = () => {
   const { openHistoryModal, setOpenHistoryModal } = useModel('layout');
-  const { conversationList, setConversationList } = useModel(
+  const { conversationList, setConversationList, runDel } = useModel(
     'conversationHistory',
   );
   const params = useParams();
@@ -39,22 +35,16 @@ const HistoryConversation: React.FC = () => {
   };
 
   // 删除会话
-  const { run: runDel } = useRequest(apiAgentConversationDelete, {
-    manual: true,
-    debounceInterval: 500,
-    onSuccess: (_: null, params: number[]) => {
-      const conversationId = params[0];
-      setConversationList((list: ConversationInfo[]) =>
-        list.filter((item) => item.id !== conversationId),
-      );
-      // 删除自己跳转至新会话
-      if (conversationId === id) {
+  const handleDelete = async (currentId: number) => {
+    try {
+      await runDel(currentId);
+      if (id === currentId) {
         setOpenHistoryModal(false);
+        // 删除自己跳转至新会话
         history.push('/agent/' + agentId);
       }
-      message.success('删除成功');
-    },
-  });
+    } catch (e) {}
+  };
 
   return (
     <Modal
@@ -72,7 +62,7 @@ const HistoryConversation: React.FC = () => {
         setConversationList={setConversationList}
         loadData={fetchApi}
         handleLink={handleLink}
-        runDel={runDel}
+        runDel={handleDelete}
       />
     </Modal>
   );
