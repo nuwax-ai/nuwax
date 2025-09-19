@@ -140,6 +140,7 @@ const SpaceMcpCreate: React.FC = () => {
             onUploadSuccess={setImageUrl}
             imageUrl={imageUrl}
             defaultImage={mcpImage}
+            svgIconName="icons-workspace-mcp"
           />
           <Form
             form={form}
