@@ -230,6 +230,8 @@ export interface ConversationInfo {
   agentId: number;
   // 会话主题
   topic: string;
+  // 会话主题是否更新
+  topicUpdated: number;
   // 会话摘要，当开启长期记忆时，会对每次会话进行总结
   summary: string;
   modified: string;
@@ -292,7 +294,11 @@ export interface ConversationInfo {
 
 // 查询用户历史会话输入参数
 export interface ConversationListParams {
-  agentId: number;
+  agentId: number | null;
+  // 上一次查询结果的会话ID
+  lastId?: number | null;
+  // 返回会话数量
+  limit?: number;
 }
 
 // 聊天用户信息

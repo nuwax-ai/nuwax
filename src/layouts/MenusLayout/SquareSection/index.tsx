@@ -37,21 +37,37 @@ const SquareSection: React.FC<{
 
   useEffect(() => {
     const { cate_type, cate_name } = params;
-    setActiveKey(cate_name ?? cate_type);
+    // setActiveKey(cate_name ?? cate_type);
+    if (cate_name) {
+      setActiveKey(cate_type + cate_name);
+    } else {
+      setActiveKey(cate_type);
+    }
     // 控制menu显隐
     setVisibleMenu(cate_type);
-  }, [params]);
+  }, []);
 
   const handleClick = (cateType: string, cateName?: string) => {
-    setActiveKey(cateName ?? cateType);
-    setVisibleMenu(cateType);
     // 关闭移动端菜单
     handleCloseMobileMenu();
 
+    // 设置active项
+    setActiveKey(cateName ?? cateType);
+    // 控制menu显隐
+    setVisibleMenu(cateType);
+
     const url = cateName
-      ? `/square?cate_type=${cateType}&cate_name=${cateName}`
+      ? `/square?cate_type=${cateType}&cate_name=${cateName.split(cateType)[1]}`
       : `/square?cate_type=${cateType}`;
     history.push(url);
+  };
+
+  const handleToggle = (info: SquareMenuComponentInfo) => {
+    if (visibleMenu === info.type) {
+      setVisibleMenu('');
+    } else {
+      setVisibleMenu(info.type);
+    }
   };
 
   // 菜单列表
@@ -59,25 +75,37 @@ const SquareSection: React.FC<{
     {
       name: '智能体',
       icon: <SvgIcon name="icons-nav-stars" />,
-      list: agentInfoList,
+      list: agentInfoList.map((item: any) => ({
+        ...item,
+        name: SquareAgentTypeEnum.Agent + item.name,
+      })),
       type: SquareAgentTypeEnum.Agent,
     },
     {
       name: '插件',
       icon: <SvgIcon name="icons-nav-plugins" />,
-      list: pluginInfoList,
+      list: pluginInfoList.map((item: any) => ({
+        ...item,
+        name: SquareAgentTypeEnum.Plugin + item.name,
+      })),
       type: SquareAgentTypeEnum.Plugin,
     },
     {
       name: '工作流',
       icon: <SvgIcon name="icons-nav-workflow" />,
-      list: workflowInfoList,
+      list: workflowInfoList.map((item: any) => ({
+        ...item,
+        name: SquareAgentTypeEnum.Workflow + item.name,
+      })),
       type: SquareAgentTypeEnum.Workflow,
     },
     {
       name: '模板',
       icon: <SvgIcon name="icons-nav-template" />,
-      list: templateList,
+      list: templateList.map((item: any) => ({
+        ...item,
+        name: SquareAgentTypeEnum.Template + item.name,
+      })),
       type: SquareAgentTypeEnum.Template,
     },
   ];
@@ -94,6 +122,7 @@ const SquareSection: React.FC<{
             isActive={activeKey === info.type}
             isOpen={visibleMenu === info.type}
             onClick={() => handleClick(info.type)}
+            onToggle={() => handleToggle(info)}
           />
           <div
             className={cx(styles['box-hidden'], {

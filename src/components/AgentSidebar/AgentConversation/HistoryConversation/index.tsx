@@ -1,20 +1,13 @@
-import CustomPopover from '@/components/CustomPopover';
-import { apiAgentConversationDelete } from '@/services/agentConfig';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import { Empty, message, Modal } from 'antd';
-import classNames from 'classnames';
-import dayjs from 'dayjs';
+import InfiniteList from '@/layouts/InfiniteList';
+import { apiAgentConversationList } from '@/services/agentConfig';
+import { Modal } from 'antd';
 import React from 'react';
-import { history, useRequest } from 'umi';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
+import { history, useModel, useParams } from 'umi';
 
 // 历史会话弹窗
 export interface HistoryConversationProps {
-  conversationList?: ConversationInfo[];
+  agentId: number;
   isOpen?: boolean;
-  onDel: (id: number) => void;
   onCancel?: () => void;
 }
 
@@ -22,25 +15,44 @@ export interface HistoryConversationProps {
  * 历史会话弹窗
  */
 const HistoryConversation: React.FC<HistoryConversationProps> = ({
-  conversationList,
+  agentId,
   isOpen,
   onCancel,
-  onDel,
 }) => {
-  // 删除会话
-  const { run: runDel } = useRequest(apiAgentConversationDelete, {
-    manual: true,
-    debounceInterval: 500,
-    onSuccess: (_: null, params: number[]) => {
-      const conversationId = params[0];
-      onDel(conversationId);
-      message.success('删除成功');
-    },
-  });
+  const { conversationListItem, setConversationListItem, runDel } = useModel(
+    'conversationHistory',
+  );
+
+  const params = useParams();
+  const id = Number(params.id);
+
+  const handleDelete = async (currentId: number) => {
+    try {
+      await runDel(currentId);
+      if (id === currentId) {
+        onCancel?.();
+        // 删除自己跳转至新会话
+        history.push('/agent/' + agentId);
+      }
+    } catch (e) {}
+  };
 
   const handleLink = (id: number, agentId: number) => {
     onCancel?.();
     history.push(`/home/chat/${id}/${agentId}`);
+  };
+
+  const fetchApi = async (lastId: number | null, pageSize: number) => {
+    return apiAgentConversationList({
+      agentId,
+      lastId,
+      limit: pageSize,
+    }).then((res) => {
+      return {
+        list: res.data ?? [],
+        hasMore: res.data.length >= pageSize,
+      };
+    });
   };
 
   return (
@@ -49,42 +61,18 @@ const HistoryConversation: React.FC<HistoryConversationProps> = ({
       width={600}
       footer={null}
       maskClosable
-      destroyOnHidden
       open={isOpen}
       onCancel={onCancel}
     >
-      <div className={cx(styles.container, 'overflow-y')}>
-        {conversationList?.length ? (
-          conversationList.map((item: ConversationInfo) => (
-            <CustomPopover
-              key={item.id}
-              list={[{ label: '删除' }]}
-              onClick={() => runDel(item.id)}
-            >
-              <div
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'radius-6',
-                  'cursor-pointer',
-                  'hover-box',
-                  styles.row,
-                )}
-                onClick={() => handleLink(item.id, item.agentId)}
-              >
-                <p className={cx('flex-1', 'text-ellipsis')}>{item.topic}</p>
-                <span>{dayjs(item.created).format('MM-DD HH:mm')}</span>
-              </div>
-            </CustomPopover>
-          ))
-        ) : (
-          <div
-            className={cx('flex', 'items-center', 'content-center', 'h-full')}
-          >
-            <Empty description="暂无数据" />
-          </div>
-        )}
-      </div>
+      <InfiniteList
+        height={500}
+        pageSize={20}
+        conversationList={conversationListItem}
+        setConversationList={setConversationListItem}
+        loadData={fetchApi}
+        handleLink={handleLink}
+        runDel={handleDelete}
+      />
     </Modal>
   );
 };

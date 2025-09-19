@@ -1,0 +1,36 @@
+@import '@/styles/color';
+
+.container {
+  height: 500px;
+  padding-right: 5px;
+}
+
+.row {
+  gap: 20px;
+  color: @BLANK04;
+  font-size: 12px;
+  background-color: @WHITE03;
+  margin-bottom: 5px;
+
+  p {
+    padding: 5px 10px;
+  }
+
+  span {
+    color: @GRAY07;
+    display: inline-block;
+  }
+
+  .icon {
+    padding: 5px 10px;
+    display: none;
+  }
+
+  &:hover {
+    background-color: @WHITE18;
+
+    .icon {
+      display: inline-block;
+    }
+  }
+}

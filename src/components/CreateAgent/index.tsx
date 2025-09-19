@@ -183,6 +183,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             onUploadSuccess={setImageUrl}
             imageUrl={imageUrl}
             defaultImage={agentImage as string}
+            svgIconName="icons-workspace-agent"
           />
         </Form.Item>
         {/*  </>*/}

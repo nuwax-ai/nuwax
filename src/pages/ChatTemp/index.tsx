@@ -11,6 +11,7 @@ import {
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
+import { apiTempChatConversationStop } from '@/services/agentConfig';
 import {
   apiTempChatConversationCreate,
   apiTempChatConversationQuery,
@@ -145,10 +146,15 @@ const ChatTemp: React.FC = () => {
 
   useEffect(() => {
     if (!!userFillVariables) {
-      form.setFieldsValue(userFillVariables);
       setVariableParams(userFillVariables);
     }
   }, [userFillVariables]);
+
+  // 停止临时会话
+  const { run: runStopTempConversation, loading: loadingStopTempConversation } =
+    useRequest(apiTempChatConversationStop, {
+      manual: true,
+    });
 
   // 聊天会话框是否禁用，不能发送消息
   const wholeDisabled = useMemo(() => {
@@ -814,7 +820,7 @@ const ChatTemp: React.FC = () => {
         )}
         ref={messageViewRef}
       >
-        <div className={cx(styles['chat-wrapper'], 'flex-1')}>
+        <div className={cx(styles['chat-wrapper'], 'flex-1', 'w-full')}>
           {isLoadingConversation ? (
             <div
               className={cx('flex', 'items-center', 'content-center', 'h-full')}
@@ -828,7 +834,8 @@ const ChatTemp: React.FC = () => {
                 className="mb-16"
                 form={form}
                 variables={variables}
-                isFilled={!!userFillVariables}
+                userFillVariables={userFillVariables}
+                isFilled={!!variableParams}
                 disabled={!!userFillVariables || isSendMessageRef.current}
               />
               {messageList?.length > 0 ? (
@@ -886,6 +893,9 @@ const ChatTemp: React.FC = () => {
           onSelectComponent={handleSelectComponent}
           onScrollBottom={onScrollBottom}
           showAnnouncement={true}
+          // 临时会话停止
+          onTempChatStop={runStopTempConversation}
+          loadingStopTempConversation={loadingStopTempConversation}
         />
         {/*手机会话输入框*/}
         <ChatInputPhone
@@ -905,7 +915,7 @@ const ChatTemp: React.FC = () => {
             'clip-path-animation',
           )}
           onClick={handleSiteLink}
-        >{`欢迎使用${tenantConfigInfo?.siteName}平台，快速搭建你的个性化智能体`}</p>
+        >{`欢迎使用${tenantConfigInfo?.siteName}，快速搭建你的个性化智能体`}</p>
       </div>
       <button
         id={buttonId}

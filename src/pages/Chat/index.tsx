@@ -37,6 +37,7 @@ const Chat: React.FC = () => {
   const location = useLocation();
   const params = useParams();
   const { isMobile } = useModel('layout');
+  const { runHistoryItem } = useModel('conversationHistory');
   // 会话ID
   const id = Number(params.id);
   const agentId = Number(params.agentId);
@@ -90,10 +91,9 @@ const Chat: React.FC = () => {
     showScrollBtn,
     setShowScrollBtn,
     resetInit,
-    variables,
     requiredNameList,
-    userFillVariables,
     setConversationInfo,
+    variables,
   } = useModel('conversationInfo');
 
   const values = Form.useWatch([], { form, preserve: true });
@@ -109,12 +109,12 @@ const Chat: React.FC = () => {
       .catch(() => setVariableParams(null));
   }, [form, values]);
 
+  // 用户在智能体主页填写的变量信息
   useEffect(() => {
-    if (!!userFillVariables) {
-      form.setFieldsValue(userFillVariables);
-      setVariableParams(userFillVariables);
+    if (!!firstVariableParams) {
+      setVariableParams(firstVariableParams);
     }
-  }, [userFillVariables]);
+  }, [firstVariableParams]);
 
   // 聊天会话框是否禁用，不能发送消息
   const wholeDisabled = useMemo(() => {
@@ -215,10 +215,25 @@ const Chat: React.FC = () => {
           (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
         // 如果message或者附件不为空,可以发送消息，但刷新页面时，不重新发送消息
         if (isCanMessage && (message || files?.length > 0)) {
-          onMessageSend(id, message, files, infos, firstVariableParams);
+          onMessageSend(
+            id,
+            message,
+            files,
+            infos,
+            firstVariableParams,
+            false,
+            true,
+            data,
+          );
         }
       };
       asyncFun();
+
+      // 获取当前智能体的历史记录
+      runHistoryItem({
+        agentId,
+        limit: 20,
+      });
     }
 
     return () => {
@@ -327,7 +342,9 @@ const Chat: React.FC = () => {
 
             <DropdownChangeName
               conversationInfo={conversationInfo}
-              setConversationInfo={setConversationInfo}
+              setConversationInfo={(value) => {
+                setConversationInfo(value);
+              }}
             />
 
             {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
@@ -366,9 +383,10 @@ const Chat: React.FC = () => {
                   className="mb-16"
                   form={form}
                   variables={variables}
+                  userFillVariables={firstVariableParams}
                   // 是否已填写表单
-                  isFilled={!!userFillVariables}
-                  disabled={!!userFillVariables || isSendMessageRef.current}
+                  isFilled={!!variableParams}
+                  disabled={!!firstVariableParams || isSendMessageRef.current}
                 />
                 {messageList?.length > 0 ? (
                   <>

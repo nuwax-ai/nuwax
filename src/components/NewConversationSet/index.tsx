@@ -7,7 +7,7 @@ import { customizeRequiredMark } from '@/utils/form';
 import { DownOutlined } from '@ant-design/icons';
 import { Button, Cascader, Form, FormProps, Input, InputNumber } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ConditionRender from '../ConditionRender';
 import styles from './index.less';
 
@@ -23,14 +23,18 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
   disabled = false,
   showSubmitButton = false,
   variables,
+  userFillVariables,
   onConfirm,
 }) => {
   // 是否打开表单
   const [isOpen, setIsOpen] = useState<boolean>(true);
 
-  if (!variables?.length) {
-    return null;
-  }
+  // 用户在智能体主页填写的变量信息，复现在当前变量form表单中
+  useEffect(() => {
+    if (!!userFillVariables) {
+      form.setFieldsValue(userFillVariables);
+    }
+  }, [form, userFillVariables]);
 
   const onFinish: FormProps<Record<string, string | number>>['onFinish'] = (
     values,
@@ -111,6 +115,11 @@ const NewConversationSet: React.FC<NewConversationSetProps> = ({
 
     return { isSelect, content };
   };
+
+  if (!variables?.length) {
+    return null;
+  }
+
   return (
     <div className={cx(styles['variables-box'], 'flex', 'flex-col', className)}>
       <header

@@ -420,6 +420,7 @@ export interface UploadAvatarProps {
   defaultImage: string;
   imageUrl?: string;
   beforeUpload?: (file: FileType) => void;
+  svgIconName?: string | null | undefined;
 }
 
 // 上传导入配置
@@ -503,6 +504,9 @@ export interface ChatInputProps extends ManualComponentItemProps {
   onClear?: () => void;
   onEnter: (message: string, files: UploadFileInfo[]) => void;
   showAnnouncement?: boolean;
+  // 临时会话停止方法
+  onTempChatStop?: (requestId: string) => void;
+  loadingStopTempConversation?: boolean;
 }
 
 // 聊天框底部更多操作组件
@@ -642,6 +646,7 @@ export interface NewConversationSetProps {
   // 是否展示重置按钮
   showSubmitButton?: boolean;
   variables: BindConfigWithSub[];
+  userFillVariables?: Record<string, string | number> | null;
   onConfirm?: (variableParams: Record<string, string | number>) => void;
 }
 

@@ -279,6 +279,15 @@ export async function apiAgentConversationChatStop(
   });
 }
 
+// 停止临时会话
+export async function apiTempChatConversationStop(
+  requestId: string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/temp/chat/conversation/${requestId}`, {
+    method: 'POST',
+  });
+}
+
 // 根据用户消息更新会话主题
 export async function apiAgentConversationUpdate(
   data: AgentConversationUpdateParams,

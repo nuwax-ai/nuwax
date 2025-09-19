@@ -327,6 +327,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
               onUploadSuccess={setImageUrl}
               imageUrl={imageUrl}
               defaultImage={knowledgeIcon as string}
+              svgIconName="icons-workspace-knowledge"
             />
           </Form.Item>
         </Form>

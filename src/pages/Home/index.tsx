@@ -154,7 +154,10 @@ const Home: React.FC = () => {
     <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
       {/* 输入框区域 */}
       <div className={cx(styles.inputSection)}>
-        <h2 className={cx(styles.title)}>{tenantConfigInfo?.homeSlogan}</h2>
+        <h2
+          className={cx(styles.title)}
+          dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
+        />
         {/*<div className={cx(styles.title)}>
           <PureMarkdownRenderer
             id={`${agentDetail?.agentId}`}

@@ -60,6 +60,27 @@ const ExamplesIndex: React.FC = () => {
       featured: true,
     },
     {
+      id: 'svg-icon-showcase',
+      title: isChineseLanguage ? 'SvgIcon 图标展示' : 'SvgIcon Showcase',
+      description: isChineseLanguage
+        ? '展示项目中所有可用的 SVG 图标，支持搜索、分类查看和代码复制功能，方便开发者快速找到和使用图标。'
+        : 'Showcase all available SVG icons in the project with search, category viewing, and code copying functionality for easy developer usage.',
+      tags: [
+        { text: isChineseLanguage ? '图标展示' : 'Icons', color: 'green' },
+        {
+          text: isChineseLanguage ? '搜索功能' : 'Search',
+          color: 'blue',
+        },
+        {
+          text: isChineseLanguage ? '代码复制' : 'Code Copy',
+          color: 'purple',
+        },
+      ],
+      icon: <AppstoreOutlined />,
+      path: '/examples/svg-icon-showcase',
+      featured: true,
+    },
+    {
       id: 'theme-demo',
       title: isChineseLanguage ? '主题功能演示' : 'Theme Demo',
       description: isChineseLanguage

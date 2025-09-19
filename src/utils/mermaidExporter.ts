@@ -25,6 +25,7 @@ export class MermaidExporter {
       const { filename = `mermaid-chart-${Date.now()}.svg` } = options;
 
       // 使用mermaid.render获取干净的SVG
+      // @ts-ignore
       const { svg } = await mermaid.render(`export-${Date.now()}`, sourceCode);
 
       const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
@@ -55,6 +56,7 @@ export class MermaidExporter {
       } = options;
 
       // 先获取SVG
+      // @ts-ignore
       const { svg } = await mermaid.render('undefined', sourceCode);
       console.log('svg', svg);
       // 转换为PNG
@@ -469,6 +471,7 @@ export class MermaidExporter {
    */
   static async getSVGString(sourceCode: string): Promise<string> {
     try {
+      // @ts-ignore
       const { svg } = await mermaid.render(`get-svg-${Date.now()}`, sourceCode);
       return svg;
     } catch (error) {

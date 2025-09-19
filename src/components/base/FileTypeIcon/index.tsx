@@ -109,7 +109,7 @@ const FileTypeIcon: React.FC<FileTypeIconProps> = ({
     return docIcon;
   }, []);
 
-  const fileIcon = getFileIcon(fileType || '', fileName || '');
+  const fileIcon = getFileIcon(fileType || '', fileName || '') as string;
   const isImage = fileType?.includes('image/');
 
   return (

@@ -145,6 +145,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
             onUploadSuccess={setImageUrl}
             imageUrl={imageUrl}
             defaultImage={workflowIcon as string}
+            svgIconName="icons-workspace-workflow"
           />
         </Form.Item>
       </Form>

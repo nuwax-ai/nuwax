@@ -54,6 +54,7 @@ import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 
 export default () => {
+  const { runHistoryItem } = useModel('conversationHistory');
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();
@@ -485,6 +486,7 @@ export default () => {
     currentMessageId: string,
     // 是否同步会话记录
     isSync: boolean = true,
+    data: any = null,
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -528,19 +530,35 @@ export default () => {
         handleScrollBottom();
       },
       onClose: async () => {
+        const currentInfo = conversationInfo ?? data;
         // 第一次发送消息后更新主题
-        if (needUpdateTopicRef.current) {
+        if (currentInfo && currentInfo?.topicUpdated !== 1) {
           await runUpdateTopic({
             id: params.conversationId,
-            firstMessage: params.message,
+            topic: params.message,
           });
+          // 更新会话记录
+          setConversationInfo({
+            ...currentInfo,
+            topicUpdated: 1,
+            topic: params.message,
+          });
+
           if (isSync) {
             // 如果是会话聊天页（chat页），同步更新会话记录
             runHistory({
               agentId: null,
+              limit: 20,
+            });
+
+            // 获取当前智能体的历史记录
+            runHistoryItem({
+              agentId: currentInfo.agentId,
+              limit: 20,
             });
           }
         }
+
         disabledConversationActive();
       },
       onError: () => {
@@ -628,6 +646,7 @@ export default () => {
     debug: boolean = false,
     // 是否同步会话记录
     isSync: boolean = true,
+    data: any = null,
   ) => {
     // 清除副作用
     handleClearSideEffect();
@@ -701,7 +720,7 @@ export default () => {
       selectedComponents: infos,
     };
     // 处理会话
-    handleConversation(params, currentMessageId, isSync);
+    handleConversation(params, currentMessageId, isSync, data);
   };
 
   const handleDebug = useCallback((info: MessageInfo) => {

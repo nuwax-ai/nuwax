@@ -13,3 +13,4 @@ export { default as McpStatus } from './McpStatus';
 export { default as MenuListItem } from './MenuListItem';
 export { default as SecondMenuItem } from './SecondMenuItem';
 export { default as SvgIcon } from './SvgIcon';
+export { default as SvgIconGoodTheme } from './SvgIconGoodTheme';

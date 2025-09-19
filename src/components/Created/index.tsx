@@ -82,7 +82,7 @@ const Created: React.FC<CreatedProp> = ({
   // 分页
   const [pagination, setPagination] = useState({
     page: 1,
-    pageSize: 10,
+    pageSize: 20,
   });
 
   const [sizes, setSizes] = useState<number>(100);
@@ -264,7 +264,7 @@ const Created: React.FC<CreatedProp> = ({
   const getCollectList = async (params: IGetList) => {
     try {
       setLoading(true);
-      const _type = selected.key.toLowerCase();
+      const _type = selected.key?.toLowerCase();
       const _res = await service.collectList(_type, params);
       setList([..._res.data]);
       setLoading(false);
@@ -275,7 +275,7 @@ const Created: React.FC<CreatedProp> = ({
 
   // 收藏和取消收藏
   const collectAndUnCollect = async (item: CreatedNodeItem) => {
-    const _type = selected.key.toLowerCase();
+    const _type = selected.key?.toLowerCase();
     // 使用计算属性名定义对象
 
     let _res;
@@ -335,10 +335,10 @@ const Created: React.FC<CreatedProp> = ({
     const _params: IGetList = {
       kw: value,
       page: 1,
-      pageSize: 10,
+      pageSize: 20,
     };
     setSearch(value); // 更新搜索状态
-    setPagination({ page: 1, pageSize: 10 }); // 重置分页状态
+    setPagination({ page: 1, pageSize: 20 }); // 重置分页状态
     setList([]); // 清空列表
 
     // 只触发一次请求
@@ -366,14 +366,14 @@ const Created: React.FC<CreatedProp> = ({
   const onMenuClick = (val: string) => {
     setSearch('');
     setSelectMenu(val);
-    setPagination({ page: 1, pageSize: 10 }); // 确保重置分页
+    setPagination({ page: 1, pageSize: 20 }); // 确保重置分页
     setList([]);
     justReturnSpaceDataRef.current = false;
     dataTypeRef.current = null;
 
     const params: IGetList = {
       page: 1,
-      pageSize: 10,
+      pageSize: 20,
     };
     // 知识库
     if (selected.key === AgentComponentTypeEnum.Knowledge && val !== 'all') {
@@ -404,14 +404,14 @@ const Created: React.FC<CreatedProp> = ({
       setSelectMenu('all');
       setSearch('');
       SetSelected(_item);
-      setPagination({ page: 1, pageSize: 10 }); // 重置分页状态
+      setPagination({ page: 1, pageSize: 20 }); // 重置分页状态
       setSizes(100); // 重置数据大小
       // setList([]); // 清空列表
 
       // 只触发一次请求
       getList(_item.key, {
         page: 1,
-        pageSize: 10,
+        pageSize: 20,
       });
     }
   };
@@ -430,7 +430,7 @@ const Created: React.FC<CreatedProp> = ({
         const nextPage = pagination.page + 1;
 
         const params: IGetList = {
-          pageSize: 10,
+          pageSize: 20,
           page: nextPage,
         };
 
@@ -661,7 +661,7 @@ const Created: React.FC<CreatedProp> = ({
               }}
               onClear={() => {
                 setSearch('');
-                getList(selected.key, { page: 1, pageSize: 10 });
+                getList(selected.key, { page: 1, pageSize: 20 });
               }}
               onPressEnter={(event) => {
                 if (event.key === 'Enter') {

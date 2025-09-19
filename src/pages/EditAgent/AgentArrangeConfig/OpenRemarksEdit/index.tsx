@@ -252,6 +252,8 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
             placeholder="输入开场白引导问题"
             value={item}
             onChange={(e) => handleChangeGuidQuestions(index, e.target.value)}
+            showCount
+            maxLength={30}
             suffix={
               <DeleteOutlined
                 className={cx('cursor-pointer')}

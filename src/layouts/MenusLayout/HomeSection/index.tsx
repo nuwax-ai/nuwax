@@ -42,6 +42,7 @@ const HomeSection: React.FC<{
     });
     runHistory({
       agentId: null,
+      limit: 20,
     });
   }, []);
 

@@ -1,13 +1,11 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import Loading from '@/components/custom/Loading';
-import { apiAgentConversationList } from '@/services/agentConfig';
 import { AgentConversationProps } from '@/types/interfaces/agentTask';
-import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { formatTimeAgo } from '@/utils/common';
 import { Button, Empty, Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useState } from 'react';
-import { history, useModel, useRequest } from 'umi';
+import React, { useCallback } from 'react';
+import { history, useModel } from 'umi';
 import HistoryConversation from './HistoryConversation';
 import styles from './index.less';
 
@@ -21,40 +19,12 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
     closeHistoryConversation,
     openHistoryConversation,
   } = useModel('conversationInfo');
-
-  const [loadingHistory, setLoadingHistory] = useState<boolean>(false);
-  // 历史会话列表
-  const [conversationList, setConversationList] =
-    useState<ConversationInfo[]>();
-
-  // 查询历史会话记录
-  const { run: runHistory } = useRequest(apiAgentConversationList, {
-    manual: true,
-    debounceInterval: 500,
-    onSuccess: (result: ConversationInfo[]) => {
-      setConversationList(result);
-      setLoadingHistory(false);
-    },
-    onError: () => {
-      setLoadingHistory(false);
-    },
-  });
-
-  useEffect(() => {
-    setLoadingHistory(true);
-    runHistory({
-      agentId,
-    });
-  }, [agentId]);
+  const { conversationListItem, loadingHistoryItem } = useModel(
+    'conversationHistory',
+  );
 
   const handleLink = (id: number, agentId: number) => {
     history.push(`/home/chat/${id}/${agentId}`);
-  };
-
-  const handleDel = (id: number) => {
-    setConversationList((list) => {
-      return list?.filter((item) => item.id !== id);
-    });
   };
 
   // 查看更多 打开历史会话弹窗 - 现在通过 model 状态管理
@@ -65,7 +35,7 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
 
   return (
     <div className={cx(styles.container)}>
-      {!loadingHistory && (
+      {!loadingHistoryItem && (
         <div
           className={cx(
             'flex',
@@ -95,10 +65,10 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
         </div>
       )}
       <div className={cx(styles['chat-wrapper'])}>
-        {loadingHistory ? (
+        {loadingHistoryItem ? (
           <Loading className={cx(styles['loading-box'])} />
-        ) : conversationList?.length ? (
-          conversationList?.slice(0, 5)?.map((item) => (
+        ) : conversationListItem?.length ? (
+          conversationListItem?.slice(0, 5)?.map((item: any) => (
             <div
               key={item.id}
               className={cx(styles['chat-item'], 'cursor-pointer', 'hover-box')}
@@ -115,10 +85,9 @@ const AgentConversation: React.FC<AgentConversationProps> = ({ agentId }) => {
         )}
       </div>
       <HistoryConversation
-        conversationList={conversationList}
+        agentId={agentId}
         isOpen={isHistoryConversationOpen}
         onCancel={closeHistoryConversation}
-        onDel={handleDel}
       />
     </div>
   );

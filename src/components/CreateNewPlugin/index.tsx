@@ -143,6 +143,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
           onUploadSuccess={setImageUrl}
           imageUrl={imageUrl}
           defaultImage={pluginIcon as string}
+          svgIconName="icons-workspace-plugin"
         />
         <Form
           form={form}
