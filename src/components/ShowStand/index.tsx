@@ -21,10 +21,6 @@ const ShowStand: React.FC<ShowStandProps> = ({
 }) => {
   // 单张卡片样式为2
   const cardStyleTwo = (item: CardDataInfo) => {
-    console.log(
-      cardList?.length === 1 && item.cardKey === CardStyleEnum.TWO,
-      8888,
-    );
     return cardList?.length === 1 && item.cardKey === CardStyleEnum.TWO;
   };
 

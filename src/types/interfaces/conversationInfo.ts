@@ -230,6 +230,8 @@ export interface ConversationInfo {
   agentId: number;
   // 会话主题
   topic: string;
+  // 会话主题是否更新
+  topicUpdated: number;
   // 会话摘要，当开启长期记忆时，会对每次会话进行总结
   summary: string;
   modified: string;

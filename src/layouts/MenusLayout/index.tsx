@@ -196,12 +196,12 @@ const MenusLayout: React.FC<{
 
     // 开发环境下添加日志
     if (process.env.NODE_ENV === 'development') {
-      console.log(
-        'MenusLayout - 导航风格:',
-        navigationStyle,
-        '-> 宽度:',
-        width,
-      );
+      // console.log(
+      //   'MenusLayout - 导航风格:',
+      //   navigationStyle,
+      //   '-> 宽度:',
+      //   width,
+      // );
     }
 
     return width;

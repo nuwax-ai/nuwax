@@ -40,7 +40,7 @@ export default () => {
 
       // 租户信息保存到localStorage后，重新初始化统一主题服务
       // 让它重新读取包含templateConfig的租户配置
-      console.log('租户配置保存完成，重新初始化统一主题服务');
+      // console.log('租户配置保存完成，重新初始化统一主题服务');
       // 统一主题服务会自动加载配置，不需要手动调用
       // unifiedThemeService.loadConfiguration();
 
@@ -63,7 +63,7 @@ export default () => {
               immediate: true,
             },
           );
-          console.log('已同步租户主题配置（本地无配置）:', templateConfig);
+          // console.log('已同步租户主题配置（本地无配置）:', templateConfig);
         } catch (error) {
           console.warn('同步租户主题颜色失败:', error);
         }

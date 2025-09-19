@@ -39,7 +39,7 @@ const DropdownChangeName: React.FC<Porps> = ({
   setConversationInfo,
 }) => {
   const navigate = useNavigate();
-  const { runHistory } = useModel('conversationHistory');
+  const { runHistory, runHistoryItem } = useModel('conversationHistory');
 
   const [modalOpenEdit, setModalOpenEdit] = useState<boolean>(false);
   const [form] = Form.useForm();
@@ -72,11 +72,19 @@ const DropdownChangeName: React.FC<Porps> = ({
         setConversationInfo({
           ...conversationInfo,
           topic: result.data.topic,
+          topicUpdated: 1,
         });
         message.success('修改成功');
-        // 如果是会话聊天页（chat页），同步更新会话记录
+
+        // 更新所有智能体的历史记录
         runHistory({
           agentId: null,
+          limit: 20,
+        });
+        // 更新当前智能体的历史记录
+        runHistoryItem({
+          agentId: result?.data?.agentId,
+          limit: 20,
         });
       }
     },

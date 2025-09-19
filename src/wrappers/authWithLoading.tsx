@@ -63,7 +63,7 @@ const AuthWithLoading: React.FC = () => {
     console.time('authWithLoading');
     const checkLoginStatus = async () => {
       const startTime = Date.now();
-      console.timeLog('authWithLoading', 'start');
+      // console.timeLog('authWithLoading', 'start');
       try {
         // 先检查sessionStorage中是否有登录状态记录
         const cachedLoginStatus = getLoginStatusFromCache();
@@ -71,11 +71,11 @@ const AuthWithLoading: React.FC = () => {
         // 如果有缓存的登录状态，直接使用
         if (cachedLoginStatus !== null) {
           setLoading(false); //直接展示内容
-          console.timeLog(
-            'authWithLoading',
-            'cachedLoginStatus',
-            cachedLoginStatus,
-          );
+          // console.timeLog(
+          //   'authWithLoading',
+          //   'cachedLoginStatus',
+          //   cachedLoginStatus,
+          // );
         } else {
           console.timeLog('authWithLoading', 'fetchUserInfoFromServer:start');
           // 如果没有缓存，调用用户信息接口验证登录状态
@@ -122,9 +122,9 @@ const AuthWithLoading: React.FC = () => {
           redirectToLogin('-1');
         }, startTime);
       } finally {
-        console.timeLog('authWithLoading', 'finally');
+        // console.timeLog('authWithLoading', 'finally');
         executeWithMinTime(() => {
-          console.timeLog('authWithLoading', 'finally', 'setLoading(false)');
+          // console.timeLog('authWithLoading', 'finally', 'setLoading(false)');
           setLoading(false);
         }, startTime);
       }
