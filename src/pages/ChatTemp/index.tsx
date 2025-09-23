@@ -371,7 +371,8 @@ const ChatTemp: React.FC = () => {
           } else {
             // 工作流过程输出
             if (
-              (!messageIdRef.current || messageIdRef.current !== id) &&
+              messageIdRef.current &&
+              messageIdRef.current !== id &&
               finished
             ) {
               newMessage = {
