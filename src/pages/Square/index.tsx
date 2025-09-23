@@ -213,6 +213,7 @@ const Square: React.FC = () => {
             key={categoryNameRef.current}
             placeholder="搜索"
             allowClear
+            defaultValue={keywordRef.current}
             onSearch={onSearch}
           />
         </div>
