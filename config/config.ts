@@ -53,11 +53,6 @@ export default defineConfig({
             console.log('开发模式检测到，跳过双向跳转逻辑');
             return;
           }
-            
-          const isChatTempPage = window.location.pathname.includes('/chat-temp/');
-          if(isChatTempPage) { // 临时会话页面不进行跳转
-            return;
-          }
           
           const { protocol, host, href, hash } = window.location;
           const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
@@ -83,6 +78,33 @@ export default defineConfig({
             if (match) {
               const agentId = match[1];
               window.location.replace(baseUrl + '/m/#/pages/agent-detail/agent-detail?id=' + agentId);
+              return;
+            }
+            window.location.replace(baseUrl + '/m/');
+            return;
+          }
+
+          // 临时会话页面: PC 端访问 M 页面 => 跳转 PC
+          if (!isMobile && href.includes('/m/')) {
+            if (hash && hash.indexOf("#/pages/chat-temp/chat-temp") !== -1) {
+              const match = hash.match(/[?&]chatKey=([^&#]+)/);
+              if (match && match[1]) {
+                const chatKey = match[1];
+                window.location.replace(baseUrl + '/chat-temp/' + chatKey);
+                return;
+              }
+            }
+            window.location.replace(baseUrl + '/');
+            return;
+          }
+
+          // 临时会话页面: 移动端访问 PC 页面 => 跳转 M
+          if (isMobile && !href.includes('/m/')) {
+            const regex = new RegExp('/chat-temp/([^/?#]+)');
+            const match = href.match(regex);
+            if (match) {
+              const chatKey = match[1];
+              window.location.replace(baseUrl + '/m/#/pages/chat-temp/chat-temp?chatKey=' + chatKey);
               return;
             }
             window.location.replace(baseUrl + '/m/');
