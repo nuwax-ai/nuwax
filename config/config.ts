@@ -68,6 +68,17 @@ export default defineConfig({
                 return;
               }
             }
+
+            // 临时会话页面: PC 端访问 M 页面 => 跳转 PC
+            if (hash && hash.indexOf("#/pages/chat-temp/chat-temp") !== -1) {
+              const matchChatTemp = hash.match(/[?&]chatKey=([^&#]+)/);
+              if (matchChatTemp && matchChatTemp[1]) {
+                const chatKey = matchChatTemp[1];
+                window.location.replace(baseUrl + '/chat-temp/' + chatKey);
+                return;
+              }
+            }
+
             window.location.replace(baseUrl + '/');
             return;
           }
@@ -80,30 +91,11 @@ export default defineConfig({
               window.location.replace(baseUrl + '/m/#/pages/agent-detail/agent-detail?id=' + agentId);
               return;
             }
-            window.location.replace(baseUrl + '/m/');
-            return;
-          }
 
-          // 临时会话页面: PC 端访问 M 页面 => 跳转 PC
-          if (!isMobile && href.includes('/m/')) {
-            if (hash && hash.indexOf("#/pages/chat-temp/chat-temp") !== -1) {
-              const match = hash.match(/[?&]chatKey=([^&#]+)/);
-              if (match && match[1]) {
-                const chatKey = match[1];
-                window.location.replace(baseUrl + '/chat-temp/' + chatKey);
-                return;
-              }
-            }
-            window.location.replace(baseUrl + '/');
-            return;
-          }
-
-          // 临时会话页面: 移动端访问 PC 页面 => 跳转 M
-          if (isMobile && !href.includes('/m/')) {
-            const match = href.match(/\\/chat-temp\\/([^/?#]+)/);
-            console.log('临时会话页面跳转', match, href);
-            if (match) {
-              const chatKey = match[1];
+            // 临时会话页面: 移动端访问 PC 页面 => 跳转 M
+            const matchChatTemp = href.match(/\\/chat-temp\\/([^/?#]+)/);
+            if (matchChatTemp) {
+              const chatKey = matchChatTemp[1];
               window.location.replace(baseUrl + '/m/#/pages/chat-temp/chat-temp?chatKey=' + chatKey);
               return;
             }
