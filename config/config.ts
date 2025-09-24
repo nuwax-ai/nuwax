@@ -100,8 +100,8 @@ export default defineConfig({
 
           // 临时会话页面: 移动端访问 PC 页面 => 跳转 M
           if (isMobile && !href.includes('/m/')) {
-            const regex = new RegExp('/chat-temp/([^/?#]+)');
-            const match = href.match(regex);
+            const match = href.match(/\\/chat-temp\\/([^/?#]+)/);
+            console.log('临时会话页面跳转', match, href);
             if (match) {
               const chatKey = match[1];
               window.location.replace(baseUrl + '/m/#/pages/chat-temp/chat-temp?chatKey=' + chatKey);
