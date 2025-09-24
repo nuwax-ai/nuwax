@@ -10,8 +10,7 @@ import type { ILoginResult } from '@/types/interfaces/login';
 import { CodeLogin } from '@/types/interfaces/login';
 import { getNumbersOnly } from '@/utils/common';
 import { LeftOutlined } from '@ant-design/icons';
-import type { InputRef } from 'antd';
-import { Button, Input } from 'antd';
+import { Button, Input, InputRef } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -35,10 +34,9 @@ const VerifyCode: React.FC = () => {
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
-  const { phoneOrEmail, areaCode, authType } = location.state;
-  const [captchaVerifyParam, setCaptchaVerifyParam] = useState<string>(
-    location.state.captchaVerifyParam,
-  );
+  const { phoneOrEmail, areaCode, authType, captchaVerifyParam } =
+    location.state;
+
   const { tenantConfigInfo, setTitle } = useModel('tenantConfigInfo');
 
   const handleClick = () => {
@@ -107,7 +105,7 @@ const VerifyCode: React.FC = () => {
   );
 
   // 发送验证码
-  const handleSendCode = useCallback(() => {
+  const handleSendCode = (captchaVerifyParam: string) => {
     handleCount();
     const isPhone = authType === 1;
     const _params = {
@@ -116,15 +114,43 @@ const VerifyCode: React.FC = () => {
       ...(captchaVerifyParam && { captchaVerifyParam }),
     };
     runSendCode(_params);
-  }, [captchaVerifyParam, authType, phoneOrEmail, runSendCode, handleCount]);
+  };
+
+  const isNeedAliyunCaptcha = () => {
+    const { captchaSceneId, captchaPrefix, openCaptcha } =
+      tenantConfigInfo || {};
+    // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
+    return !!(
+      tenantConfigInfo &&
+      captchaSceneId !== '' &&
+      captchaPrefix !== '' &&
+      openCaptcha
+    );
+  };
+
+  const handlerSuccess = (value: string = '') => {
+    handleSendCode(value);
+  };
 
   useEffect(() => {
     handleClick();
     // 发送验证码
-    handleSendCode();
+
+    if (!isNeedAliyunCaptcha()) {
+      //不需要阿里云验证码，直接执行登录/验证码逻辑
+      handlerSuccess();
+    }
+
     // 设置页面title
     setTitle();
   }, []);
+
+  const handleReady = () => {
+    if (isNeedAliyunCaptcha()) {
+      // document.getElementById(elementId)?.click();
+      handlerSuccess(captchaVerifyParam);
+    }
+  };
 
   const handleVerify = () => {
     const data = {
@@ -134,15 +160,7 @@ const VerifyCode: React.FC = () => {
     runLoginCode(data);
   };
 
-  const handlerSuccess = (value: string = '') => {
-    setCaptchaVerifyParam(value);
-    handleSendCode();
-  };
-
-  const handleClickReSendCode = useCallback(() => {
-    if (countDown > 0) {
-      return;
-    }
+  const handleSendCodeInit = () => {
     const { captchaSceneId, captchaPrefix, openCaptcha } =
       tenantConfigInfo || {};
     // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
@@ -159,6 +177,13 @@ const VerifyCode: React.FC = () => {
       //不需要阿里云验证码，直接执行登录/验证码逻辑
       handlerSuccess();
     }
+  };
+
+  const handleClickReSendCode = useCallback(() => {
+    if (countDown > 0) {
+      return;
+    }
+    handleSendCodeInit();
   }, [tenantConfigInfo, handlerSuccess]);
 
   const handleEnter = useCallback(
@@ -246,6 +271,7 @@ const VerifyCode: React.FC = () => {
         <AliyunCaptcha
           config={tenantConfigInfo}
           doAction={handlerSuccess}
+          onReady={handleReady}
           elementId="aliyun-captcha-sms"
         />
       </div>
