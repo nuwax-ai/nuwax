@@ -112,6 +112,11 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
     text: 'MCP管理',
   },
   {
+    type: SpaceApplicationListEnum.Page_Develop,
+    icon: <SvgIcon name="icons-nav-mcp" />,
+    text: '页面开发',
+  },
+  {
     type: SpaceApplicationListEnum.Space_Square,
     icon: <SvgIcon name="icons-nav-space_square" />,
     text: '空间广场',

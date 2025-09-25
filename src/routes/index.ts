@@ -30,6 +30,10 @@ const routes = [
       { path: '/agent/:agentId', component: '@/pages/AgentDetails' },
       { path: '/space', component: '@/pages/Space' },
       { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
+      {
+        path: '/space/:spaceId/page-develop',
+        component: '@/pages/SpacePageDevelop',
+      },
       { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
       { path: '/space/:spaceId/mcp', component: '@/pages/SpaceMcpManage' },

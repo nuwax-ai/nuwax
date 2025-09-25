@@ -59,6 +59,8 @@ export enum SpaceApplicationListEnum {
   Component_Library,
   // MCP管理
   MCP_Manage,
+  // 页面开发
+  Page_Develop,
   // 空间广场
   Space_Square,
   // 成员与设置
