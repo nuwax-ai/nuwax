@@ -1754,11 +1754,11 @@ const Workflow: React.FC = () => {
   useModifiedSaveUpdate({
     run: useCallback(async () => {
       const _drawerForm = getWorkflow('drawerForm');
-      console.log(
-        'useModifiedSaveUpdate: run: onSaveWorkflow',
-        _drawerForm.id,
-        JSON.stringify(_drawerForm.nodeConfig),
-      );
+      // console.log(
+      //   'useModifiedSaveUpdate: run: onSaveWorkflow',
+      //   _drawerForm.id,
+      //   JSON.stringify(_drawerForm.nodeConfig),
+      // );
       return await onSaveWorkflow(_drawerForm);
     }, []),
     doNext: useCallback(() => {
