@@ -1,0 +1,180 @@
+.appDev {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--xagi-color-bg-layout);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--xagi-color-bg-container);
+  border-bottom: 1px solid var(--xagi-color-border);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 8%);
+}
+
+.toolbarLeft {
+  display: flex;
+  align-items: center;
+}
+
+.toolbarRight {
+  display: flex;
+  align-items: center;
+}
+
+.mainLayout {
+  flex: 1;
+  height: calc(100vh - 64px);
+  background: var(--xagi-color-bg-layout);
+}
+
+.sider {
+  background: var(--xagi-color-bg-container);
+  border-right: 1px solid var(--xagi-color-border);
+  overflow: hidden;
+}
+
+.siderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--xagi-color-border);
+  background: var(--xagi-color-fill-quaternary);
+}
+
+.fileTreeContainer {
+  height: calc(100% - 64px);
+  overflow-y: auto;
+  padding: 8px;
+
+  // 滚动条样式
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--xagi-color-fill-quaternary);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--xagi-color-border);
+    border-radius: 3px;
+
+    &:hover {
+      background: var(--xagi-color-text-tertiary);
+    }
+  }
+}
+
+.content {
+  background: var(--xagi-color-bg-container);
+  overflow: hidden;
+}
+
+.tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  :global(.ant-tabs-nav) {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  :global(.ant-tabs-content-holder) {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  :global(.ant-tabs-content) {
+    height: 100%;
+  }
+
+  :global(.ant-tabs-tabpane) {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+.loadingContainer {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--xagi-color-bg-layout);
+}
+
+.errorContainer {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--xagi-color-bg-layout);
+  padding: 24px;
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .toolbar {
+    padding: 8px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .toolbarLeft {
+    width: 100%;
+  }
+
+  .toolbarRight {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .mainLayout {
+    flex-direction: column;
+  }
+
+  .sider {
+    width: 100% !important;
+    height: 200px;
+    border-right: none;
+    border-bottom: 1px solid var(--xagi-color-border);
+  }
+
+  .fileTreeContainer {
+    height: calc(100% - 48px);
+  }
+}
+
+// 暗色主题支持
+[data-theme='dark'] {
+  .appDev {
+    background: var(--xagi-color-bg-layout);
+  }
+
+  .toolbar {
+    background: var(--xagi-color-bg-container);
+    border-bottom-color: var(--xagi-color-border);
+  }
+
+  .sider {
+    background: var(--xagi-color-bg-container);
+    border-right-color: var(--xagi-color-border);
+  }
+
+  .siderHeader {
+    background: var(--xagi-color-fill-quaternary);
+    border-bottom-color: var(--xagi-color-border);
+  }
+
+  .content {
+    background: var(--xagi-color-bg-container);
+  }
+}

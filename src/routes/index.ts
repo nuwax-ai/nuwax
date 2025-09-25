@@ -148,6 +148,12 @@ const routes = [
     component: '@/examples/SvgIconShowcase',
     layout: false,
   },
+  {
+    path: '/app-dev',
+    name: 'AppDev',
+    component: '@/pages/AppDev',
+    layout: false,
+  },
 ];
 
 export default routes;
