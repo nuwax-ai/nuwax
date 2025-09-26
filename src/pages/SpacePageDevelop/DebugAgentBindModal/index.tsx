@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 
 // const cx = classNames.bind(styles);
 
-interface DebugAgentBindModelProps {
+interface DebugAgentBindModalProps {
   spaceId: number;
   open: boolean;
   onCancel: () => void;
@@ -17,7 +17,7 @@ interface DebugAgentBindModelProps {
 /**
  * 调试智能体绑定弹窗
  */
-const DebugAgentBindModel: React.FC<DebugAgentBindModelProps> = ({
+const DebugAgentBindModal: React.FC<DebugAgentBindModalProps> = ({
   spaceId,
   open,
   onCancel,
@@ -92,4 +92,4 @@ const DebugAgentBindModel: React.FC<DebugAgentBindModelProps> = ({
   );
 };
 
-export default DebugAgentBindModel;
+export default DebugAgentBindModal;

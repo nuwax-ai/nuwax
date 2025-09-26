@@ -26,7 +26,9 @@ const ReverseProxyContentConfig: React.FC<ReverseProxyContentConfigProps> = ({
   const [configArgs, setConfigArgs] = useState<any[]>([]);
 
   useEffect(() => {
+    setConfigArgs([]);
     setLoading(true);
+    // 查询反向代理配置
     setTimeout(() => {
       setConfigArgs([]);
       setLoading(false);

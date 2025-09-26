@@ -16,8 +16,9 @@ import { Button, Col, Empty, Input, Row, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams, useRequest } from 'umi';
-import DebugAgentBindModel from './DebugAgentBindModel';
+import DebugAgentBindModel from './DebugAgentBindModal';
 import styles from './index.less';
+import PathParamsConfigModal from './PathParamsConfigModal';
 import ReverseProxyModal from './ReverseProxyModal';
 const cx = classNames.bind(styles);
 
@@ -43,6 +44,9 @@ const SpacePageDevelop: React.FC = () => {
     useState<boolean>(false);
   // 打开反向代理弹窗
   const [openReverseProxyModal, setOpenReverseProxyModal] =
+    useState<boolean>(false);
+  // 打开路径参数配置弹窗
+  const [openPathParamsConfigModal, setOpenPathParamsConfigModal] =
     useState<boolean>(false);
 
   // 创建
@@ -232,6 +236,11 @@ const SpacePageDevelop: React.FC = () => {
         onCancel={() => setOpenDebugAgentBindModel(false)}
         onConfirm={() => setOpenDebugAgentBindModel(false)}
         spaceId={spaceId}
+      />
+      {/* 路径参数配置弹窗 */}
+      <PathParamsConfigModal
+        open={openPathParamsConfigModal}
+        onCancel={() => setOpenPathParamsConfigModal(false)}
       />
     </div>
   );
