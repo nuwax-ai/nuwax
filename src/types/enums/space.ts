@@ -177,3 +177,15 @@ export interface SpaceApplicationList {
   icon: React.ReactNode;
   text: string;
 }
+
+// 页面开发创建类型枚举
+export enum PageDevelopCreateTypeEnum {
+  // 全部
+  All_Type = 'All_Type',
+  // 导入项目
+  Import_Project = 'Import_Project',
+  // 在线创建
+  Online_Create = 'Online_Create',
+  // 反向代理
+  Reverse_Proxy = 'Reverse_Proxy',
+}
