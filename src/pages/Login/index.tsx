@@ -1,3 +1,4 @@
+import AliyunCaptcha from '@/components/AliyunCaptcha';
 import SiteFooter from '@/components/SiteFooter';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import { apiLogin } from '@/services/account';
@@ -304,6 +305,12 @@ const Login: React.FC = () => {
                 <SiteFooter
                   text={tenantConfigInfo?.pageFooterText}
                 ></SiteFooter>
+                <Button id="aliyun-captcha-login" style={{ display: 'none' }} />
+                <AliyunCaptcha
+                  config={tenantConfigInfo}
+                  doAction={handlerSuccess}
+                  elementId="aliyun-captcha-login"
+                />
               </div>
             </div>
           )}

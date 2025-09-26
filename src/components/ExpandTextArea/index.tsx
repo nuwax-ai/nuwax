@@ -69,7 +69,7 @@ export const ExpandableInputTextarea: React.FC<
       {expanded &&
         expanded === uuid && ( // 使用本地状态控制显示
           <ExpandTextArea
-            title={title}
+            title={title as string}
             inputFieldName={inputFieldName}
             marginRight={370 + 12 * 2}
             placeholder={placeholder}
