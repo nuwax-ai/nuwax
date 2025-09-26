@@ -1,18 +1,19 @@
 import CodeEditor from '@/components/WebIDE/CodeEditor';
 import FileTree from '@/components/WebIDE/FileTree';
-import Preview from '@/components/WebIDE/Preview';
+import Preview, { PreviewRef } from '@/components/WebIDE/Preview';
 import { getProjectIdFromUrl, useAppDevStore } from '@/models/appDev';
 import {
   buildProject,
+  mockUtils,
   restartDev,
   startDev,
   stopDev,
   uploadAndStartProject,
 } from '@/services/appDev';
-import { compilerService } from '@/services/compiler';
 import {
   BuildOutlined,
   CodeOutlined,
+  ExperimentOutlined,
   GlobalOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -28,7 +29,9 @@ import {
   Modal,
   Space,
   Spin,
+  Switch,
   Tabs,
+  Tooltip,
   Typography,
   Upload,
 } from 'antd';
@@ -68,6 +71,8 @@ const AppDev: React.FC = () => {
   // 使用 ref 来跟踪是否已经启动过开发环境，避免重复调用
   const hasStartedDevRef = useRef(false);
   const lastProjectIdRef = useRef<string | null>(null);
+  // Preview组件的ref，用于触发刷新
+  const previewRef = useRef<PreviewRef>(null);
 
   /**
    * 从 URL 参数中获取 projectId
@@ -86,20 +91,6 @@ const AppDev: React.FC = () => {
         console.warn('⚠️ [AppDev] URL 参数和工作区中都没有 projectId');
       }
     }
-  }, []);
-
-  // 初始化编译器
-  useEffect(() => {
-    const initCompiler = async () => {
-      try {
-        await compilerService.initialize();
-        console.log('✅ [AppDev] Compiler initialized successfully');
-      } catch (error) {
-        console.error('❌ [AppDev] Failed to initialize compiler:', error);
-      }
-    };
-
-    initCompiler();
   }, []);
 
   /**
@@ -222,7 +213,24 @@ const AppDev: React.FC = () => {
     }
 
     try {
-      await restartDev(workspace.projectId);
+      const response = await restartDev(workspace.projectId);
+      console.log('✅ [AppDev] 重启开发服务器成功:', response);
+
+      // 如果返回了新的开发服务器URL，更新它
+      if (response?.data?.devServerUrl) {
+        console.log(
+          '🔗 [AppDev] 更新开发服务器URL:',
+          response.data.devServerUrl,
+        );
+        updateDevServerUrl(response.data.devServerUrl);
+        // Preview组件会通过useEffect自动监听devServerUrl变化并刷新
+      } else {
+        console.warn('⚠️ [AppDev] 重启响应中没有devServerUrl字段');
+      }
+
+      setIsServiceRunning(true);
+      // 重启成功后，保持启动状态为true，允许后续操作
+      hasStartedDevRef.current = true;
       message.success('开发服务器重启成功');
     } catch (error) {
       console.error('重启开发服务器失败:', error);
@@ -230,7 +238,7 @@ const AppDev: React.FC = () => {
         error instanceof Error ? error.message : '重启开发服务器失败',
       );
     }
-  }, [workspace.projectId]);
+  }, [workspace.projectId, updateDevServerUrl, setIsServiceRunning]);
 
   /**
    * 处理停止开发服务器
@@ -242,8 +250,18 @@ const AppDev: React.FC = () => {
     }
 
     try {
-      await stopDev(workspace.projectId);
+      const response = await stopDev(workspace.projectId);
+      console.log('✅ [AppDev] 停止开发服务器成功:', response);
+
+      // 停止成功后清空开发服务器URL并更新服务状态
+      updateDevServerUrl('');
       setIsServiceRunning(false);
+
+      // 重置启动状态，允许重新启动
+      hasStartedDevRef.current = false;
+      lastProjectIdRef.current = null;
+      console.log('🔄 [AppDev] 停止服务后重置启动状态');
+
       message.success('开发服务器已停止');
     } catch (error) {
       console.error('停止开发服务器失败:', error);
@@ -251,7 +269,7 @@ const AppDev: React.FC = () => {
         error instanceof Error ? error.message : '停止开发服务器失败',
       );
     }
-  }, [workspace.projectId, setIsServiceRunning]);
+  }, [workspace.projectId, setIsServiceRunning, updateDevServerUrl]);
 
   /**
    * 处理构建项目
@@ -386,6 +404,31 @@ const AppDev: React.FC = () => {
 
         <div className={styles.toolbarRight}>
           <Space>
+            {/* Mock模式切换 */}
+            <Tooltip
+              title={
+                mockUtils.isMockEnabled() ? '禁用Mock模式' : '启用Mock模式'
+              }
+            >
+              <Space>
+                <ExperimentOutlined />
+                <Switch
+                  checked={mockUtils.isMockEnabled()}
+                  onChange={(checked) => {
+                    if (checked) {
+                      mockUtils.enableMock();
+                    } else {
+                      mockUtils.disableMock();
+                    }
+                  }}
+                  size="small"
+                />
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  Mock
+                </Text>
+              </Space>
+            </Tooltip>
+
             {workspace.projectId && (
               <>
                 <Button
@@ -457,7 +500,12 @@ const AppDev: React.FC = () => {
                     页面预览
                   </span>
                 ),
-                children: <Preview devServerUrl={workspace.devServerUrl} />,
+                children: (
+                  <Preview
+                    ref={previewRef}
+                    devServerUrl={workspace.devServerUrl}
+                  />
+                ),
               },
               {
                 key: 'code',

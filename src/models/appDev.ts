@@ -31,65 +31,6 @@ export interface AppDevWorkspace {
     fontSize: number;
     tabSize: number;
   };
-  compiler: {
-    status: 'initializing' | 'ready' | 'error';
-    error?: string;
-    mode: 'wasm' | 'fallback' | 'babel';
-  };
-}
-
-/**
- * 编译选项接口
- */
-export interface CompileOptions {
-  compiler?: 'swc' | 'babel' | 'fallback';
-  jsc?: {
-    target?:
-      | 'es3'
-      | 'es5'
-      | 'es2015'
-      | 'es2016'
-      | 'es2017'
-      | 'es2018'
-      | 'es2019'
-      | 'es2020'
-      | 'es2021'
-      | 'es2022';
-    parser?: {
-      syntax?: 'ecmascript' | 'typescript' | 'jsx';
-      tsx?: boolean;
-      decorators?: boolean;
-      dynamicImport?: boolean;
-    };
-    transform?: {
-      react?: {
-        pragma?: string;
-        pragmaFrag?: string;
-        runtime?: 'automatic' | 'classic';
-      };
-      constModules?: boolean;
-      optimizer?: {
-        globals?: Record<string, string>;
-      };
-    };
-  };
-  module?: {
-    type?: 'commonjs' | 'es6';
-    strict?: boolean;
-    strictMode?: boolean;
-    lazy?: boolean;
-    noInterop?: boolean;
-  };
-  sourceMaps?: boolean;
-}
-
-/**
- * 编译结果接口
- */
-export interface CompileResult {
-  code: string;
-  map?: any;
-  errors?: string[];
 }
 
 /**
@@ -341,10 +282,6 @@ export default App;`,
     fontSize: 14,
     tabSize: 2,
   },
-  compiler: {
-    status: 'initializing',
-    mode: 'babel',
-  },
 };
 
 /**
@@ -497,18 +434,6 @@ export const useAppDevStore = () => {
   };
 
   /**
-   * 更新编译器状态
-   */
-  const updateCompilerStatus = (
-    compiler: Partial<AppDevWorkspace['compiler']>,
-  ) => {
-    setWorkspace((prev) => ({
-      ...prev,
-      compiler: { ...prev.compiler, ...compiler },
-    }));
-  };
-
-  /**
    * 更新开发服务器URL
    */
   const updateDevServerUrl = (devServerUrl: string) => {
@@ -540,7 +465,6 @@ export const useAppDevStore = () => {
     deleteFile,
     createFolder,
     updateSettings,
-    updateCompilerStatus,
     updateDevServerUrl,
     updateProjectId,
   };

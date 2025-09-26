@@ -4,7 +4,13 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import { Alert, Button, Spin } from 'antd';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import styles from './index.less';
 
 interface PreviewProps {
@@ -12,152 +18,192 @@ interface PreviewProps {
   className?: string;
 }
 
+export interface PreviewRef {
+  refresh: () => void;
+}
+
 /**
  * 预览组件
  * 用于显示开发服务器的实时预览
  */
-const Preview: React.FC<PreviewProps> = ({ devServerUrl, className }) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+const Preview = React.forwardRef<PreviewRef, PreviewProps>(
+  ({ devServerUrl, className }, ref) => {
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
-  /**
-   * 加载开发服务器预览
-   */
-  const loadDevServerPreview = useCallback(() => {
-    console.log('🌐 [Preview] Loading dev server preview...');
+    /**
+     * 加载开发服务器预览
+     */
+    const loadDevServerPreview = useCallback(() => {
+      console.log('🌐 [Preview] Loading dev server preview...');
 
-    if (!devServerUrl) {
-      console.error('❌ [Preview] No dev server URL available');
-      setLoadError('开发服务器URL不可用');
-      return;
-    }
+      if (!devServerUrl) {
+        console.error('❌ [Preview] No dev server URL available');
+        setLoadError('开发服务器URL不可用');
+        return;
+      }
 
-    setIsLoading(true);
-    setLoadError(null);
+      setIsLoading(true);
+      setLoadError(null);
 
-    if (iframeRef.current) {
-      console.log('🔗 [Preview] Loading URL:', devServerUrl);
-      iframeRef.current.src = devServerUrl;
-      setLastRefreshed(new Date());
-    }
-  }, [devServerUrl]);
+      if (iframeRef.current) {
+        console.log('🔗 [Preview] Loading URL:', devServerUrl);
+        iframeRef.current.src = devServerUrl;
+        setLastRefreshed(new Date());
+      }
+    }, [devServerUrl]);
 
-  /**
-   * 刷新预览
-   */
-  const refreshPreview = useCallback(() => {
-    if (devServerUrl) {
-      loadDevServerPreview();
-    }
-  }, [devServerUrl, loadDevServerPreview]);
+    /**
+     * 刷新预览
+     */
+    const refreshPreview = useCallback(() => {
+      console.log(
+        '🔄 [Preview] refreshPreview called, devServerUrl:',
+        devServerUrl,
+      );
+      console.log('🔄 [Preview] iframeRef.current:', iframeRef.current);
 
-  /**
-   * iframe加载完成处理
-   */
-  const handleIframeLoad = useCallback(() => {
-    setIsLoading(false);
-    setLoadError(null);
-    console.log('✅ [Preview] Iframe loaded successfully');
-  }, []);
+      if (devServerUrl) {
+        console.log('🔄 [Preview] 有devServerUrl，调用loadDevServerPreview');
+        loadDevServerPreview();
+      } else if (iframeRef.current) {
+        // 如果devServerUrl为空，清空iframe
+        console.log('🔄 [Preview] devServerUrl为空，清空iframe');
+        iframeRef.current.src = '';
+        setLoadError('开发服务器URL不可用');
+        setLastRefreshed(new Date());
+      } else {
+        console.warn('⚠️ [Preview] iframeRef.current 为空，无法刷新');
+      }
+    }, [devServerUrl, loadDevServerPreview]);
 
-  /**
-   * iframe加载错误处理
-   */
-  const handleIframeError = useCallback(() => {
-    setIsLoading(false);
-    setLoadError('预览加载失败，请检查开发服务器状态');
-    console.error('❌ [Preview] Iframe load error');
-  }, []);
+    // 暴露refresh方法给父组件
+    useImperativeHandle(
+      ref,
+      () => ({
+        refresh: refreshPreview,
+      }),
+      [refreshPreview],
+    );
 
-  // 当开发服务器URL可用时，自动加载预览
-  useEffect(() => {
-    if (devServerUrl) {
-      console.log('🌐 [Preview] Dev server URL available, loading preview');
-      loadDevServerPreview();
-    }
-  }, [devServerUrl, loadDevServerPreview]);
+    /**
+     * iframe加载完成处理
+     */
+    const handleIframeLoad = useCallback(() => {
+      setIsLoading(false);
+      setLoadError(null);
+      console.log('✅ [Preview] Iframe loaded successfully');
+    }, []);
 
-  return (
-    <div className={`${styles.preview} ${className || ''}`}>
-      <div className={styles.previewHeader}>
-        <div className={styles.headerLeft}>
-          <div className={styles.titleSection}>
-            <GlobalOutlined className={styles.titleIcon} />
-            <span className={styles.title}>页面预览</span>
-            {devServerUrl && (
-              <span className={styles.statusBadge}>开发服务器已连接</span>
-            )}
-            {isLoading && (
-              <span className={styles.loadingBadge}>
-                <Spin size="small" />
-                加载中...
-              </span>
-            )}
-            {lastRefreshed && (
-              <span className={styles.lastUpdated}>
-                最后更新: {lastRefreshed.toLocaleTimeString()}
-              </span>
-            )}
+    /**
+     * iframe加载错误处理
+     */
+    const handleIframeError = useCallback(() => {
+      setIsLoading(false);
+      setLoadError('预览加载失败，请检查开发服务器状态');
+      console.error('❌ [Preview] Iframe load error');
+    }, []);
+
+    // 当开发服务器URL可用时，自动加载预览
+    useEffect(() => {
+      console.log('🌐 [Preview] devServerUrl changed:', devServerUrl);
+      if (devServerUrl) {
+        console.log('🌐 [Preview] Dev server URL available, loading preview');
+        loadDevServerPreview();
+      } else {
+        console.log('🌐 [Preview] Dev server URL is empty, clearing iframe');
+        if (iframeRef.current) {
+          iframeRef.current.src = '';
+        }
+        setLoadError('开发服务器URL不可用');
+        setLastRefreshed(new Date());
+      }
+    }, [devServerUrl, loadDevServerPreview]);
+
+    return (
+      <div className={`${styles.preview} ${className || ''}`}>
+        <div className={styles.previewHeader}>
+          <div className={styles.headerLeft}>
+            <div className={styles.titleSection}>
+              <GlobalOutlined className={styles.titleIcon} />
+              <span className={styles.title}>页面预览</span>
+              {devServerUrl && (
+                <span className={styles.statusBadge}>开发服务器已连接</span>
+              )}
+              {isLoading && (
+                <span className={styles.loadingBadge}>
+                  <Spin size="small" />
+                  加载中...
+                </span>
+              )}
+              {lastRefreshed && (
+                <span className={styles.lastUpdated}>
+                  最后更新: {lastRefreshed.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className={styles.headerRight}>
+            <Button
+              type="text"
+              icon={<ReloadOutlined />}
+              onClick={refreshPreview}
+              disabled={isLoading || !devServerUrl}
+              loading={isLoading}
+              className={styles.refreshButton}
+            >
+              刷新
+            </Button>
           </div>
         </div>
 
-        <div className={styles.headerRight}>
-          <Button
-            type="text"
-            icon={<ReloadOutlined />}
-            onClick={refreshPreview}
-            disabled={isLoading || !devServerUrl}
-            loading={isLoading}
-            className={styles.refreshButton}
-          >
-            刷新
-          </Button>
-        </div>
-      </div>
-
-      {loadError && (
-        <div className={styles.errorContainer}>
-          <Alert
-            message="预览加载失败"
-            description={loadError}
-            type="error"
-            icon={<ExclamationCircleOutlined />}
-            showIcon
-            action={
-              <Button size="small" onClick={refreshPreview}>
-                重试
-              </Button>
-            }
-          />
-        </div>
-      )}
-
-      <div className={styles.previewContainer}>
-        {devServerUrl ? (
-          <iframe
-            ref={iframeRef}
-            className={styles.previewIframe}
-            title="Preview"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-            onLoad={handleIframeLoad}
-            onError={handleIframeError}
-          />
-        ) : (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}>
-              <GlobalOutlined />
-            </div>
-            <h3 className={styles.emptyTitle}>等待开发服务器启动</h3>
-            <p className={styles.emptyDescription}>
-              正在连接开发服务器，请稍候...
-            </p>
+        {loadError && (
+          <div className={styles.errorContainer}>
+            <Alert
+              message="预览加载失败"
+              description={loadError}
+              type="error"
+              icon={<ExclamationCircleOutlined />}
+              showIcon
+              action={
+                <Button size="small" onClick={refreshPreview}>
+                  重试
+                </Button>
+              }
+            />
           </div>
         )}
+
+        <div className={styles.previewContainer}>
+          {devServerUrl ? (
+            <iframe
+              ref={iframeRef}
+              className={styles.previewIframe}
+              title="Preview"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+              onLoad={handleIframeLoad}
+              onError={handleIframeError}
+            />
+          ) : (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon}>
+                <GlobalOutlined />
+              </div>
+              <h3 className={styles.emptyTitle}>等待开发服务器启动</h3>
+              <p className={styles.emptyDescription}>
+                正在连接开发服务器，请稍候...
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  },
+);
+
+Preview.displayName = 'Preview';
 
 export default Preview;
