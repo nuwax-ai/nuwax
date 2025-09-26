@@ -1,7 +1,7 @@
 import ButtonToggle from '@/components/ButtonToggle';
-import CustomPopover from '@/components/CustomPopover';
 import Loading from '@/components/custom/Loading';
 import SelectList from '@/components/custom/SelectList';
+import CustomPopover from '@/components/CustomPopover';
 import {
   CREATE_LIST,
   PAGE_DEVELOP_ALL_TYPE,
@@ -18,6 +18,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams, useRequest } from 'umi';
 import DebugAgentBindModel from './DebugAgentBindModel';
 import styles from './index.less';
+import ReverseProxyModal from './ReverseProxyModal';
 const cx = classNames.bind(styles);
 
 /**
@@ -39,6 +40,9 @@ const SpacePageDevelop: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   // 打开调试智能体绑定模型弹窗
   const [openDebugAgentBindModel, setOpenDebugAgentBindModel] =
+    useState<boolean>(false);
+  // 打开反向代理弹窗
+  const [openReverseProxyModal, setOpenReverseProxyModal] =
     useState<boolean>(false);
 
   // 创建
@@ -135,6 +139,7 @@ const SpacePageDevelop: React.FC = () => {
         break;
       case PageDevelopCreateTypeEnum.Reverse_Proxy:
         console.log('反向代理');
+        setOpenReverseProxyModal(true);
         break;
     }
   };
@@ -216,7 +221,12 @@ const SpacePageDevelop: React.FC = () => {
           <Empty description="未能找到相关结果" />
         </div>
       )}
-
+      {/* 反向代理弹窗 */}
+      <ReverseProxyModal
+        open={openReverseProxyModal}
+        onCancel={() => setOpenReverseProxyModal(false)}
+      />
+      {/* 调试智能体绑定弹窗 */}
       <DebugAgentBindModel
         open={openDebugAgentBindModel}
         onCancel={() => setOpenDebugAgentBindModel(false)}

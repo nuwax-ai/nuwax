@@ -189,3 +189,11 @@ export enum PageDevelopCreateTypeEnum {
   // 反向代理
   Reverse_Proxy = 'Reverse_Proxy',
 }
+
+// 反向代理类型
+export enum ReverseProxyEnum {
+  // 开发调试
+  Dev = 'Dev',
+  // 正式环境
+  Production = 'Production',
+}

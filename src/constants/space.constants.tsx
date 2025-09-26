@@ -18,6 +18,7 @@ import {
   FilterStatusEnum,
   OpenCloseEnum,
   PageDevelopCreateTypeEnum,
+  ReverseProxyEnum,
   SpaceApplicationList,
   SpaceApplicationListEnum,
 } from '@/types/enums/space';
@@ -255,4 +256,16 @@ export const PAGE_DEVELOP_ALL_TYPE = [
     label: '所有类型',
   },
   ...PAGE_DEVELOP_CREATE_TYPE_LIST,
+];
+
+// 反向代理列表
+export const REVERSE_PROXY_ACTIONS = [
+  {
+    type: ReverseProxyEnum.Dev,
+    label: '开发调试',
+  },
+  {
+    type: ReverseProxyEnum.Production,
+    label: '正式环境',
+  },
 ];
