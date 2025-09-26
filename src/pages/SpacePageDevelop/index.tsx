@@ -16,6 +16,7 @@ import { Button, Col, Empty, Input, Row, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams, useRequest } from 'umi';
+import DebugAgentBindModel from './DebugAgentBindModel';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 
@@ -36,6 +37,9 @@ const SpacePageDevelop: React.FC = () => {
   // 搜索关键词
   const [keyword, setKeyword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  // 打开调试智能体绑定模型弹窗
+  const [openDebugAgentBindModel, setOpenDebugAgentBindModel] =
+    useState<boolean>(false);
 
   // 创建
   const [create, setCreate] = useState<CreateListEnum>(
@@ -111,14 +115,22 @@ const SpacePageDevelop: React.FC = () => {
     handleFilterList(type, create, '');
   };
 
-  // 点击创建页面类型
+  /**
+   * 点击创建页面类型
+   * @param 添加项目表单字段：名称、描述、图标、路径（唯一）
+   * 导入项目、在线创建、反向代理点击后，都是打开这个表单弹窗
+   * 导入项目、在线创建表单弹窗填写后，进入项目之前弹出“调试智能体绑定”框，确认后进入开发界面
+   * 反向代理表单填写后，点击不进入开发界面，直接弹出“反向代理配置”框
+   */
   const handleClickPopoverItem = (item: CustomPopoverItem) => {
     const { value: type } = item;
     switch (type) {
       case PageDevelopCreateTypeEnum.Import_Project:
+        setOpenDebugAgentBindModel(true);
         console.log('导入项目');
         break;
       case PageDevelopCreateTypeEnum.Online_Create:
+        setOpenDebugAgentBindModel(true);
         console.log('在线创建');
         break;
       case PageDevelopCreateTypeEnum.Reverse_Proxy:
@@ -204,6 +216,13 @@ const SpacePageDevelop: React.FC = () => {
           <Empty description="未能找到相关结果" />
         </div>
       )}
+
+      <DebugAgentBindModel
+        open={openDebugAgentBindModel}
+        onCancel={() => setOpenDebugAgentBindModel(false)}
+        onConfirm={() => setOpenDebugAgentBindModel(false)}
+        spaceId={spaceId}
+      />
     </div>
   );
 };
