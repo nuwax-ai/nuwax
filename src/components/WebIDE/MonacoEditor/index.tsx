@@ -154,8 +154,20 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
    * 创建编辑器实例
    */
   const createEditor = useCallback(() => {
-    if (!editorRef.current || !isMonacoReady || editorInstanceRef.current)
-      return;
+    if (!editorRef.current || !isMonacoReady) return;
+
+    // 如果已有编辑器实例，先清理
+    if (editorInstanceRef.current) {
+      try {
+        if (!editorInstanceRef.current.isDisposed?.()) {
+          editorInstanceRef.current.dispose();
+        }
+      } catch (error) {
+        console.warn('Monaco Editor cleanup warning:', error);
+      } finally {
+        editorInstanceRef.current = null;
+      }
+    }
 
     try {
       const language = currentFile
@@ -207,10 +219,16 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     const model = editorInstanceRef.current.getModel();
 
     if (model) {
-      // 更新语言
-      monaco.editor.setModelLanguage(model, language);
-      // 更新内容
-      model.setValue(currentFile.content || '');
+      // 检查内容是否真的发生了变化
+      const currentValue = model.getValue();
+      const newValue = currentFile.content || '';
+
+      if (currentValue !== newValue) {
+        // 更新语言
+        monaco.editor.setModelLanguage(model, language);
+        // 更新内容
+        model.setValue(newValue);
+      }
     } else {
       // 创建新模型
       const newModel = monaco.editor.createModel(
@@ -235,16 +253,26 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
   // 更新编辑器内容
   useEffect(() => {
-    if (isMonacoReady && editorInstanceRef.current) {
+    if (isMonacoReady && editorInstanceRef.current && currentFile) {
       updateEditorContent();
     }
-  }, [isMonacoReady, updateEditorContent]);
+  }, [isMonacoReady, updateEditorContent, currentFile]);
 
   // 清理资源
   useEffect(() => {
     return () => {
       if (editorInstanceRef.current) {
-        editorInstanceRef.current.dispose();
+        try {
+          // 检查编辑器是否已经被dispose
+          if (!editorInstanceRef.current.isDisposed?.()) {
+            editorInstanceRef.current.dispose();
+          }
+        } catch (error) {
+          // 忽略dispose错误，避免控制台报错
+          console.warn('Monaco Editor dispose warning:', error);
+        } finally {
+          editorInstanceRef.current = null;
+        }
       }
     };
   }, []);
