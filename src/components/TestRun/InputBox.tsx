@@ -30,11 +30,17 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
   }, [item.dataType]);
   const handleUploadData = useCallback((info: any): FileListItem[] | [] => {
     const updateFileInfo = info.fileList
-      .filter((file: any) => file.status !== UploadFileStatus.removed)
+      .filter((file: any) => {
+        if (file.status === UploadFileStatus.done && !file.response?.success) {
+          message.error('上传失败');
+          return false;
+        }
+        return file.status !== UploadFileStatus.removed;
+      })
       .map((file: any) => {
-        const url = file.url || file.response?.data.url;
-        const key = file.response?.data.key;
-        const name = file.name || file.response?.data.fileName || '';
+        const url = file.url || file.response?.data?.url;
+        const key = file.response?.data?.key;
+        const name = file.name || file.response?.data?.fileName || '';
         return {
           key: key || '',
           status: file.status,
@@ -49,7 +55,7 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
   const handleChange: any = useCallback(
     (info: any) => {
       const updateFileInfo = handleUploadData(info); //区分 单选 多选
-      setFileList(isMultiple ? updateFileInfo : [updateFileInfo[0]]);
+      setFileList(isMultiple ? updateFileInfo : updateFileInfo.splice(0, 1));
       if (info.file.status === UploadFileStatus.error) {
         message.warning(info.file.response?.message);
       }
