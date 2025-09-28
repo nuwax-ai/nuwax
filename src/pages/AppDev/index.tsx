@@ -817,20 +817,9 @@ const AppDev: React.FC = () => {
           <Space>
             {/* 刷新和代码视图 */}
             <div className={styles.navButtons}>
-              <Tooltip title="刷新">
-                <Button
-                  size="small"
-                  icon={<ReloadOutlined />}
-                  className={styles.navButton}
-                />
-              </Tooltip>
-              <Tooltip title="代码视图">
-                <Button
-                  size="small"
-                  icon={<CodeOutlined />}
-                  className={styles.navButton}
-                />
-              </Tooltip>
+              <Button size="small" className={styles.navButton}>
+                重新加载项目
+              </Button>
             </div>
 
             {/* 状态和操作按钮 */}
@@ -873,7 +862,6 @@ const AppDev: React.FC = () => {
                     { label: 'Chat', value: 'chat' },
                     { label: 'Design', value: 'design' },
                   ]}
-                  size="small"
                   className={styles.chatModeSegmented}
                 />
                 <div className={styles.versionSelectorWrapper}>
@@ -933,58 +921,56 @@ const AppDev: React.FC = () => {
 
         {/* 右侧代码编辑器区域 */}
         <Col span={16} className={styles.rightPanel}>
+          {/* 编辑器头部bar */}
+          <div className={styles.editorHeader}>
+            <div className={styles.editorHeaderLeft}>
+              <Segmented
+                value={activeTab}
+                onChange={(value) => setActiveTab(value as 'preview' | 'code')}
+                options={[
+                  {
+                    label: <GlobalOutlined />,
+                    value: 'preview',
+                  },
+                  {
+                    label: <CodeOutlined />,
+                    value: 'code',
+                  },
+                ]}
+                className={styles.segmentedTabs}
+              />
+            </div>
+            <div className={styles.editorHeaderRight}>
+              <Space size="small">
+                <Tooltip title="刷新预览">
+                  <Button
+                    size="small"
+                    icon={<ReloadOutlined />}
+                    onClick={() => {
+                      if (previewRef.current) {
+                        previewRef.current.refresh();
+                      }
+                    }}
+                    className={styles.headerButton}
+                  />
+                </Tooltip>
+                <Tooltip title="全屏预览">
+                  <Button
+                    size="small"
+                    icon={<GlobalOutlined />}
+                    onClick={() => {
+                      if (previewRef.current && workspace.devServerUrl) {
+                        window.open(workspace.devServerUrl, '_blank');
+                      }
+                    }}
+                    className={styles.headerButton}
+                  />
+                </Tooltip>
+              </Space>
+            </div>
+          </div>
           {/* 主内容区域 */}
           <div className={styles.contentArea}>
-            {/* 编辑器头部bar */}
-            <div className={styles.editorHeader}>
-              <div className={styles.editorHeaderLeft}>
-                <Segmented
-                  value={activeTab}
-                  onChange={(value) =>
-                    setActiveTab(value as 'preview' | 'code')
-                  }
-                  options={[
-                    {
-                      label: <GlobalOutlined />,
-                      value: 'preview',
-                    },
-                    {
-                      label: <CodeOutlined />,
-                      value: 'code',
-                    },
-                  ]}
-                  className={styles.segmentedTabs}
-                />
-              </div>
-              <div className={styles.editorHeaderRight}>
-                <Space size="small">
-                  <Tooltip title="刷新预览">
-                    <Button
-                      size="small"
-                      icon={<ReloadOutlined />}
-                      onClick={() => {
-                        if (previewRef.current) {
-                          previewRef.current.refresh();
-                        }
-                      }}
-                      className={styles.headerButton}
-                    />
-                  </Tooltip>
-                  <Tooltip title="全屏预览">
-                    <Button
-                      size="small"
-                      icon={<GlobalOutlined />}
-                      onClick={() => {
-                        if (previewRef.current && workspace.devServerUrl) {
-                          window.open(workspace.devServerUrl, '_blank');
-                        }
-                      }}
-                      className={styles.headerButton}
-                    />
-                  </Tooltip>
-                </Space>
-              </div>
-            </div>
             <Row gutter={0} className={styles.contentRow}>
               {/* 文件树侧边栏 */}
               <Col span={6} className={styles.fileTreeCol}>

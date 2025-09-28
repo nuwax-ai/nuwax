@@ -139,7 +139,7 @@
 
 // 聊天模式容器
 .chatModeContainer {
-  padding: 16px 20px 0;
+  padding: 12px 20px;
   border-bottom: 1px solid rgba(0, 0, 0, 10%);
 }
 
@@ -161,41 +161,43 @@
 
 // 聊天模式分段控制器
 .chatModeSegmented {
-  :global(.ant-segmented) {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 1px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 5%);
-  }
+  // 使用默认样式，自定义样式已注释
+  display: block;
+  // :global(.ant-segmented) {
+  //   background: #f8fafc;
+  //   border: 1px solid #e2e8f0;
+  //   border-radius: 6px;
+  //   padding: 1px;
+  //   box-shadow: 0 1px 2px rgba(0, 0, 0, 5%);
+  // }
 
-  :global(.ant-segmented-item) {
-    color: #64748b;
-    font-weight: 500;
-    font-size: 12px;
-    padding: 4px 12px;
-    border-radius: 4px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
+  // :global(.ant-segmented-item) {
+  //   color: #64748b;
+  //   font-weight: 500;
+  //   font-size: 12px;
+  //   padding: 4px 12px;
+  //   border-radius: 4px;
+  //   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  //   position: relative;
 
-    &:hover {
-      color: #1e293b;
-      background: rgba(0, 0, 0, 5%);
-    }
+  //   &:hover {
+  //     color: #1e293b;
+  //     background: rgba(0, 0, 0, 5%);
+  //   }
 
-    &.ant-segmented-item-selected {
-      color: #3b82f6;
-      background: #fff;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 10%);
-    }
-  }
+  //   &.ant-segmented-item-selected {
+  //     color: #3b82f6;
+  //     background: #fff;
+  //     box-shadow: 0 1px 2px rgba(0, 0, 0, 10%);
+  //   }
+  // }
 
-  :global(.ant-segmented-thumb) {
-    background: #fff;
-    border-radius: 4px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 10%);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  }
+  // :global(.ant-segmented-thumb) {
+  //   background: #fff;
+  //   border-radius: 4px;
+  //   box-shadow: 0 1px 2px rgba(0, 0, 0, 10%);
+  //   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  // }
 }
 
 // 版本选择器包装器
@@ -351,14 +353,8 @@
 }
 
 .actionButton {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  border: none;
-  color: #fff;
-
-  &:hover {
-    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-    color: #fff;
-  }
+  // 按钮样式已移除，使用默认样式
+  display: inline-block;
 }
 
 // 章节消息
@@ -803,8 +799,6 @@
   background: rgba(255, 255, 255, 95%);
   border-bottom: 1px solid rgba(0, 0, 0, 10%);
   padding: 12px 20px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 5%);
   position: relative;
   z-index: 10;
 }
@@ -843,6 +837,8 @@
 
 // Segmented组件样式
 .segmentedTabs {
+  // 使用默认样式，自定义样式已注释
+  display: block;
   // :global(.ant-segmented) {
   //   background: rgba(248, 250, 252, 80%);
   //   border: 1px solid rgba(0, 0, 0, 10%);
