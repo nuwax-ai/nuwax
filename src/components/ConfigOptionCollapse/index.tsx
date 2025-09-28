@@ -1,18 +1,13 @@
 import type { AgentArrangeConfigEnum } from '@/types/enums/space';
 import type { ConfigOptionCollapseProps } from '@/types/interfaces/space';
 import { Collapse, theme } from 'antd';
-import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import SvgIcon from '../base/SvgIcon';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 /**
  * 单个配置项手风琴组件
  */
 const ConfigOptionCollapse: React.FC<ConfigOptionCollapseProps> = ({
-  className,
   items,
   defaultActiveKey,
   onChangeCollapse,
@@ -36,6 +31,7 @@ const ConfigOptionCollapse: React.FC<ConfigOptionCollapseProps> = ({
   return (
     <Collapse
       bordered={false}
+      ghost
       expandIcon={({ isActive }) => (
         <SvgIcon
           name="icons-common-caret_right"
@@ -43,7 +39,6 @@ const ConfigOptionCollapse: React.FC<ConfigOptionCollapseProps> = ({
           style={{ color: token.colorTextTertiary }}
         />
       )}
-      className={cx(styles.header, className)}
       activeKey={activeKey}
       onChange={onChange}
       items={items}

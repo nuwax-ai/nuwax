@@ -73,8 +73,6 @@ export enum AgentArrangeConfigEnum {
   Plugin = 'Plugin',
   // 工作流
   Workflow = 'Workflow',
-  // 触发器
-  Trigger = 'Trigger',
   // 文本
   Text = 'Text',
   // 变量
@@ -87,8 +85,6 @@ export enum AgentArrangeConfigEnum {
   Long_Memory = 'Long_Memory',
   // 文件盒子
   File_Box = 'File_Box',
-  // 开场白
-  Opening_Remarks = 'Opening_Remarks',
   // 用户问题建议
   User_Problem_Suggestion = 'User_Problem_Suggestion',
   // 快捷指令
@@ -97,6 +93,14 @@ export enum AgentArrangeConfigEnum {
   Open_Scheduled_Task = 'Open_Scheduled_Task',
   // MCP
   MCP = 'Mcp',
+  // 开场白
+  Opening_Remarks = 'Opening_Remarks',
+  // 页面
+  Page = 'Page',
+  // 界面设置
+  Page_Setting = 'Page_Setting',
+  // 界面事件绑定
+  Page_Event_Binding = 'Page_Event_Binding',
 }
 
 // 是否开启问题建议,可用值:Open,Close

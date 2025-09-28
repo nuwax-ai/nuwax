@@ -2,13 +2,14 @@
 export enum AgentComponentTypeEnum {
   Plugin = 'Plugin',
   Workflow = 'Workflow',
-  Trigger = 'Trigger',
   Knowledge = 'Knowledge',
   Variable = 'Variable',
   Table = 'Table',
   Model = 'Model',
   Agent = 'Agent',
   MCP = 'Mcp',
+  // todo: 页面
+  Page = 'Page',
 }
 
 // 用户APIKEY目标类型,可用值:Agent,Mcp,TempChat
