@@ -1,11 +1,34 @@
 @import '@/styles/token';
 
 .categoryContainer {
-  padding: @paddingXs 0;
+  //padding: @paddingXs 0;
+  margin-top: 10px;
   position: relative;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  //justify-content: center;
+  width: 100%;
+
+  .tab-left {
+    width: 760px;
+  }
+
+  .tab-right {
+    line-height: 48px;
+
+    .icon {
+      color: @colorTextQuaternary;
+      cursor: pointer;
+    }
+  }
 
   // 自定义标签页样式
   :global {
+    .ant-tabs {
+      width: 760px !important;
+    }
+
     .ant-tabs-tab {
       // 基础样式
       padding-right: @paddingXs;
