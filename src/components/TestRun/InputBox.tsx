@@ -31,15 +31,16 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
   const handleUploadData = useCallback((info: any): FileListItem[] | [] => {
     const updateFileInfo = info.fileList
       .filter((file: any) => {
-        if (!file.response) {
+        if (file.status === UploadFileStatus.done && !file.response?.success) {
           message.error('上传失败');
+          return false;
         }
-        return file.status !== UploadFileStatus.removed && file.response;
+        return file.status !== UploadFileStatus.removed;
       })
       .map((file: any) => {
-        const url = file.url || file.response?.data.url;
-        const key = file.response?.data.key;
-        const name = file.name || file.response?.data.fileName || '';
+        const url = file.url || file.response?.data?.url;
+        const key = file.response?.data?.key;
+        const name = file.name || file.response?.data?.fileName || '';
         return {
           key: key || '',
           status: file.status,
