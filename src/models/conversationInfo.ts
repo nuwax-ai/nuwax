@@ -533,15 +533,15 @@ export default () => {
         const currentInfo = conversationInfo ?? data;
         // 第一次发送消息后更新主题
         if (currentInfo && currentInfo?.topicUpdated !== 1) {
-          await runUpdateTopic({
+          const { data } = await runUpdateTopic({
             id: params.conversationId,
-            topic: params.message,
+            firstMessage: params.message,
           });
           // 更新会话记录
           setConversationInfo({
             ...currentInfo,
-            topicUpdated: 1,
-            topic: params.message,
+            topicUpdated: data.topicUpdated,
+            topic: data.topic,
           });
 
           if (isSync) {
