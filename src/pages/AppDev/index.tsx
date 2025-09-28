@@ -11,7 +11,6 @@ import {
   DownOutlined,
   FileOutlined,
   GlobalOutlined,
-  PlusOutlined,
   ReloadOutlined,
   RightOutlined,
   SendOutlined,
@@ -354,19 +353,8 @@ const AppDev: React.FC = () => {
           // 延迟调用，确保handleRestartDev已定义
           setTimeout(() => {
             if (workspace.projectId) {
-              restartDev(workspace.projectId)
-                .then((response) => {
-                  console.log('✅ [AppDev] 重启开发服务器成功:', response);
-                  if (response?.data?.devServerUrl) {
-                    updateDevServerUrl(response.data.devServerUrl);
-                  }
-                  setIsServiceRunning(true);
-                  message.success('开发服务器重启成功');
-                })
-                .catch((error) => {
-                  console.error('重启开发服务器失败:', error);
-                  message.error('重启开发服务器失败');
-                });
+              // 重启开发服务器逻辑已移除
+              console.log('开发服务器重启功能已禁用');
             }
           }, 0);
         }
@@ -403,10 +391,10 @@ const AppDev: React.FC = () => {
         const response = await getFileContent(workspace.projectId, fileId);
         if (response && typeof response === 'object' && 'data' in response) {
           setFileContent((response as any).data as string);
-          message.success(`文件 ${fileId} 加载成功`);
+          // 移除成功提示，避免重复toast
         } else if (typeof response === 'string') {
           setFileContent(response);
-          message.success(`文件 ${fileId} 加载成功`);
+          // 移除成功提示，避免重复toast
         } else {
           throw new Error('文件内容为空');
         }
@@ -430,7 +418,7 @@ const AppDev: React.FC = () => {
     if (workspace.projectId && selectedFile) {
       handleFileSelect(selectedFile);
     }
-  }, [workspace.projectId, selectedFile, handleFileSelect]);
+  }, [workspace.projectId, selectedFile]);
 
   /**
    * 处理文件内容更新
@@ -725,7 +713,7 @@ const AppDev: React.FC = () => {
         );
       }
     },
-    [expandedFolders, selectedFile, toggleFolder, handleFileSelect],
+    [expandedFolders, selectedFile, toggleFolder],
   );
 
   // 如果正在启动开发环境，显示加载状态
@@ -947,20 +935,65 @@ const AppDev: React.FC = () => {
         <Col span={16} className={styles.rightPanel}>
           {/* 主内容区域 */}
           <div className={styles.contentArea}>
+            {/* 编辑器头部bar */}
+            <div className={styles.editorHeader}>
+              <div className={styles.editorHeaderLeft}>
+                <Segmented
+                  value={activeTab}
+                  onChange={(value) =>
+                    setActiveTab(value as 'preview' | 'code')
+                  }
+                  options={[
+                    {
+                      label: <GlobalOutlined />,
+                      value: 'preview',
+                    },
+                    {
+                      label: <CodeOutlined />,
+                      value: 'code',
+                    },
+                  ]}
+                  className={styles.segmentedTabs}
+                />
+              </div>
+              <div className={styles.editorHeaderRight}>
+                <Space size="small">
+                  <Tooltip title="刷新预览">
+                    <Button
+                      size="small"
+                      icon={<ReloadOutlined />}
+                      onClick={() => {
+                        if (previewRef.current) {
+                          previewRef.current.refresh();
+                        }
+                      }}
+                      className={styles.headerButton}
+                    />
+                  </Tooltip>
+                  <Tooltip title="全屏预览">
+                    <Button
+                      size="small"
+                      icon={<GlobalOutlined />}
+                      onClick={() => {
+                        if (previewRef.current && workspace.devServerUrl) {
+                          window.open(workspace.devServerUrl, '_blank');
+                        }
+                      }}
+                      className={styles.headerButton}
+                    />
+                  </Tooltip>
+                </Space>
+              </div>
+            </div>
             <Row gutter={0} className={styles.contentRow}>
               {/* 文件树侧边栏 */}
               <Col span={6} className={styles.fileTreeCol}>
                 <Card className={styles.fileTreeCard} bordered={false}>
+                  {/* 添加一个导入项目按钮 悬浮固定在最右上角 */}
                   <div className={styles.fileTreeHeader}>
-                    <Title level={5} style={{ margin: 0, color: '#1e293b' }}>
-                      项目文件
-                    </Title>
-                    <Button
-                      type="text"
-                      icon={<PlusOutlined />}
-                      size="small"
-                      className={styles.addButton}
-                    />
+                    <Button type="text" className={styles.addButton}>
+                      导入项目
+                    </Button>
                   </div>
                   <div className={styles.fileTreeContainer}>
                     {/* 文件树结构 */}
@@ -974,27 +1007,6 @@ const AppDev: React.FC = () => {
               {/* 编辑器区域 */}
               <Col span={18} className={styles.editorCol}>
                 <div className={styles.editorContainer}>
-                  {/* 切换器 */}
-                  <div className={styles.editorSwitcher}>
-                    <Segmented
-                      value={activeTab}
-                      onChange={(value) =>
-                        setActiveTab(value as 'preview' | 'code')
-                      }
-                      options={[
-                        {
-                          label: <GlobalOutlined />,
-                          value: 'preview',
-                        },
-                        {
-                          label: <CodeOutlined />,
-                          value: 'code',
-                        },
-                      ]}
-                      className={styles.segmentedTabs}
-                    />
-                  </div>
-
                   {/* 内容区域 */}
                   <div className={styles.editorContent}>
                     {activeTab === 'preview' ? (

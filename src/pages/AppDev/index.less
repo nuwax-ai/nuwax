@@ -632,13 +632,9 @@
 }
 
 .fileTreeHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 10%);
-  background: rgba(255, 255, 255, 90%);
-  backdrop-filter: blur(10px);
+  position: absolute;
+  top: 10px;
+  right: 0;
   color: #1e293b;
 }
 
@@ -654,7 +650,7 @@
 .fileTreeContainer {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  // padding: 8px;
 
   // 滚动条样式
   &::-webkit-scrollbar {
@@ -794,64 +790,98 @@
   display: flex;
   flex-direction: column;
   background: #fff;
-  border-radius: 8px;
+  // border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 10%);
+  // box-shadow: 0 1px 3px rgba(0, 0, 0, 10%);
 }
 
-// 编辑器切换器
-.editorSwitcher {
-  background: rgba(255, 255, 255, 90%);
+// 编辑器头部bar
+.editorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 95%);
   border-bottom: 1px solid rgba(0, 0, 0, 10%);
   padding: 12px 20px;
-  display: flex;
-  justify-content: center;
   backdrop-filter: blur(10px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 5%);
+  position: relative;
+  z-index: 10;
+}
+
+.editorHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.editorHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// 头部按钮样式
+.headerButton {
+  background: rgba(255, 255, 255, 90%);
+  border: 1px solid rgba(0, 0, 0, 10%);
+  color: #64748b;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(59, 130, 246, 10%);
+    border-color: rgba(59, 130, 246, 20%);
+    color: #3b82f6;
+  }
+
+  &:focus {
+    background: rgba(59, 130, 246, 10%);
+    border-color: rgba(59, 130, 246, 20%);
+    color: #3b82f6;
+  }
 }
 
 // Segmented组件样式
 .segmentedTabs {
-  :global(.ant-segmented) {
-    background: rgba(248, 250, 252, 80%);
-    border: 1px solid rgba(0, 0, 0, 10%);
-    border-radius: 8px;
-    padding: 3px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 5%);
-  }
+  // :global(.ant-segmented) {
+  //   background: rgba(248, 250, 252, 80%);
+  //   border: 1px solid rgba(0, 0, 0, 10%);
+  //   border-radius: 8px;
+  //   padding: 3px;
+  //   box-shadow: 0 1px 2px rgba(0, 0, 0, 5%);
+  // }
 
-  :global(.ant-segmented-item) {
-    color: #64748b;
-    border: none;
-    background: transparent;
-    padding: 10px 18px;
-    min-width: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    transition: all 0.2s ease;
+  // :global(.ant-segmented-item) {
+  //   color: #64748b;
+  //   border: none;
+  //   background: transparent;
+  //   padding: 6px 12px;
+  //   min-width: 36px;
+  //   display: flex;
+  //   align-items: center;
+  //   justify-content: center;
+  //   border-radius: 4px;
+  //   transition: all 0.2s ease;
 
-    &:hover {
-      color: #1e293b;
-      background: rgba(0, 0, 0, 5%);
-      transform: translateY(-1px);
-    }
+  //   &:hover {
+  //     color: #1e293b;
+  //     background: rgba(0, 0, 0, 5%);
+  //   }
 
-    &.ant-segmented-item-selected {
-      color: #fff;
-      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-      box-shadow: 0 4px 8px rgba(59, 130, 246, 30%);
-      transform: translateY(-1px);
-    }
-  }
+  //   &.ant-segmented-item-selected {
+  //     color: #fff;
+  //     background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  //     box-shadow: 0 2px 4px rgba(59, 130, 246, 30%);
+  //   }
+  // }
 
-  :global(.ant-segmented-item-label) {
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-  }
+  // :global(.ant-segmented-item-label) {
+  //   font-size: 14px;
+  //   display: flex;
+  //   align-items: center;
+  //   justify-content: center;
+  //   line-height: 1;
+  // }
 }
 
 // 编辑器内容区域
