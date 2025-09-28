@@ -1,4 +1,5 @@
 import type { CategoryInfo } from '@/types/interfaces/agentConfig';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
 import {
   closestCenter,
@@ -13,8 +14,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { TabsProps } from 'antd';
-import { Tabs } from 'antd';
+import { Tabs, TabsProps, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
 import styles from './index.less';
@@ -143,47 +143,54 @@ const CategoryContainer: React.FC<CategoryContainerProps> = ({
 
   return (
     <div className={cx(styles.categoryContainer)}>
-      <Tabs
-        activeKey={activeCategory}
-        items={tabItems}
-        onChange={handleTabChange}
-        tabBarStyle={{
-          marginBottom: 0,
-          borderBottom: 'none',
-        }}
-        // 添加更多样式控制
-        tabBarGutter={8}
-        size="middle"
-        // 去除指示条 - 通过设置size为0来隐藏
-        indicator={{ size: 0 }}
-        renderTabBar={(tabBarProps, DefaultTabBar) => (
-          <DndContext
-            sensors={[sensor]}
-            onDragStart={onDragStart}
-            onDragEnd={handleDragEnd}
-            collisionDetection={closestCenter}
-          >
-            <SortableContext
-              items={tabItems.map((item) => item.key)}
-              strategy={horizontalListSortingStrategy}
+      <div className={cx(styles['tab-left'])}>
+        <Tabs
+          activeKey={activeCategory}
+          items={tabItems}
+          onChange={handleTabChange}
+          tabBarStyle={{
+            marginBottom: 0,
+            borderBottom: 'none',
+          }}
+          // 添加更多样式控制
+          tabBarGutter={8}
+          size="middle"
+          // 去除指示条 - 通过设置size为0来隐藏
+          indicator={{ size: 0 }}
+          renderTabBar={(tabBarProps, DefaultTabBar) => (
+            <DndContext
+              sensors={[sensor]}
+              onDragStart={onDragStart}
+              onDragEnd={handleDragEnd}
+              collisionDetection={closestCenter}
             >
-              <DefaultTabBar {...tabBarProps}>
-                {(node) => (
-                  <DraggableTabNode
-                    {...(node as React.ReactElement<DraggableTabPaneProps>)
-                      .props}
-                    key={node.key}
-                    onMouseEnter={() => onMouseEnter(dragHoverText)}
-                    onMouseLeave={onMouseLeave}
-                  >
-                    {node}
-                  </DraggableTabNode>
-                )}
-              </DefaultTabBar>
-            </SortableContext>
-          </DndContext>
-        )}
-      />
+              <SortableContext
+                items={tabItems.map((item) => item.key)}
+                strategy={horizontalListSortingStrategy}
+              >
+                <DefaultTabBar {...tabBarProps}>
+                  {(node) => (
+                    <DraggableTabNode
+                      {...(node as React.ReactElement<DraggableTabPaneProps>)
+                        .props}
+                      key={node.key}
+                      onMouseEnter={() => onMouseEnter(dragHoverText)}
+                      onMouseLeave={onMouseLeave}
+                    >
+                      {node}
+                    </DraggableTabNode>
+                  )}
+                </DefaultTabBar>
+              </SortableContext>
+            </DndContext>
+          )}
+        />
+      </div>
+      <div className={cx(styles['tab-right'])}>
+        <Tooltip title="拖拽智能体卡片可交换位置">
+          <ExclamationCircleOutlined className={cx(styles.icon)} />
+        </Tooltip>
+      </div>
     </div>
   );
 };
