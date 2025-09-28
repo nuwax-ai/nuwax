@@ -12,6 +12,7 @@ const ConfigOptionCollapse: React.FC<ConfigOptionCollapseProps> = ({
   defaultActiveKey,
   onChangeCollapse,
 }) => {
+  const { token } = theme.useToken();
   // 当前激活 tab 面板的 key
   const [activeKey, setActiveKey] = useState<AgentArrangeConfigEnum[]>([]);
 
@@ -26,7 +27,6 @@ const ConfigOptionCollapse: React.FC<ConfigOptionCollapseProps> = ({
     setActiveKey(key as AgentArrangeConfigEnum[]);
     onChangeCollapse?.(key as AgentArrangeConfigEnum[]);
   };
-  const { token } = theme.useToken();
 
   return (
     <Collapse
