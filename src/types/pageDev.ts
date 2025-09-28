@@ -1,4 +1,4 @@
-import { PageDevelopCreateTypeEnum } from './enums/space';
+import { PageDevelopCreateTypeEnum } from './enums/pageDev';
 
 export interface PageInfo {
   id: number;

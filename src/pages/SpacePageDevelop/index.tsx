@@ -3,12 +3,16 @@ import Loading from '@/components/custom/Loading';
 import SelectList from '@/components/custom/SelectList';
 import CustomPopover from '@/components/CustomPopover';
 import {
-  CREATE_LIST,
   PAGE_DEVELOP_ALL_TYPE,
   PAGE_DEVELOP_CREATE_TYPE_LIST,
-} from '@/constants/space.constants';
+} from '@/constants/pageDev.constants';
+import { CREATE_LIST } from '@/constants/space.constants';
 import { apiPageList } from '@/services/pageDev';
-import { CreateListEnum, PageDevelopCreateTypeEnum } from '@/types/enums/space';
+import {
+  PageDevelopCreateTypeEnum,
+  PageDevelopMoreActionEnum,
+} from '@/types/enums/pageDev';
+import { CreateListEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { PageInfo } from '@/types/pageDev';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
@@ -16,10 +20,12 @@ import { Button, Col, Empty, Input, Row, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams, useRequest } from 'umi';
+import CardItem from './CardItem';
 import DebugAgentBindModel from './DebugAgentBindModal';
 import styles from './index.less';
 import PathParamsConfigModal from './PathParamsConfigModal';
 import ReverseProxyModal from './ReverseProxyModal';
+
 const cx = classNames.bind(styles);
 
 /**
@@ -148,6 +154,30 @@ const SpacePageDevelop: React.FC = () => {
     }
   };
 
+  // 点击卡片
+  const handleClickCard = () => {
+    console.log('点击卡片');
+  };
+
+  // 点击更多操作
+  const handleClickMore = (item: CustomPopoverItem) => {
+    const { value } = item;
+    switch (value) {
+      // 反向代理配置
+      case PageDevelopMoreActionEnum.Reverse_Proxy_Config:
+        setOpenReverseProxyModal(true);
+        break;
+      // 路径参数配置
+      case PageDevelopMoreActionEnum.Path_Params_Config:
+        setOpenPathParamsConfigModal(true);
+        break;
+      // 页面预览
+      case PageDevelopMoreActionEnum.Page_Preview:
+        // 进入开发页面
+        break;
+    }
+  };
+
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <Row>
@@ -239,8 +269,18 @@ const SpacePageDevelop: React.FC = () => {
       />
       {/* 路径参数配置弹窗 */}
       <PathParamsConfigModal
+        spaceId={spaceId}
         open={openPathParamsConfigModal}
         onCancel={() => setOpenPathParamsConfigModal(false)}
+      />
+      <CardItem
+        componentInfo={{
+          name: '页面开发',
+          label: '页面开发',
+          value: PageDevelopMoreActionEnum.Page_Preview,
+        }}
+        onClick={handleClickCard}
+        onClickMore={handleClickMore}
       />
     </div>
   );

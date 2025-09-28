@@ -1,5 +1,5 @@
-import { REVERSE_PROXY_ACTIONS } from '@/constants/space.constants';
-import { ReverseProxyEnum } from '@/types/enums/space';
+import { REVERSE_PROXY_ACTIONS } from '@/constants/pageDev.constants';
+import { ReverseProxyEnum } from '@/types/enums/pageDev';
 import { CloseOutlined } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';

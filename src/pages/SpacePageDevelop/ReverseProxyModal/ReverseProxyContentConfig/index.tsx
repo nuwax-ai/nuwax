@@ -1,4 +1,4 @@
-import { ReverseProxyEnum } from '@/types/enums/space';
+import { ReverseProxyEnum } from '@/types/enums/pageDev';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { Button, Input, Table } from 'antd';
@@ -44,51 +44,39 @@ const ReverseProxyContentConfig: React.FC<ReverseProxyContentConfigProps> = ({
   const inputColumns: TableColumnsType<any> = [
     {
       title: '路径',
-      dataIndex: 'name',
-      key: 'name',
+      dataIndex: 'path',
       className: 'flex items-center table-params-name-td',
-      render: (_, record) => (
-        <div className={cx('flex', 'flex-col')}>
-          {record.action === 'edit' ? (
-            <Input placeholder="请输入路径" />
-          ) : (
-            <span className={cx('text-ellipsis')}>{record.name}</span>
-          )}
-        </div>
-      ),
+      render: (_, record) =>
+        record.action === 'edit' ? (
+          <Input placeholder="请输入路径" />
+        ) : (
+          <span className={cx('text-ellipsis')}>{record.name}</span>
+        ),
     },
     {
       title: '后端地址',
-      dataIndex: 'dataType',
-      key: 'dataType',
-      render: (_, record) => (
-        <div className={cx('flex', 'flex-col')}>
-          {record.action === 'edit' ? (
-            <Input placeholder="请输入后端地址" />
-          ) : (
-            <span className={cx('text-ellipsis')}>{record.address}</span>
-          )}
-        </div>
-      ),
+      dataIndex: 'address',
+      render: (_, record) =>
+        record.action === 'edit' ? (
+          <Input placeholder="请输入后端地址" />
+        ) : (
+          <span className={cx('text-ellipsis')}>{record.address}</span>
+        ),
     },
     {
       title: '',
       dataIndex: 'action',
-      key: 'action',
       width: 100,
       align: 'center',
-      render: (_, record) => (
-        <div className={cx('h-full', 'flex', 'items-center')}>
-          {record.action !== 'edit' ? (
-            <>
-              <EditOutlined />
-              <DeleteOutlined />
-            </>
-          ) : (
-            <Button onClick={() => handleSave(record)}>保存</Button>
-          )}
-        </div>
-      ),
+      render: (_, record) =>
+        record.action !== 'edit' ? (
+          <div className={cx('h-full', 'flex', 'items-center')}>
+            <EditOutlined />
+            <DeleteOutlined />
+          </div>
+        ) : (
+          <Button onClick={() => handleSave(record)}>保存</Button>
+        ),
     },
   ];
 

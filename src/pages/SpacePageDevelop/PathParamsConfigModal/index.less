@@ -2,11 +2,11 @@
 @import '@/styles/token';
 
 .modal-container {
-  width: 800px !important;
+  width: 1000px !important;
 }
 
 .container {
-  height: 500px;
+  height: 650px;
   border-radius: 10px;
   background: @WHITE04;
   pointer-events: auto;
@@ -28,9 +28,7 @@
       padding: 0 10px;
 
       .item {
-        line-height: 38px;
-        padding: 0 10px;
-        margin-bottom: 10px;
+        padding: 0 6px;
         border-radius: 10px;
         transition: background-color 0.3s;
 
@@ -41,7 +39,23 @@
         &.checked {
           background-color: @WHITE07;
         }
+
+        .icon-box {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          color: @BLANK04;
+          font-size: 14px;
+        }
       }
+    }
+
+    .add-path-params {
+      padding: 0 20px;
+      margin-left: 20px;
+      background-color: @WHITE;
     }
   }
 

@@ -1,5 +1,4 @@
 import {
-  // ICON_AGENT,
   ICON_KNOWLEDGE,
   ICON_MODEL,
   ICON_PLUGIN,
@@ -17,8 +16,6 @@ import {
   CreateListEnum,
   FilterStatusEnum,
   OpenCloseEnum,
-  PageDevelopCreateTypeEnum,
-  ReverseProxyEnum,
   SpaceApplicationList,
   SpaceApplicationListEnum,
 } from '@/types/enums/space';
@@ -230,42 +227,5 @@ export const SPACE_SQUARE_TABS: TabsProps['items'] = [
   {
     key: SquareAgentTypeEnum.Template,
     label: '模板',
-  },
-];
-
-// 页面开发创建类型列表
-export const PAGE_DEVELOP_CREATE_TYPE_LIST = [
-  {
-    value: PageDevelopCreateTypeEnum.Import_Project,
-    label: '导入项目',
-  },
-  {
-    value: PageDevelopCreateTypeEnum.Online_Create,
-    label: '在线创建',
-  },
-  {
-    value: PageDevelopCreateTypeEnum.Reverse_Proxy,
-    label: '反向代理',
-  },
-];
-
-// 页面开发所有类型
-export const PAGE_DEVELOP_ALL_TYPE = [
-  {
-    value: PageDevelopCreateTypeEnum.All_Type,
-    label: '所有类型',
-  },
-  ...PAGE_DEVELOP_CREATE_TYPE_LIST,
-];
-
-// 反向代理列表
-export const REVERSE_PROXY_ACTIONS = [
-  {
-    type: ReverseProxyEnum.Dev,
-    label: '开发调试',
-  },
-  {
-    type: ReverseProxyEnum.Production,
-    label: '正式环境',
   },
 ];
