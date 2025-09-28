@@ -7,10 +7,11 @@ import {
   uploadAndStartProject,
 } from '@/services/appDev';
 import {
-  CodeOutlined,
   DownOutlined,
+  EyeOutlined,
   FileOutlined,
   GlobalOutlined,
+  ReadOutlined,
   ReloadOutlined,
   RightOutlined,
   SendOutlined,
@@ -370,6 +371,27 @@ const AppDev: React.FC = () => {
     updateDevServerUrl,
     setIsServiceRunning,
   ]);
+
+  /**
+   * 根据文件ID构建完整的文件路径
+   */
+  const getFilePath = useCallback(
+    (fileId: string, treeData: any[] = fileTreeData): string | null => {
+      for (const node of treeData) {
+        if (node.id === fileId) {
+          return node.name;
+        }
+        if (node.children) {
+          const childPath = getFilePath(fileId, node.children);
+          if (childPath) {
+            return `${node.name}/${childPath}`;
+          }
+        }
+      }
+      return null;
+    },
+    [fileTreeData],
+  );
 
   /**
    * 处理文件选择
@@ -929,11 +951,12 @@ const AppDev: React.FC = () => {
                 onChange={(value) => setActiveTab(value as 'preview' | 'code')}
                 options={[
                   {
-                    label: <GlobalOutlined />,
+                    label: <EyeOutlined />,
                     value: 'preview',
                   },
                   {
-                    label: <CodeOutlined />,
+                    label: <ReadOutlined />,
+                    // label: <CodeOutlined />,
                     value: 'code',
                   },
                 ]}
@@ -1007,7 +1030,7 @@ const AppDev: React.FC = () => {
                           <div className={styles.filePathInfo}>
                             <FileOutlined className={styles.fileIcon} />
                             <span className={styles.filePath}>
-                              app/{selectedFile}
+                              {getFilePath(selectedFile) || selectedFile}
                             </span>
                             <span className={styles.fileLanguage}>
                               {getLanguageFromFile(selectedFile)}
