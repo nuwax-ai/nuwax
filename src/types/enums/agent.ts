@@ -48,18 +48,6 @@ export enum InputTypeEnum {
   AutoRecognition = 'AutoRecognition',
 }
 
-// 触发类型,TIME 定时触发, EVENT 事件触发,可用值:TIME,EVENT
-export enum TriggerTypeEnum {
-  TIME = 'TIME',
-  EVENT = 'EVENT',
-}
-
-// 触发器执行的组件类型,可用值:PLUGIN,WORKFLOW
-export enum TriggerComponentType {
-  PLUGIN = 'PLUGIN',
-  WORKFLOW = 'WORKFLOW',
-}
-
 // 调用方式,可用值:AUTO,ON_DEMAND,MANUAL,MANUAL_ON_DEMAND
 export enum InvokeTypeEnum {
   AUTO = 'AUTO',
@@ -177,4 +165,14 @@ export enum OptionDataSourceEnum {
 export enum UpdateVariablesTypeEnum {
   Delete = 'Delete',
   Drag = 'Drag',
+}
+
+// 开场白预置问题设置类型
+export enum GuidQuestionSetTypeEnum {
+  // 问题引导
+  Question = 'Question',
+  // 扩展页面路径
+  Page_Path = 'Page_Path',
+  // 外链地址
+  Link = 'Link',
 }

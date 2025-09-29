@@ -264,7 +264,6 @@ const EditAgent: React.FC = () => {
             });
           },
         );
-
         break;
       // 日志
       case ApplicationMoreActionEnum.Log:

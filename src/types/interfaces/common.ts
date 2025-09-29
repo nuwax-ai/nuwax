@@ -417,7 +417,7 @@ export interface CustomPopoverProps {
 export interface UploadAvatarProps {
   className?: string;
   onUploadSuccess?: (url: string) => void;
-  defaultImage: string;
+  defaultImage?: string;
   imageUrl?: string;
   beforeUpload?: (file: FileType) => void;
   svgIconName?: string | null | undefined;

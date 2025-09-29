@@ -6,6 +6,7 @@ import { DeleteOutlined } from '@ant-design/icons';
 import { Input, theme } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import GuidQuestionSetModal from './GuidQuestionSetModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -28,6 +29,8 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   const [content, setContent] = useState<string>('');
   // 开场白引导问题
   const [guidQuestions, setGuidQuestions] = useState<string[]>(['']);
+  // 开场白预置问题设置弹窗
+  const [open, setOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (!!agentConfigInfo) {
@@ -70,6 +73,7 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   // 打开设置开场白预置问题弹窗
   const handleSetGuidQuestions = (index: number) => {
     console.log('handleSetGuidQuestions', index);
+    setOpen(true);
   };
 
   // const MenuBar = () => {
@@ -298,6 +302,12 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
           }
         />
       ))}
+      {/* 开场白预置问题设置弹窗 */}
+      <GuidQuestionSetModal
+        open={open}
+        onCancel={() => setOpen(false)}
+        onConfirm={handleSetGuidQuestions}
+      />
     </>
   );
 };

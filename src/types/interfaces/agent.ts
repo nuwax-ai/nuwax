@@ -8,8 +8,6 @@ import type {
   NoneRecallReplyTypeEnum,
   OutputDirectlyEnum,
   SearchStrategyEnum,
-  TriggerComponentType,
-  TriggerTypeEnum,
 } from '@/types/enums/agent';
 import type {
   PermissionsEnum,
@@ -141,33 +139,6 @@ export interface AgentComponentVariableUpdateParams
   bindConfig: {
     variables: BindConfigWithSub[];
   };
-}
-
-// 更新触发器组件配置输入参数
-export interface AgentComponentTriggerUpdateParams
-  extends AgentComponentBaseInfo {
-  bindConfig: AgentComponentTriggerAddParams;
-}
-
-// 新增智能体触发器配置输入参数
-export interface AgentComponentTriggerAddParams {
-  name: string;
-  // 触发类型,TIME 定时触发, EVENT 事件触发,可用值:TIME,EVENT
-  triggerType: TriggerTypeEnum;
-  timeZone: string;
-  timeCronExpression: string;
-  timeCronDesc: string;
-  eventBearerToken: string;
-  eventArgs: BindConfigWithSub[];
-  // 触发器执行的组件类型,可用值:PLUGIN,WORKFLOW
-  componentType: TriggerComponentType;
-  // 触发器执行的组件名称
-  componentName: string;
-  // 触发器执行的组件ID
-  componentId: string;
-  // 出参绑定配置，插件、工作流有效
-  argBindConfigs: BindConfigWithSub[];
-  agentId: number;
 }
 
 // 更新插件组件配置
@@ -326,32 +297,6 @@ export interface AgentConfigInfo {
   collected: boolean;
   // 权限列表
   permissions?: PermissionsEnum[];
-}
-
-// 触发器时区
-export interface TriggerTimeZone {
-  // UTC时区列表
-  utcTimeZones: {
-    // UTC时区
-    utc: string;
-    timeZones: {
-      // 时区
-      timeZone: string;
-      // 时区名称
-      name: string;
-    }[];
-  }[];
-  // 时间范围列表
-  cronExpScopes: {
-    // 时间范围
-    scope: string;
-    cronExps: {
-      // 时间描述
-      time: string;
-      // 表达式
-      expression: string;
-    }[];
-  }[];
 }
 
 // 智能体历史配置信息

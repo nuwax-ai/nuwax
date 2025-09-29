@@ -7,7 +7,7 @@ import {
 } from '@/components/base/AgentType/images.constants';
 import SvgIcon from '@/components/base/SvgIcon';
 
-import { InputTypeEnum, TriggerComponentType } from '@/types/enums/agent';
+import { InputTypeEnum } from '@/types/enums/agent';
 import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
@@ -148,18 +148,6 @@ export const ENABLE_LIST = [
   {
     label: '关闭',
     value: OpenCloseEnum.Close,
-  },
-];
-
-// 任务执行
-export const TASK_EXECUTION = [
-  {
-    value: TriggerComponentType.PLUGIN,
-    label: '插件',
-  },
-  {
-    value: TriggerComponentType.WORKFLOW,
-    label: '工作流',
   },
 ];
 

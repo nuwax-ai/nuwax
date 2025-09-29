@@ -6,7 +6,6 @@ import {
   NoneRecallReplyTypeEnum,
   OutputDirectlyEnum,
   SearchStrategyEnum,
-  TriggerTypeEnum,
 } from '@/types/enums/agent';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
 import {
@@ -108,20 +107,6 @@ export const NO_RECALL_RESPONSE = [
   {
     value: NoneRecallReplyTypeEnum.CUSTOM,
     label: '自定义',
-  },
-];
-
-// 触发器类型列表
-export const TRIGGER_TYPE_LIST = [
-  {
-    value: TriggerTypeEnum.TIME,
-    label: '定时触发',
-    img: '',
-  },
-  {
-    value: TriggerTypeEnum.EVENT,
-    label: '事件触发',
-    img: '',
   },
 ];
 

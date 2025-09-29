@@ -8,8 +8,6 @@ import type {
   AgentComponentModelUpdateParams,
   AgentComponentPluginUpdateParams,
   AgentComponentTableUpdateParams,
-  AgentComponentTriggerAddParams,
-  AgentComponentTriggerUpdateParams,
   AgentComponentVariableUpdateParams,
   AgentComponentWorkflowUpdateParams,
   AgentConfigHistoryInfo,
@@ -17,7 +15,6 @@ import type {
   AgentConfigUpdateParams,
   AgentConversationUpdateParams,
   AgentPublishApplyParams,
-  TriggerTimeZone,
 } from '@/types/interfaces/agent';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import type {
@@ -109,26 +106,6 @@ export async function apiAgentComponentVariableUpdate(
   });
 }
 
-// 更新触发器组件配置
-export async function apiAgentComponentTriggerUpdate(
-  data: AgentComponentTriggerUpdateParams,
-): Promise<RequestResponse<null>> {
-  return request('/api/agent/component/trigger/update', {
-    method: 'POST',
-    data,
-  });
-}
-
-// 新增智能体触发器配置
-export async function apiAgentComponentTriggerAdd(
-  data: AgentComponentTriggerAddParams,
-): Promise<RequestResponse<null>> {
-  return request('/api/agent/component/trigger/add', {
-    method: 'POST',
-    data,
-  });
-}
-
 // 更新插件组件配置
 export async function apiAgentComponentPluginUpdate(
   data: AgentComponentPluginUpdateParams,
@@ -203,15 +180,6 @@ export async function apiAgentConfigInfo(
   agentId: number,
 ): Promise<RequestResponse<AgentConfigInfo>> {
   return request(`/api/agent/${agentId}`, {
-    method: 'GET',
-  });
-}
-
-// 触发器定时任务时区数据
-export async function apiAgentTriggerTimeZone(): Promise<
-  RequestResponse<TriggerTimeZone>
-> {
-  return request('/api/agent/trigger/timeZone/data', {
     method: 'GET',
   });
 }
