@@ -219,11 +219,31 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     remark: string;
     category: string;
   }>['onFinish'] = (values) => {
+    /**
+     * 过滤发布项(存在这种情况: 之前已发布的空间已删除，但是发布项中还存在该空间的数据，
+     * 导致再次发布时，publishItemList还存在之前已被删除的空间，再次被提交了 )
+     * 1. 系统广场，不区分空间
+     * 2. 空间广场，过滤掉不在空间列表中的空间
+     */
+    const filterPublishItemList = publishItemList.filter(
+      (item: PublishItem) => {
+        // 系统广场
+        if (item.scope === PluginPublishScopeEnum.Tenant) {
+          return true;
+        } else {
+          // 空间广场
+          return spaceList?.some(
+            (space: SpaceInfo) => space.id === item.spaceId,
+          );
+        }
+      },
+    );
+
     run({
       ...values,
       targetType: mode,
       targetId,
-      items: publishItemList,
+      items: filterPublishItemList,
     });
   };
 
