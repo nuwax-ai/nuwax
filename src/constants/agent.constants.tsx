@@ -1,6 +1,7 @@
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
   DefaultSelectedEnum,
+  GuidQuestionSetTypeEnum,
   InputTypeEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
@@ -209,3 +210,19 @@ export const BINDING_DEFAULT_JSON_DATA = {
 };
 
 export const SIDEBAR_WIDTH = 368 + 32;
+
+// 预置问题设置类型选项
+export const GUID_QUESTION_SET_OPTIONS = [
+  {
+    value: GuidQuestionSetTypeEnum.Question,
+    label: '问题引导',
+  },
+  {
+    value: GuidQuestionSetTypeEnum.Page_Path,
+    label: '扩展页面路径',
+  },
+  {
+    value: GuidQuestionSetTypeEnum.Link,
+    label: '外链地址',
+  },
+];

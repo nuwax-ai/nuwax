@@ -1,15 +1,33 @@
+import { SvgIcon } from '@/components/base';
 import SelectList from '@/components/custom/SelectList';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import CustomFormModal from '@/components/CustomFormModal';
 import UploadAvatar from '@/components/UploadAvatar';
-import { Form, FormProps, Input } from 'antd';
-// import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
-// import styles from './index.less';
+import { GUID_QUESTION_SET_OPTIONS } from '@/constants/agent.constants';
+import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
+import { BindValueType, GuidQuestionSetTypeEnum } from '@/types/enums/agent';
+import { BindConfigWithSub } from '@/types/interfaces/common';
+import { InfoCircleOutlined } from '@ant-design/icons';
+import {
+  Form,
+  FormProps,
+  Input,
+  Select,
+  Space,
+  Table,
+  TableColumnsType,
+  theme,
+} from 'antd';
+import classNames from 'classnames';
+import React, { useEffect, useMemo, useState } from 'react';
+import styles from './index.less';
 
-// const cx = classNames.bind(styles);
+const cx = classNames.bind(styles);
 
-interface GuidQuestionSetModalProps {
+// 开场白预置问题设置弹窗Props
+export interface GuidQuestionSetModalProps {
   open: boolean;
+  variables: BindConfigWithSub[];
   onCancel: () => void;
   onConfirm: (result: number) => void;
 }
@@ -19,15 +37,19 @@ interface GuidQuestionSetModalProps {
  */
 const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   open,
+  variables,
   onCancel,
   onConfirm,
 }) => {
+  const { token } = theme.useToken();
+  // 是否展开
+  const [isActive, setIsActive] = useState<boolean>(false);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(false);
   // 图标
   const [imageUrl, setImageUrl] = useState<string>('');
   // 类型
-  const [type, setType] = useState<React.Key>();
+  const [type, setType] = useState<React.Key>(GuidQuestionSetTypeEnum.Question);
 
   // // 新增智能体接口
   // const { run: runAdd } = useRequest(apiAgentAdd, {
@@ -73,9 +95,73 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
 
   // 切换类型时，根据类型设置对应的表单项
   const handleChangeType = (value: React.Key) => {
-    form.setFieldValue('type', value);
+    // form.setFieldValue('type', value);
     setType(value);
   };
+
+  // 缓存变量列表
+  const variableList = useMemo(() => {
+    return (
+      variables?.map((item) => {
+        return {
+          label: item.name,
+          value: item.name,
+        };
+      }) || []
+    );
+  }, [variables]);
+
+  // 入参配置columns
+  const inputColumns: TableColumnsType<BindConfigWithSub> = [
+    {
+      title: '参数名称',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: '默认值',
+      key: 'default',
+      width: 232,
+      render: (_, record) => (
+        <div className={cx('h-full', 'flex', 'items-center')}>
+          <Space.Compact block>
+            <SelectList
+              className={cx(styles.select)}
+              // disabled={isDefaultValueDisabled(record)}
+              value={record.bindValueType}
+              // onChange={(value) =>
+              //   handleInputValue(record.key, 'bindValueType', value)
+              // }
+              options={ParamsSettingDefaultOptions}
+            />
+            {record.bindValueType === BindValueType.Input ? (
+              <Input
+                rootClassName={cx(styles.select)}
+                placeholder="请填写"
+                // disabled={isDefaultValueDisabled(record)}
+                value={record.bindValue}
+                // onChange={(e) =>
+                //   handleInputValue(record.key, 'bindValue', e.target.value)
+                // }
+              />
+            ) : (
+              <Select
+                placeholder="请选择"
+                // disabled={isDefaultValueDisabled(record)}
+                rootClassName={cx(styles.select)}
+                popupMatchSelectWidth={false}
+                value={record.bindValue || null}
+                // onChange={(value) =>
+                //   handleInputValue(record.key, 'bindValue', value)
+                // }
+                options={variableList}
+              />
+            )}
+          </Space.Compact>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <CustomFormModal
@@ -107,19 +193,15 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         <Form.Item name="type" label="类型">
           <SelectList
             placeholder="请选择类型"
-            options={[
-              { label: '问题引导', value: 1 },
-              { label: '扩展页面路径', value: 2 },
-              { label: '外链地址', value: 3 },
-            ]}
+            options={GUID_QUESTION_SET_OPTIONS}
             onChange={handleChangeType}
           />
         </Form.Item>
-        {type === 1 ? (
+        {type === GuidQuestionSetTypeEnum.Question ? (
           <Form.Item name="question" label="问题">
             <Input placeholder="请输入问题" />
           </Form.Item>
-        ) : type === 2 ? (
+        ) : type === GuidQuestionSetTypeEnum.Page_Path ? (
           <Form.Item name="type" label="类型">
             <SelectList
               placeholder="请选择类型"
@@ -132,13 +214,33 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
             />
           </Form.Item>
         ) : (
-          type === 3 && (
+          type === GuidQuestionSetTypeEnum.Link && (
             <Form.Item name="linkUrl" label="链接地址（类型为外链时展示）">
               <Input placeholder="https://xxxxxxx" />
             </Form.Item>
           )
         )}
       </Form>
+      <div className={cx(styles['input-box'], 'flex', 'items-center')}>
+        <SvgIcon
+          name="icons-common-caret_right"
+          rotate={isActive ? 90 : 0}
+          style={{ color: token.colorTextTertiary }}
+          onClick={() => setIsActive(!isActive)}
+        />
+        <span className={cx('user-select-none')}>输入</span>
+        <TooltipIcon title="输入" icon={<InfoCircleOutlined />} />
+      </div>
+      <Table<BindConfigWithSub>
+        className={cx('mb-16', 'flex-1')}
+        columns={inputColumns}
+        dataSource={[]}
+        pagination={false}
+        virtual
+        scroll={{
+          y: 480,
+        }}
+      />
     </CustomFormModal>
   );
 };
