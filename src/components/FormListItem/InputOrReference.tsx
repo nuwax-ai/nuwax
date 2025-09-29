@@ -161,6 +161,11 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   const handleTagClose = () => {
     updateValues('', 'Input');
     setDisplayValue('');
+    setSelectKey(['']);
+
+    // 清空条件分支中的名称 name
+    const basePath = fieldName?.slice(0, -1) ?? [];
+    form?.setFieldValue([...basePath, 'name'], '');
   };
 
   // 输入处理
@@ -248,6 +253,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
                         }}
                         titleRender={renderTitle}
                         defaultSelectedKeys={selectKey}
+                        selectedKeys={selectKey}
                         blockNode
                         className={`custom-tree-style ${
                           hasTreeChildren ? '' : 'custom-tree-no-children-style'
