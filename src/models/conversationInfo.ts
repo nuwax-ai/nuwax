@@ -62,7 +62,11 @@ export default () => {
   const [currentConversationRequestId, setCurrentConversationRequestId] =
     useState<string>('');
   // 是否用户问题建议
-  const [isSuggest, setIsSuggest] = useState<boolean>(false);
+  // const [isSuggest, setIsSuggest] = useState<boolean>(false);
+  const isSuggest = useRef(false);
+  const setIsSuggest = (suggest: boolean) => {
+    isSuggest.current = suggest;
+  };
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
@@ -455,7 +459,7 @@ export default () => {
           setRequestId(res.requestId);
           setFinalResult(data as ConversationFinalResult);
           // 是否开启问题建议,可用值:Open,Close
-          if (isSuggest) {
+          if (isSuggest.current) {
             runChatSuggest(params as ConversationChatSuggestParams);
           }
         }
