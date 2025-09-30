@@ -163,6 +163,11 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
     },
   ];
 
+  // 切换页面路径，修改智能体变量参数
+  const changePagePath = (value: React.Key) => {
+    console.log('changePagePath', value);
+  };
+
   return (
     <CustomFormModal
       form={form}
@@ -202,15 +207,14 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
             <Input placeholder="请输入问题" />
           </Form.Item>
         ) : type === GuidQuestionSetTypeEnum.Page_Path ? (
-          <Form.Item name="type" label="类型">
+          <Form.Item
+            name="pagePath"
+            label="页面路径（页面组件中已添加的页面下的路径作为可选列表）"
+          >
             <SelectList
-              placeholder="请选择类型"
-              options={[
-                { label: '问题引导', value: 1 },
-                { label: '扩展页面路径', value: 2 },
-                { label: '外链地址', value: 3 },
-              ]}
-              onChange={handleChangeType}
+              placeholder="请选择页面路径"
+              options={variableList}
+              onChange={changePagePath}
             />
           </Form.Item>
         ) : (

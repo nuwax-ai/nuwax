@@ -305,6 +305,7 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
       {/* 开场白预置问题设置弹窗 */}
       <GuidQuestionSetModal
         open={open}
+        variables={[]}
         onCancel={() => setOpen(false)}
         onConfirm={handleSetGuidQuestions}
       />
