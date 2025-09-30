@@ -130,3 +130,288 @@ export interface SubmitFilesParams {
  * 提交项目修改API响应类型
  */
 export type SubmitFilesResponse = RequestResponse<Record<string, any>>;
+
+// ==================== AI聊天相关类型定义 ====================
+
+/**
+ * 附件数据源类型
+ */
+export interface AttachmentSource {
+  source_type: 'FilePath' | 'Base64' | 'Url';
+  data: {
+    path?: string; // FilePath
+    data?: string; // Base64
+    mime_type?: string; // Base64
+    url?: string; // Url
+  };
+}
+
+/**
+ * 文本附件
+ */
+export interface TextAttachment {
+  id: string;
+  description?: string;
+  filename?: string;
+  source: AttachmentSource;
+}
+
+/**
+ * 图像尺寸信息
+ */
+export interface ImageDimensions {
+  width: number;
+  height: number;
+}
+
+/**
+ * 图像附件
+ */
+export interface ImageAttachment {
+  id: string;
+  description?: string;
+  filename?: string;
+  mime_type: string;
+  dimensions?: ImageDimensions;
+  source: AttachmentSource;
+}
+
+/**
+ * 音频附件
+ */
+export interface AudioAttachment {
+  id: string;
+  description?: string;
+  filename?: string;
+  mime_type: string;
+  duration?: number;
+  source: AttachmentSource;
+}
+
+/**
+ * 文档附件
+ */
+export interface DocumentAttachment {
+  id: string;
+  description?: string;
+  filename?: string;
+  mime_type: string;
+  size?: number;
+  source: AttachmentSource;
+}
+
+/**
+ * 附件类型
+ */
+export type Attachment =
+  | {
+      type: 'Text';
+      content: TextAttachment;
+    }
+  | {
+      type: 'Image';
+      content: ImageAttachment;
+    }
+  | {
+      type: 'Audio';
+      content: AudioAttachment;
+    }
+  | {
+      type: 'Document';
+      content: DocumentAttachment;
+    };
+
+/**
+ * 模型提供商配置
+ */
+export interface ModelProviderConfig {
+  id: string;
+  name: string;
+  api_key: string;
+  base_url: string;
+  default_model: string;
+  api_protocol?: 'anthropic' | 'openai';
+  requires_openai_auth: boolean;
+}
+
+/**
+ * 聊天请求参数
+ */
+export interface ChatRequest {
+  user_id: string;
+  prompt: string;
+  project_id?: string;
+  session_id?: string;
+  request_id?: string;
+  attachments?: Attachment[];
+  model_provider?: ModelProviderConfig;
+}
+
+/**
+ * 聊天响应数据
+ */
+export interface ChatResponseData {
+  project_id: string;
+  session_id: string;
+  error?: string;
+}
+
+/**
+ * 聊天API响应类型
+ */
+export type ChatResponse = RequestResponse<ChatResponseData>;
+
+/**
+ * 取消任务响应数据
+ */
+export interface CancelResponseData {
+  session_id: string;
+  success: boolean;
+}
+
+/**
+ * 取消任务API响应类型
+ */
+export type CancelResponse = RequestResponse<CancelResponseData>;
+
+/**
+ * 停止Agent响应数据
+ */
+export interface StopAgentResponseData {
+  project_id: string;
+  session_id?: string;
+  success: boolean;
+  message: string;
+}
+
+/**
+ * 停止Agent API响应类型
+ */
+export type StopAgentResponse = RequestResponse<StopAgentResponseData>;
+
+/**
+ * 会话消息类型枚举
+ */
+export enum SessionMessageType {
+  SESSION_PROMPT_START = 'sessionPromptStart',
+  SESSION_PROMPT_END = 'sessionPromptEnd',
+  AGENT_SESSION_UPDATE = 'agentSessionUpdate',
+  HEARTBEAT = 'heartbeat',
+}
+
+/**
+ * 统一会话消息结构
+ */
+export interface UnifiedSessionMessage {
+  sessionId: string;
+  messageType: SessionMessageType;
+  subType: string;
+  data: any;
+  timestamp: string;
+}
+
+/**
+ * SessionPromptStart 数据结构
+ */
+export interface SessionPromptStartData {
+  type: 'prompt_start';
+  prompt: string;
+  attachments?: Array<{
+    type: string;
+    content: string;
+  }>;
+  user_id: string;
+  project_id?: string;
+}
+
+/**
+ * SessionPromptEnd 数据结构
+ */
+export interface SessionPromptEndData {
+  stop_reason: 'end_turn' | 'max_tokens' | 'cancelled' | 'error';
+  message: string;
+  error_message?: string;
+  suggestion?: string;
+  tool_calls?: Array<{
+    name: string;
+    status: string;
+    duration_ms?: number;
+  }>;
+  total_tokens?: number;
+  duration_ms?: number;
+  progress?: number;
+}
+
+/**
+ * Agent思考过程数据
+ */
+export interface AgentThoughtData {
+  thinking: string;
+  confidence?: number;
+}
+
+/**
+ * Agent文本响应数据
+ */
+export interface AgentMessageData {
+  content: {
+    type: 'text';
+    text: string;
+  };
+  is_final: boolean;
+}
+
+/**
+ * 工具调用数据
+ */
+export interface ToolCallData {
+  tool_call: {
+    name: string;
+    arguments: Record<string, any>;
+    tool_call_id: string;
+  };
+  status: 'started' | 'completed' | 'failed';
+}
+
+/**
+ * 工具调用更新数据
+ */
+export interface ToolCallUpdateData {
+  tool_call_id: string;
+  result: {
+    status: 'success' | 'error';
+    output?: any;
+    error_message?: string;
+  };
+}
+
+/**
+ * 心跳数据
+ */
+export interface HeartbeatData {
+  type: 'heartbeat';
+  message: 'keep-alive';
+  timestamp: string;
+}
+
+/**
+ * SSE事件类型
+ */
+export type SSEEventType =
+  | 'prompt_start'
+  | 'prompt_end'
+  | 'user_message_chunk'
+  | 'agent_message_chunk'
+  | 'agent_thought_chunk'
+  | 'tool_call'
+  | 'tool_call_update'
+  | 'available_commands_update'
+  | 'heartbeat';
+
+/**
+ * SSE消息格式
+ */
+export interface SSEMessage {
+  event: SSEEventType;
+  data: UnifiedSessionMessage;
+}

@@ -4,10 +4,14 @@
  */
 
 import type {
+  CancelResponse,
+  ChatRequest,
+  ChatResponse,
   CreateProjectParams,
   DevServerInfo,
   GetProjectContentResponse,
   PageFileInfo,
+  StopAgentResponse,
   SubmitFilesResponse,
   UploadAndStartProjectParams,
 } from '@/types/interfaces/appDev';
@@ -1044,6 +1048,163 @@ export const submitFiles = async (
     return response;
   } catch (error) {
     console.error('❌ [AppDev API] 提交项目修改失败:', error);
+    throw error;
+  }
+};
+
+// ==================== AI聊天API服务 ====================
+
+/**
+ * AI聊天API基础URL - 使用文档解析服务的地址
+ */
+const AI_CHAT_BASE_URL = 'http://localhost:8000'; // 根据实际情况调整
+
+/**
+ * 发送聊天消息
+ * @param request 聊天请求参数
+ * @returns Promise<ChatResponse> 聊天响应
+ */
+export const sendChatMessage = async (
+  request: ChatRequest,
+): Promise<ChatResponse> => {
+  try {
+    console.log('💬 [AI Chat] 发送聊天消息:', {
+      userId: request.user_id,
+      projectId: request.project_id,
+      sessionId: request.session_id,
+      prompt: request.prompt.substring(0, 100) + '...',
+    });
+
+    // 生成请求ID（如果未提供）
+    const chatRequest = {
+      ...request,
+      request_id:
+        request.request_id ||
+        `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    };
+
+    // 真实API调用
+    const response = await fetch(`${AI_CHAT_BASE_URL}/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(chatRequest),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ [AI Chat] 聊天消息发送成功:', result);
+
+    return {
+      code: result.success ? '0000' : '9999',
+      displayCode: result.code || '0000',
+      message: result.message || (result.success ? '成功' : '失败'),
+      data: result.data,
+      tid: result.tid || Date.now().toString(),
+      debugInfo: {},
+      success: result.success,
+    };
+  } catch (error) {
+    console.error('❌ [AI Chat] 发送聊天消息失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 取消Agent任务
+ * @param projectId 项目ID
+ * @param sessionId 会话ID
+ * @returns Promise<CancelResponse> 取消结果
+ */
+export const cancelAgentTask = async (
+  projectId: string,
+  sessionId: string,
+): Promise<CancelResponse> => {
+  try {
+    console.log('🛑 [AI Chat] 取消Agent任务:', { projectId, sessionId });
+
+    const response = await fetch(
+      `${AI_CHAT_BASE_URL}/agent/session/cancel?project_id=${encodeURIComponent(
+        projectId,
+      )}&session_id=${encodeURIComponent(sessionId)}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ [AI Chat] Agent任务取消成功:', result);
+
+    return {
+      code: result.success ? '0000' : '9999',
+      displayCode: result.code || '0000',
+      message: result.message || (result.success ? '成功' : '失败'),
+      data: result.data,
+      tid: result.tid || Date.now().toString(),
+      debugInfo: {},
+      success: result.success,
+    };
+  } catch (error) {
+    console.error('❌ [AI Chat] 取消Agent任务失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 停止Agent服务
+ * @param projectId 项目ID
+ * @returns Promise<StopAgentResponse> 停止结果
+ */
+export const stopAgentService = async (
+  projectId: string,
+): Promise<StopAgentResponse> => {
+  try {
+    console.log('⏹️ [AI Chat] 停止Agent服务:', { projectId });
+
+    const response = await fetch(
+      `${AI_CHAT_BASE_URL}/agent/stop?project_id=${encodeURIComponent(
+        projectId,
+      )}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ [AI Chat] Agent服务停止成功:', result);
+
+    return {
+      code: result.success ? '0000' : '9999',
+      displayCode: result.code || '0000',
+      message: result.message || (result.success ? '成功' : '失败'),
+      data: result.data,
+      tid: result.tid || Date.now().toString(),
+      debugInfo: {},
+      success: result.success,
+    };
+  } catch (error) {
+    console.error('❌ [AI Chat] 停止Agent服务失败:', error);
     throw error;
   }
 };

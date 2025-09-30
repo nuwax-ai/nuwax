@@ -2,13 +2,21 @@ import MonacoEditor from '@/components/WebIDE/MonacoEditor';
 import Preview, { PreviewRef } from '@/components/WebIDE/Preview';
 import { getProjectIdFromUrl, useAppDevStore } from '@/models/appDev';
 import {
+  cancelAgentTask,
   getFileContent,
   getProjectContent,
   keepAlive,
+  sendChatMessage,
   startDev,
   submitFiles,
   uploadAndStartProject,
 } from '@/services/appDev';
+import type {
+  AgentMessageData,
+  AgentThoughtData,
+  UnifiedSessionMessage,
+} from '@/types/interfaces/appDev';
+import { createSSEManager, type SSEManager } from '@/utils/sseManager';
 import {
   DownOutlined,
   EyeOutlined,
@@ -18,6 +26,7 @@ import {
   ReloadOutlined,
   RightOutlined,
   SendOutlined,
+  StopOutlined,
   UploadOutlined,
   UserOutlined,
 } from '@ant-design/icons';
@@ -76,7 +85,7 @@ const AppDev: React.FC = () => {
   // 聊天消息类型定义
   interface ChatMessage {
     id: string;
-    type: 'ai' | 'user' | 'button' | 'section';
+    type: 'ai' | 'user' | 'button' | 'section' | 'thinking' | 'tool_call';
     content?: string;
     timestamp?: Date;
     action?: string;
@@ -84,6 +93,8 @@ const AppDev: React.FC = () => {
     items?: string[];
     isExpanded?: boolean;
     details?: string[];
+    sessionId?: string;
+    isStreaming?: boolean;
   }
 
   // AI助手聊天相关状态
@@ -91,49 +102,130 @@ const AppDev: React.FC = () => {
     {
       id: '1',
       type: 'ai',
-      content: '我已经将标题的子号调至刀更小的尺寸',
-      timestamp: new Date(),
-    },
-    {
-      id: '2',
-      type: 'ai',
       content:
-        '移动端:从 text-5x1 改为 text-2x1\n桌面端:从 text-7x1 改为 text-4x1\n这样标题会显得更加适中,不会过于突出。',
-      timestamp: new Date(),
-    },
-    {
-      id: '3',
-      type: 'button',
-      content: '背景鲜明一点',
-      action: 'makeBackgroundBrighter',
-    },
-    {
-      id: '4',
-      type: 'section',
-      title: '数据资源',
-      items: ['每日销售数据查询', '站内消息发送'],
-    },
-    {
-      id: '5',
-      type: 'ai',
-      content: '> Made some changes v4',
-      isExpanded: true,
-      details: [
-        '我已经调整了背景使其更加鲜明:',
-        '1. 将背景渐变的不透明度从 opacity-50 提升到 opacity-75,使发光效果更明显',
-        '2. 将卡片背景从 bg-slate-800 改为 bg-slate-800/90,增加透明度让背景色彩更好地透过',
-        '3. 为卡片添加 backdrop-blur-sm 类,创造玻璃态效果',
-        '4. 将悬停时的边框透明度从 /50 提升到 /70,使边框更加明显',
-        '5. 将描述文字从 text-gray-400 改为 text-gray-300,在更亮的背景下保持良好的可读性',
-        '现在三个卡片的背景发光效果会更加鲜明和突出!',
-      ],
+        '你好！我是AI助手，可以帮你进行代码开发、问题解答等。有什么可以帮助你的吗？',
       timestamp: new Date(),
     },
   ]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [sseManager, setSseManager] = useState<SSEManager | null>(null);
+
+  /**
+   * 处理SSE消息
+   */
+  const handleSSEMessage = useCallback((message: UnifiedSessionMessage) => {
+    switch (message.subType) {
+      case 'agent_thought_chunk': {
+        // 处理AI思考过程
+        const thoughtData = message.data as AgentThoughtData;
+        const thinkingMessage: ChatMessage = {
+          id: `thinking_${Date.now()}`,
+          type: 'thinking',
+          content: `思考中: ${thoughtData.thinking}`,
+          timestamp: new Date(),
+          sessionId: message.sessionId,
+        };
+        setChatMessages((prev) => [...prev, thinkingMessage]);
+        break;
+      }
+
+      case 'agent_message_chunk': {
+        // 处理AI回复
+        const messageData = message.data as AgentMessageData;
+        const aiMessage: ChatMessage = {
+          id: `ai_${Date.now()}`,
+          type: 'ai',
+          content: messageData.content.text,
+          timestamp: new Date(),
+          sessionId: message.sessionId,
+          isStreaming: !messageData.is_final,
+        };
+
+        if (messageData.is_final) {
+          setIsChatLoading(false);
+        }
+
+        setChatMessages((prev) => {
+          // 查找是否已有正在流式传输的消息
+          const existingStreamingIndex = prev.findIndex(
+            (msg) => msg.sessionId === message.sessionId && msg.isStreaming,
+          );
+
+          if (existingStreamingIndex >= 0) {
+            // 更新现有消息
+            const updated = [...prev];
+            updated[existingStreamingIndex] = aiMessage;
+            return updated;
+          } else {
+            // 添加新消息
+            return [...prev, aiMessage];
+          }
+        });
+        break;
+      }
+
+      case 'tool_call': {
+        // 处理工具调用
+        const toolCallData = message.data;
+        const toolMessage: ChatMessage = {
+          id: `tool_${Date.now()}`,
+          type: 'tool_call',
+          content: `🔧 正在执行: ${toolCallData.tool_call.name}`,
+          timestamp: new Date(),
+          sessionId: message.sessionId,
+        };
+        setChatMessages((prev) => [...prev, toolMessage]);
+        break;
+      }
+
+      case 'prompt_end':
+        // 处理会话结束
+        setIsChatLoading(false);
+        break;
+    }
+  }, []);
+
+  /**
+   * 初始化SSE连接管理器
+   */
+  const initializeSSEManager = useCallback(
+    (sessionId: string) => {
+      // 清理之前的连接
+      if (sseManager) {
+        sseManager.destroy();
+      }
+
+      const newSseManager = createSSEManager({
+        baseUrl: 'http://localhost:8000', // 根据实际情况调整
+        sessionId,
+        onMessage: (message: UnifiedSessionMessage) => {
+          console.log('📨 [SSE] 收到消息:', message);
+          handleSSEMessage(message);
+        },
+        onError: (error) => {
+          console.error('❌ [SSE] 连接错误:', error);
+          message.error('AI助手连接失败');
+        },
+        onOpen: () => {
+          console.log('🔌 [SSE] 连接已建立');
+        },
+        onClose: () => {
+          console.log('🔌 [SSE] 连接已关闭');
+        },
+      });
+
+      setSseManager(newSseManager);
+      newSseManager.connect();
+
+      return newSseManager;
+    },
+    [sseManager, handleSSEMessage],
+  );
+
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(
-    new Set(['5']),
+    new Set(),
   );
 
   // 文件内容预览相关状态
@@ -822,29 +914,82 @@ const AppDev: React.FC = () => {
     };
 
     setChatMessages((prev) => [...prev, userMessage]);
+    const inputText = chatInput;
     setChatInput('');
     setIsChatLoading(true);
 
     try {
-      // 模拟AI回复
-      await new Promise((resolve) => {
-        setTimeout(resolve, 1000);
+      // 生成会话ID（如果还没有）
+      let sessionId = currentSessionId;
+      if (!sessionId) {
+        sessionId = `session_${Date.now()}_${Math.random()
+          .toString(36)
+          .substr(2, 9)}`;
+        setCurrentSessionId(sessionId);
+      }
+
+      // 发送聊天消息到AI服务
+      const response = await sendChatMessage({
+        user_id: 'app-dev-user', // 根据实际情况获取用户ID
+        prompt: inputText,
+        project_id: workspace.projectId || undefined,
+        session_id: sessionId,
+        request_id: `req_${Date.now()}_${Math.random()
+          .toString(36)
+          .substr(2, 9)}`,
       });
 
-      const aiMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'ai',
-        content: '我理解您的需求，正在为您优化代码...',
-        timestamp: new Date(),
-      };
-      setChatMessages((prev) => [...prev, aiMessage]);
+      if (response.success && response.data) {
+        // 建立SSE连接监听回复
+        initializeSSEManager(response.data.session_id);
+      } else {
+        throw new Error(response.message || '发送消息失败');
+      }
     } catch (error) {
-      console.error('AI回复失败:', error);
-      message.error('AI回复失败，请重试');
-    } finally {
+      console.error('AI聊天失败:', error);
+      message.error(
+        `AI聊天失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      );
       setIsChatLoading(false);
     }
-  }, [chatInput]);
+  }, [chatInput, currentSessionId, workspace.projectId, initializeSSEManager]);
+
+  /**
+   * 取消AI聊天任务
+   */
+  const handleCancelChat = useCallback(async () => {
+    if (!currentSessionId || !workspace.projectId) {
+      return;
+    }
+
+    try {
+      console.log('🛑 [AppDev] 取消AI聊天任务');
+      await cancelAgentTask(workspace.projectId, currentSessionId);
+
+      // 关闭SSE连接
+      if (sseManager) {
+        sseManager.destroy();
+        setSseManager(null);
+      }
+
+      setIsChatLoading(false);
+      message.success('已取消AI任务');
+    } catch (error) {
+      console.error('取消AI任务失败:', error);
+      message.error('取消AI任务失败');
+    }
+  }, [currentSessionId, workspace.projectId, sseManager]);
+
+  /**
+   * 清理SSE连接
+   */
+  useEffect(() => {
+    return () => {
+      if (sseManager) {
+        sseManager.destroy();
+      }
+    };
+  }, [sseManager]);
 
   /**
    * 根据文件扩展名获取语言类型
@@ -980,6 +1125,37 @@ const AppDev: React.FC = () => {
                       {item}
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          );
+
+        case 'thinking':
+          return (
+            <div key={message.id} className={styles.messageWrapper}>
+              <div className={`${styles.message} ${styles.thinking}`}>
+                <div className={styles.messageContent}>
+                  <div className={styles.thinkingIndicator}>💭 思考中...</div>
+                  {message.content?.split('\n').map((line, index) => (
+                    <div key={index} className={styles.thinkingText}>
+                      {line}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+
+        case 'tool_call':
+          return (
+            <div key={message.id} className={styles.messageWrapper}>
+              <div className={`${styles.message} ${styles.toolCall}`}>
+                <div className={styles.messageContent}>
+                  <div className={styles.toolCallIndicator}>🔧</div>
+                  <span>{message.content}</span>
+                  {message.isStreaming && (
+                    <span className={styles.streamingIndicator}>...</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -1238,17 +1414,28 @@ const AppDev: React.FC = () => {
             {/* 聊天输入区域 */}
             <div className={styles.chatInput}>
               <Input
-                placeholder="Ask a follow-up..."
+                placeholder="向AI助手提问..."
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onPressEnter={handleChatSend}
                 suffix={
-                  <Button
-                    type="text"
-                    icon={<SendOutlined />}
-                    onClick={handleChatSend}
-                    disabled={!chatInput.trim()}
-                  />
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {isChatLoading && (
+                      <Button
+                        type="text"
+                        icon={<StopOutlined />}
+                        onClick={handleCancelChat}
+                        title="取消AI任务"
+                        className={styles.cancelButton}
+                      />
+                    )}
+                    <Button
+                      type="text"
+                      icon={<SendOutlined />}
+                      onClick={handleChatSend}
+                      disabled={!chatInput.trim() || isChatLoading}
+                    />
+                  </div>
                 }
                 className={styles.inputField}
               />
