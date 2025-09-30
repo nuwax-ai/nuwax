@@ -176,3 +176,11 @@ export enum GuidQuestionSetTypeEnum {
   // 外链地址
   Link = 'Link',
 }
+
+// 响应动作（扩展页面打开、外部链接跳转）
+export enum EventBindResponseActionEnum {
+  // 扩展页面打开
+  Page_Open = 'Page_Open',
+  // 外部链接跳转
+  Link_Jump = 'Link_Jump',
+}
