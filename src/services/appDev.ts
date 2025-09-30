@@ -3,6 +3,15 @@
  * 处理与后端API的通信
  */
 
+import type {
+  CreateProjectParams,
+  DevServerInfo,
+  GetProjectContentResponse,
+  PageFileInfo,
+  SubmitFilesResponse,
+  UploadAndStartProjectParams,
+} from '@/types/interfaces/appDev';
+
 // API基础配置 - 使用后端提供的临时地址
 const API_BASE_URL = 'http://192.168.31.125:8081';
 
@@ -374,9 +383,11 @@ export const mockUtils = {
 /**
  * 启动开发环境接口
  * @param projectId 项目ID
- * @returns Promise<any> 接口响应
+ * @returns Promise<RequestResponse<DevServerInfo>> 接口响应
  */
-export const startDev = async (projectId: string): Promise<any> => {
+export const startDev = async (
+  projectId: string,
+): Promise<RequestResponse<DevServerInfo>> => {
   try {
     console.log('🚀 [AppDev API] 正在启动开发环境，项目ID:', projectId);
 
@@ -510,12 +521,9 @@ export const buildProject = async (projectId: string): Promise<any> => {
  * @param projectData 项目数据
  * @returns Promise<any> 创建结果
  */
-export const createProject = async (projectData: {
-  name: string;
-  description?: string;
-  template?: string;
-  framework?: string;
-}): Promise<any> => {
+export const createProject = async (
+  projectData: CreateProjectParams,
+): Promise<any> => {
   try {
     console.log('📁 [AppDev API] 创建用户前端页面项目:', projectData);
 
@@ -537,14 +545,13 @@ export const createProject = async (projectData: {
 
 /**
  * 上传前端项目压缩包并启动开发服务器
- * @param file 项目压缩包文件
- * @param projectName 项目名称
+ * @param params 参数对象，包含文件和项目名称
  * @returns Promise<any> 上传和启动结果
  */
 export const uploadAndStartProject = async (
-  file: File,
-  projectName: string,
+  params: UploadAndStartProjectParams,
 ): Promise<any> => {
+  const { file, projectName } = params;
   try {
     console.log('📤 [AppDev API] 上传前端项目压缩包并启动开发服务器:', {
       fileName: file.name,
@@ -577,11 +584,13 @@ export const uploadAndStartProject = async (
 };
 
 /**
- * 获取项目内容（文件树）
+ * 获取项目内容（文件树）- 根据OpenAPI规范实现
  * @param projectId 项目ID
- * @returns Promise<any> 项目文件树数据
+ * @returns Promise<GetProjectContentResponse> 项目文件树数据
  */
-export const getProjectContent = async (projectId: string): Promise<any> => {
+export const getProjectContent = async (
+  projectId: number | string,
+): Promise<GetProjectContentResponse> => {
   try {
     console.log('🌲 [AppDev API] 获取项目内容:', { projectId });
 
@@ -687,20 +696,26 @@ npm run build
         },
       ];
 
-      return mockSuccessResponse(mockVueProject, '项目内容获取成功');
+      // 根据OpenAPI规范返回mock数据格式
+      return mockSuccessResponse(
+        {
+          files: mockVueProject,
+        },
+        '项目内容获取成功',
+      );
     }
 
-    // 真实API调用
+    // 真实API调用 - 根据OpenAPI规范使用GET方法
     const response = await fetch(
-      `${API_BASE_URL}/api/custom-page/project-content`,
+      `${API_BASE_URL}/api/custom-page/get-project-content?projectId=${encodeURIComponent(
+        projectId.toString(),
+      )}`,
       {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
-        body: JSON.stringify({
-          projectId,
-        }),
       },
     );
 
@@ -952,6 +967,83 @@ export default config`,
     return result;
   } catch (error) {
     console.error('❌ [AppDev API] 获取文件内容失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 开发服务器保活接口
+ * @param projectId 项目ID
+ * @returns Promise<any> 保活结果
+ */
+export const keepAlive = async (projectId: number): Promise<any> => {
+  try {
+    console.log('💗 [AppDev API] 开发服务器保活，项目ID:', projectId);
+
+    const response = await customRequest(
+      `${API_BASE_URL}/api/custom-page/keepalive`,
+      {
+        method: 'POST',
+        data: {
+          projectId: projectId,
+        },
+      },
+    );
+
+    console.log('✅ [AppDev API] 开发服务器保活成功:', response);
+    return response;
+  } catch (error) {
+    console.error('❌ [AppDev API] 开发服务器保活失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 提交项目修改接口
+ * @param projectId 项目ID
+ * @param files 文件列表
+ * @returns Promise<SubmitFilesResponse> 提交结果
+ */
+export const submitFiles = async (
+  projectId: number,
+  files: PageFileInfo[],
+): Promise<SubmitFilesResponse> => {
+  try {
+    console.log('📤 [AppDev API] 提交项目修改:', {
+      projectId,
+      fileCount: files.length,
+    });
+
+    if (MOCK_MODE) {
+      await mockDelay(800);
+
+      // 模拟提交成功
+      return mockSuccessResponse(
+        {
+          projectId,
+          submittedFiles: files.length,
+          timestamp: new Date().toISOString(),
+        },
+        '项目修改提交成功',
+      );
+    }
+
+    // 真实API调用
+    const response = await customRequest(
+      `${API_BASE_URL}/api/custom-page/submit-files`,
+      {
+        method: 'POST',
+        data: {
+          projectId,
+          files,
+        },
+      },
+    );
+
+    console.log('✅ [AppDev API] 项目修改提交成功:', response);
+    return response;
+  } catch (error) {
+    console.error('❌ [AppDev API] 提交项目修改失败:', error);
     throw error;
   }
 };

@@ -4,7 +4,9 @@ import { getProjectIdFromUrl, useAppDevStore } from '@/models/appDev';
 import {
   getFileContent,
   getProjectContent,
+  keepAlive,
   startDev,
+  submitFiles,
   uploadAndStartProject,
 } from '@/services/appDev';
 import {
@@ -226,6 +228,8 @@ const AppDev: React.FC = () => {
   const lastProjectIdRef = useRef<string | null>(null);
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
+  // 保活轮询定时器
+  const keepAliveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
    * 将扁平的文件列表转换为树形结构
@@ -491,6 +495,58 @@ const AppDev: React.FC = () => {
   }, [initializeDevEnvironment]);
 
   /**
+   * 启动保活轮询
+   */
+  const startKeepAlive = useCallback(() => {
+    if (!workspace.projectId) {
+      console.log('⚠️ [AppDev] 没有项目ID，跳过保活轮询');
+      return;
+    }
+
+    // 清除之前的定时器
+    if (keepAliveTimerRef.current) {
+      clearInterval(keepAliveTimerRef.current);
+    }
+
+    // 立即执行一次保活
+    keepAlive(Number(workspace.projectId)).catch((error) => {
+      console.error('❌ [AppDev] 初始保活失败:', error);
+    });
+
+    // 启动30秒间隔的轮询
+    keepAliveTimerRef.current = setInterval(() => {
+      keepAlive(Number(workspace.projectId)).catch((error) => {
+        console.error('❌ [AppDev] 保活轮询失败:', error);
+      });
+    }, 30000);
+
+    console.log('💗 [AppDev] 已启动30秒保活轮询，项目ID:', workspace.projectId);
+  }, [workspace.projectId]);
+
+  /**
+   * 停止保活轮询
+   */
+  const stopKeepAlive = useCallback(() => {
+    if (keepAliveTimerRef.current) {
+      clearInterval(keepAliveTimerRef.current);
+      keepAliveTimerRef.current = null;
+      console.log('🛑 [AppDev] 已停止保活轮询');
+    }
+  }, []);
+
+  // 在页面进入时启动保活轮询
+  useEffect(() => {
+    if (workspace.projectId) {
+      startKeepAlive();
+    }
+
+    // 页面卸载时停止轮询
+    return () => {
+      stopKeepAlive();
+    };
+  }, [workspace.projectId, startKeepAlive, stopKeepAlive]);
+
+  /**
    * 键盘快捷键处理
    */
   useEffect(() => {
@@ -656,7 +712,7 @@ const AppDev: React.FC = () => {
 
       try {
         setUploadLoading(true);
-        const result = await uploadAndStartProject(file, projectName);
+        const result = await uploadAndStartProject({ file, projectName });
 
         if (result?.success && result?.data) {
           const { projectId: newProjectId, devServerUrl } = result.data;
@@ -681,6 +737,76 @@ const AppDev: React.FC = () => {
     },
     [projectName, updateProjectId, updateDevServerUrl],
   );
+
+  /**
+   * 测试API接口
+   */
+  const testGetProjectContent = useCallback(async () => {
+    try {
+      console.log('🧪 [AppDev] 测试获取项目内容API...');
+      const testProjectId = workspace.projectId || '1'; // 使用当前项目ID或默认值
+
+      const response = await getProjectContent(testProjectId);
+      console.log('✅ [AppDev] API测试成功:', response);
+
+      if (response.code === '0000' && response.data) {
+        const files = response.data.files;
+        const fileCount = Array.isArray(files)
+          ? files.length
+          : Object.keys(files).length;
+        message.success(`API测试成功！获取到 ${fileCount} 个文件`);
+      } else {
+        message.warning(`API响应异常: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('❌ [AppDev] API测试失败:', error);
+      message.error(
+        `API测试失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      );
+    }
+  }, [workspace.projectId]);
+
+  /**
+   * 测试提交文件修改API
+   */
+  const testSubmitFiles = useCallback(async () => {
+    try {
+      console.log('🧪 [AppDev] 测试提交文件修改API...');
+      const testProjectId = Number(workspace.projectId) || 1;
+
+      // 创建测试文件数据
+      const testFiles = [
+        {
+          name: 'test.txt',
+          contents: '这是一个测试文件内容\nHello World!',
+          binary: false,
+          sizeExceeded: false,
+        },
+        {
+          name: 'README.md',
+          contents: '# 测试项目\n\n这是一个用于测试API的项目。',
+          binary: false,
+          sizeExceeded: false,
+        },
+      ];
+
+      const response = await submitFiles(testProjectId, testFiles);
+      console.log('✅ [AppDev] 提交文件API测试成功:', response);
+
+      if (response.code === '0000' && response.data) {
+        message.success(`提交测试成功！提交了 ${testFiles.length} 个文件`);
+      } else {
+        message.warning(`提交API响应异常: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('❌ [AppDev] 提交文件API测试失败:', error);
+      message.error(
+        `提交API测试失败: ${
+          error instanceof Error ? error.message : '未知错误'
+        }`,
+      );
+    }
+  }, [workspace.projectId]);
 
   /**
    * 处理AI助手聊天
@@ -1192,8 +1318,28 @@ const AppDev: React.FC = () => {
                 <Card className={styles.fileTreeCard} bordered={false}>
                   {/* 添加一个导入项目按钮 悬浮固定在最右上角 */}
                   <div className={styles.fileTreeHeader}>
-                    <Button type="text" className={styles.addButton}>
+                    <Button
+                      type="text"
+                      className={styles.addButton}
+                      onClick={() => setIsUploadModalVisible(true)}
+                    >
                       导入项目
+                    </Button>
+                    <Button
+                      type="text"
+                      className={styles.addButton}
+                      onClick={testGetProjectContent}
+                      style={{ marginLeft: 8 }}
+                    >
+                      测试API
+                    </Button>
+                    <Button
+                      type="text"
+                      className={styles.addButton}
+                      onClick={testSubmitFiles}
+                      style={{ marginLeft: 8 }}
+                    >
+                      测试提交
                     </Button>
                   </div>
                   <div className={styles.fileTreeContainer}>
