@@ -577,6 +577,147 @@ export const uploadAndStartProject = async (
 };
 
 /**
+ * 获取项目内容（文件树）
+ * @param projectId 项目ID
+ * @returns Promise<any> 项目文件树数据
+ */
+export const getProjectContent = async (projectId: string): Promise<any> => {
+  try {
+    console.log('🌲 [AppDev API] 获取项目内容:', { projectId });
+
+    if (MOCK_MODE) {
+      await mockDelay(500);
+
+      // 模拟Vue.js项目的扁平文件列表
+      const mockVueProject = [
+        {
+          name: '.DS_Store',
+          binary: true,
+          size: 6148,
+        },
+        {
+          name: 'README.md',
+          contents: `# Vue Project
+
+这是一个Vue.js项目示例。
+
+## 安装依赖
+
+\`\`\`bash
+npm install
+\`\`\`
+
+## 启动开发服务器
+
+\`\`\`bash
+npm run serve
+\`\`\`
+
+## 构建生产版本
+
+\`\`\`bash
+npm run build
+\`\`\``,
+          binary: false,
+          size: 150,
+        },
+        {
+          name: 'src/App.vue',
+          contents: `<template>\n  <div id="app">\n    <div id="nav">\n      <router-link to="/">Home</router-link> |\n      <router-link to="/about">About</router-link>\n    </div>\n    <router-view/>\n  </div>\n</template>\n\n<style>\n#app {\n  font-family: Avenir, Helvetica, Arial, sans-serif;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n  text-align: center;\n  color: #2c3e50;\n}\n\n#nav {\n  padding: 30px;\n}\n\n#nav a {\n  font-weight: bold;\n  color: #2c3e50;\n}\n\n#nav a.router-link-exact-active {\n  color: #42b983;\n}\n</style>`,
+          binary: false,
+          size: 856,
+        },
+        {
+          name: 'src/main.js',
+          contents: `import Vue from 'vue'\nimport App from './App.vue'\nimport router from './router'\n\nVue.config.productionTip = false\n\nnew Vue({\n  router,\n  render: h => h(App)\n}).$mount('#app')`,
+          binary: false,
+          size: 179,
+        },
+        {
+          name: 'src/router/index.js',
+          contents: `import Vue from 'vue'\nimport VueRouter from 'vue-router'\nimport Home from '../views/Home.vue'\n\nVue.use(VueRouter)\n\nconst routes = [\n  {\n    path: '/',\n    name: 'Home',\n    component: Home\n  },\n  {\n    path: '/about',\n    name: 'About',\n    component: () => import('../views/About.vue')\n  }\n]\n\nconst router = new VueRouter({\n  mode: 'history',\n  base: process.env.BASE_URL,\n  routes\n})\n\nexport default router`,
+          binary: false,
+          size: 478,
+        },
+        {
+          name: 'src/views/Home.vue',
+          contents: `<template>\n  <div class="home">\n    <h1>Hello World</h1>\n    <HelloWorld msg="Welcome to Your Vue.js App"/>\n  </div>\n</template>\n\n<script>\nimport HelloWorld from '@/components/HelloWorld.vue'\n\nexport default {\n  name: 'Home',\n  components: {\n    HelloWorld\n  }\n}\n</script>\n\n<style scoped>\n.home {\n  padding: 20px;\n}\n</style>`,
+          binary: false,
+          size: 312,
+        },
+        {
+          name: 'src/views/About.vue',
+          contents: `<template>\n  <div class="about">\n    <h1>This is an about page</h1>\n  </div>\n</template>\n\n<script>\nexport default {\n  name: 'About'\n}\n</script>`,
+          binary: false,
+          size: 119,
+        },
+        {
+          name: 'src/components/HelloWorld.vue',
+          contents: `<template>\n  <div class="hello">\n    <h1>{{ msg }}</h1>\n    <p>\n      For a guide and recipes on how to configure / customize this project,<br>\n      check out the\n      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.\n    </p>\n  </div>\n</template>\n\n<script>\nexport default {\n  name: 'HelloWorld',\n  props: {\n    msg: String\n  }\n}\n</script>\n\n<style scoped>\n.hello {\n  margin: 40px 0;\n}\n</style>`,
+          binary: false,
+          size: 485,
+        },
+        {
+          name: 'src/assets/logo.png',
+          binary: true,
+          size: 6729,
+        },
+        {
+          name: 'public/favicon.ico',
+          binary: true,
+          size: 4260,
+        },
+        {
+          name: 'public/index.html',
+          contents: `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="utf-8">\n    <meta http-equiv="X-UA-Compatible" content="IE=edge">\n    <meta name="viewport" content="width=device-width,initial-scale=1.0">\n    <link rel="icon" href="<%= BASE_URL %>favicon.ico">\n    <title>Vue Project</title>\n  </head>\n  <body>\n    <noscript>\n      <strong>We're sorry but this app doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>\n    </noscript>\n    <div id="app"></div>\n  </body>\n</html>`,
+          binary: false,
+          size: 621,
+        },
+        {
+          name: 'package.json',
+          contents: `{\n  "name": "vue-project",\n  "version": "0.1.0",\n  "private": true,\n  "scripts": {\n    "serve": "vue-cli-service serve",\n    "build": "vue-cli-service build",\n    "lint": "vue-cli-service lint"\n  },\n  "dependencies": {\n    "core-js": "^3.8.3",\n    "vue": "^2.6.14",\n    "vue-router": "^3.5.1"\n  },\n  "devDependencies": {\n    "@vue/cli-plugin-babel": "~5.0.0",\n    "@vue/cli-plugin-eslint": "~5.0.0",\n    "@vue/cli-plugin-router": "~5.0.0",\n    "@vue/cli-service": "~5.0.0",\n    "eslint": "^7.32.0",\n    "eslint-plugin-vue": "^8.0.3"\n  }\n}`,
+          binary: false,
+          size: 612,
+        },
+        {
+          name: 'vue.config.js',
+          contents: `const { defineConfig } = require('@vue/cli-service')\nmodule.exports = defineConfig({\n  transpileDependencies: true\n})`,
+          binary: false,
+          size: 95,
+        },
+      ];
+
+      return mockSuccessResponse(mockVueProject, '项目内容获取成功');
+    }
+
+    // 真实API调用
+    const response = await fetch(
+      `${API_BASE_URL}/api/custom-page/project-content`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectId,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ [AppDev API] 项目内容获取成功:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ [AppDev API] 获取项目内容失败:', error);
+    throw error;
+  }
+};
+
+/**
  * 获取文件内容
  * @param projectId 项目ID
  * @param filePath 文件路径

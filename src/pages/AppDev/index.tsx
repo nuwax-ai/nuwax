@@ -3,6 +3,7 @@ import Preview, { PreviewRef } from '@/components/WebIDE/Preview';
 import { getProjectIdFromUrl, useAppDevStore } from '@/models/appDev';
 import {
   getFileContent,
+  getProjectContent,
   startDev,
   uploadAndStartProject,
 } from '@/services/appDev';
@@ -148,7 +149,7 @@ const AppDev: React.FC = () => {
   const [chatMode, setChatMode] = useState<'chat' | 'design'>('chat');
 
   // 文件树数据结构
-  const fileTreeData = [
+  const [fileTreeData, setFileTreeData] = useState<any[]>([
     {
       id: 'app',
       name: 'app',
@@ -218,13 +219,197 @@ const AppDev: React.FC = () => {
       name: 'tailwind.config.ts',
       type: 'file',
     },
-  ];
+  ]);
 
   // 使用 ref 来跟踪是否已经启动过开发环境，避免重复调用
   const hasStartedDevRef = useRef(false);
   const lastProjectIdRef = useRef<string | null>(null);
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
+
+  /**
+   * 将扁平的文件列表转换为树形结构
+   * 支持新的API数据格式
+   */
+  const transformFlatListToTree = useCallback((files: any[]) => {
+    const root: any[] = [];
+    const map = new Map<string, any>();
+
+    // 创建所有文件节点
+    files.forEach((file) => {
+      const pathParts = file.name.split('/').filter(Boolean);
+      const fileName = pathParts[pathParts.length - 1];
+      const isFile = fileName.includes('.');
+
+      const node = {
+        id: file.name,
+        name: fileName,
+        type: isFile ? 'file' : 'folder',
+        path: file.name,
+        children: [],
+        binary: file.binary || false,
+        size: file.size || 0,
+        status: file.status || null,
+        fullPath: file.name,
+        parentPath: pathParts.slice(0, -1).join('/'),
+      };
+
+      map.set(file.name, node);
+    });
+
+    // 构建层次结构
+    files.forEach((file) => {
+      const node = map.get(file.name);
+      if (!node) return;
+
+      const pathParts = file.name.split('/').filter(Boolean);
+      if (pathParts.length > 1) {
+        const parentPath = pathParts.slice(0, -1).join('/');
+        let parentNode = map.get(parentPath);
+
+        // 如果父节点不存在，创建虚拟父节点
+        if (!parentNode) {
+          const parentName = pathParts[pathParts.length - 2];
+          parentNode = {
+            id: parentPath,
+            name: parentName,
+            type: 'folder',
+            path: parentPath,
+            children: [],
+            parentPath: pathParts.slice(0, -2).join('/'),
+          };
+          map.set(parentPath, parentNode);
+        }
+
+        parentNode.children.push(node);
+      } else {
+        root.push(node);
+      }
+    });
+
+    // 排序：文件夹在前，文件在后，同类型按名称排序
+    const sortNodes = (nodes: any[]) => {
+      return nodes.sort((a, b) => {
+        if (a.type !== b.type) {
+          return a.type === 'folder' ? -1 : 1;
+        }
+        return a.name.localeCompare(b.name);
+      });
+    };
+
+    sortNodes(root);
+    map.forEach((node) => {
+      if (node.children.length > 0) {
+        sortNodes(node.children);
+      }
+    });
+
+    return root;
+  }, []);
+
+  /**
+   * 加载文件树数据
+   * 支持新的API格式和原有格式
+   */
+  const loadFileTree = useCallback(async () => {
+    if (!workspace.projectId) {
+      console.log('⚠️ [AppDev] 没有项目ID，跳过文件树加载');
+      return;
+    }
+
+    try {
+      console.log('🌲 [AppDev] 正在加载文件树数据...', {
+        projectId: workspace.projectId,
+      });
+
+      // 使用新的API获取项目内容
+      const response = await getProjectContent(workspace.projectId);
+
+      if (response && response.code === '0000' && response.data) {
+        const files = response.data.files || response.data;
+        console.log('✅ [AppDev] 项目内容加载成功:', files);
+
+        // 检查是否是新的扁平格式
+        if (Array.isArray(files) && files.length > 0 && files[0].name) {
+          console.log('🔄 [AppDev] 检测到新的扁平格式，正在转换...');
+          const treeData = transformFlatListToTree(files);
+          setFileTreeData(treeData);
+          console.log(
+            '✅ [AppDev] 文件树转换完成，共',
+            treeData.length,
+            '个根节点',
+          );
+
+          // 自动展开第一层文件夹
+          const rootFolders = treeData
+            .filter((node) => node.type === 'folder')
+            .map((node) => node.id);
+          if (rootFolders.length > 0) {
+            setExpandedFolders(new Set(rootFolders));
+          }
+          return;
+        }
+
+        // 如果是原有的树形格式，直接使用
+        if (Array.isArray(files)) {
+          setFileTreeData(files);
+          return;
+        }
+      }
+
+      console.log('⚠️ [AppDev] API返回数据格式异常，使用默认项目结构');
+      throw new Error('API返回数据格式异常');
+    } catch (error) {
+      console.error('❌ [AppDev] 加载文件树失败:', error);
+      console.log('🔄 [AppDev] 使用默认Vue.js项目结构作为fallback');
+
+      // fallback到默认Vue.js项目结构
+      const vueProjectData = [
+        {
+          name: 'src/App.vue',
+          contents: `<template>\n  <div id="app">\n    <div id="nav">\n      <router-link to="/">Home</router-link> |\n      <router-link to="/about">About</router-link>\n    </div>\n    <router-view/>\n  </div>\n</template>\n\n<style>\n#app {\n  font-family: Avenir, Helvetica, Arial, sans-serif;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n  text-align: center;\n  color: #2c3e50;\n}\n\n#nav {\n  padding: 30px;\n}\n\n#nav a {\n  font-weight: bold;\n  color: #2c3e50;\n}\n\n#nav a.router-link-exact-active {\n  color: #42b983;\n}\n</style>`,
+          binary: false,
+        },
+        {
+          name: 'src/main.js',
+          contents: `import Vue from 'vue'\nimport App from './App.vue'\nimport router from './router'\n\nVue.config.productionTip = false\n\nnew Vue({\n  router,\n  render: h => h(App)\n}).$mount('#app')`,
+          binary: false,
+        },
+        {
+          name: 'src/router/index.js',
+          contents: `import Vue from 'vue'\nimport VueRouter from 'vue-router'\nimport Home from '../views/Home.vue'\n\nVue.use(VueRouter)\n\nconst routes = [\n  {\n    path: '/',\n    name: 'Home',\n    component: Home\n  },\n  {\n    path: '/about',\n    name: 'About',\n    component: () => import('../views/About.vue')\n  }\n]\n\nconst router = new VueRouter({\n  mode: 'history',\n  base: process.env.BASE_URL,\n  routes\n})\n\nexport default router`,
+          binary: false,
+        },
+        {
+          name: 'package.json',
+          contents: `{\n  "name": "vue-project",\n  "version": "0.1.0",\n  "private": true,\n  "scripts": {\n    "serve": "vue-cli-service serve",\n    "build": "vue-cli-service build",\n    "lint": "vue-cli-service lint"\n  },\n  "dependencies": {\n    "core-js": "^3.8.3",\n    "vue": "^2.6.14",\n    "vue-router": "^3.5.1"\n  },\n  "devDependencies": {\n    "@vue/cli-plugin-babel": "~5.0.0",\n    "@vue/cli-plugin-eslint": "~5.0.0",\n    "@vue/cli-plugin-router": "~5.0.0",\n    "@vue/cli-service": "~5.0.0",\n    "eslint": "^7.32.0",\n    "eslint-plugin-vue": "^8.0.3"\n  }\n}`,
+          binary: false,
+        },
+        {
+          name: 'src/views/Home.vue',
+          contents: `<template>\n  <div class="home">\n    <h1>Hello World</h1>\n    <HelloWorld msg="Welcome to Your Vue.js App"/>\n  </div>\n</template>\n\n<script>\nimport HelloWorld from '@/components/HelloWorld.vue'\n\nexport default {\n  name: 'Home',\n  components: {\n    HelloWorld\n  }\n}\n</script>\n\n<style scoped>\n.home {\n  padding: 20px;\n}\n</style>`,
+          binary: false,
+        },
+        {
+          name: 'src/components/HelloWorld.vue',
+          contents: `<template>\n  <div class="hello">\n    <h1>{{ msg }}</h1>\n    <p>\n      For a guide and recipes on how to configure / customize this project,<br>\n      check out the\n      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.\n    </p>\n  </div>\n</template>\n\n<script>\nexport default {\n  name: 'HelloWorld',\n  props: {\n    msg: String\n  }\n}\n</script>\n\n<style scoped>\n.hello {\n  margin: 40px 0;\n}\n</style>`,
+          binary: false,
+        },
+        {
+          name: 'public/index.html',
+          contents: `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="utf-8">\n    <meta http-equiv="X-UA-Compatible" content="IE=edge">\n    <meta name="viewport" content="width=device-width,initial-scale=1.0">\n    <link rel="icon" href="<%= BASE_URL %>favicon.ico">\n    <title>Vue Project</title>\n  </head>\n  <body>\n    <noscript>\n      <strong>We're sorry but this app doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>\n    </noscript>\n    <div id="app"></div>\n  </body>\n</html>`,
+          binary: false,
+        },
+      ];
+
+      const treeData = transformFlatListToTree(vueProjectData);
+      setFileTreeData(treeData);
+      console.log('✅ [AppDev] 默认Vue.js项目结构加载完成');
+
+      // 自动展开src文件夹
+      setExpandedFolders(new Set(['src']));
+    }
+  }, [workspace.projectId, transformFlatListToTree]);
 
   /**
    * 从 URL 参数中获取 projectId
@@ -441,6 +626,13 @@ const AppDev: React.FC = () => {
       handleFileSelect(selectedFile);
     }
   }, [workspace.projectId, selectedFile]);
+
+  // 在项目ID变化时加载文件树
+  useEffect(() => {
+    if (workspace.projectId) {
+      loadFileTree();
+    }
+  }, [workspace.projectId, loadFileTree]);
 
   /**
    * 处理文件内容更新
@@ -735,7 +927,7 @@ const AppDev: React.FC = () => {
         );
       }
     },
-    [expandedFolders, selectedFile, toggleFolder],
+    [expandedFolders, selectedFile, toggleFolder, handleFileSelect],
   );
 
   // 如果正在启动开发环境，显示加载状态
