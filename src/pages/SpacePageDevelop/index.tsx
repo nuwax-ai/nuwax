@@ -7,22 +7,22 @@ import {
   PAGE_DEVELOP_CREATE_TYPE_LIST,
 } from '@/constants/pageDev.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
-import { apiPageList } from '@/services/pageDev';
+import { apiCustomPageQueryList } from '@/services/pageDev';
 import {
   PageDevelopCreateTypeEnum,
   PageDevelopMoreActionEnum,
 } from '@/types/enums/pageDev';
 import { CreateListEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
-import { PageInfo } from '@/types/pageDev';
+import { CustomPageDto } from '@/types/interfaces/pageDev';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Empty, Input, Row, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams, useRequest } from 'umi';
-import CardItem from './CardItem';
 import DebugAgentBindModel from './DebugAgentBindModal';
 import styles from './index.less';
+import PageDevelopCardItem from './PageDevelopCardItem';
 import PathParamsConfigModal from './PathParamsConfigModal';
 import ReverseProxyModal from './ReverseProxyModal';
 
@@ -83,10 +83,10 @@ const SpacePageDevelop: React.FC = () => {
   };
 
   // 查询页面列表接口
-  const { run: runPageList } = useRequest(apiPageList, {
+  const { run: runPageList } = useRequest(apiCustomPageQueryList, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: PageInfo[]) => {
+    onSuccess: (result: CustomPageDto[]) => {
       handleFilterList(type, create, keyword, result);
       pageAllRef.current = result;
       setLoading(false);
@@ -97,9 +97,8 @@ const SpacePageDevelop: React.FC = () => {
   });
 
   useEffect(() => {
-    // setLoading(true);
-    // runPageList(spaceId);
-    console.log('pageList', runPageList, spaceId);
+    setLoading(true);
+    runPageList(spaceId);
   }, [spaceId]);
 
   // 切换类型
@@ -273,7 +272,7 @@ const SpacePageDevelop: React.FC = () => {
         open={openPathParamsConfigModal}
         onCancel={() => setOpenPathParamsConfigModal(false)}
       />
-      <CardItem
+      <PageDevelopCardItem
         componentInfo={{
           name: '页面开发',
           label: '页面开发',

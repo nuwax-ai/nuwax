@@ -2,7 +2,7 @@ import CardWrapper from '@/components/business-component/CardWrapper';
 import CustomPopover from '@/components/CustomPopover';
 import { ICON_MORE } from '@/constants/images.constants';
 import { PAGE_DEVELOP_MORE_ACTIONS } from '@/constants/pageDev.constants';
-import type { CardItemProps } from '@/types/interfaces/pageDev';
+import type { PageDevelopCardItemProps } from '@/types/interfaces/pageDev';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -12,7 +12,7 @@ const cx = classNames.bind(styles);
 /**
  * 单个页面开发卡片
  */
-const CardItem: React.FC<CardItemProps> = ({
+const PageDevelopCardItem: React.FC<PageDevelopCardItemProps> = ({
   componentInfo,
   onClick,
   onClickMore,
@@ -38,4 +38,4 @@ const CardItem: React.FC<CardItemProps> = ({
   );
 };
 
-export default CardItem;
+export default PageDevelopCardItem;
