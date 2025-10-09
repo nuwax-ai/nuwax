@@ -1,0 +1,142 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.expand-textarea {
+  position: fixed;
+  top: 76px;
+  bottom: 12px;
+  left: 12px;
+  // right: 374px;
+  background-color: #fff;
+  border: 1px solid #e5e6eb;
+  padding: 12px;
+  border-radius: 16px;
+
+  .expand-textarea-header {
+    margin-bottom: 10px;
+  }
+
+  .expand-textarea-header-title {
+    display: flex;
+    gap: 5px;
+    font-size: 16px;
+    font-weight: @fontWeightStrong;
+    font-family: 'PingFang SC', 'Noto Sans SC', sans-serif;
+  }
+}
+
+/* 定义渐变按钮的样式 */
+.gradient-button.ant-btn-primary:not([disabled]):not(.ant-btn-dangerous) {
+  position: relative;
+}
+
+.gradient-button.ant-btn-primary:not([disabled]):not(.ant-btn-dangerous)
+  > span {
+  position: relative;
+}
+
+.gradient-button::before {
+  content: '';
+  background: linear-gradient(90deg, #a06bff, #d1cdee);
+  position: absolute;
+  inset: -1px;
+  opacity: 1;
+  transition: all 0.3s;
+  border-radius: inherit;
+  z-index: -1;
+
+  /* 确保伪元素在文字之下 */
+}
+
+.gradient-button:hover::before {
+  background: linear-gradient(90deg, #d1cdee, #a06bff);
+}
+
+.gradient-button {
+  border: none;
+  margin-right: 10px;
+
+  /* 使用 !important 来确保覆盖默认样式 */
+  color: white !important;
+  background-color: transparent !important;
+}
+
+/* 定义预格式化文本区域的样式 */
+.expand-textarea-pre-style {
+  height: calc(100% - 40px);
+  font-family: monospace;
+
+  /* 使用等宽字体 */
+  white-space: pre-wrap;
+
+  /* 保留空格和换行符，并允许文本换行 */
+  word-wrap: break-word;
+
+  /* 允许长单词或 URL 地址换行到下一行 */
+  border: none;
+
+  /* 移除边框 */
+  outline: none;
+
+  /* 移除聚焦时的默认轮廓线 */
+  background-color: transparent;
+
+  /* 透明背景 */
+  // padding: 10px;
+
+  /* 根据需要调整内边距 */
+  resize: none;
+
+  .ant-form-item-row {
+    height: 100%;
+
+    .ant-form-item-control-input {
+      height: 100%;
+
+      .ant-form-item-control-input-content {
+        height: 100%;
+
+        textarea {
+          height: 100%;
+          border: none;
+          outline: none;
+        }
+      }
+    }
+  }
+
+  /* 禁止用户调整大小 */
+}
+
+/* 如果你希望光标也看起来像在 <pre> 标签中一样 */
+.expand-textarea-pre-style:focus {
+  box-shadow: none;
+
+  /* 移除聚焦时的阴影效果 */
+}
+
+/* 额外的样式以确保外观与预格式化文本一致 */
+.expand-textarea-pre-style::before {
+  content: attr(placeholder);
+  color: #ccc;
+
+  /* 占位符颜色 */
+  pointer-events: none;
+  position: absolute;
+  left: 10px;
+
+  /* 调整占位符的位置 */
+  top: 10px;
+  z-index: -1;
+
+  /* 确保输入内容覆盖占位符 */
+}
+
+/* 当有值时隐藏占位符 */
+.expand-textarea-pre-style:not(:placeholder-shown)::before {
+  display: none;
+}
+
+.no-resize-textarea {
+  resize: none !important;
+}
