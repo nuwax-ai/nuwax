@@ -229,91 +229,21 @@ const AppDev: React.FC = () => {
   );
 
   // 文件内容预览相关状态
-  const [selectedFile, setSelectedFile] = useState<string>('page.tsx');
+  const [selectedFile, setSelectedFile] = useState<string>('');
   const [fileContent, setFileContent] = useState<string>('');
   const [isLoadingFileContent, setIsLoadingFileContent] = useState(false);
   const [fileContentError, setFileContentError] = useState<string | null>(null);
 
   // 文件夹展开状态
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
-    new Set(['app']),
+    new Set(),
   );
 
   // 聊天模式状态
   const [chatMode, setChatMode] = useState<'chat' | 'design'>('chat');
 
   // 文件树数据结构
-  const [fileTreeData, setFileTreeData] = useState<any[]>([
-    {
-      id: 'app',
-      name: 'app',
-      type: 'folder',
-      children: [
-        {
-          id: 'globals.css',
-          name: 'globals.css',
-          type: 'file',
-        },
-        {
-          id: 'layout.tsx',
-          name: 'layout.tsx',
-          type: 'file',
-        },
-        {
-          id: 'page.tsx',
-          name: 'page.tsx',
-          type: 'file',
-          status: '+6/-6',
-        },
-        {
-          id: 'components',
-          name: 'components',
-          type: 'folder',
-          children: [
-            {
-              id: 'Button.tsx',
-              name: 'Button.tsx',
-              type: 'file',
-            },
-            {
-              id: 'Modal.tsx',
-              name: 'Modal.tsx',
-              type: 'file',
-            },
-          ],
-        },
-        {
-          id: 'utils',
-          name: 'utils',
-          type: 'folder',
-          children: [
-            {
-              id: 'helpers.ts',
-              name: 'helpers.ts',
-              type: 'file',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: 'public',
-      name: 'public',
-      type: 'folder',
-      children: [
-        {
-          id: 'favicon.ico',
-          name: 'favicon.ico',
-          type: 'file',
-        },
-      ],
-    },
-    {
-      id: 'tailwind.config.ts',
-      name: 'tailwind.config.ts',
-      type: 'file',
-    },
-  ]);
+  const [fileTreeData, setFileTreeData] = useState<any[]>([]);
 
   // 使用 ref 来跟踪是否已经启动过开发环境，避免重复调用
   const hasStartedDevRef = useRef(false);
@@ -322,6 +252,8 @@ const AppDev: React.FC = () => {
   const previewRef = useRef<PreviewRef>(null);
   // 保活轮询定时器
   const keepAliveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // 跟踪文件树是否已经加载过，避免重复加载
+  const lastLoadedProjectIdRef = useRef<string | null>(null);
 
   /**
    * 将扁平的文件列表转换为树形结构
@@ -330,9 +262,20 @@ const AppDev: React.FC = () => {
   const transformFlatListToTree = useCallback((files: any[]) => {
     const root: any[] = [];
     const map = new Map<string, any>();
+    const filteredFiles = files.filter((file) => {
+      const fileName = file.name.split('/').pop();
+      // 只过滤掉系统文件，不过滤包含系统文件的路径
+      return !(
+        fileName?.startsWith('.') ||
+        fileName === '.DS_Store' ||
+        fileName === 'Thumbs.db' ||
+        fileName?.endsWith('.tmp') ||
+        fileName?.endsWith('.bak')
+      );
+    });
 
-    // 创建所有文件节点
-    files.forEach((file) => {
+    // 创建所有文件节点和必要的文件夹节点
+    filteredFiles.forEach((file) => {
       const pathParts = file.name.split('/').filter(Boolean);
       const fileName = pathParts[pathParts.length - 1];
       const isFile = fileName.includes('.');
@@ -344,42 +287,47 @@ const AppDev: React.FC = () => {
         path: file.name,
         children: [],
         binary: file.binary || false,
-        size: file.size || 0,
+        size: file.size || file.sizeExceeded ? 0 : file.contents?.length || 0,
         status: file.status || null,
         fullPath: file.name,
-        parentPath: pathParts.slice(0, -1).join('/'),
+        parentPath: pathParts.slice(0, -1).join('/') || null,
+        contents: file.contents || '',
       };
 
       map.set(file.name, node);
+
+      // 如果文件在子目录中，确保创建所有必要的父文件夹节点
+      if (pathParts.length > 1) {
+        for (let i = pathParts.length - 2; i >= 0; i--) {
+          const parentPath = pathParts.slice(0, i + 1).join('/');
+          const parentName = pathParts[i];
+
+          if (!map.has(parentPath)) {
+            const parentNode = {
+              id: parentPath,
+              name: parentName,
+              type: 'folder',
+              path: parentPath,
+              children: [],
+              parentPath: i > 0 ? pathParts.slice(0, i).join('/') : null,
+            };
+            map.set(parentPath, parentNode);
+          }
+        }
+      }
     });
 
     // 构建层次结构
-    files.forEach((file) => {
-      const node = map.get(file.name);
-      if (!node) return;
-
-      const pathParts = file.name.split('/').filter(Boolean);
-      if (pathParts.length > 1) {
-        const parentPath = pathParts.slice(0, -1).join('/');
-        let parentNode = map.get(parentPath);
-
-        // 如果父节点不存在，创建虚拟父节点
-        if (!parentNode) {
-          const parentName = pathParts[pathParts.length - 2];
-          parentNode = {
-            id: parentPath,
-            name: parentName,
-            type: 'folder',
-            path: parentPath,
-            children: [],
-            parentPath: pathParts.slice(0, -2).join('/'),
-          };
-          map.set(parentPath, parentNode);
+    map.forEach((node) => {
+      if (node.parentPath && map.has(node.parentPath)) {
+        const parentNode = map.get(node.parentPath);
+        if (!parentNode.children.find((child: any) => child.id === node.id)) {
+          parentNode.children.push(node);
         }
-
-        parentNode.children.push(node);
-      } else {
-        root.push(node);
+      } else if (!node.parentPath) {
+        if (!root.find((item: any) => item.id === node.id)) {
+          root.push(node);
+        }
       }
     });
 
@@ -404,12 +352,53 @@ const AppDev: React.FC = () => {
   }, []);
 
   /**
+   * 查找第一个可用的文件
+   */
+  const findFirstFile = useCallback((treeData: any[]): string | null => {
+    for (const node of treeData) {
+      if (node.type === 'file') {
+        // 跳过系统文件和隐藏文件
+        const fileName = node.name || node.id || '';
+        if (
+          fileName.startsWith('.') ||
+          fileName === '.DS_Store' ||
+          fileName === 'Thumbs.db' ||
+          fileName.endsWith('.tmp') ||
+          fileName.endsWith('.bak')
+        ) {
+          continue;
+        }
+        return node.id;
+      }
+      if (node.children && node.children.length > 0) {
+        const fileInChildren = findFirstFile(node.children);
+        if (fileInChildren) {
+          return fileInChildren;
+        }
+      }
+    }
+    return null;
+  }, []);
+
+  /**
    * 加载文件树数据
    * 支持新的API格式和原有格式
    */
   const loadFileTree = useCallback(async () => {
     if (!workspace.projectId) {
       console.log('⚠️ [AppDev] 没有项目ID，跳过文件树加载');
+      return;
+    }
+
+    // 检查是否已经加载过相同项目的文件树，避免重复调用
+    if (
+      lastLoadedProjectIdRef.current === workspace.projectId &&
+      fileTreeData.length > 0
+    ) {
+      console.log(
+        '🔄 [AppDev] 项目ID未变化且文件树已存在，跳过重复加载:',
+        workspace.projectId,
+      );
       return;
     }
 
@@ -436,6 +425,9 @@ const AppDev: React.FC = () => {
             '个根节点',
           );
 
+          // 更新最后加载的项目ID
+          lastLoadedProjectIdRef.current = workspace.projectId;
+
           // 自动展开第一层文件夹
           const rootFolders = treeData
             .filter((node) => node.type === 'folder')
@@ -443,69 +435,60 @@ const AppDev: React.FC = () => {
           if (rootFolders.length > 0) {
             setExpandedFolders(new Set(rootFolders));
           }
+
+          // 自动选择第一个文件
+          if (!selectedFile) {
+            const firstFile = findFirstFile(treeData);
+            if (firstFile) {
+              setSelectedFile(firstFile);
+              console.log('📁 [AppDev] 自动选择第一个文件:', firstFile);
+            }
+          }
           return;
         }
 
         // 如果是原有的树形格式，直接使用
         if (Array.isArray(files)) {
           setFileTreeData(files);
+
+          // 更新最后加载的项目ID
+          lastLoadedProjectIdRef.current = workspace.projectId;
+
+          // 自动选择第一个文件
+          if (!selectedFile) {
+            const firstFile = findFirstFile(files);
+            if (firstFile) {
+              setSelectedFile(firstFile);
+              console.log('📁 [AppDev] 自动选择第一个文件:', firstFile);
+            }
+          }
           return;
         }
       }
 
-      console.log('⚠️ [AppDev] API返回数据格式异常，使用默认项目结构');
+      console.log('⚠️ [AppDev] API返回数据格式异常，使用空项目结构');
       throw new Error('API返回数据格式异常');
     } catch (error) {
       console.error('❌ [AppDev] 加载文件树失败:', error);
-      console.log('🔄 [AppDev] 使用默认Vue.js项目结构作为fallback');
+      console.log('🔄 [AppDev] 使用空项目结构作为fallback');
 
-      // fallback到默认Vue.js项目结构
-      const vueProjectData = [
-        {
-          name: 'src/App.vue',
-          contents: `<template>\n  <div id="app">\n    <div id="nav">\n      <router-link to="/">Home</router-link> |\n      <router-link to="/about">About</router-link>\n    </div>\n    <router-view/>\n  </div>\n</template>\n\n<style>\n#app {\n  font-family: Avenir, Helvetica, Arial, sans-serif;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n  text-align: center;\n  color: #2c3e50;\n}\n\n#nav {\n  padding: 30px;\n}\n\n#nav a {\n  font-weight: bold;\n  color: #2c3e50;\n}\n\n#nav a.router-link-exact-active {\n  color: #42b983;\n}\n</style>`,
-          binary: false,
-        },
-        {
-          name: 'src/main.js',
-          contents: `import Vue from 'vue'\nimport App from './App.vue'\nimport router from './router'\n\nVue.config.productionTip = false\n\nnew Vue({\n  router,\n  render: h => h(App)\n}).$mount('#app')`,
-          binary: false,
-        },
-        {
-          name: 'src/router/index.js',
-          contents: `import Vue from 'vue'\nimport VueRouter from 'vue-router'\nimport Home from '../views/Home.vue'\n\nVue.use(VueRouter)\n\nconst routes = [\n  {\n    path: '/',\n    name: 'Home',\n    component: Home\n  },\n  {\n    path: '/about',\n    name: 'About',\n    component: () => import('../views/About.vue')\n  }\n]\n\nconst router = new VueRouter({\n  mode: 'history',\n  base: process.env.BASE_URL,\n  routes\n})\n\nexport default router`,
-          binary: false,
-        },
-        {
-          name: 'package.json',
-          contents: `{\n  "name": "vue-project",\n  "version": "0.1.0",\n  "private": true,\n  "scripts": {\n    "serve": "vue-cli-service serve",\n    "build": "vue-cli-service build",\n    "lint": "vue-cli-service lint"\n  },\n  "dependencies": {\n    "core-js": "^3.8.3",\n    "vue": "^2.6.14",\n    "vue-router": "^3.5.1"\n  },\n  "devDependencies": {\n    "@vue/cli-plugin-babel": "~5.0.0",\n    "@vue/cli-plugin-eslint": "~5.0.0",\n    "@vue/cli-plugin-router": "~5.0.0",\n    "@vue/cli-service": "~5.0.0",\n    "eslint": "^7.32.0",\n    "eslint-plugin-vue": "^8.0.3"\n  }\n}`,
-          binary: false,
-        },
-        {
-          name: 'src/views/Home.vue',
-          contents: `<template>\n  <div class="home">\n    <h1>Hello World</h1>\n    <HelloWorld msg="Welcome to Your Vue.js App"/>\n  </div>\n</template>\n\n<script>\nimport HelloWorld from '@/components/HelloWorld.vue'\n\nexport default {\n  name: 'Home',\n  components: {\n    HelloWorld\n  }\n}\n</script>\n\n<style scoped>\n.home {\n  padding: 20px;\n}\n</style>`,
-          binary: false,
-        },
-        {
-          name: 'src/components/HelloWorld.vue',
-          contents: `<template>\n  <div class="hello">\n    <h1>{{ msg }}</h1>\n    <p>\n      For a guide and recipes on how to configure / customize this project,<br>\n      check out the\n      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.\n    </p>\n  </div>\n</template>\n\n<script>\nexport default {\n  name: 'HelloWorld',\n  props: {\n    msg: String\n  }\n}\n</script>\n\n<style scoped>\n.hello {\n  margin: 40px 0;\n}\n</style>`,
-          binary: false,
-        },
-        {
-          name: 'public/index.html',
-          contents: `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="utf-8">\n    <meta http-equiv="X-UA-Compatible" content="IE=edge">\n    <meta name="viewport" content="width=device-width,initial-scale=1.0">\n    <link rel="icon" href="<%= BASE_URL %>favicon.ico">\n    <title>Vue Project</title>\n  </head>\n  <body>\n    <noscript>\n      <strong>We're sorry but this app doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>\n    </noscript>\n    <div id="app"></div>\n  </body>\n</html>`,
-          binary: false,
-        },
-      ];
+      // fallback到空项目结构
+      const emptyProjectData: any[] = [];
 
-      const treeData = transformFlatListToTree(vueProjectData);
+      const treeData = transformFlatListToTree(emptyProjectData);
       setFileTreeData(treeData);
-      console.log('✅ [AppDev] 默认Vue.js项目结构加载完成');
+      console.log('✅ [AppDev] 空项目结构加载完成');
 
-      // 自动展开src文件夹
-      setExpandedFolders(new Set(['src']));
+      // 更新最后加载的项目ID
+      lastLoadedProjectIdRef.current = workspace.projectId;
+
+      // 不自动展开任何文件夹，因为项目为空
+      setExpandedFolders(new Set());
+
+      // 不自动选择任何文件，因为项目为空
+      setSelectedFile('');
     }
-  }, [workspace.projectId, transformFlatListToTree]);
+  }, [workspace.projectId, transformFlatListToTree, findFirstFile]);
 
   /**
    * 从 URL 参数中获取 projectId
@@ -601,13 +584,13 @@ const AppDev: React.FC = () => {
     }
 
     // 立即执行一次保活
-    keepAlive(Number(workspace.projectId)).catch((error) => {
+    keepAlive(workspace.projectId).catch((error) => {
       console.error('❌ [AppDev] 初始保活失败:', error);
     });
 
     // 启动30秒间隔的轮询
     keepAliveTimerRef.current = setInterval(() => {
-      keepAlive(Number(workspace.projectId)).catch((error) => {
+      keepAlive(workspace.projectId).catch((error) => {
         console.error('❌ [AppDev] 保活轮询失败:', error);
       });
     }, 30000);
@@ -727,6 +710,46 @@ const AppDev: React.FC = () => {
   );
 
   /**
+   * 判断文件是否为图片类型
+   */
+  const isImageFile = useCallback((fileName: string): boolean => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    const imageExts = [
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'bmp',
+      'webp',
+      'svg',
+      'ico',
+      'tiff',
+    ];
+    return imageExts.includes(ext || '');
+  }, []);
+
+  /**
+   * 在文件树中查找文件节点
+   */
+  const findFileNode = useCallback(
+    (fileId: string, treeData: any[] = fileTreeData): any => {
+      for (const node of treeData) {
+        if (node.id === fileId) {
+          return node;
+        }
+        if (node.children) {
+          const found = findFileNode(fileId, node.children);
+          if (found) {
+            return found;
+          }
+        }
+      }
+      return null;
+    },
+    [fileTreeData],
+  );
+
+  /**
    * 处理文件选择
    */
   const handleFileSelect = useCallback(
@@ -739,10 +762,20 @@ const AppDev: React.FC = () => {
         return;
       }
 
+      // 检查文件是否已经有contents数据，如果有则不需要调用API
+      const fileNode = findFileNode(fileId);
+      if (fileNode && fileNode.contents && fileNode.contents.trim() !== '') {
+        console.log('📄 [AppDev] 文件已有contents数据，跳过API调用:', fileId);
+        setFileContent(fileNode.contents);
+        setFileContentError(null);
+        return;
+      }
+
       try {
         setIsLoadingFileContent(true);
         setFileContentError(null);
 
+        console.log('📄 [AppDev] 调用API获取文件内容:', fileId);
         const response = await getFileContent(workspace.projectId, fileId);
         if (response && typeof response === 'object' && 'data' in response) {
           setFileContent((response as any).data as string);
@@ -765,7 +798,7 @@ const AppDev: React.FC = () => {
         setIsLoadingFileContent(false);
       }
     },
-    [setActiveFile, workspace.projectId],
+    [setActiveFile, workspace.projectId, findFileNode],
   );
 
   // 在项目ID变化时加载默认文件内容
@@ -773,7 +806,7 @@ const AppDev: React.FC = () => {
     if (workspace.projectId && selectedFile) {
       handleFileSelect(selectedFile);
     }
-  }, [workspace.projectId, selectedFile]);
+  }, [workspace.projectId, selectedFile, handleFileSelect]);
 
   // 在项目ID变化时加载文件树
   useEffect(() => {
@@ -1012,6 +1045,10 @@ const AppDev: React.FC = () => {
         return 'HTML';
       case 'md':
         return 'Markdown';
+      case 'vue':
+        return 'HTML'; // Vue文件也用HTML高亮
+      case 'xml':
+        return 'HTML'; // XML文件用HTML高亮
       default:
         return 'Text';
     }
@@ -1576,45 +1613,150 @@ const AppDev: React.FC = () => {
 
                         {/* 文件内容预览 */}
                         <div className={styles.fileContentPreview}>
-                          {isLoadingFileContent ? (
-                            <div className={styles.loadingContainer}>
-                              <Spin size="large" />
-                              <p>正在加载文件内容...</p>
-                            </div>
-                          ) : fileContentError ? (
-                            <div className={styles.errorContainer}>
-                              <p>{fileContentError}</p>
-                              <Button
-                                size="small"
-                                onClick={() => handleFileSelect(selectedFile)}
-                              >
-                                重试
-                              </Button>
-                            </div>
-                          ) : fileContent ? (
-                            <div className={styles.fileContentDisplay}>
-                              <MonacoEditor
-                                currentFile={{
-                                  id: selectedFile,
-                                  name: selectedFile,
-                                  type: 'file',
-                                  path: `app/${selectedFile}`,
-                                  content: fileContent,
-                                  lastModified: Date.now(),
-                                  children: [],
-                                }}
-                                onContentChange={(fileId, content) => {
-                                  setFileContent(content);
-                                  handleFileContentChange(fileId, content);
-                                }}
-                                className={styles.monacoEditor}
-                              />
-                            </div>
-                          ) : (
-                            <div className={styles.emptyState}>
-                              <p>请从左侧文件树选择一个文件进行预览</p>
-                            </div>
-                          )}
+                          {(() => {
+                            if (isLoadingFileContent) {
+                              return (
+                                <div className={styles.loadingContainer}>
+                                  <Spin size="large" />
+                                  <p>正在加载文件内容...</p>
+                                </div>
+                              );
+                            }
+
+                            if (fileContentError) {
+                              return (
+                                <div className={styles.errorContainer}>
+                                  <p>{fileContentError}</p>
+                                  <Button
+                                    size="small"
+                                    onClick={() =>
+                                      handleFileSelect(selectedFile)
+                                    }
+                                  >
+                                    重试
+                                  </Button>
+                                </div>
+                              );
+                            }
+
+                            if (!selectedFile) {
+                              return (
+                                <div className={styles.emptyState}>
+                                  <p>请从左侧文件树选择一个文件进行预览</p>
+                                </div>
+                              );
+                            }
+
+                            const fileNode = findFileNode(selectedFile);
+                            const hasContents =
+                              fileNode &&
+                              fileNode.contents &&
+                              fileNode.contents.trim() !== '';
+                            const isImage = isImageFile(selectedFile);
+
+                            // 逻辑1: 如果文件有contents，直接在编辑器中显示
+                            if (hasContents) {
+                              return (
+                                <div className={styles.fileContentDisplay}>
+                                  <MonacoEditor
+                                    currentFile={{
+                                      id: selectedFile,
+                                      name: selectedFile,
+                                      type: 'file',
+                                      path: `app/${selectedFile}`,
+                                      content: fileNode.contents,
+                                      lastModified: Date.now(),
+                                      children: [],
+                                    }}
+                                    onContentChange={(fileId, content) => {
+                                      setFileContent(content);
+                                      handleFileContentChange(fileId, content);
+                                    }}
+                                    className={styles.monacoEditor}
+                                  />
+                                </div>
+                              );
+                            }
+
+                            // 逻辑2: 如果是图片文件，使用img元素渲染
+                            if (isImage) {
+                              const previewUrl = workspace.devServerUrl
+                                ? `${workspace.devServerUrl}/${selectedFile}`
+                                : `/${selectedFile}`;
+
+                              return (
+                                <div className={styles.imagePreviewContainer}>
+                                  <div className={styles.imagePreviewHeader}>
+                                    <span>图片预览: {selectedFile}</span>
+                                    <Button
+                                      size="small"
+                                      icon={<ReloadOutlined />}
+                                      onClick={() => {
+                                        if (previewRef.current) {
+                                          previewRef.current.refresh();
+                                        }
+                                      }}
+                                    >
+                                      刷新
+                                    </Button>
+                                  </div>
+                                  <div className={styles.imagePreviewContent}>
+                                    <img
+                                      src={previewUrl}
+                                      alt={selectedFile}
+                                      style={{
+                                        maxWidth: '100%',
+                                        maxHeight: '600px',
+                                        objectFit: 'contain',
+                                        border: '1px solid #d9d9d9',
+                                        borderRadius: '6px',
+                                      }}
+                                      onError={(e) => {
+                                        e.currentTarget.src =
+                                          '/api/file-preview/' + selectedFile;
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // 逻辑3: 其他情况通过API远程预览或使用现有fileContent
+                            if (fileContent) {
+                              return (
+                                <div className={styles.fileContentDisplay}>
+                                  <MonacoEditor
+                                    currentFile={{
+                                      id: selectedFile,
+                                      name: selectedFile,
+                                      type: 'file',
+                                      path: `app/${selectedFile}`,
+                                      content: fileContent,
+                                      lastModified: Date.now(),
+                                      children: [],
+                                    }}
+                                    onContentChange={(fileId, content) => {
+                                      setFileContent(content);
+                                      handleFileContentChange(fileId, content);
+                                    }}
+                                    className={styles.monacoEditor}
+                                  />
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div className={styles.emptyState}>
+                                <p>无法预览此文件类型: {selectedFile}</p>
+                                <Button
+                                  size="small"
+                                  onClick={() => handleFileSelect(selectedFile)}
+                                >
+                                  重新加载
+                                </Button>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     )}

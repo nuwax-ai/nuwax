@@ -33,6 +33,21 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
    */
   const getLanguageFromFile = useCallback((fileName: string): string => {
     const ext = fileName.split('.').pop()?.toLowerCase();
+    const fileNameLower = fileName.toLowerCase();
+
+    // 检查是否为 Vue TSX 文件
+    if (
+      fileNameLower.includes('.vue.tsx') ||
+      fileNameLower.endsWith('.vue.tsx')
+    ) {
+      return 'vue-tsx';
+    }
+
+    // 检查是否为 Vue 文件
+    if (ext === 'vue') {
+      return 'vue';
+    }
+
     switch (ext) {
       case 'tsx':
       case 'jsx':

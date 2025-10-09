@@ -19,12 +19,11 @@ import type {
 // API基础配置 - 使用后端提供的临时地址
 const API_BASE_URL = 'http://192.168.31.125:8081';
 
-// Mock模式配置 - 开发环境默认启用Mock模式
+// Mock模式配置 - 开发环境默认禁用Mock模式
 const MOCK_MODE =
-  process.env.NODE_ENV === 'development' &&
-  (localStorage.getItem('appdev-mock-mode') !== 'false' || // 默认启用，除非明确禁用
-    new URLSearchParams(window.location.search).get('mock') === 'true' ||
-    new URLSearchParams(window.location.search).get('mock') !== 'false'); // 默认启用，除非明确禁用
+  (process.env.NODE_ENV === 'development' &&
+    localStorage.getItem('appdev-mock-mode') === 'true') || // 默认禁用，除非明确启用
+  new URLSearchParams(window.location.search).get('mock') === 'true';
 
 console.log('🔧 [AppDev API] Mock mode:', MOCK_MODE);
 
@@ -62,16 +61,16 @@ initMockData();
 
 /**
  * 初始化Mock模式设置
- * 在开发环境下，如果localStorage中没有设置，则默认启用Mock模式
+ * 在开发环境下，默认禁用Mock模式
  */
 const initMockMode = () => {
   if (process.env.NODE_ENV === 'development') {
     const mockModeSetting = localStorage.getItem('appdev-mock-mode');
     if (mockModeSetting === null) {
-      // 如果localStorage中没有设置，默认启用Mock模式
-      localStorage.setItem('appdev-mock-mode', 'true');
+      // 如果localStorage中没有设置，默认禁用Mock模式
+      localStorage.setItem('appdev-mock-mode', 'false');
       console.log(
-        '🎭 [AppDev API] Mock mode enabled by default in development',
+        '🎭 [AppDev API] Mock mode disabled by default in development',
       );
     }
   }
@@ -980,7 +979,7 @@ export default config`,
  * @param projectId 项目ID
  * @returns Promise<any> 保活结果
  */
-export const keepAlive = async (projectId: number): Promise<any> => {
+export const keepAlive = async (projectId: string): Promise<any> => {
   try {
     console.log('💗 [AppDev API] 开发服务器保活，项目ID:', projectId);
 
@@ -989,7 +988,7 @@ export const keepAlive = async (projectId: number): Promise<any> => {
       {
         method: 'POST',
         data: {
-          projectId: projectId,
+          projectId,
         },
       },
     );
