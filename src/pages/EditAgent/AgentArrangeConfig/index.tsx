@@ -86,8 +86,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [deleteList, setDeleteList] = useState<DeleteComponentInfo[]>([]);
   // 打开、关闭组件选择弹窗
   const [show, setShow] = useState<boolean>(false);
-  // 打开、关闭扩展页面
-  const [openPage, setOpenPage] = useState<boolean>(false);
   // 打开、关闭事件绑定弹窗
   const [openEventBindModel, setOpenEventBindModel] = useState<boolean>(false);
   // 智能体组件列表
@@ -652,7 +650,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: (
         <>
           {/* 1. “关闭扩展页面”为关闭时，不展示“默认展开页面区”和“隐藏主会话框” */}
-          <div
+          {/* <div
             className={cx(
               'flex',
               'items-center',
@@ -662,35 +660,31 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           >
             <span>关闭扩展页面</span>
             <Switch checked={openPage} onChange={setOpenPage} />
+          </div> */}
+          {/* 2. “默认展开页面区”，当选中时，用户进入智能体详情或会话时为左右分栏，左边是对话框，右边是页面 */}
+          <div
+            className={cx(
+              'flex',
+              'items-center',
+              'content-between',
+              styles['page-setting-item'],
+            )}
+          >
+            <span>默认展开页面区</span>
+            <Switch />
           </div>
-          {openPage && (
-            <>
-              {/* 2. “默认展开页面区”，当选中时，用户进入智能体详情或会话时为左右分栏，左边是对话框，右边是页面 */}
-              <div
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-between',
-                  styles['page-setting-item'],
-                )}
-              >
-                <span>默认展开页面区</span>
-                <Switch />
-              </div>
-              {/* 3. “隐藏主会话框”，当选中时智能体详情仅展示页面，这个时候一个智能体就是一个独立的应用（系统） */}
-              <div
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-between',
-                  styles['page-setting-item'],
-                )}
-              >
-                <span>隐藏主会话框</span>
-                <Switch />
-              </div>
-            </>
-          )}
+          {/* 3. “隐藏主会话框”，当选中时智能体详情仅展示页面，这个时候一个智能体就是一个独立的应用（系统） */}
+          <div
+            className={cx(
+              'flex',
+              'items-center',
+              'content-between',
+              styles['page-setting-item'],
+            )}
+          >
+            <span>隐藏主会话框</span>
+            <Switch />
+          </div>
         </>
       ),
       classNames: {

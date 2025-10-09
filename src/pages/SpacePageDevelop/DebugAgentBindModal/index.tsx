@@ -4,9 +4,10 @@ import { apiAgentConfigList } from '@/services/agentConfig';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { option } from '@/types/interfaces/common';
 import { CreateCustomPageInfo } from '@/types/interfaces/pageDev';
-import { Form, FormProps } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import { Button, Form, FormProps } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { history, useRequest } from 'umi';
 
 interface DebugAgentBindModalProps {
   spaceId: number;
@@ -72,6 +73,11 @@ const DebugAgentBindModal: React.FC<DebugAgentBindModalProps> = ({
     form.submit();
   };
 
+  // 创建智能体
+  const handleCreateAgent = () => {
+    history.push(`/space/${spaceId}/develop`);
+  };
+
   return (
     <CustomFormModal
       form={form}
@@ -89,7 +95,19 @@ const DebugAgentBindModal: React.FC<DebugAgentBindModalProps> = ({
         autoComplete="off"
       >
         <Form.Item name="name">
-          <SelectList placeholder="请选择调试智能体" options={agentList} />
+          <SelectList
+            placeholder="请选择一个用于调试的智能体"
+            options={agentList}
+            dropdownRenderComponent={
+              <Button
+                type="primary"
+                onClick={handleCreateAgent}
+                icon={<PlusOutlined />}
+              >
+                创建智能体
+              </Button>
+            }
+          />
         </Form.Item>
       </Form>
     </CustomFormModal>

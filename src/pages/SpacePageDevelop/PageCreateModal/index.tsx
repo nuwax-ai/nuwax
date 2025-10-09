@@ -72,14 +72,15 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
     setLoading(true);
     console.log(values, type);
+    // 校验路径
+    const { basePath } = values;
+    if (!basePath.includes('/')) {
+      message.error('请输入正确路径，以/开头');
+      return;
+    }
     // 项目导入
     if (type === PageDevelopCreateTypeEnum.Import_Project) {
-      const { fileList, icon, projectName, projectDesc, basePath } = values;
-
-      if (!basePath.includes('/')) {
-        message.error('请输入正确路径，以/开头');
-        return;
-      }
+      const { fileList, icon, projectName, projectDesc } = values;
 
       // todo 上传文件接口返回的是文件的base64，这里需要转换一下
       const file = fileList?.[0]?.originFileObj;
@@ -100,16 +101,15 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
     }
     // 在线创建
     else if (type === PageDevelopCreateTypeEnum.ONLINE_DEPLOY) {
-      const { basePath } = values;
-      if (!basePath.includes('/')) {
-        message.error('请输入正确路径，以/开头');
-        return;
-      }
       const data = {
         ...values,
         spaceId,
       };
       runCreatePageCreate(data);
+    }
+    // 反向代理
+    else if (type === PageDevelopCreateTypeEnum.REVERSE_PROXY) {
+      // todo 调用反向代理接口
     }
   };
 

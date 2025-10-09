@@ -69,6 +69,7 @@ const SpacePageDevelop: React.FC = () => {
   const pageCreateTypeRef = useRef<PageDevelopCreateTypeEnum>(
     PageDevelopCreateTypeEnum.Import_Project,
   );
+  // 当前页面信息
   const [currentPageInfo, setCurrentPageInfo] = useState<CustomPageDto | null>(
     null,
   );
@@ -180,9 +181,22 @@ const SpacePageDevelop: React.FC = () => {
   // 点击卡片
   const handleClickCard = (item: CustomPageDto) => {
     setCurrentPageInfo(item);
-    setOpenDebugAgentBindModel(true);
     console.log('点击卡片', item);
     // todo: 根据页面类型（页面创建模式）导入项目、在线创建，判断是否需要打开调试智能体绑定弹窗，反向代理，打开路径参数配置弹窗
+    if (
+      item.projectType === PageDevelopCreateTypeEnum.Import_Project ||
+      item.projectType === PageDevelopCreateTypeEnum.ONLINE_DEPLOY
+    ) {
+      setCreateCustomPageInfo({
+        devServerUrl: '',
+        projectId: item.projectId,
+      });
+      setOpenDebugAgentBindModel(true);
+    }
+    // 反向代理
+    else if (item.projectType === PageDevelopCreateTypeEnum.REVERSE_PROXY) {
+      setOpenReverseProxyModal(true);
+    }
   };
 
   // 点击更多操作
