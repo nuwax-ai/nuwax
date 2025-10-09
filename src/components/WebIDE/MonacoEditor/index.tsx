@@ -395,19 +395,54 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   // 清理资源
   useEffect(() => {
     return () => {
-      if (editorInstanceRef.current) {
-        try {
-          // 检查编辑器是否已经被dispose
-          if (!editorInstanceRef.current.isDisposed?.()) {
-            editorInstanceRef.current.dispose();
+      // 使用setTimeout确保在下一个事件循环中清理，避免冲突
+      const cleanup = () => {
+        if (editorInstanceRef.current) {
+          try {
+            const editor = editorInstanceRef.current;
+
+            // 先移除内容变化监听器
+            if (editor._contentWidgets) {
+              editor._contentWidgets.clear();
+            }
+
+            // 清理所有装饰器
+            if (editor._decorations) {
+              editor._decorations = [];
+            }
+
+            // 获取模型并在清理编辑器之前清理模型
+            const model = editor.getModel();
+            if (model && !model.isDisposed()) {
+              // 先清除所有标记
+              model.removeAllDecorations();
+              // 清理语言服务
+              if (model._languageService) {
+                model._languageService.dispose();
+              }
+              // 最后清理模型
+              model.dispose();
+            }
+
+            // 检查编辑器是否已经被dispose
+            if (!editor.isDisposed?.()) {
+              editor.dispose();
+            }
+          } catch (error) {
+            // 完全忽略dispose错误
+            // console.debug('Monaco Editor cleanup:', error);
+          } finally {
+            editorInstanceRef.current = null;
           }
-        } catch (error) {
-          // 忽略dispose错误，避免控制台报错
-          console.warn('Monaco Editor dispose warning:', error);
-        } finally {
-          editorInstanceRef.current = null;
         }
-      }
+      };
+
+      // 延迟清理，避免与React的清理流程冲突
+      const timeoutId = setTimeout(cleanup, 0);
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
     };
   }, []);
 
