@@ -11,11 +11,11 @@ export const PAGE_DEVELOP_CREATE_TYPE_LIST = [
     label: '导入项目',
   },
   {
-    value: PageDevelopCreateTypeEnum.Online_Create,
+    value: PageDevelopCreateTypeEnum.ONLINE_DEPLOY,
     label: '在线创建',
   },
   {
-    value: PageDevelopCreateTypeEnum.Reverse_Proxy,
+    value: PageDevelopCreateTypeEnum.REVERSE_PROXY,
     label: '反向代理',
   },
 ];

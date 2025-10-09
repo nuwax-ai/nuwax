@@ -6,6 +6,7 @@ import {
   apiCustomPageUploadAndStart,
 } from '@/services/pageDev';
 import { PageDevelopCreateTypeEnum } from '@/types/enums/pageDev';
+import { CreateCustomPageInfo } from '@/types/interfaces/pageDev';
 import { customizeRequiredMark } from '@/utils/form';
 import { InboxOutlined } from '@ant-design/icons';
 import { Form, FormProps, Input, message, Upload, UploadProps } from 'antd';
@@ -16,10 +17,11 @@ import { useRequest } from 'umi';
  * 页面创建弹窗Props
  */
 export interface PageCreateModalProps {
+  spaceId: number;
   type: PageDevelopCreateTypeEnum;
   open: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (info: CreateCustomPageInfo) => void;
 }
 
 const { Dragger } = Upload;
@@ -28,6 +30,7 @@ const { Dragger } = Upload;
  * 页面创建弹窗
  */
 const PageCreateModal: React.FC<PageCreateModalProps> = ({
+  spaceId,
   type,
   open,
   onCancel,
@@ -36,14 +39,19 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
   const [form] = Form.useForm();
   // 图标
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
   // 上传前端项目压缩包并启动开发服务器
   const { run: runCreatePageUploadAndStart } = useRequest(
     apiCustomPageUploadAndStart,
     {
       manual: true,
-      onSuccess: () => {
-        onConfirm();
+      onSuccess: (result: CreateCustomPageInfo) => {
+        onConfirm(result);
+        setLoading(false);
+      },
+      onError: () => {
+        setLoading(false);
       },
     },
   );
@@ -51,25 +59,57 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
   // 创建用户前端页面项目
   const { run: runCreatePageCreate } = useRequest(apiCustomPageCreate, {
     manual: true,
-    onSuccess: () => {
-      onConfirm();
+    onSuccess: (result: CreateCustomPageInfo) => {
+      onConfirm(result);
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
   // 创建页面
-  const onFinish: FormProps<any>['onFinish'] = (values) => {
+  const onFinish: FormProps<any>['onFinish'] = async (values) => {
+    setLoading(true);
     console.log(values, type);
+    // 项目导入
     if (type === PageDevelopCreateTypeEnum.Import_Project) {
-      const { zipFile, ...rest } = values;
+      const { fileList, icon, projectName, projectDesc, basePath } = values;
+
+      if (!basePath.includes('/')) {
+        message.error('请输入正确路径，以/开头');
+        return;
+      }
+
       // todo 上传文件接口返回的是文件的base64，这里需要转换一下
-      const file = JSON.stringify(zipFile.fileList[0]);
+      const file = fileList?.[0]?.originFileObj;
+      // 创建formData
+      const formData = new FormData();
+
+      /* 1. 先把“对象”打散成扁平字段，前缀 + 点号 */
+      formData.append('icon', icon || '');
+      formData.append('projectName', projectName);
+      formData.append('projectDesc', projectDesc || '');
+      formData.append('basePath', basePath || '');
+      formData.append('spaceId', spaceId.toString());
+      /* 2. 追加文件 */
+      formData.append('file', file || '');
+      runCreatePageUploadAndStart(formData);
+      // const result = await apiCustomPageUploadAndStart(formData);
+      // console.log(result);
+    }
+    // 在线创建
+    else if (type === PageDevelopCreateTypeEnum.ONLINE_DEPLOY) {
+      const { basePath } = values;
+      if (!basePath.includes('/')) {
+        message.error('请输入正确路径，以/开头');
+        return;
+      }
       const data = {
-        ...rest,
-        file,
+        ...values,
+        spaceId,
       };
-      runCreatePageUploadAndStart(data);
-    } else if (type === PageDevelopCreateTypeEnum.Online_Create) {
-      runCreatePageCreate(values);
+      runCreatePageCreate(data);
     }
   };
 
@@ -112,11 +152,20 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
     form.setFieldValue('icon', url);
   };
 
+  const normFile = (e: any) => {
+    console.log('Upload event:', e);
+    if (Array.isArray(e)) {
+      return e;
+    }
+    return e?.fileList;
+  };
+
   return (
     <CustomFormModal
       form={form}
       open={open}
       title="创建页面"
+      loading={loading}
       onCancel={onCancel}
       onConfirm={handlerConfirm}
     >
@@ -141,8 +190,12 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
             autoSize={{ minRows: 4, maxRows: 6 }}
           />
         </Form.Item>
-        <Form.Item name="basePath" label="路径">
-          <Input placeholder="请输入路径" />
+        <Form.Item
+          name="basePath"
+          label="路径"
+          rules={[{ required: true, message: '请输入路径' }]}
+        >
+          <Input placeholder="请输入路径，以/开头, 例如：/test" />
         </Form.Item>
         <Form.Item name="icon" label="图标">
           <UploadAvatar
@@ -152,7 +205,11 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
           />
         </Form.Item>
         {type === PageDevelopCreateTypeEnum.Import_Project && (
-          <Form.Item name="zipFile" label="项目压缩包">
+          <Form.Item
+            name="fileList"
+            valuePropName="fileList"
+            getValueFromEvent={normFile}
+          >
             <Dragger {...uploadProps}>
               <p className="ant-upload-drag-icon">
                 <InboxOutlined />

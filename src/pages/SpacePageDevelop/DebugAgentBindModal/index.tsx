@@ -1,14 +1,17 @@
 import SelectList from '@/components/custom/SelectList';
 import CustomFormModal from '@/components/CustomFormModal';
+import { apiAgentConfigList } from '@/services/agentConfig';
+import { AgentConfigInfo } from '@/types/interfaces/agent';
+import { option } from '@/types/interfaces/common';
+import { CreateCustomPageInfo } from '@/types/interfaces/pageDev';
 import { Form, FormProps } from 'antd';
-// import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-// import styles from './index.less';
-
-// const cx = classNames.bind(styles);
+import { useRequest } from 'umi';
 
 interface DebugAgentBindModalProps {
   spaceId: number;
+  devAgentId?: number;
+  createCustomPageInfo?: CreateCustomPageInfo | null;
   open: boolean;
   onCancel: () => void;
   onConfirm: (result: number) => void;
@@ -19,42 +22,48 @@ interface DebugAgentBindModalProps {
  */
 const DebugAgentBindModal: React.FC<DebugAgentBindModalProps> = ({
   spaceId,
+  devAgentId,
+  createCustomPageInfo,
   open,
   onCancel,
   onConfirm,
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(false);
+  // 智能体列表
+  const [agentList, setAgentList] = useState<option[]>([]);
 
-  // // 新增智能体接口
-  // const { run: runAdd } = useRequest(apiAgentAdd, {
-  //   manual: true,
-  //   debounceInterval: 300,
-  //   onSuccess: (result: number) => {
-  //     onConfirm?.(result);
-  //     setLoading(false);
-  //   },
-  //   onError: () => {
-  //     setLoading(false);
-  //   },
-  // });
-
-  const initForm = () => {
-    form.setFieldsValue({
-      name: 1,
-    });
-  };
+  // 查询空间智能体列表接口
+  const { run: runAgentList } = useRequest(apiAgentConfigList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: AgentConfigInfo[]) => {
+      const list =
+        result?.map((item) => ({
+          label: item.name,
+          value: item.id,
+        })) || [];
+      setAgentList(list);
+      // 如果调试智能体ID存在，则设置默认值
+      if (devAgentId) {
+        form.setFieldsValue({
+          name: devAgentId,
+        });
+      }
+    },
+  });
 
   useEffect(() => {
-    console.log('open', spaceId);
     if (open) {
-      initForm();
+      runAgentList(spaceId);
     }
-  }, [open]);
+  }, [open, devAgentId, spaceId]);
 
   const onFinish: FormProps<any>['onFinish'] = (values) => {
     console.log('onFinish', values);
     setLoading(true);
+    // todo: 选择调试智能体后，跳转到开发页面
+    console.log('createCustomPageInfo', createCustomPageInfo);
     onConfirm?.(values.name);
     setLoading(false);
   };
@@ -76,16 +85,11 @@ const DebugAgentBindModal: React.FC<DebugAgentBindModalProps> = ({
         form={form}
         layout="vertical"
         onFinish={onFinish}
+        preserve={false}
         autoComplete="off"
       >
         <Form.Item name="name">
-          <SelectList
-            placeholder="请选择调试智能体"
-            options={[
-              { label: '模型1', value: 1 },
-              { label: '模型2', value: 2 },
-            ]}
-          />
+          <SelectList placeholder="请选择调试智能体" options={agentList} />
         </Form.Item>
       </Form>
     </CustomFormModal>

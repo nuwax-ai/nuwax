@@ -14,12 +14,15 @@ import {
 } from '@/types/enums/pageDev';
 import { CreateListEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
-import { CustomPageDto } from '@/types/interfaces/pageDev';
+import {
+  CreateCustomPageInfo,
+  CustomPageDto,
+} from '@/types/interfaces/pageDev';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Empty, Input, Row, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { useModel, useParams, useRequest } from 'umi';
+import { useParams, useRequest } from 'umi';
 import DebugAgentBindModel from './DebugAgentBindModal';
 import styles from './index.less';
 import PageCreateModal from './PageCreateModal';
@@ -36,9 +39,9 @@ const SpacePageDevelop: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
   // 页面列表
-  const [pageList, setPageList] = useState<any[]>([]);
+  const [pageList, setPageList] = useState<CustomPageDto[]>([]);
   // 所有页面列表
-  const pageAllRef = useRef<any[]>([]);
+  const pageAllRef = useRef<CustomPageDto[]>([]);
   // 类型
   const [type, setType] = useState<PageDevelopCreateTypeEnum>(
     PageDevelopCreateTypeEnum.All_Type,
@@ -66,8 +69,14 @@ const SpacePageDevelop: React.FC = () => {
   const pageCreateTypeRef = useRef<PageDevelopCreateTypeEnum>(
     PageDevelopCreateTypeEnum.Import_Project,
   );
+  const [currentPageInfo, setCurrentPageInfo] = useState<CustomPageDto | null>(
+    null,
+  );
+  // 创建页面响应信息
+  const [createCustomPageInfo, setCreateCustomPageInfo] =
+    useState<CreateCustomPageInfo | null>(null);
   // 获取用户信息
-  const { userInfo } = useModel('userInfo');
+  // const { userInfo } = useModel('userInfo');
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -77,15 +86,15 @@ const SpacePageDevelop: React.FC = () => {
     list = pageAllRef.current,
   ) => {
     let _list = list;
-    if (filterType !== PageDevelopCreateTypeEnum.All_Type) {
-      _list = _list.filter((item) => item.type === filterType);
-    }
-    if (filterCreate === CreateListEnum.Me) {
-      _list = _list.filter((item) => item.creatorId === userInfo.id);
-    }
-    if (filterKeyword) {
-      _list = _list.filter((item) => item.name.includes(filterKeyword));
-    }
+    // if (filterType !== PageDevelopCreateTypeEnum.All_Type) {
+    //   _list = _list.filter((item) => item.type === filterType);
+    // }
+    // if (filterCreate === CreateListEnum.Me) {
+    //   _list = _list.filter((item) => item.creatorId === userInfo.id);
+    // }
+    // if (filterKeyword) {
+    //   _list = _list.filter((item) => item.name.includes(filterKeyword));
+    // }
     setPageList(_list);
   };
 
@@ -150,16 +159,18 @@ const SpacePageDevelop: React.FC = () => {
    * 导入项目、在线创建表单弹窗填写后，进入项目之前弹出“调试智能体绑定”框，确认后进入开发界面
    * 反向代理表单填写后，点击不进入开发界面，直接弹出“反向代理配置”框
    */
-  const handleConfirmCreatePage = () => {
+  const handleConfirmCreatePage = (result: CreateCustomPageInfo) => {
+    console.log('handleConfirmCreatePage', result);
+    setCreateCustomPageInfo(result);
     // 关闭表单弹窗
     setOpenPageCreateModal(false);
     switch (pageCreateTypeRef.current) {
       case PageDevelopCreateTypeEnum.Import_Project:
-      case PageDevelopCreateTypeEnum.Online_Create:
+      case PageDevelopCreateTypeEnum.ONLINE_DEPLOY:
         setOpenDebugAgentBindModel(true);
         console.log('导入项目、在线创建');
         break;
-      case PageDevelopCreateTypeEnum.Reverse_Proxy:
+      case PageDevelopCreateTypeEnum.REVERSE_PROXY:
         console.log('反向代理');
         setOpenReverseProxyModal(true);
         break;
@@ -167,8 +178,11 @@ const SpacePageDevelop: React.FC = () => {
   };
 
   // 点击卡片
-  const handleClickCard = () => {
-    console.log('点击卡片');
+  const handleClickCard = (item: CustomPageDto) => {
+    setCurrentPageInfo(item);
+    setOpenDebugAgentBindModel(true);
+    console.log('点击卡片', item);
+    // todo: 根据页面类型（页面创建模式）导入项目、在线创建，判断是否需要打开调试智能体绑定弹窗，反向代理，打开路径参数配置弹窗
   };
 
   // 点击更多操作
@@ -187,6 +201,15 @@ const SpacePageDevelop: React.FC = () => {
       case PageDevelopMoreActionEnum.Page_Preview:
         // 进入开发页面
         break;
+    }
+  };
+
+  // 取消反向代理
+  const handleCancelReverseProxy = () => {
+    setOpenReverseProxyModal(false);
+    // 如果是在创建页面，则重新查询页面列表
+    if (pageCreateTypeRef.current === PageDevelopCreateTypeEnum.REVERSE_PROXY) {
+      runPageList(spaceId);
     }
   };
 
@@ -259,7 +282,12 @@ const SpacePageDevelop: React.FC = () => {
           className={cx(styles['main-container'], 'flex-1', 'scroll-container')}
         >
           {pageList?.map((info) => (
-            <div key={info.id}>{info.name}</div>
+            <PageDevelopCardItem
+              key={info.projectId}
+              componentInfo={info}
+              onClick={() => handleClickCard(info)}
+              onClickMore={handleClickMore}
+            />
           ))}
         </div>
       ) : (
@@ -270,10 +298,12 @@ const SpacePageDevelop: React.FC = () => {
       {/* 反向代理弹窗 */}
       <ReverseProxyModal
         open={openReverseProxyModal}
-        onCancel={() => setOpenReverseProxyModal(false)}
+        onCancel={handleCancelReverseProxy}
       />
       {/* 调试智能体绑定弹窗 */}
       <DebugAgentBindModel
+        devAgentId={currentPageInfo?.devAgentId}
+        createCustomPageInfo={createCustomPageInfo}
         open={openDebugAgentBindModel}
         onCancel={() => setOpenDebugAgentBindModel(false)}
         onConfirm={() => setOpenDebugAgentBindModel(false)}
@@ -287,19 +317,11 @@ const SpacePageDevelop: React.FC = () => {
       />
       {/* 页面创建弹窗 */}
       <PageCreateModal
+        spaceId={spaceId}
         type={pageCreateTypeRef.current}
         open={openPageCreateModal}
         onConfirm={handleConfirmCreatePage}
         onCancel={() => setOpenPageCreateModal(false)}
-      />
-      <PageDevelopCardItem
-        componentInfo={{
-          name: '页面开发',
-          label: '页面开发',
-          value: PageDevelopMoreActionEnum.Page_Preview,
-        }}
-        onClick={handleClickCard}
-        onClickMore={handleClickMore}
       />
     </div>
   );
