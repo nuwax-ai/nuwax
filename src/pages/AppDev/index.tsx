@@ -1,6 +1,6 @@
 import MonacoEditor from '@/components/WebIDE/MonacoEditor';
 import Preview, { PreviewRef } from '@/components/WebIDE/Preview';
-import { getProjectIdFromUrl, useAppDevStore } from '@/models/appDev';
+import { getProjectIdFromUrl } from '@/models/appDev';
 import {
   cancelAgentTask,
   getFileContent,
@@ -56,6 +56,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const { Title, Text } = Typography;
@@ -65,6 +66,9 @@ const { Title, Text } = Typography;
  * 提供Web集成开发环境功能，包括文件管理、代码编辑和实时预览
  */
 const AppDev: React.FC = () => {
+  // 使用 AppDev 模型来管理状态
+  const appDevModel = useModel('appDevModel');
+
   const {
     workspace,
     isServiceRunning,
@@ -73,7 +77,10 @@ const AppDev: React.FC = () => {
     updateFileContent,
     updateDevServerUrl,
     updateProjectId,
-  } = useAppDevStore();
+  } = appDevModel;
+
+  // 使用 Modal.confirm 来处理确认对话框
+  const [modal, contextHolder] = Modal.useModal();
 
   const [isStartingDev, setIsStartingDev] = useState(false);
   const [devStartError, setDevStartError] = useState<string | null>(null);
@@ -759,9 +766,9 @@ const AppDev: React.FC = () => {
   );
 
   /**
-   * 处理文件选择
+   * 切换到指定文件的实际逻辑
    */
-  const handleFileSelect = useCallback(
+  const switchToFile = useCallback(
     async (fileId: string) => {
       setActiveFile(fileId);
       setSelectedFile(fileId);
@@ -819,6 +826,73 @@ const AppDev: React.FC = () => {
     [setActiveFile, workspace.projectId, findFileNode],
   );
 
+  /**
+   * 处理保存文件
+   */
+  const handleSaveFile = useCallback(async () => {
+    if (!selectedFile || !workspace.projectId) return;
+
+    try {
+      setIsSavingFile(true);
+      // 这里可以添加保存文件的API调用
+      // 暂时只是更新状态
+      setOriginalFileContent(fileContent);
+      setIsFileModified(false);
+      message.success('文件已保存');
+    } catch (error) {
+      console.error('保存文件失败:', error);
+      message.error('保存文件失败');
+    } finally {
+      setIsSavingFile(false);
+    }
+  }, [selectedFile, workspace.projectId, fileContent]);
+
+  /**
+   * 处理文件选择（带未保存修改确认）
+   */
+  const handleFileSelect = useCallback(
+    async (fileId: string) => {
+      // 如果选择的是当前文件，不做任何操作
+      if (selectedFile === fileId) return;
+
+      // 如果当前文件有未保存的修改，显示确认模态框
+      if (isFileModified && selectedFile) {
+        modal.confirm({
+          title: '未保存的修改',
+          content: (
+            <div>
+              <p>当前文件有未保存的修改，是否要保存这些修改？</p>
+              <p style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
+                选择&ldquo;保存&rdquo;将保存当前修改并切换文件
+                <br />
+                选择&ldquo;不保存&rdquo;将丢弃修改并切换文件
+                <br />
+                选择&ldquo;取消&rdquo;将停留在当前文件
+              </p>
+            </div>
+          ),
+          okText: '保存',
+          cancelText: '不保存',
+          centered: true,
+          onOk: async () => {
+            // 保存当前修改
+            await handleSaveFile();
+            // 切换到新文件
+            await switchToFile(fileId);
+          },
+          onCancel: () => {
+            // 不保存修改，直接切换文件
+            switchToFile(fileId);
+          },
+        });
+      } else {
+        // 没有未保存修改，直接切换文件
+        await switchToFile(fileId);
+      }
+    },
+    [selectedFile, isFileModified, modal, handleSaveFile, switchToFile],
+  );
+
   // 在项目ID变化时加载默认文件内容
   useEffect(() => {
     if (workspace.projectId && selectedFile) {
@@ -840,7 +914,7 @@ const AppDev: React.FC = () => {
     (fileId: string, content: string) => {
       updateFileContent(fileId, content);
       setFileContent(content);
-      // 检查文件是否被修改
+      // 检查文件是否被修改 - 直接更新状态，有修改就显示按钮
       setIsFileModified(content !== originalFileContent);
     },
     [updateFileContent, originalFileContent],
@@ -1270,27 +1344,6 @@ const AppDev: React.FC = () => {
   }, [chatMessages, renderChatMessage]);
 
   /**
-   * 处理保存文件
-   */
-  const handleSaveFile = useCallback(async () => {
-    if (!selectedFile || !workspace.projectId) return;
-
-    try {
-      setIsSavingFile(true);
-      // 这里可以添加保存文件的API调用
-      // 暂时只是更新状态
-      setOriginalFileContent(fileContent);
-      setIsFileModified(false);
-      message.success('文件已保存');
-    } catch (error) {
-      console.error('保存文件失败:', error);
-      message.error('保存文件失败');
-    } finally {
-      setIsSavingFile(false);
-    }
-  }, [selectedFile, workspace.projectId, fileContent]);
-
-  /**
    * 处理取消编辑
    */
   const handleCancelEdit = useCallback(() => {
@@ -1419,516 +1472,533 @@ const AppDev: React.FC = () => {
   }
 
   return (
-    <div className={styles.appDev}>
-      {/* 顶部头部区域 */}
-      <div className={styles.topHeader}>
-        <div className={styles.headerLeft}>
-          {/* AI助手信息 */}
-          <div className={styles.aiInfo}>
-            <Avatar
-              size={32}
-              icon={<UserOutlined />}
-              className={styles.aiAvatar}
-            />
-            <div className={styles.aiTitleText}>
-              <Title level={4} style={{ margin: 0, color: '#1e293b' }}>
-                人工智能通识教育智能体
-              </Title>
-              <Text type="secondary" style={{ color: '#64748b' }}>
-                AI General Education Assistant
-              </Text>
-            </div>
-          </div>
-
-          {/* 项目信息 */}
-          <div className={styles.projectInfo}>
-            <Title level={4} style={{ margin: 0, color: '#1e293b' }}>
-              {workspace.name || '大模型三部曲'}
-            </Title>
-            {workspace.projectId && (
-              <Text
-                type="secondary"
-                style={{ marginLeft: 8, color: '#64748b' }}
-              >
-                项目ID: {workspace.projectId}
-              </Text>
-            )}
-          </div>
-        </div>
-        <div className={styles.headerRight}>
-          <Space>
-            {/* 刷新和代码视图 */}
-            <div className={styles.navButtons}>
-              <Button size="small" className={styles.navButton}>
-                重新加载项目
-              </Button>
-            </div>
-
-            {/* 状态和操作按钮 */}
-            <div className={styles.statusActions}>
-              <Button
-                type="primary"
-                size="small"
-                className={styles.statusButton}
-                style={{ background: '#ff6b6b', borderColor: '#ff6b6b' }}
-              >
-                有更新未部署
-              </Button>
-              <Button size="small" danger className={styles.actionButton}>
-                删除
-              </Button>
-              <Button
-                type="primary"
-                size="small"
-                className={styles.deployButton}
-              >
-                部署
-              </Button>
-            </div>
-          </Space>
-        </div>
-      </div>
-
-      {/* 主布局 - 左右分栏 */}
-      <Row gutter={0} className={styles.mainRow}>
-        {/* 左侧AI助手面板 */}
-        <Col span={8} className={styles.leftPanel}>
-          <Card className={styles.chatCard} bordered={false}>
-            {/* 聊天模式切换 */}
-            <div className={styles.chatModeContainer}>
-              <div className={styles.chatModeSwitcher}>
-                <Segmented
-                  value={chatMode}
-                  onChange={(value) => setChatMode(value as 'chat' | 'design')}
-                  options={[
-                    { label: 'Chat', value: 'chat' },
-                    { label: 'Design', value: 'design' },
-                  ]}
-                  className={styles.chatModeSegmented}
-                />
-                <div className={styles.versionSelectorWrapper}>
-                  <Select
-                    value="v4"
-                    size="small"
-                    className={styles.versionSelector}
-                    dropdownClassName={styles.versionDropdown}
-                    options={[
-                      { value: 'v1', label: 'v1' },
-                      { value: 'v2', label: 'v2' },
-                      { value: 'v3', label: 'v3' },
-                      { value: 'v4', label: 'v4' },
-                      { value: 'v5', label: 'v5' },
-                    ]}
-                    suffixIcon={<DownOutlined />}
-                  />
-                </div>
+    <>
+      {contextHolder}
+      <div className={styles.appDev}>
+        {/* 顶部头部区域 */}
+        <div className={styles.topHeader}>
+          <div className={styles.headerLeft}>
+            {/* AI助手信息 */}
+            <div className={styles.aiInfo}>
+              <Avatar
+                size={32}
+                icon={<UserOutlined />}
+                className={styles.aiAvatar}
+              />
+              <div className={styles.aiTitleText}>
+                <Title level={4} style={{ margin: 0, color: '#1e293b' }}>
+                  人工智能通识教育智能体
+                </Title>
+                <Text type="secondary" style={{ color: '#64748b' }}>
+                  AI General Education Assistant
+                </Text>
               </div>
             </div>
 
-            {/* 聊天消息区域 */}
-            <div className={styles.chatMessages}>
-              {chatMessagesList}
-              {isChatLoading && (
-                <div className={`${styles.message} ${styles.ai}`}>
-                  <div className={styles.messageContent}>
-                    <Spin size="small" /> 正在思考...
-                  </div>
-                </div>
+            {/* 项目信息 */}
+            <div className={styles.projectInfo}>
+              <Title level={4} style={{ margin: 0, color: '#1e293b' }}>
+                {workspace.name || '大模型三部曲'}
+              </Title>
+              {workspace.projectId && (
+                <Text
+                  type="secondary"
+                  style={{ marginLeft: 8, color: '#64748b' }}
+                >
+                  项目ID: {workspace.projectId}
+                </Text>
               )}
             </div>
+          </div>
+          <div className={styles.headerRight}>
+            <Space>
+              {/* 刷新和代码视图 */}
+              <div className={styles.navButtons}>
+                <Button size="small" className={styles.navButton}>
+                  重新加载项目
+                </Button>
+              </div>
 
-            {/* 聊天输入区域 */}
-            <div className={styles.chatInput}>
-              <Input
-                placeholder="向AI助手提问..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onPressEnter={handleChatSend}
-                suffix={
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {isChatLoading && (
-                      <Button
-                        type="text"
-                        icon={<StopOutlined />}
-                        onClick={handleCancelChat}
-                        title="取消AI任务"
-                        className={styles.cancelButton}
-                      />
-                    )}
-                    <Button
-                      type="text"
-                      icon={<SendOutlined />}
-                      onClick={handleChatSend}
-                      disabled={!chatInput.trim() || isChatLoading}
+              {/* 状态和操作按钮 */}
+              <div className={styles.statusActions}>
+                <Button
+                  type="primary"
+                  size="small"
+                  className={styles.statusButton}
+                  style={{ background: '#ff6b6b', borderColor: '#ff6b6b' }}
+                >
+                  有更新未部署
+                </Button>
+                <Button size="small" danger className={styles.actionButton}>
+                  删除
+                </Button>
+                <Button
+                  type="primary"
+                  size="small"
+                  className={styles.deployButton}
+                >
+                  部署
+                </Button>
+              </div>
+            </Space>
+          </div>
+        </div>
+
+        {/* 主布局 - 左右分栏 */}
+        <Row gutter={0} className={styles.mainRow}>
+          {/* 左侧AI助手面板 */}
+          <Col span={8} className={styles.leftPanel}>
+            <Card className={styles.chatCard} bordered={false}>
+              {/* 聊天模式切换 */}
+              <div className={styles.chatModeContainer}>
+                <div className={styles.chatModeSwitcher}>
+                  <Segmented
+                    value={chatMode}
+                    onChange={(value) =>
+                      setChatMode(value as 'chat' | 'design')
+                    }
+                    options={[
+                      { label: 'Chat', value: 'chat' },
+                      { label: 'Design', value: 'design' },
+                    ]}
+                    className={styles.chatModeSegmented}
+                  />
+                  <div className={styles.versionSelectorWrapper}>
+                    <Select
+                      value="v4"
+                      size="small"
+                      className={styles.versionSelector}
+                      dropdownClassName={styles.versionDropdown}
+                      options={[
+                        { value: 'v1', label: 'v1' },
+                        { value: 'v2', label: 'v2' },
+                        { value: 'v3', label: 'v3' },
+                        { value: 'v4', label: 'v4' },
+                        { value: 'v5', label: 'v5' },
+                      ]}
+                      suffixIcon={<DownOutlined />}
                     />
                   </div>
-                }
-                className={styles.inputField}
-              />
-              <div className={styles.modelSelector}>
-                <Text type="secondary">deepseek-v3</Text>
+                </div>
               </div>
-            </div>
-          </Card>
-        </Col>
 
-        {/* 右侧代码编辑器区域 */}
-        <Col span={16} className={styles.rightPanel}>
-          {/* 编辑器头部bar */}
-          <div className={styles.editorHeader}>
-            <div className={styles.editorHeaderLeft}>
-              <Segmented
-                value={activeTab}
-                onChange={(value) => setActiveTab(value as 'preview' | 'code')}
-                options={[
-                  {
-                    label: <EyeOutlined />,
-                    value: 'preview',
-                  },
-                  {
-                    label: <ReadOutlined />,
-                    // label: <CodeOutlined />,
-                    value: 'code',
-                  },
-                ]}
-                className={styles.segmentedTabs}
-              />
-            </div>
-            <div className={styles.editorHeaderRight}>
-              <Space size="small">
-                <Tooltip title="刷新预览">
-                  <Button
-                    size="small"
-                    icon={<ReloadOutlined />}
-                    onClick={() => {
-                      if (previewRef.current) {
-                        previewRef.current.refresh();
-                      }
-                    }}
-                    className={styles.headerButton}
-                  />
-                </Tooltip>
-                <Tooltip title="全屏预览">
-                  <Button
-                    size="small"
-                    icon={<GlobalOutlined />}
-                    onClick={() => {
-                      if (previewRef.current && workspace.devServerUrl) {
-                        window.open(workspace.devServerUrl, '_blank');
-                      }
-                    }}
-                    className={styles.headerButton}
-                  />
-                </Tooltip>
-              </Space>
-            </div>
-          </div>
-          {/* 主内容区域 */}
-          <div className={styles.contentArea}>
-            {/* 悬浮折叠/展开按钮 - 放在预览区域左下角 */}
-            <Tooltip title={isFileTreeCollapsed ? '展开文件树' : '收起文件树'}>
-              <Button
-                type="text"
-                icon={
-                  isFileTreeCollapsed ? <RightOutlined /> : <LeftOutlined />
-                }
-                onClick={toggleFileTreeCollapse}
-                className={`${styles.collapseButton} ${
-                  isFileTreeCollapsed ? styles.collapsed : styles.expanded
-                }`}
-              />
-            </Tooltip>
-            <Row gutter={0} className={styles.contentRow}>
-              {/* 文件树侧边栏 */}
-              <Col
-                span={isFileTreeCollapsed ? 0 : 6}
-                className={`${styles.fileTreeCol} ${
-                  isFileTreeCollapsed ? styles.collapsed : ''
-                }`}
-                style={{ transition: 'all 0.3s ease' }}
-              >
-                <Card className={styles.fileTreeCard} bordered={false}>
-                  {!isFileTreeCollapsed && (
-                    <>
-                      {/* 文件树头部按钮 */}
-                      <div className={styles.fileTreeHeader}>
+              {/* 聊天消息区域 */}
+              <div className={styles.chatMessages}>
+                {chatMessagesList}
+                {isChatLoading && (
+                  <div className={`${styles.message} ${styles.ai}`}>
+                    <div className={styles.messageContent}>
+                      <Spin size="small" /> 正在思考...
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 聊天输入区域 */}
+              <div className={styles.chatInput}>
+                <Input
+                  placeholder="向AI助手提问..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onPressEnter={handleChatSend}
+                  suffix={
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      {isChatLoading && (
                         <Button
                           type="text"
-                          className={styles.addButton}
-                          onClick={() => setIsUploadModalVisible(true)}
-                        >
-                          导入项目
-                        </Button>
-                      </div>
-                      <div className={styles.fileTreeContainer}>
-                        {/* 文件树结构 */}
-                        <div className={styles.fileTree}>
-                          {fileTreeData.map((node) => renderFileTreeNode(node))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </Card>
-              </Col>
-
-              {/* 编辑器区域 */}
-              <Col
-                span={isFileTreeCollapsed ? 24 : 18}
-                className={styles.editorCol}
-              >
-                <div className={styles.editorContainer}>
-                  {/* 内容区域 */}
-                  <div className={styles.editorContent}>
-                    {activeTab === 'preview' ? (
-                      <Preview
-                        ref={previewRef}
-                        devServerUrl={workspace.devServerUrl}
+                          icon={<StopOutlined />}
+                          onClick={handleCancelChat}
+                          title="取消AI任务"
+                          className={styles.cancelButton}
+                        />
+                      )}
+                      <Button
+                        type="text"
+                        icon={<SendOutlined />}
+                        onClick={handleChatSend}
+                        disabled={!chatInput.trim() || isChatLoading}
                       />
-                    ) : (
-                      <div className={styles.codeEditorContainer}>
-                        {/* 文件路径显示 */}
-                        <div className={styles.filePathHeader}>
-                          <div className={styles.filePathInfo}>
-                            <FileOutlined className={styles.fileIcon} />
-                            <span className={styles.filePath}>
-                              {getFilePath(selectedFile) || selectedFile}
-                            </span>
-                            <span className={styles.fileLanguage}>
-                              {getLanguageFromFile(selectedFile)}
-                            </span>
-                            {isLoadingFileContent && <Spin size="small" />}
-                          </div>
-                          <div className={styles.fileActions}>
-                            {isFileModified && (
-                              <>
-                                <Button
-                                  size="small"
-                                  type="primary"
-                                  icon={<CheckOutlined />}
-                                  onClick={handleSaveFile}
-                                  loading={isSavingFile}
-                                  style={{ marginRight: 8 }}
-                                >
-                                  保存
-                                </Button>
-                                <Button
-                                  size="small"
-                                  onClick={handleCancelEdit}
-                                  style={{ marginRight: 8 }}
-                                >
-                                  取消
-                                </Button>
-                              </>
+                    </div>
+                  }
+                  className={styles.inputField}
+                />
+                <div className={styles.modelSelector}>
+                  <Text type="secondary">deepseek-v3</Text>
+                </div>
+              </div>
+            </Card>
+          </Col>
+
+          {/* 右侧代码编辑器区域 */}
+          <Col span={16} className={styles.rightPanel}>
+            {/* 编辑器头部bar */}
+            <div className={styles.editorHeader}>
+              <div className={styles.editorHeaderLeft}>
+                <Segmented
+                  value={activeTab}
+                  onChange={(value) =>
+                    setActiveTab(value as 'preview' | 'code')
+                  }
+                  options={[
+                    {
+                      label: <EyeOutlined />,
+                      value: 'preview',
+                    },
+                    {
+                      label: <ReadOutlined />,
+                      // label: <CodeOutlined />,
+                      value: 'code',
+                    },
+                  ]}
+                  className={styles.segmentedTabs}
+                />
+              </div>
+              <div className={styles.editorHeaderRight}>
+                <Space size="small">
+                  <Tooltip title="刷新预览">
+                    <Button
+                      size="small"
+                      icon={<ReloadOutlined />}
+                      onClick={() => {
+                        if (previewRef.current) {
+                          previewRef.current.refresh();
+                        }
+                      }}
+                      className={styles.headerButton}
+                    />
+                  </Tooltip>
+                  <Tooltip title="全屏预览">
+                    <Button
+                      size="small"
+                      icon={<GlobalOutlined />}
+                      onClick={() => {
+                        if (previewRef.current && workspace.devServerUrl) {
+                          window.open(workspace.devServerUrl, '_blank');
+                        }
+                      }}
+                      className={styles.headerButton}
+                    />
+                  </Tooltip>
+                </Space>
+              </div>
+            </div>
+            {/* 主内容区域 */}
+            <div className={styles.contentArea}>
+              {/* 悬浮折叠/展开按钮 - 放在预览区域左下角 */}
+              <Tooltip
+                title={isFileTreeCollapsed ? '展开文件树' : '收起文件树'}
+              >
+                <Button
+                  type="text"
+                  icon={
+                    isFileTreeCollapsed ? <RightOutlined /> : <LeftOutlined />
+                  }
+                  onClick={toggleFileTreeCollapse}
+                  className={`${styles.collapseButton} ${
+                    isFileTreeCollapsed ? styles.collapsed : styles.expanded
+                  }`}
+                />
+              </Tooltip>
+              <Row gutter={0} className={styles.contentRow}>
+                {/* 文件树侧边栏 */}
+                <Col
+                  span={isFileTreeCollapsed ? 0 : 6}
+                  className={`${styles.fileTreeCol} ${
+                    isFileTreeCollapsed ? styles.collapsed : ''
+                  }`}
+                  style={{ transition: 'all 0.3s ease' }}
+                >
+                  <Card className={styles.fileTreeCard} bordered={false}>
+                    {!isFileTreeCollapsed && (
+                      <>
+                        {/* 文件树头部按钮 */}
+                        <div className={styles.fileTreeHeader}>
+                          <Button
+                            type="text"
+                            className={styles.addButton}
+                            onClick={() => setIsUploadModalVisible(true)}
+                          >
+                            导入项目
+                          </Button>
+                        </div>
+                        <div className={styles.fileTreeContainer}>
+                          {/* 文件树结构 */}
+                          <div className={styles.fileTree}>
+                            {fileTreeData.map((node) =>
+                              renderFileTreeNode(node),
                             )}
-                            <Button
-                              size="small"
-                              icon={<ReloadOutlined />}
-                              onClick={() => handleFileSelect(selectedFile)}
-                              loading={isLoadingFileContent}
-                            >
-                              刷新
-                            </Button>
                           </div>
                         </div>
+                      </>
+                    )}
+                  </Card>
+                </Col>
 
-                        {/* 文件内容预览 */}
-                        <div className={styles.fileContentPreview}>
-                          {(() => {
-                            if (isLoadingFileContent) {
-                              return (
-                                <div className={styles.loadingContainer}>
-                                  <Spin size="large" />
-                                  <p>正在加载文件内容...</p>
-                                </div>
-                              );
-                            }
+                {/* 编辑器区域 */}
+                <Col
+                  span={isFileTreeCollapsed ? 24 : 18}
+                  className={styles.editorCol}
+                >
+                  <div className={styles.editorContainer}>
+                    {/* 内容区域 */}
+                    <div className={styles.editorContent}>
+                      {activeTab === 'preview' ? (
+                        <Preview
+                          ref={previewRef}
+                          devServerUrl={workspace.devServerUrl}
+                        />
+                      ) : (
+                        <div className={styles.codeEditorContainer}>
+                          {/* 文件路径显示 */}
+                          <div className={styles.filePathHeader}>
+                            <div className={styles.filePathInfo}>
+                              <FileOutlined className={styles.fileIcon} />
+                              <span className={styles.filePath}>
+                                {getFilePath(selectedFile) || selectedFile}
+                              </span>
+                              <span className={styles.fileLanguage}>
+                                {getLanguageFromFile(selectedFile)}
+                              </span>
+                              {isLoadingFileContent && <Spin size="small" />}
+                            </div>
+                            <div className={styles.fileActions}>
+                              <Button
+                                size="small"
+                                type="primary"
+                                icon={<CheckOutlined />}
+                                onClick={handleSaveFile}
+                                loading={isSavingFile}
+                                disabled={!isFileModified}
+                                style={{ marginRight: 8 }}
+                              >
+                                保存
+                              </Button>
+                              <Button
+                                size="small"
+                                onClick={handleCancelEdit}
+                                disabled={!isFileModified}
+                                style={{ marginRight: 8 }}
+                              >
+                                取消
+                              </Button>
+                              <Button
+                                size="small"
+                                icon={<ReloadOutlined />}
+                                onClick={() => handleFileSelect(selectedFile)}
+                                loading={isLoadingFileContent}
+                              >
+                                刷新
+                              </Button>
+                            </div>
+                          </div>
 
-                            if (fileContentError) {
+                          {/* 文件内容预览 */}
+                          <div className={styles.fileContentPreview}>
+                            {(() => {
+                              if (isLoadingFileContent) {
+                                return (
+                                  <div className={styles.loadingContainer}>
+                                    <Spin size="large" />
+                                    <p>正在加载文件内容...</p>
+                                  </div>
+                                );
+                              }
+
+                              if (fileContentError) {
+                                return (
+                                  <div className={styles.errorContainer}>
+                                    <p>{fileContentError}</p>
+                                    <Button
+                                      size="small"
+                                      onClick={() =>
+                                        handleFileSelect(selectedFile)
+                                      }
+                                    >
+                                      重试
+                                    </Button>
+                                  </div>
+                                );
+                              }
+
+                              if (!selectedFile) {
+                                return (
+                                  <div className={styles.emptyState}>
+                                    <p>请从左侧文件树选择一个文件进行预览</p>
+                                  </div>
+                                );
+                              }
+
+                              const fileNode = findFileNode(selectedFile);
+                              const hasContents =
+                                fileNode &&
+                                fileNode.contents &&
+                                fileNode.contents.trim() !== '';
+                              const isImage = isImageFile(selectedFile);
+
+                              // 逻辑1: 如果文件有contents，直接在编辑器中显示
+                              if (hasContents) {
+                                return (
+                                  <div className={styles.fileContentDisplay}>
+                                    <MonacoEditor
+                                      currentFile={{
+                                        id: selectedFile,
+                                        name: selectedFile,
+                                        type: 'file',
+                                        path: `app/${selectedFile}`,
+                                        content: fileNode.contents,
+                                        lastModified: Date.now(),
+                                        children: [],
+                                      }}
+                                      onContentChange={(fileId, content) => {
+                                        handleFileContentChange(
+                                          fileId,
+                                          content,
+                                        );
+                                      }}
+                                      className={styles.monacoEditor}
+                                    />
+                                  </div>
+                                );
+                              }
+
+                              // 逻辑2: 如果是图片文件，使用img元素渲染
+                              if (isImage) {
+                                const previewUrl = workspace.devServerUrl
+                                  ? `${workspace.devServerUrl}/${selectedFile}`
+                                  : `/${selectedFile}`;
+
+                                return (
+                                  <div className={styles.imagePreviewContainer}>
+                                    <div className={styles.imagePreviewHeader}>
+                                      <span>图片预览: {selectedFile}</span>
+                                      <Button
+                                        size="small"
+                                        icon={<ReloadOutlined />}
+                                        onClick={() => {
+                                          if (previewRef.current) {
+                                            previewRef.current.refresh();
+                                          }
+                                        }}
+                                      >
+                                        刷新
+                                      </Button>
+                                    </div>
+                                    <div className={styles.imagePreviewContent}>
+                                      <img
+                                        src={previewUrl}
+                                        alt={selectedFile}
+                                        style={{
+                                          maxWidth: '100%',
+                                          maxHeight: '600px',
+                                          objectFit: 'contain',
+                                          border: '1px solid #d9d9d9',
+                                          borderRadius: '6px',
+                                        }}
+                                        onError={(e) => {
+                                          e.currentTarget.src =
+                                            '/api/file-preview/' + selectedFile;
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              // 逻辑3: 其他情况通过API远程预览或使用现有fileContent
+                              if (fileContent) {
+                                return (
+                                  <div className={styles.fileContentDisplay}>
+                                    <MonacoEditor
+                                      currentFile={{
+                                        id: selectedFile,
+                                        name: selectedFile,
+                                        type: 'file',
+                                        path: `app/${selectedFile}`,
+                                        content: fileContent,
+                                        lastModified: Date.now(),
+                                        children: [],
+                                      }}
+                                      onContentChange={(fileId, content) => {
+                                        setFileContent(content);
+                                        handleFileContentChange(
+                                          fileId,
+                                          content,
+                                        );
+                                      }}
+                                      className={styles.monacoEditor}
+                                    />
+                                  </div>
+                                );
+                              }
+
                               return (
-                                <div className={styles.errorContainer}>
-                                  <p>{fileContentError}</p>
+                                <div className={styles.emptyState}>
+                                  <p>无法预览此文件类型: {selectedFile}</p>
                                   <Button
                                     size="small"
                                     onClick={() =>
                                       handleFileSelect(selectedFile)
                                     }
                                   >
-                                    重试
+                                    重新加载
                                   </Button>
                                 </div>
                               );
-                            }
-
-                            if (!selectedFile) {
-                              return (
-                                <div className={styles.emptyState}>
-                                  <p>请从左侧文件树选择一个文件进行预览</p>
-                                </div>
-                              );
-                            }
-
-                            const fileNode = findFileNode(selectedFile);
-                            const hasContents =
-                              fileNode &&
-                              fileNode.contents &&
-                              fileNode.contents.trim() !== '';
-                            const isImage = isImageFile(selectedFile);
-
-                            // 逻辑1: 如果文件有contents，直接在编辑器中显示
-                            if (hasContents) {
-                              return (
-                                <div className={styles.fileContentDisplay}>
-                                  <MonacoEditor
-                                    currentFile={{
-                                      id: selectedFile,
-                                      name: selectedFile,
-                                      type: 'file',
-                                      path: `app/${selectedFile}`,
-                                      content: fileNode.contents,
-                                      lastModified: Date.now(),
-                                      children: [],
-                                    }}
-                                    onContentChange={(fileId, content) => {
-                                      handleFileContentChange(fileId, content);
-                                    }}
-                                    className={styles.monacoEditor}
-                                  />
-                                </div>
-                              );
-                            }
-
-                            // 逻辑2: 如果是图片文件，使用img元素渲染
-                            if (isImage) {
-                              const previewUrl = workspace.devServerUrl
-                                ? `${workspace.devServerUrl}/${selectedFile}`
-                                : `/${selectedFile}`;
-
-                              return (
-                                <div className={styles.imagePreviewContainer}>
-                                  <div className={styles.imagePreviewHeader}>
-                                    <span>图片预览: {selectedFile}</span>
-                                    <Button
-                                      size="small"
-                                      icon={<ReloadOutlined />}
-                                      onClick={() => {
-                                        if (previewRef.current) {
-                                          previewRef.current.refresh();
-                                        }
-                                      }}
-                                    >
-                                      刷新
-                                    </Button>
-                                  </div>
-                                  <div className={styles.imagePreviewContent}>
-                                    <img
-                                      src={previewUrl}
-                                      alt={selectedFile}
-                                      style={{
-                                        maxWidth: '100%',
-                                        maxHeight: '600px',
-                                        objectFit: 'contain',
-                                        border: '1px solid #d9d9d9',
-                                        borderRadius: '6px',
-                                      }}
-                                      onError={(e) => {
-                                        e.currentTarget.src =
-                                          '/api/file-preview/' + selectedFile;
-                                      }}
-                                    />
-                                  </div>
-                                </div>
-                              );
-                            }
-
-                            // 逻辑3: 其他情况通过API远程预览或使用现有fileContent
-                            if (fileContent) {
-                              return (
-                                <div className={styles.fileContentDisplay}>
-                                  <MonacoEditor
-                                    currentFile={{
-                                      id: selectedFile,
-                                      name: selectedFile,
-                                      type: 'file',
-                                      path: `app/${selectedFile}`,
-                                      content: fileContent,
-                                      lastModified: Date.now(),
-                                      children: [],
-                                    }}
-                                    onContentChange={(fileId, content) => {
-                                      setFileContent(content);
-                                      handleFileContentChange(fileId, content);
-                                    }}
-                                    className={styles.monacoEditor}
-                                  />
-                                </div>
-                              );
-                            }
-
-                            return (
-                              <div className={styles.emptyState}>
-                                <p>无法预览此文件类型: {selectedFile}</p>
-                                <Button
-                                  size="small"
-                                  onClick={() => handleFileSelect(selectedFile)}
-                                >
-                                  重新加载
-                                </Button>
-                              </div>
-                            );
-                          })()}
+                            })()}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Col>
-            </Row>
-          </div>
-        </Col>
-      </Row>
+                </Col>
+              </Row>
+            </div>
+          </Col>
+        </Row>
 
-      {/* 上传项目模态框 */}
-      <Modal
-        title="导入项目"
-        open={isUploadModalVisible}
-        onCancel={() => {
-          setIsUploadModalVisible(false);
-          setProjectName('');
-        }}
-        footer={null}
-        width={500}
-      >
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <div>
-            <Text strong>项目名称：</Text>
-            <Input
-              placeholder="请输入项目名称"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              style={{ marginTop: 8 }}
-            />
-          </div>
-          <div>
-            <Text strong>项目文件：</Text>
-            <Upload.Dragger
-              accept=".zip,.tar.gz,.rar"
-              beforeUpload={(file) => {
-                handleUploadProject(file);
-                return false;
-              }}
-              disabled={uploadLoading}
-              style={{ marginTop: 8 }}
-            >
-              <p className="ant-upload-drag-icon">
-                <UploadOutlined />
-              </p>
-              <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
-              <p className="ant-upload-hint">支持 .zip、.tar.gz、.rar 格式</p>
-            </Upload.Dragger>
-          </div>
-        </Space>
-      </Modal>
-    </div>
+        {/* 上传项目模态框 */}
+        <Modal
+          title="导入项目"
+          open={isUploadModalVisible}
+          onCancel={() => {
+            setIsUploadModalVisible(false);
+            setProjectName('');
+          }}
+          footer={null}
+          width={500}
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <div>
+              <Text strong>项目名称：</Text>
+              <Input
+                placeholder="请输入项目名称"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                style={{ marginTop: 8 }}
+              />
+            </div>
+            <div>
+              <Text strong>项目文件：</Text>
+              <Upload.Dragger
+                accept=".zip,.tar.gz,.rar"
+                beforeUpload={(file) => {
+                  handleUploadProject(file);
+                  return false;
+                }}
+                disabled={uploadLoading}
+                style={{ marginTop: 8 }}
+              >
+                <p className="ant-upload-drag-icon">
+                  <UploadOutlined />
+                </p>
+                <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
+                <p className="ant-upload-hint">支持 .zip、.tar.gz、.rar 格式</p>
+              </Upload.Dragger>
+            </div>
+          </Space>
+        </Modal>
+      </div>
+    </>
   );
 };
 

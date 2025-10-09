@@ -322,7 +322,7 @@ export const useAppDevStore = () => {
       setCurrentFile(file);
       updateWorkspace({ activeFile: fileId });
     } else {
-      console.error('❌ [AppDev] File not found:', fileId);
+      // console.error('❌ [AppDev] File not found:', fileId);
     }
   };
 

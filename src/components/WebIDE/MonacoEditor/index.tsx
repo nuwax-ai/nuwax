@@ -29,6 +29,8 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const editorInstanceRef = useRef<any>(null);
   const [isMonacoReady, setIsMonacoReady] = useState(false);
+  const isCreatingRef = useRef(false);
+  const isDisposingRef = useRef(false);
 
   /**
    * 动态加载语言支持
@@ -192,33 +194,8 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         },
       });
 
-      // 设置 worker 路径
-      (window as any).MonacoEnvironment = {
-        getWorkerUrl: function (_moduleId: number, label: string) {
-          if (label === 'json') {
-            return '/vs/json.worker.js';
-          }
-          if (label === 'css' || label === 'scss' || label === 'less') {
-            return '/vs/css.worker.js';
-          }
-          if (label === 'html' || label === 'vue') {
-            return '/vs/html.worker.js';
-          }
-          if (label === 'typescript' || label === 'javascript') {
-            return '/vs/ts.worker.js';
-          }
-          if (label === 'css' || label === 'scss' || label === 'less') {
-            return '/vs/css.worker.js';
-          }
-          if (label === 'html' || label === 'vue') {
-            return '/vs/html.worker.js';
-          }
-          if (label === 'python') {
-            return '/vs/ts.worker.js'; // Python 使用 TypeScript worker
-          }
-          return '/vs/editor.worker.js';
-        },
-      };
+      // Monaco Editor webpack plugin 会自动处理 worker 配置
+      // 这里不需要手动设置 MonacoEnvironment
 
       // 初始化Monaco Editor
       await loader.init();
@@ -272,64 +249,178 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   }, [isMonacoReady]);
 
   /**
+   * 安全地清理编辑器实例
+   */
+  const safeDisposeEditor = useCallback(async () => {
+    if (isDisposingRef.current || !editorInstanceRef.current) return;
+
+    isDisposingRef.current = true;
+
+    try {
+      const editor = editorInstanceRef.current;
+
+      // 检查编辑器是否已经被dispose
+      if (
+        editor &&
+        typeof editor.isDisposed === 'function' &&
+        !editor.isDisposed()
+      ) {
+        // 获取模型并在清理编辑器之前清理模型
+        try {
+          const model = editor.getModel();
+          if (
+            model &&
+            typeof model.isDisposed === 'function' &&
+            !model.isDisposed()
+          ) {
+            try {
+              model.dispose();
+            } catch (modelError) {
+              // 忽略模型dispose错误
+              console.debug(
+                'Monaco Editor model dispose error (can be ignored):',
+                modelError,
+              );
+            }
+          }
+        } catch (getModelError) {
+          console.debug(
+            'Monaco Editor get model error (can be ignored):',
+            getModelError,
+          );
+        }
+
+        // 清理编辑器
+        try {
+          editor.dispose();
+        } catch (editorError) {
+          // 忽略编辑器dispose错误
+          console.debug(
+            'Monaco Editor dispose error (can be ignored):',
+            editorError,
+          );
+        }
+      }
+    } catch (error) {
+      // 忽略dispose错误，这通常是由于并发操作导致的
+      console.debug('Monaco Editor dispose error (can be ignored):', error);
+    } finally {
+      editorInstanceRef.current = null;
+      isDisposingRef.current = false;
+    }
+  }, []);
+
+  /**
+   * 安全地执行异步操作，处理取消错误
+   */
+  const safeAsyncOperation = useCallback(
+    async (
+      operation: () => Promise<any>,
+      errorMessage: string,
+    ): Promise<any> => {
+      try {
+        return await operation();
+      } catch (error) {
+        // 处理各种类型的取消错误
+        if (
+          error === 'Canceled' ||
+          (error instanceof Error &&
+            (error.message === 'Canceled' ||
+              error.message.includes('disposed') ||
+              error.message.includes('canceled') ||
+              error.message.includes('Cancelled')))
+        ) {
+          console.debug(`${errorMessage} - Operation was canceled (expected)`);
+          return null;
+        }
+        console.error(`❌ ${errorMessage}:`, error);
+        return null;
+      }
+    },
+    [],
+  );
+
+  /**
    * 创建编辑器实例
    */
   const createEditor = useCallback(async () => {
-    if (!editorRef.current || !isMonacoReady) return;
+    if (!editorRef.current || !isMonacoReady || isCreatingRef.current) return;
 
-    // 如果已有编辑器实例，先清理
-    if (editorInstanceRef.current) {
-      try {
-        if (!editorInstanceRef.current.isDisposed?.()) {
-          editorInstanceRef.current.dispose();
-        }
-      } catch (error) {
-        console.warn('Monaco Editor cleanup warning:', error);
-      } finally {
-        editorInstanceRef.current = null;
-      }
-    }
+    // 防止并发创建
+    if (isCreatingRef.current) return;
+    isCreatingRef.current = true;
 
     try {
+      // 如果已有编辑器实例，先清理
+      await safeAsyncOperation(
+        () => safeDisposeEditor(),
+        'Monaco Editor cleanup',
+      );
+
       const language = currentFile
         ? getLanguageFromFile(currentFile.name)
         : 'typescript';
 
       // 动态加载语言支持
-      await loadLanguageSupport(language);
+      await safeAsyncOperation(
+        () => loadLanguageSupport(language),
+        `Monaco Editor language loading (${language})`,
+      );
+
+      // 检查是否在等待期间被取消
+      if (isDisposingRef.current) {
+        console.debug(
+          'Editor creation canceled - disposal started during creation',
+        );
+        return;
+      }
 
       // 创建编辑器实例
-      const editor = monaco.editor.create(editorRef.current, {
-        ...editorOptions,
-        language,
-        value: currentFile?.content || '',
-      });
+      const editor = await safeAsyncOperation(async () => {
+        return monaco.editor.create(editorRef.current!, {
+          ...editorOptions,
+          language,
+          value: currentFile?.content || '',
+        });
+      }, 'Monaco Editor creation');
+
+      if (!editor) {
+        console.debug('Editor creation was canceled');
+        return;
+      }
 
       editorInstanceRef.current = editor;
 
       // 监听内容变化
       editor.onDidChangeModelContent(() => {
-        if (currentFile && onContentChange) {
+        if (currentFile && onContentChange && !isDisposingRef.current) {
           const value = editor.getValue();
           onContentChange(currentFile.id, value);
         }
       });
 
       // 添加键盘快捷键
-      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-        console.log('💾 [MonacoEditor] Save shortcut triggered');
-      });
+      try {
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+          console.log('💾 [MonacoEditor] Save shortcut triggered');
+        });
 
-      editor.addCommand(
-        monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
-        () => {
-          editor.getAction('editor.action.formatDocument')?.run();
-        },
-      );
+        editor.addCommand(
+          monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
+          () => {
+            editor.getAction('editor.action.formatDocument')?.run();
+          },
+        );
+      } catch (commandError) {
+        console.debug(
+          'Monaco Editor command registration error (can be ignored):',
+          commandError,
+        );
+      }
 
       console.log('✅ [MonacoEditor] 编辑器实例创建成功');
-    } catch (error) {
-      console.error('❌ [MonacoEditor] 创建编辑器实例失败:', error);
+    } finally {
+      isCreatingRef.current = false;
     }
   }, [
     isMonacoReady,
@@ -337,41 +428,127 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     onContentChange,
     getLanguageFromFile,
     loadLanguageSupport,
+    safeDisposeEditor,
+    safeAsyncOperation,
   ]);
 
   /**
    * 更新编辑器内容
    */
   const updateEditorContent = useCallback(async () => {
-    if (!editorInstanceRef.current || !currentFile) return;
+    if (!editorInstanceRef.current || !currentFile || isDisposingRef.current)
+      return;
 
-    const language = getLanguageFromFile(currentFile.name);
+    const editor = editorInstanceRef.current;
 
-    // 动态加载语言支持
-    await loadLanguageSupport(language);
+    // 检查编辑器是否已经被dispose
+    if (editor.isDisposed?.()) return;
 
-    const model = editorInstanceRef.current.getModel();
+    try {
+      const language = getLanguageFromFile(currentFile.name);
 
-    if (model) {
-      // 检查内容是否真的发生了变化
-      const currentValue = model.getValue();
-      const newValue = currentFile.content || '';
+      // 动态加载语言支持
+      await loadLanguageSupport(language);
 
-      if (currentValue !== newValue) {
-        // 更新语言
-        monaco.editor.setModelLanguage(model, language);
-        // 更新内容
-        model.setValue(newValue);
+      const model = editor.getModel();
+
+      if (model && !model.isDisposed()) {
+        // 检查内容是否真的发生了变化
+        const currentValue = model.getValue();
+        const newValue = currentFile.content || '';
+
+        if (currentValue !== newValue) {
+          // 更新语言
+          try {
+            monaco.editor.setModelLanguage(model, language);
+            // 更新内容
+            model.setValue(newValue);
+          } catch (modelError) {
+            console.debug(
+              'Monaco Editor model update error (can be ignored):',
+              modelError,
+            );
+          }
+        }
+      } else if (editor) {
+        // 创建新模型
+        try {
+          const newModel = monaco.editor.createModel(
+            currentFile.content || '',
+            language,
+          );
+          editor.setModel(newModel);
+        } catch (createModelError) {
+          console.debug(
+            'Monaco Editor model creation error (can be ignored):',
+            createModelError,
+          );
+        }
       }
-    } else {
-      // 创建新模型
-      const newModel = monaco.editor.createModel(
-        currentFile.content || '',
-        language,
-      );
-      editorInstanceRef.current.setModel(newModel);
+    } catch (error) {
+      // 忽略被取消的错误和并发错误
+      if (
+        error instanceof Error &&
+        (error.message === 'Canceled' || error.message.includes('disposed'))
+      ) {
+        console.debug(
+          'Monaco Editor content update was canceled or disposed (expected during rapid file switching)',
+        );
+      } else {
+        console.error('❌ [MonacoEditor] 更新编辑器内容失败:', error);
+      }
     }
   }, [currentFile, getLanguageFromFile, loadLanguageSupport]);
+
+  // 添加全局错误处理器来捕获Monaco Editor的取消错误
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+
+      // 检查是否为Monaco Editor相关的取消错误
+      if (
+        reason instanceof Error &&
+        (reason.message === 'Canceled' ||
+          reason.message.includes('disposed') ||
+          reason.message.includes('canceled') ||
+          reason.message.includes('Cancelled') ||
+          reason.stack?.includes('monaco-editor') ||
+          reason.stack?.includes('MonacoEditor'))
+      ) {
+        // 阻止Monaco Editor的取消错误冒泡到全局错误处理
+        event.preventDefault();
+        console.debug(
+          'Monaco Editor promise rejected (expected during rapid operations):',
+          reason,
+        );
+        return;
+      }
+
+      // 检查是否为其他类型的取消错误
+      if (
+        reason === 'Canceled' ||
+        (typeof reason === 'string' &&
+          reason.toLowerCase().includes('cancel')) ||
+        (reason &&
+          typeof reason === 'object' &&
+          'message' in reason &&
+          typeof reason.message === 'string' &&
+          reason.message.toLowerCase().includes('cancel'))
+      ) {
+        event.preventDefault();
+        console.debug('Operation canceled (can be ignored):', reason);
+      }
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener(
+        'unhandledrejection',
+        handleUnhandledRejection,
+      );
+    };
+  }, []);
 
   // 初始化Monaco Editor
   useEffect(() => {
@@ -395,56 +572,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   // 清理资源
   useEffect(() => {
     return () => {
-      // 使用setTimeout确保在下一个事件循环中清理，避免冲突
-      const cleanup = () => {
-        if (editorInstanceRef.current) {
-          try {
-            const editor = editorInstanceRef.current;
-
-            // 先移除内容变化监听器
-            if (editor._contentWidgets) {
-              editor._contentWidgets.clear();
-            }
-
-            // 清理所有装饰器
-            if (editor._decorations) {
-              editor._decorations = [];
-            }
-
-            // 获取模型并在清理编辑器之前清理模型
-            const model = editor.getModel();
-            if (model && !model.isDisposed()) {
-              // 先清除所有标记
-              model.removeAllDecorations();
-              // 清理语言服务
-              if (model._languageService) {
-                model._languageService.dispose();
-              }
-              // 最后清理模型
-              model.dispose();
-            }
-
-            // 检查编辑器是否已经被dispose
-            if (!editor.isDisposed?.()) {
-              editor.dispose();
-            }
-          } catch (error) {
-            // 完全忽略dispose错误
-            // console.debug('Monaco Editor cleanup:', error);
-          } finally {
-            editorInstanceRef.current = null;
-          }
-        }
-      };
-
-      // 延迟清理，避免与React的清理流程冲突
-      const timeoutId = setTimeout(cleanup, 0);
-
-      return () => {
-        clearTimeout(timeoutId);
-      };
+      // 组件卸载时清理编辑器
+      safeDisposeEditor();
     };
-  }, []);
+  }, [safeDisposeEditor]);
 
   if (!isMonacoReady) {
     return (
