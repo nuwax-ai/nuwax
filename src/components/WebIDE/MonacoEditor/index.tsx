@@ -1,8 +1,10 @@
 import { FileNode } from '@/models/appDev';
 import {
   editorOptions,
+  getLanguageFromFile,
   javascriptCompilerOptions,
   typescriptCompilerOptions,
+  vueLanguageConfig,
 } from '@/utils/monacoConfig';
 import { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
@@ -29,73 +31,147 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   const [isMonacoReady, setIsMonacoReady] = useState(false);
 
   /**
-   * 根据文件扩展名获取语言类型
+   * 动态加载语言支持
    */
-  const getLanguageFromFile = useCallback((fileName: string): string => {
-    const ext = fileName.split('.').pop()?.toLowerCase();
-    const fileNameLower = fileName.toLowerCase();
+  const loadLanguageSupport = useCallback(async (language: string) => {
+    if (!language || language === 'plaintext') return;
 
-    // 检查是否为 Vue TSX 文件
-    if (
-      fileNameLower.includes('.vue.tsx') ||
-      fileNameLower.endsWith('.vue.tsx')
-    ) {
-      return 'vue-tsx';
-    }
+    try {
+      console.log(`📦 [MonacoEditor] 动态加载语言支持: ${language}`);
 
-    // 检查是否为 Vue 文件
-    if (ext === 'vue') {
-      return 'html'; // Vue文件使用HTML语言模式，获得语法高亮和智能提示
-    }
+      switch (language) {
+        case 'typescript':
+        case 'javascript':
+          // TypeScript/JavaScript 内置支持，只需配置编译器选项
+          monaco.languages.typescript.typescriptDefaults.setCompilerOptions(
+            typescriptCompilerOptions,
+          );
+          monaco.languages.typescript.javascriptDefaults.setCompilerOptions(
+            javascriptCompilerOptions,
+          );
 
-    switch (ext) {
-      case 'tsx':
-      case 'jsx':
-        return 'typescript';
-      case 'ts':
-        return 'typescript';
-      case 'js':
-        return 'javascript';
-      case 'json':
-        return 'json';
-      case 'css':
-        return 'css';
-      case 'html':
-        return 'html';
-      case 'md':
-        return 'markdown';
-      case 'less':
-        return 'less';
-      case 'scss':
-        return 'scss';
-      case 'py':
-        return 'python';
-      case 'java':
-        return 'java';
-      case 'cpp':
-      case 'cc':
-        return 'cpp';
-      case 'c':
-        return 'c';
-      case 'go':
-        return 'go';
-      case 'rs':
-        return 'rust';
-      case 'php':
-        return 'php';
-      case 'rb':
-        return 'ruby';
-      case 'sh':
-        return 'shell';
-      case 'yaml':
-      case 'yml':
-        return 'yaml';
-      case 'xml':
-        return 'xml';
-      case 'sql':
-        return 'sql';
-      default:
-        return 'plaintext';
+          // 设置TypeScript和JavaScript的额外库
+          monaco.languages.typescript.typescriptDefaults.setExtraLibs([
+            {
+              content: `
+                declare module 'react' {
+                  export * from 'react';
+                }
+                declare module 'react-dom' {
+                  export * from 'react-dom';
+                }
+                declare module 'vue' {
+                  export * from 'vue';
+                }
+                // Vue类型定义
+                declare global {
+                  namespace JSX {
+                    interface IntrinsicElements {
+                      [elem: string]: any;
+                    }
+                  }
+                }
+              `,
+              filePath: 'global.d.ts',
+            },
+          ]);
+          break;
+
+        case 'css':
+          await import(
+            'monaco-editor/esm/vs/basic-languages/css/css.contribution'
+          );
+          break;
+
+        case 'scss':
+          await import(
+            'monaco-editor/esm/vs/basic-languages/scss/scss.contribution'
+          );
+          break;
+
+        case 'less':
+          await import(
+            'monaco-editor/esm/vs/basic-languages/less/less.contribution'
+          );
+          break;
+
+        case 'html':
+          await import(
+            'monaco-editor/esm/vs/basic-languages/html/html.contribution'
+          );
+          break;
+
+        case 'vue':
+          // 注册Vue语言支持
+          monaco.languages.register({ id: 'vue' });
+
+          // 设置Vue语言的语言配置
+          monaco.languages.setLanguageConfiguration(
+            'vue',
+            vueLanguageConfig.configuration,
+          );
+
+          // 为Vue文件提供HTML语法高亮
+          monaco.languages.setMonarchTokensProvider('vue', {
+            tokenizer: {
+              root: [
+                // Vue模板语法 {{ }}
+                [/\{\{/, 'delimiter', '@expression'],
+                // HTML标签
+                [/<\/?[\w-]+/, 'tag'],
+                [/<!DOCTYPE[^>]*>/, 'metatag'],
+                // 属性
+                [/[\w-]+(?=*=)/, 'attribute.name'],
+                [/=/, 'delimiter'],
+                // 属性值
+                [/"([^"\\]|\\.)*$/, 'string.invalid'],
+                [/'([^'\\]|\\.)*$/, 'string.invalid'],
+                [/"/, 'string', '@string.double'],
+                [/'/, 'string', '@string.single'],
+                // 注释
+                [/<!--/, 'comment', '@comment'],
+              ],
+              comment: [
+                [/-->/, 'comment', '@pop'],
+                [/[^-]+/, 'comment'],
+              ],
+              string: [
+                [/[^\\"']+/, 'string'],
+                [/@escapes/, 'string.escape'],
+                [/\\./, 'string.escape.invalid'],
+                [
+                  /["']/,
+                  {
+                    cases: {
+                      '$#==$S2': { token: 'string', next: '@pop' },
+                      '@default': 'string',
+                    },
+                  },
+                ],
+              ],
+              expression: [
+                [/\}\}/, 'delimiter', '@pop'],
+                [/[^}]+/, 'variable'],
+              ],
+            },
+          });
+          break;
+
+        default:
+          // 对于其他语言，尝试动态加载基础语言支持
+          try {
+            await import(
+              `monaco-editor/esm/vs/basic-languages/${language}/${language}.contribution`
+            );
+          } catch (e) {
+            console.warn(`[MonacoEditor] 无法加载语言支持: ${language}`, e);
+          }
+          break;
+      }
+
+      console.log(`✅ [MonacoEditor] 语言支持加载完成: ${language}`);
+    } catch (error) {
+      console.error(`❌ [MonacoEditor] 加载语言支持失败 (${language}):`, error);
     }
   }, []);
 
@@ -121,6 +197,12 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         getWorkerUrl: function (_moduleId: number, label: string) {
           if (label === 'json') {
             return '/vs/json.worker.js';
+          }
+          if (label === 'css' || label === 'scss' || label === 'less') {
+            return '/vs/css.worker.js';
+          }
+          if (label === 'html' || label === 'vue') {
+            return '/vs/html.worker.js';
           }
           if (label === 'typescript' || label === 'javascript') {
             return '/vs/ts.worker.js';
@@ -182,7 +264,6 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           filePath: 'react.d.ts',
         },
       ]);
-
       setIsMonacoReady(true);
       console.log('✅ [MonacoEditor] Monaco Editor初始化成功');
     } catch (error) {
@@ -193,7 +274,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   /**
    * 创建编辑器实例
    */
-  const createEditor = useCallback(() => {
+  const createEditor = useCallback(async () => {
     if (!editorRef.current || !isMonacoReady) return;
 
     // 如果已有编辑器实例，先清理
@@ -213,6 +294,9 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       const language = currentFile
         ? getLanguageFromFile(currentFile.name)
         : 'typescript';
+
+      // 动态加载语言支持
+      await loadLanguageSupport(language);
 
       // 创建编辑器实例
       const editor = monaco.editor.create(editorRef.current, {
@@ -247,15 +331,25 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     } catch (error) {
       console.error('❌ [MonacoEditor] 创建编辑器实例失败:', error);
     }
-  }, [isMonacoReady, currentFile, onContentChange, getLanguageFromFile]);
+  }, [
+    isMonacoReady,
+    currentFile,
+    onContentChange,
+    getLanguageFromFile,
+    loadLanguageSupport,
+  ]);
 
   /**
    * 更新编辑器内容
    */
-  const updateEditorContent = useCallback(() => {
+  const updateEditorContent = useCallback(async () => {
     if (!editorInstanceRef.current || !currentFile) return;
 
     const language = getLanguageFromFile(currentFile.name);
+
+    // 动态加载语言支持
+    await loadLanguageSupport(language);
+
     const model = editorInstanceRef.current.getModel();
 
     if (model) {
@@ -277,7 +371,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       );
       editorInstanceRef.current.setModel(newModel);
     }
-  }, [currentFile, getLanguageFromFile]);
+  }, [currentFile, getLanguageFromFile, loadLanguageSupport]);
 
   // 初始化Monaco Editor
   useEffect(() => {

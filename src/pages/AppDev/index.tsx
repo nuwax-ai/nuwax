@@ -22,6 +22,7 @@ import {
   EyeOutlined,
   FileOutlined,
   GlobalOutlined,
+  LeftOutlined,
   ReadOutlined,
   ReloadOutlined,
   RightOutlined,
@@ -244,6 +245,9 @@ const AppDev: React.FC = () => {
 
   // 文件树数据结构
   const [fileTreeData, setFileTreeData] = useState<any[]>([]);
+
+  // 文件树折叠状态
+  const [, setIsFileTreeCollapsed] = useState(false);
 
   // 使用 ref 来跟踪是否已经启动过开发环境，避免重复调用
   const hasStartedDevRef = useRef(false);
@@ -1166,6 +1170,13 @@ const AppDev: React.FC = () => {
   }, []);
 
   /**
+   * 切换文件树折叠状态
+   */
+  const toggleFileTreeCollapse = useCallback(() => {
+    setIsFileTreeCollapsed((prev) => !prev);
+  }, [setIsFileTreeCollapsed]);
+
+  /**
    * 处理功能按钮点击
    */
   const handleActionButton = useCallback((action: string) => {
@@ -1634,45 +1645,77 @@ const AppDev: React.FC = () => {
           <div className={styles.contentArea}>
             <Row gutter={0} className={styles.contentRow}>
               {/* 文件树侧边栏 */}
-              <Col span={6} className={styles.fileTreeCol}>
+              <Col
+                span={isFileTreeCollapsed ? 0 : 6}
+                className={`${styles.fileTreeCol} ${
+                  isFileTreeCollapsed ? styles.collapsed : ''
+                }`}
+                style={{ transition: 'all 0.3s ease' }}
+              >
                 <Card className={styles.fileTreeCard} bordered={false}>
-                  {/* 添加一个导入项目按钮 悬浮固定在最右上角 */}
-                  <div className={styles.fileTreeHeader}>
+                  {/* 悬浮折叠/展开按钮 */}
+                  <Tooltip
+                    title={isFileTreeCollapsed ? '展开文件树' : '收起文件树'}
+                  >
                     <Button
                       type="text"
-                      className={styles.addButton}
-                      onClick={() => setIsUploadModalVisible(true)}
-                    >
-                      导入项目
-                    </Button>
-                    <Button
-                      type="text"
-                      className={styles.addButton}
-                      onClick={testGetProjectContent}
-                      style={{ marginLeft: 8 }}
-                    >
-                      测试API
-                    </Button>
-                    <Button
-                      type="text"
-                      className={styles.addButton}
-                      onClick={testSubmitFiles}
-                      style={{ marginLeft: 8 }}
-                    >
-                      测试提交
-                    </Button>
-                  </div>
-                  <div className={styles.fileTreeContainer}>
-                    {/* 文件树结构 */}
-                    <div className={styles.fileTree}>
-                      {fileTreeData.map((node) => renderFileTreeNode(node))}
-                    </div>
-                  </div>
+                      icon={
+                        isFileTreeCollapsed ? (
+                          <RightOutlined />
+                        ) : (
+                          <LeftOutlined />
+                        )
+                      }
+                      onClick={toggleFileTreeCollapse}
+                      className={`${styles.collapseButton} ${
+                        isFileTreeCollapsed ? styles.collapsed : styles.expanded
+                      }`}
+                    />
+                  </Tooltip>
+                  {!isFileTreeCollapsed && (
+                    <>
+                      {/* 文件树头部按钮 */}
+                      <div className={styles.fileTreeHeader}>
+                        <Button
+                          type="text"
+                          className={styles.addButton}
+                          onClick={() => setIsUploadModalVisible(true)}
+                        >
+                          导入项目
+                        </Button>
+                        <Button
+                          type="text"
+                          className={styles.addButton}
+                          onClick={testGetProjectContent}
+                          style={{ marginLeft: 8 }}
+                        >
+                          测试API
+                        </Button>
+                        <Button
+                          type="text"
+                          className={styles.addButton}
+                          onClick={testSubmitFiles}
+                          style={{ marginLeft: 8 }}
+                        >
+                          测试提交
+                        </Button>
+                      </div>
+                      <div className={styles.fileTreeContainer}>
+                        {/* 文件树结构 */}
+                        <div className={styles.fileTree}>
+                          {fileTreeData.map((node) => renderFileTreeNode(node))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </Card>
               </Col>
 
               {/* 编辑器区域 */}
-              <Col span={18} className={styles.editorCol}>
+              <Col
+                span={isFileTreeCollapsed ? 24 : 18}
+                className={styles.editorCol}
+              >
                 <div className={styles.editorContainer}>
                   {/* 内容区域 */}
                   <div className={styles.editorContent}>

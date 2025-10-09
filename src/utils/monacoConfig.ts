@@ -10,6 +10,45 @@ export const monacoConfig = {
   },
 };
 
+// 支持的文件类型和对应的Monaco语言
+export const languageMap: Record<string, string> = {
+  // TypeScript/JavaScript
+  ts: 'typescript',
+  tsx: 'typescript',
+  js: 'javascript',
+  jsx: 'javascript',
+
+  // 样式文件
+  css: 'css',
+  less: 'less',
+  scss: 'scss',
+  sass: 'scss',
+
+  // HTML和模板
+  html: 'html',
+  htm: 'html',
+  vue: 'html', // Vue暂时使用HTML高亮
+
+  // 其他常用语言
+  json: 'json',
+  md: 'markdown',
+  xml: 'xml',
+  yaml: 'yaml',
+  yml: 'yaml',
+};
+
+// 获取语言类型的函数
+export const getLanguageFromFile = (fileName: string): string => {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+
+  // 特殊处理Vue文件
+  if (ext === 'vue') {
+    return 'html';
+  }
+
+  return languageMap[ext || ''] || 'plaintext';
+};
+
 // 配置Monaco Editor的TypeScript编译器选项
 export const typescriptCompilerOptions = {
   target: 5, // ES2020
@@ -49,6 +88,45 @@ export const javascriptCompilerOptions = {
   resolveJsonModule: true,
   isolatedModules: true,
   noEmitOnError: true,
+};
+
+// Vue语法高亮配置
+export const vueLanguageConfig = {
+  // 自定义Vue语言的token provider
+  id: 'vue',
+  extensions: ['.vue'],
+  aliases: ['Vue', 'vue'],
+
+  // 基础配置
+  configuration: {
+    comments: {
+      blockComment: ['<!--', '-->'],
+      lineComment: '//',
+    },
+    brackets: [
+      ['<!--', '-->'],
+      ['<', '>'],
+      ['{', '}'],
+      ['(', ')'],
+      ['[', ']'],
+    ],
+    autoClosingPairs: [
+      { open: '<', close: '>' },
+      { open: '{', close: '}' },
+      { open: '(', close: ')' },
+      { open: '[', close: ']' },
+      { open: '"', close: '"' },
+      { open: "'", close: "'" },
+    ],
+    surroundingPairs: [
+      { open: '<', close: '>' },
+      { open: '{', close: '}' },
+      { open: '(', close: ')' },
+      { open: '[', close: ']' },
+      { open: '"', close: '"' },
+      { open: "'", close: "'" },
+    ],
+  },
 };
 
 // 配置Monaco Editor的编辑器选项
