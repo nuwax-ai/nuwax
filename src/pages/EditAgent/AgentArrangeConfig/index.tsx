@@ -649,19 +649,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: '设置',
       children: (
         <>
-          {/* 1. “关闭扩展页面”为关闭时，不展示“默认展开页面区”和“隐藏主会话框” */}
-          {/* <div
-            className={cx(
-              'flex',
-              'items-center',
-              'content-between',
-              styles['page-setting-item'],
-            )}
-          >
-            <span>关闭扩展页面</span>
-            <Switch checked={openPage} onChange={setOpenPage} />
-          </div> */}
-          {/* 2. “默认展开页面区”，当选中时，用户进入智能体详情或会话时为左右分栏，左边是对话框，右边是页面 */}
+          {/* “默认展开页面区”，当选中时，用户进入智能体详情或会话时为左右分栏，左边是对话框，右边是页面 */}
           <div
             className={cx(
               'flex',
@@ -673,7 +661,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             <span>默认展开页面区</span>
             <Switch />
           </div>
-          {/* 3. “隐藏主会话框”，当选中时智能体详情仅展示页面，这个时候一个智能体就是一个独立的应用（系统） */}
+          {/* “隐藏主会话框”，当选中时智能体详情仅展示页面，这个时候一个智能体就是一个独立的应用（系统）*/}
           <div
             className={cx(
               'flex',

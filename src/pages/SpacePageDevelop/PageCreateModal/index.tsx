@@ -72,12 +72,6 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
     setLoading(true);
     console.log(values, type);
-    // 校验路径
-    const { basePath } = values;
-    if (!basePath.includes('/')) {
-      message.error('请输入正确路径，以/开头');
-      return;
-    }
     // 项目导入
     if (type === PageDevelopCreateTypeEnum.Import_Project) {
       const { fileList, icon, projectName, projectDesc } = values;
@@ -91,7 +85,6 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
       formData.append('icon', icon || '');
       formData.append('projectName', projectName);
       formData.append('projectDesc', projectDesc || '');
-      formData.append('basePath', basePath || '');
       formData.append('spaceId', spaceId.toString());
       /* 2. 追加文件 */
       formData.append('file', file || '');
@@ -100,7 +93,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
       // console.log(result);
     }
     // 在线创建
-    else if (type === PageDevelopCreateTypeEnum.ONLINE_DEPLOY) {
+    else if (type === PageDevelopCreateTypeEnum.Online_Develop) {
       const data = {
         ...values,
         spaceId,
@@ -108,7 +101,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
       runCreatePageCreate(data);
     }
     // 反向代理
-    else if (type === PageDevelopCreateTypeEnum.REVERSE_PROXY) {
+    else if (type === PageDevelopCreateTypeEnum.Reverse_Proxy) {
       // todo 调用反向代理接口
     }
   };
@@ -189,13 +182,6 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
             placeholder="请输入描述"
             autoSize={{ minRows: 4, maxRows: 6 }}
           />
-        </Form.Item>
-        <Form.Item
-          name="basePath"
-          label="路径"
-          rules={[{ required: true, message: '请输入路径' }]}
-        >
-          <Input placeholder="请输入路径，以/开头, 例如：/test" />
         </Form.Item>
         <Form.Item name="icon" label="图标">
           <UploadAvatar

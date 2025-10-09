@@ -1,6 +1,7 @@
 import {
   PageDevelopCreateTypeEnum,
   PageDevelopMoreActionEnum,
+  PageProjectTypeEnum,
   ReverseProxyEnum,
 } from '@/types/enums/pageDev';
 
@@ -11,11 +12,11 @@ export const PAGE_DEVELOP_CREATE_TYPE_LIST = [
     label: '导入项目',
   },
   {
-    value: PageDevelopCreateTypeEnum.ONLINE_DEPLOY,
-    label: '在线创建',
+    value: PageDevelopCreateTypeEnum.Online_Develop,
+    label: '在线开发',
   },
   {
-    value: PageDevelopCreateTypeEnum.REVERSE_PROXY,
+    value: PageDevelopCreateTypeEnum.Reverse_Proxy,
     label: '反向代理',
   },
 ];
@@ -23,10 +24,17 @@ export const PAGE_DEVELOP_CREATE_TYPE_LIST = [
 // 页面开发所有类型
 export const PAGE_DEVELOP_ALL_TYPE = [
   {
-    value: PageDevelopCreateTypeEnum.All_Type,
+    value: PageProjectTypeEnum.All_Type,
     label: '所有类型',
   },
-  ...PAGE_DEVELOP_CREATE_TYPE_LIST,
+  {
+    value: PageProjectTypeEnum.ONLINE_DEPLOY,
+    label: '在线开发',
+  },
+  {
+    value: PageProjectTypeEnum.REVERSE_PROXY,
+    label: '反向代理',
+  },
 ];
 
 // 反向代理列表

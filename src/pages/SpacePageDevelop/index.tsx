@@ -11,6 +11,7 @@ import { apiCustomPageQueryList } from '@/services/pageDev';
 import {
   PageDevelopCreateTypeEnum,
   PageDevelopMoreActionEnum,
+  PageProjectTypeEnum,
 } from '@/types/enums/pageDev';
 import { CreateListEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
@@ -43,8 +44,8 @@ const SpacePageDevelop: React.FC = () => {
   // 所有页面列表
   const pageAllRef = useRef<CustomPageDto[]>([]);
   // 类型
-  const [type, setType] = useState<PageDevelopCreateTypeEnum>(
-    PageDevelopCreateTypeEnum.All_Type,
+  const [type, setType] = useState<PageProjectTypeEnum>(
+    PageProjectTypeEnum.All_Type,
   );
   // 搜索关键词
   const [keyword, setKeyword] = useState<string>('');
@@ -81,13 +82,13 @@ const SpacePageDevelop: React.FC = () => {
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
-    filterType: PageDevelopCreateTypeEnum,
+    filterType: PageProjectTypeEnum,
     filterCreate: CreateListEnum,
     filterKeyword: string,
     list = pageAllRef.current,
   ) => {
     let _list = list;
-    // if (filterType !== PageDevelopCreateTypeEnum.All_Type) {
+    // if (filterType !== PageProjectTypeEnum.All_Type) {
     //   _list = _list.filter((item) => item.type === filterType);
     // }
     // if (filterCreate === CreateListEnum.Me) {
@@ -120,7 +121,7 @@ const SpacePageDevelop: React.FC = () => {
 
   // 切换类型
   const handlerChangeType = (value: React.Key) => {
-    const _value = value as PageDevelopCreateTypeEnum;
+    const _value = value as PageProjectTypeEnum;
     setType(_value);
     handleFilterList(_value, create, keyword);
   };
@@ -156,8 +157,8 @@ const SpacePageDevelop: React.FC = () => {
 
   /**
    * 确认创建页面
-   * 导入项目、在线创建、反向代理点击后，都是打开这个表单弹窗
-   * 导入项目、在线创建表单弹窗填写后，进入项目之前弹出“调试智能体绑定”框，确认后进入开发界面
+   * 导入项目、在线开发、反向代理点击后，都是打开这个表单弹窗
+   * 导入项目、在线开发表单弹窗填写后，进入项目之前弹出“调试智能体绑定”框，确认后进入开发界面
    * 反向代理表单填写后，点击不进入开发界面，直接弹出“反向代理配置”框
    */
   const handleConfirmCreatePage = (result: CreateCustomPageInfo) => {
@@ -166,12 +167,13 @@ const SpacePageDevelop: React.FC = () => {
     // 关闭表单弹窗
     setOpenPageCreateModal(false);
     switch (pageCreateTypeRef.current) {
+      // 导入项目、在线开发
       case PageDevelopCreateTypeEnum.Import_Project:
-      case PageDevelopCreateTypeEnum.ONLINE_DEPLOY:
+      case PageDevelopCreateTypeEnum.Online_Develop:
         setOpenDebugAgentBindModel(true);
         console.log('导入项目、在线创建');
         break;
-      case PageDevelopCreateTypeEnum.REVERSE_PROXY:
+      case PageDevelopCreateTypeEnum.Reverse_Proxy:
         console.log('反向代理');
         setOpenReverseProxyModal(true);
         break;
@@ -183,10 +185,7 @@ const SpacePageDevelop: React.FC = () => {
     setCurrentPageInfo(item);
     console.log('点击卡片', item);
     // todo: 根据页面类型（页面创建模式）导入项目、在线创建，判断是否需要打开调试智能体绑定弹窗，反向代理，打开路径参数配置弹窗
-    if (
-      item.projectType === PageDevelopCreateTypeEnum.Import_Project ||
-      item.projectType === PageDevelopCreateTypeEnum.ONLINE_DEPLOY
-    ) {
+    if (item.projectType === PageProjectTypeEnum.ONLINE_DEPLOY) {
       setCreateCustomPageInfo({
         devServerUrl: '',
         projectId: item.projectId,
@@ -194,7 +193,7 @@ const SpacePageDevelop: React.FC = () => {
       setOpenDebugAgentBindModel(true);
     }
     // 反向代理
-    else if (item.projectType === PageDevelopCreateTypeEnum.REVERSE_PROXY) {
+    else if (item.projectType === PageProjectTypeEnum.REVERSE_PROXY) {
       setOpenReverseProxyModal(true);
     }
   };
@@ -222,7 +221,7 @@ const SpacePageDevelop: React.FC = () => {
   const handleCancelReverseProxy = () => {
     setOpenReverseProxyModal(false);
     // 如果是在创建页面，则重新查询页面列表
-    if (pageCreateTypeRef.current === PageDevelopCreateTypeEnum.REVERSE_PROXY) {
+    if (pageCreateTypeRef.current === PageDevelopCreateTypeEnum.Reverse_Proxy) {
       runPageList(spaceId);
     }
   };

@@ -1,5 +1,5 @@
 import { DataTypeEnum } from '../enums/common';
-import { PageDevelopCreateTypeEnum } from '../enums/pageDev';
+import { PageProjectTypeEnum } from '../enums/pageDev';
 import { CustomPopoverItem } from './common';
 
 // 自定义页面项目信息
@@ -19,7 +19,7 @@ export interface CustomPageDto {
   // 发布状态,1:已发布;-1:未发布
   buildRunning: number;
   // 项目类型,可用值:REVERSE_PROXY,ONLINE_DEPLOY
-  projectType: PageDevelopCreateTypeEnum;
+  projectType: PageProjectTypeEnum;
   // 代理配置
   proxyConfigs: {
     // 可用值:dev,prod

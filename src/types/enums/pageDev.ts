@@ -1,10 +1,18 @@
-// 页面开发创建类型枚举(项目类型,可用值:REVERSE_PROXY,ONLINE_DEPLOY)
+// 页面开发创建类型枚举(自定义)
 export enum PageDevelopCreateTypeEnum {
-  // 全部
-  All_Type = 'All_Type',
   // 导入项目
   Import_Project = 'Import_Project',
-  // 在线创建
+  // 在线开发
+  Online_Develop = 'Online_Develop',
+  // 反向代理
+  Reverse_Proxy = 'Reverse_Proxy',
+}
+
+// 页面项目类型,可用值:REVERSE_PROXY,ONLINE_DEPLOY
+export enum PageProjectTypeEnum {
+  // 全部
+  All_Type = 'All_Type',
+  // 在线开发
   ONLINE_DEPLOY = 'ONLINE_DEPLOY',
   // 反向代理
   REVERSE_PROXY = 'REVERSE_PROXY',
