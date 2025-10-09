@@ -238,6 +238,7 @@ const AppDev: React.FC = () => {
   // 文件修改状态
   const [originalFileContent, setOriginalFileContent] = useState<string>('');
   const [isFileModified, setIsFileModified] = useState(false);
+  const [isSavingFile, setIsSavingFile] = useState(false);
 
   // 文件夹展开状态
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
@@ -1269,6 +1270,38 @@ const AppDev: React.FC = () => {
   }, [chatMessages, renderChatMessage]);
 
   /**
+   * 处理保存文件
+   */
+  const handleSaveFile = useCallback(async () => {
+    if (!selectedFile || !workspace.projectId) return;
+
+    try {
+      setIsSavingFile(true);
+      // 这里可以添加保存文件的API调用
+      // 暂时只是更新状态
+      setOriginalFileContent(fileContent);
+      setIsFileModified(false);
+      message.success('文件已保存');
+    } catch (error) {
+      console.error('保存文件失败:', error);
+      message.error('保存文件失败');
+    } finally {
+      setIsSavingFile(false);
+    }
+  }, [selectedFile, workspace.projectId, fileContent]);
+
+  /**
+   * 处理取消编辑
+   */
+  const handleCancelEdit = useCallback(() => {
+    if (!selectedFile) return;
+
+    setFileContent(originalFileContent);
+    setIsFileModified(false);
+    message.info('已取消编辑');
+  }, [selectedFile, originalFileContent]);
+
+  /**
    * 渲染文件树节点
    */
   const renderFileTreeNode = useCallback(
@@ -1592,6 +1625,19 @@ const AppDev: React.FC = () => {
           </div>
           {/* 主内容区域 */}
           <div className={styles.contentArea}>
+            {/* 悬浮折叠/展开按钮 - 放在预览区域左下角 */}
+            <Tooltip title={isFileTreeCollapsed ? '展开文件树' : '收起文件树'}>
+              <Button
+                type="text"
+                icon={
+                  isFileTreeCollapsed ? <RightOutlined /> : <LeftOutlined />
+                }
+                onClick={toggleFileTreeCollapse}
+                className={`${styles.collapseButton} ${
+                  isFileTreeCollapsed ? styles.collapsed : styles.expanded
+                }`}
+              />
+            </Tooltip>
             <Row gutter={0} className={styles.contentRow}>
               {/* 文件树侧边栏 */}
               <Col
@@ -1624,22 +1670,6 @@ const AppDev: React.FC = () => {
                   )}
                 </Card>
               </Col>
-
-              {/* 悬浮折叠/展开按钮 - 放在文件树外面 */}
-              <Tooltip
-                title={isFileTreeCollapsed ? '展开文件树' : '收起文件树'}
-              >
-                <Button
-                  type="text"
-                  icon={
-                    isFileTreeCollapsed ? <RightOutlined /> : <LeftOutlined />
-                  }
-                  onClick={toggleFileTreeCollapse}
-                  className={`${styles.collapseButton} ${
-                    isFileTreeCollapsed ? styles.collapsed : styles.expanded
-                  }`}
-                />
-              </Tooltip>
 
               {/* 编辑器区域 */}
               <Col
