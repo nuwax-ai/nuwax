@@ -1025,32 +1025,128 @@ const AppDev: React.FC = () => {
   }, [sseManager]);
 
   /**
-   * 根据文件扩展名获取语言类型
+   * 根据文件扩展名获取语言类型（用于显示）
+   * 与Monaco Editor内部语言标识保持一致
    */
   const getLanguageFromFile = useCallback((fileName: string): string => {
     const ext = fileName.split('.').pop()?.toLowerCase();
     switch (ext) {
+      // TypeScript/JavaScript
       case 'tsx':
       case 'jsx':
         return 'TypeScript React';
       case 'ts':
         return 'TypeScript';
       case 'js':
+      case 'mjs':
+      case 'cjs':
         return 'JavaScript';
-      case 'json':
-        return 'JSON';
+
+      // Stylesheets
       case 'css':
         return 'CSS';
+      case 'less':
+        return 'Less';
+      case 'scss':
+        return 'SCSS';
+      case 'sass':
+        return 'Sass';
+
+      // Markup & Templates
       case 'html':
+      case 'htm':
         return 'HTML';
-      case 'md':
-        return 'Markdown';
       case 'vue':
-        return 'HTML'; // Vue文件也用HTML高亮
+        return 'Vue'; // Vue文件
       case 'xml':
-        return 'HTML'; // XML文件用HTML高亮
+        return 'XML'; // XML文件
+
+      // Data & Configuration
+      case 'json':
+        return 'JSON';
+      case 'jsonc':
+        return 'JSON'; // JSON with comments
+      case 'yaml':
+      case 'yml':
+        return 'YAML';
+      case 'toml':
+        return 'TOML';
+      case 'ini':
+        return 'INI';
+
+      // Documentation
+      case 'md':
+      case 'markdown':
+        return 'Markdown';
+      case 'txt':
+        return 'Plain Text';
+
+      // Server & Config
+      case 'php':
+        return 'PHP';
+      case 'py':
+        return 'Python';
+      case 'java':
+        return 'Java';
+      case 'go':
+        return 'Go';
+      case 'rs':
+        return 'Rust';
+      case 'cpp':
+      case 'cc':
+      case 'cxx':
+        return 'C++';
+      case 'c':
+        return 'C';
+      case 'cs':
+        return 'C#';
+      case 'vb':
+        return 'VB';
+      case 'swift':
+        return 'Swift';
+      case 'kt':
+        return 'Kotlin';
+      case 'scala':
+        return 'Scala';
+      case 'rb':
+        return 'Ruby';
+      case 'dart':
+        return 'Dart';
+      case 'lua':
+        return 'Lua';
+      case 'r':
+        return 'R';
+
+      // Web & Scripts
+      case 'sh':
+      case 'bash':
+      case 'zsh':
+        return 'Shell';
+      case 'ps1':
+        return 'PowerShell';
+      case 'bat':
+      case 'cmd':
+        return 'Batch';
+      case 'sql':
+        return 'SQL';
+
+      // Build & Config
+      case 'dockerfile':
+        return 'Dockerfile';
+      case 'makefile':
+        return 'Makefile';
+      case 'gitignore':
+      case 'dockerignore':
+        return 'Plain Text';
+
+      // Other common files
+      case 'log':
+        return 'Log';
+      case 'csv':
+        return 'CSV';
+
       default:
-        return 'Text';
+        return 'Plain Text';
     }
   }, []);
 
