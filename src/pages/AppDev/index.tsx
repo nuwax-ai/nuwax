@@ -8,7 +8,6 @@ import {
   keepAlive,
   sendChatMessage,
   startDev,
-  submitFiles,
   uploadAndStartProject,
 } from '@/services/appDev';
 import type {
@@ -18,6 +17,7 @@ import type {
 } from '@/types/interfaces/appDev';
 import { createSSEManager, type SSEManager } from '@/utils/sseManager';
 import {
+  CheckOutlined,
   DownOutlined,
   EyeOutlined,
   FileOutlined,
@@ -235,6 +235,10 @@ const AppDev: React.FC = () => {
   const [isLoadingFileContent, setIsLoadingFileContent] = useState(false);
   const [fileContentError, setFileContentError] = useState<string | null>(null);
 
+  // 文件修改状态
+  const [originalFileContent, setOriginalFileContent] = useState<string>('');
+  const [isFileModified, setIsFileModified] = useState(false);
+
   // 文件夹展开状态
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set(),
@@ -247,7 +251,7 @@ const AppDev: React.FC = () => {
   const [fileTreeData, setFileTreeData] = useState<any[]>([]);
 
   // 文件树折叠状态
-  const [, setIsFileTreeCollapsed] = useState(false);
+  const [isFileTreeCollapsed, setIsFileTreeCollapsed] = useState(false);
 
   // 使用 ref 来跟踪是否已经启动过开发环境，避免重复调用
   const hasStartedDevRef = useRef(false);
@@ -771,6 +775,8 @@ const AppDev: React.FC = () => {
       if (fileNode && fileNode.contents && fileNode.contents.trim() !== '') {
         console.log('📄 [AppDev] 文件已有contents数据，跳过API调用:', fileId);
         setFileContent(fileNode.contents);
+        setOriginalFileContent(fileNode.contents);
+        setIsFileModified(false);
         setFileContentError(null);
         return;
       }
@@ -781,11 +787,18 @@ const AppDev: React.FC = () => {
 
         console.log('📄 [AppDev] 调用API获取文件内容:', fileId);
         const response = await getFileContent(workspace.projectId, fileId);
+        let content = '';
         if (response && typeof response === 'object' && 'data' in response) {
-          setFileContent((response as any).data as string);
+          content = (response as any).data as string;
+          setFileContent(content);
+          setOriginalFileContent(content);
+          setIsFileModified(false);
           // 移除成功提示，避免重复toast
         } else if (typeof response === 'string') {
-          setFileContent(response);
+          content = response;
+          setFileContent(content);
+          setOriginalFileContent(content);
+          setIsFileModified(false);
           // 移除成功提示，避免重复toast
         } else {
           throw new Error('文件内容为空');
@@ -825,8 +838,11 @@ const AppDev: React.FC = () => {
   const handleFileContentChange = useCallback(
     (fileId: string, content: string) => {
       updateFileContent(fileId, content);
+      setFileContent(content);
+      // 检查文件是否被修改
+      setIsFileModified(content !== originalFileContent);
     },
-    [updateFileContent],
+    [updateFileContent, originalFileContent],
   );
 
   /**
@@ -866,76 +882,6 @@ const AppDev: React.FC = () => {
     },
     [projectName, updateProjectId, updateDevServerUrl],
   );
-
-  /**
-   * 测试API接口
-   */
-  const testGetProjectContent = useCallback(async () => {
-    try {
-      console.log('🧪 [AppDev] 测试获取项目内容API...');
-      const testProjectId = workspace.projectId || '1'; // 使用当前项目ID或默认值
-
-      const response = await getProjectContent(testProjectId);
-      console.log('✅ [AppDev] API测试成功:', response);
-
-      if (response.code === '0000' && response.data) {
-        const files = response.data.files;
-        const fileCount = Array.isArray(files)
-          ? files.length
-          : Object.keys(files).length;
-        message.success(`API测试成功！获取到 ${fileCount} 个文件`);
-      } else {
-        message.warning(`API响应异常: ${response.message}`);
-      }
-    } catch (error) {
-      console.error('❌ [AppDev] API测试失败:', error);
-      message.error(
-        `API测试失败: ${error instanceof Error ? error.message : '未知错误'}`,
-      );
-    }
-  }, [workspace.projectId]);
-
-  /**
-   * 测试提交文件修改API
-   */
-  const testSubmitFiles = useCallback(async () => {
-    try {
-      console.log('🧪 [AppDev] 测试提交文件修改API...');
-      const testProjectId = Number(workspace.projectId) || 1;
-
-      // 创建测试文件数据
-      const testFiles = [
-        {
-          name: 'test.txt',
-          contents: '这是一个测试文件内容\nHello World!',
-          binary: false,
-          sizeExceeded: false,
-        },
-        {
-          name: 'README.md',
-          contents: '# 测试项目\n\n这是一个用于测试API的项目。',
-          binary: false,
-          sizeExceeded: false,
-        },
-      ];
-
-      const response = await submitFiles(testProjectId, testFiles);
-      console.log('✅ [AppDev] 提交文件API测试成功:', response);
-
-      if (response.code === '0000' && response.data) {
-        message.success(`提交测试成功！提交了 ${testFiles.length} 个文件`);
-      } else {
-        message.warning(`提交API响应异常: ${response.message}`);
-      }
-    } catch (error) {
-      console.error('❌ [AppDev] 提交文件API测试失败:', error);
-      message.error(
-        `提交API测试失败: ${
-          error instanceof Error ? error.message : '未知错误'
-        }`,
-      );
-    }
-  }, [workspace.projectId]);
 
   /**
    * 处理AI助手聊天
@@ -1173,8 +1119,11 @@ const AppDev: React.FC = () => {
    * 切换文件树折叠状态
    */
   const toggleFileTreeCollapse = useCallback(() => {
-    setIsFileTreeCollapsed((prev) => !prev);
-  }, [setIsFileTreeCollapsed]);
+    setIsFileTreeCollapsed((prev) => {
+      console.log('🔄 [AppDev] 切换文件树状态:', !prev ? '折叠' : '展开');
+      return !prev;
+    });
+  }, []);
 
   /**
    * 处理功能按钮点击
@@ -1653,25 +1602,6 @@ const AppDev: React.FC = () => {
                 style={{ transition: 'all 0.3s ease' }}
               >
                 <Card className={styles.fileTreeCard} bordered={false}>
-                  {/* 悬浮折叠/展开按钮 */}
-                  <Tooltip
-                    title={isFileTreeCollapsed ? '展开文件树' : '收起文件树'}
-                  >
-                    <Button
-                      type="text"
-                      icon={
-                        isFileTreeCollapsed ? (
-                          <RightOutlined />
-                        ) : (
-                          <LeftOutlined />
-                        )
-                      }
-                      onClick={toggleFileTreeCollapse}
-                      className={`${styles.collapseButton} ${
-                        isFileTreeCollapsed ? styles.collapsed : styles.expanded
-                      }`}
-                    />
-                  </Tooltip>
                   {!isFileTreeCollapsed && (
                     <>
                       {/* 文件树头部按钮 */}
@@ -1682,22 +1612,6 @@ const AppDev: React.FC = () => {
                           onClick={() => setIsUploadModalVisible(true)}
                         >
                           导入项目
-                        </Button>
-                        <Button
-                          type="text"
-                          className={styles.addButton}
-                          onClick={testGetProjectContent}
-                          style={{ marginLeft: 8 }}
-                        >
-                          测试API
-                        </Button>
-                        <Button
-                          type="text"
-                          className={styles.addButton}
-                          onClick={testSubmitFiles}
-                          style={{ marginLeft: 8 }}
-                        >
-                          测试提交
                         </Button>
                       </div>
                       <div className={styles.fileTreeContainer}>
@@ -1710,6 +1624,22 @@ const AppDev: React.FC = () => {
                   )}
                 </Card>
               </Col>
+
+              {/* 悬浮折叠/展开按钮 - 放在文件树外面 */}
+              <Tooltip
+                title={isFileTreeCollapsed ? '展开文件树' : '收起文件树'}
+              >
+                <Button
+                  type="text"
+                  icon={
+                    isFileTreeCollapsed ? <RightOutlined /> : <LeftOutlined />
+                  }
+                  onClick={toggleFileTreeCollapse}
+                  className={`${styles.collapseButton} ${
+                    isFileTreeCollapsed ? styles.collapsed : styles.expanded
+                  }`}
+                />
+              </Tooltip>
 
               {/* 编辑器区域 */}
               <Col
@@ -1739,6 +1669,27 @@ const AppDev: React.FC = () => {
                             {isLoadingFileContent && <Spin size="small" />}
                           </div>
                           <div className={styles.fileActions}>
+                            {isFileModified && (
+                              <>
+                                <Button
+                                  size="small"
+                                  type="primary"
+                                  icon={<CheckOutlined />}
+                                  onClick={handleSaveFile}
+                                  loading={isSavingFile}
+                                  style={{ marginRight: 8 }}
+                                >
+                                  保存
+                                </Button>
+                                <Button
+                                  size="small"
+                                  onClick={handleCancelEdit}
+                                  style={{ marginRight: 8 }}
+                                >
+                                  取消
+                                </Button>
+                              </>
+                            )}
                             <Button
                               size="small"
                               icon={<ReloadOutlined />}
@@ -1808,7 +1759,6 @@ const AppDev: React.FC = () => {
                                       children: [],
                                     }}
                                     onContentChange={(fileId, content) => {
-                                      setFileContent(content);
                                       handleFileContentChange(fileId, content);
                                     }}
                                     className={styles.monacoEditor}

@@ -648,6 +648,7 @@
   background: transparent;
   border: none;
   border-radius: 0;
+  position: relative;
 
   :global(.ant-card-body) {
     padding: 0;
@@ -819,6 +820,7 @@
   // border-radius: 8px;
   overflow: hidden;
   // box-shadow: 0 1px 3px rgba(0, 0, 0, 10%);
+  position: relative;
 }
 
 // 编辑器头部bar
@@ -1130,59 +1132,64 @@
   }
 }
 
-// 折叠按钮样式
+// 折叠按钮样式 - 放在预览区域左下角
 .collapseButton {
-  position: fixed;
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
   width: 28px;
-  height: 60px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px 0 0 8px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 95%);
   border: 1px solid rgba(0, 0, 0, 10%);
-  border-right: none;
   color: #64748b;
-  font-size: 14px;
+  font-size: 12px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1000;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 10%);
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 10%);
+  cursor: pointer;
 
-  // 展开状态
+  // 展开状态 - 文件树可见时
   &.expanded {
-    opacity: 0.7;
+    opacity: 0.8;
+    background: rgba(255, 255, 255, 95%);
+    border-color: rgba(0, 0, 0, 10%);
+    color: #64748b;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 10%);
 
     &:hover {
       opacity: 1;
-      transform: translateY(-50%) translateX(-4px);
+      transform: scale(1.05);
       background: rgba(59, 130, 246, 95%);
       border-color: rgba(59, 130, 246, 20%);
       color: #fff;
-      box-shadow: -4px 0 12px rgba(59, 130, 246, 20%);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 20%);
     }
   }
 
-  // 折叠状态
+  // 折叠状态 - 文件树隐藏时
   &.collapsed {
-    opacity: 0.9;
-    right: 0;
+    opacity: 1;
+    background: rgba(59, 130, 246, 95%);
+    border-color: rgba(59, 130, 246, 20%);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(59, 130, 246, 20%);
 
     &:hover {
       opacity: 1;
-      transform: translateY(-50%) translateX(-2px);
-      background: rgba(59, 130, 246, 95%);
-      border-color: rgba(59, 130, 246, 20%);
-      color: #fff;
-      box-shadow: -4px 0 12px rgba(59, 130, 246, 20%);
+      transform: scale(1.05);
+      background: rgba(37, 99, 235, 95%);
+      border-color: rgba(37, 99, 235, 20%);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 20%);
     }
   }
 
   &:focus {
     outline: none;
-    box-shadow: -2px 0 8px rgba(0, 0, 0, 10%), 0 0 0 2px rgba(59, 130, 246, 20%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 10%), 0 0 0 2px rgba(59, 130, 246, 20%);
   }
 }
 
@@ -1228,7 +1235,7 @@
     background: rgba(0, 0, 0, 80%);
     border-color: rgba(255, 255, 255, 10%);
     color: #94a3b8;
-    box-shadow: -2px 0 8px rgba(0, 0, 0, 30%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 30%);
 
     &.expanded {
       opacity: 0.8;
@@ -1237,18 +1244,21 @@
         background: rgba(59, 130, 246, 80%);
         border-color: rgba(59, 130, 246, 30%);
         color: #fff;
-        box-shadow: -4px 0 12px rgba(59, 130, 246, 30%);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 30%);
       }
     }
 
     &.collapsed {
-      opacity: 0.9;
+      opacity: 1;
+      background: rgba(59, 130, 246, 80%);
+      border-color: rgba(59, 130, 246, 30%);
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(59, 130, 246, 30%);
 
       &:hover {
-        background: rgba(59, 130, 246, 80%);
-        border-color: rgba(59, 130, 246, 30%);
-        color: #fff;
-        box-shadow: -4px 0 12px rgba(59, 130, 246, 30%);
+        background: rgba(37, 99, 235, 80%);
+        border-color: rgba(37, 99, 235, 30%);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 30%);
       }
     }
 
@@ -1256,7 +1266,7 @@
       background: rgba(59, 130, 246, 20%);
       border-color: rgba(59, 130, 246, 30%);
       color: #60a5fa;
-      box-shadow: -2px 0 8px rgba(0, 0, 0, 30%),
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 30%),
         0 0 0 2px rgba(59, 130, 246, 30%);
     }
   }

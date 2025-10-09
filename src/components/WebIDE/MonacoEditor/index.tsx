@@ -108,7 +108,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           // 设置Vue语言的语言配置
           monaco.languages.setLanguageConfiguration(
             'vue',
-            vueLanguageConfig.configuration,
+            vueLanguageConfig.configuration as any,
           );
 
           // 为Vue文件提供HTML语法高亮
@@ -121,7 +121,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
                 [/<\/?[\w-]+/, 'tag'],
                 [/<!DOCTYPE[^>]*>/, 'metatag'],
                 // 属性
-                [/[\w-]+(?=*=)/, 'attribute.name'],
+                [/[\w-]+(?==)/, 'attribute.name'],
                 [/=/, 'delimiter'],
                 // 属性值
                 [/"([^"\\]|\\.)*$/, 'string.invalid'],
@@ -225,7 +225,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
       // 使用官方方案导入HTML语言支持
       try {
-        await import('monaco-editor/esm/vs/basic-languages/html/html');
+        await import('monaco-editor/esm/vs/basic-languages/html/html' as any);
 
         // HTML语言已经在Monaco中内置注册，我们只需要增强Vue支持
         // 为Vue文件添加HTML worker支持
