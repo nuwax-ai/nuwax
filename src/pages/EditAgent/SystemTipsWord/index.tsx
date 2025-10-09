@@ -1,14 +1,15 @@
 import { SvgIcon } from '@/components/base';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import type { SystemTipsWordProps } from '@/types/interfaces/space';
-import { Button, Input, Tooltip } from 'antd';
+import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useRef, useState } from 'react';
+import { PromptEditorProvider, PromptEditorRender } from 'prompt-kit-editor';
+import React, { useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-const { TextArea } = Input;
+// const { TextArea } = Input;
 
 /**
  * 系统提示词组件
@@ -20,13 +21,13 @@ const SystemTipsWord: React.FC<SystemTipsWordProps> = ({
   onReplace,
 }) => {
   const [open, setOpen] = useState<boolean>(false);
-  const textareaRef = useRef<any | null>(null);
+  // const textareaRef = useRef<any | null>(null);
 
   const handleReplace = (value?: string) => {
     setOpen(false);
     onReplace(value);
   };
-
+  console.log('value', value);
   return (
     <div className={cx('flex', 'flex-col', 'flex-1', styles.container)}>
       <div
@@ -53,17 +54,28 @@ const SystemTipsWord: React.FC<SystemTipsWordProps> = ({
           </Button>
         </Tooltip>
       </div>
-      <TextArea
-        classNames={{
-          textarea: 'flex-1',
-        }}
-        ref={textareaRef}
-        rootClassName={styles['text-area']}
-        placeholder={'输入系统提示词，对大模型进行角色塑造'}
-        variant="borderless"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
+      {/*<TextArea*/}
+      {/*  classNames={{*/}
+      {/*    textarea: 'flex-1',*/}
+      {/*  }}*/}
+      {/*  ref={textareaRef}*/}
+      {/*  rootClassName={styles['text-area']}*/}
+      {/*  placeholder={'输入系统提示词，对大模型进行角色塑造'}*/}
+      {/*  variant="borderless"*/}
+      {/*  value={value}*/}
+      {/*  onChange={(e) => onChange(e.target.value)}*/}
+      {/*/>*/}
+
+      <PromptEditorProvider>
+        <div className={'flex-1 scroll-container'}>
+          <PromptEditorRender
+            value={value}
+            onChange={onChange}
+            isControled={true}
+            placeholder="输入系统提示词，对大模型进行角色塑造"
+          />
+        </div>
+      </PromptEditorProvider>
       <PromptOptimizeModal
         open={open}
         onCancel={() => setOpen(false)}
