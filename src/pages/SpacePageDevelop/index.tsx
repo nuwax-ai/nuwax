@@ -22,6 +22,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useModel, useParams, useRequest } from 'umi';
 import DebugAgentBindModel from './DebugAgentBindModal';
 import styles from './index.less';
+import PageCreateModal from './PageCreateModal';
 import PageDevelopCardItem from './PageDevelopCardItem';
 import PathParamsConfigModal from './PathParamsConfigModal';
 import ReverseProxyModal from './ReverseProxyModal';
@@ -54,10 +55,16 @@ const SpacePageDevelop: React.FC = () => {
   // 打开路径参数配置弹窗
   const [openPathParamsConfigModal, setOpenPathParamsConfigModal] =
     useState<boolean>(false);
-
+  // 打开页面创建弹窗
+  const [openPageCreateModal, setOpenPageCreateModal] =
+    useState<boolean>(false);
   // 创建
   const [create, setCreate] = useState<CreateListEnum>(
     CreateListEnum.All_Person,
+  );
+  // 缓存页面创建类型
+  const pageCreateTypeRef = useRef<PageDevelopCreateTypeEnum>(
+    PageDevelopCreateTypeEnum.Import_Project,
   );
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
@@ -131,20 +138,26 @@ const SpacePageDevelop: React.FC = () => {
   /**
    * 点击创建页面类型
    * @param 添加项目表单字段：名称、描述、图标、路径（唯一）
+   */
+  const handleClickPopoverItem = (item: CustomPopoverItem) => {
+    setOpenPageCreateModal(true);
+    pageCreateTypeRef.current = item.value as PageDevelopCreateTypeEnum;
+  };
+
+  /**
+   * 确认创建页面
    * 导入项目、在线创建、反向代理点击后，都是打开这个表单弹窗
    * 导入项目、在线创建表单弹窗填写后，进入项目之前弹出“调试智能体绑定”框，确认后进入开发界面
    * 反向代理表单填写后，点击不进入开发界面，直接弹出“反向代理配置”框
    */
-  const handleClickPopoverItem = (item: CustomPopoverItem) => {
-    const { value: type } = item;
-    switch (type) {
+  const handleConfirmCreatePage = () => {
+    // 关闭表单弹窗
+    setOpenPageCreateModal(false);
+    switch (pageCreateTypeRef.current) {
       case PageDevelopCreateTypeEnum.Import_Project:
-        setOpenDebugAgentBindModel(true);
-        console.log('导入项目');
-        break;
       case PageDevelopCreateTypeEnum.Online_Create:
         setOpenDebugAgentBindModel(true);
-        console.log('在线创建');
+        console.log('导入项目、在线创建');
         break;
       case PageDevelopCreateTypeEnum.Reverse_Proxy:
         console.log('反向代理');
@@ -271,6 +284,13 @@ const SpacePageDevelop: React.FC = () => {
         spaceId={spaceId}
         open={openPathParamsConfigModal}
         onCancel={() => setOpenPathParamsConfigModal(false)}
+      />
+      {/* 页面创建弹窗 */}
+      <PageCreateModal
+        type={pageCreateTypeRef.current}
+        open={openPageCreateModal}
+        onConfirm={handleConfirmCreatePage}
+        onCancel={() => setOpenPageCreateModal(false)}
       />
       <PageDevelopCardItem
         componentInfo={{
