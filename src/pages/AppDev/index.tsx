@@ -1057,7 +1057,7 @@ const AppDev: React.FC = () => {
       case 'htm':
         return 'HTML';
       case 'vue':
-        return 'Vue'; // Vue文件
+        return 'Vue (HTML)'; // Vue文件，基于HTML语法高亮
       case 'xml':
         return 'XML'; // XML文件
 

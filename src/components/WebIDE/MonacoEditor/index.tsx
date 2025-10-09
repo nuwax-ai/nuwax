@@ -45,7 +45,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
     // 检查是否为 Vue 文件
     if (ext === 'vue') {
-      return 'vue';
+      return 'html'; // Vue文件使用HTML语言模式，获得语法高亮和智能提示
     }
 
     switch (ext) {
@@ -118,12 +118,18 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
       // 设置 worker 路径
       (window as any).MonacoEnvironment = {
-        getWorkerUrl: function (moduleId: number, label: string) {
+        getWorkerUrl: function (_moduleId: number, label: string) {
           if (label === 'json') {
             return '/vs/json.worker.js';
           }
           if (label === 'typescript' || label === 'javascript') {
             return '/vs/ts.worker.js';
+          }
+          if (label === 'css' || label === 'scss' || label === 'less') {
+            return '/vs/css.worker.js';
+          }
+          if (label === 'html' || label === 'vue') {
+            return '/vs/html.worker.js';
           }
           if (label === 'python') {
             return '/vs/ts.worker.js'; // Python 使用 TypeScript worker
@@ -134,6 +140,20 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
       // 初始化Monaco Editor
       await loader.init();
+
+      // 使用官方方案导入HTML语言支持
+      try {
+        await import('monaco-editor/esm/vs/basic-languages/html/html');
+
+        // HTML语言已经在Monaco中内置注册，我们只需要增强Vue支持
+        // 为Vue文件添加HTML worker支持
+        console.log('✅ [MonacoEditor] HTML语言支持已加载');
+      } catch (error) {
+        console.warn(
+          '⚠️ [MonacoEditor] HTML语言支持加载失败，使用默认配置:',
+          error,
+        );
+      }
 
       // 配置TypeScript编译器选项
       monaco.languages.typescript.typescriptDefaults.setCompilerOptions(
@@ -152,6 +172,11 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
             }
             declare module 'react-dom' {
               export * from 'react-dom';
+            }
+            declare module '*.vue' {
+              import { DefineComponent } from 'vue'
+              const component: DefineComponent<{}, {}, any>
+              export default component
             }
           `,
           filePath: 'react.d.ts',
