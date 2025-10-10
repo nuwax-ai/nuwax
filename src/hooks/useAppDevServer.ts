@@ -128,12 +128,15 @@ export const useAppDevServer = ({
   }, [onServerStatusChange]);
 
   /**
-   * 在项目ID变化时自动启动服务器
+   * 在项目ID变化时自动启动服务器（异步执行，不阻塞页面渲染）
    */
   useEffect(() => {
     if (projectId) {
-      startServer();
-      startKeepAlive();
+      // 异步启动服务器，不阻塞页面渲染
+      Promise.resolve().then(() => {
+        startServer();
+        startKeepAlive();
+      });
     }
 
     return () => {

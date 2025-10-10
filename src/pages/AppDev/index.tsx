@@ -512,19 +512,6 @@ const AppDev: React.FC = () => {
     };
   }, [chat.cleanup]);
 
-  // 如果正在启动开发环境，显示加载状态
-  if (server.isStarting) {
-    return (
-      <div className={styles.loadingContainer}>
-        <Spin size="large" />
-        <Title level={3} style={{ marginTop: 16 }}>
-          正在启动开发环境...
-        </Title>
-        <Text type="secondary">项目ID: {workspace.projectId}</Text>
-      </div>
-    );
-  }
-
   // 如果缺少 projectId，显示提示信息
   if (missingProjectId) {
     return (
@@ -905,6 +892,8 @@ const AppDev: React.FC = () => {
                           <Preview
                             ref={previewRef}
                             devServerUrl={workspace.devServerUrl}
+                            isStarting={server.isStarting}
+                            startError={server.startError}
                           />
                         )
                       ) : (

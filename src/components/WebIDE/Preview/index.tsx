@@ -16,6 +16,8 @@ import styles from './index.less';
 interface PreviewProps {
   devServerUrl?: string;
   className?: string;
+  isStarting?: boolean;
+  startError?: string | null;
 }
 
 export interface PreviewRef {
@@ -27,7 +29,7 @@ export interface PreviewRef {
  * 用于显示开发服务器的实时预览
  */
 const Preview = React.forwardRef<PreviewRef, PreviewProps>(
-  ({ devServerUrl, className }, ref) => {
+  ({ devServerUrl, className, isStarting, startError }, ref) => {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
@@ -187,6 +189,24 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               onLoad={handleIframeLoad}
               onError={handleIframeError}
             />
+          ) : isStarting ? (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon}>
+                <Spin size="large" />
+              </div>
+              <h3 className={styles.emptyTitle}>开发服务器启动中</h3>
+              <p className={styles.emptyDescription}>
+                正在启动开发环境，请稍候...
+              </p>
+            </div>
+          ) : startError ? (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon} style={{ color: '#ff4d4f' }}>
+                <ExclamationCircleOutlined />
+              </div>
+              <h3 className={styles.emptyTitle}>开发服务器启动失败</h3>
+              <p className={styles.emptyDescription}>{startError}</p>
+            </div>
           ) : (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>
