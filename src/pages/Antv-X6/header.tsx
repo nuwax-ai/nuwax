@@ -68,46 +68,47 @@ const Header: React.FC<HeaderProp> = ({
           <div className="dis-left">
             <strong className="header-name-style">{name}</strong>
             <Popover content={description}>
-              <InfoCircleOutlined className="mr-6" />
+              <InfoCircleOutlined
+                className="mr-6"
+                style={{ fontSize: '16px' }}
+              />
             </Popover>
             {publishStatus === 'Published' && (
               <Popover content={'已发布'}>
                 <CheckCircleFilled
                   className="mr-6"
-                  style={{ color: '#00B23C' }}
+                  style={{ color: '#00B23C', fontSize: '16px' }}
                 />
               </Popover>
             )}
-            <EditOutlined onClick={setShowCreateWorkflow} />
-            {publishDate === null && (
-              <Tag
-                color="default"
-                bordered={false}
-                style={{ marginLeft: '6px' }}
-              >
-                未发布
-              </Tag>
-            )}
-            {publishDate !== null && publishDate !== modified && (
-              <Tag
-                bordered={false}
-                color="volcano"
-                style={{ marginLeft: '6px' }}
-              >
-                有更新未发布
-              </Tag>
-            )}
+            <EditOutlined
+              onClick={setShowCreateWorkflow}
+              style={{ fontSize: '16px' }}
+            />
             {/* <CheckCircleOutlined /> */}
           </div>
-          <div className="header-tag-style">
-            {/* <Tag color="#C9CDD4">
+        </div>
+      </div>
+
+      <div className="header-tag-style">
+        {/* <Tag color="#C9CDD4">
               {publishStatus === 'Published' ? '已发布' : '未发布'}
             </Tag> */}
-            <Tag color="#EBECF5" style={{ color: 'rgba(15,21,40,0.82)' }}>
-              已自动保存 {getTime(modified ?? new Date().toString())}
-            </Tag>
-          </div>
-        </div>
+        <Tag color="default" bordered={false}>
+          已自动保存 {getTime(modified ?? new Date().toString())}
+        </Tag>
+
+        {publishDate === null && (
+          <Tag color="#EBECF5" style={{ color: 'rgba(15,21,40,0.82)' }}>
+            未发布
+          </Tag>
+        )}
+
+        {publishDate !== null && publishDate !== modified && (
+          <Tag bordered={false} color="volcano">
+            有更新未发布
+          </Tag>
+        )}
       </div>
       <ClockCircleOutlined
         className={'ico cursor-pointer'}
