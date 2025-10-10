@@ -184,109 +184,117 @@ const Square: React.FC = () => {
 
   return (
     <div
-      id="scrollableDiv"
       className={cx(
         styles.container,
         'h-full',
         'flex',
         'flex-col',
-        'overflow-y',
+        // 'overflow-y',
       )}
     >
-      <InfiniteScrollDiv
-        scrollableTarget="scrollableDiv"
-        list={squareComponentList}
-        hasMore={hasMore}
-        onScroll={handleScroll}
-      >
-        <div
-          className={cx(
-            'flex',
-            'items-center',
-            'content-between',
-            styles['title-box'],
-          )}
-        >
-          <h6 className={cx(styles['theme-title'])}>{title}</h6>
-          <Input.Search
-            className={cx(styles['search-input'])}
-            key={categoryNameRef.current}
-            placeholder="搜索"
-            allowClear
-            defaultValue={keywordRef.current}
-            onSearch={onSearch}
-          />
-        </div>
-        <header
-          className={cx(styles.header)}
-          onClick={handleLink}
-          style={{
-            backgroundImage: `url(${
-              configInfo?.squareBanner || (squareBannerImage as string)
-            })`,
-          }}
-        >
-          <h3 className={cx('text-ellipsis-2')}>
-            {configInfo?.squareBannerText || '人人都是智能设计师'}
-          </h3>
-          <p className={cx('text-ellipsis-2')}>
-            {configInfo?.squareBannerSubText ||
-              '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API'}
-          </p>
-        </header>
-        {loading ? (
-          <Loading className={cx(styles['min-height-300'])} />
-        ) : squareComponentList?.length > 0 ? (
-          <div className={cx(styles['list-section'])}>
-            {squareComponentList.map((item, index) => {
-              if (categoryTypeRef.current === SquareAgentTypeEnum.Agent) {
-                return (
-                  <SingleAgent
-                    key={index}
-                    publishedItemInfo={item}
-                    onToggleCollectSuccess={handleToggleCollectSuccess}
-                    onClick={() => handleClick(item.targetId, item.targetType)}
-                  />
-                );
-              } else if (
-                categoryTypeRef.current === SquareAgentTypeEnum.Template
-              ) {
-                return (
-                  <TemplateItem
-                    key={index}
-                    publishedItemInfo={item}
-                    onClick={() => handleClick(item.targetId, item.targetType)}
-                  />
-                );
-              } else {
-                return (
-                  <SquareComponentInfo
-                    key={index}
-                    publishedItemInfo={item}
-                    onToggleCollectSuccess={handleToggleCollectSuccess}
-                    onClick={() => handleClick(item.targetId, item.targetType)}
-                  />
-                );
-              }
-            })}
-          </div>
-        ) : (
-          <div
-            className={cx('flex', 'flex-1', 'items-center', 'content-center')}
-          >
-            <Empty
-              className={cx(
-                styles['min-height-300'],
-                'flex',
-                'flex-col',
-                'items-center',
-                'content-center',
-              )}
-              description="暂无数据"
-            />
-          </div>
+      <div
+        className={cx(
+          'flex',
+          'items-center',
+          'content-between',
+          styles['title-box'],
         )}
-      </InfiniteScrollDiv>
+      >
+        <h6 className={cx(styles['theme-title'])}>{title}</h6>
+        <Input.Search
+          className={cx(styles['search-input'])}
+          key={categoryNameRef.current}
+          placeholder="搜索"
+          allowClear
+          defaultValue={keywordRef.current}
+          onSearch={onSearch}
+        />
+      </div>
+
+      <div id="scrollableDiv" className="scroll-container-hide">
+        <InfiniteScrollDiv
+          scrollableTarget="scrollableDiv"
+          list={squareComponentList}
+          hasMore={hasMore}
+          onScroll={handleScroll}
+        >
+          <header
+            className={cx(styles.header)}
+            onClick={handleLink}
+            style={{
+              backgroundImage: `url(${
+                configInfo?.squareBanner || (squareBannerImage as string)
+              })`,
+            }}
+          >
+            <h3 className={cx('text-ellipsis-2')}>
+              {configInfo?.squareBannerText || '人人都是智能设计师'}
+            </h3>
+            <p className={cx('text-ellipsis-2')}>
+              {configInfo?.squareBannerSubText ||
+                '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API'}
+            </p>
+          </header>
+          {loading ? (
+            <Loading className={cx(styles['min-height-300'])} />
+          ) : squareComponentList?.length > 0 ? (
+            <div className={cx(styles['list-section'])}>
+              {squareComponentList.map((item, index) => {
+                if (categoryTypeRef.current === SquareAgentTypeEnum.Agent) {
+                  return (
+                    <SingleAgent
+                      key={index}
+                      publishedItemInfo={item}
+                      onToggleCollectSuccess={handleToggleCollectSuccess}
+                      onClick={() =>
+                        handleClick(item.targetId, item.targetType)
+                      }
+                    />
+                  );
+                } else if (
+                  categoryTypeRef.current === SquareAgentTypeEnum.Template
+                ) {
+                  return (
+                    <TemplateItem
+                      key={index}
+                      publishedItemInfo={item}
+                      onClick={() =>
+                        handleClick(item.targetId, item.targetType)
+                      }
+                    />
+                  );
+                } else {
+                  return (
+                    <SquareComponentInfo
+                      key={index}
+                      publishedItemInfo={item}
+                      onToggleCollectSuccess={handleToggleCollectSuccess}
+                      onClick={() =>
+                        handleClick(item.targetId, item.targetType)
+                      }
+                    />
+                  );
+                }
+              })}
+            </div>
+          ) : (
+            <div
+              className={cx('flex', 'flex-1', 'items-center', 'content-center')}
+            >
+              <Empty
+                className={cx(
+                  styles['min-height-300'],
+                  'flex',
+                  'flex-col',
+                  'items-center',
+                  'content-center',
+                )}
+                description="暂无数据"
+              />
+            </div>
+          )}
+        </InfiniteScrollDiv>
+      </div>
     </div>
   );
 };
