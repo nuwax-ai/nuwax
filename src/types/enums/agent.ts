@@ -195,3 +195,15 @@ export enum HideChatAreaEnum {
   No = 0,
   Yes = 1,
 }
+
+// 页面是否模型可见，1 可见，0 不可见
+export enum VisibleToLLMEnum {
+  No = 0,
+  Yes = 1,
+}
+
+// 是否为智能体页面首页，1 为默认首页，0 不为首页
+export enum HomeIndexEnum {
+  No = 0,
+  Yes = 1,
+}
