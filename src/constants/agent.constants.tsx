@@ -231,11 +231,11 @@ export const GUID_QUESTION_SET_OPTIONS = [
 // 响应动作（扩展页面打开、外部链接跳转）选项
 export const EVENT_BIND_RESPONSE_ACTION_OPTIONS = [
   {
-    value: EventBindResponseActionEnum.Page_Open,
+    value: EventBindResponseActionEnum.Page,
     label: '扩展页面打开',
   },
   {
-    value: EventBindResponseActionEnum.Link_Jump,
+    value: EventBindResponseActionEnum.Link,
     label: '外部链接跳转',
   },
 ];

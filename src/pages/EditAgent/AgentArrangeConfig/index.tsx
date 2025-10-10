@@ -144,6 +144,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     ) as AgentComponentInfo;
   }, [agentComponentList]);
 
+  // 绑定的事件信息
+  const eventsInfo = useMemo(() => {
+    return agentComponentList?.find(
+      (item: AgentComponentInfo) => item.type === AgentComponentTypeEnum.Event,
+    ) as AgentComponentInfo;
+  }, [agentComponentList]);
+
   // 是否存在组件
   const isExistComponent = (type: AgentComponentTypeEnum) => {
     return agentComponentList?.some(
@@ -597,7 +604,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 添加事件绑定
   const handleAddEventBinding = (e: MouseEvent) => {
     e.stopPropagation();
-    // setOpenVariableModel(true);
+    setOpenEventBindModel(true);
     console.log('handlePageEventBindingPlus');
   };
 
@@ -631,7 +638,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         />
       ),
       extra: (
-        // todo: 添加页面
         <TooltipIcon
           title="添加页面"
           onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.Page)}
@@ -815,10 +821,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         settingActionList={getSettingActionList(currentComponentInfo?.type)}
         onCancel={() => setOpenPluginModel(false)}
       />
-      {/*todo: 事件绑定弹窗*/}
+      {/*事件绑定弹窗*/}
       <EventBindModal
         open={openEventBindModel}
-        variables={variablesInfo?.bindConfig?.variables || []}
+        eventConfigs={eventsInfo?.bindConfig?.eventConfigs || []}
         onCancel={() => setOpenEventBindModel(false)}
         onConfirm={() => setOpenEventBindModel(false)}
       />

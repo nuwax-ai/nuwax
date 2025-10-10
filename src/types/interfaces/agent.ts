@@ -4,6 +4,7 @@ import type {
   AllowCopyEnum,
   DefaultSelectedEnum,
   DevModeEnum,
+  EventBindResponseActionEnum,
   HomeIndexEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
@@ -81,7 +82,9 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
 
 // 更新智能体页面配置输入参数
 export interface AgentPageUpdateParams extends AgentBaseInfo {
+  // 组件配置ID
   id: number;
+  // 目标组件ID
   targetId: number;
   bindConfig: {
     // 自定义页面唯一标识
@@ -102,6 +105,41 @@ export interface AgentPageUpdateParams extends AgentBaseInfo {
     // 是否为智能体页面首页，1 为默认首页，0 不为首页
     homeIndex?: HomeIndexEnum;
   };
+}
+
+// 更新事件绑定配置输入参数
+export interface AgentComponentEventUpdateParams extends AgentBaseInfo {
+  // 组件配置ID
+  id: number;
+  // 目标组件ID
+  targetId: number;
+  // 事件绑定配置
+  bindConfig: {
+    eventConfigs: {
+      // 事件名称
+      name: string;
+      // 事件标识
+      identification: string;
+      // 事件类型, Link 外链；Page 扩展页面,可用值:Link,Page
+      type: EventBindResponseActionEnum;
+      // url 链接地址，type类型为Link时有效
+      url: string;
+      // 页面ID，type类型为Page时有效，更新时需要传入
+      pageId: number;
+      // 页面基础路径，type类型为Page时有效，不需要传入
+      basePath: string;
+      // 页面路径，type类型为Page时有效，更新时需要传入
+      pageUri: string;
+      // pageUrl 页面URL，type类型为Page时有效，不需要传入
+      pageUrl: string;
+      // 参数
+      args: BindConfigWithSub[];
+      // 参数配置JSON Schema，前端生成事件提示词时使用
+      argJsonSchema: string;
+    };
+  };
+  exceptionOut: number;
+  fallbackMsg: string;
 }
 
 // 智能体组件模型基础信息

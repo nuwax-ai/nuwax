@@ -9,6 +9,8 @@ export enum AgentComponentTypeEnum {
   Agent = 'Agent',
   MCP = 'Mcp',
   Page = 'Page',
+  // 事件
+  Event = 'Event',
 }
 
 // 用户APIKEY目标类型,可用值:Agent,Mcp,TempChat
@@ -176,12 +178,12 @@ export enum GuidQuestionSetTypeEnum {
   Link = 'Link',
 }
 
-// 响应动作（扩展页面打开、外部链接跳转）
+// 响应动作（扩展页面打开、外部链接跳转）事件类型, Link 外链；Page 扩展页面,可用值:Link,Page
 export enum EventBindResponseActionEnum {
   // 扩展页面打开
-  Page_Open = 'Page_Open',
+  Page = 'Page',
   // 外部链接跳转
-  Link_Jump = 'Link_Jump',
+  Link = 'Link',
 }
 
 // 是否默认展开扩展页面区域, 1 展开；0 不展开

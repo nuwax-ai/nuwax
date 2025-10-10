@@ -2,6 +2,7 @@ import type {
   AgentAddParams,
   AgentCardInfo,
   AgentComponentAddParams,
+  AgentComponentEventUpdateParams,
   AgentComponentInfo,
   AgentComponentKnowledgeUpdateParams,
   AgentComponentMcpUpdateParams,
@@ -311,6 +312,16 @@ export async function apiAgentConversationChatSuggest(
   data: ConversationChatSuggestParams,
 ): Promise<RequestResponse<string[]>> {
   return request('/api/agent/conversation/chat/suggest', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新事件绑定配置
+export async function apiAgentComponentEventUpdate(
+  data: AgentComponentEventUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/event/update', {
     method: 'POST',
     data,
   });

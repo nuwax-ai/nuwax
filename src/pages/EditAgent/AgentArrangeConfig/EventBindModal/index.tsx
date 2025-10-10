@@ -4,7 +4,10 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import CustomFormModal from '@/components/CustomFormModal';
 import { EVENT_BIND_RESPONSE_ACTION_OPTIONS } from '@/constants/agent.constants';
 import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
-import { BindValueType, GuidQuestionSetTypeEnum } from '@/types/enums/agent';
+import {
+  BindValueType,
+  EventBindResponseActionEnum,
+} from '@/types/enums/agent';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -23,30 +26,32 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-// 开场白预置问题设置弹窗Props
+// 事件绑定弹窗Props
 export interface EventBindModalProps {
   open: boolean;
-  variables: BindConfigWithSub[];
+  eventConfigs: BindConfigWithSub[];
   onCancel: () => void;
   onConfirm: (result: number) => void;
 }
 
 /**
- * 开场白预置问题设置弹窗
+ * 事件绑定弹窗
  */
 const EventBindModal: React.FC<EventBindModalProps> = ({
   open,
-  variables,
+  eventConfigs,
   onCancel,
   onConfirm,
 }) => {
+  const [form] = Form.useForm();
   const { token } = theme.useToken();
   // 是否展开
   const [isActive, setIsActive] = useState<boolean>(false);
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(false);
-  // todo: 类型
-  const [type, setType] = useState<React.Key>(GuidQuestionSetTypeEnum.Question);
+  // 响应动作类型，默认为扩展页面打开
+  const [type, setType] = useState<EventBindResponseActionEnum>(
+    EventBindResponseActionEnum.Page,
+  );
 
   const initForm = () => {
     form.setFieldsValue({
@@ -57,6 +62,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
   useEffect(() => {
     if (open) {
       initForm();
+      form.setFieldValue('type', EventBindResponseActionEnum.Page);
     }
   }, [open]);
 
@@ -74,20 +80,20 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
   // 切换类型时，根据类型设置对应的表单项
   const handleChangeType = (value: React.Key) => {
     // form.setFieldValue('type', value);
-    setType(value);
+    setType(value as EventBindResponseActionEnum);
   };
 
-  // 缓存变量列表
-  const variableList = useMemo(() => {
+  // 缓存事件列表
+  const eventList = useMemo(() => {
     return (
-      variables?.map((item) => {
+      eventConfigs?.map((item) => {
         return {
           label: item.name,
           value: item.name,
         };
       }) || []
     );
-  }, [variables]);
+  }, [eventConfigs]);
 
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
@@ -132,7 +138,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
                 // onChange={(value) =>
                 //   handleInputValue(record.key, 'bindValue', value)
                 // }
-                options={variableList}
+                options={eventList}
               />
             )}
           </Space.Compact>
@@ -149,7 +155,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title="预置问题设置"
+      title="事件绑定"
       open={open}
       loading={loading}
       onCancel={onCancel}
@@ -161,34 +167,41 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
         onFinish={onFinish}
         autoComplete="off"
       >
-        <Form.Item name="icon" label="事件名称">
-          <Input placeholder="请输入事件名称" />
+        <Form.Item
+          name="name"
+          label="事件名称"
+          rules={[{ required: true, message: '请输入事件名称' }]}
+        >
+          <Input placeholder="请输入事件名称" allowClear />
         </Form.Item>
-        <Form.Item name="displayInfo" label="事件标识（用于区分具体事件）">
-          <Input placeholder="请输入事件标识" />
+        <Form.Item name="identification" label="事件标识（用于区分具体事件）">
+          <Input placeholder="请输入事件标识" allowClear />
         </Form.Item>
         <Form.Item name="type" label="响应动作">
           <SelectList
+            allowClear
             placeholder="请选择响应动作"
             options={EVENT_BIND_RESPONSE_ACTION_OPTIONS}
+            value={type}
             onChange={handleChangeType}
           />
         </Form.Item>
-        {type === GuidQuestionSetTypeEnum.Page_Path ? (
+        {type === EventBindResponseActionEnum.Page ? (
           <Form.Item
-            name="pagePath"
+            name="pageId"
             label="页面路径（页面组件中已添加的页面下的路径作为可选列表）"
           >
+            {/* 页面路径 */}
             <SelectList
               placeholder="请选择页面路径"
-              options={variableList}
+              options={eventList}
               onChange={changePagePath}
             />
           </Form.Item>
         ) : (
-          type === GuidQuestionSetTypeEnum.Link && (
-            <Form.Item name="linkUrl" label="链接地址（类型为外链时展示）">
-              <Input placeholder="https://xxxxxxx" />
+          type === EventBindResponseActionEnum.Link && (
+            <Form.Item name="url" label="链接地址（类型为外链时展示）">
+              <Input placeholder="https://xxxxxxx" allowClear />
             </Form.Item>
           )
         )}
