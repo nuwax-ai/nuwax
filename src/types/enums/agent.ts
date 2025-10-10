@@ -183,3 +183,15 @@ export enum EventBindResponseActionEnum {
   // 外部链接跳转
   Link_Jump = 'Link_Jump',
 }
+
+// 是否默认展开扩展页面区域, 1 展开；0 不展开
+export enum ExpandPageAreaEnum {
+  No = 0,
+  Yes = 1,
+}
+
+// 是否隐藏聊天区域, 1 隐藏；0 不隐藏
+export enum HideChatAreaEnum {
+  No = 0,
+  Yes = 1,
+}

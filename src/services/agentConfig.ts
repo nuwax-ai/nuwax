@@ -14,6 +14,7 @@ import type {
   AgentConfigInfo,
   AgentConfigUpdateParams,
   AgentConversationUpdateParams,
+  AgentPageUpdateParams,
   AgentPublishApplyParams,
 } from '@/types/interfaces/agent';
 import { BindConfigWithSub } from '@/types/interfaces/common';
@@ -71,6 +72,16 @@ export async function apiAgentConfigUpdate(
   data: AgentConfigUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/config/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新智能体页面配置
+export async function apiAgentPageUpdate(
+  data: AgentPageUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/page/update', {
     method: 'POST',
     data,
   });

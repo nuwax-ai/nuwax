@@ -13,6 +13,8 @@ import {
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
+  ExpandPageAreaEnum,
+  HideChatAreaEnum,
 } from '@/types/enums/agent';
 import {
   AgentArrangeConfigEnum,
@@ -542,9 +544,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           }}
           onChange={(value) =>
             onChangeAgent(
-              value
-                ? OpenCloseEnum.Open
-                : (OpenCloseEnum.Close as OpenCloseEnum),
+              value ? OpenCloseEnum.Open : OpenCloseEnum.Close,
               'openSuggest',
             )
           }
@@ -565,16 +565,14 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       ),
       extra: (
         <Switch
-          // 阻止冒泡事件
           value={agentConfigInfo?.openScheduledTask === OpenCloseEnum.Open}
+          // 阻止冒泡事件
           onClick={(_, e: any) => {
             e.stopPropagation();
           }}
           onChange={(value) =>
             onChangeAgent(
-              value
-                ? OpenCloseEnum.Open
-                : (OpenCloseEnum.Close as OpenCloseEnum),
+              value ? OpenCloseEnum.Open : OpenCloseEnum.Close,
               'openScheduledTask',
             )
           }
@@ -659,7 +657,19 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             )}
           >
             <span>默认展开页面区</span>
-            <Switch />
+            <Switch
+              value={agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.Yes}
+              // 阻止冒泡事件
+              onClick={(_, e: any) => {
+                e.stopPropagation();
+              }}
+              onChange={(value: boolean) =>
+                onChangeAgent(
+                  value ? ExpandPageAreaEnum.Yes : ExpandPageAreaEnum.No,
+                  'expandPageArea',
+                )
+              }
+            />
           </div>
           {/* “隐藏主会话框”，当选中时智能体详情仅展示页面，这个时候一个智能体就是一个独立的应用（系统）*/}
           <div
@@ -671,7 +681,19 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             )}
           >
             <span>隐藏主会话框</span>
-            <Switch />
+            <Switch
+              value={agentConfigInfo?.hideChatArea === HideChatAreaEnum.Yes}
+              // 阻止冒泡事件
+              onClick={(_, e: any) => {
+                e.stopPropagation();
+              }}
+              onChange={(value: boolean) =>
+                onChangeAgent(
+                  value ? HideChatAreaEnum.Yes : HideChatAreaEnum.No,
+                  'hideChatArea',
+                )
+              }
+            />
           </div>
         </>
       ),

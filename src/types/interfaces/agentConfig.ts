@@ -51,7 +51,7 @@ export interface AgentArrangeConfigProps {
   agentId: number;
   agentConfigInfo?: AgentConfigInfo;
   // 修改智能体基础配置信息
-  onChangeAgent: (value: string | string[], attr: string) => void;
+  onChangeAgent: (value: string | string[] | number, attr: string) => void;
 }
 
 // 组件设置弹窗

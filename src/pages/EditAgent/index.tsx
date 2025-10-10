@@ -122,7 +122,10 @@ const EditAgent: React.FC = () => {
   };
 
   // 更新智能体信息
-  const handleChangeAgent = (value: string | string[], attr: string) => {
+  const handleChangeAgent = (
+    value: string | string[] | number,
+    attr: string,
+  ) => {
     // 更新智能体配置信息
     const _agentConfigInfo = {
       ...agentConfigInfo,
@@ -159,6 +162,8 @@ const EditAgent: React.FC = () => {
       openScheduledTask,
       openingGuidQuestions,
       openLongMemory,
+      expandPageArea,
+      hideChatArea,
     } = _agentConfigInfo;
 
     // 更新智能体信息
@@ -175,6 +180,8 @@ const EditAgent: React.FC = () => {
       openScheduledTask,
       openingGuidQuestions,
       openLongMemory,
+      expandPageArea,
+      hideChatArea,
     });
   };
 
