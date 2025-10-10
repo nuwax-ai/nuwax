@@ -336,7 +336,7 @@ export default function EcosystemMcp() {
           <div
             className={cx(
               'flex-1',
-              'scroll-container',
+              'scroll-container-hide',
               styles['main-container'],
             )}
             id="scrollableDiv"

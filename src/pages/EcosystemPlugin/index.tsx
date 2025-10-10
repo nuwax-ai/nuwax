@@ -633,7 +633,7 @@ export default function EcosystemPlugin() {
           </div>
         </div>
         <div
-          className={cx(styles.pluginList, 'flex-1', 'scroll-container')}
+          className={cx(styles.pluginList, 'flex-1', 'scroll-container-hide')}
           onScroll={(e) => {
             // 当滚动到距离底部100px时加载更多
             const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;

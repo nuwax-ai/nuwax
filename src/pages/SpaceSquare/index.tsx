@@ -265,7 +265,10 @@ const SpaceSection: React.FC = () => {
       {loading ? (
         <Loading />
       ) : squareComponentList?.length > 0 ? (
-        <div className={cx('flex-1', 'scroll-container')} id="scrollableDiv">
+        <div
+          className={cx('flex-1', 'scroll-container-hide')}
+          id="scrollableDiv"
+        >
           <InfiniteScrollDiv
             scrollableTarget="scrollableDiv"
             list={squareComponentList}
