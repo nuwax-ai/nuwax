@@ -515,7 +515,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
   // 渲染抽屉内容
   const renderDrawerContent = useCallback(
     () => (
-      <div className={cx(styles.content)}>
+      <div className={cx(styles.content, 'scroll-container')}>
         <Paragraph className={cx(styles.description)}>{description}</Paragraph>
 
         <Divider className={cx(styles.divider)} />
