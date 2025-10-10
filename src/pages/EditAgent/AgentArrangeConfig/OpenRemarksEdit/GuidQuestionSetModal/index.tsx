@@ -114,14 +114,26 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
-      title: '参数名称',
+      title: '参数名',
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: '默认值',
-      key: 'default',
-      width: 232,
+      title: () => (
+        <div className={cx('h-full', 'flex', 'items-center')}>
+          <span>参数值</span>
+          <TooltipIcon
+            title="可以在输入框中动态引用参数，留空的参数将由大模型自动补充
+              智能体ID {{AGENT_ID}}     
+              系统用户ID {{SYS_USER_ID}}    
+              用户UID {{USER_UID}}
+              用户名 {{USER_NAME}}"
+            icon={<InfoCircleOutlined />}
+          />
+        </div>
+      ),
+      key: 'bindValue',
+      width: 230,
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Space.Compact block>

@@ -4,6 +4,7 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import CustomFormModal from '@/components/CustomFormModal';
 import { EVENT_BIND_RESPONSE_ACTION_OPTIONS } from '@/constants/agent.constants';
 import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
+import { apiAgentComponentEventUpdate } from '@/services/agentConfig';
 import {
   BindValueType,
   EventBindResponseActionEnum,
@@ -22,6 +23,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -31,7 +33,7 @@ export interface EventBindModalProps {
   open: boolean;
   eventConfigs: BindConfigWithSub[];
   onCancel: () => void;
-  onConfirm: (result: number) => void;
+  onConfirm: () => void;
 }
 
 /**
@@ -66,10 +68,28 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
     }
   }, [open]);
 
+  // 更新事件绑定配置
+  const { run: runEventUpdate } = useRequest(apiAgentComponentEventUpdate, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      console.log('更新成功');
+      onConfirm();
+    },
+  });
+
+  // 表单提交
   const onFinish: FormProps<any>['onFinish'] = (values) => {
     console.log('onFinish', values);
     setLoading(true);
-    onConfirm?.(values.name);
+    // todo: 更新事件绑定配置
+    runEventUpdate({
+      id: 0,
+      targetId: '',
+      bindConfig: {
+        ...values,
+      },
+    });
     setLoading(false);
   };
 
@@ -98,14 +118,26 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
     {
-      title: '参数名称',
+      title: '参数名',
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: '默认值',
-      key: 'default',
-      width: 232,
+      title: () => (
+        <div className={cx('h-full', 'flex', 'items-center')}>
+          <span>参数值</span>
+          <TooltipIcon
+            title="可以在输入框中动态引用参数，留空的参数将由大模型自动补充
+              智能体ID {{AGENT_ID}}     
+              系统用户ID {{SYS_USER_ID}}    
+              用户UID {{USER_UID}}
+              用户名 {{USER_NAME}}"
+            icon={<InfoCircleOutlined />}
+          />
+        </div>
+      ),
+      key: 'bindValue',
+      width: 230,
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Space.Compact block>

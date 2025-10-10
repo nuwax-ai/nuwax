@@ -43,7 +43,7 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
           text: '以表格结构组织数据，可实现类似书签和图书管理等功能。',
           image: databaseImage,
         };
-      // todo: 页面
+      // 页面
       case AgentComponentTypeEnum.Page:
         return {
           text: '页面是智能体的可视化界面，用户可以通过页面与智能体进行交互。',

@@ -431,6 +431,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       },
     },
   ];
+
   // 知识库
   const KnowledgeList: CollapseProps['items'] = [
     {
@@ -458,6 +459,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       },
     },
   ];
+
   // 记忆
   const MemoryList: CollapseProps['items'] = [
     {
@@ -712,7 +714,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       key: AgentArrangeConfigEnum.Page_Event_Binding,
       label: '事件绑定',
       children: (
-        // todo: 事件绑定列表
+        // 事件绑定列表
         <VariableList
           textClassName={cx(styles.text)}
           list={[]}
