@@ -8,7 +8,6 @@ export enum AgentComponentTypeEnum {
   Model = 'Model',
   Agent = 'Agent',
   MCP = 'Mcp',
-  // todo: 页面
   Page = 'Page',
 }
 

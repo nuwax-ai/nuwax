@@ -1,4 +1,5 @@
-import {
+import type { BuildRunningEnum } from '@/types/enums/pageDev';
+import type {
   CreateCustomPageInfo,
   CustomPageCreateParams,
   CustomPageDto,
@@ -30,11 +31,13 @@ export async function apiCustomPageCreate(
 // 分页查询前端页面项目
 export async function apiCustomPageQueryList(
   spaceId: number,
+  buildRunning?: BuildRunningEnum,
 ): Promise<RequestResponse<CustomPageDto>> {
   return request('/api/custom-page/list-projects', {
     method: 'GET',
     params: {
       spaceId,
+      buildRunning,
     },
   });
 }

@@ -132,10 +132,7 @@ const errorHandler = (error: any, opts: any) => {
 const requestInterceptors = [
   // 添加基础URL
   (url: string, options: any) => {
-    const newUrl =
-      url.includes('list-projects') || url.includes('custom-page')
-        ? 'http://192.168.31.125:8081' + url
-        : process.env.BASE_URL + url;
+    const newUrl = process.env.BASE_URL + url;
     return { url: newUrl, options };
   },
 

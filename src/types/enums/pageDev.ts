@@ -35,3 +35,11 @@ export enum PageDevelopMoreActionEnum {
   // 页面预览
   Page_Preview = 'Page_Preview',
 }
+
+// 发布状态,1:已发布;-1:未发布
+export enum BuildRunningEnum {
+  // 已发布
+  Published = 1,
+  // 未发布
+  Unpublished = -1,
+}

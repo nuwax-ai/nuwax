@@ -1,5 +1,6 @@
 import { DataTypeEnum } from '../enums/common';
-import { PageProjectTypeEnum } from '../enums/pageDev';
+import { BuildRunningEnum, PageProjectTypeEnum } from '../enums/pageDev';
+import { CreatorInfo } from './agent';
 import { CustomPopoverItem } from './common';
 
 // 自定义页面项目信息
@@ -17,7 +18,7 @@ export interface CustomPageDto {
   // 项目基础路径
   basePath: string;
   // 发布状态,1:已发布;-1:未发布
-  buildRunning: number;
+  buildRunning: BuildRunningEnum;
   // 项目类型,可用值:REVERSE_PROXY,ONLINE_DEPLOY
   projectType: PageProjectTypeEnum;
   // 代理配置
@@ -46,6 +47,7 @@ export interface CustomPageDto {
       require: boolean;
     }[];
   };
+  creator: CreatorInfo;
   // 扩展字段
   ext: any;
   // 用户ID
