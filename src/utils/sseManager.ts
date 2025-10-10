@@ -303,13 +303,13 @@ export class SSEManager {
     }
 
     console.log(
-      `🔌 [SSE] 连接到: ${this.config.baseUrl}/agent/progress/${this.config.sessionId}`,
+      `🔌 [SSE] 连接到: ${this.config.baseUrl}/api/custom-page/ai-session-sse?session_id=${this.config.sessionId}`,
     );
     this.state = SSEConnectionState.CONNECTING;
 
     try {
       this.eventSource = new EventSource(
-        `${this.config.baseUrl}/agent/progress/${this.config.sessionId}`,
+        `${this.config.baseUrl}/api/custom-page/ai-session-sse?session_id=${this.config.sessionId}`,
       );
 
       // 绑定事件处理器

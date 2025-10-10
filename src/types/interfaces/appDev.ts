@@ -483,3 +483,20 @@ export interface FileTreeState {
   /** 最后加载的项目ID */
   lastLoadedProjectId: string | null;
 }
+
+/**
+ * 聊天消息类型
+ */
+export interface ChatMessage {
+  id: string;
+  type: 'ai' | 'user' | 'button' | 'section' | 'thinking' | 'tool_call';
+  content?: string;
+  timestamp?: Date;
+  action?: string;
+  title?: string;
+  items?: string[];
+  isExpanded?: boolean;
+  details?: string[];
+  sessionId?: string;
+  isStreaming?: boolean;
+}

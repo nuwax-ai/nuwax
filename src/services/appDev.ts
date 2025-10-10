@@ -252,7 +252,7 @@ export const sendChatMessage = async (
       `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
   };
 
-  return request('/api/chat', {
+  return request('/api/custom-page/ai-chat', {
     method: 'POST',
     data: requestData,
   });
