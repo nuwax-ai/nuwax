@@ -132,7 +132,16 @@ export default defineConfig({
 
     config.plugin('monaco').use(MonacoWebpackPlugin, [
       {
-        languages: ['javascript', 'typescript', 'json', 'python'],
+        languages: [
+          'javascript',
+          'typescript',
+          'json',
+          'python',
+          'html',
+          'css',
+          'scss',
+          'less',
+        ],
         publicPath: '/', // 修改为根路径
         filename: 'vs/[name].worker.js',
         features: [

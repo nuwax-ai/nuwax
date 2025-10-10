@@ -1,0 +1,147 @@
+.preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--xagi-color-bg-container);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.previewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--xagi-color-fill-quaternary);
+  border-bottom: 1px solid var(--xagi-color-border);
+  min-height: 48px;
+}
+
+.headerLeft {
+  flex: 1;
+}
+
+.titleSection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.titleIcon {
+  font-size: 16px;
+  color: var(--xagi-color-primary);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--xagi-color-text);
+}
+
+.statusBadge {
+  font-size: 12px;
+  color: var(--xagi-color-success);
+  background: var(--xagi-color-success-bg);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--xagi-color-success-border);
+}
+
+.loadingBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--xagi-color-warning);
+  background: var(--xagi-color-warning-bg);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--xagi-color-warning-border);
+}
+
+.lastUpdated {
+  font-size: 12px;
+  color: var(--xagi-color-text-tertiary);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.refreshButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.errorContainer {
+  padding: 16px;
+  background: var(--xagi-color-bg-container);
+}
+
+.previewContainer {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.previewIframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: var(--xagi-color-bg-container);
+}
+
+.emptyState {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--xagi-color-text-tertiary);
+  padding: 40px;
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+  color: var(--xagi-color-text-tertiary);
+}
+
+.emptyTitle {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--xagi-color-text);
+  margin: 0 0 8px;
+}
+
+.emptyDescription {
+  font-size: 14px;
+  color: var(--xagi-color-text-tertiary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .previewHeader {
+    padding: 8px 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .titleSection {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .headerRight {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
