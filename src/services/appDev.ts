@@ -193,6 +193,25 @@ export const submitFiles = async (
   });
 };
 
+/**
+ * 提交文件修改接口
+ * @param projectId 项目ID
+ * @param files 文件列表
+ * @returns Promise<SubmitFilesResponse> 提交结果
+ */
+export const submitFilesUpdate = async (
+  projectId: string,
+  files: PageFileInfo[],
+): Promise<SubmitFilesResponse> => {
+  return request('/api/custom-page/submit-files-update', {
+    method: 'POST',
+    data: {
+      projectId,
+      files,
+    },
+  });
+};
+
 // ==================== AI聊天API服务 ====================
 
 /**

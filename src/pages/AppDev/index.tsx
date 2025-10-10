@@ -8,6 +8,7 @@ import {
   keepAlive,
   sendChatMessage,
   startDev,
+  submitFilesUpdate,
   uploadAndStartProject,
 } from '@/services/appDev';
 import type {
@@ -827,6 +828,34 @@ const AppDev: React.FC = () => {
   );
 
   /**
+   * 将树形结构转换为扁平列表格式（用于保存）
+   */
+  const treeToFlatList = useCallback((treeData: any[]): any[] => {
+    const result: any[] = [];
+
+    const traverse = (nodes: any[]) => {
+      for (const node of nodes) {
+        if (node.type === 'file') {
+          result.push({
+            name: node.id,
+            binary: node.binary || false,
+            sizeExceeded: node.sizeExceeded || false,
+            contents: node.contents || '',
+            size: node.size || 0,
+            status: node.status || null,
+          });
+        }
+        if (node.children && node.children.length > 0) {
+          traverse(node.children);
+        }
+      }
+    };
+
+    traverse(treeData);
+    return result;
+  }, []);
+
+  /**
    * 处理保存文件
    */
   const handleSaveFile = useCallback(async () => {
@@ -834,18 +863,93 @@ const AppDev: React.FC = () => {
 
     try {
       setIsSavingFile(true);
-      // 这里可以添加保存文件的API调用
-      // 暂时只是更新状态
-      setOriginalFileContent(fileContent);
-      setIsFileModified(false);
-      message.success('文件已保存');
+
+      // 首先获取最新的项目内容
+      console.log('🔄 [AppDev] 获取最新项目内容以便保存...');
+      const projectResponse = await getProjectContent(workspace.projectId);
+
+      if (
+        !projectResponse ||
+        projectResponse.code !== '0000' ||
+        !projectResponse.data
+      ) {
+        throw new Error('获取项目内容失败');
+      }
+
+      // 将项目数据转换为扁平列表格式
+      let filesList: any[] = [];
+      const files = projectResponse.data.files || projectResponse.data;
+
+      if (Array.isArray(files) && files.length > 0 && files[0].name) {
+        // 如果是扁平格式，直接使用
+        filesList = [...files];
+      } else if (Array.isArray(files)) {
+        // 如果是树形格式，转换为扁平列表
+        filesList = treeToFlatList(files);
+      }
+
+      // 更新要保存的文件内容
+      const updatedFilesList = filesList.map((file) => {
+        if (file.name === selectedFile) {
+          return {
+            ...file,
+            contents: fileContent,
+            binary: false,
+            sizeExceeded: false,
+          };
+        }
+        return file;
+      });
+
+      console.log('💾 [AppDev] 保存文件:', selectedFile);
+      console.log('📁 [AppDev] 总文件数:', updatedFilesList.length);
+
+      // 调用保存文件的API
+      const response = await submitFilesUpdate(
+        workspace.projectId,
+        updatedFilesList,
+      );
+
+      if (response.success && response.code === '0000') {
+        // 保存成功后更新状态
+        setOriginalFileContent(fileContent);
+        setIsFileModified(false);
+
+        // 更新文件树中对应文件的内容
+        const updateFileInTree = (nodes: any[]): any[] => {
+          return nodes.map((node) => {
+            if (node.id === selectedFile) {
+              return { ...node, contents: fileContent };
+            }
+            if (node.children) {
+              return { ...node, children: updateFileInTree(node.children) };
+            }
+            return node;
+          });
+        };
+
+        setFileTreeData(updateFileInTree(fileTreeData));
+
+        message.success('文件已保存');
+        console.log('✅ [AppDev] 文件保存成功');
+      } else {
+        throw new Error(response.message || '保存文件失败');
+      }
     } catch (error) {
       console.error('保存文件失败:', error);
-      message.error('保存文件失败');
+      message.error(
+        `保存文件失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      );
     } finally {
       setIsSavingFile(false);
     }
-  }, [selectedFile, workspace.projectId, fileContent]);
+  }, [
+    selectedFile,
+    workspace.projectId,
+    fileContent,
+    fileTreeData,
+    treeToFlatList,
+  ]);
 
   /**
    * 处理文件选择（带未保存修改确认）
