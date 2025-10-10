@@ -4,12 +4,12 @@ import type {
   AllowCopyEnum,
   DefaultSelectedEnum,
   DevModeEnum,
+  HomeIndexEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
   OutputDirectlyEnum,
   SearchStrategyEnum,
-  TriggerComponentType,
-  TriggerTypeEnum,
+  VisibleToLLMEnum,
 } from '@/types/enums/agent';
 import type {
   PermissionsEnum,
@@ -79,6 +79,31 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
   openLongMemory: OpenCloseEnum;
 }
 
+// 更新智能体页面配置输入参数
+export interface AgentPageUpdateParams extends AgentBaseInfo {
+  id: number;
+  targetId: number;
+  bindConfig: {
+    // 自定义页面唯一标识
+    basePath?: string;
+    // 页面参数配置
+    pageArgConfigs?: {
+      // 页面路径，例如 /view
+      pageUri: string;
+      // 页面名称
+      name: string;
+      // 页面描述
+      description: string;
+      // 参数
+      args: BindConfigWithSub[];
+    }[];
+    // 页面是否模型可见，1 可见，0 不可见
+    visibleToLLM?: VisibleToLLMEnum;
+    // 是否为智能体页面首页，1 为默认首页，0 不为首页
+    homeIndex?: HomeIndexEnum;
+  };
+}
+
 // 智能体组件模型基础信息
 export interface AgentComponentBaseInfo {
   // 组件配置ID
@@ -141,33 +166,6 @@ export interface AgentComponentVariableUpdateParams
   bindConfig: {
     variables: BindConfigWithSub[];
   };
-}
-
-// 更新触发器组件配置输入参数
-export interface AgentComponentTriggerUpdateParams
-  extends AgentComponentBaseInfo {
-  bindConfig: AgentComponentTriggerAddParams;
-}
-
-// 新增智能体触发器配置输入参数
-export interface AgentComponentTriggerAddParams {
-  name: string;
-  // 触发类型,TIME 定时触发, EVENT 事件触发,可用值:TIME,EVENT
-  triggerType: TriggerTypeEnum;
-  timeZone: string;
-  timeCronExpression: string;
-  timeCronDesc: string;
-  eventBearerToken: string;
-  eventArgs: BindConfigWithSub[];
-  // 触发器执行的组件类型,可用值:PLUGIN,WORKFLOW
-  componentType: TriggerComponentType;
-  // 触发器执行的组件名称
-  componentName: string;
-  // 触发器执行的组件ID
-  componentId: string;
-  // 出参绑定配置，插件、工作流有效
-  argBindConfigs: BindConfigWithSub[];
-  agentId: number;
 }
 
 // 更新插件组件配置
@@ -326,32 +324,12 @@ export interface AgentConfigInfo {
   collected: boolean;
   // 权限列表
   permissions?: PermissionsEnum[];
-}
-
-// 触发器时区
-export interface TriggerTimeZone {
-  // UTC时区列表
-  utcTimeZones: {
-    // UTC时区
-    utc: string;
-    timeZones: {
-      // 时区
-      timeZone: string;
-      // 时区名称
-      name: string;
-    }[];
-  }[];
-  // 时间范围列表
-  cronExpScopes: {
-    // 时间范围
-    scope: string;
-    cronExps: {
-      // 时间描述
-      time: string;
-      // 表达式
-      expression: string;
-    }[];
-  }[];
+  // 是否默认展开扩展页面区域, 1 展开；0 不展开
+  expandPageArea: number;
+  // 是否隐藏聊天区域，1 隐藏；0 不隐藏
+  hideChatArea: number;
+  // 扩展页面首页
+  pageHomeIndex: string;
 }
 
 // 智能体历史配置信息

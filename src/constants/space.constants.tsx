@@ -1,5 +1,4 @@
 import {
-  // ICON_AGENT,
   ICON_KNOWLEDGE,
   ICON_MODEL,
   ICON_PLUGIN,
@@ -8,7 +7,7 @@ import {
 } from '@/components/base/AgentType/images.constants';
 import SvgIcon from '@/components/base/SvgIcon';
 
-import { InputTypeEnum, TriggerComponentType } from '@/types/enums/agent';
+import { InputTypeEnum } from '@/types/enums/agent';
 import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
@@ -112,6 +111,11 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
     text: 'MCP管理',
   },
   {
+    type: SpaceApplicationListEnum.Page_Develop,
+    icon: <SvgIcon name="icons-nav-mcp" />,
+    text: '页面开发',
+  },
+  {
     type: SpaceApplicationListEnum.Space_Square,
     icon: <SvgIcon name="icons-nav-space_square" />,
     text: '空间广场',
@@ -144,18 +148,6 @@ export const ENABLE_LIST = [
   {
     label: '关闭',
     value: OpenCloseEnum.Close,
-  },
-];
-
-// 任务执行
-export const TASK_EXECUTION = [
-  {
-    value: TriggerComponentType.PLUGIN,
-    label: '插件',
-  },
-  {
-    value: TriggerComponentType.WORKFLOW,
-    label: '工作流',
   },
 ];
 

@@ -2,12 +2,15 @@ import Constant, { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import service, { IGetList } from '@/services/created';
 import { apiTableAdd } from '@/services/dataTable';
+import { apiCustomPageQueryList } from '@/services/pageDev';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { BuildRunningEnum } from '@/types/enums/pageDev';
 import { CreatedNodeItem } from '@/types/interfaces/common';
+import { CustomPageDto } from '@/types/interfaces/pageDev';
 import { getTime } from '@/utils';
 import { jumpToMcpCreate } from '@/utils/router';
 import { getImg } from '@/utils/workflow';
@@ -30,7 +33,7 @@ import {
 import { AnyObject } from 'antd/es/_util/type';
 import classNames from 'classnames';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { history, useParams } from 'umi';
+import { history, useParams, useRequest } from 'umi';
 import CreatedItem from '../CreatedItem';
 import CreateKnowledge from '../CreateKnowledge';
 import CreateNewPlugin from '../CreateNewPlugin';
@@ -38,6 +41,7 @@ import CreateWorkflow from '../CreateWorkflow';
 import Loading from '../custom/Loading';
 import styles from './index.less';
 import MCPItem from './MCPItem';
+import PageItem from './PageItem';
 import { CreatedProp, MenuItem } from './type';
 
 const cx = classNames.bind(styles);
@@ -91,6 +95,8 @@ const Created: React.FC<CreatedProp> = ({
   const [currentNode, setCurrentNode] = useState<CreatedNodeItem>();
   // 右侧的list
   const [list, setList] = useState<CreatedNodeItem[]>([]);
+  // 页面列表
+  const [pageList, setPageList] = useState<CustomPageDto[]>([]);
   // 添加loading状态
   const [loading, setLoading] = useState<boolean>(false);
   // 是否进行搜索
@@ -134,22 +140,22 @@ const Created: React.FC<CreatedProp> = ({
     // },
   ];
 
+  const pageItem = [
+    {
+      key: 'all', // 子项也需要唯一的 key
+      label: '全部',
+    },
+  ];
+
   const knowledgeItem = [
     {
       key: 'all', // 子项也需要唯一的 key
       label: '全部',
-      // icon: <ProductFilled />,
     },
     {
       key: 1,
-      // icon: <ICON_WORD />,
       label: '文档',
     },
-    // {
-    //   key: 2,
-    //   icon: <ICON_TABLE />,
-    //   label: '表格',
-    // },
   ];
 
   const databaseItem = [
@@ -181,6 +187,8 @@ const Created: React.FC<CreatedProp> = ({
         return databaseItem;
       case AgentComponentTypeEnum.MCP:
         return mcpItem;
+      case AgentComponentTypeEnum.Page:
+        return pageItem;
       default:
         return items;
     }
@@ -200,14 +208,6 @@ const Created: React.FC<CreatedProp> = ({
     setDoSearching({ list: [], searching: false });
     try {
       if (spaceId === 0) return;
-
-      console.log(
-        'params',
-        params,
-        isRequesting.current,
-        (params.page > sizes && params.page !== 1) || isRequesting.current,
-      );
-
       if ((params.page > sizes && params.page !== 1) || isRequesting.current)
         return;
       isRequesting.current = true;
@@ -362,10 +362,44 @@ const Created: React.FC<CreatedProp> = ({
     }
   };
 
+  // 查询页面列表接口
+  const { run: runPageList } = useRequest(apiCustomPageQueryList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: CustomPageDto[]) => {
+      // handleFilterList(type, create, keyword, result);
+      // pageAllRef.current = result;
+      setPageList(result);
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  });
+
+  // 清空页面搜索
+  const clearPageSearch = () => {
+    setLoading(true);
+    runPageList(spaceId, BuildRunningEnum.Published);
+  };
+
+  // 搜索页面
+  const searchPage = (keyword: string) => {
+    const list = pageList?.filter((item) => item.name.includes(keyword)) || [];
+    setPageList(list);
+  };
+
   // 修改 onMenuClick 方法，确保切换左侧菜单时重置分页
   const onMenuClick = (val: string) => {
     setSearch('');
     setSelectMenu(val);
+
+    // 页面
+    if (selected.key === AgentComponentTypeEnum.Page) {
+      clearPageSearch();
+      return;
+    }
+
     setPagination({ page: 1, pageSize: 20 }); // 确保重置分页
     setList([]);
     justReturnSpaceDataRef.current = false;
@@ -394,6 +428,8 @@ const Created: React.FC<CreatedProp> = ({
   const changeTitle = (val: string | number) => {
     if (!val) return;
 
+    console.log('val', val);
+
     // 重置知识库数据类型和是否只返回空间数据
     dataTypeRef.current = null;
     justReturnSpaceDataRef.current = false;
@@ -404,15 +440,23 @@ const Created: React.FC<CreatedProp> = ({
       setSelectMenu('all');
       setSearch('');
       SetSelected(_item);
-      setPagination({ page: 1, pageSize: 20 }); // 重置分页状态
-      setSizes(100); // 重置数据大小
-      // setList([]); // 清空列表
 
-      // 只触发一次请求
-      getList(_item.key, {
-        page: 1,
-        pageSize: 20,
-      });
+      // 页面
+      if (val === AgentComponentTypeEnum.Page) {
+        setList([]); // 清空列表
+        setLoading(true);
+        runPageList(spaceId, BuildRunningEnum.Published);
+        return;
+      } else {
+        setPagination({ page: 1, pageSize: 20 }); // 重置分页状态
+        setSizes(100); // 重置数据大小
+
+        // 只触发一次请求
+        getList(_item.key, {
+          page: 1,
+          pageSize: 20,
+        });
+      }
     }
   };
 
@@ -542,6 +586,30 @@ const Created: React.FC<CreatedProp> = ({
     );
   };
 
+  const renderPageItem = (
+    item: CustomPageDto,
+    index: number,
+    selected: {
+      label: string;
+      key: AgentComponentTypeEnum;
+    },
+  ) => {
+    return (
+      <PageItem
+        key={`${item.projectId}-${index}`}
+        item={item}
+        index={index}
+        selected={selected}
+        onAddNode={(item: CustomPageDto) => onAddNode(item as any)}
+        isAddedState={true}
+        isCurrentLoading={true}
+        getToolLoading={() => {
+          return false;
+        }}
+      />
+    );
+  };
+
   const renderNormalItem = (item: CreatedNodeItem, index: number) => {
     const isCurrentLoading = handleItemLoading(item);
     const isAddedState = isAdded(item);
@@ -661,12 +729,23 @@ const Created: React.FC<CreatedProp> = ({
               }}
               onClear={() => {
                 setSearch('');
-                getList(selected.key, { page: 1, pageSize: 20 });
+                // 清空页面搜索
+                if (selected.key === AgentComponentTypeEnum.Page) {
+                  clearPageSearch();
+                } else {
+                  getList(selected.key, { page: 1, pageSize: 20 });
+                }
               }}
               onPressEnter={(event) => {
+                const keyword = (event.currentTarget as HTMLInputElement).value;
                 if (event.key === 'Enter') {
-                  setDoSearching({ ...doSearching, searching: true });
-                  onSearch((event.currentTarget as HTMLInputElement).value);
+                  // 页面搜索
+                  if (selected.key === AgentComponentTypeEnum.Page) {
+                    searchPage(keyword);
+                  } else {
+                    setDoSearching({ ...doSearching, searching: true });
+                    onSearch(keyword);
+                  }
                 }
               }}
             />
@@ -695,6 +774,11 @@ const Created: React.FC<CreatedProp> = ({
         >
           {loading ? (
             <Loading className={cx('h-full')} />
+          ) : selected.key === AgentComponentTypeEnum.Page &&
+            pageList?.length ? (
+            pageList?.map((item: CustomPageDto, index: number) => {
+              return renderPageItem(item, index, selected);
+            })
           ) : list?.length ? (
             list.map((item: CreatedNodeItem, index: number) => {
               if (selected.key === AgentComponentTypeEnum.MCP) {

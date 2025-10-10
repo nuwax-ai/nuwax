@@ -39,7 +39,7 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({
         {icon || (
           <SvgIcon
             name="icons-common-plus"
-            style={{ color: token.colorTextTertiary, fontSize: 15 }}
+            style={{ color: token.colorTextTertiary, fontSize: '15px' }}
           />
         )}
       </span>

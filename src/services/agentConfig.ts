@@ -8,16 +8,14 @@ import type {
   AgentComponentModelUpdateParams,
   AgentComponentPluginUpdateParams,
   AgentComponentTableUpdateParams,
-  AgentComponentTriggerAddParams,
-  AgentComponentTriggerUpdateParams,
   AgentComponentVariableUpdateParams,
   AgentComponentWorkflowUpdateParams,
   AgentConfigHistoryInfo,
   AgentConfigInfo,
   AgentConfigUpdateParams,
   AgentConversationUpdateParams,
+  AgentPageUpdateParams,
   AgentPublishApplyParams,
-  TriggerTimeZone,
 } from '@/types/interfaces/agent';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import type {
@@ -79,6 +77,16 @@ export async function apiAgentConfigUpdate(
   });
 }
 
+// 更新智能体页面配置
+export async function apiAgentPageUpdate(
+  data: AgentPageUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/page/update', {
+    method: 'POST',
+    data,
+  });
+}
+
 // 更新工作流组件配置
 export async function apiAgentComponentWorkflowUpdate(
   data: AgentComponentWorkflowUpdateParams,
@@ -104,26 +112,6 @@ export async function apiAgentComponentVariableUpdate(
   data: AgentComponentVariableUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/variable/update', {
-    method: 'POST',
-    data,
-  });
-}
-
-// 更新触发器组件配置
-export async function apiAgentComponentTriggerUpdate(
-  data: AgentComponentTriggerUpdateParams,
-): Promise<RequestResponse<null>> {
-  return request('/api/agent/component/trigger/update', {
-    method: 'POST',
-    data,
-  });
-}
-
-// 新增智能体触发器配置
-export async function apiAgentComponentTriggerAdd(
-  data: AgentComponentTriggerAddParams,
-): Promise<RequestResponse<null>> {
-  return request('/api/agent/component/trigger/add', {
     method: 'POST',
     data,
   });
@@ -203,15 +191,6 @@ export async function apiAgentConfigInfo(
   agentId: number,
 ): Promise<RequestResponse<AgentConfigInfo>> {
   return request(`/api/agent/${agentId}`, {
-    method: 'GET',
-  });
-}
-
-// 触发器定时任务时区数据
-export async function apiAgentTriggerTimeZone(): Promise<
-  RequestResponse<TriggerTimeZone>
-> {
-  return request('/api/agent/trigger/timeZone/data', {
     method: 'GET',
   });
 }

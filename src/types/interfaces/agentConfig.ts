@@ -5,7 +5,7 @@ import {
   InvokeTypeEnum,
   OutputDirectlyEnum,
 } from '@/types/enums/agent';
-import type { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
+import type { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { ComponentSettingEnum, OpenCloseEnum } from '@/types/enums/space';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
@@ -15,7 +15,6 @@ import type {
   AgentStatisticsInfo,
   ComponentModelBindConfig,
   CreatorInfo,
-  TriggerTimeZone,
 } from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
@@ -52,7 +51,7 @@ export interface AgentArrangeConfigProps {
   agentId: number;
   agentConfigInfo?: AgentConfigInfo;
   // 修改智能体基础配置信息
-  onChangeAgent: (value: string | string[], attr: string) => void;
+  onChangeAgent: (value: string | string[] | number, attr: string) => void;
 }
 
 // 组件设置弹窗
@@ -85,32 +84,6 @@ export interface CollapseComponentItemProps {
   agentComponentInfo: AgentComponentInfo;
   defaultImage?: string;
   extra?: React.ReactNode;
-}
-
-// 创建触发器组件
-export interface CreateTriggerProps {
-  agentId: number;
-  open: boolean;
-  title: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-}
-
-// 触发器时区组件
-export interface TimingTriggerProps {
-  triggerTimeZone?: TriggerTimeZone;
-}
-
-// 触发器请求参数输入数据类型
-export interface TriggerRequireInputType {
-  key: React.Key;
-  // 参数名称，符合函数命名规则
-  name: string;
-  // 参数详细描述信息
-  description: string;
-  // 数据类型
-  dataType: DataTypeEnum;
-  children?: TriggerRequireInputType[];
 }
 
 // 智能体模型设置弹窗组件
