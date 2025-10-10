@@ -124,6 +124,28 @@ export const uploadAndStartProject = async (
 };
 
 /**
+ * 上传单个文件
+ * @param params 参数对象，包含文件、项目ID和文件路径
+ * @returns Promise<any> 上传结果
+ */
+export const uploadSingleFile = async (params: {
+  file: File;
+  projectId: string;
+  filePath: string;
+}): Promise<any> => {
+  const { file, projectId, filePath } = params;
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('projectId', projectId);
+  formData.append('filePath', filePath);
+
+  return request('/api/custom-page/upload-single-file', {
+    method: 'POST',
+    data: formData,
+  });
+};
+
+/**
  * 获取项目内容（文件树）- 根据OpenAPI规范实现
  * @param projectId 项目ID
  * @returns Promise<GetProjectContentResponse> 项目文件树数据

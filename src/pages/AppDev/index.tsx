@@ -10,6 +10,7 @@ import {
   startDev,
   submitFilesUpdate,
   uploadAndStartProject,
+  uploadSingleFile,
 } from '@/services/appDev';
 import type {
   AgentMessageData,
@@ -24,6 +25,7 @@ import {
   FileOutlined,
   GlobalOutlined,
   LeftOutlined,
+  PlusOutlined,
   ReadOutlined,
   ReloadOutlined,
   RightOutlined,
@@ -38,6 +40,7 @@ import {
   Button,
   Card,
   Col,
+  Image,
   Input,
   message,
   Modal,
@@ -90,6 +93,13 @@ const AppDev: React.FC = () => {
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [projectName, setProjectName] = useState('');
+
+  // 单文件上传状态
+  const [isSingleFileUploadModalVisible, setIsSingleFileUploadModalVisible] =
+    useState(false);
+  const [singleFileUploadLoading, setSingleFileUploadLoading] = useState(false);
+  const [singleFilePath, setSingleFilePath] = useState('');
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   // 聊天消息类型定义
   interface ChatMessage {
@@ -1069,6 +1079,97 @@ const AppDev: React.FC = () => {
   );
 
   /**
+   * 处理单个文件选择
+   */
+  const handleSelectSingleFile = useCallback(
+    (file: File) => {
+      setUploadFile(file);
+      // 如果用户没有输入路径，使用文件名作为默认路径
+      if (!singleFilePath.trim()) {
+        setSingleFilePath(file.name);
+      }
+    },
+    [singleFilePath],
+  );
+
+  /**
+   * 处理单个文件上传
+   */
+  const handleUploadSingleFile = useCallback(async () => {
+    if (!workspace.projectId) {
+      message.error('请先创建或选择项目');
+      return;
+    }
+
+    if (!singleFilePath.trim()) {
+      message.error('请输入文件路径');
+      return;
+    }
+
+    if (!uploadFile) {
+      message.error('请选择文件');
+      return;
+    }
+
+    try {
+      setSingleFileUploadLoading(true);
+      console.log(
+        '📤 [AppDev] 正在上传单个文件:',
+        uploadFile.name,
+        '项目ID:',
+        workspace.projectId,
+        '路径:',
+        singleFilePath,
+      );
+
+      const result = await uploadSingleFile({
+        file: uploadFile,
+        projectId: workspace.projectId,
+        filePath: singleFilePath.trim(),
+      });
+
+      if (result?.success) {
+        const uploadedFilePath = singleFilePath.trim(); // 保存路径用于后续操作
+        message.success(
+          `文件 ${uploadFile.name} 上传成功到 ${uploadedFilePath}`,
+        );
+        setIsSingleFileUploadModalVisible(false);
+        setSingleFilePath(''); // 清空路径输入
+        setUploadFile(null); // 清空选择的文件
+
+        // 重新加载文件树
+        setTimeout(() => {
+          loadFileTree().then(() => {
+            // 文件树加载完成后，自动选择并加载新上传的文件内容
+            if (uploadedFilePath) {
+              setSelectedFile(uploadedFilePath);
+              handleFileSelect(uploadedFilePath);
+            }
+          });
+        }, 1000);
+      } else {
+        message.warning('文件上传成功，但返回数据格式异常');
+      }
+    } catch (error) {
+      console.error('上传单个文件失败:', error);
+      message.error(
+        error instanceof Error ? error.message : '上传单个文件失败',
+      );
+    } finally {
+      setSingleFileUploadLoading(false);
+    }
+  }, [workspace.projectId, loadFileTree, singleFilePath, uploadFile]);
+
+  /**
+   * 处理单个文件上传取消
+   */
+  const handleCancelSingleFileUpload = useCallback(() => {
+    setIsSingleFileUploadModalVisible(false);
+    setSingleFilePath('');
+    setUploadFile(null);
+  }, []);
+
+  /**
    * 处理AI助手聊天
    */
   const handleChatSend = useCallback(async () => {
@@ -1830,6 +1931,17 @@ const AppDev: React.FC = () => {
                           >
                             导入项目
                           </Button>
+                          <Tooltip title="上传单个文件">
+                            <Button
+                              type="text"
+                              icon={<PlusOutlined />}
+                              onClick={() =>
+                                setIsSingleFileUploadModalVisible(true)
+                              }
+                              className={styles.addButton}
+                              style={{ marginLeft: 8 }}
+                            />
+                          </Tooltip>
                         </div>
                         <div className={styles.fileTreeContainer}>
                           {/* 文件树结构 */}
@@ -1853,10 +1965,50 @@ const AppDev: React.FC = () => {
                     {/* 内容区域 */}
                     <div className={styles.editorContent}>
                       {activeTab === 'preview' ? (
-                        <Preview
-                          ref={previewRef}
-                          devServerUrl={workspace.devServerUrl}
-                        />
+                        // 预览标签页：如果是图片文件，显示图片组件；否则显示Preview组件
+                        selectedFile && isImageFile(selectedFile) ? (
+                          <div className={styles.imagePreviewContainer}>
+                            <div className={styles.imagePreviewHeader}>
+                              <span>图片预览: {selectedFile}</span>
+                              <Button
+                                size="small"
+                                icon={<ReloadOutlined />}
+                                onClick={() => {
+                                  if (previewRef.current) {
+                                    previewRef.current.refresh();
+                                  }
+                                }}
+                              >
+                                刷新
+                              </Button>
+                            </div>
+                            <div
+                              className={styles.imagePreviewContent}
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                minHeight: '400px',
+                              }}
+                            >
+                              <Image
+                                src={
+                                  workspace.devServerUrl
+                                    ? `${workspace.devServerUrl}/${selectedFile}`
+                                    : `/${selectedFile}`
+                                }
+                                alt={selectedFile}
+                                style={{ maxWidth: '100%', maxHeight: '600px' }}
+                                fallback={'/api/file-preview/' + selectedFile}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <Preview
+                            ref={previewRef}
+                            devServerUrl={workspace.devServerUrl}
+                          />
+                        )
                       ) : (
                         <div className={styles.codeEditorContainer}>
                           {/* 文件路径显示 */}
@@ -1972,7 +2124,7 @@ const AppDev: React.FC = () => {
                                 );
                               }
 
-                              // 逻辑2: 如果是图片文件，使用img元素渲染
+                              // 逻辑2: 如果是图片文件，使用Image组件渲染
                               if (isImage) {
                                 const previewUrl = workspace.devServerUrl
                                   ? `${workspace.devServerUrl}/${selectedFile}`
@@ -1994,21 +2146,25 @@ const AppDev: React.FC = () => {
                                         刷新
                                       </Button>
                                     </div>
-                                    <div className={styles.imagePreviewContent}>
-                                      <img
+                                    <div
+                                      className={styles.imagePreviewContent}
+                                      style={{
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        minHeight: '400px',
+                                      }}
+                                    >
+                                      <Image
                                         src={previewUrl}
                                         alt={selectedFile}
                                         style={{
                                           maxWidth: '100%',
                                           maxHeight: '600px',
-                                          objectFit: 'contain',
-                                          border: '1px solid #d9d9d9',
-                                          borderRadius: '6px',
                                         }}
-                                        onError={(e) => {
-                                          e.currentTarget.src =
-                                            '/api/file-preview/' + selectedFile;
-                                        }}
+                                        fallback={
+                                          '/api/file-preview/' + selectedFile
+                                        }
                                       />
                                     </div>
                                   </div>
@@ -2106,6 +2262,84 @@ const AppDev: React.FC = () => {
                 <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
                 <p className="ant-upload-hint">支持 .zip、.tar.gz、.rar 格式</p>
               </Upload.Dragger>
+            </div>
+          </Space>
+        </Modal>
+
+        {/* 单文件上传模态框 */}
+        <Modal
+          title="上传单个文件"
+          open={isSingleFileUploadModalVisible}
+          onCancel={handleCancelSingleFileUpload}
+          footer={[
+            <Button key="cancel" onClick={handleCancelSingleFileUpload}>
+              取消
+            </Button>,
+            <Button
+              key="submit"
+              type="primary"
+              loading={singleFileUploadLoading}
+              onClick={handleUploadSingleFile}
+              disabled={!uploadFile || !singleFilePath.trim()}
+            >
+              上传
+            </Button>,
+          ]}
+          width={500}
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <div>
+              <Text>当前项目ID：{workspace.projectId}</Text>
+            </div>
+            <div>
+              <Text strong>文件路径：</Text>
+              <div style={{ marginTop: 4, fontSize: '12px', color: '#666' }}>
+                请输入文件路径（带文件名和后缀），例如：src/components/NewComponent.tsx
+              </div>
+              <Input
+                placeholder="如：src/components/NewComponent.tsx"
+                value={singleFilePath}
+                onChange={(e) => setSingleFilePath(e.target.value)}
+                style={{ marginTop: 8 }}
+              />
+            </div>
+            <div>
+              <Text strong>选择文件：</Text>
+              <Upload.Dragger
+                beforeUpload={(file) => {
+                  handleSelectSingleFile(file);
+                  return false;
+                }}
+                disabled={singleFileUploadLoading}
+                style={{ marginTop: 8 }}
+                showUploadList={false}
+              >
+                <p className="ant-upload-drag-icon">
+                  <UploadOutlined />
+                </p>
+                <p className="ant-upload-text">点击或拖拽文件到此区域选择</p>
+                <p className="ant-upload-hint">
+                  支持任意文件格式，文件将被添加到指定路径
+                </p>
+              </Upload.Dragger>
+              {uploadFile && (
+                <div style={{ marginTop: 8 }}>
+                  <Alert
+                    message={`已选择文件: ${uploadFile.name}`}
+                    type="success"
+                    showIcon
+                    action={
+                      <Button
+                        type="text"
+                        size="small"
+                        onClick={() => setUploadFile(null)}
+                      >
+                        清除
+                      </Button>
+                    }
+                  />
+                </div>
+              )}
             </div>
           </Space>
         </Modal>
