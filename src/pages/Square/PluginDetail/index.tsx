@@ -116,7 +116,7 @@ const SpacePluginDetail: React.FC = ({}) => {
           targetType={SquareAgentTypeEnum.Plugin}
         />
       )}
-      <div className={cx(styles['main-container'], 'overflow-y')}>
+      <div className={cx(styles['main-container'], 'scroll-container')}>
         <span className={cx(styles.title)}>插件描述</span>
         <p className={cx(styles.desc, 'text-ellipsis-2')}>
           {pluginInfo?.description}

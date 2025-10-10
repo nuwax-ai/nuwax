@@ -135,7 +135,7 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
         </div>
       </section>
 
-      <div className={cx('flex')}>
+      <div className={cx('flex items-center content-center')}>
         {/*收藏与取消收藏*/}
         <CollectStar devCollected={collect} onClick={handlerCollect} />
         <span className={cx('ml-10', styles['collect'])}>
