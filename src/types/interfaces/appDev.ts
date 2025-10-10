@@ -415,3 +415,71 @@ export interface SSEMessage {
   event: SSEEventType;
   data: UnifiedSessionMessage;
 }
+
+// ==================== 文件管理相关类型定义 ====================
+
+/**
+ * 文件节点类型
+ */
+export interface FileNode {
+  /** 文件ID（完整路径） */
+  id: string;
+  /** 文件名 */
+  name: string;
+  /** 节点类型 */
+  type: 'file' | 'folder';
+  /** 文件路径 */
+  path: string;
+  /** 子节点 */
+  children?: FileNode[];
+  /** 是否为二进制文件 */
+  binary?: boolean;
+  /** 文件大小 */
+  size?: number;
+  /** 文件状态 */
+  status?: string | null;
+  /** 完整路径 */
+  fullPath?: string;
+  /** 父路径 */
+  parentPath?: string | null;
+  /** 文件内容 */
+  content?: string;
+  /** 最后修改时间 */
+  lastModified?: number;
+  /** 文件大小是否超限 */
+  sizeExceeded?: boolean;
+}
+
+/**
+ * 文件内容状态
+ */
+export interface FileContentState {
+  /** 当前选中的文件ID */
+  selectedFile: string;
+  /** 文件内容 */
+  fileContent: string;
+  /** 原始文件内容 */
+  originalFileContent: string;
+  /** 是否正在加载文件内容 */
+  isLoadingFileContent: boolean;
+  /** 文件内容加载错误 */
+  fileContentError: string | null;
+  /** 文件是否被修改 */
+  isFileModified: boolean;
+  /** 是否正在保存文件 */
+  isSavingFile: boolean;
+}
+
+/**
+ * 文件树状态
+ */
+export interface FileTreeState {
+  /** 文件树数据 */
+  data: FileNode[];
+  /** 展开的文件夹ID集合 */
+  expandedFolders: Set<string>;
+  /** 文件树是否折叠 */
+  isCollapsed: boolean;
+  /** 最后加载的项目ID */
+  lastLoadedProjectId: string | null;
+}

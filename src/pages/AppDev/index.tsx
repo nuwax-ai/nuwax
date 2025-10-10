@@ -1,23 +1,12 @@
 import MonacoEditor from '@/components/WebIDE/MonacoEditor';
 import Preview, { PreviewRef } from '@/components/WebIDE/Preview';
+import { ERROR_MESSAGES } from '@/constants/appDevConstants';
+import { useAppDevChat } from '@/hooks/useAppDevChat';
+import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
+import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { getProjectIdFromUrl } from '@/models/appDev';
-import {
-  cancelAgentTask,
-  getFileContent,
-  getProjectContent,
-  keepAlive,
-  sendChatMessage,
-  startDev,
-  submitFilesUpdate,
-  uploadAndStartProject,
-  uploadSingleFile,
-} from '@/services/appDev';
-import type {
-  AgentMessageData,
-  AgentThoughtData,
-  UnifiedSessionMessage,
-} from '@/types/interfaces/appDev';
-import { createSSEManager, type SSEManager } from '@/utils/sseManager';
+import { uploadAndStartProject } from '@/services/appDev';
+import { getLanguageFromFile, isImageFile } from '@/utils/appDevUtils';
 import {
   CheckOutlined,
   DownOutlined,
@@ -84,10 +73,9 @@ const AppDev: React.FC = () => {
   } = appDevModel;
 
   // 使用 Modal.confirm 来处理确认对话框
-  const [modal, contextHolder] = Modal.useModal();
+  const [, contextHolder] = Modal.useModal();
 
-  const [isStartingDev, setIsStartingDev] = useState(false);
-  const [devStartError, setDevStartError] = useState<string | null>(null);
+  // 组件内部状态
   const [missingProjectId, setMissingProjectId] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
@@ -101,421 +89,35 @@ const AppDev: React.FC = () => {
   const [singleFilePath, setSingleFilePath] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
 
-  // 聊天消息类型定义
-  interface ChatMessage {
-    id: string;
-    type: 'ai' | 'user' | 'button' | 'section' | 'thinking' | 'tool_call';
-    content?: string;
-    timestamp?: Date;
-    action?: string;
-    title?: string;
-    items?: string[];
-    isExpanded?: boolean;
-    details?: string[];
-    sessionId?: string;
-    isStreaming?: boolean;
-  }
+  // 使用重构后的 hooks
+  const fileManagement = useAppDevFileManagement({
+    projectId: workspace.projectId,
+    onFileSelect: setActiveFile,
+    onFileContentChange: updateFileContent,
+  });
 
-  // AI助手聊天相关状态
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      type: 'ai',
-      content:
-        '你好！我是AI助手，可以帮你进行代码开发、问题解答等。有什么可以帮助你的吗？',
-      timestamp: new Date(),
-    },
-  ]);
-  const [chatInput, setChatInput] = useState('');
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [sseManager, setSseManager] = useState<SSEManager | null>(null);
+  const chat = useAppDevChat({
+    projectId: workspace.projectId,
+  });
 
-  /**
-   * 处理SSE消息
-   */
-  const handleSSEMessage = useCallback((message: UnifiedSessionMessage) => {
-    switch (message.subType) {
-      case 'agent_thought_chunk': {
-        // 处理AI思考过程
-        const thoughtData = message.data as AgentThoughtData;
-        const thinkingMessage: ChatMessage = {
-          id: `thinking_${Date.now()}`,
-          type: 'thinking',
-          content: `思考中: ${thoughtData.thinking}`,
-          timestamp: new Date(),
-          sessionId: message.sessionId,
-        };
-        setChatMessages((prev) => [...prev, thinkingMessage]);
-        break;
-      }
-
-      case 'agent_message_chunk': {
-        // 处理AI回复
-        const messageData = message.data as AgentMessageData;
-        const aiMessage: ChatMessage = {
-          id: `ai_${Date.now()}`,
-          type: 'ai',
-          content: messageData.content.text,
-          timestamp: new Date(),
-          sessionId: message.sessionId,
-          isStreaming: !messageData.is_final,
-        };
-
-        if (messageData.is_final) {
-          setIsChatLoading(false);
-        }
-
-        setChatMessages((prev) => {
-          // 查找是否已有正在流式传输的消息
-          const existingStreamingIndex = prev.findIndex(
-            (msg) => msg.sessionId === message.sessionId && msg.isStreaming,
-          );
-
-          if (existingStreamingIndex >= 0) {
-            // 更新现有消息
-            const updated = [...prev];
-            updated[existingStreamingIndex] = aiMessage;
-            return updated;
-          } else {
-            // 添加新消息
-            return [...prev, aiMessage];
-          }
-        });
-        break;
-      }
-
-      case 'tool_call': {
-        // 处理工具调用
-        const toolCallData = message.data;
-        const toolMessage: ChatMessage = {
-          id: `tool_${Date.now()}`,
-          type: 'tool_call',
-          content: `🔧 正在执行: ${toolCallData.tool_call.name}`,
-          timestamp: new Date(),
-          sessionId: message.sessionId,
-        };
-        setChatMessages((prev) => [...prev, toolMessage]);
-        break;
-      }
-
-      case 'prompt_end':
-        // 处理会话结束
-        setIsChatLoading(false);
-        break;
-    }
-  }, []);
-
-  /**
-   * 初始化SSE连接管理器
-   */
-  const initializeSSEManager = useCallback(
-    (sessionId: string) => {
-      // 清理之前的连接
-      if (sseManager) {
-        sseManager.destroy();
-      }
-
-      const newSseManager = createSSEManager({
-        baseUrl: 'http://localhost:8000', // 根据实际情况调整
-        sessionId,
-        onMessage: (message: UnifiedSessionMessage) => {
-          console.log('📨 [SSE] 收到消息:', message);
-          handleSSEMessage(message);
-        },
-        onError: (error) => {
-          console.error('❌ [SSE] 连接错误:', error);
-          message.error('AI助手连接失败');
-        },
-        onOpen: () => {
-          console.log('🔌 [SSE] 连接已建立');
-        },
-        onClose: () => {
-          console.log('🔌 [SSE] 连接已关闭');
-        },
-      });
-
-      setSseManager(newSseManager);
-      newSseManager.connect();
-
-      return newSseManager;
-    },
-    [sseManager, handleSSEMessage],
-  );
+  const server = useAppDevServer({
+    projectId: workspace.projectId,
+    onServerStart: updateDevServerUrl,
+    onServerStatusChange: setIsServiceRunning,
+  });
 
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(
-    new Set(),
-  );
-
-  // 文件内容预览相关状态
-  const [selectedFile, setSelectedFile] = useState<string>('');
-  const [fileContent, setFileContent] = useState<string>('');
-  const [isLoadingFileContent, setIsLoadingFileContent] = useState(false);
-  const [fileContentError, setFileContentError] = useState<string | null>(null);
-
-  // 文件修改状态
-  const [originalFileContent, setOriginalFileContent] = useState<string>('');
-  const [isFileModified, setIsFileModified] = useState(false);
-  const [isSavingFile, setIsSavingFile] = useState(false);
-
-  // 文件夹展开状态
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set(),
   );
 
   // 聊天模式状态
   const [chatMode, setChatMode] = useState<'chat' | 'design'>('chat');
 
-  // 文件树数据结构
-  const [fileTreeData, setFileTreeData] = useState<any[]>([]);
-
   // 文件树折叠状态
   const [isFileTreeCollapsed, setIsFileTreeCollapsed] = useState(false);
 
-  // 使用 ref 来跟踪是否已经启动过开发环境，避免重复调用
-  const hasStartedDevRef = useRef(false);
-  const lastProjectIdRef = useRef<string | null>(null);
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
-  // 保活轮询定时器
-  const keepAliveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  // 跟踪文件树是否已经加载过，避免重复加载
-  const lastLoadedProjectIdRef = useRef<string | null>(null);
-
-  /**
-   * 将扁平的文件列表转换为树形结构
-   * 支持新的API数据格式
-   */
-  const transformFlatListToTree = useCallback((files: any[]) => {
-    const root: any[] = [];
-    const map = new Map<string, any>();
-    const filteredFiles = files.filter((file) => {
-      const fileName = file.name.split('/').pop();
-      // 只过滤掉系统文件，不过滤包含系统文件的路径
-      return !(
-        fileName?.startsWith('.') ||
-        fileName === '.DS_Store' ||
-        fileName === 'Thumbs.db' ||
-        fileName?.endsWith('.tmp') ||
-        fileName?.endsWith('.bak')
-      );
-    });
-
-    // 创建所有文件节点和必要的文件夹节点
-    filteredFiles.forEach((file) => {
-      const pathParts = file.name.split('/').filter(Boolean);
-      const fileName = pathParts[pathParts.length - 1];
-      const isFile = fileName.includes('.');
-
-      const node = {
-        id: file.name,
-        name: fileName,
-        type: isFile ? 'file' : 'folder',
-        path: file.name,
-        children: [],
-        binary: file.binary || false,
-        size: file.size || file.sizeExceeded ? 0 : file.contents?.length || 0,
-        status: file.status || null,
-        fullPath: file.name,
-        parentPath: pathParts.slice(0, -1).join('/') || null,
-        contents: file.contents || '',
-      };
-
-      map.set(file.name, node);
-
-      // 如果文件在子目录中，确保创建所有必要的父文件夹节点
-      if (pathParts.length > 1) {
-        for (let i = pathParts.length - 2; i >= 0; i--) {
-          const parentPath = pathParts.slice(0, i + 1).join('/');
-          const parentName = pathParts[i];
-
-          if (!map.has(parentPath)) {
-            const parentNode = {
-              id: parentPath,
-              name: parentName,
-              type: 'folder',
-              path: parentPath,
-              children: [],
-              parentPath: i > 0 ? pathParts.slice(0, i).join('/') : null,
-            };
-            map.set(parentPath, parentNode);
-          }
-        }
-      }
-    });
-
-    // 构建层次结构
-    map.forEach((node) => {
-      if (node.parentPath && map.has(node.parentPath)) {
-        const parentNode = map.get(node.parentPath);
-        if (!parentNode.children.find((child: any) => child.id === node.id)) {
-          parentNode.children.push(node);
-        }
-      } else if (!node.parentPath) {
-        if (!root.find((item: any) => item.id === node.id)) {
-          root.push(node);
-        }
-      }
-    });
-
-    // 排序：文件夹在前，文件在后，同类型按名称排序
-    const sortNodes = (nodes: any[]) => {
-      return nodes.sort((a, b) => {
-        if (a.type !== b.type) {
-          return a.type === 'folder' ? -1 : 1;
-        }
-        return a.name.localeCompare(b.name);
-      });
-    };
-
-    sortNodes(root);
-    map.forEach((node) => {
-      if (node.children.length > 0) {
-        sortNodes(node.children);
-      }
-    });
-
-    return root;
-  }, []);
-
-  /**
-   * 查找第一个可用的文件
-   */
-  const findFirstFile = useCallback((treeData: any[]): string | null => {
-    for (const node of treeData) {
-      if (node.type === 'file') {
-        // 跳过系统文件和隐藏文件
-        const fileName = node.name || node.id || '';
-        if (
-          fileName.startsWith('.') ||
-          fileName === '.DS_Store' ||
-          fileName === 'Thumbs.db' ||
-          fileName.endsWith('.tmp') ||
-          fileName.endsWith('.bak')
-        ) {
-          continue;
-        }
-        return node.id;
-      }
-      if (node.children && node.children.length > 0) {
-        const fileInChildren = findFirstFile(node.children);
-        if (fileInChildren) {
-          return fileInChildren;
-        }
-      }
-    }
-    return null;
-  }, []);
-
-  /**
-   * 加载文件树数据
-   * 支持新的API格式和原有格式
-   */
-  const loadFileTree = useCallback(async () => {
-    if (!workspace.projectId) {
-      console.log('⚠️ [AppDev] 没有项目ID，跳过文件树加载');
-      return;
-    }
-
-    // 检查是否已经加载过相同项目的文件树，避免重复调用
-    if (
-      lastLoadedProjectIdRef.current === workspace.projectId &&
-      fileTreeData.length > 0
-    ) {
-      console.log(
-        '🔄 [AppDev] 项目ID未变化且文件树已存在，跳过重复加载:',
-        workspace.projectId,
-      );
-      return;
-    }
-
-    try {
-      console.log('🌲 [AppDev] 正在加载文件树数据...', {
-        projectId: workspace.projectId,
-      });
-
-      // 使用新的API获取项目内容
-      const response = await getProjectContent(workspace.projectId);
-
-      if (response && response.code === '0000' && response.data) {
-        const files = response.data.files || response.data;
-        console.log('✅ [AppDev] 项目内容加载成功:', files);
-
-        // 检查是否是新的扁平格式
-        if (Array.isArray(files) && files.length > 0 && files[0].name) {
-          console.log('🔄 [AppDev] 检测到新的扁平格式，正在转换...');
-          const treeData = transformFlatListToTree(files);
-          setFileTreeData(treeData);
-          console.log(
-            '✅ [AppDev] 文件树转换完成，共',
-            treeData.length,
-            '个根节点',
-          );
-
-          // 更新最后加载的项目ID
-          lastLoadedProjectIdRef.current = workspace.projectId;
-
-          // 自动展开第一层文件夹
-          const rootFolders = treeData
-            .filter((node) => node.type === 'folder')
-            .map((node) => node.id);
-          if (rootFolders.length > 0) {
-            setExpandedFolders(new Set(rootFolders));
-          }
-
-          // 自动选择第一个文件
-          if (!selectedFile) {
-            const firstFile = findFirstFile(treeData);
-            if (firstFile) {
-              setSelectedFile(firstFile);
-              console.log('📁 [AppDev] 自动选择第一个文件:', firstFile);
-            }
-          }
-          return;
-        }
-
-        // 如果是原有的树形格式，直接使用
-        if (Array.isArray(files)) {
-          setFileTreeData(files);
-
-          // 更新最后加载的项目ID
-          lastLoadedProjectIdRef.current = workspace.projectId;
-
-          // 自动选择第一个文件
-          if (!selectedFile) {
-            const firstFile = findFirstFile(files);
-            if (firstFile) {
-              setSelectedFile(firstFile);
-              console.log('📁 [AppDev] 自动选择第一个文件:', firstFile);
-            }
-          }
-          return;
-        }
-      }
-
-      console.log('⚠️ [AppDev] API返回数据格式异常，使用空项目结构');
-      throw new Error('API返回数据格式异常');
-    } catch (error) {
-      console.error('❌ [AppDev] 加载文件树失败:', error);
-      console.log('🔄 [AppDev] 使用空项目结构作为fallback');
-
-      // fallback到空项目结构
-      const emptyProjectData: any[] = [];
-
-      const treeData = transformFlatListToTree(emptyProjectData);
-      setFileTreeData(treeData);
-      console.log('✅ [AppDev] 空项目结构加载完成');
-
-      // 更新最后加载的项目ID
-      lastLoadedProjectIdRef.current = workspace.projectId;
-
-      // 不自动展开任何文件夹，因为项目为空
-      setExpandedFolders(new Set());
-
-      // 不自动选择任何文件，因为项目为空
-      setSelectedFile('');
-    }
-  }, [workspace.projectId, transformFlatListToTree, findFirstFile]);
 
   /**
    * 从 URL 参数中获取 projectId
@@ -537,170 +139,28 @@ const AppDev: React.FC = () => {
   }, []);
 
   /**
-   * 启动开发环境
-   */
-  const initializeDevEnvironment = useCallback(async () => {
-    if (!workspace.projectId) {
-      console.warn('⚠️ [AppDev] 没有项目ID，跳过开发环境启动');
-      return;
-    }
-
-    // 检查 projectId 是否发生变化
-    if (lastProjectIdRef.current !== workspace.projectId) {
-      console.log('🔄 [AppDev] 项目ID发生变化，重置启动状态', {
-        oldProjectId: lastProjectIdRef.current,
-        newProjectId: workspace.projectId,
-      });
-      hasStartedDevRef.current = false;
-      lastProjectIdRef.current = workspace.projectId;
-    }
-
-    // 如果已经启动过且 projectId 没有变化，跳过
-    if (hasStartedDevRef.current) {
-      console.log('⚠️ [AppDev] 开发环境已经启动过，跳过重复启动');
-      return;
-    }
-
-    try {
-      hasStartedDevRef.current = true;
-      setIsStartingDev(true);
-      setDevStartError(null);
-      console.log('🚀 [AppDev] 正在启动开发环境...', {
-        projectId: workspace.projectId,
-      });
-
-      const response = await startDev(workspace.projectId);
-      console.log('✅ [AppDev] 开发环境启动成功:', response);
-
-      if (response?.data?.devServerUrl) {
-        console.log(
-          '🔗 [AppDev] 存储开发服务器URL:',
-          response.data.devServerUrl,
-        );
-        updateDevServerUrl(response.data.devServerUrl);
-        setIsServiceRunning(true);
-      }
-    } catch (error) {
-      console.error('❌ [AppDev] 开发环境启动失败:', error);
-      setDevStartError(
-        error instanceof Error ? error.message : '启动开发环境失败',
-      );
-      hasStartedDevRef.current = false;
-    } finally {
-      setIsStartingDev(false);
-    }
-  }, [workspace.projectId, updateDevServerUrl, setIsServiceRunning]);
-
-  // 在组件挂载时启动开发环境
-  useEffect(() => {
-    initializeDevEnvironment();
-  }, [initializeDevEnvironment]);
-
-  /**
-   * 启动保活轮询
-   */
-  const startKeepAlive = useCallback(() => {
-    if (!workspace.projectId) {
-      console.log('⚠️ [AppDev] 没有项目ID，跳过保活轮询');
-      return;
-    }
-
-    // 清除之前的定时器
-    if (keepAliveTimerRef.current) {
-      clearInterval(keepAliveTimerRef.current);
-    }
-
-    // 立即执行一次保活
-    keepAlive(workspace.projectId).catch((error) => {
-      console.error('❌ [AppDev] 初始保活失败:', error);
-    });
-
-    // 启动30秒间隔的轮询
-    keepAliveTimerRef.current = setInterval(() => {
-      keepAlive(workspace.projectId).catch((error) => {
-        console.error('❌ [AppDev] 保活轮询失败:', error);
-      });
-    }, 30000);
-
-    console.log('💗 [AppDev] 已启动30秒保活轮询，项目ID:', workspace.projectId);
-  }, [workspace.projectId]);
-
-  /**
-   * 停止保活轮询
-   */
-  const stopKeepAlive = useCallback(() => {
-    if (keepAliveTimerRef.current) {
-      clearInterval(keepAliveTimerRef.current);
-      keepAliveTimerRef.current = null;
-      console.log('🛑 [AppDev] 已停止保活轮询');
-    }
-  }, []);
-
-  // 在页面进入时启动保活轮询
-  useEffect(() => {
-    if (workspace.projectId) {
-      startKeepAlive();
-    }
-
-    // 页面卸载时停止轮询
-    return () => {
-      stopKeepAlive();
-    };
-  }, [workspace.projectId, startKeepAlive, stopKeepAlive]);
-
-  /**
    * 键盘快捷键处理
    */
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ctrl/Cmd + Enter 发送聊天消息
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-        if (chatInput.trim()) {
-          // 延迟调用，确保handleChatSend已定义
-          setTimeout(() => {
-            if (chatInput.trim()) {
-              const userMessage: ChatMessage = {
-                id: Date.now().toString(),
-                type: 'user',
-                content: chatInput,
-                timestamp: new Date(),
-              };
-              setChatMessages((prev) => [...prev, userMessage]);
-              setChatInput('');
-              setIsChatLoading(true);
-              // 模拟AI回复
-              setTimeout(() => {
-                const aiMessage: ChatMessage = {
-                  id: (Date.now() + 1).toString(),
-                  type: 'ai',
-                  content: '我理解您的需求，正在为您优化代码...',
-                  timestamp: new Date(),
-                };
-                setChatMessages((prev) => [...prev, aiMessage]);
-                setIsChatLoading(false);
-              }, 1000);
-            }
-          }, 0);
+        if (chat.chatInput.trim()) {
+          chat.sendChat();
         }
       }
 
       // Ctrl/Cmd + S 保存文件
       if ((event.ctrlKey || event.metaKey) && event.key === 's') {
         event.preventDefault();
-        message.info('文件已自动保存');
+        fileManagement.saveFile();
       }
 
       // Ctrl/Cmd + R 重启开发服务器
       if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
         event.preventDefault();
         if (workspace.projectId && isServiceRunning) {
-          // 延迟调用，确保handleRestartDev已定义
-          setTimeout(() => {
-            if (workspace.projectId) {
-              // 重启开发服务器逻辑已移除
-              console.log('开发服务器重启功能已禁用');
-            }
-          }, 0);
+          console.log('开发服务器重启功能已禁用');
         }
       }
     };
@@ -708,337 +168,12 @@ const AppDev: React.FC = () => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [
-    chatInput,
+    chat.chatInput,
+    chat.sendChat,
+    fileManagement.saveFile,
     workspace.projectId,
     isServiceRunning,
-    updateDevServerUrl,
-    setIsServiceRunning,
   ]);
-
-  /**
-   * 根据文件ID构建完整的文件路径
-   */
-  const getFilePath = useCallback(
-    (fileId: string, treeData: any[] = fileTreeData): string | null => {
-      for (const node of treeData) {
-        if (node.id === fileId) {
-          return node.name;
-        }
-        if (node.children) {
-          const childPath = getFilePath(fileId, node.children);
-          if (childPath) {
-            return `${node.name}/${childPath}`;
-          }
-        }
-      }
-      return null;
-    },
-    [fileTreeData],
-  );
-
-  /**
-   * 判断文件是否为图片类型
-   */
-  const isImageFile = useCallback((fileName: string): boolean => {
-    const ext = fileName.split('.').pop()?.toLowerCase();
-    const imageExts = [
-      'jpg',
-      'jpeg',
-      'png',
-      'gif',
-      'bmp',
-      'webp',
-      'svg',
-      'ico',
-      'tiff',
-    ];
-    return imageExts.includes(ext || '');
-  }, []);
-
-  /**
-   * 在文件树中查找文件节点
-   */
-  const findFileNode = useCallback(
-    (fileId: string, treeData: any[] = fileTreeData): any => {
-      for (const node of treeData) {
-        if (node.id === fileId) {
-          return node;
-        }
-        if (node.children) {
-          const found = findFileNode(fileId, node.children);
-          if (found) {
-            return found;
-          }
-        }
-      }
-      return null;
-    },
-    [fileTreeData],
-  );
-
-  /**
-   * 切换到指定文件的实际逻辑
-   */
-  const switchToFile = useCallback(
-    async (fileId: string) => {
-      setActiveFile(fileId);
-      setSelectedFile(fileId);
-
-      if (!workspace.projectId) {
-        message.warning('请先创建或选择项目');
-        return;
-      }
-
-      // 检查文件是否已经有contents数据，如果有则不需要调用API
-      const fileNode = findFileNode(fileId);
-      if (fileNode && fileNode.contents && fileNode.contents.trim() !== '') {
-        console.log('📄 [AppDev] 文件已有contents数据，跳过API调用:', fileId);
-        setFileContent(fileNode.contents);
-        setOriginalFileContent(fileNode.contents);
-        setIsFileModified(false);
-        setFileContentError(null);
-        return;
-      }
-
-      // 清空当前文件内容，准备加载新文件
-      setFileContent('');
-      setOriginalFileContent('');
-      setIsFileModified(false);
-      setFileContentError(null);
-
-      try {
-        setIsLoadingFileContent(true);
-        setFileContentError(null);
-
-        console.log('📄 [AppDev] 调用API获取文件内容:', fileId);
-        const response = await getFileContent(workspace.projectId, fileId);
-        let content = '';
-        if (response && typeof response === 'object' && 'data' in response) {
-          content = (response as any).data as string;
-          setFileContent(content);
-          setOriginalFileContent(content);
-          setIsFileModified(false);
-          // 移除成功提示，避免重复toast
-        } else if (typeof response === 'string') {
-          content = response;
-          setFileContent(content);
-          setOriginalFileContent(content);
-          setIsFileModified(false);
-          // 移除成功提示，避免重复toast
-        } else {
-          throw new Error('文件内容为空');
-        }
-      } catch (error) {
-        console.error('❌ [AppDev] 加载文件内容失败:', error);
-        setFileContentError(
-          `加载文件 ${fileId} 失败: ${
-            error instanceof Error ? error.message : '未知错误'
-          }`,
-        );
-        message.error(`加载文件 ${fileId} 失败`);
-      } finally {
-        setIsLoadingFileContent(false);
-      }
-    },
-    [setActiveFile, workspace.projectId, findFileNode],
-  );
-
-  /**
-   * 将树形结构转换为扁平列表格式（用于保存）
-   */
-  const treeToFlatList = useCallback((treeData: any[]): any[] => {
-    const result: any[] = [];
-
-    const traverse = (nodes: any[]) => {
-      for (const node of nodes) {
-        if (node.type === 'file') {
-          result.push({
-            name: node.id,
-            binary: node.binary || false,
-            sizeExceeded: node.sizeExceeded || false,
-            contents: node.contents || '',
-            size: node.size || 0,
-            status: node.status || null,
-          });
-        }
-        if (node.children && node.children.length > 0) {
-          traverse(node.children);
-        }
-      }
-    };
-
-    traverse(treeData);
-    return result;
-  }, []);
-
-  /**
-   * 处理保存文件
-   */
-  const handleSaveFile = useCallback(async () => {
-    if (!selectedFile || !workspace.projectId) return;
-
-    try {
-      setIsSavingFile(true);
-
-      // 首先获取最新的项目内容
-      console.log('🔄 [AppDev] 获取最新项目内容以便保存...');
-      const projectResponse = await getProjectContent(workspace.projectId);
-
-      if (
-        !projectResponse ||
-        projectResponse.code !== '0000' ||
-        !projectResponse.data
-      ) {
-        throw new Error('获取项目内容失败');
-      }
-
-      // 将项目数据转换为扁平列表格式
-      let filesList: any[] = [];
-      const files = projectResponse.data.files || projectResponse.data;
-
-      if (Array.isArray(files) && files.length > 0 && files[0].name) {
-        // 如果是扁平格式，直接使用
-        filesList = [...files];
-      } else if (Array.isArray(files)) {
-        // 如果是树形格式，转换为扁平列表
-        filesList = treeToFlatList(files);
-      }
-
-      // 更新要保存的文件内容
-      const updatedFilesList = filesList.map((file) => {
-        if (file.name === selectedFile) {
-          return {
-            ...file,
-            contents: fileContent,
-            binary: false,
-            sizeExceeded: false,
-          };
-        }
-        return file;
-      });
-
-      console.log('💾 [AppDev] 保存文件:', selectedFile);
-      console.log('📁 [AppDev] 总文件数:', updatedFilesList.length);
-
-      // 调用保存文件的API
-      const response = await submitFilesUpdate(
-        workspace.projectId,
-        updatedFilesList,
-      );
-
-      if (response.success && response.code === '0000') {
-        // 保存成功后更新状态
-        setOriginalFileContent(fileContent);
-        setIsFileModified(false);
-
-        // 更新文件树中对应文件的内容
-        const updateFileInTree = (nodes: any[]): any[] => {
-          return nodes.map((node) => {
-            if (node.id === selectedFile) {
-              return { ...node, contents: fileContent };
-            }
-            if (node.children) {
-              return { ...node, children: updateFileInTree(node.children) };
-            }
-            return node;
-          });
-        };
-
-        setFileTreeData(updateFileInTree(fileTreeData));
-
-        message.success('文件已保存');
-        console.log('✅ [AppDev] 文件保存成功');
-      } else {
-        throw new Error(response.message || '保存文件失败');
-      }
-    } catch (error) {
-      console.error('保存文件失败:', error);
-      message.error(
-        `保存文件失败: ${error instanceof Error ? error.message : '未知错误'}`,
-      );
-    } finally {
-      setIsSavingFile(false);
-    }
-  }, [
-    selectedFile,
-    workspace.projectId,
-    fileContent,
-    fileTreeData,
-    treeToFlatList,
-  ]);
-
-  /**
-   * 处理文件选择（带未保存修改确认）
-   */
-  const handleFileSelect = useCallback(
-    async (fileId: string) => {
-      // 如果选择的是当前文件，不做任何操作
-      if (selectedFile === fileId) return;
-
-      // 如果当前文件有未保存的修改，显示确认模态框
-      if (isFileModified && selectedFile) {
-        modal.confirm({
-          title: '未保存的修改',
-          content: (
-            <div>
-              <p>当前文件有未保存的修改，是否要保存这些修改？</p>
-              <p style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
-                选择&ldquo;保存&rdquo;将保存当前修改并切换文件
-                <br />
-                选择&ldquo;不保存&rdquo;将丢弃修改并切换文件
-                <br />
-                选择&ldquo;取消&rdquo;将停留在当前文件
-              </p>
-            </div>
-          ),
-          okText: '保存',
-          cancelText: '不保存',
-          centered: true,
-          onOk: async () => {
-            // 保存当前修改
-            await handleSaveFile();
-            // 切换到新文件
-            await switchToFile(fileId);
-          },
-          onCancel: () => {
-            // 不保存修改，直接切换文件
-            switchToFile(fileId);
-          },
-        });
-      } else {
-        // 没有未保存修改，直接切换文件
-        await switchToFile(fileId);
-      }
-    },
-    [selectedFile, isFileModified, modal, handleSaveFile, switchToFile],
-  );
-
-  // 在项目ID变化时加载默认文件内容
-  useEffect(() => {
-    if (workspace.projectId && selectedFile) {
-      handleFileSelect(selectedFile);
-    }
-  }, [workspace.projectId, selectedFile, handleFileSelect]);
-
-  // 在项目ID变化时加载文件树
-  useEffect(() => {
-    if (workspace.projectId) {
-      loadFileTree();
-    }
-  }, [workspace.projectId, loadFileTree]);
-
-  /**
-   * 处理文件内容更新
-   */
-  const handleFileContentChange = useCallback(
-    (fileId: string, content: string) => {
-      updateFileContent(fileId, content);
-      setFileContent(content);
-      // 检查文件是否被修改 - 直接更新状态，有修改就显示按钮
-      setIsFileModified(content !== originalFileContent);
-    },
-    [updateFileContent, originalFileContent],
-  );
 
   /**
    * 处理项目上传
@@ -1097,17 +232,17 @@ const AppDev: React.FC = () => {
    */
   const handleUploadSingleFile = useCallback(async () => {
     if (!workspace.projectId) {
-      message.error('请先创建或选择项目');
+      message.error(ERROR_MESSAGES.NO_PROJECT_ID);
       return;
     }
 
     if (!singleFilePath.trim()) {
-      message.error('请输入文件路径');
+      message.error(ERROR_MESSAGES.EMPTY_FILE_PATH);
       return;
     }
 
     if (!uploadFile) {
-      message.error('请选择文件');
+      message.error(ERROR_MESSAGES.NO_FILE_SELECTED);
       return;
     }
 
@@ -1122,43 +257,20 @@ const AppDev: React.FC = () => {
         singleFilePath,
       );
 
-      const result = await uploadSingleFile({
-        file: uploadFile,
-        projectId: workspace.projectId,
-        filePath: singleFilePath.trim(),
-      });
-
-      if (result?.success) {
-        const uploadedFilePath = singleFilePath.trim(); // 保存路径用于后续操作
-        message.success(
-          `文件 ${uploadFile.name} 上传成功到 ${uploadedFilePath}`,
-        );
-        setIsSingleFileUploadModalVisible(false);
-        setSingleFilePath(''); // 清空路径输入
-        setUploadFile(null); // 清空选择的文件
-
-        // 重新加载文件树
-        setTimeout(() => {
-          loadFileTree().then(() => {
-            // 文件树加载完成后，自动选择并加载新上传的文件内容
-            if (uploadedFilePath) {
-              setSelectedFile(uploadedFilePath);
-              handleFileSelect(uploadedFilePath);
-            }
-          });
-        }, 1000);
-      } else {
-        message.warning('文件上传成功，但返回数据格式异常');
-      }
-    } catch (error) {
-      console.error('上传单个文件失败:', error);
-      message.error(
-        error instanceof Error ? error.message : '上传单个文件失败',
+      const result = await fileManagement.uploadSingleFileToServer(
+        uploadFile,
+        singleFilePath.trim(),
       );
+
+      if (result) {
+        setIsSingleFileUploadModalVisible(false);
+        setSingleFilePath('');
+        setUploadFile(null);
+      }
     } finally {
       setSingleFileUploadLoading(false);
     }
-  }, [workspace.projectId, loadFileTree, singleFilePath, uploadFile]);
+  }, [workspace.projectId, fileManagement, singleFilePath, uploadFile]);
 
   /**
    * 处理单个文件上传取消
@@ -1167,238 +279,6 @@ const AppDev: React.FC = () => {
     setIsSingleFileUploadModalVisible(false);
     setSingleFilePath('');
     setUploadFile(null);
-  }, []);
-
-  /**
-   * 处理AI助手聊天
-   */
-  const handleChatSend = useCallback(async () => {
-    if (!chatInput.trim()) return;
-
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: chatInput,
-      timestamp: new Date(),
-    };
-
-    setChatMessages((prev) => [...prev, userMessage]);
-    const inputText = chatInput;
-    setChatInput('');
-    setIsChatLoading(true);
-
-    try {
-      // 生成会话ID（如果还没有）
-      let sessionId = currentSessionId;
-      if (!sessionId) {
-        sessionId = `session_${Date.now()}_${Math.random()
-          .toString(36)
-          .substr(2, 9)}`;
-        setCurrentSessionId(sessionId);
-      }
-
-      // 发送聊天消息到AI服务
-      const response = await sendChatMessage({
-        user_id: 'app-dev-user', // 根据实际情况获取用户ID
-        prompt: inputText,
-        project_id: workspace.projectId || undefined,
-        session_id: sessionId,
-        request_id: `req_${Date.now()}_${Math.random()
-          .toString(36)
-          .substr(2, 9)}`,
-      });
-
-      if (response.success && response.data) {
-        // 建立SSE连接监听回复
-        initializeSSEManager(response.data.session_id);
-      } else {
-        throw new Error(response.message || '发送消息失败');
-      }
-    } catch (error) {
-      console.error('AI聊天失败:', error);
-      message.error(
-        `AI聊天失败: ${error instanceof Error ? error.message : '未知错误'}`,
-      );
-      setIsChatLoading(false);
-    }
-  }, [chatInput, currentSessionId, workspace.projectId, initializeSSEManager]);
-
-  /**
-   * 取消AI聊天任务
-   */
-  const handleCancelChat = useCallback(async () => {
-    if (!currentSessionId || !workspace.projectId) {
-      return;
-    }
-
-    try {
-      console.log('🛑 [AppDev] 取消AI聊天任务');
-      await cancelAgentTask(workspace.projectId, currentSessionId);
-
-      // 关闭SSE连接
-      if (sseManager) {
-        sseManager.destroy();
-        setSseManager(null);
-      }
-
-      setIsChatLoading(false);
-      message.success('已取消AI任务');
-    } catch (error) {
-      console.error('取消AI任务失败:', error);
-      message.error('取消AI任务失败');
-    }
-  }, [currentSessionId, workspace.projectId, sseManager]);
-
-  /**
-   * 清理SSE连接
-   */
-  useEffect(() => {
-    return () => {
-      if (sseManager) {
-        sseManager.destroy();
-      }
-    };
-  }, [sseManager]);
-
-  /**
-   * 根据文件扩展名获取语言类型（用于显示）
-   * 与Monaco Editor内部语言标识保持一致
-   */
-  const getLanguageFromFile = useCallback((fileName: string): string => {
-    const ext = fileName.split('.').pop()?.toLowerCase();
-    switch (ext) {
-      // TypeScript/JavaScript
-      case 'tsx':
-      case 'jsx':
-        return 'TypeScript React';
-      case 'ts':
-        return 'TypeScript';
-      case 'js':
-      case 'mjs':
-      case 'cjs':
-        return 'JavaScript';
-
-      // Stylesheets
-      case 'css':
-        return 'CSS';
-      case 'less':
-        return 'Less';
-      case 'scss':
-        return 'SCSS';
-      case 'sass':
-        return 'Sass';
-
-      // Markup & Templates
-      case 'html':
-      case 'htm':
-        return 'HTML';
-      case 'vue':
-        return 'Vue (HTML)'; // Vue文件，基于HTML语法高亮
-      case 'xml':
-        return 'XML'; // XML文件
-
-      // Data & Configuration
-      case 'json':
-        return 'JSON';
-      case 'jsonc':
-        return 'JSON'; // JSON with comments
-      case 'yaml':
-      case 'yml':
-        return 'YAML';
-      case 'toml':
-        return 'TOML';
-      case 'ini':
-        return 'INI';
-
-      // Documentation
-      case 'md':
-      case 'markdown':
-        return 'Markdown';
-      case 'txt':
-        return 'Plain Text';
-
-      // Server & Config
-      case 'php':
-        return 'PHP';
-      case 'py':
-        return 'Python';
-      case 'java':
-        return 'Java';
-      case 'go':
-        return 'Go';
-      case 'rs':
-        return 'Rust';
-      case 'cpp':
-      case 'cc':
-      case 'cxx':
-        return 'C++';
-      case 'c':
-        return 'C';
-      case 'cs':
-        return 'C#';
-      case 'vb':
-        return 'VB';
-      case 'swift':
-        return 'Swift';
-      case 'kt':
-        return 'Kotlin';
-      case 'scala':
-        return 'Scala';
-      case 'rb':
-        return 'Ruby';
-      case 'dart':
-        return 'Dart';
-      case 'lua':
-        return 'Lua';
-      case 'r':
-        return 'R';
-
-      // Web & Scripts
-      case 'sh':
-      case 'bash':
-      case 'zsh':
-        return 'Shell';
-      case 'ps1':
-        return 'PowerShell';
-      case 'bat':
-      case 'cmd':
-        return 'Batch';
-      case 'sql':
-        return 'SQL';
-
-      // Build & Config
-      case 'dockerfile':
-        return 'Dockerfile';
-      case 'makefile':
-        return 'Makefile';
-      case 'gitignore':
-      case 'dockerignore':
-        return 'Plain Text';
-
-      // Other common files
-      case 'log':
-        return 'Log';
-      case 'csv':
-        return 'CSV';
-
-      default:
-        return 'Plain Text';
-    }
-  }, []);
-
-  /**
-   * 切换文件夹展开状态
-   */
-  const toggleFolder = useCallback((folderId: string) => {
-    setExpandedFolders((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(folderId)) {
-        newSet.delete(folderId);
-      } else {
-        newSet.add(folderId);
-      }
-      return newSet;
-    });
   }, []);
 
   /**
@@ -1438,16 +318,18 @@ const AppDev: React.FC = () => {
    * 渲染聊天消息
    */
   const renderChatMessage = useCallback(
-    (message: ChatMessage) => {
+    (message: any) => {
       switch (message.type) {
         case 'ai':
           return (
             <div key={message.id} className={styles.messageWrapper}>
               <div className={`${styles.message} ${styles.ai}`}>
                 <div className={styles.messageContent}>
-                  {message.content?.split('\n').map((line, index) => (
-                    <div key={index}>{line}</div>
-                  ))}
+                  {message.content
+                    ?.split('\n')
+                    .map((line: string, index: number) => (
+                      <div key={index}>{line}</div>
+                    ))}
                 </div>
               </div>
               {message.details && (
@@ -1465,7 +347,7 @@ const AppDev: React.FC = () => {
                   </div>
                   {expandedMessages.has(message.id) && (
                     <div className={styles.detailsContent}>
-                      {message.details.map((detail, index) => (
+                      {message.details.map((detail: string, index: number) => (
                         <div key={index} className={styles.detailItem}>
                           {detail}
                         </div>
@@ -1499,7 +381,7 @@ const AppDev: React.FC = () => {
               <div className={styles.sectionMessage}>
                 <div className={styles.sectionTitle}>{message.title}</div>
                 <div className={styles.sectionItems}>
-                  {message.items?.map((item, index) => (
+                  {message.items?.map((item: string, index: number) => (
                     <div key={index} className={styles.sectionItem}>
                       {item}
                     </div>
@@ -1515,11 +397,13 @@ const AppDev: React.FC = () => {
               <div className={`${styles.message} ${styles.thinking}`}>
                 <div className={styles.messageContent}>
                   <div className={styles.thinkingIndicator}>💭 思考中...</div>
-                  {message.content?.split('\n').map((line, index) => (
-                    <div key={index} className={styles.thinkingText}>
-                      {line}
-                    </div>
-                  ))}
+                  {message.content
+                    ?.split('\n')
+                    .map((line: string, index: number) => (
+                      <div key={index} className={styles.thinkingText}>
+                        {line}
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>
@@ -1551,27 +435,26 @@ const AppDev: React.FC = () => {
    * 聊天消息列表（memo化）
    */
   const chatMessagesList = useMemo(() => {
-    return chatMessages.map(renderChatMessage);
-  }, [chatMessages, renderChatMessage]);
+    return chat.chatMessages.map(renderChatMessage);
+  }, [chat.chatMessages, renderChatMessage]);
 
   /**
    * 处理取消编辑
    */
   const handleCancelEdit = useCallback(() => {
-    if (!selectedFile) return;
-
-    setFileContent(originalFileContent);
-    setIsFileModified(false);
-    message.info('已取消编辑');
-  }, [selectedFile, originalFileContent]);
+    fileManagement.cancelEdit();
+  }, [fileManagement]);
 
   /**
    * 渲染文件树节点
    */
   const renderFileTreeNode = useCallback(
     (node: any, level: number = 0) => {
-      const isExpanded = expandedFolders.has(node.id);
-      const isSelected = selectedFile === node.id;
+      const isExpanded = fileManagement.fileTreeState.expandedFolders.has(
+        node.id,
+      );
+      const isSelected =
+        fileManagement.fileContentState.selectedFile === node.id;
 
       if (node.type === 'folder') {
         return (
@@ -1582,7 +465,7 @@ const AppDev: React.FC = () => {
           >
             <div
               className={styles.folderHeader}
-              onClick={() => toggleFolder(node.id)}
+              onClick={() => fileManagement.toggleFolder(node.id)}
             >
               <RightOutlined
                 className={`${styles.folderIcon} ${
@@ -1607,7 +490,7 @@ const AppDev: React.FC = () => {
             className={`${styles.fileItem} ${
               isSelected ? styles.activeFile : ''
             }`}
-            onClick={() => handleFileSelect(node.id)}
+            onClick={() => fileManagement.switchToFile(node.id)}
             style={{ marginLeft: level * 16 }}
           >
             <FileOutlined className={styles.fileIcon} />
@@ -1619,11 +502,18 @@ const AppDev: React.FC = () => {
         );
       }
     },
-    [expandedFolders, selectedFile, toggleFolder, handleFileSelect],
+    [fileManagement],
   );
 
+  // 清理聊天连接
+  useEffect(() => {
+    return () => {
+      chat.cleanup();
+    };
+  }, [chat.cleanup]);
+
   // 如果正在启动开发环境，显示加载状态
-  if (isStartingDev) {
+  if (server.isStarting) {
     return (
       <div className={styles.loadingContainer}>
         <Spin size="large" />
@@ -1666,12 +556,12 @@ const AppDev: React.FC = () => {
   }
 
   // 如果启动失败，显示错误信息
-  if (devStartError) {
+  if (server.startError) {
     return (
       <div className={styles.errorContainer}>
         <Alert
           message="开发环境启动失败"
-          description={devStartError}
+          description={server.startError}
           type="error"
           showIcon
           action={
@@ -1796,7 +686,7 @@ const AppDev: React.FC = () => {
               {/* 聊天消息区域 */}
               <div className={styles.chatMessages}>
                 {chatMessagesList}
-                {isChatLoading && (
+                {chat.isChatLoading && (
                   <div className={`${styles.message} ${styles.ai}`}>
                     <div className={styles.messageContent}>
                       <Spin size="small" /> 正在思考...
@@ -1809,16 +699,16 @@ const AppDev: React.FC = () => {
               <div className={styles.chatInput}>
                 <Input
                   placeholder="向AI助手提问..."
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onPressEnter={handleChatSend}
+                  value={chat.chatInput}
+                  onChange={(e) => chat.setChatInput(e.target.value)}
+                  onPressEnter={chat.sendChat}
                   suffix={
                     <div style={{ display: 'flex', gap: 4 }}>
-                      {isChatLoading && (
+                      {chat.isChatLoading && (
                         <Button
                           type="text"
                           icon={<StopOutlined />}
-                          onClick={handleCancelChat}
+                          onClick={chat.cancelChat}
                           title="取消AI任务"
                           className={styles.cancelButton}
                         />
@@ -1826,8 +716,8 @@ const AppDev: React.FC = () => {
                       <Button
                         type="text"
                         icon={<SendOutlined />}
-                        onClick={handleChatSend}
-                        disabled={!chatInput.trim() || isChatLoading}
+                        onClick={chat.sendChat}
+                        disabled={!chat.chatInput.trim() || chat.isChatLoading}
                       />
                     </div>
                   }
@@ -1946,8 +836,8 @@ const AppDev: React.FC = () => {
                         <div className={styles.fileTreeContainer}>
                           {/* 文件树结构 */}
                           <div className={styles.fileTree}>
-                            {fileTreeData.map((node) =>
-                              renderFileTreeNode(node),
+                            {fileManagement.fileTreeState.data.map(
+                              (node: any) => renderFileTreeNode(node),
                             )}
                           </div>
                         </div>
@@ -1966,10 +856,16 @@ const AppDev: React.FC = () => {
                     <div className={styles.editorContent}>
                       {activeTab === 'preview' ? (
                         // 预览标签页：如果是图片文件，显示图片组件；否则显示Preview组件
-                        selectedFile && isImageFile(selectedFile) ? (
+                        fileManagement.fileContentState.selectedFile &&
+                        isImageFile(
+                          fileManagement.fileContentState.selectedFile,
+                        ) ? (
                           <div className={styles.imagePreviewContainer}>
                             <div className={styles.imagePreviewHeader}>
-                              <span>图片预览: {selectedFile}</span>
+                              <span>
+                                图片预览:{' '}
+                                {fileManagement.fileContentState.selectedFile}
+                              </span>
                               <Button
                                 size="small"
                                 icon={<ReloadOutlined />}
@@ -1994,12 +890,14 @@ const AppDev: React.FC = () => {
                               <Image
                                 src={
                                   workspace.devServerUrl
-                                    ? `${workspace.devServerUrl}/${selectedFile}`
-                                    : `/${selectedFile}`
+                                    ? `${workspace.devServerUrl}/${fileManagement.fileContentState.selectedFile}`
+                                    : `/${fileManagement.fileContentState.selectedFile}`
                                 }
-                                alt={selectedFile}
+                                alt={
+                                  fileManagement.fileContentState.selectedFile
+                                }
                                 style={{ maxWidth: '100%', maxHeight: '600px' }}
-                                fallback={'/api/file-preview/' + selectedFile}
+                                fallback={`/api/file-preview/${fileManagement.fileContentState.selectedFile}`}
                               />
                             </div>
                           </div>
@@ -2016,21 +914,32 @@ const AppDev: React.FC = () => {
                             <div className={styles.filePathInfo}>
                               <FileOutlined className={styles.fileIcon} />
                               <span className={styles.filePath}>
-                                {getFilePath(selectedFile) || selectedFile}
+                                {fileManagement.findFileNode(
+                                  fileManagement.fileContentState.selectedFile,
+                                )?.path ||
+                                  fileManagement.fileContentState.selectedFile}
                               </span>
                               <span className={styles.fileLanguage}>
-                                {getLanguageFromFile(selectedFile)}
+                                {getLanguageFromFile(
+                                  fileManagement.fileContentState.selectedFile,
+                                )}
                               </span>
-                              {isLoadingFileContent && <Spin size="small" />}
+                              {fileManagement.fileContentState
+                                .isLoadingFileContent && <Spin size="small" />}
                             </div>
                             <div className={styles.fileActions}>
                               <Button
                                 size="small"
                                 type="primary"
                                 icon={<CheckOutlined />}
-                                onClick={handleSaveFile}
-                                loading={isSavingFile}
-                                disabled={!isFileModified}
+                                onClick={fileManagement.saveFile}
+                                loading={
+                                  fileManagement.fileContentState.isSavingFile
+                                }
+                                disabled={
+                                  !fileManagement.fileContentState
+                                    .isFileModified
+                                }
                                 style={{ marginRight: 8 }}
                               >
                                 保存
@@ -2038,7 +947,10 @@ const AppDev: React.FC = () => {
                               <Button
                                 size="small"
                                 onClick={handleCancelEdit}
-                                disabled={!isFileModified}
+                                disabled={
+                                  !fileManagement.fileContentState
+                                    .isFileModified
+                                }
                                 style={{ marginRight: 8 }}
                               >
                                 取消
@@ -2046,8 +958,16 @@ const AppDev: React.FC = () => {
                               <Button
                                 size="small"
                                 icon={<ReloadOutlined />}
-                                onClick={() => handleFileSelect(selectedFile)}
-                                loading={isLoadingFileContent}
+                                onClick={() =>
+                                  fileManagement.switchToFile(
+                                    fileManagement.fileContentState
+                                      .selectedFile,
+                                  )
+                                }
+                                loading={
+                                  fileManagement.fileContentState
+                                    .isLoadingFileContent
+                                }
                               >
                                 刷新
                               </Button>
@@ -2057,7 +977,10 @@ const AppDev: React.FC = () => {
                           {/* 文件内容预览 */}
                           <div className={styles.fileContentPreview}>
                             {(() => {
-                              if (isLoadingFileContent) {
+                              if (
+                                fileManagement.fileContentState
+                                  .isLoadingFileContent
+                              ) {
                                 return (
                                   <div className={styles.loadingContainer}>
                                     <Spin size="large" />
@@ -2066,14 +989,24 @@ const AppDev: React.FC = () => {
                                 );
                               }
 
-                              if (fileContentError) {
+                              if (
+                                fileManagement.fileContentState.fileContentError
+                              ) {
                                 return (
                                   <div className={styles.errorContainer}>
-                                    <p>{fileContentError}</p>
+                                    <p>
+                                      {
+                                        fileManagement.fileContentState
+                                          .fileContentError
+                                      }
+                                    </p>
                                     <Button
                                       size="small"
                                       onClick={() =>
-                                        handleFileSelect(selectedFile)
+                                        fileManagement.switchToFile(
+                                          fileManagement.fileContentState
+                                            .selectedFile,
+                                        )
                                       }
                                     >
                                       重试
@@ -2082,7 +1015,9 @@ const AppDev: React.FC = () => {
                                 );
                               }
 
-                              if (!selectedFile) {
+                              if (
+                                !fileManagement.fileContentState.selectedFile
+                              ) {
                                 return (
                                   <div className={styles.emptyState}>
                                     <p>请从左侧文件树选择一个文件进行预览</p>
@@ -2090,33 +1025,43 @@ const AppDev: React.FC = () => {
                                 );
                               }
 
-                              const fileNode = findFileNode(selectedFile);
+                              const fileNode = fileManagement.findFileNode(
+                                fileManagement.fileContentState.selectedFile,
+                              );
                               const hasContents =
                                 fileNode &&
-                                fileNode.contents &&
-                                fileNode.contents.trim() !== '';
-                              const isImage = isImageFile(selectedFile);
+                                fileNode.content &&
+                                fileNode.content.trim() !== '';
+                              const isImage = isImageFile(
+                                fileManagement.fileContentState.selectedFile,
+                              );
 
                               // 逻辑1: 如果文件有contents，直接在编辑器中显示
                               if (hasContents) {
                                 return (
                                   <div className={styles.fileContentDisplay}>
                                     <MonacoEditor
-                                      key={selectedFile}
+                                      key={
+                                        fileManagement.fileContentState
+                                          .selectedFile
+                                      }
                                       currentFile={{
-                                        id: selectedFile,
-                                        name: selectedFile,
+                                        id: fileManagement.fileContentState
+                                          .selectedFile,
+                                        name: fileManagement.fileContentState
+                                          .selectedFile,
                                         type: 'file',
-                                        path: `app/${selectedFile}`,
-                                        content: fileNode.contents,
+                                        path: `app/${fileManagement.fileContentState.selectedFile}`,
+                                        content: fileNode.content,
                                         lastModified: Date.now(),
                                         children: [],
                                       }}
                                       onContentChange={(fileId, content) => {
-                                        handleFileContentChange(
+                                        fileManagement.updateFileContent(
                                           fileId,
                                           content,
                                         );
+                                        updateFileContent(fileId, content);
                                       }}
                                       className={styles.monacoEditor}
                                     />
@@ -2127,13 +1072,19 @@ const AppDev: React.FC = () => {
                               // 逻辑2: 如果是图片文件，使用Image组件渲染
                               if (isImage) {
                                 const previewUrl = workspace.devServerUrl
-                                  ? `${workspace.devServerUrl}/${selectedFile}`
-                                  : `/${selectedFile}`;
+                                  ? `${workspace.devServerUrl}/${fileManagement.fileContentState.selectedFile}`
+                                  : `/${fileManagement.fileContentState.selectedFile}`;
 
                                 return (
                                   <div className={styles.imagePreviewContainer}>
                                     <div className={styles.imagePreviewHeader}>
-                                      <span>图片预览: {selectedFile}</span>
+                                      <span>
+                                        图片预览:{' '}
+                                        {
+                                          fileManagement.fileContentState
+                                            .selectedFile
+                                        }
+                                      </span>
                                       <Button
                                         size="small"
                                         icon={<ReloadOutlined />}
@@ -2157,14 +1108,15 @@ const AppDev: React.FC = () => {
                                     >
                                       <Image
                                         src={previewUrl}
-                                        alt={selectedFile}
+                                        alt={
+                                          fileManagement.fileContentState
+                                            .selectedFile
+                                        }
                                         style={{
                                           maxWidth: '100%',
                                           maxHeight: '600px',
                                         }}
-                                        fallback={
-                                          '/api/file-preview/' + selectedFile
-                                        }
+                                        fallback={`/api/file-preview/${fileManagement.fileContentState.selectedFile}`}
                                       />
                                     </div>
                                   </div>
@@ -2172,26 +1124,33 @@ const AppDev: React.FC = () => {
                               }
 
                               // 逻辑3: 其他情况通过API远程预览或使用现有fileContent
-                              if (fileContent) {
+                              if (fileManagement.fileContentState.fileContent) {
                                 return (
                                   <div className={styles.fileContentDisplay}>
                                     <MonacoEditor
-                                      key={selectedFile}
+                                      key={
+                                        fileManagement.fileContentState
+                                          .selectedFile
+                                      }
                                       currentFile={{
-                                        id: selectedFile,
-                                        name: selectedFile,
+                                        id: fileManagement.fileContentState
+                                          .selectedFile,
+                                        name: fileManagement.fileContentState
+                                          .selectedFile,
                                         type: 'file',
-                                        path: `app/${selectedFile}`,
-                                        content: fileContent,
+                                        path: `app/${fileManagement.fileContentState.selectedFile}`,
+                                        content:
+                                          fileManagement.fileContentState
+                                            .fileContent,
                                         lastModified: Date.now(),
                                         children: [],
                                       }}
                                       onContentChange={(fileId, content) => {
-                                        setFileContent(content);
-                                        handleFileContentChange(
+                                        fileManagement.updateFileContent(
                                           fileId,
                                           content,
                                         );
+                                        updateFileContent(fileId, content);
                                       }}
                                       className={styles.monacoEditor}
                                     />
@@ -2201,11 +1160,20 @@ const AppDev: React.FC = () => {
 
                               return (
                                 <div className={styles.emptyState}>
-                                  <p>无法预览此文件类型: {selectedFile}</p>
+                                  <p>
+                                    无法预览此文件类型:{' '}
+                                    {
+                                      fileManagement.fileContentState
+                                        .selectedFile
+                                    }
+                                  </p>
                                   <Button
                                     size="small"
                                     onClick={() =>
-                                      handleFileSelect(selectedFile)
+                                      fileManagement.switchToFile(
+                                        fileManagement.fileContentState
+                                          .selectedFile,
+                                      )
                                     }
                                   >
                                     重新加载
