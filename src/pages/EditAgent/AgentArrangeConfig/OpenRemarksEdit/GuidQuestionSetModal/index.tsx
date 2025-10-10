@@ -6,6 +6,7 @@ import UploadAvatar from '@/components/UploadAvatar';
 import { GUID_QUESTION_SET_OPTIONS } from '@/constants/agent.constants';
 import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
 import { BindValueType, GuidQuestionSetTypeEnum } from '@/types/enums/agent';
+import { GuidQuestionDto } from '@/types/interfaces/agent';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -29,7 +30,7 @@ export interface GuidQuestionSetModalProps {
   open: boolean;
   variables: BindConfigWithSub[];
   onCancel: () => void;
-  onConfirm: (result: number) => void;
+  onConfirm: (result: GuidQuestionDto[]) => void;
 }
 
 /**
@@ -197,14 +198,12 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       >
         <Form.Item name="icon" label="图标">
           <UploadAvatar
-            // className={cx(styles['upload-box'])}
             onUploadSuccess={handleUploadSuccess}
             defaultImage={''}
             imageUrl={imageUrl}
-            // svgIconName="icons-workspace-knowledge"
           />
         </Form.Item>
-        <Form.Item name="displayInfo" label="展示信息">
+        <Form.Item name="info" label="展示信息">
           <Input placeholder="这里是问题内容" />
         </Form.Item>
         <Form.Item name="type" label="类型">
@@ -218,9 +217,9 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
           <Form.Item name="question" label="问题">
             <Input placeholder="请输入问题" />
           </Form.Item>
-        ) : type === GuidQuestionSetTypeEnum.Page_Path ? (
+        ) : type === GuidQuestionSetTypeEnum.Page ? (
           <Form.Item
-            name="pagePath"
+            name="pageId"
             label="页面路径（页面组件中已添加的页面下的路径作为可选列表）"
           >
             <SelectList
@@ -231,7 +230,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
           </Form.Item>
         ) : (
           type === GuidQuestionSetTypeEnum.Link && (
-            <Form.Item name="linkUrl" label="链接地址（类型为外链时展示）">
+            <Form.Item name="url" label="链接地址（类型为外链时展示）">
               <Input placeholder="https://xxxxxxx" />
             </Form.Item>
           )

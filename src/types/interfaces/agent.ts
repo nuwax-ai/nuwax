@@ -5,6 +5,8 @@ import type {
   DefaultSelectedEnum,
   DevModeEnum,
   EventBindResponseActionEnum,
+  ExpandPageAreaEnum,
+  HideChatAreaEnum,
   HomeIndexEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
@@ -61,6 +63,30 @@ export interface AgentPublishApplyParams {
   remark: string[];
 }
 
+// 引导问题
+export interface GuidQuestionDto {
+  // 问题类型,可用值:Question,Page,Link
+  type: number;
+  // 问题信息
+  info: string;
+  // 图标
+  icon: string;
+  // 链接地址，type类型为Link时有效
+  url: string;
+  // 页面ID，type类型为Page时有效
+  pageId: number;
+  // 页面基础路径，type类型为Page时有效
+  basePath: string;
+  // 页面路径，type类型为Page时有效
+  pageUri: string;
+  //页面地址，配置更新时不需要传递，type类型为Page时有效，完整的页面地址，前端需要使用 BASE_URL+pageUrl
+  pageUrl: string;
+  // 参数
+  args: BindConfigWithSub[];
+  // 参数值，配置更新时不需要传递，用户点击跳转时直接使用，type类型为Page时有效
+  params: any;
+}
+
 // 更新智能体基础配置信息输入参数
 export interface AgentConfigUpdateParams extends AgentBaseInfo {
   id: number;
@@ -74,10 +100,18 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
   suggestPrompt: string;
   // 首次打开聊天框自动回复消息
   openingChatMsg: string;
-  // 首次打开引导问题
+  // 首次打开引导问题(弃用)
   openingGuidQuestions: string[];
+  // 引导问题
+  guidQuestionDtos: GuidQuestionDto[];
   // 是否开启长期记忆,可用值:Open,Close
   openLongMemory: OpenCloseEnum;
+  // 是否开启定时任务,可用值:Open,Close
+  openScheduledTask: OpenCloseEnum;
+  // 是否默认展开扩展页面区域, 1 展开；0 不展开
+  expandPageArea: ExpandPageAreaEnum;
+  // 是否隐藏聊天区域，1 隐藏；0 不隐藏
+  hideChatArea: HideChatAreaEnum;
 }
 
 // 更新智能体页面配置输入参数
@@ -330,8 +364,10 @@ export interface AgentConfigInfo {
   suggestPrompt: string;
   // 首次打开聊天框自动回复消息
   openingChatMsg: string;
-  // 首次打开引导问题
+  // 首次打开引导问题(弃用)
   openingGuidQuestions: string[];
+  // 引导问题
+  guidQuestionDtos: GuidQuestionDto[];
   // 是否开启长期记忆,可用值:Open,Close
   openLongMemory: OpenCloseEnum;
   // 发布状态,可用值:Developing,Applying,Published,Rejected
@@ -363,9 +399,9 @@ export interface AgentConfigInfo {
   // 权限列表
   permissions?: PermissionsEnum[];
   // 是否默认展开扩展页面区域, 1 展开；0 不展开
-  expandPageArea: number;
+  expandPageArea: ExpandPageAreaEnum;
   // 是否隐藏聊天区域，1 隐藏；0 不隐藏
-  hideChatArea: number;
+  hideChatArea: HideChatAreaEnum;
   // 扩展页面首页
   pageHomeIndex: string;
 }

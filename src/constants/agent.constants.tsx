@@ -219,7 +219,7 @@ export const GUID_QUESTION_SET_OPTIONS = [
     label: '问题引导',
   },
   {
-    value: GuidQuestionSetTypeEnum.Page_Path,
+    value: GuidQuestionSetTypeEnum.Page,
     label: '扩展页面路径',
   },
   {

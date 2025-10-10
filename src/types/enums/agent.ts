@@ -168,12 +168,12 @@ export enum UpdateVariablesTypeEnum {
   Drag = 'Drag',
 }
 
-// 开场白预置问题设置类型
+// 开场白预置问题设置类型(问题类型,可用值:Question,Page,Link)
 export enum GuidQuestionSetTypeEnum {
   // 问题引导
   Question = 'Question',
   // 扩展页面路径
-  Page_Path = 'Page_Path',
+  Page = 'Page',
   // 外链地址
   Link = 'Link',
 }
