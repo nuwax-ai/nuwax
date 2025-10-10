@@ -2,7 +2,7 @@
 @import '@/styles/token';
 
 .header {
-  height: 72px;
+  height: 56px;
   padding: 0 10px;
   gap: 12px;
   border-bottom: 1px solid @WHITE07;
@@ -33,7 +33,7 @@
     font-family: 'Alimama Agile VF';
     font-size: 16px;
     font-weight: normal;
-    line-height: 22px;
+    line-height: 26px;
     letter-spacing: 0;
     font-variation-settings: 'opsz' auto;
     font-feature-settings: 'kern' on;
@@ -42,8 +42,8 @@
   }
 
   .logo {
-    width: 42px;
-    height: 42px;
+    width: 27px;
+    height: 27px;
     border-radius: 5px;
     object-fit: cover;
   }
@@ -54,6 +54,7 @@
     .top-box {
       gap: 10px;
       color: @BLANK04;
+      line-height: 26px;
 
       .name {
         max-width: 150px;
@@ -61,26 +62,26 @@
         font-weight: bold;
       }
 
+      .bottom-box {
+        gap: 8px;
+        font-size: 12px;
+
+        .box {
+          display: inline-block;
+          padding: 0 10px;
+          line-height: 18px;
+          border-radius: 6px;
+          background: @BLANK18;
+          color: @BLANK04;
+        }
+
+        .update-time {
+          color: @GRAY05;
+        }
+      }
+
       .circle {
         color: @GREEN03;
-      }
-    }
-
-    .bottom-box {
-      gap: 8px;
-      font-size: 12px;
-
-      .box {
-        display: inline-block;
-        padding: 0 10px;
-        line-height: 18px;
-        border-radius: 6px;
-        background: @BLANK18;
-        color: @BLANK04;
-      }
-
-      .update-time {
-        color: @GRAY05;
       }
     }
   }
