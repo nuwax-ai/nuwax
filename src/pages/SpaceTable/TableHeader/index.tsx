@@ -32,9 +32,10 @@ const TableHeader: React.FC<TableHeaderProps> = ({
           <EditOutlined
             className="cursor-pointer hover-box"
             onClick={onClick}
+            style={{ fontSize: 16 }}
           />
+          <Tag className={cx(styles['tag-style'])}>{`${total}条记录`}</Tag>
         </div>
-        <Tag className={cx(styles['tag-style'])}>{`${total}条记录`}</Tag>
       </div>
     </header>
   );
