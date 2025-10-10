@@ -790,6 +790,12 @@ const AppDev: React.FC = () => {
         return;
       }
 
+      // 清空当前文件内容，准备加载新文件
+      setFileContent('');
+      setOriginalFileContent('');
+      setIsFileModified(false);
+      setFileContentError(null);
+
       try {
         setIsLoadingFileContent(true);
         setFileContentError(null);
@@ -1944,6 +1950,7 @@ const AppDev: React.FC = () => {
                                 return (
                                   <div className={styles.fileContentDisplay}>
                                     <MonacoEditor
+                                      key={selectedFile}
                                       currentFile={{
                                         id: selectedFile,
                                         name: selectedFile,
@@ -2013,6 +2020,7 @@ const AppDev: React.FC = () => {
                                 return (
                                   <div className={styles.fileContentDisplay}>
                                     <MonacoEditor
+                                      key={selectedFile}
                                       currentFile={{
                                         id: selectedFile,
                                         name: selectedFile,
