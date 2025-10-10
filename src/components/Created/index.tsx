@@ -12,7 +12,7 @@ import { BuildRunningEnum } from '@/types/enums/pageDev';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { CustomPageDto } from '@/types/interfaces/pageDev';
 import { getTime } from '@/utils';
-import { jumpToMcpCreate } from '@/utils/router';
+import { jumpToMcpCreate, jumpToPageDevelop } from '@/utils/router';
 import { getImg } from '@/utils/workflow';
 import {
   PlusOutlined,
@@ -691,12 +691,15 @@ const Created: React.FC<CreatedProp> = ({
     );
   };
 
+  // 点击创建
   const handleClickCreate = (
     selectedKey: AgentComponentTypeEnum,
     spaceId: number,
   ) => {
     if (selectedKey === AgentComponentTypeEnum.MCP) {
       jumpToMcpCreate(spaceId);
+    } else if (selectedKey === AgentComponentTypeEnum.Page) {
+      jumpToPageDevelop(spaceId);
     } else {
       setShowCreate(true);
     }
