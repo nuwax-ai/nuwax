@@ -59,11 +59,13 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
           <EditOutlined
             className={cx('cursor-pointer', 'hover-box')}
             onClick={onEdit}
+            style={{ fontSize: 16 }}
           />
-        </div>
-        <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
-          <span className={cx(styles.box)}>{`${fileSize}`}</span>
-          <span className={cx(styles.box)}>{`${docCount}个文档`}</span>
+
+          <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
+            <span className={cx(styles.box)}>{`${fileSize}`}</span>
+            <span className={cx(styles.box)}>{`${docCount}个文档`}</span>
+          </div>
         </div>
       </section>
       {/* 添加radio.group 放在中间 选项有 文档和QA问答 默认选中文档 */}

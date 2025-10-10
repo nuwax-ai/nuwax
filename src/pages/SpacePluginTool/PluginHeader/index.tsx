@@ -68,9 +68,13 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
           <EditOutlined
             className={cx('cursor-pointer', 'hover-box')}
             onClick={onEdit}
+            style={{ fontSize: 16 }}
           />
           {pluginInfo?.publishStatus === PublishStatusEnum.Published && (
-            <CheckCircleOutlined className={cx(styles.circle)} />
+            <CheckCircleOutlined
+              className={cx(styles.circle)}
+              style={{ fontSize: 16 }}
+            />
           )}
 
           <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
