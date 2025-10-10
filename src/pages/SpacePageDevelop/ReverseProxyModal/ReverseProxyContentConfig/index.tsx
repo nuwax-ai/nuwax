@@ -1,4 +1,4 @@
-import { ReverseProxyEnum } from '@/types/enums/pageDev';
+import { ReverseProxyContentConfigProps } from '@/types/interfaces/pageDev';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { Button, Input, Table } from 'antd';
@@ -8,13 +8,6 @@ import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-/**
- * 反向代理内容配置Props
- */
-interface ReverseProxyContentConfigProps {
-  type: ReverseProxyEnum;
-}
 
 /**
  * 反向代理内容配置

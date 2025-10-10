@@ -1,4 +1,5 @@
 import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { PathParamsConfigModalProps } from '@/types/interfaces/pageDev';
 import {
   CloseOutlined,
   DeleteOutlined,
@@ -13,15 +14,6 @@ import styles from './index.less';
 import PathParamsConfigContent from './PathParamsConfigContent';
 
 const cx = classNames.bind(styles);
-
-/**
- * 路径参数配置弹窗Props
- */
-export interface PathParamsConfigModalProps {
-  spaceId: number;
-  open: boolean;
-  onCancel: () => void;
-}
 
 /**
  * 路径参数配置弹窗

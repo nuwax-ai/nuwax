@@ -1,5 +1,6 @@
 import { REVERSE_PROXY_ACTIONS } from '@/constants/pageDev.constants';
 import { ReverseProxyEnum } from '@/types/enums/pageDev';
+import { ReverseProxyModalProps } from '@/types/interfaces/pageDev';
 import { CloseOutlined } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';
@@ -8,14 +9,6 @@ import styles from './index.less';
 import ReverseProxyContentConfig from './ReverseProxyContentConfig';
 
 const cx = classNames.bind(styles);
-
-/**
- * 反向代理弹窗Props
- */
-interface ReverseProxyModalProps {
-  open: boolean;
-  onCancel: () => void;
-}
 
 /**
  * 反向代理弹窗

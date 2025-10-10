@@ -1,5 +1,10 @@
-import { DataTypeEnum } from '../enums/common';
-import { BuildRunningEnum, PageProjectTypeEnum } from '../enums/pageDev';
+import { CreateUpdateModeEnum, DataTypeEnum } from '../enums/common';
+import {
+  BuildRunningEnum,
+  PageDevelopCreateTypeEnum,
+  PageProjectTypeEnum,
+  ReverseProxyEnum,
+} from '../enums/pageDev';
 import { CreatorInfo } from './agent';
 import { CustomPopoverItem } from './common';
 
@@ -7,6 +12,8 @@ import { CustomPopoverItem } from './common';
 export interface CustomPageDto {
   // 项目ID
   projectId: number;
+  // 项目ID字符串（因为后端接口返回的projectId太大时，精度丢失了）
+  projectIdStr: string;
   // 调试关联智能体ID
   devAgentId?: number;
   // 项目名称
@@ -79,10 +86,22 @@ export interface PageUploadAndStartParams {
 // 在线创建用户前端页面项目参数
 export type CustomPageCreateParams = PageUploadAndStartParams;
 
+// 绑定开发智能体参数
+export interface CustomPageBindDevAgentParams {
+  // 项目ID
+  projectId: number;
+  // 开发智能体ID
+  devAgentId: number;
+  // 空间ID
+  spaceId: number;
+}
+
 // 上传前端项目压缩包并启动开发服务器返回值
 export interface CreateCustomPageInfo {
   // 项目ID
   projectId: number;
+  // 项目ID字符串（因为后端接口返回的projectId太大时，精度丢失了）
+  projectIdStr: string;
   // 开发服务器URL
   devServerUrl: string;
 }
@@ -92,4 +111,60 @@ export interface PageDevelopCardItemProps {
   componentInfo: CustomPageDto | any;
   onClick: () => void;
   onClickMore: (item: CustomPopoverItem) => void;
+}
+
+/**
+ * 调试智能体绑定弹窗Props
+ */
+export interface DebugAgentBindModalProps {
+  spaceId: number;
+  defaultDevAgentId?: number;
+  createCustomPageInfo?: CreateCustomPageInfo | null;
+  open: boolean;
+  onCancel: () => void;
+}
+
+/**
+ * 页面创建弹窗Props
+ */
+export interface PageCreateModalProps {
+  spaceId: number;
+  type: PageDevelopCreateTypeEnum;
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: (info: CreateCustomPageInfo) => void;
+}
+
+/**
+ * 路径参数配置弹窗Props
+ */
+export interface PathParamsConfigModalProps {
+  spaceId: number;
+  open: boolean;
+  onCancel: () => void;
+}
+
+/**
+ * 添加（修改）路径参数弹窗Props
+ */
+export interface AddPathModalProps {
+  mode: CreateUpdateModeEnum;
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+/**
+ * 反向代理弹窗Props
+ */
+export interface ReverseProxyModalProps {
+  open: boolean;
+  onCancel: () => void;
+}
+
+/**
+ * 反向代理内容配置Props
+ */
+export interface ReverseProxyContentConfigProps {
+  type: ReverseProxyEnum;
 }

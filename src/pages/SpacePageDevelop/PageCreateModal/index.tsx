@@ -6,23 +6,15 @@ import {
   apiCustomPageUploadAndStart,
 } from '@/services/pageDev';
 import { PageDevelopCreateTypeEnum } from '@/types/enums/pageDev';
-import { CreateCustomPageInfo } from '@/types/interfaces/pageDev';
+import {
+  CreateCustomPageInfo,
+  PageCreateModalProps,
+} from '@/types/interfaces/pageDev';
 import { customizeRequiredMark } from '@/utils/form';
 import { InboxOutlined } from '@ant-design/icons';
 import { Form, FormProps, Input, message, Upload, UploadProps } from 'antd';
 import React, { useState } from 'react';
 import { useRequest } from 'umi';
-
-/**
- * 页面创建弹窗Props
- */
-export interface PageCreateModalProps {
-  spaceId: number;
-  type: PageDevelopCreateTypeEnum;
-  open: boolean;
-  onCancel: () => void;
-  onConfirm: (info: CreateCustomPageInfo) => void;
-}
 
 const { Dragger } = Upload;
 

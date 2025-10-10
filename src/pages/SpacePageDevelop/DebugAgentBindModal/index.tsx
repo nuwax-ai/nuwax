@@ -1,33 +1,24 @@
 import SelectList from '@/components/custom/SelectList';
 import CustomFormModal from '@/components/CustomFormModal';
 import { apiAgentConfigList } from '@/services/agentConfig';
+import { apiCustomPageBindDevAgent } from '@/services/pageDev';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { option } from '@/types/interfaces/common';
-import { CreateCustomPageInfo } from '@/types/interfaces/pageDev';
+import { DebugAgentBindModalProps } from '@/types/interfaces/pageDev';
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, FormProps } from 'antd';
+import { Button, Form, FormProps, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
-
-interface DebugAgentBindModalProps {
-  spaceId: number;
-  devAgentId?: number;
-  createCustomPageInfo?: CreateCustomPageInfo | null;
-  open: boolean;
-  onCancel: () => void;
-  onConfirm: (result: number) => void;
-}
 
 /**
  * 调试智能体绑定弹窗
  */
 const DebugAgentBindModal: React.FC<DebugAgentBindModalProps> = ({
   spaceId,
-  devAgentId,
+  defaultDevAgentId,
   createCustomPageInfo,
   open,
   onCancel,
-  onConfirm,
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(false);
@@ -46,27 +37,51 @@ const DebugAgentBindModal: React.FC<DebugAgentBindModalProps> = ({
         })) || [];
       setAgentList(list);
       // 如果调试智能体ID存在，则设置默认值
-      if (devAgentId) {
+      if (defaultDevAgentId) {
         form.setFieldsValue({
-          name: devAgentId,
+          devAgentId: defaultDevAgentId,
         });
       }
     },
   });
 
+  // 绑定开发智能体
+  const { run: runCustomPageBindDevAgent } = useRequest(
+    apiCustomPageBindDevAgent,
+    {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: () => {
+        message.success('绑定成功');
+        setLoading(false);
+        // 关闭弹窗
+        onCancel();
+        // 选择调试智能体后，跳转到开发页面
+        history.push(
+          `/app-dev?projectId=${createCustomPageInfo?.projectIdStr}`,
+        );
+      },
+      onError: () => {
+        message.error('绑定失败');
+        setLoading(false);
+      },
+    },
+  );
+
   useEffect(() => {
     if (open) {
       runAgentList(spaceId);
     }
-  }, [open, devAgentId, spaceId]);
+  }, [open, spaceId]);
 
+  // 调试智能体绑定
   const onFinish: FormProps<any>['onFinish'] = (values) => {
-    console.log('onFinish', values);
     setLoading(true);
-    // todo: 选择调试智能体后，跳转到开发页面
-    console.log('createCustomPageInfo', createCustomPageInfo);
-    onConfirm?.(values.name);
-    setLoading(false);
+    runCustomPageBindDevAgent({
+      projectId: createCustomPageInfo?.projectIdStr,
+      spaceId,
+      ...values,
+    });
   };
 
   const handlerSubmit = () => {
@@ -94,18 +109,23 @@ const DebugAgentBindModal: React.FC<DebugAgentBindModalProps> = ({
         preserve={false}
         autoComplete="off"
       >
-        <Form.Item name="name">
+        <Form.Item
+          name="devAgentId"
+          rules={[{ required: true, message: '请选择一个用于调试的智能体' }]}
+        >
           <SelectList
             placeholder="请选择一个用于调试的智能体"
             options={agentList}
             dropdownRenderComponent={
-              <Button
-                type="primary"
-                onClick={handleCreateAgent}
-                icon={<PlusOutlined />}
-              >
-                创建智能体
-              </Button>
+              <div className="px-16 py-16">
+                <Button
+                  type="primary"
+                  onClick={handleCreateAgent}
+                  icon={<PlusOutlined />}
+                >
+                  创建智能体
+                </Button>
+              </div>
             }
           />
         </Form.Item>

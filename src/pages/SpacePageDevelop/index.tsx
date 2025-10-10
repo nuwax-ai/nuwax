@@ -189,6 +189,7 @@ const SpacePageDevelop: React.FC = () => {
       setCreateCustomPageInfo({
         devServerUrl: '',
         projectId: item.projectId,
+        projectIdStr: item.projectIdStr,
       });
       setOpenDebugAgentBindModel(true);
     }
@@ -315,12 +316,11 @@ const SpacePageDevelop: React.FC = () => {
       />
       {/* 调试智能体绑定弹窗 */}
       <DebugAgentBindModel
-        devAgentId={currentPageInfo?.devAgentId}
+        spaceId={spaceId}
+        defaultDevAgentId={currentPageInfo?.devAgentId}
         createCustomPageInfo={createCustomPageInfo}
         open={openDebugAgentBindModel}
         onCancel={() => setOpenDebugAgentBindModel(false)}
-        onConfirm={() => setOpenDebugAgentBindModel(false)}
-        spaceId={spaceId}
       />
       {/* 路径参数配置弹窗 */}
       <PathParamsConfigModal

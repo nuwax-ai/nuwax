@@ -1,18 +1,9 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { AddPathModalProps } from '@/types/interfaces/pageDev';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input } from 'antd';
 import React from 'react';
-
-/**
- * 添加（修改）路径参数弹窗Props
- */
-export interface AddPathModalProps {
-  mode: CreateUpdateModeEnum;
-  open: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}
 
 /**
  * 添加（修改）路径参数弹窗

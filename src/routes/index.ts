@@ -30,6 +30,7 @@ const routes = [
       { path: '/agent/:agentId', component: '@/pages/AgentDetails' },
       { path: '/space', component: '@/pages/Space' },
       { path: '/space/:spaceId/develop', component: '@/pages/SpaceDevelop' },
+      // 页面开发
       {
         path: '/space/:spaceId/page-develop',
         component: '@/pages/SpacePageDevelop',
