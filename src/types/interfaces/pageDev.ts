@@ -157,7 +157,6 @@ export interface PageCreateModalProps {
  * 路径参数配置弹窗Props
  */
 export interface PathParamsConfigModalProps {
-  spaceId: number;
   defaultPageArgConfigs?: PageArgConfig[];
   open: boolean;
   onCancel: () => void;

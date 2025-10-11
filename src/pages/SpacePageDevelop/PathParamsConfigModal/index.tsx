@@ -19,7 +19,6 @@ const cx = classNames.bind(styles);
  * 路径参数配置弹窗
  */
 const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
-  spaceId,
   open,
   defaultPageArgConfigs,
   onCancel,
@@ -32,10 +31,9 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
   const [addPathModalOpen, setAddPathModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    console.log('spaceId', spaceId);
     setPathParams(defaultPageArgConfigs || []);
     setKey('');
-  }, []);
+  }, [defaultPageArgConfigs]);
 
   const handleDel = (key: string) => {
     setPathParams(pathParams.filter((item) => item.key !== key));

@@ -230,6 +230,7 @@ const SpacePageDevelop: React.FC = () => {
   // 取消反向代理
   const handleCancelReverseProxy = () => {
     setOpenReverseProxyModal(false);
+    setProxyConfigs([]);
     // 重新查询页面列表
     runPageList(spaceId);
   };
@@ -333,7 +334,6 @@ const SpacePageDevelop: React.FC = () => {
       />
       {/* 路径参数配置弹窗 */}
       <PathParamsConfigModal
-        spaceId={spaceId}
         defaultPageArgConfigs={pageArgConfigs}
         open={openPathParamsConfigModal}
         onCancel={() => setOpenPathParamsConfigModal(false)}
