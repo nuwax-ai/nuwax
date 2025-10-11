@@ -12,7 +12,6 @@ import type {
   DevServerInfo,
   GetProjectContentResponse,
   PageFileInfo,
-  StopAgentResponse,
   SubmitFilesResponse,
   UploadAndStartProjectParams,
 } from '@/types/interfaces/appDev';
@@ -240,7 +239,7 @@ export const submitFilesUpdate = async (
 // ==================== AI聊天API服务 ====================
 
 /**
- * 发送聊天消息
+ * 发送聊天消息 - 基于新的 OpenAPI 规范
  * @param chatRequest 聊天请求参数
  * @returns Promise<ChatResponse> 聊天响应
  */
@@ -253,8 +252,13 @@ export const sendChatMessage = async (
     request_id:
       chatRequest.request_id ||
       `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    // 添加 user_id 字段，因为服务器可能需要这个字段来生成 session_id
+    user_id: 'app-dev-user',
   };
 
+  console.log('📤 [Service] 发送聊天请求:', requestData);
+
+  // 使用新的 /chat 接口
   return request('/api/custom-page/ai-chat', {
     method: 'POST',
     data: requestData,
@@ -262,7 +266,7 @@ export const sendChatMessage = async (
 };
 
 /**
- * 取消Agent任务
+ * 取消Agent任务 - 基于新的 OpenAPI 规范
  * @param projectId 项目ID
  * @param sessionId 会话ID
  * @returns Promise<CancelResponse> 取消结果
@@ -272,7 +276,7 @@ export const cancelAgentTask = async (
   sessionId: string,
 ): Promise<CancelResponse> => {
   return request(
-    `/api/agent/session/cancel?project_id=${encodeURIComponent(
+    `/api/custom-page/ai-session-cancel?project_id=${encodeURIComponent(
       projectId,
     )}&session_id=${encodeURIComponent(sessionId)}`,
     {
@@ -282,17 +286,42 @@ export const cancelAgentTask = async (
 };
 
 /**
- * 停止Agent服务
+ * 删除文件或文件夹
  * @param projectId 项目ID
- * @returns Promise<StopAgentResponse> 停止结果
+ * @param filePath 文件路径
+ * @returns Promise<any> 删除结果
  */
-export const stopAgentService = async (
+export const deleteFile = async (
   projectId: string,
-): Promise<StopAgentResponse> => {
-  return request(
-    `/api/agent/stop?project_id=${encodeURIComponent(projectId)}`,
-    {
-      method: 'POST',
+  filePath: string,
+): Promise<any> => {
+  return request('/api/custom-page/delete-file', {
+    method: 'POST',
+    data: {
+      projectId,
+      filePath,
     },
-  );
+  });
+};
+
+/**
+ * 重命名文件或文件夹
+ * @param projectId 项目ID
+ * @param oldPath 原文件路径
+ * @param newPath 新文件路径
+ * @returns Promise<any> 重命名结果
+ */
+export const renameFile = async (
+  projectId: string,
+  oldPath: string,
+  newPath: string,
+): Promise<any> => {
+  return request('/api/custom-page/rename-file', {
+    method: 'POST',
+    data: {
+      projectId,
+      oldPath,
+      newPath,
+    },
+  });
 };

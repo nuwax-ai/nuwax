@@ -113,12 +113,15 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
    */
   const initializeSSEManager = useCallback(
     (sessionId: string) => {
+      console.log('🔧 [SSE] 初始化 SSE 管理器，sessionId:', sessionId);
+
       if (sseManager) {
+        console.log('🔄 [SSE] 销毁现有的 SSE 管理器');
         sseManager.destroy();
       }
 
       const newSseManager = createSSEManager({
-        baseUrl: 'http://localhost:8000',
+        baseUrl: 'http://localhost:3000', // 使用新的 API 服务器地址
         sessionId,
         onMessage: handleSSEMessage,
         onError: (error) => {
@@ -134,7 +137,11 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
       });
 
       setSseManager(newSseManager);
-      newSseManager.connect();
+      console.log('🚀 [SSE] 开始连接 SSE');
+      // connect 现在是异步方法
+      newSseManager.connect().catch((error) => {
+        console.error('❌ [SSE] 连接失败:', error);
+      });
 
       return newSseManager;
     },
@@ -160,27 +167,56 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
     setIsChatLoading(true);
 
     try {
-      let sessionId = currentSessionId;
-      if (!sessionId) {
-        sessionId = `${
-          CHAT_CONSTANTS.SESSION_ID_PREFIX
-        }${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-        setCurrentSessionId(sessionId);
-      }
-
+      // 第一次发送消息时不传递 session_id，让服务器生成
       const response = await sendChatMessage({
-        user_id: CHAT_CONSTANTS.DEFAULT_USER_ID,
         prompt: inputText,
         project_id: projectId || undefined,
-        session_id: sessionId,
+        session_id: currentSessionId || undefined, // 第一次为 undefined，后续使用返回的 session_id
         request_id: `${
           CHAT_CONSTANTS.REQUEST_ID_PREFIX
         }${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
       });
 
+      console.log('📨 [Chat] 完整服务器响应:', response);
+      console.log('📨 [Chat] response.success:', response.success);
+      console.log('📨 [Chat] response.data:', response.data);
+      console.log(
+        '📨 [Chat] response.data?.session_id:',
+        response.data?.session_id,
+      );
+
       if (response.success && response.data) {
-        initializeSSEManager(response.data.session_id);
+        // 使用服务器返回的 session_id，如果没有则使用客户端生成的
+        let serverSessionId = response.data.session_id;
+
+        // 如果服务器没有返回 session_id，使用客户端生成的
+        if (!serverSessionId) {
+          console.warn('⚠️ [Chat] 服务器没有返回 session_id，使用客户端生成的');
+          serverSessionId = `${
+            CHAT_CONSTANTS.SESSION_ID_PREFIX
+          }${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        }
+
+        console.log('📨 [Chat] 最终使用的 session_id:', serverSessionId);
+        console.log('📨 [Chat] response.data 内容:', response.data);
+
+        // 如果是第一次发送消息，保存 session_id
+        if (!currentSessionId) {
+          console.log('💾 [Chat] 保存新的 session_id:', serverSessionId);
+          setCurrentSessionId(serverSessionId);
+        }
+
+        // 建立 SSE 连接
+        console.log(
+          '🔌 [Chat] 准备建立 SSE 连接，session_id:',
+          serverSessionId,
+        );
+        initializeSSEManager(serverSessionId);
       } else {
+        console.error('❌ [Chat] 请求失败:', response);
+        console.error('❌ [Chat] response.success:', response.success);
+        console.error('❌ [Chat] response.data:', response.data);
+        console.error('❌ [Chat] response.message:', response.message);
         throw new Error(response.message || '发送消息失败');
       }
     } catch (error) {

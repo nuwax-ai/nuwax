@@ -156,10 +156,56 @@ export interface SubmitFilesParams {
  */
 export type SubmitFilesResponse = RequestResponse<Record<string, any>>;
 
+// ==================== 文件操作相关类型定义 ====================
+
+/**
+ * 删除文件请求参数接口
+ */
+export interface DeleteFileParams {
+  /** 项目ID */
+  projectId: string;
+  /** 文件路径 */
+  filePath: string;
+}
+
+/**
+ * 重命名文件请求参数接口
+ */
+export interface RenameFileParams {
+  /** 项目ID */
+  projectId: string;
+  /** 原文件路径 */
+  oldPath: string;
+  /** 新文件路径 */
+  newPath: string;
+}
+
+/**
+ * 文件操作结果接口
+ */
+export interface FileOperationResult {
+  /** 操作是否成功 */
+  success: boolean;
+  /** 操作消息 */
+  message: string;
+  /** 操作的文件路径 */
+  filePath?: string;
+}
+
+/**
+ * 删除文件API响应类型
+ */
+export type DeleteFileResponse = RequestResponse<FileOperationResult>;
+
+/**
+ * 重命名文件API响应类型
+ */
+export type RenameFileResponse = RequestResponse<FileOperationResult>;
+
 // ==================== AI聊天相关类型定义 ====================
 
 /**
- * 附件数据源类型
+ * 附件数据源类型 - 基于 OpenAPI 规范
  */
 export interface AttachmentSource {
   source_type: 'FilePath' | 'Base64' | 'Url';
@@ -172,7 +218,7 @@ export interface AttachmentSource {
 }
 
 /**
- * 文本附件
+ * 文本附件 - 基于 OpenAPI 规范
  */
 export interface TextAttachment {
   id: string;
@@ -182,7 +228,7 @@ export interface TextAttachment {
 }
 
 /**
- * 图像尺寸信息
+ * 图像尺寸信息 - 基于 OpenAPI 规范
  */
 export interface ImageDimensions {
   width: number;
@@ -190,7 +236,7 @@ export interface ImageDimensions {
 }
 
 /**
- * 图像附件
+ * 图像附件 - 基于 OpenAPI 规范
  */
 export interface ImageAttachment {
   id: string;
@@ -202,7 +248,7 @@ export interface ImageAttachment {
 }
 
 /**
- * 音频附件
+ * 音频附件 - 基于 OpenAPI 规范
  */
 export interface AudioAttachment {
   id: string;
@@ -214,7 +260,7 @@ export interface AudioAttachment {
 }
 
 /**
- * 文档附件
+ * 文档附件 - 基于 OpenAPI 规范
  */
 export interface DocumentAttachment {
   id: string;
@@ -226,7 +272,7 @@ export interface DocumentAttachment {
 }
 
 /**
- * 附件类型
+ * 附件类型 - 基于 OpenAPI 规范
  */
 export type Attachment =
   | {
@@ -247,7 +293,7 @@ export type Attachment =
     };
 
 /**
- * 模型提供商配置
+ * 模型提供商配置 - 基于 OpenAPI 规范
  */
 export interface ModelProviderConfig {
   id: string;
@@ -260,15 +306,15 @@ export interface ModelProviderConfig {
 }
 
 /**
- * 聊天请求参数
+ * 聊天请求参数 - 基于 OpenAPI 规范
  */
 export interface ChatRequest {
-  user_id: string;
   prompt: string;
   project_id?: string;
   session_id?: string;
   request_id?: string;
   attachments?: Attachment[];
+  data_source_attachments?: string[]; // 数据源附件列表 - JSON 字符串数组
   model_provider?: ModelProviderConfig;
 }
 
