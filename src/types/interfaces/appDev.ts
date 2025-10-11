@@ -79,6 +79,31 @@ export interface BuildInfo {
 }
 
 /**
+ * 前端项目构建请求体
+ */
+export interface CustomBuildReq {
+  /** 项目ID */
+  projectId: number;
+}
+
+/**
+ * 前端项目构建响应体
+ */
+export interface CustomBuildRes {
+  /** 项目ID */
+  projectId: number;
+  /** 开发服务器URL */
+  devServerUrl: string;
+  /** 线上服务器URL */
+  prodServerUrl: string;
+}
+
+/**
+ * 构建API响应类型
+ */
+export type BuildResponse = RequestResponse<CustomBuildRes>;
+
+/**
  * 创建项目参数接口
  */
 export interface CreateProjectParams {

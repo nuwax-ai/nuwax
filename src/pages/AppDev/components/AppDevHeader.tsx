@@ -1,7 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { jumpBack } from '@/utils/router';
-import { UserOutlined } from '@ant-design/icons';
-import { Avatar, Button, Tag } from 'antd';
+import { RocketOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar, Button, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -19,6 +19,7 @@ export interface AppDevHeaderProps {
   onDeployProject?: () => void;
   hasUpdates?: boolean;
   lastSaveTime?: Date;
+  isDeploying?: boolean;
 }
 
 /**
@@ -32,6 +33,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   onDeployProject,
   hasUpdates = true,
   lastSaveTime = new Date(),
+  isDeploying = false,
 }) => {
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
@@ -90,14 +92,25 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
           >
             删除
           </Button>
-          <Button
-            type="primary"
-            size="small"
-            className={styles.deployButton}
-            onClick={onDeployProject}
+          <Tooltip
+            title={
+              isDeploying
+                ? '正在部署项目...'
+                : '部署项目到生产环境 (Ctrl/Cmd + D)'
+            }
           >
-            部署
-          </Button>
+            <Button
+              type="primary"
+              size="small"
+              className={styles.deployButton}
+              onClick={onDeployProject}
+              loading={isDeploying}
+              disabled={isDeploying}
+              icon={isDeploying ? undefined : <RocketOutlined />}
+            >
+              {isDeploying ? '部署中...' : '部署'}
+            </Button>
+          </Tooltip>
         </div>
       </div>
     </header>

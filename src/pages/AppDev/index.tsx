@@ -3,7 +3,7 @@ import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { getProjectIdFromUrl } from '@/models/appDev';
-import { uploadAndStartProject } from '@/services/appDev';
+import { buildProject, uploadAndStartProject } from '@/services/appDev';
 import { getLanguageFromFile, isImageFile } from '@/utils/appDevUtils';
 import {
   CheckOutlined,
@@ -81,6 +81,9 @@ const AppDev: React.FC = () => {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [projectName, setProjectName] = useState('');
 
+  // 部署相关状态
+  const [isDeploying, setIsDeploying] = useState(false);
+
   // 单文件上传状态
   const [isSingleFileUploadModalVisible, setIsSingleFileUploadModalVisible] =
     useState(false);
@@ -138,6 +141,76 @@ const AppDev: React.FC = () => {
   }, []);
 
   /**
+   * 处理项目部署
+   */
+  const handleDeployProject = useCallback(async () => {
+    if (!workspace.projectId) {
+      message.error('项目ID不存在，无法部署');
+      return;
+    }
+
+    try {
+      setIsDeploying(true);
+      console.log('🚀 [AppDev] 开始部署项目:', workspace.projectId);
+
+      const result = await buildProject(Number(workspace.projectId));
+
+      if (result?.success && result?.data) {
+        const { devServerUrl, prodServerUrl } = result.data;
+
+        message.success('项目部署成功！');
+
+        // 显示部署结果
+        Modal.success({
+          title: '部署成功',
+          content: (
+            <div>
+              <p>项目已成功构建并发布！</p>
+              {devServerUrl && (
+                <p>
+                  <strong>开发环境：</strong>
+                  <a
+                    href={devServerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {devServerUrl}
+                  </a>
+                </p>
+              )}
+              {prodServerUrl && (
+                <p>
+                  <strong>生产环境：</strong>
+                  <a
+                    href={prodServerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {prodServerUrl}
+                  </a>
+                </p>
+              )}
+            </div>
+          ),
+          width: 500,
+        });
+      } else {
+        throw new Error(result?.message || '部署失败');
+      }
+    } catch (error: any) {
+      console.error('❌ [AppDev] 部署失败:', error);
+      message.error(`部署失败: ${error.message || '未知错误'}`);
+
+      Modal.error({
+        title: '部署失败',
+        content: error.message || '部署过程中发生未知错误，请稍后重试。',
+      });
+    } finally {
+      setIsDeploying(false);
+    }
+  }, [workspace.projectId]);
+
+  /**
    * 键盘快捷键处理
    */
   useEffect(() => {
@@ -162,6 +235,14 @@ const AppDev: React.FC = () => {
           console.log('开发服务器重启功能已禁用');
         }
       }
+
+      // Ctrl/Cmd + D 部署项目
+      if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
+        event.preventDefault();
+        if (workspace.projectId && !isDeploying) {
+          handleDeployProject();
+        }
+      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -172,6 +253,8 @@ const AppDev: React.FC = () => {
     fileManagement.saveFile,
     workspace.projectId,
     isServiceRunning,
+    isDeploying,
+    handleDeployProject,
   ]);
 
   /**
@@ -570,12 +653,10 @@ const AppDev: React.FC = () => {
             // TODO: 实现删除项目功能
             console.log('删除项目');
           }}
-          onDeployProject={() => {
-            // TODO: 实现部署项目功能
-            console.log('部署项目');
-          }}
+          onDeployProject={handleDeployProject}
           hasUpdates={true}
           lastSaveTime={new Date()}
+          isDeploying={isDeploying}
         />
 
         {/* 主布局 - 左右分栏 */}

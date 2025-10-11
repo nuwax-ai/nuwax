@@ -4,6 +4,7 @@
  */
 
 import type {
+  BuildResponse,
   CancelResponse,
   ChatRequest,
   ChatResponse,
@@ -79,9 +80,11 @@ export const restartDev = async (projectId: string): Promise<any> => {
 /**
  * 构建并发布前端项目
  * @param projectId 项目ID
- * @returns Promise<any> 构建结果
+ * @returns Promise<BuildResponse> 构建结果
  */
-export const buildProject = async (projectId: string): Promise<any> => {
+export const buildProject = async (
+  projectId: number,
+): Promise<BuildResponse> => {
   return request('/api/custom-page/build', {
     method: 'POST',
     data: {

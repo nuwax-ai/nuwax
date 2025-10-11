@@ -14,7 +14,7 @@ alwaysApply: false
 - **UI 组件库**: Ant Design 5.x + ProComponents
 - **图形引擎**: AntV X6 (流程图、图可视化)
 - **框架工具**: UmiJS Max 4.x (约定式路由、插件体系)
-- **状态管理**: UmiJS 内置 model 或 Zustand
+- **状态管理**: UmiJS 内置 model (主要方案)
 - **类型检查**: TypeScript 5.x
 - **样式方案**: CSS Modules + Less (禁止全局污染)
 - **包管理**: pnpm (Node.js > 18.0.0)
@@ -77,20 +77,81 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, editable = false, onS
 }
 ```
 
-## 项目结构规范
+## AppDev Web IDE 开发规范
+
+### 文件结构规范
+- **页面组件**: `pages/AppDev/components/` 目录下
+- **自定义 Hooks**: `hooks/useAppDev*.ts` 命名规范
+- **状态管理**: 使用 `models/appDev.ts` 中的 `useAppDevStore`
+- **API 服务**: `services/appDev.ts` 统一管理
+
+### 核心 Hooks 使用
+```typescript
+// 文件管理
+const fileManagement = useAppDevFileManagement({
+  projectId: workspace.projectId,
+  onFileSelect: setActiveFile,
+  onFileContentChange: updateFileContent,
+});
+
+// AI 聊天
+const chat = useAppDevChat({
+  projectId: workspace.projectId,
+  onMessage: handleMessage,
+});
+
+// 开发服务器
+const server = useAppDevServer({
+  projectId: workspace.projectId,
+  onStatusChange: handleServerStatus,
+});
+```
+
+### 组件开发规范
+- **Monaco Editor**: 使用 `pages/AppDev/components/MonacoEditor/`
+- **文件树**: 使用 `pages/AppDev/components/FileTree/`
+- **预览组件**: 使用 `pages/AppDev/components/Preview/`
+- **页面头部**: 使用 `pages/AppDev/components/AppDevHeader.tsx`
+
+### SSE 通信规范
+- 使用 `utils/sseManager.ts` 管理连接
+- 消息类型定义在 `types/interfaces/appDev.ts`
+- 错误处理和重连机制必须实现
+- 心跳检测间隔 30 秒
 
 ```
 src/
-├── components/          # 通用组件
+├── components/          # 通用组件库
 │   ├── base/           # 基础组件
 │   ├── business-component/ # 业务组件
 │   └── custom/         # 自定义组件
 ├── pages/              # 页面组件
-├── models/             # 状态管理
-├── services/           # API服务
-├── hooks/              # 自定义Hooks
+│   ├── AppDev/         # 应用开发页面
+│   │   ├── components/  # AppDev 专用组件
+│   │   │   ├── FileTree/    # 文件树组件
+│   │   │   ├── MonacoEditor/# Monaco 编辑器组件
+│   │   │   ├── Preview/     # 预览组件
+│   │   │   └── AppDevHeader.tsx # 页面头部组件
+│   │   ├── index.tsx   # 主页面
+│   │   └── index.less  # 页面样式
+│   └── ...             # 其他页面
+├── hooks/              # 自定义 Hooks
+│   ├── useAppDevChat.ts      # AI 聊天功能
+│   ├── useAppDevFileManagement.ts # 文件管理
+│   ├── useAppDevServer.ts    # 开发服务器管理
+│   └── ...             # 其他业务 Hooks
+├── models/             # 数据模型和状态管理
+│   └── appDev.ts       # 应用开发相关状态
+├── services/           # API 服务层
+│   ├── appDev.ts       # 应用开发相关 API
+│   └── ...             # 其他业务 API
+├── types/              # TypeScript 类型定义
+│   ├── interfaces/     # 接口类型定义
+│   └── ...             # 其他类型定义
 ├── utils/              # 工具函数
-├── types/              # 类型定义
+│   ├── monacoConfig.ts # Monaco Editor 配置
+│   ├── sseManager.ts   # SSE 连接管理
+│   └── ...             # 其他工具函数
 ├── constants/          # 常量定义
 ├── styles/             # 全局样式
 └── examples/           # 功能演示页面

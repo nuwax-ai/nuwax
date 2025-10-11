@@ -1,4 +1,5 @@
 {
+  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
       "Bash(npm run build:dev:*)",
@@ -6,7 +7,13 @@
       "Bash(rg:*)",
       "Bash(git add:*)",
       "Bash(git reset:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(tree:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(timeout:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(git stash pop:*)"
     ],
     "deny": [],
     "ask": []
