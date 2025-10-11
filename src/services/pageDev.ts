@@ -2,8 +2,8 @@ import type { BuildRunningEnum } from '@/types/enums/pageDev';
 import type {
   CreateCustomPageInfo,
   CustomPageBindDevAgentParams,
-  CustomPageCreateParams,
   CustomPageDto,
+  PageBatchConfigProxyParams,
   PageUploadAndStartParams,
 } from '@/types/interfaces/pageDev';
 import type { RequestResponse } from '@/types/interfaces/request';
@@ -21,9 +21,19 @@ export async function apiCustomPageUploadAndStart(
 
 // 创建用户前端页面项目
 export async function apiCustomPageCreate(
-  data: CustomPageCreateParams,
+  data: PageUploadAndStartParams,
 ): Promise<RequestResponse<CreateCustomPageInfo>> {
   return request('/api/custom-page/create', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 创建反向代理项目
+export async function apiCustomPageCreateReverseProxy(
+  data: PageUploadAndStartParams,
+): Promise<RequestResponse<CreateCustomPageInfo>> {
+  return request('/api/custom-page/create-reverse-proxy', {
     method: 'POST',
     data,
   });
@@ -48,6 +58,16 @@ export async function apiCustomPageBindDevAgent(
   data: CustomPageBindDevAgentParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/custom-page/bind-dev-agent', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 配置反向代理
+export async function apiPageBatchConfigProxy(
+  data: PageBatchConfigProxyParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/custom-page/batch-config-proxy', {
     method: 'POST',
     data,
   });

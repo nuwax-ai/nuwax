@@ -18,6 +18,8 @@ import type { CustomPopoverItem } from '@/types/interfaces/common';
 import {
   CreateCustomPageInfo,
   CustomPageDto,
+  PageArgConfig,
+  ProxyConfig,
 } from '@/types/interfaces/pageDev';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Empty, Input, Row, Space } from 'antd';
@@ -74,9 +76,12 @@ const SpacePageDevelop: React.FC = () => {
   const [currentPageInfo, setCurrentPageInfo] = useState<CustomPageDto | null>(
     null,
   );
-  // 创建页面响应信息
-  const [createCustomPageInfo, setCreateCustomPageInfo] =
-    useState<CreateCustomPageInfo | null>(null);
+  // 当前项目ID
+  const [projectId, setProjectId] = useState<string>('');
+  // 当前反向代理配置
+  const [proxyConfigs, setProxyConfigs] = useState<ProxyConfig[]>([]);
+  // 当前页面参数配置
+  const [pageArgConfigs, setPageArgConfigs] = useState<PageArgConfig[]>([]);
   // 获取用户信息
   // const { userInfo } = useModel('userInfo');
 
@@ -163,7 +168,7 @@ const SpacePageDevelop: React.FC = () => {
    */
   const handleConfirmCreatePage = (result: CreateCustomPageInfo) => {
     console.log('handleConfirmCreatePage', result);
-    setCreateCustomPageInfo(result);
+    setProjectId(result.projectIdStr);
     // 关闭表单弹窗
     setOpenPageCreateModal(false);
     switch (pageCreateTypeRef.current) {
@@ -182,15 +187,14 @@ const SpacePageDevelop: React.FC = () => {
 
   // 点击卡片
   const handleClickCard = (item: CustomPageDto) => {
+    setProjectId(item.projectIdStr);
+    setProxyConfigs(item.proxyConfigs || []);
+    setPageArgConfigs(item.pageArgConfigs || []);
     setCurrentPageInfo(item);
     console.log('点击卡片', item);
     // todo: 根据页面类型（页面创建模式）导入项目、在线创建，判断是否需要打开调试智能体绑定弹窗，反向代理，打开路径参数配置弹窗
     if (item.projectType === PageProjectTypeEnum.ONLINE_DEPLOY) {
-      setCreateCustomPageInfo({
-        devServerUrl: '',
-        projectId: item.projectId,
-        projectIdStr: item.projectIdStr,
-      });
+      setProjectId(item.projectIdStr);
       setOpenDebugAgentBindModel(true);
     }
     // 反向代理
@@ -200,7 +204,11 @@ const SpacePageDevelop: React.FC = () => {
   };
 
   // 点击更多操作
-  const handleClickMore = (item: CustomPopoverItem) => {
+  const handleClickMore = (item: CustomPopoverItem, info: CustomPageDto) => {
+    setProjectId(info.projectIdStr);
+    setProxyConfigs(info.proxyConfigs || []);
+    setPageArgConfigs(info.pageArgConfigs || []);
+    setCurrentPageInfo(info);
     const { value } = item;
     switch (value) {
       // 反向代理配置
@@ -213,7 +221,8 @@ const SpacePageDevelop: React.FC = () => {
         break;
       // 页面预览
       case PageDevelopMoreActionEnum.Page_Preview:
-        // 进入开发页面
+        // iframe打开页面预览
+        // window.open(info.basePath, '_blank');
         break;
     }
   };
@@ -221,10 +230,8 @@ const SpacePageDevelop: React.FC = () => {
   // 取消反向代理
   const handleCancelReverseProxy = () => {
     setOpenReverseProxyModal(false);
-    // 如果是在创建页面，则重新查询页面列表
-    if (pageCreateTypeRef.current === PageDevelopCreateTypeEnum.Reverse_Proxy) {
-      runPageList(spaceId);
-    }
+    // 重新查询页面列表
+    runPageList(spaceId);
   };
 
   return (
@@ -300,7 +307,7 @@ const SpacePageDevelop: React.FC = () => {
               key={info.projectId}
               componentInfo={info}
               onClick={() => handleClickCard(info)}
-              onClickMore={handleClickMore}
+              onClickMore={(item) => handleClickMore(item, info)}
             />
           ))}
         </div>
@@ -312,19 +319,22 @@ const SpacePageDevelop: React.FC = () => {
       {/* 反向代理弹窗 */}
       <ReverseProxyModal
         open={openReverseProxyModal}
+        projectId={projectId}
+        defaultProxyConfigs={proxyConfigs}
         onCancel={handleCancelReverseProxy}
       />
       {/* 调试智能体绑定弹窗 */}
       <DebugAgentBindModel
         spaceId={spaceId}
         defaultDevAgentId={currentPageInfo?.devAgentId}
-        createCustomPageInfo={createCustomPageInfo}
+        projectId={projectId}
         open={openDebugAgentBindModel}
         onCancel={() => setOpenDebugAgentBindModel(false)}
       />
       {/* 路径参数配置弹窗 */}
       <PathParamsConfigModal
         spaceId={spaceId}
+        defaultPageArgConfigs={pageArgConfigs}
         open={openPathParamsConfigModal}
         onCancel={() => setOpenPathParamsConfigModal(false)}
       />

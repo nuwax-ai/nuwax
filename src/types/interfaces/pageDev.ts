@@ -5,8 +5,39 @@ import {
   PageProjectTypeEnum,
   ReverseProxyEnum,
 } from '../enums/pageDev';
-import { CreatorInfo } from './agent';
 import { CustomPopoverItem } from './common';
+
+/**
+ * 反向代理配置
+ */
+export interface ProxyConfig {
+  // 唯一标识
+  key: string;
+  // 可用值:dev,prod
+  env: ReverseProxyEnum;
+  path: string;
+  backends: {
+    backend: string;
+    weight: number;
+  }[];
+  healthCheckPath: string;
+  requireAuth: boolean;
+}
+
+// 页面参数配置
+export interface PageArgConfig {
+  pageUri: string;
+  name: string;
+  description: string;
+  args: {
+    key: string;
+    name: string;
+    description: string;
+    // 可用值:String,Integer,Number,Boolean,Object,Array_String,Array_Integer,Array_Number,Array_Boolean,Array_Object
+    dataType: DataTypeEnum;
+    require: boolean;
+  }[];
+}
 
 // 自定义页面项目信息
 export interface CustomPageDto {
@@ -29,42 +60,25 @@ export interface CustomPageDto {
   // 项目类型,可用值:REVERSE_PROXY,ONLINE_DEPLOY
   projectType: PageProjectTypeEnum;
   // 代理配置
-  proxyConfigs: {
-    // 可用值:dev,prod
-    env: string;
-    path: string;
-    backends: {
-      backend: string;
-      weight: number;
-    }[];
-    healthCheckPath: string;
-    requireAuth: boolean;
-  };
+  proxyConfigs: ProxyConfig[];
   // 页面参数配置
-  pageArgConfigs: {
-    pageUri: string;
-    name: string;
-    description: string;
-    args: {
-      key: string;
-      name: string;
-      description: string;
-      // 可用值:String,Integer,Number,Boolean,Object,Array_String,Array_Integer,Array_Number,Array_Boolean,Array_Object
-      dataType: DataTypeEnum;
-      require: boolean;
-    }[];
-  };
-  creator: CreatorInfo;
+  pageArgConfigs: PageArgConfig[];
   // 扩展字段
   ext: any;
-  // 用户ID
-  userId: number;
   // 租户ID
   tenantId: number;
   // 空间ID
   spaceId: number;
   // 创建时间
   created: string;
+  // 创建者ID
+  creatorId: number;
+  // 创建者名称
+  creatorName: string;
+  // 创建者昵称
+  creatorNickName: string;
+  // 创建者头像
+  creatorAvatar: number;
 }
 
 // 上传前端项目压缩包并启动开发服务器参数
@@ -73,18 +87,13 @@ export interface PageUploadAndStartParams {
   projectName: string;
   // 项目描述
   projectDesc: string;
-  // 项目基础路径
-  basePath: string;
   // 项目压缩包文件
-  file: any;
+  file?: any;
   // 空间ID
   spaceId: number;
   // 项目图标
   icon: string;
 }
-
-// 在线创建用户前端页面项目参数
-export type CustomPageCreateParams = PageUploadAndStartParams;
 
 // 绑定开发智能体参数
 export interface CustomPageBindDevAgentParams {
@@ -94,6 +103,14 @@ export interface CustomPageBindDevAgentParams {
   devAgentId: number;
   // 空间ID
   spaceId: number;
+}
+
+// 配置反向代理参数
+export interface PageBatchConfigProxyParams {
+  // 项目ID
+  projectId: number;
+  // 反向代理配置
+  proxyConfigs: ProxyConfig[];
 }
 
 // 上传前端项目压缩包并启动开发服务器返回值
@@ -119,7 +136,8 @@ export interface PageDevelopCardItemProps {
 export interface DebugAgentBindModalProps {
   spaceId: number;
   defaultDevAgentId?: number;
-  createCustomPageInfo?: CreateCustomPageInfo | null;
+  // 项目ID
+  projectId: string;
   open: boolean;
   onCancel: () => void;
 }
@@ -140,6 +158,7 @@ export interface PageCreateModalProps {
  */
 export interface PathParamsConfigModalProps {
   spaceId: number;
+  defaultPageArgConfigs?: PageArgConfig[];
   open: boolean;
   onCancel: () => void;
 }
@@ -159,6 +178,8 @@ export interface AddPathModalProps {
  */
 export interface ReverseProxyModalProps {
   open: boolean;
+  projectId: string;
+  defaultProxyConfigs?: ProxyConfig[];
   onCancel: () => void;
 }
 
@@ -166,5 +187,10 @@ export interface ReverseProxyModalProps {
  * 反向代理内容配置Props
  */
 export interface ReverseProxyContentConfigProps {
-  type: ReverseProxyEnum;
+  projectId: string;
+  // 当前反向代理类型 可用值:dev,prod
+  reverseProxyType: ReverseProxyEnum;
+  // 所有的反向代理配置（包括开发环境和生产环境）
+  proxyConfigs?: ProxyConfig[];
+  onConfirm: (proxyConfigs: ProxyConfig[]) => void;
 }
