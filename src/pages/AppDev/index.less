@@ -694,6 +694,31 @@
   margin-left: 8px;
 }
 
+// 删除按钮样式
+.deleteButton {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  margin-left: auto;
+  color: #64748b;
+  padding: 2px;
+  height: 20px;
+  width: 20px;
+  min-width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: #ff4d4f;
+    background: rgba(255, 77, 79, 10%);
+  }
+
+  .folderHeader:hover &,
+  .fileItem:hover & {
+    opacity: 1;
+  }
+}
+
 // 编辑器列
 .editorCol {
   height: 100%;

@@ -214,7 +214,7 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
       );
       setIsChatLoading(false);
     }
-  }, [chatInput, currentSessionId, projectId, initializeSSEManager]);
+  }, [chatInput, currentSessionId, projectId, initializeAppDevSSEConnection]);
 
   /**
    * 取消聊天任务

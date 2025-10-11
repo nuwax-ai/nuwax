@@ -192,7 +192,7 @@ export const fullChatExample = async () => {
     request_id: 'req-full-456',
     attachments,
     data_source_attachments: formatDataSourceAttachments(dataSources),
-    model_provider,
+    modelProvider,
   };
 
   try {
@@ -205,12 +205,7 @@ export const fullChatExample = async () => {
       console.log('会话ID:', response.data.session_id);
 
       // 这里可以建立 SSE 连接来接收实时更新
-      // const sseManager = createSSEManager({
-      //   baseUrl: 'http://localhost:3000',
-      //   sessionId: response.data.session_id,
-      //   onMessage: handleSSEMessage,
-      // });
-      // sseManager.connect();
+      // 使用 AppDev SSE Model: appDevSseModel.initializeAppDevSSEConnection()
     }
   } catch (error) {
     console.error('完整聊天失败:', error);

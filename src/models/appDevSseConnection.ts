@@ -1,8 +1,5 @@
-import type {
-  SSEEventType,
-  UnifiedSessionMessage,
-} from '@/types/interfaces/appDev';
-import { createSSEManager } from '@/utils/sseManager';
+import type { UnifiedSessionMessage } from '@/types/interfaces/appDev';
+import { createSSEConnection } from '@/utils/fetchEventSource';
 import { message } from 'antd';
 import { useCallback, useRef, useState } from 'react';
 
@@ -17,9 +14,9 @@ export enum SSEConnectionState {
 }
 
 /**
- * SSE 管理器配置
+ * AppDev SSE 管理器配置
  */
-export interface SSEManagerConfig {
+export interface AppDevSSEManagerConfig {
   baseUrl: string;
   sessionId: string;
   onMessage?: (message: UnifiedSessionMessage) => void;
@@ -56,7 +53,7 @@ export default () => {
    * 初始化 AppDev SSE 连接
    */
   const initializeAppDevSSEConnection = useCallback(
-    async (config: SSEManagerConfig) => {
+    async (config: AppDevSSEManagerConfig) => {
       console.log('🔧 [AppDev SSE Model] 初始化 AppDev SSE 连接:', config);
 
       // 如果已有连接，先断开
@@ -71,25 +68,37 @@ export default () => {
         setAppDevConnectionError(null);
         setAppDevConnectionState(SSEConnectionState.CONNECTING);
 
-        // 创建新的 AppDev SSE 管理器
-        const appDevSseManager = createSSEManager({
-          baseUrl: config.baseUrl,
-          sessionId: config.sessionId,
-          onMessage: (message: UnifiedSessionMessage) => {
-            console.log('📨 [AppDev SSE Model] 收到 AppDev 消息:', message);
-            config.onMessage?.(message);
+        // 创建 AbortController 用于控制连接
+        const abortController = new AbortController();
+
+        // 构建 SSE URL
+        const sseUrl = `${process.env.BASE_URL}/api/custom-page/ai-session-sse?session_id=${config.sessionId}`;
+        console.log(`🔌 [AppDev SSE Model] 连接到: ${sseUrl}`);
+
+        // 使用 createSSEConnection 建立连接
+        const abortFunction = await createSSEConnection({
+          url: sseUrl,
+          method: 'GET',
+          headers: {
+            Accept: 'text/event-stream',
+            'Cache-Control': 'no-cache',
           },
-          onError: (error: Event) => {
-            console.error('❌ [AppDev SSE Model] AppDev 连接错误:', error);
-            setAppDevConnectionState(SSEConnectionState.ERROR);
-            setAppDevConnectionError('AppDev SSE 连接错误');
-            config.onError?.(error);
-          },
+          abortController,
           onOpen: () => {
             console.log('✅ [AppDev SSE Model] AppDev 连接已建立');
             setAppDevConnectionState(SSEConnectionState.CONNECTED);
             setAppDevConnectionError(null);
             config.onOpen?.();
+          },
+          onMessage: (data: UnifiedSessionMessage) => {
+            console.log('📨 [AppDev SSE Model] 收到 AppDev 消息:', data);
+            config.onMessage?.(data);
+          },
+          onError: (error) => {
+            console.error('❌ [AppDev SSE Model] AppDev 连接错误:', error);
+            setAppDevConnectionState(SSEConnectionState.ERROR);
+            setAppDevConnectionError('AppDev SSE 连接错误');
+            config.onError?.(error as any);
           },
           onClose: () => {
             console.log('🔌 [AppDev SSE Model] AppDev 连接已关闭');
@@ -98,11 +107,9 @@ export default () => {
           },
         });
 
-        appDevSseManagerRef.current = appDevSseManager;
+        // 保存 abort 函数供后续使用
+        appDevSseManagerRef.current = abortFunction;
         setAppDevCurrentSessionId(config.sessionId);
-
-        // 建立连接
-        await appDevSseManager.connect();
 
         console.log('✅ [AppDev SSE Model] AppDev SSE 连接初始化完成');
       } catch (error) {
@@ -126,7 +133,10 @@ export default () => {
     console.log('🔌 [AppDev SSE Model] 断开 AppDev SSE 连接');
 
     if (appDevSseManagerRef.current) {
-      appDevSseManagerRef.current.destroy();
+      // 调用 abort 函数来断开连接
+      if (typeof appDevSseManagerRef.current === 'function') {
+        appDevSseManagerRef.current();
+      }
       appDevSseManagerRef.current = null;
     }
 
@@ -134,42 +144,6 @@ export default () => {
     setAppDevCurrentSessionId('');
     setAppDevConnectionError(null);
   }, []);
-
-  /**
-   * 添加 AppDev SSE 事件监听器
-   */
-  const addAppDevSSEEventListener = useCallback(
-    (
-      eventType: SSEEventType,
-      listener: (message: UnifiedSessionMessage) => void,
-    ) => {
-      if (appDevSseManagerRef.current) {
-        appDevSseManagerRef.current.addEventListener(eventType, listener);
-        console.log(
-          `📝 [AppDev SSE Model] 添加 AppDev 事件监听器: ${eventType}`,
-        );
-      }
-    },
-    [],
-  );
-
-  /**
-   * 移除 AppDev SSE 事件监听器
-   */
-  const removeAppDevSSEEventListener = useCallback(
-    (
-      eventType: SSEEventType,
-      listener: (message: UnifiedSessionMessage) => void,
-    ) => {
-      if (appDevSseManagerRef.current) {
-        appDevSseManagerRef.current.removeEventListener(eventType, listener);
-        console.log(
-          `🗑️ [AppDev SSE Model] 移除 AppDev 事件监听器: ${eventType}`,
-        );
-      }
-    },
-    [],
-  );
 
   /**
    * 获取 AppDev 连接状态
@@ -196,7 +170,7 @@ export default () => {
    * AppDev 重新连接
    */
   const reconnectAppDev = useCallback(
-    async (config: SSEManagerConfig) => {
+    async (config: AppDevSSEManagerConfig) => {
       console.log('🔄 [AppDev SSE Model] AppDev 重新连接');
       await initializeAppDevSSEConnection(config);
     },
@@ -221,8 +195,6 @@ export default () => {
     // AppDev 方法
     initializeAppDevSSEConnection,
     disconnectAppDevSSE,
-    addAppDevSSEEventListener,
-    removeAppDevSSEEventListener,
     getAppDevConnectionState,
     isAppDevConnected,
     getAppDevCurrentSessionId,
