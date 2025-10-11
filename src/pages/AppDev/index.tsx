@@ -1,5 +1,3 @@
-import MonacoEditor from '@/components/WebIDE/MonacoEditor';
-import Preview, { PreviewRef } from '@/components/WebIDE/Preview';
 import { ERROR_MESSAGES } from '@/constants/appDevConstants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
@@ -21,11 +19,9 @@ import {
   SendOutlined,
   StopOutlined,
   UploadOutlined,
-  UserOutlined,
 } from '@ant-design/icons';
 import {
   Alert,
-  Avatar,
   Button,
   Card,
   Col,
@@ -50,9 +46,12 @@ import React, {
   useState,
 } from 'react';
 import { useModel } from 'umi';
+import { AppDevHeader } from './components';
+import MonacoEditor from './components/MonacoEditor';
+import Preview, { type PreviewRef } from './components/Preview';
 import styles from './index.less';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 /**
  * AppDev页面组件
@@ -564,73 +563,20 @@ const AppDev: React.FC = () => {
       {contextHolder}
       <div className={styles.appDev}>
         {/* 顶部头部区域 */}
-        <div className={styles.topHeader}>
-          <div className={styles.headerLeft}>
-            {/* AI助手信息 */}
-            <div className={styles.aiInfo}>
-              <Avatar
-                size={32}
-                icon={<UserOutlined />}
-                className={styles.aiAvatar}
-              />
-              <div className={styles.aiTitleText}>
-                <Title level={4} style={{ margin: 0, color: '#1e293b' }}>
-                  人工智能通识教育智能体
-                </Title>
-                <Text type="secondary" style={{ color: '#64748b' }}>
-                  AI General Education Assistant
-                </Text>
-              </div>
-            </div>
-
-            {/* 项目信息 */}
-            <div className={styles.projectInfo}>
-              <Title level={4} style={{ margin: 0, color: '#1e293b' }}>
-                {workspace.name || '大模型三部曲'}
-              </Title>
-              {workspace.projectId && (
-                <Text
-                  type="secondary"
-                  style={{ marginLeft: 8, color: '#64748b' }}
-                >
-                  项目ID: {workspace.projectId}
-                </Text>
-              )}
-            </div>
-          </div>
-          <div className={styles.headerRight}>
-            <Space>
-              {/* 刷新和代码视图 */}
-              <div className={styles.navButtons}>
-                <Button size="small" className={styles.navButton}>
-                  重新加载项目
-                </Button>
-              </div>
-
-              {/* 状态和操作按钮 */}
-              <div className={styles.statusActions}>
-                <Button
-                  type="primary"
-                  size="small"
-                  className={styles.statusButton}
-                  style={{ background: '#ff6b6b', borderColor: '#ff6b6b' }}
-                >
-                  有更新未部署
-                </Button>
-                <Button size="small" danger className={styles.actionButton}>
-                  删除
-                </Button>
-                <Button
-                  type="primary"
-                  size="small"
-                  className={styles.deployButton}
-                >
-                  部署
-                </Button>
-              </div>
-            </Space>
-          </div>
-        </div>
+        <AppDevHeader
+          workspace={workspace}
+          onReloadProject={() => window.location.reload()}
+          onDeleteProject={() => {
+            // TODO: 实现删除项目功能
+            console.log('删除项目');
+          }}
+          onDeployProject={() => {
+            // TODO: 实现部署项目功能
+            console.log('部署项目');
+          }}
+          hasUpdates={true}
+          lastSaveTime={new Date()}
+        />
 
         {/* 主布局 - 左右分栏 */}
         <Row gutter={0} className={styles.mainRow}>

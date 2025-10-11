@@ -1,80 +1,23 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
 .appDev {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+  background-image: @backgroundImage;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  transition: background-image 0.3s ease;
   color: #1e293b;
   overflow: hidden;
 }
 
-// 顶部头部区域
-.topHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 24px;
-  background: rgba(255, 255, 255, 98%);
-  border-bottom: 1px solid #e2e8f0;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 5%);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-
-  .headerLeft {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-  }
-
-  .headerRight {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .aiInfo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    .aiAvatar {
-      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-      color: #fff;
-      border: 2px solid rgba(255, 255, 255, 20%);
-    }
-  }
-
-  .aiTitleText {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .projectInfo {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding-left: 24px;
-    border-left: 1px solid #e2e8f0;
-    position: relative;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 1px;
-      height: 24px;
-      background: linear-gradient(to bottom, transparent, #e2e8f0, transparent);
-    }
-  }
-}
-
 // 主布局行
 .mainRow {
-  height: calc(100vh - 65px);
+  height: calc(100vh - 50px);
   margin: 0 !important;
   color: #1e293b;
 }
@@ -507,49 +450,6 @@
   }
 }
 
-.navButton {
-  background: rgba(255, 255, 255, 90%);
-  border: 1px solid rgba(0, 0, 0, 10%);
-  color: #64748b;
-
-  &:hover {
-    background: rgba(0, 0, 0, 5%);
-    border-color: rgba(0, 0, 0, 20%);
-    color: #1e293b;
-  }
-}
-
-// 状态和操作按钮
-.statusActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-right: 16px;
-}
-
-.statusButton {
-  background: #ef4444;
-  border-color: #ef4444;
-  color: #fff;
-
-  &:hover {
-    background: #dc2626;
-    border-color: #dc2626;
-    color: #fff;
-  }
-}
-
-.deployButton {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  border: none;
-  color: #fff;
-
-  &:hover {
-    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-    color: #fff;
-  }
-}
-
 .toolbarLeft {
   display: flex;
   align-items: center;
@@ -578,17 +478,6 @@
     background: rgba(0, 0, 0, 5%);
     border-color: rgba(0, 0, 0, 10%);
     color: #94a3b8;
-  }
-}
-
-.uploadButton {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  border: none;
-  color: #fff;
-
-  &:hover {
-    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-    color: #fff;
   }
 }
 
