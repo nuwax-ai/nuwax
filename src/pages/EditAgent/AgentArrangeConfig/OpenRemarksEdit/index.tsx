@@ -1,6 +1,7 @@
 import { SvgIcon } from '@/components/base';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { ICON_SETTING } from '@/constants/images.constants';
+import { GuidQuestionSetTypeEnum } from '@/types/enums/agent';
 import { GuidQuestionDto } from '@/types/interfaces/agent';
 import type { OpenRemarksEditProps } from '@/types/interfaces/agentConfig';
 import { DeleteOutlined } from '@ant-design/icons';
@@ -23,32 +24,51 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   // 开场白内容
   const [content, setContent] = useState<string>('');
   // 开场白引导问题
-  const [guidQuestions, setGuidQuestions] = useState<string[]>(['']);
+  // const [guidQuestions, setGuidQuestions] = useState<string[]>(['']);
+  // 开场白引导问题
+  const [guidQuestionDtos, setGuidQuestionDtos] = useState<GuidQuestionDto[]>(
+    [],
+  );
   // 开场白预置问题设置弹窗
   const [open, setOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (!!agentConfigInfo) {
       setContent(agentConfigInfo.openingChatMsg);
-      if (agentConfigInfo.openingGuidQuestions?.length > 0) {
-        setGuidQuestions(agentConfigInfo.openingGuidQuestions);
+      // 开场白引导问题(弃用)
+      // if (agentConfigInfo.openingGuidQuestions?.length > 0) {
+      //   setGuidQuestions(agentConfigInfo.openingGuidQuestions);
+      // }
+      // 开场白引导问题
+      if (agentConfigInfo.guidQuestionDtos?.length > 0) {
+        setGuidQuestionDtos(agentConfigInfo.guidQuestionDtos);
       }
     }
   }, [agentConfigInfo]);
 
   // 新增开场白引导问题
   const handlePlus = () => {
-    const _guidQuestions = [...guidQuestions];
-    _guidQuestions.push('');
-    setGuidQuestions(_guidQuestions);
+    // const _guidQuestions = [...guidQuestions];
+    // _guidQuestions.push('');
+    // setGuidQuestions(_guidQuestions);
+    const _guidQuestionDtos = [...guidQuestionDtos];
+    _guidQuestionDtos.push({
+      type: GuidQuestionSetTypeEnum.Question,
+      info: '',
+    });
+    setGuidQuestionDtos(_guidQuestionDtos);
   };
 
   // 删除开场白引导问题
   const handleDel = (index: number) => {
-    const _guidQuestions = [...guidQuestions];
-    _guidQuestions.splice(index, 1);
-    setGuidQuestions(_guidQuestions);
-    onChangeAgent(_guidQuestions, 'openingGuidQuestions');
+    // const _guidQuestions = [...guidQuestions];
+    // _guidQuestions.splice(index, 1);
+    // setGuidQuestions(_guidQuestions);
+    // onChangeAgent(_guidQuestions, 'openingGuidQuestions');
+    const _guidQuestionDtos = [...guidQuestionDtos];
+    _guidQuestionDtos.splice(index, 1);
+    setGuidQuestionDtos(_guidQuestionDtos);
+    onChangeAgent(_guidQuestionDtos, 'guidQuestionDtos');
   };
 
   // 修改首次打开聊天框自动回复消息
@@ -59,10 +79,14 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
 
   // 修改开场白引导问题
   const handleChangeGuidQuestions = (index: number, value: string) => {
-    const _guidQuestions = [...guidQuestions];
-    _guidQuestions[index] = value;
-    setGuidQuestions(_guidQuestions);
-    onChangeAgent(_guidQuestions, 'openingGuidQuestions');
+    // const _guidQuestions = [...guidQuestions];
+    // _guidQuestions[index] = value;
+    // setGuidQuestions(_guidQuestions);
+    // onChangeAgent(_guidQuestions, 'openingGuidQuestions');
+    const _guidQuestionDtos = [...guidQuestionDtos];
+    _guidQuestionDtos[index].info = value;
+    setGuidQuestionDtos(_guidQuestionDtos);
+    onChangeAgent(_guidQuestionDtos, 'guidQuestionDtos');
   };
 
   // 打开设置开场白预置问题弹窗
@@ -122,12 +146,12 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
         />
       </div>
       {/* 开场白预置问题列表 */}
-      {guidQuestions?.map((item, index) => (
+      {guidQuestionDtos?.map((item, index) => (
         <Input
           key={index}
           rootClassName={cx(styles.input)}
           placeholder="输入开场白引导问题"
-          value={item}
+          value={item.info}
           onChange={(e) => handleChangeGuidQuestions(index, e.target.value)}
           showCount={false}
           maxLength={30}

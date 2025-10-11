@@ -15,6 +15,7 @@ import type {
   AgentStatisticsInfo,
   ComponentModelBindConfig,
   CreatorInfo,
+  GuidQuestionDto,
 } from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
@@ -51,7 +52,10 @@ export interface AgentArrangeConfigProps {
   agentId: number;
   agentConfigInfo?: AgentConfigInfo;
   // 修改智能体基础配置信息
-  onChangeAgent: (value: string | string[] | number, attr: string) => void;
+  onChangeAgent: (
+    value: string | string[] | number | GuidQuestionDto[],
+    attr: string,
+  ) => void;
 }
 
 // 组件设置弹窗
@@ -212,7 +216,10 @@ export interface LongMemoryContentProps {
 // 开场白组件
 export interface OpenRemarksEditProps {
   agentConfigInfo?: AgentConfigInfo;
-  onChangeAgent: (value: string | string[], attr: string) => void;
+  onChangeAgent: (
+    value: string | string[] | GuidQuestionDto[],
+    attr: string,
+  ) => void;
 }
 
 // 变量列表组件
