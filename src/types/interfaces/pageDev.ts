@@ -1,11 +1,11 @@
-import { CreateUpdateModeEnum, DataTypeEnum } from '../enums/common';
+import { CreateUpdateModeEnum } from '../enums/common';
 import {
   BuildRunningEnum,
   PageDevelopCreateTypeEnum,
   PageProjectTypeEnum,
   ReverseProxyEnum,
 } from '../enums/pageDev';
-import { CustomPopoverItem } from './common';
+import { BindConfigWithSub, CustomPopoverItem } from './common';
 
 /**
  * 反向代理配置
@@ -29,14 +29,7 @@ export interface PageArgConfig {
   pageUri: string;
   name: string;
   description: string;
-  args: {
-    key: string;
-    name: string;
-    description: string;
-    // 可用值:String,Integer,Number,Boolean,Object,Array_String,Array_Integer,Array_Number,Array_Boolean,Array_Object
-    dataType: DataTypeEnum;
-    require: boolean;
-  }[];
+  args: BindConfigWithSub[];
 }
 
 // 自定义页面项目信息
@@ -124,31 +117,14 @@ export interface PageAddPathParams {
   // 页面描述,示例值(用于查看数据的页面)
   description: string;
   // 页面参数配置
-  args: {
-    /*参数key，唯一标识 */
-    key?: string;
+  args: BindConfigWithSub[];
+}
 
-    /*参数名称，符合函数命名规则 */
-    name: string;
-
-    /*参数详细描述信息 */
-    description?: string;
-
-    /*数据类型 */
-    dataType: string;
-
-    /*是否必须 */
-    require?: boolean;
-
-    /*是否开启（对模型可见，默认开启） */
-    enable?: boolean;
-
-    /*默认值 */
-    bindValue?: string;
-
-    /*输入类型 */
-    inputType?: string;
-  }[];
+export interface PageDeletePathParams {
+  // 项目ID
+  projectId: number;
+  // 页面路径,示例值(/view)
+  pageUri: string;
 }
 
 // 上传前端项目压缩包并启动开发服务器返回值
@@ -209,7 +185,7 @@ export interface AddPathModalProps {
   mode: CreateUpdateModeEnum;
   open: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (info: PageAddPathParams) => void;
 }
 
 /**

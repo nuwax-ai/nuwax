@@ -5,6 +5,7 @@ import type {
   CustomPageDto,
   PageAddPathParams,
   PageBatchConfigProxyParams,
+  PageDeletePathParams,
   PageUploadAndStartParams,
 } from '@/types/interfaces/pageDev';
 import type { RequestResponse } from '@/types/interfaces/request';
@@ -79,6 +80,36 @@ export async function apiPageAddPath(
   data: PageAddPathParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/custom-page/add-path', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 编辑路径配置
+export async function apiPageUpdatePath(
+  data: PageAddPathParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/custom-page/edit-path', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除路径配置
+export async function apiPageDeletePath(
+  data: PageDeletePathParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/custom-page/delete-path', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 保存路径参数
+export async function apiPageSavePathArgs(
+  data: PageAddPathParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/custom-page/save-path-args', {
     method: 'POST',
     data,
   });

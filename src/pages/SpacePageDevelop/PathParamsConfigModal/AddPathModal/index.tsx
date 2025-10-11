@@ -1,7 +1,10 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { apiPageAddPath } from '@/services/pageDev';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { AddPathModalProps } from '@/types/interfaces/pageDev';
+import {
+  AddPathModalProps,
+  PageAddPathParams,
+} from '@/types/interfaces/pageDev';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
 import React, { useState } from 'react';
@@ -24,10 +27,11 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
   const { run: runAddPath } = useRequest(apiPageAddPath, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
+    onSuccess: (_: null, params: PageAddPathParams[]) => {
       message.success('添加路径成功');
       setLoading(false);
-      onConfirm();
+      const info = params[0];
+      onConfirm(info);
     },
     onError: () => {
       setLoading(false);

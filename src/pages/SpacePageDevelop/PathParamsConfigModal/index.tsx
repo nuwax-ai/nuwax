@@ -1,5 +1,8 @@
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { PathParamsConfigModalProps } from '@/types/interfaces/pageDev';
+import {
+  PageArgConfig,
+  PathParamsConfigModalProps,
+} from '@/types/interfaces/pageDev';
 import {
   CloseOutlined,
   DeleteOutlined,
@@ -25,7 +28,7 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
   onCancel,
 }) => {
   // 路径参数列表
-  const [pathParams, setPathParams] = useState<any[]>([]);
+  const [pathParams, setPathParams] = useState<PageArgConfig[]>([]);
   // 当前路径参数key
   const [key, setKey] = useState<string>('');
   // 添加路径参数弹窗是否打开
@@ -36,12 +39,12 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
     setKey('');
   }, [defaultPageArgConfigs]);
 
-  const handleDel = (key: string) => {
-    setPathParams(pathParams.filter((item) => item.key !== key));
+  const handleDel = (pageUri: string) => {
+    setPathParams(pathParams.filter((item) => item.pageUri !== pageUri));
   };
 
-  const handleEdit = (key: string) => {
-    setKey(key);
+  const handleEdit = (pageUri: string) => {
+    setKey(pageUri);
   };
 
   return (
@@ -62,7 +65,7 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
                 {pathParams.map((item) => {
                   return (
                     <li
-                      key={item.type}
+                      key={item.pageUri}
                       className={cx(
                         styles.item,
                         'cursor-pointer',
@@ -70,15 +73,15 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
                         'items-center',
                         'gap-10',
                         {
-                          [styles.checked]: key === item.key,
+                          [styles.checked]: key === item.pageUri,
                         },
                       )}
-                      onClick={() => setKey(item.key)}
+                      onClick={() => setKey(item.pageUri)}
                     >
                       <div
                         className={cx(styles.label, 'text-ellipsis', 'flex-1')}
                       >
-                        {item.label}
+                        {item.name}
                       </div>
                       <span
                         className={cx(
@@ -87,7 +90,9 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
                           'hover-box',
                         )}
                       >
-                        <EditOutlined onClick={() => handleEdit(item.key)} />
+                        <EditOutlined
+                          onClick={() => handleEdit(item.pageUri)}
+                        />
                       </span>
                       <span
                         className={cx(
@@ -96,7 +101,9 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
                           'hover-box',
                         )}
                       >
-                        <DeleteOutlined onClick={() => handleDel(item.key)} />
+                        <DeleteOutlined
+                          onClick={() => handleDel(item.pageUri)}
+                        />
                       </span>
                     </li>
                   );
