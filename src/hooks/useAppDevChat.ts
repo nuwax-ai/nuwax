@@ -9,9 +9,9 @@ import type {
   AgentThoughtData,
   UnifiedSessionMessage,
 } from '@/types/interfaces/appDev';
-import { createSSEManager, type SSEManager } from '@/utils/sseManager';
 import { message } from 'antd';
 import { useCallback, useState } from 'react';
+import { useModel } from 'umi';
 
 interface ChatMessage {
   id: string;
@@ -32,13 +32,15 @@ interface UseAppDevChatProps {
 }
 
 export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
+  // 使用 AppDev SSE 连接 model
+  const appDevSseModel = useModel('appDevSseConnection');
+
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(
     CHAT_CONSTANTS.DEFAULT_MESSAGES,
   );
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [sseManager, setSseManager] = useState<SSEManager | null>(null);
 
   /**
    * 处理SSE消息
@@ -109,43 +111,29 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
   }, []);
 
   /**
-   * 初始化SSE连接管理器
+   * 初始化 AppDev SSE 连接
    */
-  const initializeSSEManager = useCallback(
-    (sessionId: string) => {
-      console.log('🔧 [SSE] 初始化 SSE 管理器，sessionId:', sessionId);
+  const initializeAppDevSSEConnection = useCallback(
+    async (sessionId: string) => {
+      console.log('🔧 [Chat] 初始化 AppDev SSE 连接，sessionId:', sessionId);
 
-      if (sseManager) {
-        console.log('🔄 [SSE] 销毁现有的 SSE 管理器');
-        sseManager.destroy();
-      }
-
-      const newSseManager = createSSEManager({
-        baseUrl: 'http://localhost:3000', // 使用新的 API 服务器地址
+      await appDevSseModel.initializeAppDevSSEConnection({
+        baseUrl: 'http://localhost:3000',
         sessionId,
         onMessage: handleSSEMessage,
-        onError: (error) => {
-          console.error('❌ [SSE] 连接错误:', error);
+        onError: (error: Event) => {
+          console.error('❌ [Chat] AppDev SSE 连接错误:', error);
           message.error('AI助手连接失败');
         },
         onOpen: () => {
-          console.log('🔌 [SSE] 连接已建立');
+          console.log('🔌 [Chat] AppDev SSE 连接已建立');
         },
         onClose: () => {
-          console.log('🔌 [SSE] 连接已关闭');
+          console.log('🔌 [Chat] AppDev SSE 连接已关闭');
         },
       });
-
-      setSseManager(newSseManager);
-      console.log('🚀 [SSE] 开始连接 SSE');
-      // connect 现在是异步方法
-      newSseManager.connect().catch((error) => {
-        console.error('❌ [SSE] 连接失败:', error);
-      });
-
-      return newSseManager;
     },
-    [sseManager, handleSSEMessage],
+    [appDevSseModel, handleSSEMessage],
   );
 
   /**
@@ -206,12 +194,12 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
           setCurrentSessionId(serverSessionId);
         }
 
-        // 建立 SSE 连接
+        // 建立 AppDev SSE 连接
         console.log(
-          '🔌 [Chat] 准备建立 SSE 连接，session_id:',
+          '🔌 [Chat] 准备建立 AppDev SSE 连接，session_id:',
           serverSessionId,
         );
-        initializeSSEManager(serverSessionId);
+        await initializeAppDevSSEConnection(serverSessionId);
       } else {
         console.error('❌ [Chat] 请求失败:', response);
         console.error('❌ [Chat] response.success:', response.success);
@@ -240,10 +228,8 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
       console.log('🛑 [Chat] 取消AI聊天任务');
       await cancelAgentTask(projectId, currentSessionId);
 
-      if (sseManager) {
-        sseManager.destroy();
-        setSseManager(null);
-      }
+      // 断开 AppDev SSE 连接
+      appDevSseModel.disconnectAppDevSSE();
 
       setIsChatLoading(false);
       message.success('已取消AI任务');
@@ -251,17 +237,15 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
       console.error('取消AI任务失败:', error);
       message.error('取消AI任务失败');
     }
-  }, [currentSessionId, projectId, sseManager]);
+  }, [currentSessionId, projectId, appDevSseModel]);
 
   /**
-   * 清理SSE连接
+   * 清理 AppDev SSE 连接
    */
-  const cleanup = useCallback(() => {
-    if (sseManager) {
-      sseManager.destroy();
-      setSseManager(null);
-    }
-  }, [sseManager]);
+  const cleanupAppDevSSE = useCallback(() => {
+    console.log('🧹 [Chat] 清理 AppDev SSE 连接');
+    appDevSseModel.cleanupAppDev();
+  }, [appDevSseModel]);
 
   return {
     chatMessages,
@@ -270,6 +254,6 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
     isChatLoading,
     sendChat,
     cancelChat,
-    cleanup,
+    cleanupAppDevSSE,
   };
 };

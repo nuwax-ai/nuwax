@@ -285,9 +285,10 @@ export default App;`,
 };
 
 /**
- * AppDev状态管理Hook
+ * AppDev状态管理Model
+ * 参考 conversationInfo.ts 的模式，提供 AppDev 状态管理功能
  */
-export const useAppDevStore = () => {
+export default () => {
   const [workspace, setWorkspace] = useState<AppDevWorkspace>(initialWorkspace);
   const [currentFile, setCurrentFile] = useState<FileNode | null>(null);
   const [isServiceRunning, setIsServiceRunning] = useState(false);

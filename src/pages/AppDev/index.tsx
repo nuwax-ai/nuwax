@@ -7,6 +7,7 @@ import { buildProject, uploadAndStartProject } from '@/services/appDev';
 import { getLanguageFromFile, isImageFile } from '@/utils/appDevUtils';
 import {
   CheckOutlined,
+  DeleteOutlined,
   DownOutlined,
   EyeOutlined,
   FileOutlined,
@@ -59,7 +60,7 @@ const { Text } = Typography;
  */
 const AppDev: React.FC = () => {
   // 使用 AppDev 模型来管理状态
-  const appDevModel = useModel('appDevModel');
+  const appDevModel = useModel('appDev');
 
   const {
     workspace,
@@ -120,6 +121,10 @@ const AppDev: React.FC = () => {
 
   // 文件树折叠状态
   const [isFileTreeCollapsed, setIsFileTreeCollapsed] = useState(false);
+
+  // 删除确认对话框状态
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [nodeToDelete, setNodeToDelete] = useState<any>(null);
 
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
@@ -398,6 +403,58 @@ const AppDev: React.FC = () => {
   }, []);
 
   /**
+   * 处理删除文件/文件夹
+   */
+  const handleDeleteClick = useCallback(
+    (node: any, event: React.MouseEvent) => {
+      event.stopPropagation(); // 阻止事件冒泡
+      setNodeToDelete(node);
+      setDeleteModalVisible(true);
+    },
+    [],
+  );
+
+  /**
+   * 确认删除
+   */
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!nodeToDelete || !projectId) return;
+
+    try {
+      console.log(
+        '🗑️ [AppDev] 删除文件/文件夹:',
+        nodeToDelete.name,
+        nodeToDelete.path,
+      );
+      const success = await fileManagement.deleteFileItem(nodeToDelete.id);
+
+      if (success) {
+        message.success(
+          `成功删除 ${nodeToDelete.type === 'folder' ? '文件夹' : '文件'}: ${
+            nodeToDelete.name
+          }`,
+        );
+      } else {
+        message.error(`删除失败: ${nodeToDelete.name}`);
+      }
+    } catch (error) {
+      console.error('删除失败:', error);
+      message.error(`删除失败: ${nodeToDelete?.name}`);
+    } finally {
+      setDeleteModalVisible(false);
+      setNodeToDelete(null);
+    }
+  }, [nodeToDelete, projectId, fileManagement]);
+
+  /**
+   * 取消删除
+   */
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteModalVisible(false);
+    setNodeToDelete(null);
+  }, []);
+
+  /**
    * 切换消息展开状态
    */
   const toggleMessageExpansion = useCallback((messageId: string) => {
@@ -571,6 +628,14 @@ const AppDev: React.FC = () => {
                 }`}
               />
               <span className={styles.folderName}>{node.name}</span>
+              <Button
+                type="text"
+                size="small"
+                icon={<DeleteOutlined />}
+                className={styles.deleteButton}
+                onClick={(e) => handleDeleteClick(node, e)}
+                title="删除文件夹"
+              />
             </div>
             {isExpanded && node.children && (
               <div className={styles.fileList}>
@@ -596,19 +661,27 @@ const AppDev: React.FC = () => {
             {node.status && (
               <span className={styles.fileStatus}>{node.status}</span>
             )}
+            <Button
+              type="text"
+              size="small"
+              icon={<DeleteOutlined />}
+              className={styles.deleteButton}
+              onClick={(e) => handleDeleteClick(node, e)}
+              title="删除文件"
+            />
           </div>
         );
       }
     },
-    [fileManagement],
+    [fileManagement, handleDeleteClick],
   );
 
-  // 清理聊天连接
+  // 清理 AppDev SSE 连接
   useEffect(() => {
     return () => {
-      chat.cleanup();
+      chat.cleanupAppDevSSE();
     };
-  }, [chat.cleanup]);
+  }, [chat.cleanupAppDevSSE]);
 
   // 如果缺少 projectId，显示提示信息
   if (missingProjectId) {
@@ -1342,6 +1415,28 @@ const AppDev: React.FC = () => {
               )}
             </div>
           </Space>
+        </Modal>
+
+        {/* 删除确认对话框 */}
+        <Modal
+          title="确认删除"
+          open={deleteModalVisible}
+          onOk={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+          okText="删除"
+          cancelText="取消"
+          okButtonProps={{ danger: true }}
+        >
+          <p>
+            确定要删除 {nodeToDelete?.type === 'folder' ? '文件夹' : '文件'}{' '}
+            &quot;
+            {nodeToDelete?.name}&quot; 吗？
+          </p>
+          {nodeToDelete?.type === 'folder' && (
+            <p style={{ color: '#ff4d4f', fontSize: '12px' }}>
+              注意：删除文件夹将同时删除其内部的所有文件和子文件夹，此操作不可恢复！
+            </p>
+          )}
         </Modal>
       </div>
     </>
