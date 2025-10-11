@@ -8,8 +8,10 @@ import {
   UI_CONSTANTS,
 } from '@/constants/appDevConstants';
 import {
+  deleteFile,
   getFileContent,
   getProjectContent,
+  renameFile,
   submitFilesUpdate,
   uploadSingleFile,
 } from '@/services/appDev';
@@ -469,6 +471,138 @@ export const useAppDevFileManagement = ({
     [updateFileContent],
   );
 
+  /**
+   * 删除文件或文件夹
+   */
+  const deleteFileItem = useCallback(
+    async (fileId: string): Promise<boolean> => {
+      if (!projectId) {
+        console.error('❌ [FileManagement] 删除文件失败: 缺少项目ID');
+        return false;
+      }
+
+      try {
+        const fileNode = findFileNode(fileId, fileTreeState.data);
+        if (!fileNode) {
+          console.error('❌ [FileManagement] 删除文件失败: 找不到文件节点');
+          return false;
+        }
+
+        console.log('🗑️ [FileManagement] 删除文件:', fileNode.path);
+        const result = await deleteFile(projectId, fileNode.path);
+
+        if (result?.success) {
+          console.log('✅ [FileManagement] 文件删除成功:', fileNode.path);
+          // 删除成功后重新加载文件树
+          await loadFileTree();
+
+          // 如果删除的是当前选中的文件，清空选择
+          if (fileContentState.selectedFile === fileId) {
+            setSelectedFile('');
+          }
+
+          return true;
+        } else {
+          console.error('❌ [FileManagement] 删除文件失败:', result?.message);
+          return false;
+        }
+      } catch (error) {
+        console.error('❌ [FileManagement] 删除文件异常:', error);
+        return false;
+      }
+    },
+    [
+      projectId,
+      fileTreeState.data,
+      fileContentState.selectedFile,
+      loadFileTree,
+      setSelectedFile,
+    ],
+  );
+
+  /**
+   * 根据路径查找文件节点
+   */
+  const findFileNodeByPath = useCallback(
+    (path: string, files: FileNode[]): FileNode | null => {
+      for (const file of files) {
+        if (file.path === path) {
+          return file;
+        }
+        if (file.children) {
+          const found = findFileNodeByPath(path, file.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    },
+    [],
+  );
+
+  /**
+   * 重命名文件或文件夹
+   */
+  const renameFileItem = useCallback(
+    async (fileId: string, newName: string): Promise<boolean> => {
+      if (!projectId) {
+        console.error('❌ [FileManagement] 重命名文件失败: 缺少项目ID');
+        return false;
+      }
+
+      if (!newName.trim()) {
+        console.error('❌ [FileManagement] 重命名文件失败: 新文件名为空');
+        return false;
+      }
+
+      try {
+        const fileNode = findFileNode(fileId, fileTreeState.data);
+        if (!fileNode) {
+          console.error('❌ [FileManagement] 重命名文件失败: 找不到文件节点');
+          return false;
+        }
+
+        const oldPath = fileNode.path;
+        const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
+        const newPath = parentPath
+          ? `${parentPath}/${newName.trim()}`
+          : newName.trim();
+
+        console.log('✏️ [FileManagement] 重命名文件:', oldPath, '->', newPath);
+        const result = await renameFile(projectId, oldPath, newPath);
+
+        if (result?.success) {
+          console.log('✅ [FileManagement] 文件重命名成功:', newPath);
+          // 重命名成功后重新加载文件树
+          await loadFileTree();
+
+          // 如果重命名的是当前选中的文件，更新选中状态
+          if (fileContentState.selectedFile === fileId) {
+            // 重新查找文件节点（ID可能会改变）
+            const newFileNode = findFileNodeByPath(newPath, fileTreeState.data);
+            if (newFileNode) {
+              setSelectedFile(newFileNode.id);
+            }
+          }
+
+          return true;
+        } else {
+          console.error('❌ [FileManagement] 重命名文件失败:', result?.message);
+          return false;
+        }
+      } catch (error) {
+        console.error('❌ [FileManagement] 重命名文件异常:', error);
+        return false;
+      }
+    },
+    [
+      projectId,
+      fileTreeState.data,
+      fileContentState.selectedFile,
+      loadFileTree,
+      setSelectedFile,
+    ],
+  );
+
   // 在项目ID变化时加载文件树
   useEffect(() => {
     if (projectId) {
@@ -494,7 +628,13 @@ export const useAppDevFileManagement = ({
     // 文件上传相关
     uploadSingleFileToServer,
 
+    // 文件操作相关
+    deleteFileItem,
+    renameFileItem,
+
     // 工具函数
     findFileNode: (fileId: string) => findFileNode(fileId, fileTreeState.data),
+    findFileNodeByPath: (path: string) =>
+      findFileNodeByPath(path, fileTreeState.data),
   };
 };

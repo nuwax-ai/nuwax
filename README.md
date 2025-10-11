@@ -22,13 +22,58 @@
 
 - **智能体开发与管理**：完整的智能体创建、配置和管理功能
 - **AppDev Web IDE**：集成开发环境，支持文件管理、代码编辑和实时预览
-- **AI 助手聊天**：基于 SSE 的实时 AI 对话功能，支持流式响应和工具调用
+- **AI 助手聊天**：基于新的 OpenAPI 规范的实时 AI 对话功能，支持流式响应和工具调用
 - **工作空间管理**：项目文件树管理、文件上传和版本控制
 - **知识库管理**：智能体知识库的创建和维护
 - **组件库管理**：可复用组件的管理和发布
 - **MCP 服务管理**：Model Context Protocol 服务集成
 - **生态系统管理**：插件、模板和服务的生态系统
 - **🎨 动态主题背景切换**：支持 8 种预设背景图片，实时切换，状态持久化
+
+## AI 聊天接口更新
+
+### 🔄 接口变更说明
+
+项目已更新为基于新的 OpenAPI 规范的 AI 聊天接口：
+
+#### 主要变更
+
+- **聊天接口**：从 `/api/custom-page/ai-chat` 更新为 `/api/chat`
+- **SSE 连接**：从 `/api/custom-page/ai-session-sse` 更新为 `/api/agent/progress/{session_id}`
+- **取消任务**：使用 `/api/agent/session/cancel` 接口
+- **停止服务**：使用 `/api/agent/stop` 接口
+
+#### 新功能特性
+
+- **多媒体附件支持**：支持文本、图像、音频、文档等多种附件类型
+- **数据源附件**：支持 JSON 格式的数据源信息传递
+- **自定义模型提供商**：支持配置不同的 AI 模型提供商
+- **增强的会话管理**：更完善的会话生命周期管理
+
+#### 使用示例
+
+```typescript
+import { sendChatMessage } from '@/services/appDev';
+import { createTextAttachment } from '@/utils/chatUtils';
+
+// 基础聊天
+const response = await sendChatMessage({
+  prompt: '帮我写一个 React 组件',
+  project_id: 'my-project',
+  session_id: 'session-123',
+});
+
+// 带附件的聊天
+const response = await sendChatMessage({
+  prompt: '分析这个代码文件',
+  project_id: 'my-project',
+  attachments: [
+    createTextAttachment('att_1', 'function hello() {}', 'hello.js'),
+  ],
+});
+```
+
+详细的使用示例请参考 `src/examples/chatApiExample.ts` 文件。
 
 ## 主题背景切换功能
 
