@@ -2,6 +2,7 @@ import { ERROR_MESSAGES } from '@/constants/appDevConstants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
 import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
+import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { buildProject, uploadAndStartProject } from '@/services/appDev';
 import { getLanguageFromFile, isImageFile } from '@/utils/appDevUtils';
@@ -35,6 +36,7 @@ import {
   Select,
   Space,
   Spin,
+  Tag,
   Tooltip,
   Typography,
   Upload,
@@ -111,6 +113,9 @@ const AppDev: React.FC = () => {
     onServerStart: updateDevServerUrl,
     onServerStatusChange: setIsServiceRunning,
   });
+
+  // 使用项目详情 Hook
+  const projectInfo = useAppDevProjectInfo(projectId);
 
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(
     new Set(),
@@ -743,9 +748,12 @@ const AppDev: React.FC = () => {
             console.log('删除项目');
           }}
           onDeployProject={handleDeployProject}
-          hasUpdates={true}
+          hasUpdates={projectInfo.hasUpdates}
           lastSaveTime={new Date()}
           isDeploying={isDeploying}
+          projectInfo={projectInfo.projectInfoState.projectInfo || undefined}
+          getDeployStatusText={projectInfo.getDeployStatusText}
+          getDeployStatusColor={projectInfo.getDeployStatusColor}
         />
 
         {/* 主布局 - 左右分栏 */}
@@ -769,18 +777,42 @@ const AppDev: React.FC = () => {
                   />
                   <div className={styles.versionSelectorWrapper}>
                     <Select
-                      value="v4"
+                      value={
+                        projectInfo.projectInfoState.projectInfo?.codeVersion
+                          ? `v${projectInfo.projectInfoState.projectInfo.codeVersion}`
+                          : undefined
+                      }
                       size="small"
                       className={styles.versionSelector}
                       dropdownClassName={styles.versionDropdown}
-                      options={[
-                        { value: 'v1', label: 'v1' },
-                        { value: 'v2', label: 'v2' },
-                        { value: 'v3', label: 'v3' },
-                        { value: 'v4', label: 'v4' },
-                        { value: 'v5', label: 'v5' },
-                      ]}
+                      options={projectInfo.versionList.map((version) => ({
+                        value: `v${version.version}`,
+                        label: (
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <span>v{version.version}</span>
+                            <Tag
+                              color={projectInfo.getActionColor(version.action)}
+                              style={{ marginLeft: 8, fontSize: '10px' }}
+                            >
+                              {projectInfo.getActionText(version.action)}
+                            </Tag>
+                          </div>
+                        ),
+                      }))}
                       suffixIcon={<DownOutlined />}
+                      onChange={(value) => {
+                        const versionNumber = parseInt(value.replace('v', ''));
+                        console.log('选择版本:', versionNumber);
+                        // TODO: 实现版本切换逻辑
+                      }}
+                      placeholder="选择版本"
+                      disabled={projectInfo.versionList.length === 0}
                     />
                   </div>
                 </div>

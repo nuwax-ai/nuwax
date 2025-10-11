@@ -1,3 +1,4 @@
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 import type { UnifiedSessionMessage } from '@/types/interfaces/appDev';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { message } from 'antd';
@@ -67,6 +68,7 @@ export default () => {
         setIsAppDevConnecting(true);
         setAppDevConnectionError(null);
         setAppDevConnectionState(SSEConnectionState.CONNECTING);
+        const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
         // 创建 AbortController 用于控制连接
         const abortController = new AbortController();
@@ -80,8 +82,8 @@ export default () => {
           url: sseUrl,
           method: 'GET',
           headers: {
-            Accept: 'text/event-stream',
-            'Cache-Control': 'no-cache',
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json, text/plain, */* ',
           },
           abortController,
           onOpen: () => {

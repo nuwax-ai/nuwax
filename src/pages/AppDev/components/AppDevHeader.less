@@ -44,13 +44,31 @@
       }
 
       .project-id {
-        color: @colorTextTertiary;
+        color: @navFirstMenuTextSecondary;
         font-size: 11px;
         background: rgba(0, 0, 0, 5%);
         padding: 2px 6px;
         border-radius: 3px;
         margin-left: 8px;
       }
+
+      .deploy-status-tag {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        margin-left: 8px;
+        font-weight: @fontWeightStrong;
+      }
+    }
+
+    .project-description {
+      font-size: 12px;
+      color: @navFirstMenuTextSecondary;
+      margin-top: 4px;
+      max-width: 400px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
@@ -69,6 +87,12 @@
       color: @colorWarningText;
       background: @colorWarningBg;
       padding: 4px 8px;
+    }
+
+    .deploy-time {
+      font-size: 11px;
+      color: @navFirstMenuTextSecondary;
+      margin-left: 8px;
     }
 
     :global {

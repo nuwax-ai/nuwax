@@ -12,6 +12,7 @@ import type {
   DevServerInfo,
   GetProjectContentResponse,
   PageFileInfo,
+  ProjectDetailResponse,
   SubmitFilesResponse,
   UploadAndStartProjectParams,
 } from '@/types/interfaces/appDev';
@@ -275,14 +276,13 @@ export const cancelAgentTask = async (
   projectId: string,
   sessionId: string,
 ): Promise<CancelResponse> => {
-  return request(
-    `/api/custom-page/ai-session-cancel?project_id=${encodeURIComponent(
-      projectId,
-    )}&session_id=${encodeURIComponent(sessionId)}`,
-    {
-      method: 'POST',
+  return request(`/api/custom-page/ai-session-cancel`, {
+    method: 'POST',
+    data: {
+      project_id: projectId,
+      session_id: sessionId,
     },
-  );
+  });
 };
 
 /**
@@ -324,4 +324,22 @@ export const renameFile = async (
       newPath,
     },
   });
+};
+
+/**
+ * 获取项目详情信息
+ * @param projectId 项目ID
+ * @returns Promise<ProjectDetailResponse> 项目详情信息
+ */
+export const getProjectInfo = async (
+  projectId: string,
+): Promise<ProjectDetailResponse> => {
+  return request(
+    `/api/custom-page/get-project-info?projectId=${encodeURIComponent(
+      projectId,
+    )}`,
+    {
+      method: 'GET',
+    },
+  );
 };

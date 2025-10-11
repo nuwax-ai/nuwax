@@ -53,8 +53,8 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   const projectName = projectInfo?.name || workspace.name || '大模型三部曲';
 
   // 获取创建者信息
-  // const creatorName =
-  //   projectInfo?.creatorNickName || projectInfo?.creatorName || '未知用户';
+  const creatorName =
+    projectInfo?.creatorNickName || projectInfo?.creatorName || '未知用户';
   const creatorAvatar = projectInfo?.creatorAvatar;
 
   // 获取部署状态
@@ -166,10 +166,11 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
             <Button
               type="primary"
               size="small"
-              icon={<RocketOutlined />}
-              loading={isDeploying}
-              onClick={onDeployProject}
               className={styles.deployButton}
+              onClick={onDeployProject}
+              loading={isDeploying}
+              disabled={isDeploying}
+              icon={isDeploying ? undefined : <RocketOutlined />}
             >
               {isDeploying ? '部署中...' : '部署'}
             </Button>

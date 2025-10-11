@@ -8,7 +8,6 @@ import {
   UI_CONSTANTS,
 } from '@/constants/appDevConstants';
 import {
-  deleteFile,
   getFileContent,
   getProjectContent,
   renameFile,
@@ -472,7 +471,7 @@ export const useAppDevFileManagement = ({
   );
 
   /**
-   * 删除文件或文件夹
+   * 删除文件或文件夹（通过全量更新方式）
    */
   const deleteFileItem = useCallback(
     async (fileId: string): Promise<boolean> => {
@@ -489,7 +488,39 @@ export const useAppDevFileManagement = ({
         }
 
         console.log('🗑️ [FileManagement] 删除文件:', fileNode.path);
-        const result = await deleteFile(projectId, fileNode.path);
+
+        // 获取当前完整文件列表
+        const flatFileList = treeToFlatList(fileTreeState.data);
+
+        // 过滤掉要删除的文件及其所有子文件（如果是文件夹）
+        const filteredList = flatFileList.filter((file) => {
+          // 如果是文件本身，直接删除
+          if (file.id === fileId) {
+            console.log('🗑️ [FileManagement] 从列表中移除文件:', file.path);
+            return false;
+          }
+          // 如果是文件夹，删除其所有子文件
+          if (fileNode.type === 'folder') {
+            const shouldRemove = file.path.startsWith(fileNode.path + '/');
+            if (shouldRemove) {
+              console.log('🗑️ [FileManagement] 从列表中移除子文件:', file.path);
+            }
+            return !shouldRemove;
+          }
+          return true;
+        });
+
+        console.log(
+          '📝 [FileManagement] 原始文件数量:',
+          flatFileList.length,
+          '删除后文件数量:',
+          filteredList.length,
+        );
+        console.log(
+          '📝 [FileManagement] 提交更新后的文件列表:',
+          filteredList.map((f) => f.path),
+        );
+        const result = await submitFilesUpdate(projectId, filteredList);
 
         if (result?.success) {
           console.log('✅ [FileManagement] 文件删除成功:', fileNode.path);

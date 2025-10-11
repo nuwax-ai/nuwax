@@ -4,11 +4,7 @@
 
 import { CHAT_CONSTANTS } from '@/constants/appDevConstants';
 import { cancelAgentTask, sendChatMessage } from '@/services/appDev';
-import type {
-  AgentMessageData,
-  AgentThoughtData,
-  UnifiedSessionMessage,
-} from '@/types/interfaces/appDev';
+import type { UnifiedSessionMessage } from '@/types/interfaces/appDev';
 import { message } from 'antd';
 import { useCallback, useState } from 'react';
 import { useModel } from 'umi';
@@ -41,18 +37,27 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  // const [currentStreamingMessageId, setCurrentStreamingMessageId] = useState<
+  //   string | null
+  // >(null);
 
   /**
    * 处理SSE消息
    */
   const handleSSEMessage = useCallback((message: UnifiedSessionMessage) => {
+    console.log('🔍 [Chat] 处理SSE消息:', message);
+    console.log('🔍 [Chat] message.subType:', message.subType);
+    console.log('🔍 [Chat] message.data:', message.data);
+
     switch (message.subType) {
       case 'agent_thought_chunk': {
-        const thoughtData = message.data as AgentThoughtData;
+        const thoughtData = message.data as any; // 临时使用 any 类型
         const thinkingMessage: ChatMessage = {
           id: `thinking_${Date.now()}`,
           type: 'thinking',
-          content: `思考中: ${thoughtData.thinking}`,
+          content: `思考中: ${
+            thoughtData.thinking || thoughtData.text || '正在思考...'
+          }`,
           timestamp: new Date(),
           sessionId: message.sessionId,
         };
@@ -61,31 +66,50 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
       }
 
       case 'agent_message_chunk': {
-        const messageData = message.data as AgentMessageData;
-        const aiMessage: ChatMessage = {
-          id: `ai_${Date.now()}`,
-          type: 'ai',
-          content: messageData.content.text,
-          timestamp: new Date(),
-          sessionId: message.sessionId,
-          isStreaming: !messageData.is_final,
-        };
+        const messageData = message.data as any; // 临时使用 any 类型
+        const chunkText = messageData.text || messageData.content?.text || '';
+
+        console.log('📝 [Chat] 收到流式文本块:', chunkText);
+        console.log('📝 [Chat] is_final:', messageData.is_final);
 
         if (messageData.is_final) {
           setIsChatLoading(false);
         }
 
         setChatMessages((prev) => {
+          // 查找当前会话的流式消息
           const existingStreamingIndex = prev.findIndex(
             (msg) => msg.sessionId === message.sessionId && msg.isStreaming,
           );
 
           if (existingStreamingIndex >= 0) {
+            // 更新现有的流式消息，累积文本
             const updated = [...prev];
-            updated[existingStreamingIndex] = aiMessage;
+            const existingMessage = updated[existingStreamingIndex];
+            updated[existingStreamingIndex] = {
+              ...existingMessage,
+              content: (existingMessage.content || '') + chunkText,
+              isStreaming: !messageData.is_final,
+            };
+            console.log(
+              '📝 [Chat] 更新流式消息，累积内容:',
+              updated[existingStreamingIndex].content,
+            );
             return updated;
           } else {
-            return [...prev, aiMessage];
+            // 创建新的流式消息
+            const messageId = `ai_stream_${message.sessionId}_${Date.now()}`;
+            // setCurrentStreamingMessageId(messageId);
+            const newMessage: ChatMessage = {
+              id: messageId,
+              type: 'ai',
+              content: chunkText,
+              timestamp: new Date(),
+              sessionId: message.sessionId,
+              isStreaming: !messageData.is_final,
+            };
+            console.log('📝 [Chat] 创建新流式消息:', newMessage.content);
+            return [...prev, newMessage];
           }
         });
         break;
@@ -153,6 +177,7 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
     const inputText = chatInput;
     setChatInput('');
     setIsChatLoading(true);
+    // setCurrentStreamingMessageId(null); // 清理之前的流式消息ID
 
     try {
       // 第一次发送消息时不传递 session_id，让服务器生成

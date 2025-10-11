@@ -571,3 +571,206 @@ export interface ChatMessage {
   sessionId?: string;
   isStreaming?: boolean;
 }
+
+// ==================== 项目详情相关类型定义 ====================
+
+/**
+ * 代理配置后端信息
+ */
+export interface ProxyConfigBackend {
+  /** 后端地址 */
+  backend: string;
+  /** 权重 */
+  weight: number;
+}
+
+/**
+ * 代理配置
+ */
+export interface ProxyConfig {
+  /** 环境类型 */
+  env: 'dev' | 'prod';
+  /** 路径 */
+  path: string;
+  /** 后端配置列表 */
+  backends: ProxyConfigBackend[];
+  /** 健康检查路径 */
+  healthCheckPath?: string;
+  /** 是否需要认证 */
+  requireAuth: boolean;
+}
+
+/**
+ * 下拉选项配置
+ */
+export interface SelectOption {
+  /** 选项标签 */
+  label: string;
+  /** 选项值 */
+  value: string;
+  /** 子选项 */
+  children?: SelectOption[];
+}
+
+/**
+ * 下拉参数配置
+ */
+export interface SelectConfig {
+  /** 数据源类型 */
+  dataSourceType: 'MANUAL' | 'BINDING';
+  /** 目标类型 */
+  targetType: 'Agent' | 'Plugin' | 'Workflow' | 'Knowledge' | 'Table';
+  /** 目标ID */
+  targetId: number;
+  /** 目标名称 */
+  targetName: string;
+  /** 目标描述 */
+  targetDescription: string;
+  /** 目标图标 */
+  targetIcon: string;
+  /** 下拉选项配置 */
+  options: SelectOption[];
+}
+
+/**
+ * 参数配置
+ */
+export interface Arg {
+  /** 参数key，唯一标识 */
+  key: string;
+  /** 参数名称 */
+  name: string;
+  /** 参数展示名称 */
+  displayName: string;
+  /** 参数详细描述信息 */
+  description: string;
+  /** 数据类型 */
+  dataType: string;
+  /** 是否必须 */
+  require: boolean;
+  /** 是否为开启 */
+  enable: boolean;
+  /** 是否为系统内置变量参数 */
+  systemVariable: boolean;
+  /** 值引用类型 */
+  bindValueType: 'Input' | 'Reference';
+  /** 参数值 */
+  bindValue: string;
+  /** 下级参数 */
+  subArgs: Arg[];
+  /** 输入类型 */
+  inputType: string;
+  /** 下拉参数配置 */
+  selectConfig?: SelectConfig;
+  /** 循环ID */
+  loopId?: number;
+  /** 子参数 */
+  children?: Arg[];
+}
+
+/**
+ * 页面参数配置
+ */
+export interface PageArgConfig {
+  /** 页面ID */
+  pageId: number;
+  /** 页面基础路径 */
+  basePath: string;
+  /** 页面路径 */
+  pageUri: string;
+  /** 页面名称 */
+  name: string;
+  /** 页面描述 */
+  description: string;
+  /** 参数列表 */
+  args: Arg[];
+}
+
+/**
+ * 版本信息项
+ */
+export interface VersionInfoItem {
+  /** 版本时间 */
+  time: string;
+  /** 操作类型 */
+  action: 'chat' | 'submit_files_update' | 'build' | 'deploy';
+  /** 版本号 */
+  version: number;
+}
+
+/**
+ * 项目详情数据
+ */
+export interface ProjectDetailData {
+  /** 项目ID */
+  projectId: number;
+  /** 项目ID字符串 */
+  projectIdStr: string;
+  /** 调试关联智能体ID */
+  devAgentId: number;
+  /** 项目名称 */
+  name: string;
+  /** 项目描述 */
+  description: string;
+  /** 项目图标 */
+  icon: string;
+  /** 项目基础路径 */
+  basePath: string;
+  /** 发布状态,1:已发布;-1:未发布 */
+  buildRunning: number;
+  /** 发布时间 */
+  buildTime: string;
+  /** 发布版本 */
+  buildVersion: number;
+  /** 代码版本 */
+  codeVersion: number;
+  /** 版本信息 */
+  versionInfo: VersionInfoItem[];
+  /** 项目类型 */
+  projectType: 'REVERSE_PROXY' | 'ONLINE_DEPLOY';
+  /** 代理配置 */
+  proxyConfigs: ProxyConfig[];
+  /** 页面参数配置 */
+  pageArgConfigs: PageArgConfig[];
+  /** 扩展字段 */
+  ext: Record<string, any>;
+  /** 租户ID */
+  tenantId: number;
+  /** 空间ID */
+  spaceId: number;
+  /** 创建时间 */
+  created: string;
+  /** 创建者ID */
+  creatorId: number;
+  /** 创建者名称 */
+  creatorName: string;
+  /** 创建者昵称 */
+  creatorNickName: string;
+  /** 创建者头像 */
+  creatorAvatar: string;
+}
+
+/**
+ * 项目详情API响应类型
+ */
+export type ProjectDetailResponse = RequestResponse<ProjectDetailData>;
+
+/**
+ * 部署状态枚举
+ */
+export enum DeployStatus {
+  /** 未发布 */
+  NOT_DEPLOYED = -1,
+  /** 已发布 */
+  DEPLOYED = 1,
+}
+
+/**
+ * 项目类型枚举
+ */
+export enum ProjectType {
+  /** 反向代理 */
+  REVERSE_PROXY = 'REVERSE_PROXY',
+  /** 在线部署 */
+  ONLINE_DEPLOY = 'ONLINE_DEPLOY',
+}
