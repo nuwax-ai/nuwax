@@ -32,25 +32,8 @@ const ReverseProxyModal: React.FC<ReverseProxyModalProps> = ({
   useEffect(() => {
     // 默认选中开发环境
     setReverseProxyType(ReverseProxyEnum.Dev);
-    // // 默认选中开发环境配置
-    // const _proxyConfig = defaultProxyConfigs?.filter((item) => item.env === ReverseProxyEnum.Dev) || [];
-    // setProxyConfigs(_proxyConfig);
     setProxyConfigs(defaultProxyConfigs || []);
   }, [defaultProxyConfigs]);
-
-  const handleClick = (type: ReverseProxyEnum) => {
-    setReverseProxyType(type);
-    const _proxyConfig =
-      defaultProxyConfigs?.filter((item) => item.env === type) || [];
-    setProxyConfigs(_proxyConfig);
-  };
-
-  const handleConfirm = (configs: ProxyConfig[]) => {
-    // const _proxyConfig = proxyConfigs?.filter((item) => item.env !== reverseProxyType) || [];
-    // _proxyConfig.push(...configs);
-    // setProxyConfigs(_proxyConfig);
-    setProxyConfigs(configs);
-  };
 
   return (
     <Modal
@@ -72,7 +55,7 @@ const ReverseProxyModal: React.FC<ReverseProxyModalProps> = ({
                     className={cx(styles.item, 'cursor-pointer', {
                       [styles.checked]: reverseProxyType === item.type,
                     })}
-                    onClick={() => handleClick(item.type)}
+                    onClick={() => setReverseProxyType(item.type)}
                   >
                     {item.label}
                   </li>
@@ -86,7 +69,7 @@ const ReverseProxyModal: React.FC<ReverseProxyModalProps> = ({
               projectId={projectId}
               reverseProxyType={reverseProxyType}
               proxyConfigs={proxyConfigs}
-              onConfirm={handleConfirm}
+              onConfirm={setProxyConfigs}
             />
           </div>
           {/* 关闭按钮 */}

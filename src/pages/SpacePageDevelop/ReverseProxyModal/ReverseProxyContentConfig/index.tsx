@@ -103,7 +103,6 @@ const ReverseProxyContentConfig: React.FC<ReverseProxyContentConfigProps> = ({
   // 输入框值改变
   const handleInputValue = (key: string, attr: string, value: string) => {
     const _proxyConfig = updateNodeField(key, attr, value);
-    console.log(_proxyConfig, ' _proxyConfig');
     setAllProxyConfigs(_proxyConfig);
   };
 
@@ -183,7 +182,7 @@ const ReverseProxyContentConfig: React.FC<ReverseProxyContentConfigProps> = ({
       <Table<ProxyConfig>
         className={cx('flex-1')}
         columns={inputColumns}
-        dataSource={proxyConfigs}
+        dataSource={currentProxyConfigs}
         loading={loading}
         pagination={false}
         virtual
