@@ -83,7 +83,7 @@ export const restartDev = async (projectId: string): Promise<any> => {
  * @returns Promise<BuildResponse> 构建结果
  */
 export const buildProject = async (
-  projectId: number,
+  projectId: string,
 ): Promise<BuildResponse> => {
   return request('/api/custom-page/build', {
     method: 'POST',
@@ -154,7 +154,7 @@ export const uploadSingleFile = async (params: {
  * @returns Promise<GetProjectContentResponse> 项目文件树数据
  */
 export const getProjectContent = async (
-  projectId: number | string,
+  projectId: string,
 ): Promise<GetProjectContentResponse> => {
   return request(
     `/api/custom-page/get-project-content?projectId=${encodeURIComponent(
@@ -206,7 +206,7 @@ export const keepAlive = async (projectId: string): Promise<any> => {
  * @returns Promise<SubmitFilesResponse> 提交结果
  */
 export const submitFiles = async (
-  projectId: number,
+  projectId: string,
   files: PageFileInfo[],
 ): Promise<SubmitFilesResponse> => {
   return request('/api/custom-page/submit-files', {

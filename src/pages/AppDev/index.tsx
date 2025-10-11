@@ -1,8 +1,8 @@
 import { ERROR_MESSAGES } from '@/constants/appDevConstants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
+import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
-import { getProjectIdFromUrl } from '@/models/appDev';
 import { buildProject, uploadAndStartProject } from '@/services/appDev';
 import { getLanguageFromFile, isImageFile } from '@/utils/appDevUtils';
 import {
@@ -71,6 +71,9 @@ const AppDev: React.FC = () => {
     updateProjectId,
   } = appDevModel;
 
+  // 使用简化的 AppDev projectId hook
+  const { projectId, hasValidProjectId } = useAppDevProjectId();
+
   // 使用 Modal.confirm 来处理确认对话框
   const [, contextHolder] = Modal.useModal();
 
@@ -93,17 +96,17 @@ const AppDev: React.FC = () => {
 
   // 使用重构后的 hooks
   const fileManagement = useAppDevFileManagement({
-    projectId: workspace.projectId,
+    projectId: projectId || '',
     onFileSelect: setActiveFile,
     onFileContentChange: updateFileContent,
   });
 
   const chat = useAppDevChat({
-    projectId: workspace.projectId,
+    projectId: projectId || '',
   });
 
   const server = useAppDevServer({
-    projectId: workspace.projectId,
+    projectId: projectId || '',
     onServerStart: updateDevServerUrl,
     onServerStatusChange: setIsServiceRunning,
   });
@@ -122,44 +125,45 @@ const AppDev: React.FC = () => {
   const previewRef = useRef<PreviewRef>(null);
 
   /**
-   * 从 URL 参数中获取 projectId
+   * 检查 projectId 状态
    */
   useEffect(() => {
-    const urlProjectId = getProjectIdFromUrl();
-    console.log('🔍 [AppDev] 从 URL 参数获取 projectId:', urlProjectId);
+    console.log('🔍 [AppDev] ProjectId 状态检查:', {
+      projectId,
+      hasValidProjectId,
+    });
 
-    if (urlProjectId) {
-      updateProjectId(urlProjectId);
-      setMissingProjectId(false);
-      console.log('✅ [AppDev] 已从 URL 参数设置 projectId:', urlProjectId);
+    if (!hasValidProjectId) {
+      setMissingProjectId(true);
+      console.warn('⚠️ [AppDev] 没有有效的 projectId');
     } else {
-      if (!workspace.projectId) {
-        setMissingProjectId(true);
-        console.warn('⚠️ [AppDev] URL 参数和工作区中都没有 projectId');
-      }
+      setMissingProjectId(false);
+      console.log('✅ [AppDev] 已获取有效的 projectId:', projectId);
     }
-  }, []);
+  }, [projectId, hasValidProjectId]);
 
   /**
    * 处理项目部署
    */
   const handleDeployProject = useCallback(async () => {
-    if (!workspace.projectId) {
-      message.error('项目ID不存在，无法部署');
+    // 使用简化的 projectId hook
+    if (!hasValidProjectId || !projectId) {
+      message.error('项目ID不存在或无效，无法部署');
+      console.error('❌ [AppDev] 部署失败 - 无效的projectId:', { projectId });
       return;
     }
 
     try {
       setIsDeploying(true);
-      console.log('🚀 [AppDev] 开始部署项目:', workspace.projectId);
+      console.log('🚀 [AppDev] 开始部署项目:', projectId);
 
-      const result = await buildProject(Number(workspace.projectId));
+      const result = await buildProject(projectId);
 
-      if (result?.success && result?.data) {
+      console.log('🔍 [AppDev] 部署API响应:', result);
+
+      // 检查API响应格式
+      if (result?.code === '0000' && result?.data) {
         const { devServerUrl, prodServerUrl } = result.data;
-
-        message.success('项目部署成功！');
-
         // 显示部署结果
         Modal.success({
           title: '部署成功',
@@ -195,20 +199,26 @@ const AppDev: React.FC = () => {
           width: 500,
         });
       } else {
-        throw new Error(result?.message || '部署失败');
+        // 兼容不同的错误响应格式
+        const errorMessage = result?.message || '部署失败';
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       console.error('❌ [AppDev] 部署失败:', error);
-      message.error(`部署失败: ${error.message || '未知错误'}`);
 
+      // 改进错误处理，兼容不同的错误格式
+      const errorMessage =
+        error?.message || error?.toString() || '部署过程中发生未知错误';
+
+      // 只使用一个错误提示，避免重复
       Modal.error({
         title: '部署失败',
-        content: error.message || '部署过程中发生未知错误，请稍后重试。',
+        content: errorMessage,
       });
     } finally {
       setIsDeploying(false);
     }
-  }, [workspace.projectId]);
+  }, [hasValidProjectId, projectId]);
 
   /**
    * 键盘快捷键处理
@@ -231,7 +241,7 @@ const AppDev: React.FC = () => {
       // Ctrl/Cmd + R 重启开发服务器
       if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
         event.preventDefault();
-        if (workspace.projectId && isServiceRunning) {
+        if (projectId && isServiceRunning) {
           console.log('开发服务器重启功能已禁用');
         }
       }
@@ -239,7 +249,7 @@ const AppDev: React.FC = () => {
       // Ctrl/Cmd + D 部署项目
       if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
         event.preventDefault();
-        if (workspace.projectId && !isDeploying) {
+        if (hasValidProjectId && !isDeploying) {
           handleDeployProject();
         }
       }
@@ -251,7 +261,7 @@ const AppDev: React.FC = () => {
     chat.chatInput,
     chat.sendChat,
     fileManagement.saveFile,
-    workspace.projectId,
+    projectId,
     isServiceRunning,
     isDeploying,
     handleDeployProject,
@@ -313,7 +323,7 @@ const AppDev: React.FC = () => {
    * 处理单个文件上传
    */
   const handleUploadSingleFile = useCallback(async () => {
-    if (!workspace.projectId) {
+    if (!hasValidProjectId) {
       message.error(ERROR_MESSAGES.NO_PROJECT_ID);
       return;
     }
@@ -334,7 +344,7 @@ const AppDev: React.FC = () => {
         '📤 [AppDev] 正在上传单个文件:',
         uploadFile.name,
         '项目ID:',
-        workspace.projectId,
+        projectId,
         '路径:',
         singleFilePath,
       );
@@ -352,7 +362,13 @@ const AppDev: React.FC = () => {
     } finally {
       setSingleFileUploadLoading(false);
     }
-  }, [workspace.projectId, fileManagement, singleFilePath, uploadFile]);
+  }, [
+    hasValidProjectId,
+    projectId,
+    fileManagement,
+    singleFilePath,
+    uploadFile,
+  ]);
 
   /**
    * 处理单个文件上传取消
@@ -1273,7 +1289,7 @@ const AppDev: React.FC = () => {
         >
           <Space direction="vertical" style={{ width: '100%' }}>
             <div>
-              <Text>当前项目ID：{workspace.projectId}</Text>
+              <Text>当前项目ID：{projectId || '未设置'}</Text>
             </div>
             <div>
               <Text strong>文件路径：</Text>

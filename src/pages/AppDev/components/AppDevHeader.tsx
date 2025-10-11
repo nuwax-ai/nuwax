@@ -28,8 +28,6 @@ export interface AppDevHeaderProps {
  */
 const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   workspace,
-  onReloadProject,
-  onDeleteProject,
   onDeployProject,
   hasUpdates = true,
   lastSaveTime = new Date(),
@@ -77,21 +75,21 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
           )}
         </div>
         <div className={cx('flex', 'items-center', styles['action-buttons'])}>
-          <Button
+          {/* <Button
             size="small"
             className={styles.navButton}
             onClick={onReloadProject}
           >
             重新加载项目
-          </Button>
-          <Button
+          </Button> */}
+          {/* <Button
             size="small"
             danger
             className={styles.actionButton}
             onClick={onDeleteProject}
           >
             删除
-          </Button>
+          </Button> */}
           <Tooltip
             title={
               isDeploying

@@ -32,7 +32,7 @@ export interface ProjectContentRes {
  */
 export interface GetProjectContentParams {
   /** 项目ID */
-  projectId: number;
+  projectId: string;
 }
 
 /**
@@ -83,7 +83,7 @@ export interface BuildInfo {
  */
 export interface CustomBuildReq {
   /** 项目ID */
-  projectId: number;
+  projectId: string;
 }
 
 /**
@@ -146,7 +146,7 @@ export interface PageFileInfo {
  */
 export interface SubmitFilesParams {
   /** 项目ID */
-  projectId: number;
+  projectId: string;
   /** 文件列表 */
   files: PageFileInfo[];
 }
