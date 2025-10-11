@@ -334,6 +334,7 @@ const SpacePageDevelop: React.FC = () => {
       />
       {/* 路径参数配置弹窗 */}
       <PathParamsConfigModal
+        projectId={projectId}
         defaultPageArgConfigs={pageArgConfigs}
         open={openPathParamsConfigModal}
         onCancel={() => setOpenPathParamsConfigModal(false)}

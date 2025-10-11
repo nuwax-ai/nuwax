@@ -20,6 +20,7 @@ const cx = classNames.bind(styles);
  */
 const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
   open,
+  projectId,
   defaultPageArgConfigs,
   onCancel,
 }) => {
@@ -125,6 +126,7 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
       />
       {/* 添加路径弹窗 */}
       <AddPathModal
+        projectId={projectId}
         mode={CreateUpdateModeEnum.Create}
         open={addPathModalOpen}
         onCancel={() => setAddPathModalOpen(false)}

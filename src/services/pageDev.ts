@@ -3,6 +3,7 @@ import type {
   CreateCustomPageInfo,
   CustomPageBindDevAgentParams,
   CustomPageDto,
+  PageAddPathParams,
   PageBatchConfigProxyParams,
   PageUploadAndStartParams,
 } from '@/types/interfaces/pageDev';
@@ -68,6 +69,16 @@ export async function apiPageBatchConfigProxy(
   data: PageBatchConfigProxyParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/custom-page/batch-config-proxy', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 添加路径配置
+export async function apiPageAddPath(
+  data: PageAddPathParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/custom-page/add-path', {
     method: 'POST',
     data,
   });
