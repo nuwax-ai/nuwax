@@ -21,6 +21,7 @@ import {
   AgentComponentInfo,
   AgentConfigInfo,
   ComponentModelBindConfig,
+  GuidQuestionDto,
 } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
@@ -123,7 +124,7 @@ const EditAgent: React.FC = () => {
 
   // 更新智能体信息
   const handleChangeAgent = (
-    value: string | string[] | number,
+    value: string | string[] | number | GuidQuestionDto[],
     attr: string,
   ) => {
     // 更新智能体配置信息
@@ -143,10 +144,13 @@ const EditAgent: React.FC = () => {
       setIsSuggest(value === OpenCloseEnum.Open);
     }
     // 预置问题, 并且没有消息时，更新建议预置问题列表
-    if (attr === 'openingGuidQuestions' && !messageList?.length) {
-      const _suggestList = value as string[];
+    if (attr === 'guidQuestionDtos' && !messageList?.length) {
+      const _suggestList = value as GuidQuestionDto[];
       // 过滤掉空值
-      const list = _suggestList?.filter((item) => !!item) || [];
+      const list =
+        _suggestList?.filter((item) => !!item.info)?.map((item) => item.info) ||
+        [];
+      console.log('过滤掉空值list', list, _suggestList);
       setChatSuggestList(list);
     }
     const {
@@ -160,10 +164,11 @@ const EditAgent: React.FC = () => {
       suggestPrompt,
       openingChatMsg,
       openScheduledTask,
-      openingGuidQuestions,
+      // openingGuidQuestions,
       openLongMemory,
       expandPageArea,
       hideChatArea,
+      guidQuestionDtos,
     } = _agentConfigInfo;
 
     // 更新智能体信息
@@ -178,10 +183,11 @@ const EditAgent: React.FC = () => {
       suggestPrompt,
       openingChatMsg,
       openScheduledTask,
-      openingGuidQuestions,
+      // openingGuidQuestions,
       openLongMemory,
       expandPageArea,
       hideChatArea,
+      guidQuestionDtos,
     });
   };
 

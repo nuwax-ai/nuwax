@@ -21,6 +21,7 @@ const cx = classNames.bind(styles);
 const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
   spaceId,
   open,
+  defaultPageArgConfigs,
   onCancel,
 }) => {
   // 路径参数列表
@@ -32,7 +33,7 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
 
   useEffect(() => {
     console.log('spaceId', spaceId);
-    setPathParams([]);
+    setPathParams(defaultPageArgConfigs || []);
     setKey('');
   }, []);
 

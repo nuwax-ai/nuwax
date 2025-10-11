@@ -1,6 +1,9 @@
 import { REVERSE_PROXY_ACTIONS } from '@/constants/pageDev.constants';
 import { ReverseProxyEnum } from '@/types/enums/pageDev';
-import { ReverseProxyModalProps } from '@/types/interfaces/pageDev';
+import {
+  ProxyConfig,
+  ReverseProxyModalProps,
+} from '@/types/interfaces/pageDev';
 import { CloseOutlined } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';
@@ -15,15 +18,22 @@ const cx = classNames.bind(styles);
  */
 const ReverseProxyModal: React.FC<ReverseProxyModalProps> = ({
   open,
+  projectId,
+  defaultProxyConfigs,
   onCancel,
 }) => {
-  // 当前反向代理类型
-  const [currentReverseProxyType, setCurrentReverseProxyType] =
-    useState<ReverseProxyEnum>(ReverseProxyEnum.Dev);
+  // 当前反向代理类型 可用值:dev,prod
+  const [reverseProxyType, setReverseProxyType] = useState<ReverseProxyEnum>(
+    ReverseProxyEnum.Dev,
+  );
+  // 当前反向代理配置
+  const [proxyConfigs, setProxyConfigs] = useState<ProxyConfig[]>([]);
 
   useEffect(() => {
-    setCurrentReverseProxyType(ReverseProxyEnum.Dev);
-  }, []);
+    // 默认选中开发环境
+    setReverseProxyType(ReverseProxyEnum.Dev);
+    setProxyConfigs(defaultProxyConfigs || []);
+  }, [defaultProxyConfigs]);
 
   return (
     <Modal
@@ -34,6 +44,7 @@ const ReverseProxyModal: React.FC<ReverseProxyModalProps> = ({
       className={cx(styles['modal-container'])}
       modalRender={() => (
         <div className={cx(styles.container, 'flex', 'overflow-hide')}>
+          {/* 左侧部分 */}
           <div className={cx(styles.left)}>
             <h3>反向代理</h3>
             <ul>
@@ -42,9 +53,9 @@ const ReverseProxyModal: React.FC<ReverseProxyModalProps> = ({
                   <li
                     key={item.type}
                     className={cx(styles.item, 'cursor-pointer', {
-                      [styles.checked]: currentReverseProxyType === item.type,
+                      [styles.checked]: reverseProxyType === item.type,
                     })}
-                    onClick={() => setCurrentReverseProxyType(item.type)}
+                    onClick={() => setReverseProxyType(item.type)}
                   >
                     {item.label}
                   </li>
@@ -52,12 +63,19 @@ const ReverseProxyModal: React.FC<ReverseProxyModalProps> = ({
               })}
             </ul>
           </div>
+          {/* 右侧部分 */}
           <div className={cx('flex-1', styles.right)}>
-            <ReverseProxyContentConfig type={currentReverseProxyType} />
+            <ReverseProxyContentConfig
+              projectId={projectId}
+              reverseProxyType={reverseProxyType}
+              proxyConfigs={proxyConfigs}
+              onConfirm={setProxyConfigs}
+            />
           </div>
+          {/* 关闭按钮 */}
           <Button
             type="text"
-            className={cx(styles.close, 'cursor-pointer')}
+            className={cx(styles.close)}
             onClick={onCancel}
             icon={<CloseOutlined />}
           />

@@ -16,7 +16,7 @@ import { history, useRequest } from 'umi';
 const DebugAgentBindModal: React.FC<DebugAgentBindModalProps> = ({
   spaceId,
   defaultDevAgentId,
-  createCustomPageInfo,
+  projectId,
   open,
   onCancel,
 }) => {
@@ -57,9 +57,7 @@ const DebugAgentBindModal: React.FC<DebugAgentBindModalProps> = ({
         // 关闭弹窗
         onCancel();
         // 选择调试智能体后，跳转到开发页面
-        history.push(
-          `/app-dev?projectId=${createCustomPageInfo?.projectIdStr}`,
-        );
+        history.push(`/app-dev?projectId=${projectId}`);
       },
       onError: () => {
         message.error('绑定失败');
@@ -78,7 +76,7 @@ const DebugAgentBindModal: React.FC<DebugAgentBindModalProps> = ({
   const onFinish: FormProps<any>['onFinish'] = (values) => {
     setLoading(true);
     runCustomPageBindDevAgent({
-      projectId: createCustomPageInfo?.projectIdStr,
+      projectId,
       spaceId,
       ...values,
     });

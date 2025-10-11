@@ -203,6 +203,24 @@ const arraysContainSameItems = (arr1: string[], arr2: string[]) => {
   return true;
 };
 
+/**
+ * 判断数组中某个字段是否存在重复值
+ * @param {Array} arr 源数组
+ * @param {string} key 字段名，支持点语法，如 'user.name'
+ * @returns {boolean} true = 有重复，false = 无重复
+ */
+const hasDuplicate = (arr: any[], key: string) => {
+  if (!Array.isArray(arr)) return false;
+
+  // 按 key 取值
+  const vals = arr.map((item) => {
+    return key.split('.').reduce((o, k) => (o || {})[k], item);
+  });
+
+  // 用 Set 去重后比较长度
+  return new Set(vals).size !== vals.length;
+};
+
 // 向上查找元素
 const findParentElement = (element: HTMLElement, className: string) => {
   let currentElement = element;
@@ -233,6 +251,7 @@ export {
   getBase64,
   getNumbersOnly,
   getURLParams,
+  hasDuplicate,
   isEmptyObject,
   isNumber,
   isValidEmail,

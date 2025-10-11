@@ -3,6 +3,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import UploadAvatar from '@/components/UploadAvatar';
 import {
   apiCustomPageCreate,
+  apiCustomPageCreateReverseProxy,
   apiCustomPageUploadAndStart,
 } from '@/services/pageDev';
 import { PageDevelopCreateTypeEnum } from '@/types/enums/pageDev';
@@ -60,6 +61,21 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
     },
   });
 
+  // 创建反向代理项目
+  const { run: runCreatePageCreateReverseProxy } = useRequest(
+    apiCustomPageCreateReverseProxy,
+    {
+      manual: true,
+      onSuccess: (result: CreateCustomPageInfo) => {
+        onConfirm(result);
+        setLoading(false);
+      },
+      onError: () => {
+        setLoading(false);
+      },
+    },
+  );
+
   // 创建页面
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
     setLoading(true);
@@ -94,7 +110,12 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
     }
     // 反向代理
     else if (type === PageDevelopCreateTypeEnum.Reverse_Proxy) {
-      // todo 调用反向代理接口
+      // 调用反向代理接口
+      const data = {
+        ...values,
+        spaceId,
+      };
+      runCreatePageCreateReverseProxy(data);
     }
   };
 

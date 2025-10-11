@@ -6,6 +6,7 @@ import type {
   DevModeEnum,
   EventBindResponseActionEnum,
   ExpandPageAreaEnum,
+  GuidQuestionSetTypeEnum,
   HideChatAreaEnum,
   HomeIndexEnum,
   InvokeTypeEnum,
@@ -66,25 +67,25 @@ export interface AgentPublishApplyParams {
 // 引导问题
 export interface GuidQuestionDto {
   // 问题类型,可用值:Question,Page,Link
-  type: number;
+  type: GuidQuestionSetTypeEnum;
   // 问题信息
   info: string;
   // 图标
-  icon: string;
+  icon?: string;
   // 链接地址，type类型为Link时有效
-  url: string;
+  url?: string;
   // 页面ID，type类型为Page时有效
-  pageId: number;
+  pageId?: number;
   // 页面基础路径，type类型为Page时有效
-  basePath: string;
+  basePath?: string;
   // 页面路径，type类型为Page时有效
-  pageUri: string;
+  pageUri?: string;
   //页面地址，配置更新时不需要传递，type类型为Page时有效，完整的页面地址，前端需要使用 BASE_URL+pageUrl
-  pageUrl: string;
+  pageUrl?: string;
   // 参数
-  args: BindConfigWithSub[];
+  args?: BindConfigWithSub[];
   // 参数值，配置更新时不需要传递，用户点击跳转时直接使用，type类型为Page时有效
-  params: any;
+  params?: any;
 }
 
 // 更新智能体基础配置信息输入参数
