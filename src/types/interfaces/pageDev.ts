@@ -26,6 +26,10 @@ export interface ProxyConfig {
 
 // 页面参数配置
 export interface PageArgConfig {
+  /** 页面ID */
+  pageId?: number;
+  /** 页面基础路径 */
+  basePath?: string;
   // 页面路径，例如 /view
   pageUri: string;
   // 页面名称

@@ -3,8 +3,17 @@ import PluginConfigTitle from '@/components/PluginConfigTitle';
 import { AFFERENT_MODE_LIST } from '@/constants/library.constants';
 import { InputTypeEnum } from '@/types/enums/common';
 import { BindConfigWithSub } from '@/types/interfaces/common';
+import { PageArgConfig } from '@/types/interfaces/pageDev';
 import { DeleteOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Input, Select, Table, TableColumnsType } from 'antd';
+import {
+  Button,
+  Checkbox,
+  Empty,
+  Input,
+  Select,
+  Table,
+  TableColumnsType,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,14 +22,25 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
+ * 路径参数配置内容Props
+ */
+export interface PathParamsConfigContentProps {
+  currentPathParam: PageArgConfig | null;
+}
+
+/**
  * 路径参数配置内容
  */
-const PathParamsConfigContent: React.FC = () => {
+const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
+  currentPathParam,
+}) => {
   // 入参配置
   const [inputConfigArgs, setInputConfigArgs] = useState<BindConfigWithSub[]>(
     [],
   );
   const [loading, setLoading] = useState<boolean>(false);
+
+  console.log(currentPathParam, 'currentPathParam');
 
   // 入参配置 - 新增
   const handleInputConfigAdd = () => {
@@ -181,25 +201,33 @@ const PathParamsConfigContent: React.FC = () => {
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
-      <PluginConfigTitle
-        className="px-16"
-        title="入参配置"
-        onClick={handleInputConfigAdd}
-      />
-      <Table<BindConfigWithSub>
-        columns={inputColumns}
-        dataSource={inputConfigArgs}
-        virtual
-        scroll={{
-          y: 420,
-        }}
-        pagination={false}
-      />
-      <footer className={cx(styles.footer)}>
-        <Button type="primary" onClick={handleSave} loading={loading}>
-          保存
-        </Button>
-      </footer>
+      {!currentPathParam ? (
+        <div className={cx('h-full', 'flex', 'items-center', 'content-center')}>
+          <Empty description="暂无路径参数" />
+        </div>
+      ) : (
+        <>
+          <PluginConfigTitle
+            className="px-16"
+            title="入参配置"
+            onClick={handleInputConfigAdd}
+          />
+          <Table<BindConfigWithSub>
+            columns={inputColumns}
+            dataSource={inputConfigArgs}
+            virtual
+            scroll={{
+              y: 420,
+            }}
+            pagination={false}
+          />
+          <footer className={cx(styles.footer)}>
+            <Button type="primary" onClick={handleSave} loading={loading}>
+              保存
+            </Button>
+          </footer>
+        </>
+      )}
     </div>
   );
 };
