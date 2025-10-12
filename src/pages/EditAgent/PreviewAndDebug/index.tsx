@@ -50,6 +50,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   > | null>(null);
 
   const {
+    conversationInfo,
     messageList,
     setMessageList,
     chatSuggestList,
