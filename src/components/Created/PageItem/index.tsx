@@ -1,11 +1,8 @@
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { getTime } from '@/utils';
-import { getImg } from '@/utils/workflow';
-import { Button, Divider } from 'antd';
-import React from 'react';
-
 import { CustomPageDto } from '@/types/interfaces/pageDev';
+import { getTime } from '@/utils';
+import { Button, Divider } from 'antd';
 import classNames from 'classnames';
+import React from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -13,11 +10,9 @@ const cx = classNames.bind(styles);
 export interface PageItemProps {
   item: CustomPageDto;
   index: number;
-  selected: { key: string };
   isAddedState?: boolean;
   isCurrentLoading?: boolean;
   onAddNode: (item: CustomPageDto) => void;
-  getToolLoading: (item: CustomPageDto) => boolean | undefined;
 }
 
 /**
@@ -26,7 +21,6 @@ export interface PageItemProps {
 const PageItem: React.FC<PageItemProps> = ({
   item,
   index,
-  selected,
   isAddedState,
   onAddNode,
   isCurrentLoading,
@@ -37,11 +31,7 @@ const PageItem: React.FC<PageItemProps> = ({
       style={{ height: 'unset' }}
       key={`${item.projectId}-${index}`}
     >
-      <img
-        src={item.icon || getImg(selected.key as AgentComponentTypeEnum)}
-        alt=""
-        className={cx(styles['left-image-style'])}
-      />
+      <img src={item.icon} alt="" className={cx(styles['left-image-style'])} />
       <div className={cx('flex-1', styles['content-font'])}>
         <p className={cx(styles['label-font-style'])}>{item.name}</p>
         <p
@@ -53,13 +43,11 @@ const PageItem: React.FC<PageItemProps> = ({
         <div className={cx('dis-sb', styles['count-div-style'])}>
           <div className={'dis-left'}>
             <img
-              src={
-                item?.creator?.avatar || require('@/assets/images/avatar.png')
-              }
+              src={item?.creatorAvatar || require('@/assets/images/avatar.png')}
               style={{ borderRadius: '50%' }}
               alt="用户头像"
             />
-            <span>{item.creator?.nickName}</span>
+            <span>{item.creatorNickName}</span>
             <Divider type="vertical" />
             <span>
               {'创建于'}

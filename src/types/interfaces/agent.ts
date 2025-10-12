@@ -300,7 +300,7 @@ export interface AgentComponentKnowledgeUpdateParams
 export interface AgentComponentAddParams {
   agentId: number;
   type: AgentComponentTypeEnum;
-  targetId: number;
+  targetId: number | string;
   toolName?: string;
 }
 
