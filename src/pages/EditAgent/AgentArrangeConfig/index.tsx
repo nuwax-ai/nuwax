@@ -837,7 +837,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       {/*事件绑定弹窗*/}
       <EventBindModal
         open={openEventBindModel}
-        eventConfigs={eventsInfo?.bindConfig?.eventConfigs || []}
+        // todo: 事件绑定 - 更新 这里是当前事件配置
+        eventConfig={eventsInfo?.bindConfig?.eventConfigs[0] || null}
+        variables={variablesInfo?.bindConfig?.variables || []}
+        pageArgConfigs={pageArgConfigs}
         onCancel={() => setOpenEventBindModel(false)}
         onConfirm={() => setOpenEventBindModel(false)}
       />
