@@ -167,7 +167,6 @@ const SpacePageDevelop: React.FC = () => {
    * 反向代理表单填写后，点击不进入开发界面，直接弹出“反向代理配置”框
    */
   const handleConfirmCreatePage = (result: CreateCustomPageInfo) => {
-    console.log('handleConfirmCreatePage', result);
     setProjectId(result.projectIdStr);
     // 关闭表单弹窗
     setOpenPageCreateModal(false);
@@ -191,8 +190,7 @@ const SpacePageDevelop: React.FC = () => {
     setProxyConfigs(item.proxyConfigs || []);
     setPageArgConfigs(item.pageArgConfigs || []);
     setCurrentPageInfo(item);
-    console.log('点击卡片', item);
-    // todo: 根据页面类型（页面创建模式）导入项目、在线创建，判断是否需要打开调试智能体绑定弹窗，反向代理，打开路径参数配置弹窗
+    // 根据页面类型（页面创建模式）导入项目、在线创建，判断是否需要打开调试智能体绑定弹窗，反向代理，打开路径参数配置弹窗
     if (item.projectType === PageProjectTypeEnum.ONLINE_DEPLOY) {
       setProjectId(item.projectIdStr);
       setOpenDebugAgentBindModel(true);
@@ -222,7 +220,7 @@ const SpacePageDevelop: React.FC = () => {
       // 页面预览
       case PageDevelopMoreActionEnum.Page_Preview:
         // iframe打开页面预览
-        // window.open(info.basePath, '_blank');
+        window.open(`${process.env.BASE_URL}/${info.pageUrl}`, '_blank');
         break;
     }
   };

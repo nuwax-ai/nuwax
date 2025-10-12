@@ -33,8 +33,6 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
         pageUri: editPathInfo.pageUri,
         description: editPathInfo.description,
       });
-    } else {
-      form.resetFields();
     }
   }, [open, editPathInfo]);
 

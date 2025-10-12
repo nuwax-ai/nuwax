@@ -1,6 +1,7 @@
 import LabelStar from '@/components/LabelStar';
 import PluginConfigTitle from '@/components/PluginConfigTitle';
 import { AFFERENT_MODE_LIST } from '@/constants/library.constants';
+import { apiPageSavePathArgs } from '@/services/pageDev';
 import { InputTypeEnum } from '@/types/enums/common';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import { PageArgConfig } from '@/types/interfaces/pageDev';
@@ -10,12 +11,14 @@ import {
   Checkbox,
   Empty,
   Input,
+  message,
   Select,
   Table,
   TableColumnsType,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
@@ -25,22 +28,29 @@ const cx = classNames.bind(styles);
  * 路径参数配置内容Props
  */
 export interface PathParamsConfigContentProps {
+  projectId: string;
   currentPathParam: PageArgConfig | null;
+  onConfirmSave: (data: PageArgConfig) => void;
 }
 
 /**
  * 路径参数配置内容
  */
 const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
+  projectId,
   currentPathParam,
+  onConfirmSave,
 }) => {
   // 入参配置
   const [inputConfigArgs, setInputConfigArgs] = useState<BindConfigWithSub[]>(
     [],
   );
+  // 是否加载中
   const [loading, setLoading] = useState<boolean>(false);
 
-  console.log(currentPathParam, 'currentPathParam');
+  useEffect(() => {
+    setInputConfigArgs(currentPathParam?.args || []);
+  }, [currentPathParam]);
 
   // 入参配置 - 新增
   const handleInputConfigAdd = () => {
@@ -64,6 +74,32 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
       (item: BindConfigWithSub) => item.key !== key,
     );
     setInputConfigArgs(_inputConfigArgs);
+  };
+
+  // 保存路径参数
+  const { run: runSavePathArgs } = useRequest(apiPageSavePathArgs, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (_: null, params: PageArgConfig[]) => {
+      setLoading(false);
+      message.success('保存成功');
+      const info = params[0];
+      onConfirmSave(info);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  });
+
+  // 保存
+  const handleSave = () => {
+    setLoading(true);
+    const params = {
+      ...currentPathParam,
+      projectId,
+      args: inputConfigArgs,
+    };
+    runSavePathArgs(params);
   };
 
   // 入参配置 - changeValue
@@ -189,15 +225,6 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
       ),
     },
   ];
-
-  // 保存
-  const handleSave = () => {
-    console.log('handleSave');
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-  };
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>

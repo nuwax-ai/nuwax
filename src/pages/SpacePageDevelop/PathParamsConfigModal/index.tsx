@@ -15,6 +15,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';
+import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import AddPathModal from './AddPathModal';
@@ -50,8 +51,6 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
       setCurrentPathParam(defaultPageArgConfigs?.[0] || null);
     }
   }, [open, defaultPageArgConfigs]);
-
-  console.log(deleteLoadingPaths, 'deleteLoadingPaths');
 
   // 删除路径配置
   const { run: runDeletePath } = useRequest(apiPageDeletePath, {
@@ -136,6 +135,16 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
   const handleCancelAddPath = () => {
     setAddPathModalOpen(false);
     setEditPathInfo(null);
+  };
+
+  // 确认保存路径参数配置
+  const handleConfirmSave = (info: PageArgConfig) => {
+    const _pathParams = cloneDeep(pathParams);
+    const index = _pathParams.findIndex(
+      (item) => item.pageUri === info.pageUri,
+    );
+    _pathParams.splice(index, 1, info);
+    setPathParams(_pathParams);
   };
 
   return (
@@ -223,7 +232,11 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
             </div>
             {/* 内容区域 */}
             <div className={cx('flex-1', styles.right)}>
-              <PathParamsConfigContent currentPathParam={currentPathParam} />
+              <PathParamsConfigContent
+                projectId={projectId}
+                currentPathParam={currentPathParam}
+                onConfirmSave={handleConfirmSave}
+              />
             </div>
             {/* 关闭按钮 */}
             <Button

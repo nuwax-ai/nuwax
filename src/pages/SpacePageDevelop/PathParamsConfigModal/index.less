@@ -30,8 +30,12 @@
       .item {
         padding: 10px 6px;
         border-radius: 10px;
-        margin-bottom: 4px;
+        margin-bottom: 10px;
         transition: background-color 0.3s;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
 
         &:hover:not(.checked) {
           background-color: @WHITE07;

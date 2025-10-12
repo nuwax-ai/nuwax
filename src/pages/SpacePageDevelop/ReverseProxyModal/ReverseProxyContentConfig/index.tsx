@@ -183,7 +183,6 @@ const ReverseProxyContentConfig: React.FC<ReverseProxyContentConfigProps> = ({
         className={cx('flex-1')}
         columns={inputColumns}
         dataSource={currentProxyConfigs}
-        loading={loading}
         pagination={false}
         virtual
         scroll={{

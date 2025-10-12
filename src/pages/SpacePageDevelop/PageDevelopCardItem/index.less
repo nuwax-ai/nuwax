@@ -1,7 +1,20 @@
-.time {
-  line-height: 16px;
-}
+@import '@/styles/token.less';
 
-.status {
-  height: 16px;
+.container {
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 4px;
+  gap: 4px;
+  font-size: @fontSizeSm;
+  font-weight: @fontWeightStrong;
+
+  &.published-status {
+    color: #a84a00;
+    background-color: #fff8ea;
+  }
+
+  &.unpublished-status {
+    color: #25772f;
+    background-color: #ecf7ec;
+  }
 }
