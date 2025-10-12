@@ -1,4 +1,5 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
+import PagePreview from '@/components/business-component/PagePreview';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
@@ -7,7 +8,6 @@ import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
-import PagePreview from '@/pages/Chat/PagePreview';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {

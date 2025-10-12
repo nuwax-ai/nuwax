@@ -1,5 +1,6 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AliyunCaptcha from '@/components/AliyunCaptcha';
+import PagePreview from '@/components/business-component/PagePreview';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatInputPhone from '@/components/ChatInputPhone';
 import ChatView from '@/components/ChatView';
@@ -11,7 +12,6 @@ import {
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
-import PagePreview from '@/pages/Chat/PagePreview';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import { apiTempChatConversationStop } from '@/services/agentConfig';
 import {

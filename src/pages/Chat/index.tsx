@@ -1,6 +1,7 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
+import PagePreview from '@/components/business-component/PagePreview';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
@@ -33,7 +34,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import DropdownChangeName from './DropdownChangeName';
 import styles from './index.less';
-import PagePreview from './PagePreview';
 import ShowArea from './ShowArea';
 
 const cx = classNames.bind(styles);
