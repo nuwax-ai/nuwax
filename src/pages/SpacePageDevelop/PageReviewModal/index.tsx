@@ -58,8 +58,8 @@ const PageReviewModal: React.FC<PageReviewModalProps> = ({
       onCancel={onCancel}
       destroyOnHidden
       footer={null}
+      width={1000}
       classNames={{
-        content: styles['modal-container'],
         body: styles['modal-body'],
       }}
     >
