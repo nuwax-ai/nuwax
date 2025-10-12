@@ -366,8 +366,10 @@ const Chat: React.FC = () => {
   return (
     <div className={cx('flex', 'h-full')}>
       <div
-        className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}
+        className={cx('flex', 'flex-col', styles['main-content'])}
         style={{
+          flex: 1,
+          minWidth: 0, // 防止 flex 子元素溢出
           width: isSidebarVisible ? `calc(100% - ${SIDEBAR_WIDTH}px)` : '100%',
         }}
       >
@@ -493,8 +495,6 @@ const Chat: React.FC = () => {
           />
         )}
       </div>
-      {/* 页面预览区域 */}
-      <PagePreview />
       <AgentSidebar
         ref={sidebarRef}
         className={cx(styles['agent-sidebar'])}
@@ -506,6 +506,8 @@ const Chat: React.FC = () => {
       />
       {/*展示台区域*/}
       <ShowArea />
+      {/*页面预览区域*/}
+      <PagePreview />
     </div>
   );
 };

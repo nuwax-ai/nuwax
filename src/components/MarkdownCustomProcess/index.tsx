@@ -206,12 +206,14 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
       return;
     }
 
-    showPagePreview({
+    const previewData = {
       name: innerProcessing.name || '页面预览',
       uri: input.uri,
       params: input.arguments || {},
       executeId: innerProcessing.executeId || '',
-    });
+    };
+
+    showPagePreview(previewData);
   }, [detailData, innerProcessing, showPagePreview]);
 
   if (!innerProcessing.executeId) {

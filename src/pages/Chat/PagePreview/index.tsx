@@ -21,7 +21,8 @@ const cx = classNames.bind(styles);
  * - 使用 iframe 加载页面
  */
 const PagePreview: React.FC = () => {
-  const { pagePreviewData, hidePagePreview } = useModel('chat');
+  const chatModel = useModel('chat');
+  const { pagePreviewData, hidePagePreview } = chatModel;
 
   // 预览区域宽度（百分比）
   const [width, setWidth] = useState<number>(50); // 初始宽度 50%

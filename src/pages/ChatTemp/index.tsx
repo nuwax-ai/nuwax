@@ -11,6 +11,7 @@ import {
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
+import PagePreview from '@/pages/Chat/PagePreview';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import { apiTempChatConversationStop } from '@/services/agentConfig';
 import {
@@ -805,137 +806,155 @@ const ChatTemp: React.FC = () => {
   });
 
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
-      <ConditionRender condition={messageList?.length > 0}>
-        <div className={cx(styles['title-box'])}>
-          <h3
-            className={cx(styles.title, 'text-ellipsis', 'clip-path-animation')}
-          >
-            {conversationInfo?.agent?.name
-              ? `和${conversationInfo?.agent?.name}开始会话`
-              : '开始会话'}
-          </h3>
-        </div>
-      </ConditionRender>
+    <div className={cx('flex', 'h-full')}>
+      {/* 主内容区域 */}
       <div
-        className={cx(
-          'w-full',
-          'flex-1',
-          'flex',
-          'flex-col',
-          'overflow-y',
-          styles['main-content'],
-        )}
-        ref={messageViewRef}
+        className={cx(styles.container, 'flex', 'flex-col')}
+        style={{ flex: 1, minWidth: 0 }}
       >
-        <div className={cx(styles['chat-wrapper'], 'flex-1', 'w-full')}>
-          {isLoadingConversation ? (
-            <div
-              className={cx('flex', 'items-center', 'content-center', 'h-full')}
-            >
-              <LoadingOutlined className={cx(styles.loading)} />
-            </div>
-          ) : (
-            <>
-              {/* 新对话设置 */}
-              <NewConversationSet
-                className="mb-16"
-                form={form}
-                variables={variables}
-                userFillVariables={userFillVariables}
-                isFilled={!!variableParams}
-                disabled={!!userFillVariables || isSendMessageRef.current}
-              />
-              {messageList?.length > 0 ? (
-                <>
-                  {messageList?.map((item: MessageInfo, index: number) => (
-                    <ChatView
-                      className={cx(styles['phone-chat-item'])}
-                      key={index}
-                      messageInfo={item}
-                      roleInfo={roleInfo}
-                      mode={'home'}
-                    />
-                  ))}
-                  {/*会话建议*/}
-                  <RecommendList
-                    chatSuggestList={chatSuggestList}
-                    onClick={handleMessageSend}
-                  />
-                </>
-              ) : (
-                isLoaded && (
-                  // Chat记录为空
-                  <AgentChatEmpty
-                    className={cx({ 'h-full': !variables?.length })}
-                    icon={conversationInfo?.agent?.icon}
-                    name={conversationInfo?.agent?.name || ''}
-                    // 会话建议
-                    extra={
-                      <RecommendList
-                        className="mt-16"
-                        itemClassName={cx(styles['suggest-item'])}
-                        chatSuggestList={chatSuggestList}
-                        onClick={handleMessageSend}
-                      />
-                    }
-                  />
-                )
+        <ConditionRender condition={messageList?.length > 0}>
+          <div className={cx(styles['title-box'])}>
+            <h3
+              className={cx(
+                styles.title,
+                'text-ellipsis',
+                'clip-path-animation',
               )}
-            </>
-          )}
-        </div>
-      </div>
-      <div className={cx(styles['chat-input-container'])}>
-        {/*会话输入框*/}
-        <ChatInputHome
-          key={`chat-temp-${chatKey}`}
-          className={cx(styles['input-container'])}
-          clearDisabled={!messageList?.length}
-          onEnter={handleMessageSend}
-          onClear={handleClear}
-          visible={showScrollBtn}
-          wholeDisabled={wholeDisabled}
-          manualComponents={manualComponents}
-          selectedComponentList={selectedComponentList}
-          onSelectComponent={handleSelectComponent}
-          onScrollBottom={onScrollBottom}
-          showAnnouncement={true}
-          // 临时会话停止
-          onTempChatStop={runStopTempConversation}
-          loadingStopTempConversation={loadingStopTempConversation}
-        />
-        {/*手机会话输入框*/}
-        <ChatInputPhone
-          className={cx(styles['phone-container'])}
-          clearDisabled={!messageList?.length}
-          onClear={handleClear}
-          wholeDisabled={wholeDisabled}
-          onEnter={handleMessageSend}
-          visible={showScrollBtn}
-          onScrollBottom={onScrollBottom}
-        />
-        <p
+            >
+              {conversationInfo?.agent?.name
+                ? `和${conversationInfo?.agent?.name}开始会话`
+                : '开始会话'}
+            </h3>
+          </div>
+        </ConditionRender>
+        <div
           className={cx(
-            styles['welcome-text'],
-            'text-ellipsis',
-            'cursor-pointer',
-            'clip-path-animation',
+            'w-full',
+            'flex-1',
+            'flex',
+            'flex-col',
+            'overflow-y',
+            styles['main-content'],
           )}
-          onClick={handleSiteLink}
-        >{`欢迎使用${tenantConfigInfo?.siteName}，快速搭建你的个性化智能体`}</p>
+          ref={messageViewRef}
+        >
+          <div className={cx(styles['chat-wrapper'], 'flex-1', 'w-full')}>
+            {isLoadingConversation ? (
+              <div
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'h-full',
+                )}
+              >
+                <LoadingOutlined className={cx(styles.loading)} />
+              </div>
+            ) : (
+              <>
+                {/* 新对话设置 */}
+                <NewConversationSet
+                  className="mb-16"
+                  form={form}
+                  variables={variables}
+                  userFillVariables={userFillVariables}
+                  isFilled={!!variableParams}
+                  disabled={!!userFillVariables || isSendMessageRef.current}
+                />
+                {messageList?.length > 0 ? (
+                  <>
+                    {messageList?.map((item: MessageInfo, index: number) => (
+                      <ChatView
+                        className={cx(styles['phone-chat-item'])}
+                        key={index}
+                        messageInfo={item}
+                        roleInfo={roleInfo}
+                        mode={'home'}
+                      />
+                    ))}
+                    {/*会话建议*/}
+                    <RecommendList
+                      chatSuggestList={chatSuggestList}
+                      onClick={handleMessageSend}
+                    />
+                  </>
+                ) : (
+                  isLoaded && (
+                    // Chat记录为空
+                    <AgentChatEmpty
+                      className={cx({ 'h-full': !variables?.length })}
+                      icon={conversationInfo?.agent?.icon}
+                      name={conversationInfo?.agent?.name || ''}
+                      // 会话建议
+                      extra={
+                        <RecommendList
+                          className="mt-16"
+                          itemClassName={cx(styles['suggest-item'])}
+                          chatSuggestList={chatSuggestList}
+                          onClick={handleMessageSend}
+                        />
+                      }
+                    />
+                  )
+                )}
+              </>
+            )}
+          </div>
+        </div>
+        <div className={cx(styles['chat-input-container'])}>
+          {/*会话输入框*/}
+          <ChatInputHome
+            key={`chat-temp-${chatKey}`}
+            className={cx(styles['input-container'])}
+            clearDisabled={!messageList?.length}
+            onEnter={handleMessageSend}
+            onClear={handleClear}
+            visible={showScrollBtn}
+            wholeDisabled={wholeDisabled}
+            manualComponents={manualComponents}
+            selectedComponentList={selectedComponentList}
+            onSelectComponent={handleSelectComponent}
+            onScrollBottom={onScrollBottom}
+            showAnnouncement={true}
+            // 临时会话停止
+            onTempChatStop={runStopTempConversation}
+            loadingStopTempConversation={loadingStopTempConversation}
+          />
+          {/*手机会话输入框*/}
+          <ChatInputPhone
+            className={cx(styles['phone-container'])}
+            clearDisabled={!messageList?.length}
+            onClear={handleClear}
+            wholeDisabled={wholeDisabled}
+            onEnter={handleMessageSend}
+            visible={showScrollBtn}
+            onScrollBottom={onScrollBottom}
+          />
+          <p
+            className={cx(
+              styles['welcome-text'],
+              'text-ellipsis',
+              'cursor-pointer',
+              'clip-path-animation',
+            )}
+            onClick={handleSiteLink}
+          >{`欢迎使用${tenantConfigInfo?.siteName}，快速搭建你的个性化智能体`}</p>
+        </div>
+        <button
+          id={buttonId}
+          type="button"
+          className={cx(styles['captcha-button'])}
+        />
+        <AliyunCaptcha
+          config={tenantConfigInfo}
+          doAction={asyncFun}
+          elementId={buttonId}
+          onReady={handleCaptchaReady}
+        />
       </div>
-      <button
-        id={buttonId}
-        type="button"
-        className={cx(styles['captcha-button'])}
-      />
-      <AliyunCaptcha
-        config={tenantConfigInfo}
-        doAction={asyncFun}
-        elementId={buttonId}
-        onReady={handleCaptchaReady}
-      />
+
+      {/* 页面预览区域 */}
+      <PagePreview />
     </div>
   );
 };
