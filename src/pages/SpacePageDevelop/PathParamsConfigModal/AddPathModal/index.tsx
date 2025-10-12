@@ -1,5 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
-import { apiPageAddPath } from '@/services/pageDev';
+import { apiPageAddPath, apiPageUpdatePath } from '@/services/pageDev';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
   AddPathModalProps,
@@ -7,7 +7,7 @@ import {
 } from '@/types/interfaces/pageDev';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 
 /**
@@ -16,6 +16,7 @@ import { useRequest } from 'umi';
 const AddPathModal: React.FC<AddPathModalProps> = ({
   projectId,
   mode = CreateUpdateModeEnum.Create,
+  editPathInfo,
   open,
   onCancel,
   onConfirm,
@@ -23,15 +24,46 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(false);
 
+  const title = mode === CreateUpdateModeEnum.Create ? '添加路径' : '修改路径';
+
+  useEffect(() => {
+    if (open && editPathInfo) {
+      form.setFieldsValue({
+        name: editPathInfo.name,
+        pageUri: editPathInfo.pageUri,
+        description: editPathInfo.description,
+      });
+    } else {
+      form.resetFields();
+    }
+  }, [open, editPathInfo]);
+
+  const handleSuccess = (info: PageAddPathParams) => {
+    message.success(`${title}成功`);
+    setLoading(false);
+    onConfirm(info, editPathInfo);
+  };
+
   // 添加路径配置
   const { run: runAddPath } = useRequest(apiPageAddPath, {
     manual: true,
-    debounceInterval: 300,
+    debounceWait: 300,
     onSuccess: (_: null, params: PageAddPathParams[]) => {
-      message.success('添加路径成功');
-      setLoading(false);
       const info = params[0];
-      onConfirm(info);
+      handleSuccess(info);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  });
+
+  // 编辑路径配置
+  const { run: runUpdatePath } = useRequest(apiPageUpdatePath, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (_: null, params: PageAddPathParams[]) => {
+      const info = params[0];
+      handleSuccess(info);
     },
     onError: () => {
       setLoading(false);
@@ -41,10 +73,15 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
   // 提交表单
   const onFinish: FormProps<any>['onFinish'] = (values) => {
     setLoading(true);
-    runAddPath({
+    const params = {
       projectId,
       ...values,
-    });
+    };
+    if (mode === CreateUpdateModeEnum.Create) {
+      runAddPath(params);
+    } else {
+      runUpdatePath(params);
+    }
   };
 
   const handlerConfirm = () => {
@@ -55,7 +92,7 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
     <CustomFormModal
       form={form}
       open={open}
-      title={mode === CreateUpdateModeEnum.Create ? '添加路径' : '修改路径'}
+      title={title}
       loading={loading}
       onCancel={onCancel}
       onConfirm={handlerConfirm}

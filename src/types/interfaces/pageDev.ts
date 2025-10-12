@@ -26,9 +26,13 @@ export interface ProxyConfig {
 
 // 页面参数配置
 export interface PageArgConfig {
+  // 页面路径，例如 /view
   pageUri: string;
+  // 页面名称
   name: string;
+  // 页面描述
   description: string;
+  // 参数配置
   args: BindConfigWithSub[];
 }
 
@@ -183,9 +187,14 @@ export interface PathParamsConfigModalProps {
 export interface AddPathModalProps {
   projectId: string;
   mode: CreateUpdateModeEnum;
+  // 编辑路径参数信息
+  editPathInfo: PageArgConfig | null;
   open: boolean;
   onCancel: () => void;
-  onConfirm: (info: PageAddPathParams) => void;
+  onConfirm: (
+    info: PageAddPathParams,
+    editPathInfo: PageArgConfig | null,
+  ) => void;
 }
 
 /**

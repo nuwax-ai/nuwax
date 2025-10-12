@@ -235,6 +235,14 @@ const SpacePageDevelop: React.FC = () => {
     runPageList(spaceId);
   };
 
+  // 取消路径参数配置
+  const handleCancelPathParamsConfig = () => {
+    setOpenPathParamsConfigModal(false);
+    setPageArgConfigs([]);
+    // 重新查询页面列表
+    runPageList(spaceId);
+  };
+
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <Row>
@@ -337,7 +345,7 @@ const SpacePageDevelop: React.FC = () => {
         projectId={projectId}
         defaultPageArgConfigs={pageArgConfigs}
         open={openPathParamsConfigModal}
-        onCancel={() => setOpenPathParamsConfigModal(false)}
+        onCancel={handleCancelPathParamsConfig}
       />
       {/* 页面创建弹窗 */}
       <PageCreateModal

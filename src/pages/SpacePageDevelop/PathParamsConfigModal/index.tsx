@@ -1,5 +1,6 @@
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
+  PageAddPathParams,
   PageArgConfig,
   PathParamsConfigModalProps,
 } from '@/types/interfaces/pageDev';
@@ -33,6 +34,8 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
   const [key, setKey] = useState<string>('');
   // 添加路径参数弹窗是否打开
   const [addPathModalOpen, setAddPathModalOpen] = useState<boolean>(false);
+  // 编辑路径参数信息
+  const [editPathInfo, setEditPathInfo] = useState<PageArgConfig | null>(null);
 
   useEffect(() => {
     setPathParams(defaultPageArgConfigs || []);
@@ -43,8 +46,56 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
     setPathParams(pathParams.filter((item) => item.pageUri !== pageUri));
   };
 
-  const handleEdit = (pageUri: string) => {
+  const handleEdit = (info: PageArgConfig) => {
+    const { pageUri } = info;
     setKey(pageUri);
+    setEditPathInfo(info);
+    setAddPathModalOpen(true);
+  };
+
+  /**
+   * 确认添加路径参数配置
+   * @param info 新增路径参数配置
+   * @param editPathInfo 编辑路径参数配置信息
+   */
+  const handleConfirmAddPath = (
+    info: PageAddPathParams,
+    editPathInfo: PageArgConfig | null,
+  ) => {
+    setAddPathModalOpen(false);
+    setEditPathInfo(null);
+    // 编辑路径参数配置
+    if (editPathInfo) {
+      const _pathParams = [...pathParams];
+      // 当前编辑项索引值
+      const index = _pathParams.findIndex(
+        (item) => item.pageUri === editPathInfo.pageUri,
+      );
+      // 编辑路径参数配置
+      _pathParams.splice(index, 1, {
+        ...editPathInfo,
+        ...info,
+      });
+      setPathParams(_pathParams);
+    } else {
+      // 新增路径参数配置
+      const { pageUri, name, description } = info;
+      setPathParams([
+        ...pathParams,
+        {
+          pageUri,
+          name,
+          description,
+          args: [],
+        },
+      ]);
+    }
+  };
+
+  // 取消添加路径参数配置
+  const handleCancelAddPath = () => {
+    setAddPathModalOpen(false);
+    setEditPathInfo(null);
   };
 
   return (
@@ -90,9 +141,7 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
                           'hover-box',
                         )}
                       >
-                        <EditOutlined
-                          onClick={() => handleEdit(item.pageUri)}
-                        />
+                        <EditOutlined onClick={() => handleEdit(item)} />
                       </span>
                       <span
                         className={cx(
@@ -111,11 +160,13 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
               </ul>
               {/* 新增路径 */}
               <Button
-                type="text"
+                type="primary"
                 className={cx(styles['add-path-params'])}
                 onClick={() => setAddPathModalOpen(true)}
                 icon={<PlusOutlined />}
-              ></Button>
+              >
+                新增路径
+              </Button>
             </div>
             {/* 内容区域 */}
             <div className={cx('flex-1', styles.right)}>
@@ -134,10 +185,15 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
       {/* 添加路径弹窗 */}
       <AddPathModal
         projectId={projectId}
-        mode={CreateUpdateModeEnum.Create}
+        mode={
+          editPathInfo
+            ? CreateUpdateModeEnum.Update
+            : CreateUpdateModeEnum.Create
+        }
+        editPathInfo={editPathInfo}
         open={addPathModalOpen}
-        onCancel={() => setAddPathModalOpen(false)}
-        onConfirm={() => setAddPathModalOpen(false)}
+        onCancel={handleCancelAddPath}
+        onConfirm={handleConfirmAddPath}
       />
     </>
   );
