@@ -114,3 +114,15 @@ export async function apiPageSavePathArgs(
     data,
   });
 }
+
+// 查询项目详情
+export async function apiPageGetProjectInfo(
+  projectId: string,
+): Promise<RequestResponse<CustomPageDto>> {
+  return request('/api/custom-page/get-project-info', {
+    method: 'GET',
+    params: {
+      projectId,
+    },
+  });
+}

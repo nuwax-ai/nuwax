@@ -30,6 +30,7 @@ import DebugAgentBindModel from './DebugAgentBindModal';
 import styles from './index.less';
 import PageCreateModal from './PageCreateModal';
 import PageDevelopCardItem from './PageDevelopCardItem';
+import PageReviewModal from './PageReviewModal';
 import PathParamsConfigModal from './PathParamsConfigModal';
 import ReverseProxyModal from './ReverseProxyModal';
 
@@ -82,6 +83,9 @@ const SpacePageDevelop: React.FC = () => {
   const [proxyConfigs, setProxyConfigs] = useState<ProxyConfig[]>([]);
   // 当前页面参数配置
   const [pageArgConfigs, setPageArgConfigs] = useState<PageArgConfig[]>([]);
+  // 打开页面预览弹窗
+  const [openPageReviewModal, setOpenPageReviewModal] =
+    useState<boolean>(false);
   // 获取用户信息
   // const { userInfo } = useModel('userInfo');
 
@@ -175,10 +179,8 @@ const SpacePageDevelop: React.FC = () => {
       case PageDevelopCreateTypeEnum.Import_Project:
       case PageDevelopCreateTypeEnum.Online_Develop:
         setOpenDebugAgentBindModel(true);
-        console.log('导入项目、在线创建');
         break;
       case PageDevelopCreateTypeEnum.Reverse_Proxy:
-        console.log('反向代理');
         setOpenReverseProxyModal(true);
         break;
     }
@@ -220,7 +222,8 @@ const SpacePageDevelop: React.FC = () => {
       // 页面预览
       case PageDevelopMoreActionEnum.Page_Preview:
         // iframe打开页面预览
-        window.open(`${process.env.BASE_URL}/${info.pageUrl}`, '_blank');
+        setOpenPageReviewModal(true);
+        // window.open(`${process.env.BASE_URL}/${info.pageUrl}`, '_blank');
         break;
     }
   };
@@ -352,6 +355,12 @@ const SpacePageDevelop: React.FC = () => {
         open={openPageCreateModal}
         onConfirm={handleConfirmCreatePage}
         onCancel={() => setOpenPageCreateModal(false)}
+      />
+      {/* 页面预览弹窗 */}
+      <PageReviewModal
+        open={openPageReviewModal}
+        projectId={projectId}
+        onCancel={() => setOpenPageReviewModal(false)}
       />
     </div>
   );
