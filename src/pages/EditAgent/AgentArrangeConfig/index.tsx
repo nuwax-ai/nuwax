@@ -23,12 +23,12 @@ import {
 } from '@/types/enums/space';
 import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type {
+  AgentAddComponentBaseInfo,
   AgentArrangeConfigProps,
   DeleteComponentInfo,
   GroupMcpInfo,
 } from '@/types/interfaces/agentConfig';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
-import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { loopSetBindValueType } from '@/utils/deepNode';
 import { useRequest } from 'ahooks';
 import { CollapseProps, message, Switch } from 'antd';
@@ -149,6 +149,15 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     return agentComponentList?.find(
       (item: AgentComponentInfo) => item.type === AgentComponentTypeEnum.Event,
     ) as AgentComponentInfo;
+  }, [agentComponentList]);
+
+  // 绑定的页面参数配置信息
+  const pageArgConfigs = useMemo(() => {
+    const pageComponent = agentComponentList?.find(
+      (item: AgentComponentInfo) => item.type === AgentComponentTypeEnum.Page,
+    );
+
+    return pageComponent?.bindConfig?.pageArgConfigs || [];
   }, [agentComponentList]);
 
   // 是否存在组件
@@ -618,6 +627,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: (
         <OpenRemarksEdit
           agentConfigInfo={agentConfigInfo}
+          variables={variablesInfo?.bindConfig?.variables || []}
+          pageArgConfigs={pageArgConfigs}
           onChangeAgent={onChangeAgent}
         />
       ),
@@ -731,8 +742,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
   ];
 
-  // 添加插件、工作流、知识库、数据库
-  const handleAddComponent = (info: CreatedNodeItem) => {
+  // 添加插件、工作流、知识库、数据库、MCP、页面
+  const handleAddComponent = (info: AgentAddComponentBaseInfo) => {
     setAddComponents((list) => {
       return [
         ...list,
@@ -826,7 +837,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       {/*事件绑定弹窗*/}
       <EventBindModal
         open={openEventBindModel}
-        eventConfigs={eventsInfo?.bindConfig?.eventConfigs || []}
+        // todo: 事件绑定 - 更新 这里是当前事件配置
+        eventConfig={eventsInfo?.bindConfig?.eventConfigs[0] || null}
+        variables={variablesInfo?.bindConfig?.variables || []}
+        pageArgConfigs={pageArgConfigs}
         onCancel={() => setOpenEventBindModel(false)}
         onConfirm={() => setOpenEventBindModel(false)}
       />

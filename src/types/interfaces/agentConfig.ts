@@ -29,6 +29,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import React, { MouseEvent } from 'react';
 import { CardBindConfig } from './cardInfo';
+import { PageArgConfig } from './pageDev';
 
 // 智能体header组件
 export interface AgentHeaderProps {
@@ -216,6 +217,8 @@ export interface LongMemoryContentProps {
 // 开场白组件
 export interface OpenRemarksEditProps {
   agentConfigInfo?: AgentConfigInfo;
+  variables: BindConfigWithSub[];
+  pageArgConfigs: PageArgConfig[];
   onChangeAgent: (
     value: string | string[] | GuidQuestionDto[],
     attr: string,
@@ -350,10 +353,17 @@ export interface HomeAgentCategoryInfo {
   };
 }
 
+// 智能体添加组件基础信息
+export interface AgentAddComponentBaseInfo {
+  targetType: AgentComponentTypeEnum;
+  targetId: number | string;
+  toolName?: string;
+}
+
 // 智能体添加组件状态
 export interface AgentAddComponentStatusInfo {
   type: AgentComponentTypeEnum;
-  targetId: number;
+  targetId: number | string;
   status: AgentAddComponentStatusEnum;
   toolName?: string;
 }

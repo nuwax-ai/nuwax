@@ -142,6 +142,30 @@ export interface AgentPageUpdateParams extends AgentBaseInfo {
   };
 }
 
+// 智能体事件绑定配置
+export interface AgentComponentEventConfig {
+  // 事件名称
+  name: string;
+  // 事件标识
+  identification: string;
+  // 事件类型, Link 外链；Page 扩展页面,可用值:Link,Page
+  type: EventBindResponseActionEnum;
+  // url 链接地址，type类型为Link时有效
+  url: string;
+  // 页面ID，type类型为Page时有效，更新时需要传入
+  pageId: number;
+  // 页面基础路径，type类型为Page时有效，不需要传入
+  basePath: string;
+  // 页面路径，type类型为Page时有效，更新时需要传入
+  pageUri: string;
+  // pageUrl 页面URL，type类型为Page时有效，不需要传入
+  pageUrl: string;
+  // 参数
+  args: BindConfigWithSub[];
+  // 参数配置JSON Schema，前端生成事件提示词时使用
+  argJsonSchema: string;
+}
+
 // 更新事件绑定配置输入参数
 export interface AgentComponentEventUpdateParams extends AgentBaseInfo {
   // 组件配置ID
@@ -150,28 +174,7 @@ export interface AgentComponentEventUpdateParams extends AgentBaseInfo {
   targetId: number;
   // 事件绑定配置
   bindConfig: {
-    eventConfigs: {
-      // 事件名称
-      name: string;
-      // 事件标识
-      identification: string;
-      // 事件类型, Link 外链；Page 扩展页面,可用值:Link,Page
-      type: EventBindResponseActionEnum;
-      // url 链接地址，type类型为Link时有效
-      url: string;
-      // 页面ID，type类型为Page时有效，更新时需要传入
-      pageId: number;
-      // 页面基础路径，type类型为Page时有效，不需要传入
-      basePath: string;
-      // 页面路径，type类型为Page时有效，更新时需要传入
-      pageUri: string;
-      // pageUrl 页面URL，type类型为Page时有效，不需要传入
-      pageUrl: string;
-      // 参数
-      args: BindConfigWithSub[];
-      // 参数配置JSON Schema，前端生成事件提示词时使用
-      argJsonSchema: string;
-    };
+    eventConfigs: AgentComponentEventConfig;
   };
   exceptionOut: number;
   fallbackMsg: string;
@@ -300,7 +303,7 @@ export interface AgentComponentKnowledgeUpdateParams
 export interface AgentComponentAddParams {
   agentId: number;
   type: AgentComponentTypeEnum;
-  targetId: number;
+  targetId: number | string;
   toolName?: string;
 }
 

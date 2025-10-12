@@ -9,6 +9,7 @@ import {
 } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { BuildRunningEnum } from '@/types/enums/pageDev';
+import { AgentAddComponentBaseInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { CustomPageDto } from '@/types/interfaces/pageDev';
 import { getTime } from '@/utils';
@@ -55,6 +56,7 @@ const defaultTabsTypes = [
 const defaultTabs = CREATED_TABS.filter((item) =>
   defaultTabsTypes.includes(item.key),
 );
+
 // 创建插件、工作流、知识库、数据库
 const Created: React.FC<CreatedProp> = ({
   open,
@@ -114,30 +116,15 @@ const Created: React.FC<CreatedProp> = ({
     {
       key: 'all', // 子项也需要唯一的 key
       label: '全部',
-      // icon: <ProductFilled />,
     },
     {
       key: 'library',
-      // icon: <SearchOutlined />,
       label: `组件库${selected.label}`,
     },
     {
       key: 'collect',
-      // icon: <StarFilled />,
       label: '收藏',
     },
-    // {
-    //   key: 'group',
-    //   label: `搜索${selected.label}`, // 如果需要动态内容，可以像这样使用模板字符串
-    //   type: 'group', // 使用 Ant Design 支持的类型
-    //   children: [
-    //     {
-    //       key: 'all', // 子项也需要唯一的 key
-    //       label: '全部',
-    //       icon: <ProductFilled />,
-    //     },
-    //   ],
-    // },
   ];
 
   const pageItem = [
@@ -162,7 +149,6 @@ const Created: React.FC<CreatedProp> = ({
     {
       key: 'all', // 子项也需要唯一的 key
       label: '组件库数据表',
-      // icon: <ProductFilled />,
     },
   ];
 
@@ -170,11 +156,9 @@ const Created: React.FC<CreatedProp> = ({
     {
       key: 'all', // 子项也需要唯一的 key
       label: '全部',
-      // icon: <ProductFilled />,
     },
     {
       key: 'custom',
-      // icon: <ICON_WORD />,
       label: '自定义服务',
     },
   ];
@@ -280,9 +264,9 @@ const Created: React.FC<CreatedProp> = ({
 
     let _res;
     if (item.collect) {
-      _res = await service.unCollect(_type, item.targetId);
+      _res = await service.unCollect(_type, item.targetId as number);
     } else {
-      _res = await service.collect(_type, item.targetId);
+      _res = await service.collect(_type, item.targetId as number);
     }
 
     if (_res.code === Constant.success) {
@@ -367,8 +351,6 @@ const Created: React.FC<CreatedProp> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: CustomPageDto[]) => {
-      // handleFilterList(type, create, keyword, result);
-      // pageAllRef.current = result;
       setPageList(result);
       setLoading(false);
     },
@@ -427,8 +409,6 @@ const Created: React.FC<CreatedProp> = ({
   // 修改 changeTitle 方法，确保切换顶部选项时重置分页
   const changeTitle = (val: string | number) => {
     if (!val) return;
-
-    console.log('val', val);
 
     // 重置知识库数据类型和是否只返回空间数据
     dataTypeRef.current = null;
@@ -526,7 +506,7 @@ const Created: React.FC<CreatedProp> = ({
 
   const getItemStatusResult = useCallback(
     (
-      item: CreatedNodeItem,
+      item: AgentAddComponentBaseInfo,
       targetStatus: AgentAddComponentStatusEnum,
     ): boolean | undefined => {
       return addComponents?.some(
@@ -586,26 +566,41 @@ const Created: React.FC<CreatedProp> = ({
     );
   };
 
-  const renderPageItem = (
-    item: CustomPageDto,
-    index: number,
-    selected: {
-      label: string;
-      key: AgentComponentTypeEnum;
-    },
-  ) => {
+  // 添加页面节点
+  const addPageNode = (item: CustomPageDto) => {
+    onAdded({
+      targetType: AgentComponentTypeEnum.Page,
+      targetId: item.projectIdStr,
+    });
+  };
+
+  const renderPageItem = (item: CustomPageDto, index: number) => {
+    // 是否已添加
+    const isAddedState = getItemStatusResult(
+      {
+        targetType: AgentComponentTypeEnum.Page,
+        targetId: item.projectIdStr,
+      },
+      AgentAddComponentStatusEnum.Added,
+    );
+
+    // 是否正在加载中
+    const isCurrentLoading = getItemStatusResult(
+      {
+        targetType: AgentComponentTypeEnum.Page,
+        targetId: item.projectId,
+      },
+      AgentAddComponentStatusEnum.Loading,
+    );
+
     return (
       <PageItem
         key={`${item.projectId}-${index}`}
         item={item}
         index={index}
-        selected={selected}
-        onAddNode={(item: CustomPageDto) => onAddNode(item as any)}
-        isAddedState={true}
-        isCurrentLoading={true}
-        getToolLoading={() => {
-          return false;
-        }}
+        onAddNode={addPageNode}
+        isAddedState={isAddedState}
+        isCurrentLoading={isCurrentLoading}
       />
     );
   };
@@ -777,10 +772,11 @@ const Created: React.FC<CreatedProp> = ({
         >
           {loading ? (
             <Loading className={cx('h-full')} />
-          ) : selected.key === AgentComponentTypeEnum.Page &&
-            pageList?.length ? (
+          ) : // 页面列表
+          selected.key === AgentComponentTypeEnum.Page && pageList?.length ? (
             pageList?.map((item: CustomPageDto, index: number) => {
-              return renderPageItem(item, index, selected);
+              // 页面组件
+              return renderPageItem(item, index);
             })
           ) : list?.length ? (
             list.map((item: CreatedNodeItem, index: number) => {

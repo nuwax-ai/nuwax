@@ -1,6 +1,8 @@
 import type { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
-import { CreatedNodeItem } from '@/types/interfaces/common';
+import {
+  AgentAddComponentBaseInfo,
+  AgentAddComponentStatusInfo,
+} from '@/types/interfaces/agentConfig';
 import type { MenuProps } from 'antd';
 /**  提前定义一些东西   */
 export interface ButtonList {
@@ -15,7 +17,7 @@ export interface CreatedProp {
   // 选中的头部的tag
   checkTag: AgentComponentTypeEnum;
   // 点击添加后,通知父组件添加节点
-  onAdded: (val: CreatedNodeItem) => void;
+  onAdded: (val: AgentAddComponentBaseInfo) => void;
   addComponents?: AgentAddComponentStatusInfo[];
   tabs?: { label: string; key: AgentComponentTypeEnum }[];
   // 隐藏顶部

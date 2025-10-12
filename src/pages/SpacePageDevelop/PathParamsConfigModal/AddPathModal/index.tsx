@@ -33,8 +33,6 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
         pageUri: editPathInfo.pageUri,
         description: editPathInfo.description,
       });
-    } else {
-      form.resetFields();
     }
   }, [open, editPathInfo]);
 
@@ -118,6 +116,7 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
           rules={[{ required: true, message: '请输入路径名称' }]}
         >
           <Input
+            disabled={mode === CreateUpdateModeEnum.Update}
             placeholder="路径名称，例如 /detail/view"
             showCount
             maxLength={50}

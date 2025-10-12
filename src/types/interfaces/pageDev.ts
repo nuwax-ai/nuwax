@@ -26,6 +26,10 @@ export interface ProxyConfig {
 
 // 页面参数配置
 export interface PageArgConfig {
+  /** 页面ID */
+  pageId?: number;
+  /** 页面基础路径 */
+  basePath?: string;
   // 页面路径，例如 /view
   pageUri: string;
   // 页面名称
@@ -75,7 +79,9 @@ export interface CustomPageDto {
   // 创建者昵称
   creatorNickName: string;
   // 创建者头像
-  creatorAvatar: number;
+  creatorAvatar: string;
+  // 页面URL
+  pageUrl: string;
 }
 
 // 上传前端项目压缩包并启动开发服务器参数
@@ -143,7 +149,7 @@ export interface CreateCustomPageInfo {
 
 // 单个页面开发组件
 export interface PageDevelopCardItemProps {
-  componentInfo: CustomPageDto | any;
+  componentInfo: CustomPageDto;
   onClick: () => void;
   onClickMore: (item: CustomPopoverItem) => void;
 }

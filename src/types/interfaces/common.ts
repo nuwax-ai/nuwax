@@ -309,7 +309,7 @@ export interface CreatedNodeItem {
   // 当前id
   spaceId?: number;
   // 正在使用的
-  targetId: number;
+  targetId: number | string;
   targetSubType: string;
   targetType: AgentComponentTypeEnum;
   // 发布人员信息

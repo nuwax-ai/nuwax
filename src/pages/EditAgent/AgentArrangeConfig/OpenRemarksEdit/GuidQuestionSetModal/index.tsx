@@ -8,6 +8,7 @@ import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
 import { BindValueType, GuidQuestionSetTypeEnum } from '@/types/enums/agent';
 import { GuidQuestionDto } from '@/types/interfaces/agent';
 import { BindConfigWithSub } from '@/types/interfaces/common';
+import { PageArgConfig } from '@/types/interfaces/pageDev';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   Form,
@@ -28,7 +29,9 @@ const cx = classNames.bind(styles);
 // 开场白预置问题设置弹窗Props
 export interface GuidQuestionSetModalProps {
   open: boolean;
+  currentGuidQuestionDto?: GuidQuestionDto;
   variables: BindConfigWithSub[];
+  pageArgConfigs: PageArgConfig[];
   onCancel: () => void;
   onConfirm: (result: GuidQuestionDto[]) => void;
 }
@@ -38,7 +41,9 @@ export interface GuidQuestionSetModalProps {
  */
 const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   open,
+  currentGuidQuestionDto,
   variables,
+  pageArgConfigs,
   onCancel,
   onConfirm,
 }) => {
@@ -51,6 +56,10 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   const [imageUrl, setImageUrl] = useState<string>('');
   // 类型
   const [type, setType] = useState<React.Key>(GuidQuestionSetTypeEnum.Question);
+  // 入参配置
+  const [args, setArgs] = useState<BindConfigWithSub[]>([]);
+
+  console.log('pageArgConfigs', pageArgConfigs);
 
   // // 新增智能体接口
   // const { run: runAdd } = useRequest(apiAgentAdd, {
@@ -65,17 +74,20 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   //   },
   // });
 
-  const initForm = () => {
-    form.setFieldsValue({
-      name: 1,
-    });
-  };
-
   useEffect(() => {
-    if (open) {
-      initForm();
+    // 回显数据
+    if (open && currentGuidQuestionDto) {
+      form.setFieldsValue({
+        icon: currentGuidQuestionDto.icon,
+        type: currentGuidQuestionDto.type,
+        info: currentGuidQuestionDto.info,
+        pageUri: currentGuidQuestionDto.pageUri,
+      });
+
+      // 回显入参配置
+      setArgs(currentGuidQuestionDto.args || []);
     }
-  }, [open]);
+  }, [open, currentGuidQuestionDto]);
 
   const onFinish: FormProps<any>['onFinish'] = (values) => {
     console.log('onFinish', values);
@@ -178,7 +190,18 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
 
   // 切换页面路径，修改智能体变量参数
   const changePagePath = (value: React.Key) => {
-    console.log('changePagePath', value);
+    console.log('changePagePath', value, pageArgConfigs);
+
+    const currentPageArgConfig = pageArgConfigs.find(
+      (item) => item.pageUri === value,
+    );
+    console.log('currentPageArgConfig', currentPageArgConfig);
+    setArgs(currentPageArgConfig?.args || []);
+    // const _args = cloneDeep(args);
+    // _args.forEach((item) => {
+    //   item.bindValue = value;
+    // });
+    // setArgs(_args);
   };
 
   return (
@@ -218,13 +241,13 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
             <Input placeholder="请输入问题" />
           </Form.Item>
         ) : type === GuidQuestionSetTypeEnum.Page ? (
-          <Form.Item
-            name="pageId"
-            label="页面路径（页面组件中已添加的页面下的路径作为可选列表）"
-          >
+          <Form.Item name="pageId" label="页面路径">
             <SelectList
               placeholder="请选择页面路径"
-              options={variableList}
+              options={pageArgConfigs.map((item) => ({
+                label: item.name,
+                value: item.pageUri,
+              }))}
               onChange={changePagePath}
             />
           </Form.Item>
@@ -249,7 +272,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       <Table<BindConfigWithSub>
         className={cx('mb-16', 'flex-1')}
         columns={inputColumns}
-        dataSource={[]}
+        dataSource={args}
         pagination={false}
         virtual
         scroll={{

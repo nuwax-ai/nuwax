@@ -79,12 +79,11 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
   // 创建页面
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
     setLoading(true);
-    console.log(values, type);
     // 项目导入
     if (type === PageDevelopCreateTypeEnum.Import_Project) {
       const { fileList, icon, projectName, projectDesc } = values;
 
-      // todo 上传文件接口返回的是文件的base64，这里需要转换一下
+      // 上传文件接口返回的是文件的base64，这里需要转换一下
       const file = fileList?.[0]?.originFileObj;
       // 创建formData
       const formData = new FormData();
@@ -97,8 +96,6 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
       /* 2. 追加文件 */
       formData.append('file', file || '');
       runCreatePageUploadAndStart(formData);
-      // const result = await apiCustomPageUploadAndStart(formData);
-      // console.log(result);
     }
     // 在线创建
     else if (type === PageDevelopCreateTypeEnum.Online_Develop) {
@@ -147,7 +144,6 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
       //   return false;
       // }
 
-      // setFileList([file]);
       return false; // 阻止默认上传行为，改为手动上传
     },
   };
@@ -159,7 +155,6 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
   };
 
   const normFile = (e: any) => {
-    console.log('Upload event:', e);
     if (Array.isArray(e)) {
       return e;
     }

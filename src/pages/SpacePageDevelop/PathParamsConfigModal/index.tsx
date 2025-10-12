@@ -1,18 +1,23 @@
+import { apiPageDeletePath } from '@/services/pageDev';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
   PageAddPathParams,
   PageArgConfig,
+  PageDeletePathParams,
   PathParamsConfigModalProps,
 } from '@/types/interfaces/pageDev';
 import {
   CloseOutlined,
   DeleteOutlined,
   EditOutlined,
+  LoadingOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';
+import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
 import AddPathModal from './AddPathModal';
 import styles from './index.less';
 import PathParamsConfigContent from './PathParamsConfigContent';
@@ -30,25 +35,60 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
 }) => {
   // 路径参数列表
   const [pathParams, setPathParams] = useState<PageArgConfig[]>([]);
-  // 当前路径参数key
-  const [key, setKey] = useState<string>('');
+  // 当前路径参数
+  const [currentPathParam, setCurrentPathParam] =
+    useState<PageArgConfig | null>(null);
   // 添加路径参数弹窗是否打开
   const [addPathModalOpen, setAddPathModalOpen] = useState<boolean>(false);
   // 编辑路径参数信息
   const [editPathInfo, setEditPathInfo] = useState<PageArgConfig | null>(null);
+  // 正在删除中的路径数组
+  const [deleteLoadingPaths, setDeleteLoadingPaths] = useState<string[]>([]);
 
   useEffect(() => {
-    setPathParams(defaultPageArgConfigs || []);
-    setKey('');
-  }, [defaultPageArgConfigs]);
+    if (open) {
+      setPathParams(defaultPageArgConfigs || []);
+      setCurrentPathParam(defaultPageArgConfigs?.[0] || null);
+    }
+  }, [open, defaultPageArgConfigs]);
 
+  // 删除路径配置
+  const { run: runDeletePath } = useRequest(apiPageDeletePath, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (_: null, params: PageDeletePathParams[]) => {
+      const { pageUri } = params[0];
+      const _pathParams =
+        pathParams?.filter((item) => item.pageUri !== pageUri) || [];
+      setPathParams(_pathParams);
+
+      console.log(currentPathParam, 'currentPathParam');
+      console.log(pageUri, 'pageUri');
+      // 如果当前路径参数被删除，则设置为第一个路径参数
+      if (currentPathParam?.pageUri === pageUri) {
+        const firstPathParam = _pathParams?.[0] || null;
+        setCurrentPathParam(firstPathParam);
+      }
+    },
+    onError: (_: null, params: PageDeletePathParams[]) => {
+      const { pageUri } = params[0];
+      setDeleteLoadingPaths(
+        deleteLoadingPaths.filter((item) => item !== pageUri),
+      );
+    },
+  });
+
+  // 删除路径配置
   const handleDel = (pageUri: string) => {
-    setPathParams(pathParams.filter((item) => item.pageUri !== pageUri));
+    setDeleteLoadingPaths([...deleteLoadingPaths, pageUri]);
+    runDeletePath({
+      projectId,
+      pageUri,
+    });
   };
 
+  // 编辑路径参数配置
   const handleEdit = (info: PageArgConfig) => {
-    const { pageUri } = info;
-    setKey(pageUri);
     setEditPathInfo(info);
     setAddPathModalOpen(true);
   };
@@ -79,16 +119,15 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
       setPathParams(_pathParams);
     } else {
       // 新增路径参数配置
-      const { pageUri, name, description } = info;
-      setPathParams([
-        ...pathParams,
-        {
-          pageUri,
-          name,
-          description,
-          args: [],
-        },
-      ]);
+      const _addPathParam = {
+        ...info,
+        args: [],
+      };
+      setPathParams([...pathParams, _addPathParam]);
+      // 如果当前路径参数为空，则设置为第一个路径参数
+      if (!currentPathParam) {
+        setCurrentPathParam(_addPathParam);
+      }
     }
   };
 
@@ -96,6 +135,16 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
   const handleCancelAddPath = () => {
     setAddPathModalOpen(false);
     setEditPathInfo(null);
+  };
+
+  // 确认保存路径参数配置
+  const handleConfirmSave = (info: PageArgConfig) => {
+    const _pathParams = cloneDeep(pathParams);
+    const index = _pathParams.findIndex(
+      (item) => item.pageUri === info.pageUri,
+    );
+    _pathParams.splice(index, 1, info);
+    setPathParams(_pathParams);
   };
 
   return (
@@ -124,10 +173,11 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
                         'items-center',
                         'gap-10',
                         {
-                          [styles.checked]: key === item.pageUri,
+                          [styles.checked]:
+                            currentPathParam?.pageUri === item.pageUri,
                         },
                       )}
-                      onClick={() => setKey(item.pageUri)}
+                      onClick={() => setCurrentPathParam(item)}
                     >
                       <div
                         className={cx(styles.label, 'text-ellipsis', 'flex-1')}
@@ -141,7 +191,12 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
                           'hover-box',
                         )}
                       >
-                        <EditOutlined onClick={() => handleEdit(item)} />
+                        <EditOutlined
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(item);
+                          }}
+                        />
                       </span>
                       <span
                         className={cx(
@@ -150,9 +205,16 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
                           'hover-box',
                         )}
                       >
-                        <DeleteOutlined
-                          onClick={() => handleDel(item.pageUri)}
-                        />
+                        {deleteLoadingPaths.includes(item.pageUri) ? (
+                          <LoadingOutlined />
+                        ) : (
+                          <DeleteOutlined
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDel(item.pageUri);
+                            }}
+                          />
+                        )}
                       </span>
                     </li>
                   );
@@ -170,12 +232,16 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
             </div>
             {/* 内容区域 */}
             <div className={cx('flex-1', styles.right)}>
-              <PathParamsConfigContent key={key} />
+              <PathParamsConfigContent
+                projectId={projectId}
+                currentPathParam={currentPathParam}
+                onConfirmSave={handleConfirmSave}
+              />
             </div>
             {/* 关闭按钮 */}
             <Button
               type="text"
-              className={cx(styles.close, 'cursor-pointer')}
+              className={cx(styles.close)}
               onClick={onCancel}
               icon={<CloseOutlined />}
             />

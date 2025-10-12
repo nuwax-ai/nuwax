@@ -9,7 +9,9 @@ import {
   BindValueType,
   EventBindResponseActionEnum,
 } from '@/types/enums/agent';
+import { AgentComponentEventConfig } from '@/types/interfaces/agent';
 import { BindConfigWithSub } from '@/types/interfaces/common';
+import { PageArgConfig } from '@/types/interfaces/pageDev';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   Form,
@@ -31,7 +33,9 @@ const cx = classNames.bind(styles);
 // 事件绑定弹窗Props
 export interface EventBindModalProps {
   open: boolean;
-  eventConfigs: BindConfigWithSub[];
+  eventConfig: AgentComponentEventConfig;
+  variables: BindConfigWithSub[];
+  pageArgConfigs: PageArgConfig[];
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -41,7 +45,9 @@ export interface EventBindModalProps {
  */
 const EventBindModal: React.FC<EventBindModalProps> = ({
   open,
-  eventConfigs,
+  eventConfig,
+  variables,
+  pageArgConfigs,
   onCancel,
   onConfirm,
 }) => {
@@ -54,19 +60,20 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
   const [type, setType] = useState<EventBindResponseActionEnum>(
     EventBindResponseActionEnum.Page,
   );
-
-  const initForm = () => {
-    form.setFieldsValue({
-      name: 1,
-    });
-  };
+  const [args, setArgs] = useState<BindConfigWithSub[]>([]);
 
   useEffect(() => {
-    if (open) {
-      initForm();
-      form.setFieldValue('type', EventBindResponseActionEnum.Page);
+    if (open && eventConfig) {
+      form.setFieldsValue({
+        name: eventConfig.name,
+        identification: eventConfig.identification,
+        pageUri: eventConfig.pageUri,
+        type: eventConfig.type,
+      });
+
+      setArgs(eventConfig.args || []);
     }
-  }, [open]);
+  }, [open, eventConfig]);
 
   // 更新事件绑定配置
   const { run: runEventUpdate } = useRequest(apiAgentComponentEventUpdate, {
@@ -103,17 +110,17 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
     setType(value as EventBindResponseActionEnum);
   };
 
-  // 缓存事件列表
-  const eventList = useMemo(() => {
+  // 缓存变量列表
+  const variableList = useMemo(() => {
     return (
-      eventConfigs?.map((item) => {
+      variables?.map((item) => {
         return {
           label: item.name,
           value: item.name,
         };
       }) || []
     );
-  }, [eventConfigs]);
+  }, [variables]);
 
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
@@ -170,7 +177,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
                 // onChange={(value) =>
                 //   handleInputValue(record.key, 'bindValue', value)
                 // }
-                options={eventList}
+                options={variableList}
               />
             )}
           </Space.Compact>
@@ -181,7 +188,13 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
 
   // 切换页面路径，修改智能体变量参数
   const changePagePath = (value: React.Key) => {
-    console.log('changePagePath', value);
+    console.log('changePagePath', value, pageArgConfigs);
+
+    const currentPageArgConfig = pageArgConfigs.find(
+      (item) => item.pageUri === value,
+    );
+    console.log('currentPageArgConfig', currentPageArgConfig);
+    setArgs(currentPageArgConfig?.args || []);
   };
 
   return (
@@ -226,7 +239,10 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
             {/* 页面路径 */}
             <SelectList
               placeholder="请选择页面路径"
-              options={eventList}
+              options={pageArgConfigs.map((item) => ({
+                label: item.name,
+                value: item.pageUri,
+              }))}
               onChange={changePagePath}
             />
           </Form.Item>
@@ -251,7 +267,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
       <Table<BindConfigWithSub>
         className={cx('mb-16', 'flex-1')}
         columns={inputColumns}
-        dataSource={[]}
+        dataSource={args}
         pagination={false}
         virtual
         scroll={{
