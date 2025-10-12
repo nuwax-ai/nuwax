@@ -151,6 +151,15 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     ) as AgentComponentInfo;
   }, [agentComponentList]);
 
+  // 绑定的页面参数配置信息
+  const pageArgConfigs = useMemo(() => {
+    const pageComponent = agentComponentList?.find(
+      (item: AgentComponentInfo) => item.type === AgentComponentTypeEnum.Page,
+    );
+
+    return pageComponent?.bindConfig?.pageArgConfigs || [];
+  }, [agentComponentList]);
+
   // 是否存在组件
   const isExistComponent = (type: AgentComponentTypeEnum) => {
     return agentComponentList?.some(
@@ -618,6 +627,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: (
         <OpenRemarksEdit
           agentConfigInfo={agentConfigInfo}
+          variables={variablesInfo?.bindConfig?.variables || []}
+          pageArgConfigs={pageArgConfigs}
           onChangeAgent={onChangeAgent}
         />
       ),

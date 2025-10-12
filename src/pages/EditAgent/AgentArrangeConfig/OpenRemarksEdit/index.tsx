@@ -18,6 +18,8 @@ const cx = classNames.bind(styles);
  */
 const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   agentConfigInfo,
+  variables,
+  pageArgConfigs,
   onChangeAgent,
 }) => {
   const { token } = theme.useToken();
@@ -29,6 +31,9 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   const [guidQuestionDtos, setGuidQuestionDtos] = useState<GuidQuestionDto[]>(
     [],
   );
+  // 当前开场白引导问题
+  const [currentGuidQuestionDto, setCurrentGuidQuestionDto] =
+    useState<GuidQuestionDto>();
   // 开场白预置问题设置弹窗
   const [open, setOpen] = useState<boolean>(false);
 
@@ -90,9 +95,10 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   };
 
   // 打开设置开场白预置问题弹窗
-  const handleSetGuidQuestions = (index: number) => {
-    console.log('handleSetGuidQuestions', index);
+  const handleSetGuidQuestions = (item: GuidQuestionDto) => {
+    console.log('handleSetGuidQuestions', item, agentConfigInfo);
     setOpen(true);
+    setCurrentGuidQuestionDto(item);
   };
 
   // 确认更新开场白预置问题
@@ -166,7 +172,7 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
               <TooltipIcon
                 title="设置"
                 icon={<ICON_SETTING className={'cursor-pointer'} />}
-                onClick={() => handleSetGuidQuestions(index)}
+                onClick={() => handleSetGuidQuestions(item)}
               />
             </>
           }
@@ -175,7 +181,9 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
       {/* 开场白预置问题设置弹窗 */}
       <GuidQuestionSetModal
         open={open}
-        variables={[]}
+        currentGuidQuestionDto={currentGuidQuestionDto}
+        variables={variables}
+        pageArgConfigs={pageArgConfigs}
         onCancel={() => setOpen(false)}
         onConfirm={handleConfirmUpdateQuestions}
       />
