@@ -1,10 +1,14 @@
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  ExpandPageAreaEnum,
+} from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { cloneDeep } from '@/utils/common';
 import {
   CheckOutlined,
   CopyOutlined,
+  EyeOutlined,
   ProfileOutlined,
 } from '@ant-design/icons';
 import { Button, message, Tooltip } from 'antd';
@@ -23,7 +27,12 @@ interface MarkdownCustomProcessProps {
   dataKey: string;
 }
 function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
-  const { getProcessingById, processingList } = useModel('chat');
+  const {
+    getProcessingById,
+    processingList,
+    showPagePreview,
+    agentPageConfig,
+  } = useModel('chat');
 
   const [detailData, setDetailData] = useState<{
     params: Record<string, any>;
@@ -113,11 +122,43 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
         return;
       }
       setDetailData(theDetailData);
+
+      // 自动展开页面预览逻辑
+      // 如果是 Page 类型且配置为自动展开，并且状态为完成，自动触发预览
+      if (
+        innerProcessing.type === AgentComponentTypeEnum.Page &&
+        innerProcessing.status === ProcessingEnum.FINISHED &&
+        agentPageConfig.expandPageArea === ExpandPageAreaEnum.Yes &&
+        theDetailData
+      ) {
+        const result = innerProcessing.result;
+        if (result && typeof result === 'object') {
+          const input = (
+            result as {
+              input?: { uri?: string; arguments?: Record<string, any> };
+            }
+          ).input;
+          if (input?.uri) {
+            // 自动触发预览
+            showPagePreview({
+              name: innerProcessing.name || '页面预览',
+              uri: input.uri,
+              params: input.arguments || {},
+              executeId: innerProcessing.executeId || '',
+            });
+          }
+        }
+      }
     }
   }, [
     innerProcessing.executeId,
     innerProcessing.status,
     innerProcessing.result,
+    innerProcessing.type,
+    innerProcessing.name,
+    agentPageConfig.expandPageArea,
+    showPagePreview,
+    getDetailData,
   ]);
 
   const disabled = useMemo(() => {
@@ -138,6 +179,41 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     setOpenModal(true);
   }, [detailData]);
 
+  // 判断是否为 Page 类型
+  const isPageType = useMemo(() => {
+    return innerProcessing.type === AgentComponentTypeEnum.Page;
+  }, [innerProcessing.type]);
+
+  // 处理预览页面
+  const handlePreviewPage = useCallback(() => {
+    if (!detailData) {
+      message.error('暂无数据');
+      return;
+    }
+
+    const result = innerProcessing.result;
+    if (!result || typeof result !== 'object') {
+      message.error('数据格式错误');
+      return;
+    }
+
+    const input = (
+      result as { input?: { uri?: string; arguments?: Record<string, any> } }
+    ).input;
+
+    if (!input?.uri) {
+      message.error('页面路径不存在');
+      return;
+    }
+
+    showPagePreview({
+      name: innerProcessing.name || '页面预览',
+      uri: input.uri,
+      params: input.arguments || {},
+      executeId: innerProcessing.executeId || '',
+    });
+  }, [detailData, innerProcessing, showPagePreview]);
+
   if (!innerProcessing.executeId) {
     return null;
   }
@@ -155,14 +231,25 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
         <div className={cx(styles['process-controls'])}>
           {genStatusDisplay()}
           <div className={cx(styles['process-controls-actions'])}>
-            <Tooltip title={'查看详情'}>
-              <Button
-                type="text"
-                disabled={disabled}
-                icon={<ProfileOutlined />}
-                onClick={handleSeeDetail}
-              />
-            </Tooltip>
+            {isPageType ? (
+              <Tooltip title="预览页面">
+                <Button
+                  type="text"
+                  disabled={disabled}
+                  icon={<EyeOutlined />}
+                  onClick={handlePreviewPage}
+                />
+              </Tooltip>
+            ) : (
+              <Tooltip title="查看详情">
+                <Button
+                  type="text"
+                  disabled={disabled}
+                  icon={<ProfileOutlined />}
+                  onClick={handleSeeDetail}
+                />
+              </Tooltip>
+            )}
             <Tooltip title="复制">
               <Button
                 type="text"

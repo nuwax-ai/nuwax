@@ -10,6 +10,7 @@ import {
   TEMP_CONVERSATION_CONNECTION_URL,
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
+import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import { apiTempChatConversationStop } from '@/services/agentConfig';
 import {
@@ -796,6 +797,12 @@ const ChatTemp: React.FC = () => {
   const handleCaptchaReady = () => {
     document.getElementById(buttonId)?.click();
   };
+
+  // 初始化消息事件代理（监听会话输出中的点击事件）
+  useMessageEventDelegate({
+    containerRef: messageViewRef,
+    eventBindConfig: conversationInfo?.agent?.eventBindConfig,
+  });
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>

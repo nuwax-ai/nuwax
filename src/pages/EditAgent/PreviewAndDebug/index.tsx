@@ -5,6 +5,7 @@ import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
+import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
@@ -255,6 +256,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     messageViewScrollToBottom();
     setShowScrollBtn(false);
   };
+
+  // 消息事件代理（处理会话输出中的点击事件）
+  useMessageEventDelegate({
+    containerRef: messageViewRef,
+    eventBindConfig: conversationInfo?.agent?.eventBindConfig,
+  });
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>

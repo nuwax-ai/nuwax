@@ -8,9 +8,15 @@ import RecommendList from '@/components/RecommendList';
 import { SIDEBAR_WIDTH } from '@/constants/agent.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
+import useExclusivePanels from '@/hooks/useExclusivePanels';
+import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
-import { MessageTypeEnum } from '@/types/enums/agent';
+import {
+  ExpandPageAreaEnum,
+  HideChatAreaEnum,
+  MessageTypeEnum,
+} from '@/types/enums/agent';
 import { AgentDetailDto } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -27,6 +33,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import DropdownChangeName from './DropdownChangeName';
 import styles from './index.less';
+import PagePreview from './PagePreview';
 import ShowArea from './ShowArea';
 
 const cx = classNames.bind(styles);
@@ -94,7 +101,17 @@ const Chat: React.FC = () => {
     requiredNameList,
     setConversationInfo,
     variables,
+    showType,
+    setShowType,
   } = useModel('conversationInfo');
+
+  // 页面预览相关状态
+  const {
+    pagePreviewData,
+    hidePagePreview,
+    agentPageConfig,
+    setAgentPageConfig,
+  } = useModel('chat');
 
   const values = Form.useWatch([], { form, preserve: true });
 
@@ -169,6 +186,18 @@ const Chat: React.FC = () => {
       setAgentDetail(defaultAgentDetail);
     }
   }, [agentId, defaultAgentDetail]);
+
+  // 同步智能体页面配置到 chat model（从 conversationInfo.agent 读取）
+  useEffect(() => {
+    if (conversationInfo?.agent) {
+      setAgentPageConfig({
+        expandPageArea:
+          conversationInfo.agent.expandPageArea || ExpandPageAreaEnum.No,
+        hideChatArea:
+          conversationInfo.agent.hideChatArea || HideChatAreaEnum.No,
+      });
+    }
+  }, [conversationInfo, setAgentPageConfig]);
 
   // 在组件挂载时添加滚动事件监听器
   useEffect(() => {
@@ -318,6 +347,22 @@ const Chat: React.FC = () => {
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const sidebarRef = useRef<AgentSidebarRef>(null);
 
+  // 互斥面板控制器：管理 PagePreview、AgentSidebar、ShowArea 的互斥展示
+  useExclusivePanels({
+    pagePreviewData,
+    hidePagePreview,
+    isSidebarVisible,
+    sidebarRef,
+    showType,
+    setShowType,
+  });
+
+  // 消息事件代理（处理会话输出中的点击事件）
+  useMessageEventDelegate({
+    containerRef: messageViewRef,
+    eventBindConfig: conversationInfo?.agent?.eventBindConfig,
+  });
+
   return (
     <div className={cx('flex', 'h-full')}>
       <div
@@ -431,21 +476,25 @@ const Chat: React.FC = () => {
             )}
           </div>
         </div>
-        {/*会话输入框*/}
-        <ChatInputHome
-          key={`chat-${id}-${agentId}`}
-          className={cx(styles['chat-input-container'])}
-          onEnter={handleMessageSend}
-          visible={showScrollBtn}
-          wholeDisabled={wholeDisabled}
-          onClear={handleClear}
-          manualComponents={manualComponents}
-          selectedComponentList={selectedComponentList}
-          onSelectComponent={handleSelectComponent}
-          onScrollBottom={onScrollBottom}
-          showAnnouncement={true}
-        />
+        {/*会话输入框 - 根据 hideChatArea 配置控制显示*/}
+        {agentPageConfig.hideChatArea !== HideChatAreaEnum.Yes && (
+          <ChatInputHome
+            key={`chat-${id}-${agentId}`}
+            className={cx(styles['chat-input-container'])}
+            onEnter={handleMessageSend}
+            visible={showScrollBtn}
+            wholeDisabled={wholeDisabled}
+            onClear={handleClear}
+            manualComponents={manualComponents}
+            selectedComponentList={selectedComponentList}
+            onSelectComponent={handleSelectComponent}
+            onScrollBottom={onScrollBottom}
+            showAnnouncement={true}
+          />
+        )}
       </div>
+      {/* 页面预览区域 */}
+      <PagePreview />
       <AgentSidebar
         ref={sidebarRef}
         className={cx(styles['agent-sidebar'])}

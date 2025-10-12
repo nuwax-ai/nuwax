@@ -1,6 +1,8 @@
 import type {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
+  ExpandPageAreaEnum,
+  HideChatAreaEnum,
   MessageModeEnum,
   MessageTypeEnum,
   TaskStatus,
@@ -16,6 +18,7 @@ import type {
   AgentSelectedComponentInfo,
   AgentStatisticsInfo,
   CreatorInfo,
+  GuidQuestionDto,
 } from '@/types/interfaces/agent';
 import { CardBindConfig, CardDataInfo } from '@/types/interfaces/cardInfo';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
@@ -270,13 +273,40 @@ export interface ConversationInfo {
     openSuggest: OpenCloseEnum;
     // 开场白文案
     openingChatMsg: string;
-    // 引导问题
+    // 引导问题（弃用）
     openingGuidQuestions: string[];
+    // 引导问题
+    guidQuestionDtos: GuidQuestionDto[];
     // 是否开启定时任务,可用值:Open,Close
     openScheduledTask: OpenCloseEnum;
     variables: BindConfigWithSub[];
     // 分享链接
     shareLink: string;
+    // 是否允许复制, 1 允许
+    allowCopy: number;
+    // 会话ID
+    conversationId: number;
+    // 是否默认展开扩展页面区域, 1 展开；0 不展开
+    expandPageArea: ExpandPageAreaEnum;
+    // 是否隐藏聊天区域，1 隐藏；0 不隐藏
+    hideChatArea: HideChatAreaEnum;
+    // 扩展页面首页
+    pageHomeIndex: string;
+    // 事件绑定配置
+    eventBindConfig?: {
+      eventConfigs: Array<{
+        name: string;
+        identification: string;
+        type: string;
+        url?: string;
+        pageId?: number;
+        basePath?: string;
+        pageUri?: string;
+        pageUrl?: string;
+        args?: BindConfigWithSub[];
+        argJsonSchema?: string;
+      }>;
+    };
     collect: boolean;
   };
   // 会话消息列表，会话列表查询时不会返回该字段值
