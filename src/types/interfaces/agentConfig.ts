@@ -245,6 +245,14 @@ export interface GuidQuestionSetModalProps {
   currentGuidQuestionDtoIndex: number;
 }
 
+// 页面路径选择框选项(自定义)
+export interface PagePathSelectOption {
+  label: string;
+  value: string;
+  pageUri: string;
+  pageId?: number;
+}
+
 // 变量列表组件
 export interface VariableListProps {
   textClassName?: string;
@@ -376,14 +384,14 @@ export interface HomeAgentCategoryInfo {
 // 智能体添加组件基础信息
 export interface AgentAddComponentBaseInfo {
   targetType: AgentComponentTypeEnum;
-  targetId: number | string;
+  targetId: number;
   toolName?: string;
 }
 
 // 智能体添加组件状态
 export interface AgentAddComponentStatusInfo {
   type: AgentComponentTypeEnum;
-  targetId: number | string;
+  targetId: number;
   status: AgentAddComponentStatusEnum;
   toolName?: string;
 }

@@ -480,19 +480,21 @@ const Chat: React.FC = () => {
         </div>
         {/*会话输入框 - 根据 hideChatArea 配置控制显示*/}
         {agentPageConfig.hideChatArea !== HideChatAreaEnum.Yes && (
-          <ChatInputHome
-            key={`chat-${id}-${agentId}`}
-            className={cx(styles['chat-input-container'])}
-            onEnter={handleMessageSend}
-            visible={showScrollBtn}
-            wholeDisabled={wholeDisabled}
-            onClear={handleClear}
-            manualComponents={manualComponents}
-            selectedComponentList={selectedComponentList}
-            onSelectComponent={handleSelectComponent}
-            onScrollBottom={onScrollBottom}
-            showAnnouncement={true}
-          />
+          <div style={{ padding: '0 15px' }}>
+            <ChatInputHome
+              key={`chat-${id}-${agentId}`}
+              className={cx(styles['chat-input-container'])}
+              onEnter={handleMessageSend}
+              visible={showScrollBtn}
+              wholeDisabled={wholeDisabled}
+              onClear={handleClear}
+              manualComponents={manualComponents}
+              selectedComponentList={selectedComponentList}
+              onSelectComponent={handleSelectComponent}
+              onScrollBottom={onScrollBottom}
+              showAnnouncement={true}
+            />
+          </div>
         )}
       </div>
       <AgentSidebar

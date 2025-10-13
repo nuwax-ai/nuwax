@@ -11,7 +11,10 @@ import {
   AgentConfigUpdateParams,
   GuidQuestionDto,
 } from '@/types/interfaces/agent';
-import { GuidQuestionSetModalProps } from '@/types/interfaces/agentConfig';
+import {
+  GuidQuestionSetModalProps,
+  PagePathSelectOption,
+} from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -29,6 +32,7 @@ import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -59,6 +63,8 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   const [args, setArgs] = useState<BindConfigWithSub[]>([]);
   // 当前路径页面id
   const [currentPageId, setCurrentPageId] = useState<number | null>(null);
+  // 页面路径列表
+  const [pathList, setPathList] = useState<PagePathSelectOption[]>([]);
 
   // 更新智能体基础配置信息
   const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
@@ -82,7 +88,6 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         icon: currentGuidQuestionDto.icon,
         type: currentGuidQuestionDto.type,
         info: currentGuidQuestionDto.info,
-        pageUri: currentGuidQuestionDto.pageUri,
       });
       // 类型
       setType(currentGuidQuestionDto.type);
@@ -94,10 +99,30 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       setCurrentPageId(currentGuidQuestionDto.pageId || null);
     }
 
+    if (pageArgConfigs?.length > 0) {
+      const _pathList: PagePathSelectOption[] = [];
+      pageArgConfigs?.forEach((item) => {
+        // 添加一个唯一值，因为pageArgConfigs中可能存在相同的pageUri
+        const pageUriId = uuidv4();
+        _pathList.push({
+          label: item.name,
+          value: pageUriId,
+          // 下拉选择框的值,后续选择页面路径时，需要使用pageUri来作为真正的value值
+          pageUri: item.pageUri,
+          pageId: item.pageId,
+        });
+
+        if (currentGuidQuestionDto?.pageUri === item.pageUri) {
+          form.setFieldValue('pageUriId', pageUriId);
+        }
+      });
+      setPathList(_pathList);
+    }
+
     return () => {
       setImageUrl('');
     };
-  }, [open, currentGuidQuestionDto]);
+  }, [open, currentGuidQuestionDto, pageArgConfigs]);
 
   // 缓存变量列表
   const variableList = useMemo(() => {
@@ -110,19 +135,6 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       }) || []
     );
   }, [variables]);
-
-  // 页面路径列表
-  const pathList = useMemo(() => {
-    return (
-      pageArgConfigs?.map((item) => {
-        return {
-          label: item.name,
-          value: item.pageUri,
-          pageId: item.pageId,
-        };
-      }) || []
-    );
-  }, [pageArgConfigs]);
 
   // 入参配置 - changeValue
   const handleInputValue = (
@@ -146,10 +158,13 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   // 表单提交
   const onFinish: FormProps<any>['onFinish'] = (values) => {
     setLoading(true);
+    const { pageUriId, ...rest } = values;
+    const pageUri = pathList.find((item) => item.value === pageUriId)?.pageUri;
     // 更新后的预置问题
     const newGuidQuestionDto = {
       ...currentGuidQuestionDto,
-      ...values,
+      ...rest,
+      pageUri,
       args,
       // 选择的页面路径的ID
       pageId: currentPageId,
@@ -180,7 +195,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   const handleChangeType = (value: React.Key) => {
     form.setFieldsValue({
       type: value,
-      pageUri: '',
+      pageUriId: '',
       url: '',
     });
     setType(value);
@@ -188,13 +203,13 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   };
 
   // 切换页面路径，修改智能体变量参数
-  const changePagePath = (value: React.Key, option: any) => {
-    const { label, pageId } = option;
+  const changePagePath = (_: React.Key, option: any) => {
+    const { label, pageId, pageUri } = option;
     // 根据页面路径，获取入参配置
     const _config =
       pageArgConfigs.find(
         (item) =>
-          item.pageUri === value &&
+          item.pageUri === pageUri &&
           item.pageId === pageId &&
           item.name === label,
       ) || null;
@@ -202,8 +217,8 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
     setCurrentPageId(pageId);
 
     // 切换到当前页面路径，回显入参配置
-    if (currentGuidQuestionDto?.pageUri === value) {
-      setArgs(currentGuidQuestionDto.args || []);
+    if (currentGuidQuestionDto?.pageUri === pageUri) {
+      setArgs(currentGuidQuestionDto?.args || []);
     } else {
       // 切换到其他页面路径，回显入参配置
       if (_config?.args) {
@@ -297,6 +312,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         layout="vertical"
         onFinish={onFinish}
         autoComplete="off"
+        preserve={false}
       >
         <Form.Item name="icon" label="图标">
           <UploadAvatar
@@ -316,10 +332,10 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
           />
         </Form.Item>
         {type === GuidQuestionSetTypeEnum.Page ? (
-          <Form.Item name="pageUri" label="页面路径">
+          <Form.Item name="pageUriId" label="页面路径">
             <SelectList
               placeholder="请选择页面路径"
-              options={pathList}
+              options={pathList as any}
               onChange={changePagePath}
             />
           </Form.Item>
