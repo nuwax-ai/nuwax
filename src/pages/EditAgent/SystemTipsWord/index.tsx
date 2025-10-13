@@ -27,7 +27,6 @@ const SystemTipsWord: React.FC<SystemTipsWordProps> = ({
     setOpen(false);
     onReplace(value);
   };
-  console.log('value', value);
   return (
     <div className={cx('flex', 'flex-col', 'flex-1', styles.container)}>
       <div

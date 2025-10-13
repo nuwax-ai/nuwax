@@ -104,7 +104,7 @@ export interface SelectListType {
   disabled?: boolean;
   allowClear?: boolean;
   options: option[];
-  onChange?: (value: React.Key) => void;
+  onChange?: (value: React.Key, option: any) => void;
   size?: SizeType;
 }
 
