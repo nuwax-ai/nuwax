@@ -384,6 +384,8 @@ export interface AgentConfigInfo {
   modelComponentConfig: AgentComponentInfo;
   // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
   agentStatistics: AgentStatisticsInfo;
+  // 智能体组件配置列表
+  agentComponentConfigList: AgentComponentInfo[];
   // 发布者信息
   publishUser: CreatorInfo;
   // 创建者信息
@@ -440,8 +442,9 @@ export interface AgentComponentInfo {
   icon: string;
   // 组件描述
   description: string;
+  // 关联的AgentID
   agentId: number;
-  // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model
+  // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model,Agent,Table,Mcp,Page,Event
   type: AgentComponentTypeEnum;
   // 绑定组件配置，不同组件配置不一样
   bindConfig: any;
@@ -456,7 +459,9 @@ export interface AgentComponentInfo {
   fallbackMsg: string;
   modified: string;
   created: string;
+  // 分组描述
   groupDescription: string;
+  // 分组名称
   groupName: string;
 }
 

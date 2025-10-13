@@ -26,8 +26,6 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   // 开场白内容
   const [content, setContent] = useState<string>('');
   // 开场白引导问题
-  // const [guidQuestions, setGuidQuestions] = useState<string[]>(['']);
-  // 开场白引导问题
   const [guidQuestionDtos, setGuidQuestionDtos] = useState<GuidQuestionDto[]>(
     [],
   );
@@ -40,10 +38,6 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   useEffect(() => {
     if (!!agentConfigInfo) {
       setContent(agentConfigInfo.openingChatMsg);
-      // 开场白引导问题(弃用)
-      // if (agentConfigInfo.openingGuidQuestions?.length > 0) {
-      //   setGuidQuestions(agentConfigInfo.openingGuidQuestions);
-      // }
       // 开场白引导问题
       if (agentConfigInfo.guidQuestionDtos?.length > 0) {
         setGuidQuestionDtos(agentConfigInfo.guidQuestionDtos);
@@ -53,9 +47,6 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
 
   // 新增开场白引导问题
   const handlePlus = () => {
-    // const _guidQuestions = [...guidQuestions];
-    // _guidQuestions.push('');
-    // setGuidQuestions(_guidQuestions);
     const _guidQuestionDtos = [...guidQuestionDtos];
     _guidQuestionDtos.push({
       type: GuidQuestionSetTypeEnum.Question,
@@ -66,10 +57,6 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
 
   // 删除开场白引导问题
   const handleDel = (index: number) => {
-    // const _guidQuestions = [...guidQuestions];
-    // _guidQuestions.splice(index, 1);
-    // setGuidQuestions(_guidQuestions);
-    // onChangeAgent(_guidQuestions, 'openingGuidQuestions');
     const _guidQuestionDtos = [...guidQuestionDtos];
     _guidQuestionDtos.splice(index, 1);
     setGuidQuestionDtos(_guidQuestionDtos);
@@ -84,10 +71,6 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
 
   // 修改开场白引导问题
   const handleChangeGuidQuestions = (index: number, value: string) => {
-    // const _guidQuestions = [...guidQuestions];
-    // _guidQuestions[index] = value;
-    // setGuidQuestions(_guidQuestions);
-    // onChangeAgent(_guidQuestions, 'openingGuidQuestions');
     const _guidQuestionDtos = [...guidQuestionDtos];
     _guidQuestionDtos[index].info = value;
     setGuidQuestionDtos(_guidQuestionDtos);
@@ -119,15 +102,6 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
           onChange={(e) => handleOpeningChatMsg(e.target.value)}
           autoSize={{ minRows: 3, maxRows: 5 }}
         />
-        {/*<EditorProvider*/}
-        {/*  slotBefore={<MenuBar />}*/}
-        {/*  extensions={extensions}*/}
-        {/*  content={content}*/}
-        {/*  onUpdate={handleUpdate}*/}
-        {/*></EditorProvider>*/}
-        {/*<EditorContent editor={editor} />*/}
-        {/*<FloatingMenu editor={editor}>This is the floating menu</FloatingMenu>*/}
-        {/*<BubbleMenu editor={editor}>This is the bubble menu</BubbleMenu>*/}
       </div>
       <div
         className={cx(

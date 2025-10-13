@@ -191,17 +191,12 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   // 切换页面路径，修改智能体变量参数
   const changePagePath = (value: React.Key) => {
     console.log('changePagePath', value, pageArgConfigs);
-
+    // 根据页面路径，获取入参配置
     const currentPageArgConfig = pageArgConfigs.find(
       (item) => item.pageUri === value,
     );
     console.log('currentPageArgConfig', currentPageArgConfig);
     setArgs(currentPageArgConfig?.args || []);
-    // const _args = cloneDeep(args);
-    // _args.forEach((item) => {
-    //   item.bindValue = value;
-    // });
-    // setArgs(_args);
   };
 
   return (
@@ -236,11 +231,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
             onChange={handleChangeType}
           />
         </Form.Item>
-        {type === GuidQuestionSetTypeEnum.Question ? (
-          <Form.Item name="question" label="问题">
-            <Input placeholder="请输入问题" />
-          </Form.Item>
-        ) : type === GuidQuestionSetTypeEnum.Page ? (
+        {type === GuidQuestionSetTypeEnum.Page ? (
           <Form.Item name="pageId" label="页面路径">
             <SelectList
               placeholder="请选择页面路径"
@@ -253,32 +244,39 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
           </Form.Item>
         ) : (
           type === GuidQuestionSetTypeEnum.Link && (
-            <Form.Item name="url" label="链接地址（类型为外链时展示）">
+            <Form.Item name="url" label="链接地址">
               <Input placeholder="https://xxxxxxx" />
             </Form.Item>
           )
         )}
       </Form>
-      <div className={cx(styles['input-box'], 'flex', 'items-center')}>
-        <SvgIcon
-          name="icons-common-caret_right"
-          rotate={isActive ? 90 : 0}
-          style={{ color: token.colorTextTertiary }}
-          onClick={() => setIsActive(!isActive)}
-        />
-        <span className={cx('user-select-none')}>输入</span>
-        <TooltipIcon title="输入" icon={<InfoCircleOutlined />} />
-      </div>
-      <Table<BindConfigWithSub>
-        className={cx('mb-16', 'flex-1')}
-        columns={inputColumns}
-        dataSource={args}
-        pagination={false}
-        virtual
-        scroll={{
-          y: 480,
-        }}
-      />
+      {
+        // 扩展页面路径类型时，展示入参配置
+        type === GuidQuestionSetTypeEnum.Page && (
+          <>
+            <div className={cx(styles['input-box'], 'flex', 'items-center')}>
+              <SvgIcon
+                name="icons-common-caret_right"
+                rotate={isActive ? 90 : 0}
+                style={{ color: token.colorTextTertiary }}
+                onClick={() => setIsActive(!isActive)}
+              />
+              <span className={cx('user-select-none')}>输入</span>
+              <TooltipIcon title="输入" icon={<InfoCircleOutlined />} />
+            </div>
+            <Table<BindConfigWithSub>
+              className={cx('mb-16', 'flex-1')}
+              columns={inputColumns}
+              dataSource={args}
+              pagination={false}
+              virtual
+              scroll={{
+                y: 480,
+              }}
+            />
+          </>
+        )
+      }
     </CustomFormModal>
   );
 };

@@ -29,6 +29,7 @@ import type {
   GroupMcpInfo,
 } from '@/types/interfaces/agentConfig';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
+import { PageArgConfig } from '@/types/interfaces/pageDev';
 import { loopSetBindValueType } from '@/utils/deepNode';
 import { useRequest } from 'ahooks';
 import { CollapseProps, message, Switch } from 'antd';
@@ -152,12 +153,18 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   }, [agentComponentList]);
 
   // 绑定的页面参数配置信息
-  const pageArgConfigs = useMemo(() => {
-    const pageComponent = agentComponentList?.find(
-      (item: AgentComponentInfo) => item.type === AgentComponentTypeEnum.Page,
-    );
+  const pageArgConfigs: PageArgConfig[] = useMemo(() => {
+    const pageComponents =
+      agentComponentList?.filter(
+        (item: AgentComponentInfo) => item.type === AgentComponentTypeEnum.Page,
+      ) || [];
 
-    return pageComponent?.bindConfig?.pageArgConfigs || [];
+    const _pageArgConfigs: PageArgConfig[] = [];
+    pageComponents.forEach((item: AgentComponentInfo) => {
+      _pageArgConfigs.push(...(item.bindConfig?.pageArgConfigs || []));
+    });
+
+    return _pageArgConfigs;
   }, [agentComponentList]);
 
   // 是否存在组件
