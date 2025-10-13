@@ -532,8 +532,10 @@ export interface AgentDetailDto extends AgentBaseInfo {
   openSuggest: OpenCloseEnum;
   // 开场白文案
   openingChatMsg: string;
-  // 首次打开引导问题
+  // 首次打开引导问题（弃用）
   openingGuidQuestions: string[];
+  // 引导问题
+  guidQuestionDtos: GuidQuestionDto[];
   // 是否开启定时任务,可用值:Open,Close
   openScheduledTask: OpenCloseEnum;
   // 参数
