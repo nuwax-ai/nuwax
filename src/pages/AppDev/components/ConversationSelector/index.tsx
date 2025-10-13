@@ -1,10 +1,12 @@
 import { listConversations } from '@/services/appDev';
 import type { ConversationRecord } from '@/types/interfaces/appDev';
 import { HistoryOutlined } from '@ant-design/icons';
-import { Select, Spin } from 'antd';
+import { Button, Dropdown, List, Spin, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
+
+const { Text } = Typography;
 
 interface ConversationSelectorProps {
   projectId: string;
@@ -48,28 +50,68 @@ const ConversationSelector: React.FC<ConversationSelectorProps> = ({
     loadConversations();
   }, [projectId]);
 
-  return (
-    <Select
-      className={styles.conversationSelector}
-      placeholder="选择历史会话"
-      value={currentSessionId}
-      onChange={onSessionChange}
-      loading={loading}
-      suffixIcon={<HistoryOutlined />}
-      style={{ width: 240 }}
-      notFoundContent={loading ? <Spin size="small" /> : '暂无历史会话'}
-    >
-      {conversations.map((conv) => (
-        <Select.Option key={conv.sessionId} value={conv.sessionId}>
-          <div className={styles.optionContent}>
-            <div className={styles.topic}>{conv.topic}</div>
-            <div className={styles.time}>
-              {dayjs(conv.created).format('MM-DD HH:mm')}
+  // 渲染下拉菜单内容
+  const renderDropdownContent = () => {
+    if (loading) {
+      return (
+        <div className={styles.loadingContainer}>
+          <Spin size="small" />
+          <Text type="secondary" style={{ marginLeft: 8 }}>
+            加载中...
+          </Text>
+        </div>
+      );
+    }
+
+    if (conversations.length === 0) {
+      return (
+        <div className={styles.emptyContainer}>
+          <Text type="secondary">暂无历史会话</Text>
+        </div>
+      );
+    }
+
+    return (
+      <List
+        className={styles.conversationList}
+        dataSource={conversations}
+        renderItem={(conv) => (
+          <List.Item
+            className={`${styles.conversationItem} ${
+              conv.sessionId === currentSessionId ? styles.activeItem : ''
+            }`}
+            onClick={() => onSessionChange(conv.sessionId)}
+          >
+            <div className={styles.conversationContent}>
+              <div className={styles.topic}>
+                <Text ellipsis={{ tooltip: conv.topic }}>{conv.topic}</Text>
+              </div>
+              <div className={styles.time}>
+                <Text type="secondary" className={styles.timeText}>
+                  {dayjs(conv.created).format('MM-DD HH:mm')}
+                </Text>
+              </div>
             </div>
-          </div>
-        </Select.Option>
-      ))}
-    </Select>
+          </List.Item>
+        )}
+      />
+    );
+  };
+
+  return (
+    <Dropdown
+      overlay={renderDropdownContent()}
+      trigger={['click']}
+      placement="bottomRight"
+      overlayClassName={styles.conversationDropdown}
+    >
+      <Button
+        type="text"
+        icon={<HistoryOutlined />}
+        className={styles.historyButton}
+        title="历史会话"
+      />
+    </Dropdown>
   );
 };
 
