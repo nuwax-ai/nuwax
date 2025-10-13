@@ -1,10 +1,11 @@
 import { FileNode } from '@/models/appDev';
 import {
   editorOptions,
+  getFileTypeDisplayName,
   getLanguageFromFile,
+  isSupportedFileType,
   javascriptCompilerOptions,
   typescriptCompilerOptions,
-  vueLanguageConfig,
 } from '@/utils/monacoConfig';
 import { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
@@ -108,59 +109,8 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           break;
 
         case 'vue':
-          // 注册Vue语言支持
-          monaco.languages.register({ id: 'vue' });
-
-          // 设置Vue语言的语言配置
-          monaco.languages.setLanguageConfiguration(
-            'vue',
-            vueLanguageConfig.configuration as any,
-          );
-
-          // 为Vue文件提供HTML语法高亮
-          monaco.languages.setMonarchTokensProvider('vue', {
-            tokenizer: {
-              root: [
-                // Vue模板语法 {{ }}
-                [/\{\{/, 'delimiter', '@expression'],
-                // HTML标签
-                [/<\/?[\w-]+/, 'tag'],
-                [/<!DOCTYPE[^>]*>/, 'metatag'],
-                // 属性
-                [/[\w-]+(?==)/, 'attribute.name'],
-                [/=/, 'delimiter'],
-                // 属性值
-                [/"([^"\\]|\\.)*$/, 'string.invalid'],
-                [/'([^'\\]|\\.)*$/, 'string.invalid'],
-                [/"/, 'string', '@string.double'],
-                [/'/, 'string', '@string.single'],
-                // 注释
-                [/<!--/, 'comment', '@comment'],
-              ],
-              comment: [
-                [/-->/, 'comment', '@pop'],
-                [/[^-]+/, 'comment'],
-              ],
-              string: [
-                [/[^\\"']+/, 'string'],
-                [/@escapes/, 'string.escape'],
-                [/\\./, 'string.escape.invalid'],
-                [
-                  /["']/,
-                  {
-                    cases: {
-                      '$#==$S2': { token: 'string', next: '@pop' },
-                      '@default': 'string',
-                    },
-                  },
-                ],
-              ],
-              expression: [
-                [/\}\}/, 'delimiter', '@pop'],
-                [/[^}]+/, 'variable'],
-              ],
-            },
-          });
+          // Vue文件暂时使用HTML语言支持
+          console.log('Vue文件使用HTML语言支持');
           break;
 
         default:
@@ -712,8 +662,13 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         <div className={styles.fileInfo}>
           <span className={styles.fileName}>{currentFile.name}</span>
           <span className={styles.fileLanguage}>
-            {getLanguageFromFile(currentFile.name)}
+            {getFileTypeDisplayName(currentFile.name)}
           </span>
+          {!isSupportedFileType(currentFile.name) && (
+            <span className={styles.unsupportedWarning}>
+              ⚠️ 不支持的文件类型，将以纯文本显示
+            </span>
+          )}
         </div>
         <div className={styles.fileStats}>
           <span className={styles.fileSize}>

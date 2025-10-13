@@ -17,6 +17,8 @@ export const languageMap: Record<string, string> = {
   tsx: 'typescript',
   js: 'javascript',
   jsx: 'javascript',
+  mjs: 'javascript',
+  cjs: 'javascript',
 
   // 样式文件
   css: 'css',
@@ -27,26 +29,189 @@ export const languageMap: Record<string, string> = {
   // HTML和模板
   html: 'html',
   htm: 'html',
-  vue: 'html', // Vue暂时使用HTML高亮
+  vue: 'html', // Vue文件暂时使用HTML渲染
 
-  // 其他常用语言
+  // 配置文件
   json: 'json',
+  jsonc: 'jsonc',
+  json5: 'json',
   md: 'markdown',
+  markdown: 'markdown',
   xml: 'xml',
   yaml: 'yaml',
   yml: 'yaml',
+  toml: 'toml',
+  ini: 'ini',
+  cfg: 'ini',
+  conf: 'ini',
+
+  // 编程语言
+  py: 'python',
+  python: 'python',
+  java: 'java',
+  c: 'c',
+  cpp: 'cpp',
+  cc: 'cpp',
+  cxx: 'cpp',
+  h: 'c',
+  hpp: 'cpp',
+  cs: 'csharp',
+  php: 'php',
+  rb: 'ruby',
+  go: 'go',
+  rs: 'rust',
+  swift: 'swift',
+  kt: 'kotlin',
+  scala: 'scala',
+  sh: 'shell',
+  bash: 'shell',
+  zsh: 'shell',
+  fish: 'shell',
+  ps1: 'powershell',
+  ps: 'powershell',
+  bat: 'bat',
+  cmd: 'bat',
+
+  // 数据库
+  sql: 'sql',
+  mysql: 'sql',
+  pgsql: 'sql',
+  sqlite: 'sql',
+
+  // 其他
+  dockerfile: 'dockerfile',
+  dockerignore: 'plaintext',
+  gitignore: 'plaintext',
+  gitattributes: 'plaintext',
+  env: 'plaintext',
+  envlocal: 'plaintext',
+  envdev: 'plaintext',
+  envprod: 'plaintext',
+  txt: 'plaintext',
+  log: 'plaintext',
+  lock: 'plaintext',
+  lockb: 'plaintext',
 };
 
 // 获取语言类型的函数
 export const getLanguageFromFile = (fileName: string): string => {
-  const ext = fileName.split('.').pop()?.toLowerCase();
-
-  // 特殊处理Vue文件
-  if (ext === 'vue') {
-    return 'html';
+  if (!fileName || typeof fileName !== 'string') {
+    return 'plaintext';
   }
 
-  return languageMap[ext || ''] || 'plaintext';
+  const fileNameLower = fileName.toLowerCase();
+
+  // 特殊文件名处理（无扩展名但已知类型）
+  const specialFiles: Record<string, string> = {
+    dockerfile: 'dockerfile',
+    makefile: 'makefile',
+    rakefile: 'ruby',
+    gemfile: 'ruby',
+    podfile: 'ruby',
+    vagrantfile: 'ruby',
+    berksfile: 'ruby',
+    cheffile: 'ruby',
+    capfile: 'ruby',
+    'config.ru': 'ruby',
+    guardfile: 'ruby',
+    fastfile: 'ruby',
+    appfile: 'ruby',
+    matchfile: 'ruby',
+    snapfile: 'ruby',
+    scanfile: 'ruby',
+    gymfile: 'ruby',
+    deliverfile: 'ruby',
+    pilotfile: 'ruby',
+    precheckfile: 'ruby',
+    supplyfile: 'ruby',
+    screengrabfile: 'ruby',
+  };
+
+  // 检查特殊文件名
+  if (specialFiles[fileNameLower]) {
+    return specialFiles[fileNameLower];
+  }
+
+  // 处理带点的文件名
+  const parts = fileName.split('.');
+  if (parts.length < 2) {
+    return 'plaintext';
+  }
+
+  const ext = parts.pop()?.toLowerCase();
+  if (!ext) {
+    return 'plaintext';
+  }
+
+  // 处理复合扩展名
+  const compoundExts: Record<string, string> = {
+    'd.ts': 'typescript',
+    vue: 'vue',
+    jsx: 'javascript',
+    tsx: 'typescript',
+    mjs: 'javascript',
+    cjs: 'javascript',
+  };
+
+  // 检查复合扩展名
+  if (parts.length > 1) {
+    const lastTwoParts = parts.slice(-2).join('.');
+    if (compoundExts[lastTwoParts]) {
+      return compoundExts[lastTwoParts];
+    }
+  }
+
+  // 返回对应的语言类型，如果不存在则返回 plaintext
+  return languageMap[ext] || 'plaintext';
+};
+
+// 检查文件类型是否被支持
+export const isSupportedFileType = (fileName: string): boolean => {
+  const language = getLanguageFromFile(fileName);
+  return language !== 'plaintext';
+};
+
+// 获取文件类型的显示名称
+export const getFileTypeDisplayName = (fileName: string): string => {
+  const language = getLanguageFromFile(fileName);
+
+  const displayNames: Record<string, string> = {
+    typescript: 'TypeScript',
+    javascript: 'JavaScript',
+    css: 'CSS',
+    less: 'Less',
+    scss: 'SCSS',
+    html: 'HTML',
+    vue: 'Vue',
+    json: 'JSON',
+    jsonc: 'JSON with Comments',
+    markdown: 'Markdown',
+    xml: 'XML',
+    yaml: 'YAML',
+    toml: 'TOML',
+    ini: 'INI',
+    python: 'Python',
+    java: 'Java',
+    c: 'C',
+    cpp: 'C++',
+    csharp: 'C#',
+    php: 'PHP',
+    ruby: 'Ruby',
+    go: 'Go',
+    rust: 'Rust',
+    swift: 'Swift',
+    kotlin: 'Kotlin',
+    scala: 'Scala',
+    shell: 'Shell',
+    powershell: 'PowerShell',
+    bat: 'Batch',
+    sql: 'SQL',
+    dockerfile: 'Dockerfile',
+    makefile: 'Makefile',
+    plaintext: 'Plain Text',
+  };
+
+  return displayNames[language] || 'Unknown';
 };
 
 // 配置Monaco Editor的TypeScript编译器选项
