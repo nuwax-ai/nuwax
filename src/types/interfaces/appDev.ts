@@ -3,6 +3,8 @@
  * 基于OpenAPI规范的用户前端页面项目内容接口
  */
 
+import { MessageModeEnum } from '@/types/enums/agent';
+import { MessageStatusEnum } from '@/types/enums/common';
 import type { RequestResponse } from '@/types/interfaces/request';
 
 /**
@@ -497,6 +499,37 @@ export type SSEEventType =
 export interface SSEMessage {
   event: SSEEventType;
   data: UnifiedSessionMessage;
+}
+
+// ==================== 聊天消息相关类型定义 ====================
+
+/**
+ * AppDev 聊天消息接口
+ * 用于区分用户和 Agent 角色的多轮对话消息
+ */
+export interface AppDevChatMessage {
+  /** 消息唯一ID */
+  id: string;
+  /** 消息角色: USER | ASSISTANT */
+  role: 'USER' | 'ASSISTANT';
+  /** 消息类型: CHAT, THINK, QUESTION, ANSWER */
+  type: MessageModeEnum;
+  /** 消息文本内容 */
+  text: string;
+  /** AI 思考过程 */
+  think?: string;
+  /** 消息时间 */
+  time: string;
+  /** 消息状态: Loading, Incomplete, Complete, Error */
+  status: MessageStatusEnum | null;
+  /** 请求ID(关联问答对) */
+  requestId: string;
+  /** 会话ID */
+  sessionId?: string;
+  /** 是否正在流式传输 */
+  isStreaming?: boolean;
+  /** 时间戳 */
+  timestamp: Date;
 }
 
 // ==================== 文件管理相关类型定义 ====================

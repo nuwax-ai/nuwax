@@ -170,9 +170,37 @@
   }
 }
 
+// 消息包装器 - 按角色区分布局
 .messageWrapper {
-  margin-bottom: 8px;
+  display: flex;
+  margin-bottom: 16px;
   animation: message-slide-in 0.3s ease-out;
+
+  // 用户消息 - 右侧对齐
+  &.user {
+    justify-content: flex-end;
+
+    .messageBubble {
+      background: #1890ff;
+      color: #fff;
+      border-radius: 18px 18px 4px;
+      padding: 12px 16px;
+      max-width: 70%;
+    }
+  }
+
+  // AI助手消息 - 左侧对齐
+  &.assistant {
+    justify-content: flex-start;
+
+    .messageBubble {
+      background: #f0f0f0;
+      color: #000;
+      border-radius: 18px 18px 18px 4px;
+      padding: 12px 16px;
+      max-width: 70%;
+    }
+  }
 }
 
 @keyframes message-slide-in {
@@ -187,38 +215,124 @@
   }
 }
 
-.message {
+// 消息气泡
+.messageBubble {
+  position: relative;
+  word-wrap: break-word;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+// 消息内容
+.messageContent {
+  margin-bottom: 8px;
+}
+
+// 流式传输指示器
+.streamingIndicator {
   display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 5%);
+  border-radius: 12px;
+  font-size: 12px;
+  color: #666;
 
-  &.ai {
-    justify-content: flex-start;
-
-    .messageContent {
-      background: rgba(59, 130, 246, 10%);
-      border: 1px solid rgba(59, 130, 246, 20%);
-      color: #1e293b;
-      max-width: 85%;
-    }
-  }
-
-  &.user {
-    justify-content: flex-end;
-
-    .messageContent {
-      background: rgba(59, 130, 246, 15%);
-      border: 1px solid rgba(59, 130, 246, 30%);
-      color: #1e293b;
-      max-width: 85%;
-    }
+  .streamingText {
+    animation: blink 1.5s infinite;
   }
 }
 
-.messageContent {
-  padding: 12px 16px;
+// 加载指示器
+.loadingIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 5%);
   border-radius: 12px;
-  font-size: 14px;
-  line-height: 1.5;
-  word-wrap: break-word;
+  font-size: 12px;
+  color: #666;
+}
+
+// 错误指示器
+.errorIndicator {
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: rgba(255, 77, 79, 10%);
+  border: 1px solid rgba(255, 77, 79, 20%);
+  border-radius: 12px;
+  font-size: 12px;
+  color: #ff4d4f;
+}
+
+// 思考过程区域
+.thinkingArea {
+  margin-top: 12px;
+  background: rgba(0, 0, 0, 5%);
+  border-left: 3px solid #1890ff;
+  border-radius: 0 8px 8px 0;
+  overflow: hidden;
+}
+
+.thinkingHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 5%);
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 8%);
+  }
+}
+
+.thinkingTitle {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.expandIcon {
+  color: #999;
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.thinkingContent {
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 3%);
+  font-size: 11px;
+  color: #666;
+  line-height: 1.4;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.thinkingLine {
+  margin-bottom: 4px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// 流式文本闪烁动画
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0.3;
+  }
 }
 
 // 按钮消息
@@ -289,12 +403,6 @@
   color: #1e293b;
   font-weight: 500;
   font-size: 14px;
-}
-
-.expandIcon {
-  color: #64748b;
-  font-size: 12px;
-  transition: transform 0.2s;
 }
 
 .detailsContent {
@@ -398,11 +506,6 @@
 .toolCallIndicator {
   color: #22c55e;
   font-weight: 500;
-}
-
-.streamingIndicator {
-  color: #64748b;
-  animation: pulse 1.5s ease-in-out infinite;
 }
 
 @keyframes pulse {
