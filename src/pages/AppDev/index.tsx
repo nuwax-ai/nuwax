@@ -851,10 +851,9 @@ const AppDev: React.FC = () => {
                   }`}
                 />
               </Tooltip>
-              <Row gutter={0} className={styles.contentRow}>
+              <div className={styles.contentRow}>
                 {/* 文件树侧边栏 */}
-                <Col
-                  span={isFileTreeCollapsed ? 0 : 6}
+                <div
                   className={`${styles.fileTreeCol} ${
                     isFileTreeCollapsed ? styles.collapsed : ''
                   }`}
@@ -919,13 +918,10 @@ const AppDev: React.FC = () => {
                       </>
                     )}
                   </Card>
-                </Col>
+                </div>
 
                 {/* 编辑器区域 */}
-                <Col
-                  span={isFileTreeCollapsed ? 24 : 18}
-                  className={styles.editorCol}
-                >
+                <div className={styles.editorCol}>
                   <div className={styles.editorContainer}>
                     {/* 内容区域 */}
                     <div className={styles.editorContent}>
@@ -1263,8 +1259,8 @@ const AppDev: React.FC = () => {
                       )}
                     </div>
                   </div>
-                </Col>
-              </Row>
+                </div>
+              </div>
             </div>
           </Col>
         </Row>
