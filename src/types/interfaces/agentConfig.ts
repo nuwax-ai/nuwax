@@ -245,6 +245,14 @@ export interface GuidQuestionSetModalProps {
   currentGuidQuestionDtoIndex: number;
 }
 
+// 页面路径选择框选项(自定义)
+export interface PagePathSelectOption {
+  label: string;
+  value: string;
+  pageUri: string;
+  pageId?: number;
+}
+
 // 变量列表组件
 export interface VariableListProps {
   textClassName?: string;

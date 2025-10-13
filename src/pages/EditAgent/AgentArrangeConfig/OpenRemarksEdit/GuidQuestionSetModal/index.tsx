@@ -11,7 +11,10 @@ import {
   AgentConfigUpdateParams,
   GuidQuestionDto,
 } from '@/types/interfaces/agent';
-import { GuidQuestionSetModalProps } from '@/types/interfaces/agentConfig';
+import {
+  GuidQuestionSetModalProps,
+  PagePathSelectOption,
+} from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -33,14 +36,6 @@ import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-// 页面路径选择框选项（只用于此页面）
-interface PagePathSelectOption {
-  label: string;
-  value: string;
-  pageUri: string;
-  pageId?: number;
-}
 
 /**
  * 开场白预置问题设置弹窗
@@ -200,7 +195,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   const handleChangeType = (value: React.Key) => {
     form.setFieldsValue({
       type: value,
-      pageUri: '',
+      pageUriId: '',
       url: '',
     });
     setType(value);
