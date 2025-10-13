@@ -78,7 +78,7 @@ const SpacePageDevelop: React.FC = () => {
     null,
   );
   // 当前项目ID
-  const [projectId, setProjectId] = useState<string>('');
+  const [projectId, setProjectId] = useState<number>(0);
   // 当前反向代理配置
   const [proxyConfigs, setProxyConfigs] = useState<ProxyConfig[]>([]);
   // 当前页面参数配置
@@ -171,7 +171,7 @@ const SpacePageDevelop: React.FC = () => {
    * 反向代理表单填写后，点击不进入开发界面，直接弹出“反向代理配置”框
    */
   const handleConfirmCreatePage = (result: CreateCustomPageInfo) => {
-    setProjectId(result.projectIdStr);
+    setProjectId(result.projectId);
     // 关闭表单弹窗
     setOpenPageCreateModal(false);
     switch (pageCreateTypeRef.current) {
@@ -188,13 +188,13 @@ const SpacePageDevelop: React.FC = () => {
 
   // 点击卡片
   const handleClickCard = (item: CustomPageDto) => {
-    setProjectId(item.projectIdStr);
+    setProjectId(item.projectId);
     setProxyConfigs(item.proxyConfigs || []);
     setPageArgConfigs(item.pageArgConfigs || []);
     setCurrentPageInfo(item);
     // 根据页面类型（页面创建模式）导入项目、在线创建，判断是否需要打开调试智能体绑定弹窗，反向代理，打开路径参数配置弹窗
     if (item.projectType === PageProjectTypeEnum.ONLINE_DEPLOY) {
-      setProjectId(item.projectIdStr);
+      setProjectId(item.projectId);
       setOpenDebugAgentBindModel(true);
     }
     // 反向代理
@@ -205,7 +205,7 @@ const SpacePageDevelop: React.FC = () => {
 
   // 点击更多操作
   const handleClickMore = (item: CustomPopoverItem, info: CustomPageDto) => {
-    setProjectId(info.projectIdStr);
+    setProjectId(info.projectId);
     setProxyConfigs(info.proxyConfigs || []);
     setPageArgConfigs(info.pageArgConfigs || []);
     setCurrentPageInfo(info);

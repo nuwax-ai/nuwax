@@ -1,6 +1,9 @@
 import Loading from '@/components/custom/Loading';
 import { apiPageGetProjectInfo } from '@/services/pageDev';
-import { CustomPageDto } from '@/types/interfaces/pageDev';
+import {
+  CustomPageDto,
+  PageReviewModalProps,
+} from '@/types/interfaces/pageDev';
 import { Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -8,15 +11,6 @@ import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-/**
- * 页面预览弹窗Props
- */
-export interface PageReviewModalProps {
-  open: boolean;
-  projectId: string;
-  onCancel: () => void;
-}
 
 /**
  * 页面预览弹窗
