@@ -15,6 +15,7 @@ import type {
   ProjectDetailResponse,
   SubmitFilesResponse,
   UploadAndStartProjectParams,
+  UploadAndStartProjectResponse,
 } from '@/types/interfaces/appDev';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
@@ -110,11 +111,11 @@ export const createProject = async (
 /**
  * 上传前端项目压缩包并启动开发服务器
  * @param params 参数对象，包含文件和项目名称
- * @returns Promise<any> 上传和启动结果
+ * @returns Promise<RequestResponse<UploadAndStartProjectResponse>> 上传和启动结果
  */
 export const uploadAndStartProject = async (
   params: UploadAndStartProjectParams,
-): Promise<any> => {
+): Promise<RequestResponse<UploadAndStartProjectResponse>> => {
   const { file, projectName } = params;
   const formData = new FormData();
   formData.append('file', file);

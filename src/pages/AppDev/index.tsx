@@ -292,7 +292,7 @@ const AppDev: React.FC = () => {
         const result = await uploadAndStartProject({ file, projectName });
 
         if (result?.success && result?.data) {
-          const { projectId: newProjectId, devServerUrl } = result.data;
+          const { projectIdStr: newProjectId, devServerUrl } = result.data;
 
           updateProjectId(newProjectId);
           if (devServerUrl) {
@@ -1039,7 +1039,7 @@ const AppDev: React.FC = () => {
                         ) : (
                           <Preview
                             ref={previewRef}
-                            devServerUrl={workspace.devServerUrl}
+                            devServerUrl={`${process.env.BASE_URL}${workspace.devServerUrl}`}
                             isStarting={server.isStarting}
                             startError={server.startError}
                           />

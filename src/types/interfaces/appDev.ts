@@ -128,6 +128,18 @@ export interface UploadAndStartProjectParams {
 }
 
 /**
+ * 上传并启动项目返回数据接口
+ */
+export interface UploadAndStartProjectResponse {
+  /** 项目ID */
+  projectId: number;
+  /** 项目ID字符串（因为后端接口返回的projectId太大时，精度丢失了） */
+  projectIdStr: string;
+  /** 开发服务器URL */
+  devServerUrl: string;
+}
+
+/**
  * 页面文件信息接口（用于提交文件修改）
  */
 export interface PageFileInfo {
