@@ -3,11 +3,11 @@ import {
   ExpandPageAreaEnum,
 } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
-import { copyTextToClipboard } from '@/utils/clipboard';
+// import { copyTextToClipboard } from '@/utils/clipboard';
 import { cloneDeep } from '@/utils/common';
 import {
   CheckOutlined,
-  CopyOutlined,
+  // CopyOutlined,
   EyeOutlined,
   ProfileOutlined,
 } from '@ant-design/icons';
@@ -86,15 +86,15 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     }
   }, [innerProcessing.status]);
 
-  const handleCopy = useCallback(async () => {
-    if (!detailData) {
-      message.error('暂无数据');
-      return;
-    }
-    // 复制功能 - 可以复制组件的配置或内容
-    const jsonText = JSON.stringify(detailData, null, 2);
-    await copyTextToClipboard(jsonText, undefined, true);
-  }, [detailData]);
+  // const handleCopy = useCallback(async () => {
+  //   if (!detailData) {
+  //     message.error('暂无数据');
+  //     return;
+  //   }
+  //   // 复制功能 - 可以复制组件的配置或内容
+  //   const jsonText = JSON.stringify(detailData, null, 2);
+  //   await copyTextToClipboard(jsonText, undefined, true);
+  // }, [detailData]);
 
   // 准备 详情弹窗 所需的数据
   const getDetailData = useCallback((result: any) => {
@@ -233,6 +233,14 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
         <div className={cx(styles['process-controls'])}>
           {genStatusDisplay()}
           <div className={cx(styles['process-controls-actions'])}>
+            <Tooltip title="查看详情">
+              <Button
+                type="text"
+                disabled={disabled}
+                icon={<ProfileOutlined />}
+                onClick={handleSeeDetail}
+              />
+            </Tooltip>
             {isPageType ? (
               <Tooltip title="预览页面">
                 <Button
@@ -242,24 +250,15 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                   onClick={handlePreviewPage}
                 />
               </Tooltip>
-            ) : (
-              <Tooltip title="查看详情">
-                <Button
-                  type="text"
-                  disabled={disabled}
-                  icon={<ProfileOutlined />}
-                  onClick={handleSeeDetail}
-                />
-              </Tooltip>
-            )}
-            <Tooltip title="复制">
-              <Button
-                type="text"
-                icon={<CopyOutlined />}
-                disabled={disabled}
-                onClick={handleCopy}
-              />
-            </Tooltip>
+            ) : null}
+            {/*<Tooltip title="复制">*/}
+            {/*  <Button*/}
+            {/*    type="text"*/}
+            {/*    icon={<CopyOutlined />}*/}
+            {/*    disabled={disabled}*/}
+            {/*    onClick={handleCopy}*/}
+            {/*  />*/}
+            {/*</Tooltip>*/}
           </div>
         </div>
       </div>
