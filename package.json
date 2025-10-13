@@ -71,6 +71,7 @@
     "rehype-stringify": "^10.0.1",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
+    "simple-edit-markdown": "^0.0.3",
     "unist-util-visit": "^5.0.0",
     "ut2": "^1.15.0",
     "uuid": "^11.1.0"
