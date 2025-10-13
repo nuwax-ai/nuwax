@@ -1,15 +1,18 @@
+import Created from '@/components/Created';
 import { ERROR_MESSAGES } from '@/constants/appDevConstants';
+import { CREATED_TABS } from '@/constants/common.constants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
 import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
+import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
 import { buildProject, uploadAndStartProject } from '@/services/appDev';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { getLanguageFromFile, isImageFile } from '@/utils/appDevUtils';
 import {
   CheckOutlined,
   DeleteOutlined,
-  DownOutlined,
   EyeOutlined,
   FileOutlined,
   GlobalOutlined,
@@ -18,8 +21,6 @@ import {
   ReadOutlined,
   ReloadOutlined,
   RightOutlined,
-  SendOutlined,
-  StopOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import {
@@ -33,23 +34,17 @@ import {
   Modal,
   Row,
   Segmented,
-  Select,
   Space,
   Spin,
-  Tag,
   Tooltip,
   Typography,
   Upload,
 } from 'antd';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { AppDevHeader } from './components';
+import ChatArea from './components/ChatArea';
+import DataResourceList from './components/DataResourceList';
 import MonacoEditor from './components/MonacoEditor';
 import Preview, { type PreviewRef } from './components/Preview';
 import styles from './index.less';
@@ -114,15 +109,18 @@ const AppDev: React.FC = () => {
     onServerStatusChange: setIsServiceRunning,
   });
 
+  // 数据资源管理
+  const dataResourceManagement = useDataResourceManagement();
+
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
 
-  const [expandedMessages, setExpandedMessages] = useState<Set<string>>(
-    new Set(),
-  );
-
   // 聊天模式状态
   const [chatMode, setChatMode] = useState<'chat' | 'design'>('chat');
+
+  // 数据资源相关状态
+  const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
+    useState(false);
 
   // 文件树折叠状态
   const [isFileTreeCollapsed, setIsFileTreeCollapsed] = useState(false);
@@ -231,6 +229,113 @@ const AppDev: React.FC = () => {
   }, [hasValidProjectId, projectId]);
 
   /**
+   * 处理添加数据资源
+   */
+  const handleAddDataResource = useCallback(
+    async (data: any) => {
+      try {
+        await dataResourceManagement.createResource(data);
+        setIsAddDataResourceModalVisible(false);
+      } catch (error) {
+        console.error('添加数据资源失败:', error);
+      }
+    },
+    [dataResourceManagement],
+  );
+
+  /**
+   * 处理添加组件（Created 组件回调）
+   */
+  const handleAddComponent = useCallback(
+    (item: any) => {
+      // 将 Created 组件的选择转换为数据资源格式
+      const dataResourceData = {
+        name: item.name || '未命名资源',
+        description: item.description || '',
+        type:
+          item.targetType === AgentComponentTypeEnum.Workflow
+            ? 'workflow'
+            : item.targetType === AgentComponentTypeEnum.Plugin
+            ? 'plugin'
+            : 'reverse-proxy',
+        config: {
+          targetId: item.targetId,
+          targetType: item.targetType,
+          // 根据类型添加特定配置
+          ...(item.targetType === AgentComponentTypeEnum.Workflow && {
+            filePath: item.config?.filePath || '',
+            triggerType: 'manual',
+          }),
+          ...(item.targetType === AgentComponentTypeEnum.Plugin && {
+            packagePath: item.config?.packagePath || '',
+            version: item.config?.version || '1.0.0',
+            entry: item.config?.entry || 'index.js',
+          }),
+          ...(item.targetType === AgentComponentTypeEnum.MCP && {
+            targetUrl: item.config?.targetUrl || '',
+            proxyPath: item.config?.proxyPath || '/',
+            timeout: 30,
+          }),
+        },
+        tags: [],
+      };
+
+      handleAddDataResource(dataResourceData);
+    },
+    [dataResourceManagement],
+  );
+
+  /**
+   * 处理编辑数据资源
+   */
+  const handleEditDataResource = useCallback((resource: any) => {
+    // TODO: 实现编辑功能
+    console.log('编辑数据资源:', resource);
+  }, []);
+
+  /**
+   * 处理删除数据资源
+   */
+  const handleDeleteDataResource = useCallback(
+    async (resourceId: string) => {
+      try {
+        await dataResourceManagement.deleteResource(resourceId);
+      } catch (error) {
+        console.error('删除数据资源失败:', error);
+      }
+    },
+    [dataResourceManagement],
+  );
+
+  /**
+   * 处理切换数据资源状态
+   */
+  const handleToggleDataResourceStatus = useCallback(
+    async (resourceId: string, enabled: boolean) => {
+      try {
+        await dataResourceManagement.toggleResourceStatus(resourceId, enabled);
+      } catch (error) {
+        console.error('切换数据资源状态失败:', error);
+      }
+    },
+    [dataResourceManagement],
+  );
+
+  /**
+   * 处理测试数据资源连接
+   */
+  const handleTestDataResourceConnection = useCallback(
+    async (resourceId: string) => {
+      try {
+        await dataResourceManagement.testResourceConnection(resourceId);
+      } catch (error) {
+        console.error('测试数据资源连接失败:', error);
+      }
+    },
+    [dataResourceManagement],
+  );
+
+  /**
    * 键盘快捷键处理
    */
   useEffect(() => {
@@ -276,6 +381,15 @@ const AppDev: React.FC = () => {
     isDeploying,
     handleDeployProject,
   ]);
+
+  /**
+   * 初始化数据资源
+   */
+  useEffect(() => {
+    if (projectId) {
+      dataResourceManagement.fetchResources();
+    }
+  }, [projectId, dataResourceManagement]);
 
   /**
    * 处理项目上传
@@ -400,14 +514,6 @@ const AppDev: React.FC = () => {
   }, []);
 
   /**
-   * 处理功能按钮点击
-   */
-  const handleActionButton = useCallback((action: string) => {
-    console.log('执行操作:', action);
-    message.info(`执行操作: ${action}`);
-  }, []);
-
-  /**
    * 处理删除文件/文件夹
    */
   const handleDeleteClick = useCallback(
@@ -458,145 +564,6 @@ const AppDev: React.FC = () => {
     setDeleteModalVisible(false);
     setNodeToDelete(null);
   }, []);
-
-  /**
-   * 切换消息展开状态
-   */
-  const toggleMessageExpansion = useCallback((messageId: string) => {
-    setExpandedMessages((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(messageId)) {
-        newSet.delete(messageId);
-      } else {
-        newSet.add(messageId);
-      }
-      return newSet;
-    });
-  }, []);
-
-  /**
-   * 渲染聊天消息
-   */
-  const renderChatMessage = useCallback(
-    (message: any) => {
-      switch (message.type) {
-        case 'ai':
-          return (
-            <div key={message.id} className={styles.messageWrapper}>
-              <div className={`${styles.message} ${styles.ai}`}>
-                <div className={styles.messageContent}>
-                  {message.content
-                    ?.split('\n')
-                    .map((line: string, index: number) => (
-                      <div key={index}>{line}</div>
-                    ))}
-                </div>
-              </div>
-              {message.details && (
-                <div className={styles.detailsMessage}>
-                  <div
-                    className={styles.detailsHeader}
-                    onClick={() => toggleMessageExpansion(message.id)}
-                  >
-                    <span className={styles.detailsTitle}>
-                      {message.content}
-                    </span>
-                    <span className={styles.expandIcon}>
-                      {expandedMessages.has(message.id) ? '▼' : '▶'}
-                    </span>
-                  </div>
-                  {expandedMessages.has(message.id) && (
-                    <div className={styles.detailsContent}>
-                      {message.details.map((detail: string, index: number) => (
-                        <div key={index} className={styles.detailItem}>
-                          {detail}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-
-        case 'button':
-          return (
-            <div key={message.id} className={styles.messageWrapper}>
-              <div className={styles.buttonMessage}>
-                <Button
-                  type="primary"
-                  size="small"
-                  onClick={() => handleActionButton(message.action || '')}
-                  className={styles.actionButton}
-                >
-                  {message.content}
-                </Button>
-              </div>
-            </div>
-          );
-
-        case 'section':
-          return (
-            <div key={message.id} className={styles.messageWrapper}>
-              <div className={styles.sectionMessage}>
-                <div className={styles.sectionTitle}>{message.title}</div>
-                <div className={styles.sectionItems}>
-                  {message.items?.map((item: string, index: number) => (
-                    <div key={index} className={styles.sectionItem}>
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-
-        case 'thinking':
-          return (
-            <div key={message.id} className={styles.messageWrapper}>
-              <div className={`${styles.message} ${styles.thinking}`}>
-                <div className={styles.messageContent}>
-                  <div className={styles.thinkingIndicator}>💭 思考中...</div>
-                  {message.content
-                    ?.split('\n')
-                    .map((line: string, index: number) => (
-                      <div key={index} className={styles.thinkingText}>
-                        {line}
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-          );
-
-        case 'tool_call':
-          return (
-            <div key={message.id} className={styles.messageWrapper}>
-              <div className={`${styles.message} ${styles.toolCall}`}>
-                <div className={styles.messageContent}>
-                  <div className={styles.toolCallIndicator}>🔧</div>
-                  <span>{message.content}</span>
-                  {message.isStreaming && (
-                    <span className={styles.streamingIndicator}>...</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-
-        default:
-          return null;
-      }
-    },
-    [expandedMessages, toggleMessageExpansion, handleActionButton],
-  );
-
-  /**
-   * 聊天消息列表（memo化）
-   */
-  const chatMessagesList = useMemo(() => {
-    return chat.chatMessages.map(renderChatMessage);
-  }, [chat.chatMessages, renderChatMessage]);
 
   /**
    * 处理取消编辑
@@ -760,109 +727,12 @@ const AppDev: React.FC = () => {
         <Row gutter={0} className={styles.mainRow}>
           {/* 左侧AI助手面板 */}
           <Col span={8} className={styles.leftPanel}>
-            <Card className={styles.chatCard} bordered={false}>
-              {/* 聊天模式切换 */}
-              <div className={styles.chatModeContainer}>
-                <div className={styles.chatModeSwitcher}>
-                  <Segmented
-                    value={chatMode}
-                    onChange={(value) =>
-                      setChatMode(value as 'chat' | 'design')
-                    }
-                    options={[
-                      { label: 'Chat', value: 'chat' },
-                      { label: 'Design', value: 'design' },
-                    ]}
-                    className={styles.chatModeSegmented}
-                  />
-                  <div className={styles.versionSelectorWrapper}>
-                    <Select
-                      value={
-                        projectInfo.projectInfoState.projectInfo?.codeVersion
-                          ? `v${projectInfo.projectInfoState.projectInfo.codeVersion}`
-                          : undefined
-                      }
-                      size="small"
-                      className={styles.versionSelector}
-                      dropdownClassName={styles.versionDropdown}
-                      options={projectInfo.versionList.map((version) => ({
-                        value: `v${version.version}`,
-                        label: (
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                            }}
-                          >
-                            <span>v{version.version}</span>
-                            <Tag
-                              color={projectInfo.getActionColor(version.action)}
-                              style={{ marginLeft: 8, fontSize: '10px' }}
-                            >
-                              {projectInfo.getActionText(version.action)}
-                            </Tag>
-                          </div>
-                        ),
-                      }))}
-                      suffixIcon={<DownOutlined />}
-                      onChange={(value) => {
-                        const versionNumber = parseInt(value.replace('v', ''));
-                        console.log('选择版本:', versionNumber);
-                        // TODO: 实现版本切换逻辑
-                      }}
-                      placeholder="选择版本"
-                      disabled={projectInfo.versionList.length === 0}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 聊天消息区域 */}
-              <div className={styles.chatMessages}>
-                {chatMessagesList}
-                {chat.isChatLoading && (
-                  <div className={`${styles.message} ${styles.ai}`}>
-                    <div className={styles.messageContent}>
-                      <Spin size="small" /> 正在思考...
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 聊天输入区域 */}
-              <div className={styles.chatInput}>
-                <Input
-                  placeholder="向AI助手提问..."
-                  value={chat.chatInput}
-                  onChange={(e) => chat.setChatInput(e.target.value)}
-                  onPressEnter={chat.sendChat}
-                  suffix={
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      {chat.isChatLoading && (
-                        <Button
-                          type="text"
-                          icon={<StopOutlined />}
-                          onClick={chat.cancelChat}
-                          title="取消AI任务"
-                          className={styles.cancelButton}
-                        />
-                      )}
-                      <Button
-                        type="text"
-                        icon={<SendOutlined />}
-                        onClick={chat.sendChat}
-                        disabled={!chat.chatInput.trim() || chat.isChatLoading}
-                      />
-                    </div>
-                  }
-                  className={styles.inputField}
-                />
-                <div className={styles.modelSelector}>
-                  <Text type="secondary">deepseek-v3</Text>
-                </div>
-              </div>
-            </Card>
+            <ChatArea
+              chatMode={chatMode}
+              setChatMode={setChatMode}
+              chat={chat}
+              projectInfo={projectInfo}
+            />
           </Col>
 
           {/* 右侧代码编辑器区域 */}
@@ -978,6 +848,32 @@ const AppDev: React.FC = () => {
                         </div>
                       </>
                     )}
+                  </Card>
+                  <Card>
+                    {/* 数据资源管理 */}
+                    <div className={styles.dataSourceContainer}>
+                      <div className={styles.dataSourceHeader}>
+                        <h3>数据资源</h3>
+                        <Button
+                          type="primary"
+                          size="small"
+                          icon={<PlusOutlined />}
+                          onClick={() => setIsAddDataResourceModalVisible(true)}
+                        >
+                          添加
+                        </Button>
+                      </div>
+                      <div className={styles.dataSourceContent}>
+                        <DataResourceList
+                          resources={dataResourceManagement.resources}
+                          loading={dataResourceManagement.loading}
+                          onEdit={handleEditDataResource}
+                          onDelete={handleDeleteDataResource}
+                          onToggleStatus={handleToggleDataResourceStatus}
+                          onTestConnection={handleTestDataResourceConnection}
+                        />
+                      </div>
+                    </div>
                   </Card>
                 </Col>
 
@@ -1470,6 +1366,20 @@ const AppDev: React.FC = () => {
             </p>
           )}
         </Modal>
+
+        {/* 数据资源添加弹窗 - 使用 Created 组件 */}
+        <Created
+          open={isAddDataResourceModalVisible}
+          onCancel={() => setIsAddDataResourceModalVisible(false)}
+          checkTag={AgentComponentTypeEnum.Plugin}
+          addComponents={addComponents}
+          onAdded={handleAddComponent}
+          tabs={CREATED_TABS.filter(
+            (item) =>
+              item.key === AgentComponentTypeEnum.Plugin ||
+              item.key === AgentComponentTypeEnum.Workflow,
+          )}
+        />
       </div>
     </>
   );
