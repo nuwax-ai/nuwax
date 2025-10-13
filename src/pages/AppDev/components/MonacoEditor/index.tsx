@@ -31,6 +31,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   const [isMonacoReady, setIsMonacoReady] = useState(false);
   const isCreatingRef = useRef(false);
   const isDisposingRef = useRef(false);
+  const lastFileIdRef = useRef<string | null>(null);
+  const editorCreatedRef = useRef(false);
+  const createEditorRef = useRef<() => Promise<void>>();
+  const updateEditorContentRef = useRef<() => Promise<void>>();
 
   /**
    * 动态加载语言支持
@@ -306,6 +310,8 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       console.debug('Monaco Editor dispose error (can be ignored):', error);
     } finally {
       editorInstanceRef.current = null;
+      editorCreatedRef.current = false;
+      lastFileIdRef.current = null;
       isDisposingRef.current = false;
     }
   }, []);
@@ -346,16 +352,28 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   const createEditor = useCallback(async () => {
     if (!editorRef.current || !isMonacoReady || isCreatingRef.current) return;
 
+    // 如果编辑器已经创建且文件没有变化，直接返回
+    if (
+      editorCreatedRef.current &&
+      editorInstanceRef.current &&
+      lastFileIdRef.current === currentFile?.id
+    ) {
+      console.debug('Editor already exists for this file, skipping creation');
+      return;
+    }
+
     // 防止并发创建
     if (isCreatingRef.current) return;
     isCreatingRef.current = true;
 
     try {
-      // 如果已有编辑器实例，先清理
-      await safeAsyncOperation(
-        () => safeDisposeEditor(),
-        'Monaco Editor cleanup',
-      );
+      // 只有在需要时才清理现有编辑器
+      if (editorInstanceRef.current && editorCreatedRef.current) {
+        await safeAsyncOperation(
+          () => safeDisposeEditor(),
+          'Monaco Editor cleanup',
+        );
+      }
 
       const language = currentFile
         ? getLanguageFromFile(currentFile.name)
@@ -390,6 +408,8 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       }
 
       editorInstanceRef.current = editor;
+      editorCreatedRef.current = true;
+      lastFileIdRef.current = currentFile?.id || null;
 
       // 监听内容变化
       editor.onDidChangeModelContent(() => {
@@ -442,7 +462,30 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     const editor = editorInstanceRef.current;
 
     // 检查编辑器是否已经被dispose
-    if (editor.isDisposed?.()) return;
+    if (
+      editor &&
+      typeof editor.isDisposed === 'function' &&
+      editor.isDisposed()
+    )
+      return;
+
+    // 如果文件ID没有变化，只更新内容
+    if (lastFileIdRef.current === currentFile.id) {
+      try {
+        const model = editor.getModel();
+        if (model && !model.isDisposed()) {
+          const currentValue = model.getValue();
+          const newValue = currentFile.content || '';
+
+          if (currentValue !== newValue) {
+            model.setValue(newValue);
+          }
+        }
+      } catch (error) {
+        console.debug('Content update error:', error);
+      }
+      return;
+    }
 
     try {
       const language = getLanguageFromFile(currentFile.name);
@@ -550,24 +593,82 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     };
   }, []);
 
+  // 添加监听器数量监控（仅在开发环境）
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      const checkListenerCount = () => {
+        if (editorInstanceRef.current) {
+          try {
+            // 检查编辑器是否存在且未被销毁
+            const editor = editorInstanceRef.current;
+            if (
+              editor &&
+              typeof editor.isDisposed === 'function' &&
+              !editor.isDisposed()
+            ) {
+              const model = editor.getModel();
+              if (model) {
+                console.debug(
+                  'Monaco Editor model exists:',
+                  model.uri.toString(),
+                );
+              }
+            } else if (editor && typeof editor.isDisposed !== 'function') {
+              // 如果编辑器存在但没有 isDisposed 方法，尝试获取模型
+              try {
+                const model = editor.getModel();
+                if (model) {
+                  console.debug(
+                    'Monaco Editor model exists (no isDisposed method):',
+                    model.uri.toString(),
+                  );
+                }
+              } catch (error) {
+                console.debug('Monaco Editor model check failed:', error);
+              }
+            }
+          } catch (error) {
+            console.debug('Monaco Editor check failed:', error);
+          }
+        } else {
+          console.debug('Monaco Editor not initialized');
+        }
+      };
+
+      const interval = setInterval(checkListenerCount, 10000); // 减少检查频率
+      return () => clearInterval(interval);
+    }
+  }, []);
+
+  // 设置函数引用
+  useEffect(() => {
+    createEditorRef.current = createEditor;
+    updateEditorContentRef.current = updateEditorContent;
+  });
+
   // 初始化Monaco Editor
   useEffect(() => {
     initializeMonaco();
-  }, [initializeMonaco]);
+  }, []); // 只在组件挂载时执行一次
 
   // 创建编辑器实例
   useEffect(() => {
-    if (isMonacoReady) {
-      createEditor();
+    if (isMonacoReady && createEditorRef.current) {
+      createEditorRef.current();
     }
-  }, [isMonacoReady, createEditor]);
+  }, [isMonacoReady, currentFile?.id]); // 只依赖文件ID变化
 
   // 更新编辑器内容
   useEffect(() => {
-    if (isMonacoReady && editorInstanceRef.current && currentFile) {
-      updateEditorContent();
+    if (
+      isMonacoReady &&
+      editorInstanceRef.current &&
+      currentFile &&
+      updateEditorContentRef.current
+    ) {
+      updateEditorContentRef.current();
     }
-  }, [isMonacoReady, updateEditorContent, currentFile]);
+  }, [isMonacoReady, currentFile?.id, currentFile?.content]); // 只依赖文件ID和内容变化
 
   // 清理资源
   useEffect(() => {
@@ -575,7 +676,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       // 组件卸载时清理编辑器
       safeDisposeEditor();
     };
-  }, [safeDisposeEditor]);
+  }, []); // 移除依赖，只在组件卸载时执行
 
   if (!isMonacoReady) {
     return (
