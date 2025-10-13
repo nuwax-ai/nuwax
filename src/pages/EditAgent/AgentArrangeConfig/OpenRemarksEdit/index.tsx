@@ -3,6 +3,7 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { SimpleEditor } from 'simple-edit-markdown';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 
@@ -221,12 +222,21 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
     <div>
       <p className={cx(styles.title)}>开场白文案</p>
       <div className={cx(styles['content-box'])}>
-        <Input.TextArea
-          placeholder="请输入开场白"
+        {/*<Input.TextArea*/}
+        {/*  placeholder="请输入开场白"*/}
+        {/*  value={content}*/}
+        {/*  onChange={(e) => handleOpeningChatMsg(e.target.value)}*/}
+        {/*  autoSize={{ minRows: 3, maxRows: 5 }}*/}
+        {/*/>*/}
+
+        <SimpleEditor
           value={content}
-          onChange={(e) => handleOpeningChatMsg(e.target.value)}
-          autoSize={{ minRows: 3, maxRows: 5 }}
+          onChange={handleOpeningChatMsg}
+          className={cx(styles['custom-style-editor'])}
+          focusBorderColor={'var(--xagi-color-primary)'}
+          toolbarAlign="left"
         />
+
         {/*<EditorProvider*/}
         {/*  slotBefore={<MenuBar />}*/}
         {/*  extensions={extensions}*/}
