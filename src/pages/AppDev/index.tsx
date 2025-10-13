@@ -286,14 +286,6 @@ const AppDev: React.FC = () => {
   );
 
   /**
-   * 处理编辑数据资源
-   */
-  const handleEditDataResource = useCallback((resource: any) => {
-    // TODO: 实现编辑功能
-    console.log('编辑数据资源:', resource);
-  }, []);
-
-  /**
    * 处理删除数据资源
    */
   const handleDeleteDataResource = useCallback(
@@ -302,34 +294,6 @@ const AppDev: React.FC = () => {
         await dataResourceManagement.deleteResource(resourceId);
       } catch (error) {
         console.error('删除数据资源失败:', error);
-      }
-    },
-    [dataResourceManagement],
-  );
-
-  /**
-   * 处理切换数据资源状态
-   */
-  const handleToggleDataResourceStatus = useCallback(
-    async (resourceId: string, enabled: boolean) => {
-      try {
-        await dataResourceManagement.toggleResourceStatus(resourceId, enabled);
-      } catch (error) {
-        console.error('切换数据资源状态失败:', error);
-      }
-    },
-    [dataResourceManagement],
-  );
-
-  /**
-   * 处理测试数据资源连接
-   */
-  const handleTestDataResourceConnection = useCallback(
-    async (resourceId: string) => {
-      try {
-        await dataResourceManagement.testResourceConnection(resourceId);
-      } catch (error) {
-        console.error('测试数据资源连接失败:', error);
       }
     },
     [dataResourceManagement],
@@ -846,34 +810,32 @@ const AppDev: React.FC = () => {
                             )}
                           </div>
                         </div>
+
+                        {/* 数据资源管理 - 固定在底部 */}
+                        <div className={styles.dataSourceContainer}>
+                          <div className={styles.dataSourceHeader}>
+                            <h3>数据资源</h3>
+                            <Button
+                              type="primary"
+                              size="small"
+                              icon={<PlusOutlined />}
+                              onClick={() =>
+                                setIsAddDataResourceModalVisible(true)
+                              }
+                            >
+                              添加
+                            </Button>
+                          </div>
+                          <div className={styles.dataSourceContent}>
+                            <DataResourceList
+                              resources={dataResourceManagement.resources}
+                              loading={dataResourceManagement.loading}
+                              onDelete={handleDeleteDataResource}
+                            />
+                          </div>
+                        </div>
                       </>
                     )}
-                  </Card>
-                  <Card>
-                    {/* 数据资源管理 */}
-                    <div className={styles.dataSourceContainer}>
-                      <div className={styles.dataSourceHeader}>
-                        <h3>数据资源</h3>
-                        <Button
-                          type="primary"
-                          size="small"
-                          icon={<PlusOutlined />}
-                          onClick={() => setIsAddDataResourceModalVisible(true)}
-                        >
-                          添加
-                        </Button>
-                      </div>
-                      <div className={styles.dataSourceContent}>
-                        <DataResourceList
-                          resources={dataResourceManagement.resources}
-                          loading={dataResourceManagement.loading}
-                          onEdit={handleEditDataResource}
-                          onDelete={handleDeleteDataResource}
-                          onToggleStatus={handleToggleDataResourceStatus}
-                          onTestConnection={handleTestDataResourceConnection}
-                        />
-                      </div>
-                    </div>
                   </Card>
                 </Col>
 
@@ -1372,7 +1334,6 @@ const AppDev: React.FC = () => {
           open={isAddDataResourceModalVisible}
           onCancel={() => setIsAddDataResourceModalVisible(false)}
           checkTag={AgentComponentTypeEnum.Plugin}
-          addComponents={addComponents}
           onAdded={handleAddComponent}
           tabs={CREATED_TABS.filter(
             (item) =>

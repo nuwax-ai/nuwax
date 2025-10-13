@@ -15,7 +15,8 @@
       "Bash(git commit:*)",
       "Bash(git stash pop:*)",
       "Bash(npm run dev)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git config:*)"
     ],
     "deny": [],
     "ask": []
