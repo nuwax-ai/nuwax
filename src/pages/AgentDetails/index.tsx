@@ -112,7 +112,9 @@ const AgentDetails: React.FC = () => {
       setAgentDetail(result);
       setConversationId(result?.conversationId || null);
       // 会话问题建议
-      setChatSuggestList(result?.openingGuidQuestions || []);
+      const guidQuestionDtos = result?.guidQuestionDtos || [];
+      // 如果存在预置问题，显示预置问题
+      setChatSuggestList(guidQuestionDtos?.map((item) => item.info));
       // 变量参数
       const _variables = result?.variables || [];
       setVariables(_variables);

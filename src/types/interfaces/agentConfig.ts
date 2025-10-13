@@ -57,6 +57,10 @@ export interface AgentArrangeConfigProps {
     value: string | string[] | number | GuidQuestionDto[],
     attr: string,
   ) => void;
+  onConfirmUpdateEventQuestions: (
+    value: string | string[] | number | GuidQuestionDto[],
+    attr: string,
+  ) => void;
 }
 
 // 组件设置弹窗
@@ -223,6 +227,22 @@ export interface OpenRemarksEditProps {
     value: string | string[] | GuidQuestionDto[],
     attr: string,
   ) => void;
+  onConfirmUpdateEventQuestions: (
+    value: string | string[] | number | GuidQuestionDto[],
+    attr: string,
+  ) => void;
+}
+
+// 开场白预置问题设置弹窗Props
+export interface GuidQuestionSetModalProps {
+  open: boolean;
+  agentConfigInfo?: AgentConfigInfo;
+  currentGuidQuestionDto?: GuidQuestionDto;
+  variables: BindConfigWithSub[];
+  pageArgConfigs: PageArgConfig[];
+  onCancel: () => void;
+  onConfirm: (result: GuidQuestionDto[]) => void;
+  currentGuidQuestionDtoIndex: number;
 }
 
 // 变量列表组件
