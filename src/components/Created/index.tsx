@@ -570,7 +570,7 @@ const Created: React.FC<CreatedProp> = ({
   const addPageNode = (item: CustomPageDto) => {
     onAdded({
       targetType: AgentComponentTypeEnum.Page,
-      targetId: item.projectIdStr,
+      targetId: item.projectId,
     });
   };
 
@@ -579,7 +579,7 @@ const Created: React.FC<CreatedProp> = ({
     const isAddedState = getItemStatusResult(
       {
         targetType: AgentComponentTypeEnum.Page,
-        targetId: item.projectIdStr,
+        targetId: item.projectId,
       },
       AgentAddComponentStatusEnum.Added,
     );

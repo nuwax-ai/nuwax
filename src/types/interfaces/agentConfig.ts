@@ -376,14 +376,14 @@ export interface HomeAgentCategoryInfo {
 // 智能体添加组件基础信息
 export interface AgentAddComponentBaseInfo {
   targetType: AgentComponentTypeEnum;
-  targetId: number | string;
+  targetId: number;
   toolName?: string;
 }
 
 // 智能体添加组件状态
 export interface AgentAddComponentStatusInfo {
   type: AgentComponentTypeEnum;
-  targetId: number | string;
+  targetId: number;
   status: AgentAddComponentStatusEnum;
   toolName?: string;
 }

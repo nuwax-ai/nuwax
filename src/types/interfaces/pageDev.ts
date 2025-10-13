@@ -155,13 +155,22 @@ export interface PageDevelopCardItemProps {
 }
 
 /**
+ * 页面预览弹窗Props
+ */
+export interface PageReviewModalProps {
+  open: boolean;
+  projectId: number;
+  onCancel: () => void;
+}
+
+/**
  * 调试智能体绑定弹窗Props
  */
 export interface DebugAgentBindModalProps {
   spaceId: number;
   defaultDevAgentId?: number;
   // 项目ID
-  projectId: string;
+  projectId: number;
   open: boolean;
   onCancel: () => void;
 }
@@ -181,7 +190,7 @@ export interface PageCreateModalProps {
  * 路径参数配置弹窗Props
  */
 export interface PathParamsConfigModalProps {
-  projectId: string;
+  projectId: number;
   defaultPageArgConfigs?: PageArgConfig[];
   open: boolean;
   onCancel: () => void;
@@ -208,7 +217,7 @@ export interface AddPathModalProps {
  */
 export interface ReverseProxyModalProps {
   open: boolean;
-  projectId: string;
+  projectId: number;
   defaultProxyConfigs?: ProxyConfig[];
   onCancel: () => void;
 }
@@ -217,7 +226,7 @@ export interface ReverseProxyModalProps {
  * 反向代理内容配置Props
  */
 export interface ReverseProxyContentConfigProps {
-  projectId: string;
+  projectId: number;
   // 当前反向代理类型 可用值:dev,prod
   reverseProxyType: ReverseProxyEnum;
   // 所有的反向代理配置（包括开发环境和生产环境）
