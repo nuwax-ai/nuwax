@@ -154,7 +154,8 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
     const index = eventConfigs.findIndex(
       (item: AgentComponentEventConfig) =>
         item.pageUri === currentEventConfig?.pageUri &&
-        item.pageId === currentEventConfig?.pageId,
+        item.pageId === currentEventConfig?.pageId &&
+        item.name === currentEventConfig?.name,
     );
     // 如果存在，则更新，否则新增
     if (index !== -1) {
