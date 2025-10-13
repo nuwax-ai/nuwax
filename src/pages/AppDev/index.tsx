@@ -46,7 +46,13 @@ import {
   Typography,
   Upload,
 } from 'antd';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import { AppDevHeader } from './components';
 import ChatArea from './components/ChatArea';
@@ -125,10 +131,15 @@ const AppDev: React.FC = () => {
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
 
+  // 稳定 currentFiles 引用，避免无限循环
+  const stableCurrentFiles = useMemo(() => {
+    return fileManagement.fileTreeState.data;
+  }, [fileManagement.fileTreeState.data]);
+
   // 版本对比管理
   const versionCompare = useAppDevVersionCompare({
     projectId: projectId || '',
-    currentFiles: fileManagement.fileTreeState.data,
+    currentFiles: stableCurrentFiles,
     onVersionSwitchSuccess: () => {
       // 刷新文件树
       fileManagement.loadFileTree();

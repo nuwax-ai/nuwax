@@ -297,7 +297,7 @@ export const useAppDevVersionCompare = ({
         setIsLoadingVersion(false);
       }
     },
-    [projectId, currentFiles, flattenFiles, compareFiles],
+    [projectId, flattenFiles, compareFiles],
   );
 
   /**
