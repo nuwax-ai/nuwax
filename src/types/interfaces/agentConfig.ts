@@ -10,6 +10,7 @@ import type { ComponentSettingEnum, OpenCloseEnum } from '@/types/enums/space';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
+  AgentComponentEventConfig,
   AgentComponentInfo,
   AgentConfigInfo,
   AgentStatisticsInfo,
@@ -253,11 +254,28 @@ export interface PagePathSelectOption {
   pageId?: number;
 }
 
+// 事件绑定弹窗Props
+export interface EventBindModalProps {
+  open: boolean;
+  eventsInfo: AgentComponentInfo;
+  currentEventConfig?: AgentComponentEventConfig;
+  pageArgConfigs: PageArgConfig[];
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
 // 变量列表组件
 export interface VariableListProps {
   textClassName?: string;
   onClick: (e: MouseEvent) => void;
   list: BindConfigWithSub[];
+}
+
+// 事件列表组件
+export interface EventListProps {
+  textClassName?: string;
+  onClick: (item: AgentComponentEventConfig) => void;
+  list: AgentComponentEventConfig[];
 }
 
 // 聊天上传文件列表组件

@@ -21,7 +21,10 @@ import {
   ComponentSettingEnum,
   OpenCloseEnum,
 } from '@/types/enums/space';
-import type { AgentComponentInfo } from '@/types/interfaces/agent';
+import type {
+  AgentComponentEventConfig,
+  AgentComponentInfo,
+} from '@/types/interfaces/agent';
 import type {
   AgentAddComponentBaseInfo,
   AgentArrangeConfigProps,
@@ -46,6 +49,7 @@ import ComponentSettingModal from './ComponentSettingModal';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
 import CreateVariables from './CreateVariables';
 import EventBindModal from './EventBindModal';
+import EventList from './EventList';
 import styles from './index.less';
 import KnowledgeTextList from './KnowledgeTextList';
 import LongMemoryContent from './LongMemoryContent';
@@ -95,6 +99,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 智能体组件列表
   const { agentComponentList, setAgentComponentList } = useModel('spaceAgent');
   const { handleVariables } = useModel('conversationInfo');
+  // 点击的当前事件配置
+  const [currentEventConfig, setCurrentEventConfig] =
+    useState<AgentComponentEventConfig>();
 
   // 根据组件类型，过滤组件
   const filterList = (type: AgentComponentTypeEnum) => {
@@ -621,10 +628,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   };
 
   // 添加事件绑定
-  const handleAddEventBinding = (e: MouseEvent) => {
-    e.stopPropagation();
+  const handleAddEventBinding = (item?: AgentComponentEventConfig) => {
     setOpenEventBindModel(true);
-    console.log('handlePageEventBindingPlus');
+    setCurrentEventConfig(item);
   };
 
   // 界面配置列表
@@ -735,14 +741,20 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: '事件绑定',
       children: (
         // 事件绑定列表
-        <VariableList
+        <EventList
           textClassName={cx(styles.text)}
-          list={[]}
+          list={eventsInfo?.bindConfig?.eventConfigs || []}
           onClick={handleAddEventBinding}
         />
       ),
       extra: (
-        <TooltipIcon title="添加事件绑定" onClick={handleAddEventBinding} />
+        <TooltipIcon
+          title="添加事件绑定"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAddEventBinding();
+          }}
+        />
       ),
       classNames: {
         header: 'collapse-header',
@@ -786,6 +798,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     }
     return COMPONENT_SETTING_ACTIONS;
   }, []);
+
+  // 确认事件绑定
+  const handleConfirmEventBinding = () => {
+    setOpenEventBindModel(false);
+    // 重新查询智能体配置组件列表
+    asyncFun();
+  };
 
   return (
     <div className={classNames('overflow-y', 'flex-1', styles.container)}>
@@ -846,12 +865,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       {/*事件绑定弹窗*/}
       <EventBindModal
         open={openEventBindModel}
-        // todo: 事件绑定 - 更新 这里是当前事件配置
-        eventConfig={eventsInfo?.bindConfig?.eventConfigs[0] || null}
-        variables={variablesInfo?.bindConfig?.variables || []}
+        // 事件绑定 - 更新 这里是当前事件配置
+        eventsInfo={eventsInfo}
+        currentEventConfig={currentEventConfig}
         pageArgConfigs={pageArgConfigs}
         onCancel={() => setOpenEventBindModel(false)}
-        onConfirm={() => setOpenEventBindModel(false)}
+        onConfirm={handleConfirmEventBinding}
       />
     </div>
   );
