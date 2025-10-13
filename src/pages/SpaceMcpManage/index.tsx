@@ -282,7 +282,6 @@ const SpaceLibrary: React.FC = () => {
 
   // 切换分段器
   const handleChangeSegmentedValue = (value: McpManageSegmentedEnum) => {
-    console.log('value', value);
     setSegmentedValue(value);
     setKeyword('');
     setLoading(true);

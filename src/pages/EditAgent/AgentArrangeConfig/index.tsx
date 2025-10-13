@@ -62,6 +62,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   agentId,
   agentConfigInfo,
   onChangeAgent,
+  onConfirmUpdateEventQuestions,
 }) => {
   // 插件弹窗
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
@@ -637,6 +638,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           variables={variablesInfo?.bindConfig?.variables || []}
           pageArgConfigs={pageArgConfigs}
           onChangeAgent={onChangeAgent}
+          onConfirmUpdateEventQuestions={onConfirmUpdateEventQuestions}
         />
       ),
       classNames: {

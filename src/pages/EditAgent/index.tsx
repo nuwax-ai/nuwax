@@ -73,7 +73,7 @@ const EditAgent: React.FC = () => {
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
     manual: true,
-    debounceInterval: 300,
+    debounceWait: 300,
     onSuccess: (result: AgentConfigInfo) => {
       setAgentConfigInfo(result);
     },
@@ -82,7 +82,7 @@ const EditAgent: React.FC = () => {
   // 更新智能体基础配置信息
   const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
-    debounceInterval: 1000,
+    debounceWait: 1000,
   });
 
   useEffect(() => {
@@ -126,8 +126,8 @@ const EditAgent: React.FC = () => {
     setAgentConfigInfo(_agentConfigInfo);
   };
 
-  // 更新智能体信息
-  const handleChangeAgent = (
+  // 更新智能体配置信息
+  const handleUpdateEventQuestions = (
     value: string | string[] | number | GuidQuestionDto[],
     attr: string,
   ) => {
@@ -143,10 +143,7 @@ const EditAgent: React.FC = () => {
     }
 
     setAgentConfigInfo(_agentConfigInfo);
-    // 用户问题建议
-    if (attr === 'openSuggest') {
-      setIsSuggest(value === OpenCloseEnum.Open);
-    }
+
     // 预置问题, 并且没有消息时，更新建议预置问题列表
     if (attr === 'guidQuestionDtos' && !messageList?.length) {
       const _suggestList = value as GuidQuestionDto[];
@@ -154,9 +151,25 @@ const EditAgent: React.FC = () => {
       const list =
         _suggestList?.filter((item) => !!item.info)?.map((item) => item.info) ||
         [];
-      console.log('过滤掉空值list', list, _suggestList);
       setChatSuggestList(list);
     }
+
+    // 返回更新后的智能体配置信息
+    return _agentConfigInfo;
+  };
+
+  // 更新智能体信息
+  const handleChangeAgent = (
+    value: string | string[] | number | GuidQuestionDto[],
+    attr: string,
+  ) => {
+    // 更新智能体配置信息
+    const _agentConfigInfo = handleUpdateEventQuestions(value, attr);
+    // 用户问题建议
+    if (attr === 'openSuggest') {
+      setIsSuggest(value === OpenCloseEnum.Open);
+    }
+
     const {
       id,
       name,
@@ -168,7 +181,6 @@ const EditAgent: React.FC = () => {
       suggestPrompt,
       openingChatMsg,
       openScheduledTask,
-      // openingGuidQuestions,
       openLongMemory,
       expandPageArea,
       hideChatArea,
@@ -187,7 +199,6 @@ const EditAgent: React.FC = () => {
       suggestPrompt,
       openingChatMsg,
       openScheduledTask,
-      // openingGuidQuestions,
       openLongMemory,
       expandPageArea,
       hideChatArea,
@@ -347,6 +358,7 @@ const EditAgent: React.FC = () => {
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onChangeAgent={handleChangeAgent}
+              onConfirmUpdateEventQuestions={handleUpdateEventQuestions}
             />
           </div>
         </div>

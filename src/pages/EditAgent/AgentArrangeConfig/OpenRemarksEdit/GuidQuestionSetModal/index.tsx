@@ -5,15 +5,20 @@ import CustomFormModal from '@/components/CustomFormModal';
 import UploadAvatar from '@/components/UploadAvatar';
 import { GUID_QUESTION_SET_OPTIONS } from '@/constants/agent.constants';
 import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
+import { apiAgentConfigUpdate } from '@/services/agentConfig';
 import { BindValueType, GuidQuestionSetTypeEnum } from '@/types/enums/agent';
-import { GuidQuestionDto } from '@/types/interfaces/agent';
+import {
+  AgentConfigUpdateParams,
+  GuidQuestionDto,
+} from '@/types/interfaces/agent';
+import { GuidQuestionSetModalProps } from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
-import { PageArgConfig } from '@/types/interfaces/pageDev';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   Form,
   FormProps,
   Input,
+  message,
   Select,
   Space,
   Table,
@@ -21,31 +26,25 @@ import {
   theme,
 } from 'antd';
 import classNames from 'classnames';
+import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-// 开场白预置问题设置弹窗Props
-export interface GuidQuestionSetModalProps {
-  open: boolean;
-  currentGuidQuestionDto?: GuidQuestionDto;
-  variables: BindConfigWithSub[];
-  pageArgConfigs: PageArgConfig[];
-  onCancel: () => void;
-  onConfirm: (result: GuidQuestionDto[]) => void;
-}
 
 /**
  * 开场白预置问题设置弹窗
  */
 const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   open,
+  agentConfigInfo,
   currentGuidQuestionDto,
   variables,
   pageArgConfigs,
   onCancel,
   onConfirm,
+  currentGuidQuestionDtoIndex,
 }) => {
   const { token } = theme.useToken();
   // 是否展开
@@ -58,21 +57,23 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   const [type, setType] = useState<React.Key>(GuidQuestionSetTypeEnum.Question);
   // 入参配置
   const [args, setArgs] = useState<BindConfigWithSub[]>([]);
+  // 当前路径页面id
+  const [currentPageId, setCurrentPageId] = useState<number | null>(null);
 
-  console.log('pageArgConfigs', pageArgConfigs);
-
-  // // 新增智能体接口
-  // const { run: runAdd } = useRequest(apiAgentAdd, {
-  //   manual: true,
-  //   debounceInterval: 300,
-  //   onSuccess: (result: number) => {
-  //     onConfirm?.(result);
-  //     setLoading(false);
-  //   },
-  //   onError: () => {
-  //     setLoading(false);
-  //   },
-  // });
+  // 更新智能体基础配置信息
+  const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
+    manual: true,
+    debounceInterval: 1000,
+    onSuccess: (_: null, params: AgentConfigUpdateParams[]) => {
+      message.success('更新成功');
+      const { guidQuestionDtos } = params[0];
+      onConfirm?.(guidQuestionDtos);
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  });
 
   useEffect(() => {
     // 回显数据
@@ -83,17 +84,86 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         info: currentGuidQuestionDto.info,
         pageUri: currentGuidQuestionDto.pageUri,
       });
-
+      // 类型
+      setType(currentGuidQuestionDto.type);
+      // 图标
+      setImageUrl(currentGuidQuestionDto.icon || '');
       // 回显入参配置
       setArgs(currentGuidQuestionDto.args || []);
+      // 当前路径页面id
+      setCurrentPageId(currentGuidQuestionDto.pageId || null);
     }
+
+    return () => {
+      setImageUrl('');
+    };
   }, [open, currentGuidQuestionDto]);
 
+  // 缓存变量列表
+  const variableList = useMemo(() => {
+    return (
+      variables?.map((item) => {
+        return {
+          label: item.name,
+          value: item.name,
+        };
+      }) || []
+    );
+  }, [variables]);
+
+  // 页面路径列表
+  const pathList = useMemo(() => {
+    return (
+      pageArgConfigs?.map((item) => {
+        return {
+          label: item.name,
+          value: item.pageUri,
+          pageId: item.pageId,
+        };
+      }) || []
+    );
+  }, [pageArgConfigs]);
+
+  // 入参配置 - changeValue
+  const handleInputValue = (
+    key: React.Key,
+    attr: string,
+    value: string | number | BindValueType,
+  ) => {
+    const _inputConfigArgs = [...args];
+    _inputConfigArgs.forEach((item: BindConfigWithSub) => {
+      if (item.key === key) {
+        item[attr] = value;
+
+        if (attr === 'bindValueType') {
+          item.bindValue = '';
+        }
+      }
+    });
+    setArgs(_inputConfigArgs);
+  };
+
+  // 表单提交
   const onFinish: FormProps<any>['onFinish'] = (values) => {
-    console.log('onFinish', values);
     setLoading(true);
-    onConfirm?.(values.name);
-    setLoading(false);
+    // 更新后的预置问题
+    const newGuidQuestionDto = {
+      ...currentGuidQuestionDto,
+      ...values,
+      args,
+      // 选择的页面路径的ID
+      pageId: currentPageId,
+    } as GuidQuestionDto;
+    // 源数据
+    const _guidQuestionDtos = cloneDeep(
+      agentConfigInfo?.guidQuestionDtos || [],
+    );
+    _guidQuestionDtos[currentGuidQuestionDtoIndex] = newGuidQuestionDto;
+
+    runUpdate({
+      ...agentConfigInfo,
+      guidQuestionDtos: _guidQuestionDtos,
+    });
   };
 
   const handlerSubmit = () => {
@@ -108,21 +178,45 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
 
   // 切换类型时，根据类型设置对应的表单项
   const handleChangeType = (value: React.Key) => {
-    // form.setFieldValue('type', value);
+    form.setFieldsValue({
+      type: value,
+      pageUri: '',
+      url: '',
+    });
     setType(value);
+    setArgs([]);
   };
 
-  // 缓存变量列表
-  const variableList = useMemo(() => {
-    return (
-      variables?.map((item) => {
-        return {
-          label: item.name,
-          value: item.name,
-        };
-      }) || []
-    );
-  }, [variables]);
+  // 切换页面路径，修改智能体变量参数
+  const changePagePath = (value: React.Key, option: any) => {
+    const { label, pageId } = option;
+    // 根据页面路径，获取入参配置
+    const _config =
+      pageArgConfigs.find(
+        (item) =>
+          item.pageUri === value &&
+          item.pageId === pageId &&
+          item.name === label,
+      ) || null;
+    // 当前路径页面id
+    setCurrentPageId(pageId);
+
+    // 切换到当前页面路径，回显入参配置
+    if (currentGuidQuestionDto?.pageUri === value) {
+      setArgs(currentGuidQuestionDto.args || []);
+    } else {
+      // 切换到其他页面路径，回显入参配置
+      if (_config?.args) {
+        const _args = _config.args.map((item) => {
+          return {
+            ...item,
+            bindValueType: item.bindValueType || BindValueType.Input,
+          };
+        });
+        setArgs(_args);
+      }
+    }
+  };
 
   // 入参配置columns
   const inputColumns: TableColumnsType<BindConfigWithSub> = [
@@ -130,6 +224,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       title: '参数名',
       dataIndex: 'name',
       key: 'name',
+      width: 200,
     },
     {
       title: () => (
@@ -146,39 +241,39 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         </div>
       ),
       key: 'bindValue',
-      width: 230,
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Space.Compact block>
             <SelectList
               className={cx(styles.select)}
-              // disabled={isDefaultValueDisabled(record)}
               value={record.bindValueType}
-              // onChange={(value) =>
-              //   handleInputValue(record.key, 'bindValueType', value)
-              // }
+              onChange={(value) =>
+                handleInputValue(
+                  record.key,
+                  'bindValueType',
+                  value as BindValueType,
+                )
+              }
               options={ParamsSettingDefaultOptions}
             />
             {record.bindValueType === BindValueType.Input ? (
               <Input
                 rootClassName={cx(styles.select)}
                 placeholder="请填写"
-                // disabled={isDefaultValueDisabled(record)}
                 value={record.bindValue}
-                // onChange={(e) =>
-                //   handleInputValue(record.key, 'bindValue', e.target.value)
-                // }
+                onChange={(e) =>
+                  handleInputValue(record.key, 'bindValue', e.target.value)
+                }
               />
             ) : (
               <Select
                 placeholder="请选择"
-                // disabled={isDefaultValueDisabled(record)}
                 rootClassName={cx(styles.select)}
                 popupMatchSelectWidth={false}
                 value={record.bindValue || null}
-                // onChange={(value) =>
-                //   handleInputValue(record.key, 'bindValue', value)
-                // }
+                onChange={(value) =>
+                  handleInputValue(record.key, 'bindValue', value)
+                }
                 options={variableList}
               />
             )}
@@ -187,17 +282,6 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       ),
     },
   ];
-
-  // 切换页面路径，修改智能体变量参数
-  const changePagePath = (value: React.Key) => {
-    console.log('changePagePath', value, pageArgConfigs);
-    // 根据页面路径，获取入参配置
-    const currentPageArgConfig = pageArgConfigs.find(
-      (item) => item.pageUri === value,
-    );
-    console.log('currentPageArgConfig', currentPageArgConfig);
-    setArgs(currentPageArgConfig?.args || []);
-  };
 
   return (
     <CustomFormModal
@@ -232,13 +316,10 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
           />
         </Form.Item>
         {type === GuidQuestionSetTypeEnum.Page ? (
-          <Form.Item name="pageId" label="页面路径">
+          <Form.Item name="pageUri" label="页面路径">
             <SelectList
               placeholder="请选择页面路径"
-              options={pageArgConfigs.map((item) => ({
-                label: item.name,
-                value: item.pageUri,
-              }))}
+              options={pathList}
               onChange={changePagePath}
             />
           </Form.Item>
@@ -267,6 +348,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
             <Table<BindConfigWithSub>
               className={cx('mb-16', 'flex-1')}
               columns={inputColumns}
+              rowKey="key"
               dataSource={args}
               pagination={false}
               virtual

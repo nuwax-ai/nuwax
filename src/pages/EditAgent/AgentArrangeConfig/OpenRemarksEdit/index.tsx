@@ -7,7 +7,7 @@ import type { OpenRemarksEditProps } from '@/types/interfaces/agentConfig';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Input, theme } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import GuidQuestionSetModal from './GuidQuestionSetModal';
 import styles from './index.less';
 
@@ -21,6 +21,7 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   variables,
   pageArgConfigs,
   onChangeAgent,
+  onConfirmUpdateEventQuestions,
 }) => {
   const { token } = theme.useToken();
   // 开场白内容
@@ -34,6 +35,8 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
     useState<GuidQuestionDto>();
   // 开场白预置问题设置弹窗
   const [open, setOpen] = useState<boolean>(false);
+  // 当前引导问题索引值
+  const currentGuidQuestionDtoIndexRef = useRef<number>(-1);
 
   useEffect(() => {
     if (!!agentConfigInfo) {
@@ -78,18 +81,20 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   };
 
   // 打开设置开场白预置问题弹窗
-  const handleSetGuidQuestions = (item: GuidQuestionDto) => {
-    console.log('handleSetGuidQuestions', item, agentConfigInfo);
+  const handleSetGuidQuestions = (item: GuidQuestionDto, index: number) => {
     setOpen(true);
     setCurrentGuidQuestionDto(item);
+    currentGuidQuestionDtoIndexRef.current = index;
   };
 
-  // 确认更新开场白预置问题
-  const handleConfirmUpdateQuestions = (questions: GuidQuestionDto[]) => {
-    console.log('handleConfirmUpdateQuestions', questions);
+  /**
+   * 确认更新开场白预置问题
+   * @param newQuestion 更新后的预置问题
+   */
+  const handleConfirmUpdateQuestions = (newQuestions: GuidQuestionDto[]) => {
     setOpen(false);
-    // setGuidQuestions(questions);
-    // onChangeAgent(questions, 'guidQuestionDtos');
+    setGuidQuestionDtos(newQuestions);
+    onConfirmUpdateEventQuestions(newQuestions, 'guidQuestionDtos');
   };
 
   return (
@@ -146,7 +151,7 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
               <TooltipIcon
                 title="设置"
                 icon={<ICON_SETTING className={'cursor-pointer'} />}
-                onClick={() => handleSetGuidQuestions(item)}
+                onClick={() => handleSetGuidQuestions(item, index)}
               />
             </>
           }
@@ -155,11 +160,13 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
       {/* 开场白预置问题设置弹窗 */}
       <GuidQuestionSetModal
         open={open}
+        agentConfigInfo={agentConfigInfo}
         currentGuidQuestionDto={currentGuidQuestionDto}
         variables={variables}
         pageArgConfigs={pageArgConfigs}
         onCancel={() => setOpen(false)}
         onConfirm={handleConfirmUpdateQuestions}
+        currentGuidQuestionDtoIndex={currentGuidQuestionDtoIndexRef.current}
       />
     </>
   );

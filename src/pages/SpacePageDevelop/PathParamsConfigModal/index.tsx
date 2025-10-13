@@ -61,9 +61,6 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
       const _pathParams =
         pathParams?.filter((item) => item.pageUri !== pageUri) || [];
       setPathParams(_pathParams);
-
-      console.log(currentPathParam, 'currentPathParam');
-      console.log(pageUri, 'pageUri');
       // 如果当前路径参数被删除，则设置为第一个路径参数
       if (currentPathParam?.pageUri === pageUri) {
         const firstPathParam = _pathParams?.[0] || null;
