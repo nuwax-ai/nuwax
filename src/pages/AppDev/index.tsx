@@ -7,12 +7,17 @@ import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
-import { buildProject, uploadAndStartProject } from '@/services/appDev';
+import {
+  buildProject,
+  exportProject,
+  uploadAndStartProject,
+} from '@/services/appDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { getLanguageFromFile, isImageFile } from '@/utils/appDevUtils';
 import {
   CheckOutlined,
   DeleteOutlined,
+  DownloadOutlined,
   EyeOutlined,
   FileOutlined,
   GlobalOutlined,
@@ -84,6 +89,9 @@ const AppDev: React.FC = () => {
 
   // 部署相关状态
   const [isDeploying, setIsDeploying] = useState(false);
+
+  // 导出项目状态
+  const [isExporting, setIsExporting] = useState(false);
 
   // 单文件上传状态
   const [isSingleFileUploadModalVisible, setIsSingleFileUploadModalVisible] =
@@ -225,6 +233,71 @@ const AppDev: React.FC = () => {
       });
     } finally {
       setIsDeploying(false);
+    }
+  }, [hasValidProjectId, projectId]);
+
+  /**
+   * 处理项目导出
+   */
+  const handleExportProject = useCallback(async () => {
+    // 检查项目ID是否有效
+    if (!hasValidProjectId || !projectId) {
+      message.error('项目ID不存在或无效，无法导出');
+      console.error('❌ [AppDev] 导出失败 - 无效的projectId:', { projectId });
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      console.log('📦 [AppDev] 开始导出项目:', projectId);
+
+      const result = await exportProject(projectId);
+
+      console.log('🔍 [AppDev] 导出API响应:', result);
+
+      // 从响应头中获取文件名
+      const contentDisposition = result.headers?.['content-disposition'];
+      let filename = `project-${projectId}.zip`;
+
+      if (contentDisposition) {
+        // 解析 Content-Disposition 头中的文件名
+        const filenameMatch = contentDisposition.match(
+          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
+        );
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+
+      // 创建下载链接
+      const blob = new Blob([result.data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+
+      // 触发下载
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // 清理URL对象
+      window.URL.revokeObjectURL(url);
+
+      message.success('项目导出成功！');
+      console.log('✅ [AppDev] 项目导出成功:', filename);
+    } catch (error) {
+      console.error('❌ [AppDev] 导出项目失败:', error);
+
+      // 改进错误处理，兼容不同的错误格式
+      const errorMessage =
+        (error as any)?.message ||
+        (error as any)?.toString() ||
+        '导出过程中发生未知错误';
+
+      message.error(`导出失败: ${errorMessage}`);
+    } finally {
+      setIsExporting(false);
     }
   }, [hasValidProjectId, projectId]);
 
@@ -747,6 +820,15 @@ const AppDev: React.FC = () => {
                         }
                       }}
                       className={styles.headerButton}
+                    />
+                  </Tooltip>
+                  <Tooltip title="导出项目">
+                    <Button
+                      size="small"
+                      icon={<DownloadOutlined />}
+                      onClick={handleExportProject}
+                      className={styles.headerButton}
+                      loading={isExporting}
                     />
                   </Tooltip>
                 </Space>

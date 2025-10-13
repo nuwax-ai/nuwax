@@ -344,3 +344,30 @@ export const getProjectInfo = async (
     },
   );
 };
+
+/**
+ * 导出用户前端项目为zip文件
+ * @param projectId 项目ID
+ * @returns Promise<{ data: Blob; headers: any }> 导出结果，包含zip文件数据
+ */
+export const exportProject = async (
+  projectId: string,
+): Promise<{
+  data: Blob;
+  headers: {
+    'content-disposition': string;
+    'content-length': string;
+    'content-type': string;
+  };
+}> => {
+  return request(
+    `/api/custom-page/export-project?projectId=${encodeURIComponent(
+      projectId,
+    )}`,
+    {
+      method: 'GET',
+      responseType: 'blob', // 指定响应类型为blob
+      getResponse: true, // 获取完整响应对象
+    },
+  );
+};
