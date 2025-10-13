@@ -66,6 +66,10 @@ const EditAgent: React.FC = () => {
   } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
 
+  // 获取 chat model 中的页面预览状态
+  const chatModel = useModel('chat');
+  const { pagePreviewData, hidePagePreview } = chatModel;
+
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
     manual: true,
@@ -193,6 +197,12 @@ const EditAgent: React.FC = () => {
 
   // 调试
   const handlePressDebug = () => {
+    // 如果当前显示的是页面预览，先关闭页面预览
+    if (pagePreviewData) {
+      hidePagePreview();
+    }
+
+    // 切换调试面板
     if (showType === EditAgentShowType.Debug_Details) {
       setShowType(EditAgentShowType.Hide);
     } else {

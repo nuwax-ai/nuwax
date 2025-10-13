@@ -8,6 +8,7 @@ import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import { EditAgentShowType } from '@/types/enums/space';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -73,7 +74,13 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     variables,
     userFillVariables,
     requiredNameList,
+    showType,
+    setShowType,
   } = useModel('conversationInfo');
+
+  // 获取 chat model 中的页面预览状态
+  const chatModel = useModel('chat');
+  const { pagePreviewData } = chatModel;
 
   // 创建智能体会话
   const { runAsyncConversationCreate } = useConversation();
@@ -264,6 +271,14 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     containerRef: messageViewRef,
     eventBindConfig: conversationInfo?.agent?.eventBindConfig,
   });
+
+  // 互斥面板逻辑：管理 PagePreview 和 DebugDetails 的互斥展示
+  useEffect(() => {
+    // 当页面预览打开时，关闭调试面板
+    if (pagePreviewData && showType === EditAgentShowType.Debug_Details) {
+      setShowType(EditAgentShowType.Hide);
+    }
+  }, [pagePreviewData, showType, setShowType]);
 
   return (
     <div className={cx('flex', 'h-full')}>
