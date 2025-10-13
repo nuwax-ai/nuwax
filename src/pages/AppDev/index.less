@@ -111,12 +111,16 @@
 }
 
 .contentRow {
+  display: flex;
+  flex-direction: row;
   height: 100%;
   margin: 0 !important;
+  gap: 0;
 }
 
 // 文件树列
 .fileTreeCol {
+  flex: 0 0 25%; // 默认占25%宽度
   height: 100%;
   min-width: 240px;
   background: rgba(255, 255, 255, 80%);
@@ -127,6 +131,7 @@
   overflow-x: auto; // 启用横向滚动
 
   &.collapsed {
+    flex: 0 0 0 !important; // 折叠时不占宽度
     min-width: 0 !important;
     max-width: 0 !important;
     padding: 0 !important;
@@ -358,8 +363,10 @@
 
 // 编辑器列
 .editorCol {
+  flex: 1; // 占据剩余空间
   height: 100%;
   padding: 0;
+  min-width: 0; // 允许收缩
 }
 
 // 编辑器容器
@@ -681,20 +688,46 @@
 
   .contentRow {
     flex-direction: column;
+    height: 100%;
   }
 
   .fileTreeCol {
     height: 200px;
-    flex: 0 0 100%;
-    max-width: 100%;
+    flex: 0 0 200px; // 固定高度
+    min-width: 0;
     border-right: none;
     border-bottom: 1px solid rgba(0, 0, 0, 10%);
   }
 
   .editorCol {
     height: calc(60vh - 200px);
-    flex: 0 0 100%;
-    max-width: 100%;
+    flex: 1;
+    min-height: 300px; // 确保最小高度
+    min-width: 0;
+  }
+
+  // 编辑器头部响应式样式 - 防止换行
+  .editorHeader {
+    padding: 8px 12px;
+    flex-wrap: nowrap;
+    min-height: auto;
+  }
+
+  .editorHeaderLeft {
+    flex-shrink: 0;
+    min-width: 0;
+  }
+
+  .editorHeaderRight {
+    flex-shrink: 0;
+    min-width: 0;
+  }
+
+  // Segmented组件响应式样式
+  .segmentedTabs {
+    :global(.ant-segmented) {
+      font-size: 12px;
+    }
   }
 }
 

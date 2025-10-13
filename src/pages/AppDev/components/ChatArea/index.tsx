@@ -1,3 +1,5 @@
+import { MessageStatusEnum } from '@/types/enums/common';
+import type { AppDevChatMessage } from '@/types/interfaces/appDev';
 import { DownOutlined, SendOutlined, StopOutlined } from '@ant-design/icons';
 import {
   Button,
@@ -25,16 +27,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   chat,
   projectInfo,
 }) => {
-  // 展开的消息详情
-  const [expandedMessages, setExpandedMessages] = useState<Set<string>>(
+  // 展开的思考过程消息
+  const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
     new Set(),
   );
 
   /**
-   * 切换消息展开状态
+   * 切换思考过程展开状态
    */
-  const toggleMessageExpansion = useCallback((messageId: string) => {
-    setExpandedMessages((prev) => {
+  const toggleThinkingExpansion = useCallback((messageId: string) => {
+    setExpandedThinking((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(messageId)) {
         newSet.delete(messageId);
@@ -46,143 +48,98 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }, []);
 
   /**
-   * 处理动作按钮点击
-   */
-  const handleActionButton = useCallback((action: string) => {
-    // TODO: 实现具体的动作处理逻辑
-    console.log('Action clicked:', action);
-  }, []);
-
-  /**
-   * 渲染聊天消息
+   * 渲染聊天消息 - 按 role 区分渲染
    */
   const renderChatMessage = useCallback(
-    (message: any) => {
-      switch (message.type) {
-        case 'ai':
-          return (
-            <div key={message.id} className={styles.messageWrapper}>
-              <div className={`${styles.message} ${styles.ai}`}>
-                <div className={styles.messageContent}>
-                  {message.content
-                    ?.split('\n')
-                    .map((line: string, index: number) => (
-                      <div key={index}>{line}</div>
-                    ))}
-                </div>
+    (message: AppDevChatMessage) => {
+      const isUser = message.role === 'USER';
+      const isAssistant = message.role === 'ASSISTANT';
+      const isStreaming = message.isStreaming;
+      const isLoading = message.status === MessageStatusEnum.Loading;
+      const isError = message.status === MessageStatusEnum.Error;
+      const hasThinking = message.think && message.think.trim() !== '';
+      const isThinkingExpanded = expandedThinking.has(message.id);
+
+      // 调试信息
+      if (isAssistant) {
+        console.log('🎨 [UI] 渲染 ASSISTANT 消息:', {
+          id: message.id,
+          requestId: message.requestId,
+          status: message.status,
+          isStreaming: message.isStreaming,
+          isLoading,
+          text: message.text?.substring(0, 50) + '...',
+        });
+      }
+
+      return (
+        <div
+          key={message.id}
+          className={`${styles.messageWrapper} ${
+            isUser ? styles.user : styles.assistant
+          }`}
+        >
+          <div className={styles.messageBubble}>
+            {/* 消息内容 */}
+            <div className={styles.messageContent}>
+              {message.text?.split('\n').map((line: string, index: number) => (
+                <div key={index}>{line}</div>
+              ))}
+            </div>
+
+            {/* 流式传输指示器 */}
+            {isStreaming && (
+              <div className={styles.streamingIndicator}>
+                <Spin size="small" />
+                <span className={styles.streamingText}>正在输出...</span>
               </div>
-              {message.details && (
-                <div className={styles.detailsMessage}>
-                  <div
-                    className={styles.detailsHeader}
-                    onClick={() => toggleMessageExpansion(message.id)}
-                  >
-                    <span className={styles.detailsTitle}>
-                      {message.content}
-                    </span>
-                    <span className={styles.expandIcon}>
-                      {expandedMessages.has(message.id) ? '▼' : '▶'}
-                    </span>
-                  </div>
-                  {expandedMessages.has(message.id) && (
-                    <div className={styles.detailsContent}>
-                      {message.details.map((detail: string, index: number) => (
-                        <div key={index} className={styles.detailItem}>
-                          {detail}
+            )}
+
+            {/* 加载状态 */}
+            {isLoading && !isStreaming && (
+              <div className={styles.loadingIndicator}>
+                <Spin size="small" />
+                <span>正在思考...</span>
+              </div>
+            )}
+
+            {/* 错误状态 */}
+            {isError && (
+              <div className={styles.errorIndicator}>
+                <span>❌ 消息发送失败</span>
+              </div>
+            )}
+
+            {/* 思考过程区域 */}
+            {hasThinking && isAssistant && (
+              <div className={styles.thinkingArea}>
+                <div
+                  className={styles.thinkingHeader}
+                  onClick={() => toggleThinkingExpansion(message.id)}
+                >
+                  <span className={styles.thinkingTitle}>💭 AI 思考过程</span>
+                  <span className={styles.expandIcon}>
+                    {isThinkingExpanded ? '▼' : '▶'}
+                  </span>
+                </div>
+                {isThinkingExpanded && (
+                  <div className={styles.thinkingContent}>
+                    {message.think
+                      ?.split('\n')
+                      .map((line: string, index: number) => (
+                        <div key={index} className={styles.thinkingLine}>
+                          {line}
                         </div>
                       ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-
-        case 'user':
-          return (
-            <div key={message.id} className={styles.messageWrapper}>
-              <div className={`${styles.message} ${styles.user}`}>
-                <div className={styles.messageContent}>
-                  {message.content
-                    ?.split('\n')
-                    .map((line: string, index: number) => (
-                      <div key={index}>{line}</div>
-                    ))}
-                </div>
+                  </div>
+                )}
               </div>
-            </div>
-          );
-
-        case 'button':
-          return (
-            <div key={message.id} className={styles.messageWrapper}>
-              <div className={styles.buttonMessage}>
-                <Button
-                  type="primary"
-                  size="small"
-                  onClick={() => handleActionButton(message.action || '')}
-                  className={styles.actionButton}
-                >
-                  {message.content}
-                </Button>
-              </div>
-            </div>
-          );
-
-        case 'section':
-          return (
-            <div key={message.id} className={styles.messageWrapper}>
-              <div className={styles.sectionMessage}>
-                <div className={styles.sectionTitle}>{message.title}</div>
-                <div className={styles.sectionItems}>
-                  {message.items?.map((item: string, index: number) => (
-                    <div key={index} className={styles.sectionItem}>
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-
-        case 'thinking':
-          return (
-            <div key={message.id} className={styles.messageWrapper}>
-              <div className={`${styles.message} ${styles.thinking}`}>
-                <div className={styles.messageContent}>
-                  <div className={styles.thinkingIndicator}>💭 思考中...</div>
-                  {message.content
-                    ?.split('\n')
-                    .map((line: string, index: number) => (
-                      <div key={index} className={styles.thinkingText}>
-                        {line}
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-          );
-
-        case 'tool_call':
-          return (
-            <div key={message.id} className={styles.messageWrapper}>
-              <div className={`${styles.message} ${styles.toolCall}`}>
-                <div className={styles.messageContent}>
-                  <div className={styles.toolCallIndicator}>🔧</div>
-                  <span>{message.content}</span>
-                  {message.isStreaming && (
-                    <span className={styles.streamingIndicator}>...</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-
-        default:
-          return null;
-      }
+            )}
+          </div>
+        </div>
+      );
     },
-    [expandedMessages, toggleMessageExpansion, handleActionButton],
+    [expandedThinking, toggleThinkingExpansion],
   );
 
   /**
@@ -250,16 +207,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       </div>
 
       {/* 聊天消息区域 */}
-      <div className={styles.chatMessages}>
-        {chatMessagesList}
-        {chat.isChatLoading && (
-          <div className={`${styles.message} ${styles.ai}`}>
-            <div className={styles.messageContent}>
-              <Spin size="small" /> 正在思考...
-            </div>
-          </div>
-        )}
-      </div>
+      <div className={styles.chatMessages}>{chatMessagesList}</div>
 
       {/* 聊天输入区域 */}
       <div className={styles.chatInput}>
