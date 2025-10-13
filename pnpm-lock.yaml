@@ -150,8 +150,8 @@ importers:
         specifier: ^6.0.0
         version: 6.0.0
       simple-edit-markdown:
-        specifier: ^0.0.3
-        version: 0.0.3(@floating-ui/dom@1.7.4)(@tiptap/core@3.6.6(@tiptap/pm@3.6.6))(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^0.0.7
+        version: 0.0.7(@floating-ui/dom@1.7.4)(@tiptap/core@3.6.6(@tiptap/pm@3.6.6))(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       unist-util-visit:
         specifier: ^5.0.0
         version: 5.0.0
@@ -7935,8 +7935,8 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  simple-edit-markdown@0.0.3:
-    resolution: {integrity: sha512-+74tk6YCdB4zBB7to7XUC6feRUgkfZMsj8fI9OIBT3eDh9dkPb4Yl9NlutdoAREdnMko3lwV3S6qcsF+IMNdVQ==}
+  simple-edit-markdown@0.0.7:
+    resolution: {integrity: sha512-m5vaGp4pWw6viuppaNyH5Qj4L6sL7LsnZuyD3h/hoTpaO+YYGXfFuQJL456Btz7Cjdt8ptZdzZ9ZoenIkKhhvA==}
     peerDependencies:
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
@@ -18653,7 +18653,7 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  simple-edit-markdown@0.0.3(@floating-ui/dom@1.7.4)(@tiptap/core@3.6.6(@tiptap/pm@3.6.6))(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  simple-edit-markdown@0.0.7(@floating-ui/dom@1.7.4)(@tiptap/core@3.6.6(@tiptap/pm@3.6.6))(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@floating-ui/react': 0.27.16(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-dropdown-menu': 2.1.16(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
