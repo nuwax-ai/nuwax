@@ -2,7 +2,12 @@
  * AppDev 聊天相关 Hook
  */
 
-import { cancelAgentTask, sendChatMessage } from '@/services/appDev';
+import {
+  cancelAgentTask,
+  listConversations,
+  saveConversation,
+  sendChatMessage,
+} from '@/services/appDev';
 import { MessageModeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
@@ -15,9 +20,13 @@ import { useModel } from 'umi';
 
 interface UseAppDevChatProps {
   projectId: string;
+  onRefreshFileTree?: () => void; // 新增：文件树刷新回调
 }
 
-export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
+export const useAppDevChat = ({
+  projectId,
+  onRefreshFileTree,
+}: UseAppDevChatProps) => {
   // 使用 AppDev SSE 连接 model
   const appDevSseModel = useModel('appDevSseConnection');
 
@@ -40,6 +49,46 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
 
   // 保活定时器
   const keepAliveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleSaveConversation = useCallback(
+    (
+      chatMessages: AppDevChatMessage[],
+      sessionId: string,
+      projectId: string,
+    ) => {
+      const firstUserMessage = chatMessages.find((msg) => msg.role === 'USER');
+      const topic = firstUserMessage
+        ? firstUserMessage.text.substring(0, 50)
+        : '新会话';
+
+      // 序列化会话内容
+      const content = JSON.stringify(chatMessages);
+
+      // 保存会话
+      console.log('🔄 [Chat] 开始保存会话，参数:', {
+        projectId,
+        sessionId,
+        topic,
+        contentLength: content.length,
+      });
+
+      saveConversation({
+        projectId,
+        sessionId,
+        content,
+        topic,
+      }).then((saveResult) => {
+        console.log('✅ [Chat] 会话已自动保存，响应:', saveResult);
+
+        // 新增：刷新文件树内容
+        if (onRefreshFileTree) {
+          console.log('🔄 [Chat] 触发文件树刷新');
+          onRefreshFileTree();
+        }
+      });
+    },
+    [saveConversation, onRefreshFileTree],
+  );
 
   /**
    * 处理SSE消息 - 基于 request_id 分组处理
@@ -159,7 +208,13 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
 
         case 'sessionPromptEnd': {
           const requestId = message.data?.request_id;
+          const sessionId = message.sessionId;
           console.log('🏁 [SSE] prompt_end 收到，requestId:', requestId);
+          console.log('🏁 [SSE] 当前会话状态:', {
+            sessionId,
+            projectId,
+            chatMessagesCount: chatMessages.length,
+          });
 
           setChatMessages((prev) => {
             console.log(
@@ -189,6 +244,7 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
                 isStreaming: false,
               };
               console.log('📝 [SSE] 更新后的消息:', updated[index]);
+              handleSaveConversation(updated, sessionId, projectId); // 自动保存会话
               return updated;
             } else {
               console.warn(
@@ -201,12 +257,14 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
                 })),
               );
             }
+            handleSaveConversation(prev, sessionId, projectId); // 自动保存会话
             return prev;
           });
 
           // 无论是否找到对应消息，都要结束 loading 状态
           console.log('🔄 [SSE] 设置 isChatLoading = false');
           setIsChatLoading(false);
+
           break;
         }
 
@@ -219,7 +277,7 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
           console.log('📭 [SSE] 未处理的事件类型:', message.subType);
       }
     },
-    [setIsChatLoading, setChatMessages],
+    [setIsChatLoading, setChatMessages, handleSaveConversation],
   );
 
   /**
@@ -532,6 +590,37 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
     appDevSseModel.cleanupAppDev();
   }, [appDevSseModel]);
 
+  /**
+   * 加载历史会话消息
+   */
+  const loadHistorySession = useCallback(
+    async (sessionId: string) => {
+      try {
+        const response = await listConversations({
+          projectId,
+          sessionId,
+        });
+
+        if (response.success && response.data?.length > 0) {
+          const conversation = response.data[0];
+          const messages = JSON.parse(
+            conversation.content,
+          ) as AppDevChatMessage[];
+
+          // 清空当前消息并加载历史消息
+          setChatMessages(messages);
+          setCurrentSessionId(sessionId);
+
+          console.log('✅ [Chat] 已加载历史会话:', sessionId);
+        }
+      } catch (error) {
+        console.error('❌ [Chat] 加载历史会话失败:', error);
+        message.error('加载历史会话失败');
+      }
+    },
+    [projectId],
+  );
+
   return {
     // 状态
     chatMessages,
@@ -546,5 +635,6 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
     cancelChat,
     cleanupAppDevSSE,
     updateLastActivity,
+    loadHistorySession,
   };
 };

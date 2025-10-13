@@ -109,6 +109,7 @@ const AppDev: React.FC = () => {
 
   const chat = useAppDevChat({
     projectId: projectId || '',
+    onRefreshFileTree: fileManagement.loadFileTree, // 新增：传递文件树刷新方法
   });
 
   const server = useAppDevServer({
@@ -644,6 +645,7 @@ const AppDev: React.FC = () => {
                 className={styles.deleteButton}
                 onClick={(e) => handleDeleteClick(node, e)}
                 title="删除文件夹"
+                disabled={chat.isChatLoading} // 新增：聊天加载时禁用
               />
             </div>
             {isExpanded && node.children && (
@@ -677,6 +679,7 @@ const AppDev: React.FC = () => {
               className={styles.deleteButton}
               onClick={(e) => handleDeleteClick(node, e)}
               title="删除文件"
+              disabled={chat.isChatLoading} // 新增：聊天加载时禁用
             />
           </div>
         );
@@ -711,6 +714,7 @@ const AppDev: React.FC = () => {
               <Button
                 type="primary"
                 onClick={() => setIsUploadModalVisible(true)}
+                disabled={chat.isChatLoading} // 新增：聊天加载时禁用
               >
                 上传项目
               </Button>
@@ -769,6 +773,8 @@ const AppDev: React.FC = () => {
               setChatMode={setChatMode}
               chat={chat}
               projectInfo={projectInfo}
+              projectId={projectId || ''} // 新增：项目ID
+              loadHistorySession={chat.loadHistorySession} // 新增：加载历史会话方法
             />
           </Col>
 
@@ -868,6 +874,7 @@ const AppDev: React.FC = () => {
                             type="text"
                             className={styles.addButton}
                             onClick={() => setIsUploadModalVisible(true)}
+                            disabled={chat.isChatLoading} // 新增：聊天加载时禁用
                           >
                             导入项目
                           </Button>
@@ -880,6 +887,7 @@ const AppDev: React.FC = () => {
                               }
                               className={styles.addButton}
                               style={{ marginLeft: 8 }}
+                              disabled={chat.isChatLoading} // 新增：聊天加载时禁用
                             />
                           </Tooltip>
                         </div>
@@ -903,6 +911,7 @@ const AppDev: React.FC = () => {
                               onClick={() =>
                                 setIsAddDataResourceModalVisible(true)
                               }
+                              disabled={chat.isChatLoading} // 新增：聊天加载时禁用
                             >
                               添加
                             </Button>
@@ -1011,7 +1020,7 @@ const AppDev: React.FC = () => {
                                 }
                                 disabled={
                                   !fileManagement.fileContentState
-                                    .isFileModified
+                                    .isFileModified || chat.isChatLoading // 新增：聊天加载时禁用
                                 }
                                 style={{ marginRight: 8 }}
                               >
@@ -1022,7 +1031,7 @@ const AppDev: React.FC = () => {
                                 onClick={handleCancelEdit}
                                 disabled={
                                   !fileManagement.fileContentState
-                                    .isFileModified
+                                    .isFileModified || chat.isChatLoading // 新增：聊天加载时禁用
                                 }
                                 style={{ marginRight: 8 }}
                               >
@@ -1137,6 +1146,7 @@ const AppDev: React.FC = () => {
                                         updateFileContent(fileId, content);
                                       }}
                                       className={styles.monacoEditor}
+                                      readOnly={chat.isChatLoading} // 新增：聊天加载时设置为只读
                                     />
                                   </div>
                                 );
@@ -1226,6 +1236,7 @@ const AppDev: React.FC = () => {
                                         updateFileContent(fileId, content);
                                       }}
                                       className={styles.monacoEditor}
+                                      readOnly={chat.isChatLoading} // 新增：聊天加载时设置为只读
                                     />
                                   </div>
                                 );
@@ -1268,7 +1279,7 @@ const AppDev: React.FC = () => {
         {/* 上传项目模态框 */}
         <Modal
           title="导入项目"
-          open={isUploadModalVisible}
+          open={isUploadModalVisible && !chat.isChatLoading} // 新增：聊天加载时禁用
           onCancel={() => {
             setIsUploadModalVisible(false);
             setProjectName('');
@@ -1310,7 +1321,7 @@ const AppDev: React.FC = () => {
         {/* 单文件上传模态框 */}
         <Modal
           title="上传单个文件"
-          open={isSingleFileUploadModalVisible}
+          open={isSingleFileUploadModalVisible && !chat.isChatLoading} // 新增：聊天加载时禁用
           onCancel={handleCancelSingleFileUpload}
           footer={[
             <Button key="cancel" onClick={handleCancelSingleFileUpload}>

@@ -12,6 +12,7 @@ import {
   Typography,
 } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
+import ConversationSelector from '../ConversationSelector';
 import styles from './index.less';
 import type { ChatAreaProps } from './types';
 
@@ -26,6 +27,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   setChatMode,
   chat,
   projectInfo,
+  projectId,
+  loadHistorySession,
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
@@ -201,6 +204,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               }}
               placeholder="选择版本"
               disabled={projectInfo.versionList.length === 0}
+            />
+          </div>
+
+          {/* 历史会话选择器 */}
+          <div className={styles.conversationSelectorWrapper}>
+            <ConversationSelector
+              projectId={projectId}
+              currentSessionId={chat.currentSessionId}
+              onSessionChange={loadHistorySession}
             />
           </div>
         </div>

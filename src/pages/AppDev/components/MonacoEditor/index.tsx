@@ -16,6 +16,7 @@ interface MonacoEditorProps {
   currentFile?: FileNode | null;
   onContentChange?: (fileId: string, content: string) => void;
   className?: string;
+  readOnly?: boolean; // 新增：只读模式
 }
 
 /**
@@ -26,6 +27,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   currentFile,
   onContentChange,
   className,
+  readOnly = false, // 新增：只读模式，默认为false
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const editorInstanceRef = useRef<any>(null);
@@ -349,6 +351,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           ...editorOptions,
           language,
           value: currentFile?.content || '',
+          readOnly: readOnly, // 新增：应用只读设置
         });
       }, 'Monaco Editor creation');
 

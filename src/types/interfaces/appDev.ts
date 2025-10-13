@@ -819,3 +819,34 @@ export enum ProjectType {
   /** 在线部署 */
   ONLINE_DEPLOY = 'ONLINE_DEPLOY',
 }
+
+// ==================== 会话管理相关类型定义 ====================
+
+/**
+ * 会话记录信息
+ */
+export interface ConversationRecord {
+  projectId: number;
+  sessionId: string;
+  content: string;
+  topic: string;
+  summary?: string;
+  created: string;
+  creatorId: number;
+}
+
+/**
+ * 保存会话请求参数
+ */
+export interface SaveConversationParams {
+  projectId: number;
+  sessionId: string;
+  content: string;
+  topic: string;
+  summary?: string;
+}
+
+/**
+ * 查询会话列表响应
+ */
+export type ListConversationsResponse = RequestResponse<ConversationRecord[]>;

@@ -371,3 +371,47 @@ export const exportProject = async (
     },
   );
 };
+
+// ==================== 会话管理相关API服务 ====================
+
+/**
+ * 保存会话记录接口
+ * @param params 保存会话参数
+ * @returns Promise<any> 保存结果
+ */
+export const saveConversation = async (params: {
+  projectId: string;
+  sessionId: string;
+  content: string;
+  topic: string;
+  summary?: string;
+}): Promise<any> => {
+  console.log('📤 [API] 调用保存会话接口:', {
+    url: '/api/custom-page/save-conversation',
+    method: 'POST',
+    params,
+  });
+
+  const result = await request('/api/custom-page/save-conversation', {
+    method: 'POST',
+    data: params,
+  });
+
+  console.log('📥 [API] 保存会话接口响应:', result);
+  return result;
+};
+
+/**
+ * 查询会话记录列表接口
+ * @param params 查询参数
+ * @returns Promise<any> 会话列表
+ */
+export const listConversations = async (params: {
+  projectId: string;
+  sessionId?: string;
+}): Promise<any> => {
+  return request('/api/custom-page/list-conversations', {
+    method: 'GET',
+    params,
+  });
+};
