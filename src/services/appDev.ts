@@ -346,6 +346,26 @@ export const getProjectInfo = async (
 };
 
 /**
+ * 获取项目历史版本内容
+ * @param projectId 项目ID
+ * @param codeVersion 代码版本号
+ * @returns Promise<GetProjectContentResponse> 指定版本的项目文件数据
+ */
+export const getProjectContentByVersion = async (
+  projectId: string,
+  codeVersion: number,
+): Promise<GetProjectContentResponse> => {
+  return request(
+    `/api/custom-page/get-project-content-by-version?projectId=${encodeURIComponent(
+      projectId,
+    )}&codeVersion=${codeVersion}`,
+    {
+      method: 'GET',
+    },
+  );
+};
+
+/**
  * 导出用户前端项目为zip文件
  * @param projectId 项目ID
  * @returns Promise<{ data: Blob; headers: any }> 导出结果，包含zip文件数据

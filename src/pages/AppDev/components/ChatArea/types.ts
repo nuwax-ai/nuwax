@@ -6,4 +6,5 @@ export interface ChatAreaProps {
   setChatMode: (mode: 'chat' | 'design') => void;
   chat: ReturnType<typeof useAppDevChat>;
   projectInfo: ReturnType<typeof useAppDevProjectInfo>;
+  onVersionSelect: (version: number) => void;
 }

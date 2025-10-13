@@ -26,6 +26,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   setChatMode,
   chat,
   projectInfo,
+  onVersionSelect,
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
@@ -197,7 +198,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               onChange={(value) => {
                 const versionNumber = parseInt(value.replace('v', ''));
                 console.log('选择版本:', versionNumber);
-                // TODO: 实现版本切换逻辑
+                onVersionSelect(versionNumber);
               }}
               placeholder="选择版本"
               disabled={projectInfo.versionList.length === 0}
