@@ -7,6 +7,7 @@ import { ProcessingEnum } from '@/types/enums/common';
 import { cloneDeep } from '@/utils/common';
 import {
   CheckOutlined,
+  EyeInvisibleOutlined,
   // CopyOutlined,
   EyeOutlined,
   ProfileOutlined,
@@ -30,6 +31,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   const {
     getProcessingById,
     processingList,
+    pagePreviewData,
     showPagePreview,
     agentPageConfig,
   } = useModel('chat');
@@ -186,6 +188,10 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
   // 处理预览页面
   const handlePreviewPage = useCallback(() => {
+    if (pagePreviewData) {
+      showPagePreview(null);
+      return;
+    }
     if (!detailData) {
       message.error('暂无数据');
       return;
@@ -214,7 +220,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     };
 
     showPagePreview(previewData);
-  }, [detailData, innerProcessing, showPagePreview]);
+  }, [detailData, innerProcessing, showPagePreview, pagePreviewData]);
 
   if (!innerProcessing.executeId) {
     return null;
@@ -242,11 +248,13 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
               />
             </Tooltip>
             {isPageType ? (
-              <Tooltip title="预览页面">
+              <Tooltip title={pagePreviewData ? '关闭预览' : '预览页面'}>
                 <Button
                   type="text"
                   disabled={disabled}
-                  icon={<EyeOutlined />}
+                  icon={
+                    pagePreviewData ? <EyeInvisibleOutlined /> : <EyeOutlined />
+                  }
                   onClick={handlePreviewPage}
                 />
               </Tooltip>

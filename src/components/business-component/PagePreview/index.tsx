@@ -25,7 +25,7 @@ const PagePreview: React.FC = () => {
   const { pagePreviewData, hidePagePreview } = chatModel;
 
   // 预览区域宽度（百分比）
-  const [width, setWidth] = useState<number>(50); // 初始宽度 50%
+  const [width, setWidth] = useState<number>(66); // 初始宽度 66%
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const containerRef = useRef<HTMLDivElement>(null);
