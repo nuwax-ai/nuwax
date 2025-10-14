@@ -7,12 +7,14 @@ import { COMPONENT_SETTING_ACTIONS } from '@/constants/space.constants';
 import {
   apiAgentComponentAdd,
   apiAgentComponentDelete,
+  apiAgentComponentEventUpdate,
   apiAgentComponentList,
   apiAgentVariables,
 } from '@/services/agentConfig';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
+  EventListEnum,
   ExpandPageAreaEnum,
   HideChatAreaEnum,
 } from '@/types/enums/agent';
@@ -23,6 +25,7 @@ import {
 } from '@/types/enums/space';
 import type {
   AgentComponentEventConfig,
+  AgentComponentEventUpdateParams,
   AgentComponentInfo,
 } from '@/types/interfaces/agent';
 import type {
@@ -37,6 +40,7 @@ import { loopSetBindValueType } from '@/utils/deepNode';
 import { useRequest } from 'ahooks';
 import { CollapseProps, message, Switch } from 'antd';
 import classNames from 'classnames';
+import cloneDeep from 'lodash/cloneDeep';
 import React, {
   MouseEvent,
   useCallback,
@@ -279,25 +283,31 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     setDeleteList(_newDeleteList);
   };
 
-  // 异步查询智能体配置组件列表
-  const asyncFun = async () => {
+  /**
+   * 异步查询智能体配置组件列表
+   * @param isOnlyQuery 如果为true，则只查询组件列表，不查询添加组件列表，默认为false
+   */
+  const asyncFun = async (isOnlyQuery: boolean = false) => {
     const { data } = await runAsync(agentId);
 
     setAgentComponentList(data);
-    const list =
-      data?.map((item) => {
-        const toolName =
-          item.type === AgentComponentTypeEnum.MCP
-            ? item.bindConfig?.toolName
-            : '';
-        return {
-          type: item.type,
-          targetId: item.targetId,
-          status: AgentAddComponentStatusEnum.Added,
-          toolName,
-        };
-      }) || [];
-    setAddComponents(list);
+    // 是否更新添加组件列表
+    if (!isOnlyQuery) {
+      const list =
+        data?.map((item) => {
+          const toolName =
+            item.type === AgentComponentTypeEnum.MCP
+              ? item.bindConfig?.toolName
+              : '';
+          return {
+            type: item.type,
+            targetId: item.targetId,
+            status: AgentAddComponentStatusEnum.Added,
+            toolName,
+          };
+        }) || [];
+      setAddComponents(list);
+    }
   };
 
   // 新增智能体插件、工作流、知识库组件配置
@@ -344,7 +354,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const handleConfirmVariables = async () => {
     setOpenVariableModel(false);
     // 查询智能体配置组件列表
-    asyncFun();
+    asyncFun(true);
     // 查询智能体变量列表
     const { data } = await runVariables(agentId);
     // 处理变量参数
@@ -633,6 +643,59 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     setCurrentEventConfig(item);
   };
 
+  // 更新事件绑定配置
+  const { runAsync: runEventUpdate } = useRequest(
+    apiAgentComponentEventUpdate,
+    {
+      manual: true,
+      debounceWait: 300,
+    },
+  );
+
+  // 删除事件绑定
+  const handleDeletEventBinding = async (index: number) => {
+    const newEventConfigs = cloneDeep(eventsInfo?.bindConfig?.eventConfigs);
+    newEventConfigs?.splice(index, 1);
+    // 更新事件绑定信息
+    const newEventsInfo = {
+      id: eventsInfo?.id,
+      bindConfig: {
+        eventConfigs: newEventConfigs,
+      },
+    } as AgentComponentEventUpdateParams;
+    await runEventUpdate(newEventsInfo);
+    message.success('删除成功');
+    // 重新查询智能体配置组件列表
+    asyncFun(true);
+  };
+
+  /**
+   * 点击事件绑定项
+   * @param item 点击事件绑定项
+   * @param action 操作事件类型
+   * @param index 事件绑定项索引
+   */
+  const handleClickEventBindingItem = (
+    item: AgentComponentEventConfig,
+    action: EventListEnum,
+    index: number,
+  ) => {
+    switch (action) {
+      // 编辑
+      case EventListEnum.Edit:
+        handleAddEventBinding(item);
+        break;
+      // 插入到系统提示词
+      case EventListEnum.InsertSystemPrompt:
+        message.info('插入到系统提示词,实现功能待开发');
+        break;
+      // 删除
+      case EventListEnum.Delete:
+        handleDeletEventBinding(index);
+        break;
+    }
+  };
+
   // 界面配置列表
   const PageConfigList: CollapseProps['items'] = [
     {
@@ -743,7 +806,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         <EventList
           textClassName={cx(styles.text)}
           list={eventsInfo?.bindConfig?.eventConfigs || []}
-          onClick={handleAddEventBinding}
+          onClick={handleClickEventBindingItem}
         />
       ),
       extra: (
@@ -802,7 +865,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const handleConfirmEventBinding = () => {
     setOpenEventBindModel(false);
     // 重新查询智能体配置组件列表
-    asyncFun();
+    asyncFun(true);
   };
 
   return (

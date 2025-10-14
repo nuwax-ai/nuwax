@@ -2,6 +2,7 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
   DefaultSelectedEnum,
   EventBindResponseActionEnum,
+  EventListEnum,
   GuidQuestionSetTypeEnum,
   InputTypeEnum,
   InvokeTypeEnum,
@@ -237,5 +238,21 @@ export const EVENT_BIND_RESPONSE_ACTION_OPTIONS = [
   {
     value: EventBindResponseActionEnum.Link,
     label: '外部链接跳转',
+  },
+];
+
+// 事件列表
+export const EVENT_LIST = [
+  {
+    value: EventListEnum.Edit,
+    label: '编辑',
+  },
+  {
+    value: EventListEnum.InsertSystemPrompt,
+    label: '插入到系统提示词',
+  },
+  {
+    value: EventListEnum.Delete,
+    label: '删除',
   },
 ];

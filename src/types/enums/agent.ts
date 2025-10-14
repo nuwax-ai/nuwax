@@ -186,6 +186,16 @@ export enum EventBindResponseActionEnum {
   Link = 'Link',
 }
 
+// 事件列表枚举
+export enum EventListEnum {
+  // 编辑
+  Edit = 'Edit',
+  // 插入到系统提示词
+  InsertSystemPrompt = 'InsertSystemPrompt',
+  // 删除
+  Delete = 'Delete',
+}
+
 // 是否默认展开扩展页面区域, 1 展开；0 不展开
 export enum ExpandPageAreaEnum {
   No = 0,

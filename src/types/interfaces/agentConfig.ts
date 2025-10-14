@@ -2,6 +2,7 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
+  EventListEnum,
   InvokeTypeEnum,
   OutputDirectlyEnum,
 } from '@/types/enums/agent';
@@ -272,7 +273,11 @@ export interface VariableListProps {
 // 事件列表组件
 export interface EventListProps {
   textClassName?: string;
-  onClick: (item: AgentComponentEventConfig) => void;
+  onClick: (
+    item: AgentComponentEventConfig,
+    action: EventListEnum,
+    index: number,
+  ) => void;
   list: AgentComponentEventConfig[];
 }
 
