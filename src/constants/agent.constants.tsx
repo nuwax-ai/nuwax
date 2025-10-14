@@ -4,11 +4,13 @@ import {
   EventBindResponseActionEnum,
   EventListEnum,
   GuidQuestionSetTypeEnum,
+  HomeIndexEnum,
   InputTypeEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
   OutputDirectlyEnum,
   SearchStrategyEnum,
+  VisibleToLLMEnum,
 } from '@/types/enums/agent';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
 import {
@@ -254,5 +256,29 @@ export const EVENT_LIST = [
   {
     value: EventListEnum.Delete,
     label: '删除',
+  },
+];
+
+// 页面是否模型可见选项
+export const VISIBLE_TO_LLM_OPTIONS = [
+  {
+    value: VisibleToLLMEnum.No,
+    label: '否',
+  },
+  {
+    value: VisibleToLLMEnum.Yes,
+    label: '是',
+  },
+];
+
+// 是否为智能体页面首页，1 为默认首页，0 不为首页
+export const HOME_INDEX_OPTIONS = [
+  {
+    value: HomeIndexEnum.No,
+    label: '否',
+  },
+  {
+    value: HomeIndexEnum.Yes,
+    label: '是',
   },
 ];

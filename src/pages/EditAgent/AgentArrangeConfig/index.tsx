@@ -59,6 +59,7 @@ import KnowledgeTextList from './KnowledgeTextList';
 import LongMemoryContent from './LongMemoryContent';
 import McpGroupComponentItem from './McpGroupComponentItem';
 import OpenRemarksEdit from './OpenRemarksEdit';
+import PageSettingModal from './PageSettingModal';
 import VariableList from './VariableList';
 
 const cx = classNames.bind(styles);
@@ -100,6 +101,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [show, setShow] = useState<boolean>(false);
   // 打开、关闭事件绑定弹窗
   const [openEventBindModel, setOpenEventBindModel] = useState<boolean>(false);
+  // 打开、关闭页面设置弹窗
+  const [openPageModel, setOpenPageModel] = useState<boolean>(false);
   // 智能体组件列表
   const { agentComponentList, setAgentComponentList } = useModel('spaceAgent');
   const { handleVariables } = useModel('conversationInfo');
@@ -629,13 +632,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
   ];
 
-  // todo: 界面配置 - 设置
+  // 界面配置 - 设置
   const handlePageSet = (id: number) => {
     const componentInfo = agentComponentList?.find(
       (info: AgentComponentInfo) => info.id === id,
     );
     setCurrentComponentInfo(componentInfo);
-    // setOpenPageModel(true);
+    setOpenPageModel(true);
   };
 
   // 添加事件绑定
@@ -725,7 +728,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           list={filterList(AgentComponentTypeEnum.Page)}
           deleteList={deleteList}
           onSet={handlePageSet}
-          // todo: 界面配置 - 删除
           onDel={handleAgentComponentDel}
         />
       ),
@@ -935,6 +937,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         pageArgConfigs={pageArgConfigs}
         onCancel={() => setOpenEventBindModel(false)}
         onConfirm={handleConfirmEventBinding}
+      />
+      {/*页面设置弹窗*/}
+      <PageSettingModal
+        open={openPageModel}
+        currentComponentInfo={currentComponentInfo}
+        onCancel={() => setOpenPageModel(false)}
       />
     </div>
   );
