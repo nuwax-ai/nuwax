@@ -152,7 +152,6 @@ const AppDev: React.FC = () => {
   // 版本对比管理
   const versionCompare = useAppDevVersionCompare({
     projectId: projectId || '',
-    currentFiles: stableCurrentFiles,
     onVersionSwitchSuccess: () => {
       // 刷新文件树
       fileManagement.loadFileTree();
@@ -807,13 +806,15 @@ const AppDev: React.FC = () => {
                 );
                 updateWorkspace({ activeFile: node.id });
               } else {
-                // 正常模式下，使用文件管理逻辑
+                // 正常模式下，使用文件管理逻辑并自动切换到代码查看模式
                 console.log(
                   '🔄 [AppDev] 正常模式下选择文件:',
                   node.id,
                   node.name,
                 );
                 fileManagement.switchToFile(node.id);
+                // 自动切换到代码查看模式
+                setActiveTab('code');
               }
             }}
             style={{ marginLeft: level * 16 }}
