@@ -753,7 +753,7 @@ const AppDev: React.FC = () => {
         {/* 主布局 - 左右分栏 */}
         <Row gutter={0} className={styles.mainRow}>
           {/* 左侧AI助手面板 */}
-          <Col span={8} className={styles.leftPanel}>
+          <Col className={styles.leftPanel}>
             <ChatArea
               chatMode={chatMode}
               setChatMode={setChatMode}
@@ -766,7 +766,7 @@ const AppDev: React.FC = () => {
           </Col>
 
           {/* 右侧代码编辑器区域 */}
-          <Col span={16} className={styles.rightPanel}>
+          <Col className={styles.rightPanel}>
             {/* 编辑器头部bar */}
             <div className={styles.editorHeader}>
               <div className={styles.editorHeaderLeft}>

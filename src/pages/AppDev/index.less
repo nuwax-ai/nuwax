@@ -62,15 +62,18 @@
 
 // 左侧AI助手面板
 .leftPanel {
+  width: 360px;
   height: 100%;
   background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
   border-right: 1px solid rgba(0, 0, 0, 10%);
   padding: 0;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 10%);
+  flex-shrink: 0; // 防止收缩
 }
 
 // 右侧代码编辑器区域
 .rightPanel {
+  flex: 1; // 占据剩余空间
   height: 100%;
   background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
   padding: 0;
