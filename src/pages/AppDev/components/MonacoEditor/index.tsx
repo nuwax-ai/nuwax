@@ -15,9 +15,8 @@ import styles from './index.less';
 interface MonacoEditorProps {
   currentFile?: FileNode | null;
   onContentChange?: (fileId: string, content: string) => void;
-  readOnly?: boolean;
+  readOnly?: boolean; // 只读模式，默认为false
   className?: string;
-  readOnly?: boolean; // 新增：只读模式
 }
 
 /**
@@ -27,9 +26,8 @@ interface MonacoEditorProps {
 const MonacoEditor: React.FC<MonacoEditorProps> = ({
   currentFile,
   onContentChange,
-  readOnly = false,
+  readOnly = false, // 只读模式，默认为false
   className,
-  readOnly = false, // 新增：只读模式，默认为false
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const editorInstanceRef = useRef<any>(null);
@@ -351,10 +349,9 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       const editor = await safeAsyncOperation(async () => {
         return monaco.editor.create(editorRef.current!, {
           ...editorOptions,
-          readOnly: readOnly || false,
+          readOnly: readOnly, // 应用只读设置
           language,
           value: currentFile?.content || '',
-          readOnly: readOnly, // 新增：应用只读设置
         });
       }, 'Monaco Editor creation');
 
