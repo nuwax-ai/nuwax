@@ -815,28 +815,6 @@ export enum DeployStatus {
 }
 
 /**
- * 文件变更信息
- */
-export interface FileChangeInfo {
-  /** 文件路径 */
-  path: string;
-  /** 文件名 */
-  name: string;
-  /** 变更类型 */
-  changeType: 'added' | 'modified' | 'deleted';
-  /** 目标版本内容 */
-  targetContent?: string;
-  /** 当前版本内容 */
-  currentContent?: string;
-  /** 文件语言 */
-  language?: string;
-  /** 新增行数 */
-  addedLines?: number;
-  /** 删除行数 */
-  deletedLines?: number;
-}
-
-/**
  * 项目类型枚举
  */
 export enum ProjectType {

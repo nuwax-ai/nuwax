@@ -15,6 +15,7 @@ import styles from './index.less';
 interface MonacoEditorProps {
   currentFile?: FileNode | null;
   onContentChange?: (fileId: string, content: string) => void;
+  readOnly?: boolean;
   className?: string;
   readOnly?: boolean; // 新增：只读模式
 }
@@ -26,6 +27,7 @@ interface MonacoEditorProps {
 const MonacoEditor: React.FC<MonacoEditorProps> = ({
   currentFile,
   onContentChange,
+  readOnly = false,
   className,
   readOnly = false, // 新增：只读模式，默认为false
 }) => {
@@ -349,6 +351,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       const editor = await safeAsyncOperation(async () => {
         return monaco.editor.create(editorRef.current!, {
           ...editorOptions,
+          readOnly: readOnly || false,
           language,
           value: currentFile?.content || '',
           readOnly: readOnly, // 新增：应用只读设置
@@ -364,13 +367,15 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       editorCreatedRef.current = true;
       lastFileIdRef.current = currentFile?.id || null;
 
-      // 监听内容变化
-      editor.onDidChangeModelContent(() => {
-        if (currentFile && onContentChange && !isDisposingRef.current) {
-          const value = editor.getValue();
-          onContentChange(currentFile.id, value);
-        }
-      });
+      // 监听内容变化（只在非只读模式下）
+      if (!readOnly) {
+        editor.onDidChangeModelContent(() => {
+          if (currentFile && onContentChange && !isDisposingRef.current) {
+            const value = editor.getValue();
+            onContentChange(currentFile.id, value);
+          }
+        });
+      }
 
       // 添加键盘快捷键
       try {
@@ -399,6 +404,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     isMonacoReady,
     currentFile,
     onContentChange,
+    readOnly,
     getLanguageFromFile,
     loadLanguageSupport,
     safeDisposeEditor,

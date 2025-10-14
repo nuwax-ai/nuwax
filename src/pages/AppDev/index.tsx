@@ -1,5 +1,5 @@
 import Created from '@/components/Created';
-import { ERROR_MESSAGES } from '@/constants/appDevConstants';
+import { ERROR_MESSAGES, VERSION_CONSTANTS } from '@/constants/appDevConstants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
@@ -57,7 +57,6 @@ import { useModel } from 'umi';
 import { AppDevHeader } from './components';
 import ChatArea from './components/ChatArea';
 import DataResourceList from './components/DataResourceList';
-import MonacoDiffEditor from './components/MonacoDiffEditor';
 import MonacoEditor from './components/MonacoEditor';
 import Preview, { type PreviewRef } from './components/Preview';
 import styles from './index.less';
@@ -80,6 +79,7 @@ const AppDev: React.FC = () => {
     updateFileContent,
     updateDevServerUrl,
     updateProjectId,
+    updateWorkspace,
   } = appDevModel;
 
   // 使用简化的 AppDev projectId hook
@@ -162,12 +162,88 @@ const AppDev: React.FC = () => {
     },
   });
 
+  // 获取当前显示的文件树（版本模式或正常模式）
+  const currentDisplayFiles = useMemo(() => {
+    return versionCompare.isComparing
+      ? versionCompare.versionFiles
+      : stableCurrentFiles;
+  }, [
+    versionCompare.isComparing,
+    versionCompare.versionFiles,
+    stableCurrentFiles,
+  ]);
+
+  /**
+   * 在版本模式下查找文件节点
+   */
+  const findVersionFileNode = useCallback(
+    (fileId: string): any => {
+      console.log('🔍 [AppDev] 查找版本文件节点:', {
+        fileId,
+        versionFilesCount: versionCompare.versionFiles.length,
+        versionFiles: versionCompare.versionFiles.map((node) => ({
+          id: node.id,
+          name: node.name,
+          type: node.type,
+          hasContent: !!node.content,
+          childrenCount: node.children?.length || 0,
+        })),
+      });
+
+      const findInNodes = (nodes: any[]): any => {
+        for (const node of nodes) {
+          console.log('🔍 [AppDev] 检查节点:', {
+            nodeId: node.id,
+            targetId: fileId,
+            match: node.id === fileId,
+            hasChildren: !!node.children,
+            childrenCount: node.children?.length || 0,
+          });
+
+          if (node.id === fileId) {
+            console.log('✅ [AppDev] 找到匹配的文件节点:', {
+              id: node.id,
+              name: node.name,
+              hasContent: !!node.content,
+              contentLength: node.content?.length || 0,
+            });
+            return node;
+          }
+          if (node.children) {
+            const found = findInNodes(node.children);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      const result = findInNodes(versionCompare.versionFiles);
+      console.log(
+        '📄 [AppDev] 查找结果:',
+        result
+          ? {
+              id: result.id,
+              name: result.name,
+              hasContent: !!result.content,
+              contentLength: result.content?.length || 0,
+            }
+          : null,
+      );
+
+      return result;
+    },
+    [versionCompare.versionFiles],
+  );
+
   /**
    * 处理版本选择，直接在页面中显示版本对比
    */
   const handleVersionSelect = useCallback(
     async (version: number) => {
       try {
+        // 先切换到代码查看模式
+        setActiveTab('code');
+        // 然后启动版本对比
         await versionCompare.startVersionCompare(version);
       } catch (error) {
         console.error('版本对比启动失败:', error);
@@ -674,13 +750,8 @@ const AppDev: React.FC = () => {
         node.id,
       );
       const isSelected = versionCompare.isComparing
-        ? versionCompare.selectedCompareFile === node.path
+        ? workspace.activeFile === node.id
         : fileManagement.fileContentState.selectedFile === node.id;
-
-      // 在版本对比模式下，获取文件的变更统计
-      const changeStat = versionCompare.isComparing
-        ? versionCompare.getFileChangeStat(node.path)
-        : null;
 
       if (node.type === 'folder') {
         return (
@@ -725,11 +796,23 @@ const AppDev: React.FC = () => {
             key={node.id}
             className={`${styles.fileItem} ${
               isSelected ? styles.activeFile : ''
-            } ${changeStat ? styles[changeStat.changeType] : ''}`}
+            }`}
             onClick={() => {
               if (versionCompare.isComparing) {
-                versionCompare.selectCompareFile(node.path);
+                // 版本模式下，直接设置选中的文件到 workspace.activeFile
+                console.log(
+                  '🔄 [AppDev] 版本模式下选择文件:',
+                  node.id,
+                  node.name,
+                );
+                updateWorkspace({ activeFile: node.id });
               } else {
+                // 正常模式下，使用文件管理逻辑
+                console.log(
+                  '🔄 [AppDev] 正常模式下选择文件:',
+                  node.id,
+                  node.name,
+                );
                 fileManagement.switchToFile(node.id);
               }
             }}
@@ -737,22 +820,6 @@ const AppDev: React.FC = () => {
           >
             <FileOutlined className={styles.fileIcon} />
             <span className={styles.fileName}>{node.name}</span>
-
-            {/* 版本对比模式：显示变更统计 */}
-            {changeStat && (
-              <div className={styles.changeStats}>
-                {changeStat.addedLines > 0 && (
-                  <span className={styles.addedStat}>
-                    +{changeStat.addedLines}
-                  </span>
-                )}
-                {changeStat.deletedLines > 0 && (
-                  <span className={styles.deletedStat}>
-                    -{changeStat.deletedLines}
-                  </span>
-                )}
-              </div>
-            )}
 
             {/* 正常模式：显示文件状态和删除按钮 */}
             {!versionCompare.isComparing && (
@@ -903,6 +970,7 @@ const AppDev: React.FC = () => {
                   onChange={(value) =>
                     setActiveTab(value as 'preview' | 'code')
                   }
+                  disabled={versionCompare.isComparing}
                   options={[
                     {
                       label: <EyeOutlined />,
@@ -922,8 +990,14 @@ const AppDev: React.FC = () => {
                   {/* 版本对比模式下显示的按钮 */}
                   {versionCompare.isComparing ? (
                     <>
+                      <Alert
+                        message={VERSION_CONSTANTS.READ_ONLY_MESSAGE}
+                        type="info"
+                        showIcon
+                        style={{ marginRight: 16 }}
+                      />
                       <Text type="secondary" style={{ marginRight: 8 }}>
-                        对比版本 v{versionCompare.targetVersion}
+                        版本 v{versionCompare.targetVersion}
                       </Text>
                       <Button
                         size="small"
@@ -1038,8 +1112,8 @@ const AppDev: React.FC = () => {
                         <div className={styles.fileTreeContainer}>
                           {/* 文件树结构 */}
                           <div className={styles.fileTree}>
-                            {fileManagement.fileTreeState.data.map(
-                              (node: any) => renderFileTreeNode(node),
+                            {currentDisplayFiles.map((node: any) =>
+                              renderFileTreeNode(node),
                             )}
                           </div>
                         </div>
@@ -1080,33 +1154,149 @@ const AppDev: React.FC = () => {
                     {/* 内容区域 */}
                     <div className={styles.editorContent}>
                       {versionCompare.isComparing ? (
-                        // 版本对比模式：显示Monaco Diff Editor
-                        versionCompare.selectedCompareFile ? (
-                          (() => {
-                            const diffContent =
-                              versionCompare.getFileDiffContent(
-                                versionCompare.selectedCompareFile,
-                              );
-
-                            return diffContent ? (
-                              <MonacoDiffEditor
-                                originalContent={diffContent.original}
-                                modifiedContent={diffContent.modified}
-                                language={diffContent.language}
-                                fileName={versionCompare.selectedCompareFile}
-                                height="100%"
-                                className={styles.diffEditor}
-                              />
-                            ) : (
-                              <div className={styles.emptyState}>
-                                <p>无法加载文件对比内容</p>
-                              </div>
-                            );
-                          })()
-                        ) : (
+                        // 版本对比模式：根据当前标签页显示内容
+                        activeTab === 'preview' ? (
+                          // 预览标签页：显示禁用提示
                           <div className={styles.emptyState}>
-                            <p>请从左侧选择一个文件查看变更</p>
+                            <p>{VERSION_CONSTANTS.PREVIEW_DISABLED_MESSAGE}</p>
+                            <p>请恢复或切换到最新版本以查看预览</p>
                           </div>
+                        ) : (
+                          // 代码标签页：显示版本文件内容
+                          <>
+                            {/* 文件路径显示 */}
+                            <div className={styles.filePathHeader}>
+                              <div className={styles.filePathInfo}>
+                                <FileOutlined className={styles.fileIcon} />
+                                <span className={styles.filePath}>
+                                  {(() => {
+                                    const currentSelectedFileId =
+                                      workspace.activeFile;
+                                    return (
+                                      findVersionFileNode(currentSelectedFileId)
+                                        ?.path || currentSelectedFileId
+                                    );
+                                  })()}
+                                </span>
+                                <span className={styles.fileLanguage}>
+                                  {getLanguageFromFile(
+                                    workspace.activeFile || '',
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* 文件内容显示区域 */}
+                            <div className={styles.fileContentPreview}>
+                              {(() => {
+                                const selectedFileId = workspace.activeFile;
+
+                                console.log(
+                                  '🔍 [AppDev] 版本模式文件内容显示:',
+                                  {
+                                    selectedFileId,
+                                    workspaceActiveFile: workspace.activeFile,
+                                  },
+                                );
+
+                                if (!selectedFileId) {
+                                  return (
+                                    <div className={styles.emptyState}>
+                                      <p>请从左侧文件树选择一个文件进行预览</p>
+                                    </div>
+                                  );
+                                }
+
+                                const fileNode =
+                                  findVersionFileNode(selectedFileId);
+                                const hasContents =
+                                  fileNode &&
+                                  fileNode.content &&
+                                  fileNode.content.trim() !== '';
+                                const isImage = isImageFile(selectedFileId);
+
+                                console.log('📄 [AppDev] 版本模式文件节点:', {
+                                  selectedFileId,
+                                  fileNode: fileNode
+                                    ? {
+                                        id: fileNode.id,
+                                        name: fileNode.name,
+                                        hasContent: !!fileNode.content,
+                                        contentLength:
+                                          fileNode.content?.length || 0,
+                                      }
+                                    : null,
+                                  hasContents,
+                                  isImage,
+                                });
+
+                                // 逻辑1: 如果文件有contents，直接在编辑器中显示
+                                if (hasContents) {
+                                  return (
+                                    <div className={styles.fileContentDisplay}>
+                                      <MonacoEditor
+                                        key={selectedFileId}
+                                        currentFile={{
+                                          id: selectedFileId,
+                                          name:
+                                            selectedFileId.split('/').pop() ||
+                                            selectedFileId,
+                                          type: 'file',
+                                          path: `app/${selectedFileId}`,
+                                          content: fileNode.content,
+                                          lastModified: Date.now(),
+                                          children: [],
+                                        }}
+                                        onContentChange={() => {
+                                          // 版本模式下不允许编辑
+                                        }}
+                                        readOnly={true}
+                                        className={styles.monacoEditor}
+                                      />
+                                    </div>
+                                  );
+                                }
+
+                                // 逻辑2: 如果是图片文件，使用Image组件渲染
+                                if (isImage) {
+                                  const previewUrl = workspace.devServerUrl
+                                    ? `${workspace.devServerUrl}/${selectedFileId}`
+                                    : `/${selectedFileId}`;
+
+                                  return (
+                                    <div
+                                      className={styles.imagePreviewContainer}
+                                    >
+                                      <div
+                                        className={styles.imagePreviewHeader}
+                                      >
+                                        <span>图片预览: {selectedFileId}</span>
+                                      </div>
+                                      <div
+                                        className={styles.imagePreviewContent}
+                                      >
+                                        <Image
+                                          src={previewUrl}
+                                          alt={selectedFileId}
+                                          style={{
+                                            maxWidth: '100%',
+                                            maxHeight: '600px',
+                                          }}
+                                          fallback={`/api/file-preview/${selectedFileId}`}
+                                        />
+                                      </div>
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <div className={styles.emptyState}>
+                                    <p>无法预览此文件类型: {selectedFileId}</p>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </>
                         )
                       ) : (
                         // 正常模式：原有的预览和代码编辑器
@@ -1180,17 +1370,27 @@ const AppDev: React.FC = () => {
                                 <div className={styles.filePathInfo}>
                                   <FileOutlined className={styles.fileIcon} />
                                   <span className={styles.filePath}>
-                                    {fileManagement.findFileNode(
-                                      fileManagement.fileContentState
-                                        .selectedFile,
-                                    )?.path ||
-                                      fileManagement.fileContentState
-                                        .selectedFile}
+                                    {(() => {
+                                      const currentSelectedFileId =
+                                        versionCompare.isComparing
+                                          ? workspace.activeFile
+                                          : fileManagement.fileContentState
+                                              .selectedFile;
+                                      return versionCompare.isComparing
+                                        ? findVersionFileNode(
+                                            currentSelectedFileId,
+                                          )?.path || currentSelectedFileId
+                                        : fileManagement.findFileNode(
+                                            currentSelectedFileId,
+                                          )?.path || currentSelectedFileId;
+                                    })()}
                                   </span>
                                   <span className={styles.fileLanguage}>
                                     {getLanguageFromFile(
-                                      fileManagement.fileContentState
-                                        .selectedFile,
+                                      versionCompare.isComparing
+                                        ? workspace.activeFile
+                                        : fileManagement.fileContentState
+                                            .selectedFile,
                                     )}
                                   </span>
                                   {fileManagement.fileContentState
@@ -1210,7 +1410,8 @@ const AppDev: React.FC = () => {
                                     }
                                     disabled={
                                       !fileManagement.fileContentState
-                                        .isFileModified
+                                        .isFileModified ||
+                                      versionCompare.isComparing
                                     }
                                     style={{ marginRight: 8 }}
                                   >
@@ -1221,7 +1422,8 @@ const AppDev: React.FC = () => {
                                     onClick={handleCancelEdit}
                                     disabled={
                                       !fileManagement.fileContentState
-                                        .isFileModified
+                                        .isFileModified ||
+                                      versionCompare.isComparing
                                     }
                                     style={{ marginRight: 8 }}
                                   >
@@ -1288,10 +1490,25 @@ const AppDev: React.FC = () => {
                                     );
                                   }
 
-                                  if (
-                                    !fileManagement.fileContentState
-                                      .selectedFile
-                                  ) {
+                                  const selectedFileId =
+                                    versionCompare.isComparing
+                                      ? workspace.activeFile
+                                      : fileManagement.fileContentState
+                                          .selectedFile;
+
+                                  console.log('🔍 [AppDev] 文件内容显示调试:', {
+                                    selectedFileId,
+                                    isComparing: versionCompare.isComparing,
+                                    workspaceActiveFile: workspace.activeFile,
+                                    fileManagementSelectedFile:
+                                      fileManagement.fileContentState
+                                        .selectedFile,
+                                    versionFilesCount:
+                                      versionCompare.versionFiles.length,
+                                  });
+
+                                  if (!selectedFileId) {
+                                    console.log('❌ [AppDev] 没有选中文件');
                                     return (
                                       <div className={styles.emptyState}>
                                         <p>
@@ -1301,18 +1518,43 @@ const AppDev: React.FC = () => {
                                     );
                                   }
 
-                                  const fileNode = fileManagement.findFileNode(
-                                    fileManagement.fileContentState
-                                      .selectedFile,
-                                  );
+                                  const fileNode = versionCompare.isComparing
+                                    ? findVersionFileNode(selectedFileId)
+                                    : fileManagement.findFileNode(
+                                        selectedFileId,
+                                      );
+
+                                  console.log('📄 [AppDev] 文件节点查找结果:', {
+                                    selectedFileId,
+                                    fileNode: fileNode
+                                      ? {
+                                          id: fileNode.id,
+                                          name: fileNode.name,
+                                          hasContent: !!fileNode.content,
+                                          contentLength:
+                                            fileNode.content?.length || 0,
+                                          contentPreview:
+                                            fileNode.content?.substring(
+                                              0,
+                                              100,
+                                            ) + '...',
+                                        }
+                                      : null,
+                                    isComparing: versionCompare.isComparing,
+                                  });
+
                                   const hasContents =
                                     fileNode &&
                                     fileNode.content &&
                                     fileNode.content.trim() !== '';
-                                  const isImage = isImageFile(
-                                    fileManagement.fileContentState
-                                      .selectedFile,
-                                  );
+                                  const isImage = isImageFile(selectedFileId);
+
+                                  console.log('📊 [AppDev] 文件内容判断:', {
+                                    hasContents,
+                                    isImage,
+                                    contentLength:
+                                      fileNode?.content?.length || 0,
+                                  });
 
                                   // 逻辑1: 如果文件有contents，直接在编辑器中显示
                                   if (hasContents) {
@@ -1321,17 +1563,14 @@ const AppDev: React.FC = () => {
                                         className={styles.fileContentDisplay}
                                       >
                                         <MonacoEditor
-                                          key={
-                                            fileManagement.fileContentState
-                                              .selectedFile
-                                          }
+                                          key={selectedFileId}
                                           currentFile={{
-                                            id: fileManagement.fileContentState
-                                              .selectedFile,
-                                            name: fileManagement
-                                              .fileContentState.selectedFile,
+                                            id: selectedFileId,
+                                            name:
+                                              selectedFileId.split('/').pop() ||
+                                              selectedFileId,
                                             type: 'file',
-                                            path: `app/${fileManagement.fileContentState.selectedFile}`,
+                                            path: `app/${selectedFileId}`,
                                             content: fileNode.content,
                                             lastModified: Date.now(),
                                             children: [],
@@ -1340,12 +1579,18 @@ const AppDev: React.FC = () => {
                                             fileId,
                                             content,
                                           ) => {
-                                            fileManagement.updateFileContent(
-                                              fileId,
-                                              content,
-                                            );
-                                            updateFileContent(fileId, content);
+                                            if (!versionCompare.isComparing) {
+                                              fileManagement.updateFileContent(
+                                                fileId,
+                                                content,
+                                              );
+                                              updateFileContent(
+                                                fileId,
+                                                content,
+                                              );
+                                            }
                                           }}
+                                          readOnly={versionCompare.isComparing}
                                           className={styles.monacoEditor}
                                         />
                                       </div>
@@ -1355,8 +1600,8 @@ const AppDev: React.FC = () => {
                                   // 逻辑2: 如果是图片文件，使用Image组件渲染
                                   if (isImage) {
                                     const previewUrl = workspace.devServerUrl
-                                      ? `${workspace.devServerUrl}/${fileManagement.fileContentState.selectedFile}`
-                                      : `/${fileManagement.fileContentState.selectedFile}`;
+                                      ? `${workspace.devServerUrl}/${selectedFileId}`
+                                      : `/${selectedFileId}`;
 
                                     return (
                                       <div
@@ -1366,11 +1611,7 @@ const AppDev: React.FC = () => {
                                           className={styles.imagePreviewHeader}
                                         >
                                           <span>
-                                            图片预览:{' '}
-                                            {
-                                              fileManagement.fileContentState
-                                                .selectedFile
-                                            }
+                                            图片预览: {selectedFileId}
                                           </span>
                                           <Button
                                             size="small"
@@ -1395,15 +1636,12 @@ const AppDev: React.FC = () => {
                                         >
                                           <Image
                                             src={previewUrl}
-                                            alt={
-                                              fileManagement.fileContentState
-                                                .selectedFile
-                                            }
+                                            alt={selectedFileId}
                                             style={{
                                               maxWidth: '100%',
                                               maxHeight: '600px',
                                             }}
-                                            fallback={`/api/file-preview/${fileManagement.fileContentState.selectedFile}`}
+                                            fallback={`/api/file-preview/${selectedFileId}`}
                                           />
                                         </div>
                                       </div>
@@ -1412,27 +1650,32 @@ const AppDev: React.FC = () => {
 
                                   // 逻辑3: 其他情况通过API远程预览或使用现有fileContent
                                   if (
-                                    fileManagement.fileContentState.fileContent
+                                    fileManagement.fileContentState
+                                      .fileContent ||
+                                    (versionCompare.isComparing &&
+                                      fileNode &&
+                                      fileNode.content)
                                   ) {
                                     return (
                                       <div
                                         className={styles.fileContentDisplay}
                                       >
                                         <MonacoEditor
-                                          key={
-                                            fileManagement.fileContentState
-                                              .selectedFile
-                                          }
+                                          key={selectedFileId}
                                           currentFile={{
-                                            id: fileManagement.fileContentState
-                                              .selectedFile,
-                                            name: fileManagement
-                                              .fileContentState.selectedFile,
+                                            id: selectedFileId,
+                                            name:
+                                              selectedFileId.split('/').pop() ||
+                                              selectedFileId,
                                             type: 'file',
-                                            path: `app/${fileManagement.fileContentState.selectedFile}`,
+                                            path: `app/${selectedFileId}`,
                                             content:
-                                              fileManagement.fileContentState
-                                                .fileContent,
+                                              versionCompare.isComparing &&
+                                              fileNode
+                                                ? fileNode.content
+                                                : fileManagement
+                                                    .fileContentState
+                                                    .fileContent,
                                             lastModified: Date.now(),
                                             children: [],
                                           }}
@@ -1440,12 +1683,18 @@ const AppDev: React.FC = () => {
                                             fileId,
                                             content,
                                           ) => {
-                                            fileManagement.updateFileContent(
-                                              fileId,
-                                              content,
-                                            );
-                                            updateFileContent(fileId, content);
+                                            if (!versionCompare.isComparing) {
+                                              fileManagement.updateFileContent(
+                                                fileId,
+                                                content,
+                                              );
+                                              updateFileContent(
+                                                fileId,
+                                                content,
+                                              );
+                                            }
                                           }}
+                                          readOnly={versionCompare.isComparing}
                                           className={styles.monacoEditor}
                                         />
                                       </div>

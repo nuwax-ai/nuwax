@@ -122,6 +122,8 @@ export const KEYBOARD_SHORTCUTS = {
 export const VERSION_CONSTANTS = {
   AVAILABLE_VERSIONS: ['v1', 'v2', 'v3', 'v4', 'v5'],
   DEFAULT_VERSION: 'v4',
+  READ_ONLY_MESSAGE: '旧版本为只读模式。恢复或切换到最新版本以进行编辑。',
+  PREVIEW_DISABLED_MESSAGE: '版本预览模式下无法查看页面预览',
 } as const;
 
 /**
