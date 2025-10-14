@@ -495,13 +495,13 @@ export const useAppDevFileManagement = ({
         // 过滤掉要删除的文件及其所有子文件（如果是文件夹）
         const filteredList = flatFileList.filter((file) => {
           // 如果是文件本身，直接删除
-          if (file.id === fileId) {
+          if (file.name === fileId) {
             console.log('🗑️ [FileManagement] 从列表中移除文件:', file.path);
             return false;
           }
           // 如果是文件夹，删除其所有子文件
           if (fileNode.type === 'folder') {
-            const shouldRemove = file.path.startsWith(fileNode.path + '/');
+            const shouldRemove = file.name.startsWith(fileNode.path + '/');
             if (shouldRemove) {
               console.log('🗑️ [FileManagement] 从列表中移除子文件:', file.path);
             }

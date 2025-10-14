@@ -777,16 +777,6 @@ const AppDev: React.FC = () => {
                 }`}
               />
               <span className={styles.folderName}>{node.name}</span>
-              {!versionCompare.isComparing && (
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<DeleteOutlined />}
-                  className={styles.deleteButton}
-                  onClick={(e) => handleDeleteClick(node, e)}
-                  title="删除文件夹"
-                />
-              )}
             </div>
             {isExpanded && node.children && (
               <div className={styles.fileList}>
@@ -1103,7 +1093,7 @@ const AppDev: React.FC = () => {
                             >
                               导入项目
                             </Button>
-                            <Tooltip title="上传单个文件">
+                            {/* <Tooltip title="上传单个文件">
                               <Button
                                 type="text"
                                 icon={<PlusOutlined />}
@@ -1113,7 +1103,7 @@ const AppDev: React.FC = () => {
                                 className={styles.addButton}
                                 style={{ marginLeft: 8 }}
                               />
-                            </Tooltip>
+                            </Tooltip> */}
                           </div>
                         )}
 
