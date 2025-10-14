@@ -84,10 +84,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [experienceActiveKey, setExperienceActiveKey] = useState<
     AgentArrangeConfigEnum[]
   >([]);
-  // 界面配置列表
-  const [pageActiveKey, setPageActiveKey] = useState<AgentArrangeConfigEnum[]>([
-    AgentArrangeConfigEnum.Opening_Remarks,
-  ]);
   // 处于loading状态的组件列表
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
@@ -231,6 +227,21 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       keyList.push(AgentArrangeConfigEnum.Table);
     }
 
+    return keyList;
+  }, [agentComponentList]);
+
+  // 界面配置列表 - 当前激活 tab 面板的 key
+  const pageActiveKey = useMemo(() => {
+    const keyList: AgentArrangeConfigEnum[] = [];
+    if (isExistComponent(AgentComponentTypeEnum.Page)) {
+      keyList.push(AgentArrangeConfigEnum.Page);
+    }
+    if (isExistComponent(AgentComponentTypeEnum.Event)) {
+      keyList.push(AgentArrangeConfigEnum.Page_Event_Binding);
+    }
+
+    keyList.push(AgentArrangeConfigEnum.Page_Setting);
+    keyList.push(AgentArrangeConfigEnum.Opening_Remarks);
     return keyList;
   }, [agentComponentList]);
 
@@ -914,7 +925,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       <ConfigOptionsHeader title="界面配置" />
       <ConfigOptionCollapse
         items={PageConfigList}
-        onChangeCollapse={setPageActiveKey}
         defaultActiveKey={pageActiveKey}
       />
       {/*添加插件、工作流、知识库、数据库弹窗*/}
