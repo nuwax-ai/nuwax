@@ -1,4 +1,5 @@
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
+import { useChatScroll, useChatScrollEffects } from '@/hooks/useChatScroll';
 import { cancelAgentTask } from '@/services/appDev';
 import type { AppDevChatMessage } from '@/types/interfaces/appDev';
 import { DownOutlined, SendOutlined, StopOutlined } from '@ant-design/icons';
@@ -14,13 +15,7 @@ import {
   Typography,
 } from 'antd';
 import dayjs from 'dayjs';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import styles from './index.less';
 import type { ChatAreaProps } from './types';
 
@@ -44,10 +39,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     new Set(),
   );
 
-  // 自动滚动相关状态
-  const [isAutoScroll, setIsAutoScroll] = useState(true); // 是否启用自动滚动
-  const [showScrollButton, setShowScrollButton] = useState(false); // 是否显示滚动按钮
-  const chatMessagesRef = useRef<HTMLDivElement>(null); // 聊天消息容器引用
+  // 使用滚动管理 hook
+  const {
+    isAutoScroll,
+    showScrollButton,
+    chatMessagesRef,
+    userScrollDisabled,
+    scrollToBottom,
+    checkScrollPosition,
+    handleUserScroll,
+    handleScrollButtonClick,
+    forceScrollToBottomAndEnable,
+  } = useChatScroll();
 
   /**
    * 切换思考过程展开状态
@@ -101,12 +104,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
    * 发送消息前的处理
    */
   const handleSendMessage = useCallback(() => {
-    // 检查滚动位置并决定是否开启自动滚动
-    checkAndEnableAutoScroll();
+    // 发送消息后强制滚动到底部并开启自动滚动
+    forceScrollToBottomAndEnable();
 
     // 发送消息
     chat.sendChat();
-  }, [checkAndEnableAutoScroll, chat]);
+  }, [forceScrollToBottomAndEnable, chat]);
 
   /**
    * 渲染聊天消息 - 按 role 区分渲染
@@ -296,79 +299,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return renderedMessages;
   }, [chat.chatMessages, renderChatMessage, renderConversationDivider]);
 
-  /**
-   * 自动滚动效果 - 当消息更新且启用自动滚动时，滚动到底部
-   */
-  useEffect(() => {
-    if (isAutoScroll && chat.chatMessages.length > 0) {
-      scrollToBottom();
-    }
-  }, [chat.chatMessages, isAutoScroll, scrollToBottom]);
-
-  /**
-   * 监听消息内容变化，在打字机效果期间也保持自动滚动
-   */
-  useEffect(() => {
-    if (isAutoScroll && chat.chatMessages.length > 0) {
-      // 使用 requestAnimationFrame 确保在 DOM 更新后滚动
-      const timeoutId = requestAnimationFrame(() => {
-        scrollToBottom();
-      });
-
-      return () => cancelAnimationFrame(timeoutId);
-    }
-  }, [
-    chat.chatMessages.map((msg) => msg.text).join(''),
-    isAutoScroll,
+  // 使用滚动效果 hook
+  useChatScrollEffects(
+    chat.chatMessages,
+    chat.isLoadingHistory,
     scrollToBottom,
-  ]);
-
-  /**
-   * 监听流式消息状态变化，确保在打字机效果期间保持滚动
-   */
-  useEffect(() => {
-    if (chat.chatMessages.length > 0) {
-      // 检查是否有正在流式传输的消息
-      const hasStreamingMessage = chat.chatMessages.some(
-        (msg) => msg.isStreaming,
-      );
-
-      if (hasStreamingMessage) {
-        // 在流式传输期间，定期检查并滚动到底部
-        const intervalId = setInterval(() => {
-          if (isAutoScroll) {
-            scrollToBottom();
-          }
-          // 同时检查滚动位置，更新滚动按钮状态
-          checkScrollPosition();
-        }, 100); // 每100ms检查一次
-
-        return () => clearInterval(intervalId);
-      }
-    }
-  }, [
-    chat.chatMessages.map((msg) => msg.isStreaming).join(''),
     isAutoScroll,
-    scrollToBottom,
     checkScrollPosition,
-  ]);
-
-  /**
-   * 监听历史消息加载完成，确保滚动到底部
-   */
-  useEffect(() => {
-    if (!chat.isLoadingHistory && chat.chatMessages.length > 0) {
-      // 历史消息加载完成，延迟一点时间确保 DOM 渲染完成
-      const timeoutId = setTimeout(() => {
-        scrollToBottom();
-        // 确保自动滚动开启
-        setIsAutoScroll(true);
-        setShowScrollButton(false);
-      }, 100);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [chat.isLoadingHistory, chat.chatMessages.length, scrollToBottom]);
+    userScrollDisabled,
+  );
 
   const labelRender = useCallback((props: any) => {
     return <span>v{props.value.replace('v', '')}</span>;
@@ -448,7 +387,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       <div
         className={styles.chatMessages}
         ref={chatMessagesRef}
-        onScroll={handleScroll}
+        onScroll={handleUserScroll}
       >
         {chat.isLoadingHistory ? (
           <div className={styles.loadingContainer}>
