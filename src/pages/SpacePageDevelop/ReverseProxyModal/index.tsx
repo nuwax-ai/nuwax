@@ -1,5 +1,5 @@
 import { REVERSE_PROXY_ACTIONS } from '@/constants/pageDev.constants';
-import { ReverseProxyEnum } from '@/types/enums/pageDev';
+import { PageProjectTypeEnum, ReverseProxyEnum } from '@/types/enums/pageDev';
 import {
   ProxyConfig,
   ReverseProxyModalProps,
@@ -7,7 +7,7 @@ import {
 import { CloseOutlined } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
 import ReverseProxyContentConfig from './ReverseProxyContentConfig';
 
@@ -19,6 +19,7 @@ const cx = classNames.bind(styles);
 const ReverseProxyModal: React.FC<ReverseProxyModalProps> = ({
   open,
   projectId,
+  projectType,
   defaultProxyConfigs,
   onCancel,
 }) => {
@@ -30,10 +31,28 @@ const ReverseProxyModal: React.FC<ReverseProxyModalProps> = ({
   const [proxyConfigs, setProxyConfigs] = useState<ProxyConfig[]>([]);
 
   useEffect(() => {
-    // 默认选中开发环境
-    setReverseProxyType(ReverseProxyEnum.Dev);
-    setProxyConfigs(defaultProxyConfigs || []);
-  }, [defaultProxyConfigs]);
+    if (open) {
+      if (projectType === PageProjectTypeEnum.REVERSE_PROXY) {
+        setReverseProxyType(ReverseProxyEnum.Production);
+      } else {
+        // 默认选中开发环境
+        setReverseProxyType(ReverseProxyEnum.Dev);
+      }
+      setProxyConfigs(defaultProxyConfigs || []);
+    }
+  }, [open, defaultProxyConfigs, projectType]);
+
+  const list = useMemo(() => {
+    return REVERSE_PROXY_ACTIONS.filter((item) => {
+      if (
+        item.type === ReverseProxyEnum.Dev &&
+        projectType === PageProjectTypeEnum.REVERSE_PROXY
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [projectType]);
 
   return (
     <Modal
@@ -48,7 +67,7 @@ const ReverseProxyModal: React.FC<ReverseProxyModalProps> = ({
           <div className={cx(styles.left)}>
             <h3>反向代理</h3>
             <ul>
-              {REVERSE_PROXY_ACTIONS.map((item) => {
+              {list.map((item) => {
                 return (
                   <li
                     key={item.type}
