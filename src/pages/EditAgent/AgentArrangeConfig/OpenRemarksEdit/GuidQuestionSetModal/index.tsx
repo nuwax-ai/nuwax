@@ -4,7 +4,6 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import CustomFormModal from '@/components/CustomFormModal';
 import UploadAvatar from '@/components/UploadAvatar';
 import { GUID_QUESTION_SET_OPTIONS } from '@/constants/agent.constants';
-import { ParamsSettingDefaultOptions } from '@/constants/common.constants';
 import { apiAgentConfigUpdate } from '@/services/agentConfig';
 import { BindValueType, GuidQuestionSetTypeEnum } from '@/types/enums/agent';
 import {
@@ -22,15 +21,13 @@ import {
   FormProps,
   Input,
   message,
-  Select,
-  Space,
   Table,
   TableColumnsType,
   theme,
 } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
@@ -44,7 +41,6 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
   open,
   agentConfigInfo,
   currentGuidQuestionDto,
-  variables,
   pageArgConfigs,
   onCancel,
   onConfirm,
@@ -83,58 +79,51 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
 
   useEffect(() => {
     // 回显数据
-    if (open && currentGuidQuestionDto) {
-      form.setFieldsValue({
-        icon: currentGuidQuestionDto.icon,
-        type: currentGuidQuestionDto.type,
-        info: currentGuidQuestionDto.info,
-      });
-      // 类型
-      setType(currentGuidQuestionDto.type);
-      // 图标
-      setImageUrl(currentGuidQuestionDto.icon || '');
-      // 回显入参配置
-      setArgs(currentGuidQuestionDto.args || []);
-      // 当前路径页面id
-      setCurrentPageId(currentGuidQuestionDto.pageId || null);
-    }
-
-    if (pageArgConfigs?.length > 0) {
-      const _pathList: PagePathSelectOption[] = [];
-      pageArgConfigs?.forEach((item) => {
-        // 添加一个唯一值，因为pageArgConfigs中可能存在相同的pageUri
-        const pageUriId = uuidv4();
-        _pathList.push({
-          label: item.name,
-          value: pageUriId,
-          // 下拉选择框的值,后续选择页面路径时，需要使用pageUri来作为真正的value值
-          pageUri: item.pageUri,
-          pageId: item.pageId,
+    if (open) {
+      if (currentGuidQuestionDto) {
+        form.setFieldsValue({
+          icon: currentGuidQuestionDto.icon,
+          type: currentGuidQuestionDto.type,
+          info: currentGuidQuestionDto.info,
         });
+        // 类型
+        setType(currentGuidQuestionDto.type);
+        // 图标
+        setImageUrl(currentGuidQuestionDto.icon || '');
+        // 回显入参配置
+        setArgs(currentGuidQuestionDto.args || []);
+        // 当前路径页面id
+        setCurrentPageId(currentGuidQuestionDto.pageId || null);
+      }
 
-        if (currentGuidQuestionDto?.pageUri === item.pageUri) {
-          form.setFieldValue('pageUriId', pageUriId);
-        }
-      });
-      setPathList(_pathList);
+      if (pageArgConfigs?.length > 0) {
+        const _pathList: PagePathSelectOption[] = [];
+        pageArgConfigs?.forEach((item) => {
+          // 添加一个唯一值，因为pageArgConfigs中可能存在相同的pageUri
+          const pageUriId = uuidv4();
+          _pathList.push({
+            label: item.name,
+            value: pageUriId,
+            // 下拉选择框的值,后续选择页面路径时，需要使用pageUri来作为真正的value值
+            pageUri: item.pageUri,
+            pageId: item.pageId,
+          });
+
+          if (currentGuidQuestionDto?.pageUri === item.pageUri) {
+            form.setFieldValue('pageUriId', pageUriId);
+          }
+        });
+        setPathList(_pathList);
+      }
     }
 
     return () => {
       setImageUrl('');
+      setArgs([]);
+      setCurrentPageId(null);
+      setPathList([]);
     };
   }, [open, currentGuidQuestionDto, pageArgConfigs]);
-
-  // 缓存变量列表
-  const variableList = useMemo(() => {
-    return (
-      variables?.map((item) => {
-        return {
-          label: item.name,
-          value: item.name,
-        };
-      }) || []
-    );
-  }, [variables]);
 
   // 入参配置 - changeValue
   const handleInputValue = (
@@ -146,10 +135,6 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
     _inputConfigArgs.forEach((item: BindConfigWithSub) => {
       if (item.key === key) {
         item[attr] = value;
-
-        if (attr === 'bindValueType') {
-          item.bindValue = '';
-        }
       }
     });
     setArgs(_inputConfigArgs);
@@ -258,41 +243,14 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       key: 'bindValue',
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
-          <Space.Compact block>
-            <SelectList
-              className={cx(styles.select)}
-              value={record.bindValueType}
-              onChange={(value) =>
-                handleInputValue(
-                  record.key,
-                  'bindValueType',
-                  value as BindValueType,
-                )
-              }
-              options={ParamsSettingDefaultOptions}
-            />
-            {record.bindValueType === BindValueType.Input ? (
-              <Input
-                rootClassName={cx(styles.select)}
-                placeholder="请填写"
-                value={record.bindValue}
-                onChange={(e) =>
-                  handleInputValue(record.key, 'bindValue', e.target.value)
-                }
-              />
-            ) : (
-              <Select
-                placeholder="请选择"
-                rootClassName={cx(styles.select)}
-                popupMatchSelectWidth={false}
-                value={record.bindValue || null}
-                onChange={(value) =>
-                  handleInputValue(record.key, 'bindValue', value)
-                }
-                options={variableList}
-              />
-            )}
-          </Space.Compact>
+          <Input
+            rootClassName={cx(styles.select)}
+            placeholder="请填写"
+            value={record.bindValue}
+            onChange={(e) =>
+              handleInputValue(record.key, 'bindValue', e.target.value)
+            }
+          />
         </div>
       ),
     },

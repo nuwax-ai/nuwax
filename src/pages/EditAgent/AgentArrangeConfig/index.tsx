@@ -641,7 +641,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       children: (
         <OpenRemarksEdit
           agentConfigInfo={agentConfigInfo}
-          variables={variablesInfo?.bindConfig?.variables || []}
           pageArgConfigs={pageArgConfigs}
           onChangeAgent={onChangeAgent}
           onConfirmUpdateEventQuestions={onConfirmUpdateEventQuestions}

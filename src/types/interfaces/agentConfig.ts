@@ -222,7 +222,6 @@ export interface LongMemoryContentProps {
 // 开场白组件
 export interface OpenRemarksEditProps {
   agentConfigInfo?: AgentConfigInfo;
-  variables: BindConfigWithSub[];
   pageArgConfigs: PageArgConfig[];
   onChangeAgent: (
     value: string | string[] | GuidQuestionDto[],
@@ -239,7 +238,6 @@ export interface GuidQuestionSetModalProps {
   open: boolean;
   agentConfigInfo?: AgentConfigInfo;
   currentGuidQuestionDto?: GuidQuestionDto;
-  variables: BindConfigWithSub[];
   pageArgConfigs: PageArgConfig[];
   onCancel: () => void;
   onConfirm: (result: GuidQuestionDto[]) => void;
