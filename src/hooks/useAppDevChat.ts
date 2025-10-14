@@ -546,5 +546,6 @@ export const useAppDevChat = ({ projectId }: UseAppDevChatProps) => {
     cancelChat,
     cleanupAppDevSSE,
     updateLastActivity,
+    stopKeepAliveTimer,
   };
 };

@@ -133,6 +133,18 @@ const AppDev: React.FC = () => {
 
   // 稳定 currentFiles 引用，避免无限循环
   const stableCurrentFiles = useMemo(() => {
+    console.log('📁 [AppDev] 当前文件树数据:', {
+      fileCount: fileManagement.fileTreeState.data.length,
+      files: fileManagement.fileTreeState.data.map((node) => ({
+        id: node.id,
+        name: node.name,
+        type: node.type,
+        path: node.path,
+        hasContent: !!node.content,
+        contentLength: node.content?.length || 0,
+      })),
+    });
+
     return fileManagement.fileTreeState.data;
   }, [fileManagement.fileTreeState.data]);
 
@@ -764,30 +776,43 @@ const AppDev: React.FC = () => {
     [fileManagement, handleDeleteClick, versionCompare],
   );
 
-  // 清理 AppDev SSE 连接
+  // 页面退出时的资源清理
   useEffect(() => {
     return () => {
+      console.log('🧹 [AppDev] 页面退出，开始清理所有资源...');
+
+      // 清理聊天相关资源
       chat.cleanupAppDevSSE();
+      if (chat.stopKeepAliveTimer) {
+        chat.stopKeepAliveTimer();
+      }
+
+      // 清理服务器相关资源
+      if (server.stopKeepAlive) {
+        server.stopKeepAlive();
+      }
+
+      console.log('✅ [AppDev] 所有资源清理完成');
     };
-  }, [chat.cleanupAppDevSSE]);
+  }, [chat.cleanupAppDevSSE, chat.stopKeepAliveTimer, server.stopKeepAlive]);
 
   // 监听服务器启动错误，显示错误提示并自动消失
-  useEffect(() => {
-    if (server.startError) {
-      setShowErrorAlert(true);
+  // useEffect(() => {
+  //   if (server.startError) {
+  //     setShowErrorAlert(true);
 
-      // 10秒后自动隐藏错误提示
-      const timer = setTimeout(() => {
-        setShowErrorAlert(false);
-      }, 10000);
+  //     // 10秒后自动隐藏错误提示
+  //     const timer = setTimeout(() => {
+  //       setShowErrorAlert(false);
+  //     }, 10000);
 
-      return () => {
-        clearTimeout(timer);
-      };
-    } else {
-      setShowErrorAlert(false);
-    }
-  }, [server.startError]);
+  //     return () => {
+  //       clearTimeout(timer);
+  //     };
+  //   } else {
+  //     setShowErrorAlert(false);
+  //   }
+  // }, [server.startError]);
 
   // 如果缺少 projectId，显示提示信息
   if (missingProjectId) {
@@ -825,26 +850,13 @@ const AppDev: React.FC = () => {
       <div className={styles.appDev}>
         {/* 错误提示条 */}
         {showErrorAlert && server.startError && (
-          <div className={styles.errorAlertBar}>
-            <Alert
-              message="开发环境启动失败"
-              description={server.startError}
-              type="error"
-              showIcon
-              closable
-              onClose={() => setShowErrorAlert(false)}
-              action={
-                <Space>
-                  <Button size="small" onClick={() => window.location.reload()}>
-                    重试
-                  </Button>
-                  <Button size="small" onClick={() => setShowErrorAlert(false)}>
-                    关闭
-                  </Button>
-                </Space>
-              }
-            />
-          </div>
+          <Alert
+            message="开发环境启动失败"
+            type="error"
+            banner={true}
+            closable
+            afterClose={() => setShowErrorAlert(false)}
+          />
         )}
 
         {/* 顶部头部区域 */}
