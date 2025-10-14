@@ -2,12 +2,7 @@ import {
   getProjectContentByVersion,
   submitFilesUpdate,
 } from '@/services/appDev';
-import type {
-  FileChangeInfo,
-  FileNode,
-  PageFileInfo,
-} from '@/types/interfaces/appDev';
-import { getLanguageFromFile } from '@/utils/appDevUtils';
+import type { FileNode, PageFileInfo } from '@/types/interfaces/appDev';
 import { message } from 'antd';
 import { useCallback, useState } from 'react';
 
@@ -16,30 +11,14 @@ export interface UseAppDevVersionCompareReturn {
   isComparing: boolean;
   /** 目标版本号 */
   targetVersion: number | null;
+  /** 版本文件树 */
+  versionFiles: FileNode[];
   /** 开始版本对比 */
   startVersionCompare: (version: number) => Promise<void>;
   /** 取消对比 */
   cancelCompare: () => void;
   /** 确认切换版本 */
   confirmVersionSwitch: () => Promise<void>;
-  /** 变更文件列表 */
-  changedFilesList: FileChangeInfo[];
-  /** 当前选中的文件 */
-  selectedCompareFile: string | null;
-  /** 选择对比文件 */
-  selectCompareFile: (filePath: string) => void;
-  /** 获取文件diff内容 */
-  getFileDiffContent: (filePath: string) => {
-    original: string;
-    modified: string;
-    language: string;
-  } | null;
-  /** 获取文件的变更统计信息 */
-  getFileChangeStat: (filePath: string) => {
-    changeType: 'added' | 'modified' | 'deleted';
-    addedLines: number;
-    deletedLines: number;
-  } | null;
   /** 加载状态 */
   isLoadingVersion: boolean;
   /** 切换状态 */
@@ -49,8 +28,6 @@ export interface UseAppDevVersionCompareReturn {
 interface UseAppDevVersionCompareParams {
   /** 项目ID */
   projectId: string;
-  /** 当前文件列表 */
-  currentFiles: FileNode[];
   /** 版本切换成功回调 */
   onVersionSwitchSuccess?: () => void;
 }
@@ -61,7 +38,6 @@ interface UseAppDevVersionCompareParams {
  */
 export const useAppDevVersionCompare = ({
   projectId,
-  currentFiles,
   onVersionSwitchSuccess,
 }: UseAppDevVersionCompareParams): UseAppDevVersionCompareReturn => {
   // 版本对比状态
@@ -70,144 +46,97 @@ export const useAppDevVersionCompare = ({
   const [isLoadingVersion, setIsLoadingVersion] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
 
-  // 文件数据
-  const [changedFilesList, setChangedFilesList] = useState<FileChangeInfo[]>(
-    [],
-  );
-  const [selectedCompareFile, setSelectedCompareFile] = useState<string | null>(
-    null,
-  );
+  // 版本文件树
+  const [versionFiles, setVersionFiles] = useState<FileNode[]>([]);
 
   /**
-   * 将文件树转换为扁平的文件映射
+   * 将API返回的文件数据转换为FileNode树结构
    */
-  const flattenFiles = useCallback(
-    (files: FileNode[]): Record<string, string> => {
-      const result: Record<string, string> = {};
+  const convertToFileTree = useCallback((files: any[]): FileNode[] => {
+    const fileMap = new Map<string, FileNode>();
+    const rootNodes: FileNode[] = [];
 
-      const traverse = (nodes: FileNode[]) => {
-        nodes.forEach((node) => {
-          if (node.type === 'file' && node.content) {
-            result[node.path] = node.content;
-          }
-          if (node.children) {
-            traverse(node.children);
-          }
-        });
+    // 首先创建所有文件节点
+    files.forEach((file: any) => {
+      const fileName = file.name.replace(
+        '../../project_zips/1976620100358377472/his_temp/',
+        '',
+      );
+      const pathParts = fileName.split('/');
+      const node: FileNode = {
+        id: fileName,
+        name: pathParts[pathParts.length - 1],
+        type: 'file',
+        path: fileName,
+        content: String(file.contents || ''),
+        lastModified: Date.now(),
+        children: [],
       };
+      fileMap.set(fileName, node);
+    });
 
-      traverse(files);
-      return result;
-    },
-    [],
-  );
+    // 构建文件夹结构
+    const folderMap = new Map<string, FileNode>();
 
-  /**
-   * 计算两个文本内容的行差异
-   */
-  const calculateLineDiff = useCallback(
-    (
-      oldContent: string,
-      newContent: string,
-    ): { added: number; deleted: number } => {
-      const oldLines = oldContent.split('\n');
-      const newLines = newContent.split('\n');
+    files.forEach((file: any) => {
+      const fileName = file.name.replace(
+        '../../project_zips/1976620100358377472/his_temp/',
+        '',
+      );
+      const pathParts = fileName.split('/');
 
-      // 简单的行比较算法
-      const oldLineSet = new Set(oldLines);
-      const newLineSet = new Set(newLines);
+      // 构建文件夹路径
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        const folderPath = pathParts.slice(0, i + 1).join('/');
+        const folderName = pathParts[i];
 
-      let addedLines = 0;
-      let deletedLines = 0;
-
-      // 计算新增行
-      newLines.forEach((line) => {
-        if (!oldLineSet.has(line)) {
-          addedLines++;
+        if (!folderMap.has(folderPath)) {
+          const folderNode: FileNode = {
+            id: folderPath,
+            name: folderName,
+            type: 'folder',
+            path: folderPath,
+            children: [],
+          };
+          folderMap.set(folderPath, folderNode);
         }
-      });
+      }
+    });
 
-      // 计算删除行
-      oldLines.forEach((line) => {
-        if (!newLineSet.has(line)) {
-          deletedLines++;
+    // 将文件添加到对应的文件夹中
+    fileMap.forEach((fileNode) => {
+      const pathParts = fileNode.path.split('/');
+      if (pathParts.length === 1) {
+        // 根目录文件
+        rootNodes.push(fileNode);
+      } else {
+        // 子目录文件
+        const parentPath = pathParts.slice(0, -1).join('/');
+        const parentFolder = folderMap.get(parentPath);
+        if (parentFolder && parentFolder.children) {
+          parentFolder.children.push(fileNode);
         }
-      });
+      }
+    });
 
-      return { added: addedLines, deleted: deletedLines };
-    },
-    [],
-  );
-
-  /**
-   * 比较两个版本的文件差异
-   */
-  const compareFiles = useCallback(
-    (
-      currentFiles: Record<string, string>,
-      targetFiles: Record<string, string>,
-    ): FileChangeInfo[] => {
-      const changes: FileChangeInfo[] = [];
-      const allPaths = new Set([
-        ...Object.keys(currentFiles),
-        ...Object.keys(targetFiles),
-      ]);
-
-      allPaths.forEach((path) => {
-        // 确保内容是字符串类型
-        const currentContent = String(currentFiles[path] || '');
-        const targetContent = String(targetFiles[path] || '');
-        const fileName = path.split('/').pop() || path;
-        const language = getLanguageFromFile(fileName);
-
-        if (!currentFiles[path] && targetFiles[path]) {
-          // 新增文件
-          const lineCount = targetContent.split('\n').length;
-          changes.push({
-            path,
-            name: fileName,
-            changeType: 'added',
-            targetContent,
-            language,
-            addedLines: lineCount,
-            deletedLines: 0,
-          });
-        } else if (currentFiles[path] && !targetFiles[path]) {
-          // 删除文件
-          const lineCount = currentContent.split('\n').length;
-          changes.push({
-            path,
-            name: fileName,
-            changeType: 'deleted',
-            currentContent,
-            language,
-            addedLines: 0,
-            deletedLines: lineCount,
-          });
-        } else if (currentContent !== targetContent) {
-          // 修改文件
-          const lineDiff = calculateLineDiff(currentContent, targetContent);
-          changes.push({
-            path,
-            name: fileName,
-            changeType: 'modified',
-            currentContent,
-            targetContent,
-            language,
-            addedLines: lineDiff.added,
-            deletedLines: lineDiff.deleted,
-          });
+    // 将文件夹添加到父文件夹中
+    folderMap.forEach((folderNode) => {
+      const pathParts = folderNode.path.split('/');
+      if (pathParts.length === 1) {
+        // 根目录文件夹
+        rootNodes.push(folderNode);
+      } else {
+        // 子目录文件夹
+        const parentPath = pathParts.slice(0, -1).join('/');
+        const parentFolder = folderMap.get(parentPath);
+        if (parentFolder && parentFolder.children) {
+          parentFolder.children.push(folderNode);
         }
-      });
+      }
+    });
 
-      return changes.sort((a, b) => {
-        // 按变更类型排序：新增 -> 修改 -> 删除
-        const typeOrder = { added: 0, modified: 1, deleted: 2 };
-        return typeOrder[a.changeType] - typeOrder[b.changeType];
-      });
-    },
-    [calculateLineDiff],
-  );
+    return rootNodes;
+  }, []);
 
   /**
    * 开始版本对比
@@ -239,6 +168,7 @@ export const useAppDevVersionCompare = ({
             ),
           };
         });
+
         console.log('📥 [useAppDevVersionCompare] API 响应:', {
           code: response?.code,
           hasFiles: !!files,
@@ -247,50 +177,20 @@ export const useAppDevVersionCompare = ({
         });
 
         if (response?.code === '0000' && files) {
-          // 处理 API 返回的文件数据，确保是 Record<string, string> 格式
-          let targetFiles: Record<string, string> = {};
-
-          if (Array.isArray(files)) {
-            // 如果是数组格式 ProjectFileInfo[]
-            files.forEach((file: any) => {
-              if (file.name && file.contents !== undefined) {
-                targetFiles[file.name] = String(file.contents || '');
-              }
-            });
-          } else if (typeof files === 'object') {
-            // 如果是对象格式 Record<string, any>
-            Object.entries(files).forEach(([path, content]) => {
-              targetFiles[path] = String(content || '');
-            });
-          }
-
-          console.log('📦 [useAppDevVersionCompare] 处理后的文件数据:', {
-            fileCount: Object.keys(targetFiles).length,
-            files: Object.keys(targetFiles),
-          });
-
-          // 获取当前版本文件内容
-          const currentFilesMap = flattenFiles(currentFiles);
-
-          // 比较文件差异
-          const changes = compareFiles(currentFilesMap, targetFiles);
-          setChangedFilesList(changes);
+          // 转换为FileNode树结构
+          const fileTree = convertToFileTree(files);
+          setVersionFiles(fileTree);
 
           // 进入对比模式
           setIsComparing(true);
 
-          // 默认选择第一个变更文件
-          if (changes.length > 0) {
-            setSelectedCompareFile(changes[0].path);
-          }
-
-          console.log('✅ [useAppDevVersionCompare] 版本对比完成:', {
+          console.log('✅ [useAppDevVersionCompare] 版本文件树加载完成:', {
             targetVersion: version,
-            changesCount: changes.length,
-            changes: changes.map((c) => ({ path: c.path, type: c.changeType })),
+            fileCount: files.length,
+            treeNodes: fileTree.length,
           });
 
-          message.success(`版本对比完成，发现 ${changes.length} 个文件变更`);
+          message.success(`版本 v${version} 文件树加载完成`);
         } else {
           throw new Error(response?.message || '获取版本文件失败');
         }
@@ -301,7 +201,7 @@ export const useAppDevVersionCompare = ({
         setIsLoadingVersion(false);
       }
     },
-    [projectId, flattenFiles, compareFiles],
+    [projectId, convertToFileTree],
   );
 
   /**
@@ -310,8 +210,7 @@ export const useAppDevVersionCompare = ({
   const cancelCompare = useCallback(() => {
     setIsComparing(false);
     setTargetVersion(null);
-    setChangedFilesList([]);
-    setSelectedCompareFile(null);
+    setVersionFiles([]);
 
     console.log('🚫 [useAppDevVersionCompare] 取消版本对比');
   }, []);
@@ -331,17 +230,28 @@ export const useAppDevVersionCompare = ({
       console.log('🔄 [useAppDevVersionCompare] 开始切换版本:', {
         projectId,
         targetVersion,
-        changesCount: changedFilesList.length,
+        fileCount: versionFiles.length,
       });
 
-      // 准备要更新的文件
-      const filesToUpdate: PageFileInfo[] = changedFilesList
-        .filter((file) => file.changeType !== 'deleted') // 排除删除的文件
-        .map((file) => ({
-          name: file.path,
-          contents: file.targetContent || '',
-          binary: false,
-        }));
+      // 准备要更新的文件 - 扁平化所有文件
+      const filesToUpdate: PageFileInfo[] = [];
+
+      const flattenFiles = (nodes: FileNode[]) => {
+        nodes.forEach((node) => {
+          if (node.type === 'file' && node.content) {
+            filesToUpdate.push({
+              name: node.path,
+              contents: node.content,
+              binary: false,
+            });
+          }
+          if (node.children) {
+            flattenFiles(node.children);
+          }
+        });
+      };
+
+      flattenFiles(versionFiles);
 
       // 调用更新接口
       const response = await submitFilesUpdate(projectId, filesToUpdate);
@@ -368,74 +278,18 @@ export const useAppDevVersionCompare = ({
   }, [
     projectId,
     targetVersion,
-    changedFilesList,
+    versionFiles,
     cancelCompare,
     onVersionSwitchSuccess,
   ]);
 
-  /**
-   * 选择对比文件
-   */
-  const selectCompareFile = useCallback((filePath: string) => {
-    setSelectedCompareFile(filePath);
-    console.log('📁 [useAppDevVersionCompare] 选择文件:', filePath);
-  }, []);
-
-  /**
-   * 获取文件diff内容
-   */
-  const getFileDiffContent = useCallback(
-    (filePath: string) => {
-      const changedFile = changedFilesList.find(
-        (file) => file.path === filePath,
-      );
-
-      if (!changedFile) {
-        return null;
-      }
-
-      return {
-        original: changedFile.targetContent || '',
-        modified: changedFile.currentContent || '',
-        language: changedFile.language || 'plaintext',
-      };
-    },
-    [changedFilesList],
-  );
-
-  /**
-   * 获取文件的变更统计信息
-   */
-  const getFileChangeStat = useCallback(
-    (filePath: string) => {
-      const changedFile = changedFilesList.find(
-        (file) => file.path === filePath,
-      );
-
-      if (!changedFile) {
-        return null;
-      }
-
-      return {
-        changeType: changedFile.changeType,
-        addedLines: changedFile.addedLines || 0,
-        deletedLines: changedFile.deletedLines || 0,
-      };
-    },
-    [changedFilesList],
-  );
-
   return {
     isComparing,
     targetVersion,
+    versionFiles,
     startVersionCompare,
     cancelCompare,
     confirmVersionSwitch,
-    changedFilesList,
-    selectedCompareFile,
-    selectCompareFile,
-    getFileDiffContent,
-    getFileChangeStat,
     isLoadingVersion,
     isSwitching,
   };
