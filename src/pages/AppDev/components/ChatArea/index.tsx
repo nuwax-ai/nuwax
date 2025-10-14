@@ -1,9 +1,11 @@
+import { cancelAgentTask } from '@/services/appDev';
 import type { AppDevChatMessage } from '@/types/interfaces/appDev';
 import { DownOutlined, SendOutlined, StopOutlined } from '@ant-design/icons';
 import {
   Button,
   Card,
   Input,
+  message,
   Segmented,
   Select,
   Spin,
@@ -26,8 +28,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   setChatMode,
   chat,
   projectInfo,
-  // projectId, // 暂时未使用，保留以备将来使用
-  // loadHistorySession, // 暂时未使用，保留以备将来使用
+  projectId,
   onVersionSelect,
 }) => {
   // 展开的思考过程消息
@@ -49,6 +50,39 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       return newSet;
     });
   }, []);
+
+  /**
+   * 取消 Agent 任务
+   */
+  const handleCancelAgentTask = useCallback(async () => {
+    try {
+      // 获取当前会话ID（从最后一条消息中获取）
+      const lastMessage = chat.chatMessages[chat.chatMessages.length - 1];
+      const sessionId = lastMessage?.sessionId;
+
+      if (!sessionId) {
+        message.warning('无法获取当前会话ID');
+        return;
+      }
+
+      console.log('🛑 [ChatArea] 取消 Agent 任务:', { projectId, sessionId });
+
+      const response = await cancelAgentTask(projectId, sessionId);
+
+      if (response.success) {
+        message.success('Agent 任务已取消');
+        // 调用原有的取消聊天功能
+        chat.cancelChat();
+      } else {
+        message.error(`取消 Agent 任务失败: ${response.message || '未知错误'}`);
+      }
+    } catch (error) {
+      console.error('取消 Agent 任务失败:', error);
+      message.error('取消 Agent 任务失败');
+      // 即使 API 调用失败，也调用原有的取消功能
+      chat.cancelChat();
+    }
+  }, [chat, projectId]);
 
   /**
    * 渲染聊天消息 - 按 role 区分渲染
@@ -307,7 +341,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 <Button
                   type="text"
                   icon={<StopOutlined />}
-                  onClick={chat.cancelChat}
+                  onClick={handleCancelAgentTask}
                   title="取消AI任务"
                   className={styles.cancelButton}
                 />

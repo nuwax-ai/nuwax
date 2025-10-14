@@ -2,6 +2,7 @@
  * AppDev 聊天相关 Hook
  */
 
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   checkAgentStatus,
   listConversations,
@@ -14,6 +15,7 @@ import type {
   AppDevChatMessage,
   UnifiedSessionMessage,
 } from '@/types/interfaces/appDev';
+import { createSSEConnection } from '@/utils/fetchEventSource';
 import { message, Modal } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
@@ -34,6 +36,8 @@ export const useAppDevChat = ({
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false); // 新增：历史会话加载状态
+
+  const abortConnectionRef = useRef<AbortController | null>(null);
 
   // 用于存储超时定时器的 ref
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -105,21 +109,6 @@ export const useAppDevChat = ({
 
       switch (message.messageType) {
         case 'sessionPromptStart': {
-          // 创建ASSISTANT占位消息
-          const assistantMessage: AppDevChatMessage = {
-            id: `assistant_${activeRequestId}_${Date.now()}`,
-            role: 'ASSISTANT',
-            type: MessageModeEnum.CHAT,
-            text: '',
-            think: '',
-            time: new Date().toISOString(),
-            status: null,
-            requestId: activeRequestId,
-            sessionId: message.sessionId,
-            isStreaming: true,
-            timestamp: new Date(),
-          };
-          setChatMessages((prev) => [...prev, assistantMessage]);
           break;
         }
 
@@ -184,10 +173,8 @@ export const useAppDevChat = ({
           setIsChatLoading(false);
 
           // 延迟关闭SSE连接，确保消息处理完成
-          setTimeout(() => {
-            console.log('🔌 [SSE] 延迟关闭SSE连接');
-            appDevSseModel.disconnectAppDevSSE();
-          }, 100);
+          console.log('🔌 [SSE] 延迟关闭SSE连接');
+          abortConnectionRef.current?.abort?.();
           break;
         }
 
@@ -214,22 +201,51 @@ export const useAppDevChat = ({
         'requestId:',
         requestId,
       );
+      console.log('🔌 [Chat] AppDev SSE 连接已建立');
+      const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+      const sseUrl = `${process.env.BASE_URL}/api/custom-page/ai-session-sse?session_id=${sessionId}`;
+      console.log(`🔌 [AppDev SSE Model] 连接到: ${sseUrl}`);
+      abortConnectionRef.current = new AbortController();
+      // 创建ASSISTANT占位消息
+      const assistantMessage: AppDevChatMessage = {
+        id: `assistant_${requestId}_${Date.now()}`,
+        role: 'ASSISTANT',
+        type: MessageModeEnum.CHAT,
+        text: '',
+        think: '',
+        time: new Date().toISOString(),
+        status: null,
+        requestId: requestId,
+        sessionId: sessionId,
+        isStreaming: true,
+        timestamp: new Date(),
+      };
+      setChatMessages((prev) => [...prev, assistantMessage]);
 
-      await appDevSseModel.initializeAppDevSSEConnection({
-        baseUrl: 'http://localhost:3000',
-        sessionId,
-        onMessage: (msg: UnifiedSessionMessage) =>
-          handleSSEMessage(msg, requestId), // 传入requestId用于过滤
-        onError: (error: Event) => {
-          console.error('❌ [Chat] AppDev SSE 连接错误:', error);
-          message.error('AI助手连接失败');
-          setIsChatLoading(false);
+      await createSSEConnection({
+        url: sseUrl,
+        method: 'GET',
+        abortController: abortConnectionRef.current,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json, text/plain, */* ',
         },
         onOpen: () => {
           console.log('🔌 [Chat] AppDev SSE 连接已建立');
         },
+        onMessage: (data: UnifiedSessionMessage) => {
+          console.log('📨 [AppDev SSE Model] 收到消息:', data);
+          handleSSEMessage(data, requestId);
+        },
+        onError: (error: Error) => {
+          console.error('❌ [Chat] AppDev SSE 连接错误:', error);
+          message.error('AI助手连接失败');
+          setIsChatLoading(false);
+          abortConnectionRef.current?.abort();
+        },
         onClose: () => {
           console.log('🔌 [Chat] AppDev SSE 连接已关闭');
+          abortConnectionRef.current?.abort();
         },
       });
     },
@@ -357,9 +373,6 @@ export const useAppDevChat = ({
     try {
       console.log('🛑 [Chat] 取消AI聊天任务');
 
-      // 断开 AppDev SSE 连接
-      appDevSseModel.disconnectAppDevSSE();
-
       setIsChatLoading(false);
 
       // 将正在流式传输的消息标记为取消状态
@@ -375,7 +388,7 @@ export const useAppDevChat = ({
           return msg;
         });
       });
-
+      abortConnectionRef.current?.abort();
       message.success('已取消AI任务');
     } catch (error) {
       console.error('取消AI任务失败:', error);
@@ -388,7 +401,7 @@ export const useAppDevChat = ({
    */
   const cleanupAppDevSSE = useCallback(() => {
     console.log('🧹 [Chat] 清理 AppDev SSE 连接');
-    appDevSseModel.cleanupAppDev();
+    // appDevSseModel.cleanupAppDev();
   }, [appDevSseModel]);
 
   /**
@@ -534,13 +547,11 @@ export const useAppDevChat = ({
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-
-      // 断开 SSE 连接
-      appDevSseModel.disconnectAppDevSSE();
+      abortConnectionRef.current?.abort();
 
       console.log('🧹 [Chat] 组件卸载，已清理所有资源');
     };
-  }, [appDevSseModel]);
+  }, []);
 
   return {
     // 状态

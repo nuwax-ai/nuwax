@@ -11,7 +11,7 @@ ChatArea 组件是 AppDev 页面中的聊天会话区域，负责处理 AI 助�
 - 聊天消息显示
 - 消息输入和发送
 - 加载状态显示
-- 取消 AI 任务
+- 取消 AI 任务（调用 cancelAgentTask API）
 
 ## Props 接口
 
@@ -21,7 +21,8 @@ interface ChatAreaProps {
   setChatMode: (mode: 'chat' | 'design') => void;
   chat: ReturnType<typeof useAppDevChat>;
   projectInfo: ReturnType<typeof useAppDevProjectInfo>;
-  chatMessagesList: React.ReactNode[];
+  projectId: string; // 项目ID，用于 cancelAgentTask API
+  onVersionSelect: (version: number) => void;
 }
 ```
 
@@ -31,7 +32,8 @@ interface ChatAreaProps {
 - `setChatMode`: 切换聊天模式的回调函数
 - `chat`: useAppDevChat hook 的返回值
 - `projectInfo`: useAppDevProjectInfo hook 的返回值
-- `chatMessagesList`: 聊天消息列表
+- `projectId`: 项目 ID，用于 cancelAgentTask API 调用
+- `onVersionSelect`: 版本选择回调函数
 
 ## 使用示例
 
@@ -43,9 +45,9 @@ const AppDev: React.FC = () => {
   const chat = useAppDevChat({ projectId });
   const projectInfo = useAppDevProjectInfo(projectId);
 
-  const chatMessagesList = useMemo(() => {
-    return chat.chatMessages.map(renderChatMessage);
-  }, [chat.chatMessages, renderChatMessage]);
+  const handleVersionSelect = (version: number) => {
+    // 处理版本选择逻辑
+  };
 
   return (
     <ChatArea
@@ -53,7 +55,8 @@ const AppDev: React.FC = () => {
       setChatMode={setChatMode}
       chat={chat}
       projectInfo={projectInfo}
-      chatMessagesList={chatMessagesList}
+      projectId={projectId}
+      onVersionSelect={handleVersionSelect}
     />
   );
 };
