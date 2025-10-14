@@ -153,7 +153,9 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
       width: 120,
       render: (value, record) => (
         <Select
-          options={AFFERENT_MODE_LIST}
+          options={AFFERENT_MODE_LIST.filter(
+            (item) => item.value !== InputTypeEnum.Header,
+          )}
           value={value}
           onChange={(value) => handleInputValue(record.key, 'inputType', value)}
         />

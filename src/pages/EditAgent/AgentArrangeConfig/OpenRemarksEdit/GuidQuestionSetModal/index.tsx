@@ -48,7 +48,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
 }) => {
   const { token } = theme.useToken();
   // 是否展开
-  const [isActive, setIsActive] = useState<boolean>(false);
+  const [isActive, setIsActive] = useState<boolean>(true);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(false);
   // 图标
@@ -85,6 +85,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
           icon: currentGuidQuestionDto.icon,
           type: currentGuidQuestionDto.type,
           info: currentGuidQuestionDto.info,
+          url: currentGuidQuestionDto.url,
         });
         // 类型
         setType(currentGuidQuestionDto.type);
@@ -122,6 +123,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       setArgs([]);
       setCurrentPageId(null);
       setPathList([]);
+      setIsActive(true);
     };
   }, [open, currentGuidQuestionDto, pageArgConfigs]);
 
@@ -231,11 +233,25 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         <div className={cx('h-full', 'flex', 'items-center')}>
           <span>参数值</span>
           <TooltipIcon
-            title="可以在输入框中动态引用参数，留空的参数将由大模型自动补充
-              智能体ID {{AGENT_ID}}     
-              系统用户ID {{SYS_USER_ID}}    
-              用户UID {{USER_UID}}
-              用户名 {{USER_NAME}}"
+            title={
+              <>
+                <div>
+                  可以在输入框中动态引用参数，留空的参数将由大模型自动补充
+                </div>
+                <div>
+                  智能体ID {'{{'}AGENT_ID{'}}'}
+                </div>
+                <div>
+                  系统用户ID {'{{'}SYS_USER_ID{'}}'}
+                </div>
+                <div>
+                  用户UID {'{{'}USER_UID{'}}'}
+                </div>
+                <div>
+                  用户名 {'{{'}USER_NAME{'}}'}
+                </div>
+              </>
+            }
             icon={<InfoCircleOutlined />}
           />
         </div>
@@ -244,8 +260,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Input
-            rootClassName={cx(styles.select)}
-            placeholder="请填写"
+            placeholder={`请输入${record.description}`}
             value={record.bindValue}
             onChange={(e) =>
               handleInputValue(record.key, 'bindValue', e.target.value)

@@ -68,7 +68,7 @@ const EditAgent: React.FC = () => {
 
   // 获取 chat model 中的页面预览状态
   const chatModel = useModel('chat');
-  const { pagePreviewData, hidePagePreview } = chatModel;
+  const { pagePreviewData, hidePagePreview, showPagePreview } = chatModel;
 
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
@@ -305,6 +305,30 @@ const EditAgent: React.FC = () => {
         break;
     }
   };
+  console.log('expandPageArea：', agentConfigInfo?.expandPageArea);
+  console.log('hideChatArea：', agentConfigInfo?.hideChatArea);
+  console.log('pageHomeIndex：', agentConfigInfo?.pageHomeIndex);
+
+  useEffect(() => {
+    // 判断是否默认展示页面首页
+    if (
+      agentConfigInfo &&
+      agentConfigInfo?.expandPageArea &&
+      agentConfigInfo?.pageHomeIndex
+    ) {
+      // 自动触发预览
+      showPagePreview({
+        name: '页面预览',
+        uri: agentConfigInfo?.pageHomeIndex,
+        params: {},
+        executeId: '',
+      });
+    } else {
+      showPagePreview(null);
+    }
+
+    //
+  }, [agentConfigInfo]);
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>

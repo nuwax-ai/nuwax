@@ -84,10 +84,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [experienceActiveKey, setExperienceActiveKey] = useState<
     AgentArrangeConfigEnum[]
   >([]);
-  // 界面配置列表
-  const [pageActiveKey, setPageActiveKey] = useState<AgentArrangeConfigEnum[]>([
-    AgentArrangeConfigEnum.Opening_Remarks,
-  ]);
   // 处于loading状态的组件列表
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
@@ -157,14 +153,23 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     return agentComponentList?.find(
       (item: AgentComponentInfo) =>
         item.type === AgentComponentTypeEnum.Variable,
-    ) as AgentComponentInfo;
+    );
   }, [agentComponentList]);
 
   // 绑定的事件信息
   const eventsInfo = useMemo(() => {
     return agentComponentList?.find(
       (item: AgentComponentInfo) => item.type === AgentComponentTypeEnum.Event,
-    ) as AgentComponentInfo;
+    );
+  }, [agentComponentList]);
+
+  // 所有页面组件列表
+  const allPageComponentList = useMemo(() => {
+    return (
+      agentComponentList?.filter(
+        (info: AgentComponentInfo) => info.type === AgentComponentTypeEnum.Page,
+      ) || []
+    );
   }, [agentComponentList]);
 
   // 绑定的页面参数配置信息
@@ -222,6 +227,21 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       keyList.push(AgentArrangeConfigEnum.Table);
     }
 
+    return keyList;
+  }, [agentComponentList]);
+
+  // 界面配置列表 - 当前激活 tab 面板的 key
+  const pageActiveKey = useMemo(() => {
+    const keyList: AgentArrangeConfigEnum[] = [];
+    if (isExistComponent(AgentComponentTypeEnum.Page)) {
+      keyList.push(AgentArrangeConfigEnum.Page);
+    }
+    if (isExistComponent(AgentComponentTypeEnum.Event)) {
+      keyList.push(AgentArrangeConfigEnum.Page_Event_Binding);
+    }
+
+    keyList.push(AgentArrangeConfigEnum.Page_Setting);
+    keyList.push(AgentArrangeConfigEnum.Opening_Remarks);
     return keyList;
   }, [agentComponentList]);
 
@@ -725,7 +745,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         <CollapseComponentList
           textClassName={cx(styles.text)}
           type={AgentComponentTypeEnum.Page}
-          list={filterList(AgentComponentTypeEnum.Page)}
+          list={allPageComponentList}
           deleteList={deleteList}
           onSet={handlePageSet}
           onDel={handleAgentComponentDel}
@@ -905,7 +925,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       <ConfigOptionsHeader title="界面配置" />
       <ConfigOptionCollapse
         items={PageConfigList}
-        onChangeCollapse={setPageActiveKey}
         defaultActiveKey={pageActiveKey}
       />
       {/*添加插件、工作流、知识库、数据库弹窗*/}
@@ -949,6 +968,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       <PageSettingModal
         open={openPageModel}
         currentComponentInfo={currentComponentInfo}
+        allPageComponentList={allPageComponentList}
         onCancel={handleCancelPageModel}
       />
     </div>
