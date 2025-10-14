@@ -12,11 +12,21 @@ interface UseAppDevServerProps {
   onServerStatusChange?: (isRunning: boolean) => void;
 }
 
+interface UseAppDevServerReturn {
+  isStarting: boolean;
+  startError: string | null;
+  devServerUrl: string | null;
+  isRunning: boolean;
+  startServer: () => Promise<void>;
+  resetServer: () => void;
+  stopKeepAlive: () => void;
+}
+
 export const useAppDevServer = ({
   projectId,
   onServerStart,
   onServerStatusChange,
-}: UseAppDevServerProps) => {
+}: UseAppDevServerProps): UseAppDevServerReturn => {
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [devServerUrl, setDevServerUrl] = useState<string | null>(null);
@@ -160,5 +170,6 @@ export const useAppDevServer = ({
     isRunning,
     startServer,
     resetServer,
+    stopKeepAlive,
   };
 };

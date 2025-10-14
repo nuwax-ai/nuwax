@@ -346,6 +346,26 @@ export const getProjectInfo = async (
 };
 
 /**
+ * 获取项目历史版本内容
+ * @param projectId 项目ID
+ * @param codeVersion 代码版本号
+ * @returns Promise<GetProjectContentResponse> 指定版本的项目文件数据
+ */
+export const getProjectContentByVersion = async (
+  projectId: string,
+  codeVersion: number,
+): Promise<GetProjectContentResponse> => {
+  return request(
+    `/api/custom-page/get-project-content-by-version?projectId=${encodeURIComponent(
+      projectId,
+    )}&codeVersion=${codeVersion}`,
+    {
+      method: 'GET',
+    },
+  );
+};
+
+/**
  * 导出用户前端项目为zip文件
  * @param projectId 项目ID
  * @returns Promise<{ data: Blob; headers: any }> 导出结果，包含zip文件数据
@@ -370,4 +390,48 @@ export const exportProject = async (
       getResponse: true, // 获取完整响应对象
     },
   );
+};
+
+// ==================== 会话管理相关API服务 ====================
+
+/**
+ * 保存会话记录接口
+ * @param params 保存会话参数
+ * @returns Promise<any> 保存结果
+ */
+export const saveConversation = async (params: {
+  projectId: string;
+  sessionId: string;
+  content: string;
+  topic: string;
+  summary?: string;
+}): Promise<any> => {
+  console.log('📤 [API] 调用保存会话接口:', {
+    url: '/api/custom-page/save-conversation',
+    method: 'POST',
+    params,
+  });
+
+  const result = await request('/api/custom-page/save-conversation', {
+    method: 'POST',
+    data: params,
+  });
+
+  console.log('📥 [API] 保存会话接口响应:', result);
+  return result;
+};
+
+/**
+ * 查询会话记录列表接口
+ * @param params 查询参数
+ * @returns Promise<any> 会话列表
+ */
+export const listConversations = async (params: {
+  projectId: string;
+  sessionId?: string;
+}): Promise<any> => {
+  return request('/api/custom-page/list-conversations', {
+    method: 'GET',
+    params,
+  });
 };
