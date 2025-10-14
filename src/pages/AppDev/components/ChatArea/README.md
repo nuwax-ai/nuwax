@@ -11,6 +11,7 @@ ChatArea 组件是 AppDev 页面中的聊天会话区域，负责处理 AI 助�
 - 聊天消息显示
 - 消息输入和发送
 - 加载状态显示
+- 流式传输状态显示（正在输出中）
 - 取消 AI 任务（调用 cancelAgentTask API）
 
 ## Props 接口

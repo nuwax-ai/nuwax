@@ -30,6 +30,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   projectInfo,
   projectId,
   onVersionSelect,
+  selectedDataSources = [],
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
@@ -98,7 +99,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       );
 
       // 在历史会话渲染场景中，完全忽略所有状态
-      const isStreaming = false; // 历史消息永远不显示流式传输状态
+      const isStreaming = !isHistoryMessage && message.isStreaming === true; // 只有非历史消息才显示流式传输状态
       const isLoading = false; // 历史消息永远不显示加载状态
       const isError = false; // 历史消息永远不显示错误状态
       const hasThinking = message.think && message.think.trim() !== '';
@@ -327,6 +328,29 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           chatMessagesList
         )}
       </div>
+
+      {/* 选中的数据源显示区域 */}
+      {selectedDataSources.length > 0 && (
+        <div className={styles.selectedDataSources}>
+          <div className={styles.dataSourceHeader}>
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              已选择的数据源 ({selectedDataSources.length})
+            </Text>
+          </div>
+          <div className={styles.dataSourceList}>
+            {selectedDataSources.map((dataSource) => (
+              <Tag
+                key={dataSource.id}
+                color="blue"
+                closable={false}
+                style={{ margin: '2px 4px 2px 0' }}
+              >
+                {dataSource.name}
+              </Tag>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 聊天输入区域 */}
       <div className={styles.chatInput}>

@@ -131,6 +131,13 @@ const AppDev: React.FC = () => {
     projectInfo.projectInfoState.projectInfo?.dataSources,
   );
 
+  // 获取选中的数据源对象
+  const selectedDataSources = useMemo(() => {
+    return dataResourceManagement.resources.filter((resource) =>
+      selectedDataResourceIds.includes(resource.id),
+    );
+  }, [dataResourceManagement.resources, selectedDataResourceIds]);
+
   // 稳定 currentFiles 引用，避免无限循环
   const stableCurrentFiles = useMemo(() => {
     return fileManagement.fileTreeState.data;
@@ -499,7 +506,7 @@ const AppDev: React.FC = () => {
         file: selectedFile,
         projectId: projectId || undefined,
         projectName: workspace.projectName || '未命名项目',
-        spaceId: 32, //TODO 后续 删除 这个参数
+        // spaceId: 32, //TODO 后续 删除 这个参数
       });
 
       if (result?.success && result?.data) {
@@ -748,6 +755,7 @@ const AppDev: React.FC = () => {
               projectInfo={projectInfo}
               projectId={projectId || ''} // 新增：项目ID
               onVersionSelect={handleVersionSelect}
+              selectedDataSources={selectedDataSources} // 新增：选中的数据源
             />
           </Col>
 
