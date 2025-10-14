@@ -528,8 +528,12 @@ export interface AppDevChatMessage {
   sessionId?: string;
   /** 是否正在流式传输 */
   isStreaming?: boolean;
-  /** 时间戳 */
-  timestamp: Date;
+  /** 时间戳（用于排序） */
+  timestamp?: Date;
+  /** 会话主题（历史消息专用） */
+  conversationTopic?: string;
+  /** 会话创建时间（历史消息专用） */
+  conversationCreated?: string;
 }
 
 // ==================== 文件管理相关类型定义 ====================
@@ -808,6 +812,28 @@ export enum DeployStatus {
   NOT_DEPLOYED = -1,
   /** 已发布 */
   DEPLOYED = 1,
+}
+
+/**
+ * 文件变更信息
+ */
+export interface FileChangeInfo {
+  /** 文件路径 */
+  path: string;
+  /** 文件名 */
+  name: string;
+  /** 变更类型 */
+  changeType: 'added' | 'modified' | 'deleted';
+  /** 目标版本内容 */
+  targetContent?: string;
+  /** 当前版本内容 */
+  currentContent?: string;
+  /** 文件语言 */
+  language?: string;
+  /** 新增行数 */
+  addedLines?: number;
+  /** 删除行数 */
+  deletedLines?: number;
 }
 
 /**

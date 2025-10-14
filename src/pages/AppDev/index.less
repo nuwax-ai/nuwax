@@ -15,11 +15,49 @@
   overflow: hidden;
 }
 
+// 错误提示条样式
+// .errorAlertBar {
+//   position: fixed;
+//   top: 0;
+//   left: 0;
+//   right: 0;
+//   z-index: 9999;
+//   padding: 8px 16px;
+//   background: #fff;
+//   box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
+//   animation: slideDown 0.3s ease-out;
+
+//   .ant-alert {
+//     margin: 0;
+//     border-radius: 0;
+//     border-left: none;
+//     border-right: none;
+//     border-top: none;
+//   }
+// }
+
+@keyframes slide-down {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 // 主布局行
 .mainRow {
   height: calc(100vh - 50px);
   margin: 0 !important;
   color: #1e293b;
+
+  // 当有错误提示条时，调整高度
+  &.withErrorAlert {
+    height: calc(100vh - 50px - 50px); // 减去错误提示条的高度
+  }
 }
 
 // 左侧AI助手面板
@@ -312,6 +350,43 @@
       color: #3b82f6;
     }
   }
+
+  // 版本对比模式下的文件状态样式
+  &.added {
+    background: rgba(82, 196, 26, 5%);
+
+    &:hover {
+      background: rgba(82, 196, 26, 10%);
+    }
+
+    &.activeFile {
+      background: rgba(82, 196, 26, 15%);
+    }
+  }
+
+  &.modified {
+    background: rgba(250, 173, 20, 5%);
+
+    &:hover {
+      background: rgba(250, 173, 20, 10%);
+    }
+
+    &.activeFile {
+      background: rgba(250, 173, 20, 15%);
+    }
+  }
+
+  &.deleted {
+    background: rgba(255, 77, 79, 5%);
+
+    &:hover {
+      background: rgba(255, 77, 79, 10%);
+    }
+
+    &.activeFile {
+      background: rgba(255, 77, 79, 15%);
+    }
+  }
 }
 
 .fileIcon {
@@ -325,6 +400,33 @@
   color: #475569;
   font-size: 13px;
   flex: 1;
+}
+
+// 版本对比模式下的变更统计样式
+.changeStats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  margin-right: 8px;
+  font-size: 12px;
+  font-family: Monaco, Consolas, monospace;
+}
+
+.addedStat {
+  color: #52c41a;
+  font-weight: 500;
+  padding: 2px 4px;
+  border-radius: 2px;
+  background: rgba(82, 196, 26, 10%);
+}
+
+.deletedStat {
+  color: #ff4d4f;
+  font-weight: 500;
+  padding: 2px 4px;
+  border-radius: 2px;
+  background: rgba(255, 77, 79, 10%);
 }
 
 .fileStatus {
@@ -1117,4 +1219,10 @@
       margin-right: 8px;
     }
   }
+}
+
+// 版本对比模式下的diff编辑器样式
+.diffEditor {
+  width: 100%;
+  height: 100%;
 }

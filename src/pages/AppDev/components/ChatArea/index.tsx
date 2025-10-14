@@ -1,4 +1,3 @@
-import { MessageStatusEnum } from '@/types/enums/common';
 import type { AppDevChatMessage } from '@/types/interfaces/appDev';
 import { DownOutlined, SendOutlined, StopOutlined } from '@ant-design/icons';
 import {
@@ -11,8 +10,8 @@ import {
   Tag,
   Typography,
 } from 'antd';
+import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useState } from 'react';
-import ConversationSelector from '../ConversationSelector';
 import styles from './index.less';
 import type { ChatAreaProps } from './types';
 
@@ -27,8 +26,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   setChatMode,
   chat,
   projectInfo,
-  projectId,
-  loadHistorySession,
+  // projectId, // 暂时未使用，保留以备将来使用
+  // loadHistorySession, // 暂时未使用，保留以备将来使用
+  onVersionSelect,
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
@@ -57,14 +57,21 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     (message: AppDevChatMessage) => {
       const isUser = message.role === 'USER';
       const isAssistant = message.role === 'ASSISTANT';
-      const isStreaming = message.isStreaming;
-      const isLoading = message.status === MessageStatusEnum.Loading;
-      const isError = message.status === MessageStatusEnum.Error;
+
+      // 判断是否为历史消息（有会话信息）
+      const isHistoryMessage = !!(
+        message.conversationTopic && message.conversationCreated
+      );
+
+      // 在历史会话渲染场景中，完全忽略所有状态
+      const isStreaming = false; // 历史消息永远不显示流式传输状态
+      const isLoading = false; // 历史消息永远不显示加载状态
+      const isError = false; // 历史消息永远不显示错误状态
       const hasThinking = message.think && message.think.trim() !== '';
       const isThinkingExpanded = expandedThinking.has(message.id);
 
       // 调试信息
-      if (isAssistant) {
+      if (isAssistant && !isHistoryMessage) {
         console.log('🎨 [UI] 渲染 ASSISTANT 消息:', {
           id: message.id,
           requestId: message.requestId,
@@ -148,9 +155,98 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   /**
    * 聊天消息列表（memo化）
    */
+  /**
+   * 渲染会话分隔符
+   */
+  const renderConversationDivider = useCallback(
+    (
+      conversationTopic: string,
+      conversationCreated: string,
+      // sessionId: string, // 暂时未使用，保留以备将来使用
+    ) => {
+      return (
+        <div
+          key={`divider-${conversationCreated}`}
+          className={styles.conversationDivider}
+        >
+          <div className={styles.dividerLine} />
+          <div className={styles.dividerContent}>
+            <Text type="secondary" className={styles.conversationTopic}>
+              {conversationTopic}
+            </Text>
+            <Text type="secondary" className={styles.conversationTime}>
+              {dayjs(conversationCreated).format('YYYY-MM-DD HH:mm')}
+            </Text>
+          </div>
+          <div className={styles.dividerLine} />
+        </div>
+      );
+    },
+    [],
+  );
+
   const chatMessagesList = useMemo(() => {
-    return chat.chatMessages.map(renderChatMessage);
-  }, [chat.chatMessages, renderChatMessage]);
+    const messages = chat.chatMessages;
+    const renderedMessages: React.ReactNode[] = [];
+    let currentSessionId: string | null = null;
+
+    console.log('🔍 [ChatArea] 开始渲染消息列表，总消息数:', messages.length);
+    console.log(
+      '🔍 [ChatArea] 消息详情:',
+      messages.map((msg) => ({
+        id: msg.id,
+        role: msg.role,
+        sessionId: msg.sessionId,
+        conversationTopic: msg.conversationTopic,
+        hasHistoryInfo: !!(msg.conversationTopic && msg.conversationCreated),
+      })),
+    );
+
+    messages.forEach((message, index) => {
+      // 检查是否需要添加会话分隔符
+      if (
+        message.conversationTopic &&
+        message.sessionId &&
+        message.sessionId !== currentSessionId
+      ) {
+        console.log('🔍 [ChatArea] 添加会话分隔符:', {
+          sessionId: message.sessionId,
+          topic: message.conversationTopic,
+          previousSessionId: currentSessionId,
+        });
+
+        renderedMessages.push(
+          renderConversationDivider(
+            message.conversationTopic,
+            message.conversationCreated || message.time,
+            message.sessionId,
+          ),
+        );
+        currentSessionId = message.sessionId;
+      }
+
+      // 渲染消息
+      console.log('🔍 [ChatArea] 渲染消息:', {
+        index,
+        id: message.id,
+        role: message.role,
+        sessionId: message.sessionId,
+        isHistory: !!(message.conversationTopic && message.conversationCreated),
+      });
+
+      renderedMessages.push(renderChatMessage(message));
+    });
+
+    console.log(
+      '🔍 [ChatArea] 渲染完成，总渲染元素数:',
+      renderedMessages.length,
+    );
+    return renderedMessages;
+  }, [chat.chatMessages, renderChatMessage, renderConversationDivider]);
+
+  const labelRender = useCallback((props: any) => {
+    return <span>v{props.value.replace('v', '')}</span>;
+  }, []);
 
   return (
     <Card className={styles.chatCard} bordered={false}>
@@ -175,10 +271,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               }
               size="small"
               className={styles.versionSelector}
-              dropdownClassName={styles.versionDropdown}
               options={projectInfo.versionList.map((version) => ({
-                value: `v${version.version}`,
-                label: (
+                label: `v${version.version}`,
+                value: version.version,
+                action: version.action,
+              }))}
+              labelRender={labelRender}
+              popupMatchSelectWidth={150}
+              optionRender={(option) => {
+                return (
                   <div
                     style={{
                       display: 'flex',
@@ -186,21 +287,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                       alignItems: 'center',
                     }}
                   >
-                    <span>v{version.version}</span>
+                    <span>v{option.data.value}</span>
                     <Tag
-                      color={projectInfo.getActionColor(version.action)}
+                      color={projectInfo.getActionColor(option.data.action)}
                       style={{ marginLeft: 8, fontSize: '10px' }}
                     >
-                      {projectInfo.getActionText(version.action)}
+                      {projectInfo.getActionText(option.data.action)}
                     </Tag>
                   </div>
-                ),
-              }))}
+                );
+              }}
               suffixIcon={<DownOutlined />}
               onChange={(value) => {
-                const versionNumber = parseInt(value.replace('v', ''));
-                console.log('选择版本:', versionNumber);
-                // TODO: 实现版本切换逻辑
+                onVersionSelect(parseInt(value));
               }}
               placeholder="选择版本"
               disabled={projectInfo.versionList.length === 0}
@@ -208,18 +307,30 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           </div>
 
           {/* 历史会话选择器 */}
-          <div className={styles.conversationSelectorWrapper}>
+          {/* <div className={styles.conversationSelectorWrapper}>
             <ConversationSelector
               projectId={projectId}
               currentSessionId={chat.currentSessionId}
               onSessionChange={loadHistorySession}
+              setChatMessages={chat.setChatMessages}
             />
-          </div>
+          </div> */}
         </div>
       </div>
 
       {/* 聊天消息区域 */}
-      <div className={styles.chatMessages}>{chatMessagesList}</div>
+      <div className={styles.chatMessages}>
+        {chat.isLoadingHistory ? (
+          <div className={styles.loadingContainer}>
+            <Spin size="small" />
+            <Text type="secondary" style={{ marginLeft: 8 }}>
+              正在加载历史会话...
+            </Text>
+          </div>
+        ) : (
+          chatMessagesList
+        )}
+      </div>
 
       {/* 聊天输入区域 */}
       <div className={styles.chatInput}>

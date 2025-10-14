@@ -8,4 +8,5 @@ export interface ChatAreaProps {
   projectInfo: ReturnType<typeof useAppDevProjectInfo>;
   projectId: string; // 新增：项目ID
   loadHistorySession: (sessionId: string) => void; // 新增：加载历史会话方法
+  onVersionSelect: (version: number) => void;
 }

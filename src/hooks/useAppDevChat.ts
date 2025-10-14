@@ -33,6 +33,7 @@ export const useAppDevChat = ({
   const [chatMessages, setChatMessages] = useState<AppDevChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false); // 新增：历史会话加载状态
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   // 用于存储超时定时器的 ref
@@ -112,7 +113,9 @@ export const useAppDevChat = ({
 
           // 创建 ASSISTANT 占位消息
           const assistantMessage: AppDevChatMessage = {
-            id: `assistant_${requestId}_${Date.now()}`,
+            id: `assistant_${requestId}_${Date.now()}_${Math.random()
+              .toString(36)
+              .slice(2, 9)}`,
             role: 'ASSISTANT',
             type: MessageModeEnum.CHAT,
             text: '',
@@ -244,7 +247,11 @@ export const useAppDevChat = ({
                 isStreaming: false,
               };
               console.log('📝 [SSE] 更新后的消息:', updated[index]);
-              handleSaveConversation(updated, sessionId, projectId); // 自动保存会话
+              handleSaveConversation(
+                updated.filter((msg) => msg.requestId === requestId), // 只保存当前 requestId 的会话
+                sessionId,
+                projectId,
+              ); // 自动保存会话
               return updated;
             } else {
               console.warn(
@@ -257,7 +264,6 @@ export const useAppDevChat = ({
                 })),
               );
             }
-            handleSaveConversation(prev, sessionId, projectId); // 自动保存会话
             return prev;
           });
 
@@ -460,7 +466,7 @@ export const useAppDevChat = ({
 
     // 2. 添加用户消息
     const userMessage: AppDevChatMessage = {
-      id: `user_${Date.now()}`,
+      id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
       role: 'USER',
       type: MessageModeEnum.CHAT,
       text: chatInput,
@@ -621,20 +627,136 @@ export const useAppDevChat = ({
     [projectId],
   );
 
+  /**
+   * 自动加载所有历史会话的消息
+   */
+  const loadAllHistorySessions = useCallback(async () => {
+    if (!projectId) return;
+
+    setIsLoadingHistory(true);
+    try {
+      console.log('🔄 [Chat] 开始自动加载所有历史会话');
+
+      const response = await listConversations({
+        projectId,
+      });
+
+      if (response.success && response.data?.length > 0) {
+        // 按创建时间排序，获取所有会话
+        const sortedConversations = response.data.sort(
+          (a: any, b: any) =>
+            new Date(a.created).getTime() - new Date(b.created).getTime(),
+        );
+
+        // 合并所有会话的消息
+        const allMessages: AppDevChatMessage[] = [];
+        let latestSessionId: string | null = null;
+
+        for (const conversation of sortedConversations) {
+          try {
+            const messages = JSON.parse(
+              conversation.content,
+            ) as AppDevChatMessage[];
+
+            // 为每个消息添加会话信息并生成唯一ID
+            const messagesWithSessionInfo = messages.map((msg, index) => ({
+              ...msg,
+              id: `${msg.id}_${conversation.created}_${index}`, // 使用created时间戳作为key
+              sessionId: conversation.sessionId,
+              conversationTopic: conversation.topic,
+              conversationCreated: conversation.created,
+            }));
+
+            allMessages.push(...messagesWithSessionInfo);
+
+            // 记录最新的会话ID
+            if (!latestSessionId) {
+              latestSessionId = conversation.sessionId;
+            }
+          } catch (parseError) {
+            console.warn(
+              '⚠️ [Chat] 解析会话内容失败:',
+              conversation.sessionId,
+              parseError,
+            );
+          }
+        }
+
+        // 按时间戳排序所有消息
+        allMessages.sort((a, b) => {
+          const timeA = new Date(a.timestamp || a.time).getTime();
+          const timeB = new Date(b.timestamp || b.time).getTime();
+          return timeA - timeB;
+        });
+
+        // 加载所有历史消息
+        setChatMessages(allMessages);
+        setCurrentSessionId(latestSessionId);
+
+        console.log('✅ [Chat] 已自动加载所有历史会话:', {
+          totalConversations: sortedConversations.length,
+          totalMessages: allMessages.length,
+          latestSessionId,
+          conversations: sortedConversations.map((conv: any) => ({
+            sessionId: conv.sessionId,
+            topic: conv.topic,
+            created: conv.created,
+            messageCount: JSON.parse(conv.content).length,
+            keyUsed: conv.created, // 显示使用的key
+          })),
+          messageBreakdown: allMessages.reduce((acc, msg) => {
+            const key = msg.conversationTopic || 'unknown';
+            acc[key] = (acc[key] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>),
+          allMessageIds: allMessages.map((msg) => msg.id), // 显示所有消息ID（使用created时间戳）
+          duplicateIds: allMessages
+            .filter(
+              (msg, index, arr) =>
+                arr.findIndex((m) => m.id === msg.id) !== index,
+            )
+            .map((msg) => msg.id), // 检查重复ID
+          idPattern: '${原始ID}_${created时间戳}_${索引}', // 显示ID生成模式
+        });
+      } else {
+        console.log('ℹ️ [Chat] 暂无历史会话，将创建新会话');
+      }
+    } catch (error) {
+      console.error('❌ [Chat] 自动加载所有历史会话失败:', error);
+      // 不显示错误提示，因为这是自动加载，用户可能不知道
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, [projectId]);
+
+  /**
+   * 组件初始化时自动加载所有历史会话
+   */
+  useEffect(() => {
+    if (projectId) {
+      console.log('🚀 [Chat] 组件初始化，开始自动加载所有历史会话');
+      loadAllHistorySessions();
+    }
+  }, [projectId, loadAllHistorySessions]);
+
   return {
     // 状态
     chatMessages,
     chatInput,
     isChatLoading,
+    isLoadingHistory, // 新增：历史会话加载状态
     currentSessionId,
     isPageVisible,
 
     // 方法
     setChatInput,
+    setChatMessages, // 新增：设置聊天消息的方法
     sendChat,
     cancelChat,
     cleanupAppDevSSE,
     updateLastActivity,
     loadHistorySession,
+    stopKeepAliveTimer,
+    loadAllHistorySessions, // 新增：自动加载所有历史会话
   };
 };
