@@ -1,4 +1,4 @@
-import type { FileNode } from '@/types/interfaces/appDev';
+import type { DataSourceSelection, FileNode } from '@/types/interfaces/appDev';
 import type { DataResource } from '@/types/interfaces/dataResource';
 
 /**
@@ -41,11 +41,13 @@ export interface FileTreePanelProps {
   /** 删除数据资源回调 */
   onDeleteDataResource: (resourceId: string) => Promise<void>;
 
-  /** 选中的数据源ID列表 */
-  selectedDataResourceIds?: string[];
+  /** 选中的数据源列表 */
+  selectedDataResourceIds?: DataSourceSelection[];
 
   /** 数据源选择变化回调 */
-  onDataResourceSelectionChange?: (selectedIds: string[]) => void;
+  onDataResourceSelectionChange?: (
+    selectedDataSources: DataSourceSelection[],
+  ) => void;
 
   /** 工作空间信息（用于版本模式判断） */
   workspace?: { activeFile: string };

@@ -15,6 +15,7 @@ import {
   uploadAndStartProject,
 } from '@/services/appDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type { DataSourceSelection } from '@/types/interfaces/appDev';
 import {
   DownloadOutlined,
   EyeOutlined,
@@ -60,7 +61,7 @@ const { Text } = Typography;
 const AppDev: React.FC = () => {
   // 数据源选择状态
   const [selectedDataResourceIds, setSelectedDataResourceIds] = useState<
-    string[]
+    DataSourceSelection[]
   >([]);
 
   // 使用 AppDev 模型来管理状态
@@ -133,10 +134,8 @@ const AppDev: React.FC = () => {
 
   // 获取选中的数据源对象
   const selectedDataSources = useMemo(() => {
-    return dataResourceManagement.resources.filter((resource) =>
-      selectedDataResourceIds.includes(resource.id),
-    );
-  }, [dataResourceManagement.resources, selectedDataResourceIds]);
+    return selectedDataResourceIds;
+  }, [selectedDataResourceIds]);
 
   // 稳定 currentFiles 引用，避免无限循环
   const stableCurrentFiles = useMemo(() => {

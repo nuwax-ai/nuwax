@@ -336,7 +336,7 @@ export interface ChatRequest {
   session_id?: string;
   request_id?: string;
   attachments?: Attachment[];
-  data_source_attachments?: string[]; // 数据源附件列表 - JSON 字符串数组
+  data_sources?: DataSourceSelection[]; // 数据源附件列表 -[{dataSourceId:123,type:"plugin/workflow"}]
   model_provider?: ModelProviderConfig;
 }
 
@@ -917,6 +917,16 @@ export interface DataSource {
   tags?: string[];
   /** 是否启用 */
   enabled?: boolean;
+}
+
+/**
+ * 数据源选择接口
+ */
+export interface DataSourceSelection {
+  /** 数据源ID */
+  dataSourceId: number;
+  /** 数据源类型：plugin-插件, workflow-工作流 */
+  type: 'plugin' | 'workflow';
 }
 
 /**

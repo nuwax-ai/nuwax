@@ -1,6 +1,6 @@
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
-import type { DataResource } from '@/types/interfaces/dataResource';
+import type { DataSourceSelection } from '@/types/interfaces/appDev';
 
 export interface ChatAreaProps {
   chatMode: 'chat' | 'design';
@@ -9,5 +9,5 @@ export interface ChatAreaProps {
   projectInfo: ReturnType<typeof useAppDevProjectInfo>;
   projectId: string; // 项目ID
   onVersionSelect: (version: number) => void;
-  selectedDataSources?: DataResource[]; // 新增：选中的数据源列表
+  selectedDataSources?: DataSourceSelection[]; // 新增：选中的数据源列表
 }

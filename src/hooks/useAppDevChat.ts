@@ -20,10 +20,12 @@ import { message, Modal } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 
+import type { DataSourceSelection } from '@/types/interfaces/appDev';
+
 interface UseAppDevChatProps {
   projectId: string;
   onRefreshFileTree?: () => void; // 新增：文件树刷新回调
-  selectedDataSources?: string[]; // 新增：选中的数据源ID列表
+  selectedDataSources?: DataSourceSelection[]; // 新增：选中的数据源列表
   onClearDataSourceSelections?: () => void; // 新增：清除数据源选择回调
 }
 
@@ -287,7 +289,7 @@ export const useAppDevChat = ({
         prompt: chatInput,
         project_id: projectId,
         request_id: requestId,
-        data_source_attachments:
+        data_sources:
           selectedDataSources.length > 0 ? selectedDataSources : undefined,
       });
 

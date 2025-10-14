@@ -90,36 +90,8 @@
 
 // 版本选择器
 .versionSelector {
-  // min-width: 60px;
-
-  // :global(.ant-select-selector) {
-  //   border: 1px solid #e2e8f0 !important;
-  //   border-radius: 6px !important;
-  //   background: #fff !important;
-  //   box-shadow: 0 1px 2px rgba(0, 0, 0, 5%) !important;
-  //   transition: all 0.2s ease !important;
-
-  //   &:hover {
-  //     border-color: #3b82f6 !important;
-  //     box-shadow: 0 2px 4px rgba(59, 130, 246, 10%) !important;
-  //   }
-
-  //   &:focus {
-  //     border-color: #3b82f6 !important;
-  //     box-shadow: 0 0 0 2px rgba(59, 130, 246, 20%) !important;
-  //   }
-  // }
-
-  // :global(.ant-select-selection-item) {
-  //   color: #1e293b !important;
-  //   font-weight: 500 !important;
-  //   font-size: 12px !important;
-  // }
-
-  // :global(.ant-select-arrow) {
-  //   color: #64748b !important;
-  //   font-size: 10px !important;
-  // }
+  // 使用默认样式，自定义样式已注释
+  display: block;
 }
 
 // 版本下拉菜单
@@ -148,6 +120,7 @@
 
 // 聊天消息区域
 .chatMessages {
+  position: relative; // 新增：为滚动按钮提供定位上下文
   flex: 1;
   padding: 20px;
   overflow-y: auto;
@@ -601,4 +574,34 @@
 // 展开图标动画
 .expandIcon.expanded {
   transform: rotate(90deg);
+}
+
+// 滚动到底部按钮
+.scrollToBottomButton {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+  border: 1px solid rgba(0, 0, 0, 10%);
+
+  &:hover {
+    background: #1890ff;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(24, 144, 255, 40%);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 }

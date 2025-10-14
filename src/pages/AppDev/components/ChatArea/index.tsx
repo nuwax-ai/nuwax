@@ -13,7 +13,13 @@ import {
   Typography,
 } from 'antd';
 import dayjs from 'dayjs';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import styles from './index.less';
 import type { ChatAreaProps } from './types';
 
@@ -36,6 +42,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
     new Set(),
   );
+
+  // 自动滚动相关状态
+  const [isAutoScroll, setIsAutoScroll] = useState(true); // 是否启用自动滚动
+  const [showScrollButton, setShowScrollButton] = useState(false); // 是否显示滚动按钮
+  const chatMessagesRef = useRef<HTMLDivElement>(null); // 聊天消息容器引用
 
   /**
    * 切换思考过程展开状态
@@ -84,6 +95,45 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       chat.cancelChat();
     }
   }, [chat, projectId]);
+
+  /**
+   * 滚动到底部
+   */
+  const scrollToBottom = useCallback(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  }, []);
+
+  /**
+   * 处理滚动事件
+   */
+  const handleScroll = useCallback(() => {
+    if (!chatMessagesRef.current) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = chatMessagesRef.current;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+    // 距离底部超过 100px，取消自动滚动并显示按钮
+    if (distanceFromBottom > 100) {
+      setIsAutoScroll(false);
+      setShowScrollButton(true);
+    }
+    // 距离底部小于 50px，重新启用自动滚动并隐藏按钮
+    else if (distanceFromBottom < 50) {
+      setIsAutoScroll(true);
+      setShowScrollButton(false);
+    }
+  }, []);
+
+  /**
+   * 滚动按钮点击处理
+   */
+  const handleScrollButtonClick = useCallback(() => {
+    scrollToBottom();
+    setIsAutoScroll(true);
+    setShowScrollButton(false);
+  }, [scrollToBottom]);
 
   /**
    * 渲染聊天消息 - 按 role 区分渲染
@@ -241,6 +291,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return renderedMessages;
   }, [chat.chatMessages, renderChatMessage, renderConversationDivider]);
 
+  /**
+   * 自动滚动效果 - 当消息更新且启用自动滚动时，滚动到底部
+   */
+  useEffect(() => {
+    if (isAutoScroll && chat.chatMessages.length > 0) {
+      scrollToBottom();
+    }
+  }, [chat.chatMessages, isAutoScroll, scrollToBottom]);
+
   const labelRender = useCallback((props: any) => {
     return <span>v{props.value.replace('v', '')}</span>;
   }, []);
@@ -316,7 +375,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       </div>
 
       {/* 聊天消息区域 */}
-      <div className={styles.chatMessages}>
+      <div
+        className={styles.chatMessages}
+        ref={chatMessagesRef}
+        onScroll={handleScroll}
+      >
         {chat.isLoadingHistory ? (
           <div className={styles.loadingContainer}>
             <Spin size="small" />
@@ -326,6 +389,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           </div>
         ) : (
           chatMessagesList
+        )}
+        {/* 滚动到底部按钮 */}
+        {showScrollButton && (
+          <div
+            className={styles.scrollToBottomButton}
+            onClick={handleScrollButtonClick}
+          >
+            <DownOutlined />
+          </div>
         )}
       </div>
 
@@ -340,12 +412,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           <div className={styles.dataSourceList}>
             {selectedDataSources.map((dataSource) => (
               <Tag
-                key={dataSource.id}
+                key={`${dataSource.dataSourceId}-${dataSource.type}`}
                 color="blue"
                 closable={false}
                 style={{ margin: '2px 4px 2px 0' }}
               >
-                {dataSource.name}
+                {dataSource.type === 'plugin' ? '插件' : '工作流'} #
+                {dataSource.dataSourceId}
               </Tag>
             ))}
           </div>

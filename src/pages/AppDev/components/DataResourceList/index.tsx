@@ -1,3 +1,4 @@
+import type { DataSourceSelection } from '@/types/interfaces/appDev';
 import type { DataResource } from '@/types/interfaces/dataResource';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Button, Checkbox, Empty, message, Typography } from 'antd';
@@ -15,10 +16,10 @@ interface DataResourceListProps {
   loading?: boolean;
   /** 删除资源回调 */
   onDelete?: (resourceId: string) => Promise<void>;
-  /** 选中的数据源ID列表 */
-  selectedResourceIds?: string[];
+  /** 选中的数据源列表 */
+  selectedResourceIds?: DataSourceSelection[];
   /** 选择变化回调 */
-  onSelectionChange?: (selectedIds: string[]) => void;
+  onSelectionChange?: (selectedDataSources: DataSourceSelection[]) => void;
 }
 
 /**
@@ -38,12 +39,19 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
   /**
    * 处理复选框变化
    */
-  const handleCheckboxChange = (resourceId: string, checked: boolean) => {
-    const newSelectedIds = checked
-      ? [...selectedResourceIds, resourceId]
-      : selectedResourceIds.filter((id) => id !== resourceId);
+  const handleCheckboxChange = (resource: DataResource, checked: boolean) => {
+    const resourceSelection: DataSourceSelection = {
+      dataSourceId: parseInt(resource.id),
+      type: resource.type === 'plugin' ? 'plugin' : 'workflow',
+    };
 
-    onSelectionChange?.(newSelectedIds);
+    const newSelectedDataSources = checked
+      ? [...selectedResourceIds, resourceSelection]
+      : selectedResourceIds.filter(
+          (item) => item.dataSourceId !== resourceSelection.dataSourceId,
+        );
+
+    onSelectionChange?.(newSelectedDataSources);
   };
 
   /**
@@ -100,8 +108,10 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
       >
         {/* 左侧复选框 */}
         <Checkbox
-          checked={selectedResourceIds.includes(resource.id)}
-          onChange={(e) => handleCheckboxChange(resource.id, e.target.checked)}
+          checked={selectedResourceIds.some(
+            (item) => item.dataSourceId === parseInt(resource.id),
+          )}
+          onChange={(e) => handleCheckboxChange(resource, e.target.checked)}
           style={{ marginRight: '12px' }}
         />
 
