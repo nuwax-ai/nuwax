@@ -39,10 +39,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      * 加载开发服务器预览
      */
     const loadDevServerPreview = useCallback(() => {
-      console.log('🌐 [Preview] Loading dev server preview...');
+      // Loading dev server preview...
 
       if (!devServerUrl) {
-        console.error('❌ [Preview] No dev server URL available');
+        // No dev server URL available
         setLoadError('开发服务器URL不可用');
         return;
       }
@@ -51,7 +51,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       setLoadError(null);
 
       if (iframeRef.current) {
-        console.log('🔗 [Preview] Loading URL:', devServerUrl);
+        // Loading URL
         iframeRef.current.src = devServerUrl;
         setLastRefreshed(new Date());
       }
@@ -96,7 +96,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const handleIframeLoad = useCallback(() => {
       setIsLoading(false);
       setLoadError(null);
-      console.log('✅ [Preview] Iframe loaded successfully');
+      // Iframe loaded successfully
     }, []);
 
     /**
@@ -105,17 +105,17 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const handleIframeError = useCallback(() => {
       setIsLoading(false);
       setLoadError('预览加载失败，请检查开发服务器状态');
-      console.error('❌ [Preview] Iframe load error');
+      // Iframe load error
     }, []);
 
     // 当开发服务器URL可用时，自动加载预览
     useEffect(() => {
-      console.log('🌐 [Preview] devServerUrl changed:', devServerUrl);
+      // Dev server URL changed
       if (devServerUrl) {
-        console.log('🌐 [Preview] Dev server URL available, loading preview');
+        // Dev server URL available, loading preview
         loadDevServerPreview();
       } else {
-        console.log('🌐 [Preview] Dev server URL is empty, clearing iframe');
+        // Dev server URL is empty, clearing iframe
         if (iframeRef.current) {
           iframeRef.current.src = '';
         }

@@ -123,18 +123,6 @@ const AppDev: React.FC = () => {
 
   // 稳定 currentFiles 引用，避免无限循环
   const stableCurrentFiles = useMemo(() => {
-    console.log('📁 [AppDev] 当前文件树数据:', {
-      fileCount: fileManagement.fileTreeState.data.length,
-      files: fileManagement.fileTreeState.data.map((node) => ({
-        id: node.id,
-        name: node.name,
-        type: node.type,
-        path: node.path,
-        hasContent: !!node.content,
-        contentLength: node.content?.length || 0,
-      })),
-    });
-
     return fileManagement.fileTreeState.data;
   }, [fileManagement.fileTreeState.data]);
 
@@ -166,35 +154,9 @@ const AppDev: React.FC = () => {
    */
   const findVersionFileNode = useCallback(
     (fileId: string): any => {
-      console.log('🔍 [AppDev] 查找版本文件节点:', {
-        fileId,
-        versionFilesCount: versionCompare.versionFiles.length,
-        versionFiles: versionCompare.versionFiles.map((node) => ({
-          id: node.id,
-          name: node.name,
-          type: node.type,
-          hasContent: !!node.content,
-          childrenCount: node.children?.length || 0,
-        })),
-      });
-
       const findInNodes = (nodes: any[]): any => {
         for (const node of nodes) {
-          console.log('🔍 [AppDev] 检查节点:', {
-            nodeId: node.id,
-            targetId: fileId,
-            match: node.id === fileId,
-            hasChildren: !!node.children,
-            childrenCount: node.children?.length || 0,
-          });
-
           if (node.id === fileId) {
-            console.log('✅ [AppDev] 找到匹配的文件节点:', {
-              id: node.id,
-              name: node.name,
-              hasContent: !!node.content,
-              contentLength: node.content?.length || 0,
-            });
             return node;
           }
           if (node.children) {
@@ -205,20 +167,7 @@ const AppDev: React.FC = () => {
         return null;
       };
 
-      const result = findInNodes(versionCompare.versionFiles);
-      console.log(
-        '📄 [AppDev] 查找结果:',
-        result
-          ? {
-              id: result.id,
-              name: result.name,
-              hasContent: !!result.content,
-              contentLength: result.content?.length || 0,
-            }
-          : null,
-      );
-
-      return result;
+      return findInNodes(versionCompare.versionFiles);
     },
     [versionCompare.versionFiles],
   );
@@ -261,17 +210,10 @@ const AppDev: React.FC = () => {
    * 检查 projectId 状态
    */
   useEffect(() => {
-    console.log('🔍 [AppDev] ProjectId 状态检查:', {
-      projectId,
-      hasValidProjectId,
-    });
-
     if (!hasValidProjectId) {
       setMissingProjectId(true);
-      console.warn('⚠️ [AppDev] 没有有效的 projectId');
     } else {
       setMissingProjectId(false);
-      console.log('✅ [AppDev] 已获取有效的 projectId:', projectId);
     }
   }, [projectId, hasValidProjectId]);
 
@@ -279,20 +221,14 @@ const AppDev: React.FC = () => {
    * 处理项目部署
    */
   const handleDeployProject = useCallback(async () => {
-    // 使用简化的 projectId hook
     if (!hasValidProjectId || !projectId) {
       message.error('项目ID不存在或无效，无法部署');
-      console.error('❌ [AppDev] 部署失败 - 无效的projectId:', { projectId });
       return;
     }
 
     try {
       setIsDeploying(true);
-      console.log('🚀 [AppDev] 开始部署项目:', projectId);
-
       const result = await buildProject(projectId);
-
-      console.log('🔍 [AppDev] 部署API响应:', result);
 
       // 检查API响应格式
       if (result?.code === '0000' && result?.data) {
@@ -360,17 +296,12 @@ const AppDev: React.FC = () => {
     // 检查项目ID是否有效
     if (!hasValidProjectId || !projectId) {
       message.error('项目ID不存在或无效，无法导出');
-      console.error('❌ [AppDev] 导出失败 - 无效的projectId:', { projectId });
       return;
     }
 
     try {
       setIsExporting(true);
-      console.log('📦 [AppDev] 开始导出项目:', projectId);
-
       const result = await exportProject(projectId);
-
-      console.log('🔍 [AppDev] 导出API响应:', result);
 
       // 从响应头中获取文件名
       const contentDisposition = result.headers?.['content-disposition'];
@@ -402,10 +333,7 @@ const AppDev: React.FC = () => {
       window.URL.revokeObjectURL(url);
 
       message.success('项目导出成功！');
-      console.log('✅ [AppDev] 项目导出成功:', filename);
     } catch (error) {
-      console.error('❌ [AppDev] 导出项目失败:', error);
-
       // 改进错误处理，兼容不同的错误格式
       const errorMessage =
         (error as any)?.message ||
@@ -511,7 +439,7 @@ const AppDev: React.FC = () => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
         event.preventDefault();
         if (projectId && isServiceRunning) {
-          console.log('开发服务器重启功能已禁用');
+          // 开发服务器重启功能已禁用
         }
       }
 
@@ -727,8 +655,6 @@ const AppDev: React.FC = () => {
   // 页面退出时的资源清理
   useEffect(() => {
     return () => {
-      console.log('🧹 [AppDev] 页面退出，开始清理所有资源...');
-
       // 清理聊天相关资源
       chat.cleanupAppDevSSE();
       if (chat.stopKeepAliveTimer) {
@@ -739,28 +665,8 @@ const AppDev: React.FC = () => {
       if (server.stopKeepAlive) {
         server.stopKeepAlive();
       }
-
-      console.log('✅ [AppDev] 所有资源清理完成');
     };
   }, [chat.cleanupAppDevSSE, chat.stopKeepAliveTimer, server.stopKeepAlive]);
-
-  // 监听服务器启动错误，显示错误提示并自动消失
-  // useEffect(() => {
-  //   if (server.startError) {
-  //     setShowErrorAlert(true);
-
-  //     // 10秒后自动隐藏错误提示
-  //     const timer = setTimeout(() => {
-  //       setShowErrorAlert(false);
-  //     }, 10000);
-
-  //     return () => {
-  //       clearTimeout(timer);
-  //     };
-  //   } else {
-  //     setShowErrorAlert(false);
-  //   }
-  // }, [server.startError]);
 
   // 如果缺少 projectId，显示提示信息
   if (missingProjectId) {
@@ -814,7 +720,6 @@ const AppDev: React.FC = () => {
           onReloadProject={() => window.location.reload()}
           onDeleteProject={() => {
             // TODO: 实现删除项目功能
-            console.log('删除项目');
           }}
           onDeployProject={handleDeployProject}
           hasUpdates={projectInfo.hasUpdates}
@@ -858,7 +763,6 @@ const AppDev: React.FC = () => {
                     },
                     {
                       label: <ReadOutlined />,
-                      // label: <CodeOutlined />,
                       value: 'code',
                     },
                   ]}

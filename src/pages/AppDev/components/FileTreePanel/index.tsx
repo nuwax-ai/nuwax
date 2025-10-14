@@ -38,13 +38,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
    * 切换文件树折叠状态
    */
   const toggleFileTreeCollapse = useCallback(() => {
-    setIsFileTreeCollapsed((prev) => {
-      console.log(
-        '🔄 [FileTreePanel] 切换文件树状态:',
-        !prev ? '折叠' : '展开',
-      );
-      return !prev;
-    });
+    setIsFileTreeCollapsed((prev) => !prev);
   }, []);
 
   /**
@@ -94,19 +88,9 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
             onClick={() => {
               if (isComparing) {
                 // 版本模式下，直接设置选中的文件到 workspace.activeFile
-                console.log(
-                  '🔄 [FileTreePanel] 版本模式下选择文件:',
-                  node.id,
-                  node.name,
-                );
                 onFileSelect(node.id);
               } else {
                 // 正常模式下，使用文件管理逻辑并自动切换到代码查看模式
-                console.log(
-                  '🔄 [FileTreePanel] 正常模式下选择文件:',
-                  node.id,
-                  node.name,
-                );
                 fileManagement.switchToFile(node.id);
                 onFileSelect(node.id);
               }

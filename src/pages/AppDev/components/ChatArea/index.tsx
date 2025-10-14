@@ -72,14 +72,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
       // 调试信息
       if (isAssistant && !isHistoryMessage) {
-        console.log('🎨 [UI] 渲染 ASSISTANT 消息:', {
-          id: message.id,
-          requestId: message.requestId,
-          status: message.status,
-          isStreaming: message.isStreaming,
-          isLoading,
-          text: message.text?.substring(0, 50) + '...',
-        });
+        // 调试信息已移除
       }
 
       return (
@@ -190,57 +183,26 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     const renderedMessages: React.ReactNode[] = [];
     let currentSessionId: string | null = null;
 
-    console.log('🔍 [ChatArea] 开始渲染消息列表，总消息数:', messages.length);
-    console.log(
-      '🔍 [ChatArea] 消息详情:',
-      messages.map((msg) => ({
-        id: msg.id,
-        role: msg.role,
-        sessionId: msg.sessionId,
-        conversationTopic: msg.conversationTopic,
-        hasHistoryInfo: !!(msg.conversationTopic && msg.conversationCreated),
-      })),
-    );
-
-    messages.forEach((message, index) => {
+    messages.forEach((message) => {
       // 检查是否需要添加会话分隔符
       if (
         message.conversationTopic &&
         message.sessionId &&
         message.sessionId !== currentSessionId
       ) {
-        console.log('🔍 [ChatArea] 添加会话分隔符:', {
-          sessionId: message.sessionId,
-          topic: message.conversationTopic,
-          previousSessionId: currentSessionId,
-        });
-
         renderedMessages.push(
           renderConversationDivider(
             message.conversationTopic,
             message.conversationCreated || message.time,
-            message.sessionId,
           ),
         );
         currentSessionId = message.sessionId;
       }
 
       // 渲染消息
-      console.log('🔍 [ChatArea] 渲染消息:', {
-        index,
-        id: message.id,
-        role: message.role,
-        sessionId: message.sessionId,
-        isHistory: !!(message.conversationTopic && message.conversationCreated),
-      });
-
       renderedMessages.push(renderChatMessage(message));
     });
 
-    console.log(
-      '🔍 [ChatArea] 渲染完成，总渲染元素数:',
-      renderedMessages.length,
-    );
     return renderedMessages;
   }, [chat.chatMessages, renderChatMessage, renderConversationDivider]);
 
