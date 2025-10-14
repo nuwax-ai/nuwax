@@ -17,22 +17,17 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { getLanguageFromFile, isImageFile } from '@/utils/appDevUtils';
 import {
   CheckOutlined,
-  DeleteOutlined,
   DownloadOutlined,
   EyeOutlined,
   FileOutlined,
   GlobalOutlined,
-  LeftOutlined,
-  PlusOutlined,
   ReadOutlined,
   ReloadOutlined,
-  RightOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import {
   Alert,
   Button,
-  Card,
   Col,
   Image,
   Input,
@@ -56,7 +51,7 @@ import React, {
 import { useModel } from 'umi';
 import { AppDevHeader } from './components';
 import ChatArea from './components/ChatArea';
-import DataResourceList from './components/DataResourceList';
+import FileTreePanel from './components/FileTreePanel';
 import MonacoEditor from './components/MonacoEditor';
 import Preview, { type PreviewRef } from './components/Preview';
 import styles from './index.less';
@@ -260,9 +255,6 @@ const AppDev: React.FC = () => {
   // 数据资源相关状态
   const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
     useState(false);
-
-  // 文件树折叠状态
-  const [isFileTreeCollapsed, setIsFileTreeCollapsed] = useState(false);
 
   // 删除确认对话框状态
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -680,16 +672,6 @@ const AppDev: React.FC = () => {
   }, []);
 
   /**
-   * 切换文件树折叠状态
-   */
-  const toggleFileTreeCollapse = useCallback(() => {
-    setIsFileTreeCollapsed((prev) => {
-      console.log('🔄 [AppDev] 切换文件树状态:', !prev ? '折叠' : '展开');
-      return !prev;
-    });
-  }, []);
-
-  /**
    * 处理删除文件/文件夹
    */
   const handleDeleteClick = useCallback(
@@ -747,101 +729,6 @@ const AppDev: React.FC = () => {
   const handleCancelEdit = useCallback(() => {
     fileManagement.cancelEdit();
   }, [fileManagement]);
-
-  /**
-   * 渲染文件树节点
-   */
-  const renderFileTreeNode = useCallback(
-    (node: any, level: number = 0) => {
-      const isExpanded = fileManagement.fileTreeState.expandedFolders.has(
-        node.id,
-      );
-      const isSelected = versionCompare.isComparing
-        ? workspace.activeFile === node.id
-        : fileManagement.fileContentState.selectedFile === node.id;
-
-      if (node.type === 'folder') {
-        return (
-          <div
-            key={node.id}
-            className={styles.folderItem}
-            style={{ marginLeft: level * 16 }}
-          >
-            <div
-              className={styles.folderHeader}
-              onClick={() => fileManagement.toggleFolder(node.id)}
-            >
-              <RightOutlined
-                className={`${styles.folderIcon} ${
-                  isExpanded ? styles.expanded : ''
-                }`}
-              />
-              <span className={styles.folderName}>{node.name}</span>
-            </div>
-            {isExpanded && node.children && (
-              <div className={styles.fileList}>
-                {node.children.map((child: any) =>
-                  renderFileTreeNode(child, level + 1),
-                )}
-              </div>
-            )}
-          </div>
-        );
-      } else {
-        return (
-          <div
-            key={node.id}
-            className={`${styles.fileItem} ${
-              isSelected ? styles.activeFile : ''
-            }`}
-            onClick={() => {
-              if (versionCompare.isComparing) {
-                // 版本模式下，直接设置选中的文件到 workspace.activeFile
-                console.log(
-                  '🔄 [AppDev] 版本模式下选择文件:',
-                  node.id,
-                  node.name,
-                );
-                updateWorkspace({ activeFile: node.id });
-              } else {
-                // 正常模式下，使用文件管理逻辑并自动切换到代码查看模式
-                console.log(
-                  '🔄 [AppDev] 正常模式下选择文件:',
-                  node.id,
-                  node.name,
-                );
-                fileManagement.switchToFile(node.id);
-                // 自动切换到代码查看模式
-                setActiveTab('code');
-              }
-            }}
-            style={{ marginLeft: level * 16 }}
-          >
-            <FileOutlined className={styles.fileIcon} />
-            <span className={styles.fileName}>{node.name}</span>
-
-            {/* 正常模式：显示文件状态和删除按钮 */}
-            {!versionCompare.isComparing && (
-              <>
-                {node.status && (
-                  <span className={styles.fileStatus}>{node.status}</span>
-                )}
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<DeleteOutlined />}
-                  className={styles.deleteButton}
-                  onClick={(e) => handleDeleteClick(node, e)}
-                  title="删除文件"
-                />
-              </>
-            )}
-          </div>
-        );
-      }
-    },
-    [fileManagement, handleDeleteClick, versionCompare],
-  );
 
   // 页面退出时的资源清理
   useEffect(() => {
@@ -1057,95 +944,37 @@ const AppDev: React.FC = () => {
             </div>
             {/* 主内容区域 */}
             <div className={styles.contentArea}>
-              {/* 悬浮折叠/展开按钮 - 放在预览区域左下角 */}
-              <Tooltip
-                title={isFileTreeCollapsed ? '展开文件树' : '收起文件树'}
-              >
-                <Button
-                  type="text"
-                  icon={
-                    isFileTreeCollapsed ? <RightOutlined /> : <LeftOutlined />
-                  }
-                  onClick={toggleFileTreeCollapse}
-                  className={`${styles.collapseButton} ${
-                    isFileTreeCollapsed ? styles.collapsed : styles.expanded
-                  }`}
-                />
-              </Tooltip>
               <div className={styles.contentRow}>
-                {/* 文件树侧边栏 / 版本对比文件列表 */}
-                <div
-                  className={`${styles.fileTreeCol} ${
-                    isFileTreeCollapsed ? styles.collapsed : ''
-                  }`}
-                  style={{ transition: 'all 0.3s ease' }}
-                >
-                  <Card className={styles.fileTreeCard} bordered={false}>
-                    {!isFileTreeCollapsed && (
-                      <>
-                        {/* 文件树头部按钮 - 仅在非版本对比模式显示 */}
-                        {!versionCompare.isComparing && (
-                          <div className={styles.fileTreeHeader}>
-                            <Button
-                              type="text"
-                              className={styles.addButton}
-                              onClick={() => setIsUploadModalVisible(true)}
-                            >
-                              导入项目
-                            </Button>
-                            {/* <Tooltip title="上传单个文件">
-                              <Button
-                                type="text"
-                                icon={<PlusOutlined />}
-                                onClick={() =>
-                                  setIsSingleFileUploadModalVisible(true)
-                                }
-                                className={styles.addButton}
-                                style={{ marginLeft: 8 }}
-                              />
-                            </Tooltip> */}
-                          </div>
-                        )}
-
-                        {/* 文件树容器 */}
-                        <div className={styles.fileTreeContainer}>
-                          {/* 文件树结构 */}
-                          <div className={styles.fileTree}>
-                            {currentDisplayFiles.map((node: any) =>
-                              renderFileTreeNode(node),
-                            )}
-                          </div>
-                        </div>
-
-                        {/* 数据资源管理 - 固定在底部，仅在非版本对比模式显示 */}
-                        {!versionCompare.isComparing && (
-                          <div className={styles.dataSourceContainer}>
-                            <div className={styles.dataSourceHeader}>
-                              <h3>数据资源</h3>
-                              <Button
-                                type="primary"
-                                size="small"
-                                icon={<PlusOutlined />}
-                                onClick={() =>
-                                  setIsAddDataResourceModalVisible(true)
-                                }
-                              >
-                                添加
-                              </Button>
-                            </div>
-                            <div className={styles.dataSourceContent}>
-                              <DataResourceList
-                                resources={dataResourceManagement.resources}
-                                loading={dataResourceManagement.loading}
-                                onDelete={handleDeleteDataResource}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </Card>
-                </div>
+                {/* FileTreePanel 组件 */}
+                <FileTreePanel
+                  files={currentDisplayFiles}
+                  isComparing={versionCompare.isComparing}
+                  selectedFileId={
+                    versionCompare.isComparing
+                      ? workspace.activeFile
+                      : fileManagement.fileContentState.selectedFile
+                  }
+                  expandedFolders={fileManagement.fileTreeState.expandedFolders}
+                  dataResources={dataResourceManagement.resources}
+                  dataResourcesLoading={dataResourceManagement.loading}
+                  onFileSelect={(fileId) => {
+                    if (versionCompare.isComparing) {
+                      updateWorkspace({ activeFile: fileId });
+                    } else {
+                      fileManagement.switchToFile(fileId);
+                      setActiveTab('code');
+                    }
+                  }}
+                  onToggleFolder={fileManagement.toggleFolder}
+                  onDeleteFile={handleDeleteClick}
+                  onUploadProject={() => setIsUploadModalVisible(true)}
+                  onAddDataResource={() =>
+                    setIsAddDataResourceModalVisible(true)
+                  }
+                  onDeleteDataResource={handleDeleteDataResource}
+                  workspace={workspace}
+                  fileManagement={fileManagement}
+                />
 
                 {/* 编辑器区域 */}
                 <div className={styles.editorCol}>
