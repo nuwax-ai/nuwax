@@ -83,12 +83,6 @@ const ConversationSelector: React.FC<ConversationSelectorProps> = ({
     isAutoLoad = false,
   ) => {
     try {
-      console.log(
-        '🔄 [ConversationSelector] 开始还原历史会话:',
-        conversation.sessionId,
-        isAutoLoad ? '(自动加载)' : '(手动选择)',
-      );
-
       // 解析会话内容
       const messages = JSON.parse(conversation.content) as AppDevChatMessage[];
 
@@ -97,13 +91,6 @@ const ConversationSelector: React.FC<ConversationSelectorProps> = ({
 
       // 切换会话ID
       onSessionChange(conversation.sessionId);
-
-      console.log('✅ [ConversationSelector] 历史会话还原成功:', {
-        sessionId: conversation.sessionId,
-        messageCount: messages.length,
-        topic: conversation.topic,
-        isAutoLoad,
-      });
 
       // 只有在手动选择时才显示成功提示
       if (!isAutoLoad) {
@@ -138,12 +125,6 @@ const ConversationSelector: React.FC<ConversationSelectorProps> = ({
                 new Date(b.created).getTime() - new Date(a.created).getTime(),
             );
             const latestConversation = sortedConversations[0];
-
-            console.log('🔄 [ConversationSelector] 自动加载最新历史会话:', {
-              sessionId: latestConversation.sessionId,
-              topic: latestConversation.topic,
-              created: latestConversation.created,
-            });
 
             // 自动还原最新会话
             await handleConversationSelect(latestConversation, true);

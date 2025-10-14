@@ -47,20 +47,9 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({
   const isActive = activeFileId === file.id;
 
   const handleClick = () => {
-    console.log(
-      '🖱️ [FileTree] Clicked on file:',
-      file.name,
-      'type:',
-      file.type,
-    );
     if (file.type === 'file') {
-      console.log('📄 [FileTree] Setting active file:', file.id);
       onFileSelect?.(file.id);
     } else {
-      console.log(
-        '📁 [FileTree] Toggling folder expansion:',
-        isExpanded ? 'collapsing' : 'expanding',
-      );
       setIsExpanded(!isExpanded);
     }
   };

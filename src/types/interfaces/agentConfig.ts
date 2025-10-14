@@ -81,6 +81,7 @@ export interface ComponentSettingModalProps {
 export interface PageSettingModalProps {
   open: boolean;
   currentComponentInfo?: AgentComponentInfo;
+  allPageComponentList?: AgentComponentInfo[];
   onCancel: () => void;
 }
 

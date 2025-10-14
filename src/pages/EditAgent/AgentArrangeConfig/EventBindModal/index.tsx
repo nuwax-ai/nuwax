@@ -46,7 +46,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
   const [form] = Form.useForm();
   const { token } = theme.useToken();
   // 是否展开
-  const [isActive, setIsActive] = useState<boolean>(false);
+  const [isActive, setIsActive] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   // 响应动作类型，默认为扩展页面打开
   const [type, setType] = useState<EventBindResponseActionEnum>(
@@ -66,6 +66,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
           name: currentEventConfig.name,
           identification: currentEventConfig.identification,
           type: currentEventConfig.type,
+          url: currentEventConfig.url,
         });
 
         // 类型
@@ -102,6 +103,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
       setPathList([]);
       setArgs([]);
       setCurrentPageId(null);
+      setIsActive(true);
     };
   }, [open, currentEventConfig]);
 
@@ -229,11 +231,25 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
         <div className={cx('h-full', 'flex', 'items-center')}>
           <span>参数值</span>
           <TooltipIcon
-            title="可以在输入框中动态引用参数，留空的参数将由大模型自动补充
-              智能体ID {{AGENT_ID}}     
-              系统用户ID {{SYS_USER_ID}}    
-              用户UID {{USER_UID}}
-              用户名 {{USER_NAME}}"
+            title={
+              <>
+                <div>
+                  可以在输入框中动态引用参数，留空的参数将由大模型自动补充
+                </div>
+                <div>
+                  智能体ID {'{{'}AGENT_ID{'}}'}
+                </div>
+                <div>
+                  系统用户ID {'{{'}SYS_USER_ID{'}}'}
+                </div>
+                <div>
+                  用户UID {'{{'}USER_UID{'}}'}
+                </div>
+                <div>
+                  用户名 {'{{'}USER_NAME{'}}'}
+                </div>
+              </>
+            }
             icon={<InfoCircleOutlined />}
           />
         </div>
@@ -242,7 +258,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Input
-            placeholder="请填写"
+            placeholder={`请输入${record.description}`}
             value={record.bindValue}
             onChange={(e) =>
               handleInputValue(record.key, 'bindValue', e.target.value)

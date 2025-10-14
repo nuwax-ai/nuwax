@@ -330,6 +330,7 @@ const SpacePageDevelop: React.FC = () => {
       <ReverseProxyModal
         open={openReverseProxyModal}
         projectId={projectId}
+        projectType={currentPageInfo?.projectType}
         defaultProxyConfigs={proxyConfigs}
         onCancel={handleCancelReverseProxy}
       />

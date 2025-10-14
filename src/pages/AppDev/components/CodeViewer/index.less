@@ -1,0 +1,26 @@
+// 文件内容显示
+.fileContentDisplay {
+  height: 100%;
+  overflow: hidden;
+
+  .monacoEditor {
+    height: 100%;
+    width: 100%;
+    border: none;
+
+    :global(.monaco-editor) {
+      height: 100% !important;
+    }
+
+    :global(.monaco-editor .view-lines) {
+      padding: 20px;
+    }
+  }
+}
+
+// 暗色主题支持
+[data-theme='dark'] {
+  .fileContentDisplay {
+    background: var(--xagi-color-bg-container);
+  }
+}

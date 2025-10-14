@@ -46,7 +46,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     if (!language || language === 'plaintext') return;
 
     try {
-      console.log(`📦 [MonacoEditor] 动态加载语言支持: ${language}`);
+      // 动态加载语言支持
 
       switch (language) {
         case 'typescript':
@@ -112,7 +112,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
         case 'vue':
           // Vue文件暂时使用HTML语言支持
-          console.log('Vue文件使用HTML语言支持');
+          // Vue文件使用HTML语言支持
           break;
 
         default:
@@ -127,7 +127,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           break;
       }
 
-      console.log(`✅ [MonacoEditor] 语言支持加载完成: ${language}`);
+      // 语言支持加载完成
     } catch (error) {
       console.error(`❌ [MonacoEditor] 加载语言支持失败 (${language}):`, error);
     }
@@ -140,7 +140,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     if (isMonacoReady) return;
 
     try {
-      console.log('🔧 [MonacoEditor] 开始初始化Monaco Editor...');
+      // 开始初始化Monaco Editor
 
       // 配置Monaco Editor使用本地资源
       loader.config({
@@ -162,7 +162,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
         // HTML语言已经在Monaco中内置注册，我们只需要增强Vue支持
         // 为Vue文件添加HTML worker支持
-        console.log('✅ [MonacoEditor] HTML语言支持已加载');
+        // HTML语言支持已加载
       } catch (error) {
         console.warn(
           '⚠️ [MonacoEditor] HTML语言支持加载失败，使用默认配置:',
@@ -198,7 +198,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         },
       ]);
       setIsMonacoReady(true);
-      console.log('✅ [MonacoEditor] Monaco Editor初始化成功');
+      // Monaco Editor初始化成功
     } catch (error) {
       console.error('❌ [MonacoEditor] Monaco Editor初始化失败:', error);
     }
@@ -377,7 +377,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       // 添加键盘快捷键
       try {
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-          console.log('💾 [MonacoEditor] Save shortcut triggered');
+          // Save shortcut triggered
         });
 
         editor.addCommand(
@@ -393,7 +393,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         );
       }
 
-      console.log('✅ [MonacoEditor] 编辑器实例创建成功');
+      // 编辑器实例创建成功
     } finally {
       isCreatingRef.current = false;
     }

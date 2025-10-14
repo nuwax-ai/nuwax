@@ -218,6 +218,8 @@ export interface AddPathModalProps {
 export interface ReverseProxyModalProps {
   open: boolean;
   projectId: number;
+  // 项目类型,可用值:REVERSE_PROXY,ONLINE_DEPLOY
+  projectType?: PageProjectTypeEnum;
   defaultProxyConfigs?: ProxyConfig[];
   onCancel: () => void;
 }

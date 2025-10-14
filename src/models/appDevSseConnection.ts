@@ -132,20 +132,36 @@ export default () => {
    * 断开 AppDev SSE 连接
    */
   const disconnectAppDevSSE = useCallback(() => {
-    console.log('🔌 [AppDev SSE Model] 断开 AppDev SSE 连接');
+    console.log('🔌 [AppDev SSE Model] 开始断开 AppDev SSE 连接');
+    console.log('🔌 [AppDev SSE Model] 当前连接状态:', appDevConnectionState);
+    console.log('🔌 [AppDev SSE Model] 当前会话ID:', appDevCurrentSessionId);
 
     if (appDevSseManagerRef.current) {
+      console.log('🔌 [AppDev SSE Model] 调用 abort 函数断开连接');
       // 调用 abort 函数来断开连接
       if (typeof appDevSseManagerRef.current === 'function') {
-        appDevSseManagerRef.current();
+        try {
+          appDevSseManagerRef.current();
+          console.log('✅ [AppDev SSE Model] abort 函数调用成功');
+        } catch (error) {
+          console.error('❌ [AppDev SSE Model] abort 函数调用失败:', error);
+        }
+      } else {
+        console.warn(
+          '⚠️ [AppDev SSE Model] appDevSseManagerRef.current 不是函数',
+        );
       }
       appDevSseManagerRef.current = null;
+    } else {
+      console.log('ℹ️ [AppDev SSE Model] 没有活动的 SSE 连接需要断开');
     }
 
     setAppDevConnectionState(SSEConnectionState.DISCONNECTED);
     setAppDevCurrentSessionId('');
     setAppDevConnectionError(null);
-  }, []);
+
+    console.log('✅ [AppDev SSE Model] SSE 连接断开完成');
+  }, [appDevConnectionState, appDevCurrentSessionId]);
 
   /**
    * 获取 AppDev 连接状态
