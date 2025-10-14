@@ -56,4 +56,6 @@ export interface FileTreePanelProps {
   fileManagement: {
     switchToFile: (fileId: string) => void;
   };
+  /** 是否正在AI聊天加载中 */
+  isChatLoading?: boolean;
 }

@@ -32,6 +32,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   onDataResourceSelectionChange,
   workspace,
   fileManagement,
+  isChatLoading = false,
 }) => {
   // 文件树折叠状态
   const [isFileTreeCollapsed, setIsFileTreeCollapsed] = useState(false);
@@ -165,6 +166,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                     type="text"
                     className={styles.addButton}
                     onClick={onUploadProject}
+                    disabled={isChatLoading}
                   >
                     导入项目
                   </Button>
@@ -189,6 +191,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                       size="small"
                       icon={<PlusOutlined />}
                       onClick={onAddDataResource}
+                      disabled={isChatLoading || isComparing}
                     >
                       添加
                     </Button>
@@ -200,6 +203,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                       onDelete={onDeleteDataResource}
                       selectedResourceIds={selectedDataResourceIds}
                       onSelectionChange={onDataResourceSelectionChange}
+                      isChatLoading={isChatLoading || isComparing}
                     />
                   </div>
                 </div>

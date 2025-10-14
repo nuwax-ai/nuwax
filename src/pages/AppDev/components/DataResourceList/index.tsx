@@ -20,6 +20,8 @@ interface DataResourceListProps {
   selectedResourceIds?: DataSourceSelection[];
   /** 选择变化回调 */
   onSelectionChange?: (selectedDataSources: DataSourceSelection[]) => void;
+  /** 是否正在AI聊天加载中或版本对比模式 */
+  isChatLoading?: boolean;
 }
 
 /**
@@ -31,6 +33,7 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
   onDelete,
   selectedResourceIds = [],
   onSelectionChange,
+  isChatLoading = false,
 }) => {
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>(
     {},
@@ -112,6 +115,7 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
             (item) => item.dataSourceId === parseInt(resource.id),
           )}
           onChange={(e) => handleCheckboxChange(resource, e.target.checked)}
+          disabled={isChatLoading}
           style={{ marginRight: '12px' }}
         />
 

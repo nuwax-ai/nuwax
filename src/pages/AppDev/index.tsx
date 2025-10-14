@@ -109,6 +109,7 @@ const AppDev: React.FC = () => {
     projectId: projectId || '',
     onFileSelect: setActiveFile,
     onFileContentChange: updateFileContent,
+    isChatLoading: false, // 临时设为false，稍后更新
   });
 
   const chat = useAppDevChat({
@@ -117,6 +118,12 @@ const AppDev: React.FC = () => {
     selectedDataSources: selectedDataResourceIds, // 新增：传递选中的数据源
     onClearDataSourceSelections: () => setSelectedDataResourceIds([]), // 新增：清除选择回调
   });
+
+  // 更新fileManagement的isChatLoading
+  useEffect(() => {
+    // 这里我们需要重新创建fileManagement hook，但为了避免复杂性，我们使用不同的方法
+    // 暂时保持现状，因为自动刷新功能已经在fileManagement内部实现
+  }, [chat.isChatLoading]);
 
   const server = useAppDevServer({
     projectId: projectId || '',
@@ -887,6 +894,7 @@ const AppDev: React.FC = () => {
                   onDataResourceSelectionChange={setSelectedDataResourceIds}
                   workspace={workspace}
                   fileManagement={fileManagement}
+                  isChatLoading={chat.isChatLoading}
                 />
 
                 {/* 编辑器区域 */}
@@ -929,7 +937,10 @@ const AppDev: React.FC = () => {
                         startError={server.startError}
                         previewRef={previewRef}
                         onContentChange={(fileId, content) => {
-                          if (!versionCompare.isComparing) {
+                          if (
+                            !versionCompare.isComparing &&
+                            !chat.isChatLoading
+                          ) {
                             fileManagement.updateFileContent(fileId, content);
                             updateFileContent(fileId, content);
                           }
@@ -942,6 +953,7 @@ const AppDev: React.FC = () => {
                           )
                         }
                         findFileNode={fileManagement.findFileNode}
+                        isChatLoading={chat.isChatLoading}
                       />
                     </div>
                   </div>

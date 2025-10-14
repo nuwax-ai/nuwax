@@ -45,6 +45,8 @@ interface ContentViewerProps {
   onRefreshFile: () => void;
   /** 查找文件节点方法 */
   findFileNode: (fileId: string) => any;
+  /** 是否正在AI聊天加载中 */
+  isChatLoading?: boolean;
 }
 
 /**
@@ -70,6 +72,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   onCancelEdit,
   onRefreshFile,
   findFileNode,
+  isChatLoading = false,
 }) => {
   // 版本对比模式 + preview标签页：显示禁用提示
   if (isComparing && mode === 'preview') {
@@ -118,7 +121,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
               fileName={selectedFileId.split('/').pop() || selectedFileId}
               filePath={`app/${selectedFileId}`}
               content={fileNode.content}
-              readOnly={true}
+              readOnly={true || isChatLoading}
               onContentChange={() => {}}
             />
           ) : isImage ? (
@@ -223,7 +226,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           isModified={isFileModified}
           isLoading={isLoadingFileContent}
           isSaving={isSavingFile}
-          readOnly={isComparing}
+          readOnly={isComparing || isChatLoading}
           onSave={onSaveFile}
           onCancel={onCancelEdit}
           onRefresh={onRefreshFile}
@@ -237,7 +240,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
               fileName={selectedFileId.split('/').pop() || selectedFileId}
               filePath={`app/${selectedFileId}`}
               content={currentFileNode.content}
-              readOnly={isComparing}
+              readOnly={isComparing || isChatLoading}
               onContentChange={onContentChange}
             />
           ) : isImage ? (
@@ -261,7 +264,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
               fileName={selectedFileId.split('/').pop() || selectedFileId}
               filePath={`app/${selectedFileId}`}
               content={fileContent}
-              readOnly={isComparing}
+              readOnly={isComparing || isChatLoading}
               onContentChange={onContentChange}
             />
           ) : (

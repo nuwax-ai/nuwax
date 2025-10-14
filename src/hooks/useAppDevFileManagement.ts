@@ -34,12 +34,14 @@ interface UseAppDevFileManagementProps {
   projectId: string;
   onFileSelect?: (fileId: string) => void;
   onFileContentChange?: (fileId: string, content: string) => void;
+  isChatLoading?: boolean; // 新增：是否正在AI聊天加载中
 }
 
 export const useAppDevFileManagement = ({
   projectId,
   onFileSelect,
   onFileContentChange,
+  isChatLoading = false,
 }: UseAppDevFileManagementProps) => {
   // 文件树状态
   const [fileTreeState, setFileTreeState] = useState<FileTreeState>({
@@ -640,6 +642,31 @@ export const useAppDevFileManagement = ({
       loadFileTree();
     }
   }, [projectId, loadFileTree]);
+
+  // AI聊天加载时自动刷新文件树
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+
+    if (isChatLoading && projectId) {
+      console.log('🔄 [FileManagement] 开始AI聊天期间的自动刷新文件树');
+
+      // 立即执行一次刷新
+      loadFileTree();
+
+      // 设置10秒间隔的自动刷新
+      intervalId = setInterval(() => {
+        console.log('🔄 [FileManagement] AI聊天期间自动刷新文件树');
+        loadFileTree();
+      }, 10000); // 10秒间隔
+    }
+
+    return () => {
+      if (intervalId) {
+        console.log('🔄 [FileManagement] 停止AI聊天期间的自动刷新文件树');
+        clearInterval(intervalId);
+      }
+    };
+  }, [isChatLoading, projectId, loadFileTree]);
 
   return {
     // 文件树相关
