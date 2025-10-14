@@ -50,6 +50,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     handleUserScroll,
     handleScrollButtonClick,
     forceScrollToBottomAndEnable,
+    setShowScrollButton,
   } = useChatScroll();
 
   /**
@@ -157,7 +158,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 // ASSISTANT 消息: 使用 PureMarkdownRenderer 流式渲染
                 <div className={styles.chatAreaMarkdown}>
                   {/* 调试信息 */}
-                  {process.env.NODE_ENV === 'development' && (
+                  {/* {process.env.NODE_ENV === 'development' && (
                     <div
                       style={{
                         fontSize: '10px',
@@ -170,7 +171,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                       {isHistoryMessage ? 'disabled' : 'enabled'}, autoScroll:{' '}
                       {isAutoScroll ? 'on' : 'off'}
                     </div>
-                  )}
+                  )} */}
                   <PureMarkdownRenderer
                     key={message.id}
                     id={message.id}
@@ -406,6 +407,46 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             onClick={handleScrollButtonClick}
           >
             <DownOutlined />
+          </div>
+        )}
+
+        {/* 调试信息 - 仅在开发环境显示 */}
+        {process.env.NODE_ENV === 'development' && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '10px',
+              right: '10px',
+              background: 'rgba(0,0,0,0.8)',
+              color: 'white',
+              padding: '8px',
+              borderRadius: '4px',
+              fontSize: '12px',
+              zIndex: 1000,
+            }}
+          >
+            <div>showScrollButton: {showScrollButton ? 'true' : 'false'}</div>
+            <div>isAutoScroll: {isAutoScroll ? 'true' : 'false'}</div>
+            <div>messages: {chat.chatMessages.length}</div>
+            <button
+              type="button"
+              onClick={() => {
+                // 强制显示滚动按钮进行测试
+                setShowScrollButton(true);
+              }}
+              style={{
+                marginTop: '4px',
+                padding: '2px 6px',
+                fontSize: '10px',
+                background: '#1890ff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '2px',
+                cursor: 'pointer',
+              }}
+            >
+              测试显示按钮
+            </button>
           </div>
         )}
       </div>
