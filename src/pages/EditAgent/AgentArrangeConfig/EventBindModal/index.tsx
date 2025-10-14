@@ -66,6 +66,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
           name: currentEventConfig.name,
           identification: currentEventConfig.identification,
           type: currentEventConfig.type,
+          url: currentEventConfig.url,
         });
 
         // 类型

@@ -1,5 +1,6 @@
 import { PAGE_SETTING_ACTIONS } from '@/constants/space.constants';
 import { apiAgentPageUpdate } from '@/services/agentConfig';
+import { HomeIndexEnum } from '@/types/enums/agent';
 import { PageSettingEnum } from '@/types/enums/space';
 import {
   AgentComponentInfo,
@@ -24,6 +25,7 @@ const cx = classNames.bind(styles);
 const PageSettingModal: React.FC<PageSettingModalProps> = ({
   open,
   currentComponentInfo,
+  allPageComponentList,
   onCancel,
 }) => {
   const [action, setAction] = useState<PageSettingEnum>(
@@ -47,8 +49,34 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
 
   // 保存方法调用方式、输出方式或异步运行配置
   const handleSaveSetting = async () => {
+    // 如果当前页面设置为默认首页，则需要将其他页面设置为非默认首页
+    if (componentInfo?.bindConfig?.homeIndex === HomeIndexEnum.Yes) {
+      allPageComponentList?.forEach((item) => {
+        console.log(
+          'item.id !== componentInfo?.id',
+          item.id !== componentInfo?.id,
+          item.bindConfig?.homeIndex,
+        );
+        // 非当前页面且为默认首页，则设置为非默认首页
+        if (
+          item.id !== componentInfo?.id &&
+          item.bindConfig?.homeIndex === HomeIndexEnum.Yes
+        ) {
+          const _item = { ...item };
+          _item.bindConfig.homeIndex = HomeIndexEnum.No;
+          const pageNotHomeIndexData = {
+            id: _item?.id,
+            bindConfig: _item?.bindConfig,
+          } as AgentPageUpdateParams;
+
+          console.log('pageNotHomeIndexData', pageNotHomeIndexData);
+          runUpdate(pageNotHomeIndexData);
+        }
+      });
+    }
+
     const data = {
-      id: componentInfo?.id || 0,
+      id: componentInfo?.id,
       bindConfig: componentInfo?.bindConfig,
     } as AgentPageUpdateParams;
     await runUpdate(data);

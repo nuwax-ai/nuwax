@@ -85,6 +85,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
           icon: currentGuidQuestionDto.icon,
           type: currentGuidQuestionDto.type,
           info: currentGuidQuestionDto.info,
+          url: currentGuidQuestionDto.url,
         });
         // 类型
         setType(currentGuidQuestionDto.type);
