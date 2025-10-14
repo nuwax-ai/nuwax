@@ -166,6 +166,9 @@ const AppDev: React.FC = () => {
   // 聊天模式状态
   const [chatMode, setChatMode] = useState<'chat' | 'design'>('chat');
 
+  // 错误提示状态
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+
   // 数据资源相关状态
   const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
     useState(false);
@@ -768,6 +771,24 @@ const AppDev: React.FC = () => {
     };
   }, [chat.cleanupAppDevSSE]);
 
+  // 监听服务器启动错误，显示错误提示并自动消失
+  useEffect(() => {
+    if (server.startError) {
+      setShowErrorAlert(true);
+
+      // 10秒后自动隐藏错误提示
+      const timer = setTimeout(() => {
+        setShowErrorAlert(false);
+      }, 10000);
+
+      return () => {
+        clearTimeout(timer);
+      };
+    } else {
+      setShowErrorAlert(false);
+    }
+  }, [server.startError]);
+
   // 如果缺少 projectId，显示提示信息
   if (missingProjectId) {
     return (
@@ -798,27 +819,34 @@ const AppDev: React.FC = () => {
     );
   }
 
-  // 如果启动失败，显示错误信息
-  if (server.startError) {
-    return (
-      <div className={styles.errorContainer}>
-        <Alert
-          message="开发环境启动失败"
-          description={server.startError}
-          type="error"
-          showIcon
-          action={
-            <Button onClick={() => window.location.reload()}>重试</Button>
-          }
-        />
-      </div>
-    );
-  }
-
   return (
     <>
       {contextHolder}
       <div className={styles.appDev}>
+        {/* 错误提示条 */}
+        {showErrorAlert && server.startError && (
+          <div className={styles.errorAlertBar}>
+            <Alert
+              message="开发环境启动失败"
+              description={server.startError}
+              type="error"
+              showIcon
+              closable
+              onClose={() => setShowErrorAlert(false)}
+              action={
+                <Space>
+                  <Button size="small" onClick={() => window.location.reload()}>
+                    重试
+                  </Button>
+                  <Button size="small" onClick={() => setShowErrorAlert(false)}>
+                    关闭
+                  </Button>
+                </Space>
+              }
+            />
+          </div>
+        )}
+
         {/* 顶部头部区域 */}
         <AppDevHeader
           workspace={workspace}
@@ -837,7 +865,12 @@ const AppDev: React.FC = () => {
         />
 
         {/* 主布局 - 左右分栏 */}
-        <Row gutter={0} className={styles.mainRow}>
+        <Row
+          gutter={0}
+          className={`${styles.mainRow} ${
+            showErrorAlert ? styles.withErrorAlert : ''
+          }`}
+        >
           {/* 左侧AI助手面板 */}
           <Col span={8} className={styles.leftPanel}>
             <ChatArea
