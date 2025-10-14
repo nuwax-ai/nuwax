@@ -186,8 +186,14 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     return innerProcessing.type === AgentComponentTypeEnum.Page;
   }, [innerProcessing.type]);
 
+  const [open, setOpen] = useState(false);
   // 处理预览页面
   const handlePreviewPage = useCallback(() => {
+    // 点击前先关闭 Tooltip，防止残留
+    setOpen(false);
+    // 执行你的布局变化逻辑
+    // ...
+
     if (pagePreviewData) {
       showPagePreview(null);
       return;
@@ -248,7 +254,11 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
               />
             </Tooltip>
             {isPageType ? (
-              <Tooltip title={pagePreviewData ? '关闭预览' : '预览页面'}>
+              <Tooltip
+                title={pagePreviewData ? '关闭预览' : '预览页面'}
+                open={open}
+                onOpenChange={setOpen}
+              >
                 <Button
                   type="text"
                   disabled={disabled}
@@ -256,6 +266,8 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                     pagePreviewData ? <EyeInvisibleOutlined /> : <EyeOutlined />
                   }
                   onClick={handlePreviewPage}
+                  onMouseEnter={() => setOpen(true)}
+                  onMouseLeave={() => setOpen(false)}
                 />
               </Tooltip>
             ) : null}
