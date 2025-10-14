@@ -137,6 +137,14 @@ export enum ComponentSettingEnum {
   Card_Bind,
 }
 
+// 智能体页面设置类型
+export enum PageSettingEnum {
+  // 是否模型可见
+  Visible_To_LLM,
+  // 是否为智能体页面首页
+  Home_Index,
+}
+
 // 空间类型枚举
 export enum SpaceTypeEnum {
   Personal = 'Personal',

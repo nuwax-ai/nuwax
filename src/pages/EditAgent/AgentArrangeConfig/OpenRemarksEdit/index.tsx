@@ -18,7 +18,6 @@ const cx = classNames.bind(styles);
  */
 const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   agentConfigInfo,
-  variables,
   pageArgConfigs,
   onChangeAgent,
   onConfirmUpdateEventQuestions,
@@ -162,7 +161,6 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
         open={open}
         agentConfigInfo={agentConfigInfo}
         currentGuidQuestionDto={currentGuidQuestionDto}
-        variables={variables}
         pageArgConfigs={pageArgConfigs}
         onCancel={() => setOpen(false)}
         onConfirm={handleConfirmUpdateQuestions}

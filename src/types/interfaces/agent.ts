@@ -171,13 +171,13 @@ export interface AgentComponentEventUpdateParams extends AgentBaseInfo {
   // 组件配置ID
   id: number;
   // 目标组件ID
-  targetId: number;
+  targetId?: number;
   // 事件绑定配置
   bindConfig: {
     eventConfigs: AgentComponentEventConfig;
   };
-  exceptionOut: number;
-  fallbackMsg: string;
+  exceptionOut?: number;
+  fallbackMsg?: string;
 }
 
 // 智能体组件模型基础信息
