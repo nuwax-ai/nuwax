@@ -15,11 +15,49 @@
   overflow: hidden;
 }
 
+// 错误提示条样式
+// .errorAlertBar {
+//   position: fixed;
+//   top: 0;
+//   left: 0;
+//   right: 0;
+//   z-index: 9999;
+//   padding: 8px 16px;
+//   background: #fff;
+//   box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
+//   animation: slideDown 0.3s ease-out;
+
+//   .ant-alert {
+//     margin: 0;
+//     border-radius: 0;
+//     border-left: none;
+//     border-right: none;
+//     border-top: none;
+//   }
+// }
+
+@keyframes slide-down {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 // 主布局行
 .mainRow {
   height: calc(100vh - 50px);
   margin: 0 !important;
   color: #1e293b;
+
+  // 当有错误提示条时，调整高度
+  &.withErrorAlert {
+    height: calc(100vh - 50px - 50px); // 减去错误提示条的高度
+  }
 }
 
 // 左侧AI助手面板
