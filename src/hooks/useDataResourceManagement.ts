@@ -1,3 +1,4 @@
+import type { DataSource } from '@/types/interfaces/appDev';
 import type {
   CreateDataResourceRequest,
   DataResource,
@@ -5,14 +6,20 @@ import type {
   DataResourceQueryParams,
   UpdateDataResourceRequest,
 } from '@/types/interfaces/dataResource';
+import {
+  DataResourceStatus,
+  DataResourceType,
+} from '@/types/interfaces/dataResource';
 import { message } from 'antd';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 /**
  * 数据资源管理 Hook
  * 提供数据资源的增删改查功能
  */
-export const useDataResourceManagement = () => {
+export const useDataResourceManagement = (
+  projectDataSources?: DataSource[],
+) => {
   const [resources, setResources] = useState<DataResource[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
@@ -25,79 +32,31 @@ export const useDataResourceManagement = () => {
       try {
         setLoading(true);
 
-        // 模拟API调用
-        await new Promise<void>((resolve) => {
-          setTimeout(() => resolve(), 500);
-        });
+        // 从项目数据源中获取真实数据
+        let dataSources: DataSource[] = projectDataSources || [];
 
-        // 模拟数据 - 只包含工作流、插件、反向代理三种类型
-        const mockResources: DataResource[] = [
-          {
-            id: '1',
-            name: '站内消息发送',
-            description: '发送站内消息的工作流',
-            type: 'workflow',
-            status: 'active',
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            updatedAt: new Date(Date.now() - 3600000).toISOString(),
-            config: {
-              filePath: '/workflows/message-sender.yaml',
-              triggerType: 'event',
-            },
-            tags: ['消息', '通知'],
-            enabled: true,
-          },
-          {
-            id: '2',
-            name: '数据处理插件',
-            description: '用于数据清洗和转换的插件',
-            type: 'plugin',
-            status: 'active',
-            createdAt: new Date(Date.now() - 172800000).toISOString(),
-            updatedAt: new Date(Date.now() - 7200000).toISOString(),
-            config: {
-              packagePath: '/plugins/data-processor',
-              version: '1.0.0',
-              entry: 'index.js',
-            },
-            tags: ['数据', '处理'],
-            enabled: true,
-          },
-          {
-            id: '3',
-            name: 'API代理服务',
-            description: '代理外部API服务的反向代理',
-            type: 'reverse_proxy',
-            status: 'active',
-            createdAt: new Date(Date.now() - 259200000).toISOString(),
-            updatedAt: new Date(Date.now() - 10800000).toISOString(),
-            config: {
-              targetUrl: 'https://api.external.com',
-              proxyPath: '/api/v1',
-              timeout: 30,
-            },
-            tags: ['API', '代理'],
-            enabled: true,
-          },
-          {
-            id: '4',
-            name: '文件处理工作流',
-            description: '处理文件上传和转换的工作流',
-            type: 'workflow',
-            status: 'configuring',
-            createdAt: new Date(Date.now() - 345600000).toISOString(),
-            updatedAt: new Date(Date.now() - 14400000).toISOString(),
-            config: {
-              filePath: '/workflows/file-processor.yaml',
-              triggerType: 'manual',
-            },
-            tags: ['文件', '处理'],
-            enabled: false,
-          },
-        ];
+        // 将 DataSource 转换为 DataResource 格式
+        const convertedResources: DataResource[] = dataSources.map((ds) => ({
+          id: ds.id.toString(),
+          name: ds.name,
+          description: ds.description || '',
+          type:
+            ds.type === 'plugin'
+              ? DataResourceType.PLUGIN
+              : DataResourceType.WORKFLOW,
+          status:
+            ds.status === 'active'
+              ? DataResourceStatus.ACTIVE
+              : DataResourceStatus.INACTIVE,
+          createdAt: ds.createdAt || new Date().toISOString(),
+          updatedAt: ds.updatedAt || new Date().toISOString(),
+          config: ds.config || {},
+          tags: ds.tags || [],
+          enabled: ds.enabled !== false,
+        }));
 
         // 根据查询参数过滤数据
-        let filteredResources = mockResources;
+        let filteredResources = convertedResources;
 
         if (params?.type) {
           filteredResources = filteredResources.filter(
@@ -129,7 +88,7 @@ export const useDataResourceManagement = () => {
         setLoading(false);
       }
     },
-    [],
+    [projectDataSources],
   );
 
   /**
@@ -152,7 +111,7 @@ export const useDataResourceManagement = () => {
           name: data.name,
           description: data.description,
           type: data.type,
-          status: 'active',
+          status: DataResourceStatus.ACTIVE,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           config: data.config,
@@ -294,7 +253,9 @@ export const useDataResourceManagement = () => {
               ? {
                   ...resource,
                   enabled,
-                  status: enabled ? 'active' : 'inactive',
+                  status: enabled
+                    ? DataResourceStatus.ACTIVE
+                    : DataResourceStatus.INACTIVE,
                   updatedAt: new Date().toISOString(),
                 }
               : resource,
@@ -361,6 +322,13 @@ export const useDataResourceManagement = () => {
         setLoading(false);
       }
     }, []);
+
+  // 当项目数据源变化时，自动刷新资源列表
+  useEffect(() => {
+    if (projectDataSources) {
+      fetchResources();
+    }
+  }, [projectDataSources]); // 移除 fetchResources 依赖，避免无限循环
 
   return {
     resources,

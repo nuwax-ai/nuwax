@@ -41,6 +41,12 @@ export interface FileTreePanelProps {
   /** 删除数据资源回调 */
   onDeleteDataResource: (resourceId: string) => Promise<void>;
 
+  /** 选中的数据源ID列表 */
+  selectedDataResourceIds?: string[];
+
+  /** 数据源选择变化回调 */
+  onDataResourceSelectionChange?: (selectedIds: string[]) => void;
+
   /** 工作空间信息（用于版本模式判断） */
   workspace?: { activeFile: string };
 

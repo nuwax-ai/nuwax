@@ -9,6 +9,7 @@ import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
 import {
+  bindDataSource,
   buildProject,
   exportProject,
   uploadAndStartProject,
@@ -57,6 +58,11 @@ const { Text } = Typography;
  * 提供Web集成开发环境功能，包括文件管理、代码编辑和实时预览
  */
 const AppDev: React.FC = () => {
+  // 数据源选择状态
+  const [selectedDataResourceIds, setSelectedDataResourceIds] = useState<
+    string[]
+  >([]);
+
   // 使用 AppDev 模型来管理状态
   const appDevModel = useModel('appDev');
 
@@ -107,6 +113,8 @@ const AppDev: React.FC = () => {
   const chat = useAppDevChat({
     projectId: projectId || '',
     onRefreshFileTree: fileManagement.loadFileTree, // 新增：传递文件树刷新方法
+    selectedDataSources: selectedDataResourceIds, // 新增：传递选中的数据源
+    onClearDataSourceSelections: () => setSelectedDataResourceIds([]), // 新增：清除选择回调
   });
 
   const server = useAppDevServer({
@@ -115,11 +123,13 @@ const AppDev: React.FC = () => {
     onServerStatusChange: setIsServiceRunning,
   });
 
-  // 数据资源管理
-  const dataResourceManagement = useDataResourceManagement();
-
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
+
+  // 数据资源管理
+  const dataResourceManagement = useDataResourceManagement(
+    projectInfo.projectInfoState.projectInfo?.dataSources,
+  );
 
   // 稳定 currentFiles 引用，避免无限循环
   const stableCurrentFiles = useMemo(() => {
@@ -347,60 +357,60 @@ const AppDev: React.FC = () => {
   }, [hasValidProjectId, projectId]);
 
   /**
-   * 处理添加数据资源
-   */
-  const handleAddDataResource = useCallback(
-    async (data: any) => {
-      try {
-        await dataResourceManagement.createResource(data);
-        setIsAddDataResourceModalVisible(false);
-      } catch (error) {
-        console.error('添加数据资源失败:', error);
-      }
-    },
-    [dataResourceManagement],
-  );
-
-  /**
    * 处理添加组件（Created 组件回调）
    */
   const handleAddComponent = useCallback(
-    (item: any) => {
-      // 将 Created 组件的选择转换为数据资源格式
-      const dataResourceData = {
-        name: item.name || '未命名资源',
-        description: item.description || '',
-        type:
-          item.targetType === AgentComponentTypeEnum.Workflow
-            ? 'workflow'
-            : item.targetType === AgentComponentTypeEnum.Plugin
-            ? 'plugin'
-            : 'reverse-proxy',
-        config: {
-          targetId: item.targetId,
-          targetType: item.targetType,
-          // 根据类型添加特定配置
-          ...(item.targetType === AgentComponentTypeEnum.Workflow && {
-            filePath: item.config?.filePath || '',
-            triggerType: 'manual',
-          }),
-          ...(item.targetType === AgentComponentTypeEnum.Plugin && {
-            packagePath: item.config?.packagePath || '',
-            version: item.config?.version || '1.0.0',
-            entry: item.config?.entry || 'index.js',
-          }),
-          ...(item.targetType === AgentComponentTypeEnum.MCP && {
-            targetUrl: item.config?.targetUrl || '',
-            proxyPath: item.config?.proxyPath || '/',
-            timeout: 30,
-          }),
-        },
-        tags: [],
-      };
+    async (item: any) => {
+      // 检查项目ID是否有效
+      if (!hasValidProjectId || !projectId) {
+        message.error('项目ID不存在或无效，无法绑定数据源');
+        return;
+      }
 
-      handleAddDataResource(dataResourceData);
+      // 只处理 Plugin 和 Workflow 类型
+      if (
+        item.targetType !== AgentComponentTypeEnum.Plugin &&
+        item.targetType !== AgentComponentTypeEnum.Workflow
+      ) {
+        message.warning('仅支持绑定插件和工作流类型的数据源');
+        return;
+      }
+
+      try {
+        // 确定数据源类型
+        const type =
+          item.targetType === AgentComponentTypeEnum.Plugin
+            ? 'plugin'
+            : 'workflow';
+
+        // 调用绑定数据源 API
+        const result = await bindDataSource({
+          projectId: Number(projectId),
+          type,
+          dataSourceId: item.targetId,
+        });
+
+        // 检查绑定结果
+        if (result?.code === '0000') {
+          message.success('数据源绑定成功');
+
+          // 刷新项目详情信息以更新数据源列表
+          await projectInfo.refreshProjectInfo();
+
+          // 关闭 Created 弹窗
+          setIsAddDataResourceModalVisible(false);
+        } else {
+          const errorMessage = result?.message || '绑定数据源失败';
+          throw new Error(errorMessage);
+        }
+      } catch (error: any) {
+        console.error('❌ [AppDev] 绑定数据源失败:', error);
+        const errorMessage =
+          error?.message || error?.toString() || '绑定数据源时发生未知错误';
+        message.error(errorMessage);
+      }
     },
-    [dataResourceManagement],
+    [hasValidProjectId, projectId, projectInfo],
   );
 
   /**
@@ -471,7 +481,7 @@ const AppDev: React.FC = () => {
     if (projectId) {
       dataResourceManagement.fetchResources();
     }
-  }, [projectId, dataResourceManagement]);
+  }, [projectId]); // 移除 dataResourceManagement 依赖，避免无限循环
 
   /**
    * 处理项目上传
@@ -657,16 +667,13 @@ const AppDev: React.FC = () => {
     return () => {
       // 清理聊天相关资源
       chat.cleanupAppDevSSE();
-      if (chat.stopKeepAliveTimer) {
-        chat.stopKeepAliveTimer();
-      }
 
       // 清理服务器相关资源
       if (server.stopKeepAlive) {
         server.stopKeepAlive();
       }
     };
-  }, [chat.cleanupAppDevSSE, chat.stopKeepAliveTimer, server.stopKeepAlive]);
+  }, [chat.cleanupAppDevSSE, server.stopKeepAlive]);
 
   // 如果缺少 projectId，显示提示信息
   if (missingProjectId) {
@@ -740,7 +747,6 @@ const AppDev: React.FC = () => {
               chat={chat}
               projectInfo={projectInfo}
               projectId={projectId || ''} // 新增：项目ID
-              loadHistorySession={chat.loadHistorySession} // 新增：加载历史会话方法
               onVersionSelect={handleVersionSelect}
             />
           </Col>
@@ -870,6 +876,8 @@ const AppDev: React.FC = () => {
                     setIsAddDataResourceModalVisible(true)
                   }
                   onDeleteDataResource={handleDeleteDataResource}
+                  selectedDataResourceIds={selectedDataResourceIds}
+                  onDataResourceSelectionChange={setSelectedDataResourceIds}
                   workspace={workspace}
                   fileManagement={fileManagement}
                 />

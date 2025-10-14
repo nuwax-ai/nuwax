@@ -472,3 +472,28 @@ export const stopAgentService = async (projectId: string): Promise<any> => {
     method: 'POST',
   });
 };
+
+// ==================== 数据源绑定相关API服务 ====================
+
+/**
+ * 绑定数据源接口参数
+ */
+export interface BindDataSourceRequest {
+  projectId: number;
+  type: 'plugin' | 'workflow';
+  dataSourceId: number;
+}
+
+/**
+ * 绑定数据源
+ * @param params 绑定数据源参数
+ * @returns Promise<RequestResponse<void>> 绑定结果
+ */
+export const bindDataSource = async (
+  params: BindDataSourceRequest,
+): Promise<RequestResponse<void>> => {
+  return request('/api/custom-page/bind-data-source', {
+    method: 'POST',
+    data: params,
+  });
+};

@@ -23,11 +23,15 @@ import { useModel } from 'umi';
 interface UseAppDevChatProps {
   projectId: string;
   onRefreshFileTree?: () => void; // 新增：文件树刷新回调
+  selectedDataSources?: string[]; // 新增：选中的数据源ID列表
+  onClearDataSourceSelections?: () => void; // 新增：清除数据源选择回调
 }
 
 export const useAppDevChat = ({
   projectId,
   onRefreshFileTree,
+  selectedDataSources = [],
+  onClearDataSourceSelections,
 }: UseAppDevChatProps) => {
   // 使用 AppDev SSE 连接 model
   const appDevSseModel = useModel('appDevSseConnection');
@@ -283,6 +287,8 @@ export const useAppDevChat = ({
         prompt: chatInput,
         project_id: projectId,
         request_id: requestId,
+        data_source_attachments:
+          selectedDataSources.length > 0 ? selectedDataSources : undefined,
       });
 
       if (response.success && response.data) {
@@ -290,6 +296,11 @@ export const useAppDevChat = ({
 
         // 立即建立SSE连接（使用返回的session_id）
         await initializeAppDevSSEConnection(sessionId, requestId);
+
+        // 消息发送成功后清除数据源选择
+        if (onClearDataSourceSelections) {
+          onClearDataSourceSelections();
+        }
       } else {
         throw new Error(response.message || '发送消息失败');
       }
@@ -536,7 +547,7 @@ export const useAppDevChat = ({
       console.log('🚀 [Chat] 组件初始化，开始自动加载所有历史会话');
       loadAllHistorySessions();
     }
-  }, [projectId, loadAllHistorySessions]);
+  }, [projectId]); // 移除 loadAllHistorySessions 依赖，避免无限循环
 
   /**
    * 组件卸载时清理资源

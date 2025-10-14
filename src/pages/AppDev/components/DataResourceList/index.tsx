@@ -15,6 +15,10 @@ interface DataResourceListProps {
   loading?: boolean;
   /** 删除资源回调 */
   onDelete?: (resourceId: string) => Promise<void>;
+  /** 选中的数据源ID列表 */
+  selectedResourceIds?: string[];
+  /** 选择变化回调 */
+  onSelectionChange?: (selectedIds: string[]) => void;
 }
 
 /**
@@ -24,10 +28,23 @@ interface DataResourceListProps {
 const DataResourceList: React.FC<DataResourceListProps> = ({
   resources,
   onDelete,
+  selectedResourceIds = [],
+  onSelectionChange,
 }) => {
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>(
     {},
   );
+
+  /**
+   * 处理复选框变化
+   */
+  const handleCheckboxChange = (resourceId: string, checked: boolean) => {
+    const newSelectedIds = checked
+      ? [...selectedResourceIds, resourceId]
+      : selectedResourceIds.filter((id) => id !== resourceId);
+
+    onSelectionChange?.(newSelectedIds);
+  };
 
   /**
    * 处理删除资源
@@ -82,7 +99,11 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
         }}
       >
         {/* 左侧复选框 */}
-        <Checkbox style={{ marginRight: '12px' }} />
+        <Checkbox
+          checked={selectedResourceIds.includes(resource.id)}
+          onChange={(e) => handleCheckboxChange(resource.id, e.target.checked)}
+          style={{ marginRight: '12px' }}
+        />
 
         {/* 中间内容 */}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -125,7 +146,7 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
   };
 
   return (
-    <div className="dataResourceList">
+    <div className="dataResourceList" style={{ minHeight: '200px' }}>
       {resources.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}

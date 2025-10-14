@@ -28,6 +28,8 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   onUploadProject,
   onAddDataResource,
   onDeleteDataResource,
+  selectedDataResourceIds,
+  onDataResourceSelectionChange,
   workspace,
   fileManagement,
 }) => {
@@ -196,6 +198,8 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                       resources={dataResources}
                       loading={dataResourcesLoading}
                       onDelete={onDeleteDataResource}
+                      selectedResourceIds={selectedDataResourceIds}
+                      onSelectionChange={onDataResourceSelectionChange}
                     />
                   </div>
                 </div>
