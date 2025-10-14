@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
 import { CloseOutlined } from '@ant-design/icons';
 import { Spin } from 'antd';
 import classNames from 'classnames';
@@ -9,6 +10,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import TurndownService from 'turndown';
 import { useModel } from 'umi';
 import styles from './index.less';
 
@@ -111,10 +113,71 @@ const PagePreview: React.FC = () => {
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
   // iframe 加载完成
   const handleIframeLoad = useCallback(() => {
     setIsLoading(false);
-  }, []);
+  }, [pagePreviewData]);
+
+  useEffect(() => {
+    // 需要调用后端接口返回 iframe 内容的 html/markdown
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    iframe.onload = () => {
+      if (pagePreviewData?.method !== 'browser_navigate_page') {
+        return;
+      }
+
+      const iframeDoc = iframe.contentDocument;
+      if (!iframeDoc) return;
+
+      const turndownService = new TurndownService();
+
+      let timer: NodeJS.Timeout;
+
+      // 监听 iframe 内部 DOM 变化
+      const observer = new MutationObserver(() => {
+        // 每次变化后延迟 500ms 再检测，确保渲染稳定
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+          const html = iframeDoc.body.innerHTML;
+          // 获取 iframe 内容
+          let str = '';
+          // 如果是 html
+          if (pagePreviewData.data_type === 'html') {
+            str = html;
+          }
+          // 如果是 markdown
+          if (pagePreviewData.data_type === 'markdown') {
+            str = turndownService.turndown(html);
+          }
+          if (!str) {
+            return;
+          }
+
+          const params = {
+            requestId: pagePreviewData.request_id,
+            html: str,
+          };
+          await apiAgentComponentPageResultUpdate(params);
+        }, 500);
+      });
+
+      observer.observe(iframeDoc.body, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+
+      // 清理
+      return () => {
+        observer.disconnect();
+        clearTimeout(timer);
+      };
+    };
+  }, [pagePreviewData]);
 
   // iframe 加载失败
   const handleIframeError = useCallback(() => {
@@ -129,9 +192,7 @@ const PagePreview: React.FC = () => {
 
   // 重置加载状态
   useEffect(() => {
-    if (pagePreviewData) {
-      setIsLoading(true);
-    }
+    setIsLoading(!pagePreviewData);
   }, [pagePreviewData]);
 
   // 如果没有预览数据，不显示
@@ -178,14 +239,17 @@ const PagePreview: React.FC = () => {
                 <Spin size="large" tip="页面加载中..." />
               </div>
             )}
-            <iframe
-              src={pageUrl}
-              className={cx(styles['page-iframe'])}
-              title={pagePreviewData.name || '页面预览'}
-              onLoad={handleIframeLoad}
-              onError={handleIframeError}
-              style={{ opacity: isLoading ? 0 : 1 }}
-            />
+            {pagePreviewData && (
+              <iframe
+                ref={iframeRef}
+                src={pageUrl}
+                className={cx(styles['page-iframe'])}
+                title={pagePreviewData.name || '页面预览'}
+                onLoad={handleIframeLoad}
+                onError={handleIframeError}
+                style={{ opacity: isLoading ? 0 : 1 }}
+              />
+            )}
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import type {
+import {
   AgentAddParams,
   AgentCardInfo,
   AgentComponentAddParams,
@@ -17,6 +17,7 @@ import type {
   AgentConversationUpdateParams,
   AgentPageUpdateParams,
   AgentPublishApplyParams,
+  ApiAgentConversationChatPageResultParams,
 } from '@/types/interfaces/agent';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import type {
@@ -322,6 +323,16 @@ export async function apiAgentComponentEventUpdate(
   data: AgentComponentEventUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/event/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 页面请求结果回写
+export async function apiAgentComponentPageResultUpdate(
+  data: ApiAgentConversationChatPageResultParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/conversation/chat/page/result', {
     method: 'POST',
     data,
   });

@@ -708,3 +708,11 @@ export interface UserApiKeyInfo {
   };
   created: string;
 }
+
+// 页面请求结果回写参数
+export interface ApiAgentConversationChatPageResultParams {
+  // 请求ID
+  requestId: string;
+  // 结果HTML
+  html: string;
+}
