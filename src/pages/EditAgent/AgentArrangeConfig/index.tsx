@@ -872,6 +872,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     asyncFun(true);
   };
 
+  // 取消页面设置弹窗
+  const handleCancelPageModel = () => {
+    setOpenPageModel(false);
+    // 重新查询智能体配置组件列表
+    asyncFun(true);
+  };
+
   return (
     <div className={classNames('overflow-y', 'flex-1', styles.container)}>
       <ConfigOptionsHeader title="技能" />
@@ -942,7 +949,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       <PageSettingModal
         open={openPageModel}
         currentComponentInfo={currentComponentInfo}
-        onCancel={() => setOpenPageModel(false)}
+        onCancel={handleCancelPageModel}
       />
     </div>
   );

@@ -33,8 +33,11 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
   const [componentInfo, setComponentInfo] = useState<AgentComponentInfo>();
 
   useEffect(() => {
-    setComponentInfo(currentComponentInfo);
-  }, [currentComponentInfo]);
+    if (open) {
+      setAction(PageSettingEnum.Visible_To_LLM);
+      setComponentInfo(currentComponentInfo);
+    }
+  }, [open, currentComponentInfo]);
 
   // 更新智能体页面配置
   const { runAsync: runUpdate } = useRequest(apiAgentPageUpdate, {
