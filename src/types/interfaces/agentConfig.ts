@@ -2,8 +2,11 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
+  EventListEnum,
+  HomeIndexEnum,
   InvokeTypeEnum,
   OutputDirectlyEnum,
+  VisibleToLLMEnum,
 } from '@/types/enums/agent';
 import type { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { ComponentSettingEnum, OpenCloseEnum } from '@/types/enums/space';
@@ -71,6 +74,13 @@ export interface ComponentSettingModalProps {
   devConversationId?: number;
   variables?: BindConfigWithSub[];
   settingActionList?: { type: ComponentSettingEnum; label: string }[];
+  onCancel: () => void;
+}
+
+// 页面设置弹窗Props
+export interface PageSettingModalProps {
+  open: boolean;
+  currentComponentInfo?: AgentComponentInfo;
   onCancel: () => void;
 }
 
@@ -160,6 +170,20 @@ export interface OutputWayProps {
   onSaveSet: (data: OutputDirectlyParams) => void;
 }
 
+// 页面是否模型可见组件属性
+export interface VisibleToLLMProps {
+  visibleToLLMType: VisibleToLLMEnum;
+  onChangePageInfo: (attr: string, value: number) => void;
+  onSaveSet: () => void;
+}
+
+// 是否为智能体页面首页组件属性
+export interface HomeIndexProps {
+  homeIndexType: HomeIndexEnum;
+  onChangePageInfo: (attr: string, value: number) => void;
+  onSaveSet: () => void;
+}
+
 // 异步运行保存形参
 export interface AsyncRunSaveParams {
   async: DefaultSelectedEnum;
@@ -222,7 +246,6 @@ export interface LongMemoryContentProps {
 // 开场白组件
 export interface OpenRemarksEditProps {
   agentConfigInfo?: AgentConfigInfo;
-  variables: BindConfigWithSub[];
   pageArgConfigs: PageArgConfig[];
   onChangeAgent: (
     value: string | string[] | GuidQuestionDto[],
@@ -239,7 +262,6 @@ export interface GuidQuestionSetModalProps {
   open: boolean;
   agentConfigInfo?: AgentConfigInfo;
   currentGuidQuestionDto?: GuidQuestionDto;
-  variables: BindConfigWithSub[];
   pageArgConfigs: PageArgConfig[];
   onCancel: () => void;
   onConfirm: (result: GuidQuestionDto[]) => void;
@@ -274,7 +296,11 @@ export interface VariableListProps {
 // 事件列表组件
 export interface EventListProps {
   textClassName?: string;
-  onClick: (item: AgentComponentEventConfig) => void;
+  onClick: (
+    item: AgentComponentEventConfig,
+    action: EventListEnum,
+    index: number,
+  ) => void;
   list: AgentComponentEventConfig[];
 }
 

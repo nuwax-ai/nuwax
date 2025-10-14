@@ -1,4 +1,21 @@
 .input-box {
   margin-top: 16px;
   font-size: 12px;
+  cursor: pointer;
+}
+
+// Table 折叠动画
+.table-collapse-wrapper {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out;
+}
+
+.table-collapse-active {
+  max-height: 600px;
+}
+
+.modal-body {
+  max-height: 500px;
+  overflow-y: auto;
 }

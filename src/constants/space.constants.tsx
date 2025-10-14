@@ -16,6 +16,7 @@ import {
   CreateListEnum,
   FilterStatusEnum,
   OpenCloseEnum,
+  PageSettingEnum,
   SpaceApplicationList,
   SpaceApplicationListEnum,
 } from '@/types/enums/space';
@@ -176,6 +177,18 @@ export const COMPONENT_SETTING_ACTIONS = [
   {
     type: ComponentSettingEnum.Card_Bind,
     label: '卡片绑定',
+  },
+];
+
+// 智能体编排-组件设置列表
+export const PAGE_SETTING_ACTIONS = [
+  {
+    type: PageSettingEnum.Visible_To_LLM,
+    label: '模型可见',
+  },
+  {
+    type: PageSettingEnum.Home_Index,
+    label: '默认首页',
   },
 ];
 
