@@ -230,32 +230,36 @@ export const useAppDevVersionCompare = ({
 
         // 获取目标版本文件内容
         const response = await getProjectContentByVersion(projectId, version);
-
+        const files = response?.data?.files.map((file: any) => {
+          return {
+            ...file,
+            name: file.name.replace(
+              '../../project_zips/1976620100358377472/his_temp/',
+              '',
+            ),
+          };
+        });
         console.log('📥 [useAppDevVersionCompare] API 响应:', {
           code: response?.code,
-          hasFiles: !!response?.data?.files,
-          filesType: Array.isArray(response?.data?.files)
-            ? 'array'
-            : typeof response?.data?.files,
-          filesKeys: response?.data?.files
-            ? Object.keys(response.data.files).slice(0, 5)
-            : [],
+          hasFiles: !!files,
+          filesType: Array.isArray(files) ? 'array' : typeof files,
+          filesKeys: files ? Object.keys(files).slice(0, 5) : [],
         });
 
-        if (response?.code === '0000' && response?.data?.files) {
+        if (response?.code === '0000' && files) {
           // 处理 API 返回的文件数据，确保是 Record<string, string> 格式
           let targetFiles: Record<string, string> = {};
 
-          if (Array.isArray(response.data.files)) {
+          if (Array.isArray(files)) {
             // 如果是数组格式 ProjectFileInfo[]
-            response.data.files.forEach((file: any) => {
+            files.forEach((file: any) => {
               if (file.name && file.contents !== undefined) {
                 targetFiles[file.name] = String(file.contents || '');
               }
             });
-          } else if (typeof response.data.files === 'object') {
+          } else if (typeof files === 'object') {
             // 如果是对象格式 Record<string, any>
-            Object.entries(response.data.files).forEach(([path, content]) => {
+            Object.entries(files).forEach(([path, content]) => {
               targetFiles[path] = String(content || '');
             });
           }

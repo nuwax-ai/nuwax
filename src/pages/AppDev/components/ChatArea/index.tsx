@@ -150,6 +150,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return chat.chatMessages.map(renderChatMessage);
   }, [chat.chatMessages, renderChatMessage]);
 
+  const labelRender = useCallback((props: any) => {
+    return <span>v{props.value.replace('v', '')}</span>;
+  }, []);
+
   return (
     <Card className={styles.chatCard} bordered={false}>
       {/* 聊天模式切换 */}
@@ -173,10 +177,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               }
               size="small"
               className={styles.versionSelector}
-              dropdownClassName={styles.versionDropdown}
               options={projectInfo.versionList.map((version) => ({
-                value: `v${version.version}`,
-                label: (
+                label: `v${version.version}`,
+                value: version.version,
+                action: version.action,
+              }))}
+              labelRender={labelRender}
+              popupMatchSelectWidth={150}
+              optionRender={(option) => {
+                return (
                   <div
                     style={{
                       display: 'flex',
@@ -184,21 +193,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                       alignItems: 'center',
                     }}
                   >
-                    <span>v{version.version}</span>
+                    <span>v{option.data.value}</span>
                     <Tag
-                      color={projectInfo.getActionColor(version.action)}
+                      color={projectInfo.getActionColor(option.data.action)}
                       style={{ marginLeft: 8, fontSize: '10px' }}
                     >
-                      {projectInfo.getActionText(version.action)}
+                      {projectInfo.getActionText(option.data.action)}
                     </Tag>
                   </div>
-                ),
-              }))}
+                );
+              }}
               suffixIcon={<DownOutlined />}
               onChange={(value) => {
-                const versionNumber = parseInt(value.replace('v', ''));
-                console.log('选择版本:', versionNumber);
-                onVersionSelect(versionNumber);
+                onVersionSelect(parseInt(value));
               }}
               placeholder="选择版本"
               disabled={projectInfo.versionList.length === 0}
