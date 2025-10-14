@@ -116,10 +116,23 @@ export const createProject = async (
 export const uploadAndStartProject = async (
   params: UploadAndStartProjectParams,
 ): Promise<RequestResponse<UploadAndStartProjectResponse>> => {
-  const { file, projectName } = params;
+  const { file, projectName, projectId, spaceId, projectDesc, icon } = params;
   const formData = new FormData();
   formData.append('file', file);
   formData.append('projectName', projectName);
+
+  if (projectId) {
+    formData.append('projectId', projectId);
+  }
+  if (spaceId) {
+    formData.append('spaceId', spaceId.toString());
+  }
+  if (projectDesc) {
+    formData.append('projectDesc', projectDesc);
+  }
+  if (icon) {
+    formData.append('icon', icon);
+  }
 
   return request('/api/custom-page/upload-and-start', {
     method: 'POST',

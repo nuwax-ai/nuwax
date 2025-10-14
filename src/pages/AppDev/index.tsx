@@ -78,7 +78,7 @@ const AppDev: React.FC = () => {
     setActiveFile,
     updateFileContent,
     updateDevServerUrl,
-    updateProjectId,
+    // updateProjectId, // 暂时未使用，保留以备将来使用
     updateWorkspace,
   } = appDevModel;
 
@@ -93,7 +93,7 @@ const AppDev: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
-  const [projectName, setProjectName] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // 部署相关状态
   const [isDeploying, setIsDeploying] = useState(false);
@@ -562,40 +562,48 @@ const AppDev: React.FC = () => {
   /**
    * 处理项目上传
    */
-  const handleUploadProject = useCallback(
-    async (file: File) => {
-      if (!projectName.trim()) {
-        message.error('请输入项目名称');
-        return;
+  const handleUploadProject = useCallback(async () => {
+    if (!selectedFile) {
+      message.error('请先选择文件');
+      return;
+    }
+
+    try {
+      setUploadLoading(true);
+
+      const result = await uploadAndStartProject({
+        file: selectedFile,
+        projectId: projectId || undefined,
+        projectName: workspace.projectName || '未命名项目',
+        spaceId: 32, //TODO 后续 删除 这个参数
+      });
+
+      if (result?.success && result?.data) {
+        message.success('项目导入成功，正在重新加载页面...');
+        setIsUploadModalVisible(false);
+        setSelectedFile(null);
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      } else {
+        message.warning('项目上传成功，但返回数据格式异常');
       }
+    } catch (error) {
+      console.error('上传项目失败:', error);
+      message.error(error instanceof Error ? error.message : '上传项目失败');
+    } finally {
+      setUploadLoading(false);
+    }
+  }, [selectedFile, projectId, workspace.projectName]);
 
-      try {
-        setUploadLoading(true);
-        const result = await uploadAndStartProject({ file, projectName });
-
-        if (result?.success && result?.data) {
-          const { projectIdStr: newProjectId, devServerUrl } = result.data;
-
-          updateProjectId(newProjectId);
-          if (devServerUrl) {
-            updateDevServerUrl(devServerUrl);
-          }
-
-          message.success('项目上传并启动成功');
-          setIsUploadModalVisible(false);
-          setProjectName('');
-        } else {
-          message.warning('项目上传成功，但返回数据格式异常');
-        }
-      } catch (error) {
-        console.error('上传项目失败:', error);
-        message.error(error instanceof Error ? error.message : '上传项目失败');
-      } finally {
-        setUploadLoading(false);
-      }
-    },
-    [projectName, updateProjectId, updateDevServerUrl],
-  );
+  /**
+   * 处理文件选择
+   */
+  const handleFileSelect = useCallback((file: File) => {
+    setSelectedFile(file);
+    return false; // 阻止自动上传
+  }, []);
 
   /**
    * 处理单个文件选择
@@ -1744,40 +1752,64 @@ const AppDev: React.FC = () => {
           open={isUploadModalVisible && !chat.isChatLoading} // 新增：聊天加载时禁用
           onCancel={() => {
             setIsUploadModalVisible(false);
-            setProjectName('');
+            setSelectedFile(null);
           }}
-          footer={null}
+          footer={[
+            <Button
+              key="cancel"
+              onClick={() => {
+                setIsUploadModalVisible(false);
+                setSelectedFile(null);
+              }}
+            >
+              取消
+            </Button>,
+            <Button
+              key="confirm"
+              type="primary"
+              loading={uploadLoading}
+              onClick={handleUploadProject}
+              disabled={!selectedFile || uploadLoading}
+            >
+              确认导入
+            </Button>,
+          ]}
           width={500}
         >
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <div>
-              <Text strong>项目名称：</Text>
-              <Input
-                placeholder="请输入项目名称"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                style={{ marginTop: 8 }}
-              />
-            </div>
-            <div>
-              <Text strong>项目文件：</Text>
-              <Upload.Dragger
-                accept=".zip,.tar.gz,.rar"
-                beforeUpload={(file) => {
-                  handleUploadProject(file);
-                  return false;
+          <div>
+            <Upload.Dragger
+              accept=".zip,.tar.gz,.rar"
+              beforeUpload={(file) => handleFileSelect(file)}
+              disabled={uploadLoading}
+              showUploadList={false}
+            >
+              <p className="ant-upload-drag-icon">
+                <UploadOutlined />
+              </p>
+              <p className="ant-upload-text">点击或拖拽文件到此区域选择</p>
+              <p className="ant-upload-hint">
+                支持 .zip、.tar.gz、.rar 格式（将更新当前项目）
+              </p>
+            </Upload.Dragger>
+            {selectedFile && (
+              <div
+                style={{
+                  marginTop: 16,
+                  padding: 12,
+                  background: '#f5f5f5',
+                  borderRadius: 6,
                 }}
-                disabled={uploadLoading}
-                style={{ marginTop: 8 }}
               >
-                <p className="ant-upload-drag-icon">
-                  <UploadOutlined />
-                </p>
-                <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
-                <p className="ant-upload-hint">支持 .zip、.tar.gz、.rar 格式</p>
-              </Upload.Dragger>
-            </div>
-          </Space>
+                <Text strong>已选择文件：</Text>
+                <br />
+                <Text>{selectedFile.name}</Text>
+                <br />
+                <Text type="secondary">
+                  文件大小：{(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </Text>
+              </div>
+            )}
+          </div>
         </Modal>
 
         {/* 单文件上传模态框 */}

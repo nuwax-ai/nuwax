@@ -127,6 +127,14 @@ export interface UploadAndStartProjectParams {
   file: File;
   /** 项目名称 */
   projectName: string;
+  /** 项目ID，如果提供则更新现有项目 */
+  projectId?: string;
+  /** 空间ID */
+  spaceId?: number;
+  /** 项目描述 */
+  projectDesc?: string;
+  /** 项目图标 */
+  icon?: string;
 }
 
 /**
