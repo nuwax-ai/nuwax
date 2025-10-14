@@ -82,19 +82,19 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   }, [messageInfo, files]);
 
   // 停止按钮disabled - 只有在会话进行中时才可停止，与输入框内容无关
-  const disabledStop = useMemo(() => {
-    return (
-      !isConversationActive ||
-      isStoppingConversation ||
-      loadingStopConversation ||
-      loadingStopTempConversation
-    );
-  }, [
-    isConversationActive,
-    isStoppingConversation,
-    loadingStopConversation,
-    loadingStopTempConversation,
-  ]);
+  // const disabledStop = useMemo(() => {
+  //   return (
+  //     !isConversationActive ||
+  //     isStoppingConversation ||
+  //     loadingStopConversation ||
+  //     loadingStopTempConversation
+  //   );
+  // }, [
+  //   isConversationActive,
+  //   isStoppingConversation,
+  //   loadingStopConversation,
+  //   loadingStopTempConversation,
+  // ]);
 
   // 点击发送事件
   const handleSendMessage = () => {
@@ -165,9 +165,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 停止会话功能 - 直接集成到组件内部
   const handleStopConversation = useCallback(() => {
-    if (disabledStop || wholeDisabled) {
-      return;
-    }
+    // if (disabledStop || wholeDisabled) {
+    //   return;
+    // }
     // 设置停止操作状态
     setIsStoppingConversation(true);
 
@@ -183,8 +183,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       }
     }
   }, [
-    disabledStop,
-    wholeDisabled,
+    // disabledStop,
+    // wholeDisabled,
     getCurrentConversationRequestId,
     runStopConversation,
     onTempChatStop,
@@ -206,9 +206,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 获取停止按钮提示文本
   const getStopButtonTooltip = () => {
-    if (wholeDisabled) {
-      return '会话已禁用';
-    }
+    // if (wholeDisabled) {
+    //   return '会话已禁用';
+    // }
     if (!isConversationActive) {
       return '当前无进行中的会话';
     }
@@ -329,11 +329,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   // 当会话进行中且按钮可点击时，使用高亮样式
                   {
                     [styles['stop-box-active']]:
-                      !disabledStop &&
-                      !wholeDisabled &&
+                      // !disabledStop &&
+                      // !wholeDisabled &&
                       !isStoppingConversation,
                   },
-                  { [styles.disabled]: disabledStop || wholeDisabled },
+                  // { [styles.disabled]: disabledStop || wholeDisabled },
                 )}
               >
                 {isStoppingConversation ? (
