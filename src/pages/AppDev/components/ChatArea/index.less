@@ -260,6 +260,28 @@
 // 消息内容
 .messageContent {
   margin-bottom: 8px;
+
+  // MarkdownRenderer 容器样式调整 - 仅限 ChatArea 组件内
+  :global(.markdown-container) {
+    background: transparent;
+    padding: 0;
+
+    // 确保在消息气泡内正确显示
+    :global(*) {
+      max-width: 100%;
+      word-wrap: break-word;
+    }
+  }
+}
+
+// 专门为 ChatArea 中的 MarkdownRenderer 添加字体大小调整
+.chatAreaMarkdown {
+  :global(.ds-markdown) {
+    --ds-md-zoom: 1; // 移除缩放，使用原始字体大小
+
+    font-size: 12px; // 设置为与消息气泡相同的字体大小
+    line-height: 1.5; // 调整行高
+  }
 }
 
 // 流式传输指示器

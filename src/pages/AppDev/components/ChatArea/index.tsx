@@ -1,3 +1,4 @@
+import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { cancelAgentTask } from '@/services/appDev';
 import type { AppDevChatMessage } from '@/types/interfaces/appDev';
 import { DownOutlined, SendOutlined, StopOutlined } from '@ant-design/icons';
@@ -97,43 +98,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }, [chat, projectId]);
 
   /**
-   * 滚动到底部
+   * 发送消息前的处理
    */
-  const scrollToBottom = useCallback(() => {
-    if (chatMessagesRef.current) {
-      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
-    }
-  }, []);
+  const handleSendMessage = useCallback(() => {
+    // 检查滚动位置并决定是否开启自动滚动
+    checkAndEnableAutoScroll();
 
-  /**
-   * 处理滚动事件
-   */
-  const handleScroll = useCallback(() => {
-    if (!chatMessagesRef.current) return;
-
-    const { scrollTop, scrollHeight, clientHeight } = chatMessagesRef.current;
-    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-
-    // 距离底部超过 100px，取消自动滚动并显示按钮
-    if (distanceFromBottom > 100) {
-      setIsAutoScroll(false);
-      setShowScrollButton(true);
-    }
-    // 距离底部小于 50px，重新启用自动滚动并隐藏按钮
-    else if (distanceFromBottom < 50) {
-      setIsAutoScroll(true);
-      setShowScrollButton(false);
-    }
-  }, []);
-
-  /**
-   * 滚动按钮点击处理
-   */
-  const handleScrollButtonClick = useCallback(() => {
-    scrollToBottom();
-    setIsAutoScroll(true);
-    setShowScrollButton(false);
-  }, [scrollToBottom]);
+    // 发送消息
+    chat.sendChat();
+  }, [checkAndEnableAutoScroll, chat]);
 
   /**
    * 渲染聊天消息 - 按 role 区分渲染
@@ -170,9 +143,41 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           <div className={styles.messageBubble}>
             {/* 消息内容 */}
             <div className={styles.messageContent}>
-              {message.text?.split('\n').map((line: string, index: number) => (
-                <div key={index}>{line}</div>
-              ))}
+              {isUser ? (
+                // USER 消息: 保持纯文本渲染
+                message.text
+                  ?.split('\n')
+                  .map((line: string, index: number) => (
+                    <div key={index}>{line}</div>
+                  ))
+              ) : (
+                // ASSISTANT 消息: 使用 PureMarkdownRenderer 流式渲染
+                <div className={styles.chatAreaMarkdown}>
+                  {/* 调试信息 */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div
+                      style={{
+                        fontSize: '10px',
+                        color: '#999',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Debug: {message.text?.length || 0} chars, streaming:{' '}
+                      {isStreaming ? 'yes' : 'no'}, typing:{' '}
+                      {isHistoryMessage ? 'disabled' : 'enabled'}, autoScroll:{' '}
+                      {isAutoScroll ? 'on' : 'off'}
+                    </div>
+                  )}
+                  <PureMarkdownRenderer
+                    key={message.id}
+                    id={message.id}
+                    theme="light"
+                    disableTyping={isHistoryMessage}
+                  >
+                    {message.text}
+                  </PureMarkdownRenderer>
+                </div>
+              )}
             </div>
 
             {/* 流式传输指示器 */}
@@ -299,6 +304,71 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       scrollToBottom();
     }
   }, [chat.chatMessages, isAutoScroll, scrollToBottom]);
+
+  /**
+   * 监听消息内容变化，在打字机效果期间也保持自动滚动
+   */
+  useEffect(() => {
+    if (isAutoScroll && chat.chatMessages.length > 0) {
+      // 使用 requestAnimationFrame 确保在 DOM 更新后滚动
+      const timeoutId = requestAnimationFrame(() => {
+        scrollToBottom();
+      });
+
+      return () => cancelAnimationFrame(timeoutId);
+    }
+  }, [
+    chat.chatMessages.map((msg) => msg.text).join(''),
+    isAutoScroll,
+    scrollToBottom,
+  ]);
+
+  /**
+   * 监听流式消息状态变化，确保在打字机效果期间保持滚动
+   */
+  useEffect(() => {
+    if (chat.chatMessages.length > 0) {
+      // 检查是否有正在流式传输的消息
+      const hasStreamingMessage = chat.chatMessages.some(
+        (msg) => msg.isStreaming,
+      );
+
+      if (hasStreamingMessage) {
+        // 在流式传输期间，定期检查并滚动到底部
+        const intervalId = setInterval(() => {
+          if (isAutoScroll) {
+            scrollToBottom();
+          }
+          // 同时检查滚动位置，更新滚动按钮状态
+          checkScrollPosition();
+        }, 100); // 每100ms检查一次
+
+        return () => clearInterval(intervalId);
+      }
+    }
+  }, [
+    chat.chatMessages.map((msg) => msg.isStreaming).join(''),
+    isAutoScroll,
+    scrollToBottom,
+    checkScrollPosition,
+  ]);
+
+  /**
+   * 监听历史消息加载完成，确保滚动到底部
+   */
+  useEffect(() => {
+    if (!chat.isLoadingHistory && chat.chatMessages.length > 0) {
+      // 历史消息加载完成，延迟一点时间确保 DOM 渲染完成
+      const timeoutId = setTimeout(() => {
+        scrollToBottom();
+        // 确保自动滚动开启
+        setIsAutoScroll(true);
+        setShowScrollButton(false);
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [chat.isLoadingHistory, chat.chatMessages.length, scrollToBottom]);
 
   const labelRender = useCallback((props: any) => {
     return <span>v{props.value.replace('v', '')}</span>;
@@ -431,7 +501,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           placeholder="向AI助手提问..."
           value={chat.chatInput}
           onChange={(e) => chat.setChatInput(e.target.value)}
-          onPressEnter={chat.sendChat}
+          onPressEnter={handleSendMessage}
           suffix={
             <div style={{ display: 'flex', gap: 4 }}>
               {chat.isChatLoading && (
@@ -446,7 +516,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               <Button
                 type="text"
                 icon={<SendOutlined />}
-                onClick={chat.sendChat}
+                onClick={handleSendMessage}
                 disabled={!chat.chatInput.trim() || chat.isChatLoading}
               />
             </div>
