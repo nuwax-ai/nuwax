@@ -320,7 +320,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
                 onClick={() => setIsActive(!isActive)}
               />
               <span className={cx('user-select-none')}>输入</span>
-              <TooltipIcon title="输入" icon={<InfoCircleOutlined />} />
+              <TooltipIcon title="配置输入参数" icon={<InfoCircleOutlined />} />
             </div>
             <div
               className={cx(

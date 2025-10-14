@@ -520,6 +520,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           textClassName={cx(styles.text)}
           type={AgentComponentTypeEnum.Table}
           list={filterList(AgentComponentTypeEnum.Table)}
+          deleteList={deleteList}
           onSet={handlePluginSet}
           onDel={handleAgentComponentDel}
         />
@@ -722,6 +723,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           textClassName={cx(styles.text)}
           type={AgentComponentTypeEnum.Page}
           list={filterList(AgentComponentTypeEnum.Page)}
+          deleteList={deleteList}
           onSet={handlePageSet}
           // todo: 界面配置 - 删除
           onDel={handleAgentComponentDel}
