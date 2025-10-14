@@ -208,7 +208,7 @@ const PagePreview: React.FC = () => {
       <div
         ref={containerRef}
         className={cx(styles['page-preview-container'])}
-        style={{ width: `${width}%` }}
+        style={{ width: `${width}%`, minWidth: 680 }}
       >
         {/* 拖拽分隔条 */}
         <div
