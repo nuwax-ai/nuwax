@@ -46,7 +46,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
   const [form] = Form.useForm();
   const { token } = theme.useToken();
   // 是否展开
-  const [isActive, setIsActive] = useState<boolean>(false);
+  const [isActive, setIsActive] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   // 响应动作类型，默认为扩展页面打开
   const [type, setType] = useState<EventBindResponseActionEnum>(
@@ -102,6 +102,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
       setPathList([]);
       setArgs([]);
       setCurrentPageId(null);
+      setIsActive(true);
     };
   }, [open, currentEventConfig]);
 
@@ -242,7 +243,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Input
-            placeholder="请填写"
+            placeholder={`请输入${record.description}`}
             value={record.bindValue}
             onChange={(e) =>
               handleInputValue(record.key, 'bindValue', e.target.value)

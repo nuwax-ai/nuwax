@@ -48,7 +48,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
 }) => {
   const { token } = theme.useToken();
   // 是否展开
-  const [isActive, setIsActive] = useState<boolean>(false);
+  const [isActive, setIsActive] = useState<boolean>(true);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(false);
   // 图标
@@ -122,6 +122,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       setArgs([]);
       setCurrentPageId(null);
       setPathList([]);
+      setIsActive(true);
     };
   }, [open, currentGuidQuestionDto, pageArgConfigs]);
 
@@ -244,8 +245,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Input
-            rootClassName={cx(styles.select)}
-            placeholder="请填写"
+            placeholder={`请输入${record.description}`}
             value={record.bindValue}
             onChange={(e) =>
               handleInputValue(record.key, 'bindValue', e.target.value)

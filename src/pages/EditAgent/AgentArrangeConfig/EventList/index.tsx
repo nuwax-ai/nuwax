@@ -34,7 +34,7 @@ const EventList: React.FC<EventListProps> = ({
     </div>
   ) : (
     <p className={cx(textClassName)}>
-      用于保存用户个人信息，让智能体记住用户的特征，使回复更加个性化。
+      通过事件绑定可给大模型返回的内容指定点击操作响应。
     </p>
   );
 };
