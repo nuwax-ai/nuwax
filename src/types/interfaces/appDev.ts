@@ -862,3 +862,29 @@ export interface SaveConversationParams {
  * 查询会话列表响应
  */
 export type ListConversationsResponse = RequestResponse<ConversationRecord[]>;
+
+// ==================== Agent服务管理相关类型定义 ====================
+
+/**
+ * Agent服务状态响应数据
+ */
+export interface AgentStatusResponseData {
+  /** Agent服务是否正在运行 */
+  is_alive: boolean;
+  /** Agent服务状态 */
+  status: string;
+  /** 会话ID（如果正在运行） */
+  session_id?: string;
+  /** 项目ID */
+  project_id?: string;
+}
+
+/**
+ * Agent服务状态API响应类型
+ */
+export type AgentStatusResponse = RequestResponse<AgentStatusResponseData>;
+
+/**
+ * 停止Agent服务API响应类型
+ */
+export type StopAgentServiceResponse = RequestResponse<Record<string, any>>;

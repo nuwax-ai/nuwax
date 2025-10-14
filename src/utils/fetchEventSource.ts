@@ -20,6 +20,15 @@ export async function createSSEConnection<T = any>(
   options: SSEOptions<T>,
 ): Promise<() => void> {
   const controller = options.abortController || new AbortController();
+  let isAborted = false;
+
+  const abortFunction = () => {
+    if (!isAborted) {
+      console.log('🔌 [SSE Utils] 手动中止 SSE 连接');
+      isAborted = true;
+      controller.abort();
+    }
+  };
 
   try {
     await fetchEventSource(options.url, {
@@ -39,6 +48,7 @@ export async function createSSEConnection<T = any>(
         if (response.status >= 400) {
           throw new Error(`SSE连接失败: ${response.statusText}`);
         }
+        console.log('✅ [SSE Utils] SSE 连接已建立');
         options.onOpen?.(response);
       },
 
@@ -54,20 +64,25 @@ export async function createSSEConnection<T = any>(
       },
 
       onclose: () => {
+        console.log('🔌 [SSE Utils] SSE 连接已关闭');
         options.onClose?.();
       },
 
       onerror: (error) => {
+        console.error('❌ [SSE Utils] SSE 连接错误:', error);
         options.onError?.(error);
-        controller.abort();
+        if (!isAborted) {
+          controller.abort();
+        }
         throw error; // 停止自动重试
       },
     });
   } catch (error) {
     const normalized =
       error instanceof Error ? error : new Error(String(error));
+    console.error('❌ [SSE Utils] SSE 连接异常:', normalized);
     options.onError?.(normalized);
   }
 
-  return () => controller.abort();
+  return abortFunction;
 }

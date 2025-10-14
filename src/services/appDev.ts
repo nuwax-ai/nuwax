@@ -448,3 +448,27 @@ export const listConversations = async (params: {
     params,
   });
 };
+
+// ==================== Agent服务管理相关API服务 ====================
+
+/**
+ * 检查Agent服务状态
+ * @param projectId 项目ID
+ * @returns Promise<any> Agent服务状态
+ */
+export const checkAgentStatus = async (projectId: string): Promise<any> => {
+  return request(`/api/custom-page/agent/status/${projectId}`, {
+    method: 'GET',
+  });
+};
+
+/**
+ * 停止Agent服务
+ * @param projectId 项目ID
+ * @returns Promise<any> 停止结果
+ */
+export const stopAgentService = async (projectId: string): Promise<any> => {
+  return request(`/api/custom-page/agent/stop?project_id=${projectId}`, {
+    method: 'POST',
+  });
+};

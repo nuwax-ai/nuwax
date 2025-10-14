@@ -3,18 +3,18 @@
  */
 
 import {
-  cancelAgentTask,
+  checkAgentStatus,
   listConversations,
   saveConversation,
   sendChatMessage,
+  stopAgentService,
 } from '@/services/appDev';
 import { MessageModeEnum } from '@/types/enums/agent';
-import { MessageStatusEnum } from '@/types/enums/common';
 import type {
   AppDevChatMessage,
   UnifiedSessionMessage,
 } from '@/types/interfaces/appDev';
-import { message } from 'antd';
+import { message, Modal } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 
@@ -34,22 +34,12 @@ export const useAppDevChat = ({
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false); // 新增：历史会话加载状态
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   // 用于存储超时定时器的 ref
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 页面可见性状态
-  const [isPageVisible, setIsPageVisible] = useState(true);
-
-  // 最后活动时间
-  const lastActivityRef = useRef<number>(Date.now());
-
-  // 重连定时器
-  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // 保活定时器
-  const keepAliveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // 记录用户主动发送的消息数量（不包括历史消息）
+  const userSentMessageCountRef = useRef(0);
 
   const handleSaveConversation = useCallback(
     (
@@ -92,116 +82,65 @@ export const useAppDevChat = ({
   );
 
   /**
-   * 处理SSE消息 - 基于 request_id 分组处理
+   * 处理SSE消息 - 基于 request_id 过滤处理
    */
   const handleSSEMessage = useCallback(
-    (message: UnifiedSessionMessage) => {
+    (message: UnifiedSessionMessage, activeRequestId: string) => {
       console.log(
         '📨 [SSE] 收到消息:',
         `${message.messageType}.${message.subType}`,
         message.data,
       );
 
+      // 只处理匹配当前request_id的消息
+      const messageRequestId = message.data?.request_id;
+
+      if (messageRequestId !== activeRequestId) {
+        console.warn('收到不匹配的request_id消息，忽略:', {
+          expected: activeRequestId,
+          received: messageRequestId,
+        });
+        return;
+      }
+
       switch (message.messageType) {
         case 'sessionPromptStart': {
-          // 从 data 中提取 request_id
-          const requestId = message.data?.request_id;
-          if (!requestId) {
-            console.warn('⚠️ prompt_start 缺少 request_id');
-            return;
-          }
-
-          // 创建 ASSISTANT 占位消息
+          // 创建ASSISTANT占位消息
           const assistantMessage: AppDevChatMessage = {
-            id: `assistant_${requestId}_${Date.now()}_${Math.random()
-              .toString(36)
-              .slice(2, 9)}`,
+            id: `assistant_${activeRequestId}_${Date.now()}`,
             role: 'ASSISTANT',
             type: MessageModeEnum.CHAT,
             text: '',
             think: '',
             time: new Date().toISOString(),
-            status: MessageStatusEnum.Loading,
-            requestId: requestId,
+            status: null,
+            requestId: activeRequestId,
             sessionId: message.sessionId,
             isStreaming: true,
             timestamp: new Date(),
           };
-
           setChatMessages((prev) => [...prev, assistantMessage]);
-          setIsChatLoading(true);
           break;
         }
 
-        // case 'agent_thought_chunk': {
-        //   const requestId = message.data?.request_id;
-        //   const thoughtText =
-        //     message.data?.thinking || message.data?.text || '';
-
-        //   setChatMessages((prev) => {
-        //     const index = prev.findIndex(
-        //       (msg) =>
-        //         msg.requestId === requestId &&
-        //         msg.role === 'ASSISTANT' &&
-        //         msg.isStreaming,
-        //     );
-        //     if (index >= 0) {
-        //       const updated = [...prev];
-        //       updated[index] = {
-        //         ...updated[index],
-        //         think: (updated[index].think || '') + thoughtText,
-        //       };
-        //       return updated;
-        //     } else {
-        //       console.warn(
-        //         '⚠️ [SSE] agent_thought_chunk 未找到对应的 ASSISTANT 消息，requestId:',
-        //         requestId,
-        //       );
-        //     }
-        //     return prev;
-        //   });
-        //   break;
-        // }
-
         case 'agentSessionUpdate': {
           if (message.subType === 'agent_message_chunk') {
-            const requestId = message.data?.request_id;
             const chunkText = message.data?.text || '';
             const isFinal = message.data?.is_final;
-            console.log(
-              '📝 [SSE] agent_message_chunk 收到，requestId:',
-              requestId,
-              'isFinal:',
-              isFinal,
-            );
 
             setChatMessages((prev) => {
               const index = prev.findIndex(
                 (msg) =>
-                  msg.requestId === requestId &&
-                  msg.role === 'ASSISTANT' &&
-                  msg.isStreaming,
+                  msg.requestId === activeRequestId && msg.role === 'ASSISTANT',
               );
               if (index >= 0) {
                 const updated = [...prev];
                 updated[index] = {
                   ...updated[index],
                   text: (updated[index].text || '') + chunkText,
-                  status: isFinal
-                    ? MessageStatusEnum.Complete
-                    : MessageStatusEnum.Incomplete,
-                  isStreaming: !isFinal, // 如果 isFinal 为 true，则停止流式传输
+                  isStreaming: !isFinal,
                 };
-                console.log(
-                  '📝 [SSE] 更新 ASSISTANT 消息，isStreaming:',
-                  !isFinal,
-                );
                 return updated;
-              } else {
-                console.warn(
-                  '⚠️ [SSE] agent_message_chunk 未找到对应的 ASSISTANT 消息，requestId:',
-                  requestId,
-                );
               }
               return prev;
             });
@@ -210,67 +149,45 @@ export const useAppDevChat = ({
         }
 
         case 'sessionPromptEnd': {
-          const requestId = message.data?.request_id;
-          const sessionId = message.sessionId;
-          console.log('🏁 [SSE] prompt_end 收到，requestId:', requestId);
-          console.log('🏁 [SSE] 当前会话状态:', {
-            sessionId,
-            projectId,
-            chatMessagesCount: chatMessages.length,
-          });
+          console.log('🏁 [SSE] 收到 sessionPromptEnd，准备关闭SSE连接');
 
+          // 标记消息完成
           setChatMessages((prev) => {
-            console.log(
-              '🔍 [SSE] prompt_end 当前消息列表:',
-              prev.map((msg) => ({
-                id: msg.id,
-                role: msg.role,
-                requestId: msg.requestId,
-                status: msg.status,
-                isStreaming: false,
-              })),
-            );
-
-            // 查找所有匹配 requestId 的 ASSISTANT 消息（不管 isStreaming 状态）
             const index = prev.findIndex(
-              (msg) => msg.requestId === requestId && msg.role === 'ASSISTANT',
+              (msg) =>
+                msg.requestId === activeRequestId && msg.role === 'ASSISTANT',
             );
             if (index >= 0) {
-              console.log(
-                '✅ [SSE] 找到对应的 ASSISTANT 消息，标记为完成，索引:',
-                index,
-              );
               const updated = [...prev];
               updated[index] = {
                 ...updated[index],
-                status: MessageStatusEnum.Complete,
                 isStreaming: false,
               };
-              console.log('📝 [SSE] 更新后的消息:', updated[index]);
-              handleSaveConversation(
-                updated.filter((msg) => msg.requestId === requestId), // 只保存当前 requestId 的会话
-                sessionId,
-                projectId,
-              ); // 自动保存会话
-              return updated;
-            } else {
-              console.warn(
-                '⚠️ [SSE] 未找到对应的 ASSISTANT 消息，requestId:',
-                requestId,
-                '当前所有消息的 requestId:',
-                prev.map((msg) => ({
-                  role: msg.role,
-                  requestId: msg.requestId,
-                })),
+
+              // 保存会话
+              const userMessage = prev.find(
+                (m) => m.requestId === activeRequestId && m.role === 'USER',
               );
+              if (userMessage) {
+                handleSaveConversation(
+                  [userMessage, updated[index]],
+                  message.sessionId,
+                  projectId,
+                );
+              }
+
+              return updated;
             }
             return prev;
           });
 
-          // 无论是否找到对应消息，都要结束 loading 状态
-          console.log('🔄 [SSE] 设置 isChatLoading = false');
           setIsChatLoading(false);
 
+          // 延迟关闭SSE连接，确保消息处理完成
+          setTimeout(() => {
+            console.log('🔌 [SSE] 延迟关闭SSE连接');
+            appDevSseModel.disconnectAppDevSSE();
+          }, 100);
           break;
         }
 
@@ -283,30 +200,30 @@ export const useAppDevChat = ({
           console.log('📭 [SSE] 未处理的事件类型:', message.subType);
       }
     },
-    [setIsChatLoading, setChatMessages, handleSaveConversation],
+    [projectId, handleSaveConversation, appDevSseModel],
   );
-
-  /**
-   * 更新最后活动时间
-   */
-  const updateLastActivity = useCallback(() => {
-    lastActivityRef.current = Date.now();
-  }, []);
 
   /**
    * 初始化 AppDev SSE 连接
    */
   const initializeAppDevSSEConnection = useCallback(
-    async (sessionId: string) => {
-      console.log('🔧 [Chat] 初始化 AppDev SSE 连接，sessionId:', sessionId);
+    async (sessionId: string, requestId: string) => {
+      console.log(
+        '🔧 [Chat] 初始化 AppDev SSE 连接，sessionId:',
+        sessionId,
+        'requestId:',
+        requestId,
+      );
 
       await appDevSseModel.initializeAppDevSSEConnection({
         baseUrl: 'http://localhost:3000',
         sessionId,
-        onMessage: handleSSEMessage,
+        onMessage: (msg: UnifiedSessionMessage) =>
+          handleSSEMessage(msg, requestId), // 传入requestId用于过滤
         onError: (error: Event) => {
           console.error('❌ [Chat] AppDev SSE 连接错误:', error);
           message.error('AI助手连接失败');
+          setIsChatLoading(false);
         },
         onOpen: () => {
           console.log('🔌 [Chat] AppDev SSE 连接已建立');
@@ -320,151 +237,15 @@ export const useAppDevChat = ({
   );
 
   /**
-   * 检查是否需要重连 SSE
+   * 发送消息并建立SSE连接的核心逻辑
    */
-  const checkAndReconnectSSE = useCallback(async () => {
-    const now = Date.now();
-    const timeSinceLastActivity = now - lastActivityRef.current;
-
-    // 如果页面可见且超过 15 分钟无活动，或者页面不可见超过 5 分钟
-    const shouldReconnect =
-      (isPageVisible && timeSinceLastActivity > 15 * 60 * 1000) || // 15分钟
-      (!isPageVisible && timeSinceLastActivity > 5 * 60 * 1000); // 5分钟
-
-    if (shouldReconnect && currentSessionId) {
-      console.log('🔄 [Chat] 检测到需要重连 SSE，原因:', {
-        isPageVisible,
-        timeSinceLastActivity: Math.round(timeSinceLastActivity / 1000 / 60),
-        minutes: '分钟',
-      });
-
-      // 先断开现有连接
-      appDevSseModel.disconnectAppDevSSE();
-
-      // 延迟重连
-      setTimeout(async () => {
-        try {
-          await initializeAppDevSSEConnection(currentSessionId);
-          updateLastActivity();
-          console.log('✅ [Chat] SSE 重连成功');
-        } catch (error) {
-          console.error('❌ [Chat] SSE 重连失败:', error);
-        }
-      }, 1000);
-    }
-  }, [
-    isPageVisible,
-    currentSessionId,
-    appDevSseModel,
-    initializeAppDevSSEConnection,
-    updateLastActivity,
-  ]);
-
-  /**
-   * 启动保活定时器
-   */
-  const startKeepAliveTimer = useCallback(() => {
-    // 清除现有定时器
-    if (keepAliveTimerRef.current) {
-      clearInterval(keepAliveTimerRef.current);
-    }
-
-    // 每 5 分钟检查一次
-    keepAliveTimerRef.current = setInterval(() => {
-      checkAndReconnectSSE();
-    }, 5 * 60 * 1000);
-
-    console.log('⏰ [Chat] 保活定时器已启动，每 5 分钟检查一次');
-  }, [checkAndReconnectSSE]);
-
-  /**
-   * 停止保活定时器
-   */
-  const stopKeepAliveTimer = useCallback(() => {
-    if (keepAliveTimerRef.current) {
-      clearInterval(keepAliveTimerRef.current);
-      keepAliveTimerRef.current = null;
-      console.log('⏹️ [Chat] 保活定时器已停止');
-    }
-  }, []);
-
-  /**
-   * 页面可见性变化处理
-   */
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      const isVisible = !document.hidden;
-      setIsPageVisible(isVisible);
-
-      console.log('👁️ [Chat] 页面可见性变化:', isVisible ? '可见' : '隐藏');
-
-      if (isVisible) {
-        // 页面变为可见时，更新活动时间并检查连接
-        updateLastActivity();
-        checkAndReconnectSSE();
-      }
-    };
-
-    // 监听页面可见性变化
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // 监听页面焦点变化
-    const handleFocus = () => {
-      setIsPageVisible(true);
-      updateLastActivity();
-      checkAndReconnectSSE();
-    };
-
-    const handleBlur = () => {
-      setIsPageVisible(false);
-    };
-
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('blur', handleBlur);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('blur', handleBlur);
-    };
-  }, [updateLastActivity, checkAndReconnectSSE]);
-
-  /**
-   * 组件卸载时清理资源
-   */
-  useEffect(() => {
-    return () => {
-      // 清理所有定时器
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      if (reconnectTimerRef.current) {
-        clearTimeout(reconnectTimerRef.current);
-      }
-      stopKeepAliveTimer();
-
-      // 断开 SSE 连接
-      appDevSseModel.cleanupAppDev();
-
-      console.log('🧹 [Chat] 组件卸载，已清理所有资源');
-    };
-  }, [appDevSseModel, stopKeepAliveTimer]);
-
-  /**
-   * 发送聊天消息 - SSE 长连接模式
-   */
-  const sendChat = useCallback(async () => {
-    if (!chatInput.trim()) return;
-
-    // 更新活动时间
-    updateLastActivity();
-
-    // 1. 生成唯一 request_id
+  const sendMessageAndConnectSSE = useCallback(async () => {
+    // 生成临时request_id
     const requestId = `req_${Date.now()}_${Math.random()
       .toString(36)
       .slice(2, 9)}`;
 
-    // 2. 添加用户消息
+    // 添加用户消息
     const userMessage: AppDevChatMessage = {
       id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
       role: 'USER',
@@ -478,88 +259,103 @@ export const useAppDevChat = ({
 
     setChatMessages((prev) => [...prev, userMessage]);
     setChatInput('');
-    console.log('🚀 [Chat] 设置 isChatLoading = true，requestId:', requestId);
     setIsChatLoading(true);
+
     try {
-      // 3. 调用 API (传递 request_id)
+      // 调用发送消息API
       const response = await sendChatMessage({
         prompt: chatInput,
         project_id: projectId,
-        session_id: currentSessionId || undefined,
-        request_id: requestId, // 关键: 传递 request_id
+        request_id: requestId,
       });
 
       if (response.success && response.data) {
-        const serverSessionId = response.data.session_id;
+        const sessionId = response.data.session_id;
 
-        // 4. 首次发送时建立 SSE 连接
-        if (!currentSessionId) {
-          setCurrentSessionId(serverSessionId);
-          await initializeAppDevSSEConnection(serverSessionId);
-          // 启动保活定时器
-          startKeepAliveTimer();
-        }
-        // 后续发送复用已有 SSE 连接,不需要重新建立
+        // 立即建立SSE连接（使用返回的session_id）
+        await initializeAppDevSSEConnection(sessionId, requestId);
       } else {
         throw new Error(response.message || '发送消息失败');
       }
     } catch (error) {
-      console.error('AI聊天失败:', error);
-      message.error(
-        `AI聊天失败: ${error instanceof Error ? error.message : '未知错误'}`,
-      );
-      console.log(
-        '❌ [Chat] 错误处理：设置 isChatLoading = false，requestId:',
-        requestId,
-      );
+      console.error('发送消息失败:', error);
+      message.error('发送消息失败');
       setIsChatLoading(false);
-      // 清除超时定时器
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-
-      // 标记 ASSISTANT 消息为错误状态
-      setChatMessages((prev) => {
-        const index = prev.findIndex(
-          (msg) => msg.requestId === requestId && msg.role === 'ASSISTANT',
-        );
-        if (index >= 0) {
-          const updated = [...prev];
-          updated[index] = {
-            ...updated[index],
-            status: MessageStatusEnum.Error,
-            isStreaming: false,
-          };
-          return updated;
-        }
-        return prev;
-      });
     }
-  }, [
-    chatInput,
-    currentSessionId,
-    projectId,
-    initializeAppDevSSEConnection,
-    updateLastActivity,
-    startKeepAliveTimer,
-  ]);
+  }, [chatInput, projectId, initializeAppDevSSEConnection]);
+
+  /**
+   * 发送聊天消息 - 每次消息独立SSE连接
+   */
+  const sendChat = useCallback(async () => {
+    if (!chatInput.trim()) return;
+
+    // 1. 用户主动发送的第一条消息：检查Agent服务状态
+    // 注意：这里只统计用户主动发送的消息，不包括历史消息
+    if (userSentMessageCountRef.current === 0) {
+      try {
+        const statusResponse = await checkAgentStatus(projectId);
+        console.log('🔍 [Chat] Agent状态检查结果:', statusResponse);
+        if (
+          statusResponse.data?.is_alive &&
+          statusResponse.data?.status === 'Active'
+        ) {
+          // 显示确认对话框
+          Modal.confirm({
+            title: '检测到后台Agent服务正在运行',
+            content: '是否停止当前运行的Agent服务？',
+            onOk: async () => {
+              try {
+                const stopResponse = await stopAgentService(projectId);
+                console.log('🛑 [Chat] 停止Agent服务响应:', stopResponse);
+
+                if (stopResponse.code === '0000') {
+                  message.success('Agent服务已停止');
+                  // 增加计数并继续发送消息
+                  userSentMessageCountRef.current += 1;
+                  await sendMessageAndConnectSSE();
+                } else {
+                  message.error(
+                    `停止Agent服务失败: ${stopResponse.message || '未知错误'}`,
+                  );
+                }
+              } catch (error) {
+                console.error('停止Agent服务失败:', error);
+                message.error('停止Agent服务失败');
+              }
+            },
+            onCancel: () => {
+              // 用户取消停止Agent服务，不发送消息，不增加计数
+              message.info('已取消发送');
+            },
+          });
+          return; // 等待用户确认，不继续执行
+        }
+      } catch (error) {
+        console.error('检查Agent状态失败:', error);
+        // 检查失败时仍然允许发送消息，增加计数
+      }
+      // 检查完成且没有运行中的Agent，或检查失败，增加计数并发送
+      userSentMessageCountRef.current += 1;
+    } else {
+      // 非第一条消息，直接增加计数
+      userSentMessageCountRef.current += 1;
+    }
+
+    // 发送消息
+    await sendMessageAndConnectSSE();
+  }, [chatInput, projectId, sendMessageAndConnectSSE]);
 
   /**
    * 取消聊天任务
    */
   const cancelChat = useCallback(async () => {
-    if (!currentSessionId || !projectId) {
+    if (!projectId) {
       return;
     }
 
     try {
       console.log('🛑 [Chat] 取消AI聊天任务');
-
-      // 更新活动时间
-      updateLastActivity();
-
-      await cancelAgentTask(projectId, currentSessionId);
 
       // 断开 AppDev SSE 连接
       appDevSseModel.disconnectAppDevSSE();
@@ -572,7 +368,6 @@ export const useAppDevChat = ({
           if (msg.isStreaming && msg.role === 'ASSISTANT') {
             return {
               ...msg,
-              status: MessageStatusEnum.Error,
               isStreaming: false,
               text: msg.text + '\n\n[已取消]',
             };
@@ -586,7 +381,7 @@ export const useAppDevChat = ({
       console.error('取消AI任务失败:', error);
       message.error('取消AI任务失败');
     }
-  }, [currentSessionId, projectId, appDevSseModel, updateLastActivity]);
+  }, [projectId, appDevSseModel]);
 
   /**
    * 清理 AppDev SSE 连接
@@ -615,7 +410,6 @@ export const useAppDevChat = ({
 
           // 清空当前消息并加载历史消息
           setChatMessages(messages);
-          setCurrentSessionId(sessionId);
 
           console.log('✅ [Chat] 已加载历史会话:', sessionId);
         }
@@ -650,7 +444,6 @@ export const useAppDevChat = ({
 
         // 合并所有会话的消息
         const allMessages: AppDevChatMessage[] = [];
-        let latestSessionId: string | null = null;
 
         for (const conversation of sortedConversations) {
           try {
@@ -668,11 +461,6 @@ export const useAppDevChat = ({
             }));
 
             allMessages.push(...messagesWithSessionInfo);
-
-            // 记录最新的会话ID
-            if (!latestSessionId) {
-              latestSessionId = conversation.sessionId;
-            }
           } catch (parseError) {
             console.warn(
               '⚠️ [Chat] 解析会话内容失败:',
@@ -691,12 +479,10 @@ export const useAppDevChat = ({
 
         // 加载所有历史消息
         setChatMessages(allMessages);
-        setCurrentSessionId(latestSessionId);
 
         console.log('✅ [Chat] 已自动加载所有历史会话:', {
           totalConversations: sortedConversations.length,
           totalMessages: allMessages.length,
-          latestSessionId,
           conversations: sortedConversations.map((conv: any) => ({
             sessionId: conv.sessionId,
             topic: conv.topic,
@@ -739,14 +525,29 @@ export const useAppDevChat = ({
     }
   }, [projectId, loadAllHistorySessions]);
 
+  /**
+   * 组件卸载时清理资源
+   */
+  useEffect(() => {
+    return () => {
+      // 清理超时定时器
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // 断开 SSE 连接
+      appDevSseModel.disconnectAppDevSSE();
+
+      console.log('🧹 [Chat] 组件卸载，已清理所有资源');
+    };
+  }, [appDevSseModel]);
+
   return {
     // 状态
     chatMessages,
     chatInput,
     isChatLoading,
     isLoadingHistory, // 新增：历史会话加载状态
-    currentSessionId,
-    isPageVisible,
 
     // 方法
     setChatInput,
@@ -754,9 +555,7 @@ export const useAppDevChat = ({
     sendChat,
     cancelChat,
     cleanupAppDevSSE,
-    updateLastActivity,
     loadHistorySession,
-    stopKeepAliveTimer,
     loadAllHistorySessions, // 新增：自动加载所有历史会话
   };
 };
