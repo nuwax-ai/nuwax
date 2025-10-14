@@ -127,6 +127,14 @@ export interface UploadAndStartProjectParams {
   file: File;
   /** 项目名称 */
   projectName: string;
+  /** 项目ID，如果提供则更新现有项目 */
+  projectId?: string;
+  /** 空间ID */
+  spaceId?: number;
+  /** 项目描述 */
+  projectDesc?: string;
+  /** 项目图标 */
+  icon?: string;
 }
 
 /**
@@ -528,8 +536,12 @@ export interface AppDevChatMessage {
   sessionId?: string;
   /** 是否正在流式传输 */
   isStreaming?: boolean;
-  /** 时间戳 */
-  timestamp: Date;
+  /** 时间戳（用于排序） */
+  timestamp?: Date;
+  /** 会话主题（历史消息专用） */
+  conversationTopic?: string;
+  /** 会话创建时间（历史消息专用） */
+  conversationCreated?: string;
 }
 
 // ==================== 文件管理相关类型定义 ====================
@@ -819,3 +831,34 @@ export enum ProjectType {
   /** 在线部署 */
   ONLINE_DEPLOY = 'ONLINE_DEPLOY',
 }
+
+// ==================== 会话管理相关类型定义 ====================
+
+/**
+ * 会话记录信息
+ */
+export interface ConversationRecord {
+  projectId: number;
+  sessionId: string;
+  content: string;
+  topic: string;
+  summary?: string;
+  created: string;
+  creatorId: number;
+}
+
+/**
+ * 保存会话请求参数
+ */
+export interface SaveConversationParams {
+  projectId: number;
+  sessionId: string;
+  content: string;
+  topic: string;
+  summary?: string;
+}
+
+/**
+ * 查询会话列表响应
+ */
+export type ListConversationsResponse = RequestResponse<ConversationRecord[]>;

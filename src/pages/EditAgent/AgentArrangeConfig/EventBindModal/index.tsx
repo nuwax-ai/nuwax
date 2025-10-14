@@ -154,7 +154,8 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
     const index = eventConfigs.findIndex(
       (item: AgentComponentEventConfig) =>
         item.pageUri === currentEventConfig?.pageUri &&
-        item.pageId === currentEventConfig?.pageId,
+        item.pageId === currentEventConfig?.pageId &&
+        item.name === currentEventConfig?.name,
     );
     // 如果存在，则更新，否则新增
     if (index !== -1) {
@@ -260,6 +261,9 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
       loading={loading}
       onCancel={onCancel}
       onConfirm={handlerSubmit}
+      classNames={{
+        body: styles['modal-body'],
+      }}
     >
       <Form
         form={form}
@@ -316,18 +320,25 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
                 onClick={() => setIsActive(!isActive)}
               />
               <span className={cx('user-select-none')}>输入</span>
-              <TooltipIcon title="输入" icon={<InfoCircleOutlined />} />
+              <TooltipIcon title="配置输入参数" icon={<InfoCircleOutlined />} />
             </div>
-            <Table<BindConfigWithSub>
-              className={cx('mb-16', 'flex-1')}
-              columns={inputColumns}
-              dataSource={args}
-              pagination={false}
-              virtual
-              scroll={{
-                y: 480,
-              }}
-            />
+            <div
+              className={cx(
+                styles['table-collapse-wrapper'],
+                isActive && styles['table-collapse-active'],
+              )}
+            >
+              <Table<BindConfigWithSub>
+                className={cx('mb-16', 'flex-1')}
+                columns={inputColumns}
+                dataSource={args}
+                pagination={false}
+                virtual
+                scroll={{
+                  y: 480,
+                }}
+              />
+            </div>
           </>
         )
       }

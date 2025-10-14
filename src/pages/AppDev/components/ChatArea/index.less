@@ -82,38 +82,44 @@
   align-items: center;
 }
 
+// 历史会话选择器包装器
+.conversationSelectorWrapper {
+  display: flex;
+  align-items: center;
+}
+
 // 版本选择器
 .versionSelector {
-  min-width: 60px;
+  // min-width: 60px;
 
-  :global(.ant-select-selector) {
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 6px !important;
-    background: #fff !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 5%) !important;
-    transition: all 0.2s ease !important;
+  // :global(.ant-select-selector) {
+  //   border: 1px solid #e2e8f0 !important;
+  //   border-radius: 6px !important;
+  //   background: #fff !important;
+  //   box-shadow: 0 1px 2px rgba(0, 0, 0, 5%) !important;
+  //   transition: all 0.2s ease !important;
 
-    &:hover {
-      border-color: #3b82f6 !important;
-      box-shadow: 0 2px 4px rgba(59, 130, 246, 10%) !important;
-    }
+  //   &:hover {
+  //     border-color: #3b82f6 !important;
+  //     box-shadow: 0 2px 4px rgba(59, 130, 246, 10%) !important;
+  //   }
 
-    &:focus {
-      border-color: #3b82f6 !important;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 20%) !important;
-    }
-  }
+  //   &:focus {
+  //     border-color: #3b82f6 !important;
+  //     box-shadow: 0 0 0 2px rgba(59, 130, 246, 20%) !important;
+  //   }
+  // }
 
-  :global(.ant-select-selection-item) {
-    color: #1e293b !important;
-    font-weight: 500 !important;
-    font-size: 12px !important;
-  }
+  // :global(.ant-select-selection-item) {
+  //   color: #1e293b !important;
+  //   font-weight: 500 !important;
+  //   font-size: 12px !important;
+  // }
 
-  :global(.ant-select-arrow) {
-    color: #64748b !important;
-    font-size: 10px !important;
-  }
+  // :global(.ant-select-arrow) {
+  //   color: #64748b !important;
+  //   font-size: 10px !important;
+  // }
 }
 
 // 版本下拉菜单
@@ -166,6 +172,61 @@
 
     &:hover {
       background: rgba(0, 0, 0, 30%);
+    }
+  }
+}
+
+// 加载容器
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+// 会话分隔符
+.conversationDivider {
+  display: flex;
+  align-items: center;
+  margin: 24px 0 16px;
+  gap: 12px;
+
+  .dividerLine {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgba(0, 0, 0, 10%),
+      transparent
+    );
+  }
+
+  .dividerContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 2%);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 6%);
+    min-width: 200px;
+
+    .conversationTopic {
+      font-size: 12px;
+      font-weight: 500;
+      color: #666;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .conversationTime {
+      font-size: 11px;
+      color: #999;
     }
   }
 }
