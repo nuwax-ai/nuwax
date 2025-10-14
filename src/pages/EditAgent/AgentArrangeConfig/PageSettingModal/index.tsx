@@ -1,5 +1,6 @@
 import { PAGE_SETTING_ACTIONS } from '@/constants/space.constants';
 import { apiAgentPageUpdate } from '@/services/agentConfig';
+import { HomeIndexEnum } from '@/types/enums/agent';
 import { PageSettingEnum } from '@/types/enums/space';
 import {
   AgentComponentInfo,
@@ -24,6 +25,7 @@ const cx = classNames.bind(styles);
 const PageSettingModal: React.FC<PageSettingModalProps> = ({
   open,
   currentComponentInfo,
+  allPageComponentList,
   onCancel,
 }) => {
   const [action, setAction] = useState<PageSettingEnum>(
@@ -42,17 +44,56 @@ const PageSettingModal: React.FC<PageSettingModalProps> = ({
   // 更新智能体页面配置
   const { runAsync: runUpdate } = useRequest(apiAgentPageUpdate, {
     manual: true,
-    debounceWait: 1000,
   });
 
   // 保存方法调用方式、输出方式或异步运行配置
   const handleSaveSetting = async () => {
-    const data = {
-      id: componentInfo?.id || 0,
-      bindConfig: componentInfo?.bindConfig,
-    } as AgentPageUpdateParams;
-    await runUpdate(data);
-    message.success('保存成功');
+    try {
+      // 如果当前页面设置为默认首页，则需要将其他页面设置为非默认首页
+      if (componentInfo?.bindConfig?.homeIndex === HomeIndexEnum.Yes) {
+        // 收集所有需要更新的页面
+        const updatePromises: Promise<any>[] = [];
+
+        allPageComponentList?.forEach((item) => {
+          // 非当前页面且为默认首页，则设置为非默认首页
+          if (
+            item.id !== componentInfo?.id &&
+            item.bindConfig?.homeIndex === HomeIndexEnum.Yes
+          ) {
+            const _item = { ...item };
+            _item.bindConfig.homeIndex = HomeIndexEnum.No;
+            const pageNotHomeIndexData = {
+              id: _item?.id,
+              bindConfig: _item?.bindConfig,
+            } as AgentPageUpdateParams;
+
+            // 为每个请求添加错误处理，避免单个失败影响整体
+            updatePromises.push(
+              runUpdate(pageNotHomeIndexData).catch((error) => {
+                console.error('更新其他页面失败:', error);
+                return null;
+              }),
+            );
+          }
+        });
+
+        // 等待所有其他页面更新完成（即使部分失败也继续）
+        if (updatePromises.length > 0) {
+          Promise.all(updatePromises);
+        }
+      }
+
+      // 更新当前页面配置
+      const data = {
+        id: componentInfo?.id,
+        bindConfig: componentInfo?.bindConfig,
+      } as AgentPageUpdateParams;
+      await runUpdate(data);
+      message.success('保存成功');
+    } catch (error) {
+      console.error('保存配置失败:', error);
+      message.error('保存失败，请重试');
+    }
   };
 
   // 更新智能体页面配置

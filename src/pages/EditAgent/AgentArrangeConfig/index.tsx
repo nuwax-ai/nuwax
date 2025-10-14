@@ -157,14 +157,23 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     return agentComponentList?.find(
       (item: AgentComponentInfo) =>
         item.type === AgentComponentTypeEnum.Variable,
-    ) as AgentComponentInfo;
+    );
   }, [agentComponentList]);
 
   // 绑定的事件信息
   const eventsInfo = useMemo(() => {
     return agentComponentList?.find(
       (item: AgentComponentInfo) => item.type === AgentComponentTypeEnum.Event,
-    ) as AgentComponentInfo;
+    );
+  }, [agentComponentList]);
+
+  // 所有页面组件列表
+  const allPageComponentList = useMemo(() => {
+    return (
+      agentComponentList?.filter(
+        (info: AgentComponentInfo) => info.type === AgentComponentTypeEnum.Page,
+      ) || []
+    );
   }, [agentComponentList]);
 
   // 绑定的页面参数配置信息
@@ -725,7 +734,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         <CollapseComponentList
           textClassName={cx(styles.text)}
           type={AgentComponentTypeEnum.Page}
-          list={filterList(AgentComponentTypeEnum.Page)}
+          list={allPageComponentList}
           deleteList={deleteList}
           onSet={handlePageSet}
           onDel={handleAgentComponentDel}
@@ -949,6 +958,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       <PageSettingModal
         open={openPageModel}
         currentComponentInfo={currentComponentInfo}
+        allPageComponentList={allPageComponentList}
         onCancel={handleCancelPageModel}
       />
     </div>

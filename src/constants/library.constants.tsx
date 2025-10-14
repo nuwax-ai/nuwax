@@ -182,16 +182,16 @@ export const REQUEST_CONTENT_FORMAT = [
 // 传入方法
 export const AFFERENT_MODE_LIST = [
   {
+    value: InputTypeEnum.Query,
+    label: 'Query',
+  },
+  {
     value: InputTypeEnum.Body,
     label: 'Body',
   },
   {
     value: InputTypeEnum.Path,
     label: 'Path',
-  },
-  {
-    value: InputTypeEnum.Query,
-    label: 'Query',
   },
   {
     value: InputTypeEnum.Header,
