@@ -230,11 +230,25 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
         <div className={cx('h-full', 'flex', 'items-center')}>
           <span>参数值</span>
           <TooltipIcon
-            title="可以在输入框中动态引用参数，留空的参数将由大模型自动补充
-              智能体ID {{AGENT_ID}}     
-              系统用户ID {{SYS_USER_ID}}    
-              用户UID {{USER_UID}}
-              用户名 {{USER_NAME}}"
+            title={
+              <>
+                <div>
+                  可以在输入框中动态引用参数，留空的参数将由大模型自动补充
+                </div>
+                <div>
+                  智能体ID {'{{'}AGENT_ID{'}}'}
+                </div>
+                <div>
+                  系统用户ID {'{{'}SYS_USER_ID{'}}'}
+                </div>
+                <div>
+                  用户UID {'{{'}USER_UID{'}}'}
+                </div>
+                <div>
+                  用户名 {'{{'}USER_NAME{'}}'}
+                </div>
+              </>
+            }
             icon={<InfoCircleOutlined />}
           />
         </div>
