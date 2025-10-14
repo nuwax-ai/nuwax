@@ -261,6 +261,9 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
       loading={loading}
       onCancel={onCancel}
       onConfirm={handlerSubmit}
+      classNames={{
+        body: styles['modal-body'],
+      }}
     >
       <Form
         form={form}
@@ -319,16 +322,23 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
               <span className={cx('user-select-none')}>输入</span>
               <TooltipIcon title="输入" icon={<InfoCircleOutlined />} />
             </div>
-            <Table<BindConfigWithSub>
-              className={cx('mb-16', 'flex-1')}
-              columns={inputColumns}
-              dataSource={args}
-              pagination={false}
-              virtual
-              scroll={{
-                y: 480,
-              }}
-            />
+            <div
+              className={cx(
+                styles['table-collapse-wrapper'],
+                isActive && styles['table-collapse-active'],
+              )}
+            >
+              <Table<BindConfigWithSub>
+                className={cx('mb-16', 'flex-1')}
+                columns={inputColumns}
+                dataSource={args}
+                pagination={false}
+                virtual
+                scroll={{
+                  y: 480,
+                }}
+              />
+            </div>
           </>
         )
       }

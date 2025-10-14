@@ -264,6 +264,9 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       loading={loading}
       onCancel={onCancel}
       onConfirm={handlerSubmit}
+      classNames={{
+        body: styles['modal-body'],
+      }}
     >
       <Form
         form={form}
@@ -319,17 +322,23 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
               <span className={cx('user-select-none')}>输入</span>
               <TooltipIcon title="输入" icon={<InfoCircleOutlined />} />
             </div>
-            <Table<BindConfigWithSub>
-              className={cx('mb-16', 'flex-1')}
-              columns={inputColumns}
-              rowKey="key"
-              dataSource={args}
-              pagination={false}
-              virtual
-              scroll={{
-                y: 480,
-              }}
-            />
+            <div
+              className={cx(
+                styles['table-collapse-wrapper'],
+                isActive && styles['table-collapse-active'],
+              )}
+            >
+              <Table<BindConfigWithSub>
+                className={cx('mb-16', 'flex-1')}
+                columns={inputColumns}
+                dataSource={args}
+                pagination={false}
+                virtual
+                scroll={{
+                  y: 480,
+                }}
+              />
+            </div>
           </>
         )
       }
