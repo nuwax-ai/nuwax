@@ -73,11 +73,13 @@ const Chat: React.FC = () => {
 
   // 会话输入框已选择组件
   const {
-    selectedComponentList,
+    selectedComponentList: _selectedComponentList,
     setSelectedComponentList,
     handleSelectComponent,
     initSelectedComponentList,
   } = useSelectedComponent();
+
+  const selectedComponentList = infos ? infos : [..._selectedComponentList];
 
   const {
     conversationInfo,
