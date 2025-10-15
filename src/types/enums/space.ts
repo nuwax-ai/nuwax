@@ -97,8 +97,10 @@ export enum AgentArrangeConfigEnum {
   Opening_Remarks = 'Opening_Remarks',
   // 页面
   Page = 'Page',
-  // 界面设置
-  Page_Setting = 'Page_Setting',
+  // 默认展开页面区
+  Default_Expand_Page_Area = 'Default_Expand_Page_Area',
+  // 隐藏主会话框
+  Hide_Chat_Area = 'Hide_Chat_Area',
   // 界面事件绑定
   Page_Event_Binding = 'Page_Event_Binding',
 }
