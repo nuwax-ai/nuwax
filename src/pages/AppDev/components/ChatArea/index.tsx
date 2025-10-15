@@ -50,7 +50,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     handleUserScroll,
     handleScrollButtonClick,
     forceScrollToBottomAndEnable,
-    setShowScrollButton,
   } = useChatScroll();
 
   /**
@@ -411,7 +410,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         )}
 
         {/* 调试信息 - 仅在开发环境显示 */}
-        {process.env.NODE_ENV === 'development' && (
+        {/* {process.env.NODE_ENV === 'development' && (
           <div
             style={{
               position: 'absolute',
@@ -448,7 +447,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               测试显示按钮
             </button>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* 选中的数据源显示区域 */}
