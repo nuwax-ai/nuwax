@@ -553,6 +553,12 @@ export interface AgentDetailDto extends AgentBaseInfo {
   allowCopy: AllowCopyEnum;
   // 当前登录用户是否收藏
   collect: boolean;
+  // 是否默认展开扩展页面区域, 1 展开；0 不展开
+  expandPageArea: ExpandPageAreaEnum;
+  // 是否隐藏聊天区域，1 隐藏；0 不隐藏
+  hideChatArea: HideChatAreaEnum;
+  // 扩展页面首页
+  pageHomeIndex: string;
 }
 
 // 日志查询过滤条件

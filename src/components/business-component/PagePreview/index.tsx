@@ -17,22 +17,38 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 /**
+ * PagePreview 组件的 Props 接口
+ */
+interface PagePreviewProps {
+  /** 初始宽度（百分比），默认为 66 */
+  initialWidth?: number;
+  /** 是否显示拖拽分隔条，默认为 true */
+  showResizeHandle?: boolean;
+  /** 是否显示关闭按钮，默认为 true */
+  showCloseButton?: boolean;
+}
+
+/**
  * 页面预览组件
  * - 显示在聊天区域右侧
  * - 支持拖拽调整宽度
  * - 使用 iframe 加载页面
  */
-const PagePreview: React.FC = () => {
+const PagePreview: React.FC<PagePreviewProps> = ({
+  initialWidth = 66,
+  showResizeHandle = true,
+  showCloseButton = true,
+}) => {
   const chatModel = useModel('chat');
   const { pagePreviewData, hidePagePreview } = chatModel;
 
   // 预览区域宽度（百分比）
-  const [width, setWidth] = useState<number>(66); // 初始宽度 66%
+  const [width, setWidth] = useState<number>(initialWidth);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef<number>(0);
-  const startWidthRef = useRef<number>(50);
+  const startWidthRef = useRef<number>(initialWidth);
 
   // 构建页面 URL（拼接 query 参数）
   const pageUrl = useMemo(() => {
@@ -211,12 +227,14 @@ const PagePreview: React.FC = () => {
         style={{ width: `${width}%`, minWidth: 680 }}
       >
         {/* 拖拽分隔条 */}
-        <div
-          className={cx(styles['resize-handle'])}
-          onMouseDown={handleMouseDown}
-        >
-          <div className={cx(styles['resize-handle-bar'])} />
-        </div>
+        {showResizeHandle && (
+          <div
+            className={cx(styles['resize-handle'])}
+            onMouseDown={handleMouseDown}
+          >
+            <div className={cx(styles['resize-handle-bar'])} />
+          </div>
+        )}
 
         {/* 预览内容区域 */}
         <div className={cx(styles['page-preview-content'])}>
@@ -226,10 +244,12 @@ const PagePreview: React.FC = () => {
               <SvgIcon name="icons-page" className={cx(styles['page-icon'])} />
               <span>{pagePreviewData.name || '页面预览'}</span>
             </h3>
-            <CloseOutlined
-              className={cx(styles['close-btn'], 'cursor-pointer')}
-              onClick={handleClose}
-            />
+            {showCloseButton && (
+              <CloseOutlined
+                className={cx(styles['close-btn'], 'cursor-pointer')}
+                onClick={handleClose}
+              />
+            )}
           </div>
 
           {/* iframe 预览区域 */}

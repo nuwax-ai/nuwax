@@ -315,9 +315,6 @@ const EditAgent: React.FC = () => {
         break;
     }
   };
-  console.log('expandPageArea：', agentConfigInfo?.expandPageArea);
-  console.log('hideChatArea：', agentConfigInfo?.hideChatArea);
-  console.log('pageHomeIndex：', agentConfigInfo?.pageHomeIndex);
 
   useEffect(() => {
     // 判断是否默认展示页面首页
@@ -329,7 +326,7 @@ const EditAgent: React.FC = () => {
       // 自动触发预览
       showPagePreview({
         name: '页面预览',
-        uri: agentConfigInfo?.pageHomeIndex,
+        uri: process.env.BASE_URL + agentConfigInfo?.pageHomeIndex,
         params: {},
         executeId: '',
       });
@@ -403,6 +400,7 @@ const EditAgent: React.FC = () => {
           agentConfigInfo={agentConfigInfo}
           agentId={agentId}
           onPressDebug={handlePressDebug}
+          onAgentConfigInfo={setAgentConfigInfo}
         />
         {/*调试详情*/}
         <DebugDetails
