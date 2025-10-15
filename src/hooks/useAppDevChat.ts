@@ -130,9 +130,12 @@ export const useAppDevChat = ({
               );
               if (index >= 0) {
                 const updated = [...prev];
+                const beforeText = updated[index].text || '';
                 updated[index] = {
                   ...updated[index],
-                  text: (updated[index].text || '') + chunkText,
+                  text: beforeText
+                    ? beforeText + '\n\n' + chunkText
+                    : chunkText,
                   isStreaming: !isFinal,
                 };
                 return updated;
