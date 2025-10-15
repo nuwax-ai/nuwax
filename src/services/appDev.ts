@@ -11,6 +11,7 @@ import type {
   CreateProjectParams,
   DevServerInfo,
   GetProjectContentResponse,
+  KeepAliveResponse,
   PageFileInfo,
   ProjectDetailResponse,
   SubmitFilesResponse,
@@ -202,9 +203,11 @@ export const getFileContent = async (
 /**
  * 开发服务器保活接口
  * @param projectId 项目ID
- * @returns Promise<any> 保活结果
+ * @returns Promise<KeepAliveResponse> 保活结果，包含最新的开发服务器URL
  */
-export const keepAlive = async (projectId: string): Promise<any> => {
+export const keepAlive = async (
+  projectId: string,
+): Promise<KeepAliveResponse> => {
   return request('/api/custom-page/keepalive', {
     method: 'POST',
     data: {

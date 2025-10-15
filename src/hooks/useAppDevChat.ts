@@ -336,25 +336,30 @@ export const useAppDevChat = ({
           Modal.confirm({
             title: '检测到后台Agent服务正在运行',
             content: '是否停止当前运行的Agent服务？',
-            onOk: async () => {
-              try {
-                const stopResponse = await stopAgentService(projectId);
-                console.log('🛑 [Chat] 停止Agent服务响应:', stopResponse);
-
-                if (stopResponse.code === '0000') {
-                  message.success('Agent服务已停止');
-                  // 增加计数并继续发送消息
-                  userSentMessageCountRef.current += 1;
-                  await sendMessageAndConnectSSE();
-                } else {
-                  message.error(
-                    `停止Agent服务失败: ${stopResponse.message || '未知错误'}`,
-                  );
-                }
-              } catch (error) {
-                console.error('停止Agent服务失败:', error);
-                message.error('停止Agent服务失败');
-              }
+            onOk: () => {
+              return new Promise((resolve, reject) => {
+                stopAgentService(projectId)
+                  .then((stopResponse) => {
+                    if (stopResponse.code === '0000') {
+                      message.success('Agent服务已停止');
+                      // 增加计数并继续发送消息
+                      userSentMessageCountRef.current += 1;
+                      sendMessageAndConnectSSE();
+                      resolve(true);
+                    } else {
+                      message.error(
+                        `停止Agent服务失败: ${
+                          stopResponse.message || '未知错误'
+                        }`,
+                      );
+                      reject();
+                    }
+                  })
+                  .catch(() => {
+                    message.error('停止Agent服务失败');
+                    reject();
+                  });
+              });
             },
             onCancel: () => {
               // 用户取消停止Agent服务，不发送消息，不增加计数

@@ -54,16 +54,17 @@ export enum DevServerStatus {
 
 /**
  * 开发服务器信息接口
+ * 实际 start-dev 接口返回格式: { projectId, projectIdStr, devServerUrl, prodServerUrl }
  */
 export interface DevServerInfo {
   /** 项目ID */
-  projectId: string | number;
-  /** 服务器状态 */
-  status: DevServerStatus;
-  /** 服务器URL */
-  devServerUrl?: string;
-  /** 端口号 */
-  port?: number;
+  projectId: number;
+  /** 项目ID字符串 */
+  projectIdStr: string;
+  /** 开发服务器URL */
+  devServerUrl: string;
+  /** 生产服务器URL */
+  prodServerUrl: string | null;
 }
 
 /**
@@ -940,3 +941,22 @@ export interface BindDataSourceRequest {
   /** 数据源ID */
   dataSourceId: number;
 }
+
+// ==================== 保活接口相关类型定义 ====================
+
+/**
+ * 保活接口响应数据
+ */
+export interface KeepAliveResponseData {
+  /** 项目ID */
+  projectId: number;
+  /** 项目ID字符串 */
+  projectIdStr: string;
+  /** 开发服务器URL（可能更新） */
+  devServerUrl: string;
+}
+
+/**
+ * 保活接口API响应类型
+ */
+export type KeepAliveResponse = RequestResponse<KeepAliveResponseData>;
