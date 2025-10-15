@@ -38,7 +38,7 @@ import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { PageArgConfig } from '@/types/interfaces/pageDev';
 import { loopSetBindValueType } from '@/utils/deepNode';
 import { useRequest } from 'ahooks';
-import { CollapseProps, message, Switch } from 'antd';
+import { CollapseProps, message, Switch, Tooltip } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -240,7 +240,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       keyList.push(AgentArrangeConfigEnum.Page_Event_Binding);
     }
 
-    keyList.push(AgentArrangeConfigEnum.Page_Setting);
     keyList.push(AgentArrangeConfigEnum.Opening_Remarks);
     return keyList;
   }, [agentComponentList]);
@@ -714,6 +713,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       // 插入到系统提示词
       case EventListEnum.InsertSystemPrompt:
         message.info('插入到系统提示词,实现功能待开发');
+        console.log(item.argJsonSchema);
         break;
       // 删除
       case EventListEnum.Delete:
@@ -774,19 +774,22 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         </p>
       ),
       extra: (
-        <Switch
-          value={agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.Yes}
-          // 阻止冒泡事件
-          onClick={(_, e: any) => {
-            e.stopPropagation();
-          }}
-          onChange={(value: boolean) =>
-            onChangeAgent(
-              value ? ExpandPageAreaEnum.Yes : ExpandPageAreaEnum.No,
-              'expandPageArea',
-            )
-          }
-        />
+        <Tooltip title={!allPageComponentList?.length ? '请先添加页面' : ''}>
+          <Switch
+            disabled={!allPageComponentList?.length}
+            value={agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.Yes}
+            // 阻止冒泡事件
+            onClick={(_, e: any) => {
+              e.stopPropagation();
+            }}
+            onChange={(value: boolean) =>
+              onChangeAgent(
+                value ? ExpandPageAreaEnum.Yes : ExpandPageAreaEnum.No,
+                'expandPageArea',
+              )
+            }
+          />
+        </Tooltip>
       ),
       classNames: {
         header: 'collapse-header',
@@ -803,19 +806,22 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         </p>
       ),
       extra: (
-        <Switch
-          value={agentConfigInfo?.hideChatArea === HideChatAreaEnum.Yes}
-          // 阻止冒泡事件
-          onClick={(_, e: any) => {
-            e.stopPropagation();
-          }}
-          onChange={(value: boolean) =>
-            onChangeAgent(
-              value ? HideChatAreaEnum.Yes : HideChatAreaEnum.No,
-              'hideChatArea',
-            )
-          }
-        />
+        <Tooltip title={!allPageComponentList?.length ? '请先添加页面' : ''}>
+          <Switch
+            disabled={!allPageComponentList?.length}
+            value={agentConfigInfo?.hideChatArea === HideChatAreaEnum.Yes}
+            // 阻止冒泡事件
+            onClick={(_, e: any) => {
+              e.stopPropagation();
+            }}
+            onChange={(value: boolean) =>
+              onChangeAgent(
+                value ? HideChatAreaEnum.Yes : HideChatAreaEnum.No,
+                'hideChatArea',
+              )
+            }
+          />
+        </Tooltip>
       ),
       classNames: {
         header: 'collapse-header',
