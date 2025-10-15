@@ -769,7 +769,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: '默认展开页面区',
       children: (
         // 默认展开页面区”，当选中时，用户进入智能体详情或会话时为左右分栏，左边是对话框，右边是页面
-        <p className={cx(styles.text)}>默认展开页面区</p>
+        <p className={cx(styles.text)}>
+          当给智能体绑定了页面后，打开该配置项时，会在智能体对话框旁边默认展开页面
+        </p>
       ),
       extra: (
         <Switch
@@ -796,7 +798,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       label: '隐藏主会话框',
       children: (
         // “隐藏主会话框”，当选中时智能体详情仅展示页面，这个时候一个智能体就是一个独立的应用（系统）
-        <p className={cx(styles.text)}>隐藏主会话框</p>
+        <p className={cx(styles.text)}>
+          当给智能体绑定了页面后，打开该配置项时，智能体的对话框将会被隐藏，直接展示智能体绑定的页面
+        </p>
       ),
       extra: (
         <Switch
