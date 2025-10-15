@@ -323,7 +323,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             onChange={(value) => setChatMode(value as 'chat' | 'design')}
             options={[
               { label: 'Chat', value: 'chat' },
-              { label: 'Design', value: 'design' },
+              {
+                label: 'Design',
+                value: 'design',
+                disabled: true,
+                title: '暂未开放',
+              },
             ]}
             className={styles.chatModeSegmented}
           />
