@@ -25,7 +25,7 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Empty, Input, Row, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useRequest } from 'umi';
+import { useModel, useParams, useRequest } from 'umi';
 import DebugAgentBindModel from './DebugAgentBindModal';
 import styles from './index.less';
 import PageCreateModal from './PageCreateModal';
@@ -87,7 +87,7 @@ const SpacePageDevelop: React.FC = () => {
   const [openPageReviewModal, setOpenPageReviewModal] =
     useState<boolean>(false);
   // 获取用户信息
-  // const { userInfo } = useModel('userInfo');
+  const { userInfo } = useModel('userInfo');
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -97,15 +97,15 @@ const SpacePageDevelop: React.FC = () => {
     list = pageAllRef.current,
   ) => {
     let _list = list;
-    // if (filterType !== PageProjectTypeEnum.All_Type) {
-    //   _list = _list.filter((item) => item.type === filterType);
-    // }
-    // if (filterCreate === CreateListEnum.Me) {
-    //   _list = _list.filter((item) => item.creatorId === userInfo.id);
-    // }
-    // if (filterKeyword) {
-    //   _list = _list.filter((item) => item.name.includes(filterKeyword));
-    // }
+    if (filterType !== PageProjectTypeEnum.All_Type) {
+      _list = _list.filter((item) => item.projectType === filterType);
+    }
+    if (filterCreate === CreateListEnum.Me) {
+      _list = _list.filter((item) => item.creatorId === userInfo.id);
+    }
+    if (filterKeyword) {
+      _list = _list.filter((item) => item.name.includes(filterKeyword));
+    }
     setPageList(_list);
   };
 
