@@ -68,9 +68,13 @@ const SpaceSection: React.FC<{
         case SpaceApplicationListEnum.Component_Library:
           url = 'library';
           break;
-        // 组件库
+        // MCP管理
         case SpaceApplicationListEnum.MCP_Manage:
           url = 'mcp';
+          break;
+        // 页面开发
+        case SpaceApplicationListEnum.Page_Develop:
+          url = 'page-develop';
           break;
         // 空间广场
         case SpaceApplicationListEnum.Space_Square:
@@ -95,7 +99,7 @@ const SpaceSection: React.FC<{
   const handleActive = (type: SpaceApplicationListEnum) => {
     return (
       (type === SpaceApplicationListEnum.Application_Develop &&
-        (pathname.includes('develop') || pathname.includes('log'))) ||
+        (pathname.includes('/develop') || pathname.includes('log'))) ||
       (type === SpaceApplicationListEnum.Component_Library &&
         (pathname.includes('library') ||
           pathname.includes('knowledge') ||
@@ -103,6 +107,8 @@ const SpaceSection: React.FC<{
           pathname.includes('table'))) ||
       (type === SpaceApplicationListEnum.MCP_Manage &&
         pathname.includes('mcp')) ||
+      (type === SpaceApplicationListEnum.Page_Develop &&
+        pathname.includes('page-develop')) ||
       (type === SpaceApplicationListEnum.Space_Square &&
         pathname.includes('space-square')) ||
       (type === SpaceApplicationListEnum.Team_Setting &&

@@ -1,0 +1,137 @@
+.fileChangeList {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+}
+
+.header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e8e8e8;
+  background-color: #fafafa;
+}
+
+.fileList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.fileItem {
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+
+  &.selected {
+    background-color: #e6f7ff;
+    border-left: 3px solid #1890ff;
+  }
+}
+
+.fileItemContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fileIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+
+  .addedIcon {
+    color: #52c41a;
+    font-size: 14px;
+  }
+
+  .modifiedIcon {
+    color: #faad14;
+    font-size: 14px;
+  }
+
+  .deletedIcon {
+    color: #ff4d4f;
+    font-size: 14px;
+  }
+
+  .defaultIcon {
+    color: #666;
+    font-size: 14px;
+  }
+}
+
+.fileInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.fileName {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.filePath {
+  font-size: 12px;
+  color: #999;
+}
+
+.changeType {
+  flex-shrink: 0;
+}
+
+.changeTypeText {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  background-color: #f0f0f0;
+
+  &.added {
+    background-color: #f6ffed;
+    color: #52c41a;
+  }
+
+  &.modified {
+    background-color: #fffbe6;
+    color: #faad14;
+  }
+
+  &.deleted {
+    background-color: #fff2f0;
+    color: #ff4d4f;
+  }
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: 12px;
+}
+
+.loadingText {
+  color: #666;
+  font-size: 14px;
+}
+
+.emptyContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+}
+
+.emptyText {
+  color: #999;
+  font-size: 14px;
+}

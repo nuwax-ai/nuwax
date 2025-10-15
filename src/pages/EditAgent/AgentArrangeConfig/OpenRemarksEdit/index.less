@@ -1,9 +1,20 @@
 @import '@/styles/color';
 
-.title {
-  line-height: 32px;
+.header-title {
+  margin-bottom: 8px;
   color: @BLANK13;
   font-size: 12px;
+}
+
+.title-box {
+  height: 26px;
+  margin-top: 10px;
+  margin-bottom: 4px;
+
+  .title {
+    color: @BLANK13;
+    font-size: 12px;
+  }
 }
 
 .content-box {
@@ -19,11 +30,6 @@
   }
 }
 
-.add {
-  color: @BLANK03;
-  font-size: 12px;
-}
-
 .input {
   margin-bottom: 10px;
 
@@ -32,19 +38,6 @@
   }
 }
 
-//:global {
-//  .ProseMirror-focused {
-//    border: none;
-//    outline: none;
-//  }
-//}
-//
-//.edit-header {
-//  gap: 10px;
-//}
-//
-//.divider-line {
-//  height: 1px;
-//  margin: 20px 0;
-//  background-color: @GRAY01;
-//}
+.icon-input-suffix {
+  margin-inline-end: 0 !important;
+}

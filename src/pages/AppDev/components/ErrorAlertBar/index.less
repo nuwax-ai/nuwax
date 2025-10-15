@@ -1,0 +1,36 @@
+// 错误提示条样式
+.errorAlertBar {
+  position: relative;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  height: 50px;
+  padding: 8px 16px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
+  animation: slide-down 0.3s ease-out;
+
+  .ant-alert {
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    height: 34px; // 50px - 16px padding
+    display: flex;
+    align-items: center;
+  }
+}
+
+@keyframes slide-down {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

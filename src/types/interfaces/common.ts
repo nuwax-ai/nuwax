@@ -104,7 +104,7 @@ export interface SelectListType {
   disabled?: boolean;
   allowClear?: boolean;
   options: option[];
-  onChange?: (value: React.Key) => void;
+  onChange?: (value: React.Key, option: any) => void;
   size?: SizeType;
 }
 
@@ -417,7 +417,7 @@ export interface CustomPopoverProps {
 export interface UploadAvatarProps {
   className?: string;
   onUploadSuccess?: (url: string) => void;
-  defaultImage: string;
+  defaultImage?: string;
   imageUrl?: string;
   beforeUpload?: (file: FileType) => void;
   svgIconName?: string | null | undefined;
@@ -477,6 +477,7 @@ export interface PluginPublishProps {
 
 // 插件入参、出参配置title组件
 export interface PluginConfigTitleProps {
+  className?: string;
   title: string;
   extra?: React.ReactNode;
   onClick: () => void;

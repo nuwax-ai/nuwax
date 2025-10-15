@@ -152,6 +152,10 @@ const useMcp = () => {
           onClick={(e) => handlerComponentPlus(e, item.type)}
         />
       ),
+      classNames: {
+        header: 'collapse-header',
+        body: 'collapse-body',
+      },
     }),
   );
 

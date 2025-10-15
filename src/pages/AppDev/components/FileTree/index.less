@@ -1,0 +1,119 @@
+.fileTree {
+  user-select: none;
+  font-size: 14px;
+}
+
+.fileTreeItem {
+  position: relative;
+}
+
+.fileItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+
+  &:hover {
+    background-color: var(--xagi-color-fill-quaternary);
+
+    .fileActions {
+      opacity: 1;
+    }
+  }
+
+  &.active {
+    background-color: var(--xagi-color-primary-bg);
+    color: var(--xagi-color-primary);
+  }
+}
+
+.fileIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--xagi-color-text-tertiary);
+}
+
+.fileName {
+  flex: 1;
+  font-size: 13px;
+  color: var(--xagi-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.actionButton {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--xagi-color-text-tertiary);
+
+  &:hover {
+    background-color: var(--xagi-color-fill-quaternary);
+    color: var(--xagi-color-text);
+  }
+}
+
+.contextMenu {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 1000;
+  background: var(--xagi-color-bg-elevated);
+  border: 1px solid var(--xagi-color-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 15%);
+  padding: 4px 0;
+  min-width: 120px;
+}
+
+.contextMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--xagi-color-text);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--xagi-color-fill-quaternary);
+  }
+
+  &.danger {
+    color: var(--xagi-color-error);
+
+    &:hover {
+      background-color: var(--xagi-color-error-bg);
+    }
+  }
+}
+
+.contextMenuIcon {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

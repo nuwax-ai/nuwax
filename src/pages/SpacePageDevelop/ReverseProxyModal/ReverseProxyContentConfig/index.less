@@ -1,0 +1,19 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  width: 100%;
+  height: 100%;
+  padding-top: 50px;
+  background-color: @WHITE;
+
+  :global {
+    .ant-table-wrapper .ant-table-tbody-virtual .ant-table-cell {
+      border-bottom: none;
+    }
+
+    .ant-table-footer {
+      background-color: transparent;
+    }
+  }
+}

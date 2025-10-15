@@ -1,0 +1,75 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.modal-container {
+  width: 1000px !important;
+}
+
+.container {
+  height: 650px;
+  border-radius: 10px;
+  background: @WHITE04;
+  pointer-events: auto;
+
+  .left {
+    width: 240px;
+    padding: 20px 0;
+    background-color: @WHITE05;
+
+    h3 {
+      margin-bottom: 50px;
+      padding-left: 20px;
+      font-size: 22px;
+      font-weight: @fontWeightStrong;
+      color: @BLANK04;
+    }
+
+    ul {
+      padding: 0 10px;
+
+      .item {
+        padding: 10px 6px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        transition: background-color 0.3s;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        &:hover:not(.checked) {
+          background-color: @WHITE07;
+        }
+
+        &.checked {
+          background-color: @WHITE07;
+        }
+
+        .icon-box {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          color: @BLANK04;
+          font-size: 14px;
+        }
+      }
+    }
+
+    .add-path-params {
+      margin: 10px 0 0 16px;
+    }
+  }
+
+  .right {
+    background-color: @WHITE08;
+  }
+
+  .close {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    color: rgba(0, 0, 0, 45%);
+  }
+}

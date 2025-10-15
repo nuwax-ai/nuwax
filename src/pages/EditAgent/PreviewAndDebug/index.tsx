@@ -1,11 +1,14 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
+import PagePreview from '@/components/business-component/PagePreview';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
+import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import { EditAgentShowType } from '@/types/enums/space';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -49,6 +52,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
   > | null>(null);
 
   const {
+    conversationInfo,
     messageList,
     setMessageList,
     chatSuggestList,
@@ -70,7 +74,13 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     variables,
     userFillVariables,
     requiredNameList,
+    showType,
+    setShowType,
   } = useModel('conversationInfo');
+
+  // 获取 chat model 中的页面预览状态
+  const chatModel = useModel('chat');
+  const { pagePreviewData } = chatModel;
 
   // 创建智能体会话
   const { runAsyncConversationCreate } = useConversation();
@@ -256,86 +266,120 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     setShowScrollBtn(false);
   };
 
+  // 消息事件代理（处理会话输出中的点击事件）
+  useMessageEventDelegate({
+    containerRef: messageViewRef,
+    eventBindConfig: conversationInfo?.agent?.eventBindConfig,
+  });
+
+  // 互斥面板逻辑：管理 PagePreview 和 DebugDetails 的互斥展示
+  useEffect(() => {
+    // 当页面预览打开时，关闭调试面板
+    if (pagePreviewData && showType === EditAgentShowType.Debug_Details) {
+      setShowType(EditAgentShowType.Hide);
+    }
+  }, [pagePreviewData, showType, setShowType]);
+
   return (
-    <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
-      <PreviewAndDebugHeader onPressDebug={onPressDebug} />
-      <div
-        className={cx(
-          styles['main-content'],
-          'flex-1',
-          'flex',
-          'flex-col',
-          'overflow-hide',
-        )}
-      >
-        {/* 新对话设置 */}
-        <NewConversationSet
-          form={form}
-          variables={variables}
-          isFilled
-          userFillVariables={userFillVariables}
-        />
+    <div className={cx('flex', 'h-full')}>
+      {/* 主内容区域 */}
+      {agentConfigInfo?.hideChatArea ? null : (
         <div
-          className={cx(styles['chat-wrapper'], 'scroll-container', 'flex-1')}
-          ref={messageViewRef}
+          className={cx(styles.container, 'flex', 'flex-col')}
+          style={{ flex: 1 }}
         >
-          {loadingConversation ? (
+          <PreviewAndDebugHeader onPressDebug={onPressDebug} />
+          <div
+            className={cx(
+              styles['main-content'],
+              'flex-1',
+              'flex',
+              'flex-col',
+              'overflow-hide',
+            )}
+          >
+            {/* 新对话设置 */}
+            <NewConversationSet
+              form={form}
+              variables={variables}
+              isFilled
+              userFillVariables={userFillVariables}
+            />
             <div
-              className={cx('flex', 'items-center', 'content-center', 'h-full')}
+              className={cx(
+                styles['chat-wrapper'],
+                'scroll-container',
+                'flex-1',
+              )}
+              ref={messageViewRef}
             >
-              <LoadingOutlined className={cx(styles.loading)} />
-            </div>
-          ) : messageList?.length > 0 ? (
-            <>
-              {messageList?.map((item: MessageInfo) => (
-                <ChatView
-                  key={item?.id}
-                  messageInfo={item}
-                  roleInfo={roleInfo}
-                  mode={'chat'}
-                />
-              ))}
-              {/*会话建议*/}
-              <RecommendList
-                loading={loadingSuggest}
-                chatSuggestList={chatSuggestList}
-                onClick={handleMessageSend}
-              />
-            </>
-          ) : (
-            isLoadingConversation && (
-              // Chat记录为空
-              <AgentChatEmpty
-                className="h-full"
-                icon={agentConfigInfo?.icon}
-                name={agentConfigInfo?.name as string}
-                // 会话建议
-                extra={
+              {loadingConversation ? (
+                <div
+                  className={cx(
+                    'flex',
+                    'items-center',
+                    'content-center',
+                    'h-full',
+                  )}
+                >
+                  <LoadingOutlined className={cx(styles.loading)} />
+                </div>
+              ) : messageList?.length > 0 ? (
+                <>
+                  {messageList?.map((item: MessageInfo) => (
+                    <ChatView
+                      key={item?.id}
+                      messageInfo={item}
+                      roleInfo={roleInfo}
+                      mode={'chat'}
+                    />
+                  ))}
+                  {/*会话建议*/}
                   <RecommendList
-                    className="mt-16"
                     loading={loadingSuggest}
                     chatSuggestList={chatSuggestList}
                     onClick={handleMessageSend}
                   />
-                }
-              />
-            )
-          )}
+                </>
+              ) : (
+                isLoadingConversation && (
+                  // Chat记录为空
+                  <AgentChatEmpty
+                    className="h-full"
+                    icon={agentConfigInfo?.icon}
+                    name={agentConfigInfo?.name as string}
+                    // 会话建议
+                    extra={
+                      <RecommendList
+                        className="mt-16"
+                        loading={loadingSuggest}
+                        chatSuggestList={chatSuggestList}
+                        onClick={handleMessageSend}
+                      />
+                    }
+                  />
+                )
+              )}
+            </div>
+            {/*会话输入框*/}
+            <ChatInputHome
+              key={`edit-agent-${agentId}`}
+              clearDisabled={!messageList?.length}
+              onEnter={handleMessageSend}
+              onClear={handleClear}
+              wholeDisabled={wholeDisabled}
+              visible={showScrollBtn}
+              manualComponents={manualComponents}
+              selectedComponentList={selectedComponentList}
+              onSelectComponent={handleSelectComponent}
+              onScrollBottom={onScrollBottom}
+            />
+          </div>
         </div>
-        {/*会话输入框*/}
-        <ChatInputHome
-          key={`edit-agent-${agentId}`}
-          clearDisabled={!messageList?.length}
-          onEnter={handleMessageSend}
-          onClear={handleClear}
-          wholeDisabled={wholeDisabled}
-          visible={showScrollBtn}
-          manualComponents={manualComponents}
-          selectedComponentList={selectedComponentList}
-          onSelectComponent={handleSelectComponent}
-          onScrollBottom={onScrollBottom}
-        />
-      </div>
+      )}
+
+      {/*页面预览区域*/}
+      <PagePreview />
     </div>
   );
 };

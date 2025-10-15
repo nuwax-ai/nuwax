@@ -253,13 +253,16 @@ export default () => {
         }
         // 如果消息列表大于1时，说明已开始会话，就不显示预置问题，反之显示
         else if (len === 1) {
+          const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
           // 如果存在预置问题，显示预置问题
-          setChatSuggestList(data?.agent?.openingGuidQuestions || []);
+          setChatSuggestList(guidQuestionDtos?.map((item) => item.info));
         }
       }
       // 不存在会话消息时，才显示开场白预置问题
       else {
-        setChatSuggestList(data?.agent?.openingGuidQuestions || []);
+        const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
+        // 如果存在预置问题，显示预置问题
+        setChatSuggestList(guidQuestionDtos?.map((item) => item.info));
       }
 
       // 使用 setTimeout 确保在 DOM 完全渲染后再滚动

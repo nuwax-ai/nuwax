@@ -1,0 +1,38 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  padding: 16px 16px 16px 24px;
+
+  .title {
+    line-height: 32px;
+    font-size: @fontSizeLg;
+    font-weight: 600;
+    color: @BLANK04;
+    margin-right: 20px;
+  }
+
+  .main-container {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+
+    /* 关键修复：确保内容从顶部开始排列，避免不均匀的间距分布 */
+    align-content: start;
+    margin-top: 10px;
+  }
+
+  @media (min-width: 1200px) {
+    .main-container {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 10px;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .main-container {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 10px;
+    }
+  }
+}

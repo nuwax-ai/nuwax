@@ -81,11 +81,13 @@ const PureMarkdownRenderer = memo(
     className = '',
     children,
     theme = 'light',
+    disableTyping = false,
   }: {
     id: string;
     theme?: 'light' | 'dark';
     className?: string;
     children: string;
+    disableTyping?: boolean;
   }) => {
     const plugins = useMemo(() => [katexPlugin, genCustomPlugin()], []);
     return (
@@ -99,7 +101,7 @@ const PureMarkdownRenderer = memo(
           <DsMarkdown
             interval={30}
             timerType="requestAnimationFrame"
-            disableTyping={true}
+            disableTyping={disableTyping}
             plugins={plugins}
             codeBlock={{ headerActions: false }}
             theme={theme}
@@ -115,7 +117,12 @@ const PureMarkdownRenderer = memo(
     );
   },
   (prevProps, nextProps) => {
-    return prevProps.id === nextProps.id && prevProps.theme === nextProps.theme;
+    return (
+      prevProps.id === nextProps.id &&
+      prevProps.theme === nextProps.theme &&
+      prevProps.children === nextProps.children &&
+      prevProps.disableTyping === nextProps.disableTyping
+    );
   },
 );
 

@@ -77,8 +77,14 @@ export const jumpBack = (url?: string) => {
   }
 };
 
+// 跳转到mcp创建
 export const jumpToMcpCreate = (spaceId: number) => {
   jumpTo(`/space/${spaceId}/mcp/create`);
+};
+
+// 跳转到页面开发
+export const jumpToPageDevelop = (spaceId: number) => {
+  jumpTo(`/space/${spaceId}/page-develop`);
 };
 
 export const redirectToLogin = (redirect: string | number = '/') => {

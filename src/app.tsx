@@ -29,6 +29,56 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
   const setAntdConfig = useAntdConfigSetter();
   const lastAppliedRef = useRef<string>('');
 
+  // 全局错误处理，捕获Monaco Editor的CanceledError
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      // 检查是否是Monaco Editor的CanceledError
+      if (
+        event.reason &&
+        event.reason.name === 'Canceled' &&
+        event.reason.message === 'Canceled'
+      ) {
+        // 阻止这个错误冒泡到控制台
+        event.preventDefault();
+        return;
+      }
+
+      // 检查是否是WordHighlighter相关的取消错误
+      if (
+        event.reason &&
+        (event.reason.stack?.includes('WordHighlighter') ||
+          event.reason.stack?.includes('Delayer.cancel'))
+      ) {
+        event.preventDefault();
+        return;
+      }
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      // 检查是否是Monaco Editor相关的错误
+      if (
+        event.error &&
+        (event.error.message?.includes('Canceled') ||
+          event.error.stack?.includes('WordHighlighter'))
+      ) {
+        event.preventDefault();
+        return;
+      }
+    };
+
+    // 添加全局错误监听器
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleError);
+
+    return () => {
+      window.removeEventListener(
+        'unhandledrejection',
+        handleUnhandledRejection,
+      );
+      window.removeEventListener('error', handleError);
+    };
+  }, []);
+
   // 初始化统一主题配置，并监听主题配置变更事件
   useEffect(() => {
     const applyThemeConfig = () => {

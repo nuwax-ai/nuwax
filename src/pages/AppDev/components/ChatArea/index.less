@@ -1,0 +1,629 @@
+// 聊天卡片
+.chatCard {
+  height: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+
+  :global(.ant-card-body) {
+    padding: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+// 聊天模式容器
+.chatModeContainer {
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 10%);
+}
+
+// 聊天模式切换器
+.chatModeSwitcher {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  min-height: 32px;
+
+  // 当屏幕较小时，调整布局
+  @media (max-width: 1200px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+}
+
+// 聊天模式分段控制器
+.chatModeSegmented {
+  // 使用默认样式，自定义样式已注释
+  display: block;
+  // :global(.ant-segmented) {
+  //   background: #f8fafc;
+  //   border: 1px solid #e2e8f0;
+  //   border-radius: 6px;
+  //   padding: 1px;
+  //   box-shadow: 0 1px 2px rgba(0, 0, 0, 5%);
+  // }
+
+  // :global(.ant-segmented-item) {
+  //   color: #64748b;
+  //   font-weight: 500;
+  //   font-size: 12px;
+  //   padding: 4px 12px;
+  //   border-radius: 4px;
+  //   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  //   position: relative;
+
+  //   &:hover {
+  //     color: #1e293b;
+  //     background: rgba(0, 0, 0, 5%);
+  //   }
+
+  //   &.ant-segmented-item-selected {
+  //     color: #3b82f6;
+  //     background: #fff;
+  //     box-shadow: 0 1px 2px rgba(0, 0, 0, 10%);
+  //   }
+  // }
+
+  // :global(.ant-segmented-thumb) {
+  //   background: #fff;
+  //   border-radius: 4px;
+  //   box-shadow: 0 1px 2px rgba(0, 0, 0, 10%);
+  //   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  // }
+}
+
+// 版本选择器包装器
+.versionSelectorWrapper {
+  display: flex;
+  align-items: center;
+}
+
+// 历史会话选择器包装器
+.conversationSelectorWrapper {
+  display: flex;
+  align-items: center;
+}
+
+// 版本选择器
+.versionSelector {
+  // 使用默认样式，自定义样式已注释
+  display: block;
+}
+
+// 版本下拉菜单
+.versionDropdown {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 15%) !important;
+  border: 1px solid #e2e8f0 !important;
+
+  :global(.ant-select-item) {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    transition: all 0.2s ease !important;
+
+    &:hover {
+      background: rgba(59, 130, 246, 10%) !important;
+      color: #3b82f6 !important;
+    }
+
+    &.ant-select-item-option-selected {
+      background: rgba(59, 130, 246, 15%) !important;
+      color: #3b82f6 !important;
+      font-weight: 500 !important;
+    }
+  }
+}
+
+// 聊天消息区域
+.chatMessages {
+  position: relative; // 新增：为滚动按钮提供定位上下文
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scroll-behavior: smooth;
+
+  // 滚动条样式
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 20%);
+    border-radius: 2px;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: rgba(0, 0, 0, 30%);
+    }
+  }
+}
+
+// 加载容器
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+// 会话分隔符
+.conversationDivider {
+  display: flex;
+  align-items: center;
+  margin: 24px 0 16px;
+  gap: 12px;
+
+  .dividerLine {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgba(0, 0, 0, 10%),
+      transparent
+    );
+  }
+
+  .dividerContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 2%);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 6%);
+    min-width: 200px;
+
+    .conversationTopic {
+      font-size: 12px;
+      font-weight: 500;
+      color: #666;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .conversationTime {
+      font-size: 11px;
+      color: #999;
+    }
+  }
+}
+
+// 消息包装器 - 按角色区分布局
+.messageWrapper {
+  display: flex;
+  margin-bottom: 16px;
+  animation: message-slide-in 0.3s ease-out;
+
+  // 用户消息 - 右侧对齐
+  &.user {
+    justify-content: flex-end;
+
+    .messageBubble {
+      background: #1890ff;
+      color: #fff;
+      border-radius: 18px 18px 4px;
+      padding: 12px 16px 4px 12px;
+      max-width: 94%;
+    }
+  }
+
+  // AI助手消息 - 左侧对齐
+  &.assistant {
+    justify-content: flex-start;
+
+    .messageBubble {
+      background: #f0f0f0;
+      color: #000;
+      border-radius: 18px 18px 18px 4px;
+      padding: 12px 16px 4px 12px;
+      max-width: 94%;
+    }
+  }
+}
+
+@keyframes message-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 消息气泡
+.messageBubble {
+  position: relative;
+  word-wrap: break-word;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+// 消息内容
+.messageContent {
+  margin-bottom: 8px;
+
+  // MarkdownRenderer 容器样式调整 - 仅限 ChatArea 组件内
+  :global(.markdown-container) {
+    background: transparent;
+    padding: 0;
+
+    // 确保在消息气泡内正确显示
+    :global(*) {
+      max-width: 100%;
+      word-wrap: break-word;
+    }
+  }
+}
+
+// 专门为 ChatArea 中的 MarkdownRenderer 添加字体大小调整
+.chatAreaMarkdown {
+  :global(.ds-markdown) {
+    --ds-md-zoom: 1; // 移除缩放，使用原始字体大小
+
+    font-size: 12px; // 设置为与消息气泡相同的字体大小
+    line-height: 1.5; // 调整行高
+  }
+}
+
+// 流式传输指示器
+.streamingIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  // background: rgba(0, 0, 0, 5%);
+  // border-radius: 12px;
+  font-size: 12px;
+  color: #666;
+
+  .streamingText {
+    animation: blink 1.5s infinite;
+  }
+}
+
+// 加载指示器
+.loadingIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 5%);
+  border-radius: 12px;
+  font-size: 12px;
+  color: #666;
+}
+
+// 错误指示器
+.errorIndicator {
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: rgba(255, 77, 79, 10%);
+  border: 1px solid rgba(255, 77, 79, 20%);
+  border-radius: 12px;
+  font-size: 12px;
+  color: #ff4d4f;
+}
+
+// 思考过程区域
+.thinkingArea {
+  margin-top: 12px;
+  background: rgba(0, 0, 0, 5%);
+  border-left: 3px solid #1890ff;
+  border-radius: 0 8px 8px 0;
+  overflow: hidden;
+}
+
+.thinkingHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 5%);
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 8%);
+  }
+}
+
+.thinkingTitle {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.expandIcon {
+  color: #999;
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.thinkingContent {
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 3%);
+  font-size: 11px;
+  color: #666;
+  line-height: 1.4;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.thinkingLine {
+  margin-bottom: 4px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// 流式文本闪烁动画
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0.3;
+  }
+}
+
+// 按钮消息
+.buttonMessage {
+  display: flex;
+  justify-content: flex-start;
+  margin: 8px 0;
+}
+
+.actionButton {
+  // 按钮样式已移除，使用默认样式
+  display: inline-block;
+}
+
+// 章节消息
+.sectionMessage {
+  background: rgba(255, 255, 255, 80%);
+  border: 1px solid rgba(0, 0, 0, 10%);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 8px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 5%);
+}
+
+.sectionTitle {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.sectionItems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionItem {
+  color: #64748b;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+// 详细信息消息
+.detailsMessage {
+  background: rgba(255, 255, 255, 80%);
+  border: 1px solid rgba(0, 0, 0, 10%);
+  border-radius: 8px;
+  margin: 8px 0;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 5%);
+}
+
+.detailsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 90%);
+
+  &:hover {
+    background: rgba(0, 0, 0, 5%);
+  }
+}
+
+.detailsTitle {
+  color: #1e293b;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.detailsContent {
+  padding: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 10%);
+}
+
+.detailItem {
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// 选中的数据源显示区域
+.selectedDataSources {
+  padding: 12px 20px;
+  border-top: 1px solid rgba(0, 0, 0, 10%);
+  background: rgba(59, 130, 246, 5%);
+  backdrop-filter: blur(10px);
+
+  .dataSourceHeader {
+    margin-bottom: 8px;
+  }
+
+  .dataSourceList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+
+// 聊天输入区域
+.chatInput {
+  padding: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 10%);
+  background: rgba(255, 255, 255, 80%);
+  backdrop-filter: blur(10px);
+}
+
+.inputField {
+  background: rgba(255, 255, 255, 90%);
+  border: 1px solid rgba(0, 0, 0, 10%);
+  border-radius: 8px;
+  color: #1e293b;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 5%);
+
+  &:hover,
+  &:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 20%);
+  }
+
+  :global(.ant-input) {
+    background: transparent;
+    border: none;
+    color: #1e293b;
+
+    &::placeholder {
+      color: #64748b;
+    }
+  }
+}
+
+.modelSelector {
+  margin-top: 8px;
+  text-align: right;
+  color: #64748b;
+}
+
+// 取消按钮
+.cancelButton {
+  color: #ef4444;
+
+  &:hover {
+    background: rgba(239, 68, 68, 10%) !important;
+    color: #dc2626 !important;
+  }
+}
+
+// 思考消息样式
+.thinking {
+  .messageContent {
+    background: rgba(168, 85, 247, 10%);
+    border: 1px solid rgba(168, 85, 247, 20%);
+    color: #1e293b;
+    max-width: 85%;
+  }
+}
+
+.thinkingIndicator {
+  color: #a855f7;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.thinkingText {
+  color: #64748b;
+  font-style: italic;
+}
+
+// 工具调用消息样式
+.toolCall {
+  .messageContent {
+    background: rgba(34, 197, 94, 10%);
+    border: 1px solid rgba(34, 197, 94, 20%);
+    color: #1e293b;
+    max-width: 85%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.toolCallIndicator {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+// 展开图标动画
+.expandIcon.expanded {
+  transform: rotate(90deg);
+}
+
+// 滚动到底部按钮
+.scrollToBottomButton {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+  border: 1px solid rgba(0, 0, 0, 10%);
+
+  &:hover {
+    background: #1890ff;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(24, 144, 255, 40%);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}

@@ -26,3 +26,10 @@ package-lock.json
 # /.husky
 /src/mock
 .npm-cache
+
+# Claude local settings
+.claude/settings.local.json
+
+.claude
+.cursor
+.cursorrules

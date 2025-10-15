@@ -1,0 +1,170 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 顶部头部区域 - 使用 EditAgent AgentHeader 样式
+.header {
+  padding: @paddingSm @padding @paddingSm 0;
+  overflow-x: auto;
+
+  .icon-backward {
+    padding: @paddingXxs @paddingXs @paddingXxs @paddingXs;
+    margin-right: @marginXxs;
+    color: @navFirstMenuTextSecondary;
+  }
+
+  .avatar {
+    width: 27px;
+    height: 27px;
+    border-radius: @borderRadius;
+  }
+
+  .header-info {
+    padding-left: @paddingSm;
+
+    .h-title {
+      max-width: 360px;
+      margin-right: @marginSm;
+      font-size: 16px;
+      font-weight: @fontWeightStrong;
+      line-height: 24px;
+      color: @navFirstMenuTextSecondary;
+      white-space: nowrap;
+    }
+
+    .agent-rel-info {
+      gap: @marginXs;
+      color: @colorTextTertiary;
+      font-size: 12px;
+      margin-right: 10px;
+      line-height: 24px;
+
+      .space-name {
+        max-width: 200px;
+        color: @navFirstMenuTextSecondary;
+      }
+
+      .project-id {
+        color: @navFirstMenuTextSecondary;
+        font-size: 11px;
+        background: rgba(0, 0, 0, 5%);
+        padding: 2px 6px;
+        border-radius: 3px;
+        margin-left: 8px;
+      }
+
+      .deploy-status-tag {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        margin-left: 8px;
+        font-weight: @fontWeightStrong;
+      }
+    }
+
+    .project-description {
+      font-size: 12px;
+      color: @navFirstMenuTextSecondary;
+      margin-top: 4px;
+      max-width: 400px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .save-time-box {
+    gap: @paddingXs;
+    color: @navFirstMenuTextSecondary;
+    margin-right: @marginSm;
+
+    .save-time {
+      font-size: 12px;
+      font-weight: @fontWeightStrong;
+      line-height: 19px;
+    }
+
+    .volcano {
+      color: @colorWarningText;
+      background: @colorWarningBg;
+      padding: 4px 8px;
+    }
+
+    .deploy-time {
+      font-size: 11px;
+      color: @navFirstMenuTextSecondary;
+      margin-left: 8px;
+    }
+
+    :global {
+      .ant-tag {
+        margin-inline-end: 0;
+      }
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .navButton {
+      background: rgba(255, 255, 255, 90%);
+      border: 1px solid rgba(0, 0, 0, 10%);
+      color: #64748b;
+
+      &:hover {
+        background: rgba(0, 0, 0, 5%);
+        border-color: rgba(0, 0, 0, 20%);
+        color: #1e293b;
+      }
+    }
+
+    .actionButton {
+      background: rgba(255, 255, 255, 90%);
+      border: 1px solid rgba(0, 0, 0, 10%);
+      color: #64748b;
+
+      &:hover {
+        background: rgba(0, 0, 0, 5%);
+        border-color: rgba(0, 0, 0, 20%);
+        color: #1e293b;
+      }
+    }
+
+    .deployButton {
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      border: none;
+      color: #fff;
+
+      &:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+        color: #fff;
+      }
+    }
+  }
+
+  .right-box {
+    margin-left: auto;
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .header {
+    .agent-rel-info {
+      display: none;
+    }
+
+    .header-title {
+      display: none;
+    }
+
+    .fold {
+      display: none;
+    }
+
+    .ico {
+      display: none;
+    }
+  }
+}

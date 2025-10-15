@@ -1,0 +1,283 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 版本列表容器
+.version-list-container {
+  background: #fff;
+  border-radius: @borderRadius;
+  border: 1px solid @colorBorder;
+  overflow: hidden;
+
+  // 在聊天区域中的样式
+  &.chat-version-list {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    .version-list-header {
+      background: transparent;
+      border-bottom: 1px solid @colorBorder;
+      padding: @paddingSm @paddingXs;
+    }
+
+    .version-list-content {
+      flex: 1;
+      max-height: none;
+      overflow-y: auto;
+
+      .version-list {
+        .version-item {
+          padding: @paddingXs @paddingSm;
+          border-bottom: 1px solid @colorBorder;
+
+          &:hover {
+            background: @colorFillTertiary;
+          }
+
+          .version-content {
+            .version-header {
+              margin-bottom: @marginXxs;
+
+              .version-info {
+                gap: 2px;
+
+                .version-number {
+                  font-size: 13px;
+                }
+
+                .version-time {
+                  font-size: 11px;
+                }
+              }
+
+              .action-tag {
+                font-size: 10px;
+                padding: 1px 4px;
+              }
+            }
+
+            .version-indicators {
+              .status-tag {
+                font-size: 9px;
+                padding: 1px 3px;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .version-actions {
+      background: transparent;
+      border-top: 1px solid @colorBorder;
+      padding: @paddingXs @paddingSm;
+
+      .action-hint {
+        font-size: 11px;
+      }
+    }
+  }
+
+  .version-list-header {
+    display: flex;
+    align-items: center;
+    padding: @paddingSm @padding;
+    background: @colorFillTertiary;
+    border-bottom: 1px solid @colorBorder;
+
+    .header-icon {
+      color: @colorPrimary;
+      margin-right: @marginXs;
+      font-size: 14px;
+    }
+
+    .header-title {
+      font-size: 14px;
+      color: @colorText;
+    }
+
+    .version-count {
+      margin-left: auto;
+      font-size: 12px;
+    }
+  }
+
+  .version-list-content {
+    max-height: 400px;
+    overflow-y: auto;
+
+    .version-list {
+      padding: 0;
+
+      .version-item {
+        padding: @paddingSm @padding;
+        border-bottom: 1px solid @colorBorder;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: @colorFillTertiary;
+        }
+
+        &.current-version {
+          background: @colorPrimaryBg;
+          border-left: 3px solid @colorPrimary;
+        }
+
+        &.latest-version {
+          border-left: 3px solid @colorSuccess;
+        }
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .version-content {
+          width: 100%;
+
+          .version-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: @marginXs;
+
+            .version-info {
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+
+              .version-number {
+                font-size: 14px;
+                font-weight: @fontWeightStrong;
+
+                &.current {
+                  color: @colorPrimary;
+                }
+
+                &.latest {
+                  color: @colorSuccess;
+                }
+              }
+
+              .version-time {
+                font-size: 12px;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+
+                .time-icon {
+                  font-size: 11px;
+                }
+              }
+            }
+
+            .action-tag {
+              font-size: 11px;
+              padding: 2px 6px;
+              border-radius: 3px;
+              margin: 0;
+            }
+          }
+
+          .version-indicators {
+            display: flex;
+            gap: @marginXs;
+
+            .status-tag {
+              font-size: 10px;
+              padding: 1px 4px;
+              border-radius: 2px;
+              margin: 0;
+            }
+          }
+        }
+      }
+    }
+
+    .empty-state {
+      padding: @paddingXl;
+      color: @colorTextTertiary;
+    }
+  }
+
+  .version-actions {
+    padding: @paddingSm @padding;
+    background: @colorFillTertiary;
+    border-top: 1px solid @colorBorder;
+
+    .action-hint {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .version-list-container {
+    .version-list-header {
+      padding: @paddingXs @paddingSm;
+
+      .header-title {
+        font-size: 13px;
+      }
+
+      .version-count {
+        font-size: 11px;
+      }
+    }
+
+    .version-list-content {
+      .version-list {
+        .version-item {
+          padding: @paddingXs @paddingSm;
+
+          .version-content {
+            .version-header {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: @marginXs;
+
+              .version-info {
+                .version-number {
+                  font-size: 13px;
+                }
+
+                .version-time {
+                  font-size: 11px;
+                }
+              }
+
+              .action-tag {
+                font-size: 10px;
+                padding: 1px 4px;
+              }
+            }
+
+            .version-indicators {
+              margin-top: @marginXs;
+
+              .status-tag {
+                font-size: 9px;
+                padding: 1px 3px;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .version-actions {
+      padding: @paddingXs @paddingSm;
+
+      .action-hint {
+        font-size: 11px;
+      }
+    }
+  }
+}

@@ -4,12 +4,16 @@ import type {
   AllowCopyEnum,
   DefaultSelectedEnum,
   DevModeEnum,
+  EventBindResponseActionEnum,
+  ExpandPageAreaEnum,
+  GuidQuestionSetTypeEnum,
+  HideChatAreaEnum,
+  HomeIndexEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
   OutputDirectlyEnum,
   SearchStrategyEnum,
-  TriggerComponentType,
-  TriggerTypeEnum,
+  VisibleToLLMEnum,
 } from '@/types/enums/agent';
 import type {
   PermissionsEnum,
@@ -60,6 +64,30 @@ export interface AgentPublishApplyParams {
   remark: string[];
 }
 
+// 引导问题
+export interface GuidQuestionDto {
+  // 问题类型,可用值:Question,Page,Link
+  type: GuidQuestionSetTypeEnum;
+  // 问题信息
+  info: string;
+  // 图标
+  icon?: string;
+  // 链接地址，type类型为Link时有效
+  url?: string;
+  // 页面ID，type类型为Page时有效
+  pageId?: number;
+  // 页面基础路径，type类型为Page时有效
+  basePath?: string;
+  // 页面路径，type类型为Page时有效
+  pageUri?: string;
+  //页面地址，配置更新时不需要传递，type类型为Page时有效，完整的页面地址，前端需要使用 BASE_URL+pageUrl
+  pageUrl?: string;
+  // 参数
+  args?: BindConfigWithSub[];
+  // 参数值，配置更新时不需要传递，用户点击跳转时直接使用，type类型为Page时有效
+  params?: any;
+}
+
 // 更新智能体基础配置信息输入参数
 export interface AgentConfigUpdateParams extends AgentBaseInfo {
   id: number;
@@ -73,10 +101,83 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
   suggestPrompt: string;
   // 首次打开聊天框自动回复消息
   openingChatMsg: string;
-  // 首次打开引导问题
+  // 首次打开引导问题(弃用)
   openingGuidQuestions: string[];
+  // 引导问题
+  guidQuestionDtos: GuidQuestionDto[];
   // 是否开启长期记忆,可用值:Open,Close
   openLongMemory: OpenCloseEnum;
+  // 是否开启定时任务,可用值:Open,Close
+  openScheduledTask: OpenCloseEnum;
+  // 是否默认展开扩展页面区域, 1 展开；0 不展开
+  expandPageArea: ExpandPageAreaEnum;
+  // 是否隐藏聊天区域，1 隐藏；0 不隐藏
+  hideChatArea: HideChatAreaEnum;
+}
+
+// 更新智能体页面配置输入参数
+export interface AgentPageUpdateParams extends AgentBaseInfo {
+  // 组件配置ID
+  id: number;
+  // 目标组件ID
+  targetId: number;
+  bindConfig: {
+    // 自定义页面唯一标识
+    basePath?: string;
+    // 页面参数配置
+    pageArgConfigs?: {
+      // 页面路径，例如 /view
+      pageUri: string;
+      // 页面名称
+      name: string;
+      // 页面描述
+      description: string;
+      // 参数
+      args: BindConfigWithSub[];
+    }[];
+    // 页面是否模型可见，1 可见，0 不可见
+    visibleToLLM?: VisibleToLLMEnum;
+    // 是否为智能体页面首页，1 为默认首页，0 不为首页
+    homeIndex?: HomeIndexEnum;
+  };
+}
+
+// 智能体事件绑定配置
+export interface AgentComponentEventConfig {
+  // 事件名称
+  name: string;
+  // 事件标识
+  identification: string;
+  // 事件类型, Link 外链；Page 扩展页面,可用值:Link,Page
+  type: EventBindResponseActionEnum;
+  // url 链接地址，type类型为Link时有效
+  url: string;
+  // 页面ID，type类型为Page时有效，更新时需要传入
+  pageId: number;
+  // 页面基础路径，type类型为Page时有效，不需要传入
+  basePath: string;
+  // 页面路径，type类型为Page时有效，更新时需要传入
+  pageUri: string;
+  // pageUrl 页面URL，type类型为Page时有效，不需要传入
+  pageUrl: string;
+  // 参数
+  args: BindConfigWithSub[];
+  // 参数配置JSON Schema，前端生成事件提示词时使用
+  argJsonSchema: string;
+}
+
+// 更新事件绑定配置输入参数
+export interface AgentComponentEventUpdateParams extends AgentBaseInfo {
+  // 组件配置ID
+  id: number;
+  // 目标组件ID
+  targetId?: number;
+  // 事件绑定配置
+  bindConfig: {
+    eventConfigs: AgentComponentEventConfig;
+  };
+  exceptionOut?: number;
+  fallbackMsg?: string;
 }
 
 // 智能体组件模型基础信息
@@ -143,33 +244,6 @@ export interface AgentComponentVariableUpdateParams
   };
 }
 
-// 更新触发器组件配置输入参数
-export interface AgentComponentTriggerUpdateParams
-  extends AgentComponentBaseInfo {
-  bindConfig: AgentComponentTriggerAddParams;
-}
-
-// 新增智能体触发器配置输入参数
-export interface AgentComponentTriggerAddParams {
-  name: string;
-  // 触发类型,TIME 定时触发, EVENT 事件触发,可用值:TIME,EVENT
-  triggerType: TriggerTypeEnum;
-  timeZone: string;
-  timeCronExpression: string;
-  timeCronDesc: string;
-  eventBearerToken: string;
-  eventArgs: BindConfigWithSub[];
-  // 触发器执行的组件类型,可用值:PLUGIN,WORKFLOW
-  componentType: TriggerComponentType;
-  // 触发器执行的组件名称
-  componentName: string;
-  // 触发器执行的组件ID
-  componentId: string;
-  // 出参绑定配置，插件、工作流有效
-  argBindConfigs: BindConfigWithSub[];
-  agentId: number;
-}
-
 // 更新插件组件配置
 export type AgentComponentPluginUpdateParams =
   AgentComponentWorkflowUpdateParams;
@@ -229,7 +303,7 @@ export interface AgentComponentKnowledgeUpdateParams
 export interface AgentComponentAddParams {
   agentId: number;
   type: AgentComponentTypeEnum;
-  targetId: number;
+  targetId: number | string;
   toolName?: string;
 }
 
@@ -294,8 +368,10 @@ export interface AgentConfigInfo {
   suggestPrompt: string;
   // 首次打开聊天框自动回复消息
   openingChatMsg: string;
-  // 首次打开引导问题
+  // 首次打开引导问题(弃用)
   openingGuidQuestions: string[];
+  // 引导问题
+  guidQuestionDtos: GuidQuestionDto[];
   // 是否开启长期记忆,可用值:Open,Close
   openLongMemory: OpenCloseEnum;
   // 发布状态,可用值:Developing,Applying,Published,Rejected
@@ -308,6 +384,8 @@ export interface AgentConfigInfo {
   modelComponentConfig: AgentComponentInfo;
   // 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值)
   agentStatistics: AgentStatisticsInfo;
+  // 智能体组件配置列表
+  agentComponentConfigList: AgentComponentInfo[];
   // 发布者信息
   publishUser: CreatorInfo;
   // 创建者信息
@@ -326,32 +404,12 @@ export interface AgentConfigInfo {
   collected: boolean;
   // 权限列表
   permissions?: PermissionsEnum[];
-}
-
-// 触发器时区
-export interface TriggerTimeZone {
-  // UTC时区列表
-  utcTimeZones: {
-    // UTC时区
-    utc: string;
-    timeZones: {
-      // 时区
-      timeZone: string;
-      // 时区名称
-      name: string;
-    }[];
-  }[];
-  // 时间范围列表
-  cronExpScopes: {
-    // 时间范围
-    scope: string;
-    cronExps: {
-      // 时间描述
-      time: string;
-      // 表达式
-      expression: string;
-    }[];
-  }[];
+  // 是否默认展开扩展页面区域, 1 展开；0 不展开
+  expandPageArea: ExpandPageAreaEnum;
+  // 是否隐藏聊天区域，1 隐藏；0 不隐藏
+  hideChatArea: HideChatAreaEnum;
+  // 扩展页面首页
+  pageHomeIndex: string;
 }
 
 // 智能体历史配置信息
@@ -384,8 +442,9 @@ export interface AgentComponentInfo {
   icon: string;
   // 组件描述
   description: string;
+  // 关联的AgentID
   agentId: number;
-  // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model
+  // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model,Agent,Table,Mcp,Page,Event
   type: AgentComponentTypeEnum;
   // 绑定组件配置，不同组件配置不一样
   bindConfig: any;
@@ -400,7 +459,9 @@ export interface AgentComponentInfo {
   fallbackMsg: string;
   modified: string;
   created: string;
+  // 分组描述
   groupDescription: string;
+  // 分组名称
   groupName: string;
 }
 
@@ -476,8 +537,10 @@ export interface AgentDetailDto extends AgentBaseInfo {
   openSuggest: OpenCloseEnum;
   // 开场白文案
   openingChatMsg: string;
-  // 首次打开引导问题
+  // 首次打开引导问题（弃用）
   openingGuidQuestions: string[];
+  // 引导问题
+  guidQuestionDtos: GuidQuestionDto[];
   // 是否开启定时任务,可用值:Open,Close
   openScheduledTask: OpenCloseEnum;
   // 参数
@@ -644,4 +707,12 @@ export interface UserApiKeyInfo {
     userName: string;
   };
   created: string;
+}
+
+// 页面请求结果回写参数
+export interface ApiAgentConversationChatPageResultParams {
+  // 请求ID
+  requestId: string;
+  // 结果HTML
+  html: string;
 }

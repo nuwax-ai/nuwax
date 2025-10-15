@@ -2,20 +2,24 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
+  EventListEnum,
+  HomeIndexEnum,
   InvokeTypeEnum,
   OutputDirectlyEnum,
+  VisibleToLLMEnum,
 } from '@/types/enums/agent';
-import type { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
+import type { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { ComponentSettingEnum, OpenCloseEnum } from '@/types/enums/space';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
+  AgentComponentEventConfig,
   AgentComponentInfo,
   AgentConfigInfo,
   AgentStatisticsInfo,
   ComponentModelBindConfig,
   CreatorInfo,
-  TriggerTimeZone,
+  GuidQuestionDto,
 } from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
@@ -29,6 +33,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import React, { MouseEvent } from 'react';
 import { CardBindConfig } from './cardInfo';
+import { PageArgConfig } from './pageDev';
 
 // 智能体header组件
 export interface AgentHeaderProps {
@@ -52,7 +57,14 @@ export interface AgentArrangeConfigProps {
   agentId: number;
   agentConfigInfo?: AgentConfigInfo;
   // 修改智能体基础配置信息
-  onChangeAgent: (value: string | string[], attr: string) => void;
+  onChangeAgent: (
+    value: string | string[] | number | GuidQuestionDto[],
+    attr: string,
+  ) => void;
+  onConfirmUpdateEventQuestions: (
+    value: string | string[] | number | GuidQuestionDto[],
+    attr: string,
+  ) => void;
 }
 
 // 组件设置弹窗
@@ -62,6 +74,14 @@ export interface ComponentSettingModalProps {
   devConversationId?: number;
   variables?: BindConfigWithSub[];
   settingActionList?: { type: ComponentSettingEnum; label: string }[];
+  onCancel: () => void;
+}
+
+// 页面设置弹窗Props
+export interface PageSettingModalProps {
+  open: boolean;
+  currentComponentInfo?: AgentComponentInfo;
+  allPageComponentList?: AgentComponentInfo[];
   onCancel: () => void;
 }
 
@@ -85,32 +105,6 @@ export interface CollapseComponentItemProps {
   agentComponentInfo: AgentComponentInfo;
   defaultImage?: string;
   extra?: React.ReactNode;
-}
-
-// 创建触发器组件
-export interface CreateTriggerProps {
-  agentId: number;
-  open: boolean;
-  title: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-}
-
-// 触发器时区组件
-export interface TimingTriggerProps {
-  triggerTimeZone?: TriggerTimeZone;
-}
-
-// 触发器请求参数输入数据类型
-export interface TriggerRequireInputType {
-  key: React.Key;
-  // 参数名称，符合函数命名规则
-  name: string;
-  // 参数详细描述信息
-  description: string;
-  // 数据类型
-  dataType: DataTypeEnum;
-  children?: TriggerRequireInputType[];
 }
 
 // 智能体模型设置弹窗组件
@@ -177,6 +171,20 @@ export interface OutputWayProps {
   onSaveSet: (data: OutputDirectlyParams) => void;
 }
 
+// 页面是否模型可见组件属性
+export interface VisibleToLLMProps {
+  visibleToLLMType: VisibleToLLMEnum;
+  onChangePageInfo: (attr: string, value: number) => void;
+  onSaveSet: () => void;
+}
+
+// 是否为智能体页面首页组件属性
+export interface HomeIndexProps {
+  homeIndexType: HomeIndexEnum;
+  onChangePageInfo: (attr: string, value: number) => void;
+  onSaveSet: () => void;
+}
+
 // 异步运行保存形参
 export interface AsyncRunSaveParams {
   async: DefaultSelectedEnum;
@@ -239,7 +247,44 @@ export interface LongMemoryContentProps {
 // 开场白组件
 export interface OpenRemarksEditProps {
   agentConfigInfo?: AgentConfigInfo;
-  onChangeAgent: (value: string | string[], attr: string) => void;
+  pageArgConfigs: PageArgConfig[];
+  onChangeAgent: (
+    value: string | string[] | GuidQuestionDto[],
+    attr: string,
+  ) => void;
+  onConfirmUpdateEventQuestions: (
+    value: string | string[] | number | GuidQuestionDto[],
+    attr: string,
+  ) => void;
+}
+
+// 开场白预置问题设置弹窗Props
+export interface GuidQuestionSetModalProps {
+  open: boolean;
+  agentConfigInfo?: AgentConfigInfo;
+  currentGuidQuestionDto?: GuidQuestionDto;
+  pageArgConfigs: PageArgConfig[];
+  onCancel: () => void;
+  onConfirm: (result: GuidQuestionDto[]) => void;
+  currentGuidQuestionDtoIndex: number;
+}
+
+// 页面路径选择框选项(自定义)
+export interface PagePathSelectOption {
+  label: string;
+  value: string;
+  pageUri: string;
+  pageId?: number;
+}
+
+// 事件绑定弹窗Props
+export interface EventBindModalProps {
+  open: boolean;
+  eventsInfo: AgentComponentInfo;
+  currentEventConfig?: AgentComponentEventConfig;
+  pageArgConfigs: PageArgConfig[];
+  onCancel: () => void;
+  onConfirm: () => void;
 }
 
 // 变量列表组件
@@ -247,6 +292,17 @@ export interface VariableListProps {
   textClassName?: string;
   onClick: (e: MouseEvent) => void;
   list: BindConfigWithSub[];
+}
+
+// 事件列表组件
+export interface EventListProps {
+  textClassName?: string;
+  onClick: (
+    item: AgentComponentEventConfig,
+    action: EventListEnum,
+    index: number,
+  ) => void;
+  list: AgentComponentEventConfig[];
 }
 
 // 聊天上传文件列表组件
@@ -368,6 +424,13 @@ export interface HomeAgentCategoryInfo {
   categoryItems: {
     [key: string]: CategoryItemInfo[];
   };
+}
+
+// 智能体添加组件基础信息
+export interface AgentAddComponentBaseInfo {
+  targetType: AgentComponentTypeEnum;
+  targetId: number;
+  toolName?: string;
 }
 
 // 智能体添加组件状态

@@ -1,0 +1,149 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.page-preview-container {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  background-color: @colorBgContainer;
+  border-left: @lineWidth @lineType @colorBorderSecondary;
+  transition: width 0.1s ease-out;
+  flex-shrink: 0; // 防止被压缩
+
+  // 拖拽时禁用过渡效果
+  &.dragging {
+    transition: none;
+  }
+}
+
+// 拖拽分隔条
+.resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover .resize-handle-bar {
+    background-color: @colorPrimary;
+    opacity: 1;
+  }
+}
+
+.resize-handle-bar {
+  width: 2px;
+  height: 100%;
+  background-color: @colorBorder;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+// 拖拽时的全屏遮罩
+.drag-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  cursor: col-resize;
+  background-color: rgba(0, 0, 0, 2%);
+}
+
+// 预览内容区域
+.page-preview-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  margin-left: 8px; // 为拖拽分隔条留出空间
+}
+
+// 标题栏（参照 ToggleWrap 样式）
+.page-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: @paddingXs @paddingLg;
+  box-sizing: content-box;
+  border-bottom: @lineWidth solid @colorSplit;
+  background-color: @colorBgContainer;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    color: @colorText;
+    white-space: nowrap;
+
+    .page-icon {
+      font-size: 16px;
+      color: @colorPrimary;
+    }
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .close-btn {
+    flex-shrink: 0;
+    margin-left: @paddingXs;
+    font-size: @fontSizeLg;
+    transition: opacity ease-in-out 0.2s;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+}
+
+// iframe 预览区域
+.page-preview-body {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background-color: @colorBgLayout;
+}
+
+.loading-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: @colorBgContainer;
+  z-index: 10;
+}
+
+.page-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background-color: @colorBgContainer;
+  transition: opacity 0.3s ease;
+}
+
+// 移动端隐藏预览区域
+@media screen and (max-width: 768px) {
+  .page-preview-container {
+    display: none;
+  }
+}

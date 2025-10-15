@@ -21,6 +21,7 @@ import {
   AgentComponentInfo,
   AgentConfigInfo,
   ComponentModelBindConfig,
+  GuidQuestionDto,
 } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
@@ -65,10 +66,14 @@ const EditAgent: React.FC = () => {
   } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
 
+  // 获取 chat model 中的页面预览状态
+  const chatModel = useModel('chat');
+  const { pagePreviewData, hidePagePreview, showPagePreview } = chatModel;
+
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
     manual: true,
-    debounceInterval: 300,
+    debounceWait: 300,
     onSuccess: (result: AgentConfigInfo) => {
       setAgentConfigInfo(result);
     },
@@ -77,7 +82,7 @@ const EditAgent: React.FC = () => {
   // 更新智能体基础配置信息
   const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
-    debounceInterval: 1000,
+    debounceWait: 1000,
   });
 
   useEffect(() => {
@@ -121,8 +126,11 @@ const EditAgent: React.FC = () => {
     setAgentConfigInfo(_agentConfigInfo);
   };
 
-  // 更新智能体信息
-  const handleChangeAgent = (value: string | string[], attr: string) => {
+  // 更新智能体配置信息
+  const handleUpdateEventQuestions = (
+    value: string | string[] | number | GuidQuestionDto[],
+    attr: string,
+  ) => {
     // 更新智能体配置信息
     const _agentConfigInfo = {
       ...agentConfigInfo,
@@ -135,17 +143,33 @@ const EditAgent: React.FC = () => {
     }
 
     setAgentConfigInfo(_agentConfigInfo);
+
+    // 预置问题, 并且没有消息时，更新建议预置问题列表
+    if (attr === 'guidQuestionDtos' && !messageList?.length) {
+      const _suggestList = value as GuidQuestionDto[];
+      // 过滤掉空值
+      const list =
+        _suggestList?.filter((item) => !!item.info)?.map((item) => item.info) ||
+        [];
+      setChatSuggestList(list);
+    }
+
+    // 返回更新后的智能体配置信息
+    return _agentConfigInfo;
+  };
+
+  // 更新智能体信息
+  const handleChangeAgent = (
+    value: string | string[] | number | GuidQuestionDto[],
+    attr: string,
+  ) => {
+    // 更新智能体配置信息
+    const _agentConfigInfo = handleUpdateEventQuestions(value, attr);
     // 用户问题建议
     if (attr === 'openSuggest') {
       setIsSuggest(value === OpenCloseEnum.Open);
     }
-    // 预置问题, 并且没有消息时，更新建议预置问题列表
-    if (attr === 'openingGuidQuestions' && !messageList?.length) {
-      const _suggestList = value as string[];
-      // 过滤掉空值
-      const list = _suggestList?.filter((item) => !!item) || [];
-      setChatSuggestList(list);
-    }
+
     const {
       id,
       name,
@@ -157,8 +181,10 @@ const EditAgent: React.FC = () => {
       suggestPrompt,
       openingChatMsg,
       openScheduledTask,
-      openingGuidQuestions,
       openLongMemory,
+      expandPageArea,
+      hideChatArea,
+      guidQuestionDtos,
     } = _agentConfigInfo;
 
     // 更新智能体信息
@@ -173,13 +199,21 @@ const EditAgent: React.FC = () => {
       suggestPrompt,
       openingChatMsg,
       openScheduledTask,
-      openingGuidQuestions,
       openLongMemory,
+      expandPageArea,
+      hideChatArea,
+      guidQuestionDtos,
     });
   };
 
   // 调试
   const handlePressDebug = () => {
+    // 如果当前显示的是页面预览，先关闭页面预览
+    if (pagePreviewData) {
+      hidePagePreview();
+    }
+
+    // 切换调试面板
     if (showType === EditAgentShowType.Debug_Details) {
       setShowType(EditAgentShowType.Hide);
     } else {
@@ -264,7 +298,6 @@ const EditAgent: React.FC = () => {
             });
           },
         );
-
         break;
       // 日志
       case ApplicationMoreActionEnum.Log:
@@ -272,6 +305,30 @@ const EditAgent: React.FC = () => {
         break;
     }
   };
+  console.log('expandPageArea：', agentConfigInfo?.expandPageArea);
+  console.log('hideChatArea：', agentConfigInfo?.hideChatArea);
+  console.log('pageHomeIndex：', agentConfigInfo?.pageHomeIndex);
+
+  useEffect(() => {
+    // 判断是否默认展示页面首页
+    if (
+      agentConfigInfo &&
+      agentConfigInfo?.expandPageArea &&
+      agentConfigInfo?.pageHomeIndex
+    ) {
+      // 自动触发预览
+      showPagePreview({
+        name: '页面预览',
+        uri: agentConfigInfo?.pageHomeIndex,
+        params: {},
+        executeId: '',
+      });
+    } else {
+      showPagePreview(null);
+    }
+
+    //
+  }, [agentConfigInfo]);
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
@@ -325,6 +382,7 @@ const EditAgent: React.FC = () => {
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onChangeAgent={handleChangeAgent}
+              onConfirmUpdateEventQuestions={handleUpdateEventQuestions}
             />
           </div>
         </div>

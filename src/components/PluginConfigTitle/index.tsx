@@ -8,12 +8,21 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const PluginConfigTitle: React.FC<PluginConfigTitleProps> = ({
+  className,
   title,
   extra,
   onClick,
 }) => {
   return (
-    <div className={cx('flex', 'content-between', 'items-center', 'mb-12')}>
+    <div
+      className={cx(
+        'flex',
+        'content-between',
+        'items-center',
+        'mb-12',
+        className,
+      )}
+    >
       <h3 className={cx(styles.title)}>{title}</h3>
       <div className={cx(styles.extra, 'flex')}>
         {extra}

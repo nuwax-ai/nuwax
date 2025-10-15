@@ -1,10 +1,15 @@
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  ExpandPageAreaEnum,
+} from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
-import { copyTextToClipboard } from '@/utils/clipboard';
+// import { copyTextToClipboard } from '@/utils/clipboard';
 import { cloneDeep } from '@/utils/common';
 import {
   CheckOutlined,
-  CopyOutlined,
+  EyeInvisibleOutlined,
+  // CopyOutlined,
+  EyeOutlined,
   ProfileOutlined,
 } from '@ant-design/icons';
 import { Button, message, Tooltip } from 'antd';
@@ -22,8 +27,23 @@ interface MarkdownCustomProcessProps {
   type: AgentComponentTypeEnum;
   dataKey: string;
 }
+interface InputProps {
+  method: 'browser_open_page' | 'browser_navigate_page';
+  data_type: 'markdown' | 'html';
+  uri_type: 'Page' | 'Link';
+  uri: string;
+  arguments: Record<string, any>;
+  request_id: string;
+}
+
 function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
-  const { getProcessingById, processingList } = useModel('chat');
+  const {
+    getProcessingById,
+    processingList,
+    pagePreviewData,
+    showPagePreview,
+    agentPageConfig,
+  } = useModel('chat');
 
   const [detailData, setDetailData] = useState<{
     params: Record<string, any>;
@@ -77,15 +97,15 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     }
   }, [innerProcessing.status]);
 
-  const handleCopy = useCallback(async () => {
-    if (!detailData) {
-      message.error('暂无数据');
-      return;
-    }
-    // 复制功能 - 可以复制组件的配置或内容
-    const jsonText = JSON.stringify(detailData, null, 2);
-    await copyTextToClipboard(jsonText, undefined, true);
-  }, [detailData]);
+  // const handleCopy = useCallback(async () => {
+  //   if (!detailData) {
+  //     message.error('暂无数据');
+  //     return;
+  //   }
+  //   // 复制功能 - 可以复制组件的配置或内容
+  //   const jsonText = JSON.stringify(detailData, null, 2);
+  //   await copyTextToClipboard(jsonText, undefined, true);
+  // }, [detailData]);
 
   // 准备 详情弹窗 所需的数据
   const getDetailData = useCallback((result: any) => {
@@ -113,11 +133,43 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
         return;
       }
       setDetailData(theDetailData);
+
+      // 自动展开页面预览逻辑
+      // 如果是 Page 类型且配置为自动展开，并且状态为完成，自动触发预览
+      if (
+        innerProcessing.type === AgentComponentTypeEnum.Page &&
+        innerProcessing.status === ProcessingEnum.FINISHED &&
+        agentPageConfig.expandPageArea === ExpandPageAreaEnum.Yes &&
+        theDetailData
+      ) {
+        const result = innerProcessing.result;
+        if (result && typeof result === 'object') {
+          const input = (
+            result as {
+              input?: { uri?: string; arguments?: Record<string, any> };
+            }
+          ).input;
+          if (input?.uri) {
+            // 自动触发预览
+            showPagePreview({
+              name: innerProcessing.name || '页面预览',
+              uri: input.uri,
+              params: input.arguments || {},
+              executeId: innerProcessing.executeId || '',
+            });
+          }
+        }
+      }
     }
   }, [
     innerProcessing.executeId,
     innerProcessing.status,
     innerProcessing.result,
+    innerProcessing.type,
+    innerProcessing.name,
+    agentPageConfig.expandPageArea,
+    showPagePreview,
+    getDetailData,
   ]);
 
   const disabled = useMemo(() => {
@@ -138,6 +190,78 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     setOpenModal(true);
   }, [detailData]);
 
+  // 判断是否为 Page 类型
+  const isPageType = useMemo(() => {
+    return innerProcessing.type === AgentComponentTypeEnum.Page;
+  }, [innerProcessing.type]);
+
+  const [open, setOpen] = useState(false);
+
+  // 打开预览页面
+  const openPreviewPage = () => {
+    if (!detailData) {
+      message.error('暂无数据');
+      return;
+    }
+
+    const result = innerProcessing.result;
+    if (!result || typeof result !== 'object') {
+      message.error('数据格式错误');
+      return;
+    }
+    const input: InputProps = (result as { input: InputProps }).input;
+
+    if (!input?.uri) {
+      message.error('页面路径不存在');
+      return;
+    }
+
+    // 判断页面类型
+    if (input.uri_type === 'Page') {
+      const previewData = {
+        name: innerProcessing.name || '页面预览',
+        uri: input.uri,
+        params: input.arguments || {},
+        executeId: innerProcessing.executeId || '',
+        method: input.method,
+        request_id: input.request_id,
+        data_type: input.data_type,
+      };
+
+      // 显示页面预览
+      showPagePreview(previewData);
+    }
+    // 链接类型
+    if (input.uri_type === 'Link') {
+      // 拼接 query 参数
+      const queryString = new URLSearchParams(input.arguments).toString();
+      const pageUrl = `${input.uri}?${queryString}`;
+      window.open(pageUrl, '_blank');
+    }
+  };
+  // 处理预览页面
+  const handlePreviewPage = useCallback(() => {
+    // 点击前先关闭 Tooltip，防止残留
+    setOpen(false);
+    // 执行你的布局变化逻辑
+    // ...
+
+    if (pagePreviewData) {
+      showPagePreview(null);
+      return;
+    }
+    // 打开预览页面
+    openPreviewPage();
+  }, [detailData, innerProcessing, showPagePreview, pagePreviewData]);
+
+  // 自动打开预览页面功能
+  useEffect(() => {
+    if (detailData && innerProcessing.status === ProcessingEnum.FINISHED) {
+      // 打开预览页面
+      openPreviewPage();
+    }
+  }, [innerProcessing, detailData]);
+
   if (!innerProcessing.executeId) {
     return null;
   }
@@ -155,7 +279,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
         <div className={cx(styles['process-controls'])}>
           {genStatusDisplay()}
           <div className={cx(styles['process-controls-actions'])}>
-            <Tooltip title={'查看详情'}>
+            <Tooltip title="查看详情">
               <Button
                 type="text"
                 disabled={disabled}
@@ -163,14 +287,32 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                 onClick={handleSeeDetail}
               />
             </Tooltip>
-            <Tooltip title="复制">
-              <Button
-                type="text"
-                icon={<CopyOutlined />}
-                disabled={disabled}
-                onClick={handleCopy}
-              />
-            </Tooltip>
+            {isPageType ? (
+              <Tooltip
+                title={pagePreviewData ? '关闭预览' : '预览页面'}
+                open={open}
+                onOpenChange={setOpen}
+              >
+                <Button
+                  type="text"
+                  disabled={disabled}
+                  icon={
+                    pagePreviewData ? <EyeInvisibleOutlined /> : <EyeOutlined />
+                  }
+                  onClick={handlePreviewPage}
+                  onMouseEnter={() => setOpen(true)}
+                  onMouseLeave={() => setOpen(false)}
+                />
+              </Tooltip>
+            ) : null}
+            {/*<Tooltip title="复制">*/}
+            {/*  <Button*/}
+            {/*    type="text"*/}
+            {/*    icon={<CopyOutlined />}*/}
+            {/*    disabled={disabled}*/}
+            {/*    onClick={handleCopy}*/}
+            {/*  />*/}
+            {/*</Tooltip>*/}
           </div>
         </div>
       </div>
