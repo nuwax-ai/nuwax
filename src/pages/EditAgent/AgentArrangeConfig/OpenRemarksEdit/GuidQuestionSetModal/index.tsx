@@ -318,7 +318,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
           />
         </Form.Item>
         <Form.Item name="info" label="展示信息">
-          <Input placeholder="这里是问题内容" />
+          <Input placeholder="这里是问题内容" showCount maxLength={30} />
         </Form.Item>
         <Form.Item name="type" label="类型">
           <SelectList
@@ -338,7 +338,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         ) : (
           type === GuidQuestionSetTypeEnum.Link && (
             <Form.Item name="url" label="链接地址">
-              <Input placeholder="https://xxxxxxx" />
+              <Input placeholder="https://xxxxxxx" allowClear />
             </Form.Item>
           )
         )}
