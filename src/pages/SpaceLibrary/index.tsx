@@ -626,7 +626,11 @@ const SpaceLibrary: React.FC = () => {
         <Loading />
       ) : componentList?.length > 0 ? (
         <div
-          className={cx(styles['main-container'], 'flex-1', 'scroll-container')}
+          className={cx(
+            styles['main-container'],
+            'flex-1',
+            'scroll-container-hide',
+          )}
         >
           {componentList?.map((info) => (
             <ComponentItem

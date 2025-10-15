@@ -1,13 +1,13 @@
 import { RequestConfig } from '@@/plugin-request/request';
 import { theme as antdTheme } from 'antd';
 import React, { useEffect, useRef } from 'react';
+import 'simple-edit-markdown/styles';
 import { useAntdConfigSetter } from 'umi';
 import { ACCESS_TOKEN } from './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';
 import useEventPolling from './hooks/useEventPolling';
 import { request as requestCommon } from './services/common';
 import { unifiedThemeService } from './services/unifiedThemeService';
-
 /**
  * 全局轮询组件
  * 在应用运行期间保持活跃，处理全局事件

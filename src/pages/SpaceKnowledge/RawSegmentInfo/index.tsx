@@ -142,7 +142,7 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
         <Loading />
       ) : rawSegmentInfoList?.length > 0 ? (
         <div
-          className={cx('px-16', 'py-16', 'flex-1', 'overflow-y')}
+          className={cx('px-16', 'py-16', 'flex-1', 'scroll-container')}
           id="rawSegmentDiv"
         >
           <InfiniteScrollDiv

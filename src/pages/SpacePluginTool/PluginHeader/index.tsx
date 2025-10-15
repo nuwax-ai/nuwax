@@ -68,36 +68,42 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
           <EditOutlined
             className={cx('cursor-pointer', 'hover-box')}
             onClick={onEdit}
+            style={{ fontSize: 16 }}
           />
           {pluginInfo?.publishStatus === PublishStatusEnum.Published && (
-            <CheckCircleOutlined className={cx(styles.circle)} />
+            <CheckCircleOutlined
+              className={cx(styles.circle)}
+              style={{ fontSize: 16 }}
+            />
           )}
+
+          <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
+            <span className={cx(styles.box)}>
+              {pluginInfo?.type === PluginTypeEnum.HTTP ? 'http' : '代码'}
+            </span>
+            <span className={cx(styles.box)}>
+              {pluginInfo?.publishStatus === PublishStatusEnum.Published
+                ? '已发布'
+                : '未发布'}
+            </span>
+          </div>
+        </div>
+      </section>
+      <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
+        <span className={cx(styles['update-time'])}>
+          配置保存于{dayjs(pluginInfo?.modified).format('HH:mm')}
+        </span>
+
+        <span>
           {/* 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布 */}
           {pluginInfo?.publishDate !== null &&
             dayjs(pluginInfo?.publishDate).isBefore(pluginInfo?.modified) && (
-              <Tag
-                bordered={false}
-                color="volcano"
-                style={{ marginLeft: '6px' }}
-              >
+              <Tag bordered={false} color="volcano" style={{ marginRight: 0 }}>
                 有更新未发布
               </Tag>
             )}
-        </div>
-        <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
-          <span className={cx(styles.box)}>
-            {pluginInfo?.type === PluginTypeEnum.HTTP ? 'http' : '代码'}
-          </span>
-          <span className={cx(styles.box)}>
-            {pluginInfo?.publishStatus === PublishStatusEnum.Published
-              ? '已发布'
-              : '未发布'}
-          </span>
-          <span className={cx(styles['update-time'])}>
-            配置保存于{dayjs(pluginInfo?.modified).format('HH:mm')}
-          </span>
-        </div>
-      </section>
+        </span>
+      </div>
       <ClockCircleOutlined
         className={cx(styles.history, 'cursor-pointer')}
         onClick={onToggleHistory}

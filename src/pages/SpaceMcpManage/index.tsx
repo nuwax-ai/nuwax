@@ -351,7 +351,11 @@ const SpaceLibrary: React.FC = () => {
         <Loading />
       ) : listLength > 0 ? (
         <div
-          className={cx(styles['main-container'], 'flex-1', 'scroll-container')}
+          className={cx(
+            styles['main-container'],
+            'flex-1',
+            'scroll-container-hide',
+          )}
         >
           {mcpList?.map((info) => (
             <McpComponentItem

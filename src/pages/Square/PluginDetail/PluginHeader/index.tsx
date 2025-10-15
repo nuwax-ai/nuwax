@@ -112,29 +112,30 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
           <h3 className={cx(styles.name, 'text-ellipsis')}>
             {targetInfo?.name}
           </h3>
-        </div>
-        <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
-          <div className={cx('flex', 'items-center', styles['info-author'])}>
-            <img
-              className={cx(styles.avatar)}
-              src={publishUser?.avatar || avatarImage}
-              alt=""
-            />
-            <ConditionRender
-              condition={publishUser?.nickName || publishUser?.userName}
-            >
-              <span className={cx(styles.author, 'text-ellipsis', 'flex-1')}>
-                {publishUser?.nickName || publishUser?.userName}
-              </span>
-            </ConditionRender>
+
+          <div className={cx(styles['bottom-box'], 'flex', 'items-center')}>
+            <div className={cx('flex', 'items-center', styles['info-author'])}>
+              <img
+                className={cx(styles.avatar)}
+                src={publishUser?.avatar || avatarImage}
+                alt=""
+              />
+              <ConditionRender
+                condition={publishUser?.nickName || publishUser?.userName}
+              >
+                <span className={cx(styles.author, 'text-ellipsis', 'flex-1')}>
+                  {publishUser?.nickName || publishUser?.userName}
+                </span>
+              </ConditionRender>
+            </div>
+            <span className={cx(styles['update-time'])}>
+              发布于{dayjs(targetInfo?.created).format('YYYY-MM-DD HH:mm')}
+            </span>
           </div>
-          <span className={cx(styles['update-time'])}>
-            发布于{dayjs(targetInfo?.created).format('YYYY-MM-DD HH:mm')}
-          </span>
         </div>
       </section>
 
-      <div className={cx('flex')}>
+      <div className={cx('flex items-center content-center')}>
         {/*收藏与取消收藏*/}
         <CollectStar devCollected={collect} onClick={handlerCollect} />
         <span className={cx('ml-10', styles['collect'])}>

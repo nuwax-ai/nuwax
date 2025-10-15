@@ -335,7 +335,10 @@ const SpaceMcpCreate: React.FC = () => {
         onSave={() => handleSave(false)}
         onSaveAndDeploy={() => handleSave(true)}
       />
-      <div className={cx('flex-1', 'overflow-y')}>
+      <div
+        className={cx('flex-1', 'scroll-container')}
+        style={{ margin: '10px 0' }}
+      >
         {loadingDetail ? (
           <Loading className="h-full" />
         ) : (

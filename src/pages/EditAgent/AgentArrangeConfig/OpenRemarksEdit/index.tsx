@@ -8,6 +8,7 @@ import { DeleteOutlined } from '@ant-design/icons';
 import { Input, theme } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
+import { SimpleEditor } from 'simple-edit-markdown';
 import GuidQuestionSetModal from './GuidQuestionSetModal';
 import styles from './index.less';
 
@@ -100,12 +101,30 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
     <>
       <p className={cx(styles['header-title'])}>开场白文案</p>
       <div className={cx(styles['content-box'])}>
-        <Input.TextArea
-          placeholder="请输入开场白"
+        {/*<Input.TextArea*/}
+        {/*  placeholder="请输入开场白"*/}
+        {/*  value={content}*/}
+        {/*  onChange={(e) => handleOpeningChatMsg(e.target.value)}*/}
+        {/*  autoSize={{ minRows: 3, maxRows: 5 }}*/}
+        {/*/>*/}
+
+        <SimpleEditor
           value={content}
-          onChange={(e) => handleOpeningChatMsg(e.target.value)}
-          autoSize={{ minRows: 3, maxRows: 5 }}
+          onChange={handleOpeningChatMsg}
+          className={cx(styles['custom-style-editor'])}
+          focusBorderColor={'var(--xagi-color-primary)'}
+          toolbarAlign="left"
         />
+
+        {/*<EditorProvider*/}
+        {/*  slotBefore={<MenuBar />}*/}
+        {/*  extensions={extensions}*/}
+        {/*  content={content}*/}
+        {/*  onUpdate={handleUpdate}*/}
+        {/*></EditorProvider>*/}
+        {/*<EditorContent editor={editor} />*/}
+        {/*<FloatingMenu editor={editor}>This is the floating menu</FloatingMenu>*/}
+        {/*<BubbleMenu editor={editor}>This is the bubble menu</BubbleMenu>*/}
       </div>
       <div
         className={cx(
