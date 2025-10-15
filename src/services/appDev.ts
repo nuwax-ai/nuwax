@@ -9,6 +9,7 @@ import type {
   ChatRequest,
   ChatResponse,
   CreateProjectParams,
+  CustomBuildRes,
   DevServerInfo,
   GetProjectContentResponse,
   KeepAliveResponse,
@@ -68,9 +69,11 @@ export const stopDev = async (projectId: string): Promise<any> => {
 /**
  * 重启前端开发服务器
  * @param projectId 项目ID
- * @returns Promise<any> 重启结果
+ * @returns Promise<RequestResponse<CustomBuildRes>> 重启结果
  */
-export const restartDev = async (projectId: string): Promise<any> => {
+export const restartDev = async (
+  projectId: string,
+): Promise<RequestResponse<CustomBuildRes>> => {
   return request('/api/custom-page/restart-dev', {
     method: 'POST',
     data: {

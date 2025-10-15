@@ -35,7 +35,6 @@ interface UseAppDevFileManagementProps {
   onFileSelect?: (fileId: string) => void;
   onFileContentChange?: (fileId: string, content: string) => void;
   isChatLoading?: boolean; // 新增：是否正在AI聊天加载中
-  chatLoadingRef?: React.MutableRefObject<boolean>; // 新增：聊天加载状态的ref引用
 }
 
 export const useAppDevFileManagement = ({
@@ -43,7 +42,6 @@ export const useAppDevFileManagement = ({
   onFileSelect,
   onFileContentChange,
   isChatLoading = false,
-  chatLoadingRef,
 }: UseAppDevFileManagementProps) => {
   // 文件树状态
   const [fileTreeState, setFileTreeState] = useState<FileTreeState>({
@@ -123,11 +121,9 @@ export const useAppDevFileManagement = ({
 
         lastLoadedProjectIdRef.current = projectId;
 
-        // 自动展开第一层文件夹（跳过以"."为前缀的隐藏目录）
+        // 自动展开第一层文件夹
         const rootFolders = treeData
-          .filter(
-            (node) => node.type === 'folder' && !node.name.startsWith('.'),
-          )
+          .filter((node) => node.type === 'folder')
           .map((node) => node.id);
         if (rootFolders.length > 0) {
           setFileTreeState((prev) => ({
@@ -647,43 +643,16 @@ export const useAppDevFileManagement = ({
     }
   }, [projectId, loadFileTree]);
 
-  // AI聊天加载时自动刷新文件树
+  // AI聊天加载时自动刷新文件树 - 已禁用轮询机制
+  // 注释：取消在会话过程中的轮询间隔调用更新文件树逻辑
+  // 现在只在会话开始时执行一次刷新，不再进行定时轮询
   useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
-
-    // 使用ref获取实时的isChatLoading状态，如果没有ref则使用props中的值
-    const currentIsChatLoading = chatLoadingRef?.current ?? isChatLoading;
-
-    if (currentIsChatLoading && projectId) {
-      console.log('🔄 [FileManagement] 开始AI聊天期间的自动刷新文件树');
-
-      // 立即执行一次刷新
+    if (isChatLoading && projectId) {
+      console.log('🔄 [FileManagement] AI聊天开始，执行一次文件树刷新');
+      // 只在聊天开始时执行一次刷新，不再进行定时轮询
       loadFileTree();
-
-      // 设置10秒间隔的自动刷新
-      intervalId = setInterval(() => {
-        // 每次轮询时检查当前的聊天加载状态
-        const stillLoading = chatLoadingRef?.current ?? isChatLoading;
-        if (stillLoading && projectId) {
-          console.log('🔄 [FileManagement] AI聊天期间自动刷新文件树');
-          loadFileTree();
-        } else {
-          console.log('🔄 [FileManagement] AI聊天已结束，停止自动刷新文件树');
-          if (intervalId) {
-            clearInterval(intervalId);
-            intervalId = null;
-          }
-        }
-      }, 10000); // 10秒间隔
     }
-
-    return () => {
-      if (intervalId) {
-        console.log('🔄 [FileManagement] 停止AI聊天期间的自动刷新文件树');
-        clearInterval(intervalId);
-      }
-    };
-  }, [isChatLoading, projectId, loadFileTree, chatLoadingRef]);
+  }, [isChatLoading, projectId, loadFileTree]);
 
   return {
     // 文件树相关

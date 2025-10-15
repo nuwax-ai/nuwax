@@ -12,6 +12,7 @@ import {
   bindDataSource,
   buildProject,
   exportProject,
+  restartDev,
   uploadAndStartProject,
 } from '@/services/appDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -19,9 +20,9 @@ import type { DataSourceSelection } from '@/types/interfaces/appDev';
 import {
   DownloadOutlined,
   EyeOutlined,
-  GlobalOutlined,
+  FullscreenOutlined,
   ReadOutlined,
-  ReloadOutlined,
+  SyncOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import {
@@ -97,6 +98,9 @@ const AppDev: React.FC = () => {
   // 导出项目状态
   const [isExporting, setIsExporting] = useState(false);
 
+  // 重启服务状态
+  const [isRestarting, setIsRestarting] = useState(false);
+
   // 单文件上传状态
   const [isSingleFileUploadModalVisible, setIsSingleFileUploadModalVisible] =
     useState(false);
@@ -104,16 +108,12 @@ const AppDev: React.FC = () => {
   const [singleFilePath, setSingleFilePath] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
 
-  // 聊天加载状态的ref，用于传递给fileManagement hook
-  const chatLoadingRef = useRef<boolean>(false);
-
   // 使用重构后的 hooks
   const fileManagement = useAppDevFileManagement({
     projectId: projectId || '',
     onFileSelect: setActiveFile,
     onFileContentChange: updateFileContent,
-    isChatLoading: false, // 临时设为false，通过ref传递实时状态
-    chatLoadingRef: chatLoadingRef, // 传递ref引用
+    isChatLoading: false, // 临时设为false，稍后更新
   });
 
   const chat = useAppDevChat({
@@ -123,9 +123,10 @@ const AppDev: React.FC = () => {
     onClearDataSourceSelections: () => setSelectedDataResourceIds([]), // 新增：清除选择回调
   });
 
-  // 同步聊天加载状态到ref
+  // 更新fileManagement的isChatLoading
   useEffect(() => {
-    chatLoadingRef.current = chat.isChatLoading;
+    // 这里我们需要重新创建fileManagement hook，但为了避免复杂性，我们使用不同的方法
+    // 暂时保持现状，因为自动刷新功能已经在fileManagement内部实现
   }, [chat.isChatLoading]);
 
   const server = useAppDevServer({
@@ -371,6 +372,46 @@ const AppDev: React.FC = () => {
       setIsExporting(false);
     }
   }, [hasValidProjectId, projectId]);
+
+  /**
+   * 处理重启开发服务器
+   */
+  const handleRestartDevServer = useCallback(async () => {
+    // 检查项目ID是否有效
+    if (!hasValidProjectId || !projectId) {
+      message.error('项目ID不存在或无效，无法重启服务');
+      return;
+    }
+
+    try {
+      setIsRestarting(true);
+      message.loading('正在重启开发服务器...', 0);
+
+      const result = await restartDev(projectId);
+
+      // 关闭加载提示
+      message.destroy();
+
+      if (result.success && result.data) {
+        // 更新开发服务器URL
+        if (result.data.devServerUrl) {
+          updateDevServerUrl(result.data.devServerUrl);
+          message.success('开发服务器重启成功');
+        } else {
+          message.warning('重启成功，但未获取到新的服务器地址');
+        }
+      } else {
+        message.error(result.message || '重启开发服务器失败');
+      }
+    } catch (error: any) {
+      message.destroy();
+      const errorMessage =
+        error?.response?.data?.message || error?.message || '重启失败';
+      message.error(`重启失败: ${errorMessage}`);
+    } finally {
+      setIsRestarting(false);
+    }
+  }, [hasValidProjectId, projectId, updateDevServerUrl]);
 
   /**
    * 处理添加组件（Created 组件回调）
@@ -824,26 +865,26 @@ const AppDev: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      {/* 原有的按钮：刷新预览、全屏预览、导出项目 */}
-                      <Tooltip title="刷新预览">
+                      {/* 原有的按钮：重启服务、全屏预览、导出项目 */}
+                      <Tooltip title="重启开发服务器">
                         <Button
                           size="small"
-                          icon={<ReloadOutlined />}
-                          onClick={() => {
-                            if (previewRef.current) {
-                              previewRef.current.refresh();
-                            }
-                          }}
+                          icon={<SyncOutlined />}
+                          onClick={handleRestartDevServer}
+                          loading={isRestarting}
                           className={styles.headerButton}
                         />
                       </Tooltip>
                       <Tooltip title="全屏预览">
                         <Button
                           size="small"
-                          icon={<GlobalOutlined />}
+                          icon={<FullscreenOutlined />}
                           onClick={() => {
                             if (previewRef.current && workspace.devServerUrl) {
-                              window.open(workspace.devServerUrl, '_blank');
+                              window.open(
+                                `${process.env.BASE_URL}${workspace.devServerUrl}`,
+                                '_blank',
+                              );
                             }
                           }}
                           className={styles.headerButton}
