@@ -35,6 +35,7 @@ interface UseAppDevFileManagementProps {
   onFileSelect?: (fileId: string) => void;
   onFileContentChange?: (fileId: string, content: string) => void;
   isChatLoading?: boolean; // 新增：是否正在AI聊天加载中
+  chatLoadingRef?: React.MutableRefObject<boolean>; // 新增：聊天加载状态的ref引用
 }
 
 export const useAppDevFileManagement = ({
@@ -42,6 +43,7 @@ export const useAppDevFileManagement = ({
   onFileSelect,
   onFileContentChange,
   isChatLoading = false,
+  chatLoadingRef,
 }: UseAppDevFileManagementProps) => {
   // 文件树状态
   const [fileTreeState, setFileTreeState] = useState<FileTreeState>({
@@ -121,9 +123,11 @@ export const useAppDevFileManagement = ({
 
         lastLoadedProjectIdRef.current = projectId;
 
-        // 自动展开第一层文件夹
+        // 自动展开第一层文件夹（跳过以"."为前缀的隐藏目录）
         const rootFolders = treeData
-          .filter((node) => node.type === 'folder')
+          .filter(
+            (node) => node.type === 'folder' && !node.name.startsWith('.'),
+          )
           .map((node) => node.id);
         if (rootFolders.length > 0) {
           setFileTreeState((prev) => ({
@@ -647,7 +651,10 @@ export const useAppDevFileManagement = ({
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
 
-    if (isChatLoading && projectId) {
+    // 使用ref获取实时的isChatLoading状态，如果没有ref则使用props中的值
+    const currentIsChatLoading = chatLoadingRef?.current ?? isChatLoading;
+
+    if (currentIsChatLoading && projectId) {
       console.log('🔄 [FileManagement] 开始AI聊天期间的自动刷新文件树');
 
       // 立即执行一次刷新
@@ -655,8 +662,18 @@ export const useAppDevFileManagement = ({
 
       // 设置10秒间隔的自动刷新
       intervalId = setInterval(() => {
-        console.log('🔄 [FileManagement] AI聊天期间自动刷新文件树');
-        loadFileTree();
+        // 每次轮询时检查当前的聊天加载状态
+        const stillLoading = chatLoadingRef?.current ?? isChatLoading;
+        if (stillLoading && projectId) {
+          console.log('🔄 [FileManagement] AI聊天期间自动刷新文件树');
+          loadFileTree();
+        } else {
+          console.log('🔄 [FileManagement] AI聊天已结束，停止自动刷新文件树');
+          if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+          }
+        }
       }, 10000); // 10秒间隔
     }
 
@@ -666,7 +683,7 @@ export const useAppDevFileManagement = ({
         clearInterval(intervalId);
       }
     };
-  }, [isChatLoading, projectId, loadFileTree]);
+  }, [isChatLoading, projectId, loadFileTree, chatLoadingRef]);
 
   return {
     // 文件树相关

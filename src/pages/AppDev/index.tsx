@@ -104,12 +104,16 @@ const AppDev: React.FC = () => {
   const [singleFilePath, setSingleFilePath] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
 
+  // 聊天加载状态的ref，用于传递给fileManagement hook
+  const chatLoadingRef = useRef<boolean>(false);
+
   // 使用重构后的 hooks
   const fileManagement = useAppDevFileManagement({
     projectId: projectId || '',
     onFileSelect: setActiveFile,
     onFileContentChange: updateFileContent,
-    isChatLoading: false, // 临时设为false，稍后更新
+    isChatLoading: false, // 临时设为false，通过ref传递实时状态
+    chatLoadingRef: chatLoadingRef, // 传递ref引用
   });
 
   const chat = useAppDevChat({
@@ -119,10 +123,9 @@ const AppDev: React.FC = () => {
     onClearDataSourceSelections: () => setSelectedDataResourceIds([]), // 新增：清除选择回调
   });
 
-  // 更新fileManagement的isChatLoading
+  // 同步聊天加载状态到ref
   useEffect(() => {
-    // 这里我们需要重新创建fileManagement hook，但为了避免复杂性，我们使用不同的方法
-    // 暂时保持现状，因为自动刷新功能已经在fileManagement内部实现
+    chatLoadingRef.current = chat.isChatLoading;
   }, [chat.isChatLoading]);
 
   const server = useAppDevServer({

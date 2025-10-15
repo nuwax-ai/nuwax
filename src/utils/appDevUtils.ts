@@ -139,7 +139,8 @@ export const findFirstFile = (treeData: FileNode[]): string | null => {
       if (
         FILE_CONSTANTS.IGNORED_FILE_PATTERNS.some((pattern) =>
           pattern.test(fileName),
-        )
+        ) ||
+        fileName.startsWith('.') // 跳过以"."为前缀的隐藏文件
       ) {
         continue;
       }
