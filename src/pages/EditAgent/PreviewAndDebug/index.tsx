@@ -9,6 +9,7 @@ import useConversation from '@/hooks/useConversation';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { EditAgentShowType } from '@/types/enums/space';
+import { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -21,6 +22,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
+import cloneDeep from 'lodash/cloneDeep';
 import React, {
   useCallback,
   useEffect,
@@ -35,11 +37,20 @@ import PreviewAndDebugHeader from './PreviewAndDebugHeader';
 const cx = classNames.bind(styles);
 
 /**
+ * PreviewAndDebug 组件的 Props 接口
+ */
+interface PreviewAndDebugProps extends PreviewAndDebugHeaderProps {
+  /** 设置智能体配置信息的方法 */
+  onAgentConfigInfo: (info: AgentConfigInfo) => void;
+}
+
+/**
  * 预览与调试组件
  */
-const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
+const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   agentId,
   agentConfigInfo,
+  onAgentConfigInfo,
   onPressDebug,
 }) => {
   const [form] = Form.useForm();
@@ -228,10 +239,16 @@ const PreviewAndDebug: React.FC<PreviewAndDebugHeaderProps> = ({
     if (success) {
       const id = data?.id;
       devConversationIdRef.current = id;
+      if (agentConfigInfo) {
+        // 更新智能体配置信息
+        const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
+        _agentConfigInfo.devConversationId = id;
+        onAgentConfigInfo(_agentConfigInfo);
+      }
       // 查询会话
       runQueryConversation(id);
     }
-  }, [agentId]);
+  }, [agentId, agentConfigInfo]);
 
   // 消息发送
   const handleMessageSend = (messageInfo: string, files?: UploadFileInfo[]) => {

@@ -388,6 +388,7 @@ const EditAgent: React.FC = () => {
           agentConfigInfo={agentConfigInfo}
           agentId={agentId}
           onPressDebug={handlePressDebug}
+          onAgentConfigInfo={setAgentConfigInfo}
         />
         {/*调试详情*/}
         <DebugDetails
