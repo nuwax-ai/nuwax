@@ -1,4 +1,4 @@
-import { CheckOutlined, FileOutlined, ReloadOutlined } from '@ant-design/icons';
+import { CheckOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Button, Spin } from 'antd';
 import React from 'react';
 import styles from './index.less';
@@ -6,8 +6,6 @@ import styles from './index.less';
 interface FilePathHeaderProps {
   /** 文件路径 */
   filePath: string;
-  /** 文件语言类型 */
-  language: string;
   /** 文件是否被修改 */
   isModified: boolean;
   /** 是否正在加载 */
@@ -30,7 +28,6 @@ interface FilePathHeaderProps {
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   filePath,
-  language,
   isModified,
   isLoading,
   isSaving,
@@ -42,34 +39,39 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   return (
     <div className={styles.filePathHeader}>
       <div className={styles.filePathInfo}>
-        <FileOutlined className={styles.fileIcon} />
+        {/* <FileOutlined className={styles.fileIcon} /> */}
         <span className={styles.filePath}>{filePath}</span>
-        <span className={styles.fileLanguage}>{language}</span>
+        {/* <span className={styles.fileLanguage}>{language}</span> */}
         {isLoading && <Spin size="small" />}
         {isModified && !readOnly && (
           <span className={styles.modifiedIndicator}>已修改</span>
         )}
       </div>
       <div className={styles.fileActions}>
-        <Button
-          size="small"
-          type="primary"
-          icon={<CheckOutlined />}
-          onClick={onSave}
-          loading={isSaving}
-          disabled={!isModified || readOnly}
-          style={{ marginRight: 8 }}
-        >
-          保存
-        </Button>
-        <Button
-          size="small"
-          onClick={onCancel}
-          disabled={!isModified || readOnly}
-          style={{ marginRight: 8 }}
-        >
-          取消
-        </Button>
+        {isModified && !readOnly && (
+          <>
+            <Button
+              size="small"
+              type="primary"
+              icon={<CheckOutlined />}
+              onClick={onSave}
+              loading={isSaving}
+              disabled={!isModified || readOnly}
+              style={{ marginRight: 8 }}
+            >
+              保存
+            </Button>
+            <Button
+              size="small"
+              onClick={onCancel}
+              disabled={!isModified || readOnly}
+              style={{ marginRight: 8 }}
+            >
+              取消
+            </Button>
+          </>
+        )}
+
         <Button
           size="small"
           icon={<ReloadOutlined />}

@@ -1,5 +1,5 @@
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
-import { getLanguageFromFile, isImageFile } from '@/utils/appDevUtils';
+import { isImageFile } from '@/utils/appDevUtils';
 import { Button, Spin } from 'antd';
 import React from 'react';
 import CodeViewer from '../CodeViewer';
@@ -103,7 +103,6 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         {/* 文件路径显示 */}
         <FilePathHeader
           filePath={fileNode?.path || selectedFileId}
-          language={getLanguageFromFile(selectedFileId)}
           isModified={false}
           isLoading={false}
           isSaving={false}
@@ -222,7 +221,6 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         {/* 文件路径显示 */}
         <FilePathHeader
           filePath={currentFileNode?.path || selectedFileId}
-          language={getLanguageFromFile(selectedFileId)}
           isModified={isFileModified}
           isLoading={isLoadingFileContent}
           isSaving={isSavingFile}

@@ -6,10 +6,10 @@
   flex: 0 0 15%; // 默认占25%宽度
   height: 100%;
   min-width: 240px;
-  background: rgba(255, 255, 255, 80%);
-  border-right: 1px solid rgba(0, 0, 0, 10%);
+  background: @colorBgContainer;
+  border-right: @lineWidth solid @colorBorderSecondary;
   padding: 0;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 5%);
+  // box-shadow: 2px 0 8px rgba(0, 0, 0, 5%);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-x: auto; // 启用横向滚动
 
@@ -63,15 +63,15 @@
   position: absolute;
   top: 10px;
   right: 0;
-  color: #1e293b;
+  color: @colorTextBase;
 }
 
 .addButton {
-  color: #64748b;
+  color: @colorTextBase;
 
   &:hover {
-    color: #3b82f6;
-    background: rgba(59, 130, 246, 10%);
+    color: @colorPrimary;
+    background: @colorPrimaryBg;
   }
 }
 
@@ -83,32 +83,32 @@
   min-height: 0; // 允许 flex 子项收缩
 
   // 滚动条样式
-  &::-webkit-scrollbar {
-    width: 6px;
-    height: 6px; // 横向滚动条高度
-  }
+  // &::-webkit-scrollbar {
+  //   width: 6px;
+  //   height: 6px; // 横向滚动条高度
+  // }
 
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
+  // &::-webkit-scrollbar-track {
+  //   background: transparent;
+  // }
 
-  &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 20%);
-    border-radius: 3px;
+  // &::-webkit-scrollbar-thumb {
+  //   background: rgba(0, 0, 0, 20%);
+  //   border-radius: 3px;
 
-    &:hover {
-      background: rgba(0, 0, 0, 30%);
-    }
-  }
+  //   &:hover {
+  //     background: rgba(0, 0, 0, 30%);
+  //   }
+  // }
 
-  &::-webkit-scrollbar-corner {
-    background: transparent;
-  }
+  // &::-webkit-scrollbar-corner {
+  //   background: transparent;
+  // }
 }
 
 // 文件树样式
 .fileTree {
-  padding: 8px 0;
+  // padding: 8px 0;
   min-width: max-content; // 确保内容不会被压缩
   width: 100%;
 }
@@ -137,7 +137,7 @@
 .folderIcon {
   margin-right: 8px;
   font-size: 12px;
-  color: #64748b;
+  color: @colorTextBase;
   transition: transform 0.2s ease;
 
   &.expanded {
@@ -146,9 +146,9 @@
 }
 
 .folderName {
-  color: #1e293b;
-  font-weight: 500;
-  font-size: 14px;
+  color: @colorTextBase;
+  font-weight: @fontWeightStrong;
+  font-size: @fontSize;
 }
 
 .fileList {
@@ -183,36 +183,36 @@
     background: rgba(0, 0, 0, 5%);
 
     .fileIcon {
-      color: #3b82f6;
+      color: @colorPrimary;
     }
   }
 
   &.activeFile {
-    background: rgba(59, 130, 246, 15%);
+    background: @colorPrimaryBg;
     // border: 1px solid rgba(59, 130, 246, 30%);
 
     .fileIcon {
-      color: #3b82f6;
+      color: @colorPrimary;
     }
   }
 }
 
 .fileIcon {
   margin-right: 8px;
-  font-size: 14px;
-  color: #64748b;
+  font-size: @fontSize;
+  color: @colorTextBase;
   transition: color 0.2s ease;
 }
 
 .fileName {
-  color: #475569;
-  font-size: 13px;
+  color: @colorTextBase;
+  font-size: @fontSizeSm;
   flex: 1;
 }
 
 .fileStatus {
-  color: #64748b;
-  font-size: 11px;
+  color: @colorTextBase;
+  font-size: @fontSizeSm;
   background: rgba(0, 0, 0, 5%);
   padding: 2px 6px;
   border-radius: 3px;
@@ -224,7 +224,7 @@
   opacity: 0;
   transition: opacity 0.2s ease;
   margin-left: auto;
-  color: #64748b;
+  color: @colorTextBase;
   padding: 2px;
   height: 20px;
   width: 20px;
@@ -234,8 +234,8 @@
   justify-content: center;
 
   &:hover {
-    color: #ff4d4f;
-    background: rgba(255, 77, 79, 10%);
+    color: @colorError;
+    background: @colorErrorBg;
   }
 
   .folderHeader:hover &,
@@ -255,9 +255,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 95%);
-  color: #64748b;
-  font-size: 12px;
+  // background: rgba(255, 255, 255, 95%);
+  color: @colorTextBase;
+  font-size: @fontSizeSm;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 10;
   cursor: pointer;
@@ -266,7 +266,7 @@
   // 展开状态 - 文件树可见时
   &.expanded {
     opacity: 0.8;
-    color: #64748b;
+    color: @colorTextBase;
 
     &:hover {
       opacity: 1;
@@ -304,9 +304,9 @@
   flex-shrink: 0; // 不允许收缩
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 80%);
-  border-top: 1px solid rgba(0, 0, 0, 10%);
-  margin-top: 8px;
+  background: @colorBgContainer;
+  border-top: @lineWidth solid @colorBorderSecondary;
+  // margin-top: 8px;
 }
 
 .dataSourceHeader {
@@ -314,22 +314,22 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 10%);
-  background: rgba(255, 255, 255, 80%);
-  backdrop-filter: blur(10px);
+  border-bottom: @lineWidth solid @colorBorderSecondary;
+  background: @colorBgContainer;
+  // backdrop-filter: blur(10px);
 
   h3 {
     margin: 0;
-    color: #1e293b;
-    font-size: 16px;
-    font-weight: 600;
+    color: @colorTextBase;
+    font-size: @fontSizeLg;
+    font-weight: @fontWeightStrong;
   }
 }
 
 .dataSourceContent {
   flex: 1;
   overflow: hidden;
-  background: rgba(255, 255, 255, 60%);
+  background: @colorBgContainer;
 }
 
 // 数据资源列表样式
@@ -338,26 +338,26 @@
   overflow: hidden;
 
   // 自定义滚动条样式
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
+  // &::-webkit-scrollbar {
+  //   width: 6px;
+  // }
 
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
+  // &::-webkit-scrollbar-track {
+  //   background: transparent;
+  // }
 
-  &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 20%);
-    border-radius: 3px;
+  // &::-webkit-scrollbar-thumb {
+  //   background: rgba(0, 0, 0, 20%);
+  //   border-radius: 3px;
 
-    &:hover {
-      background: rgba(0, 0, 0, 30%);
-    }
-  }
+  //   &:hover {
+  //     background: rgba(0, 0, 0, 30%);
+  //   }
+  // }
 
-  &::-webkit-scrollbar-corner {
-    background: transparent;
-  }
+  // &::-webkit-scrollbar-corner {
+  //   background: transparent;
+  // }
 }
 
 // 资源项样式
@@ -373,11 +373,11 @@
 .resourceActionButton {
   opacity: 0;
   transition: opacity 0.2s ease;
-  color: #64748b;
+  color: @colorTextBase;
 
   &:hover {
-    color: #3b82f6;
-    background: rgba(59, 130, 246, 10%);
+    color: @colorPrimary;
+    background: @colorPrimaryBg;
   }
 }
 
@@ -388,11 +388,11 @@
   gap: 4px;
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  background: rgba(59, 130, 246, 10%);
-  color: #3b82f6;
-  border: 1px solid rgba(59, 130, 246, 20%);
+  font-size: @fontSizeSm;
+  font-weight: @fontWeightStrong;
+  background: @colorPrimaryBg;
+  color: @colorPrimary;
+  border: @lineWidth solid @colorPrimaryBorder;
 
   &.workflow {
     background: rgba(24, 144, 255, 10%);
@@ -465,7 +465,7 @@
   align-items: center;
   justify-content: center;
   height: 200px;
-  color: #8c8c8c;
+  color: @colorTextQuaternary;
   text-align: center;
 
   .emptyIcon {
@@ -475,99 +475,99 @@
   }
 
   .emptyText {
-    font-size: 14px;
+    font-size: @fontSize;
     margin-bottom: 8px;
   }
 
   .emptyDescription {
-    font-size: 12px;
-    color: #bfbfbf;
+    font-size: @fontSizeSm;
+    color: @colorTextQuaternary;
   }
 }
 
 // 响应式设计
-@media (max-width: 1200px) {
-  .fileTreeCol {
-    flex: 0 0 25%;
-    max-width: 25%;
-    min-width: 240px;
-  }
-}
+// @media (max-width: 1200px) {
+//   .fileTreeCol {
+//     flex: 0 0 25%;
+//     max-width: 25%;
+//     min-width: 240px;
+//   }
+// }
 
-@media (max-width: 768px) {
-  .fileTreeCol {
-    height: 200px;
-    flex: 0 0 200px; // 固定高度
-    min-width: 0;
-    border-right: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 10%);
-  }
+// @media (max-width: 768px) {
+//   .fileTreeCol {
+//     height: 200px;
+//     flex: 0 0 200px; // 固定高度
+//     min-width: 0;
+//     border-right: none;
+//     border-bottom: 1px solid rgba(0, 0, 0, 10%);
+//   }
 
-  .dataSourceHeader {
-    padding: 8px 12px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+//   .dataSourceHeader {
+//     padding: 8px 12px;
+//     flex-direction: column;
+//     align-items: flex-start;
+//     gap: 8px;
 
-    h3 {
-      font-size: 14px;
-    }
-  }
+//     h3 {
+//       font-size: 14px;
+//     }
+//   }
 
-  .dataSourceContent {
-    padding: 0 8px;
-  }
+//   .dataSourceContent {
+//     padding: 0 8px;
+//   }
 
-  .dataResourceList {
-    :global(.ant-list-item) {
-      padding: 8px 12px;
-    }
+//   .dataResourceList {
+//     :global(.ant-list-item) {
+//       padding: 8px 12px;
+//     }
 
-    :global(.ant-list-item-meta-avatar) {
-      margin-right: 8px;
-    }
-  }
-}
+//     :global(.ant-list-item-meta-avatar) {
+//       margin-right: 8px;
+//     }
+//   }
+// }
 
 // 暗色主题支持
-[data-theme='dark'] {
-  .collapseButton {
-    background: rgba(0, 0, 0, 80%);
-    border-color: rgba(255, 255, 255, 10%);
-    color: #94a3b8;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 30%);
+// [data-theme='dark'] {
+//   .collapseButton {
+//     background: rgba(0, 0, 0, 80%);
+//     border-color: rgba(255, 255, 255, 10%);
+//     color: #94a3b8;
+//     box-shadow: 0 2px 8px rgba(0, 0, 0, 30%);
 
-    &.expanded {
-      opacity: 0.8;
+//     &.expanded {
+//       opacity: 0.8;
 
-      &:hover {
-        background: rgba(59, 130, 246, 80%);
-        border-color: rgba(59, 130, 246, 30%);
-        color: #fff;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 30%);
-      }
-    }
+//       &:hover {
+//         background: rgba(59, 130, 246, 80%);
+//         border-color: rgba(59, 130, 246, 30%);
+//         color: #fff;
+//         box-shadow: 0 4px 12px rgba(59, 130, 246, 30%);
+//       }
+//     }
 
-    &.collapsed {
-      opacity: 1;
-      background: rgba(59, 130, 246, 80%);
-      border-color: rgba(59, 130, 246, 30%);
-      color: #fff;
-      box-shadow: 0 2px 12px rgba(59, 130, 246, 30%);
+//     &.collapsed {
+//       opacity: 1;
+//       background: rgba(59, 130, 246, 80%);
+//       border-color: rgba(59, 130, 246, 30%);
+//       color: #fff;
+//       box-shadow: 0 2px 12px rgba(59, 130, 246, 30%);
 
-      &:hover {
-        background: rgba(37, 99, 235, 80%);
-        border-color: rgba(37, 99, 235, 30%);
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 30%);
-      }
-    }
+//       &:hover {
+//         background: rgba(37, 99, 235, 80%);
+//         border-color: rgba(37, 99, 235, 30%);
+//         box-shadow: 0 4px 12px rgba(37, 99, 235, 30%);
+//       }
+//     }
 
-    &:focus {
-      background: rgba(59, 130, 246, 20%);
-      border-color: rgba(59, 130, 246, 30%);
-      color: #60a5fa;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 30%),
-        0 0 0 2px rgba(59, 130, 246, 30%);
-    }
-  }
-}
+//     &:focus {
+//       background: rgba(59, 130, 246, 20%);
+//       border-color: rgba(59, 130, 246, 30%);
+//       color: #60a5fa;
+//       box-shadow: 0 2px 8px rgba(0, 0, 0, 30%),
+//         0 0 0 2px rgba(59, 130, 246, 30%);
+//     }
+//   }
+// }
