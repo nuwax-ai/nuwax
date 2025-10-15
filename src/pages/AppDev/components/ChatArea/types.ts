@@ -1,4 +1,5 @@
 import { useAppDevChat } from '@/hooks/useAppDevChat';
+import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import type {
   DataSourceSelection,
@@ -15,4 +16,5 @@ export interface ChatAreaProps {
   selectedDataSources?: DataSourceSelection[]; // 新增：选中的数据源列表
   onUpdateDataSources?: (dataSources: DataSourceSelection[]) => void; // 新增：更新数据源回调
   fileContentState?: FileContentState; // 新增：文件内容状态
+  modelSelector: ReturnType<typeof useAppDevModelSelector>; // 新增：模型选择器状态
 }

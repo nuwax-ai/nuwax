@@ -48,6 +48,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   selectedDataSources = [],
   onUpdateDataSources,
   fileContentState,
+  modelSelector,
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
@@ -733,9 +734,21 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           </div>
 
           <div className={styles.rightActions}>
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              deepseek-v3
-            </Text>
+            <Select
+              value={modelSelector.selectedModelId}
+              onChange={modelSelector.selectModel}
+              size="small"
+              loading={modelSelector.isLoadingModels}
+              style={{ minWidth: 120 }}
+              disabled={chat.isChatLoading}
+              placeholder="选择模型"
+            >
+              {modelSelector.models.map((model) => (
+                <Select.Option key={model.id} value={model.id}>
+                  {model.name}
+                </Select.Option>
+              ))}
+            </Select>
 
             {/* 会话进行中仅显示取消按钮 */}
             {chat.isChatLoading ? (

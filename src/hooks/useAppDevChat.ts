@@ -25,6 +25,7 @@ import type { DataSourceSelection } from '@/types/interfaces/appDev';
 
 interface UseAppDevChatProps {
   projectId: string;
+  selectedModelId?: number | null; // 新增：选中的模型ID
   onRefreshFileTree?: () => void; // 新增：文件树刷新回调
   selectedDataSources?: DataSourceSelection[]; // 新增：选中的数据源列表
   onClearDataSourceSelections?: () => void; // 新增：清除数据源选择回调
@@ -32,6 +33,7 @@ interface UseAppDevChatProps {
 
 export const useAppDevChat = ({
   projectId,
+  selectedModelId, // 新增
   onRefreshFileTree,
   selectedDataSources = [],
   onClearDataSourceSelections,
@@ -320,6 +322,7 @@ export const useAppDevChat = ({
           prompt: chatInput,
           project_id: projectId,
           request_id: requestId,
+          model_id: selectedModelId ? String(selectedModelId) : undefined, // 新增：传递模型ID
           attachments: attachments || undefined,
           data_sources:
             selectedDataSources.length > 0 ? selectedDataSources : undefined,
@@ -370,6 +373,7 @@ export const useAppDevChat = ({
     [
       chatInput,
       projectId,
+      selectedModelId, // 新增：添加 selectedModelId 依赖
       initializeAppDevSSEConnection,
       showStopAgentServiceModal,
     ],

@@ -3,6 +3,7 @@ import { ERROR_MESSAGES, VERSION_CONSTANTS } from '@/constants/appDevConstants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
+import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
 import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
@@ -116,8 +117,12 @@ const AppDev: React.FC = () => {
     isChatLoading: false, // 临时设为false，稍后更新
   });
 
+  // 模型选择器
+  const modelSelector = useAppDevModelSelector(projectId || '');
+
   const chat = useAppDevChat({
     projectId: projectId || '',
+    selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
     onRefreshFileTree: fileManagement.loadFileTree, // 新增：传递文件树刷新方法
     selectedDataSources: selectedDataResourceIds, // 新增：传递选中的数据源
     onClearDataSourceSelections: () => setSelectedDataResourceIds([]), // 新增：清除选择回调
@@ -808,6 +813,7 @@ const AppDev: React.FC = () => {
               selectedDataSources={selectedDataSources} // 新增：选中的数据源
               onUpdateDataSources={setSelectedDataResourceIds} // 新增：更新数据源回调
               fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
+              modelSelector={modelSelector} // 新增：模型选择器状态
             />
           </Col>
 

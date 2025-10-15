@@ -13,6 +13,7 @@ import type {
   DevServerInfo,
   GetProjectContentResponse,
   KeepAliveResponse,
+  ListModelsResponse,
   PageFileInfo,
   ProjectDetailResponse,
   SubmitFilesResponse,
@@ -508,5 +509,18 @@ export const bindDataSource = async (
   return request('/api/custom-page/bind-data-source', {
     method: 'POST',
     data: params,
+  });
+};
+
+/**
+ * 查询可用的模型配置列表
+ * @param projectId 项目ID
+ * @returns Promise<ListModelsResponse> 模型列表
+ */
+export const listModels = async (
+  projectId: string,
+): Promise<ListModelsResponse> => {
+  return request(`/api/custom-page/list-models?projectId=${projectId}`, {
+    method: 'GET',
   });
 };
