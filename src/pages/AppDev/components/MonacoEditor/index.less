@@ -65,11 +65,49 @@
   flex: 1;
   position: relative;
   overflow: hidden;
+  // 确保容器不会影响编辑器内部布局
+  padding: 0;
+  margin: 0;
 }
 
 .editor {
   width: 100%;
   height: 100%;
+  // 确保编辑器容器没有额外的样式影响
+  padding: 0;
+  margin: 0;
+  border: none;
+  outline: none;
+
+  // 确保 Monaco Editor 内部元素正确对齐
+  :global(.monaco-editor) {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  // 确保编辑器内容区域没有偏移
+  :global(.monaco-editor .view-lines) {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  // 确保行号区域正确对齐
+  :global(.monaco-editor .margin) {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  // 确保光标和文本正确对齐
+  :global(.monaco-editor .view-line) {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  // 确保编辑器容器没有额外的边距
+  :global(.monaco-editor .overflow-guard) {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
 }
 
 .emptyState {
