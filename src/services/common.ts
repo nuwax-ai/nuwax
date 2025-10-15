@@ -1,5 +1,6 @@
 import {
   AGENT_NOT_EXIST,
+  AGENT_SERVICE_RUNNING,
   REDIRECT_LOGIN,
   SUCCESS_CODE,
   USER_NO_LOGIN,
@@ -80,6 +81,11 @@ const errorHandler = (error: any, opts: any) => {
     const errorInfo: RequestResponse<null> | undefined = error.info;
     if (errorInfo) {
       const { code, message: errorMessage } = errorInfo;
+
+      // 已经有后台Agent服务正在运行
+      if (code === AGENT_SERVICE_RUNNING) {
+        return Promise.reject(errorInfo);
+      }
 
       // 根据错误码处理不同情况
       switch (code) {

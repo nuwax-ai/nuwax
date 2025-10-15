@@ -4,7 +4,6 @@
 
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
-  checkAgentStatus,
   listConversations,
   saveConversation,
   sendChatMessage,
@@ -20,6 +19,7 @@ import { message, Modal } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 
+import { AGENT_SERVICE_RUNNING } from '@/constants/codes.constants';
 import type { DataSourceSelection } from '@/types/interfaces/appDev';
 
 interface UseAppDevChatProps {
@@ -48,8 +48,8 @@ export const useAppDevChat = ({
   // 用于存储超时定时器的 ref
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 记录用户主动发送的消息数量（不包括历史消息）
-  const userSentMessageCountRef = useRef(0);
+  // 记录用户主动发送的消息数量（不包括历史消息）- 已注释，暂时不使用
+  // const userSentMessageCountRef = useRef(0);
 
   const handleSaveConversation = useCallback(
     (
@@ -193,7 +193,10 @@ export const useAppDevChat = ({
           break;
 
         default:
-          console.log('📭 [SSE] 未处理的事件类型:', message.subType);
+          console.log(
+            '📭 [SSE] 未处理的事件类型:',
+            `${message.messageType}.${message.subType}`,
+          );
       }
     },
     [projectId, handleSaveConversation, appDevSseModel],
@@ -254,11 +257,51 @@ export const useAppDevChat = ({
         },
         onClose: () => {
           console.log('🔌 [Chat] AppDev SSE 连接已关闭');
+          setIsChatLoading(false);
           abortConnectionRef.current?.abort();
         },
       });
     },
     [appDevSseModel, handleSSEMessage],
+  );
+
+  /**
+   * 显示停止Agent服务的确认对话框
+   */
+  const showStopAgentServiceModal = useCallback(
+    (projectId: string, doNext: () => void) => {
+      // 显示确认对话框
+      Modal.confirm({
+        title: '检测到后台Agent服务正在运行',
+        content: '是否停止当前运行的Agent服务？',
+        onOk: () => {
+          return new Promise((resolve, reject) => {
+            stopAgentService(projectId)
+              .then((stopResponse) => {
+                if (stopResponse.code === '0000') {
+                  message.success('Agent服务已停止');
+                  doNext();
+                  resolve(true);
+                } else {
+                  message.error(
+                    `停止Agent服务失败: ${stopResponse.message || '未知错误'}`,
+                  );
+                  reject();
+                }
+              })
+              .catch(() => {
+                message.error('停止Agent服务失败');
+                reject();
+              });
+          });
+        },
+        onCancel: () => {
+          // 用户取消停止Agent服务，不发送消息，不增加计数
+          message.info('已取消发送');
+        },
+      });
+    },
+    [],
   );
 
   /**
@@ -269,23 +312,6 @@ export const useAppDevChat = ({
     const requestId = `req_${Date.now()}_${Math.random()
       .toString(36)
       .slice(2, 9)}`;
-
-    // 添加用户消息
-    const userMessage: AppDevChatMessage = {
-      id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-      role: 'USER',
-      type: MessageModeEnum.CHAT,
-      text: chatInput,
-      time: new Date().toISOString(),
-      status: null,
-      requestId: requestId,
-      timestamp: new Date(),
-    };
-
-    setChatMessages((prev) => [...prev, userMessage]);
-    setChatInput('');
-    setIsChatLoading(true);
-
     try {
       // 调用发送消息API
       const response = await sendChatMessage({
@@ -297,6 +323,22 @@ export const useAppDevChat = ({
       });
 
       if (response.success && response.data) {
+        // 添加用户消息
+        const userMessage: AppDevChatMessage = {
+          id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+          role: 'USER',
+          type: MessageModeEnum.CHAT,
+          text: chatInput,
+          time: new Date().toISOString(),
+          status: null,
+          requestId: requestId,
+          timestamp: new Date(),
+        };
+
+        setChatMessages((prev) => [...prev, userMessage]);
+        setChatInput('');
+        setIsChatLoading(true);
+
         const sessionId = response.data.session_id;
 
         // 立即建立SSE连接（使用返回的session_id）
@@ -310,11 +352,23 @@ export const useAppDevChat = ({
         throw new Error(response.message || '发送消息失败');
       }
     } catch (error) {
-      console.error('发送消息失败:', error);
-      message.error('发送消息失败');
-      setIsChatLoading(false);
+      console.log('error=========', error);
+      if (error && (error as any).code === AGENT_SERVICE_RUNNING) {
+        showStopAgentServiceModal(projectId, () => {
+          sendMessageAndConnectSSE(); //继续发送消息
+        });
+      } else {
+        console.error('发送消息失败:', error);
+        message.error('发送消息失败');
+        setIsChatLoading(false);
+      }
     }
-  }, [chatInput, projectId, initializeAppDevSSEConnection]);
+  }, [
+    chatInput,
+    projectId,
+    initializeAppDevSSEConnection,
+    showStopAgentServiceModal,
+  ]);
 
   /**
    * 发送聊天消息 - 每次消息独立SSE连接
@@ -322,61 +376,9 @@ export const useAppDevChat = ({
   const sendChat = useCallback(async () => {
     if (!chatInput.trim()) return;
 
-    // 1. 用户主动发送的第一条消息：检查Agent服务状态
-    // 注意：这里只统计用户主动发送的消息，不包括历史消息
-    if (userSentMessageCountRef.current === 0) {
-      try {
-        const statusResponse = await checkAgentStatus(projectId);
-        console.log('🔍 [Chat] Agent状态检查结果:', statusResponse);
-        if (
-          statusResponse.data?.is_alive &&
-          statusResponse.data?.status === 'Active'
-        ) {
-          // 显示确认对话框
-          Modal.confirm({
-            title: '检测到后台Agent服务正在运行',
-            content: '是否停止当前运行的Agent服务？',
-            onOk: async () => {
-              try {
-                const stopResponse = await stopAgentService(projectId);
-                console.log('🛑 [Chat] 停止Agent服务响应:', stopResponse);
-
-                if (stopResponse.code === '0000') {
-                  message.success('Agent服务已停止');
-                  // 增加计数并继续发送消息
-                  userSentMessageCountRef.current += 1;
-                  await sendMessageAndConnectSSE();
-                } else {
-                  message.error(
-                    `停止Agent服务失败: ${stopResponse.message || '未知错误'}`,
-                  );
-                }
-              } catch (error) {
-                console.error('停止Agent服务失败:', error);
-                message.error('停止Agent服务失败');
-              }
-            },
-            onCancel: () => {
-              // 用户取消停止Agent服务，不发送消息，不增加计数
-              message.info('已取消发送');
-            },
-          });
-          return; // 等待用户确认，不继续执行
-        }
-      } catch (error) {
-        console.error('检查Agent状态失败:', error);
-        // 检查失败时仍然允许发送消息，增加计数
-      }
-      // 检查完成且没有运行中的Agent，或检查失败，增加计数并发送
-      userSentMessageCountRef.current += 1;
-    } else {
-      // 非第一条消息，直接增加计数
-      userSentMessageCountRef.current += 1;
-    }
-
     // 发送消息
-    await sendMessageAndConnectSSE();
-  }, [chatInput, projectId, sendMessageAndConnectSSE]);
+    sendMessageAndConnectSSE();
+  }, [chatInput, sendMessageAndConnectSSE]);
 
   /**
    * 取消聊天任务
