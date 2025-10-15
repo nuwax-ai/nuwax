@@ -54,6 +54,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
     manual: true,
     onSuccess: (result: CreateCustomPageInfo) => {
       onConfirm(result);
+      setImageUrl('');
       setLoading(false);
     },
     onError: () => {
@@ -128,6 +129,11 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
     form.submit();
   };
 
+  const handleCancel = () => {
+    onCancel();
+    setImageUrl('');
+  };
+
   /**
    * 上传组件配置
    */
@@ -175,7 +181,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
       open={open}
       title="创建页面"
       loading={loading}
-      onCancel={onCancel}
+      onCancel={handleCancel}
       onConfirm={handlerConfirm}
     >
       <Form
