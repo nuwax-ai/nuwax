@@ -65,6 +65,8 @@ export interface AgentArrangeConfigProps {
     value: string | string[] | number | GuidQuestionDto[],
     attr: string,
   ) => void;
+  // 插入系统提示词
+  onInsertSystemPrompt?: (text: string) => void;
 }
 
 // 组件设置弹窗
