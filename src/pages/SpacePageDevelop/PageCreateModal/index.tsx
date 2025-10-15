@@ -54,6 +54,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
     manual: true,
     onSuccess: (result: CreateCustomPageInfo) => {
       onConfirm(result);
+      setImageUrl('');
       setLoading(false);
     },
     onError: () => {
@@ -78,13 +79,19 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
 
   // 创建页面
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
-    setLoading(true);
     // 项目导入
     if (type === PageDevelopCreateTypeEnum.Import_Project) {
       const { fileList, icon, projectName, projectDesc } = values;
 
       // 上传文件接口返回的是文件的base64，这里需要转换一下
       const file = fileList?.[0]?.originFileObj;
+      // 校验文件是否存在
+      if (!file) {
+        message.error('请上传项目压缩包文件');
+        return;
+      }
+
+      setLoading(true);
       // 创建formData
       const formData = new FormData();
 
@@ -99,6 +106,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
     }
     // 在线创建
     else if (type === PageDevelopCreateTypeEnum.Online_Develop) {
+      setLoading(true);
       const data = {
         ...values,
         spaceId,
@@ -107,6 +115,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
     }
     // 反向代理
     else if (type === PageDevelopCreateTypeEnum.Reverse_Proxy) {
+      setLoading(true);
       // 调用反向代理接口
       const data = {
         ...values,
@@ -118,6 +127,11 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
 
   const handlerConfirm = () => {
     form.submit();
+  };
+
+  const handleCancel = () => {
+    onCancel();
+    setImageUrl('');
   };
 
   /**
@@ -167,7 +181,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
       open={open}
       title="创建页面"
       loading={loading}
-      onCancel={onCancel}
+      onCancel={handleCancel}
       onConfirm={handlerConfirm}
     >
       <Form
