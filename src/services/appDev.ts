@@ -248,11 +248,18 @@ export const submitFilesUpdate = async (
   projectId: string,
   files: PageFileInfo[],
 ): Promise<SubmitFilesResponse> => {
+  // 处理文件内容，对 content 字段进行 encodeURIComponent 编码
+  const processedFiles = files.map((file) => ({
+    ...file,
+    // 只有当 content 存在时才进行编码处理
+    contents: file.contents ? encodeURIComponent(file.contents) : file.contents,
+  }));
+
   return request('/api/custom-page/submit-files-update', {
     method: 'POST',
     data: {
       projectId,
-      files,
+      files: processedFiles,
     },
   });
 };
