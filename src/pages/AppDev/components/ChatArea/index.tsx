@@ -1,8 +1,19 @@
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { useChatScroll, useChatScrollEffects } from '@/hooks/useChatScroll';
 import { cancelAgentTask } from '@/services/appDev';
-import type { AppDevChatMessage } from '@/types/interfaces/appDev';
-import { DownOutlined, SendOutlined, StopOutlined } from '@ant-design/icons';
+import type {
+  AppDevChatMessage,
+  Attachment,
+  ImageUploadInfo,
+} from '@/types/interfaces/appDev';
+import { generateAttachmentId } from '@/utils/chatUtils';
+import {
+  CloseCircleOutlined,
+  DownOutlined,
+  PictureOutlined,
+  SendOutlined,
+  StopOutlined,
+} from '@ant-design/icons';
 import {
   Button,
   Card,
@@ -12,7 +23,9 @@ import {
   Select,
   Spin,
   Tag,
+  Tooltip,
   Typography,
+  Upload,
 } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -33,11 +46,37 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   projectId,
   onVersionSelect,
   selectedDataSources = [],
+  onUpdateDataSources,
+  fileContentState,
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
     new Set(),
   );
+
+  // 图片上传状态
+  const [uploadedImages, setUploadedImages] = useState<ImageUploadInfo[]>([]);
+
+  /**
+   * 提取文件名（不包含路径）
+   */
+  const getFileName = useCallback((filePath: string) => {
+    return filePath.split('/').pop() || filePath;
+  }, []);
+
+  /**
+   * 中间截断组件 - 保留文件后缀
+   */
+  const EllipsisMiddle: React.FC<{ suffixCount: number; children: string }> =
+    useCallback(({ suffixCount, children }) => {
+      const start = children.slice(0, children.length - suffixCount);
+      const suffix = children.slice(-suffixCount).trim();
+      return (
+        <Text style={{ maxWidth: '100%', fontSize: 11 }} ellipsis={{ suffix }}>
+          {start}
+        </Text>
+      );
+    }, []);
 
   // 使用滚动管理 hook
   const {
@@ -101,15 +140,154 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }, [chat, projectId]);
 
   /**
-   * 发送消息前的处理
+   * 处理图片上传
+   */
+  const handleImageUpload = useCallback((file: File) => {
+    // 验证是否为图片
+    if (!file.type.startsWith('image/')) {
+      message.warning('仅支持上传图片文件');
+      return false;
+    }
+
+    // 验证文件大小 (限制为 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      message.warning('图片文件大小不能超过 5MB');
+      return false;
+    }
+
+    // 读取文件并转换为 Base64
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64Data = e.target?.result as string;
+
+      // 获取图片尺寸
+      const img = new Image();
+      img.onload = () => {
+        const imageInfo: ImageUploadInfo = {
+          uid: generateAttachmentId('img'),
+          name: file.name,
+          base64Data: base64Data.split(',')[1], // 移除 data:image/xxx;base64, 前缀
+          mimeType: file.type,
+          preview: base64Data,
+          dimensions: { width: img.width, height: img.height },
+        };
+
+        setUploadedImages((prev) => [...prev, imageInfo]);
+        message.success(`图片 "${file.name}" 上传成功`);
+      };
+      img.onerror = () => {
+        message.error('图片加载失败，请重试');
+      };
+      img.src = base64Data;
+    };
+    reader.onerror = () => {
+      message.error('文件读取失败，请重试');
+    };
+    reader.readAsDataURL(file);
+
+    return false; // 阻止默认上传
+  }, []);
+
+  /**
+   * 删除图片
+   */
+  const handleDeleteImage = useCallback((uid: string) => {
+    setUploadedImages((prev) => prev.filter((img) => img.uid !== uid));
+  }, []);
+
+  /**
+   * 移除单个数据源
+   */
+  const handleRemoveDataSource = useCallback(
+    (dataSource: any) => {
+      if (!onUpdateDataSources) {
+        message.warning('数据源删除功能需要父组件支持');
+        return;
+      }
+
+      const newDataSources = selectedDataSources.filter(
+        (ds) =>
+          !(
+            ds.dataSourceId === dataSource.dataSourceId &&
+            ds.type === dataSource.type
+          ),
+      );
+
+      onUpdateDataSources(newDataSources);
+      message.success('数据源已移除');
+    },
+    [selectedDataSources, onUpdateDataSources],
+  );
+
+  /**
+   * 发送消息前的处理 - 支持附件
    */
   const handleSendMessage = useCallback(() => {
+    if (!chat.chatInput.trim() && uploadedImages.length === 0) {
+      message.warning('请输入消息或上传图片');
+      return;
+    }
+
+    // 构建附件列表
+    const attachments: Attachment[] = [];
+
+    // 1. 添加图片附件
+    uploadedImages.forEach((img) => {
+      attachments.push({
+        type: 'Image',
+        content: {
+          id: img.uid,
+          filename: img.name,
+          mime_type: img.mimeType,
+          dimensions: img.dimensions,
+          source: {
+            source_type: 'Base64',
+            data: {
+              data: img.base64Data,
+              mime_type: img.mimeType,
+            },
+          },
+        },
+      });
+    });
+
+    // 2. 添加文件树选中的文件(如果有)
+    if (fileContentState?.selectedFile) {
+      attachments.push({
+        type: 'Text',
+        content: {
+          id: generateAttachmentId('file'),
+          filename: fileContentState.selectedFile,
+          source: {
+            source_type: 'FilePath',
+            data: {
+              path: fileContentState.selectedFile, // 包含路径与文件名及后缀
+            },
+          },
+        },
+      });
+    }
+
     // 发送消息后强制滚动到底部并开启自动滚动
     forceScrollToBottomAndEnable();
 
-    // 发送消息
-    chat.sendChat();
-  }, [forceScrollToBottomAndEnable, chat]);
+    // 发送消息(传递附件)
+    chat.sendMessage(attachments);
+
+    // 清空图片列表(但不清空文件选择)
+    setUploadedImages([]);
+
+    // 清空选中的数据源
+    if (onUpdateDataSources) {
+      onUpdateDataSources([]);
+    }
+  }, [
+    forceScrollToBottomAndEnable,
+    chat,
+    uploadedImages,
+    fileContentState?.selectedFile,
+    onUpdateDataSources,
+  ]);
 
   /**
    * 渲染聊天消息 - 按 role 区分渲染
@@ -455,60 +633,133 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         )} */}
       </div>
 
-      {/* 选中的数据源显示区域 */}
-      {selectedDataSources.length > 0 && (
-        <div className={styles.selectedDataSources}>
-          <div className={styles.dataSourceHeader}>
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              已选择的数据源 ({selectedDataSources.length})
-            </Text>
-          </div>
-          <div className={styles.dataSourceList}>
-            {selectedDataSources.map((dataSource) => (
-              <Tag
-                key={`${dataSource.dataSourceId}-${dataSource.type}`}
-                color="blue"
-                closable={false}
-                style={{ margin: '2px 4px 2px 0' }}
-              >
-                {dataSource.type === 'plugin' ? '插件' : '工作流'} #
-                {dataSource.dataSourceId}
-              </Tag>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* 聊天输入区域 */}
-      <div className={styles.chatInput}>
-        <Input
+      <div className={styles.chatInputContainer}>
+        {/* 附件展示区域 */}
+        {(uploadedImages.length > 0 || selectedDataSources.length > 0) && (
+          <div className={styles.attachmentsArea}>
+            {/* 第一行: 图片列表 */}
+            {uploadedImages.length > 0 && (
+              <div className={styles.attachmentRow}>
+                <Text
+                  type="secondary"
+                  style={{ fontSize: '12px', marginRight: 8 }}
+                >
+                  图片 ({uploadedImages.length}):
+                </Text>
+                {uploadedImages.map((img) => (
+                  <div key={img.uid} className={styles.imagePreviewItem}>
+                    <img src={img.preview} alt={img.name} />
+                    <CloseCircleOutlined
+                      className={styles.deleteIcon}
+                      onClick={() => handleDeleteImage(img.uid)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 第二行: 数据源 */}
+            {selectedDataSources.length > 0 && (
+              <div className={styles.attachmentRow}>
+                <Text
+                  type="secondary"
+                  style={{ fontSize: '12px', marginRight: 8 }}
+                >
+                  数据源 ({selectedDataSources.length}):
+                </Text>
+                {selectedDataSources.map((ds) => (
+                  <Tag
+                    key={`${ds.dataSourceId}-${ds.type}`}
+                    color="green"
+                    closable
+                    onClose={() => handleRemoveDataSource(ds)}
+                    style={{ margin: '0 4px 0 0' }}
+                  >
+                    {ds.type === 'plugin' ? '插件' : '工作流'} #
+                    {ds.dataSourceId}
+                  </Tag>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TextArea 输入框 */}
+        <Input.TextArea
           placeholder="向AI助手提问..."
           value={chat.chatInput}
           onChange={(e) => chat.setChatInput(e.target.value)}
-          onPressEnter={handleSendMessage}
-          suffix={
-            <div style={{ display: 'flex', gap: 4 }}>
-              {chat.isChatLoading && (
+          onPressEnter={(e) => {
+            if (!e.shiftKey && !e.ctrlKey) {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
+          autoSize={{ minRows: 2, maxRows: 6 }}
+          className={styles.textareaInput}
+          disabled={chat.isChatLoading}
+        />
+
+        {/* 底部操作栏 */}
+        <div className={styles.inputFooter}>
+          <div className={styles.leftActions}>
+            {/* 图片上传 */}
+            <Upload
+              accept="image/*"
+              showUploadList={false}
+              beforeUpload={handleImageUpload}
+              disabled={chat.isChatLoading}
+            >
+              <Tooltip title="上传图片">
                 <Button
                   type="text"
+                  icon={<PictureOutlined />}
+                  disabled={chat.isChatLoading}
+                />
+              </Tooltip>
+            </Upload>
+
+            {/* 选中文件显示 */}
+            {fileContentState?.selectedFile && (
+              <Tooltip title={fileContentState.selectedFile}>
+                <div className={styles.selectedFileDisplay}>
+                  <EllipsisMiddle suffixCount={8}>
+                    {getFileName(fileContentState.selectedFile)}
+                  </EllipsisMiddle>
+                </div>
+              </Tooltip>
+            )}
+          </div>
+
+          <div className={styles.rightActions}>
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              deepseek-v3
+            </Text>
+
+            {/* 会话进行中仅显示取消按钮 */}
+            {chat.isChatLoading ? (
+              <Tooltip title="取消AI任务">
+                <Button
+                  type="text"
+                  danger
                   icon={<StopOutlined />}
                   onClick={handleCancelAgentTask}
-                  title="取消AI任务"
-                  className={styles.cancelButton}
                 />
-              )}
-              <Button
-                type="text"
-                icon={<SendOutlined />}
-                onClick={handleSendMessage}
-                disabled={!chat.chatInput.trim() || chat.isChatLoading}
-              />
-            </div>
-          }
-          className={styles.inputField}
-        />
-        <div className={styles.modelSelector}>
-          <Text type="secondary">deepseek-v3</Text>
+              </Tooltip>
+            ) : (
+              <Tooltip title="发送消息">
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  onClick={handleSendMessage}
+                  disabled={
+                    !chat.chatInput.trim() && uploadedImages.length === 0
+                  }
+                />
+              </Tooltip>
+            )}
+          </div>
         </div>
       </div>
     </Card>

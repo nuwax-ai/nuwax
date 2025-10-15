@@ -745,6 +745,24 @@ export interface PageArgConfig {
 }
 
 /**
+ * 图片上传信息接口
+ */
+export interface ImageUploadInfo {
+  /** 唯一标识 */
+  uid: string;
+  /** 文件名 */
+  name: string;
+  /** Base64 数据 */
+  base64Data: string;
+  /** MIME 类型 */
+  mimeType: string;
+  /** 预览 URL */
+  preview?: string;
+  /** 图片尺寸 */
+  dimensions?: { width: number; height: number };
+}
+
+/**
  * 版本信息项
  */
 export interface VersionInfoItem {

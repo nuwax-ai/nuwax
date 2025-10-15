@@ -503,6 +503,154 @@
   backdrop-filter: blur(10px);
 }
 
+// 输入区域容器
+.chatInputContainer {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 10%);
+  background: rgba(255, 255, 255, 80%);
+  backdrop-filter: blur(10px);
+}
+
+// 附件展示区域(文件/图片/数据源)
+.attachmentsArea {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  max-height: 200px;
+}
+
+// 每一行附件
+.attachmentRow {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  padding: 8px 0;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 5%);
+    border-radius: 2px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 20%);
+    border-radius: 2px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 30%);
+    }
+  }
+}
+
+// 图片预览项
+.imagePreviewItem {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-right: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 10%);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .deleteIcon {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    background: rgba(0, 0, 0, 60%);
+    color: white;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(239, 68, 68, 80%);
+      transform: scale(1.1);
+    }
+  }
+}
+
+// TextArea 样式
+.textareaInput {
+  background: rgba(255, 255, 255, 90%);
+  border: 1px solid rgba(0, 0, 0, 10%);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 5%);
+
+  &:hover,
+  &:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 20%);
+  }
+
+  :global(.ant-input) {
+    background: transparent;
+    border: none;
+    color: #1e293b;
+    max-height: 120px; // 约6行
+
+    &::placeholder {
+      color: #64748b;
+    }
+  }
+}
+
+// 底部操作栏
+.inputFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+// 左侧按钮组
+.leftActions {
+  display: flex;
+  gap: 8px;
+}
+
+// 右侧按钮组
+.rightActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+// 选中文件显示
+.selectedFileDisplay {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  background: rgba(24, 144, 255, 8%);
+  border: 1px solid rgba(24, 144, 255, 20%);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(24, 144, 255, 12%);
+    border-color: rgba(24, 144, 255, 30%);
+  }
+}
+
 .inputField {
   background: rgba(255, 255, 255, 90%);
   border: 1px solid rgba(0, 0, 0, 10%);

@@ -806,6 +806,8 @@ const AppDev: React.FC = () => {
               projectId={projectId || ''} // 新增：项目ID
               onVersionSelect={handleVersionSelect}
               selectedDataSources={selectedDataSources} // 新增：选中的数据源
+              onUpdateDataSources={setSelectedDataResourceIds} // 新增：更新数据源回调
+              fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
             />
           </Col>
 

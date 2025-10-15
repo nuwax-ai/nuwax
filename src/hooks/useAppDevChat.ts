@@ -12,6 +12,7 @@ import {
 import { MessageModeEnum } from '@/types/enums/agent';
 import type {
   AppDevChatMessage,
+  Attachment,
   UnifiedSessionMessage,
 } from '@/types/interfaces/appDev';
 import { createSSEConnection } from '@/utils/fetchEventSource';
@@ -307,68 +308,72 @@ export const useAppDevChat = ({
   /**
    * 发送消息并建立SSE连接的核心逻辑
    */
-  const sendMessageAndConnectSSE = useCallback(async () => {
-    // 生成临时request_id
-    const requestId = `req_${Date.now()}_${Math.random()
-      .toString(36)
-      .slice(2, 9)}`;
-    try {
-      // 调用发送消息API
-      const response = await sendChatMessage({
-        prompt: chatInput,
-        project_id: projectId,
-        request_id: requestId,
-        data_sources:
-          selectedDataSources.length > 0 ? selectedDataSources : undefined,
-      });
-
-      if (response.success && response.data) {
-        // 添加用户消息
-        const userMessage: AppDevChatMessage = {
-          id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-          role: 'USER',
-          type: MessageModeEnum.CHAT,
-          text: chatInput,
-          time: new Date().toISOString(),
-          status: null,
-          requestId: requestId,
-          timestamp: new Date(),
-        };
-
-        setChatMessages((prev) => [...prev, userMessage]);
-        setChatInput('');
-        setIsChatLoading(true);
-
-        const sessionId = response.data.session_id;
-
-        // 立即建立SSE连接（使用返回的session_id）
-        await initializeAppDevSSEConnection(sessionId, requestId);
-
-        // 消息发送成功后清除数据源选择
-        if (onClearDataSourceSelections) {
-          onClearDataSourceSelections();
-        }
-      } else {
-        throw new Error(response.message || '发送消息失败');
-      }
-    } catch (error) {
-      console.log('error=========', error);
-      if (error && (error as any).code === AGENT_SERVICE_RUNNING) {
-        showStopAgentServiceModal(projectId, () => {
-          sendMessageAndConnectSSE(); //继续发送消息
+  const sendMessageAndConnectSSE = useCallback(
+    async (attachments?: Attachment[]) => {
+      // 生成临时request_id
+      const requestId = `req_${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2, 9)}`;
+      try {
+        // 调用发送消息API
+        const response = await sendChatMessage({
+          prompt: chatInput,
+          project_id: projectId,
+          request_id: requestId,
+          attachments: attachments || undefined,
+          data_sources:
+            selectedDataSources.length > 0 ? selectedDataSources : undefined,
         });
-      } else {
-        console.error('发送消息失败:', error);
-        message.error('发送消息失败');
-        setIsChatLoading(false);
+
+        if (response.success && response.data) {
+          // 添加用户消息
+          const userMessage: AppDevChatMessage = {
+            id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+            role: 'USER',
+            type: MessageModeEnum.CHAT,
+            text: chatInput,
+            time: new Date().toISOString(),
+            status: null,
+            requestId: requestId,
+            timestamp: new Date(),
+          };
+
+          setChatMessages((prev) => [...prev, userMessage]);
+          setChatInput('');
+          setIsChatLoading(true);
+
+          const sessionId = response.data.session_id;
+
+          // 立即建立SSE连接（使用返回的session_id）
+          await initializeAppDevSSEConnection(sessionId, requestId);
+
+          // 消息发送成功后清除数据源选择
+          if (onClearDataSourceSelections) {
+            onClearDataSourceSelections();
+          }
+        } else {
+          throw new Error(response.message || '发送消息失败');
+        }
+      } catch (error) {
+        console.log('error=========', error);
+        if (error && (error as any).code === AGENT_SERVICE_RUNNING) {
+          showStopAgentServiceModal(projectId, () => {
+            sendMessageAndConnectSSE(); //继续发送消息
+          });
+        } else {
+          console.error('发送消息失败:', error);
+          message.error('发送消息失败');
+          setIsChatLoading(false);
+        }
       }
-    }
-  }, [
-    chatInput,
-    projectId,
-    initializeAppDevSSEConnection,
-    showStopAgentServiceModal,
-  ]);
+    },
+    [
+      chatInput,
+      projectId,
+      initializeAppDevSSEConnection,
+      showStopAgentServiceModal,
+    ],
+  );
 
   /**
    * 发送聊天消息 - 每次消息独立SSE连接
@@ -379,6 +384,22 @@ export const useAppDevChat = ({
     // 发送消息
     sendMessageAndConnectSSE();
   }, [chatInput, sendMessageAndConnectSSE]);
+
+  /**
+   * 发送消息 - 支持附件
+   */
+  const sendMessage = useCallback(
+    async (attachments?: Attachment[]) => {
+      if (!chatInput.trim() && (!attachments || attachments.length === 0)) {
+        message.warning('请输入消息或上传附件');
+        return;
+      }
+
+      // 发送消息
+      sendMessageAndConnectSSE(attachments);
+    },
+    [chatInput, sendMessageAndConnectSSE],
+  );
 
   /**
    * 取消聊天任务
@@ -582,6 +603,7 @@ export const useAppDevChat = ({
     setChatInput,
     setChatMessages, // 新增：设置聊天消息的方法
     sendChat,
+    sendMessage, // 新增：支持附件的发送消息方法
     cancelChat,
     cleanupAppDevSSE,
     loadHistorySession,
