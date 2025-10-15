@@ -65,7 +65,10 @@ const PageReviewModal: React.FC<PageReviewModalProps> = ({
             <Loading />
           </div>
         ) : (
-          <iframe src={pageInfo?.pageUrl} className={cx(styles.iframe)} />
+          <iframe
+            src={`${process.env.BASE_URL}${pageInfo?.pageUrl}`}
+            className={cx(styles.iframe)}
+          />
         )}
       </div>
     </Modal>
