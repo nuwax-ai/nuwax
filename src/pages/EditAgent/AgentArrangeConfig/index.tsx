@@ -72,6 +72,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   agentConfigInfo,
   onChangeAgent,
   onConfirmUpdateEventQuestions,
+  onInsertSystemPrompt,
 }) => {
   // 插件弹窗
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
@@ -712,8 +713,24 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         break;
       // 插入到系统提示词
       case EventListEnum.InsertSystemPrompt:
-        message.info('插入到系统提示词,实现功能待开发');
-        console.log(item.argJsonSchema);
+        if (onInsertSystemPrompt) {
+          // 格式化事件配置信息
+          const eventText = `<div class="event" event-type="${
+            item.identification
+          }" data="动态JSON参数">这里填写对话中展示信息，例如 [#知识ID]</div>
+<${item.identification}>的动态JSON参数JsonSchema如下
+\`\`\`
+${
+  item.argJsonSchema
+    ? JSON.stringify(JSON.parse(item.argJsonSchema), null, 2)
+    : '{\n "type": "object", "properties": {}, "required": []\n}'
+}
+\`\`\``;
+          onInsertSystemPrompt(eventText);
+          message.success('已插入到系统提示词');
+        } else {
+          message.warning('插入系统提示词功能不可用');
+        }
         break;
       // 删除
       case EventListEnum.Delete:

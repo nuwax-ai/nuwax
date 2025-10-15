@@ -30,7 +30,7 @@ import { exportConfigFile } from '@/utils/exportImportFile';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
@@ -39,7 +39,7 @@ import ArrangeTitle from './ArrangeTitle';
 import DebugDetails from './DebugDetails';
 import styles from './index.less';
 import PreviewAndDebug from './PreviewAndDebug';
-import SystemTipsWord from './SystemTipsWord';
+import SystemTipsWord, { SystemTipsWordRef } from './SystemTipsWord';
 
 const cx = classNames.bind(styles);
 
@@ -48,6 +48,8 @@ const cx = classNames.bind(styles);
  */
 const EditAgent: React.FC = () => {
   const params = useParams();
+  // 系统提示词组件引用
+  const systemTipsWordRef = useRef<SystemTipsWordRef>(null);
   const spaceId = Number(params.spaceId);
   const agentId = Number(params.agentId);
   const [open, setOpen] = useState<boolean>(false);
@@ -204,6 +206,14 @@ const EditAgent: React.FC = () => {
       hideChatArea,
       guidQuestionDtos,
     });
+  };
+
+  /**
+   * 处理插入系统提示词
+   * @param text 要插入的文本内容
+   */
+  const handleInsertSystemPrompt = (text: string) => {
+    systemTipsWordRef.current?.insertText(text);
   };
 
   // 调试
@@ -372,6 +382,7 @@ const EditAgent: React.FC = () => {
           >
             {/*系统提示词*/}
             <SystemTipsWord
+              ref={systemTipsWordRef}
               agentConfigInfo={agentConfigInfo}
               value={agentConfigInfo?.systemPrompt}
               onChange={(value) => handleChangeAgent(value, 'systemPrompt')}
@@ -383,6 +394,7 @@ const EditAgent: React.FC = () => {
               agentConfigInfo={agentConfigInfo}
               onChangeAgent={handleChangeAgent}
               onConfirmUpdateEventQuestions={handleUpdateEventQuestions}
+              onInsertSystemPrompt={handleInsertSystemPrompt}
             />
           </div>
         </div>
