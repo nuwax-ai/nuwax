@@ -339,7 +339,7 @@ export const MultiSelectWithCheckbox: React.FC<
           .toLowerCase()
           .includes(input?.toLowerCase())
       }
-      dropdownRender={(menu) => (
+      popupRender={(menu) => (
         <div className="custom-dropdown">
           {React.cloneElement(menu as any, {
             className: `${(menu as any).props.className} custom-menu`,

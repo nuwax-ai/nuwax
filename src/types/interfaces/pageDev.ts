@@ -159,7 +159,7 @@ export interface PageDevelopCardItemProps {
  */
 export interface PageReviewModalProps {
   open: boolean;
-  projectId: number;
+  projectId?: number;
   onCancel: () => void;
 }
 
@@ -190,8 +190,7 @@ export interface PageCreateModalProps {
  * 路径参数配置弹窗Props
  */
 export interface PathParamsConfigModalProps {
-  projectId: number;
-  defaultPageArgConfigs?: PageArgConfig[];
+  currentPageInfo?: CustomPageDto;
   open: boolean;
   onCancel: () => void;
 }
@@ -200,7 +199,7 @@ export interface PathParamsConfigModalProps {
  * 添加（修改）路径参数弹窗Props
  */
 export interface AddPathModalProps {
-  projectId: string;
+  projectId?: number;
   mode: CreateUpdateModeEnum;
   // 编辑路径参数信息
   editPathInfo: PageArgConfig | null;
