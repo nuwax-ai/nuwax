@@ -9,8 +9,10 @@ import type {
   ChatRequest,
   ChatResponse,
   CreateProjectParams,
+  CustomBuildRes,
   DevServerInfo,
   GetProjectContentResponse,
+  KeepAliveResponse,
   PageFileInfo,
   ProjectDetailResponse,
   SubmitFilesResponse,
@@ -67,9 +69,11 @@ export const stopDev = async (projectId: string): Promise<any> => {
 /**
  * 重启前端开发服务器
  * @param projectId 项目ID
- * @returns Promise<any> 重启结果
+ * @returns Promise<RequestResponse<CustomBuildRes>> 重启结果
  */
-export const restartDev = async (projectId: string): Promise<any> => {
+export const restartDev = async (
+  projectId: string,
+): Promise<RequestResponse<CustomBuildRes>> => {
   return request('/api/custom-page/restart-dev', {
     method: 'POST',
     data: {
@@ -202,9 +206,11 @@ export const getFileContent = async (
 /**
  * 开发服务器保活接口
  * @param projectId 项目ID
- * @returns Promise<any> 保活结果
+ * @returns Promise<KeepAliveResponse> 保活结果，包含最新的开发服务器URL
  */
-export const keepAlive = async (projectId: string): Promise<any> => {
+export const keepAlive = async (
+  projectId: string,
+): Promise<KeepAliveResponse> => {
   return request('/api/custom-page/keepalive', {
     method: 'POST',
     data: {
@@ -242,11 +248,18 @@ export const submitFilesUpdate = async (
   projectId: string,
   files: PageFileInfo[],
 ): Promise<SubmitFilesResponse> => {
+  // 处理文件内容，对 content 字段进行 encodeURIComponent 编码
+  const processedFiles = files.map((file) => ({
+    ...file,
+    // 只有当 content 存在时才进行编码处理
+    contents: file.contents ? encodeURIComponent(file.contents) : file.contents,
+  }));
+
   return request('/api/custom-page/submit-files-update', {
     method: 'POST',
     data: {
       projectId,
-      files,
+      files: processedFiles,
     },
   });
 };

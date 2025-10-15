@@ -643,29 +643,15 @@ export const useAppDevFileManagement = ({
     }
   }, [projectId, loadFileTree]);
 
-  // AI聊天加载时自动刷新文件树
+  // AI聊天加载时自动刷新文件树 - 已禁用轮询机制
+  // 注释：取消在会话过程中的轮询间隔调用更新文件树逻辑
+  // 现在只在会话开始时执行一次刷新，不再进行定时轮询
   useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
-
     if (isChatLoading && projectId) {
-      console.log('🔄 [FileManagement] 开始AI聊天期间的自动刷新文件树');
-
-      // 立即执行一次刷新
+      console.log('🔄 [FileManagement] AI聊天开始，执行一次文件树刷新');
+      // 只在聊天开始时执行一次刷新，不再进行定时轮询
       loadFileTree();
-
-      // 设置10秒间隔的自动刷新
-      intervalId = setInterval(() => {
-        console.log('🔄 [FileManagement] AI聊天期间自动刷新文件树');
-        loadFileTree();
-      }, 10000); // 10秒间隔
     }
-
-    return () => {
-      if (intervalId) {
-        console.log('🔄 [FileManagement] 停止AI聊天期间的自动刷新文件树');
-        clearInterval(intervalId);
-      }
-    };
   }, [isChatLoading, projectId, loadFileTree]);
 
   return {

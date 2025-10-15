@@ -194,7 +194,6 @@ const SpacePageDevelop: React.FC = () => {
     setCurrentPageInfo(item);
     // 根据页面类型（页面创建模式）导入项目、在线创建，判断是否需要打开调试智能体绑定弹窗，反向代理，打开路径参数配置弹窗
     if (item.projectType === PageProjectTypeEnum.ONLINE_DEPLOY) {
-      setProjectId(item.projectId);
       setOpenDebugAgentBindModel(true);
     }
     // 反向代理
