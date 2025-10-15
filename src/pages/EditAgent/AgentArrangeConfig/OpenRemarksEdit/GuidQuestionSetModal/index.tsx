@@ -1,4 +1,6 @@
+import pageImage from '@/assets/images/agent_image.png';
 import { SvgIcon } from '@/components/base';
+import ConditionRender from '@/components/ConditionRender';
 import SelectList from '@/components/custom/SelectList';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import CustomFormModal from '@/components/CustomFormModal';
@@ -90,7 +92,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         // 类型
         setType(currentGuidQuestionDto.type);
         // 图标
-        setImageUrl(currentGuidQuestionDto.icon || '');
+        setImageUrl(currentGuidQuestionDto.icon || pageImage);
         // 回显入参配置
         setArgs(currentGuidQuestionDto.args || []);
         // 当前路径页面id
@@ -144,6 +146,15 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
 
   // 表单提交
   const onFinish: FormProps<any>['onFinish'] = (values) => {
+    const requireArgEmptyItem = args?.find(
+      (item) => item.require && !item.bindValue,
+    );
+    if (requireArgEmptyItem) {
+      message.error(
+        `参数名：${requireArgEmptyItem.name}是必填参数，参数值不能为空`,
+      );
+      return;
+    }
     setLoading(true);
     const { pageUriId, ...rest } = values;
     const pageUri = pathList.find((item) => item.value === pageUriId)?.pageUri;
@@ -227,6 +238,14 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       dataIndex: 'name',
       key: 'name',
       width: 200,
+      render: (_: string, record: BindConfigWithSub) => (
+        <div className={cx('flex', 'items-center', 'gap-4')}>
+          <span>{record.name}</span>
+          <ConditionRender condition={record.require}>
+            <span className={cx(styles.star)}>*</span>
+          </ConditionRender>
+        </div>
+      ),
     },
     {
       title: () => (
@@ -260,6 +279,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Input
+            allowClear
             placeholder={`请输入${record.description}`}
             value={record.bindValue}
             onChange={(e) =>
