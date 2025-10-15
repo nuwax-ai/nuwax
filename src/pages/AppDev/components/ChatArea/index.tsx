@@ -50,7 +50,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     handleUserScroll,
     handleScrollButtonClick,
     forceScrollToBottomAndEnable,
-    setShowScrollButton,
   } = useChatScroll();
 
   /**
@@ -324,7 +323,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             onChange={(value) => setChatMode(value as 'chat' | 'design')}
             options={[
               { label: 'Chat', value: 'chat' },
-              { label: 'Design', value: 'design' },
+              {
+                label: 'Design',
+                value: 'design',
+                disabled: true,
+                title: '暂未开放',
+              },
             ]}
             className={styles.chatModeSegmented}
           />
@@ -411,7 +415,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         )}
 
         {/* 调试信息 - 仅在开发环境显示 */}
-        {process.env.NODE_ENV === 'development' && (
+        {/* {process.env.NODE_ENV === 'development' && (
           <div
             style={{
               position: 'absolute',
@@ -448,7 +452,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               测试显示按钮
             </button>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* 选中的数据源显示区域 */}

@@ -299,7 +299,11 @@ export const editorOptions = {
   automaticLayout: true,
   scrollBeyondLastLine: false,
   fontSize: 14,
+  fontFamily:
+    "'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace",
+  lineHeight: 20, // 明确设置行高，确保光标位置准确
   tabSize: 2,
+  insertSpaces: true, // 使用空格而不是制表符
   minimap: { enabled: false },
   wordWrap: 'on' as const,
   lineNumbers: 'on' as const,
@@ -363,4 +367,17 @@ export const editorOptions = {
     showUsers: true,
     showWords: true,
   },
+  // 添加更多精确的渲染配置
+  renderWhitespace: 'selection' as const,
+  renderControlCharacters: false,
+  renderIndentGuides: true,
+  renderFinalNewline: 'on' as const,
+  // 确保光标和选择区域渲染准确
+  cursorBlinking: 'blink' as const,
+  cursorSmoothCaretAnimation: 'off' as const,
+  cursorStyle: 'line' as const,
+  // 确保文本渲染准确
+  fontLigatures: true,
+  fontWeight: 'normal',
+  letterSpacing: 0,
 };
