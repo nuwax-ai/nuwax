@@ -28,7 +28,7 @@ const cx = classNames.bind(styles);
  * 路径参数配置内容Props
  */
 export interface PathParamsConfigContentProps {
-  projectId: string;
+  projectId?: number;
   currentPathParam: PageArgConfig | null;
   onConfirmSave: (data: PageArgConfig) => void;
 }

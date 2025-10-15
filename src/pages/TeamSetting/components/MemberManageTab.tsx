@@ -170,7 +170,7 @@ const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId, role }) => {
           defaultValue=""
           onChange={handleSelectChange}
           optionLabelProp="label"
-          dropdownRender={(menu) => <>{menu}</>}
+          popupRender={(menu) => <>{menu}</>}
           menuItemSelectedIcon={<CheckOutlined style={{ marginRight: 8 }} />}
         />
         <div>

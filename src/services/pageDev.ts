@@ -1,7 +1,6 @@
 import type { BuildRunningEnum } from '@/types/enums/pageDev';
 import type {
   CreateCustomPageInfo,
-  CustomPageBindDevAgentParams,
   CustomPageDto,
   PageAddPathParams,
   PageBatchConfigProxyParams,
@@ -52,16 +51,6 @@ export async function apiCustomPageQueryList(
       spaceId,
       buildRunning,
     },
-  });
-}
-
-// 绑定开发智能体
-export async function apiCustomPageBindDevAgent(
-  data: CustomPageBindDevAgentParams,
-): Promise<RequestResponse<null>> {
-  return request('/api/custom-page/bind-dev-agent', {
-    method: 'POST',
-    data,
   });
 }
 

@@ -323,7 +323,7 @@ const PublishAudit: React.FC = () => {
             defaultValue=""
             onChange={handleSelectChange}
             optionLabelProp="label"
-            dropdownRender={(menu) => <>{menu}</>}
+            popupRender={(menu) => <>{menu}</>}
             menuItemSelectedIcon={<CheckOutlined style={{ marginRight: 8 }} />}
           />
           <Select
@@ -331,7 +331,7 @@ const PublishAudit: React.FC = () => {
             options={selectPublishOptions}
             onChange={handlePublishStatusSelectChange}
             optionLabelProp="label"
-            dropdownRender={(menu) => <>{menu}</>}
+            popupRender={(menu) => <>{menu}</>}
             defaultValue={PublishStatusEnum.Applying}
             menuItemSelectedIcon={<CheckOutlined style={{ marginRight: 8 }} />}
           />

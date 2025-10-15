@@ -281,7 +281,7 @@ const PublishManage: React.FC = () => {
           defaultValue={''}
           onChange={handleSelectChange}
           optionLabelProp="label"
-          dropdownRender={(menu) => <>{menu}</>}
+          popupRender={(menu) => <>{menu}</>}
           menuItemSelectedIcon={<CheckOutlined style={{ marginRight: 8 }} />}
         />
         <Input

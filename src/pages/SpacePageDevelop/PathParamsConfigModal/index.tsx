@@ -29,8 +29,7 @@ const cx = classNames.bind(styles);
  */
 const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
   open,
-  projectId,
-  defaultPageArgConfigs,
+  currentPageInfo,
   onCancel,
 }) => {
   // 路径参数列表
@@ -47,10 +46,10 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
 
   useEffect(() => {
     if (open) {
-      setPathParams(defaultPageArgConfigs || []);
-      setCurrentPathParam(defaultPageArgConfigs?.[0] || null);
+      setPathParams(currentPageInfo?.pageArgConfigs || []);
+      setCurrentPathParam(currentPageInfo?.pageArgConfigs?.[0] || null);
     }
-  }, [open, defaultPageArgConfigs]);
+  }, [open, currentPageInfo]);
 
   // 删除路径配置
   const { run: runDeletePath } = useRequest(apiPageDeletePath, {
@@ -79,7 +78,7 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
   const handleDel = (pageUri: string) => {
     setDeleteLoadingPaths([...deleteLoadingPaths, pageUri]);
     runDeletePath({
-      projectId,
+      projectId: currentPageInfo?.projectId,
       pageUri,
     });
   };
@@ -230,7 +229,7 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
             {/* 内容区域 */}
             <div className={cx('flex-1', styles.right)}>
               <PathParamsConfigContent
-                projectId={projectId}
+                projectId={currentPageInfo?.projectId}
                 currentPathParam={currentPathParam}
                 onConfirmSave={handleConfirmSave}
               />
@@ -247,7 +246,7 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
       />
       {/* 添加路径弹窗 */}
       <AddPathModal
-        projectId={projectId}
+        projectId={currentPageInfo?.projectId}
         mode={
           editPathInfo
             ? CreateUpdateModeEnum.Update
