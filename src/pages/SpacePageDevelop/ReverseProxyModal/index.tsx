@@ -42,15 +42,16 @@ const ReverseProxyModal: React.FC<ReverseProxyModalProps> = ({
     }
   }, [open, defaultProxyConfigs, projectType]);
 
+  // 根据项目类型过滤可用的反向代理选项
+  // 当项目类型为反向代理时，隐藏开发环境选项
   const list = useMemo(() => {
+    const isReverseProxyProject =
+      projectType === PageProjectTypeEnum.REVERSE_PROXY;
+
     return REVERSE_PROXY_ACTIONS.filter((item) => {
-      if (
-        item.type === ReverseProxyEnum.Dev &&
-        projectType === PageProjectTypeEnum.REVERSE_PROXY
-      ) {
-        return false;
-      }
-      return true;
+      const isDevOption = item.type === ReverseProxyEnum.Dev;
+      // 反向代理项目不显示开发环境选项
+      return !(isDevOption && isReverseProxyProject);
     });
   }, [projectType]);
 
