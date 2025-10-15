@@ -1,6 +1,7 @@
 import { FileNode } from '@/models/appDev';
 import {
   DeleteOutlined,
+  EyeInvisibleOutlined,
   FileAddOutlined,
   FileOutlined,
   FolderAddOutlined,
@@ -41,14 +42,20 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({
   onFileDelete,
   activeFileId,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(file.type === 'folder');
+  // 目录默认展开逻辑：以"."为前缀的目录默认不展开
+  const shouldExpandByDefault =
+    file.type === 'folder' && !file.name.startsWith('.');
+  const [isExpanded, setIsExpanded] = useState(shouldExpandByDefault);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
 
   const isActive = activeFileId === file.id;
 
   const handleClick = () => {
     if (file.type === 'file') {
-      onFileSelect?.(file.id);
+      // 跳过以"."为前缀的隐藏文件
+      if (!file.name.startsWith('.')) {
+        onFileSelect?.(file.id);
+      }
     } else {
       setIsExpanded(!isExpanded);
     }
@@ -88,6 +95,10 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({
     if (file.type === 'folder') {
       return isExpanded ? <FolderOpenOutlined /> : <FolderOutlined />;
     }
+    // 为隐藏文件显示特殊图标
+    if (file.name.startsWith('.')) {
+      return <EyeInvisibleOutlined />;
+    }
     return <FileOutlined />;
   };
 
@@ -100,7 +111,15 @@ const FileTreeItem: React.FC<FileTreeItemProps> = ({
         onContextMenu={handleContextMenu}
       >
         <div className={styles.fileIcon}>{getFileIcon()}</div>
-        <span className={styles.fileName}>{file.name}</span>
+        <Tooltip title={file.name.startsWith('.') ? '隐藏文件' : ''}>
+          <span
+            className={`${styles.fileName} ${
+              file.name.startsWith('.') ? styles.hiddenFile : ''
+            }`}
+          >
+            {file.name}
+          </span>
+        </Tooltip>
 
         <div className={styles.fileActions}>
           <Tooltip title="新建文件">

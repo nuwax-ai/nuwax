@@ -1,4 +1,5 @@
 import { SvgIcon } from '@/components/base';
+import ConditionRender from '@/components/ConditionRender';
 import SelectList from '@/components/custom/SelectList';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import CustomFormModal from '@/components/CustomFormModal';
@@ -138,6 +139,15 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
 
   // 表单提交
   const onFinish: FormProps<any>['onFinish'] = (values) => {
+    const requireArgEmptyItem = args?.find(
+      (item) => item.require && !item.bindValue,
+    );
+    if (requireArgEmptyItem) {
+      message.error(
+        `参数名：${requireArgEmptyItem.name}是必填参数，参数值不能为空`,
+      );
+      return;
+    }
     setLoading(true);
     const { pageUriId, ...rest } = values;
     const pageUri = pathList.find((item) => item.value === pageUriId)?.pageUri;
@@ -225,6 +235,14 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
       dataIndex: 'name',
       key: 'name',
       width: 200,
+      render: (_: string, record: BindConfigWithSub) => (
+        <div className={cx('flex', 'items-center', 'gap-4')}>
+          <span>{record.name}</span>
+          <ConditionRender condition={record.require}>
+            <span className={cx(styles.star)}>*</span>
+          </ConditionRender>
+        </div>
+      ),
     },
     {
       title: () => (
@@ -258,6 +276,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
       render: (_, record) => (
         <div className={cx('h-full', 'flex', 'items-center')}>
           <Input
+            allowClear
             placeholder={`请输入${record.description}`}
             value={record.bindValue}
             onChange={(e) =>

@@ -1,5 +1,6 @@
 import {
   DeleteOutlined,
+  EyeInvisibleOutlined,
   FileOutlined,
   LeftOutlined,
   PlusOutlined,
@@ -89,6 +90,11 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
               isSelected ? styles.activeFile : ''
             }`}
             onClick={() => {
+              // 跳过以"."为前缀的隐藏文件
+              if (node.name.startsWith('.')) {
+                return;
+              }
+
               if (isComparing) {
                 // 版本模式下，直接设置选中的文件到 workspace.activeFile
                 onFileSelect(node.id);
@@ -100,8 +106,18 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
             }}
             style={{ marginLeft: level * 16 }}
           >
-            <FileOutlined className={styles.fileIcon} />
-            <span className={styles.fileName}>{node.name}</span>
+            {node.name.startsWith('.') ? (
+              <EyeInvisibleOutlined className={styles.fileIcon} />
+            ) : (
+              <FileOutlined className={styles.fileIcon} />
+            )}
+            <span
+              className={`${styles.fileName} ${
+                node.name.startsWith('.') ? styles.hiddenFile : ''
+              }`}
+            >
+              {node.name}
+            </span>
 
             {/* 正常模式：显示文件状态和删除按钮 */}
             {!isComparing && (
