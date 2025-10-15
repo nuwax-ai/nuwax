@@ -197,6 +197,40 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           filePath: 'react.d.ts',
         },
       ]);
+
+      // 配置主题以确保光标位置准确
+      monaco.editor.defineTheme('xagi-light', {
+        base: 'vs',
+        inherit: true,
+        rules: [],
+        colors: {
+          'editor.background': '#ffffff',
+          'editor.foreground': '#000000',
+          'editorLineNumber.foreground': '#999999',
+          'editorLineNumber.activeForeground': '#000000',
+          'editor.selectionBackground': '#add6ff',
+          'editor.selectionHighlightBackground': '#add6ff',
+          'editorCursor.foreground': '#000000',
+          'editorCursor.background': '#ffffff',
+        },
+      });
+
+      monaco.editor.defineTheme('xagi-dark', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [],
+        colors: {
+          'editor.background': '#1e1e1e',
+          'editor.foreground': '#d4d4d4',
+          'editorLineNumber.foreground': '#858585',
+          'editorLineNumber.activeForeground': '#d4d4d4',
+          'editor.selectionBackground': '#264f78',
+          'editor.selectionHighlightBackground': '#264f78',
+          'editorCursor.foreground': '#d4d4d4',
+          'editorCursor.background': '#1e1e1e',
+        },
+      });
+
       setIsMonacoReady(true);
       // Monaco Editor初始化成功
     } catch (error) {
@@ -347,12 +381,27 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
       // 创建编辑器实例
       const editor = await safeAsyncOperation(async () => {
+        // 检测当前主题
+        const isDark =
+          document.documentElement.getAttribute('data-theme') === 'dark';
+        const theme = isDark ? 'xagi-dark' : 'xagi-light';
+
         return monaco.editor.create(editorRef.current!, {
           ...editorOptions,
           readOnly: readOnly, // 应用只读设置
           language,
           value: currentFile?.content || '',
-        });
+          theme: theme, // 应用主题
+          // 确保编辑器容器正确初始化
+          automaticLayout: true,
+          // 添加额外的布局配置
+          scrollbar: {
+            vertical: 'auto',
+            horizontal: 'auto',
+            verticalScrollbarSize: 8,
+            horizontalScrollbarSize: 8,
+          },
+        } as any); // 临时使用 any 类型避免类型检查问题
       }, 'Monaco Editor creation');
 
       if (!editor) {
@@ -625,6 +674,40 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       updateEditorContentRef.current();
     }
   }, [isMonacoReady, currentFile?.id, currentFile?.content]); // 只依赖文件ID和内容变化
+
+  // 监听主题变化
+  useEffect(() => {
+    const handleThemeChange = () => {
+      if (editorInstanceRef.current && !isDisposingRef.current) {
+        try {
+          const editor = editorInstanceRef.current;
+          if (
+            editor &&
+            typeof editor.isDisposed === 'function' &&
+            !editor.isDisposed()
+          ) {
+            const isDark =
+              document.documentElement.getAttribute('data-theme') === 'dark';
+            const theme = isDark ? 'xagi-dark' : 'xagi-light';
+            monaco.editor.setTheme(theme);
+          }
+        } catch (error) {
+          console.debug('Theme change error:', error);
+        }
+      }
+    };
+
+    // 监听主题变化
+    const observer = new MutationObserver(handleThemeChange);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   // 清理资源
   useEffect(() => {

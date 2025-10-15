@@ -10,10 +10,28 @@
 
     :global(.monaco-editor) {
       height: 100% !important;
+      // 移除可能导致光标偏移的 padding
+      padding: 0 !important;
     }
 
+    // 确保编辑器内容区域没有额外的 padding
     :global(.monaco-editor .view-lines) {
-      padding: 20px;
+      padding: 0 !important;
+    }
+
+    // 确保行号区域正确对齐
+    :global(.monaco-editor .margin) {
+      padding: 0 !important;
+    }
+
+    // 确保光标和文本正确对齐
+    :global(.monaco-editor .view-line) {
+      padding: 0 !important;
+    }
+
+    // 确保编辑器容器没有额外的边距
+    :global(.monaco-editor .overflow-guard) {
+      padding: 0 !important;
     }
   }
 }
