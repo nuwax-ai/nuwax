@@ -34,7 +34,7 @@ const SelectList: React.FC<SelectListType> = (props) => {
       }}
       options={options}
       size={size}
-      dropdownRender={(menu) => (
+      popupRender={(menu) => (
         <>
           {menu}
           {dropdownRenderComponent}

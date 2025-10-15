@@ -46,8 +46,6 @@ export interface CustomPageDto {
   projectId: number;
   // 项目ID字符串（因为后端接口返回的projectId太大时，精度丢失了）
   projectIdStr: string;
-  // 调试关联智能体ID
-  devAgentId?: number;
   // 项目名称
   name: string;
   // 项目描述
@@ -96,16 +94,6 @@ export interface PageUploadAndStartParams {
   spaceId: number;
   // 项目图标
   icon: string;
-}
-
-// 绑定开发智能体参数
-export interface CustomPageBindDevAgentParams {
-  // 项目ID
-  projectId: number;
-  // 开发智能体ID
-  devAgentId: number;
-  // 空间ID
-  spaceId: number;
 }
 
 // 配置反向代理参数
@@ -159,19 +147,7 @@ export interface PageDevelopCardItemProps {
  */
 export interface PageReviewModalProps {
   open: boolean;
-  projectId: number;
-  onCancel: () => void;
-}
-
-/**
- * 调试智能体绑定弹窗Props
- */
-export interface DebugAgentBindModalProps {
-  spaceId: number;
-  defaultDevAgentId?: number;
-  // 项目ID
-  projectId: number;
-  open: boolean;
+  projectId?: number;
   onCancel: () => void;
 }
 
@@ -190,8 +166,7 @@ export interface PageCreateModalProps {
  * 路径参数配置弹窗Props
  */
 export interface PathParamsConfigModalProps {
-  projectId: number;
-  defaultPageArgConfigs?: PageArgConfig[];
+  currentPageInfo?: CustomPageDto;
   open: boolean;
   onCancel: () => void;
 }
@@ -200,7 +175,7 @@ export interface PathParamsConfigModalProps {
  * 添加（修改）路径参数弹窗Props
  */
 export interface AddPathModalProps {
-  projectId: string;
+  projectId?: number;
   mode: CreateUpdateModeEnum;
   // 编辑路径参数信息
   editPathInfo: PageArgConfig | null;

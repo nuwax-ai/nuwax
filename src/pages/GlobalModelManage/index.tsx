@@ -144,7 +144,7 @@ const GlobalModelManage: React.FC = () => {
           value={currentType}
           onChange={handleSelectChange}
           optionLabelProp="label"
-          dropdownRender={(menu) => <>{menu}</>}
+          popupRender={(menu) => <>{menu}</>}
           menuItemSelectedIcon={<CheckOutlined style={{ marginRight: 8 }} />}
         />
         <Button

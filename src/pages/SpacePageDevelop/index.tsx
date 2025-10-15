@@ -18,15 +18,12 @@ import type { CustomPopoverItem } from '@/types/interfaces/common';
 import {
   CreateCustomPageInfo,
   CustomPageDto,
-  PageArgConfig,
-  ProxyConfig,
 } from '@/types/interfaces/pageDev';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Empty, Input, Row, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { useModel, useParams, useRequest } from 'umi';
-import DebugAgentBindModel from './DebugAgentBindModal';
+import { history, useModel, useParams, useRequest } from 'umi';
 import styles from './index.less';
 import PageCreateModal from './PageCreateModal';
 import PageDevelopCardItem from './PageDevelopCardItem';
@@ -53,9 +50,6 @@ const SpacePageDevelop: React.FC = () => {
   // 搜索关键词
   const [keyword, setKeyword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  // 打开调试智能体绑定模型弹窗
-  const [openDebugAgentBindModel, setOpenDebugAgentBindModel] =
-    useState<boolean>(false);
   // 打开反向代理弹窗
   const [openReverseProxyModal, setOpenReverseProxyModal] =
     useState<boolean>(false);
@@ -64,6 +58,9 @@ const SpacePageDevelop: React.FC = () => {
     useState<boolean>(false);
   // 打开页面创建弹窗
   const [openPageCreateModal, setOpenPageCreateModal] =
+    useState<boolean>(false);
+  // 打开页面预览弹窗
+  const [openPageReviewModal, setOpenPageReviewModal] =
     useState<boolean>(false);
   // 创建
   const [create, setCreate] = useState<CreateListEnum>(
@@ -74,18 +71,9 @@ const SpacePageDevelop: React.FC = () => {
     PageDevelopCreateTypeEnum.Import_Project,
   );
   // 当前页面信息
-  const [currentPageInfo, setCurrentPageInfo] = useState<CustomPageDto | null>(
-    null,
-  );
+  const [currentPageInfo, setCurrentPageInfo] = useState<CustomPageDto>();
   // 当前项目ID
   const [projectId, setProjectId] = useState<number>(0);
-  // 当前反向代理配置
-  const [proxyConfigs, setProxyConfigs] = useState<ProxyConfig[]>([]);
-  // 当前页面参数配置
-  const [pageArgConfigs, setPageArgConfigs] = useState<PageArgConfig[]>([]);
-  // 打开页面预览弹窗
-  const [openPageReviewModal, setOpenPageReviewModal] =
-    useState<boolean>(false);
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
 
@@ -178,7 +166,8 @@ const SpacePageDevelop: React.FC = () => {
       // 导入项目、在线开发
       case PageDevelopCreateTypeEnum.Import_Project:
       case PageDevelopCreateTypeEnum.Online_Develop:
-        setOpenDebugAgentBindModel(true);
+        // 跳转到开发页面
+        history.push(`/app-dev?projectId=${result.projectId}`);
         break;
       case PageDevelopCreateTypeEnum.Reverse_Proxy:
         setOpenReverseProxyModal(true);
@@ -189,12 +178,11 @@ const SpacePageDevelop: React.FC = () => {
   // 点击卡片
   const handleClickCard = (item: CustomPageDto) => {
     setProjectId(item.projectId);
-    setProxyConfigs(item.proxyConfigs || []);
-    setPageArgConfigs(item.pageArgConfigs || []);
     setCurrentPageInfo(item);
     // 根据页面类型（页面创建模式）导入项目、在线创建，判断是否需要打开调试智能体绑定弹窗，反向代理，打开路径参数配置弹窗
     if (item.projectType === PageProjectTypeEnum.ONLINE_DEPLOY) {
-      setOpenDebugAgentBindModel(true);
+      // 跳转到开发页面
+      history.push(`/app-dev?projectId=${item.projectId}`);
     }
     // 反向代理
     else if (item.projectType === PageProjectTypeEnum.REVERSE_PROXY) {
@@ -205,8 +193,6 @@ const SpacePageDevelop: React.FC = () => {
   // 点击更多操作
   const handleClickMore = (item: CustomPopoverItem, info: CustomPageDto) => {
     setProjectId(info.projectId);
-    setProxyConfigs(info.proxyConfigs || []);
-    setPageArgConfigs(info.pageArgConfigs || []);
     setCurrentPageInfo(info);
     const { value } = item;
     switch (value) {
@@ -222,7 +208,6 @@ const SpacePageDevelop: React.FC = () => {
       case PageDevelopMoreActionEnum.Page_Preview:
         // iframe打开页面预览
         setOpenPageReviewModal(true);
-        // window.open(`${process.env.BASE_URL}/${info.pageUrl}`, '_blank');
         break;
     }
   };
@@ -230,7 +215,6 @@ const SpacePageDevelop: React.FC = () => {
   // 取消反向代理
   const handleCancelReverseProxy = () => {
     setOpenReverseProxyModal(false);
-    setProxyConfigs([]);
     // 重新查询页面列表
     runPageList(spaceId);
   };
@@ -238,7 +222,6 @@ const SpacePageDevelop: React.FC = () => {
   // 取消路径参数配置
   const handleCancelPathParamsConfig = () => {
     setOpenPathParamsConfigModal(false);
-    setPageArgConfigs([]);
     // 重新查询页面列表
     runPageList(spaceId);
   };
@@ -330,21 +313,12 @@ const SpacePageDevelop: React.FC = () => {
         open={openReverseProxyModal}
         projectId={projectId}
         projectType={currentPageInfo?.projectType}
-        defaultProxyConfigs={proxyConfigs}
+        defaultProxyConfigs={currentPageInfo?.proxyConfigs || []}
         onCancel={handleCancelReverseProxy}
-      />
-      {/* 调试智能体绑定弹窗 */}
-      <DebugAgentBindModel
-        spaceId={spaceId}
-        defaultDevAgentId={currentPageInfo?.devAgentId}
-        projectId={projectId}
-        open={openDebugAgentBindModel}
-        onCancel={() => setOpenDebugAgentBindModel(false)}
       />
       {/* 路径参数配置弹窗 */}
       <PathParamsConfigModal
-        projectId={projectId}
-        defaultPageArgConfigs={pageArgConfigs}
+        currentPageInfo={currentPageInfo}
         open={openPathParamsConfigModal}
         onCancel={handleCancelPathParamsConfig}
       />
@@ -359,7 +333,7 @@ const SpacePageDevelop: React.FC = () => {
       {/* 页面预览弹窗 */}
       <PageReviewModal
         open={openPageReviewModal}
-        projectId={projectId}
+        projectId={currentPageInfo?.projectId}
         onCancel={() => setOpenPageReviewModal(false)}
       />
     </div>

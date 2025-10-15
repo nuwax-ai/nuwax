@@ -15,3 +15,5 @@ export const USER_NO_LOGIN = '4010';
 export const REDIRECT_LOGIN = '4011';
 // 智能体不存在或已下架
 export const AGENT_NOT_EXIST = '0001';
+
+export const AGENT_SERVICE_RUNNING = '9010';

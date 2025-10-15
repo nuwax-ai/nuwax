@@ -381,7 +381,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                           options={options}
                           allowClear
                           placeholder={'请选择连接符号'}
-                          dropdownRender={(menu) => (
+                          popupRender={(menu) => (
                             <>
                               {menu}
                               <Divider style={{ margin: '8px 0' }} />
@@ -450,7 +450,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   placeholder={'请选择分割符号'}
                   mode={'multiple'}
                   maxTagCount={3}
-                  dropdownRender={(menu) => (
+                  popupRender={(menu) => (
                     <>
                       {menu}
                       <Divider style={{ margin: '8px 0' }} />
