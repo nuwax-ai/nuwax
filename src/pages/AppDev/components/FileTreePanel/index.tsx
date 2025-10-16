@@ -2,6 +2,7 @@ import {
   DeleteOutlined,
   EyeInvisibleOutlined,
   FileOutlined,
+  ImportOutlined,
   LeftOutlined,
   PlusOutlined,
   RightOutlined,
@@ -27,6 +28,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   onToggleFolder,
   onDeleteFile,
   onUploadProject,
+  onUploadSingleFile,
   onAddDataResource,
   onDeleteDataResource,
   selectedDataResourceIds,
@@ -94,6 +96,21 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                 }`}
               />
               <span className={styles.folderName}>{node.name}</span>
+
+              {/* 文件夹删除按钮 - 仅在非版本对比模式且非聊天加载状态时显示 */}
+              {!isComparing && !isChatLoading && (
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  className={styles.deleteButton}
+                  onClick={(e) => {
+                    e.stopPropagation(); // 阻止文件夹展开/折叠
+                    onDeleteFile(node, e);
+                  }}
+                  title="删除文件夹"
+                />
+              )}
             </div>
             {isExpanded && node.children && (
               <div className={styles.fileList}>
@@ -142,7 +159,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
             </span>
 
             {/* 正常模式：显示文件状态和删除按钮 */}
-            {!isComparing && (
+            {!isComparing && !isChatLoading && (
               <>
                 {node.status && (
                   <span className={styles.fileStatus}>{node.status}</span>
@@ -170,6 +187,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
       onFileSelect,
       fileManagement,
       onDeleteFile,
+      isChatLoading,
     ],
   );
 
@@ -201,14 +219,24 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
               {/* 文件树头部按钮 - 仅在非版本对比模式显示 */}
               {!isComparing && (
                 <div className={styles.fileTreeHeader}>
-                  <Button
-                    type="text"
-                    className={styles.addButton}
-                    onClick={onUploadProject}
-                    disabled={isChatLoading}
-                  >
-                    导入项目
-                  </Button>
+                  <Tooltip title="导入项目">
+                    <Button
+                      type="text"
+                      className={styles.addButton}
+                      icon={<ImportOutlined />}
+                      onClick={onUploadProject}
+                      disabled={isChatLoading}
+                    />
+                  </Tooltip>
+                  <Tooltip title="上传单个文件">
+                    <Button
+                      type="text"
+                      className={styles.addButton}
+                      icon={<PlusOutlined />}
+                      onClick={onUploadSingleFile}
+                      disabled={isChatLoading}
+                    />
+                  </Tooltip>
                 </div>
               )}
 
@@ -229,15 +257,15 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                 <div className={styles.dataSourceContainer}>
                   <div className={styles.dataSourceHeader}>
                     <h3>数据资源</h3>
-                    <Button
-                      type="primary"
-                      size="small"
-                      icon={<PlusOutlined />}
-                      onClick={onAddDataResource}
-                      disabled={isChatLoading || isComparing}
-                    >
-                      添加
-                    </Button>
+                    <Tooltip title="添加数据资源">
+                      <Button
+                        type="text"
+                        className={styles.addButton}
+                        icon={<PlusOutlined />}
+                        onClick={onAddDataResource}
+                        disabled={isChatLoading || isComparing}
+                      />
+                    </Tooltip>
                   </div>
                   <div className={styles.dataSourceContent}>
                     <DataResourceList

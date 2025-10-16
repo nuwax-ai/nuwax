@@ -60,18 +60,36 @@
 }
 
 .fileTreeHeader {
-  position: absolute;
-  top: 10px;
-  right: 0;
-  color: @colorTextBase;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 12px;
+  background: @colorFillQuaternary;
+  border-bottom: 1px solid @colorBorder;
+  flex-shrink: 0;
+  min-height: 36px;
+  align-items: center;
 }
 
 .addButton {
+  display: flex;
+  align-items: center;
   color: @colorTextBase;
+  height: 32px;
+  width: 32px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  border: none;
+  background: transparent;
 
   &:hover {
     color: @colorPrimary;
     background: @colorPrimaryBg;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
 
@@ -317,8 +335,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-bottom: @lineWidth solid @colorBorderSecondary;
+  padding: 8px 12px;
+  border-bottom: @lineWidth solid @colorBorder;
   background: @colorBgContainer;
   // backdrop-filter: blur(10px);
 
@@ -533,44 +551,34 @@
 // }
 
 // 暗色主题支持
-// [data-theme='dark'] {
-//   .collapseButton {
-//     background: rgba(0, 0, 0, 80%);
-//     border-color: rgba(255, 255, 255, 10%);
-//     color: #94a3b8;
-//     box-shadow: 0 2px 8px rgba(0, 0, 0, 30%);
+[data-theme='dark'] {
+  .addButton {
+    color: @colorTextBase;
 
-//     &.expanded {
-//       opacity: 0.8;
+    &:hover {
+      color: @colorPrimary;
+      background: @colorPrimaryBg;
+    }
 
-//       &:hover {
-//         background: rgba(59, 130, 246, 80%);
-//         border-color: rgba(59, 130, 246, 30%);
-//         color: #fff;
-//         box-shadow: 0 4px 12px rgba(59, 130, 246, 30%);
-//       }
-//     }
+    &:disabled {
+      opacity: 0.5;
+      color: @colorTextTertiary;
+    }
+  }
 
-//     &.collapsed {
-//       opacity: 1;
-//       background: rgba(59, 130, 246, 80%);
-//       border-color: rgba(59, 130, 246, 30%);
-//       color: #fff;
-//       box-shadow: 0 2px 12px rgba(59, 130, 246, 30%);
+  .dataSourceHeader {
+    .addButton {
+      color: @colorTextBase;
 
-//       &:hover {
-//         background: rgba(37, 99, 235, 80%);
-//         border-color: rgba(37, 99, 235, 30%);
-//         box-shadow: 0 4px 12px rgba(37, 99, 235, 30%);
-//       }
-//     }
+      &:hover {
+        color: @colorPrimary;
+        background: @colorPrimaryBg;
+      }
 
-//     &:focus {
-//       background: rgba(59, 130, 246, 20%);
-//       border-color: rgba(59, 130, 246, 30%);
-//       color: #60a5fa;
-//       box-shadow: 0 2px 8px rgba(0, 0, 0, 30%),
-//         0 0 0 2px rgba(59, 130, 246, 30%);
-//     }
-//   }
-// }
+      &:disabled {
+        opacity: 0.5;
+        color: @colorTextTertiary;
+      }
+    }
+  }
+}

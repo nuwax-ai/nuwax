@@ -129,7 +129,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         <div className={styles.previewHeader}>
           <div className={styles.headerLeft}>
             <div className={styles.titleSection}>
-              <GlobalOutlined className={styles.titleIcon} />
               <span className={styles.title}>页面预览</span>
               {devServerUrl && (
                 <span className={styles.statusBadge}>开发服务器已连接</span>
