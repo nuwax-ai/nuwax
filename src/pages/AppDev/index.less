@@ -2,7 +2,7 @@
 @import '@/styles/token.less';
 
 .appDev {
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   background-image: @backgroundImage;
@@ -50,13 +50,13 @@
 
 // 主布局行
 .mainRow {
-  height: calc(100vh - 50px);
+  height: calc(100% - 50px);
   margin: 0 !important;
   color: #1e293b;
 
   // 当有错误提示条时，调整高度
   &.withErrorAlert {
-    height: calc(100vh - 50px - 50px); // 减去错误提示条的高度
+    height: calc(100% - 50px - 50px); // 减去错误提示条的高度
   }
 }
 

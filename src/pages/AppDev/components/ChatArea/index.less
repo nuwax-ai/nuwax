@@ -1,3 +1,6 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
 // 聊天卡片
 .chatCard {
   height: 100%;
@@ -122,12 +125,12 @@
 .chatMessages {
   position: relative; // 新增：为滚动按钮提供定位上下文
   flex: 1;
-  padding: 20px;
-  overflow-y: auto;
+  padding: 20px 12px 20px 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   scroll-behavior: smooth;
+  overflow-y: auto;
 
   // 滚动条样式
   &::-webkit-scrollbar {
@@ -289,7 +292,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
   padding: 4px 8px;
   // background: rgba(0, 0, 0, 5%);
   // border-radius: 12px;
@@ -517,9 +519,9 @@
 .attachmentsArea {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-  max-height: 200px;
+  // gap: 8px;
+  margin-bottom: 4px;
+  // max-height: 200px;
 }
 
 // 每一行附件
@@ -551,38 +553,29 @@
 // 图片预览项
 .imagePreviewItem {
   position: relative;
-  width: 80px;
-  height: 80px;
   margin-right: 8px;
   border-radius: 4px;
-  overflow: hidden;
   flex-shrink: 0;
-  border: 1px solid rgba(0, 0, 0, 10%);
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  border: @lineWidth @colorBorder solid;
 
   .deleteIcon {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 20px;
-    height: 20px;
-    background: rgba(0, 0, 0, 60%);
-    color: white;
+    top: -8px;
+    right: -8px;
+    width: 16px;
+    height: 16px;
+    color: @colorError;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 12px;
+    z-index: 10;
     transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 90%);
 
     &:hover {
-      background: rgba(239, 68, 68, 80%);
       transform: scale(1.1);
     }
   }
@@ -624,12 +617,13 @@
 // 左侧按钮组
 .leftActions {
   display: flex;
-  gap: 8px;
+  gap: 4px;
+  flex: 1;
 }
 
 // 模型选择器按钮
 .modelSelectorButton {
-  color: rgba(0, 0, 0, 45%);
+  color: @colorTextBase;
   border: none;
   padding: 4px 8px;
   height: 28px;
@@ -657,7 +651,7 @@
 // 右侧按钮组
 .rightActions {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
 }
 

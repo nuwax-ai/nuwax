@@ -160,7 +160,10 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
   };
 
   return (
-    <div className="dataResourceList" style={{ minHeight: '200px' }}>
+    <div
+      className="dataResourceList scroll-container"
+      style={{ height: '200px' }}
+    >
       {resources.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -172,9 +175,7 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
           </Text>
         </Empty>
       ) : (
-        <div style={{ height: '100%', overflowY: 'auto', paddingRight: '8px' }}>
-          {resources.map((resource) => renderResourceItem(resource))}
-        </div>
+        <div>{resources.map((resource) => renderResourceItem(resource))}</div>
       )}
     </div>
   );

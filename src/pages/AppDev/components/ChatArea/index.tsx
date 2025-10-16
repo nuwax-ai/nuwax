@@ -9,16 +9,17 @@ import type {
 import { generateAttachmentId } from '@/utils/chatUtils';
 import {
   CloseCircleOutlined,
+  ControlOutlined,
   DownOutlined,
   PictureOutlined,
   SendOutlined,
-  SettingOutlined,
   StopOutlined,
 } from '@ant-design/icons';
 import {
   Button,
   Card,
   Dropdown,
+  Image,
   Input,
   Menu,
   message,
@@ -31,7 +32,7 @@ import {
   Upload,
 } from 'antd';
 import dayjs from 'dayjs';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
 import type { ChatAreaProps } from './types';
 
@@ -52,6 +53,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onUpdateDataSources,
   fileContentState,
   modelSelector,
+  onClearUploadedImages,
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
@@ -60,6 +62,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   // 图片上传状态
   const [uploadedImages, setUploadedImages] = useState<ImageUploadInfo[]>([]);
+
+  // 暴露图片清空方法给父组件
+  useEffect(() => {
+    if (onClearUploadedImages) {
+      onClearUploadedImages(() => {
+        setUploadedImages([]);
+      });
+    }
+  }, [onClearUploadedImages]);
 
   /**
    * 提取文件名（不包含路径）
@@ -165,7 +176,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       const base64Data = e.target?.result as string;
 
       // 获取图片尺寸
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         const imageInfo: ImageUploadInfo = {
           uid: generateAttachmentId('img'),
@@ -227,8 +238,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
    * 发送消息前的处理 - 支持附件
    */
   const handleSendMessage = useCallback(() => {
-    if (!chat.chatInput.trim() && uploadedImages.length === 0) {
-      message.warning('请输入消息或上传图片');
+    // 验证：prompt（输入内容）是必填的
+    if (!chat.chatInput.trim()) {
+      message.warning('请输入消息内容');
       return;
     }
 
@@ -277,9 +289,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
     // 发送消息(传递附件)
     chat.sendMessage(attachments);
-
-    // 清空图片列表(但不清空文件选择)
-    setUploadedImages([]);
 
     // 清空选中的数据源
     if (onUpdateDataSources) {
@@ -357,9 +366,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     key={message.id}
                     id={message.id}
                     theme="light"
+                    interval={10}
                     disableTyping={isHistoryMessage}
                   >
-                    {message.text}
+                    {message.text ? message.text : '正在输出...'}
                   </PureMarkdownRenderer>
                 </div>
               )}
@@ -369,7 +379,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             {isStreaming && (
               <div className={styles.streamingIndicator}>
                 <Spin size="small" />
-                <span className={styles.streamingText}>正在输出...</span>
+                {/* <span className={styles.streamingText}>正在输出...</span> */}
               </div>
             )}
 
@@ -572,7 +582,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
       {/* 聊天消息区域 */}
       <div
-        className={styles.chatMessages}
+        className={`${styles.chatMessages}`}
         ref={chatMessagesRef}
         onScroll={handleUserScroll}
       >
@@ -645,15 +655,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             {/* 第一行: 图片列表 */}
             {uploadedImages.length > 0 && (
               <div className={styles.attachmentRow}>
-                <Text
-                  type="secondary"
-                  style={{ fontSize: '12px', marginRight: 8 }}
-                >
-                  图片 ({uploadedImages.length}):
-                </Text>
                 {uploadedImages.map((img) => (
                   <div key={img.uid} className={styles.imagePreviewItem}>
-                    <img src={img.preview} alt={img.name} />
+                    <Image
+                      src={img.preview}
+                      alt={img.name}
+                      width={36}
+                      height={36}
+                      style={{ objectFit: 'cover', borderRadius: 4 }}
+                      preview={{
+                        mask: false, // 禁用默认的预览遮罩
+                      }}
+                    />
                     <CloseCircleOutlined
                       className={styles.deleteIcon}
                       onClick={() => handleDeleteImage(img.uid)}
@@ -665,13 +678,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
             {/* 第二行: 数据源 */}
             {selectedDataSources.length > 0 && (
-              <div className={styles.attachmentRow}>
-                <Text
+              <div className={styles.attachmentRow} style={{ padding: 0 }}>
+                {/* <Text
                   type="secondary"
                   style={{ fontSize: '12px', marginRight: 8 }}
                 >
                   数据源 ({selectedDataSources.length}):
-                </Text>
+                </Text> */}
                 {selectedDataSources.map((ds) => (
                   <Tag
                     key={`${ds.dataSourceId}-${ds.type}`}
@@ -771,8 +784,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               >
                 <Button
                   type="text"
-                  size="small"
-                  icon={<SettingOutlined />}
+                  icon={<ControlOutlined />}
+                  disabled={chat.isChatLoading || modelSelector.isLoadingModels}
                   loading={modelSelector.isLoadingModels}
                   className={styles.modelSelectorButton}
                 />
@@ -794,9 +807,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   type="primary"
                   icon={<SendOutlined />}
                   onClick={handleSendMessage}
-                  disabled={
-                    !chat.chatInput.trim() && uploadedImages.length === 0
-                  }
+                  disabled={!chat.chatInput.trim()}
                 />
               </Tooltip>
             )}

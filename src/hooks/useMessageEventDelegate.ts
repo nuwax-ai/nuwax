@@ -75,15 +75,15 @@ export const useMessageEventDelegate = ({
       switch (eventConfig.type) {
         case EventBindResponseActionEnum.Page: {
           // 打开页面
-          if (!eventConfig.pageUri) {
+          if (!eventConfig.pageUrl) {
             antdMessage.error('页面路径配置错误');
             return;
           }
 
           // 构建完整的页面 URL
           const fullUri = eventConfig.basePath
-            ? `${eventConfig.basePath}${eventConfig.pageUri}`
-            : eventConfig.pageUri;
+            ? `${eventConfig.basePath}${eventConfig.pageUrl}`
+            : `${process.env.BASE_URL}${eventConfig.pageUrl}`;
 
           // 提取参数（从 data 中获取）
           const params: Record<string, any> = {};

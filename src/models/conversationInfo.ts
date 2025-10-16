@@ -547,8 +547,8 @@ export default () => {
           // 更新会话记录
           setConversationInfo({
             ...currentInfo,
-            topicUpdated: data.topicUpdated,
-            topic: data.topic,
+            topicUpdated: data?.topicUpdated,
+            topic: data?.topic,
           });
 
           if (isSync) {
