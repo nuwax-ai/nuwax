@@ -1,4 +1,5 @@
 import { EventBindResponseActionEnum } from '@/types/enums/agent';
+import { checkPathParams, fillPathParams } from '@/utils';
 import { message as antdMessage } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
 import { useModel } from 'umi';
@@ -52,12 +53,12 @@ export const useMessageEventDelegate = ({
       console.log('[Event Delegate] 触发事件:', { eventType, data: dataStr });
 
       // 解析 data
-      let parsedData: Record<string, any> = {};
-      try {
-        parsedData = JSON.parse(dataStr);
-      } catch (error) {
-        console.error('[Event Delegate] 数据解析失败:', error);
-      }
+      // let parsedData: Record<string, any> = {};
+      // try {
+      //   parsedData = JSON.parse(dataStr);
+      // } catch (error) {
+      //   console.error('[Event Delegate] 数据解析失败:', error);
+      // }
 
       // 查找对应的事件配置
       const eventConfig = eventBindConfig?.eventConfigs?.find(
@@ -75,39 +76,50 @@ export const useMessageEventDelegate = ({
       switch (eventConfig.type) {
         case EventBindResponseActionEnum.Page: {
           // 打开页面
-          if (!eventConfig.pageUri) {
+          if (!eventConfig.pageUrl) {
             antdMessage.error('页面路径配置错误');
             return;
           }
 
-          // 构建完整的页面 URL
-          const fullUri = eventConfig.basePath
-            ? `${eventConfig.basePath}${eventConfig.pageUri}`
-            : eventConfig.pageUri;
-
           // 提取参数（从 data 中获取）
+          const pathParams: Record<string, any> = {};
           const params: Record<string, any> = {};
           if (eventConfig.args && Array.isArray(eventConfig.args)) {
             eventConfig.args.forEach((arg: any) => {
-              if (arg.name && parsedData[arg.name] !== undefined) {
-                params[arg.name] = parsedData[arg.name];
+              if (arg.inputType === 'Path' && arg.name) {
+                pathParams[arg.name] = arg.bindValue;
+              }
+              if (arg.inputType === 'Query' && arg.name) {
+                params[arg.name] = arg.bindValue;
               }
             });
           }
 
-          console.log('[Event Delegate] 打开页面:', {
-            uri: fullUri,
-            params,
-            name: eventConfig.name,
-          });
+          // 检查路径模板中的变量是否在 data 中存在且值有效
+          if (checkPathParams(eventConfig.pageUrl, pathParams)) {
+            const pageUrl = fillPathParams(eventConfig.pageUrl, pathParams);
 
-          // 调用页面预览
-          showPagePreview({
-            name: eventConfig.name || '页面',
-            uri: fullUri,
-            params,
-            executeId: `event-${Date.now()}`,
-          });
+            // 构建完整的页面 URL
+            const fullUri = eventConfig.basePath
+              ? `${eventConfig.basePath}${pageUrl}`
+              : `${process.env.BASE_URL}${pageUrl}`;
+
+            console.log('[Event Delegate] 打开页面:', {
+              uri: fullUri,
+              params,
+              name: eventConfig.name,
+            });
+
+            // 调用页面预览
+            showPagePreview({
+              name: eventConfig.name || '页面',
+              uri: fullUri,
+              params,
+              executeId: `event-${Date.now()}`,
+            });
+          } else {
+            antdMessage.error('页面路径参数配置错误');
+          }
           break;
         }
 

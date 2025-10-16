@@ -97,3 +97,40 @@ export * from './clipboard';
 // 导出拷贝相关组件
 export { default as CopyButton } from '@/components/base/CopyButton';
 export { default as CopyIconButton } from '@/components/base/CopyIconButton';
+
+/**
+ * 替换路径模板中的动态变量
+ * @param template - 路径模板，例如 /view/detail/{id}
+ * @param params - 参数对象，例如 { id: 123 }
+ * @returns 替换后的路径，例如 /view/detail/123
+ */
+export const fillPathParams = (
+  template: string,
+  params: Record<string, string | number>,
+): string => {
+  return template.replace(/{(\w+)}/g, (_, key) => {
+    if (params[key] === undefined) {
+      throw new Error(`缺少路径参数: ${key}`);
+    }
+    return String(params[key]);
+  });
+};
+
+/**
+ * 检查路径模板中的变量是否在 data 中存在且值有效
+ * @param template 路径模板，例如 /user/{id}/{name}
+ * @param data 参数对象，例如 { id: 1, name: 'Tom' }
+ * @returns 是否全部存在且有效
+ */
+export const checkPathParams = (
+  template: string,
+  data: Record<string, any>,
+): boolean => {
+  const keys = [...template.matchAll(/{(\w+)}/g)].map((m) => m[1]);
+  return (
+    keys.length === 0 ||
+    keys.every(
+      (k) => data[k] !== undefined && data[k] !== null && data[k] !== '',
+    )
+  );
+};

@@ -549,8 +549,8 @@ export default () => {
           // 更新会话记录
           setConversationInfo({
             ...currentInfo,
-            topicUpdated: data.topicUpdated,
-            topic: data.topic,
+            topicUpdated: data?.topicUpdated,
+            topic: data?.topic,
           });
 
           // 如果是会话聊天页（chat页），同步更新会话记录

@@ -715,11 +715,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       case EventListEnum.InsertSystemPrompt:
         if (onInsertSystemPrompt) {
           // 格式化事件配置信息
-          const eventText = `<div class="event" event-type="${
+          const eventText = `返回内容后面追加引用信息如下\n'<div class="event" event-type="${
             item.identification
-          }" data="动态JSON参数">这里填写对话中展示信息，例如 [#引用编号]</div>
-${item.identification}的动态JSON参数JsonSchema如下
-  \`\`\`
+          }" data="动态JSON参数">[#引用编号]</div>'\n
+${item.identification}的动态JSON参数JsonSchema如下\n
+  \`\`\`\n'
   ${
     item.argJsonSchema
       ? JSON.stringify(JSON.parse(item.argJsonSchema), null, 2)
@@ -823,9 +823,20 @@ ${item.identification}的动态JSON参数JsonSchema如下
         </p>
       ),
       extra: (
-        <Tooltip title={!allPageComponentList?.length ? '请先添加页面' : ''}>
+        <Tooltip
+          title={
+            !allPageComponentList?.length
+              ? '请先添加页面'
+              : agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.No
+              ? '当展开页面区是关闭的情况下，隐藏主会话框不能打开'
+              : ''
+          }
+        >
           <Switch
-            disabled={!allPageComponentList?.length}
+            disabled={
+              !allPageComponentList?.length ||
+              agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.No
+            }
             value={agentConfigInfo?.hideChatArea === HideChatAreaEnum.Yes}
             // 阻止冒泡事件
             onClick={(_, e: any) => {
