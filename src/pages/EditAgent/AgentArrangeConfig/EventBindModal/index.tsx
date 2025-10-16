@@ -1,5 +1,4 @@
 import { SvgIcon } from '@/components/base';
-import ConditionRender from '@/components/ConditionRender';
 import SelectList from '@/components/custom/SelectList';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import CustomFormModal from '@/components/CustomFormModal';
@@ -139,15 +138,6 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
 
   // 表单提交
   const onFinish: FormProps<any>['onFinish'] = (values) => {
-    const requireArgEmptyItem = args?.find(
-      (item) => item.require && !item.bindValue,
-    );
-    if (requireArgEmptyItem) {
-      message.error(
-        `参数名：${requireArgEmptyItem.name}是必填参数，参数值不能为空`,
-      );
-      return;
-    }
     setLoading(true);
     const { pageUriId, ...rest } = values;
     const pageUri = pathList.find((item) => item.value === pageUriId)?.pageUri;
@@ -236,22 +226,20 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
       key: 'name',
       width: 200,
       render: (_: string, record: BindConfigWithSub) => (
-        <div className={cx('flex', 'items-center', 'gap-4')}>
-          <span>{record.name}</span>
-          <ConditionRender condition={record.require}>
-            <span className={cx(styles.star)}>*</span>
-          </ConditionRender>
+        <div className={cx('h-full', 'flex', 'items-center')}>
+          {record.name}
         </div>
       ),
     },
     {
       title: () => (
         <div className={cx('h-full', 'flex', 'items-center')}>
-          <span>参数值</span>
+          <span>参数值(非必填)</span>
           <TooltipIcon
             title={
               <>
                 <div>
+                  以下参数非必填，不填写时由模型补充,
                   可以在输入框中动态引用参数，留空的参数将由大模型自动补充
                 </div>
                 <div>
