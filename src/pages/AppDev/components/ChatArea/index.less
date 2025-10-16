@@ -627,6 +627,33 @@
   gap: 8px;
 }
 
+// 模型选择器按钮
+.modelSelectorButton {
+  color: rgba(0, 0, 0, 45%);
+  border: none;
+  padding: 4px 8px;
+  height: 28px;
+  min-width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: rgba(0, 0, 0, 75%);
+    background-color: rgba(0, 0, 0, 4%);
+  }
+
+  &:focus {
+    color: rgba(0, 0, 0, 75%);
+    background-color: rgba(0, 0, 0, 4%);
+  }
+
+  // 加载状态样式
+  &:global(.ant-btn-loading) {
+    color: rgba(0, 0, 0, 25%);
+  }
+}
+
 // 右侧按钮组
 .rightActions {
   display: flex;

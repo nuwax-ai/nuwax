@@ -12,12 +12,15 @@ import {
   DownOutlined,
   PictureOutlined,
   SendOutlined,
+  SettingOutlined,
   StopOutlined,
 } from '@ant-design/icons';
 import {
   Button,
   Card,
+  Dropdown,
   Input,
+  Menu,
   message,
   Segmented,
   Select,
@@ -705,6 +708,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         {/* 底部操作栏 */}
         <div className={styles.inputFooter}>
           <div className={styles.leftActions}>
+            {/* 选中文件显示 */}
+            {fileContentState?.selectedFile && (
+              <Tooltip title={fileContentState.selectedFile}>
+                <div className={styles.selectedFileDisplay}>
+                  <EllipsisMiddle suffixCount={8}>
+                    {getFileName(fileContentState.selectedFile)}
+                  </EllipsisMiddle>
+                </div>
+              </Tooltip>
+            )}
+          </div>
+
+          <div className={styles.rightActions}>
             {/* 图片上传 */}
             <Upload
               accept="image/*"
@@ -720,36 +736,48 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 />
               </Tooltip>
             </Upload>
-
-            {/* 选中文件显示 */}
-            {fileContentState?.selectedFile && (
-              <Tooltip title={fileContentState.selectedFile}>
-                <div className={styles.selectedFileDisplay}>
-                  <EllipsisMiddle suffixCount={8}>
-                    {getFileName(fileContentState.selectedFile)}
-                  </EllipsisMiddle>
-                </div>
-              </Tooltip>
-            )}
-          </div>
-
-          <div className={styles.rightActions}>
-            <Select
-              value={modelSelector.selectedModelId}
-              onChange={modelSelector.selectModel}
-              size="small"
-              loading={modelSelector.isLoadingModels}
-              style={{ minWidth: 120 }}
-              disabled={chat.isChatLoading}
-              placeholder="选择模型"
+            {/* 模型选择器 - 图标占位形式 */}
+            <Dropdown
+              overlay={
+                <Menu
+                  selectedKeys={
+                    modelSelector.selectedModelId
+                      ? [modelSelector.selectedModelId.toString()]
+                      : []
+                  }
+                  onClick={({ key }) => modelSelector.selectModel(Number(key))}
+                  style={{ maxHeight: 200, overflowY: 'auto' }}
+                >
+                  {modelSelector.models.map((model) => (
+                    <Menu.Item
+                      key={model.id.toString()}
+                      disabled={chat.isChatLoading}
+                    >
+                      {model.name}
+                    </Menu.Item>
+                  ))}
+                </Menu>
+              }
+              trigger={['click']}
+              disabled={chat.isChatLoading || modelSelector.isLoadingModels}
+              placement="topLeft"
             >
-              {modelSelector.models.map((model) => (
-                <Select.Option key={model.id} value={model.id}>
-                  {model.name}
-                </Select.Option>
-              ))}
-            </Select>
-
+              <Tooltip
+                title={`当前模型: ${
+                  modelSelector.models.find(
+                    (m) => m.id === modelSelector.selectedModelId,
+                  )?.name || '未选择'
+                }`}
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<SettingOutlined />}
+                  loading={modelSelector.isLoadingModels}
+                  className={styles.modelSelectorButton}
+                />
+              </Tooltip>
+            </Dropdown>
             {/* 会话进行中仅显示取消按钮 */}
             {chat.isChatLoading ? (
               <Tooltip title="取消AI任务">
