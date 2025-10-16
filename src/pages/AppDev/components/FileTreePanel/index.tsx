@@ -157,6 +157,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
       <Tooltip title={isFileTreeCollapsed ? '展开文件树' : '收起文件树'}>
         <Button
           type="text"
+          size="small"
           icon={isFileTreeCollapsed ? <RightOutlined /> : <LeftOutlined />}
           onClick={toggleFileTreeCollapse}
           className={`${styles.collapseButton} ${

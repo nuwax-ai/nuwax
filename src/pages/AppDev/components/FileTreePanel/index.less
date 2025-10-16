@@ -253,9 +253,6 @@
 .collapseButton {
   position: absolute;
   bottom: 16px;
-  left: 16px;
-  width: 28px;
-  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -271,6 +268,7 @@
   // 展开状态 - 文件树可见时
   &.expanded {
     opacity: 0.8;
+    left: 240px - 12px;
     color: @colorTextBase;
 
     &:hover {
@@ -281,6 +279,7 @@
   // 折叠状态 - 文件树隐藏时
   &.collapsed {
     opacity: 1;
+    left: 16px;
 
     &:hover {
       opacity: 1;
@@ -340,7 +339,6 @@
 // 数据资源列表样式
 .dataResourceList {
   height: 200px; // 减少高度以适应底部固定布局
-  overflow: hidden;
 
   // 自定义滚动条样式
   // &::-webkit-scrollbar {
