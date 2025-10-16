@@ -102,6 +102,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
     return () => {
       setPathList([]);
       setArgs([]);
+      setType(EventBindResponseActionEnum.Page);
       setCurrentPageId(null);
       setIsActive(true);
     };

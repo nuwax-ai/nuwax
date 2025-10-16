@@ -113,7 +113,7 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
   },
   {
     type: SpaceApplicationListEnum.Page_Develop,
-    icon: <SvgIcon name="icons-nav-mcp" />,
+    icon: <SvgIcon name="icons-nav-plugins" />,
     text: '页面开发',
   },
   {
