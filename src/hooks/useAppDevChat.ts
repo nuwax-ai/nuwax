@@ -15,6 +15,7 @@ import type {
   Attachment,
   UnifiedSessionMessage,
 } from '@/types/interfaces/appDev';
+import { debounce } from '@/utils/appDevUtils';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { message, Modal } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -26,7 +27,7 @@ import type { DataSourceSelection } from '@/types/interfaces/appDev';
 interface UseAppDevChatProps {
   projectId: string;
   selectedModelId?: number | null; // 新增：选中的模型ID
-  onRefreshFileTree?: () => void; // 新增：文件树刷新回调
+  onRefreshFileTree?: (preserveState?: boolean, forceRefresh?: boolean) => void; // 新增：文件树刷新回调
   selectedDataSources?: DataSourceSelection[]; // 新增：选中的数据源列表
   onClearDataSourceSelections?: () => void; // 新增：清除数据源选择回调
   onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
@@ -57,6 +58,66 @@ export const useAppDevChat = ({
 
   // 记录用户主动发送的消息数量（不包括历史消息）- 已注释，暂时不使用
   // const userSentMessageCountRef = useRef(0);
+
+  // 存储文件操作相关的 toolCallId
+  const fileOperationToolCallIdsRef = useRef<Set<string>>(new Set());
+
+  // 添加防抖的文件树刷新函数
+  const debouncedRefreshFileTree = useCallback(
+    debounce(() => {
+      if (onRefreshFileTree) {
+        console.log('🔄 [Chat] 触发文件树刷新(保持状态，强制刷新)');
+        // 调用时传递参数，强制刷新但保持状态
+        onRefreshFileTree(true, true); // preserveState=true, forceRefresh=true
+      }
+    }, 500), // 500ms 防抖
+    [onRefreshFileTree],
+  );
+
+  /**
+   * 检测是否为文件操作
+   * @param messageData SSE消息数据
+   * @returns 是否为文件操作
+   */
+  const isFileOperation = useCallback((messageData: any): boolean => {
+    const fileRelatedTools = [
+      'write_file',
+      'edit_file',
+      'delete_file',
+      'create_directory',
+    ];
+
+    // 检查工具名称、命令、类型或描述是否包含文件操作
+    const toolName = messageData.toolName || '';
+    const command = messageData.rawInput?.command || '';
+    const description = messageData.rawInput?.description || '';
+    const kind = messageData.kind || '';
+    const title = messageData.title || '';
+
+    return (
+      fileRelatedTools.some((tool) => toolName.includes(tool)) ||
+      kind === 'edit' || // 文件编辑操作
+      kind === 'write' || // 文件写入操作
+      // kind === 'execute' || // 执行命令操作
+      command.includes('rm ') || // 删除文件命令
+      command.includes('mv ') || // 移动/重命名文件命令
+      command.includes('cp ') || // 复制文件命令
+      command.includes('mkdir ') || // 创建目录命令
+      command.includes('touch ') || // 创建文件命令
+      command.includes('echo ') || // 写入文件命令
+      // command.includes('cat ') || // 读取文件命令
+      title.includes('Edit ') || // 编辑文件标题
+      title.includes('Write ') || // 写入文件标题
+      title.includes('Create ') || // 创建文件标题
+      title.includes('Delete ') || // 删除文件标题
+      description.includes('删除') ||
+      description.includes('创建') ||
+      description.includes('移动') ||
+      description.includes('重命名') ||
+      description.includes('编辑') ||
+      description.includes('写入')
+    );
+  }, []);
 
   const handleSaveConversation = useCallback(
     (
@@ -91,11 +152,11 @@ export const useAppDevChat = ({
         // 新增：刷新文件树内容
         if (onRefreshFileTree) {
           console.log('🔄 [Chat] 触发文件树刷新');
-          onRefreshFileTree();
+          debouncedRefreshFileTree();
         }
       });
     },
-    [saveConversation, onRefreshFileTree],
+    [saveConversation, debouncedRefreshFileTree],
   );
 
   /**
@@ -150,6 +211,42 @@ export const useAppDevChat = ({
               return prev;
             });
           }
+
+          if (message.subType === 'plan') {
+            console.log('🔄 [SSE] 收到 plan 消息:', message.data);
+            // plan 消息不立即刷新，等待 prompt_end
+          }
+          if (message.subType === 'tool_call') {
+            console.log(
+              '🔄 [SSE] 收到 tool_call 消息:',
+              message.data.toolCallId,
+            );
+            // 检测是否为文件操作，如果是则记录 toolCallId
+            if (isFileOperation(message.data) && message.data.toolCallId) {
+              fileOperationToolCallIdsRef.current.add(message.data.toolCallId);
+              console.log(
+                '📝 [SSE] 记录文件操作 toolCallId:',
+                message.data.toolCallId,
+              );
+            }
+          }
+          if (message.subType === 'tool_call_update') {
+            console.log(
+              '🔄 [SSE] 收到 tool_call_update 消息:',
+              message.data.toolCallId,
+            );
+            // 检查对应的 toolCallId 是否为文件操作
+            if (
+              message.data.toolCallId &&
+              fileOperationToolCallIdsRef.current.has(message.data.toolCallId)
+            ) {
+              console.log('🔄 [SSE] 检测到文件操作完成，触发文件树刷新:', {
+                toolCallId: message.data.toolCallId,
+                status: message.data.status,
+              });
+              debouncedRefreshFileTree();
+            }
+          }
           break;
         }
 
@@ -186,6 +283,12 @@ export const useAppDevChat = ({
             return prev;
           });
 
+          // 会话结束时执行一次文件树刷新
+          debouncedRefreshFileTree();
+
+          // 清理文件操作 toolCallId 记录
+          fileOperationToolCallIdsRef.current.clear();
+
           setIsChatLoading(false);
 
           // 延迟关闭SSE连接，确保消息处理完成
@@ -206,7 +309,13 @@ export const useAppDevChat = ({
           );
       }
     },
-    [projectId, handleSaveConversation, appDevSseModel],
+    [
+      projectId,
+      handleSaveConversation,
+      appDevSseModel,
+      debouncedRefreshFileTree,
+      isFileOperation,
+    ],
   );
 
   /**
@@ -266,7 +375,7 @@ export const useAppDevChat = ({
                 return {
                   ...msg,
                   isStreaming: false,
-                  text: msg.text + '\n\n[已出错] \n\n' + error.message,
+                  text: msg.text + '\n\n[已出错] ' + error.message,
                 };
               }
               return msg;
@@ -275,11 +384,13 @@ export const useAppDevChat = ({
           setIsChatLoading(false);
 
           abortConnectionRef.current?.abort();
+          debouncedRefreshFileTree();
         },
         onClose: () => {
           console.log('🔌 [Chat] AppDev SSE 连接已关闭');
           setIsChatLoading(false);
           abortConnectionRef.current?.abort();
+          debouncedRefreshFileTree();
         },
       });
     },
