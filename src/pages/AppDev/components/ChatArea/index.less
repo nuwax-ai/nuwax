@@ -769,9 +769,9 @@
 
 // 滚动到底部按钮
 .scrollToBottomButton {
-  position: absolute;
-  right: 24px;
-  bottom: 24px;
+  position: absolute; // 改为 absolute 定位，相对于 chatMessages 容器
+  right: 12px;
+  top: -60px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -782,7 +782,7 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  z-index: 10;
+  z-index: 10; // 相对于容器内的层级
   border: 1px solid rgba(0, 0, 0, 10%);
 
   &:hover {

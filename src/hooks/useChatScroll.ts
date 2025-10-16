@@ -11,7 +11,7 @@ export const useChatScroll = () => {
   const chatMessagesRef = useRef<HTMLDivElement>(null); // 聊天消息容器引用
   const isProgrammaticScroll = useRef(false); // 标记是否为程序触发的滚动
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 滚动延迟处理定时器
-  const lastScrollTop = useRef(0); // 记录上次滚动位置
+  const lastScrollTop = useRef(-1); // 记录上次滚动位置，初始值设为-1避免误判
   const userScrollDisabled = useRef(false); // 标记用户是否主动禁用了自动滚动
   const justDisabledAutoScroll = useRef(false); // 标记是否刚刚禁用了自动滚动
 
@@ -46,7 +46,7 @@ export const useChatScroll = () => {
       // 延迟重置标记，确保滚动事件处理完成
       setTimeout(() => {
         isProgrammaticScroll.current = false;
-      }, 300); // 平滑滚动需要更长时间
+      }, 500); // 增加延迟时间，确保平滑滚动完全结束
     }
   }, []);
 
@@ -120,40 +120,47 @@ export const useChatScroll = () => {
     // 更新上次滚动位置
     lastScrollTop.current = currentScrollTop;
 
+    // 立即检查滚动位置并更新按钮状态
+    const { scrollTop, scrollHeight, clientHeight } = chatMessagesRef.current;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
     // 清除之前的延迟处理
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
     }
 
+    // 立即处理向上滚动的情况，确保按钮能及时显示
+    if (scrollDirection === 'up') {
+      setIsAutoScroll(false);
+      setShowScrollButton(true);
+      userScrollDisabled.current = true; // 标记用户主动禁用
+      justDisabledAutoScroll.current = true; // 标记刚刚禁用
+      // 延迟重置刚刚禁用标记，避免立即重新启用
+      setTimeout(() => {
+        justDisabledAutoScroll.current = false;
+      }, 200);
+    }
+    // 如果用户向下滚动且滚动到底部附近（50px内），且不是刚刚禁用的情况
+    else if (
+      scrollDirection === 'down' &&
+      distanceFromBottom <= 50 &&
+      !justDisabledAutoScroll.current
+    ) {
+      setIsAutoScroll(true);
+      setShowScrollButton(false);
+      userScrollDisabled.current = false; // 重置用户禁用标记
+    }
+    // 如果距离底部超过 100px，确保显示滚动按钮
+    else if (distanceFromBottom > 100) {
+      setShowScrollButton(true);
+    }
+
     // 延迟处理滚动事件，避免频繁更新状态
     scrollTimeoutRef.current = setTimeout(() => {
-      const { scrollTop, scrollHeight, clientHeight } =
-        chatMessagesRef.current!;
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-
-      // 只要用户向上滚动，就停止自动滚动
-      if (scrollDirection === 'up') {
-        setIsAutoScroll(false);
-        setShowScrollButton(true);
-        userScrollDisabled.current = true; // 标记用户主动禁用
-        justDisabledAutoScroll.current = true; // 标记刚刚禁用
-        // 延迟重置刚刚禁用标记，避免立即重新启用
-        setTimeout(() => {
-          justDisabledAutoScroll.current = false;
-        }, 200);
-      }
-      // 如果用户向下滚动且滚动到底部附近（30px内），且不是刚刚禁用的情况
-      else if (
-        scrollDirection === 'down' &&
-        distanceFromBottom <= 50 &&
-        !justDisabledAutoScroll.current
-      ) {
-        setIsAutoScroll(true);
-        setShowScrollButton(false);
-        userScrollDisabled.current = false; // 重置用户禁用标记
-      }
+      // 再次检查滚动位置，确保状态正确
+      checkScrollPosition();
     }, 50); // 50ms 延迟处理
-  }, []);
+  }, [checkScrollPosition]);
 
   /**
    * 滚动按钮点击处理
@@ -161,7 +168,26 @@ export const useChatScroll = () => {
   const handleScrollButtonClick = useCallback(() => {
     smoothScrollToBottom();
     setIsAutoScroll(true);
-    setShowScrollButton(false);
+
+    // 使用更精确的方法检测滚动完成
+    const checkScrollComplete = () => {
+      if (chatMessagesRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } =
+          chatMessagesRef.current;
+        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+        // 如果已经滚动到底部附近（50px内），隐藏按钮
+        if (distanceFromBottom <= 50) {
+          setShowScrollButton(false);
+        } else {
+          // 如果还没到底部，继续检查
+          setTimeout(checkScrollComplete, 50);
+        }
+      }
+    };
+
+    // 延迟开始检查，给滚动动画一些时间
+    setTimeout(checkScrollComplete, 100);
   }, [smoothScrollToBottom]);
 
   /**
@@ -206,6 +232,16 @@ export const useChatScroll = () => {
       scrollTimeoutRef.current = null;
     }
   }, []);
+
+  // 组件挂载时初始化滚动位置
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      // 初始化滚动位置记录
+      lastScrollTop.current = chatMessagesRef.current.scrollTop;
+      // 检查初始滚动位置
+      checkScrollPosition();
+    }
+  }, [checkScrollPosition]);
 
   // 组件卸载时清理定时器
   useEffect(() => {

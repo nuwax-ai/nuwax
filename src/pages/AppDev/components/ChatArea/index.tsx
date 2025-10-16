@@ -333,11 +333,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       const hasThinking = message.think && message.think.trim() !== '';
       const isThinkingExpanded = expandedThinking.has(message.id);
 
-      // 调试信息
-      if (isAssistant && !isHistoryMessage) {
-        // 调试信息已移除
-      }
-
       return (
         <div
           key={message.id}
@@ -586,7 +581,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         ) : (
           chatMessagesList
         )}
-        {/* 滚动到底部按钮 */}
+      </div>
+      {/* 聊天输入区域 */}
+      <div className={styles.chatInputContainer}>
         {showScrollButton && (
           <div
             className={styles.scrollToBottomButton}
@@ -595,31 +592,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             <DownOutlined />
           </div>
         )}
-
-        {/* 调试信息 - 仅在开发环境显示 */}
-        {/* {process.env.NODE_ENV === 'development' && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '10px',
-              right: '10px',
-              background: 'rgba(0,0,0,0.8)',
-              color: 'white',
-              padding: '8px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              zIndex: 1000,
-            }}
-          >
-            <div>showScrollButton: {showScrollButton ? 'true' : 'false'}</div>
-            <div>isAutoScroll: {isAutoScroll ? 'true' : 'false'}</div>
-            <div>messages: {chat.chatMessages.length}</div>
-          </div>
-        )} */}
-      </div>
-
-      {/* 聊天输入区域 */}
-      <div className={styles.chatInputContainer}>
         {/* 附件展示区域 */}
         {(uploadedImages.length > 0 || selectedDataSources.length > 0) && (
           <div className={styles.attachmentsArea}>
