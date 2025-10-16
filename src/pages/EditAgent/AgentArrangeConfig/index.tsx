@@ -304,6 +304,20 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         item.id !== id && item.targetId !== targetId && item.type !== type,
     );
     setDeleteList(_newDeleteList);
+
+    // 删除最后一条页面组件配置时，删除页面路径配置
+    if (
+      type === AgentComponentTypeEnum.Page &&
+      allPageComponentList?.length === 1
+    ) {
+      if (
+        agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.Yes ||
+        agentConfigInfo?.hideChatArea === HideChatAreaEnum.Yes
+      ) {
+        // 此处只需关闭扩展页面区域，在回调方法中会设置hideChatArea为HideChatAreaEnum.No
+        onChangeAgent(ExpandPageAreaEnum.No, 'expandPageArea');
+      }
+    }
   };
 
   /**

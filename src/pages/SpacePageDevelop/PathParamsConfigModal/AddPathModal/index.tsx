@@ -117,7 +117,7 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
         >
           <Input
             disabled={mode === CreateUpdateModeEnum.Update}
-            placeholder="路径名称，例如 /detail/view"
+            placeholder="路径名称，例如 /detail/view 或 /detail/view/{id}"
             showCount
             maxLength={200}
           />

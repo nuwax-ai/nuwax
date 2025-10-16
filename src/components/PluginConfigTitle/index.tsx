@@ -9,6 +9,7 @@ const cx = classNames.bind(styles);
 
 const PluginConfigTitle: React.FC<PluginConfigTitleProps> = ({
   className,
+  titleClassName,
   title,
   extra,
   onClick,
@@ -23,7 +24,7 @@ const PluginConfigTitle: React.FC<PluginConfigTitleProps> = ({
         className,
       )}
     >
-      <h3 className={cx(styles.title)}>{title}</h3>
+      <h3 className={cx(styles.title, titleClassName)}>{title}</h3>
       <div className={cx(styles.extra, 'flex')}>
         {extra}
         <Button icon={<PlusOutlined />} onClick={onClick}>

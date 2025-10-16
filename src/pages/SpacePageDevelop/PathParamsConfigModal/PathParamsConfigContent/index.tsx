@@ -1,11 +1,10 @@
 import LabelStar from '@/components/LabelStar';
-import PluginConfigTitle from '@/components/PluginConfigTitle';
 import { AFFERENT_MODE_LIST } from '@/constants/library.constants';
 import { apiPageSavePathArgs } from '@/services/pageDev';
 import { InputTypeEnum } from '@/types/enums/common';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import { PageArgConfig } from '@/types/interfaces/pageDev';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   Button,
   Checkbox,
@@ -238,17 +237,19 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
         </div>
       ) : (
         <>
-          <PluginConfigTitle
-            className="px-16"
-            title="入参配置"
+          <Button
+            className={cx(styles['add-btn'])}
+            icon={<PlusOutlined />}
             onClick={handleInputConfigAdd}
-          />
+          >
+            新增入参
+          </Button>
           <Table<BindConfigWithSub>
             columns={inputColumns}
             dataSource={inputConfigArgs}
             virtual
             scroll={{
-              y: 420,
+              y: 460,
             }}
             pagination={false}
           />

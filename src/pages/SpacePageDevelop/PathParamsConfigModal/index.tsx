@@ -13,7 +13,7 @@ import {
   LoadingOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Modal } from 'antd';
+import { Button, Modal, Tooltip } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
@@ -155,7 +155,25 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
           <div className={cx(styles.container, 'flex', 'overflow-hide')}>
             {/* 左侧区域 */}
             <div className={cx(styles.left)}>
-              <h3>路径参数配置</h3>
+              <div
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-between',
+                  styles.header,
+                )}
+              >
+                <h3>路径参数配置</h3>
+                {/* 新增路径 */}
+                <Tooltip title="新增路径">
+                  <Button
+                    type="text"
+                    size="small"
+                    onClick={() => setAddPathModalOpen(true)}
+                    icon={<PlusOutlined />}
+                  ></Button>
+                </Tooltip>
+              </div>
               {/* 路径参数列表 */}
               <ul>
                 {pathParams.map((item) => {
@@ -216,15 +234,6 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
                   );
                 })}
               </ul>
-              {/* 新增路径 */}
-              <Button
-                type="primary"
-                className={cx(styles['add-path-params'])}
-                onClick={() => setAddPathModalOpen(true)}
-                icon={<PlusOutlined />}
-              >
-                新增路径
-              </Button>
             </div>
             {/* 内容区域 */}
             <div className={cx('flex-1', styles.right)}>
