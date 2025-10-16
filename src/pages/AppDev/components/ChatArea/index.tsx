@@ -366,9 +366,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     key={message.id}
                     id={message.id}
                     theme="light"
+                    interval={10}
                     disableTyping={isHistoryMessage}
                   >
-                    {message.text}
+                    {message.text ? message.text : '正在输出...'}
                   </PureMarkdownRenderer>
                 </div>
               )}
@@ -378,7 +379,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             {isStreaming && (
               <div className={styles.streamingIndicator}>
                 <Spin size="small" />
-                <span className={styles.streamingText}>正在输出...</span>
+                {/* <span className={styles.streamingText}>正在输出...</span> */}
               </div>
             )}
 
@@ -581,7 +582,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
       {/* 聊天消息区域 */}
       <div
-        className={`scroll-container ${styles.chatMessages}`}
+        className={`${styles.chatMessages}`}
         ref={chatMessagesRef}
         onScroll={handleUserScroll}
       >
