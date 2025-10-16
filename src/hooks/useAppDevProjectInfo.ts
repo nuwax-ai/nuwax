@@ -197,6 +197,8 @@ export const useAppDevProjectInfo = (
         return '构建';
       case 'deploy':
         return '部署';
+      case 'upload':
+        return '上传';
       default:
         return '未知操作';
     }

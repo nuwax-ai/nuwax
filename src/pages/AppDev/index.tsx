@@ -93,6 +93,9 @@ const AppDev: React.FC = () => {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  // 图片清空方法引用
+  const clearUploadedImagesRef = useRef<(() => void) | null>(null);
+
   // 部署相关状态
   const [isDeploying, setIsDeploying] = useState(false);
 
@@ -120,28 +123,29 @@ const AppDev: React.FC = () => {
   // 模型选择器
   const modelSelector = useAppDevModelSelector(projectId || '');
 
+  // 使用项目详情 Hook
+  const projectInfo = useAppDevProjectInfo(projectId);
+
   const chat = useAppDevChat({
     projectId: projectId || '',
     selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
     onRefreshFileTree: fileManagement.loadFileTree, // 新增：传递文件树刷新方法
     selectedDataSources: selectedDataResourceIds, // 新增：传递选中的数据源
     onClearDataSourceSelections: () => setSelectedDataResourceIds([]), // 新增：清除选择回调
+    onRefreshVersionList: projectInfo.refreshProjectInfo, // 新增：传递刷新版本列表方法
+    onClearUploadedImages: () => {
+      // 调用 ChatArea 组件传递的图片清空方法
+      if (clearUploadedImagesRef.current) {
+        clearUploadedImagesRef.current();
+      }
+    }, // 新增：传递清除上传图片方法
   });
-
-  // 更新fileManagement的isChatLoading
-  useEffect(() => {
-    // 这里我们需要重新创建fileManagement hook，但为了避免复杂性，我们使用不同的方法
-    // 暂时保持现状，因为自动刷新功能已经在fileManagement内部实现
-  }, [chat.isChatLoading]);
 
   const server = useAppDevServer({
     projectId: projectId || '',
     onServerStart: updateDevServerUrl,
     onServerStatusChange: setIsServiceRunning,
   });
-
-  // 使用项目详情 Hook
-  const projectInfo = useAppDevProjectInfo(projectId);
 
   // 数据资源管理
   const dataResourceManagement = useDataResourceManagement(
@@ -814,6 +818,11 @@ const AppDev: React.FC = () => {
               onUpdateDataSources={setSelectedDataResourceIds} // 新增：更新数据源回调
               fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
               modelSelector={modelSelector} // 新增：模型选择器状态
+              onRefreshVersionList={projectInfo.refreshProjectInfo} // 新增：刷新版本列表回调
+              onClearUploadedImages={(clearFn) => {
+                // 设置图片清空方法到 ref
+                clearUploadedImagesRef.current = clearFn;
+              }} // 新增：设置图片清空方法回调
             />
           </Col>
 
