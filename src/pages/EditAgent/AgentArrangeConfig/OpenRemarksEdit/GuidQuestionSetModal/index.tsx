@@ -239,7 +239,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       key: 'name',
       width: 200,
       render: (_: string, record: BindConfigWithSub) => (
-        <div className={cx('flex', 'items-center', 'gap-4')}>
+        <div className={cx('h-full', 'flex', 'items-center', 'gap-4')}>
           <span>{record.name}</span>
           <ConditionRender condition={record.require}>
             <span className={cx(styles.star)}>*</span>

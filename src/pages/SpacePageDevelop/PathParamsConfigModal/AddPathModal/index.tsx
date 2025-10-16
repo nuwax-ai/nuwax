@@ -119,7 +119,7 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
             disabled={mode === CreateUpdateModeEnum.Update}
             placeholder="路径名称，例如 /detail/view"
             showCount
-            maxLength={50}
+            maxLength={200}
           />
         </Form.Item>
         <Form.Item name="description" label="路径功能描述">

@@ -823,9 +823,20 @@ ${item.identification}的动态JSON参数JsonSchema如下\n
         </p>
       ),
       extra: (
-        <Tooltip title={!allPageComponentList?.length ? '请先添加页面' : ''}>
+        <Tooltip
+          title={
+            !allPageComponentList?.length
+              ? '请先添加页面'
+              : agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.No
+              ? '当展开页面区是关闭的情况下，隐藏主会话框不能打开'
+              : ''
+          }
+        >
           <Switch
-            disabled={!allPageComponentList?.length}
+            disabled={
+              !allPageComponentList?.length ||
+              agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.No
+            }
             value={agentConfigInfo?.hideChatArea === HideChatAreaEnum.Yes}
             // 阻止冒泡事件
             onClick={(_, e: any) => {

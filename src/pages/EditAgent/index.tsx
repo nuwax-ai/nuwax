@@ -9,7 +9,7 @@ import {
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, HideChatAreaEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
@@ -142,6 +142,11 @@ const EditAgent: React.FC = () => {
     // 已发布的智能体，修改时需要更新修改时间
     if (_agentConfigInfo.publishStatus === PublishStatusEnum.Published) {
       _agentConfigInfo.modified = dayjs().toString();
+    }
+
+    // 当展开页面区是关闭的情况下，隐藏主会话框不能打开
+    if (attr === 'expandPageArea') {
+      _agentConfigInfo.hideChatArea = HideChatAreaEnum.No;
     }
 
     setAgentConfigInfo(_agentConfigInfo);
