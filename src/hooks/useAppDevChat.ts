@@ -84,7 +84,6 @@ export const useAppDevChat = ({
   const debouncedRefreshFileTree = useCallback(
     debounce(() => {
       if (onRefreshFileTree) {
-        console.log('🔄 [Chat] 触发文件树刷新(保持状态，强制刷新)');
         // 调用时传递参数，强制刷新但保持状态
         onRefreshFileTree(true, true); // preserveState=true, forceRefresh=true
       }
@@ -416,7 +415,6 @@ export const useAppDevChat = ({
           throw new Error(response.message || '发送消息失败');
         }
       } catch (error) {
-        console.log('error=========', error);
         if (error && (error as any).code === AGENT_SERVICE_RUNNING) {
           showStopAgentServiceModal(projectId, () => {
             sendMessageAndConnectSSE(); //继续发送消息

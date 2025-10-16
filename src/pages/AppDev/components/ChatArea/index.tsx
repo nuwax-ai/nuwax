@@ -1,4 +1,3 @@
-import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { useChatScroll, useChatScrollEffects } from '@/hooks/useChatScroll';
 import { cancelAgentTask } from '@/services/appDev';
 import type {
@@ -33,10 +32,24 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
 import styles from './index.less';
-import type { ChatAreaProps } from './types';
 
 const { Text } = Typography;
+
+interface ChatAreaProps {
+  chatMode: 'chat' | 'code';
+  setChatMode: (mode: 'chat' | 'code') => void;
+  chat: any;
+  projectInfo: any;
+  projectId: string;
+  onVersionSelect: (version: any) => void;
+  selectedDataSources?: any[];
+  onUpdateDataSources: (dataSources: any[]) => void;
+  fileContentState: any;
+  modelSelector: React.ReactNode;
+  onClearUploadedImages?: (callback: () => void) => void;
+}
 
 /**
  * 聊天会话区域组件
@@ -134,8 +147,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         message.warning('无法获取当前会话ID');
         return;
       }
-
-      console.log('🛑 [ChatArea] 取消 Agent 任务:', { projectId, sessionId });
 
       const response = await cancelAgentTask(projectId, sessionId);
 
@@ -345,43 +356,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     <div key={index}>{line}</div>
                   ))
               ) : (
-                // ASSISTANT 消息: 使用 PureMarkdownRenderer 流式渲染
-                <div className={styles.chatAreaMarkdown}>
-                  {/* 调试信息 */}
-                  {/* {process.env.NODE_ENV === 'development' && (
-                    <div
-                      style={{
-                        fontSize: '10px',
-                        color: '#999',
-                        marginBottom: '4px',
-                      }}
-                    >
-                      Debug: {message.text?.length || 0} chars, streaming:{' '}
-                      {isStreaming ? 'yes' : 'no'}, typing:{' '}
-                      {isHistoryMessage ? 'disabled' : 'enabled'}, autoScroll:{' '}
-                      {isAutoScroll ? 'on' : 'off'}
-                    </div>
-                  )} */}
-                  <PureMarkdownRenderer
-                    key={message.id}
-                    id={message.id}
-                    theme="light"
-                    interval={10}
-                    disableTyping={isHistoryMessage}
-                  >
-                    {message.text ? message.text : '正在输出...'}
-                  </PureMarkdownRenderer>
-                </div>
+                // ASSISTANT 消息: 使用 MarkdownCMD 流式渲染
+                <AppDevMarkdownCMDWrapper
+                  key={message.id}
+                  message={message}
+                  isHistoryMessage={isHistoryMessage}
+                />
               )}
             </div>
-
-            {/* 流式传输指示器 */}
-            {isStreaming && (
-              <div className={styles.streamingIndicator}>
-                <Spin size="small" />
-                {/* <span className={styles.streamingText}>正在输出...</span> */}
-              </div>
-            )}
 
             {/* 加载状态 */}
             {isLoading && !isStreaming && (
@@ -421,6 +403,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                       ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* 流式传输指示器 - 放在最下面 */}
+            {isStreaming && (
+              <div className={styles.streamingIndicator}>
+                <Spin size="small" />
+                {/* <span className={styles.streamingText}>正在输出...</span> */}
               </div>
             )}
           </div>
@@ -624,25 +614,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             <div>showScrollButton: {showScrollButton ? 'true' : 'false'}</div>
             <div>isAutoScroll: {isAutoScroll ? 'true' : 'false'}</div>
             <div>messages: {chat.chatMessages.length}</div>
-            <button
-              type="button"
-              onClick={() => {
-                // 强制显示滚动按钮进行测试
-                setShowScrollButton(true);
-              }}
-              style={{
-                marginTop: '4px',
-                padding: '2px 6px',
-                fontSize: '10px',
-                background: '#1890ff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '2px',
-                cursor: 'pointer',
-              }}
-            >
-              测试显示按钮
-            </button>
           </div>
         )} */}
       </div>
@@ -709,13 +680,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           onChange={(e) => chat.setChatInput(e.target.value)}
           onPressEnter={(e) => {
             if (!e.shiftKey && !e.ctrlKey) {
-              e.preventDefault();
+              if (chat.isChatLoading) {
+                //当前还在输出 不能提交
+                return message.info('执行中 不能发送');
+              }
               handleSendMessage();
             }
           }}
           autoSize={{ minRows: 2, maxRows: 6 }}
           className={styles.textareaInput}
-          disabled={chat.isChatLoading}
         />
 
         {/* 底部操作栏 */}
@@ -791,6 +764,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 />
               </Tooltip>
             </Dropdown>
+
             {/* 会话进行中仅显示取消按钮 */}
             {chat.isChatLoading ? (
               <Tooltip title="取消AI任务">
