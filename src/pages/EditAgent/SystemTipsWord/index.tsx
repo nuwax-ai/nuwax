@@ -25,6 +25,7 @@ const SystemTipsWord = forwardRef<SystemTipsWordRef, SystemTipsWordProps>(
   ({ value, agentConfigInfo, onChange, onReplace }, ref) => {
     const [open, setOpen] = useState<boolean>(false);
     const editorContainerRef = useRef<HTMLDivElement>(null);
+    const editorRef = useRef<any | null>(null);
     // const textareaRef = useRef<any | null>(null);
 
     /**
@@ -65,37 +66,11 @@ const SystemTipsWord = forwardRef<SystemTipsWordRef, SystemTipsWordProps>(
      * 在光标位置插入文本
      */
     const insertTextAtCursor = (text: string) => {
-      const selection = window.getSelection();
-      const editorContainer = editorContainerRef.current;
-
       console.log('=== 插入文本调试信息 ===');
-      console.log('编辑器容器:', editorContainer);
-      console.log('当前选择:', selection);
+      console.log('编辑器引用:', editorRef.current);
 
-      if (!selection || !selection.rangeCount || !editorContainer) {
-        console.log('没有选择或编辑器容器，使用备用方案');
-        const currentValue = value || '';
-        const newValue = currentValue ? `${currentValue}\n${text}` : text;
-        onChange(newValue);
-        return;
-      }
-
-      const range = selection.getRangeAt(0);
-      console.log('选择范围:', range);
-      console.log('起始容器:', range.startContainer);
-      console.log('起始偏移:', range.startOffset);
-
-      // 检查光标是否在编辑器内
-      const editableElement =
-        editorContainer.querySelector('[contenteditable="true"]') ||
-        editorContainer.querySelector('div[role="textbox"]') ||
-        editorContainer.querySelector('.ProseMirror') ||
-        editorContainer;
-
-      console.log('可编辑元素:', editableElement);
-
-      if (!editableElement.contains(range.startContainer)) {
-        console.log('光标不在编辑器内，使用备用方案');
+      if (!editorRef.current) {
+        console.log('编辑器引用不存在，使用备用方案');
         const currentValue = value || '';
         const newValue = currentValue ? `${currentValue}\n${text}` : text;
         onChange(newValue);
@@ -103,53 +78,38 @@ const SystemTipsWord = forwardRef<SystemTipsWordRef, SystemTipsWordProps>(
       }
 
       try {
-        console.log('尝试直接 DOM 插入');
+        // 获取当前光标位置
+        const cursorPosition = editorRef.current.getCursorPosition();
+        console.log('当前光标位置:', cursorPosition);
 
-        // 保存当前光标位置
-        // const startContainer = range.startContainer;
-        // const startOffset = range.startOffset;
+        // 检查编辑器是否有 replaceText 方法
+        if (typeof editorRef.current.replaceText !== 'function') {
+          console.error('编辑器没有 replaceText 方法');
+          console.log('编辑器可用方法:', Object.keys(editorRef.current));
+          throw new Error('replaceText 方法不存在');
+        }
 
-        // 删除当前选择的内容（如果有）
-        range.deleteContents();
+        // 使用编辑器的 replaceText API 在光标位置插入文本
+        const replaceOptions = {
+          from: cursorPosition,
+          to: cursorPosition,
+          text: text,
+          cursorOffset: text.length, // 将光标移动到插入文本的末尾
+          scrollIntoView: true,
+          userEvent: 'insertText',
+        };
 
-        // 创建文本节点并插入
-        const textNode = document.createTextNode(text);
-        range.insertNode(textNode);
+        console.log('调用 replaceText 参数:', replaceOptions);
+        editorRef.current?.replaceText?.(replaceOptions);
 
-        // 将光标移动到插入文本的末尾
-        range.setStartAfter(textNode);
-        range.setEndAfter(textNode);
-        selection.removeAllRanges();
-        selection.addRange(range);
-
-        // 触发各种事件来通知编辑器更新
-        const events = ['input', 'change', 'keyup', 'blur'];
-        events.forEach((eventType) => {
-          const event = new Event(eventType, {
-            bubbles: true,
-            cancelable: true,
-          });
-          editableElement.dispatchEvent(event);
-        });
-
-        // 强制更新编辑器内容
-        setTimeout(() => {
-          const newContent =
-            editableElement.textContent || editableElement.innerText || '';
-          console.log('DOM 插入后的内容:', newContent);
-          if (newContent !== value) {
-            onChange(newContent);
-          }
-        }, 100);
-
-        console.log('DOM 插入成功');
+        console.log('使用编辑器 API 插入成功');
         return;
       } catch (error) {
-        console.warn('DOM 插入失败:', error);
+        console.error('编辑器 API 插入失败:', error);
       }
 
-      // 最后的备用方案：追加到末尾
-      console.log('使用最终备用方案：追加到末尾');
+      // 备用方案：追加到末尾
+      console.log('使用备用方案：追加到末尾');
       const currentValue = value || '';
       const newValue = currentValue ? `${currentValue}\n${text}` : text;
       onChange(newValue);
@@ -263,6 +223,10 @@ const SystemTipsWord = forwardRef<SystemTipsWordRef, SystemTipsWordProps>(
               onChange={onChange}
               isControled={true}
               placeholder="输入系统提示词，对大模型进行角色塑造"
+              getEditor={(editor: any) => {
+                editorRef.current = editor;
+                console.log('编辑器已初始化:', editor);
+              }}
             />
           </div>
         </PromptEditorProvider>
