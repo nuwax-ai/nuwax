@@ -1,3 +1,4 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { useChatScroll, useChatScrollEffects } from '@/hooks/useChatScroll';
 import { cancelAgentTask } from '@/services/appDev';
 import type {
@@ -10,9 +11,8 @@ import {
   CloseCircleOutlined,
   ControlOutlined,
   DownOutlined,
+  LoadingOutlined,
   PictureOutlined,
-  SendOutlined,
-  StopOutlined,
 } from '@ant-design/icons';
 import {
   Button,
@@ -47,7 +47,7 @@ interface ChatAreaProps {
   selectedDataSources?: any[];
   onUpdateDataSources: (dataSources: any[]) => void;
   fileContentState: any;
-  modelSelector: React.ReactNode;
+  modelSelector: any;
   onClearUploadedImages?: (callback: () => void) => void;
 }
 
@@ -485,7 +485,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     const renderedMessages: React.ReactNode[] = [];
     let currentSessionId: string | null = null;
 
-    messages.forEach((message) => {
+    messages.forEach((message: AppDevChatMessage) => {
       // 检查是否需要添加会话分隔符
       if (
         message.conversationTopic &&
@@ -529,7 +529,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         <div className={styles.chatModeSwitcher}>
           <Segmented
             value={chatMode}
-            onChange={(value) => setChatMode(value as 'chat' | 'design')}
+            onChange={(value) => setChatMode(value as 'chat' | 'code')}
             options={[
               { label: 'Chat', value: 'chat' },
               {
@@ -550,7 +550,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               }
               size="small"
               className={styles.versionSelector}
-              options={projectInfo.versionList.map((version) => ({
+              options={projectInfo.versionList.map((version: any) => ({
                 label: `v${version.version}`,
                 value: version.version,
                 action: version.action,
@@ -731,14 +731,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               overlay={
                 <Menu
                   selectedKeys={
-                    modelSelector.selectedModelId
+                    modelSelector?.selectedModelId
                       ? [modelSelector.selectedModelId.toString()]
                       : []
                   }
-                  onClick={({ key }) => modelSelector.selectModel(Number(key))}
+                  onClick={({ key }) => modelSelector?.selectModel(Number(key))}
                   style={{ maxHeight: 200, overflowY: 'auto' }}
                 >
-                  {modelSelector.models.map((model) => (
+                  {modelSelector?.models?.map((model: any) => (
                     <Menu.Item
                       key={model.id.toString()}
                       disabled={chat.isChatLoading}
@@ -749,21 +749,23 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 </Menu>
               }
               trigger={['click']}
-              disabled={chat.isChatLoading || modelSelector.isLoadingModels}
+              disabled={chat.isChatLoading || modelSelector?.isLoadingModels}
               placement="topLeft"
             >
               <Tooltip
                 title={`当前模型: ${
-                  modelSelector.models.find(
-                    (m) => m.id === modelSelector.selectedModelId,
+                  modelSelector?.models?.find(
+                    (m: any) => m.id === modelSelector?.selectedModelId,
                   )?.name || '未选择'
                 }`}
               >
                 <Button
                   type="text"
                   icon={<ControlOutlined />}
-                  disabled={chat.isChatLoading || modelSelector.isLoadingModels}
-                  loading={modelSelector.isLoadingModels}
+                  disabled={
+                    chat.isChatLoading || modelSelector?.isLoadingModels
+                  }
+                  loading={modelSelector?.isLoadingModels}
                   className={styles.modelSelectorButton}
                 />
               </Tooltip>
@@ -771,22 +773,42 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
             {/* 会话进行中仅显示取消按钮 */}
             {chat.isChatLoading ? (
-              <Tooltip title="取消AI任务">
-                <Button
-                  type="text"
-                  danger
-                  icon={<StopOutlined />}
+              <Tooltip title={isStoppingTask ? '正在停止...' : '取消AI任务'}>
+                <span
                   onClick={handleCancelAgentTask}
-                />
+                  className={`${styles.box} ${styles['send-box']} ${
+                    styles['stop-box']
+                  } ${!isStoppingTask ? styles['stop-box-active'] : ''} ${
+                    isStoppingTask ? styles.disabled : ''
+                  }`}
+                >
+                  {isStoppingTask ? (
+                    <div className={styles['loading-box']}>
+                      <LoadingOutlined className={styles['loading-icon']} />
+                    </div>
+                  ) : (
+                    <SvgIcon name="icons-chat-stop" />
+                  )}
+                </span>
               </Tooltip>
             ) : (
-              <Tooltip title="发送消息">
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
+              <Tooltip title={isSendingMessage ? '正在发送...' : '发送消息'}>
+                <span
                   onClick={handleSendMessage}
-                  disabled={!chat.chatInput.trim()}
-                />
+                  className={`${styles.box} ${styles['send-box']} ${
+                    !chat.chatInput.trim() || isSendingMessage
+                      ? styles.disabled
+                      : ''
+                  }`}
+                >
+                  {isSendingMessage ? (
+                    <div className={styles['loading-box']}>
+                      <LoadingOutlined className={styles['loading-icon']} />
+                    </div>
+                  ) : (
+                    <SvgIcon name="icons-chat-send" />
+                  )}
+                </span>
               </Tooltip>
             )}
           </div>
