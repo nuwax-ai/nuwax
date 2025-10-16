@@ -324,7 +324,11 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
         >
           <Input placeholder="请输入事件名称" allowClear />
         </Form.Item>
-        <Form.Item name="identification" label="事件标识（用于区分具体事件）">
+        <Form.Item
+          name="identification"
+          label="事件标识（用于区分具体事件）"
+          rules={[{ required: true, message: '请输入事件标识' }]}
+        >
           <Input placeholder="请输入事件标识" allowClear />
         </Form.Item>
         <Form.Item name="type" label="响应动作">
@@ -336,7 +340,11 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
           />
         </Form.Item>
         {type === EventBindResponseActionEnum.Page ? (
-          <Form.Item name="pageUriId" label="页面路径">
+          <Form.Item
+            name="pageUriId"
+            label="页面路径"
+            rules={[{ required: true, message: '请选择页面路径' }]}
+          >
             {/* 页面路径 */}
             <SelectList
               placeholder="请选择页面路径"
