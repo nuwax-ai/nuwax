@@ -14,6 +14,7 @@ import {
   PagePathSelectOption,
 } from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
+import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   Form,
@@ -25,7 +26,7 @@ import {
   theme,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
@@ -65,7 +66,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
         form.setFieldsValue({
           name: currentEventConfig.name,
           identification: currentEventConfig.identification,
-          type: currentEventConfig.type,
+          // type: currentEventConfig.type,
           url: currentEventConfig.url,
         });
 
@@ -75,10 +76,16 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
         setArgs(currentEventConfig.args || []);
         // 当前路径页面id
         setCurrentPageId(currentEventConfig.pageId || null);
-      } else {
-        form.setFieldValue('type', EventBindResponseActionEnum.Page);
       }
+      // 扩展页面路径类型时，展示入参配置
       if (pageArgConfigs?.length > 0) {
+        // 修改模式下，回显类型
+        if (currentEventConfig) {
+          form.setFieldValue('type', currentEventConfig.type);
+        } else {
+          form.setFieldValue('type', EventBindResponseActionEnum.Page);
+        }
+
         const _pathList: PagePathSelectOption[] = [];
         pageArgConfigs?.forEach((item) => {
           // 添加一个唯一值，因为pageArgConfigs中可能存在相同的pageUri
@@ -96,6 +103,10 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
           }
         });
         setPathList(_pathList);
+      } else {
+        // 没有页面路径，默认选择链接类型, 因为事件绑定如果响应动作选择扩展页面打开时，必须选择页面路径
+        form.setFieldValue('type', EventBindResponseActionEnum.Link);
+        setType(EventBindResponseActionEnum.Link);
       }
     }
 
@@ -277,6 +288,15 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
     },
   ];
 
+  // 响应动作列表(没有路径列表时，不展示扩展页面打开选项)
+  const responseActionList = useMemo(() => {
+    return pageArgConfigs.length > 0
+      ? EVENT_BIND_RESPONSE_ACTION_OPTIONS
+      : EVENT_BIND_RESPONSE_ACTION_OPTIONS.filter(
+          (item) => item.value !== EventBindResponseActionEnum.Page,
+        );
+  }, [pageArgConfigs]);
+
   return (
     <CustomFormModal
       form={form}
@@ -293,6 +313,7 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
         form={form}
         layout="vertical"
         onFinish={onFinish}
+        requiredMark={customizeRequiredMark}
         autoComplete="off"
         preserve={false}
       >
@@ -308,9 +329,8 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
         </Form.Item>
         <Form.Item name="type" label="响应动作">
           <SelectList
-            allowClear
             placeholder="请选择响应动作"
-            options={EVENT_BIND_RESPONSE_ACTION_OPTIONS}
+            options={responseActionList}
             value={type}
             onChange={handleChangeType}
           />
@@ -326,8 +346,12 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
           </Form.Item>
         ) : (
           type === EventBindResponseActionEnum.Link && (
-            <Form.Item name="url" label="链接地址">
-              <Input placeholder="https://xxxxxxx" allowClear />
+            <Form.Item
+              name="url"
+              label="链接地址"
+              rules={[{ required: true, message: '请选择填写链接地址' }]}
+            >
+              <Input placeholder="https://www.xxx.com" allowClear />
             </Form.Item>
           )
         )}

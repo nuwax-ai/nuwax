@@ -17,6 +17,7 @@ import {
   PagePathSelectOption,
 } from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
+import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   Form,
@@ -307,6 +308,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         form={form}
         layout="vertical"
         onFinish={onFinish}
+        requiredMark={customizeRequiredMark}
         autoComplete="off"
         preserve={false}
       >
@@ -317,7 +319,11 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
             imageUrl={imageUrl}
           />
         </Form.Item>
-        <Form.Item name="info" label="展示信息">
+        <Form.Item
+          name="info"
+          label="展示信息"
+          rules={[{ required: true, message: '请输入展示信息' }]}
+        >
           <Input placeholder="这里是问题内容" showCount maxLength={30} />
         </Form.Item>
         <Form.Item name="type" label="类型">
@@ -337,8 +343,12 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
           </Form.Item>
         ) : (
           type === GuidQuestionSetTypeEnum.Link && (
-            <Form.Item name="url" label="链接地址">
-              <Input placeholder="https://xxxxxxx" allowClear />
+            <Form.Item
+              name="url"
+              label="链接地址"
+              rules={[{ required: true, message: '请选择填写链接地址' }]}
+            >
+              <Input placeholder="https://www.xxx.com" allowClear />
             </Form.Item>
           )
         )}
