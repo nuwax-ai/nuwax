@@ -783,7 +783,7 @@ ${item.identification}的动态JSON参数JsonSchema如下
     },
     {
       key: AgentArrangeConfigEnum.Default_Expand_Page_Area,
-      label: '默认展开页面区',
+      label: '展开页面区',
       children: (
         // 默认展开页面区”，当选中时，用户进入智能体详情或会话时为左右分栏，左边是对话框，右边是页面
         <p className={cx(styles.text)}>
