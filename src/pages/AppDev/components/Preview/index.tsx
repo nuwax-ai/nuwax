@@ -61,10 +61,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      * 刷新预览
      */
     const refreshPreview = useCallback(() => {
-      console.log(
-        '🔄 [Preview] refreshPreview called, devServerUrl:',
-        devServerUrl,
-      );
+      // 刷新预览
 
       if (devServerUrl) {
         loadDevServerPreview();
@@ -74,7 +71,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         setLoadError('开发服务器URL不可用');
         setLastRefreshed(new Date());
       } else {
-        console.warn('⚠️ [Preview] iframeRef.current 为空，无法刷新');
+        // iframeRef.current 为空，无法刷新
       }
     }, [devServerUrl, loadDevServerPreview]);
 

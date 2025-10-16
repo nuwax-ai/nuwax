@@ -630,14 +630,7 @@ const AppDev: React.FC = () => {
 
     try {
       setSingleFileUploadLoading(true);
-      console.log(
-        '📤 [AppDev] 正在上传单个文件:',
-        uploadFile.name,
-        '项目ID:',
-        projectId,
-        '路径:',
-        singleFilePath,
-      );
+      // 上传单个文件
 
       const result = await fileManagement.uploadSingleFileToServer(
         uploadFile,
@@ -688,11 +681,7 @@ const AppDev: React.FC = () => {
     if (!nodeToDelete || !projectId) return;
 
     try {
-      console.log(
-        '🗑️ [AppDev] 删除文件/文件夹:',
-        nodeToDelete.name,
-        nodeToDelete.path,
-      );
+      // 删除文件/文件夹
       const success = await fileManagement.deleteFileItem(nodeToDelete.id);
 
       if (success) {

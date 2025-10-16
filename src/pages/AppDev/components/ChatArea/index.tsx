@@ -76,6 +76,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // 图片上传状态
   const [uploadedImages, setUploadedImages] = useState<ImageUploadInfo[]>([]);
 
+  // 停止按钮 loading 状态
+  const [isStoppingTask, setIsStoppingTask] = useState(false);
+
+  // 发送按钮 loading 状态
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+
   // 暴露图片清空方法给父组件
   useEffect(() => {
     if (onClearUploadedImages) {
@@ -138,6 +144,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
    * 取消 Agent 任务
    */
   const handleCancelAgentTask = useCallback(async () => {
+    if (isStoppingTask) {
+      return; // 防止重复点击
+    }
+
+    setIsStoppingTask(true);
+
     try {
       // 获取当前会话ID（从最后一条消息中获取）
       const lastMessage = chat.chatMessages[chat.chatMessages.length - 1];
@@ -162,8 +174,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       message.error('取消 Agent 任务失败');
       // 即使 API 调用失败，也调用原有的取消功能
       chat.cancelChat();
+    } finally {
+      setIsStoppingTask(false);
     }
-  }, [chat, projectId]);
+  }, [chat, projectId, isStoppingTask]);
 
   /**
    * 处理图片上传
@@ -255,55 +269,72 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       return;
     }
 
-    // 构建附件列表
-    const attachments: Attachment[] = [];
-
-    // 1. 添加图片附件
-    uploadedImages.forEach((img) => {
-      attachments.push({
-        type: 'Image',
-        content: {
-          id: img.uid,
-          filename: img.name,
-          mime_type: img.mimeType,
-          dimensions: img.dimensions,
-          source: {
-            source_type: 'Base64',
-            data: {
-              data: img.base64Data,
-              mime_type: img.mimeType,
-            },
-          },
-        },
-      });
-    });
-
-    // 2. 添加文件树选中的文件(如果有)
-    if (fileContentState?.selectedFile) {
-      attachments.push({
-        type: 'Text',
-        content: {
-          id: generateAttachmentId('file'),
-          filename: fileContentState.selectedFile,
-          source: {
-            source_type: 'FilePath',
-            data: {
-              path: fileContentState.selectedFile, // 包含路径与文件名及后缀
-            },
-          },
-        },
-      });
+    // 防止重复发送
+    if (isSendingMessage || chat.isChatLoading) {
+      return;
     }
 
-    // 发送消息后强制滚动到底部并开启自动滚动
-    forceScrollToBottomAndEnable();
+    setIsSendingMessage(true);
 
-    // 发送消息(传递附件)
-    chat.sendMessage(attachments);
+    try {
+      // 构建附件列表
+      const attachments: Attachment[] = [];
 
-    // 清空选中的数据源
-    if (onUpdateDataSources) {
-      onUpdateDataSources([]);
+      // 1. 添加图片附件
+      uploadedImages.forEach((img) => {
+        attachments.push({
+          type: 'Image',
+          content: {
+            id: img.uid,
+            filename: img.name,
+            mime_type: img.mimeType,
+            dimensions: img.dimensions,
+            source: {
+              source_type: 'Base64',
+              data: {
+                data: img.base64Data,
+                mime_type: img.mimeType,
+              },
+            },
+          },
+        });
+      });
+
+      // 2. 添加文件树选中的文件(如果有)
+      if (fileContentState?.selectedFile) {
+        attachments.push({
+          type: 'Text',
+          content: {
+            id: generateAttachmentId('file'),
+            filename: fileContentState.selectedFile,
+            source: {
+              source_type: 'FilePath',
+              data: {
+                path: fileContentState.selectedFile, // 包含路径与文件名及后缀
+              },
+            },
+          },
+        });
+      }
+
+      // 发送消息后强制滚动到底部并开启自动滚动
+      forceScrollToBottomAndEnable();
+
+      // 发送消息(传递附件)
+      chat.sendMessage(attachments);
+
+      // 清空选中的数据源
+      if (onUpdateDataSources) {
+        onUpdateDataSources([]);
+      }
+    } catch (error) {
+      console.error('发送消息失败:', error);
+      message.error('发送消息失败');
+    } finally {
+      // 延迟重置发送状态，给用户反馈
+      setTimeout(() => {
+        setIsSendingMessage(false);
+      }, 500);
     }
   }, [
     forceScrollToBottomAndEnable,
@@ -311,6 +342,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     uploadedImages,
     fileContentState?.selectedFile,
     onUpdateDataSources,
+    isSendingMessage,
   ]);
 
   /**
