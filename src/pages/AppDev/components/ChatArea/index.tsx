@@ -1,3 +1,4 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { useChatScroll, useChatScrollEffects } from '@/hooks/useChatScroll';
 import { cancelAgentTask } from '@/services/appDev';
 import type {
@@ -10,9 +11,8 @@ import {
   CloseCircleOutlined,
   ControlOutlined,
   DownOutlined,
+  LoadingOutlined,
   PictureOutlined,
-  SendOutlined,
-  StopOutlined,
 } from '@ant-design/icons';
 import {
   Button,
@@ -47,7 +47,7 @@ interface ChatAreaProps {
   selectedDataSources?: any[];
   onUpdateDataSources: (dataSources: any[]) => void;
   fileContentState: any;
-  modelSelector: React.ReactNode;
+  modelSelector: any;
   onClearUploadedImages?: (callback: () => void) => void;
 }
 
@@ -75,6 +75,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   // 图片上传状态
   const [uploadedImages, setUploadedImages] = useState<ImageUploadInfo[]>([]);
+
+  // 停止按钮 loading 状态
+  const [isStoppingTask, setIsStoppingTask] = useState(false);
+
+  // 发送按钮 loading 状态
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   // 暴露图片清空方法给父组件
   useEffect(() => {
@@ -138,6 +144,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
    * 取消 Agent 任务
    */
   const handleCancelAgentTask = useCallback(async () => {
+    if (isStoppingTask) {
+      return; // 防止重复点击
+    }
+
+    setIsStoppingTask(true);
+
     try {
       // 获取当前会话ID（从最后一条消息中获取）
       const lastMessage = chat.chatMessages[chat.chatMessages.length - 1];
@@ -162,8 +174,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       message.error('取消 Agent 任务失败');
       // 即使 API 调用失败，也调用原有的取消功能
       chat.cancelChat();
+    } finally {
+      setIsStoppingTask(false);
     }
-  }, [chat, projectId]);
+  }, [chat, projectId, isStoppingTask]);
 
   /**
    * 处理图片上传
@@ -255,55 +269,72 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       return;
     }
 
-    // 构建附件列表
-    const attachments: Attachment[] = [];
-
-    // 1. 添加图片附件
-    uploadedImages.forEach((img) => {
-      attachments.push({
-        type: 'Image',
-        content: {
-          id: img.uid,
-          filename: img.name,
-          mime_type: img.mimeType,
-          dimensions: img.dimensions,
-          source: {
-            source_type: 'Base64',
-            data: {
-              data: img.base64Data,
-              mime_type: img.mimeType,
-            },
-          },
-        },
-      });
-    });
-
-    // 2. 添加文件树选中的文件(如果有)
-    if (fileContentState?.selectedFile) {
-      attachments.push({
-        type: 'Text',
-        content: {
-          id: generateAttachmentId('file'),
-          filename: fileContentState.selectedFile,
-          source: {
-            source_type: 'FilePath',
-            data: {
-              path: fileContentState.selectedFile, // 包含路径与文件名及后缀
-            },
-          },
-        },
-      });
+    // 防止重复发送
+    if (isSendingMessage || chat.isChatLoading) {
+      return;
     }
 
-    // 发送消息后强制滚动到底部并开启自动滚动
-    forceScrollToBottomAndEnable();
+    setIsSendingMessage(true);
 
-    // 发送消息(传递附件)
-    chat.sendMessage(attachments);
+    try {
+      // 构建附件列表
+      const attachments: Attachment[] = [];
 
-    // 清空选中的数据源
-    if (onUpdateDataSources) {
-      onUpdateDataSources([]);
+      // 1. 添加图片附件
+      uploadedImages.forEach((img) => {
+        attachments.push({
+          type: 'Image',
+          content: {
+            id: img.uid,
+            filename: img.name,
+            mime_type: img.mimeType,
+            dimensions: img.dimensions,
+            source: {
+              source_type: 'Base64',
+              data: {
+                data: img.base64Data,
+                mime_type: img.mimeType,
+              },
+            },
+          },
+        });
+      });
+
+      // 2. 添加文件树选中的文件(如果有)
+      if (fileContentState?.selectedFile) {
+        attachments.push({
+          type: 'Text',
+          content: {
+            id: generateAttachmentId('file'),
+            filename: fileContentState.selectedFile,
+            source: {
+              source_type: 'FilePath',
+              data: {
+                path: fileContentState.selectedFile, // 包含路径与文件名及后缀
+              },
+            },
+          },
+        });
+      }
+
+      // 发送消息后强制滚动到底部并开启自动滚动
+      forceScrollToBottomAndEnable();
+
+      // 发送消息(传递附件)
+      chat.sendMessage(attachments);
+
+      // 清空选中的数据源
+      if (onUpdateDataSources) {
+        onUpdateDataSources([]);
+      }
+    } catch (error) {
+      console.error('发送消息失败:', error);
+      message.error('发送消息失败');
+    } finally {
+      // 延迟重置发送状态，给用户反馈
+      setTimeout(() => {
+        setIsSendingMessage(false);
+      }, 500);
     }
   }, [
     forceScrollToBottomAndEnable,
@@ -311,6 +342,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     uploadedImages,
     fileContentState?.selectedFile,
     onUpdateDataSources,
+    isSendingMessage,
   ]);
 
   /**
@@ -453,7 +485,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     const renderedMessages: React.ReactNode[] = [];
     let currentSessionId: string | null = null;
 
-    messages.forEach((message) => {
+    messages.forEach((message: AppDevChatMessage) => {
       // 检查是否需要添加会话分隔符
       if (
         message.conversationTopic &&
@@ -497,7 +529,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         <div className={styles.chatModeSwitcher}>
           <Segmented
             value={chatMode}
-            onChange={(value) => setChatMode(value as 'chat' | 'design')}
+            onChange={(value) => setChatMode(value as 'chat' | 'code')}
             options={[
               { label: 'Chat', value: 'chat' },
               {
@@ -518,7 +550,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               }
               size="small"
               className={styles.versionSelector}
-              options={projectInfo.versionList.map((version) => ({
+              options={projectInfo.versionList.map((version: any) => ({
                 label: `v${version.version}`,
                 value: version.version,
                 action: version.action,
@@ -699,14 +731,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               overlay={
                 <Menu
                   selectedKeys={
-                    modelSelector.selectedModelId
+                    modelSelector?.selectedModelId
                       ? [modelSelector.selectedModelId.toString()]
                       : []
                   }
-                  onClick={({ key }) => modelSelector.selectModel(Number(key))}
+                  onClick={({ key }) => modelSelector?.selectModel(Number(key))}
                   style={{ maxHeight: 200, overflowY: 'auto' }}
                 >
-                  {modelSelector.models.map((model) => (
+                  {modelSelector?.models?.map((model: any) => (
                     <Menu.Item
                       key={model.id.toString()}
                       disabled={chat.isChatLoading}
@@ -717,21 +749,23 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 </Menu>
               }
               trigger={['click']}
-              disabled={chat.isChatLoading || modelSelector.isLoadingModels}
+              disabled={chat.isChatLoading || modelSelector?.isLoadingModels}
               placement="topLeft"
             >
               <Tooltip
                 title={`当前模型: ${
-                  modelSelector.models.find(
-                    (m) => m.id === modelSelector.selectedModelId,
+                  modelSelector?.models?.find(
+                    (m: any) => m.id === modelSelector?.selectedModelId,
                   )?.name || '未选择'
                 }`}
               >
                 <Button
                   type="text"
                   icon={<ControlOutlined />}
-                  disabled={chat.isChatLoading || modelSelector.isLoadingModels}
-                  loading={modelSelector.isLoadingModels}
+                  disabled={
+                    chat.isChatLoading || modelSelector?.isLoadingModels
+                  }
+                  loading={modelSelector?.isLoadingModels}
                   className={styles.modelSelectorButton}
                 />
               </Tooltip>
@@ -739,22 +773,42 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
             {/* 会话进行中仅显示取消按钮 */}
             {chat.isChatLoading ? (
-              <Tooltip title="取消AI任务">
-                <Button
-                  type="text"
-                  danger
-                  icon={<StopOutlined />}
+              <Tooltip title={isStoppingTask ? '正在停止...' : '取消AI任务'}>
+                <span
                   onClick={handleCancelAgentTask}
-                />
+                  className={`${styles.box} ${styles['send-box']} ${
+                    styles['stop-box']
+                  } ${!isStoppingTask ? styles['stop-box-active'] : ''} ${
+                    isStoppingTask ? styles.disabled : ''
+                  }`}
+                >
+                  {isStoppingTask ? (
+                    <div className={styles['loading-box']}>
+                      <LoadingOutlined className={styles['loading-icon']} />
+                    </div>
+                  ) : (
+                    <SvgIcon name="icons-chat-stop" />
+                  )}
+                </span>
               </Tooltip>
             ) : (
-              <Tooltip title="发送消息">
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
+              <Tooltip title={isSendingMessage ? '正在发送...' : '发送消息'}>
+                <span
                   onClick={handleSendMessage}
-                  disabled={!chat.chatInput.trim()}
-                />
+                  className={`${styles.box} ${styles['send-box']} ${
+                    !chat.chatInput.trim() || isSendingMessage
+                      ? styles.disabled
+                      : ''
+                  }`}
+                >
+                  {isSendingMessage ? (
+                    <div className={styles['loading-box']}>
+                      <LoadingOutlined className={styles['loading-icon']} />
+                    </div>
+                  ) : (
+                    <SvgIcon name="icons-chat-send" />
+                  )}
+                </span>
               </Tooltip>
             )}
           </div>
