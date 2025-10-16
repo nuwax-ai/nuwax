@@ -29,6 +29,8 @@ interface UseAppDevChatProps {
   onRefreshFileTree?: () => void; // 新增：文件树刷新回调
   selectedDataSources?: DataSourceSelection[]; // 新增：选中的数据源列表
   onClearDataSourceSelections?: () => void; // 新增：清除数据源选择回调
+  onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
+  onClearUploadedImages?: () => void; // 新增：清除上传图片回调
 }
 
 export const useAppDevChat = ({
@@ -37,6 +39,8 @@ export const useAppDevChat = ({
   onRefreshFileTree,
   selectedDataSources = [],
   onClearDataSourceSelections,
+  onRefreshVersionList, // 新增：刷新版本列表回调
+  onClearUploadedImages, // 新增：清除上传图片回调
 }: UseAppDevChatProps) => {
   // 使用 AppDev SSE 连接 model
   const appDevSseModel = useModel('appDevSseConnection');
@@ -255,7 +259,21 @@ export const useAppDevChat = ({
         onError: (error: Error) => {
           console.error('❌ [Chat] AppDev SSE 连接错误:', error);
           message.error('AI助手连接失败');
+          //要把 chatMessages 里 ASSISTANT 当前 isSteaming 修改一下 false 并给出错误消息
+          setChatMessages((prev) => {
+            return prev.map((msg) => {
+              if (msg.isStreaming && msg.role === 'ASSISTANT') {
+                return {
+                  ...msg,
+                  isStreaming: false,
+                  text: msg.text + '\n\n[已出错] \n\n' + error.message,
+                };
+              }
+              return msg;
+            });
+          });
           setIsChatLoading(false);
+
           abortConnectionRef.current?.abort();
         },
         onClose: () => {
@@ -329,6 +347,23 @@ export const useAppDevChat = ({
         });
 
         if (response.success && response.data) {
+          // 新增：/ai-chat 接口发送成功后立即刷新版本列表
+          if (onRefreshVersionList) {
+            console.log('🔄 [Chat] /ai-chat 接口发送成功，触发版本列表刷新');
+            onRefreshVersionList();
+          }
+
+          // 新增：/ai-chat 接口发送成功后清除上传图片
+          if (onClearUploadedImages) {
+            console.log('🔄 [Chat] /ai-chat 接口发送成功，清除上传图片');
+            onClearUploadedImages();
+          }
+
+          // 消息发送成功后清除数据源选择
+          if (onClearDataSourceSelections) {
+            onClearDataSourceSelections();
+          }
+
           // 添加用户消息
           const userMessage: AppDevChatMessage = {
             id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
@@ -349,11 +384,6 @@ export const useAppDevChat = ({
 
           // 立即建立SSE连接（使用返回的session_id）
           await initializeAppDevSSEConnection(sessionId, requestId);
-
-          // 消息发送成功后清除数据源选择
-          if (onClearDataSourceSelections) {
-            onClearDataSourceSelections();
-          }
         } else {
           throw new Error(response.message || '发送消息失败');
         }
@@ -394,8 +424,9 @@ export const useAppDevChat = ({
    */
   const sendMessage = useCallback(
     async (attachments?: Attachment[]) => {
-      if (!chatInput.trim() && (!attachments || attachments.length === 0)) {
-        message.warning('请输入消息或上传附件');
+      // 验证：prompt（输入内容）是必填的
+      if (!chatInput.trim()) {
+        message.warning('请输入消息内容');
         return;
       }
 
