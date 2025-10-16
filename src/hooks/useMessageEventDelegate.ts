@@ -22,6 +22,7 @@ interface UseMessageEventDelegateProps {
       pageUrl?: string;
       args?: any[];
       argJsonSchema?: string;
+      pageName?: string;
     }>;
   };
 }
@@ -113,7 +114,7 @@ export const useMessageEventDelegate = ({
 
             // 调用页面预览
             showPagePreview({
-              name: eventConfig.name || '页面',
+              name: eventConfig.pageName || '页面',
               uri: fullUri,
               params,
               executeId: `event-${Date.now()}`,
