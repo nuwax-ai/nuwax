@@ -1,5 +1,182 @@
 # ChatArea 组件更新日志
 
+## v1.6.2 - 2025-01-17
+
+### 内容显示优化：Tool Call 无内容时的信息展示
+
+- ✅ **解决 Tool Call Update 无内容显示问题**
+- ✅ 当 `tool_call_update` 没有 `content` 时，现在会显示基本信息
+- ✅ 显示状态、时间戳和类型信息，提供有用的上下文
+- ✅ 保持与有内容时相同的展开/收起交互体验
+
+### 技术改进
+
+- 🔧 修改展开条件从 `isExpanded && content` 改为 `isExpanded`
+- 🔧 新增 `noContent` 样式，专门处理无内容时的信息展示
+- 🔧 添加状态信息、时间信息和类型信息的结构化显示
+- 🔧 为 `tool_call_update` 类型添加特殊的标识显示
+
+### 用户体验提升
+
+- 📊 **信息完整性**：即使没有具体内容，用户也能看到工具调用的基本状态
+- 📊 **一致性**：所有 Tool Call 组件都有展开/收起功能，无论是否有内容
+- 📊 **可读性**：通过结构化的信息展示，用户可以快速了解工具调用的状态
+
+## v1.6.1 - 2025-01-17
+
+### 用户体验优化：Tool Call Update 展开收起功能
+
+- ✅ **统一 Tool Call 交互体验**
+- ✅ `tool_call_update` 组件现在也支持展开/收起功能
+- ✅ 与 `tool_call` 组件保持一致的交互体验
+- ✅ 简化了展开按钮的显示逻辑，无论是否有内容都显示展开按钮
+
+### 技术改进
+
+- 🔧 移除了 `content` 条件判断，所有 Tool Call 组件都显示展开/收起按钮
+- 🔧 保持了组件的简洁性和一致性
+- 🔧 提升了用户操作的便利性
+
+## v1.6.0 - 2025-01-17
+
+### 重大架构简化：独立 Tool Call 渲染
+
+- 🔄 **简化 Tool Call 渲染架构**
+- 🔄 将 `tool_call` 和 `tool_call_update` 改为独立渲染，不再使用关联更新逻辑
+- 🔄 通过 `type` 字段区分两种不同的工具调用类型
+- 🔄 简化数据流，每个工具调用都有独立的生命周期
+
+### 技术改进
+
+- 🔧 新增 `insertToolCallUpdateBlock` 函数，支持独立的 tool_call_update 渲染
+- 🔧 移除 `updateToolCallBlock` 函数，不再需要复杂的更新逻辑
+- 🔧 `ToolCallProcess` 组件新增 `type` 字段支持
+- 🔧 `genAppDevPlugin.tsx` 支持解析 `type` 属性
+- 🔧 SSE 处理逻辑简化，直接插入新的组件而不是更新现有组件
+
+### 组件优化
+
+- ✅ `tool_call` 类型：显示原始工具调用信息
+- ✅ `tool_call_update` 类型：显示 `[更新]` 前缀，表示这是更新结果
+- ✅ 保持相同的数据结构和样式，仅通过 `type` 字段区分
+- ✅ 简化了组件状态管理，每个工具调用独立渲染
+
+### 性能提升
+
+- ⚡ 减少了复杂的正则表达式匹配和更新逻辑
+- ⚡ 简化了 SSE 消息处理流程
+- ⚡ 提高了组件的可维护性和可读性
+- ⚡ 降低了出错概率，每个组件都有独立的状态
+
+## v1.5.0 - 2025-01-17
+
+### 重大架构升级：MarkdownCMD 流式渲染
+
+- 🚀 **升级到 MarkdownCMD 流式渲染方案**
+- 🚀 使用 `ds-markdown` 的 `MarkdownCMD` 组件替代 `DsMarkdown`
+- 🚀 实现真正的增量渲染，支持流式内容更新
+- 🚀 优化 SSE 消息处理性能，减少重复渲染
+
+### 新增组件
+
+- ✅ 新增 `AppDevMarkdownCMD` 组件：基于 MarkdownCMD 的专用渲染器
+- ✅ 新增 `useAppDevMarkdownRender` Hook：处理流式内容更新逻辑
+- ✅ 新增 `AppDevMarkdownCMDWrapper` 组件：包装 MarkdownCMD 的流式渲染
+
+### 技术改进
+
+- 🔧 使用 `markdownRef.current?.push()` 方法实现增量内容推送
+- 🔧 优化 `requestId` 管理，确保每次新会话都重新初始化
+- 🔧 改进内容更新机制，支持 Plan/ToolCall 组件的实时渲染
+- 🔧 清理旧的 `AppDevMarkdownRenderer` 组件和相关代码
+
+### 性能优化
+
+- ⚡ 减少 DOM 重新渲染次数
+- ⚡ 优化流式文本处理，避免重复解析
+- ⚡ 改进内存使用，及时清理组件状态
+- ⚡ 提升 SSE 消息处理效率
+
+## v1.4.0 - 2025-01-17
+
+### 重大架构重构
+
+- 🔄 **完全重构 Plan 和 Tool Call 渲染机制**
+- 🔄 采用 HTML 标记 + 自定义插件的方式，替代原有的独立消息块方案
+- 🔄 数据序列化到 Markdown 文本中的 HTML 属性，简化状态管理
+- 🔄 创建 AppDev 专用的 Markdown 渲染器和自定义插件
+
+### 新增功能
+
+- ✅ 支持 Plan 消息在 Markdown 中渲染（支持多个 Plan 并存）
+- ✅ 支持 Tool Call 消息在 Markdown 中渲染和实时更新
+- ✅ 新增 `PlanProcess` 组件，展示执行计划任务列表
+- ✅ 新增 `ToolCallProcess` 组件，展示工具调用详情
+- ✅ 支持 Plan 任务的折叠/展开功能
+- ✅ 实时显示任务状态（待执行/执行中/已完成/失败）
+- ✅ 实时显示工具调用状态和结果
+
+### 技术改进
+
+- 🔧 创建 `markdownProcess.ts` 工具函数，管理 HTML 标记的插入和更新
+- 🔧 创建 `genAppDevPlugin.tsx` 自定义插件，解析 HTML 标记为 React 组件
+- 🔧 创建 `AppDevMarkdownRenderer` 专用渲染器，集成自定义插件
+- 🔧 Plan 消息：每次插入新标记，支持多个实例并存
+- 🔧 Tool Call 消息：通过 toolCallId 绑定，支持创建和更新
+- 🔧 移除 AppDevChatMessage 中的 planEntries 和 toolCalls 字段
+- 🔧 清理旧的 PlanDisplay 和 ToolCallDisplay 组件
+
+### 组件结构
+
+- 📦 新增 `PlanProcess` 组件：在 Markdown 中渲染执行计划
+- 📦 新增 `ToolCallProcess` 组件：在 Markdown 中渲染工具调用
+- 📦 新增 `AppDevMarkdownRenderer` 组件：集成自定义插件的 Markdown 渲染器
+- 📦 新增 `genAppDevPlugin.tsx`：AppDev 专用自定义插件
+- 📦 独立的样式文件和响应式设计
+
+### 数据流
+
+- 📊 SSE 消息 → useAppDevChat Hook → 插入/更新 HTML 标记 → AppDevMarkdownRenderer 解析渲染
+- 📊 Plan 数据：序列化到 `<appdev-plan>` 标记中
+- 📊 Tool Call 数据：序列化到 `<appdev-toolcall>` 标记中，通过 toolCallId 更新
+- 📊 完全隔离：AppDev 专用代码不影响其他模块
+
+## v1.3.0 - 2025-01-17
+
+### 新增功能
+
+- ✅ 支持 Plan 消息渲染和展示
+- ✅ 支持 Tool Call 消息渲染和展示
+- ✅ 支持 Tool Call Update 消息实时更新
+- ✅ 新增 PlanDisplay 组件，展示执行计划任务列表
+- ✅ 新增 ToolCallDisplay 组件，展示工具调用详情
+- ✅ 支持 Plan 任务的折叠/展开功能
+- ✅ 实时显示任务状态（待执行/执行中/已完成/失败）
+- ✅ 实时显示工具调用状态和结果
+
+### 技术改进
+
+- 🔧 扩展 AppDevChatMessage 类型，添加 planEntries 和 toolCalls 字段
+- 🔧 新增 PlanEntry 和 ToolCallInfo 类型定义
+- 🔧 新增消息更新工具函数：updateMessagePlanEntries、addMessageToolCall、updateToolCallStatus
+- 🔧 更新 SSE 消息处理逻辑，支持 plan、tool_call、tool_call_update 消息类型
+- 🔧 通过 toolCallId 绑定和更新 tool_call 消息
+- 🔧 优化消息渲染性能，使用 memo 和 useMemo
+
+### 组件结构
+
+- 📦 新增 `PlanDisplay` 组件：展示执行计划
+- 📦 新增 `ToolCallDisplay` 组件：展示工具调用
+- 📦 集成到 ChatArea 主组件中
+- 📦 独立的样式文件和响应式设计
+
+### 数据流
+
+- 📊 SSE 消息 → useAppDevChat Hook → 更新 chatMessages → ChatArea 渲染
+- 📊 Plan entries 完整替换更新
+- 📊 Tool Call 追加并实时更新状态
+- 📊 通过 toolCallId 精确匹配和更新
+
 ## v1.2.0 - 2025-01-17
 
 ### 新增功能

@@ -233,11 +233,28 @@ export const appendTextToStreamingMessage = (
   if (index >= 0) {
     const updated = [...messages];
     const beforeText = updated[index].text || '';
-    updated[index] = {
-      ...updated[index],
-      text: beforeText ? beforeText + '\n\n' + chunkText : chunkText,
-      isStreaming: !isFinal,
-    };
+
+    // 检查是否包含 Plan 或 ToolCall 标记
+    const hasPlanOrToolCallMarkers =
+      chunkText.includes('<appdev-plan') ||
+      chunkText.includes('<appdev-toolcall');
+
+    // 如果包含标记，直接替换而不是追加，避免重复渲染
+    if (hasPlanOrToolCallMarkers) {
+      updated[index] = {
+        ...updated[index],
+        text: chunkText, // 直接使用新的完整文本
+        isStreaming: !isFinal,
+      };
+    } else {
+      // 普通文本追加
+      updated[index] = {
+        ...updated[index],
+        text: beforeText ? beforeText + chunkText : chunkText, // 移除多余的换行
+        isStreaming: !isFinal,
+      };
+    }
+
     return updated;
   }
 
