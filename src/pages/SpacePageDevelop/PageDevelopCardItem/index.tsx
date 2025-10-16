@@ -10,6 +10,7 @@ import {
 } from '@/types/enums/pageDev';
 import type { PageDevelopCardItemProps } from '@/types/interfaces/pageDev';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import styles from './index.less';
 
@@ -39,15 +40,29 @@ const PageDevelopCardItem: React.FC<PageDevelopCardItemProps> = ({
       return true;
     });
   }, [componentInfo]);
+
+  // 获取时间信息
+  const getTime = () => {
+    // if (componentInfo.buildRunning === BuildRunningEnum.Published) {
+    // return `发布于 ${dayjs(mcpInfo.deployed).format('MM-DD HH:mm')}`;
+    // }
+    return `创建于 ${dayjs(componentInfo.created).format('MM-DD HH:mm')}`;
+  };
+
   return (
     <CardWrapper
       title={componentInfo.name}
       avatar={componentInfo.creatorAvatar}
-      name={componentInfo.creatorNickName}
+      name={componentInfo.creatorNickName || componentInfo.creatorName}
       content={componentInfo.description}
       icon={componentInfo.icon}
       defaultIcon={pageImage}
       onClick={onClick}
+      extra={
+        <span className={cx('text-ellipsis', 'flex-1', styles.time)}>
+          {getTime()}
+        </span>
+      }
       footer={
         <footer className={cx('flex', 'items-center', 'content-between')}>
           {componentInfo.buildRunning === BuildRunningEnum.Published ? (
