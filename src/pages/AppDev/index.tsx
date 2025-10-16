@@ -3,6 +3,7 @@ import { ERROR_MESSAGES, VERSION_CONSTANTS } from '@/constants/appDevConstants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
+import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
 import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
@@ -92,6 +93,9 @@ const AppDev: React.FC = () => {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  // 图片清空方法引用
+  const clearUploadedImagesRef = useRef<(() => void) | null>(null);
+
   // 部署相关状态
   const [isDeploying, setIsDeploying] = useState(false);
 
@@ -116,27 +120,32 @@ const AppDev: React.FC = () => {
     isChatLoading: false, // 临时设为false，稍后更新
   });
 
+  // 模型选择器
+  const modelSelector = useAppDevModelSelector(projectId || '');
+
+  // 使用项目详情 Hook
+  const projectInfo = useAppDevProjectInfo(projectId);
+
   const chat = useAppDevChat({
     projectId: projectId || '',
+    selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
     onRefreshFileTree: fileManagement.loadFileTree, // 新增：传递文件树刷新方法
     selectedDataSources: selectedDataResourceIds, // 新增：传递选中的数据源
     onClearDataSourceSelections: () => setSelectedDataResourceIds([]), // 新增：清除选择回调
+    onRefreshVersionList: projectInfo.refreshProjectInfo, // 新增：传递刷新版本列表方法
+    onClearUploadedImages: () => {
+      // 调用 ChatArea 组件传递的图片清空方法
+      if (clearUploadedImagesRef.current) {
+        clearUploadedImagesRef.current();
+      }
+    }, // 新增：传递清除上传图片方法
   });
-
-  // 更新fileManagement的isChatLoading
-  useEffect(() => {
-    // 这里我们需要重新创建fileManagement hook，但为了避免复杂性，我们使用不同的方法
-    // 暂时保持现状，因为自动刷新功能已经在fileManagement内部实现
-  }, [chat.isChatLoading]);
 
   const server = useAppDevServer({
     projectId: projectId || '',
     onServerStart: updateDevServerUrl,
     onServerStatusChange: setIsServiceRunning,
   });
-
-  // 使用项目详情 Hook
-  const projectInfo = useAppDevProjectInfo(projectId);
 
   // 数据资源管理
   const dataResourceManagement = useDataResourceManagement(
@@ -157,8 +166,8 @@ const AppDev: React.FC = () => {
   const versionCompare = useAppDevVersionCompare({
     projectId: projectId || '',
     onVersionSwitchSuccess: () => {
-      // 刷新文件树
-      fileManagement.loadFileTree();
+      // 刷新文件树（不保持状态，因为切换版本是全新内容）
+      fileManagement.loadFileTree(false);
       // 刷新项目详情
       projectInfo.refreshProjectInfo();
       message.success('版本切换成功');
@@ -806,6 +815,14 @@ const AppDev: React.FC = () => {
               projectId={projectId || ''} // 新增：项目ID
               onVersionSelect={handleVersionSelect}
               selectedDataSources={selectedDataSources} // 新增：选中的数据源
+              onUpdateDataSources={setSelectedDataResourceIds} // 新增：更新数据源回调
+              fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
+              modelSelector={modelSelector} // 新增：模型选择器状态
+              onRefreshVersionList={projectInfo.refreshProjectInfo} // 新增：刷新版本列表回调
+              onClearUploadedImages={(clearFn) => {
+                // 设置图片清空方法到 ref
+                clearUploadedImagesRef.current = clearFn;
+              }} // 新增：设置图片清空方法回调
             />
           </Col>
 
@@ -991,11 +1008,17 @@ const AppDev: React.FC = () => {
                         }}
                         onSaveFile={fileManagement.saveFile}
                         onCancelEdit={handleCancelEdit}
-                        onRefreshFile={() =>
-                          fileManagement.switchToFile(
-                            fileManagement.fileContentState.selectedFile,
-                          )
-                        }
+                        onRefreshFile={() => {
+                          // 刷新整个文件树（保持状态，强制刷新）
+                          fileManagement.loadFileTree(true, true);
+
+                          // 重新加载当前文件内容
+                          if (fileManagement.fileContentState.selectedFile) {
+                            fileManagement.switchToFile(
+                              fileManagement.fileContentState.selectedFile,
+                            );
+                          }
+                        }}
                         findFileNode={fileManagement.findFileNode}
                         isChatLoading={chat.isChatLoading}
                       />

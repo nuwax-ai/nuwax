@@ -22,7 +22,6 @@ import type {
 import {
   debounce,
   findFileNode,
-  findFirstFile,
   isFileModified,
   transformFlatListToTree,
   treeToFlatList,
@@ -74,101 +73,157 @@ export const useAppDevFileManagement = ({
 
   /**
    * 加载文件树数据
+   * @param preserveState 是否保持当前状态（选中文件、展开文件夹等）
+   * @param forceRefresh 是否强制刷新（忽略重复加载检查）
    */
-  const loadFileTree = useCallback(async () => {
-    if (!projectId) {
-      console.log('⚠️ [FileManagement] 没有项目ID，跳过文件树加载');
-      return;
-    }
+  const loadFileTree = useCallback(
+    async (preserveState = true, forceRefresh = false) => {
+      if (!projectId) {
+        console.log('⚠️ [FileManagement] 没有项目ID，跳过文件树加载');
+        return;
+      }
 
-    // 检查是否已经加载过相同项目的文件树，避免重复调用
-    if (
-      lastLoadedProjectIdRef.current === projectId &&
-      fileTreeState.data.length > 0
-    ) {
-      console.log(
-        '🔄 [FileManagement] 项目ID未变化且文件树已存在，跳过重复加载:',
-        projectId,
-      );
-      return;
-    }
+      // 保存当前状态
+      const currentSelectedFile = preserveState
+        ? fileContentState.selectedFile
+        : '';
+      const currentExpandedFolders = preserveState
+        ? new Set<string>(fileTreeState.expandedFolders)
+        : new Set<string>();
 
-    try {
-      console.log('🌲 [FileManagement] 正在加载文件树数据...', { projectId });
+      console.log('📁 [FileManagement] 保存当前状态:', {
+        preserveState,
+        currentSelectedFile,
+        currentExpandedFolders: Array.from(currentExpandedFolders),
+        originalExpandedFolders: Array.from(fileTreeState.expandedFolders),
+      });
 
-      const response = await getProjectContent(projectId);
+      // 检查是否已经加载过相同项目的文件树，避免重复调用
+      // 只有在保持状态且不是强制刷新时才跳过
+      if (
+        !forceRefresh &&
+        lastLoadedProjectIdRef.current === projectId &&
+        fileTreeState.data.length > 0 &&
+        preserveState
+      ) {
+        console.log(
+          '🔄 [FileManagement] 项目ID未变化且文件树已存在，跳过重复加载:',
+          projectId,
+        );
+        return;
+      }
 
-      if (response && response.code === '0000' && response.data) {
-        const files = response.data.files || response.data;
-        console.log('✅ [FileManagement] 项目内容加载成功:', files);
+      try {
+        console.log('🌲 [FileManagement] 正在加载文件树数据...', { projectId });
 
-        let treeData: FileNode[] = [];
+        const response = await getProjectContent(projectId);
 
-        // 检查是否是新的扁平格式
-        if (Array.isArray(files) && files.length > 0 && files[0].name) {
-          console.log('🔄 [FileManagement] 检测到新的扁平格式，正在转换...');
-          treeData = transformFlatListToTree(files);
-        } else if (Array.isArray(files)) {
-          // 如果是原有的树形格式，直接使用
-          treeData = files as FileNode[];
+        if (response && response.code === '0000' && response.data) {
+          const files = response.data.files || response.data;
+          console.log('✅ [FileManagement] 项目内容加载成功:', files);
+
+          let treeData: FileNode[] = [];
+
+          // 检查是否是新的扁平格式
+          if (Array.isArray(files) && files.length > 0 && files[0].name) {
+            console.log('🔄 [FileManagement] 检测到新的扁平格式，正在转换...');
+            treeData = transformFlatListToTree(files);
+          } else if (Array.isArray(files)) {
+            // 如果是原有的树形格式，直接使用
+            treeData = files as FileNode[];
+          }
+
+          setFileTreeState((prev) => ({
+            ...prev,
+            data: treeData,
+            expandedFolders: currentExpandedFolders, // 恢复展开状态
+            lastLoadedProjectId: projectId,
+          }));
+
+          lastLoadedProjectIdRef.current = projectId;
+
+          console.log('📁 [FileManagement] 恢复展开状态:', {
+            currentExpandedFolders: Array.from(currentExpandedFolders),
+            treeDataLength: treeData.length,
+            preserveState,
+          });
+
+          // 自动展开第一层文件夹（仅在非保持状态时）
+          if (!preserveState) {
+            const rootFolders = treeData
+              .filter((node) => node.type === 'folder')
+              .map((node) => node.id);
+            if (rootFolders.length > 0) {
+              setFileTreeState((prev) => ({
+                ...prev,
+                expandedFolders: new Set(rootFolders),
+              }));
+            }
+          }
+
+          // 验证并恢复选中文件
+          if (currentSelectedFile && preserveState) {
+            const fileExists = findFileNode(currentSelectedFile, treeData);
+            if (fileExists) {
+              // 文件存在，保持选中
+              setFileContentState((prev) => ({
+                ...prev,
+                selectedFile: currentSelectedFile,
+              }));
+              console.log(
+                '📁 [FileManagement] 保持选中文件:',
+                currentSelectedFile,
+              );
+            } else {
+              // 文件不存在，清空选中
+              setFileContentState((prev) => ({
+                ...prev,
+                selectedFile: '',
+                fileContent: '',
+                originalFileContent: '',
+              }));
+              console.log('📁 [FileManagement] 文件不存在，清空选中状态');
+            }
+          }
+
+          console.log(
+            '✅ [FileManagement] 文件树加载完成，共',
+            treeData.length,
+            '个根节点',
+          );
+        } else {
+          throw new Error('API返回数据格式异常');
         }
+      } catch (error) {
+        console.error('❌ [FileManagement] 加载文件树失败:', error);
+        console.log('🔄 [FileManagement] 使用空项目结构作为fallback');
 
+        // fallback到空项目结构
+        const emptyTreeData: FileNode[] = [];
         setFileTreeState((prev) => ({
           ...prev,
-          data: treeData,
+          data: emptyTreeData,
           lastLoadedProjectId: projectId,
+          expandedFolders: preserveState ? currentExpandedFolders : new Set(),
         }));
 
         lastLoadedProjectIdRef.current = projectId;
 
-        // 自动展开第一层文件夹
-        const rootFolders = treeData
-          .filter((node) => node.type === 'folder')
-          .map((node) => node.id);
-        if (rootFolders.length > 0) {
-          setFileTreeState((prev) => ({
+        // 如果是保持状态模式且当前有选中文件，清空选中（因为项目为空）
+        if (preserveState && currentSelectedFile) {
+          setFileContentState((prev) => ({
             ...prev,
-            expandedFolders: new Set(rootFolders),
+            selectedFile: '',
+            fileContent: '',
+            originalFileContent: '',
           }));
+        } else if (!preserveState) {
+          setFileContentState((prev) => ({ ...prev, selectedFile: '' }));
         }
-
-        // 自动选择第一个文件
-        if (!fileContentState.selectedFile) {
-          const firstFile = findFirstFile(treeData);
-          if (firstFile) {
-            setFileContentState((prev) => ({
-              ...prev,
-              selectedFile: firstFile,
-            }));
-            console.log('📁 [FileManagement] 自动选择第一个文件:', firstFile);
-          }
-        }
-
-        console.log(
-          '✅ [FileManagement] 文件树加载完成，共',
-          treeData.length,
-          '个根节点',
-        );
-      } else {
-        throw new Error('API返回数据格式异常');
       }
-    } catch (error) {
-      console.error('❌ [FileManagement] 加载文件树失败:', error);
-      console.log('🔄 [FileManagement] 使用空项目结构作为fallback');
-
-      // fallback到空项目结构
-      const emptyTreeData: FileNode[] = [];
-      setFileTreeState((prev) => ({
-        ...prev,
-        data: emptyTreeData,
-        lastLoadedProjectId: projectId,
-        expandedFolders: new Set(),
-      }));
-
-      lastLoadedProjectIdRef.current = projectId;
-      setFileContentState((prev) => ({ ...prev, selectedFile: '' }));
-    }
-  }, [projectId, fileTreeState.data.length, fileContentState.selectedFile]);
+    },
+    [projectId, fileTreeState.data.length, fileContentState.selectedFile],
+  );
 
   /**
    * 切换到指定文件

@@ -336,6 +336,7 @@ export interface ChatRequest {
   project_id?: string;
   session_id?: string;
   request_id?: string;
+  model_id?: string; // 新增：模型ID
   attachments?: Attachment[];
   data_sources?: DataSourceSelection[]; // 数据源附件列表 -[{dataSourceId:123,type:"plugin/workflow"}]
   model_provider?: ModelProviderConfig;
@@ -745,6 +746,24 @@ export interface PageArgConfig {
 }
 
 /**
+ * 图片上传信息接口
+ */
+export interface ImageUploadInfo {
+  /** 唯一标识 */
+  uid: string;
+  /** 文件名 */
+  name: string;
+  /** Base64 数据 */
+  base64Data: string;
+  /** MIME 类型 */
+  mimeType: string;
+  /** 预览 URL */
+  preview?: string;
+  /** 图片尺寸 */
+  dimensions?: { width: number; height: number };
+}
+
+/**
  * 版本信息项
  */
 export interface VersionInfoItem {
@@ -960,3 +979,34 @@ export interface KeepAliveResponseData {
  * 保活接口API响应类型
  */
 export type KeepAliveResponse = RequestResponse<KeepAliveResponseData>;
+
+// ==================== 模型管理相关类型定义 ====================
+
+/**
+ * 模型配置信息
+ */
+export interface ModelConfig {
+  /** 模型ID */
+  id: number;
+  /** 模型名称 */
+  name: string;
+  /** 模型描述 */
+  description?: string;
+  /** 模型标识 */
+  model: string;
+  /** 模型接口协议 */
+  apiProtocol: 'OpenAI' | 'Ollama' | 'Zhipu' | 'Anthropic';
+  /** 租户ID */
+  tenantId: number;
+  /** 空间ID */
+  spaceId: number;
+  /** 是否为推理模型 */
+  isReasonModel: number;
+  /** token上限 */
+  maxTokens: number;
+}
+
+/**
+ * 查询模型列表API响应类型
+ */
+export type ListModelsResponse = RequestResponse<ModelConfig[]>;

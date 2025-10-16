@@ -2,18 +2,18 @@
  * AppDev 聊天相关 Hook
  */
 
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   listConversations,
   saveConversation,
   sendChatMessage,
   stopAgentService,
 } from '@/services/appDev';
-import { MessageModeEnum } from '@/types/enums/agent';
 import type {
   AppDevChatMessage,
+  Attachment,
   UnifiedSessionMessage,
 } from '@/types/interfaces/appDev';
+import { debounce } from '@/utils/appDevUtils';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { message, Modal } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -21,19 +21,45 @@ import { useModel } from 'umi';
 
 import { AGENT_SERVICE_RUNNING } from '@/constants/codes.constants';
 import type { DataSourceSelection } from '@/types/interfaces/appDev';
+import {
+  addSessionInfoToMessages,
+  appendTextToStreamingMessage,
+  createAssistantMessage,
+  createUserMessage,
+  findDuplicateMessageIds,
+  generateConversationTopic,
+  generateRequestId,
+  generateSSEUrl,
+  getAuthHeaders,
+  getMessageStatsByConversation,
+  isFileOperation,
+  isRequestIdMatch,
+  markStreamingMessageCancelled,
+  markStreamingMessageComplete,
+  markStreamingMessageError,
+  parseChatMessages,
+  serializeChatMessages,
+  sortMessagesByTimestamp,
+} from '@/utils/chatUtils';
 
 interface UseAppDevChatProps {
   projectId: string;
-  onRefreshFileTree?: () => void; // 新增：文件树刷新回调
+  selectedModelId?: number | null; // 新增：选中的模型ID
+  onRefreshFileTree?: (preserveState?: boolean, forceRefresh?: boolean) => void; // 新增：文件树刷新回调
   selectedDataSources?: DataSourceSelection[]; // 新增：选中的数据源列表
   onClearDataSourceSelections?: () => void; // 新增：清除数据源选择回调
+  onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
+  onClearUploadedImages?: () => void; // 新增：清除上传图片回调
 }
 
 export const useAppDevChat = ({
   projectId,
+  selectedModelId, // 新增
   onRefreshFileTree,
   selectedDataSources = [],
   onClearDataSourceSelections,
+  onRefreshVersionList, // 新增：刷新版本列表回调
+  onClearUploadedImages, // 新增：清除上传图片回调
 }: UseAppDevChatProps) => {
   // 使用 AppDev SSE 连接 model
   const appDevSseModel = useModel('appDevSseConnection');
@@ -51,19 +77,29 @@ export const useAppDevChat = ({
   // 记录用户主动发送的消息数量（不包括历史消息）- 已注释，暂时不使用
   // const userSentMessageCountRef = useRef(0);
 
+  // 存储文件操作相关的 toolCallId
+  const fileOperationToolCallIdsRef = useRef<Set<string>>(new Set());
+
+  // 添加防抖的文件树刷新函数
+  const debouncedRefreshFileTree = useCallback(
+    debounce(() => {
+      if (onRefreshFileTree) {
+        console.log('🔄 [Chat] 触发文件树刷新(保持状态，强制刷新)');
+        // 调用时传递参数，强制刷新但保持状态
+        onRefreshFileTree(true, true); // preserveState=true, forceRefresh=true
+      }
+    }, 500), // 500ms 防抖
+    [onRefreshFileTree],
+  );
+
   const handleSaveConversation = useCallback(
     (
       chatMessages: AppDevChatMessage[],
       sessionId: string,
       projectId: string,
     ) => {
-      const firstUserMessage = chatMessages.find((msg) => msg.role === 'USER');
-      const topic = firstUserMessage
-        ? firstUserMessage.text.substring(0, 50)
-        : '新会话';
-
-      // 序列化会话内容
-      const content = JSON.stringify(chatMessages);
+      const topic = generateConversationTopic(chatMessages);
+      const content = serializeChatMessages(chatMessages);
 
       // 保存会话
       console.log('🔄 [Chat] 开始保存会话，参数:', {
@@ -84,11 +120,11 @@ export const useAppDevChat = ({
         // 新增：刷新文件树内容
         if (onRefreshFileTree) {
           console.log('🔄 [Chat] 触发文件树刷新');
-          onRefreshFileTree();
+          debouncedRefreshFileTree();
         }
       });
     },
-    [saveConversation, onRefreshFileTree],
+    [saveConversation, debouncedRefreshFileTree],
   );
 
   /**
@@ -105,7 +141,7 @@ export const useAppDevChat = ({
       // 只处理匹配当前request_id的消息
       const messageRequestId = message.data?.request_id;
 
-      if (messageRequestId !== activeRequestId) {
+      if (!isRequestIdMatch(messageRequestId, activeRequestId)) {
         console.warn('收到不匹配的request_id消息，忽略:', {
           expected: activeRequestId,
           received: messageRequestId,
@@ -123,25 +159,50 @@ export const useAppDevChat = ({
             const chunkText = message.data?.text || '';
             const isFinal = message.data?.is_final;
 
-            setChatMessages((prev) => {
-              const index = prev.findIndex(
-                (msg) =>
-                  msg.requestId === activeRequestId && msg.role === 'ASSISTANT',
+            setChatMessages((prev) =>
+              appendTextToStreamingMessage(
+                prev,
+                activeRequestId,
+                chunkText,
+                isFinal,
+              ),
+            );
+          }
+
+          if (message.subType === 'plan') {
+            console.log('🔄 [SSE] 收到 plan 消息:', message.data);
+            // plan 消息不立即刷新，等待 prompt_end
+          }
+          if (message.subType === 'tool_call') {
+            console.log(
+              '🔄 [SSE] 收到 tool_call 消息:',
+              message.data.toolCallId,
+            );
+            // 检测是否为文件操作，如果是则记录 toolCallId
+            if (isFileOperation(message.data) && message.data.toolCallId) {
+              fileOperationToolCallIdsRef.current.add(message.data.toolCallId);
+              console.log(
+                '📝 [SSE] 记录文件操作 toolCallId:',
+                message.data.toolCallId,
               );
-              if (index >= 0) {
-                const updated = [...prev];
-                const beforeText = updated[index].text || '';
-                updated[index] = {
-                  ...updated[index],
-                  text: beforeText
-                    ? beforeText + '\n\n' + chunkText
-                    : chunkText,
-                  isStreaming: !isFinal,
-                };
-                return updated;
-              }
-              return prev;
-            });
+            }
+          }
+          if (message.subType === 'tool_call_update') {
+            console.log(
+              '🔄 [SSE] 收到 tool_call_update 消息:',
+              message.data.toolCallId,
+            );
+            // 检查对应的 toolCallId 是否为文件操作
+            if (
+              message.data.toolCallId &&
+              fileOperationToolCallIdsRef.current.has(message.data.toolCallId)
+            ) {
+              console.log('🔄 [SSE] 检测到文件操作完成，触发文件树刷新:', {
+                toolCallId: message.data.toolCallId,
+                status: message.data.status,
+              });
+              debouncedRefreshFileTree();
+            }
           }
           break;
         }
@@ -151,33 +212,32 @@ export const useAppDevChat = ({
 
           // 标记消息完成
           setChatMessages((prev) => {
-            const index = prev.findIndex(
-              (msg) =>
-                msg.requestId === activeRequestId && msg.role === 'ASSISTANT',
+            const updated = markStreamingMessageComplete(prev, activeRequestId);
+
+            // 保存会话
+            const userMessage = updated.find(
+              (m) => m.requestId === activeRequestId && m.role === 'USER',
             );
-            if (index >= 0) {
-              const updated = [...prev];
-              updated[index] = {
-                ...updated[index],
-                isStreaming: false,
-              };
+            const assistantMessage = updated.find(
+              (m) => m.requestId === activeRequestId && m.role === 'ASSISTANT',
+            );
 
-              // 保存会话
-              const userMessage = prev.find(
-                (m) => m.requestId === activeRequestId && m.role === 'USER',
+            if (userMessage && assistantMessage) {
+              handleSaveConversation(
+                [userMessage, assistantMessage],
+                message.sessionId,
+                projectId,
               );
-              if (userMessage) {
-                handleSaveConversation(
-                  [userMessage, updated[index]],
-                  message.sessionId,
-                  projectId,
-                );
-              }
-
-              return updated;
             }
-            return prev;
+
+            return updated;
           });
+
+          // 会话结束时执行一次文件树刷新
+          debouncedRefreshFileTree();
+
+          // 清理文件操作 toolCallId 记录
+          fileOperationToolCallIdsRef.current.clear();
 
           setIsChatLoading(false);
 
@@ -199,7 +259,12 @@ export const useAppDevChat = ({
           );
       }
     },
-    [projectId, handleSaveConversation, appDevSseModel],
+    [
+      projectId,
+      handleSaveConversation,
+      appDevSseModel,
+      debouncedRefreshFileTree,
+    ],
   );
 
   /**
@@ -214,34 +279,22 @@ export const useAppDevChat = ({
         requestId,
       );
       console.log('🔌 [Chat] AppDev SSE 连接已建立');
-      const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-      const sseUrl = `${process.env.BASE_URL}/api/custom-page/ai-session-sse?session_id=${sessionId}`;
+
+      const sseUrl = generateSSEUrl(sessionId);
+      const headers = getAuthHeaders();
+
       console.log(`🔌 [AppDev SSE Model] 连接到: ${sseUrl}`);
       abortConnectionRef.current = new AbortController();
+
       // 创建ASSISTANT占位消息
-      const assistantMessage: AppDevChatMessage = {
-        id: `assistant_${requestId}_${Date.now()}`,
-        role: 'ASSISTANT',
-        type: MessageModeEnum.CHAT,
-        text: '',
-        think: '',
-        time: new Date().toISOString(),
-        status: null,
-        requestId: requestId,
-        sessionId: sessionId,
-        isStreaming: true,
-        timestamp: new Date(),
-      };
+      const assistantMessage = createAssistantMessage(requestId, sessionId);
       setChatMessages((prev) => [...prev, assistantMessage]);
 
       await createSSEConnection({
         url: sseUrl,
         method: 'GET',
         abortController: abortConnectionRef.current,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json, text/plain, */* ',
-        },
+        headers,
         onOpen: () => {
           console.log('🔌 [Chat] AppDev SSE 连接已建立');
         },
@@ -252,13 +305,20 @@ export const useAppDevChat = ({
         onError: (error: Error) => {
           console.error('❌ [Chat] AppDev SSE 连接错误:', error);
           message.error('AI助手连接失败');
+          //要把 chatMessages 里 ASSISTANT 当前 isSteaming 修改一下 false 并给出错误消息
+          setChatMessages((prev) =>
+            markStreamingMessageError(prev, requestId, error.message),
+          );
           setIsChatLoading(false);
+
           abortConnectionRef.current?.abort();
+          debouncedRefreshFileTree();
         },
         onClose: () => {
           console.log('🔌 [Chat] AppDev SSE 连接已关闭');
           setIsChatLoading(false);
           abortConnectionRef.current?.abort();
+          debouncedRefreshFileTree();
         },
       });
     },
@@ -307,68 +367,75 @@ export const useAppDevChat = ({
   /**
    * 发送消息并建立SSE连接的核心逻辑
    */
-  const sendMessageAndConnectSSE = useCallback(async () => {
-    // 生成临时request_id
-    const requestId = `req_${Date.now()}_${Math.random()
-      .toString(36)
-      .slice(2, 9)}`;
-    try {
-      // 调用发送消息API
-      const response = await sendChatMessage({
-        prompt: chatInput,
-        project_id: projectId,
-        request_id: requestId,
-        data_sources:
-          selectedDataSources.length > 0 ? selectedDataSources : undefined,
-      });
-
-      if (response.success && response.data) {
-        // 添加用户消息
-        const userMessage: AppDevChatMessage = {
-          id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-          role: 'USER',
-          type: MessageModeEnum.CHAT,
-          text: chatInput,
-          time: new Date().toISOString(),
-          status: null,
-          requestId: requestId,
-          timestamp: new Date(),
-        };
-
-        setChatMessages((prev) => [...prev, userMessage]);
-        setChatInput('');
-        setIsChatLoading(true);
-
-        const sessionId = response.data.session_id;
-
-        // 立即建立SSE连接（使用返回的session_id）
-        await initializeAppDevSSEConnection(sessionId, requestId);
-
-        // 消息发送成功后清除数据源选择
-        if (onClearDataSourceSelections) {
-          onClearDataSourceSelections();
-        }
-      } else {
-        throw new Error(response.message || '发送消息失败');
-      }
-    } catch (error) {
-      console.log('error=========', error);
-      if (error && (error as any).code === AGENT_SERVICE_RUNNING) {
-        showStopAgentServiceModal(projectId, () => {
-          sendMessageAndConnectSSE(); //继续发送消息
+  const sendMessageAndConnectSSE = useCallback(
+    async (attachments?: Attachment[]) => {
+      // 生成临时request_id
+      const requestId = generateRequestId();
+      try {
+        // 调用发送消息API
+        const response = await sendChatMessage({
+          prompt: chatInput,
+          project_id: projectId,
+          request_id: requestId,
+          model_id: selectedModelId ? String(selectedModelId) : undefined, // 新增：传递模型ID
+          attachments: attachments || undefined,
+          data_sources:
+            selectedDataSources.length > 0 ? selectedDataSources : undefined,
         });
-      } else {
-        console.error('发送消息失败:', error);
-        message.error('发送消息失败');
-        setIsChatLoading(false);
+
+        if (response.success && response.data) {
+          // 新增：/ai-chat 接口发送成功后立即刷新版本列表
+          if (onRefreshVersionList) {
+            console.log('🔄 [Chat] /ai-chat 接口发送成功，触发版本列表刷新');
+            onRefreshVersionList();
+          }
+
+          // 新增：/ai-chat 接口发送成功后清除上传图片
+          if (onClearUploadedImages) {
+            console.log('🔄 [Chat] /ai-chat 接口发送成功，清除上传图片');
+            onClearUploadedImages();
+          }
+
+          // 消息发送成功后清除数据源选择
+          if (onClearDataSourceSelections) {
+            onClearDataSourceSelections();
+          }
+
+          // 添加用户消息
+          const userMessage = createUserMessage(chatInput, requestId);
+
+          setChatMessages((prev) => [...prev, userMessage]);
+          setChatInput('');
+          setIsChatLoading(true);
+
+          const sessionId = response.data.session_id;
+
+          // 立即建立SSE连接（使用返回的session_id）
+          await initializeAppDevSSEConnection(sessionId, requestId);
+        } else {
+          throw new Error(response.message || '发送消息失败');
+        }
+      } catch (error) {
+        console.log('error=========', error);
+        if (error && (error as any).code === AGENT_SERVICE_RUNNING) {
+          showStopAgentServiceModal(projectId, () => {
+            sendMessageAndConnectSSE(); //继续发送消息
+          });
+        } else {
+          console.error('发送消息失败:', error);
+          message.error('发送消息失败');
+          setIsChatLoading(false);
+        }
       }
-    }
-  }, [
-    chatInput,
-    projectId,
-    initializeAppDevSSEConnection,
-    showStopAgentServiceModal,
-  ]);
+    },
+    [
+      chatInput,
+      projectId,
+      selectedModelId, // 新增：添加 selectedModelId 依赖
+      initializeAppDevSSEConnection,
+      showStopAgentServiceModal,
+    ],
+  );
 
   /**
    * 发送聊天消息 - 每次消息独立SSE连接
@@ -379,6 +446,23 @@ export const useAppDevChat = ({
     // 发送消息
     sendMessageAndConnectSSE();
   }, [chatInput, sendMessageAndConnectSSE]);
+
+  /**
+   * 发送消息 - 支持附件
+   */
+  const sendMessage = useCallback(
+    async (attachments?: Attachment[]) => {
+      // 验证：prompt（输入内容）是必填的
+      if (!chatInput.trim()) {
+        message.warning('请输入消息内容');
+        return;
+      }
+
+      // 发送消息
+      sendMessageAndConnectSSE(attachments);
+    },
+    [chatInput, sendMessageAndConnectSSE],
+  );
 
   /**
    * 取消聊天任务
@@ -397,11 +481,11 @@ export const useAppDevChat = ({
       setChatMessages((prev) => {
         return prev.map((msg) => {
           if (msg.isStreaming && msg.role === 'ASSISTANT') {
-            return {
-              ...msg,
-              isStreaming: false,
-              text: msg.text + '\n\n[已取消]',
-            };
+            return (
+              markStreamingMessageCancelled(prev, msg.requestId).find(
+                (m) => m.id === msg.id,
+              ) || msg
+            );
           }
           return msg;
         });
@@ -435,9 +519,7 @@ export const useAppDevChat = ({
 
         if (response.success && response.data?.length > 0) {
           const conversation = response.data[0];
-          const messages = JSON.parse(
-            conversation.content,
-          ) as AppDevChatMessage[];
+          const messages = parseChatMessages(conversation.content);
 
           // 清空当前消息并加载历史消息
           setChatMessages(messages);
@@ -478,18 +560,14 @@ export const useAppDevChat = ({
 
         for (const conversation of sortedConversations) {
           try {
-            const messages = JSON.parse(
-              conversation.content,
-            ) as AppDevChatMessage[];
+            const messages = parseChatMessages(conversation.content);
 
             // 为每个消息添加会话信息并生成唯一ID
-            const messagesWithSessionInfo = messages.map((msg, index) => ({
-              ...msg,
-              id: `${msg.id}_${conversation.created}_${index}`, // 使用created时间戳作为key
+            const messagesWithSessionInfo = addSessionInfoToMessages(messages, {
               sessionId: conversation.sessionId,
-              conversationTopic: conversation.topic,
-              conversationCreated: conversation.created,
-            }));
+              topic: conversation.topic,
+              created: conversation.created,
+            });
 
             allMessages.push(...messagesWithSessionInfo);
           } catch (parseError) {
@@ -502,37 +580,24 @@ export const useAppDevChat = ({
         }
 
         // 按时间戳排序所有消息
-        allMessages.sort((a, b) => {
-          const timeA = new Date(a.timestamp || a.time).getTime();
-          const timeB = new Date(b.timestamp || b.time).getTime();
-          return timeA - timeB;
-        });
+        const sortedMessages = sortMessagesByTimestamp(allMessages);
 
         // 加载所有历史消息
-        setChatMessages(allMessages);
+        setChatMessages(sortedMessages);
 
         console.log('✅ [Chat] 已自动加载所有历史会话:', {
           totalConversations: sortedConversations.length,
-          totalMessages: allMessages.length,
+          totalMessages: sortedMessages.length,
           conversations: sortedConversations.map((conv: any) => ({
             sessionId: conv.sessionId,
             topic: conv.topic,
             created: conv.created,
-            messageCount: JSON.parse(conv.content).length,
+            messageCount: parseChatMessages(conv.content).length,
             keyUsed: conv.created, // 显示使用的key
           })),
-          messageBreakdown: allMessages.reduce((acc, msg) => {
-            const key = msg.conversationTopic || 'unknown';
-            acc[key] = (acc[key] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>),
-          allMessageIds: allMessages.map((msg) => msg.id), // 显示所有消息ID（使用created时间戳）
-          duplicateIds: allMessages
-            .filter(
-              (msg, index, arr) =>
-                arr.findIndex((m) => m.id === msg.id) !== index,
-            )
-            .map((msg) => msg.id), // 检查重复ID
+          messageBreakdown: getMessageStatsByConversation(sortedMessages),
+          allMessageIds: sortedMessages.map((msg) => msg.id), // 显示所有消息ID（使用created时间戳）
+          duplicateIds: findDuplicateMessageIds(sortedMessages), // 检查重复ID
           idPattern: '${原始ID}_${created时间戳}_${索引}', // 显示ID生成模式
         });
       } else {
@@ -582,6 +647,7 @@ export const useAppDevChat = ({
     setChatInput,
     setChatMessages, // 新增：设置聊天消息的方法
     sendChat,
+    sendMessage, // 新增：支持附件的发送消息方法
     cancelChat,
     cleanupAppDevSSE,
     loadHistorySession,

@@ -82,12 +82,16 @@ const PureMarkdownRenderer = memo(
     children,
     theme = 'light',
     disableTyping = false,
+    interval = 30,
+    timerType = 'requestAnimationFrame',
   }: {
     id: string;
     theme?: 'light' | 'dark';
     className?: string;
     children: string;
     disableTyping?: boolean;
+    interval?: number;
+    timerType?: 'requestAnimationFrame' | 'setTimeout';
   }) => {
     const plugins = useMemo(() => [katexPlugin, genCustomPlugin()], []);
     return (
@@ -99,8 +103,8 @@ const PureMarkdownRenderer = memo(
       >
         <ConfigProvider>
           <DsMarkdown
-            interval={30}
-            timerType="requestAnimationFrame"
+            interval={interval}
+            timerType={timerType}
             disableTyping={disableTyping}
             plugins={plugins}
             codeBlock={{ headerActions: false }}
