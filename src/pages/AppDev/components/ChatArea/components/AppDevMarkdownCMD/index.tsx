@@ -8,6 +8,7 @@ import 'ds-markdown/katex.css';
 import { katexPlugin } from 'ds-markdown/plugins';
 import { forwardRef, useMemo } from 'react';
 import genAppDevPlugin from '../../genAppDevPlugin';
+import './index.less';
 
 const cx = classNames.bind(styles);
 
@@ -49,7 +50,11 @@ const AppDevMarkdownCMD = forwardRef<MarkdownCMDRef, AppDevMarkdownCMDProps>(
         key={renderKey}
         id={id}
         data-key={id}
-        className={cx(styles['markdown-container'], className)}
+        className={cx(
+          styles['markdown-container'],
+          'appDevMarkdownCMD',
+          className,
+        )}
       >
         <ConfigProvider>
           <MarkdownCMD
