@@ -7,7 +7,7 @@ import {
   RightOutlined,
 } from '@ant-design/icons';
 import { Button, Card, Tooltip } from 'antd';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import DataResourceList from '../DataResourceList';
 import styles from './index.less';
 import type { FileTreePanelProps } from './types';
@@ -37,6 +37,28 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
 }) => {
   // 文件树折叠状态
   const [isFileTreeCollapsed, setIsFileTreeCollapsed] = useState(false);
+
+  // 滚动位置保持相关状态
+  const fileTreeScrollRef = useRef<HTMLDivElement>(null);
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  /**
+   * 保存滚动位置
+   */
+  const saveScrollPosition = useCallback(() => {
+    if (fileTreeScrollRef.current) {
+      setScrollPosition(fileTreeScrollRef.current.scrollTop);
+    }
+  }, []);
+
+  /**
+   * 恢复滚动位置
+   */
+  useEffect(() => {
+    if (fileTreeScrollRef.current && scrollPosition > 0) {
+      fileTreeScrollRef.current.scrollTop = scrollPosition;
+    }
+  }, [files, scrollPosition]);
 
   /**
    * 切换文件树折叠状态
@@ -191,7 +213,11 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
               )}
 
               {/* 文件树容器 */}
-              <div className={styles.fileTreeContainer}>
+              <div
+                className={styles.fileTreeContainer}
+                ref={fileTreeScrollRef}
+                onScroll={saveScrollPosition}
+              >
                 {/* 文件树结构 */}
                 <div className={styles.fileTree}>
                   {files.map((node: any) => renderFileTreeNode(node))}

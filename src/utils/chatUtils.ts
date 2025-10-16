@@ -1,311 +1,384 @@
 /**
  * 聊天相关工具函数
- * 基于新的 OpenAPI 规范
  */
 
-import type { Attachment, AttachmentSource } from '@/types/interfaces/appDev';
+import { MessageModeEnum } from '@/types/enums/agent';
+import type { AppDevChatMessage } from '@/types/interfaces/appDev';
 
 /**
- * 创建文件路径附件源
- * @param path 文件路径
- * @returns AttachmentSource
+ * 检测是否为文件操作
+ * @param messageData SSE消息数据
+ * @returns 是否为文件操作
  */
-export const createFilePathSource = (path: string): AttachmentSource => ({
-  source_type: 'FilePath',
-  data: { path },
-});
+export const isFileOperation = (messageData: any): boolean => {
+  const fileRelatedTools = [
+    'write_file',
+    'edit_file',
+    'delete_file',
+    'create_directory',
+  ];
 
-/**
- * 创建 Base64 附件源
- * @param data Base64 数据
- * @param mimeType MIME 类型
- * @returns AttachmentSource
- */
-export const createBase64Source = (
-  data: string,
-  mimeType: string,
-): AttachmentSource => ({
-  source_type: 'Base64',
-  data: { data, mime_type: mimeType },
-});
+  // 检查工具名称、命令、类型或描述是否包含文件操作
+  const toolName = messageData.toolName || '';
+  const command = messageData.rawInput?.command || '';
+  const description = messageData.rawInput?.description || '';
+  const kind = messageData.kind || '';
+  const title = messageData.title || '';
 
-/**
- * 创建 URL 附件源
- * @param url URL 地址
- * @returns AttachmentSource
- */
-export const createUrlSource = (url: string): AttachmentSource => ({
-  source_type: 'Url',
-  data: { url },
-});
-
-/**
- * 创建文本附件
- * @param id 附件ID
- * @param content 文本内容
- * @param filename 文件名（可选）
- * @param description 描述（可选）
- * @returns Attachment
- */
-export const createTextAttachment = (
-  id: string,
-  content: string,
-  filename?: string,
-  description?: string,
-): Attachment => ({
-  type: 'Text',
-  content: {
-    id,
-    description,
-    filename,
-    source: createBase64Source(
-      btoa(unescape(encodeURIComponent(content))),
-      'text/plain',
-    ),
-  },
-});
-
-/**
- * 创建图像附件
- * @param id 附件ID
- * @param imageData 图像数据（Base64 或文件路径）
- * @param mimeType MIME 类型
- * @param filename 文件名（可选）
- * @param description 描述（可选）
- * @param dimensions 图像尺寸（可选）
- * @returns Attachment
- */
-export const createImageAttachment = (
-  id: string,
-  imageData: string,
-  mimeType: string,
-  filename?: string,
-  description?: string,
-  dimensions?: { width: number; height: number },
-): Attachment => {
-  const source =
-    imageData.startsWith('data:') || imageData.startsWith('/')
-      ? createFilePathSource(imageData)
-      : createBase64Source(imageData, mimeType);
-
-  return {
-    type: 'Image',
-    content: {
-      id,
-      description,
-      filename,
-      mime_type: mimeType,
-      dimensions,
-      source,
-    },
-  };
+  return (
+    fileRelatedTools.some((tool) => toolName.includes(tool)) ||
+    kind === 'edit' || // 文件编辑操作
+    kind === 'write' || // 文件写入操作
+    // kind === 'execute' || // 执行命令操作（注释掉，避免过度触发）
+    command.includes('rm ') || // 删除文件命令
+    command.includes('mv ') || // 移动/重命名文件命令
+    command.includes('cp ') || // 复制文件命令
+    command.includes('mkdir ') || // 创建目录命令
+    command.includes('touch ') || // 创建文件命令
+    command.includes('echo ') || // 写入文件命令
+    // command.includes('cat ') || // 读取文件命令（注释掉，避免过度触发）
+    title.includes('Edit ') || // 编辑文件标题
+    title.includes('Write ') || // 写入文件标题
+    title.includes('Create ') || // 创建文件标题
+    title.includes('Delete ') || // 删除文件标题
+    description.includes('删除') ||
+    description.includes('创建') ||
+    description.includes('移动') ||
+    description.includes('重命名') ||
+    description.includes('编辑') ||
+    description.includes('写入')
+  );
 };
 
 /**
- * 创建音频附件
- * @param id 附件ID
- * @param audioData 音频数据（Base64 或文件路径）
- * @param mimeType MIME 类型
- * @param filename 文件名（可选）
- * @param description 描述（可选）
- * @param duration 时长（秒，可选）
- * @returns Attachment
+ * 生成唯一的请求ID
+ * @returns 请求ID
  */
-export const createAudioAttachment = (
-  id: string,
-  audioData: string,
-  mimeType: string,
-  filename?: string,
-  description?: string,
-  duration?: number,
-): Attachment => {
-  const source =
-    audioData.startsWith('data:') || audioData.startsWith('/')
-      ? createFilePathSource(audioData)
-      : createBase64Source(audioData, mimeType);
-
-  return {
-    type: 'Audio',
-    content: {
-      id,
-      description,
-      filename,
-      mime_type: mimeType,
-      duration,
-      source,
-    },
-  };
+export const generateRequestId = (): string => {
+  return `req_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 };
 
 /**
- * 创建文档附件
- * @param id 附件ID
- * @param documentData 文档数据（Base64 或文件路径）
- * @param mimeType MIME 类型
- * @param filename 文件名（可选）
- * @param description 描述（可选）
- * @param size 文件大小（字节，可选）
- * @returns Attachment
+ * 生成唯一的消息ID
+ * @param role 消息角色
+ * @param requestId 请求ID
+ * @returns 消息ID
  */
-export const createDocumentAttachment = (
-  id: string,
-  documentData: string,
-  mimeType: string,
-  filename?: string,
-  description?: string,
-  size?: number,
-): Attachment => {
-  const source =
-    documentData.startsWith('data:') || documentData.startsWith('/')
-      ? createFilePathSource(documentData)
-      : createBase64Source(documentData, mimeType);
-
-  return {
-    type: 'Document',
-    content: {
-      id,
-      description,
-      filename,
-      mime_type: mimeType,
-      size,
-      source,
-    },
-  };
-};
-
-/**
- * 验证附件数据
- * @param attachment 附件对象
- * @returns boolean
- */
-export const validateAttachment = (attachment: Attachment): boolean => {
-  try {
-    const { type, content } = attachment;
-
-    if (!type || !content) {
-      return false;
-    }
-
-    const { id, source } = content;
-    if (!id || !source) {
-      return false;
-    }
-
-    const { source_type, data } = source;
-    if (!source_type || !data) {
-      return false;
-    }
-
-    // 根据源类型验证数据
-    switch (source_type) {
-      case 'FilePath':
-        return !!data.path;
-      case 'Base64':
-        return !!(data.data && data.mime_type);
-      case 'Url':
-        return !!data.url;
-      default:
-        return false;
-    }
-  } catch (error) {
-    console.error('附件验证失败:', error);
-    return false;
-  }
-};
-
-/**
- * 格式化数据源附件为 JSON 字符串数组
- * @param dataSources 数据源对象数组
- * @returns string[] JSON 字符串数组
- */
-export const formatDataSourceAttachments = (dataSources: any[]): string[] => {
-  return dataSources.map((source) => JSON.stringify(source));
-};
-
-/**
- * 解析数据源附件
- * @param jsonStrings JSON 字符串数组
- * @returns any[] 解析后的数据源对象数组
- */
-export const parseDataSourceAttachments = (jsonStrings: string[]): any[] => {
-  return jsonStrings
-    .map((jsonString) => {
-      try {
-        return JSON.parse(jsonString);
-      } catch (error) {
-        console.error('数据源附件解析失败:', error);
-        return null;
-      }
-    })
-    .filter(Boolean);
+export const generateMessageId = (role: string, requestId?: string): string => {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 9);
+  return requestId
+    ? `${role}_${requestId}_${timestamp}_${random}`
+    : `${role}_${timestamp}_${random}`;
 };
 
 /**
  * 生成唯一的附件ID
- * @param prefix 前缀
- * @returns string
+ * @param type 附件类型
+ * @returns 附件ID
  */
-export const generateAttachmentId = (prefix: string = 'att'): string => {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+export const generateAttachmentId = (type: string): string => {
+  return `${type}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 };
 
 /**
- * 获取附件的 MIME 类型
- * @param filename 文件名
- * @returns string MIME 类型
+ * 创建用户消息
+ * @param text 消息文本
+ * @param requestId 请求ID
+ * @returns 用户消息对象
  */
-export const getMimeTypeFromFilename = (filename: string): string => {
-  const extension = filename.split('.').pop()?.toLowerCase();
-
-  const mimeTypes: Record<string, string> = {
-    // 文本文件
-    txt: 'text/plain',
-    md: 'text/markdown',
-    json: 'application/json',
-    xml: 'application/xml',
-    csv: 'text/csv',
-
-    // 图像文件
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    png: 'image/png',
-    gif: 'image/gif',
-    svg: 'image/svg+xml',
-    webp: 'image/webp',
-
-    // 音频文件
-    mp3: 'audio/mpeg',
-    wav: 'audio/wav',
-    ogg: 'audio/ogg',
-    m4a: 'audio/mp4',
-
-    // 视频文件
-    mp4: 'video/mp4',
-    avi: 'video/x-msvideo',
-    mov: 'video/quicktime',
-    webm: 'video/webm',
-
-    // 文档文件
-    pdf: 'application/pdf',
-    doc: 'application/msword',
-    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    xls: 'application/vnd.ms-excel',
-    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ppt: 'application/vnd.ms-powerpoint',
-    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-
-    // 代码文件
-    js: 'application/javascript',
-    ts: 'application/typescript',
-    html: 'text/html',
-    css: 'text/css',
-    py: 'text/x-python',
-    java: 'text/x-java-source',
-    cpp: 'text/x-c++src',
-    c: 'text/x-csrc',
-    go: 'text/x-go',
-    rs: 'text/x-rust',
+export const createUserMessage = (
+  text: string,
+  requestId: string,
+): AppDevChatMessage => {
+  return {
+    id: generateMessageId('user', requestId),
+    role: 'USER',
+    type: MessageModeEnum.CHAT,
+    text,
+    time: new Date().toISOString(),
+    status: null,
+    requestId,
+    timestamp: new Date(),
   };
+};
 
-  return mimeTypes[extension || ''] || 'application/octet-stream';
+/**
+ * 创建助手消息
+ * @param requestId 请求ID
+ * @param sessionId 会话ID
+ * @returns 助手消息对象
+ */
+export const createAssistantMessage = (
+  requestId: string,
+  sessionId: string,
+): AppDevChatMessage => {
+  return {
+    id: generateMessageId('assistant', requestId),
+    role: 'ASSISTANT',
+    type: MessageModeEnum.CHAT,
+    text: '',
+    think: '',
+    time: new Date().toISOString(),
+    status: null,
+    requestId,
+    sessionId,
+    isStreaming: true,
+    timestamp: new Date(),
+  };
+};
+
+/**
+ * 更新聊天消息
+ * @param messages 当前消息列表
+ * @param requestId 请求ID
+ * @param role 消息角色
+ * @param updates 更新内容
+ * @returns 更新后的消息列表
+ */
+export const updateChatMessage = (
+  messages: AppDevChatMessage[],
+  requestId: string,
+  role: string,
+  updates: Partial<AppDevChatMessage>,
+): AppDevChatMessage[] => {
+  const index = messages.findIndex(
+    (msg) => msg.requestId === requestId && msg.role === role,
+  );
+
+  if (index >= 0) {
+    const updated = [...messages];
+    updated[index] = { ...updated[index], ...updates };
+    return updated;
+  }
+
+  return messages;
+};
+
+/**
+ * 标记流式消息为完成状态
+ * @param messages 当前消息列表
+ * @param requestId 请求ID
+ * @returns 更新后的消息列表
+ */
+export const markStreamingMessageComplete = (
+  messages: AppDevChatMessage[],
+  requestId: string,
+): AppDevChatMessage[] => {
+  return updateChatMessage(messages, requestId, 'ASSISTANT', {
+    isStreaming: false,
+  });
+};
+
+/**
+ * 标记流式消息为错误状态
+ * @param messages 当前消息列表
+ * @param requestId 请求ID
+ * @param errorMessage 错误消息
+ * @returns 更新后的消息列表
+ */
+export const markStreamingMessageError = (
+  messages: AppDevChatMessage[],
+  requestId: string,
+  errorMessage: string,
+): AppDevChatMessage[] => {
+  return updateChatMessage(messages, requestId, 'ASSISTANT', {
+    isStreaming: false,
+    text:
+      (messages.find(
+        (msg) => msg.requestId === requestId && msg.role === 'ASSISTANT',
+      )?.text || '') +
+      '\n\n[已出错] ' +
+      errorMessage,
+  });
+};
+
+/**
+ * 标记流式消息为取消状态
+ * @param messages 当前消息列表
+ * @param requestId 请求ID
+ * @returns 更新后的消息列表
+ */
+export const markStreamingMessageCancelled = (
+  messages: AppDevChatMessage[],
+  requestId: string,
+): AppDevChatMessage[] => {
+  return updateChatMessage(messages, requestId, 'ASSISTANT', {
+    isStreaming: false,
+    text:
+      (messages.find(
+        (msg) => msg.requestId === requestId && msg.role === 'ASSISTANT',
+      )?.text || '') + '\n\n[已取消]',
+  });
+};
+
+/**
+ * 追加文本到流式消息
+ * @param messages 当前消息列表
+ * @param requestId 请求ID
+ * @param chunkText 追加的文本
+ * @param isFinal 是否为最终消息
+ * @returns 更新后的消息列表
+ */
+export const appendTextToStreamingMessage = (
+  messages: AppDevChatMessage[],
+  requestId: string,
+  chunkText: string,
+  isFinal: boolean = false,
+): AppDevChatMessage[] => {
+  const index = messages.findIndex(
+    (msg) => msg.requestId === requestId && msg.role === 'ASSISTANT',
+  );
+
+  if (index >= 0) {
+    const updated = [...messages];
+    const beforeText = updated[index].text || '';
+    updated[index] = {
+      ...updated[index],
+      text: beforeText ? beforeText + '\n\n' + chunkText : chunkText,
+      isStreaming: !isFinal,
+    };
+    return updated;
+  }
+
+  return messages;
+};
+
+/**
+ * 生成会话主题
+ * @param messages 消息列表
+ * @returns 会话主题
+ */
+export const generateConversationTopic = (
+  messages: AppDevChatMessage[],
+): string => {
+  const firstUserMessage = messages.find((msg) => msg.role === 'USER');
+  return firstUserMessage ? firstUserMessage.text.substring(0, 50) : '新会话';
+};
+
+/**
+ * 序列化聊天消息
+ * @param messages 消息列表
+ * @returns 序列化后的JSON字符串
+ */
+export const serializeChatMessages = (
+  messages: AppDevChatMessage[],
+): string => {
+  return JSON.stringify(messages);
+};
+
+/**
+ * 解析聊天消息
+ * @param content 序列化的消息内容
+ * @returns 解析后的消息列表
+ */
+export const parseChatMessages = (content: string): AppDevChatMessage[] => {
+  try {
+    return JSON.parse(content) as AppDevChatMessage[];
+  } catch (error) {
+    console.error('解析聊天消息失败:', error);
+    return [];
+  }
+};
+
+/**
+ * 为历史消息添加会话信息
+ * @param messages 消息列表
+ * @param conversationInfo 会话信息
+ * @returns 添加会话信息后的消息列表
+ */
+export const addSessionInfoToMessages = (
+  messages: AppDevChatMessage[],
+  conversationInfo: {
+    sessionId: string;
+    topic: string;
+    created: string;
+  },
+): AppDevChatMessage[] => {
+  return messages.map((msg, index) => ({
+    ...msg,
+    id: `${msg.id}_${conversationInfo.created}_${index}`,
+    sessionId: conversationInfo.sessionId,
+    conversationTopic: conversationInfo.topic,
+    conversationCreated: conversationInfo.created,
+  }));
+};
+
+/**
+ * 按时间戳排序消息
+ * @param messages 消息列表
+ * @returns 排序后的消息列表
+ */
+export const sortMessagesByTimestamp = (
+  messages: AppDevChatMessage[],
+): AppDevChatMessage[] => {
+  return messages.sort((a, b) => {
+    const timeA = new Date(a.timestamp || a.time).getTime();
+    const timeB = new Date(b.timestamp || b.time).getTime();
+    return timeA - timeB;
+  });
+};
+
+/**
+ * 检查消息ID是否重复
+ * @param messages 消息列表
+ * @returns 重复的ID列表
+ */
+export const findDuplicateMessageIds = (
+  messages: AppDevChatMessage[],
+): string[] => {
+  return messages
+    .filter(
+      (msg, index, arr) => arr.findIndex((m) => m.id === msg.id) !== index,
+    )
+    .map((msg) => msg.id);
+};
+
+/**
+ * 统计消息按会话分组
+ * @param messages 消息列表
+ * @returns 按会话分组的统计信息
+ */
+export const getMessageStatsByConversation = (
+  messages: AppDevChatMessage[],
+): Record<string, number> => {
+  return messages.reduce((acc, msg) => {
+    const key = msg.conversationTopic || 'unknown';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+};
+
+/**
+ * 验证请求ID是否匹配
+ * @param messageRequestId 消息中的请求ID
+ * @param activeRequestId 当前活跃的请求ID
+ * @returns 是否匹配
+ */
+export const isRequestIdMatch = (
+  messageRequestId: string,
+  activeRequestId: string,
+): boolean => {
+  return messageRequestId === activeRequestId;
+};
+
+/**
+ * 生成SSE连接URL
+ * @param sessionId 会话ID
+ * @returns SSE连接URL
+ */
+export const generateSSEUrl = (sessionId: string): string => {
+  return `${process.env.BASE_URL}/api/custom-page/ai-session-sse?session_id=${sessionId}`;
+};
+
+/**
+ * 获取认证头信息
+ * @returns 认证头对象
+ */
+export const getAuthHeaders = (): Record<string, string> => {
+  const token = localStorage.getItem('ACCESS_TOKEN') ?? '';
+  return {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/json, text/plain, */* ',
+  };
 };

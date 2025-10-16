@@ -166,8 +166,8 @@ const AppDev: React.FC = () => {
   const versionCompare = useAppDevVersionCompare({
     projectId: projectId || '',
     onVersionSwitchSuccess: () => {
-      // 刷新文件树
-      fileManagement.loadFileTree();
+      // 刷新文件树（不保持状态，因为切换版本是全新内容）
+      fileManagement.loadFileTree(false);
       // 刷新项目详情
       projectInfo.refreshProjectInfo();
       message.success('版本切换成功');
@@ -1008,11 +1008,17 @@ const AppDev: React.FC = () => {
                         }}
                         onSaveFile={fileManagement.saveFile}
                         onCancelEdit={handleCancelEdit}
-                        onRefreshFile={() =>
-                          fileManagement.switchToFile(
-                            fileManagement.fileContentState.selectedFile,
-                          )
-                        }
+                        onRefreshFile={() => {
+                          // 刷新整个文件树（保持状态，强制刷新）
+                          fileManagement.loadFileTree(true, true);
+
+                          // 重新加载当前文件内容
+                          if (fileManagement.fileContentState.selectedFile) {
+                            fileManagement.switchToFile(
+                              fileManagement.fileContentState.selectedFile,
+                            );
+                          }
+                        }}
                         findFileNode={fileManagement.findFileNode}
                         isChatLoading={chat.isChatLoading}
                       />
