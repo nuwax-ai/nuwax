@@ -1,0 +1,212 @@
+@import '@/styles/token.less';
+
+.planProcess {
+  margin: 8px 0;
+  font-size: 13px;
+  color: #262626;
+  background: #fff;
+  border-radius: 8px;
+  padding: 0 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 10%);
+
+  // 主操作行 - 参考效果图的简洁设计
+  .operationRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    min-height: 14px; // 减少最小高度
+
+    .operationInfo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0; // 允许收缩
+
+      .operationText {
+        color: #262626;
+        font-weight: 400;
+        white-space: nowrap; // 防止换行
+        overflow: hidden;
+        text-overflow: ellipsis; // 溢出显示省略号
+        max-width: calc(100% - 40px); // 为状态区域预留空间
+
+        // 不同截取模式的样式
+        &.truncate-ellipsis {
+          text-overflow: ellipsis;
+        }
+
+        &.truncate-middle {
+          text-overflow: ellipsis;
+        }
+
+        &.truncate-fade {
+          text-overflow: ellipsis;
+          position: relative;
+
+          &::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 20px;
+            background: linear-gradient(to right, transparent, #fafafa);
+            pointer-events: none;
+          }
+        }
+
+        &.truncate-none {
+          text-overflow: clip;
+          white-space: normal;
+          overflow: visible;
+        }
+      }
+    }
+
+    .operationStatus {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0; // 防止收缩
+
+      .statusText {
+        color: #8c8c8c;
+        font-size: 12px;
+        white-space: nowrap; // 防止换行
+      }
+
+      .toggleButton {
+        width: 16px;
+        height: 16px;
+        padding: 0;
+        font-size: 12px;
+        color: #8c8c8c;
+        border: none;
+        background: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0; // 防止收缩
+
+        &:hover {
+          color: #1890ff;
+        }
+      }
+    }
+  }
+
+  // 详细信息行
+  .detailsRow {
+    padding: 0 0 8px; // 与标题对齐，不缩进
+
+    .detailsContent {
+      max-width: 100%;
+      overflow: hidden;
+
+      .taskList {
+        max-height: 400px; // 限制最大高度
+        overflow-y: auto; // 垂直滚动
+
+        .taskItem {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 4px 8px;
+          font-size: 12px;
+          min-height: 20px; // 确保最小高度
+
+          .taskText {
+            flex: 1;
+            color: @colorTextBase;
+            line-height: 1.4;
+            // white-space: nowrap; // 防止换行
+            // overflow: hidden;
+            // text-overflow: ellipsis; // 溢出显示省略号
+            // min-width: 0; // 允许收缩
+
+            // 不同截取模式的样式
+            // &.truncate-ellipsis {
+            //   text-overflow: ellipsis;
+            // }
+
+            // &.truncate-middle {
+            //   text-overflow: ellipsis;
+            // }
+
+            // &.truncate-fade {
+            //   text-overflow: ellipsis;
+            //   position: relative;
+
+            //   &::after {
+            //     content: '';
+            //     position: absolute;
+            //     right: 0;
+            //     top: 0;
+            //     bottom: 0;
+            //     width: 20px;
+            //     background: linear-gradient(to right, transparent, #fff);
+            //     pointer-events: none;
+            //   }
+            // }
+
+            // &.truncate-none {
+            //   text-overflow: clip;
+            //   white-space: normal;
+            //   overflow: visible;
+            // }
+          }
+
+          .taskStatus {
+            color: #8c8c8c;
+            font-size: 11px;
+            white-space: nowrap; // 防止换行
+            flex-shrink: 0; // 防止收缩
+          }
+        }
+      }
+    }
+  }
+
+  // 状态点样式 - 参考效果图的圆形点设计
+  .statusDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .statusDotStatusCompleted {
+    background-color: #52c41a;
+  }
+
+  .statusDotStatusInProgress {
+    background-color: #1890ff;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .statusDotStatusFailed {
+    background-color: #ff4d4f;
+  }
+
+  .statusDotStatusPending {
+    background-color: #d9d9d9;
+  }
+
+  // 脉冲动画
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.5;
+    }
+
+    100% {
+      opacity: 1;
+    }
+  }
+}

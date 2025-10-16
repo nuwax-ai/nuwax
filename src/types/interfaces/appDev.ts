@@ -514,6 +514,38 @@ export interface SSEMessage {
 // ==================== 聊天消息相关类型定义 ====================
 
 /**
+ * Plan 条目
+ */
+export interface PlanEntry {
+  content: string;
+  priority: 'low' | 'medium' | 'high';
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+}
+
+/**
+ * Tool Call 位置信息
+ */
+export interface ToolCallLocation {
+  line: number;
+  path: string;
+  type: 'ToolCallLocation';
+}
+
+/**
+ * Tool Call 信息
+ */
+export interface ToolCallInfo {
+  toolCallId: string;
+  title: string;
+  kind: 'read' | 'edit' | 'write' | 'execute';
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  content?: string;
+  locations?: ToolCallLocation[];
+  rawInput?: Record<string, any>;
+  timestamp: string;
+}
+
+/**
  * AppDev 聊天消息接口
  * 用于区分用户和 Agent 角色的多轮对话消息
  */

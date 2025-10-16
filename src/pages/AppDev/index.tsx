@@ -947,6 +947,9 @@ const AppDev: React.FC = () => {
                   onToggleFolder={fileManagement.toggleFolder}
                   onDeleteFile={handleDeleteClick}
                   onUploadProject={() => setIsUploadModalVisible(true)}
+                  onUploadSingleFile={() =>
+                    setIsSingleFileUploadModalVisible(true)
+                  }
                   onAddDataResource={() =>
                     setIsAddDataResourceModalVisible(true)
                   }

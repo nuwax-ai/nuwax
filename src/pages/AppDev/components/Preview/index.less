@@ -1,8 +1,11 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
 .preview {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--xagi-color-bg-container);
+  background: @colorBgContainer;
   border-radius: 6px;
   overflow: hidden;
 }
@@ -11,10 +14,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--xagi-color-fill-quaternary);
-  border-bottom: 1px solid var(--xagi-color-border);
-  min-height: 48px;
+  padding: 8px 12px;
+  background: @colorFillQuaternary;
+  border-bottom: 1px solid @colorBorder;
+  min-height: 36px;
 }
 
 .headerLeft {
@@ -27,24 +30,19 @@
   gap: 8px;
 }
 
-.titleIcon {
-  font-size: 16px;
-  color: var(--xagi-color-primary);
-}
-
 .title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--xagi-color-text);
+  font-size: @fontSizeLg;
+  font-weight: @fontWeightStrong;
+  color: @colorTextBase;
 }
 
 .statusBadge {
   font-size: 12px;
-  color: var(--xagi-color-success);
-  background: var(--xagi-color-success-bg);
+  color: @colorSuccess;
+  background: @colorSuccessBg;
   padding: 2px 8px;
   border-radius: 4px;
-  border: 1px solid var(--xagi-color-success-border);
+  border: 1px solid @colorSuccessBorder;
 }
 
 .loadingBadge {
@@ -52,16 +50,16 @@
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: var(--xagi-color-warning);
-  background: var(--xagi-color-warning-bg);
+  color: @colorWarning;
+  background: @colorWarningBg;
   padding: 2px 8px;
   border-radius: 4px;
-  border: 1px solid var(--xagi-color-warning-border);
+  border: 1px solid @colorWarningBorder;
 }
 
 .lastUpdated {
   font-size: 12px;
-  color: var(--xagi-color-text-tertiary);
+  color: @colorTextTertiary;
 }
 
 .headerRight {
@@ -78,7 +76,7 @@
 
 .errorContainer {
   padding: 16px;
-  background: var(--xagi-color-bg-container);
+  background: @colorBgContainer;
 }
 
 .previewContainer {
@@ -91,7 +89,7 @@
   width: 100%;
   height: 100%;
   border: none;
-  background: var(--xagi-color-bg-container);
+  background: @colorBgContainer;
 }
 
 .emptyState {
@@ -100,7 +98,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--xagi-color-text-tertiary);
+  color: @colorTextTertiary;
   padding: 40px;
   text-align: center;
 }
@@ -109,19 +107,19 @@
   font-size: 48px;
   margin-bottom: 16px;
   opacity: 0.6;
-  color: var(--xagi-color-text-tertiary);
+  color: @colorTextTertiary;
 }
 
 .emptyTitle {
   font-size: 18px;
   font-weight: 500;
-  color: var(--xagi-color-text);
+  color: @colorTextBase;
   margin: 0 0 8px;
 }
 
 .emptyDescription {
   font-size: 14px;
-  color: var(--xagi-color-text-tertiary);
+  color: @colorTextTertiary;
   margin: 0;
   line-height: 1.5;
 }
