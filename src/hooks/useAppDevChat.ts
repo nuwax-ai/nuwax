@@ -2,14 +2,12 @@
  * AppDev 聊天相关 Hook
  */
 
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   listConversations,
   saveConversation,
   sendChatMessage,
   stopAgentService,
 } from '@/services/appDev';
-import { MessageModeEnum } from '@/types/enums/agent';
 import type {
   AppDevChatMessage,
   Attachment,
@@ -23,6 +21,26 @@ import { useModel } from 'umi';
 
 import { AGENT_SERVICE_RUNNING } from '@/constants/codes.constants';
 import type { DataSourceSelection } from '@/types/interfaces/appDev';
+import {
+  addSessionInfoToMessages,
+  appendTextToStreamingMessage,
+  createAssistantMessage,
+  createUserMessage,
+  findDuplicateMessageIds,
+  generateConversationTopic,
+  generateRequestId,
+  generateSSEUrl,
+  getAuthHeaders,
+  getMessageStatsByConversation,
+  isFileOperation,
+  isRequestIdMatch,
+  markStreamingMessageCancelled,
+  markStreamingMessageComplete,
+  markStreamingMessageError,
+  parseChatMessages,
+  serializeChatMessages,
+  sortMessagesByTimestamp,
+} from '@/utils/chatUtils';
 
 interface UseAppDevChatProps {
   projectId: string;
@@ -74,64 +92,14 @@ export const useAppDevChat = ({
     [onRefreshFileTree],
   );
 
-  /**
-   * 检测是否为文件操作
-   * @param messageData SSE消息数据
-   * @returns 是否为文件操作
-   */
-  const isFileOperation = useCallback((messageData: any): boolean => {
-    const fileRelatedTools = [
-      'write_file',
-      'edit_file',
-      'delete_file',
-      'create_directory',
-    ];
-
-    // 检查工具名称、命令、类型或描述是否包含文件操作
-    const toolName = messageData.toolName || '';
-    const command = messageData.rawInput?.command || '';
-    const description = messageData.rawInput?.description || '';
-    const kind = messageData.kind || '';
-    const title = messageData.title || '';
-
-    return (
-      fileRelatedTools.some((tool) => toolName.includes(tool)) ||
-      kind === 'edit' || // 文件编辑操作
-      kind === 'write' || // 文件写入操作
-      // kind === 'execute' || // 执行命令操作
-      command.includes('rm ') || // 删除文件命令
-      command.includes('mv ') || // 移动/重命名文件命令
-      command.includes('cp ') || // 复制文件命令
-      command.includes('mkdir ') || // 创建目录命令
-      command.includes('touch ') || // 创建文件命令
-      command.includes('echo ') || // 写入文件命令
-      // command.includes('cat ') || // 读取文件命令
-      title.includes('Edit ') || // 编辑文件标题
-      title.includes('Write ') || // 写入文件标题
-      title.includes('Create ') || // 创建文件标题
-      title.includes('Delete ') || // 删除文件标题
-      description.includes('删除') ||
-      description.includes('创建') ||
-      description.includes('移动') ||
-      description.includes('重命名') ||
-      description.includes('编辑') ||
-      description.includes('写入')
-    );
-  }, []);
-
   const handleSaveConversation = useCallback(
     (
       chatMessages: AppDevChatMessage[],
       sessionId: string,
       projectId: string,
     ) => {
-      const firstUserMessage = chatMessages.find((msg) => msg.role === 'USER');
-      const topic = firstUserMessage
-        ? firstUserMessage.text.substring(0, 50)
-        : '新会话';
-
-      // 序列化会话内容
-      const content = JSON.stringify(chatMessages);
+      const topic = generateConversationTopic(chatMessages);
+      const content = serializeChatMessages(chatMessages);
 
       // 保存会话
       console.log('🔄 [Chat] 开始保存会话，参数:', {
@@ -173,7 +141,7 @@ export const useAppDevChat = ({
       // 只处理匹配当前request_id的消息
       const messageRequestId = message.data?.request_id;
 
-      if (messageRequestId !== activeRequestId) {
+      if (!isRequestIdMatch(messageRequestId, activeRequestId)) {
         console.warn('收到不匹配的request_id消息，忽略:', {
           expected: activeRequestId,
           received: messageRequestId,
@@ -191,25 +159,14 @@ export const useAppDevChat = ({
             const chunkText = message.data?.text || '';
             const isFinal = message.data?.is_final;
 
-            setChatMessages((prev) => {
-              const index = prev.findIndex(
-                (msg) =>
-                  msg.requestId === activeRequestId && msg.role === 'ASSISTANT',
-              );
-              if (index >= 0) {
-                const updated = [...prev];
-                const beforeText = updated[index].text || '';
-                updated[index] = {
-                  ...updated[index],
-                  text: beforeText
-                    ? beforeText + '\n\n' + chunkText
-                    : chunkText,
-                  isStreaming: !isFinal,
-                };
-                return updated;
-              }
-              return prev;
-            });
+            setChatMessages((prev) =>
+              appendTextToStreamingMessage(
+                prev,
+                activeRequestId,
+                chunkText,
+                isFinal,
+              ),
+            );
           }
 
           if (message.subType === 'plan') {
@@ -255,32 +212,25 @@ export const useAppDevChat = ({
 
           // 标记消息完成
           setChatMessages((prev) => {
-            const index = prev.findIndex(
-              (msg) =>
-                msg.requestId === activeRequestId && msg.role === 'ASSISTANT',
+            const updated = markStreamingMessageComplete(prev, activeRequestId);
+
+            // 保存会话
+            const userMessage = updated.find(
+              (m) => m.requestId === activeRequestId && m.role === 'USER',
             );
-            if (index >= 0) {
-              const updated = [...prev];
-              updated[index] = {
-                ...updated[index],
-                isStreaming: false,
-              };
+            const assistantMessage = updated.find(
+              (m) => m.requestId === activeRequestId && m.role === 'ASSISTANT',
+            );
 
-              // 保存会话
-              const userMessage = prev.find(
-                (m) => m.requestId === activeRequestId && m.role === 'USER',
+            if (userMessage && assistantMessage) {
+              handleSaveConversation(
+                [userMessage, assistantMessage],
+                message.sessionId,
+                projectId,
               );
-              if (userMessage) {
-                handleSaveConversation(
-                  [userMessage, updated[index]],
-                  message.sessionId,
-                  projectId,
-                );
-              }
-
-              return updated;
             }
-            return prev;
+
+            return updated;
           });
 
           // 会话结束时执行一次文件树刷新
@@ -314,7 +264,6 @@ export const useAppDevChat = ({
       handleSaveConversation,
       appDevSseModel,
       debouncedRefreshFileTree,
-      isFileOperation,
     ],
   );
 
@@ -330,34 +279,22 @@ export const useAppDevChat = ({
         requestId,
       );
       console.log('🔌 [Chat] AppDev SSE 连接已建立');
-      const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-      const sseUrl = `${process.env.BASE_URL}/api/custom-page/ai-session-sse?session_id=${sessionId}`;
+
+      const sseUrl = generateSSEUrl(sessionId);
+      const headers = getAuthHeaders();
+
       console.log(`🔌 [AppDev SSE Model] 连接到: ${sseUrl}`);
       abortConnectionRef.current = new AbortController();
+
       // 创建ASSISTANT占位消息
-      const assistantMessage: AppDevChatMessage = {
-        id: `assistant_${requestId}_${Date.now()}`,
-        role: 'ASSISTANT',
-        type: MessageModeEnum.CHAT,
-        text: '',
-        think: '',
-        time: new Date().toISOString(),
-        status: null,
-        requestId: requestId,
-        sessionId: sessionId,
-        isStreaming: true,
-        timestamp: new Date(),
-      };
+      const assistantMessage = createAssistantMessage(requestId, sessionId);
       setChatMessages((prev) => [...prev, assistantMessage]);
 
       await createSSEConnection({
         url: sseUrl,
         method: 'GET',
         abortController: abortConnectionRef.current,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json, text/plain, */* ',
-        },
+        headers,
         onOpen: () => {
           console.log('🔌 [Chat] AppDev SSE 连接已建立');
         },
@@ -369,18 +306,9 @@ export const useAppDevChat = ({
           console.error('❌ [Chat] AppDev SSE 连接错误:', error);
           message.error('AI助手连接失败');
           //要把 chatMessages 里 ASSISTANT 当前 isSteaming 修改一下 false 并给出错误消息
-          setChatMessages((prev) => {
-            return prev.map((msg) => {
-              if (msg.isStreaming && msg.role === 'ASSISTANT') {
-                return {
-                  ...msg,
-                  isStreaming: false,
-                  text: msg.text + '\n\n[已出错] ' + error.message,
-                };
-              }
-              return msg;
-            });
-          });
+          setChatMessages((prev) =>
+            markStreamingMessageError(prev, requestId, error.message),
+          );
           setIsChatLoading(false);
 
           abortConnectionRef.current?.abort();
@@ -442,9 +370,7 @@ export const useAppDevChat = ({
   const sendMessageAndConnectSSE = useCallback(
     async (attachments?: Attachment[]) => {
       // 生成临时request_id
-      const requestId = `req_${Date.now()}_${Math.random()
-        .toString(36)
-        .slice(2, 9)}`;
+      const requestId = generateRequestId();
       try {
         // 调用发送消息API
         const response = await sendChatMessage({
@@ -476,16 +402,7 @@ export const useAppDevChat = ({
           }
 
           // 添加用户消息
-          const userMessage: AppDevChatMessage = {
-            id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-            role: 'USER',
-            type: MessageModeEnum.CHAT,
-            text: chatInput,
-            time: new Date().toISOString(),
-            status: null,
-            requestId: requestId,
-            timestamp: new Date(),
-          };
+          const userMessage = createUserMessage(chatInput, requestId);
 
           setChatMessages((prev) => [...prev, userMessage]);
           setChatInput('');
@@ -564,11 +481,11 @@ export const useAppDevChat = ({
       setChatMessages((prev) => {
         return prev.map((msg) => {
           if (msg.isStreaming && msg.role === 'ASSISTANT') {
-            return {
-              ...msg,
-              isStreaming: false,
-              text: msg.text + '\n\n[已取消]',
-            };
+            return (
+              markStreamingMessageCancelled(prev, msg.requestId).find(
+                (m) => m.id === msg.id,
+              ) || msg
+            );
           }
           return msg;
         });
@@ -602,9 +519,7 @@ export const useAppDevChat = ({
 
         if (response.success && response.data?.length > 0) {
           const conversation = response.data[0];
-          const messages = JSON.parse(
-            conversation.content,
-          ) as AppDevChatMessage[];
+          const messages = parseChatMessages(conversation.content);
 
           // 清空当前消息并加载历史消息
           setChatMessages(messages);
@@ -645,18 +560,14 @@ export const useAppDevChat = ({
 
         for (const conversation of sortedConversations) {
           try {
-            const messages = JSON.parse(
-              conversation.content,
-            ) as AppDevChatMessage[];
+            const messages = parseChatMessages(conversation.content);
 
             // 为每个消息添加会话信息并生成唯一ID
-            const messagesWithSessionInfo = messages.map((msg, index) => ({
-              ...msg,
-              id: `${msg.id}_${conversation.created}_${index}`, // 使用created时间戳作为key
+            const messagesWithSessionInfo = addSessionInfoToMessages(messages, {
               sessionId: conversation.sessionId,
-              conversationTopic: conversation.topic,
-              conversationCreated: conversation.created,
-            }));
+              topic: conversation.topic,
+              created: conversation.created,
+            });
 
             allMessages.push(...messagesWithSessionInfo);
           } catch (parseError) {
@@ -669,37 +580,24 @@ export const useAppDevChat = ({
         }
 
         // 按时间戳排序所有消息
-        allMessages.sort((a, b) => {
-          const timeA = new Date(a.timestamp || a.time).getTime();
-          const timeB = new Date(b.timestamp || b.time).getTime();
-          return timeA - timeB;
-        });
+        const sortedMessages = sortMessagesByTimestamp(allMessages);
 
         // 加载所有历史消息
-        setChatMessages(allMessages);
+        setChatMessages(sortedMessages);
 
         console.log('✅ [Chat] 已自动加载所有历史会话:', {
           totalConversations: sortedConversations.length,
-          totalMessages: allMessages.length,
+          totalMessages: sortedMessages.length,
           conversations: sortedConversations.map((conv: any) => ({
             sessionId: conv.sessionId,
             topic: conv.topic,
             created: conv.created,
-            messageCount: JSON.parse(conv.content).length,
+            messageCount: parseChatMessages(conv.content).length,
             keyUsed: conv.created, // 显示使用的key
           })),
-          messageBreakdown: allMessages.reduce((acc, msg) => {
-            const key = msg.conversationTopic || 'unknown';
-            acc[key] = (acc[key] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>),
-          allMessageIds: allMessages.map((msg) => msg.id), // 显示所有消息ID（使用created时间戳）
-          duplicateIds: allMessages
-            .filter(
-              (msg, index, arr) =>
-                arr.findIndex((m) => m.id === msg.id) !== index,
-            )
-            .map((msg) => msg.id), // 检查重复ID
+          messageBreakdown: getMessageStatsByConversation(sortedMessages),
+          allMessageIds: sortedMessages.map((msg) => msg.id), // 显示所有消息ID（使用created时间戳）
+          duplicateIds: findDuplicateMessageIds(sortedMessages), // 检查重复ID
           idPattern: '${原始ID}_${created时间戳}_${索引}', // 显示ID生成模式
         });
       } else {
