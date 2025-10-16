@@ -2,10 +2,19 @@
 @import '@/styles/token';
 
 .container {
+  position: relative;
   height: 100%;
   padding-top: 50px;
   background-color: @WHITE;
   overflow: hidden;
+
+  .add-btn {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    width: 100px;
+    margin-left: 16px;
+  }
 
   .title {
     font-size: 14px;

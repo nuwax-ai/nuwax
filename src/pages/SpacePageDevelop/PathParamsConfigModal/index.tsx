@@ -167,12 +167,11 @@ const PathParamsConfigModal: React.FC<PathParamsConfigModalProps> = ({
                 {/* 新增路径 */}
                 <Tooltip title="新增路径">
                   <Button
-                    type="primary"
+                    type="text"
+                    size="small"
                     onClick={() => setAddPathModalOpen(true)}
                     icon={<PlusOutlined />}
-                  >
-                    新增
-                  </Button>
+                  ></Button>
                 </Tooltip>
               </div>
               {/* 路径参数列表 */}
