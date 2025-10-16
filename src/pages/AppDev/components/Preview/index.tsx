@@ -65,14 +65,11 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         '🔄 [Preview] refreshPreview called, devServerUrl:',
         devServerUrl,
       );
-      console.log('🔄 [Preview] iframeRef.current:', iframeRef.current);
 
       if (devServerUrl) {
-        console.log('🔄 [Preview] 有devServerUrl，调用loadDevServerPreview');
         loadDevServerPreview();
       } else if (iframeRef.current) {
         // 如果devServerUrl为空，清空iframe
-        console.log('🔄 [Preview] devServerUrl为空，清空iframe');
         iframeRef.current.src = '';
         setLoadError('开发服务器URL不可用');
         setLastRefreshed(new Date());
