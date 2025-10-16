@@ -240,6 +240,7 @@ const PathParamsConfigContent: React.FC<PathParamsConfigContentProps> = ({
         <>
           <PluginConfigTitle
             className="px-16"
+            titleClassName={cx(styles.title)}
             title="入参配置"
             onClick={handleInputConfigAdd}
           />
