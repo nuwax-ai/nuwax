@@ -14,8 +14,7 @@ export interface AppDevHeaderProps {
     name?: string;
     projectId?: string;
   };
-  onReloadProject?: () => void;
-  onDeleteProject?: () => void;
+  spaceId: string;
   onDeployProject?: () => void;
   hasUpdates?: boolean;
   lastSaveTime?: Date;
@@ -43,6 +42,7 @@ export interface AppDevHeaderProps {
 const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   workspace,
   onDeployProject,
+  spaceId,
   hasUpdates = true,
   lastSaveTime = new Date(),
   isDeploying = false,
@@ -82,7 +82,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
       <SvgIcon
         name="icons-nav-backward"
         className={cx(styles['icon-backward'])}
-        onClick={() => jumpBack('/')}
+        onClick={() => jumpBack(`/space/${spaceId}/page-develop`)}
       />
       {/* 项目图标 - 优先显示项目图标，为空时显示创建者头像 */}
       {projectIcon ? (
@@ -147,21 +147,6 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
           )}
         </div>
         <div className={cx('flex', 'items-center', styles['action-buttons'])}>
-          {/* <Button
-            size="small"
-            className={styles.navButton}
-            onClick={onReloadProject}
-          >
-            重新加载项目
-          </Button> */}
-          {/* <Button
-            size="small"
-            danger
-            className={styles.actionButton}
-            onClick={onDeleteProject}
-          >
-            删除
-          </Button> */}
           <Button
             type="primary"
             icon={<RocketOutlined />}
