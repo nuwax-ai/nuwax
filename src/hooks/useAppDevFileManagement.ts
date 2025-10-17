@@ -694,9 +694,10 @@ export const useAppDevFileManagement = ({
   // 在项目ID变化时加载文件树
   useEffect(() => {
     if (projectId) {
+      console.log('🌲 [FileManagement] 项目ID变化，加载文件树:', projectId);
       loadFileTree();
     }
-  }, [projectId, loadFileTree]);
+  }, [projectId]); // 移除 loadFileTree 依赖，避免重复执行
 
   // AI聊天加载时自动刷新文件树 - 已禁用轮询机制
   // 注释：取消在会话过程中的轮询间隔调用更新文件树逻辑
@@ -707,7 +708,7 @@ export const useAppDevFileManagement = ({
       // 只在聊天开始时执行一次刷新，不再进行定时轮询
       loadFileTree();
     }
-  }, [isChatLoading, projectId, loadFileTree]);
+  }, [isChatLoading, projectId]); // 移除 loadFileTree 依赖，避免重复执行
 
   return {
     // 文件树相关

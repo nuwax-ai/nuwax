@@ -102,8 +102,11 @@ export const useAppDevModelSelector = (projectId: string) => {
 
   // 组件初始化时加载模型列表
   useEffect(() => {
-    loadModels();
-  }, [projectId]);
+    if (projectId) {
+      console.log('🤖 [ModelSelector] 项目ID变化，加载模型列表:', projectId);
+      loadModels();
+    }
+  }, [projectId]); // 移除 loadModels 依赖，避免重复执行
 
   return {
     models,
