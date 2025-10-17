@@ -245,6 +245,7 @@ const AppDev: React.FC = () => {
   // 删除确认对话框状态
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<any>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
@@ -685,6 +686,7 @@ const AppDev: React.FC = () => {
   const handleDeleteConfirm = useCallback(async () => {
     if (!nodeToDelete || !projectId) return;
 
+    setDeleteLoading(true);
     try {
       // 删除文件/文件夹
       const success = await fileManagement.deleteFileItem(nodeToDelete.id);
@@ -701,6 +703,7 @@ const AppDev: React.FC = () => {
     } catch (error) {
       message.error(`删除失败: ${nodeToDelete?.name}`);
     } finally {
+      setDeleteLoading(false);
       setDeleteModalVisible(false);
       setNodeToDelete(null);
     }
@@ -1174,7 +1177,14 @@ const AppDev: React.FC = () => {
           onCancel={handleDeleteCancel}
           okText="删除"
           cancelText="取消"
-          okButtonProps={{ danger: true }}
+          okButtonProps={{
+            danger: true,
+            loading: deleteLoading,
+            disabled: deleteLoading,
+          }}
+          cancelButtonProps={{
+            disabled: deleteLoading,
+          }}
         >
           <p>
             确定要删除 {nodeToDelete?.type === 'folder' ? '文件夹' : '文件'}{' '}

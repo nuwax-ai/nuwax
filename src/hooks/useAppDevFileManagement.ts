@@ -534,7 +534,7 @@ export const useAppDevFileManagement = ({
         });
 
         if (result?.success) {
-          message.success(`文件 ${file.name} 上传成功到 ${filePath.trim()}`);
+          message.success(`上传成功到 ${filePath.trim()}`);
 
           // 上传成功后重新加载文件树（与删除文件逻辑保持一致）
           await loadFileTree(true, true);
@@ -547,14 +547,12 @@ export const useAppDevFileManagement = ({
 
           return true;
         } else {
-          message.warning('文件上传成功，但返回数据格式异常');
+          message.warning('上传失败');
           return false;
         }
       } catch (error) {
         console.error('❌ [FileManagement] 上传单个文件失败:', error);
-        message.error(
-          error instanceof Error ? error.message : '上传单个文件失败',
-        );
+        message.error('上传失败');
         return false;
       }
     },
