@@ -61,6 +61,9 @@ export const useAppDevFileManagement = ({
     isSavingFile: false,
   });
 
+  // 跟踪已经尝试加载内容的文件（避免重复调用API）
+  const [loadedFiles, setLoadedFiles] = useState<Set<string>>(new Set());
+
   // 跟踪文件树是否已经加载过，避免重复加载
   const lastLoadedProjectIdRef = useRef<string | null>(null);
 
@@ -139,6 +142,9 @@ export const useAppDevFileManagement = ({
             expandedFolders: currentExpandedFolders, // 恢复展开状态
             lastLoadedProjectId: projectId,
           }));
+
+          // 清空已加载文件的记录，因为项目内容可能已更新
+          setLoadedFiles(new Set());
 
           lastLoadedProjectIdRef.current = projectId;
 
@@ -240,19 +246,76 @@ export const useAppDevFileManagement = ({
 
       // 检查文件是否已经有content数据，如果有则不需要调用API
       const fileNode = findFileNode(fileId, fileTreeState.data);
-      if (fileNode && fileNode.content && fileNode.content.trim() !== '') {
+      // 调试日志：检查文件节点（仅在开发环境）
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 [FileManagement] 检查文件节点:', {
+          fileId,
+          fileNode: fileNode
+            ? {
+                id: fileNode.id,
+                name: fileNode.name,
+                type: fileNode.type,
+                hasContent: !!fileNode.content,
+                contentLength: fileNode.content?.length || 0,
+                contentPreview: fileNode.content?.substring(0, 100) || 'empty',
+                isContentLoaded:
+                  fileNode.content !== undefined && fileNode.content !== null,
+              }
+            : null,
+          fileTreeDataLength: fileTreeState.data.length,
+        });
+      }
+
+      // 检查文件是否已经有内容数据
+      const hasContent =
+        fileNode &&
+        fileNode.content !== undefined &&
+        fileNode.content !== null &&
+        fileNode.content.trim() !== '';
+      const hasTriedLoading = loadedFiles.has(fileId);
+
+      // 如果文件有内容，直接使用
+      if (hasContent) {
         console.log(
           '📄 [FileManagement] 文件已有content数据，跳过API调用:',
           fileId,
+          'content长度:',
+          fileNode?.content?.length || 0,
         );
         setFileContentState((prev) => ({
           ...prev,
-          fileContent: fileNode.content || '',
-          originalFileContent: fileNode.content || '',
+          fileContent: fileNode?.content || '',
+          originalFileContent: fileNode?.content || '',
           isFileModified: false,
           fileContentError: null,
         }));
         return;
+      }
+
+      // 如果文件没有内容但已经尝试过加载，说明文件确实是空的，不需要再次调用API
+      if (fileNode && hasTriedLoading && !hasContent) {
+        console.log(
+          '📄 [FileManagement] 文件已尝试加载但无内容，跳过API调用:',
+          fileId,
+        );
+        setFileContentState((prev) => ({
+          ...prev,
+          fileContent: '',
+          originalFileContent: '',
+          isFileModified: false,
+          fileContentError: null,
+        }));
+        return;
+      }
+
+      // 如果文件节点存在但没有内容且未尝试过加载，需要调用API获取内容
+      if (fileNode && !hasContent && !hasTriedLoading) {
+        console.log(
+          '📄 [FileManagement] 文件节点存在但无内容，需要调用API获取:',
+          fileId,
+          '当前content:',
+          fileNode.content,
+        );
       }
 
       // 清空当前文件内容，准备加载新文件
@@ -287,6 +350,9 @@ export const useAppDevFileManagement = ({
           isLoadingFileContent: false,
         }));
 
+        // 标记文件已尝试加载
+        setLoadedFiles((prev) => new Set(prev).add(fileId));
+
         onFileContentChange?.(fileId, content);
       } catch (error) {
         console.error('❌ [FileManagement] 加载文件内容失败:', error);
@@ -299,6 +365,9 @@ export const useAppDevFileManagement = ({
           fileContentError: errorMessage,
           isLoadingFileContent: false,
         }));
+
+        // 即使失败也要标记文件已尝试加载，避免重复调用
+        setLoadedFiles((prev) => new Set(prev).add(fileId));
 
         message.error(`加载文件 ${fileId} 失败`);
       }
@@ -467,15 +536,14 @@ export const useAppDevFileManagement = ({
         if (result?.success) {
           message.success(`文件 ${file.name} 上传成功到 ${filePath.trim()}`);
 
-          // 重新加载文件树
-          setTimeout(() => {
-            loadFileTree().then(() => {
-              if (filePath.trim()) {
-                setSelectedFile(filePath.trim());
-                switchToFile(filePath.trim());
-              }
-            });
-          }, UI_CONSTANTS.PRELOAD_DELAY);
+          // 上传成功后重新加载文件树（与删除文件逻辑保持一致）
+          await loadFileTree(true, true);
+
+          // 文件上传成功后不自动选中，让用户自己选择要查看的文件
+          console.log(
+            '✅ [FileManagement] 文件上传成功，文件树已更新:',
+            filePath.trim(),
+          );
 
           return true;
         } else {
@@ -490,7 +558,7 @@ export const useAppDevFileManagement = ({
         return false;
       }
     },
-    [projectId, loadFileTree, switchToFile, setSelectedFile],
+    [projectId, loadFileTree],
   );
 
   /**
