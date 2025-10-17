@@ -34,6 +34,8 @@ export enum PageDevelopMoreActionEnum {
   Path_Params_Config = 'Path_Params_Config',
   // 页面预览
   Page_Preview = 'Page_Preview',
+  // 删除
+  Delete = 'Delete',
 }
 
 // 发布状态,1:已发布;-1:未发布

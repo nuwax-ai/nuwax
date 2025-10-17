@@ -7,7 +7,10 @@ import {
   PAGE_DEVELOP_CREATE_TYPE_LIST,
 } from '@/constants/pageDev.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
-import { apiCustomPageQueryList } from '@/services/pageDev';
+import {
+  apiCustomPageQueryList,
+  apiPageDeleteProject,
+} from '@/services/pageDev';
 import {
   PageDevelopCreateTypeEnum,
   PageDevelopMoreActionEnum,
@@ -20,7 +23,7 @@ import {
   CustomPageDto,
 } from '@/types/interfaces/pageDev';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Col, Empty, Input, Row, Space } from 'antd';
+import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
@@ -108,6 +111,24 @@ const SpacePageDevelop: React.FC = () => {
     },
     onError: () => {
       setLoading(false);
+    },
+  });
+
+  // 查询页面列表接口
+  const { run: runPageDelete } = useRequest(apiPageDeleteProject, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_: null, params: number[]) => {
+      message.success('删除成功');
+      const projectId = params[0];
+      const _pageList = pageList.filter((item) => item.projectId !== projectId);
+      setPageList(_pageList);
+      pageAllRef.current = pageAllRef.current.filter(
+        (item) => item.projectId !== projectId,
+      );
+    },
+    onError: () => {
+      message.error('删除页面项目失败');
     },
   });
 
@@ -208,6 +229,10 @@ const SpacePageDevelop: React.FC = () => {
       case PageDevelopMoreActionEnum.Page_Preview:
         // iframe打开页面预览
         setOpenPageReviewModal(true);
+        break;
+      // 删除页面项目
+      case PageDevelopMoreActionEnum.Delete:
+        runPageDelete(info.projectId);
         break;
     }
   };
