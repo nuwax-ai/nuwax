@@ -81,6 +81,19 @@ const EditAgent: React.FC = () => {
     },
   });
 
+  const { run: runUpdateAgent } = useRequest(apiAgentConfigInfo, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: AgentConfigInfo) => {
+      const _agentConfigInfo = {
+        ...agentConfigInfo,
+        pageHomeIndex: result.pageHomeIndex,
+      } as AgentConfigInfo;
+
+      setAgentConfigInfo(_agentConfigInfo);
+    },
+  });
+
   // 更新智能体基础配置信息
   const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
@@ -175,6 +188,11 @@ const EditAgent: React.FC = () => {
     // 用户问题建议
     if (attr === 'openSuggest') {
       setIsSuggest(value === OpenCloseEnum.Open);
+    }
+    // 打开扩展页面时，检查页面是否存在
+    // 展开页面区在删除页面后重新添加没有后端接口没有返回添加的页面地址，需要前端手动刷新
+    if (attr === 'expandPageArea' && agentConfigInfo?.pageHomeIndex === null) {
+      runUpdateAgent(agentId, 'pageHomeIndex');
     }
 
     const {
