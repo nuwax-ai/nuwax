@@ -9,7 +9,6 @@ import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
-import { getSpaceIdFromUrl } from '@/models/appDev';
 import {
   bindDataSource,
   buildProject,
@@ -48,7 +47,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useModel } from 'umi';
+import { useModel, useParams } from 'umi';
 import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
 import FileTreePanel from './components/FileTreePanel';
@@ -62,6 +61,10 @@ const { Text } = Typography;
  * 提供Web集成开发环境功能，包括文件管理、代码编辑和实时预览
  */
 const AppDev: React.FC = () => {
+  // 获取路由参数
+  const params = useParams();
+  const spaceId = params.spaceId;
+
   // 数据源选择状态
   const [selectedDataResourceIds, setSelectedDataResourceIds] = useState<
     DataSourceSelection[]
@@ -83,9 +86,6 @@ const AppDev: React.FC = () => {
 
   // 使用简化的 AppDev projectId hook
   const { projectId, hasValidProjectId } = useAppDevProjectId();
-
-  // 获取 spaceId
-  const spaceId = getSpaceIdFromUrl();
 
   // 使用 Modal.confirm 来处理确认对话框
   const [, contextHolder] = Modal.useModal();
@@ -574,6 +574,8 @@ const AppDev: React.FC = () => {
         setSelectedFile(null);
 
         setTimeout(() => {
+          // 如果需要完全重新加载页面，使用 window.location.reload()
+          // 这是 UmiJS 推荐的方式，因为某些情况下需要重新初始化整个应用状态
           window.location.reload();
         }, 500);
       } else {
@@ -785,10 +787,7 @@ const AppDev: React.FC = () => {
         {/* 顶部头部区域 */}
         <AppDevHeader
           workspace={workspace}
-          onReloadProject={() => window.location.reload()}
-          onDeleteProject={() => {
-            // TODO: 实现删除项目功能
-          }}
+          spaceId={spaceId}
           onDeployProject={handleDeployProject}
           hasUpdates={projectInfo.hasUpdates}
           lastSaveTime={new Date()}
