@@ -582,7 +582,7 @@ export const useAppDevFileManagement = ({
         if (result?.success) {
           console.log('✅ [FileManagement] 文件删除成功:', fileNode.path);
           // 删除成功后重新加载文件树
-          await loadFileTree();
+          await loadFileTree(true, true);
 
           // 如果删除的是当前选中的文件，清空选择
           if (fileContentState.selectedFile === fileId) {
@@ -661,7 +661,7 @@ export const useAppDevFileManagement = ({
         if (result?.success) {
           console.log('✅ [FileManagement] 文件重命名成功:', newPath);
           // 重命名成功后重新加载文件树
-          await loadFileTree();
+          await loadFileTree(true, true);
 
           // 如果重命名的是当前选中的文件，更新选中状态
           if (fileContentState.selectedFile === fileId) {
