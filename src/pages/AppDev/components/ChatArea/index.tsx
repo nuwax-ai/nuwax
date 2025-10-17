@@ -24,7 +24,6 @@ import {
   Input,
   Menu,
   message,
-  Segmented,
   Select,
   Spin,
   Tag,
@@ -584,7 +583,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       {/* 聊天模式切换 */}
       <div className={styles.chatModeContainer}>
         <div className={styles.chatModeSwitcher}>
-          <Segmented
+          <div className={styles.chatModeSegmented}>
+            {/* <Segmented
             value={chatMode}
             onChange={(value) => setChatMode(value as 'chat' | 'code')}
             options={[
@@ -597,7 +597,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               },
             ]}
             className={styles.chatModeSegmented}
-          />
+          /> */}
+            AI 开发智能助手
+          </div>
           <div className={styles.versionSelectorWrapper}>
             <Select
               value={
@@ -638,7 +640,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 onVersionSelect(parseInt(value));
               }}
               placeholder="选择版本"
-              disabled={projectInfo.versionList.length === 0}
+              disabled={
+                projectInfo.versionList.length === 0 || chat.isChatLoading
+              }
             />
           </div>
 

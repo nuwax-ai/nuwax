@@ -21,6 +21,8 @@ export interface AppDevHeaderProps {
   hasUpdates?: boolean;
   lastSaveTime?: Date;
   isDeploying?: boolean;
+  /** 聊天加载状态，用于禁用相关功能 */
+  isChatLoading?: boolean;
   /** 项目详情信息 */
   projectInfo?: {
     name?: string;
@@ -49,6 +51,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   hasUpdates = true,
   lastSaveTime = new Date(),
   isDeploying = false,
+  isChatLoading = false, // 新增：聊天加载状态
   projectInfo,
   getDeployStatusText,
   getDeployStatusColor,
@@ -149,6 +152,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
             loading={isDeploying}
             onClick={onDeployProject}
             className={styles.deployButton}
+            disabled={isChatLoading} // 新增：聊天加载时禁用部署按钮
           >
             {isDeploying ? '部署中...' : '部署'}
           </Button>

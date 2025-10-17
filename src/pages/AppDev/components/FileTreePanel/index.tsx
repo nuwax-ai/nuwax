@@ -38,6 +38,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   workspace,
   fileManagement,
   isChatLoading = false,
+  projectId,
 }) => {
   // 文件树折叠状态
   const [isFileTreeCollapsed, setIsFileTreeCollapsed] = useState(false);
@@ -298,6 +299,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                       selectedResourceIds={selectedDataResourceIds}
                       onSelectionChange={onDataResourceSelectionChange}
                       isChatLoading={isChatLoading || isComparing}
+                      projectId={projectId}
                     />
                   </div>
                 </div>

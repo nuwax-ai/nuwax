@@ -25,6 +25,17 @@ export const isFileOperation = (messageData: any): boolean => {
   const kind = messageData.kind || '';
   const title = messageData.title || '';
 
+  // 检查是否包含文件路径相关的字段（新增）
+  const filePath = messageData.rawInput?.file_path || '';
+  const hasFileContent =
+    messageData.rawInput?.new_string || messageData.rawInput?.old_string;
+
+  // 检查 content 数组中是否包含文件编辑信息（新增）
+  const content = messageData.content || [];
+  const hasFileEditContent = content.some(
+    (item: any) => item.type === 'diff' && item.path,
+  );
+
   return (
     fileRelatedTools.some((tool) => toolName.includes(tool)) ||
     kind === 'edit' || // 文件编辑操作
@@ -37,16 +48,21 @@ export const isFileOperation = (messageData: any): boolean => {
     command.includes('touch ') || // 创建文件命令
     command.includes('echo ') || // 写入文件命令
     // command.includes('cat ') || // 读取文件命令（注释掉，避免过度触发）
-    title.includes('Edit ') || // 编辑文件标题
-    title.includes('Write ') || // 写入文件标题
-    title.includes('Create ') || // 创建文件标题
-    title.includes('Delete ') || // 删除文件标题
+
     description.includes('删除') ||
     description.includes('创建') ||
     description.includes('移动') ||
     description.includes('重命名') ||
     description.includes('编辑') ||
-    description.includes('写入')
+    description.includes('写入') ||
+    // 新增：检查文件路径和内容相关字段
+    (filePath && hasFileContent) || // 包含文件路径且有文件内容修改
+    hasFileEditContent || // content 数组中包含文件编辑信息
+    // 检查标题中是否包含文件路径（如 "Edit /path/to/file"）
+    (title.includes('Edit ') && title.includes('/')) ||
+    (title.includes('Write ') && title.includes('/')) ||
+    (title.includes('Create ') && title.includes('/')) ||
+    (title.includes('Delete ') && title.includes('/'))
   );
 };
 
