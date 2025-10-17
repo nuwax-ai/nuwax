@@ -152,29 +152,9 @@ export const useAppDevVersionCompare = ({
         setIsLoadingVersion(true);
         setTargetVersion(version);
 
-        console.log('🔄 [useAppDevVersionCompare] 开始版本对比:', {
-          projectId,
-          targetVersion: version,
-        });
-
         // 获取目标版本文件内容
         const response = await getProjectContentByVersion(projectId, version);
-        const files = response?.data?.files.map((file: any) => {
-          return {
-            ...file,
-            name: file.name.replace(
-              '../../project_zips/1976620100358377472/his_temp/',
-              '',
-            ),
-          };
-        });
-
-        console.log('📥 [useAppDevVersionCompare] API 响应:', {
-          code: response?.code,
-          hasFiles: !!files,
-          filesType: Array.isArray(files) ? 'array' : typeof files,
-          filesKeys: files ? Object.keys(files).slice(0, 5) : [],
-        });
+        const files = response?.data?.files as any[];
 
         if (response?.code === '0000' && files) {
           // 转换为FileNode树结构
@@ -183,19 +163,10 @@ export const useAppDevVersionCompare = ({
 
           // 进入对比模式
           setIsComparing(true);
-
-          console.log('✅ [useAppDevVersionCompare] 版本文件树加载完成:', {
-            targetVersion: version,
-            fileCount: files.length,
-            treeNodes: fileTree.length,
-          });
-
-          message.success(`版本 v${version} 文件树加载完成`);
         } else {
           throw new Error(response?.message || '获取版本文件失败');
         }
       } catch (error: any) {
-        console.error('❌ [useAppDevVersionCompare] 版本对比失败:', error);
         message.error(`版本对比失败: ${error.message || '未知错误'}`);
       } finally {
         setIsLoadingVersion(false);
@@ -211,8 +182,6 @@ export const useAppDevVersionCompare = ({
     setIsComparing(false);
     setTargetVersion(null);
     setVersionFiles([]);
-
-    console.log('🚫 [useAppDevVersionCompare] 取消版本对比');
   }, []);
 
   /**
@@ -226,12 +195,6 @@ export const useAppDevVersionCompare = ({
 
     try {
       setIsSwitching(true);
-
-      console.log('🔄 [useAppDevVersionCompare] 开始切换版本:', {
-        projectId,
-        targetVersion,
-        fileCount: versionFiles.length,
-      });
 
       // 准备要更新的文件 - 扁平化所有文件
       const filesToUpdate: PageFileInfo[] = [];
@@ -257,8 +220,6 @@ export const useAppDevVersionCompare = ({
       const response = await submitFilesUpdate(projectId, filesToUpdate);
 
       if (response?.code === '0000') {
-        console.log('✅ [useAppDevVersionCompare] 版本切换成功');
-
         // 退出对比模式
         cancelCompare();
 
@@ -270,7 +231,6 @@ export const useAppDevVersionCompare = ({
         throw new Error(response?.message || '版本切换失败');
       }
     } catch (error: any) {
-      console.error('❌ [useAppDevVersionCompare] 版本切换失败:', error);
       message.error(`版本切换失败: ${error.message || '未知错误'}`);
     } finally {
       setIsSwitching(false);

@@ -170,7 +170,6 @@ const AppDev: React.FC = () => {
       fileManagement.loadFileTree(false);
       // 刷新项目详情
       projectInfo.refreshProjectInfo();
-      message.success('版本切换成功');
     },
   });
 
@@ -219,7 +218,7 @@ const AppDev: React.FC = () => {
         // 然后启动版本对比
         await versionCompare.startVersionCompare(version);
       } catch (error) {
-        console.error('版本对比启动失败:', error);
+        // 版本对比启动失败
       }
     },
     [versionCompare],
@@ -309,8 +308,6 @@ const AppDev: React.FC = () => {
         throw new Error(errorMessage);
       }
     } catch (error: any) {
-      console.error('❌ [AppDev] 部署失败:', error);
-
       // 改进错误处理，兼容不同的错误格式
       const errorMessage =
         error?.message || error?.toString() || '部署过程中发生未知错误';
@@ -470,7 +467,6 @@ const AppDev: React.FC = () => {
           throw new Error(errorMessage);
         }
       } catch (error: any) {
-        console.error('❌ [AppDev] 绑定数据源失败:', error);
         const errorMessage =
           error?.message || error?.toString() || '绑定数据源时发生未知错误';
         message.error(errorMessage);
@@ -487,7 +483,7 @@ const AppDev: React.FC = () => {
       try {
         await dataResourceManagement.deleteResource(resourceId);
       } catch (error) {
-        console.error('删除数据资源失败:', error);
+        // 删除数据资源失败
       }
     },
     [dataResourceManagement],
@@ -580,7 +576,6 @@ const AppDev: React.FC = () => {
         message.warning('项目上传成功，但返回数据格式异常');
       }
     } catch (error) {
-      console.error('上传项目失败:', error);
       message.error(error instanceof Error ? error.message : '上传项目失败');
     } finally {
       setUploadLoading(false);
@@ -694,7 +689,6 @@ const AppDev: React.FC = () => {
         message.error(`删除失败: ${nodeToDelete.name}`);
       }
     } catch (error) {
-      console.error('删除失败:', error);
       message.error(`删除失败: ${nodeToDelete?.name}`);
     } finally {
       setDeleteModalVisible(false);
@@ -850,23 +844,18 @@ const AppDev: React.FC = () => {
                         showIcon
                         style={{ marginRight: 16 }}
                       />
-                      <Text type="secondary" style={{ marginRight: 8 }}>
-                        版本 v{versionCompare.targetVersion}
-                      </Text>
                       <Button
-                        size="small"
                         onClick={versionCompare.cancelCompare}
                         disabled={versionCompare.isSwitching}
                       >
                         取消
                       </Button>
                       <Button
-                        size="small"
                         type="primary"
                         onClick={versionCompare.confirmVersionSwitch}
                         loading={versionCompare.isSwitching}
                       >
-                        确认切换版本
+                        切换 v{versionCompare.targetVersion} 版本
                       </Button>
                     </>
                   ) : (

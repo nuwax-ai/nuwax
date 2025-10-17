@@ -683,7 +683,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           value={chat.chatInput}
           onChange={(e) => chat.setChatInput(e.target.value)}
           onPressEnter={(e) => {
-            if (!e.shiftKey && !e.ctrlKey) {
+            if (!e.ctrlKey) {
               if (chat.isChatLoading) {
                 //当前还在输出 不能提交
                 return message.info('执行中 不能发送');
