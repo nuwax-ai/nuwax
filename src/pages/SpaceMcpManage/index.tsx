@@ -29,17 +29,32 @@ import {
 import { Button, Empty, Input, message, Modal, Segmented, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { history, useModel, useParams, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import styles from './index.less';
 import McpComponentItem from './McpComponentItem';
 import ServerExportModal from './ServerExportModal';
 const cx = classNames.bind(styles);
 const { confirm } = Modal;
+type IQuery = 'create' | 'deployStatus' | 'segmentedValue' | 'keyword';
 
 /**
  * 工作空间 - MCP管理
  */
 const SpaceLibrary: React.FC = () => {
+  // ✅ umi 中的 useSearchParams
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ✅ 当 select 改变时同步 URL
+  const handleChange = (key: IQuery, value: string) => {
+    // 更新 URL 参数
+    const newParams = new URLSearchParams(searchParams);
+    if (value) {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
+    }
+    setSearchParams(newParams);
+  };
   const params = useParams();
   const spaceId = Number(params.spaceId);
   // Mcp管理列表
@@ -47,22 +62,24 @@ const SpaceLibrary: React.FC = () => {
   // 所有Mcp管理列表
   const mcpListAllRef = useRef<McpDetailInfo[]>([]);
   // 搜索关键词
-  const [keyword, setKeyword] = useState<string>('');
+  const [keyword, setKeyword] = useState<string>(
+    searchParams.get('keyword') || '',
+  );
   const [loading, setLoading] = useState<boolean>(false);
   // 创建者
   const [create, setCreate] = useState<CreateListEnum>(
-    CreateListEnum.All_Person,
+    Number(searchParams.get('create')) || CreateListEnum.All_Person,
   );
   // 过滤部署状态
   const [deployStatus, setDeployStatus] = useState<FilterDeployEnum>(
-    FilterDeployEnum.All,
+    searchParams.get('deployStatus') || FilterDeployEnum.All,
   );
   // 服务导出弹窗
   const [serverExportModalVisible, setServerExportModalVisible] =
     useState<boolean>(false);
   // 分段器
   const [segmentedValue, setSegmentedValue] = useState<McpManageSegmentedEnum>(
-    McpManageSegmentedEnum.Custom,
+    searchParams.get('segmentedValue') || McpManageSegmentedEnum.Custom,
   );
   // 当前Mcp信息
   const currentMcpInfoRef = useRef<McpDetailInfo | null>(null);
@@ -90,6 +107,24 @@ const SpaceLibrary: React.FC = () => {
     }
     setMcpList(_list);
   };
+
+  // ✅ 监听 URL 改变（支持浏览器前进/后退）
+  useEffect(() => {
+    const create =
+      Number(searchParams.get('create')) || CreateListEnum.All_Person;
+    const deployStatus =
+      searchParams.get('deployStatus') || FilterDeployEnum.All;
+    const segmentedValue =
+      searchParams.get('segmentedValue') || McpManageSegmentedEnum.Custom;
+    const keyword = searchParams.get('keyword') || '';
+
+    setCreate(create);
+    setDeployStatus(deployStatus);
+    setSegmentedValue(segmentedValue);
+    setKeyword(keyword);
+
+    handleFilterList(create, deployStatus, keyword);
+  }, [searchParams]);
 
   // 过滤官方服务列表数据
   const handleFilterOfficialList = (
@@ -128,7 +163,7 @@ const SpaceLibrary: React.FC = () => {
     onSuccess: (result: McpDetailInfo[]) => {
       setLoading(false);
       mcpListAllRef.current = result;
-      handleFilterOfficialList('', result);
+      handleFilterOfficialList(keyword, result);
     },
     onError: () => {
       setLoading(false);
@@ -184,9 +219,12 @@ const SpaceLibrary: React.FC = () => {
   });
 
   useEffect(() => {
-    setSegmentedValue(McpManageSegmentedEnum.Custom);
+    setSegmentedValue(
+      searchParams.get('segmentedValue') || McpManageSegmentedEnum.Custom,
+    );
     setLoading(true);
     runMcpList(spaceId);
+    runMcpOfficialList();
   }, [spaceId]);
 
   // 切换创建者
@@ -194,6 +232,7 @@ const SpaceLibrary: React.FC = () => {
     const _value = value as CreateListEnum;
     setCreate(_value);
     handleFilterList(_value, deployStatus, keyword);
+    handleChange('create', _value.toString());
   };
 
   // 切换部署状态
@@ -201,12 +240,14 @@ const SpaceLibrary: React.FC = () => {
     const _value = value as FilterDeployEnum;
     setDeployStatus(_value);
     handleFilterList(create, _value, keyword);
+    handleChange('deployStatus', _value);
   };
 
   // 智能体搜索
   const handleQueryAgent = (e: React.ChangeEvent<HTMLInputElement>) => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
+    handleChange('keyword', _keyword);
     if (segmentedValue === McpManageSegmentedEnum.Custom) {
       handleFilterList(create, deployStatus, _keyword);
     } else {
@@ -282,8 +323,9 @@ const SpaceLibrary: React.FC = () => {
 
   // 切换分段器
   const handleChangeSegmentedValue = (value: McpManageSegmentedEnum) => {
+    handleChange('segmentedValue', value);
     setSegmentedValue(value);
-    setKeyword('');
+    // setKeyword('');
     setLoading(true);
     if (value === McpManageSegmentedEnum.Custom) {
       runMcpList(spaceId);

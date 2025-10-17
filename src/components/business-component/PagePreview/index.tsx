@@ -54,8 +54,13 @@ const PagePreview: React.FC<PagePreviewProps> = ({
   const pageUrl = useMemo(() => {
     if (!pagePreviewData) return '';
 
-    const { uri, params } = pagePreviewData;
+    let { uri, params } = pagePreviewData;
     if (!uri) return '';
+
+    // 如果不是 http(s) 开头，则加上 BASE_URL
+    if (!/^https?:\/\//.test(uri)) {
+      uri = `${process.env.BASE_URL}${uri}`;
+    }
 
     // 如果没有参数，直接返回 uri
     if (!params || Object.keys(params).length === 0) {
