@@ -1,5 +1,35 @@
 # ChatArea 组件更新日志
 
+## v1.6.5 - 2025-01-17
+
+### 功能还原：Plan Tool Call 插入实现还原
+
+- ✅ **还原 Plan、Tool Call、Tool Call Update 的插入实现**
+- ✅ 修复 SSE 消息处理逻辑，使用正确的插入函数
+- ✅ 确保每种消息类型都使用对应的插入函数
+- ✅ 修复重复导入问题，优化代码结构
+
+### 技术改进
+
+- 🔧 `plan` 消息使用 `insertPlanBlock` 函数
+- 🔧 `tool_call` 消息使用 `insertToolCallBlock` 函数
+- 🔧 `tool_call_update` 消息使用 `insertToolCallUpdateBlock` 函数
+- 🔧 修复重复导入 `insertToolCallUpdateBlock` 的问题
+- 🔧 优化代码格式，提升可读性
+
+### 消息处理逻辑
+
+- 📝 **Plan 消息**: 插入 `<appdev-plan>` 标记，包含计划数据
+- 📝 **Tool Call 消息**: 插入 `<appdev-toolcall type="tool_call">` 标记
+- 📝 **Tool Call Update 消息**: 插入 `<appdev-toolcall type="tool_call_update">` 标记
+- 📝 **独立渲染**: 每种消息类型都独立插入，不再使用关联更新逻辑
+
+### 修复问题
+
+- 🐛 修复 `tool_call` 类型错误使用 `insertToolCallUpdateBlock` 的问题
+- 🐛 修复重复导入导致的编译错误
+- 🐛 确保每种消息类型都有对应的处理逻辑
+
 ## v1.6.4 - 2025-01-17
 
 ### 样式优化：AppDev Markdown 字号和行高调整

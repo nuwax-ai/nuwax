@@ -128,7 +128,7 @@
   padding: 20px 12px 20px 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   scroll-behavior: smooth;
   overflow-y: auto;
 
@@ -218,10 +218,10 @@
     justify-content: flex-end;
 
     .messageBubble {
-      background: #1890ff;
-      color: #fff;
+      background: #f0f0f0;
+      color: @colorTextBase;
       border-radius: 18px 18px 4px;
-      padding: 12px 16px 4px 12px;
+      padding: 12px;
       max-width: 94%;
     }
   }
@@ -231,11 +231,9 @@
     justify-content: flex-start;
 
     .messageBubble {
-      background: #f0f0f0;
-      color: #000;
       border-radius: 18px 18px 18px 4px;
-      padding: 12px 16px 4px 12px;
-      max-width: 94%;
+      padding: 6px 12px;
+      max-width: 100%;
     }
   }
 }
