@@ -51,6 +51,7 @@ import { useModel, useParams } from 'umi';
 import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
 import FileTreePanel from './components/FileTreePanel';
+import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
 import styles from './index.less';
 
@@ -69,6 +70,9 @@ const AppDev: React.FC = () => {
   const [selectedDataResourceIds, setSelectedDataResourceIds] = useState<
     DataSourceSelection[]
   >([]);
+
+  // 页面编辑状态
+  const [openPageEditVisible, setOpenPageEditVisible] = useState(false);
 
   // 使用 AppDev 模型来管理状态
   const appDevModel = useModel('appDev');
@@ -769,6 +773,14 @@ const AppDev: React.FC = () => {
     );
   }
 
+  /**
+   * 确认编辑项目
+   */
+  const handleConfirmEditProject = () => {
+    setOpenPageEditVisible(false);
+    projectInfo.refreshProjectInfo();
+  };
+
   return (
     <>
       {contextHolder}
@@ -788,6 +800,7 @@ const AppDev: React.FC = () => {
         <AppDevHeader
           workspace={workspace}
           spaceId={spaceId}
+          onEditProject={() => setOpenPageEditVisible(true)}
           onDeployProject={handleDeployProject}
           hasUpdates={projectInfo.hasUpdates}
           lastSaveTime={new Date()}
@@ -1199,6 +1212,13 @@ const AppDev: React.FC = () => {
           )}
         />
       </div>
+      {/* 页面开发项目编辑模态框 */}
+      <PageEditModal
+        open={openPageEditVisible}
+        onCancel={() => setOpenPageEditVisible(false)}
+        onConfirm={handleConfirmEditProject}
+        projectInfo={projectInfo.projectInfoState.projectInfo}
+      />
     </>
   );
 };

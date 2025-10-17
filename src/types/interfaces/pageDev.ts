@@ -5,6 +5,7 @@ import {
   PageProjectTypeEnum,
   ReverseProxyEnum,
 } from '../enums/pageDev';
+import { ProjectDetailData } from './appDev';
 import { BindConfigWithSub, CustomPopoverItem } from './common';
 
 /**
@@ -167,7 +168,8 @@ export interface PageCreateModalProps {
  */
 export interface PageEditModalProps {
   open: boolean;
-  currentPageInfo: CustomPageDto;
+  /** 项目详情数据 */
+  projectInfo: ProjectDetailData | null;
   onCancel: () => void;
   onConfirm: () => void;
 }
