@@ -241,7 +241,6 @@ const AgentDetails: React.FC = () => {
         {agentDetail?.hideChatArea ? null : (
           <div
             className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}
-            style={{ width: '33%' }}
           >
             <div className={cx(styles['title-box'])}>
               <div className={cx(styles['title-container'])}>

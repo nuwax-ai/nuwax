@@ -267,7 +267,10 @@ const PagePreview: React.FC<PagePreviewProps> = ({
                 title={pagePreviewData.name || '页面预览'}
                 onLoad={handleIframeLoad}
                 onError={handleIframeError}
-                style={{ opacity: isLoading ? 0 : 1 }}
+                style={{
+                  opacity: isLoading ? 0 : 1,
+                  transition: 'opacity 1.5s ease-in-out',
+                }}
               />
             )}
           </div>
