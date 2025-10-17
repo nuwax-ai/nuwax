@@ -225,7 +225,7 @@ const AppDev: React.FC = () => {
   );
 
   // 聊天模式状态
-  const [chatMode, setChatMode] = useState<'chat' | 'design'>('chat');
+  const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
 
   // 错误提示状态
   const [showErrorAlert, setShowErrorAlert] = useState(false);
@@ -714,15 +714,23 @@ const AppDev: React.FC = () => {
   // 页面退出时的资源清理
   useEffect(() => {
     return () => {
+      console.log('🧹 [AppDev] 页面卸载，开始清理资源');
+
       // 清理聊天相关资源
-      chat.cleanupAppDevSSE();
+      if (chat.cleanupAppDevSSE) {
+        console.log('🧹 [AppDev] 清理聊天SSE连接');
+        chat.cleanupAppDevSSE();
+      }
 
       // 清理服务器相关资源
       if (server.stopKeepAlive) {
+        console.log('🧹 [AppDev] 停止服务器保活轮询');
         server.stopKeepAlive();
       }
+
+      console.log('✅ [AppDev] 资源清理完成');
     };
-  }, [chat.cleanupAppDevSSE, server.stopKeepAlive]);
+  }, []); // 空依赖数组，只在组件卸载时执行
 
   // 如果缺少 projectId，显示提示信息
   if (missingProjectId) {

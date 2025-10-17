@@ -49,6 +49,7 @@ interface ChatAreaProps {
   fileContentState: any;
   modelSelector: any;
   onClearUploadedImages?: (callback: () => void) => void;
+  onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
 }
 
 /**
@@ -67,6 +68,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   fileContentState,
   modelSelector,
   onClearUploadedImages,
+  onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
