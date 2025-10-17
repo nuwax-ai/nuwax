@@ -31,7 +31,7 @@
 }
 
 .title {
-  font-size: @fontSizeLg;
+  font-size: @fontSize;
   font-weight: @fontWeightStrong;
   color: @colorTextBase;
 }
@@ -90,56 +90,4 @@
   height: 100%;
   border: none;
   background: @colorBgContainer;
-}
-
-.emptyState {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: @colorTextTertiary;
-  padding: 40px;
-  text-align: center;
-}
-
-.emptyIcon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  opacity: 0.6;
-  color: @colorTextTertiary;
-}
-
-.emptyTitle {
-  font-size: 18px;
-  font-weight: 500;
-  color: @colorTextBase;
-  margin: 0 0 8px;
-}
-
-.emptyDescription {
-  font-size: 14px;
-  color: @colorTextTertiary;
-  margin: 0;
-  line-height: 1.5;
-}
-
-// 响应式设计
-@media (max-width: 768px) {
-  .previewHeader {
-    padding: 8px 12px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .titleSection {
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .headerRight {
-    width: 100%;
-    justify-content: flex-end;
-  }
 }

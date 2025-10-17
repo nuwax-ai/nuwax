@@ -1,7 +1,8 @@
+import pageImage from '@/assets/images/agent_image.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import { jumpBack } from '@/utils/router';
-import { RocketOutlined, UserOutlined } from '@ant-design/icons';
-import { Avatar, Button, Tag } from 'antd';
+import { FormOutlined, RocketOutlined } from '@ant-design/icons';
+import { Avatar, Button, Space, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -14,9 +15,9 @@ export interface AppDevHeaderProps {
     name?: string;
     projectId?: string;
   };
-  onReloadProject?: () => void;
-  onDeleteProject?: () => void;
+  spaceId: string;
   onDeployProject?: () => void;
+  onEditProject: () => void;
   hasUpdates?: boolean;
   lastSaveTime?: Date;
   isDeploying?: boolean;
@@ -24,6 +25,7 @@ export interface AppDevHeaderProps {
   projectInfo?: {
     name?: string;
     description?: string;
+    icon?: string;
     buildRunning?: number;
     buildTime?: string;
     creatorName?: string;
@@ -42,6 +44,8 @@ export interface AppDevHeaderProps {
 const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   workspace,
   onDeployProject,
+  onEditProject,
+  spaceId,
   hasUpdates = true,
   lastSaveTime = new Date(),
   isDeploying = false,
@@ -52,10 +56,13 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   // 获取项目名称，优先使用接口数据
   const projectName = projectInfo?.name || workspace.name || '大模型三部曲';
 
+  // 获取项目图标，优先使用接口数据，为空时使用默认图标
+  const projectIcon = projectInfo?.icon;
+
   // 获取创建者信息
   // const creatorName =
   //   projectInfo?.creatorNickName || projectInfo?.creatorName || '未知用户';
-  const creatorAvatar = projectInfo?.creatorAvatar;
+  // const creatorAvatar = projectInfo?.creatorAvatar;
 
   // 获取部署状态
   const deployStatus = projectInfo?.buildRunning;
@@ -78,23 +85,22 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
       <SvgIcon
         name="icons-nav-backward"
         className={cx(styles['icon-backward'])}
-        onClick={() => jumpBack('/')}
+        onClick={() => jumpBack(`/space/${spaceId}/page-develop`)}
       />
-      <Avatar
-        size={27}
-        icon={<UserOutlined />}
-        className={cx(styles.avatar)}
-        src={creatorAvatar}
-      />
+      {/* 项目图标 - 优先显示项目图标，为空时显示创建者头像 */}
+      <Space size={27} wrap>
+        <Avatar size={27} shape="square" src={projectIcon || pageImage} />
+      </Space>
       <div className={cx('flex', 'flex-col', styles['header-info'])}>
         <div className={cx('flex', 'items-center')}>
           <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
             {projectName}
           </h3>
+          <FormOutlined
+            className={cx(styles['edit-ico'], 'cursor-pointer')}
+            onClick={onEditProject}
+          />
           <div className={cx('flex', 'items-center', styles['agent-rel-info'])}>
-            <span className={cx(styles['space-name'], 'text-ellipsis')}>
-              {projectName}
-            </span>
             {workspace.projectId && (
               <span className={cx(styles['project-id'])}>
                 项目ID: {workspace.projectId}
@@ -137,21 +143,6 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
           )}
         </div>
         <div className={cx('flex', 'items-center', styles['action-buttons'])}>
-          {/* <Button
-            size="small"
-            className={styles.navButton}
-            onClick={onReloadProject}
-          >
-            重新加载项目
-          </Button> */}
-          {/* <Button
-            size="small"
-            danger
-            className={styles.actionButton}
-            onClick={onDeleteProject}
-          >
-            删除
-          </Button> */}
           <Button
             type="primary"
             icon={<RocketOutlined />}

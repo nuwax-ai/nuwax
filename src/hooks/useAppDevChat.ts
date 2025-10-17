@@ -244,11 +244,9 @@ export const useAppDevChat = ({
           // SSE连接已建立
         },
         onMessage: (data: UnifiedSessionMessage) => {
-          // console.log('📨 [AppDev SSE Model] 收到消息:', data);
           handleSSEMessage(data, requestId);
         },
         onError: (error: Error) => {
-          console.error('❌ [Chat] AppDev SSE 连接错误:', error);
           message.error('AI助手连接失败');
           //要把 chatMessages 里 ASSISTANT 当前 isSteaming 修改一下 false 并给出错误消息
           setChatMessages((prev) =>
@@ -343,8 +341,12 @@ export const useAppDevChat = ({
             onClearDataSourceSelections();
           }
 
-          // 添加用户消息
-          const userMessage = createUserMessage(chatInput, requestId);
+          // 添加用户消息（包含附件）
+          const userMessage = createUserMessage(
+            chatInput,
+            requestId,
+            attachments,
+          );
 
           setChatMessages((prev) => [...prev, userMessage]);
           setChatInput('');
@@ -363,7 +365,6 @@ export const useAppDevChat = ({
             sendMessageAndConnectSSE(); //继续发送消息
           });
         } else {
-          console.error('发送消息失败:', error);
           message.error('发送消息失败');
           setIsChatLoading(false);
         }
@@ -455,7 +456,6 @@ export const useAppDevChat = ({
           setChatMessages(messages);
         }
       } catch (error) {
-        console.error('❌ [Chat] 加载历史会话失败:', error);
         message.error('加载历史会话失败');
       }
     },
@@ -496,13 +496,7 @@ export const useAppDevChat = ({
             });
 
             allMessages.push(...messagesWithSessionInfo);
-          } catch (parseError) {
-            console.warn(
-              '⚠️ [Chat] 解析会话内容失败:',
-              conversation.sessionId,
-              parseError,
-            );
-          }
+          } catch (parseError) {}
         }
 
         // 按时间戳排序所有消息
@@ -512,7 +506,6 @@ export const useAppDevChat = ({
         setChatMessages(sortedMessages);
       }
     } catch (error) {
-      console.error('❌ [Chat] 自动加载所有历史会话失败:', error);
       // 不显示错误提示，因为这是自动加载，用户可能不知道
     } finally {
       setIsLoadingHistory(false);

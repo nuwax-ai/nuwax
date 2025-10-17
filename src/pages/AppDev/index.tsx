@@ -47,10 +47,11 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useModel } from 'umi';
+import { useModel, useParams } from 'umi';
 import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
 import FileTreePanel from './components/FileTreePanel';
+import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
 import styles from './index.less';
 
@@ -61,10 +62,17 @@ const { Text } = Typography;
  * 提供Web集成开发环境功能，包括文件管理、代码编辑和实时预览
  */
 const AppDev: React.FC = () => {
+  // 获取路由参数
+  const params = useParams();
+  const spaceId = params.spaceId;
+
   // 数据源选择状态
   const [selectedDataResourceIds, setSelectedDataResourceIds] = useState<
     DataSourceSelection[]
   >([]);
+
+  // 页面编辑状态
+  const [openPageEditVisible, setOpenPageEditVisible] = useState(false);
 
   // 使用 AppDev 模型来管理状态
   const appDevModel = useModel('appDev');
@@ -225,7 +233,7 @@ const AppDev: React.FC = () => {
   );
 
   // 聊天模式状态
-  const [chatMode, setChatMode] = useState<'chat' | 'design'>('chat');
+  const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
 
   // 错误提示状态
   const [showErrorAlert, setShowErrorAlert] = useState(false);
@@ -561,7 +569,7 @@ const AppDev: React.FC = () => {
         file: selectedFile,
         projectId: projectId || undefined,
         projectName: workspace.projectName || '未命名项目',
-        // spaceId: 32, //TODO 后续 删除 这个参数
+        spaceId: spaceId ? Number(spaceId) : undefined,
       });
 
       if (result?.success && result?.data) {
@@ -570,6 +578,8 @@ const AppDev: React.FC = () => {
         setSelectedFile(null);
 
         setTimeout(() => {
+          // 如果需要完全重新加载页面，使用 window.location.reload()
+          // 这是 UmiJS 推荐的方式，因为某些情况下需要重新初始化整个应用状态
           window.location.reload();
         }, 500);
       } else {
@@ -714,15 +724,23 @@ const AppDev: React.FC = () => {
   // 页面退出时的资源清理
   useEffect(() => {
     return () => {
+      console.log('🧹 [AppDev] 页面卸载，开始清理资源');
+
       // 清理聊天相关资源
-      chat.cleanupAppDevSSE();
+      if (chat.cleanupAppDevSSE) {
+        console.log('🧹 [AppDev] 清理聊天SSE连接');
+        chat.cleanupAppDevSSE();
+      }
 
       // 清理服务器相关资源
       if (server.stopKeepAlive) {
+        console.log('🧹 [AppDev] 停止服务器保活轮询');
         server.stopKeepAlive();
       }
+
+      console.log('✅ [AppDev] 资源清理完成');
     };
-  }, [chat.cleanupAppDevSSE, server.stopKeepAlive]);
+  }, []); // 空依赖数组，只在组件卸载时执行
 
   // 如果缺少 projectId，显示提示信息
   if (missingProjectId) {
@@ -733,7 +751,7 @@ const AppDev: React.FC = () => {
           description={
             <div>
               <p>请在 URL 中添加 projectId 参数，例如：</p>
-              <code>/app-dev?projectId=你的项目ID</code>
+              <code>/space/你的空间ID/app-dev/你的项目ID</code>
             </div>
           }
           type="warning"
@@ -755,6 +773,14 @@ const AppDev: React.FC = () => {
     );
   }
 
+  /**
+   * 确认编辑项目
+   */
+  const handleConfirmEditProject = () => {
+    setOpenPageEditVisible(false);
+    projectInfo.refreshProjectInfo();
+  };
+
   return (
     <>
       {contextHolder}
@@ -773,10 +799,8 @@ const AppDev: React.FC = () => {
         {/* 顶部头部区域 */}
         <AppDevHeader
           workspace={workspace}
-          onReloadProject={() => window.location.reload()}
-          onDeleteProject={() => {
-            // TODO: 实现删除项目功能
-          }}
+          spaceId={spaceId}
+          onEditProject={() => setOpenPageEditVisible(true)}
           onDeployProject={handleDeployProject}
           hasUpdates={projectInfo.hasUpdates}
           lastSaveTime={new Date()}
@@ -863,16 +887,15 @@ const AppDev: React.FC = () => {
                       {/* 原有的按钮：重启服务、全屏预览、导出项目 */}
                       <Tooltip title="重启开发服务器">
                         <Button
-                          size="small"
+                          type="text"
                           icon={<SyncOutlined />}
                           onClick={handleRestartDevServer}
                           loading={isRestarting}
-                          className={styles.headerButton}
                         />
                       </Tooltip>
                       <Tooltip title="全屏预览">
                         <Button
-                          size="small"
+                          type="text"
                           icon={<FullscreenOutlined />}
                           onClick={() => {
                             if (previewRef.current && workspace.devServerUrl) {
@@ -882,15 +905,13 @@ const AppDev: React.FC = () => {
                               );
                             }
                           }}
-                          className={styles.headerButton}
                         />
                       </Tooltip>
                       <Tooltip title="导出项目">
                         <Button
-                          size="small"
+                          type="text"
                           icon={<DownloadOutlined />}
                           onClick={handleExportProject}
-                          className={styles.headerButton}
                           loading={isExporting}
                         />
                       </Tooltip>
@@ -978,6 +999,7 @@ const AppDev: React.FC = () => {
                         isStarting={server.isStarting}
                         startError={server.startError}
                         previewRef={previewRef}
+                        onStartDev={server.startServer}
                         onContentChange={(fileId, content) => {
                           if (
                             !versionCompare.isComparing &&
@@ -1190,6 +1212,13 @@ const AppDev: React.FC = () => {
           )}
         />
       </div>
+      {/* 页面开发项目编辑模态框 */}
+      <PageEditModal
+        open={openPageEditVisible}
+        onCancel={() => setOpenPageEditVisible(false)}
+        onConfirm={handleConfirmEditProject}
+        projectInfo={projectInfo.projectInfoState.projectInfo}
+      />
     </>
   );
 };

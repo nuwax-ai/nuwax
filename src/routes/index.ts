@@ -134,6 +134,12 @@ const routes = [
     layout: false,
   },
   {
+    path: '/space/:spaceId/app-dev/:projectId',
+    component: '@/pages/AppDev',
+    wrappers: ['@/wrappers/authWithLoading'],
+    layout: false,
+  },
+  {
     path: '/*',
     component: '@/pages/404',
     layout: false,
@@ -151,12 +157,6 @@ const routes = [
   {
     path: '/examples/svg-icon-showcase',
     component: '@/examples/SvgIconShowcase',
-    layout: false,
-  },
-  {
-    path: '/app-dev',
-    name: 'AppDev',
-    component: '@/pages/AppDev',
     layout: false,
   },
 ];

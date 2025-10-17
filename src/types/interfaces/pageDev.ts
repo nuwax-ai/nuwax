@@ -5,6 +5,7 @@ import {
   PageProjectTypeEnum,
   ReverseProxyEnum,
 } from '../enums/pageDev';
+import { ProjectDetailData } from './appDev';
 import { BindConfigWithSub, CustomPopoverItem } from './common';
 
 /**
@@ -163,6 +164,17 @@ export interface PageCreateModalProps {
 }
 
 /**
+ * 页面编辑弹窗Props
+ */
+export interface PageEditModalProps {
+  open: boolean;
+  /** 项目详情数据 */
+  projectInfo: ProjectDetailData | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+/**
  * 路径参数配置弹窗Props
  */
 export interface PathParamsConfigModalProps {
@@ -209,4 +221,18 @@ export interface ReverseProxyContentConfigProps {
   // 所有的反向代理配置（包括开发环境和生产环境）
   proxyConfigs?: ProxyConfig[];
   onConfirm: (proxyConfigs: ProxyConfig[]) => void;
+}
+
+/**
+ * 修改项目参数
+ */
+export interface PageUpdateParams {
+  // 项目ID
+  projectId: number;
+  // 项目名称
+  projectName: string;
+  // 项目描述
+  projectDesc: string;
+  // 项目图标
+  icon: string;
 }

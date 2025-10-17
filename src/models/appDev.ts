@@ -34,14 +34,6 @@ export interface AppDevWorkspace {
 }
 
 /**
- * 从URL参数中获取projectId
- */
-export const getProjectIdFromUrl = (): string | null => {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('projectId');
-};
-
-/**
  * 默认工作区配置
  */
 const initialWorkspace: AppDevWorkspace = {

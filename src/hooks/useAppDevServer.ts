@@ -42,52 +42,17 @@ export const useAppDevServer = ({
    */
   const handleKeepAliveResponse = useCallback(
     (response: any) => {
-      console.log('🔍 [Server] 处理保活响应:', {
-        hasData: !!response?.data,
-        hasDevServerUrl: !!response?.data?.devServerUrl,
-        projectId: response?.data?.projectId,
-        projectIdStr: response?.data?.projectIdStr,
-        devServerUrl: response?.data?.devServerUrl,
-        fullResponse: response,
-      });
-
       if (response?.data?.devServerUrl) {
         const newDevServerUrl = response.data.devServerUrl;
         const currentDevServerUrl = devServerUrl;
 
-        console.log('🔍 [Server] 预览地址比较:', {
-          currentUrl: currentDevServerUrl,
-          newUrl: newDevServerUrl,
-          isDifferent: newDevServerUrl !== currentDevServerUrl,
-          projectId: response.data.projectId,
-          projectIdStr: response.data.projectIdStr,
-        });
-
         // 如果返回的URL与当前URL不同，更新预览地址
         if (newDevServerUrl !== currentDevServerUrl) {
-          console.log('🔄 [Server] 保活接口返回新的预览地址，正在更新:', {
-            oldUrl: currentDevServerUrl,
-            newUrl: newDevServerUrl,
-            projectId: response.data.projectId,
-            projectIdStr: response.data.projectIdStr,
-            timestamp: new Date().toISOString(),
-          });
-
           setDevServerUrl(newDevServerUrl);
           onServerStart?.(newDevServerUrl);
-
-          console.log('✅ [Server] 预览地址更新完成');
         } else {
-          console.log(
-            'ℹ️ [Server] 预览地址未变化，保持当前地址:',
-            currentDevServerUrl,
-          );
         }
       } else {
-        console.log('⚠️ [Server] 保活响应中未包含 devServerUrl:', {
-          responseData: response?.data,
-          hasData: !!response?.data,
-        });
       }
     },
     [devServerUrl, onServerStart],
@@ -98,21 +63,15 @@ export const useAppDevServer = ({
    */
   const startServer = useCallback(async () => {
     if (!projectId) {
-      console.warn('⚠️ [Server] 没有项目ID，跳过开发环境启动');
       return;
     }
 
     if (lastProjectIdRef.current !== projectId) {
-      console.log('🔄 [Server] 项目ID发生变化，重置启动状态', {
-        oldProjectId: lastProjectIdRef.current,
-        newProjectId: projectId,
-      });
       hasStartedRef.current = false;
       lastProjectIdRef.current = projectId;
     }
 
     if (hasStartedRef.current) {
-      console.log('⚠️ [Server] 开发环境已经启动过，跳过重复启动');
       return;
     }
 
@@ -120,40 +79,18 @@ export const useAppDevServer = ({
       hasStartedRef.current = true;
       setIsStarting(true);
       setStartError(null);
-      console.log('🚀 [Server] 正在启动开发环境...', { projectId });
 
       const response = await startDev(projectId);
-      console.log('✅ [Server] 开发环境启动成功:', {
-        projectId: response?.data?.projectId,
-        projectIdStr: response?.data?.projectIdStr,
-        devServerUrl: response?.data?.devServerUrl,
-        prodServerUrl: response?.data?.prodServerUrl,
-        fullResponse: response,
-      });
 
       if (response?.data?.devServerUrl) {
-        console.log(
-          '🔗 [Server] 存储开发服务器URL (startDev):',
-          response.data.devServerUrl,
-        );
         setDevServerUrl(response.data.devServerUrl);
         setIsRunning(true);
         onServerStart?.(response.data.devServerUrl);
         onServerStatusChange?.(true);
 
-        // 启动后立即进行一次保活检查，获取最新的预览地址
-        console.log('🔄 [Server] 启动后立即进行保活检查，获取最新预览地址...');
-        keepAlive(projectId)
-          .then((keepAliveResponse) => {
-            console.log('💗 [Server] 启动后保活检查成功:', keepAliveResponse);
-            handleKeepAliveResponse(keepAliveResponse);
-          })
-          .catch((error) => {
-            console.error('❌ [Server] 启动后保活检查失败:', error);
-          });
+        // 注意：不再在 startServer 中进行保活检查，统一由 startKeepAlive 处理
       }
     } catch (error) {
-      console.error('❌ [Server] 开发环境启动失败:', error);
       setStartError(
         error instanceof Error ? error.message : '启动开发环境失败',
       );
@@ -169,57 +106,31 @@ export const useAppDevServer = ({
    */
   const startKeepAlive = useCallback(() => {
     if (!projectId) {
-      console.log('⚠️ [Server] 没有项目ID，跳过保活轮询');
       return;
     }
 
+    // 如果已经有保活定时器在运行，先停止
     if (keepAliveTimerRef.current) {
       clearInterval(keepAliveTimerRef.current);
+      keepAliveTimerRef.current = null;
     }
 
     // 初始保活请求
-    console.log('🚀 [Server] 发送初始保活请求，项目ID:', projectId);
+
     keepAlive(projectId)
       .then((response) => {
-        console.log('💗 [Server] 初始保活成功:', {
-          projectId,
-          responseCode: response?.code,
-          hasData: !!response?.data,
-          timestamp: new Date().toISOString(),
-        });
         handleKeepAliveResponse(response);
       })
-      .catch((error) => {
-        console.error('❌ [Server] 初始保活失败:', {
-          projectId,
-          error: error.message || error,
-          timestamp: new Date().toISOString(),
-        });
-      });
+      .catch(() => {});
 
     // 设置定时保活轮询
     keepAliveTimerRef.current = setInterval(() => {
-      console.log('⏰ [Server] 执行定时保活轮询，项目ID:', projectId);
       keepAlive(projectId)
         .then((response) => {
-          console.log('💗 [Server] 保活轮询成功:', {
-            projectId,
-            responseCode: response?.code,
-            hasData: !!response?.data,
-            timestamp: new Date().toISOString(),
-          });
           handleKeepAliveResponse(response);
         })
-        .catch((error) => {
-          console.error('❌ [Server] 保活轮询失败:', {
-            projectId,
-            error: error.message || error,
-            timestamp: new Date().toISOString(),
-          });
-        });
+        .catch(() => {});
     }, DEV_SERVER_CONSTANTS.SSE_HEARTBEAT_INTERVAL);
-
-    console.log('💗 [Server] 已启动30秒保活轮询，项目ID:', projectId);
   }, [projectId, handleKeepAliveResponse]);
 
   /**
@@ -229,7 +140,7 @@ export const useAppDevServer = ({
     if (keepAliveTimerRef.current) {
       clearInterval(keepAliveTimerRef.current);
       keepAliveTimerRef.current = null;
-      console.log('🛑 [Server] 已停止保活轮询');
+    } else {
     }
   }, []);
 
@@ -251,23 +162,25 @@ export const useAppDevServer = ({
       // 异步启动服务器，不阻塞页面渲染
       Promise.resolve().then(() => {
         startServer();
+        // 启动保活轮询
         startKeepAlive();
       });
     }
 
+    // 清理函数：当 projectId 变化或组件卸载时停止保活
     return () => {
       stopKeepAlive();
     };
-  }, [projectId, startServer, startKeepAlive, stopKeepAlive]);
+  }, [projectId]); // 移除函数依赖，避免重复执行
 
   /**
-   * 组件卸载时清理
+   * 组件卸载时清理 - 确保保活轮询被停止
    */
   useEffect(() => {
     return () => {
       stopKeepAlive();
     };
-  }, [stopKeepAlive]);
+  }, []); // 空依赖数组，只在组件卸载时执行
 
   return {
     isStarting,

@@ -3,7 +3,7 @@
  */
 
 import { MessageModeEnum } from '@/types/enums/agent';
-import type { AppDevChatMessage } from '@/types/interfaces/appDev';
+import type { AppDevChatMessage, Attachment } from '@/types/interfaces/appDev';
 
 /**
  * 检测是否为文件操作
@@ -85,11 +85,13 @@ export const generateAttachmentId = (type: string): string => {
  * 创建用户消息
  * @param text 消息文本
  * @param requestId 请求ID
+ * @param attachments 消息附件（可选）
  * @returns 用户消息对象
  */
 export const createUserMessage = (
   text: string,
   requestId: string,
+  attachments?: Attachment[],
 ): AppDevChatMessage => {
   return {
     id: generateMessageId('user', requestId),
@@ -100,6 +102,7 @@ export const createUserMessage = (
     status: null,
     requestId,
     timestamp: new Date(),
+    attachments, // 添加附件字段
   };
 };
 
@@ -293,7 +296,6 @@ export const parseChatMessages = (content: string): AppDevChatMessage[] => {
   try {
     return JSON.parse(content) as AppDevChatMessage[];
   } catch (error) {
-    console.error('解析聊天消息失败:', error);
     return [];
   }
 };

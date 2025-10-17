@@ -7,7 +7,10 @@ import {
   PAGE_DEVELOP_CREATE_TYPE_LIST,
 } from '@/constants/pageDev.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
-import { apiCustomPageQueryList } from '@/services/pageDev';
+import {
+  apiCustomPageQueryList,
+  apiPageDeleteProject,
+} from '@/services/pageDev';
 import {
   PageDevelopCreateTypeEnum,
   PageDevelopMoreActionEnum,
@@ -20,7 +23,7 @@ import {
   CustomPageDto,
 } from '@/types/interfaces/pageDev';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Col, Empty, Input, Row, Space } from 'antd';
+import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
@@ -111,6 +114,24 @@ const SpacePageDevelop: React.FC = () => {
     },
   });
 
+  // 查询页面列表接口
+  const { run: runPageDelete } = useRequest(apiPageDeleteProject, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_: null, params: number[]) => {
+      message.success('删除成功');
+      const projectId = params[0];
+      const _pageList = pageList.filter((item) => item.projectId !== projectId);
+      setPageList(_pageList);
+      pageAllRef.current = pageAllRef.current.filter(
+        (item) => item.projectId !== projectId,
+      );
+    },
+    onError: () => {
+      message.error('删除页面项目失败');
+    },
+  });
+
   useEffect(() => {
     setLoading(true);
     runPageList(spaceId);
@@ -167,7 +188,7 @@ const SpacePageDevelop: React.FC = () => {
       case PageDevelopCreateTypeEnum.Import_Project:
       case PageDevelopCreateTypeEnum.Online_Develop:
         // 跳转到开发页面
-        history.push(`/app-dev?projectId=${result.projectId}`);
+        history.push(`/space/${spaceId}/app-dev/${result.projectId}`);
         break;
       case PageDevelopCreateTypeEnum.Reverse_Proxy:
         setOpenReverseProxyModal(true);
@@ -182,7 +203,7 @@ const SpacePageDevelop: React.FC = () => {
     // 根据页面类型（页面创建模式）导入项目、在线创建，判断是否需要打开调试智能体绑定弹窗，反向代理，打开路径参数配置弹窗
     if (item.projectType === PageProjectTypeEnum.ONLINE_DEPLOY) {
       // 跳转到开发页面
-      history.push(`/app-dev?projectId=${item.projectId}`);
+      history.push(`/space/${spaceId}/app-dev/${item.projectId}`);
     }
     // 反向代理
     else if (item.projectType === PageProjectTypeEnum.REVERSE_PROXY) {
@@ -208,6 +229,10 @@ const SpacePageDevelop: React.FC = () => {
       case PageDevelopMoreActionEnum.Page_Preview:
         // iframe打开页面预览
         setOpenPageReviewModal(true);
+        break;
+      // 删除页面项目
+      case PageDevelopMoreActionEnum.Delete:
+        runPageDelete(info.projectId);
         break;
     }
   };

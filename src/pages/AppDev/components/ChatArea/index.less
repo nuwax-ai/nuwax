@@ -260,20 +260,23 @@
   line-height: 1.5;
 }
 
-// 消息内容
-.messageContent {
-  margin-bottom: 8px;
+// 消息附件区域
+.messageAttachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
 
-  // MarkdownRenderer 容器样式调整 - 仅限 ChatArea 组件内
-  :global(.markdown-container) {
-    background: transparent;
-    padding: 0;
+// MarkdownRenderer 容器样式调整 - 仅限 ChatArea 组件内
+:global(.markdown-container) {
+  background: transparent;
+  padding: 0;
 
-    // 确保在消息气泡内正确显示
-    :global(*) {
-      max-width: 100%;
-      word-wrap: break-word;
-    }
+  // 确保在消息气泡内正确显示
+  :global(*) {
+    max-width: 100%;
+    word-wrap: break-word;
   }
 }
 
@@ -581,6 +584,26 @@
   }
 }
 
+// 图片数量指示器
+.imageCountIndicator {
+  display: flex;
+  align-items: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 5%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 10%);
+}
+
+// 清空所有按钮
+.clearAllButton {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
 // TextArea 样式
 .textareaInput {
   background: rgba(255, 255, 255, 90%);
@@ -624,10 +647,6 @@
 // 模型选择器按钮
 .modelSelectorButton {
   color: @colorTextBase;
-  border: none;
-  padding: 4px 8px;
-  height: 28px;
-  min-width: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -657,18 +676,16 @@
 
 // 选中文件显示
 .selectedFileDisplay {
-  display: flex;
-  align-items: center;
+  font-size: 11px;
   padding: 0 8px;
-  background: rgba(24, 144, 255, 8%);
-  border: 1px solid rgba(24, 144, 255, 20%);
-  border-radius: 4px;
-  cursor: pointer;
+  background: @colorPrimaryBg;
+  border: @lineWidth solid @colorPrimaryBorder;
+  border-radius: @borderRadiusSm;
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(24, 144, 255, 12%);
-    border-color: rgba(24, 144, 255, 30%);
+    background: @colorPrimaryBgHover;
+    border-color: @colorPrimaryBorderHover;
   }
 }
 

@@ -1,8 +1,10 @@
+import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import {
   DeleteOutlined,
   EyeInvisibleOutlined,
   FileOutlined,
   ImportOutlined,
+  InboxOutlined,
   LeftOutlined,
   PlusOutlined,
   RightOutlined,
@@ -247,16 +249,37 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                 onScroll={saveScrollPosition}
               >
                 {/* 文件树结构 */}
-                <div className={styles.fileTree}>
-                  {files.map((node: any) => renderFileTreeNode(node))}
-                </div>
+                {files.length === 0 ? (
+                  <AppDevEmptyState
+                    type="empty"
+                    icon={<InboxOutlined />}
+                    title="暂无文件"
+                    description="请导入项目或创建新文件开始开发"
+                    buttons={
+                      !isComparing
+                        ? [
+                            {
+                              text: '导入项目',
+                              icon: <ImportOutlined />,
+                              onClick: onUploadProject,
+                              disabled: isChatLoading,
+                            },
+                          ]
+                        : undefined
+                    }
+                  />
+                ) : (
+                  <div className={styles.fileTree}>
+                    {files.map((node: any) => renderFileTreeNode(node))}
+                  </div>
+                )}
               </div>
 
               {/* 数据资源管理 - 固定在底部，仅在非版本对比模式显示 */}
               {!isComparing && (
                 <div className={styles.dataSourceContainer}>
                   <div className={styles.dataSourceHeader}>
-                    <h3>数据资源</h3>
+                    <span className={styles.dataSourceTitle}>数据资源</span>
                     <Tooltip title="添加数据资源">
                       <Button
                         type="text"

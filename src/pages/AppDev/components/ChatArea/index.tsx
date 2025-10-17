@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { useChatScroll, useChatScrollEffects } from '@/hooks/useChatScroll';
 import { cancelAgentTask } from '@/services/appDev';
 import type {
@@ -12,6 +13,7 @@ import {
   ControlOutlined,
   DownOutlined,
   LoadingOutlined,
+  MessageOutlined,
   PictureOutlined,
 } from '@ant-design/icons';
 import {
@@ -33,6 +35,7 @@ import {
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
+import MessageAttachment from './components/MessageAttachment';
 import styles from './index.less';
 
 const { Text } = Typography;
@@ -49,6 +52,7 @@ interface ChatAreaProps {
   fileContentState: any;
   modelSelector: any;
   onClearUploadedImages?: (callback: () => void) => void;
+  onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
 }
 
 /**
@@ -67,6 +71,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   fileContentState,
   modelSelector,
   onClearUploadedImages,
+  onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
@@ -97,20 +102,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const getFileName = useCallback((filePath: string) => {
     return filePath.split('/').pop() || filePath;
   }, []);
-
-  /**
-   * 中间截断组件 - 保留文件后缀
-   */
-  const EllipsisMiddle: React.FC<{ suffixCount: number; children: string }> =
-    useCallback(({ suffixCount, children }) => {
-      const start = children.slice(0, children.length - suffixCount);
-      const suffix = children.slice(-suffixCount).trim();
-      return (
-        <Text style={{ maxWidth: '100%', fontSize: 11 }} ellipsis={{ suffix }}>
-          {start}
-        </Text>
-      );
-    }, []);
 
   // 使用滚动管理 hook
   const {
@@ -170,7 +161,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         message.error(`取消 Agent 任务失败: ${response.message || '未知错误'}`);
       }
     } catch (error) {
-      console.error('取消 Agent 任务失败:', error);
       message.error('取消 Agent 任务失败');
       // 即使 API 调用失败，也调用原有的取消功能
       chat.cancelChat();
@@ -180,53 +170,103 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }, [chat, projectId, isStoppingTask]);
 
   /**
-   * 处理图片上传
+   * 处理单个图片文件
    */
-  const handleImageUpload = useCallback((file: File) => {
-    // 验证是否为图片
-    if (!file.type.startsWith('image/')) {
-      message.warning('仅支持上传图片文件');
-      return false;
-    }
+  const processImageFile = useCallback(
+    (file: File): Promise<ImageUploadInfo> => {
+      return new Promise((resolve, reject) => {
+        // 验证是否为图片
+        if (!file.type.startsWith('image/')) {
+          reject(new Error('仅支持上传图片文件'));
+          return;
+        }
 
-    // 验证文件大小 (限制为 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      message.warning('图片文件大小不能超过 5MB');
-      return false;
-    }
+        // 验证文件大小 (限制为 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          reject(new Error('图片文件大小不能超过 5MB'));
+          return;
+        }
 
-    // 读取文件并转换为 Base64
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64Data = e.target?.result as string;
+        // 读取文件并转换为 Base64
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64Data = e.target?.result as string;
 
-      // 获取图片尺寸
-      const img = new window.Image();
-      img.onload = () => {
-        const imageInfo: ImageUploadInfo = {
-          uid: generateAttachmentId('img'),
-          name: file.name,
-          base64Data: base64Data.split(',')[1], // 移除 data:image/xxx;base64, 前缀
-          mimeType: file.type,
-          preview: base64Data,
-          dimensions: { width: img.width, height: img.height },
+          // 获取图片尺寸
+          const img = new window.Image();
+          img.onload = () => {
+            const imageInfo: ImageUploadInfo = {
+              uid: generateAttachmentId('img'),
+              name: file.name,
+              base64Data: base64Data.split(',')[1], // 移除 data:image/xxx;base64, 前缀
+              mimeType: file.type,
+              preview: base64Data,
+              dimensions: { width: img.width, height: img.height },
+            };
+            resolve(imageInfo);
+          };
+          img.onerror = () => {
+            reject(new Error('图片加载失败，请重试'));
+          };
+          img.src = base64Data;
         };
+        reader.onerror = () => {
+          reject(new Error('文件读取失败，请重试'));
+        };
+        reader.readAsDataURL(file);
+      });
+    },
+    [],
+  );
 
-        setUploadedImages((prev) => [...prev, imageInfo]);
-        message.success(`图片 "${file.name}" 上传成功`);
-      };
-      img.onerror = () => {
-        message.error('图片加载失败，请重试');
-      };
-      img.src = base64Data;
-    };
-    reader.onerror = () => {
-      message.error('文件读取失败，请重试');
-    };
-    reader.readAsDataURL(file);
+  /**
+   * 处理图片上传（支持多选）
+   */
+  const handleImageUpload = useCallback(
+    async (file: File | File[]) => {
+      const files = Array.isArray(file) ? file : [file];
 
-    return false; // 阻止默认上传
-  }, []);
+      if (files.length === 0) {
+        return false;
+      }
+
+      // 检查总数量限制（最多10张图片）
+      const currentCount = uploadedImages.length;
+      if (currentCount + files.length > 10) {
+        message.warning(`最多只能上传10张图片，当前已有${currentCount}张`);
+        return false;
+      }
+
+      try {
+        // 显示加载提示
+        const loadingMessage =
+          files.length === 1
+            ? `正在上传图片 "${files[0].name}"...`
+            : `正在上传 ${files.length} 张图片...`;
+        const hideLoading = message.loading(loadingMessage, 0);
+
+        // 处理所有文件
+        const imagePromises = files.map(processImageFile);
+        const imageInfos = await Promise.all(imagePromises);
+
+        // 批量添加到状态
+        setUploadedImages((prev) => [...prev, ...imageInfos]);
+
+        // 隐藏加载提示并显示成功消息
+        hideLoading();
+        if (files.length === 1) {
+          message.success(`图片 "${files[0].name}" 上传成功`);
+        } else {
+          message.success(`成功上传 ${files.length} 张图片`);
+        }
+      } catch (error) {
+        message.error(error instanceof Error ? error.message : '图片上传失败');
+      }
+
+      return false; // 阻止默认上传
+    },
+    [processImageFile, uploadedImages.length],
+  );
 
   /**
    * 删除图片
@@ -328,7 +368,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         onUpdateDataSources([]);
       }
     } catch (error) {
-      console.error('发送消息失败:', error);
       message.error('发送消息失败');
     } finally {
       // 延迟重置发送状态，给用户反馈
@@ -376,12 +415,30 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             {/* 消息内容 */}
             <div className={styles.messageContent}>
               {isUser ? (
-                // USER 消息: 保持纯文本渲染
-                message.text
-                  ?.split('\n')
-                  .map((line: string, index: number) => (
-                    <div key={index}>{line}</div>
-                  ))
+                // USER 消息: 渲染文本和附件
+                <div>
+                  {/* 文本内容 */}
+                  {message.text
+                    ?.split('\n')
+                    .map((line: string, index: number) => (
+                      <div key={index}>{line}</div>
+                    ))}
+
+                  {/* 附件渲染 */}
+                  {message.attachments && message.attachments.length > 0 && (
+                    <div className={styles.messageAttachments}>
+                      {message.attachments.map((attachment) => (
+                        <MessageAttachment
+                          key={attachment.content.id}
+                          attachment={attachment.content}
+                          type={attachment.type}
+                          size={80}
+                          showPreview={true}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               ) : (
                 // ASSISTANT 消息: 使用 MarkdownCMD 流式渲染
                 <AppDevMarkdownCMDWrapper
@@ -604,12 +661,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         onScroll={handleUserScroll}
       >
         {chat.isLoadingHistory ? (
-          <div className={styles.loadingContainer}>
-            <Spin size="small" />
-            <Text type="secondary" style={{ marginLeft: 8 }}>
-              正在加载历史会话...
-            </Text>
-          </div>
+          <AppDevEmptyState
+            type="loading"
+            icon={<LoadingOutlined />}
+            title="正在加载历史会话"
+            description="请稍候..."
+          />
+        ) : !chat.messages || chat.messages.length === 0 ? (
+          <AppDevEmptyState
+            type="empty"
+            icon={<MessageOutlined />}
+            title="开始新对话"
+            description="向 AI 助手提问，开始您的项目开发"
+          />
         ) : (
           chatMessagesList
         )}
@@ -668,8 +732,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     onClose={() => handleRemoveDataSource(ds)}
                     style={{ margin: '0 4px 0 0' }}
                   >
-                    {ds.type === 'plugin' ? '插件' : '工作流'} #
-                    {ds.dataSourceId}
+                    {ds.name}
                   </Tag>
                 ))}
               </div>
@@ -701,15 +764,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             {/* 选中文件显示 */}
             {fileContentState?.selectedFile && (
               <Tooltip title={fileContentState.selectedFile}>
-                <div className={styles.selectedFileDisplay}>
-                  <EllipsisMiddle suffixCount={8}>
-                    {getFileName(fileContentState.selectedFile)}
-                  </EllipsisMiddle>
+                <div
+                  className={`text-ellipsis ${styles.selectedFileDisplay}`}
+                  style={{ maxWidth: '150px' }}
+                >
+                  {getFileName(fileContentState.selectedFile)}
                 </div>
               </Tooltip>
             )}
           </div>
-
           <div className={styles.rightActions}>
             {/* 图片上传 */}
             <Upload
@@ -717,6 +780,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               showUploadList={false}
               beforeUpload={handleImageUpload}
               disabled={chat.isChatLoading}
+              multiple={true}
+              maxCount={10}
             >
               <Tooltip title="上传图片">
                 <Button
