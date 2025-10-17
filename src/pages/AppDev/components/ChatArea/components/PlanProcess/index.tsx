@@ -68,7 +68,7 @@ const PlanProcess: React.FC<PlanProcessProps> = ({
   const getStatusDotClass = () => {
     const overallStatus = getOverallStatus();
     return `statusDot status${
-      overallStatus.charAt(0).toUpperCase() + overallStatus.slice(1)
+      overallStatus?.charAt?.(0).toUpperCase() + overallStatus?.slice?.(1)
     }`;
   };
 

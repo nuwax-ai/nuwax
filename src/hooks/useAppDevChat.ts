@@ -20,6 +20,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 
 import { AGENT_SERVICE_RUNNING } from '@/constants/codes.constants';
+import {
+  insertPlanBlock,
+  insertToolCallBlock,
+  insertToolCallUpdateBlock,
+} from '@/pages/AppDev/utils/markdownProcess';
 import type { DataSourceSelection } from '@/types/interfaces/appDev';
 import {
   addSessionInfoToMessages,
@@ -147,15 +152,85 @@ export const useAppDevChat = ({
           }
 
           if (message.subType === 'plan') {
-            // plan 消息不立即刷新，等待 prompt_end
+            setChatMessages((prev) =>
+              prev.map((msg) => {
+                if (
+                  msg.requestId === activeRequestId &&
+                  msg.role === 'ASSISTANT'
+                ) {
+                  return {
+                    ...msg,
+                    text: insertPlanBlock(msg.text || '', {
+                      planId: message.data.planId || 'default-plan',
+                      entries: message.data.entries || [],
+                    }),
+                  };
+                }
+                return msg;
+              }),
+            );
           }
           if (message.subType === 'tool_call') {
+            setChatMessages((prev) =>
+              prev.map((msg) => {
+                if (
+                  msg.requestId === activeRequestId &&
+                  msg.role === 'ASSISTANT'
+                ) {
+                  return {
+                    ...msg,
+                    text: insertToolCallBlock(
+                      msg.text || '',
+                      message.data.toolCallId,
+                      {
+                        toolCallId: message.data.toolCallId,
+                        title: message.data.title || '工具调用',
+                        kind: message.data.kind || 'execute',
+                        status: message.data.status,
+                        content: message.data.content,
+                        locations: message.data.locations,
+                        rawInput: message.data.rawInput,
+                        timestamp: message.timestamp,
+                      },
+                    ),
+                  };
+                }
+                return msg;
+              }),
+            );
             // 检测是否为文件操作，如果是则记录 toolCallId
             if (isFileOperation(message.data) && message.data.toolCallId) {
               fileOperationToolCallIdsRef.current.add(message.data.toolCallId);
             }
           }
           if (message.subType === 'tool_call_update') {
+            setChatMessages((prev) =>
+              prev.map((msg) => {
+                if (
+                  msg.requestId === activeRequestId &&
+                  msg.role === 'ASSISTANT'
+                ) {
+                  return {
+                    ...msg,
+                    text: insertToolCallUpdateBlock(
+                      msg.text || '',
+                      message.data.toolCallId,
+                      {
+                        toolCallId: message.data.toolCallId,
+                        title: message.data.title || '工具调用更新',
+                        kind: message.data.kind || 'execute',
+                        status: message.data.status,
+                        content: message.data.content,
+                        locations: message.data.locations,
+                        rawInput: message.data.rawInput,
+                        timestamp: message.timestamp,
+                      },
+                    ),
+                  };
+                }
+                return msg;
+              }),
+            );
             // 检查对应的 toolCallId 是否为文件操作
             if (
               message.data.toolCallId &&

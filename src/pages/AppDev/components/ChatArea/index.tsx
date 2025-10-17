@@ -667,7 +667,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             title="正在加载历史会话"
             description="请稍候..."
           />
-        ) : !chat.messages || chat.messages.length === 0 ? (
+        ) : !chat.chatMessages || chat.chatMessages.length === 0 ? (
           <AppDevEmptyState
             type="empty"
             icon={<MessageOutlined />}

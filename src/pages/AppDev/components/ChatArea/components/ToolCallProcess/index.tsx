@@ -78,7 +78,7 @@ const ToolCallProcess: React.FC<ToolCallProcessProps> = ({
   // 获取状态点样式类名
   const getStatusDotClass = () => {
     return `statusDot status${
-      status.charAt(0).toUpperCase() + status.slice(1)
+      status?.charAt?.(0).toUpperCase() + status?.slice?.(1)
     }`;
   };
 
