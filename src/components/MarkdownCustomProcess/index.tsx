@@ -209,15 +209,15 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
       message.error('数据格式错误');
       return;
     }
+
     const input: InputProps = (result as { input: InputProps }).input;
-
-    if (!input?.uri) {
-      message.error('页面路径不存在');
-      return;
-    }
-
     // 判断页面类型
     if (input.uri_type === 'Page') {
+      if (!input?.uri) {
+        message.error('页面路径不存在');
+        return;
+      }
+
       const previewData = {
         name: innerProcessing.name || '页面预览',
         uri: input.uri,
