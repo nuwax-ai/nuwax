@@ -702,6 +702,75 @@
   color: #64748b;
 }
 
+// 按钮基础样式 - 参照 ChatInputHome
+.box {
+  padding: @paddingXs;
+  border-radius: @borderRadius;
+  height: 36px;
+  width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &.send-box {
+    font-size: @fontSizeSm;
+    transition: color ease-in-out 0.2s;
+    color: @colorWhite;
+    background-color: @colorPrimary;
+
+    &.disabled {
+      color: @colorIcon;
+      cursor: not-allowed;
+      background-color: @colorBgContainerDisabled;
+    }
+
+    // 停止按钮样式
+    &.stop-box {
+      &.disabled {
+        cursor: not-allowed;
+        color: @colorIcon;
+        background-color: @colorBgContainerDisabled;
+      }
+
+      // 停止按钮高亮样式 - 当会话进行中且可点击时
+      &.stop-box-active {
+        background-color: @colorInfoBg;
+        color: @colorPrimary;
+        transition: background-color ease-in-out 0.2s;
+
+        &:hover:not(.disabled) {
+          background-color: @colorInfoBgHover;
+        }
+      }
+    }
+  }
+
+  .loading-box {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+// 加载图标样式
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 // 取消按钮
 .cancelButton {
   color: #ef4444;
@@ -769,11 +838,11 @@
 
 // 滚动到底部按钮
 .scrollToBottomButton {
-  position: absolute;
-  right: 24px;
-  bottom: 24px;
-  width: 40px;
-  height: 40px;
+  position: absolute; // 改为 absolute 定位，相对于 chatMessages 容器
+  right: 12px;
+  top: -60px;
+  width: 32px; // 减小按钮尺寸
+  height: 32px;
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
@@ -782,8 +851,9 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  z-index: 10;
+  z-index: 10; // 相对于容器内的层级
   border: 1px solid rgba(0, 0, 0, 10%);
+  font-size: 12px; // 减小图标尺寸
 
   &:hover {
     background: #1890ff;

@@ -267,17 +267,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
               model.dispose();
             } catch (modelError) {
               // 忽略模型dispose错误
-              console.debug(
-                'Monaco Editor model dispose error (can be ignored):',
-                modelError,
-              );
             }
           }
         } catch (getModelError) {
-          console.debug(
-            'Monaco Editor get model error (can be ignored):',
-            getModelError,
-          );
+          // 忽略获取模型错误
         }
 
         // 清理编辑器
@@ -285,15 +278,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           editor.dispose();
         } catch (editorError) {
           // 忽略编辑器dispose错误
-          console.debug(
-            'Monaco Editor dispose error (can be ignored):',
-            editorError,
-          );
         }
       }
     } catch (error) {
       // 忽略dispose错误，这通常是由于并发操作导致的
-      console.debug('Monaco Editor dispose error (can be ignored):', error);
     } finally {
       editorInstanceRef.current = null;
       editorCreatedRef.current = false;
@@ -322,7 +310,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
               error.message.includes('canceled') ||
               error.message.includes('Cancelled')))
         ) {
-          console.debug(`${errorMessage} - Operation was canceled (expected)`);
+          // 操作被取消（预期行为）
           return null;
         }
         console.error(`❌ ${errorMessage}:`, error);
@@ -344,7 +332,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       editorInstanceRef.current &&
       lastFileIdRef.current === currentFile?.id
     ) {
-      console.debug('Editor already exists for this file, skipping creation');
+      // 编辑器已存在，跳过创建
       return;
     }
 
@@ -373,9 +361,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
       // 检查是否在等待期间被取消
       if (isDisposingRef.current) {
-        console.debug(
-          'Editor creation canceled - disposal started during creation',
-        );
+        // 编辑器创建被取消 - 在创建期间开始销毁
         return;
       }
 
@@ -405,7 +391,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       }, 'Monaco Editor creation');
 
       if (!editor) {
-        console.debug('Editor creation was canceled');
+        // 编辑器创建被取消
         return;
       }
 
@@ -436,10 +422,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           },
         );
       } catch (commandError) {
-        console.debug(
-          'Monaco Editor command registration error (can be ignored):',
-          commandError,
-        );
+        // Monaco Editor 命令注册错误（可忽略）
       }
 
       // 编辑器实例创建成功
@@ -487,7 +470,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           }
         }
       } catch (error) {
-        console.debug('Content update error:', error);
+        // 内容更新错误（可忽略）
       }
       return;
     }
@@ -512,10 +495,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
             // 更新内容
             model.setValue(newValue);
           } catch (modelError) {
-            console.debug(
-              'Monaco Editor model update error (can be ignored):',
-              modelError,
-            );
+            // Monaco Editor 模型更新错误（可忽略）
           }
         }
       } else if (editor) {
@@ -527,10 +507,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           );
           editor.setModel(newModel);
         } catch (createModelError) {
-          console.debug(
-            'Monaco Editor model creation error (can be ignored):',
-            createModelError,
-          );
+          // Monaco Editor 模型创建错误（可忽略）
         }
       }
     } catch (error) {
@@ -539,9 +516,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         error instanceof Error &&
         (error.message === 'Canceled' || error.message.includes('disposed'))
       ) {
-        console.debug(
-          'Monaco Editor content update was canceled or disposed (expected during rapid file switching)',
-        );
+        // Monaco Editor 内容更新被取消或销毁（在快速文件切换期间是预期的）
       } else {
         console.error('❌ [MonacoEditor] 更新编辑器内容失败:', error);
       }
@@ -584,7 +559,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           reason.message.toLowerCase().includes('cancel'))
       ) {
         event.preventDefault();
-        console.debug('Operation canceled (can be ignored):', reason);
+        // 操作被取消（可忽略）
       }
     };
 
@@ -623,20 +598,17 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
               try {
                 const model = editor.getModel();
                 if (model) {
-                  console.debug(
-                    'Monaco Editor model exists (no isDisposed method):',
-                    model.uri.toString(),
-                  );
+                  // Monaco Editor 模型存在（没有 isDisposed 方法）
                 }
               } catch (error) {
-                console.debug('Monaco Editor model check failed:', error);
+                // Monaco Editor 模型检查失败（可忽略）
               }
             }
           } catch (error) {
-            console.debug('Monaco Editor check failed:', error);
+            // Monaco Editor 检查失败（可忽略）
           }
         } else {
-          console.debug('Monaco Editor not initialized');
+          // Monaco Editor 未初始化
         }
       };
 
@@ -692,7 +664,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
             monaco.editor.setTheme(theme);
           }
         } catch (error) {
-          console.debug('Theme change error:', error);
+          // 主题变化错误（可忽略）
         }
       }
     };

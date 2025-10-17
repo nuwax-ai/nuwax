@@ -61,23 +61,17 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      * 刷新预览
      */
     const refreshPreview = useCallback(() => {
-      console.log(
-        '🔄 [Preview] refreshPreview called, devServerUrl:',
-        devServerUrl,
-      );
-      console.log('🔄 [Preview] iframeRef.current:', iframeRef.current);
+      // 刷新预览
 
       if (devServerUrl) {
-        console.log('🔄 [Preview] 有devServerUrl，调用loadDevServerPreview');
         loadDevServerPreview();
       } else if (iframeRef.current) {
         // 如果devServerUrl为空，清空iframe
-        console.log('🔄 [Preview] devServerUrl为空，清空iframe');
         iframeRef.current.src = '';
         setLoadError('开发服务器URL不可用');
         setLastRefreshed(new Date());
       } else {
-        console.warn('⚠️ [Preview] iframeRef.current 为空，无法刷新');
+        // iframeRef.current 为空，无法刷新
       }
     }, [devServerUrl, loadDevServerPreview]);
 
@@ -129,7 +123,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         <div className={styles.previewHeader}>
           <div className={styles.headerLeft}>
             <div className={styles.titleSection}>
-              <GlobalOutlined className={styles.titleIcon} />
               <span className={styles.title}>页面预览</span>
               {devServerUrl && (
                 <span className={styles.statusBadge}>开发服务器已连接</span>
