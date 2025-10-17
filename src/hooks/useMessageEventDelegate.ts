@@ -22,6 +22,7 @@ interface UseMessageEventDelegateProps {
       pageUrl?: string;
       args?: any[];
       argJsonSchema?: string;
+      pageName?: string;
     }>;
   };
 }
@@ -53,12 +54,13 @@ export const useMessageEventDelegate = ({
       console.log('[Event Delegate] 触发事件:', { eventType, data: dataStr });
 
       // 解析 data
-      // let parsedData: Record<string, any> = {};
-      // try {
-      //   parsedData = JSON.parse(dataStr);
-      // } catch (error) {
-      //   console.error('[Event Delegate] 数据解析失败:', error);
-      // }
+      let parsedData: Record<string, any> = {};
+      try {
+        parsedData = JSON.parse(dataStr);
+      } catch (error) {
+        console.error('[Event Delegate] 数据解析失败:', error);
+        return;
+      }
 
       // 查找对应的事件配置
       const eventConfig = eventBindConfig?.eventConfigs?.find(
@@ -87,10 +89,10 @@ export const useMessageEventDelegate = ({
           if (eventConfig.args && Array.isArray(eventConfig.args)) {
             eventConfig.args.forEach((arg: any) => {
               if (arg.inputType === 'Path' && arg.name) {
-                pathParams[arg.name] = arg.bindValue;
+                pathParams[arg.name] = parsedData[arg.name] ?? arg.bindValue;
               }
               if (arg.inputType === 'Query' && arg.name) {
-                params[arg.name] = arg.bindValue;
+                params[arg.name] = parsedData[arg.name] ?? arg.bindValue;
               }
             });
           }
@@ -112,7 +114,7 @@ export const useMessageEventDelegate = ({
 
             // 调用页面预览
             showPagePreview({
-              name: eventConfig.name || '页面',
+              name: eventConfig.pageName || '页面',
               uri: fullUri,
               params,
               executeId: `event-${Date.now()}`,

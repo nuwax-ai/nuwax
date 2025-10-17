@@ -91,6 +91,14 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
         return;
       }
 
+      // 校验文件类型
+      const isZip = file.name?.endsWith('.zip');
+
+      if (!isZip) {
+        message.error('仅支持.zip后缀的压缩文件');
+        return;
+      }
+
       setLoading(true);
       // 创建formData
       const formData = new FormData();
@@ -140,7 +148,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
   const uploadProps: UploadProps = {
     name: 'file',
     multiple: false,
-    accept: '.zip,.rar',
+    accept: '.zip',
     maxCount: 1,
     beforeUpload: (file) => {
       // 校验文件类型

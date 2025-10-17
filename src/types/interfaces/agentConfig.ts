@@ -236,7 +236,7 @@ export interface RecommendListProps {
   className?: string;
   itemClassName?: string;
   loading?: boolean;
-  chatSuggestList: string[];
+  chatSuggestList: GuidQuestionDto[] | string[];
   onClick: (message: string) => void;
 }
 

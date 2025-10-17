@@ -15,7 +15,7 @@ import {
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
-import { AgentDetailDto } from '@/types/interfaces/agent';
+import { AgentDetailDto, GuidQuestionDto } from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
   UploadFileInfo,
@@ -50,7 +50,7 @@ const AgentDetails: React.FC = () => {
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 会话问题建议
-  const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
+  const [chatSuggestList, setChatSuggestList] = useState<GuidQuestionDto[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   // 变量参数
   const [variables, setVariables] = useState<BindConfigWithSub[]>([]);
@@ -117,7 +117,7 @@ const AgentDetails: React.FC = () => {
       // 会话问题建议
       const guidQuestionDtos = result?.guidQuestionDtos || [];
       // 如果存在预置问题，显示预置问题
-      setChatSuggestList(guidQuestionDtos?.map((item) => item.info));
+      setChatSuggestList(guidQuestionDtos);
       // 变量参数
       const _variables = result?.variables || [];
       setVariables(_variables);
