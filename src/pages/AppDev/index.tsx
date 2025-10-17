@@ -311,21 +311,7 @@ const AppDev: React.FC = () => {
           ),
           width: 500,
         });
-      } else {
-        // 兼容不同的错误响应格式
-        const errorMessage = result?.message || '部署失败';
-        throw new Error(errorMessage);
       }
-    } catch (error: any) {
-      // 改进错误处理，兼容不同的错误格式
-      const errorMessage =
-        error?.message || error?.toString() || '部署过程中发生未知错误';
-
-      // 只使用一个错误提示，避免重复
-      Modal.error({
-        title: '部署失败',
-        content: errorMessage,
-      });
     } finally {
       setIsDeploying(false);
     }
