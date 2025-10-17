@@ -785,17 +785,6 @@ const AppDev: React.FC = () => {
     <>
       {contextHolder}
       <div className={styles.appDev}>
-        {/* 错误提示条 */}
-        {showErrorAlert && server.startError && (
-          <Alert
-            message="开发环境启动失败"
-            type="error"
-            banner={true}
-            closable
-            afterClose={() => setShowErrorAlert(false)}
-          />
-        )}
-
         {/* 顶部头部区域 */}
         <AppDevHeader
           workspace={workspace}

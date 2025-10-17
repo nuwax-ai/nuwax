@@ -4,6 +4,7 @@
 
 import { DEV_SERVER_CONSTANTS } from '@/constants/appDevConstants';
 import { keepAlive, startDev } from '@/services/appDev';
+import { message } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseAppDevServerProps {
@@ -14,7 +15,6 @@ interface UseAppDevServerProps {
 
 interface UseAppDevServerReturn {
   isStarting: boolean;
-  startError: string | null;
   devServerUrl: string | null;
   isRunning: boolean;
   startServer: () => Promise<void>;
@@ -28,7 +28,6 @@ export const useAppDevServer = ({
   onServerStatusChange,
 }: UseAppDevServerProps): UseAppDevServerReturn => {
   const [isStarting, setIsStarting] = useState(false);
-  const [startError, setStartError] = useState<string | null>(null);
   const [devServerUrl, setDevServerUrl] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -78,28 +77,20 @@ export const useAppDevServer = ({
     try {
       hasStartedRef.current = true;
       setIsStarting(true);
-      setStartError(null);
 
       const response = await startDev(projectId);
 
-      if (response?.data?.devServerUrl) {
+      if (response?.code === '0000' && response?.data?.devServerUrl) {
         setDevServerUrl(response.data.devServerUrl);
         setIsRunning(true);
         onServerStart?.(response.data.devServerUrl);
-        onServerStatusChange?.(true);
-
-        // 注意：不再在 startServer 中进行保活检查，统一由 startKeepAlive 处理
+      } else {
+        message.error(response?.message || '启动开发环境失败');
       }
-    } catch (error) {
-      setStartError(
-        error instanceof Error ? error.message : '启动开发环境失败',
-      );
-      hasStartedRef.current = false;
-      onServerStatusChange?.(false);
-    } finally {
-      setIsStarting(false);
+    } catch (error: any) {
+      message.error(error?.message || '启动开发环境失败');
     }
-  }, [projectId, onServerStart, onServerStatusChange, handleKeepAliveResponse]);
+  }, [projectId, onServerStart]);
 
   /**
    * 启动保活轮询
@@ -184,7 +175,6 @@ export const useAppDevServer = ({
 
   return {
     isStarting,
-    startError,
     devServerUrl,
     isRunning,
     startServer,
