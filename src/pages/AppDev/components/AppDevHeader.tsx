@@ -1,7 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { jumpBack } from '@/utils/router';
 import { RocketOutlined, UserOutlined } from '@ant-design/icons';
-import { Avatar, Button, Tag, Tooltip } from 'antd';
+import { Avatar, Button, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -125,11 +125,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
             {dayjs(lastSaveTime).format('HH:mm')}
           </span>
           {hasUpdates && (
-            <Tag
-              bordered={false}
-              color="volcano"
-              className={cx(styles['volcano'])}
-            >
+            <Tag color="volcano" className={cx(styles['volcano'])}>
               有更新未部署
             </Tag>
           )}
@@ -156,24 +152,15 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
           >
             删除
           </Button> */}
-          <Tooltip
-            title={
-              isDeploying
-                ? '正在部署项目...'
-                : '部署项目到生产环境 (Ctrl/Cmd + D)'
-            }
+          <Button
+            type="primary"
+            icon={<RocketOutlined />}
+            loading={isDeploying}
+            onClick={onDeployProject}
+            className={styles.deployButton}
           >
-            <Button
-              type="primary"
-              size="small"
-              icon={<RocketOutlined />}
-              loading={isDeploying}
-              onClick={onDeployProject}
-              className={styles.deployButton}
-            >
-              {isDeploying ? '部署中...' : '部署'}
-            </Button>
-          </Tooltip>
+            {isDeploying ? '部署中...' : '部署'}
+          </Button>
         </div>
       </div>
     </header>
