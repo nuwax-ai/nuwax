@@ -357,11 +357,13 @@ const AgentDetails: React.FC = () => {
         )}
 
         {/*页面预览区域*/}
-        <PagePreview
-          initialWidth={agentDetail?.hideChatArea ? 100 : 66}
-          showCloseButton={!agentDetail?.hideChatArea}
-          showResizeHandle={!agentDetail?.hideChatArea}
-        />
+        {agentDetail && (
+          <PagePreview
+            initialWidth={agentDetail?.hideChatArea ? 100 : 66}
+            showCloseButton={!agentDetail?.hideChatArea}
+            showResizeHandle={!agentDetail?.hideChatArea}
+          />
+        )}
       </div>
       <AgentSidebar
         ref={sidebarRef}
