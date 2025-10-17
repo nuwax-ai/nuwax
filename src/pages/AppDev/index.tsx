@@ -986,6 +986,7 @@ const AppDev: React.FC = () => {
                         isStarting={server.isStarting}
                         startError={server.startError}
                         previewRef={previewRef}
+                        onStartDev={server.startServer}
                         onContentChange={(fileId, content) => {
                           if (
                             !versionCompare.isComparing &&

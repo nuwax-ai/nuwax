@@ -1,7 +1,8 @@
+import pageImage from '@/assets/images/agent_image.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import { jumpBack } from '@/utils/router';
-import { RocketOutlined, UserOutlined } from '@ant-design/icons';
-import { Avatar, Button, Tag } from 'antd';
+import { RocketOutlined } from '@ant-design/icons';
+import { Avatar, Button, Space, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -59,7 +60,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   // 获取创建者信息
   // const creatorName =
   //   projectInfo?.creatorNickName || projectInfo?.creatorName || '未知用户';
-  const creatorAvatar = projectInfo?.creatorAvatar;
+  // const creatorAvatar = projectInfo?.creatorAvatar;
 
   // 获取部署状态
   const deployStatus = projectInfo?.buildRunning;
@@ -85,20 +86,9 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
         onClick={() => jumpBack(`/space/${spaceId}/page-develop`)}
       />
       {/* 项目图标 - 优先显示项目图标，为空时显示创建者头像 */}
-      {projectIcon ? (
-        <SvgIcon
-          name={projectIcon}
-          className={cx(styles['project-icon'])}
-          style={{ fontSize: 27 }}
-        />
-      ) : (
-        <Avatar
-          size={27}
-          icon={<UserOutlined />}
-          className={cx(styles.avatar)}
-          src={creatorAvatar}
-        />
-      )}
+      <Space size={27} wrap>
+        <Avatar size={27} shape="square" src={projectIcon || pageImage} />
+      </Space>
       <div className={cx('flex', 'flex-col', styles['header-info'])}>
         <div className={cx('flex', 'items-center')}>
           <h3 className={cx(styles['h-title'], 'text-ellipsis')}>

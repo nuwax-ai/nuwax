@@ -5,6 +5,7 @@ import type {
   PageAddPathParams,
   PageBatchConfigProxyParams,
   PageDeletePathParams,
+  PageUpdateParams,
   PageUploadAndStartParams,
 } from '@/types/interfaces/pageDev';
 import type { RequestResponse } from '@/types/interfaces/request';
@@ -113,5 +114,25 @@ export async function apiPageGetProjectInfo(
     params: {
       projectId,
     },
+  });
+}
+
+// 删除页面项目
+export async function apiPageDeleteProject(
+  projectId: number,
+): Promise<RequestResponse<null>> {
+  return request('/api/custom-page/delete-project', {
+    method: 'POST',
+    data: { projectId },
+  });
+}
+
+// 修改项目
+export async function apiPageUpdateProject(
+  data: PageUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/custom-page/update-project', {
+    method: 'POST',
+    data,
   });
 }

@@ -63,4 +63,8 @@ export const PAGE_DEVELOP_MORE_ACTIONS = [
     value: PageDevelopMoreActionEnum.Page_Preview,
     label: '页面预览',
   },
+  {
+    value: PageDevelopMoreActionEnum.Delete,
+    label: '删除',
+  },
 ];

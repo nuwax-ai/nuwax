@@ -47,6 +47,8 @@ interface ContentViewerProps {
   findFileNode: (fileId: string) => any;
   /** 是否正在AI聊天加载中 */
   isChatLoading?: boolean;
+  /** 启动开发服务器回调 */
+  onStartDev?: () => void;
 }
 
 /**
@@ -73,6 +75,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   onRefreshFile,
   findFileNode,
   isChatLoading = false,
+  onStartDev,
 }) => {
   // 版本对比模式 + preview标签页：显示禁用提示
   if (isComparing && mode === 'preview') {
@@ -172,9 +175,12 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     return (
       <Preview
         ref={previewRef}
-        devServerUrl={`${process.env.BASE_URL}${devServerUrl}`}
+        devServerUrl={
+          devServerUrl ? `${process.env.BASE_URL}${devServerUrl}` : undefined
+        }
         isStarting={isStarting}
         startError={startError}
+        onStartDev={onStartDev}
       />
     );
   }

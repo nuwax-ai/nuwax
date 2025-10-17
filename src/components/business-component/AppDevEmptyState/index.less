@@ -1,0 +1,93 @@
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px 20px;
+  min-height: 200px;
+}
+
+.emptyIconContainer {
+  margin-bottom: 16px;
+  font-size: 48px;
+  line-height: 1;
+}
+
+.emptyIcon {
+  color: #8b9baa;
+  opacity: 0.8;
+}
+
+.loadingIcon {
+  color: #3b82f6;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.errorIcon {
+  color: #ef4444;
+  opacity: 0.8;
+}
+
+.emptyContent {
+  text-align: center;
+  max-width: 400px;
+}
+
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 8px;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.emptyDescription {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.emptyActions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .emptyState {
+    padding: 20px 16px;
+    min-height: 150px;
+  }
+
+  .emptyIconContainer {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+
+  .emptyTitle {
+    font-size: 14px;
+  }
+
+  .emptyDescription {
+    font-size: 12px;
+  }
+
+  .emptyActions {
+    gap: 8px;
+  }
+}

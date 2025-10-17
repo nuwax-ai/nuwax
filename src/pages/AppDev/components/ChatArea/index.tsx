@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { useChatScroll, useChatScrollEffects } from '@/hooks/useChatScroll';
 import { cancelAgentTask } from '@/services/appDev';
 import type {
@@ -12,6 +13,7 @@ import {
   ControlOutlined,
   DownOutlined,
   LoadingOutlined,
+  MessageOutlined,
   PictureOutlined,
 } from '@ant-design/icons';
 import {
@@ -659,12 +661,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         onScroll={handleUserScroll}
       >
         {chat.isLoadingHistory ? (
-          <div className={styles.loadingContainer}>
-            <Spin size="small" />
-            <Text type="secondary" style={{ marginLeft: 8 }}>
-              正在加载历史会话...
-            </Text>
-          </div>
+          <AppDevEmptyState
+            type="loading"
+            icon={<LoadingOutlined />}
+            title="正在加载历史会话"
+            description="请稍候..."
+          />
+        ) : !chat.messages || chat.messages.length === 0 ? (
+          <AppDevEmptyState
+            type="empty"
+            icon={<MessageOutlined />}
+            title="开始新对话"
+            description="向 AI 助手提问，开始您的项目开发"
+          />
         ) : (
           chatMessagesList
         )}
