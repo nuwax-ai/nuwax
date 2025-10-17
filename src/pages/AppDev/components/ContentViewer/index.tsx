@@ -32,7 +32,7 @@ interface ContentViewerProps {
   /** 是否正在启动 */
   isStarting: boolean;
   /** 启动错误 */
-  startError: string | null;
+  startError?: string | null;
   /** Preview组件ref */
   previewRef: React.RefObject<PreviewRef>;
   /** 内容变化回调 */

@@ -505,7 +505,7 @@ const AppDev: React.FC = () => {
       // Ctrl/Cmd + R 重启开发服务器
       if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
         event.preventDefault();
-        if (projectId && isServiceRunning) {
+        if (projectId && isServiceRunning && !chat.isChatLoading) {
           // 开发服务器重启功能已禁用
         }
       }
@@ -513,7 +513,7 @@ const AppDev: React.FC = () => {
       // Ctrl/Cmd + D 部署项目
       if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
         event.preventDefault();
-        if (hasValidProjectId && !isDeploying) {
+        if (hasValidProjectId && !isDeploying && !chat.isChatLoading) {
           handleDeployProject();
         }
       }
@@ -786,6 +786,7 @@ const AppDev: React.FC = () => {
           projectInfo={projectInfo.projectInfoState.projectInfo || undefined}
           getDeployStatusText={projectInfo.getDeployStatusText}
           getDeployStatusColor={projectInfo.getDeployStatusColor}
+          isChatLoading={chat.isChatLoading} // 新增：传递聊天加载状态
         />
 
         {/* 主布局 - 左右分栏 */}
@@ -848,7 +849,9 @@ const AppDev: React.FC = () => {
                       />
                       <Button
                         onClick={versionCompare.cancelCompare}
-                        disabled={versionCompare.isSwitching}
+                        disabled={
+                          versionCompare.isSwitching || chat.isChatLoading
+                        } // 新增：聊天加载时禁用
                       >
                         取消
                       </Button>
@@ -856,6 +859,7 @@ const AppDev: React.FC = () => {
                         type="primary"
                         onClick={versionCompare.confirmVersionSwitch}
                         loading={versionCompare.isSwitching}
+                        disabled={chat.isChatLoading} // 新增：聊天加载时禁用
                       >
                         切换 v{versionCompare.targetVersion} 版本
                       </Button>
@@ -869,6 +873,7 @@ const AppDev: React.FC = () => {
                           icon={<SyncOutlined />}
                           onClick={handleRestartDevServer}
                           loading={isRestarting}
+                          disabled={chat.isChatLoading} // 新增：聊天加载时禁用
                         />
                       </Tooltip>
                       <Tooltip title="全屏预览">
@@ -883,6 +888,7 @@ const AppDev: React.FC = () => {
                               );
                             }
                           }}
+                          disabled={chat.isChatLoading} // 新增：聊天加载时禁用
                         />
                       </Tooltip>
                       <Tooltip title="导出项目">
@@ -891,6 +897,7 @@ const AppDev: React.FC = () => {
                           icon={<DownloadOutlined />}
                           onClick={handleExportProject}
                           loading={isExporting}
+                          disabled={chat.isChatLoading} // 新增：聊天加载时禁用
                         />
                       </Tooltip>
                     </>
@@ -975,7 +982,6 @@ const AppDev: React.FC = () => {
                         }
                         devServerUrl={workspace.devServerUrl}
                         isStarting={server.isStarting}
-                        startError={server.startError}
                         previewRef={previewRef}
                         onStartDev={server.startServer}
                         onContentChange={(fileId, content) => {
