@@ -46,6 +46,7 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
     const resourceSelection: DataSourceSelection = {
       dataSourceId: parseInt(resource.id),
       type: resource.type === 'plugin' ? 'plugin' : 'workflow',
+      name: resource.name, // 添加数据源名称
     };
 
     const newSelectedDataSources = checked

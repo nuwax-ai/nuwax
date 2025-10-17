@@ -7,7 +7,7 @@ import {
   PlusOutlined,
   RightOutlined,
 } from '@ant-design/icons';
-import { Button, Card, Tooltip } from 'antd';
+import { Button, Card, Tooltip, Typography } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import DataResourceList from '../DataResourceList';
 import styles from './index.less';
@@ -256,7 +256,9 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
               {!isComparing && (
                 <div className={styles.dataSourceContainer}>
                   <div className={styles.dataSourceHeader}>
-                    <h3>数据资源</h3>
+                    <Typography.Title level={5} style={{ marginBottom: 0 }}>
+                      数据资源
+                    </Typography.Title>
                     <Tooltip title="添加数据资源">
                       <Button
                         type="text"

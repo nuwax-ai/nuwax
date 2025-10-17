@@ -260,20 +260,23 @@
   line-height: 1.5;
 }
 
-// 消息内容
-.messageContent {
-  margin-bottom: 8px;
+// 消息附件区域
+.messageAttachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
 
-  // MarkdownRenderer 容器样式调整 - 仅限 ChatArea 组件内
-  :global(.markdown-container) {
-    background: transparent;
-    padding: 0;
+// MarkdownRenderer 容器样式调整 - 仅限 ChatArea 组件内
+:global(.markdown-container) {
+  background: transparent;
+  padding: 0;
 
-    // 确保在消息气泡内正确显示
-    :global(*) {
-      max-width: 100%;
-      word-wrap: break-word;
-    }
+  // 确保在消息气泡内正确显示
+  :global(*) {
+    max-width: 100%;
+    word-wrap: break-word;
   }
 }
 
@@ -579,6 +582,26 @@
       transform: scale(1.1);
     }
   }
+}
+
+// 图片数量指示器
+.imageCountIndicator {
+  display: flex;
+  align-items: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 5%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 10%);
+}
+
+// 清空所有按钮
+.clearAllButton {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  flex-shrink: 0;
 }
 
 // TextArea 样式
