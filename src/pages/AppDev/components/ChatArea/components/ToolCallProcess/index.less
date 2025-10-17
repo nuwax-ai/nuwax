@@ -28,7 +28,7 @@
         white-space: nowrap; // 防止换行
         overflow: hidden;
         text-overflow: ellipsis; // 溢出显示省略号
-        max-width: calc(100% - 40px); // 为状态区域预留空间
+        max-width: calc(100% - 16px); // 为状态区域预留空间
 
         // 不同截取模式的样式
         &.truncate-ellipsis {
@@ -102,6 +102,7 @@
 
     .detailsContent {
       max-width: 100%;
+      padding: 0 8px;
       overflow: hidden;
 
       // 内容数组容器

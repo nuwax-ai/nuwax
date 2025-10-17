@@ -763,20 +763,9 @@ export const useAppDevFileManagement = ({
   useEffect(() => {
     if (projectId) {
       console.log('🌲 [FileManagement] 项目ID变化，加载文件树:', projectId);
-      loadFileTree();
+      loadFileTree(false, true);
     }
   }, [projectId]); // 移除 loadFileTree 依赖，避免重复执行
-
-  // AI聊天加载时自动刷新文件树 - 已禁用轮询机制
-  // 注释：取消在会话过程中的轮询间隔调用更新文件树逻辑
-  // 现在只在会话开始时执行一次刷新，不再进行定时轮询
-  useEffect(() => {
-    if (isChatLoading && projectId) {
-      console.log('🔄 [FileManagement] AI聊天开始，执行一次文件树刷新');
-      // 只在聊天开始时执行一次刷新，不再进行定时轮询
-      loadFileTree();
-    }
-  }, [isChatLoading, projectId]); // 移除 loadFileTree 依赖，避免重复执行
 
   return {
     // 文件树相关

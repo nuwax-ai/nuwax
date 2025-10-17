@@ -132,6 +132,7 @@ const PlanProcess: React.FC<PlanProcessProps> = ({
           <Tooltip
             title={`执行计划 (${stats.completed}/${stats.total} 已完成)`}
             placement="topLeft"
+            mouseEnterDelay={0.5}
           >
             <span
               className={`${styles.operationText} ${
