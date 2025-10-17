@@ -9,6 +9,7 @@ import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
+import { getSpaceIdFromUrl } from '@/models/appDev';
 import {
   bindDataSource,
   buildProject,
@@ -82,6 +83,9 @@ const AppDev: React.FC = () => {
 
   // 使用简化的 AppDev projectId hook
   const { projectId, hasValidProjectId } = useAppDevProjectId();
+
+  // 获取 spaceId
+  const spaceId = getSpaceIdFromUrl();
 
   // 使用 Modal.confirm 来处理确认对话框
   const [, contextHolder] = Modal.useModal();
@@ -561,7 +565,7 @@ const AppDev: React.FC = () => {
         file: selectedFile,
         projectId: projectId || undefined,
         projectName: workspace.projectName || '未命名项目',
-        // spaceId: 32, //TODO 后续 删除 这个参数
+        spaceId: spaceId ? Number(spaceId) : undefined,
       });
 
       if (result?.success && result?.data) {
@@ -741,7 +745,7 @@ const AppDev: React.FC = () => {
           description={
             <div>
               <p>请在 URL 中添加 projectId 参数，例如：</p>
-              <code>/app-dev?projectId=你的项目ID</code>
+              <code>/space/你的空间ID/app-dev/你的项目ID</code>
             </div>
           }
           type="warning"

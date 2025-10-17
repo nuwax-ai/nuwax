@@ -35,10 +35,42 @@ export interface AppDevWorkspace {
 
 /**
  * 从URL参数中获取projectId
+ * 支持从查询参数和路由参数中获取
  */
 export const getProjectIdFromUrl = (): string | null => {
+  // 首先尝试从查询参数获取
   const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('projectId');
+  const queryProjectId = urlParams.get('projectId');
+
+  if (queryProjectId) {
+    return queryProjectId;
+  }
+
+  // 如果查询参数中没有，尝试从路由参数获取
+  // 解析当前路径，匹配 /space/:spaceId/app-dev/:projectId 格式
+  const pathname = window.location.pathname;
+  const match = pathname.match(/\/space\/[^/]+\/app-dev\/([^/]+)/);
+
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  return null;
+};
+
+/**
+ * 从URL路由参数中获取spaceId
+ * 解析当前路径，匹配 /space/:spaceId/app-dev/:projectId 格式
+ */
+export const getSpaceIdFromUrl = (): string | null => {
+  const pathname = window.location.pathname;
+  const match = pathname.match(/\/space\/([^/]+)\/app-dev\//);
+
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  return null;
 };
 
 /**

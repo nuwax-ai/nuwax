@@ -141,16 +141,8 @@ export const useAppDevServer = ({
         onServerStart?.(response.data.devServerUrl);
         onServerStatusChange?.(true);
 
-        // 启动后立即进行一次保活检查，获取最新的预览地址
-        console.log('🔄 [Server] 启动后立即进行保活检查，获取最新预览地址...');
-        keepAlive(projectId)
-          .then((keepAliveResponse) => {
-            console.log('💗 [Server] 启动后保活检查成功:', keepAliveResponse);
-            handleKeepAliveResponse(keepAliveResponse);
-          })
-          .catch((error) => {
-            console.error('❌ [Server] 启动后保活检查失败:', error);
-          });
+        // 注意：不再在 startServer 中进行保活检查，统一由 startKeepAlive 处理
+        console.log('✅ [Server] 服务器启动完成，等待保活轮询启动...');
       }
     } catch (error) {
       console.error('❌ [Server] 开发环境启动失败:', error);
@@ -260,6 +252,7 @@ export const useAppDevServer = ({
       // 异步启动服务器，不阻塞页面渲染
       Promise.resolve().then(() => {
         startServer();
+        // 启动保活轮询
         startKeepAlive();
       });
     }

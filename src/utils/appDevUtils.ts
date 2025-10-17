@@ -332,14 +332,6 @@ export const getLanguageFromFile = (fileName: string): string => {
 };
 
 /**
- * 从 URL 参数中获取 projectId
- */
-export const getProjectIdFromUrl = (): string | null => {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('projectId');
-};
-
-/**
  * 生成随机请求ID
  */
 export const generateRequestId = (): string => {
