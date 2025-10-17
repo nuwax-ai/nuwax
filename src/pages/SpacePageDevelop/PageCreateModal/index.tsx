@@ -156,14 +156,14 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
 
       if (!isZip) {
         message.error('仅支持压缩文件(.zip)');
-        return false;
+        return Upload.LIST_IGNORE; // 阻止文件被添加到fileList
       }
 
       // 校验文件大小（限制为10MB）
       // const isLessThan10M = file.size / 1024 / 1024 < 10;
       // if (!isLessThan10M) {
       //   message.error('文件大小不能超过10MB');
-      //   return false;
+      //   return Upload.LIST_IGNORE;
       // }
 
       return false; // 阻止默认上传行为，改为手动上传
