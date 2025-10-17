@@ -256,7 +256,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
               {!isComparing && (
                 <div className={styles.dataSourceContainer}>
                   <div className={styles.dataSourceHeader}>
-                    <h3>数据资源</h3>
+                    <span className={styles.dataSourceTitle}>数据资源</span>
                     <Tooltip title="添加数据资源">
                       <Button
                         type="text"

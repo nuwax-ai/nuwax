@@ -14,8 +14,7 @@ export interface AppDevHeaderProps {
     name?: string;
     projectId?: string;
   };
-  onReloadProject?: () => void;
-  onDeleteProject?: () => void;
+  spaceId: string;
   onDeployProject?: () => void;
   hasUpdates?: boolean;
   lastSaveTime?: Date;
@@ -24,6 +23,7 @@ export interface AppDevHeaderProps {
   projectInfo?: {
     name?: string;
     description?: string;
+    icon?: string;
     buildRunning?: number;
     buildTime?: string;
     creatorName?: string;
@@ -42,6 +42,7 @@ export interface AppDevHeaderProps {
 const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   workspace,
   onDeployProject,
+  spaceId,
   hasUpdates = true,
   lastSaveTime = new Date(),
   isDeploying = false,
@@ -51,6 +52,9 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
 }) => {
   // 获取项目名称，优先使用接口数据
   const projectName = projectInfo?.name || workspace.name || '大模型三部曲';
+
+  // 获取项目图标，优先使用接口数据，为空时使用默认图标
+  const projectIcon = projectInfo?.icon;
 
   // 获取创建者信息
   // const creatorName =
@@ -78,23 +82,29 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
       <SvgIcon
         name="icons-nav-backward"
         className={cx(styles['icon-backward'])}
-        onClick={() => jumpBack('/')}
+        onClick={() => jumpBack(`/space/${spaceId}/page-develop`)}
       />
-      <Avatar
-        size={27}
-        icon={<UserOutlined />}
-        className={cx(styles.avatar)}
-        src={creatorAvatar}
-      />
+      {/* 项目图标 - 优先显示项目图标，为空时显示创建者头像 */}
+      {projectIcon ? (
+        <SvgIcon
+          name={projectIcon}
+          className={cx(styles['project-icon'])}
+          style={{ fontSize: 27 }}
+        />
+      ) : (
+        <Avatar
+          size={27}
+          icon={<UserOutlined />}
+          className={cx(styles.avatar)}
+          src={creatorAvatar}
+        />
+      )}
       <div className={cx('flex', 'flex-col', styles['header-info'])}>
         <div className={cx('flex', 'items-center')}>
           <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
             {projectName}
           </h3>
           <div className={cx('flex', 'items-center', styles['agent-rel-info'])}>
-            <span className={cx(styles['space-name'], 'text-ellipsis')}>
-              {projectName}
-            </span>
             {workspace.projectId && (
               <span className={cx(styles['project-id'])}>
                 项目ID: {workspace.projectId}
@@ -137,21 +147,6 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
           )}
         </div>
         <div className={cx('flex', 'items-center', styles['action-buttons'])}>
-          {/* <Button
-            size="small"
-            className={styles.navButton}
-            onClick={onReloadProject}
-          >
-            重新加载项目
-          </Button> */}
-          {/* <Button
-            size="small"
-            danger
-            className={styles.actionButton}
-            onClick={onDeleteProject}
-          >
-            删除
-          </Button> */}
           <Button
             type="primary"
             icon={<RocketOutlined />}

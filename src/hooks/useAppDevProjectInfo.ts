@@ -254,7 +254,7 @@ export const useAppDevProjectInfo = (
       );
       fetchProjectInfo();
     }
-  }, [projectId, fetchProjectInfo]);
+  }, [projectId]); // 移除 fetchProjectInfo 依赖，避免重复执行
 
   return {
     projectInfoState,

@@ -141,16 +141,8 @@ export const useAppDevServer = ({
         onServerStart?.(response.data.devServerUrl);
         onServerStatusChange?.(true);
 
-        // 启动后立即进行一次保活检查，获取最新的预览地址
-        console.log('🔄 [Server] 启动后立即进行保活检查，获取最新预览地址...');
-        keepAlive(projectId)
-          .then((keepAliveResponse) => {
-            console.log('💗 [Server] 启动后保活检查成功:', keepAliveResponse);
-            handleKeepAliveResponse(keepAliveResponse);
-          })
-          .catch((error) => {
-            console.error('❌ [Server] 启动后保活检查失败:', error);
-          });
+        // 注意：不再在 startServer 中进行保活检查，统一由 startKeepAlive 处理
+        console.log('✅ [Server] 服务器启动完成，等待保活轮询启动...');
       }
     } catch (error) {
       console.error('❌ [Server] 开发环境启动失败:', error);
@@ -173,8 +165,11 @@ export const useAppDevServer = ({
       return;
     }
 
+    // 如果已经有保活定时器在运行，先停止
     if (keepAliveTimerRef.current) {
+      console.log('🔄 [Server] 停止现有保活轮询，重新启动');
       clearInterval(keepAliveTimerRef.current);
+      keepAliveTimerRef.current = null;
     }
 
     // 初始保活请求
@@ -227,9 +222,15 @@ export const useAppDevServer = ({
    */
   const stopKeepAlive = useCallback(() => {
     if (keepAliveTimerRef.current) {
+      console.log(
+        '🛑 [Server] 正在停止保活轮询，定时器ID:',
+        keepAliveTimerRef.current,
+      );
       clearInterval(keepAliveTimerRef.current);
       keepAliveTimerRef.current = null;
-      console.log('🛑 [Server] 已停止保活轮询');
+      console.log('✅ [Server] 保活轮询已停止');
+    } else {
+      console.log('ℹ️ [Server] 保活轮询未运行，无需停止');
     }
   }, []);
 
@@ -251,23 +252,27 @@ export const useAppDevServer = ({
       // 异步启动服务器，不阻塞页面渲染
       Promise.resolve().then(() => {
         startServer();
+        // 启动保活轮询
         startKeepAlive();
       });
     }
 
+    // 清理函数：当 projectId 变化或组件卸载时停止保活
     return () => {
+      console.log('🛑 [Server] 清理保活轮询，projectId:', projectId);
       stopKeepAlive();
     };
-  }, [projectId, startServer, startKeepAlive, stopKeepAlive]);
+  }, [projectId]); // 移除函数依赖，避免重复执行
 
   /**
-   * 组件卸载时清理
+   * 组件卸载时清理 - 确保保活轮询被停止
    */
   useEffect(() => {
     return () => {
+      console.log('🛑 [Server] 组件卸载，停止保活轮询');
       stopKeepAlive();
     };
-  }, [stopKeepAlive]);
+  }, []); // 空依赖数组，只在组件卸载时执行
 
   return {
     isStarting,

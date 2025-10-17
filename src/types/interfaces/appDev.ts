@@ -576,6 +576,8 @@ export interface AppDevChatMessage {
   conversationTopic?: string;
   /** 会话创建时间（历史消息专用） */
   conversationCreated?: string;
+  /** 消息附件（图片、文件等） */
+  attachments?: Attachment[];
 }
 
 // ==================== 文件管理相关类型定义 ====================
@@ -979,6 +981,8 @@ export interface DataSourceSelection {
   dataSourceId: number;
   /** 数据源类型：plugin-插件, workflow-工作流 */
   type: 'plugin' | 'workflow';
+  /** 数据源名称 */
+  name: string;
 }
 
 /**
