@@ -1,9 +1,11 @@
+import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import {
   ExclamationCircleOutlined,
   GlobalOutlined,
   ReloadOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, Spin } from 'antd';
+import { Button, Spin } from 'antd';
 import React, {
   useCallback,
   useEffect,
@@ -18,6 +20,8 @@ interface PreviewProps {
   className?: string;
   isStarting?: boolean;
   startError?: string | null;
+  /** 启动开发服务器回调 */
+  onStartDev?: () => void;
 }
 
 export interface PreviewRef {
@@ -29,11 +33,12 @@ export interface PreviewRef {
  * 用于显示开发服务器的实时预览
  */
 const Preview = React.forwardRef<PreviewRef, PreviewProps>(
-  ({ devServerUrl, className, isStarting, startError }, ref) => {
+  ({ devServerUrl, className, isStarting, startError, onStartDev }, ref) => {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [retrying, setRetrying] = useState(false);
 
     /**
      * 加载开发服务器预览
@@ -56,6 +61,30 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         setLastRefreshed(new Date());
       }
     }, [devServerUrl]);
+
+    /**
+     * 重试预览
+     */
+    const retryPreview = useCallback(async () => {
+      setRetrying(true);
+      setLoadError(null);
+
+      try {
+        if (devServerUrl) {
+          // 如果有开发服务器URL，重新加载预览
+          loadDevServerPreview();
+        } else if (onStartDev) {
+          // 如果没有开发服务器URL，调用启动开发服务器接口
+          onStartDev();
+        } else {
+          setLoadError('开发服务器URL不可用');
+        }
+      } catch (error) {
+        setLoadError('重试失败，请检查网络连接');
+      } finally {
+        setRetrying(false);
+      }
+    }, [devServerUrl, loadDevServerPreview, onStartDev]);
 
     /**
      * 刷新预览
@@ -98,7 +127,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      */
     const handleIframeError = useCallback(() => {
       setIsLoading(false);
-      setLoadError('预览加载失败，请检查开发服务器状态');
+      setLoadError('预览加载失败，请检查开发服务器状态或网络连接');
       // Iframe load error
     }, []);
 
@@ -109,11 +138,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // Dev server URL available, loading preview
         loadDevServerPreview();
       } else {
-        // Dev server URL is empty, clearing iframe
+        // Dev server URL is empty, clearing iframe and resetting states
         if (iframeRef.current) {
           iframeRef.current.src = '';
         }
-        setLoadError('开发服务器URL不可用');
+        setIsLoading(false);
+        setLoadError(null);
         setLastRefreshed(new Date());
       }
     }, [devServerUrl, loadDevServerPreview]);
@@ -155,25 +185,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           </div>
         </div>
 
-        {loadError && (
-          <div className={styles.errorContainer}>
-            <Alert
-              message="预览加载失败"
-              description={loadError}
-              type="error"
-              icon={<ExclamationCircleOutlined />}
-              showIcon
-              action={
-                <Button size="small" onClick={refreshPreview}>
-                  重试
-                </Button>
-              }
-            />
-          </div>
-        )}
-
         <div className={styles.previewContainer}>
-          {devServerUrl ? (
+          {devServerUrl && !loadError ? (
             <iframe
               ref={iframeRef}
               className={styles.previewIframe}
@@ -182,34 +195,66 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               onLoad={handleIframeLoad}
               onError={handleIframeError}
             />
-          ) : isStarting ? (
-            <div className={styles.emptyState}>
-              <div className={styles.emptyIcon}>
-                <Spin size="large" />
-              </div>
-              <h3 className={styles.emptyTitle}>开发服务器启动中</h3>
-              <p className={styles.emptyDescription}>
-                正在启动开发环境，请稍候...
-              </p>
-            </div>
-          ) : startError ? (
-            <div className={styles.emptyState}>
-              <div className={styles.emptyIcon} style={{ color: '#ff4d4f' }}>
-                <ExclamationCircleOutlined />
-              </div>
-              <h3 className={styles.emptyTitle}>开发服务器启动失败</h3>
-              <p className={styles.emptyDescription}>{startError}</p>
-            </div>
           ) : (
-            <div className={styles.emptyState}>
-              <div className={styles.emptyIcon}>
-                <GlobalOutlined />
-              </div>
-              <h3 className={styles.emptyTitle}>等待开发服务器启动</h3>
-              <p className={styles.emptyDescription}>
-                正在连接开发服务器，请稍候...
-              </p>
-            </div>
+            <AppDevEmptyState
+              type={
+                loadError
+                  ? 'error'
+                  : isStarting
+                  ? 'loading'
+                  : startError
+                  ? 'error'
+                  : devServerUrl === undefined
+                  ? 'no-data'
+                  : 'empty'
+              }
+              icon={
+                loadError ? (
+                  <ExclamationCircleOutlined />
+                ) : isStarting ? (
+                  <ThunderboltOutlined />
+                ) : startError ? (
+                  <ExclamationCircleOutlined />
+                ) : (
+                  <GlobalOutlined />
+                )
+              }
+              title={
+                loadError
+                  ? '预览加载失败'
+                  : isStarting
+                  ? '开发服务器启动中'
+                  : startError
+                  ? '开发服务器启动失败'
+                  : devServerUrl === undefined
+                  ? '暂无预览地址'
+                  : '等待开发服务器启动'
+              }
+              description={
+                loadError
+                  ? '预览页面加载失败，请检查开发服务器状态或网络连接'
+                  : isStarting
+                  ? '正在启动开发环境，请稍候...'
+                  : startError
+                  ? startError
+                  : devServerUrl === undefined
+                  ? '当前没有可用的预览地址，请先启动开发服务器'
+                  : '正在连接开发服务器，请稍候...'
+              }
+              buttons={
+                onStartDev
+                  ? [
+                      {
+                        text: retrying ? '重试中...' : '重试',
+                        icon: <ReloadOutlined />,
+                        onClick: retryPreview,
+                        loading: retrying,
+                        disabled: retrying,
+                      },
+                    ]
+                  : undefined
+              }
+            />
           )}
         </div>
       </div>
