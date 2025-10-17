@@ -432,7 +432,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                           key={attachment.content.id}
                           attachment={attachment.content}
                           type={attachment.type}
-                          size={80}
+                          size={60}
                           showPreview={true}
                         />
                       ))}
