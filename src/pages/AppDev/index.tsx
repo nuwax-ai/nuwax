@@ -875,16 +875,15 @@ const AppDev: React.FC = () => {
                       {/* 原有的按钮：重启服务、全屏预览、导出项目 */}
                       <Tooltip title="重启开发服务器">
                         <Button
-                          size="small"
+                          type="text"
                           icon={<SyncOutlined />}
                           onClick={handleRestartDevServer}
                           loading={isRestarting}
-                          className={styles.headerButton}
                         />
                       </Tooltip>
                       <Tooltip title="全屏预览">
                         <Button
-                          size="small"
+                          type="text"
                           icon={<FullscreenOutlined />}
                           onClick={() => {
                             if (previewRef.current && workspace.devServerUrl) {
@@ -894,15 +893,13 @@ const AppDev: React.FC = () => {
                               );
                             }
                           }}
-                          className={styles.headerButton}
                         />
                       </Tooltip>
                       <Tooltip title="导出项目">
                         <Button
-                          size="small"
+                          type="text"
                           icon={<DownloadOutlined />}
                           onClick={handleExportProject}
-                          className={styles.headerButton}
                           loading={isExporting}
                         />
                       </Tooltip>
