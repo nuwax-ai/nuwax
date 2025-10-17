@@ -647,10 +647,6 @@
 // 模型选择器按钮
 .modelSelectorButton {
   color: @colorTextBase;
-  border: none;
-  padding: 4px 8px;
-  height: 28px;
-  min-width: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -680,18 +676,16 @@
 
 // 选中文件显示
 .selectedFileDisplay {
-  display: flex;
-  align-items: center;
+  font-size: 11px;
   padding: 0 8px;
-  background: rgba(24, 144, 255, 8%);
-  border: 1px solid rgba(24, 144, 255, 20%);
-  border-radius: 4px;
-  cursor: pointer;
+  background: @colorPrimaryBg;
+  border: @lineWidth solid @colorPrimaryBorder;
+  border-radius: @borderRadiusSm;
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(24, 144, 255, 12%);
-    border-color: rgba(24, 144, 255, 30%);
+    background: @colorPrimaryBgHover;
+    border-color: @colorPrimaryBorderHover;
   }
 }
 

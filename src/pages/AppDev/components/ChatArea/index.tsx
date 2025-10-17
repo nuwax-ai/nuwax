@@ -101,20 +101,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return filePath.split('/').pop() || filePath;
   }, []);
 
-  /**
-   * 中间截断组件 - 保留文件后缀
-   */
-  const EllipsisMiddle: React.FC<{ suffixCount: number; children: string }> =
-    useCallback(({ suffixCount, children }) => {
-      const start = children.slice(0, children.length - suffixCount);
-      const suffix = children.slice(-suffixCount).trim();
-      return (
-        <Text style={{ maxWidth: '100%', fontSize: 11 }} ellipsis={{ suffix }}>
-          {start}
-        </Text>
-      );
-    }, []);
-
   // 使用滚动管理 hook
   const {
     isAutoScroll,
@@ -769,15 +755,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             {/* 选中文件显示 */}
             {fileContentState?.selectedFile && (
               <Tooltip title={fileContentState.selectedFile}>
-                <div className={styles.selectedFileDisplay}>
-                  <EllipsisMiddle suffixCount={8}>
-                    {getFileName(fileContentState.selectedFile)}
-                  </EllipsisMiddle>
+                <div
+                  className={`text-ellipsis ${styles.selectedFileDisplay}`}
+                  style={{ maxWidth: '150px' }}
+                >
+                  {getFileName(fileContentState.selectedFile)}
                 </div>
               </Tooltip>
             )}
           </div>
-
           <div className={styles.rightActions}>
             {/* 图片上传 */}
             <Upload
