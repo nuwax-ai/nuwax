@@ -13,7 +13,7 @@ import { useRequest } from 'umi';
  */
 const PageEditModal: React.FC<PageEditModalProps> = ({
   open,
-  currentPageInfo,
+  projectInfo,
   onCancel,
   onConfirm,
 }) => {
@@ -37,8 +37,8 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
   });
 
   useEffect(() => {
-    if (open && currentPageInfo) {
-      const { name, description, icon } = currentPageInfo;
+    if (open && projectInfo) {
+      const { name, description, icon } = projectInfo;
       form.setFieldsValue({
         projectName: name,
         projectDesc: description,
@@ -47,7 +47,7 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
 
       setImageUrl(icon);
     }
-  }, [open, currentPageInfo]);
+  }, [open, projectInfo]);
 
   // 编辑页面
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
@@ -55,7 +55,7 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
     // 调用编辑页面接口
     const data = {
       ...values,
-      projectId: currentPageInfo.projectId,
+      projectId: projectInfo?.projectId,
     };
     runUpdatePage(data);
   };

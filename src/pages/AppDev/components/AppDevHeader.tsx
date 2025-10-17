@@ -1,7 +1,7 @@
 import pageImage from '@/assets/images/agent_image.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import { jumpBack } from '@/utils/router';
-import { RocketOutlined } from '@ant-design/icons';
+import { FormOutlined, RocketOutlined } from '@ant-design/icons';
 import { Avatar, Button, Space, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -17,6 +17,7 @@ export interface AppDevHeaderProps {
   };
   spaceId: string;
   onDeployProject?: () => void;
+  onEditProject: () => void;
   hasUpdates?: boolean;
   lastSaveTime?: Date;
   isDeploying?: boolean;
@@ -43,6 +44,7 @@ export interface AppDevHeaderProps {
 const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   workspace,
   onDeployProject,
+  onEditProject,
   spaceId,
   hasUpdates = true,
   lastSaveTime = new Date(),
@@ -94,6 +96,10 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
           <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
             {projectName}
           </h3>
+          <FormOutlined
+            className={cx(styles['edit-ico'], 'cursor-pointer')}
+            onClick={onEditProject}
+          />
           <div className={cx('flex', 'items-center', styles['agent-rel-info'])}>
             {workspace.projectId && (
               <span className={cx(styles['project-id'])}>
