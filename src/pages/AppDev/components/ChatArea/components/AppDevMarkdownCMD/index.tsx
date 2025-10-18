@@ -1,11 +1,9 @@
 import '@/components/MarkdownRenderer/ds-markdown.css';
 import styles from '@/components/MarkdownRenderer/index.less';
-import { replaceMathBracket } from '@/components/MarkdownRenderer/utils';
 import type { MarkdownCMDRef } from '@/types/interfaces/markdownRender';
 import classNames from 'classnames';
 import { ConfigProvider, MarkdownCMD } from 'ds-markdown';
 import 'ds-markdown/katex.css';
-import { katexPlugin } from 'ds-markdown/plugins';
 import { forwardRef, useMemo } from 'react';
 import genAppDevPlugin from '../../genAppDevPlugin';
 import './index.less';
@@ -32,14 +30,14 @@ const AppDevMarkdownCMD = forwardRef<MarkdownCMDRef, AppDevMarkdownCMDProps>(
       className = '',
       theme = 'light',
       disableTyping = false,
-      interval = 10,
+      interval = 30,
       requestId,
     },
     ref,
   ) => {
     const plugins = useMemo(() => {
       const appDevPlugin = genAppDevPlugin();
-      return [katexPlugin, appDevPlugin];
+      return [appDevPlugin];
     }, []);
 
     // 使用 requestId 作为主要 key，确保每次新会话都重新渲染
@@ -64,10 +62,6 @@ const AppDevMarkdownCMD = forwardRef<MarkdownCMDRef, AppDevMarkdownCMDProps>(
             plugins={plugins}
             codeBlock={{ headerActions: false }}
             theme={theme}
-            math={{
-              splitSymbol: 'bracket',
-              replaceMathBracket,
-            }}
             disableTyping={disableTyping}
           />
         </ConfigProvider>
