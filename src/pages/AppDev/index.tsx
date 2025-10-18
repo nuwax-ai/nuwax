@@ -13,7 +13,6 @@ import {
   bindDataSource,
   buildProject,
   exportProject,
-  restartDev,
   uploadAndStartProject,
 } from '@/services/appDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -110,15 +109,15 @@ const AppDev: React.FC = () => {
   // 导出项目状态
   const [isExporting, setIsExporting] = useState(false);
 
-  // 重启服务状态
-  const [isRestarting, setIsRestarting] = useState(false);
-
   // 单文件上传状态
   const [isSingleFileUploadModalVisible, setIsSingleFileUploadModalVisible] =
     useState(false);
   const [singleFileUploadLoading, setSingleFileUploadLoading] = useState(false);
   const [singleFilePath, setSingleFilePath] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+
+  // 项目导入状态
+  const [isProjectUploading, setIsProjectUploading] = useState(false);
 
   // 使用重构后的 hooks
   const fileManagement = useAppDevFileManagement({
@@ -134,6 +133,12 @@ const AppDev: React.FC = () => {
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
 
+  const server = useAppDevServer({
+    projectId: projectId || '',
+    onServerStart: updateDevServerUrl,
+    onServerStatusChange: setIsServiceRunning,
+  });
+
   const chat = useAppDevChat({
     projectId: projectId || '',
     selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
@@ -147,12 +152,9 @@ const AppDev: React.FC = () => {
         clearUploadedImagesRef.current();
       }
     }, // 新增：传递清除上传图片方法
-  });
-
-  const server = useAppDevServer({
-    projectId: projectId || '',
-    onServerStart: updateDevServerUrl,
-    onServerStatusChange: setIsServiceRunning,
+    onRestartDevServer: async () => {
+      await server.restartServer(false); // Agent 触发时不切换页面
+    }, // 新增：Agent 触发时不切换页面
   });
 
   // 数据资源管理
@@ -235,9 +237,6 @@ const AppDev: React.FC = () => {
   // 聊天模式状态
   const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
 
-  // 错误提示状态
-  const [showErrorAlert, setShowErrorAlert] = useState(false);
-
   // 数据资源相关状态
   const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
     useState(false);
@@ -245,6 +244,7 @@ const AppDev: React.FC = () => {
   // 删除确认对话框状态
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<any>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
@@ -310,21 +310,7 @@ const AppDev: React.FC = () => {
           ),
           width: 500,
         });
-      } else {
-        // 兼容不同的错误响应格式
-        const errorMessage = result?.message || '部署失败';
-        throw new Error(errorMessage);
       }
-    } catch (error: any) {
-      // 改进错误处理，兼容不同的错误格式
-      const errorMessage =
-        error?.message || error?.toString() || '部署过程中发生未知错误';
-
-      // 只使用一个错误提示，避免重复
-      Modal.error({
-        title: '部署失败',
-        content: errorMessage,
-      });
     } finally {
       setIsDeploying(false);
     }
@@ -388,44 +374,25 @@ const AppDev: React.FC = () => {
   }, [hasValidProjectId, projectId]);
 
   /**
-   * 处理重启开发服务器
+   * 处理重启开发服务器按钮点击（手动触发）
    */
   const handleRestartDevServer = useCallback(async () => {
-    // 检查项目ID是否有效
-    if (!hasValidProjectId || !projectId) {
-      message.error('项目ID不存在或无效，无法重启服务');
-      return;
+    // 切换到预览标签页
+    setActiveTab('preview');
+
+    // 等待标签页切换完成
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // 调用统一的重启方法
+    const result = await server.restartServer(true);
+
+    // 如果成功，延迟刷新预览
+    if (result.success) {
+      setTimeout(() => {
+        previewRef.current?.refresh();
+      }, 500);
     }
-
-    try {
-      setIsRestarting(true);
-      message.loading('正在重启开发服务器...', 0);
-
-      const result = await restartDev(projectId);
-
-      // 关闭加载提示
-      message.destroy();
-
-      if (result.success && result.data) {
-        // 更新开发服务器URL
-        if (result.data.devServerUrl) {
-          updateDevServerUrl(result.data.devServerUrl);
-          message.success('开发服务器重启成功');
-        } else {
-          message.warning('重启成功，但未获取到新的服务器地址');
-        }
-      } else {
-        message.error(result.message || '重启开发服务器失败');
-      }
-    } catch (error: any) {
-      message.destroy();
-      const errorMessage =
-        error?.response?.data?.message || error?.message || '重启失败';
-      message.error(`重启失败: ${errorMessage}`);
-    } finally {
-      setIsRestarting(false);
-    }
-  }, [hasValidProjectId, projectId, updateDevServerUrl]);
+  }, [server]);
 
   /**
    * 处理添加组件（Created 组件回调）
@@ -518,7 +485,7 @@ const AppDev: React.FC = () => {
       // Ctrl/Cmd + R 重启开发服务器
       if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
         event.preventDefault();
-        if (projectId && isServiceRunning) {
+        if (projectId && isServiceRunning && !chat.isChatLoading) {
           // 开发服务器重启功能已禁用
         }
       }
@@ -526,7 +493,7 @@ const AppDev: React.FC = () => {
       // Ctrl/Cmd + D 部署项目
       if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
         event.preventDefault();
-        if (hasValidProjectId && !isDeploying) {
+        if (hasValidProjectId && !isDeploying && !chat.isChatLoading) {
           handleDeployProject();
         }
       }
@@ -564,6 +531,7 @@ const AppDev: React.FC = () => {
 
     try {
       setUploadLoading(true);
+      setIsProjectUploading(true);
 
       const result = await uploadAndStartProject({
         file: selectedFile,
@@ -573,24 +541,46 @@ const AppDev: React.FC = () => {
       });
 
       if (result?.success && result?.data) {
-        message.success('项目导入成功，正在重新加载页面...');
+        message.success('项目导入成功');
         setIsUploadModalVisible(false);
         setSelectedFile(null);
 
-        setTimeout(() => {
-          // 如果需要完全重新加载页面，使用 window.location.reload()
-          // 这是 UmiJS 推荐的方式，因为某些情况下需要重新初始化整个应用状态
-          window.location.reload();
+        // 导入项目成功后，调用restart-dev逻辑，与点击重启服务按钮逻辑一致
+        setTimeout(async () => {
+          try {
+            // 切换到预览标签页
+            setActiveTab('preview');
+
+            // 等待标签页切换完成
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
+            // 调用统一的重启方法
+            const restartResult = await server.restartServer(true);
+
+            // 如果成功，延迟刷新预览
+            if (restartResult.success) {
+              setTimeout(() => {
+                previewRef.current?.refresh();
+              }, 500);
+            }
+          } catch (error) {
+            console.error('重启开发服务器失败:', error);
+            message.error('项目导入成功，但重启开发服务器失败');
+          } finally {
+            setIsProjectUploading(false);
+          }
         }, 500);
       } else {
         message.warning('项目上传成功，但返回数据格式异常');
+        setIsProjectUploading(false);
       }
     } catch (error) {
       message.error(error instanceof Error ? error.message : '上传项目失败');
+      setIsProjectUploading(false);
     } finally {
       setUploadLoading(false);
     }
-  }, [selectedFile, projectId, workspace.projectName]);
+  }, [selectedFile, projectId, workspace.projectName, server]);
 
   /**
    * 处理文件选择
@@ -685,6 +675,7 @@ const AppDev: React.FC = () => {
   const handleDeleteConfirm = useCallback(async () => {
     if (!nodeToDelete || !projectId) return;
 
+    setDeleteLoading(true);
     try {
       // 删除文件/文件夹
       const success = await fileManagement.deleteFileItem(nodeToDelete.id);
@@ -701,6 +692,7 @@ const AppDev: React.FC = () => {
     } catch (error) {
       message.error(`删除失败: ${nodeToDelete?.name}`);
     } finally {
+      setDeleteLoading(false);
       setDeleteModalVisible(false);
       setNodeToDelete(null);
     }
@@ -785,17 +777,6 @@ const AppDev: React.FC = () => {
     <>
       {contextHolder}
       <div className={styles.appDev}>
-        {/* 错误提示条 */}
-        {showErrorAlert && server.startError && (
-          <Alert
-            message="开发环境启动失败"
-            type="error"
-            banner={true}
-            closable
-            afterClose={() => setShowErrorAlert(false)}
-          />
-        )}
-
         {/* 顶部头部区域 */}
         <AppDevHeader
           workspace={workspace}
@@ -808,6 +789,7 @@ const AppDev: React.FC = () => {
           projectInfo={projectInfo.projectInfoState.projectInfo || undefined}
           getDeployStatusText={projectInfo.getDeployStatusText}
           getDeployStatusColor={projectInfo.getDeployStatusColor}
+          isChatLoading={chat.isChatLoading} // 新增：传递聊天加载状态
         />
 
         {/* 主布局 - 左右分栏 */}
@@ -870,7 +852,9 @@ const AppDev: React.FC = () => {
                       />
                       <Button
                         onClick={versionCompare.cancelCompare}
-                        disabled={versionCompare.isSwitching}
+                        disabled={
+                          versionCompare.isSwitching || chat.isChatLoading
+                        } // 新增：聊天加载时禁用
                       >
                         取消
                       </Button>
@@ -878,6 +862,7 @@ const AppDev: React.FC = () => {
                         type="primary"
                         onClick={versionCompare.confirmVersionSwitch}
                         loading={versionCompare.isSwitching}
+                        disabled={chat.isChatLoading} // 新增：聊天加载时禁用
                       >
                         切换 v{versionCompare.targetVersion} 版本
                       </Button>
@@ -890,7 +875,8 @@ const AppDev: React.FC = () => {
                           type="text"
                           icon={<SyncOutlined />}
                           onClick={handleRestartDevServer}
-                          loading={isRestarting}
+                          loading={server.isRestarting}
+                          disabled={chat.isChatLoading} // 新增：聊天加载时禁用
                         />
                       </Tooltip>
                       <Tooltip title="全屏预览">
@@ -905,6 +891,7 @@ const AppDev: React.FC = () => {
                               );
                             }
                           }}
+                          disabled={chat.isChatLoading} // 新增：聊天加载时禁用
                         />
                       </Tooltip>
                       <Tooltip title="导出项目">
@@ -913,6 +900,7 @@ const AppDev: React.FC = () => {
                           icon={<DownloadOutlined />}
                           onClick={handleExportProject}
                           loading={isExporting}
+                          disabled={chat.isChatLoading} // 新增：聊天加载时禁用
                         />
                       </Tooltip>
                     </>
@@ -958,6 +946,7 @@ const AppDev: React.FC = () => {
                   workspace={workspace}
                   fileManagement={fileManagement}
                   isChatLoading={chat.isChatLoading}
+                  projectId={projectId ? Number(projectId) : undefined}
                 />
 
                 {/* 编辑器区域 */}
@@ -997,9 +986,12 @@ const AppDev: React.FC = () => {
                         }
                         devServerUrl={workspace.devServerUrl}
                         isStarting={server.isStarting}
-                        startError={server.startError}
+                        isRestarting={server.isRestarting}
+                        isProjectUploading={isProjectUploading}
+                        serverMessage={server.serverMessage}
                         previewRef={previewRef}
                         onStartDev={server.startServer}
+                        onRestartDev={() => server.restartServer(false)}
                         onContentChange={(fileId, content) => {
                           if (
                             !versionCompare.isComparing &&
@@ -1185,7 +1177,14 @@ const AppDev: React.FC = () => {
           onCancel={handleDeleteCancel}
           okText="删除"
           cancelText="取消"
-          okButtonProps={{ danger: true }}
+          okButtonProps={{
+            danger: true,
+            loading: deleteLoading,
+            disabled: deleteLoading,
+          }}
+          cancelButtonProps={{
+            disabled: deleteLoading,
+          }}
         >
           <p>
             确定要删除 {nodeToDelete?.type === 'folder' ? '文件夹' : '文件'}{' '}

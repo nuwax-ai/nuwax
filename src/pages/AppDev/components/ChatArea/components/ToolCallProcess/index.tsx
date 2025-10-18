@@ -78,7 +78,7 @@ const ToolCallProcess: React.FC<ToolCallProcessProps> = ({
   // 获取状态点样式类名
   const getStatusDotClass = () => {
     return `statusDot status${
-      status.charAt(0).toUpperCase() + status.slice(1)
+      status?.charAt?.(0).toUpperCase() + status?.slice?.(1)
     }`;
   };
 
@@ -245,7 +245,11 @@ const ToolCallProcess: React.FC<ToolCallProcessProps> = ({
       <div className={styles.operationRow}>
         <div className={styles.operationInfo}>
           <span className={styles[getStatusDotClass()]} />
-          <Tooltip title={getOperationText()} placement="topLeft">
+          <Tooltip
+            title={getOperationText()}
+            placement="topLeft"
+            mouseEnterDelay={0.5}
+          >
             <span
               className={`${styles.operationText} ${
                 styles[`truncate-${textTruncateMode}`]

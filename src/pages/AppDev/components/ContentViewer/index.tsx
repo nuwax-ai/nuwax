@@ -31,8 +31,14 @@ interface ContentViewerProps {
   devServerUrl: string | null;
   /** 是否正在启动 */
   isStarting: boolean;
+  /** 是否正在重启 */
+  isRestarting?: boolean; // 新增
+  /** 是否正在导入项目 */
+  isProjectUploading?: boolean; // 新增
   /** 启动错误 */
-  startError: string | null;
+  startError?: string | null;
+  /** 服务器接口返回的消息 */
+  serverMessage?: string | null;
   /** Preview组件ref */
   previewRef: React.RefObject<PreviewRef>;
   /** 内容变化回调 */
@@ -49,6 +55,8 @@ interface ContentViewerProps {
   isChatLoading?: boolean;
   /** 启动开发服务器回调 */
   onStartDev?: () => void;
+  /** 重启开发服务器回调 */
+  onRestartDev?: () => void;
 }
 
 /**
@@ -67,7 +75,10 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   isSavingFile,
   devServerUrl,
   isStarting,
+  isRestarting, // 新增
+  isProjectUploading, // 新增
   startError,
+  serverMessage,
   previewRef,
   onContentChange,
   onSaveFile,
@@ -76,6 +87,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   findFileNode,
   isChatLoading = false,
   onStartDev,
+  onRestartDev,
 }) => {
   // 版本对比模式 + preview标签页：显示禁用提示
   if (isComparing && mode === 'preview') {
@@ -179,8 +191,12 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           devServerUrl ? `${process.env.BASE_URL}${devServerUrl}` : undefined
         }
         isStarting={isStarting}
+        isRestarting={isRestarting} // 新增
+        isProjectUploading={isProjectUploading} // 新增
         startError={startError}
+        serverMessage={serverMessage}
         onStartDev={onStartDev}
+        onRestartDev={onRestartDev}
       />
     );
   }

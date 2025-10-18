@@ -61,4 +61,6 @@ export interface FileTreePanelProps {
   };
   /** 是否正在AI聊天加载中 */
   isChatLoading?: boolean;
+  /** 项目ID，用于解绑数据源 */
+  projectId?: number;
 }

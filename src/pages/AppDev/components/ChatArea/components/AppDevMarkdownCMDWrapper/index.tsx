@@ -31,7 +31,6 @@ const AppDevMarkdownCMDWrapper: React.FC<AppDevMarkdownCMDWrapperProps> = ({
         id={message.id}
         className={styles.chatAreaMarkdown}
         disableTyping={true}
-        interval={10}
         requestId={message.requestId}
       />
     </div>

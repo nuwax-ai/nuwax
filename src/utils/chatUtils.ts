@@ -6,6 +6,93 @@ import { MessageModeEnum } from '@/types/enums/agent';
 import type { AppDevChatMessage, Attachment } from '@/types/interfaces/appDev';
 
 /**
+ * 检测是否为依赖操作（安装、删除、升级依赖）
+ * @param messageData SSE消息数据
+ * @returns 是否为依赖操作
+ */
+export const isDependencyOperation = (messageData: any): boolean => {
+  const dependencyRelatedTools = [
+    'install_package',
+    'uninstall_package',
+    'update_package',
+    'add_dependency',
+    'remove_dependency',
+    'update_dependency',
+  ];
+
+  // 检查工具名称、命令、类型或描述是否包含依赖操作
+  const toolName = messageData.toolName || '';
+  const command = messageData.rawInput?.command || '';
+  const description = messageData.rawInput?.description || '';
+  const kind = messageData.kind || '';
+  const title = messageData.title || '';
+
+  // 检查是否包含 package.json 相关的字段
+  const filePath = messageData.rawInput?.file_path || '';
+  const hasPackageJsonContent =
+    messageData.rawInput?.new_string?.includes('package.json') ||
+    messageData.rawInput?.old_string?.includes('package.json');
+
+  // 检查 content 数组中是否包含 package.json 编辑信息
+  const content = messageData.content || [];
+  const hasPackageJsonEditContent = content.some(
+    (item: any) =>
+      item.type === 'diff' && item.path && item.path.includes('package.json'),
+  );
+
+  // 检查是否包含依赖相关的字段
+  const hasDependencyFields =
+    messageData.rawInput?.dependencies ||
+    messageData.rawInput?.devDependencies ||
+    messageData.rawInput?.peerDependencies ||
+    messageData.rawInput?.package_name ||
+    messageData.rawInput?.package_version;
+
+  return (
+    dependencyRelatedTools.some((tool) => toolName.includes(tool)) ||
+    kind === 'install' || // 安装操作
+    kind === 'uninstall' || // 卸载操作
+    kind === 'update' || // 更新操作
+    command.includes('npm install') || // npm 安装命令
+    command.includes('npm uninstall') || // npm 卸载命令
+    command.includes('npm update') || // npm 更新命令
+    command.includes('yarn add') || // yarn 添加命令
+    command.includes('yarn remove') || // yarn 移除命令
+    command.includes('yarn upgrade') || // yarn 升级命令
+    command.includes('pnpm add') || // pnpm 添加命令
+    command.includes('pnpm remove') || // pnpm 移除命令
+    command.includes('pnpm update') || // pnpm 更新命令
+    command.includes('pip install') || // pip 安装命令
+    command.includes('pip uninstall') || // pip 卸载命令
+    command.includes('pip install --upgrade') || // pip 升级命令
+    command.includes('package.json') || // 直接操作 package.json
+    filePath.includes('package.json') || // 文件路径包含 package.json
+    hasPackageJsonContent || // 内容包含 package.json
+    hasPackageJsonEditContent || // 编辑内容包含 package.json
+    hasDependencyFields || // 包含依赖相关字段
+    title.toLowerCase().includes('dependency') || // 标题包含依赖
+    title.toLowerCase().includes('package') || // 标题包含包
+    title.toLowerCase().includes('install') || // 标题包含安装
+    title.toLowerCase().includes('uninstall') || // 标题包含卸载
+    title.toLowerCase().includes('update') || // 标题包含更新
+    description.toLowerCase().includes('dependency') || // 描述包含依赖
+    description.toLowerCase().includes('package') || // 描述包含包
+    description.toLowerCase().includes('install') || // 描述包含安装
+    description.toLowerCase().includes('uninstall') || // 描述包含卸载
+    description.toLowerCase().includes('update') // 描述包含更新
+  );
+};
+
+/**
+ * 检测是否为文件操作或依赖操作
+ * @param messageData SSE消息数据
+ * @returns 是否为文件操作或依赖操作
+ */
+export const isFileOrDependencyOperation = (messageData: any): boolean => {
+  return isFileOperation(messageData) || isDependencyOperation(messageData);
+};
+
+/**
  * 检测是否为文件操作
  * @param messageData SSE消息数据
  * @returns 是否为文件操作
@@ -25,6 +112,17 @@ export const isFileOperation = (messageData: any): boolean => {
   const kind = messageData.kind || '';
   const title = messageData.title || '';
 
+  // 检查是否包含文件路径相关的字段（新增）
+  const filePath = messageData.rawInput?.file_path || '';
+  const hasFileContent =
+    messageData.rawInput?.new_string || messageData.rawInput?.old_string;
+
+  // 检查 content 数组中是否包含文件编辑信息（新增）
+  const content = messageData.content || [];
+  const hasFileEditContent = content.some(
+    (item: any) => item.type === 'diff' && item.path,
+  );
+
   return (
     fileRelatedTools.some((tool) => toolName.includes(tool)) ||
     kind === 'edit' || // 文件编辑操作
@@ -37,16 +135,21 @@ export const isFileOperation = (messageData: any): boolean => {
     command.includes('touch ') || // 创建文件命令
     command.includes('echo ') || // 写入文件命令
     // command.includes('cat ') || // 读取文件命令（注释掉，避免过度触发）
-    title.includes('Edit ') || // 编辑文件标题
-    title.includes('Write ') || // 写入文件标题
-    title.includes('Create ') || // 创建文件标题
-    title.includes('Delete ') || // 删除文件标题
+
     description.includes('删除') ||
     description.includes('创建') ||
     description.includes('移动') ||
     description.includes('重命名') ||
     description.includes('编辑') ||
-    description.includes('写入')
+    description.includes('写入') ||
+    // 新增：检查文件路径和内容相关字段
+    (filePath && hasFileContent) || // 包含文件路径且有文件内容修改
+    hasFileEditContent || // content 数组中包含文件编辑信息
+    // 检查标题中是否包含文件路径（如 "Edit /path/to/file"）
+    (title.includes('Edit ') && title.includes('/')) ||
+    (title.includes('Write ') && title.includes('/')) ||
+    (title.includes('Create ') && title.includes('/')) ||
+    (title.includes('Delete ') && title.includes('/'))
   );
 };
 

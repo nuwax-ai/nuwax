@@ -24,7 +24,6 @@ import {
   Input,
   Menu,
   message,
-  Segmented,
   Select,
   Spin,
   Tag,
@@ -432,7 +431,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                           key={attachment.content.id}
                           attachment={attachment.content}
                           type={attachment.type}
-                          size={80}
+                          size={60}
                           showPreview={true}
                         />
                       ))}
@@ -584,7 +583,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       {/* 聊天模式切换 */}
       <div className={styles.chatModeContainer}>
         <div className={styles.chatModeSwitcher}>
-          <Segmented
+          <div className={styles.chatModeSegmented}>
+            {/* <Segmented
             value={chatMode}
             onChange={(value) => setChatMode(value as 'chat' | 'code')}
             options={[
@@ -597,7 +597,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               },
             ]}
             className={styles.chatModeSegmented}
-          />
+          /> */}
+            AI 开发智能助手
+          </div>
           <div className={styles.versionSelectorWrapper}>
             <Select
               value={
@@ -638,7 +640,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 onVersionSelect(parseInt(value));
               }}
               placeholder="选择版本"
-              disabled={projectInfo.versionList.length === 0}
+              disabled={
+                projectInfo.versionList.length === 0 || chat.isChatLoading
+              }
             />
           </div>
 
@@ -667,7 +671,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             title="正在加载历史会话"
             description="请稍候..."
           />
-        ) : !chat.messages || chat.messages.length === 0 ? (
+        ) : !chat.chatMessages || chat.chatMessages.length === 0 ? (
           <AppDevEmptyState
             type="empty"
             icon={<MessageOutlined />}

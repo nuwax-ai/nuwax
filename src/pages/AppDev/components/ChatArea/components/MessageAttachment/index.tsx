@@ -130,9 +130,10 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
     case 'Text':
     case 'Document':
     case 'Audio':
-      return renderFileAttachment(
-        attachment as TextAttachment | DocumentAttachment | AudioAttachment,
-      );
+      return null;
+    // return renderFileAttachment(
+    //   attachment as TextAttachment | DocumentAttachment | AudioAttachment,
+    // );
     default:
       return null;
   }

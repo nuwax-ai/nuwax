@@ -997,6 +997,18 @@ export interface BindDataSourceRequest {
   dataSourceId: number;
 }
 
+/**
+ * 解绑数据源请求参数接口
+ */
+export interface UnbindDataSourceRequest {
+  /** 项目ID */
+  projectId: number;
+  /** 数据源类型：plugin-插件, workflow-工作流 */
+  type: 'plugin' | 'workflow';
+  /** 数据源ID */
+  dataSourceId: number;
+}
+
 // ==================== 保活接口相关类型定义 ====================
 
 /**

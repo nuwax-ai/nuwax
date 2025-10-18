@@ -20,6 +20,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 
 import { AGENT_SERVICE_RUNNING } from '@/constants/codes.constants';
+import {
+  insertPlanBlock,
+  insertToolCallBlock,
+  insertToolCallUpdateBlock,
+} from '@/pages/AppDev/utils/markdownProcess';
 import type { DataSourceSelection } from '@/types/interfaces/appDev';
 import {
   addSessionInfoToMessages,
@@ -30,7 +35,7 @@ import {
   generateRequestId,
   generateSSEUrl,
   getAuthHeaders,
-  isFileOperation,
+  isFileOrDependencyOperation, // 新增：导入文件或依赖操作检测函数
   isRequestIdMatch,
   markStreamingMessageCancelled,
   markStreamingMessageComplete,
@@ -48,6 +53,7 @@ interface UseAppDevChatProps {
   onClearDataSourceSelections?: () => void; // 新增：清除数据源选择回调
   onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
   onClearUploadedImages?: () => void; // 新增：清除上传图片回调
+  onRestartDevServer?: () => Promise<void>; // 新增：重启开发服务器回调
 }
 
 export const useAppDevChat = ({
@@ -58,6 +64,7 @@ export const useAppDevChat = ({
   onClearDataSourceSelections,
   onRefreshVersionList, // 新增：刷新版本列表回调
   onClearUploadedImages, // 新增：清除上传图片回调
+  onRestartDevServer, // 新增
 }: UseAppDevChatProps) => {
   // 使用 AppDev SSE 连接 model
   const appDevSseModel = useModel('appDevSseConnection');
@@ -75,7 +82,7 @@ export const useAppDevChat = ({
   // 记录用户主动发送的消息数量（不包括历史消息）- 已注释，暂时不使用
   // const userSentMessageCountRef = useRef(0);
 
-  // 存储文件操作相关的 toolCallId
+  // 存储文件操作和依赖操作相关的 toolCallId
   const fileOperationToolCallIdsRef = useRef<Set<string>>(new Set());
 
   // 添加防抖的文件树刷新函数
@@ -147,16 +154,89 @@ export const useAppDevChat = ({
           }
 
           if (message.subType === 'plan') {
-            // plan 消息不立即刷新，等待 prompt_end
+            setChatMessages((prev) =>
+              prev.map((msg) => {
+                if (
+                  msg.requestId === activeRequestId &&
+                  msg.role === 'ASSISTANT'
+                ) {
+                  return {
+                    ...msg,
+                    text: insertPlanBlock(msg.text || '', {
+                      planId: message.data.planId || 'default-plan',
+                      entries: message.data.entries || [],
+                    }),
+                  };
+                }
+                return msg;
+              }),
+            );
           }
           if (message.subType === 'tool_call') {
-            // 检测是否为文件操作，如果是则记录 toolCallId
-            if (isFileOperation(message.data) && message.data.toolCallId) {
+            setChatMessages((prev) =>
+              prev.map((msg) => {
+                if (
+                  msg.requestId === activeRequestId &&
+                  msg.role === 'ASSISTANT'
+                ) {
+                  return {
+                    ...msg,
+                    text: insertToolCallBlock(
+                      msg.text || '',
+                      message.data.toolCallId,
+                      {
+                        toolCallId: message.data.toolCallId,
+                        title: message.data.title || '工具调用',
+                        kind: message.data.kind || 'execute',
+                        status: message.data.status,
+                        content: message.data.content,
+                        locations: message.data.locations,
+                        rawInput: message.data.rawInput,
+                        timestamp: message.timestamp,
+                      },
+                    ),
+                  };
+                }
+                return msg;
+              }),
+            );
+            // 检测是否为文件操作或依赖操作，如果是则记录 toolCallId
+            if (
+              isFileOrDependencyOperation(message.data) &&
+              message.data.toolCallId
+            ) {
               fileOperationToolCallIdsRef.current.add(message.data.toolCallId);
             }
           }
           if (message.subType === 'tool_call_update') {
-            // 检查对应的 toolCallId 是否为文件操作
+            setChatMessages((prev) =>
+              prev.map((msg) => {
+                if (
+                  msg.requestId === activeRequestId &&
+                  msg.role === 'ASSISTANT'
+                ) {
+                  return {
+                    ...msg,
+                    text: insertToolCallUpdateBlock(
+                      msg.text || '',
+                      message.data.toolCallId,
+                      {
+                        toolCallId: message.data.toolCallId,
+                        title: message.data.title || '工具调用更新',
+                        kind: message.data.kind || 'execute',
+                        status: message.data.status,
+                        content: message.data.content,
+                        locations: message.data.locations,
+                        rawInput: message.data.rawInput,
+                        timestamp: message.timestamp,
+                      },
+                    ),
+                  };
+                }
+                return msg;
+              }),
+            );
+            // 检查对应的 toolCallId 是否为文件操作或依赖操作
             if (
               message.data.toolCallId &&
               fileOperationToolCallIdsRef.current.has(message.data.toolCallId)
@@ -194,7 +274,18 @@ export const useAppDevChat = ({
           // 会话结束时执行一次文件树刷新
           debouncedRefreshFileTree();
 
-          // 清理文件操作 toolCallId 记录
+          // 新增：如果有文件操作或依赖操作，触发重启开发服务器
+          if (
+            fileOperationToolCallIdsRef.current.size > 0 &&
+            onRestartDevServer
+          ) {
+            console.log(
+              '🔄 [AppDev] 检测到文件操作或依赖操作，触发重启开发服务器',
+            );
+            onRestartDevServer(); // 不等待，异步执行
+          }
+
+          // 清理文件操作和依赖操作 toolCallId 记录
           fileOperationToolCallIdsRef.current.clear();
 
           setIsChatLoading(false);
@@ -356,8 +447,6 @@ export const useAppDevChat = ({
 
           // 立即建立SSE连接（使用返回的session_id）
           await initializeAppDevSSEConnection(sessionId, requestId);
-        } else {
-          throw new Error(response.message || '发送消息失败');
         }
       } catch (error) {
         if (error && (error as any).code === AGENT_SERVICE_RUNNING) {
@@ -365,7 +454,6 @@ export const useAppDevChat = ({
             sendMessageAndConnectSSE(); //继续发送消息
           });
         } else {
-          message.error('发送消息失败');
           setIsChatLoading(false);
         }
       }

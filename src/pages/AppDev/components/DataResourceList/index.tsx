@@ -1,7 +1,8 @@
+import { unbindDataSource } from '@/services/appDev';
 import type { DataSourceSelection } from '@/types/interfaces/appDev';
 import type { DataResource } from '@/types/interfaces/dataResource';
 import { DeleteOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Empty, message, Typography } from 'antd';
+import { Button, Checkbox, Empty, message, Modal, Typography } from 'antd';
 import React, { useState } from 'react';
 
 const { Text } = Typography;
@@ -22,6 +23,8 @@ interface DataResourceListProps {
   onSelectionChange?: (selectedDataSources: DataSourceSelection[]) => void;
   /** 是否正在AI聊天加载中或版本对比模式 */
   isChatLoading?: boolean;
+  /** 项目ID，用于解绑数据源 */
+  projectId?: number;
 }
 
 /**
@@ -34,6 +37,7 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
   selectedResourceIds = [],
   onSelectionChange,
   isChatLoading = false,
+  projectId,
 }) => {
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>(
     {},
@@ -62,15 +66,54 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
    * 处理删除资源
    */
   const handleDelete = async (resourceId: string) => {
-    try {
-      setActionLoading((prev) => ({ ...prev, [resourceId]: true }));
-      await onDelete?.(resourceId);
-      message.success('删除成功');
-    } catch (error) {
-      message.error('删除失败');
-    } finally {
-      setActionLoading((prev) => ({ ...prev, [resourceId]: false }));
+    const resource = resources.find((r) => r.id === resourceId);
+    if (!resource) {
+      message.error('未找到要删除的数据源');
+      return;
     }
+
+    // 显示二次确认弹窗
+    Modal.confirm({
+      title: '确认删除数据源',
+      content: (
+        <div>
+          <p>
+            您确定要删除数据源 <strong>"{resource.name}"</strong> 吗？
+          </p>
+        </div>
+      ),
+      okText: '确认删除',
+      cancelText: '取消',
+      okType: 'danger',
+      icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
+      onOk: async () => {
+        try {
+          setActionLoading((prev) => ({ ...prev, [resourceId]: true }));
+
+          // 如果有项目ID，先调用解绑数据源接口
+          if (projectId) {
+            // 将 DataResourceType 转换为解绑接口需要的类型
+            const type =
+              resource.type === 'plugin' || resource.type === 'workflow'
+                ? resource.type
+                : 'plugin'; // 默认值，实际应该根据业务逻辑确定
+
+            const result = await unbindDataSource({
+              projectId,
+              type,
+              dataSourceId: parseInt(resourceId),
+            });
+
+            if (result?.code === '0000') {
+              // 调用原有的删除回调
+              await onDelete?.(resourceId);
+            }
+          }
+        } finally {
+          setActionLoading((prev) => ({ ...prev, [resourceId]: false }));
+        }
+      },
+    });
   };
 
   /**
@@ -166,11 +209,10 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
       style={{ height: '200px' }}
     >
       {resources.length === 0 ? (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据资源">
-          <Text type="secondary">
-            点击右上角的&ldquo;+&rdquo;按钮添加新的数据资源
-          </Text>
-        </Empty>
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="点击&ldquo;+&rdquo;添加数据资源"
+        />
       ) : (
         <div>{resources.map((resource) => renderResourceItem(resource))}</div>
       )}

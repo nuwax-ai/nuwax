@@ -24,6 +24,8 @@ const beSilentRequestList = (url: string): boolean => {
     '/api/notify/event/clear', // 事件清除
     '/api/user/getLoginInfo', // 获取登录信息
     '/api/custom-page/keepalive', // 开发页面保活
+    '/api/custom-page/start-dev', // 开发页面启动
+    '/api/custom-page/restart-dev', // 开发页面重启
     // 可以在此添加其他不需要显示错误消息的API
   ];
   return list.some((api) => url.includes(api));

@@ -513,6 +513,32 @@ export const bindDataSource = async (
 };
 
 /**
+ * 解绑数据源接口参数
+ */
+export interface UnbindDataSourceRequest {
+  /** 项目ID */
+  projectId: number;
+  /** 数据源类型：plugin-插件, workflow-工作流 */
+  type: 'plugin' | 'workflow';
+  /** 数据源ID */
+  dataSourceId: number;
+}
+
+/**
+ * 解绑数据源
+ * @param params 解绑数据源参数
+ * @returns Promise<RequestResponse<void>> 解绑结果
+ */
+export const unbindDataSource = async (
+  params: UnbindDataSourceRequest,
+): Promise<RequestResponse<void>> => {
+  return request('/api/custom-page/unbind-data-source', {
+    method: 'POST',
+    data: params,
+  });
+};
+
+/**
  * 查询可用的模型配置列表
  * @param projectId 项目ID
  * @returns Promise<ListModelsResponse> 模型列表
