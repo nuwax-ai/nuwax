@@ -206,7 +206,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         </div>
 
         <div className={styles.previewContainer}>
-          {devServerUrl && !loadError ? (
+          {devServerUrl && !loadError && !serverMessage ? (
             <iframe
               ref={iframeRef}
               className={styles.previewIframe}
@@ -218,7 +218,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           ) : (
             <AppDevEmptyState
               type={
-                loadError
+                loadError || serverMessage
                   ? 'error'
                   : isRestarting
                   ? 'loading'
@@ -231,7 +231,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                   : 'empty'
               }
               icon={
-                loadError ? (
+                loadError || serverMessage ? (
                   <ExclamationCircleOutlined />
                 ) : isRestarting ? (
                   <ThunderboltOutlined />
@@ -246,6 +246,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               title={
                 loadError
                   ? '预览加载失败'
+                  : serverMessage
+                  ? '服务器错误'
                   : isRestarting
                   ? '服务器重启中'
                   : isStarting
@@ -271,7 +273,27 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                   : '正在连接开发服务器，请稍候...')
               }
               buttons={
-                onStartDev || onRestartDev
+                loadError || serverMessage
+                  ? [
+                      {
+                        text: retrying ? '重试中...' : '重试',
+                        icon: <ReloadOutlined />,
+                        onClick: retryPreview,
+                        loading: retrying,
+                        disabled: retrying,
+                      },
+                      ...(serverMessage && onRestartDev
+                        ? [
+                            {
+                              text: '重启服务器',
+                              icon: <ThunderboltOutlined />,
+                              onClick: onRestartDev,
+                              type: 'primary' as const,
+                            },
+                          ]
+                        : []),
+                    ]
+                  : onStartDev || onRestartDev
                   ? [
                       {
                         text: retrying ? '重启中...' : '重启服务',

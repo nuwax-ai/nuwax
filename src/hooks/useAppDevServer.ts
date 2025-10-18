@@ -118,6 +118,19 @@ export const useAppDevServer = ({
    */
   const handleKeepAliveResponse = useCallback(
     (response: any) => {
+      // 检查接口返回状态码
+      if (response?.code !== '0000') {
+        // 接口返回非 0000 状态码，设置错误信息
+        const errorMessage = response?.message || '服务器保活失败';
+        setServerMessage(errorMessage);
+        setIsRunning(false);
+        onServerStatusChange?.(false);
+        return;
+      }
+
+      // 清除之前的错误信息
+      setServerMessage(null);
+
       if (response?.data?.devServerUrl) {
         const newDevServerUrl = response.data.devServerUrl;
         const currentDevServerUrl = devServerUrl;
@@ -129,7 +142,7 @@ export const useAppDevServer = ({
         }
       }
     },
-    [devServerUrl, onServerStart],
+    [devServerUrl, onServerStart, onServerStatusChange],
   );
 
   /**
