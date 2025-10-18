@@ -644,6 +644,14 @@ const AppDev: React.FC = () => {
    * 处理文件选择
    */
   const handleFileSelect = useCallback((file: File) => {
+    // 校验文件类型，仅支持 .zip 压缩文件
+    const isZip = file.name?.toLowerCase().endsWith('.zip');
+
+    if (!isZip) {
+      message.error('仅支持 .zip 压缩文件格式');
+      return false;
+    }
+
     setSelectedFile(file);
     return false; // 阻止自动上传
   }, []);
@@ -1115,7 +1123,7 @@ const AppDev: React.FC = () => {
         >
           <div>
             <Upload.Dragger
-              accept=".zip,.tar.gz,.rar"
+              accept=".zip"
               beforeUpload={(file) => handleFileSelect(file)}
               disabled={uploadLoading}
               showUploadList={false}
@@ -1125,7 +1133,7 @@ const AppDev: React.FC = () => {
               </p>
               <p className="ant-upload-text">点击或拖拽文件到此区域选择</p>
               <p className="ant-upload-hint">
-                支持 .zip、.tar.gz、.rar 格式（将更新当前项目）
+                仅支持 .zip 压缩文件格式（将更新当前项目）
               </p>
             </Upload.Dragger>
             {selectedFile && (
