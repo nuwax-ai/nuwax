@@ -69,7 +69,6 @@ export const useAppDevProjectInfo = (
    */
   const fetchProjectInfo = useCallback(async () => {
     if (!projectId) {
-      console.warn('⚠️ [useAppDevProjectInfo] 项目ID为空，跳过获取项目详情');
       return;
     }
 
@@ -80,11 +79,7 @@ export const useAppDevProjectInfo = (
         error: null,
       }));
 
-      console.log('📡 [useAppDevProjectInfo] 开始获取项目详情:', projectId);
-
       const response = await getProjectInfo(projectId);
-
-      console.log('📡 [useAppDevProjectInfo] 项目详情API响应:', response);
 
       if (response?.code === '0000' && response?.data) {
         setProjectInfoState({
@@ -93,18 +88,11 @@ export const useAppDevProjectInfo = (
           error: null,
           lastUpdated: new Date(),
         });
-
-        console.log(
-          '✅ [useAppDevProjectInfo] 项目详情获取成功:',
-          response.data,
-        );
       } else {
         const errorMessage = response?.message || '获取项目详情失败';
         throw new Error(errorMessage);
       }
     } catch (error: any) {
-      console.error('❌ [useAppDevProjectInfo] 获取项目详情失败:', error);
-
       const errorMessage =
         error?.message || error?.toString() || '获取项目详情时发生未知错误';
 
@@ -120,7 +108,6 @@ export const useAppDevProjectInfo = (
    * 刷新项目详情
    */
   const refreshProjectInfo = useCallback(async () => {
-    console.log('🔄 [useAppDevProjectInfo] 手动刷新项目详情');
     await fetchProjectInfo();
   }, [fetchProjectInfo]);
 
@@ -252,10 +239,6 @@ export const useAppDevProjectInfo = (
   // 当项目ID变化时，自动获取项目详情
   useEffect(() => {
     if (projectId) {
-      console.log(
-        '🔄 [useAppDevProjectInfo] 项目ID变化，重新获取项目详情:',
-        projectId,
-      );
       fetchProjectInfo();
     }
   }, [projectId]); // 移除 fetchProjectInfo 依赖，避免重复执行

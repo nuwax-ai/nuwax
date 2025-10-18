@@ -35,11 +35,11 @@ export default () => {
    */
   const initializeAppDevSSEConnection = useCallback(
     (config: AppDevSSEManagerConfig) => {
-      console.log('🔧 [AppDev SSE Model] 初始化 AppDev SSE 连接:', config);
+      // 初始化 AppDev SSE 连接
 
       const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
       const sseUrl = `${process.env.BASE_URL}/api/custom-page/ai-session-sse?session_id=${config.sessionId}`;
-      console.log(`🔌 [AppDev SSE Model] 连接到: ${sseUrl}`);
+      // 连接到 SSE 服务
 
       // 直接获取 abort 句柄
       return createSSEConnection({
@@ -50,19 +50,19 @@ export default () => {
           Accept: 'application/json, text/plain, */* ',
         },
         onOpen: () => {
-          console.log('✅ [AppDev SSE Model] SSE 连接已建立');
+          // SSE 连接已建立
           config.onOpen?.();
         },
         onMessage: (data: UnifiedSessionMessage) => {
-          console.log('📨 [AppDev SSE Model] 收到消息:', data);
+          // 收到消息
           config.onMessage?.(data);
         },
         onError: (error) => {
-          console.error('❌ [AppDev SSE Model] SSE 连接错误:', error);
+          // SSE 连接错误
           config.onError?.(error as any);
         },
         onClose: () => {
-          console.log('🔌 [AppDev SSE Model] SSE 连接已关闭');
+          // SSE 连接已关闭
           config.onClose?.();
         },
       });

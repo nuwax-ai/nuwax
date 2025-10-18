@@ -5,9 +5,13 @@ import { cancelAgentTask } from '@/services/appDev';
 import type {
   AppDevChatMessage,
   Attachment,
+  DataSourceSelection,
   ImageUploadInfo,
 } from '@/types/interfaces/appDev';
-import { generateAttachmentId } from '@/utils/chatUtils';
+import {
+  convertDataSourceSelectionToAttachment,
+  generateAttachmentId,
+} from '@/utils/chatUtils';
 import {
   CloseCircleOutlined,
   ControlOutlined,
@@ -403,6 +407,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       const hasThinking = message.think && message.think.trim() !== '';
       const isThinkingExpanded = expandedThinking.has(message.id);
 
+      // 组合附件和数据源 - 只在用户消息中显示
+      let allAttachments: Attachment[] = [];
+      let dataSourceAttachments: DataSourceSelection[] = [];
+
+      if (isUser) {
+        // 传统附件（图片、文件等）
+        allAttachments = message.attachments || [];
+        // 数据源附件
+        dataSourceAttachments = message.dataSources || [];
+      } else {
+        allAttachments = message.attachments || [];
+      }
+
       return (
         <div
           key={message.id}
@@ -423,14 +440,28 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                       <div key={index}>{line}</div>
                     ))}
 
-                  {/* 附件渲染 */}
-                  {message.attachments && message.attachments.length > 0 && (
+                  {/* 附件渲染 - 包含传统附件和数据源附件 */}
+                  {(allAttachments.length > 0 ||
+                    dataSourceAttachments.length > 0) && (
                     <div className={styles.messageAttachments}>
-                      {message.attachments.map((attachment) => (
+                      {/* 渲染传统附件（图片、文件等） */}
+                      {allAttachments.map((attachment) => (
                         <MessageAttachment
                           key={attachment.content.id}
                           attachment={attachment.content}
                           type={attachment.type}
+                          size={60}
+                          showPreview={true}
+                        />
+                      ))}
+                      {/* 渲染数据源附件 */}
+                      {dataSourceAttachments.map((dataSource) => (
+                        <MessageAttachment
+                          key={`${dataSource.dataSourceId}-${dataSource.type}`}
+                          attachment={convertDataSourceSelectionToAttachment(
+                            dataSource,
+                          )}
+                          type="DataSource"
                           size={60}
                           showPreview={true}
                         />

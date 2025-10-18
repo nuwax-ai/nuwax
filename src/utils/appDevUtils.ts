@@ -26,18 +26,6 @@ export const transformFlatListToTree = (files: any[]): FileNode[] => {
     const fileName = pathParts[pathParts.length - 1];
     const isFile = fileName.includes('.');
 
-    // 调试日志：检查文件数据结构（仅在开发环境）
-    if (isFile && process.env.NODE_ENV === 'development') {
-      console.log('🔍 [Transform] 处理文件:', {
-        name: file.name,
-        hasContents: !!file.contents,
-        contentsLength: file.contents?.length || 0,
-        contentsPreview: file.contents?.substring(0, 50) || 'empty',
-        binary: file.binary,
-        size: file.size,
-      });
-    }
-
     const node: FileNode = {
       id: file.name,
       name: fileName,

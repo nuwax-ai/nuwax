@@ -1,9 +1,17 @@
 import type {
   AudioAttachment,
+  DataSourceAttachment,
   DocumentAttachment,
   ImageAttachment,
   TextAttachment,
 } from '@/types/interfaces/appDev';
+import {
+  ApiOutlined,
+  FileOutlined,
+  FileTextOutlined,
+  SoundOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
 import { Image } from 'antd';
 import React from 'react';
 import styles from './index.less';
@@ -17,9 +25,10 @@ interface MessageAttachmentProps {
     | ImageAttachment
     | TextAttachment
     | DocumentAttachment
-    | AudioAttachment;
+    | AudioAttachment
+    | DataSourceAttachment;
   /** 附件类型 */
-  type: 'Image' | 'Text' | 'Document' | 'Audio';
+  type: 'Image' | 'Text' | 'Document' | 'Audio' | 'DataSource';
   /** 图片尺寸（仅对图片类型有效） */
   size?: number;
   /** 是否显示预览（仅对图片类型有效） */
@@ -90,16 +99,18 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
     };
 
     // 获取文件图标
-    const getFileIcon = (fileType: 'Text' | 'Document' | 'Audio'): string => {
+    const getFileIcon = (
+      fileType: 'Text' | 'Document' | 'Audio',
+    ): React.ReactNode => {
       switch (fileType) {
         case 'Text':
-          return '📄';
+          return <FileTextOutlined />;
         case 'Document':
-          return '📋';
+          return <FileOutlined />;
         case 'Audio':
-          return '🎵';
+          return <SoundOutlined />;
         default:
-          return '📁';
+          return <FileOutlined />;
       }
     };
 
@@ -123,6 +134,56 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
     );
   };
 
+  // 渲染数据源附件
+  const renderDataSourceAttachment = (
+    dataSourceAttachment: DataSourceAttachment,
+  ) => {
+    // 获取数据源类型显示文本
+    const getDataSourceTypeText = (type: 'plugin' | 'workflow'): string => {
+      switch (type) {
+        case 'plugin':
+          return '插件';
+        case 'workflow':
+          return '工作流';
+        default:
+          return '数据源';
+      }
+    };
+
+    // 获取数据源图标
+    const getDataSourceIcon = (
+      type: 'plugin' | 'workflow',
+    ): React.ReactNode => {
+      switch (type) {
+        case 'plugin':
+          return <ApiOutlined />;
+        case 'workflow':
+          return <ThunderboltOutlined />;
+        default:
+          return <ApiOutlined />;
+      }
+    };
+
+    return (
+      <div
+        className={`${styles.messageDataSourceAttachment} ${className || ''}`}
+        onClick={onClick}
+      >
+        <div className={styles.dataSourceAttachmentIcon}>
+          {getDataSourceIcon(dataSourceAttachment.type)}
+        </div>
+        <div className={styles.dataSourceAttachmentInfo}>
+          <div className={styles.dataSourceAttachmentName}>
+            {dataSourceAttachment.name}
+          </div>
+          <div className={styles.dataSourceAttachmentType}>
+            {getDataSourceTypeText(dataSourceAttachment.type)}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // 根据类型渲染不同的附件
   switch (type) {
     case 'Image':
@@ -134,6 +195,8 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
     // return renderFileAttachment(
     //   attachment as TextAttachment | DocumentAttachment | AudioAttachment,
     // );
+    case 'DataSource':
+      return renderDataSourceAttachment(attachment as DataSourceAttachment);
     default:
       return null;
   }

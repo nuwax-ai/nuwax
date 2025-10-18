@@ -19,6 +19,7 @@ interface UseAppDevServerReturn {
   devServerUrl: string | null;
   isRunning: boolean;
   serverMessage: string | null;
+  serverErrorCode: string | null; // 新增：服务器错误码
   startServer: () => Promise<
     { success: boolean; message?: string; devServerUrl?: string } | undefined
   >;
@@ -39,6 +40,7 @@ export const useAppDevServer = ({
   const [devServerUrl, setDevServerUrl] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [serverMessage, setServerMessage] = useState<string | null>(null);
+  const [serverErrorCode, setServerErrorCode] = useState<string | null>(null); // 新增：服务器错误码状态
 
   const hasStartedRef = useRef(false);
   const lastProjectIdRef = useRef<string | null>(null);
@@ -66,8 +68,9 @@ export const useAppDevServer = ({
         setIsRunning(true);
         onServerStatusChange?.(true);
 
-        // 成功时清除服务器消息，避免显示错误状态
+        // 成功时清除服务器消息和错误码，避免显示错误状态
         setServerMessage(null);
+        setServerErrorCode(null);
 
         const successMessage =
           response?.message ||
@@ -89,13 +92,15 @@ export const useAppDevServer = ({
         setIsRunning(false);
         onServerStatusChange?.(false);
 
-        // 更新服务器消息
+        // 更新服务器消息和错误码
         const errorMessage =
           response?.message ||
           `${
             operation === 'start' ? '启动开发环境失败' : '重启开发服务器失败'
           }`;
+        const errorCode = response?.code || 'UNKNOWN_ERROR';
         setServerMessage(errorMessage);
+        setServerErrorCode(errorCode);
 
         let errorMsg = '';
         if (shouldShowMessage) {
@@ -120,17 +125,20 @@ export const useAppDevServer = ({
     (response: any) => {
       // 检查接口返回状态码
       if (response?.code !== '0000') {
-        // 【关键变更】接口返回非 0000 状态码，设置错误信息
+        // 【关键变更】接口返回非 0000 状态码，设置错误信息和错误码
         const errorMessage = response?.message || '服务器保活失败';
+        const errorCode = response?.code || 'KEEPALIVE_ERROR';
         setServerMessage(errorMessage);
+        setServerErrorCode(errorCode);
         setIsRunning(false);
         onServerStatusChange?.(false);
         // 不设置 isStarting 或 isRestarting，避免显示 loading
         return;
       }
 
-      // 清除之前的错误信息
+      // 清除之前的错误信息和错误码
       setServerMessage(null);
+      setServerErrorCode(null);
       setIsRunning(true);
       onServerStatusChange?.(true);
 
@@ -210,6 +218,7 @@ export const useAppDevServer = ({
       hasStartedRef.current = true;
       setIsStarting(true);
       setServerMessage(null); // 清除之前的错误消息
+      setServerErrorCode(null); // 清除之前的错误码
 
       // 调用 start-dev 接口
       const response = await startDev(projectId);
@@ -237,6 +246,7 @@ export const useAppDevServer = ({
       setIsStarting(false);
       setIsRunning(false);
       setServerMessage(error?.message || '启动开发环境失败');
+      setServerErrorCode(error?.code || 'START_ERROR');
       onServerStatusChange?.(false);
 
       // 即使异常也启动 keepalive 轮询
@@ -266,6 +276,7 @@ export const useAppDevServer = ({
         setIsRestarting(true);
         setDevServerUrl(null);
         setServerMessage(null);
+        setServerErrorCode(null);
 
         // 调用重启接口
         const response = await restartDev(projectId);
@@ -298,12 +309,10 @@ export const useAppDevServer = ({
         setIsRunning(false);
 
         const errorMessage = error?.message || '重启开发服务器失败';
+        const errorCode = error?.code || 'RESTART_ERROR';
         setServerMessage(errorMessage);
+        setServerErrorCode(errorCode);
         onServerStatusChange?.(false);
-
-        if (shouldSwitchTab) {
-          message.error(errorMessage);
-        }
 
         // 【关键变更4】即使异常也要恢复 keepalive 轮询
         startKeepAlive();
@@ -367,6 +376,7 @@ export const useAppDevServer = ({
     devServerUrl,
     isRunning,
     serverMessage,
+    serverErrorCode, // 新增：暴露服务器错误码
     startServer,
     restartServer,
     resetServer,

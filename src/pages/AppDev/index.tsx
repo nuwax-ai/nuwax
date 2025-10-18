@@ -9,13 +9,14 @@ import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
+import { useRestartDevServer } from '@/hooks/useRestartDevServer';
 import {
   bindDataSource,
   buildProject,
   exportProject,
   uploadAndStartProject,
 } from '@/services/appDev';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentAddComponentStatusEnum, AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { DataSourceSelection } from '@/types/interfaces/appDev';
 import {
   DownloadOutlined,
@@ -53,6 +54,7 @@ import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
 import styles from './index.less';
+import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 
 const { Text } = Typography;
 
@@ -72,6 +74,8 @@ const AppDev: React.FC = () => {
 
   // 页面编辑状态
   const [openPageEditVisible, setOpenPageEditVisible] = useState(false);
+  // 处于loading状态的组件列表
+  const [addComponents, setAddComponents] = useState<AgentAddComponentStatusInfo[]>([]);
 
   // 使用 AppDev 模型来管理状态
   const appDevModel = useModel('appDev');
@@ -139,6 +143,17 @@ const AppDev: React.FC = () => {
     onServerStatusChange: setIsServiceRunning,
   });
 
+  // Preview组件的ref，用于触发刷新
+  const previewRef = useRef<PreviewRef>(null);
+
+  // 使用重启开发服务器 Hook
+  const { restartDevServer } = useRestartDevServer({
+    projectId: projectId || '',
+    server,
+    setActiveTab,
+    previewRef,
+  });
+
   const chat = useAppDevChat({
     projectId: projectId || '',
     selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
@@ -153,9 +168,30 @@ const AppDev: React.FC = () => {
       }
     }, // 新增：传递清除上传图片方法
     onRestartDevServer: async () => {
-      await server.restartServer(false); // Agent 触发时不切换页面
+      // 使用重启开发服务器 Hook，Agent 触发时不切换页面
+      await restartDevServer({
+        shouldSwitchTab: false, // Agent 触发时不切换页面
+        delayBeforeRefresh: 500,
+        showMessage: false, // Agent 触发时不显示消息
+      });
     }, // 新增：Agent 触发时不切换页面
   });
+
+  useEffect(() => {
+    // 初始化处于added状态的组件列表
+    if (projectInfo.projectInfoState.projectInfo) {
+      const dataSources = projectInfo.projectInfoState.projectInfo?.dataSources || [];
+      const addComponents = dataSources.map((dataSource) => {
+        const type = dataSource.type === 'plugin' ? AgentComponentTypeEnum.Plugin : AgentComponentTypeEnum.Workflow;
+        return {
+          type: type,
+          targetId: dataSource.id,
+          status: AgentAddComponentStatusEnum.Added,
+        };
+      });
+      setAddComponents(addComponents);
+    }
+  }, [projectInfo.projectInfoState?.projectInfo]);
 
   // 数据资源管理
   const dataResourceManagement = useDataResourceManagement(
@@ -245,9 +281,6 @@ const AppDev: React.FC = () => {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<any>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  // Preview组件的ref，用于触发刷新
-  const previewRef = useRef<PreviewRef>(null);
 
   /**
    * 检查 projectId 状态
@@ -377,22 +410,13 @@ const AppDev: React.FC = () => {
    * 处理重启开发服务器按钮点击（手动触发）
    */
   const handleRestartDevServer = useCallback(async () => {
-    // 切换到预览标签页
-    setActiveTab('preview');
-
-    // 等待标签页切换完成
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    // 调用统一的重启方法
-    const result = await server.restartServer(true);
-
-    // 如果成功，延迟刷新预览
-    if (result.success) {
-      setTimeout(() => {
-        previewRef.current?.refresh();
-      }, 500);
-    }
-  }, [server]);
+    // 使用重启开发服务器 Hook，手动触发时切换到预览标签页
+    await restartDevServer({
+      shouldSwitchTab: true,
+      delayBeforeRefresh: 500,
+      showMessage: true,
+    });
+  }, [restartDevServer]);
 
   /**
    * 处理添加组件（Created 组件回调）
@@ -414,6 +438,18 @@ const AppDev: React.FC = () => {
         return;
       }
 
+      // 组件添加loading状态到列表
+      setAddComponents((list) => {
+        return [
+          ...list,
+          {
+            type: item.targetType,
+            targetId: item.targetId,
+            status: AgentAddComponentStatusEnum.Loading,
+          },
+        ];
+      });
+
       try {
         // 确定数据源类型
         const type =
@@ -432,12 +468,24 @@ const AppDev: React.FC = () => {
         if (result?.code === '0000') {
           message.success('数据源绑定成功');
 
+          // 更新处于loading状态的组件列表
+          setAddComponents((list) => {
+            return list.map((info) => {
+              if (info.targetId === item.targetId && info.status === AgentAddComponentStatusEnum.Loading) {
+                return { ...info, status: AgentAddComponentStatusEnum.Added };
+              }
+              return info;
+            });
+          });
+
           // 刷新项目详情信息以更新数据源列表
           await projectInfo.refreshProjectInfo();
 
           // 关闭 Created 弹窗
           setIsAddDataResourceModalVisible(false);
         } else {
+          // 更新处于loading状态的组件列表
+          setAddComponents((list) => list.filter((info) => info.targetId !== item.targetId));
           const errorMessage = result?.message || '绑定数据源失败';
           throw new Error(errorMessage);
         }
@@ -457,6 +505,7 @@ const AppDev: React.FC = () => {
     async (resourceId: string) => {
       try {
         await dataResourceManagement.deleteResource(resourceId);
+        setAddComponents(list => list.filter(info => info.targetId !== Number(resourceId)));
       } catch (error) {
         // 删除数据资源失败
       }
@@ -548,24 +597,12 @@ const AppDev: React.FC = () => {
         // 导入项目成功后，调用restart-dev逻辑，与点击重启服务按钮逻辑一致
         setTimeout(async () => {
           try {
-            // 切换到预览标签页
-            setActiveTab('preview');
-
-            // 等待标签页切换完成
-            await new Promise((resolve) => setTimeout(resolve, 100));
-
-            // 调用统一的重启方法
-            const restartResult = await server.restartServer(true);
-
-            // 如果成功，延迟刷新预览
-            if (restartResult.success) {
-              setTimeout(() => {
-                previewRef.current?.refresh();
-              }, 500);
-            }
-          } catch (error) {
-            console.error('重启开发服务器失败:', error);
-            message.error('项目导入成功，但重启开发服务器失败');
+            // 使用重启开发服务器 Hook，项目导入后切换到预览标签页
+            await restartDevServer({
+              shouldSwitchTab: true, // 项目导入后切换到预览标签页
+              delayBeforeRefresh: 500,
+              showMessage: true,
+            });
           } finally {
             setIsProjectUploading(false);
           }
@@ -716,21 +753,15 @@ const AppDev: React.FC = () => {
   // 页面退出时的资源清理
   useEffect(() => {
     return () => {
-      console.log('🧹 [AppDev] 页面卸载，开始清理资源');
-
       // 清理聊天相关资源
       if (chat.cleanupAppDevSSE) {
-        console.log('🧹 [AppDev] 清理聊天SSE连接');
         chat.cleanupAppDevSSE();
       }
 
       // 清理服务器相关资源
       if (server.stopKeepAlive) {
-        console.log('🧹 [AppDev] 停止服务器保活轮询');
         server.stopKeepAlive();
       }
-
-      console.log('✅ [AppDev] 资源清理完成');
     };
   }, []); // 空依赖数组，只在组件卸载时执行
 
@@ -989,9 +1020,17 @@ const AppDev: React.FC = () => {
                         isRestarting={server.isRestarting}
                         isProjectUploading={isProjectUploading}
                         serverMessage={server.serverMessage}
+                        serverErrorCode={server.serverErrorCode}
                         previewRef={previewRef}
                         onStartDev={server.startServer}
-                        onRestartDev={() => server.restartServer(false)}
+                        onRestartDev={async () => {
+                          // 使用重启开发服务器 Hook，不切换标签页
+                          await restartDevServer({
+                            shouldSwitchTab: false, // 不切换标签页
+                            delayBeforeRefresh: 500,
+                            showMessage: true,
+                          });
+                        }}
                         onContentChange={(fileId, content) => {
                           if (
                             !versionCompare.isComparing &&
@@ -1203,6 +1242,7 @@ const AppDev: React.FC = () => {
           open={isAddDataResourceModalVisible}
           onCancel={() => setIsAddDataResourceModalVisible(false)}
           checkTag={AgentComponentTypeEnum.Plugin}
+          addComponents={addComponents}
           onAdded={handleAddComponent}
           tabs={CREATED_TABS.filter(
             (item) =>
