@@ -45,14 +45,70 @@
   margin: 0 0 16px;
   line-height: 1.5;
   transition: color 0.3s ease;
+  word-break: break-word; // 允许长单词换行
+  max-width: 100%; // 确保不超出容器宽度
+
+  // 多行文本截取样式
+  &.multiLineTruncate {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--max-lines, 3);
+    line-clamp: var(--max-lines, 3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // 单行文本截取样式
+  &.singleLineTruncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// 完整内容弹窗样式
+.fullTextContent {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.fullTextPre {
+  margin: 0;
+  padding: 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: transparent;
+  border: none;
 }
 
 .emptyActions {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.regularButtons {
+  display: flex;
   gap: 12px;
   justify-content: center;
   flex-wrap: wrap;
-  margin-top: 8px;
+}
+
+.viewFullTextButton {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
 }
 
 @keyframes pulse-animation {

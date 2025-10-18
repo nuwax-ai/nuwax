@@ -39,6 +39,8 @@ interface ContentViewerProps {
   startError?: string | null;
   /** 服务器接口返回的消息 */
   serverMessage?: string | null;
+  /** 服务器错误码 */
+  serverErrorCode?: string | null;
   /** Preview组件ref */
   previewRef: React.RefObject<PreviewRef>;
   /** 内容变化回调 */
@@ -79,6 +81,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   isProjectUploading, // 新增
   startError,
   serverMessage,
+  serverErrorCode,
   previewRef,
   onContentChange,
   onSaveFile,
@@ -195,6 +198,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         isProjectUploading={isProjectUploading} // 新增
         startError={startError}
         serverMessage={serverMessage}
+        serverErrorCode={serverErrorCode}
         onStartDev={onStartDev}
         onRestartDev={onRestartDev}
       />

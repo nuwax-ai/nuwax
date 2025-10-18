@@ -82,7 +82,6 @@ export const useAppDevFileManagement = ({
   const loadFileTree = useCallback(
     async (preserveState = true, forceRefresh = false) => {
       if (!projectId) {
-        console.log('⚠️ [FileManagement] 没有项目ID，跳过文件树加载');
         return;
       }
 
@@ -94,13 +93,6 @@ export const useAppDevFileManagement = ({
         ? new Set<string>(fileTreeState.expandedFolders)
         : new Set<string>();
 
-      console.log('📁 [FileManagement] 保存当前状态:', {
-        preserveState,
-        currentSelectedFile,
-        currentExpandedFolders: Array.from(currentExpandedFolders),
-        originalExpandedFolders: Array.from(fileTreeState.expandedFolders),
-      });
-
       // 检查是否已经加载过相同项目的文件树，避免重复调用
       // 只有在保持状态且不是强制刷新时才跳过
       if (
@@ -109,27 +101,19 @@ export const useAppDevFileManagement = ({
         fileTreeState.data.length > 0 &&
         preserveState
       ) {
-        console.log(
-          '🔄 [FileManagement] 项目ID未变化且文件树已存在，跳过重复加载:',
-          projectId,
-        );
         return;
       }
 
       try {
-        console.log('🌲 [FileManagement] 正在加载文件树数据...', { projectId });
-
         const response = await getProjectContent(projectId);
 
         if (response && response.code === '0000' && response.data) {
           const files = response.data.files || response.data;
-          console.log('✅ [FileManagement] 项目内容加载成功:', files);
 
           let treeData: FileNode[] = [];
 
           // 检查是否是新的扁平格式
           if (Array.isArray(files) && files.length > 0 && files[0].name) {
-            console.log('🔄 [FileManagement] 检测到新的扁平格式，正在转换...');
             treeData = transformFlatListToTree(files);
           } else if (Array.isArray(files)) {
             // 如果是原有的树形格式，直接使用
@@ -147,12 +131,6 @@ export const useAppDevFileManagement = ({
           setLoadedFiles(new Set());
 
           lastLoadedProjectIdRef.current = projectId;
-
-          console.log('📁 [FileManagement] 恢复展开状态:', {
-            currentExpandedFolders: Array.from(currentExpandedFolders),
-            treeDataLength: treeData.length,
-            preserveState,
-          });
 
           // 自动展开第一层文件夹（仅在非保持状态时）
           if (!preserveState) {
@@ -176,10 +154,6 @@ export const useAppDevFileManagement = ({
                 ...prev,
                 selectedFile: currentSelectedFile,
               }));
-              console.log(
-                '📁 [FileManagement] 保持选中文件:',
-                currentSelectedFile,
-              );
             } else {
               // 文件不存在，清空选中
               setFileContentState((prev) => ({
@@ -188,22 +162,12 @@ export const useAppDevFileManagement = ({
                 fileContent: '',
                 originalFileContent: '',
               }));
-              console.log('📁 [FileManagement] 文件不存在，清空选中状态');
             }
           }
-
-          console.log(
-            '✅ [FileManagement] 文件树加载完成，共',
-            treeData.length,
-            '个根节点',
-          );
         } else {
           throw new Error('API返回数据格式异常');
         }
       } catch (error) {
-        console.error('❌ [FileManagement] 加载文件树失败:', error);
-        console.log('🔄 [FileManagement] 使用空项目结构作为fallback');
-
         // fallback到空项目结构
         const emptyTreeData: FileNode[] = [];
         setFileTreeState((prev) => ({
@@ -246,25 +210,6 @@ export const useAppDevFileManagement = ({
 
       // 检查文件是否已经有content数据，如果有则不需要调用API
       const fileNode = findFileNode(fileId, fileTreeState.data);
-      // 调试日志：检查文件节点（仅在开发环境）
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 [FileManagement] 检查文件节点:', {
-          fileId,
-          fileNode: fileNode
-            ? {
-                id: fileNode.id,
-                name: fileNode.name,
-                type: fileNode.type,
-                hasContent: !!fileNode.content,
-                contentLength: fileNode.content?.length || 0,
-                contentPreview: fileNode.content?.substring(0, 100) || 'empty',
-                isContentLoaded:
-                  fileNode.content !== undefined && fileNode.content !== null,
-              }
-            : null,
-          fileTreeDataLength: fileTreeState.data.length,
-        });
-      }
 
       // 检查文件是否已经有内容数据
       const hasContent =
@@ -276,12 +221,6 @@ export const useAppDevFileManagement = ({
 
       // 如果文件有内容，直接使用
       if (hasContent) {
-        console.log(
-          '📄 [FileManagement] 文件已有content数据，跳过API调用:',
-          fileId,
-          'content长度:',
-          fileNode?.content?.length || 0,
-        );
         setFileContentState((prev) => ({
           ...prev,
           fileContent: fileNode?.content || '',
@@ -294,10 +233,6 @@ export const useAppDevFileManagement = ({
 
       // 如果文件没有内容但已经尝试过加载，说明文件确实是空的，不需要再次调用API
       if (fileNode && hasTriedLoading && !hasContent) {
-        console.log(
-          '📄 [FileManagement] 文件已尝试加载但无内容，跳过API调用:',
-          fileId,
-        );
         setFileContentState((prev) => ({
           ...prev,
           fileContent: '',
@@ -310,12 +245,7 @@ export const useAppDevFileManagement = ({
 
       // 如果文件节点存在但没有内容且未尝试过加载，需要调用API获取内容
       if (fileNode && !hasContent && !hasTriedLoading) {
-        console.log(
-          '📄 [FileManagement] 文件节点存在但无内容，需要调用API获取:',
-          fileId,
-          '当前content:',
-          fileNode.content,
-        );
+        // 文件节点存在但无内容，需要调用API获取
       }
 
       // 清空当前文件内容，准备加载新文件
@@ -329,7 +259,6 @@ export const useAppDevFileManagement = ({
       }));
 
       try {
-        console.log('📄 [FileManagement] 调用API获取文件内容:', fileId);
         const response = await getFileContent(projectId, fileId);
         let content = '';
 
@@ -355,7 +284,6 @@ export const useAppDevFileManagement = ({
 
         onFileContentChange?.(fileId, content);
       } catch (error) {
-        console.error('❌ [FileManagement] 加载文件内容失败:', error);
         const errorMessage = `加载文件 ${fileId} 失败: ${
           error instanceof Error ? error.message : '未知错误'
         }`;
@@ -423,7 +351,6 @@ export const useAppDevFileManagement = ({
       setFileContentState((prev) => ({ ...prev, isSavingFile: true }));
 
       // 首先获取最新的项目内容
-      console.log('🔄 [FileManagement] 获取最新项目内容以便保存...');
       const projectResponse = await getProjectContent(projectId);
 
       if (
@@ -459,9 +386,7 @@ export const useAppDevFileManagement = ({
         return file;
       });
 
-      console.log('💾 [FileManagement] 保存文件:', selectedFile);
-      console.log('📁 [FileManagement] 总文件数:', updatedFilesList.length);
-
+      // 保存文件
       const response = await submitFilesUpdate(projectId, updatedFilesList);
 
       if (response.success && response.code === '0000') {
@@ -474,12 +399,12 @@ export const useAppDevFileManagement = ({
         }));
 
         message.success(SUCCESS_MESSAGES.FILE_SAVED);
-        console.log('✅ [FileManagement] 文件保存成功');
+        // 文件保存成功
       } else {
         throw new Error(response.message || '保存文件失败');
       }
     } catch (error) {
-      console.error('❌ [FileManagement] 保存文件失败:', error);
+      // 保存文件失败
       message.error(
         `保存文件失败: ${error instanceof Error ? error.message : '未知错误'}`,
       );
@@ -520,12 +445,7 @@ export const useAppDevFileManagement = ({
       }
 
       try {
-        console.log(
-          '📤 [FileManagement] 正在上传单个文件:',
-          file.name,
-          '路径:',
-          filePath,
-        );
+        // 上传文件
 
         const result = await uploadSingleFile({
           file,
@@ -540,10 +460,7 @@ export const useAppDevFileManagement = ({
           await loadFileTree(true, true);
 
           // 文件上传成功后不自动选中，让用户自己选择要查看的文件
-          console.log(
-            '✅ [FileManagement] 文件上传成功，文件树已更新:',
-            filePath.trim(),
-          );
+          // 文件上传成功，文件树已更新
 
           return true;
         } else {
@@ -551,7 +468,7 @@ export const useAppDevFileManagement = ({
           return false;
         }
       } catch (error) {
-        console.error('❌ [FileManagement] 上传单个文件失败:', error);
+        // 上传单个文件失败
         message.error('上传失败');
         return false;
       }
@@ -579,10 +496,7 @@ export const useAppDevFileManagement = ({
    */
   const toggleFileTreeCollapse = useCallback(() => {
     setFileTreeState((prev) => {
-      console.log(
-        '🔄 [FileManagement] 切换文件树状态:',
-        !prev.isCollapsed ? '折叠' : '展开',
-      );
+      // 切换文件树状态
       return { ...prev, isCollapsed: !prev.isCollapsed };
     });
   }, []);
@@ -599,18 +513,18 @@ export const useAppDevFileManagement = ({
   const deleteFileItem = useCallback(
     async (fileId: string): Promise<boolean> => {
       if (!projectId) {
-        console.error('❌ [FileManagement] 删除文件失败: 缺少项目ID');
+        // 删除文件失败：缺少项目ID
         return false;
       }
 
       try {
         const fileNode = findFileNode(fileId, fileTreeState.data);
         if (!fileNode) {
-          console.error('❌ [FileManagement] 删除文件失败: 找不到文件节点');
+          // 删除文件失败：找不到文件节点
           return false;
         }
 
-        console.log('🗑️ [FileManagement] 删除文件:', fileNode.path);
+        // 删除文件
 
         // 获取当前完整文件列表
         const flatFileList = treeToFlatList(fileTreeState.data);
@@ -619,34 +533,25 @@ export const useAppDevFileManagement = ({
         const filteredList = flatFileList.filter((file) => {
           // 如果是文件本身，直接删除
           if (file.name === fileId) {
-            console.log('🗑️ [FileManagement] 从列表中移除文件:', file.path);
+            // 从列表中移除文件
             return false;
           }
           // 如果是文件夹，删除其所有子文件
           if (fileNode.type === 'folder') {
             const shouldRemove = file.name.startsWith(fileNode.path + '/');
             if (shouldRemove) {
-              console.log('🗑️ [FileManagement] 从列表中移除子文件:', file.path);
+              // 从列表中移除子文件
             }
             return !shouldRemove;
           }
           return true;
         });
 
-        console.log(
-          '📝 [FileManagement] 原始文件数量:',
-          flatFileList.length,
-          '删除后文件数量:',
-          filteredList.length,
-        );
-        console.log(
-          '📝 [FileManagement] 提交更新后的文件列表:',
-          filteredList.map((f) => f.path),
-        );
+        // 提交更新后的文件列表
         const result = await submitFilesUpdate(projectId, filteredList);
 
         if (result?.success) {
-          console.log('✅ [FileManagement] 文件删除成功:', fileNode.path);
+          // 文件删除成功
           // 删除成功后重新加载文件树
           await loadFileTree(true, true);
 
@@ -657,11 +562,11 @@ export const useAppDevFileManagement = ({
 
           return true;
         } else {
-          console.error('❌ [FileManagement] 删除文件失败:', result?.message);
+          // 删除文件失败
           return false;
         }
       } catch (error) {
-        console.error('❌ [FileManagement] 删除文件异常:', error);
+        // 删除文件异常
         return false;
       }
     },
@@ -699,19 +604,19 @@ export const useAppDevFileManagement = ({
   const renameFileItem = useCallback(
     async (fileId: string, newName: string): Promise<boolean> => {
       if (!projectId) {
-        console.error('❌ [FileManagement] 重命名文件失败: 缺少项目ID');
+        // 重命名文件失败：缺少项目ID
         return false;
       }
 
       if (!newName.trim()) {
-        console.error('❌ [FileManagement] 重命名文件失败: 新文件名为空');
+        // 重命名文件失败：新文件名为空
         return false;
       }
 
       try {
         const fileNode = findFileNode(fileId, fileTreeState.data);
         if (!fileNode) {
-          console.error('❌ [FileManagement] 重命名文件失败: 找不到文件节点');
+          // 重命名文件失败：找不到文件节点
           return false;
         }
 
@@ -721,11 +626,11 @@ export const useAppDevFileManagement = ({
           ? `${parentPath}/${newName.trim()}`
           : newName.trim();
 
-        console.log('✏️ [FileManagement] 重命名文件:', oldPath, '->', newPath);
+        // 重命名文件
         const result = await renameFile(projectId, oldPath, newPath);
 
         if (result?.success) {
-          console.log('✅ [FileManagement] 文件重命名成功:', newPath);
+          // 文件重命名成功
           // 重命名成功后重新加载文件树
           await loadFileTree(true, true);
 
@@ -740,11 +645,11 @@ export const useAppDevFileManagement = ({
 
           return true;
         } else {
-          console.error('❌ [FileManagement] 重命名文件失败:', result?.message);
+          // 重命名文件失败
           return false;
         }
       } catch (error) {
-        console.error('❌ [FileManagement] 重命名文件异常:', error);
+        // 重命名文件异常
         return false;
       }
     },
@@ -760,7 +665,7 @@ export const useAppDevFileManagement = ({
   // 在项目ID变化时加载文件树
   useEffect(() => {
     if (projectId) {
-      console.log('🌲 [FileManagement] 项目ID变化，加载文件树:', projectId);
+      // 项目ID变化，加载文件树
       loadFileTree(false, true);
     }
   }, [projectId]); // 移除 loadFileTree 依赖，避免重复执行
