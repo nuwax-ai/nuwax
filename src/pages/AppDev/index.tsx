@@ -532,49 +532,49 @@ const AppDev: React.FC = () => {
   /**
    * 键盘快捷键处理
    */
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl/Cmd + Enter 发送聊天消息
-      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-        if (chat.chatInput.trim()) {
-          chat.sendChat();
-        }
-      }
+  // useEffect(() => {
+  //   const handleKeyDown = (event: KeyboardEvent) => {
+  //     // Ctrl/Cmd + Enter 发送聊天消息
+  //     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+  //       if (chat.chatInput.trim()) {
+  //         chat.sendChat();
+  //       }
+  //     }
 
-      // Ctrl/Cmd + S 保存文件
-      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-        event.preventDefault();
-        fileManagement.saveFile();
-      }
+  //     // Ctrl/Cmd + S 保存文件
+  //     if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+  //       event.preventDefault();
+  //       fileManagement.saveFile();
+  //     }
 
-      // Ctrl/Cmd + R 重启开发服务器
-      if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
-        event.preventDefault();
-        if (projectId && isServiceRunning && !chat.isChatLoading) {
-          // 开发服务器重启功能已禁用
-        }
-      }
+  //     // Ctrl/Cmd + R 重启开发服务器
+  //     if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
+  //       event.preventDefault();
+  //       if (projectId && isServiceRunning && !chat.isChatLoading) {
+  //         // 开发服务器重启功能已禁用
+  //       }
+  //     }
 
-      // Ctrl/Cmd + D 部署项目
-      if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
-        event.preventDefault();
-        if (hasValidProjectId && !isDeploying && !chat.isChatLoading) {
-          handleDeployProject();
-        }
-      }
-    };
+  //     // Ctrl/Cmd + D 部署项目
+  //     if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
+  //       event.preventDefault();
+  //       if (hasValidProjectId && !isDeploying && !chat.isChatLoading) {
+  //         handleDeployProject();
+  //       }
+  //     }
+  //   };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [
-    chat.chatInput,
-    chat.sendChat,
-    fileManagement.saveFile,
-    projectId,
-    isServiceRunning,
-    isDeploying,
-    handleDeployProject,
-  ]);
+  //   document.addEventListener('keydown', handleKeyDown);
+  //   return () => document.removeEventListener('keydown', handleKeyDown);
+  // }, [
+  //   chat.chatInput,
+  //   chat.sendChat,
+  //   fileManagement.saveFile,
+  //   projectId,
+  //   isServiceRunning,
+  //   isDeploying,
+  //   handleDeployProject,
+  // ]);
 
   /**
    * 初始化数据资源
@@ -612,7 +612,7 @@ const AppDev: React.FC = () => {
 
         // 刷新文件树（不保持状态，因为导入项目是全新内容）
         fileManagement.loadFileTree(false, true);
-        // 刷新项目详情
+        // 刷新项目详情(刷新版本列表)
         projectInfo.refreshProjectInfo();
 
         // 导入项目成功后，调用restart-dev逻辑，与点击重启服务按钮逻辑一致
@@ -638,7 +638,7 @@ const AppDev: React.FC = () => {
     } finally {
       setUploadLoading(false);
     }
-  }, [selectedFile, projectId, workspace.projectName, server]);
+  }, [selectedFile, projectId, workspace.projectName, server, projectInfo]);
 
   /**
    * 处理文件选择
@@ -702,6 +702,8 @@ const AppDev: React.FC = () => {
         setIsSingleFileUploadModalVisible(false);
         setSingleFilePath('');
         setUploadFile(null);
+        // 刷新项目详情(刷新版本列表)
+        projectInfo.refreshProjectInfo();
       }
     } finally {
       setSingleFileUploadLoading(false);
@@ -712,6 +714,7 @@ const AppDev: React.FC = () => {
     fileManagement,
     singleFilePath,
     uploadFile,
+    projectInfo,
   ]);
 
   /**
@@ -753,6 +756,8 @@ const AppDev: React.FC = () => {
           }`,
         );
         handleRestartDevServer();
+        // 刷新项目详情(刷新版本列表)
+        projectInfo.refreshProjectInfo();
       }
     } finally {
       setDeleteLoading(false);
@@ -1066,7 +1071,16 @@ const AppDev: React.FC = () => {
                             updateFileContent(fileId, content);
                           }
                         }}
-                        onSaveFile={fileManagement.saveFile}
+                        onSaveFile={() => {
+                          fileManagement.saveFile().then((success) => {
+                            if (success) {
+                              // 刷新项目详情(刷新版本列表)
+                              projectInfo.refreshProjectInfo();
+                              return true;
+                            }
+                            return false;
+                          });
+                        }}
                         onCancelEdit={handleCancelEdit}
                         onRefreshFile={() => {
                           // 刷新整个文件树（保持状态，强制刷新）

@@ -342,10 +342,10 @@ export const useAppDevFileManagement = ({
   /**
    * 保存文件
    */
-  const saveFile = useCallback(async () => {
+  const saveFile = useCallback(async (): Promise<boolean> => {
     const { selectedFile, fileContent } = fileContentState;
 
-    if (!selectedFile || !projectId) return;
+    if (!selectedFile || !projectId) return false;
 
     try {
       setFileContentState((prev) => ({ ...prev, isSavingFile: true }));
@@ -358,7 +358,7 @@ export const useAppDevFileManagement = ({
         projectResponse.code !== '0000' ||
         !projectResponse.data
       ) {
-        throw new Error('获取项目内容失败');
+        return false;
       }
 
       // 将项目数据转换为扁平列表格式
@@ -400,8 +400,9 @@ export const useAppDevFileManagement = ({
 
         message.success(SUCCESS_MESSAGES.FILE_SAVED);
         // 文件保存成功
+        return true;
       } else {
-        throw new Error(response.message || '保存文件失败');
+        return false;
       }
     } catch (error) {
       // 保存文件失败
@@ -409,6 +410,7 @@ export const useAppDevFileManagement = ({
         `保存文件失败: ${error instanceof Error ? error.message : '未知错误'}`,
       );
       setFileContentState((prev) => ({ ...prev, isSavingFile: false }));
+      return false;
     }
   }, [fileContentState, projectId]);
 
