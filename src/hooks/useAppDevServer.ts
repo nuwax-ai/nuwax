@@ -314,10 +314,6 @@ export const useAppDevServer = ({
         setServerErrorCode(errorCode);
         onServerStatusChange?.(false);
 
-        if (shouldSwitchTab) {
-          message.error(errorMessage);
-        }
-
         // 【关键变更4】即使异常也要恢复 keepalive 轮询
         startKeepAlive();
 
