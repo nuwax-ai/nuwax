@@ -298,12 +298,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   }, [pagePreviewData, showType, setShowType]);
 
   return (
-    <div className={cx('flex', 'h-full')}>
+    <div className={cx(styles.container, 'flex', 'h-full')}>
       {/* 主内容区域 */}
       {agentConfigInfo?.hideChatArea ? null : (
         <div
-          className={cx(styles.container, 'flex', 'flex-col')}
-          style={{ flex: 1 }}
+          className={cx('flex', 'flex-col')}
+          style={{ flex: 1, minWidth: 340 }}
         >
           <PreviewAndDebugHeader onPressDebug={onPressDebug} />
           <div
