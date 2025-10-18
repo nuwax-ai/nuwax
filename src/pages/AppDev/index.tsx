@@ -744,17 +744,14 @@ const AppDev: React.FC = () => {
             nodeToDelete.name
           }`,
         );
-      } else {
-        message.error(`删除失败: ${nodeToDelete.name}`);
+        handleRestartDevServer();
       }
-    } catch (error) {
-      message.error(`删除失败: ${nodeToDelete?.name}`);
     } finally {
       setDeleteLoading(false);
       setDeleteModalVisible(false);
       setNodeToDelete(null);
     }
-  }, [nodeToDelete, projectId, fileManagement]);
+  }, [nodeToDelete, projectId, fileManagement, handleRestartDevServer]);
 
   /**
    * 取消删除
