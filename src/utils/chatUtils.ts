@@ -3,7 +3,12 @@
  */
 
 import { MessageModeEnum } from '@/types/enums/agent';
-import type { AppDevChatMessage, Attachment } from '@/types/interfaces/appDev';
+import type {
+  AppDevChatMessage,
+  Attachment,
+  DataSourceAttachment,
+  DataSourceSelection,
+} from '@/types/interfaces/appDev';
 
 /**
  * 检测是否为依赖操作（安装、删除、升级依赖）
@@ -185,16 +190,34 @@ export const generateAttachmentId = (type: string): string => {
 };
 
 /**
+ * 将 DataSourceSelection 转换为 DataSourceAttachment
+ * @param dataSource 数据源选择对象
+ * @returns 数据源附件对象
+ */
+export const convertDataSourceSelectionToAttachment = (
+  dataSource: DataSourceSelection,
+): DataSourceAttachment => {
+  return {
+    id: `datasource-${dataSource.dataSourceId}-${dataSource.type}`,
+    dataSourceId: dataSource.dataSourceId,
+    type: dataSource.type,
+    name: dataSource.name,
+  };
+};
+
+/**
  * 创建用户消息
  * @param text 消息文本
  * @param requestId 请求ID
  * @param attachments 消息附件（可选）
+ * @param dataSources 数据源列表（可选）
  * @returns 用户消息对象
  */
 export const createUserMessage = (
   text: string,
   requestId: string,
   attachments?: Attachment[],
+  dataSources?: DataSourceSelection[],
 ): AppDevChatMessage => {
   return {
     id: generateMessageId('user', requestId),
@@ -205,7 +228,8 @@ export const createUserMessage = (
     status: null,
     requestId,
     timestamp: new Date(),
-    attachments, // 添加附件字段
+    attachments, // 传统附件（图片、文件等）
+    dataSources, // 直接使用 selectedDataSources
   };
 };
 

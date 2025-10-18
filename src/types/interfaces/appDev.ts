@@ -295,6 +295,18 @@ export interface DocumentAttachment {
 }
 
 /**
+ * 数据源附件 - 基于 OpenAPI 规范
+ */
+export interface DataSourceAttachment {
+  id: string;
+  description?: string;
+  filename?: string;
+  dataSourceId: number;
+  type: 'plugin' | 'workflow';
+  name: string;
+}
+
+/**
  * 附件类型 - 基于 OpenAPI 规范
  */
 export type Attachment =
@@ -313,6 +325,10 @@ export type Attachment =
   | {
       type: 'Document';
       content: DocumentAttachment;
+    }
+  | {
+      type: 'DataSource';
+      content: DataSourceAttachment;
     };
 
 /**
@@ -578,6 +594,8 @@ export interface AppDevChatMessage {
   conversationCreated?: string;
   /** 消息附件（图片、文件等） */
   attachments?: Attachment[];
+  /** 数据源附件列表 */
+  dataSources?: DataSourceSelection[];
 }
 
 // ==================== 文件管理相关类型定义 ====================

@@ -432,11 +432,12 @@ export const useAppDevChat = ({
             onClearDataSourceSelections();
           }
 
-          // 添加用户消息（包含附件）
+          // 添加用户消息（包含附件和数据源）
           const userMessage = createUserMessage(
             chatInput,
             requestId,
             attachments,
+            selectedDataSources.length > 0 ? selectedDataSources : undefined,
           );
 
           setChatMessages((prev) => [...prev, userMessage]);
