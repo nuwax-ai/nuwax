@@ -190,15 +190,19 @@ export const useAppDevProjectInfo = (
   const getActionText = useCallback((action: string): string => {
     switch (action) {
       case 'chat':
-        return 'AI对话';
+        return 'AI 对话';
       case 'submit_files_update':
         return '文件更新';
+      case 'upload_single_file':
+        return '上传单文件';
+      case 'create_project':
+        return '创建项目';
       case 'build':
         return '构建';
       case 'deploy':
         return '部署';
       case 'upload':
-        return '上传';
+        return '上传项目';
       default:
         return '未知操作';
     }

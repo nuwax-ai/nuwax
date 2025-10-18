@@ -209,11 +209,10 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
       style={{ height: '200px' }}
     >
       {resources.length === 0 ? (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据资源">
-          <Text type="secondary">
-            点击右上角的&ldquo;+&rdquo;按钮添加新的数据资源
-          </Text>
-        </Empty>
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="点击&ldquo;+&rdquo;添加数据资源"
+        />
       ) : (
         <div>{resources.map((resource) => renderResourceItem(resource))}</div>
       )}

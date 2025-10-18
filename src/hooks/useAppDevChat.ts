@@ -35,7 +35,7 @@ import {
   generateRequestId,
   generateSSEUrl,
   getAuthHeaders,
-  isFileOperation,
+  isFileOrDependencyOperation, // 新增：导入文件或依赖操作检测函数
   isRequestIdMatch,
   markStreamingMessageCancelled,
   markStreamingMessageComplete,
@@ -53,6 +53,7 @@ interface UseAppDevChatProps {
   onClearDataSourceSelections?: () => void; // 新增：清除数据源选择回调
   onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
   onClearUploadedImages?: () => void; // 新增：清除上传图片回调
+  onRestartDevServer?: () => Promise<void>; // 新增：重启开发服务器回调
 }
 
 export const useAppDevChat = ({
@@ -63,6 +64,7 @@ export const useAppDevChat = ({
   onClearDataSourceSelections,
   onRefreshVersionList, // 新增：刷新版本列表回调
   onClearUploadedImages, // 新增：清除上传图片回调
+  onRestartDevServer, // 新增
 }: UseAppDevChatProps) => {
   // 使用 AppDev SSE 连接 model
   const appDevSseModel = useModel('appDevSseConnection');
@@ -80,7 +82,7 @@ export const useAppDevChat = ({
   // 记录用户主动发送的消息数量（不包括历史消息）- 已注释，暂时不使用
   // const userSentMessageCountRef = useRef(0);
 
-  // 存储文件操作相关的 toolCallId
+  // 存储文件操作和依赖操作相关的 toolCallId
   const fileOperationToolCallIdsRef = useRef<Set<string>>(new Set());
 
   // 添加防抖的文件树刷新函数
@@ -198,8 +200,11 @@ export const useAppDevChat = ({
                 return msg;
               }),
             );
-            // 检测是否为文件操作，如果是则记录 toolCallId
-            if (isFileOperation(message.data) && message.data.toolCallId) {
+            // 检测是否为文件操作或依赖操作，如果是则记录 toolCallId
+            if (
+              isFileOrDependencyOperation(message.data) &&
+              message.data.toolCallId
+            ) {
               fileOperationToolCallIdsRef.current.add(message.data.toolCallId);
             }
           }
@@ -231,7 +236,7 @@ export const useAppDevChat = ({
                 return msg;
               }),
             );
-            // 检查对应的 toolCallId 是否为文件操作
+            // 检查对应的 toolCallId 是否为文件操作或依赖操作
             if (
               message.data.toolCallId &&
               fileOperationToolCallIdsRef.current.has(message.data.toolCallId)
@@ -269,7 +274,18 @@ export const useAppDevChat = ({
           // 会话结束时执行一次文件树刷新
           debouncedRefreshFileTree();
 
-          // 清理文件操作 toolCallId 记录
+          // 新增：如果有文件操作或依赖操作，触发重启开发服务器
+          if (
+            fileOperationToolCallIdsRef.current.size > 0 &&
+            onRestartDevServer
+          ) {
+            console.log(
+              '🔄 [AppDev] 检测到文件操作或依赖操作，触发重启开发服务器',
+            );
+            onRestartDevServer(); // 不等待，异步执行
+          }
+
+          // 清理文件操作和依赖操作 toolCallId 记录
           fileOperationToolCallIdsRef.current.clear();
 
           setIsChatLoading(false);
