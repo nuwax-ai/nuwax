@@ -31,6 +31,8 @@ interface ContentViewerProps {
   devServerUrl: string | null;
   /** 是否正在启动 */
   isStarting: boolean;
+  /** 是否正在重启 */
+  isRestarting?: boolean; // 新增
   /** 启动错误 */
   startError?: string | null;
   /** Preview组件ref */
@@ -67,6 +69,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   isSavingFile,
   devServerUrl,
   isStarting,
+  isRestarting, // 新增
   startError,
   previewRef,
   onContentChange,
@@ -179,6 +182,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           devServerUrl ? `${process.env.BASE_URL}${devServerUrl}` : undefined
         }
         isStarting={isStarting}
+        isRestarting={isRestarting} // 新增
         startError={startError}
         onStartDev={onStartDev}
       />

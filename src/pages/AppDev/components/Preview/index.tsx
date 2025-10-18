@@ -19,6 +19,7 @@ interface PreviewProps {
   devServerUrl?: string;
   className?: string;
   isStarting?: boolean;
+  isRestarting?: boolean; // 新增
   startError?: string | null;
   /** 启动开发服务器回调 */
   onStartDev?: () => void;
@@ -33,7 +34,17 @@ export interface PreviewRef {
  * 用于显示开发服务器的实时预览
  */
 const Preview = React.forwardRef<PreviewRef, PreviewProps>(
-  ({ devServerUrl, className, isStarting, startError, onStartDev }, ref) => {
+  (
+    {
+      devServerUrl,
+      className,
+      isStarting,
+      isRestarting,
+      startError,
+      onStartDev,
+    },
+    ref,
+  ) => {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
@@ -200,6 +211,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               type={
                 loadError
                   ? 'error'
+                  : isRestarting
+                  ? 'loading'
                   : isStarting
                   ? 'loading'
                   : startError
@@ -211,6 +224,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               icon={
                 loadError ? (
                   <ExclamationCircleOutlined />
+                ) : isRestarting ? (
+                  <ThunderboltOutlined />
                 ) : isStarting ? (
                   <ThunderboltOutlined />
                 ) : startError ? (
@@ -222,6 +237,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               title={
                 loadError
                   ? '预览加载失败'
+                  : isRestarting
+                  ? '服务器重启中'
                   : isStarting
                   ? '开发服务器启动中'
                   : startError
@@ -233,6 +250,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               description={
                 loadError
                   ? '预览页面加载失败，请检查开发服务器状态或网络连接'
+                  : isRestarting
+                  ? '正在重启开发服务器，请稍候...'
                   : isStarting
                   ? '正在启动开发环境，请稍候...'
                   : startError

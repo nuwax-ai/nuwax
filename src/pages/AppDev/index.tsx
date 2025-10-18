@@ -147,6 +147,9 @@ const AppDev: React.FC = () => {
         clearUploadedImagesRef.current();
       }
     }, // 新增：传递清除上传图片方法
+    onRestartDevServer: async () => {
+      await restartDevServer(false); // Agent 触发时不切换页面
+    }, // 新增：Agent 触发时不切换页面
   });
 
   const server = useAppDevServer({
@@ -375,44 +378,73 @@ const AppDev: React.FC = () => {
   }, [hasValidProjectId, projectId]);
 
   /**
-   * 处理重启开发服务器
+   * 重启开发服务器核心方法
+   * @param shouldSwitchTab 是否切换到预览标签页（手动点击为 true，Agent 触发为 false）
+   * @returns Promise<{success: boolean, message?: string, devServerUrl?: string}>
+   */
+  const restartDevServer = useCallback(
+    async (shouldSwitchTab: boolean = false) => {
+      if (!hasValidProjectId || !projectId) {
+        if (shouldSwitchTab) {
+          message.error('项目ID不存在或无效，无法重启服务');
+        }
+        return { success: false, message: '项目ID不存在或无效' };
+      }
+
+      try {
+        // 1. 如果需要，切换到预览标签页
+        if (shouldSwitchTab) {
+          setActiveTab('preview');
+        }
+
+        // 2. 设置重启状态
+        setIsRestarting(true);
+
+        // 3. 清空 devServerUrl,触发 Preview 组件显示 loading 状态
+        updateDevServerUrl('');
+
+        // 4. 调用重启接口（不显示全局提示，由 Preview 组件展示状态）
+        const result = await restartDev(projectId);
+
+        // 5. 处理重启结果
+        if (result.success && result.data?.devServerUrl) {
+          updateDevServerUrl(result.data.devServerUrl);
+
+          // 只在手动触发时显示成功消息
+          if (shouldSwitchTab) {
+            message.success('开发服务器重启成功');
+          }
+
+          // 8. 延迟刷新预览
+          setTimeout(() => {
+            previewRef.current?.refresh();
+          }, 500);
+
+          return { success: true, devServerUrl: result.data.devServerUrl };
+        } else {
+          if (shouldSwitchTab) {
+            message.error(result.message || '重启开发服务器失败');
+          }
+          return { success: false, message: result.message };
+        }
+      } catch (error: any) {
+        if (shouldSwitchTab) {
+          message.error(`重启失败: ${error?.message || '未知错误'}`);
+        }
+        return { success: false, message: error?.message };
+      } finally {
+        setIsRestarting(false);
+      }
+    },
+    [hasValidProjectId, projectId, updateDevServerUrl],
+  );
+
+  /**
+   * 处理重启开发服务器按钮点击（手动触发）
    */
   const handleRestartDevServer = useCallback(async () => {
-    // 检查项目ID是否有效
-    if (!hasValidProjectId || !projectId) {
-      message.error('项目ID不存在或无效，无法重启服务');
-      return;
-    }
-
-    try {
-      setIsRestarting(true);
-      message.loading('正在重启开发服务器...', 0);
-
-      const result = await restartDev(projectId);
-
-      // 关闭加载提示
-      message.destroy();
-
-      if (result.success && result.data) {
-        // 更新开发服务器URL
-        if (result.data.devServerUrl) {
-          updateDevServerUrl(result.data.devServerUrl);
-          message.success('开发服务器重启成功');
-        } else {
-          message.warning('重启成功，但未获取到新的服务器地址');
-        }
-      } else {
-        message.error(result.message || '重启开发服务器失败');
-      }
-    } catch (error: any) {
-      message.destroy();
-      const errorMessage =
-        error?.response?.data?.message || error?.message || '重启失败';
-      message.error(`重启失败: ${errorMessage}`);
-    } finally {
-      setIsRestarting(false);
-    }
-  }, [hasValidProjectId, projectId, updateDevServerUrl]);
+    await restartDevServer(true); // 传入 true 表示需要切换预览页面
+  }, [restartDevServer]);
 
   /**
    * 处理添加组件（Created 组件回调）
@@ -983,6 +1015,7 @@ const AppDev: React.FC = () => {
                         }
                         devServerUrl={workspace.devServerUrl}
                         isStarting={server.isStarting}
+                        isRestarting={isRestarting} // 新增
                         previewRef={previewRef}
                         onStartDev={server.startServer}
                         onContentChange={(fileId, content) => {
