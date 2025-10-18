@@ -229,16 +229,8 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
         data_type: input.data_type,
       };
 
-      if (
-        (innerProcessing.status === ProcessingEnum.EXECUTING &&
-          input.method === 'browser_navigate_page') ||
-        (innerProcessing.status === ProcessingEnum.FINISHED &&
-          input.method === 'browser_open_page')
-      ) {
-        console.log('显示页面预览', innerProcessing);
-        // 显示页面预览
-        showPagePreview(previewData);
-      }
+      // 显示页面预览
+      showPagePreview(previewData);
     }
     // 链接类型
     if (
@@ -268,8 +260,10 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
   // 自动打开预览页面功能
   useEffect(() => {
-    // 打开预览页面
-    openPreviewPage();
+    if (innerProcessing.status === ProcessingEnum.EXECUTING) {
+      // 打开预览页面
+      openPreviewPage();
+    }
   }, [innerProcessing]);
 
   if (!innerProcessing.executeId) {

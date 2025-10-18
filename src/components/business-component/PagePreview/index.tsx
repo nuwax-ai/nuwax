@@ -142,7 +142,7 @@ const PagePreview: React.FC<PagePreviewProps> = ({
   }, [pagePreviewData]);
 
   useEffect(() => {
-    if (!pagePreviewData) return;
+    if (!pagePreviewData?.method) return;
     console.log('pagePreviewData', pagePreviewData);
     console.log('pagePreviewData.method', pagePreviewData?.method);
 
