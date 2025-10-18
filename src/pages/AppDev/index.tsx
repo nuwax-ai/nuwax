@@ -16,7 +16,11 @@ import {
   exportProject,
   uploadAndStartProject,
 } from '@/services/appDev';
-import { AgentAddComponentStatusEnum, AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  AgentAddComponentStatusEnum,
+  AgentComponentTypeEnum,
+} from '@/types/enums/agent';
+import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { DataSourceSelection } from '@/types/interfaces/appDev';
 import {
   DownloadOutlined,
@@ -54,7 +58,6 @@ import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
 import styles from './index.less';
-import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 
 const { Text } = Typography;
 
@@ -75,7 +78,9 @@ const AppDev: React.FC = () => {
   // 页面编辑状态
   const [openPageEditVisible, setOpenPageEditVisible] = useState(false);
   // 处于loading状态的组件列表
-  const [addComponents, setAddComponents] = useState<AgentAddComponentStatusInfo[]>([]);
+  const [addComponents, setAddComponents] = useState<
+    AgentAddComponentStatusInfo[]
+  >([]);
 
   // 使用 AppDev 模型来管理状态
   const appDevModel = useModel('appDev');
@@ -180,9 +185,13 @@ const AppDev: React.FC = () => {
   useEffect(() => {
     // 初始化处于added状态的组件列表
     if (projectInfo.projectInfoState.projectInfo) {
-      const dataSources = projectInfo.projectInfoState.projectInfo?.dataSources || [];
+      const dataSources =
+        projectInfo.projectInfoState.projectInfo?.dataSources || [];
       const addComponents = dataSources.map((dataSource) => {
-        const type = dataSource.type === 'plugin' ? AgentComponentTypeEnum.Plugin : AgentComponentTypeEnum.Workflow;
+        const type =
+          dataSource.type === 'plugin'
+            ? AgentComponentTypeEnum.Plugin
+            : AgentComponentTypeEnum.Workflow;
         return {
           type: type,
           targetId: dataSource.id,
@@ -471,7 +480,10 @@ const AppDev: React.FC = () => {
           // 更新处于loading状态的组件列表
           setAddComponents((list) => {
             return list.map((info) => {
-              if (info.targetId === item.targetId && info.status === AgentAddComponentStatusEnum.Loading) {
+              if (
+                info.targetId === item.targetId &&
+                info.status === AgentAddComponentStatusEnum.Loading
+              ) {
                 return { ...info, status: AgentAddComponentStatusEnum.Added };
               }
               return info;
@@ -485,7 +497,9 @@ const AppDev: React.FC = () => {
           setIsAddDataResourceModalVisible(false);
         } else {
           // 更新处于loading状态的组件列表
-          setAddComponents((list) => list.filter((info) => info.targetId !== item.targetId));
+          setAddComponents((list) =>
+            list.filter((info) => info.targetId !== item.targetId),
+          );
           const errorMessage = result?.message || '绑定数据源失败';
           throw new Error(errorMessage);
         }
@@ -505,7 +519,9 @@ const AppDev: React.FC = () => {
     async (resourceId: string) => {
       try {
         await dataResourceManagement.deleteResource(resourceId);
-        setAddComponents(list => list.filter(info => info.targetId !== Number(resourceId)));
+        setAddComponents((list) =>
+          list.filter((info) => info.targetId !== Number(resourceId)),
+        );
       } catch (error) {
         // 删除数据资源失败
       }
@@ -594,6 +610,11 @@ const AppDev: React.FC = () => {
         setIsUploadModalVisible(false);
         setSelectedFile(null);
 
+        // 刷新文件树（不保持状态，因为导入项目是全新内容）
+        fileManagement.loadFileTree(false, true);
+        // 刷新项目详情
+        projectInfo.refreshProjectInfo();
+
         // 导入项目成功后，调用restart-dev逻辑，与点击重启服务按钮逻辑一致
         setTimeout(async () => {
           try {
@@ -608,11 +629,11 @@ const AppDev: React.FC = () => {
           }
         }, 500);
       } else {
-        message.warning('项目上传成功，但返回数据格式异常');
+        // message.warning('项目上传成功，但返回数据格式异常');
         setIsProjectUploading(false);
       }
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '上传项目失败');
+      // message.error(error instanceof Error ? error.message : '上传项目失败');
       setIsProjectUploading(false);
     } finally {
       setUploadLoading(false);
@@ -1045,12 +1066,13 @@ const AppDev: React.FC = () => {
                         onRefreshFile={() => {
                           // 刷新整个文件树（保持状态，强制刷新）
                           fileManagement.loadFileTree(true, true);
-
                           // 重新加载当前文件内容
                           if (fileManagement.fileContentState.selectedFile) {
                             fileManagement.switchToFile(
                               fileManagement.fileContentState.selectedFile,
                             );
+                            // 取消编辑
+                            handleCancelEdit();
                           }
                         }}
                         findFileNode={fileManagement.findFileNode}
