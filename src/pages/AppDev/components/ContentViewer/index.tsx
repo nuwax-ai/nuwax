@@ -33,6 +33,8 @@ interface ContentViewerProps {
   isStarting: boolean;
   /** 是否正在重启 */
   isRestarting?: boolean; // 新增
+  /** 是否正在导入项目 */
+  isProjectUploading?: boolean; // 新增
   /** 启动错误 */
   startError?: string | null;
   /** 服务器接口返回的消息 */
@@ -74,6 +76,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   devServerUrl,
   isStarting,
   isRestarting, // 新增
+  isProjectUploading, // 新增
   startError,
   serverMessage,
   previewRef,
@@ -189,6 +192,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         }
         isStarting={isStarting}
         isRestarting={isRestarting} // 新增
+        isProjectUploading={isProjectUploading} // 新增
         startError={startError}
         serverMessage={serverMessage}
         onStartDev={onStartDev}

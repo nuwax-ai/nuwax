@@ -116,6 +116,9 @@ const AppDev: React.FC = () => {
   const [singleFilePath, setSingleFilePath] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
 
+  // 项目导入状态
+  const [isProjectUploading, setIsProjectUploading] = useState(false);
+
   // 使用重构后的 hooks
   const fileManagement = useAppDevFileManagement({
     projectId: projectId || '',
@@ -377,6 +380,9 @@ const AppDev: React.FC = () => {
     // 切换到预览标签页
     setActiveTab('preview');
 
+    // 等待标签页切换完成
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     // 调用统一的重启方法
     const result = await server.restartServer(true);
 
@@ -525,6 +531,7 @@ const AppDev: React.FC = () => {
 
     try {
       setUploadLoading(true);
+      setIsProjectUploading(true);
 
       const result = await uploadAndStartProject({
         file: selectedFile,
@@ -534,24 +541,46 @@ const AppDev: React.FC = () => {
       });
 
       if (result?.success && result?.data) {
-        message.success('项目导入成功，正在重新加载页面...');
+        message.success('项目导入成功');
         setIsUploadModalVisible(false);
         setSelectedFile(null);
 
-        setTimeout(() => {
-          // 如果需要完全重新加载页面，使用 window.location.reload()
-          // 这是 UmiJS 推荐的方式，因为某些情况下需要重新初始化整个应用状态
-          window.location.reload();
+        // 导入项目成功后，调用restart-dev逻辑，与点击重启服务按钮逻辑一致
+        setTimeout(async () => {
+          try {
+            // 切换到预览标签页
+            setActiveTab('preview');
+
+            // 等待标签页切换完成
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
+            // 调用统一的重启方法
+            const restartResult = await server.restartServer(true);
+
+            // 如果成功，延迟刷新预览
+            if (restartResult.success) {
+              setTimeout(() => {
+                previewRef.current?.refresh();
+              }, 500);
+            }
+          } catch (error) {
+            console.error('重启开发服务器失败:', error);
+            message.error('项目导入成功，但重启开发服务器失败');
+          } finally {
+            setIsProjectUploading(false);
+          }
         }, 500);
       } else {
         message.warning('项目上传成功，但返回数据格式异常');
+        setIsProjectUploading(false);
       }
     } catch (error) {
       message.error(error instanceof Error ? error.message : '上传项目失败');
+      setIsProjectUploading(false);
     } finally {
       setUploadLoading(false);
     }
-  }, [selectedFile, projectId, workspace.projectName]);
+  }, [selectedFile, projectId, workspace.projectName, server]);
 
   /**
    * 处理文件选择
@@ -958,6 +987,7 @@ const AppDev: React.FC = () => {
                         devServerUrl={workspace.devServerUrl}
                         isStarting={server.isStarting}
                         isRestarting={server.isRestarting}
+                        isProjectUploading={isProjectUploading}
                         serverMessage={server.serverMessage}
                         previewRef={previewRef}
                         onStartDev={server.startServer}

@@ -62,16 +62,16 @@ export const useAppDevServer = ({
 
       if (isSuccess && serverUrl) {
         // 成功情况
-        setDevServerUrl(serverUrl);
+        // 注意：不在这里设置 devServerUrl，让调用方决定何时设置
         setIsRunning(true);
-        onServerStart?.(serverUrl);
         onServerStatusChange?.(true);
 
-        // 更新服务器消息
+        // 成功时清除服务器消息，避免显示错误状态
+        setServerMessage(null);
+
         const successMessage =
           response?.message ||
           (operation === 'start' ? '开发环境启动成功' : '开发服务器重启成功');
-        setServerMessage(successMessage);
 
         let messageText = '';
         if (shouldShowMessage) {
@@ -120,16 +120,19 @@ export const useAppDevServer = ({
     (response: any) => {
       // 检查接口返回状态码
       if (response?.code !== '0000') {
-        // 接口返回非 0000 状态码，设置错误信息
+        // 【关键变更】接口返回非 0000 状态码，设置错误信息
         const errorMessage = response?.message || '服务器保活失败';
         setServerMessage(errorMessage);
         setIsRunning(false);
         onServerStatusChange?.(false);
+        // 不设置 isStarting 或 isRestarting，避免显示 loading
         return;
       }
 
       // 清除之前的错误信息
       setServerMessage(null);
+      setIsRunning(true);
+      onServerStatusChange?.(true);
 
       if (response?.data?.devServerUrl) {
         const newDevServerUrl = response.data.devServerUrl;
@@ -143,96 +146,6 @@ export const useAppDevServer = ({
       }
     },
     [devServerUrl, onServerStart, onServerStatusChange],
-  );
-
-  /**
-   * 启动开发环境
-   */
-  const startServer = useCallback(async () => {
-    if (!projectId) {
-      return;
-    }
-
-    if (lastProjectIdRef.current !== projectId) {
-      hasStartedRef.current = false;
-      lastProjectIdRef.current = projectId;
-    }
-
-    if (hasStartedRef.current) {
-      return;
-    }
-
-    try {
-      hasStartedRef.current = true;
-      setIsStarting(true);
-
-      const response = await startDev(projectId);
-
-      // 使用统一的处理函数
-      const result = handleServerResponse(response, 'start', false);
-
-      // 无论成功失败，都要重置启动状态
-      setIsStarting(false);
-
-      return result;
-    } catch (error: any) {
-      setIsStarting(false);
-      setIsRunning(false);
-      onServerStatusChange?.(false);
-      // message.error(error?.message || '启动开发环境失败');
-    }
-  }, [projectId, handleServerResponse, onServerStatusChange]);
-
-  /**
-   * 重启开发服务器
-   * @param shouldSwitchTab 是否切换到预览标签页（手动点击为 true，Agent 触发为 false）
-   * @returns Promise<{success: boolean, message?: string, devServerUrl?: string}>
-   */
-  const restartServer = useCallback(
-    async (shouldSwitchTab: boolean = false) => {
-      if (!projectId) {
-        if (shouldSwitchTab) {
-          message.error('项目ID不存在或无效，无法重启服务');
-        }
-        return { success: false, message: '项目ID不存在或无效' };
-      }
-
-      try {
-        // 设置重启状态
-        setIsRestarting(true);
-
-        // 清空 devServerUrl，触发 Preview 组件显示 loading 状态
-        setDevServerUrl(null);
-
-        // 调用重启接口
-        const response = await restartDev(projectId);
-
-        // 使用统一的处理函数
-        const result = handleServerResponse(
-          response,
-          'restart',
-          shouldSwitchTab,
-        );
-
-        // 重置重启状态
-        setIsRestarting(false);
-
-        return result;
-      } catch (error: any) {
-        setIsRestarting(false);
-        setIsRunning(false);
-        onServerStatusChange?.(false);
-
-        const errorMessage = error?.message || '重启开发服务器失败';
-
-        if (shouldSwitchTab) {
-          message.error(errorMessage);
-        }
-
-        return { success: false, message: errorMessage };
-      }
-    },
-    [projectId, handleServerResponse, onServerStatusChange],
   );
 
   /**
@@ -250,7 +163,6 @@ export const useAppDevServer = ({
     }
 
     // 初始保活请求
-
     keepAlive(projectId)
       .then((response) => {
         handleKeepAliveResponse(response);
@@ -274,9 +186,140 @@ export const useAppDevServer = ({
     if (keepAliveTimerRef.current) {
       clearInterval(keepAliveTimerRef.current);
       keepAliveTimerRef.current = null;
-    } else {
     }
   }, []);
+
+  /**
+   * 启动开发环境
+   */
+  const startServer = useCallback(async () => {
+    if (!projectId) {
+      return;
+    }
+
+    if (lastProjectIdRef.current !== projectId) {
+      hasStartedRef.current = false;
+      lastProjectIdRef.current = projectId;
+    }
+
+    if (hasStartedRef.current) {
+      return;
+    }
+
+    try {
+      hasStartedRef.current = true;
+      setIsStarting(true);
+      setServerMessage(null); // 清除之前的错误消息
+
+      // 调用 start-dev 接口
+      const response = await startDev(projectId);
+
+      // 处理响应
+      const result = handleServerResponse(response, 'start', false);
+
+      // 如果启动成功，设置服务器URL
+      if (result.success && result.devServerUrl) {
+        setDevServerUrl(result.devServerUrl);
+        onServerStart?.(result.devServerUrl);
+      } else {
+        // 启动失败，设置错误消息（已在 handleServerResponse 中设置）
+        // 不需要额外操作
+      }
+
+      // 重置启动状态
+      setIsStarting(false);
+
+      // 【关键变更】无论成功失败，都启动 keepalive 轮询
+      startKeepAlive();
+
+      return result;
+    } catch (error: any) {
+      setIsStarting(false);
+      setIsRunning(false);
+      setServerMessage(error?.message || '启动开发环境失败');
+      onServerStatusChange?.(false);
+
+      // 即使异常也启动 keepalive 轮询
+      startKeepAlive();
+    }
+  }, [projectId, handleServerResponse, onServerStatusChange, startKeepAlive]);
+
+  /**
+   * 重启开发服务器
+   * @param shouldSwitchTab 是否切换到预览标签页（手动点击为 true，Agent 触发为 false）
+   * @returns Promise<{success: boolean, message?: string, devServerUrl?: string}>
+   */
+  const restartServer = useCallback(
+    async (shouldSwitchTab: boolean = false) => {
+      if (!projectId) {
+        if (shouldSwitchTab) {
+          message.error('项目ID不存在或无效，无法重启服务');
+        }
+        return { success: false, message: '项目ID不存在或无效' };
+      }
+
+      try {
+        // 【关键变更1】暂停 keepalive 轮询
+        stopKeepAlive();
+
+        // 【关键变更2】设置重启状态，清空 devServerUrl 和错误消息
+        setIsRestarting(true);
+        setDevServerUrl(null);
+        setServerMessage(null);
+
+        // 调用重启接口
+        const response = await restartDev(projectId);
+
+        // 使用统一的处理函数
+        const result = handleServerResponse(
+          response,
+          'restart',
+          shouldSwitchTab,
+        );
+
+        // 如果重启成功，设置新的服务器URL
+        if (result.success && result.devServerUrl) {
+          setDevServerUrl(result.devServerUrl);
+          onServerStart?.(result.devServerUrl);
+        } else {
+          // 重启失败，错误消息已在 handleServerResponse 中设置
+          // serverMessage 会被 Preview 组件显示
+        }
+
+        // 重置重启状态
+        setIsRestarting(false);
+
+        // 【关键变更3】恢复 keepalive 轮询
+        startKeepAlive();
+
+        return result;
+      } catch (error: any) {
+        setIsRestarting(false);
+        setIsRunning(false);
+
+        const errorMessage = error?.message || '重启开发服务器失败';
+        setServerMessage(errorMessage);
+        onServerStatusChange?.(false);
+
+        if (shouldSwitchTab) {
+          message.error(errorMessage);
+        }
+
+        // 【关键变更4】即使异常也要恢复 keepalive 轮询
+        startKeepAlive();
+
+        return { success: false, message: errorMessage };
+      }
+    },
+    [
+      projectId,
+      handleServerResponse,
+      onServerStatusChange,
+      onServerStart,
+      stopKeepAlive,
+      startKeepAlive,
+    ],
+  );
 
   /**
    * 重置服务器状态
@@ -298,9 +341,8 @@ export const useAppDevServer = ({
     if (projectId) {
       // 异步启动服务器，不阻塞页面渲染
       Promise.resolve().then(() => {
-        startServer();
-        // 启动保活轮询
-        startKeepAlive();
+        startServer(); // startServer 内部会调用 startKeepAlive
+        // 【删除】startKeepAlive(); // 移除这行
       });
     }
 

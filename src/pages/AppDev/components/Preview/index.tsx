@@ -20,6 +20,7 @@ interface PreviewProps {
   className?: string;
   isStarting?: boolean;
   isRestarting?: boolean; // 新增
+  isProjectUploading?: boolean; // 新增
   startError?: string | null;
   /** 服务器接口返回的消息 */
   serverMessage?: string | null;
@@ -44,6 +45,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       className,
       isStarting,
       isRestarting,
+      isProjectUploading,
       startError,
       serverMessage,
       onStartDev,
@@ -206,7 +208,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         </div>
 
         <div className={styles.previewContainer}>
-          {devServerUrl && !loadError && !serverMessage ? (
+          {devServerUrl &&
+          !loadError &&
+          !serverMessage &&
+          !isStarting &&
+          !isRestarting &&
+          !isProjectUploading ? (
             <iframe
               ref={iframeRef}
               className={styles.previewIframe}
@@ -220,6 +227,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               type={
                 loadError || serverMessage
                   ? 'error'
+                  : isProjectUploading
+                  ? 'loading'
                   : isRestarting
                   ? 'loading'
                   : isStarting
@@ -233,6 +242,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               icon={
                 loadError || serverMessage ? (
                   <ExclamationCircleOutlined />
+                ) : isProjectUploading ? (
+                  <ThunderboltOutlined />
                 ) : isRestarting ? (
                   <ThunderboltOutlined />
                 ) : isStarting ? (
@@ -248,10 +259,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                   ? '预览加载失败'
                   : serverMessage
                   ? '服务器错误'
+                  : isProjectUploading
+                  ? '导入项目中'
                   : isRestarting
-                  ? '服务器重启中'
+                  ? '重启中'
                   : isStarting
-                  ? '开发服务器启动中'
+                  ? '启动中'
                   : startError
                   ? '开发服务器启动失败'
                   : devServerUrl === undefined
@@ -262,6 +275,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 serverMessage ||
                 (loadError
                   ? '预览页面加载失败，请检查开发服务器状态或网络连接'
+                  : isProjectUploading
+                  ? '正在导入项目并重启开发服务器，请稍候...'
                   : isRestarting
                   ? '正在重启开发服务器，请稍候...'
                   : isStarting
@@ -293,6 +308,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                           ]
                         : []),
                     ]
+                  : isStarting || isRestarting || isProjectUploading
+                  ? undefined // 启动中、重启中或导入项目中时不显示按钮
                   : onStartDev || onRestartDev
                   ? [
                       {
