@@ -9,6 +9,7 @@ import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
+import { useRestartDevServer } from '@/hooks/useRestartDevServer';
 import {
   bindDataSource,
   buildProject,
@@ -139,6 +140,17 @@ const AppDev: React.FC = () => {
     onServerStatusChange: setIsServiceRunning,
   });
 
+  // Preview组件的ref，用于触发刷新
+  const previewRef = useRef<PreviewRef>(null);
+
+  // 使用重启开发服务器 Hook
+  const { restartDevServer } = useRestartDevServer({
+    projectId: projectId || '',
+    server,
+    setActiveTab,
+    previewRef,
+  });
+
   const chat = useAppDevChat({
     projectId: projectId || '',
     selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
@@ -153,7 +165,12 @@ const AppDev: React.FC = () => {
       }
     }, // 新增：传递清除上传图片方法
     onRestartDevServer: async () => {
-      await server.restartServer(false); // Agent 触发时不切换页面
+      // 使用重启开发服务器 Hook，Agent 触发时不切换页面
+      await restartDevServer({
+        shouldSwitchTab: false, // Agent 触发时不切换页面
+        delayBeforeRefresh: 500,
+        showMessage: false, // Agent 触发时不显示消息
+      });
     }, // 新增：Agent 触发时不切换页面
   });
 
@@ -245,9 +262,6 @@ const AppDev: React.FC = () => {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<any>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-
-  // Preview组件的ref，用于触发刷新
-  const previewRef = useRef<PreviewRef>(null);
 
   /**
    * 检查 projectId 状态
@@ -377,22 +391,13 @@ const AppDev: React.FC = () => {
    * 处理重启开发服务器按钮点击（手动触发）
    */
   const handleRestartDevServer = useCallback(async () => {
-    // 切换到预览标签页
-    setActiveTab('preview');
-
-    // 等待标签页切换完成
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    // 调用统一的重启方法
-    const result = await server.restartServer(true);
-
-    // 如果成功，延迟刷新预览
-    if (result.success) {
-      setTimeout(() => {
-        previewRef.current?.refresh();
-      }, 500);
-    }
-  }, [server]);
+    // 使用重启开发服务器 Hook，手动触发时切换到预览标签页
+    await restartDevServer({
+      shouldSwitchTab: true,
+      delayBeforeRefresh: 500,
+      showMessage: true,
+    });
+  }, [restartDevServer]);
 
   /**
    * 处理添加组件（Created 组件回调）
@@ -548,21 +553,12 @@ const AppDev: React.FC = () => {
         // 导入项目成功后，调用restart-dev逻辑，与点击重启服务按钮逻辑一致
         setTimeout(async () => {
           try {
-            // 切换到预览标签页
-            setActiveTab('preview');
-
-            // 等待标签页切换完成
-            await new Promise((resolve) => setTimeout(resolve, 100));
-
-            // 调用统一的重启方法
-            const restartResult = await server.restartServer(true);
-
-            // 如果成功，延迟刷新预览
-            if (restartResult.success) {
-              setTimeout(() => {
-                previewRef.current?.refresh();
-              }, 500);
-            }
+            // 使用重启开发服务器 Hook，项目导入后切换到预览标签页
+            await restartDevServer({
+              shouldSwitchTab: true, // 项目导入后切换到预览标签页
+              delayBeforeRefresh: 500,
+              showMessage: true,
+            });
           } catch (error) {
             console.error('重启开发服务器失败:', error);
             message.error('项目导入成功，但重启开发服务器失败');
@@ -991,7 +987,14 @@ const AppDev: React.FC = () => {
                         serverMessage={server.serverMessage}
                         previewRef={previewRef}
                         onStartDev={server.startServer}
-                        onRestartDev={() => server.restartServer(false)}
+                        onRestartDev={async () => {
+                          // 使用重启开发服务器 Hook，不切换标签页
+                          await restartDevServer({
+                            shouldSwitchTab: false, // 不切换标签页
+                            delayBeforeRefresh: 500,
+                            showMessage: true,
+                          });
+                        }}
                         onContentChange={(fileId, content) => {
                           if (
                             !versionCompare.isComparing &&
