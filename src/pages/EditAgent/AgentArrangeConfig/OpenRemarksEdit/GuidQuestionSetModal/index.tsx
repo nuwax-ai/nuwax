@@ -147,17 +147,30 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
 
   // 表单提交
   const onFinish: FormProps<any>['onFinish'] = (values) => {
-    const requireArgEmptyItem = args?.find(
-      (item) => item.require && !item.bindValue,
-    );
-    if (requireArgEmptyItem) {
-      message.error(
-        `参数名：${requireArgEmptyItem.name}是必填参数，参数值不能为空`,
-      );
-      return;
-    }
-    setLoading(true);
     const { pageUriId, ...rest } = values;
+
+    if (rest.type === GuidQuestionSetTypeEnum.Page) {
+      const requireArgEmptyItem = args?.find(
+        (item) => item.require && !item.bindValue,
+      );
+      if (requireArgEmptyItem) {
+        message.error(
+          `参数名：${requireArgEmptyItem.name}是必填参数，参数值不能为空`,
+        );
+        return;
+      }
+    }
+
+    // 链接地址类型
+    if (rest.type === GuidQuestionSetTypeEnum.Link) {
+      const isHttpUrl = rest.url?.startsWith('http');
+      if (!isHttpUrl) {
+        message.error('链接地址必须以http/https开头');
+        return;
+      }
+    }
+
+    setLoading(true);
     const pageUri = pathList.find((item) => item.value === pageUriId)?.pageUri;
     // 更新后的预置问题
     const newGuidQuestionDto = {
@@ -334,7 +347,11 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
           />
         </Form.Item>
         {type === GuidQuestionSetTypeEnum.Page ? (
-          <Form.Item name="pageUriId" label="页面路径">
+          <Form.Item
+            name="pageUriId"
+            label="页面路径"
+            rules={[{ required: true, message: '请选择页面路径' }]}
+          >
             <SelectList
               placeholder="请选择页面路径"
               options={pathList as any}
