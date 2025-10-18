@@ -74,18 +74,11 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
 
     // 显示二次确认弹窗
     Modal.confirm({
-      title: '确认删除数据源',
-      content: (
-        <div>
-          <p>
-            您确定要删除数据源 <strong>"{resource.name}"</strong> 吗？
-          </p>
-        </div>
-      ),
+      content: `确定要删除数据资源 "${resource.name}" 吗？`,
       okText: '确认删除',
       cancelText: '取消',
       okType: 'danger',
-      icon: <DeleteOutlined style={{ color: '#ff4d4f' }} />,
+      icon: null,
       onOk: async () => {
         try {
           setActionLoading((prev) => ({ ...prev, [resourceId]: true }));
@@ -105,6 +98,8 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
             });
 
             if (result?.code === '0000') {
+              // 先取消勾选
+              handleCheckboxChange(resource, false);
               // 调用原有的删除回调
               await onDelete?.(resourceId);
             }
