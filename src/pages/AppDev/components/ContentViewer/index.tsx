@@ -35,6 +35,8 @@ interface ContentViewerProps {
   isRestarting?: boolean; // 新增
   /** 启动错误 */
   startError?: string | null;
+  /** 服务器接口返回的消息 */
+  serverMessage?: string | null;
   /** Preview组件ref */
   previewRef: React.RefObject<PreviewRef>;
   /** 内容变化回调 */
@@ -51,6 +53,8 @@ interface ContentViewerProps {
   isChatLoading?: boolean;
   /** 启动开发服务器回调 */
   onStartDev?: () => void;
+  /** 重启开发服务器回调 */
+  onRestartDev?: () => void;
 }
 
 /**
@@ -71,6 +75,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   isStarting,
   isRestarting, // 新增
   startError,
+  serverMessage,
   previewRef,
   onContentChange,
   onSaveFile,
@@ -79,6 +84,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   findFileNode,
   isChatLoading = false,
   onStartDev,
+  onRestartDev,
 }) => {
   // 版本对比模式 + preview标签页：显示禁用提示
   if (isComparing && mode === 'preview') {
@@ -184,7 +190,9 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         isStarting={isStarting}
         isRestarting={isRestarting} // 新增
         startError={startError}
+        serverMessage={serverMessage}
         onStartDev={onStartDev}
+        onRestartDev={onRestartDev}
       />
     );
   }
