@@ -150,8 +150,18 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
 
   // 表单提交
   const onFinish: FormProps<any>['onFinish'] = (values) => {
-    setLoading(true);
     const { pageUriId, ...rest } = values;
+
+    // 链接地址类型
+    if (rest.type === EventBindResponseActionEnum.Link) {
+      const isHttpUrl = rest.url?.startsWith('http');
+      if (!isHttpUrl) {
+        message.error('链接地址必须以http/https开头');
+        return;
+      }
+    }
+
+    setLoading(true);
     const pageUri = pathList.find((item) => item.value === pageUriId)?.pageUri;
 
     const _currentEventConfig = {
