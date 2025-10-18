@@ -16,7 +16,7 @@ import {
   exportProject,
   uploadAndStartProject,
 } from '@/services/appDev';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentAddComponentStatusEnum, AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { DataSourceSelection } from '@/types/interfaces/appDev';
 import {
   DownloadOutlined,
@@ -54,6 +54,7 @@ import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
 import styles from './index.less';
+import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 
 const { Text } = Typography;
 
@@ -73,6 +74,8 @@ const AppDev: React.FC = () => {
 
   // 页面编辑状态
   const [openPageEditVisible, setOpenPageEditVisible] = useState(false);
+  // 处于loading状态的组件列表
+  const [addComponents, setAddComponents] = useState<AgentAddComponentStatusInfo[]>([]);
 
   // 使用 AppDev 模型来管理状态
   const appDevModel = useModel('appDev');
@@ -173,6 +176,22 @@ const AppDev: React.FC = () => {
       });
     }, // 新增：Agent 触发时不切换页面
   });
+
+  useEffect(() => {
+    // 初始化处于added状态的组件列表
+    if (projectInfo.projectInfoState.projectInfo) {
+      const dataSources = projectInfo.projectInfoState.projectInfo?.dataSources || [];
+      const addComponents = dataSources.map((dataSource) => {
+        const type = dataSource.type === 'plugin' ? AgentComponentTypeEnum.Plugin : AgentComponentTypeEnum.Workflow;
+        return {
+          type: type,
+          targetId: dataSource.id,
+          status: AgentAddComponentStatusEnum.Added,
+        };
+      });
+      setAddComponents(addComponents);
+    }
+  }, [projectInfo.projectInfoState?.projectInfo]);
 
   // 数据资源管理
   const dataResourceManagement = useDataResourceManagement(
@@ -419,6 +438,18 @@ const AppDev: React.FC = () => {
         return;
       }
 
+      // 组件添加loading状态到列表
+      setAddComponents((list) => {
+        return [
+          ...list,
+          {
+            type: item.targetType,
+            targetId: item.targetId,
+            status: AgentAddComponentStatusEnum.Loading,
+          },
+        ];
+      });
+
       try {
         // 确定数据源类型
         const type =
@@ -437,12 +468,24 @@ const AppDev: React.FC = () => {
         if (result?.code === '0000') {
           message.success('数据源绑定成功');
 
+          // 更新处于loading状态的组件列表
+          setAddComponents((list) => {
+            return list.map((info) => {
+              if (info.targetId === item.targetId && info.status === AgentAddComponentStatusEnum.Loading) {
+                return { ...info, status: AgentAddComponentStatusEnum.Added };
+              }
+              return info;
+            });
+          });
+
           // 刷新项目详情信息以更新数据源列表
           await projectInfo.refreshProjectInfo();
 
           // 关闭 Created 弹窗
           setIsAddDataResourceModalVisible(false);
         } else {
+          // 更新处于loading状态的组件列表
+          setAddComponents((list) => list.filter((info) => info.targetId !== item.targetId));
           const errorMessage = result?.message || '绑定数据源失败';
           throw new Error(errorMessage);
         }
@@ -462,6 +505,7 @@ const AppDev: React.FC = () => {
     async (resourceId: string) => {
       try {
         await dataResourceManagement.deleteResource(resourceId);
+        setAddComponents(list => list.filter(info => info.targetId !== Number(resourceId)));
       } catch (error) {
         // 删除数据资源失败
       }
@@ -1198,6 +1242,7 @@ const AppDev: React.FC = () => {
           open={isAddDataResourceModalVisible}
           onCancel={() => setIsAddDataResourceModalVisible(false)}
           checkTag={AgentComponentTypeEnum.Plugin}
+          addComponents={addComponents}
           onAdded={handleAddComponent}
           tabs={CREATED_TABS.filter(
             (item) =>
