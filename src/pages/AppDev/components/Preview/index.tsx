@@ -24,6 +24,8 @@ interface PreviewProps {
   startError?: string | null;
   /** 服务器接口返回的消息 */
   serverMessage?: string | null;
+  /** 服务器错误码 */
+  serverErrorCode?: string | null;
   /** 启动开发服务器回调 */
   onStartDev?: () => void;
   /** 重启开发服务器回调 */
@@ -48,6 +50,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       isProjectUploading,
       startError,
       serverMessage,
+      serverErrorCode,
       onStartDev,
       onRestartDev,
     },
@@ -58,6 +61,50 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [retrying, setRetrying] = useState(false);
+
+    /**
+     * 获取错误类型前缀
+     */
+    const getErrorTypePrefix = useCallback(
+      (errorCode: string | null | undefined) => {
+        if (!errorCode) return '';
+
+        // 根据错误码判断类型，目前只有三种：RESTART、START、KEEPALIVE
+        if (errorCode.includes('RESTART') || errorCode.includes('restart')) {
+          return 'RESTART';
+        }
+        if (errorCode.includes('START') || errorCode.includes('start')) {
+          return 'START';
+        }
+        if (
+          errorCode.includes('KEEPALIVE') ||
+          errorCode.includes('keepalive')
+        ) {
+          return 'KEEPALIVE';
+        }
+
+        // 如果错误码不包含关键词，根据当前状态判断类型
+        if (isRestarting) return 'RESTART';
+        if (isStarting) return 'START';
+        if (serverMessage) return 'KEEPALIVE';
+
+        return '';
+      },
+      [isRestarting, isStarting, serverMessage],
+    );
+
+    /**
+     * 格式化错误码显示
+     */
+    const formatErrorCode = useCallback(
+      (errorCode: string | null | undefined) => {
+        if (!errorCode) return '';
+
+        const prefix = getErrorTypePrefix(errorCode);
+        return prefix ? `${prefix}: ${errorCode}` : errorCode;
+      },
+      [getErrorTypePrefix],
+    );
 
     /**
      * 加载开发服务器预览
@@ -258,7 +305,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 loadError
                   ? '预览加载失败'
                   : serverMessage
-                  ? '服务器错误'
+                  ? serverErrorCode
+                    ? `服务器错误 (${formatErrorCode(serverErrorCode)})`
+                    : '服务器错误'
                   : isProjectUploading
                   ? '导入项目中'
                   : isRestarting
@@ -266,7 +315,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                   : isStarting
                   ? '启动中'
                   : startError
-                  ? '开发服务器启动失败'
+                  ? serverErrorCode
+                    ? `开发服务器启动失败 (${formatErrorCode(serverErrorCode)})`
+                    : '开发服务器启动失败'
                   : devServerUrl === undefined
                   ? '暂无预览地址'
                   : '等待开发服务器启动'
@@ -287,6 +338,11 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                   ? '当前没有可用的预览地址，请先启动开发服务器'
                   : '正在连接开发服务器，请稍候...')
               }
+              maxDescriptionLength={150} // 限制描述文本长度
+              allowDescriptionWrap={true} // 允许换行显示
+              maxLines={4} // 最多显示 4 行
+              clickableDescription={true} // 启用点击查看完整内容
+              viewFullTextButtonText="查看完整错误信息" // 自定义按钮文本
               buttons={
                 loadError || serverMessage
                   ? [

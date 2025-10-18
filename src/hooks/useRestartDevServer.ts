@@ -84,8 +84,7 @@ export const useRestartDevServer = ({
         // 显示结果消息
         if (showMessage) {
           if (result.success) {
-            // 成功时可以选择不显示消息，或者显示成功消息
-            // message.success(result.message || '开发服务器重启成功');
+            // 成功时不显示消息，避免干扰用户体验
           } else if (result.message) {
             message.error(result.message);
           }

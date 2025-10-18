@@ -1,5 +1,5 @@
-import { Button } from 'antd';
-import React from 'react';
+import { Button, Modal } from 'antd';
+import React, { useState } from 'react';
 import styles from './index.less';
 
 /**
@@ -68,6 +68,16 @@ export interface AppDevEmptyStateProps {
   showDescription?: boolean;
   /** 是否显示按钮 */
   showButtons?: boolean;
+  /** 描述文本最大长度，超过则截取并显示省略号 */
+  maxDescriptionLength?: number;
+  /** 是否允许描述文本换行 */
+  allowDescriptionWrap?: boolean;
+  /** 最大显示行数，超过则显示省略号 */
+  maxLines?: number;
+  /** 是否支持点击查看完整内容 */
+  clickableDescription?: boolean;
+  /** 点击查看完整内容的按钮文本 */
+  viewFullTextButtonText?: string;
 }
 
 /**
@@ -86,7 +96,15 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
   showTitle = true,
   showDescription = true,
   showButtons = true,
+  maxDescriptionLength = 200, // 默认最大长度 200 字符
+  allowDescriptionWrap = false, // 默认不允许换行
+  maxLines = 3, // 默认最大显示 3 行
+  clickableDescription = false, // 默认不支持点击查看
+  viewFullTextButtonText = '查看完整内容', // 默认按钮文本
 }) => {
+  // 弹窗状态管理
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
   /**
    * 默认状态配置映射
    */
@@ -129,50 +147,155 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
   const currentConfig = defaultConfigs[type];
 
   /**
+   * 处理描述文本，支持截取和换行控制
+   */
+  const processDescription = (text: string): string => {
+    if (!text) return text;
+
+    // 如果设置了最大长度且文本超过限制，进行截取
+    if (maxDescriptionLength > 0 && text.length > maxDescriptionLength) {
+      return text.substring(0, maxDescriptionLength) + '...';
+    }
+
+    return text;
+  };
+
+  /**
+   * 获取处理后的描述文本
+   */
+  const processedDescription = processDescription(
+    description || currentConfig.description,
+  );
+
+  /**
+   * 处理查看完整内容
+   */
+  const handleViewFullText = () => {
+    setIsModalVisible(true);
+  };
+
+  /**
+   * 关闭弹窗
+   */
+  const handleCloseModal = () => {
+    setIsModalVisible(false);
+  };
+
+  /**
+   * 检查是否需要显示查看完整内容按钮
+   */
+  const shouldShowViewFullButton = () => {
+    if (!clickableDescription) return false;
+
+    const fullText = description || currentConfig.description;
+    const processedText = processedDescription;
+
+    // 如果处理后的文本比原文本短，说明被截取了
+    return (
+      fullText.length > processedText.length ||
+      (allowDescriptionWrap &&
+        maxLines > 1 &&
+        fullText.split('\n').length > maxLines)
+    );
+  };
+
+  /**
    * 渲染操作按钮
    */
   const renderButtons = () => {
-    if (!showButtons || !buttons || buttons.length === 0) return null;
+    const regularButtons = [...(buttons || [])];
+
+    if (!showButtons && !shouldShowViewFullButton()) return null;
 
     return (
       <div className={styles.emptyActions}>
-        {buttons.map((button, index) => (
-          <Button
-            key={index}
-            type={button.type || 'default'}
-            size={button.size || 'middle'}
-            icon={button.icon}
-            onClick={button.onClick}
-            loading={button.loading}
-            disabled={button.disabled}
-          >
-            {button.text}
-          </Button>
-        ))}
+        {/* 渲染常规按钮 */}
+        {showButtons && regularButtons.length > 0 && (
+          <div className={styles.regularButtons}>
+            {regularButtons.map((button, index) => (
+              <Button
+                key={index}
+                type={button.type || 'default'}
+                size={button.size || 'middle'}
+                icon={button.icon}
+                onClick={button.onClick}
+                loading={button.loading}
+                disabled={button.disabled}
+              >
+                {button.text}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {/* 查看完整内容按钮单独一行 */}
+        {shouldShowViewFullButton() && (
+          <div className={styles.viewFullTextButton}>
+            <Button type="link" size="small" onClick={handleViewFullText}>
+              {viewFullTextButtonText}
+            </Button>
+          </div>
+        )}
       </div>
     );
   };
 
   return (
-    <div className={`${styles.emptyState} ${className || ''}`} style={style}>
-      {showIcon && (
-        <div className={styles.emptyIconContainer}>
-          {icon || currentConfig.icon}
-        </div>
-      )}
+    <>
+      <div className={`${styles.emptyState} ${className || ''}`} style={style}>
+        {showIcon && (
+          <div className={styles.emptyIconContainer}>
+            {icon || currentConfig.icon}
+          </div>
+        )}
 
-      <div className={styles.emptyContent}>
-        {showTitle && (
-          <h3 className={styles.emptyTitle}>{title || currentConfig.title}</h3>
-        )}
-        {showDescription && (
-          <p className={styles.emptyDescription}>
-            {description || currentConfig.description}
-          </p>
-        )}
-        {renderButtons()}
+        <div className={styles.emptyContent}>
+          {showTitle && (
+            <h3 className={styles.emptyTitle}>
+              {title || currentConfig.title}
+            </h3>
+          )}
+          {showDescription && (
+            <p
+              className={`${styles.emptyDescription} ${
+                allowDescriptionWrap && maxLines > 1
+                  ? styles.multiLineTruncate
+                  : styles.singleLineTruncate
+              }`}
+              style={
+                {
+                  '--max-lines': maxLines,
+                } as React.CSSProperties
+              }
+              title={description || currentConfig.description} // 显示完整文本的 tooltip
+            >
+              {processedDescription}
+            </p>
+          )}
+          {renderButtons()}
+        </div>
       </div>
-    </div>
+
+      {/* 完整内容弹窗 */}
+      <Modal
+        title={title || currentConfig.title}
+        open={isModalVisible}
+        onCancel={handleCloseModal}
+        footer={[
+          <Button key="close" onClick={handleCloseModal}>
+            关闭
+          </Button>,
+        ]}
+        width={600}
+        style={{ top: 20 }}
+      >
+        <div className={styles.fullTextContent}>
+          <pre className={styles.fullTextPre}>
+            {description || currentConfig.description}
+          </pre>
+        </div>
+      </Modal>
+    </>
   );
 };
 

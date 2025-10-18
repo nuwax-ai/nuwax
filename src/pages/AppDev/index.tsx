@@ -559,9 +559,6 @@ const AppDev: React.FC = () => {
               delayBeforeRefresh: 500,
               showMessage: true,
             });
-          } catch (error) {
-            console.error('重启开发服务器失败:', error);
-            message.error('项目导入成功，但重启开发服务器失败');
           } finally {
             setIsProjectUploading(false);
           }
@@ -712,21 +709,15 @@ const AppDev: React.FC = () => {
   // 页面退出时的资源清理
   useEffect(() => {
     return () => {
-      console.log('🧹 [AppDev] 页面卸载，开始清理资源');
-
       // 清理聊天相关资源
       if (chat.cleanupAppDevSSE) {
-        console.log('🧹 [AppDev] 清理聊天SSE连接');
         chat.cleanupAppDevSSE();
       }
 
       // 清理服务器相关资源
       if (server.stopKeepAlive) {
-        console.log('🧹 [AppDev] 停止服务器保活轮询');
         server.stopKeepAlive();
       }
-
-      console.log('✅ [AppDev] 资源清理完成');
     };
   }, []); // 空依赖数组，只在组件卸载时执行
 
@@ -985,6 +976,7 @@ const AppDev: React.FC = () => {
                         isRestarting={server.isRestarting}
                         isProjectUploading={isProjectUploading}
                         serverMessage={server.serverMessage}
+                        serverErrorCode={server.serverErrorCode}
                         previewRef={previewRef}
                         onStartDev={server.startServer}
                         onRestartDev={async () => {
