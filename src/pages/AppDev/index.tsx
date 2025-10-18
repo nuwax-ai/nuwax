@@ -532,49 +532,49 @@ const AppDev: React.FC = () => {
   /**
    * 键盘快捷键处理
    */
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl/Cmd + Enter 发送聊天消息
-      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-        if (chat.chatInput.trim()) {
-          chat.sendChat();
-        }
-      }
+  // useEffect(() => {
+  //   const handleKeyDown = (event: KeyboardEvent) => {
+  //     // Ctrl/Cmd + Enter 发送聊天消息
+  //     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+  //       if (chat.chatInput.trim()) {
+  //         chat.sendChat();
+  //       }
+  //     }
 
-      // Ctrl/Cmd + S 保存文件
-      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-        event.preventDefault();
-        fileManagement.saveFile();
-      }
+  //     // Ctrl/Cmd + S 保存文件
+  //     if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+  //       event.preventDefault();
+  //       fileManagement.saveFile();
+  //     }
 
-      // Ctrl/Cmd + R 重启开发服务器
-      if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
-        event.preventDefault();
-        if (projectId && isServiceRunning && !chat.isChatLoading) {
-          // 开发服务器重启功能已禁用
-        }
-      }
+  //     // Ctrl/Cmd + R 重启开发服务器
+  //     if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
+  //       event.preventDefault();
+  //       if (projectId && isServiceRunning && !chat.isChatLoading) {
+  //         // 开发服务器重启功能已禁用
+  //       }
+  //     }
 
-      // Ctrl/Cmd + D 部署项目
-      if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
-        event.preventDefault();
-        if (hasValidProjectId && !isDeploying && !chat.isChatLoading) {
-          handleDeployProject();
-        }
-      }
-    };
+  //     // Ctrl/Cmd + D 部署项目
+  //     if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
+  //       event.preventDefault();
+  //       if (hasValidProjectId && !isDeploying && !chat.isChatLoading) {
+  //         handleDeployProject();
+  //       }
+  //     }
+  //   };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [
-    chat.chatInput,
-    chat.sendChat,
-    fileManagement.saveFile,
-    projectId,
-    isServiceRunning,
-    isDeploying,
-    handleDeployProject,
-  ]);
+  //   document.addEventListener('keydown', handleKeyDown);
+  //   return () => document.removeEventListener('keydown', handleKeyDown);
+  // }, [
+  //   chat.chatInput,
+  //   chat.sendChat,
+  //   fileManagement.saveFile,
+  //   projectId,
+  //   isServiceRunning,
+  //   isDeploying,
+  //   handleDeployProject,
+  // ]);
 
   /**
    * 初始化数据资源
@@ -612,7 +612,7 @@ const AppDev: React.FC = () => {
 
         // 刷新文件树（不保持状态，因为导入项目是全新内容）
         fileManagement.loadFileTree(false, true);
-        // 刷新项目详情
+        // 刷新项目详情(刷新版本列表)
         projectInfo.refreshProjectInfo();
 
         // 导入项目成功后，调用restart-dev逻辑，与点击重启服务按钮逻辑一致
@@ -638,12 +638,20 @@ const AppDev: React.FC = () => {
     } finally {
       setUploadLoading(false);
     }
-  }, [selectedFile, projectId, workspace.projectName, server]);
+  }, [selectedFile, projectId, workspace.projectName, server, projectInfo]);
 
   /**
    * 处理文件选择
    */
   const handleFileSelect = useCallback((file: File) => {
+    // 校验文件类型，仅支持 .zip 压缩文件
+    const isZip = file.name?.toLowerCase().endsWith('.zip');
+
+    if (!isZip) {
+      message.error('仅支持 .zip 压缩文件格式');
+      return false;
+    }
+
     setSelectedFile(file);
     return false; // 阻止自动上传
   }, []);
@@ -694,6 +702,8 @@ const AppDev: React.FC = () => {
         setIsSingleFileUploadModalVisible(false);
         setSingleFilePath('');
         setUploadFile(null);
+        // 刷新项目详情(刷新版本列表)
+        projectInfo.refreshProjectInfo();
       }
     } finally {
       setSingleFileUploadLoading(false);
@@ -704,6 +714,7 @@ const AppDev: React.FC = () => {
     fileManagement,
     singleFilePath,
     uploadFile,
+    projectInfo,
   ]);
 
   /**
@@ -744,17 +755,16 @@ const AppDev: React.FC = () => {
             nodeToDelete.name
           }`,
         );
-      } else {
-        message.error(`删除失败: ${nodeToDelete.name}`);
+        handleRestartDevServer();
+        // 刷新项目详情(刷新版本列表)
+        projectInfo.refreshProjectInfo();
       }
-    } catch (error) {
-      message.error(`删除失败: ${nodeToDelete?.name}`);
     } finally {
       setDeleteLoading(false);
       setDeleteModalVisible(false);
       setNodeToDelete(null);
     }
-  }, [nodeToDelete, projectId, fileManagement]);
+  }, [nodeToDelete, projectId, fileManagement, handleRestartDevServer]);
 
   /**
    * 取消删除
@@ -1061,7 +1071,16 @@ const AppDev: React.FC = () => {
                             updateFileContent(fileId, content);
                           }
                         }}
-                        onSaveFile={fileManagement.saveFile}
+                        onSaveFile={() => {
+                          fileManagement.saveFile().then((success) => {
+                            if (success) {
+                              // 刷新项目详情(刷新版本列表)
+                              projectInfo.refreshProjectInfo();
+                              return true;
+                            }
+                            return false;
+                          });
+                        }}
                         onCancelEdit={handleCancelEdit}
                         onRefreshFile={() => {
                           // 刷新整个文件树（保持状态，强制刷新）
@@ -1118,7 +1137,7 @@ const AppDev: React.FC = () => {
         >
           <div>
             <Upload.Dragger
-              accept=".zip,.tar.gz,.rar"
+              accept=".zip"
               beforeUpload={(file) => handleFileSelect(file)}
               disabled={uploadLoading}
               showUploadList={false}
@@ -1128,7 +1147,7 @@ const AppDev: React.FC = () => {
               </p>
               <p className="ant-upload-text">点击或拖拽文件到此区域选择</p>
               <p className="ant-upload-hint">
-                支持 .zip、.tar.gz、.rar 格式（将更新当前项目）
+                仅支持 .zip 压缩文件格式（将更新当前项目）
               </p>
             </Upload.Dragger>
             {selectedFile && (

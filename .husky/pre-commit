@@ -1,3 +1,7 @@
+#!/usr/bin/env sh
+
+. "$(dirname -- "$0")/_/husky.sh"
+
 # 优先使用 pnpm；若未安装则回退到 npx/yarn/bun
 if command -v pnpm >/dev/null 2>&1; then
   pnpm run lint-staged
@@ -6,13 +10,5 @@ elif command -v bun >/dev/null 2>&1; then
 elif command -v yarn >/dev/null 2>&1; then
   yarn lint-staged
 else
-  # 使用 node_modules/.bin 中的 npx 或直接使用 node
-  if [ -f "./node_modules/.bin/npx" ]; then
-    ./node_modules/.bin/npx --yes lint-staged
-  elif command -v node >/dev/null 2>&1; then
-    node ./node_modules/.bin/lint-staged
-  else
-    echo "Error: No package manager found (pnpm, bun, yarn, npx, or node)"
-    exit 1
-  fi
+  npx --yes lint-staged
 fi
