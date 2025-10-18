@@ -447,8 +447,6 @@ export const useAppDevChat = ({
 
           // 立即建立SSE连接（使用返回的session_id）
           await initializeAppDevSSEConnection(sessionId, requestId);
-        } else {
-          throw new Error(response.message || '发送消息失败');
         }
       } catch (error) {
         if (error && (error as any).code === AGENT_SERVICE_RUNNING) {
@@ -456,7 +454,6 @@ export const useAppDevChat = ({
             sendMessageAndConnectSSE(); //继续发送消息
           });
         } else {
-          message.error('发送消息失败');
           setIsChatLoading(false);
         }
       }
