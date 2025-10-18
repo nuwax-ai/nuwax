@@ -21,8 +21,12 @@ interface PreviewProps {
   isStarting?: boolean;
   isRestarting?: boolean; // 新增
   startError?: string | null;
+  /** 服务器接口返回的消息 */
+  serverMessage?: string | null;
   /** 启动开发服务器回调 */
   onStartDev?: () => void;
+  /** 重启开发服务器回调 */
+  onRestartDev?: () => void;
 }
 
 export interface PreviewRef {
@@ -41,7 +45,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       isStarting,
       isRestarting,
       startError,
+      serverMessage,
       onStartDev,
+      onRestartDev,
     },
     ref,
   ) => {
@@ -84,6 +90,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         if (devServerUrl) {
           // 如果有开发服务器URL，重新加载预览
           loadDevServerPreview();
+        } else if (devServerUrl === undefined && onRestartDev) {
+          // 如果没有预览地址，调用重启开发服务器接口
+          onRestartDev();
         } else if (onStartDev) {
           // 如果没有开发服务器URL，调用启动开发服务器接口
           onStartDev();
@@ -95,7 +104,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       } finally {
         setRetrying(false);
       }
-    }, [devServerUrl, loadDevServerPreview, onStartDev]);
+    }, [devServerUrl, loadDevServerPreview, onStartDev, onRestartDev]);
 
     /**
      * 刷新预览
@@ -248,7 +257,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                   : '等待开发服务器启动'
               }
               description={
-                loadError
+                serverMessage ||
+                (loadError
                   ? '预览页面加载失败，请检查开发服务器状态或网络连接'
                   : isRestarting
                   ? '正在重启开发服务器，请稍候...'
@@ -258,13 +268,13 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                   ? startError
                   : devServerUrl === undefined
                   ? '当前没有可用的预览地址，请先启动开发服务器'
-                  : '正在连接开发服务器，请稍候...'
+                  : '正在连接开发服务器，请稍候...')
               }
               buttons={
-                onStartDev
+                onStartDev || onRestartDev
                   ? [
                       {
-                        text: retrying ? '重试中...' : '重试',
+                        text: retrying ? '重启中...' : '重启服务',
                         icon: <ReloadOutlined />,
                         onClick: retryPreview,
                         loading: retrying,
