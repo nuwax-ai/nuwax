@@ -142,14 +142,20 @@ const PagePreview: React.FC<PagePreviewProps> = ({
   }, [pagePreviewData]);
 
   useEffect(() => {
+    if (!pagePreviewData) return;
+    console.log('pagePreviewData', pagePreviewData);
+    console.log('pagePreviewData.method', pagePreviewData?.method);
+
     // 需要调用后端接口返回 iframe 内容的 html/markdown
     const iframe = iframeRef.current;
     if (!iframe) return;
+    iframe.src = pageUrl; // 重新加载同一个地址，会触发 onload
 
     iframe.onload = () => {
       if (pagePreviewData?.method !== 'browser_navigate_page') {
         return;
       }
+      console.log('iframe onload');
 
       const iframeDoc = iframe.contentDocument;
       if (!iframeDoc) return;
@@ -182,6 +188,7 @@ const PagePreview: React.FC<PagePreviewProps> = ({
             requestId: pagePreviewData.request_id,
             html: str,
           };
+          console.log('调用接口：apiAgentComponentPageResultUpdate');
           await apiAgentComponentPageResultUpdate(params);
         }, 500);
       });
