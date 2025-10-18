@@ -13,7 +13,6 @@ import {
   bindDataSource,
   buildProject,
   exportProject,
-  restartDev,
   uploadAndStartProject,
 } from '@/services/appDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -110,15 +109,15 @@ const AppDev: React.FC = () => {
   // 导出项目状态
   const [isExporting, setIsExporting] = useState(false);
 
-  // 重启服务状态
-  const [isRestarting, setIsRestarting] = useState(false);
-
   // 单文件上传状态
   const [isSingleFileUploadModalVisible, setIsSingleFileUploadModalVisible] =
     useState(false);
   const [singleFileUploadLoading, setSingleFileUploadLoading] = useState(false);
   const [singleFilePath, setSingleFilePath] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+
+  // 项目导入状态
+  const [isProjectUploading, setIsProjectUploading] = useState(false);
 
   // 使用重构后的 hooks
   const fileManagement = useAppDevFileManagement({
@@ -134,6 +133,12 @@ const AppDev: React.FC = () => {
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
 
+  const server = useAppDevServer({
+    projectId: projectId || '',
+    onServerStart: updateDevServerUrl,
+    onServerStatusChange: setIsServiceRunning,
+  });
+
   const chat = useAppDevChat({
     projectId: projectId || '',
     selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
@@ -148,14 +153,8 @@ const AppDev: React.FC = () => {
       }
     }, // 新增：传递清除上传图片方法
     onRestartDevServer: async () => {
-      await restartDevServer(false); // Agent 触发时不切换页面
+      await server.restartServer(false); // Agent 触发时不切换页面
     }, // 新增：Agent 触发时不切换页面
-  });
-
-  const server = useAppDevServer({
-    projectId: projectId || '',
-    onServerStart: updateDevServerUrl,
-    onServerStatusChange: setIsServiceRunning,
   });
 
   // 数据资源管理
@@ -237,9 +236,6 @@ const AppDev: React.FC = () => {
 
   // 聊天模式状态
   const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
-
-  // 错误提示状态
-  const [showErrorAlert, setShowErrorAlert] = useState(false);
 
   // 数据资源相关状态
   const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
@@ -378,73 +374,25 @@ const AppDev: React.FC = () => {
   }, [hasValidProjectId, projectId]);
 
   /**
-   * 重启开发服务器核心方法
-   * @param shouldSwitchTab 是否切换到预览标签页（手动点击为 true，Agent 触发为 false）
-   * @returns Promise<{success: boolean, message?: string, devServerUrl?: string}>
-   */
-  const restartDevServer = useCallback(
-    async (shouldSwitchTab: boolean = false) => {
-      if (!hasValidProjectId || !projectId) {
-        if (shouldSwitchTab) {
-          message.error('项目ID不存在或无效，无法重启服务');
-        }
-        return { success: false, message: '项目ID不存在或无效' };
-      }
-
-      try {
-        // 1. 如果需要，切换到预览标签页
-        if (shouldSwitchTab) {
-          setActiveTab('preview');
-        }
-
-        // 2. 设置重启状态
-        setIsRestarting(true);
-
-        // 3. 清空 devServerUrl,触发 Preview 组件显示 loading 状态
-        updateDevServerUrl('');
-
-        // 4. 调用重启接口（不显示全局提示，由 Preview 组件展示状态）
-        const result = await restartDev(projectId);
-
-        // 5. 处理重启结果
-        if (result.success && result.data?.devServerUrl) {
-          updateDevServerUrl(result.data.devServerUrl);
-
-          // 只在手动触发时显示成功消息
-          if (shouldSwitchTab) {
-            message.success('开发服务器重启成功');
-          }
-
-          // 8. 延迟刷新预览
-          setTimeout(() => {
-            previewRef.current?.refresh();
-          }, 500);
-
-          return { success: true, devServerUrl: result.data.devServerUrl };
-        } else {
-          if (shouldSwitchTab) {
-            message.error(result.message || '重启开发服务器失败');
-          }
-          return { success: false, message: result.message };
-        }
-      } catch (error: any) {
-        if (shouldSwitchTab) {
-          message.error(`重启失败: ${error?.message || '未知错误'}`);
-        }
-        return { success: false, message: error?.message };
-      } finally {
-        setIsRestarting(false);
-      }
-    },
-    [hasValidProjectId, projectId, updateDevServerUrl],
-  );
-
-  /**
    * 处理重启开发服务器按钮点击（手动触发）
    */
   const handleRestartDevServer = useCallback(async () => {
-    await restartDevServer(true); // 传入 true 表示需要切换预览页面
-  }, [restartDevServer]);
+    // 切换到预览标签页
+    setActiveTab('preview');
+
+    // 等待标签页切换完成
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // 调用统一的重启方法
+    const result = await server.restartServer(true);
+
+    // 如果成功，延迟刷新预览
+    if (result.success) {
+      setTimeout(() => {
+        previewRef.current?.refresh();
+      }, 500);
+    }
+  }, [server]);
 
   /**
    * 处理添加组件（Created 组件回调）
@@ -583,6 +531,7 @@ const AppDev: React.FC = () => {
 
     try {
       setUploadLoading(true);
+      setIsProjectUploading(true);
 
       const result = await uploadAndStartProject({
         file: selectedFile,
@@ -592,24 +541,46 @@ const AppDev: React.FC = () => {
       });
 
       if (result?.success && result?.data) {
-        message.success('项目导入成功，正在重新加载页面...');
+        message.success('项目导入成功');
         setIsUploadModalVisible(false);
         setSelectedFile(null);
 
-        setTimeout(() => {
-          // 如果需要完全重新加载页面，使用 window.location.reload()
-          // 这是 UmiJS 推荐的方式，因为某些情况下需要重新初始化整个应用状态
-          window.location.reload();
+        // 导入项目成功后，调用restart-dev逻辑，与点击重启服务按钮逻辑一致
+        setTimeout(async () => {
+          try {
+            // 切换到预览标签页
+            setActiveTab('preview');
+
+            // 等待标签页切换完成
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
+            // 调用统一的重启方法
+            const restartResult = await server.restartServer(true);
+
+            // 如果成功，延迟刷新预览
+            if (restartResult.success) {
+              setTimeout(() => {
+                previewRef.current?.refresh();
+              }, 500);
+            }
+          } catch (error) {
+            console.error('重启开发服务器失败:', error);
+            message.error('项目导入成功，但重启开发服务器失败');
+          } finally {
+            setIsProjectUploading(false);
+          }
         }, 500);
       } else {
         message.warning('项目上传成功，但返回数据格式异常');
+        setIsProjectUploading(false);
       }
     } catch (error) {
       message.error(error instanceof Error ? error.message : '上传项目失败');
+      setIsProjectUploading(false);
     } finally {
       setUploadLoading(false);
     }
-  }, [selectedFile, projectId, workspace.projectName]);
+  }, [selectedFile, projectId, workspace.projectName, server]);
 
   /**
    * 处理文件选择
@@ -904,7 +875,7 @@ const AppDev: React.FC = () => {
                           type="text"
                           icon={<SyncOutlined />}
                           onClick={handleRestartDevServer}
-                          loading={isRestarting}
+                          loading={server.isRestarting}
                           disabled={chat.isChatLoading} // 新增：聊天加载时禁用
                         />
                       </Tooltip>
@@ -1015,9 +986,12 @@ const AppDev: React.FC = () => {
                         }
                         devServerUrl={workspace.devServerUrl}
                         isStarting={server.isStarting}
-                        isRestarting={isRestarting} // 新增
+                        isRestarting={server.isRestarting}
+                        isProjectUploading={isProjectUploading}
+                        serverMessage={server.serverMessage}
                         previewRef={previewRef}
                         onStartDev={server.startServer}
+                        onRestartDev={() => server.restartServer(false)}
                         onContentChange={(fileId, content) => {
                           if (
                             !versionCompare.isComparing &&
