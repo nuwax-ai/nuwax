@@ -33,3 +33,4 @@ package-lock.json
 .claude
 .cursor
 .cursorrules
+.DS_Store
