@@ -5,7 +5,7 @@ import {
   ReloadOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
-import { Button, Spin } from 'antd';
+import { Button, Spin, Tooltip } from 'antd';
 import React, {
   useCallback,
   useEffect,
@@ -14,6 +14,97 @@ import React, {
   useState,
 } from 'react';
 import styles from './index.less';
+
+/** 资源错误监听脚本 - 注入到 iframe 内部用于捕获资源加载错误 */
+const RESOURCE_ERROR_LISTENER_SCRIPT = `
+  (function() {
+    // 监听资源加载错误
+    window.addEventListener('error', function(event) {
+      if (event.target !== window) {
+        const target = event.target;
+        const errorInfo = {
+          type: target.tagName.toLowerCase(),
+          url: target.src || target.href || '',
+          message: event.message || '资源加载失败',
+          timestamp: Date.now(),
+          // 添加更详细的错误信息
+          errorType: event.type,
+          filename: event.filename || '',
+          lineno: event.lineno || 0,
+          colno: event.colno || 0,
+          // 尝试获取网络错误信息
+          networkError: event.target.error ? {
+            code: event.target.error.code,
+            message: event.target.error.message
+          } : null
+        };
+        
+        // 发送错误信息到父窗口
+        window.parent.postMessage({
+          type: 'RESOURCE_ERROR',
+          data: errorInfo
+        }, '*');
+      }
+    }, true);
+    
+    // 监听未捕获的 Promise 错误
+    window.addEventListener('unhandledrejection', function(event) {
+      window.parent.postMessage({
+        type: 'RESOURCE_ERROR',
+        data: {
+          type: 'promise',
+          url: '',
+          message: event.reason?.message || String(event.reason),
+          timestamp: Date.now(),
+          errorType: 'unhandledrejection'
+        }
+      }, '*');
+    });
+    
+    // 监听网络错误（fetch/XMLHttpRequest）
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+      return originalFetch.apply(this, args).catch(error => {
+        window.parent.postMessage({
+          type: 'RESOURCE_ERROR',
+          data: {
+            type: 'fetch',
+            url: args[0]?.toString() || '',
+            message: error.message || '网络请求失败',
+            timestamp: Date.now(),
+            errorType: 'fetch',
+            networkError: {
+              code: error.code,
+              message: error.message,
+              stack: error.stack
+            }
+          }
+        }, '*');
+        throw error;
+      });
+    };
+  })();
+`;
+
+/** 网络错误信息 */
+interface NetworkErrorInfo {
+  code?: number;
+  message?: string;
+  stack?: string;
+}
+
+/** 资源错误信息 */
+interface ResourceErrorInfo {
+  type: 'iframe' | 'script' | 'style' | 'image' | 'other' | 'promise' | 'fetch';
+  url: string;
+  message: string;
+  timestamp: number;
+  errorType?: string;
+  filename?: string;
+  lineno?: number;
+  colno?: number;
+  networkError?: NetworkErrorInfo | null;
+}
 
 interface PreviewProps {
   devServerUrl?: string;
@@ -30,6 +121,8 @@ interface PreviewProps {
   onStartDev?: () => void;
   /** 重启开发服务器回调 */
   onRestartDev?: () => void;
+  /** 资源加载失败回调 */
+  onResourceError?: (error: ResourceErrorInfo) => void;
 }
 
 export interface PreviewRef {
@@ -53,6 +146,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       serverErrorCode,
       onStartDev,
       onRestartDev,
+      onResourceError,
     },
     ref,
   ) => {
@@ -61,6 +155,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [retrying, setRetrying] = useState(false);
+    const [resourceErrors, setResourceErrors] = useState<ResourceErrorInfo[]>(
+      [],
+    );
+    const [isCrossOrigin, setIsCrossOrigin] = useState(false);
 
     /**
      * 获取错误类型前缀
@@ -184,17 +282,99 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const handleIframeLoad = useCallback(() => {
       setIsLoading(false);
       setLoadError(null);
+
+      // 尝试注入资源错误监听脚本
+      if (iframeRef.current?.contentWindow) {
+        try {
+          // 检查是否可以访问 iframe 的 document（同源检查）
+          const iframeDoc = iframeRef.current.contentWindow.document;
+          if (iframeDoc) {
+            const script = iframeDoc.createElement('script');
+            script.textContent = RESOURCE_ERROR_LISTENER_SCRIPT;
+            iframeDoc.head.appendChild(script);
+            console.log('[Preview] 资源错误监听脚本注入成功');
+          }
+        } catch (error) {
+          // 跨域限制，无法注入脚本
+          console.info(
+            '[Preview] 跨域限制：无法注入错误监听脚本，只能捕获 iframe 本身加载错误',
+          );
+          setIsCrossOrigin(true);
+
+          // 在跨域情况下，我们可以通过其他方式尝试获取错误信息
+          // 比如监听 iframe 的 onerror 事件或者使用其他方法
+          if (iframeRef.current) {
+            // 设置额外的错误监听
+            iframeRef.current.addEventListener('error', () => {
+              const errorInfo: ResourceErrorInfo = {
+                type: 'iframe',
+                url: iframeRef.current?.src || '',
+                message: 'iframe 加载失败（跨域限制）',
+                timestamp: Date.now(),
+              };
+
+              setResourceErrors((prev) => [...prev, errorInfo]);
+              onResourceError?.(errorInfo);
+              console.error('[Preview] iframe 加载错误（跨域）:', errorInfo);
+            });
+          }
+        }
+      }
       // Iframe loaded successfully
-    }, []);
+    }, [onResourceError]);
 
     /**
      * iframe加载错误处理
      */
-    const handleIframeError = useCallback(() => {
+    const handleIframeError = useCallback((...args: any[]) => {
       setIsLoading(false);
       setLoadError('预览加载失败，请检查开发服务器状态或网络连接');
+      console.log('iframe加载错误', args);
       // Iframe load error
     }, []);
+
+    // 设置 postMessage 监听器处理资源错误
+    useEffect(() => {
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'RESOURCE_ERROR') {
+          const errorInfo = event.data.data as ResourceErrorInfo;
+
+          // 更新错误列表（限制最大数量避免内存泄漏）
+          setResourceErrors((prev) => {
+            const newErrors = [...prev, errorInfo];
+            return newErrors.length > 50 ? newErrors.slice(-50) : newErrors;
+          });
+
+          // 控制台输出详细日志
+          console.error('[Preview] 资源加载失败:', errorInfo);
+
+          // 调用父组件回调
+          onResourceError?.(errorInfo);
+
+          // UI 提示（根据错误类型和严重程度）
+          if (errorInfo.type === 'script' || errorInfo.type === 'style') {
+            // 关键资源错误，显示在主要错误区域
+            setLoadError(`关键资源加载失败: ${errorInfo.url}`);
+          } else if (
+            errorInfo.type === 'fetch' &&
+            errorInfo.networkError?.code
+          ) {
+            // 网络错误，显示状态码信息
+            const statusCode = errorInfo.networkError.code;
+            if (statusCode >= 500) {
+              setLoadError(`服务器错误 (${statusCode}): ${errorInfo.url}`);
+            } else if (statusCode >= 400) {
+              console.warn(
+                `[Preview] 客户端错误 (${statusCode}): ${errorInfo.url}`,
+              );
+            }
+          }
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+      return () => window.removeEventListener('message', handleMessage);
+    }, [onResourceError]);
 
     // 当开发服务器URL可用时，自动加载预览
     useEffect(() => {
@@ -202,12 +382,17 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       if (devServerUrl) {
         // Dev server URL available, loading preview
         loadDevServerPreview();
+        // 清空之前的资源错误和跨域状态
+        setResourceErrors([]);
+        setIsCrossOrigin(false);
       } else {
         // Dev server URL is empty, clearing iframe and resetting states
 
         setIsLoading(false);
         setLoadError(null);
         setLastRefreshed(new Date());
+        setResourceErrors([]);
+        setIsCrossOrigin(false);
       }
     }, [devServerUrl, loadDevServerPreview]);
 
@@ -226,7 +411,20 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             <div className={styles.titleSection}>
               <span className={styles.title}>页面预览</span>
               {devServerUrl && (
-                <span className={styles.statusBadge}>开发服务器已连接</span>
+                <span className={styles.statusBadge}>
+                  开发服务器已连接
+                  {isCrossOrigin && (
+                    <span
+                      style={{
+                        marginLeft: '4px',
+                        fontSize: '10px',
+                        opacity: 0.7,
+                      }}
+                    >
+                      (跨域模式)
+                    </span>
+                  )}
+                </span>
               )}
               {isLoading && (
                 <span className={styles.loadingBadge}>
@@ -238,6 +436,75 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 <span className={styles.lastUpdated}>
                   最后更新: {lastRefreshed.toLocaleTimeString()}
                 </span>
+              )}
+              {resourceErrors.length > 0 && (
+                <Tooltip
+                  title={
+                    <div>
+                      <div>
+                        检测到 {resourceErrors.length} 个资源加载错误：
+                        {isCrossOrigin && (
+                          <div
+                            style={{
+                              fontSize: '11px',
+                              color: '#ffa940',
+                              marginTop: '2px',
+                            }}
+                          >
+                            ⚠️ 跨域限制：只能捕获 iframe 本身错误
+                          </div>
+                        )}
+                      </div>
+                      {resourceErrors.slice(-5).map((error, index) => (
+                        <div
+                          key={index}
+                          style={{ fontSize: '12px', marginTop: '4px' }}
+                        >
+                          <div style={{ fontWeight: 'bold' }}>
+                            • {error.type}: {error.url || '未知资源'}
+                          </div>
+                          <div style={{ color: '#ff4d4f', marginLeft: '8px' }}>
+                            {error.message}
+                          </div>
+                          {error.networkError && (
+                            <div
+                              style={{
+                                color: '#999',
+                                marginLeft: '8px',
+                                fontSize: '11px',
+                              }}
+                            >
+                              网络错误:{' '}
+                              {error.networkError.message || '未知网络错误'}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {resourceErrors.length > 5 && (
+                        <div
+                          style={{
+                            fontSize: '12px',
+                            marginTop: '4px',
+                            color: '#999',
+                          }}
+                        >
+                          ... 还有 {resourceErrors.length - 5} 个错误
+                        </div>
+                      )}
+                    </div>
+                  }
+                  placement="bottom"
+                >
+                  <span className={styles.errorBadge}>
+                    <ExclamationCircleOutlined />
+                    {resourceErrors.length} 个错误
+                    {isCrossOrigin && (
+                      <span style={{ fontSize: '10px', marginLeft: '2px' }}>
+                        ⚠️
+                      </span>
+                    )}
+                  </span>
+                </Tooltip>
               )}
             </div>
           </div>
