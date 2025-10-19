@@ -16,7 +16,7 @@ import { EllipsisOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import { Empty, Modal, Segmented, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useParams, useRequest } from 'umi';
+import { useParams, useRequest, useSearchParams } from 'umi';
 // 复用广场中的组件
 import { SPACE_SQUARE_TABS } from '@/constants/space.constants';
 import SingleAgent from '../Square/SingleAgent';
@@ -25,6 +25,7 @@ import TemplateItem from '../Square/TemplateItem';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+type IQuery = 'activeKey';
 
 // 空间广场-分类
 const SPACE_SQUARE_SEGMENTED_LIST =
@@ -35,13 +36,27 @@ const SPACE_SQUARE_SEGMENTED_LIST =
 
 // 空间广场
 const SpaceSection: React.FC = () => {
+  // ✅ umi 中的 useSearchParams
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ✅ 当 select 改变时同步 URL
+  const handleChange = (key: IQuery, value: string) => {
+    // 更新 URL 参数
+    const newParams = new URLSearchParams(searchParams);
+    if (value) {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
+    }
+    setSearchParams(newParams);
+  };
   const params = useParams();
   const spaceId = Number(params.spaceId);
   // 目标类型（智能体、插件、工作流、模板）
   const targetComponentTypeRef = React.useRef<SquareAgentTypeEnum>();
   // tabs激活的key
   const [activeKey, setActiveKey] = useState<SquareAgentTypeEnum>(
-    SquareAgentTypeEnum.Agent,
+    searchParams.get('activeKey') || SquareAgentTypeEnum.Agent,
   );
   const [loading, setLoading] = useState<boolean>(false);
   // 当前页码
@@ -151,11 +166,18 @@ const SpaceSection: React.FC = () => {
     const _activeKey = targetType as SquareAgentTypeEnum;
     setActiveKey(_activeKey);
     handleQuery(_activeKey);
+    handleChange('activeKey', _activeKey);
   };
 
+  // ✅ 监听 URL 改变（支持浏览器前进/后退）
   useEffect(() => {
-    handleTabClick(SquareAgentTypeEnum.Agent);
-  }, [spaceId]);
+    const activeKey =
+      searchParams.get('activeKey') || SquareAgentTypeEnum.Agent;
+
+    setActiveKey(activeKey);
+
+    handleTabClick(activeKey);
+  }, [searchParams, spaceId]);
 
   // 下架
   const handleOffShelf = (
