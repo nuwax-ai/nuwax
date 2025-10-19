@@ -603,7 +603,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     isAutoScroll,
     checkScrollPosition,
     userScrollDisabled,
-    // chatMessagesRef, // 暂时注释掉，因为 hook 中未使用
+    chatMessagesRef, // 恢复使用，用于检测内容高度变化
   );
 
   const labelRender = useCallback((props: any) => {

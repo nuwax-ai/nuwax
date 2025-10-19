@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 /**
  * 聊天滚动管理 Hook
  * 提供自动滚动、滚动按钮、滚动位置检测等功能
- * 重构版本：简洁高效，专注核心功能
+ * 最终版本：使用 ResizeObserver 监听容器高度变化
  */
 export const useChatScroll = () => {
   // 滚动相关状态
@@ -18,6 +18,7 @@ export const useChatScroll = () => {
 
   /**
    * 滚动到底部（平滑滚动）
+   * 修复：增加程序滚动标记的持续时间
    */
   const scrollToBottom = useCallback(() => {
     if (chatMessagesRef.current) {
@@ -31,7 +32,7 @@ export const useChatScroll = () => {
       // 延迟重置标记，确保平滑滚动完成
       setTimeout(() => {
         isProgrammaticScroll.current = false;
-      }, 500); // 500ms 延迟，确保平滑滚动完全结束
+      }, 1000); // 增加到 1000ms，确保平滑滚动完全结束
     }
   }, []);
 
@@ -83,6 +84,7 @@ export const useChatScroll = () => {
 
   /**
    * 处理用户主动滚动事件（内部实现）
+   * 修复：防止程序滚动被误判为用户滚动
    */
   const handleUserScrollInternal = useCallback(() => {
     // 如果是程序触发的滚动，忽略
@@ -108,8 +110,9 @@ export const useChatScroll = () => {
       clearTimeout(scrollTimeoutRef.current);
     }
 
-    // 立即处理向上滚动的情况，确保按钮能及时显示
-    if (scrollDirection === 'up') {
+    // 只有在用户明确向上滚动且距离底部超过 200px 时才禁用自动滚动
+    // 这样可以避免在内容渲染过程中被误判
+    if (scrollDirection === 'up' && distanceFromBottom > 200) {
       setIsAutoScroll(false);
       setShowScrollButton(true);
       userScrollDisabled.current = true; // 标记用户主动禁用
@@ -211,7 +214,7 @@ export const useChatScroll = () => {
 /**
  * 聊天滚动效果 Hook
  * 处理各种滚动触发场景
- * 重构版本：简洁高效，专注核心功能
+ * 最终版本：使用 ResizeObserver 监听容器高度变化
  */
 export const useChatScrollEffects = (
   chatMessages: any[],
@@ -220,7 +223,7 @@ export const useChatScrollEffects = (
   isAutoScroll: boolean,
   checkScrollPosition: () => void,
   userScrollDisabled: React.MutableRefObject<boolean>,
-  // chatMessagesRef: React.RefObject<HTMLDivElement>, // 暂时未使用，保留以备将来使用
+  chatMessagesRef: React.RefObject<HTMLDivElement>,
 ) => {
   /**
    * 自动滚动效果 - 当消息更新且启用自动滚动时，滚动到底部
@@ -275,36 +278,105 @@ export const useChatScrollEffects = (
   ]);
 
   /**
-   * 流式消息期间定期检查滚动
+   * 使用 ResizeObserver 监听容器高度变化
+   * 激进方案：不考虑性能，确保滚动绝对准确
    */
   useEffect(() => {
-    if (chatMessages.length > 0) {
-      // 检查是否有正在流式传输的消息
-      const hasStreamingMessage = chatMessages.some((msg) => msg.isStreaming);
+    if (!chatMessagesRef.current) return;
 
-      if (hasStreamingMessage) {
-        // 流式传输期间，立即滚动到底部
-        if (!userScrollDisabled.current) {
-          scrollToBottom();
+    let lastHeight = 0;
+
+    // 创建 ResizeObserver 监听容器高度变化
+    const resizeObserver = new ResizeObserver(() => {
+      if (chatMessagesRef.current && !userScrollDisabled.current) {
+        const currentHeight = chatMessagesRef.current.scrollHeight;
+
+        // 如果高度增加，使用大量延迟确保滚动到正确位置
+        if (currentHeight > lastHeight) {
+          // 立即滚动
+          requestAnimationFrame(() => scrollToBottom());
+
+          // 50ms 延迟
+          setTimeout(() => scrollToBottom(), 50);
+
+          // 100ms 延迟
+          setTimeout(() => scrollToBottom(), 100);
+
+          // 200ms 延迟
+          setTimeout(() => scrollToBottom(), 200);
+
+          // 300ms 延迟
+          setTimeout(() => scrollToBottom(), 300);
+
+          // 500ms 延迟
+          setTimeout(() => scrollToBottom(), 500);
+
+          // 800ms 延迟
+          setTimeout(() => scrollToBottom(), 800);
+
+          // 1000ms 延迟
+          setTimeout(() => scrollToBottom(), 1000);
+
+          // 1500ms 延迟
+          setTimeout(() => scrollToBottom(), 1500);
+
+          // 2000ms 延迟
+          setTimeout(() => scrollToBottom(), 2000);
         }
 
-        // 在流式传输期间，定期检查并滚动到底部
-        const intervalId = setInterval(() => {
-          if (!userScrollDisabled.current) {
-            scrollToBottom();
-          }
-          // 同时检查滚动位置，更新滚动按钮状态
-          checkScrollPosition();
-        }, 150); // 150ms 检查一次，平衡性能和实时性
+        lastHeight = currentHeight;
+      }
+    });
 
-        return () => clearInterval(intervalId);
+    // 开始观察容器高度变化
+    resizeObserver.observe(chatMessagesRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [scrollToBottom, userScrollDisabled]);
+
+  /**
+   * 额外的长内容滚动保障
+   * 激进方案：不考虑性能，确保滚动绝对准确
+   */
+  useEffect(() => {
+    if (chatMessages.length > 0 && !userScrollDisabled.current) {
+      // 检查最后一条消息的内容长度
+      const lastMessage = chatMessages[chatMessages.length - 1];
+      if (lastMessage && lastMessage.text && lastMessage.text.length > 500) {
+        // 如果是长内容，使用大量延迟确保完全渲染
+        const timeouts: NodeJS.Timeout[] = [];
+
+        // 创建多个延迟滚动
+        for (let i = 100; i <= 3000; i += 100) {
+          timeouts.push(setTimeout(() => scrollToBottom(), i));
+        }
+
+        // 额外的一些关键时间点
+        timeouts.push(setTimeout(() => scrollToBottom(), 50));
+        timeouts.push(setTimeout(() => scrollToBottom(), 150));
+        timeouts.push(setTimeout(() => scrollToBottom(), 250));
+        timeouts.push(setTimeout(() => scrollToBottom(), 350));
+        timeouts.push(setTimeout(() => scrollToBottom(), 450));
+        timeouts.push(setTimeout(() => scrollToBottom(), 550));
+        timeouts.push(setTimeout(() => scrollToBottom(), 650));
+        timeouts.push(setTimeout(() => scrollToBottom(), 750));
+        timeouts.push(setTimeout(() => scrollToBottom(), 850));
+        timeouts.push(setTimeout(() => scrollToBottom(), 950));
+        timeouts.push(setTimeout(() => scrollToBottom(), 1200));
+        timeouts.push(setTimeout(() => scrollToBottom(), 1800));
+        timeouts.push(setTimeout(() => scrollToBottom(), 2500));
+        timeouts.push(setTimeout(() => scrollToBottom(), 3000));
+
+        return () => {
+          timeouts.forEach((timeout) => clearTimeout(timeout));
+        };
       }
     }
   }, [
-    chatMessages.map((msg) => msg.isStreaming).join(''),
+    chatMessages.map((msg) => msg.text?.length || 0).join(','),
     scrollToBottom,
-    checkScrollPosition,
-    userScrollDisabled,
   ]);
 
   /**
@@ -322,27 +394,48 @@ export const useChatScrollEffects = (
   }, [isLoadingHistory, chatMessages.length, scrollToBottom]);
 
   /**
-   * 长内容检测机制
-   * 监听消息内容长度变化，处理长内容一次性渲染
+   * 持续的滚动检查机制
+   * 激进方案：不考虑性能，确保滚动绝对准确
    */
   useEffect(() => {
     if (chatMessages.length > 0 && !userScrollDisabled.current) {
-      // 检查最后一条消息的内容长度
-      const lastMessage = chatMessages[chatMessages.length - 1];
-      if (lastMessage && lastMessage.text && lastMessage.text.length > 500) {
-        // 如果是长内容且不是流式消息，延迟滚动确保内容完全渲染
-        if (!lastMessage.isStreaming) {
-          const timeoutId = setTimeout(() => {
-            scrollToBottom();
-          }, 200);
-
-          return () => clearTimeout(timeoutId);
+      // 每 50ms 检查一次，确保滚动到正确位置
+      const intervalId = setInterval(() => {
+        if (!userScrollDisabled.current) {
+          scrollToBottom();
         }
-      }
+      }, 50);
+
+      return () => clearInterval(intervalId);
     }
   }, [
-    chatMessages.map((msg) => msg.text?.length || 0).join(','),
-    chatMessages.map((msg) => msg.isStreaming).join(','),
+    chatMessages.map((msg) => msg.text).join(''),
+    chatMessages.map((msg) => msg.isStreaming).join(''),
     scrollToBottom,
+    userScrollDisabled,
   ]);
+
+  /**
+   * 强制滚动机制
+   * 在流式消息期间，强制滚动，不受用户滚动状态影响
+   */
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      // 检查是否有正在流式传输的消息
+      const hasStreamingMessage = chatMessages.some((msg) => msg.isStreaming);
+
+      if (hasStreamingMessage) {
+        // 流式消息期间，强制滚动，不受 userScrollDisabled 影响
+        const forceIntervalId = setInterval(() => {
+          // 使用瞬时滚动，确保立即响应
+          if (chatMessagesRef.current) {
+            chatMessagesRef.current.scrollTop =
+              chatMessagesRef.current.scrollHeight;
+          }
+        }, 100); // 100ms 强制滚动一次
+
+        return () => clearInterval(forceIntervalId);
+      }
+    }
+  }, [chatMessages.map((msg) => msg.isStreaming).join('')]);
 };
