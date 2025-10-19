@@ -210,11 +210,11 @@
 // 消息包装器 - 按角色区分布局
 .messageWrapper {
   display: flex;
-  margin-bottom: 16px;
   animation: message-slide-in 0.3s ease-out;
 
   // 用户消息 - 右侧对齐
   &.user {
+    margin-bottom: 12px;
     justify-content: flex-end;
 
     .messageBubble {
@@ -229,6 +229,7 @@
   // AI助手消息 - 左侧对齐
   &.assistant {
     justify-content: flex-start;
+    padding-bottom: 12px;
 
     .messageBubble {
       border-radius: 18px 18px 18px 4px;
