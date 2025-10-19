@@ -56,7 +56,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     },
     ref,
   ) => {
-    const iframeRef = useRef<HTMLIFrameElement>(null);
+    const iframeRef = useRef<HTMLIFrameElement | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -122,8 +122,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       setLoadError(null);
 
       if (iframeRef.current) {
-        // Loading URL
-        iframeRef.current.src = devServerUrl;
         setLastRefreshed(new Date());
       }
     }, [devServerUrl]);
@@ -164,8 +162,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       if (devServerUrl) {
         loadDevServerPreview();
       } else if (iframeRef.current) {
-        // 如果devServerUrl为空，清空iframe
-        iframeRef.current.src = '';
         setLoadError('开发服务器URL不可用');
         setLastRefreshed(new Date());
       } else {
@@ -208,14 +204,20 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         loadDevServerPreview();
       } else {
         // Dev server URL is empty, clearing iframe and resetting states
-        if (iframeRef.current) {
-          iframeRef.current.src = '';
-        }
+
         setIsLoading(false);
         setLoadError(null);
         setLastRefreshed(new Date());
       }
     }, [devServerUrl, loadDevServerPreview]);
+
+    useEffect(() => {
+      return () => {
+        if (iframeRef.current) {
+          iframeRef.current = null;
+        }
+      };
+    }, []);
 
     return (
       <div className={`${styles.preview} ${className || ''}`}>
@@ -264,6 +266,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             <iframe
               ref={iframeRef}
               className={styles.previewIframe}
+              data-id={`${+(lastRefreshed || 0)}`}
+              key={`${+(lastRefreshed || 0)}`} // 添加key属性，当devServerUrl变化时强制重新渲染iframe
+              src={devServerUrl}
               title="Preview"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
               onLoad={handleIframeLoad}
