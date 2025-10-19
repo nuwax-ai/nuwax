@@ -1,6 +1,8 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
-import { useChatScroll, useChatScrollEffects } from '@/hooks/useChatScroll';
+import StreamMessageScrollContainer, {
+  StreamMessageScrollContainerRef,
+} from '@/pages/AppDev/components/ChatArea/components/StreamMessageScrollContainer';
 import { cancelAgentTask } from '@/services/appDev';
 import type {
   AppDevChatMessage,
@@ -36,7 +38,13 @@ import {
   Upload,
 } from 'antd';
 import dayjs from 'dayjs';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
 import MessageAttachment from './components/MessageAttachment';
 import styles from './index.less';
@@ -106,18 +114,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return filePath.split('/').pop() || filePath;
   }, []);
 
-  // 使用滚动管理 hook
-  const {
-    isAutoScroll,
-    showScrollButton,
-    chatMessagesRef,
-    userScrollDisabled,
-    scrollToBottom,
-    checkScrollPosition,
-    handleUserScroll,
-    handleScrollButtonClick,
-    forceScrollToBottomAndEnable,
-  } = useChatScroll();
+  // 滚动容器引用
+  const scrollContainerRef = useRef<StreamMessageScrollContainerRef>(null);
+
+  // 滚动状态管理
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+  /**
+   * 滚动按钮点击处理
+   */
+  const handleScrollButtonClick = useCallback(() => {
+    scrollContainerRef.current?.handleScrollButtonClick();
+  }, []);
 
   /**
    * 切换思考过程展开状态
@@ -361,7 +369,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       }
 
       // 发送消息后强制滚动到底部并开启自动滚动
-      forceScrollToBottomAndEnable();
+      scrollContainerRef.current?.handleScrollButtonClick();
 
       // 发送消息(传递附件)
       chat.sendMessage(attachments);
@@ -379,7 +387,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       }, 500);
     }
   }, [
-    forceScrollToBottomAndEnable,
     chat,
     uploadedImages,
     fileContentState?.selectedFile,
@@ -595,17 +602,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return renderedMessages;
   }, [chat.chatMessages, renderChatMessage, renderConversationDivider]);
 
-  // 使用滚动效果 hook
-  useChatScrollEffects(
-    chat.chatMessages,
-    chat.isLoadingHistory,
-    scrollToBottom,
-    isAutoScroll,
-    checkScrollPosition,
-    userScrollDisabled,
-    // chatMessagesRef, // 暂时注释掉，因为 hook 中未使用
-  );
-
   const labelRender = useCallback((props: any) => {
     return <span>v{props.value.replace('v', '')}</span>;
   }, []);
@@ -691,39 +687,50 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       </div>
 
       {/* 聊天消息区域 */}
-      <div
-        className={`${styles.chatMessages}`}
-        ref={chatMessagesRef}
-        onScroll={handleUserScroll}
+      <StreamMessageScrollContainer
+        ref={scrollContainerRef}
+        messages={chat.chatMessages}
+        isStreaming={chat.isChatLoading}
+        enableAutoScroll={true}
+        scrollButtonPosition="bottom-right"
+        scrollButtonClassName={styles.customScrollButton}
+        className={styles.chatMessagesWrapper}
+        style={{ height: '100%', minHeight: 0 }}
+        showBuiltInScrollButton={false}
+        onScrollPositionChange={(isAtBottom) => {
+          setShowScrollButton(!isAtBottom);
+        }}
       >
-        {chat.isLoadingHistory ? (
-          <AppDevEmptyState
-            type="loading"
-            icon={<LoadingOutlined />}
-            title="正在加载历史会话"
-            description="请稍候..."
-          />
-        ) : !chat.chatMessages || chat.chatMessages.length === 0 ? (
-          <AppDevEmptyState
-            type="empty"
-            icon={<MessageOutlined />}
-            title="开始新对话"
-            description="向 AI 助手提问，开始您的项目开发"
-          />
-        ) : (
-          chatMessagesList
-        )}
-      </div>
+        <div className={styles.chatMessages}>
+          {chat.isLoadingHistory ? (
+            <AppDevEmptyState
+              type="loading"
+              icon={<LoadingOutlined />}
+              title="正在加载历史会话"
+              description="请稍候..."
+            />
+          ) : !chat.chatMessages || chat.chatMessages.length === 0 ? (
+            <AppDevEmptyState
+              type="empty"
+              icon={<MessageOutlined />}
+              title="开始新对话"
+              description="向 AI 助手提问，开始您的项目开发"
+            />
+          ) : (
+            chatMessagesList
+          )}
+        </div>
+      </StreamMessageScrollContainer>
       {/* 聊天输入区域 */}
       <div className={styles.chatInputContainer}>
-        {showScrollButton && (
-          <div
-            className={styles.scrollToBottomButton}
-            onClick={handleScrollButtonClick}
-          >
-            <DownOutlined />
-          </div>
-        )}
+        <div
+          className={`${styles.scrollToBottomButton} ${
+            showScrollButton ? styles.visible : ''
+          }`}
+          onClick={handleScrollButtonClick}
+        >
+          <DownOutlined />
+        </div>
         {/* 附件展示区域 */}
         {(uploadedImages.length > 0 || selectedDataSources.length > 0) && (
           <div className={styles.attachmentsArea}>

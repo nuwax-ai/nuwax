@@ -3,12 +3,14 @@
   position: relative;
   width: 100%;
   height: 100%;
+  min-height: 0; /* 确保可以收缩 */
   display: flex;
   flex-direction: column;
 
   /* 滚动容器 */
   .scroll-container {
     flex: 1;
+    min-height: 0; /* 确保可以收缩 */
     overflow-y: auto;
     overflow-x: hidden;
     position: relative;

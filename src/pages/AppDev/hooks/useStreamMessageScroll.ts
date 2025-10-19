@@ -43,6 +43,8 @@ export interface UseStreamMessageScrollReturn {
   isAtBottom: () => boolean;
   /** 处理新消息到达 */
   handleNewMessage: (isStreaming?: boolean) => void;
+  /** 检查滚动位置并更新按钮状态 */
+  checkScrollPosition: () => void;
 }
 
 /**
@@ -243,6 +245,11 @@ export const useStreamMessageScroll = (
     // 初始化滚动位置检查
     checkScrollPosition();
 
+    // 延迟检查一次，确保 DOM 完全渲染后检查
+    const timeoutId = setTimeout(() => {
+      checkScrollPosition();
+    }, 100);
+
     return () => {
       container.removeEventListener('wheel', throttledHandleScroll);
       container.removeEventListener('scroll', throttledHandleScroll);
@@ -252,6 +259,7 @@ export const useStreamMessageScroll = (
         clearTimeout(scrollTimeoutRef.current);
         scrollTimeoutRef.current = null;
       }
+      clearTimeout(timeoutId);
     };
   }, [
     scrollContainerRef,
@@ -280,6 +288,7 @@ export const useStreamMessageScroll = (
     resetAutoScroll,
     isAtBottom,
     handleNewMessage,
+    checkScrollPosition,
   };
 };
 
@@ -299,13 +308,16 @@ export const useStreamMessageScrollEffects = (
   scrollToBottom: () => void,
   isAutoScrollEnabled: boolean,
   handleNewMessage: (isStreaming?: boolean) => void,
+  checkScrollPosition: () => void,
 ) => {
   // 监听消息变化
   useEffect(() => {
     if (messages.length > 0) {
       handleNewMessage(isStreaming);
+      // 检查滚动位置，更新按钮状态
+      checkScrollPosition();
     }
-  }, [messages.length, isStreaming, handleNewMessage]);
+  }, [messages.length, isStreaming, handleNewMessage, checkScrollPosition]);
 
   // 监听流式消息内容变化
   useEffect(() => {

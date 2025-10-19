@@ -1,7 +1,7 @@
 import {
   useStreamMessageScroll,
   useStreamMessageScrollEffects,
-} from '@/hooks/useStreamMessageScroll';
+} from '@/pages/AppDev/hooks/useStreamMessageScroll';
 import { ArrowDownOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
@@ -29,6 +29,8 @@ export interface StreamMessageScrollContainerRef {
   isAtBottom: () => boolean;
   /** 处理新消息到达 */
   handleNewMessage: (isStreaming?: boolean) => void;
+  /** 检查滚动位置并更新按钮状态 */
+  checkScrollPosition: () => void;
   /** 获取滚动容器元素 */
   getScrollContainer: () => HTMLDivElement | null;
 }
@@ -69,6 +71,8 @@ export interface StreamMessageScrollContainerProps {
   onAutoScrollChange?: (enabled: boolean) => void;
   /** 滚动位置变化回调 */
   onScrollPositionChange?: (isAtBottom: boolean) => void;
+  /** 是否显示内置滚动按钮（默认 true） */
+  showBuiltInScrollButton?: boolean;
 }
 
 /**
@@ -105,6 +109,7 @@ const StreamMessageScrollContainer = forwardRef<
       onScrollButtonClick,
       onAutoScrollChange,
       onScrollPositionChange,
+      showBuiltInScrollButton = true,
     },
     ref,
   ) => {
@@ -122,6 +127,7 @@ const StreamMessageScrollContainer = forwardRef<
       resetAutoScroll: internalResetAutoScroll,
       isAtBottom,
       handleNewMessage,
+      checkScrollPosition,
     } = useStreamMessageScroll({
       scrollContainerRef,
       enableAutoScroll,
@@ -137,6 +143,7 @@ const StreamMessageScrollContainer = forwardRef<
       scrollToBottom,
       isAutoScrollEnabled,
       handleNewMessage,
+      checkScrollPosition,
     );
 
     // 暴露组件方法给父组件
@@ -150,6 +157,7 @@ const StreamMessageScrollContainer = forwardRef<
         resetAutoScroll: internalResetAutoScroll,
         isAtBottom,
         handleNewMessage,
+        checkScrollPosition,
         getScrollContainer: () => scrollContainerRef.current,
       }),
       [
@@ -160,6 +168,7 @@ const StreamMessageScrollContainer = forwardRef<
         internalResetAutoScroll,
         isAtBottom,
         handleNewMessage,
+        checkScrollPosition,
       ],
     );
 
@@ -208,7 +217,7 @@ const StreamMessageScrollContainer = forwardRef<
         </div>
 
         {/* 滚动按钮 */}
-        {showScrollButton && (
+        {showBuiltInScrollButton && showScrollButton && (
           <Button
             type="primary"
             shape="circle"
