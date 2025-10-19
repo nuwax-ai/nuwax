@@ -31,11 +31,9 @@ const ChatView: React.FC<ChatViewProps> = memo(
   ({ className, contentClassName, roleInfo, messageInfo, mode = 'chat' }) => {
     if (messageInfo?.text) {
       // 处理消息内容中的data属性
-      messageInfo.text = messageInfo?.text?.replace(
+      messageInfo.text = messageInfo.text.replace(
         /data="(\{.*?\})"/g,
-        (_, json) => {
-          return `data='${json}'`;
-        },
+        (_, json) => `data='${json}'`,
       );
     }
 
