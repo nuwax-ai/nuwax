@@ -110,9 +110,8 @@ export const useChatScroll = () => {
       clearTimeout(scrollTimeoutRef.current);
     }
 
-    // 只有在用户明确向上滚动且距离底部超过 200px 时才禁用自动滚动
-    // 这样可以避免在内容渲染过程中被误判
-    if (scrollDirection === 'up' && distanceFromBottom > 200) {
+    // 用户向上滚动时立即禁用自动滚动，无论距离底部多远
+    if (scrollDirection === 'up') {
       setIsAutoScroll(false);
       setShowScrollButton(true);
       userScrollDisabled.current = true; // 标记用户主动禁用
@@ -417,18 +416,18 @@ export const useChatScrollEffects = (
 
   /**
    * 强制滚动机制
-   * 在流式消息期间，强制滚动，不受用户滚动状态影响
+   * 在流式消息期间，只有在用户没有主动滚动时才强制滚动
    */
   useEffect(() => {
     if (chatMessages.length > 0) {
       // 检查是否有正在流式传输的消息
       const hasStreamingMessage = chatMessages.some((msg) => msg.isStreaming);
 
-      if (hasStreamingMessage) {
-        // 流式消息期间，强制滚动，不受 userScrollDisabled 影响
+      if (hasStreamingMessage && !userScrollDisabled.current) {
+        // 流式消息期间，只有在用户没有主动滚动时才强制滚动
         const forceIntervalId = setInterval(() => {
           // 使用瞬时滚动，确保立即响应
-          if (chatMessagesRef.current) {
+          if (chatMessagesRef.current && !userScrollDisabled.current) {
             chatMessagesRef.current.scrollTop =
               chatMessagesRef.current.scrollHeight;
           }
@@ -437,5 +436,5 @@ export const useChatScrollEffects = (
         return () => clearInterval(forceIntervalId);
       }
     }
-  }, [chatMessages.map((msg) => msg.isStreaming).join('')]);
+  }, [chatMessages.map((msg) => msg.isStreaming).join(''), userScrollDisabled]);
 };
