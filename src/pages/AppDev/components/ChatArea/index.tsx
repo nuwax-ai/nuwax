@@ -63,8 +63,8 @@ interface ChatAreaProps {
  * 包含聊天模式切换、消息显示和输入区域
  */
 const ChatArea: React.FC<ChatAreaProps> = ({
-  chatMode,
-  setChatMode,
+  chatMode, // eslint-disable-line @typescript-eslint/no-unused-vars
+  setChatMode, // eslint-disable-line @typescript-eslint/no-unused-vars
   chat,
   projectInfo,
   projectId,
@@ -603,6 +603,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     isAutoScroll,
     checkScrollPosition,
     userScrollDisabled,
+    // chatMessagesRef, // 暂时注释掉，因为 hook 中未使用
   );
 
   const labelRender = useCallback((props: any) => {
