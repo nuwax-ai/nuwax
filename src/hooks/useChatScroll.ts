@@ -15,6 +15,7 @@ export const useChatScroll = () => {
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 滚动延迟处理定时器
   const lastScrollTop = useRef(-1); // 记录上次滚动位置，初始值设为-1避免误判
   const userScrollDisabled = useRef(false); // 标记用户是否主动禁用了自动滚动
+  const lastUserScrollTime = useRef(0); // 记录用户最后滚动的时间
 
   /**
    * 滚动到底部（平滑滚动）
@@ -32,7 +33,7 @@ export const useChatScroll = () => {
       // 延迟重置标记，确保平滑滚动完成
       setTimeout(() => {
         isProgrammaticScroll.current = false;
-      }, 1000); // 增加到 1000ms，确保平滑滚动完全结束
+      }, 2000); // 增加到 2000ms，确保平滑滚动完全结束
     }
   }, []);
 
@@ -110,14 +111,17 @@ export const useChatScroll = () => {
       clearTimeout(scrollTimeoutRef.current);
     }
 
-    // 用户向上滚动时立即禁用自动滚动，无论距离底部多远
+    // 优先处理：用户向上滚动时立即禁用自动滚动，无论距离底部多远
     if (scrollDirection === 'up') {
       setIsAutoScroll(false);
       setShowScrollButton(true);
       userScrollDisabled.current = true; // 标记用户主动禁用
+      lastUserScrollTime.current = Date.now(); // 记录用户滚动时间
+      return; // 立即返回，不执行后续逻辑
     }
-    // 如果用户向下滚动且滚动到底部附近（50px内），重新启用自动滚动
-    else if (scrollDirection === 'down' && distanceFromBottom <= 50) {
+
+    // 如果用户向下滚动到离底部50px内，重新启用自动滚动
+    if (distanceFromBottom <= 50) {
       setIsAutoScroll(true);
       setShowScrollButton(false);
       userScrollDisabled.current = false; // 重置用户禁用标记
@@ -431,9 +435,40 @@ export const useChatScrollEffects = (
             chatMessagesRef.current.scrollTop =
               chatMessagesRef.current.scrollHeight;
           }
-        }, 100); // 100ms 强制滚动一次
+        }, 50); // 减少到 50ms，更频繁的强制滚动
 
         return () => clearInterval(forceIntervalId);
+      }
+    }
+  }, [chatMessages.map((msg) => msg.isStreaming).join(''), userScrollDisabled]);
+
+  /**
+   * 超强滚动保障机制
+   * 在流式消息期间，只有在用户没有主动滚动时才使用多重保障
+   */
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      // 检查是否有正在流式传输的消息
+      const hasStreamingMessage = chatMessages.some((msg) => msg.isStreaming);
+
+      if (hasStreamingMessage && !userScrollDisabled.current) {
+        // 多重保障：只有在用户没有主动滚动时才强制滚动
+        const superForceIntervalId = setInterval(() => {
+          if (chatMessagesRef.current && !userScrollDisabled.current) {
+            // 检查是否真的在底部
+            const { scrollTop, scrollHeight, clientHeight } =
+              chatMessagesRef.current;
+            const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+            // 如果距离底部超过 10px，强制滚动
+            if (distanceFromBottom > 10) {
+              chatMessagesRef.current.scrollTop =
+                chatMessagesRef.current.scrollHeight;
+            }
+          }
+        }, 200); // 200ms 检查一次
+
+        return () => clearInterval(superForceIntervalId);
       }
     }
   }, [chatMessages.map((msg) => msg.isStreaming).join(''), userScrollDisabled]);
