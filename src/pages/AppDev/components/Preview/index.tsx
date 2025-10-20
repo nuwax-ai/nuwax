@@ -15,77 +15,6 @@ import React, {
 } from 'react';
 import styles from './index.less';
 
-/** 资源错误监听脚本 - 注入到 iframe 内部用于捕获资源加载错误 */
-const RESOURCE_ERROR_LISTENER_SCRIPT = `
-  (function() {
-    // 监听资源加载错误
-    window.addEventListener('error', function(event) {
-      if (event.target !== window) {
-        const target = event.target;
-        const errorInfo = {
-          type: target.tagName.toLowerCase(),
-          url: target.src || target.href || '',
-          message: event.message || '资源加载失败',
-          timestamp: Date.now(),
-          // 添加更详细的错误信息
-          errorType: event.type,
-          filename: event.filename || '',
-          lineno: event.lineno || 0,
-          colno: event.colno || 0,
-          // 尝试获取网络错误信息
-          networkError: event.target.error ? {
-            code: event.target.error.code,
-            message: event.target.error.message
-          } : null
-        };
-        
-        // 发送错误信息到父窗口
-        window.parent.postMessage({
-          type: 'RESOURCE_ERROR',
-          data: errorInfo
-        }, '*');
-      }
-    }, true);
-    
-    // 监听未捕获的 Promise 错误
-    window.addEventListener('unhandledrejection', function(event) {
-      window.parent.postMessage({
-        type: 'RESOURCE_ERROR',
-        data: {
-          type: 'promise',
-          url: '',
-          message: event.reason?.message || String(event.reason),
-          timestamp: Date.now(),
-          errorType: 'unhandledrejection'
-        }
-      }, '*');
-    });
-    
-    // 监听网络错误（fetch/XMLHttpRequest）
-    const originalFetch = window.fetch;
-    window.fetch = function(...args) {
-      return originalFetch.apply(this, args).catch(error => {
-        window.parent.postMessage({
-          type: 'RESOURCE_ERROR',
-          data: {
-            type: 'fetch',
-            url: args[0]?.toString() || '',
-            message: error.message || '网络请求失败',
-            timestamp: Date.now(),
-            errorType: 'fetch',
-            networkError: {
-              code: error.code,
-              message: error.message,
-              stack: error.stack
-            }
-          }
-        }, '*');
-        throw error;
-      });
-    };
-  })();
-`;
-
 /** 网络错误信息 */
 interface NetworkErrorInfo {
   code?: number;
@@ -282,44 +211,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const handleIframeLoad = useCallback(() => {
       setIsLoading(false);
       setLoadError(null);
-
-      // 尝试注入资源错误监听脚本
-      if (iframeRef.current?.contentWindow) {
-        try {
-          // 检查是否可以访问 iframe 的 document（同源检查）
-          const iframeDoc = iframeRef.current.contentWindow.document;
-          if (iframeDoc) {
-            const script = iframeDoc.createElement('script');
-            script.textContent = RESOURCE_ERROR_LISTENER_SCRIPT;
-            iframeDoc.head.appendChild(script);
-            console.log('[Preview] 资源错误监听脚本注入成功');
-          }
-        } catch (error) {
-          // 跨域限制，无法注入脚本
-          console.info(
-            '[Preview] 跨域限制：无法注入错误监听脚本，只能捕获 iframe 本身加载错误',
-          );
-          setIsCrossOrigin(true);
-
-          // 在跨域情况下，我们可以通过其他方式尝试获取错误信息
-          // 比如监听 iframe 的 onerror 事件或者使用其他方法
-          if (iframeRef.current) {
-            // 设置额外的错误监听
-            iframeRef.current.addEventListener('error', () => {
-              const errorInfo: ResourceErrorInfo = {
-                type: 'iframe',
-                url: iframeRef.current?.src || '',
-                message: 'iframe 加载失败（跨域限制）',
-                timestamp: Date.now(),
-              };
-
-              setResourceErrors((prev) => [...prev, errorInfo]);
-              onResourceError?.(errorInfo);
-              console.error('[Preview] iframe 加载错误（跨域）:', errorInfo);
-            });
-          }
-        }
-      }
       // Iframe loaded successfully
     }, [onResourceError]);
 
@@ -333,48 +224,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       // Iframe load error
     }, []);
 
-    // 设置 postMessage 监听器处理资源错误
-    useEffect(() => {
-      const handleMessage = (event: MessageEvent) => {
-        if (event.data?.type === 'RESOURCE_ERROR') {
-          const errorInfo = event.data.data as ResourceErrorInfo;
-
-          // 更新错误列表（限制最大数量避免内存泄漏）
-          setResourceErrors((prev) => {
-            const newErrors = [...prev, errorInfo];
-            return newErrors.length > 50 ? newErrors.slice(-50) : newErrors;
-          });
-
-          // 控制台输出详细日志
-          console.error('[Preview] 资源加载失败:', errorInfo);
-
-          // 调用父组件回调
-          onResourceError?.(errorInfo);
-
-          // UI 提示（根据错误类型和严重程度）
-          if (errorInfo.type === 'script' || errorInfo.type === 'style') {
-            // 关键资源错误，显示在主要错误区域
-            setLoadError(`关键资源加载失败: ${errorInfo.url}`);
-          } else if (
-            errorInfo.type === 'fetch' &&
-            errorInfo.networkError?.code
-          ) {
-            // 网络错误，显示状态码信息
-            const statusCode = errorInfo.networkError.code;
-            if (statusCode >= 500) {
-              setLoadError(`服务器错误 (${statusCode}): ${errorInfo.url}`);
-            } else if (statusCode >= 400) {
-              console.warn(
-                `[Preview] 客户端错误 (${statusCode}): ${errorInfo.url}`,
-              );
-            }
-          }
-        }
-      };
-
-      window.addEventListener('message', handleMessage);
-      return () => window.removeEventListener('message', handleMessage);
-    }, [onResourceError]);
+    // 移除脚本注入后，不再监听来自 iframe 的资源错误 postMessage
 
     // 当开发服务器URL可用时，自动加载预览
     useEffect(() => {
