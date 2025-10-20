@@ -410,7 +410,7 @@ const AppDev: React.FC = () => {
     await restartDevServer({
       shouldSwitchTab: true,
       delayBeforeRefresh: 500,
-      showMessage: true,
+      showMessage: false,
     });
   }, [restartDevServer]);
 
@@ -609,7 +609,7 @@ const AppDev: React.FC = () => {
             await restartDevServer({
               shouldSwitchTab: true, // 项目导入后切换到预览标签页
               delayBeforeRefresh: 500,
-              showMessage: true,
+              showMessage: false,
             });
           } finally {
             setIsProjectUploading(false);
@@ -1046,7 +1046,7 @@ const AppDev: React.FC = () => {
                           await restartDevServer({
                             shouldSwitchTab: false, // 不切换标签页
                             delayBeforeRefresh: 500,
-                            showMessage: true,
+                            showMessage: false,
                           });
                         }}
                         onContentChange={(fileId, content) => {
