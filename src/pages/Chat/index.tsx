@@ -1,12 +1,12 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
-import PagePreview from '@/components/business-component/PagePreview';
+import PagePreviewIframe from '@/components/business-component/PagePreviewIframe';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
-import { SIDEBAR_WIDTH } from '@/constants/agent.constants';
+import ResizableSplit from '@/components/ResizableSplit';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
@@ -108,6 +108,7 @@ const Chat: React.FC = () => {
   // 页面预览相关状态
   const {
     pagePreviewData,
+    showPagePreview,
     hidePagePreview,
     agentPageConfig,
     setAgentPageConfig,
@@ -363,14 +364,38 @@ const Chat: React.FC = () => {
     eventBindConfig: conversationInfo?.agent?.eventBindConfig,
   });
 
-  return (
-    <div className={cx('flex', 'h-full')}>
+  const handleOpenPreview = () => {
+    // 判断是否默认展示页面首页
+    if (
+      agentDetail &&
+      agentDetail?.expandPageArea &&
+      agentDetail?.pageHomeIndex
+    ) {
+      // 自动触发预览
+      showPagePreview({
+        name: '页面预览',
+        uri: process.env.BASE_URL + agentDetail?.pageHomeIndex,
+        params: {},
+        executeId: '',
+      });
+    } else {
+      showPagePreview(null);
+    }
+  };
+
+  useEffect(() => {
+    handleOpenPreview();
+  }, [agentDetail]);
+
+  const LeftContent = () => {
+    return (
       <div
         className={cx('flex', 'flex-col', styles['main-content'])}
         style={{
-          flex: 1,
-          minWidth: 0, // 防止 flex 子元素溢出
-          width: isSidebarVisible ? `calc(100% - ${SIDEBAR_WIDTH}px)` : '100%',
+          display: 'flex',
+          // flex: 1,
+          // minWidth: 0, // 防止 flex 子元素溢出
+          // width: isSidebarVisible ? `calc(100% - ${SIDEBAR_WIDTH}px)` : '100%',
         }}
       >
         <div
@@ -393,21 +418,37 @@ const Chat: React.FC = () => {
                 setConversationInfo(value);
               }}
             />
+            <div>
+              {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
+              {!isSidebarVisible && !isMobile && (
+                <Button
+                  type="text"
+                  className={cx(styles.sidebarButton)}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-sidebar"
+                      className={cx(styles['icons-nav-sidebar'])}
+                    />
+                  }
+                  onClick={() => sidebarRef.current?.open()}
+                />
+              )}
 
-            {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
-            {!isSidebarVisible && !isMobile && (
-              <Button
-                type="text"
-                className={cx(styles.sidebarButton)}
-                icon={
-                  <SvgIcon
-                    name="icons-nav-sidebar"
-                    className={cx(styles['icons-nav-sidebar'])}
-                  />
-                }
-                onClick={() => sidebarRef.current?.open()}
-              />
-            )}
+              {/*打开预览页面*/}
+              {!pagePreviewData && (
+                <Button
+                  type="text"
+                  className={cx(styles.sidebarButton)}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-ecosystem"
+                      className={cx(styles['icons-nav-sidebar'])}
+                    />
+                  }
+                  onClick={handleOpenPreview}
+                />
+              )}
+            </div>
           </div>
         </div>
         <div className={cx(styles['main-content-box'])} ref={messageViewRef}>
@@ -497,9 +538,31 @@ const Chat: React.FC = () => {
           </div>
         )}
       </div>
+    );
+  };
+
+  return (
+    <div className={cx('flex', 'h-full')}>
+      {/*智能体聊天和预览页面*/}
+      <ResizableSplit
+        left={agentDetail?.hideChatArea ? null : LeftContent()}
+        right={
+          pagePreviewData && (
+            <PagePreviewIframe
+              pagePreviewData={pagePreviewData}
+              showHeader={true}
+              onClose={hidePagePreview}
+              showCloseButton={!agentDetail?.hideChatArea}
+            />
+          )
+        }
+      />
+
       <AgentSidebar
         ref={sidebarRef}
-        className={cx(styles['agent-sidebar'])}
+        className={cx(
+          styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
+        )}
         agentId={agentId}
         loading={loading}
         agentDetail={agentDetail}
@@ -508,8 +571,6 @@ const Chat: React.FC = () => {
       />
       {/*展示台区域*/}
       <ShowArea />
-      {/*页面预览区域*/}
-      <PagePreview />
     </div>
   );
 };

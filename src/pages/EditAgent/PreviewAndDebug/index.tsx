@@ -1,5 +1,4 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
-import PagePreview from '@/components/business-component/PagePreview';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
@@ -42,6 +41,7 @@ const cx = classNames.bind(styles);
 interface PreviewAndDebugProps extends PreviewAndDebugHeaderProps {
   /** 设置智能体配置信息的方法 */
   onAgentConfigInfo: (info: AgentConfigInfo) => void;
+  onOpenPreview?: () => void;
 }
 
 /**
@@ -52,6 +52,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   agentConfigInfo,
   onAgentConfigInfo,
   onPressDebug,
+  onOpenPreview,
 }) => {
   const [form] = Form.useForm();
   // 会话ID
@@ -305,7 +306,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
           className={cx('flex', 'flex-col')}
           style={{ flex: 1, minWidth: 340 }}
         >
-          <PreviewAndDebugHeader onPressDebug={onPressDebug} />
+          <PreviewAndDebugHeader
+            onPressDebug={onPressDebug}
+            isShowPreview={
+              !pagePreviewData && !!agentConfigInfo?.expandPageArea
+            }
+            onShowPreview={() => {
+              onOpenPreview?.();
+            }}
+          />
           <div
             className={cx(
               styles['main-content'],
@@ -394,9 +403,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
           </div>
         </div>
       )}
-
-      {/*页面预览区域*/}
-      <PagePreview />
     </div>
   );
 };
