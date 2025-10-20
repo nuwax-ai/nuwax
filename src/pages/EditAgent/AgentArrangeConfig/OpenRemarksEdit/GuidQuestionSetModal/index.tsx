@@ -17,6 +17,7 @@ import {
   PagePathSelectOption,
 } from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
+import { isHttp } from '@/utils/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -157,15 +158,6 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         message.error(
           `参数名：${requireArgEmptyItem.name}是必填参数，参数值不能为空`,
         );
-        return;
-      }
-    }
-
-    // 链接地址类型
-    if (rest.type === GuidQuestionSetTypeEnum.Link) {
-      const isHttpUrl = rest.url?.startsWith('http');
-      if (!isHttpUrl) {
-        message.error('链接地址必须以http/https开头');
         return;
       }
     }
@@ -363,7 +355,21 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
             <Form.Item
               name="url"
               label="链接地址"
-              rules={[{ required: true, message: '请选择填写链接地址' }]}
+              rules={[
+                { required: true, message: '请输入链接地址' },
+                {
+                  validator(_, value) {
+                    if (!value || isHttp(value)) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(
+                      new Error(
+                        '请输入正确格式的链接地址，必须以http://或https://开头!',
+                      ),
+                    );
+                  },
+                },
+              ]}
             >
               <Input placeholder="https://www.xxx.com" allowClear />
             </Form.Item>
