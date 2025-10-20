@@ -258,6 +258,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         <iframe
           ref={iframeRef}
           src={pageUrl}
+          sandbox="allow-scripts allow-same-origin"
           className={cx(styles['page-iframe'])}
           title={pagePreviewData.name || '页面预览'}
           onLoad={handleIframeLoad}

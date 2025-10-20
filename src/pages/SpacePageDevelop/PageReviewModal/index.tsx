@@ -67,6 +67,7 @@ const PageReviewModal: React.FC<PageReviewModalProps> = ({
         ) : (
           <iframe
             src={`${process.env.BASE_URL}${pageInfo?.pageUrl}`}
+            sandbox="allow-scripts allow-same-origin"
             className={cx(styles.iframe)}
           />
         )}
