@@ -37,91 +37,11 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 0, 0, 20%) transparent;
   }
+}
 
-  /* 滚动按钮基础样式 */
-  .scroll-button {
-    position: absolute;
-    z-index: 1000;
-    bottom: 20px;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 15%);
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    animation: fade-in-up 0.3s ease-out;
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 20%);
-    }
-
-    &:active {
-      transform: translateY(0);
-    }
-
-    /* 按钮位置样式 */
-    &.scroll-button-bottom-right {
-      right: 20px;
-    }
-
-    &.scroll-button-bottom-center {
-      left: 50%;
-      transform: translateX(-50%);
-
-      &:hover {
-        transform: translateX(-50%) translateY(-2px);
-      }
-
-      &:active {
-        transform: translateX(-50%) translateY(0);
-      }
-    }
-
-    &.scroll-button-bottom-left {
-      left: 20px;
-    }
-
-    /* 隐藏状态 */
-    &.hide {
-      animation: fade-out-down 0.3s ease-in;
-      opacity: 0;
-      transform: translateY(20px);
-    }
-  }
-
-  /* 响应式设计 */
-  @media (max-width: 768px) {
-    .scroll-button {
-      width: 44px;
-      height: 44px;
-      bottom: 16px;
-      font-size: 14px;
-
-      &.scroll-button-bottom-right {
-        right: 16px;
-      }
-
-      &.scroll-button-bottom-center {
-        left: 50%;
-        transform: translateX(-50%);
-
-        &:hover {
-          transform: translateX(-50%) translateY(-2px);
-        }
-      }
-
-      &.scroll-button-bottom-left {
-        left: 16px;
-      }
-    }
-  }
-
-  /* 暗色主题适配 */
-  &.dark-theme {
+// 暗色主题适配
+html[data-theme='dark'] {
+  .stream-message-scroll-container {
     .scroll-container {
       &::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 30%);
@@ -130,41 +50,6 @@
           background: rgba(255, 255, 255, 40%);
         }
       }
-    }
-
-    .scroll-button {
-      background: #1890ff;
-      border-color: #1890ff;
-
-      &:hover {
-        background: #40a9ff;
-        border-color: #40a9ff;
-      }
-    }
-  }
-
-  /* 动画关键帧定义 */
-  @keyframes fade-in-up {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes fade-out-down {
-    from {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    to {
-      opacity: 0;
-      transform: translateY(20px);
     }
   }
 }

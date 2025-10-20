@@ -324,27 +324,14 @@ const AppDev: React.FC = () => {
           content: (
             <div>
               <p>项目已成功构建并发布！</p>
-              {devServerUrl && (
-                <p>
-                  <strong>开发环境：</strong>
-                  <a
-                    href={devServerUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {devServerUrl}
-                  </a>
-                </p>
-              )}
               {prodServerUrl && (
                 <p>
-                  <strong>生产环境：</strong>
                   <a
-                    href={prodServerUrl}
+                    href={`${process.env.BASE_URL}${prodServerUrl}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    {prodServerUrl}
+                    点击预览
                   </a>
                 </p>
               )}

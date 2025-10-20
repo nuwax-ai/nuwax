@@ -692,11 +692,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         messages={chat.chatMessages}
         isStreaming={chat.isChatLoading}
         enableAutoScroll={true}
-        scrollButtonPosition="bottom-right"
-        scrollButtonClassName={styles.customScrollButton}
         className={styles.chatMessagesWrapper}
         style={{ height: '100%', minHeight: 0 }}
-        showBuiltInScrollButton={false}
         onScrollPositionChange={(isAtBottom) => {
           setShowScrollButton(!isAtBottom);
         }}

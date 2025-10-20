@@ -2,11 +2,8 @@ import {
   useStreamMessageScroll,
   useStreamMessageScrollEffects,
 } from '@/pages/AppDev/hooks/useStreamMessageScroll';
-import { ArrowDownOutlined } from '@ant-design/icons';
-import { Button } from 'antd';
-import React, { forwardRef, useImperativeHandle, useRef } from 'react';
-// import type { UseStreamMessageScrollOptions } from '@/hooks/useStreamMessageScroll'; // 暂时未使用
 import classNames from 'classnames';
+import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -53,26 +50,14 @@ export interface StreamMessageScrollContainerProps {
   scrollThreshold?: number;
   /** 显示滚动按钮的阈值（默认 100px） */
   showButtonThreshold?: number;
-  /** 滚动按钮位置 */
-  scrollButtonPosition?: 'bottom-right' | 'bottom-center' | 'bottom-left';
-  /** 滚动按钮样式类名 */
-  scrollButtonClassName?: string;
-  /** 滚动按钮文本 */
-  scrollButtonText?: string;
-  /** 是否显示滚动按钮图标 */
-  showScrollButtonIcon?: boolean;
   /** 容器样式类名 */
   className?: string;
   /** 容器内联样式 */
   style?: React.CSSProperties;
-  /** 滚动按钮点击回调 */
-  onScrollButtonClick?: () => void;
   /** 自动滚动状态变化回调 */
   onAutoScrollChange?: (enabled: boolean) => void;
   /** 滚动位置变化回调 */
   onScrollPositionChange?: (isAtBottom: boolean) => void;
-  /** 是否显示内置滚动按钮（默认 true） */
-  showBuiltInScrollButton?: boolean;
 }
 
 /**
@@ -100,16 +85,10 @@ const StreamMessageScrollContainer = forwardRef<
       throttleDelay = 300,
       scrollThreshold = 50,
       showButtonThreshold = 100,
-      scrollButtonPosition = 'bottom-right',
-      scrollButtonClassName,
-      scrollButtonText = '滚动到底部',
-      showScrollButtonIcon = true,
       className,
       style,
-      onScrollButtonClick,
       onAutoScrollChange,
       onScrollPositionChange,
-      showBuiltInScrollButton = true,
     },
     ref,
   ) => {
@@ -119,7 +98,6 @@ const StreamMessageScrollContainer = forwardRef<
     // 使用流式消息滚动 Hook
     const {
       isAutoScrollEnabled,
-      showScrollButton,
       scrollToBottom,
       handleScrollButtonClick: internalHandleScrollButtonClick,
       enableAutoScroll: internalEnableAutoScroll,
@@ -172,12 +150,6 @@ const StreamMessageScrollContainer = forwardRef<
       ],
     );
 
-    // 处理滚动按钮点击
-    const handleScrollButtonClick = () => {
-      internalHandleScrollButtonClick();
-      onScrollButtonClick?.();
-    };
-
     // 监听自动滚动状态变化
     React.useEffect(() => {
       onAutoScrollChange?.(isAutoScrollEnabled);
@@ -199,13 +171,6 @@ const StreamMessageScrollContainer = forwardRef<
       }
     }, [isAtBottom, onScrollPositionChange]);
 
-    // 滚动按钮样式类名
-    const scrollButtonClassNames = cx(
-      'scroll-button',
-      `scroll-button-${scrollButtonPosition}`,
-      scrollButtonClassName,
-    );
-
     return (
       <div
         className={cx('stream-message-scroll-container', className)}
@@ -215,21 +180,6 @@ const StreamMessageScrollContainer = forwardRef<
         <div ref={scrollContainerRef} className={cx('scroll-container')}>
           {children}
         </div>
-
-        {/* 滚动按钮 */}
-        {showBuiltInScrollButton && showScrollButton && (
-          <Button
-            type="primary"
-            shape="circle"
-            size="large"
-            className={scrollButtonClassNames}
-            onClick={handleScrollButtonClick}
-            title={scrollButtonText}
-          >
-            {showScrollButtonIcon && <ArrowDownOutlined />}
-            {!showScrollButtonIcon && scrollButtonText}
-          </Button>
-        )}
       </div>
     );
   },
