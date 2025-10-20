@@ -348,6 +348,79 @@
 //   }
 // }
 
+// 部署遮罩样式
+.deployOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.deployOverlayContent {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 32px 40px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-width: 280px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.deploySpinner {
+  font-size: 32px;
+  color: #1890ff;
+  animation: spin 1s linear infinite;
+}
+
+.deployText {
+  text-align: center;
+  color: #1e293b;
+}
+
+.deployTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1e293b;
+}
+
+.deploySubtitle {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+// 动画效果
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 // 暗色主题支持
 [data-theme='dark'] {
   .appDev {
@@ -372,5 +445,23 @@
 
   .content {
     background: var(--xagi-color-bg-container);
+  }
+
+  // 暗色主题下的部署遮罩样式
+  .deployOverlayContent {
+    background: rgba(30, 41, 59, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .deployText {
+    color: #f1f5f9;
+  }
+
+  .deployTitle {
+    color: #f1f5f9;
+  }
+
+  .deploySubtitle {
+    color: #94a3b8;
   }
 }

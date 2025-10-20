@@ -826,6 +826,22 @@ const AppDev: React.FC = () => {
     <>
       {contextHolder}
       <div className={styles.appDev}>
+        {/* 部署遮罩 - 在部署过程中显示透明遮罩防止用户操作 */}
+        {isDeploying && (
+          <div className={styles.deployOverlay}>
+            <div className={styles.deployOverlayContent}>
+              <div className={styles.deploySpinner}>
+                <SyncOutlined spin />
+              </div>
+              <div className={styles.deployText}>
+                <div className={styles.deployTitle}>正在部署项目...</div>
+                <div className={styles.deploySubtitle}>
+                  请稍候，部署完成后将自动关闭
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* 顶部头部区域 */}
         <AppDevHeader
           workspace={workspace}
