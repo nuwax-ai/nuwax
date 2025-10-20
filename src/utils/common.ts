@@ -22,6 +22,11 @@ const isWeakNumber = (value: any) => {
   return false;
 };
 
+// 校验链接地址是否合法
+function isHttp(url: string) {
+  return /^https?:\/\//i.test(url);
+}
+
 // 校验手机号是否合法
 function isValidPhone(phone: string) {
   const reg = /^1[3456789]\d{9}$/;
@@ -253,6 +258,7 @@ export {
   getURLParams,
   hasDuplicate,
   isEmptyObject,
+  isHttp,
   isNumber,
   isValidEmail,
   isValidJSON,

@@ -14,6 +14,7 @@ import {
   PagePathSelectOption,
 } from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
+import { isHttp } from '@/utils/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -60,23 +61,55 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
   // 页面路径列表
   const [pathList, setPathList] = useState<PagePathSelectOption[]>([]);
 
+  // 初始化输入参数
+  const initialArgs = () => {
+    if (!currentEventConfig) {
+      return [];
+    }
+    if (!pageArgConfigs?.length) {
+      return currentEventConfig?.args || [];
+    }
+    // 当前选中的页面配置参数列表
+    const _argConfigs: BindConfigWithSub[] =
+      pageArgConfigs?.find(
+        (item) => item.pageUri === currentEventConfig?.pageUri,
+      )?.args || [];
+
+    // 新旧参数对比，如果旧参数不存在，则新增
+    const newArgs: BindConfigWithSub[] = [];
+    _argConfigs.forEach((item) => {
+      // 如果旧参数存在，则添加到新参数列表
+      const _currentArg = currentEventConfig?.args?.find(
+        (arg) => arg.key === item.key,
+      );
+      if (_currentArg) {
+        newArgs.push(_currentArg);
+      } else {
+        // 如果旧参数不存在，则新增
+        newArgs.push(item);
+      }
+    });
+    return newArgs;
+  };
+
   useEffect(() => {
     if (open) {
       if (currentEventConfig) {
         form.setFieldsValue({
           name: currentEventConfig.name,
           identification: currentEventConfig.identification,
-          // type: currentEventConfig.type,
           url: currentEventConfig.url,
         });
 
         // 类型
         setType(currentEventConfig.type);
         // 回显入参配置
-        setArgs(currentEventConfig.args || []);
+        const _args = initialArgs();
+        setArgs(_args);
         // 当前路径页面id
         setCurrentPageId(currentEventConfig.pageId || null);
       }
+
       // 扩展页面路径类型时，展示入参配置
       if (pageArgConfigs?.length > 0) {
         // 修改模式下，回显类型
@@ -152,15 +185,6 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
   const onFinish: FormProps<any>['onFinish'] = (values) => {
     const { pageUriId, ...rest } = values;
 
-    // 链接地址类型
-    if (rest.type === EventBindResponseActionEnum.Link) {
-      const isHttpUrl = rest.url?.startsWith('http');
-      if (!isHttpUrl) {
-        message.error('链接地址必须以http/https开头');
-        return;
-      }
-    }
-
     setLoading(true);
     const pageUri = pathList.find((item) => item.value === pageUriId)?.pageUri;
 
@@ -231,7 +255,9 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
 
     // 切换到当前页面路径，回显入参配置
     if (currentEventConfig?.pageUri === pageUri) {
-      setArgs(currentEventConfig?.args || []);
+      // 回显入参配置
+      const _args = initialArgs();
+      setArgs(_args);
     } else {
       // 切换到其他页面路径，回显入参配置
       if (_config?.args) {
@@ -367,7 +393,21 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
             <Form.Item
               name="url"
               label="链接地址"
-              rules={[{ required: true, message: '请选择填写链接地址' }]}
+              rules={[
+                { required: true, message: '请输入链接地址' },
+                {
+                  validator(_, value) {
+                    if (!value || isHttp(value)) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(
+                      new Error(
+                        '请输入正确格式的链接地址，必须以http://或https://开头!',
+                      ),
+                    );
+                  },
+                },
+              ]}
             >
               <Input placeholder="https://www.xxx.com" allowClear />
             </Form.Item>

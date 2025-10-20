@@ -17,6 +17,7 @@ import {
   PagePathSelectOption,
 } from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
+import { isHttp } from '@/utils/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -80,6 +81,37 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
     },
   });
 
+  // 初始化输入参数
+  const initialArgs = () => {
+    if (!currentGuidQuestionDto) {
+      return [];
+    }
+    if (!pageArgConfigs?.length) {
+      return currentGuidQuestionDto?.args || [];
+    }
+    // 当前选中的页面配置参数列表
+    const _argConfigs: BindConfigWithSub[] =
+      pageArgConfigs?.find(
+        (item) => item.pageUri === currentGuidQuestionDto?.pageUri,
+      )?.args || [];
+
+    // 新旧参数对比，如果旧参数不存在，则新增
+    const newArgs: BindConfigWithSub[] = [];
+    _argConfigs.forEach((item) => {
+      // 如果旧参数存在，则添加到新参数列表
+      const _currentArg = currentGuidQuestionDto?.args?.find(
+        (arg) => arg.key === item.key,
+      );
+      if (_currentArg) {
+        newArgs.push(_currentArg);
+      } else {
+        // 如果旧参数不存在，则新增
+        newArgs.push(item);
+      }
+    });
+    return newArgs;
+  };
+
   useEffect(() => {
     // 回显数据
     if (open) {
@@ -95,7 +127,8 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         // 图标
         setImageUrl(currentGuidQuestionDto.icon || pageImage);
         // 回显入参配置
-        setArgs(currentGuidQuestionDto.args || []);
+        const _args = initialArgs();
+        setArgs(_args);
         // 当前路径页面id
         setCurrentPageId(currentGuidQuestionDto.pageId || null);
       }
@@ -161,15 +194,6 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
       }
     }
 
-    // 链接地址类型
-    if (rest.type === GuidQuestionSetTypeEnum.Link) {
-      const isHttpUrl = rest.url?.startsWith('http');
-      if (!isHttpUrl) {
-        message.error('链接地址必须以http/https开头');
-        return;
-      }
-    }
-
     setLoading(true);
     const pageUri = pathList.find((item) => item.value === pageUriId)?.pageUri;
     // 更新后的预置问题
@@ -230,10 +254,12 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
 
     // 切换到当前页面路径，回显入参配置
     if (currentGuidQuestionDto?.pageUri === pageUri) {
-      setArgs(currentGuidQuestionDto?.args || []);
+      // 回显入参配置
+      const _args = initialArgs();
+      setArgs(_args);
     } else {
       // 切换到其他页面路径，回显入参配置
-      if (_config?.args) {
+      if (_config?.args?.length) {
         const _args = _config.args.map((item) => {
           return {
             ...item,
@@ -363,7 +389,21 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
             <Form.Item
               name="url"
               label="链接地址"
-              rules={[{ required: true, message: '请选择填写链接地址' }]}
+              rules={[
+                { required: true, message: '请输入链接地址' },
+                {
+                  validator(_, value) {
+                    if (!value || isHttp(value)) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(
+                      new Error(
+                        '请输入正确格式的链接地址，必须以http://或https://开头!',
+                      ),
+                    );
+                  },
+                },
+              ]}
             >
               <Input placeholder="https://www.xxx.com" allowClear />
             </Form.Item>
