@@ -108,6 +108,17 @@ const SpaceLibrary: React.FC = () => {
     setMcpList(_list);
   };
 
+  // 过滤官方服务列表数据
+  const handleFilterOfficialList = (
+    filterKeyword?: string,
+    list = mcpListAllRef.current,
+  ) => {
+    let _list = filterKeyword
+      ? list.filter((item) => item.name.includes(filterKeyword))
+      : list;
+    setMcpList(_list);
+  };
+
   // ✅ 监听 URL 改变（支持浏览器前进/后退）
   useEffect(() => {
     const create =
@@ -123,19 +134,12 @@ const SpaceLibrary: React.FC = () => {
     setSegmentedValue(segmentedValue);
     setKeyword(keyword);
 
-    handleFilterList(create, deployStatus, keyword);
+    if (segmentedValue === McpManageSegmentedEnum.Custom) {
+      handleFilterList(create, deployStatus, keyword);
+    } else {
+      handleFilterOfficialList(keyword);
+    }
   }, [searchParams]);
-
-  // 过滤官方服务列表数据
-  const handleFilterOfficialList = (
-    filterKeyword?: string,
-    list = mcpListAllRef.current,
-  ) => {
-    let _list = filterKeyword
-      ? list.filter((item) => item.name.includes(filterKeyword))
-      : list;
-    setMcpList(_list);
-  };
 
   // 列表请求成功后处理数据
   const handleListSuccess = (result: McpDetailInfo[]) => {
@@ -219,12 +223,15 @@ const SpaceLibrary: React.FC = () => {
   });
 
   useEffect(() => {
-    setSegmentedValue(
-      searchParams.get('segmentedValue') || McpManageSegmentedEnum.Custom,
-    );
+    const currentValue =
+      searchParams.get('segmentedValue') || McpManageSegmentedEnum.Custom;
+    setSegmentedValue(currentValue);
     setLoading(true);
-    runMcpList(spaceId);
-    runMcpOfficialList();
+    if (currentValue === McpManageSegmentedEnum.Custom) {
+      runMcpList(spaceId);
+    } else {
+      runMcpOfficialList();
+    }
   }, [spaceId]);
 
   // 切换创建者
