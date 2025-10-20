@@ -258,7 +258,6 @@ export default () => {
         else if (len === 1) {
           const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
           // 如果存在预置问题，显示预置问题
-          // setChatSuggestList(guidQuestionDtos?.map((item) => item.info));
           setChatSuggestList(guidQuestionDtos);
         }
       }
@@ -266,7 +265,6 @@ export default () => {
       else {
         const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
         // 如果存在预置问题，显示预置问题
-        // setChatSuggestList(guidQuestionDtos?.map((item) => item.info));
         setChatSuggestList(guidQuestionDtos);
       }
 

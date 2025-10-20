@@ -29,6 +29,7 @@ import { MessageStatusEnum } from '@/types/enums/common';
 import {
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
+  GuidQuestionDto,
 } from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
@@ -85,7 +86,9 @@ const ChatTemp: React.FC = () => {
   // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
   const messageListRef = useRef<MessageInfo[]>([]);
   // 会话问题建议
-  const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
+  const [chatSuggestList, setChatSuggestList] = useState<
+    string[] | GuidQuestionDto[]
+  >([]);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -252,15 +255,14 @@ const ChatTemp: React.FC = () => {
           else if (len === 1) {
             // 如果存在预置问题，显示预置问题
             const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
-            // 如果存在预置问题，显示预置问题
-            setChatSuggestList(guidQuestionDtos?.map((item) => item.info));
+            setChatSuggestList(guidQuestionDtos);
           }
         }
         // 不存在会话消息时，才显示开场白预置问题
         else {
           const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
           // 如果存在预置问题，显示预置问题
-          setChatSuggestList(guidQuestionDtos?.map((item) => item.info));
+          setChatSuggestList(guidQuestionDtos);
         }
         // 初始化会话信息: 开场白
         if (!_messageList?.length && data?.agent?.openingChatMsg) {
