@@ -201,6 +201,47 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         serverErrorCode={serverErrorCode}
         onStartDev={onStartDev}
         onRestartDev={onRestartDev}
+        onResourceError={(error) => {
+          // 记录错误日志
+          console.error('[AppDev] Preview 资源错误:', error);
+
+          // 根据错误类型进行不同的处理
+          switch (error.type) {
+            case 'script':
+              console.warn(
+                `[AppDev] 脚本加载失败: ${error.url}`,
+                error.message,
+              );
+              break;
+            case 'style':
+              console.warn(
+                `[AppDev] 样式加载失败: ${error.url}`,
+                error.message,
+              );
+              break;
+            case 'fetch':
+              if (error.networkError?.code) {
+                const statusCode = error.networkError.code;
+                if (statusCode >= 500) {
+                  console.error(
+                    `[AppDev] 服务器错误 (${statusCode}): ${error.url}`,
+                  );
+                } else if (statusCode >= 400) {
+                  console.warn(
+                    `[AppDev] 客户端错误 (${statusCode}): ${error.url}`,
+                  );
+                }
+              }
+              break;
+            case 'image':
+              console.info(`[AppDev] 图片加载失败: ${error.url}`);
+              break;
+            default:
+              console.warn(
+                `[AppDev] 资源加载失败: ${error.type} - ${error.url}`,
+              );
+          }
+        }}
       />
     );
   }

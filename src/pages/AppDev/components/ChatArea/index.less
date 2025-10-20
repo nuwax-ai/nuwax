@@ -125,34 +125,31 @@
 }
 
 // 聊天消息区域
-.chatMessages {
-  position: relative; // 新增：为滚动按钮提供定位上下文
+.chatMessagesWrapper {
   flex: 1;
+  position: relative;
+  min-height: 0; /* 确保 flex 子元素可以收缩 */
+  height: 100%; /* 明确设置高度 */
+
+  /* 确保 StreamMessageScrollContainer 内部滚动容器有正确高度 */
+  :global(.stream-message-scroll-container) {
+    height: 100%;
+    min-height: 0;
+  }
+
+  :global(.scroll-container) {
+    height: 100%;
+    min-height: 0;
+  }
+}
+
+.chatMessages {
   padding: 20px 12px 20px 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  scroll-behavior: smooth;
-  overflow-y: auto;
-
-  // 滚动条样式
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 20%);
-    border-radius: 2px;
-    transition: background 0.2s ease;
-
-    &:hover {
-      background: rgba(0, 0, 0, 30%);
-    }
-  }
+  height: 100%;
+  min-height: 0;
 }
 
 // 加载容器
@@ -213,11 +210,11 @@
 // 消息包装器 - 按角色区分布局
 .messageWrapper {
   display: flex;
-  margin-bottom: 16px;
-  animation: message-slide-in 0.3s ease-out;
+  // animation: message-slide-in 0.3s ease-out;
 
   // 用户消息 - 右侧对齐
   &.user {
+    // margin-bottom: 12px;
     justify-content: flex-end;
 
     .messageBubble {
@@ -232,6 +229,7 @@
   // AI助手消息 - 左侧对齐
   &.assistant {
     justify-content: flex-start;
+    padding-bottom: 12px;
 
     .messageBubble {
       border-radius: 18px 18px 18px 4px;
@@ -855,32 +853,47 @@
 }
 
 // 滚动到底部按钮
+.customScrollButton {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 12px;
+
+  &:hover {
+    background: #1890ff !important;
+    color: #fff !important;
+  }
+}
+
+// 聊天区域滚动按钮
 .scrollToBottomButton {
-  position: absolute; // 改为 absolute 定位，相对于 chatMessages 容器
-  right: 12px;
-  top: -60px;
-  width: 32px; // 减小按钮尺寸
+  position: absolute;
+  top: -50px;
+  right: 20px;
+  width: 32px;
   height: 32px;
+  border: 1px solid #d9d9d9;
+  background-color: #fff;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  z-index: 10; // 相对于容器内的层级
-  border: 1px solid rgba(0, 0, 0, 10%);
-  font-size: 12px; // 减小图标尺寸
+  font-size: 12px;
+  color: #666;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 25%);
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
 
   &:hover {
     background: #1890ff;
     color: #fff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(24, 144, 255, 40%);
+    border-color: #1890ff;
   }
 
-  &:active {
-    transform: translateY(0);
+  &.visible {
+    opacity: 1;
+    visibility: visible;
   }
 }

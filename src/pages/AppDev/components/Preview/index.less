@@ -62,6 +62,25 @@
   color: @colorTextTertiary;
 }
 
+.errorBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: @colorError;
+  background: @colorErrorBg;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid @colorErrorBorder;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: @colorErrorBgHover;
+    border-color: @colorErrorBorderHover;
+  }
+}
+
 .headerRight {
   display: flex;
   align-items: center;
