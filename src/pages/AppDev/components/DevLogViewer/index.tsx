@@ -4,7 +4,6 @@
  */
 
 import type { DevLogEntry } from '@/types/interfaces/appDev';
-import { formatLogDisplay } from '@/utils/devLogParser';
 import {
   BugOutlined,
   ClearOutlined,
@@ -14,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import { Badge, Button, List, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { formatLogDisplay } from '../../utils/devLogParser';
 import './index.less';
 
 /**

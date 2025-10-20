@@ -5,12 +5,12 @@
 
 import { getDevLogs } from '@/services/appDev';
 import type { DevLogEntry } from '@/types/interfaces/appDev';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   filterErrorLogs,
   generateErrorFingerprint,
   getNewErrors,
-} from '@/utils/devLogParser';
-import { useCallback, useEffect, useRef, useState } from 'react';
+} from '../utils/devLogParser';
 
 /**
  * 日志管理Hook的配置选项

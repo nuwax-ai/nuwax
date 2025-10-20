@@ -8,9 +8,7 @@ import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
-import { useAutoErrorHandling } from '@/hooks/useAutoErrorHandling';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
-import { useDevLogs } from '@/hooks/useDevLogs';
 import { useRestartDevServer } from '@/hooks/useRestartDevServer';
 import {
   bindDataSource,
@@ -60,6 +58,8 @@ import DevLogViewer from './components/DevLogViewer';
 import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
+import { useAutoErrorHandling } from './hooks/useAutoErrorHandling';
+import { useDevLogs } from './hooks/useDevLogs';
 import styles from './index.less';
 
 const { Text } = Typography;

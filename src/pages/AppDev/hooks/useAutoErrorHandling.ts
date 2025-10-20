@@ -4,13 +4,13 @@
  */
 
 import type { Attachment, DevLogEntry } from '@/types/interfaces/appDev';
+import { message } from 'antd';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   formatErrorForAgent,
   generateErrorFingerprint,
   getRecentErrors,
-} from '@/utils/devLogParser';
-import { message } from 'antd';
-import { useCallback, useEffect, useRef, useState } from 'react';
+} from '../utils/devLogParser';
 
 /**
  * 自动异常处理Hook的配置选项
