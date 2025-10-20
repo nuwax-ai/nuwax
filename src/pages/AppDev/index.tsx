@@ -8,7 +8,9 @@ import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
+import { useAutoErrorHandling } from '@/hooks/useAutoErrorHandling';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
+import { useDevLogs } from '@/hooks/useDevLogs';
 import { useRestartDevServer } from '@/hooks/useRestartDevServer';
 import {
   bindDataSource,
@@ -54,6 +56,7 @@ import React, {
 import { useModel, useParams } from 'umi';
 import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
+import DevLogViewer from './components/DevLogViewer';
 import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
@@ -182,6 +185,21 @@ const AppDev: React.FC = () => {
     }, // 新增：Agent 触发时不切换页面
   });
 
+  // 开发服务器日志管理
+  const devLogs = useDevLogs(projectId || '', {
+    enabled: hasValidProjectId && isServiceRunning,
+    pollInterval: 2000,
+    maxLogLines: 1000,
+  });
+
+  // 自动异常处理
+  const autoErrorHandling = useAutoErrorHandling(projectId || '', {
+    enabled: hasValidProjectId,
+    errorDetectionDelay: 1000,
+    maxSendFrequency: 30000,
+    showNotification: true,
+  });
+
   useEffect(() => {
     // 初始化处于added状态的组件列表
     if (projectInfo.projectInfoState.projectInfo) {
@@ -227,6 +245,38 @@ const AppDev: React.FC = () => {
       projectInfo.refreshProjectInfo();
     },
   });
+
+  // 自动异常处理监听
+  useEffect(() => {
+    // 监听Agent输出结束
+    const handleAgentPromptEnd = () => {
+      autoErrorHandling.handleAgentPromptEnd(devLogs.logs, chat.sendMessage);
+    };
+
+    // 监听文件操作完成
+    const handleFileOperationComplete = () => {
+      autoErrorHandling.handleFileOperationComplete(
+        devLogs.logs,
+        chat.sendMessage,
+      );
+    };
+
+    // 监听预览白屏
+    const handlePreviewWhiteScreen = () => {
+      autoErrorHandling.handlePreviewWhiteScreen(
+        devLogs.logs,
+        chat.sendMessage,
+      );
+    };
+
+    // 这里可以添加事件监听器
+    // 例如：监听chat的prompt_end事件
+    // chat.onPromptEnd?.(handleAgentPromptEnd);
+
+    return () => {
+      // 清理事件监听器
+    };
+  }, [autoErrorHandling, devLogs.logs, chat.sendMessage]);
 
   // 获取当前显示的文件树（版本模式或正常模式）
   const currentDisplayFiles = useMemo(() => {
@@ -877,6 +927,8 @@ const AppDev: React.FC = () => {
                 // 设置图片清空方法到 ref
                 clearUploadedImagesRef.current = clearFn;
               }} // 新增：设置图片清空方法回调
+              autoHandleError={autoErrorHandling.autoHandleEnabled} // 新增：自动处理异常开关状态
+              onAutoHandleErrorChange={autoErrorHandling.setAutoHandleEnabled} // 新增：自动处理异常开关变化回调
             />
           </Col>
 
@@ -1064,6 +1116,12 @@ const AppDev: React.FC = () => {
                             delayBeforeRefresh: 500,
                             showMessage: false,
                           });
+                        }}
+                        onWhiteScreen={() => {
+                          autoErrorHandling.handlePreviewWhiteScreen(
+                            devLogs.logs,
+                            chat.sendMessage,
+                          );
                         }}
                         onContentChange={(fileId, content) => {
                           if (
@@ -1295,6 +1353,18 @@ const AppDev: React.FC = () => {
           )}
         />
       </div>
+
+      {/* 开发服务器日志查看器 */}
+      <DevLogViewer
+        logs={devLogs.logs}
+        errorCount={devLogs.errorCount}
+        isLoading={devLogs.isLoading}
+        autoScroll={true}
+        onClear={devLogs.clearLogs}
+        onRefresh={devLogs.refreshLogs}
+        visible={hasValidProjectId && isServiceRunning}
+      />
+
       {/* 页面开发项目编辑模态框 */}
       <PageEditModal
         open={openPageEditVisible}

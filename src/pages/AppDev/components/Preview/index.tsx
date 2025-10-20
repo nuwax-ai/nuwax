@@ -38,7 +38,7 @@ const RESOURCE_ERROR_LISTENER_SCRIPT = `
             message: event.target.error.message
           } : null
         };
-        
+
         // 发送错误信息到父窗口
         window.parent.postMessage({
           type: 'RESOURCE_ERROR',
@@ -46,7 +46,7 @@ const RESOURCE_ERROR_LISTENER_SCRIPT = `
         }, '*');
       }
     }, true);
-    
+
     // 监听未捕获的 Promise 错误
     window.addEventListener('unhandledrejection', function(event) {
       window.parent.postMessage({
@@ -60,7 +60,7 @@ const RESOURCE_ERROR_LISTENER_SCRIPT = `
         }
       }, '*');
     });
-    
+
     // 监听网络错误（fetch/XMLHttpRequest）
     const originalFetch = window.fetch;
     window.fetch = function(...args) {
@@ -123,6 +123,8 @@ interface PreviewProps {
   onRestartDev?: () => void;
   /** 资源加载失败回调 */
   onResourceError?: (error: ResourceErrorInfo) => void;
+  /** 白屏检测回调 */
+  onWhiteScreen?: () => void;
 }
 
 export interface PreviewRef {
@@ -147,6 +149,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       onStartDev,
       onRestartDev,
       onResourceError,
+      onWhiteScreen,
     },
     ref,
   ) => {
@@ -159,6 +162,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       [],
     );
     const [isCrossOrigin, setIsCrossOrigin] = useState(false);
+    const [whiteScreenDetected, setWhiteScreenDetected] = useState(false);
 
     /**
      * 获取错误类型前缀
@@ -395,6 +399,47 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         setIsCrossOrigin(false);
       }
     }, [devServerUrl, loadDevServerPreview]);
+
+    // 白屏检测
+    useEffect(() => {
+      if (!devServerUrl || !iframeRef.current) return;
+
+      const checkWhiteScreen = () => {
+        try {
+          const iframe = iframeRef.current;
+          if (!iframe) return;
+
+          const doc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (!doc) return;
+
+          // 检查页面是否为空或只有空白内容
+          const body = doc.body;
+          if (!body) return;
+
+          const bodyText = body.innerText?.trim() || '';
+          const bodyHTML = body.innerHTML?.trim() || '';
+
+          // 如果body为空或只有空白字符，认为是白屏
+          if (bodyText === '' && bodyHTML === '') {
+            if (!whiteScreenDetected) {
+              setWhiteScreenDetected(true);
+              onWhiteScreen?.();
+              console.warn('[Preview] 检测到白屏');
+            }
+          } else {
+            setWhiteScreenDetected(false);
+          }
+        } catch (error) {
+          // 跨域或其他错误，忽略
+          console.debug('[Preview] 白屏检测失败（可能是跨域）:', error);
+        }
+      };
+
+      // 延迟检测，给页面加载时间
+      const timer = setTimeout(checkWhiteScreen, 3000);
+
+      return () => clearTimeout(timer);
+    }, [devServerUrl, whiteScreenDetected, onWhiteScreen]);
 
     useEffect(() => {
       return () => {

@@ -59,6 +59,8 @@ interface ContentViewerProps {
   onStartDev?: () => void;
   /** 重启开发服务器回调 */
   onRestartDev?: () => void;
+  /** 白屏检测回调 */
+  onWhiteScreen?: () => void;
 }
 
 /**
@@ -91,6 +93,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   isChatLoading = false,
   onStartDev,
   onRestartDev,
+  onWhiteScreen,
 }) => {
   // 版本对比模式 + preview标签页：显示禁用提示
   if (isComparing && mode === 'preview') {
@@ -201,6 +204,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         serverErrorCode={serverErrorCode}
         onStartDev={onStartDev}
         onRestartDev={onRestartDev}
+        onWhiteScreen={onWhiteScreen}
         onResourceError={(error) => {
           // 记录错误日志
           console.error('[AppDev] Preview 资源错误:', error);

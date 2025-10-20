@@ -15,6 +15,7 @@ import {
   generateAttachmentId,
 } from '@/utils/chatUtils';
 import {
+  BugOutlined,
   CloseCircleOutlined,
   ControlOutlined,
   DownOutlined,
@@ -32,6 +33,7 @@ import {
   message,
   Select,
   Spin,
+  Switch,
   Tag,
   Tooltip,
   Typography,
@@ -64,6 +66,9 @@ interface ChatAreaProps {
   modelSelector: any;
   onClearUploadedImages?: (callback: () => void) => void;
   onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
+  // 自动处理异常相关props
+  autoHandleError?: boolean;
+  onAutoHandleErrorChange?: (enabled: boolean) => void;
 }
 
 /**
@@ -83,6 +88,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   modelSelector,
   onClearUploadedImages,
   onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
+  autoHandleError = true,
+  onAutoHandleErrorChange,
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
@@ -308,6 +315,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       message.success('数据源已移除');
     },
     [selectedDataSources, onUpdateDataSources],
+  );
+
+  /**
+   * 处理自动处理异常开关变化
+   */
+  const handleAutoHandleErrorChange = useCallback(
+    (checked: boolean) => {
+      onAutoHandleErrorChange?.(checked);
+    },
+    [onAutoHandleErrorChange],
   );
 
   /**
@@ -831,6 +848,24 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 />
               </Tooltip>
             </Upload>
+
+            {/* 自动处理异常开关 */}
+            <Tooltip
+              title={
+                autoHandleError ? '已开启自动错误处理' : '点击开启自动错误处理'
+              }
+            >
+              <div className={styles.autoHandleSwitch}>
+                <Switch
+                  size="small"
+                  checked={autoHandleError}
+                  onChange={handleAutoHandleErrorChange}
+                  checkedChildren={<BugOutlined />}
+                  unCheckedChildren={<BugOutlined />}
+                  disabled={chat.isChatLoading}
+                />
+              </div>
+            </Tooltip>
             {/* 模型选择器 - 图标占位形式 */}
             <Dropdown
               overlay={

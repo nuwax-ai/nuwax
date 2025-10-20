@@ -1076,3 +1076,64 @@ export interface ModelConfig {
  * 查询模型列表API响应类型
  */
 export type ListModelsResponse = RequestResponse<ModelConfig[]>;
+
+// ==================== 开发服务器日志相关类型定义 ====================
+
+/**
+ * 日志级别枚举
+ */
+export enum LogLevel {
+  /** 普通信息 */
+  NORMAL = 'NORMAL',
+  /** 信息 */
+  INFO = 'INFO',
+  /** 警告 */
+  WARN = 'WARN',
+  /** 错误 */
+  ERROR = 'ERROR',
+}
+
+/**
+ * 开发服务器日志条目接口
+ */
+export interface DevLogEntry {
+  /** 行号 */
+  line: number;
+  /** 时间戳 [2025/10/20 09:52:57] */
+  timestamp?: string;
+  /** 日志级别 */
+  level: LogLevel;
+  /** 原始内容 */
+  content: string;
+  /** 是否为错误 */
+  isError?: boolean;
+  /** 错误指纹（用于去重） */
+  errorFingerprint?: string;
+}
+
+/**
+ * 获取开发服务器日志请求参数接口
+ */
+export interface GetDevLogsRequest {
+  /** 项目ID */
+  projectId: string;
+  /** 从第几行开始获取 */
+  fromLine: number;
+}
+
+/**
+ * 获取开发服务器日志响应数据接口
+ */
+export interface GetDevLogsResponse {
+  /** 日志条目数组 */
+  logs: DevLogEntry[];
+  /** 总行数 */
+  totalLines: number;
+  /** 是否还有更多数据 */
+  hasMore: boolean;
+}
+
+/**
+ * 获取开发服务器日志API响应类型
+ */
+export type GetDevLogsApiResponse = RequestResponse<GetDevLogsResponse>;
