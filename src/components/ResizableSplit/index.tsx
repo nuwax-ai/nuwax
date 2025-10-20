@@ -14,6 +14,10 @@ interface Props {
   dividerHoverColor?: string;
   /** 分隔线拖拽时颜色 */
   dividerDraggingColor?: string;
+  /** 容器自定义样式 */
+  style?: React.CSSProperties;
+  /** 容器自定义类名 */
+  className?: string;
 }
 
 const ResizableSplit: React.FC<Props> = ({
@@ -25,6 +29,8 @@ const ResizableSplit: React.FC<Props> = ({
   dividerColor = '#e0e0e0',
   dividerHoverColor = '#bbb',
   dividerDraggingColor = '#1890ff',
+  style,
+  className,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -216,7 +222,11 @@ const ResizableSplit: React.FC<Props> = ({
     : { x: (leftWidthPercent / 100) * containerWidth, y: 0 };
 
   return (
-    <div className={styles.container} ref={containerRef}>
+    <div
+      className={`${styles.container} ${className || ''}`}
+      style={style}
+      ref={containerRef}
+    >
       {/* 拖拽时的遮罩层，防止 iframe 干扰 */}
       {isDragging && <div className={styles.dragOverlay} />}
 

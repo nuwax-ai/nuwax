@@ -553,6 +553,7 @@ const Chat: React.FC = () => {
               showHeader={true}
               onClose={hidePagePreview}
               showCloseButton={!agentDetail?.hideChatArea}
+              titleClassName={cx(styles['title-style'])}
             />
           )
         }

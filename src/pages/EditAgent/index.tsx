@@ -445,6 +445,7 @@ const EditAgent: React.FC = () => {
                     showHeader={true}
                     onClose={hidePagePreview}
                     showCloseButton={!agentConfigInfo?.hideChatArea}
+                    titleClassName={cx(styles['title-style'])}
                   />
                 )
               }

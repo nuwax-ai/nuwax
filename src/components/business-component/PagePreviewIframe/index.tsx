@@ -1,7 +1,12 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
-import { CloseOutlined } from '@ant-design/icons';
-import { Spin } from 'antd';
+import {
+  CloseOutlined,
+  LeftOutlined,
+  ReloadOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
+import { Button, Spin } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -48,6 +53,14 @@ interface PagePreviewIframeProps {
   showCloseButton?: boolean;
   /** 关闭按钮点击回调 */
   onClose?: () => void;
+  /** 容器自定义样式 */
+  style?: React.CSSProperties;
+  /** 容器自定义类名 */
+  className?: string;
+  /** 标题文本自定义样式 */
+  titleStyle?: React.CSSProperties;
+  /** 标题文本自定义类名 */
+  titleClassName?: string;
 }
 
 /**
@@ -63,6 +76,10 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   showHeader = true,
   showCloseButton = true,
   onClose,
+  style,
+  className,
+  titleStyle,
+  titleClassName,
 }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -178,15 +195,50 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     return null;
   }
 
+  function getFrameWindow() {
+    return iframeRef.current?.contentWindow;
+  }
+
+  function reload() {
+    const win = getFrameWindow();
+    win?.location?.reload();
+  }
+
+  function goBack() {
+    const win = getFrameWindow();
+    win?.history?.back();
+  }
+
+  function goForward() {
+    const win = getFrameWindow();
+    win?.history?.forward();
+  }
+
   return (
-    <div className={cx(styles['page-preview-iframe-container'])}>
+    <div
+      className={cx(styles['page-preview-iframe-container'], className)}
+      style={style}
+    >
       {/* 标题栏 */}
       {showHeader && (
         <div className={cx(styles['page-preview-header'])}>
           <h3 className="text-ellipsis">
             <SvgIcon name="icons-page" className={cx(styles['page-icon'])} />
-            <span>{previewPageTitle || '页面预览'}</span>
+            <span className={titleClassName} style={titleStyle}>
+              {previewPageTitle || '页面预览'}
+            </span>
           </h3>
+          <div style={{ display: 'flex', gap: '10px', marginRight: '20px' }}>
+            <Button onClick={reload} icon={<ReloadOutlined />}>
+              刷新
+            </Button>
+            <Button onClick={goBack} icon={<LeftOutlined />}>
+              后退
+            </Button>
+            <Button onClick={goForward} icon={<RightOutlined />}>
+              前进
+            </Button>
+          </div>
           {showCloseButton && (
             <CloseOutlined
               className={cx(styles['close-btn'], 'cursor-pointer')}
