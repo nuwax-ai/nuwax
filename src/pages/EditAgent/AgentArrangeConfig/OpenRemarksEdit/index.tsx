@@ -102,13 +102,6 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
     <>
       <p className={cx(styles['header-title'])}>开场白文案</p>
       <div className={cx(styles['content-box'])}>
-        {/*<Input.TextArea*/}
-        {/*  placeholder="请输入开场白"*/}
-        {/*  value={content}*/}
-        {/*  onChange={(e) => handleOpeningChatMsg(e.target.value)}*/}
-        {/*  autoSize={{ minRows: 3, maxRows: 5 }}*/}
-        {/*/>*/}
-
         <SimpleEditor
           value={content}
           onChange={handleOpeningChatMsg}
@@ -116,16 +109,6 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
           focusBorderColor={'var(--xagi-color-primary)'}
           toolbarAlign="left"
         />
-
-        {/*<EditorProvider*/}
-        {/*  slotBefore={<MenuBar />}*/}
-        {/*  extensions={extensions}*/}
-        {/*  content={content}*/}
-        {/*  onUpdate={handleUpdate}*/}
-        {/*></EditorProvider>*/}
-        {/*<EditorContent editor={editor} />*/}
-        {/*<FloatingMenu editor={editor}>This is the floating menu</FloatingMenu>*/}
-        {/*<BubbleMenu editor={editor}>This is the bubble menu</BubbleMenu>*/}
       </div>
       <div
         className={cx(
