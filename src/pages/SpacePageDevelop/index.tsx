@@ -26,7 +26,7 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useModel, useParams, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import styles from './index.less';
 import PageCreateModal from './PageCreateModal';
 import PageDevelopCardItem from './PageDevelopCardItem';
@@ -35,11 +35,26 @@ import PathParamsConfigModal from './PathParamsConfigModal';
 import ReverseProxyModal from './ReverseProxyModal';
 
 const cx = classNames.bind(styles);
+type IQuery = 'type' | 'create' | 'keyword';
 
 /**
  * 工作空间 - 页面开发
  */
 const SpacePageDevelop: React.FC = () => {
+  // ✅ umi 中的 useSearchParams
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ✅ 当 select 改变时同步 URL
+  const handleChange = (key: IQuery, value: string) => {
+    // 更新 URL 参数
+    const newParams = new URLSearchParams(searchParams);
+    if (value) {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
+    }
+    setSearchParams(newParams);
+  };
   const params = useParams();
   const spaceId = Number(params.spaceId);
   // 页面列表
@@ -48,10 +63,12 @@ const SpacePageDevelop: React.FC = () => {
   const pageAllRef = useRef<CustomPageDto[]>([]);
   // 类型
   const [type, setType] = useState<PageProjectTypeEnum>(
-    PageProjectTypeEnum.All_Type,
+    searchParams.get('type') || PageProjectTypeEnum.All_Type,
   );
   // 搜索关键词
-  const [keyword, setKeyword] = useState<string>('');
+  const [keyword, setKeyword] = useState<string>(
+    searchParams.get('keyword') || '',
+  );
   const [loading, setLoading] = useState<boolean>(false);
   // 打开反向代理弹窗
   const [openReverseProxyModal, setOpenReverseProxyModal] =
@@ -67,7 +84,7 @@ const SpacePageDevelop: React.FC = () => {
     useState<boolean>(false);
   // 创建
   const [create, setCreate] = useState<CreateListEnum>(
-    CreateListEnum.All_Person,
+    Number(searchParams.get('create')) || CreateListEnum.All_Person,
   );
   // 缓存页面创建类型
   const pageCreateTypeRef = useRef<PageDevelopCreateTypeEnum>(
@@ -99,6 +116,19 @@ const SpacePageDevelop: React.FC = () => {
     }
     setPageList(_list);
   };
+  // ✅ 监听 URL 改变（支持浏览器前进/后退）
+  useEffect(() => {
+    const type = searchParams.get('type') || PageProjectTypeEnum.All_Type;
+    const create =
+      Number(searchParams.get('create')) || CreateListEnum.All_Person;
+    const keyword = searchParams.get('keyword') || '';
+
+    setType(type);
+    setCreate(create);
+    setKeyword(keyword);
+
+    handleFilterList(type, create, keyword);
+  }, [searchParams]);
 
   // 查询页面列表接口
   const { run: runPageList } = useRequest(apiCustomPageQueryList, {
@@ -142,6 +172,7 @@ const SpacePageDevelop: React.FC = () => {
     const _value = value as PageProjectTypeEnum;
     setType(_value);
     handleFilterList(_value, create, keyword);
+    handleChange('type', _value);
   };
 
   // 切换创建者
@@ -149,6 +180,7 @@ const SpacePageDevelop: React.FC = () => {
     const _value = value as CreateListEnum;
     setCreate(_value);
     handleFilterList(type, _value, keyword);
+    handleChange('create', _value.toString());
   };
 
   // 页面搜索
@@ -156,6 +188,7 @@ const SpacePageDevelop: React.FC = () => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
     handleFilterList(type, create, _keyword);
+    handleChange('keyword', _keyword);
   };
 
   // 清除关键词

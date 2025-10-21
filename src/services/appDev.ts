@@ -285,7 +285,7 @@ export const sendChatMessage = async (
       chatRequest.request_id ||
       `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     // 添加 user_id 字段，因为服务器可能需要这个字段来生成 session_id
-    user_id: 'app-dev-user',
+    // user_id: 'app-dev-user',
   };
 
   console.log('📤 [Service] 发送聊天请求:', requestData);

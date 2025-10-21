@@ -1,5 +1,6 @@
 import CreateAgent from '@/components/CreateAgent';
 import PublishComponentModal from '@/components/PublishComponentModal';
+import ResizableSplit from '@/components/ResizableSplit';
 import ShowStand from '@/components/ShowStand';
 import VersionHistory from '@/components/VersionHistory';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
@@ -32,6 +33,7 @@ import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
+import PagePreviewIframe from '../../components/business-component/PagePreviewIframe';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
 import AgentModelSetting from './AgentModelSetting';
@@ -78,6 +80,19 @@ const EditAgent: React.FC = () => {
     debounceWait: 300,
     onSuccess: (result: AgentConfigInfo) => {
       setAgentConfigInfo(result);
+    },
+  });
+
+  const { run: runUpdateAgent } = useRequest(apiAgentConfigInfo, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: AgentConfigInfo) => {
+      const _agentConfigInfo = {
+        ...agentConfigInfo,
+        pageHomeIndex: result.pageHomeIndex,
+      } as AgentConfigInfo;
+
+      setAgentConfigInfo(_agentConfigInfo);
     },
   });
 
@@ -175,6 +190,11 @@ const EditAgent: React.FC = () => {
     // 用户问题建议
     if (attr === 'openSuggest') {
       setIsSuggest(value === OpenCloseEnum.Open);
+    }
+    // 打开扩展页面时，检查页面是否存在
+    // 展开页面区在删除页面后重新添加没有后端接口没有返回添加的页面地址，需要前端手动刷新
+    if (attr === 'expandPageArea' && agentConfigInfo?.pageHomeIndex === null) {
+      runUpdateAgent(agentId, 'pageHomeIndex');
     }
 
     const {
@@ -321,7 +341,7 @@ const EditAgent: React.FC = () => {
     }
   };
 
-  useEffect(() => {
+  const handleOpenPreview = () => {
     // 判断是否默认展示页面首页
     if (
       agentConfigInfo &&
@@ -338,8 +358,10 @@ const EditAgent: React.FC = () => {
     } else {
       showPagePreview(null);
     }
+  };
 
-    //
+  useEffect(() => {
+    handleOpenPreview();
   }, [agentConfigInfo]);
 
   return (
@@ -400,13 +422,37 @@ const EditAgent: React.FC = () => {
             />
           </div>
         </div>
-        {/*预览与调试*/}
-        <PreviewAndDebug
-          agentConfigInfo={agentConfigInfo}
-          agentId={agentId}
-          onPressDebug={handlePressDebug}
-          onAgentConfigInfo={setAgentConfigInfo}
-        />
+
+        {(!agentConfigInfo?.hideChatArea || pagePreviewData) && (
+          <div style={{ flex: pagePreviewData ? '9 1' : '4 1' }}>
+            {/*预览与调试和预览页面*/}
+            <ResizableSplit
+              left={
+                agentConfigInfo?.hideChatArea ? null : (
+                  <PreviewAndDebug
+                    agentConfigInfo={agentConfigInfo}
+                    agentId={agentId}
+                    onPressDebug={handlePressDebug}
+                    onAgentConfigInfo={setAgentConfigInfo}
+                    onOpenPreview={handleOpenPreview}
+                  />
+                )
+              }
+              right={
+                pagePreviewData && (
+                  <PagePreviewIframe
+                    pagePreviewData={pagePreviewData}
+                    showHeader={true}
+                    onClose={hidePagePreview}
+                    showCloseButton={!agentConfigInfo?.hideChatArea}
+                    titleClassName={cx(styles['title-style'])}
+                  />
+                )
+              }
+            />
+          </div>
+        )}
+
         {/*调试详情*/}
         <DebugDetails
           visible={showType === EditAgentShowType.Debug_Details}

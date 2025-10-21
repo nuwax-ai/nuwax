@@ -72,6 +72,14 @@ const ReverseProxyContentConfig: React.FC<ReverseProxyContentConfigProps> = ({
       return;
     }
 
+    // 是否包含根目录
+    const isRootPath = currentProxyConfigs?.some((item) => item.path === '/');
+    if (isRootPath) {
+      message.error('根路径/是系统内置，无需配置');
+      setLoading(false);
+      return;
+    }
+
     runSave({
       projectId,
       proxyConfigs: allProxyConfigs,

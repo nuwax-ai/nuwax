@@ -234,14 +234,18 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 界面配置列表 - 当前激活 tab 面板的 key
   const pageActiveKey = useMemo(() => {
     const keyList: AgentArrangeConfigEnum[] = [];
+    // 页面
     if (isExistComponent(AgentComponentTypeEnum.Page)) {
       keyList.push(AgentArrangeConfigEnum.Page);
     }
+
+    // 事件绑定
     if (isExistComponent(AgentComponentTypeEnum.Event)) {
       keyList.push(AgentArrangeConfigEnum.Page_Event_Binding);
     }
 
-    keyList.push(AgentArrangeConfigEnum.Opening_Remarks);
+    // 开场白
+    // keyList.push(AgentArrangeConfigEnum.Opening_Remarks);
     return keyList;
   }, [agentComponentList]);
 

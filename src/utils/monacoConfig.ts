@@ -298,9 +298,9 @@ export const vueLanguageConfig = {
 export const editorOptions = {
   automaticLayout: true,
   scrollBeyondLastLine: false,
-  fontSize: 14,
+  fontSize: 12,
   fontFamily:
-    "'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace",
+    "'Fira Code','JetBrains Mono', monospace, 'Consolas', 'Monaco', 'Courier New'",
   lineHeight: 20, // 明确设置行高，确保光标位置准确
   tabSize: 2,
   insertSpaces: true, // 使用空格而不是制表符
@@ -380,4 +380,16 @@ export const editorOptions = {
   fontLigatures: true,
   fontWeight: 'normal',
   letterSpacing: 0,
+  // 禁用粘性滚动效果
+  stickyScroll: {
+    enabled: false,
+  },
+  // 禁用错误诊断和波浪线显示
+  diagnostics: {
+    enabled: false,
+  },
+  // 禁用语法检查
+  validate: false,
+  // 禁用错误标记
+  renderValidationDecorations: 'off' as const,
 };
