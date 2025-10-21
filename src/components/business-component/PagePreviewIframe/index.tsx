@@ -221,7 +221,12 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   }
 
   function goCopy() {
-    copyTextToClipboard(pageUrl, () => {}, true);
+    let url = pageUrl;
+    // 如果不是 http(s) 开头，则加上 BASE_URL
+    if (!/^https?:\/\//.test(pageUrl)) {
+      url = `${window.location.protocol}//${window.location.host}${pageUrl}`;
+    }
+    copyTextToClipboard(url, () => {}, true);
   }
 
   return (
