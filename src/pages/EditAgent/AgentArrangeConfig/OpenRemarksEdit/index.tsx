@@ -1,3 +1,4 @@
+import pageImage from '@/assets/images/agent_image.png';
 import { SvgIcon } from '@/components/base';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { ICON_SETTING } from '@/constants/images.constants';
@@ -158,6 +159,12 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
           onChange={(e) => handleChangeGuidQuestions(index, e.target.value)}
           showCount={false}
           maxLength={30}
+          prefix={
+            <img
+              className={cx(styles['icon-input-prefix'])}
+              src={item.icon || pageImage}
+            />
+          }
           suffix={
             <>
               <TooltipIcon
