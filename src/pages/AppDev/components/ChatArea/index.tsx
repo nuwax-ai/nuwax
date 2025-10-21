@@ -46,6 +46,7 @@ import React, {
   useState,
 } from 'react';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
+import ChatInputHome from './components/ChatInputHome';
 import MessageAttachment from './components/MessageAttachment';
 import styles from './index.less';
 
@@ -779,6 +780,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             )}
           </div>
         )}
+
+        <ChatInputHome
+          chat={chat}
+          modelSelector={modelSelector}
+          fileContentState={fileContentState}
+          isStoppingTask={isStoppingTask}
+          isSendingMessage={isSendingMessage}
+          handleCancelAgentTask={handleCancelAgentTask}
+          onEnter={handleSendMessage}
+        />
 
         {/* TextArea 输入框 */}
         <Input.TextArea
