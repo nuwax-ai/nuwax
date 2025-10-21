@@ -1,8 +1,10 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { SANDBOX } from '@/constants/common.constants';
 import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
+import { copyTextToClipboard } from '@/utils';
 import {
   CloseOutlined,
+  CopyOutlined,
   LeftOutlined,
   ReloadOutlined,
   RightOutlined,
@@ -215,6 +217,10 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     win?.history?.forward();
   }
 
+  function goCopy() {
+    copyTextToClipboard(pageUrl, () => {}, true);
+  }
+
   return (
     <div
       className={cx(styles['page-preview-iframe-container'], className)}
@@ -240,6 +246,10 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
             <Tooltip title="前进">
               <Button onClick={goForward} icon={<RightOutlined />} />
+            </Tooltip>
+
+            <Tooltip title="复制">
+              <Button onClick={goCopy} icon={<CopyOutlined />} />
             </Tooltip>
           </div>
           {showCloseButton && (
