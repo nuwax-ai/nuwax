@@ -74,7 +74,7 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
 
     // 显示二次确认弹窗
     Modal.confirm({
-      content: `确定要删除数据资源 "${resource.name}" 吗？`,
+      content: `数据资源一旦删除，页面将失去对该资源的访问权限`,
       okText: '确认删除',
       cancelText: '取消',
       okType: 'danger',
