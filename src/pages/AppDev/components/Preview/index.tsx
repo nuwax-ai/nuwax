@@ -1,4 +1,5 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import { SANDBOX } from '@/constants/common.constants';
 import {
   ExclamationCircleOutlined,
   GlobalOutlined,
@@ -537,7 +538,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               key={`${+(lastRefreshed || 0)}`} // 添加key属性，当devServerUrl变化时强制重新渲染iframe
               src={devServerUrl}
               title="Preview"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+              sandbox={SANDBOX}
               onLoad={handleIframeLoad}
               onError={handleIframeError}
             />

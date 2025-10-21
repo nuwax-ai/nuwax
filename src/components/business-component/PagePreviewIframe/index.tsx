@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { SANDBOX } from '@/constants/common.constants';
 import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
 import {
   CloseOutlined,
@@ -258,7 +259,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         <iframe
           ref={iframeRef}
           src={pageUrl}
-          sandbox="allow-scripts allow-same-origin"
+          sandbox={SANDBOX}
           className={cx(styles['page-iframe'])}
           title={pagePreviewData.name || '页面预览'}
           onLoad={handleIframeLoad}
