@@ -147,7 +147,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         timer = setTimeout(async () => {
           // 获取 head 中的 title 内容
           const title =
-            iframeDoc.querySelector('head > title')?.textContent || null;
+            iframeDoc.querySelector('head > title')?.textContent || '页面预览';
           setPreviewPageTitle(title);
 
           const html = iframeDoc.body.innerHTML;
@@ -240,7 +240,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
           <h3 className="text-ellipsis">
             <SvgIcon name="icons-page" className={cx(styles['page-icon'])} />
             <span className={titleClassName} style={titleStyle}>
-              {previewPageTitle || '页面预览'}
+              {previewPageTitle}
             </span>
           </h3>
           <div style={{ display: 'flex', gap: '10px', marginRight: '20px' }}>
