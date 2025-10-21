@@ -69,10 +69,10 @@ export const useDevLogs = (
   options: UseDevLogsOptions = {},
 ): UseDevLogsReturn => {
   const {
-    pollInterval = 2000,
+    pollInterval = 5000, // 默认5秒轮询
     maxLogLines = 1000,
     enabled = true,
-    autoScroll = true,
+    // autoScroll = true, // 暂时注释掉，后续可能需要
   } = options;
 
   // 状态管理
@@ -127,9 +127,10 @@ export const useDevLogs = (
 
     try {
       setIsLoading(true);
-      const response = await getDevLogs(projectId, lastLine);
+      const response = await getDevLogs(projectId, lastLine + 1);
 
       if (response.success && response.data.logs.length > 0) {
+        console.log('获取到日志数据:', response.data.logs);
         addNewLogs(response.data.logs);
       }
     } catch (error) {
@@ -176,12 +177,16 @@ export const useDevLogs = (
    * 清空日志
    */
   const clearLogs = useCallback(() => {
+    // 保存当前最后一行号作为新的起点
+    const currentLastLine =
+      logs.length > 0 ? Math.max(...logs.map((log) => log.line)) : lastLine;
+
     setLogs([]);
     setErrorCount(0);
-    setLastLine(0);
+    setLastLine(currentLastLine); // ✅ 保留最后一行号，后续从这里继续
     sentErrorsRef.current.clear();
     previousLogsRef.current = [];
-  }, []);
+  }, [logs, lastLine]);
 
   /**
    * 获取新的错误日志
@@ -266,7 +271,7 @@ export const useSimpleDevLogs = (
 ) => {
   return useDevLogs(projectId, {
     enabled,
-    pollInterval: 3000,
+    pollInterval: 5000, // 调整为5秒
     maxLogLines: 500,
   });
 };
@@ -285,12 +290,12 @@ export const useErrorMonitoring = (
     logs,
     errorCount,
     sentErrors,
-    getNewErrorLogs,
+    // getNewErrorLogs, // 暂时注释掉，后续可能需要
     markErrorAsSent,
     hasNewErrors,
   } = useDevLogs(projectId, {
     enabled,
-    pollInterval: 2000,
+    pollInterval: 5000, // 调整为5秒
     maxLogLines: 1000,
   });
 

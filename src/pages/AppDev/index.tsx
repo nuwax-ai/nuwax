@@ -23,6 +23,7 @@ import {
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { DataSourceSelection } from '@/types/interfaces/appDev';
 import {
+  CodeOutlined,
   DownloadOutlined,
   EyeOutlined,
   FullscreenOutlined,
@@ -32,6 +33,7 @@ import {
 } from '@ant-design/icons';
 import {
   Alert,
+  Badge,
   Button,
   Col,
   Input,
@@ -54,7 +56,7 @@ import React, {
 import { useModel, useParams } from 'umi';
 import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
-import DevLogViewer from './components/DevLogViewer';
+import DevLogConsole from './components/DevLogConsole';
 import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
@@ -111,6 +113,7 @@ const AppDev: React.FC = () => {
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showDevLogConsole, setShowDevLogConsole] = useState(false);
 
   // 图片清空方法引用
   const clearUploadedImagesRef = useRef<(() => void) | null>(null);
@@ -188,7 +191,7 @@ const AppDev: React.FC = () => {
   // 开发服务器日志管理
   const devLogs = useDevLogs(projectId || '', {
     enabled: hasValidProjectId && isServiceRunning,
-    pollInterval: 2000,
+    pollInterval: 5000, // 调整为5秒轮询
     maxLogLines: 1000,
   });
 
@@ -249,25 +252,25 @@ const AppDev: React.FC = () => {
   // 自动异常处理监听
   useEffect(() => {
     // 监听Agent输出结束
-    const handleAgentPromptEnd = () => {
-      autoErrorHandling.handleAgentPromptEnd(devLogs.logs, chat.sendMessage);
-    };
+    // const handleAgentPromptEnd = () => {
+    //   autoErrorHandling.handleAgentPromptEnd(devLogs.logs, chat.sendMessage);
+    // };
 
     // 监听文件操作完成
-    const handleFileOperationComplete = () => {
-      autoErrorHandling.handleFileOperationComplete(
-        devLogs.logs,
-        chat.sendMessage,
-      );
-    };
+    // const handleFileOperationComplete = () => {
+    //   autoErrorHandling.handleFileOperationComplete(
+    //     devLogs.logs,
+    //     chat.sendMessage,
+    //   );
+    // };
 
     // 监听预览白屏
-    const handlePreviewWhiteScreen = () => {
-      autoErrorHandling.handlePreviewWhiteScreen(
-        devLogs.logs,
-        chat.sendMessage,
-      );
-    };
+    // const handlePreviewWhiteScreen = () => {
+    //   autoErrorHandling.handlePreviewWhiteScreen(
+    //     devLogs.logs,
+    //     chat.sendMessage,
+    //   );
+    // };
 
     // 这里可以添加事件监听器
     // 例如：监听chat的prompt_end事件
@@ -367,7 +370,7 @@ const AppDev: React.FC = () => {
 
       // 检查API响应格式
       if (result?.code === '0000' && result?.data) {
-        const { devServerUrl, prodServerUrl } = result.data;
+        const { prodServerUrl } = result.data;
         // 显示部署结果
         Modal.success({
           title: '部署成功',
@@ -987,6 +990,22 @@ const AppDev: React.FC = () => {
                   ) : (
                     <>
                       {/* 原有的按钮：重启服务、全屏预览、导出项目 */}
+                      {/* 添加日志查看按钮 当有错误时显示 小红点*/}
+                      <Tooltip
+                        title={showDevLogConsole ? '关闭日志' : '查看日志'}
+                      >
+                        <Button
+                          type="text"
+                          icon={<CodeOutlined />}
+                          color="danger"
+                          onClick={() =>
+                            setShowDevLogConsole(!showDevLogConsole)
+                          }
+                        />
+                        {devLogs.errorCount > 0 && (
+                          <Badge count={devLogs.errorCount} color="danger" />
+                        )}
+                      </Tooltip>
                       <Tooltip title="重启开发服务器">
                         <Button
                           type="text"
@@ -1163,6 +1182,17 @@ const AppDev: React.FC = () => {
                 </div>
               </div>
             </div>
+            {/* 开发日志查看器 */}
+            {showDevLogConsole && (
+              <DevLogConsole
+                logs={devLogs.logs}
+                errorCount={devLogs.errorCount}
+                isLoading={devLogs.isLoading}
+                onClear={devLogs.clearLogs}
+                onRefresh={devLogs.refreshLogs}
+                onClose={() => setShowDevLogConsole(false)}
+              />
+            )}
           </Col>
         </Row>
 
@@ -1353,17 +1383,6 @@ const AppDev: React.FC = () => {
           )}
         />
       </div>
-
-      {/* 开发服务器日志查看器 */}
-      <DevLogViewer
-        logs={devLogs.logs}
-        errorCount={devLogs.errorCount}
-        isLoading={devLogs.isLoading}
-        autoScroll={true}
-        onClear={devLogs.clearLogs}
-        onRefresh={devLogs.refreshLogs}
-        visible={hasValidProjectId && isServiceRunning}
-      />
 
       {/* 页面开发项目编辑模态框 */}
       <PageEditModal

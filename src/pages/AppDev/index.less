@@ -145,6 +145,7 @@
   flex: 1;
   padding: 0;
   overflow: hidden;
+  position: relative;
 }
 
 .contentRow {
@@ -355,27 +356,27 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 30%);
   backdrop-filter: blur(4px);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.3s ease-out;
+  animation: fade-in 0.3s ease-out;
 }
 
 .deployOverlayContent {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 95%);
   border-radius: 12px;
   padding: 32px 40px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 20%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
   min-width: 280px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 20%);
 }
 
 .deploySpinner {
@@ -403,10 +404,11 @@
 }
 
 // 动画效果
-@keyframes fadeIn {
+@keyframes fade-in {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -416,6 +418,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -449,8 +452,8 @@
 
   // 暗色主题下的部署遮罩样式
   .deployOverlayContent {
-    background: rgba(30, 41, 59, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(30, 41, 59, 95%);
+    border: 1px solid rgba(255, 255, 255, 10%);
   }
 
   .deployText {

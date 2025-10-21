@@ -1,8 +1,4 @@
-/**
- * AppDev API服务模块
- * 处理与后端API的通信
- */
-
+import { parseLogEntry } from '@/pages/AppDev/utils/devLogParser';
 import type {
   BuildResponse,
   CancelResponse,
@@ -12,7 +8,7 @@ import type {
   CustomBuildRes,
   DevLogEntry,
   DevServerInfo,
-  GetDevLogsApiResponse,
+  GetDevLogApiResponse,
   GetProjectContentResponse,
   KeepAliveResponse,
   ListModelsResponse,
@@ -22,7 +18,6 @@ import type {
   UploadAndStartProjectParams,
   UploadAndStartProjectResponse,
 } from '@/types/interfaces/appDev';
-import { LogLevel } from '@/types/interfaces/appDev';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
@@ -557,267 +552,42 @@ export const listModels = async (
 // ==================== 开发服务器日志相关API服务 ====================
 
 /**
- * Mock日志数据生成器
- * 基于实际日志格式生成模拟数据
- * @param fromLine 从第几行开始
- * @returns DevLogEntry[] 模拟日志数据
- */
-const generateMockLogs = (fromLine: number): DevLogEntry[] => {
-  const logs: DevLogEntry[] = [];
-  const currentTime = new Date();
-
-  // 模拟脚本开始执行
-  if (fromLine === 0) {
-    logs.push({
-      line: 1,
-      timestamp: currentTime
-        .toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })
-        .replace(/\//g, '/'),
-      level: LogLevel.INFO,
-      content: '> agent-platform-front@1.0.0 dev',
-      isError: false,
-    });
-
-    logs.push({
-      line: 2,
-      timestamp: currentTime
-        .toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })
-        .replace(/\//g, '/'),
-      level: LogLevel.INFO,
-      content: '> umi dev',
-      isError: false,
-    });
-  }
-
-  // 模拟Vite服务启动
-  if (fromLine <= 3) {
-    logs.push({
-      line: 3,
-      timestamp: currentTime
-        .toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })
-        .replace(/\//g, '/'),
-      level: LogLevel.INFO,
-      content: 'VITE v5.4.10  ready in 2345 ms',
-      isError: false,
-    });
-
-    logs.push({
-      line: 4,
-      timestamp: currentTime
-        .toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })
-        .replace(/\//g, '/'),
-      level: LogLevel.INFO,
-      content: '➜  Local:   http://localhost:3000/',
-      isError: false,
-    });
-
-    logs.push({
-      line: 5,
-      timestamp: currentTime
-        .toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })
-        .replace(/\//g, '/'),
-      level: LogLevel.INFO,
-      content: '➜  Network: use --host to expose',
-      isError: false,
-    });
-  }
-
-  // 模拟错误日志（随机生成）
-  if (Math.random() < 0.3) {
-    // 30%概率生成错误
-    const errorLine = Math.max(fromLine + 1, 6);
-    logs.push({
-      line: errorLine,
-      timestamp: currentTime
-        .toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })
-        .replace(/\//g, '/'),
-      level: LogLevel.ERROR,
-      content:
-        "ERROR: Module not found: Can't resolve './components/NonExistentComponent' in '/Users/a1234/www/agent-platform-front/src/pages/AppDev'",
-      isError: true,
-      errorFingerprint: `NonExistentComponent-${errorLine}`,
-    });
-
-    // 添加错误堆栈
-    logs.push({
-      line: errorLine + 1,
-      timestamp: currentTime
-        .toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })
-        .replace(/\//g, '/'),
-      level: LogLevel.ERROR,
-      content:
-        '    at Module.require (node:internal/modules/cjs/loader:1103:19)',
-      isError: true,
-      errorFingerprint: `NonExistentComponent-${errorLine}`,
-    });
-
-    logs.push({
-      line: errorLine + 2,
-      timestamp: currentTime
-        .toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })
-        .replace(/\//g, '/'),
-      level: LogLevel.ERROR,
-      content:
-        '    at Object.<anonymous> (/Users/a1234/www/agent-platform-front/src/pages/AppDev/index.tsx:15:1)',
-      isError: true,
-      errorFingerprint: `NonExistentComponent-${errorLine}`,
-    });
-  }
-
-  // 模拟PostCSS错误
-  if (Math.random() < 0.2) {
-    // 20%概率生成PostCSS错误
-    const postCssLine = Math.max(fromLine + 1, 10);
-    logs.push({
-      line: postCssLine,
-      timestamp: currentTime
-        .toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })
-        .replace(/\//g, '/'),
-      level: LogLevel.ERROR,
-      content: 'ERROR: PostCSS Error: Failed to parse CSS',
-      isError: true,
-      errorFingerprint: `PostCSS-${postCssLine}`,
-    });
-  }
-
-  // 模拟Internal server error
-  if (Math.random() < 0.1) {
-    // 10%概率生成服务器错误
-    const serverErrorLine = Math.max(fromLine + 1, 15);
-    logs.push({
-      line: serverErrorLine,
-      timestamp: currentTime
-        .toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })
-        .replace(/\//g, '/'),
-      level: LogLevel.ERROR,
-      content: 'ERROR: Internal server error',
-      isError: true,
-      errorFingerprint: `InternalServerError-${serverErrorLine}`,
-    });
-
-    logs.push({
-      line: serverErrorLine + 1,
-      timestamp: currentTime
-        .toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })
-        .replace(/\//g, '/'),
-      level: LogLevel.ERROR,
-      content:
-        '    at Server.<anonymous> (/Users/a1234/www/agent-platform-front/node_modules/express/lib/application.js:123:45)',
-      isError: true,
-      errorFingerprint: `InternalServerError-${serverErrorLine}`,
-    });
-  }
-
-  return logs;
-};
-
-/**
  * 获取开发服务器日志
  * @param projectId 项目ID
- * @param fromLine 从第几行开始获取
- * @returns Promise<GetDevLogsApiResponse> 日志数据
+ * @param startIndex 从第几行开始获取
+ * @returns Promise<GetDevLogApiResponse> 日志数据
  */
 export const getDevLogs = async (
   projectId: string,
-  fromLine: number,
-): Promise<GetDevLogsApiResponse> => {
-  // TODO: 后续替换为真实接口
-  // return request.get(`/api/custom-page/get-dev-logs`, {
-  //   params: { projectId, fromLine }
-  // });
+  startIndex: number = 0,
+): Promise<GetDevLogApiResponse> => {
+  const response = await request('/api/custom-page/get-dev-log', {
+    method: 'POST',
+    data: {
+      projectId: Number(projectId), // 转换为数字
+      startIndex,
+    },
+  });
 
-  // Mock实现
-  const mockLogs = generateMockLogs(fromLine);
-  const totalLines = fromLine + mockLogs.length;
+  // 处理后端返回的日志数据，确保包含所有必需字段
+  console.log('后端返回的原始日志数据:', response.data.logs);
+  const processedLogs: DevLogEntry[] = response.data.logs.map((log: any) => {
+    // 如果后端返回的日志对象缺少某些字段，使用 parseLogEntry 来补充
+    if (!log.level || !log.isError) {
+      return parseLogEntry(log.content, log.line);
+    }
+    return log as DevLogEntry;
+  });
+  console.log('处理后的日志数据:', processedLogs);
 
   return {
-    success: true,
-    code: 200,
-    displayCode: 'SUCCESS',
-    debugInfo: null,
-    tid: `tid_${Date.now()}`,
+    ...response,
     data: {
-      logs: mockLogs,
-      totalLines,
-      hasMore: totalLines < 1000, // 模拟最多1000行
+      ...response.data,
+      logs: processedLogs,
+      hasMore:
+        response.data.startIndex + response.data.logs.length <
+        response.data.totalLines,
     },
-    message: '获取日志成功',
   };
 };

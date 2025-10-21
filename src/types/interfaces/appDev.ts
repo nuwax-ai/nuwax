@@ -1114,26 +1114,28 @@ export interface DevLogEntry {
 /**
  * 获取开发服务器日志请求参数接口
  */
-export interface GetDevLogsRequest {
+export interface GetDevLogRequest {
   /** 项目ID */
-  projectId: string;
-  /** 从第几行开始获取 */
-  fromLine: number;
+  projectId: number;
+  /** 起始行号 */
+  startIndex: number;
 }
 
 /**
  * 获取开发服务器日志响应数据接口
  */
-export interface GetDevLogsResponse {
-  /** 日志条目数组 */
+export interface GetDevLogResponse {
+  /** 项目ID */
+  projectId: number;
+  /** 日志内容列表 */
   logs: DevLogEntry[];
   /** 总行数 */
   totalLines: number;
-  /** 是否还有更多数据 */
-  hasMore: boolean;
+  /** 当前起始行号 */
+  startIndex: number;
 }
 
 /**
  * 获取开发服务器日志API响应类型
  */
-export type GetDevLogsApiResponse = RequestResponse<GetDevLogsResponse>;
+export type GetDevLogApiResponse = RequestResponse<GetDevLogResponse>;
