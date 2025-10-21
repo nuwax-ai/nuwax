@@ -39,6 +39,7 @@ interface PreviewProps {
   devServerUrl?: string;
   className?: string;
   isStarting?: boolean;
+  isDeveloping?: boolean;
   isRestarting?: boolean; // 新增
   isProjectUploading?: boolean; // 新增
   startError?: string | null;
@@ -68,6 +69,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       devServerUrl,
       className,
       isStarting,
+      isDeveloping,
       isRestarting,
       isProjectUploading,
       startError,
@@ -179,6 +181,165 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         setRetrying(false);
       }
     }, [devServerUrl, loadDevServerPreview, onStartDev, onRestartDev]);
+
+    /**
+     * 获取空状态配置
+     * 根据当前状态返回 AppDevEmptyState 的配置信息
+     */
+    const getEmptyStateConfig = useCallback(() => {
+      // 判断当前状态类型
+      const hasError = loadError || serverMessage;
+      const isLoading =
+        isProjectUploading || isRestarting || isDeveloping || isStarting;
+      const hasStartError = !!startError;
+      const noServerUrl = devServerUrl === undefined;
+
+      // 确定状态类型
+      let type: 'error' | 'loading' | 'no-data' | 'empty';
+      if (hasError) {
+        type = 'error';
+      } else if (isLoading) {
+        type = 'loading';
+      } else if (noServerUrl) {
+        type = 'no-data';
+      } else {
+        type = 'empty';
+      }
+
+      // 确定图标
+      let icon: React.ReactNode;
+      if (hasError) {
+        icon = <ExclamationCircleOutlined />;
+      } else if (isProjectUploading || isRestarting || isStarting) {
+        icon = <ThunderboltOutlined />;
+      } else if (hasStartError) {
+        icon = <ExclamationCircleOutlined />;
+      } else {
+        icon = <GlobalOutlined />;
+      }
+
+      // 确定标题
+      let title: string;
+      if (loadError) {
+        title = '预览加载失败';
+      } else if (serverMessage) {
+        title = serverErrorCode
+          ? `服务器错误 (${formatErrorCode(serverErrorCode)})`
+          : '服务器错误';
+      } else if (isProjectUploading) {
+        title = '导入项目中';
+      } else if (isRestarting) {
+        title = '重启中';
+      } else if (isStarting) {
+        title = '启动中';
+      } else if (isDeveloping) {
+        title = '开发中';
+      } else if (hasStartError) {
+        title = serverErrorCode
+          ? `开发服务器启动失败 (${formatErrorCode(serverErrorCode)})`
+          : '开发服务器启动失败';
+      } else if (noServerUrl) {
+        title = '暂无预览地址';
+      } else {
+        title = '等待开发服务器启动';
+      }
+
+      // 确定描述
+      let description: string;
+      if (serverMessage) {
+        description = serverMessage;
+      } else if (loadError) {
+        description = '预览页面加载失败，请检查开发服务器状态或网络连接';
+      } else if (isProjectUploading) {
+        description = '正在导入项目并重启开发服务器，请稍候...';
+      } else if (isRestarting) {
+        description = '正在重启开发服务器，请稍候...';
+      } else if (isStarting) {
+        description = '正在启动开发环境，请稍候...';
+      } else if (isDeveloping) {
+        description = '正在开发中，请稍候...';
+      } else if (hasStartError) {
+        description = startError || '';
+      } else if (noServerUrl) {
+        description = '当前没有可用的预览地址，请先启动开发服务器';
+      } else {
+        description = '正在连接开发服务器，请稍候...';
+      }
+
+      // 确定按钮配置
+      let buttons:
+        | Array<{
+            text: string;
+            icon: React.ReactNode;
+            onClick: () => void;
+            loading?: boolean;
+            disabled?: boolean;
+            type?: 'primary';
+          }>
+        | undefined;
+
+      if (hasError) {
+        // 有错误时显示重试按钮
+        buttons = [
+          {
+            text: retrying ? '重试中...' : '重试',
+            icon: <ReloadOutlined />,
+            onClick: retryPreview,
+            loading: retrying,
+            disabled: retrying,
+          },
+        ];
+
+        // 如果是服务器错误且有重启回调，添加重启服务器按钮
+        if (serverMessage && onRestartDev) {
+          buttons.push({
+            text: '重启服务器',
+            icon: <ThunderboltOutlined />,
+            onClick: onRestartDev,
+            type: 'primary',
+          });
+        }
+      } else if (isLoading) {
+        // 加载中时不显示按钮
+        buttons = undefined;
+      } else if (onStartDev || onRestartDev) {
+        // 其他情况且有启动/重启回调时显示重启服务按钮
+        buttons = [
+          {
+            text: retrying ? '重启中...' : '重启服务',
+            icon: <ReloadOutlined />,
+            onClick: retryPreview,
+            loading: retrying,
+            disabled: retrying,
+          },
+        ];
+      } else {
+        buttons = undefined;
+      }
+
+      return {
+        type,
+        icon,
+        title,
+        description,
+        buttons,
+      };
+    }, [
+      loadError,
+      serverMessage,
+      isProjectUploading,
+      isRestarting,
+      isDeveloping,
+      isStarting,
+      startError,
+      devServerUrl,
+      serverErrorCode,
+      formatErrorCode,
+      retrying,
+      retryPreview,
+      onRestartDev,
+      onStartDev,
+    ]);
 
     /**
      * 刷新预览
@@ -379,6 +540,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           !serverMessage &&
           !isStarting &&
           !isRestarting &&
+          !isDeveloping &&
           !isProjectUploading ? (
             <iframe
               ref={iframeRef}
@@ -393,113 +555,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             />
           ) : (
             <AppDevEmptyState
-              type={
-                loadError || serverMessage
-                  ? 'error'
-                  : isProjectUploading
-                  ? 'loading'
-                  : isRestarting
-                  ? 'loading'
-                  : isStarting
-                  ? 'loading'
-                  : startError
-                  ? 'error'
-                  : devServerUrl === undefined
-                  ? 'no-data'
-                  : 'empty'
-              }
-              icon={
-                loadError || serverMessage ? (
-                  <ExclamationCircleOutlined />
-                ) : isProjectUploading ? (
-                  <ThunderboltOutlined />
-                ) : isRestarting ? (
-                  <ThunderboltOutlined />
-                ) : isStarting ? (
-                  <ThunderboltOutlined />
-                ) : startError ? (
-                  <ExclamationCircleOutlined />
-                ) : (
-                  <GlobalOutlined />
-                )
-              }
-              title={
-                loadError
-                  ? '预览加载失败'
-                  : serverMessage
-                  ? serverErrorCode
-                    ? `服务器错误 (${formatErrorCode(serverErrorCode)})`
-                    : '服务器错误'
-                  : isProjectUploading
-                  ? '导入项目中'
-                  : isRestarting
-                  ? '重启中'
-                  : isStarting
-                  ? '启动中'
-                  : startError
-                  ? serverErrorCode
-                    ? `开发服务器启动失败 (${formatErrorCode(serverErrorCode)})`
-                    : '开发服务器启动失败'
-                  : devServerUrl === undefined
-                  ? '暂无预览地址'
-                  : '等待开发服务器启动'
-              }
-              description={
-                serverMessage ||
-                (loadError
-                  ? '预览页面加载失败，请检查开发服务器状态或网络连接'
-                  : isProjectUploading
-                  ? '正在导入项目并重启开发服务器，请稍候...'
-                  : isRestarting
-                  ? '正在重启开发服务器，请稍候...'
-                  : isStarting
-                  ? '正在启动开发环境，请稍候...'
-                  : startError
-                  ? startError
-                  : devServerUrl === undefined
-                  ? '当前没有可用的预览地址，请先启动开发服务器'
-                  : '正在连接开发服务器，请稍候...')
-              }
+              {...getEmptyStateConfig()}
               maxDescriptionLength={150} // 限制描述文本长度
               allowDescriptionWrap={true} // 允许换行显示
               maxLines={4} // 最多显示 4 行
               clickableDescription={true} // 启用点击查看完整内容
               viewFullTextButtonText="查看完整错误信息" // 自定义按钮文本
-              buttons={
-                loadError || serverMessage
-                  ? [
-                      {
-                        text: retrying ? '重试中...' : '重试',
-                        icon: <ReloadOutlined />,
-                        onClick: retryPreview,
-                        loading: retrying,
-                        disabled: retrying,
-                      },
-                      ...(serverMessage && onRestartDev
-                        ? [
-                            {
-                              text: '重启服务器',
-                              icon: <ThunderboltOutlined />,
-                              onClick: onRestartDev,
-                              type: 'primary' as const,
-                            },
-                          ]
-                        : []),
-                    ]
-                  : isStarting || isRestarting || isProjectUploading
-                  ? undefined // 启动中、重启中或导入项目中时不显示按钮
-                  : onStartDev || onRestartDev
-                  ? [
-                      {
-                        text: retrying ? '重启中...' : '重启服务',
-                        icon: <ReloadOutlined />,
-                        onClick: retryPreview,
-                        loading: retrying,
-                        disabled: retrying,
-                      },
-                    ]
-                  : undefined
-              }
             />
           )}
         </div>
