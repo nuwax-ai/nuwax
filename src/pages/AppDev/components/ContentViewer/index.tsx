@@ -194,6 +194,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           devServerUrl ? `${process.env.BASE_URL}${devServerUrl}` : undefined
         }
         isStarting={isStarting}
+        isDeveloping={isChatLoading}
         isRestarting={isRestarting} // 新增
         isProjectUploading={isProjectUploading} // 新增
         startError={startError}

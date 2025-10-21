@@ -28,7 +28,7 @@ const RecommendList: React.FC<RecommendListProps> = ({
         if (arg.inputType === 'Path' && arg.name) {
           pathParams[arg.name] = arg.bindValue;
         }
-        if (arg.inputType === 'Query' && arg.name) {
+        if (arg.inputType === 'Query' && arg.name && arg.bindValue) {
           params[arg.name] = arg.bindValue;
         }
       });
@@ -42,13 +42,11 @@ const RecommendList: React.FC<RecommendListProps> = ({
       );
 
       // 构建完整的页面 URL
-      const fullUri = eventConfig.basePath
-        ? `${eventConfig.basePath}${pageUrl}`
-        : `${process.env.BASE_URL}${pageUrl}`;
+      const fullUri = `${process.env.BASE_URL}${pageUrl}`;
 
       // 调用页面预览
       showPagePreview({
-        name: eventConfig.info || '页面',
+        name: eventConfig.info || '页面预览',
         uri: fullUri,
         params,
         executeId: `event-${Date.now()}`,
