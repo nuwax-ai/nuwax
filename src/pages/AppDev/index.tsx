@@ -758,6 +758,61 @@ const AppDev: React.FC = () => {
   ]);
 
   /**
+   * 处理右键上传（直接调用上传接口，不依赖状态）
+   */
+  const handleRightClickUpload = useCallback(async () => {
+    if (!hasValidProjectId) {
+      message.error(ERROR_MESSAGES.NO_PROJECT_ID);
+      return;
+    }
+
+    // 创建一个隐藏的文件输入框
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    // 等待用户选择文件
+    input.click();
+
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) {
+        document.body.removeChild(input);
+        return;
+      }
+
+      try {
+        // 设置加载状态，与弹窗上传保持一致
+        setSingleFileUploadLoading(true);
+
+        // 直接调用上传接口，使用文件名作为路径
+        const result = await fileManagement.uploadSingleFileToServer(
+          file,
+          file.name,
+        );
+
+        if (result) {
+          // 与弹窗上传成功后逻辑保持一致
+          // 刷新项目详情(刷新版本列表)
+          projectInfo.refreshProjectInfo();
+        }
+      } catch (error) {
+        message.error('上传失败');
+      } finally {
+        // 清理加载状态和DOM
+        setSingleFileUploadLoading(false);
+        document.body.removeChild(input);
+      }
+    };
+
+    // 如果用户取消选择，也要清理DOM
+    input.oncancel = () => {
+      document.body.removeChild(input);
+    };
+  }, [hasValidProjectId, fileManagement, projectInfo]);
+
+  /**
    * 处理单个文件上传取消
    */
   const handleCancelSingleFileUpload = useCallback(() => {
@@ -776,6 +831,83 @@ const AppDev: React.FC = () => {
       setDeleteModalVisible(true);
     },
     [],
+  );
+
+  /**
+   * 处理重命名文件/文件夹
+   */
+  const handleRenameFile = useCallback(
+    async (node: any, newName: string): Promise<boolean> => {
+      if (!node || !newName.trim()) {
+        return false;
+      }
+
+      try {
+        const success = await fileManagement.renameFileItem(
+          node.id,
+          newName.trim(),
+        );
+        if (success) {
+          handleRestartDevServer();
+          // 刷新项目详情(刷新版本列表)
+          projectInfo.refreshProjectInfo();
+          return true;
+        } else {
+          return false;
+        }
+      } catch (error) {
+        return false;
+      }
+    },
+    [fileManagement, projectInfo, handleRestartDevServer],
+  );
+
+  /**
+   * 处理上传文件到指定路径
+   */
+  const handleUploadToFolder = useCallback(
+    async (targetPath: string, file: File): Promise<boolean> => {
+      if (!hasValidProjectId) {
+        message.error(ERROR_MESSAGES.NO_PROJECT_ID);
+        return false;
+      }
+
+      if (!targetPath.trim()) {
+        message.error('目标路径不能为空');
+        return false;
+      }
+
+      try {
+        // 构建完整文件路径
+        const fileName = file.name;
+        const fullPath = targetPath.endsWith('/')
+          ? `${targetPath}${fileName}`
+          : `${targetPath}/${fileName}`;
+
+        const success = await fileManagement.uploadSingleFileToServer(
+          file,
+          fullPath,
+        );
+        if (success) {
+          message.success(`文件上传成功: ${fileName}`);
+          handleRestartDevServer();
+          // 刷新项目详情(刷新版本列表)
+          projectInfo.refreshProjectInfo();
+          return true;
+        } else {
+          message.error('文件上传失败');
+          return false;
+        }
+      } catch (error) {
+        message.error(
+          `文件上传失败: ${
+            error instanceof Error ? error.message : '未知错误'
+          }`,
+        );
+        return false;
+      }
+    },
+    [hasValidProjectId, fileManagement, projectInfo, handleRestartDevServer],
   );
 
   /**
@@ -833,6 +965,9 @@ const AppDev: React.FC = () => {
       if (server.stopKeepAlive) {
         server.stopKeepAlive();
       }
+
+      // 停止日志轮询
+      devLogs.stopPolling();
     };
   }, []); // 空依赖数组，只在组件卸载时执行
 
@@ -994,17 +1129,15 @@ const AppDev: React.FC = () => {
                       <Tooltip
                         title={showDevLogConsole ? '关闭日志' : '查看日志'}
                       >
-                        <Button
-                          type="text"
-                          icon={<CodeOutlined />}
-                          color="danger"
-                          onClick={() =>
-                            setShowDevLogConsole(!showDevLogConsole)
-                          }
-                        />
-                        {devLogs.errorCount > 0 && (
-                          <Badge count={devLogs.errorCount} color="danger" />
-                        )}
+                        <Badge dot={devLogs.errorCount > 0} offset={[-8, 8]}>
+                          <Button
+                            type="text"
+                            icon={<CodeOutlined />}
+                            onClick={() =>
+                              setShowDevLogConsole(!showDevLogConsole)
+                            }
+                          />
+                        </Badge>
                       </Tooltip>
                       <Tooltip title="重启开发服务器">
                         <Button
@@ -1069,10 +1202,10 @@ const AppDev: React.FC = () => {
                   }}
                   onToggleFolder={fileManagement.toggleFolder}
                   onDeleteFile={handleDeleteClick}
+                  onRenameFile={handleRenameFile}
+                  onUploadToFolder={handleUploadToFolder}
                   onUploadProject={() => setIsUploadModalVisible(true)}
-                  onUploadSingleFile={() =>
-                    setIsSingleFileUploadModalVisible(true)
-                  }
+                  onUploadSingleFile={handleRightClickUpload}
                   onAddDataResource={() =>
                     setIsAddDataResourceModalVisible(true)
                   }
