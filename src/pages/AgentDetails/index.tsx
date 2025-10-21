@@ -401,7 +401,7 @@ const AgentDetails: React.FC = () => {
                   <LoadingOutlined className={cx(styles.loading)} />
                 </div>
               ) : (
-                <LeftContent />
+                LeftContent()
               )
             }
             right={
