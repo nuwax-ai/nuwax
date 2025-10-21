@@ -7,7 +7,7 @@ import {
   ReloadOutlined,
   RightOutlined,
 } from '@ant-design/icons';
-import { Button, Spin } from 'antd';
+import { Button, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -230,15 +230,17 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
             </span>
           </h3>
           <div style={{ display: 'flex', gap: '10px', marginRight: '20px' }}>
-            <Button onClick={reload} icon={<ReloadOutlined />}>
-              刷新
-            </Button>
-            <Button onClick={goBack} icon={<LeftOutlined />}>
-              后退
-            </Button>
-            <Button onClick={goForward} icon={<RightOutlined />}>
-              前进
-            </Button>
+            <Tooltip title="刷新">
+              <Button onClick={reload} icon={<ReloadOutlined />} />
+            </Tooltip>
+
+            <Tooltip title="后退">
+              <Button onClick={goBack} icon={<LeftOutlined />} />
+            </Tooltip>
+
+            <Tooltip title="前进">
+              <Button onClick={goForward} icon={<RightOutlined />} />
+            </Tooltip>
           </div>
           {showCloseButton && (
             <CloseOutlined
@@ -259,6 +261,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         <iframe
           ref={iframeRef}
           src={pageUrl}
+          key={Date.now()}
           sandbox={SANDBOX}
           className={cx(styles['page-iframe'])}
           title={pagePreviewData.name || '页面预览'}
