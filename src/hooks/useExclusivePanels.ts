@@ -70,13 +70,13 @@ export const useExclusivePanels = ({
     // 规则 2：当 AgentSidebar 刚打开时，关闭 PagePreview
     if (sidebarJustOpened && pagePreviewData) {
       console.log('[ExclusivePanels] AgentSidebar 打开，关闭 PagePreview');
-      hidePagePreview();
+      // hidePagePreview();
     }
 
     // 规则 3：当 ShowArea 刚打开时，关闭 PagePreview
     if (showAreaJustOpened && pagePreviewData) {
       console.log('[ExclusivePanels] ShowArea 打开，关闭 PagePreview');
-      hidePagePreview();
+      // hidePagePreview();
     }
 
     // 更新 ref

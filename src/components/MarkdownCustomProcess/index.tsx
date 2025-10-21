@@ -8,7 +8,6 @@ import { cloneDeep } from '@/utils/common';
 import {
   CheckOutlined,
   EyeInvisibleOutlined,
-  // CopyOutlined,
   EyeOutlined,
   ProfileOutlined,
 } from '@ant-design/icons';
@@ -19,6 +18,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 import SeeDetailModal from './SeeDetailModal';
+
 const cx = classNames.bind(styles);
 interface MarkdownCustomProcessProps {
   executeId: string;
@@ -199,25 +199,26 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
   // 打开预览页面
   const openPreviewPage = () => {
-    if (!detailData) {
-      message.error('暂无数据');
-      return;
-    }
+    // if (!detailData) {
+    //   message.error('暂无数据');
+    //   return;
+    // }
 
     const result = innerProcessing.result;
     if (!result || typeof result !== 'object') {
-      message.error('数据格式错误');
+      // message.error('数据格式错误');
       return;
     }
+
     const input: InputProps = (result as { input: InputProps }).input;
-
-    if (!input?.uri) {
-      message.error('页面路径不存在');
-      return;
-    }
-
+    console.log('自动打开预览页面');
     // 判断页面类型
     if (input.uri_type === 'Page') {
+      if (!input?.uri) {
+        message.error('页面路径不存在');
+        return;
+      }
+
       const previewData = {
         name: innerProcessing.name || '页面预览',
         uri: input.uri,
@@ -232,7 +233,10 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
       showPagePreview(previewData);
     }
     // 链接类型
-    if (input.uri_type === 'Link') {
+    if (
+      input.uri_type === 'Link' &&
+      innerProcessing.status === ProcessingEnum.FINISHED
+    ) {
       // 拼接 query 参数
       const queryString = new URLSearchParams(input.arguments).toString();
       const pageUrl = `${input.uri}?${queryString}`;
@@ -256,11 +260,11 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
   // 自动打开预览页面功能
   useEffect(() => {
-    if (detailData && innerProcessing.status === ProcessingEnum.FINISHED) {
+    if (innerProcessing.status === ProcessingEnum.EXECUTING) {
       // 打开预览页面
       openPreviewPage();
     }
-  }, [innerProcessing, detailData]);
+  }, [innerProcessing]);
 
   if (!innerProcessing.executeId) {
     return null;

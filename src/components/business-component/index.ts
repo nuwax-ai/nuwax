@@ -1,3 +1,3 @@
 export { default as AppDevEmptyState } from './AppDevEmptyState';
 export { default as CardWrapper } from './CardWrapper';
-export { default as PagePreview } from './PagePreview';
+export { default as PagePreviewIframe } from './PagePreviewIframe';

@@ -32,6 +32,9 @@ export default () => {
   const [pagePreviewData, setPagePreviewData] =
     useState<PagePreviewData | null>(null);
 
+  // 页面预览标题
+  const [previewPageTitle, setPreviewPageTitle] = useState<string>('');
+
   // 智能体页面配置
   const [agentPageConfig, setAgentPageConfig] = useState<AgentPageConfig>({
     expandPageArea: ExpandPageAreaEnum.No,
@@ -127,5 +130,8 @@ export default () => {
     // 智能体页面配置
     agentPageConfig,
     setAgentPageConfig,
+    // 预览标题
+    previewPageTitle,
+    setPreviewPageTitle,
   };
 };

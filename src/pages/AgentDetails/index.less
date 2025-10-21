@@ -5,7 +5,6 @@
   height: 100%;
   position: relative;
   min-width: 400px;
-  width: 33%;
 
   .title-box {
     background-color: transparent;
@@ -15,7 +14,8 @@
       align-items: center;
       justify-content: space-between;
       height: 32px;
-      padding: 12px 4px 12px 18px;
+      //padding: 12px 4px 12px 18px;
+      padding: @paddingXs @paddingLg;
       box-sizing: content-box;
     }
 
@@ -92,6 +92,13 @@
 .agent-sidebar {
   position: sticky;
   margin: 0;
+}
+
+.title-style {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 24px;
+  color: @colorTextSecondary;
 }
 
 .agent-sidebar-w {

@@ -1,4 +1,5 @@
 import Loading from '@/components/custom/Loading';
+import { SANDBOX } from '@/constants/common.constants';
 import { apiPageGetProjectInfo } from '@/services/pageDev';
 import {
   CustomPageDto,
@@ -67,6 +68,7 @@ const PageReviewModal: React.FC<PageReviewModalProps> = ({
         ) : (
           <iframe
             src={`${process.env.BASE_URL}${pageInfo?.pageUrl}`}
+            sandbox={SANDBOX}
             className={cx(styles.iframe)}
           />
         )}

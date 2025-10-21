@@ -1,12 +1,12 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
-import PagePreview from '@/components/business-component/PagePreview';
+import PagePreviewIframe from '@/components/business-component/PagePreviewIframe';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
-import { SIDEBAR_WIDTH } from '@/constants/agent.constants';
+import ResizableSplit from '@/components/ResizableSplit';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
@@ -210,7 +210,7 @@ const AgentDetails: React.FC = () => {
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const sidebarRef = useRef<AgentSidebarRef>(null);
 
-  useEffect(() => {
+  const handleOpenPreview = () => {
     // 判断是否默认展示页面首页
     if (
       agentDetail &&
@@ -227,153 +227,181 @@ const AgentDetails: React.FC = () => {
     } else {
       showPagePreview(null);
     }
+  };
+
+  useEffect(() => {
+    handleOpenPreview();
   }, [agentDetail]);
+  const { pagePreviewData, hidePagePreview } = useModel('chat');
+
+  const LeftContent = () => {
+    return (
+      <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
+        <div className={cx(styles['title-box'])}>
+          <div className={cx(styles['title-container'])}>
+            {/* 左侧标题 */}
+            <Typography.Title
+              level={5}
+              className={cx(styles.title, 'clip-path-animation')}
+              ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
+            >
+              {isLoaded &&
+                (agentDetail?.name
+                  ? `和${agentDetail?.name}开始会话`
+                  : '开始会话')}
+            </Typography.Title>
+            <div>
+              {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
+              {!isSidebarVisible && !isMobile && (
+                <Button
+                  type="text"
+                  className={cx(styles.sidebarButton)}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-sidebar"
+                      className={cx(styles['icons-nav-sidebar'])}
+                    />
+                  }
+                  onClick={() => sidebarRef.current?.open()}
+                />
+              )}
+
+              {/*打开预览页面*/}
+              {!pagePreviewData && (
+                <Button
+                  type="text"
+                  className={cx(styles.sidebarButton)}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-ecosystem"
+                      className={cx(styles['icons-nav-sidebar'])}
+                    />
+                  }
+                  onClick={handleOpenPreview}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+        <div className={cx(styles['main-content-box'])}>
+          <div className={cx(styles['chat-wrapper-content'])}>
+            <div className={cx(styles['chat-wrapper'], 'flex-1')}>
+              {loading ? (
+                <div
+                  className={cx(
+                    'flex',
+                    'items-center',
+                    'content-center',
+                    'h-full',
+                  )}
+                >
+                  <LoadingOutlined className={cx(styles.loading)} />
+                </div>
+              ) : (
+                <>
+                  {/* 新对话设置 */}
+                  <NewConversationSet
+                    key={agentId}
+                    className="mb-16"
+                    form={form}
+                    isFilled
+                    variables={variables}
+                  />
+                  {messageList?.length > 0 ? (
+                    <>
+                      {messageList?.map((item: MessageInfo, index: number) => (
+                        <ChatView
+                          key={index}
+                          messageInfo={item}
+                          roleInfo={roleInfo}
+                          contentClassName={styles['chat-inner']}
+                          mode={'none'}
+                        />
+                      ))}
+                      {/*会话建议*/}
+                      <RecommendList
+                        itemClassName={styles['suggest-item']}
+                        chatSuggestList={chatSuggestList}
+                        onClick={handleMessageSend}
+                      />
+                    </>
+                  ) : (
+                    isLoaded && (
+                      // Chat记录为空
+                      <AgentChatEmpty
+                        className={cx({ 'h-full': !variables?.length })}
+                        icon={agentDetail?.icon}
+                        name={agentDetail?.name || ''}
+                        // 会话建议
+                        extra={
+                          <RecommendList
+                            className="mt-16"
+                            itemClassName={cx(styles['suggest-item'])}
+                            chatSuggestList={chatSuggestList}
+                            onClick={handleMessageSend}
+                          />
+                        }
+                      />
+                    )
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+          {/*会话输入框*/}
+          <ChatInputHome
+            className={cx(styles['chat-input-container'])}
+            key={`agent-details-${agentId}`}
+            onEnter={handleMessageSend}
+            isClearInput={false}
+            wholeDisabled={wholeDisabled}
+            manualComponents={agentDetail?.manualComponents || []}
+            selectedComponentList={selectedComponentList}
+            onSelectComponent={handleSelectComponent}
+            showAnnouncement={true}
+          />
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className={cx('flex', 'h-full')}>
       <div
         style={{
-          width: isSidebarVisible ? `calc(100% - ${SIDEBAR_WIDTH}px)` : '100%',
+          width: '100%',
           overflow: 'auto',
           display: 'flex',
         }}
       >
-        {agentDetail?.hideChatArea ? null : (
-          <div
-            className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}
-            style={{ width: '33%' }}
-          >
-            <div className={cx(styles['title-box'])}>
-              <div className={cx(styles['title-container'])}>
-                {/* 左侧标题 */}
-                <Typography.Title
-                  level={5}
-                  className={cx(styles.title, 'clip-path-animation')}
-                  ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
-                >
-                  {isLoaded &&
-                    (agentDetail?.name
-                      ? `和${agentDetail?.name}开始会话`
-                      : '开始会话')}
-                </Typography.Title>
-
-                {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
-                {!isSidebarVisible && !isMobile && (
-                  <Button
-                    type="text"
-                    className={cx(styles.sidebarButton)}
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-sidebar"
-                        className={cx(styles['icons-nav-sidebar'])}
-                      />
-                    }
-                    onClick={() => sidebarRef.current?.open()}
-                  />
-                )}
-              </div>
-            </div>
-            <div className={cx(styles['main-content-box'])}>
-              <div className={cx(styles['chat-wrapper-content'])}>
-                <div className={cx(styles['chat-wrapper'], 'flex-1')}>
-                  {loading ? (
-                    <div
-                      className={cx(
-                        'flex',
-                        'items-center',
-                        'content-center',
-                        'h-full',
-                      )}
-                    >
-                      <LoadingOutlined className={cx(styles.loading)} />
-                    </div>
-                  ) : (
-                    <>
-                      {/* 新对话设置 */}
-                      <NewConversationSet
-                        key={agentId}
-                        className="mb-16"
-                        form={form}
-                        isFilled
-                        variables={variables}
-                      />
-                      {messageList?.length > 0 ? (
-                        <>
-                          {messageList?.map(
-                            (item: MessageInfo, index: number) => (
-                              <ChatView
-                                key={index}
-                                messageInfo={item}
-                                roleInfo={roleInfo}
-                                contentClassName={styles['chat-inner']}
-                                mode={'none'}
-                              />
-                            ),
-                          )}
-                          {/*会话建议*/}
-                          <RecommendList
-                            itemClassName={styles['suggest-item']}
-                            chatSuggestList={chatSuggestList}
-                            onClick={handleMessageSend}
-                          />
-                        </>
-                      ) : (
-                        isLoaded && (
-                          // Chat记录为空
-                          <AgentChatEmpty
-                            className={cx({ 'h-full': !variables?.length })}
-                            icon={agentDetail?.icon}
-                            name={agentDetail?.name || ''}
-                            // 会话建议
-                            extra={
-                              <RecommendList
-                                className="mt-16"
-                                itemClassName={cx(styles['suggest-item'])}
-                                chatSuggestList={chatSuggestList}
-                                onClick={handleMessageSend}
-                              />
-                            }
-                          />
-                        )
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-              {/*会话输入框*/}
-              <ChatInputHome
-                className={cx(styles['chat-input-container'])}
-                key={`agent-details-${agentId}`}
-                onEnter={handleMessageSend}
-                isClearInput={false}
-                wholeDisabled={wholeDisabled}
-                manualComponents={agentDetail?.manualComponents || []}
-                selectedComponentList={selectedComponentList}
-                onSelectComponent={handleSelectComponent}
-                showAnnouncement={true}
+        {/*智能体聊天和预览页面*/}
+        <ResizableSplit
+          left={agentDetail?.hideChatArea ? null : LeftContent()}
+          right={
+            pagePreviewData && (
+              <PagePreviewIframe
+                pagePreviewData={pagePreviewData}
+                showHeader={true}
+                onClose={hidePagePreview}
+                showCloseButton={!agentDetail?.hideChatArea}
+                titleClassName={cx(styles['title-style'])}
               />
-            </div>
-          </div>
-        )}
-
-        {/*页面预览区域*/}
-        <PagePreview
-          initialWidth={agentDetail?.hideChatArea ? 100 : 66}
-          showCloseButton={!agentDetail?.hideChatArea}
-          showResizeHandle={!agentDetail?.hideChatArea}
+            )
+          }
+        />
+        {/*智能体详情*/}
+        <AgentSidebar
+          ref={sidebarRef}
+          className={cx(
+            styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
+          )}
+          agentId={agentId}
+          loading={loading}
+          agentDetail={agentDetail}
+          onToggleCollectSuccess={handleToggleCollectSuccess}
+          onVisibleChange={setIsSidebarVisible}
         />
       </div>
-      <AgentSidebar
-        ref={sidebarRef}
-        className={cx(
-          styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
-        )}
-        agentId={agentId}
-        loading={loading}
-        agentDetail={agentDetail}
-        onToggleCollectSuccess={handleToggleCollectSuccess}
-        onVisibleChange={setIsSidebarVisible}
-      />
     </div>
   );
 };

@@ -135,3 +135,7 @@ export const COMPONENT_TYPE_NAME_MAP = {
   [AgentComponentTypeEnum.Model]: '模型',
   [AgentComponentTypeEnum.MCP]: 'MCP服务',
 };
+
+// iframe 配置
+export const SANDBOX =
+  'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox';

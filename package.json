@@ -62,6 +62,7 @@
     "rc-slider-captcha": "^1.7.1",
     "react-beautiful-dnd": "^13.1.1",
     "react-copy-to-clipboard": "^5.1.0",
+    "react-draggable": "^4.5.0",
     "react-infinite-scroll-component": "^6.1.0",
     "react-markdown": "^10.1.0",
     "react-sticky-box": "^2.0.5",
