@@ -6,7 +6,7 @@ import {
   ReloadOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
-import { Button, Spin, Tooltip } from 'antd';
+import { Button, Spin } from 'antd';
 import React, {
   useCallback,
   useEffect,
@@ -15,26 +15,6 @@ import React, {
   useState,
 } from 'react';
 import styles from './index.less';
-
-/** 网络错误信息 */
-interface NetworkErrorInfo {
-  code?: number;
-  message?: string;
-  stack?: string;
-}
-
-/** 资源错误信息 */
-interface ResourceErrorInfo {
-  type: 'iframe' | 'script' | 'style' | 'image' | 'other' | 'promise' | 'fetch';
-  url: string;
-  message: string;
-  timestamp: number;
-  errorType?: string;
-  filename?: string;
-  lineno?: number;
-  colno?: number;
-  networkError?: NetworkErrorInfo | null;
-}
 
 interface PreviewProps {
   devServerUrl?: string;
@@ -52,8 +32,6 @@ interface PreviewProps {
   onStartDev?: () => void;
   /** 重启开发服务器回调 */
   onRestartDev?: () => void;
-  /** 资源加载失败回调 */
-  onResourceError?: (error: ResourceErrorInfo) => void;
   /** 白屏检测回调 */
   onWhiteScreen?: () => void;
 }
@@ -80,7 +58,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       serverErrorCode,
       onStartDev,
       onRestartDev,
-      onResourceError,
       onWhiteScreen,
     },
     ref,
@@ -90,10 +67,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [retrying, setRetrying] = useState(false);
-    const [resourceErrors, setResourceErrors] = useState<ResourceErrorInfo[]>(
-      [],
-    );
-    const [isCrossOrigin, setIsCrossOrigin] = useState(false);
     const [whiteScreenDetected, setWhiteScreenDetected] = useState(false);
 
     /**
@@ -378,7 +351,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       setIsLoading(false);
       setLoadError(null);
       // Iframe loaded successfully
-    }, [onResourceError]);
+    }, []);
 
     /**
      * iframe加载错误处理
@@ -398,17 +371,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       if (devServerUrl) {
         // Dev server URL available, loading preview
         loadDevServerPreview();
-        // 清空之前的资源错误和跨域状态
-        setResourceErrors([]);
-        setIsCrossOrigin(false);
       } else {
         // Dev server URL is empty, clearing iframe and resetting states
 
         setIsLoading(false);
         setLoadError(null);
         setLastRefreshed(new Date());
-        setResourceErrors([]);
-        setIsCrossOrigin(false);
       }
     }, [devServerUrl, loadDevServerPreview]);
 
@@ -468,20 +436,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             <div className={styles.titleSection}>
               <span className={styles.title}>页面预览</span>
               {devServerUrl && (
-                <span className={styles.statusBadge}>
-                  开发服务器已连接
-                  {isCrossOrigin && (
-                    <span
-                      style={{
-                        marginLeft: '4px',
-                        fontSize: '10px',
-                        opacity: 0.7,
-                      }}
-                    >
-                      (跨域模式)
-                    </span>
-                  )}
-                </span>
+                <span className={styles.statusBadge}>开发服务器已连接</span>
               )}
               {isLoading && (
                 <span className={styles.loadingBadge}>
@@ -493,75 +448,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 <span className={styles.lastUpdated}>
                   最后更新: {lastRefreshed.toLocaleTimeString()}
                 </span>
-              )}
-              {resourceErrors.length > 0 && (
-                <Tooltip
-                  title={
-                    <div>
-                      <div>
-                        检测到 {resourceErrors.length} 个资源加载错误：
-                        {isCrossOrigin && (
-                          <div
-                            style={{
-                              fontSize: '11px',
-                              color: '#ffa940',
-                              marginTop: '2px',
-                            }}
-                          >
-                            ⚠️ 跨域限制：只能捕获 iframe 本身错误
-                          </div>
-                        )}
-                      </div>
-                      {resourceErrors.slice(-5).map((error, index) => (
-                        <div
-                          key={index}
-                          style={{ fontSize: '12px', marginTop: '4px' }}
-                        >
-                          <div style={{ fontWeight: 'bold' }}>
-                            • {error.type}: {error.url || '未知资源'}
-                          </div>
-                          <div style={{ color: '#ff4d4f', marginLeft: '8px' }}>
-                            {error.message}
-                          </div>
-                          {error.networkError && (
-                            <div
-                              style={{
-                                color: '#999',
-                                marginLeft: '8px',
-                                fontSize: '11px',
-                              }}
-                            >
-                              网络错误:{' '}
-                              {error.networkError.message || '未知网络错误'}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                      {resourceErrors.length > 5 && (
-                        <div
-                          style={{
-                            fontSize: '12px',
-                            marginTop: '4px',
-                            color: '#999',
-                          }}
-                        >
-                          ... 还有 {resourceErrors.length - 5} 个错误
-                        </div>
-                      )}
-                    </div>
-                  }
-                  placement="bottom"
-                >
-                  <span className={styles.errorBadge}>
-                    <ExclamationCircleOutlined />
-                    {resourceErrors.length} 个错误
-                    {isCrossOrigin && (
-                      <span style={{ fontSize: '10px', marginLeft: '2px' }}>
-                        ⚠️
-                      </span>
-                    )}
-                  </span>
-                </Tooltip>
               )}
             </div>
           </div>
