@@ -365,17 +365,6 @@ const AgentDetails: React.FC = () => {
     );
   };
 
-  const [loadingResizableSplit, setLoadingResizableSplit] = useState(true);
-
-  useEffect(() => {
-    // 每次 name 改变时触发加载
-    setLoadingResizableSplit(true);
-    const timer = setTimeout(() => {
-      setLoadingResizableSplit(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [agentDetail]);
-
   return (
     <div className={cx('flex', 'h-full')}>
       <div
@@ -386,38 +375,20 @@ const AgentDetails: React.FC = () => {
         }}
       >
         {/*智能体聊天和预览页面*/}
-        {agentDetail && (
-          <ResizableSplit
-            left={
-              agentDetail?.hideChatArea ? null : loadingResizableSplit ? (
-                <div
-                  className={cx(
-                    'flex',
-                    'items-center',
-                    'content-center',
-                    'h-full',
-                  )}
-                >
-                  <LoadingOutlined className={cx(styles.loading)} />
-                </div>
-              ) : (
-                LeftContent()
-              )
-            }
-            right={
-              pagePreviewData && (
-                <PagePreviewIframe
-                  pagePreviewData={pagePreviewData}
-                  showHeader={true}
-                  onClose={hidePagePreview}
-                  showCloseButton={!agentDetail?.hideChatArea}
-                  titleClassName={cx(styles['title-style'])}
-                />
-              )
-            }
-          />
-        )}
-
+        <ResizableSplit
+          left={agentDetail?.hideChatArea ? null : LeftContent()}
+          right={
+            pagePreviewData && (
+              <PagePreviewIframe
+                pagePreviewData={pagePreviewData}
+                showHeader={true}
+                onClose={hidePagePreview}
+                showCloseButton={!agentDetail?.hideChatArea}
+                titleClassName={cx(styles['title-style'])}
+              />
+            )
+          }
+        />
         {/*智能体详情*/}
         <AgentSidebar
           ref={sidebarRef}

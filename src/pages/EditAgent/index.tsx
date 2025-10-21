@@ -28,7 +28,6 @@ import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import { exportConfigFile } from '@/utils/exportImportFile';
-import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
@@ -365,17 +364,6 @@ const EditAgent: React.FC = () => {
     handleOpenPreview();
   }, [agentConfigInfo]);
 
-  const [loadingResizableSplit, setLoadingResizableSplit] = useState(true);
-
-  useEffect(() => {
-    // 每次 name 改变时触发加载
-    setLoadingResizableSplit(true);
-    const timer = setTimeout(() => {
-      setLoadingResizableSplit(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [agentConfigInfo]);
-
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
@@ -435,47 +423,35 @@ const EditAgent: React.FC = () => {
           </div>
         </div>
 
-        {agentConfigInfo &&
-          (!agentConfigInfo?.hideChatArea || pagePreviewData) && (
-            <div style={{ flex: pagePreviewData ? '9 1' : '4 1' }}>
-              {/*预览与调试和预览页面*/}
-              <ResizableSplit
-                left={
-                  agentConfigInfo?.hideChatArea ? null : loadingResizableSplit ? (
-                    <div
-                      className={cx(
-                        'flex',
-                        'items-center',
-                        'content-center',
-                        'h-full',
-                      )}
-                    >
-                      <LoadingOutlined className={cx(styles.loading)} />
-                    </div>
-                  ) : (
-                    <PreviewAndDebug
-                      agentConfigInfo={agentConfigInfo}
-                      agentId={agentId}
-                      onPressDebug={handlePressDebug}
-                      onAgentConfigInfo={setAgentConfigInfo}
-                      onOpenPreview={handleOpenPreview}
-                    />
-                  )
-                }
-                right={
-                  pagePreviewData && (
-                    <PagePreviewIframe
-                      pagePreviewData={pagePreviewData}
-                      showHeader={true}
-                      onClose={hidePagePreview}
-                      showCloseButton={!agentConfigInfo?.hideChatArea}
-                      titleClassName={cx(styles['title-style'])}
-                    />
-                  )
-                }
-              />
-            </div>
-          )}
+        {(!agentConfigInfo?.hideChatArea || pagePreviewData) && (
+          <div style={{ flex: pagePreviewData ? '9 1' : '4 1' }}>
+            {/*预览与调试和预览页面*/}
+            <ResizableSplit
+              left={
+                agentConfigInfo?.hideChatArea ? null : (
+                  <PreviewAndDebug
+                    agentConfigInfo={agentConfigInfo}
+                    agentId={agentId}
+                    onPressDebug={handlePressDebug}
+                    onAgentConfigInfo={setAgentConfigInfo}
+                    onOpenPreview={handleOpenPreview}
+                  />
+                )
+              }
+              right={
+                pagePreviewData && (
+                  <PagePreviewIframe
+                    pagePreviewData={pagePreviewData}
+                    showHeader={true}
+                    onClose={hidePagePreview}
+                    showCloseButton={!agentConfigInfo?.hideChatArea}
+                    titleClassName={cx(styles['title-style'])}
+                  />
+                )
+              }
+            />
+          </div>
+        )}
 
         {/*调试详情*/}
         <DebugDetails
