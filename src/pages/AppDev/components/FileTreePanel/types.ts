@@ -32,6 +32,12 @@ export interface FileTreePanelProps {
   /** 删除文件回调 */
   onDeleteFile: (node: any, event: React.MouseEvent) => void;
 
+  /** 重命名文件回调 */
+  onRenameFile?: (node: any, newName: string) => Promise<boolean>;
+
+  /** 上传文件到指定路径回调 */
+  onUploadToFolder?: (targetPath: string, file: File) => Promise<boolean>;
+
   /** 上传项目回调 */
   onUploadProject: () => void;
 

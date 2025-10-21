@@ -1,6 +1,25 @@
 @import '@/styles/color.less';
 @import '@/styles/token.less';
 
+// 内联重命名样式
+.inlineRenameInput {
+  flex: 1;
+  margin-right: 8px;
+
+  :global(.ant-input) {
+    font-size: @fontSizeSm;
+    padding: 2px 6px;
+    height: 24px;
+    border-radius: 4px;
+  }
+}
+
+.renameMode {
+  background: @colorPrimaryBg !important;
+  border: 1px solid @colorPrimaryBorder;
+  border-radius: 4px;
+}
+
 // 文件树列
 .fileTreeCol {
   flex: 0 0 15%; // 默认占25%宽度
@@ -121,7 +140,7 @@
 .folderHeader {
   display: flex;
   align-items: center;
-  padding: 4px 4px;
+  padding: 4px;
   cursor: pointer;
   border-radius: 6px;
   transition: background-color 0.2s ease;
@@ -174,7 +193,7 @@
 .fileItem {
   display: flex;
   align-items: center;
-  padding: 4px 4px;
+  padding: 4px;
   cursor: pointer;
   border-radius: 4px;
   // margin-bottom: 2px;
