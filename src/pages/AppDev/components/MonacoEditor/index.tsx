@@ -1,9 +1,7 @@
 import { FileNode } from '@/models/appDev';
 import {
   editorOptions,
-  getFileTypeDisplayName,
   getLanguageFromFile,
-  isSupportedFileType,
   javascriptCompilerOptions,
   typescriptCompilerOptions,
 } from '@/utils/monacoConfig';
@@ -198,39 +196,6 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         },
       ]);
 
-      // 配置主题以确保光标位置准确
-      monaco.editor.defineTheme('xagi-light', {
-        base: 'vs',
-        inherit: true,
-        rules: [],
-        colors: {
-          'editor.background': '#ffffff',
-          'editor.foreground': '#000000',
-          'editorLineNumber.foreground': '#999999',
-          'editorLineNumber.activeForeground': '#000000',
-          'editor.selectionBackground': '#add6ff',
-          'editor.selectionHighlightBackground': '#add6ff',
-          'editorCursor.foreground': '#000000',
-          'editorCursor.background': '#ffffff',
-        },
-      });
-
-      monaco.editor.defineTheme('xagi-dark', {
-        base: 'vs-dark',
-        inherit: true,
-        rules: [],
-        colors: {
-          'editor.background': '#1e1e1e',
-          'editor.foreground': '#d4d4d4',
-          'editorLineNumber.foreground': '#858585',
-          'editorLineNumber.activeForeground': '#d4d4d4',
-          'editor.selectionBackground': '#264f78',
-          'editor.selectionHighlightBackground': '#264f78',
-          'editorCursor.foreground': '#d4d4d4',
-          'editorCursor.background': '#1e1e1e',
-        },
-      });
-
       setIsMonacoReady(true);
       // Monaco Editor初始化成功
     } catch (error) {
@@ -367,10 +332,8 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
       // 创建编辑器实例
       const editor = await safeAsyncOperation(async () => {
-        // 检测当前主题
-        const isDark =
-          document.documentElement.getAttribute('data-theme') === 'dark';
-        const theme = isDark ? 'xagi-dark' : 'xagi-light';
+        // 使用浅色主题
+        const theme = 'vs';
 
         return monaco.editor.create(editorRef.current!, {
           ...editorOptions,
@@ -398,6 +361,30 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       editorInstanceRef.current = editor;
       editorCreatedRef.current = true;
       lastFileIdRef.current = currentFile?.id || null;
+
+      // 禁用错误诊断和波浪线显示
+      try {
+        // 禁用 TypeScript 诊断
+        monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+          noSemanticValidation: true,
+          noSyntaxValidation: true,
+          noSuggestionDiagnostics: true,
+        });
+
+        // 禁用 JavaScript 诊断
+        monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+          noSemanticValidation: true,
+          noSyntaxValidation: true,
+          noSuggestionDiagnostics: true,
+        });
+
+        // 禁用编辑器的错误标记
+        editor.updateOptions({
+          renderValidationDecorations: 'off',
+        });
+      } catch (error) {
+        // 忽略配置错误
+      }
 
       // 监听内容变化（只在非只读模式下）
       if (!readOnly) {
@@ -658,9 +645,8 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
             typeof editor.isDisposed === 'function' &&
             !editor.isDisposed()
           ) {
-            const isDark =
-              document.documentElement.getAttribute('data-theme') === 'dark';
-            const theme = isDark ? 'xagi-dark' : 'xagi-light';
+            // 使用浅色主题
+            const theme = 'vs';
             monaco.editor.setTheme(theme);
           }
         } catch (error) {
@@ -719,7 +705,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
   return (
     <div className={`${styles.monacoEditor} ${className || ''}`}>
-      <div className={styles.editorHeader}>
+      {/* <div className={styles.editorHeader}>
         <div className={styles.fileInfo}>
           <span className={styles.fileName}>{currentFile.name}</span>
           <span className={styles.fileLanguage}>
@@ -736,7 +722,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
             {currentFile.content?.length || 0} 字符
           </span>
         </div>
-      </div>
+      </div> */}
 
       <div className={styles.editorContainer}>
         <div ref={editorRef} className={styles.editor} />
