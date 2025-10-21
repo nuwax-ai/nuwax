@@ -424,7 +424,7 @@ const EditAgent: React.FC = () => {
         </div>
 
         {(!agentConfigInfo?.hideChatArea || pagePreviewData) && (
-          <div style={{ flex: pagePreviewData ? '9 1' : '6 1' }}>
+          <div style={{ flex: pagePreviewData ? '9 1' : '4 1' }}>
             {/*预览与调试和预览页面*/}
             <ResizableSplit
               left={

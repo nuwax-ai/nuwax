@@ -84,6 +84,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   titleStyle,
   titleClassName,
 }) => {
+  const [iframeKey, setIframeKey] = useState(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -106,6 +107,8 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
     // 拼接 query 参数
     const queryString = new URLSearchParams(params).toString();
+    //
+    setIframeKey(Date.now);
     return `${uri}?${queryString}`;
   }, [pagePreviewData]);
 
@@ -270,8 +273,8 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         )}
         <iframe
           ref={iframeRef}
+          key={iframeKey}
           src={pageUrl}
-          key={Date.now()}
           sandbox={SANDBOX}
           className={cx(styles['page-iframe'])}
           title={pagePreviewData.name || '页面预览'}
