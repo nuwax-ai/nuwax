@@ -967,7 +967,7 @@ const ChatTemp: React.FC = () => {
     <>
       {/*智能体聊天和预览页面*/}
       <ResizableSplit
-        left={conversationInfo?.agent?.hideChatArea ? null : LeftContent()}
+        left={conversationInfo?.agent?.hideChatArea ? null : <LeftContent />}
         right={
           pagePreviewData && (
             <PagePreviewIframe
