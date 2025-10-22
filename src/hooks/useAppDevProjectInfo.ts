@@ -33,9 +33,9 @@ export interface UseAppDevProjectInfoReturn {
   /** 刷新项目详情 */
   refreshProjectInfo: () => Promise<void>;
   /** 获取部署状态文本 */
-  getDeployStatusText: (buildRunning: number) => string;
+  getDeployStatusText: (buildRunning: boolean) => string;
   /** 获取部署状态颜色 */
-  getDeployStatusColor: (buildRunning: number) => string;
+  getDeployStatusColor: (buildRunning: boolean) => string;
   /** 检查是否有更新未部署 */
   hasUpdates: boolean;
   /** 版本列表 */
@@ -116,15 +116,8 @@ export const useAppDevProjectInfo = (
    * @param buildRunning 部署状态值
    * @returns 部署状态文本
    */
-  const getDeployStatusText = useCallback((buildRunning: number): string => {
-    switch (buildRunning) {
-      case 1:
-        return '已发布';
-      case -1:
-        return '未发布';
-      default:
-        return '未知状态';
-    }
+  const getDeployStatusText = useCallback((buildRunning: boolean): string => {
+    return buildRunning ? '已发布' : '未发布';
   }, []);
 
   /**
@@ -132,15 +125,8 @@ export const useAppDevProjectInfo = (
    * @param buildRunning 部署状态值
    * @returns 部署状态颜色
    */
-  const getDeployStatusColor = useCallback((buildRunning: number): string => {
-    switch (buildRunning) {
-      case 1:
-        return 'success';
-      case -1:
-        return 'warning';
-      default:
-        return 'default';
-    }
+  const getDeployStatusColor = useCallback((buildRunning: boolean): string => {
+    return buildRunning ? 'success' : 'default';
   }, []);
 
   /**
