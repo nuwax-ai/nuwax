@@ -7,9 +7,9 @@ import { UploadFileStatus } from '@/types/enums/common';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import { DataResource } from '@/types/interfaces/dataResource';
 import { handleUploadFileList } from '@/utils/upload';
-import { LoadingOutlined, PictureOutlined } from '@ant-design/icons';
+import { LoadingOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
-import { Button, Input, Menu, message, Popover, Tooltip, Upload } from 'antd';
+import { Input, Menu, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import DataSourceList from './DataSourceList';
@@ -75,10 +75,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 点击发送事件
   const handleSendMessage = () => {
-    if (chat.chatInput?.trim() || files?.length > 0) {
+    if (chat.chatInput?.trim()) {
       // enter事件
       onEnter(files);
-
       // 清空输入框
       chat.setChatInput('');
       // 清空文件列表
@@ -93,8 +92,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       e.target as HTMLTextAreaElement;
 
     // 验证：prompt（输入内容）是必填的
-    if (!value?.trim() && !files?.length) {
-      message.warning('请输入消息内容或上传文件');
+    if (!value?.trim()) {
       return;
     }
 
@@ -111,10 +109,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       const newValue =
         value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
       chat.setChatInput(newValue);
-    } else if (
-      e.nativeEvent.keyCode === 13 &&
-      (!!value.trim() || !!files?.length)
-    ) {
+    } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
       // enter事件
       onEnter(files);
       // 清空输入框
@@ -186,11 +181,23 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             maxCount={10}
           >
             <Tooltip title="上传附件">
-              <Button
-                type="text"
-                icon={<PictureOutlined />}
-                disabled={chat.isChatLoading}
-              />
+              <span
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'cursor-pointer',
+                  styles.box,
+                  styles['plus-box'],
+                  { [styles['upload-box-disabled']]: chat.isChatLoading },
+                )}
+              >
+                <SvgIcon
+                  name="icons-chat-add"
+                  style={{ fontSize: '14px' }}
+                  className={cx(styles['svg-icon'])}
+                />
+              </span>
             </Tooltip>
           </Upload>
           {/* 大模型选择 */}
@@ -269,56 +276,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               </span>
             </Tooltip>
           )}
-
-          {/* 根据会话状态显示发送或停止按钮 */}
-          {/* {isConversationActive ? (
-            // 会话进行中，显示停止按钮
-            <Tooltip title={getStopButtonTooltip()}>
-              <span
-                onClick={handleStopConversation}
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'cursor-pointer',
-                  styles.box,
-                  styles['send-box'],
-                  styles['stop-box'],
-                  // 当会话进行中且按钮可点击时，使用高亮样式
-                  {
-                    [styles['stop-box-active']]:
-                      !isStoppingConversation,
-                  },
-                )}
-              >
-                {isStoppingConversation ? (
-                  <div className={cx(styles['loading-box'])}>
-                    <LoadingOutlined className={cx(styles['loading-icon'])} />
-                  </div>
-                ) : (
-                  <SvgIcon name="icons-chat-stop" />
-                )}
-              </span>
-            </Tooltip>
-          ) : (
-            // 会话未进行中，显示发送按钮
-            <Tooltip title={getButtonTooltip()}>
-              <span
-                onClick={handleSendMessage}
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'cursor-pointer',
-                  styles.box,
-                  styles['send-box'],
-                  { [styles.disabled]: disabledSend || wholeDisabled },
-                )}
-              >
-                <SvgIcon name="icons-chat-send" style={{ fontSize: '14px' }} />
-              </span>
-            </Tooltip>
-          )} */}
         </footer>
       </div>
     </div>
