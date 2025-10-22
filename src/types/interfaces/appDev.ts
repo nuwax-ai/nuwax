@@ -6,6 +6,7 @@
 import { MessageModeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { DataResource } from './dataResource';
 
 /**
  * 项目文件信息接口
@@ -862,7 +863,7 @@ export interface ProjectDetailData {
   /** 页面参数配置 */
   pageArgConfigs: PageArgConfig[];
   /** 数据源列表 */
-  dataSources?: DataSource[];
+  dataSources: DataResource[];
   /** 扩展字段 */
   ext: Record<string, any>;
   /** 租户ID */
@@ -964,32 +965,6 @@ export type AgentStatusResponse = RequestResponse<AgentStatusResponseData>;
 export type StopAgentServiceResponse = RequestResponse<Record<string, any>>;
 
 // ==================== 数据源绑定相关类型定义 ====================
-
-/**
- * 数据源信息接口
- */
-export interface DataSource {
-  /** 数据源ID */
-  id: number;
-  /** 数据源名称 */
-  name: string;
-  /** 数据源描述 */
-  description?: string;
-  /** 数据源类型：plugin-插件, workflow-工作流 */
-  type: 'plugin' | 'workflow';
-  /** 数据源状态 */
-  status?: string;
-  /** 创建时间 */
-  createdAt?: string;
-  /** 更新时间 */
-  updatedAt?: string;
-  /** 配置信息 */
-  config?: Record<string, any>;
-  /** 标签 */
-  tags?: string[];
-  /** 是否启用 */
-  enabled?: boolean;
-}
 
 /**
  * 数据源选择接口

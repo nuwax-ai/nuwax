@@ -21,7 +21,7 @@ import {
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
-import type { DataSourceSelection } from '@/types/interfaces/appDev';
+import { DataResource } from '@/types/interfaces/dataResource';
 import {
   CodeOutlined,
   DownloadOutlined,
@@ -76,9 +76,11 @@ const AppDev: React.FC = () => {
   const spaceId = params.spaceId;
 
   // 数据源选择状态
-  const [selectedDataResourceIds, setSelectedDataResourceIds] = useState<
-    DataSourceSelection[]
+  const [selectedDataResources, setSelectedDataResources] = useState<
+    DataResource[]
   >([]);
+  // 缓存 selectedDataResources 引用，避免无限循环
+  const selectedDataResourcesRef = useRef<DataResource[]>([]);
 
   // 页面编辑状态
   const [openPageEditVisible, setOpenPageEditVisible] = useState(false);
@@ -169,8 +171,8 @@ const AppDev: React.FC = () => {
     projectId: projectId || '',
     selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
     onRefreshFileTree: fileManagement.loadFileTree, // 新增：传递文件树刷新方法
-    selectedDataSources: selectedDataResourceIds, // 新增：传递选中的数据源
-    onClearDataSourceSelections: () => setSelectedDataResourceIds([]), // 新增：清除选择回调
+    selectedDataResources: selectedDataResources, // 新增：传递选中的数据源
+    onClearDataSourceSelections: () => setSelectedDataResources([]), // 新增：清除选择回调
     onRefreshVersionList: projectInfo.refreshProjectInfo, // 新增：传递刷新版本列表方法
     onClearUploadedImages: () => {
       // 调用 ChatArea 组件传递的图片清空方法
@@ -219,19 +221,36 @@ const AppDev: React.FC = () => {
           status: AgentAddComponentStatusEnum.Added,
         };
       });
-      setAddComponents(addComponents);
+      setAddComponents(addComponents as AgentAddComponentStatusInfo[]);
     }
   }, [projectInfo.projectInfoState?.projectInfo]);
 
   // 数据资源管理
   const dataResourceManagement = useDataResourceManagement(
-    projectInfo.projectInfoState.projectInfo?.dataSources,
+    projectInfo.projectInfoState.projectInfo?.dataSources || [],
   );
 
-  // 获取选中的数据源对象
-  const selectedDataSources = useMemo(() => {
-    return selectedDataResourceIds;
-  }, [selectedDataResourceIds]);
+  useEffect(() => {
+    if (dataResourceManagement.resources?.length > 0) {
+      const _selectedDataResources: DataResource[] =
+        dataResourceManagement.resources.map((resource) => {
+          // 判断数据源是否已选中
+          const isExist = selectedDataResourcesRef.current?.find(
+            (item) => item.id === resource.id,
+          );
+          if (isExist) {
+            return isExist;
+          }
+          // 新增数据源
+          return {
+            ...resource,
+            isSelected: false,
+          };
+        });
+      setSelectedDataResources(_selectedDataResources);
+      selectedDataResourcesRef.current = _selectedDataResources;
+    }
+  }, [dataResourceManagement.resources]);
 
   // 稳定 currentFiles 引用，避免无限循环
   const stableCurrentFiles = useMemo(() => {
@@ -559,17 +578,22 @@ const AppDev: React.FC = () => {
    * 处理删除数据资源
    */
   const handleDeleteDataResource = useCallback(
-    async (resourceId: string) => {
+    async (resourceId: number) => {
       try {
         await dataResourceManagement.deleteResource(resourceId);
         setAddComponents((list) =>
           list.filter((info) => info.targetId !== Number(resourceId)),
         );
+
+        const _selectedDataResources =
+          selectedDataResources?.filter((item) => item.id !== resourceId) || [];
+        setSelectedDataResources(_selectedDataResources);
+        selectedDataResourcesRef.current = _selectedDataResources;
       } catch (error) {
         // 删除数据资源失败
       }
     },
-    [dataResourceManagement],
+    [dataResourceManagement, selectedDataResources],
   );
 
   /**
@@ -999,6 +1023,14 @@ const AppDev: React.FC = () => {
     projectInfo.refreshProjectInfo();
   };
 
+  /**
+   * 更新数据源
+   */
+  const handleUpdateDataSources = (dataSources: DataResource[]) => {
+    setSelectedDataResources(dataSources);
+    selectedDataResourcesRef.current = dataSources;
+  };
+
   return (
     <>
       {contextHolder}
@@ -1028,7 +1060,7 @@ const AppDev: React.FC = () => {
           hasUpdates={projectInfo.hasUpdates}
           lastSaveTime={new Date()}
           isDeploying={isDeploying}
-          projectInfo={projectInfo.projectInfoState.projectInfo || null}
+          projectInfo={projectInfo.projectInfoState.projectInfo || undefined}
           getDeployStatusText={projectInfo.getDeployStatusText}
           getDeployStatusColor={projectInfo.getDeployStatusColor}
           isChatLoading={chat.isChatLoading} // 新增：传递聊天加载状态
@@ -1045,11 +1077,11 @@ const AppDev: React.FC = () => {
               projectInfo={projectInfo}
               projectId={projectId || ''} // 新增：项目ID
               onVersionSelect={handleVersionSelect}
-              selectedDataSources={selectedDataSources} // 新增：选中的数据源
-              onUpdateDataSources={setSelectedDataResourceIds} // 新增：更新数据源回调
+              selectedDataSources={selectedDataResources} // 新增：选中的数据源
+              onUpdateDataSources={handleUpdateDataSources} // 新增：更新数据源回调
               fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
               modelSelector={modelSelector} // 新增：模型选择器状态
-              onRefreshVersionList={projectInfo.refreshProjectInfo} // 新增：刷新版本列表回调
+              // onRefreshVersionList={projectInfo.refreshProjectInfo} // 新增：刷新版本列表回调
               onClearUploadedImages={(clearFn) => {
                 // 设置图片清空方法到 ref
                 clearUploadedImagesRef.current = clearFn;
@@ -1199,8 +1231,8 @@ const AppDev: React.FC = () => {
                     setIsAddDataResourceModalVisible(true)
                   }
                   onDeleteDataResource={handleDeleteDataResource}
-                  selectedDataResourceIds={selectedDataResourceIds}
-                  onDataResourceSelectionChange={setSelectedDataResourceIds}
+                  selectedDataResources={selectedDataResources}
+                  // onDataResourceSelectionChange={setSelectedDataResourceIds}
                   workspace={workspace}
                   fileManagement={fileManagement}
                   isChatLoading={chat.isChatLoading}
