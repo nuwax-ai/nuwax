@@ -1,6 +1,7 @@
 import {
   PageDevelopCreateTypeEnum,
   PageDevelopMoreActionEnum,
+  PageDevelopPublishTypeEnum,
   PageProjectTypeEnum,
   ReverseProxyEnum,
 } from '@/types/enums/pageDev';
@@ -66,5 +67,17 @@ export const PAGE_DEVELOP_MORE_ACTIONS = [
   {
     value: PageDevelopMoreActionEnum.Delete,
     label: '删除',
+  },
+];
+
+// 页面开发发布类型列表
+export const PAGE_DEVELOP_PUBLISH_TYPE_LIST = [
+  {
+    value: PageDevelopPublishTypeEnum.Component,
+    label: '发布成组件',
+  },
+  {
+    value: PageDevelopPublishTypeEnum.Application,
+    label: '发布成应用',
   },
 ];
