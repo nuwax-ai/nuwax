@@ -845,8 +845,8 @@ export interface ProjectDetailData {
   icon: string;
   /** 项目基础路径 */
   basePath: string;
-  /** 发布状态,1:已发布;-1:未发布 */
-  buildRunning: number;
+  /** 发布状态,true:已发布;false:未发布 */
+  buildRunning: boolean;
   /** 发布时间 */
   buildTime: string;
   /** 发布版本 */
