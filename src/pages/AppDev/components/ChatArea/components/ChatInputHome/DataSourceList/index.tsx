@@ -1,4 +1,5 @@
 import HoverScrollbar from '@/components/base/HoverScrollbar';
+import { DataResource } from '@/types/interfaces/dataResource';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -8,9 +9,9 @@ const cx = classNames.bind(styles);
 // 手动选择组件属性
 export interface DataSourceListProps {
   // 数据源列表
-  dataSourceList?: any[];
-  selectedDataSourceList?: any[];
-  onSelectDataSource?: (dataSource: any) => void;
+  dataSourceList?: DataResource[];
+  // 切换数据源选择状态
+  onToggleSelectDataSource?: (dataSource: DataResource) => void;
 }
 
 /**
@@ -18,8 +19,7 @@ export interface DataSourceListProps {
  */
 const DataSourceList: React.FC<DataSourceListProps> = ({
   dataSourceList,
-  selectedDataSourceList,
-  onSelectDataSource,
+  onToggleSelectDataSource,
 }) => {
   return (
     <div className={cx('flex-1')}>
@@ -35,12 +35,10 @@ const DataSourceList: React.FC<DataSourceListProps> = ({
                   'items-center',
                   'cursor-pointer',
                   {
-                    [styles.active]: selectedDataSourceList?.some(
-                      (c) => c.id === item.id,
-                    ),
+                    [styles.active]: item.isSelected,
                   },
                 )}
-                onClick={() => onSelectDataSource?.(item)}
+                onClick={() => onToggleSelectDataSource?.(item)}
               >
                 {item.name}
               </span>

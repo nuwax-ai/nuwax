@@ -33,8 +33,10 @@ export enum DataResourceStatus {
  * 数据资源基础接口
  */
 export interface DataResource {
+  /** 是否选中 */
+  isSelected?: boolean;
   /** 资源唯一标识 */
-  id: string;
+  id: number | string;
   /** 资源名称 */
   name: string;
   /** 资源描述 */
@@ -44,15 +46,15 @@ export interface DataResource {
   /** 资源状态 */
   status: DataResourceStatus;
   /** 创建时间 */
-  createdAt: string;
+  createdAt?: string;
   /** 更新时间 */
-  updatedAt: string;
+  updatedAt?: string;
   /** 配置信息 */
-  config: Record<string, any>;
+  config?: Record<string, any>;
   /** 标签 */
   tags?: string[];
   /** 是否启用 */
-  enabled: boolean;
+  enabled?: boolean;
 }
 
 /**

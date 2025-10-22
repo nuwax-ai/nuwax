@@ -5,6 +5,7 @@ import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { UploadFileInfo } from '@/types/interfaces/common';
+import { DataResource } from '@/types/interfaces/dataResource';
 import { handleUploadFileList } from '@/utils/upload';
 import { LoadingOutlined, PictureOutlined } from '@ant-design/icons';
 import type { InputRef, UploadProps } from 'antd';
@@ -33,9 +34,8 @@ export interface ChatInputProps {
   className?: React.CSSProperties;
   onEnter: (files: UploadFileInfo[]) => void;
   // 数据源列表
-  dataSourceList?: any[];
-  selectedDataSourceList?: any[];
-  onSelectDataSource?: (dataSource: any) => void;
+  dataSourceList?: DataResource[];
+  onToggleSelectDataSource?: (dataSource: DataResource) => void;
 }
 
 /**
@@ -51,8 +51,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   className,
   onEnter,
   dataSourceList,
-  selectedDataSourceList,
-  onSelectDataSource,
+  onToggleSelectDataSource,
 }) => {
   // 文档
   const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
@@ -141,8 +140,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         <ConditionRender condition={dataSourceList?.length}>
           <DataSourceList
             dataSourceList={dataSourceList}
-            selectedDataSourceList={selectedDataSourceList}
-            onSelectDataSource={onSelectDataSource}
+            onToggleSelectDataSource={onToggleSelectDataSource}
           />
         </ConditionRender>
         <div className={styles.leftActions}>

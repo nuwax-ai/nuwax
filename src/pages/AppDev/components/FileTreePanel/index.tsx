@@ -33,8 +33,8 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   onUploadSingleFile,
   onAddDataResource,
   onDeleteDataResource,
-  selectedDataResourceIds,
-  onDataResourceSelectionChange,
+  // selectedDataResourceIds,
+  // onDataResourceSelectionChange,
   workspace,
   fileManagement,
   isChatLoading = false,
@@ -296,9 +296,9 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                       resources={dataResources}
                       loading={dataResourcesLoading}
                       onDelete={onDeleteDataResource}
-                      selectedResourceIds={selectedDataResourceIds}
-                      onSelectionChange={onDataResourceSelectionChange}
-                      isChatLoading={isChatLoading || isComparing}
+                      // selectedResourceIds={selectedDataResourceIds}
+                      // onSelectionChange={onDataResourceSelectionChange}
+                      // isChatLoading={isChatLoading || isComparing}
                       projectId={projectId}
                     />
                   </div>

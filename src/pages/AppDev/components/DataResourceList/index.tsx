@@ -1,8 +1,7 @@
 import { unbindDataSource } from '@/services/appDev';
-import type { DataSourceSelection } from '@/types/interfaces/appDev';
 import type { DataResource } from '@/types/interfaces/dataResource';
 import { DeleteOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Empty, message, Modal, Typography } from 'antd';
+import { Button, Empty, message, Modal, Typography } from 'antd';
 import React, { useState } from 'react';
 
 const { Text } = Typography;
@@ -16,13 +15,13 @@ interface DataResourceListProps {
   /** 加载状态 */
   loading?: boolean;
   /** 删除资源回调 */
-  onDelete?: (resourceId: string) => Promise<void>;
-  /** 选中的数据源列表 */
-  selectedResourceIds?: DataSourceSelection[];
-  /** 选择变化回调 */
-  onSelectionChange?: (selectedDataSources: DataSourceSelection[]) => void;
+  onDelete?: (resourceId: number) => Promise<void>;
+  // /** 选中的数据源列表 */
+  // selectedResourceIds?: DataSourceSelection[];
+  // /** 选择变化回调 */
+  // onSelectionChange?: (selectedDataSources: DataSourceSelection[]) => void;
   /** 是否正在AI聊天加载中或版本对比模式 */
-  isChatLoading?: boolean;
+  // isChatLoading?: boolean;
   /** 项目ID，用于解绑数据源 */
   projectId?: number;
 }
@@ -34,9 +33,9 @@ interface DataResourceListProps {
 const DataResourceList: React.FC<DataResourceListProps> = ({
   resources,
   onDelete,
-  selectedResourceIds = [],
-  onSelectionChange,
-  isChatLoading = false,
+  // selectedResourceIds = [],
+  // onSelectionChange,
+  // isChatLoading = false,
   projectId,
 }) => {
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>(
@@ -46,26 +45,26 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
   /**
    * 处理复选框变化
    */
-  const handleCheckboxChange = (resource: DataResource, checked: boolean) => {
-    const resourceSelection: DataSourceSelection = {
-      dataSourceId: parseInt(resource.id),
-      type: resource.type === 'plugin' ? 'plugin' : 'workflow',
-      name: resource.name, // 添加数据源名称
-    };
+  // const handleCheckboxChange = (resource: DataResource, checked: boolean) => {
+  //   const resourceSelection: DataSourceSelection = {
+  //     dataSourceId: parseInt(resource.id),
+  //     type: resource.type === 'plugin' ? 'plugin' : 'workflow',
+  //     name: resource.name, // 添加数据源名称
+  //   };
 
-    const newSelectedDataSources = checked
-      ? [...selectedResourceIds, resourceSelection]
-      : selectedResourceIds.filter(
-          (item) => item.dataSourceId !== resourceSelection.dataSourceId,
-        );
+  //   const newSelectedDataSources = checked
+  //     ? [...selectedResourceIds, resourceSelection]
+  //     : selectedResourceIds.filter(
+  //         (item) => item.dataSourceId !== resourceSelection.dataSourceId,
+  //       );
 
-    onSelectionChange?.(newSelectedDataSources);
-  };
+  //   onSelectionChange?.(newSelectedDataSources);
+  // };
 
   /**
    * 处理删除资源
    */
-  const handleDelete = async (resourceId: string) => {
+  const handleDelete = async (resourceId: number) => {
     const resource = resources.find((r) => r.id === resourceId);
     if (!resource) {
       message.error('未找到要删除的数据源');
@@ -94,12 +93,12 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
             const result = await unbindDataSource({
               projectId,
               type,
-              dataSourceId: parseInt(resourceId),
+              dataSourceId: resourceId,
             });
 
             if (result?.code === '0000') {
               // 先取消勾选
-              handleCheckboxChange(resource, false);
+              // handleCheckboxChange(resource, false);
               // 调用原有的删除回调
               await onDelete?.(resourceId);
             }
@@ -149,14 +148,14 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
         }}
       >
         {/* 左侧复选框 */}
-        <Checkbox
+        {/* <Checkbox
           checked={selectedResourceIds.some(
             (item) => item.dataSourceId === parseInt(resource.id),
           )}
           onChange={(e) => handleCheckboxChange(resource, e.target.checked)}
           disabled={isChatLoading}
           style={{ marginRight: '12px' }}
-        />
+        /> */}
 
         {/* 中间内容 */}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -181,7 +180,7 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
             size="small"
             onClick={(e) => {
               e.stopPropagation();
-              handleDelete(resource.id);
+              handleDelete(Number(resource.id));
             }}
             style={{
               width: '24px',
