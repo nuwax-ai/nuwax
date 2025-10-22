@@ -373,7 +373,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       {
         key: 'refresh',
         icon: <ReloadOutlined />,
-        label: '刷新预览',
+        label: '刷新页面预览',
         onClick: onRefreshPreview,
         disabled: isRefreshDisabled,
       },
@@ -387,7 +387,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       {
         key: 'fullscreen',
         icon: <FullscreenOutlined />,
-        label: '全屏预览',
+        label: '全屏页面预览',
         onClick: onFullscreenPreview,
         disabled: isChatLoading,
       },
