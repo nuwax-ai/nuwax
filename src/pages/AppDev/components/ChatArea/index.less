@@ -509,12 +509,12 @@
 
 // 输入区域容器
 .chatInputContainer {
+  position: relative;
   display: flex;
   flex-direction: column;
   padding: 20px;
-  border-top: 1px solid rgba(0, 0, 0, 10%);
-  background: rgba(255, 255, 255, 80%);
-  backdrop-filter: blur(10px);
+  // background: rgba(255, 255, 255, 80%);
+  // backdrop-filter: blur(10px);
 }
 
 // 附件展示区域(文件/图片/数据源)
@@ -708,21 +708,6 @@
 //         background-color: #fff;
 //       }
 //     }
-//   }
-// }
-
-// 选中文件显示
-// .selectedFileDisplay {
-//   font-size: 11px;
-//   padding: 0 8px;
-//   background: @colorPrimaryBg;
-//   border: @lineWidth solid @colorPrimaryBorder;
-//   border-radius: @borderRadiusSm;
-//   transition: all 0.2s ease;
-
-//   &:hover {
-//     background: @colorPrimaryBgHover;
-//     border-color: @colorPrimaryBorderHover;
 //   }
 // }
 
