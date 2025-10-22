@@ -6,7 +6,7 @@ import {
   ReloadOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
-import { Button, Spin } from 'antd';
+import { Spin } from 'antd';
 import React, {
   useCallback,
   useEffect,
@@ -450,19 +450,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 </span>
               )}
             </div>
-          </div>
-
-          <div className={styles.headerRight}>
-            <Button
-              type="text"
-              icon={<ReloadOutlined />}
-              onClick={refreshPreview}
-              disabled={isLoading || !devServerUrl}
-              loading={isLoading}
-              className={styles.refreshButton}
-            >
-              刷新
-            </Button>
           </div>
         </div>
 
