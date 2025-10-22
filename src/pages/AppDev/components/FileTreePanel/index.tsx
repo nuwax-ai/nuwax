@@ -87,7 +87,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
           <div
             key={node.id}
             className={styles.folderItem}
-            style={{ marginLeft: level * 16 }}
+            style={{ marginLeft: level * 8 }}
           >
             <div
               className={styles.folderHeader}
@@ -146,7 +146,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                 onFileSelect(node.id);
               }
             }}
-            style={{ marginLeft: level * 16 }}
+            style={{ marginLeft: level * 8 }}
           >
             {node.name.startsWith('.') ? (
               <EyeInvisibleOutlined className={styles.fileIcon} />
