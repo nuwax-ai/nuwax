@@ -131,7 +131,6 @@
   // padding: 8px 0;
   min-width: max-content; // 确保内容不会被压缩
   width: 100%;
-  font-family: @fontFamilyCode;
 }
 
 .folderItem {
@@ -156,8 +155,7 @@
 }
 
 .folderIcon {
-  margin-right: 8px;
-  font-size: @fontSizeSm;
+  margin-right: 4px;
   color: @colorTextBase;
   transition: transform 0.2s ease;
 
@@ -170,6 +168,7 @@
   color: @colorTextBase;
   font-weight: @fontWeightStrong;
   font-size: @fontSize;
+  font-family: @fontFamilyCode;
 }
 
 .fileList {
@@ -227,7 +226,8 @@
 
 .fileName {
   color: @colorTextBase;
-  font-size: @fontSizeSm;
+  font-size: @fontSize;
+  font-family: @fontFamilyCode;
   flex: 1;
 
   &.hiddenFile {

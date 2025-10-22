@@ -1,3 +1,4 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import {
   EyeInvisibleOutlined,
@@ -249,7 +250,9 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
               onClick={() => !isRenaming && onToggleFolder(node.id)}
               onContextMenu={(e) => handleContextMenu(e, node)}
             >
-              <RightOutlined
+              <SvgIcon
+                name="icons-common-caret_right"
+                style={{ fontSize: '16px' }}
                 className={`${styles.folderIcon} ${
                   isExpanded ? styles.expanded : ''
                 }`}

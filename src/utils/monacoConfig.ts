@@ -300,7 +300,7 @@ export const editorOptions = {
   scrollBeyondLastLine: false,
   fontSize: 12,
   fontFamily:
-    "'Fira Code','JetBrains Mono', monospace, 'Consolas', 'Monaco', 'Courier New'",
+    "'JetBrains Mono', monospace, 'Fira Code','Consolas', 'Monaco', 'Courier New'",
   lineHeight: 20, // 明确设置行高，确保光标位置准确
   tabSize: 2,
   insertSpaces: true, // 使用空格而不是制表符
