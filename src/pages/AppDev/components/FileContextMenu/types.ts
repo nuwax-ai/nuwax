@@ -40,4 +40,8 @@ export interface FileContextMenuProps {
   onRename?: (node: FileNode) => void;
   /** 上传单个文件回调（直接调用，不弹窗） */
   onUploadSingleFile?: (node: FileNode) => void;
+  /** 上传项目回调（空白区域菜单） */
+  onUploadProject?: () => void;
+  /** 添加数据资源回调（空白区域菜单） */
+  onAddDataResource?: () => void;
 }

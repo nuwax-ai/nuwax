@@ -1,6 +1,8 @@
 import {
   DeleteOutlined,
   EditOutlined,
+  ImportOutlined,
+  PlusOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import React, { useCallback, useEffect } from 'react';
@@ -21,6 +23,8 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onDelete,
   onRename,
   onUploadSingleFile,
+  onUploadProject,
+  onAddDataResource,
 }) => {
   /**
    * 处理菜单项点击
@@ -80,6 +84,26 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   }, [targetNode, onUploadSingleFile, handleMenuItemClick]);
 
   /**
+   * 处理上传项目操作（空白区域菜单）
+   */
+  const handleUploadProject = useCallback(() => {
+    if (!onUploadProject) return;
+    handleMenuItemClick(() => {
+      onUploadProject();
+    });
+  }, [onUploadProject, handleMenuItemClick]);
+
+  /**
+   * 处理添加数据资源操作（空白区域菜单）
+   */
+  const handleAddDataResource = useCallback(() => {
+    if (!onAddDataResource) return;
+    handleMenuItemClick(() => {
+      onAddDataResource();
+    });
+  }, [onAddDataResource, handleMenuItemClick]);
+
+  /**
    * 点击外部关闭菜单
    */
   useEffect(() => {
@@ -93,8 +117,8 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
     }
   }, [visible, onClose]);
 
-  // 如果不显示或没有目标节点，返回 null
-  if (!visible || !targetNode) {
+  // 如果不显示，返回 null
+  if (!visible) {
     return null;
   }
 
@@ -103,34 +127,53 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
     return null;
   }
 
-  // 构建菜单项
-  const menuItems = [
-    {
-      key: 'rename',
-      label: '重命名',
-      icon: <EditOutlined />,
-      onClick: handleRename,
-      disabled: !onRename,
-    },
-    {
-      key: 'upload',
-      label: '上传文件',
-      icon: <UploadOutlined />,
-      onClick: handleUpload,
-      disabled: !onUploadSingleFile || targetNode.name.startsWith('.'),
-    },
-    {
-      key: 'divider',
-      type: 'divider' as const,
-    },
-    {
-      key: 'delete',
-      label: '删除',
-      icon: <DeleteOutlined />,
-      onClick: handleDelete,
-      danger: true,
-    },
-  ];
+  // 构建菜单项 - 根据是否有目标节点显示不同菜单
+  const menuItems = targetNode
+    ? [
+        // 文件/文件夹菜单项
+        {
+          key: 'rename',
+          label: '重命名',
+          icon: <EditOutlined />,
+          onClick: handleRename,
+          disabled: !onRename,
+        },
+        {
+          key: 'upload',
+          label: '上传文件',
+          icon: <UploadOutlined />,
+          onClick: handleUpload,
+          disabled: !onUploadSingleFile || targetNode.name.startsWith('.'),
+        },
+        {
+          key: 'divider',
+          type: 'divider' as const,
+        },
+        {
+          key: 'delete',
+          label: '删除',
+          icon: <DeleteOutlined />,
+          onClick: handleDelete,
+          danger: true,
+        },
+      ]
+    : [
+        // 空白区域菜单项
+        {
+          key: 'uploadProject',
+          label: '导入项目',
+          icon: <ImportOutlined />,
+          onClick: handleUploadProject,
+          disabled: !onUploadProject,
+        },
+        {
+          key: 'addDataResource',
+          label: '添加数据资源',
+          icon: <PlusOutlined />,
+          onClick: handleAddDataResource,
+          disabled: !onAddDataResource,
+        },
+      ];
 
   return (
     <div

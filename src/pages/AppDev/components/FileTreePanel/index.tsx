@@ -110,6 +110,26 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   );
 
   /**
+   * 处理空白区域右键菜单显示
+   */
+  const handleEmptyAreaContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // 如果正在聊天加载或版本对比模式，禁用右键菜单
+      if (isChatLoading || isComparing) {
+        return;
+      }
+
+      setContextMenuTarget(null); // 空白区域没有目标节点
+      setContextMenuPosition({ x: e.clientX, y: e.clientY });
+      setContextMenuVisible(true);
+    },
+    [isChatLoading, isComparing],
+  );
+
+  /**
    * 关闭右键菜单
    */
   const closeContextMenu = useCallback(() => {
@@ -375,6 +395,8 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         onDelete={onDeleteFile}
         onRename={onRenameFile ? handleRenameFromMenu : undefined}
         onUploadSingleFile={handleUploadFromMenu}
+        onUploadProject={onUploadProject}
+        onAddDataResource={onAddDataResource}
       />
 
       {/* 悬浮折叠/展开按钮 - 放在预览区域左下角 */}
@@ -405,6 +427,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                 className={styles.fileTreeContainer}
                 ref={fileTreeScrollRef}
                 onScroll={saveScrollPosition}
+                onContextMenu={handleEmptyAreaContextMenu}
               >
                 {/* 文件树结构 */}
                 {files.length === 0 ? (

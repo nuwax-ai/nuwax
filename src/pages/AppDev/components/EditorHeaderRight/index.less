@@ -7,6 +7,21 @@
   gap: 4px; // 增加间距以适应更多按钮
 }
 
+.versionSelectorButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.caretDownIcon {
+  transition: transform 0.2s ease;
+
+  &.expanded {
+    transform: rotate(180deg);
+  }
+}
 // 预览状态信息样式
 .previewStatusInfo {
   display: flex;

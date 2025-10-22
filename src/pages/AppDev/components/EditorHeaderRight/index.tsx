@@ -1,16 +1,14 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
 import {
-  CodeOutlined,
   DownloadOutlined,
-  DownOutlined,
-  EllipsisOutlined,
   FullscreenOutlined,
   ImportOutlined,
   ReloadOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
 import { Alert, Badge, Button, Dropdown, Tag, Tooltip } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import styles from './index.less';
 
 // 版本对比模式相关接口
@@ -236,6 +234,7 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
   getActionText,
   isChatLoading,
 }) => {
+  const [expanded, setExpanded] = useState(false);
   // 版本选择器是否禁用
   const isDisabled = useMemo(
     () => versionList.length === 0 || isChatLoading,
@@ -290,10 +289,23 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
       disabled={isDisabled}
       trigger={['click']}
       placement="bottomRight"
+      onOpenChange={(open) => {
+        setExpanded(open);
+      }}
     >
-      <Button type="text" disabled={isDisabled}>
+      <Button
+        type="text"
+        className={styles.versionSelectorButton}
+        disabled={isDisabled}
+      >
         {currentVersionText}
-        <DownOutlined style={{ fontSize: 10 }} />
+        <SvgIcon
+          name="icons-common-caret_down"
+          className={`${styles.caretDownIcon} ${
+            expanded ? styles.expanded : ''
+          }`}
+          style={{ fontSize: '16px' }}
+        />
       </Button>
     </Dropdown>
   );
@@ -322,7 +334,10 @@ const ConsoleButton: React.FC<ConsoleButtonProps> = ({
       <Badge dot={hasErrors} offset={[-8, 8]}>
         <Button
           type="text"
-          icon={<CodeOutlined />}
+          className={styles.consoleButton}
+          icon={
+            <SvgIcon name="icons-nav-sidebar" style={{ fontSize: '16px' }} />
+          }
           onClick={onToggleDevLogConsole}
         />
       </Badge>
@@ -420,7 +435,11 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       menu={{ items: menuItems }}
       placement="bottomRight"
     >
-      <Button type="text" icon={<EllipsisOutlined />} />
+      <Button
+        type="text"
+        className={styles.moreActionsButton}
+        icon={<SvgIcon name="icons-common-more" style={{ fontSize: '16px' }} />}
+      />
     </Dropdown>
   );
 };
