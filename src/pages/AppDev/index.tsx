@@ -92,7 +92,7 @@ const AppDev: React.FC = () => {
 
   const {
     workspace,
-    // isServiceRunning, // 暂时未使用，保留以备将来使用
+    isServiceRunning,
     setIsServiceRunning,
     setActiveFile,
     updateFileContent,
