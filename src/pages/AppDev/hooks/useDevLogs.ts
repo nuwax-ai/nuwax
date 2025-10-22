@@ -48,6 +48,8 @@ interface UseDevLogsReturn {
   refreshLogs: () => Promise<void>;
   /** 停止轮询 */
   stopPolling: () => void;
+  /** 重置日志起始行号 */
+  resetStartLine: () => void;
   /** 开始轮询 */
   startPolling: () => void;
   /** 获取新的错误日志 */
@@ -189,6 +191,15 @@ export const useDevLogs = (
   }, [logs, lastLine]);
 
   /**
+   * 重置日志起始行号
+   */
+  const resetStartLine = useCallback(() => {
+    clearLogs();
+    setLastLine(0); // 设置为0，这样下次请求时从第1行开始
+    startPolling();
+  }, [clearLogs, setLastLine, startPolling]);
+
+  /**
    * 获取新的错误日志
    */
   const getNewErrorLogs = useCallback((): DevLogEntry[] => {
@@ -253,6 +264,7 @@ export const useDevLogs = (
     refreshLogs,
     stopPolling,
     startPolling,
+    resetStartLine,
     getNewErrorLogs,
     markErrorAsSent,
     hasNewErrors,

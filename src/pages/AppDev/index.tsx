@@ -459,13 +459,16 @@ const AppDev: React.FC = () => {
    * 处理重启开发服务器按钮点击（手动触发）
    */
   const handleRestartDevServer = useCallback(async () => {
+    // 重置日志起始行号
+    devLogs.resetStartLine();
+
     // 使用重启开发服务器 Hook，手动触发时切换到预览标签页
     await restartDevServer({
       shouldSwitchTab: true,
       delayBeforeRefresh: 500,
       showMessage: false,
     });
-  }, [restartDevServer]);
+  }, [restartDevServer, devLogs.resetStartLine]);
 
   /**
    * 处理添加组件（Created 组件回调）

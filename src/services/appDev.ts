@@ -559,7 +559,7 @@ export const listModels = async (
  */
 export const getDevLogs = async (
   projectId: string,
-  startIndex: number = 0,
+  startIndex: number = 1,
 ): Promise<GetDevLogApiResponse> => {
   const response = await request('/api/custom-page/get-dev-log', {
     method: 'POST',
