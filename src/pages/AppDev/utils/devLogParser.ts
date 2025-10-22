@@ -4,6 +4,7 @@
  */
 
 import { LogLevel, type DevLogEntry } from '@/types/interfaces/appDev';
+import dayjs from 'dayjs';
 
 /**
  * 解析单行日志，识别日志级别和错误状态
@@ -313,4 +314,106 @@ export const formatLogDisplay = (
   displayText += log.content;
 
   return displayText;
+};
+
+/**
+ * 日志分组接口
+ */
+export interface LogGroup {
+  /** 时间戳 */
+  timestamp: string;
+  /** 该组内的日志条目 */
+  logs: DevLogEntry[];
+  /** 组内错误数量 */
+  errorCount: number;
+  /** 组内警告数量 */
+  warnCount: number;
+  /** 组内信息数量 */
+  infoCount: number;
+  /** 组内普通日志数量 */
+  normalCount: number;
+}
+
+/**
+ * 创建日志组
+ * @param timestamp 时间戳
+ * @param logs 日志数组
+ * @returns 日志组
+ */
+const createLogGroup = (timestamp: string, logs: DevLogEntry[]): LogGroup => {
+  const errorCount = logs.filter((log) => log.level === LogLevel.ERROR).length;
+  const warnCount = logs.filter((log) => log.level === LogLevel.WARN).length;
+  const infoCount = logs.filter((log) => log.level === LogLevel.INFO).length;
+  const normalCount = logs.filter(
+    (log) => log.level === LogLevel.NORMAL,
+  ).length;
+
+  return {
+    timestamp: timestamp || '未知时间',
+    logs,
+    errorCount,
+    warnCount,
+    infoCount,
+    normalCount,
+  };
+};
+
+/**
+ * 按时间戳标识符切分日志块
+ * @param logs 日志数组
+ * @returns 分组后的日志数组
+ */
+export const groupLogsByTimestamp = (logs: DevLogEntry[]): LogGroup[] => {
+  const groups: LogGroup[] = [];
+  let currentGroup: DevLogEntry[] = [];
+  let currentTimestamp = '';
+
+  // 遍历日志，按时间戳标识符切分
+  logs.forEach((log) => {
+    const timestamp = extractTimestamp(log.content);
+
+    if (timestamp) {
+      // 如果遇到新的时间戳标识符，保存当前组并开始新组
+      if (currentGroup.length > 0) {
+        groups.push(createLogGroup(currentTimestamp, currentGroup));
+        currentGroup = [];
+      }
+      currentTimestamp = timestamp;
+    }
+
+    // 将当前日志添加到当前组
+    currentGroup.push(log);
+  });
+
+  // 处理最后一个组（如果没有时间戳标识符，就是最后一个）
+  if (currentGroup.length > 0) {
+    groups.push(createLogGroup(currentTimestamp, currentGroup));
+  }
+
+  // 保持后端返回数据的原始顺序，不进行排序
+  return groups;
+};
+
+/**
+ * 格式化时间戳显示
+ * @param timestamp 时间戳字符串
+ * @returns 格式化后的时间戳
+ */
+export const formatTimestampDisplay = (timestamp: string): string => {
+  // 如果已经是格式化好的时间戳，直接返回
+  if (timestamp.includes('/') && timestamp.includes(':')) {
+    return timestamp;
+  }
+
+  // 使用 dayjs 解析时间戳
+  try {
+    const date = dayjs(timestamp);
+    if (date.isValid()) {
+      return date.format('YYYY/MM/DD HH:mm:ss');
+    }
+  } catch (error) {
+    console.warn('时间戳解析失败:', timestamp, error);
+  }
+
+  return timestamp;
 };

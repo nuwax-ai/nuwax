@@ -7,9 +7,9 @@
 
 .dev-log-console {
   width: 100%;
-  background: @colorBgContainer;
-  border: @lineWidth solid @colorBorder;
-  // margin-top: 16px;
+  background: #f5f5dc; // 浅黄色/米色背景，参考图片
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
 
   // 头部工具栏
   &-header {
@@ -18,8 +18,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: @lineWidth solid @colorBorder;
-    background: @colorBgContainer;
+    border-bottom: 1px solid #d9d9d9;
+    background: #f5f5dc;
 
     .header-left {
       display: flex;
@@ -28,18 +28,18 @@
 
       .header-icon {
         font-size: 16px;
-        color: @colorPrimary;
+        color: #8b4513; // 深棕色，参考图片文字颜色
       }
 
       .header-title {
         font-size: 14px;
         font-weight: 500;
-        color: @colorTextBase;
+        color: #8b4513; // 深棕色
       }
 
       .error-badge {
         .ant-badge-count {
-          background: @colorError;
+          background: #ff4d4f;
           font-size: 10px;
           min-width: 16px;
           height: 16px;
@@ -60,9 +60,14 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        color: #8b4513;
 
         .anticon {
           font-size: 12px;
+        }
+
+        &:hover {
+          background: rgba(139, 69, 19, 10%);
         }
       }
     }
@@ -76,50 +81,61 @@
     .log-list {
       height: 100%;
       overflow-y: auto;
-      padding: 4px 0;
+      padding: 8px;
 
-      .dev-log-console-item {
-        padding: 2px 8px;
-        font-family: Consolas, Monaco, 'Courier New', monospace;
-        font-size: 12px;
-        line-height: 20px;
-        border-bottom: 1px solid rgba(0, 0, 0, 5%);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-
-        .log-content {
-          display: block;
-          width: 100%;
-        }
-
-        // 普通日志
-        &-normal {
-          color: #595959;
-          background: transparent;
-        }
-
-        // 信息日志
-        &-info {
-          color: #1890ff;
-          background: rgba(24, 144, 255, 5%);
-        }
-
-        // 警告日志
-        &-warn {
-          color: #fa8c16;
-          background: rgba(250, 140, 22, 5%);
-        }
-
-        // 错误日志
-        &-error {
-          color: #cf1322;
-          background: rgba(207, 19, 34, 5%);
-          font-weight: 500;
-        }
+      // 日志组样式 - 参考图片的简洁设计
+      .log-group {
+        display: flex;
+        flex-direction: row;
+        margin-bottom: 4px;
+        background: transparent; // 透明背景，与整体背景一致
+        cursor: pointer;
+        border-radius: 4px;
 
         &:hover {
-          background: rgba(0, 0, 0, 2%);
+          background: rgba(139, 69, 19, 10%); // 浅棕色背景
+        }
+
+        // 组头样式 - 简洁的时间戳显示
+        .log-group-header {
+          padding: 4px 8px;
+          transition: all 0.2s ease;
+
+          .group-header-left {
+            display: flex;
+            align-items: center;
+
+            .group-timestamp {
+              font-size: 12px;
+              color: #8b4513; // 深棕色文字
+              font-family: Consolas, Monaco, 'Courier New', monospace;
+            }
+          }
+        }
+
+        // 组内容样式 - 简洁的文本显示
+        .log-group-content {
+          flex: 1;
+          padding: 0;
+          background: transparent;
+
+          // 合并的日志内容块
+          .log-content-block {
+            background: transparent;
+            border: none;
+            border-radius: 0;
+
+            .log-text {
+              margin: 0;
+              padding: 4px 8px;
+              font-family: Consolas, Monaco, 'Courier New', monospace;
+              font-size: 12px;
+              white-space: pre-wrap;
+              word-break: break-all;
+              color: #8b4513; // 统一的深棕色文字
+              background: transparent;
+            }
+          }
         }
       }
     }

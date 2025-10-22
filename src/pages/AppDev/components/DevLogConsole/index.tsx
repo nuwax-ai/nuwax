@@ -4,15 +4,20 @@
  */
 
 import type { DevLogEntry } from '@/types/interfaces/appDev';
+import { LogLevel } from '@/types/interfaces/appDev';
 import {
   BugOutlined,
   ClearOutlined,
   CloseOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { Badge, Button, List, Tooltip } from 'antd';
-import React, { useEffect, useRef } from 'react';
-import { formatLogDisplay } from '../../utils/devLogParser';
+import { Badge, Button, Tooltip } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  formatTimestampDisplay,
+  groupLogsByTimestamp,
+  type LogGroup,
+} from '../../utils/devLogParser';
 import './index.less';
 
 /**
@@ -34,18 +39,60 @@ interface DevLogConsoleProps {
 }
 
 /**
- * 单条日志渲染组件
- * 用于渲染单条日志条目
+ * 日志内容合并渲染组件
+ * 将组内所有日志合并成一个文本块展示
  */
-const LogItem: React.FC<{ log: DevLogEntry }> = ({ log }) => {
-  const displayText = formatLogDisplay(log, true, true);
+const LogContentBlock: React.FC<{ logs: DevLogEntry[] }> = ({ logs }) => {
+  // 合并所有日志内容，移除时间戳和行号
+  const mergedContent = logs
+    .map((log) => {
+      // 移除时间戳标识符 [YYYY/MM/DD HH:mm:ss]
+      let content = log.content.replace(
+        /\[\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}\]\s*/,
+        '',
+      );
+      // 移除行号标识符 "123| "
+      content = content.replace(/^\d+\|\s*/, '');
+      return content;
+    })
+    .join('\n')
+    .trim();
+
+  // 获取组的最高级别
+  const getGroupLevel = () => {
+    if (logs.some((log) => log.level === LogLevel.ERROR)) return 'error';
+    if (logs.some((log) => log.level === LogLevel.WARN)) return 'warn';
+    if (logs.some((log) => log.level === LogLevel.INFO)) return 'info';
+    return 'normal';
+  };
 
   return (
-    <div
-      className={`dev-log-console-item dev-log-console-item-${log.level.toLowerCase()}`}
-      title={log.content}
-    >
-      <span className="log-content">{displayText}</span>
+    <div className={`log-content-block log-content-block-${getGroupLevel()}`}>
+      <pre className="log-text">{mergedContent}</pre>
+    </div>
+  );
+};
+
+/**
+ * 日志组渲染组件
+ * 用于渲染一个时间戳分组的日志
+ */
+const LogGroupItem: React.FC<{ group: LogGroup }> = ({ group }) => {
+  // const [isExpanded, setIsExpanded] = useState(true); // 暂时注释掉，后续可能需要
+
+  return (
+    <div className="log-group">
+      {/* 组头 - 简洁的时间戳显示 */}
+      <div className="log-group-header">
+        <div className="group-header-left">
+          <span className="group-timestamp">
+            {formatTimestampDisplay(group.timestamp)}
+          </span>
+        </div>
+      </div>
+      <div className="log-group-content">
+        <LogContentBlock logs={group.logs} />
+      </div>
     </div>
   );
 };
@@ -62,6 +109,13 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
   onClose,
 }) => {
   const logListRef = useRef<HTMLDivElement>(null);
+  const [logGroups, setLogGroups] = useState<LogGroup[]>([]);
+
+  // 将日志按时间戳分组
+  useEffect(() => {
+    const groups = groupLogsByTimestamp(logs);
+    setLogGroups(groups);
+  }, [logs]);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -112,21 +166,16 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
 
       {/* 日志列表 */}
       <div className="dev-log-console-body">
-        {logs.length > 0 ? (
+        {logGroups.length > 0 ? (
           <div ref={logListRef} className="log-list">
-            <List
-              dataSource={logs}
-              renderItem={(log) => <LogItem key={log.line} log={log} />}
-              size="small"
-            />
+            {logGroups.map((group, index) => (
+              <LogGroupItem key={`${group.timestamp}-${index}`} group={group} />
+            ))}
           </div>
         ) : (
           <div className="empty-logs">
             <BugOutlined className="empty-icon" />
             <p>暂无日志数据</p>
-            <Button type="primary" size="small" onClick={onRefresh}>
-              刷新日志
-            </Button>
           </div>
         )}
       </div>
