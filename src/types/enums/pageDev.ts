@@ -45,3 +45,11 @@ export enum BuildRunningEnum {
   // 未发布
   Unpublished = -1,
 }
+
+// 页面开发发布类型枚举
+export enum PageDevelopPublishTypeEnum {
+  // 发布成组件
+  Component = 'Component',
+  // 发布成应用
+  Application = 'Application',
+}

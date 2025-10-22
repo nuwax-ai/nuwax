@@ -1,5 +1,8 @@
 import pageImage from '@/assets/images/agent_image.png';
 import SvgIcon from '@/components/base/SvgIcon';
+import CustomPopover from '@/components/CustomPopover';
+import { PAGE_DEVELOP_PUBLISH_TYPE_LIST } from '@/constants/pageDev.constants';
+import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import { jumpBack } from '@/utils/router';
 import { FormOutlined, RocketOutlined } from '@ant-design/icons';
 import { Avatar, Button, Space, Tag } from 'antd';
@@ -16,7 +19,10 @@ export interface AppDevHeaderProps {
     projectId?: string;
   };
   spaceId: string;
-  onDeployProject?: () => void;
+  // 发布成组件
+  onPublishComponent: () => void;
+  // 发布成应用
+  onPublishApplication: () => void;
   onEditProject: () => void;
   hasUpdates?: boolean;
   lastSaveTime?: Date;
@@ -45,7 +51,8 @@ export interface AppDevHeaderProps {
  */
 const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   workspace,
-  onDeployProject,
+  onPublishComponent,
+  onPublishApplication,
   onEditProject,
   spaceId,
   hasUpdates = true,
@@ -82,6 +89,18 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   const lastDeployTime = projectInfo?.buildTime
     ? dayjs(projectInfo.buildTime).format('YYYY-MM-DD HH:mm')
     : null;
+
+  // 点击发布类型按钮
+  const handleClickPopoverItem = (item: any) => {
+    switch (item.value) {
+      case PageDevelopPublishTypeEnum.Component:
+        onPublishComponent();
+        break;
+      case PageDevelopPublishTypeEnum.Application:
+        onPublishApplication();
+        break;
+    }
+  };
 
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
@@ -135,7 +154,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
           </span>
           {hasUpdates && (
             <Tag color="volcano" className={cx(styles['volcano'])}>
-              有更新未部署
+              有更新未发布
             </Tag>
           )}
           {/* 最后发布时间 */}
@@ -145,18 +164,23 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
             </span>
           )}
         </div>
-        <div className={cx('flex', 'items-center', styles['action-buttons'])}>
-          <Button
-            type="primary"
-            icon={<RocketOutlined />}
-            loading={isDeploying}
-            onClick={onDeployProject}
-            className={styles.deployButton}
-            disabled={isChatLoading} // 新增：聊天加载时禁用部署按钮
-          >
-            {isDeploying ? '部署中...' : '部署'}
-          </Button>
-        </div>
+        {/*添加资源*/}
+        <CustomPopover
+          list={PAGE_DEVELOP_PUBLISH_TYPE_LIST}
+          onClick={handleClickPopoverItem}
+        >
+          <div className={cx('flex', 'items-center', styles['action-buttons'])}>
+            <Button
+              type="primary"
+              icon={<RocketOutlined />}
+              loading={isDeploying}
+              className={styles.deployButton}
+              disabled={isChatLoading} // 新增：聊天加载时禁用部署按钮
+            >
+              {isDeploying ? '发布中...' : '发布'}
+            </Button>
+          </div>
+        </CustomPopover>
       </div>
     </header>
   );

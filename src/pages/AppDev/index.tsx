@@ -1,4 +1,5 @@
 import Created from '@/components/Created';
+import PublishComponentModal from '@/components/PublishComponentModal';
 import { ERROR_MESSAGES } from '@/constants/appDevConstants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
@@ -144,6 +145,9 @@ const AppDev: React.FC = () => {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<any>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  // 发布智能体弹窗状态
+  const [openPublishComponentModal, setOpenPublishComponentModal] =
+    useState(false);
 
   // 使用重构后的 hooks
   const fileManagement = useAppDevFileManagement({
@@ -395,17 +399,13 @@ const AppDev: React.FC = () => {
    * 检查 projectId 状态
    */
   useEffect(() => {
-    if (!hasValidProjectId) {
-      setMissingProjectId(true);
-    } else {
-      setMissingProjectId(false);
-    }
+    setMissingProjectId(!hasValidProjectId);
   }, [projectId, hasValidProjectId]);
 
   /**
-   * 处理项目部署
+   * 处理项目发布成组件
    */
-  const handleDeployProject = useCallback(async () => {
+  const handlePublishComponent = useCallback(async () => {
     if (!hasValidProjectId || !projectId) {
       message.error('项目ID不存在或无效，无法部署');
       return;
@@ -420,7 +420,7 @@ const AppDev: React.FC = () => {
         const { prodServerUrl } = result.data;
         // 显示部署结果
         Modal.success({
-          title: '部署成功',
+          title: '成功发布成组件',
           content: (
             <div>
               <p>项目已成功构建并发布！</p>
@@ -444,6 +444,13 @@ const AppDev: React.FC = () => {
       setIsDeploying(false);
     }
   }, [hasValidProjectId, projectId]);
+
+  /**
+   * 处理发布智能体
+   */
+  const handleConfirmPublish = () => {
+    setOpenPublishComponentModal(false);
+  };
 
   /**
    * 处理项目导出
@@ -1071,9 +1078,9 @@ const AppDev: React.FC = () => {
                 <SyncOutlined spin />
               </div>
               <div className={styles.deployText}>
-                <div className={styles.deployTitle}>正在部署项目...</div>
+                <div className={styles.deployTitle}>正在发布项目...</div>
                 <div className={styles.deploySubtitle}>
-                  请稍候，部署完成后将自动关闭
+                  请稍候，发布完成后将自动关闭
                 </div>
               </div>
             </div>
@@ -1084,7 +1091,8 @@ const AppDev: React.FC = () => {
           workspace={workspace}
           spaceId={spaceId}
           onEditProject={() => setOpenPageEditVisible(true)}
-          onDeployProject={handleDeployProject}
+          onPublishComponent={handlePublishComponent}
+          onPublishApplication={() => setOpenPublishComponentModal(true)}
           hasUpdates={projectInfo.hasUpdates}
           lastSaveTime={new Date()}
           isDeploying={isDeploying}
@@ -1546,6 +1554,16 @@ const AppDev: React.FC = () => {
         onCancel={() => setOpenPageEditVisible(false)}
         onConfirm={handleConfirmEditProject}
         projectInfo={projectInfo.projectInfoState.projectInfo}
+      />
+      {/*todo: 发布智能体弹窗*/}
+      <PublishComponentModal
+        targetId={744}
+        open={openPublishComponentModal}
+        spaceId={spaceId}
+        category={'BusinessService'}
+        // 取消发布
+        onCancel={() => setOpenPublishComponentModal(false)}
+        onConfirm={handleConfirmPublish}
       />
     </>
   );
