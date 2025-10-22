@@ -573,53 +573,6 @@ const AppDev: React.FC = () => {
   );
 
   /**
-   * 键盘快捷键处理
-   */
-  // useEffect(() => {
-  //   const handleKeyDown = (event: KeyboardEvent) => {
-  //     // Ctrl/Cmd + Enter 发送聊天消息
-  //     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-  //       if (chat.chatInput.trim()) {
-  //         chat.sendChat();
-  //       }
-  //     }
-
-  //     // Ctrl/Cmd + S 保存文件
-  //     if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-  //       event.preventDefault();
-  //       fileManagement.saveFile();
-  //     }
-
-  //     // Ctrl/Cmd + R 重启开发服务器
-  //     if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
-  //       event.preventDefault();
-  //       if (projectId && isServiceRunning && !chat.isChatLoading) {
-  //         // 开发服务器重启功能已禁用
-  //       }
-  //     }
-
-  //     // Ctrl/Cmd + D 部署项目
-  //     if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
-  //       event.preventDefault();
-  //       if (hasValidProjectId && !isDeploying && !chat.isChatLoading) {
-  //         handleDeployProject();
-  //       }
-  //     }
-  //   };
-
-  //   document.addEventListener('keydown', handleKeyDown);
-  //   return () => document.removeEventListener('keydown', handleKeyDown);
-  // }, [
-  //   chat.chatInput,
-  //   chat.sendChat,
-  //   fileManagement.saveFile,
-  //   projectId,
-  //   isServiceRunning,
-  //   isDeploying,
-  //   handleDeployProject,
-  // ]);
-
-  /**
    * 初始化数据资源
    */
   useEffect(() => {
