@@ -67,6 +67,7 @@ const EditAgent: React.FC = () => {
     setIsSuggest,
     messageList,
     setChatSuggestList,
+    // setMessageList,
   } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
 
@@ -77,7 +78,7 @@ const EditAgent: React.FC = () => {
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: AgentConfigInfo) => {
       setAgentConfigInfo(result);
     },
@@ -85,7 +86,7 @@ const EditAgent: React.FC = () => {
 
   const { run: runUpdateAgent } = useRequest(apiAgentConfigInfo, {
     manual: true,
-    debounceWait: 300,
+    debounceInterval: 300,
     onSuccess: (result: AgentConfigInfo) => {
       const _agentConfigInfo = {
         ...agentConfigInfo,
@@ -99,7 +100,7 @@ const EditAgent: React.FC = () => {
   // 更新智能体基础配置信息
   const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
-    debounceWait: 1000,
+    debounceInterval: 1000,
   });
 
   useEffect(() => {
@@ -165,6 +166,10 @@ const EditAgent: React.FC = () => {
     }
 
     setAgentConfigInfo(_agentConfigInfo);
+    // @ts-ignore
+    // setMessageList(prev => prev.map(item =>
+    //   item.id === null ? {...item, text: _agentConfigInfo.openingChatMsg} : item
+    // ))
 
     // 预置问题, 并且没有消息时，更新建议预置问题列表
     if (attr === 'guidQuestionDtos' && !messageList?.length) {
