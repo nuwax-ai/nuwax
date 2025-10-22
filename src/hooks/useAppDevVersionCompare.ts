@@ -135,7 +135,24 @@ export const useAppDevVersionCompare = ({
       }
     });
 
-    return rootNodes;
+    // 对根节点进行排序：文件夹优先，然后按名称排序
+    const sortNodes = (nodes: FileNode[]): FileNode[] => {
+      return nodes
+        .sort((a, b) => {
+          // 文件夹优先于文件
+          if (a.type !== b.type) {
+            return a.type === 'folder' ? -1 : 1;
+          }
+          // 同类型按名称排序
+          return a.name.localeCompare(b.name);
+        })
+        .map((node) => ({
+          ...node,
+          children: node.children ? sortNodes(node.children) : [],
+        }));
+    };
+
+    return sortNodes(rootNodes);
   }, []);
 
   /**

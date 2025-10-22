@@ -232,10 +232,13 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         : selectedFileId === node.id;
       const isRenaming = renamingNode?.id === node.id;
 
+      // 为版本模式添加特殊的前缀，避免 key 冲突
+      const nodeKey = isComparing ? `version-${node.id}` : node.id;
+
       if (node.type === 'folder') {
         return (
           <div
-            key={node.id}
+            key={nodeKey}
             className={styles.folderItem}
             style={{ marginLeft: level * 8 }}
           >
@@ -278,7 +281,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
       } else {
         return (
           <div
-            key={node.id}
+            key={nodeKey}
             className={`${styles.fileItem} ${
               isSelected ? styles.activeFile : ''
             } ${isRenaming ? styles.renameMode : ''}`}
