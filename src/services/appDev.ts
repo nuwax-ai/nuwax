@@ -570,7 +570,6 @@ export const getDevLogs = async (
   });
 
   // 处理后端返回的日志数据，确保包含所有必需字段
-  console.log('后端返回的原始日志数据:', response.data.logs);
   const processedLogs: DevLogEntry[] = response.data.logs.map((log: any) => {
     // 如果后端返回的日志对象缺少某些字段，使用 parseLogEntry 来补充
     if (!log.level || !log.isError) {
@@ -578,7 +577,6 @@ export const getDevLogs = async (
     }
     return log as DevLogEntry;
   });
-  console.log('处理后的日志数据:', processedLogs);
 
   return {
     ...response,

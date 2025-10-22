@@ -21,6 +21,7 @@ import {
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
+import { FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
 import {
   EyeOutlined,
@@ -768,21 +769,21 @@ const AppDev: React.FC = () => {
    * 处理右键上传（直接调用上传接口，不依赖状态）
    */
   const handleRightClickUpload = useCallback(
-    async (node: any) => {
+    async (node: FileNode | null) => {
       if (!hasValidProjectId) {
         message.error(ERROR_MESSAGES.NO_PROJECT_ID);
         return;
       }
-      if (!node || !node.path) {
-        message.error('请选择文件路径，不能为空');
-        return;
-      }
       //两种情况 第一个是文件夹，第二个是文件
       let relativePath = '';
-      if (node.type === 'file') {
-        relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
-      } else if (node.type === 'folder') {
-        relativePath = node.path + '/';
+      if (node) {
+        if (node.type === 'file') {
+          relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
+        } else if (node.type === 'folder') {
+          relativePath = node.path + '/';
+        }
+      } else {
+        relativePath = '';
       }
       // 创建一个隐藏的文件输入框
       const input = document.createElement('input');

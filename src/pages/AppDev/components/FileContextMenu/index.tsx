@@ -2,7 +2,6 @@ import {
   DeleteOutlined,
   EditOutlined,
   ImportOutlined,
-  PlusOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import React, { useCallback, useEffect } from 'react';
@@ -24,7 +23,6 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onRename,
   onUploadSingleFile,
   onUploadProject,
-  onAddDataResource,
 }) => {
   /**
    * 处理菜单项点击
@@ -77,7 +75,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
    * 处理上传操作
    */
   const handleUpload = useCallback(() => {
-    if (!targetNode || !onUploadSingleFile) return;
+    if (!onUploadSingleFile) return;
     handleMenuItemClick(() => {
       onUploadSingleFile(targetNode);
     });
@@ -92,16 +90,6 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
       onUploadProject();
     });
   }, [onUploadProject, handleMenuItemClick]);
-
-  /**
-   * 处理添加数据资源操作（空白区域菜单）
-   */
-  const handleAddDataResource = useCallback(() => {
-    if (!onAddDataResource) return;
-    handleMenuItemClick(() => {
-      onAddDataResource();
-    });
-  }, [onAddDataResource, handleMenuItemClick]);
 
   /**
    * 点击外部关闭菜单
@@ -167,11 +155,11 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
           disabled: !onUploadProject,
         },
         {
-          key: 'addDataResource',
-          label: '添加数据资源',
-          icon: <PlusOutlined />,
-          onClick: handleAddDataResource,
-          disabled: !onAddDataResource,
+          key: 'upload',
+          label: '上传文件',
+          icon: <UploadOutlined />,
+          onClick: handleUpload,
+          disabled: !onUploadSingleFile,
         },
       ];
 
