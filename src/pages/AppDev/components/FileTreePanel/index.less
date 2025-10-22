@@ -103,31 +103,8 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: auto; // 启用横向滚动
-  padding: 8px 0;
+  padding: 8px;
   min-height: 0; // 允许 flex 子项收缩
-
-  // 滚动条样式
-  // &::-webkit-scrollbar {
-  //   width: 6px;
-  //   height: 6px; // 横向滚动条高度
-  // }
-
-  // &::-webkit-scrollbar-track {
-  //   background: transparent;
-  // }
-
-  // &::-webkit-scrollbar-thumb {
-  //   background: rgba(0, 0, 0, 20%);
-  //   border-radius: 3px;
-
-  //   &:hover {
-  //     background: rgba(0, 0, 0, 30%);
-  //   }
-  // }
-
-  // &::-webkit-scrollbar-corner {
-  //   background: transparent;
-  // }
 }
 
 // 文件树样式
@@ -138,13 +115,13 @@
 }
 
 .folderItem {
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
 
 .folderHeader {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: 4px 4px;
   cursor: pointer;
   border-radius: 6px;
   transition: background-color 0.2s ease;
@@ -160,7 +137,7 @@
 
 .folderIcon {
   margin-right: 8px;
-  font-size: 12px;
+  font-size: @fontSizeSm;
   color: @colorTextBase;
   transition: transform 0.2s ease;
 
@@ -176,7 +153,7 @@
 }
 
 .fileList {
-  margin-top: 4px;
+  // margin-top: 4px;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   animation: slide-down 0.3s ease-out;
@@ -197,10 +174,10 @@
 .fileItem {
   display: flex;
   align-items: center;
-  padding: 6px 12px;
+  padding: 4px 4px;
   cursor: pointer;
   border-radius: 4px;
-  margin-bottom: 2px;
+  // margin-bottom: 2px;
   transition: all 0.2s ease;
 
   &:hover {

@@ -258,7 +258,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       } else if (isStarting) {
         description = '正在启动开发环境，请稍候...';
       } else if (isDeveloping) {
-        description = '正在开发中，请稍候...';
+        description = '正在生成，请稍候...';
       } else if (hasStartError) {
         description = startError || '';
       } else if (noServerUrl) {

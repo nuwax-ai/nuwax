@@ -28,15 +28,15 @@ export interface AppDevHeaderProps {
     name?: string;
     description?: string;
     icon?: string;
-    buildRunning?: number;
+    buildRunning?: boolean;
     buildTime?: string;
     creatorName?: string;
     creatorNickName?: string;
     creatorAvatar?: string;
-  };
+  } | null;
   /** 部署状态相关方法 */
-  getDeployStatusText?: (buildRunning: number) => string;
-  getDeployStatusColor?: (buildRunning: number) => string;
+  getDeployStatusText?: (buildRunning: boolean) => string;
+  getDeployStatusColor?: (buildRunning: boolean) => string;
 }
 
 /**

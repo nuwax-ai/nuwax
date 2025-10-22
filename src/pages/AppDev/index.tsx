@@ -87,7 +87,7 @@ const AppDev: React.FC = () => {
 
   const {
     workspace,
-    isServiceRunning,
+    // isServiceRunning, // 暂时未使用，保留以备将来使用
     setIsServiceRunning,
     setActiveFile,
     updateFileContent,
@@ -317,7 +317,7 @@ const AppDev: React.FC = () => {
 
       // 检查API响应格式
       if (result?.code === '0000' && result?.data) {
-        const { devServerUrl, prodServerUrl } = result.data;
+        const { prodServerUrl } = result.data;
         // 显示部署结果
         Modal.success({
           title: '部署成功',
@@ -851,7 +851,7 @@ const AppDev: React.FC = () => {
           hasUpdates={projectInfo.hasUpdates}
           lastSaveTime={new Date()}
           isDeploying={isDeploying}
-          projectInfo={projectInfo.projectInfoState.projectInfo || undefined}
+          projectInfo={projectInfo.projectInfoState.projectInfo || null}
           getDeployStatusText={projectInfo.getDeployStatusText}
           getDeployStatusColor={projectInfo.getDeployStatusColor}
           isChatLoading={chat.isChatLoading} // 新增：传递聊天加载状态
