@@ -1,5 +1,5 @@
 import Created from '@/components/Created';
-import { ERROR_MESSAGES, VERSION_CONSTANTS } from '@/constants/appDevConstants';
+import { ERROR_MESSAGES } from '@/constants/appDevConstants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
@@ -23,17 +23,13 @@ import {
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { DataResource } from '@/types/interfaces/dataResource';
 import {
-  CodeOutlined,
-  DownloadOutlined,
   EyeOutlined,
-  FullscreenOutlined,
   ReadOutlined,
   SyncOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import {
   Alert,
-  Badge,
   Button,
   Col,
   Input,
@@ -42,7 +38,6 @@ import {
   Row,
   Segmented,
   Space,
-  Tooltip,
   Typography,
   Upload,
 } from 'antd';
@@ -57,6 +52,7 @@ import { useModel, useParams } from 'umi';
 import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
 import DevLogConsole from './components/DevLogConsole';
+import EditorHeaderRight from './components/EditorHeaderRight';
 import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
@@ -124,7 +120,7 @@ const AppDev: React.FC = () => {
   const [isDeploying, setIsDeploying] = useState(false);
 
   // 导出项目状态
-  const [isExporting, setIsExporting] = useState(false);
+  // const [isExporting, setIsExporting] = useState(false); // 暂时注释掉，后续可能需要
 
   // 单文件上传状态
   const [isSingleFileUploadModalVisible, setIsSingleFileUploadModalVisible] =
@@ -158,6 +154,30 @@ const AppDev: React.FC = () => {
 
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
+
+  // Preview 状态跟踪
+  const [previewIsLoading, setPreviewIsLoading] = useState(false);
+  const [previewLastRefreshed, setPreviewLastRefreshed] = useState<Date | null>(
+    null,
+  );
+
+  // 定期更新 Preview 状态
+  useEffect(() => {
+    const updatePreviewStatus = () => {
+      if (previewRef.current) {
+        setPreviewIsLoading(previewRef.current.getIsLoading());
+        setPreviewLastRefreshed(previewRef.current.getLastRefreshed());
+      }
+    };
+
+    // 立即更新一次
+    updatePreviewStatus();
+
+    // 每 500ms 更新一次状态
+    const interval = setInterval(updatePreviewStatus, 500);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // 使用重启开发服务器 Hook
   const { restartDevServer } = useRestartDevServer({
@@ -335,6 +355,13 @@ const AppDev: React.FC = () => {
   );
 
   /**
+   * 版本选择器标签渲染函数
+   */
+  // const labelRender = useCallback((props: any) => {
+  //   return <span>v{props.value.replace('v', '')}</span>;
+  // }, []); // 暂时注释掉，后续可能需要
+
+  /**
    * 处理版本选择，直接在页面中显示版本对比
    */
   const handleVersionSelect = useCallback(
@@ -428,7 +455,7 @@ const AppDev: React.FC = () => {
     }
 
     try {
-      setIsExporting(true);
+      // setIsExporting(true); // 暂时注释掉，后续可能需要
       const result = await exportProject(projectId);
 
       // 从响应头中获取文件名
@@ -470,7 +497,7 @@ const AppDev: React.FC = () => {
 
       message.error(`导出失败: ${errorMessage}`);
     } finally {
-      setIsExporting(false);
+      // setIsExporting(false); // 暂时注释掉，后续可能需要
     }
   }, [hasValidProjectId, projectId]);
 
@@ -1115,88 +1142,60 @@ const AppDev: React.FC = () => {
                   className={styles.segmentedTabs}
                 />
               </div>
-              <div className={styles.editorHeaderRight}>
-                <Space size="small">
-                  {/* 版本对比模式下显示的按钮 */}
-                  {versionCompare.isComparing ? (
-                    <>
-                      <Alert
-                        message={VERSION_CONSTANTS.READ_ONLY_MESSAGE}
-                        type="info"
-                        showIcon
-                        style={{ marginRight: 16 }}
-                      />
-                      <Button
-                        onClick={versionCompare.cancelCompare}
-                        disabled={
-                          versionCompare.isSwitching || chat.isChatLoading
-                        } // 新增：聊天加载时禁用
-                      >
-                        取消
-                      </Button>
-                      <Button
-                        type="primary"
-                        onClick={versionCompare.confirmVersionSwitch}
-                        loading={versionCompare.isSwitching}
-                        disabled={chat.isChatLoading} // 新增：聊天加载时禁用
-                      >
-                        切换 v{versionCompare.targetVersion} 版本
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      {/* 原有的按钮：重启服务、全屏预览、导出项目 */}
-                      {/* 添加日志查看按钮 当有错误时显示 小红点*/}
-                      <Tooltip
-                        title={showDevLogConsole ? '关闭日志' : '查看日志'}
-                      >
-                        <Badge dot={devLogs.errorCount > 0} offset={[-8, 8]}>
-                          <Button
-                            type="text"
-                            icon={<CodeOutlined />}
-                            onClick={() =>
-                              setShowDevLogConsole(!showDevLogConsole)
-                            }
-                          />
-                        </Badge>
-                      </Tooltip>
-                      <Tooltip title="重启开发服务器">
-                        <Button
-                          type="text"
-                          icon={<SyncOutlined />}
-                          onClick={handleRestartDevServer}
-                          loading={server.isRestarting}
-                          disabled={chat.isChatLoading} // 新增：聊天加载时禁用
-                        />
-                      </Tooltip>
-                      <Tooltip title="全屏预览">
-                        <Button
-                          type="text"
-                          icon={<FullscreenOutlined />}
-                          onClick={() => {
-                            if (previewRef.current && workspace.devServerUrl) {
-                              window.open(
-                                `${process.env.BASE_URL}${workspace.devServerUrl}`,
-                                '_blank',
-                              );
-                            }
-                          }}
-                          disabled={chat.isChatLoading} // 新增：聊天加载时禁用
-                        />
-                      </Tooltip>
-                      <Tooltip title="导出项目">
-                        <Button
-                          type="text"
-                          icon={<DownloadOutlined />}
-                          onClick={handleExportProject}
-                          loading={isExporting}
-                          disabled={chat.isChatLoading} // 新增：聊天加载时禁用
-                        />
-                      </Tooltip>
-                    </>
-                  )}
-                </Space>
-              </div>
+              <EditorHeaderRight
+                // 版本对比模式相关
+                isComparing={versionCompare.isComparing}
+                versionCompareData={{
+                  isSwitching: versionCompare.isSwitching,
+                  targetVersion: versionCompare.targetVersion || undefined,
+                  onCancelCompare: versionCompare.cancelCompare,
+                  onConfirmVersionSwitch: versionCompare.confirmVersionSwitch,
+                }}
+                // 预览模式相关
+                activeTab={activeTab}
+                previewData={{
+                  devServerUrl: workspace.devServerUrl,
+                  isStarting: server.isStarting,
+                  isRestarting: server.isRestarting,
+                  isProjectUploading: isProjectUploading,
+                  isLoading: previewIsLoading,
+                  lastRefreshed: previewLastRefreshed,
+                }}
+                // 版本选择相关
+                versionData={{
+                  versionList: projectInfo.versionList,
+                  currentVersion:
+                    projectInfo.projectInfoState.projectInfo?.codeVersion,
+                  onVersionSelect: handleVersionSelect,
+                  getActionColor: projectInfo.getActionColor,
+                  getActionText: projectInfo.getActionText,
+                }}
+                // 控制台相关
+                consoleData={{
+                  showDevLogConsole: showDevLogConsole,
+                  errorCount: devLogs.errorCount,
+                  onToggleDevLogConsole: () =>
+                    setShowDevLogConsole(!showDevLogConsole),
+                }}
+                // 更多操作相关
+                actionsData={{
+                  onImportProject: () => setIsUploadModalVisible(true),
+                  onUploadSingleFile: () => handleRightClickUpload(null),
+                  onRefreshPreview: () => previewRef.current?.refresh(),
+                  onRestartServer: handleRestartDevServer,
+                  onFullscreenPreview: () => {
+                    if (previewRef.current && workspace.devServerUrl) {
+                      window.open(
+                        `${process.env.BASE_URL}${workspace.devServerUrl}`,
+                        '_blank',
+                      );
+                    }
+                  },
+                  onExportProject: handleExportProject,
+                }}
+                // 通用状态
+                isChatLoading={chat.isChatLoading}
+              />
             </div>
             {/* 主内容区域 */}
             <div className={styles.contentArea}>

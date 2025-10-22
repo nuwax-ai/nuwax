@@ -6,7 +6,6 @@ import {
   ReloadOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
-import { Button, Spin } from 'antd';
 import React, {
   useCallback,
   useEffect,
@@ -38,6 +37,8 @@ interface PreviewProps {
 
 export interface PreviewRef {
   refresh: () => void;
+  getIsLoading: () => boolean;
+  getLastRefreshed: () => Date | null;
 }
 
 /**
@@ -340,8 +341,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       ref,
       () => ({
         refresh: refreshPreview,
+        getIsLoading: () => isLoading,
+        getLastRefreshed: () => lastRefreshed,
       }),
-      [refreshPreview],
+      [refreshPreview, isLoading, lastRefreshed],
     );
 
     /**
@@ -431,41 +434,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
     return (
       <div className={`${styles.preview} ${className || ''}`}>
-        <div className={styles.previewHeader}>
-          <div className={styles.headerLeft}>
-            <div className={styles.titleSection}>
-              <span className={styles.title}>页面预览</span>
-              {devServerUrl && (
-                <span className={styles.statusBadge}>开发服务器已连接</span>
-              )}
-              {isLoading && (
-                <span className={styles.loadingBadge}>
-                  <Spin size="small" />
-                  加载中...
-                </span>
-              )}
-              {lastRefreshed && (
-                <span className={styles.lastUpdated}>
-                  最后更新: {lastRefreshed.toLocaleTimeString()}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className={styles.headerRight}>
-            <Button
-              type="text"
-              icon={<ReloadOutlined />}
-              onClick={refreshPreview}
-              disabled={isLoading || !devServerUrl}
-              loading={isLoading}
-              className={styles.refreshButton}
-            >
-              刷新
-            </Button>
-          </div>
-        </div>
-
         <div className={styles.previewContainer}>
           {devServerUrl &&
           !loadError &&

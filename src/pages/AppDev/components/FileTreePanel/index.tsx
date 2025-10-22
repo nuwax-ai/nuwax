@@ -394,30 +394,6 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         <Card className={styles.fileTreeCard} bordered={false}>
           {!isFileTreeCollapsed && (
             <>
-              {/* 文件树头部按钮 - 仅在非版本对比模式显示 */}
-              {!isComparing && (
-                <div className={styles.fileTreeHeader}>
-                  <Tooltip title="导入项目">
-                    <Button
-                      type="text"
-                      className={styles.addButton}
-                      icon={<ImportOutlined />}
-                      onClick={onUploadProject}
-                      disabled={isChatLoading}
-                    />
-                  </Tooltip>
-                  <Tooltip title="上传单个文件">
-                    <Button
-                      type="text"
-                      className={styles.addButton}
-                      icon={<PlusOutlined />}
-                      onClick={onUploadSingleFile}
-                      disabled={isChatLoading}
-                    />
-                  </Tooltip>
-                </div>
-              )}
-
               {/* 文件树容器 */}
               <div
                 className={styles.fileTreeContainer}

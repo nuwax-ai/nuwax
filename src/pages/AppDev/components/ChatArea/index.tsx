@@ -20,7 +20,7 @@ import {
   LoadingOutlined,
   MessageOutlined,
 } from '@ant-design/icons';
-import { Card, message, Select, Spin, Tag, Typography } from 'antd';
+import { Card, message, Spin, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, {
   useCallback,
@@ -62,9 +62,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // chatMode, // eslint-disable-line @typescript-eslint/no-unused-vars
   // setChatMode, // eslint-disable-line @typescript-eslint/no-unused-vars
   chat,
-  projectInfo,
+  // projectInfo, // 暂时注释掉，后续可能需要
   projectId,
-  onVersionSelect,
+  // onVersionSelect, // 暂时注释掉，后续可能需要
   selectedDataSources = [],
   onUpdateDataSources,
   fileContentState,
@@ -605,17 +605,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return renderedMessages;
   }, [chat.chatMessages, renderChatMessage, renderConversationDivider]);
 
-  const labelRender = useCallback((props: any) => {
-    return <span>v{props.value.replace('v', '')}</span>;
-  }, []);
-
   return (
     <Card className={styles.chatCard} bordered={false}>
       {/* 聊天模式切换 */}
-      <div className={styles.chatModeContainer}>
-        <div className={styles.chatModeSwitcher}>
-          <div className={styles.chatModeSegmented}>
-            {/* <Segmented
+      {/* <div className={styles.chatModeContainer}>
+        <div className={styles.chatModeSwitcher}> */}
+      {/* <div className={styles.chatModeSegmented}> */}
+      {/* <Segmented
             value={chatMode}
             onChange={(value) => setChatMode(value as 'chat' | 'code')}
             options={[
@@ -629,65 +625,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             ]}
             className={styles.chatModeSegmented}
           /> */}
-            AI 开发智能助手
-          </div>
-          <div className={styles.versionSelectorWrapper}>
-            <Select
-              value={
-                projectInfo.projectInfoState.projectInfo?.codeVersion
-                  ? `v${projectInfo.projectInfoState.projectInfo.codeVersion}`
-                  : undefined
-              }
-              size="small"
-              className={styles.versionSelector}
-              options={projectInfo.versionList.map((version: any) => ({
-                label: `v${version.version}`,
-                value: version.version,
-                action: version.action,
-              }))}
-              labelRender={labelRender}
-              popupMatchSelectWidth={150}
-              optionRender={(option) => {
-                return (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <span>v{option.data.value}</span>
-                    <Tag
-                      color={projectInfo.getActionColor(option.data.action)}
-                      style={{ marginLeft: 8, fontSize: '10px' }}
-                    >
-                      {projectInfo.getActionText(option.data.action)}
-                    </Tag>
-                  </div>
-                );
-              }}
-              suffixIcon={<DownOutlined />}
-              onChange={(value) => {
-                onVersionSelect(parseInt(value));
-              }}
-              placeholder="选择版本"
-              disabled={
-                projectInfo.versionList.length === 0 || chat.isChatLoading
-              }
-            />
-          </div>
-
-          {/* 历史会话选择器 */}
-          {/* <div className={styles.conversationSelectorWrapper}>
-            <ConversationSelector
-              projectId={projectId}
-              currentSessionId={chat.currentSessionId}
-              onSessionChange={loadHistorySession}
-              setChatMessages={chat.setChatMessages}
-            />
-          </div> */}
-        </div>
-      </div>
+      {/* </div> */}
+      {/* </div>
+      </div> */}
 
       {/* 聊天消息区域 */}
       <StreamMessageScrollContainer

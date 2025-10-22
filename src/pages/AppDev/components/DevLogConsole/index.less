@@ -7,8 +7,8 @@
 
 .dev-log-console {
   width: 100%;
-  background: #f5f5dc; // 浅黄色/米色背景，参考图片
-  border: 1px solid #d9d9d9;
+  background: @colorBgContainer; // 浅黄色/米色背景，参考图片
+  border-top: @lineWidth solid @colorBorder;
   border-radius: 6px;
 
   // 头部工具栏
@@ -18,8 +18,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid #d9d9d9;
-    background: #f5f5dc;
+    border-bottom: @lineWidth solid @colorBorder;
+    background: @colorBgContainer;
 
     .header-left {
       display: flex;
@@ -27,19 +27,19 @@
       gap: 8px;
 
       .header-icon {
-        font-size: 16px;
-        color: #8b4513; // 深棕色，参考图片文字颜色
+        font-size: @fontSizeLg;
+        color: @colorTextBase; // 深棕色，参考图片文字颜色
       }
 
       .header-title {
-        font-size: 14px;
-        font-weight: 500;
-        color: #8b4513; // 深棕色
+        font-size: @fontSize;
+        font-weight: @fontWeightStrong;
+        color: @colorTextBase; // 深棕色
       }
 
       .error-badge {
         .ant-badge-count {
-          background: #ff4d4f;
+          background: @colorError;
           font-size: 10px;
           min-width: 16px;
           height: 16px;
@@ -60,14 +60,10 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #8b4513;
+        color: @colorTextBase;
 
         .anticon {
-          font-size: 12px;
-        }
-
-        &:hover {
-          background: rgba(139, 69, 19, 10%);
+          font-size: @fontSizeSm;
         }
       }
     }
@@ -146,17 +142,17 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: #8c8c8c;
+      color: @colorTextTertiary;
 
       .empty-icon {
         font-size: 48px;
         margin-bottom: 16px;
-        color: #d9d9d9;
+        color: @colorTextTertiary;
       }
 
       p {
         margin: 0 0 16px;
-        font-size: 14px;
+        font-size: @fontSize;
       }
     }
   }
