@@ -518,13 +518,13 @@
 }
 
 // 附件展示区域(文件/图片/数据源)
-.attachmentsArea {
-  display: flex;
-  flex-direction: column;
-  // gap: 8px;
-  margin-bottom: 4px;
-  // max-height: 200px;
-}
+// .attachmentsArea {
+//   display: flex;
+//   flex-direction: column;
+//   // gap: 8px;
+//   margin-bottom: 4px;
+//   // max-height: 200px;
+// }
 
 // 每一行附件
 // .attachmentRow {
@@ -629,132 +629,132 @@
 }
 
 // 底部操作栏
-.inputFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-}
+// .inputFooter {
+//   display: flex;
+//   align-items: center;
+//   justify-content: space-between;
+//   margin-top: 8px;
+// }
 
 // 左侧按钮组
-.leftActions {
-  display: flex;
-  gap: 4px;
-  flex: 1;
-}
+// .leftActions {
+//   display: flex;
+//   gap: 4px;
+//   flex: 1;
+// }
 
 // 模型选择器按钮
-.modelSelectorButton {
-  color: @colorTextBase;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+// .modelSelectorButton {
+//   color: @colorTextBase;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
 
-  &:hover {
-    color: rgba(0, 0, 0, 75%);
-    background-color: rgba(0, 0, 0, 4%);
-  }
+//   &:hover {
+//     color: rgba(0, 0, 0, 75%);
+//     background-color: rgba(0, 0, 0, 4%);
+//   }
 
-  &:focus {
-    color: rgba(0, 0, 0, 75%);
-    background-color: rgba(0, 0, 0, 4%);
-  }
+//   &:focus {
+//     color: rgba(0, 0, 0, 75%);
+//     background-color: rgba(0, 0, 0, 4%);
+//   }
 
-  // 加载状态样式
-  &:global(.ant-btn-loading) {
-    color: rgba(0, 0, 0, 25%);
-  }
-}
+//   // 加载状态样式
+//   &:global(.ant-btn-loading) {
+//     color: rgba(0, 0, 0, 25%);
+//   }
+// }
 
 // 右侧按钮组
-.rightActions {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
+// .rightActions {
+//   display: flex;
+//   gap: 4px;
+//   align-items: center;
+// }
 
 // 自动处理异常开关
-.autoHandleSwitch {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 2%);
-  transition: all 0.2s ease;
+// .autoHandleSwitch {
+//   display: flex;
+//   align-items: center;
+//   gap: 6px;
+//   padding: 4px 8px;
+//   border-radius: 6px;
+//   background: rgba(0, 0, 0, 2%);
+//   transition: all 0.2s ease;
 
-  &:hover {
-    background: rgba(0, 0, 0, 5%);
-  }
+//   &:hover {
+//     background: rgba(0, 0, 0, 5%);
+//   }
 
-  .switchLabel {
-    font-size: 12px;
-    color: @colorTextSecondary;
-    white-space: nowrap;
-    user-select: none;
-  }
+//   .switchLabel {
+//     font-size: 12px;
+//     color: @colorTextSecondary;
+//     white-space: nowrap;
+//     user-select: none;
+//   }
 
-  :global(.ant-switch) {
-    &.ant-switch-checked {
-      background-color: #52c41a;
+//   :global(.ant-switch) {
+//     &.ant-switch-checked {
+//       background-color: #52c41a;
 
-      .ant-switch-handle::before {
-        background-color: #fff;
-      }
-    }
+//       .ant-switch-handle::before {
+//         background-color: #fff;
+//       }
+//     }
 
-    .ant-switch-handle {
-      &::before {
-        background-color: #fff;
-      }
-    }
-  }
-}
+//     .ant-switch-handle {
+//       &::before {
+//         background-color: #fff;
+//       }
+//     }
+//   }
+// }
 
 // 选中文件显示
-.selectedFileDisplay {
-  font-size: 11px;
-  padding: 0 8px;
-  background: @colorPrimaryBg;
-  border: @lineWidth solid @colorPrimaryBorder;
-  border-radius: @borderRadiusSm;
-  transition: all 0.2s ease;
+// .selectedFileDisplay {
+//   font-size: 11px;
+//   padding: 0 8px;
+//   background: @colorPrimaryBg;
+//   border: @lineWidth solid @colorPrimaryBorder;
+//   border-radius: @borderRadiusSm;
+//   transition: all 0.2s ease;
 
-  &:hover {
-    background: @colorPrimaryBgHover;
-    border-color: @colorPrimaryBorderHover;
-  }
-}
+//   &:hover {
+//     background: @colorPrimaryBgHover;
+//     border-color: @colorPrimaryBorderHover;
+//   }
+// }
 
-.inputField {
-  background: rgba(255, 255, 255, 90%);
-  border: 1px solid rgba(0, 0, 0, 10%);
-  border-radius: 8px;
-  color: #1e293b;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 5%);
+// .inputField {
+//   background: rgba(255, 255, 255, 90%);
+//   border: 1px solid rgba(0, 0, 0, 10%);
+//   border-radius: 8px;
+//   color: #1e293b;
+//   box-shadow: 0 2px 4px rgba(0, 0, 0, 5%);
 
-  &:hover,
-  &:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 20%);
-  }
+//   &:hover,
+//   &:focus {
+//     border-color: #3b82f6;
+//     box-shadow: 0 0 0 2px rgba(59, 130, 246, 20%);
+//   }
 
-  :global(.ant-input) {
-    background: transparent;
-    border: none;
-    color: #1e293b;
+//   :global(.ant-input) {
+//     background: transparent;
+//     border: none;
+//     color: #1e293b;
 
-    &::placeholder {
-      color: #64748b;
-    }
-  }
-}
+//     &::placeholder {
+//       color: #64748b;
+//     }
+//   }
+// }
 
-.modelSelector {
-  margin-top: 8px;
-  text-align: right;
-  color: #64748b;
-}
+// .modelSelector {
+//   margin-top: 8px;
+//   text-align: right;
+//   color: #64748b;
+// }
 
 // 按钮基础样式 - 参照 ChatInputHome
 .box {
@@ -826,64 +826,64 @@
 }
 
 // 取消按钮
-.cancelButton {
-  color: #ef4444;
+// .cancelButton {
+//   color: #ef4444;
 
-  &:hover {
-    background: rgba(239, 68, 68, 10%) !important;
-    color: #dc2626 !important;
-  }
-}
+//   &:hover {
+//     background: rgba(239, 68, 68, 10%) !important;
+//     color: #dc2626 !important;
+//   }
+// }
 
 // 思考消息样式
-.thinking {
-  .messageContent {
-    background: rgba(168, 85, 247, 10%);
-    border: 1px solid rgba(168, 85, 247, 20%);
-    color: #1e293b;
-    max-width: 85%;
-  }
-}
+// .thinking {
+//   .messageContent {
+//     background: rgba(168, 85, 247, 10%);
+//     border: 1px solid rgba(168, 85, 247, 20%);
+//     color: #1e293b;
+//     max-width: 85%;
+//   }
+// }
 
-.thinkingIndicator {
-  color: #a855f7;
-  font-weight: 500;
-  margin-bottom: 8px;
-}
+// .thinkingIndicator {
+//   color: #a855f7;
+//   font-weight: 500;
+//   margin-bottom: 8px;
+// }
 
-.thinkingText {
-  color: #64748b;
-  font-style: italic;
-}
+// .thinkingText {
+//   color: #64748b;
+//   font-style: italic;
+// }
 
 // 工具调用消息样式
-.toolCall {
-  .messageContent {
-    background: rgba(34, 197, 94, 10%);
-    border: 1px solid rgba(34, 197, 94, 20%);
-    color: #1e293b;
-    max-width: 85%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-}
+// .toolCall {
+//   .messageContent {
+//     background: rgba(34, 197, 94, 10%);
+//     border: 1px solid rgba(34, 197, 94, 20%);
+//     color: #1e293b;
+//     max-width: 85%;
+//     display: flex;
+//     align-items: center;
+//     gap: 8px;
+//   }
+// }
 
-.toolCallIndicator {
-  color: #22c55e;
-  font-weight: 500;
-}
+// .toolCallIndicator {
+//   color: #22c55e;
+//   font-weight: 500;
+// }
 
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
+// @keyframes pulse {
+//   0%,
+//   100% {
+//     opacity: 1;
+//   }
 
-  50% {
-    opacity: 0.5;
-  }
-}
+//   50% {
+//     opacity: 0.5;
+//   }
+// }
 
 // 展开图标动画
 .expandIcon.expanded {
