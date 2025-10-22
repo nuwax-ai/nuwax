@@ -114,7 +114,7 @@ const AppDev: React.FC = () => {
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
 
   // 图片清空方法引用
-  const clearUploadedImagesRef = useRef<(() => void) | null>(null);
+  // const clearUploadedImagesRef = useRef<(() => void) | null>(null);
 
   // 部署相关状态
   const [isDeploying, setIsDeploying] = useState(false);
@@ -131,6 +131,18 @@ const AppDev: React.FC = () => {
 
   // 项目导入状态
   const [isProjectUploading, setIsProjectUploading] = useState(false);
+
+  // 聊天模式状态
+  const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
+
+  // 数据资源相关状态
+  const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
+    useState(false);
+
+  // 删除确认对话框状态
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [nodeToDelete, setNodeToDelete] = useState<any>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // 使用重构后的 hooks
   const fileManagement = useAppDevFileManagement({
@@ -194,12 +206,12 @@ const AppDev: React.FC = () => {
     selectedDataResources: selectedDataResources, // 新增：传递选中的数据源
     onClearDataSourceSelections: () => setSelectedDataResources([]), // 新增：清除选择回调
     onRefreshVersionList: projectInfo.refreshProjectInfo, // 新增：传递刷新版本列表方法
-    onClearUploadedImages: () => {
-      // 调用 ChatArea 组件传递的图片清空方法
-      if (clearUploadedImagesRef.current) {
-        clearUploadedImagesRef.current();
-      }
-    }, // 新增：传递清除上传图片方法
+    // onClearUploadedImages: () => {
+    //   // 调用 ChatArea 组件传递的图片清空方法
+    //   if (clearUploadedImagesRef.current) {
+    //     clearUploadedImagesRef.current();
+    //   }
+    // }, // 新增：传递清除上传图片方法
     onRestartDevServer: async () => {
       // 使用重启开发服务器 Hook，Agent 触发时不切换页面
       await restartDevServer({
@@ -377,18 +389,6 @@ const AppDev: React.FC = () => {
     },
     [versionCompare],
   );
-
-  // 聊天模式状态
-  const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
-
-  // 数据资源相关状态
-  const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
-    useState(false);
-
-  // 删除确认对话框状态
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [nodeToDelete, setNodeToDelete] = useState<any>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
   /**
    * 检查 projectId 状态
@@ -1109,10 +1109,10 @@ const AppDev: React.FC = () => {
               fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
               modelSelector={modelSelector} // 新增：模型选择器状态
               // onRefreshVersionList={projectInfo.refreshProjectInfo} // 新增：刷新版本列表回调
-              onClearUploadedImages={(clearFn) => {
-                // 设置图片清空方法到 ref
-                clearUploadedImagesRef.current = clearFn;
-              }} // 新增：设置图片清空方法回调
+              // onClearUploadedImages={(clearFn) => {
+              //   // 设置图片清空方法到 ref
+              //   clearUploadedImagesRef.current = clearFn;
+              // }} // 新增：设置图片清空方法回调
               autoHandleError={autoErrorHandling.autoHandleEnabled} // 新增：自动处理异常开关状态
               onAutoHandleErrorChange={autoErrorHandling.setAutoHandleEnabled} // 新增：自动处理异常开关变化回调
             />

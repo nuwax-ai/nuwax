@@ -8,10 +8,10 @@ import type { UploadFileInfo } from '@/types/interfaces/common';
 import { DataResource } from '@/types/interfaces/dataResource';
 import { handleUploadFileList } from '@/utils/upload';
 import { LoadingOutlined, PictureOutlined } from '@ant-design/icons';
-import type { InputRef, UploadProps } from 'antd';
+import type { UploadProps } from 'antd';
 import { Button, Input, Menu, message, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import DataSourceList from './DataSourceList';
 import styles from './index.less';
 
@@ -57,7 +57,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-  const textareaRef = useRef<InputRef>(null);
 
   useEffect(() => {
     setFiles(
@@ -79,6 +78,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     if (chat.chatInput?.trim() || files?.length > 0) {
       // enter事件
       onEnter(files);
+
+      // 清空输入框
+      chat.setChatInput('');
+      // 清空文件列表
+      setUploadFiles([]);
     }
   };
 
@@ -89,8 +93,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       e.target as HTMLTextAreaElement;
 
     // 验证：prompt（输入内容）是必填的
-    if (!value?.trim() || !files?.length) {
-      message.warning('请输入消息内容');
+    if (!value?.trim() && !files?.length) {
+      message.warning('请输入消息内容或上传文件');
       return;
     }
 
@@ -113,6 +117,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     ) {
       // enter事件
       onEnter(files);
+      // 清空输入框
+      chat.setChatInput('');
+      // 清空文件列表
+      setUploadFiles([]);
     }
   };
 
@@ -143,22 +151,16 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             onToggleSelectDataSource={onToggleSelectDataSource}
           />
         </ConditionRender>
-        <div className={styles.leftActions}>
-          {/* 选中文件显示 */}
-          {fileContentState?.selectedFile && (
-            <Tooltip title={fileContentState.selectedFile}>
-              <div
-                className={`text-ellipsis ${styles.selectedFileDisplay}`}
-                style={{ maxWidth: '150px' }}
-              >
-                {getFileName(fileContentState.selectedFile)}
-              </div>
-            </Tooltip>
-          )}
-        </div>
+        {/* 选择的文件 */}
+        {fileContentState?.selectedFile && (
+          <Tooltip title={fileContentState.selectedFile}>
+            <div className={`text-ellipsis ${styles.selectedFileDisplay}`}>
+              {getFileName(fileContentState.selectedFile)}
+            </div>
+          </Tooltip>
+        )}
         {/*输入框*/}
         <Input.TextArea
-          ref={textareaRef}
           value={chat.chatInput}
           onChange={(e) => chat.setChatInput(e.target.value)}
           rootClassName={cx(styles.input)}

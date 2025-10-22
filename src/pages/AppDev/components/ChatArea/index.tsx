@@ -7,7 +7,8 @@ import type {
   AppDevChatMessage,
   Attachment,
   DataSourceSelection,
-  ImageUploadInfo,
+  DocumentAttachment,
+  ImageAttachment,
 } from '@/types/interfaces/appDev';
 import { UploadFileInfo } from '@/types/interfaces/common';
 import { DataResource } from '@/types/interfaces/dataResource';
@@ -22,13 +23,7 @@ import {
 } from '@ant-design/icons';
 import { Card, message, Spin, Typography } from 'antd';
 import dayjs from 'dayjs';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
 import ChatInputHome from './components/ChatInputHome';
 import MessageAttachment from './components/MessageAttachment';
@@ -47,7 +42,7 @@ interface ChatAreaProps {
   onUpdateDataSources: (dataSources: DataResource[]) => void;
   fileContentState: any;
   modelSelector: any;
-  onClearUploadedImages?: (callback: () => void) => void;
+  // onClearUploadedImages?: (callback: () => void) => void;
   onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
   // 自动处理异常相关props
   autoHandleError?: boolean;
@@ -69,8 +64,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onUpdateDataSources,
   fileContentState,
   modelSelector,
-  onClearUploadedImages,
-  onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
+  // onClearUploadedImages,
+  // onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
   // autoHandleError = true, // 暂时注释掉，后续可能需要
   // onAutoHandleErrorChange, // 暂时注释掉，后续可能需要
 }) => {
@@ -79,9 +74,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     new Set(),
   );
 
-  // 图片上传状态
-  const [uploadedImages, setUploadedImages] = useState<ImageUploadInfo[]>([]);
-
   // 停止按钮 loading 状态
   const [isStoppingTask, setIsStoppingTask] = useState(false);
 
@@ -89,20 +81,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   // 暴露图片清空方法给父组件
-  useEffect(() => {
-    if (onClearUploadedImages) {
-      onClearUploadedImages(() => {
-        setUploadedImages([]);
-      });
-    }
-  }, [onClearUploadedImages]);
-
-  /**
-   * 提取文件名（不包含路径）
-   */
-  // const getFileName = useCallback((filePath: string) => {
-  //   return filePath.split('/').pop() || filePath;
-  // }, []);
+  // useEffect(() => {
+  //   if (onClearUploadedImages) {
+  //     onClearUploadedImages(() => {
+  //       setUploadedImages([]);
+  //     });
+  //   }
+  // }, [onClearUploadedImages]);
 
   // 滚动容器引用
   const scrollContainerRef = useRef<StreamMessageScrollContainerRef>(null);
@@ -331,23 +316,39 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         const attachments: Attachment[] = [];
 
         // 1. 添加图片附件
-        uploadedImages.forEach((img) => {
-          attachments.push({
-            type: 'Image',
-            content: {
-              id: img.uid,
-              filename: img.name,
-              mime_type: img.mimeType,
-              dimensions: img.dimensions,
-              source: {
-                source_type: 'Base64',
-                data: {
-                  data: img.base64Data,
-                  mime_type: img.mimeType,
-                },
+        files?.forEach((file: UploadFileInfo) => {
+          const baseContent = {
+            id: file.uid,
+            filename: file.name,
+            mime_type: file.type,
+            source: {
+              source_type: 'Url',
+              data: {
+                url: file.url,
+                mime_type: file.type,
               },
             },
-          });
+          } as ImageAttachment | DocumentAttachment;
+          if (file.type?.startsWith('image')) {
+            attachments.push({
+              type: 'Image',
+              content: {
+                dimensions: {
+                  width: file.width || 0,
+                  height: file.height || 0,
+                },
+                ...baseContent,
+              },
+            });
+          } else {
+            attachments.push({
+              type: 'Document',
+              content: {
+                size: file.size,
+                ...baseContent,
+              },
+            });
+          }
         });
 
         // 2. 添加文件树选中的文件(如果有)
@@ -394,7 +395,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }, 500);
       }
     },
-    [chat, uploadedImages, fileContentState?.selectedFile, isSendingMessage],
+    [chat, fileContentState?.selectedFile],
   );
 
   /**
