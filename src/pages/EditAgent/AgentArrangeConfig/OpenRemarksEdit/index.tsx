@@ -1,3 +1,4 @@
+import pageImage from '@/assets/images/agent_image.png';
 import { SvgIcon } from '@/components/base';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { ICON_SETTING } from '@/constants/images.constants';
@@ -101,13 +102,6 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
     <>
       <p className={cx(styles['header-title'])}>开场白文案</p>
       <div className={cx(styles['content-box'])}>
-        {/*<Input.TextArea*/}
-        {/*  placeholder="请输入开场白"*/}
-        {/*  value={content}*/}
-        {/*  onChange={(e) => handleOpeningChatMsg(e.target.value)}*/}
-        {/*  autoSize={{ minRows: 3, maxRows: 5 }}*/}
-        {/*/>*/}
-
         <SimpleEditor
           value={content}
           onChange={handleOpeningChatMsg}
@@ -115,16 +109,6 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
           focusBorderColor={'var(--xagi-color-primary)'}
           toolbarAlign="left"
         />
-
-        {/*<EditorProvider*/}
-        {/*  slotBefore={<MenuBar />}*/}
-        {/*  extensions={extensions}*/}
-        {/*  content={content}*/}
-        {/*  onUpdate={handleUpdate}*/}
-        {/*></EditorProvider>*/}
-        {/*<EditorContent editor={editor} />*/}
-        {/*<FloatingMenu editor={editor}>This is the floating menu</FloatingMenu>*/}
-        {/*<BubbleMenu editor={editor}>This is the bubble menu</BubbleMenu>*/}
       </div>
       <div
         className={cx(
@@ -158,6 +142,12 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
           onChange={(e) => handleChangeGuidQuestions(index, e.target.value)}
           showCount={false}
           maxLength={30}
+          prefix={
+            <img
+              className={cx(styles['icon-input-prefix'])}
+              src={item.icon || pageImage}
+            />
+          }
           suffix={
             <>
               <TooltipIcon
