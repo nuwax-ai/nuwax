@@ -10,17 +10,17 @@ import type {
   ImageUploadInfo,
 } from '@/types/interfaces/appDev';
 import { UploadFileInfo } from '@/types/interfaces/common';
+import { DataResource } from '@/types/interfaces/dataResource';
 import {
   convertDataSourceSelectionToAttachment,
   generateAttachmentId,
 } from '@/utils/chatUtils';
 import {
-  CloseCircleOutlined,
   DownOutlined,
   LoadingOutlined,
   MessageOutlined,
 } from '@ant-design/icons';
-import { Card, Image, message, Spin, Tag, Typography } from 'antd';
+import { Card, message, Spin, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, {
   useCallback,
@@ -43,8 +43,8 @@ interface ChatAreaProps {
   projectInfo: any;
   projectId: string;
   onVersionSelect: (version: any) => void;
-  selectedDataSources?: any[];
-  onUpdateDataSources: (dataSources: any[]) => void;
+  selectedDataSources?: DataResource[];
+  onUpdateDataSources: (dataSources: DataResource[]) => void;
   fileContentState: any;
   modelSelector: any;
   onClearUploadedImages?: (callback: () => void) => void;
@@ -272,32 +272,28 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   /**
    * 删除图片
    */
-  const handleDeleteImage = useCallback((uid: string) => {
-    setUploadedImages((prev) => prev.filter((img) => img.uid !== uid));
-  }, []);
+  // const handleDeleteImage = useCallback((uid: string) => {
+  //   setUploadedImages((prev) => prev.filter((img) => img.uid !== uid));
+  // }, []);
 
   /**
-   * 移除单个数据源
+   * 切换单个数据源选择状态
    */
-  const handleRemoveDataSource = useCallback(
-    (dataSource: any) => {
-      if (!onUpdateDataSources) {
-        message.warning('数据源删除功能需要父组件支持');
-        return;
-      }
-
-      const newDataSources = selectedDataSources.filter(
-        (ds) =>
-          !(
-            ds.dataSourceId === dataSource.dataSourceId &&
-            ds.type === dataSource.type
-          ),
-      );
+  const handleToggleSelectDataSource = useCallback(
+    (dataSource: DataResource) => {
+      const newDataSources = selectedDataSources.map((ds) => {
+        if (ds.id === dataSource.id) {
+          return {
+            ...ds,
+            isSelected: !ds.isSelected,
+          };
+        }
+        return ds;
+      });
 
       onUpdateDataSources(newDataSources);
-      message.success('数据源已移除');
     },
-    [selectedDataSources, onUpdateDataSources],
+    [selectedDataSources],
   );
 
   /**
@@ -379,7 +375,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
         // 清空选中的数据源
         if (onUpdateDataSources) {
-          onUpdateDataSources([]);
+          const _selectedDataSources: DataResource[] = selectedDataSources.map(
+            (ds) => {
+              return {
+                ...ds,
+                isSelected: false,
+              };
+            },
+          );
+          onUpdateDataSources(_selectedDataSources);
         }
       } catch (error) {
         message.error('发送消息失败');
@@ -390,13 +394,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }, 500);
       }
     },
-    [
-      chat,
-      uploadedImages,
-      fileContentState?.selectedFile,
-      onUpdateDataSources,
-      isSendingMessage,
-    ],
+    [chat, uploadedImages, fileContentState?.selectedFile, isSendingMessage],
   );
 
   /**
@@ -674,9 +672,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           <DownOutlined />
         </div>
         {/* 附件展示区域 */}
-        {(uploadedImages.length > 0 || selectedDataSources.length > 0) && (
+        {/* {(uploadedImages.length > 0 || selectedDataSources.length > 0) && (
           <div className={styles.attachmentsArea}>
-            {/* 第一行: 图片列表 */}
             {uploadedImages.length > 0 && (
               <div className={styles.attachmentRow}>
                 {uploadedImages.map((img) => (
@@ -700,18 +697,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               </div>
             )}
 
-            {/* 第二行: 数据源 */}
             {selectedDataSources.length > 0 && (
               <div className={styles.attachmentRow} style={{ padding: 0 }}>
-                {/* <Text
+                <Text
                   type="secondary"
                   style={{ fontSize: '12px', marginRight: 8 }}
                 >
                   数据源 ({selectedDataSources.length}):
-                </Text> */}
+                </Text>
                 {selectedDataSources.map((ds) => (
                   <Tag
-                    key={`${ds.dataSourceId}-${ds.type}`}
+                    key={`${ds.id}-${ds.type}`}
                     color="green"
                     closable
                     onClose={() => handleRemoveDataSource(ds)}
@@ -723,7 +719,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               </div>
             )}
           </div>
-        )}
+        )} */}
 
         <ChatInputHome
           chat={chat}
@@ -732,8 +728,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           fileContentState={fileContentState}
           // 数据源列表
           dataSourceList={selectedDataSources}
-          selectedDataSourceList={selectedDataSources}
-          onSelectDataSource={handleRemoveDataSource}
+          onToggleSelectDataSource={handleToggleSelectDataSource}
           // 是否正在停止任务
           isStoppingTask={isStoppingTask}
           // 是否正在发送消息

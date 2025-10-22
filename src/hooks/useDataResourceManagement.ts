@@ -1,4 +1,3 @@
-import type { DataSource } from '@/types/interfaces/appDev';
 import type {
   CreateDataResourceRequest,
   DataResource,
@@ -18,7 +17,7 @@ import { useCallback, useEffect, useState } from 'react';
  * 提供数据资源的增删改查功能
  */
 export const useDataResourceManagement = (
-  projectDataSources?: DataSource[],
+  projectDataSources: DataResource[],
 ) => {
   const [resources, setResources] = useState<DataResource[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,11 +32,11 @@ export const useDataResourceManagement = (
         setLoading(true);
 
         // 从项目数据源中获取真实数据
-        let dataSources: DataSource[] = projectDataSources || [];
+        let dataSources: DataResource[] = projectDataSources || [];
 
         // 将 DataSource 转换为 DataResource 格式
         const convertedResources: DataResource[] = dataSources.map((ds) => ({
-          id: ds.id.toString(),
+          id: ds.id,
           name: ds.name,
           description: ds.description || '',
           type:
@@ -196,7 +195,7 @@ export const useDataResourceManagement = (
    * 删除数据资源
    */
   const deleteResource = useCallback(
-    async (resourceId: string): Promise<DataResourceOperationResult> => {
+    async (resourceId: number): Promise<DataResourceOperationResult> => {
       try {
         setLoading(true);
 
@@ -236,7 +235,7 @@ export const useDataResourceManagement = (
    */
   const toggleResourceStatus = useCallback(
     async (
-      resourceId: string,
+      resourceId: number,
       enabled: boolean,
     ): Promise<DataResourceOperationResult> => {
       try {
