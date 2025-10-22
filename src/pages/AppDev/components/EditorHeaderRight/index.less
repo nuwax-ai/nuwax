@@ -1,3 +1,5 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
 // 编辑器头部右侧区域样式
 .editorHeaderRight {
   display: flex;
@@ -12,28 +14,33 @@
   gap: 8px;
   margin-right: 8px;
 
+  .lastUpdated {
+    font-size: @fontSizeSm;
+    color: @colorTextTertiary;
+  }
+
   .previewTitle {
-    font-size: 14px;
-    font-weight: 500;
-    color: #1e293b;
+    font-size: @fontSize;
+    font-weight: @fontWeightStrong;
+    color: @colorTextBase;
   }
 
   .statusBadge {
-    font-size: 12px;
-    color: #059669;
-    background: #d1fae5;
+    font-size: @fontSizeSm;
+    color: @colorSuccess;
+    background: @colorSuccessBg;
     padding: 2px 8px;
     border-radius: 4px;
-    border: 1px solid #a7f3d0;
+    border: 1px solid @colorSuccessBorder;
   }
 
   .loadingBadge {
-    font-size: 12px;
-    color: #d97706;
-    background: #fef3c7;
+    font-size: @fontSizeSm;
+    color: @colorWarning;
+    background: @colorWarningBg;
     padding: 2px 8px;
     border-radius: 4px;
-    border: 1px solid #fde68a;
+    border: 1px solid @colorWarningBorder;
     display: flex;
     align-items: center;
     gap: 4px;

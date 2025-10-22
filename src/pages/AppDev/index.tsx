@@ -153,6 +153,30 @@ const AppDev: React.FC = () => {
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
 
+  // Preview 状态跟踪
+  const [previewIsLoading, setPreviewIsLoading] = useState(false);
+  const [previewLastRefreshed, setPreviewLastRefreshed] = useState<Date | null>(
+    null,
+  );
+
+  // 定期更新 Preview 状态
+  useEffect(() => {
+    const updatePreviewStatus = () => {
+      if (previewRef.current) {
+        setPreviewIsLoading(previewRef.current.getIsLoading());
+        setPreviewLastRefreshed(previewRef.current.getLastRefreshed());
+      }
+    };
+
+    // 立即更新一次
+    updatePreviewStatus();
+
+    // 每 500ms 更新一次状态
+    const interval = setInterval(updatePreviewStatus, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // 使用重启开发服务器 Hook
   const { restartDevServer } = useRestartDevServer({
     projectId: projectId || '',
@@ -1102,6 +1126,8 @@ const AppDev: React.FC = () => {
                   isStarting: server.isStarting,
                   isRestarting: server.isRestarting,
                   isProjectUploading: isProjectUploading,
+                  isLoading: previewIsLoading,
+                  lastRefreshed: previewLastRefreshed,
                 }}
                 // 版本选择相关
                 versionData={{

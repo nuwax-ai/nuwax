@@ -28,6 +28,8 @@ interface PreviewStatusProps {
   isStarting: boolean;
   isRestarting: boolean;
   isProjectUploading: boolean;
+  isLoading?: boolean;
+  lastRefreshed?: Date | null;
 }
 
 // 版本选择相关接口
@@ -77,6 +79,8 @@ interface EditorHeaderRightProps {
     isStarting: boolean;
     isRestarting: boolean;
     isProjectUploading: boolean;
+    isLoading?: boolean;
+    lastRefreshed?: Date | null;
   };
 
   // 版本选择相关
@@ -166,6 +170,8 @@ const PreviewStatusInfo: React.FC<PreviewStatusProps> = ({
   isStarting,
   isRestarting,
   isProjectUploading,
+  isLoading,
+  lastRefreshed,
 }) => {
   // 服务器连接状态
   const isServerConnected = useMemo(() => !!devServerUrl, [devServerUrl]);
@@ -178,8 +184,18 @@ const PreviewStatusInfo: React.FC<PreviewStatusProps> = ({
 
   return (
     <div className={styles.previewStatusInfo}>
-      {isServerConnected && (
-        <span className={styles.statusBadge}>开发服务器已连接</span>
+      {!isProjectUploading &&
+        !isRestarting &&
+        !isStarting &&
+        !isLoading &&
+        isServerConnected && (
+          <span className={styles.statusBadge}>开发服务器已连接</span>
+        )}
+      {isLoading && (
+        <span className={styles.loadingBadge}>
+          <SyncOutlined spin style={{ fontSize: 12 }} />
+          加载中...
+        </span>
       )}
       {isStarting && (
         <span className={styles.loadingBadge}>
@@ -197,6 +213,11 @@ const PreviewStatusInfo: React.FC<PreviewStatusProps> = ({
         <span className={styles.loadingBadge}>
           <SyncOutlined spin style={{ fontSize: 12 }} />
           导入中...
+        </span>
+      )}
+      {lastRefreshed && (
+        <span className={styles.lastUpdated}>
+          最后更新: {lastRefreshed.toLocaleTimeString()}
         </span>
       )}
     </div>
@@ -455,6 +476,8 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
               isStarting={previewData.isStarting}
               isRestarting={previewData.isRestarting}
               isProjectUploading={previewData.isProjectUploading}
+              isLoading={previewData.isLoading}
+              lastRefreshed={previewData.lastRefreshed}
             />
           )}
 
