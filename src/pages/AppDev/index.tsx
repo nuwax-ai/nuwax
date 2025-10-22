@@ -763,57 +763,70 @@ const AppDev: React.FC = () => {
   /**
    * 处理右键上传（直接调用上传接口，不依赖状态）
    */
-  const handleRightClickUpload = useCallback(async () => {
-    if (!hasValidProjectId) {
-      message.error(ERROR_MESSAGES.NO_PROJECT_ID);
-      return;
-    }
-
-    // 创建一个隐藏的文件输入框
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.style.display = 'none';
-    document.body.appendChild(input);
-
-    // 等待用户选择文件
-    input.click();
-
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        document.body.removeChild(input);
+  const handleRightClickUpload = useCallback(
+    async (node: any) => {
+      if (!hasValidProjectId) {
+        message.error(ERROR_MESSAGES.NO_PROJECT_ID);
         return;
       }
-
-      try {
-        // 设置加载状态，与弹窗上传保持一致
-        setSingleFileUploadLoading(true);
-
-        // 直接调用上传接口，使用文件名作为路径
-        const result = await fileManagement.uploadSingleFileToServer(
-          file,
-          file.name,
-        );
-
-        if (result) {
-          // 与弹窗上传成功后逻辑保持一致
-          // 刷新项目详情(刷新版本列表)
-          projectInfo.refreshProjectInfo();
-        }
-      } catch (error) {
-        message.error('上传失败');
-      } finally {
-        // 清理加载状态和DOM
-        setSingleFileUploadLoading(false);
-        document.body.removeChild(input);
+      if (!node || !node.path) {
+        message.error('请选择文件路径，不能为空');
+        return;
       }
-    };
+      //两种情况 第一个是文件夹，第二个是文件
+      let relativePath = '';
+      if (node.type === 'file') {
+        relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
+      } else if (node.type === 'folder') {
+        relativePath = node.path + '/';
+      }
+      // 创建一个隐藏的文件输入框
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.style.display = 'none';
+      document.body.appendChild(input);
 
-    // 如果用户取消选择，也要清理DOM
-    input.oncancel = () => {
-      document.body.removeChild(input);
-    };
-  }, [hasValidProjectId, fileManagement, projectInfo]);
+      // 等待用户选择文件
+      input.click();
+
+      input.onchange = async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) {
+          document.body.removeChild(input);
+          return;
+        }
+
+        try {
+          // 设置加载状态，与弹窗上传保持一致
+          setSingleFileUploadLoading(true);
+
+          // 直接调用上传接口，使用文件名作为路径
+          const result = await fileManagement.uploadSingleFileToServer(
+            file,
+            relativePath + file.name,
+          );
+
+          if (result) {
+            // 与弹窗上传成功后逻辑保持一致
+            // 刷新项目详情(刷新版本列表)
+            projectInfo.refreshProjectInfo();
+          }
+        } catch (error) {
+          message.error('上传失败');
+        } finally {
+          // 清理加载状态和DOM
+          setSingleFileUploadLoading(false);
+          document.body.removeChild(input);
+        }
+      };
+
+      // 如果用户取消选择，也要清理DOM
+      input.oncancel = () => {
+        document.body.removeChild(input);
+      };
+    },
+    [hasValidProjectId, fileManagement, projectInfo],
+  );
 
   /**
    * 处理单个文件上传取消

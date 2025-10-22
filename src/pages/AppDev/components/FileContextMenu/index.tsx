@@ -73,11 +73,11 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
    * 处理上传操作
    */
   const handleUpload = useCallback(() => {
-    if (!onUploadSingleFile) return;
+    if (!targetNode || !onUploadSingleFile) return;
     handleMenuItemClick(() => {
-      onUploadSingleFile();
+      onUploadSingleFile(targetNode);
     });
-  }, [onUploadSingleFile, handleMenuItemClick]);
+  }, [targetNode, onUploadSingleFile, handleMenuItemClick]);
 
   /**
    * 点击外部关闭菜单

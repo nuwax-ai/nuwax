@@ -39,5 +39,5 @@ export interface FileContextMenuProps {
   /** 重命名文件回调 */
   onRename?: (node: FileNode) => void;
   /** 上传单个文件回调（直接调用，不弹窗） */
-  onUploadSingleFile?: () => void;
+  onUploadSingleFile?: (node: FileNode) => void;
 }

@@ -42,7 +42,7 @@ export interface FileTreePanelProps {
   onUploadProject: () => void;
 
   /** 上传单个文件回调 */
-  onUploadSingleFile: () => void;
+  onUploadSingleFile: (node: any) => void;
 
   /** 添加数据资源回调 */
   onAddDataResource: () => void;

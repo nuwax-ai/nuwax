@@ -213,10 +213,13 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   /**
    * 处理上传操作（从右键菜单触发）
    */
-  const handleUploadFromMenu = useCallback(() => {
-    // 直接调用现有的上传单个文件功能
-    onUploadSingleFile();
-  }, [onUploadSingleFile]);
+  const handleUploadFromMenu = useCallback(
+    (node: any) => {
+      // 直接调用现有的上传单个文件功能
+      onUploadSingleFile(node);
+    },
+    [onUploadSingleFile],
+  );
 
   /**
    * 渲染文件树节点
