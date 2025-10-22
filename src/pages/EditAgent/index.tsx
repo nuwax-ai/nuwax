@@ -362,7 +362,7 @@ const EditAgent: React.FC = () => {
 
   useEffect(() => {
     handleOpenPreview();
-  }, [agentConfigInfo]);
+  }, [agentConfigInfo?.expandPageArea, agentConfigInfo?.pageHomeIndex]);
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
