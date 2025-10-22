@@ -1,4 +1,3 @@
-import SvgIcon from '@/components/base/SvgIcon';
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import StreamMessageScrollContainer, {
   StreamMessageScrollContainerRef,
@@ -10,33 +9,18 @@ import type {
   DataSourceSelection,
   ImageUploadInfo,
 } from '@/types/interfaces/appDev';
+import { UploadFileInfo } from '@/types/interfaces/common';
 import {
   convertDataSourceSelectionToAttachment,
   generateAttachmentId,
 } from '@/utils/chatUtils';
 import {
   CloseCircleOutlined,
-  ControlOutlined,
   DownOutlined,
   LoadingOutlined,
   MessageOutlined,
-  PictureOutlined,
 } from '@ant-design/icons';
-import {
-  Button,
-  Card,
-  Dropdown,
-  Image,
-  Input,
-  Menu,
-  message,
-  Select,
-  Spin,
-  Tag,
-  Tooltip,
-  Typography,
-  Upload,
-} from 'antd';
+import { Card, Image, message, Select, Spin, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, {
   useCallback,
@@ -64,7 +48,7 @@ interface ChatAreaProps {
   fileContentState: any;
   modelSelector: any;
   onClearUploadedImages?: (callback: () => void) => void;
-  onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
+  // onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
 }
 
 /**
@@ -72,8 +56,8 @@ interface ChatAreaProps {
  * 包含聊天模式切换、消息显示和输入区域
  */
 const ChatArea: React.FC<ChatAreaProps> = ({
-  chatMode, // eslint-disable-line @typescript-eslint/no-unused-vars
-  setChatMode, // eslint-disable-line @typescript-eslint/no-unused-vars
+  // chatMode, // eslint-disable-line @typescript-eslint/no-unused-vars
+  // setChatMode, // eslint-disable-line @typescript-eslint/no-unused-vars
   chat,
   projectInfo,
   projectId,
@@ -83,7 +67,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   fileContentState,
   modelSelector,
   onClearUploadedImages,
-  onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
+  // onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
@@ -111,9 +95,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   /**
    * 提取文件名（不包含路径）
    */
-  const getFileName = useCallback((filePath: string) => {
-    return filePath.split('/').pop() || filePath;
-  }, []);
+  // const getFileName = useCallback((filePath: string) => {
+  //   return filePath.split('/').pop() || filePath;
+  // }, []);
 
   // 滚动容器引用
   const scrollContainerRef = useRef<StreamMessageScrollContainerRef>(null);
@@ -184,101 +168,101 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   /**
    * 处理单个图片文件
    */
-  const processImageFile = useCallback(
-    (file: File): Promise<ImageUploadInfo> => {
-      return new Promise((resolve, reject) => {
-        // 验证是否为图片
-        if (!file.type.startsWith('image/')) {
-          reject(new Error('仅支持上传图片文件'));
-          return;
-        }
+  // const processImageFile = useCallback(
+  //   (file: File): Promise<ImageUploadInfo> => {
+  //     return new Promise((resolve, reject) => {
+  //       // 验证是否为图片
+  //       if (!file.type.startsWith('image/')) {
+  //         reject(new Error('仅支持上传图片文件'));
+  //         return;
+  //       }
 
-        // 验证文件大小 (限制为 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-          reject(new Error('图片文件大小不能超过 5MB'));
-          return;
-        }
+  //       // 验证文件大小 (限制为 5MB)
+  //       if (file.size > 5 * 1024 * 1024) {
+  //         reject(new Error('图片文件大小不能超过 5MB'));
+  //         return;
+  //       }
 
-        // 读取文件并转换为 Base64
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const base64Data = e.target?.result as string;
+  //       // 读取文件并转换为 Base64
+  //       const reader = new FileReader();
+  //       reader.onload = (e) => {
+  //         const base64Data = e.target?.result as string;
 
-          // 获取图片尺寸
-          const img = new window.Image();
-          img.onload = () => {
-            const imageInfo: ImageUploadInfo = {
-              uid: generateAttachmentId('img'),
-              name: file.name,
-              base64Data: base64Data.split(',')[1], // 移除 data:image/xxx;base64, 前缀
-              mimeType: file.type,
-              preview: base64Data,
-              dimensions: { width: img.width, height: img.height },
-            };
-            resolve(imageInfo);
-          };
-          img.onerror = () => {
-            reject(new Error('图片加载失败，请重试'));
-          };
-          img.src = base64Data;
-        };
-        reader.onerror = () => {
-          reject(new Error('文件读取失败，请重试'));
-        };
-        reader.readAsDataURL(file);
-      });
-    },
-    [],
-  );
+  //         // 获取图片尺寸
+  //         const img = new window.Image();
+  //         img.onload = () => {
+  //           const imageInfo: ImageUploadInfo = {
+  //             uid: generateAttachmentId('img'),
+  //             name: file.name,
+  //             base64Data: base64Data.split(',')[1], // 移除 data:image/xxx;base64, 前缀
+  //             mimeType: file.type,
+  //             preview: base64Data,
+  //             dimensions: { width: img.width, height: img.height },
+  //           };
+  //           resolve(imageInfo);
+  //         };
+  //         img.onerror = () => {
+  //           reject(new Error('图片加载失败，请重试'));
+  //         };
+  //         img.src = base64Data;
+  //       };
+  //       reader.onerror = () => {
+  //         reject(new Error('文件读取失败，请重试'));
+  //       };
+  //       reader.readAsDataURL(file);
+  //     });
+  //   },
+  //   [],
+  // );
 
   /**
    * 处理图片上传（支持多选）
    */
-  const handleImageUpload = useCallback(
-    async (file: File | File[]) => {
-      const files = Array.isArray(file) ? file : [file];
+  // const handleImageUpload = useCallback(
+  //   async (file: File | File[]) => {
+  //     const files = Array.isArray(file) ? file : [file];
 
-      if (files.length === 0) {
-        return false;
-      }
+  //     if (files.length === 0) {
+  //       return false;
+  //     }
 
-      // 检查总数量限制（最多10张图片）
-      const currentCount = uploadedImages.length;
-      if (currentCount + files.length > 10) {
-        message.warning(`最多只能上传10张图片，当前已有${currentCount}张`);
-        return false;
-      }
+  //     // 检查总数量限制（最多10张图片）
+  //     const currentCount = uploadedImages.length;
+  //     if (currentCount + files.length > 10) {
+  //       message.warning(`最多只能上传10张图片，当前已有${currentCount}张`);
+  //       return false;
+  //     }
 
-      try {
-        // 显示加载提示
-        const loadingMessage =
-          files.length === 1
-            ? `正在上传图片 "${files[0].name}"...`
-            : `正在上传 ${files.length} 张图片...`;
-        const hideLoading = message.loading(loadingMessage, 0);
+  //     try {
+  //       // 显示加载提示
+  //       const loadingMessage =
+  //         files.length === 1
+  //           ? `正在上传图片 "${files[0].name}"...`
+  //           : `正在上传 ${files.length} 张图片...`;
+  //       const hideLoading = message.loading(loadingMessage, 0);
 
-        // 处理所有文件
-        const imagePromises = files.map(processImageFile);
-        const imageInfos = await Promise.all(imagePromises);
+  //       // 处理所有文件
+  //       const imagePromises = files.map(processImageFile);
+  //       const imageInfos = await Promise.all(imagePromises);
 
-        // 批量添加到状态
-        setUploadedImages((prev) => [...prev, ...imageInfos]);
+  //       // 批量添加到状态
+  //       setUploadedImages((prev) => [...prev, ...imageInfos]);
 
-        // 隐藏加载提示并显示成功消息
-        hideLoading();
-        if (files.length === 1) {
-          message.success(`图片 "${files[0].name}" 上传成功`);
-        } else {
-          message.success(`成功上传 ${files.length} 张图片`);
-        }
-      } catch (error) {
-        message.error(error instanceof Error ? error.message : '图片上传失败');
-      }
+  //       // 隐藏加载提示并显示成功消息
+  //       hideLoading();
+  //       if (files.length === 1) {
+  //         message.success(`图片 "${files[0].name}" 上传成功`);
+  //       } else {
+  //         message.success(`成功上传 ${files.length} 张图片`);
+  //       }
+  //     } catch (error) {
+  //       message.error(error instanceof Error ? error.message : '图片上传失败');
+  //     }
 
-      return false; // 阻止默认上传
-    },
-    [processImageFile, uploadedImages.length],
-  );
+  //     return false; // 阻止默认上传
+  //   },
+  //   [processImageFile, uploadedImages.length],
+  // );
 
   /**
    * 删除图片
@@ -314,86 +298,91 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   /**
    * 发送消息前的处理 - 支持附件
    */
-  const handleSendMessage = useCallback(() => {
-    // 验证：prompt（输入内容）是必填的
-    if (!chat.chatInput.trim()) {
-      message.warning('请输入消息内容');
-      return;
-    }
+  const handleSendMessage = useCallback(
+    (files: UploadFileInfo[]) => {
+      // todo: 需要处理文件列表
+      console.log('上传的文件列表', files);
+      // // 验证：prompt（输入内容）是必填的
+      // if (!chat.chatInput.trim()) {
+      //   message.warning('请输入消息内容');
+      //   return;
+      // }
 
-    // 防止重复发送
-    if (isSendingMessage || chat.isChatLoading) {
-      return;
-    }
+      // 防止重复发送
+      // if (isSendingMessage || chat.isChatLoading) {
+      //   return;
+      // }
 
-    setIsSendingMessage(true);
+      setIsSendingMessage(true);
 
-    try {
-      // 构建附件列表
-      const attachments: Attachment[] = [];
+      try {
+        // 构建附件列表
+        const attachments: Attachment[] = [];
 
-      // 1. 添加图片附件
-      uploadedImages.forEach((img) => {
-        attachments.push({
-          type: 'Image',
-          content: {
-            id: img.uid,
-            filename: img.name,
-            mime_type: img.mimeType,
-            dimensions: img.dimensions,
-            source: {
-              source_type: 'Base64',
-              data: {
-                data: img.base64Data,
-                mime_type: img.mimeType,
+        // 1. 添加图片附件
+        uploadedImages.forEach((img) => {
+          attachments.push({
+            type: 'Image',
+            content: {
+              id: img.uid,
+              filename: img.name,
+              mime_type: img.mimeType,
+              dimensions: img.dimensions,
+              source: {
+                source_type: 'Base64',
+                data: {
+                  data: img.base64Data,
+                  mime_type: img.mimeType,
+                },
               },
             },
-          },
+          });
         });
-      });
 
-      // 2. 添加文件树选中的文件(如果有)
-      if (fileContentState?.selectedFile) {
-        attachments.push({
-          type: 'Text',
-          content: {
-            id: generateAttachmentId('file'),
-            filename: fileContentState.selectedFile,
-            source: {
-              source_type: 'FilePath',
-              data: {
-                path: fileContentState.selectedFile, // 包含路径与文件名及后缀
+        // 2. 添加文件树选中的文件(如果有)
+        if (fileContentState?.selectedFile) {
+          attachments.push({
+            type: 'Text',
+            content: {
+              id: generateAttachmentId('file'),
+              filename: fileContentState.selectedFile,
+              source: {
+                source_type: 'FilePath',
+                data: {
+                  path: fileContentState.selectedFile, // 包含路径与文件名及后缀
+                },
               },
             },
-          },
-        });
+          });
+        }
+
+        // 发送消息后强制滚动到底部并开启自动滚动
+        scrollContainerRef.current?.handleScrollButtonClick();
+
+        // 发送消息(传递附件)
+        chat.sendMessage(attachments);
+
+        // 清空选中的数据源
+        if (onUpdateDataSources) {
+          onUpdateDataSources([]);
+        }
+      } catch (error) {
+        message.error('发送消息失败');
+      } finally {
+        // 延迟重置发送状态，给用户反馈
+        setTimeout(() => {
+          setIsSendingMessage(false);
+        }, 500);
       }
-
-      // 发送消息后强制滚动到底部并开启自动滚动
-      scrollContainerRef.current?.handleScrollButtonClick();
-
-      // 发送消息(传递附件)
-      chat.sendMessage(attachments);
-
-      // 清空选中的数据源
-      if (onUpdateDataSources) {
-        onUpdateDataSources([]);
-      }
-    } catch (error) {
-      message.error('发送消息失败');
-    } finally {
-      // 延迟重置发送状态，给用户反馈
-      setTimeout(() => {
-        setIsSendingMessage(false);
-      }, 500);
-    }
-  }, [
-    chat,
-    uploadedImages,
-    fileContentState?.selectedFile,
-    onUpdateDataSources,
-    isSendingMessage,
-  ]);
+    },
+    [
+      chat,
+      uploadedImages,
+      fileContentState?.selectedFile,
+      onUpdateDataSources,
+      isSendingMessage,
+    ],
+  );
 
   /**
    * 渲染聊天消息 - 按 role 区分渲染
@@ -784,15 +773,24 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         <ChatInputHome
           chat={chat}
           modelSelector={modelSelector}
+          // 文件列表
           fileContentState={fileContentState}
+          // 数据源列表
+          dataSourceList={selectedDataSources}
+          selectedDataSourceList={selectedDataSources}
+          onSelectDataSource={handleRemoveDataSource}
+          // 是否正在停止任务
           isStoppingTask={isStoppingTask}
+          // 是否正在发送消息
           isSendingMessage={isSendingMessage}
+          // 取消任务
           handleCancelAgentTask={handleCancelAgentTask}
+          // 发送消息
           onEnter={handleSendMessage}
         />
 
         {/* TextArea 输入框 */}
-        <Input.TextArea
+        {/* <Input.TextArea
           placeholder="向AI助手提问..."
           value={chat.chatInput}
           onChange={(e) => chat.setChatInput(e.target.value)}
@@ -807,13 +805,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           }}
           autoSize={{ minRows: 2, maxRows: 6 }}
           className={styles.textareaInput}
-        />
+        /> */}
 
         {/* 底部操作栏 */}
         <div className={styles.inputFooter}>
           <div className={styles.leftActions}>
             {/* 选中文件显示 */}
-            {fileContentState?.selectedFile && (
+            {/* {fileContentState?.selectedFile && (
               <Tooltip title={fileContentState.selectedFile}>
                 <div
                   className={`text-ellipsis ${styles.selectedFileDisplay}`}
@@ -822,11 +820,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   {getFileName(fileContentState.selectedFile)}
                 </div>
               </Tooltip>
-            )}
+            )} */}
           </div>
           <div className={styles.rightActions}>
             {/* 图片上传 */}
-            <Upload
+            {/* <Upload
               accept="image/*"
               showUploadList={false}
               beforeUpload={handleImageUpload}
@@ -841,9 +839,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   disabled={chat.isChatLoading}
                 />
               </Tooltip>
-            </Upload>
+            </Upload> */}
             {/* 模型选择器 - 图标占位形式 */}
-            <Dropdown
+            {/* <Dropdown
               overlay={
                 <Menu
                   selectedKeys={
@@ -885,10 +883,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   className={styles.modelSelectorButton}
                 />
               </Tooltip>
-            </Dropdown>
+            </Dropdown> */}
 
             {/* 会话进行中仅显示取消按钮 */}
-            {chat.isChatLoading ? (
+            {/* {chat.isChatLoading ? (
               <Tooltip title={isStoppingTask ? '正在停止...' : '取消AI任务'}>
                 <span
                   onClick={handleCancelAgentTask}
@@ -926,7 +924,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   )}
                 </span>
               </Tooltip>
-            )}
+            )} */}
           </div>
         </div>
       </div>

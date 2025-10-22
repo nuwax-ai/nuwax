@@ -8,7 +8,7 @@ import type { UploadFileInfo } from '@/types/interfaces/common';
 import { handleUploadFileList } from '@/utils/upload';
 import { LoadingOutlined, PictureOutlined } from '@ant-design/icons';
 import type { InputRef, UploadProps } from 'antd';
-import { Button, Input, Menu, Popover, Tooltip, Upload } from 'antd';
+import { Button, Input, Menu, message, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import DataSourceList from './DataSourceList';
@@ -18,14 +18,20 @@ const cx = classNames.bind(styles);
 
 // 聊天输入框组件
 export interface ChatInputProps {
+  // 聊天信息
   chat: any;
+  // 大模型选择器
   modelSelector: any;
+  // 文件内容状态
   fileContentState: any;
+  // 是否正在停止任务
   isStoppingTask: boolean;
+  // 是否正在发送消息
   isSendingMessage: boolean;
+  // 取消任务
   handleCancelAgentTask: () => void;
   className?: React.CSSProperties;
-  onEnter: (message: string, files: UploadFileInfo[]) => void;
+  onEnter: (files: UploadFileInfo[]) => void;
   // 数据源列表
   dataSourceList?: any[];
   selectedDataSourceList?: any[];
@@ -51,7 +57,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   // 文档
   const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
-  const [messageInfo, setMessageInfo] = useState<string>('');
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   const textareaRef = useRef<InputRef>(null);
 
@@ -72,29 +77,28 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 点击发送事件
   const handleSendMessage = () => {
-    // if (disabledSend || wholeDisabled) {
-    //   return;
-    // }
-    if (messageInfo || files?.length > 0) {
+    if (chat.chatInput?.trim() || files?.length > 0) {
       // enter事件
-      onEnter(messageInfo, files);
-      // if (isClearInput) {
-      //   // 置空
-      //   setUploadFiles([]);
-      //   setMessageInfo('');
-      // }
+      onEnter(files);
     }
   };
 
   // enter事件
   const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    //如果是输出过程中 或者 中止会话过程中 不能触发enter事件
-    // if (isConversationActive || isStoppingConversation) {
-    //   return;
-    // }
     e.preventDefault();
     const { value, selectionStart, selectionEnd } =
       e.target as HTMLTextAreaElement;
+
+    // 验证：prompt（输入内容）是必填的
+    if (!value?.trim() || !files?.length) {
+      message.warning('请输入消息内容');
+      return;
+    }
+
+    //如果是输出过程中 或者 中止会话过程中 不能触发enter事件
+    if (chat.isChatLoading || isSendingMessage) {
+      return;
+    }
     // shift+enter或者ctrl+enter时换行
     if (
       e.nativeEvent.keyCode === 13 &&
@@ -103,90 +107,28 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       // 在光标位置插入换行符
       const newValue =
         value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
-      setMessageInfo(newValue);
+      chat.setChatInput(newValue);
     } else if (
       e.nativeEvent.keyCode === 13 &&
       (!!value.trim() || !!files?.length)
     ) {
       // enter事件
-      onEnter(value, files);
-      // if (isClearInput) {
-      //   // 置空
-      //   setUploadFiles([]);
-      //   setMessageInfo('');
-      // }
+      onEnter(files);
     }
   };
 
+  // 上传文件
   const handleChange: UploadProps['onChange'] = (info) => {
     const { fileList } = info;
     setUploadFiles(handleUploadFileList(fileList));
   };
 
+  // 删除文件
   const handleDelFile = (uid: string) => {
     setUploadFiles((uploadFiles) =>
       uploadFiles.filter((item) => item.uid !== uid),
     );
   };
-
-  // // 停止会话功能 - 直接集成到组件内部
-  // const handleStopConversation = useCallback(() => {
-  //   // if (disabledStop || wholeDisabled) {
-  //   //   return;
-  //   // }
-  //   // 设置停止操作状态
-  //   setIsStoppingConversation(true);
-
-  //   // 获取当前会话请求ID
-  //   const requestId = getCurrentConversationRequestId();
-
-  //   if (requestId) {
-  //     if (onTempChatStop) {
-  //       onTempChatStop(requestId);
-  //     } else {
-  //       // 调用停止会话方法
-  //       runStopConversation(requestId);
-  //     }
-  //   }
-  // }, [
-  //   // disabledStop,
-  //   // wholeDisabled,
-  //   getCurrentConversationRequestId,
-  //   runStopConversation,
-  //   onTempChatStop,
-  // ]);
-
-  // // 获取按钮提示文本
-  // const getButtonTooltip = () => {
-  //   if (wholeDisabled) {
-  //     return '会话已禁用';
-  //   }
-  //   if (disabledSend) {
-  //     return '请输入你的问题';
-  //   }
-  //   if (isConversationActive) {
-  //     return '点击停止当前会话';
-  //   }
-  //   return '点击发送消息';
-  // };
-
-  // // 获取停止按钮提示文本
-  // const getStopButtonTooltip = () => {
-  //   // if (wholeDisabled) {
-  //   //   return '会话已禁用';
-  //   // }
-  //   if (!isConversationActive) {
-  //     return '当前无进行中的会话';
-  //   }
-  //   if (
-  //     isStoppingConversation ||
-  //     loadingStopConversation ||
-  //     loadingStopTempConversation
-  //   ) {
-  //     return '正在停止会话...';
-  //   }
-  //   return '点击停止当前会话';
-  // };
 
   return (
     <div className={cx('w-full', 'relative', className)}>
@@ -219,8 +161,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         {/*输入框*/}
         <Input.TextArea
           ref={textareaRef}
-          value={messageInfo}
-          onChange={(e) => setMessageInfo(e.target.value)}
+          value={chat.chatInput}
+          onChange={(e) => chat.setChatInput(e.target.value)}
           rootClassName={cx(styles.input)}
           onPressEnter={handlePressEnter}
           placeholder="向AI助手提问..."
