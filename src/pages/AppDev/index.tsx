@@ -1342,6 +1342,7 @@ const AppDev: React.FC = () => {
                 logs={devLogs.logs}
                 errorCount={devLogs.errorCount}
                 isLoading={devLogs.isLoading}
+                lastLine={devLogs.lastLine}
                 onClear={devLogs.clearLogs}
                 onRefresh={devLogs.refreshLogs}
                 onClose={() => setShowDevLogConsole(false)}

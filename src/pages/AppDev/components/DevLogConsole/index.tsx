@@ -30,6 +30,8 @@ interface DevLogConsoleProps {
   errorCount: number;
   /** 是否正在加载 */
   isLoading?: boolean;
+  /** 最后加载的行号 */
+  lastLine?: number;
   /** 清空日志回调 */
   onClear?: () => void;
   /** 刷新日志回调 */
@@ -125,6 +127,7 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
   logs,
   errorCount,
   isLoading = false,
+  lastLine = 0,
   onClear,
   onRefresh,
   onClose,
@@ -132,12 +135,51 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
 }) => {
   const logListRef = useRef<HTMLDivElement>(null);
   const [logGroups, setLogGroups] = useState<LogGroup[]>([]);
+  const [showLoading, setShowLoading] = useState(false);
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const loadingStartTimeRef = useRef<number | null>(null);
 
   // 将日志按时间戳分组
   useEffect(() => {
     const groups = groupLogsByTimestamp(logs);
     setLogGroups(groups);
   }, [logs]);
+
+  // 处理 loading 状态，确保至少显示 500ms
+  useEffect(() => {
+    // 清除之前的定时器
+    if (loadingTimerRef.current) {
+      clearTimeout(loadingTimerRef.current);
+      loadingTimerRef.current = null;
+    }
+
+    if (isLoading && lastLine <= 1) {
+      // 只有在第一次加载（lastLine <= 1）且正在加载时才显示
+      if (!showLoading) {
+        loadingStartTimeRef.current = Date.now();
+        setShowLoading(true);
+      }
+    } else if (!isLoading && showLoading) {
+      // 停止加载时，计算剩余时间确保至少显示 500ms
+      const elapsed = loadingStartTimeRef.current
+        ? Date.now() - loadingStartTimeRef.current
+        : 0;
+      const remainingTime = Math.max(0, 500 - elapsed);
+
+      loadingTimerRef.current = setTimeout(() => {
+        setShowLoading(false);
+        loadingStartTimeRef.current = null;
+      }, remainingTime);
+    }
+
+    // 清理函数
+    return () => {
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+        loadingTimerRef.current = null;
+      }
+    };
+  }, [isLoading, lastLine, showLoading]);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -188,7 +230,14 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
 
       {/* 日志列表 */}
       <div className="dev-log-console-body">
-        {logGroups.length > 0 ? (
+        {showLoading ? (
+          <div className="loading-logs">
+            <div className="loading-spinner">
+              <ReloadOutlined spin />
+            </div>
+            <p>正在加载日志...</p>
+          </div>
+        ) : logGroups.length > 0 ? (
           <div ref={logListRef} className="log-list">
             {logGroups.map((group, index) => (
               <LogGroupItem

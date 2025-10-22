@@ -169,13 +169,6 @@ export const useDevLogs = (
   }, []);
 
   /**
-   * 手动刷新日志
-   */
-  const refreshLogs = useCallback(async () => {
-    await pollLogs();
-  }, [pollLogs]);
-
-  /**
    * 清空日志
    */
   const clearLogs = useCallback(() => {
@@ -189,6 +182,15 @@ export const useDevLogs = (
     sentErrorsRef.current.clear();
     previousLogsRef.current = [];
   }, [logs, lastLine]);
+
+  /**
+   * 手动刷新日志
+   */
+  const refreshLogs = useCallback(async () => {
+    clearLogs();
+    setLastLine(0); // 设置为0，这样下次请求时从第1行开始
+    await pollLogs();
+  }, [clearLogs, setLastLine, pollLogs]);
 
   /**
    * 重置日志起始行号

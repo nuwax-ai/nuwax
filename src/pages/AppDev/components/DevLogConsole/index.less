@@ -155,5 +155,37 @@
         font-size: @fontSize;
       }
     }
+
+    .loading-logs {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: @colorTextTertiary;
+
+      .loading-spinner {
+        font-size: 32px;
+        margin-bottom: 16px;
+        color: @colorPrimary;
+        animation: spin 1s linear infinite;
+      }
+
+      p {
+        margin: 0;
+        font-size: @fontSize;
+        color: @colorTextSecondary;
+      }
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
   }
 }
