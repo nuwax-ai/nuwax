@@ -832,6 +832,26 @@ const AppDev: React.FC = () => {
   );
 
   /**
+   * 处理将日志内容添加到聊天框
+   */
+  const handleAddLogToChat = useCallback(
+    (logContent: string) => {
+      if (!logContent.trim()) {
+        message.warning('日志内容为空');
+        return;
+      }
+
+      // 将日志内容添加到聊天输入框
+      const formattedContent = `请帮我分析以下日志内容：\n\n\`\`\`\n${logContent}\n\`\`\``;
+      chat.setChatInput(formattedContent);
+
+      // 显示成功提示
+      message.success('日志内容已添加到聊天框');
+    },
+    [chat],
+  );
+
+  /**
    * 处理上传文件到指定路径
    */
   const handleUploadToFolder = useCallback(
@@ -1293,6 +1313,7 @@ const AppDev: React.FC = () => {
                 onClear={devLogs.clearLogs}
                 onRefresh={devLogs.refreshLogs}
                 onClose={() => setShowDevLogConsole(false)}
+                onAddToChat={handleAddLogToChat}
               />
             )}
           </Col>

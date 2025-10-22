@@ -36,13 +36,17 @@ interface DevLogConsoleProps {
   onRefresh?: () => void;
   /** 关闭控制台回调 */
   onClose?: () => void;
+  /** 添加日志到聊天框回调 */
+  onAddToChat?: (content: string) => void;
 }
 
 /**
  * 日志内容合并渲染组件
  * 将组内所有日志合并成一个文本块展示
  */
-const LogContentBlock: React.FC<{ logs: DevLogEntry[] }> = ({ logs }) => {
+const LogContentBlock: React.FC<{
+  logs: DevLogEntry[];
+}> = ({ logs }) => {
   // 合并所有日志内容，移除时间戳和行号
   const mergedContent = logs
     .map((log) => {
@@ -77,11 +81,28 @@ const LogContentBlock: React.FC<{ logs: DevLogEntry[] }> = ({ logs }) => {
  * 日志组渲染组件
  * 用于渲染一个时间戳分组的日志
  */
-const LogGroupItem: React.FC<{ group: LogGroup }> = ({ group }) => {
+const LogGroupItem: React.FC<{
+  group: LogGroup;
+  onAddToChat?: (content: string) => void;
+}> = ({ group, onAddToChat }) => {
   // const [isExpanded, setIsExpanded] = useState(true); // 暂时注释掉，后续可能需要
-
+  const groupLogs = group.logs
+    .map((log) => log.content)
+    .join('\n')
+    .trim();
+  // 处理点击事件
+  const handleClick = () => {
+    if (onAddToChat && groupLogs) {
+      onAddToChat(groupLogs);
+    }
+  };
   return (
-    <div className="log-group">
+    <div
+      className="log-group"
+      onClick={handleClick}
+      style={{ cursor: onAddToChat ? 'pointer' : 'default' }}
+      title={onAddToChat ? '点击添加到聊天框' : ''}
+    >
       {/* 组头 - 简洁的时间戳显示 */}
       <div className="log-group-header">
         <div className="group-header-left">
@@ -107,6 +128,7 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
   onClear,
   onRefresh,
   onClose,
+  onAddToChat,
 }) => {
   const logListRef = useRef<HTMLDivElement>(null);
   const [logGroups, setLogGroups] = useState<LogGroup[]>([]);
@@ -169,7 +191,11 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
         {logGroups.length > 0 ? (
           <div ref={logListRef} className="log-list">
             {logGroups.map((group, index) => (
-              <LogGroupItem key={`${group.timestamp}-${index}`} group={group} />
+              <LogGroupItem
+                key={`${group.timestamp}-${index}`}
+                group={group}
+                onAddToChat={onAddToChat}
+              />
             ))}
           </div>
         ) : (

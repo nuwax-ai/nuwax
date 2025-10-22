@@ -15,28 +15,12 @@ import {
   generateAttachmentId,
 } from '@/utils/chatUtils';
 import {
-  BugOutlined,
   CloseCircleOutlined,
   DownOutlined,
   LoadingOutlined,
   MessageOutlined,
 } from '@ant-design/icons';
-import {
-  Button,
-  Card,
-  Dropdown,
-  Image,
-  Input,
-  Menu,
-  message,
-  Select,
-  Spin,
-  Switch,
-  Tag,
-  Tooltip,
-  Typography,
-  Upload,
-} from 'antd';
+import { Card, Image, message, Select, Spin, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, {
   useCallback,
@@ -87,8 +71,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   modelSelector,
   onClearUploadedImages,
   onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
-  autoHandleError = true,
-  onAutoHandleErrorChange,
+  // autoHandleError = true, // 暂时注释掉，后续可能需要
+  // onAutoHandleErrorChange, // 暂时注释掉，后续可能需要
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
@@ -319,12 +303,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   /**
    * 处理自动处理异常开关变化
    */
-  const handleAutoHandleErrorChange = useCallback(
-    (checked: boolean) => {
-      onAutoHandleErrorChange?.(checked);
-    },
-    [onAutoHandleErrorChange],
-  );
+  // const handleAutoHandleErrorChange = useCallback(
+  //   (checked: boolean) => {
+  //     onAutoHandleErrorChange?.(checked);
+  //   },
+  //   [onAutoHandleErrorChange],
+  // );
 
   /**
    * 发送消息前的处理 - 支持附件
@@ -871,24 +855,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 />
               </Tooltip>
             </Upload>
-
-            {/* 自动处理异常开关 */}
-            <Tooltip
-              title={
-                autoHandleError ? '已开启自动错误处理' : '点击开启自动错误处理'
-              }
-            >
-              <div className={styles.autoHandleSwitch}>
-                <Switch
-                  size="small"
-                  checked={autoHandleError}
-                  onChange={handleAutoHandleErrorChange}
-                  checkedChildren={<BugOutlined />}
-                  unCheckedChildren={<BugOutlined />}
-                  disabled={chat.isChatLoading}
-                />
-              </div>
-            </Tooltip>
             {/* 模型选择器 - 图标占位形式 */}
             {/* <Dropdown
               overlay={
