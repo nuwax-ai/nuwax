@@ -1,14 +1,13 @@
 #!/usr/bin/env sh
-
 . "$(dirname -- "$0")/_/husky.sh"
 
 # 优先使用 pnpm；若未安装则回退到 npx/yarn/bun
 if command -v pnpm >/dev/null 2>&1; then
-  pnpm run verify-commit "$1"
+  pnpm run verify-commit
 elif command -v bun >/dev/null 2>&1; then
-  bun x max verify-commit "$1"
+  bun x max verify-commit
 elif command -v yarn >/dev/null 2>&1; then
-  yarn verify-commit "$1"
+  yarn verify-commit
 else
-  npx --yes max verify-commit "$1"
+  npx --yes max verify-commit
 fi
