@@ -49,6 +49,26 @@
       border-radius: @borderRadius;
       height: 36px;
 
+      &.plus-box {
+        color: @colorTextDescription;
+        font-size: @fontSize;
+        transition: color ease-in-out 0.2s;
+        border-radius: 50% !important;
+        height: 32px !important;
+        width: 32px !important;
+        border: 1px solid @colorSplit;
+
+        &:hover {
+          background-color: @colorPrimaryBg;
+        }
+      }
+
+      &.upload-box-disabled {
+        cursor: not-allowed;
+        color: @colorIcon !important;
+        background-color: @colorBgContainerDisabled !important;
+      }
+
       .loading-box {
         width: 24px;
         height: 24px;
