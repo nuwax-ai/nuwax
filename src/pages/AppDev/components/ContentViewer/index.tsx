@@ -1,7 +1,7 @@
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
 import { isImageFile, processImageContent } from '@/utils/appDevUtils';
 import { Button, Spin } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
 import CodeViewer from '../CodeViewer';
 import FilePathHeader from '../FilePathHeader';
 import ImageViewer from '../ImageViewer';
@@ -66,6 +66,7 @@ interface ContentViewerProps {
 /**
  * 内容查看器组件
  * 统一的内容查看器容器，根据不同模式和文件类型渲染对应的子组件
+ * 优化：使用条件渲染和组件缓存来避免 iframe 重新加载
  */
 const ContentViewer: React.FC<ContentViewerProps> = ({
   mode,
@@ -95,84 +96,9 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   onRestartDev,
   onWhiteScreen,
 }) => {
-  // 版本对比模式 + preview标签页：显示禁用提示
-  if (isComparing && mode === 'preview') {
-    return (
-      <div className={styles.emptyState}>
-        <p>{VERSION_CONSTANTS.PREVIEW_DISABLED_MESSAGE}</p>
-        <p>请恢复或切换到最新版本以查看预览</p>
-      </div>
-    );
-  }
-
-  // 版本对比模式 + code标签页：显示FilePathHeader + CodeViewer/ImageViewer
-  if (isComparing && mode === 'code') {
-    if (!selectedFileId) {
-      return (
-        <div className={styles.emptyState}>
-          <p>请从左侧文件树选择一个文件进行预览</p>
-        </div>
-      );
-    }
-
-    const hasContents =
-      fileNode && fileNode.content && fileNode.content.trim() !== '';
-    const isImage = isImageFile(selectedFileId);
-
-    return (
-      <>
-        {/* 文件路径显示 */}
-        <FilePathHeader
-          filePath={fileNode?.path || selectedFileId}
-          isModified={false}
-          isLoading={false}
-          isSaving={false}
-          readOnly={true}
-          onSave={() => {}}
-          onCancel={() => {}}
-          onRefresh={() => {}}
-        />
-
-        {/* 文件内容显示区域 */}
-        <div className={styles.fileContentPreview}>
-          {hasContents ? (
-            <CodeViewer
-              fileId={selectedFileId}
-              fileName={selectedFileId.split('/').pop() || selectedFileId}
-              filePath={`app/${selectedFileId}`}
-              content={fileNode.content}
-              readOnly={true || isChatLoading}
-              onContentChange={() => {}}
-            />
-          ) : isImage ? (
-            <ImageViewer
-              imagePath={selectedFileId}
-              imageUrl={processImageContent(
-                fileNode.content,
-                devServerUrl
-                  ? `${devServerUrl}/${selectedFileId}`
-                  : `/${selectedFileId}`,
-              )}
-              alt={selectedFileId}
-              onRefresh={() => {
-                if (previewRef.current) {
-                  previewRef.current.refresh();
-                }
-              }}
-            />
-          ) : (
-            <div className={styles.emptyState}>
-              <p>无法预览此文件类型: {selectedFileId}</p>
-            </div>
-          )}
-        </div>
-      </>
-    );
-  }
-
-  // 正常模式 + preview标签页：review组件（应用预览）
-  if (mode === 'preview') {
-    return (
+  // 使用 useMemo 缓存 Preview 组件，避免重新创建
+  const previewComponent = useMemo(
+    () => (
       <Preview
         ref={previewRef}
         devServerUrl={
@@ -180,8 +106,8 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         }
         isStarting={isStarting}
         isDeveloping={isChatLoading}
-        isRestarting={isRestarting} // 新增
-        isProjectUploading={isProjectUploading} // 新增
+        isRestarting={isRestarting}
+        isProjectUploading={isProjectUploading}
         startError={startError}
         serverMessage={serverMessage}
         serverErrorCode={serverErrorCode}
@@ -189,11 +115,25 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         onRestartDev={onRestartDev}
         onWhiteScreen={onWhiteScreen}
       />
-    );
-  }
+    ),
+    [
+      previewRef,
+      devServerUrl,
+      isStarting,
+      isChatLoading,
+      isRestarting,
+      isProjectUploading,
+      startError,
+      serverMessage,
+      serverErrorCode,
+      onStartDev,
+      onRestartDev,
+      onWhiteScreen,
+    ],
+  );
 
-  // 正常模式 + code标签页：显示FilePathHeader + CodeViewer/ImageViewer
-  if (mode === 'code') {
+  // 使用 useMemo 缓存代码编辑器组件
+  const codeEditorComponent = useMemo(() => {
     if (isLoadingFileContent) {
       return (
         <div className={styles.loadingContainer}>
@@ -289,9 +229,126 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         </div>
       </div>
     );
+  }, [
+    isLoadingFileContent,
+    fileContentError,
+    selectedFileId,
+    findFileNode,
+    isFileModified,
+    isSavingFile,
+    isComparing,
+    isChatLoading,
+    devServerUrl,
+    fileContent,
+    onContentChange,
+    onSaveFile,
+    onCancelEdit,
+    onRefreshFile,
+    previewRef,
+  ]);
+
+  // 使用 useMemo 缓存版本对比模式下的代码编辑器组件
+  const versionCompareCodeComponent = useMemo(() => {
+    if (!selectedFileId) {
+      return (
+        <div className={styles.emptyState}>
+          <p>请从左侧文件树选择一个文件进行预览</p>
+        </div>
+      );
+    }
+
+    const hasContents =
+      fileNode && fileNode.content && fileNode.content.trim() !== '';
+    const isImage = isImageFile(selectedFileId);
+
+    return (
+      <>
+        {/* 文件路径显示 */}
+        <FilePathHeader
+          filePath={fileNode?.path || selectedFileId}
+          isModified={false}
+          isLoading={false}
+          isSaving={false}
+          readOnly={true}
+          onSave={() => {}}
+          onCancel={() => {}}
+          onRefresh={() => {}}
+        />
+
+        {/* 文件内容显示区域 */}
+        <div className={styles.fileContentPreview}>
+          {hasContents ? (
+            <CodeViewer
+              fileId={selectedFileId}
+              fileName={selectedFileId.split('/').pop() || selectedFileId}
+              filePath={`app/${selectedFileId}`}
+              content={fileNode.content}
+              readOnly={true || isChatLoading}
+              onContentChange={() => {}}
+            />
+          ) : isImage ? (
+            <ImageViewer
+              imagePath={selectedFileId}
+              imageUrl={processImageContent(
+                fileNode.content,
+                devServerUrl
+                  ? `${devServerUrl}/${selectedFileId}`
+                  : `/${selectedFileId}`,
+              )}
+              alt={selectedFileId}
+              onRefresh={() => {
+                if (previewRef.current) {
+                  previewRef.current.refresh();
+                }
+              }}
+            />
+          ) : (
+            <div className={styles.emptyState}>
+              <p>无法预览此文件类型: {selectedFileId}</p>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }, [selectedFileId, fileNode, devServerUrl, isChatLoading, previewRef]);
+
+  // 版本对比模式 + preview标签页：显示禁用提示
+  if (isComparing && mode === 'preview') {
+    return (
+      <div className={styles.emptyState}>
+        <p>{VERSION_CONSTANTS.PREVIEW_DISABLED_MESSAGE}</p>
+        <p>请恢复或切换到最新版本以查看预览</p>
+      </div>
+    );
   }
 
-  return null;
+  // 版本对比模式 + code标签页：使用缓存的版本对比代码组件
+  if (isComparing && mode === 'code') {
+    return versionCompareCodeComponent;
+  }
+
+  // 正常模式：同时渲染两个组件，通过 CSS 控制显示/隐藏
+  return (
+    <div className={styles.contentViewerContainer}>
+      {/* 预览组件 - 始终存在，通过 CSS 控制显示 */}
+      <div
+        className={`${styles.previewContainer} ${
+          mode === 'preview' ? styles.visible : styles.hidden
+        }`}
+      >
+        {previewComponent}
+      </div>
+
+      {/* 代码编辑器组件 - 始终存在，通过 CSS 控制显示 */}
+      <div
+        className={`${styles.codeContainer} ${
+          mode === 'code' ? styles.visible : styles.hidden
+        }`}
+      >
+        {codeEditorComponent}
+      </div>
+    </div>
+  );
 };
 
 export default ContentViewer;

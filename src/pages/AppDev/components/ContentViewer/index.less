@@ -1,5 +1,47 @@
 @import '@/styles/color.less';
 @import '@/styles/token.less';
+
+// 内容查看器容器
+.contentViewerContainer {
+  height: 100%;
+  position: relative;
+}
+
+// 预览容器
+.previewContainer {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+// 代码容器
+.codeContainer {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+// 显示状态
+.visible {
+  opacity: 1;
+  visibility: visible;
+  z-index: 1;
+}
+
+// 隐藏状态
+.hidden {
+  opacity: 0;
+  visibility: hidden;
+  z-index: 0;
+  pointer-events: none; // 防止隐藏元素接收鼠标事件
+}
+
 // 代码编辑器容器
 .codeEditorContainer {
   height: 100%;

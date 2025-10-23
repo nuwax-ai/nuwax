@@ -386,13 +386,6 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
         type: 'divider' as const,
       },
       {
-        key: 'refresh',
-        icon: <ReloadOutlined />,
-        label: '刷新页面预览',
-        onClick: onRefreshPreview,
-        disabled: isRefreshDisabled,
-      },
-      {
         key: 'restart',
         icon: <SyncOutlined />,
         label: '重启服务器',
@@ -516,6 +509,15 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
             errorCount={consoleData.errorCount}
             onToggleDevLogConsole={consoleData.onToggleDevLogConsole}
           />
+          {/* 刷新按钮 */}
+          {shouldShowPreviewStatus && (
+            <Button
+              type="text"
+              className={styles.refreshButton}
+              icon={<ReloadOutlined />}
+              onClick={actionsData.onRefreshPreview}
+            />
+          )}
 
           {/* 更多操作菜单 */}
           <MoreActionsMenu
