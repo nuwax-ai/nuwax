@@ -263,9 +263,15 @@ const AppDev: React.FC = () => {
   }, [projectInfo.projectInfoState?.projectInfo]);
 
   // 数据资源管理
-  const dataResourceManagement = useDataResourceManagement(
-    projectInfo.projectInfoState.projectInfo?.dataSources || [],
-  );
+  const dataResourceManagement = useDataResourceManagement();
+
+  useEffect(() => {
+    if (projectInfo.projectInfoState.projectInfo) {
+      dataResourceManagement.fetchResources(
+        projectInfo.projectInfoState.projectInfo?.dataSources || [],
+      );
+    }
+  }, [projectInfo.projectInfoState.projectInfo]);
 
   useEffect(() => {
     if (dataResourceManagement.resources?.length > 0) {
@@ -630,15 +636,6 @@ const AppDev: React.FC = () => {
     },
     [dataResourceManagement, selectedDataResources],
   );
-
-  /**
-   * 初始化数据资源
-   */
-  useEffect(() => {
-    if (projectId) {
-      dataResourceManagement.fetchResources();
-    }
-  }, [projectId]); // 移除 dataResourceManagement 依赖，避免无限循环
 
   /**
    * 处理项目上传
@@ -1110,7 +1107,7 @@ const AppDev: React.FC = () => {
               chatMode={chatMode}
               setChatMode={setChatMode}
               chat={chat}
-              // projectInfo={projectInfo}
+              projectInfo={projectInfo}
               projectId={projectId || ''} // 新增：项目ID
               onVersionSelect={handleVersionSelect}
               selectedDataSources={selectedDataResources} // 新增：选中的数据源

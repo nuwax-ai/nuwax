@@ -2,7 +2,6 @@ import type {
   CreateDataResourceRequest,
   DataResource,
   DataResourceOperationResult,
-  DataResourceQueryParams,
   UpdateDataResourceRequest,
 } from '@/types/interfaces/dataResource';
 import {
@@ -10,15 +9,13 @@ import {
   DataResourceType,
 } from '@/types/interfaces/dataResource';
 import { message } from 'antd';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 /**
  * 数据资源管理 Hook
  * 提供数据资源的增删改查功能
  */
-export const useDataResourceManagement = (
-  projectDataSources: DataResource[],
-) => {
+export const useDataResourceManagement = () => {
   const [resources, setResources] = useState<DataResource[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
@@ -27,12 +24,9 @@ export const useDataResourceManagement = (
    * 获取数据资源列表
    */
   const fetchResources = useCallback(
-    async (params?: DataResourceQueryParams) => {
+    async (dataSources: DataResource[] = []) => {
       try {
         setLoading(true);
-
-        // 从项目数据源中获取真实数据
-        let dataSources: DataResource[] = projectDataSources || [];
 
         // 将 DataSource 转换为 DataResource 格式
         const convertedResources: DataResource[] = dataSources.map((ds) => ({
@@ -54,32 +48,8 @@ export const useDataResourceManagement = (
           enabled: ds.enabled !== false,
         }));
 
-        // 根据查询参数过滤数据
-        let filteredResources = convertedResources;
-
-        if (params?.type) {
-          filteredResources = filteredResources.filter(
-            (r) => r.type === params.type,
-          );
-        }
-
-        if (params?.status) {
-          filteredResources = filteredResources.filter(
-            (r) => r.status === params.status,
-          );
-        }
-
-        if (params?.keyword) {
-          const keyword = params.keyword.toLowerCase();
-          filteredResources = filteredResources.filter(
-            (r) =>
-              r.name.toLowerCase().includes(keyword) ||
-              r.description?.toLowerCase().includes(keyword),
-          );
-        }
-
-        setResources(filteredResources);
-        setTotal(filteredResources.length);
+        setResources(convertedResources);
+        setTotal(convertedResources.length);
       } catch (error) {
         console.error('获取数据资源列表失败:', error);
         message.error('获取数据资源列表失败');
@@ -87,7 +57,7 @@ export const useDataResourceManagement = (
         setLoading(false);
       }
     },
-    [projectDataSources],
+    [setResources, setTotal, setLoading],
   );
 
   /**
@@ -321,13 +291,6 @@ export const useDataResourceManagement = (
         setLoading(false);
       }
     }, []);
-
-  // 当项目数据源变化时，自动刷新资源列表
-  useEffect(() => {
-    if (projectDataSources) {
-      fetchResources();
-    }
-  }, [projectDataSources]); // 移除 fetchResources 依赖，避免无限循环
 
   return {
     resources,
