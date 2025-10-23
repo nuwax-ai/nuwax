@@ -6,17 +6,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 90%);
-  border-bottom: 1px solid rgba(0, 0, 0, 10%);
-  padding: 12px 16px;
+  background: @colorBgContainer;
+  border-bottom: @lineWidth solid @colorBorder;
+  padding: 8px 12px;
 
   .filePathInfo {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #1e293b;
-    font-size: 14px;
-    font-weight: 500;
+    color: @colorTextBase;
+    font-size: @fontSizeSm;
 
     // .fileIcon {
     //   font-size: 16px;
@@ -24,11 +23,11 @@
     // }
 
     .filePath {
-      font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
-      background: @colorPrimaryBg;
+      font-family: @fontFamilyCode;
+      // background: @colorPrimaryBg;
       padding: 2px 8px;
-      border-radius: 4px;
-      color: @colorPrimary;
+      border-radius: @borderRadiusSm;
+      // color: @colorPrimary;
     }
 
     // .fileLanguage {
@@ -41,13 +40,12 @@
     // }
 
     .modifiedIndicator {
-      font-size: 12px;
-      color: #f59e0b;
-      background: rgba(245, 158, 11, 10%);
+      font-size: @fontSizeSm;
+      color: @colorWarning;
+      background: @colorWarningBg;
       padding: 2px 6px;
-      border-radius: 3px;
-      margin-left: 8px;
-      font-weight: 500;
+      border-radius: @borderRadiusSm;
+      font-weight: @fontWeightStrong;
       animation: pulse 2s infinite;
     }
 
@@ -70,13 +68,13 @@
 }
 
 // 暗色主题支持
-[data-theme='dark'] {
-  .filePathHeader {
-    background: var(--xagi-color-bg-container);
-    border-bottom-color: var(--xagi-color-border);
+// [data-theme='dark'] {
+//   .filePathHeader {
+//     background: var(--xagi-color-bg-container);
+//     border-bottom-color: var(--xagi-color-border);
 
-    .filePathInfo {
-      color: var(--xagi-color-text);
-    }
-  }
-}
+//     .filePathInfo {
+//       color: var(--xagi-color-text);
+//     }
+//   }
+// }

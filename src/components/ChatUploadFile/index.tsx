@@ -137,9 +137,9 @@ const ChatUploadFile: React.FC<ChatUploadFileProps> = ({ files, onDel }) => {
       {files?.map((file) => {
         // 根据文件类型选择不同的渲染方式
         if (file?.type?.includes('image/')) {
-          return renderImageFile(file);
+          return renderImageFile(file as UploadFileInfo);
         } else {
-          return renderDocumentFile(file);
+          return renderDocumentFile(file as UploadFileInfo);
         }
       })}
     </div>

@@ -1,8 +1,4 @@
-/**
- * AppDev API服务模块
- * 处理与后端API的通信
- */
-
+import { parseLogEntry } from '@/pages/AppDev/utils/devLogParser';
 import type {
   BuildResponse,
   CancelResponse,
@@ -10,7 +6,9 @@ import type {
   ChatResponse,
   CreateProjectParams,
   CustomBuildRes,
+  DevLogEntry,
   DevServerInfo,
+  GetDevLogApiResponse,
   GetProjectContentResponse,
   KeepAliveResponse,
   ListModelsResponse,
@@ -549,4 +547,45 @@ export const listModels = async (
   return request(`/api/custom-page/list-models?projectId=${projectId}`, {
     method: 'GET',
   });
+};
+
+// ==================== 开发服务器日志相关API服务 ====================
+
+/**
+ * 获取开发服务器日志
+ * @param projectId 项目ID
+ * @param startIndex 从第几行开始获取
+ * @returns Promise<GetDevLogApiResponse> 日志数据
+ */
+export const getDevLogs = async (
+  projectId: string,
+  startIndex: number = 1,
+): Promise<GetDevLogApiResponse> => {
+  const response = await request('/api/custom-page/get-dev-log', {
+    method: 'POST',
+    data: {
+      projectId: Number(projectId), // 转换为数字
+      startIndex,
+    },
+  });
+
+  // 处理后端返回的日志数据，确保包含所有必需字段
+  const processedLogs: DevLogEntry[] = response.data.logs.map((log: any) => {
+    // 如果后端返回的日志对象缺少某些字段，使用 parseLogEntry 来补充
+    if (!log.level || !log.isError) {
+      return parseLogEntry(log.content, log.line);
+    }
+    return log as DevLogEntry;
+  });
+
+  return {
+    ...response,
+    data: {
+      ...response.data,
+      logs: processedLogs,
+      hasMore:
+        response.data.startIndex + response.data.logs.length <
+        response.data.totalLines,
+    },
+  };
 };

@@ -1,5 +1,6 @@
 import Created from '@/components/Created';
-import { ERROR_MESSAGES, VERSION_CONSTANTS } from '@/constants/appDevConstants';
+import PublishComponentModal from '@/components/PublishComponentModal';
+import { ERROR_MESSAGES } from '@/constants/appDevConstants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
@@ -21,11 +22,10 @@ import {
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
-import type { DataSourceSelection } from '@/types/interfaces/appDev';
+import { FileNode } from '@/types/interfaces/appDev';
+import { DataResource } from '@/types/interfaces/dataResource';
 import {
-  DownloadOutlined,
   EyeOutlined,
-  FullscreenOutlined,
   ReadOutlined,
   SyncOutlined,
   UploadOutlined,
@@ -40,7 +40,6 @@ import {
   Row,
   Segmented,
   Space,
-  Tooltip,
   Typography,
   Upload,
 } from 'antd';
@@ -54,9 +53,13 @@ import React, {
 import { useModel, useParams } from 'umi';
 import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
+import DevLogConsole from './components/DevLogConsole';
+import EditorHeaderRight from './components/EditorHeaderRight';
 import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
+import { useAutoErrorHandling } from './hooks/useAutoErrorHandling';
+import { useDevLogs } from './hooks/useDevLogs';
 import styles from './index.less';
 
 const { Text } = Typography;
@@ -71,9 +74,11 @@ const AppDev: React.FC = () => {
   const spaceId = params.spaceId;
 
   // 数据源选择状态
-  const [selectedDataResourceIds, setSelectedDataResourceIds] = useState<
-    DataSourceSelection[]
+  const [selectedDataResources, setSelectedDataResources] = useState<
+    DataResource[]
   >([]);
+  // 缓存 selectedDataResources 引用，避免无限循环
+  const selectedDataResourcesRef = useRef<DataResource[]>([]);
 
   // 页面编辑状态
   const [openPageEditVisible, setOpenPageEditVisible] = useState(false);
@@ -87,7 +92,7 @@ const AppDev: React.FC = () => {
 
   const {
     workspace,
-    // isServiceRunning, // 暂时未使用，保留以备将来使用
+    isServiceRunning,
     setIsServiceRunning,
     setActiveFile,
     updateFileContent,
@@ -108,15 +113,16 @@ const AppDev: React.FC = () => {
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showDevLogConsole, setShowDevLogConsole] = useState(false);
 
   // 图片清空方法引用
-  const clearUploadedImagesRef = useRef<(() => void) | null>(null);
+  // const clearUploadedImagesRef = useRef<(() => void) | null>(null);
 
   // 部署相关状态
   const [isDeploying, setIsDeploying] = useState(false);
 
   // 导出项目状态
-  const [isExporting, setIsExporting] = useState(false);
+  // const [isExporting, setIsExporting] = useState(false); // 暂时注释掉，后续可能需要
 
   // 单文件上传状态
   const [isSingleFileUploadModalVisible, setIsSingleFileUploadModalVisible] =
@@ -127,6 +133,21 @@ const AppDev: React.FC = () => {
 
   // 项目导入状态
   const [isProjectUploading, setIsProjectUploading] = useState(false);
+
+  // 聊天模式状态
+  const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
+
+  // 数据资源相关状态
+  const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
+    useState(false);
+
+  // 删除确认对话框状态
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [nodeToDelete, setNodeToDelete] = useState<any>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  // 发布智能体弹窗状态
+  const [openPublishComponentModal, setOpenPublishComponentModal] =
+    useState(false);
 
   // 使用重构后的 hooks
   const fileManagement = useAppDevFileManagement({
@@ -151,6 +172,30 @@ const AppDev: React.FC = () => {
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
 
+  // Preview 状态跟踪
+  const [previewIsLoading, setPreviewIsLoading] = useState(false);
+  const [previewLastRefreshed, setPreviewLastRefreshed] = useState<Date | null>(
+    null,
+  );
+
+  // 定期更新 Preview 状态
+  useEffect(() => {
+    const updatePreviewStatus = () => {
+      if (previewRef.current) {
+        setPreviewIsLoading(previewRef.current.getIsLoading());
+        setPreviewLastRefreshed(previewRef.current.getLastRefreshed());
+      }
+    };
+
+    // 立即更新一次
+    updatePreviewStatus();
+
+    // 每 500ms 更新一次状态
+    const interval = setInterval(updatePreviewStatus, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // 使用重启开发服务器 Hook
   const { restartDevServer } = useRestartDevServer({
     projectId: projectId || '',
@@ -163,15 +208,15 @@ const AppDev: React.FC = () => {
     projectId: projectId || '',
     selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
     onRefreshFileTree: fileManagement.loadFileTree, // 新增：传递文件树刷新方法
-    selectedDataSources: selectedDataResourceIds, // 新增：传递选中的数据源
-    onClearDataSourceSelections: () => setSelectedDataResourceIds([]), // 新增：清除选择回调
+    selectedDataResources: selectedDataResources, // 新增：传递选中的数据源
+    onClearDataSourceSelections: () => setSelectedDataResources([]), // 新增：清除选择回调
     onRefreshVersionList: projectInfo.refreshProjectInfo, // 新增：传递刷新版本列表方法
-    onClearUploadedImages: () => {
-      // 调用 ChatArea 组件传递的图片清空方法
-      if (clearUploadedImagesRef.current) {
-        clearUploadedImagesRef.current();
-      }
-    }, // 新增：传递清除上传图片方法
+    // onClearUploadedImages: () => {
+    //   // 调用 ChatArea 组件传递的图片清空方法
+    //   if (clearUploadedImagesRef.current) {
+    //     clearUploadedImagesRef.current();
+    //   }
+    // }, // 新增：传递清除上传图片方法
     onRestartDevServer: async () => {
       // 使用重启开发服务器 Hook，Agent 触发时不切换页面
       await restartDevServer({
@@ -180,6 +225,21 @@ const AppDev: React.FC = () => {
         showMessage: false, // Agent 触发时不显示消息
       });
     }, // 新增：Agent 触发时不切换页面
+  });
+
+  // 开发服务器日志管理
+  const devLogs = useDevLogs(projectId || '', {
+    enabled: hasValidProjectId && isServiceRunning,
+    pollInterval: 5000, // 调整为5秒轮询
+    maxLogLines: 1000,
+  });
+
+  // 自动异常处理
+  const autoErrorHandling = useAutoErrorHandling(projectId || '', {
+    enabled: hasValidProjectId,
+    errorDetectionDelay: 1000,
+    maxSendFrequency: 30000,
+    showNotification: true,
   });
 
   useEffect(() => {
@@ -198,19 +258,36 @@ const AppDev: React.FC = () => {
           status: AgentAddComponentStatusEnum.Added,
         };
       });
-      setAddComponents(addComponents);
+      setAddComponents(addComponents as AgentAddComponentStatusInfo[]);
     }
   }, [projectInfo.projectInfoState?.projectInfo]);
 
   // 数据资源管理
   const dataResourceManagement = useDataResourceManagement(
-    projectInfo.projectInfoState.projectInfo?.dataSources,
+    projectInfo.projectInfoState.projectInfo?.dataSources || [],
   );
 
-  // 获取选中的数据源对象
-  const selectedDataSources = useMemo(() => {
-    return selectedDataResourceIds;
-  }, [selectedDataResourceIds]);
+  useEffect(() => {
+    if (dataResourceManagement.resources?.length > 0) {
+      const _selectedDataResources: DataResource[] =
+        dataResourceManagement.resources.map((resource) => {
+          // 判断数据源是否已选中
+          const isExist = selectedDataResourcesRef.current?.find(
+            (item) => item.id === resource.id,
+          );
+          if (isExist) {
+            return isExist;
+          }
+          // 新增数据源
+          return {
+            ...resource,
+            isSelected: false,
+          };
+        });
+      setSelectedDataResources(_selectedDataResources);
+      selectedDataResourcesRef.current = _selectedDataResources;
+    }
+  }, [dataResourceManagement.resources]);
 
   // 稳定 currentFiles 引用，避免无限循环
   const stableCurrentFiles = useMemo(() => {
@@ -227,6 +304,38 @@ const AppDev: React.FC = () => {
       projectInfo.refreshProjectInfo();
     },
   });
+
+  // 自动异常处理监听
+  useEffect(() => {
+    // 监听Agent输出结束
+    // const handleAgentPromptEnd = () => {
+    //   autoErrorHandling.handleAgentPromptEnd(devLogs.logs, chat.sendMessage);
+    // };
+
+    // 监听文件操作完成
+    // const handleFileOperationComplete = () => {
+    //   autoErrorHandling.handleFileOperationComplete(
+    //     devLogs.logs,
+    //     chat.sendMessage,
+    //   );
+    // };
+
+    // 监听预览白屏
+    // const handlePreviewWhiteScreen = () => {
+    //   autoErrorHandling.handlePreviewWhiteScreen(
+    //     devLogs.logs,
+    //     chat.sendMessage,
+    //   );
+    // };
+
+    // 这里可以添加事件监听器
+    // 例如：监听chat的prompt_end事件
+    // chat.onPromptEnd?.(handleAgentPromptEnd);
+
+    return () => {
+      // 清理事件监听器
+    };
+  }, [autoErrorHandling, devLogs.logs, chat.sendMessage]);
 
   // 获取当前显示的文件树（版本模式或正常模式）
   const currentDisplayFiles = useMemo(() => {
@@ -263,6 +372,13 @@ const AppDev: React.FC = () => {
   );
 
   /**
+   * 版本选择器标签渲染函数
+   */
+  // const labelRender = useCallback((props: any) => {
+  //   return <span>v{props.value.replace('v', '')}</span>;
+  // }, []); // 暂时注释掉，后续可能需要
+
+  /**
    * 处理版本选择，直接在页面中显示版本对比
    */
   const handleVersionSelect = useCallback(
@@ -279,33 +395,17 @@ const AppDev: React.FC = () => {
     [versionCompare],
   );
 
-  // 聊天模式状态
-  const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
-
-  // 数据资源相关状态
-  const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
-    useState(false);
-
-  // 删除确认对话框状态
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [nodeToDelete, setNodeToDelete] = useState<any>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
   /**
    * 检查 projectId 状态
    */
   useEffect(() => {
-    if (!hasValidProjectId) {
-      setMissingProjectId(true);
-    } else {
-      setMissingProjectId(false);
-    }
+    setMissingProjectId(!hasValidProjectId);
   }, [projectId, hasValidProjectId]);
 
   /**
-   * 处理项目部署
+   * 处理项目发布成组件
    */
-  const handleDeployProject = useCallback(async () => {
+  const handlePublishComponent = useCallback(async () => {
     if (!hasValidProjectId || !projectId) {
       message.error('项目ID不存在或无效，无法部署');
       return;
@@ -320,7 +420,7 @@ const AppDev: React.FC = () => {
         const { prodServerUrl } = result.data;
         // 显示部署结果
         Modal.success({
-          title: '部署成功',
+          title: '成功发布成组件',
           content: (
             <div>
               <p>项目已成功构建并发布！</p>
@@ -346,6 +446,13 @@ const AppDev: React.FC = () => {
   }, [hasValidProjectId, projectId]);
 
   /**
+   * 处理发布智能体
+   */
+  const handleConfirmPublish = () => {
+    setOpenPublishComponentModal(false);
+  };
+
+  /**
    * 处理项目导出
    */
   const handleExportProject = useCallback(async () => {
@@ -356,7 +463,7 @@ const AppDev: React.FC = () => {
     }
 
     try {
-      setIsExporting(true);
+      // setIsExporting(true); // 暂时注释掉，后续可能需要
       const result = await exportProject(projectId);
 
       // 从响应头中获取文件名
@@ -398,7 +505,7 @@ const AppDev: React.FC = () => {
 
       message.error(`导出失败: ${errorMessage}`);
     } finally {
-      setIsExporting(false);
+      // setIsExporting(false); // 暂时注释掉，后续可能需要
     }
   }, [hasValidProjectId, projectId]);
 
@@ -406,13 +513,16 @@ const AppDev: React.FC = () => {
    * 处理重启开发服务器按钮点击（手动触发）
    */
   const handleRestartDevServer = useCallback(async () => {
+    // 重置日志起始行号
+    devLogs.resetStartLine();
+
     // 使用重启开发服务器 Hook，手动触发时切换到预览标签页
     await restartDevServer({
       shouldSwitchTab: true,
       delayBeforeRefresh: 500,
       showMessage: false,
     });
-  }, [restartDevServer]);
+  }, [restartDevServer, devLogs.resetStartLine]);
 
   /**
    * 处理添加组件（Created 组件回调）
@@ -503,65 +613,23 @@ const AppDev: React.FC = () => {
    * 处理删除数据资源
    */
   const handleDeleteDataResource = useCallback(
-    async (resourceId: string) => {
+    async (resourceId: number) => {
       try {
         await dataResourceManagement.deleteResource(resourceId);
         setAddComponents((list) =>
           list.filter((info) => info.targetId !== Number(resourceId)),
         );
+
+        const _selectedDataResources =
+          selectedDataResources?.filter((item) => item.id !== resourceId) || [];
+        setSelectedDataResources(_selectedDataResources);
+        selectedDataResourcesRef.current = _selectedDataResources;
       } catch (error) {
         // 删除数据资源失败
       }
     },
-    [dataResourceManagement],
+    [dataResourceManagement, selectedDataResources],
   );
-
-  /**
-   * 键盘快捷键处理
-   */
-  // useEffect(() => {
-  //   const handleKeyDown = (event: KeyboardEvent) => {
-  //     // Ctrl/Cmd + Enter 发送聊天消息
-  //     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-  //       if (chat.chatInput.trim()) {
-  //         chat.sendChat();
-  //       }
-  //     }
-
-  //     // Ctrl/Cmd + S 保存文件
-  //     if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-  //       event.preventDefault();
-  //       fileManagement.saveFile();
-  //     }
-
-  //     // Ctrl/Cmd + R 重启开发服务器
-  //     if ((event.ctrlKey || event.metaKey) && event.key === 'r') {
-  //       event.preventDefault();
-  //       if (projectId && isServiceRunning && !chat.isChatLoading) {
-  //         // 开发服务器重启功能已禁用
-  //       }
-  //     }
-
-  //     // Ctrl/Cmd + D 部署项目
-  //     if ((event.ctrlKey || event.metaKey) && event.key === 'd') {
-  //       event.preventDefault();
-  //       if (hasValidProjectId && !isDeploying && !chat.isChatLoading) {
-  //         handleDeployProject();
-  //       }
-  //     }
-  //   };
-
-  //   document.addEventListener('keydown', handleKeyDown);
-  //   return () => document.removeEventListener('keydown', handleKeyDown);
-  // }, [
-  //   chat.chatInput,
-  //   chat.sendChat,
-  //   fileManagement.saveFile,
-  //   projectId,
-  //   isServiceRunning,
-  //   isDeploying,
-  //   handleDeployProject,
-  // ]);
 
   /**
    * 初始化数据资源
@@ -705,6 +773,74 @@ const AppDev: React.FC = () => {
   ]);
 
   /**
+   * 处理右键上传（直接调用上传接口，不依赖状态）
+   */
+  const handleRightClickUpload = useCallback(
+    async (node: FileNode | null) => {
+      if (!hasValidProjectId) {
+        message.error(ERROR_MESSAGES.NO_PROJECT_ID);
+        return;
+      }
+      //两种情况 第一个是文件夹，第二个是文件
+      let relativePath = '';
+      if (node) {
+        if (node.type === 'file') {
+          relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
+        } else if (node.type === 'folder') {
+          relativePath = node.path + '/';
+        }
+      } else {
+        relativePath = '';
+      }
+      // 创建一个隐藏的文件输入框
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.style.display = 'none';
+      document.body.appendChild(input);
+
+      // 等待用户选择文件
+      input.click();
+
+      input.onchange = async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) {
+          document.body.removeChild(input);
+          return;
+        }
+
+        try {
+          // 设置加载状态，与弹窗上传保持一致
+          setSingleFileUploadLoading(true);
+
+          // 直接调用上传接口，使用文件名作为路径
+          const result = await fileManagement.uploadSingleFileToServer(
+            file,
+            relativePath + file.name,
+          );
+
+          if (result) {
+            // 与弹窗上传成功后逻辑保持一致
+            // 刷新项目详情(刷新版本列表)
+            projectInfo.refreshProjectInfo();
+          }
+        } catch (error) {
+          message.error('上传失败');
+        } finally {
+          // 清理加载状态和DOM
+          setSingleFileUploadLoading(false);
+          document.body.removeChild(input);
+        }
+      };
+
+      // 如果用户取消选择，也要清理DOM
+      input.oncancel = () => {
+        document.body.removeChild(input);
+      };
+    },
+    [hasValidProjectId, fileManagement, projectInfo],
+  );
+
+  /**
    * 处理单个文件上传取消
    */
   const handleCancelSingleFileUpload = useCallback(() => {
@@ -723,6 +859,103 @@ const AppDev: React.FC = () => {
       setDeleteModalVisible(true);
     },
     [],
+  );
+
+  /**
+   * 处理重命名文件/文件夹
+   */
+  const handleRenameFile = useCallback(
+    async (node: any, newName: string): Promise<boolean> => {
+      if (!node || !newName.trim()) {
+        return false;
+      }
+
+      try {
+        const success = await fileManagement.renameFileItem(
+          node.id,
+          newName.trim(),
+        );
+        if (success) {
+          handleRestartDevServer();
+          // 刷新项目详情(刷新版本列表)
+          projectInfo.refreshProjectInfo();
+          return true;
+        } else {
+          return false;
+        }
+      } catch (error) {
+        return false;
+      }
+    },
+    [fileManagement, projectInfo, handleRestartDevServer],
+  );
+
+  /**
+   * 处理将日志内容添加到聊天框
+   */
+  const handleAddLogToChat = useCallback(
+    (logContent: string) => {
+      if (!logContent.trim()) {
+        message.warning('日志内容为空');
+        return;
+      }
+
+      // 将日志内容添加到聊天输入框
+      const formattedContent = `请帮我分析以下日志内容：\n\n\`\`\`\n${logContent}\n\`\`\``;
+      chat.setChatInput(formattedContent);
+
+      // 显示成功提示
+      message.success('日志内容已添加到聊天框');
+    },
+    [chat],
+  );
+
+  /**
+   * 处理上传文件到指定路径
+   */
+  const handleUploadToFolder = useCallback(
+    async (targetPath: string, file: File): Promise<boolean> => {
+      if (!hasValidProjectId) {
+        message.error(ERROR_MESSAGES.NO_PROJECT_ID);
+        return false;
+      }
+
+      if (!targetPath.trim()) {
+        message.error('目标路径不能为空');
+        return false;
+      }
+
+      try {
+        // 构建完整文件路径
+        const fileName = file.name;
+        const fullPath = targetPath.endsWith('/')
+          ? `${targetPath}${fileName}`
+          : `${targetPath}/${fileName}`;
+
+        const success = await fileManagement.uploadSingleFileToServer(
+          file,
+          fullPath,
+        );
+        if (success) {
+          message.success(`文件上传成功: ${fileName}`);
+          handleRestartDevServer();
+          // 刷新项目详情(刷新版本列表)
+          projectInfo.refreshProjectInfo();
+          return true;
+        } else {
+          message.error('文件上传失败');
+          return false;
+        }
+      } catch (error) {
+        message.error(
+          `文件上传失败: ${
+            error instanceof Error ? error.message : '未知错误'
+          }`,
+        );
+        return false;
+      }
+    },
+    [hasValidProjectId, fileManagement, projectInfo, handleRestartDevServer],
   );
 
   /**
@@ -780,6 +1013,9 @@ const AppDev: React.FC = () => {
       if (server.stopKeepAlive) {
         server.stopKeepAlive();
       }
+
+      // 停止日志轮询
+      devLogs.stopPolling();
     };
   }, []); // 空依赖数组，只在组件卸载时执行
 
@@ -822,6 +1058,14 @@ const AppDev: React.FC = () => {
     projectInfo.refreshProjectInfo();
   };
 
+  /**
+   * 更新数据源
+   */
+  const handleUpdateDataSources = (dataSources: DataResource[]) => {
+    setSelectedDataResources(dataSources);
+    selectedDataResourcesRef.current = dataSources;
+  };
+
   return (
     <>
       {contextHolder}
@@ -834,9 +1078,9 @@ const AppDev: React.FC = () => {
                 <SyncOutlined spin />
               </div>
               <div className={styles.deployText}>
-                <div className={styles.deployTitle}>正在部署项目...</div>
+                <div className={styles.deployTitle}>正在发布项目...</div>
                 <div className={styles.deploySubtitle}>
-                  请稍候，部署完成后将自动关闭
+                  请稍候，发布完成后将自动关闭
                 </div>
               </div>
             </div>
@@ -847,11 +1091,12 @@ const AppDev: React.FC = () => {
           workspace={workspace}
           spaceId={spaceId}
           onEditProject={() => setOpenPageEditVisible(true)}
-          onDeployProject={handleDeployProject}
+          onPublishComponent={handlePublishComponent}
+          onPublishApplication={() => setOpenPublishComponentModal(true)}
           hasUpdates={projectInfo.hasUpdates}
           lastSaveTime={new Date()}
           isDeploying={isDeploying}
-          projectInfo={projectInfo.projectInfoState.projectInfo || null}
+          projectInfo={projectInfo.projectInfoState.projectInfo || undefined}
           getDeployStatusText={projectInfo.getDeployStatusText}
           getDeployStatusColor={projectInfo.getDeployStatusColor}
           isChatLoading={chat.isChatLoading} // 新增：传递聊天加载状态
@@ -868,15 +1113,17 @@ const AppDev: React.FC = () => {
               projectInfo={projectInfo}
               projectId={projectId || ''} // 新增：项目ID
               onVersionSelect={handleVersionSelect}
-              selectedDataSources={selectedDataSources} // 新增：选中的数据源
-              onUpdateDataSources={setSelectedDataResourceIds} // 新增：更新数据源回调
+              selectedDataSources={selectedDataResources} // 新增：选中的数据源
+              onUpdateDataSources={handleUpdateDataSources} // 新增：更新数据源回调
               fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
               modelSelector={modelSelector} // 新增：模型选择器状态
-              onRefreshVersionList={projectInfo.refreshProjectInfo} // 新增：刷新版本列表回调
-              onClearUploadedImages={(clearFn) => {
-                // 设置图片清空方法到 ref
-                clearUploadedImagesRef.current = clearFn;
-              }} // 新增：设置图片清空方法回调
+              // onRefreshVersionList={projectInfo.refreshProjectInfo} // 新增：刷新版本列表回调
+              // onClearUploadedImages={(clearFn) => {
+              //   // 设置图片清空方法到 ref
+              //   clearUploadedImagesRef.current = clearFn;
+              // }} // 新增：设置图片清空方法回调
+              autoHandleError={autoErrorHandling.autoHandleEnabled} // 新增：自动处理异常开关状态
+              onAutoHandleErrorChange={autoErrorHandling.setAutoHandleEnabled} // 新增：自动处理异常开关变化回调
             />
           </Col>
 
@@ -904,74 +1151,60 @@ const AppDev: React.FC = () => {
                   className={styles.segmentedTabs}
                 />
               </div>
-              <div className={styles.editorHeaderRight}>
-                <Space size="small">
-                  {/* 版本对比模式下显示的按钮 */}
-                  {versionCompare.isComparing ? (
-                    <>
-                      <Alert
-                        message={VERSION_CONSTANTS.READ_ONLY_MESSAGE}
-                        type="info"
-                        showIcon
-                        style={{ marginRight: 16 }}
-                      />
-                      <Button
-                        onClick={versionCompare.cancelCompare}
-                        disabled={
-                          versionCompare.isSwitching || chat.isChatLoading
-                        } // 新增：聊天加载时禁用
-                      >
-                        取消
-                      </Button>
-                      <Button
-                        type="primary"
-                        onClick={versionCompare.confirmVersionSwitch}
-                        loading={versionCompare.isSwitching}
-                        disabled={chat.isChatLoading} // 新增：聊天加载时禁用
-                      >
-                        切换 v{versionCompare.targetVersion} 版本
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      {/* 原有的按钮：重启服务、全屏预览、导出项目 */}
-                      <Tooltip title="重启开发服务器">
-                        <Button
-                          type="text"
-                          icon={<SyncOutlined />}
-                          onClick={handleRestartDevServer}
-                          loading={server.isRestarting}
-                          disabled={chat.isChatLoading} // 新增：聊天加载时禁用
-                        />
-                      </Tooltip>
-                      <Tooltip title="全屏预览">
-                        <Button
-                          type="text"
-                          icon={<FullscreenOutlined />}
-                          onClick={() => {
-                            if (previewRef.current && workspace.devServerUrl) {
-                              window.open(
-                                `${process.env.BASE_URL}${workspace.devServerUrl}`,
-                                '_blank',
-                              );
-                            }
-                          }}
-                          disabled={chat.isChatLoading} // 新增：聊天加载时禁用
-                        />
-                      </Tooltip>
-                      <Tooltip title="导出项目">
-                        <Button
-                          type="text"
-                          icon={<DownloadOutlined />}
-                          onClick={handleExportProject}
-                          loading={isExporting}
-                          disabled={chat.isChatLoading} // 新增：聊天加载时禁用
-                        />
-                      </Tooltip>
-                    </>
-                  )}
-                </Space>
-              </div>
+              <EditorHeaderRight
+                // 版本对比模式相关
+                isComparing={versionCompare.isComparing}
+                versionCompareData={{
+                  isSwitching: versionCompare.isSwitching,
+                  targetVersion: versionCompare.targetVersion || undefined,
+                  onCancelCompare: versionCompare.cancelCompare,
+                  onConfirmVersionSwitch: versionCompare.confirmVersionSwitch,
+                }}
+                // 预览模式相关
+                activeTab={activeTab}
+                previewData={{
+                  devServerUrl: workspace.devServerUrl,
+                  isStarting: server.isStarting,
+                  isRestarting: server.isRestarting,
+                  isProjectUploading: isProjectUploading,
+                  isLoading: previewIsLoading,
+                  lastRefreshed: previewLastRefreshed,
+                }}
+                // 版本选择相关
+                versionData={{
+                  versionList: projectInfo.versionList,
+                  currentVersion:
+                    projectInfo.projectInfoState.projectInfo?.codeVersion,
+                  onVersionSelect: handleVersionSelect,
+                  getActionColor: projectInfo.getActionColor,
+                  getActionText: projectInfo.getActionText,
+                }}
+                // 控制台相关
+                consoleData={{
+                  showDevLogConsole: showDevLogConsole,
+                  errorCount: devLogs.errorCount,
+                  onToggleDevLogConsole: () =>
+                    setShowDevLogConsole(!showDevLogConsole),
+                }}
+                // 更多操作相关
+                actionsData={{
+                  onImportProject: () => setIsUploadModalVisible(true),
+                  onUploadSingleFile: () => handleRightClickUpload(null),
+                  onRefreshPreview: () => previewRef.current?.refresh(),
+                  onRestartServer: handleRestartDevServer,
+                  onFullscreenPreview: () => {
+                    if (previewRef.current && workspace.devServerUrl) {
+                      window.open(
+                        `${process.env.BASE_URL}${workspace.devServerUrl}`,
+                        '_blank',
+                      );
+                    }
+                  },
+                  onExportProject: handleExportProject,
+                }}
+                // 通用状态
+                isChatLoading={chat.isChatLoading}
+              />
             </div>
             {/* 主内容区域 */}
             <div className={styles.contentArea}>
@@ -998,16 +1231,16 @@ const AppDev: React.FC = () => {
                   }}
                   onToggleFolder={fileManagement.toggleFolder}
                   onDeleteFile={handleDeleteClick}
+                  onRenameFile={handleRenameFile}
+                  onUploadToFolder={handleUploadToFolder}
                   onUploadProject={() => setIsUploadModalVisible(true)}
-                  onUploadSingleFile={() =>
-                    setIsSingleFileUploadModalVisible(true)
-                  }
+                  onUploadSingleFile={handleRightClickUpload}
                   onAddDataResource={() =>
                     setIsAddDataResourceModalVisible(true)
                   }
                   onDeleteDataResource={handleDeleteDataResource}
-                  selectedDataResourceIds={selectedDataResourceIds}
-                  onDataResourceSelectionChange={setSelectedDataResourceIds}
+                  selectedDataResources={selectedDataResources}
+                  // onDataResourceSelectionChange={setSelectedDataResourceIds}
                   workspace={workspace}
                   fileManagement={fileManagement}
                   isChatLoading={chat.isChatLoading}
@@ -1065,6 +1298,12 @@ const AppDev: React.FC = () => {
                             showMessage: false,
                           });
                         }}
+                        onWhiteScreen={() => {
+                          autoErrorHandling.handlePreviewWhiteScreen(
+                            devLogs.logs,
+                            chat.sendMessage,
+                          );
+                        }}
                         onContentChange={(fileId, content) => {
                           if (
                             !versionCompare.isComparing &&
@@ -1105,6 +1344,19 @@ const AppDev: React.FC = () => {
                 </div>
               </div>
             </div>
+            {/* 开发日志查看器 */}
+            {showDevLogConsole && (
+              <DevLogConsole
+                logs={devLogs.logs}
+                errorCount={devLogs.errorCount}
+                isLoading={devLogs.isLoading}
+                lastLine={devLogs.lastLine}
+                onClear={devLogs.clearLogs}
+                onRefresh={devLogs.refreshLogs}
+                onClose={() => setShowDevLogConsole(false)}
+                onAddToChat={handleAddLogToChat}
+              />
+            )}
           </Col>
         </Row>
 
@@ -1295,12 +1547,23 @@ const AppDev: React.FC = () => {
           )}
         />
       </div>
+
       {/* 页面开发项目编辑模态框 */}
       <PageEditModal
         open={openPageEditVisible}
         onCancel={() => setOpenPageEditVisible(false)}
         onConfirm={handleConfirmEditProject}
         projectInfo={projectInfo.projectInfoState.projectInfo}
+      />
+      {/*todo: 发布智能体弹窗*/}
+      <PublishComponentModal
+        targetId={744}
+        open={openPublishComponentModal}
+        spaceId={spaceId}
+        category={'BusinessService'}
+        // 取消发布
+        onCancel={() => setOpenPublishComponentModal(false)}
+        onConfirm={handleConfirmPublish}
       />
     </>
   );
