@@ -43,6 +43,8 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   fileManagement,
   isChatLoading = false,
   projectId,
+  // 新增：文件树初始化 loading 状态
+  isFileTreeInitializing = false,
 }) => {
   // 文件树折叠状态
   const [isFileTreeCollapsed, setIsFileTreeCollapsed] = useState(false);
@@ -430,7 +432,13 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                 onContextMenu={handleEmptyAreaContextMenu}
               >
                 {/* 文件树结构 */}
-                {files.length === 0 ? (
+                {isFileTreeInitializing ? (
+                  <AppDevEmptyState
+                    type="loading"
+                    title="正在加载..."
+                    description="请稍候"
+                  />
+                ) : files.length === 0 ? (
                   <AppDevEmptyState
                     type="empty"
                     icon={<InboxOutlined />}

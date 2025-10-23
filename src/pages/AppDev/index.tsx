@@ -1110,7 +1110,7 @@ const AppDev: React.FC = () => {
               chatMode={chatMode}
               setChatMode={setChatMode}
               chat={chat}
-              projectInfo={projectInfo}
+              // projectInfo={projectInfo}
               projectId={projectId || ''} // 新增：项目ID
               onVersionSelect={handleVersionSelect}
               selectedDataSources={selectedDataResources} // 新增：选中的数据源
@@ -1245,6 +1245,7 @@ const AppDev: React.FC = () => {
                   fileManagement={fileManagement}
                   isChatLoading={chat.isChatLoading}
                   projectId={projectId ? Number(projectId) : undefined}
+                  isFileTreeInitializing={fileManagement.isFileTreeInitializing}
                 />
 
                 {/* 编辑器区域 */}

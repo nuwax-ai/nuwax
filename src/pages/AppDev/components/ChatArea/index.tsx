@@ -35,7 +35,7 @@ interface ChatAreaProps {
   chatMode: 'chat' | 'code';
   setChatMode: (mode: 'chat' | 'code') => void;
   chat: any;
-  projectInfo: any;
+  // projectInfo: any;
   projectId: string;
   onVersionSelect: (version: any) => void;
   selectedDataSources?: DataResource[];

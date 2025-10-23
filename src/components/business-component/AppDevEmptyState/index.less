@@ -1,3 +1,6 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
 .emptyIconContainer {
   margin-bottom: 16px;
   font-size: 48px;
@@ -8,19 +11,17 @@
 }
 
 .emptyIcon {
-  color: #8b9baa;
-  opacity: 0.8;
+  color: @colorTextBase;
   transition: all 0.3s ease;
 }
 
 .loadingIcon {
-  color: #3b82f6;
+  color: @colorTextBase;
   animation: pulse-animation 2s ease-in-out infinite;
 }
 
 .errorIcon {
-  color: #ef4444;
-  opacity: 0.8;
+  color: @colorTextBase;
   transition: all 0.3s ease;
 }
 
@@ -31,17 +32,17 @@
 }
 
 .emptyTitle {
-  font-size: 16px;
+  font-size: @fontSizeLg;
   font-weight: 500;
   margin: 0 0 8px;
-  color: #1f2937;
+  color: @colorTextBase;
   line-height: 1.4;
   transition: color 0.3s ease;
 }
 
 .emptyDescription {
-  font-size: 14px;
-  color: #6b7280;
+  font-size: @fontSize;
+  color: @colorTextSecondary;
   margin: 0 0 16px;
   line-height: 1.5;
   transition: color 0.3s ease;
@@ -50,7 +51,7 @@
 
   // 多行文本截取样式
   &.multiLineTruncate {
-    display: -webkit-box;
+    display: box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: var(--max-lines, 3);
     line-clamp: var(--max-lines, 3);
@@ -73,16 +74,16 @@
   padding: 16px;
   background: #f8f9fa;
   border-radius: 6px;
-  border: 1px solid #e9ecef;
+  border: 1px solid @colorBorder;
 }
 
 .fullTextPre {
   margin: 0;
   padding: 0;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 13px;
+  font-family: @fontFamilyCode;
+  font-size: @fontSizeSm;
   line-height: 1.5;
-  color: #333;
+  color: @colorTextBase;
   white-space: pre-wrap;
   word-break: break-word;
   background: transparent;

@@ -60,6 +60,9 @@ UseAppDevFileManagementProps) => {
     isSavingFile: false,
   });
 
+  // 文件树初始化 loading 状态（只在第一次加载时显示）
+  const [isFileTreeInitializing, setIsFileTreeInitializing] = useState(false);
+
   // 跟踪已经尝试加载内容的文件（避免重复调用API）
   const [loadedFiles, setLoadedFiles] = useState<Set<string>>(new Set());
 
@@ -101,6 +104,12 @@ UseAppDevFileManagementProps) => {
         preserveState
       ) {
         return;
+      }
+
+      // 只在第一次加载时显示初始化 loading 状态
+      const isFirstLoad = lastLoadedProjectIdRef.current !== projectId;
+      if (isFirstLoad) {
+        setIsFileTreeInitializing(true);
       }
 
       try {
@@ -188,6 +197,11 @@ UseAppDevFileManagementProps) => {
           }));
         } else if (!preserveState) {
           setFileContentState((prev) => ({ ...prev, selectedFile: '' }));
+        }
+      } finally {
+        // 只在第一次加载时清除初始化 loading 状态
+        if (isFirstLoad) {
+          setIsFileTreeInitializing(false);
         }
       }
     },
@@ -770,6 +784,9 @@ UseAppDevFileManagementProps) => {
     // 文件操作相关
     deleteFileItem,
     renameFileItem,
+
+    // 文件树初始化 loading 状态
+    isFileTreeInitializing,
 
     // 工具函数
     findFileNode: (fileId: string) => findFileNode(fileId, fileTreeState.data),
