@@ -511,12 +511,14 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
           />
           {/* 刷新按钮 */}
           {shouldShowPreviewStatus && (
-            <Button
-              type="text"
-              className={styles.refreshButton}
-              icon={<ReloadOutlined />}
-              onClick={actionsData.onRefreshPreview}
-            />
+            <Tooltip title="刷新预览">
+              <Button
+                type="text"
+                className={styles.refreshButton}
+                icon={<ReloadOutlined />}
+                onClick={actionsData.onRefreshPreview}
+              />
+            </Tooltip>
           )}
 
           {/* 更多操作菜单 */}

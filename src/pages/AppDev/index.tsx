@@ -196,6 +196,29 @@ const AppDev: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    // 如果上次使用的模型ID存在，则使用上次使用的模型ID
+    if (projectInfo.projectInfoState.projectInfo?.lastModelId) {
+      modelSelector.selectModel(
+        projectInfo.projectInfoState.projectInfo?.lastModelId,
+      );
+      return;
+    }
+
+    const { chatModelList } = modelSelector.models || {};
+    // 没有上次使用的模型时，优先使用 Anthropic 的第一个
+    const anthropicModel = chatModelList?.find(
+      (m) => m.apiProtocol === 'Anthropic',
+    );
+
+    if (anthropicModel) {
+      modelSelector.selectModel(anthropicModel.id);
+    } else if (chatModelList && chatModelList.length > 0) {
+      // 如果没有 Anthropic 模型，使用列表第一个
+      modelSelector.selectModel(chatModelList[0].id);
+    }
+  }, [modelSelector.models, projectInfo.projectInfoState.projectInfo]);
+
   // 使用重启开发服务器 Hook
   const { restartDevServer } = useRestartDevServer({
     projectId: projectId || '',
@@ -263,9 +286,15 @@ const AppDev: React.FC = () => {
   }, [projectInfo.projectInfoState?.projectInfo]);
 
   // 数据资源管理
-  const dataResourceManagement = useDataResourceManagement(
-    projectInfo.projectInfoState.projectInfo?.dataSources || [],
-  );
+  const dataResourceManagement = useDataResourceManagement();
+
+  useEffect(() => {
+    if (projectInfo.projectInfoState.projectInfo) {
+      dataResourceManagement.fetchResources(
+        projectInfo.projectInfoState.projectInfo?.dataSources || [],
+      );
+    }
+  }, [projectInfo.projectInfoState.projectInfo]);
 
   useEffect(() => {
     if (dataResourceManagement.resources?.length > 0) {
@@ -632,15 +661,6 @@ const AppDev: React.FC = () => {
   );
 
   /**
-   * 初始化数据资源
-   */
-  useEffect(() => {
-    if (projectId) {
-      dataResourceManagement.fetchResources();
-    }
-  }, [projectId]); // 移除 dataResourceManagement 依赖，避免无限循环
-
-  /**
    * 处理项目上传
    */
   const handleUploadProject = useCallback(async () => {
@@ -824,7 +844,7 @@ const AppDev: React.FC = () => {
             projectInfo.refreshProjectInfo();
           }
         } catch (error) {
-          message.error('上传失败');
+          console.error('上传失败', error);
         } finally {
           // 清理加载状态和DOM
           setSingleFileUploadLoading(false);
@@ -1110,7 +1130,7 @@ const AppDev: React.FC = () => {
               chatMode={chatMode}
               setChatMode={setChatMode}
               chat={chat}
-              // projectInfo={projectInfo}
+              projectInfo={projectInfo}
               projectId={projectId || ''} // 新增：项目ID
               onVersionSelect={handleVersionSelect}
               selectedDataSources={selectedDataResources} // 新增：选中的数据源
