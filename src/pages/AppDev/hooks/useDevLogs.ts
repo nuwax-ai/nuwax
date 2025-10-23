@@ -16,14 +16,12 @@ import {
  * 日志管理Hook的配置选项
  */
 interface UseDevLogsOptions {
-  /** 轮询间隔（毫秒），默认2000ms */
+  /** 轮询间隔（毫秒），默认5000ms */
   pollInterval?: number;
   /** 最大缓存日志行数，默认1000 */
   maxLogLines?: number;
   /** 是否启用轮询，默认true */
   enabled?: boolean;
-  /** 是否自动滚动到底部，默认true */
-  autoScroll?: boolean;
 }
 
 /**
@@ -32,8 +30,8 @@ interface UseDevLogsOptions {
 interface UseDevLogsReturn {
   /** 日志数组 */
   logs: DevLogEntry[];
-  /** 错误计数 */
-  errorCount: number;
+  /** 最新日志块是否包含错误 */
+  hasErrorInLatestBlock: boolean;
   /** 是否正在加载 */
   isLoading: boolean;
   /** 是否正在轮询 */
@@ -74,12 +72,11 @@ export const useDevLogs = (
     pollInterval = 5000, // 默认5秒轮询
     maxLogLines = 1000,
     enabled = true,
-    // autoScroll = true, // 暂时注释掉，后续可能需要
   } = options;
 
   // 状态管理
   const [logs, setLogs] = useState<DevLogEntry[]>([]);
-  const [errorCount, setErrorCount] = useState(0);
+  const [hasErrorInLatestBlock, setHasErrorInLatestBlock] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
   const [lastLine, setLastLine] = useState(0);
@@ -89,6 +86,9 @@ export const useDevLogs = (
   const previousLogsRef = useRef<DevLogEntry[]>([]);
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
+  const consecutiveErrorsRef = useRef(0); // 连续错误计数
+  const maxConsecutiveErrors = 3; // 最大连续错误次数
+  const retryDelayRef = useRef(5000); // 重试延迟，初始5秒
 
   /**
    * 解析和添加新日志
@@ -108,11 +108,9 @@ export const useDevLogs = (
         return updatedLogs;
       });
 
-      // 更新错误计数
+      // 检查最新日志块是否包含错误
       const newErrorLogs = filterErrorLogs(newLogs);
-      if (newErrorLogs.length > 0) {
-        setErrorCount((prev) => prev + newErrorLogs.length);
-      }
+      setHasErrorInLatestBlock(newErrorLogs.length > 0);
 
       // 更新最后行号
       const maxLine = Math.max(...newLogs.map((log) => log.line));
@@ -122,25 +120,62 @@ export const useDevLogs = (
   );
 
   /**
+   * 停止轮询
+   */
+  const stopPolling = useCallback(() => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+    setIsPolling(false);
+  }, []);
+
+  /**
    * 轮询获取新日志
    */
   const pollLogs = useCallback(async () => {
-    if (!isMountedRef.current || !projectId) return;
+    if (!isMountedRef.current || !projectId) {
+      return;
+    }
 
     try {
       setIsLoading(true);
       const response = await getDevLogs(projectId, lastLine + 1);
 
       if (response.success && response.data.logs.length > 0) {
-        console.log('获取到日志数据:', response.data.logs);
         addNewLogs(response.data.logs);
+        // 成功时重置错误计数
+        consecutiveErrorsRef.current = 0;
+        retryDelayRef.current = 5000; // 重置重试延迟
+      } else {
+        // 即使没有新日志，也算作成功
+        consecutiveErrorsRef.current = 0;
       }
     } catch (error) {
+      consecutiveErrorsRef.current += 1;
       console.error('获取日志失败:', error);
+
+      // 如果连续错误次数超过阈值，停止轮询并安排重试
+      if (consecutiveErrorsRef.current >= maxConsecutiveErrors) {
+        // 停止当前轮询
+        stopPolling();
+
+        // 安排重试 - 使用 ref 来避免循环依赖
+        setTimeout(() => {
+          if (isMountedRef.current && projectId) {
+            // 重新设置定时器
+            pollTimerRef.current = setInterval(pollLogs, pollInterval);
+            setIsPolling(true);
+          }
+        }, retryDelayRef.current);
+
+        // 增加重试延迟（最大30秒）
+        retryDelayRef.current = Math.min(retryDelayRef.current * 1.5, 30000);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [projectId, lastLine, addNewLogs]);
+  }, [projectId, lastLine, addNewLogs, stopPolling, pollInterval]);
 
   /**
    * 开始轮询
@@ -158,17 +193,6 @@ export const useDevLogs = (
   }, [pollLogs, pollInterval]);
 
   /**
-   * 停止轮询
-   */
-  const stopPolling = useCallback(() => {
-    if (pollTimerRef.current) {
-      clearInterval(pollTimerRef.current);
-      pollTimerRef.current = null;
-    }
-    setIsPolling(false);
-  }, []);
-
-  /**
    * 清空日志
    */
   const clearLogs = useCallback(() => {
@@ -177,7 +201,7 @@ export const useDevLogs = (
       logs.length > 0 ? Math.max(...logs.map((log) => log.line)) : lastLine;
 
     setLogs([]);
-    setErrorCount(0);
+    setHasErrorInLatestBlock(false);
     setLastLine(currentLastLine); // ✅ 保留最后一行号，后续从这里继续
     sentErrorsRef.current.clear();
     previousLogsRef.current = [];
@@ -190,7 +214,7 @@ export const useDevLogs = (
     clearLogs();
     setLastLine(0); // 设置为0，这样下次请求时从第1行开始
     await pollLogs();
-  }, [clearLogs, setLastLine, pollLogs]);
+  }, [clearLogs, pollLogs]);
 
   /**
    * 重置日志起始行号
@@ -199,7 +223,7 @@ export const useDevLogs = (
     clearLogs();
     setLastLine(0); // 设置为0，这样下次请求时从第1行开始
     startPolling();
-  }, [clearLogs, setLastLine, startPolling]);
+  }, [clearLogs, startPolling]);
 
   /**
    * 获取新的错误日志
@@ -257,7 +281,7 @@ export const useDevLogs = (
 
   return {
     logs,
-    errorCount,
+    hasErrorInLatestBlock,
     isLoading,
     isPolling,
     lastLine,
@@ -302,7 +326,7 @@ export const useErrorMonitoring = (
 ) => {
   const {
     logs,
-    errorCount,
+    hasErrorInLatestBlock,
     sentErrors,
     // getNewErrorLogs, // 暂时注释掉，后续可能需要
     markErrorAsSent,
@@ -338,7 +362,7 @@ export const useErrorMonitoring = (
 
   return {
     logs,
-    errorCount,
+    hasErrorInLatestBlock,
     hasNewErrors,
     getUnsentErrors,
     getLatestErrorForAgent,

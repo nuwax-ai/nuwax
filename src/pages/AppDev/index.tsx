@@ -914,7 +914,7 @@ const AppDev: React.FC = () => {
    * 处理将日志内容添加到聊天框
    */
   const handleAddLogToChat = useCallback(
-    (logContent: string) => {
+    (logContent: string, isAuto?: boolean) => {
       if (!logContent.trim()) {
         message.warning('日志内容为空');
         return;
@@ -923,9 +923,12 @@ const AppDev: React.FC = () => {
       // 将日志内容添加到聊天输入框
       const formattedContent = `请帮我分析以下日志内容：\n\n\`\`\`\n${logContent}\n\`\`\``;
       chat.setChatInput(formattedContent);
-
+      if (isAuto && !chat.isChatLoading) {
+        chat.sendChat();
+        return;
+      }
       // 显示成功提示
-      message.success('日志内容已添加到聊天框');
+      message.success('日志已添加,等待发送');
     },
     [chat],
   );
@@ -1205,7 +1208,7 @@ const AppDev: React.FC = () => {
                 // 控制台相关
                 consoleData={{
                   showDevLogConsole: showDevLogConsole,
-                  errorCount: devLogs.errorCount,
+                  hasErrorInLatestBlock: devLogs.hasErrorInLatestBlock,
                   onToggleDevLogConsole: () =>
                     setShowDevLogConsole(!showDevLogConsole),
                 }}
@@ -1372,7 +1375,7 @@ const AppDev: React.FC = () => {
             {showDevLogConsole && (
               <DevLogConsole
                 logs={devLogs.logs}
-                errorCount={devLogs.errorCount}
+                hasErrorInLatestBlock={devLogs.hasErrorInLatestBlock}
                 isLoading={devLogs.isLoading}
                 lastLine={devLogs.lastLine}
                 onClear={devLogs.clearLogs}

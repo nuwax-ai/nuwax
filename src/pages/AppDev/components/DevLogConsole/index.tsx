@@ -3,6 +3,7 @@
  * 在预览页面下方展示开发服务器日志
  */
 
+import SvgIcon from '@/components/base/SvgIcon';
 import type { DevLogEntry } from '@/types/interfaces/appDev';
 import { LogLevel } from '@/types/interfaces/appDev';
 import {
@@ -12,10 +13,11 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import { Badge, Button, Tooltip } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   formatTimestampDisplay,
   groupLogsByTimestamp,
+  isErrorLog,
   type LogGroup,
 } from '../../utils/devLogParser';
 import './index.less';
@@ -26,8 +28,8 @@ import './index.less';
 interface DevLogConsoleProps {
   /** 日志数据 */
   logs: DevLogEntry[];
-  /** 错误计数 */
-  errorCount: number;
+  /** 最新日志块是否包含错误 */
+  hasErrorInLatestBlock: boolean;
   /** 是否正在加载 */
   isLoading?: boolean;
   /** 最后加载的行号 */
@@ -39,31 +41,16 @@ interface DevLogConsoleProps {
   /** 关闭控制台回调 */
   onClose?: () => void;
   /** 添加日志到聊天框回调 */
-  onAddToChat?: (content: string) => void;
+  onAddToChat?: (content: string, isAuto?: boolean) => void;
 }
 
 /**
  * 日志内容合并渲染组件
- * 将组内所有日志合并成一个文本块展示
+ * 将组内所有日志合并成一个文本块展示，支持错误高亮
  */
 const LogContentBlock: React.FC<{
   logs: DevLogEntry[];
 }> = ({ logs }) => {
-  // 合并所有日志内容，移除时间戳和行号
-  const mergedContent = logs
-    .map((log) => {
-      // 移除时间戳标识符 [YYYY/MM/DD HH:mm:ss]
-      let content = log.content.replace(
-        /\[\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}\]\s*/,
-        '',
-      );
-      // 移除行号标识符 "123| "
-      content = content.replace(/^\d+\|\s*/, '');
-      return content;
-    })
-    .join('\n')
-    .trim();
-
   // 获取组的最高级别
   const getGroupLevel = () => {
     if (logs.some((log) => log.level === LogLevel.ERROR)) return 'error';
@@ -72,9 +59,31 @@ const LogContentBlock: React.FC<{
     return 'normal';
   };
 
+  // 渲染带高亮的日志内容
+  const renderHighlightedContent = () => {
+    return logs.map((log, index) => {
+      // 移除时间戳标识符 [YYYY/MM/DD HH:mm:ss]
+      let content = log.content.replace(
+        /\[\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}\]\s*/,
+        '',
+      );
+      // 移除行号标识符 "123| "
+      content = content.replace(/^\d+\|\s*/, '');
+
+      // 根据日志级别添加高亮样式
+      const logClassName = `log-line log-line-${log.level.toLowerCase()}`;
+
+      return (
+        <div key={`${log.line}-${index}`} className={logClassName}>
+          <span className="log-content">{content}</span>
+        </div>
+      );
+    });
+  };
+
   return (
     <div className={`log-content-block log-content-block-${getGroupLevel()}`}>
-      <pre className="log-text">{mergedContent}</pre>
+      <div className="log-text">{renderHighlightedContent()}</div>
     </div>
   );
 };
@@ -103,15 +112,16 @@ const LogGroupItem: React.FC<{
       className="log-group"
       onClick={handleClick}
       style={{ cursor: onAddToChat ? 'pointer' : 'default' }}
-      title={onAddToChat ? '点击添加到聊天框' : ''}
     >
       {/* 组头 - 简洁的时间戳显示 */}
       <div className="log-group-header">
-        <div className="group-header-left">
-          <span className="group-timestamp">
-            {formatTimestampDisplay(group.timestamp)}
-          </span>
-        </div>
+        <Tooltip title={onAddToChat ? '点击添加到聊天框' : ''}>
+          <div className="group-header-left">
+            <span className="group-timestamp">
+              {formatTimestampDisplay(group.timestamp)}
+            </span>
+          </div>
+        </Tooltip>
       </div>
       <div className="log-group-content">
         <LogContentBlock logs={group.logs} />
@@ -125,7 +135,7 @@ const LogGroupItem: React.FC<{
  */
 const DevLogConsole: React.FC<DevLogConsoleProps> = ({
   logs,
-  errorCount,
+  hasErrorInLatestBlock,
   isLoading = false,
   lastLine = 0,
   onClear,
@@ -183,10 +193,44 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
 
   // 自动滚动到底部
   useEffect(() => {
-    if (logs.length > 0 && logListRef.current) {
-      logListRef.current.scrollTop = logListRef.current.scrollHeight;
+    if (logGroups.length > 0 && logListRef.current) {
+      // 使用 setTimeout 确保 DOM 更新完成后再滚动
+      setTimeout(() => {
+        if (logListRef.current) {
+          logListRef.current.scrollTop = logListRef.current.scrollHeight;
+        }
+      }, 0);
     }
-  }, [logs.length]);
+  }, [logGroups.length, logGroups]);
+
+  // 组件挂载时滚动到底部
+  useEffect(() => {
+    if (logGroups.length > 0 && logListRef.current) {
+      // 延迟执行，确保组件完全渲染
+      const timer = setTimeout(() => {
+        if (logListRef.current) {
+          logListRef.current.scrollTop = logListRef.current.scrollHeight;
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, []);
+  const handleFindLatestErrorLogs = useCallback(() => {
+    // 查找到最新错误日志所在的组
+    const latestErrorGroup = logGroups.findLast((group) =>
+      group.logs.some((log) => isErrorLog(log)),
+    );
+    if (latestErrorGroup) {
+      onAddToChat?.(
+        latestErrorGroup.logs
+          .map((log) => log.content)
+          .join('\n')
+          .trim(),
+        true,
+      );
+    }
+  }, [logGroups, onAddToChat]);
 
   return (
     <div className="dev-log-console">
@@ -195,8 +239,27 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
         <div className="header-left">
           <BugOutlined className="header-icon" />
           <span className="header-title">开发服务器日志</span>
-          {errorCount > 0 && (
-            <Badge count={errorCount} size="small" className="error-badge" />
+          {hasErrorInLatestBlock && (
+            <>
+              <Tooltip title="最新日志包含错误">
+                <Badge status="error" className="error-badge" />
+              </Tooltip>
+              {onAddToChat && (
+                <Button
+                  size="small"
+                  danger
+                  icon={
+                    <SvgIcon
+                      name="icons-common-stars"
+                      style={{ fontSize: '12px' }}
+                    />
+                  }
+                  onClick={handleFindLatestErrorLogs}
+                >
+                  一键问题处理
+                </Button>
+              )}
+            </>
           )}
         </div>
         <div className="header-right">
