@@ -69,4 +69,7 @@ export interface FileTreePanelProps {
   isChatLoading?: boolean;
   /** 项目ID，用于解绑数据源 */
   projectId?: number;
+
+  /** 文件树初始化 loading 状态 */
+  isFileTreeInitializing?: boolean;
 }
