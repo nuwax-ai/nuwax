@@ -35,7 +35,7 @@ interface PagePreviewData {
   /** 页面参数 */
   params?: Record<string, string>;
   /** 请求方法 */
-  method?: string;
+  method?: 'browser_navigate_page' | 'browser_open_page';
   /** 数据类型 */
   data_type?: 'html' | 'markdown';
   /** 请求 ID */
