@@ -821,7 +821,7 @@ const AppDev: React.FC = () => {
             projectInfo.refreshProjectInfo();
           }
         } catch (error) {
-          message.error('上传失败');
+          console.error('上传失败', error);
         } finally {
           // 清理加载状态和DOM
           setSingleFileUploadLoading(false);

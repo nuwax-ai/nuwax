@@ -479,12 +479,12 @@ UseAppDevFileManagementProps) => {
 
           return true;
         } else {
-          message.warning('上传失败');
+          console.error('上传失败', result);
           return false;
         }
       } catch (error) {
         // 上传单个文件失败
-        message.error('上传失败');
+        console.error('上传失败', error);
         return false;
       }
     },
