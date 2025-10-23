@@ -43,7 +43,7 @@ interface VersionSelectorProps {
 // 控制台相关接口
 interface ConsoleButtonProps {
   showDevLogConsole: boolean;
-  errorCount: number;
+  hasErrorInLatestBlock: boolean;
   onToggleDevLogConsole: () => void;
 }
 
@@ -93,7 +93,7 @@ interface EditorHeaderRightProps {
   // 控制台相关
   consoleData: {
     showDevLogConsole: boolean;
-    errorCount: number;
+    hasErrorInLatestBlock: boolean;
     onToggleDevLogConsole: () => void;
   };
 
@@ -317,17 +317,20 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
  */
 const ConsoleButton: React.FC<ConsoleButtonProps> = ({
   showDevLogConsole,
-  errorCount,
+  hasErrorInLatestBlock,
   onToggleDevLogConsole,
 }) => {
   // 工具提示文本
-  const tooltipText = useMemo(
-    () => (showDevLogConsole ? '关闭日志' : '查看日志'),
-    [showDevLogConsole],
-  );
+  const tooltipText = useMemo(() => {
+    if (showDevLogConsole) return '关闭日志';
+    return '查看日志';
+  }, [showDevLogConsole]);
 
   // 是否有错误
-  const hasErrors = useMemo(() => errorCount > 0, [errorCount]);
+  const hasErrors = useMemo(
+    () => hasErrorInLatestBlock,
+    [hasErrorInLatestBlock],
+  );
 
   return (
     <Tooltip title={tooltipText}>
@@ -506,7 +509,7 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
           {/* 控制台按钮 - 保持现有样式 */}
           <ConsoleButton
             showDevLogConsole={consoleData.showDevLogConsole}
-            errorCount={consoleData.errorCount}
+            hasErrorInLatestBlock={consoleData.hasErrorInLatestBlock}
             onToggleDevLogConsole={consoleData.onToggleDevLogConsole}
           />
           {/* 刷新按钮 */}

@@ -1,6 +1,7 @@
 import Created from '@/components/Created';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import { ERROR_MESSAGES } from '@/constants/appDevConstants';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
@@ -11,6 +12,7 @@ import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
 import { useRestartDevServer } from '@/hooks/useRestartDevServer';
+import { apiAgentConfigInfo } from '@/services/agentConfig';
 import {
   bindDataSource,
   buildProject,
@@ -21,6 +23,8 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
+import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
+import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
@@ -50,7 +54,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useModel, useParams } from 'umi';
+import { useModel, useParams, useRequest } from 'umi';
 import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
 import DevLogConsole from './components/DevLogConsole';
@@ -71,7 +75,7 @@ const { Text } = Typography;
 const AppDev: React.FC = () => {
   // 获取路由参数
   const params = useParams();
-  const spaceId = params.spaceId;
+  const spaceId = Number(params.spaceId);
 
   // 数据源选择状态
   const [selectedDataResources, setSelectedDataResources] = useState<
@@ -177,6 +181,26 @@ const AppDev: React.FC = () => {
   const [previewLastRefreshed, setPreviewLastRefreshed] = useState<Date | null>(
     null,
   );
+
+  // 智能体配置信息
+  const [agentConfigInfo, setAgentConfigInfo] =
+    useState<AgentConfigInfo | null>(null);
+
+  // 查询智能体配置信息
+  const { run: runAgentConfigInfo } = useRequest(apiAgentConfigInfo, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: AgentConfigInfo) => {
+      setAgentConfigInfo(result);
+    },
+  });
+
+  useEffect(() => {
+    if (projectInfo.projectInfoState.projectInfo?.devAgentId) {
+      const agentId = projectInfo.projectInfoState.projectInfo?.devAgentId;
+      runAgentConfigInfo(agentId);
+    }
+  }, [projectInfo.projectInfoState.projectInfo?.devAgentId]);
 
   // 定期更新 Preview 状态
   useEffect(() => {
@@ -334,38 +358,6 @@ const AppDev: React.FC = () => {
     },
   });
 
-  // 自动异常处理监听
-  useEffect(() => {
-    // 监听Agent输出结束
-    // const handleAgentPromptEnd = () => {
-    //   autoErrorHandling.handleAgentPromptEnd(devLogs.logs, chat.sendMessage);
-    // };
-
-    // 监听文件操作完成
-    // const handleFileOperationComplete = () => {
-    //   autoErrorHandling.handleFileOperationComplete(
-    //     devLogs.logs,
-    //     chat.sendMessage,
-    //   );
-    // };
-
-    // 监听预览白屏
-    // const handlePreviewWhiteScreen = () => {
-    //   autoErrorHandling.handlePreviewWhiteScreen(
-    //     devLogs.logs,
-    //     chat.sendMessage,
-    //   );
-    // };
-
-    // 这里可以添加事件监听器
-    // 例如：监听chat的prompt_end事件
-    // chat.onPromptEnd?.(handleAgentPromptEnd);
-
-    return () => {
-      // 清理事件监听器
-    };
-  }, [autoErrorHandling, devLogs.logs, chat.sendMessage]);
-
   // 获取当前显示的文件树（版本模式或正常模式）
   const currentDisplayFiles = useMemo(() => {
     return versionCompare.isComparing
@@ -442,10 +434,13 @@ const AppDev: React.FC = () => {
 
     try {
       setIsDeploying(true);
-      const result = await buildProject(projectId);
+      const result = await buildProject(
+        projectId,
+        PageDevelopPublishTypeEnum.PAGE,
+      );
 
       // 检查API响应格式
-      if (result?.code === '0000' && result?.data) {
+      if (result?.code === SUCCESS_CODE && result?.data) {
         const { prodServerUrl } = result.data;
         // 显示部署结果
         Modal.success({
@@ -475,9 +470,30 @@ const AppDev: React.FC = () => {
   }, [hasValidProjectId, projectId]);
 
   /**
+   * 处理发布成应用
+   */
+  const handlePublishApplication = async () => {
+    if (!hasValidProjectId || !projectId) {
+      message.error('项目ID不存在或无效，无法部署');
+      return;
+    }
+    // 先执行发布成组件
+    const { code, message: errorMessage } = await buildProject(
+      projectId,
+      PageDevelopPublishTypeEnum.AGENT,
+    );
+    if (code === SUCCESS_CODE) {
+      setOpenPublishComponentModal(true);
+    } else {
+      message.error(errorMessage);
+    }
+  };
+
+  /**
    * 处理发布智能体
    */
   const handleConfirmPublish = () => {
+    projectInfo.refreshProjectInfo();
     setOpenPublishComponentModal(false);
   };
 
@@ -600,7 +616,7 @@ const AppDev: React.FC = () => {
         });
 
         // 检查绑定结果
-        if (result?.code === '0000') {
+        if (result?.code === SUCCESS_CODE) {
           message.success('数据源绑定成功');
 
           // 更新处于loading状态的组件列表
@@ -914,7 +930,7 @@ const AppDev: React.FC = () => {
    * 处理将日志内容添加到聊天框
    */
   const handleAddLogToChat = useCallback(
-    (logContent: string) => {
+    (logContent: string, isAuto?: boolean) => {
       if (!logContent.trim()) {
         message.warning('日志内容为空');
         return;
@@ -923,9 +939,12 @@ const AppDev: React.FC = () => {
       // 将日志内容添加到聊天输入框
       const formattedContent = `请帮我分析以下日志内容：\n\n\`\`\`\n${logContent}\n\`\`\``;
       chat.setChatInput(formattedContent);
-
+      if (isAuto && !chat.isChatLoading) {
+        chat.sendChat();
+        return;
+      }
       // 显示成功提示
-      message.success('日志内容已添加到聊天框');
+      message.success('日志已添加,等待发送');
     },
     [chat],
   );
@@ -1017,9 +1036,12 @@ const AppDev: React.FC = () => {
   /**
    * 处理取消编辑
    */
-  const handleCancelEdit = useCallback(() => {
-    fileManagement.cancelEdit();
-  }, [fileManagement]);
+  const handleCancelEdit = useCallback(
+    (silent: boolean = false) => {
+      fileManagement.cancelEdit(silent);
+    },
+    [fileManagement],
+  );
 
   // 页面退出时的资源清理
   useEffect(() => {
@@ -1112,13 +1134,10 @@ const AppDev: React.FC = () => {
           spaceId={spaceId}
           onEditProject={() => setOpenPageEditVisible(true)}
           onPublishComponent={handlePublishComponent}
-          onPublishApplication={() => setOpenPublishComponentModal(true)}
+          onPublishApplication={handlePublishApplication}
           hasUpdates={projectInfo.hasUpdates}
-          lastSaveTime={new Date()}
           isDeploying={isDeploying}
-          projectInfo={projectInfo.projectInfoState.projectInfo || undefined}
-          getDeployStatusText={projectInfo.getDeployStatusText}
-          getDeployStatusColor={projectInfo.getDeployStatusColor}
+          projectInfo={projectInfo.projectInfoState?.projectInfo}
           isChatLoading={chat.isChatLoading} // 新增：传递聊天加载状态
         />
 
@@ -1130,7 +1149,6 @@ const AppDev: React.FC = () => {
               chatMode={chatMode}
               setChatMode={setChatMode}
               chat={chat}
-              projectInfo={projectInfo}
               projectId={projectId || ''} // 新增：项目ID
               onVersionSelect={handleVersionSelect}
               selectedDataSources={selectedDataResources} // 新增：选中的数据源
@@ -1202,7 +1220,7 @@ const AppDev: React.FC = () => {
                 // 控制台相关
                 consoleData={{
                   showDevLogConsole: showDevLogConsole,
-                  errorCount: devLogs.errorCount,
+                  hasErrorInLatestBlock: devLogs.hasErrorInLatestBlock,
                   onToggleDevLogConsole: () =>
                     setShowDevLogConsole(!showDevLogConsole),
                 }}
@@ -1354,7 +1372,7 @@ const AppDev: React.FC = () => {
                               fileManagement.fileContentState.selectedFile,
                             );
                             // 取消编辑
-                            handleCancelEdit();
+                            handleCancelEdit(true);
                           }
                         }}
                         findFileNode={fileManagement.findFileNode}
@@ -1369,7 +1387,7 @@ const AppDev: React.FC = () => {
             {showDevLogConsole && (
               <DevLogConsole
                 logs={devLogs.logs}
-                errorCount={devLogs.errorCount}
+                hasErrorInLatestBlock={devLogs.hasErrorInLatestBlock}
                 isLoading={devLogs.isLoading}
                 lastLine={devLogs.lastLine}
                 onClear={devLogs.clearLogs}
@@ -1576,12 +1594,12 @@ const AppDev: React.FC = () => {
         onConfirm={handleConfirmEditProject}
         projectInfo={projectInfo.projectInfoState.projectInfo}
       />
-      {/*todo: 发布智能体弹窗*/}
+      {/*发布智能体弹窗*/}
       <PublishComponentModal
-        targetId={744}
+        targetId={projectInfo.projectInfoState.projectInfo?.devAgentId || 0}
         open={openPublishComponentModal}
         spaceId={spaceId}
-        category={'BusinessService'}
+        category={agentConfigInfo?.category}
         // 取消发布
         onCancel={() => setOpenPublishComponentModal(false)}
         onConfirm={handleConfirmPublish}

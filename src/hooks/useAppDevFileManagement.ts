@@ -22,6 +22,7 @@ import {
   debounce,
   findFileNode,
   isFileModified,
+  isPreviewableFile,
   transformFlatListToTree,
   treeToFlatList,
 } from '@/utils/appDevUtils';
@@ -256,6 +257,19 @@ UseAppDevFileManagementProps) => {
         return;
       }
 
+      // 检查文件是否支持预览，如果不支持则不调用API
+      if (!isPreviewableFile(fileId) && !hasContent) {
+        setFileContentState((prev) => ({
+          ...prev,
+          fileContent: '',
+          originalFileContent: '',
+          isFileModified: false,
+          fileContentError: null,
+          isLoadingFileContent: false,
+        }));
+        return;
+      }
+
       // 如果文件节点存在但没有内容且未尝试过加载，需要调用API获取内容
       if (fileNode && !hasContent && !hasTriedLoading) {
         // 文件节点存在但无内容，需要调用API获取
@@ -430,19 +444,24 @@ UseAppDevFileManagementProps) => {
   /**
    * 取消编辑
    */
-  const cancelEdit = useCallback(() => {
-    const { selectedFile, originalFileContent } = fileContentState;
+  const cancelEdit = useCallback(
+    (silent: boolean = false) => {
+      const { selectedFile, originalFileContent } = fileContentState;
 
-    if (!selectedFile) return;
+      if (!selectedFile) return;
 
-    setFileContentState((prev) => ({
-      ...prev,
-      fileContent: originalFileContent,
-      isFileModified: false,
-    }));
+      setFileContentState((prev) => ({
+        ...prev,
+        fileContent: originalFileContent,
+        isFileModified: false,
+      }));
 
-    message.info('已取消编辑');
-  }, [fileContentState]);
+      if (!silent) {
+        message.info('已取消编辑');
+      }
+    },
+    [fileContentState],
+  );
 
   /**
    * 上传单个文件

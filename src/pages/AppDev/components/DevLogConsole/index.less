@@ -130,6 +130,29 @@
               word-break: break-all;
               color: #8b4513; // 统一的深棕色文字
               background: transparent;
+
+              // 日志行样式 - 只改变字体颜色
+              .log-line {
+                // 错误日志 - 只改变字体颜色
+                &.log-line-error {
+                  color: #d32f2f; // 深红色文字
+                }
+
+                // 警告日志 - 只改变字体颜色
+                &.log-line-warn {
+                  color: #d46b08; // 深橙色文字
+                }
+
+                // 信息日志 - 只改变字体颜色
+                &.log-line-info {
+                  color: #1890ff; // 蓝色文字
+                }
+
+                // 普通日志 - 保持原有颜色
+                &.log-line-normal {
+                  color: #8b4513; // 深棕色文字
+                }
+              }
             }
           }
         }
