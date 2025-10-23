@@ -444,19 +444,24 @@ UseAppDevFileManagementProps) => {
   /**
    * 取消编辑
    */
-  const cancelEdit = useCallback(() => {
-    const { selectedFile, originalFileContent } = fileContentState;
+  const cancelEdit = useCallback(
+    (silent: boolean = false) => {
+      const { selectedFile, originalFileContent } = fileContentState;
 
-    if (!selectedFile) return;
+      if (!selectedFile) return;
 
-    setFileContentState((prev) => ({
-      ...prev,
-      fileContent: originalFileContent,
-      isFileModified: false,
-    }));
+      setFileContentState((prev) => ({
+        ...prev,
+        fileContent: originalFileContent,
+        isFileModified: false,
+      }));
 
-    message.info('已取消编辑');
-  }, [fileContentState]);
+      if (!silent) {
+        message.info('已取消编辑');
+      }
+    },
+    [fileContentState],
+  );
 
   /**
    * 上传单个文件

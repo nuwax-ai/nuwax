@@ -1017,9 +1017,12 @@ const AppDev: React.FC = () => {
   /**
    * 处理取消编辑
    */
-  const handleCancelEdit = useCallback(() => {
-    fileManagement.cancelEdit();
-  }, [fileManagement]);
+  const handleCancelEdit = useCallback(
+    (silent: boolean = false) => {
+      fileManagement.cancelEdit(silent);
+    },
+    [fileManagement],
+  );
 
   // 页面退出时的资源清理
   useEffect(() => {
@@ -1354,7 +1357,7 @@ const AppDev: React.FC = () => {
                               fileManagement.fileContentState.selectedFile,
                             );
                             // 取消编辑
-                            handleCancelEdit();
+                            handleCancelEdit(true);
                           }
                         }}
                         findFileNode={fileManagement.findFileNode}

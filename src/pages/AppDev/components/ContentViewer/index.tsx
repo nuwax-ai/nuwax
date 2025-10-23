@@ -234,12 +234,13 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
               onContentChange={onContentChange}
             />
           ) : (
-            <div className={styles.emptyState}>
-              <p>无法预览此文件类型: {selectedFileId}</p>
-              <Button size="small" onClick={onRefreshFile}>
-                重新加载
-              </Button>
-            </div>
+            <AppDevEmptyState
+              type="error"
+              title="无法预览此文件类型"
+              description={`当前不支持预览 ${
+                selectedFileId.split('.').pop() || selectedFileId
+              } 格式的文件。`}
+            />
           )}
         </div>
       </div>
