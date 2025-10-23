@@ -25,7 +25,7 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
   useEffect(() => {
     if (open && pageInfo) {
       form.setFieldsValue({
-        needLogin: pageInfo.needLogin || false,
+        needLogin: !pageInfo.needLogin,
       });
     }
   }, [open, pageInfo]);
@@ -37,7 +37,7 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
       setLoading(false);
       const { projectId, needLogin } = params[0];
       message.success('编辑成功');
-      onConfirm(projectId, needLogin || false);
+      onConfirm(projectId, needLogin);
     },
     onError: () => {
       setLoading(false);
@@ -82,7 +82,7 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
         onFinish={onFinish}
         autoComplete="off"
       >
-        <Form.Item name="needLogin" label="是否免登录访问">
+        <Form.Item name="needLogin" label="免登录访问">
           <Switch />
         </Form.Item>
       </Form>
