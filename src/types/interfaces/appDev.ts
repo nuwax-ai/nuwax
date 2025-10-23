@@ -353,7 +353,8 @@ export interface ChatRequest {
   project_id?: string;
   session_id?: string;
   request_id?: string;
-  model_id?: string; // 新增：模型ID
+  chat_model_id: string; // 编码模型ID
+  multi_model_id?: string; // 多模态模型ID（视觉模型ID）【可选】
   attachments?: Attachment[];
   data_sources?: DataSourceSelection[]; // 数据源附件列表 -[{dataSourceId:123,type:"plugin/workflow"}]
   model_provider?: ModelProviderConfig;
@@ -836,8 +837,14 @@ export interface ProjectDetailData {
   buildVersion: number;
   /** 代码版本 */
   codeVersion: number;
+  // 发布类型,可用值:AGENT,PAGE
+  publishType: 'AGENT' | 'PAGE';
   /** 版本信息 */
   versionInfo: VersionInfoItem[];
+  // 上次对话模型ID(编码模型ID)
+  lastModelId: number;
+  // 是否需要登录,true:需要,false:不需要
+  needLogin: boolean;
   /** 项目类型 */
   projectType: 'REVERSE_PROXY' | 'ONLINE_DEPLOY';
   /** 代理配置 */
