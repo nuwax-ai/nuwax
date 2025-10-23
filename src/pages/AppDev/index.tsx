@@ -1245,6 +1245,7 @@ const AppDev: React.FC = () => {
                   fileManagement={fileManagement}
                   isChatLoading={chat.isChatLoading}
                   projectId={projectId ? Number(projectId) : undefined}
+                  isFileTreeInitializing={fileManagement.isFileTreeInitializing}
                 />
 
                 {/* 编辑器区域 */}
