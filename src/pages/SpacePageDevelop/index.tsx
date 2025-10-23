@@ -28,6 +28,7 @@ import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
+import AuthConfigModal from './AuthConfigModal';
 import styles from './index.less';
 import PageCreateModal from './PageCreateModal';
 import PageDevelopCardItem from './PageDevelopCardItem';
@@ -78,6 +79,9 @@ const SpacePageDevelop: React.FC = () => {
     useState<boolean>(false);
   // 打开页面创建弹窗
   const [openPageCreateModal, setOpenPageCreateModal] =
+    useState<boolean>(false);
+  // 打开认证配置弹窗
+  const [openAuthConfigModal, setOpenAuthConfigModal] =
     useState<boolean>(false);
   // 创建
   const [create, setCreate] = useState<CreateListEnum>(
@@ -266,6 +270,10 @@ const SpacePageDevelop: React.FC = () => {
       case PageDevelopMoreActionEnum.Path_Params_Config:
         setOpenPathParamsConfigModal(true);
         break;
+      // 认证配置
+      case PageDevelopMoreActionEnum.Auth_Config:
+        setOpenAuthConfigModal(true);
+        break;
       // 页面预览
       case PageDevelopMoreActionEnum.Page_Preview:
         runPageInfo(info.projectId);
@@ -289,6 +297,24 @@ const SpacePageDevelop: React.FC = () => {
     setOpenPathParamsConfigModal(false);
     // 重新查询页面列表
     runPageList(spaceId);
+  };
+
+  // 确认认证配置
+  const handleConfirmAuthConfig = (projectId: number, needLogin: boolean) => {
+    setOpenAuthConfigModal(false);
+    const _pageList = pageList.map((item) => {
+      if (item.projectId === projectId) {
+        return { ...item, needLogin };
+      }
+      return item;
+    });
+    setPageList(_pageList);
+    pageAllRef.current = pageAllRef.current.map((item) => {
+      if (item.projectId === projectId) {
+        return { ...item, needLogin };
+      }
+      return item;
+    });
   };
 
   return (
@@ -394,6 +420,13 @@ const SpacePageDevelop: React.FC = () => {
         open={openPageCreateModal}
         onConfirm={handleConfirmCreatePage}
         onCancel={() => setOpenPageCreateModal(false)}
+      />
+      {/* 认证配置弹窗 */}
+      <AuthConfigModal
+        open={openAuthConfigModal}
+        pageInfo={currentPageInfo}
+        onCancel={() => setOpenAuthConfigModal(false)}
+        onConfirm={handleConfirmAuthConfig}
       />
     </div>
   );
