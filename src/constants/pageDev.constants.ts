@@ -61,6 +61,10 @@ export const PAGE_DEVELOP_MORE_ACTIONS = [
     label: '路径参数配置',
   },
   {
+    value: PageDevelopMoreActionEnum.Auth_Config,
+    label: '认证配置',
+  },
+  {
     value: PageDevelopMoreActionEnum.Page_Preview,
     label: '页面预览',
   },

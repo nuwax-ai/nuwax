@@ -732,7 +732,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             item.identification
           }" data='动态JSON参数'>[#引用编号]</div>'\n
 ${item.identification}的动态JSON参数JsonSchema如下\n
-  \`\`\`\n'
+  \`\`\`
   ${
     item.argJsonSchema
       ? JSON.stringify(JSON.parse(item.argJsonSchema), null, 2)

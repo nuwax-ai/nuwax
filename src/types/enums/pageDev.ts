@@ -32,6 +32,8 @@ export enum PageDevelopMoreActionEnum {
   Reverse_Proxy_Config = 'Reverse_Proxy_Config',
   // 路径参数配置
   Path_Params_Config = 'Path_Params_Config',
+  // 认证配置
+  Auth_Config = 'Auth_Config',
   // 页面预览
   Page_Preview = 'Page_Preview',
   // 删除

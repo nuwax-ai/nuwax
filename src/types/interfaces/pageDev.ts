@@ -56,6 +56,18 @@ export interface CustomPageDto {
   basePath: string;
   // 发布状态,true:已发布;false:未发布
   buildRunning: boolean;
+  // 发布时间
+  buildTime: string;
+  // 发布版本
+  buildVersion: number;
+  // 代码版本
+  codeVersion: number;
+  // 版本信息
+  versionInfo: any;
+  // 上次对话模型ID
+  lastModelId: number;
+  // 是否需要登录,true:需要,false:不需要
+  needLogin: boolean;
   // 项目类型,可用值:REVERSE_PROXY,ONLINE_DEPLOY
   projectType: PageProjectTypeEnum;
   // 代理配置
@@ -234,4 +246,16 @@ export interface PageUpdateParams {
   projectDesc: string;
   // 项目图标
   icon: string;
+  // 是否需要登录
+  needLogin?: boolean;
+}
+
+/**
+ * 认证配置弹窗Props
+ */
+export interface AuthConfigModalProps {
+  open: boolean;
+  pageInfo?: CustomPageDto;
+  onCancel: () => void;
+  onConfirm: (projectId: number, needLogin: boolean) => void;
 }

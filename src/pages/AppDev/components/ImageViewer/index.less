@@ -1,13 +1,14 @@
-@import '@/styles/color.less';
-@import '@/styles/token.less';
+@import '@/styles/color';
+@import '@/styles/token';
+
 // 图片预览容器
 .imagePreviewContainer {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 10%);
-  border-radius: 0 0 8px 8px;
+  background: @colorBgContainer;
+  border: @lineWidth solid @colorBorder;
+  border-radius: 0 0 @borderRadius @borderRadius;
   overflow: hidden;
 }
 
@@ -15,34 +16,26 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 90%);
-  border-bottom: 1px solid rgba(0, 0, 0, 10%);
-  padding: 12px 16px;
-  color: #1e293b;
-  font-size: 14px;
-  font-weight: 500;
+  background: @colorBgContainer;
+  border-bottom: @lineWidth solid @colorBorder;
+  padding: 8px 12px;
+  color: @colorTextBase;
+  font-size: @fontSizeSm;
+  font-weight: @fontWeightStrong;
+
+  .base64Indicator {
+    color: @colorPrimary;
+    font-size: @fontSizeSm;
+    margin-left: 8px;
+    padding: 2px 6px;
+    background: @colorPrimaryBg;
+    border-radius: @borderRadiusSm;
+    border: @lineWidth solid @colorPrimaryBorder;
+  }
 }
 
 .imagePreviewContent {
   flex: 1;
-  background: #f8fafc;
+  background: @colorBgLayout;
   overflow: auto;
-}
-
-// 暗色主题支持
-[data-theme='dark'] {
-  .imagePreviewContainer {
-    background: var(--xagi-color-bg-container);
-    border-color: var(--xagi-color-border);
-  }
-
-  .imagePreviewHeader {
-    background: var(--xagi-color-fill-quaternary);
-    border-bottom-color: var(--xagi-color-border);
-    color: var(--xagi-color-text);
-  }
-
-  .imagePreviewContent {
-    background: var(--xagi-color-bg-layout);
-  }
 }

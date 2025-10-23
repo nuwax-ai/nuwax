@@ -1030,9 +1030,19 @@ export interface ModelConfig {
 }
 
 /**
+ * 模型列表API响应类型
+ */
+export interface ModelLisDto {
+  /** 编码模型列表 */
+  chatModelList: ModelConfig[];
+  // 多模态模型列表
+  multiModelList: ModelConfig[];
+}
+
+/**
  * 查询模型列表API响应类型
  */
-export type ListModelsResponse = RequestResponse<ModelConfig[]>;
+export type ListModelsResponse = RequestResponse<ModelLisDto>;
 
 // ==================== 开发服务器日志相关类型定义 ====================
 
