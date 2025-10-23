@@ -1105,11 +1105,8 @@ const AppDev: React.FC = () => {
           onPublishComponent={handlePublishComponent}
           onPublishApplication={() => setOpenPublishComponentModal(true)}
           hasUpdates={projectInfo.hasUpdates}
-          lastSaveTime={new Date()}
           isDeploying={isDeploying}
           projectInfo={projectInfo.projectInfoState?.projectInfo}
-          getDeployStatusText={projectInfo.getDeployStatusText}
-          getDeployStatusColor={projectInfo.getDeployStatusColor}
           isChatLoading={chat.isChatLoading} // 新增：传递聊天加载状态
         />
 

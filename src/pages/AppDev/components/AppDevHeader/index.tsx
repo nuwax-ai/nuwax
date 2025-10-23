@@ -5,12 +5,15 @@ import { PAGE_DEVELOP_PUBLISH_TYPE_LIST } from '@/constants/pageDev.constants';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import { ProjectDetailData } from '@/types/interfaces/appDev';
 import { jumpBack } from '@/utils/router';
-import { FormOutlined, RocketOutlined } from '@ant-design/icons';
-import { Avatar, Button, Space, Tag } from 'antd';
+import {
+  CheckCircleOutlined,
+  FormOutlined,
+  RocketOutlined,
+} from '@ant-design/icons';
+import { Avatar, Button, Popover, Space, Tag } from 'antd';
 import classNames from 'classnames';
-import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
-import styles from './AppDevHeader.less';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
@@ -26,15 +29,11 @@ export interface AppDevHeaderProps {
   onPublishApplication: () => void;
   onEditProject: () => void;
   hasUpdates?: boolean;
-  lastSaveTime?: Date;
   isDeploying?: boolean;
   /** 聊天加载状态，用于禁用相关功能 */
   isChatLoading?: boolean;
   /** 项目详情信息 */
   projectInfo?: ProjectDetailData | null;
-  /** 部署状态相关方法 */
-  getDeployStatusText?: (buildRunning: boolean) => string;
-  getDeployStatusColor?: (buildRunning: boolean) => string;
 }
 
 /**
@@ -48,39 +47,17 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   onEditProject,
   spaceId,
   hasUpdates = true,
-  lastSaveTime = new Date(),
   isDeploying = false,
   isChatLoading = false, // 新增：聊天加载状态
   projectInfo,
-  getDeployStatusText,
-  getDeployStatusColor,
 }) => {
   // 获取项目名称，优先使用接口数据
   const projectName = projectInfo?.name || workspace.name || '大模型三部曲';
 
   // 获取项目图标，优先使用接口数据，为空时使用默认图标
   const projectIcon = projectInfo?.icon;
-
-  // 获取创建者信息
-  // const creatorName =
-  //   projectInfo?.creatorNickName || projectInfo?.creatorName || '未知用户';
-  // const creatorAvatar = projectInfo?.creatorAvatar;
-
   // 获取部署状态
   const deployStatus = projectInfo?.buildRunning;
-  const deployStatusText =
-    deployStatus !== undefined && getDeployStatusText
-      ? getDeployStatusText(deployStatus)
-      : '未知状态';
-  const deployStatusColor =
-    deployStatus !== undefined && getDeployStatusColor
-      ? getDeployStatusColor(deployStatus)
-      : 'default';
-
-  // 获取最后发布时间
-  const lastDeployTime = projectInfo?.buildTime
-    ? dayjs(projectInfo.buildTime).format('YYYY-MM-DD HH:mm')
-    : null;
 
   // 点击发布类型按钮
   const handleClickPopoverItem = (item: any) => {
@@ -115,57 +92,37 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
       <Space size={27} wrap>
         <Avatar size={27} shape="square" src={projectIcon || pageImage} />
       </Space>
-      <div className={cx('flex', 'flex-col', styles['header-info'])}>
-        <div className={cx('flex', 'items-center')}>
-          <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
-            {projectName}
-          </h3>
-          <FormOutlined
-            className={cx(styles['edit-ico'], 'cursor-pointer')}
-            onClick={onEditProject}
-          />
-          <div className={cx('flex', 'items-center', styles['agent-rel-info'])}>
-            {workspace.projectId && (
-              <span className={cx(styles['project-id'])}>
-                项目ID: {workspace.projectId}
-              </span>
-            )}
-            {/* 部署状态标签 */}
-            {deployStatus !== undefined && (
-              <Tag
-                color={deployStatusColor}
-                className={cx(styles['deploy-status-tag'])}
-              >
-                {deployStatusText}
-              </Tag>
-            )}
-          </div>
-        </div>
-        {/* 项目描述 */}
-        {/* {projectInfo?.description && (
-          <div className={cx(styles['project-description'])}>
-            {projectInfo.description}
-          </div>
-        )} */}
-      </div>
-      <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-        <div className={cx('flex', 'items-center', styles['save-time-box'])}>
-          <span className={cx(styles['save-time'])}>
-            草稿自动保存于&nbsp;
-            {dayjs(lastSaveTime).format('HH:mm')}
-          </span>
-          {hasUpdates && (
-            <Tag color="volcano" className={cx(styles['volcano'])}>
-              有更新未发布
-            </Tag>
-          )}
-          {/* 最后发布时间 */}
-          {lastDeployTime && (
-            <span className={cx(styles['deploy-time'])}>
-              最后发布: {lastDeployTime}
+      <div className={cx('flex', 'items-center', styles['header-info'])}>
+        <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
+          {projectName}
+        </h3>
+        <FormOutlined
+          className={cx(styles['edit-ico'], 'cursor-pointer')}
+          onClick={onEditProject}
+        />
+        <div className={cx('flex', 'items-center', styles['agent-rel-info'])}>
+          {workspace.projectId && (
+            <span className={cx(styles['project-id'])}>
+              项目ID: {workspace.projectId}
             </span>
           )}
+          {/* 已发布，并存在更新 */}
+          {deployStatus && hasUpdates ? (
+            <Tag
+              bordered={false}
+              color="volcano"
+              className={cx(styles['volcano'])}
+            >
+              有更新未发布
+            </Tag>
+          ) : deployStatus ? (
+            <Popover content={'已发布'}>
+              <CheckCircleOutlined className={cx(styles.circle)} />
+            </Popover>
+          ) : null}
         </div>
+      </div>
+      <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         {/*添加资源*/}
         <CustomPopover list={publishList} onClick={handleClickPopoverItem}>
           <div className={cx('flex', 'items-center', styles['action-buttons'])}>

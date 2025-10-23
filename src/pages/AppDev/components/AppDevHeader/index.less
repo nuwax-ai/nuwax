@@ -34,10 +34,10 @@
 
   .header-info {
     padding-left: @paddingSm;
+    gap: @marginSm;
 
     .h-title {
       max-width: 360px;
-      margin-right: @marginSm;
       font-size: 16px;
       font-weight: @fontWeightStrong;
       line-height: 24px;
@@ -66,47 +66,15 @@
         margin-left: 8px;
       }
 
-      .deploy-status-tag {
-        padding: 2px 6px;
-        margin-left: 8px;
+      .volcano {
+        color: @colorWarningText;
+        background: @colorWarningBg;
+        padding: 4px 8px;
       }
-    }
 
-    .project-description {
-      font-size: 12px;
-      color: @navFirstMenuTextSecondary;
-      margin-top: 4px;
-      max-width: 400px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-
-  .save-time-box {
-    gap: @paddingXs;
-    color: @navFirstMenuTextSecondary;
-    margin-right: @marginSm;
-
-    .save-time {
-      font-size: 12px;
-      font-weight: @fontWeightStrong;
-      line-height: 19px;
-    }
-
-    .volcano {
-      padding: 2px 6px;
-    }
-
-    .deploy-time {
-      font-size: 11px;
-      color: @navFirstMenuTextSecondary;
-      margin-left: 8px;
-    }
-
-    :global {
-      .ant-tag {
-        margin-inline-end: 0;
+      .circle {
+        color: @GREEN03;
+        font-size: 16px;
       }
     }
   }
