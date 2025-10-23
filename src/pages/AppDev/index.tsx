@@ -196,6 +196,29 @@ const AppDev: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    // 如果上次使用的模型ID存在，则使用上次使用的模型ID
+    if (projectInfo.projectInfoState.projectInfo?.lastModelId) {
+      modelSelector.selectModel(
+        projectInfo.projectInfoState.projectInfo?.lastModelId,
+      );
+      return;
+    }
+
+    const { chatModelList } = modelSelector.models || {};
+    // 没有上次使用的模型时，优先使用 Anthropic 的第一个
+    const anthropicModel = chatModelList?.find(
+      (m) => m.apiProtocol === 'Anthropic',
+    );
+
+    if (anthropicModel) {
+      modelSelector.selectModel(anthropicModel.id);
+    } else if (chatModelList && chatModelList.length > 0) {
+      // 如果没有 Anthropic 模型，使用列表第一个
+      modelSelector.selectModel(chatModelList[0].id);
+    }
+  }, [modelSelector.models, projectInfo.projectInfoState.projectInfo]);
+
   // 使用重启开发服务器 Hook
   const { restartDevServer } = useRestartDevServer({
     projectId: projectId || '',
