@@ -126,7 +126,7 @@ export const useAppDevServer = ({
       // 检查接口返回状态码
       if (response?.code !== '0000') {
         // 【关键变更】接口返回非 0000 状态码，设置错误信息和错误码
-        const errorMessage = response?.message || '服务器保活失败';
+        const errorMessage = response?.message || '错误信息';
         const errorCode = response?.code || 'KEEPALIVE_ERROR';
         setServerMessage(errorMessage);
         setServerErrorCode(errorCode);

@@ -1,3 +1,5 @@
+import { IMAGE_FALLBACK } from '@/constants/images.constants';
+import { isBase64Image } from '@/utils/appDevUtils';
 import { ReloadOutlined } from '@ant-design/icons';
 import { Button, Image } from 'antd';
 import React from 'react';
@@ -5,7 +7,7 @@ import styles from './index.less';
 
 interface ImageViewerProps {
   /** 图片路径 */
-  imagePath: string;
+  imagePath?: string;
   /** 图片URL */
   imageUrl: string;
   /** 图片alt文本 */
@@ -16,7 +18,7 @@ interface ImageViewerProps {
 
 /**
  * 图片查看器组件
- * 显示图片预览
+ * 显示图片预览，支持 base64 和普通 URL
  */
 const ImageViewer: React.FC<ImageViewerProps> = ({
   imagePath,
@@ -24,14 +26,24 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
   alt,
   onRefresh,
 }) => {
+  // 判断是否为 base64 图片
+  const isBase64 = isBase64Image(imageUrl);
+
   return (
     <div className={styles.imagePreviewContainer}>
-      <div className={styles.imagePreviewHeader}>
-        <span>图片预览: {imagePath}</span>
-        <Button size="small" icon={<ReloadOutlined />} onClick={onRefresh}>
-          刷新
-        </Button>
-      </div>
+      {imagePath && (
+        <div className={styles.imagePreviewHeader}>
+          <span>
+            图片预览: {imagePath}
+            {isBase64 && (
+              <span className={styles.base64Indicator}> (Base64)</span>
+            )}
+          </span>
+          <Button size="small" icon={<ReloadOutlined />} onClick={onRefresh}>
+            刷新
+          </Button>
+        </div>
+      )}
       <div
         className={styles.imagePreviewContent}
         style={{
@@ -48,7 +60,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
             maxWidth: '100%',
             maxHeight: '600px',
           }}
-          fallback={`/api/file-preview/${imagePath}`}
+          fallback={IMAGE_FALLBACK}
         />
       </div>
     </div>
