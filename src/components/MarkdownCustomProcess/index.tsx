@@ -211,7 +211,6 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     }
 
     const input: InputProps = (result as { input: InputProps }).input;
-    console.log('自动打开预览页面');
     // 判断页面类型
     if (input.uri_type === 'Page') {
       if (!input?.uri) {
