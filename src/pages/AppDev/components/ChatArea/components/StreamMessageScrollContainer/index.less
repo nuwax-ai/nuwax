@@ -8,7 +8,7 @@
   flex-direction: column;
 
   /* 滚动容器 */
-  .scroll-container {
+  .scroll-container-inner {
     flex: 1;
     min-height: 0; /* 确保可以收缩 */
     overflow-y: auto;
@@ -40,16 +40,16 @@
 }
 
 // 暗色主题适配
-html[data-theme='dark'] {
-  .stream-message-scroll-container {
-    .scroll-container {
-      &::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 30%);
+// html[data-theme='dark'] {
+//   .stream-message-scroll-container {
+//     .scroll-container {
+//       &::-webkit-scrollbar-thumb {
+//         background: rgba(255, 255, 255, 30%);
 
-        &:hover {
-          background: rgba(255, 255, 255, 40%);
-        }
-      }
-    }
-  }
-}
+//         &:hover {
+//           background: rgba(255, 255, 255, 40%);
+//         }
+//       }
+//     }
+//   }
+// }
