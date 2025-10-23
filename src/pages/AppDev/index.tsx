@@ -1110,7 +1110,7 @@ const AppDev: React.FC = () => {
               chatMode={chatMode}
               setChatMode={setChatMode}
               chat={chat}
-              projectInfo={projectInfo}
+              // projectInfo={projectInfo}
               projectId={projectId || ''} // 新增：项目ID
               onVersionSelect={handleVersionSelect}
               selectedDataSources={selectedDataResources} // 新增：选中的数据源
