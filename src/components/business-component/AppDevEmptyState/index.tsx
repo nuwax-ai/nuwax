@@ -1,3 +1,9 @@
+import {
+  ExclamationCircleOutlined,
+  GlobalOutlined,
+  InboxOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
 import { Button, Modal } from 'antd';
 import React, { useState } from 'react';
 import styles from './index.less';
@@ -110,17 +116,29 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
    */
   const defaultConfigs: Record<EmptyStateType, DefaultStateConfig> = {
     loading: {
-      icon: <div className={styles.loadingIcon}>⚡</div>,
+      icon: (
+        <div className={styles.loadingIcon}>
+          <LoadingOutlined />
+        </div>
+      ),
       title: '加载中...',
       description: '正在加载，请稍候...',
     },
     error: {
-      icon: <div className={styles.errorIcon}>⚠️</div>,
+      icon: (
+        <div className={styles.errorIcon}>
+          <ExclamationCircleOutlined />
+        </div>
+      ),
       title: '出现错误',
       description: '加载过程中出现错误，请重试',
     },
     'network-error': {
-      icon: <div className={styles.errorIcon}>🌐</div>,
+      icon: (
+        <div className={styles.errorIcon}>
+          <GlobalOutlined />
+        </div>
+      ),
       title: '网络连接失败',
       description: '网络连接异常，请检查网络设置后重试',
     },
@@ -130,12 +148,20 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
       description: '您没有访问此资源的权限，请联系管理员',
     },
     empty: {
-      icon: <div className={styles.emptyIcon}>📁</div>,
+      icon: (
+        <div className={styles.emptyIcon}>
+          <InboxOutlined />
+        </div>
+      ),
       title: '暂无内容',
       description: '当前没有可显示的内容',
     },
     'no-data': {
-      icon: <div className={styles.emptyIcon}>🌐</div>,
+      icon: (
+        <div className={styles.emptyIcon}>
+          <GlobalOutlined />
+        </div>
+      ),
       title: '暂无数据',
       description: '当前没有可用的数据',
     },
