@@ -4,14 +4,14 @@
  */
 
 import { listModels } from '@/services/appDev';
-import type { ModelConfig } from '@/types/interfaces/appDev';
+import type { ModelLisDto } from '@/types/interfaces/appDev';
 import { message } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 
 const MODEL_STORAGE_KEY = 'appdev_selected_model_id';
 
 export const useAppDevModelSelector = (projectId: string) => {
-  const [models, setModels] = useState<ModelConfig[]>([]);
+  const [models, setModels] = useState<ModelLisDto>();
   const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
 
@@ -26,13 +26,17 @@ export const useAppDevModelSelector = (projectId: string) => {
       const response = await listModels(projectId);
 
       if (response.success && response.data) {
-        setModels(response.data);
+        const modelInfo: ModelLisDto = response.data;
+        const { chatModelList, multiModelList } = modelInfo;
+        setModels(modelInfo);
+
+        console.log(multiModelList, 'multiModelList');
 
         // 获取上次使用的模型ID
         const lastUsedModelId = localStorage.getItem(MODEL_STORAGE_KEY);
 
         if (lastUsedModelId) {
-          const modelExists = response.data.find(
+          const modelExists = chatModelList.find(
             (m) => m.id === parseInt(lastUsedModelId),
           );
           if (modelExists) {
@@ -42,19 +46,19 @@ export const useAppDevModelSelector = (projectId: string) => {
         }
 
         // 没有上次使用的模型时，优先使用 Anthropic 的第一个
-        const anthropicModel = response.data.find(
+        const anthropicModel = chatModelList.find(
           (m) => m.apiProtocol === 'Anthropic',
         );
 
         if (anthropicModel) {
           setSelectedModelId(anthropicModel.id);
           localStorage.setItem(MODEL_STORAGE_KEY, anthropicModel.id.toString());
-        } else if (response.data.length > 0) {
+        } else if (chatModelList.length > 0) {
           // 如果没有 Anthropic 模型，使用列表第一个
-          setSelectedModelId(response.data[0].id);
+          setSelectedModelId(chatModelList[0].id);
           localStorage.setItem(
             MODEL_STORAGE_KEY,
-            response.data[0].id.toString(),
+            chatModelList[0].id.toString(),
           );
         }
       } else {
@@ -79,7 +83,8 @@ export const useAppDevModelSelector = (projectId: string) => {
   /**
    * 获取当前选中的模型信息
    */
-  const selectedModel = models.find((m) => m.id === selectedModelId) || null;
+  const selectedModel =
+    models?.chatModelList?.find((m) => m.id === selectedModelId) || null;
 
   // 组件初始化时加载模型列表
   useEffect(() => {

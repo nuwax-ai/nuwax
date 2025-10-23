@@ -7,7 +7,7 @@ import { UploadFileStatus } from '@/types/enums/common';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import { DataResource } from '@/types/interfaces/dataResource';
 import { handleUploadFileList } from '@/utils/upload';
-import { LoadingOutlined } from '@ant-design/icons';
+import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import { Input, Menu, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
@@ -151,6 +151,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           <Tooltip title={fileContentState.selectedFile}>
             <div className={`text-ellipsis ${styles.selectedFileDisplay}`}>
               {getFileName(fileContentState.selectedFile)}
+              <CloseOutlined />
             </div>
           </Tooltip>
         )}
@@ -200,82 +201,86 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               </span>
             </Tooltip>
           </Upload>
-          {/* 大模型选择 */}
-          <Popover
-            content={
-              <div>
-                <Menu
-                  selectedKeys={
-                    modelSelector?.selectedModelId
-                      ? [modelSelector.selectedModelId.toString()]
-                      : []
-                  }
-                  onClick={({ key }) => modelSelector?.selectModel(Number(key))}
-                  style={{ maxHeight: 200, overflowY: 'auto' }}
-                >
-                  {modelSelector?.models?.map((model: any) => (
-                    <Menu.Item
-                      key={model.id.toString()}
-                      disabled={chat.isChatLoading}
-                    >
-                      {model.name}
-                    </Menu.Item>
-                  ))}
-                </Menu>
-              </div>
-            }
-            trigger="hover"
-            // open={open}
-            // onOpenChange={handleOpenChange}
-          >
-            <span>
-              {
-                modelSelector?.models?.find(
-                  (m: any) => m.id === modelSelector?.selectedModelId,
-                )?.name
+          <div className={cx('flex', 'items-center', 'content-end', 'gap-10')}>
+            {/* 大模型选择 */}
+            <Popover
+              content={
+                <div>
+                  <Menu
+                    selectedKeys={
+                      modelSelector?.selectedModelId
+                        ? [modelSelector.selectedModelId.toString()]
+                        : []
+                    }
+                    onClick={({ key }) =>
+                      modelSelector?.selectModel(Number(key))
+                    }
+                    style={{ maxHeight: 200, overflowY: 'auto' }}
+                  >
+                    {modelSelector?.models?.chatModelList?.map((model: any) => (
+                      <Menu.Item
+                        key={model.id.toString()}
+                        disabled={chat.isChatLoading}
+                      >
+                        {model.name}
+                      </Menu.Item>
+                    ))}
+                  </Menu>
+                </div>
               }
-            </span>
-          </Popover>
-          {/* 会话进行中仅显示取消按钮 */}
-          {chat.isChatLoading ? (
-            <Tooltip title={isStoppingTask ? '正在停止...' : '取消AI任务'}>
-              <span
-                onClick={handleCancelAgentTask}
-                className={`${styles.box} ${styles['send-box']} ${
-                  styles['stop-box']
-                } ${!isStoppingTask ? styles['stop-box-active'] : ''} ${
-                  isStoppingTask ? styles.disabled : ''
-                }`}
-              >
-                {isStoppingTask ? (
-                  <div className={styles['loading-box']}>
-                    <LoadingOutlined className={styles['loading-icon']} />
-                  </div>
-                ) : (
-                  <SvgIcon name="icons-chat-stop" />
-                )}
+              trigger="hover"
+              // open={open}
+              // onOpenChange={handleOpenChange}
+            >
+              <span>
+                {
+                  modelSelector?.models?.chatModelList?.find(
+                    (m: any) => m.id === modelSelector?.selectedModelId,
+                  )?.name
+                }
               </span>
-            </Tooltip>
-          ) : (
-            <Tooltip title={isSendingMessage ? '正在发送...' : '发送消息'}>
-              <span
-                onClick={handleSendMessage}
-                className={`${styles.box} ${styles['send-box']} ${
-                  !chat.chatInput.trim() || isSendingMessage
-                    ? styles.disabled
-                    : ''
-                }`}
-              >
-                {isSendingMessage ? (
-                  <div className={styles['loading-box']}>
-                    <LoadingOutlined className={styles['loading-icon']} />
-                  </div>
-                ) : (
-                  <SvgIcon name="icons-chat-send" />
-                )}
-              </span>
-            </Tooltip>
-          )}
+            </Popover>
+            {/* 会话进行中仅显示取消按钮 */}
+            {chat.isChatLoading ? (
+              <Tooltip title={isStoppingTask ? '正在停止...' : '取消AI任务'}>
+                <span
+                  onClick={handleCancelAgentTask}
+                  className={`${styles.box} ${styles['send-box']} ${
+                    styles['stop-box']
+                  } ${!isStoppingTask ? styles['stop-box-active'] : ''} ${
+                    isStoppingTask ? styles.disabled : ''
+                  }`}
+                >
+                  {isStoppingTask ? (
+                    <div className={styles['loading-box']}>
+                      <LoadingOutlined className={styles['loading-icon']} />
+                    </div>
+                  ) : (
+                    <SvgIcon name="icons-chat-stop" />
+                  )}
+                </span>
+              </Tooltip>
+            ) : (
+              <Tooltip title={isSendingMessage ? '正在发送...' : '发送消息'}>
+                <span
+                  onClick={handleSendMessage}
+                  className={`${styles.box} ${styles['send-box']} ${
+                    !chat.chatInput.trim() || isSendingMessage
+                      ? styles.disabled
+                      : ''
+                  }`}
+                >
+                  {isSendingMessage ? (
+                    <div className={styles['loading-box']}>
+                      <LoadingOutlined className={styles['loading-icon']} />
+                    </div>
+                  ) : (
+                    <SvgIcon name="icons-chat-send" />
+                  )}
+                </span>
+              </Tooltip>
+            )}
+          </div>
         </footer>
       </div>
     </div>
