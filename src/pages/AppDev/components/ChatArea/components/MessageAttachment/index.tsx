@@ -53,13 +53,32 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
 }) => {
   // 渲染图片附件
   const renderImageAttachment = (imageAttachment: ImageAttachment) => {
-    const imageSrc = `data:${imageAttachment.mime_type};base64,${imageAttachment.source.data.data}`;
+    // 根据数据源类型获取图片地址
+    const getImageSrc = (): string => {
+      const { source_type, data } = imageAttachment.source;
+
+      switch (source_type) {
+        case 'Base64':
+          // Base64 格式
+          return `data:${imageAttachment.mime_type};base64,${data.data}`;
+        case 'Url':
+          // URL 格式
+          return data.url || '';
+        case 'FilePath':
+          // 文件路径格式
+          return data.path || '';
+        default:
+          return '';
+      }
+    };
+
+    const imageSrc = getImageSrc();
 
     return (
       <div className={`${styles.messageImageAttachment} ${className || ''}`}>
         <Image
           src={imageSrc}
-          alt={imageAttachment.filename}
+          alt={imageAttachment.filename || '图片'}
           width={size}
           height={size}
           style={{
@@ -164,10 +183,39 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
       }
     };
 
+    // 处理数据源附件点击事件
+    const handleDataSourceClick = () => {
+      // 如果有自定义点击回调，优先执行
+      if (onClick) {
+        onClick();
+        return;
+      }
+
+      // 根据数据源类型在新页面中打开对应页面
+      const { type, dataSourceId } = dataSourceAttachment;
+
+      if (type === 'plugin') {
+        // 在新页面中打开插件详情页面
+        window.open(
+          `/square/publish/plugin/${dataSourceId}`,
+          '_blank',
+          'noopener,noreferrer',
+        );
+      } else if (type === 'workflow') {
+        // 在新页面中打开工作流详情页面
+        window.open(
+          `/square/publish/workflow/${dataSourceId}`,
+          '_blank',
+          'noopener,noreferrer',
+        );
+      }
+    };
+
     return (
       <div
         className={`${styles.messageDataSourceAttachment} ${className || ''}`}
-        onClick={onClick}
+        onClick={handleDataSourceClick}
+        style={{ cursor: 'pointer' }}
       >
         <div className={styles.dataSourceAttachmentIcon}>
           {getDataSourceIcon(dataSourceAttachment.type)}
@@ -190,11 +238,11 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
       return renderImageAttachment(attachment as ImageAttachment);
     case 'Text':
     case 'Document':
+      return renderFileAttachment(
+        attachment as TextAttachment | DocumentAttachment | AudioAttachment,
+      );
     case 'Audio':
       return null;
-    // return renderFileAttachment(
-    //   attachment as TextAttachment | DocumentAttachment | AudioAttachment,
-    // );
     case 'DataSource':
       return renderDataSourceAttachment(attachment as DataSourceAttachment);
     default:
