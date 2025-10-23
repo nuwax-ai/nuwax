@@ -34,7 +34,7 @@ const PageDevelopCardItem: React.FC<PageDevelopCardItemProps> = ({
         return (
           componentInfo.projectType === PageProjectTypeEnum.REVERSE_PROXY ||
           (componentInfo.projectType === PageProjectTypeEnum.ONLINE_DEPLOY &&
-            componentInfo.buildRunning === BuildRunningEnum.Published)
+            componentInfo.buildRunning === Boolean(BuildRunningEnum.Published))
         );
       }
       return true;
@@ -65,7 +65,8 @@ const PageDevelopCardItem: React.FC<PageDevelopCardItemProps> = ({
       }
       footer={
         <footer className={cx('flex', 'items-center', 'content-between')}>
-          {componentInfo.buildRunning === BuildRunningEnum.Published ? (
+          {componentInfo.buildRunning ===
+          Boolean(BuildRunningEnum.Published) ? (
             <span
               className={cx(
                 'flex',

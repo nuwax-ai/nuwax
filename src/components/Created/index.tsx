@@ -362,7 +362,7 @@ const Created: React.FC<CreatedProp> = ({
   // 清空页面搜索
   const clearPageSearch = () => {
     setLoading(true);
-    runPageList(spaceId, BuildRunningEnum.Published);
+    runPageList(spaceId, Boolean(BuildRunningEnum.Published));
   };
 
   // 搜索页面
@@ -425,7 +425,7 @@ const Created: React.FC<CreatedProp> = ({
       if (val === AgentComponentTypeEnum.Page) {
         setList([]); // 清空列表
         setLoading(true);
-        runPageList(spaceId, BuildRunningEnum.Published);
+        runPageList(spaceId, Boolean(BuildRunningEnum.Published));
         return;
       } else {
         setPagination({ page: 1, pageSize: 20 }); // 重置分页状态

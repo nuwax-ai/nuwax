@@ -1,6 +1,5 @@
 import { CreateUpdateModeEnum } from '../enums/common';
 import {
-  BuildRunningEnum,
   PageDevelopCreateTypeEnum,
   PageProjectTypeEnum,
   ReverseProxyEnum,
@@ -55,8 +54,8 @@ export interface CustomPageDto {
   icon: string;
   // 项目基础路径
   basePath: string;
-  // 发布状态,1:已发布;-1:未发布
-  buildRunning: BuildRunningEnum;
+  // 发布状态,true:已发布;false:未发布
+  buildRunning: boolean;
   // 项目类型,可用值:REVERSE_PROXY,ONLINE_DEPLOY
   projectType: PageProjectTypeEnum;
   // 代理配置
