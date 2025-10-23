@@ -3,12 +3,13 @@ import SvgIcon from '@/components/base/SvgIcon';
 import CustomPopover from '@/components/CustomPopover';
 import { PAGE_DEVELOP_PUBLISH_TYPE_LIST } from '@/constants/pageDev.constants';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
+import { ProjectDetailData } from '@/types/interfaces/appDev';
 import { jumpBack } from '@/utils/router';
 import { FormOutlined, RocketOutlined } from '@ant-design/icons';
 import { Avatar, Button, Space, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React from 'react';
+import React, { useMemo } from 'react';
 import styles from './AppDevHeader.less';
 
 const cx = classNames.bind(styles);
@@ -18,7 +19,7 @@ export interface AppDevHeaderProps {
     name?: string;
     projectId?: string;
   };
-  spaceId: string;
+  spaceId: number;
   // 发布成组件
   onPublishComponent: () => void;
   // 发布成应用
@@ -30,16 +31,7 @@ export interface AppDevHeaderProps {
   /** 聊天加载状态，用于禁用相关功能 */
   isChatLoading?: boolean;
   /** 项目详情信息 */
-  projectInfo?: {
-    name?: string;
-    description?: string;
-    icon?: string;
-    buildRunning?: boolean;
-    buildTime?: string;
-    creatorName?: string;
-    creatorNickName?: string;
-    creatorAvatar?: string;
-  } | null;
+  projectInfo?: ProjectDetailData | null;
   /** 部署状态相关方法 */
   getDeployStatusText?: (buildRunning: boolean) => string;
   getDeployStatusColor?: (buildRunning: boolean) => string;
@@ -93,14 +85,24 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   // 点击发布类型按钮
   const handleClickPopoverItem = (item: any) => {
     switch (item.value) {
-      case PageDevelopPublishTypeEnum.Component:
+      case PageDevelopPublishTypeEnum.PAGE:
         onPublishComponent();
         break;
-      case PageDevelopPublishTypeEnum.Application:
+      case PageDevelopPublishTypeEnum.AGENT:
         onPublishApplication();
         break;
     }
   };
+
+  // 发布类型列表
+  const publishList = useMemo(() => {
+    if (projectInfo?.publishType === PageDevelopPublishTypeEnum.AGENT) {
+      return PAGE_DEVELOP_PUBLISH_TYPE_LIST.filter(
+        (item) => item.value === PageDevelopPublishTypeEnum.AGENT,
+      );
+    }
+    return PAGE_DEVELOP_PUBLISH_TYPE_LIST;
+  }, [projectInfo?.publishType]);
 
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
@@ -165,10 +167,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
           )}
         </div>
         {/*添加资源*/}
-        <CustomPopover
-          list={PAGE_DEVELOP_PUBLISH_TYPE_LIST}
-          onClick={handleClickPopoverItem}
-        >
+        <CustomPopover list={publishList} onClick={handleClickPopoverItem}>
           <div className={cx('flex', 'items-center', styles['action-buttons'])}>
             <Button
               type="primary"

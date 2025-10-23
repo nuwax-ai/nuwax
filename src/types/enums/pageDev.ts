@@ -48,10 +48,10 @@ export enum BuildRunningEnum {
   Unpublished = 0,
 }
 
-// 页面开发发布类型枚举
+// 页面开发发布类型枚举(发布类型,可用值:AGENT,PAGE)
 export enum PageDevelopPublishTypeEnum {
   // 发布成组件
-  Component = 'Component',
+  PAGE = 'PAGE',
   // 发布成应用
-  Application = 'Application',
+  AGENT = 'AGENT',
 }

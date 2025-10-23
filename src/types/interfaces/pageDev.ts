@@ -247,7 +247,7 @@ export interface PageUpdateParams {
   // 项目图标
   icon: string;
   // 是否需要登录
-  needLogin?: boolean;
+  needLogin: boolean;
 }
 
 /**
