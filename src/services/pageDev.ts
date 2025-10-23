@@ -1,4 +1,3 @@
-import type { BuildRunningEnum } from '@/types/enums/pageDev';
 import type {
   CreateCustomPageInfo,
   CustomPageDto,
@@ -44,7 +43,7 @@ export async function apiCustomPageCreateReverseProxy(
 // 分页查询前端页面项目
 export async function apiCustomPageQueryList(
   spaceId: number,
-  buildRunning?: BuildRunningEnum,
+  buildRunning?: boolean,
 ): Promise<RequestResponse<CustomPageDto>> {
   return request('/api/custom-page/list-projects', {
     method: 'GET',

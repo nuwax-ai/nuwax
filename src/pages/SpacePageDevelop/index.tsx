@@ -10,6 +10,7 @@ import { CREATE_LIST } from '@/constants/space.constants';
 import {
   apiCustomPageQueryList,
   apiPageDeleteProject,
+  apiPageGetProjectInfo,
 } from '@/services/pageDev';
 import {
   PageDevelopCreateTypeEnum,
@@ -30,7 +31,6 @@ import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import styles from './index.less';
 import PageCreateModal from './PageCreateModal';
 import PageDevelopCardItem from './PageDevelopCardItem';
-import PageReviewModal from './PageReviewModal';
 import PathParamsConfigModal from './PathParamsConfigModal';
 import ReverseProxyModal from './ReverseProxyModal';
 
@@ -41,10 +41,10 @@ type IQuery = 'type' | 'create' | 'keyword';
  * 工作空间 - 页面开发
  */
 const SpacePageDevelop: React.FC = () => {
-  // ✅ umi 中的 useSearchParams
+  // umi 中的 useSearchParams
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // ✅ 当 select 改变时同步 URL
+  // 当 select 改变时同步 URL
   const handleChange = (key: IQuery, value: string) => {
     // 更新 URL 参数
     const newParams = new URLSearchParams(searchParams);
@@ -78,9 +78,6 @@ const SpacePageDevelop: React.FC = () => {
     useState<boolean>(false);
   // 打开页面创建弹窗
   const [openPageCreateModal, setOpenPageCreateModal] =
-    useState<boolean>(false);
-  // 打开页面预览弹窗
-  const [openPageReviewModal, setOpenPageReviewModal] =
     useState<boolean>(false);
   // 创建
   const [create, setCreate] = useState<CreateListEnum>(
@@ -116,7 +113,7 @@ const SpacePageDevelop: React.FC = () => {
     }
     setPageList(_list);
   };
-  // ✅ 监听 URL 改变（支持浏览器前进/后退）
+  // 监听 URL 改变（支持浏览器前进/后退）
   useEffect(() => {
     const type = searchParams.get('type') || PageProjectTypeEnum.All_Type;
     const create =
@@ -156,9 +153,6 @@ const SpacePageDevelop: React.FC = () => {
       pageAllRef.current = pageAllRef.current.filter(
         (item) => item.projectId !== projectId,
       );
-    },
-    onError: () => {
-      message.error('删除页面项目失败');
     },
   });
 
@@ -244,6 +238,20 @@ const SpacePageDevelop: React.FC = () => {
     }
   };
 
+  // 查询页面信息
+  const { run: runPageInfo } = useRequest(apiPageGetProjectInfo, {
+    manual: true,
+    onSuccess: (result: CustomPageDto) => {
+      if (result.pageUrl) {
+        // 打开页面预览
+        const url = `${process.env.BASE_URL}${result.pageUrl}`;
+        window.open(url, '_blank');
+      } else {
+        message.error('页面URL不存在');
+      }
+    },
+  });
+
   // 点击更多操作
   const handleClickMore = (item: CustomPopoverItem, info: CustomPageDto) => {
     setProjectId(info.projectId);
@@ -260,8 +268,7 @@ const SpacePageDevelop: React.FC = () => {
         break;
       // 页面预览
       case PageDevelopMoreActionEnum.Page_Preview:
-        // iframe打开页面预览
-        setOpenPageReviewModal(true);
+        runPageInfo(info.projectId);
         break;
       // 删除页面项目
       case PageDevelopMoreActionEnum.Delete:
@@ -387,12 +394,6 @@ const SpacePageDevelop: React.FC = () => {
         open={openPageCreateModal}
         onConfirm={handleConfirmCreatePage}
         onCancel={() => setOpenPageCreateModal(false)}
-      />
-      {/* 页面预览弹窗 */}
-      <PageReviewModal
-        open={openPageReviewModal}
-        projectId={currentPageInfo?.projectId}
-        onCancel={() => setOpenPageReviewModal(false)}
       />
     </div>
   );

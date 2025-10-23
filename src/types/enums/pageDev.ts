@@ -38,12 +38,12 @@ export enum PageDevelopMoreActionEnum {
   Delete = 'Delete',
 }
 
-// 发布状态,1:已发布;-1:未发布
+// 发布状态,true:已发布;false:未发布
 export enum BuildRunningEnum {
   // 已发布
   Published = 1,
   // 未发布
-  Unpublished = -1,
+  Unpublished = 0,
 }
 
 // 页面开发发布类型枚举

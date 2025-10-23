@@ -16,10 +16,10 @@ export const PAGE_DEVELOP_CREATE_TYPE_LIST = [
     value: PageDevelopCreateTypeEnum.Online_Develop,
     label: '在线开发',
   },
-  {
-    value: PageDevelopCreateTypeEnum.Reverse_Proxy,
-    label: '反向代理',
-  },
+  // {
+  //   value: PageDevelopCreateTypeEnum.Reverse_Proxy,
+  //   label: '反向代理',
+  // },
 ];
 
 // 页面开发所有类型
