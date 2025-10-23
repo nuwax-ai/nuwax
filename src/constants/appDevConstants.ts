@@ -28,7 +28,9 @@ export const CHAT_CONSTANTS = {
  * 文件相关常量
  */
 export const FILE_CONSTANTS = {
-  IMAGE_EXTENSIONS: [
+  // 支持预览的文件扩展名白名单
+  SUPPORTED_EXTENSIONS: [
+    // 图片文件
     'jpg',
     'jpeg',
     'png',
@@ -38,7 +40,58 @@ export const FILE_CONSTANTS = {
     'svg',
     'ico',
     'tiff',
+    // 代码文件
+    'ts',
+    'tsx',
+    'js',
+    'jsx',
+    'mjs',
+    'cjs',
+    'css',
+    'less',
+    'scss',
+    'sass',
+    'html',
+    'htm',
+    'vue',
+    'json',
+    'jsonc',
+    'yaml',
+    'yml',
+    'xml',
+    'toml',
+    'ini',
+    'py',
+    'java',
+    'c',
+    'cpp',
+    'cs',
+    'php',
+    'rb',
+    'go',
+    'rs',
+    'swift',
+    'kt',
+    'scala',
+    'sh',
+    'bash',
+    'zsh',
+    'fish',
+    'ps1',
+    'bat',
+    'sql',
+    'dockerfile',
+    'makefile',
+    // 文本文件
+    'txt',
+    'md',
+    'markdown',
+    'log',
+    'csv',
+    'tsv',
+    'rtf',
   ],
+  // 忽略的文件模式
   IGNORED_FILE_PATTERNS: [
     /^\./, // 以 . 开头的隐藏文件
     /^\.DS_Store$/,

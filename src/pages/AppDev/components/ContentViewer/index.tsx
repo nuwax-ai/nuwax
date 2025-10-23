@@ -1,5 +1,10 @@
+import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
-import { isImageFile, processImageContent } from '@/utils/appDevUtils';
+import {
+  isImageFile,
+  isPreviewableFile,
+  processImageContent,
+} from '@/utils/appDevUtils';
 import { Button, Spin } from 'antd';
 import React, { useMemo } from 'react';
 import CodeViewer from '../CodeViewer';
@@ -168,6 +173,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       currentFileNode.content &&
       currentFileNode.content.trim() !== '';
     const isImage = isImageFile(selectedFileId);
+    const isPreviewable = isPreviewableFile(selectedFileId);
 
     return (
       <div className={styles.codeEditorContainer}>
@@ -185,7 +191,16 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
 
         {/* 文件内容预览 */}
         <div className={styles.fileContentPreview}>
-          {isImage ? (
+          {!isPreviewable && !hasContents ? (
+            // 不支持预览的文件类型
+            <AppDevEmptyState
+              type="error"
+              title="无法预览此文件类型"
+              description={`当前不支持预览 ${
+                selectedFileId.split('.').pop() || selectedFileId
+              } 格式的文件。`}
+            />
+          ) : isImage ? (
             <ImageViewer
               imageUrl={processImageContent(
                 hasContents ? currentFileNode.content : '',
@@ -260,6 +275,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     const hasContents =
       fileNode && fileNode.content && fileNode.content.trim() !== '';
     const isImage = isImageFile(selectedFileId);
+    const isPreviewable = isPreviewableFile(selectedFileId);
 
     return (
       <>
@@ -277,7 +293,15 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
 
         {/* 文件内容显示区域 */}
         <div className={styles.fileContentPreview}>
-          {hasContents ? (
+          {!isPreviewable && !hasContents ? (
+            <AppDevEmptyState
+              type="error"
+              title="无法预览此文件类型"
+              description={`当前不支持预览 ${
+                selectedFileId.split('.').pop() || selectedFileId
+              } 格式的文件。`}
+            />
+          ) : hasContents ? (
             <CodeViewer
               fileId={selectedFileId}
               fileName={selectedFileId.split('/').pop() || selectedFileId}

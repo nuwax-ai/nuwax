@@ -22,6 +22,7 @@ import {
   debounce,
   findFileNode,
   isFileModified,
+  isPreviewableFile,
   transformFlatListToTree,
   treeToFlatList,
 } from '@/utils/appDevUtils';
@@ -252,6 +253,19 @@ UseAppDevFileManagementProps) => {
           originalFileContent: '',
           isFileModified: false,
           fileContentError: null,
+        }));
+        return;
+      }
+
+      // 检查文件是否支持预览，如果不支持则不调用API
+      if (!isPreviewableFile(fileId) && !hasContent) {
+        setFileContentState((prev) => ({
+          ...prev,
+          fileContent: '',
+          originalFileContent: '',
+          isFileModified: false,
+          fileContentError: null,
+          isLoadingFileContent: false,
         }));
         return;
       }

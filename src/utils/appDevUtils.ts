@@ -199,11 +199,42 @@ export const getFilePath = (
 };
 
 /**
+ * 文件类型枚举
+ */
+export enum FileType {
+  SUPPORTED = 'supported',
+  UNSUPPORTED = 'unsupported',
+}
+
+/**
  * 判断文件是否为图片类型
  */
 export const isImageFile = (fileName: string): boolean => {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
-  return FILE_CONSTANTS.IMAGE_EXTENSIONS.includes(ext as any);
+  const imageExtensions = [
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'bmp',
+    'webp',
+    'svg',
+    'ico',
+    'tiff',
+  ];
+  return imageExtensions.includes(ext);
+};
+
+/**
+ * 判断文件是否支持预览（白名单方案）
+ */
+export const isPreviewableFile = (fileName: string): boolean => {
+  if (!fileName || typeof fileName !== 'string') {
+    return false;
+  }
+
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  return FILE_CONSTANTS.SUPPORTED_EXTENSIONS.includes(ext as any);
 };
 
 /**
