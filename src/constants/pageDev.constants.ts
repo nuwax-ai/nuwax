@@ -77,11 +77,11 @@ export const PAGE_DEVELOP_MORE_ACTIONS = [
 // 页面开发发布类型列表
 export const PAGE_DEVELOP_PUBLISH_TYPE_LIST = [
   {
-    value: PageDevelopPublishTypeEnum.Component,
+    value: PageDevelopPublishTypeEnum.PAGE,
     label: '发布成组件',
   },
   {
-    value: PageDevelopPublishTypeEnum.Application,
+    value: PageDevelopPublishTypeEnum.AGENT,
     label: '发布成应用',
   },
 ];
