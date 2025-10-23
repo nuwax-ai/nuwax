@@ -1,4 +1,4 @@
-import type { DataSourceSelection, FileNode } from '@/types/interfaces/appDev';
+import type { FileNode } from '@/types/interfaces/appDev';
 import type { DataResource } from '@/types/interfaces/dataResource';
 
 /**
@@ -32,24 +32,30 @@ export interface FileTreePanelProps {
   /** 删除文件回调 */
   onDeleteFile: (node: any, event: React.MouseEvent) => void;
 
+  /** 重命名文件回调 */
+  onRenameFile?: (node: any, newName: string) => Promise<boolean>;
+
+  /** 上传文件到指定路径回调 */
+  onUploadToFolder?: (targetPath: string, file: File) => Promise<boolean>;
+
   /** 上传项目回调 */
   onUploadProject: () => void;
 
   /** 上传单个文件回调 */
-  onUploadSingleFile: () => void;
+  onUploadSingleFile: (node: FileNode | null) => void;
 
   /** 添加数据资源回调 */
   onAddDataResource: () => void;
 
   /** 删除数据资源回调 */
-  onDeleteDataResource: (resourceId: string) => Promise<void>;
+  onDeleteDataResource: (resourceId: number) => Promise<void>;
 
   /** 选中的数据源列表 */
-  selectedDataResourceIds?: DataSourceSelection[];
+  selectedDataResources?: DataResource[];
 
   /** 数据源选择变化回调 */
   onDataResourceSelectionChange?: (
-    selectedDataSources: DataSourceSelection[],
+    selectedDataResources: DataResource[],
   ) => void;
 
   /** 工作空间信息（用于版本模式判断） */

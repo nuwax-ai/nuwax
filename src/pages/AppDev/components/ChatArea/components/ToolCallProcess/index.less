@@ -1,8 +1,10 @@
+@import '@/styles/token.less';
+
 .toolCallProcess {
   margin: 8px 0;
   font-size: 13px;
-  color: #262626;
-  background: #fff;
+  color: @colorTextBase;
+  background: @colorBgContainer;
   border-radius: 8px;
   padding: 0 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 10%);
@@ -23,7 +25,7 @@
       min-width: 0; // 允许收缩
 
       .operationText {
-        color: #262626;
+        color: @colorTextBase;
         font-weight: 400;
         white-space: nowrap; // 防止换行
         overflow: hidden;
@@ -70,8 +72,8 @@
       flex-shrink: 0; // 防止收缩
 
       .statusText {
-        color: #8c8c8c;
-        font-size: 12px;
+        color: @colorTextTertiary;
+        font-size: @fontSizeSm;
         white-space: nowrap; // 防止换行
       }
 
@@ -79,8 +81,8 @@
         width: 16px;
         height: 16px;
         padding: 0;
-        font-size: 12px;
-        color: #8c8c8c;
+        font-size: @fontSizeSm;
+        color: @colorTextTertiary;
         border: none;
         background: none;
         cursor: pointer;
@@ -90,7 +92,7 @@
         flex-shrink: 0; // 防止收缩
 
         &:hover {
-          color: #1890ff;
+          color: @colorPrimary;
         }
       }
     }
@@ -115,15 +117,15 @@
         .objectContent,
         .unknownContent {
           .contentPre {
-            background: #f8f9fa;
-            border: 1px solid #e8e8e8;
+            background: @colorBgContainer;
+            border: 1px solid @colorBorder;
             border-radius: 4px;
             padding: 8px;
             margin: 0;
-            font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+            font-family: @fontFamilyCode;
             font-size: 11px;
             line-height: 1.4;
-            color: #262626;
+            color: @colorTextBase;
             overflow-x: auto; // 水平滚动
             overflow-y: auto; // 垂直滚动
             white-space: pre-wrap; // 保持格式但允许换行
@@ -138,7 +140,7 @@
         .textContent {
           .contentPre {
             background: #f8f9fa;
-            border-left: 3px solid #1890ff;
+            border-left: 3px solid @colorPrimary;
             font-size: 10px;
             line-height: 1.3;
 
@@ -158,7 +160,7 @@
         .unknownContent {
           .contentPre {
             background: #f6f6f6;
-            border-left: 3px solid #d9d9d9;
+            border-left: 3px solid @colorBorder;
           }
         }
       }
@@ -168,15 +170,15 @@
       .objectContent,
       .unknownContent {
         .contentPre {
-          background: #f8f9fa;
-          border: 1px solid #e8e8e8;
+          background: @colorBgContainer;
+          border: 1px solid @colorBorder;
           border-radius: 4px;
           padding: 8px;
           margin: 0;
-          font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+          font-family: @fontFamilyCode;
           font-size: 11px;
           line-height: 1.4;
-          color: #262626;
+          color: @colorTextBase;
           overflow-x: auto; // 水平滚动
           overflow-y: auto; // 垂直滚动
           white-space: pre-wrap; // 保持格式但允许换行
@@ -189,11 +191,11 @@
 
       // 文件列表特殊样式
       .fileListContainer {
-        background: #f8f9fa;
-        border: 1px solid #e8e8e8;
+        background: @colorBgContainer;
+        border: 1px solid @colorBorder;
         border-radius: 4px;
         padding: 8px;
-        font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+        font-family: @fontFamilyCode;
         font-size: 10px;
         line-height: 1.3;
         max-height: 200px;
@@ -204,54 +206,54 @@
           align-items: center;
           gap: 6px;
           padding: 2px 0;
-          border-bottom: 1px solid #f0f0f0;
+          border-bottom: 1px solid @colorBorder;
 
           &:last-child {
             border-bottom: none;
           }
 
           .fileIcon {
-            font-size: 12px;
+            font-size: @fontSizeSm;
             flex-shrink: 0;
             width: 16px;
             text-align: center;
           }
 
           .directoryLine {
-            color: #52c41a; // 目录用绿色
-            font-weight: 500;
+            color: @colorSuccess; // 目录用绿色
+            font-weight: @fontWeightStrong;
           }
 
           .fileLine {
-            color: #262626; // 文件用默认色
+            color: @colorTextBase; // 文件用默认色
           }
 
           // 代码文件特殊样式 - 通过类名控制
           .fileLine.codeFile {
-            color: #1890ff;
+            color: @blue;
           }
 
           // 配置文件特殊样式 - 通过类名控制
           .fileLine.configFile {
-            color: #faad14;
+            color: @colorWarning;
           }
 
           .otherLine {
-            color: #8c8c8c;
+            color: @colorBorder;
           }
         }
 
         .fileListSummary {
           padding: 4px 0;
           margin-top: 4px;
-          border-top: 1px solid #d9d9d9;
-          background: #f0f0f0;
+          border-top: 1px solid @colorBorder;
+          background: @colorBgContainer;
           border-radius: 2px;
           text-align: center;
 
           .summaryText {
-            color: #595959;
-            font-weight: 500;
+            color: @colorTextTertiary;
+            font-weight: @fontWeightStrong;
           }
         }
       }
@@ -267,20 +269,20 @@
   }
 
   .statusDotStatusCompleted {
-    background-color: #52c41a;
+    background-color: @colorSuccess;
   }
 
   .statusDotStatusInProgress {
-    background-color: #1890ff;
+    background-color: @blue;
     animation: pulse 1.5s ease-in-out infinite;
   }
 
   .statusDotStatusFailed {
-    background-color: #ff4d4f;
+    background-color: @colorError;
   }
 
   .statusDotStatusPending {
-    background-color: #d9d9d9;
+    background-color: @colorBorder;
   }
 
   // 脉冲动画
@@ -301,8 +303,8 @@
   // 无内容时的信息显示
   .noContent {
     padding: 8px 0;
-    color: #666;
-    font-size: 12px;
+    color: @colorTextTertiary;
+    font-size: @fontSizeSm;
     line-height: 1.5;
 
     .statusInfo,
@@ -319,7 +321,7 @@
     .statusLabel,
     .timeLabel,
     .updateLabel {
-      font-weight: 500;
+      font-weight: @fontWeightStrong;
       margin-right: 8px;
       min-width: 40px;
     }
@@ -327,20 +329,20 @@
     .statusValue,
     .timeValue,
     .updateValue {
-      color: #333;
+      color: @colorTextBase;
     }
 
     .statusValue {
-      font-weight: 500;
+      font-weight: @fontWeightStrong;
     }
 
     .timeValue {
-      font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+      font-family: @fontFamilyCode;
     }
 
     .updateValue {
-      color: #1890ff;
-      font-weight: 500;
+      color: @colorPrimary;
+      font-weight: @fontWeightStrong;
     }
   }
 }

@@ -10,7 +10,6 @@ import {
 import {
   getFileContent,
   getProjectContent,
-  renameFile,
   submitFilesUpdate,
   uploadSingleFile,
 } from '@/services/appDev';
@@ -40,8 +39,8 @@ export const useAppDevFileManagement = ({
   projectId,
   onFileSelect,
   onFileContentChange,
-  isChatLoading = false,
-}: UseAppDevFileManagementProps) => {
+}: // isChatLoading = false, // 暂时注释掉，后续可能需要
+UseAppDevFileManagementProps) => {
   // 文件树状态
   const [fileTreeState, setFileTreeState] = useState<FileTreeState>({
     data: [],
@@ -601,6 +600,34 @@ export const useAppDevFileManagement = ({
   );
 
   /**
+   * 更新文件树中的显示名字（用于即时反馈）
+   */
+  const updateFileTreeName = useCallback(
+    (fileTree: FileNode[], fileId: string, newName: string): FileNode[] => {
+      return fileTree.map((node) => {
+        if (node.id === fileId) {
+          return {
+            ...node,
+            name: newName,
+            path:
+              node.path.substring(0, node.path.lastIndexOf('/')) +
+              '/' +
+              newName,
+          };
+        }
+        if (node.children && node.children.length > 0) {
+          return {
+            ...node,
+            children: updateFileTreeName(node.children, fileId, newName),
+          };
+        }
+        return node;
+      });
+    },
+    [],
+  );
+
+  /**
    * 重命名文件或文件夹
    */
   const renameFileItem = useCallback(
@@ -628,11 +655,54 @@ export const useAppDevFileManagement = ({
           ? `${parentPath}/${newName.trim()}`
           : newName.trim();
 
-        // 重命名文件
-        const result = await renameFile(projectId, oldPath, newPath);
+        // 先立即更新文件树中的显示名字，提供即时反馈
+        const updatedFileTree = updateFileTreeName(
+          fileTreeState.data,
+          fileId,
+          newName.trim(),
+        );
+        setFileTreeState((prev) => ({
+          ...prev,
+          data: updatedFileTree,
+        }));
 
-        if (result?.success) {
-          // 文件重命名成功
+        // 获取当前的文件列表（扁平格式）
+        const projectResponse = await getProjectContent(projectId);
+        if (
+          !projectResponse ||
+          projectResponse.code !== '0000' ||
+          !projectResponse.data
+        ) {
+          return false;
+        }
+
+        // 将项目数据转换为扁平列表格式
+        let filesList: any[] = [];
+        const files = projectResponse.data.files || projectResponse.data;
+
+        if (Array.isArray(files) && files.length > 0 && files[0].name) {
+          // 如果是扁平格式，直接使用
+          filesList = [...files];
+        } else if (Array.isArray(files)) {
+          // 如果是树形格式，转换为扁平列表
+          filesList = treeToFlatList(files as FileNode[]);
+        }
+
+        // 更新文件列表中的文件名（包含完整路径+文件名+后缀）
+        const updatedFilesList = filesList.map((file) => {
+          if (file.name === oldPath) {
+            return {
+              ...file,
+              name: newPath, // 更新为新的完整路径
+            };
+          }
+          return file;
+        });
+
+        // 使用文件全量更新逻辑
+        const response = await submitFilesUpdate(projectId, updatedFilesList);
+
+        if (response.success && response.code === '0000') {
           // 重命名成功后重新加载文件树
           await loadFileTree(true, true);
 
@@ -645,13 +715,20 @@ export const useAppDevFileManagement = ({
             }
           }
 
+          message.success(`重命名成功: ${fileNode.name} → ${newName.trim()}`);
           return true;
         } else {
-          // 重命名文件失败
+          // 重命名文件失败，重新加载文件树以恢复原状态
+          await loadFileTree(true, true);
+          message.error('重命名失败');
           return false;
         }
       } catch (error) {
-        // 重命名文件异常
+        // 重命名文件异常，重新加载文件树以恢复原状态
+        await loadFileTree(true, true);
+        message.error(
+          `重命名失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        );
         return false;
       }
     },

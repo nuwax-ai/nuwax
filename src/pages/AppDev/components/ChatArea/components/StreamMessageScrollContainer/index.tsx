@@ -177,7 +177,7 @@ const StreamMessageScrollContainer = forwardRef<
         style={style}
       >
         {/* 滚动容器 */}
-        <div ref={scrollContainerRef} className={cx('scroll-container')}>
+        <div ref={scrollContainerRef} className={cx('scroll-container-inner')}>
           {children}
         </div>
       </div>

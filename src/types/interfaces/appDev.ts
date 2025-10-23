@@ -6,6 +6,7 @@
 import { MessageModeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { DataResource } from './dataResource';
 
 /**
  * 项目文件信息接口
@@ -798,24 +799,6 @@ export interface PageArgConfig {
 }
 
 /**
- * 图片上传信息接口
- */
-export interface ImageUploadInfo {
-  /** 唯一标识 */
-  uid: string;
-  /** 文件名 */
-  name: string;
-  /** Base64 数据 */
-  base64Data: string;
-  /** MIME 类型 */
-  mimeType: string;
-  /** 预览 URL */
-  preview?: string;
-  /** 图片尺寸 */
-  dimensions?: { width: number; height: number };
-}
-
-/**
  * 版本信息项
  */
 export interface VersionInfoItem {
@@ -862,7 +845,7 @@ export interface ProjectDetailData {
   /** 页面参数配置 */
   pageArgConfigs: PageArgConfig[];
   /** 数据源列表 */
-  dataSources?: DataSource[];
+  dataSources: DataResource[];
   /** 扩展字段 */
   ext: Record<string, any>;
   /** 租户ID */
@@ -966,32 +949,6 @@ export type StopAgentServiceResponse = RequestResponse<Record<string, any>>;
 // ==================== 数据源绑定相关类型定义 ====================
 
 /**
- * 数据源信息接口
- */
-export interface DataSource {
-  /** 数据源ID */
-  id: number;
-  /** 数据源名称 */
-  name: string;
-  /** 数据源描述 */
-  description?: string;
-  /** 数据源类型：plugin-插件, workflow-工作流 */
-  type: 'plugin' | 'workflow';
-  /** 数据源状态 */
-  status?: string;
-  /** 创建时间 */
-  createdAt?: string;
-  /** 更新时间 */
-  updatedAt?: string;
-  /** 配置信息 */
-  config?: Record<string, any>;
-  /** 标签 */
-  tags?: string[];
-  /** 是否启用 */
-  enabled?: boolean;
-}
-
-/**
  * 数据源选择接口
  */
 export interface DataSourceSelection {
@@ -1076,3 +1033,66 @@ export interface ModelConfig {
  * 查询模型列表API响应类型
  */
 export type ListModelsResponse = RequestResponse<ModelConfig[]>;
+
+// ==================== 开发服务器日志相关类型定义 ====================
+
+/**
+ * 日志级别枚举
+ */
+export enum LogLevel {
+  /** 普通信息 */
+  NORMAL = 'NORMAL',
+  /** 信息 */
+  INFO = 'INFO',
+  /** 警告 */
+  WARN = 'WARN',
+  /** 错误 */
+  ERROR = 'ERROR',
+}
+
+/**
+ * 开发服务器日志条目接口
+ */
+export interface DevLogEntry {
+  /** 行号 */
+  line: number;
+  /** 时间戳 [2025/10/20 09:52:57] */
+  timestamp?: string;
+  /** 日志级别 */
+  level: LogLevel;
+  /** 原始内容 */
+  content: string;
+  /** 是否为错误 */
+  isError?: boolean;
+  /** 错误指纹（用于去重） */
+  errorFingerprint?: string;
+}
+
+/**
+ * 获取开发服务器日志请求参数接口
+ */
+export interface GetDevLogRequest {
+  /** 项目ID */
+  projectId: number;
+  /** 起始行号 */
+  startIndex: number;
+}
+
+/**
+ * 获取开发服务器日志响应数据接口
+ */
+export interface GetDevLogResponse {
+  /** 项目ID */
+  projectId: number;
+  /** 日志内容列表 */
+  logs: DevLogEntry[];
+  /** 总行数 */
+  totalLines: number;
+  /** 当前起始行号 */
+  startIndex: number;
+}
+
+/**
+ * 获取开发服务器日志API响应类型
+ */
+export type GetDevLogApiResponse = RequestResponse<GetDevLogResponse>;

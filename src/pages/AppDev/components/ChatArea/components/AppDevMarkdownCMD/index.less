@@ -1,4 +1,6 @@
 // AppDev 专用 MarkdownCMD 样式 - 更紧凑的字体和间距
+@import '@/styles/token.less';
+
 .appDevMarkdownCMD {
   // 覆盖默认的 Markdown 样式，使其更紧凑
 
@@ -123,12 +125,12 @@
   code:not(pre code) {
     background: #f5f5f5 !important;
     border-radius: 3px !important;
-    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace !important;
+    font-family: @fontFamilyCode !important;
   }
 
   // 代码块
   pre code {
-    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace !important;
+    font-family: @fontFamilyCode !important;
     background: transparent !important;
     padding: 0 !important;
   }

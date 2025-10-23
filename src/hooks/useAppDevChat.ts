@@ -26,6 +26,7 @@ import {
   insertToolCallUpdateBlock,
 } from '@/pages/AppDev/utils/markdownProcess';
 import type { DataSourceSelection } from '@/types/interfaces/appDev';
+import { DataResource } from '@/types/interfaces/dataResource';
 import {
   addSessionInfoToMessages,
   appendTextToStreamingMessage,
@@ -49,7 +50,7 @@ interface UseAppDevChatProps {
   projectId: string;
   selectedModelId?: number | null; // 新增：选中的模型ID
   onRefreshFileTree?: (preserveState?: boolean, forceRefresh?: boolean) => void; // 新增：文件树刷新回调
-  selectedDataSources?: DataSourceSelection[]; // 新增：选中的数据源列表
+  selectedDataResources?: DataResource[]; // 新增：选中的数据源列表
   onClearDataSourceSelections?: () => void; // 新增：清除数据源选择回调
   onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
   onClearUploadedImages?: () => void; // 新增：清除上传图片回调
@@ -60,7 +61,7 @@ export const useAppDevChat = ({
   projectId,
   selectedModelId, // 新增
   onRefreshFileTree,
-  selectedDataSources = [],
+  selectedDataResources = [],
   onClearDataSourceSelections,
   onRefreshVersionList, // 新增：刷新版本列表回调
   onClearUploadedImages, // 新增：清除上传图片回调
@@ -405,6 +406,16 @@ export const useAppDevChat = ({
       // 生成临时request_id
       const requestId = generateRequestId();
       try {
+        const _selectedDataResources: DataSourceSelection[] =
+          selectedDataResources
+            .filter((item) => item.isSelected)
+            ?.map((resource) => {
+              return {
+                dataSourceId: Number(resource.id),
+                type: resource.type === 'plugin' ? 'plugin' : 'workflow',
+                name: resource.name,
+              };
+            }) || [];
         // 调用发送消息API
         const response = await sendChatMessage({
           prompt: chatInput,
@@ -412,8 +423,7 @@ export const useAppDevChat = ({
           request_id: requestId,
           model_id: selectedModelId ? String(selectedModelId) : undefined, // 新增：传递模型ID
           attachments: attachments || undefined,
-          data_sources:
-            selectedDataSources.length > 0 ? selectedDataSources : undefined,
+          data_sources: _selectedDataResources,
         });
 
         if (response.success && response.data) {
@@ -437,7 +447,7 @@ export const useAppDevChat = ({
             chatInput,
             requestId,
             attachments,
-            selectedDataSources.length > 0 ? selectedDataSources : undefined,
+            _selectedDataResources,
           );
 
           setChatMessages((prev) => [...prev, userMessage]);

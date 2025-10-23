@@ -1,3 +1,5 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
 // 代码编辑器容器
 .codeEditorContainer {
   height: 100%;
@@ -8,11 +10,11 @@
 // 文件内容预览区域
 .fileContentPreview {
   flex: 1;
-  height: calc(100vh - 200px);
+  // height: calc(100vh - 200px);
   min-height: 400px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 10%);
-  border-radius: 0 0 8px 8px;
+  background: @colorBgContainer;
+  // border: 1px solid rgba(0, 0, 0, 10%);
+  // border-radius: 0 0 8px 8px;
   overflow: hidden;
 }
 
@@ -23,59 +25,59 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #64748b;
-  font-size: 14px;
+  color: @colorTextTertiary;
+  font-size: @fontSize;
   background: #f8fafc;
   gap: 16px;
 }
 
 // 加载和错误状态样式
 .loadingContainer {
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
-  color: #1e293b;
+  color: @colorTextBase;
   gap: 16px;
 }
 
 .errorContainer {
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
   padding: 24px;
-  color: #1e293b;
+  color: @colorTextBase;
   gap: 16px;
 }
 
 // 暗色主题支持
 [data-theme='dark'] {
   .codeEditorContainer {
-    background: var(--xagi-color-bg-container);
+    background: @colorBgContainer;
   }
 
   .fileContentPreview {
-    background: var(--xagi-color-bg-container);
-    border-color: var(--xagi-color-border);
+    background: @colorBgContainer;
+    border-color: @colorBorder;
   }
 
   .emptyState {
-    background: var(--xagi-color-bg-layout);
-    color: var(--xagi-color-text-secondary);
+    background: @colorBgContainer;
+    color: @colorTextSecondary;
   }
 
   .loadingContainer {
-    background: var(--xagi-color-bg-layout);
-    color: var(--xagi-color-text);
+    background: @colorBgContainer;
+    color: @colorTextBase;
   }
 
   .errorContainer {
-    background: var(--xagi-color-bg-layout);
-    color: var(--xagi-color-text);
+    background: @colorBgContainer;
+    color: @colorTextBase;
   }
 }
