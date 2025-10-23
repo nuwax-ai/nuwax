@@ -49,6 +49,7 @@ import {
 interface UseAppDevChatProps {
   projectId: string;
   selectedModelId?: number | null; // 新增：选中的模型ID
+  multiModelId?: number | null; // 新增：多模态模型ID（视觉模型ID）
   onRefreshFileTree?: (preserveState?: boolean, forceRefresh?: boolean) => void; // 新增：文件树刷新回调
   selectedDataResources?: DataResource[]; // 新增：选中的数据源列表
   onClearDataSourceSelections?: () => void; // 新增：清除数据源选择回调
@@ -60,6 +61,7 @@ interface UseAppDevChatProps {
 export const useAppDevChat = ({
   projectId,
   selectedModelId, // 新增
+  multiModelId, // 新增：多模态模型ID（视觉模型ID）
   onRefreshFileTree,
   selectedDataResources = [],
   onClearDataSourceSelections,
@@ -421,7 +423,8 @@ export const useAppDevChat = ({
           prompt: chatInput,
           project_id: projectId,
           request_id: requestId,
-          model_id: selectedModelId ? String(selectedModelId) : undefined, // 新增：传递模型ID
+          chat_model_id: selectedModelId ? String(selectedModelId) : '', // 编码模型ID
+          multi_model_id: multiModelId ? String(multiModelId) : '', // 多模态模型ID（视觉模型ID，可选）
           attachments: attachments || undefined,
           data_sources: _selectedDataResources,
         });
