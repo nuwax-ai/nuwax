@@ -16,7 +16,6 @@ import {
   AgentComponentTypeEnum,
   EventListEnum,
   ExpandPageAreaEnum,
-  HideChatAreaEnum,
 } from '@/types/enums/agent';
 import {
   AgentArrangeConfigEnum,
@@ -314,11 +313,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       type === AgentComponentTypeEnum.Page &&
       allPageComponentList?.length === 1
     ) {
-      if (
-        agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.Yes ||
-        agentConfigInfo?.hideChatArea === HideChatAreaEnum.Yes
-      ) {
-        // 此处只需关闭扩展页面区域，在回调方法中会设置hideChatArea为HideChatAreaEnum.No
+      if (agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.Yes) {
         onChangeAgent(ExpandPageAreaEnum.No, 'expandPageArea');
       }
     }
@@ -821,49 +816,6 @@ ${item.identification}的动态JSON参数JsonSchema如下\n
               onChangeAgent(
                 value ? ExpandPageAreaEnum.Yes : ExpandPageAreaEnum.No,
                 'expandPageArea',
-              )
-            }
-          />
-        </Tooltip>
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
-    {
-      key: AgentArrangeConfigEnum.Hide_Chat_Area,
-      label: '隐藏主会话框',
-      children: (
-        // “隐藏主会话框”，当选中时智能体详情仅展示页面，这个时候一个智能体就是一个独立的应用（系统）
-        <p className={cx(styles.text)}>
-          当给智能体绑定了页面后，打开该配置项时，智能体的对话框将会被隐藏，直接展示智能体绑定的页面
-        </p>
-      ),
-      extra: (
-        <Tooltip
-          title={
-            !allPageComponentList?.length
-              ? '请先添加页面'
-              : agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.No
-              ? '当展开页面区是关闭的情况下，隐藏主会话框不能打开'
-              : ''
-          }
-        >
-          <Switch
-            disabled={
-              !allPageComponentList?.length ||
-              agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.No
-            }
-            value={agentConfigInfo?.hideChatArea === HideChatAreaEnum.Yes}
-            // 阻止冒泡事件
-            onClick={(_, e: any) => {
-              e.stopPropagation();
-            }}
-            onChange={(value: boolean) =>
-              onChangeAgent(
-                value ? HideChatAreaEnum.Yes : HideChatAreaEnum.No,
-                'hideChatArea',
               )
             }
           />

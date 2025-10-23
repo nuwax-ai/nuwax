@@ -10,7 +10,7 @@ import {
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
-import { AgentComponentTypeEnum, HideChatAreaEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
@@ -159,11 +159,6 @@ const EditAgent: React.FC = () => {
       _agentConfigInfo.modified = dayjs().toString();
     }
 
-    // 当展开页面区是关闭的情况下，隐藏主会话框不能打开
-    if (attr === 'expandPageArea') {
-      _agentConfigInfo.hideChatArea = HideChatAreaEnum.No;
-    }
-
     setAgentConfigInfo(_agentConfigInfo);
 
     // 预置问题, 并且没有消息时，更新建议预置问题列表
@@ -210,7 +205,6 @@ const EditAgent: React.FC = () => {
       openScheduledTask,
       openLongMemory,
       expandPageArea,
-      hideChatArea,
       guidQuestionDtos,
     } = _agentConfigInfo;
 
@@ -228,7 +222,6 @@ const EditAgent: React.FC = () => {
       openScheduledTask,
       openLongMemory,
       expandPageArea,
-      hideChatArea,
       guidQuestionDtos,
     });
   };
