@@ -383,3 +383,107 @@ export const formatFileSize = (bytes: number): string => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
+
+/**
+ * 检测字符串是否为 base64 编码
+ */
+export const isBase64 = (str: string): boolean => {
+  if (!str || typeof str !== 'string') return false;
+
+  // 检查是否包含 base64 数据 URL 前缀
+  if (str.startsWith('data:')) {
+    return /^data:image\/[a-zA-Z0-9]+;base64,/.test(str);
+  }
+
+  // 检查是否为纯 base64 字符串（不包含 data URL 前缀）
+  const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+  return base64Regex.test(str) && str.length > 0 && str.length % 4 === 0;
+};
+
+/**
+ * 检测字符串是否为 base64 图片数据
+ */
+export const isBase64Image = (str: string): boolean => {
+  if (!str || typeof str !== 'string') return false;
+
+  // 检查是否为 data URL 格式的图片
+  if (str.startsWith('data:image/')) {
+    return /^data:image\/[a-zA-Z0-9]+;base64,/.test(str);
+  }
+
+  // 检查是否为纯 base64 图片数据（通过文件头判断）
+  if (isBase64(str)) {
+    // 检查常见的图片文件头
+    const imageHeaders = [
+      '/9j/', // JPEG
+      'iVBORw0KGgo', // PNG
+      'R0lGOD', // GIF
+      'UklGR', // WebP
+      'Qk0=', // BMP
+    ];
+
+    return imageHeaders.some((header) => str.startsWith(header));
+  }
+
+  return false;
+};
+
+/**
+ * 将 base64 字符串转换为 data URL 格式
+ */
+export const base64ToDataUrl = (
+  base64: string,
+  mimeType: string = 'image/png',
+): string => {
+  if (!base64 || typeof base64 !== 'string') return '';
+
+  // 如果已经是 data URL 格式，直接返回
+  if (base64.startsWith('data:')) {
+    return base64;
+  }
+
+  // 添加 data URL 前缀
+  return `data:${mimeType};base64,${base64}`;
+};
+
+/**
+ * 从 base64 字符串中提取 MIME 类型
+ */
+export const getMimeTypeFromBase64 = (base64: string): string => {
+  if (!base64 || typeof base64 !== 'string') return 'image/png';
+
+  // 如果已经是 data URL 格式，提取 MIME 类型
+  if (base64.startsWith('data:')) {
+    const match = base64.match(/^data:([^;]+);base64,/);
+    return match ? match[1] : 'image/png';
+  }
+
+  // 根据文件头判断 MIME 类型
+  if (base64.startsWith('/9j/')) return 'image/jpeg';
+  if (base64.startsWith('iVBORw0KGgo')) return 'image/png';
+  if (base64.startsWith('R0lGOD')) return 'image/gif';
+  if (base64.startsWith('UklGR')) return 'image/webp';
+  if (base64.startsWith('Qk0=')) return 'image/bmp';
+
+  // 默认返回 PNG
+  return 'image/png';
+};
+
+/**
+ * 处理图片内容，支持 base64 和普通 URL
+ */
+export const processImageContent = (
+  content: string,
+  fallbackUrl?: string,
+): string => {
+  if (!content) return fallbackUrl || '';
+
+  // 如果是 base64 图片数据，转换为 data URL
+  if (isBase64Image(content)) {
+    const mimeType = getMimeTypeFromBase64(content);
+    return base64ToDataUrl(content, mimeType);
+  }
+
+  // 如果是普通 URL，直接返回
+  return content;
+};

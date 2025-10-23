@@ -1,5 +1,5 @@
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
-import { isImageFile } from '@/utils/appDevUtils';
+import { isImageFile, processImageContent } from '@/utils/appDevUtils';
 import { Button, Spin } from 'antd';
 import React from 'react';
 import CodeViewer from '../CodeViewer';
@@ -147,11 +147,12 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           ) : isImage ? (
             <ImageViewer
               imagePath={selectedFileId}
-              imageUrl={
+              imageUrl={processImageContent(
+                fileNode.content,
                 devServerUrl
                   ? `${devServerUrl}/${selectedFileId}`
-                  : `/${selectedFileId}`
-              }
+                  : `/${selectedFileId}`,
+              )}
               alt={selectedFileId}
               onRefresh={() => {
                 if (previewRef.current) {
@@ -169,27 +170,8 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     );
   }
 
-  // 正常模式 + preview标签页：显示ImageViewer（图片）或Preview组件（应用预览）
+  // 正常模式 + preview标签页：review组件（应用预览）
   if (mode === 'preview') {
-    if (selectedFileId && isImageFile(selectedFileId)) {
-      return (
-        <ImageViewer
-          imagePath={selectedFileId}
-          imageUrl={
-            devServerUrl
-              ? `${devServerUrl}/${selectedFileId}`
-              : `/${selectedFileId}`
-          }
-          alt={selectedFileId}
-          onRefresh={() => {
-            if (previewRef.current) {
-              previewRef.current.refresh();
-            }
-          }}
-        />
-      );
-    }
-
     return (
       <Preview
         ref={previewRef}
@@ -263,7 +245,22 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
 
         {/* 文件内容预览 */}
         <div className={styles.fileContentPreview}>
-          {hasContents ? (
+          {isImage ? (
+            <ImageViewer
+              imageUrl={processImageContent(
+                hasContents ? currentFileNode.content : '',
+                devServerUrl
+                  ? `${devServerUrl}/${selectedFileId}`
+                  : `/${selectedFileId}`,
+              )}
+              alt={selectedFileId}
+              onRefresh={() => {
+                if (previewRef.current) {
+                  previewRef.current.refresh();
+                }
+              }}
+            />
+          ) : hasContents ? (
             <CodeViewer
               fileId={selectedFileId}
               fileName={selectedFileId.split('/').pop() || selectedFileId}
@@ -271,21 +268,6 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
               content={currentFileNode.content}
               readOnly={isComparing || isChatLoading}
               onContentChange={onContentChange}
-            />
-          ) : isImage ? (
-            <ImageViewer
-              imagePath={selectedFileId}
-              imageUrl={
-                devServerUrl
-                  ? `${devServerUrl}/${selectedFileId}`
-                  : `/${selectedFileId}`
-              }
-              alt={selectedFileId}
-              onRefresh={() => {
-                if (previewRef.current) {
-                  previewRef.current.refresh();
-                }
-              }}
             />
           ) : fileContent ? (
             <CodeViewer
