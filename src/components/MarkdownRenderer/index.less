@@ -117,6 +117,28 @@
         color: var(--ds-rgb-label-1);
       }
     }
+
+    // 事件绑定配置样式
+    a.event[event-type][data] {
+      display: inline-block;
+      font-size: 12px;
+      margin: 0 4px;
+      padding: 4px 8px;
+      cursor: pointer;
+      max-width: 100px;
+      min-width: 18px;
+      border-radius: 24px;
+      color: rgba(0, 0, 0, 60%) !important;
+      background-color: rgba(0, 0, 0, 5%);
+      line-height: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      &:hover {
+        background-color: rgba(235, 235, 235);
+      }
+    }
   }
 }
 
