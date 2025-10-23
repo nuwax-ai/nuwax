@@ -46,7 +46,6 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
 
   // 创建页面
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
-    console.log('values', values);
     const { projectId, name: projectName } = pageInfo || {};
     if (!projectId) {
       message.error('页面ID不存在');
@@ -78,7 +77,7 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
       <Form
         form={form}
         preserve={false}
-        layout="vertical"
+        layout="horizontal"
         requiredMark={customizeRequiredMark}
         onFinish={onFinish}
         autoComplete="off"
