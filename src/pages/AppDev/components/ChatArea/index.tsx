@@ -2,7 +2,7 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import StreamMessageScrollContainer, {
   StreamMessageScrollContainerRef,
 } from '@/pages/AppDev/components/ChatArea/components/StreamMessageScrollContainer';
-import { cancelAgentTask } from '@/services/appDev';
+import { cancelAgentTask, cancelAiChatAgentTask } from '@/services/appDev';
 import type {
   AppDevChatMessage,
   Attachment,
@@ -130,23 +130,30 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     setIsStoppingTask(true);
 
     try {
-      // 获取当前会话ID（从最后一条消息中获取）
+      // 获取当前Ai Chat会话ID
+      const aiChatSessionId = chat.aiChatSessionId;
+      // 获取当前会话ID（从最后一条消息中获取）  cancelAiChatAgentTask
       const lastMessage = chat.chatMessages[chat.chatMessages.length - 1];
       const sessionId = lastMessage?.sessionId;
 
-      if (!sessionId) {
-        message.warning('无法获取当前会话ID');
-        return;
+      // console.log('aiChatSessionId', aiChatSessionId, sessionId);
+      let response;
+      // 如果Ai Chat会话ID存在，并且会话ID不存在，则取消Ai Chat Agent任务
+      if (aiChatSessionId && !sessionId) {
+        response = await cancelAiChatAgentTask(projectId, aiChatSessionId);
+      } else if (sessionId) {
+        // 如果会话ID存在，则取消Agent任务
+        response = await cancelAgentTask(projectId, sessionId);
       }
 
-      const response = await cancelAgentTask(projectId, sessionId);
-
-      if (response.success) {
+      if (response && response.success) {
         message.success('Agent 任务已取消');
         // 调用原有的取消聊天功能
         chat.cancelChat();
       } else {
-        message.error(`取消 Agent 任务失败: ${response.message || '未知错误'}`);
+        message.error(
+          `取消 Agent 任务失败: ${response?.message || '未知错误'}`,
+        );
       }
     } catch (error) {
       message.error('取消 Agent 任务失败');

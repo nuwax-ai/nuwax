@@ -316,6 +316,25 @@ export const cancelAgentTask = async (
 };
 
 /**
+ * 取消Ai Chat Agent任务 - 基于新的 OpenAPI 规范
+ * @param projectId 项目ID
+ * @param aiChatSessionId Ai Chat会话ID
+ * @returns Promise<CancelResponse> 取消结果
+ */
+export const cancelAiChatAgentTask = async (
+  projectId: string,
+  sessionId: string,
+): Promise<CancelResponse> => {
+  return request(`/api/custom-page/ai-chat-terminate`, {
+    method: 'POST',
+    data: {
+      project_id: projectId,
+      session_id: sessionId,
+    },
+  });
+};
+
+/**
  * 删除文件或文件夹
  * @param projectId 项目ID
  * @param filePath 文件路径
