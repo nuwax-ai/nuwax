@@ -22,6 +22,8 @@ export interface ProjectInfoState {
   error: string | null;
   /** 最后更新时间 */
   lastUpdated: Date | null;
+  /** 是否有权限访问项目 */
+  hasPermission: boolean;
 }
 
 /**
@@ -42,6 +44,8 @@ export interface UseAppDevProjectInfoReturn {
   getActionColor: (action: string) => string;
   /** 格式化版本时间 */
   formatVersionTime: (time: string) => string;
+  /** 是否有权限访问项目 */
+  hasPermission: boolean;
 }
 
 /**
@@ -58,6 +62,7 @@ export const useAppDevProjectInfo = (
     isLoading: false,
     error: null,
     lastUpdated: null,
+    hasPermission: false,
   });
 
   /**
@@ -83,10 +88,18 @@ export const useAppDevProjectInfo = (
           isLoading: false,
           error: null,
           lastUpdated: new Date(),
+          hasPermission: true,
         });
       } else {
-        const errorMessage = response?.message || '获取项目详情失败';
-        throw new Error(errorMessage);
+        if (response?.code === '4030') {
+          // 没有权限
+          setProjectInfoState((prev) => ({
+            ...prev,
+            isLoading: false,
+            error: '您没有权限访问该项目',
+            hasPermission: false,
+          }));
+        }
       }
     } catch (error: any) {
       const errorMessage =
@@ -221,6 +234,7 @@ export const useAppDevProjectInfo = (
     getActionText,
     getActionColor,
     formatVersionTime,
+    hasPermission: projectInfoState.hasPermission,
   };
 };
 

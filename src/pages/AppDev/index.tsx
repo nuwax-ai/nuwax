@@ -158,20 +158,22 @@ const AppDev: React.FC = () => {
   // 使用 Hook 控制抽屉打开时的滚动条
   useDrawerScroll(openVersionHistory);
 
-  // 使用重构后的 hooks
+  // 使用项目详情 Hook
+  const projectInfo = useAppDevProjectInfo(projectId);
+
+  // 权限校验通过后才初始化其他 hooks
   const fileManagement = useAppDevFileManagement({
     projectId: projectId || '',
     onFileSelect: setActiveFile,
     onFileContentChange: updateFileContent,
     isChatLoading: false, // 临时设为false，稍后更新
+    hasPermission: projectInfo.hasPermission, // 传递权限状态
   });
 
   // 模型选择器
-  const modelSelector = useAppDevModelSelector(projectId || '');
-
-  // 使用项目详情 Hook
-  const projectInfo = useAppDevProjectInfo(projectId);
-
+  const modelSelector = useAppDevModelSelector(projectId || '', {
+    hasPermission: projectInfo.hasPermission,
+  });
   const server = useAppDevServer({
     projectId: projectId || '',
     onServerStart: updateDevServerUrl,
@@ -201,11 +203,17 @@ const AppDev: React.FC = () => {
   });
 
   useEffect(() => {
-    if (projectInfo.projectInfoState.projectInfo?.devAgentId) {
+    if (
+      projectInfo.projectInfoState.projectInfo?.devAgentId &&
+      projectInfo.hasPermission
+    ) {
       const agentId = projectInfo.projectInfoState.projectInfo?.devAgentId;
       runAgentConfigInfo(agentId);
     }
-  }, [projectInfo.projectInfoState.projectInfo?.devAgentId]);
+  }, [
+    projectInfo.projectInfoState.projectInfo?.devAgentId,
+    projectInfo.hasPermission,
+  ]);
 
   // 定期更新 Preview 状态
   useEffect(() => {
@@ -226,6 +234,10 @@ const AppDev: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (!projectInfo.hasPermission) {
+      return;
+    }
+
     if (projectInfo.projectInfoState.projectInfo?.lastMultiModelId) {
       modelSelector.selectMultiModel(
         projectInfo.projectInfoState.projectInfo.lastMultiModelId,
@@ -251,7 +263,11 @@ const AppDev: React.FC = () => {
       // 如果没有 Anthropic 模型，使用列表第一个
       modelSelector.selectModel(chatModelList[0].id);
     }
-  }, [modelSelector.models, projectInfo.projectInfoState.projectInfo]);
+  }, [
+    modelSelector.models,
+    projectInfo.projectInfoState.projectInfo,
+    projectInfo.hasPermission,
+  ]);
 
   // 使用重启开发服务器 Hook
   const { restartDevServer } = useRestartDevServer({
@@ -283,11 +299,12 @@ const AppDev: React.FC = () => {
         showMessage: false, // Agent 触发时不显示消息
       });
     }, // 新增：Agent 触发时不切换页面
+    hasPermission: projectInfo.hasPermission, // 传递权限状态
   });
 
   // 开发服务器日志管理
   const devLogs = useDevLogs(projectId || '', {
-    enabled: hasValidProjectId && isServiceRunning,
+    enabled: hasValidProjectId && isServiceRunning && projectInfo.hasPermission,
     pollInterval: 5000, // 调整为5秒轮询
     maxLogLines: 1000,
   });
@@ -302,7 +319,7 @@ const AppDev: React.FC = () => {
 
   useEffect(() => {
     // 初始化处于added状态的组件列表
-    if (projectInfo.projectInfoState.projectInfo) {
+    if (projectInfo.projectInfoState.projectInfo && projectInfo.hasPermission) {
       const dataSources =
         projectInfo.projectInfoState.projectInfo?.dataSources || [];
       const addComponents = dataSources.map((dataSource) => {
@@ -318,18 +335,18 @@ const AppDev: React.FC = () => {
       });
       setAddComponents(addComponents as AgentAddComponentStatusInfo[]);
     }
-  }, [projectInfo.projectInfoState?.projectInfo]);
+  }, [projectInfo.projectInfoState?.projectInfo, projectInfo.hasPermission]);
 
   // 数据资源管理
   const dataResourceManagement = useDataResourceManagement();
 
   useEffect(() => {
-    if (projectInfo.projectInfoState.projectInfo) {
+    if (projectInfo.projectInfoState.projectInfo && projectInfo.hasPermission) {
       dataResourceManagement.fetchResources(
         projectInfo.projectInfoState.projectInfo?.dataSources || [],
       );
     }
-  }, [projectInfo.projectInfoState.projectInfo]);
+  }, [projectInfo.projectInfoState.projectInfo, projectInfo.hasPermission]);
 
   useEffect(() => {
     if (dataResourceManagement.resources?.length > 0) {
@@ -1348,7 +1365,11 @@ const AppDev: React.FC = () => {
                         isSavingFile={
                           fileManagement.fileContentState.isSavingFile
                         }
-                        devServerUrl={workspace.devServerUrl}
+                        devServerUrl={
+                          projectInfo.hasPermission
+                            ? workspace.devServerUrl
+                            : null
+                        }
                         isStarting={server.isStarting}
                         isRestarting={server.isRestarting}
                         isProjectUploading={isProjectUploading}

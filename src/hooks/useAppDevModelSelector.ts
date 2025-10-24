@@ -7,7 +7,11 @@ import type { ModelLisDto } from '@/types/interfaces/appDev';
 import { message } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 
-export const useAppDevModelSelector = (projectId: string) => {
+export const useAppDevModelSelector = (
+  projectId: string,
+  options?: { hasPermission?: boolean },
+) => {
+  const { hasPermission = true } = options || {};
   const [models, setModels] = useState<ModelLisDto>();
   // 编码模型ID
   const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
@@ -61,10 +65,10 @@ export const useAppDevModelSelector = (projectId: string) => {
 
   // 组件初始化时加载模型列表
   useEffect(() => {
-    if (projectId) {
+    if (projectId && hasPermission) {
       loadModels();
     }
-  }, [projectId]); // 移除 loadModels 依赖，避免重复执行
+  }, [projectId, hasPermission]); // 移除 loadModels 依赖，避免重复执行
 
   return {
     models,
