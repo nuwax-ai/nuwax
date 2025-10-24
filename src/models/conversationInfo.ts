@@ -56,6 +56,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export default () => {
   const { runHistoryItem } = useModel('conversationHistory');
+  const { showPagePreview } = useModel('chat');
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();
@@ -347,6 +348,39 @@ export default () => {
               data,
             ] as ProcessingInfo[],
           };
+          // 添加处理扩展页面逻辑
+          if (data.status === ProcessingEnum.EXECUTING) {
+            const input = processingResult.input;
+            // 判断页面类型
+            if (input.uri_type === 'Page') {
+              // if (!input?.uri) {
+              //   message.error('页面路径不存在');
+              //   return;
+              // }
+
+              const previewData = {
+                uri: input.uri,
+                params: input.arguments || {},
+                executeId: data.executeId || '',
+                method: input.method,
+                request_id: input.request_id,
+                data_type: input.data_type,
+              };
+
+              // 显示页面预览
+              showPagePreview(previewData);
+            }
+
+            // 链接类型
+            if (input.uri_type === 'Link') {
+              // 拼接 query 参数
+              const queryString = new URLSearchParams(
+                input.arguments,
+              ).toString();
+              const pageUrl = `${input.uri}?${queryString}`;
+              window.open(pageUrl, '_blank');
+            }
+          }
 
           // 已调用完毕后, 处理卡片信息
           if (

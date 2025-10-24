@@ -1,7 +1,4 @@
-import {
-  AgentComponentTypeEnum,
-  ExpandPageAreaEnum,
-} from '@/types/enums/agent';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
 // import { copyTextToClipboard } from '@/utils/clipboard';
 import { cloneDeep } from '@/utils/common';
@@ -136,30 +133,30 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
       // 自动展开页面预览逻辑
       // 如果是 Page 类型且配置为自动展开，并且状态为完成，自动触发预览
-      if (
-        innerProcessing.type === AgentComponentTypeEnum.Page &&
-        innerProcessing.status === ProcessingEnum.FINISHED &&
-        agentPageConfig.expandPageArea === ExpandPageAreaEnum.Yes &&
-        theDetailData
-      ) {
-        const result = innerProcessing.result;
-        if (result && typeof result === 'object') {
-          const input = (
-            result as {
-              input?: { uri?: string; arguments?: Record<string, any> };
-            }
-          ).input;
-          if (input?.uri) {
-            // 自动触发预览
-            showPagePreview({
-              name: innerProcessing.name || '页面预览',
-              uri: input.uri,
-              params: input.arguments || {},
-              executeId: innerProcessing.executeId || '',
-            });
-          }
-        }
-      }
+      // if (
+      //   innerProcessing.type === AgentComponentTypeEnum.Page &&
+      //   innerProcessing.status === ProcessingEnum.FINISHED &&
+      //   agentPageConfig.expandPageArea === ExpandPageAreaEnum.Yes &&
+      //   theDetailData
+      // ) {
+      //   const result = innerProcessing.result;
+      //   if (result && typeof result === 'object') {
+      //     const input = (
+      //       result as {
+      //         input?: { uri?: string; arguments?: Record<string, any> };
+      //       }
+      //     ).input;
+      //     if (input?.uri) {
+      //       // 自动触发预览
+      //       showPagePreview({
+      //         name: innerProcessing.name || '页面预览',
+      //         uri: input.uri,
+      //         params: input.arguments || {},
+      //         executeId: innerProcessing.executeId || '',
+      //       });
+      //     }
+      //   }
+      // }
     }
   }, [
     innerProcessing.executeId,
@@ -213,29 +210,24 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     const input: InputProps = (result as { input: InputProps }).input;
     // 判断页面类型
     if (input.uri_type === 'Page') {
-      if (!input?.uri) {
-        message.error('页面路径不存在');
-        return;
-      }
+      // if (!input?.uri) {
+      //   message.error('页面路径不存在');
+      //   return;
+      // }
 
       const previewData = {
-        name: innerProcessing.name || '页面预览',
         uri: input.uri,
         params: input.arguments || {},
-        executeId: innerProcessing.executeId || '',
-        method: input.method,
-        request_id: input.request_id,
-        data_type: input.data_type,
+        method: '', // input.method,
+        request_id: '', //  input.request_id,
+        data_type: '', // input.data_type,
       };
 
       // 显示页面预览
       showPagePreview(previewData);
     }
     // 链接类型
-    if (
-      input.uri_type === 'Link' &&
-      innerProcessing.status === ProcessingEnum.FINISHED
-    ) {
+    if (input.uri_type === 'Link') {
       // 拼接 query 参数
       const queryString = new URLSearchParams(input.arguments).toString();
       const pageUrl = `${input.uri}?${queryString}`;
@@ -258,12 +250,13 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   }, [detailData, innerProcessing, showPagePreview, pagePreviewData]);
 
   // 自动打开预览页面功能
-  useEffect(() => {
-    if (innerProcessing.status === ProcessingEnum.EXECUTING) {
-      // 打开预览页面
-      openPreviewPage();
-    }
-  }, [innerProcessing]);
+  // useEffect(() => {
+  //   if (innerProcessing.status === ProcessingEnum.EXECUTING) {
+  //     console.log('innerProcessing.status',innerProcessing.status)
+  //     // 打开预览页面
+  //     openPreviewPage();
+  //   }
+  // }, [innerProcessing]);
 
   if (!innerProcessing.executeId) {
     return null;

@@ -282,7 +282,6 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
           src={pageUrl}
           sandbox={SANDBOX}
           className={cx(styles['page-iframe'])}
-          title={pagePreviewData.name || '页面预览'}
           onLoad={handleIframeLoad}
           onError={handleIframeError}
           style={{
