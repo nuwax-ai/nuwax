@@ -139,7 +139,7 @@ const AppDev: React.FC = () => {
   const [isProjectUploading, setIsProjectUploading] = useState(false);
 
   // 聊天模式状态
-  const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
+  // const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
 
   // 数据资源相关状态
   const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
@@ -1146,11 +1146,11 @@ const AppDev: React.FC = () => {
           {/* 左侧AI助手面板 */}
           <Col className={styles.leftPanel}>
             <ChatArea
-              chatMode={chatMode}
-              setChatMode={setChatMode}
+              // chatMode={chatMode}
+              // setChatMode={setChatMode}
               chat={chat}
               projectId={projectId || ''} // 新增：项目ID
-              onVersionSelect={handleVersionSelect}
+              // onVersionSelect={handleVersionSelect}
               selectedDataSources={selectedDataResources} // 新增：选中的数据源
               onUpdateDataSources={handleUpdateDataSources} // 新增：更新数据源回调
               fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
@@ -1160,8 +1160,8 @@ const AppDev: React.FC = () => {
               //   // 设置图片清空方法到 ref
               //   clearUploadedImagesRef.current = clearFn;
               // }} // 新增：设置图片清空方法回调
-              autoHandleError={autoErrorHandling.autoHandleEnabled} // 新增：自动处理异常开关状态
-              onAutoHandleErrorChange={autoErrorHandling.setAutoHandleEnabled} // 新增：自动处理异常开关变化回调
+              // autoHandleError={autoErrorHandling.autoHandleEnabled} // 新增：自动处理异常开关状态
+              // onAutoHandleErrorChange={autoErrorHandling.setAutoHandleEnabled} // 新增：自动处理异常开关变化回调
             />
           </Col>
 

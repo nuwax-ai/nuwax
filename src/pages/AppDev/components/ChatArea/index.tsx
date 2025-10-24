@@ -32,12 +32,12 @@ import styles from './index.less';
 const { Text } = Typography;
 
 interface ChatAreaProps {
-  chatMode: 'chat' | 'code';
-  setChatMode: (mode: 'chat' | 'code') => void;
+  // chatMode: 'chat' | 'code';
+  // setChatMode: (mode: 'chat' | 'code') => void;
   chat: any;
   // projectInfo: any;
   projectId: string;
-  onVersionSelect: (version: any) => void;
+  // onVersionSelect: (version: any) => void;
   selectedDataSources?: DataResource[];
   onUpdateDataSources: (dataSources: DataResource[]) => void;
   fileContentState: any;
@@ -45,8 +45,8 @@ interface ChatAreaProps {
   // onClearUploadedImages?: (callback: () => void) => void;
   onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
   // 自动处理异常相关props
-  autoHandleError?: boolean;
-  onAutoHandleErrorChange?: (enabled: boolean) => void;
+  // autoHandleError?: boolean;
+  // onAutoHandleErrorChange?: (enabled: boolean) => void;
 }
 
 /**
@@ -94,6 +94,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   // 滚动状态管理
   const [showScrollButton, setShowScrollButton] = useState(false);
+
+  console.log('modelSelector', modelSelector);
 
   /**
    * 滚动按钮点击处理
@@ -607,7 +609,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }, [chat.chatMessages, renderChatMessage, renderConversationDivider]);
 
   return (
-    <Card className={styles.chatCard} bordered={false}>
+    <Card className={styles.chatCard} variant="outlined">
       {/* 聊天模式切换 */}
       {/* <div className={styles.chatModeContainer}>
         <div className={styles.chatModeSwitcher}> */}
