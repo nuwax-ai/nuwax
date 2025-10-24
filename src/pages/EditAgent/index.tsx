@@ -239,20 +239,11 @@ const EditAgent: React.FC = () => {
     systemTipsWordRef.current?.insertText(text);
   };
 
-  // 调试
-  const handlePressDebug = () => {
-    // 如果当前显示的是页面预览，先关闭页面预览
+  useEffect(() => {
     if (pagePreviewData) {
-      hidePagePreview();
-    }
-
-    // 切换调试面板
-    if (showType === EditAgentShowType.Debug_Details) {
       setShowType(EditAgentShowType.Hide);
-    } else {
-      setShowType(EditAgentShowType.Debug_Details);
     }
-  };
+  }, [pagePreviewData]);
 
   // 发布智能体
   const handleConfirmPublish = () => {
@@ -366,10 +357,14 @@ const EditAgent: React.FC = () => {
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
         agentConfigInfo={agentConfigInfo}
-        onToggleShowStand={() => setShowType(EditAgentShowType.Show_Stand)}
-        onToggleVersionHistory={() =>
-          setShowType(EditAgentShowType.Version_History)
-        }
+        onToggleShowStand={() => {
+          hidePagePreview();
+          setShowType(EditAgentShowType.Show_Stand);
+        }}
+        onToggleVersionHistory={() => {
+          hidePagePreview();
+          setShowType(EditAgentShowType.Version_History);
+        }}
         // 点击编辑智能体按钮，打开弹窗
         onEditAgent={() => setOpenEditAgent(true)}
         // 点击发布按钮，打开发布智能体弹窗
@@ -425,7 +420,7 @@ const EditAgent: React.FC = () => {
           <div
             style={{
               flex: pagePreviewData ? '9 1' : '4 1',
-              minWidth: pagePreviewData ? '700px' : '340px',
+              minWidth: pagePreviewData ? '700px' : '350px',
             }}
           >
             {/*预览与调试和预览页面*/}
@@ -435,7 +430,10 @@ const EditAgent: React.FC = () => {
                   <PreviewAndDebug
                     agentConfigInfo={agentConfigInfo}
                     agentId={agentId}
-                    onPressDebug={handlePressDebug}
+                    onPressDebug={() => {
+                      hidePagePreview();
+                      setShowType(EditAgentShowType.Debug_Details);
+                    }}
                     onAgentConfigInfo={setAgentConfigInfo}
                     onOpenPreview={handleOpenPreview}
                   />
