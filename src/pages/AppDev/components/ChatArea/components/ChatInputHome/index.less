@@ -40,6 +40,22 @@
     align-items: center;
     justify-content: space-between;
 
+    .model-selector {
+      color: @colorTextSecondary;
+      padding: 6px @paddingXs;
+      border-radius: @borderRadius;
+      transition: background-color ease-in-out 0.2s;
+
+      &:hover {
+        background-color: @colorPrimaryBg;
+      }
+
+      .model-arrow {
+        font-size: 12px;
+        color: @colorTextDescription;
+      }
+    }
+
     .svg-icon {
       color: @colorTextDescription;
     }
@@ -137,5 +153,14 @@
 
   to {
     transform: rotate(360deg);
+  }
+}
+
+.model-selector-popover {
+  width: 300px;
+  gap: @marginSm;
+
+  .select-list {
+    width: 100% !important;
   }
 }

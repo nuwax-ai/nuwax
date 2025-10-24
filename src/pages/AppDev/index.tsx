@@ -28,6 +28,7 @@ import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import {
   EyeOutlined,
   ReadOutlined,
@@ -62,7 +63,6 @@ import EditorHeaderRight from './components/EditorHeaderRight';
 import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
-import { useAutoErrorHandling } from './hooks/useAutoErrorHandling';
 import { useDevLogs } from './hooks/useDevLogs';
 import styles from './index.less';
 
@@ -139,7 +139,7 @@ const AppDev: React.FC = () => {
   const [isProjectUploading, setIsProjectUploading] = useState(false);
 
   // 聊天模式状态
-  const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
+  // const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
 
   // 数据资源相关状态
   const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
@@ -281,13 +281,13 @@ const AppDev: React.FC = () => {
     maxLogLines: 1000,
   });
 
-  // 自动异常处理
-  const autoErrorHandling = useAutoErrorHandling(projectId || '', {
-    enabled: hasValidProjectId,
-    errorDetectionDelay: 1000,
-    maxSendFrequency: 30000,
-    showNotification: true,
-  });
+  // 自动异常处理（暂时禁用）
+  // const autoErrorHandling = useAutoErrorHandling(projectId || '', {
+  //   enabled: hasValidProjectId,
+  //   errorDetectionDelay: 1000,
+  //   maxSendFrequency: 30000,
+  //   showNotification: true,
+  // });
 
   useEffect(() => {
     // 初始化处于added状态的组件列表
@@ -940,13 +940,16 @@ const AppDev: React.FC = () => {
       const formattedContent = `请帮我分析以下日志内容：\n\n\`\`\`\n${logContent}\n\`\`\``;
       chat.setChatInput(formattedContent);
       if (isAuto && !chat.isChatLoading) {
-        chat.sendChat();
+        setTimeout(() => {
+          // 通过事件总线发布发送消息事件
+          eventBus.emit(EVENT_NAMES.SEND_CHAT_MESSAGE);
+        }, 300);
         return;
       }
       // 显示成功提示
       message.success('日志已添加,等待发送');
     },
-    [chat],
+    [chat.setChatInput, chat.sendMessage],
   );
 
   /**
@@ -1146,11 +1149,11 @@ const AppDev: React.FC = () => {
           {/* 左侧AI助手面板 */}
           <Col className={styles.leftPanel}>
             <ChatArea
-              chatMode={chatMode}
-              setChatMode={setChatMode}
+              // chatMode={chatMode}
+              // setChatMode={setChatMode}
               chat={chat}
               projectId={projectId || ''} // 新增：项目ID
-              onVersionSelect={handleVersionSelect}
+              // onVersionSelect={handleVersionSelect}
               selectedDataSources={selectedDataResources} // 新增：选中的数据源
               onUpdateDataSources={handleUpdateDataSources} // 新增：更新数据源回调
               fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
@@ -1160,8 +1163,8 @@ const AppDev: React.FC = () => {
               //   // 设置图片清空方法到 ref
               //   clearUploadedImagesRef.current = clearFn;
               // }} // 新增：设置图片清空方法回调
-              autoHandleError={autoErrorHandling.autoHandleEnabled} // 新增：自动处理异常开关状态
-              onAutoHandleErrorChange={autoErrorHandling.setAutoHandleEnabled} // 新增：自动处理异常开关变化回调
+              // autoHandleError={autoErrorHandling.autoHandleEnabled} // 新增：自动处理异常开关状态
+              // onAutoHandleErrorChange={autoErrorHandling.setAutoHandleEnabled} // 新增：自动处理异常开关变化回调
             />
           </Col>
 
@@ -1338,10 +1341,10 @@ const AppDev: React.FC = () => {
                           });
                         }}
                         onWhiteScreen={() => {
-                          autoErrorHandling.handlePreviewWhiteScreen(
-                            devLogs.logs,
-                            chat.sendMessage,
-                          );
+                          // autoErrorHandling.handlePreviewWhiteScreen(
+                          //   devLogs.logs,
+                          //   chat.sendMessage,
+                          // );
                         }}
                         onContentChange={(fileId, content) => {
                           if (
@@ -1393,6 +1396,7 @@ const AppDev: React.FC = () => {
                 onClear={devLogs.clearLogs}
                 onRefresh={devLogs.refreshLogs}
                 onClose={() => setShowDevLogConsole(false)}
+                isChatLoading={chat.isChatLoading}
                 onAddToChat={handleAddLogToChat}
               />
             )}

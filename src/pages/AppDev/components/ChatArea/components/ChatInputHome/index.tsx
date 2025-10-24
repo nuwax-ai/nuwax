@@ -1,15 +1,22 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
+import SelectList from '@/components/custom/SelectList';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { UploadFileStatus } from '@/types/enums/common';
+import { ModelConfig } from '@/types/interfaces/appDev';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import { DataResource } from '@/types/interfaces/dataResource';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
-import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
+import {
+  CloseOutlined,
+  DownOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
 import type { UploadProps } from 'antd';
-import { Input, Menu, Popover, Tooltip, Upload } from 'antd';
+import { Input, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import DataSourceList from './DataSourceList';
@@ -56,6 +63,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   // 文档
   const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
+  const [open, setOpen] = useState(false);
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
   useEffect(() => {
@@ -132,6 +140,65 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     );
   };
 
+  // 订阅发送消息事件
+  useEffect(() => {
+    const handleSendMessageEvent = () => {
+      // 检查是否有输入内容
+      if (chat.chatInput?.trim()) {
+        handleSendMessage();
+      }
+    };
+
+    // 订阅发送消息事件
+    eventBus.on(EVENT_NAMES.SEND_CHAT_MESSAGE, handleSendMessageEvent);
+
+    // 组件卸载时取消订阅
+    return () => {
+      eventBus.off(EVENT_NAMES.SEND_CHAT_MESSAGE, handleSendMessageEvent);
+    };
+  }, [chat.chatInput, handleSendMessage]);
+
+  // 获取模型选项
+  const getModeOptions = (models: ModelConfig[]) => {
+    return (
+      models?.map((model: ModelConfig) => ({
+        label: model.name,
+        value: model.id,
+      })) || []
+    );
+  };
+
+  // 模型弹窗内容
+  const PopoverContent = () => {
+    return (
+      <div className={cx('flex', styles['model-selector-popover'])}>
+        <div
+          className={cx('flex-1', 'flex', 'flex-col', 'gap-6', 'overflow-hide')}
+        >
+          <h4>编码模型</h4>
+          <SelectList
+            className={cx(styles['select-list'])}
+            options={getModeOptions(modelSelector?.models?.chatModelList)}
+            value={modelSelector?.selectedModelId}
+            onChange={modelSelector?.selectModel}
+          />
+        </div>
+        <div
+          className={cx('flex-1', 'flex', 'flex-col', 'gap-6', 'overflow-hide')}
+        >
+          <h4>视觉模型（可选）</h4>
+          <SelectList
+            className={cx(styles['select-list'])}
+            allowClear
+            options={getModeOptions(modelSelector?.models?.multiModelList)}
+            value={modelSelector?.selectedMultiModelId}
+            onChange={modelSelector?.selectMultiModel}
+          />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={cx('w-full', 'relative', className)}>
       <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
@@ -203,43 +270,27 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           </Upload>
           <div className={cx('flex', 'items-center', 'content-end', 'gap-10')}>
             {/* 大模型选择 */}
-            <Popover
-              content={
-                <div>
-                  <Menu
-                    selectedKeys={
-                      modelSelector?.selectedModelId
-                        ? [modelSelector.selectedModelId.toString()]
-                        : []
-                    }
-                    onClick={({ key }) =>
-                      modelSelector?.selectModel(Number(key))
-                    }
-                    style={{ maxHeight: 200, overflowY: 'auto' }}
-                  >
-                    {modelSelector?.models?.chatModelList?.map((model: any) => (
-                      <Menu.Item
-                        key={model.id.toString()}
-                        disabled={chat.isChatLoading}
-                      >
-                        {model.name}
-                      </Menu.Item>
-                    ))}
-                  </Menu>
+            <Tooltip title="模型">
+              <Popover
+                content={<PopoverContent />}
+                trigger="click"
+                open={open}
+                onOpenChange={setOpen}
+              >
+                <div
+                  className={cx(
+                    'flex',
+                    'items-center',
+                    'gap-4',
+                    'cursor-pointer',
+                    styles['model-selector'],
+                  )}
+                >
+                  <span>{modelSelector?.selectedModel?.name}</span>
+                  <DownOutlined className={cx(styles['model-arrow'])} />
                 </div>
-              }
-              trigger="hover"
-              // open={open}
-              // onOpenChange={handleOpenChange}
-            >
-              <span>
-                {
-                  modelSelector?.models?.chatModelList?.find(
-                    (m: any) => m.id === modelSelector?.selectedModelId,
-                  )?.name
-                }
-              </span>
-            </Popover>
+              </Popover>
+            </Tooltip>
             {/* 会话进行中仅显示取消按钮 */}
             {chat.isChatLoading ? (
               <Tooltip title={isStoppingTask ? '正在停止...' : '取消AI任务'}>
