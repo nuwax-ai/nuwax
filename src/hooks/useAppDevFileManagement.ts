@@ -34,14 +34,17 @@ interface UseAppDevFileManagementProps {
   onFileSelect?: (fileId: string) => void;
   onFileContentChange?: (fileId: string, content: string) => void;
   isChatLoading?: boolean; // 新增：是否正在AI聊天加载中
+  hasPermission?: boolean; // 新增：是否有权限访问项目
 }
 
 export const useAppDevFileManagement = ({
   projectId,
   onFileSelect,
   onFileContentChange,
-}: // isChatLoading = false, // 暂时注释掉，后续可能需要
-UseAppDevFileManagementProps) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  isChatLoading = false,
+  hasPermission = true,
+}: UseAppDevFileManagementProps) => {
   // 文件树状态
   const [fileTreeState, setFileTreeState] = useState<FileTreeState>({
     data: [],
@@ -776,11 +779,11 @@ UseAppDevFileManagementProps) => {
 
   // 在项目ID变化时加载文件树
   useEffect(() => {
-    if (projectId) {
-      // 项目ID变化，加载文件树
+    if (projectId && hasPermission) {
+      // 项目ID变化且有权限时，加载文件树
       loadFileTree(false, true);
     }
-  }, [projectId]); // 移除 loadFileTree 依赖，避免重复执行
+  }, [projectId, hasPermission]); // 移除 loadFileTree 依赖，避免重复执行
 
   return {
     // 文件树相关
