@@ -42,6 +42,8 @@ interface DevLogConsoleProps {
   onClose?: () => void;
   /** 添加日志到聊天框回调 */
   onAddToChat?: (content: string, isAuto?: boolean) => void;
+  /** 是否正在发送消息 */
+  isChatLoading?: boolean;
 }
 
 /**
@@ -142,6 +144,7 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
   onRefresh,
   onClose,
   onAddToChat,
+  isChatLoading = false,
 }) => {
   const logListRef = useRef<HTMLDivElement>(null);
   const [logGroups, setLogGroups] = useState<LogGroup[]>([]);
@@ -248,6 +251,7 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
                 <Button
                   size="small"
                   danger
+                  disabled={!onAddToChat || isChatLoading}
                   icon={
                     <SvgIcon
                       name="icons-common-stars"

@@ -10,6 +10,7 @@ import {
   filterErrorLogs,
   generateErrorFingerprint,
   getNewErrors,
+  groupLogsByTimestamp,
 } from '../utils/devLogParser';
 
 /**
@@ -99,18 +100,17 @@ export const useDevLogs = (
 
       setLogs((prevLogs) => {
         const updatedLogs = [...prevLogs, ...newLogs];
-
+        let resultLogs = updatedLogs;
         // 限制日志数量，保留最新的日志
         if (updatedLogs.length > maxLogLines) {
-          return updatedLogs.slice(-maxLogLines);
+          resultLogs = updatedLogs.slice(-maxLogLines);
         }
-
-        return updatedLogs;
+        const groups = groupLogsByTimestamp(resultLogs);
+        // 检查最新日志块是否包含错误 仅检查最后一组
+        const newErrorLogs = filterErrorLogs(groups.at(-1)?.logs || []);
+        setHasErrorInLatestBlock(newErrorLogs.length > 0);
+        return resultLogs;
       });
-
-      // 检查最新日志块是否包含错误
-      const newErrorLogs = filterErrorLogs(newLogs);
-      setHasErrorInLatestBlock(newErrorLogs.length > 0);
 
       // 更新最后行号
       const maxLine = Math.max(...newLogs.map((log) => log.line));

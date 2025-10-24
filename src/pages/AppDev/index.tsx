@@ -1397,6 +1397,7 @@ const AppDev: React.FC = () => {
                 onClear={devLogs.clearLogs}
                 onRefresh={devLogs.refreshLogs}
                 onClose={() => setShowDevLogConsole(false)}
+                isChatLoading={chat.isChatLoading}
                 onAddToChat={handleAddLogToChat}
               />
             )}
