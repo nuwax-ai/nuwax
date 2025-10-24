@@ -295,23 +295,18 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               maxCount={9}
             >
               <Tooltip title="上传附件">
-                <span
-                  className={cx(
-                    'flex',
-                    'items-center',
-                    'content-center',
-                    'cursor-pointer',
-                    styles.box,
-                    styles['plus-box'],
-                    { [styles['upload-box-disabled']]: chat.isChatLoading },
-                  )}
-                >
-                  <SvgIcon
-                    name="icons-chat-add"
-                    style={{ fontSize: '14px' }}
-                    className={cx(styles['svg-icon'])}
-                  />
-                </span>
+                <Button
+                  type="text"
+                  className={cx(styles['svg-icon'], {
+                    [styles['upload-box-disabled']]: chat.isChatLoading,
+                  })}
+                  icon={
+                    <SvgIcon
+                      name="icons-common-attachments"
+                      style={{ fontSize: '14px' }}
+                    />
+                  }
+                />
               </Tooltip>
             </Upload>
             {/*上传原型图片附件*/}
@@ -339,7 +334,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   })}
                   icon={
                     <SvgIcon
-                      name="icons-common-attachments"
+                      name="icons-common-sketch"
                       style={{ fontSize: '14px' }}
                     />
                   }

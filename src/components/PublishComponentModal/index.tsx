@@ -47,6 +47,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   onlyShowTemplate = true,
   onCancel,
   onConfirm,
+  onBeforePublishFn,
 }) => {
   const [form] = Form.useForm();
   // 标题
@@ -218,7 +219,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   const onFinish: FormProps<{
     remark: string;
     category: string;
-  }>['onFinish'] = (values) => {
+  }>['onFinish'] = async (values) => {
     /**
      * 过滤发布项(存在这种情况: 之前已发布的空间已删除，但是发布项中还存在该空间的数据，
      * 导致再次发布时，publishItemList还存在之前已被删除的空间，再次被提交了 )
@@ -238,6 +239,11 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
         }
       },
     );
+
+    // 发布智能体前执行的方法函数
+    if (onBeforePublishFn) {
+      await onBeforePublishFn();
+    }
 
     run({
       ...values,

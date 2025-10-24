@@ -8,6 +8,7 @@ import type {
   Attachment,
   DataSourceAttachment,
   DataSourceSelection,
+  FileStreamAttachment,
 } from '@/types/interfaces/appDev';
 
 /**
@@ -217,6 +218,7 @@ export const createUserMessage = (
   text: string,
   requestId: string,
   attachments?: Attachment[],
+  attachmentPrototypeImages?: FileStreamAttachment[],
   dataSources?: DataSourceSelection[],
 ): AppDevChatMessage => {
   return {
@@ -230,6 +232,7 @@ export const createUserMessage = (
     timestamp: new Date(),
     attachments, // 传统附件（图片、文件等）
     dataSources, // 直接使用 selectedDataSources
+    attachmentPrototypeImages, // 原型图片附件列表
   };
 };
 

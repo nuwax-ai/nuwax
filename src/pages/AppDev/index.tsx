@@ -485,36 +485,28 @@ const AppDev: React.FC = () => {
   /**
    * 处理发布成应用
    */
-  const handlePublishApplication = useCallback(async () => {
+  const handleBeforePublish = async () => {
     if (!hasValidProjectId || !projectId) {
       message.error('项目ID不存在或无效，无法部署');
       return;
     }
-    try {
-      setIsDeploying(true);
-      // 先执行发布成组件
-      const result = await buildProject(
-        projectId,
-        PageDevelopPublishTypeEnum.AGENT,
-      );
-      if (result?.code === SUCCESS_CODE) {
-        setOpenPublishComponentModal(true);
-        projectInfo.refreshProjectInfo();
-      } else {
-        message.error('发布失败,先尝试解决错误后重试');
-      }
-    } catch (error) {
-      message.error('发布失败,先尝试解决错误后重试');
-    } finally {
+    setIsDeploying(true);
+    const { code } = await buildProject(
+      projectId,
+      PageDevelopPublishTypeEnum.AGENT,
+    );
+
+    if (code !== SUCCESS_CODE) {
       setIsDeploying(false);
     }
-  }, [hasValidProjectId, projectId, projectInfo]);
+  };
 
   /**
    * 处理发布智能体
    */
   const handleConfirmPublish = () => {
     projectInfo.refreshProjectInfo();
+    setIsDeploying(false);
     setOpenPublishComponentModal(false);
   };
 
@@ -1158,7 +1150,7 @@ const AppDev: React.FC = () => {
           spaceId={spaceId}
           onEditProject={() => setOpenPageEditVisible(true)}
           onPublishComponent={handlePublishComponent}
-          onPublishApplication={handlePublishApplication}
+          onPublishApplication={() => setOpenPublishComponentModal(true)}
           onOpenVersionHistory={() => setOpenVersionHistory(true)}
           hasUpdates={projectInfo.hasUpdates}
           isDeploying={isDeploying}
@@ -1200,7 +1192,7 @@ const AppDev: React.FC = () => {
                         <Tooltip title="预览">
                           <SvgIcon
                             name="icons-common-preview"
-                            style={{ fontSize: 20 }}
+                            style={{ fontSize: 18 }}
                           />
                         </Tooltip>
                       ),
@@ -1211,7 +1203,7 @@ const AppDev: React.FC = () => {
                         <Tooltip title="代码">
                           <SvgIcon
                             name="icons-common-code"
-                            style={{ fontSize: 20 }}
+                            style={{ fontSize: 18 }}
                           />
                         </Tooltip>
                       ),
@@ -1631,6 +1623,7 @@ const AppDev: React.FC = () => {
       <PublishComponentModal
         targetId={projectInfo.projectInfoState.projectInfo?.devAgentId || 0}
         open={openPublishComponentModal}
+        onBeforePublishFn={handleBeforePublish}
         spaceId={spaceId}
         category={agentConfigInfo?.category}
         // 取消发布
