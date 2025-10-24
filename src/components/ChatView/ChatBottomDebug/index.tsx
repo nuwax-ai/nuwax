@@ -16,6 +16,15 @@ const ChatBottomDebug: React.FC<ChatBottomDebugProps> = ({ messageInfo }) => {
   // finalResult 自定义添加字段：chat 会话结果
   const { finalResult } = messageInfo || {};
   const { handleDebug, showType } = useModel('conversationInfo');
+  const { pagePreviewData, hidePagePreview } = useModel('chat');
+
+  const handleClick = () => {
+    // 如果当前显示的是页面预览，先关闭页面预览
+    if (pagePreviewData) {
+      hidePagePreview();
+    }
+    handleDebug(messageInfo);
+  };
 
   // 运行时间
   const runTime = useMemo(() => {
@@ -51,7 +60,7 @@ const ChatBottomDebug: React.FC<ChatBottomDebugProps> = ({ messageInfo }) => {
             <TooltipIcon
               className={styles.icon}
               icon={<img src={debugImage as string} alt="" />}
-              onClick={() => handleDebug(messageInfo)}
+              onClick={handleClick}
               title="调试"
               type={TooltipTitleTypeEnum.White}
             />

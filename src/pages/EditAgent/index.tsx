@@ -72,8 +72,8 @@ const EditAgent: React.FC = () => {
   const { setTitle } = useModel('tenantConfigInfo');
 
   // 获取 chat model 中的页面预览状态
-  const chatModel = useModel('chat');
-  const { pagePreviewData, hidePagePreview, showPagePreview } = chatModel;
+  const { pagePreviewData, hidePagePreview, showPagePreview } =
+    useModel('chat');
 
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
@@ -422,7 +422,12 @@ const EditAgent: React.FC = () => {
         </div>
 
         {(!agentConfigInfo?.hideChatArea || pagePreviewData) && (
-          <div style={{ flex: pagePreviewData ? '9 1' : '4 1' }}>
+          <div
+            style={{
+              flex: pagePreviewData ? '9 1' : '4 1',
+              minWidth: pagePreviewData ? '700px' : '340px',
+            }}
+          >
             {/*预览与调试和预览页面*/}
             <ResizableSplit
               left={
