@@ -459,69 +459,53 @@ const Chat: React.FC = () => {
         </div>
         <div className={cx(styles['main-content-box'])} ref={messageViewRef}>
           <div className={cx(styles['chat-wrapper'], 'flex-1')}>
-            {loadingConversation ? (
-              <div
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'h-full',
-                )}
-              >
-                <LoadingOutlined className={cx(styles.loading)} />
-              </div>
-            ) : (
+            {/* 新对话设置 */}
+            <NewConversationSet
+              className="mb-16"
+              form={form}
+              variables={variables}
+              userFillVariables={firstVariableParams}
+              // 是否已填写表单
+              isFilled={!!variableParams}
+              disabled={!!firstVariableParams || isSendMessageRef.current}
+            />
+            {messageList?.length > 0 ? (
               <>
-                {/* 新对话设置 */}
-                <NewConversationSet
-                  className="mb-16"
-                  form={form}
-                  variables={variables}
-                  userFillVariables={firstVariableParams}
-                  // 是否已填写表单
-                  isFilled={!!variableParams}
-                  disabled={!!firstVariableParams || isSendMessageRef.current}
+                {messageList?.map((item: MessageInfo, index: number) => (
+                  <ChatView
+                    key={item.id || index}
+                    messageInfo={item}
+                    roleInfo={roleInfo}
+                    contentClassName={styles['chat-inner']}
+                    mode={'home'}
+                  />
+                ))}
+                {/*会话建议*/}
+                <RecommendList
+                  itemClassName={styles['suggest-item']}
+                  loading={loadingSuggest}
+                  chatSuggestList={chatSuggestList}
+                  onClick={handleMessageSend}
                 />
-                {messageList?.length > 0 ? (
-                  <>
-                    {messageList?.map((item: MessageInfo, index: number) => (
-                      <ChatView
-                        key={item.id || index}
-                        messageInfo={item}
-                        roleInfo={roleInfo}
-                        contentClassName={styles['chat-inner']}
-                        mode={'home'}
-                      />
-                    ))}
-                    {/*会话建议*/}
+              </>
+            ) : (
+              !message && (
+                // Chat记录为空
+                <AgentChatEmpty
+                  className={cx({ 'h-full': !variables?.length })}
+                  icon={conversationInfo?.agent?.icon}
+                  name={conversationInfo?.agent?.name}
+                  // 会话建议
+                  extra={
                     <RecommendList
-                      itemClassName={styles['suggest-item']}
-                      loading={loadingSuggest}
+                      className="mt-16"
+                      itemClassName={cx(styles['suggest-item'])}
                       chatSuggestList={chatSuggestList}
                       onClick={handleMessageSend}
                     />
-                  </>
-                ) : (
-                  isLoadingConversation &&
-                  !message && (
-                    // Chat记录为空
-                    <AgentChatEmpty
-                      className={cx({ 'h-full': !variables?.length })}
-                      icon={conversationInfo?.agent?.icon}
-                      name={conversationInfo?.agent?.name}
-                      // 会话建议
-                      extra={
-                        <RecommendList
-                          className="mt-16"
-                          itemClassName={cx(styles['suggest-item'])}
-                          chatSuggestList={chatSuggestList}
-                          onClick={handleMessageSend}
-                        />
-                      }
-                    />
-                  )
-                )}
-              </>
+                  }
+                />
+              )
             )}
           </div>
         </div>
@@ -550,21 +534,37 @@ const Chat: React.FC = () => {
   return (
     <div className={cx('flex', 'h-full')}>
       {/*智能体聊天和预览页面*/}
-      <ResizableSplit
-        minLeftWidth={400}
-        left={agentDetail?.hideChatArea ? null : LeftContent()}
-        right={
-          pagePreviewData && (
-            <PagePreviewIframe
-              pagePreviewData={pagePreviewData}
-              showHeader={true}
-              onClose={hidePagePreview}
-              showCloseButton={!agentDetail?.hideChatArea}
-              titleClassName={cx(styles['title-style'])}
-            />
-          )
-        }
-      />
+      {loading || loadingConversation || !isLoadingConversation ? (
+        // 接口加载中，显示 loading 状态，避免右侧渲染时挤压左侧
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 1,
+            height: '100%',
+            width: '100%',
+          }}
+        >
+          <LoadingOutlined />
+        </div>
+      ) : (
+        <ResizableSplit
+          minLeftWidth={400}
+          left={agentDetail?.hideChatArea ? null : LeftContent()}
+          right={
+            pagePreviewData && (
+              <PagePreviewIframe
+                pagePreviewData={pagePreviewData}
+                showHeader={true}
+                onClose={hidePagePreview}
+                showCloseButton={!agentDetail?.hideChatArea}
+                titleClassName={cx(styles['title-style'])}
+              />
+            )
+          }
+        />
+      )}
 
       <AgentSidebar
         ref={sidebarRef}
