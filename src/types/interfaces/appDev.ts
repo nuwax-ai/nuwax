@@ -441,6 +441,9 @@ export interface UnifiedSessionMessage {
   subType: string;
   data: any;
   timestamp: string;
+  message: string;
+  code?: string;
+  [key: string]: any;
 }
 
 /**
