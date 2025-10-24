@@ -65,7 +65,9 @@ export interface CustomPageDto {
   // 版本信息
   versionInfo: any;
   // 上次对话模型ID
-  lastModelId: number;
+  lastChatModelId: number;
+  // 上次多模态ID(视觉模型ID)
+  lastMultiModelId: number;
   // 是否需要登录,true:需要,false:不需要
   needLogin: boolean;
   // 项目类型,可用值:REVERSE_PROXY,ONLINE_DEPLOY

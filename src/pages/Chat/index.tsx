@@ -430,7 +430,10 @@ const Chat: React.FC = () => {
                       className={cx(styles['icons-nav-sidebar'])}
                     />
                   }
-                  onClick={() => sidebarRef.current?.open()}
+                  onClick={() => {
+                    hidePagePreview();
+                    sidebarRef.current?.open();
+                  }}
                 />
               )}
 
@@ -445,7 +448,10 @@ const Chat: React.FC = () => {
                       className={cx(styles['icons-nav-sidebar'])}
                     />
                   }
-                  onClick={handleOpenPreview}
+                  onClick={() => {
+                    sidebarRef.current?.close();
+                    handleOpenPreview();
+                  }}
                 />
               )}
             </div>
@@ -545,6 +551,7 @@ const Chat: React.FC = () => {
     <div className={cx('flex', 'h-full')}>
       {/*智能体聊天和预览页面*/}
       <ResizableSplit
+        minLeftWidth={400}
         left={agentDetail?.hideChatArea ? null : LeftContent()}
         right={
           pagePreviewData && (
