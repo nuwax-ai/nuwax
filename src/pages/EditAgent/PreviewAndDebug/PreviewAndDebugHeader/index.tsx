@@ -33,7 +33,9 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
       <h3>预览与调试</h3>
       <div className={cx(styles['extra-box'], 'flex')}>
         {/*<MessageOutlined className={cx('cursor-pointer')} />*/}
-        {showType === EditAgentShowType.Hide && (
+        {(showType === EditAgentShowType.Version_History ||
+          showType === EditAgentShowType.Show_Stand ||
+          showType === EditAgentShowType.Hide) && (
           <Button
             type="text"
             className={cx(styles.debug)}

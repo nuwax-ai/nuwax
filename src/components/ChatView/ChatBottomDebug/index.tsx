@@ -44,7 +44,9 @@ const ChatBottomDebug: React.FC<ChatBottomDebugProps> = ({ messageInfo }) => {
             <span>{`${finalResult?.totalTokens} Tokens`}</span>
           </ConditionRender>
         </ConditionRender>
-        {showType === EditAgentShowType.Hide && (
+        {(showType === EditAgentShowType.Version_History ||
+          showType === EditAgentShowType.Show_Stand ||
+          showType === EditAgentShowType.Hide) && (
           <ConditionRender condition={!!finalResult}>
             <TooltipIcon
               className={styles.icon}
