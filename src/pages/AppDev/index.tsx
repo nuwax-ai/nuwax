@@ -218,10 +218,15 @@ const AppDev: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (projectInfo.projectInfoState.projectInfo?.lastMultiModelId) {
+      modelSelector.selectMultiModel(
+        projectInfo.projectInfoState.projectInfo.lastMultiModelId,
+      );
+    }
     // 如果上次使用的模型ID存在，则使用上次使用的模型ID
-    if (projectInfo.projectInfoState.projectInfo?.lastModelId) {
+    if (projectInfo.projectInfoState.projectInfo?.lastChatModelId) {
       modelSelector.selectModel(
-        projectInfo.projectInfoState.projectInfo?.lastModelId,
+        projectInfo.projectInfoState.projectInfo.lastChatModelId,
       );
       return;
     }
