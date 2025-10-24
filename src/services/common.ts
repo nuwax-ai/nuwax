@@ -77,8 +77,6 @@ const errorHandler = (error: any, opts: any) => {
     return;
   }
 
-  if (opts?.skipErrorHandler) throw error;
-
   if (error.name === 'BizError') {
     // 处理业务错误
     const errorInfo: RequestResponse<null> | undefined = error.info;
@@ -178,6 +176,7 @@ const responseInterceptors = [
 
     // 当响应码不是成功时，进行错误处理
     if (data.code !== SUCCESS_CODE) {
+      if (config?.skipErrorHandler) return response; // 跳过错误处理
       const error = errorThrower?.(data);
 
       if (error) {

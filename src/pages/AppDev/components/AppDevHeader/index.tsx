@@ -6,11 +6,11 @@ import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import { ProjectDetailData } from '@/types/interfaces/appDev';
 import { jumpBack } from '@/utils/router';
 import {
-  CheckCircleOutlined,
+  CheckCircleFilled,
+  ClockCircleOutlined,
   FormOutlined,
-  RocketOutlined,
 } from '@ant-design/icons';
-import { Avatar, Button, Popover, Space, Tag } from 'antd';
+import { Avatar, Button, Popover, Space, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import styles from './index.less';
@@ -28,6 +28,8 @@ export interface AppDevHeaderProps {
   // 发布成应用
   onPublishApplication: () => void;
   onEditProject: () => void;
+  // 版本历史相关
+  onOpenVersionHistory: () => void;
   hasUpdates?: boolean;
   isDeploying?: boolean;
   /** 聊天加载状态，用于禁用相关功能 */
@@ -45,6 +47,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   onPublishComponent,
   onPublishApplication,
   onEditProject,
+  onOpenVersionHistory,
   spaceId,
   hasUpdates = true,
   isDeploying = false,
@@ -106,8 +109,13 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
               项目ID: {workspace.projectId}
             </span>
           )}
+          {deployStatus && (
+            <Popover content={'已发布'}>
+              <CheckCircleFilled className={cx(styles.circle)} />
+            </Popover>
+          )}
           {/* 已发布，并存在更新 */}
-          {deployStatus && hasUpdates ? (
+          {hasUpdates && (
             <Tag
               bordered={false}
               color="volcano"
@@ -115,20 +123,25 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
             >
               有更新未发布
             </Tag>
-          ) : deployStatus ? (
-            <Popover content={'已发布'}>
-              <CheckCircleOutlined className={cx(styles.circle)} />
-            </Popover>
-          ) : null}
+          )}
         </div>
       </div>
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
+        <Tooltip title="版本历史">
+          <ClockCircleOutlined
+            className={cx(
+              'ico',
+              'cursor-pointer',
+              styles['version-history-icon'],
+            )}
+            onClick={onOpenVersionHistory}
+          />
+        </Tooltip>
         {/*添加资源*/}
         <CustomPopover list={publishList} onClick={handleClickPopoverItem}>
           <div className={cx('flex', 'items-center', styles['action-buttons'])}>
             <Button
               type="primary"
-              icon={<RocketOutlined />}
               loading={isDeploying}
               className={styles.deployButton}
               disabled={isChatLoading} // 新增：聊天加载时禁用部署按钮

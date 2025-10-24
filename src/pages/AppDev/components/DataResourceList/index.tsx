@@ -159,7 +159,24 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
 
         {/* 中间内容 */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ fontSize: '14px', color: '#1e293b' }}>
+          <Text
+            style={{ fontSize: '14px', color: '#1e293b' }}
+            onClick={() => {
+              if (resource.type === 'plugin') {
+                window.open(
+                  `${process.env.BASE_URL}/square/publish/plugin/${resource.id}`,
+                  '_blank',
+                  'noopener,noreferrer',
+                );
+              } else if (resource.type === 'workflow') {
+                window.open(
+                  `${process.env.BASE_URL}/square/publish/workflow/${resource.id}`,
+                  '_blank',
+                  'noopener,noreferrer',
+                );
+              }
+            }}
+          >
             {resource.name}
           </Text>
         </div>

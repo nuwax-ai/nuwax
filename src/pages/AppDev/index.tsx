@@ -1,6 +1,7 @@
 import { SvgIcon } from '@/components/base';
 import Created from '@/components/Created';
 import PublishComponentModal from '@/components/PublishComponentModal';
+import VersionHistory from '@/components/VersionHistory';
 import { ERROR_MESSAGES } from '@/constants/appDevConstants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
@@ -60,6 +61,7 @@ import EditorHeaderRight from './components/EditorHeaderRight';
 import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
+import VersionAction from './components/VersionAction';
 import { useDevLogs } from './hooks/useDevLogs';
 import styles from './index.less';
 
@@ -149,6 +151,9 @@ const AppDev: React.FC = () => {
   // 发布智能体弹窗状态
   const [openPublishComponentModal, setOpenPublishComponentModal] =
     useState(false);
+
+  // 版本历史弹窗状态
+  const [openVersionHistory, setOpenVersionHistory] = useState(false);
 
   // 使用重构后的 hooks
   const fileManagement = useAppDevFileManagement({
@@ -461,31 +466,44 @@ const AppDev: React.FC = () => {
           ),
           width: 500,
         });
+        projectInfo.refreshProjectInfo();
+      } else {
+        message.error('发布失败,请先尝试解决错误后重试');
       }
+    } catch (error) {
+      message.error('发布失败,先尝试解决错误后重试');
     } finally {
       setIsDeploying(false);
     }
-  }, [hasValidProjectId, projectId]);
+  }, [hasValidProjectId, projectId, projectInfo]);
 
   /**
    * 处理发布成应用
    */
-  const handlePublishApplication = async () => {
+  const handlePublishApplication = useCallback(async () => {
     if (!hasValidProjectId || !projectId) {
       message.error('项目ID不存在或无效，无法部署');
       return;
     }
-    // 先执行发布成组件
-    const { code, message: errorMessage } = await buildProject(
-      projectId,
-      PageDevelopPublishTypeEnum.AGENT,
-    );
-    if (code === SUCCESS_CODE) {
-      setOpenPublishComponentModal(true);
-    } else {
-      message.error(errorMessage);
+    try {
+      setIsDeploying(true);
+      // 先执行发布成组件
+      const result = await buildProject(
+        projectId,
+        PageDevelopPublishTypeEnum.AGENT,
+      );
+      if (result?.code === SUCCESS_CODE) {
+        setOpenPublishComponentModal(true);
+        projectInfo.refreshProjectInfo();
+      } else {
+        message.error('发布失败,先尝试解决错误后重试');
+      }
+    } catch (error) {
+      message.error('发布失败,先尝试解决错误后重试');
+    } finally {
+      setIsDeploying(false);
     }
-  };
+  }, [hasValidProjectId, projectId, projectInfo]);
 
   /**
    * 处理发布智能体
@@ -1136,6 +1154,7 @@ const AppDev: React.FC = () => {
           onEditProject={() => setOpenPageEditVisible(true)}
           onPublishComponent={handlePublishComponent}
           onPublishApplication={handlePublishApplication}
+          onOpenVersionHistory={() => setOpenVersionHistory(true)}
           hasUpdates={projectInfo.hasUpdates}
           isDeploying={isDeploying}
           projectInfo={projectInfo.projectInfoState?.projectInfo}
@@ -1619,6 +1638,23 @@ const AppDev: React.FC = () => {
         // 取消发布
         onCancel={() => setOpenPublishComponentModal(false)}
         onConfirm={handleConfirmPublish}
+      />
+      {/*版本历史*/}
+      <VersionHistory
+        targetId={projectInfo.projectInfoState.projectInfo?.devAgentId || 0}
+        targetName={projectInfo.projectInfoState.projectInfo?.name}
+        targetType={AgentComponentTypeEnum.Agent}
+        permissions={agentConfigInfo?.permissions || []}
+        visible={openVersionHistory}
+        isDrawer={true}
+        onClose={() => setOpenVersionHistory(false)}
+        renderActions={(item) => (
+          <VersionAction
+            data={item}
+            onRefresh={projectInfo.refreshProjectInfo}
+            onClose={() => setOpenVersionHistory(false)}
+          />
+        )}
       />
     </>
   );
