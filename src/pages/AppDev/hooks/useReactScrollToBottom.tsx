@@ -79,6 +79,10 @@ export interface UseReactScrollToBottomReturn {
   handleUserScrollUp: () => void;
   /** 处理用户滚动到底部 */
   handleUserScrollToBottom: () => void;
+  /** 允许自动滚动的 ref */
+  allowAutoScrollRef: React.MutableRefObject<boolean>;
+  /** 用户是否正在滚动的 ref */
+  isUserScrollingRef: React.MutableRefObject<boolean>;
 }
 
 /**
@@ -321,6 +325,8 @@ export const useReactScrollToBottom = (
     checkScrollPosition,
     handleUserScrollUp,
     handleUserScrollToBottom,
+    allowAutoScrollRef,
+    isUserScrollingRef,
   };
 };
 
@@ -342,6 +348,8 @@ export const useReactScrollToBottomEffects = (
   isAutoScrollEnabled: boolean,
   handleNewMessage: (isStreaming?: boolean, immediate?: boolean) => void,
   checkScrollPosition: () => void,
+  allowAutoScrollRef: React.MutableRefObject<boolean>,
+  isUserScrollingRef: React.MutableRefObject<boolean>,
 ) => {
   // 跟踪是否是首次加载历史消息
   const isInitialLoadRef = useRef(true);
@@ -412,10 +420,12 @@ export const useReactScrollToBottomEffects = (
   // 监听流式消息内容变化
   useEffect(() => {
     if (isStreaming) {
-      // 流式消息期间，无论用户是否滚动过，都定期滚动到底部
-      // 这样可以确保流式消息内容始终可见
+      // 流式消息期间，只有在用户没有滚动时才定期滚动到底部
       const intervalId = setInterval(() => {
-        scrollToBottom({ behavior: 'smooth' });
+        // 检查用户是否滚动过
+        if (allowAutoScrollRef.current && !isUserScrollingRef.current) {
+          scrollToBottom({ behavior: 'smooth' });
+        }
       }, SCROLL_CONSTANTS.STREAM_SCROLL_INTERVAL);
 
       return () => {
@@ -430,8 +440,10 @@ export const useReactScrollToBottomEffects = (
       // 检查最后一条消息是否为流式消息
       const lastMessage = messages[messages.length - 1];
       if (lastMessage && lastMessage.isStreaming) {
-        // 流式消息内容更新时，使用平滑滚动
-        scrollToBottom({ behavior: 'smooth' });
+        // 只有在用户没有滚动时才滚动
+        if (allowAutoScrollRef.current && !isUserScrollingRef.current) {
+          scrollToBottom({ behavior: 'smooth' });
+        }
       }
     }
   }, [
@@ -459,7 +471,7 @@ export const ScrollPositionObserver: React.FC<{
   enabled = true,
 }) => {
   const previousScrollTopRef = useRef(0);
-  const hasScrolledUpRef = useRef(false);
+  // const hasScrolledUpRef = useRef(false); // 已移除，不再使用
   const backupPreviousScrollTopRef = useRef(0);
 
   const observer = useCallback(
@@ -498,19 +510,12 @@ export const ScrollPositionObserver: React.FC<{
         const scrollDelta = scrollTop - previousScrollTopRef.current;
 
         // 如果用户向上滚动且不在底部，则取消自动滚动
-        if (
-          scrollDelta < -5 &&
-          !isAtBottom &&
-          onUserScrollUp &&
-          !hasScrolledUpRef.current
-        ) {
-          hasScrolledUpRef.current = true;
+        if (scrollDelta < -10 && !isAtBottom && onUserScrollUp) {
           onUserScrollUp();
         }
 
         // 如果用户滚动到底部，重新启用自动滚动
-        if (isAtBottom && hasScrolledUpRef.current && onUserScrollToBottom) {
-          hasScrolledUpRef.current = false;
+        if (isAtBottom && onUserScrollToBottom) {
           onUserScrollToBottom();
         }
       }
@@ -561,19 +566,12 @@ export const ScrollPositionObserver: React.FC<{
         const scrollDelta = scrollTop - backupPreviousScrollTopRef.current;
 
         // 如果用户向上滚动且不在底部，则取消自动滚动
-        if (
-          scrollDelta < -5 &&
-          !isAtBottom &&
-          onUserScrollUp &&
-          !hasScrolledUpRef.current
-        ) {
-          hasScrolledUpRef.current = true;
+        if (scrollDelta < -10 && !isAtBottom && onUserScrollUp) {
           onUserScrollUp();
         }
 
         // 如果用户滚动到底部，重新启用自动滚动
-        if (isAtBottom && hasScrolledUpRef.current && onUserScrollToBottom) {
-          hasScrolledUpRef.current = false;
+        if (isAtBottom && onUserScrollToBottom) {
           onUserScrollToBottom();
         }
       }

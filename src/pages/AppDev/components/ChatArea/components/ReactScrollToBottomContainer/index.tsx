@@ -133,6 +133,8 @@ const ReactScrollToBottomContainer = forwardRef<
       checkScrollPosition,
       handleUserScrollUp,
       handleUserScrollToBottom,
+      allowAutoScrollRef,
+      isUserScrollingRef,
     } = useReactScrollToBottom({
       enableAutoScroll,
       throttleDelay,
@@ -196,6 +198,8 @@ const ReactScrollToBottomContainer = forwardRef<
       isAutoScrollEnabled,
       handleNewMessage,
       checkScrollPositionWrapper,
+      allowAutoScrollRef,
+      isUserScrollingRef,
     );
 
     // 暴露组件方法给父组件
