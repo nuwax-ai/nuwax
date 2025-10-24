@@ -1,4 +1,5 @@
 import { SvgIcon } from '@/components/base';
+import ConditionRender from '@/components/ConditionRender';
 import Created from '@/components/Created';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
@@ -62,7 +63,6 @@ import EditorHeaderRight from './components/EditorHeaderRight';
 import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
-import VersionAction from './components/VersionAction';
 import { useDevLogs } from './hooks/useDevLogs';
 import styles from './index.less';
 
@@ -1634,22 +1634,22 @@ const AppDev: React.FC = () => {
         onConfirm={handleConfirmPublish}
       />
       {/*版本历史*/}
-      <VersionHistory
-        targetId={projectInfo.projectInfoState.projectInfo?.devAgentId || 0}
-        targetName={projectInfo.projectInfoState.projectInfo?.name}
-        targetType={AgentComponentTypeEnum.Agent}
-        permissions={agentConfigInfo?.permissions || []}
-        visible={openVersionHistory}
-        isDrawer={true}
-        onClose={() => setOpenVersionHistory(false)}
-        renderActions={(item) => (
-          <VersionAction
-            data={item}
-            onRefresh={projectInfo.refreshProjectInfo}
-            onClose={() => setOpenVersionHistory(false)}
-          />
-        )}
-      />
+      <ConditionRender
+        condition={
+          projectInfo.projectInfoState.projectInfo?.publishType ===
+          PageDevelopPublishTypeEnum.AGENT
+        }
+      >
+        <VersionHistory
+          targetId={projectInfo.projectInfoState.projectInfo?.devAgentId || 0}
+          targetName={projectInfo.projectInfoState.projectInfo?.name}
+          targetType={AgentComponentTypeEnum.Agent}
+          permissions={agentConfigInfo?.permissions || []}
+          visible={openVersionHistory}
+          isDrawer={true}
+          onClose={() => setOpenVersionHistory(false)}
+        />
+      </ConditionRender>
     </>
   );
 };

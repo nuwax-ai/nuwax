@@ -31,7 +31,6 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
       setLoading(false);
     },
     onError: () => {
-      message.error('编辑失败');
       setLoading(false);
     },
   });

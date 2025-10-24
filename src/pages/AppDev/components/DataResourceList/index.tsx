@@ -67,9 +67,9 @@ const convertToAgentComponentInfo = (
  * @returns 图标路径
  */
 const getDefaultImage = (type: string): string => {
-  console.log('getDefaultImage called with type:', type); // 调试日志
-  console.log('pluginImage:', pluginImage); // 调试日志
-  console.log('workflowImage:', workflowImage); // 调试日志
+  // console.log('getDefaultImage called with type:', type); // 调试日志
+  // console.log('pluginImage:', pluginImage); // 调试日志
+  // console.log('workflowImage:', workflowImage); // 调试日志
   switch (type.toLowerCase()) {
     case 'plugin':
       return pluginImage;
@@ -212,13 +212,13 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
     const agentComponentInfo = convertToAgentComponentInfo(resource);
     const defaultImage = getDefaultImage(resource.type);
 
-    console.log('Rendering resource:', {
-      id: resource.id,
-      name: resource.name,
-      type: resource.type,
-      defaultImage,
-      agentComponentInfoIcon: agentComponentInfo.icon,
-    }); // 调试日志
+    // console.log('Rendering resource:', {
+    //   id: resource.id,
+    //   name: resource.name,
+    //   type: resource.type,
+    //   defaultImage,
+    //   agentComponentInfoIcon: agentComponentInfo.icon,
+    // }); // 调试日志
 
     return (
       <div key={resource.id} onClick={() => handleResourceClick(resource)}>
