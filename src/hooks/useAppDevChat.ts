@@ -406,6 +406,8 @@ export const useAppDevChat = ({
     const sseUrl = generateAIChatSSEUrl();
     const headers = getAuthHeaders();
 
+    setIsChatLoading(true);
+
     await createSSEConnection({
       url: sseUrl,
       method: 'POST',
@@ -442,7 +444,6 @@ export const useAppDevChat = ({
           }
 
           setChatInput('');
-          setIsChatLoading(true);
 
           const sessionId = response.data.session_id;
 
