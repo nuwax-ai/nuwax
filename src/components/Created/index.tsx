@@ -8,7 +8,7 @@ import {
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { BuildRunningEnum } from '@/types/enums/pageDev';
+import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import { AgentAddComponentBaseInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { CustomPageDto } from '@/types/interfaces/pageDev';
@@ -362,7 +362,11 @@ const Created: React.FC<CreatedProp> = ({
   // 清空页面搜索
   const clearPageSearch = () => {
     setLoading(true);
-    runPageList(spaceId, Boolean(BuildRunningEnum.Published));
+    runPageList({
+      spaceId,
+      publishType: PageDevelopPublishTypeEnum.PAGE,
+      buildRunning: true,
+    });
   };
 
   // 搜索页面
@@ -425,7 +429,11 @@ const Created: React.FC<CreatedProp> = ({
       if (val === AgentComponentTypeEnum.Page) {
         setList([]); // 清空列表
         setLoading(true);
-        runPageList(spaceId, Boolean(BuildRunningEnum.Published));
+        runPageList({
+          spaceId,
+          publishType: PageDevelopPublishTypeEnum.PAGE,
+          buildRunning: true,
+        });
         return;
       } else {
         setPagination({ page: 1, pageSize: 20 }); // 重置分页状态
