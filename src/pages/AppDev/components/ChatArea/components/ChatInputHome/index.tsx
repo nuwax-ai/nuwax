@@ -18,7 +18,7 @@ import {
 import type { UploadProps } from 'antd';
 import { Input, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import DataSourceList from './DataSourceList';
 import styles from './index.less';
 
