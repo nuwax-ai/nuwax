@@ -23,6 +23,7 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
+import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { FileNode } from '@/types/interfaces/appDev';
@@ -434,10 +435,13 @@ const AppDev: React.FC = () => {
 
     try {
       setIsDeploying(true);
-      const result = await buildProject(projectId);
+      const result = await buildProject(
+        projectId,
+        PageDevelopPublishTypeEnum.PAGE,
+      );
 
       // 检查API响应格式
-      if (result?.code === '0000' && result?.data) {
+      if (result?.code === SUCCESS_CODE && result?.data) {
         const { prodServerUrl } = result.data;
         // 显示部署结果
         Modal.success({
@@ -467,9 +471,30 @@ const AppDev: React.FC = () => {
   }, [hasValidProjectId, projectId]);
 
   /**
+   * 处理发布成应用
+   */
+  const handlePublishApplication = async () => {
+    if (!hasValidProjectId || !projectId) {
+      message.error('项目ID不存在或无效，无法部署');
+      return;
+    }
+    // 先执行发布成组件
+    const { code, message: errorMessage } = await buildProject(
+      projectId,
+      PageDevelopPublishTypeEnum.AGENT,
+    );
+    if (code === SUCCESS_CODE) {
+      setOpenPublishComponentModal(true);
+    } else {
+      message.error(errorMessage);
+    }
+  };
+
+  /**
    * 处理发布智能体
    */
   const handleConfirmPublish = () => {
+    projectInfo.refreshProjectInfo();
     setOpenPublishComponentModal(false);
   };
 
@@ -1113,13 +1138,10 @@ const AppDev: React.FC = () => {
           spaceId={spaceId}
           onEditProject={() => setOpenPageEditVisible(true)}
           onPublishComponent={handlePublishComponent}
-          onPublishApplication={() => setOpenPublishComponentModal(true)}
+          onPublishApplication={handlePublishApplication}
           hasUpdates={projectInfo.hasUpdates}
-          lastSaveTime={new Date()}
           isDeploying={isDeploying}
           projectInfo={projectInfo.projectInfoState?.projectInfo}
-          getDeployStatusText={projectInfo.getDeployStatusText}
-          getDeployStatusColor={projectInfo.getDeployStatusColor}
           isChatLoading={chat.isChatLoading} // 新增：传递聊天加载状态
         />
 

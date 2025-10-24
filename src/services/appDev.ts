@@ -1,4 +1,5 @@
 import { parseLogEntry } from '@/pages/AppDev/utils/devLogParser';
+import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import type {
   BuildResponse,
   CancelResponse,
@@ -88,11 +89,13 @@ export const restartDev = async (
  */
 export const buildProject = async (
   projectId: string,
+  publishType: PageDevelopPublishTypeEnum,
 ): Promise<BuildResponse> => {
   return request('/api/custom-page/build', {
     method: 'POST',
     data: {
-      projectId: projectId,
+      projectId,
+      publishType,
     },
   });
 };
