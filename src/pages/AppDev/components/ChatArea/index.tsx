@@ -1,7 +1,7 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
-import StreamMessageScrollContainer, {
-  StreamMessageScrollContainerRef,
-} from '@/pages/AppDev/components/ChatArea/components/StreamMessageScrollContainer';
+import ReactScrollToBottomContainer, {
+  ReactScrollToBottomContainerRef,
+} from '@/pages/AppDev/components/ChatArea/components/ReactScrollToBottomContainer';
 import { cancelAgentTask, cancelAiChatAgentTask } from '@/services/appDev';
 import type {
   AppDevChatMessage,
@@ -92,7 +92,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // }, [onClearUploadedImages]);
 
   // 滚动容器引用
-  const scrollContainerRef = useRef<StreamMessageScrollContainerRef>(null);
+  const scrollContainerRef = useRef<ReactScrollToBottomContainerRef>(null);
 
   // 滚动状态管理
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -686,7 +686,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       </div> */}
 
       {/* 聊天消息区域 */}
-      <StreamMessageScrollContainer
+      <ReactScrollToBottomContainer
         ref={scrollContainerRef}
         messages={chat.chatMessages}
         isStreaming={chat.isChatLoading}
@@ -716,7 +716,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             chatMessagesList
           )}
         </div>
-      </StreamMessageScrollContainer>
+      </ReactScrollToBottomContainer>
       {/* 聊天输入区域 */}
       <div className={styles.chatInputContainer}>
         <div
