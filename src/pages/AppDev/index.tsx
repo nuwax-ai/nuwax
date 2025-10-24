@@ -27,6 +27,7 @@ import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import {
   EyeOutlined,
   ReadOutlined,
@@ -915,13 +916,16 @@ const AppDev: React.FC = () => {
       const formattedContent = `请帮我分析以下日志内容：\n\n\`\`\`\n${logContent}\n\`\`\``;
       chat.setChatInput(formattedContent);
       if (isAuto && !chat.isChatLoading) {
-        chat.sendChat();
+        setTimeout(() => {
+          // 通过事件总线发布发送消息事件
+          eventBus.emit(EVENT_NAMES.SEND_CHAT_MESSAGE);
+        }, 300);
         return;
       }
       // 显示成功提示
       message.success('日志已添加,等待发送');
     },
-    [chat],
+    [chat.setChatInput, chat.sendMessage],
   );
 
   /**
@@ -1316,10 +1320,10 @@ const AppDev: React.FC = () => {
                           });
                         }}
                         onWhiteScreen={() => {
-                          autoErrorHandling.handlePreviewWhiteScreen(
-                            devLogs.logs,
-                            chat.sendMessage,
-                          );
+                          // autoErrorHandling.handlePreviewWhiteScreen(
+                          //   devLogs.logs,
+                          //   chat.sendMessage,
+                          // );
                         }}
                         onContentChange={(fileId, content) => {
                           if (

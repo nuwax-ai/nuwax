@@ -6,6 +6,7 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import { DataResource } from '@/types/interfaces/dataResource';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import { CloseOutlined, LoadingOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
@@ -131,6 +132,24 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       uploadFiles.filter((item) => item.uid !== uid),
     );
   };
+
+  // 订阅发送消息事件
+  useEffect(() => {
+    const handleSendMessageEvent = () => {
+      // 检查是否有输入内容
+      if (chat.chatInput?.trim()) {
+        handleSendMessage();
+      }
+    };
+
+    // 订阅发送消息事件
+    eventBus.on(EVENT_NAMES.SEND_CHAT_MESSAGE, handleSendMessageEvent);
+
+    // 组件卸载时取消订阅
+    return () => {
+      eventBus.off(EVENT_NAMES.SEND_CHAT_MESSAGE, handleSendMessageEvent);
+    };
+  }, [chat.chatInput, handleSendMessage]);
 
   return (
     <div className={cx('w-full', 'relative', className)}>
