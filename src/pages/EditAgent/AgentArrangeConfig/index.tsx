@@ -220,10 +220,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 记忆 - 当前激活 tab 面板的 key
   const memoryActiveKey = useMemo(() => {
     const keyList: AgentArrangeConfigEnum[] = [];
-    if (
-      isExistComponent(AgentComponentTypeEnum.Variable) &&
-      variablesInfo?.bindConfig?.variables?.length
-    ) {
+    const _list =
+      variablesInfo?.bindConfig?.variables?.filter(
+        (info: any) => !info.systemVariable,
+      ) || [];
+
+    if (isExistComponent(AgentComponentTypeEnum.Variable) && _list.length) {
       keyList.push(AgentArrangeConfigEnum.Variable);
     }
     if (isExistComponent(AgentComponentTypeEnum.Table)) {
