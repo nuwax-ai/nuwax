@@ -71,6 +71,8 @@ export interface PublishComponentModalProps {
   onlyShowTemplate?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
+  // 定义一个发布智能体前执行的方法函数
+  onBeforePublishFn?: () => Promise<void>;
 }
 
 // 创建临时会话弹窗属性
