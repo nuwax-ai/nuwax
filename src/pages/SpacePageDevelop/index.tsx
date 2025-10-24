@@ -343,7 +343,7 @@ const SpacePageDevelop: React.FC = () => {
         >
           <div>
             <Space>
-              <h3 className={cx(styles.title)}>页面开发</h3>
+              <h3 className={cx(styles.title)}>应用页面开发</h3>
               <SelectList
                 value={type}
                 options={PAGE_DEVELOP_ALL_TYPE}
