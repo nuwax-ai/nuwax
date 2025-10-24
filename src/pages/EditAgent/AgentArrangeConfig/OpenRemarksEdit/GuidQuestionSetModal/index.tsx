@@ -1,4 +1,4 @@
-import pageImage from '@/assets/images/agent_image.png';
+import guidQuestionImage from '@/assets/images/guid_question.png';
 import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
 import SelectList from '@/components/custom/SelectList';
@@ -125,7 +125,7 @@ const GuidQuestionSetModal: React.FC<GuidQuestionSetModalProps> = ({
         // 类型
         setType(currentGuidQuestionDto.type);
         // 图标
-        setImageUrl(currentGuidQuestionDto.icon || pageImage);
+        setImageUrl(currentGuidQuestionDto.icon || guidQuestionImage);
         // 回显入参配置
         const _args = initialArgs();
         setArgs(_args);

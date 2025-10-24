@@ -2,39 +2,51 @@
 @import '@/styles/token.less';
 
 .appDev {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+  // AppDev 页面根容器样式
+  min-height: 600px;
+  min-width: 1200px;
+}
+
+.container {
+  color: @colorTextBase;
   background-image: @backgroundImage;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
   transition: background-image 0.3s ease;
-  color: @colorTextBase;
-  overflow: hidden;
+
+  .title-style {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    color: @colorText;
+  }
+
+  .edit-content {
+    // 隐藏滚动条
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .section {
+    // gap: 20px;
+    overflow-x: auto;
+    border-radius: @pageContainerBorderRadius;
+    border: @lineWidth solid @colorSplit;
+    margin: 0 @marginSm @marginSm;
+    background-color: @colorBgContainer;
+  }
+
+  :global {
+    // 风格2的适配
+    .xagi-nav-style2 {
+      margin: 0;
+      border-radius: 0;
+    }
+  }
 }
-
-// 错误提示条样式
-// .errorAlertBar {
-//   position: fixed;
-//   top: 0;
-//   left: 0;
-//   right: 0;
-//   z-index: 9999;
-//   padding: 8px 16px;
-//   background: #fff;
-//   box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
-//   animation: slideDown 0.3s ease-out;
-
-//   .ant-alert {
-//     margin: 0;
-//     border-radius: 0;
-//     border-left: none;
-//     border-right: none;
-//     border-top: none;
-//   }
-// }
 
 @keyframes slide-down {
   from {
@@ -50,9 +62,12 @@
 
 // 主布局行
 .mainRow {
-  height: calc(100% - 56px);
+  width: 100%;
   margin: 0 !important;
   color: @colorTextBase;
+  display: flex;
+  flex-direction: row;
+  height: 100%;
 }
 
 // 左侧AI助手面板
