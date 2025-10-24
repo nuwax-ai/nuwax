@@ -386,24 +386,22 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 </span>
               </Tooltip>
             ) : (
-              <Tooltip title={isSendingMessage ? '正在发送...' : '发送消息'}>
-                <span
-                  onClick={handleSendMessage}
-                  className={`${styles.box} ${styles['send-box']} ${
-                    !chat.chatInput.trim() || isSendingMessage
-                      ? styles.disabled
-                      : ''
-                  }`}
-                >
-                  {isSendingMessage ? (
-                    <div className={styles['loading-box']}>
-                      <LoadingOutlined className={styles['loading-icon']} />
-                    </div>
-                  ) : (
-                    <SvgIcon name="icons-chat-send" />
-                  )}
-                </span>
-              </Tooltip>
+              <span
+                onClick={handleSendMessage}
+                className={`${styles.box} ${styles['send-box']} ${
+                  !chat.chatInput.trim() || isSendingMessage
+                    ? styles.disabled
+                    : ''
+                }`}
+              >
+                {isSendingMessage ? (
+                  <div className={styles['loading-box']}>
+                    <LoadingOutlined className={styles['loading-icon']} />
+                  </div>
+                ) : (
+                  <SvgIcon name="icons-chat-send" />
+                )}
+              </span>
             )}
           </div>
         </footer>
