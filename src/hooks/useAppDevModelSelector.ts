@@ -9,7 +9,12 @@ import { useCallback, useEffect, useState } from 'react';
 
 export const useAppDevModelSelector = (projectId: string) => {
   const [models, setModels] = useState<ModelLisDto>();
+  // 编码模型ID
   const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
+  // 视觉模型ID
+  const [selectedMultiModelId, setSelectedMultiModelId] = useState<
+    number | null
+  >(null);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
 
   /**
@@ -35,10 +40,17 @@ export const useAppDevModelSelector = (projectId: string) => {
   }, [projectId]);
 
   /**
-   * 选择模型
+   * 选择编码模型
    */
   const selectModel = (modelId: number) => {
     setSelectedModelId(modelId);
+  };
+
+  /**
+   * 选择视觉模型
+   */
+  const selectMultiModel = (modelId: number) => {
+    setSelectedMultiModelId(modelId);
   };
 
   /**
@@ -58,6 +70,8 @@ export const useAppDevModelSelector = (projectId: string) => {
     models,
     selectedModelId,
     selectedModel,
+    selectedMultiModelId,
+    selectMultiModel,
     isLoadingModels,
     selectModel,
     reloadModels: loadModels,

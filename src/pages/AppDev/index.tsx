@@ -63,7 +63,6 @@ import EditorHeaderRight from './components/EditorHeaderRight';
 import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
-import { useAutoErrorHandling } from './hooks/useAutoErrorHandling';
 import { useDevLogs } from './hooks/useDevLogs';
 import styles from './index.less';
 
@@ -140,7 +139,7 @@ const AppDev: React.FC = () => {
   const [isProjectUploading, setIsProjectUploading] = useState(false);
 
   // 聊天模式状态
-  const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
+  // const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
 
   // 数据资源相关状态
   const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
@@ -282,13 +281,13 @@ const AppDev: React.FC = () => {
     maxLogLines: 1000,
   });
 
-  // 自动异常处理
-  const autoErrorHandling = useAutoErrorHandling(projectId || '', {
-    enabled: hasValidProjectId,
-    errorDetectionDelay: 1000,
-    maxSendFrequency: 30000,
-    showNotification: true,
-  });
+  // 自动异常处理（暂时禁用）
+  // const autoErrorHandling = useAutoErrorHandling(projectId || '', {
+  //   enabled: hasValidProjectId,
+  //   errorDetectionDelay: 1000,
+  //   maxSendFrequency: 30000,
+  //   showNotification: true,
+  // });
 
   useEffect(() => {
     // 初始化处于added状态的组件列表
@@ -1150,11 +1149,11 @@ const AppDev: React.FC = () => {
           {/* 左侧AI助手面板 */}
           <Col className={styles.leftPanel}>
             <ChatArea
-              chatMode={chatMode}
-              setChatMode={setChatMode}
+              // chatMode={chatMode}
+              // setChatMode={setChatMode}
               chat={chat}
               projectId={projectId || ''} // 新增：项目ID
-              onVersionSelect={handleVersionSelect}
+              // onVersionSelect={handleVersionSelect}
               selectedDataSources={selectedDataResources} // 新增：选中的数据源
               onUpdateDataSources={handleUpdateDataSources} // 新增：更新数据源回调
               fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
@@ -1164,8 +1163,8 @@ const AppDev: React.FC = () => {
               //   // 设置图片清空方法到 ref
               //   clearUploadedImagesRef.current = clearFn;
               // }} // 新增：设置图片清空方法回调
-              autoHandleError={autoErrorHandling.autoHandleEnabled} // 新增：自动处理异常开关状态
-              onAutoHandleErrorChange={autoErrorHandling.setAutoHandleEnabled} // 新增：自动处理异常开关变化回调
+              // autoHandleError={autoErrorHandling.autoHandleEnabled} // 新增：自动处理异常开关状态
+              // onAutoHandleErrorChange={autoErrorHandling.setAutoHandleEnabled} // 新增：自动处理异常开关变化回调
             />
           </Col>
 
