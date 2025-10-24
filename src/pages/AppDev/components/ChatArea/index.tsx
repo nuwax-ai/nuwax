@@ -95,8 +95,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // 滚动状态管理
   const [showScrollButton, setShowScrollButton] = useState(false);
 
-  console.log('modelSelector', modelSelector);
-
   /**
    * 滚动按钮点击处理
    */
@@ -297,9 +295,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
    * 发送消息前的处理 - 支持附件
    */
   const handleSendMessage = useCallback(
-    (files: UploadFileInfo[]) => {
-      // todo: 需要处理文件列表
-      console.log('上传的文件列表', files);
+    (
+      attachmentFiles?: UploadFileInfo[],
+      prototypeImages?: UploadFileInfo[],
+    ) => {
       // // 验证：prompt（输入内容）是必填的
       // if (!chat.chatInput.trim()) {
       //   message.warning('请输入消息内容');
@@ -314,11 +313,34 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       setIsSendingMessage(true);
 
       try {
-        // 构建附件列表
+        // ai-chat 附件文件
+        const aiChatAttachments = attachmentFiles?.map(
+          (file: UploadFileInfo) => {
+            return {
+              url: file.url,
+              mimeType: file.type,
+              fileName: file.name,
+              fileKey: file.uid,
+            };
+          },
+        );
+
+        // ai-chat 原型图片附件
+        const aiChatPrototypeImages = prototypeImages?.map(
+          (file: UploadFileInfo) => {
+            return {
+              url: file.url,
+              mimeType: file.type,
+              fileName: file.name,
+              fileKey: file.uid,
+            };
+          },
+        );
+
         const attachments: Attachment[] = [];
 
         // 1. 添加图片附件
-        files?.forEach((file: UploadFileInfo) => {
+        attachmentFiles?.forEach((file: UploadFileInfo) => {
           const baseContent = {
             id: file.uid,
             filename: file.name,
@@ -374,7 +396,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         scrollContainerRef.current?.handleScrollButtonClick();
 
         // 发送消息(传递附件)
-        chat.sendMessage(attachments);
+        chat.sendMessage(attachments, aiChatAttachments, aiChatPrototypeImages);
 
         // 清空选中的数据源
         if (onUpdateDataSources) {

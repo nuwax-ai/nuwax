@@ -1,3 +1,4 @@
+import { SvgIcon } from '@/components/base';
 import Created from '@/components/Created';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import { ERROR_MESSAGES } from '@/constants/appDevConstants';
@@ -29,12 +30,7 @@ import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
-import {
-  EyeOutlined,
-  ReadOutlined,
-  SyncOutlined,
-  UploadOutlined,
-} from '@ant-design/icons';
+import { SyncOutlined, UploadOutlined } from '@ant-design/icons';
 import {
   Alert,
   Button,
@@ -45,6 +41,7 @@ import {
   Row,
   Segmented,
   Space,
+  Tooltip,
   Typography,
   Upload,
 } from 'antd';
@@ -254,6 +251,7 @@ const AppDev: React.FC = () => {
   const chat = useAppDevChat({
     projectId: projectId || '',
     selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
+    multiModelId: modelSelector.selectedMultiModelId, // 新增：传递多模态模型ID（视觉模型ID）
     onRefreshFileTree: fileManagement.loadFileTree, // 新增：传递文件树刷新方法
     selectedDataResources: selectedDataResources, // 新增：传递选中的数据源
     onClearDataSourceSelections: () => setSelectedDataResources([]), // 新增：清除选择回调
@@ -1181,11 +1179,25 @@ const AppDev: React.FC = () => {
                   disabled={versionCompare.isComparing}
                   options={[
                     {
-                      label: <EyeOutlined />,
+                      label: (
+                        <Tooltip title="预览">
+                          <SvgIcon
+                            name="icons-common-preview"
+                            style={{ fontSize: 20 }}
+                          />
+                        </Tooltip>
+                      ),
                       value: 'preview',
                     },
                     {
-                      label: <ReadOutlined />,
+                      label: (
+                        <Tooltip title="代码">
+                          <SvgIcon
+                            name="icons-common-code"
+                            style={{ fontSize: 20 }}
+                          />
+                        </Tooltip>
+                      ),
                       value: 'code',
                     },
                   ]}

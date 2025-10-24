@@ -5,12 +5,12 @@
 import {
   listConversations,
   saveConversation,
-  sendChatMessage,
   stopAgentService,
 } from '@/services/appDev';
 import type {
   AppDevChatMessage,
   Attachment,
+  FileStreamAttachment,
   UnifiedSessionMessage,
 } from '@/types/interfaces/appDev';
 import { debounce } from '@/utils/appDevUtils';
@@ -32,6 +32,7 @@ import {
   appendTextToStreamingMessage,
   createAssistantMessage,
   createUserMessage,
+  generateAIChatSSEUrl,
   generateConversationTopic,
   generateRequestId,
   generateSSEUrl,
@@ -78,6 +79,7 @@ export const useAppDevChat = ({
   const [isLoadingHistory, setIsLoadingHistory] = useState(false); // 新增：历史会话加载状态
 
   const abortConnectionRef = useRef<AbortController | null>(null);
+  const aIChatAbortConnectionRef = useRef<AbortController>();
 
   // 用于存储超时定时器的 ref
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -334,14 +336,11 @@ export const useAppDevChat = ({
         method: 'GET',
         abortController: abortConnectionRef.current,
         headers,
-        onOpen: () => {
-          // SSE连接已建立
-        },
         onMessage: (data: UnifiedSessionMessage) => {
           handleSSEMessage(data, requestId);
         },
         onError: (error: Error) => {
-          message.error('AI助手连接失败');
+          // message.error('AI助手连接失败');
           //要把 chatMessages 里 ASSISTANT 当前 isSteaming 修改一下 false 并给出错误消息
           setChatMessages((prev) =>
             markStreamingMessageError(prev, requestId, error.message),
@@ -401,35 +400,20 @@ export const useAppDevChat = ({
   );
 
   /**
-   * 发送消息并建立SSE连接的核心逻辑
+   * 初始化 AI-CHAT SSE 连接
    */
-  const sendMessageAndConnectSSE = useCallback(
-    async (attachments?: Attachment[]) => {
-      // 生成临时request_id
-      const requestId = generateRequestId();
-      try {
-        const _selectedDataResources: DataSourceSelection[] =
-          selectedDataResources
-            .filter((item) => item.isSelected)
-            ?.map((resource) => {
-              return {
-                dataSourceId: Number(resource.id),
-                type: resource.type === 'plugin' ? 'plugin' : 'workflow',
-                name: resource.name,
-              };
-            }) || [];
-        // 调用发送消息API
-        const response = await sendChatMessage({
-          prompt: chatInput,
-          project_id: projectId,
-          request_id: requestId,
-          chat_model_id: selectedModelId ? String(selectedModelId) : '', // 编码模型ID
-          multi_model_id: multiModelId ? String(multiModelId) : '', // 多模态模型ID（视觉模型ID，可选）
-          attachments: attachments || undefined,
-          data_sources: _selectedDataResources,
-        });
+  const aIChatSSEConnection = async (params: any, requestId: string) => {
+    const sseUrl = generateAIChatSSEUrl();
+    const headers = getAuthHeaders();
 
-        if (response.success && response.data) {
+    await createSSEConnection({
+      url: sseUrl,
+      method: 'POST',
+      headers,
+      abortController: aIChatAbortConnectionRef.current,
+      body: params,
+      onMessage: (response: UnifiedSessionMessage) => {
+        if (response.type === 'success') {
           // 新增：/ai-chat 接口发送成功后立即刷新版本列表
           if (onRefreshVersionList) {
             onRefreshVersionList();
@@ -445,23 +429,110 @@ export const useAppDevChat = ({
             onClearDataSourceSelections();
           }
 
-          // 添加用户消息（包含附件和数据源）
-          const userMessage = createUserMessage(
-            chatInput,
-            requestId,
-            attachments,
-            _selectedDataResources,
-          );
-
-          setChatMessages((prev) => [...prev, userMessage]);
           setChatInput('');
           setIsChatLoading(true);
 
           const sessionId = response.data.session_id;
 
           // 立即建立SSE连接（使用返回的session_id）
-          await initializeAppDevSSEConnection(sessionId, requestId);
+          initializeAppDevSSEConnection(sessionId, requestId);
         }
+      },
+      onError: () => {
+        // message.error('AI助手连接失败');
+        aIChatAbortConnectionRef.current?.abort();
+        setIsChatLoading(false);
+      },
+      onClose: () => {
+        aIChatAbortConnectionRef.current?.abort();
+      },
+    });
+  };
+
+  /**
+   * 发送消息并建立SSE连接的核心逻辑
+   */
+  const sendMessageAndConnectSSE = useCallback(
+    async (
+      attachments?: Attachment[],
+      attachmentFiles?: FileStreamAttachment[],
+      attachmentPrototypeImages?: FileStreamAttachment[],
+    ) => {
+      // 生成临时request_id
+      const requestId = generateRequestId();
+      try {
+        // 数据源数据结构提取
+        const _selectedDataResources: DataSourceSelection[] =
+          selectedDataResources
+            .filter((item) => item.isSelected)
+            ?.map((resource) => {
+              return {
+                dataSourceId: Number(resource.id),
+                type: resource.type === 'plugin' ? 'plugin' : 'workflow',
+                name: resource.name,
+              };
+            }) || [];
+
+        const aiChatParams = {
+          prompt: chatInput,
+          project_id: projectId,
+          chat_model_id: selectedModelId, // 编码模型ID
+          multi_model_id: multiModelId, // 多模态模型ID（视觉模型ID，可选）
+          attachments,
+          // 附件文件列表
+          attachment_files: attachmentFiles,
+          // 原型图片附件列表
+          attachment_prototype_images: attachmentPrototypeImages,
+          data_sources: _selectedDataResources,
+        };
+
+        // 添加用户消息（包含附件和数据源）
+        const userMessage = createUserMessage(
+          chatInput,
+          requestId,
+          attachments,
+          _selectedDataResources,
+        );
+
+        setChatMessages((prev) => [...prev, userMessage]);
+
+        await aIChatSSEConnection(aiChatParams, requestId);
+        // 调用发送消息API
+        // const response = await sendChatMessage(aiChatParams);
+
+        // if (response.success && response.data) {
+        //   // 新增：/ai-chat 接口发送成功后立即刷新版本列表
+        //   if (onRefreshVersionList) {
+        //     onRefreshVersionList();
+        //   }
+
+        //   // 新增：/ai-chat 接口发送成功后清除上传图片
+        //   if (onClearUploadedImages) {
+        //     onClearUploadedImages();
+        //   }
+
+        //   // 消息发送成功后清除数据源选择
+        //   if (onClearDataSourceSelections) {
+        //     onClearDataSourceSelections();
+        //   }
+
+        // // 添加用户消息（包含附件和数据源）
+        // const userMessage = createUserMessage(
+        //   chatInput,
+        //   requestId,
+        //   attachments,
+        //   _selectedDataResources,
+        // );
+
+        // setChatMessages((prev) => [...prev, userMessage]);
+        //   setChatInput('');
+        //   setIsChatLoading(true);
+
+        //   const sessionId = response.data.session_id;
+
+        //   // 立即建立SSE连接（使用返回的session_id）
+        //   await initializeAppDevSSEConnection(sessionId, requestId);
+        // }
       } catch (error) {
         if (error && (error as any).code === AGENT_SERVICE_RUNNING) {
           showStopAgentServiceModal(projectId, () => {
@@ -493,9 +564,16 @@ export const useAppDevChat = ({
 
   /**
    * 发送消息 - 支持附件
+   * @param attachments 附件文件列表
+   * @param attachmentFiles ai-chat 附件文件列表
+   * @param attachmentPrototypeImages ai-chat 原型图片附件列表
    */
   const sendMessage = useCallback(
-    async (attachments?: Attachment[]) => {
+    async (
+      attachments?: Attachment[],
+      attachmentFiles?: FileStreamAttachment[],
+      attachmentPrototypeImages?: FileStreamAttachment[],
+    ) => {
       // 验证：prompt（输入内容）是必填的
       if (!chatInput.trim()) {
         message.warning('请输入消息内容');
@@ -503,7 +581,11 @@ export const useAppDevChat = ({
       }
 
       // 发送消息
-      sendMessageAndConnectSSE(attachments);
+      sendMessageAndConnectSSE(
+        attachments,
+        attachmentFiles,
+        attachmentPrototypeImages,
+      );
     },
     [chatInput, sendMessageAndConnectSSE],
   );
