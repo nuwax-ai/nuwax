@@ -259,7 +259,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 {getFileName(fileContentState.selectedFile)}
               </div>
               <CloseOutlined
-                className={cx('cursor-pointer')}
+                className={cx('cursor-pointer', styles['close-icon'])}
                 onClick={() => {
                   onSetSelectedFile('');
                 }}
