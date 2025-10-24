@@ -1,4 +1,4 @@
-import pageImage from '@/assets/images/agent_image.png';
+import guidQuestionImage from '@/assets/images/guid_question.png';
 import { SvgIcon } from '@/components/base';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { ICON_SETTING } from '@/constants/images.constants';
@@ -145,7 +145,7 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
           prefix={
             <img
               className={cx(styles['icon-input-prefix'])}
-              src={item.icon || pageImage}
+              src={item.icon || guidQuestionImage}
             />
           }
           suffix={
