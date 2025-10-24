@@ -254,6 +254,7 @@ const AppDev: React.FC = () => {
   const chat = useAppDevChat({
     projectId: projectId || '',
     selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
+    multiModelId: modelSelector.selectedMultiModelId, // 新增：传递多模态模型ID（视觉模型ID）
     onRefreshFileTree: fileManagement.loadFileTree, // 新增：传递文件树刷新方法
     selectedDataResources: selectedDataResources, // 新增：传递选中的数据源
     onClearDataSourceSelections: () => setSelectedDataResources([]), // 新增：清除选择回调
