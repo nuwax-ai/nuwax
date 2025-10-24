@@ -16,7 +16,7 @@ import {
   LoadingOutlined,
 } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
-import { Input, Popover, Tooltip, Upload } from 'antd';
+import { Button, Input, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import DataSourceList from './DataSourceList';
@@ -32,6 +32,8 @@ export interface ChatInputProps {
   modelSelector: any;
   // 文件内容状态
   fileContentState: any;
+  // 设置选中的文件
+  onSetSelectedFile: (fileId: string) => void;
   // 是否正在停止任务
   isStoppingTask: boolean;
   // 是否正在发送消息
@@ -55,6 +57,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   chat,
   modelSelector,
   fileContentState,
+  onSetSelectedFile,
   isStoppingTask,
   isSendingMessage,
   handleCancelAgentTask,
@@ -225,18 +228,17 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     );
   };
 
-  console.log('chat.isChatLoading', chat.isChatLoading);
-
   return (
     <div className={cx('w-full', 'relative', className)}>
       <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
         {/*附件文件列表*/}
         <ConditionRender condition={attachmentFiles?.length}>
+          <h5 className={cx(styles['file-title'])}>附件文件</h5>
           <ChatUploadFile files={attachmentFiles} onDel={handleDelFile} />
         </ConditionRender>
         {/*附件文件列表*/}
         <ConditionRender condition={attachmentPrototypeImages?.length}>
-          <h5>原型图片</h5>
+          <h5 className={cx(styles['file-title'])}>原型图片</h5>
           <ChatUploadFile
             files={attachmentPrototypeImages}
             onDel={handleDelFilePrototypeImages}
@@ -252,9 +254,16 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         {/* 选择的文件 */}
         {fileContentState?.selectedFile && (
           <Tooltip title={fileContentState.selectedFile}>
-            <div className={`text-ellipsis ${styles.selectedFileDisplay}`}>
-              {getFileName(fileContentState.selectedFile)}
-              <CloseOutlined />
+            <div className={`flex ${styles.selectedFileDisplay}`}>
+              <div className={cx('text-ellipsis', styles['file-name'])}>
+                {getFileName(fileContentState.selectedFile)}
+              </div>
+              <CloseOutlined
+                className={cx('cursor-pointer')}
+                onClick={() => {
+                  onSetSelectedFile('');
+                }}
+              />
             </div>
           </Tooltip>
         )}
@@ -268,79 +277,76 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           autoSize={{ minRows: 2, maxRows: 6 }}
         />
         <footer className={cx('flex-1', styles.footer)}>
-          {/*上传附件文件*/}
-          <Upload
-            action={UPLOAD_FILE_ACTION}
-            onChange={handleChange}
-            multiple={true}
-            fileList={attachmentFiles}
-            headers={{
-              Authorization: token ? `Bearer ${token}` : '',
-            }}
-            data={{
-              type: 'tmp',
-            }}
-            disabled={chat.isChatLoading}
-            showUploadList={false}
-            maxCount={9}
-          >
-            <Tooltip title="上传附件">
-              <span
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'cursor-pointer',
-                  styles.box,
-                  styles['plus-box'],
-                  { [styles['upload-box-disabled']]: chat.isChatLoading },
-                )}
-              >
-                <SvgIcon
-                  name="icons-chat-add"
-                  style={{ fontSize: '14px' }}
-                  className={cx(styles['svg-icon'])}
+          <div className={cx('flex', 'items-center', 'gap-4')}>
+            {/*上传附件文件*/}
+            <Upload
+              action={UPLOAD_FILE_ACTION}
+              onChange={handleChange}
+              multiple={true}
+              fileList={attachmentFiles}
+              headers={{
+                Authorization: token ? `Bearer ${token}` : '',
+              }}
+              data={{
+                type: 'tmp',
+              }}
+              disabled={chat.isChatLoading}
+              showUploadList={false}
+              maxCount={9}
+            >
+              <Tooltip title="上传附件">
+                <span
+                  className={cx(
+                    'flex',
+                    'items-center',
+                    'content-center',
+                    'cursor-pointer',
+                    styles.box,
+                    styles['plus-box'],
+                    { [styles['upload-box-disabled']]: chat.isChatLoading },
+                  )}
+                >
+                  <SvgIcon
+                    name="icons-chat-add"
+                    style={{ fontSize: '14px' }}
+                    className={cx(styles['svg-icon'])}
+                  />
+                </span>
+              </Tooltip>
+            </Upload>
+            {/*上传原型图片附件*/}
+            <Upload
+              action={UPLOAD_FILE_ACTION}
+              accept="image/*"
+              onChange={handleChangePrototypeImages}
+              multiple={true}
+              fileList={attachmentPrototypeImages}
+              headers={{
+                Authorization: token ? `Bearer ${token}` : '',
+              }}
+              data={{
+                type: 'tmp',
+              }}
+              disabled={chat.isChatLoading}
+              showUploadList={false}
+              maxCount={9}
+            >
+              <Tooltip title="上传原型图片">
+                <Button
+                  type="text"
+                  className={cx(styles['svg-icon'], {
+                    [styles['upload-box-disabled']]: chat.isChatLoading,
+                  })}
+                  icon={
+                    <SvgIcon
+                      name="icons-common-attachments"
+                      style={{ fontSize: '14px' }}
+                    />
+                  }
                 />
-              </span>
-            </Tooltip>
-          </Upload>
-          {/*上传原型图片附件*/}
-          <Upload
-            action={UPLOAD_FILE_ACTION}
-            accept="image/*"
-            onChange={handleChangePrototypeImages}
-            multiple={true}
-            fileList={attachmentPrototypeImages}
-            headers={{
-              Authorization: token ? `Bearer ${token}` : '',
-            }}
-            data={{
-              type: 'tmp',
-            }}
-            disabled={chat.isChatLoading}
-            showUploadList={false}
-            maxCount={9}
-          >
-            <Tooltip title="上传原型图片">
-              <span
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'cursor-pointer',
-                  styles.box,
-                  styles['plus-box'],
-                  { [styles['upload-box-disabled']]: chat.isChatLoading },
-                )}
-              >
-                <SvgIcon
-                  name="icons-chat-add"
-                  style={{ fontSize: '14px' }}
-                  className={cx(styles['svg-icon'])}
-                />
-              </span>
-            </Tooltip>
-          </Upload>
+              </Tooltip>
+            </Upload>
+          </div>
           <div className={cx('flex', 'items-center', 'content-end', 'gap-10')}>
             {/* 大模型选择 */}
             <Tooltip title="模型">

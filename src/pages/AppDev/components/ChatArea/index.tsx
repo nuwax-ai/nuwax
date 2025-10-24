@@ -41,6 +41,7 @@ interface ChatAreaProps {
   selectedDataSources?: DataResource[];
   onUpdateDataSources: (dataSources: DataResource[]) => void;
   fileContentState: any;
+  onSetSelectedFile: (fileId: string) => void;
   modelSelector: any;
   // onClearUploadedImages?: (callback: () => void) => void;
   onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
@@ -63,6 +64,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   selectedDataSources = [],
   onUpdateDataSources,
   fileContentState,
+  onSetSelectedFile,
   modelSelector,
   // onClearUploadedImages,
   // onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -702,6 +704,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           modelSelector={modelSelector}
           // 文件列表
           fileContentState={fileContentState}
+          onSetSelectedFile={onSetSelectedFile}
           // 数据源列表
           dataSourceList={selectedDataSources}
           onToggleSelectDataSource={handleToggleSelectDataSource}

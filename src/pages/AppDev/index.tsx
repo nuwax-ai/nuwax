@@ -1150,19 +1150,12 @@ const AppDev: React.FC = () => {
               // chatMode={chatMode}
               // setChatMode={setChatMode}
               chat={chat}
-              projectId={projectId || ''} // 新增：项目ID
-              // onVersionSelect={handleVersionSelect}
+              projectId={projectId || ''}
               selectedDataSources={selectedDataResources} // 新增：选中的数据源
               onUpdateDataSources={handleUpdateDataSources} // 新增：更新数据源回调
               fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
-              modelSelector={modelSelector} // 新增：模型选择器状态
-              // onRefreshVersionList={projectInfo.refreshProjectInfo} // 新增：刷新版本列表回调
-              // onClearUploadedImages={(clearFn) => {
-              //   // 设置图片清空方法到 ref
-              //   clearUploadedImagesRef.current = clearFn;
-              // }} // 新增：设置图片清空方法回调
-              // autoHandleError={autoErrorHandling.autoHandleEnabled} // 新增：自动处理异常开关状态
-              // onAutoHandleErrorChange={autoErrorHandling.setAutoHandleEnabled} // 新增：自动处理异常开关变化回调
+              onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
+              modelSelector={modelSelector} // 模型选择器状态
             />
           </Col>
 
