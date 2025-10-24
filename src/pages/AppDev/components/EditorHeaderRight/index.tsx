@@ -183,7 +183,7 @@ const PreviewStatusInfo: React.FC<PreviewStatusProps> = ({
         isServerConnected && (
           <span className={styles.statusBadge}>开发服务器已连接</span>
         )}
-      {isLoading && (
+      {!isStarting && !isRestarting && !isProjectUploading && isLoading && (
         <span className={styles.loadingBadge}>
           <SyncOutlined spin style={{ fontSize: 12 }} />
           加载中...

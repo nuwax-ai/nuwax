@@ -93,6 +93,7 @@ export const buildProject = async (
 ): Promise<BuildResponse> => {
   return request('/api/custom-page/build', {
     method: 'POST',
+    skipErrorHandler: true, // 跳过错误处理
     data: {
       projectId,
       publishType,

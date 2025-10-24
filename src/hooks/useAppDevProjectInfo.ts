@@ -117,8 +117,14 @@ export const useAppDevProjectInfo = (
     }
 
     const { codeVersion, buildVersion } = projectInfoState.projectInfo;
-    return codeVersion > buildVersion;
-  }, [projectInfoState.projectInfo]);
+    if (codeVersion === buildVersion) {
+      return false;
+    }
+    return true;
+  }, [
+    projectInfoState.projectInfo?.codeVersion,
+    projectInfoState.projectInfo?.buildVersion,
+  ]);
 
   /**
    * 版本列表（按版本号降序排列）

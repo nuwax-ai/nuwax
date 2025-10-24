@@ -170,8 +170,15 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
       ))}
     </div>
   ) : (
-    <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
-      <Empty description="暂无历史记录" />
+    <div className={cx('flex', 'h-full', 'items-center', 'justify-center')}>
+      <Empty
+        description="暂无版本历史记录"
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+      >
+        <div style={{ color: '#8c8c8c', fontSize: '12px', marginTop: '8px' }}>
+          当您对项目进行修改时，系统会自动保存版本历史
+        </div>
+      </Empty>
     </div>
   );
 
@@ -183,10 +190,20 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
           body: cx(styles['drawer-body']),
         }}
         closable
-        title={'版本历史'}
+        title={
+          <div>
+            <div style={{ fontSize: '16px', fontWeight: 600 }}>版本历史</div>
+            <div
+              style={{ fontSize: '12px', color: '#8c8c8c', marginTop: '4px' }}
+            >
+              {targetName} - {componentType}
+            </div>
+          </div>
+        }
         placement="right"
         open={visible}
         onClose={onClose}
+        width={480}
       >
         {content}
       </Drawer>

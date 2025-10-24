@@ -1,10 +1,85 @@
+import pluginImage from '@/assets/images/plugin_image.png';
+import workflowImage from '@/assets/images/workflow_image.png';
+import CollapseComponentItem from '@/components/CollapseComponentItem';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { unbindDataSource } from '@/services/appDev';
+import {
+  AgentComponentTypeEnum,
+  DefaultSelectedEnum,
+} from '@/types/enums/agent';
+import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { DataResource } from '@/types/interfaces/dataResource';
-import { DeleteOutlined } from '@ant-design/icons';
-import { Button, Empty, message, Modal, Typography } from 'antd';
+import { DeleteOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Empty, message, Modal } from 'antd';
 import React, { useState } from 'react';
+import styles from './index.less';
+/**
+ * 获取资源类型的默认描述
+ * @param type 资源类型
+ * @returns 默认描述文本
+ */
+const getDefaultDescription = (type: string): string => {
+  switch (type) {
+    case 'plugin':
+      return '插件资源，提供特定功能和服务';
+    case 'workflow':
+      return '工作流资源，支持复杂的业务流程编排';
+    default:
+      return '数据资源';
+  }
+};
 
-const { Text } = Typography;
+/**
+ * 将 DataResource 转换为 AgentComponentInfo
+ * @param resource 数据资源
+ * @returns AgentComponentInfo 对象
+ */
+const convertToAgentComponentInfo = (
+  resource: DataResource,
+): AgentComponentInfo => {
+  return {
+    id: Number(resource.id),
+    targetId: Number(resource.id),
+    name: resource.name,
+    description: resource.description || getDefaultDescription(resource.type), // 使用默认描述确保总是有内容显示
+    type:
+      resource.type === 'plugin'
+        ? AgentComponentTypeEnum.Plugin
+        : AgentComponentTypeEnum.Workflow,
+    icon: '', // 使用默认图标
+    targetConfig: undefined, // 设置为 undefined 以禁用内部链接跳转
+    spaceId: 0,
+    bindConfig: undefined,
+    tenantId: 0,
+    agentId: 0,
+    exceptionOut: DefaultSelectedEnum.No,
+    fallbackMsg: '',
+    modified: '',
+    created: '',
+    groupDescription: '',
+    groupName: '',
+  };
+};
+
+/**
+ * 根据资源类型获取默认图标
+ * @param type 资源类型
+ * @returns 图标路径
+ */
+const getDefaultImage = (type: string): string => {
+  console.log('getDefaultImage called with type:', type); // 调试日志
+  console.log('pluginImage:', pluginImage); // 调试日志
+  console.log('workflowImage:', workflowImage); // 调试日志
+  switch (type.toLowerCase()) {
+    case 'plugin':
+      return pluginImage;
+    case 'workflow':
+      return workflowImage;
+    default:
+      console.log('Using default plugin image for type:', type); // 调试日志
+      return pluginImage;
+  }
+};
 
 /**
  * 数据资源列表组件属性
@@ -111,96 +186,76 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
   };
 
   /**
+   * 处理资源点击跳转
+   */
+  const handleResourceClick = (resource: DataResource) => {
+    if (resource.type === 'plugin') {
+      window.open(
+        `${process.env.BASE_URL}/square/publish/plugin/${resource.id}`,
+        '_blank',
+        'noopener,noreferrer',
+      );
+    } else if (resource.type === 'workflow') {
+      window.open(
+        `${process.env.BASE_URL}/square/publish/workflow/${resource.id}`,
+        '_blank',
+        'noopener,noreferrer',
+      );
+    }
+  };
+
+  /**
    * 渲染资源项
    */
   const renderResourceItem = (resource: DataResource) => {
     const isLoading = actionLoading[resource.id] || false;
+    const agentComponentInfo = convertToAgentComponentInfo(resource);
+    const defaultImage = getDefaultImage(resource.type);
+
+    console.log('Rendering resource:', {
+      id: resource.id,
+      name: resource.name,
+      type: resource.type,
+      defaultImage,
+      agentComponentInfoIcon: agentComponentInfo.icon,
+    }); // 调试日志
 
     return (
-      <div
-        key={resource.id}
-        className="resourceItem"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          padding: '8px 16px',
-          borderBottom: '1px solid rgba(0, 0, 0, 5%)',
-          transition: 'background-color 0.2s ease',
-          cursor: 'pointer',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 3%)';
-          const actionButton = e.currentTarget.querySelector(
-            '.resourceActionButton',
-          ) as HTMLElement;
-          if (actionButton) {
-            actionButton.style.opacity = '1';
+      <div key={resource.id} onClick={() => handleResourceClick(resource)}>
+        <CollapseComponentItem
+          agentComponentInfo={agentComponentInfo}
+          defaultImage={defaultImage}
+          className={styles['dataResourceItem']}
+          showImage={true}
+          extra={
+            <TooltipIcon
+              title="删除"
+              icon={
+                isLoading ? (
+                  <LoadingOutlined />
+                ) : (
+                  <DeleteOutlined className="cursor-pointer" />
+                )
+              }
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(Number(resource.id));
+              }}
+            />
           }
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'transparent';
-          const actionButton = e.currentTarget.querySelector(
-            '.resourceActionButton',
-          ) as HTMLElement;
-          if (actionButton) {
-            actionButton.style.opacity = '0';
-          }
-        }}
-      >
-        {/* 左侧复选框 */}
-        {/* <Checkbox
-          checked={selectedResourceIds.some(
-            (item) => item.dataSourceId === parseInt(resource.id),
-          )}
-          onChange={(e) => handleCheckboxChange(resource, e.target.checked)}
-          disabled={isChatLoading}
-          style={{ marginRight: '12px' }}
-        /> */}
-
-        {/* 中间内容 */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ fontSize: '14px', color: '#1e293b' }}>
-            {resource.name}
-          </Text>
-        </div>
-
-        {/* 右侧删除按钮 */}
-        <div
-          className="resourceActionButton"
-          style={{
-            marginLeft: '8px',
-            opacity: 0,
-            transition: 'opacity 0.2s ease',
-          }}
-        >
-          <Button
-            type="text"
-            icon={<DeleteOutlined />}
-            loading={isLoading}
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(Number(resource.id));
-            }}
-            style={{
-              width: '24px',
-              height: '24px',
-              padding: '0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ff4d4f',
-            }}
-          />
-        </div>
+        />
       </div>
     );
   };
 
   return (
     <div
-      className="dataResourceList scroll-container"
-      style={{ height: '200px' }}
+      style={{
+        height: '200px',
+        padding: '8px',
+        margin: '0 4px',
+        overflow: 'auto',
+      }}
     >
       {resources.length === 0 ? (
         <Empty
@@ -208,7 +263,9 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
           description="点击&ldquo;+&rdquo;添加数据资源"
         />
       ) : (
-        <div>{resources.map((resource) => renderResourceItem(resource))}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {resources.map((resource) => renderResourceItem(resource))}
+        </div>
       )}
     </div>
   );
