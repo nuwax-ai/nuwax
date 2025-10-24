@@ -1,3 +1,4 @@
+import { SvgIcon } from '@/components/base';
 import Created from '@/components/Created';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import { ERROR_MESSAGES } from '@/constants/appDevConstants';
@@ -29,12 +30,7 @@ import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
-import {
-  EyeOutlined,
-  ReadOutlined,
-  SyncOutlined,
-  UploadOutlined,
-} from '@ant-design/icons';
+import { SyncOutlined, UploadOutlined } from '@ant-design/icons';
 import {
   Alert,
   Button,
@@ -45,6 +41,7 @@ import {
   Row,
   Segmented,
   Space,
+  Tooltip,
   Typography,
   Upload,
 } from 'antd';
@@ -1181,11 +1178,25 @@ const AppDev: React.FC = () => {
                   disabled={versionCompare.isComparing}
                   options={[
                     {
-                      label: <EyeOutlined />,
+                      label: (
+                        <Tooltip title="预览">
+                          <SvgIcon
+                            name="icons-common-preview"
+                            style={{ fontSize: 20 }}
+                          />
+                        </Tooltip>
+                      ),
                       value: 'preview',
                     },
                     {
-                      label: <ReadOutlined />,
+                      label: (
+                        <Tooltip title="代码">
+                          <SvgIcon
+                            name="icons-common-code"
+                            style={{ fontSize: 20 }}
+                          />
+                        </Tooltip>
+                      ),
                       value: 'code',
                     },
                   ]}

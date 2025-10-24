@@ -1,12 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
-import {
-  DownloadOutlined,
-  FullscreenOutlined,
-  ImportOutlined,
-  ReloadOutlined,
-  SyncOutlined,
-} from '@ant-design/icons';
+import { SyncOutlined } from '@ant-design/icons';
 import { Alert, Badge, Button, Dropdown, Tag, Tooltip } from 'antd';
 import React, { useMemo, useState } from 'react';
 import styles from './index.less';
@@ -304,7 +298,7 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
           className={`${styles.caretDownIcon} ${
             expanded ? styles.expanded : ''
           }`}
-          style={{ fontSize: '16px' }}
+          style={{ fontSize: 16 }}
         />
       </Button>
     </Dropdown>
@@ -339,7 +333,7 @@ const ConsoleButton: React.FC<ConsoleButtonProps> = ({
           type="text"
           className={styles.consoleButton}
           icon={
-            <SvgIcon name="icons-nav-sidebar" style={{ fontSize: '16px' }} />
+            <SvgIcon name="icons-common-console" style={{ fontSize: 16 }} />
           }
           onClick={onToggleDevLogConsole}
         />
@@ -373,7 +367,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
     () => [
       {
         key: 'import',
-        icon: <ImportOutlined />,
+        icon: <SvgIcon name="icons-common-import" style={{ fontSize: 16 }} />,
         label: '导入项目',
         onClick: onImportProject,
         disabled: isChatLoading,
@@ -390,14 +384,16 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       },
       {
         key: 'restart',
-        icon: <SyncOutlined />,
+        icon: <SvgIcon name="icons-common-restart" style={{ fontSize: 16 }} />,
         label: '重启服务器',
         onClick: onRestartServer,
         disabled: isChatLoading,
       },
       {
         key: 'fullscreen',
-        icon: <FullscreenOutlined />,
+        icon: (
+          <SvgIcon name="icons-common-fullscreen" style={{ fontSize: 16 }} />
+        ),
         label: '全屏页面预览',
         onClick: onFullscreenPreview,
         disabled: isChatLoading,
@@ -407,7 +403,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       },
       {
         key: 'export',
-        icon: <DownloadOutlined />,
+        icon: <SvgIcon name="icons-common-download" style={{ fontSize: 16 }} />,
         label: '导出项目',
         onClick: onExportProject,
         disabled: isChatLoading,
@@ -518,7 +514,12 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
               <Button
                 type="text"
                 className={styles.refreshButton}
-                icon={<ReloadOutlined />}
+                icon={
+                  <SvgIcon
+                    name="icons-common-refresh"
+                    style={{ fontSize: 16 }}
+                  />
+                }
                 onClick={actionsData.onRefreshPreview}
               />
             </Tooltip>
