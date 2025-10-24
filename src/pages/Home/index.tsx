@@ -1,7 +1,6 @@
 import ChatInputHome from '@/components/ChatInputHome';
 import Loading from '@/components/custom/Loading';
 // import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
-import pageImage from '@/assets/images/agent_image.png';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import {
@@ -212,10 +211,9 @@ const Home: React.FC = () => {
                   )}
                   onClick={() => handleClickItem(item)}
                 >
-                  <img
-                    className={cx(styles.icon)}
-                    src={item?.icon || pageImage}
-                  />
+                  {item?.icon && (
+                    <img className={cx(styles.icon)} src={item?.icon} />
+                  )}
                   {item.info}
                 </div>
               );
