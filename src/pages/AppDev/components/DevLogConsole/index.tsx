@@ -273,7 +273,6 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
               size="small"
               icon={<ReloadOutlined />}
               onClick={onRefresh}
-              loading={isLoading}
             />
           </Tooltip>
           <Tooltip title="清空日志">
