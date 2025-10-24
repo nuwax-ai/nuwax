@@ -273,7 +273,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           onChange={(e) => chat.setChatInput(e.target.value)}
           rootClassName={cx(styles.input)}
           onPressEnter={handlePressEnter}
-          placeholder="向AI助手提问..."
+          placeholder="一句话做网站、应用、提效工具等，可选择工作流、插件等数据资源拓展多种能力"
           autoSize={{ minRows: 2, maxRows: 6 }}
         />
         <footer className={cx('flex-1', styles.footer)}>
