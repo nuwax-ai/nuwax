@@ -244,7 +244,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     }
 
     // 开场白
-    keyList.push(AgentArrangeConfigEnum.Opening_Remarks);
+    // keyList.push(AgentArrangeConfigEnum.Opening_Remarks);
     return keyList;
   }, [agentComponentList]);
 
