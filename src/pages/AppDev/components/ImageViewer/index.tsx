@@ -1,7 +1,7 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { IMAGE_FALLBACK } from '@/constants/images.constants';
 import { isBase64Image } from '@/utils/appDevUtils';
-import { ReloadOutlined } from '@ant-design/icons';
-import { Button, Image } from 'antd';
+import { Button, Image, Tooltip } from 'antd';
 import React from 'react';
 import styles from './index.less';
 
@@ -39,9 +39,16 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
               <span className={styles.base64Indicator}> (Base64)</span>
             )}
           </span>
-          <Button size="small" icon={<ReloadOutlined />} onClick={onRefresh}>
-            刷新
-          </Button>
+          <Tooltip title="刷新">
+            <Button
+              size="small"
+              type="text"
+              icon={
+                <SvgIcon name="icons-common-refresh" style={{ fontSize: 16 }} />
+              }
+              onClick={onRefresh}
+            />
+          </Tooltip>
         </div>
       )}
       <div

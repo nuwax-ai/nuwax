@@ -51,7 +51,6 @@ export const jumpBack = (url?: string) => {
   const isNewTab = !referrer && historyLength <= 2;
   const location = history.location;
 
-  console.info('jumpBack', history, location, url);
   if (location.key === 'default' && location.state === null) {
     //说明直接进入的是二级页面
     if (url) {
@@ -62,19 +61,23 @@ export const jumpBack = (url?: string) => {
     return;
   }
 
+  let result: string | number;
   if (isNewTab && url) {
     // 新标签页打开，跳转到指定页面
-    jumpTo(url);
+    result = url;
   } else if (historyLength > 1) {
     // 有正常的浏览历史，执行返回
-    jumpTo(-1);
+    result = -1;
   } else if (url) {
     // 兜底方案，跳转到指定页面
-    jumpTo(url);
+    result = url;
   } else {
     // 没有指定页面，跳转到首页
-    jumpTo('/');
+    result = '/';
   }
+
+  console.info('[router] jumpBack', history, location, result);
+  jumpTo(result);
 };
 
 // 跳转到mcp创建

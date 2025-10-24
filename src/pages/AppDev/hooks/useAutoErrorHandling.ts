@@ -44,16 +44,6 @@ interface UseAutoErrorHandlingReturn {
     logs: DevLogEntry[],
     sendMessage: (attachments?: Attachment[]) => void,
   ) => void;
-  /** 处理预览白屏错误 */
-  handlePreviewWhiteScreen: (
-    logs: DevLogEntry[],
-    sendMessage: (attachments?: Attachment[]) => void,
-  ) => void;
-  /** 处理Agent输出结束后的错误检测 */
-  handleAgentPromptEnd: (
-    logs: DevLogEntry[],
-    sendMessage: (attachments?: Attachment[]) => void,
-  ) => void;
   /** 获取错误统计信息 */
   getErrorStats: () => {
     totalErrors: number;
@@ -260,36 +250,6 @@ export const useAutoErrorHandling = (
   /**
    * 处理预览白屏错误
    */
-  const handlePreviewWhiteScreen = useCallback(
-    (
-      logs: DevLogEntry[],
-      sendMessage: (attachments?: Attachment[]) => void,
-    ) => {
-      if (!autoHandleEnabled) return;
-
-      // 立即检测错误
-      checkAndSendError(logs, sendMessage);
-    },
-    [autoHandleEnabled, checkAndSendError],
-  );
-
-  /**
-   * 处理Agent输出结束后的错误检测
-   */
-  const handleAgentPromptEnd = useCallback(
-    (
-      logs: DevLogEntry[],
-      sendMessage: (attachments?: Attachment[]) => void,
-    ) => {
-      if (!autoHandleEnabled) return;
-
-      // 延迟检测，给Agent一些时间完成操作
-      setTimeout(() => {
-        checkAndSendError(logs, sendMessage);
-      }, 2000);
-    },
-    [autoHandleEnabled, checkAndSendError],
-  );
 
   /**
    * 获取错误统计信息
@@ -319,8 +279,6 @@ export const useAutoErrorHandling = (
     setAutoHandleEnabled: handleSetAutoHandleEnabled,
     checkAndSendError,
     handleFileOperationComplete,
-    handlePreviewWhiteScreen,
-    handleAgentPromptEnd,
     getErrorStats,
   };
 };
@@ -341,10 +299,9 @@ export const useSimpleAutoErrorHandling = (projectId: string) => {
 
 /**
  * 错误处理状态管理Hook
- * @param projectId 项目ID
  * @returns 错误处理状态管理
  */
-export const useErrorHandlingState = (projectId: string) => {
+export const useErrorHandlingState = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastProcessedTime, setLastProcessedTime] = useState<number>(0);
   const [processedErrors, setProcessedErrors] = useState<Set<string>>(
