@@ -404,7 +404,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
       {/* 悬浮折叠/展开按钮 - 放在预览区域左下角 */}
       <Tooltip title={isFileTreeCollapsed ? '展开文件树' : '收起文件树'}>
         <Button
-          type="text"
+          shape="circle"
           size="small"
           icon={isFileTreeCollapsed ? <RightOutlined /> : <LeftOutlined />}
           onClick={toggleFileTreeCollapse}

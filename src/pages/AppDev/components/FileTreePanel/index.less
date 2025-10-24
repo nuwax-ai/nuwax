@@ -285,6 +285,8 @@
   z-index: 10;
   cursor: pointer;
   outline: none;
+  background: @colorBgContainer;
+  border: none;
 
   // 展开状态 - 文件树可见时
   &.expanded {
@@ -293,6 +295,7 @@
     color: @colorTextBase;
 
     &:hover {
+      background: @colorBgContainer;
       opacity: 1;
     }
   }
@@ -303,6 +306,7 @@
     left: 16px;
 
     &:hover {
+      background: @colorBgContainer;
       opacity: 1;
     }
   }
