@@ -20,6 +20,16 @@
   border-bottom: @lineWidth solid @colorSplit;
   background-color: @colorBgContainer;
 
+  :global {
+    .ant-btn {
+      border: 0 !important;
+
+      &:hover {
+        color: #0e0101 !important;
+      }
+    }
+  }
+
   h3 {
     display: flex;
     align-items: center;

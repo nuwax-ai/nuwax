@@ -726,9 +726,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       case EventListEnum.InsertSystemPrompt:
         if (onInsertSystemPrompt) {
           // 格式化事件配置信息
-          const eventText = `返回内容后面追加引用信息如下\n'<div class="event" event-type="${
+          const eventText = `返回内容后面追加引用信息如下\n<div class="event" event-type="${
             item.identification
-          }" data="动态JSON参数">[#引用编号]</div>'\n
+          }" data='动态JSON参数'>[#引用编号]</div>\n
 ${item.identification}的动态JSON参数JsonSchema如下\n
   \`\`\`
   ${

@@ -4,8 +4,8 @@ import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
 import { copyTextToClipboard } from '@/utils';
 import {
   CloseOutlined,
-  CopyOutlined,
   LeftOutlined,
+  LinkOutlined,
   ReloadOutlined,
   RightOutlined,
 } from '@ant-design/icons';
@@ -35,7 +35,7 @@ interface PagePreviewData {
   /** 页面参数 */
   params?: Record<string, string>;
   /** 请求方法 */
-  method?: string;
+  method?: 'browser_navigate_page' | 'browser_open_page';
   /** 数据类型 */
   data_type?: 'html' | 'markdown';
   /** 请求 ID */
@@ -147,7 +147,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         timer = setTimeout(async () => {
           // 获取 head 中的 title 内容
           const title =
-            iframeDoc.querySelector('head > title')?.textContent || null;
+            iframeDoc.querySelector('head > title')?.textContent || '页面预览';
           setPreviewPageTitle(title);
 
           const html = iframeDoc.body.innerHTML;
@@ -221,7 +221,12 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   }
 
   function goCopy() {
-    copyTextToClipboard(pageUrl, () => {}, true);
+    let url = pageUrl;
+    // 如果不是 http(s) 开头，则加上 BASE_URL
+    if (!/^https?:\/\//.test(pageUrl)) {
+      url = `${window.location.protocol}//${window.location.host}${pageUrl}`;
+    }
+    copyTextToClipboard(url, () => {}, true);
   }
 
   return (
@@ -235,7 +240,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
           <h3 className="text-ellipsis">
             <SvgIcon name="icons-page" className={cx(styles['page-icon'])} />
             <span className={titleClassName} style={titleStyle}>
-              {previewPageTitle || '页面预览'}
+              {previewPageTitle}
             </span>
           </h3>
           <div style={{ display: 'flex', gap: '10px', marginRight: '20px' }}>
@@ -251,8 +256,8 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
               <Button onClick={goForward} icon={<RightOutlined />} />
             </Tooltip>
 
-            <Tooltip title="复制">
-              <Button onClick={goCopy} icon={<CopyOutlined />} />
+            <Tooltip title="复制链接">
+              <Button onClick={goCopy} icon={<LinkOutlined />} />
             </Tooltip>
           </div>
           {showCloseButton && (

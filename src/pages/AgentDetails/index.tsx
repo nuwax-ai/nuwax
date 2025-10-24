@@ -262,7 +262,10 @@ const AgentDetails: React.FC = () => {
                       className={cx(styles['icons-nav-sidebar'])}
                     />
                   }
-                  onClick={() => sidebarRef.current?.open()}
+                  onClick={() => {
+                    hidePagePreview();
+                    sidebarRef.current?.open();
+                  }}
                 />
               )}
 
@@ -277,7 +280,10 @@ const AgentDetails: React.FC = () => {
                       className={cx(styles['icons-nav-sidebar'])}
                     />
                   }
-                  onClick={handleOpenPreview}
+                  onClick={() => {
+                    sidebarRef.current?.close();
+                    handleOpenPreview();
+                  }}
                 />
               )}
             </div>
@@ -367,41 +373,34 @@ const AgentDetails: React.FC = () => {
 
   return (
     <div className={cx('flex', 'h-full')}>
-      <div
-        style={{
-          width: '100%',
-          overflow: 'auto',
-          display: 'flex',
-        }}
-      >
-        {/*智能体聊天和预览页面*/}
-        <ResizableSplit
-          left={agentDetail?.hideChatArea ? null : LeftContent()}
-          right={
-            pagePreviewData && (
-              <PagePreviewIframe
-                pagePreviewData={pagePreviewData}
-                showHeader={true}
-                onClose={hidePagePreview}
-                showCloseButton={!agentDetail?.hideChatArea}
-                titleClassName={cx(styles['title-style'])}
-              />
-            )
-          }
-        />
-        {/*智能体详情*/}
-        <AgentSidebar
-          ref={sidebarRef}
-          className={cx(
-            styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
-          )}
-          agentId={agentId}
-          loading={loading}
-          agentDetail={agentDetail}
-          onToggleCollectSuccess={handleToggleCollectSuccess}
-          onVisibleChange={setIsSidebarVisible}
-        />
-      </div>
+      {/*智能体聊天和预览页面*/}
+      <ResizableSplit
+        minLeftWidth={400}
+        left={agentDetail?.hideChatArea ? null : LeftContent()}
+        right={
+          pagePreviewData && (
+            <PagePreviewIframe
+              pagePreviewData={pagePreviewData}
+              showHeader={true}
+              onClose={hidePagePreview}
+              showCloseButton={!agentDetail?.hideChatArea}
+              titleClassName={cx(styles['title-style'])}
+            />
+          )
+        }
+      />
+      {/*智能体详情*/}
+      <AgentSidebar
+        ref={sidebarRef}
+        className={cx(
+          styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
+        )}
+        agentId={agentId}
+        loading={loading}
+        agentDetail={agentDetail}
+        onToggleCollectSuccess={handleToggleCollectSuccess}
+        onVisibleChange={setIsSidebarVisible}
+      />
     </div>
   );
 };
