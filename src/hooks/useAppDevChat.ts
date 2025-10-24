@@ -58,6 +58,7 @@ interface UseAppDevChatProps {
   onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
   onClearUploadedImages?: () => void; // 新增：清除上传图片回调
   onRestartDevServer?: () => Promise<void>; // 新增：重启开发服务器回调
+  hasPermission?: boolean; // 新增：是否有权限访问项目
 }
 
 export const useAppDevChat = ({
@@ -70,6 +71,8 @@ export const useAppDevChat = ({
   onRefreshVersionList, // 新增：刷新版本列表回调
   onClearUploadedImages, // 新增：清除上传图片回调
   onRestartDevServer, // 新增
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  hasPermission = true, // 新增：是否有权限访问项目
 }: UseAppDevChatProps) => {
   // 使用 AppDev SSE 连接 model
   const appDevSseModel = useModel('appDevSseConnection');
