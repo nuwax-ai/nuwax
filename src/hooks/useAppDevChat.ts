@@ -456,7 +456,7 @@ export const useAppDevChat = ({
         }
 
         if (
-          response.type === 'error' &&
+          response.type === 'error' ||
           response.code === AGENT_SERVICE_RUNNING
         ) {
           aIChatAbortConnectionRef.current?.abort();
