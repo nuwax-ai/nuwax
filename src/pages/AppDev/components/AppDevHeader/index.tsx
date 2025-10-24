@@ -1,5 +1,6 @@
 import pageImage from '@/assets/images/agent_image.png';
 import SvgIcon from '@/components/base/SvgIcon';
+import ConditionRender from '@/components/ConditionRender';
 import CustomPopover from '@/components/CustomPopover';
 import { PAGE_DEVELOP_PUBLISH_TYPE_LIST } from '@/constants/pageDev.constants';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
@@ -127,16 +128,22 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
         </div>
       </div>
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-        <Tooltip title="版本历史">
-          <ClockCircleOutlined
-            className={cx(
-              'ico',
-              'cursor-pointer',
-              styles['version-history-icon'],
-            )}
-            onClick={onOpenVersionHistory}
-          />
-        </Tooltip>
+        <ConditionRender
+          condition={
+            projectInfo?.publishType === PageDevelopPublishTypeEnum.AGENT
+          }
+        >
+          <Tooltip title="版本历史">
+            <ClockCircleOutlined
+              className={cx(
+                'ico',
+                'cursor-pointer',
+                styles['version-history-icon'],
+              )}
+              onClick={onOpenVersionHistory}
+            />
+          </Tooltip>
+        </ConditionRender>
         {/*添加资源*/}
         <CustomPopover list={publishList} onClick={handleClickPopoverItem}>
           <div className={cx('flex', 'items-center', styles['action-buttons'])}>

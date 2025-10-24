@@ -36,7 +36,6 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
     onSuccess: (_: null, params: PageUpdateParams[]) => {
       setLoading(false);
       const { projectId, needLogin } = params[0];
-      message.success('编辑成功');
       onConfirm(projectId, needLogin);
     },
     onError: () => {

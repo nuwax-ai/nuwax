@@ -215,15 +215,6 @@ export async function apiAgentConfigHistoryList(
   });
 }
 
-// 还原智能体版本
-export async function apiRestoreAgentVersion(
-  versionId: number,
-): Promise<RequestResponse<null>> {
-  return request(`/api/agent/config/history/restore/${versionId}`, {
-    method: 'POST',
-  });
-}
-
 // 查询智能体配置组件列表
 export async function apiAgentComponentList(
   agentId: number,
