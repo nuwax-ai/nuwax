@@ -23,8 +23,8 @@ interface Props {
 const ResizableSplit: React.FC<Props> = ({
   left,
   right,
-  minLeftWidth = 150,
-  minRightWidth = 300,
+  minLeftWidth = 350,
+  minRightWidth = 350,
   defaultLeftWidth = 33, // 默认左侧占比33%
   dividerColor = '#e0e0e0',
   dividerHoverColor = '#bbb',
