@@ -209,6 +209,8 @@ const AgentDetails: React.FC = () => {
   };
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const sidebarRef = useRef<AgentSidebarRef>(null);
+  // 控制输入框的淡入动画
+  const [showInput, setShowInput] = useState<boolean>(false);
 
   const handleOpenPreview = () => {
     // 判断是否默认展示页面首页
@@ -232,6 +234,19 @@ const AgentDetails: React.FC = () => {
   useEffect(() => {
     handleOpenPreview();
   }, [agentDetail]);
+
+  // 当加载完成后，延迟显示输入框（淡入效果）
+  useEffect(() => {
+    if (isLoaded && !loading) {
+      const timer = setTimeout(() => {
+        setShowInput(true);
+      }, 300); // 延迟 300ms 后显示输入框
+
+      return () => clearTimeout(timer);
+    } else {
+      setShowInput(false);
+    }
+  }, [isLoaded, loading]);
   const { pagePreviewData, hidePagePreview } = useModel('chat');
 
   const LeftContent = () => {
@@ -337,19 +352,26 @@ const AgentDetails: React.FC = () => {
               )}
             </div>
           </div>
-          {/*会话输入框 - 加载完成后才显示*/}
+          {/*会话输入框 - 加载完成后延迟淡入显示*/}
           {isLoaded && !loading && (
-            <ChatInputHome
-              className={cx(styles['chat-input-container'])}
-              key={`agent-details-${agentId}`}
-              onEnter={handleMessageSend}
-              isClearInput={false}
-              wholeDisabled={wholeDisabled}
-              manualComponents={agentDetail?.manualComponents || []}
-              selectedComponentList={selectedComponentList}
-              onSelectComponent={handleSelectComponent}
-              showAnnouncement={true}
-            />
+            <div
+              style={{
+                opacity: showInput ? 1 : 0,
+                transition: 'opacity 0.4s ease-in-out',
+              }}
+            >
+              <ChatInputHome
+                className={cx(styles['chat-input-container'])}
+                key={`agent-details-${agentId}`}
+                onEnter={handleMessageSend}
+                isClearInput={false}
+                wholeDisabled={wholeDisabled}
+                manualComponents={agentDetail?.manualComponents || []}
+                selectedComponentList={selectedComponentList}
+                onSelectComponent={handleSelectComponent}
+                showAnnouncement={true}
+              />
+            </div>
           )}
         </div>
       </div>

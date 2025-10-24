@@ -66,6 +66,8 @@ const Chat: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   // 是否发送过消息,如果是,则禁用变量参数
   const isSendMessageRef = useRef<boolean>(false);
+  // 控制输入框的淡入动画
+  const [showInput, setShowInput] = useState<boolean>(false);
 
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
@@ -387,6 +389,19 @@ const Chat: React.FC = () => {
     handleOpenPreview();
   }, [agentDetail]);
 
+  // 当加载完成后，延迟显示输入框（淡入效果）
+  useEffect(() => {
+    if (!loading && !loadingConversation && isLoadingConversation) {
+      const timer = setTimeout(() => {
+        setShowInput(true);
+      }, 300); // 延迟 300ms 后显示输入框
+
+      return () => clearTimeout(timer);
+    } else {
+      setShowInput(false);
+    }
+  }, [loading, loadingConversation, isLoadingConversation]);
+
   const LeftContent = () => {
     return (
       <div
@@ -509,9 +524,15 @@ const Chat: React.FC = () => {
             )}
           </div>
         </div>
-        {/*会话输入框 - 根据 hideChatArea 配置控制显示*/}
+        {/*会话输入框 - 根据 hideChatArea 配置控制显示，加载完成后延迟淡入*/}
         {agentPageConfig.hideChatArea !== HideChatAreaEnum.Yes && (
-          <div style={{ padding: '0 15px' }}>
+          <div
+            style={{
+              padding: '0 15px',
+              opacity: showInput ? 1 : 0,
+              transition: 'opacity 0.4s ease-in-out',
+            }}
+          >
             <ChatInputHome
               key={`chat-${id}-${agentId}`}
               className={cx(styles['chat-input-container'])}
