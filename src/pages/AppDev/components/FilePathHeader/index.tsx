@@ -1,5 +1,6 @@
-import { CheckOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Button, Spin } from 'antd';
+import SvgIcon from '@/components/base/SvgIcon';
+import { CheckOutlined } from '@ant-design/icons';
+import { Button, Spin, Tooltip } from 'antd';
 import React from 'react';
 import styles from './index.less';
 
@@ -71,15 +72,17 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             </Button>
           </>
         )}
-
-        <Button
-          size="small"
-          icon={<ReloadOutlined />}
-          onClick={onRefresh}
-          loading={isLoading}
-        >
-          刷新
-        </Button>
+        <Tooltip title="刷新">
+          <Button
+            size="small"
+            type="text"
+            icon={
+              <SvgIcon name="icons-common-refresh" style={{ fontSize: 16 }} />
+            }
+            onClick={onRefresh}
+            loading={isLoading}
+          />
+        </Tooltip>
       </div>
     </div>
   );

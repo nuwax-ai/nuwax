@@ -242,6 +242,16 @@ export interface AttachmentSource {
 }
 
 /**
+ * 文件流附件 - 原型图片附件、其他附件文件
+ */
+export interface FileStreamAttachment {
+  url: string;
+  mimeType?: string;
+  fileName?: string;
+  fileKey?: string;
+}
+
+/**
  * 文本附件 - 基于 OpenAPI 规范
  */
 export interface TextAttachment {
@@ -416,6 +426,16 @@ export enum SessionMessageType {
  * 统一会话消息结构
  */
 export interface UnifiedSessionMessage {
+  type:
+    | 'success'
+    | 'error'
+    | 'progress'
+    | 'heartbeat'
+    | 'agent_message_chunk'
+    | 'tool_call'
+    | 'tool_call_update'
+    | 'agent_message_chunk'
+    | 'plan';
   sessionId: string;
   messageType: SessionMessageType;
   subType: string;
