@@ -53,7 +53,7 @@ export default defineConfig({
             console.log('开发模式检测到，跳过双向跳转逻辑');
             return;
           }
-          
+
           const { protocol, host, href, hash } = window.location;
           const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
           const baseUrl = protocol + '//' + host;
