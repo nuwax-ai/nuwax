@@ -8,7 +8,7 @@ import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import { handleUploadFileList } from '@/utils/upload';
 import { ArrowDownOutlined, LoadingOutlined } from '@ant-design/icons';
 import type { InputRef, UploadProps } from 'antd';
-import { Input, Tooltip, Upload } from 'antd';
+import { Input, message, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -18,6 +18,7 @@ import React, {
   useState,
 } from 'react';
 import { useModel } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 import ManualComponentItem from './ManualComponentItem';
 
@@ -155,6 +156,114 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     );
   };
 
+  /**
+   * 处理粘贴事件，支持粘贴图片上传
+   * 支持从剪贴板粘贴图片（Ctrl+V 或 Cmd+V）
+   * 支持多张图片同时粘贴
+   */
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const clipboardData = e.clipboardData;
+      if (!clipboardData || !clipboardData.items) {
+        return;
+      }
+
+      // 提取所有图片文件
+      const imageFiles: File[] = [];
+      for (let i = 0; i < clipboardData.items.length; i++) {
+        const item = clipboardData.items[i];
+        // 检查是否为图片类型
+        if (item.type.indexOf('image') !== -1) {
+          const file = item.getAsFile();
+          if (file) {
+            imageFiles.push(file);
+          }
+        }
+      }
+
+      // 如果有图片文件，则阻止默认粘贴行为并上传
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+
+        // 为每个图片文件创建唯一的 uid
+        const newUploadFiles: any[] = imageFiles.map((file, index) => {
+          const uid = uuidv4();
+          return {
+            uid,
+            name: file.name || `粘贴图片-${Date.now()}-${index + 1}.png`,
+            size: file.size,
+            type: file.type,
+            status: UploadFileStatus.uploading,
+            percent: 0,
+            originFileObj: file,
+          };
+        });
+
+        // 先更新 UI 显示上传中状态
+        setUploadFiles((prev) => [
+          ...prev,
+          ...handleUploadFileList(newUploadFiles),
+        ]);
+
+        // 手动上传每个文件
+        for (let i = 0; i < imageFiles.length; i++) {
+          const file = imageFiles[i];
+          const uploadFile = newUploadFiles[i];
+
+          try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', 'tmp');
+
+            const response = await fetch(UPLOAD_FILE_ACTION, {
+              method: 'POST',
+              headers: {
+                Authorization: token ? `Bearer ${token}` : '',
+              },
+              body: formData,
+            });
+
+            const result = await response.json();
+
+            // 更新上传结果
+            setUploadFiles((prev) =>
+              prev.map((item) =>
+                item.uid === uploadFile.uid
+                  ? {
+                      ...item,
+                      status: UploadFileStatus.done,
+                      percent: 100,
+                      url: result.data?.url || '',
+                      key: result.data?.key || '',
+                      name: result.data?.fileName || item.name,
+                      response: result,
+                    }
+                  : item,
+              ),
+            );
+          } catch (error) {
+            console.error('图片上传失败:', error);
+            message.error(`${uploadFile.name} 上传失败`);
+
+            // 更新为失败状态
+            setUploadFiles((prev) =>
+              prev.map((item) =>
+                item.uid === uploadFile.uid
+                  ? {
+                      ...item,
+                      status: UploadFileStatus.error,
+                      percent: 0,
+                    }
+                  : item,
+              ),
+            );
+          }
+        }
+      }
+    },
+    [wholeDisabled, token],
+  );
+
   const handleClear = () => {
     if (clearDisabled || wholeDisabled) {
       return;
@@ -244,7 +353,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           onChange={(e) => setMessageInfo(e.target.value)}
           rootClassName={cx(styles.input)}
           onPressEnter={handlePressEnter}
-          placeholder="直接输入指令；可通过回车发送"
+          onPaste={handlePaste}
+          placeholder="直接输入指令；可通过回车发送；支持粘贴图片"
           autoSize={{ minRows: 2, maxRows: 6 }}
         />
         <footer className={cx('flex', 'flex-1', styles.footer)}>
