@@ -145,8 +145,21 @@
   transition: all 0.2s ease;
   cursor: default;
 
+  &:hover {
+    .close-icon {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
   .file-name {
     flex: 1 0 auto;
+  }
+
+  .close-icon {
+    visibility: hidden;
+    opacity: 0;
+    transition: all 0.3s;
   }
 }
 

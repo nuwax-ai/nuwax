@@ -38,7 +38,7 @@ import {
   generateSSEUrl,
   getAuthHeaders,
   isFileOrDependencyOperation, // 新增：导入文件或依赖操作检测函数
-  isRequestIdMatch,
+  // isRequestIdMatch,
   markStreamingMessageCancelled,
   markStreamingMessageComplete,
   markStreamingMessageError,
@@ -132,11 +132,11 @@ export const useAppDevChat = ({
   const handleSSEMessage = useCallback(
     (message: UnifiedSessionMessage, activeRequestId: string) => {
       // 只处理匹配当前request_id的消息
-      const messageRequestId = message.data?.request_id;
+      // const messageRequestId = message.data?.request_id;
 
-      if (!isRequestIdMatch(messageRequestId, activeRequestId)) {
-        return;
-      }
+      // if (!isRequestIdMatch(messageRequestId, activeRequestId)) {
+      //   return;
+      // }
 
       switch (message.messageType) {
         case 'sessionPromptStart': {
@@ -327,9 +327,9 @@ export const useAppDevChat = ({
       // 连接到SSE
       abortConnectionRef.current = new AbortController();
 
-      // 创建ASSISTANT占位消息
-      const assistantMessage = createAssistantMessage(requestId, sessionId);
-      setChatMessages((prev) => [...prev, assistantMessage]);
+      // // 创建ASSISTANT占位消息
+      // const assistantMessage = createAssistantMessage(requestId, sessionId);
+      // setChatMessages((prev) => [...prev, assistantMessage]);
 
       await createSSEConnection({
         url: sseUrl,
@@ -413,6 +413,18 @@ export const useAppDevChat = ({
       abortController: aIChatAbortConnectionRef.current,
       body: params,
       onMessage: (response: UnifiedSessionMessage) => {
+        if (response.type === 'progress') {
+          const chunkText = response?.message ? `${response?.message}\n\n` : '';
+          setChatMessages((prev) =>
+            appendTextToStreamingMessage(
+              prev,
+              requestId,
+              chunkText,
+              false,
+            ),
+          );
+        }
+
         if (response.type === 'success') {
           // 新增：/ai-chat 接口发送成功后立即刷新版本列表
           if (onRefreshVersionList) {
@@ -436,6 +448,14 @@ export const useAppDevChat = ({
 
           // 立即建立SSE连接（使用返回的session_id）
           initializeAppDevSSEConnection(sessionId, requestId);
+        }
+
+        if (response.type === 'error' && response.code === AGENT_SERVICE_RUNNING) {
+          aIChatAbortConnectionRef.current?.abort();
+          setIsChatLoading(false);
+          showStopAgentServiceModal(projectId, () => {
+            sendMessageAndConnectSSE(params.attachments, params.attachment_files, params.attachment_prototype_images); //继续发送消息
+          });
         }
       },
       onError: () => {
@@ -496,6 +516,10 @@ export const useAppDevChat = ({
 
         setChatMessages((prev) => [...prev, userMessage]);
 
+        // 创建ASSISTANT占位消息
+        const assistantMessage = createAssistantMessage(requestId, '');
+        setChatMessages((prev) => [...prev, assistantMessage]);
+
         await aIChatSSEConnection(aiChatParams, requestId);
         // 调用发送消息API
         // const response = await sendChatMessage(aiChatParams);
@@ -551,6 +575,7 @@ export const useAppDevChat = ({
       showStopAgentServiceModal,
     ],
   );
+
 
   /**
    * 发送聊天消息 - 每次消息独立SSE连接
