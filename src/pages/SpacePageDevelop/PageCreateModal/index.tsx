@@ -1,4 +1,3 @@
-import workflowIcon from '@/assets/images/agent_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import UploadAvatar from '@/components/UploadAvatar';
 import {
@@ -217,7 +216,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
           <UploadAvatar
             onUploadSuccess={uploadIconSuccess}
             imageUrl={imageUrl}
-            defaultImage={workflowIcon}
+            svgIconName="icons-common-upload"
           />
         </Form.Item>
         {type === PageDevelopCreateTypeEnum.Import_Project && (

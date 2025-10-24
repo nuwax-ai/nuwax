@@ -1,4 +1,3 @@
-import pageImage from '@/assets/images/agent_image.png';
 import { GuidQuestionDto } from '@/types/interfaces/agent';
 import type { RecommendListProps } from '@/types/interfaces/agentConfig';
 import { checkPathParams, fillPathParams } from '@/utils';
@@ -104,15 +103,14 @@ const RecommendList: React.FC<RecommendListProps> = ({
             }
             className={cx(
               styles.box,
-              'px-16',
               'cursor-pointer',
               'hover-box',
               itemClassName,
               'text-ellipsis-2',
             )}
           >
-            {typeof item === 'object' && (
-              <img className={cx(styles.icon)} src={item?.icon || pageImage} />
+            {typeof item === 'object' && item?.icon && (
+              <img className={cx(styles.icon)} src={item?.icon} />
             )}
             {typeof item === 'string' ? item : item.info}
           </div>
