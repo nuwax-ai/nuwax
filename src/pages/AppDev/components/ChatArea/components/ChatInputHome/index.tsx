@@ -2,7 +2,11 @@ import SvgIcon from '@/components/base/SvgIcon';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import SelectList from '@/components/custom/SelectList';
-import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  MAX_IMAGE_COUNT,
+  UPLOAD_FILE_ACTION,
+} from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { UploadFileStatus } from '@/types/enums/common';
 import { ModelConfig } from '@/types/interfaces/appDev';
@@ -16,9 +20,10 @@ import {
   LoadingOutlined,
 } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
-import { Button, Input, Popover, Tooltip, Upload } from 'antd';
+import { Button, Input, message, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import DataSourceList from './DataSourceList';
 import styles from './index.less';
 
@@ -74,6 +79,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   >([]);
   const [open, setOpen] = useState(false);
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+  // TextArea ref，用于处理粘贴事件
+  const textAreaRef = useRef<any>(null);
 
   /**
    * 提取文件名（不包含路径）
@@ -168,6 +175,155 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       attachmentFiles.filter((item) => item.uid !== uid),
     );
   };
+
+  /**
+   * 处理粘贴事件 - 支持粘贴多张图片
+   */
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      // 收集所有图片文件
+      const imageFiles: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        // 只处理图片类型
+        if (item.type.indexOf('image') !== -1) {
+          const file = item.getAsFile();
+          if (file) {
+            imageFiles.push(file);
+          }
+        }
+      }
+
+      // 如果没有图片，直接返回
+      if (imageFiles.length === 0) return;
+
+      // 阻止默认粘贴行为
+      e.preventDefault();
+
+      // 检查附件数量限制
+      const currentCount = attachmentPrototypeImages.length;
+      const totalCount = currentCount + imageFiles.length;
+
+      if (totalCount > MAX_IMAGE_COUNT) {
+        // 只上传允许的数量
+        imageFiles.splice(MAX_IMAGE_COUNT - currentCount);
+        if (imageFiles.length === 0) {
+          message.warning(
+            `原型图片最多上传${MAX_IMAGE_COUNT}张，当前已有${currentCount}张，最多还能上传${
+              MAX_IMAGE_COUNT - currentCount
+            }张`,
+          );
+          return;
+        }
+      }
+
+      // 批量创建临时文件信息
+      const tempFileInfoList: UploadFileInfo[] = imageFiles.map(
+        (file, index) => ({
+          uid: uuidv4(),
+          name: file.name || `粘贴图片-${Date.now()}-${index + 1}.png`,
+          size: file.size,
+          type: file.type,
+          status: UploadFileStatus.uploading,
+          percent: 0,
+          url: '',
+          key: '',
+        }),
+      );
+
+      // 批量添加到列表（显示上传中）
+      setAttachmentPrototypeImages((prev) => [...prev, ...tempFileInfoList]);
+
+      // 并发上传所有图片
+      const uploadPromises = imageFiles.map(async (file, index) => {
+        const uid = tempFileInfoList[index].uid;
+
+        try {
+          // 创建 FormData
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('type', 'tmp');
+
+          // 上传文件
+          const response = await fetch(UPLOAD_FILE_ACTION, {
+            method: 'POST',
+            headers: {
+              Authorization: token ? `Bearer ${token}` : '',
+            },
+            body: formData,
+          });
+
+          const result = await response.json();
+
+          // 更新文件状态
+          if (result.code === SUCCESS_CODE && result.data) {
+            setAttachmentPrototypeImages((prev) =>
+              prev.map((item) =>
+                item.uid === uid
+                  ? {
+                      ...item,
+                      status: UploadFileStatus.done,
+                      percent: 100,
+                      url: result.data.url || '',
+                      key: result.data.key || '',
+                      name: result.data.fileName || item.name,
+                    }
+                  : item,
+              ),
+            );
+            return { success: true, uid };
+          } else {
+            // 上传失败
+            setAttachmentPrototypeImages((prev) =>
+              prev.map((item) =>
+                item.uid === uid
+                  ? {
+                      ...item,
+                      status: UploadFileStatus.error,
+                      percent: 0,
+                    }
+                  : item,
+              ),
+            );
+            return { success: false, uid, error: result.message };
+          }
+        } catch (error) {
+          console.error('上传图片失败:', error);
+          // 上传失败，更新状态
+          setAttachmentPrototypeImages((prev) =>
+            prev.map((item) =>
+              item.uid === uid
+                ? {
+                    ...item,
+                    status: UploadFileStatus.error,
+                    percent: 0,
+                  }
+                : item,
+            ),
+          );
+          return { success: false, uid, error: String(error) };
+        }
+      });
+
+      // 等待所有上传完成
+      const results = await Promise.all(uploadPromises);
+
+      // 统计上传结果
+      const successCount = results.filter((r) => r.success).length;
+      const failCount = results.length - successCount;
+
+      // 存在上传失败时，显示上传结果
+      if (failCount > 0) {
+        message.warning(
+          `${successCount}张图片上传成功，${failCount}张上传失败`,
+        );
+      }
+    },
+    [attachmentPrototypeImages, token],
+  );
 
   // 订阅发送消息事件
   useEffect(() => {
@@ -269,10 +425,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         )}
         {/*输入框*/}
         <Input.TextArea
+          ref={textAreaRef}
           value={chat.chatInput}
           onChange={(e) => chat.setChatInput(e.target.value)}
           rootClassName={cx(styles.input)}
           onPressEnter={handlePressEnter}
+          onPaste={handlePaste}
           placeholder="一句话做网站、应用、提效工具等，可选择工作流、插件等数据资源拓展多种能力"
           autoSize={{ minRows: 2, maxRows: 6 }}
         />
@@ -292,7 +450,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               }}
               disabled={chat.isChatLoading}
               showUploadList={false}
-              maxCount={9}
+              maxCount={MAX_IMAGE_COUNT}
             >
               <Tooltip title="上传附件">
                 <Button
@@ -324,7 +482,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               }}
               disabled={chat.isChatLoading}
               showUploadList={false}
-              maxCount={9}
+              maxCount={MAX_IMAGE_COUNT}
             >
               <Tooltip title="上传原型图片">
                 <Button
