@@ -36,16 +36,23 @@ const ResizableSplit: React.FC<Props> = ({
   const [containerWidth, setContainerWidth] = useState(0);
   const [leftWidthPercent, setLeftWidthPercent] = useState(defaultLeftWidth);
   const [isDragging, setIsDragging] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
         const width = containerRef.current.offsetWidth;
         setContainerWidth(width);
+        // 首次计算完成后标记为已初始化
+        if (!isInitialized && width > 0) {
+          setIsInitialized(true);
+        }
       }
     };
 
+    // 立即同步计算一次，减少初始渲染延迟
     updateWidth();
+
     const resizeObserver = new ResizeObserver(updateWidth);
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
@@ -57,7 +64,7 @@ const ResizableSplit: React.FC<Props> = ({
       resizeObserver.disconnect();
       window.removeEventListener('resize', updateWidth);
     };
-  }, []);
+  }, [isInitialized]);
 
   // 检查是否有内容
   const hasLeftContent = !!left;
@@ -202,12 +209,19 @@ const ResizableSplit: React.FC<Props> = ({
       {isDragging && <div className={styles.dragOverlay} />}
 
       {hasLeftContent && (
-        <div className={styles.left} style={{ width: `${actualLeftPercent}%` }}>
+        <div
+          className={styles.left}
+          style={{
+            width: `${actualLeftPercent}%`,
+            // 初始化完成前使用 CSS 过渡，避免抖动
+            transition: isInitialized ? 'none' : 'width 0ms',
+          }}
+        >
           {left}
         </div>
       )}
 
-      {showDivider && (
+      {showDivider && containerWidth > 0 && (
         <Draggable
           axis="x"
           position={dividerPosition}
@@ -238,7 +252,11 @@ const ResizableSplit: React.FC<Props> = ({
       {hasRightContent && (
         <div
           className={styles.right}
-          style={{ width: `${100 - actualLeftPercent}%` }}
+          style={{
+            width: `${100 - actualLeftPercent}%`,
+            // 初始化完成前使用 CSS 过渡，避免抖动
+            transition: isInitialized ? 'none' : 'width 0ms',
+          }}
         >
           {right}
         </div>
