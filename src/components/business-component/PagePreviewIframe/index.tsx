@@ -4,8 +4,8 @@ import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
 import { copyTextToClipboard } from '@/utils';
 import {
   CloseOutlined,
-  CopyOutlined,
   LeftOutlined,
+  LinkOutlined,
   ReloadOutlined,
   RightOutlined,
 } from '@ant-design/icons';
@@ -256,8 +256,8 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
               <Button onClick={goForward} icon={<RightOutlined />} />
             </Tooltip>
 
-            <Tooltip title="复制">
-              <Button onClick={goCopy} icon={<CopyOutlined />} />
+            <Tooltip title="复制链接">
+              <Button onClick={goCopy} icon={<LinkOutlined />} />
             </Tooltip>
           </div>
           {showCloseButton && (
