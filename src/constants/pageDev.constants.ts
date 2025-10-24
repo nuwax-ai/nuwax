@@ -2,7 +2,7 @@ import {
   PageDevelopCreateTypeEnum,
   PageDevelopMoreActionEnum,
   PageDevelopPublishTypeEnum,
-  PageProjectTypeEnum,
+  PageDevelopSelectTypeEnum,
   ReverseProxyEnum,
 } from '@/types/enums/pageDev';
 
@@ -25,16 +25,16 @@ export const PAGE_DEVELOP_CREATE_TYPE_LIST = [
 // 页面开发所有类型
 export const PAGE_DEVELOP_ALL_TYPE = [
   {
-    value: PageProjectTypeEnum.All_Type,
+    value: PageDevelopSelectTypeEnum.All_Type,
     label: '所有类型',
   },
   {
-    value: PageProjectTypeEnum.ONLINE_DEPLOY,
-    label: '在线开发',
+    value: PageDevelopSelectTypeEnum.AGENT,
+    label: '智能应用',
   },
   {
-    value: PageProjectTypeEnum.REVERSE_PROXY,
-    label: '反向代理',
+    value: PageDevelopSelectTypeEnum.PAGE,
+    label: '页面组件',
   },
 ];
 

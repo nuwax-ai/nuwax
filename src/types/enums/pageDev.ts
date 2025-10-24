@@ -8,10 +8,18 @@ export enum PageDevelopCreateTypeEnum {
   Reverse_Proxy = 'Reverse_Proxy',
 }
 
-// 页面项目类型,可用值:REVERSE_PROXY,ONLINE_DEPLOY
-export enum PageProjectTypeEnum {
+// 页面项目类型,可用值:Agent,Page (自定义)
+export enum PageDevelopSelectTypeEnum {
   // 全部
   All_Type = 'All_Type',
+  // 智能应用
+  AGENT = 'AGENT',
+  // 页面组件
+  PAGE = 'PAGE',
+}
+
+// 项目类型,可用值:REVERSE_PROXY,ONLINE_DEPLOY
+export enum PageProjectTypeEnum {
   // 在线开发
   ONLINE_DEPLOY = 'ONLINE_DEPLOY',
   // 反向代理
