@@ -77,6 +77,7 @@ export const useAppDevChat = ({
   // 使用 AppDev SSE 连接 model
   const appDevSseModel = useModel('appDevSseConnection');
 
+  const [aiChatSessionId, setAiChatSessionId] = useState<string>('');
   const [chatMessages, setChatMessages] = useState<AppDevChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
@@ -419,6 +420,10 @@ export const useAppDevChat = ({
       abortController: aIChatAbortConnectionRef.current,
       body: params,
       onMessage: (response: UnifiedSessionMessage) => {
+        if (response.type === 'session_id') {
+          const _aiChatSessionId = response.session_id;
+          setAiChatSessionId(_aiChatSessionId);
+        }
         if (response.type === 'progress') {
           const chunkText = response?.message ? `${response?.message}\n\n` : '';
           setChatMessages((prev) =>
@@ -753,6 +758,7 @@ export const useAppDevChat = ({
 
   return {
     // 状态
+    aiChatSessionId,
     chatMessages,
     chatInput,
     isChatLoading,

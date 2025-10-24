@@ -435,7 +435,8 @@ export interface UnifiedSessionMessage {
     | 'tool_call'
     | 'tool_call_update'
     | 'agent_message_chunk'
-    | 'plan';
+    | 'plan'
+    | 'session_id';
   sessionId: string;
   messageType: SessionMessageType;
   subType: string;
