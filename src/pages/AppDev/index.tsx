@@ -13,6 +13,7 @@ import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
+import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { useRestartDevServer } from '@/hooks/useRestartDevServer';
 import { apiAgentConfigInfo } from '@/services/agentConfig';
 import {
@@ -154,6 +155,8 @@ const AppDev: React.FC = () => {
 
   // 版本历史弹窗状态
   const [openVersionHistory, setOpenVersionHistory] = useState(false);
+  // 使用 Hook 控制抽屉打开时的滚动条
+  useDrawerScroll(openVersionHistory);
 
   // 使用重构后的 hooks
   const fileManagement = useAppDevFileManagement({
