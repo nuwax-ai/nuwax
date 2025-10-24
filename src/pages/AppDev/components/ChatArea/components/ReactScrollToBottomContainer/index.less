@@ -1,0 +1,162 @@
+/* 基于 react-scroll-to-bottom 的滚动容器样式 */
+.react-scroll-to-bottom-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0; /* 确保可以收缩 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* 防止内容溢出 */
+
+  /* 滚动容器 */
+  .scroll-container-inner {
+    flex: 1;
+    min-height: 0; /* 确保可以收缩 */
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+
+    /* 自定义滚动条样式 */
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 20%);
+      border-radius: 3px;
+
+      &:hover {
+        background: rgba(0, 0, 0, 30%);
+      }
+    }
+
+    /* 滚动条在 Firefox 中的样式 */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 20%) transparent;
+  }
+
+  /* 覆盖 react-scroll-to-bottom 的默认样式 */
+  :global {
+    /* 针对 react-scroll-to-bottom 生成的类名 */
+    [class*='react-scroll-to-bottom'] {
+      height: 100% !important;
+      min-height: 0 !important;
+      max-height: 100% !important;
+      overflow: hidden !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    /* 滚动内容区域 */
+    [class*='react-scroll-to-bottom'][class*='css'] {
+      flex: 1 !important;
+      min-height: 0 !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      position: relative !important;
+
+      /* 确保滚动条样式一致 */
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 20%);
+        border-radius: 3px;
+
+        &:hover {
+          background: rgba(0, 0, 0, 30%);
+        }
+      }
+
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 0, 0, 20%) transparent;
+    }
+
+    /* 隐藏默认的滚动按钮 */
+    [class*='react-scroll-to-bottom'][class*='follow-button'] {
+      display: none !important;
+    }
+  }
+}
+
+/* 滚动到底部按钮样式 */
+.scroll-to-bottom-button {
+  position: absolute;
+  top: -50px;
+  right: 20px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d9d9d9;
+  background-color: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #666;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 25%);
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+
+  &:hover {
+    background: #1890ff;
+    color: #fff;
+    border-color: #1890ff;
+  }
+
+  &.visible {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+// 暗色主题适配
+html[data-theme='dark'] {
+  .react-scroll-to-bottom-container {
+    .scroll-container {
+      &::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 30%);
+
+        &:hover {
+          background: rgba(255, 255, 255, 40%);
+        }
+      }
+    }
+
+    :global {
+      .reactScrollToBottomCssXxxxxXxxxx {
+        &::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 30%);
+
+          &:hover {
+            background: rgba(255, 255, 255, 40%);
+          }
+        }
+      }
+    }
+  }
+
+  .scroll-to-bottom-button {
+    background-color: #1f1f1f;
+    border-color: #434343;
+    color: #d9d9d9;
+
+    &:hover {
+      background: #1890ff;
+      color: #fff;
+      border-color: #1890ff;
+    }
+  }
+}
