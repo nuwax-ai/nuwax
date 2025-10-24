@@ -450,9 +450,29 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
       if (isUser) {
         // 传统附件（图片、文件等）
-        allAttachments = message.attachments || [];
+        allAttachments = [...(message.attachments || [])];
         // 数据源附件
         dataSourceAttachments = message.dataSources || [];
+        // 原型图片附件
+        allAttachments.unshift(
+          ...(message.attachmentPrototypeImages?.map((item) => {
+            return {
+              type: 'Image',
+              content: {
+                id: item.fileKey,
+                filename: item.fileName,
+                mime_type: item.mimeType,
+                source: {
+                  source_type: 'Url',
+                  data: {
+                    url: item.url,
+                    mime_type: item.mimeType,
+                  },
+                },
+              } as ImageAttachment,
+            } as Attachment;
+          }) || []),
+        );
       } else {
         allAttachments = message.attachments || [];
       }

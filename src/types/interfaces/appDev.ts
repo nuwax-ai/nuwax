@@ -619,6 +619,8 @@ export interface AppDevChatMessage {
   conversationCreated?: string;
   /** 消息附件（图片、文件等） */
   attachments?: Attachment[];
+  /** 原型图片附件列表 */
+  attachmentPrototypeImages?: FileStreamAttachment[];
   /** 数据源附件列表 */
   dataSources?: DataSourceSelection[];
 }

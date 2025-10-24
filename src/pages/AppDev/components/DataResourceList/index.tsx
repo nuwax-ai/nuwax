@@ -46,7 +46,7 @@ const convertToAgentComponentInfo = (
       resource.type === 'plugin'
         ? AgentComponentTypeEnum.Plugin
         : AgentComponentTypeEnum.Workflow,
-    icon: '', // 使用默认图标
+    icon: resource.icon || '', // 使用默认图标
     targetConfig: undefined, // 设置为 undefined 以禁用内部链接跳转
     spaceId: 0,
     bindConfig: undefined,

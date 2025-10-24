@@ -32,6 +32,7 @@ export const useDataResourceManagement = () => {
         const convertedResources: DataResource[] = dataSources.map((ds) => ({
           id: ds.id,
           name: ds.name,
+          icon: ds.icon || '',
           description: ds.description || '',
           type:
             ds.type === 'plugin'

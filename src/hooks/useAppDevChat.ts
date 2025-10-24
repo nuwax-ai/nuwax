@@ -38,6 +38,7 @@ import {
   generateSSEUrl,
   getAuthHeaders,
   isFileOrDependencyOperation, // 新增：导入文件或依赖操作检测函数
+
   // isRequestIdMatch,
   markStreamingMessageCancelled,
   markStreamingMessageComplete,
@@ -418,12 +419,7 @@ export const useAppDevChat = ({
         if (response.type === 'progress') {
           const chunkText = response?.message ? `${response?.message}\n\n` : '';
           setChatMessages((prev) =>
-            appendTextToStreamingMessage(
-              prev,
-              requestId,
-              chunkText,
-              false,
-            ),
+            appendTextToStreamingMessage(prev, requestId, chunkText, false),
           );
         }
 
@@ -451,11 +447,19 @@ export const useAppDevChat = ({
           initializeAppDevSSEConnection(sessionId, requestId);
         }
 
-        if (response.type === 'error' && response.code === AGENT_SERVICE_RUNNING) {
+        if (
+          response.type === 'error' &&
+          response.code === AGENT_SERVICE_RUNNING
+        ) {
           aIChatAbortConnectionRef.current?.abort();
           setIsChatLoading(false);
           showStopAgentServiceModal(projectId, () => {
-            sendMessageAndConnectSSE(params.attachments, params.attachment_files, params.attachment_prototype_images); //继续发送消息
+            // eslint-disable-next-line @typescript-eslint/no-use-before-define
+            sendMessageAndConnectSSE(
+              params.attachments,
+              params.attachment_files,
+              params.attachment_prototype_images,
+            ); //继续发送消息
           });
         }
       },
@@ -512,6 +516,7 @@ export const useAppDevChat = ({
           chatInput,
           requestId,
           attachments,
+          attachmentPrototypeImages,
           _selectedDataResources,
         );
 
@@ -576,7 +581,6 @@ export const useAppDevChat = ({
       showStopAgentServiceModal,
     ],
   );
-
 
   /**
    * 发送聊天消息 - 每次消息独立SSE连接
