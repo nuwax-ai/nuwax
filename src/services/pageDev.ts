@@ -4,6 +4,7 @@ import type {
   PageAddPathParams,
   PageBatchConfigProxyParams,
   PageDeletePathParams,
+  PageQueryListParams,
   PageUpdateParams,
   PageUploadAndStartParams,
 } from '@/types/interfaces/pageDev';
@@ -40,17 +41,13 @@ export async function apiCustomPageCreateReverseProxy(
   });
 }
 
-// 分页查询前端页面项目
+// 查询前端页面列表
 export async function apiCustomPageQueryList(
-  spaceId: number,
-  buildRunning?: boolean,
+  data: PageQueryListParams,
 ): Promise<RequestResponse<CustomPageDto>> {
   return request('/api/custom-page/list-projects', {
     method: 'GET',
-    params: {
-      spaceId,
-      buildRunning,
-    },
+    params: data,
   });
 }
 

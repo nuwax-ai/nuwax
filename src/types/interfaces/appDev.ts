@@ -441,6 +441,9 @@ export interface UnifiedSessionMessage {
   subType: string;
   data: any;
   timestamp: string;
+  message: string;
+  code?: string;
+  [key: string]: any;
 }
 
 /**
@@ -862,7 +865,9 @@ export interface ProjectDetailData {
   /** 版本信息 */
   versionInfo: VersionInfoItem[];
   // 上次对话模型ID(编码模型ID)
-  lastModelId: number;
+  lastChatModelId: number;
+  // 上次多模态ID(视觉模型ID)
+  lastMultiModelId: number;
   // 是否需要登录,true:需要,false:不需要
   needLogin: boolean;
   /** 项目类型 */

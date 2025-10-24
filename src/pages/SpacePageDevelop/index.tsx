@@ -15,6 +15,8 @@ import {
 import {
   PageDevelopCreateTypeEnum,
   PageDevelopMoreActionEnum,
+  PageDevelopPublishTypeEnum,
+  PageDevelopSelectTypeEnum,
   PageProjectTypeEnum,
 } from '@/types/enums/pageDev';
 import { CreateListEnum } from '@/types/enums/space';
@@ -63,8 +65,8 @@ const SpacePageDevelop: React.FC = () => {
   // 所有页面列表
   const pageAllRef = useRef<CustomPageDto[]>([]);
   // 类型
-  const [type, setType] = useState<PageProjectTypeEnum>(
-    searchParams.get('type') || PageProjectTypeEnum.All_Type,
+  const [type, setType] = useState<PageDevelopSelectTypeEnum>(
+    searchParams.get('type') || PageDevelopSelectTypeEnum.All_Type,
   );
   // 搜索关键词
   const [keyword, setKeyword] = useState<string>(
@@ -100,14 +102,18 @@ const SpacePageDevelop: React.FC = () => {
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
-    filterType: PageProjectTypeEnum,
+    filterType: PageDevelopSelectTypeEnum,
     filterCreate: CreateListEnum,
     filterKeyword: string,
     list = pageAllRef.current,
   ) => {
     let _list = list;
-    if (filterType !== PageProjectTypeEnum.All_Type) {
-      _list = _list.filter((item) => item.projectType === filterType);
+    if (filterType !== PageDevelopSelectTypeEnum.All_Type) {
+      _list = _list.filter(
+        (item) =>
+          item.publishType ===
+          (filterType as unknown as PageDevelopPublishTypeEnum),
+      );
     }
     if (filterCreate === CreateListEnum.Me) {
       _list = _list.filter((item) => item.creatorId === userInfo.id);
@@ -119,7 +125,7 @@ const SpacePageDevelop: React.FC = () => {
   };
   // 监听 URL 改变（支持浏览器前进/后退）
   useEffect(() => {
-    const type = searchParams.get('type') || PageProjectTypeEnum.All_Type;
+    const type = searchParams.get('type') || PageDevelopSelectTypeEnum.All_Type;
     const create =
       Number(searchParams.get('create')) || CreateListEnum.All_Person;
     const keyword = searchParams.get('keyword') || '';
@@ -162,12 +168,14 @@ const SpacePageDevelop: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    runPageList(spaceId);
+    runPageList({
+      spaceId,
+    });
   }, [spaceId]);
 
   // 切换类型
   const handlerChangeType = (value: React.Key) => {
-    const _value = value as PageProjectTypeEnum;
+    const _value = value as PageDevelopSelectTypeEnum;
     setType(_value);
     handleFilterList(_value, create, keyword);
     handleChange('type', _value);
@@ -289,14 +297,18 @@ const SpacePageDevelop: React.FC = () => {
   const handleCancelReverseProxy = () => {
     setOpenReverseProxyModal(false);
     // 重新查询页面列表
-    runPageList(spaceId);
+    runPageList({
+      spaceId,
+    });
   };
 
   // 取消路径参数配置
   const handleCancelPathParamsConfig = () => {
     setOpenPathParamsConfigModal(false);
     // 重新查询页面列表
-    runPageList(spaceId);
+    runPageList({
+      spaceId,
+    });
   };
 
   // 确认认证配置

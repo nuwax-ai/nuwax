@@ -1,6 +1,7 @@
 import { CreateUpdateModeEnum } from '../enums/common';
 import {
   PageDevelopCreateTypeEnum,
+  PageDevelopPublishTypeEnum,
   PageProjectTypeEnum,
   ReverseProxyEnum,
 } from '../enums/pageDev';
@@ -60,12 +61,16 @@ export interface CustomPageDto {
   buildTime: string;
   // 发布版本
   buildVersion: number;
+  // 发布类型,可用值:AGENT,PAGE
+  publishType: PageDevelopPublishTypeEnum;
   // 代码版本
   codeVersion: number;
   // 版本信息
   versionInfo: any;
   // 上次对话模型ID
-  lastModelId: number;
+  lastChatModelId: number;
+  // 上次多模态ID(视觉模型ID)
+  lastMultiModelId: number;
   // 是否需要登录,true:需要,false:不需要
   needLogin: boolean;
   // 项目类型,可用值:REVERSE_PROXY,ONLINE_DEPLOY
@@ -106,6 +111,16 @@ export interface PageUploadAndStartParams {
   spaceId: number;
   // 项目图标
   icon: string;
+}
+
+// 查询前端页面列表参数
+export interface PageQueryListParams {
+  // 空间ID
+  spaceId: number;
+  // 发布状态,true:已发布;false:未发布
+  buildRunning?: boolean;
+  // 发布类型,可用值:AGENT,PAGE
+  publishType?: PageDevelopPublishTypeEnum;
 }
 
 // 配置反向代理参数
