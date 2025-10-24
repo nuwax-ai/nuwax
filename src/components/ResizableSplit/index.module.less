@@ -79,11 +79,12 @@
     }
   }
 
-  // 拖拽时左右面板禁用过渡效果
+  // 拖拽时左右面板禁用过渡效果和滚动条
   &:has(.dragging) {
     .left,
     .right {
       transition: none;
+      overflow: hidden; // 拖拽时禁用滚动条，避免闪烁
     }
   }
 }
