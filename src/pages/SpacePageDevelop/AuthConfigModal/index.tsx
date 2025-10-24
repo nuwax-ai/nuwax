@@ -25,7 +25,7 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
   useEffect(() => {
     if (open && pageInfo) {
       form.setFieldsValue({
-        needLogin: !pageInfo.needLogin,
+        allowAccessWithoutLogin: !pageInfo.needLogin,
       });
     }
   }, [open, pageInfo]);
@@ -46,6 +46,11 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
 
   // 创建页面
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
+    // 是否允许免登录访问
+    const { allowAccessWithoutLogin } = values;
+    // 是否需要登录 = 是否允许免登录访问的取反
+    const needLogin = !allowAccessWithoutLogin;
+    // 页面ID和页面名称
     const { projectId, name: projectName } = pageInfo || {};
     if (!projectId) {
       message.error('页面ID不存在');
@@ -54,7 +59,7 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
     setLoading(true);
     // 调用编辑页面接口
     const data = {
-      ...values,
+      needLogin,
       projectId,
       projectName,
     };
@@ -82,7 +87,7 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
         onFinish={onFinish}
         autoComplete="off"
       >
-        <Form.Item name="needLogin" label="免登录访问">
+        <Form.Item name="allowAccessWithoutLogin" label="免登录访问">
           <Switch />
         </Form.Item>
       </Form>
