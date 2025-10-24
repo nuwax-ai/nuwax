@@ -18,7 +18,7 @@ import {
 import type { UploadProps } from 'antd';
 import { Input, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import DataSourceList from './DataSourceList';
 import styles from './index.less';
 
@@ -39,7 +39,10 @@ export interface ChatInputProps {
   // 取消任务
   handleCancelAgentTask: () => void;
   className?: React.CSSProperties;
-  onEnter: (files: UploadFileInfo[]) => void;
+  onEnter: (
+    files?: UploadFileInfo[],
+    prototypeImages?: UploadFileInfo[],
+  ) => void;
   // 数据源列表
   dataSourceList?: DataResource[];
   onToggleSelectDataSource?: (dataSource: DataResource) => void;
@@ -60,19 +63,14 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   dataSourceList,
   onToggleSelectDataSource,
 }) => {
-  // 文档
-  const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
-  const [files, setFiles] = useState<UploadFileInfo[]>([]);
+  // 附件文件列表
+  const [attachmentFiles, setAttachmentFiles] = useState<UploadFileInfo[]>([]);
+  // 原型图片附件列表
+  const [attachmentPrototypeImages, setAttachmentPrototypeImages] = useState<
+    UploadFileInfo[]
+  >([]);
   const [open, setOpen] = useState(false);
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-
-  useEffect(() => {
-    setFiles(
-      uploadFiles.filter(
-        (item) => item.status === UploadFileStatus.done && item.url && item.key,
-      ),
-    );
-  }, [uploadFiles]);
 
   /**
    * 提取文件名（不包含路径）
@@ -84,12 +82,20 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   // 点击发送事件
   const handleSendMessage = () => {
     if (chat.chatInput?.trim()) {
+      const files = attachmentFiles?.filter(
+        (item) => item.status === UploadFileStatus.done && item.url && item.key,
+      );
+      const prototypeImages = attachmentPrototypeImages?.filter(
+        (item) => item.status === UploadFileStatus.done && item.url && item.key,
+      );
       // enter事件
-      onEnter(files);
+      onEnter(files, prototypeImages);
       // 清空输入框
       chat.setChatInput('');
-      // 清空文件列表
-      setUploadFiles([]);
+      // 清空附件文件列表
+      setAttachmentFiles([]);
+      // 清空原型图片附件列表
+      setAttachmentPrototypeImages([]);
     }
   };
 
@@ -118,25 +124,45 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
       chat.setChatInput(newValue);
     } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
+      const files = attachmentFiles?.filter(
+        (item) => item.status === UploadFileStatus.done && item.url && item.key,
+      );
+      const prototypeImages = attachmentPrototypeImages?.filter(
+        (item) => item.status === UploadFileStatus.done && item.url && item.key,
+      );
       // enter事件
-      onEnter(files);
+      onEnter(files, prototypeImages);
       // 清空输入框
       chat.setChatInput('');
-      // 清空文件列表
-      setUploadFiles([]);
+      // 清空附件文件列表
+      setAttachmentFiles([]);
+      // 清空原型图片附件列表
+      setAttachmentPrototypeImages([]);
     }
   };
 
   // 上传文件
   const handleChange: UploadProps['onChange'] = (info) => {
     const { fileList } = info;
-    setUploadFiles(handleUploadFileList(fileList));
+    setAttachmentFiles(handleUploadFileList(fileList));
+  };
+
+  // 上传原型图片
+  const handleChangePrototypeImages: UploadProps['onChange'] = (info) => {
+    const { fileList } = info;
+    setAttachmentPrototypeImages(handleUploadFileList(fileList));
+  };
+
+  const handleDelFile = (uid: string) => {
+    setAttachmentFiles((attachmentFiles) =>
+      attachmentFiles.filter((item) => item.uid !== uid),
+    );
   };
 
   // 删除文件
-  const handleDelFile = (uid: string) => {
-    setUploadFiles((uploadFiles) =>
-      uploadFiles.filter((item) => item.uid !== uid),
+  const handleDelFilePrototypeImages = (uid: string) => {
+    setAttachmentPrototypeImages((attachmentFiles) =>
+      attachmentFiles.filter((item) => item.uid !== uid),
     );
   };
 
@@ -199,12 +225,22 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     );
   };
 
+  console.log('chat.isChatLoading', chat.isChatLoading);
+
   return (
     <div className={cx('w-full', 'relative', className)}>
       <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
-        {/*文件列表*/}
-        <ConditionRender condition={uploadFiles?.length}>
-          <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
+        {/*附件文件列表*/}
+        <ConditionRender condition={attachmentFiles?.length}>
+          <ChatUploadFile files={attachmentFiles} onDel={handleDelFile} />
+        </ConditionRender>
+        {/*附件文件列表*/}
+        <ConditionRender condition={attachmentPrototypeImages?.length}>
+          <h5>原型图片</h5>
+          <ChatUploadFile
+            files={attachmentPrototypeImages}
+            onDel={handleDelFilePrototypeImages}
+          />
         </ConditionRender>
         {/*选择的数据源*/}
         <ConditionRender condition={dataSourceList?.length}>
@@ -232,12 +268,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           autoSize={{ minRows: 2, maxRows: 6 }}
         />
         <footer className={cx('flex-1', styles.footer)}>
-          {/*上传按钮*/}
+          {/*上传附件文件*/}
           <Upload
             action={UPLOAD_FILE_ACTION}
             onChange={handleChange}
             multiple={true}
-            fileList={uploadFiles}
+            fileList={attachmentFiles}
             headers={{
               Authorization: token ? `Bearer ${token}` : '',
             }}
@@ -246,9 +282,46 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             }}
             disabled={chat.isChatLoading}
             showUploadList={false}
-            maxCount={10}
+            maxCount={9}
           >
             <Tooltip title="上传附件">
+              <span
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'cursor-pointer',
+                  styles.box,
+                  styles['plus-box'],
+                  { [styles['upload-box-disabled']]: chat.isChatLoading },
+                )}
+              >
+                <SvgIcon
+                  name="icons-chat-add"
+                  style={{ fontSize: '14px' }}
+                  className={cx(styles['svg-icon'])}
+                />
+              </span>
+            </Tooltip>
+          </Upload>
+          {/*上传原型图片附件*/}
+          <Upload
+            action={UPLOAD_FILE_ACTION}
+            accept="image/*"
+            onChange={handleChangePrototypeImages}
+            multiple={true}
+            fileList={attachmentPrototypeImages}
+            headers={{
+              Authorization: token ? `Bearer ${token}` : '',
+            }}
+            data={{
+              type: 'tmp',
+            }}
+            disabled={chat.isChatLoading}
+            showUploadList={false}
+            maxCount={9}
+          >
+            <Tooltip title="上传原型图片">
               <span
                 className={cx(
                   'flex',

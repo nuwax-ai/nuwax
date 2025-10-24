@@ -89,15 +89,6 @@ export const isDependencyOperation = (messageData: any): boolean => {
 };
 
 /**
- * 检测是否为文件操作或依赖操作
- * @param messageData SSE消息数据
- * @returns 是否为文件操作或依赖操作
- */
-export const isFileOrDependencyOperation = (messageData: any): boolean => {
-  return isFileOperation(messageData) || isDependencyOperation(messageData);
-};
-
-/**
  * 检测是否为文件操作
  * @param messageData SSE消息数据
  * @returns 是否为文件操作
@@ -156,6 +147,15 @@ export const isFileOperation = (messageData: any): boolean => {
     (title.includes('Create ') && title.includes('/')) ||
     (title.includes('Delete ') && title.includes('/'))
   );
+};
+
+/**
+ * 检测是否为文件操作或依赖操作
+ * @param messageData SSE消息数据
+ * @returns 是否为文件操作或依赖操作
+ */
+export const isFileOrDependencyOperation = (messageData: any): boolean => {
+  return isFileOperation(messageData) || isDependencyOperation(messageData);
 };
 
 /**
@@ -515,6 +515,14 @@ export const isRequestIdMatch = (
  */
 export const generateSSEUrl = (sessionId: string): string => {
   return `${process.env.BASE_URL}/api/custom-page/ai-session-sse?session_id=${sessionId}`;
+};
+
+/**
+ * 生成AI-CHAT SSE连接URL
+ * @returns AI-CHAT SSE连接URL
+ */
+export const generateAIChatSSEUrl = (): string => {
+  return `${process.env.BASE_URL}/api/custom-page/ai-chat-flux`;
 };
 
 /**
