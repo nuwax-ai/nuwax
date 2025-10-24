@@ -51,6 +51,9 @@ export const VERIFICATION_CODE_LEN = 6;
 // 倒计时
 export const COUNT_DOWN_LEN = 60;
 
+// 图片最大上传数量
+export const MAX_IMAGE_COUNT = 9;
+
 // 插件处理时，新增的字段默认名称
 export const ARRAY_ITEM = '[Array_Item]';
 
