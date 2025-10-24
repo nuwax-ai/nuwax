@@ -63,7 +63,6 @@ import EditorHeaderRight from './components/EditorHeaderRight';
 import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
-import VersionAction from './components/VersionAction';
 import { useDevLogs } from './hooks/useDevLogs';
 import styles from './index.less';
 
@@ -1649,13 +1648,6 @@ const AppDev: React.FC = () => {
           visible={openVersionHistory}
           isDrawer={true}
           onClose={() => setOpenVersionHistory(false)}
-          renderActions={(item) => (
-            <VersionAction
-              data={item}
-              onRefresh={projectInfo.refreshProjectInfo}
-              onClose={() => setOpenVersionHistory(false)}
-            />
-          )}
         />
       </ConditionRender>
     </>
