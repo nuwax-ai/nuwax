@@ -1200,7 +1200,7 @@ const AppDev: React.FC = () => {
                         <Tooltip title="预览">
                           <SvgIcon
                             name="icons-common-preview"
-                            style={{ fontSize: 20 }}
+                            style={{ fontSize: 18 }}
                           />
                         </Tooltip>
                       ),
@@ -1211,7 +1211,7 @@ const AppDev: React.FC = () => {
                         <Tooltip title="代码">
                           <SvgIcon
                             name="icons-common-code"
-                            style={{ fontSize: 20 }}
+                            style={{ fontSize: 18 }}
                           />
                         </Tooltip>
                       ),

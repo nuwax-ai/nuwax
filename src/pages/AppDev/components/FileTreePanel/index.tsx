@@ -6,7 +6,6 @@ import {
   ImportOutlined,
   InboxOutlined,
   LeftOutlined,
-  PlusOutlined,
   RightOutlined,
 } from '@ant-design/icons';
 import type { InputRef } from 'antd';
@@ -473,7 +472,12 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                       <Button
                         type="text"
                         className={styles.addButton}
-                        icon={<PlusOutlined />}
+                        icon={
+                          <SvgIcon
+                            name="icons-common-plus"
+                            style={{ fontSize: 16 }}
+                          />
+                        }
                         onClick={onAddDataResource}
                         disabled={isChatLoading || isComparing}
                       />
