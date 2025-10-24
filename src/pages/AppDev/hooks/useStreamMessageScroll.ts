@@ -1,5 +1,24 @@
+import type { AppDevChatMessage } from '@/types/interfaces/appDev';
 import { throttle } from 'lodash';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+/**
+ * 滚动相关常量定义
+ */
+const SCROLL_CONSTANTS = {
+  /** 默认节流延迟（毫秒） */
+  DEFAULT_THROTTLE_DELAY: 50,
+  /** 默认滚动到底部的阈值（像素） */
+  DEFAULT_SCROLL_THRESHOLD: 50,
+  /** 默认显示滚动按钮的阈值（像素） */
+  DEFAULT_SHOW_BUTTON_THRESHOLD: 100,
+  /** 流式消息滚动检查间隔（毫秒） */
+  STREAM_SCROLL_INTERVAL: 150,
+  /** 非流式消息滚动延迟（毫秒） */
+  NON_STREAM_SCROLL_DELAY: 100,
+  /** 初始化滚动位置检查延迟（毫秒） */
+  INITIAL_SCROLL_CHECK_DELAY: 100,
+} as const;
 
 /**
  * 流式消息自动滚动管理 Hook
@@ -16,7 +35,7 @@ export interface UseStreamMessageScrollOptions {
   scrollContainerRef: React.RefObject<HTMLElement>;
   /** 是否启用自动滚动（默认 true） */
   enableAutoScroll?: boolean;
-  /** 滚动节流延迟（默认 300ms） */
+  /** 滚动节流延迟（默认 50ms） */
   throttleDelay?: number;
   /** 滚动到底部的阈值（默认 50px） */
   scrollThreshold?: number;
@@ -42,7 +61,7 @@ export interface UseStreamMessageScrollReturn {
   /** 检查是否在底部 */
   isAtBottom: () => boolean;
   /** 处理新消息到达 */
-  handleNewMessage: (isStreaming?: boolean) => void;
+  handleNewMessage: (isStreaming?: boolean, immediate?: boolean) => void;
   /** 检查滚动位置并更新按钮状态 */
   checkScrollPosition: () => void;
 }
@@ -59,9 +78,9 @@ export const useStreamMessageScroll = (
   const {
     scrollContainerRef,
     enableAutoScroll: initialEnableAutoScroll = true,
-    throttleDelay = 300,
-    scrollThreshold = 50,
-    showButtonThreshold = 100,
+    throttleDelay = SCROLL_CONSTANTS.DEFAULT_THROTTLE_DELAY,
+    scrollThreshold = SCROLL_CONSTANTS.DEFAULT_SCROLL_THRESHOLD,
+    showButtonThreshold = SCROLL_CONSTANTS.DEFAULT_SHOW_BUTTON_THRESHOLD,
   } = options;
 
   // 状态管理
@@ -79,43 +98,65 @@ export const useStreamMessageScroll = (
    * 滚动到底部
    */
   const scrollToBottom = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
+    try {
+      const container = scrollContainerRef.current;
+      if (!container) {
+        console.warn('[useStreamMessageScroll] 滚动容器不存在');
+        return;
+      }
 
-    container.scrollTo({
-      top: container.scrollHeight,
-      behavior: 'smooth',
-    });
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth',
+      });
+    } catch (error) {
+      console.error('[useStreamMessageScroll] 滚动到底部失败:', error);
+    }
   }, [scrollContainerRef]);
 
   /**
    * 检查是否在底部
    */
   const isAtBottom = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return false;
+    try {
+      const container = scrollContainerRef.current;
+      if (!container) {
+        console.warn('[useStreamMessageScroll] 滚动容器不存在');
+        return false;
+      }
 
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
-    return distanceFromBottom <= scrollThreshold;
+      return distanceFromBottom <= scrollThreshold;
+    } catch (error) {
+      console.error('[useStreamMessageScroll] 检查滚动位置失败:', error);
+      return false;
+    }
   }, [scrollContainerRef, scrollThreshold]);
 
   /**
    * 检查滚动位置并更新按钮状态
    */
   const checkScrollPosition = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
+    try {
+      const container = scrollContainerRef.current;
+      if (!container) {
+        console.warn('[useStreamMessageScroll] 滚动容器不存在');
+        return;
+      }
 
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
-    // 如果距离底部超过阈值，显示滚动按钮
-    if (distanceFromBottom > showButtonThreshold) {
-      setShowScrollButton(true);
-    } else {
-      setShowScrollButton(false);
+      // 如果距离底部超过阈值，显示滚动按钮
+      if (distanceFromBottom > showButtonThreshold) {
+        setShowScrollButton(true);
+      } else {
+        setShowScrollButton(false);
+      }
+    } catch (error) {
+      console.error('[useStreamMessageScroll] 检查滚动位置失败:', error);
     }
   }, [scrollContainerRef, showButtonThreshold]);
 
@@ -123,36 +164,43 @@ export const useStreamMessageScroll = (
    * 处理用户滚动事件
    */
   const handleUserScroll = useCallback(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
+    try {
+      const container = scrollContainerRef.current;
+      if (!container) {
+        console.warn('[useStreamMessageScroll] 滚动容器不存在');
+        return;
+      }
 
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
 
-    // 清除之前的定时器
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-      scrollTimeoutRef.current = null;
+      // 清除之前的定时器
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = null;
+      }
+
+      // 如果用户滚动到非底部区域，暂停自动滚动
+      if (distanceFromBottom > scrollThreshold) {
+        allowAutoScrollRef.current = false;
+        setIsAutoScrollEnabled(false);
+        setShowScrollButton(true);
+        isUserScrollingRef.current = true;
+      } else {
+        // 如果用户滚动到底部，重新启用自动滚动
+        allowAutoScrollRef.current = true;
+        setIsAutoScrollEnabled(true);
+        setShowScrollButton(false);
+        isUserScrollingRef.current = false;
+      }
+
+      // 延迟检查滚动位置，避免频繁更新
+      scrollTimeoutRef.current = setTimeout(() => {
+        checkScrollPosition();
+      }, throttleDelay);
+    } catch (error) {
+      console.error('[useStreamMessageScroll] 处理用户滚动事件失败:', error);
     }
-
-    // 如果用户滚动到非底部区域，暂停自动滚动
-    if (distanceFromBottom > scrollThreshold) {
-      allowAutoScrollRef.current = false;
-      setIsAutoScrollEnabled(false);
-      setShowScrollButton(true);
-      isUserScrollingRef.current = true;
-    } else {
-      // 如果用户滚动到底部，重新启用自动滚动
-      allowAutoScrollRef.current = true;
-      setIsAutoScrollEnabled(true);
-      setShowScrollButton(false);
-      isUserScrollingRef.current = false;
-    }
-
-    // 延迟检查滚动位置，避免频繁更新
-    scrollTimeoutRef.current = setTimeout(() => {
-      checkScrollPosition();
-    }, throttleDelay);
   }, [
     scrollContainerRef,
     scrollThreshold,
@@ -209,22 +257,27 @@ export const useStreamMessageScroll = (
   /**
    * 处理新消息到达
    * @param isStreaming 是否为流式消息
+   * @param immediate 是否立即滚动（忽略延迟）
    */
   const handleNewMessage = useCallback(
-    (isStreaming = false) => {
-      // 如果启用自动滚动且用户没有主动滚动，则滚动到底部
-      if (allowAutoScrollRef.current && !isUserScrollingRef.current) {
-        // 对于流式消息，立即滚动
-        if (isStreaming) {
-          scrollToBottom();
-        } else {
-          // 对于非流式消息，延迟一点时间确保 DOM 更新完成
-          setTimeout(() => {
-            if (allowAutoScrollRef.current) {
-              scrollToBottom();
-            }
-          }, 100);
+    (isStreaming = false, immediate = false) => {
+      try {
+        // 如果启用自动滚动且用户没有主动滚动，则滚动到底部
+        if (allowAutoScrollRef.current && !isUserScrollingRef.current) {
+          // 对于流式消息或立即滚动，立即滚动
+          if (isStreaming || immediate) {
+            scrollToBottom();
+          } else {
+            // 对于非流式消息，延迟一点时间确保 DOM 更新完成
+            setTimeout(() => {
+              if (allowAutoScrollRef.current) {
+                scrollToBottom();
+              }
+            }, SCROLL_CONSTANTS.NON_STREAM_SCROLL_DELAY);
+          }
         }
+      } catch (error) {
+        console.error('[useStreamMessageScroll] 处理新消息失败:', error);
       }
     },
     [scrollToBottom],
@@ -248,7 +301,7 @@ export const useStreamMessageScroll = (
     // 延迟检查一次，确保 DOM 完全渲染后检查
     const timeoutId = setTimeout(() => {
       checkScrollPosition();
-    }, 100);
+    }, SCROLL_CONSTANTS.INITIAL_SCROLL_CHECK_DELAY);
 
     return () => {
       container.removeEventListener('wheel', throttledHandleScroll);
@@ -301,23 +354,49 @@ export const useStreamMessageScroll = (
  * @param scrollToBottom 滚动到底部的方法
  * @param isAutoScrollEnabled 是否启用自动滚动
  * @param handleNewMessage 处理新消息的方法
+ * @param checkScrollPosition 检查滚动位置的方法
  */
 export const useStreamMessageScrollEffects = (
-  messages: any[],
+  messages: AppDevChatMessage[],
   isStreaming: boolean,
   scrollToBottom: () => void,
   isAutoScrollEnabled: boolean,
-  handleNewMessage: (isStreaming?: boolean) => void,
+  handleNewMessage: (isStreaming?: boolean, immediate?: boolean) => void,
   checkScrollPosition: () => void,
 ) => {
+  // 使用 useMemo 缓存消息内容和流式状态，避免不必要的重渲染
+  const messagesContent = useMemo(() => {
+    return messages.map((msg) => msg.text || '').join('');
+  }, [messages]);
+
+  const messagesStreamingStatus = useMemo(() => {
+    return messages.map((msg) => msg.isStreaming || false).join('');
+  }, [messages]);
+
   // 监听消息变化
   useEffect(() => {
     if (messages.length > 0) {
-      handleNewMessage(isStreaming);
+      // 检查最后一条消息是否为用户消息
+      const lastMessage = messages[messages.length - 1];
+      const isUserMessage = lastMessage && lastMessage.role === 'USER';
+
+      // 如果是用户消息，立即滚动；否则按照流式状态处理
+      if (isUserMessage) {
+        handleNewMessage(false, true); // 用户消息立即滚动
+      } else {
+        handleNewMessage(isStreaming);
+      }
+
       // 检查滚动位置，更新按钮状态
       checkScrollPosition();
     }
-  }, [messages.length, isStreaming, handleNewMessage, checkScrollPosition]);
+  }, [
+    messages.length,
+    isStreaming,
+    handleNewMessage,
+    checkScrollPosition,
+    messages,
+  ]);
 
   // 监听流式消息内容变化
   useEffect(() => {
@@ -325,7 +404,7 @@ export const useStreamMessageScrollEffects = (
       // 流式消息期间，定期滚动到底部
       const intervalId = setInterval(() => {
         scrollToBottom();
-      }, 150); // 150ms 检查一次
+      }, SCROLL_CONSTANTS.STREAM_SCROLL_INTERVAL);
 
       return () => clearInterval(intervalId);
     }
@@ -342,9 +421,10 @@ export const useStreamMessageScrollEffects = (
       }
     }
   }, [
-    messages.map((msg) => msg.text || '').join(''),
-    messages.map((msg) => msg.isStreaming).join(''),
+    messagesContent,
+    messagesStreamingStatus,
     isAutoScrollEnabled,
     scrollToBottom,
+    messages,
   ]);
 };

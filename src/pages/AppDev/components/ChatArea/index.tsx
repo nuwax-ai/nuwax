@@ -394,11 +394,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           });
         }
 
-        // 发送消息后强制滚动到底部并开启自动滚动
-        scrollContainerRef.current?.handleScrollButtonClick();
-
         // 发送消息(传递附件)
         chat.sendMessage(attachments, aiChatAttachments, aiChatPrototypeImages);
+
+        // 发送消息后强制滚动到底部并开启自动滚动
+        setTimeout(() => {
+          scrollContainerRef.current?.handleScrollButtonClick();
+        }, 1000);
 
         // 清空选中的数据源
         if (onUpdateDataSources) {
