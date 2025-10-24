@@ -33,6 +33,8 @@ export enum DataResourceStatus {
  * 数据资源基础接口
  */
 export interface DataResource {
+  /** 资源图标 */
+  icon?: string;
   /** 是否选中 */
   isSelected?: boolean;
   /** 资源唯一标识 */
