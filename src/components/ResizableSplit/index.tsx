@@ -37,6 +37,17 @@ const ResizableSplit: React.FC<Props> = ({
   const [leftWidthPercent, setLeftWidthPercent] = useState(defaultLeftWidth);
   const [isDragging, setIsDragging] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  // 控制分隔线的延迟淡入
+  const [dividerVisible, setDividerVisible] = useState(false);
+
+  // 延迟显示分隔线，产生淡入效果
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDividerVisible(true);
+    }, 300); // 延迟 300ms 后显示分隔线
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const updateWidth = () => {
@@ -243,6 +254,8 @@ const ResizableSplit: React.FC<Props> = ({
                 '--divider-color': dividerColor,
                 '--divider-hover-color': dividerHoverColor,
                 '--divider-dragging-color': dividerDraggingColor,
+                opacity: dividerVisible ? 1 : 0,
+                transition: 'opacity 0.4s ease-in-out',
               } as React.CSSProperties
             }
           />
