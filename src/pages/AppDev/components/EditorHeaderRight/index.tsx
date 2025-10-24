@@ -283,6 +283,7 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
       disabled={isDisabled}
       trigger={['click']}
       placement="bottomRight"
+      overlayClassName={styles.versionSelectorDropdown}
       onOpenChange={(open) => {
         setExpanded(open);
       }}
