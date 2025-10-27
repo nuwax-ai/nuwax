@@ -47,11 +47,19 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     const isUser_NotAllowDevelop =
       info?.currentUserRole === RoleEnum.User &&
       info?.allowDevelop === AllowDevelopEnum.Not_Allow;
+
     // 智能体开发页以及子页
-    if (pathname.includes('develop') || pathname.includes('log')) {
+    if (
+      (pathname.includes('develop') && !pathname.includes('page-develop')) ||
+      pathname.includes('log')
+    ) {
       const defaultUrl = isUser_NotAllowDevelop ? 'space-square' : 'develop';
       localStorage.setItem('SPACE_URL', defaultUrl);
       history.push(`/space/${spaceId}/${defaultUrl}`);
+    }
+    // 应用页面开发
+    else if (pathname.includes('page-develop')) {
+      history.push(`/space/${spaceId}/page-develop`);
     }
     // mcp管理
     else if (pathname.includes('mcp')) {
@@ -99,6 +107,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
       </div>
       <Divider className={styles['divider']} />
       <ul className={cx('flex-1', 'overflow-y')}>
+        {/* 空间列表 */}
         {filterSpaceList?.map((item: SpaceInfo) => (
           <li
             key={item.id}
