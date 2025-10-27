@@ -174,9 +174,11 @@ const AppDev: React.FC = () => {
   });
 
   // 模型选择器
-  const modelSelector = useAppDevModelSelector(projectId || '', {
-    hasPermission: projectInfo.hasPermission,
-  });
+  const modelSelector = useAppDevModelSelector(
+    spaceId,
+    projectId,
+    projectInfo?.hasPermission,
+  );
   const server = useAppDevServer({
     projectId: projectId || '',
     onServerStart: updateDevServerUrl,
