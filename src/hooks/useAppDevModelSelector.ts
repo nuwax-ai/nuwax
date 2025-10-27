@@ -43,7 +43,8 @@ export const useAppDevModelSelector = (
         if (!chatModelList?.length) {
           Modal.confirm({
             title: '提示',
-            content: '请在系统管理或组件库中配置编码模型',
+            content:
+              '请在系统管理或组件库中配置编码模型，添加模型的时候请选择支持Anthropic协议的模型，推荐使用智谱的Coding Plan https://bigmodel.cn/glm-coding',
             // 核心代码：通过样式隐藏取消按钮
             cancelButtonProps: { style: { display: 'none' } },
             onOk() {

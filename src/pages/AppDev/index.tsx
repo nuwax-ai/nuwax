@@ -652,12 +652,6 @@ const AppDev: React.FC = () => {
               return info;
             });
           });
-
-          // 刷新项目详情信息以更新数据源列表
-          await projectInfo.refreshProjectInfo();
-
-          // 关闭 Created 弹窗
-          setIsAddDataResourceModalVisible(false);
         } else {
           // 更新处于loading状态的组件列表
           setAddComponents((list) =>
@@ -674,6 +668,17 @@ const AppDev: React.FC = () => {
     },
     [hasValidProjectId, projectId, projectInfo],
   );
+
+  /**
+   * 处理取消或关闭添加组件
+   */
+  const handleCancelAddComponent = () => {
+    // 刷新项目详情信息以更新数据源列表
+    projectInfo.refreshProjectInfo();
+
+    // 关闭 Created 弹窗
+    setIsAddDataResourceModalVisible(false);
+  };
 
   /**
    * 处理删除数据资源
@@ -1632,7 +1637,7 @@ const AppDev: React.FC = () => {
         {/* 数据资源添加弹窗 - 使用 Created 组件 */}
         <Created
           open={isAddDataResourceModalVisible}
-          onCancel={() => setIsAddDataResourceModalVisible(false)}
+          onCancel={handleCancelAddComponent}
           checkTag={AgentComponentTypeEnum.Plugin}
           addComponents={addComponents}
           onAdded={handleAddComponent}
