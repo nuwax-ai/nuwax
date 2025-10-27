@@ -30,7 +30,10 @@ import {
 } from '@/types/enums/agent';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
-import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
+import {
+  AgentAddComponentBaseInfo,
+  AgentAddComponentStatusInfo,
+} from '@/types/interfaces/agentConfig';
 import { FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
@@ -238,16 +241,16 @@ const AppDev: React.FC = () => {
       return;
     }
 
-    if (projectInfo.projectInfoState.projectInfo?.lastMultiModelId) {
-      modelSelector.selectMultiModel(
-        projectInfo.projectInfoState.projectInfo.lastMultiModelId,
-      );
+    // 获取上次使用的模型ID、多模态模型ID
+    const { lastChatModelId, lastMultiModelId } =
+      projectInfo.projectInfoState.projectInfo || {};
+
+    if (lastMultiModelId) {
+      modelSelector.selectMultiModel(lastMultiModelId);
     }
     // 如果上次使用的模型ID存在，则使用上次使用的模型ID
-    if (projectInfo.projectInfoState.projectInfo?.lastChatModelId) {
-      modelSelector.selectModel(
-        projectInfo.projectInfoState.projectInfo.lastChatModelId,
-      );
+    if (lastChatModelId) {
+      modelSelector.selectModel(lastChatModelId);
       return;
     }
 
@@ -285,12 +288,6 @@ const AppDev: React.FC = () => {
     selectedDataResources: selectedDataResources, // 新增：传递选中的数据源
     onClearDataSourceSelections: () => setSelectedDataResources([]), // 新增：清除选择回调
     onRefreshVersionList: projectInfo.refreshProjectInfo, // 新增：传递刷新版本列表方法
-    // onClearUploadedImages: () => {
-    //   // 调用 ChatArea 组件传递的图片清空方法
-    //   if (clearUploadedImagesRef.current) {
-    //     clearUploadedImagesRef.current();
-    //   }
-    // }, // 新增：传递清除上传图片方法
     onRestartDevServer: async () => {
       // 使用重启开发服务器 Hook，Agent 触发时不切换页面
       await restartDevServer({
@@ -317,11 +314,18 @@ const AppDev: React.FC = () => {
   //   showNotification: true,
   // });
 
+  // 数据资源管理
+  const dataResourceManagement = useDataResourceManagement();
+
   useEffect(() => {
     // 初始化处于added状态的组件列表
     if (projectInfo.projectInfoState.projectInfo && projectInfo.hasPermission) {
       const dataSources =
         projectInfo.projectInfoState.projectInfo?.dataSources || [];
+
+      dataResourceManagement.fetchResources(dataSources);
+
+      // 初始化处于added状态的组件列表
       const addComponents = dataSources.map((dataSource) => {
         const type =
           dataSource.type === 'plugin'
@@ -336,17 +340,6 @@ const AppDev: React.FC = () => {
       setAddComponents(addComponents as AgentAddComponentStatusInfo[]);
     }
   }, [projectInfo.projectInfoState?.projectInfo, projectInfo.hasPermission]);
-
-  // 数据资源管理
-  const dataResourceManagement = useDataResourceManagement();
-
-  useEffect(() => {
-    if (projectInfo.projectInfoState.projectInfo && projectInfo.hasPermission) {
-      dataResourceManagement.fetchResources(
-        projectInfo.projectInfoState.projectInfo?.dataSources || [],
-      );
-    }
-  }, [projectInfo.projectInfoState.projectInfo, projectInfo.hasPermission]);
 
   useEffect(() => {
     if (dataResourceManagement.resources?.length > 0) {
@@ -419,13 +412,6 @@ const AppDev: React.FC = () => {
     },
     [versionCompare.versionFiles],
   );
-
-  /**
-   * 版本选择器标签渲染函数
-   */
-  // const labelRender = useCallback((props: any) => {
-  //   return <span>v{props.value.replace('v', '')}</span>;
-  // }, []); // 暂时注释掉，后续可能需要
 
   /**
    * 处理版本选择，直接在页面中显示版本对比
@@ -606,7 +592,7 @@ const AppDev: React.FC = () => {
    * 处理添加组件（Created 组件回调）
    */
   const handleAddComponent = useCallback(
-    async (item: any) => {
+    async (item: AgentAddComponentBaseInfo) => {
       // 检查项目ID是否有效
       if (!hasValidProjectId || !projectId) {
         message.error('项目ID不存在或无效，无法绑定数据源');

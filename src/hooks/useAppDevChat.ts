@@ -455,20 +455,22 @@ export const useAppDevChat = ({
           initializeAppDevSSEConnection(sessionId, requestId);
         }
 
-        if (
-          response.type === 'error' &&
-          response.code === AGENT_SERVICE_RUNNING
-        ) {
+        if (response.type === 'error') {
           aIChatAbortConnectionRef.current?.abort();
           setIsChatLoading(false);
-          showStopAgentServiceModal(projectId, () => {
-            // eslint-disable-next-line @typescript-eslint/no-use-before-define
-            sendMessageAndConnectSSE(
-              params.attachments,
-              params.attachment_files,
-              params.attachment_prototype_images,
-            ); //继续发送消息
-          });
+          // 智能体服务运行中的错误状态
+          if (response.code === AGENT_SERVICE_RUNNING) {
+            showStopAgentServiceModal(projectId, () => {
+              // eslint-disable-next-line @typescript-eslint/no-use-before-define
+              sendMessageAndConnectSSE(
+                params.attachments,
+                params.attachment_files,
+                params.attachment_prototype_images,
+              ); //继续发送消息
+            });
+          } else {
+            message.error(response.message);
+          }
         }
       },
       onError: () => {
