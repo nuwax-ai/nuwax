@@ -172,6 +172,11 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
               requestId: pagePreviewData.request_id || '',
               html: str,
             };
+            console.log(
+              '调用接口：apiAgentComponentPageResultUpdate',
+              pagePreviewData?.method,
+              params,
+            );
             await apiAgentComponentPageResultUpdate(params);
           }
         }, 500);

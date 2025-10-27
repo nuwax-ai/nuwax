@@ -366,7 +366,11 @@ export default () => {
                 request_id: input.request_id,
                 data_type: input.data_type,
               };
-
+              console.log(
+                '调用接口：showPagePreview',
+                input.method,
+                previewData,
+              );
               // 显示页面预览
               showPagePreview(previewData);
             }
