@@ -53,31 +53,27 @@ export default () => {
         const tableMDContent = extractTableToMarkdown(children);
 
         return (
-          <div
-            key={listKey}
-            data-key={listKey}
-            className={styles['table-wrapper']}
-            style={{ display: 'block' }} // 确保表格作为块级元素显示
-          >
-            <div className={`md-code-block md-code-block-${theme}`}>
-              {headerActions && (
-                <div className="md-code-block-banner-wrap">
-                  <div className="md-code-block-banner md-code-block-banner-lite">
-                    <>
-                      <div className="md-code-block-language">表格</div>
-                      <CodeBlockActions
-                        language="markdown"
-                        codeContent={tableMDContent}
-                      />
-                    </>
+          <div key={listKey} data-key={listKey} style={{ display: 'block' }}>
+            <div className={styles['table-wrapper']}>
+              <div className={`md-code-block md-code-block-${theme}`}>
+                {headerActions && (
+                  <div className="md-code-block-banner-wrap">
+                    <div className="md-code-block-banner md-code-block-banner-lite">
+                      <>
+                        <div className="md-code-block-language">表格</div>
+                        <CodeBlockActions
+                          language="markdown"
+                          codeContent={tableMDContent}
+                        />
+                      </>
+                    </div>
                   </div>
+                )}
+                <div className="md-code-block-content scrollbar">
+                  <table className={cx(styles['markdown-table'])}>
+                    {children}
+                  </table>
                 </div>
-              )}
-
-              <div className="md-code-block-content scrollbar">
-                <table className={cx(styles['markdown-table'])}>
-                  {children}
-                </table>
               </div>
             </div>
           </div>
