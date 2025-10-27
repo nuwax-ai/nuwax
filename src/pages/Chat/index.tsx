@@ -64,6 +64,7 @@ const Chat: React.FC = () => {
     string | number
   > | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [clearLoading, setClearLoading] = useState<boolean>(false);
   // 是否发送过消息,如果是,则禁用变量参数
   const isSendMessageRef = useRef<boolean>(false);
   // 控制输入框的淡入动画
@@ -177,6 +178,19 @@ const Chat: React.FC = () => {
     },
     onError: () => {
       setLoading(false);
+    },
+  });
+
+  const { run: runDetailNew } = useRequest(apiPublishedAgentInfo, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: AgentDetailDto) => {
+      const { agentId, conversationId } = result;
+      history.replace(`/home/chat/${conversationId}/${agentId}`);
+      setClearLoading(false);
+    },
+    onError: () => {
+      setClearLoading(false);
     },
   });
 
@@ -314,7 +328,9 @@ const Chat: React.FC = () => {
 
   // 清空会话记录，实际上是跳转到智能体详情页面
   const handleClear = () => {
-    history.push(`/agent/${agentId}`);
+    // history.push(`/agent/${agentId}`);
+    setClearLoading(true);
+    runDetailNew(agentId, true);
   };
 
   // 消息发送
@@ -539,6 +555,7 @@ const Chat: React.FC = () => {
               onEnter={handleMessageSend}
               visible={showScrollBtn}
               wholeDisabled={wholeDisabled}
+              clearLoading={clearLoading}
               onClear={handleClear}
               manualComponents={manualComponents}
               selectedComponentList={selectedComponentList}
