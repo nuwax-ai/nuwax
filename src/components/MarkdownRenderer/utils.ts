@@ -166,19 +166,20 @@ const extractTableToMarkdown = (tableChildren: React.ReactNode): string => {
 
       // 生成 Markdown 表格格式
       if (rows.length > 0) {
-        const markdownTable = rows.join('\n');
-
         // 如果有表头，添加表头分隔符
         if (hasHeader && rows.length > 1) {
           const headerRow = rows[0];
           if (headerRow) {
             const columnCount = (headerRow.match(/\|/g) || []).length - 1;
             const separator = '|' + '---|'.repeat(columnCount);
-            return `${markdownTable}\n${separator}`;
+            // 将分隔符插入到第一行（表头）后面
+            const resultRows = [rows[0], separator, ...rows.slice(1)];
+            return resultRows.join('\n');
           }
         }
 
-        return markdownTable;
+        // 没有表头的情况，直接拼接所有行
+        return rows.join('\n');
       }
     }
 
