@@ -726,12 +726,40 @@ export const useAppDevFileManagement = ({
 
         // 更新文件列表中的文件名（包含完整路径+文件名+后缀）
         const updatedFilesList = filesList.map((file) => {
-          if (file.name === oldPath) {
-            return {
-              ...file,
-              name: newPath, // 更新为新的完整路径
-            };
+          // 如果是文件夹，需要更新文件夹本身以及所有子文件
+          if (fileNode.type === 'folder') {
+            // 检查是否是文件夹本身（虽然扁平列表中文件夹可能不存在）
+            if (file.name === oldPath) {
+              return {
+                ...file,
+                name: newPath, // 更新为新的完整路径
+                renameFrom: oldPath, // 记录重命名前的名字
+              };
+            }
+
+            // 检查是否是文件夹的子文件
+            if (file.name.startsWith(oldPath + '/')) {
+              // 计算新路径：将 oldPath 前缀替换为 newPath
+              const relativePath = file.name.substring(oldPath.length);
+              const newFilePath = newPath + relativePath;
+
+              return {
+                ...file,
+                name: newFilePath, // 更新为新的完整路径
+                renameFrom: file.name, // 记录重命名前的名字
+              };
+            }
+          } else {
+            // 如果是文件，直接更新匹配的文件
+            if (file.name === oldPath) {
+              return {
+                ...file,
+                name: newPath, // 更新为新的完整路径
+                renameFrom: oldPath, // 记录重命名前的名字
+              };
+            }
           }
+
           return file;
         });
 

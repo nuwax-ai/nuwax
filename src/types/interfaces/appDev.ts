@@ -163,6 +163,8 @@ export interface PageFileInfo {
   binary: boolean;
   /** 文件大小是否超限 */
   sizeExceeded?: boolean;
+  /** 重命名之前的文件名（仅在重命名场景下使用） */
+  renameFrom?: string;
 }
 
 /**
