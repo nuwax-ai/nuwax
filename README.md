@@ -1,444 +1,381 @@
 # Nuwax
 Nuwax AI - Easily build and deploy your private Agentic AI solutions.
 
-官网地址：https://nuwax.com
+Official Website: https://nuwax.com
 
-体验地址：https://agent.nuwax.com
+Demo: https://agent.nuwax.com
 
-## 安装部署
+## Installation & Deployment
 
-借助于官方提供的 nuwax-cli 命令工具，来快速本地部署服务。
+Use the official nuwax-cli command tool to quickly deploy services locally.
 
-### 快速开始
+### Quick Start
 
-#### 环境准备
+#### Environment Preparation
 
-##### 系统要求
-- **系统要求：** Ubuntu22.04LTS或以上版本（其他linux版本未充分测试），macOS 10.15+，Windows 10/11（后续支持）
-- **配置要求：** 4核8G或以上
-- **环境要求：** docker、docker-compose V2 环境 [docker安装指南](#docker环境安装)
+##### System Requirements
+- **System Requirements**: Ubuntu 22.04 LTS or later (other Linux versions not fully tested), macOS 10.15+, Windows 10/11 (support coming soon)
+- **Hardware Requirements**: 4 cores 8GB RAM or higher
+- **Environment Requirements**: docker, docker-compose V2 environment [Docker Installation Guide](#docker-environment-installation)
 
-##### 支持的平台
+##### Supported Platforms
 - **Linux**: x86_64, ARM64
-    - Ubuntu 22.04 LTS（推荐）
-    - 当前用户需要有 Docker 权限，验证方式`docker ps`，查看是否有权限问题， 碰到权限问题，可以使用 sudo 权限运行。
-    - 推荐使用阿里云镜像加速
+    - Ubuntu 22.04 LTS (recommended)
+    - Current user needs Docker permissions, verify with `docker ps`. If you encounter permission issues, you can run with sudo privileges.
+    - Alibaba Cloud mirror acceleration is recommended
 - **macOS**: Intel, Apple Silicon (M1/M2), Universal
-    - macOS 10.15 (Catalina) 及以上版本
-    - 推荐使用OrbStack（个人免费，性能更佳）
-    - 确保 OrbStack 或 Docker Desktop 已启动
-    - 首次运行可能需要允许未知开发者：系统偏好设置 → 安全性与隐私
+    - macOS 10.15 (Catalina) and later versions
+    - OrbStack is recommended (free for personal use, better performance)
+    - Ensure OrbStack or Docker Desktop is started
+    - First-time use may require allowing unknown developers: System Preferences → Security & Privacy
 
-##### 客户端下载
-> 客户端仅作为运维工具，不包含平台软件包
+##### Client Download
+> The client is only a deployment tool and does not include the platform software package
 - [nuwax-cli-linux-amd64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.55/nuwax-cli-linux-amd64.tar.gz)
 - [nuwax-cli-linux-arm64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.55/nuwax-cli-linux-arm64.tar.gz)
-- [nuwax-cli-macos-universal.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.55/nuwax-cli-macos-universal.tar.gz)（amd64&arm64）
+- [nuwax-cli-macos-universal.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.55/nuwax-cli-macos-universal.tar.gz) (amd64&arm64)
 
-##### 执行命令完成部署
+##### Execute Commands to Complete Deployment
 
-执行以下命令需要有docker权限，或者使用sudo运行
+The following commands require Docker permissions or can be run with sudo
 
 #### Linux / macOS
 ```bash
-# 示例工作目录
+# Example working directory
 mkdir nuwax_deploy
 cd nuwax_deploy
 
-# 下载客户端运维工具
-# Linux下载命令（amd64）
+# Download client deployment tool
+# Linux download command (amd64)
 wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.55/nuwax-cli-linux-amd64.tar.gz
-# Linux下载命令（arm64）
+# Linux download command (arm64)
 wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.55/nuwax-cli-linux-arm64.tar.gz
-# macOS下载命令
+# macOS download command
 wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.55/nuwax-cli-macos-universal.tar.gz
 
-# 将下载的客户端文件解压到工作目录
+# Extract downloaded client files to working directory
 tar -xzf nuwax-cli-*.tar.gz
 
-# 添加执行权限
+# Add execute permission
 chmod +x nuwax-cli
 
-# 初始化
+# Initialize
 ./nuwax-cli init
 
-# 开始部署，如需指定 project name 或访问端口(默认80)，可以使用以下命令：
+# Start deployment, if you need to specify project name or access port (default 80), you can use the following command:
 # ./nuwax-cli auto-upgrade-deploy run --port 8099 -p nuwax
 ./nuwax-cli auto-upgrade-deploy run
 ```
 
-> **重要提示：** 建议定期升级命令行工具，在工作目录下执行：
+> **Important Note**: It is recommended to regularly upgrade the command line tool by executing in the working directory:
 > ```bash
 > ./nuwax-cli check-update install
 > ```
 
-正常情况下，执行完命令后，服务就已经部署好了。
+Normally, after executing the commands, the service should be deployed successfully.
 
-##### 访问服务
+##### Access Service
 
-部署完成后，在浏览器访问：`http://localhost`
+After deployment is complete, access in browser: `http://localhost`
 
-使用默认管理员账号登录：`admin@nuwax.com` 密码：`123456`
+Login with default administrator account: `admin@nuwax.com` password: `123456`
 
-> 注：如果80端口被占用，可以指定端口部署，比如：`./nuwax-cli auto-upgrade-deploy run --port 8099`
+> Note: If port 80 is occupied, you can specify a port for deployment, such as: `./nuwax-cli auto-upgrade-deploy run --port 8099`
 
-##### 重要配置
-登录后请及时修改：
-- 管理员密码
-- 站点信息配置
+##### Important Configuration
+Please modify promptly after login:
+- Administrator password
+- Site information configuration
 
   ![alt text](https://nuwax.com/images/image-101.png)
 
-- 邮件服务配置，用于用户登录注册收取验证码。
+- Email service configuration for user registration and login verification codes.
 
   ![alt text](https://nuwax.com/images/image-91.png)
 
-### 常见问题排查
+### Troubleshooting
 
-#### 1. 服务启动失败
-- 检查 Docker 是否正常运行
-- 使用 `./nuwax-cli status` 查看详细状态
-- 检查端口是否被占用
+#### 1. Service Startup Failed
+- Check if Docker is running properly
+- Use `./nuwax-cli status` to view detailed status
+- Check if ports are occupied
 
-#### 2. 无法访问服务
-- 确认服务已正常启动，可以执行 `docker ps` 或 `./nuwax-cli ducker` 查看容器状态
-- 检查防火墙设置
-- 确认端口配置正确
+#### 2. Unable to Access Service
+- Confirm service has started properly, you can execute `docker ps` or `./nuwax-cli ducker` to view container status
+- Check firewall settings
+- Confirm port configuration is correct
 
-#### 3. 权限问题 - Permission denied
-- **Linux（Ubuntu 22.04 LTS）**: 确保用户在 docker 组中
-- **macOS**: 允许未知开发者运行，确保OrbStack或Docker Desktop已启动
+#### 3. Permission Issues - Permission denied
+- **Linux (Ubuntu 22.04 LTS)**: Ensure user is in docker group
+- **macOS**: Allow unknown developers to run, ensure OrbStack or Docker Desktop is started
 
-使用 `sudo` 来执行命令：`sudo ./nuwax-cli auto-upgrade-deploy run`
+Use `sudo` to execute commands: `sudo ./nuwax-cli auto-upgrade-deploy run`
 
-#### 4. 解压失败 - Directory not empty(os error 39)
-先停止Docker服务：`./nuwax-cli docker-service stop`，然后手动删除工作目录下的 `docker` 目录，重新执行部署命令。
+#### 4. Extraction Failed - Directory not empty(os error 39)
+First stop Docker service: `./nuwax-cli docker-service stop`, then manually delete the `docker` directory in the working directory and re-execute the deployment command.
 
-#### 5. 进入界面但提示系统异常
-查看后台日志：`./docker/logs/agent/app.log`，通常重启服务可解决：
+#### 5. Interface Shows System Exception
+Check backend logs: `./docker/logs/agent/app.log`, usually restarting the service can resolve:
 ```bash
 ./nuwax-cli docker-service restart
 ```
 
-#### 6. 下载失败 - error decoding response body
-网络问题导致，重新执行部署命令即可，支持断点续传。
+#### 6. Download Failed - error decoding response body
+Network issues cause this, re-executing the deployment command will work, supports resumable downloads.
 
-### 常用管理命令
+### Common Management Commands
 
-#### 服务管理
-- 启动服务：`./nuwax-cli docker-service start`
-- 停止服务：`./nuwax-cli docker-service stop`
-- 重启服务：`./nuwax-cli docker-service restart`
-- 检查状态：`./nuwax-cli docker-service status`
+#### Service Management
+- Start service: `./nuwax-cli docker-service start`
+- Stop service: `./nuwax-cli docker-service stop`
+- Restart service: `./nuwax-cli docker-service restart`
+- Check status: `./nuwax-cli docker-service status`
 
-#### 备份管理
-> 备份服务需要停止Docker应用服务器，建议业务低谷时操作
+#### Backup Management
+> Backup service requires stopping Docker application servers, it's recommended to operate during business low-peak periods
 
-- **一键备份（推荐）：**
-    - 手动执行备份：`./nuwax-cli auto-backup run`
-    - 列出所有备份：`./nuwax-cli list-backups`
-    - 从备份恢复：`./nuwax-cli rollback [BACKUP_ID]`
+- **One-click Backup (Recommended):**
+    - Manual backup execution: `./nuwax-cli auto-backup run`
+    - List all backups: `./nuwax-cli list-backups`
+    - Restore from backup: `./nuwax-cli rollback [BACKUP_ID]`
 
-#### 升级管理
+#### Upgrade Management
 
-**应用服务升级，使用命令`./nuwax-cli auto-upgrade-deploy run` 会自动检测下载新版本，自动部署。**
+**Application service upgrade, using command `./nuwax-cli auto-upgrade-deploy run` will automatically detect and download new versions for deployment.**
 
-完整升级流程：
+Complete upgrade process:
 ```bash
-# 检查运维客户端是否有新版本并更新
+# Check if deployment client has new version and update
 ./nuwax-cli check-update install
-# 更新应用服务
+# Update application service
 ./nuwax-cli auto-upgrade-deploy run
 ```
 
-### Docker环境安装
+### Docker Environment Installation
 
-> **重要说明：** Docker和Docker Compose是运行本服务的核心依赖，必须正确安装。
+> **Important Note**: Docker and Docker Compose are core dependencies for running this service and must be installed correctly.
 
-#### Ubuntu 22.04 LTS（推荐）
+If your system doesn't have Docker environment installed yet, please refer to the detailed **[Docker Environment Installation Guide](docs/en/docker-install.md)**.
 
+This installation guide includes detailed installation steps for the following platforms:
+
+- **Ubuntu 22.04 LTS** (recommended Linux distribution)
+- **macOS** (supports OrbStack and Docker Desktop)
+- **Windows 10/11** (Docker Desktop)
+- **Mirror acceleration configuration** (for mainland China users)
+- **Installation verification and troubleshooting**
+
+**Quick Docker Installation Verification:**
 ```bash
-# 1. 更新软件包索引
-sudo apt update
-
-# 2. 安装必要的软件包
-sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
-
-# 3. 添加Docker官方GPG密钥
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-
-# 4. 设置稳定版仓库
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# 5. 安装Docker Engine
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-
-# 6. 启动Docker服务
-sudo systemctl start docker
-sudo systemctl enable docker
-
-# 7. 将用户添加到docker组
-sudo usermod -aG docker $USER
-
-# 8. 验证安装（需要重新登录）
-newgrp docker
+# Check Docker version
 docker --version
+
+# Check Docker Compose version
 docker compose version
+
+# Run test container
+docker run hello-world
 ```
 
-#### macOS
+If the above commands all run successfully, your Docker environment is ready and you can proceed with Nuwax service deployment.
 
-**方法一：使用OrbStack（推荐）**
-1. 访问 [OrbStack官网](https://orbstack.dev/) 下载安装
-2. 启动后自动支持 `docker` 和 `docker compose` 命令
+### Agent Platform Frontend
 
-**方法二：使用Docker Desktop**
-1. 访问 [Docker Desktop官网](https://www.docker.com/products/docker-desktop/) 下载安装
-2. 启动Docker Desktop
+Intelligent Agent Platform Frontend Project
 
-#### Docker镜像加速（可选）
+#### Project Overview
 
-**中国大陆用户建议配置镜像加速器**
+This is an intelligent agent platform frontend project based on React 18 + UmiJS Max + Ant Design, providing a complete solution for intelligent agent development, management, and usage. The project integrates advanced AI Agent systems, supporting file management, code editing, real-time preview, and AI assistant chat functionality.
 
-**Linux系统：**
-```bash
-sudo mkdir -p /etc/docker
-sudo tee /etc/docker/daemon.json <<-'EOF'
-{
-  "registry-mirrors": [
-    "https://docker.mirrors.ustc.edu.cn",
-    "https://hub-mirror.c.163.com",
-    "https://mirror.baidubce.com"
-  ]
-}
-EOF
-sudo systemctl daemon-reload
-sudo systemctl restart docker
-```
+##### Tech Stack
 
-**macOS/Windows：**
-在Docker Desktop或OrbStack的设置中添加上述镜像地址。
+- **Frontend Framework**: React 18 + TypeScript 5.0
+- **UI Component Library**: Ant Design 5.4 + ProComponents
+- **Code Editor**: Monaco Editor 0.53.0
+- **Graphics Engine**: AntV X6 2.18.1
+- **Framework Tool**: UmiJS Max 4.x
+- **State Management**: UmiJS built-in model
+- **Styling Solution**: CSS Modules + Less
+- **Package Manager**: pnpm 10.17.1
+- **SSE Communication**: @microsoft/fetch-event-source 2.0.1
 
-### Agent Platform Front
+##### Key Features
 
-智能体平台前端项目
+- **Intelligent Agent Development & Management**: Complete intelligent agent creation, configuration, and management functionality
+- **AppDev Web IDE**: Integrated development environment supporting file management, code editing, and real-time preview
+- **AI Assistant Chat**: Real-time AI conversation functionality based on new OpenAPI specifications, supporting streaming responses and tool calls
+- **Workspace Management**: Project file tree management, file upload, and version control
+- **Knowledge Base Management**: Creation and maintenance of intelligent agent knowledge bases
+- **Component Library Management**: Management and publishing of reusable components
+- **MCP Service Management**: Model Context Protocol service integration
+- **Ecosystem Management**: Plugin, template, and service ecosystem
+- **🎨 Dynamic Theme Background Switching**: Support for 8 preset background images, real-time switching, persistent state
 
-#### 项目概述
+##### AI Chat Interface Update
 
-这是一个基于 React 18 + UmiJS Max + Ant Design 的智能体平台前端项目，提供智能体开发、管理和使用的完整解决方案。项目集成了先进的 AI Agent 系统，支持文件管理、代码编辑、实时预览和 AI 助手聊天功能。
+###### 🔄 Interface Change Description
 
-##### 技术栈
+The project has been updated to an AI chat interface based on new OpenAPI specifications:
 
-- **前端框架**: React 18 + TypeScript 5.0
-- **UI 组件库**: Ant Design 5.4 + ProComponents
-- **代码编辑器**: Monaco Editor 0.53.0
-- **图形引擎**: AntV X6 2.18.1
-- **框架工具**: UmiJS Max 4.x
-- **状态管理**: UmiJS 内置 model
-- **样式方案**: CSS Modules + Less
-- **包管理**: pnpm 10.17.1
-- **SSE 通信**: @microsoft/fetch-event-source 2.0.1
+##### Theme Background Switching Feature
 
-##### 主要功能
+###### ✨ Main Features
 
-- **智能体开发与管理**：完整的智能体创建、配置和管理功能
-- **AppDev Web IDE**：集成开发环境，支持文件管理、代码编辑和实时预览
-- **AI 助手聊天**：基于新的 OpenAPI 规范的实时 AI 对话功能，支持流式响应和工具调用
-- **工作空间管理**：项目文件树管理、文件上传和版本控制
-- **知识库管理**：智能体知识库的创建和维护
-- **组件库管理**：可复用组件的管理和发布
-- **MCP 服务管理**：Model Context Protocol 服务集成
-- **生态系统管理**：插件、模板和服务的生态系统
-- **🎨 动态主题背景切换**：支持 8 种预设背景图片，实时切换，状态持久化
+- **8 Preset Backgrounds**: Provide multiple styles of background image choices
+- **Real-time Switching**: Background image switching takes effect immediately without page refresh
+- **State Persistence**: User-selected background images are saved to local storage
+- **Theme Adaptation**: Support for light/dark themes, background images display well under different themes
+- **Responsive Design**: Background images adapt to different screen sizes
+- **Multi-language Support**: Support for Chinese and English interfaces
 
-##### AI 聊天接口更新
+###### 🚀 Usage Methods
 
-###### 🔄 接口变更说明
+1. **Through Theme Control Panel**: Click the "Background" button in the bottom right corner of the page to select background images
+2. **In Theme Demo Page**: Visit the theme demo page under the `/examples` route for testing
 
-项目已更新为基于新的 OpenAPI 规范的 AI 聊天接口：
+###### 📁 Related Files
 
-##### 主题背景切换功能
+- `src/hooks/useGlobalSettings.ts` - Background state management
+- `src/components/ThemeControlPanel/` - Background selector component
+- `src/layouts/index.tsx` - Background application logic
+- `docs/background-switching.md` - Detailed feature documentation
 
-###### ✨ 主要特性
-
-- **8 种预设背景**：提供多种风格的背景图片选择
-- **实时切换**：背景图片切换即时生效，无需刷新页面
-- **状态持久化**：用户选择的背景图片会保存到本地存储
-- **主题适配**：支持明暗主题，背景图片在不同主题下都有良好的显示效果
-- **响应式设计**：背景图片自适应不同屏幕尺寸
-- **多语言支持**：支持中英文界面
-
-###### 🚀 使用方法
-
-1. **通过主题控制面板**：在页面右下角点击"背景"按钮选择背景图片
-2. **在主题演示页面**：访问 `/examples` 路由下的主题演示页面进行测试
-
-###### 📁 相关文件
-
-- `src/hooks/useGlobalSettings.ts` - 背景状态管理
-- `src/components/ThemeControlPanel/` - 背景选择器组件
-- `src/layouts/index.tsx` - 背景应用逻辑
-- `docs/background-switching.md` - 详细功能文档
-
-##### 项目结构
+##### Project Structure
 
 ```text
 src/
-├── components/          # 通用组件库
-│   ├── base/           # 基础组件
-│   ├── business-component/ # 业务组件
-│   └── custom/         # 自定义组件
-├── pages/              # 页面组件
-│   ├── AppDev/         # 应用开发页面
-│   │   ├── components/  # AppDev 专用组件
-│   │   │   ├── FileTree/    # 文件树组件
-│   │   │   ├── MonacoEditor/# Monaco 编辑器组件
-│   │   │   ├── Preview/     # 预览组件
-│   │   │   └── AppDevHeader.tsx # 页面头部组件
-│   │   ├── index.tsx   # 主页面
-│   │   └── index.less  # 页面样式
-│   └── ...             # 其他页面
-├── hooks/              # 自定义 Hooks
-│   ├── useAppDevChat.ts      # AI 聊天功能
-│   ├── useAppDevFileManagement.ts # 文件管理
-│   ├── useAppDevServer.ts    # 开发服务器管理
-│   └── ...             # 其他业务 Hooks
-├── models/             # 数据模型和状态管理
-│   └── appDev.ts       # 应用开发相关状态
-├── services/           # API 服务层
-│   ├── appDev.ts       # 应用开发相关 API
-│   └── ...             # 其他业务 API
-├── types/              # TypeScript 类型定义
-│   ├── interfaces/     # 接口类型定义
-│   └── ...             # 其他类型定义
-├── utils/              # 工具函数
-│   ├── monacoConfig.ts # Monaco Editor 配置
-│   ├── sseManager.ts   # SSE 连接管理
-│   └── ...             # 其他工具函数
-├── constants/          # 常量定义
-├── styles/             # 全局样式
-└── examples/           # 功能演示页面
+├── components/          # Universal component library
+│   ├── base/           # Basic components
+│   ├── business-component/ # Business components
+│   └── custom/         # Custom components
+├── pages/              # Page components
+│   ├── AppDev/         # Application development pages
+│   │   ├── components/  # AppDev specific components
+│   │   │   ├── FileTree/    # File tree component
+│   │   │   ├── MonacoEditor/# Monaco editor component
+│   │   │   ├── Preview/     # Preview component
+│   │   │   └── AppDevHeader.tsx # Page header component
+│   │   ├── index.tsx   # Main page
+│   │   └── index.less  # Page styles
+│   └── ...             # Other pages
+├── hooks/              # Custom Hooks
+│   ├── useAppDevChat.ts      # AI chat functionality
+│   ├── useAppDevFileManagement.ts # File management
+│   ├── useAppDevServer.ts    # Development server management
+│   └── ...             # Other business Hooks
+├── models/             # Data models and state management
+│   └── appDev.ts       # Application development related state
+├── services/           # API service layer
+│   ├── appDev.ts       # Application development related APIs
+│   └── ...             # Other business APIs
+├── types/              # TypeScript type definitions
+│   ├── interfaces/     # Interface type definitions
+│   └── ...             # Other type definitions
+├── utils/              # Utility functions
+│   ├── monacoConfig.ts # Monaco Editor configuration
+│   ├── sseManager.ts   # SSE connection management
+│   └── ...             # Other utility functions
+├── constants/          # Constant definitions
+├── styles/             # Global styles
+└── examples/           # Feature demo pages
 
 public/
-└── bg/                 # 背景图片资源
+└── bg/                 # Background image resources
 ```
 
-##### 开发指南
+##### Development Guide
 
-###### 环境要求
+###### Environment Requirements
 
-- **Node.js**: >= 18.0.0 (推荐使用 LTS 版本)
-- **包管理器**: pnpm >= 8.0.0 (推荐) 或 npm >= 8.0.0
-- **操作系统**: Windows 10+, macOS 10.15+, Linux (Ubuntu 18.04+)
-- **浏览器**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
+- **Node.js**: >= 18.0.0 (LTS version recommended)
+- **Package Manager**: pnpm >= 8.0.0 (recommended) or npm >= 8.0.0
+- **Operating System**: Windows 10+, macOS 10.15+, Linux (Ubuntu 18.04+)
+- **Browser**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
 
-###### 快速开始
+###### Quick Start
 
-####### 1. 安装依赖
+####### 1. Install Dependencies
 
 ```bash
-# 使用 pnpm (推荐)
+# Use pnpm (recommended)
 pnpm install
 
-# 或使用 npm
+# Or use npm
 npm install
 ```
 
-####### 2. 启动开发服务器
+####### 2. Start Development Server
 
 ```bash
-# 使用 pnpm
+# Use pnpm
 pnpm dev
 
-# 或使用 npm
+# Or use npm
 npm run dev
 ```
 
-####### 4. 访问应用
+####### 4. Access Application
 
-打开浏览器访问 `http://localhost:8000`
+Open browser and visit `http://localhost:8000`
 
-###### 构建和部署
+###### Build & Deployment
 
-####### 开发环境构建
+####### Development Environment Build
 
 ```bash
 pnpm build:dev
 ```
 
-####### 生产环境构建
+####### Production Environment Build
 
 ```bash
 pnpm build:prod
 ```
 
-####### 本地预览构建结果
+####### Local Preview of Build Results
 
 ```bash
 pnpm serve
 ```
 
-###### 代码规范
+###### Code Standards
 
-- **TypeScript**: 所有新文件必须使用 TypeScript，组件 Props 和 State 必须有类型注解
-- **组件开发**: 使用函数式组件和 Hooks，组件文件命名采用 PascalCase
-- **样式方案**: 使用 CSS Modules 避免全局污染，Less 变量统一管理
-- **状态管理**: 全局状态使用 UmiJS model，局部状态使用 useState/useReducer
-- **性能优化**: 使用 `useMemo` 和 `useCallback` 优化渲染，路由和组件必须懒加载
-- **代码质量**: 遵循 ESLint 和 Prettier 规范，每个组件必须有详细的 JSDoc 注释
+- **TypeScript**: All new files must use TypeScript, component Props and State must have type annotations
+- **Component Development**: Use functional components and Hooks, component file naming uses PascalCase
+- **Styling Solution**: Use CSS Modules to avoid global pollution, Less variables managed uniformly
+- **State Management**: Use UmiJS model for global state, useState/useReducer for local state
+- **Performance Optimization**: Use `useMemo` and `useCallback` to optimize rendering, routes and components must be lazy loaded
+- **Code Quality**: Follow ESLint and Prettier standards, each component must have detailed JSDoc comments
 
-##### 常见问题修复
+##### Performance Optimization
 
-###### Grid 布局间距问题
+- **Route Lazy Loading**: Use React.lazy and UmiJS dynamic loading
+- **Component Lazy Loading**: Monaco Editor on-demand loading to reduce first-screen size
+- **State Optimization**: Use `useMemo` and `useCallback` to avoid unnecessary rendering
+- **Resource Optimization**: Image lazy loading and compression, static resource caching
+- **Code Splitting**: Reasonably split business modules to avoid single files being too large
 
-**问题描述**: 当列表数据不能占满屏幕时，Grid 布局会产生不均匀的上下间距。
+##### Deployment Instructions
 
-**解决方案**: 为 Grid 容器添加以下 CSS 属性：
+###### Environment Variable Configuration
 
-```less
-.main-container {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  /* 关键修复：确保内容从顶部开始排列，避免不均匀的间距分布 */
-  align-content: start;
-  /* 设置最小高度，确保容器有足够的高度来容纳内容 */
-  min-height: 170px;
-}
-```
+- `UMI_ENV`: Environment identifier (development/production)
+- `NODE_ENV`: Node.js environment identifier
+- Other custom environment variables
 
-**修复原理**:
+###### Build Optimization
 
-1. `align-content: start` 确保 Grid 行从顶部开始排列，而不是均匀分布
-2. `min-height: 170px` 设置容器最小高度，与卡片高度保持一致
-3. 避免使用默认的 `align-content: stretch` 导致的拉伸问题
+- Code splitting and lazy loading
+- Resource compression and caching
+- Monaco Editor on-demand loading
 
-##### 性能优化
+##### Contributing Guide
 
-- **路由懒加载**: 使用 React.lazy 和 UmiJS 的动态加载
-- **组件懒加载**: Monaco Editor 按需加载，减少首屏体积
-- **状态优化**: 使用 `useMemo` 和 `useCallback` 避免不必要的渲染
-- **资源优化**: 图片懒加载和压缩，静态资源缓存
-- **代码分割**: 合理拆分业务模块，避免单文件过大
+1. Fork the project
+2. Create feature branch
+3. Submit code changes
+4. Create Pull Request
 
-##### 部署说明
+## License
 
-###### 环境变量配置
-
-- `UMI_ENV`: 环境标识（development/production）
-- `NODE_ENV`: Node.js 环境标识
-- 其他自定义环境变量
-
-###### 构建优化
-
-- 代码分割和懒加载
-- 资源压缩和缓存
-- Monaco Editor 按需加载
-
-##### 贡献指南
-
-1. Fork 项目
-2. 创建功能分支
-3. 提交代码变更
-4. 创建 Pull Request
+Apache 2.0 License - see [LICENSE](LICENSE) for details.
