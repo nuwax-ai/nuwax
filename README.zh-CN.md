@@ -88,12 +88,12 @@ chmod +x nuwax-cli
 登录后请及时修改：
 - 管理员密码
 - 站点信息配置
-
-  ![alt text](https://nuwax.com/images/image-101.png)
-
 - 邮件服务配置，用于用户登录注册收取验证码。
 
-  ![alt text](https://nuwax.com/images/image-91.png)
+```
+#菜单路径
+系统管理 ->系统配置
+```
 
 ### 常见问题排查
 
