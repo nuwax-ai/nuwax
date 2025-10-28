@@ -6,7 +6,7 @@ import { getImg } from '@/utils/workflow';
 import {
   CheckCircleFilled,
   ClockCircleOutlined,
-  EditOutlined,
+  FormOutlined,
   InfoCircleOutlined,
   LeftOutlined,
 } from '@ant-design/icons';
@@ -81,11 +81,10 @@ const Header: React.FC<HeaderProp> = ({
                 />
               </Popover>
             )}
-            <EditOutlined
+            <FormOutlined
               onClick={setShowCreateWorkflow}
               style={{ fontSize: '16px' }}
             />
-            {/* <CheckCircleOutlined /> */}
           </div>
         </div>
       </div>

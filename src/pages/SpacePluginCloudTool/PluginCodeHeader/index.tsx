@@ -8,7 +8,7 @@ import {
   CaretRightOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  EditOutlined,
+  FormOutlined,
   LeftOutlined,
 } from '@ant-design/icons';
 import { Button, Segmented, Tag } from 'antd';
@@ -67,7 +67,7 @@ const PluginCodeHeader: React.FC<PluginCodeHeaderProps> = ({
           <h3 className={cx(styles.name, 'text-ellipsis')}>
             {pluginInfo?.name}
           </h3>
-          <EditOutlined
+          <FormOutlined
             className={cx('cursor-pointer', 'hover-box')}
             onClick={onEdit}
           />

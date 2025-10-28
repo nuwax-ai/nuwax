@@ -8,7 +8,7 @@ import { KnowledgeDocTypeEnum } from '@/types/enums/library';
 import type { KnowledgeHeaderProps } from '@/types/interfaces/knowledge';
 import { formatBytes } from '@/utils/byteConverter';
 import { jumpBack } from '@/utils/router';
-import { DownOutlined, EditOutlined, LeftOutlined } from '@ant-design/icons';
+import { DownOutlined, FormOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button, Radio, RadioChangeEvent } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -56,7 +56,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
           <h3 className={cx(styles.name, 'text-ellipsis')}>
             {knowledgeInfo?.name}
           </h3>
-          <EditOutlined
+          <FormOutlined
             className={cx('cursor-pointer', 'hover-box')}
             onClick={onEdit}
             style={{ fontSize: 16 }}

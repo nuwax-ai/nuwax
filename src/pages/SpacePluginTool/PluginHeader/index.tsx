@@ -7,7 +7,7 @@ import {
   CaretRightOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  EditOutlined,
+  FormOutlined,
   LeftOutlined,
 } from '@ant-design/icons';
 import { Button, Tag } from 'antd';
@@ -65,10 +65,9 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
           <h3 className={cx(styles.name, 'text-ellipsis')}>
             {pluginInfo?.name}
           </h3>
-          <EditOutlined
-            className={cx('cursor-pointer', 'hover-box')}
+          <FormOutlined
+            className={cx(styles['edit-ico'], 'cursor-pointer', 'hover-box')}
             onClick={onEdit}
-            style={{ fontSize: 16 }}
           />
           {pluginInfo?.publishStatus === PublishStatusEnum.Published && (
             <CheckCircleOutlined
