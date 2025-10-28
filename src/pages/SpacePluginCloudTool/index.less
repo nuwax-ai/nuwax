@@ -1,0 +1,51 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  padding: 0 5px;
+
+  .main-container {
+    padding: 16px 20px;
+
+    // 代码模式
+    &.code-wrap {
+      background-color: @WHITE;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: @fontWeightStrong;
+      color: @BLANK04;
+    }
+
+    .request-select {
+      width: 98px;
+      margin-right: 16px;
+    }
+
+    .table-wrap {
+      border-radius: 5px;
+      border: 1px solid @BLANK19;
+
+      &.mb-24 {
+        margin-bottom: 24px;
+      }
+
+      :global {
+        .ant-table-tbody > tr > td {
+          border-bottom: none;
+        }
+      }
+    }
+
+    .select {
+      width: 120px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    min-width: 900px;
+  }
+}

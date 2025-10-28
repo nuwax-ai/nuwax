@@ -1,0 +1,214 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+/**
+ * 开发日志控制台组件样式
+ */
+
+.dev-log-console {
+  width: 100%;
+  background: #f5f5dc; // 浅黄色/米色背景，参考图片
+  border-top: @lineWidth solid @colorBorder;
+  border-radius: 6px;
+
+  // 头部工具栏
+  &-header {
+    height: 40px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: @lineWidth solid @colorBorder;
+    background: @colorBgContainer;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .header-icon {
+        font-size: @fontSizeLg;
+        color: @colorTextBase; // 深棕色，参考图片文字颜色
+      }
+
+      .header-title {
+        font-size: @fontSize;
+        font-weight: @fontWeightStrong;
+        color: @colorTextBase; // 深棕色
+      }
+
+      .error-badge {
+        .ant-badge-count {
+          background: @colorError;
+          font-size: 10px;
+          min-width: 16px;
+          height: 16px;
+          line-height: 16px;
+        }
+      }
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .ant-btn {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: @colorTextBase;
+
+        .anticon {
+          font-size: @fontSizeSm;
+        }
+      }
+    }
+  }
+
+  // 日志列表区域
+  &-body {
+    height: 210px;
+    overflow: hidden;
+
+    .log-list {
+      height: 100%;
+      overflow-y: auto;
+      padding: 8px;
+
+      // 日志组样式 - 参考图片的简洁设计
+      .log-group {
+        display: flex;
+        flex-direction: row;
+        margin-bottom: 4px;
+        background: transparent; // 透明背景，与整体背景一致
+        cursor: pointer;
+        border-radius: 4px;
+
+        &:hover {
+          background: rgba(139, 69, 19, 10%); // 浅棕色背景
+        }
+
+        // 组头样式 - 简洁的时间戳显示
+        .log-group-header {
+          padding: 4px 8px;
+          transition: all 0.2s ease;
+
+          .group-header-left {
+            display: flex;
+            align-items: center;
+
+            .group-timestamp {
+              font-size: @fontSizeSm;
+              color: #8b4513; // 深棕色文字
+              font-family: @fontFamilyCode;
+            }
+          }
+        }
+
+        // 组内容样式 - 简洁的文本显示
+        .log-group-content {
+          flex: 1;
+          padding: 0;
+          background: transparent;
+
+          // 合并的日志内容块
+          .log-content-block {
+            background: transparent;
+            border: none;
+            border-radius: 0;
+
+            .log-text {
+              margin: 0;
+              padding: 4px 8px;
+              font-family: @fontFamilyCode;
+              font-size: @fontSizeSm;
+              white-space: pre-wrap;
+              word-break: break-all;
+              color: #8b4513; // 统一的深棕色文字
+              background: transparent;
+
+              // 日志行样式 - 只改变字体颜色
+              .log-line {
+                // 错误日志 - 只改变字体颜色
+                &.log-line-error {
+                  color: #d32f2f; // 深红色文字
+                }
+
+                // 警告日志 - 只改变字体颜色
+                &.log-line-warn {
+                  color: #d46b08; // 深橙色文字
+                }
+
+                // 信息日志 - 只改变字体颜色
+                &.log-line-info {
+                  color: #1890ff; // 蓝色文字
+                }
+
+                // 普通日志 - 保持原有颜色
+                &.log-line-normal {
+                  color: #8b4513; // 深棕色文字
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .empty-logs {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: @colorTextTertiary;
+
+      .empty-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        color: @colorTextTertiary;
+      }
+
+      p {
+        margin: 0 0 16px;
+        font-size: @fontSize;
+      }
+    }
+
+    .loading-logs {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: @colorTextTertiary;
+
+      .loading-spinner {
+        font-size: 32px;
+        margin-bottom: 16px;
+        color: @colorPrimary;
+        animation: spin 1s linear infinite;
+      }
+
+      p {
+        margin: 0;
+        font-size: @fontSize;
+        color: @colorTextSecondary;
+      }
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  }
+}

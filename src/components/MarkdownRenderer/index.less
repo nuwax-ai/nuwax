@@ -1,0 +1,171 @@
+@import '@/styles/color';
+@import '@/styles/theme';
+
+.markdown-container {
+  h1 {
+    // font-size: 2em;
+    border-bottom: 1px solid #eaecef;
+    // line-height: 32px;
+    padding-bottom: 0.3em;
+  }
+
+  ul {
+    list-style: disc;
+
+    ul {
+      list-style: circle;
+
+      ul {
+        list-style: square;
+      }
+    }
+  }
+
+  ol {
+    list-style: decimal;
+  }
+
+  ul,
+  ol {
+    // padding-left: 24px;
+    // margin-bottom: 16px;
+
+    li {
+      list-style: unset;
+      // margin-bottom: 12px;
+    }
+  }
+
+  p {
+    word-wrap: break-word;
+  }
+
+  hr {
+    height: 0.5px;
+    background-color: #d9d9d9;
+  }
+  // 表格样式
+  .table-wrapper {
+    max-width: 100%;
+    display: inline-block;
+
+    :global {
+      .md-code-block {
+        .md-code-block-banner-wrap {
+          max-width: 100%;
+        }
+
+        .md-code-block-content {
+          max-height: 500px;
+          padding: 0;
+          background-color: #fff;
+          max-width: 100%;
+          overflow: auto;
+        }
+      }
+    }
+  }
+
+  .markdown-table {
+    // border-spacing: 0;
+    // border-collapse: collapse;
+    display: table;
+    width: max-content;
+    overflow: auto;
+    min-width: 240px;
+
+    th {
+      border-top: 0.5px solid #d9d9d9;
+      border-bottom: 0.5px solid #d9d9d9;
+      border-right: 0.5px solid #d9d9d9;
+    }
+
+    td {
+      border-right: 0.5px solid #d9d9d9;
+      border-bottom: 0.5px solid #d9d9d9;
+    }
+
+    th:first-child {
+      border-left: 0.5px solid #d9d9d9;
+      padding-left: 6px;
+    }
+
+    td:first-child {
+      border-left: 0.5px solid #d9d9d9;
+      padding-left: 6px;
+    }
+  }
+
+  :global {
+    .ds-markdown {
+      background-color: transparent;
+
+      .md-code-block-light,
+      .md-code-block-dark {
+        --ds-md-code-block-banner-wrap-background-color: transparent;
+      }
+
+      .ds-markdown-thinking {
+        .ds-markdown-paragraph.ds-typed-thinking {
+          p:last-child {
+            margin-bottom: 16px;
+          }
+        }
+      }
+
+      li::marker {
+        color: var(--ds-rgb-label-1);
+      }
+    }
+
+    // 事件绑定配置样式
+    .event[event-type][data] {
+      display: inline-block;
+      font-size: 12px;
+      margin: 0 4px;
+      padding: 4px 8px;
+      cursor: pointer;
+      max-width: 100px;
+      min-width: 18px;
+      border-radius: 24px;
+      color: rgba(0, 0, 0, 60%) !important;
+      background-color: rgba(0, 0, 0, 5%);
+      line-height: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      // 斜体移除 指 em 标签样式
+      font-style: normal;
+
+      &:hover {
+        background-color: rgba(235, 235, 235);
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.markdown-image-container {
+  cursor: pointer;
+  width: fit-content;
+  max-width: 100%;
+  display: inline-block; // 确保span表现为块级元素
+  vertical-align: top; // 确保图片对齐
+
+  :global {
+    .ant-image-error .ant-image-img {
+      width: unset;
+      height: unset;
+    }
+  }
+}

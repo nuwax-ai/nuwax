@@ -1,0 +1,92 @@
+@import 'src/styles/color';
+@import 'src/styles/token';
+
+.ant-select-dropdown
+  .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background-color: transparent;
+
+  &:hover {
+    background-color: @BLANK12;
+  }
+}
+
+.tooltip-blank {
+  .ant-tooltip-inner {
+    color: @WHITE15;
+    background-color: @BLANK36;
+  }
+
+  .ant-tooltip-arrow::before {
+    background-color: @BLANK36;
+  }
+}
+
+.tooltip-white {
+  .ant-tooltip-inner {
+    color: @BLANK;
+    background-color: @WHITE;
+  }
+
+  .ant-tooltip-arrow::before {
+    background-color: @WHITE;
+  }
+}
+
+// table
+.ant-table-wrapper .ant-table-thead > tr > th {
+  font-size: 14px;
+  color: @BLANK04;
+  background: transparent;
+}
+
+.ant-table-wrapper
+  .ant-table-thead
+  > tr
+  > th:not(:last-child):not(.ant-table-selection-column):not(
+    .ant-table-row-expand-icon-cell
+  ):not([colspan])::before {
+  width: 0;
+}
+
+// switch 样式
+.ant-switch.ant-switch-checked {
+  background: @GREEN03;
+
+  &:hover {
+    background: @GREEN04 !important;
+  }
+}
+
+// 上传Upload 样式
+.ant-upload-wrapper .ant-upload-drag {
+  background-color: transparent;
+  border: none;
+}
+
+// Form.Item label字体加粗
+.ant-form-vertical
+  .ant-form-item:not(.ant-form-item-horizontal)
+  .ant-form-item-label
+  > label {
+  font-weight: @fontWeightStrong;
+}
+
+.ant-checkbox-checked.ant-checkbox-disabled .ant-checkbox-inner {
+  background-color: @BLUE04;
+  border-color: @BLUE04;
+  opacity: 0.5;
+
+  &::after {
+    border-color: @WHITE;
+  }
+}
+
+// 在文件末尾添加
+// 特别针对 Modal 确认对话框
+.ant-modal-root .ant-btn {
+  outline: none !important;
+
+  &:focus-visible {
+    outline: none !important;
+  }
+}

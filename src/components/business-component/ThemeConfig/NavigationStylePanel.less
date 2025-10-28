@@ -1,0 +1,180 @@
+@import '@/styles/token';
+
+.navigationStylePanel {
+  padding: 0;
+
+  .panelTitle {
+    margin: 0 0 @marginSm 0;
+    font-size: @fontSizeLg;
+    font-weight: @fontWeightStrong;
+    color: @colorText;
+  }
+}
+
+.navigationStyleSection {
+  margin-top: @marginSm;
+}
+
+.navigationStyleOptions {
+  margin-bottom: @marginSm;
+
+  h4 {
+    margin: 0 0 @marginSm 0;
+    font-size: @fontSize;
+    color: @colorTextSecondary;
+    font-weight: normal;
+  }
+}
+
+.navigationColorOptions {
+  h4 {
+    margin: 0 0 @marginSm 0;
+    font-size: @fontSize;
+    color: @colorTextSecondary;
+    font-weight: normal;
+  }
+}
+
+.styleOptions,
+.colorOptions {
+  display: flex;
+  gap: @paddingSm;
+  justify-content: flex-start;
+}
+
+.styleOption,
+.colorOption {
+  cursor: pointer;
+}
+
+.stylePreview {
+  padding: @paddingXs;
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-radius: @borderRadiusLg;
+  transition: all 0.3s @motionEaseOut;
+  overflow: hidden;
+
+  &:hover {
+    border-color: @colorPrimary;
+  }
+
+  &.active {
+    border-color: @colorPrimary;
+  }
+}
+
+.colorPreview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 40px;
+  cursor: pointer;
+  box-sizing: content-box;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  transition: all 0.3s @motionEaseOut;
+  overflow: hidden;
+
+  &:hover {
+    border-color: @colorPrimary;
+  }
+
+  &.active {
+    border-color: @colorPrimary;
+  }
+}
+
+.navbarPreview {
+  width: 100%;
+  height: 100%;
+}
+
+.colorItem {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.lightNavbar {
+  .colorItemContent {
+    background: linear-gradient(0deg, #e3e5ea 0%, #e0ddf1 100%);
+  }
+}
+
+.darkNavbar {
+  .colorItemContent {
+    background: linear-gradient(180deg, #5e6470 0%, #404552 100%);
+  }
+}
+
+.colorItemContent {
+  width: 100%;
+  height: 100%;
+}
+
+.navbarContent {
+  width: 96px;
+  height: 60px;
+  background-color: @colorBgLayout;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: @borderRadiusSm;
+}
+
+// 紧凑导航样式（风格1）
+.compactNavbar {
+  .navbarContent {
+    background-image: url('@/assets/images/theme/nav-style1.png');
+  }
+}
+
+// 展开导航样式（风格2）
+.expandedNavbar {
+  .navbarContent {
+    background-image: url('@/assets/images/theme/nav-style2.png');
+  }
+}
+
+// 风格提示文字
+.styleText {
+  font-size: 8px;
+  color: rgba(0, 0, 0, 50%);
+  margin-top: 2px;
+  white-space: nowrap;
+
+  .darkNavbar & {
+    color: rgba(255, 255, 255, 50%);
+  }
+}
+
+.navbarItem {
+  width: 16px;
+  height: 2px;
+  background-color: rgba(0, 0, 0, 30%);
+
+  .lightNavbar & {
+    background-color: rgba(0, 0, 0, 30%);
+  }
+
+  .darkNavbar & {
+    background-color: rgba(255, 255, 255, 30%);
+  }
+}
+
+.styleLabel,
+.colorLabel {
+  margin-top: @marginXxs;
+  display: block;
+  font-size: @fontSizeSm; // 使用更小的字号
+  color: @colorTextSecondary;
+  text-align: center;
+  white-space: nowrap;
+  line-height: @lineHeight;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: normal;
+}

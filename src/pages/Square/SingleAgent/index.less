@@ -1,0 +1,49 @@
+.card-wrapper {
+  position: relative;
+
+  &:hover {
+    .action-box {
+      opacity: 1;
+      z-index: 1;
+    }
+  }
+
+  .action-box {
+    gap: 12px;
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 12px;
+    height: 32px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    z-index: -1;
+    background-color: #fff;
+
+    .star-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  .footer {
+    height: 24px;
+    gap: 16px;
+
+    .count-box {
+      gap: 16px;
+      flex: 1;
+
+      .text {
+        display: flex;
+        align-items: center;
+        font-size: 12px;
+        color: #828894;
+        gap: 4px;
+      }
+    }
+  }
+}

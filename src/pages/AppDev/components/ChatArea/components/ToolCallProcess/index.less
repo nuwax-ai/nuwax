@@ -1,0 +1,348 @@
+@import '@/styles/token.less';
+
+.toolCallProcess {
+  margin: 8px 0;
+  font-size: 13px;
+  color: @colorTextBase;
+  background: @colorBgContainer;
+  border-radius: 8px;
+  padding: 0 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 10%);
+
+  // 主操作行 - 参考效果图的简洁设计
+  .operationRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    min-height: 14px; // 减少最小高度
+
+    .operationInfo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0; // 允许收缩
+
+      .operationText {
+        color: @colorTextBase;
+        font-weight: 400;
+        white-space: nowrap; // 防止换行
+        overflow: hidden;
+        text-overflow: ellipsis; // 溢出显示省略号
+        max-width: calc(100% - 16px); // 为状态区域预留空间
+
+        // 不同截取模式的样式
+        &.truncate-ellipsis {
+          text-overflow: ellipsis;
+        }
+
+        &.truncate-middle {
+          text-overflow: ellipsis;
+        }
+
+        &.truncate-fade {
+          text-overflow: ellipsis;
+          position: relative;
+
+          &::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 20px;
+            background: linear-gradient(to right, transparent, #fafafa);
+            pointer-events: none;
+          }
+        }
+
+        &.truncate-none {
+          text-overflow: clip;
+          white-space: normal;
+          overflow: visible;
+        }
+      }
+    }
+
+    .operationStatus {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0; // 防止收缩
+
+      .statusText {
+        color: @colorTextTertiary;
+        font-size: @fontSizeSm;
+        white-space: nowrap; // 防止换行
+      }
+
+      .toggleButton {
+        width: 16px;
+        height: 16px;
+        padding: 0;
+        font-size: @fontSizeSm;
+        color: @colorTextTertiary;
+        border: none;
+        background: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0; // 防止收缩
+
+        &:hover {
+          color: @colorPrimary;
+        }
+      }
+    }
+  }
+
+  // 详细信息行
+  .detailsRow {
+    padding: 0 0 8px; // 与标题对齐，不缩进
+
+    .detailsContent {
+      max-width: 100%;
+      padding: 0 8px;
+      overflow: hidden;
+
+      // 内容数组容器
+      .contentArray {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        .textContent,
+        .objectContent,
+        .unknownContent {
+          .contentPre {
+            background: @colorBgContainer;
+            border: 1px solid @colorBorder;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 0;
+            font-family: @fontFamilyCode;
+            font-size: 11px;
+            line-height: 1.4;
+            color: @colorTextBase;
+            overflow-x: auto; // 水平滚动
+            overflow-y: auto; // 垂直滚动
+            white-space: pre-wrap; // 保持格式但允许换行
+            word-break: break-word; // 强制长单词换行
+            max-height: 200px; // 限制最大高度
+            max-width: 100%; // 限制最大宽度
+            resize: vertical; // 允许垂直调整大小
+          }
+        }
+
+        // 文件列表特殊样式
+        .textContent {
+          .contentPre {
+            background: #f8f9fa;
+            border-left: 3px solid @colorPrimary;
+            font-size: 10px;
+            line-height: 1.3;
+
+            // 文件列表的目录结构样式
+            // 注意：:contains 不是标准CSS选择器，这里只是示例
+            // 实际应用中需要通过JavaScript来处理文本匹配
+          }
+        }
+
+        .objectContent {
+          .contentPre {
+            background: #fff7e6;
+            border-left: 3px solid #faad14;
+          }
+        }
+
+        .unknownContent {
+          .contentPre {
+            background: #f6f6f6;
+            border-left: 3px solid @colorBorder;
+          }
+        }
+      }
+
+      // 单一内容容器
+      .textContent,
+      .objectContent,
+      .unknownContent {
+        .contentPre {
+          background: @colorBgContainer;
+          border: 1px solid @colorBorder;
+          border-radius: 4px;
+          padding: 8px;
+          margin: 0;
+          font-family: @fontFamilyCode;
+          font-size: 11px;
+          line-height: 1.4;
+          color: @colorTextBase;
+          overflow-x: auto; // 水平滚动
+          overflow-y: auto; // 垂直滚动
+          white-space: pre-wrap; // 保持格式但允许换行
+          word-break: break-word; // 强制长单词换行
+          max-height: 200px; // 限制最大高度
+          max-width: 100%; // 限制最大宽度
+          resize: vertical; // 允许垂直调整大小
+        }
+      }
+
+      // 文件列表特殊样式
+      .fileListContainer {
+        background: @colorBgContainer;
+        border: 1px solid @colorBorder;
+        border-radius: 4px;
+        padding: 8px;
+        font-family: @fontFamilyCode;
+        font-size: 10px;
+        line-height: 1.3;
+        max-height: 200px;
+        overflow-y: auto;
+
+        .fileListLine {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 2px 0;
+          border-bottom: 1px solid @colorBorder;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .fileIcon {
+            font-size: @fontSizeSm;
+            flex-shrink: 0;
+            width: 16px;
+            text-align: center;
+          }
+
+          .directoryLine {
+            color: @colorSuccess; // 目录用绿色
+            font-weight: @fontWeightStrong;
+          }
+
+          .fileLine {
+            color: @colorTextBase; // 文件用默认色
+          }
+
+          // 代码文件特殊样式 - 通过类名控制
+          .fileLine.codeFile {
+            color: @blue;
+          }
+
+          // 配置文件特殊样式 - 通过类名控制
+          .fileLine.configFile {
+            color: @colorWarning;
+          }
+
+          .otherLine {
+            color: @colorBorder;
+          }
+        }
+
+        .fileListSummary {
+          padding: 4px 0;
+          margin-top: 4px;
+          border-top: 1px solid @colorBorder;
+          background: @colorBgContainer;
+          border-radius: 2px;
+          text-align: center;
+
+          .summaryText {
+            color: @colorTextTertiary;
+            font-weight: @fontWeightStrong;
+          }
+        }
+      }
+    }
+  }
+
+  // 状态点样式 - 参考效果图的圆形点设计
+  .statusDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .statusDotStatusCompleted {
+    background-color: @colorSuccess;
+  }
+
+  .statusDotStatusInProgress {
+    background-color: @blue;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .statusDotStatusFailed {
+    background-color: @colorError;
+  }
+
+  .statusDotStatusPending {
+    background-color: @colorBorder;
+  }
+
+  // 脉冲动画
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.5;
+    }
+
+    100% {
+      opacity: 1;
+    }
+  }
+
+  // 无内容时的信息显示
+  .noContent {
+    padding: 8px 0;
+    color: @colorTextTertiary;
+    font-size: @fontSizeSm;
+    line-height: 1.5;
+
+    .statusInfo,
+    .timeInfo,
+    .updateInfo {
+      display: flex;
+      margin-bottom: 4px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    .statusLabel,
+    .timeLabel,
+    .updateLabel {
+      font-weight: @fontWeightStrong;
+      margin-right: 8px;
+      min-width: 40px;
+    }
+
+    .statusValue,
+    .timeValue,
+    .updateValue {
+      color: @colorTextBase;
+    }
+
+    .statusValue {
+      font-weight: @fontWeightStrong;
+    }
+
+    .timeValue {
+      font-family: @fontFamilyCode;
+    }
+
+    .updateValue {
+      color: @colorPrimary;
+      font-weight: @fontWeightStrong;
+    }
+  }
+}

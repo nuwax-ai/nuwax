@@ -1,0 +1,47 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  height: 32px;
+  color: @GRAY05;
+  font-size: 12px;
+
+  .elapsed-time {
+    gap: 12px;
+
+    .vertical-line {
+      width: 1px;
+      height: 12px;
+      background-color: @GRAY05;
+    }
+  }
+
+  .replace-btn {
+    border-radius: 10px;
+    background: #f0f0f9;
+    box-sizing: border-box;
+    border: 1px solid #e0e0e8;
+    font-family: 'Source Han Sans';
+    font-size: 14px;
+    font-weight: @fontWeightStrong;
+    line-height: normal;
+    letter-spacing: normal;
+    color: #7a33fe;
+  }
+
+  .more-action {
+    gap: 10px;
+
+    .box {
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      color: @BLANK11;
+    }
+
+    .icon {
+      width: 24px;
+      height: 24px;
+    }
+  }
+}

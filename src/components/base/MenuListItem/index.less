@@ -1,0 +1,89 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.row {
+  padding: @paddingXs;
+  margin-top: @marginXxs;
+  cursor: default;
+  color: @navSecondMenuTextSecondary;
+
+  &.first {
+    margin-top: 0;
+  }
+
+  &.menuItem {
+    cursor: pointer;
+
+    .name {
+      color: @navSecondMenuTextSecondary;
+    }
+
+    &.has-icon {
+      :global {
+        .ant-typography {
+          margin-left: @marginXs;
+          // line-height: @fontHeightSm;
+        }
+      }
+    }
+
+    :global {
+      .ant-typography {
+        font-size: @fontSize;
+        line-height: @fontHeightLg;
+      }
+    }
+  }
+
+  &.active {
+    background-color: @colorBgContainer;
+    color: @colorPrimary;
+    border-radius: @borderRadius;
+    box-shadow: @boxShadowTertiary;
+
+    :global {
+      .ant-typography {
+        color: @colorPrimary;
+      }
+    }
+  }
+
+  &:hover {
+    background-color: @colorBgContainer;
+    border-radius: @borderRadius;
+    box-shadow: @boxShadowTertiary;
+    color: @colorTextSecondary;
+
+    :global {
+      .ant-typography {
+        color: @colorTextSecondary;
+      }
+    }
+
+    .collectIcon {
+      visibility: visible;
+      color: @colorTextSecondary;
+    }
+  }
+
+  .title {
+    font-size: @fontSize;
+  }
+
+  .icon-image {
+    width: 20px;
+    height: 20px;
+    border-radius: @borderRadiusSm;
+  }
+
+  .collectIcon {
+    color: @navSecondMenuTextSecondary;
+    visibility: hidden;
+    // border-radius: @borderRadiusXs;
+    transition: background-color ease-in-out 0.2s;
+
+    &:hover {
+      background-color: @colorBgContainer;
+    }
+  }
+}

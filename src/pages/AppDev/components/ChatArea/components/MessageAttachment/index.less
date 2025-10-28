@@ -1,0 +1,96 @@
+// 消息中的图片附件
+.messageImageAttachment {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 10%);
+  transition: transform 0.2s ease;
+
+  // &:hover {
+  //   transform: scale(1.02);
+  // }
+}
+
+// 消息中的文件附件
+.messageFileAttachment {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 5%);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 10%);
+  margin-top: 4px;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(0, 0, 0, 8%);
+  }
+
+  .fileAttachmentIcon {
+    font-size: 16px;
+    margin-right: 8px;
+  }
+
+  .fileAttachmentInfo {
+    flex: 1;
+    min-width: 0;
+
+    .fileAttachmentName {
+      font-size: 12px;
+      font-weight: 500;
+      color: #333;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .fileAttachmentType {
+      font-size: 10px;
+      color: #666;
+      margin-top: 2px;
+    }
+  }
+}
+
+// 消息中的数据源附件
+.messageDataSourceAttachment {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(34, 197, 94, 8%); // 绿色背景，表示数据源
+  border-radius: 8px;
+  border: 1px solid rgba(34, 197, 94, 20%);
+  margin-top: 4px;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(34, 197, 94, 12%);
+  }
+
+  .dataSourceAttachmentIcon {
+    font-size: 16px;
+    margin-right: 8px;
+    color: #22c55e; // 绿色图标
+  }
+
+  .dataSourceAttachmentInfo {
+    flex: 1;
+    min-width: 0;
+
+    .dataSourceAttachmentName {
+      font-size: 12px;
+      font-weight: 500;
+      color: #333;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dataSourceAttachmentType {
+      font-size: 10px;
+      color: #22c55e; // 绿色文字
+      margin-top: 2px;
+    }
+  }
+}

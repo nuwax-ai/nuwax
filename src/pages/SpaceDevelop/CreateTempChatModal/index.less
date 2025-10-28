@@ -1,0 +1,64 @@
+@import '@/styles/color';
+
+.container {
+  background-color: @WHITE12 !important;
+
+  .table-wrap {
+    background-color: @WHITE12;
+
+    :global {
+      .ant-table-cell {
+        background-color: @WHITE12;
+      }
+
+      .ant-table-tbody > tr.ant-table-placeholder:hover > td {
+        background-color: @WHITE12;
+      }
+
+      .ant-table-footer {
+        background-color: @WHITE12;
+        padding-left: 0;
+      }
+
+      .ant-table-thead > tr > th {
+        color: @GRAY07 !important;
+        font-size: 12px !important;
+      }
+    }
+
+    .url-box {
+      gap: 4px;
+
+      .chat-url {
+        color: @GRAY26;
+        font-size: 12px;
+      }
+
+      .img-box {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        overflow: hidden;
+
+        &.copy-img-box {
+          width: 28px;
+          height: 28px;
+        }
+
+        .img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+    }
+  }
+}
+
+.qr-code-modal {
+  background-color: @WHITE12;
+  padding-bottom: 0;
+  width: 500px !important;
+  height: 500px;
+  border-radius: 10px;
+}

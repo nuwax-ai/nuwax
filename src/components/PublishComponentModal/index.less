@@ -1,0 +1,60 @@
+@import '@/styles/color';
+
+.modal-content {
+  width: 560px;
+  height: 80%;
+  background-color: @WHITE12 !important;
+  overflow: hidden;
+
+  .modal-header {
+    background-color: @WHITE12;
+  }
+
+  .modal-body {
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
+  }
+
+  .input-textarea {
+    border: none;
+  }
+
+  :global {
+    .ant-input-outlined:focus,
+    .ant-input-outlined:focus-within {
+      box-shadow: none !important;
+    }
+  }
+
+  .select {
+    width: 150px !important;
+  }
+
+  .table-wrap {
+    .label-normal {
+      width: auto;
+    }
+
+    .font-12 {
+      font-size: 12px;
+      color: @BLANK17;
+
+      &.down-outlined {
+        transform: rotate(-90deg);
+        transition: transform 0.5s ease; /* 添加过渡效果 */
+      }
+    }
+
+    .ml-8 {
+      margin-left: 8px;
+    }
+
+    .table-copy {
+      margin-left: 50px;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+  }
+}

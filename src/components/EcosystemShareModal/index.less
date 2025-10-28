@@ -1,0 +1,64 @@
+// src/components/PluginShareModal/index.less
+@import '@/styles/color';
+@import '@/styles/token';
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.pluginItemStyle {
+  height: 56px;
+  color: #999;
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.pluginError {
+  margin-top: 4px;
+  color: @colorError;
+  font-size: @fontSize;
+  line-height: @lineHeight;
+}
+
+.tableWrap {
+  border-radius: 5px;
+  border: 1px solid @colorBorder;
+  // margin-top: 12px;
+  margin-bottom: 24px;
+  min-height: 120px;
+
+  td {
+    font-size: 12px;
+  }
+
+  // th {
+  //   font-size: 12px;
+  //   font-weight: 500;
+  // }
+
+  // td {
+  //   font-weight: normal;
+  //   letter-spacing: 0;
+  //   padding: 12px;
+  //   color: #3d3d3d;
+
+  //   &:nth-child(2) {
+  //     font-family: 'Alimama Agile VF';
+  //     font-size: 10px;
+  //     font-weight: normal;
+  //     line-height: 18px;
+  //     letter-spacing: 0;
+  //   }
+  // }
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+}

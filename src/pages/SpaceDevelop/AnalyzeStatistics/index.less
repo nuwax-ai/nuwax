@@ -1,0 +1,41 @@
+@import '@/styles/color';
+
+.analyze-wrapper {
+  position: relative;
+  gap: 20px;
+
+  .analyze-box {
+    width: calc(50% - 10px);
+
+    span {
+      line-height: 50px;
+      padding-left: 16px;
+      font-size: 14px;
+      color: @GRAY05;
+    }
+
+    div {
+      height: 80px;
+      font-size: 24px;
+      color: @BLANK04;
+    }
+  }
+
+  .row-line {
+    position: absolute;
+    top: 140px;
+    left: 5px;
+    width: calc(100% - 10px);
+    height: 1px;
+    background-color: @GRAY06;
+  }
+
+  .vertical-line {
+    position: absolute;
+    left: calc(50%);
+    top: 5px;
+    width: 1px;
+    height: calc(100% - 10px);
+    background-color: @GRAY06;
+  }
+}

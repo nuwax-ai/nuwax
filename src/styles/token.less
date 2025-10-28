@@ -1,0 +1,611 @@
+// ================================
+// Seed Token (基础变量)
+// ================================
+
+// 颜色系统
+@blue: var(--xagi-blue);
+@purple: var(--xagi-purple);
+@cyan: var(--xagi-cyan);
+@green: var(--xagi-green);
+@magenta: var(--xagi-magenta);
+@pink: var(--xagi-pink);
+@red: var(--xagi-red);
+@orange: var(--xagi-orange);
+@yellow: var(--xagi-yellow);
+@volcano: var(--xagi-volcano);
+@geekblue: var(--xagi-geekblue);
+@gold: var(--xagi-gold);
+@lime: var(--xagi-lime);
+
+// 主题色
+@colorPrimary: var(--xagi-color-primary);
+@colorSuccess: var(--xagi-color-success);
+@colorWarning: var(--xagi-color-warning);
+@colorError: var(--xagi-color-error);
+@colorInfo: var(--xagi-color-info);
+@colorLink: var(--xagi-color-link);
+
+// 文本色
+@colorTextBase: var(--xagi-color-text-base);
+
+// 背景色
+@colorBgBase: var(--xagi-color-bg-base);
+
+// 字体
+@fontFamily: var(--xagi-font-family);
+// @fontFamilyCode: var(--xagi-font-family-code) ";
+@fontFamilyCode: "'JetBrains Mono',monospace,'Fira Code','Consolas','Monaco','Courier New'";
+@fontSize: var(--xagi-font-size);
+
+// 边框
+@lineWidth: var(--xagi-line-width);
+@lineType: var(--xagi-line-type);
+
+// 圆角
+@borderRadius: var(--xagi-border-radius);
+
+// 尺寸
+@sizePopupArrow: var(--xagi-size-popup-arrow);
+@controlHeight: var(--xagi-control-height);
+
+// 层级
+@zIndexBase: var(--xagi-z-index-base);
+@zIndexPopupBase: var(--xagi-z-index-popup-base);
+
+// 透明度
+@opacityImage: var(--xagi-opacity-image);
+
+// 动画曲线
+@motionEaseOutCirc: var(--xagi-motion-ease-out-circ);
+@motionEaseInOutCirc: var(--xagi-motion-ease-in-out-circ);
+@motionEaseOut: var(--xagi-motion-ease-out);
+@motionEaseInOut: var(--xagi-motion-ease-in-out);
+@motionEaseOutBack: var(--xagi-motion-ease-out-back);
+@motionEaseInBack: var(--xagi-motion-ease-in-back);
+@motionEaseInQuint: var(--xagi-motion-ease-in-quint);
+@motionEaseOutQuint: var(--xagi-motion-ease-out-quint);
+
+// ================== 补充缺失的 SeedToken ==================
+
+// 更多圆角尺寸
+@borderRadiusXs: var(--xagi-border-radius-xs);
+@borderRadiusSm: var(--xagi-border-radius-sm);
+@borderRadiusLg: var(--xagi-border-radius-lg);
+@borderRadiusOuter: var(--xagi-border-radius-outer);
+
+// 更多控制高度
+@controlHeightXs: var(--xagi-control-height-xs);
+@controlHeightSm: var(--xagi-control-height-sm);
+@controlHeightLg: var(--xagi-control-height-lg);
+
+// 更多字体大小
+@fontSizeSm: var(--xagi-font-size-sm);
+@fontSizeLg: var(--xagi-font-size-lg);
+@fontSizeXl: var(--xagi-font-size-xl);
+@fontSizeIcon: var(--xagi-font-size-icon);
+@fontSizeHeading1: var(--xagi-font-size-heading-1);
+@fontSizeHeading2: var(--xagi-font-size-heading-2);
+@fontSizeHeading3: var(--xagi-font-size-heading-3);
+@fontSizeHeading4: var(--xagi-font-size-heading-4);
+@fontSizeHeading5: var(--xagi-font-size-heading-5);
+
+// 行高
+@lineHeight: var(--xagi-line-height);
+@lineHeightLg: var(--xagi-line-height-lg);
+@lineHeightSm: var(--xagi-line-height-sm);
+@lineHeightHeading1: var(--xagi-line-height-heading-1);
+@lineHeightHeading2: var(--xagi-line-height-heading-2);
+@lineHeightHeading3: var(--xagi-line-height-heading-3);
+@lineHeightHeading4: var(--xagi-line-height-heading-4);
+@lineHeightHeading5: var(--xagi-line-height-heading-5);
+
+// 更多边框宽度
+@lineWidthBold: var(--xagi-line-width-bold);
+@lineWidthFocus: var(--xagi-line-width-focus);
+
+// 动画开关
+@motion: var(--xagi-motion);
+@motionBase: var(--xagi-motion-base);
+
+// 动画时长
+@motionDurationFast: var(--xagi-motion-duration-fast);
+@motionDurationMid: var(--xagi-motion-duration-mid);
+@motionDurationSlow: var(--xagi-motion-duration-slow);
+
+// 尺寸步长
+@sizeStep: var(--xagi-size-step);
+@sizeUnit: var(--xagi-size-unit);
+
+// 控制相关
+@controlInteractiveSize: var(--xagi-control-interactive-size);
+@controlOutlineWidth: var(--xagi-control-outline-width);
+
+// 内边距
+@paddingXxs: var(--xagi-padding-xxs);
+@paddingXs: var(--xagi-padding-xs);
+@paddingSm: var(--xagi-padding-sm);
+@padding: var(--xagi-padding);
+@paddingMd: var(--xagi-padding-md);
+@paddingLg: var(--xagi-padding-lg);
+@paddingXl: var(--xagi-padding-xl);
+
+// 内容内边距
+@paddingContentHorizontal: var(--xagi-padding-content-horizontal);
+@paddingContentVertical: var(--xagi-padding-content-vertical);
+@paddingContentHorizontalLg: var(--xagi-padding-content-horizontal-lg);
+@paddingContentVerticalLg: var(--xagi-padding-content-vertical-lg);
+@paddingContentHorizontalSm: var(--xagi-padding-content-horizontal-sm);
+@paddingContentVerticalSm: var(--xagi-padding-content-vertical-sm);
+
+// 外边距
+@marginXxs: var(--xagi-margin-xxs);
+@marginXs: var(--xagi-margin-xs);
+@marginSm: var(--xagi-margin-sm);
+@margin: var(--xagi-margin);
+@marginMd: var(--xagi-margin-md);
+@marginLg: var(--xagi-margin-lg);
+@marginXl: var(--xagi-margin-xl);
+@marginXxl: var(--xagi-margin-xxl);
+
+// 屏幕尺寸断点
+@screenXs: var(--xagi-screen-xs);
+@screenXsMax: var(--xagi-screen-xs-max);
+@screenXsMin: var(--xagi-screen-xs-min);
+@screenSm: var(--xagi-screen-sm);
+@screenSmMax: var(--xagi-screen-sm-max);
+@screenSmMin: var(--xagi-screen-sm-min);
+@screenMd: var(--xagi-screen-md);
+@screenMdMax: var(--xagi-screen-md-max);
+@screenMdMin: var(--xagi-screen-md-min);
+@screenLg: var(--xagi-screen-lg);
+@screenLgMax: var(--xagi-screen-lg-max);
+@screenLgMin: var(--xagi-screen-lg-min);
+@screenXl: var(--xagi-screen-xl);
+@screenXlMax: var(--xagi-screen-xl-max);
+@screenXlMin: var(--xagi-screen-xl-min);
+@screenXxl: var(--xagi-screen-xxl);
+@screenXxlMin: var(--xagi-screen-xxl-min);
+
+// 更多透明度
+@opacityLoading: var(--xagi-opacity-loading);
+
+// ================================
+// Map Token (梯度变量)
+// ================================
+
+// 蓝色梯度
+@blue1: var(--xagi-blue-1);
+@blue2: var(--xagi-blue-2);
+@blue3: var(--xagi-blue-3);
+@blue4: var(--xagi-blue-4);
+@blue5: var(--xagi-blue-5);
+@blue6: var(--xagi-blue-6);
+@blue7: var(--xagi-blue-7);
+@blue8: var(--xagi-blue-8);
+@blue9: var(--xagi-blue-9);
+@blue10: var(--xagi-blue-10);
+
+// 紫色梯度
+@purple1: var(--xagi-purple-1);
+@purple2: var(--xagi-purple-2);
+@purple3: var(--xagi-purple-3);
+@purple4: var(--xagi-purple-4);
+@purple5: var(--xagi-purple-5);
+@purple6: var(--xagi-purple-6);
+@purple7: var(--xagi-purple-7);
+@purple8: var(--xagi-purple-8);
+@purple9: var(--xagi-purple-9);
+@purple10: var(--xagi-purple-10);
+
+// 青色梯度
+@cyan1: var(--xagi-cyan-1);
+@cyan2: var(--xagi-cyan-2);
+@cyan3: var(--xagi-cyan-3);
+@cyan4: var(--xagi-cyan-4);
+@cyan5: var(--xagi-cyan-5);
+@cyan6: var(--xagi-cyan-6);
+@cyan7: var(--xagi-cyan-7);
+@cyan8: var(--xagi-cyan-8);
+@cyan9: var(--xagi-cyan-9);
+@cyan10: var(--xagi-cyan-10);
+
+// 绿色梯度
+@green1: var(--xagi-green-1);
+@green2: var(--xagi-green-2);
+@green3: var(--xagi-green-3);
+@green4: var(--xagi-green-4);
+@green5: var(--xagi-green-5);
+@green6: var(--xagi-green-6);
+@green7: var(--xagi-green-7);
+@green8: var(--xagi-green-8);
+@green9: var(--xagi-green-9);
+@green10: var(--xagi-green-10);
+
+// 洋红色梯度
+@magenta1: var(--xagi-magenta-1);
+@magenta2: var(--xagi-magenta-2);
+@magenta3: var(--xagi-magenta-3);
+@magenta4: var(--xagi-magenta-4);
+@magenta5: var(--xagi-magenta-5);
+@magenta6: var(--xagi-magenta-6);
+@magenta7: var(--xagi-magenta-7);
+@magenta8: var(--xagi-magenta-8);
+@magenta9: var(--xagi-magenta-9);
+@magenta10: var(--xagi-magenta-10);
+
+// 粉色梯度
+@pink1: var(--xagi-pink-1);
+@pink2: var(--xagi-pink-2);
+@pink3: var(--xagi-pink-3);
+@pink4: var(--xagi-pink-4);
+@pink5: var(--xagi-pink-5);
+@pink6: var(--xagi-pink-6);
+@pink7: var(--xagi-pink-7);
+@pink8: var(--xagi-pink-8);
+@pink9: var(--xagi-pink-9);
+@pink10: var(--xagi-pink-10);
+
+// 红色梯度
+@red1: var(--xagi-red-1);
+@red2: var(--xagi-red-2);
+@red3: var(--xagi-red-3);
+@red4: var(--xagi-red-4);
+@red5: var(--xagi-red-5);
+@red6: var(--xagi-red-6);
+@red7: var(--xagi-red-7);
+@red8: var(--xagi-red-8);
+@red9: var(--xagi-red-9);
+@red10: var(--xagi-red-10);
+
+// 橙色梯度
+@orange1: var(--xagi-orange-1);
+@orange2: var(--xagi-orange-2);
+@orange3: var(--xagi-orange-3);
+@orange4: var(--xagi-orange-4);
+@orange5: var(--xagi-orange-5);
+@orange6: var(--xagi-orange-6);
+@orange7: var(--xagi-orange-7);
+@orange8: var(--xagi-orange-8);
+@orange9: var(--xagi-orange-9);
+@orange10: var(--xagi-orange-10);
+
+// 黄色梯度
+@yellow1: var(--xagi-yellow-1);
+@yellow2: var(--xagi-yellow-2);
+@yellow3: var(--xagi-yellow-3);
+@yellow4: var(--xagi-yellow-4);
+@yellow5: var(--xagi-yellow-5);
+@yellow6: var(--xagi-yellow-6);
+@yellow7: var(--xagi-yellow-7);
+@yellow8: var(--xagi-yellow-8);
+@yellow9: var(--xagi-yellow-9);
+@yellow10: var(--xagi-yellow-10);
+
+// 火山色梯度
+@volcano1: var(--xagi-volcano-1);
+@volcano2: var(--xagi-volcano-2);
+@volcano3: var(--xagi-volcano-3);
+@volcano4: var(--xagi-volcano-4);
+@volcano5: var(--xagi-volcano-5);
+@volcano6: var(--xagi-volcano-6);
+@volcano7: var(--xagi-volcano-7);
+@volcano8: var(--xagi-volcano-8);
+@volcano9: var(--xagi-volcano-9);
+@volcano10: var(--xagi-volcano-10);
+
+// 极客蓝梯度
+@geekblue1: var(--xagi-geekblue-1);
+@geekblue2: var(--xagi-geekblue-2);
+@geekblue3: var(--xagi-geekblue-3);
+@geekblue4: var(--xagi-geekblue-4);
+@geekblue5: var(--xagi-geekblue-5);
+@geekblue6: var(--xagi-geekblue-6);
+@geekblue7: var(--xagi-geekblue-7);
+@geekblue8: var(--xagi-geekblue-8);
+@geekblue9: var(--xagi-geekblue-9);
+@geekblue10: var(--xagi-geekblue-10);
+
+// 金色梯度
+@gold1: var(--xagi-gold-1);
+@gold2: var(--xagi-gold-2);
+@gold3: var(--xagi-gold-3);
+@gold4: var(--xagi-gold-4);
+@gold5: var(--xagi-gold-5);
+@gold6: var(--xagi-gold-6);
+@gold7: var(--xagi-gold-7);
+@gold8: var(--xagi-gold-8);
+@gold9: var(--xagi-gold-9);
+@gold10: var(--xagi-gold-10);
+
+// 青柠色梯度
+@lime1: var(--xagi-lime-1);
+@lime2: var(--xagi-lime-2);
+@lime3: var(--xagi-lime-3);
+@lime4: var(--xagi-lime-4);
+@lime5: var(--xagi-lime-5);
+@lime6: var(--xagi-lime-6);
+@lime7: var(--xagi-lime-7);
+@lime8: var(--xagi-lime-8);
+@lime9: var(--xagi-lime-9);
+@lime10: var(--xagi-lime-10);
+
+// ================================
+// Alias Token (别名变量)
+// ================================
+
+// 文本颜色
+@colorText: var(--xagi-color-text);
+@colorTextSecondary: var(--xagi-color-text-secondary);
+@colorTextTertiary: var(--xagi-color-text-tertiary);
+@colorTextQuaternary: var(--xagi-color-text-quaternary);
+@colorTextHeading: var(--xagi-color-text-heading);
+@colorTextLabel: var(--xagi-color-text-label);
+@colorTextDescription: var(--xagi-color-text-description);
+@colorTextPlaceholder: var(--xagi-color-text-placeholder);
+@colorTextDisabled: var(--xagi-color-text-disabled);
+@colorTextLightSolid: var(--xagi-color-text-light-solid);
+
+// 填充颜色
+@colorFill: var(--xagi-color-fill);
+@colorFillSecondary: var(--xagi-color-fill-secondary);
+@colorFillTertiary: var(--xagi-color-fill-tertiary);
+@colorFillQuaternary: var(--xagi-color-fill-quaternary);
+@colorFillContent: var(--xagi-color-fill-content);
+@colorFillContentHover: var(--xagi-color-fill-content-hover);
+@colorFillAlter: var(--xagi-color-fill-alter);
+
+// 背景颜色
+@colorBgLayout: var(--xagi-color-bg-layout);
+@colorBgContainer: var(--xagi-color-bg-container);
+@colorBgElevated: var(--xagi-color-bg-elevated);
+@colorBgSpotlight: var(--xagi-color-bg-spotlight);
+@colorBgBlur: var(--xagi-color-bg-blur);
+@colorBgContainerDisabled: var(--xagi-color-bg-container-disabled);
+@colorBgSolid: var(--xagi-color-bg-solid);
+@colorBgSolidHover: var(--xagi-color-bg-solid-hover);
+@colorBgSolidActive: var(--xagi-color-bg-solid-active);
+@colorBgTextHover: var(--xagi-color-bg-text-hover);
+@colorBgTextActive: var(--xagi-color-bg-text-active);
+
+// 边框颜色
+@colorBorder: var(--xagi-color-border);
+@colorBorderSecondary: var(--xagi-color-border-secondary);
+@colorBorderBg: var(--xagi-color-border-bg);
+@colorSplit: var(--xagi-color-split);
+
+// 主题色相关
+@colorPrimaryBg: var(--xagi-color-primary-bg);
+@colorPrimaryBgHover: var(--xagi-color-primary-bg-hover);
+@colorPrimaryBorder: var(--xagi-color-primary); // TODO: 修改过
+@colorPrimaryBorderHover: @colorPrimaryActive; // TODO: 修改过
+@colorPrimaryHover: var(--xagi-color-primary-hover);
+@colorPrimaryActive: var(--xagi-color-primary-active);
+@colorPrimaryTextHover: var(--xagi-color-primary-text-hover);
+@colorPrimaryText: var(--xagi-color-primary-text);
+@colorPrimaryTextActive: var(--xagi-color-primary-text-active);
+
+// 成功色相关
+@colorSuccessBg: var(--xagi-color-success-bg);
+@colorSuccessBgHover: var(--xagi-color-success-bg-hover);
+@colorSuccessBorder: var(--xagi-color-success); // TODO: 修改过
+@colorSuccessBorderHover: @colorSuccessActive; // TODO: 修改过
+@colorSuccessHover: var(--xagi-color-success-hover);
+@colorSuccessActive: var(--xagi-color-success-active);
+@colorSuccessTextHover: var(--xagi-color-success-text-hover);
+@colorSuccessText: var(--xagi-color-success-text);
+@colorSuccessTextActive: var(--xagi-color-success-text-active);
+
+// 错误色相关
+@colorErrorBg: var(--xagi-color-error-bg);
+@colorErrorBgHover: var(--xagi-color-error-bg-hover);
+@colorErrorBgFilledHover: var(--xagi-color-error-bg-filled-hover);
+@colorErrorBgActive: var(--xagi-color-error-bg-active);
+@colorErrorBorder: var(--xagi-color-error); // TODO: 修改过
+@colorErrorBorderHover: @colorErrorActive; // TODO: 修改过
+@colorErrorHover: var(--xagi-color-error-hover);
+@colorErrorActive: var(--xagi-color-error-active);
+@colorErrorTextHover: var(--xagi-color-error-text-hover);
+@colorErrorText: var(--xagi-color-error-text);
+@colorErrorTextActive: var(--xagi-color-error-text-active);
+@colorErrorOutline: var(--xagi-color-error-outline);
+
+// 警告色相关
+@colorWarningBg: var(--xagi-color-warning-bg);
+@colorWarningBgHover: var(--xagi-color-warning-bg-hover);
+@colorWarningBorder: var(--xagi-color-warning); // TODO: 修改过
+@colorWarningBorderHover: @colorWarningActive; // TODO: 修改过
+@colorWarningHover: var(--xagi-color-warning-hover);
+@colorWarningActive: var(--xagi-color-warning-active);
+@colorWarningTextHover: var(--xagi-color-warning-text-hover);
+@colorWarningText: var(--xagi-color-warning-text);
+@colorWarningTextActive: var(--xagi-color-warning-text-active);
+@colorWarningOutline: var(--xagi-color-warning-outline);
+
+// 信息色相关
+@colorInfoBg: var(--xagi-color-info-bg);
+@colorInfoBgHover: var(--xagi-color-info-bg-hover);
+@colorInfoBorder: var(--xagi-color-info); // TODO: 修改过
+@colorInfoBorderHover: @colorInfoActive; // TODO: 修改过
+@colorInfoHover: var(--xagi-color-info-hover);
+@colorInfoActive: var(--xagi-color-info-active);
+@colorInfoTextHover: var(--xagi-color-info-text-hover);
+@colorInfoText: var(--xagi-color-info-text);
+@colorInfoTextActive: var(--xagi-color-info-text-active);
+
+// 链接色相关
+@colorLinkHover: var(--xagi-color-link-hover);
+@colorLinkActive: var(--xagi-color-link-active);
+
+// 其他颜色
+@colorMask: var(--xagi-color-bg-mask);
+@colorWhite: var(--xagi-color-white);
+@colorHighlight: var(--xagi-color-highlight);
+@colorIcon: var(--xagi-color-icon);
+@colorIconHover: var(--xagi-color-icon-hover);
+
+// 字体高度
+@fontHeight: var(--xagi-font-height);
+@fontHeightLg: var(--xagi-font-height-lg);
+@fontHeightSm: var(--xagi-font-height-sm);
+
+// 控制相关
+@controlItemBgHover: var(--xagi-control-item-bg-hover);
+@controlItemBgActive: var(--xagi-control-item-bg-active);
+@controlItemBgActiveHover: var(--xagi-control-item-bg-active-hover);
+@controlItemBgActiveDisabled: var(--xagi-control-item-bg-active-disabled);
+@controlTmpOutline: var(--xagi-control-tmp-outline);
+@controlOutline: var(--xagi-control-outline);
+@controlPaddingHorizontal: var(--xagi-control-padding-horizontal);
+@controlPaddingHorizontalSm: var(--xagi-control-padding-horizontal-sm);
+
+// 阴影
+@boxShadow: var(--xagi-box-shadow);
+@boxShadowSecondary: var(--xagi-box-shadow-secondary);
+@boxShadowTertiary: var(--xagi-box-shadow-tertiary);
+@boxShadowPopoverArrow: var(--xagi-box-shadow-popover-arrow);
+@boxShadowCard: var(--xagi-box-shadow-card);
+@boxShadowDrawerRight: var(--xagi-box-shadow-drawer-right);
+@boxShadowDrawerLeft: var(--xagi-box-shadow-drawer-left);
+@boxShadowDrawerUp: var(--xagi-box-shadow-drawer-up);
+@boxShadowDrawerDown: var(--xagi-box-shadow-drawer-down);
+@boxShadowTabsOverflowLeft: var(--xagi-box-shadow-tabs-overflow-left);
+@boxShadowTabsOverflowRight: var(--xagi-box-shadow-tabs-overflow-right);
+@boxShadowTabsOverflowTop: var(--xagi-box-shadow-tabs-overflow-top);
+@boxShadowTabsOverflowBottom: var(--xagi-box-shadow-tabs-overflow-bottom);
+
+// 其他
+@fontWeightStrong: var(--xagi-font-weight-strong);
+@linkDecoration: var(--xagi-link-decoration);
+@linkHoverDecoration: var(--xagi-link-hover-decoration);
+@linkFocusDecoration: var(--xagi-link-focus-decoration);
+
+@backgroundImage: var(--xagi-background-image, none);
+
+// ================================
+// 导航相关的专用变量 (Navigation Tokens)
+// 基于Ant Design的CSS变量系统和独立的布局风格系统
+// ===============================
+
+// 导航尺寸配置（直接使用动态CSS变量）
+@navFirstMenuWidth: var(--xagi-nav-first-menu-width, 60px);
+@navFirstMenuWidthStyle2: 88px; // 展开模式宽度
+@navFirstMenuFontSize: @fontSizeSm;
+
+// 导航背景色（使用Ant Design的动态颜色）
+@navFirstMenuBg: var(--xagi-color-bg-container, rgba(255, 255, 255, 0.95));
+@navSecondMenuBg: var(--xagi-color-bg-layout, rgba(255, 255, 255, 0.85));
+
+// 页面容器相关Token
+@pageContainerMargin: var(--xagi-page-container-margin, 12px);
+@pageContainerBorderRadius: var(--xagi-page-container-border-radius, 12px);
+@pageContainerBg: var(--xagi-layout-bg-container, rgba(255, 255, 255, 0.95));
+
+// 导航文字颜色（使用独立的布局风格变量）
+@navFirstMenuText: var(--xagi-layout-text-secondary, rgba(0, 0, 0, 0.88));
+@navFirstMenuTextSecondary: var(
+  --xagi-layout-text-secondary,
+  rgba(0, 0, 0, 0.65)
+);
+@navFirstMenuTextTertiary: var(
+  --xagi-layout-text-tertiary,
+  rgba(0, 0, 0, 0.45)
+);
+@navSecondMenuText: var(
+  --xagi-layout-second-menu-text-color,
+  rgba(0, 0, 0, 0.88)
+);
+@navSecondMenuTextSecondary: var(
+  --xagi-layout-second-menu-text-color-secondary,
+  rgba(0, 0, 0, 0.65)
+);
+@navSecondMenuTextSecondaryTertiary: var(
+  --xagi-layout-text-tertiary,
+  rgba(0, 0, 0, 0.45)
+);
+
+// 导航交互状态颜色（使用主题色）
+@navItemHoverBg: #ffffff;
+@navItemActiveBg: #ffffff;
+@navItemSelectedBg: #ffffff;
+
+// 导航边框和分割线（使用独立的布局风格变量）
+@navBorderColor: var(--xagi-layout-border-primary, rgba(0, 0, 0, 0.15));
+@navDividerColor: var(--xagi-layout-border-secondary, rgba(0, 0, 0, 0.06));
+
+@pageContainerBorderColor: var(
+  --xagi-page-container-border-color,
+  rgba(0, 0, 0, 0.15)
+);
+
+// 导航阴影（使用独立的布局风格变量）
+@navShadow: var(--xagi-layout-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
+@navFirstMenuShadow: none;
+@navSecondMenuShadow: none;
+
+// 移动端响应式适配
+// 在移动端强制使用紧凑模式，忽略导航风格设置
+@media (max-width: 768px) {
+  :root {
+    --xagi-nav-first-menu-width: 60px !important;
+  }
+
+  // 隐藏移动端的文字显示
+  .xagi-nav-style2 {
+    .text {
+      opacity: 0 !important;
+      transform: translateY(-5px) !important;
+    }
+  }
+
+  // 移动端页面容器适配
+  .page-container {
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+}
+
+// ================================
+// 布局风格适配类（独立于Ant Design主题）
+// ================================
+
+// // 深色布局风格适配
+// .xagi-layout-dark {
+//   // 导航文字颜色覆盖
+//   @navFirstMenuText: var(--xagi-layout-text-primary, #ffffff);
+//   @navFirstMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(255, 255, 255, 0.85));
+//   @navFirstMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(255, 255, 255, 0.65));
+//   @navSecondMenuTextSecondary: var(--xagi-layout-text-primary, #ffffff);
+//   @navSecondMenuTextSecondarySecondary: var(--xagi-layout-text-secondary, rgba(255, 255, 255, 0.85));
+//   @navSecondMenuTextSecondaryTertiary: var(--xagi-layout-text-tertiary, rgba(255, 255, 255, 0.65));
+
+//   // 导航背景色覆盖
+//   @navFirstMenuBg: var(--xagi-layout-bg-card, rgba(0, 0, 0, 0.45));
+//   @navSecondMenuBg: var(--xagi-layout-bg-secondary, rgba(0, 0, 0, 0.65));
+
+//   // 边框和分割线覆盖
+//   @navBorderColor: var(--xagi-layout-border-primary, rgba(255, 255, 255, 0.15));
+//   @navDividerColor: var(--xagi-layout-border-secondary, rgba(255, 255, 255, 0.1));
+
+//   @pageContainerBg: var(--xagi-color-bg-container, #ffffff);
+// }
+
+// // 浅色布局风格适配
+// .xagi-layout-light {
+//   // 使用默认的浅色变量
+//   @navFirstMenuText: var(--xagi-layout-text-secondary, #000000);
+//   @navFirstMenuTextSecondary: var(--xagi-layout-text-secondary, rgba(0, 0, 0, 0.85));
+//   @navFirstMenuTextTertiary: var(--xagi-layout-text-tertiary, rgba(0, 0, 0, 0.65));
+//   @navSecondMenuTextSecondary: var(--xagi-layout-text-secondary, #000000);
+//   @navSecondMenuTextSecondarySecondary: var(--xagi-layout-text-secondary, rgba(0, 0, 0, 0.85));
+//   @navSecondMenuTextSecondaryTertiary: var(--xagi-layout-text-tertiary, rgba(0, 0, 0, 0.65));
+
+//   // 导航背景色覆盖
+//   @navFirstMenuBg: var(--xagi-layout-bg-card, rgba(255, 255, 255, 0.65));
+//   @navSecondMenuBg: var(--xagi-layout-bg-secondary, rgba(255, 255, 255, 0.85));
+
+//   // 边框和分割线覆盖
+//   @navBorderColor: var(--xagi-layout-border-primary, rgba(0, 0, 0, 0.15));
+//   @navDividerColor: var(--xagi-layout-border-secondary, rgba(0, 0, 0, 0.1));
+
+//    @pageContainerBg: var(--xagi-layout-bg-secondary, rgba(255, 255, 255, 0.9));
+// }

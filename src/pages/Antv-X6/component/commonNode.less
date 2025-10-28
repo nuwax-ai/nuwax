@@ -1,0 +1,130 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.margin-bottom-20 {
+  /* 在这里设置你想要的样式 */
+  margin-bottom: -20px;
+}
+
+.margin-right {
+  margin-right: 6px;
+}
+
+.margin-bottom {
+  margin-bottom: 10px;
+}
+
+// 标题样式
+.node-title-style {
+  font-size: 14px;
+  font-weight: @fontWeightStrong;
+  line-height: 22px;
+  color: @BLANK04;
+}
+
+.node-title-bold-style {
+  font-size: 14px;
+  font-weight: @fontWeightStrong;
+  line-height: 22px;
+  color: @BLANK04;
+}
+
+.has-child-node {
+  // 标题样式
+  .node-title-style {
+    font-size: 14px;
+    font-weight: normal;
+    line-height: 22px;
+    color: @BLANK04;
+  }
+
+  .ant-form-item-label > label {
+    font-weight: @fontWeightStrong !important;
+  }
+}
+
+// 大模型节点
+.model-dispose-mode-style {
+  display: flex;
+  flex-direction: column;
+
+  .label-style {
+    width: 120px;
+  }
+
+  .slider-style {
+    flex: 1;
+  }
+
+  .input-style {
+    width: 100px;
+    margin-left: 30px;
+  }
+}
+
+// 模型列表
+.model-list-item-style {
+  padding: 0;
+
+  svg {
+    width: 48px;
+    height: 48px;
+    align-items: center;
+    margin-right: 10px;
+  }
+
+  .model-list-item-label {
+    font-weight: @fontWeightStrong;
+    font-size: 14px;
+    line-height: 20px;
+    margin-right: 10px;
+  }
+
+  .divider-text {
+    color: @GRAY04;
+  }
+
+  .model-list-item-desc {
+    color: @GRAY05;
+    width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-width: 300px;
+  }
+}
+
+.option-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  /* 调整复选框和文本之间的间距 */
+}
+
+.custom-dropdown .ant-select-item-option-content {
+  padding-left: 24px;
+
+  /* 调整左侧内边距以对齐文本 */
+}
+
+.custom-dropdown .ant-select-item-option-active {
+  background-color: #e6f7ff;
+
+  /* 当前激活项背景色 */
+}
+
+.custom-dropdown .ant-select-item-option-selected {
+  background-color: #b3d8ff;
+
+  /* 已选项背景色 */
+}
+
+.form-list-item-style {
+  .ant-form-item {
+    margin-bottom: 14px;
+  }
+
+  .ant-form-item :last-child {
+    margin-bottom: 0;
+  }
+}

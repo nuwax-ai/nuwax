@@ -1,0 +1,64 @@
+import agentImage from '@/assets/images/agent_image.png';
+import personalImage from '@/assets/images/personal.png';
+import teamImage from '@/assets/images/team_image.png';
+import { SpaceTypeEnum } from '@/types/enums/space';
+import { LogHeaderProps } from '@/types/interfaces/space';
+import { jumpBack } from '@/utils/router';
+import { LeftOutlined } from '@ant-design/icons';
+import classNames from 'classnames';
+import React from 'react';
+import { useParams } from 'umi';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+
+// 日志头部组件
+const LogHeader: React.FC<LogHeaderProps> = ({ agentConfigInfo }) => {
+  const { spaceId } = useParams();
+
+  return (
+    <header
+      className={cx(
+        'flex',
+        'items-center',
+        'px-16',
+        'py-16',
+        'relative',
+        styles.header,
+      )}
+    >
+      <LeftOutlined
+        className={cx('hover-box')}
+        onClick={() => jumpBack(`/space/${spaceId}/library`)}
+      />
+      {/* 智能体图标 */}
+      <img
+        className={cx('radius-6', styles['agent-logo'])}
+        src={agentConfigInfo?.icon || agentImage}
+        alt=""
+      />
+      <div className={cx('flex', 'flex-col', styles['header-info'])}>
+        {/* 智能体名称 */}
+        <h3 className={cx(styles['agent-name'])}>{agentConfigInfo?.name}</h3>
+        {/* 空间信息 */}
+        <div className={cx('flex', 'items-center', styles['user-info'])}>
+          <img
+            className={cx(styles.avatar)}
+            src={
+              agentConfigInfo?.space?.icon ||
+              agentConfigInfo?.space?.type === SpaceTypeEnum.Personal
+                ? personalImage
+                : teamImage
+            }
+            alt=""
+          />
+          <span className={cx(styles.name, 'text-ellipsis')}>
+            {agentConfigInfo?.space?.name}
+          </span>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default LogHeader;

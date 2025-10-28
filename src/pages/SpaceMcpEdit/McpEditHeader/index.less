@@ -1,0 +1,110 @@
+@import '@/styles/color.less';
+@import '@/styles/token';
+
+.header {
+  position: relative;
+  height: 56px;
+  border-bottom: 1px solid @WHITE15;
+
+  .icon {
+    color: @GRAY10;
+    font-size: 14px;
+    margin-right: 4px;
+  }
+
+  .name {
+    font-size: 14px;
+    font-weight: normal;
+    color: @BLANK04;
+    white-space: nowrap;
+  }
+
+  .deploy-status {
+    padding: 0 6px;
+    border-radius: 5px;
+    background: @GRAY06;
+    font-size: 12px;
+    color: @BLANK04;
+    white-space: nowrap;
+  }
+
+  .menus-box {
+    gap: 10px;
+    position: absolute;
+    left: 50%;
+    top: 10px;
+    height: 40px;
+    padding: 0 15px;
+    transform: translateX(-50%);
+    border-radius: 5px;
+    background: @WHITE21;
+
+    .head-menu {
+      height: 32px;
+      line-height: 32px;
+      padding: 0 15px;
+      font-size: 14px;
+      color: @BLANK04;
+      user-select: none;
+      white-space: nowrap;
+
+      &.active {
+        border-radius: 5px;
+        background: @WHITE;
+        color: @BLUE07;
+      }
+
+      &.disabled {
+        color: @GRAY05;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .extra-box {
+    gap: 20px;
+
+    .text {
+      width: 108px;
+      line-height: 24px;
+      border-radius: 5px;
+      background: @WHITE22;
+      font-size: 12px;
+      color: @ORANGE01;
+      text-align: center;
+    }
+
+    .save-btn {
+      background-color: @WHITE13;
+      color: @BLUE05;
+      border-color: @GRAY30;
+
+      &:hover {
+        background-color: @WHITE13;
+        border-color: transparent;
+        color: @BLUE05;
+        opacity: 0.8;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+
+    .extra-box {
+      gap: 8px;
+    }
+
+    .menus-box {
+      position: relative;
+      left: 0;
+      top: 5px;
+      transform: none;
+      margin-right: 10px;
+    }
+  }
+}

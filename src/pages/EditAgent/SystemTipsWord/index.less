@@ -1,0 +1,40 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  padding: @paddingXs @padding;
+  border-left: @lineWidth solid @colorSplit;
+  //隐藏滚动条
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.system-tips-wrapper {
+  padding: @paddingXs;
+}
+
+.system-tips {
+  font-size: @fontSize;
+  line-height: @lineHeight;
+  color: @colorTextSecondary;
+}
+
+.optimize-btn {
+  color: @colorText; /* 修改文本颜色 */
+  padding: 6px @paddingSm;
+  line-height: 16px;
+  height: 16px;
+  box-sizing: content-box;
+  font-size: @fontSize;
+  gap: @paddingXxs;
+}
+
+.text-area {
+  padding-left: 0;
+  padding-right: 0;
+  //隐藏滚动条
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

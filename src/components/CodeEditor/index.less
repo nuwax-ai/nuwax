@@ -1,0 +1,36 @@
+@import '@/styles/color.less';
+
+.code-editor {
+  height: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+// 代码编辑器的样式
+.monaco-container {
+  position: fixed;
+  right: 384px;
+  top: 78px;
+  left: 10px;
+  bottom: 10px;
+  background-color: #fff;
+  z-index: 101;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 16px;
+  border-radius: 15px;
+  box-shadow: 0 0 5px 0 @BLANK05;
+
+  .monaco-editor-content {
+    position: absolute;
+    right: 12px;
+    top: 60px;
+    bottom: 12px;
+    left: 12px;
+    padding: 12px 0;
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+}

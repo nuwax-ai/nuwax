@@ -1,0 +1,22 @@
+@import '@/styles/token.less';
+
+.container {
+  min-width: 30px;
+  gap: 4px;
+  color: #828894;
+  font-size: 12px;
+  font-weight: @fontWeightStrong;
+  flex: 0 1 auto; /* 等价于 flex-grow:0; flex-shrink:1; flex-basis:auto; */
+
+  .name {
+    height: 16px;
+    line-height: 16px;
+  }
+
+  .avatar {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+}

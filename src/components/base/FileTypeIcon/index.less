@@ -1,0 +1,26 @@
+.file-type-icon {
+  display: inline-block;
+  border-radius: 4px;
+  overflow: hidden;
+
+  // 图标样式
+  img {
+    object-fit: cover;
+    border-radius: 4px;
+  }
+
+  // 文件类型图标特殊样式
+  &[src*='doc.png'],
+  &[src*='excel.png'],
+  &[src*='media.png'],
+  &[src*='pdf.png'],
+  &[src*='ppt.png'] {
+    background-color: #f5f5f5;
+    border: 1px solid #e8e8e8;
+
+    img {
+      padding: 8px;
+      background-color: transparent;
+    }
+  }
+}

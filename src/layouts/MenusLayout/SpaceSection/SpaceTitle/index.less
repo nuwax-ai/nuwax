@@ -1,0 +1,22 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.header {
+  gap: @marginXs;
+  color: @navSecondMenuText;
+
+  .icon-down {
+    color: @navSecondMenuTextSecondary;
+    font-size: @fontSize;
+  }
+
+  :global {
+    .ant-typography {
+      color: @navSecondMenuText;
+    }
+
+    .anticon {
+      color: @navSecondMenuTextSecondary;
+    }
+  }
+}

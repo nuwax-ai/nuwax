@@ -1,0 +1,36 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  padding: 16px 20px;
+  border-bottom: 1px solid @GRAY08;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+  }
+
+  .box {
+    margin-left: 10px;
+
+    h3 {
+      color: @BLANK31;
+      margin-bottom: 6px;
+      font-size: 16px;
+      font-weight: @fontWeightStrong;
+      word-break: break-all;
+    }
+
+    p {
+      line-height: 20px;
+      color: @GRAY05;
+      font-size: 14px;
+      word-break: break-all;
+    }
+  }
+}

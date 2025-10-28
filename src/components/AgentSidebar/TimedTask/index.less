@@ -1,0 +1,71 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.container {
+  min-height: 250px;
+  padding: @padding 0;
+  gap: @marginXxs;
+
+  .title {
+    margin-bottom: 0;
+  }
+
+  .titleBox {
+    padding: @paddingXs;
+  }
+
+  .create {
+    color: @colorTextTertiary;
+    font-size: @fontSizeSm;
+    gap: 2px;
+    height: 20px;
+    line-height: 20px;
+    padding: 0;
+    border: none;
+
+    :global {
+      .ant-btn-icon {
+        height: 20px;
+        padding: 2px 0;
+      }
+    }
+  }
+
+  .tab {
+    :global {
+      .ant-tabs-tab {
+        font-size: @fontSize;
+        color: @colorTextSecondary;
+        line-height: @lineHeight;
+        user-select: none; // 禁止选中文字
+        padding: @paddingXs;
+        border-radius: @borderRadius;
+      }
+
+      .ant-tabs-tab-active {
+        background-color: @colorPrimaryBg;
+      }
+
+      .ant-tabs-nav {
+        &::before {
+          display: none;
+        }
+      }
+
+      .ant-tabs-tab.ant-tabs-tab-focus .ant-tabs-tab-btn {
+        outline: none;
+      }
+
+      .ant-tabs-tab-active .ant-tabs-tab-btn {
+        font-size: @fontSize;
+        font-weight: @fontWeightStrong;
+        color: @colorPrimaryText;
+        text-shadow: none;
+      }
+
+      .ant-tabs-ink-bar {
+        display: none;
+      }
+    }
+  }
+}

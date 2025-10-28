@@ -1,0 +1,19 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.user {
+  width: 32px;
+  height: 32px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-sizing: content-box;
+  border: @lineWidth solid @colorBorder;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}

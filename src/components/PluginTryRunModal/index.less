@@ -1,0 +1,84 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.modal-container {
+  width: 1000px !important;
+
+  .inner-container {
+    height: 690px;
+    padding: 0 20px 20px;
+    border-radius: 10px;
+    background: @WHITE03;
+    pointer-events: auto;
+
+    .header {
+      height: 60px;
+
+      h3 {
+        font-weight: @fontWeightStrong;
+      }
+    }
+
+    .section {
+      gap: 20px;
+
+      .p-title {
+        margin-bottom: 20px;
+        font-weight: @fontWeightStrong;
+      }
+
+      .table-wrap {
+        border: 1px solid @GRAY01;
+        border-radius: 6px;
+        overflow: hidden;
+
+        :global {
+          .ant-table-footer {
+            background-color: transparent;
+          }
+
+          .ant-table-tbody-virtual .ant-table-cell {
+            border-bottom: none;
+          }
+        }
+      }
+
+      .result-wrap {
+        color: @GRAY05;
+        background-color: @WHITE;
+
+        .loading-box {
+          gap: 10px;
+          font-size: 12px;
+        }
+
+        pre {
+          background-color: @BLANK12;
+          border-radius: 6px;
+          padding: 10px;
+          white-space: pre-wrap;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          overflow-x: auto;
+        }
+      }
+    }
+
+    //.footer {
+    //  height: 72px;
+    //
+    //  .divider-vertical {
+    //    width: 1px;
+    //    height: 20px;
+    //    margin-left: 6px;
+    //    margin-right: 16px;
+    //    background-color: @GRAY01;
+    //  }
+    //}
+  }
+
+  .param-desc {
+    color: @GRAY05;
+    font-size: 12px;
+  }
+}

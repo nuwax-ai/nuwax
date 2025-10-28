@@ -1,0 +1,37 @@
+@import '@/styles/color';
+
+.table-container {
+  background: @WHITE03;
+
+  .table-row {
+    background: @WHITE03;
+  }
+
+  .icon {
+    font-size: 12px;
+    color: @BLANK17;
+    margin-right: 8px;
+    transform: rotate(-90deg);
+    transition: transform 0.3s; // 添加过渡效果，使旋转更平滑;
+
+    &.rotate-0 {
+      transform: rotate(0deg);
+    }
+
+    &.icon-hidden {
+      visibility: hidden;
+    }
+  }
+
+  :global {
+    .ant-table-cell-with-append {
+      display: flex;
+      align-items: center;
+    }
+
+    // 覆盖header的背景色
+    .ant-table-thead > tr > th {
+      background: @WHITE03 !important;
+    }
+  }
+}

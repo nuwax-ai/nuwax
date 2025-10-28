@@ -1,0 +1,177 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  h1 {
+    text-align: center;
+    margin-bottom: 16px;
+    color: @BLANK10;
+    font-size: 28px;
+    font-weight: 600;
+  }
+
+  .description {
+    text-align: center;
+    color: @BLANK15;
+    margin-bottom: 32px;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+}
+
+.card {
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 10%);
+
+  .ant-card-head-title {
+    font-weight: 600;
+    color: @BLANK10;
+    font-size: 16px;
+  }
+
+  p {
+    color: @BLANK15;
+    margin-bottom: 16px;
+    line-height: 1.6;
+    font-size: 14px;
+  }
+}
+
+// 自定义样式示例
+.primary {
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+  color: #1890ff;
+
+  &:hover {
+    background-color: #bae7ff;
+    border-color: #69c0ff;
+  }
+}
+
+.warning {
+  background-color: #fff7e6;
+  border: 1px solid #ffd591;
+  color: #fa8c16;
+
+  &:hover {
+    background-color: #ffe7ba;
+    border-color: #ffc069;
+  }
+}
+
+.danger {
+  background-color: #fff2f0;
+  border: 1px solid #ffccc7;
+  color: #f5222d;
+
+  &:hover {
+    background-color: #ffebe6;
+    border-color: #ffa39e;
+  }
+}
+
+.info {
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  color: #52c41a;
+
+  &:hover {
+    background-color: #d9f7be;
+    border-color: #95de64;
+  }
+}
+
+.success {
+  background-color: #f0f5ff;
+  border: 1px solid #adc6ff;
+  color: #2f54eb;
+
+  &:hover {
+    background-color: #d6e4ff;
+    border-color: #85a5ff;
+  }
+}
+
+// 实际应用场景样式
+.realExample {
+  padding: 16px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  background-color: #fafafa;
+}
+
+.timedTask {
+  border: 2px dashed #722ed1;
+  padding: 6px 10px;
+
+  &:hover {
+    border-color: #531dab;
+    background-color: rgba(114, 46, 209, 4%);
+  }
+
+  &:focus {
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%);
+  }
+}
+
+.historyConversation {
+  background-color: #f0f0ff;
+  border-radius: 8px;
+
+  &:hover {
+    background-color: #e6e6ff;
+  }
+
+  &:focus {
+    background-color: #e6e6ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%);
+  }
+}
+
+/* 响应式样式 */
+@media screen and (max-width: 768px) {
+  .container {
+    padding: 16px;
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+
+    .description {
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+  }
+
+  .card {
+    margin-bottom: 16px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .container {
+    padding: 12px;
+
+    h1 {
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .description {
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+  }
+
+  .card {
+    margin-bottom: 12px;
+  }
+}

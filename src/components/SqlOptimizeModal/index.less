@@ -1,0 +1,64 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.btn {
+  // width: 100px;
+  border-radius: 10px;
+  background: #f0f0f9;
+  box-sizing: border-box;
+  border: 1px solid #e0e0e8;
+  font-family: 'Source Han Sans';
+  font-size: 14px;
+  font-weight: @fontWeightStrong;
+  line-height: normal;
+  letter-spacing: normal;
+  color: #615f5f;
+}
+
+.chat-wrapper {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  margin-top: 14px;
+}
+
+.replace-btn {
+  color: #7a33fe;
+}
+
+.footer {
+  gap: 12px;
+  padding: 10px 16px;
+  border: 1px solid @GRAY01;
+  border-radius: 20px;
+  margin-top: 20px;
+}
+
+.chat-input {
+  gap: 8px;
+
+  .input {
+    flex: 1;
+    border: none;
+    background-color: transparent;
+  }
+
+  :global {
+    .ant-input:focus {
+      border: none;
+      box-shadow: none;
+    }
+  }
+
+  .icon-box {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: @WHITE01;
+    cursor: pointer;
+  }
+
+  .send-image {
+    width: 14px;
+  }
+}

@@ -1,0 +1,77 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.modal-container {
+  width: 1000px !important;
+}
+
+.container {
+  height: 750px;
+  border-radius: @borderRadiusLg;
+  background: @colorBgContainer;
+  pointer-events: auto;
+  position: relative;
+
+  .left {
+    width: 240px;
+    padding: 20px 0;
+    background-color: @colorBgLayout;
+
+    h3 {
+      margin-bottom: 50px;
+      padding-left: @paddingLg;
+      font-size: 22px;
+      font-weight: @fontWeightStrong;
+      color: @colorText;
+    }
+
+    ul {
+      padding: 0 10px;
+
+      .item {
+        line-height: 38px;
+        padding: 0 10px;
+        margin-bottom: 10px;
+        border-radius: 10px;
+        transition: background-color 0.3s;
+
+        &:hover:not(.checked) {
+          background-color: @colorBgElevated;
+        }
+
+        &.checked {
+          background-color: @colorBgElevated;
+        }
+      }
+    }
+  }
+
+  .right {
+    background-color: @colorBgContainer;
+  }
+
+  .close {
+    position: absolute;
+    right: 24px;
+    top: 24px;
+    z-index: 2;
+  }
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  font-size: @fontSize;
+  color: @colorText;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  font-size: @fontSize;
+  color: @colorError;
+}

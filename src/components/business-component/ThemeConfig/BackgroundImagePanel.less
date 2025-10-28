@@ -1,0 +1,138 @@
+@import '@/styles/token';
+
+.backgroundImagePanel {
+  padding: 0;
+
+  .panelTitle {
+    margin: 0 0 @paddingSm 0;
+    font-size: @fontSizeLg;
+    font-weight: @fontWeightStrong;
+    color: @colorText;
+  }
+
+  h4 {
+    margin: 0 0 @paddingSm 0;
+    font-size: @fontSize;
+    color: @colorText;
+    font-weight: @fontWeightStrong;
+
+    &:not(:first-of-type) {
+      margin-top: @paddingMd;
+    }
+  }
+}
+
+.systemBackgroundsSection {
+  margin-bottom: @paddingMd;
+
+  h4 {
+    margin-bottom: @paddingSm;
+    color: @colorTextSecondary;
+    font-weight: normal;
+  }
+}
+
+.backgroundGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: @paddingXs;
+  justify-content: flex-start;
+}
+
+.backgroundOption {
+  cursor: pointer;
+  padding: @paddingXs;
+  border: 2px solid transparent;
+  border-radius: @borderRadius;
+  transition: all 0.3s @motionEaseOut;
+  overflow: hidden;
+  position: relative;
+
+  &:hover {
+    border-color: @colorPrimary;
+  }
+
+  &.active {
+    border-color: @colorPrimary;
+  }
+}
+
+.backgroundPreview,
+.uploadContainer {
+  width: 96px;
+  height: 60px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: @borderRadiusSm;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: @colorTextSecondary;
+  background-color: @colorFillQuaternary;
+}
+
+.customBackgroundsSection {
+  h4 {
+    margin-bottom: @paddingSm;
+    color: @colorTextSecondary;
+    font-weight: normal;
+  }
+}
+
+.customBackgroundGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: @paddingXs;
+  justify-content: flex-start;
+}
+
+.uploadOption {
+  cursor: pointer;
+  border: 2px dashed @colorBorder;
+  border-radius: @borderRadius;
+  transition: all 0.3s @motionEaseOut;
+  background-color: @colorFillQuaternary;
+  width: 96px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    border-color: @colorPrimary;
+    background-color: @colorPrimaryBg;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 12%);
+  }
+}
+
+.uploadButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: @paddingXs;
+  border: 2px solid transparent;
+  border-radius: @borderRadiusSm;
+
+  .uploadOption:hover & {
+    color: @colorPrimary;
+    border-color: @colorPrimary;
+    border-style: solid;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+.uploadIcon {
+  font-size: @fontSizeLg;
+  margin-bottom: @marginXxs;
+}
+
+.uploadText {
+  font-size: @fontSizeSm;
+}

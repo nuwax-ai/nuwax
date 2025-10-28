@@ -1,0 +1,50 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.run-success {
+  display: inline-block;
+  line-height: 16px;
+  gap: @marginXxs;
+  padding: @paddingXxs @paddingXs;
+  border-radius: @borderRadiusSm;
+  font-size: @fontSizeSm;
+  background-color: @colorBgContainerDisabled;
+  color: @colorTextDescription;
+
+  .status-name {
+    margin-left: @marginXxs;
+  }
+
+  .icon {
+    color: @colorSuccessText;
+    margin-left: @marginXxs;
+    font-size: @fontSizeSm;
+  }
+}
+
+.successColor {
+  color: @colorSuccessText;
+}
+
+.pop-content {
+  max-width: 500px;
+  padding: @padding;
+  color: @colorTextDescription;
+  font-size: @fontSizeSm;
+  background-color: @colorBgContainerDisabled;
+  box-sizing: border-box;
+  border-radius: @borderRadius;
+
+  .row {
+    height: 26px;
+    margin-bottom: @marginXxs;
+    gap: @marginXs;
+  }
+
+  .summary {
+    padding: @paddingXxs @paddingXs;
+    border-radius: @borderRadiusSm;
+    color: @colorSuccessText;
+    background-color: @colorSuccessBg;
+  }
+}

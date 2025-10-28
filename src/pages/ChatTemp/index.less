@@ -1,0 +1,141 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.title-box {
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  background-color: @colorBgContainer;
+
+  .title {
+    position: sticky;
+    top: 0;
+    height: 60px;
+    line-height: 60px;
+    padding: 0 60px;
+    color: @BLANK17;
+    font-size: 16px;
+    text-align: center;
+    mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
+  }
+}
+
+.main-content {
+  box-sizing: border-box;
+  //隐藏滚动条
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chat-wrapper {
+    margin: 0 auto;
+    padding-top: 30px;
+    padding-bottom: 40px - 16px;
+    box-sizing: border-box;
+
+    .loading {
+      color: @colorPrimary;
+    }
+  }
+}
+
+.chat-input-container {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  background-color: transparent;
+  border-radius: @borderRadiusLg @borderRadiusLg 0 0;
+  padding-bottom: 12px;
+  z-index: 10;
+  box-sizing: border-box;
+}
+
+.welcome-text {
+  height: 40px;
+  line-height: 40px;
+  padding: 0 60px;
+  color: @colorTextSecondary;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* 当屏幕宽度小于等于 720px 时应用的样式 */
+@media screen and (max-width: 720px) {
+  .chat-wrapper {
+    width: 100%;
+  }
+
+  html {
+    width: 100%;
+    height: 100%;
+    min-width: 100% !important;
+  }
+
+  .phone-chat-item {
+    padding: 0 15px;
+  }
+
+  .input-container {
+    display: none;
+  }
+
+  .phone-container {
+    display: block;
+    padding: 0 15px;
+    box-sizing: border-box;
+  }
+
+  .welcome-text {
+    font-size: 10px;
+  }
+}
+
+/* 当屏幕宽度大于 720px 且小于等于 900px 时应用的样式 */
+@media screen and (min-width: 721px) and (max-width: 1200px) {
+  .chat-wrapper {
+    width: 80%;
+  }
+
+  html {
+    width: 100%;
+    height: 100%;
+    min-width: 100% !important;
+  }
+
+  .input-container {
+    display: block;
+  }
+
+  .phone-container {
+    display: none;
+  }
+}
+
+/* 当屏幕宽度大于 1200px 时应用的样式 */
+@media screen and (min-width: 1200px) {
+  .chat-wrapper {
+    max-width: 800px;
+  }
+
+  html {
+    width: 100%;
+    height: 100%;
+    min-width: 100% !important;
+  }
+
+  .input-container {
+    display: block;
+  }
+
+  .phone-container {
+    display: none;
+  }
+}
+
+.captcha-button {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  visibility: hidden;
+  opacity: 0;
+}

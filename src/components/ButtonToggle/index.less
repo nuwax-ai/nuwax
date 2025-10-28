@@ -1,0 +1,135 @@
+@import '@/styles/token';
+
+.buttonToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  .toggleButton {
+    position: relative;
+    transition: all 0.2s ease-in-out;
+    border-radius: 6px;
+
+    &:not(:last-child) {
+      margin-right: 0;
+    }
+
+    // 默认状态
+    &:not(.selected) {
+      background-color: @colorBgContainer;
+      border: none;
+      color: @colorText;
+      box-shadow: none !important;
+
+      &:hover:not(.disabled) {
+        background-color: @colorBgTextHover;
+        border-color: @colorPrimaryHover;
+        color: @colorPrimaryHover;
+      }
+    }
+
+    // 选中状态
+    &.selected {
+      background-color: @colorPrimaryBg;
+      border: none;
+      color: @colorPrimary;
+      font-weight: @fontWeightStrong;
+      box-shadow: none;
+
+      &:hover:not(.disabled) {
+        background-color: @colorPrimaryBg;
+        border: none;
+        color: @colorPrimaryHover;
+      }
+
+      &:focus:not(.disabled) {
+        background-color: @colorPrimaryBg;
+        border: none;
+        color: @colorPrimaryActive;
+      }
+    }
+
+    // 禁用状态
+    &.disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+
+      &:hover {
+        background-color: inherit;
+        border-color: inherit;
+        color: inherit;
+      }
+    }
+  }
+
+  // 大小变体
+  &.size-small {
+    gap: 4px;
+
+    .toggleButton {
+      padding: 4px 8px;
+      font-size: 12px;
+      border-radius: 4px;
+    }
+  }
+
+  &.size-large {
+    gap: 12px;
+
+    .toggleButton {
+      padding: 8px 16px;
+      font-size: 16px;
+      border-radius: 8px;
+    }
+  }
+}
+
+// 紧凑模式 - 按钮之间无间隙
+.buttonToggle.compact {
+  gap: 0;
+
+  .toggleButton {
+    border-radius: 0;
+
+    &:first-child {
+      border-top-left-radius: 6px;
+      border-bottom-left-radius: 6px;
+    }
+
+    &:last-child {
+      border-top-right-radius: 6px;
+      border-bottom-right-radius: 6px;
+    }
+
+    &:not(:first-child) {
+      border-left: none;
+    }
+
+    &.selected + .toggleButton:not(.selected) {
+      border-left: 1px solid @colorPrimary;
+    }
+  }
+}
+
+// 垂直布局
+.buttonToggle.vertical {
+  flex-direction: column;
+  align-items: stretch;
+
+  .toggleButton {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .buttonToggle {
+    gap: 4px;
+
+    .toggleButton {
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+  }
+}

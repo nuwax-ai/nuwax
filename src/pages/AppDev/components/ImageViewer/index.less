@@ -1,0 +1,41 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 图片预览容器
+.imagePreviewContainer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: @colorBgContainer;
+  border: @lineWidth solid @colorBorder;
+  border-radius: 0 0 @borderRadius @borderRadius;
+  overflow: hidden;
+}
+
+.imagePreviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: @colorBgContainer;
+  border-bottom: @lineWidth solid @colorBorder;
+  padding: 8px 12px;
+  color: @colorTextBase;
+  font-size: @fontSizeSm;
+  font-weight: @fontWeightStrong;
+
+  .base64Indicator {
+    color: @colorPrimary;
+    font-size: @fontSizeSm;
+    margin-left: 8px;
+    padding: 2px 6px;
+    background: @colorPrimaryBg;
+    border-radius: @borderRadiusSm;
+    border: @lineWidth solid @colorPrimaryBorder;
+  }
+}
+
+.imagePreviewContent {
+  flex: 1;
+  background: @colorBgLayout;
+  overflow: auto;
+}

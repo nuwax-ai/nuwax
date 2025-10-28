@@ -1,0 +1,18 @@
+# frontend-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-frontend-service
+spec:
+  type: ClusterIP
+  selector:
+    app: agent-frontend
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: 443

@@ -1,0 +1,63 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.modal-body-container {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.radio-group {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+
+  :global {
+    .ant-radio-wrapper-block {
+      justify-content: flex-start;
+    }
+  }
+}
+
+.tab {
+  margin-bottom: 20px;
+
+  :global {
+    .ant-tabs-tab {
+      font-size: 14px;
+      color: @GRAY05;
+      user-select: none; // 禁止选中文字
+    }
+
+    .ant-tabs-tab.ant-tabs-tab-focus .ant-tabs-tab-btn {
+      outline: none;
+    }
+
+    .ant-tabs-tab-active .ant-tabs-tab-btn {
+      font-size: 14px;
+      font-weight: @fontWeightStrong;
+      color: @GRAY15;
+      text-shadow: none;
+    }
+
+    .ant-tabs-ink-bar {
+      background: @BLUE13;
+    }
+  }
+}
+
+.add-item-btn {
+  height: 32px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 6px;
+  color: @GRAY05;
+  background-color: @GRAY09;
+  cursor: pointer;
+  transition: opacity 0.3s;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}

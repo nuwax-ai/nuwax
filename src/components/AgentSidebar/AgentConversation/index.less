@@ -1,0 +1,60 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.container {
+  padding: @padding 0;
+  gap: @marginXxs;
+  border-bottom: @lineWidth @lineType @colorSplit;
+
+  .title {
+    margin-bottom: 0;
+  }
+
+  .titleBox {
+    padding: @paddingXs;
+  }
+
+  .more {
+    color: @colorTextTertiary;
+    font-size: @fontSizeSm;
+    gap: 2px;
+    height: 20px;
+    line-height: 20px;
+    padding: 0;
+    border: none;
+
+    :global {
+      .ant-btn-icon {
+        height: 20px;
+        padding: 2px 0;
+      }
+    }
+  }
+
+  .chat-wrapper {
+    .loading-box {
+      height: 200px;
+    }
+
+    .chat-item {
+      display: flex;
+      align-items: center;
+      gap: @marginXxs;
+      height: 22px;
+      box-sizing: content-box;
+      padding: @paddingXs;
+
+      p {
+        flex: 1;
+        font-size: @fontSize;
+        line-height: @lineHeight;
+        color: @colorTextSecondary;
+      }
+
+      .time {
+        font-size: @fontSizeSm;
+        color: @colorTextTertiary;
+      }
+    }
+  }
+}
