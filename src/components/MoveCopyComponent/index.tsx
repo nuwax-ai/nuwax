@@ -31,17 +31,36 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
   onCancel,
   onConfirm,
 }) => {
+  // 目标空间ID
   const [targetSpaceId, setTargetSpaceId] = useState<number>(0);
+  // 组件类型
+  const [componentType, setComponentType] = useState<string>('');
   const { spaceList } = useModel('spaceModel');
   // 迁移或复制的标题
   const actionText = type === ApplicationMoreActionEnum.Move ? '迁移' : '复制';
-  // 组件类型
-  const componentType =
-    mode === AgentComponentTypeEnum.Agent
-      ? '智能体'
-      : mode === AgentComponentTypeEnum.Plugin
-      ? '插件'
-      : '工作流';
+
+  useEffect(() => {
+    if (open) {
+      setTargetSpaceId(0);
+      switch (mode) {
+        case AgentComponentTypeEnum.Agent:
+          setComponentType('智能体');
+          break;
+        case AgentComponentTypeEnum.Page:
+          setComponentType('页面');
+          break;
+        case AgentComponentTypeEnum.Plugin:
+          setComponentType('插件');
+          break;
+        case AgentComponentTypeEnum.Workflow:
+          setComponentType('工作流');
+          break;
+        default:
+          setComponentType('组件');
+          break;
+      }
+    }
+  }, [mode, open]);
 
   const filterSpaceList = useMemo(() => {
     // 过滤掉当前空间的角色为普通用户且不允许开发的空间
@@ -76,12 +95,6 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
       return _spaceList;
     }
   }, [type, spaceId, spaceList, isTemplate]);
-
-  useEffect(() => {
-    if (open) {
-      setTargetSpaceId(0);
-    }
-  }, [open]);
 
   return (
     <Modal

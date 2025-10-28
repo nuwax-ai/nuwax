@@ -44,6 +44,8 @@ export enum PageDevelopMoreActionEnum {
   Auth_Config = 'Auth_Config',
   // 页面预览
   Page_Preview = 'Page_Preview',
+  // 复制到空间
+  Copy_To_Space = 'Copy_To_Space',
   // 删除
   Delete = 'Delete',
 }
