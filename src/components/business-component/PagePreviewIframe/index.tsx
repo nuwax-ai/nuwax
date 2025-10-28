@@ -184,6 +184,18 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         subtree: true,
         characterData: true,
       });
+      // 添加一个空的 div，用于触发 observer
+      // setTimeout(() => {
+      //   iframeDoc.body.appendChild(iframeDoc.createElement('div'));
+      // }, 200);
+
+      const nginxWelcomeText =
+        iframeDoc.body.querySelector('body>h1')?.textContent;
+      if (nginxWelcomeText === 'Welcome to nginx!') {
+        console.log('nginx欢迎页');
+        // 添加一个空的 div，用于触发 observer
+        iframeDoc.body.appendChild(iframeDoc.createElement('div'));
+      }
 
       // 清理
       return () => {
