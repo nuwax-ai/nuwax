@@ -1,6 +1,7 @@
 import ConditionRender from '@/components/ConditionRender';
 import CustomFormModal from '@/components/CustomFormModal';
 import LabelStar from '@/components/LabelStar';
+import SubmitButton from '@/components/SubmitButton';
 import {
   MODEL_API_PROTOCOL_LIST,
   MODEL_FUNCTION_CALL_LIST,
@@ -57,6 +58,10 @@ const CreateModel: React.FC<CreateModelProps> = ({
   const [form] = Form.useForm();
   const [visible, setVisible] = useState<boolean>(false);
   const [modelType, setModelType] = useState<ModelTypeEnum>();
+  // 检测连接加载中
+  const [loadingTestConnection, setLoadingTestConnection] =
+    useState<boolean>(false);
+  // 确认按钮加载中
   const [loading, setLoading] = useState<boolean>(false);
   // const [shouldRenderDimension, setShouldRenderDimension] = useState(false);
   // const [networkType, setNetworkType] = useState<ModelNetworkTypeEnum>(
@@ -127,6 +132,12 @@ const CreateModel: React.FC<CreateModelProps> = ({
   //   }
   // };
 
+  const handlerCheckConnection = () => {
+    setLoadingTestConnection(true);
+    console.log('检测连接');
+    setLoadingTestConnection(false);
+  };
+
   return (
     <CustomFormModal
       form={form}
@@ -134,9 +145,18 @@ const CreateModel: React.FC<CreateModelProps> = ({
       classNames={{
         content: cx(styles.container),
         header: cx(styles.header),
+        body: cx(styles.body),
       }}
       open={open}
       loading={loading}
+      footerExtra={
+        <SubmitButton
+          loading={loadingTestConnection}
+          onConfirm={handlerCheckConnection}
+          form={form}
+          okText="检测连接"
+        />
+      }
       onCancel={onCancel}
       onConfirm={handlerSubmit}
     >
@@ -254,6 +274,16 @@ const CreateModel: React.FC<CreateModelProps> = ({
             />
           </Form.Item>
         </ConditionRender>
+
+        {/* todo: 启用模型开关 */}
+        <Form.Item name="enable" label="启用">
+          <Radio.Group
+            options={[
+              { label: '是', value: 1 },
+              { label: '否', value: 0 },
+            ]}
+          />
+        </Form.Item>
 
         <Form.Item
           name="apiProtocol"

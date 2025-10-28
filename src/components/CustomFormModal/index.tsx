@@ -23,6 +23,7 @@ const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
   onCancel,
   onConfirm,
   children,
+  footerExtra,
 }) => {
   return (
     <Modal
@@ -36,6 +37,7 @@ const CustomFormModal: React.FC<PropsWithChildren<CustomFormModalProps>> = ({
           <Button className={cx(styles.btn)} type="default" onClick={onCancel}>
             取消
           </Button>
+          {footerExtra}
           <SubmitButton
             okPrefixIcon={okPrefixIcon}
             loading={loading}
