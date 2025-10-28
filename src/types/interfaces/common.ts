@@ -175,8 +175,6 @@ export interface CustomFormModalProps {
   // 确定按钮文本
   okText?: string;
   centered?: boolean;
-  // 底部额外内容
-  footerExtra?: React.ReactNode;
   onCancel: () => void;
   onConfirm: () => void;
 }

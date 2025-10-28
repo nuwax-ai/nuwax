@@ -1,14 +1,16 @@
 import ConditionRender from '@/components/ConditionRender';
-import CustomFormModal from '@/components/CustomFormModal';
 import LabelStar from '@/components/LabelStar';
-import SubmitButton from '@/components/SubmitButton';
 import {
   MODEL_API_PROTOCOL_LIST,
   MODEL_FUNCTION_CALL_LIST,
   MODEL_STRATEGY_LIST,
   MODEL_TYPE_LIST,
 } from '@/constants/library.constants';
-import { apiModelInfo, apiModelSave } from '@/services/modelConfig';
+import {
+  apiModelInfo,
+  apiModelSave,
+  apiModelTestConnectivity,
+} from '@/services/modelConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
   ModelApiProtocolEnum,
@@ -26,11 +28,13 @@ import type {
 import { customizeRequiredMark } from '@/utils/form';
 import { DeleteOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import {
+  Button,
   Form,
   FormProps,
   Input,
   InputNumber,
   message,
+  Modal,
   Radio,
   Select,
   Space,
@@ -63,10 +67,18 @@ const CreateModel: React.FC<CreateModelProps> = ({
     useState<boolean>(false);
   // 确认按钮加载中
   const [loading, setLoading] = useState<boolean>(false);
-  // const [shouldRenderDimension, setShouldRenderDimension] = useState(false);
-  // const [networkType, setNetworkType] = useState<ModelNetworkTypeEnum>(
-  //   ModelNetworkTypeEnum.Internet,
-  // );
+  // 确认按钮是否可点击
+  const [submittable, setSubmittable] = useState<boolean>(false);
+
+  // 监听表单值变化
+  const values = Form.useWatch([], { form, preserve: true });
+
+  useEffect(() => {
+    form
+      .validateFields({ validateOnly: true })
+      .then(() => setSubmittable(true))
+      .catch(() => setSubmittable(false));
+  }, [form, values]);
 
   // 查询指定模型配置信息
   const { run: runQuery } = useRequest(apiModelInfo, {
@@ -75,6 +87,19 @@ const CreateModel: React.FC<CreateModelProps> = ({
     onSuccess: (result: ModelConfigInfo) => {
       form.setFieldsValue(result);
       setModelType(result?.type);
+    },
+  });
+
+  // 测试模型连通性
+  const { run: runTestConnectivity } = useRequest(apiModelTestConnectivity, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success('模型检测连接成功');
+      setLoadingTestConnection(false);
+    },
+    onError: () => {
+      setLoadingTestConnection(false);
     },
   });
 
@@ -124,41 +149,54 @@ const CreateModel: React.FC<CreateModelProps> = ({
     form.submit();
   };
 
-  // const handleValuesChange = (changedValues: ModelFormData) => {
-  //   // const { networkType } = changedValues;
-  //   // setNetworkType(networkType);
-  //   if (action !== apiModelSave) {
-  //     setShouldRenderDimension(changedValues.type === ModelTypeEnum.Embeddings);
-  //   }
-  // };
-
+  // 检测模型连通性
   const handlerCheckConnection = () => {
     setLoadingTestConnection(true);
-    console.log('检测连接');
-    setLoadingTestConnection(false);
+    const values = form.getFieldsValue();
+
+    runTestConnectivity({
+      ...values,
+      id,
+      spaceId,
+    });
   };
 
   return (
-    <CustomFormModal
-      form={form}
+    <Modal
       title={mode === CreateUpdateModeEnum.Create ? '新增模型' : '更新模型'}
+      open={open}
       classNames={{
         content: cx(styles.container),
         header: cx(styles.header),
         body: cx(styles.body),
       }}
-      open={open}
-      loading={loading}
-      footerExtra={
-        <SubmitButton
-          loading={loadingTestConnection}
-          onConfirm={handlerCheckConnection}
-          form={form}
-          okText="检测连接"
-        />
-      }
+      destroyOnHidden
       onCancel={onCancel}
-      onConfirm={handlerSubmit}
+      footer={
+        <>
+          <Button className={cx(styles.btn)} type="default" onClick={onCancel}>
+            取消
+          </Button>
+          <Button
+            type="default"
+            loading={loadingTestConnection}
+            onClick={handlerCheckConnection}
+            className={cx(!submittable && styles['confirm-btn'], styles.btn)}
+            disabled={!submittable}
+          >
+            检测连接
+          </Button>
+          <Button
+            type="primary"
+            loading={loading}
+            onClick={handlerSubmit}
+            className={cx(!submittable && styles['confirm-btn'], styles.btn)}
+            disabled={!submittable}
+          >
+            确定
+          </Button>
+        </>
+      }
     >
       <Form
         form={form}
@@ -176,6 +214,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           type: ModelTypeEnum.Chat,
           maxTokens: 4096,
           dimension: 1536,
+          enabled: 1, // 启用
         }}
         autoComplete="off"
       >
@@ -275,12 +314,12 @@ const CreateModel: React.FC<CreateModelProps> = ({
           </Form.Item>
         </ConditionRender>
 
-        {/* todo: 启用模型开关 */}
-        <Form.Item name="enable" label="启用">
+        {/* 启用模型开关 */}
+        <Form.Item name="enabled" label="是否启用">
           <Radio.Group
             options={[
-              { label: '是', value: 1 },
-              { label: '否', value: 0 },
+              { label: '启用', value: 1 },
+              { label: '禁用', value: 0 },
             ]}
           />
         </Form.Item>
@@ -379,7 +418,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           onCancel={() => setVisible(false)}
         />
       </Form>
-    </CustomFormModal>
+    </Modal>
   );
 };
 
