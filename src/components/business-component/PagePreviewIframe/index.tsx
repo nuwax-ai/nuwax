@@ -11,13 +11,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import TurndownService from 'turndown';
 import { useModel } from 'umi';
 import styles from './index.less';
@@ -113,14 +107,14 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   }, [pagePreviewData]);
 
   // iframe 加载完成
-  const handleIframeLoad = useCallback(() => {
+  const handleIframeLoad = () => {
     setIsLoading(false);
-  }, [pagePreviewData]);
+  };
 
   // iframe 加载失败
-  const handleIframeError = useCallback(() => {
+  const handleIframeError = () => {
     setIsLoading(false);
-  }, []);
+  };
 
   const { previewPageTitle, setPreviewPageTitle } = useModel('chat');
 
@@ -130,8 +124,8 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     const iframe = iframeRef.current;
     if (!iframe) return;
     iframe.src = pageUrl; // 重新加载同一个地址，会触发 onload
-
-    iframe.onload = () => {
+    setIsLoading(true);
+    iframe.onload = async () => {
       const iframeDoc =
         iframe.contentDocument || iframe.contentWindow?.document;
       if (!iframeDoc) return;
@@ -172,6 +166,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
               requestId: pagePreviewData.request_id || '',
               html: str,
             };
+            console.log('CHART2', params);
             await apiAgentComponentPageResultUpdate(params);
           }
         }, 500);
@@ -182,6 +177,27 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         subtree: true,
         characterData: true,
       });
+      // 添加一个空的 div，用于触发 observer
+      // setTimeout(() => {
+      //   iframeDoc.body.appendChild(iframeDoc.createElement('div'));
+      // }, 200);
+
+      if (pagePreviewData?.method === 'browser_navigate_page') {
+        const nginxWelcomeText =
+          iframeDoc.body.querySelector('body>h1')?.textContent;
+
+        if (nginxWelcomeText === 'Welcome to nginx!') {
+          // 添加一个空的 div，用于触发 observer
+          // iframeDoc.body.appendChild(iframeDoc.createElement('div'));
+
+          const params = {
+            requestId: pagePreviewData?.request_id as string,
+            html: '无法读取数据',
+          };
+          console.log('CHART1', params);
+          await apiAgentComponentPageResultUpdate(params);
+        }
+      }
 
       // 清理
       return () => {
@@ -189,12 +205,12 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         clearTimeout(timer);
       };
     };
-  }, [pagePreviewData, pageUrl]);
-
-  // 重置加载状态
-  useEffect(() => {
-    setIsLoading(!pagePreviewData);
   }, [pagePreviewData]);
+
+  // // 重置加载状态
+  // useEffect(() => {
+  //   setIsLoading(!pagePreviewData);
+  // }, [pagePreviewData]);
 
   // 如果没有预览数据，不显示
   if (!pagePreviewData) {

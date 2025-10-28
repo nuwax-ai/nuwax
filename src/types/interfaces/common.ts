@@ -499,6 +499,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   wholeDisabled?: boolean;
   // 清空按钮禁用
   clearDisabled?: boolean;
+  // 清空按钮加载中
+  clearLoading?: boolean;
   visible?: boolean;
   // 发送消息后是否清空输入框, 默认true
   isClearInput?: boolean;
