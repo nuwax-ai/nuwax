@@ -285,22 +285,24 @@ const AgentDetails: React.FC = () => {
               )}
 
               {/*打开预览页面*/}
-              {!pagePreviewData && (
-                <Button
-                  type="text"
-                  className={cx(styles.sidebarButton)}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-ecosystem"
-                      className={cx(styles['icons-nav-sidebar'])}
-                    />
-                  }
-                  onClick={() => {
-                    sidebarRef.current?.close();
-                    handleOpenPreview();
-                  }}
-                />
-              )}
+              {!!agentDetail?.expandPageArea &&
+                !!agentDetail?.pageHomeIndex &&
+                !pagePreviewData && (
+                  <Button
+                    type="text"
+                    className={cx(styles.sidebarButton)}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-ecosystem"
+                        className={cx(styles['icons-nav-sidebar'])}
+                      />
+                    }
+                    onClick={() => {
+                      sidebarRef.current?.close();
+                      handleOpenPreview();
+                    }}
+                  />
+                )}
             </div>
           </div>
         </div>
