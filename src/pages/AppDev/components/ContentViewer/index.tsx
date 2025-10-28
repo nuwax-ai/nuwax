@@ -66,6 +66,8 @@ interface ContentViewerProps {
   onRestartDev?: () => void;
   /** 白屏检测回调 */
   onWhiteScreen?: () => void;
+  /** iframe 加载错误回调 */
+  onIframeError?: (error: { message: string; timestamp: number }) => void;
 }
 
 /**
@@ -100,6 +102,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   onStartDev,
   onRestartDev,
   onWhiteScreen,
+  onIframeError,
 }) => {
   // 使用 useMemo 缓存 Preview 组件，避免重新创建
   const previewComponent = useMemo(
@@ -119,6 +122,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         onStartDev={onStartDev}
         onRestartDev={onRestartDev}
         onWhiteScreen={onWhiteScreen}
+        onIframeError={onIframeError}
       />
     ),
     [
@@ -134,6 +138,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       onStartDev,
       onRestartDev,
       onWhiteScreen,
+      onIframeError,
     ],
   );
 

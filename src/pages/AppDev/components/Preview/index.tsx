@@ -33,6 +33,8 @@ interface PreviewProps {
   onRestartDev?: () => void;
   /** 白屏检测回调 */
   onWhiteScreen?: () => void;
+  /** iframe 加载错误回调 */
+  onIframeError?: (error: { message: string; timestamp: number }) => void;
 }
 
 export interface PreviewRef {
@@ -60,6 +62,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       onStartDev,
       onRestartDev,
       onWhiteScreen,
+      onIframeError,
     },
     ref,
   ) => {
@@ -359,12 +362,23 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     /**
      * iframe加载错误处理
      */
-    const handleIframeError = useCallback((...args: any[]) => {
-      setIsLoading(false);
-      setLoadError('预览加载失败，请检查开发服务器状态或网络连接');
-      console.log('iframe加载错误', args);
-      // Iframe load error
-    }, []);
+    const handleIframeError = useCallback(
+      (...args: any[]) => {
+        setIsLoading(false);
+        setLoadError('预览加载失败，请检查开发服务器状态或网络连接');
+        console.info('[Preview] iframe加载错误', args);
+
+        // 触发 iframe 错误回调
+        if (onIframeError) {
+          onIframeError({
+            message: '预览加载失败，请检查开发服务器状态或网络连接',
+            timestamp: Date.now(),
+          });
+        }
+        // Iframe load error
+      },
+      [onIframeError],
+    );
 
     // 移除脚本注入后，不再监听来自 iframe 的资源错误 postMessage
 
