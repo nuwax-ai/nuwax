@@ -1,0 +1,60 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.task-wrapper {
+  max-height: 300px;
+  gap: 5px;
+  overflow-y: auto;
+  padding-bottom: 10px;
+
+  .task-item {
+    gap: 16px;
+    padding: @paddingXs;
+    border-radius: @borderRadius;
+    transition: color 0.3s;
+
+    .topicBox {
+      min-width: 0; // 允许 flex 子项收缩到内容宽度以下
+      overflow: hidden; // 确保内容不会溢出
+    }
+
+    .iconBox {
+      gap: 16px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .topic {
+      margin-bottom: 0;
+      cursor: pointer;
+      color: @colorTextSecondary;
+    }
+
+    &:hover {
+      background-color: @colorFillTertiary;
+
+      .icon {
+        visibility: visible;
+        opacity: 1;
+      }
+    }
+
+    .time {
+      font-size: @fontSizeSm;
+      color: @colorTextTertiary;
+    }
+
+    .icon {
+      color: @colorTextTertiary;
+      visibility: hidden;
+      opacity: 0;
+      transition: visibility 0.3s, opacity 0.3s, color 0.3s;
+
+      &:hover {
+        color: @colorTextSecondary;
+      }
+    }
+  }
+}

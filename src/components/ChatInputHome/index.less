@@ -1,0 +1,194 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.chat-container {
+  width: 100%;
+  margin: 0 auto;
+  max-width: 800px;
+  gap: @marginXxs;
+  padding: @padding @padding @paddingXxs;
+  border-radius: 20px;
+  background: @colorBgContainer;
+  box-sizing: border-box;
+  transition: box-shadow 0.3s;
+  border: @lineWidth solid @colorBorderSecondary;
+  box-shadow: 0 9px 45px 0 rgba(0, 0, 0, 5%), 0 2px 10px 0 rgba(0, 0, 0, 3%),
+    0 1px 3px 0 rgba(0, 0, 0, 2%);
+
+  .input {
+    font-size: @fontSize;
+    line-height: @fontHeightSm;
+    caret-color: @colorPrimary;
+    width: 100%;
+    border: none;
+    background-color: transparent;
+    resize: none;
+    color: @colorText;
+  }
+
+  :global {
+    .ant-input-outlined:focus,
+    .ant-input-outlined:focus-within {
+      border: none;
+      box-shadow: none;
+    }
+  }
+
+  .footer {
+    gap: @marginSm;
+    width: 100%;
+
+    .svg-icon {
+      color: @colorTextDescription;
+    }
+
+    .clear {
+      color: @colorTextDescription;
+      font-size: @fontSize;
+      transition: color ease-in-out 0.2s;
+      //margin-bottom: 14px;
+
+      &.disabled {
+        cursor: not-allowed;
+        color: @colorTextDescription;
+        background-color: @colorBgContainerDisabled;
+      }
+
+      &:hover {
+        background-color: @colorPrimaryBg;
+      }
+    }
+
+    .box {
+      padding: @paddingXs;
+      border-radius: @borderRadius;
+      height: 36px;
+
+      &.plus-box {
+        color: @colorTextDescription;
+        font-size: @fontSize;
+        transition: color ease-in-out 0.2s;
+        border-radius: 50% !important;
+        height: 32px !important;
+        width: 32px !important;
+        border: 1px solid @colorSplit;
+
+        &:hover {
+          background-color: @colorPrimaryBg;
+        }
+      }
+
+      &.upload-box-disabled {
+        cursor: not-allowed;
+        color: @colorIcon !important;
+        background-color: @colorBgContainerDisabled !important;
+      }
+
+      .loading-box {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      &.send-box {
+        font-size: @fontSizeSm;
+        transition: color ease-in-out 0.2s;
+        color: @colorWhite;
+        background-color: @colorPrimary;
+        width: 36px;
+        height: 36px;
+
+        &.disabled {
+          color: @colorIcon;
+          cursor: not-allowed;
+          background-color: @colorBgContainerDisabled;
+        }
+
+        // 停止按钮样式
+        &.stop-box {
+          &.disabled {
+            cursor: not-allowed;
+            color: @colorIcon;
+            background-color: @colorBgContainerDisabled;
+          }
+
+          // 停止按钮高亮样式 - 当会话进行中且可点击时
+          &.stop-box-active {
+            background-color: @colorInfoBg;
+            color: @colorPrimary;
+            transition: background-color ease-in-out 0.2s;
+
+            &:hover:not(.disabled) {
+              background-color: @colorInfoBgHover;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 加载图标样式
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.chat-action {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%);
+
+  .to-bottom {
+    width: 44px;
+    height: 44px;
+    position: absolute;
+    bottom: 24px;
+    border: @lineWidth solid @colorSplit;
+    background-color: @colorBgContainer;
+    border-radius: 50%;
+    cursor: pointer;
+    left: 50%;
+    transform: translate(-50%);
+    display: flex;
+    align-items: center;
+    font-size: @fontSizeXl;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 25%);
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+
+    &.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+}
+
+.announcement-box {
+  font-size: @fontSizeSm;
+  line-height: @fontHeight;
+  color: @colorTextQuaternary;
+  text-align: center;
+  margin-top: @marginXs;
+}
+
+@media screen and (max-width: 720px) {
+  .chat-container {
+    max-width: 100%;
+  }
+}

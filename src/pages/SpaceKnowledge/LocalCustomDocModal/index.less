@@ -1,0 +1,96 @@
+@import '@/styles/color';
+
+.container {
+  width: 560px;
+  background-color: @WHITE12 !important;
+
+  .header {
+    background-color: @WHITE12 !important;
+  }
+
+  .body {
+    padding: 20px !important;
+  }
+
+  .gap {
+    gap: 10px;
+  }
+
+  .step-wrap {
+    width: 400px;
+    padding: 10px 16px;
+    margin: 0 auto;
+    background-color: @WHITE;
+
+    :global {
+      .ant-steps .ant-steps-item-title::after {
+        height: 0;
+      }
+    }
+  }
+
+  .fileList {
+    margin-top: 6px;
+    max-height: 160px;
+    overflow-y: auto;
+
+    .file-box {
+      position: relative;
+      height: 40px;
+      padding: 0 12px;
+      margin-top: 6px;
+      color: @BLANK03;
+      border: 1px solid @GRAY01;
+      border-radius: 6px;
+
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+  }
+
+  .box {
+    gap: 10px;
+    margin-top: 50px;
+    padding: 8px 20px;
+    background-color: @WHITE;
+
+    img {
+      width: 40px;
+      height: 40px;
+    }
+
+    h3 {
+      font-size: 14px;
+    }
+
+    .span {
+      width: 120px;
+      text-align: right;
+    }
+  }
+
+  .progress-upload-file {
+    position: absolute;
+    right: 50px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .progress-upload-file-error {
+    color: @RED01;
+  }
+
+  .progress-upload-file-success {
+    color: @GREEN02;
+  }
+
+  .progress-upload-file-success,
+  .progress-upload-file-error {
+    position: absolute;
+    right: 52px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+  }
+}

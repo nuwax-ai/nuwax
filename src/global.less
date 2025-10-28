@@ -1,0 +1,141 @@
+@import 'styles/color.less';
+@import 'styles/custom.less';
+
+html {
+  width: 100%;
+  height: 100%;
+  min-width: 1200px; //TODO 这个要和UI 确认
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto,
+    Ubuntu, Cantarell, 'Noto Sans', Arial, 'PingFang SC', 'Source Han Sans SC',
+    'Microsoft YaHei UI', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+  margin: 0;
+  padding: 0;
+  transform: translate3d(0, 0, 0);
+
+  ul,
+  li {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  a {
+    text-decoration: none; /* 取消链接默认的下划线 */
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin-bottom: 0;
+  }
+
+  p {
+    margin-bottom: 0;
+  }
+}
+
+// 滚动条
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+// 滚动条轨道
+::-webkit-scrollbar-track {
+  background: @GRAY01;
+}
+// 滚动条滑块
+::-webkit-scrollbar-thumb {
+  background: @GRAY19;
+  border-radius: 6px; /* 滚动条滑块圆角 */
+  transition: background-color 0.3s ease-in-out; /* 添加过渡动画 */
+}
+// 滚动条滑块悬停效果
+::-webkit-scrollbar-thumb:hover {
+  background: @GRAY; /* 鼠标悬停时颜色加深 */
+}
+
+@media (max-width: 768px) {
+  html {
+    min-width: unset;
+  }
+}
+
+.scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar::-webkit-scrollbar-track-piece {
+  background-color: #fff;
+}
+
+/* 滚动条的内层滑轨背景颜色 */
+
+.scrollbar::-webkit-scrollbar-track {
+  background: @GRAY01;
+}
+
+/* 滚动条的外层滑轨背景颜色 */
+
+.scrollbar::-webkit-scrollbar-thumb {
+  background: @GRAY19;
+  border-radius: 6px;
+  transition: background-color 0.3s ease-in-out; /* 添加过渡动画 */
+
+  /* 滚动条滑块圆角 */
+}
+
+/* 滚动条的内层滑块悬停效果 */
+.scrollbar::-webkit-scrollbar-thumb:hover {
+  background: @GRAY; /* 鼠标悬停时颜色进一步加深 */
+}
+
+/* 滚动条的内层滑块颜色 */
+
+.scrollbar::-webkit-scrollbar-button {
+  background-color: #fff;
+  display: none;
+}
+
+/* 「hover 时才显示滚动条，默认隐藏」 */
+.scroll-container {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+
+  /* 保持布局稳定 */
+}
+
+.scroll-container:hover {
+  overflow: auto;
+}
+
+.noselect {
+  user-select: none; /* 禁用文本选择，兼容所有浏览器 */
+}
+
+// 隐藏滚动条
+.scroll-container-hide {
+  //height: 200px;        /* 固定高度以触发滚动 */
+  overflow: auto; /* 或 overflow-y: auto; */
+  -ms-overflow-style: none; /* IE 10+ 和旧 Edge 隐藏滚动条 */
+  scrollbar-width: none; /* Firefox 隐藏滚动条 */
+
+  /* Chrome, Safari, Edge(Chromium) */
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}

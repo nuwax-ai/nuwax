@@ -1,0 +1,68 @@
+@import '@/styles/token';
+@import '@/styles/color';
+
+.container {
+  width: 100%; /* 宽度自适应 */
+  max-width: 520px;
+  max-height: 680px;
+  min-height: 680px;
+  padding: 48px 64px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 60%);
+  background: rgba(255, 255, 255, 85%);
+  box-shadow: 0 8px 48px 0 rgba(0, 0, 0, 16%);
+  backdrop-filter: blur(12px);
+
+  .form {
+    margin-top: 72px;
+  }
+
+  .title {
+    font-size: 24px;
+    font-weight: @fontWeightStrong;
+    line-height: 1.5;
+    color: @colorText;
+    text-align: center;
+  }
+
+  .sub-title {
+    margin-top: @marginLg;
+    font-size: @fontSize;
+    font-weight: @fontWeightStrong;
+    line-height: @lineHeight;
+    color: @colorTextSecondary;
+    text-align: center;
+  }
+
+  .input {
+    // height: 40px;
+    padding: 8px 16px;
+    border: none !important;
+    border-radius: 8px !important;
+    background-color: @colorFillTertiary !important;
+
+    &:focus,
+    &:focus-within {
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+    }
+  }
+
+  // 输入框自动填充样式
+  input:-webkit-autofill {
+    -webkit-text-fill-color: #000 !important; /* 保证字体颜色正常 */
+    box-shadow: 0 0 0 1000px transparent inset !important; /* 背景覆盖成透明 */
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  .login {
+    .btn {
+      height: 38px;
+      margin-top: 20px;
+      // padding: 18px;
+      border: 0;
+      // border-radius: 8px;
+    }
+  }
+}

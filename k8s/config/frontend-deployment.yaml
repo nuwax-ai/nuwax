@@ -1,0 +1,21 @@
+# frontend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-frontend-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agent-frontend
+  template:
+    metadata:
+      labels:
+        app: agent-frontend
+    spec:
+      containers:
+      - name: agent-frontend
+        image: localhost:5000/agent-platform-front:latest
+        ports:
+        - containerPort: 80
+        - containerPort: 443

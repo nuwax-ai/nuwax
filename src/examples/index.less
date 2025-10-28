@@ -1,0 +1,524 @@
+@import '@/styles/token';
+
+.examples-index {
+  padding: 24px;
+  height: 100vh;
+  background-color: var(--xagi-color-bg-layout);
+  overflow: auto;
+
+  // 页面标题区域
+  .examples-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 40px 20px;
+    background: linear-gradient(
+      135deg,
+      var(--xagi-color-primary),
+      var(--xagi-color-info)
+    );
+    border-radius: var(--xagi-border-radius-lg);
+    color: white;
+    position: relative;
+    overflow: hidden;
+    animation: fade-in-down 0.8s ease-out;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1.5" fill="white" opacity="0.2"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>')
+        repeat;
+    }
+
+    h1 {
+      color: white !important;
+      margin-bottom: 16px !important;
+      font-size: 2.5rem !important;
+      font-weight: @fontWeightStrong !important;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 20%);
+      position: relative;
+      z-index: 1;
+    }
+
+    .ant-typography {
+      color: rgba(255, 255, 255, 90%) !important;
+      font-size: 1.1rem;
+      position: relative;
+      z-index: 1;
+    }
+  }
+
+  // 卡片样式
+  .ant-card {
+    border-radius: var(--xagi-border-radius-lg);
+    box-shadow: var(--xagi-box-shadow-card);
+    border: 1px solid var(--xagi-color-border);
+    transition: all 0.3s ease;
+    animation: fade-in-up 0.6s ease-out;
+    animation-fill-mode: both;
+
+    &:hover {
+      box-shadow: var(--xagi-box-shadow-secondary);
+      transform: translateY(-2px);
+    }
+
+    &:nth-child(1) {
+      animation-delay: 0.1s;
+    }
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    .ant-card-head {
+      border-bottom: 1px solid var(--xagi-color-border);
+
+      .ant-card-head-title {
+        font-weight: @fontWeightStrong;
+        font-size: 1.1rem;
+        color: var(--xagi-color-text-heading);
+
+        .anticon {
+          margin-right: 8px;
+        }
+      }
+    }
+
+    .ant-card-body {
+      color: var(--xagi-color-text);
+    }
+  }
+
+  // 特色示例区域
+  .featured-section {
+    .ant-card-head-title {
+      .anticon {
+        color: var(--xagi-color-warning);
+      }
+    }
+  }
+
+  // 示例卡片
+  .example-card {
+    height: 100%;
+
+    &.featured-card {
+      border: 2px solid var(--xagi-color-warning);
+      position: relative;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(
+          45deg,
+          var(--xagi-color-warning),
+          var(--xagi-color-primary)
+        );
+        border-radius: var(--xagi-border-radius-lg);
+        z-index: -1;
+        opacity: 0.1;
+      }
+    }
+
+    .example-cover {
+      height: 120px;
+      background: linear-gradient(
+        135deg,
+        var(--xagi-color-fill-alter),
+        var(--xagi-color-fill-quaternary)
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--xagi-border-radius-lg) var(--xagi-border-radius-lg) 0
+        0;
+
+      .example-icon {
+        font-size: 48px;
+        color: var(--xagi-color-primary);
+        opacity: 0.8;
+        transition: all 0.3s ease;
+      }
+    }
+
+    &:hover {
+      .example-cover .example-icon {
+        transform: scale(1.1);
+        opacity: 1;
+      }
+    }
+
+    .ant-card-meta {
+      .ant-card-meta-title {
+        color: var(--xagi-color-text-heading);
+        font-weight: @fontWeightStrong;
+        margin-bottom: 8px;
+      }
+
+      .ant-card-meta-description {
+        color: var(--xagi-color-text-secondary);
+      }
+    }
+
+    .ant-card-actions {
+      border-top: 1px solid var(--xagi-color-border);
+      background: var(--xagi-color-fill-alter);
+
+      li {
+        margin: 8px 0;
+
+        .ant-btn {
+          border: none;
+          background: var(--xagi-color-primary);
+          color: white;
+          font-weight: @fontWeightStrong;
+          border-radius: var(--xagi-border-radius);
+          transition: all 0.3s ease;
+
+          &:hover {
+            background: var(--xagi-color-primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(81, 71, 255, 30%);
+          }
+        }
+      }
+    }
+  }
+
+  // 示例列表项
+  .example-list-item {
+    padding: 24px;
+    border-radius: var(--xagi-border-radius);
+    margin-bottom: 16px;
+    background: var(--xagi-color-bg-container);
+    border: 1px solid var(--xagi-color-border);
+    transition: all 0.3s ease;
+    animation: fade-in-left 0.6s ease-out;
+    animation-fill-mode: both;
+
+    &:hover {
+      box-shadow: var(--xagi-box-shadow-secondary);
+      transform: translateY(-2px);
+    }
+
+    &:nth-child(1) {
+      animation-delay: 0.1s;
+    }
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    .ant-list-item-meta {
+      .ant-list-item-meta-avatar {
+        margin-right: 20px;
+
+        .ant-avatar {
+          box-shadow: 0 4px 12px rgba(81, 71, 255, 20%);
+        }
+      }
+
+      .ant-list-item-meta-title {
+        color: var(--xagi-color-text-heading);
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+
+      .ant-list-item-meta-description {
+        color: var(--xagi-color-text-secondary);
+      }
+    }
+
+    .ant-list-item-action {
+      margin-left: 16px;
+
+      .ant-btn {
+        background: var(--xagi-color-primary);
+        border-color: var(--xagi-color-primary);
+        color: white;
+        font-weight: @fontWeightStrong;
+        border-radius: var(--xagi-border-radius);
+
+        &:hover {
+          background: var(--xagi-color-primary-hover);
+          border-color: var(--xagi-color-primary-hover);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(81, 71, 255, 30%);
+        }
+      }
+    }
+  }
+
+  // 使用指南
+  .guide-item {
+    text-align: center;
+    padding: 20px;
+    background: var(--xagi-color-fill-alter);
+    border-radius: var(--xagi-border-radius);
+    border: 1px solid var(--xagi-color-border);
+    height: 100%;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--xagi-box-shadow-secondary);
+    }
+
+    .anticon {
+      display: block;
+      margin: 0 auto 12px;
+    }
+
+    h4 {
+      color: var(--xagi-color-text-heading) !important;
+      font-weight: @fontWeightStrong !important;
+      margin-bottom: 12px !important;
+    }
+
+    .ant-typography {
+      color: var(--xagi-color-text-secondary);
+      line-height: 1.6;
+    }
+  }
+
+  // 标签样式
+  .ant-tag {
+    border-radius: var(--xagi-border-radius);
+    font-weight: @fontWeightStrong;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 10%);
+    }
+  }
+
+  // 文本样式
+  .ant-typography {
+    color: var(--xagi-color-text);
+
+    &.ant-typography-secondary {
+      color: var(--xagi-color-text-secondary) !important;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      color: var(--xagi-color-text-heading) !important;
+    }
+
+    p {
+      line-height: 1.6;
+    }
+  }
+
+  // 响应式设计
+  @media (max-width: 1200px) {
+    padding: 16px;
+
+    .examples-header {
+      padding: 30px 16px;
+
+      h1 {
+        font-size: 2rem !important;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px;
+
+    .examples-header {
+      padding: 20px 12px;
+
+      h1 {
+        font-size: 1.5rem !important;
+      }
+    }
+
+    .example-list-item {
+      padding: 16px;
+
+      .ant-list-item-meta {
+        .ant-list-item-meta-avatar {
+          margin-right: 12px;
+
+          .ant-avatar {
+            width: 48px !important;
+            height: 48px !important;
+            font-size: 18px !important;
+          }
+        }
+
+        .ant-list-item-meta-title {
+          font-size: 16px;
+        }
+      }
+
+      .ant-list-item-action {
+        margin-left: 8px;
+        margin-top: 12px;
+      }
+    }
+
+    .guide-item {
+      margin-bottom: 16px;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .examples-header {
+      h1 {
+        font-size: 1.2rem !important;
+      }
+
+      .ant-typography {
+        font-size: 0.9rem;
+      }
+    }
+
+    .example-card {
+      .example-cover {
+        height: 80px;
+
+        .example-icon {
+          font-size: 32px;
+        }
+      }
+    }
+
+    .example-list-item {
+      .ant-list-item-meta {
+        .ant-list-item-meta-avatar {
+          .ant-avatar {
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 16px !important;
+          }
+        }
+
+        .ant-list-item-meta-title {
+          font-size: 14px;
+        }
+      }
+    }
+  }
+}
+
+// 暗色主题适配
+[data-theme='dark'] {
+  .examples-index {
+    .examples-header {
+      background: linear-gradient(
+        135deg,
+        var(--xagi-color-primary),
+        var(--xagi-color-info)
+      );
+
+      &::before {
+        opacity: 0.3;
+      }
+    }
+
+    .ant-card {
+      background-color: var(--xagi-color-bg-container);
+      border-color: var(--xagi-color-border);
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(255, 255, 255, 5%);
+      }
+    }
+
+    .example-card {
+      &.featured-card {
+        border-color: var(--xagi-color-warning);
+      }
+
+      .example-cover {
+        background: linear-gradient(
+          135deg,
+          var(--xagi-color-bg-container),
+          var(--xagi-color-fill-secondary)
+        );
+      }
+
+      .ant-card-actions {
+        background: var(--xagi-color-bg-container);
+      }
+    }
+
+    .example-list-item {
+      background: var(--xagi-color-bg-container);
+      border-color: var(--xagi-color-border);
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(255, 255, 255, 5%);
+      }
+    }
+
+    .guide-item {
+      background: var(--xagi-color-bg-container);
+      border-color: var(--xagi-color-border);
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(255, 255, 255, 5%);
+      }
+    }
+  }
+}
+
+// 淡入动画
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

@@ -1,0 +1,27 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  border-left: @lineWidth solid @colorSplit;
+  padding: @paddingXs @padding;
+  //隐藏滚动条
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.text {
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @lineHeight;
+}
+
+.page-setting-item {
+  height: 40px;
+  border-radius: 3px;
+  border-bottom: 1px solid @GRAY01;
+
+  &:last-child {
+    border-bottom-color: transparent;
+  }
+}

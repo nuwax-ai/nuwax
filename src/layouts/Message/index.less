@@ -1,0 +1,35 @@
+@import '@/styles/color';
+
+.container {
+  position: absolute;
+  left: 70px !important;
+
+  .segment {
+    width: 50%;
+  }
+
+  .del-disabled {
+    color: @GRAY04;
+  }
+}
+
+.message-list {
+  width: 500px;
+  height: 500px;
+
+  :global {
+    .ds-markdown {
+      --ds-font-size-m: 12px;
+      --ds-font-size-xsp: 11px;
+      --ds-line-height-m: 22px;
+      // --ds-transition-duration: 0.2s;
+      // --ds-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+      // --ds-rgba-transparent: 255 255 255 / 0;
+      // --ds-rgb-link: var(--ds-rgb-primary);
+      // --ds-input-height-l: 44px;
+      // --ds-input-height-m: 34px;
+      // --ds-input-height-s: 30px;
+      // --ds-input-height-xs: 26px;
+    }
+  }
+}

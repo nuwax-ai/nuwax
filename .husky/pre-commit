@@ -1,0 +1,10 @@
+# 优先使用 pnpm；若未安装则回退到 npx/yarn/bun
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm run lint-staged
+elif command -v bun >/dev/null 2>&1; then
+  bun x lint-staged
+elif command -v yarn >/dev/null 2>&1; then
+  yarn lint-staged
+else
+  npx --yes lint-staged
+fi

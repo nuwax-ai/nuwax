@@ -1,0 +1,62 @@
+@import '@/styles/color';
+
+.container {
+  gap: 10px;
+  padding: 16px 8px;
+  border-bottom: 1px solid @GRAY01;
+
+  &:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+  }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+
+  .name {
+    color: @BLANK23;
+    font-size: 14px;
+  }
+
+  .content {
+    line-height: 22px;
+    color: @GRAY13;
+    font-size: 12px;
+    word-wrap: break-word;
+    word-break: break-all;
+
+    img {
+      max-width: 100%;
+    }
+
+    ol {
+      padding-inline-start: 10px;
+    }
+
+    pre {
+      box-sizing: border-box;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: @WHITE;
+      background: @BLANK26;
+      padding: 10px;
+      border-radius: 10px;
+      overflow-x: auto;
+      margin: 0 0 4px;
+
+      code {
+        color: inherit;
+        background: transparent;
+      }
+    }
+  }
+
+  .time {
+    color: @GRAY05;
+    font-size: 12px;
+  }
+}

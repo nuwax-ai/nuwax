@@ -1,0 +1,125 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+// 内容查看器容器
+.contentViewerContainer {
+  height: 100%;
+  position: relative;
+}
+
+// 预览容器
+.previewContainer {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+// 代码容器
+.codeContainer {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+// 显示状态
+.visible {
+  opacity: 1;
+  visibility: visible;
+  z-index: 1;
+}
+
+// 隐藏状态
+.hidden {
+  opacity: 0;
+  visibility: hidden;
+  z-index: 0;
+  pointer-events: none; // 防止隐藏元素接收鼠标事件
+}
+
+// 代码编辑器容器
+.codeEditorContainer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+// 文件内容预览区域
+.fileContentPreview {
+  flex: 1;
+  // height: calc(100vh - 200px);
+  min-height: 400px;
+  background: @colorBgContainer;
+  // border: 1px solid rgba(0, 0, 0, 10%);
+  // border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+// 空状态
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: @colorTextTertiary;
+  font-size: @fontSize;
+  background: #f8fafc;
+  gap: 16px;
+}
+
+// 加载和错误状态样式
+.loadingContainer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+  color: @colorTextBase;
+  gap: 16px;
+}
+
+.errorContainer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+  padding: 24px;
+  color: @colorTextBase;
+  gap: 16px;
+}
+
+// 暗色主题支持
+[data-theme='dark'] {
+  .codeEditorContainer {
+    background: @colorBgContainer;
+  }
+
+  .fileContentPreview {
+    background: @colorBgContainer;
+    border-color: @colorBorder;
+  }
+
+  .emptyState {
+    background: @colorBgContainer;
+    color: @colorTextSecondary;
+  }
+
+  .loadingContainer {
+    background: @colorBgContainer;
+    color: @colorTextBase;
+  }
+
+  .errorContainer {
+    background: @colorBgContainer;
+    color: @colorTextBase;
+  }
+}

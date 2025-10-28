@@ -1,0 +1,27 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.title-actions {
+  display: flex;
+  align-items: center;
+  margin-left: @margin;
+}
+
+// 收藏状态样式
+.collected {
+  color: @orange;
+}
+
+/* 响应式样式 */
+@media screen and (max-width: 720px) {
+  .title-actions {
+    margin-left: 0;
+    justify-content: center;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .title-actions {
+    margin-left: 0;
+  }
+}

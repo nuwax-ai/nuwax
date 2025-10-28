@@ -1,0 +1,25 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  flex: 4 1;
+  min-width: 350px;
+  border-left: @lineWidth solid @colorSplit;
+
+  .loading {
+    color: @BLUE08;
+  }
+
+  .main-content {
+    gap: 20px;
+    padding: 20px;
+
+    .chat-wrapper {
+      margin: 0 auto;
+      width: 100%;
+      max-width: 800px;
+      padding-bottom: 30px;
+      mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
+    }
+  }
+}

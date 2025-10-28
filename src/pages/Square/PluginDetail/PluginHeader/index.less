@@ -1,0 +1,117 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.header {
+  height: 56px;
+  padding: 0 10px;
+  gap: 12px;
+  border-bottom: 1px solid @WHITE07;
+
+  .icon-back {
+    color: @BLANK17;
+    font-size: 18px;
+  }
+
+  .info-author {
+    height: 26px;
+    font-size: 12px;
+    gap: 6px;
+
+    .avatar {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+    }
+
+    .author {
+      max-width: 260px;
+      color: @GRAY07;
+    }
+  }
+
+  .collect {
+    font-family: 'Alimama Agile VF';
+    font-size: 14px;
+    font-weight: normal;
+    line-height: 26px;
+    letter-spacing: 0;
+    font-variation-settings: 'opsz' auto;
+    font-feature-settings: 'kern' on;
+    color: #828694;
+    cursor: default;
+  }
+
+  .logo {
+    width: 27px;
+    height: 27px;
+    border-radius: 5px;
+    object-fit: cover;
+  }
+
+  .section {
+    gap: 4px;
+
+    .top-box {
+      gap: 10px;
+      color: @BLANK04;
+      line-height: 26px;
+
+      .name {
+        max-width: 150px;
+        font-size: 14px;
+        font-weight: bold;
+      }
+
+      .bottom-box {
+        gap: 8px;
+        font-size: 12px;
+
+        .box {
+          display: inline-block;
+          padding: 0 10px;
+          line-height: 18px;
+          border-radius: 6px;
+          background: @BLANK18;
+          color: @BLANK04;
+        }
+
+        .update-time {
+          color: @GRAY05;
+        }
+      }
+
+      .circle {
+        color: @GREEN03;
+      }
+    }
+  }
+
+  .history {
+    color: @GRAY10;
+  }
+
+  .try-btn {
+    background-color: @WHITE13;
+    color: @BLUE05;
+
+    &:hover {
+      background-color: @WHITE13 !important;
+      color: @BLUE05 !important;
+      opacity: 0.8;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .author {
+    max-width: 160px;
+  }
+
+  .update-time {
+    display: none;
+  }
+
+  .collect {
+    display: none;
+  }
+}

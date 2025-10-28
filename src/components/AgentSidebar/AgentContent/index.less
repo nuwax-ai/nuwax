@@ -1,0 +1,93 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  padding: @paddingLg 0;
+  width: 100%;
+  border-bottom: @lineWidth @lineType @colorSplit;
+
+  .avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    user-select: none;
+  }
+
+  .title {
+    // font-weight: bold;
+    // color: @GRAY21;
+    text-align: center;
+    margin: @margin 0 @marginXs 0;
+  }
+
+  .infoContainer {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: @margin;
+  }
+
+  .content {
+    text-align: center;
+    margin-bottom: 0;
+    color: @colorTextTertiary;
+  }
+
+  .from {
+    color: @colorTextTertiary;
+    text-align: center;
+  }
+
+  // 统计信息样式
+  .statistics {
+    gap: @marginLg;
+
+    .statItem {
+      gap: @marginXs;
+
+      .statIcon {
+        color: @colorText;
+      }
+
+      .statText {
+        font-size: @fontSize;
+        color: @colorTextSecondary;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .copyBtn {
+    color: @colorText;
+    line-height: 24px;
+    padding: @paddingXs @paddingSm;
+    border-radius: @borderRadius;
+    border: none;
+
+    :global {
+      .ant-btn-icon {
+        height: 20px;
+        width: 20px;
+      }
+    }
+  }
+
+  .action-box {
+    gap: 10px;
+    font-size: 20px;
+
+    .collected {
+      color: @YELLOW01;
+    }
+
+    .un-collect {
+      color: @GRAY05;
+    }
+
+    .share {
+      width: 22px;
+    }
+  }
+}

@@ -1,0 +1,36 @@
+.see-detail-modal {
+  :global {
+    .ant-modal-content {
+      padding: 16px;
+    }
+  }
+
+  .see-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 50px;
+    height: 42px;
+
+    .see-detail-header-title {
+      flex: 1;
+    }
+
+    .see-detail-header-actions {
+      :global {
+        .ant-btn .ant-btn-icon {
+          color: rgba(0, 0, 0, 45%);
+        }
+
+        .ant-btn:hover .ant-btn-icon {
+          color: rgba(0, 0, 0, 88%);
+        }
+      }
+    }
+  }
+
+  .see-detail-content {
+    height: 400px;
+    overflow: auto;
+  }
+}

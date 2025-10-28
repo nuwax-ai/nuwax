@@ -1,0 +1,155 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.title-box {
+  background-color: transparent;
+
+  .title-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 32px;
+    //padding: 12px 4px 12px 12px;
+    padding: @paddingXs @paddingLg;
+    box-sizing: content-box;
+  }
+
+  .title {
+    margin-bottom: 0;
+  }
+
+  .icons-nav-sidebar {
+    color: @colorTextTertiary;
+  }
+}
+
+.sidebarButton {
+  :global {
+    .ant-btn-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+}
+
+.main-content {
+  // padding: 0 10px;
+  height: 100%;
+  position: relative;
+  // min-width: 800px;
+  width: 100%;
+
+  .main-content-box {
+    padding: @padding @padding 0;
+    //隐藏滚动条
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    overflow-y: auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    flex: 1;
+  }
+
+  .chat-wrapper {
+    padding-bottom: 40px - 16px;
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+
+    .loading {
+      color: @colorPrimary;
+    }
+
+    .chat-inner {
+      background-color: transparent;
+      padding: 0 @paddingXs;
+    }
+
+    .suggest-item {
+      background-color: @colorBgContainer;
+
+      &:hover {
+        background-color: @colorBgContainer;
+      }
+    }
+  }
+}
+
+.chat-input-container {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background-color: transparent;
+  border-radius: @borderRadiusLg @borderRadiusLg 0 0;
+  padding-bottom: @paddingSm;
+  width: 100%;
+}
+
+.agent-sidebar {
+  position: sticky;
+  margin: 0;
+}
+
+.title-style {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 24px;
+  color: @colorTextSecondary;
+}
+
+.agent-sidebar-w {
+  position: sticky;
+  margin: 0;
+  min-width: 400px;
+}
+
+@media (max-width: 768px) {
+  .agent-sidebar {
+    display: none;
+  }
+}
+
+/* 当屏幕宽度小于等于 720px 时应用的样式 */
+@media screen and (max-width: 720px) {
+  .main-content {
+    min-width: 100%;
+
+    .main-content-box {
+      max-width: 100%;
+    }
+
+    .chat-wrapper {
+      max-width: 100%;
+    }
+  }
+
+  .title-box {
+    .title-container {
+      padding: 0 16px;
+      flex-direction: column;
+      height: auto;
+      gap: 12px;
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+
+    .title {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+  }
+}
+
+/* 当屏幕宽度小于等于 480px 时应用的样式 */
+@media screen and (max-width: 480px) {
+  .title-box {
+    .title-container {
+      padding: 0 12px;
+    }
+  }
+}

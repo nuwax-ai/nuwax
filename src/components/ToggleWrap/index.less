@@ -1,0 +1,42 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  display: flex;
+  width: 100%;
+  max-width: 434px;
+  min-width: 300px;
+  transition: all 0.3s ease;
+  border-left: @lineWidth solid @colorSplit;
+
+  &.hidden {
+    display: none;
+    width: 0;
+    overflow: hidden;
+  }
+
+  .header {
+    height: 32px;
+    padding: @paddingXs @paddingLg;
+    box-sizing: content-box;
+    border-bottom: @lineWidth solid @colorSplit;
+
+    h3 {
+      font-size: 16px;
+      color: @colorText;
+      white-space: nowrap;
+      font-weight: 600;
+      line-height: 24px;
+    }
+
+    .close {
+      margin-left: @paddingXs;
+      font-size: @fontSizeLg;
+      transition: opacity ease-in-out 0.2s;
+
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+  }
+}

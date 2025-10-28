@@ -1,0 +1,162 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.empty-box {
+  height: 200px;
+  background: #fafafa;
+  border-radius: 8px;
+
+  a {
+    color: #1890ff;
+    text-decoration: none;
+
+    &:hover {
+      color: #40a9ff;
+    }
+  }
+}
+
+.stickyContainer {
+  padding: 0 @padding;
+}
+
+.category-name {
+  margin: 30px 0 16px;
+  color: @BLANK31;
+  font-size: 16px;
+}
+
+.recommendContainer {
+  padding: @paddingSm 0;
+
+  .recommendTitle {
+    margin: 0;
+  }
+
+  .recommendDesc {
+    color: @colorTextQuaternary;
+    font-size: @fontSizeSm;
+  }
+}
+
+.category-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-content: start;
+}
+
+.dragging {
+  transform: rotate(2deg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 15%);
+  z-index: 1000;
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .category-list {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+.draggableContainer {
+  width: 100%;
+}
+
+.section {
+  // margin-bottom: 24px;
+
+  .sectionTitle {
+    padding-top: @padding;
+    color: @colorTextTertiary;
+    font-size: @fontSize;
+    line-height: 20px;
+  }
+
+  .agentGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(246px, 1fr));
+    gap: @margin;
+    padding: @padding 0;
+    align-content: start;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+  }
+}
+
+.contentContainer {
+  padding: 0 @padding;
+}
+
+.emptyContainer {
+  margin-top: @margin;
+  margin-left: @margin;
+}
+
+.activeSticky {
+  :global {
+    .ant-affix {
+      background-color: @pageContainerBg;
+      margin-left: calc(0px - @padding);
+      padding-left: @padding;
+      padding-right: @padding;
+    }
+  }
+}
+
+.agentCard {
+  transition: all 0.3s ease;
+
+  &.dragging {
+    opacity: 0.8;
+    transform: rotate(2deg) scale(1.02);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 20%);
+    z-index: 1000;
+  }
+
+  .cardContent {
+    height: 100%;
+
+    .avatarContainer {
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f5f5f5;
+
+      .avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+    }
+
+    .cardTitle {
+      font-size: 16px;
+      font-weight: @fontWeightStrong;
+      color: #262626;
+      margin-bottom: 8px;
+    }
+
+    .cardStats {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+
+      .stat {
+        color: #8c8c8c;
+        font-size: 12px;
+      }
+    }
+  }
+
+  .collectBtn {
+    &.collected {
+      color: #ff4d4f;
+    }
+  }
+}

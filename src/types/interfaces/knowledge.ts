@@ -1,0 +1,495 @@
+import type {
+  DocStatusCodeEnum,
+  KnowledgeDataTypeEnum,
+  KnowledgePubStatusEnum,
+  KnowledgeSegmentTypeEnum,
+  KnowledgeTextImportEnum,
+} from '@/types/enums/library';
+import { DocStatusEnum } from '@/types/enums/library';
+import type {
+  CustomPopoverItem,
+  FileType,
+  UploadFileInfo,
+} from '@/types/interfaces/common';
+import type { TablePageRequest } from '@/types/interfaces/request';
+import type { FormInstance, UploadFile } from 'antd';
+import { UploadChangeParam } from 'antd/es/upload';
+// 数据新增输入参数
+export interface KnowledgeConfigAddParams {
+  spaceId: number;
+  // 知识库名称
+  name: string;
+  // 知识库描述
+  description: string;
+  // 数据类型,默认文本,1:文本;2:表格
+  dataType: KnowledgeDataTypeEnum;
+  // 图标的url地址
+  icon: string;
+  // 知识库的嵌入模型ID
+  embeddingModelId: number;
+}
+
+// 知识库基础信息
+export interface KnowledgeBaseInfo extends KnowledgeConfigAddParams {
+  // 主键id
+  id: number;
+}
+
+// 数据更新输入参数
+export type KnowledgeConfigUpdateParams = KnowledgeBaseInfo;
+
+// 知识库数据列表查询
+export type KnowledgeConfigListParams = TablePageRequest<{
+  spaceId: number;
+  // 知识库名称
+  name: string;
+  // 数据类型,默认文本,1:文本;2:表格
+  dataType: KnowledgeDataTypeEnum;
+  // 问题
+  question: string;
+}>;
+
+// 知识库信息
+export interface KnowledgeInfo extends KnowledgeConfigAddParams {
+  // 主键id
+  id: number;
+  // 文件大小,单位字节byte,用于预估对应知识库的参考大小值
+  fileSize: number;
+  // 知识状态,可用值:Waiting,Published
+  pubStatus: KnowledgePubStatusEnum;
+  // 知识库的嵌入模型ID
+  embeddingModelId: number;
+  // 知识库的生成Q&A模型ID
+  chatModelId: number;
+  // 创建时间
+  created: string;
+  // 创建人id
+  creatorId: number;
+  // 创建人
+  creatorName: string;
+  // 更新时间
+  modified: string;
+  // 最后修改人id
+  modifiedId: number;
+  // 最后修改人
+  modifiedName: string;
+  // 工作流id
+  workflowId?: string;
+  // 工作流名称
+  workflowName?: string;
+  // 工作流图标
+  workflowIcon?: string;
+  // 工作流描述
+  workflowDescription?: string;
+}
+
+// 分段配置
+export interface SegmentConfigModel {
+  // 分段类型，words: 按照词数分段, delimiter: 按照分隔符分段，field: 按照字段分段,可用值:WORDS,DELIMITER
+  segment: KnowledgeSegmentTypeEnum;
+  // 分段最大字符数，选择words或delimiter时有效
+  words: number;
+  // 分段重叠字符数，建议设置words的10%-25%
+  overlaps: number;
+  // 分隔符，仅在选择delimiter时有效
+  delimiter: string;
+  // 是否去除连续空白、制表符和空行等，默认为True
+  isTrim: boolean;
+}
+
+// 知识库文档配置 - 数据更新接口
+export interface KnowledgeDocumentUpdateParams {
+  spaceId: number;
+  // 文档ID
+  docId: number;
+  // 文档名称
+  name: string;
+  // 文档URL
+  docUrl: string;
+  // 快速自动分段与清洗,true:无需分段设置,自动使用默认值
+  autoSegmentConfigFlag: boolean;
+  // 分段配置
+  segmentConfig: SegmentConfigModel;
+}
+
+// 更改文件名称输入参数
+export interface KnowledgeDocumentUpdateDocNameParams {
+  // 文档ID
+  docId: number;
+  // 文档名称
+  name: string;
+}
+
+// 知识库文档配置 - 数据列表查询
+export type KnowledgeDocumentListParams = TablePageRequest<{
+  spaceId: number;
+  // 知识库名称
+  name: string;
+  // 知识库ID
+  kbId: number;
+}>;
+
+export interface KnowledgeDocumentStatus {
+  // 知识库文档状态,ANALYZING(1, "分析中", "分析中"), ANALYZED(2, "分析成功", "分析成功"), ANALYZING_RAW(3, "分析中", "分段生成中"),ANALYZED_QA(4, "分析中", "问答生成中"),ANALYZED_EMBEDDING(5, "分析中", "向量化中"),ANALYZE_FAILED(10, "分析失败", "分析失败");
+  docStatus: DocStatusEnum;
+  // 知识库文档状态
+  docStatusCode: DocStatusCodeEnum;
+  // 知识库文档状态描述
+  docStatusDesc: string;
+  // 知识库文档状态原因
+  docStatusReason: string;
+}
+
+// 知识库文档信息
+export interface KnowledgeDocumentInfo extends KnowledgeDocumentStatus {
+  // 主键id
+  id: number;
+  // 文档所属知识库
+  kbId: number;
+  // 文档名称
+  name: string;
+  // 文件URL
+  docUrl: string;
+  // 知识状态,可用值:Waiting,Published
+  pubStatus: KnowledgePubStatusEnum;
+  // 是否已经生成Q&A
+  hasQa: boolean;
+  // 是否已经完成嵌入
+  hasEmbedding: boolean;
+  // 分段配置
+  segment: SegmentConfigModel;
+  // 所属空间ID
+  spaceId: number;
+  // 创建时间
+  created: string;
+  // 创建人id
+  creatorId: number;
+  // 创建人
+  creatorName: string;
+  // 更新时间
+  modified: string;
+  // 最后修改人id
+  modifiedId: number;
+  // 最后修改人
+  modifiedName: string;
+}
+
+// 知识库文档配置 - 自定义新增接口
+export interface KnowledgeDocumentCustomAddParams {
+  // 知识库ID
+  kbId: number;
+  // 文档名称
+  name: string;
+  // 文件内容
+  fileContent: string;
+  // 快速自动分段与清洗,true:无需分段设置,自动使用默认值
+  autoSegmentConfigFlag: boolean;
+  // 分段配置
+  segmentConfig: SegmentConfigModel;
+}
+
+// 知识库文档 - 数据新增接口
+export interface KnowledgeDocumentAddParams {
+  // 知识库ID
+  kbId: number;
+  fileList: {
+    // 文档名称
+    name: string;
+    // 文档URL
+    docUrl: string;
+    // 文件大小,单位是字节Byte
+    fileSize: number;
+  }[];
+  // 快速自动分段与清洗,true:无需分段设置,自动使用默认值
+  autoSegmentConfigFlag: boolean;
+  // 分段配置
+  segmentConfig: SegmentConfigModel;
+}
+
+// 查询文档状态输入参数
+export interface KnowledgeQueryDocStatusParams {
+  docIds: number[];
+}
+
+// 知识库分段配置 - 数据更新接口
+export interface KnowledgeRawSegmentUpdateParams {
+  spaceId: number;
+  // 主键id
+  rawSegmentId: number;
+  // 文档ID
+  docId: number;
+  // 原始文本
+  rawTxt: string;
+  // 排序索引,在归属同一个文档下，段的排序
+  sortIndex: number;
+}
+
+// 知识库分段配置 - 数据列表查询
+export type KnowledgeRawSegmentListParams = TablePageRequest<{
+  spaceId: number;
+  docId: number;
+}>;
+
+// 知识库分段配置 - 数据列表查询 分段信息
+export interface KnowledgeRawSegmentInfo {
+  id: number;
+  // 分段所属文档
+  docId: number;
+  // 原始文本
+  rawTxt: string;
+  // 知识库ID
+  kbId: number;
+  // 排序索引,在归属同一个文档下，段的排序
+  sortIndex: number;
+  // 所属空间ID
+  spaceId: number;
+  // 创建时间
+  created: string;
+  // 创建人id
+  creatorId: number;
+  // 创建人
+  creatorName: string;
+  // 更新时间
+  modified: string;
+  // 最后修改人id
+  modifiedId: number;
+  // 最后修改人
+  modifiedName: string;
+}
+
+// 知识库分段配置 - 数据新增接口
+export interface KnowledgeRawSegmentAddParams {
+  spaceId: number;
+  // 文档ID
+  docId: number;
+  // 原始文本
+  rawTxt: string;
+  // 排序索引,在归属同一个文档下，段的排序
+  sortIndex: number;
+}
+
+// 知识库问答 - 数据新增接口
+export interface KnowledgeQAUpdateParams {
+  spaceId: number;
+  // 问答ID
+  qaId: number;
+  // 文档ID
+  docId: number;
+  // 问题
+  question: string;
+  // 答案
+  answer: string;
+}
+
+// 知识库问答 - 知识库内问答查询
+export interface KnowledgeQASearchParams {
+  // 知识库ID
+  kbId: number;
+  // 问题
+  question: string;
+  // top-K值
+  topK: number;
+  // 是否忽略文档状态
+  ignoreDocStatus: boolean;
+}
+
+// 知识库问答 - 知识库内问答查询 返回的具体业务数据
+export interface KnowledgeQASearchParams {
+  // 问答ID
+  qaId: number;
+  // 所在知识库ID
+  kbId: number;
+  // 分段问题
+  question: string;
+  // 分段答案
+  answer: string;
+  // 归属分段对应的原始分段文本,可能没有
+  rawTxt: string;
+  // 得分
+  score: number;
+}
+
+// 知识库问答 - 数据列表查询输入参数
+export type KnowledgeQAListParams = TablePageRequest<{
+  // 当前页,示例值(1)
+  current: number;
+  // 分页pageSize,示例值(10)
+  pageSize: number;
+}>;
+
+// 知识库问答 - 详细信息
+export interface KnowledgeQAInfo {
+  // 主键id
+  id: number;
+  // 分段所属文档
+  docId: number;
+  // 所属原始分段ID
+  rawId: number;
+  // 问题会进行嵌入（对分段的增删改会走大模型并调用向量数据库）
+  question: string;
+  // 答案会进行嵌入（对分段的增删改会走大模型并调用向量数据库）
+  answer: string;
+  // 知识库ID
+  kbId: number;
+  // 是否已经完成嵌入
+  hasEmbedding: boolean;
+  // 所属空间ID
+  spaceId: number;
+  // 创建时间
+  created: string;
+  // 创建人id
+  creatorId: number;
+  // 创建人
+  creatorName: string;
+  // 更新时间
+  modified: string;
+  // 最后修改人id
+  modifiedId: number;
+  // 最后修改人
+  modifiedName: string;
+}
+
+// 知识库问答 - 新增请求参数
+export interface KnowledgeQAAddParams {
+  spaceId: number;
+  // 文档ID
+  docId: number;
+  // 问题
+  question: string;
+  // 答案
+  answer: string;
+}
+
+export interface EmbeddingStatusInfo {
+  // Doc ID
+  docId: number;
+  // QA数量
+  qaCount: number;
+  // QA Embedding数量
+  qaEmbeddingCount: number;
+}
+
+// 知识库详情header组件
+export interface KnowledgeHeaderProps {
+  // 文档数量
+  docCount: number;
+  knowledgeInfo?: KnowledgeInfo;
+  onEdit: () => void;
+  onPopover: (item: CustomPopoverItem) => void;
+  onQaPopover: (item: CustomPopoverItem) => void;
+  docType: number;
+  onChangeDocType: (value: number) => void;
+}
+
+// 文档列表组件
+export interface DocWrapProps {
+  currentDocId?: number;
+  loading: boolean;
+  documentList: KnowledgeDocumentInfo[];
+  onChange: (value: string) => void;
+  onClick: (info: KnowledgeDocumentInfo) => void;
+  onSetAnalyzed: (id: number, status: KnowledgeDocumentStatus) => void;
+  hasMore: boolean;
+  onScroll: () => void;
+}
+
+// 文档列表项
+export interface DocItemProps {
+  currentDocId?: number;
+  info: KnowledgeDocumentInfo;
+  onClick: (info: KnowledgeDocumentInfo) => void;
+  onSetAnalyzed: (id: number, status: KnowledgeDocumentStatus) => void;
+}
+
+// 分段信息
+export interface RawSegmentInfoProps {
+  onDel: () => void;
+  onSuccessUpdateName: (id: number, name: string) => void;
+  documentInfo?: KnowledgeDocumentInfo | null;
+}
+
+// 本地文档弹窗组件
+export interface LocalCustomDocModalProps {
+  // 知识库ID
+  id: number;
+  type?: KnowledgeTextImportEnum;
+  open: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+// 上传文档
+export interface UploadFileProps {
+  className?: string;
+  onUploadSuccess?: (info: UploadFileInfo) => void;
+  imageUrl?: string;
+  beforeUpload?: (file: FileType) => void;
+  onChange?: (info: UploadChangeParam<UploadFile>) => void;
+  multiple?: boolean;
+  height?: number | string | undefined;
+  fileList?: UploadFileInfo[];
+}
+
+// 创建设置、分段设置组件
+export interface CreateSetProps {
+  form: FormInstance;
+  autoSegmentConfigFlag: boolean;
+  onChoose: (flag: boolean) => void;
+}
+
+// 数据处理组件
+export interface DataProcessProps {
+  // 本地文档列表
+  uploadFileList: UploadFileInfo[];
+}
+
+// 文本填写组件
+export interface TextFillProps {
+  form: FormInstance;
+}
+
+// 知识库问答 - 新增请求参数
+export interface KnowledgeQaAddParams {
+  // 空间ID
+  spaceId: number;
+  // 知识库ID
+  kbId: number;
+  // 问题
+  question: string;
+  // 答案
+  answer: string;
+}
+
+// 知识库问答 - 数据列表查询输入参数
+export type KnowledgeQaListParams = TablePageRequest<{
+  // 当前页,示例值(1)
+  spaceId: number;
+  // 分页pageSize,示例值(10)
+  question: string;
+  // 知识库ID
+  kbId: number;
+}>;
+
+// 知识库问答 - 数据更新请求参数
+export interface KnowledgeQaUpdateParams {
+  // 主键id
+  id: number;
+  // 问题
+  question: string;
+  // 答案
+  answer: string;
+}
+
+// 知识库问答 - 数据删除请求参数
+export interface KnowledgeQaDeleteParams {
+  // 主键id
+  id: number;
+}
+
+// 知识库问答 - 上传QA批量excel模板请求参数
+export interface KnowledgeQaUploadParams {
+  // 文件
+  file: File;
+  // 知识库ID
+  kbId: number;
+}

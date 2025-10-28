@@ -1,0 +1,56 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.variables-box {
+  max-height: 50%;
+  border-radius: 10px;
+  background-color: @WHITE;
+  border: 1px solid @GRAY31;
+  box-sizing: border-box;
+
+  .header {
+    font-weight: @fontWeightStrong;
+    padding: 18px 20px;
+
+    .text {
+      color: @GRAY05;
+      user-select: none;
+
+      .down-icon {
+        font-size: 12px;
+        transition: transform 0.3s ease-in-out;
+
+        &.rotate-90 {
+          transform: rotate(-90deg);
+        }
+      }
+    }
+  }
+
+  .conversation-container {
+    display: flex;
+    flex-direction: column;
+    padding-top: 20px;
+    border-top: 1px solid @GRAY31;
+    overflow: hidden;
+  }
+
+  .close-form {
+    transition: height 0.3s ease-in-out;
+    height: 0;
+    overflow: hidden;
+  }
+
+  .form-box {
+    height: 100%;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0 20px;
+  }
+
+  .desc {
+    line-height: 60px;
+    padding: 0 20px;
+    color: @GRAY12;
+  }
+}

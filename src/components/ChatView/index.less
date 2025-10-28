@@ -1,0 +1,119 @@
+@import '@/styles/color';
+@import '@/styles/theme';
+@import '@/styles/token';
+
+.container {
+  // padding: 0 30px;
+  margin-bottom: @marginSm;
+  gap: @marginSm;
+  font-size: @fontSizeSm;
+
+  .avatar {
+    width: 24px;
+    height: 24px;
+    //border-radius: @borderRadiusSm;
+    border-radius: 50%;
+  }
+
+  .author {
+    line-height: 20px;
+    font-size: @fontSize;
+    color: @colorTextDescription;
+  }
+
+  .agent-title-bar {
+    display: flex;
+    align-items: center;
+    gap: @marginSm;
+  }
+
+  .attach-file-container {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .userContainer {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 0 @paddingXs;
+  }
+
+  .user-content {
+    display: inline-block;
+
+    .chat-content {
+      min-width: 80px;
+      padding: calc(@padding - 4px) @padding !important;
+      background-color: @colorBgLayout !important;
+      border-radius: 16px 0 16px 16px;
+    }
+  }
+
+  .inner-container {
+    // background-color: @WHITE04;
+    // padding: @SPACE_LG;
+    // border-radius: @BORDER_RADIUS_LG;
+    padding: 0 @paddingXs;
+
+    .think-content {
+      position: relative;
+      line-height: 28px;
+      padding: @SPACE_BASE 15px @SPACE_BASE 23px;
+      color: #626b75;
+      background-color: @CHAT_THINK_BG;
+      word-wrap: break-word;
+      word-break: break-all;
+      transition: @ANIMATION_DURATION_SLOW background
+        cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: @SPACE_SM;
+      border-radius: @BORDER_RADIUS_BASE;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: @SPACE_SM;
+        top: @SPACE_BASE;
+        bottom: @SPACE_BASE;
+        width: 1px;
+        background-color: @CHAT_THINK_BORDER;
+        border-radius: 2px;
+      }
+    }
+  }
+
+  // 聊天内容
+  .chat-content {
+    display: inline-block;
+    // color: @GRAY13;
+    word-wrap: break-word;
+    word-break: break-all;
+    padding: @padding 0;
+  }
+
+  .user-action-box {
+    // height: 32px;
+    padding: @paddingXs 0;
+    justify-content: flex-end;
+
+    .copy-btn {
+      color: @colorTextDescription;
+      font-size: @fontSizeSm;
+
+      .copy-image {
+        width: 16px;
+        height: 16px;
+        margin-right: @marginXxs;
+      }
+    }
+  }
+}
+
+@media (max-width: @SCREEN_MD) {
+  .container {
+    padding: 0 3px;
+  }
+}

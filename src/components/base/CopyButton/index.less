@@ -1,0 +1,23 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.copy-btn {
+  color: @colorTextDescription;
+  font-size: @fontSizeSm;
+  transition: color 0.2s ease-in-out;
+  user-select: none;
+
+  &:hover:not(.disabled) {
+    color: @colorText;
+  }
+
+  &.disabled {
+    color: @colorTextDisabled;
+    cursor: not-allowed;
+  }
+}
+
+// 图标样式
+.copy-image {
+  margin-right: @marginXxs;
+}

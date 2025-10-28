@@ -1,0 +1,15 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  .prompt-editor-provider {
+    border: 0.5px solid @colorBorderSecondary;
+    border-radius: @borderRadius;
+    height: 100px;
+
+    &:hover,
+    &:focus {
+      border-color: @colorPrimary;
+    }
+  }
+}

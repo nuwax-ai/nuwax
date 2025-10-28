@@ -1,0 +1,100 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.header {
+  position: relative;
+  height: 72px;
+  padding: 0 10px;
+  gap: 12px;
+  border-bottom: 1px solid @WHITE07;
+
+  .icon-back {
+    color: @BLANK17;
+    font-size: 18px;
+  }
+
+  .logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 5px;
+    object-fit: cover;
+  }
+
+  .section {
+    gap: 4px;
+
+    .top-box {
+      gap: 10px;
+      color: @BLANK04;
+
+      .name {
+        max-width: 200px;
+        font-size: 14px;
+        font-weight: @fontWeightStrong;
+      }
+
+      .circle {
+        color: @GREEN03;
+      }
+    }
+
+    .bottom-box {
+      gap: 8px;
+      font-size: 12px;
+
+      .box {
+        display: inline-block;
+        padding: 0 10px;
+        line-height: 18px;
+        border-radius: 6px;
+        background: @BLANK18;
+        color: @BLANK04;
+      }
+
+      .update-time {
+        color: @GRAY05;
+      }
+    }
+  }
+
+  .segment {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate3d(-50%, -50%, 0);
+
+    :global {
+      .ant-segmented-item {
+        font-weight: @fontWeightStrong;
+      }
+
+      .ant-segmented-item-selected {
+        color: @BLUE07;
+      }
+
+      .ant-segmented-item-label {
+        display: flex;
+        align-items: center;
+
+        .ant-segmented-item-icon {
+          display: flex;
+        }
+      }
+    }
+  }
+
+  .history {
+    color: @GRAY10;
+  }
+
+  .try-btn {
+    background-color: @WHITE13;
+    color: @BLUE05;
+
+    &:hover {
+      background-color: @WHITE13 !important;
+      color: @BLUE05 !important;
+      opacity: 0.8;
+    }
+  }
+}

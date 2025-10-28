@@ -1,0 +1,39 @@
+@import '@/styles/color';
+
+.container {
+  display: inline-block;
+  line-height: 0;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+
+  .file-box {
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
+
+    &:hover {
+      .mask {
+        visibility: visible;
+      }
+    }
+
+    .mask {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(22, 22, 26, 30%);
+      color: @WHITE;
+      font-size: 20px;
+      transition: visibility 0.15s;
+      visibility: hidden;
+    }
+
+    .image {
+      width: 100%;
+      height: 100%;
+    }
+  }
+}

@@ -1,0 +1,63 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  background-image: @backgroundImage;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  transition: background-image 0.3s ease;
+
+  .title-style {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    color: @colorText;
+  }
+
+  .edit-content {
+    // 隐藏滚动条
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .section {
+    // gap: 20px;
+    overflow-x: auto;
+    border-radius: @pageContainerBorderRadius;
+    border: @lineWidth solid @colorSplit;
+    margin: 0 @marginSm @marginSm;
+    background-color: @colorBgContainer;
+
+    .edit-info {
+      flex: 6;
+      min-width: 680px;
+      // background-color: @WHITE10;
+
+      .h-line {
+        width: @lineWidth;
+        height: calc(100% - 20px);
+        margin-top: 10px;
+        background-color: @colorSplit;
+      }
+    }
+  }
+
+  :global {
+    // 风格2的适配
+    .xagi-nav-style2 {
+      margin: 0;
+      border-radius: 0;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    .section {
+      overflow-x: auto;
+    }
+  }
+}

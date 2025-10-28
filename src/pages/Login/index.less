@@ -1,0 +1,95 @@
+@import '@/styles/token';
+
+.login-form-box {
+  width: 100%; /* 宽度自适应 */
+  max-width: 520px;
+  max-height: 680px;
+  min-height: 680px;
+  height: 100%;
+  padding: 48px 64px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 60%);
+  background: rgba(255, 255, 255, 85%);
+  box-shadow: 0 8px 48px 0 rgba(0, 0, 0, 16%);
+  backdrop-filter: blur(12px);
+  overflow: auto;
+
+  .current-input {
+    padding: 0 !important;
+  }
+
+  :global {
+    .ant-input-group-addon,
+    .ant-input,
+    .ant-btn {
+      border: 0 !important;
+      border-radius: 8px;
+      padding: 8px;
+
+      &:focus {
+        border: 0 !important;
+        box-shadow: none !important;
+      }
+    }
+
+    .ant-input-group-addon {
+      padding-right: 0;
+      background: transparent !important;
+    }
+
+    // 输入框自动填充样式
+    input:-webkit-autofill {
+      -webkit-text-fill-color: #000 !important; /* 保证字体颜色正常 */
+      box-shadow: 0 0 0 1000px transparent inset !important; /* 背景覆盖成透明 */
+      transition: background-color 5000s ease-in-out 0s;
+    }
+  }
+
+  .input {
+    padding: 8px 16px;
+    border: none !important;
+    border-radius: 8px !important;
+    background-color: @colorFillTertiary !important;
+
+    &:focus,
+    &:focus-within {
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+    }
+
+    :global {
+      .ant-input {
+        background-color: transparent !important;
+      }
+    }
+  }
+
+  // Input 输入框样式定制
+  .form {
+    .login {
+      padding-top: 20px;
+    }
+
+    .icon {
+      display: inline-block;
+      padding: 5px 15px 5px 5px;
+      border-right: 1px solid rgba(12, 20, 102, 12%);
+      color: rgba(0, 0, 0, 70%);
+    }
+  }
+
+  .segmented {
+    height: 38px;
+
+    :global {
+      .ant-segmented-item-label {
+        line-height: 36px;
+      }
+    }
+  }
+
+  .btn {
+    height: 38px;
+  }
+}

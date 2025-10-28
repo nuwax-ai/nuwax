@@ -1,0 +1,42 @@
+@import '@/styles/color';
+
+.file-info {
+  height: 40px;
+  padding: 0 10px;
+  gap: 6px;
+  margin-bottom: 4px;
+  color: @BLANK04;
+  font-size: 14px;
+  transition: background-color 0.3s;
+  cursor: default;
+
+  &:hover {
+    background-color: @GRAY01;
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &.active {
+    background-color: @GRAY01;
+  }
+
+  .analyzing {
+    color: @WHITE03;
+    font-size: 12px;
+    display: inline-block;
+    padding: 4px 6px;
+    background-color: @YELLOW01;
+    border-radius: 4px;
+    transform: scale(0.95);
+
+    &.analyzing-success {
+      background-color: @GREEN;
+    }
+  }
+
+  .retry-btn {
+    font-size: 12px;
+  }
+}

@@ -1,0 +1,69 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.mcp-tools-style {
+  padding-left: 65px + 16px;
+  padding-right: @padding;
+  border-bottom: @lineWidth solid @colorSplit;
+}
+
+.mcp-tools-item-style {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  padding: 12px 0;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: @lineWidth solid @colorSplit;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.add-button {
+  background: @colorPrimaryBg !important;
+
+  &.add-button-added {
+    background: transparent !important;
+    color: @colorText !important;
+    border-color: transparent !important;
+  }
+}
+
+.mcp-tools-item-content-style {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0; // 关键：允许 flex 子元素收缩，使文本截断生效
+}
+
+.mcp-tools-item-name-style {
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  color: @colorText;
+  line-height: @lineHeight;
+  margin-bottom: @marginXxs;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%; // 确保占满父容器宽度
+}
+
+.mcp-tools-item-description-style {
+  font-size: @fontSizeSm;
+  color: @colorText;
+  line-height: @lineHeight;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%; // 确保占满父容器宽度
+}
+
+.mcp-tools-item-button-style {
+  margin-left: 12px;
+  margin-top: 6px;
+}

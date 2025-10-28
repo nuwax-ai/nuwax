@@ -1,0 +1,98 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  padding: 16px 24px;
+
+  /* 隐藏滚动条但保持滚动功能 */
+  //&::-webkit-scrollbar {
+  //  width: 0;
+  //  background: transparent;
+  //}
+
+  .header {
+    margin-bottom: 30px;
+    padding: 30px 60px;
+    z-index: 990;
+    border-radius: 20px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    h3 {
+      margin-bottom: 30px;
+      font-size: 32px;
+      font-weight: @fontWeightStrong;
+      color: @WHITE;
+    }
+
+    p {
+      line-height: 36px;
+      font-size: 24px;
+      color: @GRAY05;
+    }
+  }
+
+  .title-box {
+    margin-bottom: 20px;
+
+    .theme-title {
+      font-size: 18px;
+      color: @BLANK04;
+    }
+  }
+
+  .search-input {
+    width: 200px;
+  }
+
+  .min-height-300 {
+    min-height: 300px;
+  }
+
+  .list-section {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+
+    /* 关键修复：确保内容从顶部开始排列，避免不均匀的间距分布 */
+    align-content: start;
+  }
+
+  @media (min-width: 1200px) {
+    .list-section {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .list-section {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 36px 12px 24px;
+
+    .header {
+      padding: 20px;
+      border-radius: 12px;
+
+      h3 {
+        margin-bottom: 20px;
+        font-size: 22px;
+      }
+
+      p {
+        line-height: 22px;
+        font-size: 16px;
+      }
+    }
+
+    .list-section {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+  }
+}

@@ -1,0 +1,528 @@
+@import '@/styles/token';
+
+/**
+ * 导航组件示例样式
+ * 使用导航相关的CSS变量token
+ */
+
+.navigation-example {
+  display: flex;
+  height: 100vh;
+  position: relative;
+  background-image: var(
+    --xagi-nav-background-image,
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:rgba(81,71,255,0.1);stop-opacity:1" /><stop offset="100%" style="stop-color:rgba(81,71,255,0.05);stop-opacity:1" /></linearGradient></defs><rect width="100" height="100" fill="url(%23grad1)"/></svg>')
+  );
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+
+  // 第一级导航
+  .first-menu {
+    width: @navFirstMenuWidth;
+    background: @navFirstMenuBg;
+    border-right: 1px solid @navBorderColor;
+    box-shadow: @navFirstMenuShadow;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+
+    &.expanded {
+      width: @navFirstMenuWidthExpanded;
+    }
+
+    .nav-header {
+      padding: 16px;
+      border-bottom: 1px solid @navDividerColor;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 64px;
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+
+        .logo-icon {
+          font-size: 24px;
+          color: @colorPrimary;
+        }
+
+        .logo-text {
+          font-size: @navFirstMenuFontSize;
+          font-weight: @fontWeightStrong;
+          color: @navFirstMenuText;
+          white-space: nowrap;
+          opacity: 1;
+          transition: opacity 0.3s ease;
+        }
+      }
+
+      .toggle-btn {
+        cursor: pointer;
+        padding: 4px;
+        border-radius: @borderRadius;
+        color: @navFirstMenuTextSecondary;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: @navItemHoverBg;
+          color: @navFirstMenuText;
+        }
+      }
+    }
+
+    .nav-search {
+      padding: 12px 16px;
+      border-bottom: 1px solid @navDividerColor;
+
+      .search-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: @borderRadius;
+        cursor: pointer;
+        color: @navFirstMenuTextSecondary;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: @navItemHoverBg;
+          color: @navFirstMenuText;
+        }
+      }
+
+      .search-input {
+        .ant-input {
+          background: @currentStyleBgInput !important;
+          border-color: @navBorderColor !important;
+          color: @navFirstMenuText !important;
+
+          &::placeholder {
+            color: @navFirstMenuTextSecondary !important;
+          }
+
+          &:hover,
+          &:focus {
+            border-color: @colorPrimary !important;
+          }
+        }
+      }
+    }
+
+    .nav-menu {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+
+      .custom-menu {
+        background: transparent !important;
+        border: none !important;
+        color: @navFirstMenuText !important;
+
+        .ant-menu-item,
+        .ant-menu-submenu-title {
+          margin: 2px 8px !important;
+          width: calc(100% - 16px) !important;
+          border-radius: @borderRadius !important;
+          color: @navFirstMenuText !important;
+          font-size: @navFirstMenuFontSize !important;
+
+          &:hover {
+            background: @navItemHoverBg !important;
+            color: @navFirstMenuText !important;
+          }
+
+          &.ant-menu-item-selected,
+          &.ant-menu-submenu-selected {
+            background: @navItemSelectedBg !important;
+            color: @colorPrimary !important;
+          }
+
+          .ant-menu-item-icon,
+          .ant-menu-submenu-arrow {
+            color: inherit !important;
+          }
+        }
+
+        .ant-menu-submenu-open > .ant-menu-submenu-title {
+          background: @navItemActiveBg !important;
+        }
+
+        // 子菜单样式
+        .ant-menu-sub {
+          background: @currentStyleBgSecondary !important;
+          border-radius: @borderRadius !important;
+          margin: 4px 8px !important;
+          width: calc(100% - 16px) !important;
+
+          .ant-menu-item {
+            margin: 2px 4px !important;
+            width: calc(100% - 8px) !important;
+            padding-left: 40px !important;
+            color: @navFirstMenuTextSecondary !important;
+
+            &:hover {
+              background: @navItemHoverBg !important;
+              color: @navFirstMenuText !important;
+            }
+
+            &.ant-menu-item-selected {
+              background: @navItemSelectedBg !important;
+              color: @colorPrimary !important;
+            }
+          }
+        }
+      }
+    }
+
+    .nav-footer {
+      padding: 16px;
+      border-top: 1px solid @navDividerColor;
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+
+        .user-details {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+
+          .username {
+            color: @navFirstMenuText !important;
+            font-size: @navFirstMenuFontSize !important;
+            font-weight: @fontWeightStrong;
+          }
+
+          .user-role {
+            color: @navFirstMenuTextSecondary !important;
+            font-size: 12px;
+          }
+        }
+      }
+
+      .nav-actions {
+        .action-icon {
+          color: @navFirstMenuTextSecondary;
+          cursor: pointer;
+          transition: color 0.3s ease;
+
+          &:hover {
+            color: @navFirstMenuText;
+          }
+        }
+      }
+    }
+
+    // 折叠状态下的样式调整
+    &.collapsed {
+      .nav-header .logo .logo-text {
+        opacity: 0;
+      }
+
+      .nav-footer .user-details {
+        display: none;
+      }
+
+      .nav-actions {
+        display: none;
+      }
+    }
+  }
+
+  // 第二级导航
+  .second-menu {
+    width: 240px;
+    background: @navSecondMenuBg;
+    border-right: 1px solid @navBorderColor;
+    box-shadow: @navSecondMenuShadow;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(8px);
+
+    .second-menu-header {
+      padding: 20px 16px 16px;
+      border-bottom: 1px solid @navDividerColor;
+
+      .menu-title {
+        display: block;
+        color: @navSecondMenuTextSecondary !important;
+        font-size: @fontSize !important;
+        font-weight: @fontWeightStrong;
+        margin-bottom: 4px;
+      }
+
+      .menu-subtitle {
+        color: @navSecondMenuTextSecondarySecondary !important;
+        font-size: 12px !important;
+      }
+    }
+
+    .second-menu-content {
+      flex: 1;
+      padding: 8px 0;
+      overflow-y: auto;
+
+      .second-custom-menu {
+        background: transparent !important;
+        border: none !important;
+
+        .ant-menu-item {
+          margin: 2px 8px !important;
+          width: calc(100% - 16px) !important;
+          border-radius: @borderRadius !important;
+          color: @navSecondMenuTextSecondary !important;
+          font-size: @navSecondMenuFontSize !important;
+
+          &:hover {
+            background: @navItemHoverBg !important;
+            color: @navSecondMenuTextSecondary !important;
+          }
+
+          &.ant-menu-item-selected {
+            background: @navItemSelectedBg !important;
+            color: @colorPrimary !important;
+          }
+
+          .ant-menu-item-icon {
+            color: @navSecondMenuTextSecondaryTertiary !important;
+          }
+
+          &:hover .ant-menu-item-icon,
+          &.ant-menu-item-selected .ant-menu-item-icon {
+            color: inherit !important;
+          }
+        }
+      }
+    }
+
+    .second-menu-footer {
+      padding: 16px;
+      border-top: 1px solid @navDividerColor;
+      text-align: center;
+
+      .footer-text {
+        color: @navSecondMenuTextSecondaryTertiary !important;
+        font-size: 12px !important;
+      }
+    }
+  }
+
+  // 主内容区域
+  .main-content {
+    flex: 1;
+    padding: 24px;
+    background: rgba(255, 255, 255, 70%);
+    overflow-y: auto;
+
+    .content-header {
+      margin-bottom: 24px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 65%);
+      border-radius: @borderRadiusLG;
+      border: 1px solid rgba(0, 0, 0, 15%);
+      backdrop-filter: blur(10px);
+
+      .content-title {
+        display: block;
+        color: #000 !important;
+        font-size: 24px !important;
+        font-weight: @fontWeightStrong;
+        margin-bottom: 8px;
+      }
+
+      .content-description {
+        color: rgba(0, 0, 0, 85%) !important;
+        font-size: 14px !important;
+      }
+    }
+
+    .content-body {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+
+      .demo-card {
+        padding: 20px;
+        background: rgba(255, 255, 255, 65%);
+        border-radius: @borderRadius;
+        border: 1px solid rgba(0, 0, 0, 15%);
+        backdrop-filter: blur(8px);
+
+        h3 {
+          color: #000 !important;
+          margin-bottom: 16px;
+          font-size: 16px;
+          font-weight: @fontWeightStrong;
+        }
+
+        ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+
+          li {
+            padding: 8px 0;
+            color: rgba(0, 0, 0, 85%);
+            border-bottom: 1px solid rgba(0, 0, 0, 10%);
+
+            &:last-child {
+              border-bottom: none;
+            }
+
+            code {
+              background: rgba(255, 255, 255, 85%);
+              padding: 2px 6px;
+              border-radius: 4px;
+              font-family: @fontFamilyCode;
+              color: @colorPrimary;
+              font-size: 12px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 深色风格适配
+.xagi-dark-style {
+  .navigation-example {
+    .main-content {
+      background: rgba(0, 0, 0, 70%) !important;
+    }
+
+    .content-header {
+      background: rgba(0, 0, 0, 45%) !important;
+      border-color: rgba(255, 255, 255, 15%) !important;
+
+      .content-title {
+        color: #fff !important;
+      }
+
+      .content-description {
+        color: rgba(255, 255, 255, 85%) !important;
+      }
+    }
+
+    .demo-card {
+      background: rgba(0, 0, 0, 45%) !important;
+      border-color: rgba(255, 255, 255, 15%) !important;
+
+      h3 {
+        color: #fff !important;
+      }
+
+      ul li {
+        color: rgba(255, 255, 255, 85%) !important;
+        border-bottom-color: rgba(255, 255, 255, 10%) !important;
+
+        code {
+          background: rgba(255, 255, 255, 8%) !important;
+        }
+      }
+    }
+
+    .first-menu {
+      .custom-menu {
+        .ant-menu-item,
+        .ant-menu-submenu-title {
+          &::after {
+            border-right-color: transparent !important;
+          }
+        }
+      }
+    }
+
+    // 滚动条样式
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 10%);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 30%);
+      border-radius: 3px;
+
+      &:hover {
+        background: rgba(255, 255, 255, 50%);
+      }
+    }
+  }
+}
+
+// 浅色风格适配
+.xagi-light-style {
+  .navigation-example {
+    // 滚动条样式
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 10%);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 30%);
+      border-radius: 3px;
+
+      &:hover {
+        background: rgba(0, 0, 0, 50%);
+      }
+    }
+  }
+}
+
+// 响应式适配
+@media (max-width: 768px) {
+  .navigation-example {
+    .second-menu {
+      display: none; // 移动端隐藏二级导航
+    }
+
+    .first-menu {
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: 100vh;
+      z-index: 1001;
+
+      &.collapsed {
+        transform: translateX(-100%);
+      }
+    }
+
+    .main-content {
+      margin-left: 0;
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .navigation-example {
+    .main-content {
+      padding: 12px;
+
+      .content-body {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+    }
+  }
+}

@@ -1,0 +1,130 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.header {
+  // gap: 10px;
+  padding: @paddingSm @padding @paddingSm 0;
+  // border-bottom: 1px solid @BLANK01;
+  overflow-x: auto;
+
+  .icon-backward {
+    padding: @paddingXxs @paddingXs @paddingXxs @paddingXs;
+    margin-right: @marginXxs;
+    color: @navFirstMenuTextSecondary;
+  }
+
+  .avatar {
+    width: 27px;
+    height: 27px;
+    border-radius: @borderRadius;
+  }
+
+  .header-info {
+    padding-left: @paddingSm;
+
+    .h-title {
+      max-width: 360px;
+      margin-right: @marginSm;
+      font-size: 16px;
+      font-weight: @fontWeightStrong;
+      line-height: 24px;
+      color: @navFirstMenuTextSecondary;
+      white-space: nowrap;
+    }
+
+    .edit-ico {
+      color: @navFirstMenuTextSecondary;
+      font-size: 16px;
+    }
+
+    .agent-rel-info {
+      gap: @marginXs;
+      color: @colorTextTertiary;
+      font-size: 12px;
+      margin-right: 10px;
+      line-height: 24px;
+
+      img {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        object-fit: cover;
+      }
+
+      .space-name {
+        max-width: 200px;
+        color: @navFirstMenuTextSecondary;
+      }
+    }
+  }
+
+  .save-time-box {
+    gap: @paddingXs;
+    color: @navFirstMenuTextSecondary;
+
+    .save-time {
+      font-size: 12px;
+      font-weight: @fontWeightStrong;
+      line-height: 19px;
+    }
+
+    .volcano {
+      color: @colorWarningText;
+      background: @colorWarningBg;
+      padding: 4px 8px;
+    }
+
+    :global {
+      .ant-tag {
+        margin-inline-end: 0;
+      }
+    }
+  }
+
+  .fold-box {
+    //margin: 0 @marginLg;
+    //margin-left: @marginLg;
+    padding: 6px @paddingSm;
+
+    .fold-btn {
+      gap: @paddingXs;
+      color: @navFirstMenuTextSecondary;
+      font-size: @fontSize;
+    }
+  }
+
+  .header-title {
+    top: 50%;
+    left: 50%;
+    transform: translate3d(-50%, -50%, 0);
+    font-size: 18px;
+    font-weight: @fontWeightStrong;
+    color: @BLANK04;
+  }
+
+  .right-box {
+    margin-left: auto;
+
+    .publish-btn {
+      margin-left: @marginXs;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .agent-rel-info {
+    display: none;
+  }
+
+  .header-title {
+    display: none;
+  }
+
+  .fold {
+    display: none;
+  }
+
+  .ico {
+    display: none;
+  }
+}

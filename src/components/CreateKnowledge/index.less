@@ -1,0 +1,25 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.header {
+  gap: 28px;
+  margin: 30px 0;
+}
+
+.box {
+  gap: 4px;
+  width: 130px;
+  height: 70px;
+  border-radius: 10px;
+  background: @WHITE06;
+  box-sizing: border-box;
+  border: 1px solid @GRAY04;
+  font-size: 18px;
+  font-weight: @fontWeightStrong;
+  color: @BLANK04;
+  transition: border-color 0.3s;
+
+  &.active {
+    border-color: @BLUE02;
+  }
+}

@@ -1,0 +1,35 @@
+@import '@/styles/token';
+
+.mobileMenuBtn {
+  position: fixed;
+  top: 10px;
+  // left 位置现在通过内联样式动态设置
+  z-index: 1000;
+  transition: margin-left 0.3s;
+  border-radius: 50%;
+  border: @lineWidth solid @colorSplit;
+  width: 20px;
+  height: 20px;
+  padding: 4px;
+  box-sizing: content-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: @colorBgContainer;
+  color: @colorTextSecondary;
+  box-shadow: @navShadow;
+
+  &:hover {
+    background: @navItemHoverBg;
+    transform: scale(1.1);
+  }
+
+  &:active {
+    background: @navItemActiveBg;
+  }
+}
+
+.mobileMenuMask {
+  flex: 1;
+  background: transparent;
+}

@@ -1,0 +1,323 @@
+import AliyunCaptcha from '@/components/AliyunCaptcha';
+import SiteFooter from '@/components/SiteFooter';
+import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
+import { apiLogin } from '@/services/account';
+import { unifiedThemeService } from '@/services/unifiedThemeService';
+import { LoginTypeEnum } from '@/types/enums/login';
+import type { ILoginResult, LoginFieldType } from '@/types/interfaces/login';
+import {
+  isValidEmail,
+  isValidPhone,
+  isWeakNumber,
+  validatePassword,
+} from '@/utils/common';
+import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
+import {
+  Button,
+  Checkbox,
+  ConfigProvider,
+  Form,
+  FormProps,
+  Input,
+  Modal,
+  Segmented,
+  theme,
+  Typography,
+} from 'antd';
+import classNames from 'classnames';
+import React, { useEffect, useRef, useState } from 'react';
+import { history, useModel, useRequest, useSearchParams } from 'umi';
+import BasicLayout from './BasicLayout';
+import styles from './index.less';
+import SiteProtocol from './SiteProtocol';
+
+const { Title } = Typography;
+
+type SegmentedItemType = { label: string; value: string };
+
+const cx = classNames.bind(styles);
+
+const { confirm } = Modal;
+
+const Login: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const [loginType, setLoginType] = useState<LoginTypeEnum>(
+    LoginTypeEnum.Password,
+  );
+  const loginTypeRef = useRef<LoginTypeEnum>(LoginTypeEnum.Password);
+  const [checked, setChecked] = useState<boolean>(true);
+  const [form] = Form.useForm();
+  const { loadEnd, tenantConfigInfo, runTenantConfig } =
+    useModel('tenantConfigInfo');
+
+  const { run, loading } = useRequest(apiLogin, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: ILoginResult, params: LoginFieldType[]) => {
+      const { expireDate, token, redirect: responseRedirectUrl } = result;
+      localStorage.setItem(ACCESS_TOKEN, token);
+      localStorage.setItem(EXPIRE_DATE, expireDate);
+      localStorage.setItem(PHONE, params[0].phoneOrEmail);
+      const redirect = decodeURIComponent(searchParams.get('redirect') || '');
+      console.info('login:redirect', redirect, responseRedirectUrl);
+      if (isWeakNumber(redirect)) {
+        history.go(Number(redirect));
+      } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
+        // 注意没有考虑 "//" url 的情况
+        window.location.href = responseRedirectUrl;
+      } else if (redirect) {
+        history.replace(redirect);
+      } else {
+        history.replace('/');
+      }
+    },
+  });
+
+  useEffect(() => {
+    // 清除主题本地缓存
+    unifiedThemeService.clearUserThemeConfig();
+
+    // 租户配置信息查询接口
+    runTenantConfig();
+  }, []);
+
+  // 表单验证规则 - 抽取为常量避免重复
+  const getPhoneOrEmailRules = () => {
+    const isEmailAuth = tenantConfigInfo?.authType === 3;
+    return [
+      {
+        required: true,
+        message: isEmailAuth ? '请输入邮箱地址!' : '请输入手机号码!',
+      },
+      {
+        validator(_: any, value: string) {
+          if (!value) return Promise.resolve();
+          if (isEmailAuth) {
+            return isValidEmail(value)
+              ? Promise.resolve()
+              : Promise.reject(new Error('请输入正确的邮箱账号!'));
+          } else {
+            return isValidPhone(value)
+              ? Promise.resolve()
+              : Promise.reject(new Error('请输入正确的手机号码!'));
+          }
+        },
+      },
+    ];
+  };
+
+  const passwordRules = [
+    { required: true, message: '请输入6位以上密码!' },
+    {
+      validator(_: any, value: string) {
+        if (!value || validatePassword(value)) {
+          return Promise.resolve();
+        }
+        return Promise.reject(new Error('请输入正确格式的密码!'));
+      },
+    },
+  ];
+
+  // 账号密码登录
+  const handlerPasswordLogin = (captchaVerifyParam: string) => {
+    // 为了避免 formValues 为 undefined 的情况，添加空值检查
+    const {
+      phoneOrEmail,
+      areaCode = '86',
+      password,
+    } = form.getFieldsValue() || {};
+    run({ phoneOrEmail, areaCode, password, captchaVerifyParam });
+  };
+
+  // 验证码登录
+  const handlerCodeLogin = (captchaVerifyParam: string) => {
+    // 为了避免 formValues 为 undefined 的情况，添加空值检查
+    const { phoneOrEmail, areaCode = '86' } = form.getFieldsValue() || {};
+    history.push('/verify-code', {
+      phoneOrEmail,
+      areaCode,
+      authType: tenantConfigInfo.authType,
+      captchaVerifyParam,
+    });
+  };
+
+  // 使用 useCallback 包装 handlerSuccess，确保捕获最新的 loginType 值
+  const handlerSuccess = (captchaVerifyParam: string = '') => {
+    // 每次调用时都使用最新的 loginType 值
+    if (loginTypeRef.current === LoginTypeEnum.Password) {
+      handlerPasswordLogin(captchaVerifyParam);
+    } else {
+      handlerCodeLogin(captchaVerifyParam);
+    }
+  }; // loginType 作为依赖项
+
+  const doLogin = () => {
+    const { captchaSceneId, captchaPrefix, openCaptcha } =
+      tenantConfigInfo || {};
+    // 只有同时满足三个条件才启用验证码：场景ID存在、身份标存在、开启验证码
+    const needAliyunCaptcha = !!(
+      tenantConfigInfo &&
+      captchaSceneId !== '' &&
+      captchaPrefix !== '' &&
+      openCaptcha
+    );
+    // 如果需要阿里云验证码，则点击按钮触发验证码
+    if (needAliyunCaptcha) {
+      document.getElementById('aliyun-captcha-login')?.click();
+    } else {
+      //不需要阿里云验证码，直接执行登录/验证码逻辑
+      handlerSuccess();
+    }
+  };
+
+  const onFinish: FormProps<LoginFieldType>['onFinish'] = () => {
+    if (!checked) {
+      return confirm({
+        title: '服务协议及隐私保护',
+        icon: <ExclamationCircleFilled />,
+        content: <SiteProtocol />,
+        okText: '同意',
+        cancelText: '不同意',
+        onOk() {
+          setChecked(true);
+          doLogin();
+        },
+      });
+    }
+    doLogin();
+  };
+
+  const handleChangeType = (value: string) => {
+    setLoginType(Number(value));
+    loginTypeRef.current = Number(value);
+  };
+  const { token } = theme.useToken();
+  // 分段器切换登录方式
+  const options: SegmentedItemType[] = [
+    { label: '密码登录', value: LoginTypeEnum.Password + '' },
+    { label: '验证码登录/注册', value: LoginTypeEnum.Code + '' },
+  ];
+
+  return (
+    <ConfigProvider
+      theme={{
+        token: {},
+        components: {
+          Segmented: {
+            itemSelectedColor: token.colorPrimary,
+            itemHoverBg: 'transparent',
+            itemActiveBg: 'transparent',
+            trackBg: token.colorFillTertiary,
+            itemColor: token.colorTextTertiary,
+            itemHoverColor: token.colorPrimary,
+          },
+        },
+      }}
+    >
+      <BasicLayout>
+        <div>
+          {loadEnd && (
+            <div className={cx(styles['login-form-box'])}>
+              <Segmented
+                className={cx(styles.segmented)}
+                options={options}
+                value={loginType + ''}
+                onChange={handleChangeType}
+                block
+              />
+              <Form
+                form={form}
+                validateTrigger="onBlur"
+                initialValues={{ areaCode: '86' }}
+                rootClassName={cx(styles.form, 'flex', 'flex-col')}
+                name="login"
+                onFinish={onFinish}
+              >
+                <Form.Item>
+                  <Title level={3} style={{ marginTop: 48 }}>
+                    {`欢迎使用${tenantConfigInfo?.siteName || ''}`}
+                  </Title>
+                </Form.Item>
+                <Form.Item name="phoneOrEmail" rules={getPhoneOrEmailRules()}>
+                  {tenantConfigInfo?.authType === 3 ? (
+                    <Input
+                      rootClassName={cx(styles.input)}
+                      placeholder="请输入邮箱地址"
+                    />
+                  ) : (
+                    <Input
+                      placeholder="请输入手机号"
+                      rootClassName={cx(styles.input, styles['current-input'])}
+                      addonBefore={
+                        <div className={cx(styles.icon, 'flex', 'flex-col')}>
+                          +86
+                          <DownOutlined
+                            style={{ marginLeft: 15, fontSize: '14px' }}
+                          />
+                        </div>
+                      }
+                    />
+                  )}
+                </Form.Item>
+                {loginType === LoginTypeEnum.Password && (
+                  <Form.Item name="password" rules={passwordRules}>
+                    <Input.Password
+                      rootClassName={cx(styles.input)}
+                      autoComplete="off"
+                      placeholder="请输入6位以上密码"
+                    />
+                  </Form.Item>
+                )}
+
+                <Form.Item className={cx(styles.login)}>
+                  <Button
+                    className={cx(styles.btn)}
+                    block
+                    type="primary"
+                    htmlType="submit"
+                    loading={loading}
+                  >
+                    {loginType === LoginTypeEnum.Password ? '登录' : '下一步'}
+                  </Button>
+                </Form.Item>
+                <Form.Item
+                  className={cx('mb-16')}
+                  style={{ marginTop: '-10px' }}
+                >
+                  <Checkbox
+                    checked={checked}
+                    onChange={(e) => setChecked(e.target.checked)}
+                  >
+                    <SiteProtocol />
+                  </Checkbox>
+                </Form.Item>
+              </Form>
+
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  padding: '0 64px',
+                  width: '100%',
+                }}
+              >
+                <SiteFooter
+                  text={tenantConfigInfo?.pageFooterText}
+                ></SiteFooter>
+                <Button id="aliyun-captcha-login" style={{ display: 'none' }} />
+                <AliyunCaptcha
+                  config={tenantConfigInfo}
+                  doAction={handlerSuccess}
+                  elementId="aliyun-captcha-login"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </BasicLayout>
+    </ConfigProvider>
+  );
+};
+
+export default Login;

@@ -1,0 +1,49 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  max-width: 300px;
+  max-height: 500px;
+
+  .p-header {
+    gap: @marginXs;
+
+    .icon {
+      color: @colorPrimary;
+    }
+
+    .title {
+      font-size: @fontSize;
+      color: @colorText;
+    }
+  }
+
+  .divider {
+    margin: @marginSm auto;
+  }
+
+  .team-info {
+    height: 32px;
+    padding: 0 22px;
+    gap: @marginXxs;
+    color: @colorText;
+    cursor: pointer;
+
+    &:hover {
+      background-color: @colorBgTextHover;
+      border-radius: @borderRadiusSm;
+    }
+  }
+
+  .create-team {
+    padding: 0 22px;
+    height: 32px;
+    line-height: 32px;
+    gap: @marginXxs;
+
+    &:hover {
+      background-color: @colorBgTextHover;
+      border-radius: @borderRadiusSm;
+    }
+  }
+}
