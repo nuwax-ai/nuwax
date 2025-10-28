@@ -125,9 +125,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     if (!iframe) return;
     iframe.src = pageUrl; // 重新加载同一个地址，会触发 onload
     setIsLoading(true);
-    console.log('iframe 加载完成');
-    iframe.onload = () => {
-      console.log('iframe 内容加载完成');
+    iframe.onload = async () => {
       const iframeDoc =
         iframe.contentDocument || iframe.contentWindow?.document;
       if (!iframeDoc) return;
@@ -138,7 +136,6 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
       // 监听 iframe 内部 DOM 变化
       const observer = new MutationObserver(() => {
-        console.log('iframe 内容变化');
         // 每次变化后延迟 500ms 再检测，确保渲染稳定
         clearTimeout(timer);
         timer = setTimeout(async () => {
@@ -169,11 +166,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
               requestId: pagePreviewData.request_id || '',
               html: str,
             };
-            console.log(
-              '调用接口：apiAgentComponentPageResultUpdate',
-              pagePreviewData?.method,
-              params,
-            );
+            console.log('CHART2', params);
             await apiAgentComponentPageResultUpdate(params);
           }
         }, 500);
@@ -189,12 +182,21 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
       //   iframeDoc.body.appendChild(iframeDoc.createElement('div'));
       // }, 200);
 
-      const nginxWelcomeText =
-        iframeDoc.body.querySelector('body>h1')?.textContent;
-      if (nginxWelcomeText === 'Welcome to nginx!') {
-        console.log('nginx欢迎页');
-        // 添加一个空的 div，用于触发 observer
-        iframeDoc.body.appendChild(iframeDoc.createElement('div'));
+      if (pagePreviewData?.method === 'browser_navigate_page') {
+        const nginxWelcomeText =
+          iframeDoc.body.querySelector('body>h1')?.textContent;
+
+        if (nginxWelcomeText === 'Welcome to nginx!') {
+          // 添加一个空的 div，用于触发 observer
+          // iframeDoc.body.appendChild(iframeDoc.createElement('div'));
+
+          const params = {
+            requestId: pagePreviewData?.request_id as string,
+            html: '无法读取数据',
+          };
+          console.log('CHART1', params);
+          await apiAgentComponentPageResultUpdate(params);
+        }
       }
 
       // 清理

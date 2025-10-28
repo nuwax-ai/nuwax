@@ -351,6 +351,7 @@ export default () => {
           // 添加处理扩展页面逻辑
           if (data.status === ProcessingEnum.EXECUTING) {
             const input = processingResult.input;
+            input.uri_type = processingResult.input.uri_type ?? 'Page';
             // 判断页面类型
             if (input.uri_type === 'Page') {
               // if (!input?.uri) {
@@ -366,11 +367,7 @@ export default () => {
                 request_id: input.request_id,
                 data_type: input.data_type,
               };
-              console.log(
-                '调用接口：showPagePreview',
-                input.method,
-                previewData,
-              );
+              console.log('CHART', previewData);
               // 显示页面预览
               showPagePreview(previewData);
             }
