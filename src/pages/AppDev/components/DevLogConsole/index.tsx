@@ -44,6 +44,8 @@ interface DevLogConsoleProps {
   onAddToChat?: (content: string, isAuto?: boolean) => void;
   /** 是否正在发送消息 */
   isChatLoading?: boolean;
+  /** 重置自动重试计数回调 */
+  onResetAutoRetry?: () => void;
 }
 
 /**
@@ -145,6 +147,7 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
   onClose,
   onAddToChat,
   isChatLoading = false,
+  onResetAutoRetry,
 }) => {
   const logListRef = useRef<HTMLDivElement>(null);
   const [logGroups, setLogGroups] = useState<LogGroup[]>([]);
@@ -220,6 +223,9 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
     }
   }, []);
   const handleFindLatestErrorLogs = useCallback(() => {
+    // 重置自动重试计数
+    onResetAutoRetry?.();
+
     // 查找到最新错误日志所在的组
     const latestErrorGroup = logGroups.findLast((group) =>
       group.logs.some((log) => isErrorLog(log)),
@@ -233,7 +239,7 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
         true,
       );
     }
-  }, [logGroups, onAddToChat]);
+  }, [logGroups, onAddToChat, onResetAutoRetry]);
 
   return (
     <div className="dev-log-console">
