@@ -6,6 +6,7 @@ import { PAGE_DEVELOP_MORE_ACTIONS } from '@/constants/pageDev.constants';
 import {
   BuildRunningEnum,
   PageDevelopMoreActionEnum,
+  PageDevelopPublishTypeEnum,
   PageProjectTypeEnum,
 } from '@/types/enums/pageDev';
 import type { PageDevelopCardItemProps } from '@/types/interfaces/pageDev';
@@ -49,6 +50,19 @@ const PageDevelopCardItem: React.FC<PageDevelopCardItemProps> = ({
     return `创建于 ${dayjs(componentInfo.created).format('MM-DD HH:mm')}`;
   };
 
+  // 发布类型文本
+  const PublishTypeText: React.FC = () => {
+    // 未发布或未设置发布类型
+    if (!componentInfo.buildRunning || !componentInfo.publishType) {
+      return null;
+    }
+    return componentInfo.publishType === PageDevelopPublishTypeEnum.PAGE ? (
+      <span className={cx(styles['publish-type-text'])}>组件</span>
+    ) : (
+      <span className={cx(styles['publish-type-text'])}>应用</span>
+    );
+  };
+
   return (
     <CardWrapper
       title={componentInfo.name}
@@ -65,30 +79,21 @@ const PageDevelopCardItem: React.FC<PageDevelopCardItemProps> = ({
       }
       footer={
         <footer className={cx('flex', 'items-center', 'content-between')}>
-          {componentInfo.buildRunning ===
-          Boolean(BuildRunningEnum.Published) ? (
+          <div className={cx('flex', 'items-center', 'gap-6')}>
             <span
               className={cx(
                 'flex',
                 'items-center',
                 styles.container,
-                styles['published-status'],
+                componentInfo.buildRunning
+                  ? styles['published-status']
+                  : styles['unpublished-status'],
               )}
             >
-              已发布
+              {componentInfo.buildRunning ? '已发布' : '未发布'}
             </span>
-          ) : (
-            <span
-              className={cx(
-                'flex',
-                'items-center',
-                styles.container,
-                styles['unpublished-status'],
-              )}
-            >
-              未发布
-            </span>
-          )}
+            <PublishTypeText />
+          </div>
           {/*更多操作*/}
           <CustomPopover list={moreActionList} onClick={onClickMore}>
             <ICON_MORE />
