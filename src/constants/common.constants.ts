@@ -139,6 +139,15 @@ export const COMPONENT_TYPE_NAME_MAP = {
   [AgentComponentTypeEnum.MCP]: 'MCP服务',
 };
 
-// iframe 配置
+/**
+ * iframe 配置
+ * allow-scripts	允许执行JavaScript脚本
+ * allow-same-origin	允许与父页面同源访问
+ * allow-forms	允许提交表单
+ * allow-top-navigation	允许导航到父页面
+ * allow-popups	允许弹出窗口
+ * allow-modals	允许模态对话框
+ * allow-popups-to-escape-sandbox	允许弹出窗口逃逸沙盒
+ */
 export const SANDBOX =
-  'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox';
+  'allow-scripts allow-same-origin allow-forms allow-top-navigation allow-popups allow-modals allow-popups-to-escape-sandbox';
