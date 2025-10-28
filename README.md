@@ -88,12 +88,7 @@ Login with default administrator account: `admin@nuwax.com` password: `123456`
 Please modify promptly after login:
 - Administrator password
 - Site information configuration
-
-  ![alt text](https://nuwax.com/images/image-101.png)
-
 - Email service configuration for user registration and login verification codes.
-
-  ![alt text](https://nuwax.com/images/image-91.png)
 
 ### Troubleshooting
 
