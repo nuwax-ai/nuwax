@@ -11,13 +11,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import TurndownService from 'turndown';
 import { useModel } from 'umi';
 import styles from './index.less';
@@ -113,14 +107,14 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   }, [pagePreviewData]);
 
   // iframe 加载完成
-  const handleIframeLoad = useCallback(() => {
+  const handleIframeLoad = () => {
     setIsLoading(false);
-  }, [pagePreviewData]);
+  };
 
   // iframe 加载失败
-  const handleIframeError = useCallback(() => {
+  const handleIframeError = () => {
     setIsLoading(false);
-  }, []);
+  };
 
   const { previewPageTitle, setPreviewPageTitle } = useModel('chat');
 
@@ -130,8 +124,10 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     const iframe = iframeRef.current;
     if (!iframe) return;
     iframe.src = pageUrl; // 重新加载同一个地址，会触发 onload
-
+    setIsLoading(true);
+    console.log('iframe 加载完成');
     iframe.onload = () => {
+      console.log('iframe 内容加载完成');
       const iframeDoc =
         iframe.contentDocument || iframe.contentWindow?.document;
       if (!iframeDoc) return;
@@ -142,6 +138,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
       // 监听 iframe 内部 DOM 变化
       const observer = new MutationObserver(() => {
+        console.log('iframe 内容变化');
         // 每次变化后延迟 500ms 再检测，确保渲染稳定
         clearTimeout(timer);
         timer = setTimeout(async () => {
@@ -194,12 +191,12 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         clearTimeout(timer);
       };
     };
-  }, [pagePreviewData, pageUrl]);
-
-  // 重置加载状态
-  useEffect(() => {
-    setIsLoading(!pagePreviewData);
   }, [pagePreviewData]);
+
+  // // 重置加载状态
+  // useEffect(() => {
+  //   setIsLoading(!pagePreviewData);
+  // }, [pagePreviewData]);
 
   // 如果没有预览数据，不显示
   if (!pagePreviewData) {
