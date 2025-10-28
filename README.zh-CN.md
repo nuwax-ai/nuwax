@@ -184,7 +184,7 @@ docker run hello-world
 
 ### Agent Platform Frontend
 
-[中文文档](docs/ch/front-project.md) |[English Doc](docs/en/front-project.md) | [Contributing](CONTRIBUTING.md) | [Documentation](docs/)
+[中文文档](docs/ch/front-project.md) |[English Doc](docs/en/front-project.md)
 
 ##### 贡献指南
 
