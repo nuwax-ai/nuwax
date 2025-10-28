@@ -13,6 +13,7 @@ import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
+import { useAutoErrorHandling } from '@/hooks/useAutoErrorHandling';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { useRestartDevServer } from '@/hooks/useRestartDevServer';
@@ -161,6 +162,10 @@ const AppDev: React.FC = () => {
   // 使用 Hook 控制抽屉打开时的滚动条
   useDrawerScroll(openVersionHistory);
 
+  // 白屏和 iframe 错误检测状态
+  const [whiteScreenDetected, setWhiteScreenDetected] = useState(false);
+  const [iframeErrorDetected, setIframeErrorDetected] = useState(false);
+
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
 
@@ -308,13 +313,38 @@ const AppDev: React.FC = () => {
     maxLogLines: 1000,
   });
 
-  // 自动异常处理（暂时禁用）
-  // const autoErrorHandling = useAutoErrorHandling(projectId || '', {
-  //   enabled: hasValidProjectId,
-  //   errorDetectionDelay: 1000,
-  //   maxSendFrequency: 30000,
-  //   showNotification: true,
-  // });
+  // 临时回调，稍后会被替换
+  const handleAddLogToChatPlaceholder = useCallback(
+    (logContent: string, isAuto?: boolean) => {
+      if (!logContent.trim()) {
+        message.warning('日志内容为空');
+        return;
+      }
+
+      // 将日志内容添加到聊天输入框
+      const formattedContent = `分析以下日志并修复错误：\n\n\`\`\`\n${logContent}\n\`\`\``;
+      chat.setChatInput(formattedContent);
+      if (isAuto && !chat.isChatLoading) {
+        setTimeout(() => {
+          // 通过事件总线发布发送消息事件
+          eventBus.emit(EVENT_NAMES.SEND_CHAT_MESSAGE);
+        }, 300);
+        return;
+      }
+      // 显示成功提示
+      message.success('日志已添加,等待发送');
+    },
+    [chat],
+  );
+
+  // 自动异常处理
+  const autoErrorHandling = useAutoErrorHandling({
+    projectId: projectId || '',
+    devLogs,
+    onAddToChat: handleAddLogToChatPlaceholder,
+    isChatLoading: chat.isChatLoading,
+    enabled: hasValidProjectId && projectInfo.hasPermission,
+  });
 
   // 数据资源管理
   const dataResourceManagement = useDataResourceManagement();
@@ -438,6 +468,57 @@ const AppDev: React.FC = () => {
   useEffect(() => {
     setMissingProjectId(!hasValidProjectId);
   }, [projectId, hasValidProjectId]);
+
+  /**
+   * 监听日志错误，触发自动处理
+   * 当有新错误时触发自动修复
+   */
+  useEffect(() => {
+    if (devLogs.hasErrorInLatestBlock && !chat.isChatLoading) {
+      // 延迟一小段时间，确保新的错误日志已经添加到 devLogs.logs 中
+      setTimeout(() => {
+        autoErrorHandling.handleAutoError();
+      }, 100);
+    }
+  }, [
+    devLogs.hasErrorInLatestBlock,
+    devLogs.logs.length, // 新增：监听日志数组长度变化
+    chat.isChatLoading,
+    autoErrorHandling.handleAutoError,
+  ]);
+
+  /**
+   * 白屏和 iframe 错误同时发生时触发自动处理
+   */
+  useEffect(() => {
+    if (whiteScreenDetected && iframeErrorDetected && !chat.isChatLoading) {
+      autoErrorHandling.handleAutoError();
+      // 重置状态避免重复触发
+      setWhiteScreenDetected(false);
+      setIframeErrorDetected(false);
+    }
+  }, [
+    whiteScreenDetected,
+    iframeErrorDetected,
+    chat.isChatLoading,
+    autoErrorHandling.handleAutoError,
+  ]);
+
+  /**
+   * 当 AI 会话加载完成时，重置自动重试计数
+   * 这样进度条就会自动隐藏
+   */
+  useEffect(() => {
+    // 从加载中变为完成时，重置计数
+    if (!chat.isChatLoading && autoErrorHandling.autoRetryCount > 0) {
+      // 延迟重置，确保进度条能正确显示
+      const timer = setTimeout(() => {
+        autoErrorHandling.resetAutoRetryCount();
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [chat.isChatLoading, autoErrorHandling]);
 
   /**
    * 处理项目发布成组件
@@ -963,7 +1044,7 @@ const AppDev: React.FC = () => {
       }
 
       // 将日志内容添加到聊天输入框
-      const formattedContent = `请帮我分析以下日志内容：\n\n\`\`\`\n${logContent}\n\`\`\``;
+      const formattedContent = `分析以下日志并修复错误：\n\n\`\`\`\n${logContent}\n\`\`\``;
       chat.setChatInput(formattedContent);
       if (isAuto && !chat.isChatLoading) {
         setTimeout(() => {
@@ -974,8 +1055,13 @@ const AppDev: React.FC = () => {
       }
       // 显示成功提示
       message.success('日志已添加,等待发送');
+
+      // 如果不是自动发送，重置自动重试计数
+      if (!isAuto) {
+        autoErrorHandling.resetAutoRetryCount();
+      }
     },
-    [chat.setChatInput, chat.sendMessage],
+    [chat.setChatInput, chat.sendMessage, autoErrorHandling],
   );
 
   /**
@@ -1200,6 +1286,7 @@ const AppDev: React.FC = () => {
                 fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
                 onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
                 modelSelector={modelSelector} // 模型选择器状态
+                autoErrorRetryCount={autoErrorHandling.autoRetryCount} // 新增：自动错误处理重试次数
               />
             </div>
 
@@ -1397,12 +1484,8 @@ const AppDev: React.FC = () => {
                               showMessage: false,
                             });
                           }}
-                          onWhiteScreen={() => {
-                            // autoErrorHandling.handlePreviewWhiteScreen(
-                            //   devLogs.logs,
-                            //   chat.sendMessage,
-                            // );
-                          }}
+                          onWhiteScreen={() => setWhiteScreenDetected(true)}
+                          onIframeError={() => setIframeErrorDetected(true)}
                           onContentChange={(fileId, content) => {
                             if (
                               !versionCompare.isComparing &&
@@ -1455,6 +1538,7 @@ const AppDev: React.FC = () => {
                   onClose={() => setShowDevLogConsole(false)}
                   isChatLoading={chat.isChatLoading}
                   onAddToChat={handleAddLogToChat}
+                  onResetAutoRetry={autoErrorHandling.resetAutoRetryCount}
                 />
               )}
             </div>
