@@ -141,6 +141,7 @@ export const COMPONENT_TYPE_NAME_MAP = {
 
 /**
  * iframe 配置
+ * allow-downloads	允许通过带有 download 属性的 <a> 或 <area> 元素或者通过导航来下载文件，无论是用户通过点击链接触发，还是在用户没有交互的情况下通过 JS 代码触发。
  * allow-scripts	允许执行JavaScript脚本
  * allow-same-origin	允许与父页面同源访问
  * allow-forms	允许提交表单
@@ -150,4 +151,4 @@ export const COMPONENT_TYPE_NAME_MAP = {
  * allow-popups-to-escape-sandbox	允许弹出窗口逃逸沙盒
  */
 export const SANDBOX =
-  'allow-scripts allow-same-origin allow-forms allow-top-navigation allow-popups allow-modals allow-popups-to-escape-sandbox';
+  'allow-downloads allow-scripts allow-same-origin allow-forms allow-top-navigation allow-popups allow-modals allow-popups-to-escape-sandbox';
