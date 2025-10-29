@@ -27,8 +27,14 @@ interface UseAutoErrorHandlingReturn {
   autoRetryCount: number;
   /** 是否启用自动处理 */
   isAutoHandlingEnabled: boolean;
-  /** 自动处理错误 */
+  /** 自动处理错误（从日志中提取） */
   handleAutoError: () => void;
+  /** 处理自定义错误内容（支持多种场景） */
+  handleCustomError: (
+    errorContent: string,
+    errorType?: 'whiteScreen' | 'log' | 'iframe',
+    isAuto?: boolean,
+  ) => void;
   /** 重置自动重试计数 */
   resetAutoRetryCount: () => void;
   /** 用户确认继续自动处理 */
@@ -56,6 +62,7 @@ export const useAutoErrorHandling = ({
 
   // 使用 ref 避免闭包问题
   const lastErrorTimestampRef = useRef<string | null>(null);
+  const lastCustomErrorHashRef = useRef<string | null>(null); // 自定义错误的哈希值
   const autoRetryCountRef = useRef(0);
   const hasShownConfirmModalRef = useRef(false);
   const previousErrorLineNumbersRef = useRef<Set<number>>(new Set());
@@ -67,6 +74,7 @@ export const useAutoErrorHandling = ({
     setAutoRetryCount(0);
     autoRetryCountRef.current = 0;
     lastErrorTimestampRef.current = null;
+    lastCustomErrorHashRef.current = null;
     setHasShownConfirmModal(false);
     hasShownConfirmModalRef.current = false;
   }, []);
@@ -114,7 +122,112 @@ export const useAutoErrorHandling = ({
   }, [handleUserConfirmContinue, handleUserCancelAuto]);
 
   /**
-   * 自动处理错误
+   * 格式化错误内容（根据场景类型）
+   */
+  const formatErrorContent = useCallback(
+    (errorContent: string, errorType?: 'whiteScreen' | 'log' | 'iframe') => {
+      const trimmedContent = errorContent.trim();
+      if (!trimmedContent) {
+        return '';
+      }
+
+      // 根据错误类型选择不同的格式
+      switch (errorType) {
+        case 'whiteScreen':
+          // 白屏错误格式
+          return `检测到预览页面白屏，捕获到以下错误，请分析并修复：\n\n\`\`\`\n${trimmedContent}\n\`\`\``;
+
+        case 'log':
+          // 日志错误格式
+          return `分析以下日志并修复错误：\n\n\`\`\`\n${trimmedContent}\n\`\`\``;
+
+        case 'iframe':
+          // iframe 加载错误格式
+          return `预览页面加载失败，请分析并修复：\n\n\`\`\`\n${trimmedContent}\n\`\`\``;
+
+        default:
+          // 默认格式（保持原有逻辑）
+          return trimmedContent;
+      }
+    },
+    [],
+  );
+
+  /**
+   * 处理自定义错误内容（支持多种场景）
+   * 统一由 autoErrorHandling 管理，包括重试次数限制和用户确认
+   */
+  const handleCustomError = useCallback(
+    (
+      errorContent: string,
+      errorType: 'whiteScreen' | 'log' | 'iframe' = 'whiteScreen',
+      isAuto?: boolean,
+    ) => {
+      // 检查是否启用
+      if (!enabled || !isAutoHandlingEnabled) {
+        console.warn(
+          '[AutoErrorHandling] 自动错误处理未启用，跳过自定义错误处理',
+        );
+        return;
+      }
+
+      // 检查聊天是否正在加载
+      if (isChatLoading) {
+        console.warn('[AutoErrorHandling] AI 正在处理中，跳过自定义错误处理');
+        return;
+      }
+
+      if (!errorContent.trim()) {
+        return;
+      }
+
+      // 根据场景格式化错误内容
+      const formattedContent = formatErrorContent(errorContent, errorType);
+
+      // 使用格式化后的内容哈希来判断是否为新错误（避免重复）
+      const errorHash = formattedContent.trim();
+      const isDuplicate = errorHash === lastCustomErrorHashRef.current;
+      if (isDuplicate) {
+        console.debug('[AutoErrorHandling] 跳过重复的自定义错误');
+        return;
+      }
+
+      if (!isAuto) {
+        // 手动发送时，直接发送
+        onAddToChat(formattedContent, false);
+        return;
+      }
+
+      // 更新错误哈希
+      lastCustomErrorHashRef.current = errorHash;
+
+      // 检查重试次数
+      autoRetryCountRef.current += 1;
+      setAutoRetryCount(autoRetryCountRef.current);
+
+      // 如果重试次数 <= 3，直接发送
+      if (autoRetryCountRef.current <= 3) {
+        // 使用格式化后的内容自动发送到聊天框
+        onAddToChat(formattedContent, true);
+      } else {
+        // 第4次及以上，显示确认弹窗
+        if (!hasShownConfirmModalRef.current) {
+          showConfirmModal();
+        }
+      }
+    },
+    [
+      enabled,
+      isAutoHandlingEnabled,
+      isChatLoading,
+      formatErrorContent,
+      onAddToChat,
+      showConfirmModal,
+    ],
+  );
+
+  /**
+   * 自动处理错误（从日志中提取）
    */
   const handleAutoError = useCallback(() => {
     // 检查是否启用
@@ -178,8 +291,11 @@ export const useAutoErrorHandling = ({
         .join('\n')
         .trim();
 
+      // 使用统一的格式化逻辑（日志错误类型）
+      const formattedContent = formatErrorContent(errorContent, 'log');
+
       // 自动发送到聊天框
-      onAddToChat(errorContent, true);
+      onAddToChat(formattedContent, true);
     } else {
       // 第4次及以上，显示确认弹窗
       if (!hasShownConfirmModalRef.current) {
@@ -191,6 +307,7 @@ export const useAutoErrorHandling = ({
     isAutoHandlingEnabled,
     isChatLoading,
     devLogs.logs,
+    formatErrorContent,
     onAddToChat,
     showConfirmModal,
   ]);
@@ -199,6 +316,7 @@ export const useAutoErrorHandling = ({
     autoRetryCount,
     isAutoHandlingEnabled,
     handleAutoError,
+    handleCustomError,
     resetAutoRetryCount,
     handleUserConfirmContinue,
     handleUserCancelAuto,
