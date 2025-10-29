@@ -28,6 +28,7 @@ import {
   CreateCustomPageInfo,
   CustomPageDto,
 } from '@/types/interfaces/pageDev';
+import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
 import classNames from 'classnames';
@@ -313,7 +314,12 @@ const SpacePageDevelop: React.FC = () => {
         break;
       // 删除页面项目
       case PageDevelopMoreActionEnum.Delete:
-        runPageDelete(info.projectId);
+        modalConfirm('您确定要删除此页面吗?', info.name, () => {
+          runPageDelete(info.projectId);
+          return new Promise((resolve) => {
+            setTimeout(resolve, 1000);
+          });
+        });
         break;
     }
   };
