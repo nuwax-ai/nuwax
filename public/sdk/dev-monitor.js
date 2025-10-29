@@ -1,6 +1,6 @@
 /**
  * 开发环境监控脚本
- * 提供错误监控、性能监控、通信功能
+ * 提供错误监控、历史记录追踪、父窗口通信功能
  */
 
 (function () {
@@ -43,34 +43,125 @@
       if (monitorData.errors.length > config.maxErrors) {
         monitorData.errors.shift();
       }
+
+      // ⭐ 立即发送错误消息到父窗口（实时通知）
+      // 检查是否在 iframe 中运行（使用多种方式检测）
+      const isInIframe = window.self !== window.top;
+      const hasParent = !!window.parent;
+      const parentEqualsWindow = window.parent === window;
+      const parentEqualsSelf = window.parent === window.self;
+      const parentEqualsTop = window.parent === window.top;
+
+      console.log('[DevMonitor] 🔍 Checking parent window:', {
+        isInIframe: isInIframe,
+        hasParent: hasParent,
+        parentEqualsWindow: parentEqualsWindow,
+        parentEqualsSelf: parentEqualsSelf,
+        parentEqualsTop: parentEqualsTop,
+        location: window.location.href,
+        parentLocation: window.parent
+          ? (() => {
+              try {
+                return window.parent.location?.href || 'N/A (cross-origin)';
+              } catch (e) {
+                return 'N/A (cross-origin - access denied)';
+              }
+            })()
+          : 'N/A',
+        topLocation: window.top
+          ? (() => {
+              try {
+                return window.top.location?.href || 'N/A (cross-origin)';
+              } catch (e) {
+                return 'N/A (cross-origin - access denied)';
+              }
+            })()
+          : 'N/A',
+      });
+
+      // ⭐ 关键修复：使用 isInIframe 作为主要判断条件
+      // 如果在 iframe 中（window.self !== window.top），就尝试发送消息
+      if (isInIframe && window.parent) {
+        try {
+          const errorMessage = {
+            type: 'dev-monitor-error', // 实时错误消息类型
+            error: errorData,
+            errorCount: monitorData.errors.length,
+            url: monitorData.basicInfo.url,
+            timestamp: Date.now(),
+          };
+          console.log(
+            '[DevMonitor] 📤 Sending dev-monitor-error:',
+            errorMessage,
+          );
+          window.parent.postMessage(errorMessage, '*');
+          console.log('[DevMonitor] ✅ postMessage called successfully');
+        } catch (e) {
+          console.error('[DevMonitor] ❌ Failed to send error message:', e);
+        }
+      } else {
+        console.warn(
+          '[DevMonitor] ⚠️ Cannot send error message - parent check failed:',
+          {
+            isInIframe: isInIframe,
+            hasParent: hasParent,
+            parentEqualsWindow: parentEqualsWindow,
+            parentEqualsSelf: parentEqualsSelf,
+          },
+        );
+      }
     },
   };
 
   // 简化的错误监控
   function setupErrorMonitoring() {
-    // 全局错误捕获
-    window.addEventListener('error', function (event) {
-      const errorMsg = `${event.message} at ${event.filename}:${event.lineno}:${event.colno}`;
-      logger.error(errorMsg);
-    });
-
-    // Promise 错误捕获
-    window.addEventListener('unhandledrejection', function (event) {
-      const errorMsg = `Promise rejection: ${event.reason}`;
-      logger.error(errorMsg);
-    });
-
-    // 资源加载错误 - 只记录关键信息
+    // 统一的错误处理函数 - 合并全局错误和资源加载错误监听
     window.addEventListener(
       'error',
       function (event) {
-        if (event.target !== window) {
+        // 全局 JavaScript 错误
+        if (event.target === window || !event.target) {
+          const errorMsg = `${event.message} at ${event.filename}:${event.lineno}:${event.colno}`;
+          logger.error(errorMsg, {
+            filename: event.filename,
+            lineno: event.lineno,
+            colno: event.colno,
+          });
+        }
+        // 资源加载错误
+        else if (event.target.tagName) {
           const source = event.target.src || event.target.href || 'unknown';
-          logger.error(`Resource failed: ${source}`);
+          logger.error(`Resource failed: ${source}`, {
+            tagName: event.target.tagName,
+            source: source,
+          });
         }
       },
       true,
-    );
+    ); // 使用捕获阶段同时捕获全局错误和资源错误
+
+    // Promise 错误捕获
+    window.addEventListener('unhandledrejection', function (event) {
+      let errorMsg = 'Promise rejection: ';
+      let errorDetails = null;
+
+      if (event.reason instanceof Error) {
+        errorMsg += event.reason.message;
+        errorDetails = {
+          name: event.reason.name,
+          message: event.reason.message,
+          stack: event.reason.stack
+            ? event.reason.stack.substring(0, 200)
+            : null,
+        };
+      } else if (typeof event.reason === 'string') {
+        errorMsg += event.reason;
+      } else {
+        errorMsg += JSON.stringify(event.reason).substring(0, 200);
+      }
+
+      logger.error(errorMsg, errorDetails);
+    });
   }
 
   // 移除复杂的性能监控和控制台拦截，专注于核心错误监控
@@ -209,181 +300,24 @@
     }, 100);
   }
 
-  // 简化的通信功能
-  function setupCommunication() {
-    // 向父窗口发送监控数据 - 只在有新错误时发送
-    function sendToParent() {
-      if (
-        window.parent &&
-        window.parent !== window &&
-        monitorData.errors.length > 0
-      ) {
-        try {
-          const summary = {
-            type: 'dev-monitor-summary',
-            errorCount: monitorData.errors.length,
-            latestError: monitorData.errors[monitorData.errors.length - 1],
-            url: monitorData.basicInfo.url,
-            timestamp: Date.now(),
-          };
-
-          window.parent.postMessage(summary, '*');
-        } catch (e) {
-          // 静默处理错误
-        }
-      }
-    }
-
-    // 监听来自父窗口的请求
-    window.addEventListener('message', function (event) {
-      if (event.data && event.data.type === 'dev-monitor-request') {
-        const summary = {
-          type: 'dev-monitor-data',
-          errorCount: monitorData.errors.length,
-          errors: monitorData.errors.slice(-3), // 只发送最近3个错误
-          url: monitorData.basicInfo.url,
-        };
-
-        try {
-          window.parent.postMessage(summary, '*');
-        } catch (e) {
-          // 静默处理错误
-        }
-      }
-    });
-
-    // 降低发送频率 - 每10秒检查一次
-    setInterval(sendToParent, 10000);
-  }
-
-  // 简化的全局 API
-  window.DevMonitor = {
-    // 获取错误统计
-    getStats: function () {
-      return {
-        errorCount: monitorData.errors.length,
-        url: monitorData.basicInfo.url,
-        userAgent: monitorData.basicInfo.userAgent,
-        latestError: monitorData.errors[monitorData.errors.length - 1] || null,
-      };
-    },
-
-    // 获取所有错误（限制数量）
-    getErrors: function () {
-      return monitorData.errors.slice(-5); // 只返回最近5个错误
-    },
-
-    // 清除错误
-    clearErrors: function () {
-      monitorData.errors = [];
-      console.log('✅ DevMonitor errors cleared');
-    },
-
-    // 获取历史记录变化
-    getHistoryChanges: function () {
-      return monitorData.historyChanges.slice(-10); // 只返回最近10条历史记录
-    },
-
-    // 清除历史记录
-    clearHistory: function () {
-      monitorData.historyChanges = [];
-      console.log('✅ DevMonitor history cleared');
-    },
-
-    // 显示简化监控面板
-    showPanel: function () {
-      // 移除现有面板
-      const existingPanel = document.getElementById('dev-monitor-panel');
-      if (existingPanel) {
-        existingPanel.remove();
-      }
-
-      const panel = document.createElement('div');
-      panel.id = 'dev-monitor-panel';
-      panel.style.cssText = `
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        width: 280px;
-        background: #1a1a1a;
-        color: white;
-        border: 1px solid #333;
-        border-radius: 6px;
-        padding: 12px;
-        font-family: monospace;
-        font-size: 12px;
-        z-index: 999999;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      `;
-
-      const errors = monitorData.errors.slice(-3); // 只显示最近3个错误
-
-      panel.innerHTML = `
-        <div style="border-bottom: 1px solid #333; margin-bottom: 10px; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-          <strong style="color: #4CAF50;">DevMonitor</strong>
-          <button onclick="this.parentElement.parentElement.remove()" style="background: #ff4444; border: none; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer;">×</button>
-        </div>
-        <div style="margin-bottom: 10px;">
-          <strong>Errors (${monitorData.errors.length}):</strong>
-        </div>
-        ${
-          errors.length
-            ? errors
-                .map(
-                  (e) => `
-          <div style="color: #ff6b6b; margin: 4px 0; padding: 4px; background: rgba(255,107,107,0.1); border-radius: 3px; font-size: 11px;">
-            ${e.message}
-            ${
-              e.details
-                ? `<br><small style="color: #999;">${e.details}</small>`
-                : ''
-            }
-          </div>
-        `,
-                )
-                .join('')
-            : '<div style="color: #666; font-style: italic;">No errors</div>'
-        }
-        <div style="margin-top: 12px; margin-bottom: 10px; padding-top: 10px; border-top: 1px solid #333;">
-          <strong>History (${monitorData.historyChanges.length}):</strong>
-        </div>
-        ${
-          monitorData.historyChanges.length
-            ? monitorData.historyChanges
-                .slice(-3)
-                .map(
-                  (h) => `
-          <div style="color: #66b3ff; margin: 4px 0; padding: 4px; background: rgba(102,179,255,0.1); border-radius: 3px; font-size: 11px;">
-            <span style="color: #999;">[${h.historyType}]</span> ${h.pathname}
-          </div>
-        `,
-                )
-                .join('')
-            : '<div style="color: #666; font-style: italic;">No changes</div>'
-        }
-        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #333;">
-          <button onclick="DevMonitor.clearErrors(); DevMonitor.clearHistory(); DevMonitor.showPanel();" style="background: #333; border: none; color: white; padding: 6px 12px; border-radius: 3px; cursor: pointer; margin-right: 8px;">Clear</button>
-          <button onclick="console.log('Stats:', DevMonitor.getStats()); console.log('History:', DevMonitor.getHistoryChanges())" style="background: #2196F3; border: none; color: white; padding: 6px 12px; border-radius: 3px; cursor: pointer;">Stats</button>
-        </div>
-      `;
-
-      document.body.appendChild(panel);
-    },
-  };
-
   // 简化的初始化
   function init() {
+    // ⭐ 初始化时检查运行环境
+    const isInIframe = window.self !== window.top;
+
     setupErrorMonitoring();
     setupHistoryTracking();
-    setupCommunication();
     monitorData.ready = true;
 
     // 简化的控制台提示
-    console.log(
-      '%cDevMonitor v' + config.version,
-      'color: #4CAF50; font-weight: bold;',
-      '- DevMonitor.showPanel()',
-    );
+    console.log('[DevMonitor] 🚀 Initializing...', {
+      version: config.version,
+      isInIframe: isInIframe,
+      hasParent: !!window.parent,
+      parentEqualsWindow: window.parent === window,
+      location: window.location.href,
+      canSendMessages: window.parent && window.parent !== window,
+    });
   }
 
   // 立即初始化
