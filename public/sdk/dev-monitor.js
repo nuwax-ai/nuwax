@@ -131,9 +131,14 @@
         // 资源加载错误
         else if (event.target.tagName) {
           const source = event.target.src || event.target.href || 'unknown';
-          logger.error(`Resource failed: ${source}`, {
+          // 只保存相对地址
+          const relativeSource = source.replace(
+            window.location.origin + window.location.pathname,
+            '',
+          );
+          logger.error(`Resource failed: ${relativeSource}`, {
             tagName: event.target.tagName,
-            source: source,
+            source: relativeSource,
           });
         }
       },
