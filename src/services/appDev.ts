@@ -593,13 +593,16 @@ export const getDevLogs = async (
   });
 
   // 处理后端返回的日志数据，确保包含所有必需字段
-  const processedLogs: DevLogEntry[] = response.data.logs.map((log: any) => {
-    // 如果后端返回的日志对象缺少某些字段，使用 parseLogEntry 来补充
-    if (!log.level || !log.isError) {
-      return parseLogEntry(log.content, log.line);
-    }
-    return log as DevLogEntry;
-  });
+  const processedLogs: DevLogEntry[] =
+    response.data?.logs?.length > 0
+      ? response.data.logs.map((log: any) => {
+          // 如果后端返回的日志对象缺少某些字段，使用 parseLogEntry 来补充
+          if (!log.level || !log.isError) {
+            return parseLogEntry(log.content, log.line);
+          }
+          return log as DevLogEntry;
+        })
+      : ([] as DevLogEntry[]);
 
   return {
     ...response,

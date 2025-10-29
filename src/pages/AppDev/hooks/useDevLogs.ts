@@ -230,6 +230,7 @@ export const useDevLogs = (
    */
   const getNewErrorLogs = useCallback((): DevLogEntry[] => {
     const newErrors = getNewErrors(logs, previousLogsRef.current);
+    console.log('[error] getNewErrorLogs', newErrors);
     previousLogsRef.current = [...logs];
     return newErrors;
   }, [logs]);
