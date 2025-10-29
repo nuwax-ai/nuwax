@@ -19,6 +19,7 @@ import {
   ModelStrategyEnum,
   ModelTypeEnum,
 } from '@/types/enums/modelConfig';
+import { ModelComponentStatusEnum } from '@/types/enums/space';
 import type { CreateModelProps } from '@/types/interfaces/library';
 import type {
   ModelConfigInfo,
@@ -174,17 +175,20 @@ const CreateModel: React.FC<CreateModelProps> = ({
       onCancel={onCancel}
       footer={
         <>
-          <Button className={cx(styles.btn)} type="default" onClick={onCancel}>
-            取消
-          </Button>
           <Button
             type="default"
             loading={loadingTestConnection}
             onClick={handlerCheckConnection}
-            className={cx(!submittable && styles['confirm-btn'], styles.btn)}
+            className={cx(
+              !submittable && styles['confirm-btn'],
+              styles['connection-btn'],
+            )}
             disabled={!submittable}
           >
-            检测连接
+            模型连通性测试
+          </Button>
+          <Button className={cx(styles.btn)} type="default" onClick={onCancel}>
+            取消
           </Button>
           <Button
             type="primary"
@@ -214,7 +218,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           type: ModelTypeEnum.Chat,
           maxTokens: 4096,
           dimension: 1536,
-          enabled: 1, // 启用
+          enabled: ModelComponentStatusEnum.Enabled, // 启用
         }}
         autoComplete="off"
       >
@@ -318,8 +322,8 @@ const CreateModel: React.FC<CreateModelProps> = ({
         <Form.Item name="enabled" label="是否启用">
           <Radio.Group
             options={[
-              { label: '启用', value: 1 },
-              { label: '禁用', value: 0 },
+              { label: '启用', value: ModelComponentStatusEnum.Enabled },
+              { label: '禁用', value: ModelComponentStatusEnum.Disabled },
             ]}
           />
         </Form.Item>

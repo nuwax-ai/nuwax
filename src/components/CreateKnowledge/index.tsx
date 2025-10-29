@@ -279,7 +279,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
             label="描述"
             initialValue={knowledgeInfo?.description}
             placeholder="输入知识库内容的描述"
-            maxLength={100}
+            maxLength={10000}
           />
           <Form.Item
             name="embeddingModelId"

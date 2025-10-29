@@ -1,4 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import {
   apiCustomPageCreate,
@@ -206,12 +207,12 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
         >
           <Input placeholder="请输入名称" showCount maxLength={50} />
         </Form.Item>
-        <Form.Item name="projectDesc" label="描述">
-          <Input.TextArea
-            placeholder="请输入描述"
-            autoSize={{ minRows: 4, maxRows: 6 }}
-          />
-        </Form.Item>
+        <OverrideTextArea
+          name="projectDesc"
+          label="描述"
+          placeholder="请输入描述"
+          maxLength={10000}
+        />
         <Form.Item name="icon" label="图标">
           <UploadAvatar
             onUploadSuccess={uploadIconSuccess}
