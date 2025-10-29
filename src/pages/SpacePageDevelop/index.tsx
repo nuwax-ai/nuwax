@@ -2,16 +2,19 @@ import ButtonToggle from '@/components/ButtonToggle';
 import Loading from '@/components/custom/Loading';
 import SelectList from '@/components/custom/SelectList';
 import CustomPopover from '@/components/CustomPopover';
+import MoveCopyComponent from '@/components/MoveCopyComponent';
 import {
   PAGE_DEVELOP_ALL_TYPE,
   PAGE_DEVELOP_CREATE_TYPE_LIST,
 } from '@/constants/pageDev.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
 import {
+  apiCustomPageCopyProject,
   apiCustomPageQueryList,
   apiPageDeleteProject,
   apiPageGetProjectInfo,
 } from '@/services/pageDev';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   PageDevelopCreateTypeEnum,
   PageDevelopMoreActionEnum,
@@ -19,7 +22,7 @@ import {
   PageDevelopSelectTypeEnum,
   PageProjectTypeEnum,
 } from '@/types/enums/pageDev';
-import { CreateListEnum } from '@/types/enums/space';
+import { ApplicationMoreActionEnum, CreateListEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import {
   CreateCustomPageInfo,
@@ -85,6 +88,11 @@ const SpacePageDevelop: React.FC = () => {
   // 打开认证配置弹窗
   const [openAuthConfigModal, setOpenAuthConfigModal] =
     useState<boolean>(false);
+  // 打开复制到空间弹窗
+  const [openCopyToSpaceModal, setOpenCopyToSpaceModal] =
+    useState<boolean>(false);
+  // 复制到空间加载中
+  const [loadingCopyToSpace, setLoadingCopyToSpace] = useState<boolean>(false);
   // 创建
   const [create, setCreate] = useState<CreateListEnum>(
     Number(searchParams.get('create')) || CreateListEnum.All_Person,
@@ -163,6 +171,19 @@ const SpacePageDevelop: React.FC = () => {
       pageAllRef.current = pageAllRef.current.filter(
         (item) => item.projectId !== projectId,
       );
+    },
+  });
+
+  // 复制到空间接口
+  const { run: runCopyToSpace } = useRequest(apiCustomPageCopyProject, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success('页面复制成功');
+      setLoadingCopyToSpace(false);
+    },
+    onError: () => {
+      setLoadingCopyToSpace(false);
     },
   });
 
@@ -286,6 +307,10 @@ const SpacePageDevelop: React.FC = () => {
       case PageDevelopMoreActionEnum.Page_Preview:
         runPageInfo(info.projectId);
         break;
+      // 复制到空间
+      case PageDevelopMoreActionEnum.Copy_To_Space:
+        setOpenCopyToSpaceModal(true);
+        break;
       // 删除页面项目
       case PageDevelopMoreActionEnum.Delete:
         runPageDelete(info.projectId);
@@ -327,6 +352,17 @@ const SpacePageDevelop: React.FC = () => {
       }
       return item;
     });
+  };
+
+  // 确认复制到空间
+  const handleConfirmCopyToSpace = (targetSpaceId: number) => {
+    setLoadingCopyToSpace(true);
+    setOpenCopyToSpaceModal(false);
+    const data = {
+      projectId,
+      targetSpaceId,
+    };
+    runCopyToSpace(data);
   };
 
   return (
@@ -439,6 +475,17 @@ const SpacePageDevelop: React.FC = () => {
         pageInfo={currentPageInfo}
         onCancel={() => setOpenAuthConfigModal(false)}
         onConfirm={handleConfirmAuthConfig}
+      />
+      {/*复制到空间弹窗*/}
+      <MoveCopyComponent
+        spaceId={spaceId}
+        loading={loadingCopyToSpace}
+        type={ApplicationMoreActionEnum.Copy_To_Space}
+        mode={AgentComponentTypeEnum.Page}
+        open={openCopyToSpaceModal}
+        title={currentPageInfo?.name}
+        onCancel={() => setOpenCopyToSpaceModal(false)}
+        onConfirm={handleConfirmCopyToSpace}
       />
     </div>
   );

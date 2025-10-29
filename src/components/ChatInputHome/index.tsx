@@ -7,8 +7,7 @@ import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import { handleUploadFileList } from '@/utils/upload';
 import { ArrowDownOutlined, LoadingOutlined } from '@ant-design/icons';
-import type { InputRef, UploadProps } from 'antd';
-import { Input, message, Tooltip, Upload } from 'antd';
+import { Input, InputRef, message, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -31,6 +30,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   className,
   wholeDisabled = false,
   clearDisabled = false,
+  clearLoading = false,
   onEnter,
   visible,
   selectedComponentList,
@@ -50,6 +50,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     getCurrentConversationRequestId,
     isConversationActive,
     disabledConversationActive,
+    messageList,
   } = useModel('conversationInfo');
 
   // 文档
@@ -358,29 +359,39 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           autoSize={{ minRows: 2, maxRows: 6 }}
         />
         <footer className={cx('flex', 'flex-1', styles.footer)}>
-          <ConditionRender condition={!!onClear}>
-            <Tooltip title="清空会话记录">
-              <span
-                className={cx(
-                  styles.clear,
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'cursor-pointer',
-                  styles.box,
-                  styles['plus-box'],
-                  { [styles.disabled]: clearDisabled || wholeDisabled },
-                )}
-                onClick={handleClear}
-              >
-                <SvgIcon
-                  name="icons-chat-clear"
-                  style={{ fontSize: '14px' }}
-                  className={cx(styles['svg-icon'])}
-                />
-              </span>
-            </Tooltip>
-          </ConditionRender>
+          {!!messageList?.length && (
+            <ConditionRender condition={!!onClear}>
+              <Tooltip title="清空会话记录">
+                <span
+                  className={cx(
+                    styles.clear,
+                    'flex',
+                    'items-center',
+                    'content-center',
+                    'cursor-pointer',
+                    styles.box,
+                    styles['plus-box'],
+                    {
+                      [styles.disabled]:
+                        clearDisabled || wholeDisabled || clearLoading,
+                    },
+                  )}
+                  onClick={handleClear}
+                >
+                  {clearLoading ? (
+                    <LoadingOutlined />
+                  ) : (
+                    <SvgIcon
+                      name="icons-chat-clear"
+                      style={{ fontSize: '14px' }}
+                      className={cx(styles['svg-icon'])}
+                    />
+                  )}
+                </span>
+              </Tooltip>
+            </ConditionRender>
+          )}
+
           {/*上传按钮*/}
           <Upload
             action={UPLOAD_FILE_ACTION}
