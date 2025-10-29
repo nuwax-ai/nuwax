@@ -22,6 +22,7 @@ import {
   bindDataSource,
   buildProject,
   exportProject,
+  stopAgentService,
   uploadAndStartProject,
 } from '@/services/appDev';
 import {
@@ -588,7 +589,7 @@ const AppDev: React.FC = () => {
       delayBeforeRefresh: 500,
       showMessage: false,
     });
-  }, [restartDevServer, devLogs.resetStartLine]);
+  }, [restartDevServer, devLogs.resetStartLine, projectId]);
 
   /**
    * 处理添加组件（Created 组件回调）
@@ -1281,7 +1282,11 @@ const AppDev: React.FC = () => {
                     onImportProject: () => setIsUploadModalVisible(true),
                     onUploadSingleFile: () => handleRightClickUpload(null),
                     onRefreshPreview: () => previewRef.current?.refresh(),
-                    onRestartServer: handleRestartDevServer,
+                    onRestartServer: async () => {
+                      //新逻辑 先停止Agent服务
+                      await stopAgentService(projectId || '');
+                      await handleRestartDevServer();
+                    },
                     onFullscreenPreview: () => {
                       if (previewRef.current && workspace.devServerUrl) {
                         window.open(

@@ -4,19 +4,33 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
-import { useModel } from 'umi';
+import React, { useEffect } from 'react';
+import { useModel, useSearchParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 /**
  * 二级菜单收起/展开切换按钮
+ * @description 支持通过 URL 参数 ?hideMenu=true 来默认收起二级菜单
  */
 const CollapseButton: React.FC = () => {
-  const { isSecondMenuCollapsed, toggleSecondMenuCollapse } =
-    useModel('layout');
+  const {
+    isSecondMenuCollapsed,
+    setIsSecondMenuCollapsed,
+    toggleSecondMenuCollapse,
+  } = useModel('layout');
   const { navigationStyle } = useUnifiedTheme();
+  const [searchParams] = useSearchParams();
+
+  // 从 URL 参数中读取 hideMenu 配置
+  useEffect(() => {
+    const hideMenu = searchParams.get('hideMenu');
+    if (hideMenu === 'true') {
+      // 如果 URL 参数中 hideMenu=true，则收起菜单
+      setIsSecondMenuCollapsed(true);
+    }
+  }, [searchParams, setIsSecondMenuCollapsed]);
 
   // 计算动态导航宽度
   const firstMenuWidth =
