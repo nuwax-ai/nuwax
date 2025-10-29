@@ -14,6 +14,7 @@ import {
 import { Avatar, Button, Popover, Space, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import { type PreviewRef } from '../Preview';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -37,6 +38,8 @@ export interface AppDevHeaderProps {
   isChatLoading?: boolean;
   /** 项目详情信息 */
   projectInfo?: ProjectDetailData | null;
+  /** Preview 组件引用，用于获取 iframe 内部回退次数 */
+  previewRef?: React.RefObject<PreviewRef>;
 }
 
 /**
@@ -54,6 +57,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   isDeploying = false,
   isChatLoading = false, // 新增：聊天加载状态
   projectInfo,
+  previewRef,
 }) => {
   // 获取项目名称，优先使用接口数据
   const projectName = projectInfo?.name || workspace.name || '大模型三部曲';
@@ -85,12 +89,38 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
     return PAGE_DEVELOP_PUBLISH_TYPE_LIST;
   }, [projectInfo?.publishType]);
 
+  // 处理返回按钮点击
+  const handleBackClick = () => {
+    // 先处理 iframe 内部的回退
+    if (previewRef?.current) {
+      try {
+        const iframeBackCount = previewRef.current.getHistoryBackCount();
+        // 如果 iframe 内有路由跳转，先在 iframe 内部回退相应次数
+        if (iframeBackCount > 0) {
+          previewRef.current.backInIframe(iframeBackCount);
+          // 给一点时间让 iframe 内部回退完成
+          setTimeout(() => {
+            // 然后父容器回退1步
+            jumpBack(`/space/${spaceId}/page-develop`);
+          }, 100);
+          return;
+        }
+      } catch (error) {
+        console.warn('[AppDevHeader] 处理 iframe 回退失败:', error);
+        // 出错时直接执行父容器回退
+      }
+    }
+
+    // 默认情况下，父容器回退1步
+    jumpBack(`/space/${spaceId}/page-develop`);
+  };
+
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
       <SvgIcon
         name="icons-nav-backward"
         className={cx(styles['icon-backward'])}
-        onClick={() => jumpBack(`/space/${spaceId}/page-develop`)}
+        onClick={handleBackClick}
       />
       {/* 项目图标 - 优先显示项目图标，为空时显示创建者头像 */}
       <Space size={27} wrap>

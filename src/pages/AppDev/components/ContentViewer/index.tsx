@@ -64,8 +64,14 @@ interface ContentViewerProps {
   onStartDev?: () => void;
   /** 重启开发服务器回调 */
   onRestartDev?: () => void;
-  /** 白屏检测回调 */
-  onWhiteScreen?: () => void;
+  /** 白屏且 iframe 内错误时触发 AI Agent 自动处理回调
+   * @param errorMessage 错误消息，为空字符串表示只有白屏没有错误
+   * @param errorType 错误类型，用于区分不同的错误场景
+   */
+  onWhiteScreenWithError?: (
+    errorMessage: string,
+    errorType?: 'whiteScreen' | 'iframe',
+  ) => void;
 }
 
 /**
@@ -99,7 +105,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   isChatLoading = false,
   onStartDev,
   onRestartDev,
-  onWhiteScreen,
+  onWhiteScreenWithError,
 }) => {
   // 使用 useMemo 缓存 Preview 组件，避免重新创建
   const previewComponent = useMemo(
@@ -118,7 +124,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         serverErrorCode={serverErrorCode}
         onStartDev={onStartDev}
         onRestartDev={onRestartDev}
-        onWhiteScreen={onWhiteScreen}
+        onWhiteScreenWithError={onWhiteScreenWithError}
       />
     ),
     [
@@ -133,7 +139,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       serverErrorCode,
       onStartDev,
       onRestartDev,
-      onWhiteScreen,
+      onWhiteScreenWithError,
     ],
   );
 

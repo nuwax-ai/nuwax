@@ -477,6 +477,9 @@ export const useAppDevChat = ({
         // message.error('AI助手连接失败');
         aIChatAbortConnectionRef.current?.abort();
         setIsChatLoading(false);
+        setChatMessages((prev) =>
+          markStreamingMessageError(prev, requestId, 'AI助手连接失败'),
+        );
       },
       onClose: () => {
         aIChatAbortConnectionRef.current?.abort();

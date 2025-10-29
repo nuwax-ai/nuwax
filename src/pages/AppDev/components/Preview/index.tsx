@@ -31,14 +31,22 @@ interface PreviewProps {
   onStartDev?: () => void;
   /** 重启开发服务器回调 */
   onRestartDev?: () => void;
-  /** 白屏检测回调 */
-  onWhiteScreen?: () => void;
+  /** 白屏且 iframe 内错误时触发 AI Agent 自动处理回调
+   * @param errorMessage 错误消息，为空字符串表示只有白屏没有错误
+   * @param errorType 错误类型，用于区分不同的错误场景
+   */
+  onWhiteScreenWithError?: (
+    errorMessage: string,
+    errorType?: 'whiteScreen' | 'iframe',
+  ) => void;
 }
 
 export interface PreviewRef {
   refresh: () => void;
   getIsLoading: () => boolean;
   getLastRefreshed: () => Date | null;
+  getHistoryBackCount: () => number;
+  backInIframe: (steps: number) => void;
 }
 
 /**
@@ -59,7 +67,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       serverErrorCode,
       onStartDev,
       onRestartDev,
-      onWhiteScreen,
+      onWhiteScreenWithError,
     },
     ref,
   ) => {
@@ -68,7 +76,25 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [retrying, setRetrying] = useState(false);
-    const [whiteScreenDetected, setWhiteScreenDetected] = useState(false);
+
+    // dev-monitor 错误信息收集
+    const devMonitorErrorsRef = useRef<
+      Array<{ message: string; details: string | null; timestamp: number }>
+    >([]);
+
+    // 路由历史记录
+    const historyStackRef = useRef<
+      Array<{
+        historyType: string;
+        url: string;
+        pathname: string;
+        timestamp: number;
+      }>
+    >([]);
+    const initialUrlRef = useRef<string | null>(null);
+    // 简化的回退计数：pushState 和 hashchange 的数量
+    const pushCountRef = useRef<number>(0);
+    const lastUrlRef = useRef<string | null>(null);
 
     /**
      * 获取错误类型前缀
@@ -261,7 +287,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // 有错误时显示重试按钮
         buttons = [
           {
-            text: retrying ? '重试中...' : '重试',
+            text: retrying ? '刷新中...' : '刷新',
             icon: <ReloadOutlined />,
             onClick: retryPreview,
             loading: retrying,
@@ -336,6 +362,34 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       }
     }, [devServerUrl, loadDevServerPreview]);
 
+    /**
+     * 计算需要回退的历史记录数量
+     * 返回从初始页面开始的 pushState 和 hashchange 次数
+     * 这表示需要多少次 back() 才能回到初始页面
+     */
+    const getHistoryBackCount = useCallback(() => {
+      return Math.max(0, pushCountRef.current);
+    }, []);
+
+    /**
+     * 在 iframe 内部执行回退
+     * @param steps 回退步数
+     */
+    const backInIframe = useCallback((steps: number) => {
+      if (!iframeRef.current || steps <= 0) return;
+
+      try {
+        const iframeWindow = iframeRef.current.contentWindow;
+        if (iframeWindow && iframeWindow.history) {
+          // 在 iframe 内部执行回退
+          // 使用 history.go(-steps) 比循环调用 history.back() 更高效
+          iframeWindow.history.go(-steps);
+        }
+      } catch (error) {
+        console.warn('[Preview] iframe 内部回退失败（可能是跨域限制）:', error);
+      }
+    }, []);
+
     // 暴露refresh方法给父组件
     useImperativeHandle(
       ref,
@@ -343,8 +397,16 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         refresh: refreshPreview,
         getIsLoading: () => isLoading,
         getLastRefreshed: () => lastRefreshed,
+        getHistoryBackCount,
+        backInIframe,
       }),
-      [refreshPreview, isLoading, lastRefreshed],
+      [
+        refreshPreview,
+        isLoading,
+        lastRefreshed,
+        getHistoryBackCount,
+        backInIframe,
+      ],
     );
 
     /**
@@ -353,20 +415,288 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const handleIframeLoad = useCallback(() => {
       setIsLoading(false);
       setLoadError(null);
-      // Iframe loaded successfully
+
+      // 清空之前收集的错误信息和路由历史
+      devMonitorErrorsRef.current = [];
+      historyStackRef.current = [];
+      initialUrlRef.current = null;
+      lastUrlRef.current = null;
+      pushCountRef.current = 0;
+      console.log('[Preview] iframeLoad');
     }, []);
 
     /**
      * iframe加载错误处理
      */
-    const handleIframeError = useCallback((...args: any[]) => {
-      setIsLoading(false);
-      setLoadError('预览加载失败，请检查开发服务器状态或网络连接');
-      console.log('iframe加载错误', args);
-      // Iframe load error
-    }, []);
+    const handleIframeError = useCallback(
+      (...args: any[]) => {
+        setIsLoading(false);
+        setLoadError('预览加载失败，请检查开发服务器状态或网络连接');
+        console.info('[Preview] iframe加载错误', args);
 
-    // 移除脚本注入后，不再监听来自 iframe 的资源错误 postMessage
+        // 统一通过 onWhiteScreenWithError 处理，指定错误类型为 iframe
+        if (onWhiteScreenWithError) {
+          onWhiteScreenWithError(
+            '预览加载失败，请检查开发服务器状态或网络连接',
+            'iframe',
+          );
+        }
+        // Iframe load error
+      },
+      [onWhiteScreenWithError],
+    );
+
+    /**
+     * 检查白屏状态
+     * @returns 是否检测到白屏
+     */
+    const checkWhiteScreen = useCallback(() => {
+      if (!devServerUrl || !iframeRef.current) return false;
+
+      try {
+        const iframe = iframeRef.current;
+        if (!iframe) return false;
+
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!doc) return false;
+
+        // 检查页面是否为空或只有空白内容
+        if (!doc || !doc.body) return true;
+
+        // 检查是否空内容
+        const hasContent =
+          doc.body.innerText.trim().length > 0 || doc.body.children.length > 0;
+        if (!hasContent) return true;
+
+        // 检查是否存在根节点（React/Vue 挂载点）
+        const appRoot = doc.querySelector('#root, #app');
+        if (!appRoot) return true;
+
+        // 如果存在挂载点但内部为空，说明 React/Vite 崩溃了
+        if (appRoot.children.length === 0) return true;
+
+        return false;
+      } catch (error) {
+        // 跨域或其他错误，忽略
+        console.debug('[Preview] 白屏检测失败（可能是跨域）:', error);
+        return false;
+      }
+    }, [devServerUrl]);
+
+    /**
+     * 处理来自 dev-monitor 的错误消息
+     */
+    const handleDevMonitorError = useCallback(
+      (errorInfo: {
+        message: string;
+        details: string | null;
+        timestamp: number;
+      }) => {
+        // 检查是否已存在相同错误（避免重复）
+        const exists = devMonitorErrorsRef.current.some(
+          (e) =>
+            e.message === errorInfo.message &&
+            Math.abs(e.timestamp - errorInfo.timestamp) < 1000, // 1秒内的相同错误视为重复
+        );
+
+        if (!exists) {
+          devMonitorErrorsRef.current.push(errorInfo);
+          // 限制错误数量，只保留最近10条
+          if (devMonitorErrorsRef.current.length > 10) {
+            devMonitorErrorsRef.current.shift();
+          }
+
+          // 收到错误消息时，主动触发白屏检测
+          const isWhiteScreen = checkWhiteScreen();
+
+          // 格式化错误消息
+          const errorMessages = devMonitorErrorsRef.current
+            .slice(-3) // 只取最近3条
+            .map((e) => {
+              let msg = `[DevMonitor] ${e.message}`;
+              if (e.details) {
+                try {
+                  const details = JSON.parse(e.details);
+                  if (typeof details === 'string') {
+                    msg += `: ${details}`;
+                  } else if (details && typeof details === 'object') {
+                    msg += `: ${JSON.stringify(details)}`;
+                  }
+                } catch {
+                  msg += `: ${e.details}`;
+                }
+              }
+              return msg;
+            })
+            .join('; ');
+
+          // 如果检测到白屏且有错误，统一通过 onWhiteScreenWithError 处理
+          if (isWhiteScreen && onWhiteScreenWithError) {
+            onWhiteScreenWithError(errorMessages, 'whiteScreen');
+            console.warn(
+              '[Preview] 白屏检测到 DevMonitor 错误，已触发 AI Agent 自动处理:',
+              errorMessages,
+            );
+          }
+        }
+      },
+      [checkWhiteScreen, onWhiteScreenWithError],
+    );
+
+    /**
+     * 处理来自 dev-monitor 的历史变化消息
+     */
+    const handleDevMonitorHistoryChange = useCallback(
+      (changeData: {
+        historyType: string;
+        url: string;
+        pathname: string;
+        timestamp: number;
+      }) => {
+        // 记录初始 URL
+        if (changeData.historyType === 'initial') {
+          initialUrlRef.current = changeData.url;
+          lastUrlRef.current = changeData.url;
+          historyStackRef.current = [changeData];
+          pushCountRef.current = 0;
+          return;
+        }
+
+        // 记录历史变化
+        historyStackRef.current.push(changeData);
+
+        // 限制历史记录数量，只保留最近50条
+        if (historyStackRef.current.length > 50) {
+          historyStackRef.current.shift();
+        }
+
+        // 根据历史变化类型更新回退计数
+        if (
+          changeData.historyType === 'pushState' ||
+          changeData.historyType === 'hashchange'
+        ) {
+          // pushState 和 hashchange 会增加历史记录
+          pushCountRef.current++;
+        } else if (changeData.historyType === 'replaceState') {
+          // replaceState 不会增加历史记录，不改变计数
+          // 但需要更新 lastUrl
+        } else if (changeData.historyType === 'popstate') {
+          // popstate 表示用户手动前进/后退
+          // 通过比较 URL 来判断：如果当前 URL 和之前的某个 URL 相同，说明是后退
+          // 简化处理：如果 pushCount > 0，可能是一次后退，减少计数
+          // 但为了更准确，我们需要比较当前 URL 是否在历史栈中存在
+          const currentUrl = changeData.url;
+          const lastUrl = lastUrlRef.current;
+
+          // 如果当前 URL 和上一个 URL 相同，可能是后退到之前的页面
+          // 查找历史栈中是否有相同的 URL（且时间更早），如果有则说明是后退
+          const earlierUrlIndex = historyStackRef.current.findIndex(
+            (record) =>
+              record.url === currentUrl &&
+              record.timestamp < changeData.timestamp &&
+              (record.historyType === 'pushState' ||
+                record.historyType === 'hashchange'),
+          );
+
+          if (earlierUrlIndex >= 0 && pushCountRef.current > 0) {
+            // 找到了更早的相同 URL，说明是后退
+            pushCountRef.current--;
+          } else if (currentUrl !== lastUrl && pushCountRef.current > 0) {
+            // 如果 URL 变化且 pushCount > 0，可能是后退（简化判断）
+            // 但这里不做处理，因为无法确定是前进还是后退
+            // 更准确的方法是维护一个 URL 栈，但这会增加复杂度
+          }
+        }
+
+        // 更新最后 URL
+        lastUrlRef.current = changeData.url;
+      },
+      [],
+    );
+
+    /**
+     * 监听来自 iframe 的 postMessage 消息
+     */
+    useEffect(() => {
+      const handleMessage = (event: MessageEvent) => {
+        // ⭐ 过滤：只处理来自 iframe 的消息
+        // 检查消息是否来自我们的 iframe（通过检查 source 是否是 iframe 的 contentWindow）
+        const isFromIframe =
+          iframeRef.current &&
+          (event.source === iframeRef.current.contentWindow ||
+            // 也允许通过 origin 判断（如果 iframe 的 URL 和 origin 匹配）
+            (iframeRef.current.src &&
+              event.origin === new URL(iframeRef.current.src).origin));
+
+        // ⭐ 调试日志：记录所有消息以便排查
+        const data = event.data;
+        if (
+          data &&
+          typeof data === 'object' &&
+          data.type?.includes('dev-monitor')
+        ) {
+          console.log('[Preview] 🔍 DevMonitor message detected:', {
+            type: data.type,
+            origin: event.origin,
+            isFromIframe: !!isFromIframe,
+            sourceIsWindow: event.source instanceof Window,
+            iframeSrc: iframeRef.current?.src,
+            errorCount: data.errorCount,
+            hasLatestError: !!data.latestError,
+            hasError: !!data.error,
+            fullData: data,
+          });
+        }
+
+        // 如果不是来自 iframe，直接返回（避免处理其他来源的消息，如 React DevTools）
+        if (!isFromIframe && data?.type?.includes('dev-monitor')) {
+          console.warn(
+            '[Preview] ⚠️ DevMonitor message ignored (not from iframe):',
+            {
+              type: data.type,
+              origin: event.origin,
+              source: event.source,
+            },
+          );
+          return;
+        }
+
+        // 处理 dev-monitor 消息
+        if (data && typeof data === 'object' && data.type) {
+          switch (data.type) {
+            case 'dev-monitor-error':
+              // ⭐ 实时错误消息（立即发送）
+              if (data.error) {
+                console.debug(
+                  '[Preview] Received dev-monitor-error:',
+                  data.error,
+                );
+                handleDevMonitorError(data.error);
+              }
+              break;
+
+            case 'dev-monitor-history-change':
+              // 历史记录变化消息
+              handleDevMonitorHistoryChange({
+                historyType: data.historyType,
+                url: data.url,
+                pathname: data.pathname,
+                timestamp: data.timestamp || Date.now(),
+              });
+              break;
+
+            default:
+              break;
+          }
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+
+      return () => {
+        window.removeEventListener('message', handleMessage);
+      };
+    }, [handleDevMonitorError, handleDevMonitorHistoryChange]);
 
     // 当开发服务器URL可用时，自动加载预览
     useEffect(() => {
@@ -374,61 +704,41 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       if (devServerUrl) {
         // Dev server URL available, loading preview
         loadDevServerPreview();
+
+        // 清空之前收集的错误信息和路由历史
+        devMonitorErrorsRef.current = [];
+        historyStackRef.current = [];
+        initialUrlRef.current = null;
+        lastUrlRef.current = null;
+        pushCountRef.current = 0;
       } else {
         // Dev server URL is empty, clearing iframe and resetting states
 
         setIsLoading(false);
         setLoadError(null);
         setLastRefreshed(new Date());
+
+        // 清空收集的错误信息和路由历史
+        devMonitorErrorsRef.current = [];
+        historyStackRef.current = [];
+        initialUrlRef.current = null;
+        lastUrlRef.current = null;
+        pushCountRef.current = 0;
       }
     }, [devServerUrl, loadDevServerPreview]);
 
-    // 白屏检测
-    useEffect(() => {
-      if (!devServerUrl || !iframeRef.current) return;
-
-      const checkWhiteScreen = () => {
-        try {
-          const iframe = iframeRef.current;
-          if (!iframe) return;
-
-          const doc = iframe.contentDocument || iframe.contentWindow?.document;
-          if (!doc) return;
-
-          // 检查页面是否为空或只有空白内容
-          const body = doc.body;
-          if (!body) return;
-
-          const bodyText = body.innerText?.trim() || '';
-          const bodyHTML = body.innerHTML?.trim() || '';
-
-          // 如果body为空或只有空白字符，认为是白屏
-          if (bodyText === '' && bodyHTML === '') {
-            if (!whiteScreenDetected) {
-              setWhiteScreenDetected(true);
-              onWhiteScreen?.();
-              console.warn('[Preview] 检测到白屏');
-            }
-          } else {
-            setWhiteScreenDetected(false);
-          }
-        } catch (error) {
-          // 跨域或其他错误，忽略
-          console.debug('[Preview] 白屏检测失败（可能是跨域）:', error);
-        }
-      };
-
-      // 延迟检测，给页面加载时间
-      const timer = setTimeout(checkWhiteScreen, 3000);
-
-      return () => clearTimeout(timer);
-    }, [devServerUrl, whiteScreenDetected, onWhiteScreen]);
-
+    // 组件卸载时清理
     useEffect(() => {
       return () => {
         if (iframeRef.current) {
           iframeRef.current = null;
         }
+        // 清理收集的错误信息和路由历史
+        devMonitorErrorsRef.current = [];
+        historyStackRef.current = [];
+        initialUrlRef.current = null;
+        lastUrlRef.current = null;
+        pushCountRef.current = 0;
       };
     }, []);
 

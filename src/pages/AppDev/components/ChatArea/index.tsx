@@ -21,7 +21,7 @@ import {
   LoadingOutlined,
   MessageOutlined,
 } from '@ant-design/icons';
-import { Card, message, Spin, Typography } from 'antd';
+import { Card, message, Spin, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
@@ -48,6 +48,10 @@ interface ChatAreaProps {
   // 自动处理异常相关props
   // autoHandleError?: boolean;
   // onAutoHandleErrorChange?: (enabled: boolean) => void;
+  /** 自动错误处理重试次数 */
+  autoErrorRetryCount?: number;
+  /** 用户手动发送消息回调 */
+  onUserManualSendMessage?: () => void;
 }
 
 /**
@@ -70,6 +74,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
   // autoHandleError = true, // 暂时注释掉，后续可能需要
   // onAutoHandleErrorChange, // 暂时注释掉，后续可能需要
+  autoErrorRetryCount = 0,
+  onUserManualSendMessage,
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
@@ -404,6 +410,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         // 发送消息(传递附件)
         chat.sendMessage(attachments, aiChatAttachments, aiChatPrototypeImages);
 
+        onUserManualSendMessage?.();
         // 发送消息后强制滚动到底部并开启自动滚动
         setTimeout(() => {
           scrollContainerRef.current?.handleScrollButtonClick();
@@ -661,6 +668,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return renderedMessages;
   }, [chat.chatMessages, renderChatMessage, renderConversationDivider]);
 
+  // 计算进度百分比（自动处理次数 / 3，最大100%）
+  // const progressPercent = useMemo(() => {
+  //   return Math.min((autoErrorRetryCount / 3) * 100, 100);
+  // }, [autoErrorRetryCount]);
+
   return (
     <Card className={styles.chatCard} variant="outlined">
       {/* 聊天模式切换 */}
@@ -727,6 +739,30 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         >
           <DownOutlined />
         </div>
+        {/* 自动错误处理进度条 */}
+        {autoErrorRetryCount > 0 && chat.isChatLoading && (
+          <Tooltip title={`(${autoErrorRetryCount}/3) 尝试自动修复中...`}>
+            <div className={styles.progressContainer}>
+              <div className={styles.progressBar}>
+                <div
+                  className={`${styles.progressBarItem} ${
+                    autoErrorRetryCount >= 1 ? styles.active : ''
+                  }`}
+                />
+                <div
+                  className={`${styles.progressBarItem} ${
+                    autoErrorRetryCount >= 2 ? styles.active : ''
+                  }`}
+                />
+                <div
+                  className={`${styles.progressBarItem} ${
+                    autoErrorRetryCount >= 3 ? styles.active : ''
+                  }`}
+                />
+              </div>
+            </div>
+          </Tooltip>
+        )}
         {/* 聊天输入框 */}
         <ChatInputHome
           chat={chat}
