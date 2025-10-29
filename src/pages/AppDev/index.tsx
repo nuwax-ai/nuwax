@@ -89,6 +89,10 @@ const AppDev: React.FC = () => {
   // 缓存 selectedDataResources 引用，避免无限循环
   const selectedDataResourcesRef = useRef<DataResource[]>([]);
 
+  // ⭐ 自动发送消息锁，防止重复调用
+  const autoSendLockRef = useRef<boolean>(false);
+  const autoSendTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // 页面编辑状态
   const [openPageEditVisible, setOpenPageEditVisible] = useState(false);
   // 处于loading状态的组件列表
@@ -314,10 +318,40 @@ const AppDev: React.FC = () => {
 
       // 将日志内容添加到聊天输入框
       chat.setChatInput(content);
+
       if (isAuto && !chat.isChatLoading) {
-        setTimeout(() => {
-          // 通过事件总线发布发送消息事件
-          eventBus.emit(EVENT_NAMES.SEND_CHAT_MESSAGE);
+        // ⭐ 加锁：防止重复调用自动发送逻辑
+        if (autoSendLockRef.current) {
+          console.warn('[AppDev] ⚠️ 自动发送已在处理中，忽略重复调用');
+          return;
+        }
+
+        // 设置锁标志
+        autoSendLockRef.current = true;
+
+        // 清除之前的定时器（如果存在）
+        if (autoSendTimerRef.current) {
+          clearTimeout(autoSendTimerRef.current);
+        }
+
+        // 设置定时器发送消息
+        autoSendTimerRef.current = setTimeout(() => {
+          try {
+            // 再次检查聊天是否仍在加载中
+            if (!chat.isChatLoading) {
+              // 通过事件总线发布发送消息事件
+              eventBus.emit(EVENT_NAMES.SEND_CHAT_MESSAGE);
+              console.log('[AppDev] ✅ 自动发送消息事件已触发');
+            } else {
+              console.warn('[AppDev] ⚠️ 聊天正在加载中，取消自动发送');
+            }
+          } finally {
+            // 延迟解锁，确保消息已处理
+            setTimeout(() => {
+              autoSendLockRef.current = false;
+              autoSendTimerRef.current = null;
+            }, 500);
+          }
         }, 300);
         return;
       }
@@ -1138,6 +1172,13 @@ const AppDev: React.FC = () => {
 
       // 停止日志轮询
       devLogs.stopPolling();
+
+      // ⭐ 清理自动发送相关资源
+      if (autoSendTimerRef.current) {
+        clearTimeout(autoSendTimerRef.current);
+        autoSendTimerRef.current = null;
+      }
+      autoSendLockRef.current = false;
     };
   }, []); // 空依赖数组，只在组件卸载时执行
 
