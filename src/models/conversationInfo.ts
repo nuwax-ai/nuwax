@@ -531,6 +531,8 @@ export default () => {
     }, 200);
   };
 
+  const abortController = new AbortController();
+
   // 会话处理
   const handleConversation = async (
     params: ConversationChatParams,
@@ -575,6 +577,7 @@ export default () => {
         Accept: 'application/json, text/plain, */* ',
       },
       body: params,
+      abortController,
       onMessage: (res: ConversationChatResponse) => {
         handleChangeMessageList(params, res, currentMessageId);
         // 滚动到底部
@@ -685,6 +688,9 @@ export default () => {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+
+    // 停止当前会话【强制】
+    abortController?.abort();
   };
 
   // 发送消息
