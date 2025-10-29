@@ -483,7 +483,7 @@ const Chat: React.FC = () => {
                 </>
               ) : (
                 !message &&
-                conversationInfo && (
+                (conversationInfo ? (
                   // Chat记录为空
                   <AgentChatEmpty
                     className={cx({ 'h-full': !variables?.length })}
@@ -499,7 +499,21 @@ const Chat: React.FC = () => {
                       />
                     }
                   />
-                )
+                ) : (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flex: 1,
+                      height: '100%',
+                      width: '100%',
+                      margin: '50px auto',
+                    }}
+                  >
+                    <LoadingOutlined />
+                  </div>
+                ))
               )}
             </div>
           </div>
