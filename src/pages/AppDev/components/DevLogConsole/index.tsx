@@ -98,7 +98,7 @@ const LogContentBlock: React.FC<{
  */
 const LogGroupItem: React.FC<{
   group: LogGroup;
-  onAddToChat?: (content: string) => void;
+  onAddToChat?: (content: string, isAuto?: boolean) => void;
 }> = ({ group, onAddToChat }) => {
   // const [isExpanded, setIsExpanded] = useState(true); // 暂时注释掉，后续可能需要
   const groupLogs = group.logs
@@ -108,7 +108,7 @@ const LogGroupItem: React.FC<{
   // 处理点击事件
   const handleClick = () => {
     if (onAddToChat && groupLogs) {
-      onAddToChat(groupLogs);
+      onAddToChat(groupLogs, false);
     }
   };
   return (
