@@ -470,6 +470,13 @@ export const useAppDevChat = ({
             });
           } else {
             message.error(response.message);
+            setChatMessages((prev) =>
+              markStreamingMessageError(
+                prev,
+                requestId,
+                '服务异常，请稍后再试',
+              ),
+            );
           }
         }
       },
