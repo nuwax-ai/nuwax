@@ -50,6 +50,8 @@ interface ChatAreaProps {
   // onAutoHandleErrorChange?: (enabled: boolean) => void;
   /** 自动错误处理重试次数 */
   autoErrorRetryCount?: number;
+  /** 用户手动发送消息回调 */
+  onUserManualSendMessage?: () => void;
 }
 
 /**
@@ -73,6 +75,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // autoHandleError = true, // 暂时注释掉，后续可能需要
   // onAutoHandleErrorChange, // 暂时注释掉，后续可能需要
   autoErrorRetryCount = 0,
+  onUserManualSendMessage,
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
@@ -407,6 +410,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         // 发送消息(传递附件)
         chat.sendMessage(attachments, aiChatAttachments, aiChatPrototypeImages);
 
+        onUserManualSendMessage?.();
         // 发送消息后强制滚动到底部并开启自动滚动
         setTimeout(() => {
           scrollContainerRef.current?.handleScrollButtonClick();
