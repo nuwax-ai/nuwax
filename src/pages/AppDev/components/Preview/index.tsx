@@ -264,7 +264,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // 有错误时显示重试按钮
         buttons = [
           {
-            text: retrying ? '重试中...' : '重试',
+            text: retrying ? '刷新中...' : '刷新',
             icon: <ReloadOutlined />,
             onClick: retryPreview,
             loading: retrying,
