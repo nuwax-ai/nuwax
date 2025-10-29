@@ -1280,7 +1280,7 @@ const AppDev: React.FC = () => {
                 autoErrorRetryCount={autoErrorHandling.autoRetryCount} // 新增：自动错误处理重试次数
                 onUserManualSendMessage={() => {
                   // 用户手动发送消息，重置自动重试计数
-                  autoErrorHandling.resetAutoRetryCount();
+                  autoErrorHandling.resetAndEnableAutoHandling();
                 }}
               />
             </div>
@@ -1538,7 +1538,10 @@ const AppDev: React.FC = () => {
                   onAddToChat={(content: string, isAuto?: boolean) => {
                     autoErrorHandling.handleCustomError(content, 'log', isAuto);
                   }}
-                  onResetAutoRetry={autoErrorHandling.resetAutoRetryCount}
+                  onResetAutoRetry={() => {
+                    // 重置自动重试计数
+                    autoErrorHandling.resetAndEnableAutoHandling();
+                  }}
                 />
               )}
             </div>

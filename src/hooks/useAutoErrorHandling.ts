@@ -39,6 +39,8 @@ interface UseAutoErrorHandlingReturn {
   resetAutoRetryCount: () => void;
   /** 用户确认继续自动处理 */
   handleUserConfirmContinue: () => void;
+  /** 重置并启用自动处理 */
+  resetAndEnableAutoHandling: () => void;
   /** 用户取消自动处理 */
   handleUserCancelAuto: () => void;
 }
@@ -83,6 +85,12 @@ export const useAutoErrorHandling = ({
    * 用户确认继续自动处理
    */
   const handleUserConfirmContinue = useCallback(() => {
+    resetAutoRetryCount();
+    setIsAutoHandlingEnabled(true);
+  }, [resetAutoRetryCount]);
+
+  // reset and endable AutoHandling
+  const resetAndEnableAutoHandling = useCallback(() => {
     resetAutoRetryCount();
     setIsAutoHandlingEnabled(true);
   }, [resetAutoRetryCount]);
@@ -319,6 +327,7 @@ export const useAutoErrorHandling = ({
     handleCustomError,
     resetAutoRetryCount,
     handleUserConfirmContinue,
+    resetAndEnableAutoHandling,
     handleUserCancelAuto,
   };
 };
