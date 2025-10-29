@@ -511,22 +511,6 @@ const AppDev: React.FC = () => {
   ]);
 
   /**
-   * 当 AI 会话加载完成时，重置自动重试计数
-   * 这样进度条就会自动隐藏
-   */
-  useEffect(() => {
-    // 从加载中变为完成时，重置计数
-    if (!chat.isChatLoading && autoErrorHandling.autoRetryCount > 0) {
-      // 延迟重置，确保进度条能正确显示
-      const timer = setTimeout(() => {
-        autoErrorHandling.resetAutoRetryCount();
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [chat.isChatLoading, autoErrorHandling]);
-
-  /**
    * 处理项目发布成组件
    */
   const handlePublishComponent = useCallback(async () => {
@@ -1294,6 +1278,10 @@ const AppDev: React.FC = () => {
                 onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
                 modelSelector={modelSelector} // 模型选择器状态
                 autoErrorRetryCount={autoErrorHandling.autoRetryCount} // 新增：自动错误处理重试次数
+                onUserManualSendMessage={() => {
+                  // 用户手动发送消息，重置自动重试计数
+                  autoErrorHandling.resetAndEnableAutoHandling();
+                }}
               />
             </div>
 
@@ -1550,7 +1538,10 @@ const AppDev: React.FC = () => {
                   onAddToChat={(content: string, isAuto?: boolean) => {
                     autoErrorHandling.handleCustomError(content, 'log', isAuto);
                   }}
-                  onResetAutoRetry={autoErrorHandling.resetAutoRetryCount}
+                  onResetAutoRetry={() => {
+                    // 重置自动重试计数
+                    autoErrorHandling.resetAndEnableAutoHandling();
+                  }}
                 />
               )}
             </div>
