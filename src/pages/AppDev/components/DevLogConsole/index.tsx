@@ -26,6 +26,8 @@ import './index.less';
  * DevLogConsole 组件属性
  */
 interface DevLogConsoleProps {
+  /** 是否显示 */
+  visible: boolean;
   /** 日志数据 */
   logs: DevLogEntry[];
   /** 最新日志块是否包含错误 */
@@ -148,6 +150,7 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
   onAddToChat,
   isChatLoading = false,
   onResetAutoRetry,
+  visible = false,
 }) => {
   const logListRef = useRef<HTMLDivElement>(null);
   const [logGroups, setLogGroups] = useState<LogGroup[]>([]);
@@ -222,17 +225,35 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
       return () => clearTimeout(timer);
     }
   }, []);
+
+  // 添加一个自动问题处理逻辑
+  useEffect(() => {
+    if (isChatLoading) return;
+    // 查找到最新错误日志所在的组
+    const theLastLogGroup = logGroups.at(-1);
+    if (hasErrorInLatestBlock && theLastLogGroup) {
+      onAddToChat?.(
+        theLastLogGroup?.logs
+          .map((log) => log.content)
+          .join('\n')
+          .trim(),
+        true,
+      );
+    }
+  }, [hasErrorInLatestBlock, logGroups, isChatLoading]);
+
+  // 一键问题处理
   const handleFindLatestErrorLogs = useCallback(() => {
+    if (!onAddToChat || isChatLoading || !onResetAutoRetry) return;
     // 重置自动重试计数
     onResetAutoRetry?.();
 
     // 查找到最新错误日志所在的组
-    const latestErrorGroup = logGroups.findLast((group) =>
-      group.logs.some((log) => isErrorLog(log)),
-    );
-    if (latestErrorGroup) {
+    const theLastLogGroup = logGroups.at(-1);
+    const hasError = theLastLogGroup?.logs.some((log) => isErrorLog(log));
+    if (hasError && theLastLogGroup) {
       onAddToChat?.(
-        latestErrorGroup.logs
+        theLastLogGroup?.logs
           .map((log) => log.content)
           .join('\n')
           .trim(),
@@ -240,6 +261,8 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
       );
     }
   }, [logGroups, onAddToChat, onResetAutoRetry]);
+
+  if (!visible) return null;
 
   return (
     <div className="dev-log-console">
@@ -330,4 +353,4 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
   );
 };
 
-export default React.memo(DevLogConsole);
+export default DevLogConsole;
