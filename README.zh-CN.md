@@ -1,9 +1,9 @@
 # Nuwax
 Nuwax AI - Easily build and deploy your private Agentic AI solutions.
 
-官网地址：https://nuwax.com
+官方网站：https://nuwax.com
 
-体验地址：https://agent.nuwax.com
+在线演示：https://agent.nuwax.com
 
 [中文文档](README.zh-CN.md)|[English Doc](README.md) | [Contributing](CONTRIBUTING.zh-CN.md) | [Documentation](docs/)
 
