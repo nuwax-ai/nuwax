@@ -8,7 +8,11 @@ import {
 } from '@/constants/library.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
-import { ApplicationMoreActionEnum } from '@/types/enums/space';
+import {
+  ApplicationMoreActionEnum,
+  ComponentTypeEnum,
+  ModelComponentStatusEnum,
+} from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentItemProps } from '@/types/interfaces/library';
 import classNames from 'classnames';
@@ -65,14 +69,33 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
           <span className={cx('text-ellipsis', 'flex-1', styles.time)}>
             最近编辑 {dayjs(componentInfo.modified).format('MM-DD HH:mm')}
           </span>
-          {componentInfo?.publishStatus === PublishStatusEnum.Published && (
-            <span
-              className={cx('flex', 'items-center', 'gap-4', styles.status)}
-            >
-              <ICON_SUCCESS />
-              已发布
-            </span>
-          )}
+          {
+            // 模型组件
+            componentInfo?.type === ComponentTypeEnum.Model ? (
+              <span
+                className={cx('flex', 'items-center', 'gap-4', styles.status)}
+              >
+                {componentInfo?.enabled === ModelComponentStatusEnum.Enabled ? (
+                  <>
+                    <ICON_SUCCESS />
+                    已启用
+                  </>
+                ) : (
+                  <>已禁用</>
+                )}
+              </span>
+            ) : (
+              // 其他组件
+              componentInfo?.publishStatus === PublishStatusEnum.Published && (
+                <span
+                  className={cx('flex', 'items-center', 'gap-4', styles.status)}
+                >
+                  <ICON_SUCCESS />
+                  已发布
+                </span>
+              )
+            )
+          }
         </>
       }
       footer={

@@ -191,3 +191,11 @@ export interface SpaceApplicationList {
   icon: React.ReactNode;
   text: string;
 }
+
+// 模型组件状态枚举
+export enum ModelComponentStatusEnum {
+  // 已启用
+  Enabled = 1,
+  // 已禁用
+  Disabled = 0,
+}
