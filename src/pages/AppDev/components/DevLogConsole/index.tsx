@@ -44,6 +44,8 @@ interface DevLogConsoleProps {
   onAddToChat?: (content: string, isAuto?: boolean) => void;
   /** 是否正在发送消息 */
   isChatLoading?: boolean;
+  /** 重置自动重试计数回调 */
+  onResetAutoRetry?: () => void;
 }
 
 /**
@@ -96,7 +98,7 @@ const LogContentBlock: React.FC<{
  */
 const LogGroupItem: React.FC<{
   group: LogGroup;
-  onAddToChat?: (content: string) => void;
+  onAddToChat?: (content: string, isAuto?: boolean) => void;
 }> = ({ group, onAddToChat }) => {
   // const [isExpanded, setIsExpanded] = useState(true); // 暂时注释掉，后续可能需要
   const groupLogs = group.logs
@@ -106,7 +108,7 @@ const LogGroupItem: React.FC<{
   // 处理点击事件
   const handleClick = () => {
     if (onAddToChat && groupLogs) {
-      onAddToChat(groupLogs);
+      onAddToChat(groupLogs, false);
     }
   };
   return (
@@ -145,6 +147,7 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
   onClose,
   onAddToChat,
   isChatLoading = false,
+  onResetAutoRetry,
 }) => {
   const logListRef = useRef<HTMLDivElement>(null);
   const [logGroups, setLogGroups] = useState<LogGroup[]>([]);
@@ -220,6 +223,9 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
     }
   }, []);
   const handleFindLatestErrorLogs = useCallback(() => {
+    // 重置自动重试计数
+    onResetAutoRetry?.();
+
     // 查找到最新错误日志所在的组
     const latestErrorGroup = logGroups.findLast((group) =>
       group.logs.some((log) => isErrorLog(log)),
@@ -233,7 +239,7 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
         true,
       );
     }
-  }, [logGroups, onAddToChat]);
+  }, [logGroups, onAddToChat, onResetAutoRetry]);
 
   return (
     <div className="dev-log-console">

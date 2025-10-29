@@ -13,6 +13,7 @@ import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
+import { useAutoErrorHandling } from '@/hooks/useAutoErrorHandling';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { useRestartDevServer } from '@/hooks/useRestartDevServer';
@@ -123,14 +124,8 @@ const AppDev: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
 
-  // 图片清空方法引用
-  // const clearUploadedImagesRef = useRef<(() => void) | null>(null);
-
   // 部署相关状态
   const [isDeploying, setIsDeploying] = useState(false);
-
-  // 导出项目状态
-  // const [isExporting, setIsExporting] = useState(false); // 暂时注释掉，后续可能需要
 
   // 单文件上传状态
   const [isSingleFileUploadModalVisible, setIsSingleFileUploadModalVisible] =
@@ -309,13 +304,36 @@ const AppDev: React.FC = () => {
     maxLogLines: 1000,
   });
 
-  // 自动异常处理（暂时禁用）
-  // const autoErrorHandling = useAutoErrorHandling(projectId || '', {
-  //   enabled: hasValidProjectId,
-  //   errorDetectionDelay: 1000,
-  //   maxSendFrequency: 30000,
-  //   showNotification: true,
-  // });
+  // 临时回调，稍后会被替换
+  const handleAddLogToChat = useCallback(
+    (content: string, isAuto?: boolean) => {
+      if (!content.trim()) {
+        message.warning('输入内容为空');
+        return;
+      }
+
+      // 将日志内容添加到聊天输入框
+      chat.setChatInput(content);
+      if (isAuto && !chat.isChatLoading) {
+        setTimeout(() => {
+          // 通过事件总线发布发送消息事件
+          eventBus.emit(EVENT_NAMES.SEND_CHAT_MESSAGE);
+        }, 300);
+        return;
+      }
+      // 显示成功提示
+      message.success('日志已添加,等待发送');
+    },
+    [chat],
+  );
+
+  // 自动异常处理
+  const autoErrorHandling = useAutoErrorHandling({
+    devLogs,
+    onAddToChat: handleAddLogToChat,
+    isChatLoading: chat.isChatLoading,
+    enabled: hasValidProjectId && projectInfo.hasPermission,
+  });
 
   // 数据资源管理
   const dataResourceManagement = useDataResourceManagement();
@@ -439,6 +457,40 @@ const AppDev: React.FC = () => {
   useEffect(() => {
     setMissingProjectId(!hasValidProjectId);
   }, [projectId, hasValidProjectId]);
+
+  /**
+   * 监听日志错误，触发自动处理
+   * 当有新错误时触发自动修复
+   */
+  useEffect(() => {
+    if (devLogs.hasErrorInLatestBlock && !chat.isChatLoading) {
+      // 延迟一小段时间，确保新的错误日志已经添加到 devLogs.logs 中
+      setTimeout(() => {
+        autoErrorHandling.handleAutoError();
+      }, 100);
+    }
+  }, [
+    devLogs.hasErrorInLatestBlock,
+    devLogs.logs.length, // 新增：监听日志数组长度变化
+    chat.isChatLoading,
+    autoErrorHandling.handleAutoError,
+  ]);
+
+  /**
+   * 当 AI 会话加载完成时，重置自动重试计数
+   * 这样进度条就会自动隐藏
+   */
+  useEffect(() => {
+    // 从加载中变为完成时，重置计数
+    if (!chat.isChatLoading && autoErrorHandling.autoRetryCount > 0) {
+      // 延迟重置，确保进度条能正确显示
+      const timer = setTimeout(() => {
+        autoErrorHandling.resetAutoRetryCount();
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [chat.isChatLoading, autoErrorHandling]);
 
   /**
    * 处理项目发布成组件
@@ -954,29 +1006,27 @@ const AppDev: React.FC = () => {
   );
 
   /**
-   * 处理将日志内容添加到聊天框
+   * 统一处理白屏和 iframe 错误的情况
+   * 统一由 autoErrorHandling 管理处理，包括重试次数限制和用户确认
+   * @param errorMessage 错误消息，为空字符串表示只有白屏没有错误
    */
-  const handleAddLogToChat = useCallback(
-    (logContent: string, isAuto?: boolean) => {
-      if (!logContent.trim()) {
-        message.warning('日志内容为空');
-        return;
+  const handleWhiteScreenWithError = useCallback(
+    (errorMessage: string, errorType?: 'whiteScreen' | 'iframe') => {
+      // 如果有错误消息，通过 autoErrorHandling 统一处理（格式化逻辑在内部）
+      if (errorMessage.trim()) {
+        // 通过 autoErrorHandling 统一处理，传入原始错误内容和场景类型
+        // 如果未指定类型，默认使用 'whiteScreen'
+        autoErrorHandling.handleCustomError(
+          errorMessage,
+          errorType || 'whiteScreen',
+          true,
+        );
+      } else {
+        // 只有白屏没有错误，可以记录日志但不触发自动处理
+        console.warn('[AppDev] 检测到白屏，但未捕获到错误信息');
       }
-
-      // 将日志内容添加到聊天输入框
-      const formattedContent = `请帮我分析以下日志内容：\n\n\`\`\`\n${logContent}\n\`\`\``;
-      chat.setChatInput(formattedContent);
-      if (isAuto && !chat.isChatLoading) {
-        setTimeout(() => {
-          // 通过事件总线发布发送消息事件
-          eventBus.emit(EVENT_NAMES.SEND_CHAT_MESSAGE);
-        }, 300);
-        return;
-      }
-      // 显示成功提示
-      message.success('日志已添加,等待发送');
     },
-    [chat.setChatInput, chat.sendMessage],
+    [autoErrorHandling],
   );
 
   /**
@@ -1178,6 +1228,7 @@ const AppDev: React.FC = () => {
           isDeploying={isDeploying}
           projectInfo={projectInfo.projectInfoState?.projectInfo}
           isChatLoading={chat.isChatLoading} // 新增：传递聊天加载状态
+          previewRef={previewRef} // 新增：传递 Preview 引用以获取回退次数
         />
         <section
           className={cx(
@@ -1201,6 +1252,7 @@ const AppDev: React.FC = () => {
                 fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
                 onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
                 modelSelector={modelSelector} // 模型选择器状态
+                autoErrorRetryCount={autoErrorHandling.autoRetryCount} // 新增：自动错误处理重试次数
               />
             </div>
 
@@ -1402,12 +1454,7 @@ const AppDev: React.FC = () => {
                               showMessage: false,
                             });
                           }}
-                          onWhiteScreen={() => {
-                            // autoErrorHandling.handlePreviewWhiteScreen(
-                            //   devLogs.logs,
-                            //   chat.sendMessage,
-                            // );
-                          }}
+                          onWhiteScreenWithError={handleWhiteScreenWithError}
                           onContentChange={(fileId, content) => {
                             if (
                               !versionCompare.isComparing &&
@@ -1459,7 +1506,10 @@ const AppDev: React.FC = () => {
                   onRefresh={devLogs.refreshLogs}
                   onClose={() => setShowDevLogConsole(false)}
                   isChatLoading={chat.isChatLoading}
-                  onAddToChat={handleAddLogToChat}
+                  onAddToChat={(content: string, isAuto?: boolean) => {
+                    autoErrorHandling.handleCustomError(content, 'log', isAuto);
+                  }}
+                  onResetAutoRetry={autoErrorHandling.resetAutoRetryCount}
                 />
               )}
             </div>
