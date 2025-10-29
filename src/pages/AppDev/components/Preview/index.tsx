@@ -675,47 +675,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               }
               break;
 
-            case 'dev-monitor-summary':
-              // 错误摘要消息（每10秒主动发送，如果有错误）
-              console.log('[Preview] 📨 Processing dev-monitor-summary:', {
-                errorCount: data.errorCount,
-                hasLatestError: !!data.latestError,
-                latestError: data.latestError,
-              });
-              if (data.errorCount > 0 && data.latestError) {
-                console.log(
-                  '[Preview] ✅ Received dev-monitor-summary, calling handleDevMonitorError:',
-                  data.latestError,
-                );
-                handleDevMonitorError(data.latestError);
-              } else {
-                console.warn(
-                  '[Preview] ⚠️ dev-monitor-summary condition not met:',
-                  {
-                    errorCount: data.errorCount,
-                    hasLatestError: !!data.latestError,
-                  },
-                );
-              }
-              break;
-
-            case 'dev-monitor-data':
-              // 错误数据消息（响应请求时）
-              if (
-                data.errorCount > 0 &&
-                data.errors &&
-                Array.isArray(data.errors)
-              ) {
-                console.debug(
-                  '[Preview] Received dev-monitor-data:',
-                  data.errors,
-                );
-                data.errors.forEach((error: any) => {
-                  handleDevMonitorError(error);
-                });
-              }
-              break;
-
             case 'dev-monitor-history-change':
               // 历史记录变化消息
               handleDevMonitorHistoryChange({
