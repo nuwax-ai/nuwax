@@ -52,6 +52,8 @@ interface ChatAreaProps {
   autoErrorRetryCount?: number;
   /** 用户手动发送消息回调 */
   onUserManualSendMessage?: () => void;
+  /** 用户取消Agent任务回调 */
+  onUserCancelAgentTask?: () => void;
 }
 
 /**
@@ -76,6 +78,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // onAutoHandleErrorChange, // 暂时注释掉，后续可能需要
   autoErrorRetryCount = 0,
   onUserManualSendMessage,
+  onUserCancelAgentTask,
 }) => {
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
@@ -134,6 +137,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
 
     setIsStoppingTask(true);
+
+    //关闭自动错误处理
+    onUserCancelAgentTask?.();
 
     try {
       // 获取当前Ai Chat会话ID
@@ -739,7 +745,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         >
           <DownOutlined />
         </div>
-        {/* 自动错误处理进度条 */}
+        {/* 自动错误处理进度条 目前有 透传问题先关闭了*/}
         {autoErrorRetryCount > 0 && chat.isChatLoading && (
           <Tooltip title={`(${autoErrorRetryCount}/3) 尝试自动修复中...`}>
             <div className={styles.progressContainer}>

@@ -310,7 +310,7 @@ const AppDev: React.FC = () => {
 
   // 临时回调，稍后会被替换
   const handleAddLogToChat = useCallback(
-    (content: string, isAuto?: boolean) => {
+    (content: string, isAuto?: boolean, callback?: () => void) => {
       if (!content.trim()) {
         message.warning('输入内容为空');
         return;
@@ -339,6 +339,8 @@ const AppDev: React.FC = () => {
           try {
             // 再次检查聊天是否仍在加载中
             if (!chat.isChatLoading) {
+              // 这里记录自动发送消息的次数
+              callback?.();
               // 通过事件总线发布发送消息事件
               eventBus.emit(EVENT_NAMES.SEND_CHAT_MESSAGE);
               console.log('[AppDev] ✅ 自动发送消息事件已触发');
@@ -491,24 +493,6 @@ const AppDev: React.FC = () => {
   useEffect(() => {
     setMissingProjectId(!hasValidProjectId);
   }, [projectId, hasValidProjectId]);
-
-  /**
-   * 监听日志错误，触发自动处理
-   * 当有新错误时触发自动修复
-   */
-  useEffect(() => {
-    if (devLogs.hasErrorInLatestBlock && !chat.isChatLoading) {
-      // 延迟一小段时间，确保新的错误日志已经添加到 devLogs.logs 中
-      setTimeout(() => {
-        autoErrorHandling.handleAutoError();
-      }, 100);
-    }
-  }, [
-    devLogs.hasErrorInLatestBlock,
-    devLogs.logs.length, // 新增：监听日志数组长度变化
-    chat.isChatLoading,
-    autoErrorHandling.handleAutoError,
-  ]);
 
   /**
    * 处理项目发布成组件
@@ -1277,10 +1261,13 @@ const AppDev: React.FC = () => {
                 fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
                 onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
                 modelSelector={modelSelector} // 模型选择器状态
-                autoErrorRetryCount={autoErrorHandling.autoRetryCount} // 新增：自动错误处理重试次数
                 onUserManualSendMessage={() => {
                   // 用户手动发送消息，重置自动重试计数
                   autoErrorHandling.resetAndEnableAutoHandling();
+                }}
+                onUserCancelAgentTask={() => {
+                  // 用户取消Agent任务，重置自动重试计数
+                  autoErrorHandling.handleUserCancelAuto();
                 }}
               />
             </div>
@@ -1525,25 +1512,24 @@ const AppDev: React.FC = () => {
                 </div>
               </div>
               {/* 开发日志查看器 */}
-              {showDevLogConsole && (
-                <DevLogConsole
-                  logs={devLogs.logs}
-                  hasErrorInLatestBlock={devLogs.hasErrorInLatestBlock}
-                  isLoading={devLogs.isLoading}
-                  lastLine={devLogs.lastLine}
-                  onClear={devLogs.clearLogs}
-                  onRefresh={devLogs.refreshLogs}
-                  onClose={() => setShowDevLogConsole(false)}
-                  isChatLoading={chat.isChatLoading}
-                  onAddToChat={(content: string, isAuto?: boolean) => {
-                    autoErrorHandling.handleCustomError(content, 'log', isAuto);
-                  }}
-                  onResetAutoRetry={() => {
-                    // 重置自动重试计数
-                    autoErrorHandling.resetAndEnableAutoHandling();
-                  }}
-                />
-              )}
+              <DevLogConsole
+                logs={devLogs.logs}
+                visible={showDevLogConsole}
+                hasErrorInLatestBlock={devLogs.hasErrorInLatestBlock}
+                isLoading={devLogs.isLoading}
+                lastLine={devLogs.lastLine}
+                onClear={devLogs.clearLogs}
+                onRefresh={devLogs.refreshLogs}
+                onClose={() => setShowDevLogConsole(false)}
+                isChatLoading={chat.isChatLoading}
+                onAddToChat={(content: string, isAuto?: boolean) => {
+                  autoErrorHandling.handleCustomError(content, 'log', isAuto);
+                }}
+                onResetAutoRetry={() => {
+                  // 重置自动重试计数
+                  autoErrorHandling.resetAndEnableAutoHandling();
+                }}
+              />
             </div>
           </div>
         </section>
