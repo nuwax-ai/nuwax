@@ -174,17 +174,20 @@ const CreateModel: React.FC<CreateModelProps> = ({
       onCancel={onCancel}
       footer={
         <>
-          <Button className={cx(styles.btn)} type="default" onClick={onCancel}>
-            取消
-          </Button>
           <Button
             type="default"
             loading={loadingTestConnection}
             onClick={handlerCheckConnection}
-            className={cx(!submittable && styles['confirm-btn'], styles.btn)}
+            className={cx(
+              !submittable && styles['confirm-btn'],
+              styles['connection-btn'],
+            )}
             disabled={!submittable}
           >
-            检测连接
+            模型连通性测试
+          </Button>
+          <Button className={cx(styles.btn)} type="default" onClick={onCancel}>
+            取消
           </Button>
           <Button
             type="primary"

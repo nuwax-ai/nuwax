@@ -9,6 +9,7 @@ import {
 } from '@/constants/pageDev.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
 import {
+  apiCustomPageCopyProject,
   apiCustomPageQueryList,
   apiPageDeleteProject,
   apiPageGetProjectInfo,
@@ -173,8 +174,8 @@ const SpacePageDevelop: React.FC = () => {
     },
   });
 
-  // todo: 页面 - 复制到空间接口
-  const { run: runCopyToSpace } = useRequest('apiPageCopyToSpace', {
+  // 复制到空间接口
+  const { run: runCopyToSpace } = useRequest(apiCustomPageCopyProject, {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
@@ -357,7 +358,11 @@ const SpacePageDevelop: React.FC = () => {
   const handleConfirmCopyToSpace = (targetSpaceId: number) => {
     setLoadingCopyToSpace(true);
     setOpenCopyToSpaceModal(false);
-    runCopyToSpace(projectId, targetSpaceId);
+    const data = {
+      projectId,
+      targetSpaceId,
+    };
+    runCopyToSpace(data);
   };
 
   return (

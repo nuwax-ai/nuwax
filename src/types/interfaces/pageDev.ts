@@ -123,6 +123,22 @@ export interface PageQueryListParams {
   publishType?: PageDevelopPublishTypeEnum;
 }
 
+// 复制项目参数
+export interface PageCopyParams {
+  // 项目ID
+  projectId: number;
+  // 空间ID
+  targetSpaceId: number;
+}
+
+// 复制项目返回值
+export interface PageCopyProjectInfo {
+  // 项目ID
+  projectId: number;
+  // 开发服务器URL
+  devServerUrl: string;
+}
+
 // 配置反向代理参数
 export interface PageBatchConfigProxyParams {
   // 项目ID
