@@ -243,7 +243,6 @@ const AppDev: React.FC = () => {
 
   const server = useAppDevServer({
     projectId: projectId || '',
-    devLogsRefresh: () => devLogs.resetStartLine(),
     onServerStart: updateDevServerUrl,
     onServerStatusChange: setIsServiceRunning,
   });
@@ -343,6 +342,7 @@ const AppDev: React.FC = () => {
     server,
     setActiveTab,
     previewRef,
+    devLogsRefresh: () => devLogs.resetStartLine(),
   });
 
   const chat = useAppDevChat({
