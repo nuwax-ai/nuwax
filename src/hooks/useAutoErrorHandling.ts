@@ -202,7 +202,7 @@ export const useAutoErrorHandling = ({
       const errorHash = formattedContent.trim();
       const isDuplicate = errorHash === model.lastCustomErrorHash;
       if (isDuplicate) {
-        console.debug('[AutoErrorHandling] 跳过重复的自定义错误');
+        console.info('[AutoErrorHandling] 跳过重复的自定义错误');
         return;
       }
 
@@ -217,7 +217,7 @@ export const useAutoErrorHandling = ({
       console.info(
         `[AutoErrorHandling] 当前自动发送次数为${model.autoRetryCount}`,
         formattedContent,
-        dayjs().format('YYYY-MM-DD HH:mm:ss'),
+        dayjs(Date.now()).format('YYYY-MM-DD HH:mm:ss'),
       );
 
       // 如果重试次数 < 3，直接发送
