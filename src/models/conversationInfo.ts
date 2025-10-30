@@ -199,17 +199,17 @@ export default () => {
   };
 
   // 检查会话是否正在进行中（有消息正在处理）
-  const checkConversationActive = (messages: MessageInfo[]) => {
+  const checkConversationActive = useCallback((messages: MessageInfo[]) => {
+    // 只检查最后几条消息的状态，而不是所有消息
+    const recentMessages = messages?.slice(-5) || []; // 只检查最后5条消息
     const hasActiveMessage =
-      (messages?.length &&
-        messages.some(
-          (message) =>
-            message.status === MessageStatusEnum.Loading ||
-            message.status === MessageStatusEnum.Incomplete,
-        )) ||
-      false;
+      recentMessages.some(
+        (message) =>
+          message.status === MessageStatusEnum.Loading ||
+          message.status === MessageStatusEnum.Incomplete,
+      ) || false;
     setIsConversationActive(hasActiveMessage);
-  };
+  }, []);
 
   const disabledConversationActive = () => {
     setIsConversationActive(false);
