@@ -24,6 +24,7 @@ import {
 import { Card, message, Spin, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
 import ChatInputHome from './components/ChatInputHome';
 import MessageAttachment from './components/MessageAttachment';
@@ -48,8 +49,6 @@ interface ChatAreaProps {
   // 自动处理异常相关props
   // autoHandleError?: boolean;
   // onAutoHandleErrorChange?: (enabled: boolean) => void;
-  /** 自动错误处理重试次数 */
-  autoErrorRetryCount?: number;
   /** 用户手动发送消息回调 */
   onUserManualSendMessage?: () => void;
   /** 用户取消Agent任务回调 */
@@ -76,10 +75,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
   // autoHandleError = true, // 暂时注释掉，后续可能需要
   // onAutoHandleErrorChange, // 暂时注释掉，后续可能需要
-  autoErrorRetryCount = 0,
   onUserManualSendMessage,
   onUserCancelAgentTask,
 }) => {
+  const autoErrorRetryCount = useModel('autoErrorHandling').autoRetryCount;
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
     new Set(),
@@ -319,6 +318,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     (
       attachmentFiles?: UploadFileInfo[],
       prototypeImages?: UploadFileInfo[],
+      requestId?: string,
     ) => {
       // // 验证：prompt（输入内容）是必填的
       // if (!chat.chatInput.trim()) {
@@ -414,9 +414,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }
 
         // 发送消息(传递附件)
-        chat.sendMessage(attachments, aiChatAttachments, aiChatPrototypeImages);
+        chat.sendMessage(
+          attachments,
+          aiChatAttachments,
+          aiChatPrototypeImages,
+          requestId,
+        );
 
-        onUserManualSendMessage?.();
+        // 只有手动发送（requestId 不存在）时才调用 onUserManualSendMessage
+        // 自动发送时会有 requestId，不应该重置状态
+        if (!requestId) {
+          onUserManualSendMessage?.();
+        }
         // 发送消息后强制滚动到底部并开启自动滚动
         setTimeout(() => {
           scrollContainerRef.current?.handleScrollButtonClick();

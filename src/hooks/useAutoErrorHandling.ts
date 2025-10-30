@@ -5,6 +5,7 @@
  */
 
 import { Modal } from 'antd';
+import dayjs from 'dayjs';
 import { useCallback, useRef } from 'react';
 import { useModel } from 'umi';
 
@@ -215,6 +216,8 @@ export const useAutoErrorHandling = ({
       model.setLastCustomErrorHash(errorHash);
       console.info(
         `[AutoErrorHandling] 当前自动发送次数为${model.autoRetryCount}`,
+        formattedContent,
+        dayjs().format('YYYY-MM-DD HH:mm:ss'),
       );
 
       // 如果重试次数 < 3，直接发送

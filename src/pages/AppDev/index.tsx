@@ -38,6 +38,7 @@ import {
 } from '@/types/interfaces/agentConfig';
 import { FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
+import { generateRequestId } from '@/utils/chatUtils';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { SyncOutlined, UploadOutlined } from '@ant-design/icons';
 import {
@@ -92,6 +93,11 @@ const AppDev: React.FC = () => {
   // ⭐ 自动发送消息锁，防止重复调用
   const autoSendLockRef = useRef<boolean>(false);
   const autoSendTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ⭐ 自动错误处理 Hook 引用
+  const autoErrorHandlingRef = useRef<ReturnType<
+    typeof useAutoErrorHandling
+  > | null>(null);
 
   // 页面编辑状态
   const [openPageEditVisible, setOpenPageEditVisible] = useState(false);
@@ -308,7 +314,14 @@ const AppDev: React.FC = () => {
     maxLogLines: 1000,
   });
 
-  // 临时回调，稍后会被替换
+  // ⭐ 自动错误处理 Model（用于记录和管理）
+  const autoErrorHandlingModelInstance = useModel('autoErrorHandling');
+
+  // 使用 ref 存储 errorType 和 requestId，以便在 callback 中使用
+  const currentErrorTypeRef = useRef<'whiteScreen' | 'log' | 'iframe'>('log');
+  const currentRequestIdRef = useRef<string>('');
+
+  // 定义 handleAddLogToChat（需要在 useAutoErrorHandling 之前定义）
   const handleAddLogToChat = useCallback(
     (content: string, isAuto?: boolean, callback?: () => void) => {
       if (!content.trim()) {
@@ -339,13 +352,23 @@ const AppDev: React.FC = () => {
           try {
             // 再次检查聊天是否仍在加载中
             if (!chat.isChatLoading) {
-              // 这里记录自动发送消息的次数
+              // 调用 callback，这里会记录次数并调用 setAutoSendCount
               callback?.();
               // 通过事件总线发布发送消息事件
-              eventBus.emit(EVENT_NAMES.SEND_CHAT_MESSAGE);
-              console.log('[AppDev] ✅ 自动发送消息事件已触发');
+              eventBus.emit(
+                EVENT_NAMES.SEND_CHAT_MESSAGE,
+                currentRequestIdRef.current,
+              );
+              console.log(
+                `[AppDev] ✅ 自动发送消息事件已触发，requestId: ${currentRequestIdRef.current}`,
+              );
+
+              // 发送成功后，生成新的 requestId 供下次使用（如果下次还有自动处理）
+              currentRequestIdRef.current = generateRequestId();
             } else {
               console.warn('[AppDev] ⚠️ 聊天正在加载中，取消自动发送');
+              // 如果取消发送，重置 requestId
+              currentRequestIdRef.current = '';
             }
           } finally {
             // 延迟解锁，确保消息已处理
@@ -363,13 +386,38 @@ const AppDev: React.FC = () => {
     [chat],
   );
 
-  // 自动异常处理
+  // 自动异常处理（在 handleAddLogToChat 之后定义）
   const autoErrorHandling = useAutoErrorHandling({
-    devLogs,
-    onAddToChat: handleAddLogToChat,
+    onAddToChat: (content, isAuto, callback) => {
+      // 这里会在 handleAddLogToChat 中实际处理
+      handleAddLogToChat(content, isAuto, () => {
+        // 记录自动处理问题次数到 Model
+        if (isAuto && content) {
+          // 生成 requestId（如果还没有生成）
+          if (!currentRequestIdRef.current) {
+            currentRequestIdRef.current = generateRequestId();
+          }
+
+          // 记录到 model（用于统计和历史记录）
+          autoErrorHandlingModelInstance.recordAutoHandle(
+            currentErrorTypeRef.current,
+            content,
+            currentRequestIdRef.current,
+          );
+        }
+
+        // 调用外部传入的 callback（这个 callback 就是 setAutoSendCount，会增加重试次数）
+        callback?.();
+      });
+    },
     isChatLoading: chat.isChatLoading,
     enabled: hasValidProjectId && projectInfo.hasPermission,
   });
+
+  // 存储 autoErrorHandling 的引用
+  useEffect(() => {
+    autoErrorHandlingRef.current = autoErrorHandling;
+  }, [autoErrorHandling]);
 
   // 数据资源管理
   const dataResourceManagement = useDataResourceManagement();
@@ -1016,6 +1064,9 @@ const AppDev: React.FC = () => {
     (errorMessage: string, errorType?: 'whiteScreen' | 'iframe') => {
       // 如果有错误消息，通过 autoErrorHandling 统一处理（格式化逻辑在内部）
       if (errorMessage.trim()) {
+        // 更新当前错误类型引用
+        currentErrorTypeRef.current = errorType || 'whiteScreen';
+
         // 通过 autoErrorHandling 统一处理，传入原始错误内容和场景类型
         // 如果未指定类型，默认使用 'whiteScreen'
         autoErrorHandling.handleCustomError(
@@ -1147,8 +1198,12 @@ const AppDev: React.FC = () => {
         autoSendTimerRef.current = null;
       }
       autoSendLockRef.current = false;
+
+      // ⭐ 重置自动错误处理 Model 的所有状态
+      autoErrorHandlingModelInstance.resetAll();
     };
-  }, []); // 空依赖数组，只在组件卸载时执行
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 空依赖数组，只在组件卸载时执行清理
 
   // 如果缺少 projectId，显示提示信息
   if (missingProjectId) {
@@ -1262,8 +1317,10 @@ const AppDev: React.FC = () => {
                 onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
                 modelSelector={modelSelector} // 模型选择器状态
                 onUserManualSendMessage={() => {
-                  // 用户手动发送消息，重置自动重试计数
+                  // 用户手动发送消息，重置自动重试计数、会话计数和 requestId
                   autoErrorHandling.resetAndEnableAutoHandling();
+                  autoErrorHandlingModelInstance.resetSessionCount();
+                  currentRequestIdRef.current = ''; // 重置 requestId，下次自动处理时生成新的
                 }}
                 onUserCancelAgentTask={() => {
                   // 用户取消Agent任务，重置自动重试计数
@@ -1523,6 +1580,8 @@ const AppDev: React.FC = () => {
                 onClose={() => setShowDevLogConsole(false)}
                 isChatLoading={chat.isChatLoading}
                 onAddToChat={(content: string, isAuto?: boolean) => {
+                  // 更新当前错误类型引用
+                  currentErrorTypeRef.current = 'log';
                   autoErrorHandling.handleCustomError(content, 'log', isAuto);
                 }}
                 onResetAutoRetry={() => {
