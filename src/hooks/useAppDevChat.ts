@@ -349,6 +349,9 @@ export const useAppDevChat = ({
         },
         onClose: () => {
           setIsChatLoading(false);
+          setChatMessages((prev) =>
+            markStreamingMessageComplete(prev, requestId),
+          );
           abortConnectionRef.current?.abort();
           debouncedRefreshFileTree();
         },
