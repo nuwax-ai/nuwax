@@ -33,9 +33,9 @@ Nuwax AI - Easily build and deploy your private Agentic AI solutions.
 
 ##### 客户端下载
 > 客户端仅作为运维工具，不包含平台软件包
-- [nuwax-cli-linux-amd64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.55/nuwax-cli-linux-amd64.tar.gz)
-- [nuwax-cli-linux-arm64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.55/nuwax-cli-linux-arm64.tar.gz)
-- [nuwax-cli-macos-universal.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.55/nuwax-cli-macos-universal.tar.gz)（amd64&arm64）
+- [nuwax-cli-linux-amd64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-amd64.tar.gz)
+- [nuwax-cli-linux-arm64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-arm64.tar.gz)
+- [nuwax-cli-macos-universal.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-macos-universal.tar.gz)（amd64&arm64）
 
 ##### 执行命令完成部署
 
@@ -49,11 +49,11 @@ cd nuwax_deploy
 
 # 下载客户端运维工具
 # Linux下载命令（amd64）
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.55/nuwax-cli-linux-amd64.tar.gz
+wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-amd64.tar.gz
 # Linux下载命令（arm64）
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.55/nuwax-cli-linux-arm64.tar.gz
+wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-arm64.tar.gz
 # macOS下载命令
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.55/nuwax-cli-macos-universal.tar.gz
+wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-macos-universal.tar.gz
 
 # 将下载的客户端文件解压到工作目录
 tar -xzf nuwax-cli-*.tar.gz
