@@ -352,7 +352,7 @@ const AppDev: React.FC = () => {
         showMessage: false, // Agent 触发时不显示消息
       });
     }, // 新增：Agent 触发时不切换页面
-    hasPermission: projectInfo.hasPermission, // 传递权限状态
+    // hasPermission: projectInfo.hasPermission, // 传递权限状态
   });
 
   // 开发服务器日志管理
