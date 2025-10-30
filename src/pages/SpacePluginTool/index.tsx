@@ -417,7 +417,7 @@ const SpacePluginTool: React.FC = () => {
           onTryRun={handleTryRun}
           onPublish={handlePublish}
         />
-        <div className={cx(styles['main-container'], 'overflow-y')}>
+        <div className={cx(styles['main-container'], 'scroll-container')}>
           <h3 className={cx(styles.title, 'mb-12')}>请求配置</h3>
           <Form
             form={form}

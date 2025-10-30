@@ -104,7 +104,7 @@ export interface SelectListType {
   disabled?: boolean;
   allowClear?: boolean;
   options: option[];
-  onChange?: (value: React.Key) => void;
+  onChange?: (value: React.Key, option: any) => void;
   size?: SizeType;
 }
 
@@ -417,7 +417,7 @@ export interface CustomPopoverProps {
 export interface UploadAvatarProps {
   className?: string;
   onUploadSuccess?: (url: string) => void;
-  defaultImage: string;
+  defaultImage?: string;
   imageUrl?: string;
   beforeUpload?: (file: FileType) => void;
   svgIconName?: string | null | undefined;
@@ -477,6 +477,8 @@ export interface PluginPublishProps {
 
 // 插件入参、出参配置title组件
 export interface PluginConfigTitleProps {
+  className?: string;
+  titleClassName?: string;
   title: string;
   extra?: React.ReactNode;
   onClick: () => void;
@@ -497,6 +499,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   wholeDisabled?: boolean;
   // 清空按钮禁用
   clearDisabled?: boolean;
+  // 清空按钮加载中
+  clearLoading?: boolean;
   visible?: boolean;
   // 发送消息后是否清空输入框, 默认true
   isClearInput?: boolean;
@@ -573,7 +577,7 @@ export interface MoveCopyComponentProps {
   loading?: boolean;
   // 迁移、复制
   type?: ApplicationMoreActionEnum;
-  // 组件类型: 智能体、插件、工作流， 默认智能体
+  // 组件类型: 智能体、插件、工作流、页面， 默认智能体
   mode?: AgentComponentTypeEnum;
   // 是否是模板,如果是模板，”复制操作“展示所有空间列表，否则【空间创建者或空间管理员可复制到自己有权限的所有空间（这里涉及到会把关联的插件工作流一并发布到目标空间去），普通用户只能复制到本空间】
   isTemplate?: boolean;

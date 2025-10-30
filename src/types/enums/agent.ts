@@ -2,13 +2,15 @@
 export enum AgentComponentTypeEnum {
   Plugin = 'Plugin',
   Workflow = 'Workflow',
-  Trigger = 'Trigger',
   Knowledge = 'Knowledge',
   Variable = 'Variable',
   Table = 'Table',
   Model = 'Model',
   Agent = 'Agent',
   MCP = 'Mcp',
+  Page = 'Page',
+  // 事件
+  Event = 'Event',
 }
 
 // 用户APIKEY目标类型,可用值:Agent,Mcp,TempChat
@@ -45,18 +47,6 @@ export enum InputTypeEnum {
   Number = 'Number',
   // 智能识别
   AutoRecognition = 'AutoRecognition',
-}
-
-// 触发类型,TIME 定时触发, EVENT 事件触发,可用值:TIME,EVENT
-export enum TriggerTypeEnum {
-  TIME = 'TIME',
-  EVENT = 'EVENT',
-}
-
-// 触发器执行的组件类型,可用值:PLUGIN,WORKFLOW
-export enum TriggerComponentType {
-  PLUGIN = 'PLUGIN',
-  WORKFLOW = 'WORKFLOW',
 }
 
 // 调用方式,可用值:AUTO,ON_DEMAND,MANUAL,MANUAL_ON_DEMAND
@@ -176,4 +166,56 @@ export enum OptionDataSourceEnum {
 export enum UpdateVariablesTypeEnum {
   Delete = 'Delete',
   Drag = 'Drag',
+}
+
+// 开场白预置问题设置类型(问题类型,可用值:Question,Page,Link)
+export enum GuidQuestionSetTypeEnum {
+  // 问题引导
+  Question = 'Question',
+  // 扩展页面路径
+  Page = 'Page',
+  // 外链地址
+  Link = 'Link',
+}
+
+// 响应动作（扩展页面打开、外部链接跳转）事件类型, Link 外链；Page 扩展页面,可用值:Link,Page
+export enum EventBindResponseActionEnum {
+  // 扩展页面打开
+  Page = 'Page',
+  // 外部链接跳转
+  Link = 'Link',
+}
+
+// 事件列表枚举
+export enum EventListEnum {
+  // 编辑
+  Edit = 'Edit',
+  // 插入到系统提示词
+  InsertSystemPrompt = 'InsertSystemPrompt',
+  // 删除
+  Delete = 'Delete',
+}
+
+// 是否默认展开扩展页面区域, 1 展开；0 不展开
+export enum ExpandPageAreaEnum {
+  No = 0,
+  Yes = 1,
+}
+
+// 是否隐藏聊天区域, 1 隐藏；0 不隐藏
+export enum HideChatAreaEnum {
+  No = 0,
+  Yes = 1,
+}
+
+// 页面是否模型可见，1 可见，0 不可见
+export enum VisibleToLLMEnum {
+  No = 0,
+  Yes = 1,
+}
+
+// 是否为智能体页面首页，1 为默认首页，0 不为首页
+export enum HomeIndexEnum {
+  No = 0,
+  Yes = 1,
 }

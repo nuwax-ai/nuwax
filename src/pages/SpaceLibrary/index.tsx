@@ -45,16 +45,33 @@ import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useModel, useParams, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import ComponentItem from './ComponentItem';
 import CreateModel from './CreateModel';
 import styles from './index.less';
+type IQuery = 'type' | 'create' | 'status' | 'keyword';
+
 const cx = classNames.bind(styles);
 
 /**
  * 工作空间 - 组件库
  */
 const SpaceLibrary: React.FC = () => {
+  // ✅ umi 中的 useSearchParams
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ✅ 当 select 改变时同步 URL
+  const handleChange = (key: IQuery, value: string) => {
+    // 更新 URL 参数
+    const newParams = new URLSearchParams(searchParams);
+    if (value) {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
+    }
+    setSearchParams(newParams);
+  };
+
   const params = useParams();
   const spaceId = Number(params.spaceId);
   // 组件列表
@@ -80,12 +97,16 @@ const SpaceLibrary: React.FC = () => {
     useState<ComponentInfo | null>();
   // 类型
   const [type, setType] = useState<ComponentTypeEnum>(
-    ComponentTypeEnum.All_Type,
+    searchParams.get('type') || ComponentTypeEnum.All_Type,
   );
   // 过滤状态
-  const [status, setStatus] = useState<FilterStatusEnum>(FilterStatusEnum.All);
+  const [status, setStatus] = useState<FilterStatusEnum>(
+    Number(searchParams.get('status')) || FilterStatusEnum.All,
+  );
   // 搜索关键词
-  const [keyword, setKeyword] = useState<string>('');
+  const [keyword, setKeyword] = useState<string>(
+    searchParams.get('keyword') || '',
+  );
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingWorkflow, setLoadingWorkflow] = useState<boolean>(false);
   const [loadingPlugin, setLoadingPlugin] = useState<boolean>(false);
@@ -95,8 +116,9 @@ const SpaceLibrary: React.FC = () => {
 
   // 创建
   const [create, setCreate] = useState<CreateListEnum>(
-    CreateListEnum.All_Person,
+    Number(searchParams.get('create')) || CreateListEnum.All_Person,
   );
+
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
 
@@ -125,6 +147,22 @@ const SpaceLibrary: React.FC = () => {
     }
     setComponentList(_list);
   };
+
+  // ✅ 监听 URL 改变（支持浏览器前进/后退）
+  useEffect(() => {
+    const type = searchParams.get('type') || ComponentTypeEnum.All_Type;
+    const status = Number(searchParams.get('status')) || FilterStatusEnum.All;
+    const create =
+      Number(searchParams.get('create')) || CreateListEnum.All_Person;
+    const keyword = searchParams.get('keyword') || '';
+
+    setType(type);
+    setStatus(status);
+    setCreate(create);
+    setKeyword(keyword);
+
+    handleFilterList(type, status, create, keyword);
+  }, [searchParams]);
 
   // 查询组件列表接口
   const { run: runComponent } = useRequest(apiComponentList, {
@@ -284,6 +322,7 @@ const SpaceLibrary: React.FC = () => {
     const _value = value as ComponentTypeEnum;
     setType(_value);
     handleFilterList(_value, status, create, keyword);
+    handleChange('type', _value);
   };
 
   // 切换创建者
@@ -291,6 +330,7 @@ const SpaceLibrary: React.FC = () => {
     const _value = value as CreateListEnum;
     setCreate(_value);
     handleFilterList(type, status, _value, keyword);
+    handleChange('create', _value.toString());
   };
 
   // 切换状态
@@ -298,6 +338,7 @@ const SpaceLibrary: React.FC = () => {
     const _value = value as FilterStatusEnum;
     setStatus(_value);
     handleFilterList(type, _value, create, keyword);
+    handleChange('status', _value.toString());
   };
 
   // 智能体搜索
@@ -305,6 +346,7 @@ const SpaceLibrary: React.FC = () => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
     handleFilterList(type, status, create, _keyword);
+    handleChange('keyword', _keyword);
   };
 
   // 清除关键词
@@ -626,7 +668,11 @@ const SpaceLibrary: React.FC = () => {
         <Loading />
       ) : componentList?.length > 0 ? (
         <div
-          className={cx(styles['main-container'], 'flex-1', 'scroll-container')}
+          className={cx(
+            styles['main-container'],
+            'flex-1',
+            'scroll-container-hide',
+          )}
         >
           {componentList?.map((info) => (
             <ComponentItem

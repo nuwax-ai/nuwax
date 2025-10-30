@@ -28,7 +28,7 @@ const AuthorInfo: React.FC<AuthorInfoProps> = ({ avatar, name }) => {
     >
       <img
         className={cx(styles.avatar)}
-        src={avatar}
+        src={avatar || defaultAvatar}
         alt=""
         onError={handleError}
       />

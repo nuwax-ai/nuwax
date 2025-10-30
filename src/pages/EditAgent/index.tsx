@@ -1,5 +1,6 @@
 import CreateAgent from '@/components/CreateAgent';
 import PublishComponentModal from '@/components/PublishComponentModal';
+import ResizableSplit from '@/components/ResizableSplit';
 import ShowStand from '@/components/ShowStand';
 import VersionHistory from '@/components/VersionHistory';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
@@ -21,6 +22,7 @@ import {
   AgentComponentInfo,
   AgentConfigInfo,
   ComponentModelBindConfig,
+  GuidQuestionDto,
 } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
@@ -29,8 +31,9 @@ import { exportConfigFile } from '@/utils/exportImportFile';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';
+import PagePreviewIframe from '../../components/business-component/PagePreviewIframe';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
 import AgentModelSetting from './AgentModelSetting';
@@ -38,7 +41,7 @@ import ArrangeTitle from './ArrangeTitle';
 import DebugDetails from './DebugDetails';
 import styles from './index.less';
 import PreviewAndDebug from './PreviewAndDebug';
-import SystemTipsWord from './SystemTipsWord';
+import SystemTipsWord, { SystemTipsWordRef } from './SystemTipsWord';
 
 const cx = classNames.bind(styles);
 
@@ -47,6 +50,8 @@ const cx = classNames.bind(styles);
  */
 const EditAgent: React.FC = () => {
   const params = useParams();
+  // 系统提示词组件引用
+  const systemTipsWordRef = useRef<SystemTipsWordRef>(null);
   const spaceId = Number(params.spaceId);
   const agentId = Number(params.agentId);
   const [open, setOpen] = useState<boolean>(false);
@@ -62,8 +67,13 @@ const EditAgent: React.FC = () => {
     setIsSuggest,
     messageList,
     setChatSuggestList,
+    // setMessageList,
   } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
+
+  // 获取 chat model 中的页面预览状态
+  const { pagePreviewData, hidePagePreview, showPagePreview } =
+    useModel('chat');
 
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
@@ -71,6 +81,19 @@ const EditAgent: React.FC = () => {
     debounceInterval: 300,
     onSuccess: (result: AgentConfigInfo) => {
       setAgentConfigInfo(result);
+    },
+  });
+
+  const { run: runUpdateAgent } = useRequest(apiAgentConfigInfo, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: AgentConfigInfo) => {
+      const _agentConfigInfo = {
+        ...agentConfigInfo,
+        pageHomeIndex: result.pageHomeIndex,
+      } as AgentConfigInfo;
+
+      setAgentConfigInfo(_agentConfigInfo);
     },
   });
 
@@ -121,8 +144,11 @@ const EditAgent: React.FC = () => {
     setAgentConfigInfo(_agentConfigInfo);
   };
 
-  // 更新智能体信息
-  const handleChangeAgent = (value: string | string[], attr: string) => {
+  // 更新智能体配置信息
+  const handleUpdateEventQuestions = (
+    value: string | string[] | number | GuidQuestionDto[],
+    attr: string,
+  ) => {
     // 更新智能体配置信息
     const _agentConfigInfo = {
       ...agentConfigInfo,
@@ -135,17 +161,42 @@ const EditAgent: React.FC = () => {
     }
 
     setAgentConfigInfo(_agentConfigInfo);
+    // @ts-ignore
+    // setMessageList(prev => prev.map(item =>
+    //   item.id === null ? {...item, text: _agentConfigInfo.openingChatMsg} : item
+    // ))
+
+    // 预置问题, 并且没有消息时，更新建议预置问题列表
+    if (attr === 'guidQuestionDtos' && !messageList?.length) {
+      const _suggestList = value as GuidQuestionDto[];
+      // 过滤掉空值
+      const list =
+        _suggestList?.filter((item) => !!item.info)?.map((item) => item.info) ||
+        [];
+      setChatSuggestList(list);
+    }
+
+    // 返回更新后的智能体配置信息
+    return _agentConfigInfo;
+  };
+
+  // 更新智能体信息
+  const handleChangeAgent = (
+    value: string | string[] | number | GuidQuestionDto[],
+    attr: string,
+  ) => {
+    // 更新智能体配置信息
+    const _agentConfigInfo = handleUpdateEventQuestions(value, attr);
     // 用户问题建议
     if (attr === 'openSuggest') {
       setIsSuggest(value === OpenCloseEnum.Open);
     }
-    // 预置问题, 并且没有消息时，更新建议预置问题列表
-    if (attr === 'openingGuidQuestions' && !messageList?.length) {
-      const _suggestList = value as string[];
-      // 过滤掉空值
-      const list = _suggestList?.filter((item) => !!item) || [];
-      setChatSuggestList(list);
+    // 打开扩展页面时，检查页面是否存在
+    // 展开页面区在删除页面后重新添加没有后端接口没有返回添加的页面地址，需要前端手动刷新
+    if (attr === 'expandPageArea') {
+      runUpdateAgent(agentId);
     }
+
     const {
       id,
       name,
@@ -157,8 +208,9 @@ const EditAgent: React.FC = () => {
       suggestPrompt,
       openingChatMsg,
       openScheduledTask,
-      openingGuidQuestions,
       openLongMemory,
+      expandPageArea,
+      guidQuestionDtos,
     } = _agentConfigInfo;
 
     // 更新智能体信息
@@ -173,19 +225,25 @@ const EditAgent: React.FC = () => {
       suggestPrompt,
       openingChatMsg,
       openScheduledTask,
-      openingGuidQuestions,
       openLongMemory,
+      expandPageArea,
+      guidQuestionDtos,
     });
   };
 
-  // 调试
-  const handlePressDebug = () => {
-    if (showType === EditAgentShowType.Debug_Details) {
-      setShowType(EditAgentShowType.Hide);
-    } else {
-      setShowType(EditAgentShowType.Debug_Details);
-    }
+  /**
+   * 处理插入系统提示词
+   * @param text 要插入的文本内容
+   */
+  const handleInsertSystemPrompt = (text: string) => {
+    systemTipsWordRef.current?.insertText(text);
   };
+
+  useEffect(() => {
+    if (pagePreviewData) {
+      setShowType(EditAgentShowType.Hide);
+    }
+  }, [pagePreviewData]);
 
   // 发布智能体
   const handleConfirmPublish = () => {
@@ -264,7 +322,6 @@ const EditAgent: React.FC = () => {
             });
           },
         );
-
         break;
       // 日志
       case ApplicationMoreActionEnum.Log:
@@ -273,14 +330,41 @@ const EditAgent: React.FC = () => {
     }
   };
 
+  const handleOpenPreview = () => {
+    // 判断是否默认展示页面首页
+    if (
+      agentConfigInfo &&
+      agentConfigInfo?.expandPageArea &&
+      agentConfigInfo?.pageHomeIndex
+    ) {
+      // 自动触发预览
+      showPagePreview({
+        name: '页面预览',
+        uri: process.env.BASE_URL + agentConfigInfo?.pageHomeIndex,
+        params: {},
+        executeId: '',
+      });
+    } else {
+      showPagePreview(null);
+    }
+  };
+
+  useEffect(() => {
+    handleOpenPreview();
+  }, [agentConfigInfo?.expandPageArea, agentConfigInfo?.pageHomeIndex]);
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
         agentConfigInfo={agentConfigInfo}
-        onToggleShowStand={() => setShowType(EditAgentShowType.Show_Stand)}
-        onToggleVersionHistory={() =>
-          setShowType(EditAgentShowType.Version_History)
-        }
+        onToggleShowStand={() => {
+          hidePagePreview();
+          setShowType(EditAgentShowType.Show_Stand);
+        }}
+        onToggleVersionHistory={() => {
+          hidePagePreview();
+          setShowType(EditAgentShowType.Version_History);
+        }}
         // 点击编辑智能体按钮，打开弹窗
         onEditAgent={() => setOpenEditAgent(true)}
         // 点击发布按钮，打开发布智能体弹窗
@@ -315,6 +399,7 @@ const EditAgent: React.FC = () => {
           >
             {/*系统提示词*/}
             <SystemTipsWord
+              ref={systemTipsWordRef}
               agentConfigInfo={agentConfigInfo}
               value={agentConfigInfo?.systemPrompt}
               onChange={(value) => handleChangeAgent(value, 'systemPrompt')}
@@ -325,15 +410,51 @@ const EditAgent: React.FC = () => {
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onChangeAgent={handleChangeAgent}
+              onConfirmUpdateEventQuestions={handleUpdateEventQuestions}
+              onInsertSystemPrompt={handleInsertSystemPrompt}
             />
           </div>
         </div>
-        {/*预览与调试*/}
-        <PreviewAndDebug
-          agentConfigInfo={agentConfigInfo}
-          agentId={agentId}
-          onPressDebug={handlePressDebug}
-        />
+
+        {(!agentConfigInfo?.hideChatArea || pagePreviewData) && (
+          <div
+            style={{
+              flex: pagePreviewData ? '9 1' : '4 1',
+              minWidth: pagePreviewData ? '1050px' : '350px',
+            }}
+          >
+            {/*预览与调试和预览页面*/}
+            <ResizableSplit
+              minRightWidth={700}
+              left={
+                agentConfigInfo?.hideChatArea ? null : (
+                  <PreviewAndDebug
+                    agentConfigInfo={agentConfigInfo}
+                    agentId={agentId}
+                    onPressDebug={() => {
+                      hidePagePreview();
+                      setShowType(EditAgentShowType.Debug_Details);
+                    }}
+                    onAgentConfigInfo={setAgentConfigInfo}
+                    onOpenPreview={handleOpenPreview}
+                  />
+                )
+              }
+              right={
+                pagePreviewData && (
+                  <PagePreviewIframe
+                    pagePreviewData={pagePreviewData}
+                    showHeader={true}
+                    onClose={hidePagePreview}
+                    showCloseButton={!agentConfigInfo?.hideChatArea}
+                    titleClassName={cx(styles['title-style'])}
+                  />
+                )
+              }
+            />
+          </div>
+        )}
+
         {/*调试详情*/}
         <DebugDetails
           visible={showType === EditAgentShowType.Debug_Details}

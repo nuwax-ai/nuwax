@@ -8,7 +8,6 @@ const itemList = {
   [AgentComponentTypeEnum.Table]: '/api/published/composeTable/list',
   [AgentComponentTypeEnum.Variable]: '/api/published/dataBase/list',
   [AgentComponentTypeEnum.Model]: '/api/published/dataBase/list',
-  [AgentComponentTypeEnum.Trigger]: '/api/published/dataBase/list',
   [AgentComponentTypeEnum.Agent]: '/api/published/agent/list',
 } as {
   [key in AgentComponentTypeEnum]: string;

@@ -277,7 +277,7 @@
 }
 
 .fold-header-style {
-  height: 64px;
+  height: 56px;
   border-bottom: 1px solid @WHITE11;
   padding: 0 16px;
   background-color: @WHITE02;
@@ -290,15 +290,15 @@
   min-width: 1200px;
 
   .back-icon-style {
-    font-size: 14px;
+    font-size: 16px;
     color: @BLANK17;
     cursor: pointer;
     margin-right: 12px;
   }
 
   .header-icon-style {
-    width: 32px;
-    height: 32px;
+    width: 27px;
+    height: 27px;
     margin-right: 12px;
   }
 
@@ -313,13 +313,17 @@
       margin-right: 6px;
       line-height: 20px;
     }
+  }
 
-    .header-tag-style {
-      margin-top: 2px;
+  .header-tag-style {
+    //margin-top: 2px;
+    //margin-right: -15px;
 
-      .ant-tag {
-        line-height: 14px;
-        height: 16px;
+    .ant-tag {
+      //line-height: 14px;
+      //height: 16px;
+      &:last-child {
+        margin-right: 0 !important;
       }
     }
   }

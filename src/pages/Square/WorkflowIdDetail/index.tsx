@@ -154,7 +154,7 @@ const WorkflowIdDetail: React.FC = ({}) => {
           targetType={SquareAgentTypeEnum.Workflow}
         />
       )}
-      <div className={cx(styles['main-container'], 'overflow-y')}>
+      <div className={cx(styles['main-container'], 'scroll-container')}>
         <div className={cx('flex', 'items-center', 'content-between')}>
           <span className={cx(styles.title)}>工作流描述</span>
           <ConditionRender

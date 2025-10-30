@@ -7,6 +7,7 @@ import {
 import styles from '@/styles/systemManage.less';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
+import { ModelComponentStatusEnum } from '@/types/enums/space';
 import { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { CheckOutlined, PlusOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
@@ -77,6 +78,16 @@ const GlobalModelManage: React.FC = () => {
       width: 260,
     },
     {
+      title: '状态',
+      dataIndex: 'enabled',
+      width: 100,
+      render: (enabled) => {
+        return enabled === ModelComponentStatusEnum.Enabled
+          ? '已启用'
+          : '已禁用';
+      },
+    },
+    {
       title: '创建者',
       dataIndex: 'creator',
       width: 160,
@@ -144,7 +155,7 @@ const GlobalModelManage: React.FC = () => {
           value={currentType}
           onChange={handleSelectChange}
           optionLabelProp="label"
-          dropdownRender={(menu) => <>{menu}</>}
+          popupRender={(menu) => <>{menu}</>}
           menuItemSelectedIcon={<CheckOutlined style={{ marginRight: 8 }} />}
         />
         <Button

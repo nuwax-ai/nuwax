@@ -1,12 +1,16 @@
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
   DefaultSelectedEnum,
+  EventBindResponseActionEnum,
+  EventListEnum,
+  GuidQuestionSetTypeEnum,
+  HomeIndexEnum,
   InputTypeEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
   OutputDirectlyEnum,
   SearchStrategyEnum,
-  TriggerTypeEnum,
+  VisibleToLLMEnum,
 } from '@/types/enums/agent';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
 import {
@@ -111,20 +115,6 @@ export const NO_RECALL_RESPONSE = [
   },
 ];
 
-// 触发器类型列表
-export const TRIGGER_TYPE_LIST = [
-  {
-    value: TriggerTypeEnum.TIME,
-    label: '定时触发',
-    img: '',
-  },
-  {
-    value: TriggerTypeEnum.EVENT,
-    label: '事件触发',
-    img: '',
-  },
-];
-
 // 卡片绑定列表
 export const BIND_CARD_STYLE_LIST = [
   {
@@ -224,3 +214,71 @@ export const BINDING_DEFAULT_JSON_DATA = {
 };
 
 export const SIDEBAR_WIDTH = 368 + 32;
+
+// 预置问题设置类型选项
+export const GUID_QUESTION_SET_OPTIONS = [
+  {
+    value: GuidQuestionSetTypeEnum.Question,
+    label: '问题引导',
+  },
+  {
+    value: GuidQuestionSetTypeEnum.Page,
+    label: '扩展页面路径',
+  },
+  {
+    value: GuidQuestionSetTypeEnum.Link,
+    label: '外链地址',
+  },
+];
+
+// 响应动作（扩展页面打开、外部链接跳转）选项
+export const EVENT_BIND_RESPONSE_ACTION_OPTIONS = [
+  {
+    value: EventBindResponseActionEnum.Page,
+    label: '扩展页面打开',
+  },
+  {
+    value: EventBindResponseActionEnum.Link,
+    label: '外部链接跳转',
+  },
+];
+
+// 事件列表
+export const EVENT_LIST = [
+  {
+    value: EventListEnum.Edit,
+    label: '编辑',
+  },
+  {
+    value: EventListEnum.InsertSystemPrompt,
+    label: '插入到系统提示词',
+  },
+  {
+    value: EventListEnum.Delete,
+    label: '删除',
+  },
+];
+
+// 页面是否模型可见选项
+export const VISIBLE_TO_LLM_OPTIONS = [
+  {
+    value: VisibleToLLMEnum.No,
+    label: '否',
+  },
+  {
+    value: VisibleToLLMEnum.Yes,
+    label: '是',
+  },
+];
+
+// 是否为智能体页面首页，1 为默认首页，0 不为首页
+export const HOME_INDEX_OPTIONS = [
+  {
+    value: HomeIndexEnum.No,
+    label: '否',
+  },
+  {
+    value: HomeIndexEnum.Yes,
+    label: '是',
+  },
+];

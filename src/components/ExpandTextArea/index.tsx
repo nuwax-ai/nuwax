@@ -1,11 +1,15 @@
 import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import { ExpandAltOutlined } from '@ant-design/icons';
-import { Button, Form, Input } from 'antd';
+import { Button, Form } from 'antd';
+import classNames from 'classnames';
+import { PromptEditorProvider, PromptEditorRender } from 'prompt-kit-editor';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import ExpandTextArea from './expandTextarea';
+import styles from './index.less';
 import { ExpandableInputTextareaProps } from './type';
+const cx = classNames.bind(styles);
 
 export const ExpandableInputTextarea: React.FC<
   ExpandableInputTextareaProps
@@ -13,7 +17,7 @@ export const ExpandableInputTextarea: React.FC<
   title,
   inputFieldName,
   placeholder,
-  rows = 3,
+  // rows = 3,
   onExpand,
   onOptimize,
   onOptimizeClick,
@@ -29,7 +33,7 @@ export const ExpandableInputTextarea: React.FC<
   }, []);
 
   return (
-    <div>
+    <div className={cx(styles.container)}>
       <div className="dis-sb margin-bottom">
         {/* 名称 */}
         <span className="node-title-style gap-6 flex items-center">
@@ -58,12 +62,22 @@ export const ExpandableInputTextarea: React.FC<
         </div>
       </div>
       {/* 输入框 */}
-      <Form.Item name={inputFieldName}>
-        <Input.TextArea
-          placeholder={placeholder}
-          autoSize={{ minRows: rows, maxRows: rows }}
-        />
-      </Form.Item>
+      {/*<Form.Item name={inputFieldName}>*/}
+      {/*  <Input.TextArea*/}
+      {/*    placeholder={placeholder}*/}
+      {/*    autoSize={{ minRows: rows, maxRows: rows }}*/}
+      {/*  />*/}
+      {/*</Form.Item>*/}
+
+      <PromptEditorProvider>
+        <Form.Item name={inputFieldName}>
+          <PromptEditorRender
+            className={cx(styles['prompt-editor-provider'], 'scroll-container')}
+            isControled={true}
+            placeholder={placeholder}
+          />
+        </Form.Item>
+      </PromptEditorProvider>
 
       {/* 如果有展开，就要调用展开的组件 */}
       {expanded &&

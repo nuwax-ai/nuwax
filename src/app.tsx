@@ -1,13 +1,13 @@
 import { RequestConfig } from '@@/plugin-request/request';
 import { theme as antdTheme } from 'antd';
 import React, { useEffect, useRef } from 'react';
+import 'simple-edit-markdown/styles';
 import { useAntdConfigSetter } from 'umi';
 import { ACCESS_TOKEN } from './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';
 import useEventPolling from './hooks/useEventPolling';
 import { request as requestCommon } from './services/common';
 import { unifiedThemeService } from './services/unifiedThemeService';
-
 /**
  * 全局轮询组件
  * 在应用运行期间保持活跃，处理全局事件
@@ -28,6 +28,56 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
 }) => {
   const setAntdConfig = useAntdConfigSetter();
   const lastAppliedRef = useRef<string>('');
+
+  // 全局错误处理，捕获Monaco Editor的CanceledError
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      // 检查是否是Monaco Editor的CanceledError
+      if (
+        event.reason &&
+        event.reason.name === 'Canceled' &&
+        event.reason.message === 'Canceled'
+      ) {
+        // 阻止这个错误冒泡到控制台
+        event.preventDefault();
+        return;
+      }
+
+      // 检查是否是WordHighlighter相关的取消错误
+      if (
+        event.reason &&
+        (event.reason.stack?.includes('WordHighlighter') ||
+          event.reason.stack?.includes('Delayer.cancel'))
+      ) {
+        event.preventDefault();
+        return;
+      }
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      // 检查是否是Monaco Editor相关的错误
+      if (
+        event.error &&
+        (event.error.message?.includes('Canceled') ||
+          event.error.stack?.includes('WordHighlighter'))
+      ) {
+        event.preventDefault();
+        return;
+      }
+    };
+
+    // 添加全局错误监听器
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleError);
+
+    return () => {
+      window.removeEventListener(
+        'unhandledrejection',
+        handleUnhandledRejection,
+      );
+      window.removeEventListener('error', handleError);
+    };
+  }, []);
 
   // 初始化统一主题配置，并监听主题配置变更事件
   useEffect(() => {
@@ -143,8 +193,8 @@ export function render(oldRender: () => void) {
  * 路由变化监听
  * 可以在这里处理页面切换逻辑
  */
-export function onRouteChange({ location /* ...rest*/ }: any) {
-  // console.info('onRouteChange', location, rest);
+export function onRouteChange(...params: any[]) {
+  console.info('[router] onRouteChange', ...params);
 
   // 如果是登录成功后的路由变化，确保轮询启动
   if (localStorage.getItem(ACCESS_TOKEN) && location.pathname !== '/login') {

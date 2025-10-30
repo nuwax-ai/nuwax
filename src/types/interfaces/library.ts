@@ -3,7 +3,10 @@ import type {
   PermissionsEnum,
   PublishStatusEnum,
 } from '@/types/enums/common';
-import type { ComponentTypeEnum } from '@/types/enums/space';
+import type {
+  ComponentTypeEnum,
+  ModelComponentStatusEnum,
+} from '@/types/enums/space';
 import type { CreatorInfo } from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
@@ -126,6 +129,8 @@ export interface UpdateWorkflowParams {
 
 // 组件信息
 export interface ComponentInfo {
+  // 是否启用
+  enabled?: ModelComponentStatusEnum;
   // 组件ID
   id: number;
   // 空间ID

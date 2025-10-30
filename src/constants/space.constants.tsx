@@ -1,5 +1,4 @@
 import {
-  // ICON_AGENT,
   ICON_KNOWLEDGE,
   ICON_MODEL,
   ICON_PLUGIN,
@@ -8,7 +7,7 @@ import {
 } from '@/components/base/AgentType/images.constants';
 import SvgIcon from '@/components/base/SvgIcon';
 
-import { InputTypeEnum, TriggerComponentType } from '@/types/enums/agent';
+import { InputTypeEnum } from '@/types/enums/agent';
 import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
@@ -17,6 +16,7 @@ import {
   CreateListEnum,
   FilterStatusEnum,
   OpenCloseEnum,
+  PageSettingEnum,
   SpaceApplicationList,
   SpaceApplicationListEnum,
 } from '@/types/enums/space';
@@ -102,6 +102,11 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
     text: '智能体开发',
   },
   {
+    type: SpaceApplicationListEnum.Page_Develop,
+    icon: <SvgIcon name="icons-common-console" />,
+    text: '应用页面开发',
+  },
+  {
     type: SpaceApplicationListEnum.Component_Library,
     icon: <SvgIcon name="icons-nav-components" />,
     text: '组件库',
@@ -147,18 +152,6 @@ export const ENABLE_LIST = [
   },
 ];
 
-// 任务执行
-export const TASK_EXECUTION = [
-  {
-    value: TriggerComponentType.PLUGIN,
-    label: '插件',
-  },
-  {
-    value: TriggerComponentType.WORKFLOW,
-    label: '工作流',
-  },
-];
-
 // 智能体编排-组件设置列表
 export const COMPONENT_SETTING_ACTIONS = [
   {
@@ -184,6 +177,18 @@ export const COMPONENT_SETTING_ACTIONS = [
   {
     type: ComponentSettingEnum.Card_Bind,
     label: '卡片绑定',
+  },
+];
+
+// 智能体编排-组件设置列表
+export const PAGE_SETTING_ACTIONS = [
+  {
+    type: PageSettingEnum.Visible_To_LLM,
+    label: '模型可见',
+  },
+  {
+    type: PageSettingEnum.Home_Index,
+    label: '默认首页',
   },
 ];
 

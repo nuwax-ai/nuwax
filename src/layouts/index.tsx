@@ -4,6 +4,7 @@ import {
   MOBILE_MENU_TOP_PADDING,
 } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Outlet, useModel } from 'umi';
@@ -44,6 +45,7 @@ const Layout: React.FC = () => {
   // 导航风格管理（使用统一主题系统）
   const { navigationStyle, layoutStyle } = useUnifiedTheme();
   const { isSecondMenuCollapsed } = useModel('layout');
+  const { token } = theme.useToken();
 
   // 状态管理
   const {
@@ -162,6 +164,11 @@ const Layout: React.FC = () => {
         transition: `transform ${ANIMATION_DURATION}ms ease-in-out`,
         zIndex: 999,
         pointerEvents: 'auto',
+        ...({
+          ['--xagi-layout-second-menu-text-color']: token.colorText, // 悬浮菜单文字颜色 覆写
+          ['--xagi-layout-second-menu-text-color-secondary']:
+            token.colorTextSecondary, // 悬浮菜单文字颜色 覆写
+        } as React.CSSProperties),
       };
     }
 

@@ -1,5 +1,6 @@
 import {
   AGENT_NOT_EXIST,
+  AGENT_SERVICE_RUNNING,
   REDIRECT_LOGIN,
   SUCCESS_CODE,
   USER_NO_LOGIN,
@@ -22,6 +23,10 @@ const beSilentRequestList = (url: string): boolean => {
     '/api/notify/event/collect/batch', // 事件轮询
     '/api/notify/event/clear', // 事件清除
     '/api/user/getLoginInfo', // 获取登录信息
+    '/api/custom-page/keepalive', // 开发页面保活
+    '/api/custom-page/start-dev', // 开发页面启动
+    '/api/custom-page/restart-dev', // 开发页面重启
+    '/api/custom-page/get-dev-log', // 开发页面获取日志
     // 可以在此添加其他不需要显示错误消息的API
   ];
   return list.some((api) => url.includes(api));
@@ -72,13 +77,16 @@ const errorHandler = (error: any, opts: any) => {
     return;
   }
 
-  if (opts?.skipErrorHandler) throw error;
-
   if (error.name === 'BizError') {
     // 处理业务错误
     const errorInfo: RequestResponse<null> | undefined = error.info;
     if (errorInfo) {
       const { code, message: errorMessage } = errorInfo;
+
+      // 已经有后台Agent服务正在运行
+      if (code === AGENT_SERVICE_RUNNING) {
+        return Promise.reject(errorInfo);
+      }
 
       // 根据错误码处理不同情况
       switch (code) {
@@ -168,6 +176,7 @@ const responseInterceptors = [
 
     // 当响应码不是成功时，进行错误处理
     if (data.code !== SUCCESS_CODE) {
+      if (config?.skipErrorHandler) return response; // 跳过错误处理
       const error = errorThrower?.(data);
 
       if (error) {

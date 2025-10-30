@@ -335,7 +335,10 @@ const SpaceMcpCreate: React.FC = () => {
         onSave={() => handleSave(false)}
         onSaveAndDeploy={() => handleSave(true)}
       />
-      <div className={cx('flex-1', 'overflow-y')}>
+      <div
+        className={cx('flex-1', 'scroll-container')}
+        style={{ margin: '10px 0' }}
+      >
         {loadingDetail ? (
           <Loading className="h-full" />
         ) : (
@@ -374,7 +377,7 @@ const SpaceMcpCreate: React.FC = () => {
                       className="dispose-textarea-count"
                       placeholder="描述你的MCP服务"
                       showCount
-                      maxLength={500}
+                      maxLength={10000}
                       autoSize={{ minRows: 3, maxRows: 5 }}
                     />
                   </Form.Item>

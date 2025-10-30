@@ -1,13 +1,16 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
+import PagePreviewIframe from '@/components/business-component/PagePreviewIframe';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
-import { SIDEBAR_WIDTH } from '@/constants/agent.constants';
+import ResizableSplit from '@/components/ResizableSplit';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
+import useExclusivePanels from '@/hooks/useExclusivePanels';
+import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { MessageTypeEnum } from '@/types/enums/agent';
@@ -45,10 +48,10 @@ const Chat: React.FC = () => {
   const message = location.state?.message;
   const files = location.state?.files;
   const infos = location.state?.infos;
-  // 用户填写的变量参数，此处用于第一次发送消息时，传递变量参数
-  const firstVariableParams = location.state?.variableParams;
   // 默认的智能体详情信息
   const defaultAgentDetail = location.state?.defaultAgentDetail;
+  // 用户填写的变量参数，此处用于第一次发送消息时，传递变量参数
+  const firstVariableParams = location.state?.variableParams;
 
   const [form] = Form.useForm();
   // 变量参数
@@ -57,6 +60,7 @@ const Chat: React.FC = () => {
     string | number
   > | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [clearLoading, setClearLoading] = useState<boolean>(false);
   // 是否发送过消息,如果是,则禁用变量参数
   const isSendMessageRef = useRef<boolean>(false);
 
@@ -75,12 +79,10 @@ const Chat: React.FC = () => {
   const {
     conversationInfo,
     manualComponents,
-    loadingConversation,
     messageList,
     setMessageList,
     chatSuggestList,
     runAsync,
-    isLoadingConversation,
     setIsLoadingConversation,
     loadingSuggest,
     onMessageSend,
@@ -94,7 +96,13 @@ const Chat: React.FC = () => {
     requiredNameList,
     setConversationInfo,
     variables,
+    showType,
+    setShowType,
   } = useModel('conversationInfo');
+
+  // 页面预览相关状态
+  const { pagePreviewData, showPagePreview, hidePagePreview } =
+    useModel('chat');
 
   const values = Form.useWatch([], { form, preserve: true });
 
@@ -148,15 +156,55 @@ const Chat: React.FC = () => {
     };
   }, [conversationInfo]);
 
+  // 打开扩展页面
+  const handleOpenPreview = (agentDetail: any) => {
+    // 判断是否默认展示页面首页
+    if (
+      agentDetail &&
+      agentDetail?.expandPageArea &&
+      agentDetail?.pageHomeIndex
+    ) {
+      // 自动触发预览
+      showPagePreview({
+        name: '页面预览',
+        uri: process.env.BASE_URL + agentDetail?.pageHomeIndex,
+        params: {},
+        executeId: '',
+      });
+    } else {
+      showPagePreview(null);
+    }
+  };
+
   const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: AgentDetailDto) => {
       setAgentDetail(result);
+      handleOpenPreview(result);
       setLoading(false);
     },
     onError: () => {
       setLoading(false);
+    },
+  });
+
+  const { run: runDetailNew } = useRequest(apiPublishedAgentInfo, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: AgentDetailDto) => {
+      const { agentId, conversationId } = result;
+      history.replace(`/home/chat/${conversationId}/${agentId}`, {
+        message: '',
+        files: [],
+        infos,
+        defaultAgentDetail,
+        firstVariableParams,
+      });
+      setClearLoading(false);
+    },
+    onError: () => {
+      setClearLoading(false);
     },
   });
 
@@ -167,6 +215,7 @@ const Chat: React.FC = () => {
       runDetail(agentId);
     } else {
       setAgentDetail(defaultAgentDetail);
+      handleOpenPreview(defaultAgentDetail);
     }
   }, [agentId, defaultAgentDetail]);
 
@@ -282,7 +331,9 @@ const Chat: React.FC = () => {
 
   // 清空会话记录，实际上是跳转到智能体详情页面
   const handleClear = () => {
-    history.push(`/agent/${agentId}`);
+    // history.push(`/agent/${agentId}`);
+    setClearLoading(true);
+    runDetailNew(agentId, true);
   };
 
   // 消息发送
@@ -318,18 +369,26 @@ const Chat: React.FC = () => {
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const sidebarRef = useRef<AgentSidebarRef>(null);
 
-  return (
-    <div className={cx('flex', 'h-full')}>
-      <div
-        className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}
-        style={{
-          width: isSidebarVisible ? `calc(100% - ${SIDEBAR_WIDTH}px)` : '100%',
-        }}
-      >
-        <div
-          className={cx(styles['title-box'])}
-          // style={{ right: isSidebarVisible ? SIDEBAR_WIDTH : 0 }}
-        >
+  // 互斥面板控制器：管理 PagePreview、AgentSidebar、ShowArea 的互斥展示
+  useExclusivePanels({
+    pagePreviewData,
+    hidePagePreview,
+    isSidebarVisible,
+    sidebarRef,
+    showType,
+    setShowType,
+  });
+
+  // 消息事件代理（处理会话输出中的点击事件）
+  useMessageEventDelegate({
+    containerRef: messageViewRef,
+    eventBindConfig: conversationInfo?.agent?.eventBindConfig,
+  });
+
+  const LeftContent = () => {
+    return (
+      <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
+        <div className={cx(styles['title-box'])}>
           <div className={cx(styles['title-container'])}>
             {/* 左侧标题 */}
             {/*<Typography.Title*/}
@@ -346,109 +405,178 @@ const Chat: React.FC = () => {
                 setConversationInfo(value);
               }}
             />
-
-            {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
-            {!isSidebarVisible && !isMobile && (
-              <Button
-                type="text"
-                className={cx(styles.sidebarButton)}
-                icon={
-                  <SvgIcon
-                    name="icons-nav-sidebar"
-                    className={cx(styles['icons-nav-sidebar'])}
-                  />
-                }
-                onClick={() => sidebarRef.current?.open()}
-              />
-            )}
-          </div>
-        </div>
-        <div className={cx(styles['main-content-box'])} ref={messageViewRef}>
-          <div className={cx(styles['chat-wrapper'], 'flex-1')}>
-            {loadingConversation ? (
-              <div
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'h-full',
-                )}
-              >
-                <LoadingOutlined className={cx(styles.loading)} />
-              </div>
-            ) : (
-              <>
-                {/* 新对话设置 */}
-                <NewConversationSet
-                  className="mb-16"
-                  form={form}
-                  variables={variables}
-                  userFillVariables={firstVariableParams}
-                  // 是否已填写表单
-                  isFilled={!!variableParams}
-                  disabled={!!firstVariableParams || isSendMessageRef.current}
+            <div>
+              {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
+              {!isSidebarVisible && !isMobile && (
+                <Button
+                  type="text"
+                  className={cx(styles.sidebarButton)}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-sidebar"
+                      className={cx(styles['icons-nav-sidebar'])}
+                    />
+                  }
+                  onClick={() => {
+                    hidePagePreview();
+                    sidebarRef.current?.open();
+                  }}
                 />
-                {messageList?.length > 0 ? (
-                  <>
-                    {messageList?.map((item: MessageInfo, index: number) => (
-                      <ChatView
-                        key={item.id || index}
-                        messageInfo={item}
-                        roleInfo={roleInfo}
-                        contentClassName={styles['chat-inner']}
-                        mode={'home'}
+              )}
+
+              {/*打开预览页面*/}
+              {!!agentDetail?.expandPageArea &&
+                !!agentDetail?.pageHomeIndex &&
+                !pagePreviewData && (
+                  <Button
+                    type="text"
+                    className={cx(styles.sidebarButton)}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-ecosystem"
+                        className={cx(styles['icons-nav-sidebar'])}
                       />
-                    ))}
-                    {/*会话建议*/}
-                    <RecommendList
-                      itemClassName={styles['suggest-item']}
-                      loading={loadingSuggest}
-                      chatSuggestList={chatSuggestList}
-                      onClick={handleMessageSend}
-                    />
-                  </>
-                ) : (
-                  isLoadingConversation &&
-                  !message && (
-                    // Chat记录为空
-                    <AgentChatEmpty
-                      className={cx({ 'h-full': !variables?.length })}
-                      icon={conversationInfo?.agent?.icon}
-                      name={conversationInfo?.agent?.name}
-                      // 会话建议
-                      extra={
-                        <RecommendList
-                          className="mt-16"
-                          itemClassName={cx(styles['suggest-item'])}
-                          chatSuggestList={chatSuggestList}
-                          onClick={handleMessageSend}
-                        />
-                      }
-                    />
-                  )
+                    }
+                    onClick={() => {
+                      sidebarRef.current?.close();
+                      handleOpenPreview(agentDetail);
+                    }}
+                  />
                 )}
-              </>
-            )}
+            </div>
           </div>
         </div>
-        {/*会话输入框*/}
-        <ChatInputHome
-          key={`chat-${id}-${agentId}`}
-          className={cx(styles['chat-input-container'])}
-          onEnter={handleMessageSend}
-          visible={showScrollBtn}
-          wholeDisabled={wholeDisabled}
-          onClear={handleClear}
-          manualComponents={manualComponents}
-          selectedComponentList={selectedComponentList}
-          onSelectComponent={handleSelectComponent}
-          onScrollBottom={onScrollBottom}
-          showAnnouncement={true}
-        />
+        <div className={cx(styles['main-content-box'])}>
+          <div
+            className={cx(styles['chat-wrapper-content'])}
+            ref={messageViewRef}
+          >
+            <div className={cx(styles['chat-wrapper'], 'flex-1')}>
+              {/* 新对话设置 */}
+              <NewConversationSet
+                className="mb-16"
+                form={form}
+                variables={variables}
+                userFillVariables={firstVariableParams}
+                // 是否已填写表单
+                isFilled={!!variableParams}
+                disabled={!!firstVariableParams || isSendMessageRef.current}
+              />
+              {messageList?.length > 0 ? (
+                <>
+                  {messageList?.map((item: MessageInfo, index: number) => (
+                    <ChatView
+                      key={item.id || index}
+                      messageInfo={item}
+                      roleInfo={roleInfo}
+                      contentClassName={styles['chat-inner']}
+                      mode={'home'}
+                    />
+                  ))}
+                  {/*会话建议*/}
+                  <RecommendList
+                    itemClassName={styles['suggest-item']}
+                    loading={loadingSuggest}
+                    chatSuggestList={chatSuggestList}
+                    onClick={handleMessageSend}
+                  />
+                </>
+              ) : (
+                !message &&
+                (conversationInfo ? (
+                  // Chat记录为空
+                  <AgentChatEmpty
+                    className={cx({ 'h-full': !variables?.length })}
+                    icon={conversationInfo?.agent?.icon}
+                    name={conversationInfo?.agent?.name}
+                    // 会话建议
+                    extra={
+                      <RecommendList
+                        className="mt-16"
+                        itemClassName={cx(styles['suggest-item'])}
+                        chatSuggestList={chatSuggestList}
+                        onClick={handleMessageSend}
+                      />
+                    }
+                  />
+                ) : (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flex: 1,
+                      height: '100%',
+                      width: '100%',
+                      margin: '50px auto',
+                    }}
+                  >
+                    <LoadingOutlined />
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          <ChatInputHome
+            // key={`chat-${id}-${agentId}`}
+            key={`agent-details-${agentId}`}
+            className={cx(styles['chat-input-container'])}
+            onEnter={handleMessageSend}
+            visible={showScrollBtn}
+            wholeDisabled={wholeDisabled}
+            clearLoading={clearLoading}
+            onClear={handleClear}
+            manualComponents={manualComponents}
+            selectedComponentList={selectedComponentList}
+            onSelectComponent={handleSelectComponent}
+            onScrollBottom={onScrollBottom}
+            showAnnouncement={true}
+          />
+        </div>
       </div>
+    );
+  };
+
+  return (
+    <div className={cx('flex', 'h-full')}>
+      {/*智能体聊天和预览页面*/}
+      {loading ? (
+        // 接口加载中，显示 loading 状态，避免右侧渲染时挤压左侧
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 1,
+            height: '100%',
+            width: '100%',
+          }}
+        >
+          <LoadingOutlined />
+        </div>
+      ) : (
+        <ResizableSplit
+          minLeftWidth={400}
+          left={agentDetail?.hideChatArea ? null : LeftContent()}
+          right={
+            pagePreviewData && (
+              <PagePreviewIframe
+                pagePreviewData={pagePreviewData}
+                showHeader={true}
+                onClose={hidePagePreview}
+                showCloseButton={!agentDetail?.hideChatArea}
+                titleClassName={cx(styles['title-style'])}
+              />
+            )
+          }
+        />
+      )}
+
       <AgentSidebar
         ref={sidebarRef}
-        className={cx(styles['agent-sidebar'])}
+        className={cx(
+          styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
+        )}
         agentId={agentId}
         loading={loading}
         agentDetail={agentDetail}

@@ -5,13 +5,13 @@ import { APPLICATION_MORE_ACTION_DETAIL } from '@/constants/space.constants';
 import { PermissionsEnum } from '@/types/enums/common';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { AgentHeaderProps } from '@/types/interfaces/agentConfig';
-import { jumpBack } from '@/utils/router';
+// import { jumpBack } from '@/utils/router';
 import { FormOutlined } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
-import { useParams } from 'umi';
+import { history, useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -86,12 +86,16 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
     },
     ...actionList,
   ];
+
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
       <SvgIcon
         name="icons-nav-backward"
         className={cx(styles['icon-backward'])}
-        onClick={() => jumpBack(`/space/${spaceId}/develop`)}
+        onClick={() => {
+          history.push(`/space/${spaceId}/develop`);
+          // jumpBack(`/space/${spaceId}/develop`)
+        }}
       />
       <img
         className={cx(styles.avatar)}

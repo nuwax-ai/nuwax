@@ -62,8 +62,6 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
 
   useEffect(() => {
     const list = getActionList(mcpInfo);
-    console.log('list', list);
-    console.log('mcpInfo', mcpInfo);
     setActionList(list);
   }, [mcpInfo]);
 

@@ -1,0 +1,103 @@
+.container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+
+  .left,
+  .right {
+    height: 100%;
+    overflow: auto;
+    // 拖拽时禁用过渡效果，避免卡顿
+    transition: width 0.3s ease-out;
+    // 添加 will-change 优化渲染性能
+    will-change: width;
+  }
+
+  .left {
+    //background: #fafafa;
+    flex-shrink: 0; // 防止收缩
+  }
+
+  .right {
+    //background: #fff;
+    flex-shrink: 0; // 防止收缩
+    display: flex;
+  }
+
+  .divider {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background-color: var(--divider-color, #e0e0e0);
+    cursor: col-resize;
+    transition: background-color 0.2s;
+    z-index: 10;
+    transform: translateX(-1px); // 使分隔线居中
+    // 添加 will-change 优化渲染性能
+    will-change: transform;
+    // 添加拖拽手柄
+    &::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 1px;
+      height: 40px;
+      background-color: rgba(0, 0, 0, 15%);
+      border-radius: 2px;
+      transition: background-color 0.2s;
+    }
+
+    &:hover {
+      background-color: var(--divider-hover-color, #bbb);
+
+      &::before {
+        background-color: rgba(0, 0, 0, 30%);
+      }
+    }
+
+    &.dragging {
+      background-color: var(--divider-dragging-color, #1890ff);
+      transition: none; // 拖拽时禁用过渡
+      &::before {
+        background-color: rgba(255, 255, 255, 80%);
+        transition: none; // 拖拽时禁用过渡
+      }
+    }
+
+    &.disabled {
+      cursor: not-allowed;
+      background-color: #f2f2f2;
+
+      &::before {
+        display: none;
+      }
+    }
+  }
+
+  // 拖拽时左右面板禁用过渡效果和滚动条
+  &:has(.dragging) {
+    .left,
+    .right {
+      transition: none;
+      overflow: hidden; // 拖拽时禁用滚动条，避免闪烁
+    }
+  }
+}
+
+// 拖拽时的遮罩层，防止 iframe 干扰
+.dragOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  cursor: col-resize;
+  background-color: transparent;
+  pointer-events: auto;
+}

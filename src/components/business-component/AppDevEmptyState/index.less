@@ -1,0 +1,152 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.emptyIconContainer {
+  margin-bottom: 16px;
+  font-size: 48px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyIcon {
+  color: @colorTextBase;
+  transition: all 0.3s ease;
+}
+
+.loadingIcon {
+  color: @colorTextBase;
+  animation: pulse-animation 2s ease-in-out infinite;
+}
+
+.errorIcon {
+  color: @colorTextBase;
+  transition: all 0.3s ease;
+}
+
+.emptyContent {
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+}
+
+.emptyTitle {
+  font-size: @fontSizeLg;
+  font-weight: 500;
+  margin: 0 0 8px;
+  color: @colorTextBase;
+  line-height: 1.4;
+  transition: color 0.3s ease;
+}
+
+.emptyDescription {
+  font-size: @fontSize;
+  color: @colorTextSecondary;
+  margin: 0 0 16px;
+  line-height: 1.5;
+  transition: color 0.3s ease;
+  word-break: break-word; // 允许长单词换行
+  max-width: 100%; // 确保不超出容器宽度
+
+  // 多行文本截取样式
+  &.multiLineTruncate {
+    display: box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--max-lines, 3);
+    line-clamp: var(--max-lines, 3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // 单行文本截取样式
+  &.singleLineTruncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// 完整内容弹窗样式
+.fullTextContent {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid @colorBorder;
+}
+
+.fullTextPre {
+  margin: 0;
+  padding: 0;
+  font-family: @fontFamilyCode;
+  font-size: @fontSizeSm;
+  line-height: 1.5;
+  color: @colorTextBase;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: transparent;
+  border: none;
+}
+
+.emptyActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.regularButtons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.viewFullTextButton {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+@keyframes pulse-animation {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px 20px;
+  min-height: 200px;
+  background: transparent;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  animation: fade-in 0.3s ease-out;
+}

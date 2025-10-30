@@ -23,6 +23,7 @@ import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import {
   AgentManualComponentInfo,
   AgentSelectedComponentInfo,
+  GuidQuestionDto,
 } from '@/types/interfaces/agent';
 import { CardDataInfo } from '@/types/interfaces/cardInfo';
 import type {
@@ -55,6 +56,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export default () => {
   const { runHistoryItem } = useModel('conversationHistory');
+  const { showPagePreview } = useModel('chat');
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();
@@ -62,13 +64,19 @@ export default () => {
   const [currentConversationRequestId, setCurrentConversationRequestId] =
     useState<string>('');
   // 是否用户问题建议
-  const [isSuggest, setIsSuggest] = useState<boolean>(false);
+  // const [isSuggest, setIsSuggest] = useState<boolean>(false);
+  const isSuggest = useRef(false);
+  const setIsSuggest = (suggest: boolean) => {
+    isSuggest.current = suggest;
+  };
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
   const messageListRef = useRef<MessageInfo[]>([]);
   // 会话问题建议
-  const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
+  const [chatSuggestList, setChatSuggestList] = useState<
+    string[] | GuidQuestionDto[]
+  >([]);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -191,17 +199,17 @@ export default () => {
   };
 
   // 检查会话是否正在进行中（有消息正在处理）
-  const checkConversationActive = (messages: MessageInfo[]) => {
+  const checkConversationActive = useCallback((messages: MessageInfo[]) => {
+    // 只检查最后几条消息的状态，而不是所有消息
+    const recentMessages = messages?.slice(-5) || []; // 只检查最后5条消息
     const hasActiveMessage =
-      (messages?.length &&
-        messages.some(
-          (message) =>
-            message.status === MessageStatusEnum.Loading ||
-            message.status === MessageStatusEnum.Incomplete,
-        )) ||
-      false;
+      recentMessages.some(
+        (message) =>
+          message.status === MessageStatusEnum.Loading ||
+          message.status === MessageStatusEnum.Incomplete,
+      ) || false;
     setIsConversationActive(hasActiveMessage);
-  };
+  }, []);
 
   const disabledConversationActive = () => {
     setIsConversationActive(false);
@@ -249,13 +257,16 @@ export default () => {
         }
         // 如果消息列表大于1时，说明已开始会话，就不显示预置问题，反之显示
         else if (len === 1) {
+          const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
           // 如果存在预置问题，显示预置问题
-          setChatSuggestList(data?.agent?.openingGuidQuestions || []);
+          setChatSuggestList(guidQuestionDtos);
         }
       }
       // 不存在会话消息时，才显示开场白预置问题
       else {
-        setChatSuggestList(data?.agent?.openingGuidQuestions || []);
+        const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
+        // 如果存在预置问题，显示预置问题
+        setChatSuggestList(guidQuestionDtos);
       }
 
       // 使用 setTimeout 确保在 DOM 完全渲染后再滚动
@@ -337,6 +348,46 @@ export default () => {
               data,
             ] as ProcessingInfo[],
           };
+          // 添加处理扩展页面逻辑
+          if (data.status === ProcessingEnum.EXECUTING) {
+            // 判断页面类型
+            if (data.type === 'Page') {
+              const input = processingResult.input;
+              // 添加页面类型 后的未返回默认 Page
+              input.uri_type = processingResult.input.uri_type ?? 'Page';
+              // if (!input?.uri) {
+              //   message.error('页面路径不存在');
+              //   return;
+              // }
+
+              // 显示页面预览
+              if (input.uri_type === 'Page') {
+                const previewData = {
+                  uri: input.uri,
+                  params: input.arguments || {},
+                  executeId: data.executeId || '',
+                  method: input.method,
+                  request_id: input.request_id,
+                  data_type: input.data_type,
+                };
+                console.log('CHART', previewData);
+                // 显示页面预览
+                showPagePreview(previewData);
+              }
+
+              // 链接类型
+              if (input.uri_type === 'Link') {
+                const input = processingResult.input;
+                input.uri_type = processingResult.input.uri_type ?? 'Page';
+                // 拼接 query 参数
+                const queryString = new URLSearchParams(
+                  input.arguments,
+                ).toString();
+                const pageUrl = `${input.uri}?${queryString}`;
+                window.open(pageUrl, '_blank');
+              }
+            }
+          }
 
           // 已调用完毕后, 处理卡片信息
           if (
@@ -455,7 +506,7 @@ export default () => {
           setRequestId(res.requestId);
           setFinalResult(data as ConversationFinalResult);
           // 是否开启问题建议,可用值:Open,Close
-          if (isSuggest) {
+          if (isSuggest.current) {
             runChatSuggest(params as ConversationChatSuggestParams);
           }
         }
@@ -479,6 +530,8 @@ export default () => {
       });
     }, 200);
   };
+
+  const abortController = new AbortController();
 
   // 会话处理
   const handleConversation = async (
@@ -524,6 +577,7 @@ export default () => {
         Accept: 'application/json, text/plain, */* ',
       },
       body: params,
+      abortController,
       onMessage: (res: ConversationChatResponse) => {
         handleChangeMessageList(params, res, currentMessageId);
         // 滚动到底部
@@ -531,8 +585,10 @@ export default () => {
       },
       onClose: async () => {
         const currentInfo = conversationInfo ?? data;
-        // 第一次发送消息后更新主题
-        if (currentInfo && currentInfo?.topicUpdated !== 1) {
+
+        if (isSync && currentInfo && currentInfo?.topicUpdated !== 1) {
+          // 第一次发送消息后更新主题
+          // 如果是智能体编排页面不更新
           const { data } = await runUpdateTopic({
             id: params.conversationId,
             firstMessage: params.message,
@@ -540,23 +596,21 @@ export default () => {
           // 更新会话记录
           setConversationInfo({
             ...currentInfo,
-            topicUpdated: data.topicUpdated,
-            topic: data.topic,
+            topicUpdated: data?.topicUpdated,
+            topic: data?.topic,
           });
 
-          if (isSync) {
-            // 如果是会话聊天页（chat页），同步更新会话记录
-            runHistory({
-              agentId: null,
-              limit: 20,
-            });
+          // 如果是会话聊天页（chat页），同步更新会话记录
+          runHistory({
+            agentId: null,
+            limit: 20,
+          });
 
-            // 获取当前智能体的历史记录
-            runHistoryItem({
-              agentId: currentInfo.agentId,
-              limit: 20,
-            });
-          }
+          // 获取当前智能体的历史记录
+          runHistoryItem({
+            agentId: currentInfo.agentId,
+            limit: 20,
+          });
         }
 
         disabledConversationActive();
@@ -634,6 +688,9 @@ export default () => {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+
+    // 停止当前会话【强制】
+    abortController?.abort();
   };
 
   // 发送消息

@@ -7,13 +7,22 @@
   .box {
     max-width: 100%;
     width: fit-content;
-    display: inline-block;
     line-height: 26px;
-    padding-top: @paddingXxs;
-    padding-bottom: @paddingXxs;
+    padding: @paddingXxs @paddingSm;
     font-size: @fontSize;
     color: @colorText;
     border: @lineWidth solid @colorSplit;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+
+    .icon {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      display: inline-block;
+    }
   }
 }
 

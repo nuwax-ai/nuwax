@@ -253,7 +253,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                 }}
                 onClick={() => setOpenBindArray(true)}
                 placeholder="请为卡片整体绑定一个数组"
-                dropdownRender={() =>
+                popupRender={() =>
                   bindArray?.length > 0 ? (
                     <Tree
                       treeData={bindArray}
@@ -293,7 +293,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
                   value={info?.cardKey || null}
                   onDropdownVisibleChange={(open) => handleArgList(index, open)}
                   onClick={() => handleArgList(index, true)}
-                  dropdownRender={() =>
+                  popupRender={() =>
                     dataSource?.length > 0 ? (
                       <Tree
                         treeData={dataSource}
@@ -349,7 +349,7 @@ const BindDataSource: React.FC<BindDataSourceProps> = ({
               value={bindLinkUrl || null}
               onDropdownVisibleChange={(open) => setUrlVisible(open)}
               onClick={() => setUrlVisible(true)}
-              dropdownRender={() => (
+              popupRender={() => (
                 <Tree
                   treeData={dataSource}
                   height={300}

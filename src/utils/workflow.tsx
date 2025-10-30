@@ -47,6 +47,7 @@ import Knowledge from '@/assets/images/knowledge_image.png';
 import Plugin from '@/assets/images/plugin_image.png';
 import {
   default as Model,
+  default as Page,
   default as Trigger,
   default as Variable,
   default as Workflow,
@@ -94,6 +95,7 @@ const imageList = {
   Trigger,
   Variable,
   Model,
+  Page,
 } as {
   [key in AgentComponentTypeEnum]: string;
 };

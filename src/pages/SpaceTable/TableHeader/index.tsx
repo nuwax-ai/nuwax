@@ -1,7 +1,7 @@
 import databaseImage from '@/assets/images/database_image.png';
 import { TableHeaderProps } from '@/types/interfaces/dataTable';
 import { jumpBack } from '@/utils/router';
-import { EditOutlined, LeftOutlined } from '@ant-design/icons';
+import { FormOutlined, LeftOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
 import classNames from 'classnames';
 import styles from './index.less';
@@ -29,12 +29,13 @@ const TableHeader: React.FC<TableHeaderProps> = ({
       <div>
         <div className={cx('dis-left', styles['database-header-title'])}>
           <h3 className={cx(styles.name)}>{tableDetail?.tableName}</h3>
-          <EditOutlined
+          <FormOutlined
             className="cursor-pointer hover-box"
             onClick={onClick}
+            style={{ fontSize: 16 }}
           />
+          <Tag className={cx(styles['tag-style'])}>{`${total}条记录`}</Tag>
         </div>
-        <Tag className={cx(styles['tag-style'])}>{`${total}条记录`}</Tag>
       </div>
     </header>
   );

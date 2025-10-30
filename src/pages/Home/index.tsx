@@ -9,13 +9,13 @@ import {
   apiPublishedAgentInfo,
   apiUnCollectAgent,
 } from '@/services/agentDev';
-import { AgentDetailDto } from '@/types/interfaces/agent';
+import { AgentDetailDto, GuidQuestionDto } from '@/types/interfaces/agent';
 import type {
   CategoryItemInfo,
   HomeAgentCategoryInfo,
 } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import { AffixRef, App } from 'antd';
+import { AffixRef, App, message as antdMessage } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useRequest } from 'umi';
@@ -150,6 +150,21 @@ const Home: React.FC = () => {
     return () => window.removeEventListener('scroll', handler, true);
   }, []);
 
+  const handleClickItem = (item: GuidQuestionDto) => {
+    // 外部页面
+    if (item.type === 'Link') {
+      // 打开外链
+      if (!item.url) {
+        antdMessage.error('链接地址配置错误');
+        return;
+      }
+      window.open(item.url, '_blank');
+      return;
+    }
+
+    handleEnter(item.info);
+  };
+
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
       {/* 输入框区域 */}
@@ -184,8 +199,8 @@ const Home: React.FC = () => {
             'flex-wrap',
           )}
         >
-          {agentDetail?.openingGuidQuestions?.map(
-            (item: string, index: number) => {
+          {agentDetail?.guidQuestionDtos?.map(
+            (item: GuidQuestionDto, index: number) => {
               return (
                 <div
                   key={index}
@@ -194,9 +209,12 @@ const Home: React.FC = () => {
                     'cursor-pointer',
                     'hover-box',
                   )}
-                  onClick={() => handleEnter(item)}
+                  onClick={() => handleClickItem(item)}
                 >
-                  {item}
+                  {item?.icon && (
+                    <img className={cx(styles.icon)} src={item?.icon} />
+                  )}
+                  {item.info}
                 </div>
               );
             },

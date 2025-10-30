@@ -28,11 +28,13 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Empty, Input, message, Row, Space, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useModel, useParams, useRequest } from 'umi';
+import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import ApplicationItem from './ApplicationItem';
 import CreateApiKeyModal from './CreateApiKeyModal';
 import CreateTempChatModal from './CreateTempChatModal';
 import styles from './index.less';
+
+type IQuery = 'status' | 'create' | 'keyword';
 
 const cx = classNames.bind(styles);
 
@@ -40,6 +42,21 @@ const cx = classNames.bind(styles);
  * 工作空间 - 应用开发
  */
 const SpaceDevelop: React.FC = () => {
+  // ✅ umi 中的 useSearchParams
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ✅ 当 select 改变时同步 URL
+  const handleChange = (key: IQuery, value: string) => {
+    // 更新 URL 参数
+    const newParams = new URLSearchParams(searchParams);
+    if (value) {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
+    }
+    setSearchParams(newParams);
+  };
+
   const params = useParams();
   const spaceId = Number(params.spaceId);
   // 打开分析弹窗
@@ -53,15 +70,19 @@ const SpaceDevelop: React.FC = () => {
   const [currentAgentInfo, setCurrentAgentInfo] =
     useState<AgentConfigInfo | null>(null);
   const [openCreateAgent, setOpenCreateAgent] = useState<boolean>(false);
-  const [status, setStatus] = useState<FilterStatusEnum>(FilterStatusEnum.All);
+  const [status, setStatus] = useState<FilterStatusEnum>(
+    Number(searchParams.get('status')) || FilterStatusEnum.All,
+  );
   const [agentStatistics, setAgentStatistics] = useState<
     AnalyzeStatisticsItem[]
   >([]);
   const [create, setCreate] = useState<CreateListEnum>(
-    CreateListEnum.All_Person,
+    Number(searchParams.get('create')) || CreateListEnum.All_Person,
   );
   // 搜索关键词
-  const [keyword, setKeyword] = useState<string>('');
+  const [keyword, setKeyword] = useState<string>(
+    searchParams.get('keyword') || '',
+  );
   const [loading, setLoading] = useState<boolean>(false);
   // 复制模板loading
   const [transferLoading, setTransferLoading] = useState<boolean>(false);
@@ -98,6 +119,20 @@ const SpaceDevelop: React.FC = () => {
     }
     setAgentList(_list);
   };
+
+  // ✅ 监听 URL 改变（支持浏览器前进/后退）
+  useEffect(() => {
+    const status = Number(searchParams.get('status')) || FilterStatusEnum.All;
+    const create =
+      Number(searchParams.get('create')) || CreateListEnum.All_Person;
+    const keyword = searchParams.get('keyword') || '';
+
+    setStatus(status);
+    setCreate(create);
+    setKeyword(keyword);
+
+    handleFilterList(status, create, keyword);
+  }, [searchParams]);
 
   // 查询空间智能体列表接口
   const { run } = useRequest(apiAgentConfigList, {
@@ -198,6 +233,7 @@ const SpaceDevelop: React.FC = () => {
     const _status = value as FilterStatusEnum;
     setStatus(_status);
     handleFilterList(_status, create, keyword);
+    handleChange('status', _status.toString());
   };
 
   // 切换创建者
@@ -205,6 +241,7 @@ const SpaceDevelop: React.FC = () => {
     const _create = value as CreateListEnum;
     setCreate(_create);
     handleFilterList(status, _create, keyword);
+    handleChange('create', _create.toString());
   };
 
   // 智能体搜索
@@ -212,6 +249,7 @@ const SpaceDevelop: React.FC = () => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
     handleFilterList(status, create, _keyword);
+    handleChange('keyword', _keyword);
   };
 
   // 清除关键词
@@ -415,7 +453,11 @@ const SpaceDevelop: React.FC = () => {
         <Loading />
       ) : agentList?.length > 0 ? (
         <div
-          className={cx(styles['main-container'], 'flex-1', 'scroll-container')}
+          className={cx(
+            styles['main-container'],
+            'flex-1',
+            'scroll-container-hide',
+          )}
         >
           {agentList?.map((item: AgentConfigInfo, index: number) => (
             <ApplicationItem
