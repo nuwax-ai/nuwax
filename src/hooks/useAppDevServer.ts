@@ -6,9 +6,11 @@ import { DEV_SERVER_CONSTANTS } from '@/constants/appDevConstants';
 import { keepAlive, restartDev, startDev } from '@/services/appDev';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useModel } from 'umi';
 
 interface UseAppDevServerProps {
   projectId: string;
+  devLogsRefresh: () => void;
   onServerStart?: (devServerUrl: string) => void;
   onServerStatusChange?: (isRunning: boolean) => void;
 }
@@ -33,6 +35,7 @@ interface UseAppDevServerReturn {
 export const useAppDevServer = ({
   projectId,
   onServerStart,
+  devLogsRefresh,
   onServerStatusChange,
 }: UseAppDevServerProps): UseAppDevServerReturn => {
   const [isStarting, setIsStarting] = useState(false);
@@ -45,6 +48,9 @@ export const useAppDevServer = ({
   const hasStartedRef = useRef(false);
   const lastProjectIdRef = useRef<string | null>(null);
   const keepAliveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 使用 model 统一管理状态
+  const autoErrorHandlingModelInstance = useModel('autoErrorHandling');
 
   /**
    * 统一的服务器状态处理函数
@@ -267,10 +273,13 @@ export const useAppDevServer = ({
         }
         return { success: false, message: '项目ID不存在或无效' };
       }
+      let finalResult;
 
       try {
         // 【关键变更1】暂停 keepalive 轮询
         stopKeepAlive();
+        //暂停 自动错误处理
+        autoErrorHandlingModelInstance.setAutoHandlingEnabled(false);
 
         // 【关键变更2】设置重启状态，清空 devServerUrl 和错误消息
         setIsRestarting(true);
@@ -303,7 +312,7 @@ export const useAppDevServer = ({
         // 【关键变更3】恢复 keepalive 轮询
         startKeepAlive();
 
-        return result;
+        finalResult = result;
       } catch (error: any) {
         setIsRestarting(false);
         setIsRunning(false);
@@ -317,8 +326,14 @@ export const useAppDevServer = ({
         // 【关键变更4】即使异常也要恢复 keepalive 轮询
         startKeepAlive();
 
-        return { success: false, message: errorMessage };
+        finalResult = { success: false, message: errorMessage };
+      } finally {
+        // 拉取最新的日志 刷新日志
+        devLogsRefresh();
+        // 恢复 自动错误处理
+        autoErrorHandlingModelInstance.setAutoHandlingEnabled(true);
       }
+      return finalResult;
     },
     [
       projectId,
