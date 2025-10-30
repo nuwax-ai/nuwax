@@ -547,7 +547,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               </Tooltip>
             ) : (
               <span
-                onClick={handleSendMessage}
+                onClick={() => handleSendMessage()}
                 className={`${styles.box} ${styles['send-box']} ${
                   !chat.chatInput.trim() || isSendingMessage
                     ? styles.disabled
