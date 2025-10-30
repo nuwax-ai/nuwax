@@ -26,6 +26,120 @@
     ready: false,
   };
 
+  /**
+   * 检查白屏状态并获取 document 字符串
+   * 参考 Preview 组件的 checkWhiteScreen 逻辑
+   * @returns {{ isWhiteScreen: boolean, documentString?: string }} 白屏检查结果
+   */
+  function checkWhiteScreen() {
+    try {
+      const doc = document;
+
+      // 获取 document 字符串的辅助函数
+      function getDocumentString() {
+        try {
+          let docString = '';
+
+          // 如果没有 body，获取整个 document 的 HTML
+          if (!doc || !doc.body) {
+            if (doc && doc.documentElement) {
+              docString = doc.documentElement.outerHTML || '';
+            } else if (doc) {
+              docString = doc.documentElement
+                ? String(doc.documentElement)
+                : String(doc);
+            } else {
+              docString = '[Document not available]';
+            }
+          } else {
+            // 如果有 body，获取 body 的 HTML 结构
+            // 同时也获取 head 中的关键信息（如 script 标签）
+            const bodyHTML = doc.body.innerHTML || '';
+            const headScripts = Array.from(doc.head.querySelectorAll('script'))
+              .map((script) => script.outerHTML)
+              .join('\n');
+            const headStyles = Array.from(doc.head.querySelectorAll('style'))
+              .map((style) => style.outerHTML)
+              .join('\n');
+
+            docString = [
+              '<!-- Head Scripts -->',
+              headScripts,
+              '<!-- Head Styles -->',
+              headStyles,
+              '<!-- Body -->',
+              bodyHTML,
+            ]
+              .filter((s) => s)
+              .join('\n');
+          }
+
+          // 限制长度，避免消息过大（限制为 5000 字符）
+          const maxLength = 5000;
+          if (docString.length > maxLength) {
+            docString =
+              docString.substring(0, maxLength) +
+              '\n... [truncated, total length: ' +
+              docString.length +
+              ']';
+          }
+
+          return docString;
+        } catch (e) {
+          console.debug('[DevMonitor] 获取 document 字符串失败:', e);
+          return '[Failed to get document string: ' + String(e) + ']';
+        }
+      }
+
+      // 检查白屏状态
+      if (!doc || !doc.body) {
+        return {
+          isWhiteScreen: true,
+          documentString: getDocumentString(),
+        };
+      }
+
+      // 检查是否空内容
+      const hasContent =
+        doc.body.innerText.trim().length > 0 || doc.body.children.length > 0;
+      if (!hasContent) {
+        return {
+          isWhiteScreen: true,
+          documentString: getDocumentString(),
+        };
+      }
+
+      // 检查是否存在根节点（React/Vue 挂载点）
+      const appRoot = doc.querySelector('#root, #app');
+      if (!appRoot) {
+        return {
+          isWhiteScreen: true,
+          documentString: getDocumentString(),
+        };
+      }
+
+      // 如果存在挂载点但内部为空，说明 React/Vite 崩溃了
+      if (appRoot.children.length === 0) {
+        return {
+          isWhiteScreen: true,
+          documentString: getDocumentString(),
+        };
+      }
+
+      // 不是白屏，不返回 documentString
+      return {
+        isWhiteScreen: false,
+      };
+    } catch (error) {
+      // 检测失败时，保守处理，返回 false（不认为是白屏）
+      console.debug('[DevMonitor] 白屏检测失败:', error);
+      return {
+        isWhiteScreen: false,
+        documentString: '[White screen check failed: ' + String(error) + ']',
+      };
+    }
+  }
+
   // 简化的日志函数 - 只记录错误
   const logger = {
     error: (message, details = null) => {
@@ -83,12 +197,19 @@
       // 如果在 iframe 中（window.self !== window.top），就尝试发送消息
       if (isInIframe && window.parent) {
         try {
+          // ⭐ 检查白屏状态
+          const { documentString, isWhiteScreen } = checkWhiteScreen();
+
           const errorMessage = {
             type: 'dev-monitor-error', // 实时错误消息类型
             error: errorData,
             errorCount: monitorData.errors.length,
             url: monitorData.basicInfo.url,
             timestamp: Date.now(),
+            isWhiteScreen, // 白屏检查结果
+            ...(documentString && {
+              documentString,
+            }), // 仅在白屏时包含 document 字符串
           };
           console.log(
             '[DevMonitor] 📤 Sending dev-monitor-error:',
@@ -283,9 +404,16 @@
       // 发送消息到父窗口
       if (window.parent && window.parent !== window) {
         try {
+          // ⭐ 检查白屏状态
+          const { documentString, isWhiteScreen } = checkWhiteScreen();
+
           const message = {
             type: 'dev-monitor-history-change',
             ...changeData,
+            isWhiteScreen, // 白屏检查结果
+            ...(documentString && {
+              documentString,
+            }), // 仅在白屏时包含 document 字符串
           };
 
           window.parent.postMessage(message, '*');
