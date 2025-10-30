@@ -502,9 +502,8 @@ export const useAppDevChat = ({
       attachments?: Attachment[],
       attachmentFiles?: FileStreamAttachment[],
       attachmentPrototypeImages?: FileStreamAttachment[],
+      requestId: string = generateRequestId(), // 生成临时request_id
     ) => {
-      // 生成临时request_id
-      const requestId = generateRequestId();
       try {
         // 数据源数据结构提取
         const _selectedDataResources: DataSourceSelection[] =
@@ -623,6 +622,7 @@ export const useAppDevChat = ({
       attachments?: Attachment[],
       attachmentFiles?: FileStreamAttachment[],
       attachmentPrototypeImages?: FileStreamAttachment[],
+      requestId?: string,
     ) => {
       // 验证：prompt（输入内容）是必填的
       if (!chatInput.trim()) {
@@ -635,6 +635,7 @@ export const useAppDevChat = ({
         attachments,
         attachmentFiles,
         attachmentPrototypeImages,
+        requestId,
       );
     },
     [chatInput, sendMessageAndConnectSSE],
@@ -669,7 +670,13 @@ export const useAppDevChat = ({
    */
   const cleanupAppDevSSE = useCallback(() => {
     // appDevSseModel.cleanupAppDev();
-  }, [appDevSseModel]);
+    aIChatAbortConnectionRef.current?.abort();
+    abortConnectionRef.current?.abort();
+    setIsChatLoading(false);
+    setChatMessages([]);
+    setChatInput('');
+    setAiChatSessionId('');
+  }, []);
 
   /**
    * 加载历史会话消息

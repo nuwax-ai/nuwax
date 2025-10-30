@@ -49,6 +49,7 @@ export interface ChatInputProps {
   onEnter: (
     files?: UploadFileInfo[],
     prototypeImages?: UploadFileInfo[],
+    requestId?: string,
   ) => void;
   // 数据源列表
   dataSourceList?: DataResource[];
@@ -90,7 +91,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   }, []);
 
   // 点击发送事件
-  const handleSendMessage = () => {
+  const handleSendMessage = (requestId?: string) => {
     if (chat.chatInput?.trim()) {
       const files = attachmentFiles?.filter(
         (item) => item.status === UploadFileStatus.done && item.url && item.key,
@@ -99,7 +100,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         (item) => item.status === UploadFileStatus.done && item.url && item.key,
       );
       // enter事件
-      onEnter(files, prototypeImages);
+      onEnter(files, prototypeImages, requestId);
       // 清空输入框
       chat.setChatInput('');
       // 清空附件文件列表
@@ -327,10 +328,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 订阅发送消息事件
   useEffect(() => {
-    const handleSendMessageEvent = () => {
+    const handleSendMessageEvent = (requestId?: string) => {
+      console.log('[AutoErrorHandling] eventBus requestId', requestId);
       // 检查是否有输入内容
       if (chat.chatInput?.trim()) {
-        handleSendMessage();
+        handleSendMessage(requestId);
       }
     };
 
