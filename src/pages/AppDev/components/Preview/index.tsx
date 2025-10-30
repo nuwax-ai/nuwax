@@ -7,6 +7,7 @@ import {
   ReloadOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import React, {
   useCallback,
   useEffect,
@@ -446,7 +447,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // 统一通过 onWhiteScreenWithError 处理，指定错误类型为 iframe
         if (onWhiteScreenWithError) {
           onWhiteScreenWithError(
-            '预览加载失败，请检查开发服务器状态或网络连接',
+            dayjs(Date.now()).format('YYYY/MM/DD HH:mm:ss') +
+              ' 预览加载失败，请检查开发服务器状态或网络连接',
             'iframe',
           );
         }
@@ -485,7 +487,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           const errorMessages = devMonitorErrorsRef.current
             .slice(-3) // 只取最近3条
             .map((e) => {
-              let msg = `[DevMonitor] ${e.message}`;
+              let msg = `${dayjs(e.timestamp).format('YYYY/MM/DD HH:mm:ss')} ${
+                e.message
+              }`;
               if (e.details) {
                 try {
                   const details = JSON.parse(e.details);

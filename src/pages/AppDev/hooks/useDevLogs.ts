@@ -96,15 +96,26 @@ export const useDevLogs = (
    */
   const addNewLogs = useCallback(
     (newLogs: DevLogEntry[]) => {
-      if (!isMountedRef.current || newLogs.length === 0) return;
+      if (!newLogs || !isMountedRef.current || newLogs.length === 0) return;
 
       setLogs((prevLogs) => {
-        const updatedLogs = [...prevLogs, ...newLogs];
+        if (prevLogs[0]?.timestamp !== newLogs[0]?.timestamp) {
+          return newLogs;
+        }
+
+        if (prevLogs.length === newLogs.length) {
+          return prevLogs;
+        }
+
+        const updatedLogs = [
+          ...prevLogs,
+          ...newLogs.slice(prevLogs.length, newLogs.length),
+        ];
         let resultLogs = updatedLogs;
         // 限制日志数量，保留最新的日志
-        if (updatedLogs.length > maxLogLines) {
-          resultLogs = updatedLogs.slice(-maxLogLines);
-        }
+        // if (updatedLogs.length > maxLogLines) {
+        //   resultLogs = updatedLogs.slice(-maxLogLines);
+        // }
         const groups = groupLogsByTimestamp(resultLogs);
         // 检查最新日志块是否包含错误 仅检查最后一组
         const newErrorLogs = filterErrorLogs(groups.at(-1)?.logs || []);
@@ -140,7 +151,7 @@ export const useDevLogs = (
 
     try {
       setIsLoading(true);
-      const response = await getDevLogs(projectId, lastLine + 1);
+      const response = await getDevLogs(projectId, 1);
 
       if (response.success && response.data.logs.length > 0) {
         addNewLogs(response.data.logs);
