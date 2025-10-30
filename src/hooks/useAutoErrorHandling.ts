@@ -36,7 +36,7 @@ interface UseAutoErrorHandlingReturn {
   /** 重置自动重试计数 */
   resetAutoRetryCount: () => void;
   /** 用户确认继续自动处理 */
-  handleUserConfirmContinue: () => void;
+  handleUserConfirmContinue: (content: string) => void;
   /** 重置并启用自动处理 */
   resetAndEnableAutoHandling: () => void;
   /** 用户取消自动处理 */
