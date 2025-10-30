@@ -673,27 +673,23 @@ export const useAppDevChat = ({
   /**
    * 加载历史会话消息
    */
-  const loadHistorySession = useCallback(
-    async (sessionId: string) => {
-      try {
-        const response = await listConversations({
-          projectId,
-          sessionId,
-        });
+  const loadHistorySession = useCallback(async () => {
+    try {
+      const response = await listConversations({
+        projectId,
+      });
 
-        if (response.success && response.data?.length > 0) {
-          const conversation = response.data[0];
-          const messages = parseChatMessages(conversation.content);
+      if (response.success && response.data?.records?.length > 0) {
+        const conversation = response.data?.records[0];
+        const messages = parseChatMessages(conversation.content);
 
-          // 清空当前消息并加载历史消息
-          setChatMessages(messages);
-        }
-      } catch (error) {
-        message.error('加载历史会话失败');
+        // 清空当前消息并加载历史消息
+        setChatMessages(messages);
       }
-    },
-    [projectId],
-  );
+    } catch (error) {
+      message.error('加载历史会话失败');
+    }
+  }, [projectId]);
 
   /**
    * 自动加载所有历史会话的消息
@@ -707,9 +703,9 @@ export const useAppDevChat = ({
         projectId,
       });
 
-      if (response.success && response.data?.length > 0) {
+      if (response.success && response.data?.records?.length > 0) {
         // 按创建时间排序，获取所有会话
-        const sortedConversations = response.data.sort(
+        const sortedConversations = response.data?.records.sort(
           (a: any, b: any) =>
             new Date(a.created).getTime() - new Date(b.created).getTime(),
         );
