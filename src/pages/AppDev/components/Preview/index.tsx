@@ -1,6 +1,5 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { SANDBOX } from '@/constants/common.constants';
-import { jumpTo } from '@/utils/router';
 import {
   ExclamationCircleOutlined,
   GlobalOutlined,
@@ -394,13 +393,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           // 在 iframe 内部执行回退
           // 使用 history.go(-steps) 比循环调用 history.back() 更高效
           iframeWindow.history.go(-steps);
-        } else {
-          //直接在父容器中回退
-          jumpTo(-steps);
         }
       } catch (error) {
         console.warn('[Preview] iframe 内部回退失败（可能是跨域限制）:', error);
-        jumpTo(-steps); //直接在父容器中回退
       }
     }, []);
 
@@ -430,8 +425,14 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       setIsLoading(false);
       setLoadError(null);
 
-      // 清空之前收集的错误信息
+      // 清空之前收集的错误信息和路由历史
       devMonitorErrorsRef.current = [];
+      historyStackRef.current = [];
+      initialUrlRef.current = null;
+      lastUrlRef.current = null;
+      pushCountRef.current = 0;
+      navigableHistoryRef.current = [];
+      currentIndexRef.current = 0;
       console.log('[Preview] iframeLoad');
     }, []);
 
@@ -540,10 +541,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             },
           ];
           currentIndexRef.current = 0;
-          console.log(
-            '[Preview] initial  navigableHistoryRef.current',
-            navigableHistoryRef.current,
-          );
           return;
         }
 
@@ -614,8 +611,11 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               }
               currentIndexRef.current = targetIndex;
             } else {
-              // 找不到索引时，视为打开新页面，计数加一
-              pushCountRef.current += 1;
+              // 找不到索引时，使用保守回退策略（仅当 URL 与最后一项不一致且计数>0时减一）
+              const lastUrl = lastUrlRef.current;
+              if (changeData.url !== lastUrl && pushCountRef.current > 0) {
+                pushCountRef.current -= 1;
+              }
             }
           }
         }
@@ -723,12 +723,30 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       if (devServerUrl) {
         // Dev server URL available, loading preview
         loadDevServerPreview();
+
+        // 清空之前收集的错误信息和路由历史
+        devMonitorErrorsRef.current = [];
+        historyStackRef.current = [];
+        initialUrlRef.current = null;
+        lastUrlRef.current = null;
+        pushCountRef.current = 0;
+        navigableHistoryRef.current = [];
+        currentIndexRef.current = 0;
       } else {
         // Dev server URL is empty, clearing iframe and resetting states
 
         setIsLoading(false);
         setLoadError(null);
         setLastRefreshed(new Date());
+
+        // 清空收集的错误信息和路由历史
+        devMonitorErrorsRef.current = [];
+        historyStackRef.current = [];
+        initialUrlRef.current = null;
+        lastUrlRef.current = null;
+        pushCountRef.current = 0;
+        navigableHistoryRef.current = [];
+        currentIndexRef.current = 0;
       }
     }, [devServerUrl, loadDevServerPreview]);
 
