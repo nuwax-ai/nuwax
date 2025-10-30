@@ -74,15 +74,6 @@ export const useAutoErrorHandling = ({
   }, []);
 
   /**
-   * 用户确认继续自动处理
-   */
-  const handleUserConfirmContinue = useCallback(() => {
-    modelStateRef.current.resetAutoRetryCount();
-    modelStateRef.current.setAutoHandlingEnabled(true);
-    confirmModalRef.current = false;
-  }, []);
-
-  /**
    * 重置并启用自动处理
    */
   const resetAndEnableAutoHandling = useCallback(() => {
@@ -106,32 +97,51 @@ export const useAutoErrorHandling = ({
   }, []);
 
   /**
+   * 用户确认继续自动处理
+   */
+  const handleUserConfirmContinue = useCallback(
+    (formattedContent: string) => {
+      modelStateRef.current.resetAutoRetryCount();
+      modelStateRef.current.setAutoHandlingEnabled(true);
+      confirmModalRef.current = false;
+      onAddToChat(formattedContent, true, setAutoSendCount);
+    },
+    [onAddToChat],
+  );
+
+  /**
    * 显示确认弹窗
    */
-  const showConfirmModal = useCallback(() => {
-    // 检查 model 中的状态，避免重复显示
-    if (confirmModalRef.current || modelStateRef.current.hasShownConfirmModal) {
-      return; // 已经显示过弹窗，避免重复显示
-    }
+  const showConfirmModal = useCallback(
+    (formattedContent: string) => {
+      // 检查 model 中的状态，避免重复显示
+      if (
+        confirmModalRef.current ||
+        modelStateRef.current.hasShownConfirmModal
+      ) {
+        return; // 已经显示过弹窗，避免重复显示
+      }
 
-    confirmModalRef.current = true;
-    modelStateRef.current.setHasShownConfirmModal(true);
+      confirmModalRef.current = true;
+      modelStateRef.current.setHasShownConfirmModal(true);
 
-    Modal.confirm({
-      title: '自动错误处理已达上限',
-      content: '是否继续自动处理当前问题？',
-      okText: '继续',
-      cancelText: '取消',
-      onOk: () => {
-        handleUserConfirmContinue();
-        confirmModalRef.current = false;
-      },
-      onCancel: () => {
-        handleUserCancelAuto();
-        confirmModalRef.current = false;
-      },
-    });
-  }, [handleUserConfirmContinue, handleUserCancelAuto]);
+      Modal.confirm({
+        title: '自动错误处理已达上限',
+        content: '是否继续自动处理当前问题？',
+        okText: '继续',
+        cancelText: '取消',
+        onOk: () => {
+          handleUserConfirmContinue(formattedContent);
+          confirmModalRef.current = false;
+        },
+        onCancel: () => {
+          handleUserCancelAuto();
+          confirmModalRef.current = false;
+        },
+      });
+    },
+    [handleUserConfirmContinue, handleUserCancelAuto],
+  );
 
   /**
    * 格式化错误内容（根据场景类型）
@@ -227,7 +237,7 @@ export const useAutoErrorHandling = ({
       } else {
         // 第4次及以上，显示确认弹窗
         if (!model.hasShownConfirmModal && !confirmModalRef.current) {
-          showConfirmModal();
+          showConfirmModal(formattedContent);
         }
       }
     },
