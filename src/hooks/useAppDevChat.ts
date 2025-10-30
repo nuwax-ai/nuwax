@@ -332,7 +332,9 @@ export const useAppDevChat = ({
         abortController: abortConnectionRef.current,
         headers,
         onMessage: (data: UnifiedSessionMessage) => {
-          handleSSEMessage(data, requestId);
+          setTimeout(() => {
+            handleSSEMessage(data, requestId);
+          }, 100);
         },
         onError: (error: Error) => {
           // message.error('AI助手连接失败');
