@@ -1041,7 +1041,7 @@ const AppDev: React.FC = () => {
           newName.trim(),
         );
         if (success) {
-          handleRestartDevServer();
+          // handleRestartDevServer();
           // 刷新项目详情(刷新版本列表)
           projectInfo.refreshProjectInfo();
           return true;
@@ -1052,7 +1052,7 @@ const AppDev: React.FC = () => {
         return false;
       }
     },
-    [fileManagement, projectInfo, handleRestartDevServer],
+    [fileManagement, projectInfo],
   );
 
   /**
@@ -1110,7 +1110,7 @@ const AppDev: React.FC = () => {
         );
         if (success) {
           message.success(`文件上传成功: ${fileName}`);
-          handleRestartDevServer();
+          // handleRestartDevServer();
           // 刷新项目详情(刷新版本列表)
           projectInfo.refreshProjectInfo();
           return true;
@@ -1127,7 +1127,7 @@ const AppDev: React.FC = () => {
         return false;
       }
     },
-    [hasValidProjectId, fileManagement, projectInfo, handleRestartDevServer],
+    [hasValidProjectId, fileManagement, projectInfo],
   );
 
   /**
@@ -1147,7 +1147,7 @@ const AppDev: React.FC = () => {
             nodeToDelete.name
           }`,
         );
-        handleRestartDevServer();
+        // handleRestartDevServer();
         // 刷新项目详情(刷新版本列表)
         projectInfo.refreshProjectInfo();
       }
@@ -1156,7 +1156,7 @@ const AppDev: React.FC = () => {
       setDeleteModalVisible(false);
       setNodeToDelete(null);
     }
-  }, [nodeToDelete, projectId, fileManagement, handleRestartDevServer]);
+  }, [nodeToDelete, projectId, fileManagement]);
 
   /**
    * 取消删除
