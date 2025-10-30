@@ -1,5 +1,6 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { SANDBOX } from '@/constants/common.constants';
+import { jumpTo } from '@/utils/router';
 import {
   ExclamationCircleOutlined,
   GlobalOutlined,
@@ -95,6 +96,15 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     // 简化的回退计数：pushState 和 hashchange 的数量
     const pushCountRef = useRef<number>(0);
     const lastUrlRef = useRef<string | null>(null);
+    // 仅记录可导航的历史（initial、pushState、hashchange、replaceState 覆盖当前项）
+    const navigableHistoryRef = useRef<
+      Array<{
+        url: string;
+        pathname: string;
+        timestamp: number;
+      }>
+    >([]);
+    const currentIndexRef = useRef<number>(0);
 
     /**
      * 获取错误类型前缀
@@ -384,9 +394,13 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           // 在 iframe 内部执行回退
           // 使用 history.go(-steps) 比循环调用 history.back() 更高效
           iframeWindow.history.go(-steps);
+        } else {
+          //直接在父容器中回退
+          jumpTo(-steps);
         }
       } catch (error) {
         console.warn('[Preview] iframe 内部回退失败（可能是跨域限制）:', error);
+        jumpTo(-steps); //直接在父容器中回退
       }
     }, []);
 
@@ -416,12 +430,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       setIsLoading(false);
       setLoadError(null);
 
-      // 清空之前收集的错误信息和路由历史
+      // 清空之前收集的错误信息
       devMonitorErrorsRef.current = [];
-      historyStackRef.current = [];
-      initialUrlRef.current = null;
-      lastUrlRef.current = null;
-      pushCountRef.current = 0;
       console.log('[Preview] iframeLoad');
     }, []);
 
@@ -522,6 +532,18 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           lastUrlRef.current = changeData.url;
           historyStackRef.current = [changeData];
           pushCountRef.current = 0;
+          navigableHistoryRef.current = [
+            {
+              url: changeData.url,
+              pathname: changeData.pathname,
+              timestamp: changeData.timestamp,
+            },
+          ];
+          currentIndexRef.current = 0;
+          console.log(
+            '[Preview] initial  navigableHistoryRef.current',
+            navigableHistoryRef.current,
+          );
           return;
         }
 
@@ -540,36 +562,69 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         ) {
           // pushState 和 hashchange 会增加历史记录
           pushCountRef.current++;
+          // 追加到可导航历史，并移动当前指针
+          navigableHistoryRef.current.push({
+            url: changeData.url,
+            pathname: changeData.pathname,
+            timestamp: changeData.timestamp,
+          });
+          currentIndexRef.current = navigableHistoryRef.current.length - 1;
         } else if (changeData.historyType === 'replaceState') {
-          // replaceState 不会增加历史记录，不改变计数
-          // 但需要更新 lastUrl
+          // replaceState 替换当前位置，不改变计数
+          if (navigableHistoryRef.current.length === 0) {
+            navigableHistoryRef.current = [
+              {
+                url: changeData.url,
+                pathname: changeData.pathname,
+                timestamp: changeData.timestamp,
+              },
+            ];
+            currentIndexRef.current = 0;
+          } else {
+            navigableHistoryRef.current[currentIndexRef.current] = {
+              url: changeData.url,
+              pathname: changeData.pathname,
+              timestamp: changeData.timestamp,
+            };
+          }
         } else if (changeData.historyType === 'popstate') {
-          // popstate 表示用户手动前进/后退
-          // 通过比较 URL 来判断：如果当前 URL 和之前的某个 URL 相同，说明是后退
-          // 简化处理：如果 pushCount > 0，可能是一次后退，减少计数
-          // 但为了更准确，我们需要比较当前 URL 是否在历史栈中存在
-          const currentUrl = changeData.url;
-          const lastUrl = lastUrlRef.current;
+          // popstate：浏览器前进/后退 → 依据可导航历史计算方向
+          const list = navigableHistoryRef.current;
+          if (list.length > 0) {
+            // 找到目标 URL 在可导航历史中的最近一次出现
+            let targetIndex = -1;
+            for (let i = list.length - 1; i >= 0; i--) {
+              if (list[i].url === changeData.url) {
+                targetIndex = i;
+                break;
+              }
+            }
 
-          // 如果当前 URL 和上一个 URL 相同，可能是后退到之前的页面
-          // 查找历史栈中是否有相同的 URL（且时间更早），如果有则说明是后退
-          const earlierUrlIndex = historyStackRef.current.findIndex(
-            (record) =>
-              record.url === currentUrl &&
-              record.timestamp < changeData.timestamp &&
-              (record.historyType === 'pushState' ||
-                record.historyType === 'hashchange'),
-          );
-
-          if (earlierUrlIndex >= 0 && pushCountRef.current > 0) {
-            // 找到了更早的相同 URL，说明是后退
-            pushCountRef.current--;
-          } else if (currentUrl !== lastUrl && pushCountRef.current > 0) {
-            // 如果 URL 变化且 pushCount > 0，可能是后退（简化判断）
-            // 但这里不做处理，因为无法确定是前进还是后退
-            // 更准确的方法是维护一个 URL 栈，但这会增加复杂度
+            if (targetIndex !== -1 && targetIndex !== currentIndexRef.current) {
+              const delta = targetIndex - currentIndexRef.current;
+              if (delta < 0) {
+                // 后退
+                pushCountRef.current = Math.max(
+                  0,
+                  pushCountRef.current + delta,
+                );
+              } else if (delta > 0) {
+                // 前进
+                pushCountRef.current += delta;
+              }
+              currentIndexRef.current = targetIndex;
+            } else {
+              // 找不到索引时，视为打开新页面，计数加一
+              pushCountRef.current += 1;
+            }
           }
         }
+        console.log(
+          '[Preview] pushCountRef',
+          pushCountRef.current,
+          'currentIndex',
+          currentIndexRef.current,
+        );
 
         // 更新最后 URL
         lastUrlRef.current = changeData.url;
@@ -668,26 +723,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       if (devServerUrl) {
         // Dev server URL available, loading preview
         loadDevServerPreview();
-
-        // 清空之前收集的错误信息和路由历史
-        devMonitorErrorsRef.current = [];
-        historyStackRef.current = [];
-        initialUrlRef.current = null;
-        lastUrlRef.current = null;
-        pushCountRef.current = 0;
       } else {
         // Dev server URL is empty, clearing iframe and resetting states
 
         setIsLoading(false);
         setLoadError(null);
         setLastRefreshed(new Date());
-
-        // 清空收集的错误信息和路由历史
-        devMonitorErrorsRef.current = [];
-        historyStackRef.current = [];
-        initialUrlRef.current = null;
-        lastUrlRef.current = null;
-        pushCountRef.current = 0;
       }
     }, [devServerUrl, loadDevServerPreview]);
 
@@ -703,6 +744,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         initialUrlRef.current = null;
         lastUrlRef.current = null;
         pushCountRef.current = 0;
+        navigableHistoryRef.current = [];
+        currentIndexRef.current = 0;
       };
     }, []);
 
