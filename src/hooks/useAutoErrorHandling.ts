@@ -209,12 +209,12 @@ export const useAutoErrorHandling = ({
       const formattedContent = formatErrorContent(errorContent, errorType);
 
       // 使用格式化后的内容哈希来判断是否为新错误（避免重复）
-      const errorHash = formattedContent.trim();
-      const isDuplicate = errorHash === model.lastCustomErrorHash;
-      if (isDuplicate) {
-        console.info('[AutoErrorHandling] 跳过重复的自定义错误');
-        return;
-      }
+      // const errorHash = formattedContent.trim();
+      // const isDuplicate = errorHash === model.lastCustomErrorHash;
+      // if (isDuplicate) {
+      //   console.info('[AutoErrorHandling] 跳过重复的自定义错误');
+      //   return;
+      // }
 
       if (!isAuto) {
         // 手动发送时，仅内容上框，不发送给AI
@@ -223,7 +223,7 @@ export const useAutoErrorHandling = ({
       }
 
       // 更新错误哈希到 model
-      model.setLastCustomErrorHash(errorHash);
+      // model.setLastCustomErrorHash(errorHash);
       console.info(
         `[AutoErrorHandling] 当前自动发送次数为${model.autoRetryCount}`,
         formattedContent,
