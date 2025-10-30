@@ -113,8 +113,8 @@ const ConversationSelector: React.FC<ConversationSelectorProps> = ({
           projectId,
         });
 
-        if (response.success && response.data) {
-          const conversations = response.data;
+        if (response.success && response.data?.records) {
+          const conversations = response.data?.records;
           setConversations(conversations);
 
           // 自动加载最新的历史会话（如果存在且当前没有活跃会话）
