@@ -1409,8 +1409,8 @@ const AppDev: React.FC = () => {
                     onRefreshPreview: () => previewRef.current?.refresh(),
                     onRestartServer: async () => {
                       //新逻辑 先停止Agent服务
-                      await stopAgentService(projectId || '');
                       await handleRestartDevServer();
+                      await stopAgentService(projectId || '');
                     },
                     onFullscreenPreview: () => {
                       if (previewRef.current && workspace.devServerUrl) {
