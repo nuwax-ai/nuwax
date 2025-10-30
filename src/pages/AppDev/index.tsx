@@ -233,8 +233,17 @@ const AppDev: React.FC = () => {
     projectId,
     projectInfo?.hasPermission,
   );
+
+  // 开发服务器日志管理
+  const devLogs = useDevLogs(projectId || '', {
+    enabled: hasValidProjectId && isServiceRunning && projectInfo.hasPermission,
+    pollInterval: 5000, // 调整为5秒轮询
+    maxLogLines: 1000,
+  });
+
   const server = useAppDevServer({
     projectId: projectId || '',
+    devLogsRefresh: () => devLogs.resetStartLine(),
     onServerStart: updateDevServerUrl,
     onServerStatusChange: setIsServiceRunning,
   });
@@ -353,13 +362,6 @@ const AppDev: React.FC = () => {
       });
     }, // 新增：Agent 触发时不切换页面
     // hasPermission: projectInfo.hasPermission, // 传递权限状态
-  });
-
-  // 开发服务器日志管理
-  const devLogs = useDevLogs(projectId || '', {
-    enabled: hasValidProjectId && isServiceRunning && projectInfo.hasPermission,
-    pollInterval: 5000, // 调整为5秒轮询
-    maxLogLines: 1000,
   });
 
   // ⭐ 自动错误处理 Model（用于记录和管理）
