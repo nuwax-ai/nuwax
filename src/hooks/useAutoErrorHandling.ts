@@ -1,10 +1,12 @@
 /**
  * 自动错误处理 Hook
  * 实现自动检测错误并发送到 AI 进行处理
+ * 状态统一由 autoErrorHandling model 管理
  */
 
 import { Modal } from 'antd';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
+import { useModel } from 'umi';
 
 interface UseAutoErrorHandlingProps {
   /** 添加日志到聊天框的回调 */
@@ -21,7 +23,7 @@ interface UseAutoErrorHandlingProps {
 
 interface UseAutoErrorHandlingReturn {
   /** 当前自动重试次数 */
-  // autoRetryCount: number;
+  autoRetryCount: number;
   /** 是否启用自动处理 */
   isAutoHandlingEnabled: boolean;
   /** 处理自定义错误内容（支持多种场景） */
@@ -38,7 +40,7 @@ interface UseAutoErrorHandlingReturn {
   resetAndEnableAutoHandling: () => void;
   /** 用户取消自动处理 */
   handleUserCancelAuto: () => void;
-  /** 添加自动发送消息次数 */
+  /** 增加自动发送消息次数 */
   setAutoSendCount: () => void;
 }
 
@@ -52,80 +54,80 @@ export const useAutoErrorHandling = ({
   isChatLoading,
   enabled = true,
 }: UseAutoErrorHandlingProps): UseAutoErrorHandlingReturn => {
-  // 状态管理
-  const [isAutoHandlingEnabled, setIsAutoHandlingEnabled] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [hasShownConfirmModal, setHasShownConfirmModal] = useState(false);
+  // 使用 model 统一管理状态
+  const autoErrorHandlingModelInstance = useModel('autoErrorHandling');
 
-  // 使用 ref 避免闭包问题
-  const lastErrorTimestampRef = useRef<string | null>(null);
-  const lastCustomErrorHashRef = useRef<string | null>(null); // 自定义错误的哈希值
-  const autoRetryCountRef = useRef(0);
-  const hasShownConfirmModalRef = useRef(false);
+  // 从 model 获取状态（使用 ref 避免闭包问题）
+  const modelStateRef = useRef(autoErrorHandlingModelInstance);
+  modelStateRef.current = autoErrorHandlingModelInstance;
+
+  // 使用 ref 存储弹窗状态，避免重复显示
+  const confirmModalRef = useRef(false);
 
   /**
    * 重置自动重试计数
    */
   const resetAutoRetryCount = useCallback(() => {
-    autoRetryCountRef.current = 0;
-    lastErrorTimestampRef.current = null;
-    lastCustomErrorHashRef.current = null;
-    setHasShownConfirmModal(false);
-    hasShownConfirmModalRef.current = false;
+    modelStateRef.current.resetAutoRetryCount();
+    confirmModalRef.current = false;
   }, []);
 
   /**
    * 用户确认继续自动处理
    */
   const handleUserConfirmContinue = useCallback(() => {
-    resetAutoRetryCount();
-    setIsAutoHandlingEnabled(true);
-  }, [resetAutoRetryCount]);
+    modelStateRef.current.resetAutoRetryCount();
+    modelStateRef.current.setAutoHandlingEnabled(true);
+    confirmModalRef.current = false;
+  }, []);
 
-  // reset and endable AutoHandling
+  /**
+   * 重置并启用自动处理
+   */
   const resetAndEnableAutoHandling = useCallback(() => {
-    resetAutoRetryCount();
-    setIsAutoHandlingEnabled(true);
-  }, [resetAutoRetryCount]);
+    modelStateRef.current.resetAndEnableAutoHandling();
+    confirmModalRef.current = false;
+  }, []);
 
   /**
    * 用户取消自动处理
    */
   const handleUserCancelAuto = useCallback(() => {
-    setIsAutoHandlingEnabled(false);
+    modelStateRef.current.cancelAutoHandling();
+    confirmModalRef.current = false;
   }, []);
+
   /**
-   * 添加自动发送消息次数
+   * 增加自动发送消息次数
    */
   const setAutoSendCount = useCallback(() => {
-    // 先更新 ref
-    autoRetryCountRef.current += 1;
-    console.info(`[auto] 设置自动发送次数为${autoRetryCountRef.current}`);
+    modelStateRef.current.incrementAutoRetryCount();
   }, []);
 
   /**
    * 显示确认弹窗
    */
   const showConfirmModal = useCallback(() => {
-    if (hasShownConfirmModalRef.current) {
+    // 检查 model 中的状态，避免重复显示
+    if (confirmModalRef.current || modelStateRef.current.hasShownConfirmModal) {
       return; // 已经显示过弹窗，避免重复显示
     }
 
-    hasShownConfirmModalRef.current = true;
-    setHasShownConfirmModal(true);
+    confirmModalRef.current = true;
+    modelStateRef.current.setHasShownConfirmModal(true);
 
     Modal.confirm({
       title: '自动错误处理已达上限',
-      content: '已自动处理3次错误，是否继续自动处理？',
+      content: '是否继续自动处理当前问题？',
       okText: '继续',
       cancelText: '取消',
       onOk: () => {
         handleUserConfirmContinue();
-        hasShownConfirmModalRef.current = false;
+        confirmModalRef.current = false;
       },
       onCancel: () => {
         handleUserCancelAuto();
-        hasShownConfirmModalRef.current = false;
+        confirmModalRef.current = false;
       },
     });
   }, [handleUserConfirmContinue, handleUserCancelAuto]);
@@ -164,7 +166,7 @@ export const useAutoErrorHandling = ({
 
   /**
    * 处理自定义错误内容（支持多种场景）
-   * 统一由 autoErrorHandling 管理，包括重试次数限制和用户确认
+   * 统一由 autoErrorHandling model 管理，包括重试次数限制和用户确认
    */
   const handleCustomError = useCallback(
     (
@@ -172,8 +174,10 @@ export const useAutoErrorHandling = ({
       errorType: 'whiteScreen' | 'log' | 'iframe' = 'whiteScreen',
       isAuto?: boolean,
     ) => {
+      const model = modelStateRef.current;
+
       // 检查是否启用
-      if (!enabled || !isAutoHandlingEnabled) {
+      if (!enabled || !model.isAutoHandlingEnabled) {
         console.warn(
           '[AutoErrorHandling] 自动错误处理未启用，跳过自定义错误处理',
         );
@@ -195,7 +199,7 @@ export const useAutoErrorHandling = ({
 
       // 使用格式化后的内容哈希来判断是否为新错误（避免重复）
       const errorHash = formattedContent.trim();
-      const isDuplicate = errorHash === lastCustomErrorHashRef.current;
+      const isDuplicate = errorHash === model.lastCustomErrorHash;
       if (isDuplicate) {
         console.debug('[AutoErrorHandling] 跳过重复的自定义错误');
         return;
@@ -206,32 +210,37 @@ export const useAutoErrorHandling = ({
         onAddToChat(formattedContent, false);
         return;
       }
-      // 更新错误哈希
-      lastCustomErrorHashRef.current = errorHash;
-      console.info(`[auto] 当前自动发送次数为${autoRetryCountRef.current}`);
+
+      // 更新错误哈希到 model
+      model.setLastCustomErrorHash(errorHash);
+      console.info(
+        `[AutoErrorHandling] 当前自动发送次数为${model.autoRetryCount}`,
+      );
+
       // 如果重试次数 < 3，直接发送
-      if (autoRetryCountRef.current < 3) {
+      if (model.autoRetryCount < 3) {
         // 使用格式化后的内容自动发送到聊天框，并发送给AI
         onAddToChat(formattedContent, true, setAutoSendCount);
       } else {
         // 第4次及以上，显示确认弹窗
-        if (!hasShownConfirmModalRef.current) {
+        if (!model.hasShownConfirmModal && !confirmModalRef.current) {
           showConfirmModal();
         }
       }
     },
     [
       enabled,
-      isAutoHandlingEnabled,
       isChatLoading,
       formatErrorContent,
       onAddToChat,
+      setAutoSendCount,
       showConfirmModal,
     ],
   );
 
   return {
-    isAutoHandlingEnabled,
+    autoRetryCount: autoErrorHandlingModelInstance.autoRetryCount,
+    isAutoHandlingEnabled: autoErrorHandlingModelInstance.isAutoHandlingEnabled,
     handleCustomError,
     resetAutoRetryCount,
     handleUserConfirmContinue,
