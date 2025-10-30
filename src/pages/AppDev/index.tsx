@@ -66,6 +66,7 @@ import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
 import DevLogConsole from './components/DevLogConsole';
 import EditorHeaderRight from './components/EditorHeaderRight';
+import FileOperatingMask from './components/FileOperatingMask';
 import FileTreePanel from './components/FileTreePanel';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
@@ -130,7 +131,6 @@ const AppDev: React.FC = () => {
   const [missingProjectId, setMissingProjectId] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
-  const [uploadLoading, setUploadLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
 
@@ -157,15 +157,63 @@ const AppDev: React.FC = () => {
   // 删除确认对话框状态
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<any>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  // 发布智能体弹窗状态
-  const [openPublishComponentModal, setOpenPublishComponentModal] =
+  // 文件操作状态，避免多步流程竞争和覆盖
+  const [isFileOperating, setIsFileOperating] = useState(false);
+  // 文件操作遮罩显示状态，小于500ms不显示遮罩
+  const [shouldShowFileOperatingMask, setShouldShowFileOperatingMask] =
     useState(false);
+  // 文件操作开始时间
+  const fileOperatingStartTimeRef = useRef<number | null>(null);
+  // 文件操作延时定时器
+  const fileOperatingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 版本历史弹窗状态
   const [openVersionHistory, setOpenVersionHistory] = useState(false);
+
+  // 发布智能体弹窗状态
+  const [openPublishComponentModal, setOpenPublishComponentModal] =
+    useState(false);
   // 使用 Hook 控制抽屉打开时的滚动条
   useDrawerScroll(openVersionHistory);
+
+  // 文件操作遮罩延时显示逻辑
+  useEffect(() => {
+    if (isFileOperating) {
+      // 文件操作开始，记录开始时间并设置500ms后显示遮罩
+      fileOperatingStartTimeRef.current = Date.now();
+
+      // 设置500ms延时显示遮罩
+      fileOperatingTimerRef.current = setTimeout(() => {
+        setShouldShowFileOperatingMask(true);
+      }, 500);
+    } else {
+      // 文件操作结束，清理定时器和状态
+      if (fileOperatingTimerRef.current) {
+        clearTimeout(fileOperatingTimerRef.current);
+        fileOperatingTimerRef.current = null;
+      }
+
+      // 检查操作持续时间，如果小于500ms则不显示遮罩
+      if (fileOperatingStartTimeRef.current) {
+        const duration = Date.now() - fileOperatingStartTimeRef.current;
+        if (duration < 500) {
+          // 操作时间太短，不显示遮罩
+          setShouldShowFileOperatingMask(false);
+        }
+      }
+
+      // 重置状态
+      fileOperatingStartTimeRef.current = null;
+    }
+
+    // 清理函数
+    return () => {
+      if (fileOperatingTimerRef.current) {
+        clearTimeout(fileOperatingTimerRef.current);
+        fileOperatingTimerRef.current = null;
+      }
+    };
+  }, [isFileOperating]);
 
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
@@ -815,7 +863,6 @@ const AppDev: React.FC = () => {
     }
 
     try {
-      setUploadLoading(true);
       setIsProjectUploading(true);
 
       const result = await uploadAndStartProject({
@@ -856,7 +903,7 @@ const AppDev: React.FC = () => {
       // message.error(error instanceof Error ? error.message : '上传项目失败');
       setIsProjectUploading(false);
     } finally {
-      setUploadLoading(false);
+      // setUploadLoading(false); // 移除未使用变量
     }
   }, [selectedFile, projectId, workspace.projectName, server, projectInfo]);
 
@@ -894,47 +941,32 @@ const AppDev: React.FC = () => {
    * 处理单个文件上传
    */
   const handleUploadSingleFile = useCallback(async () => {
-    if (!hasValidProjectId) {
-      message.error(ERROR_MESSAGES.NO_PROJECT_ID);
+    if (!hasValidProjectId || !singleFilePath.trim() || !uploadFile) {
       return;
     }
-
-    if (!singleFilePath.trim()) {
-      message.error(ERROR_MESSAGES.EMPTY_FILE_PATH);
-      return;
-    }
-
-    if (!uploadFile) {
-      message.error(ERROR_MESSAGES.NO_FILE_SELECTED);
-      return;
-    }
-
+    setSingleFileUploadLoading(true);
+    setIsFileOperating(true);
+    setIsSingleFileUploadModalVisible(false); // 立即关闭弹窗
     try {
-      setSingleFileUploadLoading(true);
-      // 上传单个文件
-
       const result = await fileManagement.uploadSingleFileToServer(
         uploadFile,
         singleFilePath.trim(),
       );
-
       if (result) {
-        setIsSingleFileUploadModalVisible(false);
         setSingleFilePath('');
         setUploadFile(null);
-        // 刷新项目详情(刷新版本列表)
         projectInfo.refreshProjectInfo();
       }
     } finally {
       setSingleFileUploadLoading(false);
+      setIsFileOperating(false);
     }
   }, [
     hasValidProjectId,
-    projectId,
     fileManagement,
+    projectInfo,
     singleFilePath,
     uploadFile,
-    projectInfo,
   ]);
 
   /**
@@ -976,6 +1008,7 @@ const AppDev: React.FC = () => {
         try {
           // 设置加载状态，与弹窗上传保持一致
           setSingleFileUploadLoading(true);
+          setIsFileOperating(true);
 
           // 直接调用上传接口，使用文件名作为路径
           const result = await fileManagement.uploadSingleFileToServer(
@@ -994,12 +1027,14 @@ const AppDev: React.FC = () => {
           // 清理加载状态和DOM
           setSingleFileUploadLoading(false);
           document.body.removeChild(input);
+          setIsFileOperating(false);
         }
       };
 
       // 如果用户取消选择，也要清理DOM
       input.oncancel = () => {
         document.body.removeChild(input);
+        setIsFileOperating(false);
       };
     },
     [hasValidProjectId, fileManagement, projectInfo],
@@ -1019,6 +1054,7 @@ const AppDev: React.FC = () => {
    */
   const handleDeleteClick = useCallback(
     (node: any, event: React.MouseEvent) => {
+      if (isFileOperating) return;
       event.stopPropagation(); // 阻止事件冒泡
       setNodeToDelete(node);
       setDeleteModalVisible(true);
@@ -1028,21 +1064,21 @@ const AppDev: React.FC = () => {
 
   /**
    * 处理重命名文件/文件夹
+   * 文件操作期间，全局 isFileOperating，所有 UI 禁用
    */
   const handleRenameFile = useCallback(
     async (node: any, newName: string): Promise<boolean> => {
-      if (!node || !newName.trim()) {
+      if (!node || !newName.trim() || isFileOperating) {
         return false;
       }
-
+      setIsFileOperating(true);
       try {
+        // 这里建议调用前先关闭前端弹窗
         const success = await fileManagement.renameFileItem(
           node.id,
           newName.trim(),
         );
         if (success) {
-          // handleRestartDevServer();
-          // 刷新项目详情(刷新版本列表)
           projectInfo.refreshProjectInfo();
           return true;
         } else {
@@ -1050,6 +1086,8 @@ const AppDev: React.FC = () => {
         }
       } catch (error) {
         return false;
+      } finally {
+        setIsFileOperating(false);
       }
     },
     [fileManagement, projectInfo],
@@ -1110,7 +1148,7 @@ const AppDev: React.FC = () => {
         );
         if (success) {
           message.success(`文件上传成功: ${fileName}`);
-          // handleRestartDevServer();
+          handleRestartDevServer();
           // 刷新项目详情(刷新版本列表)
           projectInfo.refreshProjectInfo();
           return true;
@@ -1127,7 +1165,7 @@ const AppDev: React.FC = () => {
         return false;
       }
     },
-    [hasValidProjectId, fileManagement, projectInfo],
+    [hasValidProjectId, fileManagement, projectInfo, handleRestartDevServer],
   );
 
   /**
@@ -1135,8 +1173,7 @@ const AppDev: React.FC = () => {
    */
   const handleDeleteConfirm = useCallback(async () => {
     if (!nodeToDelete || !projectId) return;
-
-    setDeleteLoading(true);
+    setIsFileOperating(true);
     try {
       // 删除文件/文件夹
       const success = await fileManagement.deleteFileItem(nodeToDelete.id);
@@ -1147,16 +1184,22 @@ const AppDev: React.FC = () => {
             nodeToDelete.name
           }`,
         );
-        // handleRestartDevServer();
+        handleRestartDevServer();
         // 刷新项目详情(刷新版本列表)
         projectInfo.refreshProjectInfo();
       }
     } finally {
-      setDeleteLoading(false);
       setDeleteModalVisible(false);
       setNodeToDelete(null);
+      setIsFileOperating(false);
     }
-  }, [nodeToDelete, projectId, fileManagement]);
+  }, [
+    nodeToDelete,
+    projectId,
+    fileManagement,
+    handleRestartDevServer,
+    projectInfo,
+  ]);
 
   /**
    * 取消删除
@@ -1198,6 +1241,12 @@ const AppDev: React.FC = () => {
         autoSendTimerRef.current = null;
       }
       autoSendLockRef.current = false;
+
+      // 清理文件操作延时定时器
+      if (fileOperatingTimerRef.current) {
+        clearTimeout(fileOperatingTimerRef.current);
+        fileOperatingTimerRef.current = null;
+      }
 
       // ⭐ 重置自动错误处理 Model 的所有状态
       autoErrorHandlingModelInstance.resetAll();
@@ -1255,6 +1304,23 @@ const AppDev: React.FC = () => {
   return (
     <>
       {contextHolder}
+      {/* 全局文件操作/部署遮罩组件，优先级最高。部署>文件操作。 */}
+      <FileOperatingMask
+        visible={
+          isDeploying || (isFileOperating && shouldShowFileOperatingMask)
+        }
+        tip={
+          isDeploying
+            ? '正在发布项目...\n请稍候，发布完成后将自动关闭'
+            : undefined
+        }
+        icon={
+          isDeploying ? (
+            <SyncOutlined spin style={{ fontSize: 52, color: '#1677ff' }} />
+          ) : undefined
+        }
+        zIndex={9999}
+      />
       <div
         className={cx(
           styles.appDev,
@@ -1263,23 +1329,13 @@ const AppDev: React.FC = () => {
           'flex',
           'flex-col',
         )}
+        /* 页面主区根据 isFileOperating 动态调整可交互性与视觉反馈（禁用操作+暗色） */
+        style={
+          isFileOperating || isDeploying
+            ? { pointerEvents: 'none', userSelect: 'none', opacity: 0.7 }
+            : {}
+        }
       >
-        {/* 部署遮罩 - 在部署过程中显示透明遮罩防止用户操作 */}
-        {isDeploying && (
-          <div className={styles.deployOverlay}>
-            <div className={styles.deployOverlayContent}>
-              <div className={styles.deploySpinner}>
-                <SyncOutlined spin />
-              </div>
-              <div className={styles.deployText}>
-                <div className={styles.deployTitle}>正在发布项目...</div>
-                <div className={styles.deploySubtitle}>
-                  请稍候，发布完成后将自动关闭
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
         {/* 顶部头部区域 */}
         <AppDevHeader
           workspace={workspace}
@@ -1409,8 +1465,8 @@ const AppDev: React.FC = () => {
                     onRefreshPreview: () => previewRef.current?.refresh(),
                     onRestartServer: async () => {
                       //新逻辑 先停止Agent服务
-                      await handleRestartDevServer();
                       await stopAgentService(projectId || '');
+                      await handleRestartDevServer();
                     },
                     onFullscreenPreview: () => {
                       if (previewRef.current && workspace.devServerUrl) {
@@ -1452,13 +1508,27 @@ const AppDev: React.FC = () => {
                       }
                     }}
                     onToggleFolder={fileManagement.toggleFolder}
-                    onDeleteFile={handleDeleteClick}
-                    onRenameFile={handleRenameFile}
-                    onUploadToFolder={handleUploadToFolder}
-                    onUploadProject={() => setIsUploadModalVisible(true)}
-                    onUploadSingleFile={handleRightClickUpload}
-                    onAddDataResource={() =>
-                      setIsAddDataResourceModalVisible(true)
+                    onDeleteFile={
+                      isFileOperating ? () => {} : handleDeleteClick
+                    }
+                    onRenameFile={
+                      isFileOperating ? async () => false : handleRenameFile
+                    }
+                    onUploadToFolder={
+                      isFileOperating ? async () => false : handleUploadToFolder
+                    }
+                    onUploadProject={
+                      isFileOperating
+                        ? () => {}
+                        : () => setIsUploadModalVisible(true)
+                    }
+                    onUploadSingleFile={
+                      isFileOperating ? async () => {} : handleRightClickUpload
+                    }
+                    onAddDataResource={
+                      isFileOperating
+                        ? () => {}
+                        : () => setIsAddDataResourceModalVisible(true)
                     }
                     onDeleteDataResource={handleDeleteDataResource}
                     selectedDataResources={selectedDataResources}
@@ -1596,7 +1666,9 @@ const AppDev: React.FC = () => {
         {/* 上传项目模态框 */}
         <Modal
           title="导入项目"
-          open={isUploadModalVisible && !chat.isChatLoading} // 新增：聊天加载时禁用
+          open={isUploadModalVisible && !chat.isChatLoading}
+          // ⚠️ 不用 onOk，按钮自身 onClick 处理
+          onOk={undefined}
           onCancel={() => {
             setIsUploadModalVisible(false);
             setSelectedFile(null);
@@ -1608,26 +1680,38 @@ const AppDev: React.FC = () => {
                 setIsUploadModalVisible(false);
                 setSelectedFile(null);
               }}
+              disabled={isFileOperating}
             >
               取消
             </Button>,
             <Button
               key="confirm"
               type="primary"
-              loading={uploadLoading}
-              onClick={handleUploadProject}
-              disabled={!selectedFile || uploadLoading}
+              disabled={!selectedFile || isFileOperating}
+              // 只在可用时允许操作
+              onClick={async () => {
+                setIsUploadModalVisible(false);
+                setIsFileOperating(true);
+                try {
+                  await handleUploadProject();
+                } finally {
+                  setIsFileOperating(false);
+                }
+              }}
             >
               确认导入
             </Button>,
           ]}
           width={500}
+          maskClosable={!isFileOperating}
+          closable={!isFileOperating}
+          mask={true}
         >
           <div>
             <Upload.Dragger
               accept=".zip"
               beforeUpload={(file) => handleFileSelect(file)}
-              disabled={uploadLoading}
+              disabled={isFileOperating}
               showUploadList={false}
             >
               <p className="ant-upload-drag-icon">
@@ -1665,7 +1749,11 @@ const AppDev: React.FC = () => {
           open={isSingleFileUploadModalVisible && !chat.isChatLoading} // 新增：聊天加载时禁用
           onCancel={handleCancelSingleFileUpload}
           footer={[
-            <Button key="cancel" onClick={handleCancelSingleFileUpload}>
+            <Button
+              key="cancel"
+              onClick={handleCancelSingleFileUpload}
+              disabled={isFileOperating}
+            >
               取消
             </Button>,
             <Button
@@ -1673,12 +1761,17 @@ const AppDev: React.FC = () => {
               type="primary"
               loading={singleFileUploadLoading}
               onClick={handleUploadSingleFile}
-              disabled={!uploadFile || !singleFilePath.trim()}
+              disabled={
+                !uploadFile || !singleFilePath.trim() || isFileOperating
+              }
             >
               上传
             </Button>,
           ]}
           width={500}
+          maskClosable={!isFileOperating}
+          closable={!isFileOperating}
+          mask={true}
         >
           <Space direction="vertical" style={{ width: '100%' }}>
             <div>
@@ -1741,18 +1834,47 @@ const AppDev: React.FC = () => {
         <Modal
           title="确认删除"
           open={deleteModalVisible}
-          onOk={handleDeleteConfirm}
+          // ⚠️ 不再用 onOk，按钮自身 onClick 处理
+          onOk={undefined}
           onCancel={handleDeleteCancel}
           okText="删除"
           cancelText="取消"
           okButtonProps={{
             danger: true,
-            loading: deleteLoading,
-            disabled: deleteLoading,
+            // 禁用逻辑统一用 isFileOperating，loading 由全局 mask 处理
+            disabled: isFileOperating,
           }}
-          cancelButtonProps={{
-            disabled: deleteLoading,
-          }}
+          cancelButtonProps={{ disabled: isFileOperating }}
+          maskClosable={!isFileOperating}
+          closable={!isFileOperating}
+          mask={true}
+          footer={[
+            <Button
+              key="cancel"
+              onClick={handleDeleteCancel}
+              disabled={isFileOperating}
+            >
+              取消
+            </Button>,
+            <Button
+              key="confirm"
+              type="primary"
+              danger
+              disabled={isFileOperating}
+              onClick={async () => {
+                // 用户点击确认，立即关闭弹窗，全局 mask 检查交互
+                setDeleteModalVisible(false);
+                setIsFileOperating(true);
+                try {
+                  await handleDeleteConfirm();
+                } finally {
+                  setIsFileOperating(false);
+                }
+              }}
+            >
+              删除
+            </Button>,
+          ]}
         >
           <p>
             确定要删除 {nodeToDelete?.type === 'folder' ? '文件夹' : '文件'}{' '}

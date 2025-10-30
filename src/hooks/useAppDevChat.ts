@@ -58,7 +58,6 @@ interface UseAppDevChatProps {
   onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
   onClearUploadedImages?: () => void; // 新增：清除上传图片回调
   onRestartDevServer?: () => Promise<void>; // 新增：重启开发服务器回调
-  hasPermission?: boolean; // 新增：是否有权限访问项目
 }
 
 export const useAppDevChat = ({
@@ -71,8 +70,6 @@ export const useAppDevChat = ({
   onRefreshVersionList, // 新增：刷新版本列表回调
   onClearUploadedImages, // 新增：清除上传图片回调
   onRestartDevServer, // 新增
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  hasPermission = true, // 新增：是否有权限访问项目
 }: UseAppDevChatProps) => {
   // 使用 AppDev SSE 连接 model
   const appDevSseModel = useModel('appDevSseConnection');
@@ -149,21 +146,24 @@ export const useAppDevChat = ({
         }
 
         case 'agentSessionUpdate': {
-          if (message.subType === 'agent_message_chunk') {
-            const chunkText = message.data?.text || '';
-            const isFinal = message.data?.is_final;
-
-            setChatMessages((prev) =>
-              appendTextToStreamingMessage(
-                prev,
-                activeRequestId,
-                chunkText,
-                isFinal,
-              ),
-            );
+          const { subType, data } = message;
+          if (subType === 'agent_message_chunk') {
+            const chunkText = data?.text || '';
+            const isFinal = data?.is_final;
+            // 如果 chunkText 不为空，则追加到消息列表，如果 isFinal 为 true，则标记消息完成
+            if (chunkText) {
+              setChatMessages((prev) =>
+                appendTextToStreamingMessage(
+                  prev,
+                  activeRequestId,
+                  chunkText,
+                  isFinal,
+                ),
+              );
+            }
           }
 
-          if (message.subType === 'plan') {
+          if (subType === 'plan') {
             setChatMessages((prev) =>
               prev.map((msg) => {
                 if (
@@ -173,8 +173,8 @@ export const useAppDevChat = ({
                   return {
                     ...msg,
                     text: insertPlanBlock(msg.text || '', {
-                      planId: message.data.planId || 'default-plan',
-                      entries: message.data.entries || [],
+                      planId: data.planId || 'default-plan',
+                      entries: data.entries || [],
                     }),
                   };
                 }
@@ -182,7 +182,7 @@ export const useAppDevChat = ({
               }),
             );
           }
-          if (message.subType === 'tool_call') {
+          if (subType === 'tool_call') {
             setChatMessages((prev) =>
               prev.map((msg) => {
                 if (
@@ -191,34 +191,27 @@ export const useAppDevChat = ({
                 ) {
                   return {
                     ...msg,
-                    text: insertToolCallBlock(
-                      msg.text || '',
-                      message.data.toolCallId,
-                      {
-                        toolCallId: message.data.toolCallId,
-                        title: message.data.title || '工具调用',
-                        kind: message.data.kind || 'execute',
-                        status: message.data.status,
-                        content: message.data.content,
-                        locations: message.data.locations,
-                        rawInput: message.data.rawInput,
-                        timestamp: message.timestamp,
-                      },
-                    ),
+                    text: insertToolCallBlock(msg.text || '', data.toolCallId, {
+                      toolCallId: data.toolCallId,
+                      title: data.title || '工具调用',
+                      kind: data.kind || 'execute',
+                      status: data.status,
+                      content: data.content,
+                      locations: data.locations,
+                      rawInput: data.rawInput,
+                      timestamp: message.timestamp,
+                    }),
                   };
                 }
                 return msg;
               }),
             );
             // 检测是否为文件操作或依赖操作，如果是则记录 toolCallId
-            if (
-              isFileOrDependencyOperation(message.data) &&
-              message.data.toolCallId
-            ) {
-              fileOperationToolCallIdsRef.current.add(message.data.toolCallId);
+            if (isFileOrDependencyOperation(data) && data.toolCallId) {
+              fileOperationToolCallIdsRef.current.add(data.toolCallId);
             }
           }
-          if (message.subType === 'tool_call_update') {
+          if (subType === 'tool_call_update') {
             setChatMessages((prev) =>
               prev.map((msg) => {
                 if (
@@ -229,15 +222,15 @@ export const useAppDevChat = ({
                     ...msg,
                     text: insertToolCallUpdateBlock(
                       msg.text || '',
-                      message.data.toolCallId,
+                      data.toolCallId,
                       {
-                        toolCallId: message.data.toolCallId,
-                        title: message.data.title || '工具调用更新',
-                        kind: message.data.kind || 'execute',
-                        status: message.data.status,
-                        content: message.data.content,
-                        locations: message.data.locations,
-                        rawInput: message.data.rawInput,
+                        toolCallId: data.toolCallId,
+                        title: data.title || '工具调用更新',
+                        kind: data.kind || 'execute',
+                        status: data.status,
+                        content: data.content,
+                        locations: data.locations,
+                        rawInput: data.rawInput,
                         timestamp: message.timestamp,
                       },
                     ),
@@ -248,8 +241,8 @@ export const useAppDevChat = ({
             );
             // 检查对应的 toolCallId 是否为文件操作或依赖操作
             if (
-              message.data.toolCallId &&
-              fileOperationToolCallIdsRef.current.has(message.data.toolCallId)
+              data.toolCallId &&
+              fileOperationToolCallIdsRef.current.has(data.toolCallId)
             ) {
               debouncedRefreshFileTree();
             }
@@ -289,9 +282,6 @@ export const useAppDevChat = ({
             fileOperationToolCallIdsRef.current.size > 0 &&
             onRestartDevServer
           ) {
-            console.log(
-              '🔄 [AppDev] 检测到文件操作或依赖操作，触发重启开发服务器',
-            );
             onRestartDevServer(); // 不等待，异步执行
           }
 

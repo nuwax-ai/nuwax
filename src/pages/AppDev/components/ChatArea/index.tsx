@@ -1,7 +1,4 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
-import ReactScrollToBottomContainer, {
-  ReactScrollToBottomContainerRef,
-} from '@/pages/AppDev/components/ChatArea/components/ReactScrollToBottomContainer';
 import { cancelAgentTask, cancelAiChatAgentTask } from '@/services/appDev';
 import type {
   AppDevChatMessage,
@@ -28,24 +25,22 @@ import { useModel } from 'umi';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
 import ChatInputHome from './components/ChatInputHome';
 import MessageAttachment from './components/MessageAttachment';
+import ReactScrollToBottomContainer, {
+  ReactScrollToBottomContainerRef,
+} from './components/ReactScrollToBottomContainer';
 import styles from './index.less';
 
 const { Text } = Typography;
 
 interface ChatAreaProps {
-  // chatMode: 'chat' | 'code';
-  // setChatMode: (mode: 'chat' | 'code') => void;
   chat: any;
-  // projectInfo: any;
   projectId: string;
-  // onVersionSelect: (version: any) => void;
   selectedDataSources?: DataResource[];
   onUpdateDataSources: (dataSources: DataResource[]) => void;
   fileContentState: any;
   onSetSelectedFile: (fileId: string) => void;
   modelSelector: any;
-  // onClearUploadedImages?: (callback: () => void) => void;
-  onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
+  // onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
   // 自动处理异常相关props
   // autoHandleError?: boolean;
   // onAutoHandleErrorChange?: (enabled: boolean) => void;
@@ -60,18 +55,13 @@ interface ChatAreaProps {
  * 包含聊天模式切换、消息显示和输入区域
  */
 const ChatArea: React.FC<ChatAreaProps> = ({
-  // chatMode, // eslint-disable-line @typescript-eslint/no-unused-vars
-  // setChatMode, // eslint-disable-line @typescript-eslint/no-unused-vars
   chat,
-  // projectInfo, // 暂时注释掉，后续可能需要
   projectId,
-  // onVersionSelect, // 暂时注释掉，后续可能需要
   selectedDataSources = [],
   onUpdateDataSources,
   fileContentState,
   onSetSelectedFile,
   modelSelector,
-  // onClearUploadedImages,
   // onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
   // autoHandleError = true, // 暂时注释掉，后续可能需要
   // onAutoHandleErrorChange, // 暂时注释掉，后续可能需要
@@ -174,112 +164,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       setIsStoppingTask(false);
     }
   }, [chat, projectId, isStoppingTask]);
-
-  /**
-   * 处理单个图片文件
-   */
-  // const processImageFile = useCallback(
-  //   (file: File): Promise<ImageUploadInfo> => {
-  //     return new Promise((resolve, reject) => {
-  //       // 验证是否为图片
-  //       if (!file.type.startsWith('image/')) {
-  //         reject(new Error('仅支持上传图片文件'));
-  //         return;
-  //       }
-
-  //       // 验证文件大小 (限制为 5MB)
-  //       if (file.size > 5 * 1024 * 1024) {
-  //         reject(new Error('图片文件大小不能超过 5MB'));
-  //         return;
-  //       }
-
-  //       // 读取文件并转换为 Base64
-  //       const reader = new FileReader();
-  //       reader.onload = (e) => {
-  //         const base64Data = e.target?.result as string;
-
-  //         // 获取图片尺寸
-  //         const img = new window.Image();
-  //         img.onload = () => {
-  //           const imageInfo: ImageUploadInfo = {
-  //             uid: generateAttachmentId('img'),
-  //             name: file.name,
-  //             base64Data: base64Data.split(',')[1], // 移除 data:image/xxx;base64, 前缀
-  //             mimeType: file.type,
-  //             preview: base64Data,
-  //             dimensions: { width: img.width, height: img.height },
-  //           };
-  //           resolve(imageInfo);
-  //         };
-  //         img.onerror = () => {
-  //           reject(new Error('图片加载失败，请重试'));
-  //         };
-  //         img.src = base64Data;
-  //       };
-  //       reader.onerror = () => {
-  //         reject(new Error('文件读取失败，请重试'));
-  //       };
-  //       reader.readAsDataURL(file);
-  //     });
-  //   },
-  //   [],
-  // );
-
-  /**
-   * 处理图片上传（支持多选）
-   */
-  // const handleImageUpload = useCallback(
-  //   async (file: File | File[]) => {
-  //     const files = Array.isArray(file) ? file : [file];
-
-  //     if (files.length === 0) {
-  //       return false;
-  //     }
-
-  //     // 检查总数量限制（最多10张图片）
-  //     const currentCount = uploadedImages.length;
-  //     if (currentCount + files.length > 10) {
-  //       message.warning(`最多只能上传10张图片，当前已有${currentCount}张`);
-  //       return false;
-  //     }
-
-  //     try {
-  //       // 显示加载提示
-  //       const loadingMessage =
-  //         files.length === 1
-  //           ? `正在上传图片 "${files[0].name}"...`
-  //           : `正在上传 ${files.length} 张图片...`;
-  //       const hideLoading = message.loading(loadingMessage, 0);
-
-  //       // 处理所有文件
-  //       const imagePromises = files.map(processImageFile);
-  //       const imageInfos = await Promise.all(imagePromises);
-
-  //       // 批量添加到状态
-  //       setUploadedImages((prev) => [...prev, ...imageInfos]);
-
-  //       // 隐藏加载提示并显示成功消息
-  //       hideLoading();
-  //       if (files.length === 1) {
-  //         message.success(`图片 "${files[0].name}" 上传成功`);
-  //       } else {
-  //         message.success(`成功上传 ${files.length} 张图片`);
-  //       }
-  //     } catch (error) {
-  //       message.error(error instanceof Error ? error.message : '图片上传失败');
-  //     }
-
-  //     return false; // 阻止默认上传
-  //   },
-  //   [processImageFile, uploadedImages.length],
-  // );
-
-  /**
-   * 删除图片
-   */
-  // const handleDeleteImage = useCallback((uid: string) => {
-  //   setUploadedImages((prev) => prev.filter((img) => img.uid !== uid));
-  // }, []);
 
   /**
    * 切换单个数据源选择状态
@@ -469,7 +353,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       );
 
       // 在历史会话渲染场景中，完全忽略所有状态
-      const isStreaming = !isHistoryMessage && message.isStreaming === true; // 只有非历史消息才显示流式传输状态
+      const isStreaming = !isHistoryMessage && message.isStreaming; // 只有非历史消息才显示流式传输状态
       const isLoading = false; // 历史消息永远不显示加载状态
       const isError = false; // 历史消息永远不显示错误状态
       const hasThinking = message.think && message.think.trim() !== '';
@@ -627,18 +511,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
    */
   /**
    * 渲染会话分隔符
+   * @param conversationTopic 会话主题
+   * @param conversationCreated 会话创建时间
+   * @param id 消息ID 用于唯一标识key会话分隔符
    */
   const renderConversationDivider = useCallback(
     (
       conversationTopic: string,
       conversationCreated: string,
+      id: string,
       // sessionId: string, // 暂时未使用，保留以备将来使用
     ) => {
       return (
-        <div
-          key={`divider-${conversationCreated}`}
-          className={styles.conversationDivider}
-        >
+        <div key={`divider-${id}`} className={styles.conversationDivider}>
           <div className={styles.dividerLine} />
           <div className={styles.dividerContent}>
             <Text type="secondary" className={styles.conversationTopic}>
@@ -671,6 +556,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           renderConversationDivider(
             message.conversationTopic,
             message.conversationCreated || message.time,
+            message.id,
           ),
         );
         currentSessionId = message.sessionId;
