@@ -1,4 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import LabelStar from '@/components/LabelStar';
 import {
   MODEL_API_PROTOCOL_LIST,
@@ -27,7 +28,11 @@ import type {
   ModelSaveParams,
 } from '@/types/interfaces/model';
 import { customizeRequiredMark } from '@/utils/form';
-import { DeleteOutlined, PlusCircleOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  InfoCircleOutlined,
+  PlusCircleOutlined,
+} from '@ant-design/icons';
 import {
   Button,
   Form,
@@ -319,7 +324,18 @@ const CreateModel: React.FC<CreateModelProps> = ({
         </ConditionRender>
 
         {/* 启用模型开关 */}
-        <Form.Item name="enabled" label="是否启用">
+        <Form.Item
+          name="enabled"
+          label={
+            <div className={cx('flex', 'items-center')}>
+              <span>是否启用</span>
+              <TooltipIcon
+                title="禁用后，将不可再被选择，正在使用中的智能体不受影响"
+                icon={<InfoCircleOutlined />}
+              />
+            </div>
+          }
+        >
           <Radio.Group
             options={[
               { label: '启用', value: ModelComponentStatusEnum.Enabled },
