@@ -420,7 +420,7 @@ export const useAppDevChat = ({
           setAiChatSessionId(_aiChatSessionId);
         }
         if (response.type === 'progress') {
-          const chunkText = response?.message ? `${response?.message}\n\n` : '';
+          const chunkText = response?.message ? `${response?.message}` : '';
           setChatMessages((prev) =>
             appendTextToStreamingMessage(prev, requestId, chunkText, false),
           );
