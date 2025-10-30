@@ -148,7 +148,7 @@ export const useAppDevChat = ({
         case 'agentSessionUpdate': {
           const { subType, data } = message;
           if (subType === 'agent_message_chunk') {
-            const chunkText = data?.text || '';
+            const chunkText = data?.content?.text || data?.text || '';
             const isFinal = data?.is_final;
             // 如果 chunkText 不为空，则追加到消息列表，如果 isFinal 为 true，则标记消息完成
             if (chunkText) {

@@ -306,11 +306,12 @@ export const cancelAgentTask = async (
   projectId: string,
   sessionId: string,
 ): Promise<CancelResponse> => {
+  console.info(sessionId); // eslint-disable-line no-console
   return request(`/api/custom-page/ai-session-cancel`, {
     method: 'POST',
     data: {
       project_id: projectId,
-      session_id: sessionId,
+      // session_id: sessionId,
     },
   });
 };
