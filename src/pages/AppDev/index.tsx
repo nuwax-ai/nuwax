@@ -159,6 +159,13 @@ const AppDev: React.FC = () => {
   const [nodeToDelete, setNodeToDelete] = useState<any>(null);
   // 文件操作状态，避免多步流程竞争和覆盖
   const [isFileOperating, setIsFileOperating] = useState(false);
+  // 文件操作遮罩显示状态，小于500ms不显示遮罩
+  const [shouldShowFileOperatingMask, setShouldShowFileOperatingMask] =
+    useState(false);
+  // 文件操作开始时间
+  const fileOperatingStartTimeRef = useRef<number | null>(null);
+  // 文件操作延时定时器
+  const fileOperatingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 版本历史弹窗状态
   const [openVersionHistory, setOpenVersionHistory] = useState(false);
@@ -168,6 +175,45 @@ const AppDev: React.FC = () => {
     useState(false);
   // 使用 Hook 控制抽屉打开时的滚动条
   useDrawerScroll(openVersionHistory);
+
+  // 文件操作遮罩延时显示逻辑
+  useEffect(() => {
+    if (isFileOperating) {
+      // 文件操作开始，记录开始时间并设置500ms后显示遮罩
+      fileOperatingStartTimeRef.current = Date.now();
+
+      // 设置500ms延时显示遮罩
+      fileOperatingTimerRef.current = setTimeout(() => {
+        setShouldShowFileOperatingMask(true);
+      }, 500);
+    } else {
+      // 文件操作结束，清理定时器和状态
+      if (fileOperatingTimerRef.current) {
+        clearTimeout(fileOperatingTimerRef.current);
+        fileOperatingTimerRef.current = null;
+      }
+
+      // 检查操作持续时间，如果小于500ms则不显示遮罩
+      if (fileOperatingStartTimeRef.current) {
+        const duration = Date.now() - fileOperatingStartTimeRef.current;
+        if (duration < 500) {
+          // 操作时间太短，不显示遮罩
+          setShouldShowFileOperatingMask(false);
+        }
+      }
+
+      // 重置状态
+      fileOperatingStartTimeRef.current = null;
+    }
+
+    // 清理函数
+    return () => {
+      if (fileOperatingTimerRef.current) {
+        clearTimeout(fileOperatingTimerRef.current);
+        fileOperatingTimerRef.current = null;
+      }
+    };
+  }, [isFileOperating]);
 
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
@@ -1196,6 +1242,12 @@ const AppDev: React.FC = () => {
       }
       autoSendLockRef.current = false;
 
+      // 清理文件操作延时定时器
+      if (fileOperatingTimerRef.current) {
+        clearTimeout(fileOperatingTimerRef.current);
+        fileOperatingTimerRef.current = null;
+      }
+
       // ⭐ 重置自动错误处理 Model 的所有状态
       autoErrorHandlingModelInstance.resetAll();
     };
@@ -1254,7 +1306,9 @@ const AppDev: React.FC = () => {
       {contextHolder}
       {/* 全局文件操作/部署遮罩组件，优先级最高。部署>文件操作。 */}
       <FileOperatingMask
-        visible={isDeploying || isFileOperating}
+        visible={
+          isDeploying || (isFileOperating && shouldShowFileOperatingMask)
+        }
         tip={
           isDeploying
             ? '正在发布项目...\n请稍候，发布完成后将自动关闭'
