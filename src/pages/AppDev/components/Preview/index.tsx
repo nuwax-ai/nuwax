@@ -447,51 +447,17 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     );
 
     /**
-     * 检查白屏状态
-     * @returns 是否检测到白屏
-     */
-    const checkWhiteScreen = useCallback(() => {
-      if (!devServerUrl || !iframeRef.current) return false;
-
-      try {
-        const iframe = iframeRef.current;
-        if (!iframe) return false;
-
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!doc) return false;
-
-        // 检查页面是否为空或只有空白内容
-        if (!doc || !doc.body) return true;
-
-        // 检查是否空内容
-        const hasContent =
-          doc.body.innerText.trim().length > 0 || doc.body.children.length > 0;
-        if (!hasContent) return true;
-
-        // 检查是否存在根节点（React/Vue 挂载点）
-        const appRoot = doc.querySelector('#root, #app');
-        if (!appRoot) return true;
-
-        // 如果存在挂载点但内部为空，说明 React/Vite 崩溃了
-        if (appRoot.children.length === 0) return true;
-
-        return false;
-      } catch (error) {
-        // 跨域或其他错误，忽略
-        console.debug('[Preview] 白屏检测失败（可能是跨域）:', error);
-        return false;
-      }
-    }, [devServerUrl]);
-
-    /**
      * 处理来自 dev-monitor 的错误消息
      */
     const handleDevMonitorError = useCallback(
-      (errorInfo: {
-        message: string;
-        details: string | null;
-        timestamp: number;
-      }) => {
+      (
+        errorInfo: {
+          message: string;
+          details: string | null;
+          timestamp: number;
+        },
+        isWhiteScreen: boolean = false,
+      ) => {
         // 检查是否已存在相同错误（避免重复）
         const exists = devMonitorErrorsRef.current.some(
           (e) =>
@@ -505,9 +471,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           if (devMonitorErrorsRef.current.length > 10) {
             devMonitorErrorsRef.current.shift();
           }
-
-          // 收到错误消息时，主动触发白屏检测
-          const isWhiteScreen = checkWhiteScreen();
 
           // 格式化错误消息
           const errorMessages = devMonitorErrorsRef.current
@@ -540,7 +503,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           }
         }
       },
-      [checkWhiteScreen, onWhiteScreenWithError],
+      [onWhiteScreenWithError],
     );
 
     /**
@@ -667,11 +630,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             case 'dev-monitor-error':
               // ⭐ 实时错误消息（立即发送）
               if (data.error) {
+                const isWhiteScreen = data.isWhiteScreen;
                 console.debug(
                   '[Preview] Received dev-monitor-error:',
                   data.error,
                 );
-                handleDevMonitorError(data.error);
+                handleDevMonitorError(data.error, isWhiteScreen);
               }
               break;
 
