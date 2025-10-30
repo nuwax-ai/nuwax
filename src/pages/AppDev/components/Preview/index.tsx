@@ -529,16 +529,20 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         if (changeData.historyType === 'initial') {
           initialUrlRef.current = changeData.url;
           lastUrlRef.current = changeData.url;
-          historyStackRef.current = [changeData];
-          pushCountRef.current = 0;
+          historyStackRef.current = [
+            ...(historyStackRef.current || []),
+            changeData,
+          ];
+          // pushCountRef.current = 0;
           navigableHistoryRef.current = [
+            ...(navigableHistoryRef.current || []),
             {
               url: changeData.url,
               pathname: changeData.pathname,
               timestamp: changeData.timestamp,
             },
           ];
-          currentIndexRef.current = 0;
+          // currentIndexRef.current = 0;
           return;
         }
 
