@@ -76,7 +76,9 @@ const ChatTemp: React.FC = () => {
     checkConversationActive,
     disabledConversationActive,
     setCurrentConversationRequestId,
+    setMessageList: setConversationInfoMessageList,
   } = useModel('conversationInfo');
+
   // 链接Key
   const { chatKey } = useParams();
   // 会话信息
@@ -84,6 +86,12 @@ const ChatTemp: React.FC = () => {
     useState<ConversationInfo | null>();
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
+
+  // 更新数据流消息列表 - 未显示刷子bug处理
+  useEffect(() => {
+    setConversationInfoMessageList([...messageList]);
+  }, [messageList]);
+
   // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
   const messageListRef = useRef<MessageInfo[]>([]);
   // 会话问题建议
