@@ -676,23 +676,23 @@ export const useAppDevChat = ({
   /**
    * 加载历史会话消息
    */
-  const loadHistorySession = useCallback(async () => {
-    try {
-      const response = await listConversations({
-        projectId,
-      });
+  // const loadHistorySession = useCallback(async () => {
+  //   try {
+  //     const response = await listConversations({
+  //       projectId,
+  //     });
 
-      if (response.success && response.data?.records?.length > 0) {
-        const conversation = response.data?.records[0];
-        const messages = parseChatMessages(conversation.content);
+  //     if (response.success && response.data?.records?.length > 0) {
+  //       const conversation = response.data?.records[0];
+  //       const messages = parseChatMessages(conversation.content);
 
-        // 清空当前消息并加载历史消息
-        setChatMessages(messages);
-      }
-    } catch (error) {
-      message.error('加载历史会话失败');
-    }
-  }, [projectId]);
+  //       // 清空当前消息并加载历史消息
+  //       setChatMessages(messages);
+  //     }
+  //   } catch (error) {
+  //     message.error('加载历史会话失败');
+  //   }
+  // }, [projectId]);
 
   /**
    * 自动加载所有历史会话的消息
@@ -702,9 +702,7 @@ export const useAppDevChat = ({
 
     setIsLoadingHistory(true);
     try {
-      const response = await listConversations({
-        projectId,
-      });
+      const response = await listConversations(projectId);
 
       if (response.success && response.data?.records?.length > 0) {
         // 按创建时间排序，获取所有会话
@@ -781,7 +779,7 @@ export const useAppDevChat = ({
     sendMessage, // 新增：支持附件的发送消息方法
     cancelChat,
     cleanupAppDevSSE,
-    loadHistorySession,
+    // loadHistorySession,
     loadAllHistorySessions, // 新增：自动加载所有历史会话
   };
 };
