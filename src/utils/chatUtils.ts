@@ -364,9 +364,8 @@ export const appendTextToStreamingMessage = (
   );
 
   if (index >= 0) {
-    // 避免创建新数组，直接修改原数组
-    const message = messages[index];
-    const beforeText = message.text || '';
+    const updated = [...messages];
+    const beforeText = updated[index].text || '';
 
     // 检查是否包含 Plan 或 ToolCall 标记
     const hasPlanOrToolCallMarkers =
@@ -375,13 +374,21 @@ export const appendTextToStreamingMessage = (
 
     // 如果包含标记，直接替换而不是追加，避免重复渲染
     if (hasPlanOrToolCallMarkers) {
-      message.text = chunkText; // 直接使用新的完整文本
+      updated[index] = {
+        ...updated[index],
+        text: chunkText, // 直接使用新的完整文本
+        isStreaming: !isFinal,
+      };
     } else {
       // 普通文本追加
-      message.text = `${beforeText}${chunkText}`; // 移除多余的换行
+      updated[index] = {
+        ...updated[index],
+        text: beforeText ? beforeText + chunkText : chunkText, // 移除多余的换行
+        isStreaming: !isFinal,
+      };
     }
 
-    message.isStreaming = !isFinal;
+    return updated;
   }
 
   return messages;
