@@ -157,6 +157,22 @@
   }
 }
 
+// 加载更多历史会话的指示器
+.loadingMoreHistory {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 0;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  background: rgba(255, 255, 255, 80%);
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid @colorBorderSecondary;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
 .chatMessages {
   padding: 20px 12px 36px 20px;
   display: flex;
