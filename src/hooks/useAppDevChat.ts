@@ -19,7 +19,10 @@ import { message, Modal } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 
-import { AGENT_SERVICE_RUNNING } from '@/constants/codes.constants';
+import {
+  AGENT_SERVICE_RUNNING,
+  SUCCESS_CODE,
+} from '@/constants/codes.constants';
 import {
   insertPlanBlock,
   insertToolCallBlock,
@@ -76,9 +79,17 @@ export const useAppDevChat = ({
 
   const [aiChatSessionId, setAiChatSessionId] = useState<string>('');
   const [chatMessages, setChatMessages] = useState<AppDevChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false); // 新增：历史会话加载状态
+  const [chatInput, setChatInput] = useState<string>('');
+  const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false); // 新增：历史会话加载状态
+
+  /**
+   * 滚动加载更多历史会话相关状态
+   */
+  const [currentPage, setCurrentPage] = useState<number>(1); // 新增：当前页码
+  const [totalHistoryCount, setTotalHistoryCount] = useState<number>(0); // 新增：历史记录总数
+  const hasMoreHistoryRef = useRef<boolean>(false); // 是否还有更多历史记录，初始为false
+  const isLoadingMoreHistoryRef = useRef<boolean>(false); // 滚动加载更多历史会话状态，初始为false
 
   const abortConnectionRef = useRef<AbortController | null>(null);
   const aIChatAbortConnectionRef = useRef<AbortController>();
@@ -420,7 +431,7 @@ export const useAppDevChat = ({
           setAiChatSessionId(_aiChatSessionId);
         }
         if (response.type === 'progress') {
-          const chunkText = response?.message ? `${response?.message}\n\n` : '';
+          const chunkText = response?.message ? `${response?.message}` : '';
           setChatMessages((prev) =>
             appendTextToStreamingMessage(prev, requestId, chunkText, false),
           );
@@ -674,47 +685,48 @@ export const useAppDevChat = ({
   }, []);
 
   /**
-   * 加载历史会话消息
+   * 加载历史会话
+   * @param page 要加载的页码，默认为1（第一页）
+   * @param isLoadMore 是否为加载更多操作，默认为false
    */
-  const loadHistorySession = useCallback(async () => {
-    try {
-      const response = await listConversations({
-        projectId,
-      });
-
-      if (response.success && response.data?.records?.length > 0) {
-        const conversation = response.data?.records[0];
-        const messages = parseChatMessages(conversation.content);
-
-        // 清空当前消息并加载历史消息
-        setChatMessages(messages);
-      }
-    } catch (error) {
-      message.error('加载历史会话失败');
-    }
-  }, [projectId]);
-
-  /**
-   * 自动加载所有历史会话的消息
-   */
-  const loadAllHistorySessions = useCallback(async () => {
+  const loadHistorySessions = async (
+    page: number = 1,
+    isLoadMore: boolean = false,
+  ) => {
     if (!projectId) return;
 
-    setIsLoadingHistory(true);
-    try {
-      const response = await listConversations({
-        projectId,
-      });
+    // 如果是加载更多操作，检查是否还有更多历史记录和是否正在加载
+    if (
+      isLoadMore &&
+      (isLoadingMoreHistoryRef.current || !hasMoreHistoryRef.current)
+    ) {
+      return;
+    }
 
-      if (response.success && response.data?.records?.length > 0) {
+    // 设置加载状态
+    if (isLoadMore) {
+      isLoadingMoreHistoryRef.current = true;
+    } else {
+      setIsLoadingHistory(true);
+    }
+
+    try {
+      const { data, code } = await listConversations(projectId, page);
+
+      if (code === SUCCESS_CODE) {
+        // 更新分页信息
+        setCurrentPage(page);
+        hasMoreHistoryRef.current = data?.current < data?.pages;
+        setTotalHistoryCount(data?.total || 0);
+
         // 按创建时间排序，获取所有会话
-        const sortedConversations = response.data?.records.sort(
+        const sortedConversations = data?.records.sort(
           (a: any, b: any) =>
             new Date(a.created).getTime() - new Date(b.created).getTime(),
         );
 
         // 合并所有会话的消息
-        const allMessages: AppDevChatMessage[] = [];
+        const newMessages: AppDevChatMessage[] = [];
 
         for (const conversation of sortedConversations) {
           try {
@@ -727,31 +739,44 @@ export const useAppDevChat = ({
               created: conversation.created,
             });
 
-            allMessages.push(...messagesWithSessionInfo);
+            newMessages.push(...messagesWithSessionInfo);
           } catch (parseError) {}
         }
 
-        // 按时间戳排序所有消息
-        const sortedMessages = sortMessagesByTimestamp(allMessages);
+        // 按时间戳排序新消息
+        const sortedNewMessages = sortMessagesByTimestamp(newMessages);
 
-        // 加载所有历史消息
-        setChatMessages(sortedMessages);
+        // 更新消息列表
+        if (isLoadMore) {
+          // 加载更多：将新消息添加到现有消息列表的开头（历史消息在顶部）
+          setChatMessages((prevMessages) => {
+            return [...sortedNewMessages, ...prevMessages];
+          });
+        } else {
+          // 初始加载：直接设置消息列表
+          setChatMessages(sortedNewMessages);
+        }
       }
     } catch (error) {
-      // 不显示错误提示，因为这是自动加载，用户可能不知道
+      console.error('加载历史会话失败:', error);
     } finally {
-      setIsLoadingHistory(false);
+      // 清除加载状态
+      if (isLoadMore) {
+        isLoadingMoreHistoryRef.current = false;
+      } else {
+        setIsLoadingHistory(false);
+      }
     }
-  }, [projectId]);
+  };
 
   /**
    * 组件初始化时自动加载所有历史会话
    */
   useEffect(() => {
     if (projectId) {
-      loadAllHistorySessions();
+      loadHistorySessions();
     }
-  }, [projectId]); // 移除 loadAllHistorySessions 依赖，避免无限循环
+  }, [projectId]);
 
   /**
    * 组件卸载时清理资源
@@ -773,6 +798,10 @@ export const useAppDevChat = ({
     chatInput,
     isChatLoading,
     isLoadingHistory, // 新增：历史会话加载状态
+    isLoadingMoreHistoryRef, // 新增：加载更多历史会话状态
+    currentPage, // 新增：当前页码
+    hasMoreHistoryRef, // 新增：是否还有更多历史记录
+    totalHistoryCount, // 新增：历史记录总数
 
     // 方法
     setChatInput,
@@ -781,7 +810,7 @@ export const useAppDevChat = ({
     sendMessage, // 新增：支持附件的发送消息方法
     cancelChat,
     cleanupAppDevSSE,
-    loadHistorySession,
-    loadAllHistorySessions, // 新增：自动加载所有历史会话
+    // loadHistorySession,
+    loadHistorySessions, // 新增：自动加载所有历史会话
   };
 };

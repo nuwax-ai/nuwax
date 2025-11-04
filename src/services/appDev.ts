@@ -475,27 +475,19 @@ export const saveConversation = async (params: {
  * @param params 查询参数
  * @returns Promise<any> 会话列表
  */
-// export const listConversations = async (params: {
-//   projectId: string;
-//   sessionId?: string;
-// }): Promise<any> => {
-//   return request('/api/custom-page/list-conversations', {
-//     method: 'GET',
-//     params,
-//   });
-// };
-
-export const listConversations = async (params: {
-  projectId: string;
-}): Promise<any> => {
+export const listConversations = async (
+  projectId: string,
+  page: number = 1,
+  pageSize: number = 10,
+): Promise<any> => {
   return request('/api/custom-page/page-query-conversations', {
     method: 'POST',
     data: {
       queryFilter: {
-        projectId: params.projectId,
+        projectId,
       },
-      current: 1,
-      pageSize: 20,
+      current: page,
+      pageSize,
     },
   });
 };

@@ -9,6 +9,7 @@ import classNames from 'classnames';
 import React, {
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
 } from 'react';
@@ -81,6 +82,8 @@ export interface ReactScrollToBottomContainerProps {
   onAutoScrollChange?: (enabled: boolean) => void;
   /** 滚动位置变化回调 */
   onScrollPositionChange?: (isAtBottom: boolean) => void;
+  /** 滚动到顶部回调 */
+  onScrollToTop?: () => void;
 }
 
 /**
@@ -112,6 +115,7 @@ const ReactScrollToBottomContainer = forwardRef<
       style,
       onAutoScrollChange,
       onScrollPositionChange,
+      onScrollToTop,
     },
     ref,
   ) => {
@@ -229,12 +233,12 @@ const ReactScrollToBottomContainer = forwardRef<
     );
 
     // 监听自动滚动状态变化
-    React.useEffect(() => {
+    useEffect(() => {
       onAutoScrollChange?.(isAutoScrollEnabled);
     }, [isAutoScrollEnabled, onAutoScrollChange]);
 
     // 监听滚动位置变化
-    React.useEffect(() => {
+    useEffect(() => {
       const checkPosition = () => {
         // const atBottom = isAtBottom();
         // 完全禁用库的状态检查，使用备用检测
@@ -245,7 +249,7 @@ const ReactScrollToBottomContainer = forwardRef<
     }, [isAtBottom, onScrollPositionChange]);
 
     // 添加备用滚动监听器，确保滚动位置检测正常工作
-    React.useEffect(() => {
+    useEffect(() => {
       const timer = setTimeout(() => {
         const scrollContainer = document.querySelector(
           '.react-scroll-to-bottom-container .scroll-container-inner',
@@ -255,6 +259,7 @@ const ReactScrollToBottomContainer = forwardRef<
         }
 
         let lastIsAtBottom = true; // 记录上次的状态，避免重复调用
+        let lastIsAtTop = false; // 记录上次是否在顶部
 
         const handleScroll = () => {
           const scrollTop = scrollContainer.scrollTop;
@@ -264,10 +269,21 @@ const ReactScrollToBottomContainer = forwardRef<
           const isAtBottom =
             scrollTop + containerHeight >= contentHeight - threshold;
 
+          // 检测是否滚动到顶部
+          const isAtTop = scrollTop <= 50; // 距离顶部50px内视为在顶部
+
           // 只有状态发生变化时才调用回调
           if (isAtBottom !== lastIsAtBottom) {
             lastIsAtBottom = isAtBottom;
             onScrollPositionChange?.(isAtBottom);
+          }
+
+          // 检测滚动到顶部
+          if (isAtTop && !lastIsAtTop) {
+            lastIsAtTop = true;
+            onScrollToTop?.();
+          } else if (!isAtTop && lastIsAtTop) {
+            lastIsAtTop = false;
           }
         };
 
@@ -284,7 +300,7 @@ const ReactScrollToBottomContainer = forwardRef<
       return () => {
         clearTimeout(timer);
       };
-    }, [onScrollPositionChange]);
+    }, [onScrollPositionChange, onScrollToTop]);
 
     return (
       <div
