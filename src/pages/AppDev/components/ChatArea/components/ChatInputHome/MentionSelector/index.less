@@ -1,0 +1,138 @@
+/**
+ * MentionSelector 组件样式
+ * 参考 react-mentions-ts 的样式实现
+ */
+
+@import '@/styles/color';
+@import '@/styles/token';
+
+.mention-selector {
+  background: @WHITE;
+  border: 1px solid @colorBorder;
+  border-radius: @borderRadius;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 15%);
+  max-width: 400px;
+  max-height: 400px;
+  overflow: hidden;
+  z-index: 1000;
+  animation: fade-in 0.2s ease-in-out;
+
+  .mention-tabs {
+    border-bottom: 1px solid @colorBorder;
+    padding: 0 @paddingMd;
+
+    .ant-tabs-tab {
+      padding: @paddingSm @paddingMd;
+      transition: color 0.2s;
+
+      &:hover {
+        color: @colorPrimary;
+      }
+
+      &.ant-tabs-tab-active {
+        .ant-tabs-tab-btn {
+          color: @colorPrimary;
+          font-weight: @fontWeightStrong;
+        }
+      }
+    }
+  }
+
+  .mention-content {
+    padding: @paddingSm;
+    max-height: 320px;
+    overflow-y: auto;
+
+    // 滚动条样式
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: @colorFillQuaternary;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: @colorBorder;
+      border-radius: 3px;
+
+      &:hover {
+        background: @colorTextTertiary;
+      }
+    }
+
+    .mention-list {
+      .mention-item {
+        padding: @paddingXs @paddingSm;
+        cursor: pointer;
+        border-radius: @borderRadiusSm;
+        transition: all 0.2s ease-in-out;
+        margin-bottom: @marginXxs;
+
+        &:hover {
+          background-color: @colorFillQuaternary;
+        }
+
+        &.selected {
+          background-color: @colorPrimaryBg;
+          color: @colorPrimary;
+          font-weight: @fontWeightStrong;
+        }
+
+        .mention-item-title {
+          font-size: @fontSize;
+          color: @colorText;
+          line-height: @lineHeight;
+        }
+
+        .mention-item-desc {
+          font-size: @fontSizeSm;
+          color: @colorTextSecondary;
+          margin-top: @marginXxs;
+          line-height: @lineHeight;
+        }
+      }
+    }
+
+    .mention-tree {
+      .ant-tree-node-content-wrapper {
+        padding: @paddingXs @paddingSm;
+        border-radius: @borderRadiusSm;
+        transition: all 0.2s ease-in-out;
+
+        &:hover {
+          background-color: @colorFillQuaternary;
+        }
+
+        &.ant-tree-node-selected {
+          background-color: @colorPrimaryBg;
+          color: @colorPrimary;
+        }
+      }
+
+      .ant-tree-treenode {
+        padding: @marginXxs 0;
+      }
+    }
+
+    .mention-empty {
+      padding: @paddingLg;
+      text-align: center;
+      color: @colorTextSecondary;
+    }
+  }
+}
+
+// 淡入动画
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

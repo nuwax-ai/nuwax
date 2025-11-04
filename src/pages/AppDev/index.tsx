@@ -1415,6 +1415,7 @@ const AppDev: React.FC = () => {
                 fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
                 onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
                 modelSelector={modelSelector} // 模型选择器状态
+                files={currentDisplayFiles} // 新增：文件树数据
                 onUserManualSendMessage={() => {
                   // 用户手动发送消息，重置自动重试计数、会话计数和 requestId
                   autoErrorHandling.resetAndEnableAutoHandling();

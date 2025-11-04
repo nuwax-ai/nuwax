@@ -5,6 +5,7 @@ import type {
   Attachment,
   DataSourceSelection,
   DocumentAttachment,
+  FileNode,
   ImageAttachment,
 } from '@/types/interfaces/appDev';
 import { UploadFileInfo } from '@/types/interfaces/common';
@@ -48,6 +49,8 @@ interface ChatAreaProps {
   onUserManualSendMessage?: () => void;
   /** 用户取消Agent任务回调 */
   onUserCancelAgentTask?: () => void;
+  /** 文件树数据 */
+  files?: FileNode[];
 }
 
 /**
@@ -67,6 +70,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // onAutoHandleErrorChange, // 暂时注释掉，后续可能需要
   onUserManualSendMessage,
   onUserCancelAgentTask,
+  files = [],
 }) => {
   const autoErrorRetryCount = useModel('autoErrorHandling').autoRetryCount;
   // 展开的思考过程消息
@@ -682,6 +686,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           handleCancelAgentTask={handleCancelAgentTask}
           // 发送消息
           onEnter={handleSendMessage}
+          // 文件树数据
+          files={files}
         />
       </div>
     </Card>
