@@ -611,14 +611,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }}
         onScrollToTop={() => {
           // 当用户滚动到顶部时，加载更多历史会话
-          if (chat.hasMoreHistoryRef.current && !chat.isLoadingMoreHistory) {
+          if (
+            chat.hasMoreHistoryRef.current &&
+            !chat.isLoadingMoreHistoryRef.current
+          ) {
             chat.loadHistorySessions(chat.currentPage + 1, true);
           }
         }}
       >
         <div className={styles.chatMessages}>
           {/* 加载更多历史会话的指示器 */}
-          {chat.isLoadingMoreHistory && (
+          {chat.isLoadingMoreHistoryRef.current && (
             <div className={styles.loadingMoreHistory}>
               <Spin size="small" />
               <span style={{ marginLeft: 8 }}>正在加载更多历史会话...</span>

@@ -82,11 +82,14 @@ export const useAppDevChat = ({
   const [chatInput, setChatInput] = useState<string>('');
   const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false); // 新增：历史会话加载状态
-  const [isLoadingMoreHistory, setIsLoadingMoreHistory] =
-    useState<boolean>(false); // 新增：加载更多历史会话状态
+
+  /**
+   * 滚动加载更多历史会话相关状态
+   */
   const [currentPage, setCurrentPage] = useState<number>(1); // 新增：当前页码
   const [totalHistoryCount, setTotalHistoryCount] = useState<number>(0); // 新增：历史记录总数
-  const hasMoreHistoryRef = useRef<boolean>(true); // 是否还有更多历史记录
+  const hasMoreHistoryRef = useRef<boolean>(false); // 是否还有更多历史记录，初始为false
+  const isLoadingMoreHistoryRef = useRef<boolean>(false); // 滚动加载更多历史会话状态，初始为false
 
   const abortConnectionRef = useRef<AbortController | null>(null);
   const aIChatAbortConnectionRef = useRef<AbortController>();
@@ -693,31 +696,27 @@ export const useAppDevChat = ({
     if (!projectId) return;
 
     // 如果是加载更多操作，检查是否还有更多历史记录和是否正在加载
-    if (isLoadMore && (isLoadingMoreHistory || !hasMoreHistoryRef.current)) {
+    if (
+      isLoadMore &&
+      (isLoadingMoreHistoryRef.current || !hasMoreHistoryRef.current)
+    ) {
       return;
     }
 
     // 设置加载状态
     if (isLoadMore) {
-      setIsLoadingMoreHistory(true);
+      isLoadingMoreHistoryRef.current = true;
     } else {
       setIsLoadingHistory(true);
     }
 
     try {
-      const { data, code } = await listConversations(projectId, page, 10); // 每页10条
+      const { data, code } = await listConversations(projectId, page);
 
       if (code === SUCCESS_CODE) {
         // 更新分页信息
         setCurrentPage(page);
-        const _hasMoreHistory = data?.current < data?.pages;
-        console.log(
-          _hasMoreHistory,
-          'hasMoreHistory',
-          data?.current,
-          data?.pages,
-        );
-        hasMoreHistoryRef.current = _hasMoreHistory;
+        hasMoreHistoryRef.current = data?.current < data?.pages;
         setTotalHistoryCount(data?.total || 0);
 
         // 按创建时间排序，获取所有会话
@@ -757,23 +756,13 @@ export const useAppDevChat = ({
           // 初始加载：直接设置消息列表
           setChatMessages(sortedNewMessages);
         }
-      } else {
-        // 没有历史记录
-        if (isLoadMore) {
-          hasMoreHistoryRef.current = false;
-        } else {
-          hasMoreHistoryRef.current = false;
-          setTotalHistoryCount(0);
-          setChatMessages([]);
-        }
       }
     } catch (error) {
-      // 不显示错误提示，因为这是自动加载，用户可能不知道
-      hasMoreHistoryRef.current = false;
+      console.error('加载历史会话失败:', error);
     } finally {
       // 清除加载状态
       if (isLoadMore) {
-        setIsLoadingMoreHistory(false);
+        isLoadingMoreHistoryRef.current = false;
       } else {
         setIsLoadingHistory(false);
       }
@@ -809,7 +798,7 @@ export const useAppDevChat = ({
     chatInput,
     isChatLoading,
     isLoadingHistory, // 新增：历史会话加载状态
-    isLoadingMoreHistory, // 新增：加载更多历史会话状态
+    isLoadingMoreHistoryRef, // 新增：加载更多历史会话状态
     currentPage, // 新增：当前页码
     hasMoreHistoryRef, // 新增：是否还有更多历史记录
     totalHistoryCount, // 新增：历史记录总数

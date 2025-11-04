@@ -475,16 +475,6 @@ export const saveConversation = async (params: {
  * @param params 查询参数
  * @returns Promise<any> 会话列表
  */
-// export const listConversations = async (params: {
-//   projectId: string;
-//   sessionId?: string;
-// }): Promise<any> => {
-//   return request('/api/custom-page/list-conversations', {
-//     method: 'GET',
-//     params,
-//   });
-// };
-
 export const listConversations = async (
   projectId: string,
   page: number = 1,
