@@ -30,6 +30,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ info }) => {
         {!!info?.content && (
           <PureMarkdownRenderer
             id={`${info?.id}`}
+            disableTyping={true}
             className={cx(styles.content)}
           >
             {info.content}
