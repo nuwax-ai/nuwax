@@ -662,6 +662,20 @@ const AppDev: React.FC = () => {
   /**
    * 处理发布成应用
    */
+  const handlePublishApplication = async () => {
+    if (previewRef.current) {
+      try {
+        previewRef.current.captureIframeContent();
+      } catch (error) {
+        console.error('[AppDev] 截图上传过程中发生错误:', error);
+      }
+    }
+    setOpenPublishComponentModal(true);
+  };
+
+  /**
+   * 处理发布成应用
+   */
   const handleBeforePublish = async () => {
     if (!hasValidProjectId || !projectId) {
       message.error('项目ID不存在或无效，无法部署');
@@ -1359,8 +1373,10 @@ const AppDev: React.FC = () => {
           workspace={workspace}
           spaceId={spaceId}
           onEditProject={() => setOpenPageEditVisible(true)}
+          // 处理项目发布成组件
           onPublishComponent={handlePublishComponent}
-          onPublishApplication={() => setOpenPublishComponentModal(true)}
+          // 处理发布成应用
+          onPublishApplication={handlePublishApplication}
           onOpenVersionHistory={() => setOpenVersionHistory(true)}
           hasUpdates={projectInfo.hasUpdates}
           isDeploying={isDeploying}

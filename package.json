@@ -52,6 +52,7 @@
     "ds-markdown": " 0.1.10-beta.1",
     "ds-markdown-mermaid-plugin": "^0.0.3",
     "globby": "^14.1.0",
+    "html2canvas": "^1.4.1",
     "insert-css": "^2.0.0",
     "lodash": "^4.17.21",
     "mermaid": "9.4.3",
