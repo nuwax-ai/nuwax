@@ -126,11 +126,29 @@ const SelectComponent: React.FC<CreatedProp> = ({
         return;
       isRequesting.current = true;
       const allowCopy = getAllowCopy(selected.key);
-      const _res = await service.getList(type, {
+
+      // 目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table
+      const targetType =
+        type === AgentComponentTypeEnum.Page
+          ? AgentComponentTypeEnum.Agent
+          : type;
+      // Agent目标子类型，ChatBot,PageApp,可用值:ChatBot,PageApp, 非Agent类型时不传
+      const targetSubType =
+        type === AgentComponentTypeEnum.Agent
+          ? 'ChatBot'
+          : type === AgentComponentTypeEnum.Page
+          ? 'PageApp'
+          : '';
+
+      const _params = {
         ...params,
         spaceId,
+        targetType,
+        ...(targetSubType ? { targetSubType } : {}),
         ...(allowCopy === 1 ? { allowCopy } : {}),
-      });
+      };
+
+      const _res = await service.getList(targetType, _params);
       isRequesting.current = false;
       setSizes(_res.data.pages);
       setPagination((prev) => ({
@@ -254,6 +272,7 @@ const SelectComponent: React.FC<CreatedProp> = ({
 
     const _select = typeof val === 'string' ? val : val.target.value;
     const _item = tabs.find((item) => item.key === _select);
+
     if (_item) {
       setSelectMenu('all');
       setSearch('');

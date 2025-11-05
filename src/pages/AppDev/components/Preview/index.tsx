@@ -1,5 +1,8 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
-import { SANDBOX } from '@/constants/common.constants';
+import { SANDBOX, UPLOAD_FILE_ACTION } from '@/constants/common.constants';
+import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { apiPageUpdateProject } from '@/services/pageDev';
+import { ProjectDetailData } from '@/types/interfaces/appDev';
 import { jumpTo } from '@/utils/router';
 import {
   ExclamationCircleOutlined,
@@ -7,7 +10,9 @@ import {
   ReloadOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
+import { message } from 'antd';
 import dayjs from 'dayjs';
+import html2canvas from 'html2canvas';
 import React, {
   useCallback,
   useEffect,
@@ -15,10 +20,12 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 interface PreviewProps {
   devServerUrl?: string;
+  projectInfo?: ProjectDetailData | null;
   className?: string;
   isStarting?: boolean;
   isDeveloping?: boolean;
@@ -49,6 +56,7 @@ export interface PreviewRef {
   getLastRefreshed: () => Date | null;
   getHistoryBackCount: () => number;
   backInIframe: (steps: number) => void;
+  captureIframeContent: () => void;
 }
 
 /**
@@ -58,6 +66,7 @@ export interface PreviewRef {
 const Preview = React.forwardRef<PreviewRef, PreviewProps>(
   (
     {
+      projectInfo,
       devServerUrl,
       className,
       isStarting,
@@ -78,6 +87,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [retrying, setRetrying] = useState(false);
+
+    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
     // dev-monitor 错误信息收集
     const devMonitorErrorsRef = useRef<
@@ -404,6 +415,188 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       }
     }, []);
 
+    // 上传前端项目压缩包并启动开发服务器
+    const { run: runUpdatePage } = useRequest(apiPageUpdateProject, {
+      manual: true,
+      onSuccess: () => {
+        message.success('编辑成功');
+      },
+    });
+
+    // 截图 iframe 内容
+    const captureIframeContent = async () => {
+      const iframeElement = iframeRef.current;
+      console.log('截图 iframe 内容55555', iframeElement, devServerUrl);
+
+      if (!devServerUrl) {
+        return;
+      }
+
+      // 如果 iframe 不存在，创建一个新的 iframe 元素
+      if (!iframeElement) {
+        console.log('[Preview] 创建新的 iframe 元素进行截图');
+
+        // 创建一个新的 iframe 元素
+        const createIframe = document.createElement('iframe');
+        createIframe.style.position = 'absolute';
+        createIframe.style.opacity = '0'; // 移到屏幕外，不可见
+        createIframe.style.zIndex = '-99'; // 移到屏幕外，不可见
+        // createIframe.style.width = '1280px'; // 设置固定宽度
+        // createIframe.style.height = '720px'; // 设置固定高度
+        createIframe.style.border = 'none';
+        createIframe.src = devServerUrl;
+
+        // 设置加载完成事件
+        createIframe.onload = async () => {
+          console.log('[Preview] iframe 加载完成，开始截图');
+
+          try {
+            // 等待一小段时间确保内容渲染完成
+            await new Promise((resolve) => {
+              setTimeout(resolve, 1000);
+            });
+
+            const iframeDoc =
+              createIframe.contentDocument ||
+              createIframe.contentWindow?.document;
+            if (!iframeDoc) {
+              console.error('[Preview] 无法访问 iframe 文档');
+              document.body.removeChild(createIframe);
+              return;
+            }
+
+            const canvas = await html2canvas(iframeDoc.body, {
+              useCORS: true,
+              allowTaint: true,
+            });
+
+            // 将 canvas 转换为 blob
+            canvas.toBlob(async (blob) => {
+              if (!blob) {
+                console.error('[Preview] 无法生成图片 blob');
+                document.body.removeChild(createIframe);
+                return;
+              }
+
+              try {
+                // 创建 FormData 并上传图片
+                const formData = new FormData();
+                formData.append('file', blob, 'screenshot.png');
+
+                // 上传文件
+                const response = await fetch(UPLOAD_FILE_ACTION, {
+                  method: 'POST',
+                  headers: {
+                    Authorization: token ? `Bearer ${token}` : '',
+                  },
+                  body: formData,
+                });
+
+                const result = await response.json();
+                const imageUrl = result.data?.url || result.url || '';
+
+                console.log('[Preview] 图片上传成功:', imageUrl, result);
+                // 调用编辑页面接口，更新图标
+                const params = {
+                  projectId: projectInfo?.projectId,
+                  projectName: projectInfo?.name,
+                  icon: imageUrl,
+                };
+                runUpdatePage(params);
+
+                // 移除临时创建的 iframe
+                document.body.removeChild(createIframe);
+              } catch (uploadError) {
+                console.error('[Preview] 图片上传过程中发生错误:', uploadError);
+
+                // 确保移除临时创建的 iframe
+                if (document.body.contains(createIframe)) {
+                  document.body.removeChild(createIframe);
+                }
+              }
+            }, 'image/png');
+          } catch (error) {
+            console.error('[Preview] 截图失败:', error);
+
+            // 确保移除临时创建的 iframe
+            if (document.body.contains(createIframe)) {
+              document.body.removeChild(createIframe);
+            }
+          }
+        };
+
+        // 设置加载错误事件
+        createIframe.onerror = () => {
+          console.error('[Preview] iframe 加载失败');
+
+          // 确保移除临时创建的 iframe
+          if (document.body.contains(createIframe)) {
+            document.body.removeChild(createIframe);
+          }
+        };
+
+        // 将 iframe 添加到页面中
+        document.body.appendChild(createIframe);
+      } else {
+        // 如果 iframe 存在，使用现有 iframe 进行截图
+        console.log('运行到这里了iframeElement', iframeElement);
+        try {
+          const iframeDoc =
+            iframeElement.contentDocument ||
+            iframeElement.contentWindow?.document;
+          console.log('iframeDoc', iframeDoc);
+          if (!iframeDoc) {
+            console.error('[Preview] 无法访问 iframe 文档');
+            return;
+          }
+
+          const canvas = await html2canvas(iframeDoc.body, {
+            useCORS: true,
+            allowTaint: true,
+          });
+
+          // 将 canvas 转换为 blob
+          canvas.toBlob(async (blob) => {
+            if (!blob) {
+              console.error('[Preview] 无法生成图片 blob');
+              return;
+            }
+
+            try {
+              // 创建 FormData 并上传图片
+              const formData = new FormData();
+              formData.append('file', blob, 'screenshot.png');
+
+              // 上传文件
+              const response = await fetch(UPLOAD_FILE_ACTION, {
+                method: 'POST',
+                headers: {
+                  Authorization: token ? `Bearer ${token}` : '',
+                },
+                body: formData,
+              });
+
+              const result = await response.json();
+              const imageUrl = result.data?.url || result.url || '';
+
+              console.log('[Preview] 图片上传成功:', imageUrl, result);
+              // 调用编辑页面接口，更新图标
+              const params = {
+                projectId: projectInfo?.projectId,
+                projectName: projectInfo?.name,
+                icon: imageUrl,
+              };
+              runUpdatePage(params);
+            } catch (uploadError) {
+              console.error('[Preview] 图片上传过程中发生错误:', uploadError);
+            }
+          }, 'image/png');
+        } catch (error) {
+          console.error('[Preview] 截图失败:', error);
+        }
+      }
+    };
+
     // 暴露refresh方法给父组件
     useImperativeHandle(
       ref,
@@ -413,6 +606,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         getLastRefreshed: () => lastRefreshed,
         getHistoryBackCount,
         backInIframe,
+        captureIframeContent,
       }),
       [
         refreshPreview,
@@ -420,6 +614,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         lastRefreshed,
         getHistoryBackCount,
         backInIframe,
+        captureIframeContent,
       ],
     );
 
@@ -432,7 +627,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
       // 清空之前收集的错误信息
       devMonitorErrorsRef.current = [];
-      console.log('[Preview] iframeLoad');
     }, []);
 
     /**

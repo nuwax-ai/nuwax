@@ -608,6 +608,17 @@ const AppDev: React.FC = () => {
     setMissingProjectId(!hasValidProjectId);
   }, [projectId, hasValidProjectId]);
 
+  // 截图 iframe 内容
+  const handleCaptureIframeContent = useCallback(() => {
+    if (previewRef.current) {
+      try {
+        previewRef.current.captureIframeContent();
+      } catch (error) {
+        console.error('[AppDev] 截图上传过程中发生错误:', error);
+      }
+    }
+  }, [previewRef.current]);
+
   /**
    * 处理项目发布成组件
    */
@@ -616,6 +627,9 @@ const AppDev: React.FC = () => {
       message.error('项目ID不存在或无效，无法部署');
       return;
     }
+
+    // 截图 iframe 内容
+    handleCaptureIframeContent();
 
     try {
       setIsDeploying(true);
@@ -658,6 +672,15 @@ const AppDev: React.FC = () => {
       setIsDeploying(false);
     }
   }, [hasValidProjectId, projectId, projectInfo]);
+
+  /**
+   * 处理发布成应用
+   */
+  const handlePublishApplication = async () => {
+    // 截图 iframe 内容
+    handleCaptureIframeContent();
+    setOpenPublishComponentModal(true);
+  };
 
   /**
    * 处理发布成应用
@@ -1359,8 +1382,10 @@ const AppDev: React.FC = () => {
           workspace={workspace}
           spaceId={spaceId}
           onEditProject={() => setOpenPageEditVisible(true)}
+          // 处理项目发布成组件
           onPublishComponent={handlePublishComponent}
-          onPublishApplication={() => setOpenPublishComponentModal(true)}
+          // 处理发布成应用
+          onPublishApplication={handlePublishApplication}
           onOpenVersionHistory={() => setOpenVersionHistory(true)}
           hasUpdates={projectInfo.hasUpdates}
           isDeploying={isDeploying}
@@ -1566,6 +1591,9 @@ const AppDev: React.FC = () => {
                       {/* 内容区域 */}
                       <div className={styles.editorContent}>
                         <ContentViewer
+                          projectInfo={
+                            projectInfo.projectInfoState?.projectInfo
+                          }
                           mode={activeTab}
                           isComparing={versionCompare.isComparing}
                           selectedFileId={

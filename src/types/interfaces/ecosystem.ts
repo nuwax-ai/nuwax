@@ -33,6 +33,8 @@ export interface FetchPluginListParams {
   pageSize: number;
   shareStatus?: number;
   categoryCode?: string;
+  // 子类型,智能体,应用页面
+  targetSubType?: 'ChatBot' | 'PageApp';
 }
 /**
  * 表格列扩展配置
@@ -140,6 +142,8 @@ export interface ClientConfigVo {
   dataType?: EcosystemDataTypeEnum;
   /** 细分类型，比如: 插件,智能体,工作流 */
   targetType?: AgentComponentTypeEnum;
+  // 子类型,智能体,应用页面
+  targetSubType?: 'ChatBot' | 'PageApp';
   /** 具体目标的id，可以智能体,工作流,插件,还有mcp等 */
   targetId?: number;
   /** 分类编码，商业服务等，通过接口获取 */

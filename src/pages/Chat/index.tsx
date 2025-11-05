@@ -73,7 +73,7 @@ const Chat: React.FC = () => {
     selectedComponentList,
     setSelectedComponentList,
     handleSelectComponent,
-    initSelectedComponentList,
+    // initSelectedComponentList,
   } = useSelectedComponent();
 
   const {
@@ -295,14 +295,15 @@ const Chat: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // 初始化选中的组件列表
-    if (infos?.length) {
-      setSelectedComponentList(infos || []);
-    } else {
-      // 初始化选中的组件列表
-      initSelectedComponentList(manualComponents);
-    }
-  }, [infos, manualComponents]);
+    // 初始化选中的组件列表 - 聊天页面使用外面传过来的组件列表
+    setSelectedComponentList(infos || []);
+    // if (infos?.length) {
+    //   setSelectedComponentList(infos || []);
+    // } else {
+    //   // 初始化选中的组件列表
+    //   initSelectedComponentList(manualComponents);
+    // }
+  }, [infos /*, manualComponents*/]);
 
   // 监听会话更新事件，更新会话记录
   const handleConversationUpdate = (data: {

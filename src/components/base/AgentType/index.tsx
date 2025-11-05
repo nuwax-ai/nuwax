@@ -4,6 +4,7 @@ import {
   ICON_AGENT,
   ICON_KNOWLEDGE,
   ICON_MODEL,
+  ICON_PAGE_APP,
   ICON_PLUGIN,
   ICON_TABLE,
   ICON_WORKFLOW,
@@ -51,6 +52,11 @@ const AgentTypeMap: Record<
     icon: <ICON_MODEL />,
     title: '模型',
     styleClassName: styles.model,
+  },
+  [AgentComponentTypeEnum.Page]: {
+    icon: <ICON_PAGE_APP />,
+    title: '应用页面',
+    styleClassName: styles.page,
   },
 };
 

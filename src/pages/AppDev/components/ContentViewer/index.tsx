@@ -1,5 +1,6 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
+import { ProjectDetailData } from '@/types/interfaces/appDev';
 import {
   isImageFile,
   isPreviewableFile,
@@ -14,6 +15,7 @@ import Preview, { type PreviewRef } from '../Preview';
 import styles from './index.less';
 
 interface ContentViewerProps {
+  projectInfo?: ProjectDetailData | null;
   /** 显示模式 */
   mode: 'preview' | 'code';
   /** 是否在版本对比模式 */
@@ -80,6 +82,7 @@ interface ContentViewerProps {
  * 优化：使用条件渲染和组件缓存来避免 iframe 重新加载
  */
 const ContentViewer: React.FC<ContentViewerProps> = ({
+  projectInfo,
   mode,
   isComparing,
   selectedFileId,
@@ -112,6 +115,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     () => (
       <Preview
         ref={previewRef}
+        projectInfo={projectInfo}
         devServerUrl={
           devServerUrl ? `${process.env.BASE_URL}${devServerUrl}` : undefined
         }
