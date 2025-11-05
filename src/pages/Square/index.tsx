@@ -1,7 +1,9 @@
 import squareBannerImage from '@/assets/images/square_banner_image2.png';
+import ButtonToggle from '@/components/ButtonToggle';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
+import { SQUARE_TEMPLATE_SEGMENTED_LIST } from '@/constants/square.constants';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
 import {
   apiPublishedAgentList,
@@ -9,7 +11,11 @@ import {
   apiPublishedTemplateList,
   apiPublishedWorkflowList,
 } from '@/services/square';
-import { SquareAgentTypeEnum } from '@/types/enums/square';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  SquareAgentTypeEnum,
+  SquareTemplateTargetTypeEnum,
+} from '@/types/enums/square';
 import type { TenantConfigInfo } from '@/types/interfaces/login';
 import { Page } from '@/types/interfaces/request';
 import {
@@ -26,7 +32,6 @@ import styles from './index.less';
 import SingleAgent from './SingleAgent';
 import SquareComponentInfo from './SquareComponentInfo';
 import TemplateItem from './TemplateItem';
-
 const cx = classNames.bind(styles);
 
 /**
@@ -44,12 +49,16 @@ const Square: React.FC = () => {
   const categoryTypeRef = useRef<SquareAgentTypeEnum>(
     SquareAgentTypeEnum.Agent,
   );
+  // 模板模式下，目标类型tabs激活的key
+  const [activeKey, setActiveKey] = useState<SquareTemplateTargetTypeEnum>(
+    SquareTemplateTargetTypeEnum.All,
+  );
   // 当前页码
   const [page, setPage] = useState<number>(1);
   // 是否有更多数据
   const [hasMore, setHasMore] = useState<boolean>(true);
   // 文档搜索关键词
-  const keywordRef = useRef<string>('');
+  const [keyword, setKeyword] = useState<string>('');
   // 接口地址， 默认智能体列表
   const apiUrlRef = useRef<(data: SquarePublishedListParams) => void>(
     apiPublishedAgentList,
@@ -72,7 +81,7 @@ const Square: React.FC = () => {
     // 如果当前页码大于等于总页数，则不再加载更多数据
     setHasMore(current < pages);
     // 更新页码
-    setPage(current + 1);
+    setPage(current);
     setLoading(false);
   };
 
@@ -123,22 +132,38 @@ const Square: React.FC = () => {
   // 查询列表
   const handleQuery = (
     pageIndex: number = 1,
-    keyword: string = keywordRef.current,
+    kw: string = keyword,
+    targetType?: AgentComponentTypeEnum,
+    targetSubType?: 'ChatBot' | 'PageApp',
   ) => {
-    const data = {
+    const data: SquarePublishedListParams = {
       page: pageIndex,
       pageSize: 20,
       // 分类名称
       category: categoryNameRef.current,
-      kw: keyword,
+      kw,
     };
+
+    /**
+     * 模板模式下，需要设置目标类型和目标子类型
+     */
+    if (targetType) {
+      data.targetType = targetType;
+    }
+
+    if (targetSubType) {
+      data.targetSubType = targetSubType;
+    }
 
     runSquareList(data);
   };
 
   // 滚动加载下一页
   const handleScroll = () => {
-    handleQuery(page);
+    // 下一页页码
+    const _page = page + 1;
+    // 滚动时，不改变关键词
+    handleQuery(_page, keyword);
   };
 
   // 初始化加载
@@ -176,22 +201,70 @@ const Square: React.FC = () => {
     }
   };
 
+  // 处理模板下查询列表
+  const handleTemplateQuery = (
+    currentActiveKey: SquareTemplateTargetTypeEnum,
+    value: string = '',
+  ) => {
+    switch (currentActiveKey) {
+      case SquareTemplateTargetTypeEnum.All:
+        handleQuery(1, value);
+        break;
+      case SquareTemplateTargetTypeEnum.Agent:
+        handleQuery(1, value, AgentComponentTypeEnum.Agent, 'ChatBot');
+        break;
+      case SquareTemplateTargetTypeEnum.Workflow:
+        handleQuery(1, value, AgentComponentTypeEnum.Workflow);
+        break;
+      case SquareTemplateTargetTypeEnum.Page:
+        handleQuery(1, value, AgentComponentTypeEnum.Agent, 'PageApp');
+        break;
+    }
+  };
+
   // 搜索
   const onSearch: SearchProps['onSearch'] = (value) => {
-    keywordRef.current = value;
-    handleQuery(1, value);
+    setLoading(true);
+    setSquareComponentList([]);
+    // 模板模式下
+    if (categoryTypeRef.current === SquareAgentTypeEnum.Template) {
+      // 处理模板下查询列表
+      handleTemplateQuery(activeKey, value);
+    } else {
+      // 处理非模板下查询列表
+      handleQuery(1, value);
+    }
+  };
+
+  // 切换标签页 targetType: 组件类型，agent: 智能体，plugin: 插件，workflow: 工作流，template: 模板
+  const handleTabClick = (targetType: React.Key) => {
+    setLoading(true);
+    setSquareComponentList([]);
+    const _activeKey = targetType as SquareTemplateTargetTypeEnum;
+    setActiveKey(_activeKey);
+    // 处理模板下查询列表
+    handleTemplateQuery(_activeKey, keyword);
   };
 
   return (
-    <div
-      className={cx(
-        styles.container,
-        'h-full',
-        'flex',
-        'flex-col',
-        // 'overflow-y',
-      )}
-    >
+    <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
+      <header
+        className={cx(styles.header)}
+        onClick={handleLink}
+        style={{
+          backgroundImage: `url(${
+            configInfo?.squareBanner || (squareBannerImage as string)
+          })`,
+        }}
+      >
+        <h3 className={cx('text-ellipsis-2')}>
+          {configInfo?.squareBannerText || '人人都是智能设计师'}
+        </h3>
+        <p className={cx('text-ellipsis-2')}>
+          {configInfo?.squareBannerSubText ||
+            '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API'}
+        </p>
+      </header>
       <div
         className={cx(
           'flex',
@@ -200,14 +273,24 @@ const Square: React.FC = () => {
           styles['title-box'],
         )}
       >
-        <h6 className={cx(styles['theme-title'])}>{title}</h6>
+        <div className={cx('flex', 'items-center', 'gap-10')}>
+          <h6 className={cx(styles['theme-title'])}>{title}</h6>
+          {categoryTypeRef.current === SquareAgentTypeEnum.Template && (
+            <ButtonToggle
+              options={SQUARE_TEMPLATE_SEGMENTED_LIST}
+              value={activeKey}
+              onChange={(value) => handleTabClick(value as React.Key)}
+            />
+          )}
+        </div>
         <Input.Search
           className={cx(styles['search-input'])}
           key={categoryNameRef.current}
           placeholder="搜索"
           allowClear
-          defaultValue={keywordRef.current}
+          value={keyword}
           onSearch={onSearch}
+          onChange={(e) => setKeyword(e.target.value)}
         />
       </div>
 
@@ -216,25 +299,9 @@ const Square: React.FC = () => {
           scrollableTarget="scrollableDiv"
           list={squareComponentList}
           hasMore={hasMore}
+          showLoader={!loading}
           onScroll={handleScroll}
         >
-          <header
-            className={cx(styles.header)}
-            onClick={handleLink}
-            style={{
-              backgroundImage: `url(${
-                configInfo?.squareBanner || (squareBannerImage as string)
-              })`,
-            }}
-          >
-            <h3 className={cx('text-ellipsis-2')}>
-              {configInfo?.squareBannerText || '人人都是智能设计师'}
-            </h3>
-            <p className={cx('text-ellipsis-2')}>
-              {configInfo?.squareBannerSubText ||
-                '新一代AI应用设计、开发、实践平台 \n 无需代码，轻松创建，适合各类人群，支持多种端发布及API'}
-            </p>
-          </header>
           {loading ? (
             <Loading className={cx(styles['min-height-300'])} />
           ) : squareComponentList?.length > 0 ? (

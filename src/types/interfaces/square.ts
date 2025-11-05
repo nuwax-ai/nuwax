@@ -10,7 +10,9 @@ import React from 'react';
 // 广场 - 已发布列表请求参数
 export interface SquarePublishedListParams {
   // 目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table
-  targetType: AgentComponentTypeEnum;
+  targetType?: AgentComponentTypeEnum;
+  // 模板模式下，目标类型
+  targetSubType?: 'ChatBot' | 'PageApp';
   // 页码，从1开始
   page: number;
   // 每页数量
@@ -22,11 +24,11 @@ export interface SquarePublishedListParams {
   // 空间ID（可选）需要通过空间过滤时有用
   spaceId?: number;
   // 只返回空间的组件
-  justReturnSpaceData: boolean;
+  justReturnSpaceData?: boolean;
   // 空间ID列表（可选）,查询用户有权限的空间,限制访问空间,比如工作流查询全部知识库,要限制用户有权限的空间下的知识库
-  authSpaceIds: number[];
+  authSpaceIds?: number[];
   // 允许复制过滤（模板），1 允许
-  allowCopy: AllowCopyEnum;
+  allowCopy?: AllowCopyEnum;
 }
 
 // 广场-已发布的组件单项信息

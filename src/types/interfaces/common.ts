@@ -660,6 +660,8 @@ export interface InfiniteScrollDivProps {
   scrollableTarget?: React.ReactNode;
   list: any[];
   hasMore: boolean;
+  // 是否显示加载更多
+  showLoader?: boolean;
   onScroll: () => void;
 }
 
