@@ -298,6 +298,10 @@
     let currentUrl = window.location.href;
     let currentHash = window.location.hash;
 
+    // ⭐ 维护可导航历史记录栈，用于判断前进/后退方向
+    const navigableHistory = [];
+    let currentIndex = -1; // 当前在历史记录栈中的索引
+
     // 监听 hashchange 事件（hash 变化）
     window.addEventListener('hashchange', function () {
       const newUrl = window.location.href;
@@ -305,6 +309,13 @@
       if (newHash !== currentHash) {
         currentUrl = newUrl;
         currentHash = newHash;
+        // ⭐ hashchange 会增加历史记录
+        navigableHistory.push({
+          url: newUrl,
+          pathname: window.location.pathname + newHash,
+          timestamp: Date.now(),
+        });
+        currentIndex = navigableHistory.length - 1;
         sendHistoryChange(
           'hashchange',
           newUrl,
@@ -320,10 +331,48 @@
       if (newUrl !== currentUrl || newHash !== currentHash) {
         currentUrl = newUrl;
         currentHash = newHash;
+
+        // ⭐ 判断是前进还是后退
+        // 在历史记录栈中查找目标 URL 的位置
+        let targetIndex = -1;
+        const newPathname = window.location.pathname + newHash;
+        for (let i = navigableHistory.length - 1; i >= 0; i--) {
+          if (
+            navigableHistory[i].url === newUrl ||
+            navigableHistory[i].pathname === newPathname
+          ) {
+            targetIndex = i;
+            break;
+          }
+        }
+
+        // 判断方向
+        let direction = 'unknown'; // 默认未知
+        if (targetIndex !== -1 && targetIndex !== currentIndex) {
+          if (targetIndex < currentIndex) {
+            direction = 'back'; // 后退
+          } else if (targetIndex > currentIndex) {
+            direction = 'forward'; // 前进
+          }
+          currentIndex = targetIndex;
+        } else if (targetIndex === -1) {
+          // 找不到目标 URL，可能是跳转到历史记录之外
+          // 将新 URL 添加到历史记录末尾
+          navigableHistory.push({
+            url: newUrl,
+            pathname: newPathname,
+            timestamp: Date.now(),
+          });
+          currentIndex = navigableHistory.length - 1;
+          direction = 'forward'; // 视为前进
+        }
+
         sendHistoryChange(
           'popstate',
           newUrl,
-          window.location.pathname + newHash,
+          newPathname,
+          null,
+          direction, // ⭐ 传递方向信息
         );
       }
     });
@@ -337,6 +386,13 @@
       if (newUrl !== currentUrl || newHash !== currentHash) {
         currentUrl = newUrl;
         currentHash = newHash;
+        // ⭐ pushState 会增加历史记录
+        navigableHistory.push({
+          url: newUrl,
+          pathname: window.location.pathname + newHash,
+          timestamp: Date.now(),
+        });
+        currentIndex = navigableHistory.length - 1;
         sendHistoryChange(
           'pushState',
           newUrl,
@@ -355,6 +411,24 @@
       if (newUrl !== currentUrl || newHash !== currentHash) {
         currentUrl = newUrl;
         currentHash = newHash;
+        // ⭐ replaceState 替换当前位置，不改变索引
+        if (navigableHistory.length === 0) {
+          navigableHistory.push({
+            url: newUrl,
+            pathname: window.location.pathname + newHash,
+            timestamp: Date.now(),
+          });
+          currentIndex = 0;
+        } else if (
+          currentIndex >= 0 &&
+          currentIndex < navigableHistory.length
+        ) {
+          navigableHistory[currentIndex] = {
+            url: newUrl,
+            pathname: window.location.pathname + newHash,
+            timestamp: Date.now(),
+          };
+        }
         sendHistoryChange(
           'replaceState',
           newUrl,
@@ -370,8 +444,15 @@
      * @param {string} url - 完整的 URL
      * @param {string} pathname - 路径名（包含 hash）
      * @param {*} state - history state 对象
+     * @param {string} direction - 方向信息（仅 popstate 时使用）: 'back' | 'forward' | 'unknown'
      */
-    function sendHistoryChange(type, url, pathname, state = null) {
+    function sendHistoryChange(
+      type,
+      url,
+      pathname,
+      state = null,
+      direction = null,
+    ) {
       // 安全序列化 state 对象，防止 postMessage 序列化错误
       let serializedState = null;
       if (state !== null && state !== undefined) {
@@ -391,6 +472,7 @@
         pathname: pathname,
         state: serializedState,
         timestamp: Date.now(),
+        ...(direction && { direction }), // ⭐ 仅在 popstate 时包含方向信息
       };
 
       // 记录到 monitorData（存储序列化后的数据）
@@ -425,6 +507,13 @@
 
     // 初始发送当前 URL
     setTimeout(() => {
+      // ⭐ 初始化历史记录栈
+      navigableHistory.push({
+        url: currentUrl,
+        pathname: window.location.pathname + currentHash,
+        timestamp: Date.now(),
+      });
+      currentIndex = 0;
       sendHistoryChange(
         'initial',
         currentUrl,
