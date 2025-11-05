@@ -12,7 +12,9 @@
   border-radius: @borderRadius;
   box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
     0 9px 28px 8px rgba(0, 0, 0, 5%);
-  width: 400px;
+  min-width: 320px;
+  max-width: 480px;
+  width: max-content;
   max-height: 400px;
   overflow: hidden;
   z-index: 1050;
@@ -24,15 +26,15 @@
   .mention-header {
     display: flex;
     align-items: center;
-    padding: @paddingSm @paddingMd;
+    padding: @paddingXs @paddingSm;
     border-bottom: 1px solid @colorBorder;
     background-color: @colorFillQuaternary;
 
     .mention-back {
       cursor: pointer;
       color: @colorPrimary;
-      margin-right: @marginSm;
-      font-size: @fontSize;
+      margin-right: @marginXs;
+      font-size: @fontSizeSm;
       transition: color 0.2s;
 
       &:hover {
@@ -41,18 +43,19 @@
     }
 
     .mention-title {
-      font-size: @fontSize;
+      font-size: @fontSizeSm;
       font-weight: @fontWeightStrong;
       color: @colorText;
     }
   }
 
   .mention-content {
-    padding: @paddingXs 0;
-    max-height: 320px;
+    padding: 4px 0;
+    max-height: 350px;
     overflow-y: auto;
     overflow-x: hidden;
     flex: 1;
+    min-height: 0;
     animation: slide-in-right 0.2s ease-in-out;
 
     // 滚动条样式
@@ -75,9 +78,9 @@
     }
 
     .mention-section-title {
-      font-size: @fontSizeSm;
+      font-size: 11px;
       color: @colorTextSecondary;
-      padding: @paddingXs @paddingMd;
+      padding: 4px @paddingSm;
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -86,20 +89,20 @@
     .mention-divider {
       height: 1px;
       background: @colorBorder;
-      margin: @marginXs 0;
+      margin: 4px 0;
     }
 
     .mention-list {
       .mention-item {
         display: flex;
         align-items: center;
-        padding: @paddingXs @paddingMd;
+        padding: 6px @paddingSm;
         cursor: pointer;
         border-radius: @borderRadiusSm;
         transition: all 0.15s ease-in-out;
-        margin-bottom: @marginXxs;
-        gap: @marginSm;
-        min-height: 32px;
+        margin-bottom: 2px;
+        gap: @marginXs;
+        min-height: 28px;
 
         &:hover {
           background-color: @colorFillQuaternary;
@@ -115,11 +118,11 @@
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 20px;
-          height: 20px;
+          width: 16px;
+          height: 16px;
           color: @colorTextSecondary;
           flex-shrink: 0;
-          font-size: 14px;
+          font-size: 12px;
         }
 
         .mention-item-content {
@@ -128,19 +131,19 @@
           overflow: hidden;
 
           .mention-item-title {
-            font-size: @fontSize;
+            font-size: @fontSizeSm;
             color: @colorText;
-            line-height: 1.5715;
+            line-height: 1.4;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
           }
 
           .mention-item-desc {
-            font-size: @fontSizeSm;
+            font-size: 11px;
             color: @colorTextSecondary;
-            margin-top: @marginXxs;
-            line-height: 1.5;
+            margin-top: 2px;
+            line-height: 1.3;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -161,7 +164,7 @@
     }
 
     .mention-empty {
-      padding: @paddingLg;
+      padding: @paddingSm;
       text-align: center;
       color: @colorTextSecondary;
     }

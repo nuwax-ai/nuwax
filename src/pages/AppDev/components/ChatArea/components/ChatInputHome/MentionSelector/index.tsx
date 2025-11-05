@@ -6,13 +6,19 @@
 
 import type { FileNode } from '@/types/interfaces/appDev';
 import type { DataResource } from '@/types/interfaces/dataResource';
-import { FileOutlined, FolderOutlined, RightOutlined } from '@ant-design/icons';
+import {
+  DatabaseOutlined,
+  FileOutlined,
+  FolderOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
 import { Empty } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
 import type { MentionSelectorProps, ViewType } from './types';
 import {
   flattenFiles,
+  flattenFolders,
   getDataSourceTypeName,
   getRecentDataSources,
   getRecentFiles,
@@ -58,6 +64,11 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
     return flattenFiles(files, searchText);
   }, [files, searchText]);
 
+  // 扁平化目录列表
+  const flattenedFolders = useMemo(() => {
+    return flattenFolders(files, searchText);
+  }, [files, searchText]);
+
   // 过滤数据源列表
   const filteredDataSources = useMemo(() => {
     if (!searchText) {
@@ -79,7 +90,7 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
   // 合并最近使用的文件和数据源（最多7个）
   const recentItems = useMemo(() => {
     const items: Array<{
-      type: 'file' | 'datasource' | 'action' | 'category';
+      type: 'file' | 'folder' | 'datasource' | 'action' | 'category';
       id?: string | number;
       name: string;
       path?: string;
@@ -94,7 +105,7 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
       count?: number;
     }> = [];
 
-    // 添加最近使用的文件
+    // 添加最近使用的文件（同时从文件和目录列表中查找）
     recentFiles.forEach((item) => {
       const file = flattenedFiles.find((f) => f.id === item.id);
       if (file) {
@@ -105,6 +116,18 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
           path: item.path,
           file,
         });
+      } else {
+        // 如果在文件列表中没找到，尝试在目录列表中查找
+        const folder = flattenedFolders.find((f) => f.id === item.id);
+        if (folder) {
+          items.push({
+            type: 'folder',
+            id: item.id,
+            name: item.name,
+            path: item.path,
+            file: folder,
+          });
+        }
       }
     });
 
@@ -121,26 +144,63 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
       }
     });
 
-    // 如果有最近使用记录，按时间戳排序，取前7个
+    // 如果有最近使用记录，按时间戳排序
     if (items.length > 0) {
-      return items
-        .sort((a, b) => {
-          const aTime =
-            a.type === 'file'
-              ? recentFiles.find((f) => f.id === a.id)?.timestamp || 0
-              : recentDataSources.find((ds) => ds.id === a.id)?.timestamp || 0;
-          const bTime =
-            b.type === 'file'
-              ? recentFiles.find((f) => f.id === b.id)?.timestamp || 0
-              : recentDataSources.find((ds) => ds.id === b.id)?.timestamp || 0;
-          return bTime - aTime;
-        })
-        .slice(0, 7);
+      const sortedItems = items.sort((a, b) => {
+        const aTime =
+          a.type === 'file' || a.type === 'folder'
+            ? recentFiles.find((f) => f.id === a.id)?.timestamp || 0
+            : recentDataSources.find((ds) => ds.id === a.id)?.timestamp || 0;
+        const bTime =
+          b.type === 'file' || b.type === 'folder'
+            ? recentFiles.find((f) => f.id === b.id)?.timestamp || 0
+            : recentDataSources.find((ds) => ds.id === b.id)?.timestamp || 0;
+        return bTime - aTime;
+      });
+
+      // 如果不满7个，从文件/目录列表中补充
+      if (sortedItems.length < 7) {
+        const existingIds = new Set(sortedItems.map((item) => item.id));
+        const allFiles = flattenFiles(files, '');
+        const allFolders = flattenFolders(files, '');
+
+        // 先补充文件
+        for (const file of allFiles) {
+          if (sortedItems.length >= 7) break;
+          if (!existingIds.has(file.id)) {
+            sortedItems.push({
+              type: 'file',
+              id: file.id,
+              name: file.name,
+              path: file.path,
+              file,
+            });
+            existingIds.add(file.id);
+          }
+        }
+
+        // 再补充目录
+        for (const folder of allFolders) {
+          if (sortedItems.length >= 7) break;
+          if (!existingIds.has(folder.id)) {
+            sortedItems.push({
+              type: 'folder',
+              id: folder.id,
+              name: folder.name,
+              path: folder.path,
+              file: folder,
+            });
+            existingIds.add(folder.id);
+          }
+        }
+      }
+
+      return sortedItems.slice(0, 7);
     }
 
-    // 如果没有最近使用记录，显示默认推荐项
+    // 如果没有最近使用记录，显示默认推荐项（从文件和目录列表中取前7个）
     const defaultItems: Array<{
-      type: 'file' | 'datasource';
+      type: 'file' | 'datasource' | 'folder';
       id: string | number;
       name: string;
       path?: string;
@@ -150,6 +210,9 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
 
     // 添加文件列表的前5个（使用原始文件列表，不经过搜索过滤）
     const allFiles = flattenFiles(files, '');
+    const allFolders = flattenFolders(files, '');
+
+    // 先添加文件
     if (allFiles.length > 0) {
       allFiles.slice(0, 5).forEach((file) => {
         defaultItems.push({
@@ -158,6 +221,20 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
           name: file.name,
           path: file.path,
           file,
+        });
+      });
+    }
+
+    // 如果文件不足5个，补充目录
+    if (defaultItems.length < 5 && allFolders.length > 0) {
+      const remaining = 5 - defaultItems.length;
+      allFolders.slice(0, remaining).forEach((folder) => {
+        defaultItems.push({
+          type: 'folder',
+          id: folder.id,
+          name: folder.name,
+          path: folder.path,
+          file: folder,
         });
       });
     }
@@ -174,7 +251,14 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
     }
 
     return defaultItems;
-  }, [recentFiles, recentDataSources, files, dataSources, flattenedFiles]);
+  }, [
+    recentFiles,
+    recentDataSources,
+    files,
+    dataSources,
+    flattenedFiles,
+    flattenedFolders,
+  ]);
 
   /**
    * 获取当前视图的可选项列表
@@ -267,10 +351,10 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
    * 处理数据源点击，直接显示数据源列表
    * @deprecated 暂时未使用，保留以备后续使用
    */
-  // const handleDataSourcesClick = () => {
-  //   setViewType('datasource-list');
-  //   onSelectedIndexChange?.(0);
-  // };
+  const handleDataSourcesClick = () => {
+    setViewType('datasource-list');
+    onSelectedIndexChange?.(0);
+  };
 
   /**
    * 处理返回主视图
@@ -349,7 +433,13 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
               onClick={() => handleRecentItemSelect(item)}
             >
               <div className={styles['mention-item-icon']}>
-                {item.type === 'file' ? <FileOutlined /> : <FolderOutlined />}
+                {item.type === 'file' ? (
+                  <FileOutlined />
+                ) : item.type === 'folder' ? (
+                  <FolderOutlined />
+                ) : (
+                  <DatabaseOutlined />
+                )}
               </div>
               <div className={styles['mention-item-content']}>
                 <div className={styles['mention-item-title']}>{item.name}</div>
@@ -377,13 +467,13 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
         onClick: handleFilesClick,
         description: '浏览项目文件',
       },
-      // {
-      //   key: 'datasources',
-      //   label: '数据资源',
-      //   icon: <FolderOutlined />,
-      //   onClick: handleDataSourcesClick,
-      //   description: '工作流、插件等',
-      // },
+      {
+        key: 'datasources',
+        label: '数据资源',
+        icon: <DatabaseOutlined />,
+        onClick: handleDataSourcesClick,
+        description: '工作流、插件等',
+      },
     ];
 
     const adjustedIndex = selectedIndex - recentItems.length;
@@ -421,7 +511,8 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
    * 渲染文件列表视图（平铺）
    */
   const renderFilesView = () => {
-    if (flattenedFiles.length === 0) {
+    // 当文件和目录都为空时显示空状态
+    if (flattenedFiles.length === 0 && flattenedFolders.length === 0) {
       return (
         <div className={styles['mention-content']}>
           <div className={styles['mention-header']}>
@@ -431,7 +522,7 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
             <span className={styles['mention-title']}>文件列表</span>
           </div>
           <Empty
-            description="未找到匹配的文件"
+            description="未找到匹配的文件或目录"
             className={styles['mention-empty']}
           />
         </div>
@@ -447,6 +538,7 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
           <span className={styles['mention-title']}>文件列表</span>
         </div>
         <div className={styles['mention-list']}>
+          {/* 先渲染文件 */}
           {flattenedFiles.map((file, index) => (
             <div
               key={file.id}
@@ -461,6 +553,28 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
               <div className={styles['mention-item-content']}>
                 <div className={styles['mention-item-title']}>{file.name}</div>
                 <div className={styles['mention-item-desc']}>{file.path}</div>
+              </div>
+            </div>
+          ))}
+          {/* 然后渲染目录 */}
+          {flattenedFolders.map((folder, index) => (
+            <div
+              key={folder.id}
+              className={`${styles['mention-item']} ${
+                index + flattenedFiles.length === selectedIndex
+                  ? styles.selected
+                  : ''
+              }`}
+              onClick={() => handleFileSelect(folder)}
+            >
+              <div className={styles['mention-item-icon']}>
+                <FolderOutlined />
+              </div>
+              <div className={styles['mention-item-content']}>
+                <div className={styles['mention-item-title']}>
+                  {folder.name}
+                </div>
+                <div className={styles['mention-item-desc']}>{folder.path}</div>
               </div>
             </div>
           ))}

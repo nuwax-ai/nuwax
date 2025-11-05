@@ -44,6 +44,43 @@ export const flattenFiles = (
 };
 
 /**
+ * 扁平化文件树，提取所有目录节点
+ * @param nodes 文件树节点数组
+ * @param searchText 搜索文本（可选）
+ * @returns 扁平化后的目录节点数组
+ */
+export const flattenFolders = (
+  nodes: FileNode[],
+  searchText?: string,
+): FileNode[] => {
+  const result: FileNode[] = [];
+  const searchLower = searchText?.toLowerCase() || '';
+
+  const traverse = (nodeList: FileNode[]) => {
+    nodeList.forEach((node) => {
+      if (node.type === 'folder') {
+        // 只添加目录节点
+        if (
+          !searchText ||
+          node.name.toLowerCase().includes(searchLower) ||
+          node.path?.toLowerCase().includes(searchLower) ||
+          node.id.toLowerCase().includes(searchLower)
+        ) {
+          result.push(node);
+        }
+      }
+      // 递归处理子节点
+      if (node.children && node.children.length > 0) {
+        traverse(node.children);
+      }
+    });
+  };
+
+  traverse(nodes);
+  return result;
+};
+
+/**
  * 获取数据源类型显示名称
  */
 export const getDataSourceTypeName = (
