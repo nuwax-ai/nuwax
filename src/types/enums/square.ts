@@ -7,3 +7,15 @@ export enum SquareAgentTypeEnum {
   // 模板
   Template = 'Template',
 }
+
+// 自定义广场-模板目标类型（全部、智能体、工作流、页面应用）
+export enum SquareTemplateTargetTypeEnum {
+  // 全部
+  All = 'All',
+  // 智能体
+  Agent = 'Agent',
+  // 工作流
+  Workflow = 'Workflow',
+  // 应用页面
+  Page = 'Page',
+}
