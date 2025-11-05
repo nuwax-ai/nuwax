@@ -7,21 +7,19 @@
 @import '@/styles/token';
 
 .mention-selector {
-  background: @WHITE;
   border: 1px solid @colorBorder;
   border-radius: @borderRadius;
   box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
     0 9px 28px 8px rgba(0, 0, 0, 5%);
-  min-width: 320px;
-  max-width: 480px;
-  width: max-content;
-  max-height: 400px;
+  width: 320px;
+  height: 300px;
   overflow: hidden;
   z-index: 1050;
   animation: fade-in 0.2s ease-in-out;
   display: flex;
   flex-direction: column;
   position: relative;
+  background-color: @colorBgContainer;
 
   .mention-header {
     display: flex;
@@ -51,7 +49,7 @@
 
   .mention-content {
     padding: 4px 0;
-    max-height: 350px;
+    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     flex: 1;

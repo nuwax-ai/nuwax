@@ -28,7 +28,6 @@ import { Button, Input, message, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import DataSourceList from './DataSourceList';
 import styles from './index.less';
 import MentionSelector from './MentionSelector';
 import type {
@@ -120,6 +119,50 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     | { type: 'file'; data: FileNode }
     | { type: 'datasource'; data: DataResource };
   const [selectedMentions, setSelectedMentions] = useState<MentionItem[]>([]);
+
+  // 同步 dataSourceList 中已选的数据源到 selectedMentions
+  useEffect(() => {
+    if (!dataSourceList) return;
+
+    const selectedDataSources = dataSourceList.filter((ds) => ds.isSelected);
+    setSelectedMentions((prev) => {
+      // 保留非数据源类型的提及项（文件等）
+      const nonDataSourceMentions = prev.filter(
+        (mention) => mention.type !== 'datasource',
+      );
+
+      // 处理数据源类型的提及项
+      const dataSourceMentions = prev.filter(
+        (mention) => mention.type === 'datasource',
+      );
+
+      // 获取当前数据源 ID 集合
+      const selectedDataSourceIds = new Set(
+        selectedDataSources.map((ds) => ds.id),
+      );
+
+      // 保留在 dataSourceList 中已选的数据源，以及通过 @ 选择但不在 dataSourceList 中的数据源
+      const keptDataSources = dataSourceMentions.filter((mention) => {
+        const dsId = mention.data.id;
+        // 如果数据源在 dataSourceList 中，只有 isSelected=true 时才保留
+        const inList = dataSourceList.some((ds) => ds.id === dsId);
+        if (inList) {
+          return selectedDataSourceIds.has(dsId);
+        }
+        // 如果数据源不在 dataSourceList 中（通过 @ 选择的），保留它
+        return true;
+      });
+
+      // 添加新的已选数据源（在 dataSourceList 中但不在当前 selectedMentions 中）
+      const newDataSources = selectedDataSources
+        .filter(
+          (ds) => !keptDataSources.some((mention) => mention.data.id === ds.id),
+        )
+        .map((ds) => ({ type: 'datasource' as const, data: ds }));
+
+      return [...nonDataSourceMentions, ...keptDataSources, ...newDataSources];
+    });
+  }, [dataSourceList]);
 
   /**
    * 提取文件名（不包含路径）
@@ -942,6 +985,18 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                       onClick={() => {
                         // 删除该提及项
                         const mentionToRemove = selectedMentions[index];
+
+                        // 如果是数据源，调用 onToggleSelectDataSource 取消选择
+                        if (
+                          mentionToRemove.type === 'datasource' &&
+                          onToggleSelectDataSource
+                        ) {
+                          onToggleSelectDataSource(
+                            mentionToRemove.data as DataResource,
+                          );
+                        }
+
+                        // 从 selectedMentions 中移除
                         setSelectedMentions((prev) =>
                           prev.filter((_, i) => i !== index),
                         );
@@ -982,13 +1037,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             })}
           </div>
         </ConditionRender>
-        {/*选择的数据源*/}
-        <ConditionRender condition={dataSourceList?.length}>
-          <DataSourceList
-            dataSourceList={dataSourceList}
-            onToggleSelectDataSource={onToggleSelectDataSource}
-          />
-        </ConditionRender>
+        {/* 已选择的数据源已统一显示在上方的 @ 提及标签中 */}
         {/* 选择的文件 */}
         {/* {fileContentState?.selectedFile && (
           <Tooltip title={fileContentState.selectedFile}>
@@ -1023,7 +1072,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           position={mentionPosition}
           searchText={mentionTrigger.searchText || ''}
           files={files}
-          dataSources={dataSourceList || []}
+          dataSources={
+            dataSourceList?.map((ds) => ({
+              ...ds,
+              description: ds.description || '', // 确保 description 字段存在
+            })) || []
+          }
           onSelectFile={handleSelectFile}
           onSelectDataSource={handleSelectDataSource}
           selectedIndex={mentionSelectedIndex}

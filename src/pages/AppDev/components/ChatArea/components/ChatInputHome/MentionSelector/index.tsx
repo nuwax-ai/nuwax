@@ -20,6 +20,7 @@ import {
   flattenFiles,
   flattenFolders,
   getDataSourceTypeName,
+  getDefaultDescription,
   getRecentDataSources,
   getRecentFiles,
   groupDataSourcesByType,
@@ -140,6 +141,7 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
           id: item.id,
           name: item.name,
           dataSource,
+          description: dataSource.description,
         });
       }
     });
@@ -206,6 +208,7 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
       path?: string;
       dataSource?: DataResource;
       file?: FileNode;
+      description?: string;
     }> = [];
 
     // 添加文件列表的前5个（使用原始文件列表，不经过搜索过滤）
@@ -247,6 +250,7 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
         id: firstDataSource.id,
         name: firstDataSource.name,
         dataSource: firstDataSource,
+        description: firstDataSource.description,
       });
     }
 
@@ -443,9 +447,16 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
               </div>
               <div className={styles['mention-item-content']}>
                 <div className={styles['mention-item-title']}>{item.name}</div>
-                {item.path && (
+                {item.type === 'datasource' ? (
+                  <div className={styles['mention-item-desc']}>
+                    {item.description ||
+                      (item.dataSource
+                        ? getDefaultDescription(item.dataSource.type)
+                        : '数据资源')}
+                  </div>
+                ) : item.path ? (
                   <div className={styles['mention-item-desc']}>{item.path}</div>
-                )}
+                ) : null}
               </div>
             </div>
           ))}
@@ -626,7 +637,7 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
                 onClick={() => handleCategoryClick(category)}
               >
                 <div className={styles['mention-item-icon']}>
-                  <FolderOutlined />
+                  <DatabaseOutlined />
                 </div>
                 <div className={styles['mention-item-content']}>
                   <div className={styles['mention-item-title']}>
@@ -684,15 +695,13 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
               onClick={() => handleDataSourceSelect(ds)}
             >
               <div className={styles['mention-item-icon']}>
-                <FolderOutlined />
+                <DatabaseOutlined />
               </div>
               <div className={styles['mention-item-content']}>
                 <div className={styles['mention-item-title']}>{ds.name}</div>
-                {ds.description && (
-                  <div className={styles['mention-item-desc']}>
-                    {ds.description}
-                  </div>
-                )}
+                <div className={styles['mention-item-desc']}>
+                  {ds.description || getDefaultDescription(ds.type)}
+                </div>
               </div>
             </div>
           ))}
@@ -754,15 +763,13 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
               onClick={() => handleDataSourceSelect(ds)}
             >
               <div className={styles['mention-item-icon']}>
-                <FolderOutlined />
+                <DatabaseOutlined />
               </div>
               <div className={styles['mention-item-content']}>
                 <div className={styles['mention-item-title']}>{ds.name}</div>
-                {ds.description && (
-                  <div className={styles['mention-item-desc']}>
-                    {ds.description}
-                  </div>
-                )}
+                <div className={styles['mention-item-desc']}>
+                  {ds.description || getDefaultDescription(ds.type)}
+                </div>
               </div>
             </div>
           ))}

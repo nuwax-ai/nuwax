@@ -95,6 +95,26 @@ export const getDataSourceTypeName = (
 };
 
 /**
+ * 获取资源类型的默认描述
+ * @param type 资源类型
+ * @returns 默认描述文本
+ */
+export const getDefaultDescription = (
+  type: DataResourceType | string,
+): string => {
+  switch (type) {
+    case 'plugin':
+      return '插件资源，提供特定功能和服务';
+    case 'workflow':
+      return '工作流资源，支持复杂的业务流程编排';
+    case 'reverse_proxy':
+      return '反向代理资源，提供网络代理服务';
+    default:
+      return '数据资源';
+  }
+};
+
+/**
  * 按类型分组数据源
  */
 export const groupDataSourcesByType = (
