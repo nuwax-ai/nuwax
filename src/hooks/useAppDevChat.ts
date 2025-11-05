@@ -28,7 +28,7 @@ import {
   insertToolCallBlock,
   insertToolCallUpdateBlock,
 } from '@/pages/AppDev/utils/markdownProcess';
-import type { DataSourceSelection } from '@/types/interfaces/appDev';
+import type { DataSourceSelection, FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
 import {
   addSessionInfoToMessages,
@@ -50,6 +50,14 @@ import {
   serializeChatMessages,
   sortMessagesByTimestamp,
 } from '@/utils/chatUtils';
+
+/**
+ * @ 提及的项类型（与 ChatInputHome 保持一致）
+ */
+type MentionItem =
+  | { type: 'file'; data: FileNode }
+  | { type: 'folder'; data: FileNode }
+  | { type: 'datasource'; data: DataResource };
 
 interface UseAppDevChatProps {
   projectId: string;
@@ -509,10 +517,12 @@ export const useAppDevChat = ({
       attachmentFiles?: FileStreamAttachment[],
       attachmentPrototypeImages?: FileStreamAttachment[],
       requestId: string = generateRequestId(), // 生成临时request_id
+      selectedMentions?: MentionItem[], // 新增：@ 提及的项（包含通过 @ 选择的数据源）
     ) => {
       try {
         // 数据源数据结构提取
-        const _selectedDataResources: DataSourceSelection[] =
+        // 1. 从 props 传入的 selectedDataResources 中提取
+        const propsDataSources: DataSourceSelection[] =
           selectedDataResources
             .filter((item) => item.isSelected)
             ?.map((resource) => {
@@ -522,6 +532,28 @@ export const useAppDevChat = ({
                 name: resource.name,
               };
             }) || [];
+
+        // 2. 从 selectedMentions 中提取数据源（通过 @ 选择的数据源）
+        const mentionDataSources: DataSourceSelection[] =
+          selectedMentions
+            ?.filter((mention) => mention.type === 'datasource')
+            ?.map((mention) => {
+              const dataSource = mention.data as DataResource;
+              return {
+                dataSourceId: Number(dataSource.id),
+                type: dataSource.type === 'plugin' ? 'plugin' : 'workflow',
+                name: dataSource.name,
+              };
+            }) || [];
+
+        // 3. 合并两个来源的数据源，去重（基于 dataSourceId）
+        const dataSourceMap = new Map<number, DataSourceSelection>();
+        [...propsDataSources, ...mentionDataSources].forEach((ds) => {
+          dataSourceMap.set(ds.dataSourceId, ds);
+        });
+        const _selectedDataResources: DataSourceSelection[] = Array.from(
+          dataSourceMap.values(),
+        );
 
         const aiChatParams = {
           prompt: chatInput,
@@ -622,6 +654,8 @@ export const useAppDevChat = ({
    * @param attachments 附件文件列表
    * @param attachmentFiles ai-chat 附件文件列表
    * @param attachmentPrototypeImages ai-chat 原型图片附件列表
+   * @param requestId 请求ID
+   * @param selectedMentions @ 提及的项（包含通过 @ 选择的数据源）
    */
   const sendMessage = useCallback(
     async (
@@ -629,6 +663,7 @@ export const useAppDevChat = ({
       attachmentFiles?: FileStreamAttachment[],
       attachmentPrototypeImages?: FileStreamAttachment[],
       requestId?: string,
+      selectedMentions?: MentionItem[], // 新增：@ 提及的项
     ) => {
       // 验证：prompt（输入内容）是必填的
       if (!chatInput.trim()) {
@@ -642,6 +677,7 @@ export const useAppDevChat = ({
         attachmentFiles,
         attachmentPrototypeImages,
         requestId,
+        selectedMentions, // 传递 @ 提及的项
       );
     },
     [chatInput, sendMessageAndConnectSSE],

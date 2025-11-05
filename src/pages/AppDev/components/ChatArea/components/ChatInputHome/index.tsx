@@ -115,10 +115,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
   const mentionContainerRef = useRef<HTMLDivElement>(null);
 
-  // 已选择的提及项（文件和数据源）
-  type MentionItem =
-    | { type: 'file'; data: FileNode }
-    | { type: 'datasource'; data: DataResource };
+  // 已选择的提及项（文件、目录和数据源）
+  // 使用导出的 MentionItem 类型，确保包含所有类型（file、folder、datasource）
   const [selectedMentions, setSelectedMentions] = useState<MentionItem[]>([]);
 
   // 同步 dataSourceList 中已选的数据源到 selectedMentions

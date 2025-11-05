@@ -290,11 +290,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           if (mention.type === 'file' || mention.type === 'folder') {
             const fileData = mention.data as FileNode;
             attachments.push({
-              type: 'File',
+              type: 'Text', // 使用 Text 类型，与后端保持一致
               content: {
                 id: generateAttachmentId('file'),
                 filename: fileData.name,
-                path: fileData.path,
                 source: {
                   source_type: 'FilePath',
                   data: {
@@ -330,12 +329,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         //   });
         // }
 
-        // 发送消息(传递附件)
+        // 发送消息(传递附件和 @ 提及的项)
         chat.sendMessage(
           attachments,
           aiChatAttachments,
           aiChatPrototypeImages,
           requestId,
+          selectedMentions, // 传递 @ 提及的项（包含通过 @ 选择的数据源）
         );
 
         // 只有手动发送（requestId 不存在）时才调用 onUserManualSendMessage
