@@ -568,7 +568,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
               {previewPageTitle}
             </span>
           </h3>
-          <div style={{ display: 'flex', gap: '10px', marginRight: '20px' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
             <Tooltip title="刷新">
               <Button
                 type="text"
@@ -615,34 +615,36 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
                 type="text"
                 onClick={goCopy}
                 icon={
-                  <SvgIcon name="icons-chat-copy" style={{ fontSize: 16 }} />
+                  <SvgIcon name="icons-common-link" style={{ fontSize: 16 }} />
                 }
               />
             </Tooltip>
-          </div>
-          {/* 复制模板按钮 */}
-          {showCopyButton && allowCopy && onCopyClick && (
-            <Button
-              type="primary"
-              className={copyButtonClassName}
-              onClick={onCopyClick}
-              style={{ marginRight: '10px' }}
-            >
-              {copyButtonText}
-            </Button>
-          )}
-          {showCloseButton && (
-            <Button
-              type="text"
-              onClick={onClose}
-              icon={
-                <SvgIcon
-                  name="icons-chat-close_regular"
-                  style={{ fontSize: 16 }}
+            {/* 复制模板按钮 */}
+            {showCopyButton && allowCopy && onCopyClick && (
+              <Tooltip title={copyButtonText}>
+                <Button
+                  type="text"
+                  className={copyButtonClassName}
+                  icon={
+                    <SvgIcon name="icons-chat-copy" style={{ fontSize: 16 }} />
+                  }
+                  onClick={onCopyClick}
                 />
-              }
-            />
-          )}
+              </Tooltip>
+            )}
+            {showCloseButton && (
+              <Button
+                type="text"
+                onClick={onClose}
+                icon={
+                  <SvgIcon
+                    name="icons-chat-close_regular"
+                    style={{ fontSize: 16 }}
+                  />
+                }
+              />
+            )}
+          </div>
         </div>
       )}
 
