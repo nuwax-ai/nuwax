@@ -1582,6 +1582,7 @@ const AppDev: React.FC = () => {
                       {/* 内容区域 */}
                       <div className={styles.editorContent}>
                         <ContentViewer
+                          projectId={projectId || ''}
                           mode={activeTab}
                           isComparing={versionCompare.isComparing}
                           selectedFileId={

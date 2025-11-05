@@ -1,6 +1,7 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { SANDBOX, UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { apiPageUpdateProject } from '@/services/pageDev';
 import { jumpTo } from '@/utils/router';
 import {
   ExclamationCircleOutlined,
@@ -8,6 +9,7 @@ import {
   ReloadOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
+import { message } from 'antd';
 import dayjs from 'dayjs';
 import html2canvas from 'html2canvas';
 import React, {
@@ -17,10 +19,12 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 interface PreviewProps {
   devServerUrl?: string;
+  projectId: string;
   className?: string;
   isStarting?: boolean;
   isDeveloping?: boolean;
@@ -61,6 +65,7 @@ export interface PreviewRef {
 const Preview = React.forwardRef<PreviewRef, PreviewProps>(
   (
     {
+      projectId,
       devServerUrl,
       className,
       isStarting,
@@ -409,6 +414,14 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       }
     }, []);
 
+    // 上传前端项目压缩包并启动开发服务器
+    const { run: runUpdatePage } = useRequest(apiPageUpdateProject, {
+      manual: true,
+      onSuccess: () => {
+        message.success('编辑成功');
+      },
+    });
+
     // 截图 iframe 内容
     const captureIframeContent = async () => {
       const iframeElement = iframeRef.current;
@@ -485,8 +498,13 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 const result = await response.json();
                 const imageUrl = result.data?.url || result.url || '';
 
-                // todo: 触发icon更新事件，更新icon
-                console.log('[Preview] 图片上传成功:', imageUrl);
+                console.log('[Preview] 图片上传成功:', imageUrl, result);
+                // 调用编辑页面接口，更新图标
+                const params = {
+                  projectId,
+                  icon: imageUrl,
+                };
+                runUpdatePage(params);
 
                 // 移除临时创建的 iframe
                 document.body.removeChild(createIframe);
@@ -567,6 +585,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               const imageUrl = result.data?.url || result.url || '';
 
               console.log('[Preview] 图片上传成功:', imageUrl);
+              // 调用编辑页面接口，更新图标
+              const params = {
+                projectId,
+                icon: imageUrl,
+              };
+              runUpdatePage(params);
             } catch (uploadError) {
               console.error('[Preview] 图片上传过程中发生错误:', uploadError);
             }
