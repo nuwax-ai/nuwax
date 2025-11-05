@@ -24,7 +24,7 @@ import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
-import ChatInputHome from './components/ChatInputHome';
+import ChatInputHome, { MentionItem } from './components/ChatInputHome';
 import MessageAttachment from './components/MessageAttachment';
 import ReactScrollToBottomContainer, {
   ReactScrollToBottomContainerRef,
@@ -39,7 +39,7 @@ interface ChatAreaProps {
   selectedDataSources?: DataResource[];
   onUpdateDataSources: (dataSources: DataResource[]) => void;
   fileContentState: any;
-  onSetSelectedFile: (fileId: string) => void;
+  // onSetSelectedFile: (fileId: string) => void; // 暂时未使用，保留以备后续使用
   modelSelector: any;
   // onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
   // 自动处理异常相关props
@@ -63,7 +63,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   selectedDataSources = [],
   onUpdateDataSources,
   fileContentState,
-  onSetSelectedFile,
+  // onSetSelectedFile, // 暂时未使用，保留以备后续使用
   modelSelector,
   // onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
   // autoHandleError = true, // 暂时注释掉，后续可能需要
@@ -206,6 +206,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     (
       attachmentFiles?: UploadFileInfo[],
       prototypeImages?: UploadFileInfo[],
+      selectedMentions?: MentionItem[],
       requestId?: string,
     ) => {
       // // 验证：prompt（输入内容）是必填的
@@ -284,22 +285,50 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           }
         });
 
-        // 2. 添加文件树选中的文件(如果有)
-        if (fileContentState?.selectedFile) {
-          attachments.push({
-            type: 'Text',
-            content: {
-              id: generateAttachmentId('file'),
-              filename: fileContentState.selectedFile,
-              source: {
-                source_type: 'FilePath',
-                data: {
-                  path: fileContentState.selectedFile, // 包含路径与文件名及后缀
+        // 2. @提及的文件/目录(如果有)
+        selectedMentions?.forEach((mention) => {
+          if (mention.type === 'file' || mention.type === 'folder') {
+            const fileData = mention.data as FileNode;
+            attachments.push({
+              type: 'File',
+              content: {
+                id: generateAttachmentId('file'),
+                filename: fileData.name,
+                path: fileData.path,
+                source: {
+                  source_type: 'FilePath',
+                  data: {
+                    path: fileData.path,
+                  },
                 },
               },
-            },
-          });
-        }
+            } as unknown as Attachment);
+          }
+          // if (mention.type === 'datasource') {
+          //   const dataSourceData = mention.data as DataResource;
+          //   attachments.push({
+          //     type: 'DataSource',
+          //     content: {
+          //       id: dataSourceData.id,
+          //     },
+          //   } as unknown as Attachment);
+          // }
+        });
+        // if (fileContentState?.selectedFile) {
+        //   attachments.push({
+        //     type: 'Text',
+        //     content: {
+        //       id: generateAttachmentId('file'),
+        //       filename: fileContentState.selectedFile,
+        //       source: {
+        //         source_type: 'FilePath',
+        //         data: {
+        //           path: fileContentState.selectedFile, // 包含路径与文件名及后缀
+        //         },
+        //       },
+        //     },
+        //   });
+        // }
 
         // 发送消息(传递附件)
         chat.sendMessage(
@@ -673,8 +702,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           chat={chat}
           modelSelector={modelSelector}
           // 文件列表
-          fileContentState={fileContentState}
-          onSetSelectedFile={onSetSelectedFile}
+          // fileContentState={fileContentState}
+          // onSetSelectedFile={onSetSelectedFile}
           // 数据源列表
           dataSourceList={selectedDataSources}
           onToggleSelectDataSource={handleToggleSelectDataSource}

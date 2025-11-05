@@ -265,11 +265,12 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
 
   /**
    * 处理数据源点击，直接显示数据源列表
+   * @deprecated 暂时未使用，保留以备后续使用
    */
-  const handleDataSourcesClick = () => {
-    setViewType('datasource-list');
-    onSelectedIndexChange?.(0);
-  };
+  // const handleDataSourcesClick = () => {
+  //   setViewType('datasource-list');
+  //   onSelectedIndexChange?.(0);
+  // };
 
   /**
    * 处理返回主视图
@@ -376,13 +377,13 @@ const MentionSelector: React.FC<MentionSelectorProps> = ({
         onClick: handleFilesClick,
         description: '浏览项目文件',
       },
-      {
-        key: 'datasources',
-        label: '数据资源',
-        icon: <FolderOutlined />,
-        onClick: handleDataSourcesClick,
-        description: '工作流、插件等',
-      },
+      // {
+      //   key: 'datasources',
+      //   label: '数据资源',
+      //   icon: <FolderOutlined />,
+      //   onClick: handleDataSourcesClick,
+      //   description: '工作流、插件等',
+      // },
     ];
 
     const adjustedIndex = selectedIndex - recentItems.length;

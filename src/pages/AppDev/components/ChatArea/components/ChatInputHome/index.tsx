@@ -17,7 +17,10 @@ import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import {
   CloseOutlined,
+  DatabaseOutlined,
   DownOutlined,
+  FileOutlined,
+  FolderOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
@@ -36,15 +39,21 @@ import type {
 const cx = classNames.bind(styles);
 
 // 聊天输入框组件
+// @ 提及的项类型
+export type MentionItem =
+  | { type: 'file'; data: FileNode }
+  | { type: 'folder'; data: FileNode }
+  | { type: 'datasource'; data: DataResource };
+
 export interface ChatInputProps {
   // 聊天信息
   chat: any;
   // 大模型选择器
   modelSelector: any;
   // 文件内容状态
-  fileContentState: any;
+  // fileContentState: any;
   // 设置选中的文件
-  onSetSelectedFile: (fileId: string) => void;
+  // onSetSelectedFile: (fileId: string) => void;
   // 是否正在停止任务
   isStoppingTask: boolean;
   // 是否正在发送消息
@@ -52,9 +61,11 @@ export interface ChatInputProps {
   // 取消任务
   handleCancelAgentTask: () => void;
   className?: React.CSSProperties;
+  // 发送消息回调 - 传递上传的附件、原型图片 和 @ 提及的文件/目录/数据资源
   onEnter: (
-    files?: UploadFileInfo[],
+    attachmentFiles?: UploadFileInfo[],
     prototypeImages?: UploadFileInfo[],
+    selectedMentions?: MentionItem[],
     requestId?: string,
   ) => void;
   // 数据源列表
@@ -70,8 +81,8 @@ export interface ChatInputProps {
 const ChatInputHome: React.FC<ChatInputProps> = ({
   chat,
   modelSelector,
-  fileContentState,
-  onSetSelectedFile,
+  // fileContentState,
+  // onSetSelectedFile,
   isStoppingTask,
   isSendingMessage,
   handleCancelAgentTask,
@@ -115,6 +126,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
    */
   const getFileName = useCallback((filePath: string) => {
     return filePath.split('/').pop() || filePath;
+  }, []);
+
+  /**
+   * 判断文件节点是否为目录
+   */
+  const isDirectory = useCallback((file: FileNode) => {
+    return file.type === 'folder' || file.children !== undefined;
   }, []);
 
   /**
@@ -553,8 +571,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       const prototypeImages = attachmentPrototypeImages?.filter(
         (item) => item.status === UploadFileStatus.done && item.url && item.key,
       );
-      // enter事件
-      onEnter(files, prototypeImages, requestId);
+      // enter事件 - 传递上传的附件、原型图片 和 @ 提及的文件/目录/数据资源
+      onEnter(files, prototypeImages, selectedMentions, requestId);
       // 清空输入框
       chat.setChatInput('');
       // 清空附件文件列表
@@ -877,12 +895,33 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             )}
           >
             {selectedMentions.map((mention, index) => {
-              const displayName =
-                mention.type === 'file'
-                  ? getFileName(mention.data.path)
-                  : mention.data.name;
-              const fullPath =
-                mention.type === 'file' ? mention.data.path : mention.data.name;
+              // 判断类型并获取对应信息
+              let displayName: string;
+              let fullPath: string;
+              let icon: React.ReactNode;
+              let itemType: string; // 用于区分文件、目录、数据资源
+
+              if (mention.type === 'file') {
+                // 文件或目录
+                const fileData = mention.data as FileNode;
+                displayName = getFileName(fileData.path); // 只显示末级名字
+                fullPath = fileData.path;
+                itemType = isDirectory(fileData) ? 'directory' : 'file';
+                // 根据类型选择图标
+                icon = isDirectory(fileData) ? (
+                  <FolderOutlined style={{ fontSize: '14px' }} />
+                ) : (
+                  <FileOutlined style={{ fontSize: '14px' }} />
+                );
+              } else {
+                // 数据资源
+                const dataSourceData = mention.data as DataResource;
+                displayName = dataSourceData.name;
+                fullPath = dataSourceData.name;
+                itemType = 'datasource';
+                icon = <DatabaseOutlined style={{ fontSize: '14px' }} />;
+              }
+
               const key =
                 mention.type === 'file'
                   ? `file-${mention.data.id}`
@@ -890,9 +929,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
               return (
                 <Tooltip key={key} title={fullPath}>
-                  <div className={cx(styles['mention-tag'])}>
+                  <div
+                    className={cx(styles['mention-tag'])}
+                    data-type={itemType}
+                  >
+                    {icon}
                     <span className={cx(styles['mention-tag-text'])}>
-                      @{displayName}
+                      {displayName}
                     </span>
                     <CloseOutlined
                       className={cx(styles['mention-tag-close'])}
@@ -947,7 +990,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           />
         </ConditionRender>
         {/* 选择的文件 */}
-        {fileContentState?.selectedFile && (
+        {/* {fileContentState?.selectedFile && (
           <Tooltip title={fileContentState.selectedFile}>
             <div className={`flex ${styles.selectedFileDisplay}`}>
               <div className={cx('text-ellipsis', styles['file-name'])}>
@@ -961,7 +1004,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               />
             </div>
           </Tooltip>
-        )}
+        )} */}
         {/*输入框*/}
         <Input.TextArea
           ref={textAreaRef}
@@ -980,7 +1023,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           position={mentionPosition}
           searchText={mentionTrigger.searchText || ''}
           files={files}
-          dataSources={dataSourceList || []}
+          dataSources={[]} //TODO: 由于dataSourceList 太过复杂 要放在后面处理 目前这里先不处理了
           onSelectFile={handleSelectFile}
           onSelectDataSource={handleSelectDataSource}
           selectedIndex={mentionSelectedIndex}
