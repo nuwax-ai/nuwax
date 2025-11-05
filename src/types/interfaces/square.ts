@@ -35,6 +35,8 @@ export interface SquarePublishedItemInfo {
   id: number;
   tenantId: number;
   spaceId: number;
+  // ChatBot、PageApp
+  agentType: 'ChatBot' | 'PageApp';
   // 目标对象（智能体、工作流、插件）ID,可用值:Agent,Plugin,Workflow,KNOWLEDGE
   targetType: SquareAgentTypeEnum;
   // 目标对象（智能体、工作流、插件）ID

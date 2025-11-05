@@ -247,7 +247,7 @@ const Square: React.FC = () => {
                       publishedItemInfo={item}
                       onToggleCollectSuccess={handleToggleCollectSuccess}
                       onClick={() =>
-                        handleClick(item.targetId, item.targetType)
+                        handleClick(item.targetId, item.targetType, item)
                       }
                     />
                   );
@@ -259,7 +259,7 @@ const Square: React.FC = () => {
                       key={index}
                       publishedItemInfo={item}
                       onClick={() =>
-                        handleClick(item.targetId, item.targetType)
+                        handleClick(item.targetId, item.targetType, item)
                       }
                     />
                   );
