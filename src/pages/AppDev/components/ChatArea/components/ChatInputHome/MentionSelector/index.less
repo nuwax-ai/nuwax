@@ -1,6 +1,6 @@
 /**
  * MentionSelector 组件样式
- * 参考 react-mentions-ts 的样式实现
+ * 参考 Ant Design Mentions 的样式实现
  */
 
 @import '@/styles/color';
@@ -10,38 +10,50 @@
   background: @WHITE;
   border: 1px solid @colorBorder;
   border-radius: @borderRadius;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 15%);
-  max-width: 400px;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
+    0 9px 28px 8px rgba(0, 0, 0, 5%);
+  width: 400px;
   max-height: 400px;
   overflow: hidden;
-  z-index: 1000;
+  z-index: 1050;
   animation: fade-in 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  position: relative;
 
-  .mention-tabs {
+  .mention-header {
+    display: flex;
+    align-items: center;
+    padding: @paddingSm @paddingMd;
     border-bottom: 1px solid @colorBorder;
-    padding: 0 @paddingMd;
+    background-color: @colorFillQuaternary;
 
-    .ant-tabs-tab {
-      padding: @paddingSm @paddingMd;
+    .mention-back {
+      cursor: pointer;
+      color: @colorPrimary;
+      margin-right: @marginSm;
+      font-size: @fontSize;
       transition: color 0.2s;
 
       &:hover {
-        color: @colorPrimary;
+        color: @colorPrimaryHover;
       }
+    }
 
-      &.ant-tabs-tab-active {
-        .ant-tabs-tab-btn {
-          color: @colorPrimary;
-          font-weight: @fontWeightStrong;
-        }
-      }
+    .mention-title {
+      font-size: @fontSize;
+      font-weight: @fontWeightStrong;
+      color: @colorText;
     }
   }
 
   .mention-content {
-    padding: @paddingSm;
+    padding: @paddingXs 0;
     max-height: 320px;
     overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    animation: slide-in-right 0.2s ease-in-out;
 
     // 滚动条样式
     &::-webkit-scrollbar {
@@ -62,13 +74,32 @@
       }
     }
 
+    .mention-section-title {
+      font-size: @fontSizeSm;
+      color: @colorTextSecondary;
+      padding: @paddingXs @paddingMd;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .mention-divider {
+      height: 1px;
+      background: @colorBorder;
+      margin: @marginXs 0;
+    }
+
     .mention-list {
       .mention-item {
-        padding: @paddingXs @paddingSm;
+        display: flex;
+        align-items: center;
+        padding: @paddingXs @paddingMd;
         cursor: pointer;
         border-radius: @borderRadiusSm;
-        transition: all 0.2s ease-in-out;
+        transition: all 0.15s ease-in-out;
         margin-bottom: @marginXxs;
+        gap: @marginSm;
+        min-height: 32px;
 
         &:hover {
           background-color: @colorFillQuaternary;
@@ -80,39 +111,52 @@
           font-weight: @fontWeightStrong;
         }
 
-        .mention-item-title {
-          font-size: @fontSize;
-          color: @colorText;
-          line-height: @lineHeight;
-        }
-
-        .mention-item-desc {
-          font-size: @fontSizeSm;
+        .mention-item-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
           color: @colorTextSecondary;
-          margin-top: @marginXxs;
-          line-height: @lineHeight;
-        }
-      }
-    }
-
-    .mention-tree {
-      .ant-tree-node-content-wrapper {
-        padding: @paddingXs @paddingSm;
-        border-radius: @borderRadiusSm;
-        transition: all 0.2s ease-in-out;
-
-        &:hover {
-          background-color: @colorFillQuaternary;
+          flex-shrink: 0;
+          font-size: 14px;
         }
 
-        &.ant-tree-node-selected {
-          background-color: @colorPrimaryBg;
-          color: @colorPrimary;
-        }
-      }
+        .mention-item-content {
+          flex: 1;
+          min-width: 0;
+          overflow: hidden;
 
-      .ant-tree-treenode {
-        padding: @marginXxs 0;
+          .mention-item-title {
+            font-size: @fontSize;
+            color: @colorText;
+            line-height: 1.5715;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .mention-item-desc {
+            font-size: @fontSizeSm;
+            color: @colorTextSecondary;
+            margin-top: @marginXxs;
+            line-height: 1.5;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+
+        .mention-item-arrow {
+          color: @colorTextTertiary;
+          font-size: @fontSizeSm;
+          flex-shrink: 0;
+          transition: transform 0.2s;
+
+          .mention-item:hover & {
+            transform: translateX(2px);
+          }
+        }
       }
     }
 
@@ -134,5 +178,18 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+// 右侧滑入动画
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }

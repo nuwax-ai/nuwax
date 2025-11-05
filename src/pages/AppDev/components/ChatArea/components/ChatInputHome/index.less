@@ -174,3 +174,55 @@
     width: 100% !important;
   }
 }
+
+// @ 提及标签列表
+.mentions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: @marginXs;
+}
+
+// @ 提及标签样式
+.mention-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: @marginXxs;
+  padding: 4px @paddingXs;
+  background-color: @colorPrimaryBg;
+  border: 1px solid @colorPrimary;
+  border-radius: @borderRadiusSm;
+  font-size: @fontSizeSm;
+  color: @colorPrimary;
+  cursor: default;
+  transition: all 0.2s ease;
+  max-width: 200px;
+
+  &:hover {
+    background-color: @colorPrimaryBgHover;
+
+    .mention-tag-close {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  .mention-tag-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mention-tag-close {
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+
+    &:hover {
+      color: @colorError;
+    }
+  }
+}

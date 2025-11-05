@@ -32,6 +32,16 @@ export interface MentionPosition {
 }
 
 /**
+ * 视图类型
+ */
+export type ViewType =
+  | 'main'
+  | 'files'
+  | 'datasources'
+  | 'datasource-list'
+  | 'datasource-category';
+
+/**
  * MentionSelector 组件属性
  */
 export interface MentionSelectorProps {
@@ -45,10 +55,6 @@ export interface MentionSelectorProps {
   files: FileNode[];
   /** 数据源列表 */
   dataSources: DataResource[];
-  /** 选中的 Tab (files | datasources) */
-  activeTab: 'files' | 'datasources';
-  /** Tab 切换回调 */
-  onTabChange: (tab: 'files' | 'datasources') => void;
   /** 选择文件回调 */
   onSelectFile: (file: FileNode) => void;
   /** 选择数据源回调 */
@@ -57,4 +63,6 @@ export interface MentionSelectorProps {
   selectedIndex: number;
   /** 下拉菜单容器引用 */
   containerRef?: React.RefObject<HTMLDivElement>;
+  /** 键盘导航索引变化回调 */
+  onSelectedIndexChange?: (index: number) => void;
 }
