@@ -1,3 +1,4 @@
+import AgentType from '@/components/base/AgentType';
 import Loading from '@/components/custom/Loading';
 import EcosystemCard, { EcosystemCardProps } from '@/components/EcosystemCard';
 import PluginDetailDrawer from '@/components/EcosystemDetailDrawer';
@@ -58,6 +59,7 @@ import classNames from 'classnames';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
 const cx = classNames.bind(styles);
+
 const { Search } = Input;
 const PAGE_SIZE = 24;
 
@@ -97,10 +99,12 @@ export default function EcosystemTemplate() {
     targetType: string;
     categoryCode: string;
     shareStatus: number;
+    targetSubType?: 'ChatBot' | 'PageApp' | '';
   }>({
     targetType: '',
     categoryCode: '',
     shareStatus: -1,
+    targetSubType: '',
   });
 
   const [selectComponentProps, setSelectComponentProps] = useState<{
@@ -166,13 +170,14 @@ export default function EcosystemTemplate() {
           default:
             subTabType = EcosystemSubTabTypeEnum.ALL;
         }
-        const { targetType, categoryCode, shareStatus } =
+        const { targetType, categoryCode, shareStatus, targetSubType } =
           selectTargetTypeRef.current;
         const params = {
           queryFilter: {
             dataType: EcosystemDataTypeEnum.TEMPLATE, // 只查询模板类型
             subTabType,
             targetType: targetType === '' ? undefined : targetType,
+            targetSubType: targetSubType === '' ? undefined : targetSubType,
             name: keyword || undefined,
             shareStatus: shareStatus === -1 ? undefined : shareStatus,
             categoryCode: categoryCode || undefined,
@@ -209,18 +214,20 @@ export default function EcosystemTemplate() {
     options?: Partial<FetchPluginListParams> | undefined,
   ) => {
     setPagination({ current: 1, pageSize: PAGE_SIZE });
-    fetchPluginList({
+    const params = {
       tabType: activeTab,
       keyword: options?.keyword === undefined ? searchKeyword : options.keyword,
       page: 1,
       pageSize: PAGE_SIZE,
       ...(options || {}),
-    });
+    };
+    fetchPluginList(params);
   };
 
   const handleResetQueryFilter = useCallback(() => {
     selectTargetTypeRef.current['categoryCode'] = '';
     selectTargetTypeRef.current['targetType'] = '';
+    selectTargetTypeRef.current['targetSubType'] = '';
     selectTargetTypeRef.current['shareStatus'] = -1;
     setSearchKeyword('');
   }, []);
@@ -653,7 +660,19 @@ export default function EcosystemTemplate() {
   };
 
   const handleTargetTypeChange = (value: string) => {
-    selectTargetTypeRef.current['targetType'] = value;
+    // 应用页面
+    if (value === AgentComponentTypeEnum.Page) {
+      selectTargetTypeRef.current['targetType'] = AgentComponentTypeEnum.Agent;
+      selectTargetTypeRef.current['targetSubType'] = 'PageApp';
+    }
+    // 智能体
+    else if (value === AgentComponentTypeEnum.Agent) {
+      selectTargetTypeRef.current['targetType'] = AgentComponentTypeEnum.Agent;
+      selectTargetTypeRef.current['targetSubType'] = 'ChatBot';
+    } else {
+      selectTargetTypeRef.current['targetType'] = value;
+      selectTargetTypeRef.current['targetSubType'] = '';
+    }
     selectTargetTypeRef.current['categoryCode'] = '';
     refreshPluginList();
   };
@@ -766,9 +785,18 @@ export default function EcosystemTemplate() {
                     label: '工作流',
                     value: AgentComponentTypeEnum.Workflow,
                   },
+                  {
+                    label: '应用页面',
+                    value: AgentComponentTypeEnum.Page,
+                  },
                 ]}
                 style={{ width: 100 }}
-                value={selectTargetTypeRef.current.targetType}
+                // 如果targetSubType为PageApp，则显示应用页面，否则显示目标类型
+                value={
+                  selectTargetTypeRef.current.targetSubType === 'PageApp'
+                    ? AgentComponentTypeEnum.Page
+                    : selectTargetTypeRef.current.targetType
+                }
                 onChange={(value: string) => handleTargetTypeChange(value)}
               />
             )}
@@ -794,13 +822,27 @@ export default function EcosystemTemplate() {
           ) : pluginData?.records?.length ? (
             <>
               <div className={cx(styles['list-section'])}>
-                {pluginData.records?.map((config) => (
-                  <EcosystemCard
-                    key={config?.uid}
-                    {...convertToTemplateCard(config)}
-                    onClick={async () => await handleCardClick(config)}
-                  />
-                ))}
+                {pluginData.records?.map((config) => {
+                  const type =
+                    config.targetType === AgentComponentTypeEnum.Agent &&
+                    config.targetSubType === 'PageApp'
+                      ? AgentComponentTypeEnum.Page
+                      : config.targetType;
+                  return (
+                    <EcosystemCard
+                      key={config?.uid}
+                      {...convertToTemplateCard(config)}
+                      onClick={async () => await handleCardClick(config)}
+                      footer={
+                        <footer className={cx('flex', 'items-center')}>
+                          <AgentType
+                            type={type as unknown as AgentComponentTypeEnum}
+                          />
+                        </footer>
+                      }
+                    />
+                  );
+                })}
               </div>
               {!(pagination.current < (pluginData.pages || 0)) && (
                 <NoMoreDivider />
@@ -821,37 +863,6 @@ export default function EcosystemTemplate() {
               />
             </div>
           )}
-          {/* <List
-            grid={{ gutter: 16, column: 4 }}
-            dataSource={pluginData.records || []}
-            renderItem={(config) => (
-              <List.Item>
-                <EcosystemCard
-                  {...convertToTemplateCard(config)}
-                  onClick={() => handleCardClick(config)}
-                />
-              </List.Item>
-            )}
-            loadMore={
-              loading ? (
-                <div style={{ textAlign: 'center', margin: '12px 0' }}>
-                  <Spin />
-                </div>
-              ) : pluginData.total &&
-                pluginData.total > 0 &&
-                pagination.current >= (pluginData.pages || 0) ? (
-                <div
-                  style={{
-                    textAlign: 'center',
-                    padding: '12px 0',
-                    color: '#ccc',
-                  }}
-                >
-                  没有更多数据了
-                </div>
-              ) : null
-            }
-          /> */}
         </div>
       </div>
 
