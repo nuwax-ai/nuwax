@@ -2,6 +2,7 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { SANDBOX, UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { apiPageUpdateProject } from '@/services/pageDev';
+import { ProjectDetailData } from '@/types/interfaces/appDev';
 import { jumpTo } from '@/utils/router';
 import {
   ExclamationCircleOutlined,
@@ -24,7 +25,7 @@ import styles from './index.less';
 
 interface PreviewProps {
   devServerUrl?: string;
-  projectId: string;
+  projectInfo?: ProjectDetailData | null;
   className?: string;
   isStarting?: boolean;
   isDeveloping?: boolean;
@@ -65,7 +66,7 @@ export interface PreviewRef {
 const Preview = React.forwardRef<PreviewRef, PreviewProps>(
   (
     {
-      projectId,
+      projectInfo,
       devServerUrl,
       className,
       isStarting,
@@ -438,9 +439,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // 创建一个新的 iframe 元素
         const createIframe = document.createElement('iframe');
         createIframe.style.position = 'absolute';
-        createIframe.style.left = '-9999px'; // 移到屏幕外，不可见
-        createIframe.style.width = '1280px'; // 设置固定宽度
-        createIframe.style.height = '720px'; // 设置固定高度
+        createIframe.style.opacity = '0'; // 移到屏幕外，不可见
+        createIframe.style.zIndex = '-99'; // 移到屏幕外，不可见
+        // createIframe.style.width = '1280px'; // 设置固定宽度
+        // createIframe.style.height = '720px'; // 设置固定高度
         createIframe.style.border = 'none';
         createIframe.src = devServerUrl;
 
@@ -450,7 +452,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
           try {
             // 等待一小段时间确保内容渲染完成
-            // await new Promise(resolve => setTimeout(resolve, 1000));
             await new Promise((resolve) => {
               setTimeout(resolve, 1000);
             });
@@ -467,10 +468,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             const canvas = await html2canvas(iframeDoc.body, {
               useCORS: true,
               allowTaint: true,
-              width: 1280,
-              height: 720,
-              windowWidth: 1280,
-              windowHeight: 720,
             });
 
             // 将 canvas 转换为 blob
@@ -501,7 +498,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 console.log('[Preview] 图片上传成功:', imageUrl, result);
                 // 调用编辑页面接口，更新图标
                 const params = {
-                  projectId,
+                  projectId: projectInfo?.projectId,
+                  projectName: projectInfo?.name,
                   icon: imageUrl,
                 };
                 runUpdatePage(params);
@@ -543,9 +541,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // 如果 iframe 存在，使用现有 iframe 进行截图
         console.log('运行到这里了iframeElement', iframeElement);
         try {
-          // 等待一小段时间确保内容渲染完成
-          // await new Promise(resolve => setTimeout(resolve, 1000));
-
           const iframeDoc =
             iframeElement.contentDocument ||
             iframeElement.contentWindow?.document;
@@ -584,10 +579,11 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               const result = await response.json();
               const imageUrl = result.data?.url || result.url || '';
 
-              console.log('[Preview] 图片上传成功:', imageUrl);
+              console.log('[Preview] 图片上传成功:', imageUrl, result);
               // 调用编辑页面接口，更新图标
               const params = {
-                projectId,
+                projectId: projectInfo?.projectId,
+                projectName: projectInfo?.name,
                 icon: imageUrl,
               };
               runUpdatePage(params);
