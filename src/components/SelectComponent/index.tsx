@@ -8,7 +8,7 @@ import { CreatedNodeItem } from '@/types/interfaces/common';
 import { getTime } from '@/utils';
 import { getImg } from '@/utils/workflow';
 import { SearchOutlined, StarFilled, StarOutlined } from '@ant-design/icons';
-import { Button, Divider, Input, Modal } from 'antd';
+import { Button, Divider, Empty, Input, Modal } from 'antd';
 import { RadioChangeEvent } from 'antd/lib/radio';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 // import { useModel } from 'umi';
@@ -16,6 +16,7 @@ import { CreatedProp } from '@/components/Created/type';
 import { CREATED_TABS } from '@/constants/common.constants';
 import classNames from 'classnames';
 import { useParams } from 'umi';
+import Loading from '../custom/Loading';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 const defaultTabsTypes = [
@@ -70,6 +71,8 @@ const SelectComponent: React.FC<CreatedProp> = ({
   const [selectMenu, setSelectMenu] = useState<string>('all');
   //   右侧的list
   const [list, setList] = useState<CreatedNodeItem[]>([]);
+  // 添加loading状态
+  const [loading, setLoading] = useState<boolean>(false);
 
   // 左侧菜单栏配置（暂时未使用，保留以备后续功能扩展）
   // const items: MenuItem[] = [
@@ -126,11 +129,31 @@ const SelectComponent: React.FC<CreatedProp> = ({
         return;
       isRequesting.current = true;
       const allowCopy = getAllowCopy(selected.key);
-      const _res = await service.getList(type, {
+
+      // 目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table
+      const targetType =
+        type === AgentComponentTypeEnum.Page
+          ? AgentComponentTypeEnum.Agent
+          : type;
+      // Agent目标子类型，ChatBot,PageApp,可用值:ChatBot,PageApp, 非Agent类型时不传
+      const targetSubType =
+        type === AgentComponentTypeEnum.Agent
+          ? 'ChatBot'
+          : type === AgentComponentTypeEnum.Page
+          ? 'PageApp'
+          : '';
+
+      const _params = {
         ...params,
         spaceId,
+        targetType,
+        ...(targetSubType ? { targetSubType } : {}),
         ...(allowCopy === 1 ? { allowCopy } : {}),
-      });
+      };
+
+      const _res = await service.getList(targetType, _params);
+      // 请求完成，设置loading状态为false
+      setLoading(false);
       isRequesting.current = false;
       setSizes(_res.data.pages);
       setPagination((prev) => ({
@@ -254,12 +277,14 @@ const SelectComponent: React.FC<CreatedProp> = ({
 
     const _select = typeof val === 'string' ? val : val.target.value;
     const _item = tabs.find((item) => item.key === _select);
+
     if (_item) {
       setSelectMenu('all');
       setSearch('');
       setSelected(_item);
       setPagination({ page: 1, pageSize: 10 }); // 重置分页状态
       setSizes(100); // 重置数据大小
+      setLoading(true);
       setList([]); // 清空列表
 
       // 只触发一次请求
@@ -435,7 +460,7 @@ const SelectComponent: React.FC<CreatedProp> = ({
       className={cx(styles['created-modal-style'])}
       width={1096}
     >
-      <div className={cx(styles['created-container'])}>
+      <div className={cx(styles['created-container'], 'flex', 'flex-col')}>
         <div className={cx('dis-left', styles['filter-bar'])}>
           {/* <Segmented
             value={selectMenu}
@@ -474,8 +499,18 @@ const SelectComponent: React.FC<CreatedProp> = ({
           className={cx(styles['main-style'], 'flex-1', 'overflow-y')}
           ref={scrollRef}
         >
-          {list.map((item: CreatedNodeItem, index: number) =>
-            renderNormalItem(item, index),
+          {loading ? (
+            <Loading className={cx('h-full')} />
+          ) : list.length > 0 ? (
+            list.map((item: CreatedNodeItem, index: number) =>
+              renderNormalItem(item, index),
+            )
+          ) : (
+            <div
+              className={cx('h-full', 'flex', 'items-center', 'content-center')}
+            >
+              <Empty description="暂无数据" />
+            </div>
           )}
         </div>
       </div>
