@@ -136,7 +136,12 @@ const Home: React.FC = () => {
   };
 
   // 点击单个智能体
-  const handleClick = async (targetId: number) => {
+  const handleClick = (agentInfo: CategoryItemInfo) => {
+    const { agentType, targetId } = agentInfo;
+    if (agentType === 'PageApp') {
+      history.push(`/agent/${targetId}?hideMenu=true`);
+      return;
+    }
     history.push(`/agent/${targetId}`);
   };
 
