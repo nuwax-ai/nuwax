@@ -9,11 +9,16 @@ import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
+import { useCopyTemplate } from '@/hooks/useCopyTemplate';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
-import { MessageTypeEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  AllowCopyEnum,
+  MessageTypeEnum,
+} from '@/types/enums/agent';
 import { AgentDetailDto } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -103,6 +108,59 @@ const Chat: React.FC = () => {
   // 页面预览相关状态
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
+
+  // 复制模板功能
+  const { openCopyModal, renderCopyModal } = useCopyTemplate();
+
+  // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
+  // 支持多种可能的参数名：workflowId, workflow_id, id
+  // 也支持从 URI 路径中解析（如 /square/workflow/123）
+  const workflowId = useMemo(() => {
+    // 1. 先从 params 中获取
+    if (pagePreviewData?.params) {
+      const params = pagePreviewData.params;
+      const workflowIdFromParams =
+        params.workflowId || params.workflow_id || params.id;
+      if (workflowIdFromParams) {
+        const id = Number(workflowIdFromParams);
+        if (!isNaN(id)) return id;
+      }
+    }
+
+    // 2. 从 URI 路径中解析（如 /square/workflow/123 或 /workflow/123）
+    if (pagePreviewData?.uri) {
+      const uri = pagePreviewData.uri;
+      const workflowMatch = uri.match(/[/]workflow[/](\d+)/i);
+      if (workflowMatch && workflowMatch[1]) {
+        const id = Number(workflowMatch[1]);
+        if (!isNaN(id)) return id;
+      }
+    }
+
+    return null;
+  }, [pagePreviewData?.params, pagePreviewData?.uri]);
+
+  // 判断是否显示复制按钮（智能体允许复制即可显示，支持复制智能体或工作流模板）
+  const showCopyButton = useMemo(() => {
+    const shouldShow = agentDetail?.allowCopy === AllowCopyEnum.Yes;
+    // 调试：输出相关信息
+    console.log('[Chat] 复制按钮显示条件:', {
+      workflowId,
+      agentId: agentDetail?.agentId,
+      allowCopy: agentDetail?.allowCopy,
+      allowCopyEnum: AllowCopyEnum.Yes,
+      showCopyButton: shouldShow,
+      pagePreviewData: pagePreviewData,
+      uri: pagePreviewData?.uri,
+      params: pagePreviewData?.params,
+    });
+    return shouldShow;
+  }, [
+    workflowId,
+    agentDetail?.allowCopy,
+    agentDetail?.agentId,
+    pagePreviewData,
+  ]);
 
   const values = Form.useWatch([], { form, preserve: true });
 
@@ -561,13 +619,39 @@ const Chat: React.FC = () => {
           left={agentDetail?.hideChatArea ? null : LeftContent()}
           right={
             pagePreviewData && (
-              <PagePreviewIframe
-                pagePreviewData={pagePreviewData}
-                showHeader={true}
-                onClose={hidePagePreview}
-                showCloseButton={!agentDetail?.hideChatArea}
-                titleClassName={cx(styles['title-style'])}
-              />
+              <>
+                <PagePreviewIframe
+                  pagePreviewData={pagePreviewData}
+                  showHeader={true}
+                  onClose={hidePagePreview}
+                  showCloseButton={!agentDetail?.hideChatArea}
+                  titleClassName={cx(styles['title-style'])}
+                  // 复制模板按钮相关 props
+                  showCopyButton={showCopyButton}
+                  allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
+                  onCopyClick={openCopyModal}
+                  copyButtonText="复制模板"
+                  copyButtonClassName={styles['copy-btn']}
+                />
+                {/* 复制模板弹窗 */}
+                {showCopyButton &&
+                  agentDetail &&
+                  (workflowId
+                    ? // 如果有工作流ID，复制工作流模板
+                      renderCopyModal(
+                        agentDetail.spaceId,
+                        AgentComponentTypeEnum.Workflow,
+                        workflowId,
+                        agentDetail.name || '工作流',
+                      )
+                    : // 否则复制智能体模板
+                      renderCopyModal(
+                        agentDetail.spaceId,
+                        AgentComponentTypeEnum.Agent,
+                        agentDetail.agentId,
+                        agentDetail.name || '智能体',
+                      ))}
+              </>
             )
           }
         />
