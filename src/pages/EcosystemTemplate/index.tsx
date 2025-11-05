@@ -433,12 +433,10 @@ export default function EcosystemTemplate() {
         refreshPluginListAndReset();
         return true;
       } else {
-        message.error('操作失败');
         return false;
       }
     } catch (error) {
       console.error('保存分享失败:', error);
-      message.error('操作失败');
       return false;
     }
   };
@@ -541,7 +539,6 @@ export default function EcosystemTemplate() {
 
   // 查询智能体配置组件列表
   const onSelectedComponent = (item: CreatedNodeItem) => {
-    console.log('item6666', item);
     item.type = item.targetType as unknown as NodeTypeEnum;
     item.typeId = item.targetId;
     setShow(false);
