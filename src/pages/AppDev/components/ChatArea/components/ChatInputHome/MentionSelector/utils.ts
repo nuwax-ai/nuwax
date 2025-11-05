@@ -263,7 +263,7 @@ export const calculateMentionPosition = (
   // 创建镜像元素，完全模拟 textarea 的样式
   const mirror = document.createElement('div');
   const mirrorStyles: Record<string, string> = {
-    position: 'absolute',
+    position: 'fixed', // 使用 fixed 定位，确保相对于视口定位
     visibility: 'hidden',
     whiteSpace: 'pre-wrap',
     wordWrap: 'break-word',
@@ -280,8 +280,8 @@ export const calculateMentionPosition = (
     boxSizing: computedStyle.boxSizing,
     width: `${textarea.clientWidth}px`,
     minHeight: '1px',
-    top: '0',
-    left: '0',
+    top: `${rect.top}px`, // 设置 textarea 的 top 位置
+    left: `${rect.left}px`, // 设置 textarea 的 left 位置
     zIndex: '-1',
   };
   Object.assign(mirror.style, mirrorStyles);
@@ -317,23 +317,32 @@ export const calculateMentionPosition = (
   // 将镜像元素添加到 body，使用 fixed 定位确保位置准确
   document.body.appendChild(mirror);
 
+  // 强制浏览器重新计算布局，确保镜像元素位置正确
+  // 通过访问 offsetHeight 触发重排
+  void mirror.offsetHeight;
+
   // 获取标记的位置（这就是光标位置）
   // 使用 getBoundingClientRect 获取相对于视口的位置
   const markerRect = marker.getBoundingClientRect();
 
   // 计算光标位置
   // 标记的位置就是光标位置（相对于视口）
+  // marker 的 top 是光标所在行的顶部，bottom 是光标所在行的底部
   let cursorX = markerRect.left;
   let cursorY = markerRect.bottom; // 使用 bottom 作为光标所在行的底部位置
 
   // 如果标记位置无效（可能是因为标记没有正确渲染），使用备用方法
+  // 检查标记是否在视口外或尺寸异常
   if (
-    (markerRect.width === 0 && markerRect.height === 0) ||
-    (markerRect.left === 0 && markerRect.top === 0)
+    markerRect.width === 0 ||
+    markerRect.height === 0 ||
+    markerRect.left < 0 ||
+    markerRect.top < 0 ||
+    markerRect.right > window.innerWidth ||
+    markerRect.bottom > window.innerHeight
   ) {
-    // 备用方法：计算文本宽度和高度
+    // 备用方法：计算文本宽度
     const textWidth = mirror.offsetWidth;
-    const textHeight = mirror.offsetHeight;
 
     // 计算最后一行的宽度
     const lastNewlineIndex = textBeforeCursor.lastIndexOf('\n');
@@ -357,16 +366,30 @@ export const calculateMentionPosition = (
     const scrollTop = textarea.scrollTop || 0;
 
     cursorX = rect.left + borderLeft + paddingLeft + cursorXInLine - scrollLeft;
+
     // 计算光标所在行的底部位置
-    cursorY = rect.top + borderTop + paddingTop + textHeight - scrollTop;
+    // 需要计算光标所在行数，然后计算该行的底部位置
+    const lines = textBeforeCursor.split('\n');
+    const lineCount = lines.length;
+    const currentLineIndex = lineCount - 1; // 当前行索引（从0开始）
+
+    // 计算光标所在行的顶部位置
+    const currentLineTop =
+      rect.top +
+      borderTop +
+      paddingTop +
+      currentLineIndex * lineHeight -
+      scrollTop;
+    // 计算光标所在行的底部位置
+    cursorY = currentLineTop + lineHeight;
   }
 
   // 清理临时元素
   document.body.removeChild(mirror);
 
   // 弹层尺寸（参考 Ant Design Mentions）
-  const dropdownWidth = 400;
-  const dropdownHeight = 400;
+  const dropdownWidth = 260;
+  const dropdownHeight = 300;
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
   const minMargin = 8; // 最小边距
@@ -376,9 +399,9 @@ export const calculateMentionPosition = (
   // X 轴：弹层左侧对齐光标位置右侧
   let left = cursorX + horizontalOffset;
 
-  // Y 轴：下拉菜单顶部对齐光标所在行的底部（在光标下方显示）
-  // 使用光标所在行的底部位置作为下拉菜单的顶部
-  let top = cursorY;
+  // Y 轴：下拉菜单底部对齐光标所在行的底部
+  // 使用光标所在行的底部位置作为下拉菜单的底部
+  let top = cursorY - dropdownHeight;
 
   // 水平定位：优先在光标右侧，如果右侧空间不够，调整到左侧
   if (cursorX + dropdownWidth + horizontalOffset > viewportWidth - minMargin) {
@@ -392,15 +415,16 @@ export const calculateMentionPosition = (
     }
   }
 
-  // 垂直定位：下拉菜单底部对齐输入框底部
-  // 如果上方空间不够（top < minMargin），调整到最小边距
+  // 垂直定位：下拉菜单底部对齐光标所在行的底部
+  // 如果上方空间不够（top < minMargin），调整下拉菜单位置
   if (top < minMargin) {
-    // 上方空间不够，将下拉菜单顶部设置为最小边距
-    top = minMargin;
+    // 上方空间不够，将下拉菜单放在光标下方（顶部对齐光标所在行底部）
+    top = cursorY;
   }
 
   // 如果下拉菜单超出视口底部，向上调整
   if (top + dropdownHeight > viewportHeight - minMargin) {
+    // 下拉菜单底部对齐到视口底部
     top = viewportHeight - dropdownHeight - minMargin;
   }
 
