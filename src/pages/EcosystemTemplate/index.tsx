@@ -391,6 +391,7 @@ export default function EcosystemTemplate() {
         description: values.description,
         dataType: EcosystemDataTypeEnum.TEMPLATE,
         targetType: values.targetType || AgentComponentTypeEnum.Workflow,
+        targetSubType: values.targetSubType,
         targetId: values.targetId,
         categoryCode: values.categoryCode,
         categoryName: values.categoryName,
@@ -540,6 +541,7 @@ export default function EcosystemTemplate() {
 
   // 查询智能体配置组件列表
   const onSelectedComponent = (item: CreatedNodeItem) => {
+    console.log('item6666', item);
     item.type = item.targetType as unknown as NodeTypeEnum;
     item.typeId = item.targetId;
     setShow(false);
@@ -549,6 +551,7 @@ export default function EcosystemTemplate() {
       description: item.description,
       targetType: item.targetType,
       targetId: item.targetId.toString(),
+      targetSubType: item.targetSubType,
       shareStatus: EcosystemShareStatusEnum.DRAFT,
     });
     setAddComponents([

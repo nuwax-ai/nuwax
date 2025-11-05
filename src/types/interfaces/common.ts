@@ -310,8 +310,9 @@ export interface CreatedNodeItem {
   spaceId?: number;
   // 正在使用的
   targetId: number;
-  targetSubType: string;
   targetType: AgentComponentTypeEnum;
+  // 目标子类型,可用值:ChatBot,PageApp, 非Agent类型时为null
+  targetSubType?: 'ChatBot' | 'PageApp';
   // 发布人员信息
   publishUser?: CreatorInfo;
   collect?: boolean;
