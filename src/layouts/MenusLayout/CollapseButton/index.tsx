@@ -87,8 +87,13 @@ const CollapseButton: React.FC = () => {
   // 处理点击事件（保存用户操作到localStorage）
   const handleToggleCollapse = () => {
     const newState = !isSecondMenuCollapsed;
-    // 保存用户操作状态
-    saveUserPreference(newState);
+    //当用户手动展开时 去除 用户操作标记
+    if (!newState) {
+      sessionStorage.removeItem(getStorageKey());
+    } else {
+      // 保存用户操作状态
+      saveUserPreference(newState);
+    }
     // 更新状态
     setIsSecondMenuCollapsed(newState);
   };
