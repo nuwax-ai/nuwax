@@ -25,9 +25,14 @@ const HomeSection: React.FC<{
   const { handleCloseMobileMenu } = useModel('layout');
 
   // 智能体主页
-  const handleAgentHome = (id: number) => {
+  const handleAgentHome = (agentInfo: AgentInfo) => {
     handleCloseMobileMenu();
-    history.push(`/agent/${id}`);
+    const { agentType, agentId } = agentInfo;
+    if (agentType === 'PageApp') {
+      history.push(`/agent/${agentId}?hideMenu=true`);
+      return;
+    }
+    history.push(`/agent/${agentId}`);
   };
 
   // 会话跳转
@@ -60,7 +65,7 @@ const HomeSection: React.FC<{
             .map((info: AgentInfo, index: number) => (
               <MenuListItem
                 key={info.id}
-                onClick={() => handleAgentHome(info.agentId)}
+                onClick={() => handleAgentHome(info)}
                 icon={info.icon}
                 name={info.name}
                 isFirst={index === 0}

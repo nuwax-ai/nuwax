@@ -309,16 +309,32 @@ const AppDev: React.FC = () => {
     const { lastChatModelId, lastMultiModelId } =
       projectInfo.projectInfoState.projectInfo || {};
 
-    if (lastMultiModelId) {
-      modelSelector.selectMultiModel(lastMultiModelId);
+    const { chatModelList, multiModelList } = modelSelector.models || {};
+
+    // 如果上次使用的多模态模型ID存在，则使用上次使用的多模态模型ID
+    if (lastMultiModelId && !!multiModelList?.length) {
+      const index = multiModelList?.findIndex((m) => m.id === lastMultiModelId);
+      if (index > -1) {
+        modelSelector.selectMultiModel(lastMultiModelId);
+      } else {
+        // 如果上次使用的模型已被删除或不存在，则使用列表第一个模型
+        modelSelector.selectMultiModel(multiModelList[0].id);
+      }
     }
-    // 如果上次使用的模型ID存在，则使用上次使用的模型ID
-    if (lastChatModelId) {
-      modelSelector.selectModel(lastChatModelId);
+
+    // 如果上次使用的编码模型ID存在，则使用上次使用的编码模型ID
+    if (lastChatModelId && !!chatModelList?.length) {
+      // 如果上次使用的模型ID存在，则使用上次使用的模型ID
+      const index = chatModelList?.findIndex((m) => m.id === lastChatModelId);
+      if (index > -1) {
+        modelSelector.selectModel(lastChatModelId);
+      } else {
+        // 如果上次使用的模型已被删除或不存在，则使用列表第一个模型
+        modelSelector.selectModel(chatModelList[0].id);
+      }
       return;
     }
 
-    const { chatModelList } = modelSelector.models || {};
     // 没有上次使用的模型时，优先使用 Anthropic 的第一个
     const anthropicModel = chatModelList?.find(
       (m) => m.apiProtocol === 'Anthropic',
@@ -642,6 +658,20 @@ const AppDev: React.FC = () => {
       setIsDeploying(false);
     }
   }, [hasValidProjectId, projectId, projectInfo]);
+
+  /**
+   * 处理发布成应用
+   */
+  const handlePublishApplication = async () => {
+    if (previewRef.current) {
+      try {
+        previewRef.current.captureIframeContent();
+      } catch (error) {
+        console.error('[AppDev] 截图上传过程中发生错误:', error);
+      }
+    }
+    setOpenPublishComponentModal(true);
+  };
 
   /**
    * 处理发布成应用
@@ -1343,8 +1373,10 @@ const AppDev: React.FC = () => {
           workspace={workspace}
           spaceId={spaceId}
           onEditProject={() => setOpenPageEditVisible(true)}
+          // 处理项目发布成组件
           onPublishComponent={handlePublishComponent}
-          onPublishApplication={() => setOpenPublishComponentModal(true)}
+          // 处理发布成应用
+          onPublishApplication={handlePublishApplication}
           onOpenVersionHistory={() => setOpenVersionHistory(true)}
           hasUpdates={projectInfo.hasUpdates}
           isDeploying={isDeploying}
@@ -1550,6 +1582,7 @@ const AppDev: React.FC = () => {
                       {/* 内容区域 */}
                       <div className={styles.editorContent}>
                         <ContentViewer
+                          projectId={projectId || ''}
                           mode={activeTab}
                           isComparing={versionCompare.isComparing}
                           selectedFileId={

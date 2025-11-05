@@ -14,6 +14,7 @@ import Preview, { type PreviewRef } from '../Preview';
 import styles from './index.less';
 
 interface ContentViewerProps {
+  projectId: string;
   /** 显示模式 */
   mode: 'preview' | 'code';
   /** 是否在版本对比模式 */
@@ -80,6 +81,7 @@ interface ContentViewerProps {
  * 优化：使用条件渲染和组件缓存来避免 iframe 重新加载
  */
 const ContentViewer: React.FC<ContentViewerProps> = ({
+  projectId,
   mode,
   isComparing,
   selectedFileId,
@@ -112,6 +114,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     () => (
       <Preview
         ref={previewRef}
+        projectId={projectId}
         devServerUrl={
           devServerUrl ? `${process.env.BASE_URL}${devServerUrl}` : undefined
         }
