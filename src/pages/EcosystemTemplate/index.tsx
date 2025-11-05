@@ -140,6 +140,13 @@ export default function EcosystemTemplate() {
     pageSize: PAGE_SIZE,
   });
 
+  const [show, setShow] = useState(false);
+  const [shareModalData, setShareModalData] =
+    useState<EcosystemShareModalData | null>(null);
+  const [addComponents, setAddComponents] = useState<
+    AgentAddComponentStatusInfo[]
+  >([]);
+
   /**
    * 获取模板列表数据
    */
@@ -354,6 +361,7 @@ export default function EcosystemTemplate() {
       checkTag: type,
       tabs: CREATED_TABS.filter((item) => [type].includes(item.key)),
     });
+
     setShareModalProps({
       targetType: type,
       type: EcosystemDataTypeEnum.TEMPLATE,
@@ -513,12 +521,16 @@ export default function EcosystemTemplate() {
   const menuProps = {
     items: [
       {
+        key: AgentComponentTypeEnum.Agent,
+        label: '智能体',
+      },
+      {
         key: AgentComponentTypeEnum.Workflow,
         label: '工作流',
       },
       {
-        key: AgentComponentTypeEnum.Agent,
-        label: '智能体',
+        key: AgentComponentTypeEnum.Page,
+        label: '应用页面',
       },
     ],
     onClick: (e: any) => {
@@ -526,12 +538,6 @@ export default function EcosystemTemplate() {
     },
   };
 
-  const [show, setShow] = useState(false);
-  const [shareModalData, setShareModalData] =
-    useState<EcosystemShareModalData | null>(null);
-  const [addComponents, setAddComponents] = useState<
-    AgentAddComponentStatusInfo[]
-  >([]);
   // 查询智能体配置组件列表
   const onSelectedComponent = (item: CreatedNodeItem) => {
     item.type = item.targetType as unknown as NodeTypeEnum;
@@ -895,7 +901,7 @@ export default function EcosystemTemplate() {
         }}
         {...shareModalProps}
       />
-      {/*添加工作流、智能体弹窗*/}
+      {/*添加工作流、智能体、应用页面弹窗*/}
       <SelectComponent
         onAdded={onSelectedComponent}
         open={show}
