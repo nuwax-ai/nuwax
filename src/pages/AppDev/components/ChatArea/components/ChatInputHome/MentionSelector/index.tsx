@@ -124,7 +124,7 @@ const MentionSelector = React.forwardRef<
       return groupDataSourcesByType(filteredDataSources);
     }, [filteredDataSources]);
 
-    // 合并最近使用的文件和数据源（最多7个）
+    // 合并最近使用的文件和数据源（最多5个）
     const recentItems = useMemo(() => {
       const items: Array<{
         type: 'file' | 'folder' | 'datasource' | 'action' | 'category';
@@ -196,15 +196,15 @@ const MentionSelector = React.forwardRef<
           return bTime - aTime;
         });
 
-        // 如果不满7个，从文件/目录列表中补充
-        if (sortedItems.length < 7) {
+        // 如果不满5个，从文件/目录列表中补充
+        if (sortedItems.length < 5) {
           const existingIds = new Set(sortedItems.map((item) => item.id));
           const allFiles = flattenFiles(files, '');
           const allFolders = flattenFolders(files, '');
 
           // 先补充文件
           for (const file of allFiles) {
-            if (sortedItems.length >= 7) break;
+            if (sortedItems.length >= 5) break;
             if (!existingIds.has(file.id)) {
               sortedItems.push({
                 type: 'file',
@@ -219,7 +219,7 @@ const MentionSelector = React.forwardRef<
 
           // 再补充目录
           for (const folder of allFolders) {
-            if (sortedItems.length >= 7) break;
+            if (sortedItems.length >= 5) break;
             if (!existingIds.has(folder.id)) {
               sortedItems.push({
                 type: 'folder',
@@ -233,10 +233,10 @@ const MentionSelector = React.forwardRef<
           }
         }
 
-        return sortedItems.slice(0, 7);
+        return sortedItems.slice(0, 5);
       }
 
-      // 如果没有最近使用记录，显示默认推荐项（从文件和目录列表中取前7个）
+      // 如果没有最近使用记录，显示默认推荐项（从文件和目录列表中取前5个）
       const defaultItems: Array<{
         type: 'file' | 'datasource' | 'folder';
         id: string | number;
@@ -247,13 +247,13 @@ const MentionSelector = React.forwardRef<
         description?: string;
       }> = [];
 
-      // 添加文件列表的前5个（使用原始文件列表，不经过搜索过滤）
+      // 添加文件列表的前4个（使用原始文件列表，不经过搜索过滤）
       const allFiles = flattenFiles(files, '');
       const allFolders = flattenFolders(files, '');
 
       // 先添加文件
       if (allFiles.length > 0) {
-        allFiles.slice(0, 5).forEach((file) => {
+        allFiles.slice(0, 4).forEach((file) => {
           defaultItems.push({
             type: 'file',
             id: file.id,
@@ -264,9 +264,9 @@ const MentionSelector = React.forwardRef<
         });
       }
 
-      // 如果文件不足5个，补充目录
-      if (defaultItems.length < 5 && allFolders.length > 0) {
-        const remaining = 5 - defaultItems.length;
+      // 如果文件不足4个，补充目录
+      if (defaultItems.length < 4 && allFolders.length > 0) {
+        const remaining = 4 - defaultItems.length;
         allFolders.slice(0, remaining).forEach((folder) => {
           defaultItems.push({
             type: 'folder',
@@ -290,7 +290,7 @@ const MentionSelector = React.forwardRef<
         });
       }
 
-      return defaultItems;
+      return defaultItems.slice(0, 5);
     }, [
       recentFiles,
       recentDataSources,

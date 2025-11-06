@@ -389,11 +389,12 @@ export const calculateMentionPosition = (
 
   // 弹层尺寸（参考 Ant Design Mentions）
   const dropdownWidth = 260;
-  const dropdownHeight = 300;
+  const dropdownHeight = 332;
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
   const minMargin = 8; // 最小边距
-  const horizontalOffset = 2; // 水平偏移量，让下拉菜单稍微靠右一点
+  const horizontalOffset = 32 + 8; // 水平偏移量，让下拉菜单稍微靠右一点
+  const verticalOffset = -16; // 垂直偏移量，让下拉菜单稍微靠下一点
 
   // 计算弹层位置（参考 Ant Design Mentions 的智能定位）
   // X 轴：弹层左侧对齐光标位置右侧
@@ -401,7 +402,7 @@ export const calculateMentionPosition = (
 
   // Y 轴：下拉菜单底部对齐光标所在行的底部
   // 使用光标所在行的底部位置作为下拉菜单的底部
-  let top = cursorY - dropdownHeight;
+  let top = cursorY - dropdownHeight + verticalOffset;
 
   // 水平定位：优先在光标右侧，如果右侧空间不够，调整到左侧
   if (cursorX + dropdownWidth + horizontalOffset > viewportWidth - minMargin) {

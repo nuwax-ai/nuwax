@@ -2,6 +2,7 @@ import SvgIcon from '@/components/base/SvgIcon';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import SelectList from '@/components/custom/SelectList';
+import useClickOutside from '@/components/SmartVariableInput/hooks/useClickOutside';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   MAX_IMAGE_COUNT,
@@ -690,6 +691,36 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       eventBus.off(EVENT_NAMES.SEND_CHAT_MESSAGE, handleSendMessageEvent);
     };
   }, [chat.chatInput, handleSendMessage]);
+
+  /**
+   * 处理点击外部关闭 MentionSelector
+   */
+  const handleCloseMentionSelector = useCallback(
+    (event: MouseEvent | TouchEvent) => {
+      // 检查点击是否在输入框内
+      const target = event.target as Node;
+      if (textAreaRef.current) {
+        const textarea =
+          textAreaRef.current.resizableTextArea?.textArea ||
+          textAreaRef.current;
+        if (textarea && (textarea as HTMLElement).contains(target)) {
+          // 点击在输入框内，不关闭
+          return;
+        }
+      }
+
+      // 点击在外部，关闭 MentionSelector
+      if (mentionTrigger.trigger && mentionPosition.visible) {
+        setMentionTrigger({ trigger: false });
+        setMentionPosition({ left: 0, top: 0, visible: false });
+        setMentionSelectedIndex(0);
+      }
+    },
+    [mentionTrigger.trigger, mentionPosition.visible],
+  );
+
+  // 使用 useClickOutside 检测点击外部事件
+  useClickOutside(mentionContainerRef, handleCloseMentionSelector, []);
 
   // 获取模型选项
   const getModeOptions = (models: ModelConfig[]) => {
