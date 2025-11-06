@@ -27,6 +27,7 @@ import type { CustomPopoverItem } from '@/types/interfaces/common';
 import {
   CreateCustomPageInfo,
   CustomPageDto,
+  PageCopyParams,
 } from '@/types/interfaces/pageDev';
 import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
@@ -179,9 +180,17 @@ const SpacePageDevelop: React.FC = () => {
   const { run: runCopyToSpace } = useRequest(apiCustomPageCopyProject, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: () => {
+    onSuccess: (_: null, params: PageCopyParams[]) => {
       message.success('页面复制成功');
       setLoadingCopyToSpace(false);
+      // 目标空间ID
+      const targetSpaceId = params[0]?.targetSpaceId;
+      // 如果目标空间ID和当前空间ID相同, 则重新查询当前空间智能体列表
+      if (targetSpaceId === spaceId) {
+        runPageList({
+          spaceId,
+        });
+      }
     },
     onError: () => {
       setLoadingCopyToSpace(false);
