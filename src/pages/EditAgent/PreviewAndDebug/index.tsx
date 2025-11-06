@@ -91,8 +91,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   } = useModel('conversationInfo');
 
   // 获取 chat model 中的页面预览状态
-  const chatModel = useModel('chat');
-  const { pagePreviewData } = chatModel;
+  const { pagePreviewData, hidePagePreview, showPagePreview } =
+    useModel('chat');
 
   // 创建智能体会话
   const { runAsyncConversationCreate } = useConversation();
@@ -238,6 +238,19 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     });
 
     if (success) {
+      // 点击刷子时,智能体要"重置",默认有打开页面就返回到默认首页,默认没有打开页面,则把页面收起来
+      const agent = data?.agent || {};
+      const expandPageArea = agent.expandPageArea; // 0: 收起, 1: 展开
+      const pageHomeIndex = agent.pageHomeIndex;
+      if (expandPageArea === 0) {
+        hidePagePreview();
+      } else {
+        showPagePreview({
+          uri: pageHomeIndex,
+          params: {},
+        });
+      }
+
       const id = data?.id;
       devConversationIdRef.current = id;
       if (agentConfigInfo) {
