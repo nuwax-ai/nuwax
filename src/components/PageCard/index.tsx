@@ -41,9 +41,6 @@ const PageCard: React.FC<PageCardProps> = ({
     e.currentTarget.src = defaultAvatar;
   };
 
-  console.log('isEnabled', isEnabled);
-  console.log('isNewVersion', isNewVersion);
-
   return (
     <div
       className={cx('flex', 'flex-col', 'relative', styles.container)}
