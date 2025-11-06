@@ -57,6 +57,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'umi';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 
@@ -75,6 +76,7 @@ const SPACE_SQUARE_SEGMENTED_LIST =
  */
 export default function EcosystemTemplate() {
   const { message } = App.useApp();
+  const location = useLocation();
   // 搜索关键词
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   // 当前激活的标签页
@@ -233,19 +235,50 @@ export default function EcosystemTemplate() {
 
   const handleResetQueryFilter = useCallback(() => {
     selectTargetTypeRef.current['categoryCode'] = '';
-    selectTargetTypeRef.current['targetType'] = '';
-    selectTargetTypeRef.current['targetSubType'] = '';
     selectTargetTypeRef.current['shareStatus'] = -1;
     setSearchKeyword('');
   }, []);
 
+  useEffect(() => {
+    const searchParams = location?.search;
+    if (searchParams) {
+      const searchParamsObj = new URLSearchParams(searchParams);
+      const targetType = searchParamsObj.get('targetType');
+      // 应用页面
+      if (targetType === AgentComponentTypeEnum.Page) {
+        selectTargetTypeRef.current['targetType'] =
+          AgentComponentTypeEnum.Agent;
+        selectTargetTypeRef.current['targetSubType'] = 'PageApp';
+      }
+      // 智能体
+      else if (targetType === AgentComponentTypeEnum.Agent) {
+        selectTargetTypeRef.current['targetType'] =
+          AgentComponentTypeEnum.Agent;
+        selectTargetTypeRef.current['targetSubType'] = 'ChatBot';
+      } else {
+        selectTargetTypeRef.current['targetType'] =
+          targetType as AgentComponentTypeEnum;
+        selectTargetTypeRef.current['targetSubType'] = '';
+      }
+    } else {
+      selectTargetTypeRef.current['targetType'] = '';
+      selectTargetTypeRef.current['targetSubType'] = '';
+    }
+    handleResetQueryFilter();
+    setActiveTab(TabTypeEnum.ALL);
+    // 刷新列表
+    refreshPluginList();
+  }, [location]);
+
   /**
    * 标签页切换时重新获取数据
    */
-  useEffect(() => {
+  const handleChangeTab = (value: string) => {
+    const tab = value as EcosystemTabTypeEnum;
+    setActiveTab(tab);
     handleResetQueryFilter();
     refreshPluginList();
-  }, [activeTab]);
+  };
 
   /**
    * 将后端数据转换为插件卡片数据
@@ -665,24 +698,6 @@ export default function EcosystemTemplate() {
     refreshPluginList();
   };
 
-  const handleTargetTypeChange = (value: string) => {
-    // 应用页面
-    if (value === AgentComponentTypeEnum.Page) {
-      selectTargetTypeRef.current['targetType'] = AgentComponentTypeEnum.Agent;
-      selectTargetTypeRef.current['targetSubType'] = 'PageApp';
-    }
-    // 智能体
-    else if (value === AgentComponentTypeEnum.Agent) {
-      selectTargetTypeRef.current['targetType'] = AgentComponentTypeEnum.Agent;
-      selectTargetTypeRef.current['targetSubType'] = 'ChatBot';
-    } else {
-      selectTargetTypeRef.current['targetType'] = value;
-      selectTargetTypeRef.current['targetSubType'] = '';
-    }
-    selectTargetTypeRef.current['categoryCode'] = '';
-    refreshPluginList();
-  };
-
   /**
    * 渲染右侧操作区域
    */
@@ -711,12 +726,6 @@ export default function EcosystemTemplate() {
     }
     return (
       <div className={cx(styles.headerRight)}>
-        {selectTargetTypeRef.current.targetType && (
-          <SelectCategory
-            targetType={selectTargetTypeRef.current.targetType}
-            onChange={(value) => handleCategoryChange(value)}
-          />
-        )}
         <Search
           className={cx(styles.searchInput)}
           placeholder="搜索模板"
@@ -748,9 +757,7 @@ export default function EcosystemTemplate() {
               className={cx(styles.segmented)}
               options={SPACE_SQUARE_SEGMENTED_LIST}
               value={activeTab}
-              onChange={(value: string) =>
-                setActiveTab(value as EcosystemTabTypeEnum)
-              }
+              onChange={handleChangeTab}
             />
             {activeTab === TabTypeEnum.SHARED ? (
               <Select
@@ -777,34 +784,12 @@ export default function EcosystemTemplate() {
                 onChange={(value) => handleShareStatusChange(value)}
               />
             ) : (
-              <Select
-                options={[
-                  {
-                    label: '全部',
-                    value: '',
-                  },
-                  {
-                    label: '智能体',
-                    value: AgentComponentTypeEnum.Agent,
-                  },
-                  {
-                    label: '工作流',
-                    value: AgentComponentTypeEnum.Workflow,
-                  },
-                  {
-                    label: '应用页面',
-                    value: AgentComponentTypeEnum.Page,
-                  },
-                ]}
-                style={{ width: 100 }}
-                // 如果targetSubType为PageApp，则显示应用页面，否则显示目标类型
-                value={
-                  selectTargetTypeRef.current.targetSubType === 'PageApp'
-                    ? AgentComponentTypeEnum.Page
-                    : selectTargetTypeRef.current.targetType
-                }
-                onChange={(value: string) => handleTargetTypeChange(value)}
-              />
+              selectTargetTypeRef.current.targetType && (
+                <SelectCategory
+                  targetType={selectTargetTypeRef.current.targetType}
+                  onChange={(value) => handleCategoryChange(value)}
+                />
+              )
             )}
           </Space>
           {renderExtraContent()}

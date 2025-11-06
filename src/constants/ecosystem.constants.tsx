@@ -35,6 +35,20 @@ export const ECOSYSTEM_MARKET_LIST = [
     type: EcosystemMarketEnum.Template,
     icon: <SvgIcon name="icons-nav-template" />,
     text: '模板',
+    list: [
+      {
+        text: '智能体',
+        type: AgentComponentTypeEnum.Agent,
+      },
+      {
+        text: '工作流',
+        type: AgentComponentTypeEnum.Workflow,
+      },
+      {
+        text: '应用页面',
+        type: AgentComponentTypeEnum.Page,
+      },
+    ],
   },
 ];
 
