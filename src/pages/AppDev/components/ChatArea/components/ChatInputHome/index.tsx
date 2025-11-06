@@ -29,6 +29,7 @@ import { Button, Input, message, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { usePlaceholderCarousel } from '../../hooks/usePlaceholderCarousel';
 import styles from './index.less';
 import MentionSelector from './MentionSelector';
 import type {
@@ -121,6 +122,20 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   // 已选择的提及项（文件、目录和数据源）
   // 使用导出的 MentionItem 类型，确保包含所有类型（file、folder、datasource）
   const [selectedMentions, setSelectedMentions] = useState<MentionItem[]>([]);
+
+  // 占位符消息轮播
+  const placeholderMessages = [
+    '一句话做网站、应用、提效工具等，可选择工作流、插件等数据资源拓展多种能力',
+    '可以通过 @ 提及文件、目录、数据源，以增强提示词的准确性',
+  ];
+
+  // 使用占位符轮播 Hook
+  const { isPlaceholderVisible, currentPlaceholder } = usePlaceholderCarousel(
+    chat.chatInput,
+    placeholderMessages,
+    5000,
+    300,
+  );
 
   // 同步 dataSourceList 中已选的数据源到 selectedMentions
   useEffect(() => {
@@ -931,17 +946,30 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           </Tooltip>
         )} */}
         {/*输入框*/}
-        <Input.TextArea
-          ref={textAreaRef}
-          value={chat.chatInput}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          rootClassName={cx(styles.input)}
-          onPressEnter={(e) => handlePressEnter(e, selectedMentions)}
-          onPaste={handlePaste}
-          placeholder="一句话做网站、应用、提效工具等，可选择工作流、插件等数据资源拓展多种能力"
-          autoSize={{ minRows: 2, maxRows: 6 }}
-        />
+        <div className={cx(styles['input-wrapper'])}>
+          <Input.TextArea
+            ref={textAreaRef}
+            value={chat.chatInput}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            rootClassName={cx(styles.input)}
+            onPressEnter={(e) => handlePressEnter(e, selectedMentions)}
+            onPaste={handlePaste}
+            placeholder="" // 使用空字符串，通过自定义占位符元素显示
+            autoSize={{ minRows: 2, maxRows: 6 }}
+          />
+          {/* 自定义占位符元素，带淡入淡出动画效果 */}
+          {!chat.chatInput?.trim() && (
+            <div
+              className={cx(
+                styles['custom-placeholder'],
+                isPlaceholderVisible && styles['placeholder-visible'],
+              )}
+            >
+              {currentPlaceholder}
+            </div>
+          )}
+        </div>
         {/* @ 提及下拉选择器 */}
         <MentionSelector
           ref={mentionSelectorRef}
