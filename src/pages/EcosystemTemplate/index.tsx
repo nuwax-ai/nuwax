@@ -182,6 +182,7 @@ export default function EcosystemTemplate() {
         }
         const { targetType, categoryCode, shareStatus, targetSubType } =
           selectTargetTypeRef.current;
+
         const params = {
           queryFilter: {
             dataType: EcosystemDataTypeEnum.TEMPLATE, // 只查询模板类型
@@ -218,18 +219,20 @@ export default function EcosystemTemplate() {
         setLoading(false);
       }
     },
-    [activeTab, searchKeyword, pagination.current, pagination.pageSize],
+    [],
   );
+
+  // 刷新模板列表
   const refreshPluginList = (
-    options?: Partial<FetchPluginListParams> | undefined,
+    tabType: EcosystemTabTypeEnum = activeTab,
+    kw: string = searchKeyword,
   ) => {
     setPagination({ current: 1, pageSize: PAGE_SIZE });
     const params = {
-      tabType: activeTab,
-      keyword: options?.keyword === undefined ? searchKeyword : options.keyword,
+      tabType,
+      keyword: kw,
       page: 1,
       pageSize: PAGE_SIZE,
-      ...(options || {}),
     };
     fetchPluginList(params);
   };
@@ -268,17 +271,22 @@ export default function EcosystemTemplate() {
     handleResetQueryFilter();
     setActiveTab(TabTypeEnum.ALL);
     // 刷新列表
-    refreshPluginList();
+    refreshPluginList(TabTypeEnum.ALL);
   }, [location]);
 
   /**
    * 标签页切换时重新获取数据
    */
   const handleChangeTab = (value: string) => {
-    const tab = value as EcosystemTabTypeEnum;
-    setActiveTab(tab);
-    handleResetQueryFilter();
-    refreshPluginList();
+    const tabType = value as EcosystemTabTypeEnum;
+    setActiveTab(tabType);
+    selectTargetTypeRef.current['shareStatus'] = -1;
+    setSearchKeyword('');
+    // 我的分享标签页，清空分类
+    if (tabType === TabTypeEnum.SHARED) {
+      selectTargetTypeRef.current['categoryCode'] = '';
+    }
+    refreshPluginList(tabType);
   };
 
   /**
@@ -329,7 +337,7 @@ export default function EcosystemTemplate() {
    */
   const handleSearch = (value: string) => {
     setSearchKeyword(value);
-    refreshPluginList({ keyword: value });
+    refreshPluginList(activeTab, value);
   };
 
   /**
@@ -497,14 +505,16 @@ export default function EcosystemTemplate() {
         default:
           subTabType = EcosystemSubTabTypeEnum.ALL;
       }
-      const { targetType, categoryCode, shareStatus } =
+      const { targetType, categoryCode, shareStatus, targetSubType } =
         selectTargetTypeRef.current;
+
       // 获取数据的API调用
       const response = await getClientConfigList({
         queryFilter: {
           dataType: EcosystemDataTypeEnum.TEMPLATE,
           subTabType,
           targetType: targetType === '' ? undefined : targetType,
+          targetSubType: targetSubType === '' ? undefined : targetSubType,
           name: searchKeyword || undefined,
           categoryCode: categoryCode === '' ? undefined : categoryCode,
           shareStatus: shareStatus === -1 ? undefined : shareStatus,
@@ -785,12 +795,10 @@ export default function EcosystemTemplate() {
                 onChange={(value) => handleShareStatusChange(value)}
               />
             ) : (
-              selectTargetTypeRef.current.targetType && (
-                <SelectCategory
-                  targetType={selectTargetTypeRef.current.targetType}
-                  onChange={(value) => handleCategoryChange(value)}
-                />
-              )
+              <SelectCategory
+                targetType={selectTargetTypeRef.current.targetType}
+                onChange={(value) => handleCategoryChange(value)}
+              />
             )}
           </Space>
           {renderExtraContent()}

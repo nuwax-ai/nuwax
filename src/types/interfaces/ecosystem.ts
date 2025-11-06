@@ -92,6 +92,8 @@ export interface ClientConfigQueryRequest {
   subTabType?: number;
   /** 细分类型，比如: 插件,智能体,工作流 */
   targetType?: string;
+  /** 目标子类型,可用值:ChatBot,PageApp, 非Agent类型时为null */
+  targetSubType?: 'ChatBot' | 'PageApp';
   /** 分类编码 */
   categoryCode?: string;
   /** 分享状态，1:草稿;2:审核中;3:已发布;4:已下线;5:驳回 */
