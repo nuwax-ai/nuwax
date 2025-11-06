@@ -32,6 +32,7 @@ import styles from './index.less';
 import MentionSelector from './MentionSelector';
 import type {
   MentionPosition,
+  MentionSelectorHandle,
   MentionTriggerResult,
 } from './MentionSelector/types';
 import { calculateMentionPosition } from './MentionSelector/utils';
@@ -114,6 +115,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   });
   const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
   const mentionContainerRef = useRef<HTMLDivElement>(null);
+  const mentionSelectorRef = useRef<MentionSelectorHandle>(null);
 
   // 已选择的提及项（文件、目录和数据源）
   // 使用导出的 MentionItem 类型，确保包含所有类型（file、folder、datasource）
@@ -401,24 +403,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       // Enter 键：确认选择（参考 Ant Design Mentions，Enter 键直接确认选择或进入下一步）
       if (key === 'Enter' || keyCode === 13) {
         e.preventDefault();
-        // 触发当前选中项的点击事件
-        const mentionSelector = mentionContainerRef.current;
-        if (mentionSelector) {
-          // 尝试多种选择器格式
-          const selectors = [
-            '[class*="mention-item"][class*="selected"]',
-            '.mention-item.selected',
-          ];
-          let selectedElement: HTMLElement | null = null;
-          for (const selector of selectors) {
-            selectedElement = mentionSelector.querySelector(
-              selector,
-            ) as HTMLElement;
-            if (selectedElement) break;
-          }
-          if (selectedElement) {
-            selectedElement.click();
-          }
+        // 直接调用 MentionSelector 的方法处理当前选中项的选择
+        // 这样可以确保与 onClick 逻辑完全一致
+        if (mentionSelectorRef.current) {
+          mentionSelectorRef.current.handleSelectCurrentItem();
         }
         return;
       }
@@ -889,6 +877,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         />
         {/* @ 提及下拉选择器 */}
         <MentionSelector
+          ref={mentionSelectorRef}
           visible={mentionTrigger.trigger && mentionPosition.visible}
           position={mentionPosition}
           searchText={mentionTrigger.searchText || ''}

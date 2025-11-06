@@ -42,6 +42,14 @@ export type ViewType =
   | 'datasource-category';
 
 /**
+ * MentionSelector 组件暴露的方法
+ */
+export interface MentionSelectorHandle {
+  /** 处理当前选中项的选择 */
+  handleSelectCurrentItem: () => void;
+}
+
+/**
  * MentionSelector 组件属性
  */
 export interface MentionSelectorProps {
