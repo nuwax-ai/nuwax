@@ -10,7 +10,6 @@ import {
   ReloadOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
-import { message } from 'antd';
 import dayjs from 'dayjs';
 import html2canvas from 'html2canvas';
 import React, {
@@ -418,9 +417,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     // 上传前端项目压缩包并启动开发服务器
     const { run: runUpdatePage } = useRequest(apiPageUpdateProject, {
       manual: true,
-      onSuccess: () => {
-        message.success('编辑成功');
-      },
     });
 
     // 截图 iframe 内容
