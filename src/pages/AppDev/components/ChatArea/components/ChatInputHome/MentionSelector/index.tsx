@@ -59,7 +59,7 @@ const MentionSelector = React.forwardRef<
     },
     ref,
   ) => {
-    // 视图状态：main-主视图, files-文件列表, datasources-数据源分类, datasource-list-数据源列表, datasource-category-数据源分类详情
+    // 视图状态：main-主视图, search-搜索视图, files-文件列表, datasources-数据源分类, datasource-list-数据源列表, datasource-category-数据源分类详情
     const [viewType, setViewType] = useState<ViewType>('main');
     const [selectedCategory, setSelectedCategory] = useState<string>('');
 
@@ -71,6 +71,26 @@ const MentionSelector = React.forwardRef<
         onSelectedIndexChange?.(0);
       }
     }, [visible, onSelectedIndexChange]);
+
+    // 监听 searchText 变化，自动切换到搜索视图
+    useEffect(() => {
+      if (!visible) return;
+
+      if (searchText && searchText.trim()) {
+        // 当有搜索文本时，如果不是在搜索视图，切换到搜索视图
+        // 这样可以确保无论用户在哪个视图，输入搜索文本都会显示搜索结果
+        if (viewType !== 'search') {
+          setViewType('search');
+          onSelectedIndexChange?.(0);
+        }
+      } else {
+        // 当搜索文本为空时，如果当前在搜索视图，返回主视图
+        if (viewType === 'search') {
+          setViewType('main');
+          onSelectedIndexChange?.(0);
+        }
+      }
+    }, [searchText, visible, viewType, onSelectedIndexChange]);
 
     // 获取最近使用的文件和数据源
     const recentFiles = useMemo(() => getRecentFiles(), []);
@@ -292,6 +312,31 @@ const MentionSelector = React.forwardRef<
           ];
           return [...recentItems, ...mainItems];
         }
+        case 'search': {
+          // 搜索视图：合并显示文件、文件夹和数据资源
+          const searchItems: Array<
+            | { type: 'file'; file: FileNode }
+            | { type: 'folder'; file: FileNode }
+            | { type: 'datasource'; dataSource: DataResource }
+          > = [];
+
+          // 添加文件
+          flattenedFiles.forEach((file) => {
+            searchItems.push({ type: 'file', file });
+          });
+
+          // 添加文件夹
+          flattenedFolders.forEach((folder) => {
+            searchItems.push({ type: 'folder', file: folder });
+          });
+
+          // 添加数据资源
+          filteredDataSources.forEach((ds) => {
+            searchItems.push({ type: 'datasource', dataSource: ds });
+          });
+
+          return searchItems;
+        }
         case 'files':
           // 文件列表视图：先返回文件，再返回目录（与渲染顺序一致）
           return [...flattenedFiles, ...flattenedFolders];
@@ -437,6 +482,35 @@ const MentionSelector = React.forwardRef<
           }
           break;
         }
+        case 'search': {
+          // 搜索视图：处理文件、文件夹或数据资源选择
+          const currentItem = currentItems[validIndex];
+          if (!currentItem || !('type' in currentItem)) break;
+
+          if (
+            currentItem.type === 'file' &&
+            'file' in currentItem &&
+            currentItem.file
+          ) {
+            // 文件
+            handleFileSelect(currentItem.file);
+          } else if (
+            currentItem.type === 'folder' &&
+            'file' in currentItem &&
+            currentItem.file
+          ) {
+            // 文件夹
+            handleFileSelect(currentItem.file);
+          } else if (
+            currentItem.type === 'datasource' &&
+            'dataSource' in currentItem &&
+            currentItem.dataSource
+          ) {
+            // 数据资源
+            handleDataSourceSelect(currentItem.dataSource);
+          }
+          break;
+        }
         case 'files': {
           // 文件列表视图：处理文件或目录选择
           // getCurrentItems 已经按顺序返回了 [文件列表, 目录列表]
@@ -487,9 +561,51 @@ const MentionSelector = React.forwardRef<
       }
     };
 
+    /**
+     * 处理 ESC 键返回上一级
+     * @returns 如果处理了 ESC 键（返回了上一级），返回 true；否则返回 false
+     */
+    const handleEscapeKey = () => {
+      switch (viewType) {
+        case 'search':
+          // 搜索视图返回到主视图
+          setViewType('main');
+          onSelectedIndexChange?.(0);
+          return true;
+        case 'files':
+          // 文件列表视图返回到主视图
+          setViewType('main');
+          onSelectedIndexChange?.(0);
+          return true;
+        case 'datasources':
+          // 数据源分类视图返回到主视图
+          setViewType('main');
+          setSelectedCategory('');
+          onSelectedIndexChange?.(0);
+          return true;
+        case 'datasource-list':
+          // 数据源列表视图返回到主视图
+          setViewType('main');
+          onSelectedIndexChange?.(0);
+          return true;
+        case 'datasource-category':
+          // 数据源分类详情视图返回到数据源分类视图
+          setViewType('datasources');
+          setSelectedCategory('');
+          onSelectedIndexChange?.(0);
+          return true;
+        case 'main':
+          // 主视图不处理，由父组件关闭弹层
+          return false;
+        default:
+          return false;
+      }
+    };
+
     // 暴露方法给父组件
     useImperativeHandle(ref, () => ({
       handleSelectCurrentItem,
+      handleEscapeKey,
     }));
 
     /**
@@ -634,6 +750,148 @@ const MentionSelector = React.forwardRef<
               </div>
             ))}
           </div>
+        </div>
+      );
+    };
+
+    /**
+     * 渲染搜索视图（合并显示文件、文件夹和数据资源）
+     */
+    const renderSearchView = () => {
+      // 计算当前索引对应的项在哪个分组
+      let currentSection: 'files' | 'folders' | 'datasources' | null = null;
+      let currentItemIndex = 0;
+
+      // 计算当前选中项在哪个分组
+      if (selectedIndex < flattenedFiles.length) {
+        currentSection = 'files';
+        currentItemIndex = selectedIndex;
+      } else if (
+        selectedIndex <
+        flattenedFiles.length + flattenedFolders.length
+      ) {
+        currentSection = 'folders';
+        currentItemIndex = selectedIndex - flattenedFiles.length;
+      } else {
+        currentSection = 'datasources';
+        currentItemIndex =
+          selectedIndex - flattenedFiles.length - flattenedFolders.length;
+      }
+
+      // 如果所有结果都为空，显示空状态
+      if (
+        flattenedFiles.length === 0 &&
+        flattenedFolders.length === 0 &&
+        filteredDataSources.length === 0
+      ) {
+        return (
+          <div className={styles['mention-content']}>
+            <Empty
+              description="未找到匹配的结果"
+              className={styles['mention-empty']}
+            />
+          </div>
+        );
+      }
+
+      return (
+        <div className={styles['mention-content']}>
+          {/* 文件分组 */}
+          {flattenedFiles.length > 0 && (
+            <>
+              <div className={styles['mention-section-title']}>文件</div>
+              <div className={styles['mention-list']}>
+                {flattenedFiles.map((file, index) => (
+                  <div
+                    key={`file-${file.id}`}
+                    className={`${styles['mention-item']} ${
+                      currentSection === 'files' && index === currentItemIndex
+                        ? styles.selected
+                        : ''
+                    }`}
+                    onClick={() => handleFileSelect(file)}
+                  >
+                    <div className={styles['mention-item-icon']}>
+                      <FileOutlined />
+                    </div>
+                    <div className={styles['mention-item-content']}>
+                      <div className={styles['mention-item-title']}>
+                        {file.name}
+                      </div>
+                      <div className={styles['mention-item-desc']}>
+                        {file.path}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* 文件夹分组 */}
+          {flattenedFolders.length > 0 && (
+            <>
+              <div className={styles['mention-section-title']}>文件夹</div>
+              <div className={styles['mention-list']}>
+                {flattenedFolders.map((folder, index) => (
+                  <div
+                    key={`folder-${folder.id}`}
+                    className={`${styles['mention-item']} ${
+                      currentSection === 'folders' && index === currentItemIndex
+                        ? styles.selected
+                        : ''
+                    }`}
+                    onClick={() => handleFileSelect(folder)}
+                  >
+                    <div className={styles['mention-item-icon']}>
+                      <FolderOutlined />
+                    </div>
+                    <div className={styles['mention-item-content']}>
+                      <div className={styles['mention-item-title']}>
+                        {folder.name}
+                      </div>
+                      <div className={styles['mention-item-desc']}>
+                        {folder.path}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* 数据资源分组 */}
+          {filteredDataSources.length > 0 && (
+            <>
+              <div className={styles['mention-section-title']}>数据资源</div>
+              <div className={styles['mention-list']}>
+                {filteredDataSources.map((ds, index) => (
+                  <div
+                    key={`datasource-${ds.id}`}
+                    className={`${styles['mention-item']} ${
+                      currentSection === 'datasources' &&
+                      index === currentItemIndex
+                        ? styles.selected
+                        : ''
+                    }`}
+                    onClick={() => handleDataSourceSelect(ds)}
+                  >
+                    <div className={styles['mention-item-icon']}>
+                      <DatabaseOutlined />
+                    </div>
+                    <div className={styles['mention-item-content']}>
+                      <div className={styles['mention-item-title']}>
+                        {ds.name}
+                      </div>
+                      <div className={styles['mention-item-desc']}>
+                        {ds.description || getDefaultDescription(ds.type)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       );
     };
@@ -916,6 +1174,8 @@ const MentionSelector = React.forwardRef<
      */
     const renderContent = () => {
       switch (viewType) {
+        case 'search':
+          return renderSearchView();
         case 'files':
           return renderFilesView();
         case 'datasources':

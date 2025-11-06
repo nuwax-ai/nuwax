@@ -36,6 +36,7 @@ export interface MentionPosition {
  */
 export type ViewType =
   | 'main'
+  | 'search'
   | 'files'
   | 'datasources'
   | 'datasource-list'
@@ -47,6 +48,8 @@ export type ViewType =
 export interface MentionSelectorHandle {
   /** 处理当前选中项的选择 */
   handleSelectCurrentItem: () => void;
+  /** 处理 ESC 键返回上一级 */
+  handleEscapeKey: () => boolean;
 }
 
 /**

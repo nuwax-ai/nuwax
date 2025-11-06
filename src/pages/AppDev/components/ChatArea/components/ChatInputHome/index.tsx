@@ -364,12 +364,25 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
       const { key, keyCode } = e.nativeEvent;
 
-      // Esc 键：关闭下拉菜单
+      // Esc 键：处理返回上一级或关闭下拉菜单
       if (key === 'Escape' || keyCode === 27) {
         e.preventDefault();
-        setMentionTrigger({ trigger: false });
-        setMentionPosition({ left: 0, top: 0, visible: false });
-        setMentionSelectedIndex(0);
+        // 如果 MentionSelector 不在主视图，尝试返回上一级
+        if (mentionSelectorRef.current) {
+          const handled = mentionSelectorRef.current.handleEscapeKey();
+          // 如果返回了上一级（返回 true），则不关闭弹层
+          // 如果已经在主视图（返回 false），则关闭弹层
+          if (!handled) {
+            setMentionTrigger({ trigger: false });
+            setMentionPosition({ left: 0, top: 0, visible: false });
+            setMentionSelectedIndex(0);
+          }
+        } else {
+          // 如果 ref 不存在，直接关闭弹层
+          setMentionTrigger({ trigger: false });
+          setMentionPosition({ left: 0, top: 0, visible: false });
+          setMentionSelectedIndex(0);
+        }
         return;
       }
 
