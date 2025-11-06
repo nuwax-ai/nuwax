@@ -1,5 +1,4 @@
 import defaultAvatar from '@/assets/images/avatar.png';
-import { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -9,14 +8,27 @@ const cx = classNames.bind(styles);
 
 // 模板组件属性
 export interface PageCardProps {
-  publishedItemInfo: SquarePublishedItemInfo;
+  icon: string;
+  name: string;
+  avatar: string;
+  userName: string;
+  created: string;
+  overlayText?: string;
   onClick: () => void;
 }
 
 /**
  * 应用页面卡片
  */
-const PageCard: React.FC<PageCardProps> = ({ publishedItemInfo, onClick }) => {
+const PageCard: React.FC<PageCardProps> = ({
+  icon,
+  name,
+  avatar,
+  userName,
+  created,
+  overlayText,
+  onClick,
+}) => {
   // 图片错误处理
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     e.currentTarget.onerror = null;
@@ -26,11 +38,7 @@ const PageCard: React.FC<PageCardProps> = ({ publishedItemInfo, onClick }) => {
   return (
     <div className={cx('flex', 'flex-col', styles.container)} onClick={onClick}>
       <div className={cx(styles['image-wrapper'])}>
-        <img
-          className={cx(styles.image)}
-          src={publishedItemInfo.icon}
-          alt="应用页面图标"
-        />
+        <img className={cx(styles.image)} src={icon} alt="应用页面图标" />
         <div
           className={cx(
             styles['image-overlay'],
@@ -39,24 +47,23 @@ const PageCard: React.FC<PageCardProps> = ({ publishedItemInfo, onClick }) => {
             'content-center',
           )}
         >
-          <span className={cx(styles['image-overlay-text'])}>开始使用</span>
+          <span className={cx(styles['image-overlay-text'])}>
+            {overlayText || '开始使用'}
+          </span>
         </div>
       </div>
       <footer className={cx('flex', 'flex-col', 'gap-4')}>
-        <p className={cx(styles.name)}>{publishedItemInfo.name}</p>
+        <p className={cx(styles.name)}>{name}</p>
         <div className={cx('flex', 'items-center', 'gap-4')}>
           <img
             className={cx(styles.avatar)}
-            src={publishedItemInfo?.publishUser?.avatar || defaultAvatar}
+            src={avatar || defaultAvatar}
             alt="avatar"
             onError={handleError}
           />
-          <span className={cx(styles['author-name'])}>
-            {publishedItemInfo.publishUser.nickName ||
-              publishedItemInfo.publishUser.userName}
-          </span>
+          <span className={cx(styles['author-name'])}>{userName}</span>
           <span className={cx(styles.time)}>
-            发布于 {dayjs(publishedItemInfo.created).format('YYYY-MM-DD')}
+            发布于 {dayjs(created).format('YYYY-MM-DD')}
           </span>
         </div>
       </footer>

@@ -7,6 +7,7 @@ import EcosystemShareModal, {
   EcosystemShareModalData,
 } from '@/components/EcosystemShareModal';
 import NoMoreDivider from '@/components/NoMoreDivider';
+import PageCard from '@/components/PageCard';
 import SelectComponent from '@/components/SelectComponent';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { TabItems, TabTypeEnum } from '@/constants/ecosystem.constants';
@@ -819,20 +820,35 @@ export default function EcosystemTemplate() {
                     config.targetSubType === 'PageApp'
                       ? AgentComponentTypeEnum.Page
                       : config.targetType;
-                  return (
-                    <EcosystemCard
-                      key={config?.uid}
-                      {...convertToTemplateCard(config)}
-                      onClick={async () => await handleCardClick(config)}
-                      footer={
-                        <footer className={cx('flex', 'items-center')}>
-                          <AgentType
-                            type={type as unknown as AgentComponentTypeEnum}
-                          />
-                        </footer>
-                      }
-                    />
-                  );
+                  if (type === AgentComponentTypeEnum.Page) {
+                    return (
+                      <PageCard
+                        key={config?.uid}
+                        icon={config.icon || ''}
+                        name={config.name || ''}
+                        avatar={''}
+                        userName={config.author || ''}
+                        created={config.created || ''}
+                        overlayText="查看详情"
+                        onClick={async () => await handleCardClick(config)}
+                      />
+                    );
+                  } else {
+                    return (
+                      <EcosystemCard
+                        key={config?.uid}
+                        {...convertToTemplateCard(config)}
+                        onClick={async () => await handleCardClick(config)}
+                        footer={
+                          <footer className={cx('flex', 'items-center')}>
+                            <AgentType
+                              type={type as unknown as AgentComponentTypeEnum}
+                            />
+                          </footer>
+                        }
+                      />
+                    );
+                  }
                 })}
               </div>
               {!(pagination.current < (pluginData.pages || 0)) && (

@@ -327,7 +327,14 @@ const Square: React.FC = () => {
                     return (
                       <PageCard
                         key={index}
-                        publishedItemInfo={item}
+                        icon={item.icon}
+                        name={item.name}
+                        avatar={item.publishUser?.avatar}
+                        userName={
+                          item.publishUser?.nickName ||
+                          item.publishUser?.userName
+                        }
+                        created={item.created}
                         onClick={() =>
                           handleClick(item.targetId, item.targetType, item)
                         }
