@@ -429,29 +429,43 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   );
 
   // 点击发送事件
-  const handleSendMessage = (requestId?: string) => {
-    if (chat.chatInput?.trim()) {
-      const files = attachmentFiles?.filter(
-        (item) => item.status === UploadFileStatus.done && item.url && item.key,
-      );
-      const prototypeImages = attachmentPrototypeImages?.filter(
-        (item) => item.status === UploadFileStatus.done && item.url && item.key,
-      );
-      // enter事件 - 传递上传的附件、原型图片 和 @ 提及的文件/目录/数据资源
-      onEnter(files, prototypeImages, selectedMentions, requestId);
-      // 清空输入框
-      chat.setChatInput('');
-      // 清空附件文件列表
-      setAttachmentFiles([]);
-      // 清空原型图片附件列表
-      setAttachmentPrototypeImages([]);
-      // 清空提及列表
-      setSelectedMentions([]);
-    }
-  };
+  const handleSendMessage = useCallback(
+    (requestId?: string) => {
+      if (chat.chatInput?.trim()) {
+        const files = attachmentFiles?.filter(
+          (item) =>
+            item.status === UploadFileStatus.done && item.url && item.key,
+        );
+        const prototypeImages = attachmentPrototypeImages?.filter(
+          (item) =>
+            item.status === UploadFileStatus.done && item.url && item.key,
+        );
+        // enter事件 - 传递上传的附件、原型图片 和 @ 提及的文件/目录/数据资源
+        onEnter(files, prototypeImages, selectedMentions, requestId);
+        // 清空输入框
+        chat.setChatInput('');
+        // 清空附件文件列表
+        setAttachmentFiles([]);
+        // 清空原型图片附件列表
+        setAttachmentPrototypeImages([]);
+        // 清空提及列表
+        setSelectedMentions([]);
+      }
+    },
+    [
+      chat.chatInput,
+      attachmentFiles,
+      attachmentPrototypeImages,
+      selectedMentions,
+      onEnter,
+    ],
+  );
 
   // enter事件
-  const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handlePressEnter = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+    selectedMentionsParam: MentionItem[],
+  ) => {
     // 如果下拉菜单显示，Enter 键由 handleKeyDown 处理
     if (mentionTrigger.trigger && mentionPosition.visible) {
       return;
@@ -487,7 +501,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         (item) => item.status === UploadFileStatus.done && item.url && item.key,
       );
       // enter事件
-      onEnter(files, prototypeImages);
+      onEnter(files, prototypeImages, selectedMentionsParam);
       // 清空输入框
       chat.setChatInput('');
       // 清空附件文件列表
@@ -914,7 +928,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           rootClassName={cx(styles.input)}
-          onPressEnter={handlePressEnter}
+          onPressEnter={(e) => handlePressEnter(e, selectedMentions)}
           onPaste={handlePaste}
           placeholder="一句话做网站、应用、提效工具等，可选择工作流、插件等数据资源拓展多种能力"
           autoSize={{ minRows: 2, maxRows: 6 }}

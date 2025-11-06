@@ -14,6 +14,7 @@ import {
 } from '@ant-design/icons';
 import { Empty } from 'antd';
 import React, {
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -378,31 +379,46 @@ const MentionSelector = React.forwardRef<
     }, [getCurrentItems]);
 
     /**
-     * 处理文件选择（参考 Ant Design Mentions，选择后关闭弹窗）
+     * 统一处理所有末级节点的选择（文件、文件夹、数据源）
+     * 用于统一处理 click 和回车事件
+     * 自动判断节点类型并调用对应的回调函数
+     * 与之前的 handleFileSelect 和 handleDataSourceSelect 逻辑一致
      */
-    const handleFileSelect = (file: FileNode) => {
-      saveRecentFile(file);
-      onSelectFile(file);
-      // 选择后关闭弹窗（由父组件通过 onSelectFile 回调处理）
-    };
-
-    /**
-     * 处理数据源选择（参考 Ant Design Mentions，选择后关闭弹窗）
-     */
-    const handleDataSourceSelect = (dataSource: DataResource) => {
-      saveRecentDataSource(dataSource);
-      onSelectDataSource(dataSource);
-      // 选择后关闭弹窗（由父组件通过 onSelectDataSource 回调处理）
-    };
+    const handleItemSelect = useCallback(
+      (item: FileNode | DataResource) => {
+        // 判断是文件节点还是数据源：FileNode 有 path 属性（必需），DataResource 没有 path 属性
+        if ('path' in item) {
+          // 是文件节点（文件或文件夹）
+          const file = item as FileNode;
+          saveRecentFile(file);
+          // 确保回调函数存在并调用
+          if (onSelectFile) {
+            onSelectFile(file);
+          }
+        } else {
+          // 是数据源（DataResource 没有 path 属性）
+          const dataSource = item as DataResource;
+          saveRecentDataSource(dataSource);
+          // 确保回调函数存在并调用
+          if (onSelectDataSource) {
+            onSelectDataSource(dataSource);
+          }
+        }
+      },
+      [onSelectFile, onSelectDataSource],
+    );
 
     /**
      * 处理最近使用项选择
      */
     const handleRecentItemSelect = (item: (typeof recentItems)[0]) => {
       if (item.type === 'file' && item.file) {
-        handleFileSelect(item.file);
+        handleItemSelect(item.file);
+      } else if (item.type === 'folder' && item.file) {
+        // 文件夹类型也使用 handleItemSelect 处理
+        handleItemSelect(item.file);
       } else if (item.type === 'datasource' && item.dataSource) {
-        handleDataSourceSelect(item.dataSource);
+        handleItemSelect(item.dataSource);
       }
     };
 
@@ -443,86 +459,121 @@ const MentionSelector = React.forwardRef<
 
     /**
      * 处理当前选中项的选择（用于键盘导航回车确认）
+     * 统一处理所有视图的选择逻辑，与点击处理保持一致
+     * 直接调用 handleItemSelect，确保与点击事件完全一致
      */
     const handleSelectCurrentItem = () => {
-      const currentItems = getCurrentItems;
-      const validIndex = Math.min(selectedIndex, currentItems.length - 1);
-      if (validIndex < 0 || validIndex >= currentItems.length) {
-        return;
-      }
-
       switch (viewType) {
         case 'main': {
           // 主视图：处理最近使用项或操作项
+          const currentItems = getCurrentItems;
+          const validIndex = Math.min(selectedIndex, currentItems.length - 1);
+          if (validIndex < 0 || validIndex >= currentItems.length) {
+            break;
+          }
+
           const currentItem = currentItems[validIndex];
           if (!currentItem) break;
 
-          // 判断是最近使用项还是操作项
-          if ('type' in currentItem && currentItem.type === 'action') {
-            // 操作项（文件/目录 或 数据资源）
-            const actionItem = currentItem as {
-              type: 'action';
-              key: string;
-              label: string;
-            };
-            if (actionItem.key === 'files') {
-              // 文件/目录
-              handleFilesClick();
-            } else if (actionItem.key === 'datasources') {
-              // 数据资源
-              handleDataSourcesClick();
-            }
-          } else if (
-            ('type' in currentItem && currentItem.type === 'file') ||
-            ('type' in currentItem && currentItem.type === 'folder') ||
-            ('type' in currentItem && currentItem.type === 'datasource')
-          ) {
+          // 通过索引判断：索引 < recentItems.length 的是最近使用项，否则是操作项
+          if (validIndex < recentItems.length) {
             // 最近使用项（文件、目录或数据源）
-            handleRecentItemSelect(currentItem as (typeof recentItems)[0]);
+            // 直接使用 recentItems 中的项，确保数据完整
+            const recentItem = recentItems[validIndex];
+            if (recentItem) {
+              handleRecentItemSelect(recentItem);
+            }
+          } else {
+            // 操作项（文件/目录 或 数据资源）
+            if ('type' in currentItem && currentItem.type === 'action') {
+              const actionItem = currentItem as {
+                type: 'action';
+                key: string;
+                label: string;
+              };
+              if (actionItem.key === 'files') {
+                // 文件/目录
+                handleFilesClick();
+              } else if (actionItem.key === 'datasources') {
+                // 数据资源
+                handleDataSourcesClick();
+              }
+            }
           }
           break;
         }
         case 'search': {
           // 搜索视图：处理文件、文件夹或数据资源选择
-          const currentItem = currentItems[validIndex];
-          if (!currentItem || !('type' in currentItem)) break;
+          // 与点击处理保持一致：直接使用原始数组，而不是从 getCurrentItems 获取
+          const totalItems =
+            flattenedFiles.length +
+            flattenedFolders.length +
+            filteredDataSources.length;
+          const validIndex = Math.min(selectedIndex, totalItems - 1);
+          if (validIndex < 0 || validIndex >= totalItems) {
+            break;
+          }
 
-          if (
-            currentItem.type === 'file' &&
-            'file' in currentItem &&
-            currentItem.file
-          ) {
+          if (validIndex < flattenedFiles.length) {
             // 文件
-            handleFileSelect(currentItem.file);
+            const file = flattenedFiles[validIndex];
+            if (file) {
+              handleItemSelect(file);
+            }
           } else if (
-            currentItem.type === 'folder' &&
-            'file' in currentItem &&
-            currentItem.file
+            validIndex <
+            flattenedFiles.length + flattenedFolders.length
           ) {
             // 文件夹
-            handleFileSelect(currentItem.file);
-          } else if (
-            currentItem.type === 'datasource' &&
-            'dataSource' in currentItem &&
-            currentItem.dataSource
-          ) {
+            const folderIndex = validIndex - flattenedFiles.length;
+            const folder = flattenedFolders[folderIndex];
+            if (folder) {
+              handleItemSelect(folder);
+            }
+          } else {
             // 数据资源
-            handleDataSourceSelect(currentItem.dataSource);
+            const dsIndex =
+              validIndex - flattenedFiles.length - flattenedFolders.length;
+            const dataSource = filteredDataSources[dsIndex];
+            if (dataSource) {
+              handleItemSelect(dataSource);
+            }
           }
           break;
         }
         case 'files': {
           // 文件列表视图：处理文件或目录选择
-          // getCurrentItems 已经按顺序返回了 [文件列表, 目录列表]
-          const currentItem = currentItems[validIndex];
-          if (currentItem && 'id' in currentItem) {
-            // 是文件节点（FileNode），直接选择
-            handleFileSelect(currentItem as FileNode);
+          // 与点击处理保持一致：直接使用原始数组，而不是从 getCurrentItems 获取
+          const totalItems = flattenedFiles.length + flattenedFolders.length;
+          const validIndex = Math.min(selectedIndex, totalItems - 1);
+          if (validIndex < 0 || validIndex >= totalItems) {
+            break;
+          }
+
+          if (validIndex < flattenedFiles.length) {
+            // 文件
+            const file = flattenedFiles[validIndex];
+            if (file) {
+              handleItemSelect(file);
+            }
+          } else {
+            // 目录
+            const folderIndex = validIndex - flattenedFiles.length;
+            const folder = flattenedFolders[folderIndex];
+            if (folder) {
+              handleItemSelect(folder);
+            }
           }
           break;
         }
         case 'datasources': {
           // 数据源分类视图：处理分类点击
+          const currentItems = getCurrentItems;
+          const validIndex = Math.min(selectedIndex, currentItems.length - 1);
+          if (validIndex < 0 || validIndex >= currentItems.length) {
+            break;
+          }
+
           const currentItem = currentItems[validIndex] as
             | {
                 type: 'category';
@@ -538,21 +589,38 @@ const MentionSelector = React.forwardRef<
         }
         case 'datasource-list': {
           // 数据源列表视图：处理数据源选择
-          const currentItem = currentItems[validIndex] as
-            | DataResource
-            | undefined;
-          if (currentItem && 'id' in currentItem && 'name' in currentItem) {
-            handleDataSourceSelect(currentItem as DataResource);
+          // 与点击处理保持一致：直接使用原始数组，而不是从 getCurrentItems 获取
+          const validIndex = Math.min(
+            selectedIndex,
+            filteredDataSources.length - 1,
+          );
+          if (validIndex < 0 || validIndex >= filteredDataSources.length) {
+            break;
+          }
+
+          const dataSource = filteredDataSources[validIndex];
+          if (dataSource) {
+            handleItemSelect(dataSource);
           }
           break;
         }
         case 'datasource-category': {
           // 数据源分类详情视图：处理数据源选择
-          const currentItem = currentItems[validIndex] as
-            | DataResource
-            | undefined;
-          if (currentItem && 'id' in currentItem && 'name' in currentItem) {
-            handleDataSourceSelect(currentItem as DataResource);
+          // 与点击处理保持一致：直接使用原始数组，而不是从 getCurrentItems 获取
+          const categoryDataSources = selectedCategory
+            ? groupedDataSources[selectedCategory] || []
+            : [];
+          const validIndex = Math.min(
+            selectedIndex,
+            categoryDataSources.length - 1,
+          );
+          if (validIndex < 0 || validIndex >= categoryDataSources.length) {
+            break;
+          }
+
+          const dataSource = categoryDataSources[validIndex];
+          if (dataSource) {
+            handleItemSelect(dataSource);
           }
           break;
         }
@@ -707,7 +775,7 @@ const MentionSelector = React.forwardRef<
       const mainItems = [
         {
           key: 'files',
-          label: '文件/目录',
+          label: '文件/文件夹',
           icon: <FileOutlined />,
           onClick: handleFilesClick,
           description: '浏览项目文件',
@@ -809,7 +877,7 @@ const MentionSelector = React.forwardRef<
                         ? styles.selected
                         : ''
                     }`}
-                    onClick={() => handleFileSelect(file)}
+                    onClick={() => handleItemSelect(file)}
                   >
                     <div className={styles['mention-item-icon']}>
                       <FileOutlined />
@@ -841,7 +909,7 @@ const MentionSelector = React.forwardRef<
                         ? styles.selected
                         : ''
                     }`}
-                    onClick={() => handleFileSelect(folder)}
+                    onClick={() => handleItemSelect(folder)}
                   >
                     <div className={styles['mention-item-icon']}>
                       <FolderOutlined />
@@ -874,7 +942,7 @@ const MentionSelector = React.forwardRef<
                         ? styles.selected
                         : ''
                     }`}
-                    onClick={() => handleDataSourceSelect(ds)}
+                    onClick={() => handleItemSelect(ds)}
                   >
                     <div className={styles['mention-item-icon']}>
                       <DatabaseOutlined />
@@ -937,7 +1005,7 @@ const MentionSelector = React.forwardRef<
                 className={`${styles['mention-item']} ${
                   index === selectedIndex ? styles.selected : ''
                 }`}
-                onClick={() => handleFileSelect(file)}
+                onClick={() => handleItemSelect(file)}
               >
                 <div className={styles['mention-item-icon']}>
                   <FileOutlined />
@@ -959,7 +1027,7 @@ const MentionSelector = React.forwardRef<
                     ? styles.selected
                     : ''
                 }`}
-                onClick={() => handleFileSelect(folder)}
+                onClick={() => handleItemSelect(folder)}
               >
                 <div className={styles['mention-item-icon']}>
                   <FolderOutlined />
@@ -1083,7 +1151,7 @@ const MentionSelector = React.forwardRef<
                 className={`${styles['mention-item']} ${
                   index === selectedIndex ? styles.selected : ''
                 }`}
-                onClick={() => handleDataSourceSelect(ds)}
+                onClick={() => handleItemSelect(ds)}
               >
                 <div className={styles['mention-item-icon']}>
                   <DatabaseOutlined />
@@ -1151,7 +1219,7 @@ const MentionSelector = React.forwardRef<
                 className={`${styles['mention-item']} ${
                   index === selectedIndex ? styles.selected : ''
                 }`}
-                onClick={() => handleDataSourceSelect(ds)}
+                onClick={() => handleItemSelect(ds)}
               >
                 <div className={styles['mention-item-icon']}>
                   <DatabaseOutlined />
