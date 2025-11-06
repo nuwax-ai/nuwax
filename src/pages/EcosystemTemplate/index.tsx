@@ -795,10 +795,12 @@ export default function EcosystemTemplate() {
                 onChange={(value) => handleShareStatusChange(value)}
               />
             ) : (
-              <SelectCategory
-                targetType={selectTargetTypeRef.current.targetType}
-                onChange={(value) => handleCategoryChange(value)}
-              />
+              !!selectTargetTypeRef.current.targetType && (
+                <SelectCategory
+                  targetType={selectTargetTypeRef.current.targetType}
+                  onChange={(value) => handleCategoryChange(value)}
+                />
+              )
             )}
           </Space>
           {renderExtraContent()}
@@ -828,7 +830,11 @@ export default function EcosystemTemplate() {
                     config.targetSubType === 'PageApp'
                       ? AgentComponentTypeEnum.Page
                       : config.targetType;
-                  if (type === AgentComponentTypeEnum.Page) {
+                  // 如果目标类型是应用页面，不是选择的模板菜单，则显示应用页面卡片
+                  if (
+                    selectTargetTypeRef.current.targetType &&
+                    type === AgentComponentTypeEnum.Page
+                  ) {
                     return (
                       <PageCard
                         key={config?.uid}
