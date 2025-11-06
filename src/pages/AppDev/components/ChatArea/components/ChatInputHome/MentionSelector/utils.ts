@@ -393,7 +393,7 @@ export const calculateMentionPosition = (
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
   const minMargin = 8; // 最小边距
-  const horizontalOffset = 32 + 8; // 水平偏移量，让下拉菜单稍微靠右一点
+  const horizontalOffset = 8; // 水平偏移量，让下拉菜单稍微靠右一点
   const verticalOffset = -16; // 垂直偏移量，让下拉菜单稍微靠下一点
 
   // 计算弹层位置（参考 Ant Design Mentions 的智能定位）
