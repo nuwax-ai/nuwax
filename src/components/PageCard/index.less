@@ -17,6 +17,34 @@
     }
   }
 
+  // 右上角提示
+  .position-top-right {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 0 @borderRadius;
+    font-size: @fontSizeSm;
+    font-weight: @fontWeightStrong;
+
+    // 已启用
+    &.activated-text {
+      background: #ecf7ec;
+      color: #3bb346;
+      z-index: 9;
+    }
+
+    // 有版本更新
+    &.new-version-text {
+      background: #fff7e6;
+      color: #fc8800;
+      z-index: 10;
+    }
+  }
+
   .image-wrapper {
     position: relative;
     width: 100%;

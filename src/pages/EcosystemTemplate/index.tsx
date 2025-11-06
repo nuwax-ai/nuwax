@@ -838,6 +838,13 @@ export default function EcosystemTemplate() {
                         userName={config.author || ''}
                         created={config.created || ''}
                         overlayText="查看详情"
+                        isNewVersion={config.isNewVersion}
+                        isEnabled={
+                          activeTab === TabTypeEnum.ALL
+                            ? config.useStatus ===
+                              EcosystemUseStatusEnum.ENABLED
+                            : undefined
+                        }
                         onClick={async () => await handleCardClick(config)}
                       />
                     );
