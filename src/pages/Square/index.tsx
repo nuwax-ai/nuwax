@@ -2,6 +2,7 @@ import squareBannerImage from '@/assets/images/square_banner_image2.png';
 import ButtonToggle from '@/components/ButtonToggle';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
+import PageCard from '@/components/PageCard';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
 import { SQUARE_TEMPLATE_SEGMENTED_LIST } from '@/constants/square.constants';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
@@ -322,15 +323,34 @@ const Square: React.FC = () => {
                 } else if (
                   categoryTypeRef.current === SquareAgentTypeEnum.Template
                 ) {
-                  return (
-                    <TemplateItem
-                      key={index}
-                      publishedItemInfo={item}
-                      onClick={() =>
-                        handleClick(item.targetId, item.targetType, item)
-                      }
-                    />
-                  );
+                  if (activeKey === SquareTemplateTargetTypeEnum.Page) {
+                    return (
+                      <PageCard
+                        key={index}
+                        icon={item.icon}
+                        name={item.name}
+                        avatar={item.publishUser?.avatar}
+                        userName={
+                          item.publishUser?.nickName ||
+                          item.publishUser?.userName
+                        }
+                        created={item.created}
+                        onClick={() =>
+                          handleClick(item.targetId, item.targetType, item)
+                        }
+                      />
+                    );
+                  } else {
+                    return (
+                      <TemplateItem
+                        key={index}
+                        publishedItemInfo={item}
+                        onClick={() =>
+                          handleClick(item.targetId, item.targetType, item)
+                        }
+                      />
+                    );
+                  }
                 } else {
                   return (
                     <SquareComponentInfo

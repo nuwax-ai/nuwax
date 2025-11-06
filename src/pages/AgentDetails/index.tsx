@@ -1,14 +1,16 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
-import PagePreviewIframe from '@/components/business-component/PagePreviewIframe';
+import {
+  CopyToSpaceComponent,
+  PagePreviewIframe,
+} from '@/components/business-component';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
 import useAgentDetails from '@/hooks/useAgentDetails';
-import { useCopyTemplate } from '@/hooks/useCopyTemplate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
@@ -27,7 +29,8 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import { arraysContainSameItems } from '@/utils/common';
+import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
+import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Button, Form, message, Typography } from 'antd';
 import classNames from 'classnames';
@@ -235,8 +238,8 @@ const AgentDetails: React.FC = () => {
 
   const { pagePreviewData, hidePagePreview } = useModel('chat');
 
-  // 复制模板功能
-  const { openCopyModal, renderCopyModal } = useCopyTemplate();
+  // 页面复制弹窗状态
+  const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
 
   // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
   // 支持多种可能的参数名：workflowId, workflow_id, id
@@ -266,7 +269,7 @@ const AgentDetails: React.FC = () => {
     return null;
   }, [pagePreviewData?.params, pagePreviewData?.uri]);
 
-  // 判断是否显示复制按钮（智能体允许复制即可显示，支持复制智能体或工作流模板）
+  // 判断是否显示复制按钮（智能体允许复制即可显示，支持复制智能体、工作流或页面模板）
   const showCopyButton = useMemo(() => {
     const shouldShow = agentDetail?.allowCopy === AllowCopyEnum.Yes;
     // 调试：输出相关信息
@@ -442,28 +445,27 @@ const AgentDetails: React.FC = () => {
                   // 复制模板按钮相关 props
                   showCopyButton={showCopyButton}
                   allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
-                  onCopyClick={openCopyModal}
+                  onCopyClick={() => setOpenPageCopyModal(true)}
                   copyButtonText="复制模板"
                   copyButtonClassName={styles['copy-btn']}
                 />
                 {/* 复制模板弹窗 */}
-                {showCopyButton &&
-                  agentDetail &&
-                  (workflowId
-                    ? // 如果有工作流ID，复制工作流模板
-                      renderCopyModal(
-                        agentDetail.spaceId,
-                        AgentComponentTypeEnum.Workflow,
-                        workflowId,
-                        agentDetail.name || '工作流',
-                      )
-                    : // 否则复制智能体模板
-                      renderCopyModal(
-                        agentDetail.spaceId,
-                        AgentComponentTypeEnum.Agent,
-                        agentDetail.agentId,
-                        agentDetail.name || '智能体',
-                      ))}
+                {showCopyButton && agentDetail && pagePreviewData?.uri && (
+                  <CopyToSpaceComponent
+                    spaceId={agentDetail.spaceId}
+                    mode={AgentComponentTypeEnum.Page}
+                    componentId={parsePageAppProjectId(pagePreviewData.uri)}
+                    title={''}
+                    open={openPageCopyModal}
+                    isTemplate={true}
+                    onSuccess={(_: any, targetSpaceId: number) => {
+                      setOpenPageCopyModal(false);
+                      // 跳转
+                      jumpToPageDevelop(targetSpaceId);
+                    }}
+                    onCancel={() => setOpenPageCopyModal(false)}
+                  />
+                )}
               </>
             )
           }

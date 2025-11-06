@@ -108,7 +108,7 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
       centered
       title={
         <header className={cx(styles.header, 'text-ellipsis')}>
-          {`${actionText}${componentType} - ${title}`}
+          {`${actionText}${componentType}${title ? ` - ${title}` : ''}`}
         </header>
       }
       footer={() => (

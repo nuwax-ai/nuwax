@@ -1,15 +1,14 @@
+import { CopyToSpaceComponent } from '@/components/business-component';
 import ButtonToggle from '@/components/ButtonToggle';
 import Loading from '@/components/custom/Loading';
 import SelectList from '@/components/custom/SelectList';
 import CustomPopover from '@/components/CustomPopover';
-import MoveCopyComponent from '@/components/MoveCopyComponent';
 import {
   PAGE_DEVELOP_ALL_TYPE,
   PAGE_DEVELOP_CREATE_TYPE_LIST,
 } from '@/constants/pageDev.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
 import {
-  apiCustomPageCopyProject,
   apiCustomPageQueryList,
   apiPageDeleteProject,
   apiPageGetProjectInfo,
@@ -22,7 +21,7 @@ import {
   PageDevelopSelectTypeEnum,
   PageProjectTypeEnum,
 } from '@/types/enums/pageDev';
-import { ApplicationMoreActionEnum, CreateListEnum } from '@/types/enums/space';
+import { CreateListEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import {
   CreateCustomPageInfo,
@@ -92,8 +91,6 @@ const SpacePageDevelop: React.FC = () => {
   // 打开复制到空间弹窗
   const [openCopyToSpaceModal, setOpenCopyToSpaceModal] =
     useState<boolean>(false);
-  // 复制到空间加载中
-  const [loadingCopyToSpace, setLoadingCopyToSpace] = useState<boolean>(false);
   // 创建
   const [create, setCreate] = useState<CreateListEnum>(
     Number(searchParams.get('create')) || CreateListEnum.All_Person,
@@ -172,19 +169,6 @@ const SpacePageDevelop: React.FC = () => {
       pageAllRef.current = pageAllRef.current.filter(
         (item) => item.projectId !== projectId,
       );
-    },
-  });
-
-  // 复制到空间接口
-  const { run: runCopyToSpace } = useRequest(apiCustomPageCopyProject, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      message.success('页面复制成功');
-      setLoadingCopyToSpace(false);
-    },
-    onError: () => {
-      setLoadingCopyToSpace(false);
     },
   });
 
@@ -360,17 +344,6 @@ const SpacePageDevelop: React.FC = () => {
     });
   };
 
-  // 确认复制到空间
-  const handleConfirmCopyToSpace = (targetSpaceId: number) => {
-    setLoadingCopyToSpace(true);
-    setOpenCopyToSpaceModal(false);
-    const data = {
-      projectId,
-      targetSpaceId,
-    };
-    runCopyToSpace(data);
-  };
-
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <Row>
@@ -483,16 +456,24 @@ const SpacePageDevelop: React.FC = () => {
         onConfirm={handleConfirmAuthConfig}
       />
       {/*复制到空间弹窗*/}
-      <MoveCopyComponent
-        spaceId={spaceId}
-        loading={loadingCopyToSpace}
-        type={ApplicationMoreActionEnum.Copy_To_Space}
-        mode={AgentComponentTypeEnum.Page}
-        open={openCopyToSpaceModal}
-        title={currentPageInfo?.name}
-        onCancel={() => setOpenCopyToSpaceModal(false)}
-        onConfirm={handleConfirmCopyToSpace}
-      />
+      {currentPageInfo && (
+        <CopyToSpaceComponent
+          spaceId={spaceId}
+          mode={AgentComponentTypeEnum.Page}
+          componentId={projectId}
+          title={currentPageInfo.name}
+          open={openCopyToSpaceModal}
+          isTemplate={false}
+          onCancel={() => setOpenCopyToSpaceModal(false)}
+          onSuccess={(data: any, targetSpaceId: number) => {
+            if (targetSpaceId === spaceId) {
+              runPageList({
+                spaceId,
+              });
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

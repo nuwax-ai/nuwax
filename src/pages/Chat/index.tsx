@@ -1,7 +1,10 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
-import PagePreviewIframe from '@/components/business-component/PagePreviewIframe';
+import {
+  CopyToSpaceComponent,
+  PagePreviewIframe,
+} from '@/components/business-component';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
@@ -9,7 +12,6 @@ import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
-import { useCopyTemplate } from '@/hooks/useCopyTemplate';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -25,8 +27,13 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import { addBaseTarget, arraysContainSameItems } from '@/utils/common';
+import {
+  addBaseTarget,
+  arraysContainSameItems,
+  parsePageAppProjectId,
+} from '@/utils/common';
 import eventBus from '@/utils/eventBus';
+import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import classNames from 'classnames';
@@ -109,8 +116,8 @@ const Chat: React.FC = () => {
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
 
-  // 复制模板功能
-  const { openCopyModal, renderCopyModal } = useCopyTemplate();
+  // 复制模板弹窗状态
+  const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
 
   // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
   // 支持多种可能的参数名：workflowId, workflow_id, id
@@ -629,28 +636,27 @@ const Chat: React.FC = () => {
                   // 复制模板按钮相关 props
                   showCopyButton={showCopyButton}
                   allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
-                  onCopyClick={openCopyModal}
+                  onCopyClick={() => setOpenCopyModal(true)}
                   copyButtonText="复制模板"
                   copyButtonClassName={styles['copy-btn']}
                 />
                 {/* 复制模板弹窗 */}
-                {showCopyButton &&
-                  agentDetail &&
-                  (workflowId
-                    ? // 如果有工作流ID，复制工作流模板
-                      renderCopyModal(
-                        agentDetail.spaceId,
-                        AgentComponentTypeEnum.Workflow,
-                        workflowId,
-                        agentDetail.name || '工作流',
-                      )
-                    : // 否则复制智能体模板
-                      renderCopyModal(
-                        agentDetail.spaceId,
-                        AgentComponentTypeEnum.Agent,
-                        agentDetail.agentId,
-                        agentDetail.name || '智能体',
-                      ))}
+                {showCopyButton && agentDetail && pagePreviewData?.uri && (
+                  <CopyToSpaceComponent
+                    spaceId={agentDetail.spaceId}
+                    mode={AgentComponentTypeEnum.Page}
+                    componentId={parsePageAppProjectId(pagePreviewData?.uri)}
+                    title={''}
+                    open={openCopyModal}
+                    isTemplate={true}
+                    onSuccess={(_: any, targetSpaceId: number) => {
+                      setOpenCopyModal(false);
+                      // 跳转
+                      jumpToPageDevelop(targetSpaceId);
+                    }}
+                    onCancel={() => setOpenCopyModal(false)}
+                  />
+                )}
               </>
             )
           }
