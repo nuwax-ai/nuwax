@@ -245,6 +245,14 @@ const findClassElement = (currentElement: HTMLElement, className: string) => {
   return findParentElement(currentElement, className);
 };
 const noop = () => {};
+
+// 解析 pageApp 页面 projectId 示例是"https://testagent.xspaceagi.com/page/3838117383245824-1044/prod/" 3838117383245824 就是 projectId 要去除-1044
+const parsePageAppProjectId = (uri: string): number => {
+  const pattern = /\/(\d+)(?=-\d+\/)/;
+  const match = uri.match(pattern);
+  return match && match[1] ? Number(match[1]) : -1;
+};
+
 export {
   addBaseTarget,
   arraysContainSameItems,
@@ -267,6 +275,7 @@ export {
   mergeObject,
   noop,
   parseJSON,
+  parsePageAppProjectId,
   validatePassword,
   validateTableName,
 };
