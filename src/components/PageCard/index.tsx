@@ -2,6 +2,7 @@ import defaultAvatar from '@/assets/images/avatar.png';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
+import ConditionRender from '../ConditionRender';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -78,19 +79,25 @@ const PageCard: React.FC<PageCardProps> = ({
           </span>
         </div>
       </div>
-      <footer className={cx('flex', 'flex-col', 'gap-4')}>
+      <footer className={cx('flex', 'flex-col')}>
         <p className={cx(styles.name)}>{name}</p>
-        <div className={cx('flex', 'items-center', 'gap-4')}>
+        <div
+          className={cx('flex', 'items-center', 'gap-4', styles['footer-box'])}
+        >
           <img
             className={cx(styles.avatar)}
             src={avatar || defaultAvatar}
             alt="avatar"
             onError={handleError}
           />
-          <span className={cx(styles['author-name'])}>{userName}</span>
-          <span className={cx(styles.time)}>
-            发布于 {dayjs(created).format('YYYY-MM-DD')}
+          <span className={cx(styles['author-name'], 'text-ellipsis')}>
+            {userName}
           </span>
+          <ConditionRender condition={created}>
+            <span className={cx(styles.time, 'text-ellipsis')}>
+              创建于 {dayjs(created).format('YYYY-MM-DD')}
+            </span>
+          </ConditionRender>
         </div>
       </footer>
     </div>

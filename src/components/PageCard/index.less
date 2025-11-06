@@ -88,22 +88,29 @@
     font-weight: @fontWeightStrong;
   }
 
-  .avatar {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    object-fit: cover;
-  }
+  .footer-box {
+    height: 24px;
 
-  .author-name {
-    color: #15171f;
-    font-size: @fontSizeSm;
-    font-weight: @fontWeightStrong;
-  }
+    .avatar {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
 
-  .time {
-    color: #5e6470;
-    font-size: @fontSizeSm;
-    font-weight: @fontWeightStrong;
+    .author-name {
+      flex: 0 1 auto;
+      color: #15171f;
+      font-size: @fontSizeSm;
+      font-weight: @fontWeightStrong;
+    }
+
+    .time {
+      min-width: 120px;
+      flex: 1 1 auto;
+      color: #5e6470;
+      font-size: @fontSizeSm;
+      font-weight: @fontWeightStrong;
+    }
   }
 }
