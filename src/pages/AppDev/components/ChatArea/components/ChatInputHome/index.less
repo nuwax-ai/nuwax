@@ -19,6 +19,12 @@
     color: @colorTextDescription;
   }
 
+  // 输入框包装器，用于定位自定义占位符
+  .input-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
   .input {
     font-size: @fontSize;
     line-height: @fontHeightSm;
@@ -28,6 +34,31 @@
     background-color: transparent;
     resize: none;
     color: @colorText;
+  }
+
+  // 自定义占位符元素，带淡入淡出动画效果
+  .custom-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 8px 12px; // 与 Input.TextArea 的内边距保持一致
+    font-size: @fontSize;
+    line-height: @fontHeightSm;
+    color: @colorTextPlaceholder;
+    pointer-events: none; // 确保不阻挡输入框的交互
+    display: flex;
+    align-items: flex-start;
+    white-space: pre-wrap; // 支持多行显示
+    word-wrap: break-word;
+    opacity: 0; // 默认隐藏
+    transition: opacity 0.3s ease-in-out; // 淡入淡出动画
+
+    // 占位符可见时的样式
+    &.placeholder-visible {
+      opacity: 1;
+    }
   }
 
   :global {
