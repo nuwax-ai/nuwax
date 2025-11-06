@@ -431,6 +431,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   // 点击发送事件
   const handleSendMessage = useCallback(
     (requestId?: string) => {
+      //如果是输出过程中 或者 中止会话过程中 不能触发enter事件
+      if (chat.isChatLoading || isSendingMessage || isStoppingTask) {
+        console.warn('正在处理中，不能发送消息');
+        return;
+      }
+
       if (chat.chatInput?.trim()) {
         const files = attachmentFiles?.filter(
           (item) =>
@@ -453,6 +459,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       }
     },
     [
+      chat.isChatLoading,
+      isSendingMessage,
+      isStoppingTask,
       chat.chatInput,
       attachmentFiles,
       attachmentPrototypeImages,
