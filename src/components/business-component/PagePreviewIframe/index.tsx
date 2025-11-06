@@ -565,6 +565,19 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
             </span>
           </h3>
           <div style={{ display: 'flex', gap: '12px' }}>
+            {/* 复制模板按钮 */}
+            {showCopyButton && allowCopy && onCopyClick && (
+              <Button
+                type="text"
+                className={cx(styles['copy-template-btn'], copyButtonClassName)}
+                icon={
+                  <SvgIcon name="icons-chat-copy" style={{ fontSize: 16 }} />
+                }
+                onClick={onCopyClick}
+              >
+                {copyButtonText}
+              </Button>
+            )}
             <Tooltip title="刷新">
               <Button
                 type="text"
@@ -615,19 +628,6 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
                 }
               />
             </Tooltip>
-            {/* 复制模板按钮 */}
-            {showCopyButton && allowCopy && onCopyClick && (
-              <Tooltip title={copyButtonText}>
-                <Button
-                  type="text"
-                  className={copyButtonClassName}
-                  icon={
-                    <SvgIcon name="icons-chat-copy" style={{ fontSize: 16 }} />
-                  }
-                  onClick={onCopyClick}
-                />
-              </Tooltip>
-            )}
             {showCloseButton && (
               <Button
                 type="text"

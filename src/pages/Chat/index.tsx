@@ -27,8 +27,13 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import { addBaseTarget, arraysContainSameItems } from '@/utils/common';
+import {
+  addBaseTarget,
+  arraysContainSameItems,
+  parsePageAppProjectId,
+} from '@/utils/common';
 import eventBus from '@/utils/eventBus';
+import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import classNames from 'classnames';
@@ -636,22 +641,19 @@ const Chat: React.FC = () => {
                   copyButtonClassName={styles['copy-btn']}
                 />
                 {/* 复制模板弹窗 */}
-                {showCopyButton && agentDetail && (
+                {showCopyButton && agentDetail && pagePreviewData?.uri && (
                   <CopyToSpaceComponent
                     spaceId={agentDetail.spaceId}
-                    mode={
-                      workflowId
-                        ? AgentComponentTypeEnum.Workflow
-                        : AgentComponentTypeEnum.Agent
-                    }
-                    componentId={workflowId || agentDetail.agentId}
-                    title={
-                      workflowId
-                        ? agentDetail.name || '工作流'
-                        : agentDetail.name || '智能体'
-                    }
+                    mode={AgentComponentTypeEnum.Page}
+                    componentId={parsePageAppProjectId(pagePreviewData?.uri)}
+                    title={''}
                     open={openCopyModal}
                     isTemplate={true}
+                    onSuccess={(_: any, targetSpaceId: number) => {
+                      setOpenCopyModal(false);
+                      // 跳转
+                      jumpToPageDevelop(targetSpaceId);
+                    }}
                     onCancel={() => setOpenCopyModal(false)}
                   />
                 )}
