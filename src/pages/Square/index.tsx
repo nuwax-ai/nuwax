@@ -169,6 +169,7 @@ const Square: React.FC = () => {
   // 初始化加载
   const effectLoadFn = () => {
     initValues();
+    setKeyword('');
     setSquareComponentList([]);
     setLoading(true);
     // 查询列表
