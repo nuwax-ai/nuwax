@@ -127,14 +127,14 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   // 占位符消息轮播
   const placeholderMessages = [
     '一句话做网站、应用、提效工具等，可选择工作流、插件等数据资源拓展多种能力',
-    '可以通过 @ 提及文件、目录、数据源，以增强提示词的准确性',
+    '可以通过 @ 提及文件、目录、数据资源，以增强提示词的准确性',
   ];
 
   // 使用占位符轮播 Hook
   const { isPlaceholderVisible, currentPlaceholder } = usePlaceholderCarousel(
     chat.chatInput,
     placeholderMessages,
-    5000,
+    10000,
     300,
   );
 
