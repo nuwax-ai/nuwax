@@ -5,6 +5,7 @@ import type {
   Attachment,
   DataSourceSelection,
   DocumentAttachment,
+  FileNode,
   ImageAttachment,
 } from '@/types/interfaces/appDev';
 import { UploadFileInfo } from '@/types/interfaces/common';
@@ -48,6 +49,8 @@ interface ChatAreaProps {
   onUserManualSendMessage?: () => void;
   /** 用户取消Agent任务回调 */
   onUserCancelAgentTask?: () => void;
+  /** 文件树数据 */
+  files?: FileNode[];
 }
 
 /**
@@ -67,6 +70,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // onAutoHandleErrorChange, // 暂时注释掉，后续可能需要
   onUserManualSendMessage,
   onUserCancelAgentTask,
+  files = [],
 }) => {
   const autoErrorRetryCount = useModel('autoErrorHandling').autoRetryCount;
   // 展开的思考过程消息
@@ -609,24 +613,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         onScrollPositionChange={(isAtBottom) => {
           setShowScrollButton(!isAtBottom);
         }}
-        onScrollToTop={() => {
-          // 当用户滚动到顶部时，加载更多历史会话
-          if (
-            chat.hasMoreHistoryRef.current &&
-            !chat.isLoadingMoreHistoryRef.current
-          ) {
-            chat.loadHistorySessions(chat.currentPage + 1, true);
-          }
-        }}
       >
         <div className={styles.chatMessages}>
-          {/* 加载更多历史会话的指示器 */}
-          {chat.isLoadingMoreHistoryRef.current && (
-            <div className={styles.loadingMoreHistory}>
-              <Spin size="small" />
-              <span style={{ marginLeft: 8 }}>正在加载更多历史会话...</span>
-            </div>
-          )}
           {chat.isLoadingHistory ? (
             <AppDevEmptyState
               type="loading"
@@ -698,6 +686,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           handleCancelAgentTask={handleCancelAgentTask}
           // 发送消息
           onEnter={handleSendMessage}
+          // 文件树数据
+          files={files}
         />
       </div>
     </Card>
