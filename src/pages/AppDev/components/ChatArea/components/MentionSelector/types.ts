@@ -50,6 +50,10 @@ export interface MentionSelectorHandle {
   handleSelectCurrentItem: () => void;
   /** 处理 ESC 键返回上一级 */
   handleEscapeKey: () => boolean;
+  /** 处理右方向键进入下一级 */
+  handleArrowRightKey: () => boolean;
+  /** 处理左方向键返回上一级 */
+  handleArrowLeftKey: () => boolean;
 }
 
 /**

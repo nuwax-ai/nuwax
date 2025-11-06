@@ -670,10 +670,128 @@ const MentionSelector = React.forwardRef<
       }
     };
 
+    /**
+     * 处理右方向键：进入下一级或选择当前项
+     * @returns 如果处理了右方向键，返回 true；否则返回 false
+     */
+    const handleArrowRightKey = () => {
+      switch (viewType) {
+        case 'main': {
+          // 主视图：右方向键进入选中的操作项
+          const currentItems = getCurrentItems;
+          const validIndex = Math.min(selectedIndex, currentItems.length - 1);
+          if (validIndex < 0 || validIndex >= currentItems.length) {
+            return false;
+          }
+
+          // 只有操作项可以进入下一级（最近使用项不可以）
+          if (validIndex >= recentItems.length) {
+            const adjustedIndex = validIndex - recentItems.length;
+            // 从 currentItems 中获取操作项，注意跳过了 recentItems
+            const actionItems = currentItems.slice(recentItems.length);
+            const actionItem = actionItems[adjustedIndex];
+
+            // actionItem 是 { type: 'action', key: 'files'|'datasources', label: string } 类型
+            if (
+              actionItem &&
+              'type' in actionItem &&
+              actionItem.type === 'action'
+            ) {
+              const { key } = actionItem as {
+                type: 'action';
+                key: string;
+                label: string;
+              };
+              if (key === 'files') {
+                handleFilesClick();
+                return true;
+              } else if (key === 'datasources') {
+                handleDataSourcesClick();
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+        case 'files':
+          // 文件列表视图：右方向键选择当前项
+          handleSelectCurrentItem();
+          return true;
+        case 'search':
+          // 搜索视图：右方向键选择当前项
+          handleSelectCurrentItem();
+          return true;
+        case 'datasources': {
+          // 数据源分类视图：右方向键进入选中的分类
+          const categories = Object.keys(groupedDataSources);
+          const validIndex = Math.min(selectedIndex, categories.length - 1);
+          if (validIndex < 0 || validIndex >= categories.length) {
+            return false;
+          }
+
+          const selectedCategory = categories[validIndex];
+          if (selectedCategory) {
+            handleCategoryClick(selectedCategory);
+            return true;
+          }
+          return false;
+        }
+        case 'datasource-list':
+          // 数据源列表视图：右方向键选择当前项
+          handleSelectCurrentItem();
+          return true;
+        case 'datasource-category':
+          // 数据源分类详情视图：右方向键选择当前项
+          handleSelectCurrentItem();
+          return true;
+        default:
+          return false;
+      }
+    };
+
+    /**
+     * 处理左方向键：返回上一级
+     * @returns 如果处理了左方向键，返回 true；否则返回 false
+     */
+    const handleArrowLeftKey = () => {
+      switch (viewType) {
+        case 'files':
+          // 文件列表视图返回到主视图
+          setViewType('main');
+          onSelectedIndexChange?.(0);
+          return true;
+        case 'datasources':
+          // 数据源分类视图返回到主视图
+          setViewType('main');
+          setSelectedCategory('');
+          onSelectedIndexChange?.(0);
+          return true;
+        case 'datasource-list':
+          // 数据源列表视图返回到主视图
+          setViewType('main');
+          onSelectedIndexChange?.(0);
+          return true;
+        case 'datasource-category':
+          // 数据源分类详情视图返回到数据源分类视图
+          setViewType('datasources');
+          setSelectedCategory('');
+          onSelectedIndexChange?.(0);
+          return true;
+        case 'main':
+        case 'search':
+          // 主视图和搜索视图不处理左方向键
+          return false;
+        default:
+          return false;
+      }
+    };
+
     // 暴露方法给父组件
     useImperativeHandle(ref, () => ({
       handleSelectCurrentItem,
       handleEscapeKey,
+      handleArrowRightKey,
+      handleArrowLeftKey,
     }));
 
     /**
