@@ -30,14 +30,14 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { usePlaceholderCarousel } from '../../hooks/usePlaceholderCarousel';
-import styles from './index.less';
-import MentionSelector from './MentionSelector';
+import MentionSelector from '../MentionSelector';
 import type {
   MentionPosition,
   MentionSelectorHandle,
   MentionTriggerResult,
-} from './MentionSelector/types';
-import { calculateMentionPosition } from './MentionSelector/utils';
+} from '../MentionSelector/types';
+import { calculateMentionPosition } from '../MentionSelector/utils';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
@@ -398,6 +398,36 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           setMentionTrigger({ trigger: false });
           setMentionPosition({ left: 0, top: 0, visible: false });
           setMentionSelectedIndex(0);
+        }
+        return;
+      }
+
+      // 左方向键：返回上一级视图（新增）
+      if (key === 'ArrowLeft' || keyCode === 37) {
+        e.preventDefault();
+        if (mentionSelectorRef.current) {
+          const handled = mentionSelectorRef.current.handleArrowLeftKey();
+          // 如果成功处理了左方向键，则触发滚动
+          if (handled) {
+            setTimeout(() => {
+              scrollToSelectedItem();
+            }, 0);
+          }
+        }
+        return;
+      }
+
+      // 右方向键：进入下一级或确认选择（新增）
+      if (key === 'ArrowRight' || keyCode === 39) {
+        e.preventDefault();
+        if (mentionSelectorRef.current) {
+          const handled = mentionSelectorRef.current.handleArrowRightKey();
+          // 如果成功处理了右方向键，则触发滚动
+          if (handled) {
+            setTimeout(() => {
+              scrollToSelectedItem();
+            }, 0);
+          }
         }
         return;
       }
