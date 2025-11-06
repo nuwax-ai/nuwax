@@ -29,6 +29,7 @@ import { Button, Input, message, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { useMentionSelectorKeyboard } from '../../hooks/useMentionSelectorKeyboard';
 import { usePlaceholderCarousel } from '../../hooks/usePlaceholderCarousel';
 import MentionSelector from '../MentionSelector';
 import type {
@@ -369,109 +370,25 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   }, []);
 
   /**
-   * 处理键盘事件（参考 Ant Design Mentions 的键盘交互）
+   * 关闭 mentionSelector 弹层
    */
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      // 如果下拉菜单未显示，不处理键盘导航
-      if (!mentionTrigger.trigger || !mentionPosition.visible) {
-        return;
-      }
+  const handleCloseMenu = useCallback(() => {
+    setMentionTrigger({ trigger: false });
+    setMentionPosition({ left: 0, top: 0, visible: false });
+    setMentionSelectedIndex(0);
+  }, []);
 
-      const { key, keyCode } = e.nativeEvent;
-
-      // Esc 键：处理返回上一级或关闭下拉菜单
-      if (key === 'Escape' || keyCode === 27) {
-        e.preventDefault();
-        // 如果 MentionSelector 不在主视图，尝试返回上一级
-        if (mentionSelectorRef.current) {
-          const handled = mentionSelectorRef.current.handleEscapeKey();
-          // 如果返回了上一级（返回 true），则不关闭弹层
-          // 如果已经在主视图（返回 false），则关闭弹层
-          if (!handled) {
-            setMentionTrigger({ trigger: false });
-            setMentionPosition({ left: 0, top: 0, visible: false });
-            setMentionSelectedIndex(0);
-          }
-        } else {
-          // 如果 ref 不存在，直接关闭弹层
-          setMentionTrigger({ trigger: false });
-          setMentionPosition({ left: 0, top: 0, visible: false });
-          setMentionSelectedIndex(0);
-        }
-        return;
-      }
-
-      // 左方向键：返回上一级视图（新增）
-      if (key === 'ArrowLeft' || keyCode === 37) {
-        e.preventDefault();
-        if (mentionSelectorRef.current) {
-          const handled = mentionSelectorRef.current.handleArrowLeftKey();
-          // 如果成功处理了左方向键，则触发滚动
-          if (handled) {
-            setTimeout(() => {
-              scrollToSelectedItem();
-            }, 0);
-          }
-        }
-        return;
-      }
-
-      // 右方向键：进入下一级或确认选择（新增）
-      if (key === 'ArrowRight' || keyCode === 39) {
-        e.preventDefault();
-        if (mentionSelectorRef.current) {
-          const handled = mentionSelectorRef.current.handleArrowRightKey();
-          // 如果成功处理了右方向键，则触发滚动
-          if (handled) {
-            setTimeout(() => {
-              scrollToSelectedItem();
-            }, 0);
-          }
-        }
-        return;
-      }
-
-      // 上下箭头键：导航选择（参考 Ant Design Mentions）
-      if (key === 'ArrowUp' || keyCode === 38) {
-        e.preventDefault();
-        setMentionSelectedIndex((prev) => {
-          const newIndex = prev > 0 ? prev - 1 : 0;
-          // 延迟滚动，确保 DOM 已更新
-          setTimeout(() => {
-            scrollToSelectedItem();
-          }, 0);
-          return newIndex;
-        });
-        return;
-      }
-
-      if (key === 'ArrowDown' || keyCode === 40) {
-        e.preventDefault();
-        setMentionSelectedIndex((prev) => {
-          const newIndex = prev + 1;
-          // 延迟滚动，确保 DOM 已更新
-          setTimeout(() => {
-            scrollToSelectedItem();
-          }, 0);
-          return newIndex;
-        });
-        return;
-      }
-
-      // Enter 键：确认选择（参考 Ant Design Mentions，Enter 键直接确认选择或进入下一步）
-      if (key === 'Enter' || keyCode === 13) {
-        e.preventDefault();
-        // 直接调用 MentionSelector 的方法处理当前选中项的选择
-        // 这样可以确保与 onClick 逻辑完全一致
-        if (mentionSelectorRef.current) {
-          mentionSelectorRef.current.handleSelectCurrentItem();
-        }
-        return;
-      }
-    },
-    [mentionTrigger, mentionPosition, scrollToSelectedItem],
-  );
+  /**
+   * MentionSelector 键盘导航 Hook
+   */
+  const { handleKeyDown } = useMentionSelectorKeyboard({
+    mentionTrigger,
+    mentionPosition,
+    mentionSelectorRef,
+    onSelectedIndexChange: setMentionSelectedIndex,
+    onCloseMenu: handleCloseMenu,
+    scrollToSelectedItem,
+  });
 
   // 点击发送事件
   const handleSendMessage = useCallback(
