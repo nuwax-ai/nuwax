@@ -57,6 +57,16 @@ interface PagePreviewIframeProps {
   titleStyle?: React.CSSProperties;
   /** 标题文本自定义类名 */
   titleClassName?: string;
+  /** 是否显示复制按钮 */
+  showCopyButton?: boolean;
+  /** 是否允许复制（用于条件渲染） */
+  allowCopy?: boolean;
+  /** 复制按钮点击回调 */
+  onCopyClick?: () => void;
+  /** 复制按钮文本 */
+  copyButtonText?: string;
+  /** 复制按钮自定义类名 */
+  copyButtonClassName?: string;
 }
 
 /**
@@ -65,6 +75,7 @@ interface PagePreviewIframeProps {
  * - 处理 iframe 加载事件
  * - 监听页面内容变化并上报
  * - 显示标题栏和关闭按钮
+ * - 支持显示复制按钮（不包含业务逻辑，仅处理显示和点击事件）
  */
 const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   pagePreviewData,
@@ -76,6 +87,11 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   className,
   titleStyle,
   titleClassName,
+  showCopyButton = false,
+  allowCopy = false,
+  onCopyClick,
+  copyButtonText = '复制模板',
+  copyButtonClassName,
 }) => {
   const [iframeKey, setIframeKey] = useState(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -552,7 +568,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
               {previewPageTitle}
             </span>
           </h3>
-          <div style={{ display: 'flex', gap: '10px', marginRight: '20px' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
             <Tooltip title="刷新">
               <Button
                 type="text"
@@ -599,23 +615,36 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
                 type="text"
                 onClick={goCopy}
                 icon={
-                  <SvgIcon name="icons-chat-copy" style={{ fontSize: 16 }} />
+                  <SvgIcon name="icons-common-link" style={{ fontSize: 16 }} />
                 }
               />
             </Tooltip>
-          </div>
-          {showCloseButton && (
-            <Button
-              type="text"
-              onClick={onClose}
-              icon={
-                <SvgIcon
-                  name="icons-chat-close_regular"
-                  style={{ fontSize: 16 }}
+            {/* 复制模板按钮 */}
+            {showCopyButton && allowCopy && onCopyClick && (
+              <Tooltip title={copyButtonText}>
+                <Button
+                  type="text"
+                  className={copyButtonClassName}
+                  icon={
+                    <SvgIcon name="icons-chat-copy" style={{ fontSize: 16 }} />
+                  }
+                  onClick={onCopyClick}
                 />
-              }
-            />
-          )}
+              </Tooltip>
+            )}
+            {showCloseButton && (
+              <Button
+                type="text"
+                onClick={onClose}
+                icon={
+                  <SvgIcon
+                    name="icons-chat-close_regular"
+                    style={{ fontSize: 16 }}
+                  />
+                }
+              />
+            )}
+          </div>
         </div>
       )}
 
