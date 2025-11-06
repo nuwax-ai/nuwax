@@ -320,6 +320,17 @@ export interface DataSourceAttachment {
 }
 
 /**
+ * 文件附件 - 用于通过 @ 选择的文件和目录
+ */
+export interface FileAttachment {
+  id: string;
+  description?: string;
+  filename?: string;
+  path?: string;
+  source: AttachmentSource;
+}
+
+/**
  * 附件类型 - 基于 OpenAPI 规范
  */
 export type Attachment =
@@ -338,6 +349,10 @@ export type Attachment =
   | {
       type: 'Document';
       content: DocumentAttachment;
+    }
+  | {
+      type: 'File';
+      content: FileAttachment;
     }
   | {
       type: 'DataSource';

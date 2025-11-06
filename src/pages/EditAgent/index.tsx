@@ -339,10 +339,8 @@ const EditAgent: React.FC = () => {
     ) {
       // 自动触发预览
       showPagePreview({
-        name: '页面预览',
-        uri: process.env.BASE_URL + agentConfigInfo?.pageHomeIndex,
+        uri: agentConfigInfo?.pageHomeIndex,
         params: {},
-        executeId: '',
       });
     } else {
       showPagePreview(null);

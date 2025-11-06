@@ -2,6 +2,7 @@ import SvgIcon from '@/components/base/SvgIcon';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import SelectList from '@/components/custom/SelectList';
+import useClickOutside from '@/components/SmartVariableInput/hooks/useClickOutside';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   MAX_IMAGE_COUNT,
@@ -17,7 +18,10 @@ import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import {
   CloseOutlined,
+  DatabaseOutlined,
   DownOutlined,
+  FileOutlined,
+  FolderOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
@@ -25,26 +29,34 @@ import { Button, Input, message, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import DataSourceList from './DataSourceList';
+import { usePlaceholderCarousel } from '../../hooks/usePlaceholderCarousel';
 import styles from './index.less';
 import MentionSelector from './MentionSelector';
 import type {
   MentionPosition,
+  MentionSelectorHandle,
   MentionTriggerResult,
 } from './MentionSelector/types';
+import { calculateMentionPosition } from './MentionSelector/utils';
 
 const cx = classNames.bind(styles);
 
 // 聊天输入框组件
+// @ 提及的项类型
+export type MentionItem =
+  | { type: 'file'; data: FileNode }
+  | { type: 'folder'; data: FileNode }
+  | { type: 'datasource'; data: DataResource };
+
 export interface ChatInputProps {
   // 聊天信息
   chat: any;
   // 大模型选择器
   modelSelector: any;
   // 文件内容状态
-  fileContentState: any;
+  // fileContentState: any;
   // 设置选中的文件
-  onSetSelectedFile: (fileId: string) => void;
+  // onSetSelectedFile: (fileId: string) => void;
   // 是否正在停止任务
   isStoppingTask: boolean;
   // 是否正在发送消息
@@ -52,9 +64,11 @@ export interface ChatInputProps {
   // 取消任务
   handleCancelAgentTask: () => void;
   className?: React.CSSProperties;
+  // 发送消息回调 - 传递上传的附件、原型图片 和 @ 提及的文件/目录/数据资源
   onEnter: (
-    files?: UploadFileInfo[],
+    attachmentFiles?: UploadFileInfo[],
     prototypeImages?: UploadFileInfo[],
+    selectedMentions?: MentionItem[],
     requestId?: string,
   ) => void;
   // 数据源列表
@@ -70,8 +84,8 @@ export interface ChatInputProps {
 const ChatInputHome: React.FC<ChatInputProps> = ({
   chat,
   modelSelector,
-  fileContentState,
-  onSetSelectedFile,
+  // fileContentState,
+  // onSetSelectedFile,
   isStoppingTask,
   isSendingMessage,
   handleCancelAgentTask,
@@ -101,17 +115,84 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     top: 0,
     visible: false,
   });
-  const [mentionActiveTab, setMentionActiveTab] = useState<
-    'files' | 'datasources'
-  >('files');
   const [mentionSelectedIndex, setMentionSelectedIndex] = useState(0);
   const mentionContainerRef = useRef<HTMLDivElement>(null);
+  const mentionSelectorRef = useRef<MentionSelectorHandle>(null);
+
+  // 已选择的提及项（文件、目录和数据源）
+  // 使用导出的 MentionItem 类型，确保包含所有类型（file、folder、datasource）
+  const [selectedMentions, setSelectedMentions] = useState<MentionItem[]>([]);
+
+  // 占位符消息轮播
+  const placeholderMessages = [
+    '一句话做网站、应用、提效工具等，可选择工作流、插件等数据资源拓展多种能力',
+    '可以通过 @ 提及文件、目录、数据源，以增强提示词的准确性',
+  ];
+
+  // 使用占位符轮播 Hook
+  const { isPlaceholderVisible, currentPlaceholder } = usePlaceholderCarousel(
+    chat.chatInput,
+    placeholderMessages,
+    5000,
+    300,
+  );
+
+  // 同步 dataSourceList 中已选的数据源到 selectedMentions
+  useEffect(() => {
+    if (!dataSourceList) return;
+
+    const selectedDataSources = dataSourceList.filter((ds) => ds.isSelected);
+    setSelectedMentions((prev) => {
+      // 保留非数据源类型的提及项（文件等）
+      const nonDataSourceMentions = prev.filter(
+        (mention) => mention.type !== 'datasource',
+      );
+
+      // 处理数据源类型的提及项
+      const dataSourceMentions = prev.filter(
+        (mention) => mention.type === 'datasource',
+      );
+
+      // 获取当前数据源 ID 集合
+      const selectedDataSourceIds = new Set(
+        selectedDataSources.map((ds) => ds.id),
+      );
+
+      // 保留在 dataSourceList 中已选的数据源，以及通过 @ 选择但不在 dataSourceList 中的数据源
+      const keptDataSources = dataSourceMentions.filter((mention) => {
+        const dsId = mention.data.id;
+        // 如果数据源在 dataSourceList 中，只有 isSelected=true 时才保留
+        const inList = dataSourceList.some((ds) => ds.id === dsId);
+        if (inList) {
+          return selectedDataSourceIds.has(dsId);
+        }
+        // 如果数据源不在 dataSourceList 中（通过 @ 选择的），保留它
+        return true;
+      });
+
+      // 添加新的已选数据源（在 dataSourceList 中但不在当前 selectedMentions 中）
+      const newDataSources = selectedDataSources
+        .filter(
+          (ds) => !keptDataSources.some((mention) => mention.data.id === ds.id),
+        )
+        .map((ds) => ({ type: 'datasource' as const, data: ds }));
+
+      return [...nonDataSourceMentions, ...keptDataSources, ...newDataSources];
+    });
+  }, [dataSourceList]);
 
   /**
    * 提取文件名（不包含路径）
    */
   const getFileName = useCallback((filePath: string) => {
     return filePath.split('/').pop() || filePath;
+  }, []);
+
+  /**
+   * 判断文件节点是否为目录
+   */
+  const isDirectory = useCallback((file: FileNode) => {
+    return file.type === 'folder' || file.children !== undefined;
   }, []);
 
   /**
@@ -137,72 +218,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     },
     [],
   );
-
-  /**
-   * 计算下拉菜单位置（参考 react-mentions-ts 的定位实现）
-   * 下拉菜单右侧对齐光标右侧，底部对齐光标底部
-   */
-  const calculateMentionPosition = useCallback(() => {
-    if (!textAreaRef.current) {
-      return { left: 0, top: 0, visible: false };
-    }
-
-    const textarea =
-      textAreaRef.current.resizableTextArea?.textArea || textAreaRef.current;
-    if (!textarea) {
-      return { left: 0, top: 0, visible: false };
-    }
-
-    const rect = textarea.getBoundingClientRect();
-    const { selectionStart } = textarea;
-
-    // 计算光标位置
-    const textBeforeCursor = textarea.value.slice(0, selectionStart);
-    const lines = textBeforeCursor.split('\n');
-    const currentLine = lines.length - 1;
-    const lineText = lines[currentLine] || '';
-    const atIndex = lineText.lastIndexOf('@');
-
-    if (atIndex === -1) {
-      return { left: 0, top: 0, visible: false };
-    }
-
-    // 创建临时元素计算文本宽度（到光标位置）
-    const tempDiv = document.createElement('div');
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.visibility = 'hidden';
-    tempDiv.style.whiteSpace = 'pre-wrap';
-    tempDiv.style.font = window.getComputedStyle(textarea).font;
-    tempDiv.style.padding = window.getComputedStyle(textarea).padding;
-    tempDiv.style.width = `${textarea.offsetWidth}px`; // 设置宽度以模拟 textarea 的换行
-    tempDiv.textContent = textBeforeCursor;
-    document.body.appendChild(tempDiv);
-
-    // 获取光标位置的坐标
-    const textWidth = tempDiv.offsetWidth;
-    document.body.removeChild(tempDiv);
-
-    // 计算位置
-    const lineHeight =
-      parseFloat(window.getComputedStyle(textarea).lineHeight) || 20;
-    const paddingTop =
-      parseFloat(window.getComputedStyle(textarea).paddingTop) || 0;
-    const paddingLeft =
-      parseFloat(window.getComputedStyle(textarea).paddingLeft) || 0;
-
-    // 计算光标右侧位置（相对于视口，fixed 定位不需要考虑 scroll）
-    const cursorRight = rect.left + paddingLeft + textWidth;
-
-    // 计算光标底部位置（当前行的底部，相对于视口）
-    const cursorBottom = rect.top + paddingTop + (currentLine + 1) * lineHeight;
-
-    // 下拉菜单使用 fixed 定位，右侧对齐光标右侧，底部对齐光标底部
-    return {
-      left: cursorRight, // 光标右侧位置（下拉菜单的右侧会对齐这里）
-      top: cursorBottom, // 光标底部位置（下拉菜单的底部会对齐这里）
-      visible: true,
-    };
-  }, []);
 
   /**
    * 插入提及文本（参考 react-mentions-ts 的 markup 处理）
@@ -248,9 +263,18 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
    */
   const handleSelectFile = useCallback(
     (file: FileNode) => {
+      // 检查是否已经选择过该文件
+      const isDuplicate = selectedMentions.some(
+        (mention) => mention.type === 'file' && mention.data.id === file.id,
+      );
+      if (!isDuplicate) {
+        // 添加到已选择列表
+        setSelectedMentions((prev) => [...prev, { type: 'file', data: file }]);
+      }
+      // 在输入框中插入提及文本
       insertMention(file.path);
     },
-    [insertMention],
+    [insertMention, selectedMentions],
   );
 
   /**
@@ -258,13 +282,26 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
    */
   const handleSelectDataSource = useCallback(
     (dataSource: DataResource) => {
+      // 检查是否已经选择过该数据源
+      const isDuplicate = selectedMentions.some(
+        (mention) =>
+          mention.type === 'datasource' && mention.data.id === dataSource.id,
+      );
+      if (!isDuplicate) {
+        // 添加到已选择列表
+        setSelectedMentions((prev) => [
+          ...prev,
+          { type: 'datasource', data: dataSource },
+        ]);
+      }
+      // 在输入框中插入提及文本
       insertMention(dataSource.name);
     },
-    [insertMention],
+    [insertMention, selectedMentions],
   );
 
   /**
-   * 处理输入变化，检测 @ 字符
+   * 处理输入变化，检测 @ 字符和提及删除
    */
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -272,25 +309,67 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       const cursorPosition = e.target.selectionStart;
       chat.setChatInput(value);
 
+      // 检测已删除的提及项（与上框同步）
+      // 遍历当前选中的提及项，检查文本中是否还存在
+      const mentionsToRemove: number[] = [];
+      selectedMentions.forEach((mention, index) => {
+        const mentionText =
+          mention.type === 'file'
+            ? `@${mention.data.path}`
+            : `@${mention.data.name}`;
+        // 如果文本中不再包含该提及，标记为删除
+        if (!value.includes(mentionText)) {
+          mentionsToRemove.push(index);
+        }
+      });
+
+      // 从上框中移除已删除的提及项
+      if (mentionsToRemove.length > 0) {
+        setSelectedMentions((prev) =>
+          prev.filter((_, index) => !mentionsToRemove.includes(index)),
+        );
+      }
+
       const triggerResult = checkMentionTrigger(value, cursorPosition);
       setMentionTrigger(triggerResult);
 
       if (triggerResult.trigger) {
         // 延迟计算位置，确保 DOM 已更新
-        setTimeout(() => {
-          const position = calculateMentionPosition();
-          setMentionPosition(position);
-          setMentionSelectedIndex(0);
-        }, 0);
+        // 使用 requestAnimationFrame 确保在下一帧渲染后计算位置
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const position = calculateMentionPosition(textAreaRef);
+            setMentionPosition(position);
+            setMentionSelectedIndex(0);
+          });
+        });
       } else {
         setMentionPosition({ left: 0, top: 0, visible: false });
       }
     },
-    [chat, checkMentionTrigger, calculateMentionPosition],
+    [chat, checkMentionTrigger, selectedMentions],
   );
 
   /**
-   * 处理键盘事件（参考 react-mentions-ts 的键盘处理）
+   * 滚动到选中的项（参考 Ant Design Mentions 的自动滚动）
+   */
+  const scrollToSelectedItem = useCallback(() => {
+    const mentionSelector = mentionContainerRef.current;
+    if (!mentionSelector) return;
+
+    const selectedElement = mentionSelector.querySelector(
+      '[class*="mention-item"][class*="selected"]',
+    ) as HTMLElement;
+    if (selectedElement) {
+      selectedElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, []);
+
+  /**
+   * 处理键盘事件（参考 Ant Design Mentions 的键盘交互）
    */
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -301,202 +380,116 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
       const { key, keyCode } = e.nativeEvent;
 
-      // Esc 键：关闭下拉菜单
+      // Esc 键：处理返回上一级或关闭下拉菜单
       if (key === 'Escape' || keyCode === 27) {
         e.preventDefault();
-        setMentionTrigger({ trigger: false });
-        setMentionPosition({ left: 0, top: 0, visible: false });
-        setMentionSelectedIndex(0);
+        // 如果 MentionSelector 不在主视图，尝试返回上一级
+        if (mentionSelectorRef.current) {
+          const handled = mentionSelectorRef.current.handleEscapeKey();
+          // 如果返回了上一级（返回 true），则不关闭弹层
+          // 如果已经在主视图（返回 false），则关闭弹层
+          if (!handled) {
+            setMentionTrigger({ trigger: false });
+            setMentionPosition({ left: 0, top: 0, visible: false });
+            setMentionSelectedIndex(0);
+          }
+        } else {
+          // 如果 ref 不存在，直接关闭弹层
+          setMentionTrigger({ trigger: false });
+          setMentionPosition({ left: 0, top: 0, visible: false });
+          setMentionSelectedIndex(0);
+        }
         return;
       }
 
-      // Tab 键：切换 Tabs
-      if (key === 'Tab' || keyCode === 9) {
-        e.preventDefault();
-        setMentionActiveTab(
-          mentionActiveTab === 'files' ? 'datasources' : 'files',
-        );
-        setMentionSelectedIndex(0);
-        return;
-      }
-
-      // 上下箭头键：导航选择
+      // 上下箭头键：导航选择（参考 Ant Design Mentions）
       if (key === 'ArrowUp' || keyCode === 38) {
         e.preventDefault();
-        // 获取当前 Tab 的过滤后列表
-        let currentTabItems: (FileNode | DataResource)[] = [];
-        if (mentionActiveTab === 'files') {
-          const flattenFiles = (nodes: FileNode[]): FileNode[] => {
-            const result: FileNode[] = [];
-            nodes.forEach((node) => {
-              if (node.type === 'file') {
-                if (
-                  !mentionTrigger.searchText ||
-                  node.name
-                    .toLowerCase()
-                    .includes(mentionTrigger.searchText.toLowerCase()) ||
-                  node.path
-                    .toLowerCase()
-                    .includes(mentionTrigger.searchText.toLowerCase()) ||
-                  node.id
-                    .toLowerCase()
-                    .includes(mentionTrigger.searchText.toLowerCase())
-                ) {
-                  result.push(node);
-                }
-              }
-              if (node.children && node.children.length > 0) {
-                result.push(...flattenFiles(node.children));
-              }
-            });
-            return result;
-          };
-          currentTabItems = flattenFiles(files);
-        } else {
-          const searchLower = (mentionTrigger.searchText || '').toLowerCase();
-          currentTabItems = (dataSourceList || []).filter(
-            (ds) =>
-              !searchLower ||
-              ds.name.toLowerCase().includes(searchLower) ||
-              ds.description?.toLowerCase().includes(searchLower),
-          );
-        }
-        const maxIndex = Math.max(0, currentTabItems.length - 1);
-        setMentionSelectedIndex((prev) => (prev > 0 ? prev - 1 : maxIndex));
+        setMentionSelectedIndex((prev) => {
+          const newIndex = prev > 0 ? prev - 1 : 0;
+          // 延迟滚动，确保 DOM 已更新
+          setTimeout(() => {
+            scrollToSelectedItem();
+          }, 0);
+          return newIndex;
+        });
         return;
       }
 
       if (key === 'ArrowDown' || keyCode === 40) {
         e.preventDefault();
-        // 获取当前 Tab 的过滤后列表
-        let currentTabItems: (FileNode | DataResource)[] = [];
-        if (mentionActiveTab === 'files') {
-          const flattenFiles = (nodes: FileNode[]): FileNode[] => {
-            const result: FileNode[] = [];
-            nodes.forEach((node) => {
-              if (node.type === 'file') {
-                if (
-                  !mentionTrigger.searchText ||
-                  node.name
-                    .toLowerCase()
-                    .includes(mentionTrigger.searchText.toLowerCase()) ||
-                  node.path
-                    .toLowerCase()
-                    .includes(mentionTrigger.searchText.toLowerCase()) ||
-                  node.id
-                    .toLowerCase()
-                    .includes(mentionTrigger.searchText.toLowerCase())
-                ) {
-                  result.push(node);
-                }
-              }
-              if (node.children && node.children.length > 0) {
-                result.push(...flattenFiles(node.children));
-              }
-            });
-            return result;
-          };
-          currentTabItems = flattenFiles(files);
-        } else {
-          const searchLower = (mentionTrigger.searchText || '').toLowerCase();
-          currentTabItems = (dataSourceList || []).filter(
-            (ds) =>
-              !searchLower ||
-              ds.name.toLowerCase().includes(searchLower) ||
-              ds.description?.toLowerCase().includes(searchLower),
-          );
-        }
-        const maxIndex = Math.max(0, currentTabItems.length - 1);
-        setMentionSelectedIndex((prev) => (prev < maxIndex ? prev + 1 : 0));
+        setMentionSelectedIndex((prev) => {
+          const newIndex = prev + 1;
+          // 延迟滚动，确保 DOM 已更新
+          setTimeout(() => {
+            scrollToSelectedItem();
+          }, 0);
+          return newIndex;
+        });
         return;
       }
 
-      // Enter 键：确认选择
+      // Enter 键：确认选择（参考 Ant Design Mentions，Enter 键直接确认选择或进入下一步）
       if (key === 'Enter' || keyCode === 13) {
         e.preventDefault();
-        // 获取当前 Tab 的过滤后列表
-        let currentTabItems: (FileNode | DataResource)[] = [];
-        if (mentionActiveTab === 'files') {
-          const flattenFiles = (nodes: FileNode[]): FileNode[] => {
-            const result: FileNode[] = [];
-            nodes.forEach((node) => {
-              if (node.type === 'file') {
-                if (
-                  !mentionTrigger.searchText ||
-                  node.name
-                    .toLowerCase()
-                    .includes(mentionTrigger.searchText.toLowerCase()) ||
-                  node.path
-                    .toLowerCase()
-                    .includes(mentionTrigger.searchText.toLowerCase()) ||
-                  node.id
-                    .toLowerCase()
-                    .includes(mentionTrigger.searchText.toLowerCase())
-                ) {
-                  result.push(node);
-                }
-              }
-              if (node.children && node.children.length > 0) {
-                result.push(...flattenFiles(node.children));
-              }
-            });
-            return result;
-          };
-          currentTabItems = flattenFiles(files);
-        } else {
-          const searchLower = (mentionTrigger.searchText || '').toLowerCase();
-          currentTabItems = (dataSourceList || []).filter(
-            (ds) =>
-              !searchLower ||
-              ds.name.toLowerCase().includes(searchLower) ||
-              ds.description?.toLowerCase().includes(searchLower),
-          );
-        }
-        const selectedItem = currentTabItems[mentionSelectedIndex];
-        if (selectedItem) {
-          if (mentionActiveTab === 'files') {
-            handleSelectFile(selectedItem as FileNode);
-          } else {
-            handleSelectDataSource(selectedItem as DataResource);
-          }
+        // 直接调用 MentionSelector 的方法处理当前选中项的选择
+        // 这样可以确保与 onClick 逻辑完全一致
+        if (mentionSelectorRef.current) {
+          mentionSelectorRef.current.handleSelectCurrentItem();
         }
         return;
       }
     },
-    [
-      mentionTrigger,
-      mentionPosition,
-      mentionActiveTab,
-      mentionSelectedIndex,
-      files,
-      dataSourceList,
-      handleSelectFile,
-      handleSelectDataSource,
-    ],
+    [mentionTrigger, mentionPosition, scrollToSelectedItem],
   );
 
   // 点击发送事件
-  const handleSendMessage = (requestId?: string) => {
-    if (chat.chatInput?.trim()) {
-      const files = attachmentFiles?.filter(
-        (item) => item.status === UploadFileStatus.done && item.url && item.key,
-      );
-      const prototypeImages = attachmentPrototypeImages?.filter(
-        (item) => item.status === UploadFileStatus.done && item.url && item.key,
-      );
-      // enter事件
-      onEnter(files, prototypeImages, requestId);
-      // 清空输入框
-      chat.setChatInput('');
-      // 清空附件文件列表
-      setAttachmentFiles([]);
-      // 清空原型图片附件列表
-      setAttachmentPrototypeImages([]);
-    }
-  };
+  const handleSendMessage = useCallback(
+    (requestId?: string) => {
+      //如果是输出过程中 或者 中止会话过程中 不能触发enter事件
+      if (chat.isChatLoading || isSendingMessage || isStoppingTask) {
+        console.warn('正在处理中，不能发送消息');
+        return;
+      }
+
+      if (chat.chatInput?.trim()) {
+        const files = attachmentFiles?.filter(
+          (item) =>
+            item.status === UploadFileStatus.done && item.url && item.key,
+        );
+        const prototypeImages = attachmentPrototypeImages?.filter(
+          (item) =>
+            item.status === UploadFileStatus.done && item.url && item.key,
+        );
+        // enter事件 - 传递上传的附件、原型图片 和 @ 提及的文件/目录/数据资源
+        onEnter(files, prototypeImages, selectedMentions, requestId);
+        // 清空输入框
+        chat.setChatInput('');
+        // 清空附件文件列表
+        setAttachmentFiles([]);
+        // 清空原型图片附件列表
+        setAttachmentPrototypeImages([]);
+        // 清空提及列表
+        setSelectedMentions([]);
+      }
+    },
+    [
+      chat.isChatLoading,
+      isSendingMessage,
+      isStoppingTask,
+      chat.chatInput,
+      attachmentFiles,
+      attachmentPrototypeImages,
+      selectedMentions,
+      onEnter,
+    ],
+  );
 
   // enter事件
-  const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handlePressEnter = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+    selectedMentionsParam: MentionItem[],
+  ) => {
     // 如果下拉菜单显示，Enter 键由 handleKeyDown 处理
     if (mentionTrigger.trigger && mentionPosition.visible) {
       return;
@@ -532,13 +525,15 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         (item) => item.status === UploadFileStatus.done && item.url && item.key,
       );
       // enter事件
-      onEnter(files, prototypeImages);
+      onEnter(files, prototypeImages, selectedMentionsParam);
       // 清空输入框
       chat.setChatInput('');
       // 清空附件文件列表
       setAttachmentFiles([]);
       // 清空原型图片附件列表
       setAttachmentPrototypeImages([]);
+      // 清空提及列表
+      setSelectedMentions([]);
     }
   };
 
@@ -735,6 +730,36 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     };
   }, [chat.chatInput, handleSendMessage]);
 
+  /**
+   * 处理点击外部关闭 MentionSelector
+   */
+  const handleCloseMentionSelector = useCallback(
+    (event: MouseEvent | TouchEvent) => {
+      // 检查点击是否在输入框内
+      const target = event.target as Node;
+      if (textAreaRef.current) {
+        const textarea =
+          textAreaRef.current.resizableTextArea?.textArea ||
+          textAreaRef.current;
+        if (textarea && (textarea as HTMLElement).contains(target)) {
+          // 点击在输入框内，不关闭
+          return;
+        }
+      }
+
+      // 点击在外部，关闭 MentionSelector
+      if (mentionTrigger.trigger && mentionPosition.visible) {
+        setMentionTrigger({ trigger: false });
+        setMentionPosition({ left: 0, top: 0, visible: false });
+        setMentionSelectedIndex(0);
+      }
+    },
+    [mentionTrigger.trigger, mentionPosition.visible],
+  );
+
+  // 使用 useClickOutside 检测点击外部事件
+  useClickOutside(mentionContainerRef, handleCloseMentionSelector, []);
+
   // 获取模型选项
   const getModeOptions = (models: ModelConfig[]) => {
     return (
@@ -792,15 +817,120 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             onDel={handleDelFilePrototypeImages}
           />
         </ConditionRender>
-        {/*选择的数据源*/}
-        <ConditionRender condition={dataSourceList?.length}>
-          <DataSourceList
-            dataSourceList={dataSourceList}
-            onToggleSelectDataSource={onToggleSelectDataSource}
-          />
+        {/*已选择的提及项（文件/数据源）*/}
+        <ConditionRender condition={selectedMentions?.length}>
+          <h5 className={cx(styles['file-title'])}>@ 提及</h5>
+          <div
+            className={cx(
+              styles['mentions-list'],
+              'flex',
+              'flex-wrap',
+              'gap-8',
+            )}
+          >
+            {selectedMentions.map((mention, index) => {
+              // 判断类型并获取对应信息
+              let displayName: string;
+              let fullPath: string;
+              let icon: React.ReactNode;
+              let itemType: string; // 用于区分文件、目录、数据资源
+
+              if (mention.type === 'file') {
+                // 文件或目录
+                const fileData = mention.data as FileNode;
+                displayName = getFileName(fileData.path); // 只显示末级名字
+                fullPath = fileData.path;
+                itemType = isDirectory(fileData) ? 'directory' : 'file';
+                // 根据类型选择图标
+                icon = isDirectory(fileData) ? (
+                  <FolderOutlined style={{ fontSize: '14px' }} />
+                ) : (
+                  <FileOutlined style={{ fontSize: '14px' }} />
+                );
+              } else {
+                // 数据资源
+                const dataSourceData = mention.data as DataResource;
+                displayName = dataSourceData.name;
+                fullPath = dataSourceData.name;
+                itemType = 'datasource';
+                icon = <DatabaseOutlined style={{ fontSize: '14px' }} />;
+              }
+
+              const key =
+                mention.type === 'file'
+                  ? `file-${mention.data.id}`
+                  : `datasource-${mention.data.id}`;
+
+              return (
+                <Tooltip key={key} title={fullPath}>
+                  <div
+                    className={cx(styles['mention-tag'])}
+                    data-type={itemType}
+                  >
+                    {icon}
+                    <span className={cx(styles['mention-tag-text'])}>
+                      {displayName}
+                    </span>
+                    <CloseOutlined
+                      className={cx(styles['mention-tag-close'])}
+                      onClick={() => {
+                        // 删除该提及项
+                        const mentionToRemove = selectedMentions[index];
+
+                        // 如果是数据源，调用 onToggleSelectDataSource 取消选择
+                        if (
+                          mentionToRemove.type === 'datasource' &&
+                          onToggleSelectDataSource
+                        ) {
+                          onToggleSelectDataSource(
+                            mentionToRemove.data as DataResource,
+                          );
+                        }
+
+                        // 从 selectedMentions 中移除
+                        setSelectedMentions((prev) =>
+                          prev.filter((_, i) => i !== index),
+                        );
+
+                        // 从输入框中删除对应的 @ 提及文本
+                        if (!textAreaRef.current) return;
+                        const textarea =
+                          textAreaRef.current.resizableTextArea?.textArea ||
+                          textAreaRef.current;
+                        if (!textarea) return;
+
+                        const currentText = textarea.value;
+                        // 构建要删除的提及文本
+                        const mentionTextToRemove =
+                          mentionToRemove.type === 'file'
+                            ? `@${mentionToRemove.data.path}`
+                            : `@${mentionToRemove.data.name}`;
+
+                        // 替换所有匹配的提及文本（可能有多个）
+                        const newText = currentText.replace(
+                          new RegExp(
+                            mentionTextToRemove.replace(
+                              /[.*+?^${}()|[\]\\]/g,
+                              '\\$&',
+                            ),
+                            'g',
+                          ),
+                          '',
+                        );
+
+                        // 更新输入框内容
+                        chat.setChatInput(newText.trim());
+                      }}
+                    />
+                  </div>
+                </Tooltip>
+              );
+            })}
+          </div>
         </ConditionRender>
+        {/* 已选择的数据源已统一显示在上方的 @ 提及标签中 */}
         {/* 选择的文件 */}
-        {fileContentState?.selectedFile && (
+        {/* {fileContentState?.selectedFile && (
           <Tooltip title={fileContentState.selectedFile}>
             <div className={`flex ${styles.selectedFileDisplay}`}>
               <div className={cx('text-ellipsis', styles['file-name'])}>
@@ -814,32 +944,50 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               />
             </div>
           </Tooltip>
-        )}
+        )} */}
         {/*输入框*/}
-        <Input.TextArea
-          ref={textAreaRef}
-          value={chat.chatInput}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          rootClassName={cx(styles.input)}
-          onPressEnter={handlePressEnter}
-          onPaste={handlePaste}
-          placeholder="一句话做网站、应用、提效工具等，可选择工作流、插件等数据资源拓展多种能力"
-          autoSize={{ minRows: 2, maxRows: 6 }}
-        />
+        <div className={cx(styles['input-wrapper'])}>
+          <Input.TextArea
+            ref={textAreaRef}
+            value={chat.chatInput}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            rootClassName={cx(styles.input)}
+            onPressEnter={(e) => handlePressEnter(e, selectedMentions)}
+            onPaste={handlePaste}
+            placeholder="" // 使用空字符串，通过自定义占位符元素显示
+            autoSize={{ minRows: 2, maxRows: 6 }}
+          />
+          {/* 自定义占位符元素，带淡入淡出动画效果 */}
+          {!chat.chatInput?.trim() && (
+            <div
+              className={cx(
+                styles['custom-placeholder'],
+                isPlaceholderVisible && styles['placeholder-visible'],
+              )}
+            >
+              {currentPlaceholder}
+            </div>
+          )}
+        </div>
         {/* @ 提及下拉选择器 */}
         <MentionSelector
+          ref={mentionSelectorRef}
           visible={mentionTrigger.trigger && mentionPosition.visible}
           position={mentionPosition}
           searchText={mentionTrigger.searchText || ''}
           files={files}
-          dataSources={dataSourceList || []}
-          activeTab={mentionActiveTab}
-          onTabChange={setMentionActiveTab}
+          dataSources={
+            dataSourceList?.map((ds) => ({
+              ...ds,
+              description: ds.description || '', // 确保 description 字段存在
+            })) || []
+          }
           onSelectFile={handleSelectFile}
           onSelectDataSource={handleSelectDataSource}
           selectedIndex={mentionSelectedIndex}
           containerRef={mentionContainerRef}
+          onSelectedIndexChange={setMentionSelectedIndex}
         />
         <footer className={cx('flex-1', styles.footer)}>
           <div className={cx('flex', 'items-center', 'gap-4')}>

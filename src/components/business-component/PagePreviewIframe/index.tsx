@@ -560,10 +560,6 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
       {showHeader && (
         <div className={cx(styles['page-preview-header'])}>
           <h3 className="text-ellipsis">
-            <SvgIcon
-              name="icons-common-console"
-              className={cx(styles['page-icon'])}
-            />
             <span className={titleClassName} style={titleStyle}>
               {previewPageTitle}
             </span>
