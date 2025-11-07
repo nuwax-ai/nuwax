@@ -94,7 +94,7 @@ export const useAppDevChat = ({
   /**
    * 滚动加载更多历史会话相关状态
    */
-  const [currentPage, setCurrentPage] = useState<number>(1); // 新增：当前页码
+  const currentPageRef = useRef<number>(1); // 新增：当前页码的 ref，用于立即获取最新值
   const [totalHistoryCount, setTotalHistoryCount] = useState<number>(0); // 新增：历史记录总数
   const hasMoreHistoryRef = useRef<boolean>(false); // 是否还有更多历史记录，初始为false
   const isLoadingMoreHistoryRef = useRef<boolean>(false); // 滚动加载更多历史会话状态，初始为false
@@ -751,7 +751,7 @@ export const useAppDevChat = ({
 
       if (code === SUCCESS_CODE) {
         // 更新分页信息
-        setCurrentPage(page);
+        currentPageRef.current = page; // 同时更新 ref，确保立即获取最新值
         hasMoreHistoryRef.current = data?.current < data?.pages;
         setTotalHistoryCount(data?.total || 0);
 
@@ -835,7 +835,7 @@ export const useAppDevChat = ({
     isChatLoading,
     isLoadingHistory, // 新增：历史会话加载状态
     isLoadingMoreHistoryRef, // 新增：加载更多历史会话状态
-    currentPage, // 新增：当前页码
+    currentPageRef, // 新增：当前页码的 ref，用于立即获取最新值
     hasMoreHistoryRef, // 新增：是否还有更多历史记录
     totalHistoryCount, // 新增：历史记录总数
 

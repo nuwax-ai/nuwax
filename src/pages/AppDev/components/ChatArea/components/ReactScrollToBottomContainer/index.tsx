@@ -23,14 +23,14 @@ const cx = classNames.bind(styles);
  * 暂时不使用，所有状态检测都通过备用监听器处理
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const ScrollStateHandler: React.FC<{
-  atBottom: boolean;
-  onScrollPositionChange?: (isAtBottom: boolean) => void;
-  children: React.ReactNode;
-}> = ({ children }) => {
-  // 完全禁用库的状态检测，使用备用检测
-  return <>{children}</>;
-};
+// const ScrollStateHandler: React.FC<{
+//   atBottom: boolean;
+//   onScrollPositionChange?: (isAtBottom: boolean) => void;
+//   children: React.ReactNode;
+// }> = ({ children }) => {
+//   // 完全禁用库的状态检测，使用备用检测
+//   return <>{children}</>;
+// };
 
 /**
  * 基于 react-scroll-to-bottom 的滚动容器组件的引用接口
@@ -238,15 +238,15 @@ const ReactScrollToBottomContainer = forwardRef<
     }, [isAutoScrollEnabled, onAutoScrollChange]);
 
     // 监听滚动位置变化
-    useEffect(() => {
-      const checkPosition = () => {
-        // const atBottom = isAtBottom();
-        // 完全禁用库的状态检查，使用备用检测
-        // onScrollPositionChange?.(atBottom);
-      };
+    // useEffect(() => {
+    //   const checkPosition = () => {
+    //     // const atBottom = isAtBottom();
+    //     // 完全禁用库的状态检查，使用备用检测
+    //     // onScrollPositionChange?.(atBottom);
+    //   };
 
-      checkPosition();
-    }, [isAtBottom, onScrollPositionChange]);
+    //   checkPosition();
+    // }, [isAtBottom, onScrollPositionChange]);
 
     // 添加备用滚动监听器，确保滚动位置检测正常工作
     useEffect(() => {
@@ -300,7 +300,7 @@ const ReactScrollToBottomContainer = forwardRef<
       return () => {
         clearTimeout(timer);
       };
-    }, [onScrollPositionChange, onScrollToTop]);
+    }, []);
 
     return (
       <div

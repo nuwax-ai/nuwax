@@ -646,7 +646,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             chat.hasMoreHistoryRef.current &&
             !chat.isLoadingMoreHistoryRef.current
           ) {
-            chat.loadHistorySessions(chat.currentPage + 1, true);
+            // 使用 ref 而不是状态来获取当前页码，确保获取到最新值
+            const nextPage = chat.currentPageRef.current + 1;
+            chat.loadHistorySessions(nextPage, true);
           }
         }}
       >

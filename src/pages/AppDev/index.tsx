@@ -1413,7 +1413,7 @@ const AppDev: React.FC = () => {
                 selectedDataSources={selectedDataResources} // 新增：选中的数据源
                 onUpdateDataSources={handleUpdateDataSources} // 新增：更新数据源回调
                 fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
-                onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
+                // onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
                 modelSelector={modelSelector} // 模型选择器状态
                 files={currentDisplayFiles} // 新增：文件树数据
                 onUserManualSendMessage={() => {
