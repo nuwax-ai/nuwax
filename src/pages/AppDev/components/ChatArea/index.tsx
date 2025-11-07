@@ -18,8 +18,9 @@ import {
   DownOutlined,
   LoadingOutlined,
   MessageOutlined,
+  RollbackOutlined,
 } from '@ant-design/icons';
-import { Card, message, Spin, Tooltip, Typography } from 'antd';
+import { Button, Card, message, Spin, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useModel } from 'umi';
@@ -640,19 +641,44 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         onScrollPositionChange={(isAtBottom) => {
           setShowScrollButton(!isAtBottom);
         }}
-        onScrollToTop={() => {
-          // 当用户滚动到顶部时，加载更多历史会话
-          if (
-            chat.hasMoreHistoryRef.current &&
-            !chat.isLoadingMoreHistoryRef.current
-          ) {
-            // 使用 ref 而不是状态来获取当前页码，确保获取到最新值
-            const nextPage = chat.currentPageRef.current + 1;
-            chat.loadHistorySessions(nextPage, true);
-          }
-        }}
+        onScrollToTop={() => {}}
       >
         <div className={styles.chatMessages}>
+          {chat.hasMoreHistoryRef.current &&
+            !chat.isLoadingMoreHistoryRef.current && (
+              <Button
+                type="text"
+                className={styles.loadMoreHistoryButton}
+                icon={<RollbackOutlined />}
+                onClick={async () => {
+                  // 1. 先记录当前内容的滚动位置与高度
+                  const scrollContainer =
+                    scrollContainerRef.current?.getScrollContainer();
+                  if (!scrollContainer) {
+                    return;
+                  }
+
+                  // 记录按钮元素（如果存在），用于计算高度变化
+                  const scrollPosition = scrollContainer.scrollTop;
+                  const scrollHeight = scrollContainer.scrollHeight;
+
+                  // 2. 加载历史会话
+                  await chat.loadHistorySessions(chat.currentPage + 1, true);
+
+                  // 3. 加载记录成功后，恢复到上一次历史会话的位置
+                  // 等待 DOM 更新完成，包括按钮状态变化
+                  setTimeout(() => {
+                    scrollContainerRef.current?.handleScrollTo(
+                      scrollPosition,
+                      scrollHeight,
+                    );
+                  }, 100);
+                }}
+              >
+                点击查看更多历史会话
+              </Button>
+            )}
+          {chat.isLoadingMoreHistoryRef.current && <Spin size="small" />}
           {chat.isLoadingHistory ? (
             <AppDevEmptyState
               type="loading"

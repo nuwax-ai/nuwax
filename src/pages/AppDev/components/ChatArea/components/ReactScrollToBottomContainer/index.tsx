@@ -54,6 +54,11 @@ export interface ReactScrollToBottomContainerRef {
   checkScrollPosition: () => void;
   /** 获取滚动容器元素 */
   getScrollContainer: () => HTMLDivElement | null;
+  /** 恢复到指定的滚动位置（用于加载历史会话后保持滚动位置） */
+  handleScrollTo: (
+    previousScrollTop: number,
+    previousScrollHeight: number,
+  ) => void;
 }
 
 /**
@@ -194,6 +199,110 @@ const ReactScrollToBottomContainer = forwardRef<
       }
     }, [checkScrollPosition]);
 
+    /**
+     * 恢复到指定的滚动位置（用于加载历史会话后保持滚动位置）
+     * 当新内容添加到顶部时，需要调整滚动位置以保持视觉连续性
+     *
+     * @param previousScrollTop 之前的滚动位置
+     * @param previousScrollHeight 之前的内容高度
+     */
+    const handleScrollTo = useCallback(
+      (previousScrollTop: number, previousScrollHeight: number) => {
+        if (!scrollContainerRef.current) {
+          return;
+        }
+
+        // 暂时禁用自动滚动，避免干扰滚动恢复
+        const wasAutoScrollEnabled = allowAutoScrollRef.current;
+        allowAutoScrollRef.current = false;
+        isUserScrollingRef.current = true;
+
+        // 使用多重延迟确保 DOM 完全更新和渲染完成
+        // 第一层：等待 React 完成渲染
+        requestAnimationFrame(() => {
+          // 第二层：等待浏览器完成布局
+          requestAnimationFrame(() => {
+            // 第三层：额外延迟确保所有内容都已渲染
+            setTimeout(() => {
+              if (!scrollContainerRef.current) {
+                // 恢复自动滚动状态
+                allowAutoScrollRef.current = wasAutoScrollEnabled;
+                isUserScrollingRef.current = false;
+                return;
+              }
+
+              const currentScrollHeight =
+                scrollContainerRef.current.scrollHeight;
+              const heightDifference =
+                currentScrollHeight - previousScrollHeight;
+
+              // 检查是否有"加载更多历史会话"按钮，考虑其高度变化
+              const loadMoreButton = scrollContainerRef.current.querySelector(
+                '.loadMoreHistoryButton',
+              ) as HTMLElement | null;
+              const currentButtonHeight = loadMoreButton?.offsetHeight || 0;
+
+              // 计算新的滚动位置：旧位置 + 新增内容的高度
+              // 注意：如果按钮在加载时被移除，高度会减少，需要调整计算
+              let newScrollTop = previousScrollTop + heightDifference;
+
+              // 调试日志（开发环境）
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[handleScrollTo] 滚动位置恢复:', {
+                  previousScrollTop,
+                  previousScrollHeight,
+                  currentScrollHeight,
+                  heightDifference,
+                  currentButtonHeight,
+                  newScrollTop,
+                });
+              }
+
+              // 滚动到新位置，使用 auto 行为以获得即时效果
+              scrollContainerRef.current.scrollTo({
+                top: newScrollTop,
+                behavior: 'auto',
+              });
+
+              // 验证滚动位置是否正确，如果不正确则调整
+              requestAnimationFrame(() => {
+                if (scrollContainerRef.current) {
+                  const actualScrollTop = scrollContainerRef.current.scrollTop;
+                  const expectedScrollTop = newScrollTop;
+                  const scrollDifference = Math.abs(
+                    actualScrollTop - expectedScrollTop,
+                  );
+
+                  // 如果滚动位置偏差超过 10px，进行调整
+                  if (scrollDifference > 10) {
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log('[handleScrollTo] 滚动位置偏差，进行调整:', {
+                        expectedScrollTop,
+                        actualScrollTop,
+                        scrollDifference,
+                      });
+                    }
+
+                    scrollContainerRef.current.scrollTo({
+                      top: expectedScrollTop,
+                      behavior: 'auto',
+                    });
+                  }
+                }
+              });
+
+              // 延迟恢复自动滚动状态，确保滚动完成
+              setTimeout(() => {
+                allowAutoScrollRef.current = wasAutoScrollEnabled;
+                isUserScrollingRef.current = false;
+              }, 150);
+            }, 50); // 额外延迟 50ms 确保 DOM 完全更新
+          });
+        });
+      },
+      [],
+    );
+
     // 使用滚动效果 Hook
     useReactScrollToBottomEffects(
       messages,
@@ -219,6 +328,7 @@ const ReactScrollToBottomContainer = forwardRef<
         handleNewMessage,
         checkScrollPosition: checkScrollPositionWrapper,
         getScrollContainer: () => scrollContainerRef.current,
+        handleScrollTo,
       }),
       [
         hookScrollToBottom,
@@ -229,6 +339,7 @@ const ReactScrollToBottomContainer = forwardRef<
         isAtBottom,
         handleNewMessage,
         checkScrollPositionWrapper,
+        handleScrollTo,
       ],
     );
 
