@@ -2,13 +2,14 @@ import MoveCopyComponent from '@/components/MoveCopyComponent';
 import { apiCustomPageCopyProject } from '@/services/pageDev';
 import { apiPublishTemplateCopy } from '@/services/publish';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { PageCopyTypeEnum } from '@/types/enums/pageDev';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { PageCopyParams } from '@/types/interfaces/pageDev';
 import { PublishTemplateCopyParams } from '@/types/interfaces/publish';
 import { jumpToWorkflow } from '@/utils/router';
 import { message } from 'antd';
 import React, { useState } from 'react';
-import { useRequest } from 'umi';
+import { useLocation, useRequest } from 'umi';
 
 /**
  * 复制到空间组件的 Props 接口
@@ -57,6 +58,9 @@ const CopyToSpaceComponent: React.FC<CopyToSpaceComponentProps> = ({
 }) => {
   // 内部加载状态
   const [internalLoading, setInternalLoading] = useState<boolean>(false);
+
+  // 使用 UmiJS 的 useLocation hook 获取当前路由信息
+  const location = useLocation();
 
   // 页面复制接口
   const { run: runPageCopy, loading: loadingPageCopy } = useRequest(
@@ -131,10 +135,17 @@ const CopyToSpaceComponent: React.FC<CopyToSpaceComponentProps> = ({
     setInternalLoading(true);
 
     if (mode === AgentComponentTypeEnum.Page) {
+      // 当页面路由地址路径有 /page-develop 是为开发，否则为广场
+      // 使用 UmiJS 的 location.pathname 替代 window.location.pathname
+      const copyType = location.pathname.includes('/page-develop')
+        ? PageCopyTypeEnum.DEVELOP
+        : PageCopyTypeEnum.SQUARE;
+
       // 页面复制
       const params: PageCopyParams = {
         projectId: componentId,
         targetSpaceId,
+        copyType,
       };
       runPageCopy(params);
     } else {

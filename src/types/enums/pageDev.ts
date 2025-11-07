@@ -65,3 +65,11 @@ export enum PageDevelopPublishTypeEnum {
   // 发布成应用
   AGENT = 'AGENT',
 }
+
+// 复制类型枚举(可用值:DEVELOP,SQUARE)
+export enum PageCopyTypeEnum {
+  // 开发
+  DEVELOP = 'DEVELOP',
+  // 广场
+  SQUARE = 'SQUARE',
+}
