@@ -1,6 +1,7 @@
 import AgentType from '@/components/base/AgentType';
 import Loading from '@/components/custom/Loading';
 import EcosystemCard, { EcosystemCardProps } from '@/components/EcosystemCard';
+import SharedIcon from '@/components/EcosystemCard/SharedIcon';
 import PluginDetailDrawer from '@/components/EcosystemDetailDrawer';
 import SelectCategory from '@/components/EcosystemSelectCategory';
 import EcosystemShareModal, {
@@ -835,6 +836,11 @@ export default function EcosystemTemplate() {
                     selectTargetTypeRef.current.targetType &&
                     type === AgentComponentTypeEnum.Page
                   ) {
+                    // 分享状态
+                    const shareStatus =
+                      activeTab === TabTypeEnum.SHARED
+                        ? config.shareStatus
+                        : undefined;
                     return (
                       <PageCard
                         key={config?.uid}
@@ -852,6 +858,11 @@ export default function EcosystemTemplate() {
                             : undefined
                         }
                         onClick={async () => await handleCardClick(config)}
+                        footerInner={
+                          shareStatus && (
+                            <SharedIcon shareStatus={shareStatus} />
+                          )
+                        }
                       />
                     );
                   } else {

@@ -86,9 +86,9 @@ const PageCard: React.FC<PageCardProps> = ({
       </div>
       {/* footer 底部区域 */}
       <footer className={cx('flex', 'items-center', 'gap-4')}>
-        <div className={cx('flex', 'flex-col', 'flex-1')}>
+        <div className={cx('flex', 'flex-col', 'flex-1', 'overflow-hide')}>
           {/* 页面名称 */}
-          <p className={cx(styles.name)}>{name}</p>
+          <p className={cx(styles.name, 'text-ellipsis')}>{name}</p>
           {/* 作者信息 */}
           <div
             className={cx(
