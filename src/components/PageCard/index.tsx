@@ -19,10 +19,9 @@ export interface PageCardProps {
   isEnabled?: boolean;
   /** 是否是新版本 */
   isNewVersion?: boolean;
-  /** 是否已发布 */
-  buildRunning?: boolean;
   footerInner?: React.ReactNode;
   onClick: () => void;
+  extra?: React.ReactNode;
 }
 
 /**
@@ -37,9 +36,9 @@ const PageCard: React.FC<PageCardProps> = ({
   overlayText,
   isEnabled,
   isNewVersion,
-  buildRunning,
   footerInner,
   onClick,
+  extra,
 }) => {
   // 图片错误处理
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
@@ -70,16 +69,7 @@ const PageCard: React.FC<PageCardProps> = ({
           有版本更新
         </div>
       )}
-      {buildRunning && (
-        <div
-          className={cx(
-            styles['position-top-right'],
-            styles['new-version-text'],
-          )}
-        >
-          已发布
-        </div>
-      )}
+      {extra}
       {/* 图片区域 */}
       <div className={cx(styles['image-wrapper'])}>
         {icon ? (

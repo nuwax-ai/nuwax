@@ -439,7 +439,6 @@ const SpacePageDevelop: React.FC = () => {
                 avatar={info.creatorAvatar}
                 userName={info.creatorNickName || info.creatorName}
                 created={info.created}
-                buildRunning={info.buildRunning}
                 overlayText="查看详情"
                 onClick={() => handleClickCard(info)}
                 footerInner={
@@ -449,6 +448,18 @@ const SpacePageDevelop: React.FC = () => {
                   >
                     <Button type="text" icon={<ICON_MORE />}></Button>
                   </CustomPopover>
+                }
+                extra={
+                  <div
+                    className={cx(
+                      styles['position-top-right'],
+                      info.buildRunning
+                        ? styles['published-text']
+                        : styles['unpublished-text'],
+                    )}
+                  >
+                    {info.buildRunning ? '已发布' : '未发布'}
+                  </div>
                 }
               />
             );
