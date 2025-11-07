@@ -15,6 +15,7 @@ import {
 } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentItemProps } from '@/types/interfaces/library';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -105,7 +106,7 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
           />
           {/*更多操作*/}
           <CustomPopover list={actionList} onClick={onClickMore}>
-            <ICON_MORE />
+            <Button size="small" type="text" icon={<ICON_MORE />}></Button>
           </CustomPopover>
         </footer>
       }

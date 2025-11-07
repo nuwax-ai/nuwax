@@ -19,6 +19,7 @@ export interface PageCardProps {
   isEnabled?: boolean;
   /** 是否是新版本 */
   isNewVersion?: boolean;
+  footerInner?: React.ReactNode;
   onClick: () => void;
 }
 
@@ -34,6 +35,7 @@ const PageCard: React.FC<PageCardProps> = ({
   overlayText,
   isEnabled,
   isNewVersion,
+  footerInner,
   onClick,
 }) => {
   // 图片错误处理
@@ -47,6 +49,7 @@ const PageCard: React.FC<PageCardProps> = ({
       className={cx('flex', 'flex-col', 'relative', styles.container)}
       onClick={onClick}
     >
+      {/* 状态区域 */}
       {isEnabled && (
         <div
           className={cx(styles['position-top-right'], styles['activated-text'])}
@@ -64,8 +67,10 @@ const PageCard: React.FC<PageCardProps> = ({
           有版本更新
         </div>
       )}
+      {/* 图片区域 */}
       <div className={cx(styles['image-wrapper'])}>
         <img className={cx(styles.image)} src={icon} alt="应用页面图标" />
+        {/* 阴影覆盖区域 */}
         <div
           className={cx(
             styles['image-overlay'],
@@ -79,26 +84,42 @@ const PageCard: React.FC<PageCardProps> = ({
           </span>
         </div>
       </div>
-      <footer className={cx('flex', 'flex-col')}>
-        <p className={cx(styles.name)}>{name}</p>
-        <div
-          className={cx('flex', 'items-center', 'gap-4', styles['footer-box'])}
-        >
-          <img
-            className={cx(styles.avatar)}
-            src={avatar || defaultAvatar}
-            alt="avatar"
-            onError={handleError}
-          />
-          <span className={cx(styles['author-name'], 'text-ellipsis')}>
-            {userName}
-          </span>
-          <ConditionRender condition={created}>
-            <span className={cx(styles.time, 'text-ellipsis')}>
-              创建于 {dayjs(created).format('YYYY-MM-DD')}
+      {/* footer 底部区域 */}
+      <footer className={cx('flex', 'items-center', 'gap-4')}>
+        <div className={cx('flex', 'flex-col', 'flex-1')}>
+          {/* 页面名称 */}
+          <p className={cx(styles.name)}>{name}</p>
+          {/* 作者信息 */}
+          <div
+            className={cx(
+              'flex',
+              'items-center',
+              'gap-4',
+              'flex-1',
+              styles['footer-box'],
+            )}
+          >
+            {/* 作者头像 */}
+            <img
+              className={cx(styles.avatar)}
+              src={avatar || defaultAvatar}
+              alt="avatar"
+              onError={handleError}
+            />
+            {/* 作者名称 */}
+            <span className={cx(styles['author-name'], 'text-ellipsis')}>
+              {userName}
             </span>
-          </ConditionRender>
+            {/* 创建时间 */}
+            <ConditionRender condition={created}>
+              <span className={cx(styles.time, 'text-ellipsis')}>
+                创建于 {dayjs(created).format('YYYY-MM-DD')}
+              </span>
+            </ConditionRender>
+          </div>
         </div>
+        {/* 更多操作区域 */}
+        {footerInner}
       </footer>
     </div>
   );

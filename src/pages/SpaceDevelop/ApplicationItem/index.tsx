@@ -13,7 +13,7 @@ import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ApplicationItemProps } from '@/types/interfaces/space';
-import { message } from 'antd';
+import { Button, message } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
@@ -144,7 +144,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
           </span>
           {/*更多操作*/}
           <CustomPopover onClick={handlerClickMore} list={actionList}>
-            <ICON_MORE />
+            <Button size="small" type="text" icon={<ICON_MORE />}></Button>
           </CustomPopover>
         </footer>
       }
