@@ -663,7 +663,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   const scrollHeight = scrollContainer.scrollHeight;
 
                   // 2. 加载历史会话
-                  await chat.loadHistorySessions(chat.currentPage + 1, true);
+                  await chat.loadHistorySessions(
+                    chat.currentPageRef.current + 1,
+                    true,
+                  );
 
                   // 3. 加载记录成功后，恢复到上一次历史会话的位置
                   // 等待 DOM 更新完成，包括按钮状态变化

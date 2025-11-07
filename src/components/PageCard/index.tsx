@@ -75,11 +75,6 @@ const PageCard: React.FC<PageCardProps> = ({
         className={cx(styles['image-wrapper'])}
         style={{
           backgroundImage: `url(${icon})`,
-          backgroundSize: 'cover',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
-          width: '100%',
-          paddingTop: '56.25%',
         }}
       >
         {!icon && (
