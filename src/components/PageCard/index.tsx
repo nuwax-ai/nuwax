@@ -82,7 +82,20 @@ const PageCard: React.FC<PageCardProps> = ({
       )}
       {/* 图片区域 */}
       <div className={cx(styles['image-wrapper'])}>
-        <img className={cx(styles.image)} src={icon} alt="应用页面图标" />
+        {icon ? (
+          <img className={cx(styles.image)} src={icon} alt="应用页面图标" />
+        ) : (
+          <div
+            className={cx(
+              'flex',
+              'items-center',
+              'content-center',
+              styles['no-screenshot'],
+            )}
+          >
+            No screenshot available
+          </div>
+        )}
         {/* 阴影覆盖区域 */}
         <div
           className={cx(
