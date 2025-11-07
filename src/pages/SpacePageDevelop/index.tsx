@@ -117,6 +117,7 @@ const SpacePageDevelop: React.FC = () => {
     list = pageAllRef.current,
   ) => {
     let _list = list;
+    // 过滤发布类型
     if (filterType !== PageDevelopSelectTypeEnum.All_Type) {
       _list = _list.filter(
         (item) =>
@@ -438,6 +439,7 @@ const SpacePageDevelop: React.FC = () => {
                 avatar={info.creatorAvatar}
                 userName={info.creatorNickName || info.creatorName}
                 created={info.created}
+                buildRunning={info.buildRunning}
                 overlayText="查看详情"
                 onClick={() => handleClickCard(info)}
                 footerInner={
