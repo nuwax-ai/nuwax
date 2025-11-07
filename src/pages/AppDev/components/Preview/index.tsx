@@ -461,9 +461,21 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               return;
             }
 
+            // 获取 iframe 宽度
+            const iframeWidth =
+              iframeDoc?.body?.scrollWidth ||
+              iframeDoc?.documentElement?.offsetWidth ||
+              1280;
+            // 获取 iframe 高度 16:9比例
+            const iframeHeight = iframeWidth * 0.5625;
+
             const canvas = await html2canvas(iframeDoc.body, {
               useCORS: true,
               allowTaint: true,
+              width: iframeWidth,
+              // 16:9比例
+              height: iframeHeight,
+              scrollY: 0, // 从顶部开始
             });
 
             // 将 canvas 转换为 blob
@@ -546,9 +558,27 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             return;
           }
 
+          // 获取 iframe 宽度
+          const iframeWidth =
+            iframeDoc?.body?.scrollWidth ||
+            iframeDoc?.documentElement?.offsetWidth ||
+            1280;
+          // 获取 iframe 高度 16:9比例
+          const iframeHeight = iframeWidth * 0.5625;
+
+          console.log(
+            'iframeDoc?.body?.scrollWidth',
+            iframeDoc?.body?.scrollWidth,
+            'iframeDoc?.documentElement?.offsetWidth',
+            iframeDoc?.documentElement?.offsetWidth,
+          );
+
           const canvas = await html2canvas(iframeDoc.body, {
             useCORS: true,
             allowTaint: true,
+            width: iframeWidth,
+            height: iframeHeight,
+            scrollY: 0, // 从顶部开始
           });
 
           // 将 canvas 转换为 blob
