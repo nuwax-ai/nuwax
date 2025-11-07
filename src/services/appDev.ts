@@ -477,7 +477,7 @@ export const saveConversation = async (params: {
 export const listConversations = async (
   projectId: string,
   page: number = 1,
-  pageSize: number = 30,
+  pageSize: number = 20,
 ): Promise<any> => {
   return request('/api/custom-page/page-query-conversations', {
     method: 'POST',
