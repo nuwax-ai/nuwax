@@ -304,14 +304,13 @@ export const sendChatMessage = async (
  */
 export const cancelAgentTask = async (
   projectId: string,
-  sessionId: string,
+  sessionId?: string,
 ): Promise<CancelResponse> => {
-  console.info(sessionId); // eslint-disable-line no-console
   return request(`/api/custom-page/ai-session-cancel`, {
     method: 'POST',
     data: {
       project_id: projectId,
-      // session_id: sessionId,
+      session_id: sessionId,
     },
   });
 };
@@ -478,7 +477,7 @@ export const saveConversation = async (params: {
 export const listConversations = async (
   projectId: string,
   page: number = 1,
-  pageSize: number = 10,
+  pageSize: number = 30,
 ): Promise<any> => {
   return request('/api/custom-page/page-query-conversations', {
     method: 'POST',
