@@ -1,5 +1,6 @@
 import { CreateUpdateModeEnum } from '../enums/common';
 import {
+  PageCopyTypeEnum,
   PageDevelopCreateTypeEnum,
   PageDevelopPublishTypeEnum,
   PageProjectTypeEnum,
@@ -129,6 +130,8 @@ export interface PageCopyParams {
   projectId: number;
   // 空间ID
   targetSpaceId: number;
+  // 复制类型,可用值:DEVELOP,SQUARE
+  copyType: PageCopyTypeEnum;
 }
 
 // 复制项目返回值
