@@ -51,7 +51,7 @@
     justify-content: center;
     align-items: center;
     width: 100%;
-    height: 200px;
+    // height: 200px;
     border-radius: @borderRadius;
     overflow: hidden;
     background-color: @colorBgLayout;
@@ -66,15 +66,15 @@
         0 8px 24px -2px rgba(0, 0, 0, 4%);
     }
 
-    .image {
-      width: auto;
-      height: auto;
-      object-fit: contain;
-      max-width: 100%;
-      transition: all 0.3s ease-in-out;
-    }
-
     .no-screenshot {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       color: @colorTextDescription;
     }
 
