@@ -30,8 +30,17 @@ export const jumpTo = (params: JumpToProps) => {
   throw new Error('Invalid jumpTo params');
 };
 
+// 跳转到普通插件工具页面
 export const jumpToPlugin = (targetSpaceId: number, pluginId: number) => {
   jumpTo(`/space/${targetSpaceId}/plugin/${pluginId}`);
+};
+
+// 跳转到代码插件云端工具页面
+export const jumpToPluginCloudTool = (
+  targetSpaceId: number,
+  pluginId: number,
+) => {
+  jumpTo(`/space/${targetSpaceId}/plugin/${pluginId}/cloud-tool`);
 };
 
 export const jumpToWorkflow = (targetSpaceId: number, workflowId: number) => {
