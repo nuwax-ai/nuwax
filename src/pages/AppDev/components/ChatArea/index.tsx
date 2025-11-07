@@ -640,6 +640,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         onScrollPositionChange={(isAtBottom) => {
           setShowScrollButton(!isAtBottom);
         }}
+        onScrollToTop={() => {
+          // 当用户滚动到顶部时，加载更多历史会话
+          if (
+            chat.hasMoreHistoryRef.current &&
+            !chat.isLoadingMoreHistoryRef.current
+          ) {
+            chat.loadHistorySessions(chat.currentPage + 1, true);
+          }
+        }}
       >
         <div className={styles.chatMessages}>
           {chat.isLoadingHistory ? (
