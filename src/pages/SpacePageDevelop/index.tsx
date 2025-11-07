@@ -3,9 +3,12 @@ import ButtonToggle from '@/components/ButtonToggle';
 import Loading from '@/components/custom/Loading';
 import SelectList from '@/components/custom/SelectList';
 import CustomPopover from '@/components/CustomPopover';
+import PageCard from '@/components/PageCard';
+import { ICON_MORE } from '@/constants/images.constants';
 import {
   PAGE_DEVELOP_ALL_TYPE,
   PAGE_DEVELOP_CREATE_TYPE_LIST,
+  PAGE_DEVELOP_MORE_ACTIONS,
 } from '@/constants/pageDev.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
 import {
@@ -15,6 +18,7 @@ import {
 } from '@/services/pageDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
+  BuildRunningEnum,
   PageDevelopCreateTypeEnum,
   PageDevelopMoreActionEnum,
   PageDevelopPublishTypeEnum,
@@ -36,7 +40,6 @@ import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import AuthConfigModal from './AuthConfigModal';
 import styles from './index.less';
 import PageCreateModal from './PageCreateModal';
-import PageDevelopCardItem from './PageDevelopCardItem';
 import PathParamsConfigModal from './PathParamsConfigModal';
 import ReverseProxyModal from './ReverseProxyModal';
 
@@ -412,14 +415,42 @@ const SpacePageDevelop: React.FC = () => {
         <div
           className={cx(styles['main-container'], 'flex-1', 'scroll-container')}
         >
-          {pageList?.map((info) => (
-            <PageDevelopCardItem
-              key={info.projectId}
-              componentInfo={info}
-              onClick={() => handleClickCard(info)}
-              onClickMore={(item) => handleClickMore(item, info)}
-            />
-          ))}
+          {pageList?.map((info) => {
+            /**
+             * 更多操作列表
+             */
+            const moreActionList = PAGE_DEVELOP_MORE_ACTIONS.filter((item) => {
+              // 页面预览
+              if (item.value === PageDevelopMoreActionEnum.Page_Preview) {
+                return (
+                  info.projectType === PageProjectTypeEnum.REVERSE_PROXY ||
+                  (info.projectType === PageProjectTypeEnum.ONLINE_DEPLOY &&
+                    info.buildRunning === Boolean(BuildRunningEnum.Published))
+                );
+              }
+              return true;
+            });
+            return (
+              <PageCard
+                key={info.projectId}
+                icon={info.icon}
+                name={info.name}
+                avatar={info.creatorAvatar}
+                userName={info.creatorNickName || info.creatorName}
+                created={info.created}
+                overlayText="查看详情"
+                onClick={() => handleClickCard(info)}
+                footerInner={
+                  <CustomPopover
+                    list={moreActionList}
+                    onClick={(item) => handleClickMore(item, info)}
+                  >
+                    <Button type="text" icon={<ICON_MORE />}></Button>
+                  </CustomPopover>
+                }
+              />
+            );
+          })}
         </div>
       ) : (
         <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>

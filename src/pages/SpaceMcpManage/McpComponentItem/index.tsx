@@ -12,6 +12,7 @@ import {
 } from '@/types/enums/mcp';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { McpComponentItemProps, McpDetailInfo } from '@/types/interfaces/mcp';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -96,7 +97,7 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
           {/*更多操作*/}
           <ConditionRender condition={actionList.length > 0}>
             <CustomPopover list={actionList} onClick={onClickMore}>
-              <ICON_MORE />
+              <Button size="small" type="text" icon={<ICON_MORE />}></Button>
             </CustomPopover>
           </ConditionRender>
         </footer>

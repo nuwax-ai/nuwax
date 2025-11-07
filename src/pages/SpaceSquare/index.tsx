@@ -12,12 +12,13 @@ import {
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { Page } from '@/types/interfaces/request';
 import { SquarePublishedItemInfo } from '@/types/interfaces/square';
-import { EllipsisOutlined, ExclamationCircleFilled } from '@ant-design/icons';
-import { Empty, Modal, Segmented, Space } from 'antd';
+import { ExclamationCircleFilled } from '@ant-design/icons';
+import { Button, Empty, Modal, Segmented, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRequest, useSearchParams } from 'umi';
 // 复用广场中的组件
+import { ICON_MORE } from '@/constants/images.constants';
 import { SPACE_SQUARE_TABS } from '@/constants/space.constants';
 import SingleAgent from '../Square/SingleAgent';
 import SquareComponentInfo from '../Square/SquareComponentInfo';
@@ -225,7 +226,7 @@ const SpaceSection: React.FC = () => {
           )
         }
       >
-        <EllipsisOutlined className={cx(styles.icon)} />
+        <Button size="small" type="text" icon={<ICON_MORE />}></Button>
       </CustomPopover>
     );
   };

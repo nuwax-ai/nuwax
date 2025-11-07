@@ -1,6 +1,7 @@
 import AgentType from '@/components/base/AgentType';
 import Loading from '@/components/custom/Loading';
 import EcosystemCard, { EcosystemCardProps } from '@/components/EcosystemCard';
+import SharedIcon from '@/components/EcosystemCard/SharedIcon';
 import PluginDetailDrawer from '@/components/EcosystemDetailDrawer';
 import SelectCategory from '@/components/EcosystemSelectCategory';
 import EcosystemShareModal, {
@@ -590,9 +591,11 @@ export default function EcosystemTemplate() {
       icon: item.icon,
       name: item.name,
       description: item.description,
+      // 目标类型
       targetType: item.targetType,
-      targetId: item.targetId.toString(),
+      /** 目标子类型 */
       targetSubType: item.targetSubType,
+      targetId: item.targetId.toString(),
       shareStatus: EcosystemShareStatusEnum.DRAFT,
     });
     setAddComponents([
@@ -620,7 +623,11 @@ export default function EcosystemTemplate() {
         uid: config.uid,
         name: config.name || '',
         description: config.description || '',
+        // 目标类型
         targetType: targetType as AgentComponentTypeEnum,
+        // 目标子类型
+        targetSubType: config.targetSubType,
+        // 目标id
         targetId: (config.targetId || '').toString(),
         author: config.author || '',
         publishDoc: config.publishDoc || '',
@@ -835,6 +842,11 @@ export default function EcosystemTemplate() {
                     selectTargetTypeRef.current.targetType &&
                     type === AgentComponentTypeEnum.Page
                   ) {
+                    // 分享状态
+                    const shareStatus =
+                      activeTab === TabTypeEnum.SHARED
+                        ? config.shareStatus
+                        : undefined;
                     return (
                       <PageCard
                         key={config?.uid}
@@ -852,6 +864,11 @@ export default function EcosystemTemplate() {
                             : undefined
                         }
                         onClick={async () => await handleCardClick(config)}
+                        footerInner={
+                          shareStatus && (
+                            <SharedIcon shareStatus={shareStatus} />
+                          )
+                        }
                       />
                     );
                   } else {
