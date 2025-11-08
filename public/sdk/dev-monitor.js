@@ -93,7 +93,7 @@
 
           return docString;
         } catch (e) {
-          console.debug('[DevMonitor] 获取 document 字符串失败:', e);
+          // 获取 document 字符串失败（静默处理）
           return '[Failed to get document string: ' + String(e) + ']';
         }
       }
@@ -139,7 +139,6 @@
       };
     } catch (error) {
       // 检测失败时，保守处理，返回 false（不认为是白屏）
-      console.debug('[DevMonitor] 白屏检测失败:', error);
       return {
         isWhiteScreen: false,
         documentString: '[White screen check failed: ' + String(error) + ']',
@@ -231,12 +230,13 @@
       }
 
       // ⭐ 关键修复：使用原始 console.error，避免被拦截器捕获形成循环
-      _originalConsoleError.call(
-        console,
-        '[Dev-Monitor ERROR]',
-        message,
-        details || '',
-      );
+      // 只在开发环境或需要调试时输出错误日志
+      // _originalConsoleError.call(
+      //   console,
+      //   '[Dev-Monitor ERROR]',
+      //   message,
+      //   details || '',
+      // );
 
       const errorData = {
         message: typeof message === 'string' ? message : message.toString(),
@@ -305,36 +305,16 @@
               documentString,
             }), // 仅在白屏时包含 document 字符串
           };
-          // ⭐ 使用原始 console 方法，避免被拦截
-          _originalConsoleError.call(
-            console,
-            '[DevMonitor] 📤 Sending dev-monitor-error:',
-            errorMessage,
-          );
+          // ⭐ 发送错误消息到父窗口
           window.parent.postMessage(errorMessage, '*');
-          _originalConsoleError.call(
-            console,
-            '[DevMonitor] ✅ postMessage called successfully',
-          );
         } catch (e) {
-          _originalConsoleError.call(
-            console,
-            '[DevMonitor] ❌ Failed to send error message:',
-            e,
-          );
+          // 发送错误消息失败（静默处理，避免日志污染）
+          // _originalConsoleError.call(console, '[DevMonitor] ❌ Failed to send error message:', e);
         }
-      } else {
-        _originalConsoleWarn.call(
-          console,
-          '[DevMonitor] ⚠️ Cannot send error message - parent check failed:',
-          {
-            isInIframe: isInIframe,
-            hasParent: hasParent,
-            parentEqualsWindow: parentEqualsWindow,
-            parentEqualsSelf: parentEqualsSelf,
-          },
-        );
       }
+      // else {
+      //   // 不在 iframe 中，无法发送消息（静默处理）
+      // }
     },
   };
 
@@ -446,17 +426,6 @@
             return;
           }
 
-          // 调试日志：确认捕获到错误（使用原始 console，避免循环）
-          _originalConsoleError.call(
-            console,
-            '[DevMonitor] 🔍 Captured error via console.error:',
-            {
-              isReactRouterError,
-              isImportantError,
-              message: fullMessage.substring(0, 200),
-            },
-          );
-
           // 记录到 logger（会自动发送到父窗口）
           logger.error(fullMessage, {
             source: 'console.error',
@@ -480,13 +449,9 @@
           });
         }
       } catch (e) {
-        // 拦截器本身的错误不应该影响原始功能
+        // 拦截器本身的错误不应该影响原始功能（静默处理）
         // 使用原始 console.error 避免循环调用
-        originalConsoleError.call(
-          console,
-          '[DevMonitor] Console interception error:',
-          e,
-        );
+        // originalConsoleError.call(console, '[DevMonitor] Console interception error:', e);
       }
 
       // 调用原始方法
@@ -533,16 +498,6 @@
             return;
           }
 
-          // 调试日志：确认捕获到警告（使用原始 console，避免循环）
-          _originalConsoleWarn.call(
-            console,
-            '[DevMonitor] 🔍 Captured warning via console.warn:',
-            {
-              isImportantWarning,
-              message: fullMessage.substring(0, 200),
-            },
-          );
-
           logger.error(fullMessage, {
             source: 'console.warn',
             isImportantWarning,
@@ -564,12 +519,9 @@
           });
         }
       } catch (e) {
+        // 拦截器本身的错误不应该影响原始功能（静默处理）
         // 使用原始 console.warn 避免循环调用
-        originalConsoleWarn.call(
-          console,
-          '[DevMonitor] Console interception error:',
-          e,
-        );
+        // originalConsoleWarn.call(console, '[DevMonitor] Console interception error:', e);
       }
 
       // 调用原始方法
@@ -696,9 +648,9 @@
         attributes: false, // 不监听属性变化（减少性能开销）
       });
 
-      console.debug('[DevMonitor] MutationObserver initialized');
+      // MutationObserver 初始化成功（静默）
     } catch (e) {
-      console.debug('[DevMonitor] Failed to setup MutationObserver:', e);
+      // MutationObserver 初始化失败（静默）
     }
   }
 
@@ -1027,15 +979,8 @@
     setupHistoryTracking();
     monitorData.ready = true;
 
-    // 简化的控制台提示
-    console.log('[DevMonitor] 🚀 Initializing...', {
-      version: config.version,
-      isInIframe: isInIframe,
-      hasParent: !!window.parent,
-      parentEqualsWindow: window.parent === window,
-      location: window.location.href,
-      canSendMessages: window.parent && window.parent !== window,
-    });
+    // 简化的控制台提示（可选：需要调试时可以取消注释）
+    // console.log('[DevMonitor] 🚀 Initialized', { version: config.version, isInIframe });
   }
 
   // 立即初始化
