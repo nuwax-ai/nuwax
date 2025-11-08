@@ -43,7 +43,7 @@ interface PreviewProps {
    * @param errorMessage 错误消息，为空字符串表示只有白屏没有错误
    * @param errorType 错误类型，用于区分不同的错误场景
    */
-  onWhiteScreenWithError?: (
+  onWhiteScreenOrIframeError?: (
     errorMessage: string,
     errorType?: 'whiteScreen' | 'iframe',
   ) => void;
@@ -77,7 +77,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       serverErrorCode,
       onStartDev,
       onRestartDev,
-      onWhiteScreenWithError,
+      onWhiteScreenOrIframeError,
     },
     ref,
   ) => {
@@ -665,8 +665,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         console.info('[Preview] iframe加载错误', args);
 
         // 统一通过 onWhiteScreenWithError 处理，指定错误类型为 iframe
-        if (onWhiteScreenWithError) {
-          onWhiteScreenWithError(
+        if (onWhiteScreenOrIframeError) {
+          onWhiteScreenOrIframeError(
             dayjs(Date.now()).format('YYYY/MM/DD HH:mm:ss') +
               ' 预览加载失败，请检查开发服务器状态或网络连接',
             'iframe',
@@ -674,7 +674,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         }
         // Iframe load error
       },
-      [onWhiteScreenWithError],
+      [onWhiteScreenOrIframeError],
     );
 
     /**
@@ -726,17 +726,24 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             })
             .join('; ');
 
-          // 如果检测到白屏且有错误，统一通过 onWhiteScreenWithError 处理
-          if (isWhiteScreen && onWhiteScreenWithError) {
-            onWhiteScreenWithError(errorMessages, 'whiteScreen');
+          // ⭐ 只要有错误就触发自动处理，不限于白屏
+          // 白屏时使用 'whiteScreen' 类型，否则使用 'whiteScreen'（因为类型定义只支持 whiteScreen | iframe）
+          if (onWhiteScreenOrIframeError) {
+            // 即使不是白屏，也触发自动处理（使用 whiteScreen 类型）
+            onWhiteScreenOrIframeError(
+              errorMessages,
+              isWhiteScreen ? 'whiteScreen' : 'iframe',
+            );
             console.warn(
-              '[Preview] 白屏检测到 DevMonitor 错误，已触发 AI Agent 自动处理:',
+              `[Preview] ${
+                isWhiteScreen ? '白屏' : '运行时'
+              } 通过 DevMonitor 捕获错误，已触发 AI Agent 自动处理:`,
               errorMessages,
             );
           }
         }
       },
-      [onWhiteScreenWithError],
+      [onWhiteScreenOrIframeError],
     );
 
     /**

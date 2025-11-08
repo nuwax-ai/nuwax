@@ -1139,7 +1139,7 @@ const AppDev: React.FC = () => {
    * 统一由 autoErrorHandling 管理处理，包括重试次数限制和用户确认
    * @param errorMessage 错误消息，为空字符串表示只有白屏没有错误
    */
-  const handleWhiteScreenWithError = useCallback(
+  const handleWhiteScreenOrIframeError = useCallback(
     (errorMessage: string, errorType?: 'whiteScreen' | 'iframe') => {
       // 如果有错误消息，通过 autoErrorHandling 统一处理（格式化逻辑在内部）
       if (errorMessage.trim()) {
@@ -1644,7 +1644,9 @@ const AppDev: React.FC = () => {
                               showMessage: false,
                             });
                           }}
-                          onWhiteScreenWithError={handleWhiteScreenWithError}
+                          onWhiteScreenOrIframeError={
+                            handleWhiteScreenOrIframeError
+                          }
                           onContentChange={(fileId, content) => {
                             if (
                               !versionCompare.isComparing &&

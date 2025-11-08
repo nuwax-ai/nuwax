@@ -6,13 +6,18 @@
 (function () {
   'use strict';
 
+  // ⭐ 关键：立即保存原始 console 方法，防止被其他脚本覆盖
+  const _originalConsoleError = console.error;
+  const _originalConsoleWarn = console.warn;
+
   // 配置
   const config = {
-    version: '1.0.0',
+    version: '1.0.1',
     enabled: true,
     logLevel: 'error', // 只记录错误级别日志
     maxErrors: 10, // 减少存储量
     maxLogs: 20, // 减少存储量
+    mutationObserverEnabled: true, // 是否启用 MutationObserver
   };
 
   // 简化的监控数据存储
@@ -24,6 +29,8 @@
     },
     historyChanges: [], // 历史记录变化
     ready: false,
+    detectedErrorElements: new Set(), // 已检测到的错误元素（避免重复报告）
+    recentErrors: new Map(), // 最近报告的错误（用于去重），key: 错误消息，value: 时间戳
   };
 
   /**
@@ -140,14 +147,100 @@
     }
   }
 
+  /**
+   * 检查错误是否应该被过滤（已知的非关键错误）
+   * @param {string} message - 错误消息
+   * @param {object} details - 错误详情
+   * @returns {boolean} 是否应该过滤
+   */
+  function shouldFilterError(message, details) {
+    const messageStr = typeof message === 'string' ? message : String(message);
+    const detailsStr = details ? JSON.stringify(details) : '';
+
+    // 过滤 Monaco Editor 的 CanceledError
+    if (
+      messageStr.includes('Canceled') &&
+      (messageStr.includes('Monaco') ||
+        messageStr.includes('WordHighlighter') ||
+        detailsStr.includes('Canceled'))
+    ) {
+      return true;
+    }
+
+    // 过滤已知的 DevMonitor 自身日志
+    if (
+      messageStr.includes('[DevMonitor]') ||
+      messageStr.includes('[Dev-Monitor') ||
+      messageStr.includes('DevMonitor')
+    ) {
+      return true;
+    }
+
+    // 过滤业务错误（如 "Failed to fetch blog info"）
+    if (
+      messageStr.includes('Failed to fetch') ||
+      messageStr.includes('请求的数据源不存在')
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * 检查错误是否应该被去重（短时间内相同错误不重复报告）
+   * @param {string} message - 错误消息
+   * @param {number} dedupWindow - 去重时间窗口（毫秒），默认 5 秒
+   * @returns {boolean} 是否应该去重（true 表示应该跳过）
+   */
+  function shouldDeduplicateError(message, dedupWindow = 5000) {
+    const messageStr = typeof message === 'string' ? message : String(message);
+    const now = Date.now();
+
+    // 生成错误标识（使用消息的前 100 个字符）
+    const errorKey = messageStr.substring(0, 100);
+
+    // 检查是否在时间窗口内
+    const lastReportTime = monitorData.recentErrors.get(errorKey);
+    if (lastReportTime && now - lastReportTime < dedupWindow) {
+      return true; // 应该去重
+    }
+
+    // 更新最近报告时间
+    monitorData.recentErrors.set(errorKey, now);
+
+    // 清理过期的错误记录（保留最近 50 条）
+    if (monitorData.recentErrors.size > 50) {
+      const entries = Array.from(monitorData.recentErrors.entries());
+      entries.sort((a, b) => b[1] - a[1]); // 按时间戳降序排序
+      monitorData.recentErrors.clear();
+      entries.slice(0, 50).forEach(([key, time]) => {
+        monitorData.recentErrors.set(key, time);
+      });
+    }
+
+    return false; // 不需要去重
+  }
+
   // 简化的日志函数 - 只记录错误
   const logger = {
     error: (message, details = null) => {
-      console.error('[Dev-Monitor ERROR]', message, details || '');
+      // 检查是否应该过滤
+      if (shouldFilterError(message, details)) {
+        return;
+      }
+
+      // ⭐ 关键修复：使用原始 console.error，避免被拦截器捕获形成循环
+      _originalConsoleError.call(
+        console,
+        '[Dev-Monitor ERROR]',
+        message,
+        details || '',
+      );
 
       const errorData = {
         message: typeof message === 'string' ? message : message.toString(),
-        details: details ? JSON.stringify(details).substring(0, 200) : null, // 限制详细信息长度
+        details: details ? JSON.stringify(details).substring(0, 500) : null, // 限制详细信息长度
         timestamp: Date.now(),
       };
 
@@ -166,32 +259,33 @@
       const parentEqualsSelf = window.parent === window.self;
       const parentEqualsTop = window.parent === window.top;
 
-      console.log('[DevMonitor] 🔍 Checking parent window:', {
-        isInIframe: isInIframe,
-        hasParent: hasParent,
-        parentEqualsWindow: parentEqualsWindow,
-        parentEqualsSelf: parentEqualsSelf,
-        parentEqualsTop: parentEqualsTop,
-        location: window.location.href,
-        parentLocation: window.parent
-          ? (() => {
-              try {
-                return window.parent.location?.href || 'N/A (cross-origin)';
-              } catch (e) {
-                return 'N/A (cross-origin - access denied)';
-              }
-            })()
-          : 'N/A',
-        topLocation: window.top
-          ? (() => {
-              try {
-                return window.top.location?.href || 'N/A (cross-origin)';
-              } catch (e) {
-                return 'N/A (cross-origin - access denied)';
-              }
-            })()
-          : 'N/A',
-      });
+      // ⭐ 注释掉调试日志以减少日志量（可选：需要调试时可以取消注释）
+      // console.log('[DevMonitor] 🔍 Checking parent window:', {
+      //   isInIframe: isInIframe,
+      //   hasParent: hasParent,
+      //   parentEqualsWindow: parentEqualsWindow,
+      //   parentEqualsSelf: parentEqualsSelf,
+      //   parentEqualsTop: parentEqualsTop,
+      //   location: window.location.href,
+      //   parentLocation: window.parent
+      //     ? (() => {
+      //         try {
+      //           return window.parent.location?.href || 'N/A (cross-origin)';
+      //         } catch (e) {
+      //           return 'N/A (cross-origin - access denied)';
+      //         }
+      //       })()
+      //     : 'N/A',
+      //   topLocation: window.top
+      //     ? (() => {
+      //         try {
+      //           return window.top.location?.href || 'N/A (cross-origin)';
+      //         } catch (e) {
+      //           return 'N/A (cross-origin - access denied)';
+      //         }
+      //       })()
+      //     : 'N/A',
+      // });
 
       // ⭐ 关键修复：使用 isInIframe 作为主要判断条件
       // 如果在 iframe 中（window.self !== window.top），就尝试发送消息
@@ -211,17 +305,27 @@
               documentString,
             }), // 仅在白屏时包含 document 字符串
           };
-          console.log(
+          // ⭐ 使用原始 console 方法，避免被拦截
+          _originalConsoleError.call(
+            console,
             '[DevMonitor] 📤 Sending dev-monitor-error:',
             errorMessage,
           );
           window.parent.postMessage(errorMessage, '*');
-          console.log('[DevMonitor] ✅ postMessage called successfully');
+          _originalConsoleError.call(
+            console,
+            '[DevMonitor] ✅ postMessage called successfully',
+          );
         } catch (e) {
-          console.error('[DevMonitor] ❌ Failed to send error message:', e);
+          _originalConsoleError.call(
+            console,
+            '[DevMonitor] ❌ Failed to send error message:',
+            e,
+          );
         }
       } else {
-        console.warn(
+        _originalConsoleWarn.call(
+          console,
           '[DevMonitor] ⚠️ Cannot send error message - parent check failed:',
           {
             isInIframe: isInIframe,
@@ -233,6 +337,370 @@
       }
     },
   };
+
+  /**
+   * 从 console 参数中提取错误信息
+   * @param {Array} args - console 方法的参数
+   * @returns {object} 提取的错误信息
+   */
+  function extractErrorInfo(args) {
+    let errorMessage = '';
+    let errorStack = null;
+    let errorDetails = null;
+
+    // 尝试从参数中提取错误信息
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+
+      if (arg instanceof Error) {
+        errorMessage = arg.message || errorMessage;
+        errorStack = arg.stack || null;
+        errorDetails = {
+          name: arg.name,
+          message: arg.message,
+          stack: arg.stack ? arg.stack.substring(0, 500) : null,
+        };
+      } else if (typeof arg === 'string') {
+        if (!errorMessage) {
+          errorMessage = arg;
+        } else {
+          errorMessage += ' ' + arg;
+        }
+      } else if (typeof arg === 'object' && arg !== null) {
+        try {
+          const jsonStr = JSON.stringify(arg);
+          if (jsonStr.length < 200) {
+            errorDetails = errorDetails || {};
+            Object.assign(errorDetails, arg);
+          }
+        } catch (e) {
+          // 忽略序列化错误
+        }
+      }
+    }
+
+    return {
+      message: errorMessage || args.map((a) => String(a)).join(' '),
+      stack: errorStack,
+      details: errorDetails,
+    };
+  }
+
+  /**
+   * 设置 Console 拦截
+   * 拦截 console.error 和 console.warn，捕获 React Router 等框架的错误
+   */
+  function setupConsoleInterception() {
+    // 使用全局保存的原始 console 方法（在脚本开头已保存）
+    const originalConsoleError = _originalConsoleError;
+    const originalConsoleWarn = _originalConsoleWarn;
+
+    // 拦截 console.error
+    console.error = function (...args) {
+      try {
+        // 将参数转换为字符串进行检查（更全面的转换）
+        const errorText = args
+          .map((arg) => {
+            if (arg instanceof Error) {
+              return arg.name + ': ' + arg.message + ' ' + (arg.stack || '');
+            }
+            if (typeof arg === 'object' && arg !== null) {
+              try {
+                return JSON.stringify(arg);
+              } catch (e) {
+                return String(arg);
+              }
+            }
+            return String(arg);
+          })
+          .join(' ');
+
+        // 检查是否是 React Router 错误或其他框架错误（更宽松的匹配）
+        const isReactRouterError =
+          errorText.includes('Error handled by React Router') ||
+          errorText.includes('Error handled by') ||
+          errorText.includes('ErrorBoundary') ||
+          errorText.includes('React Router') ||
+          errorText.includes('react-router') ||
+          errorText.includes('default ErrorBoundary');
+
+        // 检查是否是其他需要捕获的错误（包括所有常见错误类型）
+        const isImportantError =
+          errorText.includes('Uncaught') ||
+          errorText.includes('Unhandled') ||
+          errorText.includes('TypeError') ||
+          errorText.includes('ReferenceError') ||
+          errorText.includes('SyntaxError') ||
+          errorText.includes('RangeError') ||
+          errorText.includes('URIError') ||
+          errorText.includes('EvalError');
+
+        // 如果匹配到任何错误，都进行捕获
+        if (isReactRouterError || isImportantError) {
+          const errorInfo = extractErrorInfo(args);
+          const fullMessage = errorInfo.message || errorText;
+
+          // ⭐ 去重检查：避免短时间内重复报告相同错误
+          if (shouldDeduplicateError(fullMessage, 5000)) {
+            // 错误在 5 秒内已报告过，跳过
+            return;
+          }
+
+          // 调试日志：确认捕获到错误（使用原始 console，避免循环）
+          _originalConsoleError.call(
+            console,
+            '[DevMonitor] 🔍 Captured error via console.error:',
+            {
+              isReactRouterError,
+              isImportantError,
+              message: fullMessage.substring(0, 200),
+            },
+          );
+
+          // 记录到 logger（会自动发送到父窗口）
+          logger.error(fullMessage, {
+            source: 'console.error',
+            isReactRouterError,
+            isImportantError,
+            stack: errorInfo.stack,
+            originalArgs: args.map((a) => {
+              if (a instanceof Error) {
+                return {
+                  type: 'Error',
+                  name: a.name,
+                  message: a.message,
+                  stack: a.stack ? a.stack.substring(0, 500) : null,
+                };
+              }
+              return typeof a === 'object' && a !== null
+                ? '[Object]'
+                : String(a);
+            }),
+            ...errorInfo.details,
+          });
+        }
+      } catch (e) {
+        // 拦截器本身的错误不应该影响原始功能
+        // 使用原始 console.error 避免循环调用
+        originalConsoleError.call(
+          console,
+          '[DevMonitor] Console interception error:',
+          e,
+        );
+      }
+
+      // 调用原始方法
+      originalConsoleError.apply(console, args);
+    };
+
+    // 拦截 console.warn（某些框架可能使用 warn 而不是 error）
+    console.warn = function (...args) {
+      try {
+        const errorText = args
+          .map((arg) => {
+            if (arg instanceof Error) {
+              return arg.name + ': ' + arg.message + ' ' + (arg.stack || '');
+            }
+            if (typeof arg === 'object' && arg !== null) {
+              try {
+                return JSON.stringify(arg);
+              } catch (e) {
+                return String(arg);
+              }
+            }
+            return String(arg);
+          })
+          .join(' ');
+
+        // 检查是否是重要的警告（可能表示错误）
+        const isImportantWarning =
+          errorText.includes('Error handled by React Router') ||
+          errorText.includes('Error handled by') ||
+          errorText.includes('ErrorBoundary') ||
+          errorText.includes('default ErrorBoundary') ||
+          errorText.includes('Warning:') ||
+          errorText.includes('Failed to') ||
+          errorText.includes('ReferenceError') ||
+          errorText.includes('TypeError');
+
+        if (isImportantWarning) {
+          const errorInfo = extractErrorInfo(args);
+          const fullMessage = errorInfo.message || errorText;
+
+          // ⭐ 去重检查：避免短时间内重复报告相同错误
+          if (shouldDeduplicateError(fullMessage, 5000)) {
+            // 错误在 5 秒内已报告过，跳过
+            return;
+          }
+
+          // 调试日志：确认捕获到警告（使用原始 console，避免循环）
+          _originalConsoleWarn.call(
+            console,
+            '[DevMonitor] 🔍 Captured warning via console.warn:',
+            {
+              isImportantWarning,
+              message: fullMessage.substring(0, 200),
+            },
+          );
+
+          logger.error(fullMessage, {
+            source: 'console.warn',
+            isImportantWarning,
+            stack: errorInfo.stack,
+            originalArgs: args.map((a) => {
+              if (a instanceof Error) {
+                return {
+                  type: 'Error',
+                  name: a.name,
+                  message: a.message,
+                  stack: a.stack ? a.stack.substring(0, 500) : null,
+                };
+              }
+              return typeof a === 'object' && a !== null
+                ? '[Object]'
+                : String(a);
+            }),
+            ...errorInfo.details,
+          });
+        }
+      } catch (e) {
+        // 使用原始 console.warn 避免循环调用
+        originalConsoleWarn.call(
+          console,
+          '[DevMonitor] Console interception error:',
+          e,
+        );
+      }
+
+      // 调用原始方法
+      originalConsoleWarn.apply(console, args);
+    };
+  }
+
+  /**
+   * 检查 DOM 元素是否是错误 UI
+   * @param {Node} node - DOM 节点
+   * @returns {boolean} 是否是错误 UI
+   */
+  function isErrorUI(node) {
+    if (!node || node.nodeType !== 1) {
+      // 不是元素节点
+      return false;
+    }
+
+    try {
+      const element = node;
+      const tagName = element.tagName?.toLowerCase() || '';
+      const className = element.className || '';
+      const id = element.id || '';
+      const textContent = element.textContent || '';
+      const innerHTML = element.innerHTML || '';
+
+      // 检查类名、ID、文本内容中是否包含错误相关关键词
+      const errorKeywords = [
+        'error',
+        'ErrorBoundary',
+        'error-boundary',
+        'react-error-boundary',
+        'error-page',
+        'error-page-container',
+        'Something went wrong',
+        '出错了',
+        '错误',
+      ];
+
+      const hasErrorKeyword =
+        errorKeywords.some(
+          (keyword) =>
+            className.includes(keyword) ||
+            id.includes(keyword) ||
+            textContent.includes(keyword) ||
+            innerHTML.includes(keyword),
+        ) ||
+        // 检查常见的错误 UI 特征
+        textContent.includes('Error handled by React Router') ||
+        textContent.includes('Something went wrong') ||
+        (tagName === 'div' &&
+          (className.includes('error') || id.includes('error')));
+
+      return hasErrorKeyword;
+    } catch (e) {
+      // 如果检查过程中出错，保守处理
+      return false;
+    }
+  }
+
+  /**
+   * 设置 MutationObserver 监听 DOM 变化
+   * 检测错误 UI 的出现
+   */
+  function setupMutationObserver() {
+    if (!config.mutationObserverEnabled || !window.MutationObserver) {
+      return;
+    }
+
+    try {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (isErrorUI(node)) {
+              // 生成唯一标识符（基于元素的位置和内容）
+              const elementId =
+                node.id ||
+                node.className ||
+                (node.textContent ? node.textContent.substring(0, 50) : '') +
+                  Date.now();
+
+              // 避免重复报告同一个错误元素
+              if (!monitorData.detectedErrorElements.has(elementId)) {
+                monitorData.detectedErrorElements.add(elementId);
+
+                // 限制已检测元素的数量
+                if (monitorData.detectedErrorElements.size > 50) {
+                  const firstKey = monitorData.detectedErrorElements
+                    .values()
+                    .next().value;
+                  monitorData.detectedErrorElements.delete(firstKey);
+                }
+
+                // 提取错误信息
+                const errorText =
+                  node.textContent || node.innerHTML || 'Error UI detected';
+                const elementHTML = node.outerHTML
+                  ? node.outerHTML.substring(0, 500)
+                  : '';
+
+                // ⭐ 去重检查：避免短时间内重复报告相同错误 UI
+                const errorKey = `error-ui-${elementId}`;
+                if (!shouldDeduplicateError(errorKey, 5000)) {
+                  logger.error('Error UI detected in DOM', {
+                    source: 'mutation-observer',
+                    elementId,
+                    errorText: errorText.substring(0, 200),
+                    elementHTML,
+                    tagName: node.tagName,
+                    className: node.className,
+                    id: node.id,
+                  });
+                }
+              }
+            }
+          });
+        });
+      });
+
+      // 开始观察 DOM 变化
+      observer.observe(document.body || document.documentElement, {
+        childList: true, // 监听子节点的添加和删除
+        subtree: true, // 监听所有后代节点
+        attributes: false, // 不监听属性变化（减少性能开销）
+      });
+
+      console.debug('[DevMonitor] MutationObserver initialized');
+    } catch (e) {
+      console.debug('[DevMonitor] Failed to setup MutationObserver:', e);
+    }
+  }
 
   // 简化的错误监控
   function setupErrorMonitoring() {
@@ -247,6 +715,7 @@
             filename: event.filename,
             lineno: event.lineno,
             colno: event.colno,
+            source: 'window.error',
           });
         }
         // 资源加载错误
@@ -260,6 +729,7 @@
           logger.error(`Resource failed: ${relativeSource}`, {
             tagName: event.target.tagName,
             source: relativeSource,
+            errorSource: 'resource-load',
           });
         }
       },
@@ -279,15 +749,37 @@
           stack: event.reason.stack
             ? event.reason.stack.substring(0, 200)
             : null,
+          source: 'unhandledrejection',
         };
       } else if (typeof event.reason === 'string') {
         errorMsg += event.reason;
+        errorDetails = {
+          message: event.reason,
+          source: 'unhandledrejection',
+        };
       } else {
         errorMsg += JSON.stringify(event.reason).substring(0, 200);
+        errorDetails = {
+          reason: event.reason,
+          source: 'unhandledrejection',
+        };
       }
 
       logger.error(errorMsg, errorDetails);
     });
+
+    // ⭐ Console 拦截已在 init() 中优先设置，这里不需要重复调用
+    // setupConsoleInterception(); // 已在 init() 中调用
+
+    // ⭐ 新增：MutationObserver（检测错误 UI）
+    if (config.mutationObserverEnabled) {
+      // 延迟初始化，确保 DOM 已加载
+      if (document.body) {
+        setupMutationObserver();
+      } else {
+        window.addEventListener('DOMContentLoaded', setupMutationObserver);
+      }
+    }
   }
 
   // 移除复杂的性能监控和控制台拦截，专注于核心错误监控
@@ -526,6 +1018,10 @@
   function init() {
     // ⭐ 初始化时检查运行环境
     const isInIframe = window.self !== window.top;
+
+    // ⭐ 关键：优先设置 Console 拦截，确保在 React Router 加载之前就拦截
+    // 这样可以捕获所有通过 console.error 输出的错误
+    setupConsoleInterception();
 
     setupErrorMonitoring();
     setupHistoryTracking();

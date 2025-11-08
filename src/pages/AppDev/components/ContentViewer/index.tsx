@@ -70,7 +70,7 @@ interface ContentViewerProps {
    * @param errorMessage 错误消息，为空字符串表示只有白屏没有错误
    * @param errorType 错误类型，用于区分不同的错误场景
    */
-  onWhiteScreenWithError?: (
+  onWhiteScreenOrIframeError?: (
     errorMessage: string,
     errorType?: 'whiteScreen' | 'iframe',
   ) => void;
@@ -108,7 +108,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   isChatLoading = false,
   onStartDev,
   onRestartDev,
-  onWhiteScreenWithError,
+  onWhiteScreenOrIframeError,
 }) => {
   // 使用 useMemo 缓存 Preview 组件，避免重新创建
   const previewComponent = useMemo(
@@ -128,7 +128,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         serverErrorCode={serverErrorCode}
         onStartDev={onStartDev}
         onRestartDev={onRestartDev}
-        onWhiteScreenWithError={onWhiteScreenWithError}
+        onWhiteScreenOrIframeError={onWhiteScreenOrIframeError}
       />
     ),
     [
@@ -143,7 +143,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       serverErrorCode,
       onStartDev,
       onRestartDev,
-      onWhiteScreenWithError,
+      onWhiteScreenOrIframeError,
     ],
   );
 
