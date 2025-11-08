@@ -203,15 +203,21 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     (value: string, cursorPosition: number): MentionTriggerResult => {
       const textBeforeCursor = value.slice(0, cursorPosition);
       // 参考 react-mentions-ts: 使用 RegExp，包含两个捕获组
-      // 第一个捕获组：触发字符+查询文本（如 @mention）
-      // 第二个捕获组：查询文本（如 mention）
-      const TRIGGER_REGEX = /(@)(\w*)$/;
+      // 第一个捕获组：触发字符（@）
+      // 第二个捕获组：查询文本（支持中文、英文、数字、下划线等）
+      // \w 匹配 ASCII 字符（字母、数字、下划线）
+      // \u4e00-\u9fa5 匹配中文字符（常用汉字范围，覆盖大部分中文）
+      // \u3400-\u4dbf 匹配扩展汉字A区
+      // \uf900-\ufaff 匹配兼容汉字
+      // 使用 u 标志支持 Unicode 属性类，匹配所有 Unicode 字母（包括中文、日文、韩文等）
+      const TRIGGER_REGEX =
+        /(@)([\w\u4e00-\u9fa5\u3400-\u4dbf\uf900-\ufaff\p{L}]*)$/u;
       const match = textBeforeCursor.match(TRIGGER_REGEX);
       if (match) {
         return {
           trigger: true,
           triggerChar: match[1], // '@'
-          searchText: match[2] || '', // 查询文本
+          searchText: match[2] || '', // 查询文本（支持中文）
           startIndex: match.index || 0, // @ 字符位置
         };
       }
