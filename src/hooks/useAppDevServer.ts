@@ -4,8 +4,12 @@
 
 import { DEV_SERVER_CONSTANTS } from '@/constants/appDevConstants';
 import { keepAlive, restartDev, startDev } from '@/services/appDev';
+import { createDevLogger } from '@/utils/devLogger';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+// 模块级日志工具实例，避免在业务代码中重复创建
+const keepAliveLogger = createDevLogger('keepAlive');
 
 interface UseAppDevServerProps {
   projectId: string;
@@ -46,6 +50,8 @@ export const useAppDevServer = ({
   const hasStartedRef = useRef(false);
   const lastProjectIdRef = useRef<string | null>(null);
   const keepAliveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // 用于存储当前保活对应的 projectId，确保定时器回调使用最新的 projectId
+  const currentKeepAliveProjectIdRef = useRef<string | null>(null);
 
   /**
    * 统一的服务器状态处理函数
@@ -171,30 +177,89 @@ export const useAppDevServer = ({
       keepAliveTimerRef.current = null;
     }
 
+    // 更新当前保活对应的 projectId
+    const currentProjectId = projectId;
+    currentKeepAliveProjectIdRef.current = currentProjectId;
+
     // 初始保活请求
-    keepAlive(projectId)
+    keepAlive(currentProjectId)
       .then((response) => {
-        handleKeepAliveResponse(response);
+        // 检查 projectId 是否已经变化，如果变化了就不处理这个响应
+        if (currentKeepAliveProjectIdRef.current === currentProjectId) {
+          handleKeepAliveResponse(response);
+        }
       })
       .catch(() => {});
 
     // 设置定时保活轮询
+    // 使用 currentKeepAliveProjectIdRef.current 而不是闭包中的 projectId
+    // 这样即使 projectId 变化，定时器回调也会使用最新的 projectId
     keepAliveTimerRef.current = setInterval(() => {
-      keepAlive(projectId)
+      const activeProjectId = currentKeepAliveProjectIdRef.current;
+      // 如果 projectId 已经被清除或变化，停止定时器
+      if (!activeProjectId) {
+        if (keepAliveTimerRef.current) {
+          clearInterval(keepAliveTimerRef.current);
+          keepAliveTimerRef.current = null;
+        }
+        return;
+      }
+      keepAlive(activeProjectId)
         .then((response) => {
-          handleKeepAliveResponse(response);
+          // 再次检查 projectId 是否还是当前的，避免处理过期的响应
+          if (currentKeepAliveProjectIdRef.current === activeProjectId) {
+            handleKeepAliveResponse(response);
+          }
         })
         .catch(() => {});
     }, DEV_SERVER_CONSTANTS.SSE_HEARTBEAT_INTERVAL);
+
+    // 输出日志（仅在开发模式）
+    keepAliveLogger.mark(`启动保活轮询-${currentProjectId}`);
+    keepAliveLogger.info(
+      `启动保活轮询-${currentProjectId}`,
+      new Date().toLocaleString(),
+    );
   }, [projectId, handleKeepAliveResponse]);
 
   /**
    * 停止保活轮询
    */
   const stopKeepAlive = useCallback(() => {
+    const currentProjectId = currentKeepAliveProjectIdRef.current;
+
+    // 输出日志（仅在开发模式）
+    keepAliveLogger.info(
+      `调用停止保活轮询-${currentProjectId || 'null'}`,
+      new Date().toLocaleString(),
+      keepAliveTimerRef.current,
+    );
+
     if (keepAliveTimerRef.current) {
       clearInterval(keepAliveTimerRef.current);
+
+      // 输出日志（仅在开发模式）
+      keepAliveLogger.mark(`停止保活轮询-${currentProjectId || 'null'}`);
+
       keepAliveTimerRef.current = null;
+      // 清除当前保活对应的 projectId
+      currentKeepAliveProjectIdRef.current = null;
+
+      // 输出日志（仅在开发模式）
+      keepAliveLogger.info(
+        `完成停止保活轮询-${currentProjectId || 'null'}`,
+        new Date().toLocaleString(),
+      );
+
+      if (currentProjectId) {
+        keepAliveLogger.measure(
+          'measure',
+          `启动保活轮询-${currentProjectId}`,
+          `停止保活轮询-${currentProjectId}`,
+        );
+        const duration = keepAliveLogger.getMeasureDuration('measure');
+        keepAliveLogger.info(`total time: ${duration || 0}s`);
+      }
     }
   }, []);
 
