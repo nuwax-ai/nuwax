@@ -4,12 +4,8 @@
 
 import { DEV_SERVER_CONSTANTS } from '@/constants/appDevConstants';
 import { keepAlive, restartDev, startDev } from '@/services/appDev';
-import { createDevLogger } from '@/utils/devLogger';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-// 模块级日志工具实例，避免在业务代码中重复创建
-const keepAliveLogger = createDevLogger('keepAlive');
 
 interface UseAppDevServerProps {
   projectId: string;
@@ -213,53 +209,17 @@ export const useAppDevServer = ({
         })
         .catch(() => {});
     }, DEV_SERVER_CONSTANTS.SSE_HEARTBEAT_INTERVAL);
-
-    // 输出日志（仅在开发模式）
-    keepAliveLogger.mark(`启动保活轮询-${currentProjectId}`);
-    keepAliveLogger.info(
-      `启动保活轮询-${currentProjectId}`,
-      new Date().toLocaleString(),
-    );
   }, [projectId, handleKeepAliveResponse]);
 
   /**
    * 停止保活轮询
    */
   const stopKeepAlive = useCallback(() => {
-    const currentProjectId = currentKeepAliveProjectIdRef.current;
-
-    // 输出日志（仅在开发模式）
-    keepAliveLogger.info(
-      `调用停止保活轮询-${currentProjectId || 'null'}`,
-      new Date().toLocaleString(),
-      keepAliveTimerRef.current,
-    );
-
     if (keepAliveTimerRef.current) {
       clearInterval(keepAliveTimerRef.current);
-
-      // 输出日志（仅在开发模式）
-      keepAliveLogger.mark(`停止保活轮询-${currentProjectId || 'null'}`);
-
       keepAliveTimerRef.current = null;
       // 清除当前保活对应的 projectId
       currentKeepAliveProjectIdRef.current = null;
-
-      // 输出日志（仅在开发模式）
-      keepAliveLogger.info(
-        `完成停止保活轮询-${currentProjectId || 'null'}`,
-        new Date().toLocaleString(),
-      );
-
-      if (currentProjectId) {
-        keepAliveLogger.measure(
-          'measure',
-          `启动保活轮询-${currentProjectId}`,
-          `停止保活轮询-${currentProjectId}`,
-        );
-        const duration = keepAliveLogger.getMeasureDuration('measure');
-        keepAliveLogger.info(`total time: ${duration || 0}s`);
-      }
     }
   }, []);
 
