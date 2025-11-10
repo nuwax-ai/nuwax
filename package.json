@@ -11,7 +11,7 @@
     "url": "https://github.com/nuwax-ai/nuwax.git"
   },
   "license": "Apache-2.0",
-  "author": "pujing <398996745@qq.com>",
+  "author": "Nuwax AI FE Team",
   "scripts": {
     "build:dev": "cross-env UMI_ENV=development max build",
     "build:prod": "cross-env UMI_ENV=production max build",
