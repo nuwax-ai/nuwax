@@ -1,0 +1,45 @@
+{
+  "types": [
+    {
+      "type": "feat",
+      "section": "✨ 新功能"
+    },
+    {
+      "type": "fix",
+      "section": "🐛 Bug 修复"
+    },
+    {
+      "type": "perf",
+      "section": "⚡️ 性能优化"
+    },
+    {
+      "type": "refactor",
+      "section": "♻️ 重构"
+    },
+    {
+      "type": "docs",
+      "section": "📝 文档"
+    },
+    {
+      "type": "style",
+      "section": "💄 样式"
+    },
+    {
+      "type": "test",
+      "section": "✅ 测试"
+    },
+    {
+      "type": "chore",
+      "section": "🔧 构建/工具"
+    },
+    {
+      "type": "ci",
+      "section": "👷 CI/CD"
+    }
+  ],
+  "releaseCommitMessageFormat": "chore(release): {{currentTag}}",
+  "skip": {
+    "tag": false
+  },
+  "header": "# 更新日志\n\n本项目的所有重要变更都会记录在此文件中。\n\n格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，\n版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/) 规范。\n"
+}

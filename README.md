@@ -33,9 +33,9 @@ Use the official nuwax-cli command tool to quickly deploy services locally.
 
 ##### Client Download
 > The client is only a deployment tool and does not include the platform software package
-- [nuwax-cli-linux-amd64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-amd64.tar.gz)
-- [nuwax-cli-linux-arm64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-arm64.tar.gz)
-- [nuwax-cli-macos-universal.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-macos-universal.tar.gz) (amd64&arm64)
+- [nuwax-cli-linux-amd64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-linux-amd64.tar.gz)
+- [nuwax-cli-linux-arm64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-linux-arm64.tar.gz)
+- [nuwax-cli-macos-universal.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-macos-universal.tar.gz) (amd64&arm64)
 
 ##### Execute Commands to Complete Deployment
 
@@ -49,11 +49,11 @@ cd nuwax_deploy
 
 # Download client deployment tool
 # Linux download command (amd64)
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-amd64.tar.gz
+wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-linux-amd64.tar.gz
 # Linux download command (arm64)
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-arm64.tar.gz
+wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-linux-arm64.tar.gz
 # macOS download command
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-macos-universal.tar.gz
+wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-macos-universal.tar.gz
 
 # Extract downloaded client files to working directory
 tar -xzf nuwax-cli-*.tar.gz

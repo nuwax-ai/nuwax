@@ -8,7 +8,7 @@ import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { TemplateItemProps } from '@/types/interfaces/square';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 const cx = classNames;
 
@@ -18,8 +18,15 @@ const TemplateItem: React.FC<TemplateItemProps> = ({
   onClick,
   extra,
 }) => {
-  const { targetType, icon, name, publishUser, description, created } =
-    publishedItemInfo;
+  const {
+    targetType,
+    icon,
+    name,
+    publishUser,
+    description,
+    created,
+    agentType,
+  } = publishedItemInfo;
   // 组件图标
   const [componentIcon, setComponentIcon] = useState<string>('');
 
@@ -40,6 +47,15 @@ const TemplateItem: React.FC<TemplateItemProps> = ({
     setComponentIcon(defaultIcon);
   }, [targetType]);
 
+  const componentType = useMemo(() => {
+    if (targetType === SquareAgentTypeEnum.Agent) {
+      return agentType === 'PageApp'
+        ? AgentComponentTypeEnum.Page
+        : AgentComponentTypeEnum.Agent;
+    }
+    return targetType;
+  }, [targetType, agentType]);
+
   return (
     <CardWrapper
       title={name}
@@ -57,7 +73,7 @@ const TemplateItem: React.FC<TemplateItemProps> = ({
       footer={
         <footer className={cx('flex', 'items-center')}>
           <AgentType
-            type={targetType as unknown as AgentComponentTypeEnum}
+            type={componentType as unknown as AgentComponentTypeEnum}
             className="mr-auto"
           />
           {extra}
