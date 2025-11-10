@@ -1,5 +1,6 @@
 import { CreateUpdateModeEnum } from '../enums/common';
 import {
+  PageCopyTypeEnum,
   PageDevelopCreateTypeEnum,
   PageDevelopPublishTypeEnum,
   PageProjectTypeEnum,
@@ -121,6 +122,24 @@ export interface PageQueryListParams {
   buildRunning?: boolean;
   // 发布类型,可用值:AGENT,PAGE
   publishType?: PageDevelopPublishTypeEnum;
+}
+
+// 复制项目参数
+export interface PageCopyParams {
+  // 项目ID
+  projectId: number;
+  // 空间ID
+  targetSpaceId: number;
+  // 复制类型,可用值:DEVELOP,SQUARE
+  copyType: PageCopyTypeEnum;
+}
+
+// 复制项目返回值
+export interface PageCopyProjectInfo {
+  // 项目ID
+  projectId: number;
+  // 开发服务器URL
+  devServerUrl: string;
 }
 
 // 配置反向代理参数

@@ -1,10 +1,14 @@
+import { CopyToSpaceComponent } from '@/components/business-component';
 import ButtonToggle from '@/components/ButtonToggle';
 import Loading from '@/components/custom/Loading';
 import SelectList from '@/components/custom/SelectList';
 import CustomPopover from '@/components/CustomPopover';
+import PageCard from '@/components/PageCard';
+import { ICON_MORE } from '@/constants/images.constants';
 import {
   PAGE_DEVELOP_ALL_TYPE,
   PAGE_DEVELOP_CREATE_TYPE_LIST,
+  PAGE_DEVELOP_MORE_ACTIONS,
 } from '@/constants/pageDev.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
 import {
@@ -12,7 +16,9 @@ import {
   apiPageDeleteProject,
   apiPageGetProjectInfo,
 } from '@/services/pageDev';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
+  BuildRunningEnum,
   PageDevelopCreateTypeEnum,
   PageDevelopMoreActionEnum,
   PageDevelopPublishTypeEnum,
@@ -25,6 +31,7 @@ import {
   CreateCustomPageInfo,
   CustomPageDto,
 } from '@/types/interfaces/pageDev';
+import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
 import classNames from 'classnames';
@@ -33,7 +40,6 @@ import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import AuthConfigModal from './AuthConfigModal';
 import styles from './index.less';
 import PageCreateModal from './PageCreateModal';
-import PageDevelopCardItem from './PageDevelopCardItem';
 import PathParamsConfigModal from './PathParamsConfigModal';
 import ReverseProxyModal from './ReverseProxyModal';
 
@@ -85,6 +91,9 @@ const SpacePageDevelop: React.FC = () => {
   // 打开认证配置弹窗
   const [openAuthConfigModal, setOpenAuthConfigModal] =
     useState<boolean>(false);
+  // 打开复制到空间弹窗
+  const [openCopyToSpaceModal, setOpenCopyToSpaceModal] =
+    useState<boolean>(false);
   // 创建
   const [create, setCreate] = useState<CreateListEnum>(
     Number(searchParams.get('create')) || CreateListEnum.All_Person,
@@ -108,6 +117,7 @@ const SpacePageDevelop: React.FC = () => {
     list = pageAllRef.current,
   ) => {
     let _list = list;
+    // 过滤发布类型
     if (filterType !== PageDevelopSelectTypeEnum.All_Type) {
       _list = _list.filter(
         (item) =>
@@ -286,9 +296,18 @@ const SpacePageDevelop: React.FC = () => {
       case PageDevelopMoreActionEnum.Page_Preview:
         runPageInfo(info.projectId);
         break;
+      // 复制到空间
+      case PageDevelopMoreActionEnum.Copy_To_Space:
+        setOpenCopyToSpaceModal(true);
+        break;
       // 删除页面项目
       case PageDevelopMoreActionEnum.Delete:
-        runPageDelete(info.projectId);
+        modalConfirm('您确定要删除此页面吗?', info.name, () => {
+          runPageDelete(info.projectId);
+          return new Promise((resolve) => {
+            setTimeout(resolve, 1000);
+          });
+        });
         break;
     }
   };
@@ -397,14 +416,54 @@ const SpacePageDevelop: React.FC = () => {
         <div
           className={cx(styles['main-container'], 'flex-1', 'scroll-container')}
         >
-          {pageList?.map((info) => (
-            <PageDevelopCardItem
-              key={info.projectId}
-              componentInfo={info}
-              onClick={() => handleClickCard(info)}
-              onClickMore={(item) => handleClickMore(item, info)}
-            />
-          ))}
+          {pageList?.map((info) => {
+            /**
+             * 更多操作列表
+             */
+            const moreActionList = PAGE_DEVELOP_MORE_ACTIONS.filter((item) => {
+              // 页面预览
+              if (item.value === PageDevelopMoreActionEnum.Page_Preview) {
+                return (
+                  info.projectType === PageProjectTypeEnum.REVERSE_PROXY ||
+                  (info.projectType === PageProjectTypeEnum.ONLINE_DEPLOY &&
+                    info.buildRunning === Boolean(BuildRunningEnum.Published))
+                );
+              }
+              return true;
+            });
+            return (
+              <PageCard
+                key={info.projectId}
+                icon={info.icon}
+                name={info.name}
+                avatar={info.creatorAvatar}
+                userName={info.creatorNickName || info.creatorName}
+                created={info.created}
+                overlayText="查看详情"
+                onClick={() => handleClickCard(info)}
+                footerInner={
+                  <CustomPopover
+                    list={moreActionList}
+                    onClick={(item) => handleClickMore(item, info)}
+                  >
+                    <Button type="text" icon={<ICON_MORE />}></Button>
+                  </CustomPopover>
+                }
+                extra={
+                  <div
+                    className={cx(
+                      styles['position-top-right'],
+                      info.buildRunning
+                        ? styles['published-text']
+                        : styles['unpublished-text'],
+                    )}
+                  >
+                    {info.buildRunning ? '已发布' : '未发布'}
+                  </div>
+                }
+              />
+            );
+          })}
         </div>
       ) : (
         <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
@@ -440,6 +499,25 @@ const SpacePageDevelop: React.FC = () => {
         onCancel={() => setOpenAuthConfigModal(false)}
         onConfirm={handleConfirmAuthConfig}
       />
+      {/*复制到空间弹窗*/}
+      {currentPageInfo && (
+        <CopyToSpaceComponent
+          spaceId={spaceId}
+          mode={AgentComponentTypeEnum.Page}
+          componentId={projectId}
+          title={currentPageInfo.name}
+          open={openCopyToSpaceModal}
+          isTemplate={false}
+          onCancel={() => setOpenCopyToSpaceModal(false)}
+          onSuccess={(data: any, targetSpaceId: number) => {
+            if (targetSpaceId === spaceId) {
+              runPageList({
+                spaceId,
+              });
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

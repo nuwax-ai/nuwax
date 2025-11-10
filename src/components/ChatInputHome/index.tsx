@@ -5,6 +5,7 @@ import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
+import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { handleUploadFileList } from '@/utils/upload';
 import { ArrowDownOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Input, InputRef, message, Tooltip, Upload, UploadProps } from 'antd';
@@ -338,7 +339,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       setUploadFiles([]);
     };
   }, []);
-
   return (
     <div className={cx('w-full', 'relative', className)}>
       <div className={cx(styles['chat-container'], 'flex', 'flex-col')}>
@@ -359,7 +359,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           autoSize={{ minRows: 2, maxRows: 6 }}
         />
         <footer className={cx('flex', 'flex-1', styles.footer)}>
-          {!!messageList?.length && (
+          {!!messageList?.filter((item: MessageInfo) => item.id)?.length && (
             <ConditionRender condition={!!onClear}>
               <Tooltip title="清空会话记录">
                 <span

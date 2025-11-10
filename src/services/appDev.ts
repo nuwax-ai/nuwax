@@ -304,7 +304,7 @@ export const sendChatMessage = async (
  */
 export const cancelAgentTask = async (
   projectId: string,
-  sessionId: string,
+  sessionId?: string,
 ): Promise<CancelResponse> => {
   return request(`/api/custom-page/ai-session-cancel`, {
     method: 'POST',
@@ -474,13 +474,20 @@ export const saveConversation = async (params: {
  * @param params 查询参数
  * @returns Promise<any> 会话列表
  */
-export const listConversations = async (params: {
-  projectId: string;
-  sessionId?: string;
-}): Promise<any> => {
-  return request('/api/custom-page/list-conversations', {
-    method: 'GET',
-    params,
+export const listConversations = async (
+  projectId: string,
+  page: number = 1,
+  pageSize: number = 20,
+): Promise<any> => {
+  return request('/api/custom-page/page-query-conversations', {
+    method: 'POST',
+    data: {
+      queryFilter: {
+        projectId,
+      },
+      current: page,
+      pageSize,
+    },
   });
 };
 
@@ -593,13 +600,16 @@ export const getDevLogs = async (
   });
 
   // 处理后端返回的日志数据，确保包含所有必需字段
-  const processedLogs: DevLogEntry[] = response.data.logs.map((log: any) => {
-    // 如果后端返回的日志对象缺少某些字段，使用 parseLogEntry 来补充
-    if (!log.level || !log.isError) {
-      return parseLogEntry(log.content, log.line);
-    }
-    return log as DevLogEntry;
-  });
+  const processedLogs: DevLogEntry[] =
+    response.data?.logs?.length > 0
+      ? response.data.logs.map((log: any) => {
+          // 如果后端返回的日志对象缺少某些字段，使用 parseLogEntry 来补充
+          if (!log.level || !log.isError) {
+            return parseLogEntry(log.content, log.line);
+          }
+          return log as DevLogEntry;
+        })
+      : ([] as DevLogEntry[]);
 
   return {
     ...response,

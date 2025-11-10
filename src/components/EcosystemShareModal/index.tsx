@@ -53,6 +53,7 @@ export interface EcosystemShareModalData {
   name?: string;
   description?: string;
   targetType: AgentComponentTypeEnum;
+  targetSubType?: 'ChatBot' | 'PageApp';
   targetId: string;
   categoryCode?: string;
   categoryName?: string;
@@ -128,7 +129,10 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
     if (targetType === AgentComponentTypeEnum.Plugin) {
       return apiPublishedPluginInfo;
     }
-    if (targetType === AgentComponentTypeEnum.Agent) {
+    if (
+      targetType === AgentComponentTypeEnum.Agent ||
+      targetType === AgentComponentTypeEnum.Page
+    ) {
       return apiPublishedAgentInfo;
     }
     if (targetType === AgentComponentTypeEnum.Workflow) {
@@ -208,10 +212,19 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
     try {
       const values = await form.validateFields();
       const { plugin, ...rest } = values;
+
+      // 目标子类型，Agent类型时，targetSubType为ChatBot或PageApp，其他类型时为null
+      const targetSubType =
+        data?.targetType === AgentComponentTypeEnum.Agent
+          ? data?.targetSubType === 'PageApp'
+            ? 'PageApp'
+            : 'ChatBot'
+          : null;
       const result = await onSave(
         {
           ...rest,
           ...plugin,
+          targetSubType,
           categoryCode: detail?.category,
           categoryName: detail?.category,
           configParamJson: JSON.stringify(configParam),
@@ -314,7 +327,7 @@ const EcosystemShareModal: React.FC<EcosystemShareModalProps> = ({
     if (visible && data?.targetId) {
       runGetDetail(data?.targetId);
     }
-  }, [visible, data?.targetId, runGetDetail]);
+  }, [visible, data?.targetId]);
 
   useEffect(() => {
     if (detail) {

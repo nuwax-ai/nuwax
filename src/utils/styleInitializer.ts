@@ -210,7 +210,7 @@ export class StyleInitializer {
     context: string = '接口失败',
   ): Promise<void> {
     console.log(`${context}，使用兜底方案初始化 layout navigation CSS 变量`);
-    await this.initializeLayoutStyle(context, true); // 强制使用默认配置
+    await this.initializeLayoutStyle?.(context, true); // 强制使用默认配置
   }
 }
 

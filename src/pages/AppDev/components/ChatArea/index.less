@@ -82,48 +82,47 @@
   // }
 }
 
-// 版本选择器包装器
-.versionSelectorWrapper {
-  display: flex;
-  align-items: center;
-}
+// // 版本选择器包装器
+// .versionSelectorWrapper {
+//   display: flex;
+//   align-items: center;
+// }
 
-// 历史会话选择器包装器
-.conversationSelectorWrapper {
-  display: flex;
-  align-items: center;
-}
+// // 历史会话选择器包装器
+// .conversationSelectorWrapper {
+//   display: flex;
+//   align-items: center;
+// }
 
-// 版本选择器
-.versionSelector {
-  // 使用默认样式，自定义样式已注释
-  display: block;
-}
+// // 版本选择器
+// .versionSelector {
+//   // 使用默认样式，自定义样式已注释
+//   display: block;
+// }
 
-// 版本下拉菜单
-.versionDropdown {
-  border-radius: 8px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 15%) !important;
-  border: 1px solid #e2e8f0 !important;
+// // 版本下拉菜单
+// .versionDropdown {
+//   border-radius: 8px !important;
+//   box-shadow: 0 4px 12px rgba(0, 0, 0, 15%) !important;
+//   border: 1px solid #e2e8f0 !important;
 
-  :global(.ant-select-item) {
-    padding: 8px 12px !important;
-    font-size: 12px !important;
-    transition: all 0.2s ease !important;
+//   :global(.ant-select-item) {
+//     padding: 8px 12px !important;
+//     font-size: 12px !important;
+//     transition: all 0.2s ease !important;
 
-    &:hover {
-      background: rgba(59, 130, 246, 10%) !important;
-      color: #3b82f6 !important;
-    }
+//     &:hover {
+//       background: rgba(59, 130, 246, 10%) !important;
+//       color: #3b82f6 !important;
+//     }
 
-    &.ant-select-item-option-selected {
-      background: rgba(59, 130, 246, 15%) !important;
-      color: #3b82f6 !important;
-      font-weight: 500 !important;
-    }
-  }
-}
-
+//     &.ant-select-item-option-selected {
+//       background: rgba(59, 130, 246, 15%) !important;
+//       color: #3b82f6 !important;
+//       font-weight: 500 !important;
+//     }
+//   }
+// }
 // 聊天消息区域
 .chatMessagesWrapper {
   flex: 1;
@@ -158,8 +157,24 @@
   }
 }
 
+// 加载更多历史会话的指示器
+.loadingMoreHistory {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 0;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  background: rgba(255, 255, 255, 80%);
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid @colorBorderSecondary;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
 .chatMessages {
-  padding: 20px 12px 20px 20px;
+  padding: 20px 12px 36px 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -247,9 +262,10 @@
     padding-bottom: 12px;
 
     .messageBubble {
+      width: 100%;
       border-radius: 18px 18px 18px 4px;
       padding: 6px 12px;
-      max-width: 100%;
+      // max-width: 100%;
     }
   }
 }
@@ -933,5 +949,83 @@
   &.visible {
     opacity: 1;
     visibility: visible;
+  }
+}
+
+// 自动错误处理进度条容器
+.progressContainer {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  padding: 2px 28px;
+  top: -6px;
+  width: 100%;
+  left: 0;
+  animation: slide-in-down 0.3s ease-out;
+
+  @keyframes slide-in-down {
+    from {
+      transform: translateY(-10px);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}
+
+.progressBar {
+  flex: 1;
+  height: 2px;
+  background: @colorBgContainerDisabled;
+  border-radius: 2px;
+  display: flex;
+  gap: 2px;
+
+  .progressBarItem {
+    width: 100%;
+    height: 2px;
+    background: @colorBgContainerDisabled;
+    border-radius: 1px;
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.3s ease;
+
+    &.active {
+      background: @colorPrimary;
+
+      // 添加流光动画效果
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 30%),
+          transparent
+        );
+        animation: shine 1.5s ease-in-out infinite;
+      }
+    }
+
+    &.inactive {
+      background: @colorBgContainerDisabled;
+    }
+
+    @keyframes shine {
+      0% {
+        left: -100%;
+      }
+
+      100% {
+        left: 100%;
+      }
+    }
   }
 }

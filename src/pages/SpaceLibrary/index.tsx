@@ -39,7 +39,12 @@ import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentInfo } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
 import { exportConfigFile } from '@/utils/exportImportFile';
-import { jumpTo, jumpToPlugin, jumpToWorkflow } from '@/utils/router';
+import {
+  jumpTo,
+  jumpToPlugin,
+  jumpToPluginCloudTool,
+  jumpToWorkflow,
+} from '@/utils/router';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
 import { AnyObject } from 'antd/es/_util/type';
@@ -194,7 +199,13 @@ const SpaceLibrary: React.FC = () => {
     const targetSpaceId = params[1];
     // 跳转
     if (type === ComponentTypeEnum.Plugin) {
-      jumpToPlugin(targetSpaceId, data);
+      // 代码插件跳转云端工具页面
+      if (currentComponentInfo?.ext === PluginTypeEnum.CODE) {
+        jumpToPluginCloudTool(targetSpaceId, data);
+      } else {
+        // 普通插件跳转插件工具页面
+        jumpToPlugin(targetSpaceId, data);
+      }
     } else if (type === ComponentTypeEnum.Workflow) {
       jumpToWorkflow(targetSpaceId, data);
     }
