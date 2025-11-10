@@ -5,6 +5,7 @@
 
 import { message } from 'antd';
 import { useCallback } from 'react';
+import { useModel } from 'umi';
 
 interface UseRestartDevServerProps {
   projectId: string;
@@ -17,6 +18,7 @@ interface UseRestartDevServerProps {
   };
   setActiveTab?: (tab: 'preview' | 'code') => void;
   previewRef?: React.RefObject<{ refresh: () => void }>;
+  devLogsRefresh: () => void;
 }
 
 interface UseRestartDevServerReturn {
@@ -37,7 +39,10 @@ export const useRestartDevServer = ({
   server,
   setActiveTab,
   previewRef,
+  devLogsRefresh,
 }: UseRestartDevServerProps): UseRestartDevServerReturn => {
+  // 使用 model 统一管理状态
+  const autoErrorHandlingModelInstance = useModel('autoErrorHandling');
   /**
    * 重启开发服务器方法
    * @param params 重启参数
@@ -62,13 +67,16 @@ export const useRestartDevServer = ({
         }
         return { success: false, message: errorMessage };
       }
+      let finalResult;
+      // 暂停 自动错误处理
+      autoErrorHandlingModelInstance.setAutoHandlingEnabled(false);
 
       try {
         // 根据 shouldSwitchTab 参数决定是否切换到预览标签页
         if (shouldSwitchTab && setActiveTab) {
           setActiveTab('preview');
           // 等待标签页切换完成
-          await new Promise((resolve) => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100)); //eslint-disable-line no-promise-executor-return
         }
 
         // 调用服务器重启方法，传递 shouldSwitchTab 参数
@@ -90,14 +98,21 @@ export const useRestartDevServer = ({
           }
         }
 
-        return result;
+        finalResult = result;
       } catch (error: any) {
         const errorMessage = error?.message || '重启开发服务器失败';
         if (showMessage) {
           message.error(errorMessage);
         }
-        return { success: false, message: errorMessage };
+        finalResult = { success: false, message: errorMessage };
+      } finally {
+        // 拉取最新的日志 刷新日志
+        devLogsRefresh();
+
+        // 恢复 自动错误处理
+        autoErrorHandlingModelInstance.setAutoHandlingEnabled(true);
       }
+      return finalResult;
     },
     [projectId, server, setActiveTab, previewRef],
   );

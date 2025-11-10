@@ -1,11 +1,14 @@
+import AgentType from '@/components/base/AgentType';
 import Loading from '@/components/custom/Loading';
 import EcosystemCard, { EcosystemCardProps } from '@/components/EcosystemCard';
+import SharedIcon from '@/components/EcosystemCard/SharedIcon';
 import PluginDetailDrawer from '@/components/EcosystemDetailDrawer';
 import SelectCategory from '@/components/EcosystemSelectCategory';
 import EcosystemShareModal, {
   EcosystemShareModalData,
 } from '@/components/EcosystemShareModal';
 import NoMoreDivider from '@/components/NoMoreDivider';
+import PageCard from '@/components/PageCard';
 import SelectComponent from '@/components/SelectComponent';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { TabItems, TabTypeEnum } from '@/constants/ecosystem.constants';
@@ -56,8 +59,10 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'umi';
 import styles from './index.less';
 const cx = classNames.bind(styles);
+
 const { Search } = Input;
 const PAGE_SIZE = 24;
 
@@ -73,6 +78,7 @@ const SPACE_SQUARE_SEGMENTED_LIST =
  */
 export default function EcosystemTemplate() {
   const { message } = App.useApp();
+  const location = useLocation();
   // 搜索关键词
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   // 当前激活的标签页
@@ -97,10 +103,12 @@ export default function EcosystemTemplate() {
     targetType: string;
     categoryCode: string;
     shareStatus: number;
+    targetSubType?: 'ChatBot' | 'PageApp' | '';
   }>({
     targetType: '',
     categoryCode: '',
     shareStatus: -1,
+    targetSubType: '',
   });
 
   const [selectComponentProps, setSelectComponentProps] = useState<{
@@ -136,6 +144,13 @@ export default function EcosystemTemplate() {
     pageSize: PAGE_SIZE,
   });
 
+  const [show, setShow] = useState(false);
+  const [shareModalData, setShareModalData] =
+    useState<EcosystemShareModalData | null>(null);
+  const [addComponents, setAddComponents] = useState<
+    AgentAddComponentStatusInfo[]
+  >([]);
+
   /**
    * 获取模板列表数据
    */
@@ -166,13 +181,15 @@ export default function EcosystemTemplate() {
           default:
             subTabType = EcosystemSubTabTypeEnum.ALL;
         }
-        const { targetType, categoryCode, shareStatus } =
+        const { targetType, categoryCode, shareStatus, targetSubType } =
           selectTargetTypeRef.current;
+
         const params = {
           queryFilter: {
             dataType: EcosystemDataTypeEnum.TEMPLATE, // 只查询模板类型
             subTabType,
             targetType: targetType === '' ? undefined : targetType,
+            targetSubType: targetSubType === '' ? undefined : targetSubType,
             name: keyword || undefined,
             shareStatus: shareStatus === -1 ? undefined : shareStatus,
             categoryCode: categoryCode || undefined,
@@ -203,35 +220,75 @@ export default function EcosystemTemplate() {
         setLoading(false);
       }
     },
-    [activeTab, searchKeyword, pagination.current, pagination.pageSize],
+    [],
   );
+
+  // 刷新模板列表
   const refreshPluginList = (
-    options?: Partial<FetchPluginListParams> | undefined,
+    tabType: EcosystemTabTypeEnum = activeTab,
+    kw: string = searchKeyword,
   ) => {
     setPagination({ current: 1, pageSize: PAGE_SIZE });
-    fetchPluginList({
-      tabType: activeTab,
-      keyword: options?.keyword === undefined ? searchKeyword : options.keyword,
+    const params = {
+      tabType,
+      keyword: kw,
       page: 1,
       pageSize: PAGE_SIZE,
-      ...(options || {}),
-    });
+    };
+    fetchPluginList(params);
   };
 
   const handleResetQueryFilter = useCallback(() => {
     selectTargetTypeRef.current['categoryCode'] = '';
-    selectTargetTypeRef.current['targetType'] = '';
     selectTargetTypeRef.current['shareStatus'] = -1;
     setSearchKeyword('');
   }, []);
 
+  useEffect(() => {
+    const searchParams = location?.search;
+    if (searchParams) {
+      const searchParamsObj = new URLSearchParams(searchParams);
+      const targetType = searchParamsObj.get('targetType');
+      // 应用页面
+      if (targetType === AgentComponentTypeEnum.Page) {
+        selectTargetTypeRef.current['targetType'] =
+          AgentComponentTypeEnum.Agent;
+        selectTargetTypeRef.current['targetSubType'] = 'PageApp';
+      }
+      // 智能体
+      else if (targetType === AgentComponentTypeEnum.Agent) {
+        selectTargetTypeRef.current['targetType'] =
+          AgentComponentTypeEnum.Agent;
+        selectTargetTypeRef.current['targetSubType'] = 'ChatBot';
+      } else {
+        selectTargetTypeRef.current['targetType'] =
+          targetType as AgentComponentTypeEnum;
+        selectTargetTypeRef.current['targetSubType'] = '';
+      }
+    } else {
+      selectTargetTypeRef.current['targetType'] = '';
+      selectTargetTypeRef.current['targetSubType'] = '';
+    }
+    handleResetQueryFilter();
+    setActiveTab(TabTypeEnum.ALL);
+    // 刷新列表
+    refreshPluginList(TabTypeEnum.ALL);
+  }, [location]);
+
   /**
    * 标签页切换时重新获取数据
    */
-  useEffect(() => {
-    handleResetQueryFilter();
-    refreshPluginList();
-  }, [activeTab]);
+  const handleChangeTab = (value: string) => {
+    const tabType = value as EcosystemTabTypeEnum;
+    setActiveTab(tabType);
+    selectTargetTypeRef.current['shareStatus'] = -1;
+    setSearchKeyword('');
+    // 我的分享标签页，清空分类
+    if (tabType === TabTypeEnum.SHARED) {
+      selectTargetTypeRef.current['categoryCode'] = '';
+    }
+    refreshPluginList(tabType);
+  };
 
   /**
    * 将后端数据转换为插件卡片数据
@@ -281,7 +338,7 @@ export default function EcosystemTemplate() {
    */
   const handleSearch = (value: string) => {
     setSearchKeyword(value);
-    refreshPluginList({ keyword: value });
+    refreshPluginList(activeTab, value);
   };
 
   /**
@@ -376,6 +433,7 @@ export default function EcosystemTemplate() {
         description: values.description,
         dataType: EcosystemDataTypeEnum.TEMPLATE,
         targetType: values.targetType || AgentComponentTypeEnum.Workflow,
+        targetSubType: values.targetSubType,
         targetId: values.targetId,
         categoryCode: values.categoryCode,
         categoryName: values.categoryName,
@@ -417,12 +475,10 @@ export default function EcosystemTemplate() {
         refreshPluginListAndReset();
         return true;
       } else {
-        message.error('操作失败');
         return false;
       }
     } catch (error) {
       console.error('保存分享失败:', error);
-      message.error('操作失败');
       return false;
     }
   };
@@ -449,14 +505,16 @@ export default function EcosystemTemplate() {
         default:
           subTabType = EcosystemSubTabTypeEnum.ALL;
       }
-      const { targetType, categoryCode, shareStatus } =
+      const { targetType, categoryCode, shareStatus, targetSubType } =
         selectTargetTypeRef.current;
+
       // 获取数据的API调用
       const response = await getClientConfigList({
         queryFilter: {
           dataType: EcosystemDataTypeEnum.TEMPLATE,
           subTabType,
           targetType: targetType === '' ? undefined : targetType,
+          targetSubType: targetSubType === '' ? undefined : targetSubType,
           name: searchKeyword || undefined,
           categoryCode: categoryCode === '' ? undefined : categoryCode,
           shareStatus: shareStatus === -1 ? undefined : shareStatus,
@@ -506,12 +564,16 @@ export default function EcosystemTemplate() {
   const menuProps = {
     items: [
       {
+        key: AgentComponentTypeEnum.Agent,
+        label: '智能体',
+      },
+      {
         key: AgentComponentTypeEnum.Workflow,
         label: '工作流',
       },
       {
-        key: AgentComponentTypeEnum.Agent,
-        label: '智能体',
+        key: AgentComponentTypeEnum.Page,
+        label: '应用页面',
       },
     ],
     onClick: (e: any) => {
@@ -519,12 +581,6 @@ export default function EcosystemTemplate() {
     },
   };
 
-  const [show, setShow] = useState(false);
-  const [shareModalData, setShareModalData] =
-    useState<EcosystemShareModalData | null>(null);
-  const [addComponents, setAddComponents] = useState<
-    AgentAddComponentStatusInfo[]
-  >([]);
   // 查询智能体配置组件列表
   const onSelectedComponent = (item: CreatedNodeItem) => {
     item.type = item.targetType as unknown as NodeTypeEnum;
@@ -534,7 +590,10 @@ export default function EcosystemTemplate() {
       icon: item.icon,
       name: item.name,
       description: item.description,
+      // 目标类型
       targetType: item.targetType,
+      /** 目标子类型 */
+      targetSubType: item.targetSubType,
       targetId: item.targetId.toString(),
       shareStatus: EcosystemShareStatusEnum.DRAFT,
     });
@@ -563,7 +622,11 @@ export default function EcosystemTemplate() {
         uid: config.uid,
         name: config.name || '',
         description: config.description || '',
+        // 目标类型
         targetType: targetType as AgentComponentTypeEnum,
+        // 目标子类型
+        targetSubType: config.targetSubType,
+        // 目标id
         targetId: (config.targetId || '').toString(),
         author: config.author || '',
         publishDoc: config.publishDoc || '',
@@ -652,12 +715,6 @@ export default function EcosystemTemplate() {
     refreshPluginList();
   };
 
-  const handleTargetTypeChange = (value: string) => {
-    selectTargetTypeRef.current['targetType'] = value;
-    selectTargetTypeRef.current['categoryCode'] = '';
-    refreshPluginList();
-  };
-
   /**
    * 渲染右侧操作区域
    */
@@ -686,12 +743,6 @@ export default function EcosystemTemplate() {
     }
     return (
       <div className={cx(styles.headerRight)}>
-        {selectTargetTypeRef.current.targetType && (
-          <SelectCategory
-            targetType={selectTargetTypeRef.current.targetType}
-            onChange={(value) => handleCategoryChange(value)}
-          />
-        )}
         <Search
           className={cx(styles.searchInput)}
           placeholder="搜索模板"
@@ -723,9 +774,7 @@ export default function EcosystemTemplate() {
               className={cx(styles.segmented)}
               options={SPACE_SQUARE_SEGMENTED_LIST}
               value={activeTab}
-              onChange={(value: string) =>
-                setActiveTab(value as EcosystemTabTypeEnum)
-              }
+              onChange={handleChangeTab}
             />
             {activeTab === TabTypeEnum.SHARED ? (
               <Select
@@ -752,25 +801,12 @@ export default function EcosystemTemplate() {
                 onChange={(value) => handleShareStatusChange(value)}
               />
             ) : (
-              <Select
-                options={[
-                  {
-                    label: '全部',
-                    value: '',
-                  },
-                  {
-                    label: '智能体',
-                    value: AgentComponentTypeEnum.Agent,
-                  },
-                  {
-                    label: '工作流',
-                    value: AgentComponentTypeEnum.Workflow,
-                  },
-                ]}
-                style={{ width: 100 }}
-                value={selectTargetTypeRef.current.targetType}
-                onChange={(value: string) => handleTargetTypeChange(value)}
-              />
+              !!selectTargetTypeRef.current.targetType && (
+                <SelectCategory
+                  targetType={selectTargetTypeRef.current.targetType}
+                  onChange={(value) => handleCategoryChange(value)}
+                />
+              )
             )}
           </Space>
           {renderExtraContent()}
@@ -794,13 +830,63 @@ export default function EcosystemTemplate() {
           ) : pluginData?.records?.length ? (
             <>
               <div className={cx(styles['list-section'])}>
-                {pluginData.records?.map((config) => (
-                  <EcosystemCard
-                    key={config?.uid}
-                    {...convertToTemplateCard(config)}
-                    onClick={async () => await handleCardClick(config)}
-                  />
-                ))}
+                {pluginData.records?.map((config) => {
+                  const type =
+                    config.targetType === AgentComponentTypeEnum.Agent &&
+                    config.targetSubType === 'PageApp'
+                      ? AgentComponentTypeEnum.Page
+                      : config.targetType;
+                  // 如果目标类型是应用页面，不是选择的模板菜单，则显示应用页面卡片
+                  if (
+                    selectTargetTypeRef.current.targetType &&
+                    type === AgentComponentTypeEnum.Page
+                  ) {
+                    // 分享状态
+                    const shareStatus =
+                      activeTab === TabTypeEnum.SHARED
+                        ? config.shareStatus
+                        : undefined;
+                    return (
+                      <PageCard
+                        key={config?.uid}
+                        icon={config.icon || ''}
+                        name={config.name || ''}
+                        avatar={''}
+                        userName={config.author || ''}
+                        created={config.created || ''}
+                        overlayText="查看详情"
+                        isNewVersion={config.isNewVersion}
+                        isEnabled={
+                          activeTab === TabTypeEnum.ALL
+                            ? config.useStatus ===
+                              EcosystemUseStatusEnum.ENABLED
+                            : undefined
+                        }
+                        onClick={async () => await handleCardClick(config)}
+                        footerInner={
+                          shareStatus && (
+                            <SharedIcon shareStatus={shareStatus} />
+                          )
+                        }
+                      />
+                    );
+                  } else {
+                    return (
+                      <EcosystemCard
+                        key={config?.uid}
+                        {...convertToTemplateCard(config)}
+                        onClick={async () => await handleCardClick(config)}
+                        footer={
+                          <footer className={cx('flex', 'items-center')}>
+                            <AgentType
+                              type={type as unknown as AgentComponentTypeEnum}
+                            />
+                          </footer>
+                        }
+                      />
+                    );
+                  }
+                })}
               </div>
               {!(pagination.current < (pluginData.pages || 0)) && (
                 <NoMoreDivider />
@@ -821,37 +907,6 @@ export default function EcosystemTemplate() {
               />
             </div>
           )}
-          {/* <List
-            grid={{ gutter: 16, column: 4 }}
-            dataSource={pluginData.records || []}
-            renderItem={(config) => (
-              <List.Item>
-                <EcosystemCard
-                  {...convertToTemplateCard(config)}
-                  onClick={() => handleCardClick(config)}
-                />
-              </List.Item>
-            )}
-            loadMore={
-              loading ? (
-                <div style={{ textAlign: 'center', margin: '12px 0' }}>
-                  <Spin />
-                </div>
-              ) : pluginData.total &&
-                pluginData.total > 0 &&
-                pagination.current >= (pluginData.pages || 0) ? (
-                <div
-                  style={{
-                    textAlign: 'center',
-                    padding: '12px 0',
-                    color: '#ccc',
-                  }}
-                >
-                  没有更多数据了
-                </div>
-              ) : null
-            }
-          /> */}
         </div>
       </div>
 
@@ -884,7 +939,7 @@ export default function EcosystemTemplate() {
         }}
         {...shareModalProps}
       />
-      {/*添加工作流、智能体弹窗*/}
+      {/*添加工作流、智能体、应用页面弹窗*/}
       <SelectComponent
         onAdded={onSelectedComponent}
         open={show}

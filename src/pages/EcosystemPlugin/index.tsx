@@ -455,7 +455,10 @@ export default function EcosystemPlugin() {
       icon: item.icon,
       name: item.name,
       description: item.description,
+      // 目标类型
       targetType: item.targetType,
+      // 目标子类型
+      targetSubType: item.targetSubType,
       targetId: item.targetId.toString(),
       shareStatus: EcosystemShareStatusEnum.DRAFT,
     });
@@ -485,6 +488,9 @@ export default function EcosystemPlugin() {
         name: config.name || '',
         description: config.description || '',
         targetType: targetType as AgentComponentTypeEnum,
+        // 目标子类型
+        targetSubType: config.targetSubType,
+        // 目标id
         targetId: (config.targetId || '').toString(),
         author: config.author || '',
         publishDoc: config.publishDoc || '',

@@ -6,7 +6,6 @@
   padding: 16px 16px 16px 24px;
 
   .title {
-    //padding: 0 30px;
     line-height: 32px;
     font-size: @fontSizeLg;
     font-weight: 600;
@@ -14,27 +13,21 @@
     margin-right: 20px;
   }
 
-  .segmented {
-    :global {
-      .ant-segmented-item-selected {
-        font-weight: @fontWeightStrong !important;
-      }
-    }
-  }
+  // .segmented {
+  //   :global {
+  //     .ant-segmented-item-selected {
+  //       font-weight: @fontWeightStrong !important;
+  //     }
+  //   }
+  // }
 
   .list-section {
-    //padding: 0 30px;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
 
     /* 关键修复：确保内容从顶部开始排列，避免不均匀的间距分布 */
     align-content: start;
-
-    .icon {
-      color: @BLANK04;
-      font-size: 20px;
-    }
   }
 
   @media (min-width: 1200px) {
@@ -48,12 +41,4 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
-
-  // @media (max-width: 768px) {
-  //   .list-section {
-  //     display: flex;
-  //     flex-wrap: wrap;
-  //     gap: 16px;
-  //   }
-  // }
 }

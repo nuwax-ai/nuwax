@@ -12,13 +12,22 @@ const cx = classNames.bind(styles);
  */
 const InfiniteScrollDiv: React.FC<
   PropsWithChildren<InfiniteScrollDivProps>
-> = ({ scrollableTarget, list, hasMore, onScroll, children }) => {
+> = ({
+  scrollableTarget,
+  list,
+  hasMore,
+  showLoader = true,
+  onScroll,
+  children,
+}) => {
   return (
     <InfiniteScroll
       dataLength={list.length}
       next={onScroll}
       hasMore={hasMore}
-      loader={<Loading className={cx(styles['end-loading'])} />}
+      loader={
+        showLoader ? <Loading className={cx(styles['end-loading'])} /> : null
+      }
       scrollableTarget={scrollableTarget}
     >
       {children}

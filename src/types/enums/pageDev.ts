@@ -44,6 +44,8 @@ export enum PageDevelopMoreActionEnum {
   Auth_Config = 'Auth_Config',
   // 页面预览
   Page_Preview = 'Page_Preview',
+  // 复制到空间
+  Copy_To_Space = 'Copy_To_Space',
   // 删除
   Delete = 'Delete',
 }
@@ -62,4 +64,12 @@ export enum PageDevelopPublishTypeEnum {
   PAGE = 'PAGE',
   // 发布成应用
   AGENT = 'AGENT',
+}
+
+// 复制类型枚举(可用值:DEVELOP,SQUARE)
+export enum PageCopyTypeEnum {
+  // 开发
+  DEVELOP = 'DEVELOP',
+  // 广场
+  SQUARE = 'SQUARE',
 }

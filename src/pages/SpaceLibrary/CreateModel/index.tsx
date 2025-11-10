@@ -1,5 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
-import CustomFormModal from '@/components/CustomFormModal';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import LabelStar from '@/components/LabelStar';
 import {
   MODEL_API_PROTOCOL_LIST,
@@ -7,7 +7,11 @@ import {
   MODEL_STRATEGY_LIST,
   MODEL_TYPE_LIST,
 } from '@/constants/library.constants';
-import { apiModelInfo, apiModelSave } from '@/services/modelConfig';
+import {
+  apiModelInfo,
+  apiModelSave,
+  apiModelTestConnectivity,
+} from '@/services/modelConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import {
   ModelApiProtocolEnum,
@@ -16,6 +20,7 @@ import {
   ModelStrategyEnum,
   ModelTypeEnum,
 } from '@/types/enums/modelConfig';
+import { ModelComponentStatusEnum } from '@/types/enums/space';
 import type { CreateModelProps } from '@/types/interfaces/library';
 import type {
   ModelConfigInfo,
@@ -23,13 +28,19 @@ import type {
   ModelSaveParams,
 } from '@/types/interfaces/model';
 import { customizeRequiredMark } from '@/utils/form';
-import { DeleteOutlined, PlusCircleOutlined } from '@ant-design/icons';
 import {
+  DeleteOutlined,
+  InfoCircleOutlined,
+  PlusCircleOutlined,
+} from '@ant-design/icons';
+import {
+  Button,
   Form,
   FormProps,
   Input,
   InputNumber,
   message,
+  Modal,
   Radio,
   Select,
   Space,
@@ -57,11 +68,23 @@ const CreateModel: React.FC<CreateModelProps> = ({
   const [form] = Form.useForm();
   const [visible, setVisible] = useState<boolean>(false);
   const [modelType, setModelType] = useState<ModelTypeEnum>();
+  // 检测连接加载中
+  const [loadingTestConnection, setLoadingTestConnection] =
+    useState<boolean>(false);
+  // 确认按钮加载中
   const [loading, setLoading] = useState<boolean>(false);
-  // const [shouldRenderDimension, setShouldRenderDimension] = useState(false);
-  // const [networkType, setNetworkType] = useState<ModelNetworkTypeEnum>(
-  //   ModelNetworkTypeEnum.Internet,
-  // );
+  // 确认按钮是否可点击
+  const [submittable, setSubmittable] = useState<boolean>(false);
+
+  // 监听表单值变化
+  const values = Form.useWatch([], { form, preserve: true });
+
+  useEffect(() => {
+    form
+      .validateFields({ validateOnly: true })
+      .then(() => setSubmittable(true))
+      .catch(() => setSubmittable(false));
+  }, [form, values]);
 
   // 查询指定模型配置信息
   const { run: runQuery } = useRequest(apiModelInfo, {
@@ -70,6 +93,19 @@ const CreateModel: React.FC<CreateModelProps> = ({
     onSuccess: (result: ModelConfigInfo) => {
       form.setFieldsValue(result);
       setModelType(result?.type);
+    },
+  });
+
+  // 测试模型连通性
+  const { run: runTestConnectivity } = useRequest(apiModelTestConnectivity, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success('模型检测连接成功');
+      setLoadingTestConnection(false);
+    },
+    onError: () => {
+      setLoadingTestConnection(false);
     },
   });
 
@@ -119,26 +155,57 @@ const CreateModel: React.FC<CreateModelProps> = ({
     form.submit();
   };
 
-  // const handleValuesChange = (changedValues: ModelFormData) => {
-  //   // const { networkType } = changedValues;
-  //   // setNetworkType(networkType);
-  //   if (action !== apiModelSave) {
-  //     setShouldRenderDimension(changedValues.type === ModelTypeEnum.Embeddings);
-  //   }
-  // };
+  // 检测模型连通性
+  const handlerCheckConnection = () => {
+    setLoadingTestConnection(true);
+    const values = form.getFieldsValue();
+
+    runTestConnectivity({
+      ...values,
+      id,
+      spaceId,
+    });
+  };
 
   return (
-    <CustomFormModal
-      form={form}
+    <Modal
       title={mode === CreateUpdateModeEnum.Create ? '新增模型' : '更新模型'}
+      open={open}
       classNames={{
         content: cx(styles.container),
         header: cx(styles.header),
+        body: cx(styles.body),
       }}
-      open={open}
-      loading={loading}
+      destroyOnHidden
       onCancel={onCancel}
-      onConfirm={handlerSubmit}
+      footer={
+        <>
+          <Button
+            type="default"
+            loading={loadingTestConnection}
+            onClick={handlerCheckConnection}
+            className={cx(
+              !submittable && styles['confirm-btn'],
+              styles['connection-btn'],
+            )}
+            disabled={!submittable}
+          >
+            模型连通性测试
+          </Button>
+          <Button className={cx(styles.btn)} type="default" onClick={onCancel}>
+            取消
+          </Button>
+          <Button
+            type="primary"
+            loading={loading}
+            onClick={handlerSubmit}
+            className={cx(!submittable && styles['confirm-btn'], styles.btn)}
+            disabled={!submittable}
+          >
+            确定
+          </Button>
+        </>
+      }
     >
       <Form
         form={form}
@@ -156,6 +223,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           type: ModelTypeEnum.Chat,
           maxTokens: 4096,
           dimension: 1536,
+          enabled: ModelComponentStatusEnum.Enabled, // 启用
         }}
         autoComplete="off"
       >
@@ -255,6 +323,27 @@ const CreateModel: React.FC<CreateModelProps> = ({
           </Form.Item>
         </ConditionRender>
 
+        {/* 启用模型开关 */}
+        <Form.Item
+          name="enabled"
+          label={
+            <div className={cx('flex', 'items-center')}>
+              <span>是否启用</span>
+              <TooltipIcon
+                title="禁用后，将不可再被选择，正在使用中的智能体不受影响"
+                icon={<InfoCircleOutlined />}
+              />
+            </div>
+          }
+        >
+          <Radio.Group
+            options={[
+              { label: '启用', value: ModelComponentStatusEnum.Enabled },
+              { label: '禁用', value: ModelComponentStatusEnum.Disabled },
+            ]}
+          />
+        </Form.Item>
+
         <Form.Item
           name="apiProtocol"
           label="接口协议"
@@ -349,7 +438,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
           onCancel={() => setVisible(false)}
         />
       </Form>
-    </CustomFormModal>
+    </Modal>
   );
 };
 

@@ -255,6 +255,9 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
             }}
           >
             <span>v{version.version}</span>
+            <span style={{ fontSize: '10px', color: '#999', marginLeft: 8 }}>
+              {version.time}
+            </span>
             <Tag
               color={getActionColor(version.action)}
               style={{ marginLeft: 8, fontSize: '10px' }}

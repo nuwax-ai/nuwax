@@ -1,12 +1,16 @@
-import workflowIcon from '@/assets/images/agent_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
+import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { apiPageUpdateProject } from '@/services/pageDev';
 import { PageEditModalProps } from '@/types/interfaces/pageDev';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
+import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 /**
  * 页面编辑弹窗
@@ -98,17 +102,28 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
         >
           <Input placeholder="请输入名称" showCount maxLength={50} />
         </Form.Item>
-        <Form.Item name="projectDesc" label="描述">
-          <Input.TextArea
-            placeholder="请输入描述"
-            autoSize={{ minRows: 4, maxRows: 6 }}
-          />
-        </Form.Item>
-        <Form.Item name="icon" label="图标">
+        <OverrideTextArea
+          name="projectDesc"
+          label="描述"
+          placeholder="请输入描述"
+          maxLength={10000}
+        />
+        <Form.Item
+          name="icon"
+          label={
+            <div className={cx('flex', 'gap-10', 'items-center')}>
+              <span>图标</span>
+              <span className={cx(styles['text-tip'])}>
+                建议尺寸356px * 200px, 比例16:9
+              </span>
+            </div>
+          }
+        >
           <UploadAvatar
+            className={cx(styles['upload-avatar'])}
             onUploadSuccess={uploadIconSuccess}
             imageUrl={imageUrl}
-            defaultImage={workflowIcon}
+            svgIconName="icons-common-upload"
           />
         </Form.Item>
       </Form>

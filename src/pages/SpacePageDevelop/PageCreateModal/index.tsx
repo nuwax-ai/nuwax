@@ -1,4 +1,5 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import {
   apiCustomPageCreate,
@@ -13,8 +14,12 @@ import {
 import { customizeRequiredMark } from '@/utils/form';
 import { InboxOutlined } from '@ant-design/icons';
 import { Form, FormProps, Input, message, Upload, UploadProps } from 'antd';
+import classNames from 'classnames';
 import React, { useState } from 'react';
 import { useRequest } from 'umi';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 const { Dragger } = Upload;
 
@@ -206,14 +211,25 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
         >
           <Input placeholder="请输入名称" showCount maxLength={50} />
         </Form.Item>
-        <Form.Item name="projectDesc" label="描述">
-          <Input.TextArea
-            placeholder="请输入描述"
-            autoSize={{ minRows: 4, maxRows: 6 }}
-          />
-        </Form.Item>
-        <Form.Item name="icon" label="图标">
+        <OverrideTextArea
+          name="projectDesc"
+          label="描述"
+          placeholder="请输入描述"
+          maxLength={10000}
+        />
+        <Form.Item
+          name="icon"
+          label={
+            <div className={cx('flex', 'gap-10', 'items-center')}>
+              <span>图标</span>
+              <span className={cx(styles['text-tip'])}>
+                建议尺寸356px * 200px, 比例16:9
+              </span>
+            </div>
+          }
+        >
           <UploadAvatar
+            className={cx(styles['upload-avatar'])}
             onUploadSuccess={uploadIconSuccess}
             imageUrl={imageUrl}
             svgIconName="icons-common-upload"

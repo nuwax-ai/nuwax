@@ -3,6 +3,8 @@ import type {
   CustomPageDto,
   PageAddPathParams,
   PageBatchConfigProxyParams,
+  PageCopyParams,
+  PageCopyProjectInfo,
   PageDeletePathParams,
   PageQueryListParams,
   PageUpdateParams,
@@ -48,6 +50,16 @@ export async function apiCustomPageQueryList(
   return request('/api/custom-page/list-projects', {
     method: 'GET',
     params: data,
+  });
+}
+
+// 复制项目
+export async function apiCustomPageCopyProject(
+  data: PageCopyParams,
+): Promise<RequestResponse<PageCopyProjectInfo>> {
+  return request('/api/custom-page/copy-project', {
+    method: 'POST',
+    data,
   });
 }
 

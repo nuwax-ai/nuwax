@@ -13,6 +13,7 @@ import { ReactComponent as EditSvgFile } from '@/assets/icons/common/edit.svg';
 import { ReactComponent as ExportSvgFile } from '@/assets/icons/common/export.svg';
 import { ReactComponent as FullscreenSvgFile } from '@/assets/icons/common/fullscreen.svg';
 import { ReactComponent as ImportSvgFile } from '@/assets/icons/common/import.svg';
+import { ReactComponent as LinkSvgIcon } from '@/assets/icons/common/link.svg';
 import { ReactComponent as MoreSvgFile } from '@/assets/icons/common/more.svg';
 import { ReactComponent as PlusSvgFile } from '@/assets/icons/common/plus.svg';
 import { ReactComponent as PreviewSvgFile } from '@/assets/icons/common/preview.svg';
@@ -49,7 +50,7 @@ const SketchSvg = wrapSvg(SketchSvgFile);
 const StarsSvg = wrapSvg(StarsSvgFile);
 const StrawSvg = wrapSvg(StrawSvgFile);
 const UploadSvg = wrapSvg(UploadSvgFile);
-
+const LinkSvg = wrapSvg(LinkSvgIcon);
 export default {
   'icons-common-attachments': AttachmentsSvg,
   'icons-common-book': BookSvg,
@@ -75,4 +76,5 @@ export default {
   'icons-common-stars': StarsSvg,
   'icons-common-straw': StrawSvg,
   'icons-common-upload': UploadSvg,
+  'icons-common-link': LinkSvg,
 } as Record<string, React.FC>;

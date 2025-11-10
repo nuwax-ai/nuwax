@@ -60,7 +60,6 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
   return (
     <Upload
       action={UPLOAD_FILE_ACTION}
-      className={cx(styles.container, className)}
       onChange={handleChange}
       headers={{
         Authorization: token ? `Bearer ${token}` : '',
@@ -74,6 +73,7 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
           'relative',
           'overflow-hide',
           'cursor-pointer',
+          className,
         )}
       >
         <div

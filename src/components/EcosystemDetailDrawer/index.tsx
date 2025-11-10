@@ -524,7 +524,7 @@ const EcosystemDetailDrawer: React.FC<EcosystemDetailDrawerProps> = ({
           <Title level={5} className={cx(styles.sectionTitle)}>
             使用文档
           </Title>
-          <PureMarkdownRenderer id={`${title}`}>
+          <PureMarkdownRenderer id={`${title}`} disableTyping={true}>
             {publishDoc ? encodeHTML(publishDoc) : ''}
           </PureMarkdownRenderer>
         </div>

@@ -42,6 +42,7 @@ export interface EcosystemCardProps {
   localConfigParamJson?: string;
   /** 组件类型 */
   targetType: AgentComponentTypeEnum;
+  footer?: React.ReactNode;
 }
 
 /**
@@ -62,6 +63,7 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
   isNewVersion,
   targetType,
   dataType,
+  footer,
 }) => {
   // 默认信息(组件类型、默认图标、标签图标)
   const [defaultInfo, setDefaultInfo] = useState<{
@@ -171,6 +173,7 @@ const EcosystemCard: React.FC<EcosystemCardProps> = ({
         </div>
       </header>
       <p className={cx('text-ellipsis-2', styles.content)}>{description}</p>
+      {footer}
     </div>
   );
 };
