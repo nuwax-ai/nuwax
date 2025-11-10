@@ -22,13 +22,13 @@ import { Page } from '@/types/interfaces/request';
 import {
   SquarePublishedItemInfo,
   SquarePublishedListParams,
+  SquareSearchParams,
 } from '@/types/interfaces/square';
-import { getURLParams } from '@/utils/common';
 import { Empty, Input } from 'antd';
 import { SearchProps } from 'antd/es/input';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useRequest } from 'umi';
+import { useLocation, useRequest } from 'umi';
 import styles from './index.less';
 import SingleAgent from './SingleAgent';
 import SquareComponentInfo from './SquareComponentInfo';
@@ -39,6 +39,7 @@ const cx = classNames.bind(styles);
  * 广场
  */
 const Square: React.FC = () => {
+  const location = useLocation();
   // 配置信息
   const [configInfo, setConfigInfo] = useState<TenantConfigInfo>();
   const [loading, setLoading] = useState<boolean>(false);
@@ -99,11 +100,7 @@ const Square: React.FC = () => {
   });
 
   // 初始化配置信息
-  const initValues = () => {
-    const params = getURLParams() as {
-      cate_type: string;
-      cate_name: string;
-    };
+  const initValues = (params: SquareSearchParams) => {
     const { cate_type, cate_name } = params;
     // 分类类型
     categoryTypeRef.current = cate_type as SquareAgentTypeEnum;
@@ -169,9 +166,9 @@ const Square: React.FC = () => {
 
   // 初始化加载
   const effectLoadFn = () => {
-    initValues();
     setKeyword('');
     setSquareComponentList([]);
+    setActiveKey(SquareTemplateTargetTypeEnum.All);
     setLoading(true);
     // 查询列表
     handleQuery();
@@ -183,18 +180,19 @@ const Square: React.FC = () => {
     if (info) {
       setConfigInfo(JSON.parse(info));
     }
-    effectLoadFn();
 
-    const unListen = history.listen(({ location }: { location: Location }) => {
-      if (location.pathname === '/square') {
-        effectLoadFn();
-      }
-    });
+    // 获取url search参数
+    const searchParams = new URLSearchParams(location.search);
+    const cate_type = searchParams.get('cate_type') || '';
+    const cate_name = searchParams.get('cate_name') || '';
 
-    return () => {
-      unListen();
+    const params: SquareSearchParams = {
+      cate_type,
+      cate_name,
     };
-  }, []);
+    initValues(params);
+    effectLoadFn();
+  }, [location]);
 
   // 点击打开页面
   const handleLink = () => {
