@@ -36,6 +36,42 @@
     color: @colorText;
   }
 
+  // contentEditable 输入框样式
+  .input-editor {
+    font-size: @fontSize;
+    line-height: @fontHeightSm;
+    caret-color: @colorPrimary;
+    width: 100%;
+    min-height: 60px; // 对应 minRows: 2
+    max-height: 180px; // 对应 maxRows: 6
+    padding: 8px 12px; // 与 TextArea 内边距一致
+    border: none;
+    background-color: transparent;
+    color: @colorText;
+    overflow-y: auto;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    outline: none;
+
+    // 滚动条样式
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: @colorBorderSecondary;
+      border-radius: 3px;
+
+      &:hover {
+        background: @colorTextDescription;
+      }
+    }
+  }
+
   // 自定义占位符元素，带淡入淡出动画效果
   .custom-placeholder {
     position: absolute;
@@ -281,6 +317,82 @@
 
     &:hover {
       color: @colorError;
+    }
+  }
+}
+
+// @ 提及高亮样式（输入框内）
+:global {
+  .mention-highlight {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    margin: 0 2px;
+    background-color: @colorPrimaryBg;
+    border: 1px solid @colorPrimary;
+    border-radius: @borderRadiusSm;
+    font-size: @fontSizeSm;
+    color: @colorPrimary;
+    cursor: default;
+    transition: all 0.2s ease;
+    position: relative;
+    user-select: none;
+
+    // 根据类型定制样式
+    &[data-mention-type='file'] {
+      color: @colorPrimary;
+    }
+
+    &[data-mention-type='directory'] {
+      color: @colorWarning;
+      border-color: @colorWarning;
+      background-color: @colorWarningBg;
+    }
+
+    &[data-mention-type='datasource'] {
+      color: @colorSuccess;
+      border-color: @colorSuccess;
+      background-color: @colorSuccessBg;
+    }
+
+    // hover 时显示删除按钮
+    &:hover {
+      background-color: @colorPrimaryBgHover;
+
+      .mention-delete-btn {
+        opacity: 1;
+        visibility: visible;
+      }
+    }
+
+    // 删除按钮样式
+    .mention-delete-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      margin-left: 2px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: @colorTextDescription;
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+      font-size: 12px;
+      line-height: 1;
+
+      &:hover {
+        color: @colorError;
+      }
+
+      &::before {
+        content: '×';
+        display: block;
+      }
     }
   }
 }
