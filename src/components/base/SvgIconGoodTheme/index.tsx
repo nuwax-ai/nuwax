@@ -13,8 +13,8 @@ const SvgIconGoodTheme: React.FC<IProps> = ({
   name = 'icons-workspace-table',
   fontSize = 40,
   borderRadius = 12,
-  width = 64,
-  height = 64,
+  width = '100%',
+  height = '100%',
 }) => {
   return (
     <div

@@ -1,7 +1,10 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
-import PagePreviewIframe from '@/components/business-component/PagePreviewIframe';
+import {
+  CopyToSpaceComponent,
+  PagePreviewIframe,
+} from '@/components/business-component';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
@@ -14,8 +17,8 @@ import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
-  ExpandPageAreaEnum,
-  HideChatAreaEnum,
+  AgentComponentTypeEnum,
+  AllowCopyEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
 import { AgentDetailDto } from '@/types/interfaces/agent';
@@ -24,8 +27,13 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import { addBaseTarget, arraysContainSameItems } from '@/utils/common';
+import {
+  addBaseTarget,
+  arraysContainSameItems,
+  parsePageAppProjectId,
+} from '@/utils/common';
 import eventBus from '@/utils/eventBus';
+import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import classNames from 'classnames';
@@ -52,10 +60,10 @@ const Chat: React.FC = () => {
   const message = location.state?.message;
   const files = location.state?.files;
   const infos = location.state?.infos;
-  // 用户填写的变量参数，此处用于第一次发送消息时，传递变量参数
-  const firstVariableParams = location.state?.variableParams;
   // 默认的智能体详情信息
   const defaultAgentDetail = location.state?.defaultAgentDetail;
+  // 用户填写的变量参数，此处用于第一次发送消息时，传递变量参数
+  const firstVariableParams = location.state?.variableParams;
 
   const [form] = Form.useForm();
   // 变量参数
@@ -67,8 +75,6 @@ const Chat: React.FC = () => {
   const [clearLoading, setClearLoading] = useState<boolean>(false);
   // 是否发送过消息,如果是,则禁用变量参数
   const isSendMessageRef = useRef<boolean>(false);
-  // 控制输入框的淡入动画
-  const [showInput, setShowInput] = useState<boolean>(false);
 
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
@@ -79,18 +85,16 @@ const Chat: React.FC = () => {
     selectedComponentList,
     setSelectedComponentList,
     handleSelectComponent,
-    initSelectedComponentList,
+    // initSelectedComponentList,
   } = useSelectedComponent();
 
   const {
     conversationInfo,
     manualComponents,
-    loadingConversation,
     messageList,
     setMessageList,
     chatSuggestList,
     runAsync,
-    isLoadingConversation,
     setIsLoadingConversation,
     loadingSuggest,
     onMessageSend,
@@ -109,13 +113,61 @@ const Chat: React.FC = () => {
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
-  const {
+  const { pagePreviewData, showPagePreview, hidePagePreview } =
+    useModel('chat');
+
+  // 复制模板弹窗状态
+  const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
+
+  // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
+  // 支持多种可能的参数名：workflowId, workflow_id, id
+  // 也支持从 URI 路径中解析（如 /square/workflow/123）
+  const workflowId = useMemo(() => {
+    // 1. 先从 params 中获取
+    if (pagePreviewData?.params) {
+      const params = pagePreviewData.params;
+      const workflowIdFromParams =
+        params.workflowId || params.workflow_id || params.id;
+      if (workflowIdFromParams) {
+        const id = Number(workflowIdFromParams);
+        if (!isNaN(id)) return id;
+      }
+    }
+
+    // 2. 从 URI 路径中解析（如 /square/workflow/123 或 /workflow/123）
+    if (pagePreviewData?.uri) {
+      const uri = pagePreviewData.uri;
+      const workflowMatch = uri.match(/[/]workflow[/](\d+)/i);
+      if (workflowMatch && workflowMatch[1]) {
+        const id = Number(workflowMatch[1]);
+        if (!isNaN(id)) return id;
+      }
+    }
+
+    return null;
+  }, [pagePreviewData?.params, pagePreviewData?.uri]);
+
+  // 判断是否显示复制按钮（智能体允许复制即可显示，支持复制智能体或工作流模板）
+  const showCopyButton = useMemo(() => {
+    const shouldShow = agentDetail?.allowCopy === AllowCopyEnum.Yes;
+    // 调试：输出相关信息
+    console.log('[Chat] 复制按钮显示条件:', {
+      workflowId,
+      agentId: agentDetail?.agentId,
+      allowCopy: agentDetail?.allowCopy,
+      allowCopyEnum: AllowCopyEnum.Yes,
+      showCopyButton: shouldShow,
+      pagePreviewData: pagePreviewData,
+      uri: pagePreviewData?.uri,
+      params: pagePreviewData?.params,
+    });
+    return shouldShow;
+  }, [
+    workflowId,
+    agentDetail?.allowCopy,
+    agentDetail?.agentId,
     pagePreviewData,
-    showPagePreview,
-    hidePagePreview,
-    agentPageConfig,
-    setAgentPageConfig,
-  } = useModel('chat');
+  ]);
 
   const values = Form.useWatch([], { form, preserve: true });
 
@@ -169,11 +221,32 @@ const Chat: React.FC = () => {
     };
   }, [conversationInfo]);
 
+  // 打开扩展页面
+  const handleOpenPreview = (agentDetail: any) => {
+    // 判断是否默认展示页面首页
+    if (
+      agentDetail &&
+      agentDetail?.expandPageArea &&
+      agentDetail?.pageHomeIndex
+    ) {
+      // 自动触发预览
+      showPagePreview({
+        name: '页面预览',
+        uri: process.env.BASE_URL + agentDetail?.pageHomeIndex,
+        params: {},
+        executeId: '',
+      });
+    } else {
+      showPagePreview(null);
+    }
+  };
+
   const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: AgentDetailDto) => {
       setAgentDetail(result);
+      handleOpenPreview(result);
       setLoading(false);
     },
     onError: () => {
@@ -186,7 +259,13 @@ const Chat: React.FC = () => {
     debounceInterval: 300,
     onSuccess: (result: AgentDetailDto) => {
       const { agentId, conversationId } = result;
-      history.replace(`/home/chat/${conversationId}/${agentId}`);
+      history.replace(`/home/chat/${conversationId}/${agentId}`, {
+        message: '',
+        files: [],
+        infos,
+        defaultAgentDetail,
+        firstVariableParams,
+      });
       setClearLoading(false);
     },
     onError: () => {
@@ -201,20 +280,9 @@ const Chat: React.FC = () => {
       runDetail(agentId);
     } else {
       setAgentDetail(defaultAgentDetail);
+      handleOpenPreview(defaultAgentDetail);
     }
   }, [agentId, defaultAgentDetail]);
-
-  // 同步智能体页面配置到 chat model（从 conversationInfo.agent 读取）
-  useEffect(() => {
-    if (conversationInfo?.agent) {
-      setAgentPageConfig({
-        expandPageArea:
-          conversationInfo.agent.expandPageArea || ExpandPageAreaEnum.No,
-        hideChatArea:
-          conversationInfo.agent.hideChatArea || HideChatAreaEnum.No,
-      });
-    }
-  }, [conversationInfo, setAgentPageConfig]);
 
   // 在组件挂载时添加滚动事件监听器
   useEffect(() => {
@@ -292,14 +360,15 @@ const Chat: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // 初始化选中的组件列表
-    if (infos?.length) {
-      setSelectedComponentList(infos || []);
-    } else {
-      // 初始化选中的组件列表
-      initSelectedComponentList(manualComponents);
-    }
-  }, [infos, manualComponents]);
+    // 初始化选中的组件列表 - 聊天页面使用外面传过来的组件列表
+    setSelectedComponentList(infos || []);
+    // if (infos?.length) {
+    //   setSelectedComponentList(infos || []);
+    // } else {
+    //   // 初始化选中的组件列表
+    //   initSelectedComponentList(manualComponents);
+    // }
+  }, [infos /*, manualComponents*/]);
 
   // 监听会话更新事件，更新会话记录
   const handleConversationUpdate = (data: {
@@ -382,57 +451,10 @@ const Chat: React.FC = () => {
     eventBindConfig: conversationInfo?.agent?.eventBindConfig,
   });
 
-  const handleOpenPreview = () => {
-    // 判断是否默认展示页面首页
-    if (
-      agentDetail &&
-      agentDetail?.expandPageArea &&
-      agentDetail?.pageHomeIndex
-    ) {
-      // 自动触发预览
-      showPagePreview({
-        name: '页面预览',
-        uri: process.env.BASE_URL + agentDetail?.pageHomeIndex,
-        params: {},
-        executeId: '',
-      });
-    } else {
-      showPagePreview(null);
-    }
-  };
-
-  useEffect(() => {
-    handleOpenPreview();
-  }, [agentDetail]);
-
-  // 当加载完成后，延迟显示输入框（淡入效果）
-  useEffect(() => {
-    if (!loading && !loadingConversation && isLoadingConversation) {
-      const timer = setTimeout(() => {
-        setShowInput(true);
-      }, 300); // 延迟 300ms 后显示输入框
-
-      return () => clearTimeout(timer);
-    } else {
-      setShowInput(false);
-    }
-  }, [loading, loadingConversation, isLoadingConversation]);
-
   const LeftContent = () => {
     return (
-      <div
-        className={cx('flex', 'flex-col', styles['main-content'])}
-        style={{
-          display: 'flex',
-          // flex: 1,
-          // minWidth: 0, // 防止 flex 子元素溢出
-          // width: isSidebarVisible ? `calc(100% - ${SIDEBAR_WIDTH}px)` : '100%',
-        }}
-      >
-        <div
-          className={cx(styles['title-box'])}
-          // style={{ right: isSidebarVisible ? SIDEBAR_WIDTH : 0 }}
-        >
+      <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
+        <div className={cx(styles['title-box'])}>
           <div className={cx(styles['title-container'])}>
             {/* 左侧标题 */}
             {/*<Typography.Title*/}
@@ -469,102 +491,114 @@ const Chat: React.FC = () => {
               )}
 
               {/*打开预览页面*/}
-              {!pagePreviewData && (
-                <Button
-                  type="text"
-                  className={cx(styles.sidebarButton)}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-ecosystem"
-                      className={cx(styles['icons-nav-sidebar'])}
-                    />
-                  }
-                  onClick={() => {
-                    sidebarRef.current?.close();
-                    handleOpenPreview();
-                  }}
-                />
-              )}
+              {!!agentDetail?.expandPageArea &&
+                !!agentDetail?.pageHomeIndex &&
+                !pagePreviewData && (
+                  <Button
+                    type="text"
+                    className={cx(styles.sidebarButton)}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-ecosystem"
+                        className={cx(styles['icons-nav-sidebar'])}
+                      />
+                    }
+                    onClick={() => {
+                      sidebarRef.current?.close();
+                      handleOpenPreview(agentDetail);
+                    }}
+                  />
+                )}
             </div>
           </div>
         </div>
-        <div className={cx(styles['main-content-box'])} ref={messageViewRef}>
-          <div className={cx(styles['chat-wrapper'], 'flex-1')}>
-            {/* 新对话设置 */}
-            <NewConversationSet
-              className="mb-16"
-              form={form}
-              variables={variables}
-              userFillVariables={firstVariableParams}
-              // 是否已填写表单
-              isFilled={!!variableParams}
-              disabled={!!firstVariableParams || isSendMessageRef.current}
-            />
-            {messageList?.length > 0 ? (
-              <>
-                {messageList?.map((item: MessageInfo, index: number) => (
-                  <ChatView
-                    key={item.id || index}
-                    messageInfo={item}
-                    roleInfo={roleInfo}
-                    contentClassName={styles['chat-inner']}
-                    mode={'home'}
-                  />
-                ))}
-                {/*会话建议*/}
-                <RecommendList
-                  itemClassName={styles['suggest-item']}
-                  loading={loadingSuggest}
-                  chatSuggestList={chatSuggestList}
-                  onClick={handleMessageSend}
-                />
-              </>
-            ) : (
-              !message && (
-                // Chat记录为空
-                <AgentChatEmpty
-                  className={cx({ 'h-full': !variables?.length })}
-                  icon={conversationInfo?.agent?.icon}
-                  name={conversationInfo?.agent?.name}
-                  // 会话建议
-                  extra={
-                    <RecommendList
-                      className="mt-16"
-                      itemClassName={cx(styles['suggest-item'])}
-                      chatSuggestList={chatSuggestList}
-                      onClick={handleMessageSend}
-                    />
-                  }
-                />
-              )
-            )}
-          </div>
-        </div>
-        {/*会话输入框 - 根据 hideChatArea 配置控制显示，加载完成后延迟淡入*/}
-        {agentPageConfig.hideChatArea !== HideChatAreaEnum.Yes && (
+        <div className={cx(styles['main-content-box'])}>
           <div
-            style={{
-              padding: '0 15px',
-              opacity: showInput ? 1 : 0,
-              transition: 'opacity 0.4s ease-in-out',
-            }}
+            className={cx(styles['chat-wrapper-content'])}
+            ref={messageViewRef}
           >
-            <ChatInputHome
-              key={`chat-${id}-${agentId}`}
-              className={cx(styles['chat-input-container'])}
-              onEnter={handleMessageSend}
-              visible={showScrollBtn}
-              wholeDisabled={wholeDisabled}
-              clearLoading={clearLoading}
-              onClear={handleClear}
-              manualComponents={manualComponents}
-              selectedComponentList={selectedComponentList}
-              onSelectComponent={handleSelectComponent}
-              onScrollBottom={onScrollBottom}
-              showAnnouncement={true}
-            />
+            <div className={cx(styles['chat-wrapper'], 'flex-1')}>
+              {/* 新对话设置 */}
+              <NewConversationSet
+                className="mb-16"
+                form={form}
+                variables={variables}
+                userFillVariables={firstVariableParams}
+                // 是否已填写表单
+                isFilled={!!variableParams}
+                disabled={!!firstVariableParams || isSendMessageRef.current}
+              />
+              {messageList?.length > 0 ? (
+                <>
+                  {messageList?.map((item: MessageInfo, index: number) => (
+                    <ChatView
+                      key={item.id || index}
+                      messageInfo={item}
+                      roleInfo={roleInfo}
+                      contentClassName={styles['chat-inner']}
+                      mode={'home'}
+                    />
+                  ))}
+                  {/*会话建议*/}
+                  <RecommendList
+                    itemClassName={styles['suggest-item']}
+                    loading={loadingSuggest}
+                    chatSuggestList={chatSuggestList}
+                    onClick={handleMessageSend}
+                  />
+                </>
+              ) : (
+                !message &&
+                (conversationInfo ? (
+                  // Chat记录为空
+                  <AgentChatEmpty
+                    className={cx({ 'h-full': !variables?.length })}
+                    icon={conversationInfo?.agent?.icon}
+                    name={conversationInfo?.agent?.name}
+                    // 会话建议
+                    extra={
+                      <RecommendList
+                        className="mt-16"
+                        itemClassName={cx(styles['suggest-item'])}
+                        chatSuggestList={chatSuggestList}
+                        onClick={handleMessageSend}
+                      />
+                    }
+                  />
+                ) : (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flex: 1,
+                      height: '100%',
+                      width: '100%',
+                      margin: '50px auto',
+                    }}
+                  >
+                    <LoadingOutlined />
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        )}
+          <ChatInputHome
+            // key={`chat-${id}-${agentId}`}
+            key={`agent-details-${agentId}`}
+            className={cx(styles['chat-input-container'])}
+            onEnter={handleMessageSend}
+            visible={showScrollBtn}
+            wholeDisabled={wholeDisabled}
+            clearLoading={clearLoading}
+            onClear={handleClear}
+            manualComponents={manualComponents}
+            selectedComponentList={selectedComponentList}
+            onSelectComponent={handleSelectComponent}
+            onScrollBottom={onScrollBottom}
+            showAnnouncement={true}
+          />
+        </div>
       </div>
     );
   };
@@ -572,7 +606,7 @@ const Chat: React.FC = () => {
   return (
     <div className={cx('flex', 'h-full')}>
       {/*智能体聊天和预览页面*/}
-      {loading || loadingConversation || !isLoadingConversation ? (
+      {loading ? (
         // 接口加载中，显示 loading 状态，避免右侧渲染时挤压左侧
         <div
           style={{
@@ -592,13 +626,38 @@ const Chat: React.FC = () => {
           left={agentDetail?.hideChatArea ? null : LeftContent()}
           right={
             pagePreviewData && (
-              <PagePreviewIframe
-                pagePreviewData={pagePreviewData}
-                showHeader={true}
-                onClose={hidePagePreview}
-                showCloseButton={!agentDetail?.hideChatArea}
-                titleClassName={cx(styles['title-style'])}
-              />
+              <>
+                <PagePreviewIframe
+                  pagePreviewData={pagePreviewData}
+                  showHeader={true}
+                  onClose={hidePagePreview}
+                  showCloseButton={!agentDetail?.hideChatArea}
+                  titleClassName={cx(styles['title-style'])}
+                  // 复制模板按钮相关 props
+                  showCopyButton={showCopyButton}
+                  allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
+                  onCopyClick={() => setOpenCopyModal(true)}
+                  copyButtonText="复制模板"
+                  copyButtonClassName={styles['copy-btn']}
+                />
+                {/* 复制模板弹窗 */}
+                {showCopyButton && agentDetail && pagePreviewData?.uri && (
+                  <CopyToSpaceComponent
+                    spaceId={agentDetail.spaceId}
+                    mode={AgentComponentTypeEnum.Page}
+                    componentId={parsePageAppProjectId(pagePreviewData?.uri)}
+                    title={''}
+                    open={openCopyModal}
+                    isTemplate={true}
+                    onSuccess={(_: any, targetSpaceId: number) => {
+                      setOpenCopyModal(false);
+                      // 跳转
+                      jumpToPageDevelop(targetSpaceId);
+                    }}
+                    onCancel={() => setOpenCopyModal(false)}
+                  />
+                )}
+              </>
             )
           }
         />

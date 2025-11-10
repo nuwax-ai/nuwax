@@ -176,7 +176,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           label="智能体功能介绍"
           initialValue={agentConfigInfo?.description}
           placeholder="介绍智能体的功能，将会展示给智能体的用户"
-          maxLength={500}
+          maxLength={10000}
         />
         <Form.Item name="icon" label="图标">
           <UploadAvatar

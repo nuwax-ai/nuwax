@@ -48,8 +48,11 @@ export interface AgentInfo extends AgentBaseInfo {
   userId: number;
   modified: string;
   created: string;
+  // 智能体ID
   agentId: number;
   spaceId: number;
+  // ChatBot、PageApp
+  agentType: 'ChatBot' | 'PageApp';
 }
 
 // 新增智能体输入参数

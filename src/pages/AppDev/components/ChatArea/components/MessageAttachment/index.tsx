@@ -2,6 +2,7 @@ import type {
   AudioAttachment,
   DataSourceAttachment,
   DocumentAttachment,
+  FileAttachment, // 新增：支持 FileAttachment 类型
   ImageAttachment,
   TextAttachment,
 } from '@/types/interfaces/appDev';
@@ -26,9 +27,10 @@ interface MessageAttachmentProps {
     | TextAttachment
     | DocumentAttachment
     | AudioAttachment
+    | FileAttachment // 新增：支持 FileAttachment 类型
     | DataSourceAttachment;
   /** 附件类型 */
-  type: 'Image' | 'Text' | 'Document' | 'Audio' | 'DataSource';
+  type: 'Image' | 'Text' | 'Document' | 'Audio' | 'File' | 'DataSource';
   /** 图片尺寸（仅对图片类型有效） */
   size?: number;
   /** 是否显示预览（仅对图片类型有效） */
@@ -99,11 +101,15 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
 
   // 渲染文件附件
   const renderFileAttachment = (
-    fileAttachment: TextAttachment | DocumentAttachment | AudioAttachment,
+    fileAttachment:
+      | TextAttachment
+      | DocumentAttachment
+      | AudioAttachment
+      | FileAttachment, // 新增：支持 FileAttachment 类型
   ) => {
     // 获取文件类型显示文本
     const getFileTypeText = (
-      fileType: 'Text' | 'Document' | 'Audio',
+      fileType: 'Text' | 'Document' | 'Audio' | 'File',
     ): string => {
       switch (fileType) {
         case 'Text':
@@ -112,6 +118,8 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
           return '文档';
         case 'Audio':
           return '音频文件';
+        case 'File':
+          return '文件';
         default:
           return '文件';
       }
@@ -119,7 +127,7 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
 
     // 获取文件图标
     const getFileIcon = (
-      fileType: 'Text' | 'Document' | 'Audio',
+      fileType: 'Text' | 'Document' | 'Audio' | 'File',
     ): React.ReactNode => {
       switch (fileType) {
         case 'Text':
@@ -128,6 +136,8 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
           return <FileOutlined />;
         case 'Audio':
           return <SoundOutlined />;
+        case 'File':
+          return <FileOutlined />;
         default:
           return <FileOutlined />;
       }
@@ -139,14 +149,18 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
         onClick={onClick}
       >
         <div className={styles.fileAttachmentIcon}>
-          {getFileIcon(type as 'Text' | 'Document' | 'Audio')}
+          {getFileIcon(type as 'Text' | 'Document' | 'Audio' | 'File')}
         </div>
         <div className={styles.fileAttachmentInfo}>
           <div className={styles.fileAttachmentName}>
-            {fileAttachment.filename}
+            {fileAttachment.filename ||
+              (fileAttachment.source?.source_type === 'FilePath'
+                ? fileAttachment.source.data?.path?.split('/').pop()
+                : null) ||
+              '文件'}
           </div>
           <div className={styles.fileAttachmentType}>
-            {getFileTypeText(type as 'Text' | 'Document' | 'Audio')}
+            {getFileTypeText(type as 'Text' | 'Document' | 'Audio' | 'File')}
           </div>
         </div>
       </div>
@@ -238,8 +252,13 @@ const MessageAttachment: React.FC<MessageAttachmentProps> = ({
       return renderImageAttachment(attachment as ImageAttachment);
     case 'Text':
     case 'Document':
+    case 'File': // 新增：处理通过 @ 选择的文件和目录
       return renderFileAttachment(
-        attachment as TextAttachment | DocumentAttachment | AudioAttachment,
+        attachment as
+          | TextAttachment
+          | DocumentAttachment
+          | AudioAttachment
+          | FileAttachment,
       );
     case 'Audio':
       return null;

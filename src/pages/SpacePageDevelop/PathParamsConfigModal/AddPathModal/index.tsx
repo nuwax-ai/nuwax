@@ -105,19 +105,31 @@ const AddPathModal: React.FC<AddPathModalProps> = ({
       >
         <Form.Item
           name="name"
-          label="路径名"
-          rules={[{ required: true, message: '请输入路径名' }]}
-        >
-          <Input placeholder="请输入路径名" showCount maxLength={50} />
-        </Form.Item>
-        <Form.Item
-          name="pageUri"
           label="路径名称"
           rules={[{ required: true, message: '请输入路径名称' }]}
         >
+          <Input placeholder="请输入路径名称" showCount maxLength={50} />
+        </Form.Item>
+        <Form.Item
+          name="pageUri"
+          label="路径URI"
+          rules={[
+            { required: true, message: '请输入路径URI' },
+            {
+              validator(_, value) {
+                if (!value || value.startsWith('/')) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(
+                  new Error('请输入正确的路径URI，必须以/开头'),
+                );
+              },
+            },
+          ]}
+        >
           <Input
             disabled={mode === CreateUpdateModeEnum.Update}
-            placeholder="路径名称，例如 /detail/view 或 /detail/view/{id}"
+            placeholder="路径URI，例如 /detail/view 或 /detail/view/{id}"
             showCount
             maxLength={200}
           />

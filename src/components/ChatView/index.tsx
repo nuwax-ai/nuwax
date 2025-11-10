@@ -90,6 +90,10 @@ const ChatView: React.FC<ChatViewProps> = memo(
                 className={cx(styles.avatar)}
                 src={info?.avatar as string}
                 alt=""
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = agentImage;
+                }}
               />
               <div className={cx(styles.author)}>{info?.name}</div>
               <ConditionRender condition={!!messageInfo?.status}>

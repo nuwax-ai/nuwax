@@ -69,6 +69,10 @@ export const PAGE_DEVELOP_MORE_ACTIONS = [
     label: '页面预览',
   },
   {
+    value: PageDevelopMoreActionEnum.Copy_To_Space,
+    label: '复制到空间',
+  },
+  {
     value: PageDevelopMoreActionEnum.Delete,
     label: '删除',
   },

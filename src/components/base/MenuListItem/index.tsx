@@ -1,3 +1,4 @@
+import agentImage from '@/assets/images/agent_image.png';
 import CustomPopover from '@/components/CustomPopover';
 import { EllipsisOutlined } from '@ant-design/icons';
 import { Typography } from 'antd';
@@ -59,7 +60,15 @@ const MenuListItem: React.FC<MenuListItemProps> = ({
         )}
       >
         {typeof icon === 'string' ? (
-          <img className={cx(styles['icon-image'])} src={icon} alt={name} />
+          <img
+            className={cx(styles['icon-image'])}
+            src={icon}
+            alt={name}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = agentImage;
+            }}
+          />
         ) : (
           icon
         )}

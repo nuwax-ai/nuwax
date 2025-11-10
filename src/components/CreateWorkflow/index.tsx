@@ -138,7 +138,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
           label="描述"
           initialValue={description}
           placeholder="请输入描述，让大模型理解什么情况下应该调用此工作流"
-          maxLength={100}
+          maxLength={10000}
         />
         <Form.Item name="icon" label="图标">
           <UploadAvatar

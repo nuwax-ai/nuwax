@@ -11,10 +11,18 @@ const useSpaceSquare = () => {
   >([]);
 
   // 点击单项
-  const handleClick = (targetId: number, targetType: SquareAgentTypeEnum) => {
+  const handleClick = (
+    targetId: number,
+    targetType: SquareAgentTypeEnum,
+    info?: SquarePublishedItemInfo,
+  ) => {
     // 智能体
     if (targetType === SquareAgentTypeEnum.Agent) {
-      history.push(`/agent/${targetId}`);
+      if (info && info.agentType === 'PageApp') {
+        history.push(`/agent/${targetId}?hideMenu=true`);
+      } else {
+        history.push(`/agent/${targetId}`);
+      }
     }
     // 插件
     if (targetType === SquareAgentTypeEnum.Plugin) {

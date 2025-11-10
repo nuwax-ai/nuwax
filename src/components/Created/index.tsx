@@ -579,7 +579,7 @@ const Created: React.FC<CreatedProp> = ({
     onAdded({
       targetType: AgentComponentTypeEnum.Page,
       targetId: item.projectId,
-    });
+    } as CreatedNodeItem);
   };
 
   const renderPageItem = (item: CustomPageDto, index: number) => {

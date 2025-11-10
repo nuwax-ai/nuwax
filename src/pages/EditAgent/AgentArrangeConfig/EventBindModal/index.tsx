@@ -14,7 +14,7 @@ import {
   PagePathSelectOption,
 } from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
-import { isHttp } from '@/utils/common';
+import { isHttp, validateTableName } from '@/utils/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -363,9 +363,26 @@ const EventBindModal: React.FC<EventBindModalProps> = ({
         <Form.Item
           name="identification"
           label="事件标识（用于区分具体事件）"
-          rules={[{ required: true, message: '请输入事件标识' }]}
+          rules={[
+            { required: true, message: '请输入事件标识' },
+            {
+              validator(_, value) {
+                if (!value || validateTableName(value)) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(
+                  new Error(
+                    '事件标识只能包含字母、数字和下划线,且必须以字母或下划线开头!',
+                  ),
+                );
+              },
+            },
+          ]}
         >
-          <Input placeholder="请输入事件标识" allowClear />
+          <Input
+            placeholder="请输入事件标识,只能包含字母、数字和下划线"
+            allowClear
+          />
         </Form.Item>
         <Form.Item name="type" label="响应动作">
           <SelectList

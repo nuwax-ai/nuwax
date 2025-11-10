@@ -1,7 +1,6 @@
 import { RequestConfig } from '@@/plugin-request/request';
 import { theme as antdTheme } from 'antd';
 import React, { useEffect, useRef } from 'react';
-import 'simple-edit-markdown/styles';
 import { useAntdConfigSetter } from 'umi';
 import { ACCESS_TOKEN } from './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';

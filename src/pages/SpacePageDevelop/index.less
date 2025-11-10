@@ -36,3 +36,33 @@
     }
   }
 }
+
+// 右上角提示
+.position-top-right {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  display: flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 0 @borderRadius;
+  font-size: @fontSizeSm;
+  font-weight: @fontWeightStrong;
+
+  // 已发布
+  &.published-text {
+    color: @colorSuccess;
+    background-color: @colorSuccessBg;
+    opacity: 0.8;
+    z-index: 9;
+  }
+
+  // 未发布
+  &.unpublished-text {
+    color: @colorTextSecondary;
+    background-color: @colorPrimaryBg;
+    opacity: 0.8;
+    z-index: 10;
+  }
+}

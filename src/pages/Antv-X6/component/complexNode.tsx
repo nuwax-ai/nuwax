@@ -363,7 +363,8 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
       <div className="node-item-style">
         <ExpandableInputTextarea
           title="补充提示词"
-          inputFieldName="systemPrompt"
+          // inputFieldName="systemPrompt"
+          inputFieldName="extraPrompt"
           onExpand
           placeholder="支持额外的系统提示词，如对意图选项做更详细的例子以增 强用户输出与意图匹配的成功率。"
         />

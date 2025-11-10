@@ -30,7 +30,7 @@ interface AgentSectionProps {
   /** 拖拽提示文本 */
   dragHoverText: string;
   /** 智能体点击事件 */
-  onAgentClick: (targetId: number) => void;
+  onAgentClick: (agentInfo: CategoryItemInfo) => void;
   /** 收藏切换事件 */
   onToggleCollect: (type: string, info: CategoryItemInfo) => void;
   /** 鼠标进入事件 */
@@ -143,7 +143,7 @@ const AgentSection: React.FC<AgentSectionProps> = ({
                 agent={agent}
                 categoryType={category.type}
                 dragHoverText={dragHoverText}
-                onAgentClick={onAgentClick}
+                onAgentClick={() => onAgentClick(agent)}
                 onToggleCollect={onToggleCollect}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}

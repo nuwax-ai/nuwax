@@ -408,6 +408,8 @@ export interface CategoryInfo {
 
 // 智能体分类项详细信息
 export interface CategoryItemInfo {
+  // ChatBot、PageApp
+  agentType: 'ChatBot' | 'PageApp';
   targetType: AgentComponentTypeEnum;
   targetId: number;
   name: string;

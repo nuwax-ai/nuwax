@@ -13,7 +13,7 @@ interface AgentCardProps {
   /** 拖拽提示文本 */
   dragHoverText: string;
   /** 智能体点击事件 */
-  onAgentClick: (targetId: number) => void;
+  onAgentClick: () => void;
   /** 收藏切换事件 */
   onToggleCollect: (type: string, info: CategoryItemInfo) => void;
   /** 鼠标进入事件 */
@@ -53,12 +53,6 @@ const AgentCard: React.FC<AgentCardProps> = React.memo(
       opacity: isDragging ? 0.8 : 1,
       zIndex: isDragging ? 1000 : 'auto',
     };
-
-    // 处理智能体点击
-    const handleAgentClick = () => {
-      onAgentClick(agent.targetId);
-    };
-
     // 处理收藏切换
     const handleToggleCollect = () => {
       onToggleCollect(categoryType, agent);
@@ -81,7 +75,7 @@ const AgentCard: React.FC<AgentCardProps> = React.memo(
       >
         <AgentItem
           info={agent}
-          onItemClick={handleAgentClick}
+          onItemClick={onAgentClick}
           onToggleCollect={handleToggleCollect}
         />
       </div>

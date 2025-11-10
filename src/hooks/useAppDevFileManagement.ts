@@ -491,7 +491,7 @@ export const useAppDevFileManagement = ({
         });
 
         if (result?.success) {
-          message.success(`上传成功到 ${filePath.trim()}`);
+          // message.success(`上传成功到 ${filePath.trim()}`);
 
           // 上传成功后重新加载文件树（与删除文件逻辑保持一致）
           await loadFileTree(true, true);
@@ -779,7 +779,7 @@ export const useAppDevFileManagement = ({
             }
           }
 
-          message.success(`重命名成功: ${fileNode.name} → ${newName.trim()}`);
+          // message.success(`重命名成功: ${fileNode.name} → ${newName.trim()}`);
           return true;
         } else {
           // 重命名文件失败，重新加载文件树以恢复原状态
