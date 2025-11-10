@@ -199,17 +199,17 @@ export default () => {
   };
 
   // 检查会话是否正在进行中（有消息正在处理）
-  const checkConversationActive = (messages: MessageInfo[]) => {
+  const checkConversationActive = useCallback((messages: MessageInfo[]) => {
+    // 只检查最后几条消息的状态，而不是所有消息
+    const recentMessages = messages?.slice(-5) || []; // 只检查最后5条消息
     const hasActiveMessage =
-      (messages?.length &&
-        messages.some(
-          (message) =>
-            message.status === MessageStatusEnum.Loading ||
-            message.status === MessageStatusEnum.Incomplete,
-        )) ||
-      false;
+      recentMessages.some(
+        (message) =>
+          message.status === MessageStatusEnum.Loading ||
+          message.status === MessageStatusEnum.Incomplete,
+      ) || false;
     setIsConversationActive(hasActiveMessage);
-  };
+  }, []);
 
   const disabledConversationActive = () => {
     setIsConversationActive(false);
@@ -350,36 +350,42 @@ export default () => {
           };
           // 添加处理扩展页面逻辑
           if (data.status === ProcessingEnum.EXECUTING) {
-            const input = processingResult.input;
-            input.uri_type = processingResult.input.uri_type ?? 'Page';
             // 判断页面类型
-            if (input.uri_type === 'Page') {
+            if (data.type === 'Page') {
+              const input = processingResult.input;
+              // 添加页面类型 后的未返回默认 Page
+              input.uri_type = processingResult.input.uri_type ?? 'Page';
               // if (!input?.uri) {
               //   message.error('页面路径不存在');
               //   return;
               // }
 
-              const previewData = {
-                uri: input.uri,
-                params: input.arguments || {},
-                executeId: data.executeId || '',
-                method: input.method,
-                request_id: input.request_id,
-                data_type: input.data_type,
-              };
-              console.log('CHART', previewData);
               // 显示页面预览
-              showPagePreview(previewData);
-            }
+              if (input.uri_type === 'Page') {
+                const previewData = {
+                  uri: input.uri,
+                  params: input.arguments || {},
+                  executeId: data.executeId || '',
+                  method: input.method,
+                  request_id: input.request_id,
+                  data_type: input.data_type,
+                };
+                console.log('CHART', previewData);
+                // 显示页面预览
+                showPagePreview(previewData);
+              }
 
-            // 链接类型
-            if (input.uri_type === 'Link') {
-              // 拼接 query 参数
-              const queryString = new URLSearchParams(
-                input.arguments,
-              ).toString();
-              const pageUrl = `${input.uri}?${queryString}`;
-              window.open(pageUrl, '_blank');
+              // 链接类型
+              if (input.uri_type === 'Link') {
+                const input = processingResult.input;
+                input.uri_type = processingResult.input.uri_type ?? 'Page';
+                // 拼接 query 参数
+                const queryString = new URLSearchParams(
+                  input.arguments,
+                ).toString();
+                const pageUrl = `${input.uri}?${queryString}`;
+                window.open(pageUrl, '_blank');
+              }
             }
           }
 
@@ -525,6 +531,8 @@ export default () => {
     }, 200);
   };
 
+  const abortController = new AbortController();
+
   // 会话处理
   const handleConversation = async (
     params: ConversationChatParams,
@@ -569,6 +577,7 @@ export default () => {
         Accept: 'application/json, text/plain, */* ',
       },
       body: params,
+      abortController,
       onMessage: (res: ConversationChatResponse) => {
         handleChangeMessageList(params, res, currentMessageId);
         // 滚动到底部
@@ -679,6 +688,9 @@ export default () => {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+
+    // 停止当前会话【强制】
+    abortController?.abort();
   };
 
   // 发送消息

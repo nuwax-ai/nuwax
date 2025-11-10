@@ -1,5 +1,6 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
+import { ProjectDetailData } from '@/types/interfaces/appDev';
 import {
   isImageFile,
   isPreviewableFile,
@@ -14,6 +15,7 @@ import Preview, { type PreviewRef } from '../Preview';
 import styles from './index.less';
 
 interface ContentViewerProps {
+  projectInfo?: ProjectDetailData | null;
   /** 显示模式 */
   mode: 'preview' | 'code';
   /** 是否在版本对比模式 */
@@ -64,8 +66,14 @@ interface ContentViewerProps {
   onStartDev?: () => void;
   /** 重启开发服务器回调 */
   onRestartDev?: () => void;
-  /** 白屏检测回调 */
-  onWhiteScreen?: () => void;
+  /** 白屏且 iframe 内错误时触发 AI Agent 自动处理回调
+   * @param errorMessage 错误消息，为空字符串表示只有白屏没有错误
+   * @param errorType 错误类型，用于区分不同的错误场景
+   */
+  onWhiteScreenOrIframeError?: (
+    errorMessage: string,
+    errorType?: 'whiteScreen' | 'iframe',
+  ) => void;
 }
 
 /**
@@ -74,6 +82,7 @@ interface ContentViewerProps {
  * 优化：使用条件渲染和组件缓存来避免 iframe 重新加载
  */
 const ContentViewer: React.FC<ContentViewerProps> = ({
+  projectInfo,
   mode,
   isComparing,
   selectedFileId,
@@ -99,13 +108,14 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   isChatLoading = false,
   onStartDev,
   onRestartDev,
-  onWhiteScreen,
+  onWhiteScreenOrIframeError,
 }) => {
   // 使用 useMemo 缓存 Preview 组件，避免重新创建
   const previewComponent = useMemo(
     () => (
       <Preview
         ref={previewRef}
+        projectInfo={projectInfo}
         devServerUrl={
           devServerUrl ? `${process.env.BASE_URL}${devServerUrl}` : undefined
         }
@@ -118,7 +128,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         serverErrorCode={serverErrorCode}
         onStartDev={onStartDev}
         onRestartDev={onRestartDev}
-        onWhiteScreen={onWhiteScreen}
+        onWhiteScreenOrIframeError={onWhiteScreenOrIframeError}
       />
     ),
     [
@@ -133,7 +143,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       serverErrorCode,
       onStartDev,
       onRestartDev,
-      onWhiteScreen,
+      onWhiteScreenOrIframeError,
     ],
   );
 

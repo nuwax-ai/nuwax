@@ -1,13 +1,11 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
-import ReactScrollToBottomContainer, {
-  ReactScrollToBottomContainerRef,
-} from '@/pages/AppDev/components/ChatArea/components/ReactScrollToBottomContainer';
 import { cancelAgentTask, cancelAiChatAgentTask } from '@/services/appDev';
 import type {
   AppDevChatMessage,
   Attachment,
   DataSourceSelection,
   DocumentAttachment,
+  FileNode,
   ImageAttachment,
 } from '@/types/interfaces/appDev';
 import { UploadFileInfo } from '@/types/interfaces/common';
@@ -20,34 +18,40 @@ import {
   DownOutlined,
   LoadingOutlined,
   MessageOutlined,
+  RollbackOutlined,
 } from '@ant-design/icons';
-import { Card, message, Spin, Typography } from 'antd';
+import { Button, Card, message, Spin, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
-import ChatInputHome from './components/ChatInputHome';
+import ChatInputHome, { MentionItem } from './components/ChatInputHome';
 import MessageAttachment from './components/MessageAttachment';
+import ReactScrollToBottomContainer, {
+  ReactScrollToBottomContainerRef,
+} from './components/ReactScrollToBottomContainer';
 import styles from './index.less';
 
 const { Text } = Typography;
 
 interface ChatAreaProps {
-  // chatMode: 'chat' | 'code';
-  // setChatMode: (mode: 'chat' | 'code') => void;
   chat: any;
-  // projectInfo: any;
   projectId: string;
-  // onVersionSelect: (version: any) => void;
   selectedDataSources?: DataResource[];
   onUpdateDataSources: (dataSources: DataResource[]) => void;
   fileContentState: any;
-  onSetSelectedFile: (fileId: string) => void;
+  // onSetSelectedFile: (fileId: string) => void; // 暂时未使用，保留以备后续使用
   modelSelector: any;
-  // onClearUploadedImages?: (callback: () => void) => void;
-  onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
+  // onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
   // 自动处理异常相关props
   // autoHandleError?: boolean;
   // onAutoHandleErrorChange?: (enabled: boolean) => void;
+  /** 用户手动发送消息回调 */
+  onUserManualSendMessage?: () => void;
+  /** 用户取消Agent任务回调 */
+  onUserCancelAgentTask?: () => void;
+  /** 文件树数据 */
+  files?: FileNode[];
 }
 
 /**
@@ -55,22 +59,21 @@ interface ChatAreaProps {
  * 包含聊天模式切换、消息显示和输入区域
  */
 const ChatArea: React.FC<ChatAreaProps> = ({
-  // chatMode, // eslint-disable-line @typescript-eslint/no-unused-vars
-  // setChatMode, // eslint-disable-line @typescript-eslint/no-unused-vars
   chat,
-  // projectInfo, // 暂时注释掉，后续可能需要
   projectId,
-  // onVersionSelect, // 暂时注释掉，后续可能需要
   selectedDataSources = [],
   onUpdateDataSources,
   fileContentState,
-  onSetSelectedFile,
+  // onSetSelectedFile, // 暂时未使用，保留以备后续使用
   modelSelector,
-  // onClearUploadedImages,
   // onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
   // autoHandleError = true, // 暂时注释掉，后续可能需要
   // onAutoHandleErrorChange, // 暂时注释掉，后续可能需要
+  onUserManualSendMessage,
+  onUserCancelAgentTask,
+  files = [],
 }) => {
+  const autoErrorRetryCount = useModel('autoErrorHandling').autoRetryCount;
   // 展开的思考过程消息
   const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
     new Set(),
@@ -129,6 +132,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
     setIsStoppingTask(true);
 
+    //关闭自动错误处理
+    onUserCancelAgentTask?.();
+
     try {
       // 获取当前Ai Chat会话ID
       const aiChatSessionId = chat.aiChatSessionId;
@@ -136,15 +142,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       const lastMessage = chat.chatMessages[chat.chatMessages.length - 1];
       const sessionId = lastMessage?.sessionId;
 
-      // console.log('aiChatSessionId', aiChatSessionId, sessionId);
-      let response;
+      console.log('aiChatSessionId', aiChatSessionId, sessionId);
       // 如果Ai Chat会话ID存在，并且会话ID不存在，则取消Ai Chat Agent任务
       if (aiChatSessionId && !sessionId) {
-        response = await cancelAiChatAgentTask(projectId, aiChatSessionId);
-      } else if (sessionId) {
-        // 如果会话ID存在，则取消Agent任务
-        response = await cancelAgentTask(projectId, sessionId);
+        await cancelAiChatAgentTask(projectId, aiChatSessionId);
       }
+      // 取消Agent任务
+      const response = await cancelAgentTask(projectId);
 
       if (response && response.success) {
         message.success('Agent 任务已取消');
@@ -163,112 +167,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       setIsStoppingTask(false);
     }
   }, [chat, projectId, isStoppingTask]);
-
-  /**
-   * 处理单个图片文件
-   */
-  // const processImageFile = useCallback(
-  //   (file: File): Promise<ImageUploadInfo> => {
-  //     return new Promise((resolve, reject) => {
-  //       // 验证是否为图片
-  //       if (!file.type.startsWith('image/')) {
-  //         reject(new Error('仅支持上传图片文件'));
-  //         return;
-  //       }
-
-  //       // 验证文件大小 (限制为 5MB)
-  //       if (file.size > 5 * 1024 * 1024) {
-  //         reject(new Error('图片文件大小不能超过 5MB'));
-  //         return;
-  //       }
-
-  //       // 读取文件并转换为 Base64
-  //       const reader = new FileReader();
-  //       reader.onload = (e) => {
-  //         const base64Data = e.target?.result as string;
-
-  //         // 获取图片尺寸
-  //         const img = new window.Image();
-  //         img.onload = () => {
-  //           const imageInfo: ImageUploadInfo = {
-  //             uid: generateAttachmentId('img'),
-  //             name: file.name,
-  //             base64Data: base64Data.split(',')[1], // 移除 data:image/xxx;base64, 前缀
-  //             mimeType: file.type,
-  //             preview: base64Data,
-  //             dimensions: { width: img.width, height: img.height },
-  //           };
-  //           resolve(imageInfo);
-  //         };
-  //         img.onerror = () => {
-  //           reject(new Error('图片加载失败，请重试'));
-  //         };
-  //         img.src = base64Data;
-  //       };
-  //       reader.onerror = () => {
-  //         reject(new Error('文件读取失败，请重试'));
-  //       };
-  //       reader.readAsDataURL(file);
-  //     });
-  //   },
-  //   [],
-  // );
-
-  /**
-   * 处理图片上传（支持多选）
-   */
-  // const handleImageUpload = useCallback(
-  //   async (file: File | File[]) => {
-  //     const files = Array.isArray(file) ? file : [file];
-
-  //     if (files.length === 0) {
-  //       return false;
-  //     }
-
-  //     // 检查总数量限制（最多10张图片）
-  //     const currentCount = uploadedImages.length;
-  //     if (currentCount + files.length > 10) {
-  //       message.warning(`最多只能上传10张图片，当前已有${currentCount}张`);
-  //       return false;
-  //     }
-
-  //     try {
-  //       // 显示加载提示
-  //       const loadingMessage =
-  //         files.length === 1
-  //           ? `正在上传图片 "${files[0].name}"...`
-  //           : `正在上传 ${files.length} 张图片...`;
-  //       const hideLoading = message.loading(loadingMessage, 0);
-
-  //       // 处理所有文件
-  //       const imagePromises = files.map(processImageFile);
-  //       const imageInfos = await Promise.all(imagePromises);
-
-  //       // 批量添加到状态
-  //       setUploadedImages((prev) => [...prev, ...imageInfos]);
-
-  //       // 隐藏加载提示并显示成功消息
-  //       hideLoading();
-  //       if (files.length === 1) {
-  //         message.success(`图片 "${files[0].name}" 上传成功`);
-  //       } else {
-  //         message.success(`成功上传 ${files.length} 张图片`);
-  //       }
-  //     } catch (error) {
-  //       message.error(error instanceof Error ? error.message : '图片上传失败');
-  //     }
-
-  //     return false; // 阻止默认上传
-  //   },
-  //   [processImageFile, uploadedImages.length],
-  // );
-
-  /**
-   * 删除图片
-   */
-  // const handleDeleteImage = useCallback((uid: string) => {
-  //   setUploadedImages((prev) => prev.filter((img) => img.uid !== uid));
-  // }, []);
 
   /**
    * 切换单个数据源选择状态
@@ -307,6 +205,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     (
       attachmentFiles?: UploadFileInfo[],
       prototypeImages?: UploadFileInfo[],
+      selectedMentions?: MentionItem[],
+      requestId?: string,
     ) => {
       // // 验证：prompt（输入内容）是必填的
       // if (!chat.chatInput.trim()) {
@@ -384,26 +284,64 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           }
         });
 
-        // 2. 添加文件树选中的文件(如果有)
-        if (fileContentState?.selectedFile) {
-          attachments.push({
-            type: 'Text',
-            content: {
-              id: generateAttachmentId('file'),
-              filename: fileContentState.selectedFile,
-              source: {
-                source_type: 'FilePath',
-                data: {
-                  path: fileContentState.selectedFile, // 包含路径与文件名及后缀
+        // 2. @提及的文件/目录(如果有)
+        selectedMentions?.forEach((mention) => {
+          if (mention.type === 'file' || mention.type === 'folder') {
+            const fileData = mention.data as FileNode;
+            attachments.push({
+              type: 'Text', // 使用 Text 类型，与后端保持一致
+              content: {
+                id: generateAttachmentId('file'),
+                filename: fileData.name,
+                source: {
+                  source_type: 'FilePath',
+                  data: {
+                    path: fileData.path,
+                  },
                 },
               },
-            },
-          });
+            } as unknown as Attachment);
+          }
+          // if (mention.type === 'datasource') {
+          //   const dataSourceData = mention.data as DataResource;
+          //   attachments.push({
+          //     type: 'DataSource',
+          //     content: {
+          //       id: dataSourceData.id,
+          //     },
+          //   } as unknown as Attachment);
+          // }
+        });
+        // if (fileContentState?.selectedFile) {
+        //   attachments.push({
+        //     type: 'Text',
+        //     content: {
+        //       id: generateAttachmentId('file'),
+        //       filename: fileContentState.selectedFile,
+        //       source: {
+        //         source_type: 'FilePath',
+        //         data: {
+        //           path: fileContentState.selectedFile, // 包含路径与文件名及后缀
+        //         },
+        //       },
+        //     },
+        //   });
+        // }
+
+        // 发送消息(传递附件和 @ 提及的项)
+        chat.sendMessage(
+          attachments,
+          aiChatAttachments,
+          aiChatPrototypeImages,
+          requestId,
+          selectedMentions, // 传递 @ 提及的项（包含通过 @ 选择的数据源）
+        );
+
+        // 只有手动发送（requestId 不存在）时才调用 onUserManualSendMessage
+        // 自动发送时会有 requestId，不应该重置状态
+        if (!requestId) {
+          onUserManualSendMessage?.();
         }
-
-        // 发送消息(传递附件)
-        chat.sendMessage(attachments, aiChatAttachments, aiChatPrototypeImages);
-
         // 发送消息后强制滚动到底部并开启自动滚动
         setTimeout(() => {
           scrollContainerRef.current?.handleScrollButtonClick();
@@ -447,7 +385,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       );
 
       // 在历史会话渲染场景中，完全忽略所有状态
-      const isStreaming = !isHistoryMessage && message.isStreaming === true; // 只有非历史消息才显示流式传输状态
+      const isStreaming = !isHistoryMessage && message.isStreaming; // 只有非历史消息才显示流式传输状态
       const isLoading = false; // 历史消息永远不显示加载状态
       const isError = false; // 历史消息永远不显示错误状态
       const hasThinking = message.think && message.think.trim() !== '';
@@ -605,18 +543,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
    */
   /**
    * 渲染会话分隔符
+   * @param conversationTopic 会话主题
+   * @param conversationCreated 会话创建时间
+   * @param id 消息ID 用于唯一标识key会话分隔符
    */
   const renderConversationDivider = useCallback(
     (
       conversationTopic: string,
       conversationCreated: string,
+      id: string,
       // sessionId: string, // 暂时未使用，保留以备将来使用
     ) => {
       return (
-        <div
-          key={`divider-${conversationCreated}`}
-          className={styles.conversationDivider}
-        >
+        <div key={`divider-${id}`} className={styles.conversationDivider}>
           <div className={styles.dividerLine} />
           <div className={styles.dividerContent}>
             <Text type="secondary" className={styles.conversationTopic}>
@@ -649,6 +588,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           renderConversationDivider(
             message.conversationTopic,
             message.conversationCreated || message.time,
+            message.id,
           ),
         );
         currentSessionId = message.sessionId;
@@ -660,6 +600,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
     return renderedMessages;
   }, [chat.chatMessages, renderChatMessage, renderConversationDivider]);
+
+  // 计算进度百分比（自动处理次数 / 3，最大100%）
+  // const progressPercent = useMemo(() => {
+  //   return Math.min((autoErrorRetryCount / 3) * 100, 100);
+  // }, [autoErrorRetryCount]);
 
   return (
     <Card className={styles.chatCard} variant="outlined">
@@ -696,8 +641,47 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         onScrollPositionChange={(isAtBottom) => {
           setShowScrollButton(!isAtBottom);
         }}
+        onScrollToTop={() => {}}
       >
         <div className={styles.chatMessages}>
+          {chat.hasMoreHistoryRef.current &&
+            !chat.isLoadingMoreHistoryRef.current && (
+              <Button
+                type="text"
+                className={styles.loadMoreHistoryButton}
+                icon={<RollbackOutlined />}
+                onClick={async () => {
+                  // 1. 先记录当前内容的滚动位置与高度
+                  const scrollContainer =
+                    scrollContainerRef.current?.getScrollContainer();
+                  if (!scrollContainer) {
+                    return;
+                  }
+
+                  // 记录按钮元素（如果存在），用于计算高度变化
+                  const scrollPosition = scrollContainer.scrollTop;
+                  const scrollHeight = scrollContainer.scrollHeight;
+
+                  // 2. 加载历史会话
+                  await chat.loadHistorySessions(
+                    chat.currentPageRef.current + 1,
+                    true,
+                  );
+
+                  // 3. 加载记录成功后，恢复到上一次历史会话的位置
+                  // 等待 DOM 更新完成，包括按钮状态变化
+                  setTimeout(() => {
+                    scrollContainerRef.current?.handleScrollTo(
+                      scrollPosition,
+                      scrollHeight,
+                    );
+                  }, 100);
+                }}
+              >
+                点击查看更多历史会话
+              </Button>
+            )}
+          {chat.isLoadingMoreHistoryRef.current && <Spin size="small" />}
           {chat.isLoadingHistory ? (
             <AppDevEmptyState
               type="loading"
@@ -727,13 +711,37 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         >
           <DownOutlined />
         </div>
+        {/* 自动错误处理进度条 目前有 透传问题先关闭了*/}
+        {autoErrorRetryCount > 0 && chat.isChatLoading && (
+          <Tooltip title={`(${autoErrorRetryCount}/3) 尝试自动修复中...`}>
+            <div className={styles.progressContainer}>
+              <div className={styles.progressBar}>
+                <div
+                  className={`${styles.progressBarItem} ${
+                    autoErrorRetryCount >= 1 ? styles.active : ''
+                  }`}
+                />
+                <div
+                  className={`${styles.progressBarItem} ${
+                    autoErrorRetryCount >= 2 ? styles.active : ''
+                  }`}
+                />
+                <div
+                  className={`${styles.progressBarItem} ${
+                    autoErrorRetryCount >= 3 ? styles.active : ''
+                  }`}
+                />
+              </div>
+            </div>
+          </Tooltip>
+        )}
         {/* 聊天输入框 */}
         <ChatInputHome
           chat={chat}
           modelSelector={modelSelector}
           // 文件列表
-          fileContentState={fileContentState}
-          onSetSelectedFile={onSetSelectedFile}
+          // fileContentState={fileContentState}
+          // onSetSelectedFile={onSetSelectedFile}
           // 数据源列表
           dataSourceList={selectedDataSources}
           onToggleSelectDataSource={handleToggleSelectDataSource}
@@ -745,6 +753,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           handleCancelAgentTask={handleCancelAgentTask}
           // 发送消息
           onEnter={handleSendMessage}
+          // 文件树数据
+          files={files}
         />
       </div>
     </Card>

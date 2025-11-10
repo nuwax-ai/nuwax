@@ -20,10 +20,6 @@ export const useAppDevProjectId = () => {
   const projectId = useMemo(() => {
     // 优先从路由参数获取 projectId
     if (params.projectId) {
-      console.log(
-        '✅ [AppDevProjectId] 从路由参数获取 projectId:',
-        params.projectId,
-      );
       return params.projectId;
     }
 
@@ -32,10 +28,6 @@ export const useAppDevProjectId = () => {
     const queryProjectId = urlParams.get('projectId');
 
     if (queryProjectId) {
-      console.log(
-        '✅ [AppDevProjectId] 从查询参数获取 projectId:',
-        queryProjectId,
-      );
       return queryProjectId;
     }
 

@@ -30,7 +30,7 @@ interface DraggableHomeContentProps {
   /** 标签点击事件 */
   onTabClick: (type: string) => void;
   /** 智能体点击事件 */
-  onAgentClick: (targetId: number) => void;
+  onAgentClick: (agentInfo: CategoryItemInfo) => void;
   /** 收藏切换事件 */
   onToggleCollect: (type: string, info: CategoryItemInfo) => void;
   /** 数据更新回调 */

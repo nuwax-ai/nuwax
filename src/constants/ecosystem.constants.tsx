@@ -1,4 +1,7 @@
-import agentImage from '@/assets/images/agent_image.png';
+import {
+  default as agentImage,
+  default as pageImage,
+} from '@/assets/images/agent_image.png';
 import databaseImage from '@/assets/images/database_image.png';
 import knowledgeImage from '@/assets/images/knowledge_image.png';
 import mcpImage from '@/assets/images/mcp_image.png';
@@ -32,6 +35,20 @@ export const ECOSYSTEM_MARKET_LIST = [
     type: EcosystemMarketEnum.Template,
     icon: <SvgIcon name="icons-nav-template" />,
     text: '模板',
+    list: [
+      {
+        text: '智能体',
+        type: AgentComponentTypeEnum.Agent,
+      },
+      {
+        text: '工作流',
+        type: AgentComponentTypeEnum.Workflow,
+      },
+      {
+        text: '应用页面',
+        type: AgentComponentTypeEnum.Page,
+      },
+    ],
   },
 ];
 
@@ -80,6 +97,11 @@ export const COMPONENT_LIST: {
     type: AgentComponentTypeEnum.MCP,
     defaultImage: mcpImage,
     text: 'MCP',
+  },
+  {
+    type: AgentComponentTypeEnum.Page,
+    defaultImage: pageImage,
+    text: '应用页面',
   },
 ];
 

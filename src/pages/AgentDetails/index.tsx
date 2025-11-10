@@ -1,7 +1,10 @@
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
-import PagePreviewIframe from '@/components/business-component/PagePreviewIframe';
+import {
+  CopyToSpaceComponent,
+  PagePreviewIframe,
+} from '@/components/business-component';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
@@ -11,6 +14,8 @@ import useAgentDetails from '@/hooks/useAgentDetails';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
+  AgentComponentTypeEnum,
+  AllowCopyEnum,
   AssistantRoleEnum,
   MessageModeEnum,
   MessageTypeEnum,
@@ -24,7 +29,8 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import { arraysContainSameItems } from '@/utils/common';
+import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
+import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Button, Form, message, Typography } from 'antd';
 import classNames from 'classnames';
@@ -106,6 +112,25 @@ const AgentDetails: React.FC = () => {
     return false;
   }, [requiredNameList, variableParams]);
 
+  const handleOpenPreview = (agentDetail: any) => {
+    // 判断是否默认展示页面首页
+    if (
+      agentDetail &&
+      agentDetail?.expandPageArea &&
+      agentDetail?.pageHomeIndex
+    ) {
+      // 自动触发预览
+      showPagePreview({
+        name: '页面预览',
+        uri: process.env.BASE_URL + agentDetail?.pageHomeIndex,
+        params: {},
+        executeId: '',
+      });
+    } else {
+      showPagePreview(null);
+    }
+  };
+
   // 已发布的智能体详情接口
   const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
     manual: true,
@@ -113,6 +138,7 @@ const AgentDetails: React.FC = () => {
     onSuccess: (result: AgentDetailDto) => {
       setLoading(false);
       setAgentDetail(result);
+      handleOpenPreview(result);
       setConversationId(result?.conversationId || null);
       // 会话问题建议
       const guidQuestionDtos = result?.guidQuestionDtos || [];
@@ -209,45 +235,61 @@ const AgentDetails: React.FC = () => {
   };
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const sidebarRef = useRef<AgentSidebarRef>(null);
-  // 控制输入框的淡入动画
-  const [showInput, setShowInput] = useState<boolean>(false);
 
-  const handleOpenPreview = () => {
-    // 判断是否默认展示页面首页
-    if (
-      agentDetail &&
-      agentDetail?.expandPageArea &&
-      agentDetail?.pageHomeIndex
-    ) {
-      // 自动触发预览
-      showPagePreview({
-        name: '页面预览',
-        uri: process.env.BASE_URL + agentDetail?.pageHomeIndex,
-        params: {},
-        executeId: '',
-      });
-    } else {
-      showPagePreview(null);
-    }
-  };
-
-  useEffect(() => {
-    handleOpenPreview();
-  }, [agentDetail]);
-
-  // 当加载完成后，延迟显示输入框（淡入效果）
-  useEffect(() => {
-    if (isLoaded && !loading) {
-      const timer = setTimeout(() => {
-        setShowInput(true);
-      }, 300); // 延迟 300ms 后显示输入框
-
-      return () => clearTimeout(timer);
-    } else {
-      setShowInput(false);
-    }
-  }, [isLoaded, loading]);
   const { pagePreviewData, hidePagePreview } = useModel('chat');
+
+  // 页面复制弹窗状态
+  const [openPageCopyModal, setOpenPageCopyModal] = useState<boolean>(false);
+
+  // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
+  // 支持多种可能的参数名：workflowId, workflow_id, id
+  // 也支持从 URI 路径中解析（如 /square/workflow/123）
+  const workflowId = useMemo(() => {
+    // 1. 先从 params 中获取
+    if (pagePreviewData?.params) {
+      const params = pagePreviewData.params;
+      const workflowIdFromParams =
+        params.workflowId || params.workflow_id || params.id;
+      if (workflowIdFromParams) {
+        const id = Number(workflowIdFromParams);
+        if (!isNaN(id)) return id;
+      }
+    }
+
+    // 2. 从 URI 路径中解析（如 /square/workflow/123 或 /workflow/123）
+    if (pagePreviewData?.uri) {
+      const uri = pagePreviewData.uri;
+      const workflowMatch = uri.match(/[/]workflow[/](\d+)/i);
+      if (workflowMatch && workflowMatch[1]) {
+        const id = Number(workflowMatch[1]);
+        if (!isNaN(id)) return id;
+      }
+    }
+
+    return null;
+  }, [pagePreviewData?.params, pagePreviewData?.uri]);
+
+  // 判断是否显示复制按钮（智能体允许复制即可显示，支持复制智能体、工作流或页面模板）
+  const showCopyButton = useMemo(() => {
+    const shouldShow = agentDetail?.allowCopy === AllowCopyEnum.Yes;
+    // 调试：输出相关信息
+    console.log('[AgentDetails] 复制按钮显示条件:', {
+      workflowId,
+      agentId: agentDetail?.agentId,
+      allowCopy: agentDetail?.allowCopy,
+      allowCopyEnum: AllowCopyEnum.Yes,
+      showCopyButton: shouldShow,
+      pagePreviewData: pagePreviewData,
+      uri: pagePreviewData?.uri,
+      params: pagePreviewData?.params,
+    });
+    return shouldShow;
+  }, [
+    workflowId,
+    agentDetail?.allowCopy,
+    agentDetail?.agentId,
+    pagePreviewData,
+  ]);
 
   const LeftContent = () => {
     return (
@@ -285,22 +327,24 @@ const AgentDetails: React.FC = () => {
               )}
 
               {/*打开预览页面*/}
-              {!pagePreviewData && (
-                <Button
-                  type="text"
-                  className={cx(styles.sidebarButton)}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-ecosystem"
-                      className={cx(styles['icons-nav-sidebar'])}
-                    />
-                  }
-                  onClick={() => {
-                    sidebarRef.current?.close();
-                    handleOpenPreview();
-                  }}
-                />
-              )}
+              {!!agentDetail?.expandPageArea &&
+                !!agentDetail?.pageHomeIndex &&
+                !pagePreviewData && (
+                  <Button
+                    type="text"
+                    className={cx(styles.sidebarButton)}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-ecosystem"
+                        className={cx(styles['icons-nav-sidebar'])}
+                      />
+                    }
+                    onClick={() => {
+                      sidebarRef.current?.close();
+                      handleOpenPreview(agentDetail);
+                    }}
+                  />
+                )}
             </div>
           </div>
         </div>
@@ -352,27 +396,17 @@ const AgentDetails: React.FC = () => {
               )}
             </div>
           </div>
-          {/*会话输入框 - 加载完成后延迟淡入显示*/}
-          {isLoaded && !loading && (
-            <div
-              style={{
-                opacity: showInput ? 1 : 0,
-                transition: 'opacity 0.4s ease-in-out',
-              }}
-            >
-              <ChatInputHome
-                className={cx(styles['chat-input-container'])}
-                key={`agent-details-${agentId}`}
-                onEnter={handleMessageSend}
-                isClearInput={false}
-                wholeDisabled={wholeDisabled}
-                manualComponents={agentDetail?.manualComponents || []}
-                selectedComponentList={selectedComponentList}
-                onSelectComponent={handleSelectComponent}
-                showAnnouncement={true}
-              />
-            </div>
-          )}
+          <ChatInputHome
+            key={`agent-details-${agentId}`}
+            className={cx(styles['chat-input-container'])}
+            onEnter={handleMessageSend}
+            isClearInput={false}
+            wholeDisabled={wholeDisabled}
+            manualComponents={agentDetail?.manualComponents || []}
+            selectedComponentList={selectedComponentList}
+            onSelectComponent={handleSelectComponent}
+            showAnnouncement={true}
+          />
         </div>
       </div>
     );
@@ -401,13 +435,38 @@ const AgentDetails: React.FC = () => {
           left={agentDetail?.hideChatArea ? null : LeftContent()}
           right={
             pagePreviewData && (
-              <PagePreviewIframe
-                pagePreviewData={pagePreviewData}
-                showHeader={true}
-                onClose={hidePagePreview}
-                showCloseButton={!agentDetail?.hideChatArea}
-                titleClassName={cx(styles['title-style'])}
-              />
+              <>
+                <PagePreviewIframe
+                  pagePreviewData={pagePreviewData}
+                  showHeader={true}
+                  onClose={hidePagePreview}
+                  showCloseButton={!agentDetail?.hideChatArea}
+                  titleClassName={cx(styles['title-style'])}
+                  // 复制模板按钮相关 props
+                  showCopyButton={showCopyButton}
+                  allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
+                  onCopyClick={() => setOpenPageCopyModal(true)}
+                  copyButtonText="复制模板"
+                  copyButtonClassName={styles['copy-btn']}
+                />
+                {/* 复制模板弹窗 */}
+                {showCopyButton && agentDetail && pagePreviewData?.uri && (
+                  <CopyToSpaceComponent
+                    spaceId={agentDetail.spaceId}
+                    mode={AgentComponentTypeEnum.Page}
+                    componentId={parsePageAppProjectId(pagePreviewData.uri)}
+                    title={''}
+                    open={openPageCopyModal}
+                    isTemplate={true}
+                    onSuccess={(_: any, targetSpaceId: number) => {
+                      setOpenPageCopyModal(false);
+                      // 跳转
+                      jumpToPageDevelop(targetSpaceId);
+                    }}
+                    onCancel={() => setOpenPageCopyModal(false)}
+                  />
+                )}
+              </>
             )
           }
         />

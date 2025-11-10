@@ -19,13 +19,16 @@ import { message, Modal } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 
-import { AGENT_SERVICE_RUNNING } from '@/constants/codes.constants';
+import {
+  AGENT_SERVICE_RUNNING,
+  SUCCESS_CODE,
+} from '@/constants/codes.constants';
 import {
   insertPlanBlock,
   insertToolCallBlock,
   insertToolCallUpdateBlock,
 } from '@/pages/AppDev/utils/markdownProcess';
-import type { DataSourceSelection } from '@/types/interfaces/appDev';
+import type { DataSourceSelection, FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
 import {
   addSessionInfoToMessages,
@@ -48,6 +51,14 @@ import {
   sortMessagesByTimestamp,
 } from '@/utils/chatUtils';
 
+/**
+ * @ 提及的项类型（与 ChatInputHome 保持一致）
+ */
+type MentionItem =
+  | { type: 'file'; data: FileNode }
+  | { type: 'folder'; data: FileNode }
+  | { type: 'datasource'; data: DataResource };
+
 interface UseAppDevChatProps {
   projectId: string;
   selectedModelId?: number | null; // 新增：选中的模型ID
@@ -58,7 +69,6 @@ interface UseAppDevChatProps {
   onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
   onClearUploadedImages?: () => void; // 新增：清除上传图片回调
   onRestartDevServer?: () => Promise<void>; // 新增：重启开发服务器回调
-  hasPermission?: boolean; // 新增：是否有权限访问项目
 }
 
 export const useAppDevChat = ({
@@ -71,17 +81,23 @@ export const useAppDevChat = ({
   onRefreshVersionList, // 新增：刷新版本列表回调
   onClearUploadedImages, // 新增：清除上传图片回调
   onRestartDevServer, // 新增
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  hasPermission = true, // 新增：是否有权限访问项目
 }: UseAppDevChatProps) => {
   // 使用 AppDev SSE 连接 model
   const appDevSseModel = useModel('appDevSseConnection');
 
   const [aiChatSessionId, setAiChatSessionId] = useState<string>('');
   const [chatMessages, setChatMessages] = useState<AppDevChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false); // 新增：历史会话加载状态
+  const [chatInput, setChatInput] = useState<string>('');
+  const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false); // 新增：历史会话加载状态
+
+  /**
+   * 滚动加载更多历史会话相关状态
+   */
+  const currentPageRef = useRef<number>(1); // 新增：当前页码的 ref，用于立即获取最新值
+  const [totalHistoryCount, setTotalHistoryCount] = useState<number>(0); // 新增：历史记录总数
+  const hasMoreHistoryRef = useRef<boolean>(false); // 是否还有更多历史记录，初始为false
+  const isLoadingMoreHistoryRef = useRef<boolean>(false); // 滚动加载更多历史会话状态，初始为false
 
   const abortConnectionRef = useRef<AbortController | null>(null);
   const aIChatAbortConnectionRef = useRef<AbortController>();
@@ -149,21 +165,24 @@ export const useAppDevChat = ({
         }
 
         case 'agentSessionUpdate': {
-          if (message.subType === 'agent_message_chunk') {
-            const chunkText = message.data?.text || '';
-            const isFinal = message.data?.is_final;
-
-            setChatMessages((prev) =>
-              appendTextToStreamingMessage(
-                prev,
-                activeRequestId,
-                chunkText,
-                isFinal,
-              ),
-            );
+          const { subType, data } = message;
+          if (subType === 'agent_message_chunk') {
+            const chunkText = data?.content?.text || data?.text || '';
+            const isFinal = data?.is_final;
+            // 如果 chunkText 不为空，则追加到消息列表，如果 isFinal 为 true，则标记消息完成
+            if (chunkText) {
+              setChatMessages((prev) =>
+                appendTextToStreamingMessage(
+                  prev,
+                  activeRequestId,
+                  chunkText,
+                  isFinal,
+                ),
+              );
+            }
           }
 
-          if (message.subType === 'plan') {
+          if (subType === 'plan') {
             setChatMessages((prev) =>
               prev.map((msg) => {
                 if (
@@ -173,8 +192,8 @@ export const useAppDevChat = ({
                   return {
                     ...msg,
                     text: insertPlanBlock(msg.text || '', {
-                      planId: message.data.planId || 'default-plan',
-                      entries: message.data.entries || [],
+                      planId: data.planId || 'default-plan',
+                      entries: data.entries || [],
                     }),
                   };
                 }
@@ -182,7 +201,7 @@ export const useAppDevChat = ({
               }),
             );
           }
-          if (message.subType === 'tool_call') {
+          if (subType === 'tool_call') {
             setChatMessages((prev) =>
               prev.map((msg) => {
                 if (
@@ -191,34 +210,27 @@ export const useAppDevChat = ({
                 ) {
                   return {
                     ...msg,
-                    text: insertToolCallBlock(
-                      msg.text || '',
-                      message.data.toolCallId,
-                      {
-                        toolCallId: message.data.toolCallId,
-                        title: message.data.title || '工具调用',
-                        kind: message.data.kind || 'execute',
-                        status: message.data.status,
-                        content: message.data.content,
-                        locations: message.data.locations,
-                        rawInput: message.data.rawInput,
-                        timestamp: message.timestamp,
-                      },
-                    ),
+                    text: insertToolCallBlock(msg.text || '', data.toolCallId, {
+                      toolCallId: data.toolCallId,
+                      title: data.title || '工具调用',
+                      kind: data.kind || 'execute',
+                      status: data.status,
+                      content: data.content,
+                      locations: data.locations,
+                      rawInput: data.rawInput,
+                      timestamp: message.timestamp,
+                    }),
                   };
                 }
                 return msg;
               }),
             );
             // 检测是否为文件操作或依赖操作，如果是则记录 toolCallId
-            if (
-              isFileOrDependencyOperation(message.data) &&
-              message.data.toolCallId
-            ) {
-              fileOperationToolCallIdsRef.current.add(message.data.toolCallId);
+            if (isFileOrDependencyOperation(data) && data.toolCallId) {
+              fileOperationToolCallIdsRef.current.add(data.toolCallId);
             }
           }
-          if (message.subType === 'tool_call_update') {
+          if (subType === 'tool_call_update') {
             setChatMessages((prev) =>
               prev.map((msg) => {
                 if (
@@ -229,15 +241,15 @@ export const useAppDevChat = ({
                     ...msg,
                     text: insertToolCallUpdateBlock(
                       msg.text || '',
-                      message.data.toolCallId,
+                      data.toolCallId,
                       {
-                        toolCallId: message.data.toolCallId,
-                        title: message.data.title || '工具调用更新',
-                        kind: message.data.kind || 'execute',
-                        status: message.data.status,
-                        content: message.data.content,
-                        locations: message.data.locations,
-                        rawInput: message.data.rawInput,
+                        toolCallId: data.toolCallId,
+                        title: data.title || '工具调用更新',
+                        kind: data.kind || 'execute',
+                        status: data.status,
+                        content: data.content,
+                        locations: data.locations,
+                        rawInput: data.rawInput,
                         timestamp: message.timestamp,
                       },
                     ),
@@ -248,8 +260,8 @@ export const useAppDevChat = ({
             );
             // 检查对应的 toolCallId 是否为文件操作或依赖操作
             if (
-              message.data.toolCallId &&
-              fileOperationToolCallIdsRef.current.has(message.data.toolCallId)
+              data.toolCallId &&
+              fileOperationToolCallIdsRef.current.has(data.toolCallId)
             ) {
               debouncedRefreshFileTree();
             }
@@ -289,9 +301,6 @@ export const useAppDevChat = ({
             fileOperationToolCallIdsRef.current.size > 0 &&
             onRestartDevServer
           ) {
-            console.log(
-              '🔄 [AppDev] 检测到文件操作或依赖操作，触发重启开发服务器',
-            );
             onRestartDevServer(); // 不等待，异步执行
           }
 
@@ -342,7 +351,9 @@ export const useAppDevChat = ({
         abortController: abortConnectionRef.current,
         headers,
         onMessage: (data: UnifiedSessionMessage) => {
-          handleSSEMessage(data, requestId);
+          setTimeout(() => {
+            handleSSEMessage(data, requestId);
+          }, 100);
         },
         onError: (error: Error) => {
           // message.error('AI助手连接失败');
@@ -357,6 +368,9 @@ export const useAppDevChat = ({
         },
         onClose: () => {
           setIsChatLoading(false);
+          setChatMessages((prev) =>
+            markStreamingMessageComplete(prev, requestId),
+          );
           abortConnectionRef.current?.abort();
           debouncedRefreshFileTree();
         },
@@ -425,7 +439,7 @@ export const useAppDevChat = ({
           setAiChatSessionId(_aiChatSessionId);
         }
         if (response.type === 'progress') {
-          const chunkText = response?.message ? `${response?.message}\n\n` : '';
+          const chunkText = response?.message ? `${response?.message}` : '';
           setChatMessages((prev) =>
             appendTextToStreamingMessage(prev, requestId, chunkText, false),
           );
@@ -470,6 +484,13 @@ export const useAppDevChat = ({
             });
           } else {
             message.error(response.message);
+            setChatMessages((prev) =>
+              markStreamingMessageError(
+                prev,
+                requestId,
+                '服务异常，请稍后再试',
+              ),
+            );
           }
         }
       },
@@ -477,6 +498,9 @@ export const useAppDevChat = ({
         // message.error('AI助手连接失败');
         aIChatAbortConnectionRef.current?.abort();
         setIsChatLoading(false);
+        setChatMessages((prev) =>
+          markStreamingMessageError(prev, requestId, 'AI助手连接失败'),
+        );
       },
       onClose: () => {
         aIChatAbortConnectionRef.current?.abort();
@@ -492,12 +516,13 @@ export const useAppDevChat = ({
       attachments?: Attachment[],
       attachmentFiles?: FileStreamAttachment[],
       attachmentPrototypeImages?: FileStreamAttachment[],
+      requestId: string = generateRequestId(), // 生成临时request_id
+      selectedMentions?: MentionItem[], // 新增：@ 提及的项（包含通过 @ 选择的数据源）
     ) => {
-      // 生成临时request_id
-      const requestId = generateRequestId();
       try {
         // 数据源数据结构提取
-        const _selectedDataResources: DataSourceSelection[] =
+        // 1. 从 props 传入的 selectedDataResources 中提取
+        const propsDataSources: DataSourceSelection[] =
           selectedDataResources
             .filter((item) => item.isSelected)
             ?.map((resource) => {
@@ -507,6 +532,28 @@ export const useAppDevChat = ({
                 name: resource.name,
               };
             }) || [];
+
+        // 2. 从 selectedMentions 中提取数据源（通过 @ 选择的数据源）
+        const mentionDataSources: DataSourceSelection[] =
+          selectedMentions
+            ?.filter((mention) => mention.type === 'datasource')
+            ?.map((mention) => {
+              const dataSource = mention.data as DataResource;
+              return {
+                dataSourceId: Number(dataSource.id),
+                type: dataSource.type === 'plugin' ? 'plugin' : 'workflow',
+                name: dataSource.name,
+              };
+            }) || [];
+
+        // 3. 合并两个来源的数据源，去重（基于 dataSourceId）
+        const dataSourceMap = new Map<number, DataSourceSelection>();
+        [...propsDataSources, ...mentionDataSources].forEach((ds) => {
+          dataSourceMap.set(ds.dataSourceId, ds);
+        });
+        const _selectedDataResources: DataSourceSelection[] = Array.from(
+          dataSourceMap.values(),
+        );
 
         const aiChatParams = {
           prompt: chatInput,
@@ -607,12 +654,16 @@ export const useAppDevChat = ({
    * @param attachments 附件文件列表
    * @param attachmentFiles ai-chat 附件文件列表
    * @param attachmentPrototypeImages ai-chat 原型图片附件列表
+   * @param requestId 请求ID
+   * @param selectedMentions @ 提及的项（包含通过 @ 选择的数据源）
    */
   const sendMessage = useCallback(
     async (
       attachments?: Attachment[],
       attachmentFiles?: FileStreamAttachment[],
       attachmentPrototypeImages?: FileStreamAttachment[],
+      requestId?: string,
+      selectedMentions?: MentionItem[], // 新增：@ 提及的项
     ) => {
       // 验证：prompt（输入内容）是必填的
       if (!chatInput.trim()) {
@@ -625,6 +676,8 @@ export const useAppDevChat = ({
         attachments,
         attachmentFiles,
         attachmentPrototypeImages,
+        requestId,
+        selectedMentions, // 传递 @ 提及的项
       );
     },
     [chatInput, sendMessageAndConnectSSE],
@@ -659,54 +712,57 @@ export const useAppDevChat = ({
    */
   const cleanupAppDevSSE = useCallback(() => {
     // appDevSseModel.cleanupAppDev();
-  }, [appDevSseModel]);
+    aIChatAbortConnectionRef.current?.abort();
+    abortConnectionRef.current?.abort();
+    setIsChatLoading(false);
+    setChatMessages([]);
+    setChatInput('');
+    setAiChatSessionId('');
+  }, []);
 
   /**
-   * 加载历史会话消息
+   * 加载历史会话
+   * @param page 要加载的页码，默认为1（第一页）
+   * @param isLoadMore 是否为加载更多操作，默认为false
    */
-  const loadHistorySession = useCallback(
-    async (sessionId: string) => {
-      try {
-        const response = await listConversations({
-          projectId,
-          sessionId,
-        });
-
-        if (response.success && response.data?.length > 0) {
-          const conversation = response.data[0];
-          const messages = parseChatMessages(conversation.content);
-
-          // 清空当前消息并加载历史消息
-          setChatMessages(messages);
-        }
-      } catch (error) {
-        message.error('加载历史会话失败');
-      }
-    },
-    [projectId],
-  );
-
-  /**
-   * 自动加载所有历史会话的消息
-   */
-  const loadAllHistorySessions = useCallback(async () => {
+  const loadHistorySessions = async (
+    page: number = 1,
+    isLoadMore: boolean = false,
+  ) => {
     if (!projectId) return;
 
-    setIsLoadingHistory(true);
-    try {
-      const response = await listConversations({
-        projectId,
-      });
+    // 如果是加载更多操作，检查是否还有更多历史记录和是否正在加载
+    if (
+      isLoadMore &&
+      (isLoadingMoreHistoryRef.current || !hasMoreHistoryRef.current)
+    ) {
+      return;
+    }
 
-      if (response.success && response.data?.length > 0) {
+    // 设置加载状态
+    if (isLoadMore) {
+      isLoadingMoreHistoryRef.current = true;
+    } else {
+      setIsLoadingHistory(true);
+    }
+
+    try {
+      const { data, code } = await listConversations(projectId, page);
+
+      if (code === SUCCESS_CODE) {
+        // 更新分页信息
+        currentPageRef.current = page; // 同时更新 ref，确保立即获取最新值
+        hasMoreHistoryRef.current = data?.current < data?.pages;
+        setTotalHistoryCount(data?.total || 0);
+
         // 按创建时间排序，获取所有会话
-        const sortedConversations = response.data.sort(
+        const sortedConversations = data?.records.sort(
           (a: any, b: any) =>
             new Date(a.created).getTime() - new Date(b.created).getTime(),
         );
 
         // 合并所有会话的消息
-        const allMessages: AppDevChatMessage[] = [];
+        const newMessages: AppDevChatMessage[] = [];
 
         for (const conversation of sortedConversations) {
           try {
@@ -719,31 +775,44 @@ export const useAppDevChat = ({
               created: conversation.created,
             });
 
-            allMessages.push(...messagesWithSessionInfo);
+            newMessages.push(...messagesWithSessionInfo);
           } catch (parseError) {}
         }
 
-        // 按时间戳排序所有消息
-        const sortedMessages = sortMessagesByTimestamp(allMessages);
+        // 按时间戳排序新消息
+        const sortedNewMessages = sortMessagesByTimestamp(newMessages);
 
-        // 加载所有历史消息
-        setChatMessages(sortedMessages);
+        // 更新消息列表
+        if (isLoadMore) {
+          // 加载更多：将新消息添加到现有消息列表的开头（历史消息在顶部）
+          setChatMessages((prevMessages) => {
+            return [...sortedNewMessages, ...prevMessages];
+          });
+        } else {
+          // 初始加载：直接设置消息列表
+          setChatMessages(sortedNewMessages);
+        }
       }
     } catch (error) {
-      // 不显示错误提示，因为这是自动加载，用户可能不知道
+      console.error('加载历史会话失败:', error);
     } finally {
-      setIsLoadingHistory(false);
+      // 清除加载状态
+      if (isLoadMore) {
+        isLoadingMoreHistoryRef.current = false;
+      } else {
+        setIsLoadingHistory(false);
+      }
     }
-  }, [projectId]);
+  };
 
   /**
    * 组件初始化时自动加载所有历史会话
    */
   useEffect(() => {
     if (projectId) {
-      loadAllHistorySessions();
+      loadHistorySessions();
     }
-  }, [projectId]); // 移除 loadAllHistorySessions 依赖，避免无限循环
+  }, [projectId]);
 
   /**
    * 组件卸载时清理资源
@@ -765,6 +834,10 @@ export const useAppDevChat = ({
     chatInput,
     isChatLoading,
     isLoadingHistory, // 新增：历史会话加载状态
+    isLoadingMoreHistoryRef, // 新增：加载更多历史会话状态
+    currentPageRef, // 新增：当前页码的 ref，用于立即获取最新值
+    hasMoreHistoryRef, // 新增：是否还有更多历史记录
+    totalHistoryCount, // 新增：历史记录总数
 
     // 方法
     setChatInput,
@@ -773,7 +846,7 @@ export const useAppDevChat = ({
     sendMessage, // 新增：支持附件的发送消息方法
     cancelChat,
     cleanupAppDevSSE,
-    loadHistorySession,
-    loadAllHistorySessions, // 新增：自动加载所有历史会话
+    // loadHistorySession,
+    loadHistorySessions, // 新增：自动加载所有历史会话
   };
 };

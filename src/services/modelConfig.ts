@@ -18,6 +18,16 @@ export async function apiModelSave(
   });
 }
 
+// 测试模型连通性
+export async function apiModelTestConnectivity(
+  data: ModelSaveParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/model/test-connectivity', {
+    method: 'POST',
+    data,
+  });
+}
+
 // 查询可使用模型列表接口
 export async function apiModelList(
   data: ModelListParams,
