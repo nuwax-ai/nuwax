@@ -239,28 +239,76 @@ export const saveRecentDataSource = (dataSource: DataResource): void => {
 /**
  * 计算下拉菜单位置（参考 Ant Design Mentions 的智能定位）
  * 使用镜像元素精确计算光标位置
- * @param textAreaRef TextArea 的 ref 引用
+ * 支持 TextArea 和 contentEditable div
+ * @param editorRef TextArea 或 contentEditable div 的 ref 引用
  * @returns 下拉菜单的位置信息
  */
 export const calculateMentionPosition = (
-  textAreaRef: React.RefObject<any>,
+  editorRef: React.RefObject<any>,
 ): MentionPosition => {
-  if (!textAreaRef.current) {
+  if (!editorRef.current) {
     return { left: 0, top: 0, visible: false };
   }
 
-  // Ant Design TextArea 的 ref 可能包含 resizableTextArea 属性
-  const textarea =
-    textAreaRef.current.resizableTextArea?.textArea || textAreaRef.current;
-  if (!textarea || !(textarea instanceof HTMLTextAreaElement)) {
+  // 支持 TextArea 和 contentEditable div
+  const editor =
+    editorRef.current.resizableTextArea?.textArea || editorRef.current;
+  if (!editor) {
     return { left: 0, top: 0, visible: false };
   }
 
-  const { selectionStart } = textarea;
-  const rect = textarea.getBoundingClientRect();
-  const computedStyle = window.getComputedStyle(textarea);
+  const rect = editor.getBoundingClientRect();
+  const computedStyle = window.getComputedStyle(editor);
 
-  // 创建镜像元素，完全模拟 textarea 的样式
+  // 获取光标位置
+  let selectionStart = 0;
+  let textBeforeCursor = '';
+  let textAfterCursor = '';
+
+  if (editor instanceof HTMLTextAreaElement) {
+    // TextArea 情况
+    selectionStart = editor.selectionStart;
+    textBeforeCursor = editor.value.slice(0, selectionStart);
+    textAfterCursor = editor.value.slice(selectionStart);
+  } else if (editor instanceof HTMLDivElement && editor.isContentEditable) {
+    // contentEditable div 情况
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const textNode = range.startContainer;
+      if (textNode.nodeType === Node.TEXT_NODE) {
+        textBeforeCursor =
+          textNode.textContent?.slice(0, range.startOffset) || '';
+        textAfterCursor = textNode.textContent?.slice(range.startOffset) || '';
+        // 计算光标前的文本长度（需要遍历所有文本节点）
+        const walker = document.createTreeWalker(
+          editor,
+          NodeFilter.SHOW_TEXT,
+          null,
+        );
+        let node;
+        let offset = 0;
+        while ((node = walker.nextNode())) {
+          if (node === textNode) {
+            offset += range.startOffset;
+            break;
+          }
+          offset += node.textContent?.length || 0;
+        }
+        selectionStart = offset;
+      } else {
+        // 如果不是文本节点，使用纯文本内容
+        const plainText = editor.textContent || '';
+        textBeforeCursor = plainText;
+        textAfterCursor = '';
+        selectionStart = plainText.length;
+      }
+    }
+  } else {
+    return { left: 0, top: 0, visible: false };
+  }
+
+  // 创建镜像元素，完全模拟 editor 的样式
   const mirror = document.createElement('div');
   const mirrorStyles: Record<string, string> = {
     position: 'fixed', // 使用 fixed 定位，确保相对于视口定位
@@ -278,17 +326,13 @@ export const calculateMentionPosition = (
     padding: computedStyle.padding,
     border: computedStyle.border,
     boxSizing: computedStyle.boxSizing,
-    width: `${textarea.clientWidth}px`,
+    width: `${editor.clientWidth}px`,
     minHeight: '1px',
-    top: `${rect.top}px`, // 设置 textarea 的 top 位置
-    left: `${rect.left}px`, // 设置 textarea 的 left 位置
+    top: `${rect.top}px`, // 设置 editor 的 top 位置
+    left: `${rect.left}px`, // 设置 editor 的 left 位置
     zIndex: '-1',
   };
   Object.assign(mirror.style, mirrorStyles);
-
-  // 获取文本内容
-  const textBeforeCursor = textarea.value.slice(0, selectionStart);
-  const textAfterCursor = textarea.value.slice(selectionStart);
 
   // 获取行高（用于计算行底部位置）
   const lineHeight =
@@ -362,8 +406,8 @@ export const calculateMentionPosition = (
     const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
     const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0;
     const borderTop = parseFloat(computedStyle.borderTopWidth) || 0;
-    const scrollLeft = textarea.scrollLeft || 0;
-    const scrollTop = textarea.scrollTop || 0;
+    const scrollLeft = (editor as HTMLElement).scrollLeft || 0;
+    const scrollTop = (editor as HTMLElement).scrollTop || 0;
 
     cursorX = rect.left + borderLeft + paddingLeft + cursorXInLine - scrollLeft;
 

@@ -15,7 +15,9 @@ export interface UseMentionSelectorKeyboardParams {
 }
 
 export interface UseMentionSelectorKeyboardReturn {
-  handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  handleKeyDown: (
+    e: React.KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>,
+  ) => void;
 }
 
 /**
@@ -32,9 +34,10 @@ export const useMentionSelectorKeyboard = ({
 }: UseMentionSelectorKeyboardParams): UseMentionSelectorKeyboardReturn => {
   /**
    * 处理键盘事件（参考 Ant Design Mentions 的键盘交互）
+   * 支持 TextArea 和 contentEditable div
    */
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLDivElement>) => {
       // 如果下拉菜单未显示，不处理键盘导航
       if (!mentionTrigger.trigger || !mentionPosition.visible) {
         return;
