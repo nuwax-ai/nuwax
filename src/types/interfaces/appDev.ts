@@ -439,6 +439,14 @@ export enum SessionMessageType {
   HEARTBEAT = 'heartbeat',
 }
 
+export enum AgentSessionUpdateSubType {
+  AGENT_MESSAGE_CHUNK = 'agent_message_chunk',
+  TOOL_CALL = 'tool_call',
+  TOOL_CALL_UPDATE = 'tool_call_update',
+  PLAN = 'plan',
+  ERROR = 'error',
+}
+
 /**
  * 统一会话消息结构
  */
