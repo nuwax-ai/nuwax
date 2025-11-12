@@ -48,6 +48,7 @@ import { CreatedProp, MenuItem } from './type';
 const cx = classNames.bind(styles);
 
 const defaultTabsTypes = [
+  AgentComponentTypeEnum.Agent,
   AgentComponentTypeEnum.Plugin,
   AgentComponentTypeEnum.Workflow,
   AgentComponentTypeEnum.Knowledge,
@@ -69,7 +70,6 @@ const Created: React.FC<CreatedProp> = ({
   hideTop,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
-  // const { spaceId } = useModel('workflow');
   const params = useParams();
   const spaceId = Number(params.spaceId);
 
@@ -625,6 +625,11 @@ const Created: React.FC<CreatedProp> = ({
           src={item.icon || getImg(selected.key)}
           alt=""
           className={cx(styles['left-image-style'])}
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src =
+              getImg(selected.key as AgentComponentTypeEnum) || '';
+          }}
         />
         <div className={cx('flex-1', styles['content-font'])}>
           <p className={cx(styles['label-font-style'], 'text-ellipsis-2')}>

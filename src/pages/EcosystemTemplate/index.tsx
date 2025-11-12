@@ -859,7 +859,7 @@ export default function EcosystemTemplate() {
                     return (
                       <PageCard
                         key={config?.uid}
-                        icon={config.icon || ''}
+                        coverImg={config.coverImg || ''}
                         name={config.name || ''}
                         avatar={''}
                         userName={config.author || ''}
