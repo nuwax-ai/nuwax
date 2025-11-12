@@ -215,7 +215,8 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     let lastIndex = 0;
     let match;
 
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = regex.exec(text))
+              )) !== null) {
       // 添加匹配前的普通文本
       if (match.index > lastIndex) {
         parts.push(text.substring(lastIndex, match.index));
@@ -589,7 +590,22 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           {/* 变量列表 - 使用树形结构 */}
           <div>
             {displayTree.length > 0 ? (
-              displayTree.map((node) => (
+              <>
+                {/* 调试信息 */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div style={{
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    color: '#666',
+                    backgroundColor: '#f9f9f9',
+                    borderBottom: '1px solid #f0f0f0'
+                  }}>
+                    Debug: selectedKeys = {JSON.stringify(selectedKeys)}, activeKey = {activeKey}
+                  </div>
+                )}
+
+                {/* 变量列表 */}
+                {displayTree.map((node) => (
                 <div
                   key={node.key}
                   data-node-key={node.key}
@@ -607,12 +623,23 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
                     paddingLeft: `${
                       8 + ((node.keyPath?.length || 1) - 1) * 16
                     }px`,
+                    // 选中状态样式
+                    backgroundColor: selectedKeys.includes(node.key)
+                      ? '#e6f7ff'
+                      : 'transparent',
+                    color: selectedKeys.includes(node.key)
+                      ? '#1890ff'
+                      : 'inherit',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f5f5f5';
+                    if (!selectedKeys.includes(node.key)) {
+                      e.currentTarget.style.backgroundColor = '#f5f5f5';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
+                    if (!selectedKeys.includes(node.key)) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
                   }}
                   onClick={() => {
                     handleApplyVariable(node.value);
@@ -656,7 +683,8 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
                   </span>
                 </div>
               ))
-            ) : (
+              </>
+             ) : (
               <div
                 style={{
                   padding: '32px 16px',
