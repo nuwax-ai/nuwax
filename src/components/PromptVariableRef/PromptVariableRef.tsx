@@ -6,7 +6,7 @@
 
 import { SearchOutlined } from '@ant-design/icons';
 import { Empty, Input, Popover, Tree } from 'antd';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import './styles.less';
 import type { PromptVariableRefProps, VariableTreeNode } from './types';
