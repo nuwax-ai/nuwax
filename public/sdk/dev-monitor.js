@@ -1026,7 +1026,10 @@
             subtree: true, // 监听所有后代节点
             characterData: true, // 监听文本内容变化
           });
-          sendMessageToMiniProgram();
+
+          setTimeout(() => {
+            sendMessageToMiniProgram();
+          }, 500);
         }, 100);
       };
 
