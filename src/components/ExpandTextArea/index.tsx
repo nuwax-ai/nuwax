@@ -1,8 +1,10 @@
+import PromptEditorWithVariable from '@/components/PromptEditorWithVariable';
 import { ICON_OPTIMIZE } from '@/constants/images.constants';
+import { InputItemNameEnum } from '@/types/enums/node';
 import { ExpandAltOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import classNames from 'classnames';
-import { PromptEditorProvider, PromptEditorRender } from 'prompt-kit-editor';
+import { PromptEditorProvider } from 'prompt-kit-editor';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
@@ -21,6 +23,7 @@ export const ExpandableInputTextarea: React.FC<
   onExpand,
   onOptimize,
   onOptimizeClick,
+  form,
 }) => {
   const [uuid, setUuid] = useState('');
   const { setExpanded, expanded } = useModel('workflow'); // 添加本地状态
@@ -31,6 +34,20 @@ export const ExpandableInputTextarea: React.FC<
       setExpanded('');
     };
   }, []);
+
+  // 获取输入参数变量数据
+  // 注意：useWatch 必须在组件顶层调用，不能在条件中
+  const watchedInputArgs = Form.useWatch(InputItemNameEnum.inputArgs, {
+    form: form || undefined,
+    preserve: true,
+  });
+
+  const variables =
+    form && watchedInputArgs
+      ? watchedInputArgs.filter(
+          (item: any) => !['', null, undefined].includes(item.name),
+        )
+      : [];
 
   return (
     <div className={cx(styles.container)}>
@@ -71,10 +88,11 @@ export const ExpandableInputTextarea: React.FC<
 
       <PromptEditorProvider>
         <Form.Item name={inputFieldName}>
-          <PromptEditorRender
+          <PromptEditorWithVariable
             className={cx(styles['prompt-editor-provider'], 'scroll-container')}
             isControled={true}
             placeholder={placeholder}
+            variables={variables}
           />
         </Form.Item>
       </PromptEditorProvider>
@@ -89,6 +107,7 @@ export const ExpandableInputTextarea: React.FC<
             placeholder={placeholder}
             visible={expanded === uuid}
             onClose={() => setExpanded('')}
+            form={form}
           />
         )}
     </div>

@@ -159,6 +159,11 @@ const routes = [
     component: '@/examples/SvgIconShowcase',
     layout: false,
   },
+  {
+    path: '/test/prompt-editor-variable',
+    component: '@/pages/PromptEditorVariableTest',
+    layout: false,
+  },
 ];
 
 export default routes;
