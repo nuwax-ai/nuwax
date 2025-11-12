@@ -267,6 +267,27 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         className="prompt-variable-input"
       />
 
+      {/* 测试：直接显示内容来排除 Popover 问题 */}
+      {popoverShouldShow && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            zIndex: 9999,
+            background: 'red',
+            padding: 20,
+            width: 300,
+            minHeight: 200,
+            border: '2px solid blue',
+          }}
+        >
+          <div>DIRECT RENDER TEST - Should show!</div>
+          <div>Variables count: {filteredTree.length}</div>
+          <div>Visible: {visible.toString()}</div>
+        </div>
+      )}
+
       <Popover
         open={popoverShouldShow}
         placement="bottom" // 临时使用简单的 placement
