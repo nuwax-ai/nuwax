@@ -4,7 +4,6 @@
  * 支持 {{变量名}}、{{变量名.子变量名}}、{{变量名[数组索引]}} 语法
  */
 
-import { SearchOutlined } from '@ant-design/icons';
 import { Input, Popover } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -13,7 +12,6 @@ import type { PromptVariableRefProps, VariableTreeNode } from './types';
 import {
   buildVariableTree,
   drillToPath,
-  filterVariableTree,
   generateVariableReference,
   getVariableTypeIcon,
 } from './utils/treeUtils';
@@ -92,8 +90,8 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   // 构建变量树
   const variableTree = buildVariableTree(variables);
 
-  // 过滤变量树
-  const filteredTree = filterVariableTree(variableTree, searchText);
+  // 由于移除了搜索框，直接显示完整的变量树
+  const displayTree = variableTree;
 
   // 应用变量
   const handleApplyVariable = useCallback(
@@ -125,7 +123,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           finalText =
             beforeText.substring(0, lastStartPos) +
             variableRef +
-            afterText.substring(endPosMatch - afterStartText.length + 2);
+            afterText.substring(endPosMatch + 2); // +2 跳过 }}
           newCursorPos = lastStartPos + variableRef.length;
         } else {
           // 完成新的变量引用
@@ -333,33 +331,10 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* 搜索框 */}
-          <div
-            style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <SearchOutlined style={{ color: '#8c8c8c' }} />
-              <input
-                type="text"
-                placeholder="搜索变量..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                style={{
-                  flex: 1,
-                  border: 'none',
-                  outline: 'none',
-                  fontSize: '14px',
-                  background: 'transparent',
-                }}
-                autoFocus
-              />
-            </div>
-          </div>
-
           {/* 变量列表 */}
           <div>
-            {filteredTree.length > 0 ? (
-              filteredTree.map((node) => (
+            {displayTree.length > 0 ? (
+              displayTree.map((node) => (
                 <div
                   key={node.key}
                   className="variable-item"
