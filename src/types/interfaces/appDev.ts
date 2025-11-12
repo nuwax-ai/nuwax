@@ -5,8 +5,8 @@
 
 import { MessageModeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
+import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import type { RequestResponse } from '@/types/interfaces/request';
-import { CoverImgSourceTypeEnum } from '../enums/pageDev';
 import { DataResource } from './dataResource';
 
 /**
