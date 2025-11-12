@@ -86,6 +86,46 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     }
   }, [visible]);
 
+  // 全局键盘事件处理，当下拉框显示时
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (!visible || readonly) return;
+
+      // 检查焦点是否在我们的组件内
+      const activeElement = document.activeElement;
+      if (activeElement && !activeElement.closest('.variable-dropdown')) {
+        return; // 如果焦点不在下拉框内，不处理键盘事件
+      }
+
+      if (
+        e.key === 'ArrowDown' ||
+        e.key === 'ArrowUp' ||
+        e.key === 'Enter' ||
+        e.key === 'Escape'
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 触发组件内的键盘处理逻辑
+        const syntheticEvent = {
+          key: e.key,
+          preventDefault: () => {},
+          stopPropagation: () => {},
+        } as React.KeyboardEvent;
+
+        // 调用键盘处理函数
+        handleKeyDown(syntheticEvent);
+      }
+    };
+
+    if (visible) {
+      document.addEventListener('keydown', handleGlobalKeyDown, true);
+      return () => {
+        document.removeEventListener('keydown', handleGlobalKeyDown, true);
+      };
+    }
+  }, [visible, readonly, handleKeyDown]);
+
   // 高亮显示变量引用
   const renderHighlightedText = useCallback((text: string) => {
     const regex = /\{\{([^}]+)\}\}/g;
@@ -470,6 +510,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
               displayTree.map((node) => (
                 <div
                   key={node.key}
+                  data-node-key={node.key}
                   className="variable-item"
                   style={{
                     padding: '6px 8px',
