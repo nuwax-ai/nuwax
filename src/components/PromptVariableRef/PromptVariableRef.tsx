@@ -15,6 +15,7 @@ import {
   drillToPath,
   filterVariableTree,
   generateVariableReference,
+  getVariableTypeIcon,
 } from './utils/treeUtils';
 
 const { TextArea } = Input;
