@@ -91,12 +91,8 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     const handleGlobalKeyDown = (e: globalThis.KeyboardEvent) => {
       if (!visible || readonly) return;
 
-      // 检查焦点是否在我们的组件内
-      const activeElement = document.activeElement;
-      if (activeElement && !activeElement.closest('.variable-dropdown')) {
-        return; // 如果焦点不在下拉框内，不处理键盘事件
-      }
-
+      // 当下拉框显示时，直接处理键盘导航事件
+      // 不检查焦点位置，因为焦点可能在输入框中
       if (
         e.key === 'ArrowDown' ||
         e.key === 'ArrowUp' ||
@@ -106,21 +102,107 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         e.preventDefault();
         e.stopPropagation();
 
-        // 触发组件内的键盘处理逻辑
-        const syntheticEvent = {
-          key: e.key,
-          preventDefault: () => {},
-          stopPropagation: () => {},
-        } as React.KeyboardEvent;
+        console.log('Global keydown detected:', e.key);
 
-        // 调用键盘处理函数
-        handleKeyDown(syntheticEvent);
+        // 获取所有叶子节点
+        const getAllLeafNodes = (
+          nodes: VariableTreeNode[],
+        ): VariableTreeNode[] => {
+          const leafNodes: VariableTreeNode[] = [];
+          const traverse = (nodeList: VariableTreeNode[]) => {
+            nodeList.forEach((node) => {
+              if (!node.children || node.children.length === 0) {
+                leafNodes.push(node);
+              } else {
+                traverse(node.children);
+              }
+            });
+          };
+          traverse(nodes);
+          return leafNodes;
+        };
+
+        const leafNodes = getAllLeafNodes(displayTree);
+        console.log(
+          'Available leaf nodes:',
+          leafNodes.map((n) => n.key),
+        );
+
+        if (e.key === 'ArrowDown') {
+          let nextIndex = 0;
+          if (activeKey) {
+            const currentIndex = leafNodes.findIndex(
+              (node) => node.key === activeKey,
+            );
+            nextIndex =
+              currentIndex >= 0 ? (currentIndex + 1) % leafNodes.length : 0;
+          }
+
+          const nextNode = leafNodes[nextIndex];
+          console.log('Selecting next node:', nextNode);
+          setActiveKey(nextNode.key);
+          setSelectedKeys([nextNode.key]);
+
+          // 滚动到选中项
+          setTimeout(() => {
+            const element = document.querySelector(
+              `[data-node-key="${nextNode.key}"]`,
+            ) as HTMLElement;
+            if (element) {
+              element.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+          }, 0);
+        } else if (e.key === 'ArrowUp') {
+          let prevIndex = leafNodes.length - 1;
+          if (activeKey) {
+            const currentIndex = leafNodes.findIndex(
+              (node) => node.key === activeKey,
+            );
+            prevIndex =
+              currentIndex > 0 ? currentIndex - 1 : leafNodes.length - 1;
+          }
+
+          const prevNode = leafNodes[prevIndex];
+          console.log('Selecting prev node:', prevNode);
+          setActiveKey(prevNode.key);
+          setSelectedKeys([prevNode.key]);
+
+          // 滚动到选中项
+          setTimeout(() => {
+            const element = document.querySelector(
+              `[data-node-key="${prevNode.key}"]`,
+            ) as HTMLElement;
+            if (element) {
+              element.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+          }, 0);
+        } else if (e.key === 'Enter') {
+          console.log('Enter pressed, activeKey:', activeKey);
+          if (activeKey) {
+            const selectedNode = leafNodes.find(
+              (node) => node.key === activeKey,
+            );
+            if (selectedNode) {
+              console.log('Applying variable:', selectedNode.value);
+              handleApplyVariable(selectedNode.value);
+            }
+          } else if (leafNodes.length > 0) {
+            console.log('Applying first variable:', leafNodes[0].value);
+            handleApplyVariable(leafNodes[0].value);
+          }
+        } else if (e.key === 'Escape') {
+          console.log('Escape pressed, closing dropdown');
+          setVisible(false);
+          setActiveKey(null);
+        }
       }
     };
 
     if (visible) {
+      console.log('Adding global keyboard listener, visible:', visible);
       document.addEventListener('keydown', handleGlobalKeyDown, true);
       return () => {
+        console.log('Removing global keyboard listener');
         document.removeEventListener('keydown', handleGlobalKeyDown, true);
       };
     }
