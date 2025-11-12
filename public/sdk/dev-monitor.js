@@ -12,7 +12,7 @@
 
   // 配置
   const config = {
-    version: '1.0.1',
+    version: '1.0.2',
     enabled: true,
     logLevel: 'error', // 只记录错误级别日志
     maxErrors: 10, // 减少存储量
