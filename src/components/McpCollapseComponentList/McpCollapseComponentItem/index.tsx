@@ -12,10 +12,20 @@ const McpCollapseComponentItem: React.FC<McpCollapseComponentItemProps> = ({
   defaultImage,
   extra,
 }) => {
+  // 图片加载错误处理
+  const handleError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.onerror = null;
+    e.currentTarget.src = defaultImage || '';
+  };
+
   const innerContent = (
     <>
       <span className={cx('radius-6', styles['img-box'])}>
-        <img src={componentInfo.icon || defaultImage} alt="" />
+        <img
+          src={componentInfo.icon || defaultImage}
+          alt=""
+          onError={handleError}
+        />
       </span>
       <div
         className={cx(

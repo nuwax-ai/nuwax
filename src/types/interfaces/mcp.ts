@@ -229,7 +229,6 @@ export interface McpTryRunModalProps {
 
 // Mcp组件列表
 export interface McpCollapseComponentListProps {
-  textClassName?: string;
   type: AgentComponentTypeEnum;
   list: McpConfigComponentInfo[];
   onDel: (targetId: number, type: AgentComponentTypeEnum) => void;

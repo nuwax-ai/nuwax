@@ -1,3 +1,4 @@
+import agentImage from '@/assets/images/agent_image.png';
 import databaseImage from '@/assets/images/database_image.png';
 import knowledgeImage from '@/assets/images/knowledge_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
@@ -8,16 +9,21 @@ import { McpCollapseComponentListProps } from '@/types/interfaces/mcp';
 import { DeleteOutlined } from '@ant-design/icons';
 import React from 'react';
 import McpCollapseComponentItem from './McpCollapseComponentItem';
+import styles from './index.less';
 
 // Mcp手风琴组件列表
 const McpCollapseComponentList: React.FC<McpCollapseComponentListProps> = ({
-  textClassName,
   type,
   list,
   onDel,
 }) => {
   const getInfo = (type: AgentComponentTypeEnum) => {
     switch (type) {
+      case AgentComponentTypeEnum.Agent:
+        return {
+          text: '智能体负责接收用户任务请求，进行智能分析和决策，协调各个模块的协同工作，并最终给出响应结果。',
+          image: agentImage,
+        };
       case AgentComponentTypeEnum.Plugin:
         return {
           text: '插件能够让智能体调用外部API，例如搜索信息、浏览网页、生成图片等，扩展智能体的能力和使用场景。',
@@ -41,7 +47,7 @@ const McpCollapseComponentList: React.FC<McpCollapseComponentListProps> = ({
     }
   };
   return !list?.length ? (
-    <p className={textClassName}>{getInfo(type)?.text}</p>
+    <p className={styles.text}>{getInfo(type)?.text}</p>
   ) : (
     list.map((item, index) => (
       <McpCollapseComponentItem

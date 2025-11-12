@@ -434,7 +434,7 @@ const SpacePageDevelop: React.FC = () => {
             return (
               <PageCard
                 key={info.projectId}
-                icon={info.icon}
+                coverImg={info.coverImg}
                 name={info.name}
                 avatar={info.creatorAvatar}
                 userName={info.creatorNickName || info.creatorName}
