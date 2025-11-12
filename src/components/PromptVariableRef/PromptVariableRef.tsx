@@ -108,12 +108,13 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     [value, onChange, onVariableSelect, variableTree],
   );
 
-  // 根据key查找节点
+  // 根据key查找节点（现在key是完整路径）
   const findNodeByKey = (
     tree: VariableTreeNode[],
     key: string,
   ): VariableTreeNode | null => {
     for (const node of tree) {
+      // 现在key是完整路径，所以直接比较
       if (node.key === key || node.value === key) {
         return node;
       }
@@ -150,8 +151,6 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
         // 展开到当前路径
         const drilledTree = drillToPath(variableTree, currentPath);
-        const newExpandedKeys = drilledTree.map((node) => node.key);
-        setExpandedKeys(newExpandedKeys);
       } else {
         setVisible(false);
         setSearchText('');
