@@ -223,6 +223,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
         addComponents={addComponents}
         hideTop={[
           AgentComponentTypeEnum.Table,
+          AgentComponentTypeEnum.Agent,
           AgentComponentTypeEnum.Plugin,
           AgentComponentTypeEnum.Workflow,
           AgentComponentTypeEnum.MCP,

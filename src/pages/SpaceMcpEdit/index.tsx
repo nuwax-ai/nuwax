@@ -9,10 +9,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { MCP_INSTALL_TYPE_LIST } from '@/constants/mcp.constants';
 import useMcp from '@/hooks/useMcp';
 import { apiMcpDetail, apiMcpUpdate } from '@/services/mcp';
-import {
-  AgentAddComponentStatusEnum,
-  AgentComponentTypeEnum,
-} from '@/types/enums/agent';
+import { AgentAddComponentStatusEnum } from '@/types/enums/agent';
 import {
   DeployStatusEnum,
   McpEditHeadMenusEnum,
@@ -465,7 +462,6 @@ const SpaceMcpCreate: React.FC = () => {
         checkTag={checkTag}
         addComponents={addComponents}
         onAdded={handleAddComponent}
-        hideTop={[AgentComponentTypeEnum.MCP]}
       />
       {/* 试运行弹窗组件 */}
       <McpTryRunModal
