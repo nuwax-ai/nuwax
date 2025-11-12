@@ -967,43 +967,6 @@
   }
 
   /**
-   * 同步登录状态
-   * 当 URL 有 token 参数时，将其写入 cookie（key: ticket）
-   * 用于小程序内同步登录状态
-   */
-  function syncLoginStatus() {
-    try {
-      // 获取 URL 参数中的 token
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token');
-
-      // 如果存在 token 参数
-      if (token) {
-        // 解码 token 值
-        const decodedToken = decodeURIComponent(token);
-
-        // 计算 30 天后的过期时间
-        const expiresDate = new Date();
-        expiresDate.setTime(expiresDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 天
-
-        // 设置 cookie
-        // key: ticket, value: 解码后的 token
-        // 同域名（不设置 domain，使用当前域名）
-        // 30 天有效（使用 expires）
-        // path: /（根路径，确保全站可用）
-        // SameSite: Lax（允许跨站请求携带 cookie）
-        document.cookie = `ticket=${decodedToken}; expires=${expiresDate.toUTCString()}; path=/; SameSite=Lax`;
-
-        // 可选：如果需要调试，可以取消注释下面的日志
-        // _originalConsoleError.call(console, '[DevMonitor] ✅ Login status synced: ticket cookie set');
-      }
-    } catch (error) {
-      // 静默处理错误，避免影响页面正常功能
-      // _originalConsoleError.call(console, '[DevMonitor] ❌ Failed to sync login status:', error);
-    }
-  }
-
-  /**
    * 设置微信小程序相关功能
    * 包括：注入 JS-SDK、监听 DOM 变化并发送消息到小程序
    */
@@ -1146,10 +1109,6 @@
 
   // 简化的初始化
   function init() {
-    // ⭐ 优先同步登录状态（在页面加载时立即执行）
-    // 当 URL 有 token 参数时，将其写入 cookie（key: ticket）
-    syncLoginStatus();
-
     // ⭐ 关键：优先设置 Console 拦截，确保在 React Router 加载之前就拦截
     // 这样可以捕获所有通过 console.error 输出的错误
     setupConsoleInterception();
