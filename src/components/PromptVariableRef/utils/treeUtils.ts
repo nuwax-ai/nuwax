@@ -15,12 +15,14 @@ export const transformVariableToTreeNode = (
 ): VariableTreeNode => {
   const currentPath = [...parentPath, variable.key];
   const value = currentPath.join('.');
+  // 使用完整的路径作为 key，确保唯一性
+  const uniqueKey = value;
 
   const node: VariableTreeNode = {
     label: variable.label || variable.name,
     title: variable.label || variable.name,
     value: value,
-    key: variable.key,
+    key: uniqueKey,
     keyPath: currentPath,
     variable,
     children: [],
@@ -42,7 +44,7 @@ export const transformVariableToTreeNode = (
         label: `[0] (数组索引)`,
         title: `[0] (数组索引)`,
         value: `${value}[0]`,
-        key: `${variable.key}_index_0`,
+        key: `${uniqueKey}_index_0`,
         keyPath: currentPath,
         variable: {
           key: '0',
@@ -91,8 +93,8 @@ export const findNodeByPath = (
       const arrayIndex = currentSegment.slice(1, -1);
       const child = node.children?.find(
         (child) =>
-          child.key === `${node.key}_index_${arrayIndex}` ||
-          child.key === arrayIndex,
+          child.key === `${node.key}[${arrayIndex}]` ||
+          child.key === `${node.key}_index_${arrayIndex}`,
       );
 
       if (child) {
@@ -101,7 +103,9 @@ export const findNodeByPath = (
     }
 
     // 处理常规属性
-    const child = node.children?.find((child) => child.key === currentSegment);
+    const child = node.children?.find(
+      (child) => child.key === `${node.key}.${currentSegment}`,
+    );
 
     if (child) {
       return findInNode(child, segments, index + 1);
@@ -163,49 +167,34 @@ export const drillToPath = (
   tree: VariableTreeNode[],
   path: string,
 ): VariableTreeNode[] => {
-  const pathSegments = path.split('.');
+  if (!path.trim()) {
+    return tree;
+  }
 
-  const drillNode = (
+  const findAndExpandNode = (
     node: VariableTreeNode,
-    segments: string[],
-    index: number,
+    targetPath: string,
   ): VariableTreeNode => {
-    if (index >= segments.length) {
+    if (node.key === targetPath) {
+      // 找到目标节点，展开它
       return node;
     }
 
-    const currentSegment = segments[index];
-
-    // 处理数组索引
-    if (currentSegment.startsWith('[') && currentSegment.endsWith(']')) {
-      const arrayIndex = currentSegment.slice(1, -1);
-      const indexChild = node.children?.find(
-        (child) =>
-          child.key === `${node.key}_index_${arrayIndex}` ||
-          child.key === arrayIndex,
+    if (node.children && targetPath.startsWith(node.key + '.')) {
+      const childPath = targetPath.substring(node.key.length + 1);
+      const expandedChild = node.children.map((child) =>
+        findAndExpandNode(child, childPath),
       );
-
-      if (indexChild) {
-        return drillNode(indexChild, segments, index + 1);
-      }
-    }
-
-    // 处理常规属性
-    const child = node.children?.find((child) => child.key === currentSegment);
-
-    if (child) {
-      return drillNode(child, segments, index + 1);
+      return {
+        ...node,
+        children: expandedChild,
+      };
     }
 
     return node;
   };
 
-  return tree.map((node) => {
-    if (node.key === pathSegments[0]) {
-      return drillNode(node, pathSegments, 1);
-    }
-    return node;
-  });
+  return tree.map((node) => findAndExpandNode(node, path));
 };
 
 /**
