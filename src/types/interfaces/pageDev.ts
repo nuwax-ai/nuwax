@@ -8,7 +8,7 @@ import {
   ReverseProxyEnum,
 } from '../enums/pageDev';
 import { ProjectDetailData } from './appDev';
-import { BindConfigWithSub, CustomPopoverItem } from './common';
+import { BindConfigWithSub } from './common';
 
 /**
  * 反向代理配置
@@ -186,13 +186,6 @@ export interface CreateCustomPageInfo {
   projectIdStr: string;
   // 开发服务器URL
   devServerUrl: string;
-}
-
-// 单个页面开发组件
-export interface PageDevelopCardItemProps {
-  componentInfo: CustomPageDto;
-  onClick: () => void;
-  onClickMore: (item: CustomPopoverItem) => void;
 }
 
 /**
