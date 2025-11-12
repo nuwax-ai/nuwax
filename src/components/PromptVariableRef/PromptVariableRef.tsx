@@ -4,8 +4,7 @@
  * 支持 {{变量名}}、{{变量名.子变量名}}、{{变量名[数组索引]}} 语法
  */
 
-import { SearchOutlined } from '@ant-design/icons';
-import { Empty, Input, Popover, Tree } from 'antd';
+import { Input, Popover } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import './styles.less';
@@ -15,7 +14,6 @@ import {
   drillToPath,
   filterVariableTree,
   generateVariableReference,
-  getVariableTypeIcon,
 } from './utils/treeUtils';
 
 const { TextArea } = Input;
@@ -37,11 +35,11 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   const [internalValue, setInternalValue] = useState(value || '');
   const [visible, setVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
-  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  // const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]); // 临时注释用于调试
+  // const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]); // 临时注释用于调试
 
   const inputRef = useRef<any>(null);
-  const treeRef = useRef<any>(null);
+  // const treeRef = useRef<any>(null); // 临时注释用于调试
 
   // 根据key查找变量节点
   const findNodeByKey = (
@@ -187,18 +185,18 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         // 展开到当前路径
         const drilledTree = drillToPath(variableTree, currentPath);
         console.log('Drilled tree:', drilledTree);
-        // 更新展开的 keys
-        const expandedKeys = drilledTree.flatMap((node) =>
-          node.keyPath ? [node.keyPath.slice(0, -1).join('.')] : [],
-        );
-        const finalExpandedKeys = expandedKeys.filter(Boolean);
-        console.log('Setting expanded keys:', finalExpandedKeys);
-        setExpandedKeys(finalExpandedKeys);
+        // 更新展开的 keys - 临时注释用于调试
+        // const expandedKeys = drilledTree.flatMap((node) =>
+        //   node.keyPath ? [node.keyPath.slice(0, -1).join('.')] : [],
+        // );
+        // const finalExpandedKeys = expandedKeys.filter(Boolean);
+        // console.log('Setting expanded keys:', finalExpandedKeys);
+        // setExpandedKeys(finalExpandedKeys);
       } else {
         console.log('Setting visible to false');
         setVisible(false);
         setSearchText('');
-        setExpandedKeys([]);
+        // setExpandedKeys([]); // 临时注释用于调试
       }
     },
     [onChange, readonly, variableTree],
@@ -235,16 +233,25 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     [visible, readonly, selectedKeys, handleApplyVariable],
   );
 
-  // 树节点选择
-  const handleTreeSelect = useCallback(
-    (selectedKeys: React.Key[]) => {
-      setSelectedKeys(selectedKeys);
-      if (selectedKeys.length > 0) {
-        handleApplyVariable(selectedKeys[0] as string);
-      }
-    },
-    [handleApplyVariable],
-  );
+  // 树节点选择 - 临时注释用于调试
+  // const handleTreeSelect = useCallback(
+  //   (selectedKeys: React.Key[]) => {
+  //     setSelectedKeys(selectedKeys);
+  //     if (selectedKeys.length > 0) {
+  //       handleApplyVariable(selectedKeys[0] as string);
+  //     }
+  //   },
+  //   [handleApplyVariable],
+  // );
+
+  const popoverShouldShow = visible && !readonly && !disabled;
+  console.log('Popover show condition:', {
+    visible,
+    readonly,
+    disabled,
+    shouldShow: popoverShouldShow,
+    direction,
+  });
 
   return (
     <div className={`prompt-variable-ref ${className}`} style={style}>
@@ -260,70 +267,24 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       />
 
       <Popover
-        open={visible && !readonly && !disabled}
-        placement={direction}
+        open={popoverShouldShow}
+        placement="bottom" // 临时使用简单的 placement
         trigger={[]} // 移除 trigger，通过 open 属性完全控制显示
         onOpenChange={(open) => console.log('Popover open changed to:', open)}
         content={
-          <div className="variable-popover-content">
-            <div className="variable-search">
-              <SearchOutlined />
-              <input
-                type="text"
-                placeholder="搜索变量..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                className="variable-search-input"
-              />
-            </div>
-
-            <div className="variable-tree-container">
-              {filteredTree.length > 0 ? (
-                <Tree
-                  ref={treeRef}
-                  treeData={filteredTree}
-                  selectedKeys={selectedKeys}
-                  expandedKeys={expandedKeys}
-                  onExpandedKeysChange={setExpandedKeys}
-                  onSelect={handleTreeSelect}
-                  titleRender={(nodeData) => {
-                    if (typeof nodeData === 'object' && nodeData !== null) {
-                      const variable = (nodeData as any).variable;
-                      if (variable) {
-                        return (
-                          <div className="variable-tree-node">
-                            <span className="variable-type-icon">
-                              {getVariableTypeIcon(variable.type)}
-                            </span>
-                            <span className="variable-label">
-                              {nodeData.title || nodeData.label}
-                            </span>
-                            {variable.description && (
-                              <span className="variable-description">
-                                {variable.description}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      }
-                    }
-                    return nodeData.title || nodeData.label || nodeData.key;
-                  }}
-                />
-              ) : (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description="没有找到匹配的变量"
-                />
-              )}
-            </div>
-
-            <div className="variable-popover-footer">
-              <small>
-                支持语法：{'{{variable}}'}, {'{{variable.property}}'},{' '}
-                {'{{variable[0]}}'}
-              </small>
-            </div>
+          <div
+            style={{
+              padding: 20,
+              background: 'red',
+              width: 300,
+              minHeight: 200,
+            }}
+          >
+            <div>TEST CONTENT - Popover is showing!</div>
+            <div>Variables count: {filteredTree.length}</div>
+            <div>Visible: {visible.toString()}</div>
+            <div>Readonly: {readonly.toString()}</div>
+            <div>Disabled: {disabled.toString()}</div>
           </div>
         }
         overlayClassName="variable-popover"
