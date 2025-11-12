@@ -5,7 +5,6 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
-import { AgentArrangeConfigEnum } from '@/types/enums/space';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { McpConfigComponentInfo } from '@/types/interfaces/mcp';
@@ -72,7 +71,7 @@ const useMcp = () => {
     setAddComponents(newList);
   };
 
-  // 添加插件、工作流、知识库等
+  // 添加智能体、插件、工作流、知识库、数据表等
   const handlerComponentPlus = (
     e: React.MouseEvent<HTMLElement>,
     type: AgentComponentTypeEnum,
@@ -91,18 +90,21 @@ const useMcp = () => {
 
   // 折叠面板 - 当前激活 tab 面板的 key
   const collapseActiveKey = useMemo(() => {
-    const list: AgentArrangeConfigEnum[] = [];
+    const list: AgentComponentTypeEnum[] = [];
+    if (isExistComponent(AgentComponentTypeEnum.Agent)) {
+      list.push(AgentComponentTypeEnum.Agent);
+    }
     if (isExistComponent(AgentComponentTypeEnum.Plugin)) {
-      list.push(AgentArrangeConfigEnum.Plugin);
+      list.push(AgentComponentTypeEnum.Plugin);
     }
     if (isExistComponent(AgentComponentTypeEnum.Workflow)) {
-      list.push(AgentArrangeConfigEnum.Workflow);
+      list.push(AgentComponentTypeEnum.Workflow);
     }
     if (isExistComponent(AgentComponentTypeEnum.Knowledge)) {
-      list.push(AgentArrangeConfigEnum.Knowledge);
+      list.push(AgentComponentTypeEnum.Knowledge);
     }
     if (isExistComponent(AgentComponentTypeEnum.Table)) {
-      list.push(AgentArrangeConfigEnum.Table);
+      list.push(AgentComponentTypeEnum.Table);
     }
     return list;
   }, [mcpConfigComponentList]);
@@ -140,7 +142,6 @@ const useMcp = () => {
       label: item.label,
       children: (
         <McpCollapseComponentList
-          textClassName="px-16"
           type={item.type}
           list={filterList(item.type)}
           onDel={handleComponentDel}

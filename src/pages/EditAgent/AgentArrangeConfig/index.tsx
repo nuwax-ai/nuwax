@@ -929,7 +929,9 @@ ${item.identification}的动态JSON参数JsonSchema如下\n
       <ConfigOptionsHeader title="对话体验" />
       <ConfigOptionCollapse
         items={ConversationalExperienceList}
-        onChangeCollapse={setExperienceActiveKey}
+        onChangeCollapse={(key) =>
+          setExperienceActiveKey(key as AgentArrangeConfigEnum[])
+        }
         defaultActiveKey={experienceActiveKey}
       />
       <ConfigOptionsHeader title="界面配置" />

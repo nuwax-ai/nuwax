@@ -25,6 +25,7 @@ export const MCP_INSTALL_TYPE_LIST = [
   { value: McpInstallTypeEnum.NPX, label: 'npx' },
   { value: McpInstallTypeEnum.UVX, label: 'uvx' },
   { value: McpInstallTypeEnum.SSE, label: 'sse' },
+  { value: McpInstallTypeEnum.STREAMABLE_HTTP, label: 'streamableHttp' },
   { value: McpInstallTypeEnum.COMPONENT, label: '组件库' },
 ];
 
@@ -33,6 +34,10 @@ export const MCP_COLLAPSE_COMPONENT_LIST: {
   type: AgentComponentTypeEnum;
   label: string;
 }[] = [
+  {
+    type: AgentComponentTypeEnum.Agent,
+    label: '智能体',
+  },
   {
     type: AgentComponentTypeEnum.Plugin,
     label: '插件',
