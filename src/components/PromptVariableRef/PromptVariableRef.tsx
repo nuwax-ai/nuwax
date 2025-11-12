@@ -27,12 +27,12 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   placeholder = '输入提示词，使用 {{变量名}} 引用变量',
   onChange,
   onVariableSelect,
-  defaultValue = '',
+  value,
   disabled = false,
   className = '',
   style,
 }) => {
-  const [value, setValue] = useState(defaultValue);
+  const [internalValue, setInternalValue] = useState(value || '');
   const [visible, setVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
@@ -40,6 +40,31 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
   const inputRef = useRef<any>(null);
   const treeRef = useRef<any>(null);
+
+  // 根据key查找变量节点
+  const findNodeByKey = (
+    tree: VariableTreeNode[],
+    key: string,
+  ): VariableTreeNode | null => {
+    for (const node of tree) {
+      // 现在key是完整路径，所以直接比较
+      if (node.key === key || node.value === key) {
+        return node;
+      }
+      if (node.children) {
+        const found = findNodeByKey(node.children, key);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // 同步外部 value 到内部 state
+  useEffect(() => {
+    if (value !== undefined) {
+      setInternalValue(value);
+    }
+  }, [value]);
 
   // 构建变量树
   const variableTree = buildVariableTree(variables);
@@ -55,7 +80,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       const textarea = inputRef.current.resizableTextArea.textArea;
       const startPos = textarea.selectionStart;
       const endPos = textarea.selectionEnd;
-      const currentValue = value;
+      const currentValue = internalValue;
 
       // 查找 {{...}} 的范围
       const beforeText = currentValue.substring(0, startPos);
@@ -86,7 +111,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           newCursorPos = lastStartPos + variableRef.length;
         }
 
-        setValue(finalText);
+        setInternalValue(finalText);
         onChange?.(finalText);
 
         // 设置光标位置
@@ -108,29 +133,11 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     [value, onChange, onVariableSelect, variableTree],
   );
 
-  // 根据key查找节点（现在key是完整路径）
-  const findNodeByKey = (
-    tree: VariableTreeNode[],
-    key: string,
-  ): VariableTreeNode | null => {
-    for (const node of tree) {
-      // 现在key是完整路径，所以直接比较
-      if (node.key === key || node.value === key) {
-        return node;
-      }
-      if (node.children) {
-        const found = findNodeByKey(node.children, key);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
   // 处理输入变化
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newValue = e.target.value;
-      setValue(newValue);
+      setInternalValue(newValue);
       onChange?.(newValue);
 
       // 检查是否在输入变量引用
@@ -141,7 +148,11 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       const lastDoubleBraceStart = beforeCursor.lastIndexOf('{{');
 
       // 检查是否刚刚输入了 {{ 或正在 {{...}} 中
-      const isInVariableContext = lastDoubleBraceStart !== -1;
+      // 确保在 {{ 之后没有对应的 }}
+      const afterLastStart = beforeCursor.substring(lastDoubleBraceStart + 2);
+      const hasClosingBraces = afterLastStart.includes('}}');
+      const isInVariableContext =
+        lastDoubleBraceStart !== -1 && !hasClosingBraces;
 
       if (isInVariableContext && !readonly) {
         setVisible(true);
@@ -151,9 +162,15 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
         // 展开到当前路径
         const drilledTree = drillToPath(variableTree, currentPath);
+        // 更新展开的 keys
+        const expandedKeys = drilledTree.flatMap((node) =>
+          node.keyPath ? [node.keyPath.slice(0, -1).join('.')] : [],
+        );
+        setExpandedKeys(expandedKeys.filter(Boolean));
       } else {
         setVisible(false);
         setSearchText('');
+        setExpandedKeys([]);
       }
     },
     [onChange, readonly, variableTree],
@@ -192,7 +209,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
   // 树节点选择
   const handleTreeSelect = useCallback(
-    (selectedKeys: React.Key[], info: any) => {
+    (selectedKeys: React.Key[]) => {
       setSelectedKeys(selectedKeys);
       if (selectedKeys.length > 0) {
         handleApplyVariable(selectedKeys[0] as string);
@@ -205,7 +222,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     <div className={`prompt-variable-ref ${className}`} style={style}>
       <TextArea
         ref={inputRef}
-        value={value}
+        value={internalValue}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
