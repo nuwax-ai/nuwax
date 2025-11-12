@@ -1,1 +1,0 @@
-"use strict";(()=>{(self.webpackChunkagent_platform_front=self.webpackChunkagent_platform_front||[]).push([[5333],{90223:function(o,a,n){n.r(a),n.d(a,{default:function(){return f}});var s=n(94581),r=n.n(s),c=n(75271),t={container:"container___N3DsY"},u=n(52676),l=r().bind(t),d=function(){return(0,u.jsx)("div",{className:l(t.container),children:"404\u9875\u9762"})},f=d}}]);})();
