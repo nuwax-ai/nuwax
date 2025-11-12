@@ -464,7 +464,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* 变量列表 */}
+          {/* 变量列表 - 使用树形结构 */}
           <div>
             {displayTree.length > 0 ? (
               displayTree.map((node) => (
