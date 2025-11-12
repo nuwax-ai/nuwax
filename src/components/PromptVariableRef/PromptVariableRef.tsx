@@ -419,7 +419,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
             }}
           >
             <div>TEST CONTENT - Popover is showing!</div>
-            <div>Variables count: {filteredTree.length}</div>
+            <div>Variables count: {displayTree.length}</div>
             <div>Visible: {visible.toString()}</div>
             <div>Readonly: {readonly.toString()}</div>
             <div>Disabled: {disabled.toString()}</div>
