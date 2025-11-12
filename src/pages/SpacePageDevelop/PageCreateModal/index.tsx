@@ -6,7 +6,10 @@ import {
   apiCustomPageCreateReverseProxy,
   apiCustomPageUploadAndStart,
 } from '@/services/pageDev';
-import { PageDevelopCreateTypeEnum } from '@/types/enums/pageDev';
+import {
+  CoverImgSourceTypeEnum,
+  PageDevelopCreateTypeEnum,
+} from '@/types/enums/pageDev';
 import {
   CreateCustomPageInfo,
   PageCreateModalProps,
@@ -36,6 +39,8 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
   const [form] = Form.useForm();
   // 图标
   const [imageUrl, setImageUrl] = useState<string>('');
+  // 封面图片
+  const [coverImgUrl, setCoverImgUrl] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
   // 上传前端项目压缩包并启动开发服务器
@@ -85,7 +90,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
     // 项目导入
     if (type === PageDevelopCreateTypeEnum.Import_Project) {
-      const { fileList, icon, projectName, projectDesc } = values;
+      const { fileList, icon, projectName, projectDesc, coverImg } = values;
 
       // 上传文件接口返回的是文件的base64，这里需要转换一下
       const file = fileList?.[0]?.originFileObj;
@@ -112,28 +117,32 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
       formData.append('projectName', projectName);
       formData.append('projectDesc', projectDesc || '');
       formData.append('spaceId', spaceId.toString());
+      formData.append('coverImg', coverImg);
+      // 如果用户上传了封面图片，则设置封面图片来源为USER
+      formData.append(
+        'coverImgSourceType',
+        coverImg ? CoverImgSourceTypeEnum.USER : '',
+      );
       /* 2. 追加文件 */
       formData.append('file', file || '');
       runCreatePageUploadAndStart(formData);
-    }
-    // 在线创建
-    else if (type === PageDevelopCreateTypeEnum.Online_Develop) {
+    } else {
+      // 封面图片
+      const { coverImg } = values;
       setLoading(true);
       const data = {
         ...values,
         spaceId,
+        coverImgSourceType: coverImg ? CoverImgSourceTypeEnum.USER : '',
       };
-      runCreatePageCreate(data);
-    }
-    // 反向代理
-    else if (type === PageDevelopCreateTypeEnum.Reverse_Proxy) {
-      setLoading(true);
-      // 调用反向代理接口
-      const data = {
-        ...values,
-        spaceId,
-      };
-      runCreatePageCreateReverseProxy(data);
+      // 在线创建
+      if (type === PageDevelopCreateTypeEnum.Online_Develop) {
+        runCreatePageCreate(data);
+      }
+      // 反向代理
+      else if (type === PageDevelopCreateTypeEnum.Reverse_Proxy) {
+        runCreatePageCreateReverseProxy(data);
+      }
     }
   };
 
@@ -180,6 +189,12 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
     form.setFieldValue('icon', url);
   };
 
+  // 上传封面图片成功
+  const uploadCoverImgSuccess = (url: string) => {
+    setCoverImgUrl(url);
+    form.setFieldValue('coverImg', url);
+  };
+
   const normFile = (e: any) => {
     if (Array.isArray(e)) {
       return e;
@@ -193,6 +208,11 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
       open={open}
       title="创建页面"
       loading={loading}
+      classNames={{
+        content: styles['modal-content'],
+        header: styles['modal-header'],
+        body: styles['modal-body'],
+      }}
       onCancel={handleCancel}
       onConfirm={handlerConfirm}
     >
@@ -217,11 +237,18 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
           placeholder="请输入描述"
           maxLength={10000}
         />
+        <Form.Item name="icon" label="图标">
+          <UploadAvatar
+            onUploadSuccess={uploadIconSuccess}
+            imageUrl={imageUrl}
+            svgIconName="icons-common-plus"
+          />
+        </Form.Item>
         <Form.Item
-          name="icon"
+          name="coverImg"
           label={
             <div className={cx('flex', 'gap-10', 'items-center')}>
-              <span>图标</span>
+              <span>封面图片</span>
               <span className={cx(styles['text-tip'])}>
                 建议尺寸356px * 200px, 比例16:9
               </span>
@@ -230,9 +257,9 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
         >
           <UploadAvatar
             className={cx(styles['upload-avatar'])}
-            onUploadSuccess={uploadIconSuccess}
-            imageUrl={imageUrl}
-            svgIconName="icons-common-upload"
+            onUploadSuccess={uploadCoverImgSuccess}
+            imageUrl={coverImgUrl}
+            svgIconName="icons-common-plus"
           />
         </Form.Item>
         {type === PageDevelopCreateTypeEnum.Import_Project && (

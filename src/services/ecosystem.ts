@@ -650,3 +650,12 @@ export async function getCategoryListApi(): Promise<any> {
   })) as RequestResponse<any>;
   return response.data || [];
 }
+
+// 删除配置
+export async function apiEcoMarketClientConfigDelete(
+  uid: string,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/eco/market/client/config/delete/${uid}`, {
+    method: 'POST',
+  });
+}

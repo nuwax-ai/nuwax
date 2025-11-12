@@ -7,11 +7,13 @@ import {
   saveConversation,
   stopAgentService,
 } from '@/services/appDev';
-import type {
-  AppDevChatMessage,
-  Attachment,
-  FileStreamAttachment,
-  UnifiedSessionMessage,
+import {
+  AgentSessionUpdateSubType,
+  SessionMessageType,
+  type AppDevChatMessage,
+  type Attachment,
+  type FileStreamAttachment,
+  type UnifiedSessionMessage,
 } from '@/types/interfaces/appDev';
 import { debounce } from '@/utils/appDevUtils';
 import { createSSEConnection } from '@/utils/fetchEventSource';
@@ -28,6 +30,7 @@ import {
   insertToolCallBlock,
   insertToolCallUpdateBlock,
 } from '@/pages/AppDev/utils/markdownProcess';
+import { AssistantRoleEnum } from '@/types/enums/agent';
 import type { DataSourceSelection, FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
 import {
@@ -160,13 +163,13 @@ export const useAppDevChat = ({
       // }
 
       switch (message.messageType) {
-        case 'sessionPromptStart': {
+        case SessionMessageType.SESSION_PROMPT_START: {
           break;
         }
 
-        case 'agentSessionUpdate': {
+        case SessionMessageType.AGENT_SESSION_UPDATE: {
           const { subType, data } = message;
-          if (subType === 'agent_message_chunk') {
+          if (subType === AgentSessionUpdateSubType.AGENT_MESSAGE_CHUNK) {
             const chunkText = data?.content?.text || data?.text || '';
             const isFinal = data?.is_final;
             // 如果 chunkText 不为空，则追加到消息列表，如果 isFinal 为 true，则标记消息完成
@@ -182,12 +185,12 @@ export const useAppDevChat = ({
             }
           }
 
-          if (subType === 'plan') {
+          if (subType === AgentSessionUpdateSubType.PLAN) {
             setChatMessages((prev) =>
               prev.map((msg) => {
                 if (
                   msg.requestId === activeRequestId &&
-                  msg.role === 'ASSISTANT'
+                  msg.role === AssistantRoleEnum.ASSISTANT
                 ) {
                   return {
                     ...msg,
@@ -201,12 +204,12 @@ export const useAppDevChat = ({
               }),
             );
           }
-          if (subType === 'tool_call') {
+          if (subType === AgentSessionUpdateSubType.TOOL_CALL) {
             setChatMessages((prev) =>
               prev.map((msg) => {
                 if (
                   msg.requestId === activeRequestId &&
-                  msg.role === 'ASSISTANT'
+                  msg.role === AssistantRoleEnum.ASSISTANT
                 ) {
                   return {
                     ...msg,
@@ -230,12 +233,12 @@ export const useAppDevChat = ({
               fileOperationToolCallIdsRef.current.add(data.toolCallId);
             }
           }
-          if (subType === 'tool_call_update') {
+          if (subType === AgentSessionUpdateSubType.TOOL_CALL_UPDATE) {
             setChatMessages((prev) =>
               prev.map((msg) => {
                 if (
                   msg.requestId === activeRequestId &&
-                  msg.role === 'ASSISTANT'
+                  msg.role === AssistantRoleEnum.ASSISTANT
                 ) {
                   return {
                     ...msg,
@@ -266,20 +269,76 @@ export const useAppDevChat = ({
               debouncedRefreshFileTree();
             }
           }
+          if (subType === AgentSessionUpdateSubType.ERROR) {
+            // 错误处理
+            const chunkText = data?.message || '';
+            const isFinal = true;
+            // 如果 chunkText 不为空，则追加到消息列表，如果 isFinal 为 true，则标记消息完成
+            if (chunkText) {
+              setChatMessages((prev) =>
+                appendTextToStreamingMessage(
+                  prev,
+                  activeRequestId,
+                  chunkText,
+                  isFinal,
+                ),
+              );
+            }
+
+            // 会话结束时执行一次文件树刷新
+            debouncedRefreshFileTree();
+            setIsChatLoading(false);
+            // 延迟关闭SSE连接，确保消息处理完成
+            abortConnectionRef.current?.abort?.();
+            //弹窗提示错误消息 强制用户关闭对话框并让用户确认停止Agent服务
+            Modal.confirm({
+              maskClosable: false,
+              title: '错误消息',
+              content:
+                '服务异常，请停止Agent服务并重新开始对话' +
+                (data?.code ? `(${data?.code})` : ''),
+              onOk: () => {
+                return new Promise((resolve, reject) => {
+                  stopAgentService(projectId)
+                    .then((stopResponse) => {
+                      if (stopResponse.code === '0000') {
+                        message.success('Agent服务已停止');
+                        resolve(true);
+                      } else {
+                        message.error(
+                          `停止Agent服务失败: ${
+                            stopResponse.message || '未知错误'
+                          }`,
+                        );
+                        reject();
+                      }
+                    })
+                    .catch(() => {
+                      message.error('停止Agent服务失败');
+                      reject();
+                    });
+                });
+              },
+            });
+          }
           break;
         }
 
-        case 'sessionPromptEnd': {
+        case SessionMessageType.SESSION_PROMPT_END: {
           // 标记消息完成
           setChatMessages((prev) => {
             const updated = markStreamingMessageComplete(prev, activeRequestId);
 
             // 保存会话
             const userMessage = updated.find(
-              (m) => m.requestId === activeRequestId && m.role === 'USER',
+              (m) =>
+                m.requestId === activeRequestId &&
+                m.role === AssistantRoleEnum.USER,
             );
             const assistantMessage = updated.find(
-              (m) => m.requestId === activeRequestId && m.role === 'ASSISTANT',
+              (m) =>
+                m.requestId === activeRequestId &&
+                m.role === AssistantRoleEnum.ASSISTANT,
             );
 
             if (userMessage && assistantMessage) {
@@ -314,7 +373,7 @@ export const useAppDevChat = ({
           break;
         }
 
-        case 'heartbeat':
+        case SessionMessageType.HEARTBEAT:
           // 仅用于保活,不做任何处理
           break;
 
@@ -388,6 +447,7 @@ export const useAppDevChat = ({
       Modal.confirm({
         title: '检测到后台Agent服务正在运行',
         content: '是否停止当前运行的Agent服务？',
+        maskClosable: false,
         onOk: () => {
           return new Promise((resolve, reject) => {
             stopAgentService(projectId)

@@ -966,21 +966,160 @@
     }, 100);
   }
 
+  /**
+   * 设置微信小程序相关功能
+   * 包括：注入 JS-SDK、监听 DOM 变化并发送消息到小程序
+   */
+  function setupWeChatMiniProgram() {
+    // 检查是否在微信小程序的 webview 环境中
+    if (window.__wxjs_environment !== 'miniprogram') {
+      return; // 不在小程序环境中，直接返回
+    }
+
+    /**
+     * 检查并设置消息发送功能
+     * 如果 JS-SDK 已加载，直接设置；否则注入脚本后设置
+     */
+    function trySetupMessage() {
+      // 检查 wx.miniProgram 是否可用
+      if (
+        window.wx &&
+        window.wx.miniProgram &&
+        window.wx.miniProgram.postMessage
+      ) {
+        setupMiniProgramMessage();
+        return true;
+      }
+      return false;
+    }
+
+    /**
+     * 注入微信 JS-SDK
+     */
+    function injectWeChatSDK() {
+      // 如果 JS-SDK 已加载，直接设置消息发送功能
+      if (trySetupMessage()) {
+        return;
+      }
+
+      // 检查是否已经注入过脚本（避免重复注入）
+      if (document.querySelector('script[id="wechat-js-sdk"]')) {
+        // 脚本已存在，等待加载完成
+        const checkInterval = setInterval(() => {
+          if (trySetupMessage()) {
+            clearInterval(checkInterval);
+          }
+        }, 100);
+
+        // 10 秒后停止检查
+        setTimeout(() => clearInterval(checkInterval), 10000);
+        return;
+      }
+
+      // 创建并注入 JS-SDK 脚本
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.id = 'wechat-js-sdk';
+      script.src = 'https://res.wx.qq.com/open/js/jweixin-1.3.2.js';
+
+      // 脚本加载成功回调
+      script.onload = function () {
+        // 等待 wx 对象可用
+        setTimeout(() => {
+          trySetupMessage();
+        }, 100);
+      };
+
+      // 插入脚本到 head（确保 DOM 已准备好）
+      const insertScript = () => {
+        if (document.head) {
+          document.head.appendChild(script);
+        }
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', insertScript);
+      } else {
+        insertScript();
+      }
+    }
+
+    /**
+     * 设置小程序消息发送功能
+     * 监听 DOM 变化并通过 wx.miniProgram.postMessage 发送页面内容
+     * 参考 PagePreviewIframe 组件的实现逻辑
+     */
+    function setupMiniProgramMessage() {
+      // 确保 document.body 存在
+      if (!document.body) {
+        if (document.readyState === 'loading') {
+          document.addEventListener(
+            'DOMContentLoaded',
+            setupMiniProgramMessage,
+          );
+        } else {
+          setTimeout(setupMiniProgramMessage, 100);
+        }
+        return;
+      }
+
+      let timer = null;
+
+      // 监听 DOM 变化
+      const observer = new MutationObserver(() => {
+        // 每次变化后延迟 500ms 再检测，确保渲染稳定
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          try {
+            // 获取 head 中的 title 内容
+            const htmlTitle =
+              document.querySelector('head > title')?.textContent || '页面预览';
+
+            // 获取 body 的 HTML 内容
+            const htmlDomString = document.body.innerHTML || '';
+
+            // 通过 postMessage 发送消息到小程序（已确保 wx.miniProgram 可用）
+            window.wx.miniProgram.postMessage({
+              data: {
+                html: htmlDomString,
+                title: htmlTitle,
+              },
+            });
+          } catch (error) {
+            // 静默处理错误（避免影响页面正常功能）
+          }
+        }, 500);
+      });
+
+      // 开始观察 DOM 变化
+      observer.observe(document.body, {
+        childList: true, // 监听子节点的添加和删除
+        subtree: true, // 监听所有后代节点
+        characterData: true, // 监听文本内容变化
+      });
+    }
+
+    // 根据 DOM 状态决定何时注入 JS-SDK
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', injectWeChatSDK);
+    } else {
+      injectWeChatSDK();
+    }
+  }
+
   // 简化的初始化
   function init() {
-    // ⭐ 初始化时检查运行环境
-    const isInIframe = window.self !== window.top;
-
     // ⭐ 关键：优先设置 Console 拦截，确保在 React Router 加载之前就拦截
     // 这样可以捕获所有通过 console.error 输出的错误
     setupConsoleInterception();
 
     setupErrorMonitoring();
     setupHistoryTracking();
-    monitorData.ready = true;
 
-    // 简化的控制台提示（可选：需要调试时可以取消注释）
-    // console.log('[DevMonitor] 🚀 Initialized', { version: config.version, isInIframe });
+    // ⭐ 设置微信小程序相关功能（在最后执行，确保其他功能已初始化）
+    setupWeChatMiniProgram();
+
+    monitorData.ready = true;
   }
 
   // 立即初始化

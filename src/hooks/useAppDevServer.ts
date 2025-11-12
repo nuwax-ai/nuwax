@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseAppDevServerProps {
   projectId: string;
+
   onServerStart?: (devServerUrl: string) => void;
   onServerStatusChange?: (isRunning: boolean) => void;
 }
