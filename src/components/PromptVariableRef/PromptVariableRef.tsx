@@ -86,6 +86,49 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     }
   }, [visible]);
 
+  // 高亮显示变量引用
+  const renderHighlightedText = useCallback((text: string) => {
+    const regex = /\{\{([^}]+)\}\}/g;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      // 添加匹配前的普通文本
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+
+      // 添加高亮的变量引用
+      const variableName = match[1];
+      parts.push(
+        <span
+          key={`variable-${match.index}`}
+          style={{
+            backgroundColor: '#e6f7ff',
+            color: '#1890ff',
+            padding: '2px 4px',
+            borderRadius: '3px',
+            fontFamily: 'Monaco, Menlo, monospace',
+            fontSize: '13px',
+            fontWeight: 500,
+          }}
+        >
+          {`{{${variableName}}}`}
+        </span>,
+      );
+
+      lastIndex = match.index + match.length;
+    }
+
+    // 添加剩余的普通文本
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : text;
+  }, []);
+
   // 构建变量树
   const variableTree = buildVariableTree(variables);
 
@@ -294,16 +337,48 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
   return (
     <div className={`prompt-variable-ref ${className}`} style={style}>
-      <TextArea
-        ref={inputRef}
-        value={internalValue}
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        disabled={disabled}
-        rows={4}
-        className="prompt-variable-input"
-      />
+      {/* 主要的输入区域 */}
+      <div style={{ position: 'relative' }}>
+        {/* 高亮背景层 */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            padding: '4px 11px',
+            backgroundColor: 'transparent',
+            color: 'transparent',
+            whiteSpace: 'pre-wrap',
+            wordWrap: 'break-word',
+            pointerEvents: 'none',
+            zIndex: 1,
+            fontFamily: 'Monaco, Menlo, monospace',
+            fontSize: '14px',
+            lineHeight: '1.5715',
+          }}
+        >
+          {renderHighlightedText(internalValue) || <span>&nbsp;</span>}
+        </div>
+
+        {/* 实际的输入框 */}
+        <TextArea
+          ref={inputRef}
+          value={internalValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          disabled={disabled}
+          rows={4}
+          className="prompt-variable-input"
+          style={{
+            backgroundColor: 'transparent',
+            position: 'relative',
+            zIndex: 2,
+          }}
+        />
+      </div>
 
       {/* 变量引用下拉框 */}
       {popoverShouldShow && (
