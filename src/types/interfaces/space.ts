@@ -1,9 +1,6 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { TooltipTitleTypeEnum } from '@/types/enums/common';
-import type {
-  AgentArrangeConfigEnum,
-  ApplicationMoreActionEnum,
-} from '@/types/enums/space';
+import type { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { CollapseProps } from 'antd';
 import type { MouseEventHandler } from 'react';
@@ -45,8 +42,8 @@ export interface ConfigOptionsHeaderProps {
 export interface ConfigOptionCollapseProps {
   className?: string;
   items: CollapseProps['items'];
-  defaultActiveKey: AgentArrangeConfigEnum[];
-  onChangeCollapse?: (key: AgentArrangeConfigEnum[]) => void;
+  defaultActiveKey: string[];
+  onChangeCollapse?: (key: string[]) => void;
 }
 
 // 自定义icon带提示组件， 默认加号（+）

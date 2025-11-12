@@ -1,4 +1,3 @@
-import type { AgentArrangeConfigEnum } from '@/types/enums/space';
 import type { ConfigOptionCollapseProps } from '@/types/interfaces/space';
 import { Collapse, theme } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -14,18 +13,18 @@ const ConfigOptionCollapse: React.FC<ConfigOptionCollapseProps> = ({
 }) => {
   const { token } = theme.useToken();
   // 当前激活 tab 面板的 key
-  const [activeKey, setActiveKey] = useState<AgentArrangeConfigEnum[]>([]);
+  const [activeKey, setActiveKey] = useState<string[]>([]);
 
   useEffect(() => {
     if (defaultActiveKey?.length > 0) {
-      setActiveKey(defaultActiveKey as AgentArrangeConfigEnum[]);
+      setActiveKey(defaultActiveKey);
     }
   }, [defaultActiveKey]);
 
   // 切换面板的回调
   const onChange = (key: string | string[]) => {
-    setActiveKey(key as AgentArrangeConfigEnum[]);
-    onChangeCollapse?.(key as AgentArrangeConfigEnum[]);
+    setActiveKey(key as string[]);
+    onChangeCollapse?.(key as string[]);
   };
 
   return (
