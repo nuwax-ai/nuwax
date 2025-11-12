@@ -9,12 +9,33 @@
   .prompt-variable-input {
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.5715;
 
     &:focus,
     &:focus-within {
       border-color: #1890ff;
       box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    }
+
+    // 确保背景透明以显示高亮层
+    &:not(:focus) {
+      background-color: transparent !important;
+    }
+  }
+
+  // 变量高亮样式
+  .variable-highlight {
+    background-color: #e6f7ff;
+    color: #1890ff;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #bae7ff;
     }
   }
 }
