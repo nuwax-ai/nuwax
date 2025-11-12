@@ -1,0 +1,247 @@
+/*
+ * Variable Tree Utilities
+ * 变量树工具函数
+ */
+
+import type { PromptVariable, VariableTreeNode } from '../types';
+import { VariableType } from '../types';
+
+/**
+ * 将 PromptVariable 转换为 Antd Tree 兼容的节点格式
+ */
+export const transformVariableToTreeNode = (
+  variable: PromptVariable,
+  parentPath: string[] = [],
+): VariableTreeNode => {
+  const currentPath = [...parentPath, variable.key];
+  const value = currentPath.join('.');
+
+  const node: VariableTreeNode = {
+    label: variable.label || variable.name,
+    title: variable.label || variable.name,
+    value: value,
+    key: variable.key,
+    keyPath: currentPath,
+    variable,
+    children: [],
+  };
+
+  // 处理子变量
+  if (variable.children && variable.children.length > 0) {
+    node.children = variable.children.map((child) =>
+      transformVariableToTreeNode(child, currentPath),
+    );
+  }
+
+  // 处理数组类型的特殊结构
+  if (variable.type.startsWith('array_') && !variable.children) {
+    // 为数组类型添加索引示例节点
+    const baseType = variable.type.replace('array_', '');
+    node.children = [
+      {
+        label: `[0] (数组索引)`,
+        title: `[0] (数组索引)`,
+        value: `${value}[0]`,
+        key: `${variable.key}_index_0`,
+        keyPath: currentPath,
+        variable: {
+          key: '0',
+          type: baseType as VariableType,
+          name: '数组元素',
+        },
+        children: [],
+      },
+    ];
+  }
+
+  return node;
+};
+
+/**
+ * 构建变量树
+ */
+export const buildVariableTree = (
+  variables: PromptVariable[],
+): VariableTreeNode[] => {
+  return variables.map((variable) => transformVariableToTreeNode(variable));
+};
+
+/**
+ * 根据路径查找变量节点
+ */
+export const findNodeByPath = (
+  tree: VariableTreeNode[],
+  path: string,
+): VariableTreeNode | null => {
+  const pathSegments = path.split('.');
+
+  const findInNode = (
+    node: VariableTreeNode,
+    segments: string[],
+    index: number,
+  ): VariableTreeNode | null => {
+    if (index === segments.length) {
+      return node;
+    }
+
+    const currentSegment = segments[index];
+
+    // 处理数组索引
+    if (currentSegment.startsWith('[') && currentSegment.endsWith(']')) {
+      const arrayIndex = currentSegment.slice(1, -1);
+      const child = node.children?.find(
+        (child) =>
+          child.key === `${node.key}_index_${arrayIndex}` ||
+          child.key === arrayIndex,
+      );
+
+      if (child) {
+        return findInNode(child, segments, index + 1);
+      }
+    }
+
+    // 处理常规属性
+    const child = node.children?.find((child) => child.key === currentSegment);
+
+    if (child) {
+      return findInNode(child, segments, index + 1);
+    }
+
+    return null;
+  };
+
+  for (const rootNode of tree) {
+    if (rootNode.key === pathSegments[0]) {
+      return findInNode(rootNode, pathSegments, 1);
+    }
+  }
+
+  return null;
+};
+
+/**
+ * 过滤变量树
+ */
+export const filterVariableTree = (
+  tree: VariableTreeNode[],
+  filterText: string,
+): VariableTreeNode[] => {
+  if (!filterText.trim()) {
+    return tree;
+  }
+
+  const filterNode = (node: VariableTreeNode): VariableTreeNode | null => {
+    const matchesFilter =
+      node.label.toLowerCase().includes(filterText.toLowerCase()) ||
+      node.key.toLowerCase().includes(filterText.toLowerCase()) ||
+      node.value.toLowerCase().includes(filterText.toLowerCase());
+
+    const filteredChildren =
+      (node.children
+        ?.map((child) => filterNode(child))
+        .filter(Boolean) as VariableTreeNode[]) || [];
+
+    if (matchesFilter || filteredChildren.length > 0) {
+      return {
+        ...node,
+        children: filteredChildren,
+      };
+    }
+
+    return null;
+  };
+
+  return tree
+    .map((node) => filterNode(node))
+    .filter(Boolean) as VariableTreeNode[];
+};
+
+/**
+ * 展开变量树到指定路径
+ */
+export const drillToPath = (
+  tree: VariableTreeNode[],
+  path: string,
+): VariableTreeNode[] => {
+  const pathSegments = path.split('.');
+
+  const drillNode = (
+    node: VariableTreeNode,
+    segments: string[],
+    index: number,
+  ): VariableTreeNode => {
+    if (index >= segments.length) {
+      return node;
+    }
+
+    const currentSegment = segments[index];
+
+    // 处理数组索引
+    if (currentSegment.startsWith('[') && currentSegment.endsWith(']')) {
+      const arrayIndex = currentSegment.slice(1, -1);
+      const indexChild = node.children?.find(
+        (child) =>
+          child.key === `${node.key}_index_${arrayIndex}` ||
+          child.key === arrayIndex,
+      );
+
+      if (indexChild) {
+        return drillNode(indexChild, segments, index + 1);
+      }
+    }
+
+    // 处理常规属性
+    const child = node.children?.find((child) => child.key === currentSegment);
+
+    if (child) {
+      return drillNode(child, segments, index + 1);
+    }
+
+    return node;
+  };
+
+  return tree.map((node) => {
+    if (node.key === pathSegments[0]) {
+      return drillNode(node, pathSegments, 1);
+    }
+    return node;
+  });
+};
+
+/**
+ * 获取变量显示路径
+ */
+export const getVariableDisplayPath = (node: VariableTreeNode): string => {
+  if (node.keyPath) {
+    return node.keyPath.join('.');
+  }
+  return node.key;
+};
+
+/**
+ * 生成变量引用字符串
+ */
+export const generateVariableReference = (path: string): string => {
+  return `{{${path}}}`;
+};
+
+/**
+ * 根据变量类型获取图标
+ */
+export const getVariableTypeIcon = (type: VariableType): string => {
+  const iconMap = {
+    [VariableType.String]: '📝',
+    [VariableType.Integer]: '🔢',
+    [VariableType.Boolean]: '✅',
+    [VariableType.Number]: '➕',
+    [VariableType.Object]: '📦',
+    [VariableType.Array]: '📋',
+    [VariableType.ArrayString]: '📝',
+    [VariableType.ArrayInteger]: '🔢',
+    [VariableType.ArrayBoolean]: '✅',
+    [VariableType.ArrayNumber]: '➕',
+    [VariableType.ArrayObject]: '📦',
+  };
+
+  return iconMap[type] || '📄';
+};

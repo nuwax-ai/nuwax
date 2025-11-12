@@ -1,0 +1,205 @@
+/*
+ * Prompt Variable Reference Component Styles
+ * 提示词变量引用组件样式
+ */
+
+.prompt-variable-ref {
+  position: relative;
+
+  .prompt-variable-input {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+
+    &:focus,
+    &:focus-within {
+      border-color: #1890ff;
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    }
+  }
+}
+
+.variable-popover {
+  .ant-popover-inner-content {
+    padding: 0;
+  }
+
+  .ant-popover-content {
+    border-radius: 8px;
+    box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08),
+                0 3px 6px -4px rgba(0, 0, 0, 0.12),
+                0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.variable-popover-content {
+  width: 360px;
+  min-height: 200px;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+
+  .variable-search {
+    padding: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .variable-search-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 14px;
+
+      &::placeholder {
+        color: #bfbfbf;
+      }
+    }
+
+    .anticon {
+      color: #8c8c8c;
+    }
+  }
+
+  .variable-tree-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+
+    .ant-tree {
+      background: transparent;
+
+      .ant-tree-node-content-wrapper {
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s;
+
+        &:hover {
+          background-color: #f5f5f5;
+        }
+
+        &.ant-tree-node-selected {
+          background-color: #e6f7ff;
+          color: #1890ff;
+        }
+      }
+
+      .ant-tree-switcher {
+        color: #8c8c8c;
+      }
+    }
+
+    .variable-tree-node {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+
+      .variable-type-icon {
+        font-size: 12px;
+        opacity: 0.8;
+      }
+
+      .variable-label {
+        font-weight: 500;
+        color: #262626;
+      }
+
+      .variable-description {
+        font-size: 12px;
+        color: #8c8c8c;
+        margin-left: auto;
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .ant-empty {
+      padding: 32px 16px;
+
+      .ant-empty-description {
+        color: #8c8c8c;
+        font-size: 14px;
+      }
+    }
+  }
+
+  .variable-popover-footer {
+    padding: 12px;
+    border-top: 1px solid #f0f0f0;
+    background-color: #fafafa;
+    color: #8c8c8c;
+    font-size: 12px;
+    text-align: center;
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .variable-popover-content {
+    width: 300px;
+
+    .variable-tree-container {
+      .variable-tree-node {
+        .variable-description {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+/* 暗色主题支持 */
+@media (prefers-color-scheme: dark) {
+  .variable-popover-content {
+    .variable-search {
+      border-bottom-color: #303030;
+
+      .variable-search-input {
+        color: #ffffff;
+
+        &::placeholder {
+          color: #666666;
+        }
+      }
+
+      .anticon {
+        color: #666666;
+      }
+    }
+
+    .variable-tree-container {
+      .ant-tree {
+        .ant-tree-node-content-wrapper {
+          &:hover {
+            background-color: #1f1f1f;
+          }
+
+          &.ant-tree-node-selected {
+            background-color: #111b26;
+            color: #1890ff;
+          }
+        }
+      }
+
+      .variable-tree-node {
+        .variable-label {
+          color: #ffffff;
+        }
+
+        .variable-description {
+          color: #666666;
+        }
+      }
+    }
+
+    .variable-popover-footer {
+      border-top-color: #303030;
+      background-color: #141414;
+      color: #666666;
+    }
+  }
+}

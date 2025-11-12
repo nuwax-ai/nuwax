@@ -159,6 +159,11 @@ const routes = [
     component: '@/examples/SvgIconShowcase',
     layout: false,
   },
+  {
+    path: '/examples/variable-ref-test',
+    component: '@/examples/VariableRefTest/index',
+    layout: false,
+  },
 ];
 
 export default routes;
