@@ -472,7 +472,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
                   key={node.key}
                   className="variable-item"
                   style={{
-                    padding: '8px 12px',
+                    padding: '6px 8px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -480,6 +480,10 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
                     fontSize: '14px',
                     borderBottom: '1px solid #f5f5f5',
                     transition: 'background-color 0.2s',
+                    // 添加层级缩进
+                    paddingLeft: `${
+                      8 + ((node.keyPath?.length || 1) - 1) * 16
+                    }px`,
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = '#f5f5f5';
@@ -491,10 +495,31 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
                     handleApplyVariable(node.value);
                   }}
                 >
+                  {/* 层级指示器 */}
+                  {(node.keyPath?.length || 1) > 1 && (
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        color: '#8c8c8c',
+                        position: 'absolute',
+                        left: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
+                      ├─
+                    </span>
+                  )}
+
                   <span style={{ fontSize: '12px', opacity: 0.8 }}>
                     {getVariableTypeIcon(node.variable.type)}
                   </span>
-                  <span style={{ fontWeight: 500, color: '#262626' }}>
+                  <span
+                    style={{
+                      fontWeight: (node.keyPath?.length || 1) === 1 ? 600 : 500,
+                      color: '#262626',
+                    }}
+                  >
                     {node.label}
                   </span>
                   <span
