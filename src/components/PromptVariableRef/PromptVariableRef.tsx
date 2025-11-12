@@ -12,7 +12,6 @@ import type { PromptVariableRefProps, VariableTreeNode } from './types';
 import {
   buildVariableTree,
   drillToPath,
-  generateVariableReference,
   getVariableTypeIcon,
 } from './utils/treeUtils';
 
@@ -111,25 +110,23 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       const lastStartPos = beforeText.lastIndexOf('{{');
       if (lastStartPos !== -1) {
         // 检查是否有匹配的 }} 结束位置
-        const afterStartText = beforeText.substring(lastStartPos);
+        const afterStartText = beforeText.substring(lastStartPos + 2); // 从 {{ 后开始
         const endPosMatch = afterStartText.indexOf('}}');
 
         let finalText: string;
         let newCursorPos: number;
 
         if (endPosMatch !== -1) {
-          // 替换现有的变量引用
-          const variableRef = generateVariableReference(nodeValue);
-          finalText =
-            beforeText.substring(0, lastStartPos) +
-            variableRef +
-            afterText.substring(endPosMatch + 2); // +2 跳过 }}
-          newCursorPos = lastStartPos + variableRef.length;
+          // 替换现有的变量引用（包含 {{ 和 }}）
+          const beforeVariable = beforeText.substring(0, lastStartPos);
+          const afterVariable = afterText.substring(endPosMatch + 2); // 跳过 }}
+          finalText = beforeVariable + `{{${nodeValue}}}` + afterVariable;
+          newCursorPos = beforeVariable.length + nodeValue.length + 4; // 4 = {{}} 的长度
         } else {
           // 完成新的变量引用
-          const variableRef = generateVariableReference(nodeValue);
-          finalText = beforeText + variableRef + afterText;
-          newCursorPos = lastStartPos + variableRef.length;
+          const beforeVariable = beforeText.substring(0, lastStartPos);
+          finalText = beforeVariable + `{{${nodeValue}}}` + afterText;
+          newCursorPos = beforeVariable.length + nodeValue.length + 4;
         }
 
         setInternalValue(finalText);
