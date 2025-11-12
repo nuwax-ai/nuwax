@@ -6,6 +6,7 @@
 import { MessageModeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { CoverImgSourceTypeEnum } from '../enums/pageDev';
 import { DataResource } from './dataResource';
 
 /**
@@ -878,6 +879,10 @@ export interface ProjectDetailData {
   description: string;
   /** 项目图标 */
   icon: string;
+  /** 封面图片 */
+  coverImg: string;
+  /** 封面图片来源,可用值:SYSTEM,USER */
+  coverImgSourceType: CoverImgSourceTypeEnum;
   /** 项目基础路径 */
   basePath: string;
   /** 发布状态,true:已发布;false:未发布 */
