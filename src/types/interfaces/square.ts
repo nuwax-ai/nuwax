@@ -6,6 +6,7 @@ import type {
   CreatorInfo,
 } from '@/types/interfaces/agent';
 import React from 'react';
+import { CoverImgSourceTypeEnum } from '../enums/pageDev';
 
 // 广场 - 已发布列表请求参数
 export interface SquarePublishedListParams {
@@ -49,6 +50,10 @@ export interface SquarePublishedItemInfo {
   description: string;
   // 图标
   icon: string;
+  /** 封面图片地址 */
+  coverImg: string;
+  /** 封面图片来源,可用值:SYSTEM,USER */
+  coverImgSourceType: CoverImgSourceTypeEnum;
   remark: string;
   // 智能体发布修改时间
   modified: string;

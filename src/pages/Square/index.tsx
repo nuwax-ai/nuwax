@@ -325,7 +325,7 @@ const Square: React.FC = () => {
                     return (
                       <PageCard
                         key={index}
-                        icon={item.icon}
+                        coverImg={item.coverImg}
                         name={item.name}
                         avatar={item.publishUser?.avatar}
                         userName={

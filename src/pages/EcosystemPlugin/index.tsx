@@ -573,8 +573,7 @@ export default function EcosystemPlugin() {
   };
 
   // 我的分享 ~ 点击更多操作
-  const handleClickMore = (item: CustomPopoverItem, config: ClientConfigVo) => {
-    console.log(item, config);
+  const handleClickMore = (_: CustomPopoverItem, config: ClientConfigVo) => {
     const { uid, name } = config;
     if (uid) {
       onDeleteShare(uid, name || '', () => {

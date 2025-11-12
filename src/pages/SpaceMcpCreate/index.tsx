@@ -7,7 +7,6 @@ import UploadAvatar from '@/components/UploadAvatar';
 import { MCP_INSTALL_TYPE_LIST } from '@/constants/mcp.constants';
 import useMcp from '@/hooks/useMcp';
 import { apiMcpCreate } from '@/services/mcp';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { McpInstallTypeEnum } from '@/types/enums/mcp';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { McpDetailInfo } from '@/types/interfaces/mcp';
@@ -245,7 +244,6 @@ const SpaceMcpCreate: React.FC = () => {
         checkTag={checkTag}
         addComponents={addComponents}
         onAdded={handleAddComponent}
-        hideTop={[AgentComponentTypeEnum.MCP]}
       />
     </div>
   );

@@ -492,6 +492,7 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
           AgentComponentTypeEnum.Knowledge,
           AgentComponentTypeEnum.Table,
           AgentComponentTypeEnum.MCP,
+          AgentComponentTypeEnum.Agent,
         ]}
       />
     </CustomFormModal>
