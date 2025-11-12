@@ -1,3 +1,4 @@
+@import '@/styles/color';
 @import '@/styles/token';
 
 .upload-avatar {
@@ -8,4 +9,19 @@
 .text-tip {
   font-size: @fontSizeSm;
   color: @colorTextSecondary;
+}
+
+.modal-content {
+  width: 560px;
+  background-color: @WHITE12 !important;
+  overflow: hidden;
+
+  .modal-header {
+    background-color: @WHITE12;
+  }
+
+  .modal-body {
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+  }
 }

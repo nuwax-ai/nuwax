@@ -277,6 +277,7 @@ const SelectComponent: React.FC<CreatedProp> = ({
 
     const _select = typeof val === 'string' ? val : val.target.value;
     const _item = tabs.find((item) => item.key === _select);
+
     if (_item) {
       setSelectMenu('all');
       setSearch('');

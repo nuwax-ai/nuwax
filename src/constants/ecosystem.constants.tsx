@@ -13,6 +13,7 @@ import SvgIcon from '@/components/base/SvgIcon';
 import { ICON_AGENT, ICON_WORKFLOW_SQUARE } from '@/constants/images.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { EcosystemMarketEnum } from '@/types/enums/ecosystemMarket';
+import { CustomPopoverItem } from '@/types/interfaces/common';
 import {
   EcosystemDataTypeEnum,
   EcosystemTabTypeEnum,
@@ -168,3 +169,33 @@ export const ECO_TYPE_TITLE_MAP = {
   [EcosystemDataTypeEnum.TEMPLATE]: '模板',
   [EcosystemDataTypeEnum.MCP]: 'MCP',
 };
+
+/**
+ * 生态市场模板分享状态选项列表
+ */
+export const ECO_TEMPLATE_SHARE_STATUS_OPTIONS = [
+  {
+    label: '全部',
+    value: -1,
+  },
+  {
+    label: '已发布',
+    value: 3,
+  },
+  {
+    label: '审核中',
+    value: 2,
+  },
+  {
+    label: '已下线',
+    value: 4,
+  },
+];
+
+// 生态市场更多操作列表
+export const EcoMarketActionList: CustomPopoverItem[] = [
+  {
+    label: '删除',
+    isDel: true,
+  },
+];
