@@ -975,47 +975,25 @@
     if (window.__wxjs_environment !== 'miniprogram') {
       return; // 不在小程序环境中，直接返回
     }
+    function sendMessageToMiniProgram() {
+      const htmlTitle =
+        document.querySelector('head > title')?.textContent || '页面预览';
 
-    /**
-     * 检查并设置消息发送功能
-     * 如果 JS-SDK 已加载，直接设置；否则注入脚本后设置
-     */
-    function trySetupMessage() {
-      // 检查 wx.miniProgram 是否可用
-      if (
-        window.wx &&
-        window.wx.miniProgram &&
-        window.wx.miniProgram.postMessage
-      ) {
-        setupMiniProgramMessage();
-        return true;
-      }
-      return false;
+      // 获取 body 的 HTML 内容
+      const htmlDomString = document.body.innerHTML || '';
+
+      // 通过 postMessage 发送消息到小程序（已确保 wx.miniProgram 可用）
+      window.wx.miniProgram.postMessage({
+        data: {
+          html: htmlDomString,
+          title: htmlTitle,
+        },
+      });
     }
-
     /**
      * 注入微信 JS-SDK
      */
     function injectWeChatSDK() {
-      // 如果 JS-SDK 已加载，直接设置消息发送功能
-      if (trySetupMessage()) {
-        return;
-      }
-
-      // 检查是否已经注入过脚本（避免重复注入）
-      if (document.querySelector('script[id="wechat-js-sdk"]')) {
-        // 脚本已存在，等待加载完成
-        const checkInterval = setInterval(() => {
-          if (trySetupMessage()) {
-            clearInterval(checkInterval);
-          }
-        }, 100);
-
-        // 10 秒后停止检查
-        setTimeout(() => clearInterval(checkInterval), 10000);
-        return;
-      }
-
       // 创建并注入 JS-SDK 脚本
       const script = document.createElement('script');
       script.type = 'text/javascript';
@@ -1026,7 +1004,29 @@
       script.onload = function () {
         // 等待 wx 对象可用
         setTimeout(() => {
-          trySetupMessage();
+          let timer = null;
+
+          // 监听 DOM 变化
+          const observer = new MutationObserver(() => {
+            // 每次变化后延迟 500ms 再检测，确保渲染稳定
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+              try {
+                // 获取 head 中的 title 内容
+                sendMessageToMiniProgram();
+              } catch (error) {
+                // 静默处理错误（避免影响页面正常功能）
+              }
+            }, 500);
+          });
+
+          // 开始观察 DOM 变化
+          observer.observe(document.body, {
+            childList: true, // 监听子节点的添加和删除
+            subtree: true, // 监听所有后代节点
+            characterData: true, // 监听文本内容变化
+          });
+          sendMessageToMiniProgram();
         }, 100);
       };
 
@@ -1036,67 +1036,7 @@
           document.head.appendChild(script);
         }
       };
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', insertScript);
-      } else {
-        insertScript();
-      }
-    }
-
-    /**
-     * 设置小程序消息发送功能
-     * 监听 DOM 变化并通过 wx.miniProgram.postMessage 发送页面内容
-     * 参考 PagePreviewIframe 组件的实现逻辑
-     */
-    function setupMiniProgramMessage() {
-      // 确保 document.body 存在
-      if (!document.body) {
-        if (document.readyState === 'loading') {
-          document.addEventListener(
-            'DOMContentLoaded',
-            setupMiniProgramMessage,
-          );
-        } else {
-          setTimeout(setupMiniProgramMessage, 100);
-        }
-        return;
-      }
-
-      let timer = null;
-
-      // 监听 DOM 变化
-      const observer = new MutationObserver(() => {
-        // 每次变化后延迟 500ms 再检测，确保渲染稳定
-        clearTimeout(timer);
-        timer = setTimeout(() => {
-          try {
-            // 获取 head 中的 title 内容
-            const htmlTitle =
-              document.querySelector('head > title')?.textContent || '页面预览';
-
-            // 获取 body 的 HTML 内容
-            const htmlDomString = document.body.innerHTML || '';
-
-            // 通过 postMessage 发送消息到小程序（已确保 wx.miniProgram 可用）
-            window.wx.miniProgram.postMessage({
-              data: {
-                html: htmlDomString,
-                title: htmlTitle,
-              },
-            });
-          } catch (error) {
-            // 静默处理错误（避免影响页面正常功能）
-          }
-        }, 500);
-      });
-
-      // 开始观察 DOM 变化
-      observer.observe(document.body, {
-        childList: true, // 监听子节点的添加和删除
-        subtree: true, // 监听所有后代节点
-        characterData: true, // 监听文本内容变化
-      });
+      insertScript();
     }
 
     // 根据 DOM 状态决定何时注入 JS-SDK
