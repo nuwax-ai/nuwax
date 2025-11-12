@@ -4,7 +4,7 @@
  * 支持 {{变量名}}、{{变量名.子变量名}}、{{变量名[数组索引]}} 语法
  */
 
-import { Input, Popover } from 'antd';
+import { Input } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import './styles.less';
@@ -403,33 +403,6 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           </div>
         </div>
       )}
-
-      <Popover
-        open={false} // 临时禁用 Popover 来测试直接渲染
-        placement="bottom" // 临时使用简单的 placement
-        trigger={[]} // 移除 trigger，通过 open 属性完全控制显示
-        onOpenChange={(open) => console.log('Popover open changed to:', open)}
-        content={
-          <div
-            style={{
-              padding: 20,
-              background: 'red',
-              width: 300,
-              minHeight: 200,
-            }}
-          >
-            <div>TEST CONTENT - Popover is showing!</div>
-            <div>Variables count: {displayTree.length}</div>
-            <div>Visible: {visible.toString()}</div>
-            <div>Readonly: {readonly.toString()}</div>
-            <div>Disabled: {disabled.toString()}</div>
-          </div>
-        }
-        overlayClassName="variable-popover"
-        autoAdjustOverflow
-      >
-        <div style={{ display: 'none' }} />
-      </Popover>
     </div>
   );
 };
