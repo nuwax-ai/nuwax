@@ -70,13 +70,28 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     }
   }, [value]);
 
+  // 点击外部关闭下拉框
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (visible) {
+        setVisible(false);
+        setSearchText('');
+      }
+    };
+
+    if (visible) {
+      document.addEventListener('click', handleClickOutside);
+      return () => {
+        document.removeEventListener('click', handleClickOutside);
+      };
+    }
+  }, [visible]);
+
   // 构建变量树
   const variableTree = buildVariableTree(variables);
-  console.log('Variable tree built:', variableTree);
 
   // 过滤变量树
   const filteredTree = filterVariableTree(variableTree, searchText);
-  console.log('Filtered tree:', filteredTree, 'searchText:', searchText);
 
   // 应用变量
   const handleApplyVariable = useCallback(
@@ -293,28 +308,121 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         className="prompt-variable-input"
       />
 
-      {/* 测试：直接显示内容来排除 Popover 问题 */}
+      {/* 变量引用下拉框 */}
       {popoverShouldShow && (
         <div
+          className="variable-dropdown"
           style={{
             position: 'fixed',
             left: cursorPosition.x,
             top: cursorPosition.y,
             zIndex: 9999,
-            background: 'red',
-            padding: 20,
-            width: 300,
-            minHeight: 200,
-            border: '2px solid blue',
+            background: '#fff',
+            border: '1px solid #d9d9d9',
+            borderRadius: '8px',
+            padding: '8px 0',
+            minWidth: '320px',
+            maxWidth: '400px',
+            maxHeight: '300px',
+            overflow: 'auto',
+            boxShadow:
+              '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
             transform: 'translateY(10px)', // 稍微向下偏移避免遮挡光标
           }}
+          onClick={(e) => e.stopPropagation()}
         >
-          <div>DIRECT RENDER TEST - Following cursor!</div>
-          <div>Variables count: {filteredTree.length}</div>
-          <div>Visible: {visible.toString()}</div>
+          {/* 搜索框 */}
+          <div
+            style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <SearchOutlined style={{ color: '#8c8c8c' }} />
+              <input
+                type="text"
+                placeholder="搜索变量..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{
+                  flex: 1,
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: '14px',
+                  background: 'transparent',
+                }}
+                autoFocus
+              />
+            </div>
+          </div>
+
+          {/* 变量列表 */}
           <div>
-            Position: ({Math.round(cursorPosition.x)},{' '}
-            {Math.round(cursorPosition.y)})
+            {filteredTree.length > 0 ? (
+              filteredTree.map((node) => (
+                <div
+                  key={node.key}
+                  className="variable-item"
+                  style={{
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '14px',
+                    borderBottom: '1px solid #f5f5f5',
+                    transition: 'background-color 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f5f5f5';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                  onClick={() => {
+                    handleApplyVariable(node.value);
+                  }}
+                >
+                  <span style={{ fontSize: '12px', opacity: 0.8 }}>
+                    {getVariableTypeIcon(node.variable.type)}
+                  </span>
+                  <span style={{ fontWeight: 500, color: '#262626' }}>
+                    {node.label}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      color: '#8c8c8c',
+                      marginLeft: 'auto',
+                    }}
+                  >
+                    {node.variable.type}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div
+                style={{
+                  padding: '32px 16px',
+                  textAlign: 'center',
+                  color: '#8c8c8c',
+                }}
+              >
+                没有找到匹配的变量
+              </div>
+            )}
+          </div>
+
+          {/* 底部提示 */}
+          <div
+            style={{
+              padding: '8px 12px',
+              borderTop: '1px solid #f0f0f0',
+              background: '#fafafa',
+              fontSize: '12px',
+              color: '#8c8c8c',
+              textAlign: 'center',
+            }}
+          >
+            支持语法：{'{variable}'}, {'{variable.property}'}, {'{variable[0]}'}
           </div>
         </div>
       )}
