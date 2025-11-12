@@ -21,7 +21,8 @@ export const useKeyboardSelection = (flatAllNodes: TreeNodeData[]) => {
   // 当节点列表变化时，重置选择状态
   useEffect(() => {
     resetSelection();
-  }, [flatAllNodes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flatAllNodes.length]);
 
   // 处理键盘选择
   const handleKeyboardSelect = (direction: 'up' | 'down') => {
