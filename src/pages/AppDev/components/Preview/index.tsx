@@ -2,6 +2,7 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { SANDBOX, UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { apiPageUpdateProject } from '@/services/pageDev';
+import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import { ProjectDetailData } from '@/types/interfaces/appDev';
 import { jumpTo } from '@/utils/router';
 import {
@@ -428,6 +429,14 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         return;
       }
 
+      // 如果项目封面图片不为空且封面图片来源为USER，则不截图, 以用户上传为准
+      if (
+        projectInfo?.coverImg &&
+        projectInfo?.coverImgSourceType === CoverImgSourceTypeEnum.USER
+      ) {
+        return;
+      }
+
       // 如果 iframe 不存在，创建一个新的 iframe 元素
       if (!iframeElement) {
         console.log('[Preview] 创建新的 iframe 元素进行截图');
@@ -508,7 +517,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 const params = {
                   projectId: projectInfo?.projectId,
                   projectName: projectInfo?.name,
-                  icon: imageUrl,
+                  coverImg: imageUrl,
+                  coverImgSourceType: CoverImgSourceTypeEnum.SYSTEM,
                 };
                 runUpdatePage(params);
 
@@ -610,7 +620,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               const params = {
                 projectId: projectInfo?.projectId,
                 projectName: projectInfo?.name,
-                icon: imageUrl,
+                coverImg: imageUrl,
+                coverImgSourceType: CoverImgSourceTypeEnum.SYSTEM,
               };
               runUpdatePage(params);
             } catch (uploadError) {

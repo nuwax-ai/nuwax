@@ -110,3 +110,11 @@ export interface SquareMenuComponentInfo {
   list: SquareAgentInfo[];
   type: SquareAgentTypeEnum;
 }
+
+// 广场搜索参数
+export interface SquareSearchParams {
+  // 分类类型
+  cate_type: string;
+  // 分类名称
+  cate_name: string;
+}

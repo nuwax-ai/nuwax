@@ -1,5 +1,6 @@
 import AgentType from '@/components/base/AgentType';
 import Loading from '@/components/custom/Loading';
+import CustomPopover from '@/components/CustomPopover';
 import EcosystemCard, { EcosystemCardProps } from '@/components/EcosystemCard';
 import SharedIcon from '@/components/EcosystemCard/SharedIcon';
 import PluginDetailDrawer from '@/components/EcosystemDetailDrawer';
@@ -11,7 +12,14 @@ import NoMoreDivider from '@/components/NoMoreDivider';
 import PageCard from '@/components/PageCard';
 import SelectComponent from '@/components/SelectComponent';
 import { CREATED_TABS } from '@/constants/common.constants';
-import { TabItems, TabTypeEnum } from '@/constants/ecosystem.constants';
+import {
+  ECO_TEMPLATE_SHARE_STATUS_OPTIONS,
+  EcoMarketActionList,
+  TabItems,
+  TabTypeEnum,
+} from '@/constants/ecosystem.constants';
+import { ICON_MORE } from '@/constants/images.constants';
+import useEcoMarket from '@/hooks/useEcoMarket';
 import {
   createClientConfigDraft,
   disableClientConfig,
@@ -30,7 +38,7 @@ import {
 } from '@/types/enums/agent';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
-import { CreatedNodeItem } from '@/types/interfaces/common';
+import { CreatedNodeItem, CustomPopoverItem } from '@/types/interfaces/common';
 import type {
   ClientConfigSaveReqDTO,
   ClientConfigUpdateDraftReqDTO,
@@ -150,6 +158,8 @@ export default function EcosystemTemplate() {
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]
   >([]);
+
+  const { onDeleteShare } = useEcoMarket();
 
   /**
    * 获取模板列表数据
@@ -404,6 +414,7 @@ export default function EcosystemTemplate() {
       checkTag: type,
       tabs: CREATED_TABS.filter((item) => [type].includes(item.key)),
     });
+
     setShareModalProps({
       targetType: type,
       type: EcosystemDataTypeEnum.TEMPLATE,
@@ -756,6 +767,16 @@ export default function EcosystemTemplate() {
     );
   };
 
+  // 我的分享 ~ 点击更多操作
+  const handleClickMore = (item: CustomPopoverItem, config: ClientConfigVo) => {
+    const { uid, name } = config;
+    if (uid) {
+      onDeleteShare(uid, name || '', () => {
+        refreshPluginList();
+      });
+    }
+  };
+
   return (
     <>
       <div
@@ -778,24 +799,7 @@ export default function EcosystemTemplate() {
             />
             {activeTab === TabTypeEnum.SHARED ? (
               <Select
-                options={[
-                  {
-                    label: '全部',
-                    value: -1,
-                  },
-                  {
-                    label: '已发布',
-                    value: 3,
-                  },
-                  {
-                    label: '审核中',
-                    value: 2,
-                  },
-                  {
-                    label: '已下线',
-                    value: 4,
-                  },
-                ]}
+                options={ECO_TEMPLATE_SHARE_STATUS_OPTIONS}
                 style={{ width: 100 }}
                 value={selectTargetTypeRef.current.shareStatus}
                 onChange={(value) => handleShareStatusChange(value)}
@@ -836,16 +840,22 @@ export default function EcosystemTemplate() {
                     config.targetSubType === 'PageApp'
                       ? AgentComponentTypeEnum.Page
                       : config.targetType;
+
+                  // 分享状态
+                  const shareStatus =
+                    activeTab === TabTypeEnum.SHARED
+                      ? config.shareStatus
+                      : undefined;
+
+                  const isPublished =
+                    config.shareStatus === EcosystemShareStatusEnum.PUBLISHED;
+                  const isReviewing =
+                    config.shareStatus === EcosystemShareStatusEnum.REVIEWING;
                   // 如果目标类型是应用页面，不是选择的模板菜单，则显示应用页面卡片
                   if (
                     selectTargetTypeRef.current.targetType &&
                     type === AgentComponentTypeEnum.Page
                   ) {
-                    // 分享状态
-                    const shareStatus =
-                      activeTab === TabTypeEnum.SHARED
-                        ? config.shareStatus
-                        : undefined;
                     return (
                       <PageCard
                         key={config?.uid}
@@ -864,9 +874,26 @@ export default function EcosystemTemplate() {
                         }
                         onClick={async () => await handleCardClick(config)}
                         footerInner={
-                          shareStatus && (
-                            <SharedIcon shareStatus={shareStatus} />
-                          )
+                          <div className={cx('flex', 'items-center', 'gap-4')}>
+                            {shareStatus && (
+                              <SharedIcon shareStatus={shareStatus} />
+                            )}
+                            {shareStatus && !(isPublished || isReviewing) && (
+                              // 更多操作
+                              <CustomPopover
+                                list={EcoMarketActionList}
+                                onClick={(item) =>
+                                  handleClickMore(item, config)
+                                }
+                              >
+                                <Button
+                                  size="small"
+                                  type="text"
+                                  icon={<ICON_MORE />}
+                                ></Button>
+                              </CustomPopover>
+                            )}
+                          </div>
                         }
                       />
                     );
@@ -877,10 +904,32 @@ export default function EcosystemTemplate() {
                         {...convertToTemplateCard(config)}
                         onClick={async () => await handleCardClick(config)}
                         footer={
-                          <footer className={cx('flex', 'items-center')}>
+                          <footer
+                            className={cx(
+                              'flex',
+                              'items-center',
+                              'content-between',
+                            )}
+                          >
                             <AgentType
                               type={type as unknown as AgentComponentTypeEnum}
                             />
+                            {/* 我的分享弹出一样逻辑，保持一致，是否有删除功能 */}
+                            {shareStatus && !(isPublished || isReviewing) && (
+                              // 更多操作
+                              <CustomPopover
+                                list={EcoMarketActionList}
+                                onClick={(item) =>
+                                  handleClickMore(item, config)
+                                }
+                              >
+                                <Button
+                                  size="small"
+                                  type="text"
+                                  icon={<ICON_MORE />}
+                                ></Button>
+                              </CustomPopover>
+                            )}
                           </footer>
                         }
                       />

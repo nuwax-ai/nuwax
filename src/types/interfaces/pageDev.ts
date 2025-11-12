@@ -1,5 +1,6 @@
 import { CreateUpdateModeEnum } from '../enums/common';
 import {
+  CoverImgSourceTypeEnum,
   PageCopyTypeEnum,
   PageDevelopCreateTypeEnum,
   PageDevelopPublishTypeEnum,
@@ -54,6 +55,8 @@ export interface CustomPageDto {
   description: string;
   // 项目图标
   icon: string;
+  // 项目封面图片
+  coverImg: string;
   // 项目基础路径
   basePath: string;
   // 发布状态,true:已发布;false:未发布
@@ -112,6 +115,10 @@ export interface PageUploadAndStartParams {
   spaceId: number;
   // 项目图标
   icon: string;
+  // 封面图片
+  coverImg: string;
+  // 封面图片来源,可用值:SYSTEM,USER
+  coverImgSourceType: CoverImgSourceTypeEnum;
 }
 
 // 查询前端页面列表参数
@@ -280,6 +287,10 @@ export interface PageUpdateParams {
   projectDesc: string;
   // 项目图标
   icon: string;
+  // 封面图片
+  coverImg: string;
+  // 封面图片来源,可用值:SYSTEM,USER
+  coverImgSourceType: CoverImgSourceTypeEnum;
   // 是否需要登录
   needLogin: boolean;
 }

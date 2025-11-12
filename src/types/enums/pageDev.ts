@@ -1,3 +1,11 @@
+// 封面图片来源,可用值:SYSTEM,USER
+export enum CoverImgSourceTypeEnum {
+  // 系统
+  SYSTEM = 'SYSTEM',
+  // 用户
+  USER = 'USER',
+}
+
 // 页面开发创建类型枚举(自定义)
 export enum PageDevelopCreateTypeEnum {
   // 导入项目
