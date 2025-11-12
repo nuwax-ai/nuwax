@@ -36,6 +36,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   const [visible, setVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   // const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]); // 临时注释用于调试
+  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]); // 修复：需要用于键盘导航
   // const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]); // 临时注释用于调试
 
   const inputRef = useRef<any>(null);
