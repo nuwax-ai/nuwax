@@ -39,6 +39,9 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]); // 修复：需要用于键盘导航
   // const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]); // 临时注释用于调试
 
+  // 添加光标位置状态
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+
   const inputRef = useRef<any>(null);
   // const treeRef = useRef<any>(null); // 临时注释用于调试
 
@@ -178,6 +181,29 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       if (isInVariableContext && !readonly) {
         console.log('Setting visible to true');
         setVisible(true);
+
+        // 计算光标的屏幕位置
+        if (inputRef.current) {
+          const textarea = inputRef.current.resizableTextArea.textArea;
+          const rect = textarea.getBoundingClientRect();
+          const computedStyle = window.getComputedStyle(textarea);
+          const lineHeight = parseInt(computedStyle.lineHeight) || 20;
+          const charWidth = parseInt(computedStyle.fontSize) * 0.6; // 估算字符宽度
+
+          // 计算光标在文本中的位置
+          const textBeforeCursor = newValue.substring(0, cursorPosition);
+          const lines = textBeforeCursor.split('\n');
+          const currentLine = lines.length - 1;
+          const currentCol = lines[lines.length - 1].length;
+
+          // 计算光标相对于文本域的像素位置
+          const cursorX = rect.left + currentCol * charWidth;
+          const cursorY = rect.top + currentLine * lineHeight + lineHeight;
+
+          console.log('Calculated cursor position:', { cursorX, cursorY });
+          setCursorPosition({ x: cursorX, y: cursorY });
+        }
+
         // 提取当前的变量路径
         const currentPath = beforeCursor.substring(lastDoubleBraceStart + 2);
         console.log('Variable context detected, currentPath:', currentPath);
@@ -271,25 +297,30 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       {popoverShouldShow && (
         <div
           style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
+            position: 'fixed',
+            left: cursorPosition.x,
+            top: cursorPosition.y,
             zIndex: 9999,
             background: 'red',
             padding: 20,
             width: 300,
             minHeight: 200,
             border: '2px solid blue',
+            transform: 'translateY(10px)', // 稍微向下偏移避免遮挡光标
           }}
         >
-          <div>DIRECT RENDER TEST - Should show!</div>
+          <div>DIRECT RENDER TEST - Following cursor!</div>
           <div>Variables count: {filteredTree.length}</div>
           <div>Visible: {visible.toString()}</div>
+          <div>
+            Position: ({Math.round(cursorPosition.x)},{' '}
+            {Math.round(cursorPosition.y)})
+          </div>
         </div>
       )}
 
       <Popover
-        open={popoverShouldShow}
+        open={false} // 临时禁用 Popover 来测试直接渲染
         placement="bottom" // 临时使用简单的 placement
         trigger={[]} // 移除 trigger，通过 open 属性完全控制显示
         onOpenChange={(open) => console.log('Popover open changed to:', open)}
