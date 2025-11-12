@@ -32,6 +32,8 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   className = '',
   style,
 }) => {
+  console.log('PromptVariableRef rendered with variables:', variables);
+  console.log('Current value:', value);
   const [internalValue, setInternalValue] = useState(value || '');
   const [visible, setVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -68,9 +70,11 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
   // 构建变量树
   const variableTree = buildVariableTree(variables);
+  console.log('Variable tree built:', variableTree);
 
   // 过滤变量树
   const filteredTree = filterVariableTree(variableTree, searchText);
+  console.log('Filtered tree:', filteredTree, 'searchText:', searchText);
 
   // 应用变量
   const handleApplyVariable = useCallback(
@@ -137,37 +141,61 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newValue = e.target.value;
+      console.log('Input changed to:', newValue);
       setInternalValue(newValue);
       onChange?.(newValue);
 
       // 检查是否在输入变量引用
       const cursorPosition = e.target.selectionStart || 0;
+      console.log('Cursor position:', cursorPosition);
 
       // 检查光标前是否有 {{
       const beforeCursor = newValue.substring(0, cursorPosition);
       const lastDoubleBraceStart = beforeCursor.lastIndexOf('{{');
+      console.log(
+        'Before cursor:',
+        beforeCursor,
+        'lastDoubleBraceStart:',
+        lastDoubleBraceStart,
+      );
 
       // 检查是否刚刚输入了 {{ 或正在 {{...}} 中
       // 确保在 {{ 之后没有对应的 }}
-      const afterLastStart = beforeCursor.substring(lastDoubleBraceStart + 2);
-      const hasClosingBraces = afterLastStart.includes('}}');
-      const isInVariableContext =
-        lastDoubleBraceStart !== -1 && !hasClosingBraces;
+      let isInVariableContext = false;
+      if (lastDoubleBraceStart !== -1) {
+        const afterLastStart = beforeCursor.substring(lastDoubleBraceStart + 2);
+        const hasClosingBraces = afterLastStart.includes('}}');
+        isInVariableContext = !hasClosingBraces;
+        console.log('After last start:', JSON.stringify(afterLastStart));
+        console.log('hasClosingBraces:', hasClosingBraces);
+      }
+      console.log(
+        'isInVariableContext:',
+        isInVariableContext,
+        'readonly:',
+        readonly,
+      );
 
       if (isInVariableContext && !readonly) {
+        console.log('Setting visible to true');
         setVisible(true);
         // 提取当前的变量路径
         const currentPath = beforeCursor.substring(lastDoubleBraceStart + 2);
+        console.log('Variable context detected, currentPath:', currentPath);
         setSearchText(currentPath);
 
         // 展开到当前路径
         const drilledTree = drillToPath(variableTree, currentPath);
+        console.log('Drilled tree:', drilledTree);
         // 更新展开的 keys
         const expandedKeys = drilledTree.flatMap((node) =>
           node.keyPath ? [node.keyPath.slice(0, -1).join('.')] : [],
         );
-        setExpandedKeys(expandedKeys.filter(Boolean));
+        const finalExpandedKeys = expandedKeys.filter(Boolean);
+        console.log('Setting expanded keys:', finalExpandedKeys);
+        setExpandedKeys(finalExpandedKeys);
       } else {
+        console.log('Setting visible to false');
         setVisible(false);
         setSearchText('');
         setExpandedKeys([]);
@@ -235,6 +263,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         open={visible && !readonly && !disabled}
         placement={direction}
         trigger={[]} // 移除 trigger，通过 open 属性完全控制显示
+        onOpenChange={(open) => console.log('Popover open changed to:', open)}
         content={
           <div className="variable-popover-content">
             <div className="variable-search">

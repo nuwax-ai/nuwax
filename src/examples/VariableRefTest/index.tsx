@@ -348,6 +348,25 @@ const VariableRefTestExample: React.FC = () => {
 
           <Col span={12}>
             <Card title="组件测试区域" size="small">
+              <Space
+                direction="vertical"
+                style={{ width: '100%', marginBottom: 16 }}
+              >
+                <Button
+                  onClick={() =>
+                    console.log('Debug: current variables', testVariables)
+                  }
+                >
+                  调试：输出变量数据
+                </Button>
+                <Button
+                  onClick={() =>
+                    console.log('Debug: current prompt value', promptValue)
+                  }
+                >
+                  调试：输出当前值
+                </Button>
+              </Space>
               <PromptVariableRef
                 variables={testVariables}
                 value={promptValue}
