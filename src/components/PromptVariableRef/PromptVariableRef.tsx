@@ -34,15 +34,15 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   const [internalValue, setInternalValue] = useState(value || '');
   const [visible, setVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
-  // const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]); // 临时注释用于调试
-  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]); // 修复：需要用于键盘导航
-  // const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]); // 临时注释用于调试
+  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  const [activeKey, setActiveKey] = useState<React.Key | null>(null); // 当前激活的变量
 
   // 添加光标位置状态
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
 
   const inputRef = useRef<any>(null);
-  // const treeRef = useRef<any>(null); // 临时注释用于调试
+  const treeRef = useRef<any>(null);
 
   // 根据key查找变量节点
   const findNodeByKey = (
@@ -289,42 +289,103 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     (e: React.KeyboardEvent) => {
       if (!visible || readonly) return;
 
+      // 获取所有可选择的节点（叶子节点）
+      const getAllLeafNodes = (
+        nodes: VariableTreeNode[],
+      ): VariableTreeNode[] => {
+        const leafNodes: VariableTreeNode[] = [];
+        const traverse = (nodeList: VariableTreeNode[]) => {
+          nodeList.forEach((node) => {
+            if (!node.children || node.children.length === 0) {
+              leafNodes.push(node);
+            } else {
+              traverse(node.children);
+            }
+          });
+        };
+        traverse(nodes);
+        return leafNodes;
+      };
+
+      const leafNodes = getAllLeafNodes(displayTree);
+      if (leafNodes.length === 0) return;
+
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        // 选择第一个节点
-        const firstSelectableNode = document.querySelector(
-          '.ant-tree-node-content-wrapper',
-        );
-        if (firstSelectableNode) {
-          (firstSelectableNode as HTMLElement).click();
+        let nextIndex = 0;
+        if (activeKey) {
+          const currentIndex = leafNodes.findIndex(
+            (node) => node.key === activeKey,
+          );
+          nextIndex =
+            currentIndex >= 0 ? (currentIndex + 1) % leafNodes.length : 0;
+        }
+
+        const nextNode = leafNodes[nextIndex];
+        setActiveKey(nextNode.key);
+        setSelectedKeys([nextNode.key]);
+
+        // 自动展开到该节点的路径
+        if (nextNode.keyPath) {
+          const keysToExpand = nextNode.keyPath.slice(0, -1);
+          setExpandedKeys((prev) => [...new Set([...prev, ...keysToExpand])]);
         }
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        // 处理向上选择
+        let prevIndex = leafNodes.length - 1;
+        if (activeKey) {
+          const currentIndex = leafNodes.findIndex(
+            (node) => node.key === activeKey,
+          );
+          prevIndex =
+            currentIndex > 0 ? currentIndex - 1 : leafNodes.length - 1;
+        }
+
+        const prevNode = leafNodes[prevIndex];
+        setActiveKey(prevNode.key);
+        setSelectedKeys([prevNode.key]);
+
+        // 自动展开到该节点的路径
+        if (prevNode.keyPath) {
+          const keysToExpand = prevNode.keyPath.slice(0, -1);
+          setExpandedKeys((prev) => [...new Set([...prev, ...keysToExpand])]);
+        }
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        // 应用选中的变量
-        const selectedKey = selectedKeys[0];
-        if (selectedKey) {
-          handleApplyVariable(selectedKey as string);
+        if (activeKey) {
+          const selectedNode = findNodeByKey(displayTree, activeKey as string);
+          if (selectedNode) {
+            handleApplyVariable(selectedNode.value);
+          }
+        } else if (selectedKeys.length > 0) {
+          handleApplyVariable(selectedKeys[0] as string);
         }
       } else if (e.key === 'Escape') {
         setVisible(false);
+        setActiveKey(null);
       }
     },
-    [visible, readonly, selectedKeys, handleApplyVariable],
+    [
+      visible,
+      readonly,
+      activeKey,
+      selectedKeys,
+      displayTree,
+      handleApplyVariable,
+    ],
   );
 
-  // 树节点选择 - 临时注释用于调试
-  // const handleTreeSelect = useCallback(
-  //   (selectedKeys: React.Key[]) => {
-  //     setSelectedKeys(selectedKeys);
-  //     if (selectedKeys.length > 0) {
-  //       handleApplyVariable(selectedKeys[0] as string);
-  //     }
-  //   },
-  //   [handleApplyVariable],
-  // );
+  // 树节点选择
+  const handleTreeSelect = useCallback(
+    (selectedKeys: React.Key[], info: any) => {
+      setSelectedKeys(selectedKeys);
+      setActiveKey(selectedKeys[0] || null);
+      if (selectedKeys.length > 0) {
+        handleApplyVariable(selectedKeys[0] as string);
+      }
+    },
+    [handleApplyVariable],
+  );
 
   const popoverShouldShow = visible && !readonly && !disabled;
   console.log('Popover show condition:', {
