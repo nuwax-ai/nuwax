@@ -135,21 +135,30 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
               (node) => node.key === activeKey,
             );
             nextIndex =
-              currentIndex >= 0 ? (currentIndex + 1) % leafNodes.length : 0;
+              currentIndex >= 0 ? currentIndex + 1 : 0;
           }
 
           const nextNode = leafNodes[nextIndex];
-          console.log('Selecting next node:', nextNode);
+          console.log('Highlighting next node:', nextNode);
           setActiveKey(nextNode.key);
           setSelectedKeys([nextNode.key]);
 
-          // 滚动到选中项
+          // 滚动到选中项并添加高亮效果
           setTimeout(() => {
             const element = document.querySelector(
               `[data-node-key="${nextNode.key}"]`,
             ) as HTMLElement;
             if (element) {
               element.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+              // 添加临时高亮效果
+              element.style.transition = 'none';
+              element.style.boxShadow = '0 0 0 2px #1890ff';
+              element.style.transform = 'scale(1.02)';
+              setTimeout(() => {
+                element.style.transition = 'all 0.2s ease';
+                element.style.boxShadow = 'none';
+                element.style.transform = 'scale(1)';
+              }, 300);
             }
           }, 0);
         } else if (e.key === 'ArrowUp') {
