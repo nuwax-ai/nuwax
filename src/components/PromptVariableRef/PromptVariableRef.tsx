@@ -4,6 +4,7 @@
  * 支持 {{变量名}}、{{变量名.子变量名}}、{{变量名[数组索引]}} 语法
  */
 
+import { SearchOutlined } from '@ant-design/icons';
 import { Input, Popover } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
