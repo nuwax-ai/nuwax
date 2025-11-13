@@ -117,23 +117,26 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
       formData.append('projectName', projectName);
       formData.append('projectDesc', projectDesc || '');
       formData.append('spaceId', spaceId.toString());
-      formData.append('coverImg', coverImg);
-      // 如果用户上传了封面图片，则设置封面图片来源为USER
-      formData.append(
-        'coverImgSourceType',
-        coverImg ? CoverImgSourceTypeEnum.USER : '',
-      );
+      if (coverImg) {
+        formData.append('coverImg', coverImg);
+        // 如果用户上传了封面图片，则设置封面图片来源为USER
+        formData.append('coverImgSourceType', CoverImgSourceTypeEnum.USER);
+      }
       /* 2. 追加文件 */
       formData.append('file', file || '');
       runCreatePageUploadAndStart(formData);
     } else {
       // 封面图片
       const { coverImg } = values;
+      // 封面图片来源
+      const coverImgSourceType = coverImg ? CoverImgSourceTypeEnum.USER : '';
       setLoading(true);
+      // 参数
       const data = {
         ...values,
         spaceId,
-        coverImgSourceType: coverImg ? CoverImgSourceTypeEnum.USER : '',
+        // 如果用户没有上传封面图片，则不设置封面图片来源
+        ...(coverImgSourceType ? { coverImgSourceType } : {}),
       };
       // 在线创建
       if (type === PageDevelopCreateTypeEnum.Online_Develop) {

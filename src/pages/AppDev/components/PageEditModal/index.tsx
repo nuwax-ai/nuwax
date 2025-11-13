@@ -71,7 +71,8 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
     const data = {
       ...values,
       projectId: projectInfo?.projectId,
-      coverImgSourceType,
+      // 如果用户没有上传封面图片，则不设置封面图片来源
+      ...(coverImgSourceType ? { coverImgSourceType } : {}),
     };
     runUpdatePage(data);
   };
