@@ -94,6 +94,33 @@ const ExamplesIndex: React.FC = () => {
       path: '/examples/theme-demo',
       featured: false,
     },
+    {
+      id: 'autosize-demo',
+      title: isChineseLanguage
+        ? 'PromptVariableRef 自动调整大小演示'
+        : 'PromptVariableRef Autosize Demo',
+      description: isChineseLanguage
+        ? '演示 PromptVariableRef 组件的自动调整大小功能，包括 rows、cols、autosize 等 textarea 风格的属性，展示文本框如何根据内容智能调整尺寸。'
+        : 'Demonstrate the autosize functionality of PromptVariableRef component, including rows, cols, autosize and other textarea-style attributes, showing how textboxes intelligently adjust size based on content.',
+      tags: [
+        {
+          text: isChineseLanguage ? '组件演示' : 'Component Demo',
+          color: 'blue',
+        },
+        { text: isChineseLanguage ? '自动调整' : 'Autosize', color: 'green' },
+        {
+          text: isChineseLanguage ? '变量引用' : 'Variable Reference',
+          color: 'purple',
+        },
+        {
+          text: isChineseLanguage ? '文本输入' : 'Text Input',
+          color: 'orange',
+        },
+      ],
+      icon: <CodeOutlined />,
+      path: '/examples/autosize-demo',
+      featured: true,
+    },
   ];
 
   // 跳转到示例页面

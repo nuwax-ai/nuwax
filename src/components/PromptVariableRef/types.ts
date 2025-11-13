@@ -121,4 +121,24 @@ export interface PromptVariableRefProps {
   className?: string;
   /** 输入框样式 */
   style?: React.CSSProperties;
+
+  // ========== 新增：类似 textarea 的属性 ==========
+  /** 可见行数（与 textarea 的 rows 属性类似） */
+  rows?: number;
+  /** 可见列数（与 textarea 的 cols 属性类似） */
+  cols?: number;
+  /** 自动调整大小（类似 textarea 的 autosize） */
+  autosize?: boolean | { minRows?: number; maxRows?: number };
+  /** 自动调整的最小行数 */
+  minRows?: number;
+  /** 自动调整的最大行数 */
+  maxRows?: number;
+  /** 是否显示字符计数 */
+  showCount?: boolean;
+  /** 最大字符数 */
+  maxLength?: number;
+  /** 自适应高度时的最大高度（像素） */
+  maxHeight?: number | string;
+  /** 自适应高度时的最小高度（像素） */
+  minHeight?: number | string;
 }

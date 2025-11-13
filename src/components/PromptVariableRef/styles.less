@@ -26,6 +26,8 @@
     overflow-wrap: break-word;
     outline: none;
     cursor: text;
+
+    // 默认高度
     min-height: 80px;
     max-height: 400px;
     overflow-y: auto;
@@ -54,6 +56,33 @@
     &.prompt-variable-input-readonly {
       background-color: #fafafa;
       cursor: default;
+    }
+
+    // ========== 新增：自动调整大小状态 ==========
+    &.prompt-variable-input-autosize {
+      overflow-y: hidden; // 自动大小时隐藏滚动条
+
+      // 动态高度的平滑过渡
+      transition: height 0.1s ease-out;
+    }
+  }
+
+  // ========== 新增：字符计数器样式 ==========
+  .prompt-variable-count {
+    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+    user-select: none;
+
+    // 正常状态
+    color: #8c8c8c;
+
+    // 超出限制状态
+    &.count-error {
+      color: #ff4d4f;
+    }
+
+    // 接近限制时的警告
+    &.count-warning {
+      color: #faad14;
     }
   }
 
