@@ -100,6 +100,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
   const inputRef = useRef<any>(null);
   const treeRef = useRef<any>(null);
+  const highlightLayerRef = useRef<HTMLDivElement>(null);
 
   // 构建变量树（需要在使用前定义）
   const variableTree = buildVariableTree(variables);
@@ -265,6 +266,41 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       setInternalValue(value);
     }
   }, [value]);
+
+  // 同步输入框和高亮层的滚动位置
+  useEffect(() => {
+    const textarea = inputRef.current?.resizableTextArea?.textArea;
+    const highlightLayer = highlightLayerRef.current;
+
+    if (!textarea || !highlightLayer) return;
+
+    const handleScroll = () => {
+      // 同步滚动位置
+      highlightLayer.scrollTop = textarea.scrollTop;
+      highlightLayer.scrollLeft = textarea.scrollLeft;
+    };
+
+    // 监听输入框滚动事件
+    textarea.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      textarea.removeEventListener('scroll', handleScroll);
+    };
+  }, []); // 只在组件挂载时绑定一次
+
+  // 当内容变化时，同步一次滚动位置（确保内容变化后滚动位置正确）
+  useEffect(() => {
+    const textarea = inputRef.current?.resizableTextArea?.textArea;
+    const highlightLayer = highlightLayerRef.current;
+
+    if (!textarea || !highlightLayer) return;
+
+    // 使用 requestAnimationFrame 确保 DOM 更新后再同步
+    requestAnimationFrame(() => {
+      highlightLayer.scrollTop = textarea.scrollTop;
+      highlightLayer.scrollLeft = textarea.scrollLeft;
+    });
+  }, [internalValue]); // 当内容变化时同步滚动位置
 
   // 点击外部关闭下拉框
   useEffect(() => {
@@ -590,7 +626,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       {/* 主要的输入区域 */}
       <div className="input-container">
         {/* 高亮背景层 - 显示所有文本，包括高亮的变量引用 */}
-        <div className="highlight-layer">
+        <div ref={highlightLayerRef} className="highlight-layer">
           {internalValue ? renderHighlightedText(internalValue) : ''}
         </div>
 
