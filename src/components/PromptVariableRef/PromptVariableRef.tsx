@@ -4,7 +4,8 @@
  * 支持 {{变量名}}、{{变量名.子变量名}}、{{变量名[数组索引]}} 语法
  */
 
-import { Input } from 'antd';
+import { Input, Tree } from 'antd';
+import cx from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import './styles.less';
@@ -16,6 +17,52 @@ import {
 } from './utils/treeUtils';
 
 const { TextArea } = Input;
+
+// 将变量树节点转换为 Tree 组件格式
+const transformToTreeDataForTree = (nodes: VariableTreeNode[]): any[] => {
+  return nodes.map((node) => {
+    return {
+      title: (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span style={{ fontSize: '12px', opacity: 0.8 }}>
+            {node.variable?.type
+              ? getVariableTypeIcon(node.variable.type)
+              : '📝'}
+          </span>
+          <span
+            style={{
+              flex: 1,
+              fontSize: '14px',
+            }}
+          >
+            {node.label}
+          </span>
+          <span
+            style={{
+              fontSize: '12px',
+              color: '#8c8c8c',
+            }}
+          >
+            {node.variable?.type || 'unknown'}
+          </span>
+        </div>
+      ),
+      key: node.key,
+      value: node.value,
+      selectable: true, // 所有节点都可选择
+      disabled: false, // 不禁用任何节点
+      children: node.children
+        ? transformToTreeDataForTree(node.children)
+        : undefined,
+    };
+  });
+};
 
 const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   variables = [],
@@ -33,17 +80,107 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   console.log('Current value:', value);
   const [internalValue, setInternalValue] = useState(value || '');
   const [visible, setVisible] = useState(false);
-  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
-  const [activeKey, setActiveKey] = useState<React.Key | null>(null); // 当前激活的变量
+  // 树相关状态
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]); // Tree 组件需要
 
   // 添加光标位置状态
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
 
+  // 从文本输入框中提取搜索关键词
+  const extractSearchTextFromInput = useCallback(
+    (inputText: string): string => {
+      // 查找 {{ 后面的搜索内容
+      const match = inputText.match(/{{([^}]*)$/);
+      return match ? match[1] : '';
+    },
+    [],
+  );
+
   const inputRef = useRef<any>(null);
+  const treeRef = useRef<any>(null);
 
   // 构建变量树（需要在使用前定义）
   const variableTree = buildVariableTree(variables);
-  const displayTree = variableTree;
+
+  // 搜索过滤函数
+  const filterTreeBySearch = (
+    nodes: VariableTreeNode[],
+    searchText: string,
+    matchMode: string = 'fuzzy', // 使用固定的模糊匹配
+  ): VariableTreeNode[] => {
+    if (!searchText.trim()) {
+      return nodes;
+    }
+
+    const matchesNode = (node: VariableTreeNode): boolean => {
+      const searchLower = searchText.toLowerCase();
+      const labelLower = node.label.toLowerCase();
+      const valueLower = node.value.toLowerCase();
+      const typeLower = node.variable?.type.toLowerCase() || '';
+
+      switch (matchMode) {
+        case 'exact':
+          return labelLower === searchLower || valueLower === searchLower;
+        case 'fuzzy':
+          // 支持中文的模糊匹配 - 只要包含即可
+          return (
+            labelLower.includes(searchLower) ||
+            valueLower.includes(searchLower) ||
+            typeLower.includes(searchLower)
+          );
+        case 'prefix':
+          // 支持中文的前缀匹配
+          return (
+            labelLower.startsWith(searchLower) ||
+            valueLower.startsWith(searchLower) ||
+            labelLower.includes(searchLower) ||
+            valueLower.includes(searchLower)
+          );
+        case 'regex':
+          try {
+            const regex = new RegExp(searchText, 'i');
+            return (
+              regex.test(node.label) ||
+              regex.test(node.value) ||
+              regex.test(node.variable?.type || '')
+            );
+          } catch {
+            return false; // 无效正则表达式
+          }
+        default:
+          return false;
+      }
+    };
+
+    const filterNodes = (nodes: VariableTreeNode[]): VariableTreeNode[] => {
+      const result: VariableTreeNode[] = [];
+
+      for (const node of nodes) {
+        const filteredChildren = node.children
+          ? filterNodes(node.children)
+          : [];
+        const isMatch = matchesNode(node);
+
+        if (isMatch || filteredChildren.length > 0) {
+          result.push({
+            ...node,
+            children: filteredChildren,
+          });
+        }
+      }
+
+      return result;
+    };
+
+    return filterNodes(nodes);
+  };
+
+  const displayTree = filterTreeBySearch(
+    variableTree,
+    extractSearchTextFromInput(internalValue),
+    'fuzzy',
+  );
 
   // 根据key查找变量节点
   const findNodeByKey = (
@@ -144,137 +281,6 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     }
   }, [visible]);
 
-  // 全局键盘事件处理，当下拉框显示时
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: globalThis.KeyboardEvent) => {
-      if (!visible || readonly) return;
-
-      // 当下拉框显示时，直接处理键盘导航事件
-      // 不检查焦点位置，因为焦点可能在输入框中
-      if (
-        e.key === 'ArrowDown' ||
-        e.key === 'ArrowUp' ||
-        e.key === 'Enter' ||
-        e.key === 'Escape'
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        console.log('Global keydown detected:', e.key);
-
-        // 获取所有叶子节点
-        const getAllLeafNodes = (
-          nodes: VariableTreeNode[],
-        ): VariableTreeNode[] => {
-          const leafNodes: VariableTreeNode[] = [];
-          const traverse = (nodeList: VariableTreeNode[]) => {
-            nodeList.forEach((node) => {
-              if (!node.children || node.children.length === 0) {
-                leafNodes.push(node);
-              } else {
-                traverse(node.children);
-              }
-            });
-          };
-          traverse(nodes);
-          return leafNodes;
-        };
-
-        const leafNodes = getAllLeafNodes(displayTree);
-        console.log(
-          'Available leaf nodes:',
-          leafNodes.map((n) => n.key),
-        );
-
-        if (e.key === 'ArrowDown') {
-          let nextIndex = 0;
-          if (activeKey) {
-            const currentIndex = leafNodes.findIndex(
-              (node) => node.key === activeKey,
-            );
-            nextIndex = currentIndex >= 0 ? currentIndex + 1 : 0;
-          }
-
-          const nextNode = leafNodes[nextIndex];
-          console.log('Highlighting next node:', nextNode);
-          setActiveKey(nextNode.key);
-          setSelectedKeys([nextNode.key]);
-
-          // 滚动到选中项并添加高亮效果
-          setTimeout(() => {
-            const element = document.querySelector(
-              `[data-node-key="${nextNode.key}"]`,
-            ) as HTMLElement;
-            if (element) {
-              element.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-              // 添加临时高亮效果
-              element.style.transition = 'none';
-              element.style.boxShadow = '0 0 0 2px #1890ff';
-              element.style.transform = 'scale(1.02)';
-              setTimeout(() => {
-                element.style.transition = 'all 0.2s ease';
-                element.style.boxShadow = 'none';
-                element.style.transform = 'scale(1)';
-              }, 300);
-            }
-          }, 0);
-        } else if (e.key === 'ArrowUp') {
-          let prevIndex = leafNodes.length - 1;
-          if (activeKey) {
-            const currentIndex = leafNodes.findIndex(
-              (node) => node.key === activeKey,
-            );
-            prevIndex =
-              currentIndex > 0 ? currentIndex - 1 : leafNodes.length - 1;
-          }
-
-          const prevNode = leafNodes[prevIndex];
-          console.log('Selecting prev node:', prevNode);
-          setActiveKey(prevNode.key);
-          setSelectedKeys([prevNode.key]);
-
-          // 滚动到选中项
-          setTimeout(() => {
-            const element = document.querySelector(
-              `[data-node-key="${prevNode.key}"]`,
-            ) as HTMLElement;
-            if (element) {
-              element.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-            }
-          }, 0);
-        } else if (e.key === 'Enter') {
-          console.log('Enter pressed, activeKey:', activeKey);
-          if (activeKey) {
-            const selectedNode = leafNodes.find(
-              (node) => node.key === activeKey,
-            );
-            if (selectedNode) {
-              console.log('Applying variable:', selectedNode.value);
-              handleApplyVariable(selectedNode.value);
-            }
-          } else if (leafNodes.length > 0) {
-            console.log('Applying first variable:', leafNodes[0].value);
-            handleApplyVariable(leafNodes[0].value);
-          }
-        } else if (e.key === 'Escape') {
-          console.log('Escape pressed, closing dropdown');
-          setVisible(false);
-          setActiveKey(null);
-        }
-      }
-    };
-
-    if (visible) {
-      console.log('Adding global keyboard listener, visible:', visible);
-      document.addEventListener('keydown', handleGlobalKeyDown, true);
-      return () => {
-        console.log('Removing global keyboard listener');
-        document.removeEventListener('keydown', handleGlobalKeyDown, true);
-      };
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, readonly]);
-
   // 高亮显示变量引用
   const renderHighlightedText = useCallback((text: string) => {
     const regex = /\{\{([^}]+)\}\}/g;
@@ -291,18 +297,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       // 添加高亮的变量引用
       const variableName = match[1];
       parts.push(
-        <span
-          key={`variable-${match.index}`}
-          style={{
-            backgroundColor: '#e6f7ff',
-            color: '#1890ff',
-            padding: '2px 4px',
-            borderRadius: '3px',
-            fontFamily: 'Monaco, Menlo, monospace',
-            fontSize: '13px',
-            fontWeight: 500,
-          }}
-        >
+        <span key={`variable-${match.index}`} className="variable-highlight">
           {`{{${variableName}}}`}
         </span>,
       );
@@ -398,86 +393,164 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     [onChange, readonly, variableTree],
   );
 
-  // 处理键盘事件
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (!visible || readonly) return;
+  // 键盘导航的具体实现
+  const handleTreeNavigation = useCallback(
+    (e: KeyboardEvent) => {
+      const treeData = transformToTreeDataForTree(displayTree);
 
-      // 获取所有可选择的节点（叶子节点）
-      const getAllLeafNodes = (
-        nodes: VariableTreeNode[],
-      ): VariableTreeNode[] => {
-        const leafNodes: VariableTreeNode[] = [];
-        const traverse = (nodeList: VariableTreeNode[]) => {
-          nodeList.forEach((node) => {
-            if (!node.children || node.children.length === 0) {
-              leafNodes.push(node);
-            } else {
-              traverse(node.children);
-            }
-          });
-        };
-        traverse(nodes);
-        return leafNodes;
+      // 获取所有可选择的节点
+      const getAllNodes = (nodes: any[], path: string[] = []): any[] => {
+        const result: any[] = [];
+        for (const node of nodes) {
+          result.push({ ...node, path: [...path, node.key] });
+          if (node.children) {
+            result.push(...getAllNodes(node.children, [...path, node.key]));
+          }
+        }
+        return result;
       };
 
-      const leafNodes = getAllLeafNodes(displayTree);
-      if (leafNodes.length === 0) return;
+      const allNodes = getAllNodes(treeData);
+      console.log('Available nodes:', allNodes.length);
+
+      if (allNodes.length === 0) return;
+
+      // 获取当前选中节点的索引
+      const getCurrentIndex = (): number => {
+        if (selectedKeys.length === 0) return -1;
+        return allNodes.findIndex((node) => node.key === selectedKeys[0]);
+      };
+
+      const currentIndex = getCurrentIndex();
+      console.log(
+        'Current selected index:',
+        currentIndex,
+        'selectedKeys:',
+        selectedKeys,
+      );
 
       if (e.key === 'ArrowDown') {
+        console.log('ArrowDown pressed');
         e.preventDefault();
-        let nextIndex = 0;
-        if (activeKey) {
-          const currentIndex = leafNodes.findIndex(
-            (node) => node.key === activeKey,
-          );
-          nextIndex =
-            currentIndex >= 0 ? (currentIndex + 1) % leafNodes.length : 0;
-        }
-
-        const nextNode = leafNodes[nextIndex];
-        setActiveKey(nextNode.key);
+        const nextIndex =
+          currentIndex >= 0 ? (currentIndex + 1) % allNodes.length : 0;
+        const nextNode = allNodes[nextIndex];
         setSelectedKeys([nextNode.key]);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        let prevIndex = leafNodes.length - 1;
-        if (activeKey) {
-          const currentIndex = leafNodes.findIndex(
-            (node) => node.key === activeKey,
-          );
-          prevIndex =
-            currentIndex > 0 ? currentIndex - 1 : leafNodes.length - 1;
-        }
+        console.log('Next node selected:', nextNode.key);
 
-        const prevNode = leafNodes[prevIndex];
-        setActiveKey(prevNode.key);
-        setSelectedKeys([prevNode.key]);
-      } else if (e.key === 'Enter') {
+        // 自动展开父级节点
+        const parentPath = nextNode.path.slice(0, -1);
+        if (parentPath.length > 0) {
+          const newExpandedKeys = [
+            ...new Set([...expandedKeys, ...parentPath]),
+          ];
+          setExpandedKeys(newExpandedKeys);
+        }
+      } else if (e.key === 'ArrowUp') {
+        console.log('ArrowUp pressed');
         e.preventDefault();
-        if (activeKey) {
-          const selectedNode = findNodeByKey(displayTree, activeKey as string);
-          if (selectedNode) {
-            handleApplyVariable(selectedNode.value);
-          }
-        } else if (selectedKeys.length > 0) {
-          handleApplyVariable(selectedKeys[0] as string);
+        const prevIndex =
+          currentIndex >= 0
+            ? (currentIndex - 1 + allNodes.length) % allNodes.length
+            : allNodes.length - 1;
+        const prevNode = allNodes[prevIndex];
+        setSelectedKeys([prevNode.key]);
+        console.log('Prev node selected:', prevNode.key);
+
+        // 自动展开父级节点
+        const parentPath = prevNode.path.slice(0, -1);
+        if (parentPath.length > 0) {
+          const newExpandedKeys = [
+            ...new Set([...expandedKeys, ...parentPath]),
+          ];
+          setExpandedKeys(newExpandedKeys);
+        }
+      } else if (e.key === 'Enter') {
+        console.log('Enter pressed');
+        e.preventDefault();
+        if (currentIndex >= 0) {
+          const selectedNode = allNodes[currentIndex];
+          handleApplyVariable(selectedNode.value);
+          setVisible(false);
+          console.log('Variable applied:', selectedNode.value);
         }
       } else if (e.key === 'Escape') {
-        setVisible(false);
-        setActiveKey(null);
+        const searchText = extractSearchTextFromInput(internalValue);
+        if (searchText.trim()) {
+          // 如果有搜索文本，删除{{和搜索内容
+          const index = internalValue.lastIndexOf('{{' + searchText);
+          if (index >= 0) {
+            setInternalValue(internalValue.substring(0, index));
+          }
+        } else if (internalValue.includes('{{')) {
+          // 如果有{{但没有搜索文本，删除{{
+          const index = internalValue.lastIndexOf('{{');
+          if (index >= 0) {
+            setInternalValue(
+              internalValue.substring(0, index) +
+                internalValue.substring(index + 2),
+            );
+          }
+        } else {
+          // 否则关闭下拉框
+          setVisible(false);
+          setSelectedKeys([]);
+        }
       }
     },
     [
-      visible,
-      readonly,
-      activeKey,
-      selectedKeys,
       displayTree,
+      expandedKeys,
+      selectedKeys,
       handleApplyVariable,
+      extractSearchTextFromInput,
+      internalValue,
     ],
   );
 
-  const popoverShouldShow = visible && !readonly && !disabled;
+  // Tree 组件显示时自动获取焦点
+  useEffect(() => {
+    if (visible && treeRef.current) {
+      // Tree 组件没有 focus 方法，所以这里不调用 focus()
+      // 键盘导航通过全局事件处理器来处理
+      console.log('Tree component ready for keyboard navigation');
+    }
+  }, [visible]);
+
+  // 全局键盘事件处理，作为 Tree 组件内置键盘导航的备选方案
+  useEffect(() => {
+    if (!visible) return;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (readonly) return;
+
+      console.log('Global keydown detected:', e.key, 'visible:', visible);
+
+      // 只处理我们的快捷键
+      if (
+        e.key === 'ArrowDown' ||
+        e.key === 'ArrowUp' ||
+        e.key === 'Enter' ||
+        e.key === 'Escape'
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 直接在这里实现键盘导航逻辑，避免函数依赖问题
+        handleTreeNavigation(e);
+      }
+    };
+
+    console.log('Adding global keyboard listener');
+    document.addEventListener('keydown', handleGlobalKeyDown, true);
+    return () => {
+      console.log('Removing global keyboard listener');
+      document.removeEventListener('keydown', handleGlobalKeyDown, true);
+    };
+  }, [visible, readonly, handleTreeNavigation]); // 包含 handleTreeNavigation 依赖
+
+  const popoverShouldShow =
+    visible && !readonly && !disabled && internalValue.includes('{{'); // 只要包含 {{ 就显示，不要求有搜索文本
   console.log('Popover show condition:', {
     visible,
     readonly,
@@ -487,34 +560,11 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   });
 
   return (
-    <div className={`prompt-variable-ref ${className}`} style={style}>
+    <div className={cx('prompt-variable-ref', className)} style={style}>
       {/* 主要的输入区域 */}
-      <div style={{ position: 'relative' }}>
+      <div className="input-container">
         {/* 高亮背景层 - 显示所有文本，包括高亮的变量引用 */}
-        <div
-          className="highlight-layer"
-          style={{
-            position: 'absolute',
-            top: '1px',
-            left: '1px',
-            right: '1px',
-            bottom: '1px',
-            padding: '4px 11px',
-            backgroundColor: 'transparent',
-            whiteSpace: 'pre-wrap',
-            wordWrap: 'break-word',
-            wordBreak: 'break-word',
-            overflowWrap: 'break-word',
-            pointerEvents: 'none',
-            zIndex: 1,
-            fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
-            fontSize: '14px',
-            lineHeight: '1.5715',
-            overflow: 'hidden',
-            boxSizing: 'border-box',
-            color: 'rgba(0, 0, 0, 0.88)', // Ant Design 默认文本颜色
-          }}
-        >
+        <div className="highlight-layer">
           {internalValue ? renderHighlightedText(internalValue) : ''}
         </div>
 
@@ -523,171 +573,92 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           ref={inputRef}
           value={internalValue}
           onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
           rows={4}
           className="prompt-variable-input"
-          style={{
-            position: 'relative',
-            zIndex: 2,
-            color: 'transparent',
-            caretColor: 'rgba(0, 0, 0, 0.88)',
-          }}
         />
       </div>
 
-      {/* 变量引用下拉框 */}
+      {/* 变量引用列表 */}
       {popoverShouldShow && (
         <div
-          className="variable-dropdown"
+          className="variable-tree-list"
+          tabIndex={-1}
           style={{
             position: 'fixed',
             left: cursorPosition.x,
             top: cursorPosition.y,
             zIndex: 9999,
+            width: '300px', // 设置宽度为300px
+            padding: '8px', // 添加内边距
             background: '#fff',
             border: '1px solid #d9d9d9',
             borderRadius: '8px',
-            padding: '8px 0',
-            minWidth: '320px',
-            maxWidth: '400px',
-            maxHeight: '300px',
-            overflow: 'auto',
             boxShadow:
               '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
-            transform: 'translateY(10px)', // 稍微向下偏移避免遮挡光标
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* 变量列表 - 使用树形结构 */}
-          <div>
+          {/* 搜索提示（当在输入框中输入{{后显示） */}
+          {visible && internalValue.includes('{{') && (
+            <div
+              className="variable-search-stats"
+              style={{
+                padding: '4px 8px',
+                fontSize: '11px',
+                color: '#666',
+                borderBottom: '1px solid #f0f0f0',
+              }}
+            >
+              {extractSearchTextFromInput(internalValue)
+                ? `搜索："${extractSearchTextFromInput(
+                    internalValue,
+                  )}" - 找到 ${displayTree.length} 个匹配项`
+                : `输入搜索词或浏览所有 ${variableTree.length} 个变量`}
+            </div>
+          )}
+
+          {/* Tree 组件 */}
+          <div className="tree-list-content">
             {displayTree.length > 0 ? (
-              <>
-                {/* 调试信息 */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div
-                    style={{
-                      padding: '4px 8px',
-                      fontSize: '12px',
-                      color: '#666',
-                      backgroundColor: '#f9f9f9',
-                      borderBottom: '1px solid #f0f0f0',
-                    }}
-                  >
-                    Debug: selectedKeys = {JSON.stringify(selectedKeys)},
-                    activeKey = {String(activeKey)}
-                  </div>
-                )}
+              <Tree
+                ref={treeRef}
+                treeData={transformToTreeDataForTree(displayTree)}
+                selectedKeys={selectedKeys}
+                expandedKeys={expandedKeys as string[]}
+                onExpand={(newExpandedKeys) => setExpandedKeys(newExpandedKeys)}
+                onSelect={(selectedKeys) => {
+                  // 所有节点都可以选择和应用
+                  const selectedNode = transformToTreeDataForTree(displayTree)
+                    .flatMap((node) => {
+                      const getAllNodes = (n: any): any[] => {
+                        const nodes = [n];
+                        if (n.children) {
+                          nodes.push(...n.children.flatMap(getAllNodes));
+                        }
+                        return nodes;
+                      };
+                      return getAllNodes(node);
+                    })
+                    .find((node: any) => selectedKeys.includes(node.key));
 
-                {/* 变量列表 */}
-                {displayTree.map((node) => (
-                  <div
-                    key={node.key}
-                    data-node-key={node.key}
-                    className="variable-item"
-                    style={{
-                      padding: '6px 8px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      fontSize: '14px',
-                      borderBottom: '1px solid #f5f5f5',
-                      transition: 'background-color 0.2s',
-                      // 添加层级缩进
-                      paddingLeft: `${
-                        8 + ((node.keyPath?.length || 1) - 1) * 16
-                      }px`,
-                      // 选中状态样式
-                      backgroundColor: selectedKeys.includes(node.key)
-                        ? '#e6f7ff'
-                        : 'transparent',
-                      color: selectedKeys.includes(node.key)
-                        ? '#1890ff'
-                        : 'inherit',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!selectedKeys.includes(node.key)) {
-                        e.currentTarget.style.backgroundColor = '#f5f5f5';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!selectedKeys.includes(node.key)) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }
-                    }}
-                    onClick={() => {
-                      handleApplyVariable(node.value);
-                    }}
-                  >
-                    {/* 层级指示器 */}
-                    {(node.keyPath?.length || 1) > 1 && (
-                      <span
-                        style={{
-                          fontSize: '10px',
-                          color: '#8c8c8c',
-                          position: 'absolute',
-                          left: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                        }}
-                      >
-                        ├─
-                      </span>
-                    )}
-
-                    <span style={{ fontSize: '12px', opacity: 0.8 }}>
-                      {node.variable?.type
-                        ? getVariableTypeIcon(node.variable.type)
-                        : '📝'}
-                    </span>
-                    <span
-                      style={{
-                        fontWeight:
-                          (node.keyPath?.length || 1) === 1 ? 600 : 500,
-                        color: '#262626',
-                      }}
-                    >
-                      {node.label}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        color: '#8c8c8c',
-                        marginLeft: 'auto',
-                      }}
-                    >
-                      {node.variable?.type || 'unknown'}
-                    </span>
-                  </div>
-                ))}
-              </>
-            ) : (
-              <div
-                style={{
-                  padding: '32px 16px',
-                  textAlign: 'center',
-                  color: '#8c8c8c',
+                  if (selectedNode) {
+                    handleApplyVariable(selectedNode.value);
+                    setVisible(false);
+                  }
                 }}
-              >
-                没有找到匹配的变量
-              </div>
+                showIcon={false}
+                tabIndex={-1} // 设置为 -1，禁用 Tree 组件的键盘导航
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                }}
+                blockNode={true}
+              />
+            ) : (
+              <div className="variable-empty">没有找到匹配的变量</div>
             )}
-          </div>
-
-          {/* 底部提示 */}
-          <div
-            style={{
-              padding: '8px 12px',
-              borderTop: '1px solid #f0f0f0',
-              background: '#fafafa',
-              fontSize: '12px',
-              color: '#8c8c8c',
-              textAlign: 'center',
-            }}
-          >
-            支持语法：{'{variable}'}, {'{variable.property}'}, {'{variable[0]}'}
           </div>
         </div>
       )}

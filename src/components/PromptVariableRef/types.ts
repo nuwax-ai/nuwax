@@ -32,15 +32,20 @@ export enum VariableType {
   ArrayObject = 'array_object',
 }
 
+// 匹配模式枚举
+export enum MatchMode {
+  EXACT = 'exact', // 精确匹配
+  FUZZY = 'fuzzy', // 模糊匹配
+  PREFIX = 'prefix', // 前缀匹配
+  REGEX = 'regex', // 正则表达式匹配
+}
+
 export interface VariableTreeNode {
-  label: string;
-  title: string;
-  value: string;
   key: string;
-  keyPath?: string[];
+  label: string;
+  value: string;
   variable?: PromptVariable;
   children?: VariableTreeNode[];
-  parent?: VariableTreeNode;
 }
 
 export interface VariableParseData {
