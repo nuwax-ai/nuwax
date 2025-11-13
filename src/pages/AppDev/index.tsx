@@ -1941,7 +1941,7 @@ const AppDev: React.FC = () => {
         <Created
           open={isAddDataResourceModalVisible}
           onCancel={handleCancelAddComponent}
-          checkTag={AgentComponentTypeEnum.Plugin}
+          checkTag={AgentComponentTypeEnum.Workflow}
           addComponents={addComponents}
           onAdded={handleAddComponent}
           tabs={CREATED_TABS.filter(
