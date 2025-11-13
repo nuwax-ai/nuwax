@@ -108,6 +108,8 @@ export interface PromptVariableRefProps {
   onVariableSelect?: (variable: PromptVariable, path: string) => void;
   /** 默认值 */
   defaultValue?: string;
+  /** 受控值 */
+  value?: string;
   /** 是否禁用 */
   disabled?: boolean;
   /** 样式类名 */

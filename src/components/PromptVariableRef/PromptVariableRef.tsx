@@ -33,16 +33,17 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   console.log('Current value:', value);
   const [internalValue, setInternalValue] = useState(value || '');
   const [visible, setVisible] = useState(false);
-  const [searchText, setSearchText] = useState('');
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
-  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [activeKey, setActiveKey] = useState<React.Key | null>(null); // 当前激活的变量
 
   // 添加光标位置状态
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
 
   const inputRef = useRef<any>(null);
-  const treeRef = useRef<any>(null);
+
+  // 构建变量树（需要在使用前定义）
+  const variableTree = buildVariableTree(variables);
+  const displayTree = variableTree;
 
   // 根据key查找变量节点
   const findNodeByKey = (
@@ -62,6 +63,64 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     return null;
   };
 
+  // 应用变量（需要在 useEffect 之前定义）
+  const handleApplyVariable = useCallback(
+    (nodeValue: string) => {
+      if (!inputRef.current) return;
+
+      const textarea = inputRef.current.resizableTextArea.textArea;
+      const startPos = textarea.selectionStart;
+      const endPos = textarea.selectionEnd;
+      const currentValue = internalValue;
+
+      // 查找 {{...}} 的范围
+      const beforeText = currentValue.substring(0, startPos);
+      const afterText = currentValue.substring(endPos);
+
+      // 找到最近的 {{ 开始位置
+      const lastStartPos = beforeText.lastIndexOf('{{');
+      if (lastStartPos !== -1) {
+        // 检查是否有匹配的 }} 结束位置
+        const afterStartText = beforeText.substring(lastStartPos + 2); // 从 {{ 后开始
+        const endPosMatch = afterStartText.indexOf('}}');
+
+        let finalText: string;
+        let newCursorPos: number;
+
+        if (endPosMatch !== -1) {
+          // 替换现有的变量引用（包含 {{ 和 }}）
+          const beforeVariable = beforeText.substring(0, lastStartPos);
+          const afterVariable = afterText.substring(endPosMatch + 2); // 跳过 }}
+          finalText = beforeVariable + `{{${nodeValue}}}` + afterVariable;
+          newCursorPos = beforeVariable.length + nodeValue.length + 4; // 4 = {{}} 的长度
+        } else {
+          // 完成新的变量引用
+          const beforeVariable = beforeText.substring(0, lastStartPos);
+          finalText = beforeVariable + `{{${nodeValue}}}` + afterText;
+          newCursorPos = beforeVariable.length + nodeValue.length + 4;
+        }
+
+        setInternalValue(finalText);
+        onChange?.(finalText);
+
+        // 设置光标位置
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(newCursorPos, newCursorPos);
+        }, 0);
+
+        // 触发变量选择回调
+        const selectedNode = findNodeByKey(variableTree, nodeValue);
+        if (selectedNode && selectedNode.variable) {
+          onVariableSelect?.(selectedNode.variable, nodeValue);
+        }
+      }
+
+      setVisible(false);
+    },
+    [internalValue, onChange, onVariableSelect, variableTree],
+  );
+
   // 同步外部 value 到内部 state
   useEffect(() => {
     if (value !== undefined) {
@@ -71,10 +130,9 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
   // 点击外部关闭下拉框
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = () => {
       if (visible) {
         setVisible(false);
-        setSearchText('');
       }
     };
 
@@ -134,8 +192,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
             const currentIndex = leafNodes.findIndex(
               (node) => node.key === activeKey,
             );
-            nextIndex =
-              currentIndex >= 0 ? currentIndex + 1 : 0;
+            nextIndex = currentIndex >= 0 ? currentIndex + 1 : 0;
           }
 
           const nextNode = leafNodes[nextIndex];
@@ -215,7 +272,8 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         document.removeEventListener('keydown', handleGlobalKeyDown, true);
       };
     }
-  }, [visible, readonly, handleKeyDown]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, readonly]);
 
   // 高亮显示变量引用
   const renderHighlightedText = useCallback((text: string) => {
@@ -224,8 +282,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     let lastIndex = 0;
     let match;
 
-    while ((match = regex.exec(text))
-              )) !== null) {
+    while ((match = regex.exec(text)) !== null) {
       // 添加匹配前的普通文本
       if (match.index > lastIndex) {
         parts.push(text.substring(lastIndex, match.index));
@@ -250,7 +307,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         </span>,
       );
 
-      lastIndex = match.index + match.length;
+      lastIndex = match.index + match[0].length;
     }
 
     // 添加剩余的普通文本
@@ -260,71 +317,6 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
     return parts.length > 0 ? parts : text;
   }, []);
-
-  // 构建变量树
-  const variableTree = buildVariableTree(variables);
-
-  // 由于移除了搜索框，直接显示完整的变量树
-  const displayTree = variableTree;
-
-  // 应用变量
-  const handleApplyVariable = useCallback(
-    (nodeValue: string) => {
-      if (!inputRef.current) return;
-
-      const textarea = inputRef.current.resizableTextArea.textArea;
-      const startPos = textarea.selectionStart;
-      const endPos = textarea.selectionEnd;
-      const currentValue = internalValue;
-
-      // 查找 {{...}} 的范围
-      const beforeText = currentValue.substring(0, startPos);
-      const afterText = currentValue.substring(endPos);
-
-      // 找到最近的 {{ 开始位置
-      const lastStartPos = beforeText.lastIndexOf('{{');
-      if (lastStartPos !== -1) {
-        // 检查是否有匹配的 }} 结束位置
-        const afterStartText = beforeText.substring(lastStartPos + 2); // 从 {{ 后开始
-        const endPosMatch = afterStartText.indexOf('}}');
-
-        let finalText: string;
-        let newCursorPos: number;
-
-        if (endPosMatch !== -1) {
-          // 替换现有的变量引用（包含 {{ 和 }}）
-          const beforeVariable = beforeText.substring(0, lastStartPos);
-          const afterVariable = afterText.substring(endPosMatch + 2); // 跳过 }}
-          finalText = beforeVariable + `{{${nodeValue}}}` + afterVariable;
-          newCursorPos = beforeVariable.length + nodeValue.length + 4; // 4 = {{}} 的长度
-        } else {
-          // 完成新的变量引用
-          const beforeVariable = beforeText.substring(0, lastStartPos);
-          finalText = beforeVariable + `{{${nodeValue}}}` + afterText;
-          newCursorPos = beforeVariable.length + nodeValue.length + 4;
-        }
-
-        setInternalValue(finalText);
-        onChange?.(finalText);
-
-        // 设置光标位置
-        setTimeout(() => {
-          textarea.focus();
-          textarea.setSelectionRange(newCursorPos, newCursorPos);
-        }, 0);
-
-        // 触发变量选择回调
-        const selectedNode = findNodeByKey(variableTree, nodeValue);
-        if (selectedNode && selectedNode.variable) {
-          onVariableSelect?.(selectedNode.variable, nodeValue);
-        }
-      }
-
-      setVisible(false);
-      setSearchText('');
-    },
-    [value, onChange, onVariableSelect, variableTree],
-  );
 
   // 处理输入变化
   const handleInputChange = useCallback(
@@ -394,23 +386,13 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         // 提取当前的变量路径
         const currentPath = beforeCursor.substring(lastDoubleBraceStart + 2);
         console.log('Variable context detected, currentPath:', currentPath);
-        setSearchText(currentPath);
 
         // 展开到当前路径
         const drilledTree = drillToPath(variableTree, currentPath);
         console.log('Drilled tree:', drilledTree);
-        // 更新展开的 keys - 临时注释用于调试
-        // const expandedKeys = drilledTree.flatMap((node) =>
-        //   node.keyPath ? [node.keyPath.slice(0, -1).join('.')] : [],
-        // );
-        // const finalExpandedKeys = expandedKeys.filter(Boolean);
-        // console.log('Setting expanded keys:', finalExpandedKeys);
-        // setExpandedKeys(finalExpandedKeys);
       } else {
         console.log('Setting visible to false');
         setVisible(false);
-        setSearchText('');
-        // setExpandedKeys([]); // 临时注释用于调试
       }
     },
     [onChange, readonly, variableTree],
@@ -456,12 +438,6 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         const nextNode = leafNodes[nextIndex];
         setActiveKey(nextNode.key);
         setSelectedKeys([nextNode.key]);
-
-        // 自动展开到该节点的路径
-        if (nextNode.keyPath) {
-          const keysToExpand = nextNode.keyPath.slice(0, -1);
-          setExpandedKeys((prev) => [...new Set([...prev, ...keysToExpand])]);
-        }
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         let prevIndex = leafNodes.length - 1;
@@ -476,12 +452,6 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         const prevNode = leafNodes[prevIndex];
         setActiveKey(prevNode.key);
         setSelectedKeys([prevNode.key]);
-
-        // 自动展开到该节点的路径
-        if (prevNode.keyPath) {
-          const keysToExpand = prevNode.keyPath.slice(0, -1);
-          setExpandedKeys((prev) => [...new Set([...prev, ...keysToExpand])]);
-        }
       } else if (e.key === 'Enter') {
         e.preventDefault();
         if (activeKey) {
@@ -507,18 +477,6 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     ],
   );
 
-  // 树节点选择
-  const handleTreeSelect = useCallback(
-    (selectedKeys: React.Key[], info: any) => {
-      setSelectedKeys(selectedKeys);
-      setActiveKey(selectedKeys[0] || null);
-      if (selectedKeys.length > 0) {
-        handleApplyVariable(selectedKeys[0] as string);
-      }
-    },
-    [handleApplyVariable],
-  );
-
   const popoverShouldShow = visible && !readonly && !disabled;
   console.log('Popover show condition:', {
     visible,
@@ -532,30 +490,35 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     <div className={`prompt-variable-ref ${className}`} style={style}>
       {/* 主要的输入区域 */}
       <div style={{ position: 'relative' }}>
-        {/* 高亮背景层 */}
+        {/* 高亮背景层 - 显示所有文本，包括高亮的变量引用 */}
         <div
+          className="highlight-layer"
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            top: '1px',
+            left: '1px',
+            right: '1px',
+            bottom: '1px',
             padding: '4px 11px',
             backgroundColor: 'transparent',
-            color: 'transparent',
             whiteSpace: 'pre-wrap',
             wordWrap: 'break-word',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
             pointerEvents: 'none',
             zIndex: 1,
-            fontFamily: 'Monaco, Menlo, monospace',
+            fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
             fontSize: '14px',
             lineHeight: '1.5715',
+            overflow: 'hidden',
+            boxSizing: 'border-box',
+            color: 'rgba(0, 0, 0, 0.88)', // Ant Design 默认文本颜色
           }}
         >
-          {renderHighlightedText(internalValue) || <span>&nbsp;</span>}
+          {internalValue ? renderHighlightedText(internalValue) : ''}
         </div>
 
-        {/* 实际的输入框 */}
+        {/* 实际的输入框 - 文本透明，只显示光标和选择效果 */}
         <TextArea
           ref={inputRef}
           value={internalValue}
@@ -566,9 +529,10 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           rows={4}
           className="prompt-variable-input"
           style={{
-            backgroundColor: 'transparent',
             position: 'relative',
             zIndex: 2,
+            color: 'transparent',
+            caretColor: 'rgba(0, 0, 0, 0.88)',
           }}
         />
       </div>
@@ -602,98 +566,104 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
               <>
                 {/* 调试信息 */}
                 {process.env.NODE_ENV === 'development' && (
-                  <div style={{
-                    padding: '4px 8px',
-                    fontSize: '12px',
-                    color: '#666',
-                    backgroundColor: '#f9f9f9',
-                    borderBottom: '1px solid #f0f0f0'
-                  }}>
-                    Debug: selectedKeys = {JSON.stringify(selectedKeys)}, activeKey = {activeKey}
+                  <div
+                    style={{
+                      padding: '4px 8px',
+                      fontSize: '12px',
+                      color: '#666',
+                      backgroundColor: '#f9f9f9',
+                      borderBottom: '1px solid #f0f0f0',
+                    }}
+                  >
+                    Debug: selectedKeys = {JSON.stringify(selectedKeys)},
+                    activeKey = {String(activeKey)}
                   </div>
                 )}
 
                 {/* 变量列表 */}
                 {displayTree.map((node) => (
-                <div
-                  key={node.key}
-                  data-node-key={node.key}
-                  className="variable-item"
-                  style={{
-                    padding: '6px 8px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '14px',
-                    borderBottom: '1px solid #f5f5f5',
-                    transition: 'background-color 0.2s',
-                    // 添加层级缩进
-                    paddingLeft: `${
-                      8 + ((node.keyPath?.length || 1) - 1) * 16
-                    }px`,
-                    // 选中状态样式
-                    backgroundColor: selectedKeys.includes(node.key)
-                      ? '#e6f7ff'
-                      : 'transparent',
-                    color: selectedKeys.includes(node.key)
-                      ? '#1890ff'
-                      : 'inherit',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!selectedKeys.includes(node.key)) {
-                      e.currentTarget.style.backgroundColor = '#f5f5f5';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!selectedKeys.includes(node.key)) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
-                  }}
-                  onClick={() => {
-                    handleApplyVariable(node.value);
-                  }}
-                >
-                  {/* 层级指示器 */}
-                  {(node.keyPath?.length || 1) > 1 && (
+                  <div
+                    key={node.key}
+                    data-node-key={node.key}
+                    className="variable-item"
+                    style={{
+                      padding: '6px 8px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '14px',
+                      borderBottom: '1px solid #f5f5f5',
+                      transition: 'background-color 0.2s',
+                      // 添加层级缩进
+                      paddingLeft: `${
+                        8 + ((node.keyPath?.length || 1) - 1) * 16
+                      }px`,
+                      // 选中状态样式
+                      backgroundColor: selectedKeys.includes(node.key)
+                        ? '#e6f7ff'
+                        : 'transparent',
+                      color: selectedKeys.includes(node.key)
+                        ? '#1890ff'
+                        : 'inherit',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!selectedKeys.includes(node.key)) {
+                        e.currentTarget.style.backgroundColor = '#f5f5f5';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!selectedKeys.includes(node.key)) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }
+                    }}
+                    onClick={() => {
+                      handleApplyVariable(node.value);
+                    }}
+                  >
+                    {/* 层级指示器 */}
+                    {(node.keyPath?.length || 1) > 1 && (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          color: '#8c8c8c',
+                          position: 'absolute',
+                          left: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                      >
+                        ├─
+                      </span>
+                    )}
+
+                    <span style={{ fontSize: '12px', opacity: 0.8 }}>
+                      {node.variable?.type
+                        ? getVariableTypeIcon(node.variable.type)
+                        : '📝'}
+                    </span>
                     <span
                       style={{
-                        fontSize: '10px',
-                        color: '#8c8c8c',
-                        position: 'absolute',
-                        left: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
+                        fontWeight:
+                          (node.keyPath?.length || 1) === 1 ? 600 : 500,
+                        color: '#262626',
                       }}
                     >
-                      ├─
+                      {node.label}
                     </span>
-                  )}
-
-                  <span style={{ fontSize: '12px', opacity: 0.8 }}>
-                    {getVariableTypeIcon(node.variable.type)}
-                  </span>
-                  <span
-                    style={{
-                      fontWeight: (node.keyPath?.length || 1) === 1 ? 600 : 500,
-                      color: '#262626',
-                    }}
-                  >
-                    {node.label}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '12px',
-                      color: '#8c8c8c',
-                      marginLeft: 'auto',
-                    }}
-                  >
-                    {node.variable.type}
-                  </span>
-                </div>
-              ))
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        color: '#8c8c8c',
+                        marginLeft: 'auto',
+                      }}
+                    >
+                      {node.variable?.type || 'unknown'}
+                    </span>
+                  </div>
+                ))}
               </>
-             ) : (
+            ) : (
               <div
                 style={{
                   padding: '32px 16px',
