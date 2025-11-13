@@ -35,6 +35,7 @@ import { AnyObject } from 'antd/es/_util/type';
 import classNames from 'classnames';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useParams, useRequest } from 'umi';
+import CreateAgent from '../CreateAgent';
 import CreatedItem from '../CreatedItem';
 import CreateKnowledge from '../CreateKnowledge';
 import CreateNewPlugin from '../CreateNewPlugin';
@@ -134,6 +135,13 @@ const Created: React.FC<CreatedProp> = ({
     },
   ];
 
+  const agentItem = [
+    {
+      key: 'all',
+      label: '当前空间智能体',
+    },
+  ];
+
   const knowledgeItem = [
     {
       key: 'all', // 子项也需要唯一的 key
@@ -173,6 +181,8 @@ const Created: React.FC<CreatedProp> = ({
         return mcpItem;
       case AgentComponentTypeEnum.Page:
         return pageItem;
+      case AgentComponentTypeEnum.Agent:
+        return agentItem;
       default:
         return items;
     }
@@ -208,6 +218,12 @@ const Created: React.FC<CreatedProp> = ({
       // 知识库：如果需要传dataType，则设置dataType
       if (dataTypeRef.current) {
         params.dataType = dataTypeRef.current;
+      }
+
+      // 如果类型是智能体，则设置targetType和targetSubType，需要过滤掉子类型是应用页面的智能体数据
+      if (type === AgentComponentTypeEnum.Agent) {
+        params.targetType = AgentComponentTypeEnum.Agent;
+        params.targetSubType = 'ChatBot';
       }
 
       const {
@@ -306,6 +322,12 @@ const Created: React.FC<CreatedProp> = ({
         history.push(`/space/${spaceId}/table/${res.data}`);
       } catch (error) {}
     }
+  };
+
+  // 确认创建智能体
+  const handlerConfirmCreateAgent = (agentId: number) => {
+    setShowCreate(false);
+    history.push(`/space/${spaceId}/agent/${agentId}`);
   };
 
   /**  -----------------  无需调用接口的方法  -----------------   */
@@ -829,6 +851,13 @@ const Created: React.FC<CreatedProp> = ({
         onCancel={() => setShowCreate(false)}
         open={showCreate && selected.key === AgentComponentTypeEnum.Knowledge}
         mode={CreateUpdateModeEnum.Create}
+      />
+      {/*创建智能体*/}
+      <CreateAgent
+        spaceId={spaceId}
+        open={showCreate && selected.key === AgentComponentTypeEnum.Agent}
+        onCancel={() => setShowCreate(false)}
+        onConfirmCreate={handlerConfirmCreateAgent}
       />
       <CreatedItem
         spaceId={spaceId}
