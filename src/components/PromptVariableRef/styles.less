@@ -5,12 +5,21 @@
 
 .prompt-variable-ref {
   position: relative;
+  width: 100%;
+
+  .input-container {
+    position: relative;
+  }
 
   .prompt-variable-input {
     font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
     font-size: 14px;
     line-height: 1.5715;
     background-color: transparent !important;
+    position: relative;
+    z-index: 2;
+    color: transparent;
+    caret-color: rgba(0, 0, 0, 88%);
 
     &:focus,
     &:focus-within {
@@ -27,6 +36,26 @@
 
   // 高亮层样式
   .highlight-layer {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    right: 1px;
+    bottom: 1px;
+    padding: 4px 11px;
+    background-color: transparent;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    pointer-events: none;
+    z-index: 1;
+    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+    font-size: 14px;
+    line-height: 1.5715;
+    overflow: hidden;
+    box-sizing: border-box;
+    color: rgba(0, 0, 0, 88%);
+
     // 防止滚动条显示
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE/Edge */
@@ -40,11 +69,6 @@
   .variable-highlight {
     background-color: #e6f7ff;
     color: #1890ff;
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
-    font-size: 13px;
-    font-weight: 500;
     transition: all 0.2s ease;
 
     &:hover {
@@ -53,186 +77,376 @@
   }
 }
 
-.variable-popover {
-  .ant-popover-inner-content {
-    padding: 0;
-  }
+// 变量下拉框样式
+.variable-dropdown {
+  position: fixed;
+  z-index: 9999;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 8px 0;
+  min-width: 320px;
+  max-width: 400px;
+  max-height: 300px;
+  overflow: auto;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
+    0 9px 28px 8px rgba(0, 0, 0, 5%);
+  transform: translateY(10px);
 
-  .ant-popover-content {
-    border-radius: 8px;
-    box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%),
-      0 3px 6px -4px rgba(0, 0, 0, 12%), 0 9px 28px 8px rgba(0, 0, 0, 5%);
-  }
-}
-
-.variable-popover-content {
-  width: 360px;
-  min-height: 200px;
-  max-height: 400px;
-  display: flex;
-  flex-direction: column;
-
-  .variable-search {
-    padding: 12px;
+  // 调试信息样式
+  .variable-debug-info {
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #666;
+    background-color: #f9f9f9;
     border-bottom: 1px solid #f0f0f0;
+  }
+
+  // 变量列表项基础样式
+  .variable-item {
+    padding: 6px 8px;
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
+    font-size: 14px;
+    border-bottom: 1px solid #f5f5f5;
+    transition: background-color 0.2s;
+    position: relative;
 
-    .variable-search-input {
-      flex: 1;
-      border: none;
-      outline: none;
-      font-size: 14px;
+    // 层级缩进
+    &.level-1 {
+      padding-left: 8px;
+    }
+    &.level-2 {
+      padding-left: 24px;
+    }
+    &.level-3 {
+      padding-left: 40px;
+    }
+    &.level-4 {
+      padding-left: 56px;
+    }
+    &.level-5 {
+      padding-left: 72px;
+    }
 
-      &::placeholder {
-        color: #bfbfbf;
+    // 默认状态
+    &:hover {
+      background-color: #f5f5f5;
+    }
+
+    // 选中状态（键盘导航高亮）
+    &.selected {
+      background-color: #1890ff;
+      color: #fff;
+      border-left: 4px solid #0050b3;
+      box-shadow: inset 0 0 0 1px rgba(0, 80, 179, 30%),
+        0 2px 4px rgba(0, 0, 0, 10%);
+      font-weight: 600;
+
+      // 选中状态下的悬停效果
+      &:hover {
+        background-color: #096dd9;
       }
     }
 
-    .anticon {
+    // 图标样式
+    .variable-icon {
+      font-size: 12px;
+      opacity: 0.8;
+      flex-shrink: 0;
+    }
+
+    // 变量名样式
+    .variable-label {
+      flex: 1;
+      color: inherit;
+      font-weight: inherit;
+    }
+
+    // 变量类型样式
+    .variable-type {
+      font-size: 12px;
+      color: #8c8c8c;
+      margin-left: auto;
+      flex-shrink: 0;
+
+      .selected & {
+        color: rgba(255, 255, 255, 80%);
+      }
+    }
+
+    // 层级指示器
+    .level-indicator {
+      font-size: 10px;
+      color: #8c8c8c;
+      position: absolute;
+      left: 8px;
+      display: flex;
+      align-items: center;
+
+      .selected & {
+        color: rgba(255, 255, 255, 60%);
+      }
+    }
+  }
+
+  // 空状态样式
+  .variable-empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: #8c8c8c;
+  }
+
+  // 底部提示样式
+  .variable-footer {
+    padding: 8px 12px;
+    border-top: 1px solid #f0f0f0;
+    background: #fafafa;
+    font-size: 12px;
+    color: #8c8c8c;
+    text-align: center;
+  }
+}
+
+// 变量树形选择器样式
+.variable-tree-select {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+
+  // 调试信息样式
+  .variable-debug-info {
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #666;
+    background-color: #f9f9f9;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  // TreeSelect 定制样式
+  .ant-tree-select {
+    border: none;
+    border-radius: 0;
+
+    .ant-select-selector {
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+    }
+
+    .ant-select-selection-placeholder {
+      color: #bfbfbf;
+    }
+  }
+
+  // TreeSelect 下拉框样式
+  .ant-select-tree {
+    .ant-select-tree-node-content-wrapper {
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      &:hover {
+        background-color: #f5f5f5;
+      }
+
+      &.ant-select-tree-node-selected {
+        background-color: #1890ff;
+        color: #fff;
+
+        .ant-select-tree-title {
+          color: #fff;
+        }
+      }
+    }
+
+    .ant-select-tree-switcher {
       color: #8c8c8c;
     }
   }
 
-  .variable-tree-container {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
+  // 底部提示样式
+  .variable-footer {
+    padding: 8px 12px;
+    border-top: 1px solid #f0f0f0;
+    background: #fafafa;
+    font-size: 12px;
+    color: #8c8c8c;
+    text-align: center;
+  }
+}
 
-    .ant-tree {
-      background: transparent;
+// 变量树形列表样式
+.variable-tree-list {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 300px; // 设置宽度为300px
+  min-width: 300px; // 最小宽度300px
+  max-width: 300px; // 最大宽度300px
+  padding: 8px; // 添加内边距
 
-      .ant-tree-node-content-wrapper {
-        padding: 4px 8px;
-        border-radius: 4px;
-        transition: all 0.2s;
+  // 调试信息样式
+  .variable-debug-info {
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #666;
+    background-color: #f9f9f9;
+    border-bottom: 1px solid #f0f0f0;
+  }
 
-        &:hover {
-          background-color: #f5f5f5;
-        }
+  // 树列表内容
+  .tree-list-content {
+    max-height: 320px; // 设置高度为320px
+    height: 320px; // 固定高度
+    overflow-y: auto; // 内容可滚动
+  }
 
-        &.ant-tree-node-selected {
-          background-color: #e6f7ff;
-          color: #1890ff;
-        }
-      }
+  // 搜索提示样式
+  .variable-search-stats {
+    background-color: #f9f9f9;
+    color: #666;
+    text-align: center;
+  }
 
-      .ant-tree-switcher {
-        color: #8c8c8c;
-      }
-    }
+  // Tree 组件样式定制
+  .ant-tree {
+    background: transparent;
+    border: none;
 
-    .variable-tree-node {
+    .ant-tree-node-content-wrapper {
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s;
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 14px;
+      height: auto !important;
+      line-height: 1.5;
 
-      .variable-type-icon {
-        font-size: 12px;
-        opacity: 0.8;
+      &:hover {
+        background-color: #f5f5f5;
       }
 
-      .variable-label {
-        font-weight: 500;
-        color: #262626;
-      }
+      &.ant-tree-node-selected {
+        background-color: #1890ff !important;
+        color: #fff !important;
 
-      .variable-description {
-        font-size: 12px;
-        color: #8c8c8c;
-        margin-left: auto;
-        max-width: 120px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        .ant-tree-title {
+          color: #fff !important;
+        }
       }
     }
 
-    .ant-empty {
-      padding: 32px 16px;
+    .ant-tree-switcher {
+      color: #8c8c8c;
 
-      .ant-empty-description {
-        color: #8c8c8c;
-        font-size: 14px;
+      &:hover {
+        color: #1890ff;
+      }
+    }
+
+    // 树节点标题样式
+    .ant-tree-title {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      > div {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+
+        > span:first-child {
+          font-size: 12px;
+          opacity: 0.8;
+          flex-shrink: 0;
+        }
+
+        > span:nth-child(2) {
+          flex: 1;
+          font-size: 14px;
+        }
+
+        > span:last-child {
+          font-size: 12px;
+          color: #8c8c8c;
+          flex-shrink: 0;
+
+          .ant-tree-node-selected & {
+            color: rgba(255, 255, 255, 80%);
+          }
+        }
       }
     }
   }
 
-  .variable-popover-footer {
-    padding: 12px;
-    border-top: 1px solid #f0f0f0;
-    background-color: #fafafa;
-    color: #8c8c8c;
-    font-size: 12px;
+  // 空状态样式
+  .variable-empty {
+    padding: 32px 16px;
     text-align: center;
+    color: #8c8c8c;
+  }
+
+  // 底部提示样式
+  .variable-footer {
+    padding: 8px 12px;
+    border-top: 1px solid #f0f0f0;
+    background: #fafafa;
+    font-size: 12px;
+    color: #8c8c8c;
+    text-align: center;
+    line-height: 1.4;
   }
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .variable-popover-content {
-    width: 300px;
-
-    .variable-tree-container {
-      .variable-tree-node {
-        .variable-description {
-          display: none;
-        }
-      }
-    }
+  .variable-dropdown {
+    min-width: 280px;
+    max-width: 350px;
   }
 }
 
 /* 暗色主题支持 */
 @media (prefers-color-scheme: dark) {
-  .variable-popover-content {
-    .variable-search {
-      border-bottom-color: #303030;
+  .variable-dropdown {
+    background-color: #1f1f1f;
+    border-color: #434343;
+    color: #fff;
 
-      .variable-search-input {
+    .variable-item {
+      border-bottom-color: #434343;
+
+      &:hover {
+        background-color: #262626;
+      }
+
+      &.selected {
+        background-color: #1890ff;
         color: #fff;
-
-        &::placeholder {
-          color: #666;
-        }
       }
 
-      .anticon {
-        color: #666;
-      }
-    }
+      .variable-type {
+        color: #8c8c8c;
 
-    .variable-tree-container {
-      .ant-tree {
-        .ant-tree-node-content-wrapper {
-          &:hover {
-            background-color: #1f1f1f;
-          }
-
-          &.ant-tree-node-selected {
-            background-color: #111b26;
-            color: #1890ff;
-          }
-        }
-      }
-
-      .variable-tree-node {
-        .variable-label {
-          color: #fff;
-        }
-
-        .variable-description {
-          color: #666;
+        .selected & {
+          color: rgba(255, 255, 255, 80%);
         }
       }
     }
 
-    .variable-popover-footer {
-      border-top-color: #303030;
+    .variable-footer {
       background-color: #141414;
-      color: #666;
+      border-top-color: #434343;
+      color: #8c8c8c;
     }
   }
 }
