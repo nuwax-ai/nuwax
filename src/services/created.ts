@@ -14,6 +14,8 @@ const itemList = {
 };
 
 export interface IGetList {
+  targetType?: AgentComponentTypeEnum;
+  targetSubType?: 'ChatBot' | 'PageApp';
   page: number;
   pageSize: number;
   category?: string;
