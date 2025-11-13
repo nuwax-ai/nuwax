@@ -164,6 +164,11 @@ const routes = [
     component: '@/examples/VariableRefTest/index',
     layout: false,
   },
+  {
+    path: '/examples/autosize-demo',
+    component: '@/examples/AutosizeDemo/index',
+    layout: false,
+  },
 ];
 
 export default routes;

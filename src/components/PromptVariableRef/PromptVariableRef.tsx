@@ -74,6 +74,17 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   disabled = false,
   className = '',
   style,
+
+  // ========== 新增：类似 textarea 的属性 ==========
+  rows,
+  cols,
+  autosize = false,
+  minRows,
+  maxRows,
+  showCount = false,
+  maxLength,
+  maxHeight = 400,
+  minHeight = 80,
 }) => {
   console.log('PromptVariableRef rendered with variables:', variables);
   console.log('Current value:', value);
@@ -85,6 +96,12 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
   // 添加光标位置状态
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+
+  // ========== 新增：自动调整大小相关状态 ==========
+  const [textareaHeight, setTextareaHeight] = useState<number | string>(
+    minHeight,
+  );
+  const [charCount, setCharCount] = useState(0);
 
   // 从文本输入框中提取搜索关键词
   const extractSearchTextFromInput = useCallback(
@@ -101,6 +118,106 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
   // 构建变量树（需要在使用前定义）
   const variableTree = buildVariableTree(variables);
+
+  // ========== 新增：获取文本内容的函数（需要提前定义） ==========
+  // 获取 contenteditable 中的纯文本内容
+  // 使用 textContent 而不是 innerText，因为 textContent 更可靠，不会受样式影响
+  const getTextContent = (element: HTMLElement): string => {
+    // 确保获取的是纯文本，移除所有 HTML 标签的影响
+    const text = element.textContent || element.innerText || '';
+    // 移除可能的空白字符问题，但保留换行等格式
+    return text;
+  };
+
+  // ========== 新增：自动调整大小相关函数 ==========
+
+  // 计算文本高度（基于行数）
+  const calculateTextHeight = useCallback(
+    (text: string): number => {
+      if (!inputRef.current) return minHeight as number;
+
+      const lineHeight =
+        parseFloat(getComputedStyle(inputRef.current).lineHeight) || 20;
+      const paddingTop =
+        parseFloat(getComputedStyle(inputRef.current).paddingTop) || 4;
+      const paddingBottom =
+        parseFloat(getComputedStyle(inputRef.current).paddingBottom) || 4;
+      const borderTop =
+        parseFloat(getComputedStyle(inputRef.current).borderTopWidth) || 1;
+      const borderBottom =
+        parseFloat(getComputedStyle(inputRef.current).borderBottomWidth) || 1;
+
+      // 计算行数（包括换行符）
+      const lines = text.split('\n');
+      const totalLines = Math.max(lines.length, 1);
+
+      // 计算总高度
+      const totalHeight =
+        paddingTop +
+        paddingBottom +
+        borderTop +
+        borderBottom +
+        totalLines * lineHeight;
+
+      return Math.max(minHeight as number, totalHeight);
+    },
+    [minHeight],
+  );
+
+  // 自动调整大小
+  const adjustTextareaSize = useCallback(() => {
+    if (!autosize || !inputRef.current) return;
+
+    const text = getTextContent(inputRef.current);
+    let newHeight = calculateTextHeight(text);
+
+    // 处理 autosize 对象配置
+    if (typeof autosize === 'object') {
+      const configMinRows = autosize.minRows || minRows || 1;
+      const configMaxRows = autosize.maxRows || maxRows || Infinity;
+      const lineHeight =
+        parseFloat(getComputedStyle(inputRef.current).lineHeight) || 20;
+      const paddingTop =
+        parseFloat(getComputedStyle(inputRef.current).paddingTop) || 4;
+      const paddingBottom =
+        parseFloat(getComputedStyle(inputRef.current).paddingBottom) || 4;
+      const borderTop =
+        parseFloat(getComputedStyle(inputRef.current).borderTopWidth) || 1;
+      const borderBottom =
+        parseFloat(getComputedStyle(inputRef.current).borderBottomWidth) || 1;
+
+      const minHeight =
+        paddingTop +
+        paddingBottom +
+        borderTop +
+        borderBottom +
+        configMinRows * lineHeight;
+      const maxHeight =
+        paddingTop +
+        paddingBottom +
+        borderTop +
+        borderBottom +
+        configMaxRows * lineHeight;
+
+      newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
+    }
+
+    // 应用最大最小高度限制
+    newHeight = Math.max(
+      minHeight as number,
+      Math.min(newHeight, maxHeight as number),
+    );
+
+    setTextareaHeight(newHeight);
+  }, [autosize, minRows, maxRows, minHeight, maxHeight, calculateTextHeight]);
+
+  // 更新字符计数
+  const updateCharCount = useCallback(() => {
+    if (showCount && inputRef.current) {
+      const text = getTextContent(inputRef.current);
+      setCharCount(text.length);
+    }
+  }, [showCount]);
 
   // 搜索过滤函数
   const filterTreeBySearch = (
@@ -197,15 +314,6 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       }
     }
     return null;
-  };
-
-  // 获取 contenteditable 中的纯文本内容
-  // 使用 textContent 而不是 innerText，因为 textContent 更可靠，不会受样式影响
-  const getTextContent = (element: HTMLElement): string => {
-    // 确保获取的是纯文本，移除所有 HTML 标签的影响
-    const text = element.textContent || element.innerText || '';
-    // 移除可能的空白字符问题，但保留换行等格式
-    return text;
   };
 
   // 获取 contenteditable 中的光标位置（字符索引）
@@ -534,6 +642,40 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     }
   }, [visible]);
 
+  // ========== 新增：自动调整大小的 useEffect ==========
+  // 初始化自动调整大小
+  useEffect(() => {
+    if (autosize && inputRef.current) {
+      const text = getTextContent(inputRef.current);
+      const initialHeight = calculateTextHeight(text);
+      setTextareaHeight(
+        Math.max(
+          minHeight as number,
+          Math.min(initialHeight, maxHeight as number),
+        ),
+      );
+    } else if (rows) {
+      // 如果指定了 rows，使用固定行数计算高度
+      const lineHeight = 20; // 默认行高
+      const paddingHeight = 8; // 默认内边距
+      setTextareaHeight(rows * lineHeight + paddingHeight);
+    } else {
+      // 使用默认值
+      setTextareaHeight(minHeight);
+    }
+  }, [autosize, rows, minHeight, maxHeight, calculateTextHeight]);
+
+  // 监听内部值变化，自动调整大小
+  useEffect(() => {
+    if (autosize) {
+      const timer = setTimeout(() => {
+        adjustTextareaSize();
+        updateCharCount();
+      }, 100); // 防抖处理
+      return () => clearTimeout(timer);
+    }
+  }, [internalValue, autosize, adjustTextareaSize, updateCharCount]);
+
   // 检查并修复高亮元素内部的新输入内容
   // 返回是否进行了修复
   const fixHighlightStructure = (element: HTMLElement): boolean => {
@@ -634,8 +776,29 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     const cursorPosition = getCaretPosition(element);
 
     console.log('Input changed to:', newValue);
-    setInternalValue(newValue);
-    onChange?.(newValue);
+
+    // ========== 新增：处理最大长度限制 ==========
+    if (maxLength && newValue.length > maxLength) {
+      const truncatedValue = newValue.substring(0, maxLength);
+      setInternalValue(truncatedValue);
+      onChange?.(truncatedValue);
+
+      // 重新设置内容（这里简化处理，实际可能需要更复杂的逻辑）
+      element.innerHTML = truncatedValue
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // 设置光标位置到末尾
+      const newCursorPos = truncatedValue.length;
+      setCaretPosition(element, newCursorPos);
+    } else {
+      setInternalValue(newValue);
+      onChange?.(newValue);
+    }
+
+    // ========== 新增：更新字符计数和自动调整大小 ==========
+    updateCharCount();
+    adjustTextareaSize();
 
     // 检查光标前是否有 {{
     const beforeCursor = newValue.substring(0, cursorPosition);
@@ -709,7 +872,15 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       console.log('Setting visible to false');
       setVisible(false);
     }
-  }, [onChange, readonly, variableTree, extractSearchTextFromInput]);
+  }, [
+    onChange,
+    readonly,
+    variableTree,
+    extractSearchTextFromInput,
+    maxLength,
+    updateCharCount,
+    adjustTextareaSize,
+  ]);
 
   // 键盘导航的具体实现
   const handleTreeNavigation = useCallback(
@@ -935,6 +1106,35 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     }
   }, []);
 
+  // ========== 新增：计算输入框样式 ==========
+  const getInputStyle = (): React.CSSProperties => {
+    const inputStyle: React.CSSProperties = {};
+
+    // 处理高度
+    if (autosize) {
+      inputStyle.height = textareaHeight;
+      inputStyle.minHeight = minHeight;
+      inputStyle.maxHeight = maxHeight;
+      inputStyle.overflowY = 'auto';
+    } else if (rows) {
+      const lineHeight = 20; // 默认行高
+      const paddingHeight = 8; // 默认内边距
+      inputStyle.height = rows * lineHeight + paddingHeight;
+    } else {
+      inputStyle.minHeight = minHeight;
+      inputStyle.maxHeight = maxHeight;
+    }
+
+    // 处理宽度（cols）
+    if (cols) {
+      const charWidth = 8; // 默认字符宽度
+      inputStyle.width = cols * charWidth + 22; // 添加padding和border
+      inputStyle.minWidth = cols * charWidth + 22;
+    }
+
+    return inputStyle;
+  };
+
   return (
     <div className={cx('prompt-variable-ref', className)} style={style}>
       {/* 主要的输入区域 */}
@@ -949,14 +1149,27 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           className={cx('prompt-variable-input', {
             'prompt-variable-input-disabled': disabled,
             'prompt-variable-input-readonly': readonly,
+            'prompt-variable-input-autosize': autosize,
           })}
           data-placeholder={placeholder}
-          style={{
-            minHeight: '80px',
-            maxHeight: '400px',
-            overflow: 'auto',
-          }}
+          style={getInputStyle()}
         />
+
+        {/* ========== 新增：字符计数器 ========== */}
+        {showCount && (
+          <div
+            className="prompt-variable-count"
+            style={{
+              textAlign: 'right',
+              fontSize: '12px',
+              color: maxLength && charCount > maxLength ? '#ff4d4f' : '#8c8c8c',
+              marginTop: '4px',
+              padding: '0 2px',
+            }}
+          >
+            {maxLength ? `${charCount}/${maxLength}` : charCount}
+          </div>
+        )}
       </div>
 
       {/* 变量引用列表 */}
