@@ -52,11 +52,12 @@
     font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
     font-size: 14px;
     line-height: 1.5715;
-    overflow: hidden;
+    // 允许滚动，但隐藏滚动条（滚动由输入框控制）
+    overflow: auto;
     box-sizing: border-box;
     color: rgba(0, 0, 0, 88%);
 
-    // 防止滚动条显示
+    // 防止滚动条显示（滚动条由输入框显示）
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE/Edge */
 
