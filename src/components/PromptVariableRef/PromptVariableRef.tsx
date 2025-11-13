@@ -217,7 +217,15 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     const preCaretRange = range.cloneRange();
     preCaretRange.selectNodeContents(element);
     preCaretRange.setEnd(range.endContainer, range.endOffset);
-    return preCaretRange.toString().length;
+
+    const position = preCaretRange.toString().length;
+    console.log(
+      'getCaretPosition result:',
+      position,
+      'originalText:',
+      JSON.stringify(preCaretRange.toString()),
+    );
+    return position;
   };
 
   // 设置 contenteditable 中的光标位置
@@ -317,16 +325,35 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       const currentText = getTextContent(element);
       const cursorPos = getCaretPosition(element);
 
+      console.log(
+        'handleApplyVariable - currentText:',
+        JSON.stringify(currentText),
+      );
+      console.log('handleApplyVariable - cursorPos:', cursorPos);
+      console.log('handleApplyVariable - nodeValue:', nodeValue);
+
       // 查找 {{...}} 的范围
       const beforeText = currentText.substring(0, cursorPos);
       const afterText = currentText.substring(cursorPos);
 
+      console.log(
+        'handleApplyVariable - beforeText:',
+        JSON.stringify(beforeText),
+      );
+      console.log(
+        'handleApplyVariable - afterText:',
+        JSON.stringify(afterText),
+      );
+
       // 找到最近的 {{ 开始位置
       const lastStartPos = beforeText.lastIndexOf('{{');
+      console.log('lastStartPos:', lastStartPos);
+
       if (lastStartPos !== -1) {
         // 检查是否有匹配的 }} 结束位置
         const afterStartText = beforeText.substring(lastStartPos + 2);
         const endPosMatch = afterStartText.indexOf('}}');
+        console.log('endPosMatch:', endPosMatch);
 
         let finalText: string;
         let newCursorPos: number;
@@ -335,14 +362,23 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           // 替换现有的变量引用（包含 {{ 和 }}）
           const beforeVariable = beforeText.substring(0, lastStartPos);
           const afterVariable = afterText.substring(endPosMatch + 2);
+          console.log('beforeVariable:', JSON.stringify(beforeVariable));
+          console.log('afterVariable:', JSON.stringify(afterVariable));
           finalText = beforeVariable + `{{${nodeValue}}}` + afterVariable;
-          newCursorPos = beforeVariable.length + nodeValue.length + 4;
+          newCursorPos = (beforeVariable + `{{${nodeValue}}}`).length;
         } else {
           // 完成新的变量引用
           const beforeVariable = beforeText.substring(0, lastStartPos);
+          console.log('beforeVariable (new):', JSON.stringify(beforeVariable));
           finalText = beforeVariable + `{{${nodeValue}}}` + afterText;
-          newCursorPos = beforeVariable.length + nodeValue.length + 4;
+          newCursorPos = (beforeVariable + `{{${nodeValue}}}`).length;
         }
+
+        console.log(
+          'handleApplyVariable - finalText:',
+          JSON.stringify(finalText),
+        );
+        console.log('newCursorPos:', newCursorPos);
 
         setInternalValue(finalText);
         onChange?.(finalText);
@@ -382,6 +418,9 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     const element = inputRef.current;
     const currentText = getTextContent(element);
 
+    console.log('Content sync - internalValue:', JSON.stringify(internalValue));
+    console.log('Content sync - currentText:', JSON.stringify(currentText));
+
     // 只有当内容不一致时才更新（避免在用户输入时覆盖）
     // 确保比较的是纯文本内容，不包含 HTML 标签
     if (currentText !== (internalValue || '')) {
@@ -410,12 +449,13 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           // 添加匹配前的普通文本
           if (match.index > lastIndex) {
             const text = internalValue.substring(lastIndex, match.index);
-            // 转义 HTML 特殊字符
+            // 转义 HTML 特殊字符，但保留换行符
             parts.push(
               text
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;'),
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '&#10;'), // 显式处理换行符
             );
           }
 
@@ -453,12 +493,20 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
             text
               .replace(/&/g, '&amp;')
               .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;'),
+              .replace(/>/g, '&gt;')
+              .replace(/\n/g, '&#10;'), // 显式处理换行符
           );
         }
 
         // 使用 textContent 和 innerHTML 的组合来确保正确设置
+        console.log('Setting innerHTML with parts:', parts);
+        console.log('Parts joined result:', JSON.stringify(parts.join('')));
         element.innerHTML = parts.join('');
+
+        console.log(
+          'After setting innerHTML, element textContent:',
+          JSON.stringify(element.textContent),
+        );
 
         // 恢复光标位置
         if (range && cursorPos <= internalValue.length) {
@@ -737,13 +785,16 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         }
       } else if (e.key === 'Enter') {
         console.log('Enter pressed');
-        e.preventDefault();
-        if (currentIndex >= 0) {
+
+        // 只有当下拉框有可见选项且有选中项时，才阻止默认行为并应用变量
+        if (currentIndex >= 0 && allNodes.length > 0) {
+          e.preventDefault();
           const selectedNode = allNodes[currentIndex];
           handleApplyVariable(selectedNode.value);
           setVisible(false);
           console.log('Variable applied:', selectedNode.value);
         }
+        // 否则允许回车键执行默认行为（换行）
       } else if (e.key === 'Escape') {
         const searchText = extractSearchTextFromInput(internalValue);
         if (searchText.trim()) {
@@ -797,17 +848,42 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       console.log('Global keydown detected:', e.key, 'visible:', visible);
 
       // 只处理我们的快捷键
-      if (
-        e.key === 'ArrowDown' ||
-        e.key === 'ArrowUp' ||
-        e.key === 'Enter' ||
-        e.key === 'Escape'
-      ) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
 
         // 直接在这里实现键盘导航逻辑，避免函数依赖问题
         handleTreeNavigation(e);
+      } else if (e.key === 'Enter') {
+        // 对于 Enter 键，检查是否有选中的节点
+        const treeData = transformToTreeDataForTree(displayTree);
+        const getAllNodes = (nodes: any[], path: string[] = []): any[] => {
+          const result: any[] = [];
+          for (const node of nodes) {
+            result.push({ ...node, path: [...path, node.key] });
+            if (node.children) {
+              result.push(...getAllNodes(node.children, [...path, node.key]));
+            }
+          }
+          return result;
+        };
+
+        const allNodes = getAllNodes(treeData);
+        const currentIndex =
+          selectedKeys.length > 0
+            ? allNodes.findIndex((node) => node.key === selectedKeys[0])
+            : -1;
+
+        // 只有当下拉框有可见选项且有选中项时，才阻止默认行为并应用变量
+        if (currentIndex >= 0 && allNodes.length > 0) {
+          e.preventDefault();
+          e.stopPropagation();
+          const selectedNode = allNodes[currentIndex];
+          handleApplyVariable(selectedNode.value);
+          setVisible(false);
+          console.log('Variable applied:', selectedNode.value);
+        }
+        // 否则允许回车键执行默认行为（换行）
       }
     };
 
@@ -817,7 +893,14 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       console.log('Removing global keyboard listener');
       document.removeEventListener('keydown', handleGlobalKeyDown, true);
     };
-  }, [visible, readonly, handleTreeNavigation]); // 包含 handleTreeNavigation 依赖
+  }, [
+    visible,
+    readonly,
+    handleTreeNavigation,
+    displayTree,
+    selectedKeys,
+    handleApplyVariable,
+  ]); // 包含 handleTreeNavigation 依赖
 
   const popoverShouldShow =
     visible && !readonly && !disabled && internalValue.includes('{{'); // 只要包含 {{ 就显示，不要求有搜索文本
