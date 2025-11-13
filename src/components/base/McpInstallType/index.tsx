@@ -25,6 +25,10 @@ const McpInstallTypeMap: Record<
     title: 'sse',
     styleClassName: styles.sse,
   },
+  [McpInstallTypeEnum.STREAMABLE_HTTP]: {
+    title: 'streamableHttp',
+    styleClassName: styles['streamable-http'],
+  },
   [McpInstallTypeEnum.COMPONENT]: {
     title: '组件库',
     styleClassName: styles.component,
