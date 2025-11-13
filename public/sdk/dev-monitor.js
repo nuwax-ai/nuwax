@@ -221,6 +221,54 @@
     return false; // 不需要去重
   }
 
+  // ⭐ 错误发送防抖配置
+  let errorSendTimer = null; // 错误发送定时器
+  let latestErrorData = null; // 最新的错误数据（用于防抖）
+  const ERROR_SEND_DELAY = 5000; // 错误发送延迟时间（5秒）
+
+  /**
+   * 发送错误消息到父窗口（延迟执行的实际发送逻辑）
+   * @param {object} errorData - 错误数据
+   */
+  function sendErrorToParent(errorData) {
+    // 检查是否在 iframe 中运行
+    const isInIframe = window.self !== window.top;
+
+    if (isInIframe && window.parent) {
+      try {
+        // 检查白屏状态
+        const { documentString, isWhiteScreen } = checkWhiteScreen();
+
+        const errorMessage = {
+          type: 'dev-monitor-error',
+          error: errorData,
+          errorCount: monitorData.errors.length,
+          url: monitorData.basicInfo.url,
+          timestamp: Date.now(),
+          isWhiteScreen,
+          ...(documentString && {
+            documentString,
+          }),
+        };
+
+        // 发送错误消息到父窗口
+        window.parent.postMessage(errorMessage, '*');
+
+        // 关键日志：发送成功
+        _originalConsoleError.call(
+          console,
+          `[DevMonitor] ✓ 错误已发送 | ${errorData.message.substring(0, 80)}`,
+        );
+      } catch (e) {
+        // 关键日志：发送失败
+        _originalConsoleError.call(
+          console,
+          `[DevMonitor] ✗ 发送失败 | ${e.message}`,
+        );
+      }
+    }
+  }
+
   // 简化的日志函数 - 只记录错误
   const logger = {
     error: (message, details = null) => {
@@ -229,18 +277,9 @@
         return;
       }
 
-      // ⭐ 关键修复：使用原始 console.error，避免被拦截器捕获形成循环
-      // 只在开发环境或需要调试时输出错误日志
-      // _originalConsoleError.call(
-      //   console,
-      //   '[Dev-Monitor ERROR]',
-      //   message,
-      //   details || '',
-      // );
-
       const errorData = {
         message: typeof message === 'string' ? message : message.toString(),
-        details: details ? JSON.stringify(details).substring(0, 500) : null, // 限制详细信息长度
+        details: details ? JSON.stringify(details).substring(0, 500) : null,
         timestamp: Date.now(),
       };
 
@@ -251,70 +290,30 @@
         monitorData.errors.shift();
       }
 
-      // ⭐ 立即发送错误消息到父窗口（实时通知）
-      // 检查是否在 iframe 中运行（使用多种方式检测）
-      const isInIframe = window.self !== window.top;
-      const hasParent = !!window.parent;
-      const parentEqualsWindow = window.parent === window;
-      const parentEqualsSelf = window.parent === window.self;
-      const parentEqualsTop = window.parent === window.top;
-
-      // ⭐ 注释掉调试日志以减少日志量（可选：需要调试时可以取消注释）
-      // console.log('[DevMonitor] 🔍 Checking parent window:', {
-      //   isInIframe: isInIframe,
-      //   hasParent: hasParent,
-      //   parentEqualsWindow: parentEqualsWindow,
-      //   parentEqualsSelf: parentEqualsSelf,
-      //   parentEqualsTop: parentEqualsTop,
-      //   location: window.location.href,
-      //   parentLocation: window.parent
-      //     ? (() => {
-      //         try {
-      //           return window.parent.location?.href || 'N/A (cross-origin)';
-      //         } catch (e) {
-      //           return 'N/A (cross-origin - access denied)';
-      //         }
-      //       })()
-      //     : 'N/A',
-      //   topLocation: window.top
-      //     ? (() => {
-      //         try {
-      //           return window.top.location?.href || 'N/A (cross-origin)';
-      //         } catch (e) {
-      //           return 'N/A (cross-origin - access denied)';
-      //         }
-      //       })()
-      //     : 'N/A',
-      // });
-
-      // ⭐ 关键修复：使用 isInIframe 作为主要判断条件
-      // 如果在 iframe 中（window.self !== window.top），就尝试发送消息
-      if (isInIframe && window.parent) {
-        try {
-          // ⭐ 检查白屏状态
-          const { documentString, isWhiteScreen } = checkWhiteScreen();
-
-          const errorMessage = {
-            type: 'dev-monitor-error', // 实时错误消息类型
-            error: errorData,
-            errorCount: monitorData.errors.length,
-            url: monitorData.basicInfo.url,
-            timestamp: Date.now(),
-            isWhiteScreen, // 白屏检查结果
-            ...(documentString && {
-              documentString,
-            }), // 仅在白屏时包含 document 字符串
-          };
-          // ⭐ 发送错误消息到父窗口
-          window.parent.postMessage(errorMessage, '*');
-        } catch (e) {
-          // 发送错误消息失败（静默处理，避免日志污染）
-          // _originalConsoleError.call(console, '[DevMonitor] ❌ Failed to send error message:', e);
-        }
+      // 延迟发送错误消息到父窗口（防抖处理）
+      const isUpdate = errorSendTimer !== null;
+      if (errorSendTimer) {
+        clearTimeout(errorSendTimer);
       }
-      // else {
-      //   // 不在 iframe 中，无法发送消息（静默处理）
-      // }
+
+      latestErrorData = errorData;
+
+      // 关键日志：接收错误
+      _originalConsoleError.call(
+        console,
+        `[DevMonitor] ${isUpdate ? '⟳' : '●'} 接收错误，${
+          ERROR_SEND_DELAY / 1000
+        }s后发送 | ${errorData.message.substring(0, 80)}`,
+      );
+
+      // 设置新的定时器，5秒后发送最新的错误
+      errorSendTimer = setTimeout(() => {
+        if (latestErrorData) {
+          sendErrorToParent(latestErrorData);
+          latestErrorData = null;
+        }
+        errorSendTimer = null;
+      }, ERROR_SEND_DELAY);
     },
   };
 
@@ -997,7 +996,6 @@
       // 创建并注入 JS-SDK 脚本
       const script = document.createElement('script');
       script.type = 'text/javascript';
-      script.id = 'wechat-js-sdk';
       script.src = 'https://res.wx.qq.com/open/js/jweixin-1.3.2.js';
 
       // 脚本加载成功回调
@@ -1027,9 +1025,7 @@
             characterData: true, // 监听文本内容变化
           });
 
-          setTimeout(() => {
-            sendMessageToMiniProgram();
-          }, 500);
+          sendMessageToMiniProgram();
         }, 100);
       };
 
