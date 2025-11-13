@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import './styles.less';
 import type { PromptVariableRefProps, VariableTreeNode } from './types';
+import { calculateDropdownPosition } from './utils';
 import {
   buildVariableTree,
   drillToPath,
@@ -374,8 +375,33 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           const cursorX = rect.left + currentCol * charWidth;
           const cursorY = rect.top + currentLine * lineHeight + lineHeight;
 
-          console.log('Calculated cursor position:', { cursorX, cursorY });
-          setCursorPosition({ x: cursorX, y: cursorY });
+          // 使用改进的位置计算函数（参考 antd Select）
+          const { position, adjustment } = calculateDropdownPosition(
+            cursorX,
+            cursorY,
+            inputRef.current, // DOM元素或undefined
+            undefined, // dimensions，使用默认值
+            {
+              hasSearch: true, // 变量引用下拉框始终有搜索区域
+              searchText: extractSearchTextFromInput(internalValue),
+              treeHeight: 240, // tree-list-content的固定高度
+            },
+          );
+
+          console.log('Calculated cursor position:', {
+            cursorX,
+            cursorY,
+            final: position,
+            adjustment,
+          });
+          setCursorPosition(position);
+
+          // 记录位置调整信息，用于定位指示器
+          // const positionInfo = getPositionAdjustment(
+          //   { x: cursorX, y: cursorY },
+          //   position,
+          // );
+          // console.log('Position adjustment info:', positionInfo);
         }
 
         // 提取当前的变量路径
@@ -602,21 +628,43 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         >
           {/* 搜索提示（当在输入框中输入{{后显示） */}
           {visible && internalValue.includes('{{') && (
-            <div
-              className="variable-search-stats"
-              style={{
-                padding: '4px 8px',
-                fontSize: '11px',
-                color: '#666',
-                borderBottom: '1px solid #f0f0f0',
-              }}
-            >
-              {extractSearchTextFromInput(internalValue)
-                ? `搜索："${extractSearchTextFromInput(
-                    internalValue,
-                  )}" - 找到 ${displayTree.length} 个匹配项`
-                : `输入搜索词或浏览所有 ${variableTree.length} 个变量`}
-            </div>
+            <>
+              <div
+                className="variable-search-stats"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  color: '#666',
+                  borderBottom: '1px solid #f0f0f0',
+                }}
+              >
+                {extractSearchTextFromInput(internalValue)
+                  ? `搜索："${extractSearchTextFromInput(
+                      internalValue,
+                    )}" - 找到 ${displayTree.length} 个匹配项`
+                  : `输入搜索词或浏览所有 ${variableTree.length} 个变量`}
+              </div>
+
+              {/* 开发环境：显示位置计算信息 */}
+              {process.env.NODE_ENV === 'development' && (
+                <>
+                  <div className="position-debug">
+                    <strong>位置计算信息:</strong>
+                    <br />
+                    光标位置: ({cursorPosition.x.toFixed(0)},{' '}
+                    {cursorPosition.y.toFixed(0)})<br />
+                    下拉框尺寸: 300x280 (含搜索区)
+                    <br />
+                    内容对齐: 以下拉框顶部/底部为准
+                    <br />
+                    触发元素: {inputRef.current ? '✓' : '✗'}
+                  </div>
+
+                  {/* 对齐指示器 */}
+                  <div className="alignment-indicator top-center"></div>
+                </>
+              )}
+            </>
           )}
 
           {/* Tree 组件 */}

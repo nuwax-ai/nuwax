@@ -118,15 +118,19 @@
     &.level-1 {
       padding-left: 8px;
     }
+
     &.level-2 {
       padding-left: 24px;
     }
+
     &.level-3 {
       padding-left: 40px;
     }
+
     &.level-4 {
       padding-left: 56px;
     }
+
     &.level-5 {
       padding-left: 72px;
     }
@@ -291,6 +295,35 @@
   max-width: 300px; // 最大宽度300px
   padding: 8px; // 添加内边距
 
+  // 添加定位指示器（基于光标位置计算的结果）
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 20px; // 动态调整以匹配实际光标位置
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid #fff;
+    z-index: 1;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 19px; // 动态调整以匹配实际光标位置
+    width: 0;
+    height: 0;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-bottom: 9px solid #d9d9d9;
+    z-index: 0;
+  }
+
   // 调试信息样式
   .variable-debug-info {
     padding: 4px 8px;
@@ -302,8 +335,8 @@
 
   // 树列表内容
   .tree-list-content {
-    max-height: 320px; // 设置高度为320px
-    height: 320px; // 固定高度
+    max-height: 240px; // 设置最大高度为240px
+    height: 240px; // 默认高度240px
     overflow-y: auto; // 内容可滚动
   }
 
@@ -312,6 +345,55 @@
     background-color: #f9f9f9;
     color: #666;
     text-align: center;
+  }
+
+  // 位置计算调试信息（开发环境显示）
+  .position-debug {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 80%);
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 10000;
+    max-width: 300px;
+    word-wrap: break-word;
+  }
+
+  // 对齐指示器样式
+  .alignment-indicator {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: #ff4d4f;
+    border-radius: 50%;
+    z-index: 10001;
+
+    &.top-center {
+      top: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    &.bottom-center {
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    &.left-center {
+      left: -5px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    &.right-center {
+      right: -5px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
   }
 
   // Tree 组件样式定制
