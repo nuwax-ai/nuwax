@@ -7,19 +7,32 @@
   position: relative;
 
   .prompt-variable-input {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
     font-size: 14px;
     line-height: 1.5715;
+    background-color: transparent !important;
 
     &:focus,
     &:focus-within {
       border-color: #1890ff;
-      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%);
     }
 
-    // 确保背景透明以显示高亮层
-    &:not(:focus) {
-      background-color: transparent !important;
+    // 确保 placeholder 可见
+    &::placeholder {
+      color: #bfbfbf;
+      opacity: 1;
+    }
+  }
+
+  // 高亮层样式
+  .highlight-layer {
+    // 防止滚动条显示
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+
+    &::-webkit-scrollbar {
+      display: none; /* Chrome/Safari */
     }
   }
 
@@ -29,7 +42,7 @@
     color: #1890ff;
     padding: 2px 4px;
     border-radius: 3px;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
     font-size: 13px;
     font-weight: 500;
     transition: all 0.2s ease;
@@ -47,9 +60,8 @@
 
   .ant-popover-content {
     border-radius: 8px;
-    box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08),
-                0 3px 6px -4px rgba(0, 0, 0, 0.12),
-                0 9px 28px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%),
+      0 3px 6px -4px rgba(0, 0, 0, 12%), 0 9px 28px 8px rgba(0, 0, 0, 5%);
   }
 }
 
@@ -180,15 +192,15 @@
       border-bottom-color: #303030;
 
       .variable-search-input {
-        color: #ffffff;
+        color: #fff;
 
         &::placeholder {
-          color: #666666;
+          color: #666;
         }
       }
 
       .anticon {
-        color: #666666;
+        color: #666;
       }
     }
 
@@ -208,11 +220,11 @@
 
       .variable-tree-node {
         .variable-label {
-          color: #ffffff;
+          color: #fff;
         }
 
         .variable-description {
-          color: #666666;
+          color: #666;
         }
       }
     }
@@ -220,7 +232,7 @@
     .variable-popover-footer {
       border-top-color: #303030;
       background-color: #141414;
-      color: #666666;
+      color: #666;
     }
   }
 }
