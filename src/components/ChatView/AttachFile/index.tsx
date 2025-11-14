@@ -18,9 +18,10 @@ const AttachFile: React.FC<AttachFileProps> = ({ files }) => {
           className={cx(styles['file-box'], 'flex', 'items-center')}
         >
           {/*如果文件是图片，则显示图片，否则显示文档默认图片*/}
+          {/* 此处mimeType做容错处理，后端查询历史会话记录时，返回的mimeType可能为空 */}
           <img
             src={
-              file.mimeType.includes('image/')
+              file.mimeType?.includes('image/')
                 ? file.fileUrl
                 : (docImage as string)
             }
