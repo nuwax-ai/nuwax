@@ -571,17 +571,26 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         const charAtCursor =
           cursorPosition > 0 ? newValue[cursorPosition - 1] : '';
         // 优化检测条件：只对单个 { 触发自动补全，避免干扰 {{
-        if (charAtCursor === '{' && !newValue.includes('{{')) {
+        if (charAtCursor === '{') {
+          // 检查光标位置附近是否有 {{，而不是检查整个文本
+          const nearbyText = newValue.substring(
+            Math.max(0, cursorPosition - 3),
+            Math.min(newValue.length, cursorPosition + 3),
+          );
+          const hasDoubleBraceNearby = nearbyText.includes('{{');
+
           // 额外检查：确保不是连续的 { 字符
           const prevChar =
             cursorPosition > 1 ? newValue[cursorPosition - 2] : '';
-          if (prevChar !== '{') {
+
+          if (!hasDoubleBraceNearby && prevChar !== '{') {
             shouldAutoCompleteBrace = true;
             console.log('Auto-complete triggered:', {
               charAtCursor,
               cursorPosition,
               newValue,
               prevValue,
+              nearbyText,
             });
           }
         }
