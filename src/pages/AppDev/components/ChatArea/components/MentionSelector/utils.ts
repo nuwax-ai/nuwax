@@ -134,11 +134,21 @@ export const groupDataSourcesByType = (
 };
 
 /**
- * 最近使用的文件/数据源存储键名
+ * 最近使用的文件/数据源存储键名前缀
  */
-const RECENT_FILES_KEY = 'mention_recent_files';
-const RECENT_DATA_SOURCES_KEY = 'mention_recent_data_sources';
+const RECENT_FILES_KEY_PREFIX = 'mention_recent_files';
+const RECENT_DATA_SOURCES_KEY_PREFIX = 'mention_recent_data_sources';
 const MAX_RECENT_ITEMS = 7;
+
+/**
+ * 获取项目相关的存储键名
+ * @param projectId 项目ID
+ * @param keyPrefix 键名前缀
+ * @returns 完整的存储键名
+ */
+const getStorageKey = (projectId: string, keyPrefix: string): string => {
+  return projectId ? `${keyPrefix}_${projectId}` : keyPrefix;
+};
 
 /**
  * 最近使用的文件项
@@ -148,6 +158,7 @@ interface RecentFileItem {
   name: string;
   path: string;
   timestamp: number;
+  projectId?: string; // 兼容旧数据，新数据会按 projectId 分别存储
 }
 
 /**
@@ -157,14 +168,17 @@ interface RecentDataSourceItem {
   id: number | string;
   name: string;
   timestamp: number;
+  projectId?: string; // 兼容旧数据，新数据会按 projectId 分别存储
 }
 
 /**
  * 获取最近使用的文件
+ * @param projectId 项目ID，用于区分不同项目的最近使用记录
  */
-export const getRecentFiles = (): RecentFileItem[] => {
+export const getRecentFiles = (projectId?: string): RecentFileItem[] => {
   try {
-    const stored = localStorage.getItem(RECENT_FILES_KEY);
+    const storageKey = getStorageKey(projectId || '', RECENT_FILES_KEY_PREFIX);
+    const stored = sessionStorage.getItem(storageKey);
     if (!stored) return [];
     const items: RecentFileItem[] = JSON.parse(stored);
     // 按时间戳倒序排序，取前7个
@@ -178,10 +192,16 @@ export const getRecentFiles = (): RecentFileItem[] => {
 
 /**
  * 保存最近使用的文件
+ * @param file 文件节点
+ * @param projectId 项目ID，用于区分不同项目的最近使用记录
  */
-export const saveRecentFile = (file: FileNode): void => {
+export const saveRecentFile = (file: FileNode, projectId?: string): void => {
   try {
-    const items = getRecentFiles();
+    if (!projectId) {
+      console.warn('保存最近使用的文件时缺少 projectId，将使用默认存储键');
+    }
+    const storageKey = getStorageKey(projectId || '', RECENT_FILES_KEY_PREFIX);
+    const items = getRecentFiles(projectId);
     // 移除已存在的相同文件
     const filtered = items.filter((item) => item.id !== file.id);
     // 添加新文件到开头
@@ -192,7 +212,7 @@ export const saveRecentFile = (file: FileNode): void => {
       timestamp: Date.now(),
     };
     const updated = [newItem, ...filtered].slice(0, MAX_RECENT_ITEMS);
-    localStorage.setItem(RECENT_FILES_KEY, JSON.stringify(updated));
+    sessionStorage.setItem(storageKey, JSON.stringify(updated));
   } catch (error) {
     console.error('保存最近使用的文件失败:', error);
   }
@@ -200,10 +220,17 @@ export const saveRecentFile = (file: FileNode): void => {
 
 /**
  * 获取最近使用的数据源
+ * @param projectId 项目ID，用于区分不同项目的最近使用记录
  */
-export const getRecentDataSources = (): RecentDataSourceItem[] => {
+export const getRecentDataSources = (
+  projectId?: string,
+): RecentDataSourceItem[] => {
   try {
-    const stored = localStorage.getItem(RECENT_DATA_SOURCES_KEY);
+    const storageKey = getStorageKey(
+      projectId || '',
+      RECENT_DATA_SOURCES_KEY_PREFIX,
+    );
+    const stored = sessionStorage.getItem(storageKey);
     if (!stored) return [];
     const items: RecentDataSourceItem[] = JSON.parse(stored);
     // 按时间戳倒序排序，取前7个
@@ -217,10 +244,22 @@ export const getRecentDataSources = (): RecentDataSourceItem[] => {
 
 /**
  * 保存最近使用的数据源
+ * @param dataSource 数据源
+ * @param projectId 项目ID，用于区分不同项目的最近使用记录
  */
-export const saveRecentDataSource = (dataSource: DataResource): void => {
+export const saveRecentDataSource = (
+  dataSource: DataResource,
+  projectId?: string,
+): void => {
   try {
-    const items = getRecentDataSources();
+    if (!projectId) {
+      console.warn('保存最近使用的数据源时缺少 projectId，将使用默认存储键');
+    }
+    const storageKey = getStorageKey(
+      projectId || '',
+      RECENT_DATA_SOURCES_KEY_PREFIX,
+    );
+    const items = getRecentDataSources(projectId);
     // 移除已存在的相同数据源
     const filtered = items.filter((item) => item.id !== dataSource.id);
     // 添加新数据源到开头
@@ -230,7 +269,7 @@ export const saveRecentDataSource = (dataSource: DataResource): void => {
       timestamp: Date.now(),
     };
     const updated = [newItem, ...filtered].slice(0, MAX_RECENT_ITEMS);
-    localStorage.setItem(RECENT_DATA_SOURCES_KEY, JSON.stringify(updated));
+    sessionStorage.setItem(storageKey, JSON.stringify(updated));
   } catch (error) {
     console.error('保存最近使用的数据源失败:', error);
   }

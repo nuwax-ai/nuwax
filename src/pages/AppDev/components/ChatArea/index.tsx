@@ -751,6 +751,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           isSendingMessage={isSendingMessage}
           // 取消任务
           handleCancelAgentTask={handleCancelAgentTask}
+          // 项目ID，用于区分不同项目的最近使用记录
+          projectId={projectId}
           // 发送消息
           onEnter={handleSendMessage}
           // 文件树数据
