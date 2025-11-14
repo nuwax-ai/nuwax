@@ -97,50 +97,109 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       const lastBraceStart = beforeCursor.lastIndexOf('{');
       const lastDoubleBraceStart = beforeCursor.lastIndexOf('{{');
 
+      console.log('Extract search text - initial check:', {
+        inputText,
+        cursorPosition,
+        beforeCursor,
+        lastBraceStart,
+        lastDoubleBraceStart,
+      });
+
       // 确定当前在哪种上下文中
       let mode: 'single' | 'double' = 'double';
       let braceStartPos = lastDoubleBraceStart;
 
       if (lastBraceStart > lastDoubleBraceStart) {
         // 检查单个大括号是否有效
-        const afterBrace = beforeCursor.substring(lastBraceStart + 1);
-        const hasClosingBrace = afterBrace.includes('}');
+        // 需要检查完整的 inputText，而不仅仅是 beforeCursor，因为 } 可能在光标后面
+        const afterBraceInFullText = inputText.substring(lastBraceStart + 1);
+        const closingBracePosInFullText = afterBraceInFullText.indexOf('}');
+        const hasClosingBrace = closingBracePosInFullText !== -1;
+
+        console.log('Single brace check:', {
+          lastBraceStart,
+          lastDoubleBraceStart,
+          afterBraceInFullText: afterBraceInFullText.substring(0, 20), // 只显示前20个字符
+          closingBracePosInFullText,
+          hasClosingBrace,
+        });
 
         if (hasClosingBrace) {
-          // 检查光标是否在 { } 之间
+          // 检查光标是否在 { 和 } 之间
           const betweenBraces = inputText.substring(
             lastBraceStart + 1,
             cursorPosition,
           );
           const hasClosingBeforeCursor = betweenBraces.includes('}');
 
+          console.log('Between braces check:', {
+            betweenBraces,
+            hasClosingBeforeCursor,
+            cursorPosition,
+            closingBracePosInFullText,
+            braceEndPos: lastBraceStart + 1 + closingBracePosInFullText,
+          });
+
           if (!hasClosingBeforeCursor) {
             mode = 'single';
             braceStartPos = lastBraceStart;
+            console.log('Mode set to single, braceStartPos:', braceStartPos);
           }
         }
       }
 
-      // 只有当光标紧跟 { 或 {{ 后面时才提取搜索文本
-      if (
-        braceStartPos !== -1 &&
-        cursorPosition === braceStartPos + (mode === 'single' ? 1 : 2)
-      ) {
+      console.log('Final mode detection:', {
+        mode,
+        braceStartPos,
+      });
+
+      // 提取搜索文本：支持在 {} 或 {{}} 中输入内容时搜索
+      if (braceStartPos !== -1) {
         if (mode === 'single') {
           // 单个大括号模式：在 { } 中搜索
           const afterBrace = inputText.substring(braceStartPos + 1);
           const closingBracePos = afterBrace.indexOf('}');
 
           if (closingBracePos !== -1) {
-            // 在 { } 之间搜索
-            const betweenBraces = afterBrace.substring(0, closingBracePos);
-            const match = betweenBraces.match(/^([^}]*)$/);
-            return match ? match[1].split(' ')[0] : '';
+            // 检查光标是否在 { 和 } 之间（包括 } 的位置）
+            const isInBraces =
+              cursorPosition > braceStartPos &&
+              cursorPosition <= braceStartPos + 1 + closingBracePos + 1; // +1 包括 } 的位置
+
+            console.log('Extract search text (single mode):', {
+              inputText,
+              cursorPosition,
+              braceStartPos,
+              closingBracePos,
+              isInBraces,
+              afterBrace: afterBrace.substring(0, closingBracePos),
+            });
+
+            if (isInBraces) {
+              // 提取光标前的内容作为搜索文本（从 { 后到光标位置，但不包括 }）
+              const endPos = Math.min(
+                cursorPosition,
+                braceStartPos + 1 + closingBracePos,
+              );
+              const searchText = inputText.substring(braceStartPos + 1, endPos);
+              const result = searchText.split(' ')[0];
+              console.log('Extracted search text:', result);
+              return result;
+            }
           }
         } else {
-          // 双大括号模式：保持原有逻辑
-          const match = inputText.match(/{{([^}]*)$/);
-          return match ? match[1].split(' ')[0] : '';
+          // 双大括号模式：检查光标是否在 {{ 后面
+          if (cursorPosition >= braceStartPos + 2) {
+            const match = inputText.match(/{{([^}]*)$/);
+            if (match) {
+              // 提取光标前的内容作为搜索文本
+              const searchText = inputText.substring(
+                braceStartPos + 2,
+                cursorPosition,
+              );
+              return searchText.split(' ')[0];
+            }
+          }
         }
       }
 
@@ -230,11 +289,18 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     return filterNodes(nodes);
   };
 
-  const displayTree = filterTreeBySearch(
-    variableTree,
-    extractSearchTextFromInput(internalValue, textCursorPosition),
-    'fuzzy',
+  const searchText = extractSearchTextFromInput(
+    internalValue,
+    textCursorPosition,
   );
+  console.log('Display tree search:', {
+    internalValue,
+    textCursorPosition,
+    searchText,
+    hasSearchText: !!searchText,
+  });
+
+  const displayTree = filterTreeBySearch(variableTree, searchText, 'fuzzy');
 
   // 应用变量（需要在 useEffect 之前定义）
   const handleApplyVariable = useCallback(
@@ -713,15 +779,40 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       setInternalValue(newValue);
       onChange?.(newValue);
 
-      // 继续原有的 {{ 处理逻辑
+      // 继续原有的 {{ 处理逻辑，同时支持 {} 模式
       const beforeCursor = newValue.substring(0, cursorPosition);
       const lastDoubleBraceStart = beforeCursor.lastIndexOf('{{');
+      const lastBraceStart = beforeCursor.lastIndexOf('{');
 
       let isInVariableContext = false;
+
+      // 检查是否在 {{}} 中
       if (lastDoubleBraceStart !== -1) {
         const afterLastStart = beforeCursor.substring(lastDoubleBraceStart + 2);
         const hasClosingBraces = afterLastStart.includes('}}');
         isInVariableContext = !hasClosingBraces;
+      }
+
+      // 检查是否在 {} 中（单大括号模式）
+      if (
+        !isInVariableContext &&
+        lastBraceStart !== -1 &&
+        lastBraceStart !== lastDoubleBraceStart
+      ) {
+        const afterBrace = newValue.substring(lastBraceStart + 1);
+        const closingBracePos = afterBrace.indexOf('}');
+
+        if (closingBracePos !== -1) {
+          // 检查光标是否在 { 和 } 之间
+          const isInBraces =
+            cursorPosition > lastBraceStart &&
+            cursorPosition <= lastBraceStart + 1 + closingBracePos;
+
+          if (isInBraces) {
+            isInVariableContext = true;
+            console.log('In single brace context, showing dropdown');
+          }
+        }
       }
 
       if (isInVariableContext) {
