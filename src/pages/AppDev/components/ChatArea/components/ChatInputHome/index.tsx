@@ -77,6 +77,8 @@ export interface ChatInputProps {
   onToggleSelectDataSource?: (dataSource: DataResource) => void;
   // 文件树数据
   files?: FileNode[];
+  // 项目ID，用于区分不同项目的最近使用记录
+  projectId?: string;
 }
 
 /**
@@ -95,6 +97,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   dataSourceList,
   onToggleSelectDataSource,
   files = [],
+  projectId,
 }) => {
   // 附件文件列表
   const [attachmentFiles, setAttachmentFiles] = useState<UploadFileInfo[]>([]);
@@ -941,6 +944,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           selectedIndex={mentionSelectedIndex}
           containerRef={mentionContainerRef}
           onSelectedIndexChange={setMentionSelectedIndex}
+          projectId={projectId}
         />
         <footer className={cx('flex-1', styles.footer)}>
           <div className={cx('flex', 'items-center', 'gap-4')}>
