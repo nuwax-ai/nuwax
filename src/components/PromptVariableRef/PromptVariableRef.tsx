@@ -71,7 +71,6 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   direction = 'bottomLeft',
   placeholder = '输入提示词，使用 {{变量名}} 引用变量',
   onChange,
-  onVariableSelect,
   value,
   disabled = false,
   className = '',
@@ -87,13 +86,66 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
   // 添加光标位置状态
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+  // 添加文本光标位置状态
+  const [textCursorPosition, setTextCursorPosition] = useState(0);
 
   // 从文本输入框中提取搜索关键词
   const extractSearchTextFromInput = useCallback(
-    (inputText: string): string => {
-      // 查找 {{ 后面的搜索内容
-      const match = inputText.match(/{{([^}]*)$/);
-      return match ? match[1] : '';
+    (inputText: string, cursorPosition: number): string => {
+      // 检查光标前是否有 { 或 {{
+      const beforeCursor = inputText.substring(0, cursorPosition);
+      const lastBraceStart = beforeCursor.lastIndexOf('{');
+      const lastDoubleBraceStart = beforeCursor.lastIndexOf('{{');
+
+      // 确定当前在哪种上下文中
+      let mode: 'single' | 'double' = 'double';
+      let braceStartPos = lastDoubleBraceStart;
+
+      if (lastBraceStart > lastDoubleBraceStart) {
+        // 检查单个大括号是否有效
+        const afterBrace = beforeCursor.substring(lastBraceStart + 1);
+        const hasClosingBrace = afterBrace.includes('}');
+
+        if (hasClosingBrace) {
+          // 检查光标是否在 { } 之间
+          const betweenBraces = inputText.substring(
+            lastBraceStart + 1,
+            cursorPosition,
+          );
+          const hasClosingBeforeCursor = betweenBraces.includes('}');
+
+          if (!hasClosingBeforeCursor) {
+            mode = 'single';
+            braceStartPos = lastBraceStart;
+          }
+        }
+      }
+
+      // 只有当光标紧跟 { 或 {{ 后面时才提取搜索文本
+      if (
+        braceStartPos !== -1 &&
+        cursorPosition === braceStartPos + (mode === 'single' ? 1 : 2)
+      ) {
+        if (mode === 'single') {
+          // 单个大括号模式：在 { } 中搜索
+          const afterBrace = inputText.substring(braceStartPos + 1);
+          const closingBracePos = afterBrace.indexOf('}');
+
+          if (closingBracePos !== -1) {
+            // 在 { } 之间搜索
+            const betweenBraces = afterBrace.substring(0, closingBracePos);
+            const match = betweenBraces.match(/^([^}]*)$/);
+            return match ? match[1].split(' ')[0] : '';
+          }
+        } else {
+          // 双大括号模式：保持原有逻辑
+          const match = inputText.match(/{{([^}]*)$/);
+          return match ? match[1].split(' ')[0] : '';
+        }
+      }
+
+      // 光标不在 { 或 {{ 后面时，返回空字符串（不进行搜索）
+      return '';
     },
     [],
   );
@@ -180,27 +232,9 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
   const displayTree = filterTreeBySearch(
     variableTree,
-    extractSearchTextFromInput(internalValue),
+    extractSearchTextFromInput(internalValue, textCursorPosition),
     'fuzzy',
   );
-
-  // 根据key查找变量节点
-  const findNodeByKey = (
-    tree: VariableTreeNode[],
-    key: string,
-  ): VariableTreeNode | null => {
-    for (const node of tree) {
-      // 现在key是完整路径，所以直接比较
-      if (node.key === key || node.value === key) {
-        return node;
-      }
-      if (node.children) {
-        const found = findNodeByKey(node.children, key);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
 
   // 应用变量（需要在 useEffect 之前定义）
   const handleApplyVariable = useCallback(
@@ -212,52 +246,218 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       const endPos = textarea.selectionEnd;
       const currentValue = internalValue;
 
-      // 查找 {{...}} 的范围
+      // 查找光标前的 { 或 {{
       const beforeText = currentValue.substring(0, startPos);
       const afterText = currentValue.substring(endPos);
 
-      // 找到最近的 {{ 开始位置
-      const lastStartPos = beforeText.lastIndexOf('{{');
-      if (lastStartPos !== -1) {
-        // 检查是否有匹配的 }} 结束位置
-        const afterStartText = beforeText.substring(lastStartPos + 2); // 从 {{ 后开始
-        const endPosMatch = afterStartText.indexOf('}}');
+      // 首先检查是否在单个 { } 之间
+      const lastBraceStart = beforeText.lastIndexOf('{');
+      const lastDoubleBraceStart = beforeText.lastIndexOf('{{');
 
-        let finalText: string;
-        let newCursorPos: number;
+      // 重新设计模式检测逻辑
+      let mode: 'single' | 'double' = 'double';
+      let braceStartPos = lastDoubleBraceStart;
 
-        if (endPosMatch !== -1) {
-          // 替换现有的变量引用（包含 {{ 和 }}）
-          const beforeVariable = beforeText.substring(0, lastStartPos);
-          const afterVariable = afterText.substring(endPosMatch + 2); // 跳过 }}
-          finalText = beforeVariable + `{{${nodeValue}}}` + afterVariable;
-          newCursorPos = beforeVariable.length + nodeValue.length + 4; // 4 = {{}} 的长度
-        } else {
-          // 完成新的变量引用
-          const beforeVariable = beforeText.substring(0, lastStartPos);
-          finalText = beforeVariable + `{{${nodeValue}}}` + afterText;
-          newCursorPos = beforeVariable.length + nodeValue.length + 4;
+      // 强制使用单大括号模式的条件：确实在单个 {} 中间
+      const isInSingleBraceContext = () => {
+        if (lastBraceStart !== -1) {
+          const afterBrace = currentValue.substring(lastBraceStart + 1);
+          const closingBracePos = afterBrace.indexOf('}');
+
+          if (closingBracePos !== -1) {
+            // 检查光标是否精确在 { 和 } 之间
+            const isInRange =
+              startPos > lastBraceStart &&
+              startPos <= lastBraceStart + 1 + closingBracePos;
+
+            // 额外检查：确保中间没有其他的大括号对
+            const betweenBraces = currentValue.substring(
+              lastBraceStart + 1,
+              startPos,
+            );
+            const hasOtherBraces =
+              betweenBraces.includes('{') || betweenBraces.includes('}');
+
+            // 确保这不是 {{}} 的情况
+            const isNotDoubleBrace = lastBraceStart !== lastDoubleBraceStart;
+
+            return isInRange && !hasOtherBraces && isNotDoubleBrace;
+          }
         }
+        return false;
+      };
 
-        setInternalValue(finalText);
-        onChange?.(finalText);
+      if (isInSingleBraceContext()) {
+        mode = 'single';
+        braceStartPos = lastBraceStart;
+      }
 
-        // 设置光标位置
-        setTimeout(() => {
-          textarea.focus();
-          textarea.setSelectionRange(newCursorPos, newCursorPos);
-        }, 0);
+      // 添加调试日志
+      console.log('Mode detection:', {
+        currentValue,
+        startPos,
+        lastBraceStart,
+        lastDoubleBraceStart,
+        mode,
+        braceStartPos,
+      });
 
-        // 触发变量选择回调
-        const selectedNode = findNodeByKey(variableTree, nodeValue);
-        if (selectedNode && selectedNode.variable) {
-          onVariableSelect?.(selectedNode.variable, nodeValue);
+      let finalText: string;
+      let newCursorPos: number;
+
+      // 在处理前验证模式选择的正确性
+      const validateMode = () => {
+        if (mode === 'single') {
+          // 确保确实在单个 {} 上下文中
+          if (braceStartPos < 0 || braceStartPos >= currentValue.length) {
+            console.warn(
+              'Invalid braceStartPos for single mode:',
+              braceStartPos,
+            );
+            return false;
+          }
+
+          const braceContent = currentValue.substring(
+            braceStartPos,
+            Math.min(braceStartPos + 10, currentValue.length),
+          );
+          if (!braceContent.startsWith('{')) {
+            console.warn('BraceStartPos does not point to {:', braceContent);
+            return false;
+          }
+        }
+        return true;
+      };
+
+      if (!validateMode()) {
+        console.log('Mode validation failed, switching to default double mode');
+        mode = 'double';
+        braceStartPos = lastDoubleBraceStart;
+      }
+
+      if (mode === 'single') {
+        // 单个大括号模式：{...} -> {{xxx}}，光标移到末尾
+        const beforeBrace = currentValue.substring(0, braceStartPos);
+
+        // 找到对应的 } 位置
+        const afterOpeningBrace = currentValue.substring(braceStartPos + 1);
+        const closingBracePos = afterOpeningBrace.indexOf('}');
+
+        if (closingBracePos !== -1) {
+          // 完整的 {xxx} 结构，替换为 {{xxx}}
+          const completeBeforeBrace = currentValue.substring(0, braceStartPos);
+          const completeAfterBrace = currentValue.substring(
+            braceStartPos + 1 + closingBracePos + 1,
+          );
+
+          // 检查是否已经被双大括号包围，避免重复添加
+          const originalBraceContent = currentValue.substring(
+            braceStartPos,
+            braceStartPos + 1 + closingBracePos + 1,
+          );
+          const isAlreadyDoubleBrace =
+            originalBraceContent.startsWith('{{') &&
+            originalBraceContent.endsWith('}}');
+
+          console.log('Single brace replacement:', {
+            originalText: currentValue,
+            braceStartPos,
+            originalBraceContent,
+            isAlreadyDoubleBrace,
+            nodeValue,
+          });
+
+          if (isAlreadyDoubleBrace) {
+            // 如果已经是被 {{ }} 包围的，直接替换内容
+            const beforeDoubleBrace = currentValue.substring(0, braceStartPos);
+            const afterDoubleBrace = currentValue.substring(
+              braceStartPos + originalBraceContent.length,
+            );
+            finalText =
+              beforeDoubleBrace + `{{${nodeValue}}}` + afterDoubleBrace;
+            newCursorPos = beforeDoubleBrace.length + nodeValue.length + 4;
+          } else {
+            // 正常的 {xxx} -> {{xxx}} 转换
+            finalText =
+              completeBeforeBrace + `{{${nodeValue}}}` + completeAfterBrace;
+            newCursorPos = completeBeforeBrace.length + nodeValue.length + 4; // {{xxx}} 长度
+          }
+        } else {
+          // 只有 {xxx，没有 }，添加 }} 变成 {{xxx}}
+          finalText = beforeBrace + `{{${nodeValue}}}` + afterText;
+          newCursorPos = beforeBrace.length + nodeValue.length + 4;
+        }
+      } else {
+        // 双大括号模式：保持原有逻辑
+        const lastStartPos = lastDoubleBraceStart;
+        if (lastStartPos !== -1) {
+          // 检查是否有匹配的 }} 结束位置
+          const afterStartText = beforeText.substring(lastStartPos + 2); // 从 {{ 后开始
+          const endPosMatch = afterStartText.indexOf('}}');
+
+          if (endPosMatch !== -1) {
+            // 替换现有的变量引用（包含 {{ 和 }}）
+            const beforeVariable = beforeText.substring(0, lastStartPos);
+            const afterVariable = afterText.substring(endPosMatch + 2); // 跳过 }}
+            finalText = beforeVariable + `{{${nodeValue}}}` + afterVariable;
+            newCursorPos = beforeVariable.length + nodeValue.length + 4; // 4 = {{}} 的长度
+          } else {
+            // 完成新的变量引用
+            const beforeVariable = beforeText.substring(0, lastStartPos);
+            finalText = beforeVariable + `{{${nodeValue}}}` + afterText;
+            newCursorPos = beforeVariable.length + nodeValue.length + 4;
+          }
+        } else {
+          // 如果没有找到 {{，则在当前位置插入变量
+          finalText =
+            currentValue.substring(0, startPos) +
+            `{{${nodeValue}}}` +
+            afterText;
+          newCursorPos = startPos + nodeValue.length + 4;
         }
       }
 
+      setInternalValue(finalText);
+      onChange?.(finalText);
+
+      // 添加最终检查：防止生成错误的大括号结构
+      const bracketError = finalText.match(/\{[^}]*\{[^}]*\}/);
+      if (bracketError && finalText.includes('{{{')) {
+        console.log('Detected bracket error, auto-correcting:', {
+          original: finalText,
+          error: bracketError[0],
+        });
+
+        // 自动修正：移除多余的大括号
+        finalText = finalText.replace(/\{\{\{/g, '{{');
+        finalText = finalText.replace(/\}\}\}/g, '}}');
+
+        console.log('Auto-corrected to:', finalText);
+        setInternalValue(finalText);
+        onChange?.(finalText);
+      }
+
+      // 设置光标位置
+      setTimeout(() => {
+        if (inputRef.current) {
+          const textarea = inputRef.current.resizableTextArea.textArea;
+          textarea.setSelectionRange(newCursorPos, newCursorPos);
+          textarea.focus();
+        }
+      }, 0);
+
+      // 关闭下拉框
       setVisible(false);
+      setSelectedKeys([]);
+
+      console.log('Variable applied:', {
+        mode,
+        nodeValue,
+        finalText,
+        newCursorPos,
+      });
     },
-    [internalValue, onChange, onVariableSelect, variableTree],
+    [internalValue, onChange],
   );
 
   // 同步外部 value 到内部 state
@@ -354,43 +554,168 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newValue = e.target.value;
+      const cursorPosition = e.target.selectionStart || 0;
+      const prevValue = internalValue;
+
+      // 更新文本光标位置
+      setTextCursorPosition(cursorPosition);
+
+      // 检测是否刚输入了单个 {，如果是则自动补全 }
+      let shouldAutoCompleteBrace = false;
+      if (
+        !readonly &&
+        cursorPosition > 0 &&
+        newValue.length > prevValue.length
+      ) {
+        // 只在文本增加时检查（排除删除操作）
+        const charAtCursor =
+          cursorPosition > 0 ? newValue[cursorPosition - 1] : '';
+        // 优化检测条件：只对单个 { 触发自动补全，避免干扰 {{
+        if (charAtCursor === '{' && !newValue.includes('{{')) {
+          // 额外检查：确保不是连续的 { 字符
+          const prevChar =
+            cursorPosition > 1 ? newValue[cursorPosition - 2] : '';
+          if (prevChar !== '{') {
+            shouldAutoCompleteBrace = true;
+            console.log('Auto-complete triggered:', {
+              charAtCursor,
+              cursorPosition,
+              newValue,
+              prevValue,
+            });
+          }
+        }
+      }
+
+      if (shouldAutoCompleteBrace) {
+        // 插入闭合的 } 并将光标移到中间
+        const beforeCursor = newValue.substring(0, cursorPosition);
+        const afterCursor = newValue.substring(cursorPosition);
+        const newText = beforeCursor + '}' + afterCursor;
+
+        console.log(
+          'Auto-completed text:',
+          newText,
+          'cursor at:',
+          cursorPosition,
+        );
+
+        setInternalValue(newText);
+        onChange?.(newText);
+
+        // 强制设置可见状态，确保下拉框显示
+        console.log('Force setting visible to true for auto-complete');
+        setVisible(true);
+
+        // 延迟设置光标位置，确保DOM更新完成
+        setTimeout(() => {
+          if (inputRef.current) {
+            const textarea = inputRef.current.resizableTextArea.textArea;
+            textarea.setSelectionRange(cursorPosition, cursorPosition);
+          }
+        }, 0);
+
+        // 检查是否需要显示变量选择框
+        const beforeBrace = newText.substring(0, cursorPosition);
+        const lastBraceStart = beforeBrace.lastIndexOf('{');
+        if (lastBraceStart !== -1) {
+          // 检查光标是否在 { } 之间
+          const afterBrace = newText.substring(lastBraceStart + 1);
+          const closingBracePos = afterBrace.indexOf('}');
+
+          if (closingBracePos !== -1) {
+            // 检查光标是否在 { 和 } 之间
+            const isInBraces =
+              cursorPosition > lastBraceStart &&
+              cursorPosition <= lastBraceStart + 1 + closingBracePos;
+
+            console.log('Brace check:', {
+              cursorPosition,
+              lastBraceStart,
+              closingBracePos,
+              isInBraces,
+              newText,
+            });
+
+            if (isInBraces) {
+              console.log('Setting visible to true for brace input');
+              setVisible(true);
+
+              // 计算光标位置
+              if (inputRef.current) {
+                const textarea = inputRef.current.resizableTextArea.textArea;
+                const rect = textarea.getBoundingClientRect();
+                const computedStyle = window.getComputedStyle(textarea);
+                const lineHeight = parseInt(computedStyle.lineHeight) || 20;
+                const charWidth = parseInt(computedStyle.fontSize) * 0.6; // 估算字符宽度
+
+                // 计算光标在文本中的位置
+                const textBeforeCursor = newText.substring(0, cursorPosition);
+                const lines = textBeforeCursor.split('\n');
+                const currentLine = lines.length - 1;
+                const currentCol = lines[lines.length - 1].length;
+
+                // 计算光标相对于文本域的像素位置
+                const cursorX = rect.left + currentCol * charWidth;
+                const cursorY =
+                  rect.top + currentLine * lineHeight + lineHeight;
+
+                // 使用改进的位置计算函数（参考 antd Select）
+                const { position, adjustment } = calculateDropdownPosition(
+                  cursorX,
+                  cursorY,
+                  inputRef.current, // DOM元素或undefined
+                  undefined, // dimensions，使用默认值
+                  {
+                    hasSearch: true, // 变量引用下拉框始终有搜索区域
+                    searchText: extractSearchTextFromInput(
+                      newText,
+                      cursorPosition,
+                    ),
+                    treeHeight: 240, // tree-list-content的固定高度
+                  },
+                );
+
+                console.log('Calculated cursor position:', {
+                  cursorX,
+                  cursorY,
+                  final: position,
+                  adjustment,
+                });
+                setCursorPosition(position);
+              }
+            } else {
+              console.log('Cursor not in braces, closing dropdown');
+              setVisible(false);
+            }
+          } else {
+            console.log('No closing brace found, closing dropdown');
+            setVisible(false);
+          }
+        } else {
+          console.log('No opening brace found, closing dropdown');
+          setVisible(false);
+        }
+
+        return; // 提前返回，不执行后续逻辑
+      }
+
       console.log('Input changed to:', newValue);
       setInternalValue(newValue);
       onChange?.(newValue);
 
-      // 检查是否在输入变量引用
-      const cursorPosition = e.target.selectionStart || 0;
-      console.log('Cursor position:', cursorPosition);
-
-      // 检查光标前是否有 {{
+      // 继续原有的 {{ 处理逻辑
       const beforeCursor = newValue.substring(0, cursorPosition);
       const lastDoubleBraceStart = beforeCursor.lastIndexOf('{{');
-      console.log(
-        'Before cursor:',
-        beforeCursor,
-        'lastDoubleBraceStart:',
-        lastDoubleBraceStart,
-      );
 
-      // 检查是否刚刚输入了 {{ 或正在 {{...}} 中
-      // 确保在 {{ 之后没有对应的 }}
       let isInVariableContext = false;
       if (lastDoubleBraceStart !== -1) {
         const afterLastStart = beforeCursor.substring(lastDoubleBraceStart + 2);
         const hasClosingBraces = afterLastStart.includes('}}');
         isInVariableContext = !hasClosingBraces;
-        console.log('After last start:', JSON.stringify(afterLastStart));
-        console.log('hasClosingBraces:', hasClosingBraces);
       }
-      console.log(
-        'isInVariableContext:',
-        isInVariableContext,
-        'readonly:',
-        readonly,
-      );
 
-      if (isInVariableContext && !readonly) {
-        console.log('Setting visible to true');
+      if (isInVariableContext) {
         setVisible(true);
 
         // 计算光标的屏幕位置
@@ -419,7 +744,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
             undefined, // dimensions，使用默认值
             {
               hasSearch: true, // 变量引用下拉框始终有搜索区域
-              searchText: extractSearchTextFromInput(internalValue),
+              searchText: extractSearchTextFromInput(newValue, cursorPosition),
               treeHeight: 240, // tree-list-content的固定高度
             },
           );
@@ -431,13 +756,6 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
             adjustment,
           });
           setCursorPosition(position);
-
-          // 记录位置调整信息，用于定位指示器
-          // const positionInfo = getPositionAdjustment(
-          //   { x: cursorX, y: cursorY },
-          //   position,
-          // );
-          // console.log('Position adjustment info:', positionInfo);
         }
 
         // 提取当前的变量路径
@@ -448,11 +766,11 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         const drilledTree = drillToPath(variableTree, currentPath);
         console.log('Drilled tree:', drilledTree);
       } else {
-        console.log('Setting visible to false');
         setVisible(false);
+        setSelectedKeys([]);
       }
     },
-    [onChange, readonly, variableTree],
+    [internalValue, readonly, variableTree, onChange],
   );
 
   // 键盘导航的具体实现
@@ -537,26 +855,67 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           console.log('Variable applied:', selectedNode.value);
         }
       } else if (e.key === 'Escape') {
-        const searchText = extractSearchTextFromInput(internalValue);
+        const searchText = extractSearchTextFromInput(
+          internalValue,
+          textCursorPosition,
+        );
+
         if (searchText.trim()) {
-          // 如果有搜索文本，删除{{和搜索内容
-          const index = internalValue.lastIndexOf('{{' + searchText);
-          if (index >= 0) {
-            setInternalValue(internalValue.substring(0, index));
-          }
-        } else if (internalValue.includes('{{')) {
-          // 如果有{{但没有搜索文本，删除{{
-          const index = internalValue.lastIndexOf('{{');
-          if (index >= 0) {
-            setInternalValue(
-              internalValue.substring(0, index) +
-                internalValue.substring(index + 2),
-            );
+          // 如果有搜索文本，检查是单个大括号还是双大括号
+          const beforeCursor = internalValue.substring(0, textCursorPosition);
+          const lastBraceStart = beforeCursor.lastIndexOf('{');
+          const lastDoubleBraceStart = beforeCursor.lastIndexOf('{{');
+
+          if (lastBraceStart > lastDoubleBraceStart) {
+            // 单个大括号：删除 { 和搜索内容
+            const index = internalValue.lastIndexOf('{' + searchText);
+            if (index >= 0) {
+              setInternalValue(internalValue.substring(0, index));
+            }
+          } else {
+            // 双大括号：删除 {{ 和搜索内容
+            const index = internalValue.lastIndexOf('{{' + searchText);
+            if (index >= 0) {
+              setInternalValue(internalValue.substring(0, index));
+            }
           }
         } else {
-          // 否则关闭下拉框
-          setVisible(false);
-          setSelectedKeys([]);
+          // 检查是否有 { 或 {{
+          if (internalValue.includes('{')) {
+            const beforeCursor = internalValue.substring(0, textCursorPosition);
+            const lastBraceStart = beforeCursor.lastIndexOf('{');
+            const lastDoubleBraceStart = beforeCursor.lastIndexOf('{{');
+
+            if (lastBraceStart > lastDoubleBraceStart) {
+              // 单个大括号：删除 { 和对应的 }
+              const index = internalValue.lastIndexOf('{');
+              if (index >= 0) {
+                // 找到对应的 }
+                const afterBrace = internalValue.substring(index + 1);
+                const closingBracePos = afterBrace.indexOf('}');
+
+                if (closingBracePos !== -1) {
+                  // 删除 {xxx}
+                  setInternalValue(
+                    internalValue.substring(0, index) +
+                      internalValue.substring(index + 1 + closingBracePos + 1),
+                  );
+                } else {
+                  // 只有 {，删除 {
+                  setInternalValue(internalValue.substring(0, index));
+                }
+              }
+            } else if (internalValue.includes('{{')) {
+              // 双大括号：删除 {{
+              const index = internalValue.lastIndexOf('{{');
+              if (index >= 0) {
+                setInternalValue(
+                  internalValue.substring(0, index) +
+                    internalValue.substring(index + 2),
+                );
+              }
+            }
+          }
         }
       }
     },
@@ -567,6 +926,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       handleApplyVariable,
       extractSearchTextFromInput,
       internalValue,
+      textCursorPosition,
     ],
   );
 
@@ -612,13 +972,21 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   }, [visible, readonly, handleTreeNavigation]); // 包含 handleTreeNavigation 依赖
 
   const popoverShouldShow =
-    visible && !readonly && !disabled && internalValue.includes('{{'); // 只要包含 {{ 就显示，不要求有搜索文本
+    visible &&
+    !readonly &&
+    !disabled &&
+    (internalValue.includes('{{') || internalValue.includes('{}')); // 支持 {{ 和 {} 两种情况
+
+  // 添加详细的调试日志
   console.log('Popover show condition:', {
     visible,
     readonly,
     disabled,
     shouldShow: popoverShouldShow,
     direction,
+    internalValue,
+    hasDoubleBrace: internalValue.includes('{{'),
+    hasSingleBrace: internalValue.includes('{}'),
   });
 
   return (
@@ -674,9 +1042,10 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
                   borderBottom: '1px solid #f0f0f0',
                 }}
               >
-                {extractSearchTextFromInput(internalValue)
+                {extractSearchTextFromInput(internalValue, textCursorPosition)
                   ? `搜索："${extractSearchTextFromInput(
                       internalValue,
+                      textCursorPosition,
                     )}" - 找到 ${displayTree.length} 个匹配项`
                   : `输入搜索词或浏览所有 ${variableTree.length} 个变量`}
               </div>
