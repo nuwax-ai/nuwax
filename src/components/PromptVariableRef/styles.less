@@ -1,3 +1,5 @@
+@import '@/styles/token.less';
+
 /*
  * Prompt Variable Reference Component Styles
  * 提示词变量引用组件样式
@@ -13,10 +15,11 @@
 
   .prompt-variable-input {
     font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
-    font-size: 14px;
+    font-size: @fontSize;
     line-height: 1.5715;
     background-color: transparent !important;
     position: relative;
+    padding: @paddingSm @padding;
     z-index: 2;
     color: transparent;
     caret-color: rgba(0, 0, 0, 88%);
@@ -41,7 +44,7 @@
     left: 1px;
     right: 1px;
     bottom: 1px;
-    padding: 4px 11px;
+    padding: @paddingSm @padding;
     background-color: transparent;
     white-space: pre-wrap;
     word-wrap: break-word;
@@ -50,7 +53,7 @@
     pointer-events: none;
     z-index: 1;
     font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
-    font-size: 14px;
+    font-size: @fontSize;
     line-height: 1.5715;
     // 允许滚动，但隐藏滚动条（滚动由输入框控制）
     overflow: auto;
