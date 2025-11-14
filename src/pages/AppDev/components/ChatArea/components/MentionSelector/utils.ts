@@ -178,7 +178,7 @@ interface RecentDataSourceItem {
 export const getRecentFiles = (projectId?: string): RecentFileItem[] => {
   try {
     const storageKey = getStorageKey(projectId || '', RECENT_FILES_KEY_PREFIX);
-    const stored = localStorage.getItem(storageKey);
+    const stored = sessionStorage.getItem(storageKey);
     if (!stored) return [];
     const items: RecentFileItem[] = JSON.parse(stored);
     // 按时间戳倒序排序，取前7个
@@ -212,7 +212,7 @@ export const saveRecentFile = (file: FileNode, projectId?: string): void => {
       timestamp: Date.now(),
     };
     const updated = [newItem, ...filtered].slice(0, MAX_RECENT_ITEMS);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
+    sessionStorage.setItem(storageKey, JSON.stringify(updated));
   } catch (error) {
     console.error('保存最近使用的文件失败:', error);
   }
@@ -230,7 +230,7 @@ export const getRecentDataSources = (
       projectId || '',
       RECENT_DATA_SOURCES_KEY_PREFIX,
     );
-    const stored = localStorage.getItem(storageKey);
+    const stored = sessionStorage.getItem(storageKey);
     if (!stored) return [];
     const items: RecentDataSourceItem[] = JSON.parse(stored);
     // 按时间戳倒序排序，取前7个
@@ -269,7 +269,7 @@ export const saveRecentDataSource = (
       timestamp: Date.now(),
     };
     const updated = [newItem, ...filtered].slice(0, MAX_RECENT_ITEMS);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
+    sessionStorage.setItem(storageKey, JSON.stringify(updated));
   } catch (error) {
     console.error('保存最近使用的数据源失败:', error);
   }

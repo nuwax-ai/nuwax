@@ -94,12 +94,22 @@ const MentionSelector = React.forwardRef<
       }
     }, [searchText, visible, viewType, onSelectedIndexChange]);
 
-    // 获取最近使用的文件和数据源（按 projectId 区分）
-    const recentFiles = useMemo(() => getRecentFiles(projectId), [projectId]);
-    const recentDataSources = useMemo(
-      () => getRecentDataSources(projectId),
-      [projectId],
+    // 最近使用的文件和数据源状态（按 projectId 区分）
+    const [recentFiles, setRecentFiles] = useState(() =>
+      getRecentFiles(projectId),
     );
+    const [recentDataSources, setRecentDataSources] = useState(() =>
+      getRecentDataSources(projectId),
+    );
+
+    // 每次显示 @ 选择器时，重新获取最近使用记录
+    useEffect(() => {
+      if (visible && position.visible) {
+        // 当选择器显示时，重新从 sessionStorage 获取最新的最近使用记录
+        setRecentFiles(getRecentFiles(projectId));
+        setRecentDataSources(getRecentDataSources(projectId));
+      }
+    }, [visible, position.visible, projectId]);
 
     // 扁平化文件列表
     const flattenedFiles = useMemo(() => {
