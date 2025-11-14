@@ -80,4 +80,6 @@ export interface MentionSelectorProps {
   containerRef?: React.RefObject<HTMLDivElement>;
   /** 键盘导航索引变化回调 */
   onSelectedIndexChange?: (index: number) => void;
+  /** 项目ID，用于区分不同项目的最近使用记录 */
+  projectId?: string;
 }

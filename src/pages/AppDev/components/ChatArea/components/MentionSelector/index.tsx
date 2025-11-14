@@ -57,6 +57,7 @@ const MentionSelector = React.forwardRef<
       selectedIndex,
       containerRef,
       onSelectedIndexChange,
+      projectId,
     },
     ref,
   ) => {
@@ -93,9 +94,12 @@ const MentionSelector = React.forwardRef<
       }
     }, [searchText, visible, viewType, onSelectedIndexChange]);
 
-    // 获取最近使用的文件和数据源
-    const recentFiles = useMemo(() => getRecentFiles(), []);
-    const recentDataSources = useMemo(() => getRecentDataSources(), []);
+    // 获取最近使用的文件和数据源（按 projectId 区分）
+    const recentFiles = useMemo(() => getRecentFiles(projectId), [projectId]);
+    const recentDataSources = useMemo(
+      () => getRecentDataSources(projectId),
+      [projectId],
+    );
 
     // 扁平化文件列表
     const flattenedFiles = useMemo(() => {
@@ -390,7 +394,7 @@ const MentionSelector = React.forwardRef<
         if ('path' in item) {
           // 是文件节点（文件或文件夹）
           const file = item as FileNode;
-          saveRecentFile(file);
+          saveRecentFile(file, projectId);
           // 确保回调函数存在并调用
           if (onSelectFile) {
             onSelectFile(file);
@@ -398,14 +402,14 @@ const MentionSelector = React.forwardRef<
         } else {
           // 是数据源（DataResource 没有 path 属性）
           const dataSource = item as DataResource;
-          saveRecentDataSource(dataSource);
+          saveRecentDataSource(dataSource, projectId);
           // 确保回调函数存在并调用
           if (onSelectDataSource) {
             onSelectDataSource(dataSource);
           }
         }
       },
-      [onSelectFile, onSelectDataSource],
+      [onSelectFile, onSelectDataSource, projectId],
     );
 
     /**
@@ -817,9 +821,12 @@ const MentionSelector = React.forwardRef<
     }, [selectedIndex, maxIndex, onSelectedIndexChange, containerRef]);
 
     /**
-     * 判断是否有真实的最近使用记录（从 localStorage 读取的）
+     * 判断是否有真实的最近使用记录（从 localStorage 读取的，且属于当前 projectId）
+     * 注意：这里只统计当前 projectId 的最近使用记录，不同项目使用不同的记录
      */
     const hasRealRecentItems = useMemo(() => {
+      // 只统计当前 projectId 的最近使用记录
+      // recentFiles 和 recentDataSources 已经通过 getRecentFiles(projectId) 和 getRecentDataSources(projectId) 过滤了
       return recentFiles.length > 0 || recentDataSources.length > 0;
     }, [recentFiles, recentDataSources]);
 
