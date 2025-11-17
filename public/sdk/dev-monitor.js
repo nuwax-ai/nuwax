@@ -12,7 +12,7 @@
 
   // 配置
   const config = {
-    version: '1.0.2',
+    version: '1.0.3',
     enabled: true,
     logLevel: 'error', // 只记录错误级别日志
     maxErrors: 10, // 减少存储量
@@ -585,73 +585,73 @@
    * 设置 MutationObserver 监听 DOM 变化
    * 检测错误 UI 的出现
    */
-  function setupMutationObserver() {
-    if (!config.mutationObserverEnabled || !window.MutationObserver) {
-      return;
-    }
+  // function setupMutationObserver() {
+  //   if (!config.mutationObserverEnabled || !window.MutationObserver) {
+  //     return;
+  //   }
 
-    try {
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (isErrorUI(node)) {
-              // 生成唯一标识符（基于元素的位置和内容）
-              const elementId =
-                node.id ||
-                node.className ||
-                (node.textContent ? node.textContent.substring(0, 50) : '') +
-                  Date.now();
+  //   try {
+  //     const observer = new MutationObserver((mutations) => {
+  //       mutations.forEach((mutation) => {
+  //         mutation.addedNodes.forEach((node) => {
+  //           if (isErrorUI(node)) {
+  //             // 生成唯一标识符（基于元素的位置和内容）
+  //             const elementId =
+  //               node.id ||
+  //               node.className ||
+  //               (node.textContent ? node.textContent.substring(0, 50) : '') +
+  //                 Date.now();
 
-              // 避免重复报告同一个错误元素
-              if (!monitorData.detectedErrorElements.has(elementId)) {
-                monitorData.detectedErrorElements.add(elementId);
+  //             // 避免重复报告同一个错误元素
+  //             if (!monitorData.detectedErrorElements.has(elementId)) {
+  //               monitorData.detectedErrorElements.add(elementId);
 
-                // 限制已检测元素的数量
-                if (monitorData.detectedErrorElements.size > 50) {
-                  const firstKey = monitorData.detectedErrorElements
-                    .values()
-                    .next().value;
-                  monitorData.detectedErrorElements.delete(firstKey);
-                }
+  //               // 限制已检测元素的数量
+  //               if (monitorData.detectedErrorElements.size > 50) {
+  //                 const firstKey = monitorData.detectedErrorElements
+  //                   .values()
+  //                   .next().value;
+  //                 monitorData.detectedErrorElements.delete(firstKey);
+  //               }
 
-                // 提取错误信息
-                const errorText =
-                  node.textContent || node.innerHTML || 'Error UI detected';
-                const elementHTML = node.outerHTML
-                  ? node.outerHTML.substring(0, 500)
-                  : '';
+  //               // 提取错误信息
+  //               const errorText =
+  //                 node.textContent || node.innerHTML || 'Error UI detected';
+  //               const elementHTML = node.outerHTML
+  //                 ? node.outerHTML.substring(0, 500)
+  //                 : '';
 
-                // ⭐ 去重检查：避免短时间内重复报告相同错误 UI
-                const errorKey = `error-ui-${elementId}`;
-                if (!shouldDeduplicateError(errorKey, 5000)) {
-                  logger.error('Error UI detected in DOM', {
-                    source: 'mutation-observer',
-                    elementId,
-                    errorText: errorText.substring(0, 200),
-                    elementHTML,
-                    tagName: node.tagName,
-                    className: node.className,
-                    id: node.id,
-                  });
-                }
-              }
-            }
-          });
-        });
-      });
+  //               // ⭐ 去重检查：避免短时间内重复报告相同错误 UI
+  //               const errorKey = `error-ui-${elementId}`;
+  //               if (!shouldDeduplicateError(errorKey, 5000)) {
+  //                 logger.error('Error UI detected in DOM', {
+  //                   source: 'mutation-observer',
+  //                   elementId,
+  //                   errorText: errorText.substring(0, 200),
+  //                   elementHTML,
+  //                   tagName: node.tagName,
+  //                   className: node.className,
+  //                   id: node.id,
+  //                 });
+  //               }
+  //             }
+  //           }
+  //         });
+  //       });
+  //     });
 
-      // 开始观察 DOM 变化
-      observer.observe(document.body || document.documentElement, {
-        childList: true, // 监听子节点的添加和删除
-        subtree: true, // 监听所有后代节点
-        attributes: false, // 不监听属性变化（减少性能开销）
-      });
+  //     // 开始观察 DOM 变化
+  //     observer.observe(document.body || document.documentElement, {
+  //       childList: true, // 监听子节点的添加和删除
+  //       subtree: true, // 监听所有后代节点
+  //       attributes: false, // 不监听属性变化（减少性能开销）
+  //     });
 
-      // MutationObserver 初始化成功（静默）
-    } catch (e) {
-      // MutationObserver 初始化失败（静默）
-    }
-  }
+  //     // MutationObserver 初始化成功（静默）
+  //   } catch (e) {
+  //     // MutationObserver 初始化失败（静默）
+  //   }
+  // }
 
   // 简化的错误监控
   function setupErrorMonitoring() {
@@ -723,14 +723,14 @@
     // setupConsoleInterception(); // 已在 init() 中调用
 
     // ⭐ 新增：MutationObserver（检测错误 UI）
-    if (config.mutationObserverEnabled) {
-      // 延迟初始化，确保 DOM 已加载
-      if (document.body) {
-        setupMutationObserver();
-      } else {
-        window.addEventListener('DOMContentLoaded', setupMutationObserver);
-      }
-    }
+    // if (config.mutationObserverEnabled) {
+    //   // 延迟初始化，确保 DOM 已加载
+    //   if (document.body) {
+    //     setupMutationObserver();
+    //   } else {
+    //     window.addEventListener('DOMContentLoaded', setupMutationObserver);
+    //   }
+    // }
   }
 
   // 移除复杂的性能监控和控制台拦截，专注于核心错误监控
