@@ -12,7 +12,7 @@
 
   // 配置
   const config = {
-    version: '1.0.3',
+    version: '1.0.4',
     enabled: true,
     logLevel: 'error', // 只记录错误级别日志
     maxErrors: 10, // 减少存储量
@@ -670,19 +670,19 @@
           });
         }
         // 资源加载错误
-        else if (event.target.tagName) {
-          const source = event.target.src || event.target.href || 'unknown';
-          // 只保存相对地址
-          const relativeSource = source.replace(
-            window.location.origin + window.location.pathname,
-            '',
-          );
-          logger.error(`Resource failed: ${relativeSource}`, {
-            tagName: event.target.tagName,
-            source: relativeSource,
-            errorSource: 'resource-load',
-          });
-        }
+        // else if (event.target.tagName) {
+        //   const source = event.target.src || event.target.href || 'unknown';
+        //   // 只保存相对地址
+        //   const relativeSource = source.replace(
+        //     window.location.origin + window.location.pathname,
+        //     '',
+        //   );
+        //   logger.error(`Resource failed: ${relativeSource}`, {
+        //     tagName: event.target.tagName,
+        //     source: relativeSource,
+        //     errorSource: 'resource-load',
+        //   });
+        // }
       },
       true,
     ); // 使用捕获阶段同时捕获全局错误和资源错误
