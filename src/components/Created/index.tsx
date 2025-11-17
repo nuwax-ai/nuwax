@@ -138,6 +138,10 @@ const Created: React.FC<CreatedProp> = ({
   const agentItem = [
     {
       key: 'all',
+      label: '全部',
+    },
+    {
+      key: 'library',
       label: '当前空间智能体',
     },
   ];
