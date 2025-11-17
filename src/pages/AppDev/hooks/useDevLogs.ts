@@ -6,6 +6,7 @@
 import { getDevLogs } from '@/services/appDev';
 import type { DevLogEntry } from '@/types/interfaces/appDev';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRequest } from 'umi';
 import {
   filterErrorLogs,
   generateErrorFingerprint,
@@ -71,137 +72,136 @@ export const useDevLogs = (
 ): UseDevLogsReturn => {
   const {
     pollInterval = 5000, // 默认5秒轮询
-    maxLogLines = 1000,
     enabled = true,
   } = options;
 
   // 状态管理
   const [logs, setLogs] = useState<DevLogEntry[]>([]);
   const [hasErrorInLatestBlock, setHasErrorInLatestBlock] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPolling, setIsPolling] = useState(false);
   const [lastLine, setLastLine] = useState(0);
+  const [isPolling, setIsPolling] = useState(false); // 轮询状态
 
   // 引用管理
   const sentErrorsRef = useRef<Set<string>>(new Set());
   const previousLogsRef = useRef<DevLogEntry[]>([]);
-  const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
-  const consecutiveErrorsRef = useRef(0); // 连续错误计数
-  const maxConsecutiveErrors = 3; // 最大连续错误次数
-  const retryDelayRef = useRef(5000); // 重试延迟，初始5秒
+  const lastLineRef = useRef(0); // 使用 ref 存储 lastLine，供轮询函数使用
+
+  // 使用 ref 存储 projectId，避免依赖项变化导致 useRequest 重新创建
+  const projectIdRef = useRef(projectId);
+  useEffect(() => {
+    projectIdRef.current = projectId;
+  }, [projectId]);
 
   /**
    * 解析和添加新日志
+   * 使用稳定的回调，避免依赖项变化
    */
-  const addNewLogs = useCallback(
-    (newLogs: DevLogEntry[]) => {
-      if (!newLogs || !isMountedRef.current || newLogs.length === 0) return;
+  const addNewLogs = useCallback((newLogs: DevLogEntry[]) => {
+    if (!newLogs || !isMountedRef.current || newLogs.length === 0) return;
 
-      setLogs((prevLogs) => {
-        if (prevLogs[0]?.timestamp !== newLogs[0]?.timestamp) {
-          return newLogs;
-        }
+    setLogs((prevLogs) => {
+      if (prevLogs[0]?.timestamp !== newLogs[0]?.timestamp) {
+        return newLogs;
+      }
 
-        if (prevLogs.length === newLogs.length) {
-          return prevLogs;
-        }
+      if (prevLogs.length === newLogs.length) {
+        return prevLogs;
+      }
 
-        const updatedLogs = [
-          ...prevLogs,
-          ...newLogs.slice(prevLogs.length, newLogs.length),
-        ];
-        let resultLogs = updatedLogs;
-        // 限制日志数量，保留最新的日志
-        // if (updatedLogs.length > maxLogLines) {
-        //   resultLogs = updatedLogs.slice(-maxLogLines);
-        // }
-        const groups = groupLogsByTimestamp(resultLogs);
-        // 检查最新日志块是否包含错误 仅检查最后一组
-        const newErrorLogs = filterErrorLogs(groups.at(-1)?.logs || []);
-        setHasErrorInLatestBlock(newErrorLogs.length > 0);
-        return resultLogs;
-      });
+      const updatedLogs = [
+        ...prevLogs,
+        ...newLogs.slice(prevLogs.length, newLogs.length),
+      ];
+      let resultLogs = updatedLogs;
+      // 限制日志数量，保留最新的日志
+      // if (updatedLogs.length > maxLogLines) {
+      //   resultLogs = updatedLogs.slice(-maxLogLines);
+      // }
+      const groups = groupLogsByTimestamp(resultLogs);
+      // 检查最新日志块是否包含错误 仅检查最后一组
+      const newErrorLogs = filterErrorLogs(groups.at(-1)?.logs || []);
+      setHasErrorInLatestBlock(newErrorLogs.length > 0);
+      return resultLogs;
+    });
 
-      // 更新最后行号
-      const maxLine = Math.max(...newLogs.map((log) => log.line));
-      setLastLine(maxLine);
+    // 更新最后行号
+    const maxLine = Math.max(...newLogs.map((log) => log.line));
+    setLastLine(maxLine);
+    lastLineRef.current = maxLine;
+  }, []); // 空依赖数组，避免依赖项变化
+
+  /**
+   * 使用 umi useRequest 实现 get-dev-log 轮询
+   * 与 useEventPolling.ts 的 batch 接入方案一致
+   */
+  const devLogsPolling = useRequest(
+    () => {
+      const currentProjectId = projectIdRef.current;
+      if (!currentProjectId || !isMountedRef.current) {
+        return Promise.resolve({
+          success: false,
+          data: { logs: [] },
+        });
+      }
+      // 使用 ref 中的 lastLine，从第1行开始获取
+      return getDevLogs(currentProjectId, 1);
     },
-    [maxLogLines],
+    {
+      manual: true, // 手动控制，不自动执行
+      loading: false, // 不显示 loading 状态
+      pollingInterval: pollInterval, // 轮询间隔
+      pollingWhenHidden: false, // 在屏幕不可见时，暂时暂停定时任务
+      pollingErrorRetryCount: -1, // 轮询错误重试次数，-1 表示无限次
+      throwOnError: false, // 不抛出错误，在 onError 中处理
+      onSuccess: (data: any, params: any, response: any) => {
+        // useRequest 的 onSuccess 回调参数：
+        // - data: response.data (即 GetDevLogResponse)
+        // - params: 请求参数
+        // - response: 完整的响应对象 (RequestResponse<GetDevLogResponse>)
+        // 需要判断传入的是完整的 response 还是 data
+        const isFullResponse =
+          response?.code !== undefined || response?.success !== undefined;
+        const fullResponse = isFullResponse
+          ? response
+          : { data, code: '0000', success: true };
+        const responseData = isFullResponse ? response?.data : data;
+
+        // 兼容不同的返回数据格式：code === '0000' 或 success === true
+        const isSuccess =
+          fullResponse?.code === '0000' || fullResponse?.success === true;
+        if (isSuccess && responseData?.logs?.length > 0) {
+          addNewLogs(responseData.logs);
+        }
+      },
+      onError: () => {
+        // 错误处理，不显示错误提示（已在 common.ts 中配置为静默请求）
+        console.error('获取日志失败');
+      },
+    },
   );
+
+  // 使用 ref 存储 devLogsPolling，避免依赖项变化
+  const devLogsPollingRef = useRef(devLogsPolling);
+  devLogsPollingRef.current = devLogsPolling;
 
   /**
    * 停止轮询
    */
   const stopPolling = useCallback(() => {
-    if (pollTimerRef.current) {
-      clearInterval(pollTimerRef.current);
-      pollTimerRef.current = null;
-    }
+    // 取消 umi useRequest 的轮询
+    devLogsPollingRef.current.cancel();
     setIsPolling(false);
-  }, []);
-
-  /**
-   * 轮询获取新日志
-   */
-  const pollLogs = useCallback(async () => {
-    if (!isMountedRef.current || !projectId) {
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const response = await getDevLogs(projectId, 1);
-
-      if (response.success && response.data.logs.length > 0) {
-        addNewLogs(response.data.logs);
-        // 成功时重置错误计数
-        consecutiveErrorsRef.current = 0;
-        retryDelayRef.current = 5000; // 重置重试延迟
-      } else {
-        // 即使没有新日志，也算作成功
-        consecutiveErrorsRef.current = 0;
-      }
-    } catch (error) {
-      consecutiveErrorsRef.current += 1;
-      console.error('获取日志失败:', error);
-
-      // 如果连续错误次数超过阈值，停止轮询并安排重试
-      if (consecutiveErrorsRef.current >= maxConsecutiveErrors) {
-        // 停止当前轮询
-        stopPolling();
-
-        // 安排重试 - 使用 ref 来避免循环依赖
-        setTimeout(() => {
-          if (isMountedRef.current && projectId) {
-            // 重新设置定时器
-            pollTimerRef.current = setInterval(pollLogs, pollInterval);
-            setIsPolling(true);
-          }
-        }, retryDelayRef.current);
-
-        // 增加重试延迟（最大30秒）
-        retryDelayRef.current = Math.min(retryDelayRef.current * 1.5, 30000);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [projectId, lastLine, addNewLogs, stopPolling, pollInterval]);
+  }, []); // 空依赖数组，使用 ref 访问最新值
 
   /**
    * 开始轮询
    */
   const startPolling = useCallback(() => {
-    if (pollTimerRef.current) {
-      clearInterval(pollTimerRef.current);
-    }
-
+    // 启动 umi useRequest 轮询
+    devLogsPollingRef.current.run();
     setIsPolling(true);
-    pollTimerRef.current = setInterval(pollLogs, pollInterval);
-
-    // 立即执行一次
-    pollLogs();
-  }, [pollLogs, pollInterval]);
+  }, []); // 空依赖数组，使用 ref 访问最新值
 
   /**
    * 清空日志
@@ -224,8 +224,10 @@ export const useDevLogs = (
   const refreshLogs = useCallback(async () => {
     clearLogs();
     setLastLine(0); // 设置为0，这样下次请求时从第1行开始
-    await pollLogs();
-  }, [clearLogs, pollLogs]);
+    lastLineRef.current = 0;
+    // 手动触发一次轮询
+    devLogsPollingRef.current.run();
+  }, [clearLogs]);
 
   /**
    * 重置日志起始行号
@@ -294,8 +296,8 @@ export const useDevLogs = (
   return {
     logs,
     hasErrorInLatestBlock,
-    isLoading,
-    isPolling,
+    isLoading: devLogsPolling.loading, // 使用 useRequest 的 loading 状态
+    isPolling, // 使用本地状态管理轮询状态
     lastLine,
     sentErrors: sentErrorsRef.current,
     clearLogs,
