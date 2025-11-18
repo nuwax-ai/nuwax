@@ -143,31 +143,21 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       const sessionId = lastMessage?.sessionId;
 
       // console.log('aiChatSessionId', aiChatSessionId, sessionId);
+      // 如果Ai Chat会话ID存在，并且会话ID不存在，则取消Ai Chat Agent任务
+      if (aiChatSessionId && !sessionId) {
+        await cancelAiChatAgentTask(projectId, aiChatSessionId);
+      }
+      // 取消Agent任务
+      const response = await cancelAgentTask(projectId);
 
-      // 只在有活动的Agent任务时才尝试取消
-      if (chat.isChatLoading || aiChatSessionId || (lastMessage && sessionId)) {
-        // 如果Ai Chat会话ID存在，并且会话ID不存在，则取消Ai Chat Agent任务
-        if (aiChatSessionId && !sessionId) {
-          await cancelAiChatAgentTask(projectId, aiChatSessionId);
-        }
-
-        // 取消Agent任务 - 只在有活动任务时调用
-        const response = await cancelAgentTask(projectId);
-
-        if (response && response.success) {
-          message.success('Agent 任务已取消');
-          // 调用原有的取消聊天功能
-          chat.cancelChat();
-        } else {
-          message.error(
-            `取消 Agent 任务失败: ${response?.message || '未知错误'}`,
-          );
-          // 即使 API 调用失败，也调用原有的取消功能
-          chat.cancelChat();
-        }
-      } else {
-        // 没有活动任务，直接调用原有的取消功能
+      if (response && response.success) {
+        message.success('Agent 任务已取消');
+        // 调用原有的取消聊天功能
         chat.cancelChat();
+      } else {
+        message.error(
+          `取消 Agent 任务失败: ${response?.message || '未知错误'}`,
+        );
       }
     } catch (error) {
       message.error('取消 Agent 任务失败');
