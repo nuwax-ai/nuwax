@@ -989,6 +989,153 @@
         },
       });
     }
+
+    /**
+     * 添加「回到首页」悬浮图标
+     * - 默认固定在页面左上角
+     * - 短按/单击：回到首页
+     * - 长按后可拖动到任意位置
+     */
+    function addBackToHomeButton() {
+      // 如果当前 URL 中不包含 _ticket 参数，则不显示按钮
+      try {
+        const search = window.location && window.location.search;
+        if (!search || search.indexOf('_ticket=') === -1) {
+          return;
+        }
+      } catch (e) {
+        // 获取 URL 异常时，保险起见也不渲染按钮，避免影响页面
+        return;
+      }
+
+      const icon = document.createElement('div');
+      icon.innerHTML = '首页';
+
+      // 基础样式：左上角悬浮小圆角块
+      Object.assign(icon.style, {
+        position: 'fixed',
+        top: '16px',
+        left: '16px',
+        width: '44px',
+        height: '44px',
+        lineHeight: '44px',
+        textAlign: 'center',
+        borderRadius: '22px',
+        background: 'rgba(0, 0, 0, 0.65)',
+        color: '#fff',
+        fontSize: '12px',
+        zIndex: '99999',
+        cursor: 'pointer',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
+      });
+
+      let longPressTimer = null; // 长按计时器
+      let isDragging = false; // 是否处于拖动状态
+      let startX = 0;
+      let startY = 0;
+      let startLeft = 0;
+      let startTop = 0;
+
+      const LONG_PRESS_DURATION = 300; // 长按时间阈值（毫秒）
+
+      /**
+       * 获取当前事件的坐标（兼容鼠标和触摸）
+       */
+      function getPoint(event) {
+        if (event.touches && event.touches.length > 0) {
+          return {
+            x: event.touches[0].clientX,
+            y: event.touches[0].clientY,
+          };
+        }
+        return {
+          x: event.clientX,
+          y: event.clientY,
+        };
+      }
+
+      /**
+       * 开始按下：启动长按计时
+       */
+      function handleDown(event) {
+        try {
+          event.preventDefault();
+        } catch (e) {
+          // 某些环境下可能不允许 preventDefault，忽略即可
+        }
+
+        const point = getPoint(event);
+        startX = point.x;
+        startY = point.y;
+        startLeft = icon.offsetLeft;
+        startTop = icon.offsetTop;
+        isDragging = false;
+
+        // 开始计时，超过阈值则进入拖动模式
+        longPressTimer = setTimeout(() => {
+          isDragging = true;
+          icon.style.transition = 'none';
+        }, LONG_PRESS_DURATION);
+      }
+
+      /**
+       * 移动：只有在长按后进入拖动模式时才移动
+       */
+      function handleMove(event) {
+        if (!isDragging) return;
+
+        const point = getPoint(event);
+        const deltaX = point.x - startX;
+        const deltaY = point.y - startY;
+
+        let nextLeft = startLeft + deltaX;
+        let nextTop = startTop + deltaY;
+
+        // 防止拖出可视区域
+        const maxLeft = window.innerWidth - icon.offsetWidth;
+        const maxTop = window.innerHeight - icon.offsetHeight;
+
+        nextLeft = Math.max(0, Math.min(maxLeft, nextLeft));
+        nextTop = Math.max(0, Math.min(maxTop, nextTop));
+
+        icon.style.left = nextLeft + 'px';
+        icon.style.top = nextTop + 'px';
+      }
+
+      /**
+       * 松开：如果没有进入拖动状态，则认为是点击 → 回到首页
+       */
+      function handleUp() {
+        clearTimeout(longPressTimer);
+
+        if (!isDragging) {
+          // 短按 / 单击：回到首页
+          try {
+            window.wx.miniProgram.reLaunch({ url: '/pages/home/home' });
+          } catch (e) {
+            // 静默失败，避免影响页面
+          }
+        }
+
+        isDragging = false;
+      }
+
+      // 鼠标事件
+      icon.addEventListener('mousedown', handleDown);
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleUp);
+
+      // 触摸事件（移动端）
+      icon.addEventListener('touchstart', handleDown, { passive: false });
+      window.addEventListener('touchmove', handleMove, { passive: false });
+      window.addEventListener('touchend', handleUp);
+      window.addEventListener('touchcancel', handleUp);
+
+      document.body.appendChild(icon);
+    }
+
     /**
      * 注入微信 JS-SDK
      */
@@ -1000,6 +1147,9 @@
 
       // 脚本加载成功回调
       script.onload = function () {
+        // 添加回到首页按钮
+        addBackToHomeButton();
+
         // 等待 wx 对象可用
         setTimeout(() => {
           let timer = null;
