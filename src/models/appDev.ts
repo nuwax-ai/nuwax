@@ -68,7 +68,7 @@ export default () => {
    * 设置活动文件
    */
   const setActiveFile = (fileId: string) => {
-    console.log('📁 [AppDev] Setting active file:', fileId);
+    // console.log('📁 [AppDev] Setting active file:', fileId);
 
     const findFile = (files: FileNode[], targetId: string): FileNode | null => {
       for (const file of files) {
@@ -83,11 +83,11 @@ export default () => {
 
     const file = findFile(workspace.files, fileId);
     if (file) {
-      console.log('✅ [AppDev] File found:', file.name);
+      // console.log('✅ [AppDev] File found:', file.name);
       setCurrentFile(file);
       updateWorkspace({ activeFile: fileId });
     } else {
-      // console.error('❌ [AppDev] File not found:', fileId);
+      // console.error('❌ [AppDev] File not found:', fileId); // 已被注释的调试日志
     }
   };
 
@@ -95,12 +95,12 @@ export default () => {
    * 更新文件内容
    */
   const updateFileContent = (fileId: string, content: string) => {
-    console.log('📝 [AppDev] Updating file content:', fileId);
+    // console.log('📝 [AppDev] Updating file content:', fileId);
 
     const updateFileInTree = (files: FileNode[]): FileNode[] => {
       return files.map((file) => {
         if (file.id === fileId) {
-          console.log('✅ [AppDev] File found for update:', file.name);
+          // console.log('✅ [AppDev] File found for update:', file.name);
           return { ...file, content, lastModified: Date.now() };
         }
         if (file.children) {
@@ -114,7 +114,7 @@ export default () => {
       ...prev,
       files: updateFileInTree(prev.files),
     }));
-    console.log('✅ [AppDev] File content updated successfully');
+    // console.log('✅ [AppDev] File content updated successfully');
   };
 
   /**

@@ -287,7 +287,7 @@ export const sendChatMessage = async (
     // user_id: 'app-dev-user',
   };
 
-  console.log('📤 [Service] 发送聊天请求:', requestData);
+  // console.log('📤 [Service] 发送聊天请求:', requestData);
 
   // 使用新的 /chat 接口
   return request('/api/custom-page/ai-chat', {
@@ -454,18 +454,18 @@ export const saveConversation = async (params: {
   topic: string;
   summary?: string;
 }): Promise<any> => {
-  console.log('📤 [API] 调用保存会话接口:', {
-    url: '/api/custom-page/save-conversation',
-    method: 'POST',
-    params,
-  });
+  // console.log('📤 [API] 调用保存会话接口:', {
+  //   url: '/api/custom-page/save-conversation',
+  //   method: 'POST',
+  //   params,
+  // });
 
   const result = await request('/api/custom-page/save-conversation', {
     method: 'POST',
     data: params,
   });
 
-  console.log('📥 [API] 保存会话接口响应:', result);
+  // console.log('📥 [API] 保存会话接口响应:', result);
   return result;
 };
 
