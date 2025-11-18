@@ -12,7 +12,8 @@
 
   &:hover {
     .mask {
-      visibility: visible;
+      opacity: 1;
+      z-index: 1;
     }
   }
 
@@ -25,8 +26,9 @@
     background-color: rgba(22, 22, 26, 30%);
     color: @WHITE;
     font-size: 20px;
-    transition: visibility 0.15s;
-    visibility: hidden;
+    transition: opacity 0.3s, z-index 0.2s;
+    z-index: -1;
+    opacity: 0;
   }
 
   .image {

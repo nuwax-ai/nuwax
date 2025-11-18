@@ -9,7 +9,8 @@ const cx = classNames.bind(styles);
 
 // 模板组件属性
 export interface PageCardProps {
-  icon: string;
+  // 封面图片
+  coverImg: string;
   name: string;
   avatar: string;
   userName: string;
@@ -28,7 +29,7 @@ export interface PageCardProps {
  * 应用页面卡片
  */
 const PageCard: React.FC<PageCardProps> = ({
-  icon,
+  coverImg,
   name,
   avatar,
   userName,
@@ -74,10 +75,10 @@ const PageCard: React.FC<PageCardProps> = ({
       <div
         className={cx(styles['image-wrapper'])}
         style={{
-          backgroundImage: `url(${icon})`,
+          backgroundImage: `url(${coverImg})`,
         }}
       >
-        {!icon && (
+        {!coverImg && (
           <div
             className={cx(
               'flex',

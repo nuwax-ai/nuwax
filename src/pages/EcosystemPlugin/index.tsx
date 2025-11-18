@@ -5,7 +5,12 @@ import EcosystemShareModal, {
   EcosystemShareModalData,
 } from '@/components/EcosystemShareModal';
 import SelectComponent from '@/components/SelectComponent';
-import { TabItems, TabTypeEnum } from '@/constants/ecosystem.constants';
+import {
+  ECO_TEMPLATE_SHARE_STATUS_OPTIONS,
+  EcoMarketActionList,
+  TabItems,
+  TabTypeEnum,
+} from '@/constants/ecosystem.constants';
 import {
   createClientConfigDraft,
   disableClientConfig,
@@ -23,7 +28,7 @@ import {
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
-import { CreatedNodeItem } from '@/types/interfaces/common';
+import { CreatedNodeItem, CustomPopoverItem } from '@/types/interfaces/common';
 import type {
   ClientConfigSaveReqDTO,
   ClientConfigUpdateDraftReqDTO,
@@ -47,10 +52,13 @@ const cx = classNames.bind(styles);
 const { Search } = Input;
 const PAGE_SIZE = 24;
 
+import CustomPopover from '@/components/CustomPopover';
 import EcosystemCard from '@/components/EcosystemCard';
 import NoMoreDivider from '@/components/NoMoreDivider';
 import Loading from '@/components/custom/Loading';
 import { CREATED_TABS } from '@/constants/common.constants';
+import { ICON_MORE } from '@/constants/images.constants';
+import useEcoMarket from '@/hooks/useEcoMarket';
 import { PlusOutlined } from '@ant-design/icons';
 const defaultTabs = CREATED_TABS.filter((item) =>
   [AgentComponentTypeEnum.Plugin].includes(item.key),
@@ -103,6 +111,8 @@ export default function EcosystemPlugin() {
     current: 1,
     pageSize: PAGE_SIZE,
   });
+
+  const { onDeleteShare } = useEcoMarket();
 
   /**
    * 获取插件列表数据
@@ -544,7 +554,6 @@ export default function EcosystemPlugin() {
     } catch (error) {
       return false;
     }
-    console.log('result', result);
     if (result) {
       message.success('插件已撤销发布');
       refreshPluginList();
@@ -561,6 +570,16 @@ export default function EcosystemPlugin() {
     setEditingPlugin(null);
     setShareModalData(null);
     setAddComponents([]);
+  };
+
+  // 我的分享 ~ 点击更多操作
+  const handleClickMore = (_: CustomPopoverItem, config: ClientConfigVo) => {
+    const { uid, name } = config;
+    if (uid) {
+      onDeleteShare(uid, name || '', () => {
+        refreshPluginList();
+      });
+    }
   };
 
   return (
@@ -587,24 +606,7 @@ export default function EcosystemPlugin() {
             />
             {activeTab === TabTypeEnum.SHARED ? (
               <Select
-                options={[
-                  {
-                    label: '全部分类',
-                    value: -1,
-                  },
-                  {
-                    label: '已发布',
-                    value: 3,
-                  },
-                  {
-                    label: '审核中',
-                    value: 2,
-                  },
-                  {
-                    label: '已下线',
-                    value: 4,
-                  },
-                ]}
+                options={ECO_TEMPLATE_SHARE_STATUS_OPTIONS}
                 defaultValue={-1}
                 onChange={(value) => handleShareStatusChange(value)}
                 className={cx(styles.select)}
@@ -657,13 +659,45 @@ export default function EcosystemPlugin() {
           ) : pluginData?.records?.length ? (
             <>
               <div className={cx(styles['list-section'])}>
-                {pluginData.records?.map((config) => (
-                  <EcosystemCard
-                    key={config?.uid}
-                    {...convertToPluginCard(config)}
-                    onClick={async () => await handleCardClick(config)}
-                  />
-                ))}
+                {pluginData.records?.map((config) => {
+                  // 分享状态
+                  const shareStatus =
+                    activeTab === TabTypeEnum.SHARED
+                      ? config.shareStatus
+                      : undefined;
+
+                  const isPublished =
+                    config.shareStatus === EcosystemShareStatusEnum.PUBLISHED;
+                  const isReviewing =
+                    config.shareStatus === EcosystemShareStatusEnum.REVIEWING;
+                  return (
+                    <EcosystemCard
+                      key={config?.uid}
+                      {...convertToPluginCard(config)}
+                      onClick={async () => await handleCardClick(config)}
+                      footer={
+                        <footer
+                          className={cx('flex', 'items-center', 'content-end')}
+                        >
+                          {/* 我的分享弹出一样逻辑，保持一致，是否有删除功能 */}
+                          {shareStatus && !(isPublished || isReviewing) && (
+                            // 更多操作
+                            <CustomPopover
+                              list={EcoMarketActionList}
+                              onClick={(item) => handleClickMore(item, config)}
+                            >
+                              <Button
+                                size="small"
+                                type="text"
+                                icon={<ICON_MORE />}
+                              ></Button>
+                            </CustomPopover>
+                          )}
+                        </footer>
+                      }
+                    />
+                  );
+                })}
               </div>
               {!(pagination.current < (pluginData.pages || 0)) && (
                 <NoMoreDivider />

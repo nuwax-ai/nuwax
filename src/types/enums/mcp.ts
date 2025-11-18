@@ -3,6 +3,7 @@ export enum McpInstallTypeEnum {
   NPX = 'NPX',
   UVX = 'UVX',
   SSE = 'SSE',
+  STREAMABLE_HTTP = 'STREAMABLE_HTTP',
   COMPONENT = 'COMPONENT',
 }
 

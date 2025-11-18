@@ -130,6 +130,33 @@ export default defineConfig({
       },
     ]);
 
+    // 复制并压缩 dev-monitor.js
+    config.plugin('copy-dev-monitor').use(CopyWebpackPlugin, [
+      {
+        patterns: [
+          {
+            from: path.resolve(__dirname, '../public/sdk/dev-monitor.js'),
+            to: 'sdk/dev-monitor.js',
+            force: true,
+            // 使用 transform 在复制时进行压缩
+            transform: async (content: Buffer) => {
+              const code = content.toString('utf-8');
+              // 动态导入 esbuild 进行压缩
+              const { transform } = await import('esbuild');
+              const result = await transform(code, {
+                minify: true,
+                target: 'es2020',
+                format: 'iife',
+                // 保持代码为单行，移除注释和空白
+                legalComments: 'none',
+              });
+              return Buffer.from(result.code, 'utf-8');
+            },
+          },
+        ],
+      },
+    ]);
+
     config.plugin('monaco').use(MonacoWebpackPlugin, [
       {
         languages: [

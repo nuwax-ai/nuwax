@@ -12,7 +12,7 @@
 
   // 配置
   const config = {
-    version: '1.0.1',
+    version: '1.0.4',
     enabled: true,
     logLevel: 'error', // 只记录错误级别日志
     maxErrors: 10, // 减少存储量
@@ -221,6 +221,54 @@
     return false; // 不需要去重
   }
 
+  // ⭐ 错误发送防抖配置
+  let errorSendTimer = null; // 错误发送定时器
+  let latestErrorData = null; // 最新的错误数据（用于防抖）
+  const ERROR_SEND_DELAY = 5000; // 错误发送延迟时间（5秒）
+
+  /**
+   * 发送错误消息到父窗口（延迟执行的实际发送逻辑）
+   * @param {object} errorData - 错误数据
+   */
+  function sendErrorToParent(errorData) {
+    // 检查是否在 iframe 中运行
+    const isInIframe = window.self !== window.top;
+
+    if (isInIframe && window.parent) {
+      try {
+        // 检查白屏状态
+        const { documentString, isWhiteScreen } = checkWhiteScreen();
+
+        const errorMessage = {
+          type: 'dev-monitor-error',
+          error: errorData,
+          errorCount: monitorData.errors.length,
+          url: monitorData.basicInfo.url,
+          timestamp: Date.now(),
+          isWhiteScreen,
+          ...(documentString && {
+            documentString,
+          }),
+        };
+
+        // 发送错误消息到父窗口
+        window.parent.postMessage(errorMessage, '*');
+
+        // 关键日志：发送成功
+        _originalConsoleError.call(
+          console,
+          `[DevMonitor] ✓ 错误已发送 | ${errorData.message.substring(0, 80)}`,
+        );
+      } catch (e) {
+        // 关键日志：发送失败
+        _originalConsoleError.call(
+          console,
+          `[DevMonitor] ✗ 发送失败 | ${e.message}`,
+        );
+      }
+    }
+  }
+
   // 简化的日志函数 - 只记录错误
   const logger = {
     error: (message, details = null) => {
@@ -229,18 +277,9 @@
         return;
       }
 
-      // ⭐ 关键修复：使用原始 console.error，避免被拦截器捕获形成循环
-      // 只在开发环境或需要调试时输出错误日志
-      // _originalConsoleError.call(
-      //   console,
-      //   '[Dev-Monitor ERROR]',
-      //   message,
-      //   details || '',
-      // );
-
       const errorData = {
         message: typeof message === 'string' ? message : message.toString(),
-        details: details ? JSON.stringify(details).substring(0, 500) : null, // 限制详细信息长度
+        details: details ? JSON.stringify(details).substring(0, 500) : null,
         timestamp: Date.now(),
       };
 
@@ -251,70 +290,30 @@
         monitorData.errors.shift();
       }
 
-      // ⭐ 立即发送错误消息到父窗口（实时通知）
-      // 检查是否在 iframe 中运行（使用多种方式检测）
-      const isInIframe = window.self !== window.top;
-      const hasParent = !!window.parent;
-      const parentEqualsWindow = window.parent === window;
-      const parentEqualsSelf = window.parent === window.self;
-      const parentEqualsTop = window.parent === window.top;
-
-      // ⭐ 注释掉调试日志以减少日志量（可选：需要调试时可以取消注释）
-      // console.log('[DevMonitor] 🔍 Checking parent window:', {
-      //   isInIframe: isInIframe,
-      //   hasParent: hasParent,
-      //   parentEqualsWindow: parentEqualsWindow,
-      //   parentEqualsSelf: parentEqualsSelf,
-      //   parentEqualsTop: parentEqualsTop,
-      //   location: window.location.href,
-      //   parentLocation: window.parent
-      //     ? (() => {
-      //         try {
-      //           return window.parent.location?.href || 'N/A (cross-origin)';
-      //         } catch (e) {
-      //           return 'N/A (cross-origin - access denied)';
-      //         }
-      //       })()
-      //     : 'N/A',
-      //   topLocation: window.top
-      //     ? (() => {
-      //         try {
-      //           return window.top.location?.href || 'N/A (cross-origin)';
-      //         } catch (e) {
-      //           return 'N/A (cross-origin - access denied)';
-      //         }
-      //       })()
-      //     : 'N/A',
-      // });
-
-      // ⭐ 关键修复：使用 isInIframe 作为主要判断条件
-      // 如果在 iframe 中（window.self !== window.top），就尝试发送消息
-      if (isInIframe && window.parent) {
-        try {
-          // ⭐ 检查白屏状态
-          const { documentString, isWhiteScreen } = checkWhiteScreen();
-
-          const errorMessage = {
-            type: 'dev-monitor-error', // 实时错误消息类型
-            error: errorData,
-            errorCount: monitorData.errors.length,
-            url: monitorData.basicInfo.url,
-            timestamp: Date.now(),
-            isWhiteScreen, // 白屏检查结果
-            ...(documentString && {
-              documentString,
-            }), // 仅在白屏时包含 document 字符串
-          };
-          // ⭐ 发送错误消息到父窗口
-          window.parent.postMessage(errorMessage, '*');
-        } catch (e) {
-          // 发送错误消息失败（静默处理，避免日志污染）
-          // _originalConsoleError.call(console, '[DevMonitor] ❌ Failed to send error message:', e);
-        }
+      // 延迟发送错误消息到父窗口（防抖处理）
+      const isUpdate = errorSendTimer !== null;
+      if (errorSendTimer) {
+        clearTimeout(errorSendTimer);
       }
-      // else {
-      //   // 不在 iframe 中，无法发送消息（静默处理）
-      // }
+
+      latestErrorData = errorData;
+
+      // 关键日志：接收错误
+      _originalConsoleError.call(
+        console,
+        `[DevMonitor] ${isUpdate ? '⟳' : '●'} 接收错误，${
+          ERROR_SEND_DELAY / 1000
+        }s后发送 | ${errorData.message.substring(0, 80)}`,
+      );
+
+      // 设置新的定时器，5秒后发送最新的错误
+      errorSendTimer = setTimeout(() => {
+        if (latestErrorData) {
+          sendErrorToParent(latestErrorData);
+          latestErrorData = null;
+        }
+        errorSendTimer = null;
+      }, ERROR_SEND_DELAY);
     },
   };
 
@@ -586,73 +585,73 @@
    * 设置 MutationObserver 监听 DOM 变化
    * 检测错误 UI 的出现
    */
-  function setupMutationObserver() {
-    if (!config.mutationObserverEnabled || !window.MutationObserver) {
-      return;
-    }
+  // function setupMutationObserver() {
+  //   if (!config.mutationObserverEnabled || !window.MutationObserver) {
+  //     return;
+  //   }
 
-    try {
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (isErrorUI(node)) {
-              // 生成唯一标识符（基于元素的位置和内容）
-              const elementId =
-                node.id ||
-                node.className ||
-                (node.textContent ? node.textContent.substring(0, 50) : '') +
-                  Date.now();
+  //   try {
+  //     const observer = new MutationObserver((mutations) => {
+  //       mutations.forEach((mutation) => {
+  //         mutation.addedNodes.forEach((node) => {
+  //           if (isErrorUI(node)) {
+  //             // 生成唯一标识符（基于元素的位置和内容）
+  //             const elementId =
+  //               node.id ||
+  //               node.className ||
+  //               (node.textContent ? node.textContent.substring(0, 50) : '') +
+  //                 Date.now();
 
-              // 避免重复报告同一个错误元素
-              if (!monitorData.detectedErrorElements.has(elementId)) {
-                monitorData.detectedErrorElements.add(elementId);
+  //             // 避免重复报告同一个错误元素
+  //             if (!monitorData.detectedErrorElements.has(elementId)) {
+  //               monitorData.detectedErrorElements.add(elementId);
 
-                // 限制已检测元素的数量
-                if (monitorData.detectedErrorElements.size > 50) {
-                  const firstKey = monitorData.detectedErrorElements
-                    .values()
-                    .next().value;
-                  monitorData.detectedErrorElements.delete(firstKey);
-                }
+  //               // 限制已检测元素的数量
+  //               if (monitorData.detectedErrorElements.size > 50) {
+  //                 const firstKey = monitorData.detectedErrorElements
+  //                   .values()
+  //                   .next().value;
+  //                 monitorData.detectedErrorElements.delete(firstKey);
+  //               }
 
-                // 提取错误信息
-                const errorText =
-                  node.textContent || node.innerHTML || 'Error UI detected';
-                const elementHTML = node.outerHTML
-                  ? node.outerHTML.substring(0, 500)
-                  : '';
+  //               // 提取错误信息
+  //               const errorText =
+  //                 node.textContent || node.innerHTML || 'Error UI detected';
+  //               const elementHTML = node.outerHTML
+  //                 ? node.outerHTML.substring(0, 500)
+  //                 : '';
 
-                // ⭐ 去重检查：避免短时间内重复报告相同错误 UI
-                const errorKey = `error-ui-${elementId}`;
-                if (!shouldDeduplicateError(errorKey, 5000)) {
-                  logger.error('Error UI detected in DOM', {
-                    source: 'mutation-observer',
-                    elementId,
-                    errorText: errorText.substring(0, 200),
-                    elementHTML,
-                    tagName: node.tagName,
-                    className: node.className,
-                    id: node.id,
-                  });
-                }
-              }
-            }
-          });
-        });
-      });
+  //               // ⭐ 去重检查：避免短时间内重复报告相同错误 UI
+  //               const errorKey = `error-ui-${elementId}`;
+  //               if (!shouldDeduplicateError(errorKey, 5000)) {
+  //                 logger.error('Error UI detected in DOM', {
+  //                   source: 'mutation-observer',
+  //                   elementId,
+  //                   errorText: errorText.substring(0, 200),
+  //                   elementHTML,
+  //                   tagName: node.tagName,
+  //                   className: node.className,
+  //                   id: node.id,
+  //                 });
+  //               }
+  //             }
+  //           }
+  //         });
+  //       });
+  //     });
 
-      // 开始观察 DOM 变化
-      observer.observe(document.body || document.documentElement, {
-        childList: true, // 监听子节点的添加和删除
-        subtree: true, // 监听所有后代节点
-        attributes: false, // 不监听属性变化（减少性能开销）
-      });
+  //     // 开始观察 DOM 变化
+  //     observer.observe(document.body || document.documentElement, {
+  //       childList: true, // 监听子节点的添加和删除
+  //       subtree: true, // 监听所有后代节点
+  //       attributes: false, // 不监听属性变化（减少性能开销）
+  //     });
 
-      // MutationObserver 初始化成功（静默）
-    } catch (e) {
-      // MutationObserver 初始化失败（静默）
-    }
-  }
+  //     // MutationObserver 初始化成功（静默）
+  //   } catch (e) {
+  //     // MutationObserver 初始化失败（静默）
+  //   }
+  // }
 
   // 简化的错误监控
   function setupErrorMonitoring() {
@@ -671,19 +670,19 @@
           });
         }
         // 资源加载错误
-        else if (event.target.tagName) {
-          const source = event.target.src || event.target.href || 'unknown';
-          // 只保存相对地址
-          const relativeSource = source.replace(
-            window.location.origin + window.location.pathname,
-            '',
-          );
-          logger.error(`Resource failed: ${relativeSource}`, {
-            tagName: event.target.tagName,
-            source: relativeSource,
-            errorSource: 'resource-load',
-          });
-        }
+        // else if (event.target.tagName) {
+        //   const source = event.target.src || event.target.href || 'unknown';
+        //   // 只保存相对地址
+        //   const relativeSource = source.replace(
+        //     window.location.origin + window.location.pathname,
+        //     '',
+        //   );
+        //   logger.error(`Resource failed: ${relativeSource}`, {
+        //     tagName: event.target.tagName,
+        //     source: relativeSource,
+        //     errorSource: 'resource-load',
+        //   });
+        // }
       },
       true,
     ); // 使用捕获阶段同时捕获全局错误和资源错误
@@ -724,14 +723,14 @@
     // setupConsoleInterception(); // 已在 init() 中调用
 
     // ⭐ 新增：MutationObserver（检测错误 UI）
-    if (config.mutationObserverEnabled) {
-      // 延迟初始化，确保 DOM 已加载
-      if (document.body) {
-        setupMutationObserver();
-      } else {
-        window.addEventListener('DOMContentLoaded', setupMutationObserver);
-      }
-    }
+    // if (config.mutationObserverEnabled) {
+    //   // 延迟初始化，确保 DOM 已加载
+    //   if (document.body) {
+    //     setupMutationObserver();
+    //   } else {
+    //     window.addEventListener('DOMContentLoaded', setupMutationObserver);
+    //   }
+    // }
   }
 
   // 移除复杂的性能监控和控制台拦截，专注于核心错误监控
@@ -966,21 +965,100 @@
     }, 100);
   }
 
+  /**
+   * 设置微信小程序相关功能
+   * 包括：注入 JS-SDK、监听 DOM 变化并发送消息到小程序
+   */
+  function setupWeChatMiniProgram() {
+    // 检查是否在微信小程序的 webview 环境中
+    if (window.__wxjs_environment !== 'miniprogram') {
+      return; // 不在小程序环境中，直接返回
+    }
+    function sendMessageToMiniProgram() {
+      const htmlTitle =
+        document.querySelector('head > title')?.textContent || '页面预览';
+
+      // 获取 body 的 HTML 内容
+      const htmlDomString = document.body.innerHTML || '';
+
+      // 通过 postMessage 发送消息到小程序（已确保 wx.miniProgram 可用）
+      window.wx.miniProgram.postMessage({
+        data: {
+          html: htmlDomString,
+          title: htmlTitle,
+        },
+      });
+    }
+    /**
+     * 注入微信 JS-SDK
+     */
+    function injectWeChatSDK() {
+      // 创建并注入 JS-SDK 脚本
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = 'https://res.wx.qq.com/open/js/jweixin-1.3.2.js';
+
+      // 脚本加载成功回调
+      script.onload = function () {
+        // 等待 wx 对象可用
+        setTimeout(() => {
+          let timer = null;
+
+          // 监听 DOM 变化
+          const observer = new MutationObserver(() => {
+            // 每次变化后延迟 500ms 再检测，确保渲染稳定
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+              try {
+                // 获取 head 中的 title 内容
+                sendMessageToMiniProgram();
+              } catch (error) {
+                // 静默处理错误（避免影响页面正常功能）
+              }
+            }, 500);
+          });
+
+          // 开始观察 DOM 变化
+          observer.observe(document.body, {
+            childList: true, // 监听子节点的添加和删除
+            subtree: true, // 监听所有后代节点
+            characterData: true, // 监听文本内容变化
+          });
+
+          sendMessageToMiniProgram();
+        }, 100);
+      };
+
+      // 插入脚本到 head（确保 DOM 已准备好）
+      const insertScript = () => {
+        if (document.head) {
+          document.head.appendChild(script);
+        }
+      };
+      insertScript();
+    }
+
+    // 根据 DOM 状态决定何时注入 JS-SDK
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', injectWeChatSDK);
+    } else {
+      injectWeChatSDK();
+    }
+  }
+
   // 简化的初始化
   function init() {
-    // ⭐ 初始化时检查运行环境
-    const isInIframe = window.self !== window.top;
-
     // ⭐ 关键：优先设置 Console 拦截，确保在 React Router 加载之前就拦截
     // 这样可以捕获所有通过 console.error 输出的错误
     setupConsoleInterception();
 
     setupErrorMonitoring();
     setupHistoryTracking();
-    monitorData.ready = true;
 
-    // 简化的控制台提示（可选：需要调试时可以取消注释）
-    // console.log('[DevMonitor] 🚀 Initialized', { version: config.version, isInIframe });
+    // ⭐ 设置微信小程序相关功能（在最后执行，确保其他功能已初始化）
+    setupWeChatMiniProgram();
+
+    monitorData.ready = true;
   }
 
   // 立即初始化

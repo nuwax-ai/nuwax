@@ -6,6 +6,7 @@ import type {
   CreatorInfo,
 } from '@/types/interfaces/agent';
 import React from 'react';
+import { CoverImgSourceTypeEnum } from '../enums/pageDev';
 
 // 广场 - 已发布列表请求参数
 export interface SquarePublishedListParams {
@@ -49,6 +50,10 @@ export interface SquarePublishedItemInfo {
   description: string;
   // 图标
   icon: string;
+  /** 封面图片地址 */
+  coverImg: string;
+  /** 封面图片来源,可用值:SYSTEM,USER */
+  coverImgSourceType: CoverImgSourceTypeEnum;
   remark: string;
   // 智能体发布修改时间
   modified: string;
@@ -109,4 +114,12 @@ export interface SquareMenuComponentInfo {
   icon: React.ReactNode;
   list: SquareAgentInfo[];
   type: SquareAgentTypeEnum;
+}
+
+// 广场搜索参数
+export interface SquareSearchParams {
+  // 分类类型
+  cate_type: string;
+  // 分类名称
+  cate_name: string;
 }

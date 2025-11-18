@@ -4,6 +4,7 @@
  */
 
 import { AgentComponentTypeEnum } from '../enums/agent';
+import { CoverImgSourceTypeEnum } from '../enums/pageDev';
 
 /**
  * 排序字段信息
@@ -179,6 +180,10 @@ export interface ClientConfigVo {
   configJson?: any;
   /** 图标图片地址 */
   icon?: string;
+  /** 封面图片地址 */
+  coverImg?: string;
+  /** 封面图片来源,可用值:SYSTEM,USER */
+  coverImgSourceType?: CoverImgSourceTypeEnum;
   /** 租户ID */
   tenantId?: number;
   /** 所属空间ID */
