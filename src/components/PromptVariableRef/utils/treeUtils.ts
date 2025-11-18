@@ -20,10 +20,8 @@ export const transformVariableToTreeNode = (
 
   const node: VariableTreeNode = {
     label: variable.label || variable.name,
-    title: variable.label || variable.name,
     value: value,
     key: uniqueKey,
-    keyPath: currentPath,
     variable,
     children: [],
   };
@@ -42,10 +40,8 @@ export const transformVariableToTreeNode = (
     node.children = [
       {
         label: `[0] (数组索引)`,
-        title: `[0] (数组索引)`,
         value: `${value}[0]`,
         key: `${uniqueKey}_index_0`,
-        keyPath: currentPath,
         variable: {
           key: '0',
           type: baseType as VariableType,
@@ -201,9 +197,7 @@ export const drillToPath = (
  * 获取变量显示路径
  */
 export const getVariableDisplayPath = (node: VariableTreeNode): string => {
-  if (node.keyPath) {
-    return node.keyPath.join('.');
-  }
+  // 使用 key 作为显示路径，因为 key 已经包含了完整的路径信息
   return node.key;
 };
 
