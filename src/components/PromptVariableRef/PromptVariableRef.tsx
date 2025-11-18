@@ -68,7 +68,7 @@ const transformToTreeDataForTree = (nodes: VariableTreeNode[]): any[] => {
 const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   variables = [],
   readonly = false,
-  direction = 'bottomLeft',
+  // 移除 direction 参数，使用智能动态定位
   placeholder = '输入提示词，使用 {{变量名}} 引用变量',
   onChange,
   value,
@@ -441,17 +441,18 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
             );
             finalText =
               beforeDoubleBrace + `{{${nodeValue}}}` + afterDoubleBrace;
-            newCursorPos = beforeDoubleBrace.length + nodeValue.length + 4;
+            newCursorPos = beforeDoubleBrace.length + 2 + nodeValue.length + 2; // {{变量名}}
           } else {
             // 正常的 {xxx} -> {{xxx}} 转换
             finalText =
               completeBeforeBrace + `{{${nodeValue}}}` + completeAfterBrace;
-            newCursorPos = completeBeforeBrace.length + nodeValue.length + 4; // {{xxx}} 长度
+            newCursorPos =
+              completeBeforeBrace.length + 2 + nodeValue.length + 2; // {{变量名}}
           }
         } else {
           // 只有 {xxx，没有 }，添加 }} 变成 {{xxx}}
           finalText = beforeBrace + `{{${nodeValue}}}` + afterText;
-          newCursorPos = beforeBrace.length + nodeValue.length + 4;
+          newCursorPos = beforeBrace.length + 2 + nodeValue.length + 2; // {{变量名}}
         }
       } else {
         // 双大括号模式：保持原有逻辑
@@ -466,12 +467,12 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
             const beforeVariable = beforeText.substring(0, lastStartPos);
             const afterVariable = afterText.substring(endPosMatch + 2); // 跳过 }}
             finalText = beforeVariable + `{{${nodeValue}}}` + afterVariable;
-            newCursorPos = beforeVariable.length + nodeValue.length + 4; // 4 = {{}} 的长度
+            newCursorPos = beforeVariable.length + 2 + nodeValue.length + 2; // {{变量名}}
           } else {
             // 完成新的变量引用
             const beforeVariable = beforeText.substring(0, lastStartPos);
             finalText = beforeVariable + `{{${nodeValue}}}` + afterText;
-            newCursorPos = beforeVariable.length + nodeValue.length + 4;
+            newCursorPos = beforeVariable.length + 2 + nodeValue.length + 2; // {{变量名}}
           }
         } else {
           // 如果没有找到 {{，则在当前位置插入变量
@@ -479,7 +480,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
             currentValue.substring(0, startPos) +
             `{{${nodeValue}}}` +
             afterText;
-          newCursorPos = startPos + nodeValue.length + 4;
+          newCursorPos = startPos + 2 + nodeValue.length + 2; // {{变量名}}
         }
       }
 
@@ -503,14 +504,26 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         onChange?.(finalText);
       }
 
-      // 设置光标位置
+      // 设置光标位置到变量引用后面
       setTimeout(() => {
         if (inputRef.current) {
           const textarea = inputRef.current.resizableTextArea.textArea;
-          textarea.setSelectionRange(newCursorPos, newCursorPos);
+
+          // 验证光标位置是否在有效范围内
+          const maxPos = finalText.length;
+          const safeCursorPos = Math.min(Math.max(0, newCursorPos), maxPos);
+
+          console.log('Setting cursor position:', {
+            requested: newCursorPos,
+            safe: safeCursorPos,
+            textLength: maxPos,
+            finalText,
+          });
+
+          textarea.setSelectionRange(safeCursorPos, safeCursorPos);
           textarea.focus();
         }
-      }, 0);
+      }, 10); // 增加延时确保DOM更新完成
 
       // 关闭下拉框
       setVisible(false);
@@ -521,6 +534,11 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         nodeValue,
         finalText,
         newCursorPos,
+        cursorPosition: `${newCursorPos} (应该定位到 '}}' 后面)`,
+        finalTextPreview: finalText.substring(
+          Math.max(0, newCursorPos - 10),
+          newCursorPos + 10,
+        ),
       });
     },
     [internalValue, onChange],
@@ -533,39 +551,217 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     }
   }, [value]);
 
-  // 同步输入框和高亮层的滚动位置
+  // 同步输入框和高亮层的滚动位置 - 增强版本
   useEffect(() => {
     const textarea = inputRef.current?.resizableTextArea?.textArea;
     const highlightLayer = highlightLayerRef.current;
 
     if (!textarea || !highlightLayer) return;
 
-    const handleScroll = () => {
-      // 同步滚动位置
-      highlightLayer.scrollTop = textarea.scrollTop;
-      highlightLayer.scrollLeft = textarea.scrollLeft;
+    let rafId: number;
+    let scrollSyncRafId: number;
+    let isScrolling = false;
+
+    // 重新计算下拉框位置
+    const recalculateDropdownPosition = () => {
+      const textarea = inputRef.current?.resizableTextArea?.textArea;
+      if (!textarea) return;
+
+      const rect = textarea.getBoundingClientRect();
+      const computedStyle = window.getComputedStyle(textarea);
+      const lineHeight = parseInt(computedStyle.lineHeight) || 20;
+      const charWidth = parseFloat(computedStyle.fontSize) * 0.6;
+
+      const textBeforeCursor = internalValue.substring(0, textCursorPosition);
+      const lines = textBeforeCursor.split('\n');
+      const currentLine = Math.max(0, lines.length - 1);
+      const currentCol = Math.max(0, lines[lines.length - 1]?.length || 0);
+
+      // 获取滚动偏移（增强版本）
+      const scrollLeft = textarea.scrollLeft || 0;
+      const scrollTop = textarea.scrollTop || 0;
+
+      // 计算相对于视口的光标位置（考虑滚动偏移）
+      const cursorX = rect.left + currentCol * charWidth - scrollLeft;
+      const cursorY =
+        rect.top + currentLine * lineHeight + lineHeight - scrollTop;
+
+      console.log('Enhanced recalculateDropdownPosition:', {
+        rectLeft: rect.left,
+        rectTop: rect.top,
+        currentLine,
+        currentCol,
+        lineHeight,
+        charWidth,
+        scrollLeft,
+        scrollTop,
+        cursorX,
+        cursorY,
+      });
+
+      // 重新计算下拉框位置
+      const { position } = calculateDropdownPosition(
+        cursorX,
+        cursorY,
+        inputRef.current,
+        undefined,
+        {
+          hasSearch: true,
+          searchText: extractSearchTextFromInput(
+            internalValue,
+            textCursorPosition,
+          ),
+          treeHeight: 240,
+        },
+      );
+
+      setCursorPosition(position);
     };
 
-    // 监听输入框滚动事件
+    // 使用更精确的滚动同步方法
+    const syncScrollPosition = () => {
+      const currentScrollTop = textarea.scrollTop;
+      const currentScrollLeft = textarea.scrollLeft;
+
+      // 同步高亮层滚动位置
+      highlightLayer.scrollTop = currentScrollTop;
+      highlightLayer.scrollLeft = currentScrollLeft;
+
+      console.log('Enhanced scroll synced:', {
+        scrollTop: currentScrollTop,
+        scrollLeft: currentScrollLeft,
+        isVisible: visible,
+        timestamp: Date.now(),
+      });
+
+      // 如果下拉框可见，重新计算位置
+      if (visible) {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          recalculateDropdownPosition();
+        });
+      }
+    };
+
+    // 优化滚动监听：使用更高的触发频率和更精确的检测
+    const handleScroll = () => {
+      // 立即同步
+      syncScrollPosition();
+
+      // 设置滚动状态标记
+      isScrolling = true;
+
+      // 清除之前的debounce定时器
+      if (scrollSyncRafId) {
+        cancelAnimationFrame(scrollSyncRafId);
+      }
+
+      // 使用 requestAnimationFrame 进行防抖
+      scrollSyncRafId = requestAnimationFrame(() => {
+        if (isScrolling) {
+          syncScrollPosition();
+          isScrolling = false;
+        }
+      });
+    };
+
+    // 添加多种滚动事件监听以确保同步
     textarea.addEventListener('scroll', handleScroll, { passive: true });
+
+    // 监听鼠标滚轮事件（更早触发）
+    textarea.addEventListener('wheel', handleScroll, { passive: true });
+
+    // 监听键盘滚动事件
+    textarea.addEventListener('keydown', (e) => {
+      if (
+        e.key === 'PageDown' ||
+        e.key === 'PageUp' ||
+        e.key === 'Home' ||
+        e.key === 'End' ||
+        (e.ctrlKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp'))
+      ) {
+        // 延迟触发以确保键盘滚动完成
+        setTimeout(handleScroll, 0);
+      }
+    });
+
+    // 使用 ResizeObserver 监听输入框尺寸变化
+    const resizeObserver = new ResizeObserver(() => {
+      // 尺寸变化时立即同步滚动位置
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(syncScrollPosition);
+    });
+    resizeObserver.observe(textarea);
 
     return () => {
       textarea.removeEventListener('scroll', handleScroll);
+      textarea.removeEventListener('wheel', handleScroll);
+      textarea.removeEventListener('keydown', handleScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+      if (scrollSyncRafId) cancelAnimationFrame(scrollSyncRafId);
+      resizeObserver.disconnect();
     };
-  }, []); // 只在组件挂载时绑定一次
+  }, [visible, internalValue, textCursorPosition, extractSearchTextFromInput]);
 
-  // 当内容变化时，同步一次滚动位置（确保内容变化后滚动位置正确）
+  // 当内容变化时，同步一次滚动位置 - 增强版本
   useEffect(() => {
     const textarea = inputRef.current?.resizableTextArea?.textArea;
     const highlightLayer = highlightLayerRef.current;
 
     if (!textarea || !highlightLayer) return;
 
-    // 使用 requestAnimationFrame 确保 DOM 更新后再同步
-    requestAnimationFrame(() => {
-      highlightLayer.scrollTop = textarea.scrollTop;
-      highlightLayer.scrollLeft = textarea.scrollLeft;
+    console.log('Content changed, preparing enhanced sync scroll:', {
+      contentLength: internalValue.length,
+      scrollTop: textarea.scrollTop,
+      scrollLeft: textarea.scrollLeft,
+      timestamp: Date.now(),
     });
+
+    // 增强的滚动同步：立即同步 + 双重 requestAnimationFrame
+    const syncScroll = () => {
+      const currentScrollTop = textarea.scrollTop;
+      const currentScrollLeft = textarea.scrollLeft;
+
+      highlightLayer.scrollTop = currentScrollTop;
+      highlightLayer.scrollLeft = currentScrollLeft;
+
+      console.log('Enhanced content scroll synced:', {
+        scrollTop: currentScrollTop,
+        scrollLeft: currentScrollLeft,
+        contentLength: internalValue.length,
+        timestamp: Date.now(),
+      });
+
+      // 标记同步完成
+      highlightLayer.classList.add('sync-complete');
+
+      // 300ms 后移除标记，允许下次同步
+      setTimeout(() => {
+        highlightLayer.classList.remove('sync-complete');
+      }, 300);
+    };
+
+    // 立即同步一次
+    syncScroll();
+
+    // 使用双重 requestAnimationFrame 确保 DOM 更新后再同步
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        syncScroll();
+      });
+    });
+
+    // 额外的延迟同步，确保复杂布局情况下也能正确同步
+    const timeoutId = setTimeout(() => {
+      syncScroll();
+    }, 50);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (highlightLayer) {
+        highlightLayer.classList.remove('sync-complete');
+      }
+    };
   }, [internalValue]); // 当内容变化时同步滚动位置
 
   // 点击外部关闭下拉框
@@ -598,14 +794,20 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       }
 
       // 添加高亮的变量引用
-      const variableName = match[1];
+      const fullMatch = match[0]; // 完整的 {{变量名}} 匹配
       parts.push(
-        <span key={`variable-${match.index}`} className="variable-highlight">
-          {`{{${variableName}}}`}
+        <span
+          key={`variable-${match.index}`}
+          className="variable-highlight"
+          data-variable-start={match.index}
+          data-variable-end={match.index + fullMatch.length}
+          data-variable-content={fullMatch}
+        >
+          {fullMatch}
         </span>,
       );
 
-      lastIndex = match.index + match[0].length;
+      lastIndex = match.index + fullMatch.length;
     }
 
     // 添加剩余的普通文本
@@ -616,6 +818,93 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     return parts.length > 0 ? parts : text;
   }, []);
 
+  // 识别光标位置是否在高亮区块中，并返回高亮区块信息
+  const findHighlightedBlockAtCursor = useCallback(
+    (text: string, cursorPos: number) => {
+      const regex = /\{\{([^}]+)\}\}/g;
+      let match;
+
+      while ((match = regex.exec(text)) !== null) {
+        const fullMatch = match[0];
+        const startPos = match.index;
+        const endPos = startPos + fullMatch.length;
+
+        // 检查光标是否在高亮区块中
+        if (cursorPos >= startPos && cursorPos <= endPos) {
+          return {
+            start: startPos,
+            end: endPos,
+            content: fullMatch,
+            variableName: match[1],
+          };
+        }
+      }
+
+      return null;
+    },
+    [],
+  );
+
+  // 一次性删除高亮区块
+  const deleteHighlightedBlock = useCallback(
+    (cursorPos: number, isBackspace: boolean = true) => {
+      const highlightedBlock = findHighlightedBlockAtCursor(
+        internalValue,
+        cursorPos,
+      );
+
+      if (!highlightedBlock) return false; // 没有找到高亮区块，不拦截删除操作
+
+      console.log('发现高亮区块，一次性删除:', highlightedBlock);
+
+      let newValue = internalValue;
+      let newCursorPos = cursorPos;
+
+      if (isBackspace) {
+        // 退格键：从光标位置往前删除到高亮区块开始
+        if (cursorPos >= highlightedBlock.start) {
+          // 如果光标在高亮区块中间或后面，删除整个高亮区块
+          newValue =
+            internalValue.substring(0, highlightedBlock.start) +
+            internalValue.substring(highlightedBlock.end);
+          newCursorPos = highlightedBlock.start;
+        } else {
+          // 如果光标在高亮区块前面，正常删除（不拦截）
+          return false;
+        }
+      } else {
+        // 删除键：从光标位置往后删除到高亮区块结束
+        if (cursorPos <= highlightedBlock.end) {
+          // 如果光标在高亮区块中间或前面，删除整个高亮区块
+          newValue =
+            internalValue.substring(0, highlightedBlock.start) +
+            internalValue.substring(highlightedBlock.end);
+          newCursorPos = highlightedBlock.start;
+        } else {
+          // 如果光标在高亮区块后面，正常删除（不拦截）
+          return false;
+        }
+      }
+
+      // 更新值和光标位置
+      setInternalValue(newValue);
+      onChange?.(newValue);
+      setTextCursorPosition(newCursorPos);
+
+      // 同步设置输入框的光标位置
+      if (inputRef.current) {
+        setTimeout(() => {
+          const textarea = inputRef.current.resizableTextArea.textArea;
+          textarea.setSelectionRange(newCursorPos, newCursorPos);
+          textarea.focus();
+        }, 0);
+      }
+
+      return true; // 已处理删除操作
+    },
+    [internalValue, onChange, findHighlightedBlockAtCursor],
+  );
+
   // 处理输入变化
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -625,6 +914,32 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
       // 更新文本光标位置
       setTextCursorPosition(cursorPosition);
+
+      // 检测删除操作（文本长度减少）
+      if (!readonly && newValue.length < prevValue.length) {
+        console.log(
+          '检测到删除操作，原值:',
+          prevValue,
+          '新值:',
+          newValue,
+          '光标位置:',
+          cursorPosition,
+        );
+
+        // 检查是否为一次性删除高亮区块
+        // 使用当前光标位置和前一个光标位置来判断删除类型
+        const prevCursorPos = textCursorPosition; // 之前保存的光标位置
+        const isBackspace = cursorPosition <= prevCursorPos; // 光标位置没有移动或后退，说明是退格键
+        const handledByHighlightDelete = deleteHighlightedBlock(
+          cursorPosition,
+          isBackspace,
+        );
+
+        if (handledByHighlightDelete) {
+          console.log('高亮区块删除已处理，不再执行默认删除逻辑');
+          return; // 已经处理了删除操作，不执行后续逻辑
+        }
+      }
 
       // 检测是否刚输入了单个 {，如果是则自动补全 }
       let shouldAutoCompleteBrace = false;
@@ -668,11 +983,23 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         const afterCursor = newValue.substring(cursorPosition);
         const newText = beforeCursor + '}' + afterCursor;
 
+        // 计算新的光标位置：保持在 {} 中间
+        // 用户输入 { 后，光标在 { 后面
+        // 插入 } 后，光标应该在 } 前面，这样就在 {} 中间
+        const newCursorPosition = cursorPosition; // 光标位置不变，正好在 {} 中间
+
         console.log(
           'Auto-completed text:',
           newText,
-          'cursor at:',
+          'original cursor at:',
           cursorPosition,
+          'new cursor at:',
+          newCursorPosition,
+          'preview:',
+          newText.substring(
+            Math.max(0, newCursorPosition - 5),
+            newCursorPosition + 5,
+          ),
         );
 
         setInternalValue(newText);
@@ -686,9 +1013,20 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         setTimeout(() => {
           if (inputRef.current) {
             const textarea = inputRef.current.resizableTextArea.textArea;
-            textarea.setSelectionRange(cursorPosition, cursorPosition);
+
+            console.log('Setting cursor position for auto-complete:', {
+              requested: newCursorPosition,
+              textLength: newText.length,
+              finalText: newText,
+              cursorPreview: newText.substring(
+                Math.max(0, newCursorPosition - 3),
+                newCursorPosition + 3,
+              ),
+            });
+
+            textarea.setSelectionRange(newCursorPosition, newCursorPosition);
           }
-        }, 0);
+        }, 10);
 
         // 检查是否需要显示变量选择框
         const beforeBrace = newText.substring(0, cursorPosition);
@@ -722,18 +1060,48 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
                 const rect = textarea.getBoundingClientRect();
                 const computedStyle = window.getComputedStyle(textarea);
                 const lineHeight = parseInt(computedStyle.lineHeight) || 20;
-                const charWidth = parseInt(computedStyle.fontSize) * 0.6; // 估算字符宽度
+                const charWidth = parseFloat(computedStyle.fontSize) * 0.6; // 提高精度
 
                 // 计算光标在文本中的位置
                 const textBeforeCursor = newText.substring(0, cursorPosition);
                 const lines = textBeforeCursor.split('\n');
-                const currentLine = lines.length - 1;
-                const currentCol = lines[lines.length - 1].length;
+                const currentLine = Math.max(0, lines.length - 1);
+                const currentCol = Math.max(
+                  0,
+                  lines[lines.length - 1]?.length || 0,
+                );
 
-                // 计算光标相对于文本域的像素位置
-                const cursorX = rect.left + currentCol * charWidth;
+                // 获取文本框的滚动偏移（增强版本）
+                const scrollLeft =
+                  textarea.scrollLeft ||
+                  window.pageXOffset ||
+                  document.documentElement.scrollLeft ||
+                  0;
+                const scrollTop =
+                  textarea.scrollTop ||
+                  window.pageYOffset ||
+                  document.documentElement.scrollTop ||
+                  0;
+
+                // 计算光标相对于视口的像素位置（考虑滚动偏移）
+                const cursorX = rect.left + currentCol * charWidth - scrollLeft;
                 const cursorY =
-                  rect.top + currentLine * lineHeight + lineHeight;
+                  rect.top + currentLine * lineHeight + lineHeight - scrollTop;
+
+                console.log('Auto-complete cursor calculation enhanced:', {
+                  rectLeft: rect.left,
+                  rectTop: rect.top,
+                  currentLine,
+                  currentCol,
+                  lineHeight,
+                  charWidth,
+                  scrollLeft,
+                  scrollTop,
+                  cursorX,
+                  cursorY,
+                  cursorPosition,
+                  newTextLength: newText.length,
+                });
 
                 // 使用改进的位置计算函数（参考 antd Select）
                 const { position, adjustment } = calculateDropdownPosition(
@@ -824,17 +1192,45 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
           const rect = textarea.getBoundingClientRect();
           const computedStyle = window.getComputedStyle(textarea);
           const lineHeight = parseInt(computedStyle.lineHeight) || 20;
-          const charWidth = parseInt(computedStyle.fontSize) * 0.6; // 估算字符宽度
+          const charWidth = parseFloat(computedStyle.fontSize) * 0.6; // 提高精度
 
           // 计算光标在文本中的位置
           const textBeforeCursor = newValue.substring(0, cursorPosition);
           const lines = textBeforeCursor.split('\n');
-          const currentLine = lines.length - 1;
-          const currentCol = lines[lines.length - 1].length;
+          const currentLine = Math.max(0, lines.length - 1);
+          const currentCol = Math.max(0, lines[lines.length - 1]?.length || 0);
 
-          // 计算光标相对于文本域的像素位置
-          const cursorX = rect.left + currentCol * charWidth;
-          const cursorY = rect.top + currentLine * lineHeight + lineHeight;
+          // 获取文本框的滚动偏移（增强版本）
+          const scrollLeft =
+            textarea.scrollLeft ||
+            window.pageXOffset ||
+            document.documentElement.scrollLeft ||
+            0;
+          const scrollTop =
+            textarea.scrollTop ||
+            window.pageYOffset ||
+            document.documentElement.scrollTop ||
+            0;
+
+          // 计算光标相对于视口的像素位置（考虑滚动偏移）
+          const cursorX = rect.left + currentCol * charWidth - scrollLeft;
+          const cursorY =
+            rect.top + currentLine * lineHeight + lineHeight - scrollTop;
+
+          console.log('Variable apply cursor calculation enhanced:', {
+            rectLeft: rect.left,
+            rectTop: rect.top,
+            currentLine,
+            currentCol,
+            lineHeight,
+            charWidth,
+            scrollLeft,
+            scrollTop,
+            cursorX,
+            cursorY,
+            cursorPosition,
+            newValueLength: newValue.length,
+          });
 
           // 使用改进的位置计算函数（参考 antd Select）
           const { position, adjustment } = calculateDropdownPosition(
@@ -1083,7 +1479,6 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     readonly,
     disabled,
     shouldShow: popoverShouldShow,
-    direction,
     internalValue,
     hasDoubleBrace: internalValue.includes('{{'),
     hasSingleBrace: internalValue.includes('{}'),
