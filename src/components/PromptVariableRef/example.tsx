@@ -6,7 +6,8 @@
 import { Alert, Card, Space, Tag, Typography } from 'antd';
 import React, { useState } from 'react';
 import PromptVariableRef from './index';
-import type { PromptVariable, VariableType } from './types';
+import type { PromptVariable } from './types';
+import { VariableType } from './types';
 
 const { Title, Paragraph, Text } = Typography;
 
