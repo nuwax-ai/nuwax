@@ -81,7 +81,7 @@
       background-color: rgba(0, 0, 0, 40%);
       opacity: 0;
       z-index: -1;
-      transition: all 0.3s ease-in-out;
+      transition: opacity 0.3s ease-in-out, z-index 0.2s ease-in-out;
 
       .image-overlay-text {
         padding: @paddingXxs @padding;
@@ -90,6 +90,11 @@
         font-weight: @fontWeightStrong;
         border-radius: @borderRadiusSm;
         background-color: rgba(0, 0, 0, 80%);
+        transition: background-color 0.3s ease-in-out;
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 60%);
+        }
       }
     }
   }

@@ -42,6 +42,7 @@ import {
   PortsConfig,
 } from '@/types/interfaces/node';
 // 引用默认图标
+import Agent from '@/assets/images/agent_image.png';
 import Table from '@/assets/images/database_image.png';
 import Knowledge from '@/assets/images/knowledge_image.png';
 import Plugin from '@/assets/images/plugin_image.png';
@@ -88,6 +89,7 @@ const NODE_BOTTOM_PADDING_AND_BORDER = NODE_BOTTOM_PADDING + 1;
 const EXCEPTION_PORT_COLOR = '#e67e22';
 const PORT_COLOR = '#5147FF';
 const imageList = {
+  Agent,
   Table,
   Knowledge,
   Plugin,
@@ -96,9 +98,9 @@ const imageList = {
   Variable,
   Model,
   Page,
-} as {
+} as Partial<{
   [key in AgentComponentTypeEnum]: string;
-};
+}>;
 
 export const getShape = (type: NodeTypeEnum) => {
   if (type === NodeTypeEnum.Loop) {

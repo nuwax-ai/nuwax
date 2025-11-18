@@ -2,6 +2,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { apiPageUpdateProject } from '@/services/pageDev';
+import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import { PageEditModalProps } from '@/types/interfaces/pageDev';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
@@ -24,7 +25,12 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
   const [form] = Form.useForm();
   // 图标
   const [imageUrl, setImageUrl] = useState<string>('');
+  // 封面图片
+  const [coverImgUrl, setCoverImgUrl] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  // 用户是否上传封面图片
+  const [isUserUploadCoverImg, setIsUserUploadCoverImg] =
+    useState<boolean>(false);
 
   // 上传前端项目压缩包并启动开发服务器
   const { run: runUpdatePage } = useRequest(apiPageUpdateProject, {
@@ -41,24 +47,32 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
 
   useEffect(() => {
     if (open && projectInfo) {
-      const { name, description, icon } = projectInfo;
+      const { name, description, icon, coverImg } = projectInfo;
       form.setFieldsValue({
         projectName: name,
         projectDesc: description,
         icon: icon || '',
+        coverImg: coverImg || '',
       });
 
       setImageUrl(icon);
+      setCoverImgUrl(coverImg);
     }
   }, [open, projectInfo]);
 
   // 编辑页面
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
     setLoading(true);
+    // 封面图片来源, 如果用户上传了封面图片，则设置封面图片来源为USER, 否则使用项目原有的封面图片来源
+    const coverImgSourceType = isUserUploadCoverImg
+      ? CoverImgSourceTypeEnum.USER
+      : projectInfo?.coverImgSourceType;
     // 调用编辑页面接口
     const data = {
       ...values,
       projectId: projectInfo?.projectId,
+      // 如果用户没有上传封面图片，则不设置封面图片来源
+      ...(coverImgSourceType ? { coverImgSourceType } : {}),
     };
     runUpdatePage(data);
   };
@@ -70,6 +84,8 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
   const handleCancel = () => {
     onCancel();
     setImageUrl('');
+    setCoverImgUrl('');
+    setIsUserUploadCoverImg(false);
   };
 
   // 上传图标成功
@@ -78,12 +94,24 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
     form.setFieldValue('icon', url);
   };
 
+  // 上传封面图片成功
+  const uploadCoverImgSuccess = (url: string) => {
+    setCoverImgUrl(url);
+    setIsUserUploadCoverImg(true);
+    form.setFieldValue('coverImg', url);
+  };
+
   return (
     <CustomFormModal
       form={form}
       open={open}
       title="编辑页面"
       loading={loading}
+      classNames={{
+        content: styles['modal-content'],
+        header: styles['modal-header'],
+        body: styles['modal-body'],
+      }}
       onCancel={handleCancel}
       onConfirm={handlerConfirm}
     >
@@ -108,11 +136,18 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
           placeholder="请输入描述"
           maxLength={10000}
         />
+        <Form.Item name="icon" label="图标">
+          <UploadAvatar
+            onUploadSuccess={uploadIconSuccess}
+            imageUrl={imageUrl}
+            svgIconName="icons-common-plus"
+          />
+        </Form.Item>
         <Form.Item
-          name="icon"
+          name="coverImg"
           label={
             <div className={cx('flex', 'gap-10', 'items-center')}>
-              <span>图标</span>
+              <span>封面图片</span>
               <span className={cx(styles['text-tip'])}>
                 建议尺寸356px * 200px, 比例16:9
               </span>
@@ -121,9 +156,9 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
         >
           <UploadAvatar
             className={cx(styles['upload-avatar'])}
-            onUploadSuccess={uploadIconSuccess}
-            imageUrl={imageUrl}
-            svgIconName="icons-common-upload"
+            onUploadSuccess={uploadCoverImgSuccess}
+            imageUrl={coverImgUrl}
+            svgIconName="icons-common-plus"
           />
         </Form.Item>
       </Form>

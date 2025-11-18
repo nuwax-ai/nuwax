@@ -5,6 +5,7 @@
 
 import { MessageModeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
+import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { DataResource } from './dataResource';
 
@@ -439,6 +440,14 @@ export enum SessionMessageType {
   HEARTBEAT = 'heartbeat',
 }
 
+export enum AgentSessionUpdateSubType {
+  AGENT_MESSAGE_CHUNK = 'agent_message_chunk',
+  TOOL_CALL = 'tool_call',
+  TOOL_CALL_UPDATE = 'tool_call_update',
+  PLAN = 'plan',
+  ERROR = 'error',
+}
+
 /**
  * 统一会话消息结构
  */
@@ -870,6 +879,10 @@ export interface ProjectDetailData {
   description: string;
   /** 项目图标 */
   icon: string;
+  /** 封面图片 */
+  coverImg: string;
+  /** 封面图片来源,可用值:SYSTEM,USER */
+  coverImgSourceType: CoverImgSourceTypeEnum;
   /** 项目基础路径 */
   basePath: string;
   /** 发布状态,true:已发布;false:未发布 */
