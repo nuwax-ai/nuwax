@@ -6,7 +6,7 @@ import { DEV_SERVER_CONSTANTS } from '@/constants/appDevConstants';
 import { keepAlive, restartDev, startDev } from '@/services/appDev';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'umi';
+import { useParams, useRequest } from 'umi';
 
 interface UseAppDevServerProps {
   projectId: string;
@@ -50,13 +50,12 @@ export const useAppDevServer = ({
 
   const hasStartedRef = useRef(false);
   const lastProjectIdRef = useRef<string | null>(null);
-  const keepAliveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  // 用于存储当前保活对应的 projectId，确保定时器回调使用最新的 projectId
+  // 用于存储当前保活对应的 projectId，确保回调使用最新的 projectId
   const currentKeepAliveProjectIdRef = useRef<string | null>(null);
-  // 【关键】存储 URL 中的最新 projectId，供定时器回调访问
+  // 【关键】存储 URL 中的最新 projectId，供回调访问
   const latestProjectIdRef = useRef<string | undefined>(urlProjectId);
 
-  // 【关键】同步更新 latestProjectIdRef，确保定时器回调始终能访问到 URL 中最新的 projectId
+  // 【关键】同步更新 latestProjectIdRef，确保回调始终能访问到 URL 中最新的 projectId
   useEffect(() => {
     latestProjectIdRef.current = urlProjectId;
   }, [urlProjectId]);
@@ -132,56 +131,153 @@ export const useAppDevServer = ({
     [onServerStart, onServerStatusChange],
   );
 
+  // 使用 ref 存储回调函数，避免依赖项变化导致 useRequest 重新创建
+  const onServerStartRef = useRef(onServerStart);
+  const onServerStatusChangeRef = useRef(onServerStatusChange);
+  const devServerUrlRef = useRef(devServerUrl);
+
+  // 同步更新 ref
+  useEffect(() => {
+    onServerStartRef.current = onServerStart;
+    onServerStatusChangeRef.current = onServerStatusChange;
+    devServerUrlRef.current = devServerUrl;
+  }, [onServerStart, onServerStatusChange, devServerUrl]);
+
+  /**
+   * 处理保活响应，更新预览地址
+   * 根据实际接口返回格式: RequestResponse<KeepAliveResponseData>
+   * 使用 ref 访问最新值，避免依赖项变化
+   *
+   * 注意：useRequest 的 onSuccess 可能传入 data 或完整的 response
+   * 需要兼容两种情况：
+   * 1. 传入完整的 response 对象 (RequestResponse<KeepAliveResponseData>)
+   * 2. 传入 data 对象 (KeepAliveResponseData)
+   */
+  const handleKeepAliveResponse = useCallback((responseOrData: any) => {
+    // 检查 projectId 是否已经变化，如果变化了就不处理这个响应
+    const currentProjectId = latestProjectIdRef.current;
+    if (currentKeepAliveProjectIdRef.current !== currentProjectId) {
+      return;
+    }
+
+    // 判断传入的是完整的 response 还是 data
+    // 如果有 code 或 success 字段，说明是完整的 response
+    // 否则可能是 data 对象
+    const isFullResponse =
+      responseOrData?.code !== undefined ||
+      responseOrData?.success !== undefined;
+    const response = isFullResponse
+      ? responseOrData
+      : { data: responseOrData, code: '0000', success: true };
+    const data = isFullResponse ? responseOrData?.data : responseOrData;
+
+    // 调试日志：打印返回数据格式
+    // console.log('[useAppDevServer] keepAlive response:', {
+    //   isFullResponse,
+    //   code: response?.code,
+    //   success: response?.success,
+    //   message: response?.message,
+    //   hasData: !!data,
+    //   devServerUrl: data?.devServerUrl,
+    //   fullResponse: responseOrData,
+    // });
+
+    // 检查接口返回状态码 - 兼容 code === '0000' 或 success === true
+    const isSuccess = response?.code === '0000' || response?.success === true;
+
+    if (!isSuccess) {
+      // 【关键变更】接口返回非成功状态码，设置错误信息和错误码
+      const errorMessage = response?.message || '保活请求失败';
+      const errorCode = response?.code || 'KEEPALIVE_ERROR';
+      // console.warn('[useAppDevServer] keepAlive failed:', {
+      //   code: errorCode,
+      //   message: errorMessage,
+      //   fullResponse: responseOrData,
+      // });
+      setServerMessage(errorMessage);
+      setServerErrorCode(errorCode);
+      setIsRunning(false);
+      onServerStatusChangeRef.current?.(false);
+      // 不设置 isStarting 或 isRestarting，避免显示 loading
+      return;
+    }
+
+    // 清除之前的错误信息和错误码
+    setServerMessage(null);
+    setServerErrorCode(null);
+    setIsRunning(true);
+    onServerStatusChangeRef.current?.(true);
+
+    // 处理返回数据 - 兼容不同的数据结构
+    const devServerUrl = data?.devServerUrl;
+    if (devServerUrl) {
+      const newDevServerUrl = devServerUrl;
+      const currentDevServerUrl = devServerUrlRef.current;
+
+      // 如果返回的URL与当前URL不同，更新预览地址
+      if (newDevServerUrl !== currentDevServerUrl) {
+        // console.log('[useAppDevServer] devServerUrl updated:', {
+        //   old: currentDevServerUrl,
+        //   new: newDevServerUrl,
+        // });
+        setDevServerUrl(newDevServerUrl);
+        devServerUrlRef.current = newDevServerUrl;
+        onServerStartRef.current?.(newDevServerUrl);
+      }
+    } else {
+      // 如果没有 devServerUrl，但请求成功，可能是首次请求或服务器未启动
+      // console.log('[useAppDevServer] keepAlive success but no devServerUrl');
+    }
+  }, []); // 空依赖数组，使用 ref 访问最新值
+
+  /**
+   * 使用 umi useRequest 实现 keepalive 轮询
+   * 与 useEventPolling.ts 的 batch 接入方案一致
+   * 注意：useRequest 的 onSuccess 回调接收的是完整的 response 对象（包含 code, success, message, data）
+   */
+  const keepAlivePolling = useRequest(
+    () => {
+      const currentProjectId = latestProjectIdRef.current;
+      if (!currentProjectId) {
+        return Promise.resolve({ code: 'NO_PROJECT_ID' });
+      }
+      return keepAlive(currentProjectId);
+    },
+    {
+      manual: true, // 手动控制，不自动执行
+      loading: false, // 不显示 loading 状态
+      pollingInterval: DEV_SERVER_CONSTANTS.SSE_HEARTBEAT_INTERVAL, // 轮询间隔
+      pollingWhenHidden: false, // 在屏幕不可见时，暂时暂停定时任务
+      pollingErrorRetryCount: -1, // 轮询错误重试次数，-1 表示无限次
+      throwOnError: false, // 不抛出错误，在 onError 中处理
+      onSuccess: (data: any, params: any, response: any) => {
+        // useRequest 的 onSuccess 回调参数：
+        // - data: response.data (即 KeepAliveResponseData)
+        // - params: 请求参数
+        // - response: 完整的响应对象 (RequestResponse<KeepAliveResponseData>)
+        // 我们需要使用完整的 response 对象
+        handleKeepAliveResponse(response || data);
+      },
+      onError: () => {
+        // 错误处理，不显示错误提示（已在 common.ts 中配置为静默请求）
+        // console.error('[useAppDevServer] keepAlive error:', error);
+      },
+    },
+  );
+
+  // 使用 ref 存储 keepAlivePolling，避免依赖项变化
+  const keepAlivePollingRef = useRef(keepAlivePolling);
+  keepAlivePollingRef.current = keepAlivePolling;
+
   /**
    * 停止保活轮询
    */
   const stopKeepAlive = useCallback(() => {
-    if (keepAliveTimerRef.current) {
-      clearInterval(keepAliveTimerRef.current);
-      keepAliveTimerRef.current = null;
-    }
+    // 取消 umi useRequest 的轮询
+    keepAlivePollingRef.current.cancel();
     // 清除当前保活对应的 projectId
     currentKeepAliveProjectIdRef.current = null;
-  }, []);
-
-  /**
-   * 处理保活响应，更新预览地址
-   * 根据实际接口返回格式: { projectId, projectIdStr, devServerUrl }
-   */
-  const handleKeepAliveResponse = useCallback(
-    (response: any) => {
-      // 检查接口返回状态码
-      if (response?.code !== '0000') {
-        // 【关键变更】接口返回非 0000 状态码，设置错误信息和错误码
-        const errorMessage = response?.message || '错误信息';
-        const errorCode = response?.code || 'KEEPALIVE_ERROR';
-        setServerMessage(errorMessage);
-        setServerErrorCode(errorCode);
-        setIsRunning(false);
-        onServerStatusChange?.(false);
-        // 不设置 isStarting 或 isRestarting，避免显示 loading
-        return;
-      }
-
-      // 清除之前的错误信息和错误码
-      setServerMessage(null);
-      setServerErrorCode(null);
-      setIsRunning(true);
-      onServerStatusChange?.(true);
-
-      if (response?.data?.devServerUrl) {
-        const newDevServerUrl = response.data.devServerUrl;
-        const currentDevServerUrl = devServerUrl;
-
-        // 如果返回的URL与当前URL不同，更新预览地址
-        if (newDevServerUrl !== currentDevServerUrl) {
-          setDevServerUrl(newDevServerUrl);
-          onServerStart?.(newDevServerUrl);
-        }
-      }
-    },
-    [devServerUrl, onServerStart, onServerStatusChange],
-  );
+  }, []); // 空依赖数组，使用 ref 访问最新值
 
   /**
    * 启动保活轮询
@@ -194,59 +290,12 @@ export const useAppDevServer = ({
       return;
     }
 
-    // 【核心修复】先停止旧的定时器，确保不会有多个定时器同时运行
-    stopKeepAlive();
-
     // 更新当前保活对应的 projectId
     currentKeepAliveProjectIdRef.current = currentProjectId;
 
-    // 初始保活请求
-    keepAlive(currentProjectId)
-      .then((response) => {
-        // 检查 projectId 是否已经变化，如果变化了就不处理这个响应
-        if (currentKeepAliveProjectIdRef.current === currentProjectId) {
-          handleKeepAliveResponse(response);
-        }
-      })
-      .catch(() => {});
-
-    // 设置定时保活轮询
-    keepAliveTimerRef.current = setInterval(() => {
-      const activeProjectId = currentKeepAliveProjectIdRef.current;
-      const currentLatestProjectId = latestProjectIdRef.current;
-
-      // 【核心检测】如果当前定时器的 projectId 与最新的不一致，说明有新的 keepAlive 启动了，停止当前定时器
-      if (activeProjectId !== currentLatestProjectId) {
-        console.log(
-          '[useAppDevServer] 检测到 projectId 变化，停止旧的 keepAlive 定时器',
-          { activeProjectId, currentLatestProjectId },
-        );
-        if (keepAliveTimerRef.current) {
-          clearInterval(keepAliveTimerRef.current);
-          keepAliveTimerRef.current = null;
-        }
-        return;
-      }
-
-      // 如果 projectId 已经被清除，停止定时器
-      if (!activeProjectId) {
-        if (keepAliveTimerRef.current) {
-          clearInterval(keepAliveTimerRef.current);
-          keepAliveTimerRef.current = null;
-        }
-        return;
-      }
-
-      keepAlive(activeProjectId)
-        .then((response) => {
-          // 再次检查 projectId 是否还是当前的，避免处理过期的响应
-          if (currentKeepAliveProjectIdRef.current === activeProjectId) {
-            handleKeepAliveResponse(response);
-          }
-        })
-        .catch(() => {});
-    }, DEV_SERVER_CONSTANTS.SSE_HEARTBEAT_INTERVAL);
-  }, [handleKeepAliveResponse, stopKeepAlive]); // 移除 projectId 依赖，使用 latestProjectIdRef 访问最新值
+    // 启动 umi useRequest 轮询
+    keepAlivePollingRef.current.run();
+  }, []); // 空依赖数组，使用 ref 访问最新值
 
   /**
    * 启动开发环境
