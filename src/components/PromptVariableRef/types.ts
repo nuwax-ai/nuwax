@@ -103,7 +103,7 @@ export interface PromptVariableRefProps {
   variables?: PromptVariable[];
   /** 是否只读模式 */
   readonly?: boolean;
-  /** 弹窗方向 */
+  /** 弹窗方向 - 已废弃，现在使用智能动态定位 */
   direction?: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
   /** 占位符文本 */
   placeholder?: string;
