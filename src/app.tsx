@@ -192,8 +192,8 @@ export function render(oldRender: () => void) {
  * 路由变化监听
  * 可以在这里处理页面切换逻辑
  */
-export function onRouteChange(...params: any[]) {
-  console.info('[router] onRouteChange', ...params);
+export function onRouteChange() {
+  // console.info('[router] onRouteChange', ...params);
 
   // 如果是登录成功后的路由变化，确保轮询启动
   if (localStorage.getItem(ACCESS_TOKEN) && location.pathname !== '/login') {

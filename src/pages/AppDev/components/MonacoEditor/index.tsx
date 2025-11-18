@@ -120,14 +120,14 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
               `monaco-editor/esm/vs/basic-languages/${language}/${language}.contribution`
             );
           } catch (e) {
-            console.warn(`[MonacoEditor] 无法加载语言支持: ${language}`, e);
+            // console.warn(`[MonacoEditor] 无法加载语言支持: ${language}`, e);
           }
           break;
       }
 
       // 语言支持加载完成
     } catch (error) {
-      console.error(`❌ [MonacoEditor] 加载语言支持失败 (${language}):`, error);
+      // console.error(`❌ [MonacoEditor] 加载语言支持失败 (${language}):`, error);
     }
   }, []);
 
@@ -162,10 +162,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         // 为Vue文件添加HTML worker支持
         // HTML语言支持已加载
       } catch (error) {
-        console.warn(
-          '⚠️ [MonacoEditor] HTML语言支持加载失败，使用默认配置:',
-          error,
-        );
+        // console.warn(
+        //   '⚠️ [MonacoEditor] HTML语言支持加载失败，使用默认配置:',
+        //   error,
+        // );
       }
 
       // 配置TypeScript编译器选项
@@ -199,7 +199,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       setIsMonacoReady(true);
       // Monaco Editor初始化成功
     } catch (error) {
-      console.error('❌ [MonacoEditor] Monaco Editor初始化失败:', error);
+      // console.error('❌ [MonacoEditor] Monaco Editor初始化失败:', error);
     }
   }, [isMonacoReady]);
 
@@ -259,10 +259,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
    * 安全地执行异步操作，处理取消错误
    */
   const safeAsyncOperation = useCallback(
-    async (
-      operation: () => Promise<any>,
-      errorMessage: string,
-    ): Promise<any> => {
+    async (operation: () => Promise<any>): Promise<any> => {
       try {
         return await operation();
       } catch (error) {
@@ -278,7 +275,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           // 操作被取消（预期行为）
           return null;
         }
-        console.error(`❌ ${errorMessage}:`, error);
+        // console.error(`❌ ${errorMessage}:`, error);
         return null;
       }
     },
@@ -308,10 +305,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
     try {
       // 只有在需要时才清理现有编辑器
       if (editorInstanceRef.current && editorCreatedRef.current) {
-        await safeAsyncOperation(
-          () => safeDisposeEditor(),
-          'Monaco Editor cleanup',
-        );
+        await safeAsyncOperation(() => safeDisposeEditor());
       }
 
       const language = currentFile
@@ -319,10 +313,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
         : 'typescript';
 
       // 动态加载语言支持
-      await safeAsyncOperation(
-        () => loadLanguageSupport(language),
-        `Monaco Editor language loading (${language})`,
-      );
+      await safeAsyncOperation(() => loadLanguageSupport(language));
 
       // 检查是否在等待期间被取消
       if (isDisposingRef.current) {
@@ -505,7 +496,7 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       ) {
         // Monaco Editor 内容更新被取消或销毁（在快速文件切换期间是预期的）
       } else {
-        console.error('❌ [MonacoEditor] 更新编辑器内容失败:', error);
+        // console.error('❌ [MonacoEditor] 更新编辑器内容失败:', error);
       }
     }
   }, [currentFile, getLanguageFromFile, loadLanguageSupport]);
@@ -527,10 +518,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       ) {
         // 阻止Monaco Editor的取消错误冒泡到全局错误处理
         event.preventDefault();
-        console.debug(
-          'Monaco Editor promise rejected (expected during rapid operations):',
-          reason,
-        );
+        // console.debug(
+        //   'Monaco Editor promise rejected (expected during rapid operations):',
+        //   reason,
+        // );
         return;
       }
 
@@ -575,10 +566,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
             ) {
               const model = editor.getModel();
               if (model) {
-                console.debug(
-                  'Monaco Editor model exists:',
-                  model.uri.toString(),
-                );
+                // console.debug(
+                //   'Monaco Editor model exists:',
+                //   model.uri.toString(),
+                // );
               }
             } else if (editor && typeof editor.isDisposed !== 'function') {
               // 如果编辑器存在但没有 isDisposed 方法，尝试获取模型

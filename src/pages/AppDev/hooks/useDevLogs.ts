@@ -176,7 +176,7 @@ export const useDevLogs = (
       },
       onError: () => {
         // 错误处理，不显示错误提示（已在 common.ts 中配置为静默请求）
-        console.error('获取日志失败');
+        // console.error('获取日志失败');
       },
     },
   );
@@ -243,7 +243,7 @@ export const useDevLogs = (
    */
   const getNewErrorLogs = useCallback((): DevLogEntry[] => {
     const newErrors = getNewErrors(logs, previousLogsRef.current);
-    console.log('[error] getNewErrorLogs', newErrors);
+    // console.log('[error] getNewErrorLogs', newErrors);
     previousLogsRef.current = [...logs];
     return newErrors;
   }, [logs]);
