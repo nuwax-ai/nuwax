@@ -185,12 +185,22 @@ export const useDevLogs = (
   const devLogsPollingRef = useRef(devLogsPolling);
   devLogsPollingRef.current = devLogsPolling;
 
+  // 添加一个标志来跟踪轮询是否已经执行过
+  const hasExecutedRef = useRef(false);
+
   /**
    * 停止轮询
    */
   const stopPolling = useCallback(() => {
-    // 取消 umi useRequest 的轮询
-    devLogsPollingRef.current.cancel();
+    // 只有在服务已经执行过的情况下才取消
+    if (devLogsPollingRef.current && hasExecutedRef.current) {
+      try {
+        devLogsPollingRef.current.cancel();
+      } catch (error) {
+        // 静默处理cancel错误，避免控制台警告
+        console.debug('取消轮询时出错:', error);
+      }
+    }
     setIsPolling(false);
   }, []); // 空依赖数组，使用 ref 访问最新值
 
@@ -200,6 +210,7 @@ export const useDevLogs = (
   const startPolling = useCallback(() => {
     // 启动 umi useRequest 轮询
     devLogsPollingRef.current.run();
+    hasExecutedRef.current = true;
     setIsPolling(true);
   }, []); // 空依赖数组，使用 ref 访问最新值
 
