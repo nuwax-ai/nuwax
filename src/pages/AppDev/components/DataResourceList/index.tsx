@@ -76,7 +76,7 @@ const getDefaultImage = (type: string): string => {
     case 'workflow':
       return workflowImage;
     default:
-      console.log('Using default plugin image for type:', type); // 调试日志
+      // console.log('Using default plugin image for type:', type); // 已被注释的调试日志
       return pluginImage;
   }
 };
@@ -212,7 +212,7 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
     const agentComponentInfo = convertToAgentComponentInfo(resource);
     const defaultImage = getDefaultImage(resource.type);
 
-    // console.log('Rendering resource:', {
+    // console.log('Rendering resource:', { // 已被注释的调试日志
     //   id: resource.id,
     //   name: resource.name,
     //   type: resource.type,

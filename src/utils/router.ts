@@ -85,7 +85,7 @@ export const jumpBack = (url?: string) => {
     result = '/';
   }
 
-  console.info('[router] jumpBack', history, location, result);
+  // console.info('[router] jumpBack', history, location, result);
   jumpTo(result);
 };
 
