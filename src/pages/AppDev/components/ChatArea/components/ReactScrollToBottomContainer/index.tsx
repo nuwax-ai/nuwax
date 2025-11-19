@@ -237,10 +237,10 @@ const ReactScrollToBottomContainer = forwardRef<
                 currentScrollHeight - previousScrollHeight;
 
               // 检查是否有"加载更多历史会话"按钮，考虑其高度变化
-              const loadMoreButton = scrollContainerRef.current.querySelector(
-                '.loadMoreHistoryButton',
-              ) as HTMLElement | null;
-              const currentButtonHeight = loadMoreButton?.offsetHeight || 0;
+              // const loadMoreButton = scrollContainerRef.current.querySelector(
+              //   '.loadMoreHistoryButton',
+              // ) as HTMLElement | null;
+              // const currentButtonHeight = loadMoreButton?.offsetHeight || 0;
 
               // 计算新的滚动位置：旧位置 + 新增内容的高度
               // 注意：如果按钮在加载时被移除，高度会减少，需要调整计算
@@ -248,14 +248,14 @@ const ReactScrollToBottomContainer = forwardRef<
 
               // 调试日志（开发环境）
               if (process.env.NODE_ENV === 'development') {
-                console.log('[handleScrollTo] 滚动位置恢复:', {
-                  previousScrollTop,
-                  previousScrollHeight,
-                  currentScrollHeight,
-                  heightDifference,
-                  currentButtonHeight,
-                  newScrollTop,
-                });
+                // console.log('[handleScrollTo] 滚动位置恢复:', {
+                //   previousScrollTop,
+                //   previousScrollHeight,
+                //   currentScrollHeight,
+                //   heightDifference,
+                //   currentButtonHeight,
+                //   newScrollTop,
+                // });
               }
 
               // 滚动到新位置，使用 auto 行为以获得即时效果
@@ -276,11 +276,11 @@ const ReactScrollToBottomContainer = forwardRef<
                   // 如果滚动位置偏差超过 10px，进行调整
                   if (scrollDifference > 10) {
                     if (process.env.NODE_ENV === 'development') {
-                      console.log('[handleScrollTo] 滚动位置偏差，进行调整:', {
-                        expectedScrollTop,
-                        actualScrollTop,
-                        scrollDifference,
-                      });
+                      // console.log('[handleScrollTo] 滚动位置偏差，进行调整:', {
+                      //   expectedScrollTop,
+                      //   actualScrollTop,
+                      //   scrollDifference,
+                      // });
                     }
 
                     scrollContainerRef.current.scrollTo({
@@ -425,7 +425,7 @@ const ReactScrollToBottomContainer = forwardRef<
           <ScrollController>
             {({ scrollToBottom: contextScrollToBottom, atBottom }) => {
               // 完全禁用库的状态检测，避免冲突
-              // console.log('[ScrollController] atBottom 状态:', atBottom);
+              // console.log('[ScrollController] atBottom 状态:', atBottom); // 已被注释的调试日志
 
               // 直接设置 ref，不使用 useEffect
               scrollToBottomRef.current = contextScrollToBottom;

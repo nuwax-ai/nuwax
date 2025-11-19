@@ -989,6 +989,219 @@
         },
       });
     }
+
+    /**
+     * 获取 URL 指定参数的值（支持 search 与 hash）
+     * @param {string} url - 要处理的 URL
+     * @param {string} key - 参数名
+     * @returns {string|null} - 返回参数值，不存在返回 null
+     */
+    function getQueryParam(url, key) {
+      try {
+        const u = new URL(url, window.location.origin);
+
+        // 1. 优先从 ?a=1&b=2 中读取
+        if (u.searchParams.has(key)) {
+          return u.searchParams.get(key);
+        }
+
+        // 2. 再从 hash 中读取: #/page?id=100&type=1
+        if (u.hash.includes('?')) {
+          const hashQuery = u.hash.split('?')[1]; // 取 ? 后部分
+          const hashParams = new URLSearchParams(hashQuery);
+
+          if (hashParams.has(key)) {
+            return hashParams.get(key);
+          }
+        }
+
+        return null;
+      } catch (e) {
+        console.warn('无效 URL：', url);
+        return null;
+      }
+    }
+
+    /**
+     * 添加「回到首页」悬浮图标
+     * - 默认固定在页面左上角
+     * - 短按/单击：回到首页
+     * - 长按后可拖动到任意位置
+     */
+    function addBackToHomeButton() {
+      // 如果当前 URL 中不包含 _ticket 参数，则不显示按钮
+      const currentUrl = window.location.href;
+      const _ticket = getQueryParam(currentUrl, '_ticket');
+      // 跳转类型主要区别是否是系统内部跳转还是分享链接跳转
+      const jump_type = getQueryParam(currentUrl, 'jump_type');
+
+      if (!_ticket || !jump_type) {
+        console.warn(
+          '[dev-monitor] 未检测到 _ticket 或 jump_type，跳过首页按钮渲染',
+        );
+        return;
+      }
+
+      const icon = document.createElement('div');
+      icon.innerHTML = '首页';
+
+      // 基础样式：右下角悬浮小圆角块
+      Object.assign(icon.style, {
+        position: 'fixed',
+        bottom: '16px',
+        right: '16px',
+        width: '44px',
+        height: '44px',
+        lineHeight: '44px',
+        textAlign: 'center',
+        borderRadius: '22px',
+        background: 'rgba(0, 0, 0, 0.65)',
+        color: '#fff',
+        fontSize: '12px',
+        zIndex: '99999',
+        cursor: 'pointer',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
+      });
+
+      let longPressTimer = null; // 长按计时器
+      let isDragging = false; // 是否处于拖动状态
+      let startX = 0;
+      let startY = 0;
+      let startLeft = 0;
+      let startTop = 0;
+
+      const LONG_PRESS_DURATION = 300; // 长按时间阈值（毫秒）
+
+      /**
+       * 获取当前事件的坐标（兼容鼠标和触摸）
+       */
+      function getPoint(event) {
+        if (event.touches && event.touches.length > 0) {
+          return {
+            x: event.touches[0].clientX,
+            y: event.touches[0].clientY,
+          };
+        }
+        return {
+          x: event.clientX,
+          y: event.clientY,
+        };
+      }
+
+      /**
+       * 开始按下：启动长按计时
+       */
+      function handleDown(event) {
+        try {
+          event.preventDefault();
+        } catch (e) {
+          // 某些环境下可能不允许 preventDefault，忽略即可
+        }
+
+        const point = getPoint(event);
+        startX = point.x;
+        startY = point.y;
+
+        // 获取当前元素的位置（兼容 bottom/right 和 left/top）
+        const rect = icon.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        isDragging = false;
+
+        // 开始计时，超过阈值则进入拖动模式
+        longPressTimer = setTimeout(() => {
+          isDragging = true;
+          icon.style.transition = 'none';
+          // 进入拖动模式时，将 bottom/right 转换为 left/top
+          icon.style.bottom = 'auto';
+          icon.style.right = 'auto';
+          icon.style.left = startLeft + 'px';
+          icon.style.top = startTop + 'px';
+        }, LONG_PRESS_DURATION);
+      }
+
+      /**
+       * 移动：只有在长按后进入拖动模式时才移动
+       */
+      function handleMove(event) {
+        if (!isDragging) return;
+
+        const point = getPoint(event);
+        const deltaX = point.x - startX;
+        const deltaY = point.y - startY;
+
+        let nextLeft = startLeft + deltaX;
+        let nextTop = startTop + deltaY;
+
+        // 防止拖出可视区域
+        const maxLeft = window.innerWidth - icon.offsetWidth;
+        const maxTop = window.innerHeight - icon.offsetHeight;
+
+        nextLeft = Math.max(0, Math.min(maxLeft, nextLeft));
+        nextTop = Math.max(0, Math.min(maxTop, nextTop));
+
+        icon.style.left = nextLeft + 'px';
+        icon.style.top = nextTop + 'px';
+      }
+
+      // 1. child 第一次加载时记录进入 iframe 的历史位置
+      if (!sessionStorage.getItem('entryIndex')) {
+        sessionStorage.setItem('entryIndex', window.history.length);
+        console.log('进入 iframe 时的历史位置记录为：', window.history.length);
+      }
+      // 2. 回到首页
+      function goHome() {
+        if (jump_type === 'outer') {
+          // 如果是分享链接跳转，则使用 wx.miniProgram.reLaunch 跳转到首页
+          window.wx.miniProgram.reLaunch({ url: '/pages/home/home' });
+          return;
+        }
+
+        if (jump_type === 'inner') {
+          // 如果是系统内部跳转，则使用 history.go 回退
+          const entryIndex = Number(sessionStorage.getItem('entryIndex'));
+          const diff = entryIndex - window.history.length;
+          console.log('返回数量:', diff);
+
+          window.history.go(diff);
+          return;
+        }
+      }
+
+      /**
+       * 松开：如果没有进入拖动状态，则认为是点击 → 回到首页
+       */
+      function handleUp() {
+        clearTimeout(longPressTimer);
+
+        if (!isDragging) {
+          // 短按 / 单击：回到首页
+          try {
+            goHome();
+          } catch (e) {
+            // 静默失败，避免影响页面
+          }
+        }
+
+        isDragging = false;
+      }
+
+      // 鼠标事件
+      icon.addEventListener('mousedown', handleDown);
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleUp);
+
+      // 触摸事件（移动端）
+      icon.addEventListener('touchstart', handleDown, { passive: false });
+      window.addEventListener('touchmove', handleMove, { passive: false });
+      window.addEventListener('touchend', handleUp);
+      window.addEventListener('touchcancel', handleUp);
+
+      document.body.appendChild(icon);
+    }
+
     /**
      * 注入微信 JS-SDK
      */
@@ -1000,6 +1213,9 @@
 
       // 脚本加载成功回调
       script.onload = function () {
+        // 添加回到首页按钮
+        addBackToHomeButton();
+
         // 等待 wx 对象可用
         setTimeout(() => {
           let timer = null;

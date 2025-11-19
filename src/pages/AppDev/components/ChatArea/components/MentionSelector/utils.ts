@@ -198,7 +198,7 @@ export const getRecentFiles = (projectId?: string): RecentFileItem[] => {
 export const saveRecentFile = (file: FileNode, projectId?: string): void => {
   try {
     if (!projectId) {
-      console.warn('保存最近使用的文件时缺少 projectId，将使用默认存储键');
+      // console.warn('保存最近使用的文件时缺少 projectId，将使用默认存储键');
     }
     const storageKey = getStorageKey(projectId || '', RECENT_FILES_KEY_PREFIX);
     const items = getRecentFiles(projectId);
@@ -214,7 +214,7 @@ export const saveRecentFile = (file: FileNode, projectId?: string): void => {
     const updated = [newItem, ...filtered].slice(0, MAX_RECENT_ITEMS);
     sessionStorage.setItem(storageKey, JSON.stringify(updated));
   } catch (error) {
-    console.error('保存最近使用的文件失败:', error);
+    // console.error('保存最近使用的文件失败:', error);
   }
 };
 
@@ -253,7 +253,7 @@ export const saveRecentDataSource = (
 ): void => {
   try {
     if (!projectId) {
-      console.warn('保存最近使用的数据源时缺少 projectId，将使用默认存储键');
+      // console.warn('保存最近使用的数据源时缺少 projectId，将使用默认存储键');
     }
     const storageKey = getStorageKey(
       projectId || '',
@@ -271,7 +271,7 @@ export const saveRecentDataSource = (
     const updated = [newItem, ...filtered].slice(0, MAX_RECENT_ITEMS);
     sessionStorage.setItem(storageKey, JSON.stringify(updated));
   } catch (error) {
-    console.error('保存最近使用的数据源失败:', error);
+    // console.error('保存最近使用的数据源失败:', error);
   }
 };
 
