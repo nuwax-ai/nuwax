@@ -24,16 +24,16 @@ import {
   Typography,
 } from 'antd';
 import React, { useCallback, useState } from 'react';
-import PromptVariableRef from '../../components/PromptVariableRef';
+import VariableInferenceInput from '../../components/VariableInferenceInput';
 import {
   type PromptVariable,
   VariableType,
-} from '../../components/PromptVariableRef/types';
+} from '../../components/VariableInferenceInput/types';
 import {
   findAllVariableReferences,
   isValidVariableReference,
-} from '../../components/PromptVariableRef/utils/parser';
-import { generateVariableReference } from '../../components/PromptVariableRef/utils/treeUtils';
+} from '../../components/VariableInferenceInput/utils/parser';
+import { generateVariableReference } from '../../components/VariableInferenceInput/utils/treeUtils';
 
 const { Title, Paragraph, Text } = Typography;
 const { Panel } = Collapse;
@@ -367,7 +367,7 @@ const VariableRefTestExample: React.FC = () => {
                   调试：输出当前值
                 </Button>
               </Space>
-              <PromptVariableRef
+              <VariableInferenceInput
                 variables={testVariables}
                 value={promptValue}
                 onChange={setPromptValue}

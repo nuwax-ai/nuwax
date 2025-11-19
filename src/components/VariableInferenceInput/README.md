@@ -1,6 +1,6 @@
-# Prompt Variable Reference Component
+# Variable Inference Input Component
 
-一个功能强大的提示词变量引用组件，支持智能提示、自动补全和多种变量引用语法。
+一个功能强大的变量智能推断输入组件，支持智能提示、自动补全和多种变量引用语法。
 
 ## 📋 目录
 
@@ -98,11 +98,11 @@
 
 ```tsx
 import React, { useState } from 'react';
-import PromptVariableRef from '@/components/PromptVariableRef';
+import VariableInferenceInput from '@/components/VariableInferenceInput';
 import type {
   PromptVariable,
   VariableType,
-} from '@/components/PromptVariableRef';
+} from '@/components/VariableInferenceInput';
 
 const MyComponent = () => {
   const [value, setValue] = useState('');
@@ -128,7 +128,7 @@ const MyComponent = () => {
   ];
 
   return (
-    <PromptVariableRef
+    <VariableInferenceInput
       variables={variables}
       value={value}
       onChange={setValue}
@@ -141,7 +141,7 @@ const MyComponent = () => {
 ### 高级配置
 
 ```tsx
-<PromptVariableRef
+<VariableInferenceInput
   variables={variables}
   value={value}
   onChange={setValue}
@@ -158,7 +158,7 @@ const MyComponent = () => {
 
 ## 📖 API 参考
 
-### PromptVariableRef Props
+### VariableInferenceInput Props
 
 | 属性 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
@@ -280,7 +280,7 @@ import {
   findAllVariableReferences,
   extractVariableName,
   isValidVariableReference,
-} from '@/components/PromptVariableRef/utils/parser';
+} from '@/components/VariableInferenceInput/utils/parser';
 
 // 解析变量表达式
 const parseData = parseVariableExpression({
@@ -305,7 +305,7 @@ import {
   buildVariableTree,
   filterVariableTree,
   generateVariableReference,
-} from '@/components/PromptVariableRef/utils/treeUtils';
+} from '@/components/VariableInferenceInput/utils/treeUtils';
 
 // 构建变量树
 const tree = buildVariableTree(variables);
@@ -384,7 +384,7 @@ const cursorY = rect.top + currentLine * lineHeight + lineHeight - scrollTop;
 
 ```tsx
 // 升级前 (v1.1.x)
-<PromptVariableRef
+<VariableInferenceInput
   variables={variables}
   value={value}
   onChange={setValue}
@@ -392,7 +392,7 @@ const cursorY = rect.top + currentLine * lineHeight + lineHeight - scrollTop;
 />
 
 // 升级后 (v1.2.x)
-<PromptVariableRef
+<VariableInferenceInput
   variables={variables}
   value={value}
   onChange={setValue}

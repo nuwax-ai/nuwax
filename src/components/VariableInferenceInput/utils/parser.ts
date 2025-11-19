@@ -284,5 +284,5 @@ export const extractVariableName = (
  * 检查是否为有效的变量引用格式
  */
 export const isValidVariableReference = (text: string): boolean => {
-  return /^\{\{[\u4e00-\u9fa5_a-zA-Z0-9.\[\]]*\}\}$/.test(text);
+  return /^\{\{[\u4e00-\u9fa5_a-zA-Z0-9.[\]]*\}\}$/.test(text);
 };

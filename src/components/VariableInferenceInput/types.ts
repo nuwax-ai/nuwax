@@ -1,6 +1,6 @@
 /*
- * Prompt Variable Reference Component Types
- * 提示词变量引用组件类型定义
+ * Variable Inference Input Component Types
+ * 变量智能推断输入组件类型定义
  */
 
 export interface PromptVariable {
@@ -98,7 +98,7 @@ export interface CompletionContext {
   to: number;
 }
 
-export interface PromptVariableRefProps {
+export interface VariableInferenceInputProps {
   /** 可用变量列表 */
   variables?: PromptVariable[];
   /** 是否只读模式 */

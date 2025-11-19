@@ -1,5 +1,5 @@
 // import { ICON_OPTIMIZE } from '@/constants/images.constants';
-import PromptVariableRef from '@/components/PromptVariableRef/PromptVariableRef';
+import VariableInferenceInput from '@/components/VariableInferenceInput/VariableInferenceInput';
 import { CloseOutlined } from '@ant-design/icons';
 import { ConfigProvider, Space } from 'antd';
 import { Form } from 'antd/lib';
@@ -47,7 +47,7 @@ const ExpandTextArea: React.FC<
       {/*  />*/}
       {/*</Form.Item>*/}
       <Form.Item name={inputFieldName} className="expand-textarea-pre-style">
-        <PromptVariableRef
+        <VariableInferenceInput
           className="prompt-editor-provider"
           placeholder={placeholder}
           variables={variables}
