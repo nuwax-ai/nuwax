@@ -1,10 +1,24 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { VariableTreeNode } from '../types';
 import { buildVariableTree } from '../utils/treeUtils';
 
-export const useVariableTree = (variables: any[], searchText: string) => {
+export const useVariableTree = (
+  variables: any[] = [],
+  searchText: string,
+  visible: boolean,
+) => {
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
+
   // 构建变量树
   const variableTree = useMemo(() => buildVariableTree(variables), [variables]);
+
+  // 当不可见时重置选中状态
+  useEffect(() => {
+    if (!visible) {
+      setSelectedKeys([]);
+    }
+  }, [visible]);
 
   // 搜索过滤逻辑
   const displayTree = useMemo(() => {
@@ -83,5 +97,25 @@ export const useVariableTree = (variables: any[], searchText: string) => {
     return filterTreeBySearch(variableTree, searchText, 'fuzzy');
   }, [variableTree, searchText]);
 
-  return { variableTree, displayTree };
+  // 当搜索结果变化时，自动展开所有节点
+  useEffect(() => {
+    if (searchText.trim()) {
+      const getAllKeys = (nodes: VariableTreeNode[]): string[] => {
+        return nodes.flatMap((node) => [
+          node.key,
+          ...(node.children ? getAllKeys(node.children) : []),
+        ]);
+      };
+      setExpandedKeys(getAllKeys(displayTree));
+    }
+  }, [displayTree, searchText]);
+
+  return {
+    variableTree,
+    displayTree,
+    expandedKeys,
+    setExpandedKeys,
+    selectedKeys,
+    setSelectedKeys,
+  };
 };

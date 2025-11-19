@@ -59,8 +59,11 @@ export const transformVariableToTreeNode = (
  * 构建变量树
  */
 export const buildVariableTree = (
-  variables: PromptVariable[],
+  variables: PromptVariable[] = [],
 ): VariableTreeNode[] => {
+  if (!Array.isArray(variables)) {
+    return [];
+  }
   return variables.map((variable) => transformVariableToTreeNode(variable));
 };
 
