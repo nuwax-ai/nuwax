@@ -1563,26 +1563,6 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
                     )}" - 找到 ${displayTree.length} 个匹配项`
                   : `输入搜索词或浏览所有 ${variableTree.length} 个变量`}
               </div>
-
-              {/* 开发环境：显示位置计算信息 */}
-              {process.env.NODE_ENV === 'development' && (
-                <>
-                  <div className="position-debug">
-                    <strong>位置计算信息:</strong>
-                    <br />
-                    光标位置: ({cursorPosition.x.toFixed(0)},{' '}
-                    {cursorPosition.y.toFixed(0)})<br />
-                    下拉框尺寸: 300x280 (含搜索区)
-                    <br />
-                    内容对齐: 以下拉框顶部/底部为准
-                    <br />
-                    触发元素: {inputRef.current ? '✓' : '✗'}
-                  </div>
-
-                  {/* 对齐指示器 */}
-                  <div className="alignment-indicator top-center"></div>
-                </>
-              )}
             </>
           )}
 
