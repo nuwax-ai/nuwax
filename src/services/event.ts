@@ -8,6 +8,7 @@ interface EventList {
 export interface ApiCollectEventResponse {
   hasEvent: boolean;
   eventList: EventList[];
+  version?: string; // 版本号
 }
 // 轮询获取事件
 export async function apiCollectEvent(): Promise<
