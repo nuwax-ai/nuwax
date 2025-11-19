@@ -163,6 +163,7 @@ export const calculateDropdownPosition = (
     offset: 4,
     maxHeight: 280,
   },
+  options?: PositionOptions,
 ): { position: Position; adjustment: PositionAdjustment } => {
   const {
     width: dropdownWidth,
@@ -173,8 +174,11 @@ export const calculateDropdownPosition = (
     // 移除默认的 placement，使用动态计算
   } = dimensions;
 
+  // 优先使用 options 中的 treeHeight
+  const targetHeight = options?.treeHeight || dropdownHeight;
+
   // 计算实际内容区域高度（考虑搜索区域等）
-  const actualHeight = Math.min(dropdownHeight, maxHeight);
+  const actualHeight = Math.min(targetHeight, maxHeight);
 
   // 使用光标位置作为主要参考点
   const cursorBasedBounds = {
