@@ -1,8 +1,8 @@
 // import { ICON_OPTIMIZE } from '@/constants/images.constants';
+import PromptVariableRef from '@/components/PromptVariableRef/PromptVariableRef';
 import { CloseOutlined } from '@ant-design/icons';
 import { ConfigProvider, Space } from 'antd';
 import { Form } from 'antd/lib';
-import { PromptEditorProvider, PromptEditorRender } from 'prompt-kit-editor';
 import React from 'react';
 import './expandTextarea.less';
 import type { ExpandableInputTextareaState } from './type';
@@ -15,6 +15,7 @@ const ExpandTextArea: React.FC<
   placeholder,
   visible, // 接收 visible 属性
   onClose,
+  variables,
 }) => {
   return (
     <div
@@ -45,18 +46,13 @@ const ExpandTextArea: React.FC<
       {/*    className="no-resize-textarea"*/}
       {/*  />*/}
       {/*</Form.Item>*/}
-      <PromptEditorProvider>
-        <Form.Item
-          name={inputFieldName}
-          className="expand-textarea-pre-style scroll-container"
-        >
-          <PromptEditorRender
-            className="prompt-editor-provider"
-            isControled={true}
-            placeholder={placeholder}
-          />
-        </Form.Item>
-      </PromptEditorProvider>
+      <Form.Item name={inputFieldName} className="expand-textarea-pre-style">
+        <PromptVariableRef
+          className="prompt-editor-provider"
+          placeholder={placeholder}
+          variables={variables}
+        />
+      </Form.Item>
     </div>
   );
 };
