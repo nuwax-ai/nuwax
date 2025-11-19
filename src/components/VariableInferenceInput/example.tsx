@@ -1,17 +1,17 @@
 /*
- * Prompt Variable Reference Component Example
- * 提示词变量引用组件使用示例
+ * Variable Inference Input Component Example
+ * 变量智能推断输入组件使用示例
  */
 
 import { Alert, Card, Space, Tag, Typography } from 'antd';
 import React, { useState } from 'react';
-import PromptVariableRef from './index';
+import VariableInferenceInput from './index';
 import type { PromptVariable } from './types';
 import { VariableType } from './types';
 
 const { Title, Paragraph, Text } = Typography;
 
-export const PromptVariableRefExample: React.FC = () => {
+export const VariableInferenceInputExample: React.FC = () => {
   const [promptValue, setPromptValue] = useState('');
   const [selectedVariable, setSelectedVariable] = useState<{
     variable: PromptVariable;
@@ -118,7 +118,7 @@ export const PromptVariableRefExample: React.FC = () => {
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '20px' }}>
-      <Title level={2}>Prompt Variable Reference Component</Title>
+      <Title level={2}>Variable Inference Input Component</Title>
 
       <Alert
         message="智能变量引用组件"
@@ -135,7 +135,7 @@ export const PromptVariableRefExample: React.FC = () => {
             时会自动弹出变量选择菜单。
           </Paragraph>
 
-          <PromptVariableRef
+          <VariableInferenceInput
             variables={sampleVariables}
             value={promptValue}
             onChange={setPromptValue}
@@ -267,4 +267,4 @@ export const PromptVariableRefExample: React.FC = () => {
   );
 };
 
-export default PromptVariableRefExample;
+export default VariableInferenceInputExample;

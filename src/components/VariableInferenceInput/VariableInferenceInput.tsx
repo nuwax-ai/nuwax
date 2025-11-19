@@ -1,6 +1,6 @@
 /*
- * Prompt Variable Reference Component
- * 提示词变量引用组件
+ * Variable Inference Input Component
+ * 变量智能推断输入组件
  * 支持 {{变量名}}、{{变量名.子变量名}}、{{变量名[数组索引]}} 语法
  */
 
@@ -8,7 +8,7 @@ import { Tree } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import './styles.less';
-import type { PromptVariableRefProps, VariableTreeNode } from './types';
+import type { VariableInferenceInputProps, VariableTreeNode } from './types';
 import { calculateDropdownPosition } from './utils';
 import {
   buildVariableTree,
@@ -62,7 +62,7 @@ const transformToTreeDataForTree = (nodes: VariableTreeNode[]): any[] => {
   });
 };
 
-const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
+const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
   variables = [],
   readonly = false,
   // 移除 direction 参数，使用智能动态定位
@@ -73,7 +73,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   className = '',
   style,
 }) => {
-  console.log('PromptVariableRef rendered with variables:', variables);
+  console.log('VariableInferenceInput rendered with variables:', variables);
   console.log('Current value:', value);
   const [internalValue, setInternalValue] = useState(value || '');
   const [visible, setVisible] = useState(false);
@@ -1613,4 +1613,4 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   );
 };
 
-export default PromptVariableRef;
+export default VariableInferenceInput;

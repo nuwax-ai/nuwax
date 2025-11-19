@@ -1,4 +1,4 @@
-import PromptVariableRef from '@/components/PromptVariableRef/PromptVariableRef';
+import VariableInferenceInput from '@/components/VariableInferenceInput/VariableInferenceInput';
 import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import { ExpandAltOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
@@ -71,7 +71,7 @@ export const ExpandableInputTextarea: React.FC<
       {/*</Form.Item>*/}
 
       <Form.Item name={inputFieldName}>
-        <PromptVariableRef
+        <VariableInferenceInput
           placeholder={placeholder}
           variables={variables}
           className={cx(styles['prompt-editor-provider'])}
