@@ -317,16 +317,21 @@
 
 // 变量树形列表样式
 .variable-tree-list {
+  position: fixed; // Changed from relative to fixed
+  z-index: 9999;
   background: #fff;
+  border: 1px solid #d9d9d9;
   border-radius: 8px;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
+    0 9px 28px 8px rgba(0, 0, 0, 5%);
   overflow: hidden;
-  width: 300px; // 设置宽度为300px
-  min-width: 300px; // 最小宽度300px
-  max-width: 300px; // 最大宽度300px
-  padding: 8px; // 添加内边距
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+  padding: 8px;
 
   // 添加定位指示器（基于光标位置计算的结果）
-  position: relative;
+  // position: relative; // Removed as it conflicts with fixed positioning needed for dropdown
 
   &::before {
     content: '';
