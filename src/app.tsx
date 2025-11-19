@@ -12,9 +12,9 @@ import { unifiedThemeService } from './services/unifiedThemeService';
  * 在应用运行期间保持活跃，处理全局事件
  */
 const GlobalEventPolling: React.FC = () => {
-  // 启动事件轮询
-  useEventPolling();
-  return null; // 这个组件不渲染任何内容
+  // 启动事件轮询，返回 contextHolder 用于渲染 Modal 上下文
+  const contextHolder = useEventPolling();
+  return contextHolder; // 返回 contextHolder 以支持 Modal 的动态主题
 };
 
 /**
