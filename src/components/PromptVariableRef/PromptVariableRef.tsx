@@ -560,7 +560,8 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
     let rafId: number;
     let scrollSyncRafId: number;
-    let isScrolling = false;
+    let lastSyncTime = 0;
+    const SYNC_INTERVAL = 16; // 约60fps的同步间隔
 
     // 重新计算下拉框位置
     const recalculateDropdownPosition = () => {
@@ -586,7 +587,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       const cursorY =
         rect.top + currentLine * lineHeight + lineHeight - scrollTop;
 
-      console.log('Enhanced recalculateDropdownPosition:', {
+      console.log('🎯 Recalculate dropdown position:', {
         rectLeft: rect.left,
         rectTop: rect.top,
         currentLine,
@@ -605,34 +606,38 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         cursorY,
         inputRef.current,
         undefined,
-        {
-          hasSearch: true,
-          searchText: extractSearchTextFromInput(
-            internalValue,
-            textCursorPosition,
-          ),
-          treeHeight: 240,
-        },
       );
 
       setCursorPosition(position);
     };
 
-    // 使用更精确的滚动同步方法
-    const syncScrollPosition = () => {
+    // 强制同步滚动位置函数
+    const forceSyncScroll = () => {
       const currentScrollTop = textarea.scrollTop;
       const currentScrollLeft = textarea.scrollLeft;
 
-      // 同步高亮层滚动位置
+      // 立即同步滚动位置
       highlightLayer.scrollTop = currentScrollTop;
       highlightLayer.scrollLeft = currentScrollLeft;
 
-      console.log('Enhanced scroll synced:', {
+      // 额外的同步确保：考虑尾随换行的情况
+      const textAreaRect = textarea.getBoundingClientRect();
+      const highlightRect = highlightLayer.getBoundingClientRect();
+
+      const currentTime = Date.now();
+      console.log('🔄 Force scroll sync:', {
         scrollTop: currentScrollTop,
         scrollLeft: currentScrollLeft,
         isVisible: visible,
-        timestamp: Date.now(),
+        textAreaHeight: textAreaRect.height,
+        highlightHeight: highlightRect.height,
+        hasTrailingNewline: internalValue.endsWith('\n'),
+        contentLength: internalValue.length,
+        timestamp: currentTime,
+        deltaTime: currentTime - lastSyncTime,
       });
+
+      lastSyncTime = currentTime;
 
       // 如果下拉框可见，重新计算位置
       if (visible) {
@@ -643,35 +648,33 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       }
     };
 
-    // 优化滚动监听：使用更高的触发频率和更精确的检测
+    // 立即执行一次同步
+    forceSyncScroll();
+
+    // 防抖的滚动处理函数
     const handleScroll = () => {
+      const currentTime = Date.now();
+
       // 立即同步
-      syncScrollPosition();
+      forceSyncScroll();
 
-      // 设置滚动状态标记
-      isScrolling = true;
-
-      // 清除之前的debounce定时器
+      // 清除之前的定时器
       if (scrollSyncRafId) {
         cancelAnimationFrame(scrollSyncRafId);
       }
 
-      // 使用 requestAnimationFrame 进行防抖
+      // 延迟同步以确保同步完成
       scrollSyncRafId = requestAnimationFrame(() => {
-        if (isScrolling) {
-          syncScrollPosition();
-          isScrolling = false;
+        if (currentTime - lastSyncTime > SYNC_INTERVAL) {
+          forceSyncScroll();
         }
       });
     };
 
     // 添加多种滚动事件监听以确保同步
     textarea.addEventListener('scroll', handleScroll, { passive: true });
-
-    // 监听鼠标滚轮事件（更早触发）
+    textarea.addEventListener('scroll', forceSyncScroll, { passive: true }); // 双重同步
     textarea.addEventListener('wheel', handleScroll, { passive: true });
-
-    // 监听键盘滚动事件
     textarea.addEventListener('keydown', (e) => {
       if (
         e.key === 'PageDown' ||
@@ -680,26 +683,46 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         e.key === 'End' ||
         (e.ctrlKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp'))
       ) {
-        // 延迟触发以确保键盘滚动完成
-        setTimeout(handleScroll, 0);
+        setTimeout(forceSyncScroll, 0);
       }
+    });
+
+    // 监听输入框内容变化
+    const observer = new MutationObserver(() => {
+      console.log('📝 Content changed, syncing scroll...');
+      forceSyncScroll();
+    });
+    observer.observe(textarea, {
+      childList: true,
+      subtree: true,
+      characterData: true,
     });
 
     // 使用 ResizeObserver 监听输入框尺寸变化
     const resizeObserver = new ResizeObserver(() => {
-      // 尺寸变化时立即同步滚动位置
+      console.log('📐 Size changed, syncing scroll...');
       if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(syncScrollPosition);
+      rafId = requestAnimationFrame(forceSyncScroll);
     });
     resizeObserver.observe(textarea);
 
+    // 额外的窗口事件监听
+    const handleWindowScroll = () => {
+      // 窗口滚动时也同步
+      forceSyncScroll();
+    };
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
+
     return () => {
       textarea.removeEventListener('scroll', handleScroll);
+      textarea.removeEventListener('scroll', forceSyncScroll);
       textarea.removeEventListener('wheel', handleScroll);
       textarea.removeEventListener('keydown', handleScroll);
+      window.removeEventListener('scroll', handleWindowScroll);
       if (rafId) cancelAnimationFrame(rafId);
       if (scrollSyncRafId) cancelAnimationFrame(scrollSyncRafId);
       resizeObserver.disconnect();
+      observer.disconnect();
     };
   }, [visible, internalValue, textCursorPosition, extractSearchTextFromInput]);
 
@@ -710,57 +733,46 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
     if (!textarea || !highlightLayer) return;
 
-    console.log('Content changed, preparing enhanced sync scroll:', {
+    console.log('📝 Content changed, preparing enhanced sync scroll:', {
       contentLength: internalValue.length,
       scrollTop: textarea.scrollTop,
       scrollLeft: textarea.scrollLeft,
       timestamp: Date.now(),
     });
 
-    // 增强的滚动同步：立即同步 + 双重 requestAnimationFrame
-    const syncScroll = () => {
+    // 强制同步滚动位置的函数
+    const forceSyncScroll = () => {
       const currentScrollTop = textarea.scrollTop;
       const currentScrollLeft = textarea.scrollLeft;
 
       highlightLayer.scrollTop = currentScrollTop;
       highlightLayer.scrollLeft = currentScrollLeft;
 
-      console.log('Enhanced content scroll synced:', {
+      console.log('🔄 Enhanced content scroll synced:', {
         scrollTop: currentScrollTop,
         scrollLeft: currentScrollLeft,
         contentLength: internalValue.length,
         timestamp: Date.now(),
       });
-
-      // 标记同步完成
-      highlightLayer.classList.add('sync-complete');
-
-      // 300ms 后移除标记，允许下次同步
-      setTimeout(() => {
-        highlightLayer.classList.remove('sync-complete');
-      }, 300);
     };
 
     // 立即同步一次
-    syncScroll();
+    forceSyncScroll();
 
-    // 使用双重 requestAnimationFrame 确保 DOM 更新后再同步
+    // 使用多重 requestAnimationFrame 确保 DOM 更新后再同步
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        syncScroll();
+        forceSyncScroll();
       });
     });
 
     // 额外的延迟同步，确保复杂布局情况下也能正确同步
     const timeoutId = setTimeout(() => {
-      syncScroll();
-    }, 50);
+      forceSyncScroll();
+    }, 100); // 增加延迟时间
 
     return () => {
       clearTimeout(timeoutId);
-      if (highlightLayer) {
-        highlightLayer.classList.remove('sync-complete');
-      }
     };
   }, [internalValue]); // 当内容变化时同步滚动位置
 
@@ -780,17 +792,20 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     }
   }, [visible]);
 
-  // 高亮显示变量引用
+  // 高亮显示变量引用 - 增强版本，处理尾随换行
   const renderHighlightedText = useCallback((text: string) => {
+    // 处理尾随换行的问题
+    const processedText = text.endsWith('\n') ? text + '\n' : text;
+
     const regex = /\{\{([^}]+)\}\}/g;
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
     let match;
 
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = regex.exec(processedText)) !== null) {
       // 添加匹配前的普通文本
       if (match.index > lastIndex) {
-        parts.push(text.substring(lastIndex, match.index));
+        parts.push(processedText.substring(lastIndex, match.index));
       }
 
       // 添加高亮的变量引用
@@ -810,12 +825,12 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       lastIndex = match.index + fullMatch.length;
     }
 
-    // 添加剩余的普通文本
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
+    // 添加剩余的普通文本（包括尾随换行）
+    if (lastIndex < processedText.length) {
+      parts.push(processedText.substring(lastIndex));
     }
 
-    return parts.length > 0 ? parts : text;
+    return parts;
   }, []);
 
   // 识别光标位置是否在高亮区块中，并返回高亮区块信息
@@ -1490,7 +1505,14 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       <div className="input-container">
         {/* 高亮背景层 - 显示所有文本，包括高亮的变量引用 */}
         <div ref={highlightLayerRef} className="highlight-layer">
-          {internalValue ? renderHighlightedText(internalValue) : ''}
+          <div className="highlight-content">
+            {internalValue ? (
+              renderHighlightedText(internalValue)
+            ) : (
+              // 空内容时显示一个不可见的空格，确保有基本高度
+              <span style={{ visibility: 'hidden' }}>&nbsp;</span>
+            )}
+          </div>
         </div>
 
         {/* 实际的输入框 - 文本透明，只显示光标和选择效果 */}
