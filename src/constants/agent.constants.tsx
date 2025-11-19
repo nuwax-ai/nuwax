@@ -251,7 +251,7 @@ export const EVENT_LIST = [
   },
   {
     value: EventListEnum.InsertSystemPrompt,
-    label: '插入到系统提示词',
+    label: '插入到提示词',
   },
   {
     value: EventListEnum.Delete,
