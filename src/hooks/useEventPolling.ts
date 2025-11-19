@@ -4,12 +4,16 @@ import {
   apiCollectEvent,
   ApiCollectEventResponse,
 } from '@/services/event';
-import { modalConfirm } from '@/utils/ant-custom';
 import eventBus from '@/utils/eventBus';
-import { useRef } from 'react';
+import { ExclamationCircleFilled } from '@ant-design/icons';
+import { Modal } from 'antd';
+import React, { useRef } from 'react';
 import { useRequest } from 'umi';
 
-export default function useEventPolling(): void {
+export default function useEventPolling(): React.ReactElement | null {
+  // 使用 Modal.useModal() 获取 modal 实例，支持动态主题
+  const [modal, contextHolder] = Modal.useModal();
+
   // 使用ref记录当前是否正在处理事件，避免并发处理
   const isProcessingRef = useRef<boolean>(false);
   // 使用ref记录是否已经显示过版本更新弹窗，确保弹窗唯一性
@@ -65,26 +69,34 @@ export default function useEventPolling(): void {
     // 更新当前版本引用
     currentVersionRef.current = newVersion;
 
-    // 显示版本更新提示
-    modalConfirm(
-      '发现新版本',
-      `检测到新版本 ${newVersion}，是否立即更新？`,
-      () => {
+    // 处理取消逻辑（点击取消或点击遮罩都执行此逻辑）
+    const handleCancel = () => {
+      // 用户点击取消或点击遮罩，更新存储的版本号但不刷新页面
+      // 更新 sessionStorage，这样下次轮询时不会再次提示同一版本
+      sessionStorage.setItem(APP_VERSION, newVersion);
+      currentVersionRef.current = newVersion;
+      // 不重置弹窗标记，保持本次会话中不再重复显示
+      // 如果版本号再次更新（比如从 1.0.3 更新到 1.0.4），会再次提示
+    };
+
+    // 显示版本更新提示（居中显示）
+    modal.confirm({
+      title: '发现新版本',
+      icon: React.createElement(ExclamationCircleFilled),
+      content: `检测到新版本 ${newVersion}，是否立即更新？`,
+      okText: '更新',
+      cancelText: '取消',
+      centered: true, // 弹窗居中显示
+      maskClosable: true, // 允许点击遮罩关闭，点击遮罩时会触发 onCancel
+      onOk: () => {
         // 用户点击更新，重新加载页面
         // 更新存储的版本号（使用 sessionStorage）
         sessionStorage.setItem(APP_VERSION, newVersion);
         // 重新加载页面
         window.location.reload();
       },
-      () => {
-        // 用户点击取消，更新存储的版本号但不刷新页面
-        // 更新 sessionStorage，这样下次轮询时不会再次提示同一版本
-        sessionStorage.setItem(APP_VERSION, newVersion);
-        currentVersionRef.current = newVersion;
-        // 不重置弹窗标记，保持本次会话中不再重复显示
-        // 如果版本号再次更新（比如从 1.0.3 更新到 1.0.4），会再次提示
-      },
-    );
+      onCancel: handleCancel, // 点击取消或点击遮罩关闭时执行
+    });
   };
 
   const { run: startPolling, cancel: stopPolling } = useRequest(
@@ -137,4 +149,7 @@ export default function useEventPolling(): void {
       onError: () => {},
     },
   );
+
+  // 返回 contextHolder，需要在组件中渲染
+  return contextHolder;
 }
