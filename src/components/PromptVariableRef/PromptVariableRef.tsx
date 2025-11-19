@@ -4,8 +4,7 @@
  * 支持 {{变量名}}、{{变量名.子变量名}}、{{变量名[数组索引]}} 语法
  */
 
-import { Input, Tree } from 'antd';
-import cx from 'classnames';
+import { Tree } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import './styles.less';
@@ -16,8 +15,6 @@ import {
   drillToPath,
   getVariableTypeIcon,
 } from './utils/treeUtils';
-
-const { TextArea } = Input;
 
 // 将变量树节点转换为 Tree 组件格式
 const transformToTreeDataForTree = (nodes: VariableTreeNode[]): any[] => {
@@ -307,7 +304,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
     (nodeValue: string) => {
       if (!inputRef.current) return;
 
-      const textarea = inputRef.current.resizableTextArea.textArea;
+      const textarea = inputRef.current;
       const startPos = textarea.selectionStart;
       const endPos = textarea.selectionEnd;
       const currentValue = internalValue;
@@ -507,7 +504,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       // 设置光标位置到变量引用后面
       setTimeout(() => {
         if (inputRef.current) {
-          const textarea = inputRef.current.resizableTextArea.textArea;
+          const textarea = inputRef.current;
 
           // 验证光标位置是否在有效范围内
           const maxPos = finalText.length;
@@ -547,13 +544,13 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   // 同步外部 value 到内部 state
   useEffect(() => {
     if (value !== undefined) {
-      setInternalValue(value);
+      setInternalValue(value || '');
     }
   }, [value]);
 
   // 同步输入框和高亮层的滚动位置 - 增强版本
   useEffect(() => {
-    const textarea = inputRef.current?.resizableTextArea?.textArea;
+    const textarea = inputRef.current;
     const highlightLayer = highlightLayerRef.current;
 
     if (!textarea || !highlightLayer) return;
@@ -565,7 +562,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
     // 重新计算下拉框位置
     const recalculateDropdownPosition = () => {
-      const textarea = inputRef.current?.resizableTextArea?.textArea;
+      const textarea = inputRef.current;
       if (!textarea) return;
 
       const rect = textarea.getBoundingClientRect();
@@ -728,7 +725,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
   // 当内容变化时，同步一次滚动位置 - 增强版本
   useEffect(() => {
-    const textarea = inputRef.current?.resizableTextArea?.textArea;
+    const textarea = inputRef.current;
     const highlightLayer = highlightLayerRef.current;
 
     if (!textarea || !highlightLayer) return;
@@ -909,7 +906,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
       // 同步设置输入框的光标位置
       if (inputRef.current) {
         setTimeout(() => {
-          const textarea = inputRef.current.resizableTextArea.textArea;
+          const textarea = inputRef.current;
           textarea.setSelectionRange(newCursorPos, newCursorPos);
           textarea.focus();
         }, 0);
@@ -1027,7 +1024,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         // 延迟设置光标位置，确保DOM更新完成
         setTimeout(() => {
           if (inputRef.current) {
-            const textarea = inputRef.current.resizableTextArea.textArea;
+            const textarea = inputRef.current;
 
             console.log('Setting cursor position for auto-complete:', {
               requested: newCursorPosition,
@@ -1071,7 +1068,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
               // 计算光标位置
               if (inputRef.current) {
-                const textarea = inputRef.current.resizableTextArea.textArea;
+                const textarea = inputRef.current;
                 const rect = textarea.getBoundingClientRect();
                 const computedStyle = window.getComputedStyle(textarea);
                 const lineHeight = parseInt(computedStyle.lineHeight) || 20;
@@ -1203,7 +1200,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
 
         // 计算光标的屏幕位置
         if (inputRef.current) {
-          const textarea = inputRef.current.resizableTextArea.textArea;
+          const textarea = inputRef.current;
           const rect = textarea.getBoundingClientRect();
           const computedStyle = window.getComputedStyle(textarea);
           const lineHeight = parseInt(computedStyle.lineHeight) || 20;
@@ -1500,7 +1497,7 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
   });
 
   return (
-    <div className={cx('prompt-variable-ref', className)} style={style}>
+    <div className={['prompt-variable-ref', className].join(' ')} style={style}>
       {/* 主要的输入区域 */}
       <div className="input-container">
         {/* 高亮背景层 - 显示所有文本，包括高亮的变量引用 */}
@@ -1516,14 +1513,14 @@ const PromptVariableRef: React.FC<PromptVariableRefProps> = ({
         </div>
 
         {/* 实际的输入框 - 文本透明，只显示光标和选择效果 */}
-        <TextArea
+        <textarea
           ref={inputRef}
           value={internalValue}
           onChange={handleInputChange}
           placeholder={placeholder}
           disabled={disabled}
           rows={4}
-          className="prompt-variable-input"
+          className={'prompt-variable-input'}
         />
       </div>
 

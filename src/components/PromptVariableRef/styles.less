@@ -11,23 +11,43 @@
 
   .input-container {
     position: relative;
+    height: 100%;
   }
 
   .prompt-variable-input {
-    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
-    font-size: @fontSize;
-    line-height: 1.5715;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    font-family: inherit !important;
+    font-size: @fontSize !important;
+    font-weight: normal !important;
+    height: 100% !important;
+    line-height: 1.5715 !important;
     background-color: transparent !important;
     position: relative;
-    padding: 0;
+    padding: 12px;
     z-index: 2;
-    color: inherit;
+    color: transparent !important;
     caret-color: rgba(0, 0, 0, 88%);
     scrollbar-width: thin; // 细滚动条，与输入框一致
     border: none;
+    margin: 0;
+    list-style: none;
+
+    // 确保文本渲染一致性
+    word-spacing: 0;
+    letter-spacing: normal;
+    text-rendering: auto;
+    tab-size: 2;
+    display: inline-block;
+    width: 100%;
+    min-width: 0;
+    border-radius: var(--xagi-border-radius);
 
     &:focus,
     &:focus-within {
+      outline: 0;
       border-color: #1890ff;
       box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%);
     }
@@ -36,6 +56,10 @@
     &::placeholder {
       color: #bfbfbf;
       opacity: 1;
+    }
+
+    &::-webkit-scrollbar {
+      width: 8px; // 匹配 thin 滚动条宽度
     }
   }
 
@@ -47,31 +71,35 @@
     right: 0;
     bottom: 0;
     padding: 0;
+    padding: 12px;
     background-color: transparent;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    word-break: break-word;
-    overflow-wrap: break-word;
+    // white-space: pre-wrap;
+    // word-wrap: break-word;
+    // word-break: break-word;
+    // overflow-wrap: break-word;
     pointer-events: none;
     z-index: 1;
-    font-weight: 400;
-    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
-    font-size: @fontSize;
-    line-height: 1.5715;
-    box-sizing: border-box;
-    color: rgba(0, 0, 0, 88%);
 
     // 修复关键：完全依赖输入框的滚动，不允许高亮层自己滚动
-    overflow: hidden;
+    // 确保高亮层也保留滚动条空间，但不可见
+    overflow-y: auto;
 
-    // 隐藏滚动条（滚动条由输入框显示）
+    // 隐藏滚动条样式但保留空间
     &::-webkit-scrollbar {
-      width: 0;
+      width: 8px; // 匹配 thin 滚动条宽度
       background: transparent;
     }
 
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    &::-webkit-scrollbar-thumb {
+      background: transparent;
+    }
+
+    scrollbar-width: none;
+
+    /* Firefox */
+    -ms-overflow-style: none;
+
+    /* IE/Edge */
 
     // 高亮内容容器，与输入层完全一致
     .highlight-content {
@@ -85,6 +113,19 @@
       word-wrap: break-word;
       word-break: break-word;
       overflow-wrap: break-word;
+      font-weight: normal !important;
+      font-family: inherit !important;
+      font-size: @fontSize !important;
+      line-height: 1.5715 !important;
+      // box-sizing: border-box;
+      color: @colorText;
+      word-spacing: 0;
+      letter-spacing: normal;
+      text-rendering: auto;
+      tab-size: 2;
+      vertical-align: bottom;
+      display: inline-block;
+      padding-right: 12px;
 
       // 添加调试边框（开发时可以使用）
       // outline: 1px solid red;
@@ -97,7 +138,7 @@
     color: #1890ff;
     // border-radius: 2px;
     // padding: 1px 2px;
-    font-weight: 400;
+    // font-weight: 400;
     transition: background-color 0.2s ease;
     cursor: text;
 
