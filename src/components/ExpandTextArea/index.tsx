@@ -1,8 +1,8 @@
+import PromptVariableRef from '@/components/PromptVariableRef/PromptVariableRef';
 import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import { ExpandAltOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import classNames from 'classnames';
-import { PromptEditorProvider, PromptEditorRender } from 'prompt-kit-editor';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
@@ -21,6 +21,7 @@ export const ExpandableInputTextarea: React.FC<
   onExpand,
   onOptimize,
   onOptimizeClick,
+  variables,
 }) => {
   const [uuid, setUuid] = useState('');
   const { setExpanded, expanded } = useModel('workflow'); // 添加本地状态
@@ -69,15 +70,13 @@ export const ExpandableInputTextarea: React.FC<
       {/*  />*/}
       {/*</Form.Item>*/}
 
-      <PromptEditorProvider>
-        <Form.Item name={inputFieldName}>
-          <PromptEditorRender
-            className={cx(styles['prompt-editor-provider'], 'scroll-container')}
-            isControled={true}
-            placeholder={placeholder}
-          />
-        </Form.Item>
-      </PromptEditorProvider>
+      <Form.Item name={inputFieldName}>
+        <PromptVariableRef
+          placeholder={placeholder}
+          variables={variables}
+          className={cx(styles['prompt-editor-provider'])}
+        />
+      </Form.Item>
 
       {/* 如果有展开，就要调用展开的组件 */}
       {expanded &&
@@ -89,6 +88,7 @@ export const ExpandableInputTextarea: React.FC<
             placeholder={placeholder}
             visible={expanded === uuid}
             onClose={() => setExpanded('')}
+            variables={variables}
           />
         )}
     </div>
