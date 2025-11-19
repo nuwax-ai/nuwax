@@ -19,6 +19,7 @@ export const useInputHandler = (
     cursorPos: number,
     isBackspace: boolean,
   ) => { handled: boolean; newValue?: string; newCursorPos?: number } | boolean,
+  forceSyncScroll?: () => void,
 ) => {
   // 应用变量
   const handleApplyVariable = useCallback(
@@ -202,6 +203,9 @@ export const useInputHandler = (
 
           textarea.setSelectionRange(safeCursorPos, safeCursorPos);
           textarea.focus();
+
+          // 强制同步滚动位置，防止光标跳转导致不同步
+          forceSyncScroll?.();
         }
       }, 10); // 增加延时确保DOM更新完成
 
@@ -216,6 +220,7 @@ export const useInputHandler = (
       setVisible,
       setSelectedKeys,
       setInternalValue,
+      forceSyncScroll,
     ],
   );
 
@@ -247,16 +252,22 @@ export const useInputHandler = (
             setTextCursorPosition(result.newCursorPos);
             // 同步设置输入框的光标位置
             if (inputRef.current) {
-              setTimeout(() => {
+              // 使用 requestAnimationFrame 确保在下一帧渲染后执行
+              requestAnimationFrame(() => {
                 const textarea = inputRef.current;
                 if (textarea) {
+                  // 临时失去焦点再获取焦点，有助于浏览器重新定位滚动位置
+                  textarea.blur();
                   textarea.setSelectionRange(
                     result.newCursorPos!,
                     result.newCursorPos!,
                   );
                   textarea.focus();
+
+                  // 再次强制同步滚动位置
+                  forceSyncScroll?.();
                 }
-              }, 0);
+              });
             }
           }
           return; // 已经处理了删除操作，不执行后续逻辑
@@ -316,6 +327,9 @@ export const useInputHandler = (
           if (inputRef.current) {
             const textarea = inputRef.current;
             textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+
+            // 强制同步滚动位置
+            forceSyncScroll?.();
           }
         }, 10);
 
@@ -434,6 +448,11 @@ export const useInputHandler = (
       if (isInVariableContext) {
         setVisible(true);
 
+        // 强制同步滚动，确保光标位置正确
+        requestAnimationFrame(() => {
+          forceSyncScroll?.();
+        });
+
         // 计算光标的屏幕位置
         if (inputRef.current) {
           const textarea = inputRef.current;
@@ -496,6 +515,7 @@ export const useInputHandler = (
       setVisible,
       setCursorPosition,
       setSelectedKeys,
+      forceSyncScroll,
     ],
   );
 
