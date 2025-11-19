@@ -1042,33 +1042,33 @@
       }
 
       const icon = document.createElement('div');
-      icon.innerHTML = '首页';
+      icon.innerHTML = 'X';
 
       // 基础样式：右下角悬浮小圆角块
       Object.assign(icon.style, {
         position: 'fixed',
         bottom: '16px',
         right: '16px',
-        width: '44px',
-        height: '44px',
-        lineHeight: '44px',
+        width: '30px',
+        height: '30px',
+        lineHeight: '30px',
         textAlign: 'center',
         borderRadius: '22px',
-        background: 'rgba(0, 0, 0, 0.65)',
+        background: 'rgba(0, 0, 0, 0.15)',
         color: '#fff',
-        fontSize: '12px',
+        fontSize: '14px',
         zIndex: '99999',
         cursor: 'pointer',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
+        // boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
       });
 
       // 1. child 第一次加载时记录进入 iframe 的历史位置
-      if (!sessionStorage.getItem('entryIndex')) {
-        sessionStorage.setItem('entryIndex', window.history.length);
-        console.log('进入 iframe 时的历史位置记录为：', window.history.length);
-      }
+      // if (!sessionStorage.getItem('entryIndex')) {
+      //   sessionStorage.setItem('entryIndex', window.history.length);
+      //   console.log('进入 iframe 时的历史位置记录为：', window.history.length);
+      // }
       // 2. 回到首页
       function goHome() {
         if (jump_type === 'outer') {
@@ -1079,11 +1079,12 @@
 
         if (jump_type === 'inner') {
           // 如果是系统内部跳转，则使用 history.go 回退
-          const entryIndex = Number(sessionStorage.getItem('entryIndex'));
-          const diff = entryIndex - window.history.length;
-          console.log('返回数量:', diff);
+          // const entryIndex = Number(sessionStorage.getItem('entryIndex'));
+          // const diff = entryIndex - window.history.length;
+          // console.log('返回数量:', diff);
 
-          window.history.go(diff);
+          // window.history.go(diff);
+          window.wx.miniProgram.navigateBack();
           return;
         }
       }
