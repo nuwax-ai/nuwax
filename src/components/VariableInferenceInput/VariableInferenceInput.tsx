@@ -1,7 +1,6 @@
 import { theme, Tree } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useContentEditable } from './hooks/useContentEditable';
-import { useDropdownPosition } from './hooks/useDropdownPosition';
 import { useInputHandler } from './hooks/useInputHandler';
 import { useKeyboardNavigation } from './hooks/useKeyboardNavigation';
 import { useVariableTree } from './hooks/useVariableTree';
@@ -47,7 +46,9 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
   } = useVariableTree(variables, skills, searchText, visible);
 
   // 2. Dropdown Position Logic
-  const { cursorPosition, setCursorPosition } = useDropdownPosition();
+  // Note: VariableInferenceInput uses contentEditable, not textarea
+  // So we use a simplified version without the full hook parameters
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
 
   // 3. Create ref to store handleInputChange before it's defined
   const handleInputChangeRef = useRef<
