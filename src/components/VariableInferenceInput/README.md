@@ -280,7 +280,7 @@ import {
   findAllVariableReferences,
   extractVariableName,
   isValidVariableReference,
-} from '@/components/VariableInferenceInput/utils/parser';
+import { VARIABLE_REGEX } from '@/components/VariableInferenceInput/utils/parserUtils';
 
 // 解析变量表达式
 const parseData = parseVariableExpression({

@@ -4,6 +4,7 @@ import { buildVariableTree } from '../utils/treeUtils';
 
 export const useVariableTree = (
   variables: any[] = [],
+  skills: any[] = [],
   searchText: string,
   visible: boolean,
 ) => {
@@ -11,7 +12,39 @@ export const useVariableTree = (
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
 
   // 构建变量树
-  const variableTree = useMemo(() => buildVariableTree(variables), [variables]);
+  const variableTree = useMemo(() => {
+    const tree = buildVariableTree(variables);
+
+    if (skills && skills.length > 0) {
+      // Convert skills to tree nodes
+      const skillNodes: VariableTreeNode[] = skills.map((skill, index) => ({
+        key: `skill-${skill.typeId || skill.id || index}`,
+        value: skill.toolName || skill.name || 'Unknown Tool', // Display name
+        label: skill.toolName || skill.name || 'Unknown Tool',
+        isLeaf: true,
+        variable: {
+          name: skill.name,
+          type: 'Tool', // Special type for tools
+          value: skill, // Store full skill object here
+        } as any,
+      }));
+
+      // Add a Skills category
+      tree.push({
+        key: 'category-skills',
+        value: 'Skills',
+        label: 'Skills',
+        isLeaf: false,
+        children: skillNodes,
+        variable: {
+          name: 'Skills',
+          type: 'Category',
+        } as any,
+      });
+    }
+
+    return tree;
+  }, [variables, skills]);
 
   // 当不可见时重置选中状态
   useEffect(() => {

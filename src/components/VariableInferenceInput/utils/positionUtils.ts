@@ -57,94 +57,6 @@ const getAvailableSpace = (triggerBounds: any, containerBounds?: any) => {
 };
 
 /**
- * 计算最佳的放置方向 - 参考 antd Select 的逻辑
- */
-const getBestPlacement = (
-  triggerBounds: any,
-  dropdownWidth: number,
-  dropdownHeight: number,
-  space: any,
-): { placement: string; x: number; y: number; reason: string } => {
-  // 尝试放置在下方（默认）
-  if (space.below >= dropdownHeight) {
-    const x = triggerBounds.left;
-    const y = triggerBounds.bottom;
-    return {
-      placement: 'bottom',
-      x,
-      y,
-      reason: 'enough_space_below',
-    };
-  }
-
-  // 尝试放置在上方
-  if (space.above >= dropdownHeight) {
-    const x = triggerBounds.left;
-    const y = triggerBounds.top - dropdownHeight;
-    return {
-      placement: 'top',
-      x,
-      y,
-      reason: 'enough_space_above',
-    };
-  }
-
-  // 水平空间检查
-  if (space.right >= dropdownWidth) {
-    const x = triggerBounds.right;
-    const y = Math.max(triggerBounds.top, 0);
-    return {
-      placement: 'right',
-      x,
-      y,
-      reason: 'enough_space_right',
-    };
-  }
-
-  if (space.left >= dropdownWidth) {
-    const x = triggerBounds.left - dropdownWidth;
-    const y = Math.max(triggerBounds.top, 0);
-    return {
-      placement: 'left',
-      x,
-      y,
-      reason: 'enough_space_left',
-    };
-  }
-
-  // 空间不足，放置在空间最大的地方
-  const placements = [
-    { name: 'bottom', space: space.below },
-    { name: 'top', space: space.above },
-    { name: 'right', space: space.right },
-    { name: 'left', space: space.left },
-  ];
-
-  const bestPlacement = placements.reduce((prev, current) =>
-    current.space > prev.space ? current : prev,
-  );
-
-  const x =
-    bestPlacement.name === 'right'
-      ? triggerBounds.right
-      : bestPlacement.name === 'left'
-      ? triggerBounds.left - dropdownWidth
-      : triggerBounds.left;
-
-  const y =
-    bestPlacement.name === 'top'
-      ? triggerBounds.top - dropdownHeight
-      : triggerBounds.bottom;
-
-  return {
-    placement: bestPlacement.name,
-    x,
-    y,
-    reason: `insufficient_space_using_${bestPlacement.name}`,
-  };
-};
-
-/**
  * 计算下拉框的安全显示位置 - 智能动态定位
  * @param cursorX 光标X坐标
  * @param cursorY 光标Y坐标
@@ -192,14 +104,6 @@ export const calculateDropdownPosition = (
 
   // 获取可用空间
   const space = getAvailableSpace(cursorBasedBounds);
-
-  // 动态计算最佳放置方向
-  const bestPlacement = getBestPlacement(
-    cursorBasedBounds,
-    dropdownWidth,
-    actualHeight,
-    space,
-  );
 
   // 根据最佳方向计算位置
   let position: Position;
@@ -346,15 +250,6 @@ export const calculateDropdownPosition = (
     },
     reason: adjustmentReason,
   };
-
-  console.log('智能定位计算结果:', {
-    cursorPosition: { x: cursorX, y: cursorY },
-    availableSpace: space,
-    bestPlacement: bestPlacement.placement,
-    finalPosition: position,
-    direction: adjustment.direction,
-    reason: adjustment.reason,
-  });
 
   return { position, adjustment };
 };

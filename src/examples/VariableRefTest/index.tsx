@@ -29,11 +29,16 @@ import {
   type PromptVariable,
   VariableType,
 } from '../../components/VariableInferenceInput/types';
-import {
-  findAllVariableReferences,
-  isValidVariableReference,
-} from '../../components/VariableInferenceInput/utils/parser';
+import { VARIABLE_REGEX } from '../../components/VariableInferenceInput/utils/parserUtils';
 import { generateVariableReference } from '../../components/VariableInferenceInput/utils/treeUtils';
+
+const findAllVariableReferences = (text: string) => {
+  return text.match(VARIABLE_REGEX) || [];
+};
+
+const isValidVariableReference = (ref: string) => {
+  return new RegExp(/^\{\{([^}]+)\}\}$/).test(ref);
+};
 
 const { Title, Paragraph, Text } = Typography;
 const { Panel } = Collapse;
@@ -261,6 +266,50 @@ const VariableRefTestExample: React.FC = () => {
     },
   ];
 
+  // 测试工具数据
+  const testSkills = [
+    {
+      typeId: 'web_search_tool',
+      id: 'tool_001',
+      name: 'Web Search',
+      toolName: '网页搜索',
+      description: '在互联网上搜索信息',
+      category: 'search',
+    },
+    {
+      typeId: 'calculator_tool',
+      id: 'tool_002',
+      name: 'Calculator',
+      toolName: '计算器',
+      description: '执行数学计算',
+      category: 'math',
+    },
+    {
+      typeId: 'weather_tool',
+      id: 'tool_003',
+      name: 'Weather Forecast',
+      toolName: '天气预报',
+      description: '获取天气信息',
+      category: 'info',
+    },
+    {
+      typeId: 'translator_tool',
+      id: 'tool_004',
+      name: 'Translator',
+      toolName: '翻译工具',
+      description: '翻译多种语言',
+      category: 'language',
+    },
+    {
+      typeId: 'image_generator',
+      id: 'tool_005',
+      name: 'Image Generator',
+      toolName: '图像生成器',
+      description: '根据描述生成图像',
+      category: 'creative',
+    },
+  ];
+
   // 处理变量选择
   const handleVariableSelect = useCallback(
     (variable: PromptVariable, path: string) => {
@@ -361,22 +410,32 @@ const VariableRefTestExample: React.FC = () => {
                 </Button>
                 <Button
                   onClick={() =>
+                    console.log('Debug: current skills', testSkills)
+                  }
+                >
+                  调试：输出工具数据
+                </Button>
+                <Button
+                  onClick={() =>
                     console.log('Debug: current prompt value', promptValue)
                   }
                 >
                   调试：输出当前值
                 </Button>
               </Space>
-              <VariableInferenceInput
-                variables={testVariables}
-                value={promptValue}
-                onChange={setPromptValue}
-                onVariableSelect={handleVariableSelect}
-                readonly={readonly}
-                disabled={disabled}
-                direction={direction}
-                placeholder="输入提示词，使用 {{变量名}} 引用变量..."
-              />
+              <div style={{ border: '1px solid #d9d9d9', borderRadius: '4px' }}>
+                <VariableInferenceInput
+                  variables={testVariables}
+                  skills={testSkills}
+                  value={promptValue}
+                  onChange={setPromptValue}
+                  onVariableSelect={handleVariableSelect}
+                  readonly={readonly}
+                  disabled={disabled}
+                  direction={direction}
+                  placeholder="输入提示词，使用 {{ 引用变量或工具"
+                />
+              </div>
             </Card>
           </Col>
 
@@ -604,6 +663,68 @@ const VariableRefTestExample: React.FC = () => {
               </Space>
             </Card>
           </Col>
+
+          <Col span={12}>
+            <Card title="工具使用示例" size="small">
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    insertPresetText(
+                      '{#ToolBlock id="web_search_tool" type="search" name="Web Search"#}网页搜索{#/ToolBlock#}',
+                    )
+                  }
+                >
+                  网页搜索工具
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    insertPresetText(
+                      '{#ToolBlock id="calculator_tool" type="math" name="Calculator"#}计算器{#/ToolBlock#}',
+                    )
+                  }
+                >
+                  计算器工具
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    insertPresetText(
+                      '{#ToolBlock id="weather_tool" type="info" name="Weather Forecast"#}天气预报{#/ToolBlock#}',
+                    )
+                  }
+                >
+                  天气预报工具
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    insertPresetText(
+                      '{#ToolBlock id="translator_tool" type="language" name="Translator"#}翻译工具{#/ToolBlock#}',
+                    )
+                  }
+                >
+                  翻译工具
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    insertPresetText(
+                      '{#ToolBlock id="image_generator" type="creative" name="Image Generator"#}图像生成器{#/ToolBlock#}',
+                    )
+                  }
+                >
+                  图像生成器
+                </Button>
+              </Space>
+            </Card>
+          </Col>
         </Row>
       ),
     },
@@ -717,13 +838,14 @@ const VariableRefTestExample: React.FC = () => {
           description={
             <div>
               <p>
-                • 在输入框中输入 <Text code>{`{{`}</Text> 触发变量选择菜单
+                • 在输入框中输入 <Text code>{`{{`}</Text> 触发变量/工具选择菜单
               </p>
               <p>
-                • 使用 <Text code>↑</Text> <Text code>↓</Text> 键选择变量，
-                <Text code>Enter</Text> 确认，<Text code>Esc</Text> 取消
+                • 使用 <Text code>↑</Text> <Text code>↓</Text> 键选择变量或工具,
+                <Text code>Enter</Text> 确认,<Text code>Esc</Text> 取消
               </p>
               <p>• 支持嵌套对象和数组索引访问</p>
+              <p>• 支持插入工具块(Tools),工具会显示为特殊的块状标签</p>
               <p>• 实时解析和验证变量引用语法</p>
             </div>
           }
