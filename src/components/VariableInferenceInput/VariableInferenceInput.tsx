@@ -1,10 +1,9 @@
 import { Tree } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useContentEditable } from './hooks/useContentEditable';
 import { useDropdownPosition } from './hooks/useDropdownPosition';
-import { useHighlight } from './hooks/useHighlight';
 import { useInputHandler } from './hooks/useInputHandler';
 import { useKeyboardNavigation } from './hooks/useKeyboardNavigation';
-import { useScrollSync } from './hooks/useScrollSync';
 import { useVariableTree } from './hooks/useVariableTree';
 import './styles.less';
 import { VariableInferenceInputProps } from './types';
@@ -15,6 +14,7 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
   value,
   onChange,
   variables,
+  skills,
   placeholder = '输入 {{ 引用变量',
   disabled = false,
   readonly = false,
@@ -24,10 +24,6 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
   const [internalValue, setInternalValue] = useState(value || '');
   const [visible, setVisible] = useState(false);
   const [textCursorPosition, setTextCursorPosition] = useState(0);
-
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const highlightLayerRef = useRef<HTMLDivElement>(null);
-  const treeRef = useRef<any>(null);
 
   // Update internal value when prop value changes
   useEffect(() => {
@@ -47,31 +43,41 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
     setExpandedKeys,
     selectedKeys,
     setSelectedKeys,
-  } = useVariableTree(variables, searchText, visible);
+  } = useVariableTree(variables, skills, searchText, visible);
 
   // 2. Dropdown Position Logic
   const { cursorPosition, setCursorPosition } = useDropdownPosition();
 
-  // 3. Scroll Sync Logic
-  const { forceSyncScroll } = useScrollSync(
-    inputRef,
-    highlightLayerRef,
-    internalValue,
-    visible,
-    textCursorPosition,
-    setCursorPosition,
-  );
+  // 3. Create ref to store handleInputChange before it's defined
+  const handleInputChangeRef = useRef<((value: string) => void) | null>(null);
 
-  // 4. Highlight Logic
-  const { renderHighlightedText, deleteHighlightedBlock } =
-    useHighlight(internalValue);
+  // 4. Content Editable Logic (needs to be defined first to get ref)
+  const {
+    contentEditableRef,
+    internalHtml,
+    handleInput,
+    handlePaste,
+    handleCompositionStart,
+    handleCompositionEnd,
+  } = useContentEditable(
+    internalValue,
+    (newValue) => {
+      // This callback is called when contentEditable changes
+      // We need to pass this to useInputHandler to handle side effects (like showing dropdown)
+      if (handleInputChangeRef.current) {
+        handleInputChangeRef.current(newValue);
+      }
+    },
+    readonly,
+    disabled,
+  );
 
   // 5. Input Handler Logic
   const { handleApplyVariable, handleInputChange } = useInputHandler(
     internalValue,
     setInternalValue,
     onChange,
-    inputRef,
+    contentEditableRef,
     setVisible,
     setSelectedKeys,
     textCursorPosition,
@@ -79,11 +85,12 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
     setCursorPosition,
     variableTree,
     readonly,
-    deleteHighlightedBlock,
-    forceSyncScroll,
   );
 
-  // 6. Keyboard Navigation Logic
+  // Store handleInputChange in ref for useContentEditable callback
+  handleInputChangeRef.current = handleInputChange;
+
+  // 5. Keyboard Navigation Logic
   const { onKeyDown } = useKeyboardNavigation(
     visible,
     displayTree,
@@ -108,26 +115,31 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
   return (
     <div className={['prompt-variable-ref', className].join(' ')} style={style}>
       <div className="input-container">
-        <div ref={highlightLayerRef} className="highlight-layer">
-          <div className="highlight-content">
-            {internalValue ? (
-              renderHighlightedText(internalValue)
-            ) : (
-              <span style={{ visibility: 'hidden' }}>&nbsp;</span>
-            )}
-          </div>
-        </div>
-
-        <textarea
-          ref={inputRef}
-          value={internalValue}
-          onChange={handleInputChange}
+        <div
+          ref={contentEditableRef}
+          className="prompt-variable-input content-editable scroll-container"
+          contentEditable={!readonly && !disabled}
+          onInput={handleInput}
+          onPaste={handlePaste}
           onKeyDown={onKeyDown}
-          placeholder={placeholder}
-          disabled={disabled}
-          rows={4}
-          className={'prompt-variable-input'}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
+          dangerouslySetInnerHTML={{ __html: internalHtml }}
         />
+        {!internalValue && (
+          <div
+            className="placeholder"
+            style={{
+              position: 'absolute',
+              top: '9px',
+              left: '9px',
+              color: '#bfbfbf',
+              pointerEvents: 'none',
+            }}
+          >
+            {placeholder}
+          </div>
+        )}
       </div>
 
       {popoverShouldShow && (
@@ -149,28 +161,9 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* {visible && internalValue.includes('{{') && (
-            <>
-              <div
-                className="variable-search-stats"
-                style={{
-                  padding: '4px 8px',
-                  fontSize: '11px',
-                  color: '#666',
-                  borderBottom: '1px solid #f0f0f0',
-                }}
-              >
-                {searchText
-                  ? `搜索："${searchText}" - 找到 ${displayTree.length} 个匹配项`
-                  : `输入搜索词或浏览所有 ${variableTree.length} 个变量`}
-              </div>
-            </>
-          )} */}
-
           <div className="tree-list-content">
             {displayTree.length > 0 ? (
               <Tree
-                ref={treeRef}
                 treeData={transformToTreeDataForTree(displayTree)}
                 selectedKeys={selectedKeys}
                 expandedKeys={expandedKeys as string[]}
@@ -190,7 +183,41 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
                     .find((node: any) => selectedKeys.includes(node.key));
 
                   if (selectedNode) {
-                    handleApplyVariable(selectedNode.value);
+                    // Check if it's a tool
+                    // We need to access the original node data to check type
+                    // transformToTreeDataForTree might not preserve all fields in 'value'
+                    // But we stored the full skill object in variable.value in useVariableTree
+
+                    // Actually, transformToTreeDataForTree uses node.value as the value.
+                    // In useVariableTree, we set value: skill.toolName || ...
+                    // But we also set variable: { type: 'Tool', value: skill }
+                    // We need to find the original node in displayTree to get the variable data
+
+                    const findOriginalNode = (nodes: any[]): any => {
+                      for (const node of nodes) {
+                        if (node.key === selectedKeys[0]) return node;
+                        if (node.children) {
+                          const found = findOriginalNode(node.children);
+                          if (found) return found;
+                        }
+                      }
+                      return null;
+                    };
+
+                    const originalNode = findOriginalNode(displayTree);
+
+                    if (
+                      originalNode &&
+                      originalNode.variable?.type === 'Tool'
+                    ) {
+                      handleApplyVariable(
+                        originalNode.value,
+                        true,
+                        originalNode.variable.value,
+                      );
+                    } else {
+                      handleApplyVariable(selectedNode.value);
+                    }
                     setVisible(false);
                   }
                 }}

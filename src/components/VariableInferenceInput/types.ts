@@ -46,51 +46,8 @@ export interface VariableTreeNode {
   value: string;
   variable?: PromptVariable;
   children?: VariableTreeNode[];
+  isLeaf?: boolean;
 }
-
-export interface VariableParseData {
-  content: {
-    line: string;
-    inline: string;
-    reachable: string;
-    unreachable: string;
-  };
-  offset: {
-    line: number;
-    inline: number;
-    lastStart: number;
-    firstEnd: number;
-  };
-  segments: {
-    inline?: VariableSegment[];
-    reachable: VariableSegment[];
-  };
-}
-
-export enum VariableSegmentType {
-  ObjectKey = 'object_key',
-  ArrayIndex = 'array_index',
-  EndEmpty = 'end_empty',
-}
-
-export type VariableSegment<
-  T extends VariableSegmentType = VariableSegmentType,
-> = {
-  [VariableSegmentType.ObjectKey]: {
-    type: VariableSegmentType.ObjectKey;
-    index: number;
-    objectKey: string;
-  };
-  [VariableSegmentType.ArrayIndex]: {
-    type: VariableSegmentType.ArrayIndex;
-    index: number;
-    arrayIndex: number;
-  };
-  [VariableSegmentType.EndEmpty]: {
-    type: VariableSegmentType.EndEmpty;
-    index: number;
-  };
-}[T];
 
 export interface CompletionContext {
   text: string;
@@ -101,6 +58,8 @@ export interface CompletionContext {
 export interface VariableInferenceInputProps {
   /** 可用变量列表 */
   variables?: PromptVariable[];
+  /** 技能列表 */
+  skills?: any[];
   /** 是否只读模式 */
   readonly?: boolean;
   /** 弹窗方向 - 已废弃，现在使用智能动态定位 */
