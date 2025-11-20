@@ -60,6 +60,31 @@ const ExamplesIndex: React.FC = () => {
       featured: true,
     },
     {
+      id: 'tiptap-editor',
+      title: isChineseLanguage ? 'TipTap 编辑器示例' : 'TipTap Editor Example',
+      description: isChineseLanguage
+        ? '基于 TipTap 的高级富文本编辑器，支持 { 字符触发的变量补全和 ToolBlock 插入功能，包含完整的示例和文档。'
+        : 'Advanced rich text editor based on TipTap with variable completion and ToolBlock insertion triggered by { character, including complete examples and documentation.',
+      tags: [
+        { text: isChineseLanguage ? '富文本编辑' : 'Rich Text', color: 'blue' },
+        {
+          text: isChineseLanguage ? '变量补全' : 'Variable Completion',
+          color: 'green',
+        },
+        {
+          text: isChineseLanguage ? '工具插入' : 'Tool Insertion',
+          color: 'orange',
+        },
+        {
+          text: isChineseLanguage ? '文档完整' : 'Complete Docs',
+          color: 'purple',
+        },
+      ],
+      icon: <CodeOutlined />,
+      path: '/examples/tiptap-editor',
+      featured: true,
+    },
+    {
       id: 'svg-icon-showcase',
       title: isChineseLanguage ? 'SvgIcon 图标展示' : 'SvgIcon Showcase',
       description: isChineseLanguage
