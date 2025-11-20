@@ -8,9 +8,13 @@
 .prompt-variable-ref {
   position: relative;
   width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: @borderRadius;
 
   .input-container {
     position: relative;
+    width: 100%;
     height: 100%;
   }
 
@@ -22,453 +26,104 @@
     font-family: inherit !important;
     font-size: @fontSize !important;
     font-weight: normal !important;
-    height: 100% !important;
     line-height: 1.5715 !important;
-    background-color: transparent !important;
+    background-color: #fff;
     position: relative;
-    padding: 12px;
-    z-index: 2;
-    color: transparent !important;
-    // color: #0050b3;
-    caret-color: rgba(0, 0, 0, 88%);
-    scrollbar-width: thin; // 细滚动条，与输入框一致
-    border: none;
-    margin: 0;
-    list-style: none;
-
-    // 确保文本渲染一致性
-    word-spacing: 0;
-    letter-spacing: normal;
-    text-rendering: auto;
-    tab-size: 2;
-    display: inline-block;
-    width: 100%;
-    min-width: 0;
-    border-radius: var(--xagi-border-radius);
-
-    &:focus,
-    &:focus-within {
-      outline: 0;
-      border-color: #1890ff;
-      box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%);
-    }
-
-    // 确保 placeholder 可见
-    &::placeholder {
-      color: #bfbfbf;
-      opacity: 1;
-    }
-
-    &::-webkit-scrollbar {
-      width: 8px; // 匹配 thin 滚动条宽度
-    }
-  }
-
-  // 高亮层样式 - 修复滚动同步版本
-  .highlight-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 0;
-    padding: 12px;
-    background-color: transparent;
-    // white-space: pre-wrap;
-    // word-wrap: break-word;
-    // word-break: break-word;
-    // overflow-wrap: break-word;
-    pointer-events: none;
+    padding: @paddingSm @padding;
     z-index: 1;
+    color: @colorText;
+    height: 100%;
+    min-height: 100px;
+    // overflow: auto;
+    // border: 1px solid #d9d9d9;
+    // border-radius: 4px;
+    // transition: all 0.3s;
+    // min-height: 100px;
+    // max-height: 400px;
+    // overflow-y: auto;
+    outline: none;
 
-    // 修复关键：完全依赖输入框的滚动，不允许高亮层自己滚动
-    // 确保高亮层也保留滚动条空间，但不可见
-    overflow-y: auto;
+    // &:hover {
+    //   border-color: #40a9ff;
+    // }
 
-    // 隐藏滚动条样式但保留空间
-    &::-webkit-scrollbar {
-      width: 8px; // 匹配 thin 滚动条宽度
-      background: transparent;
-    }
+    // &:focus,
+    // &:focus-within {
+    //   border-color: #1890ff;
+    //   box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%);
+    // }
 
-    &::-webkit-scrollbar-thumb {
-      background: transparent;
-    }
+    // Placeholder handling
+    &:empty::before {
+      content: attr(placeholder);
+      color: #bfbfbf;
+      pointer-events: none;
+      display: block;
 
-    scrollbar-width: none;
-
-    /* Firefox */
-    -ms-overflow-style: none;
-
-    /* IE/Edge */
-
-    // 高亮内容容器，与输入层完全一致
-    .highlight-content {
-      min-height: 100%;
-      padding: 0;
-      // 确保内容与输入框的内边距完全一致
-      box-sizing: border-box;
-
-      // 确保换行符正确处理
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      word-break: break-word;
-      overflow-wrap: break-word;
-      font-weight: normal !important;
-      font-family: inherit !important;
-      font-size: @fontSize !important;
-      line-height: 1.5715 !important;
-      // box-sizing: border-box;
-      color: @colorText;
-      word-spacing: 0;
-      letter-spacing: normal;
-      text-rendering: auto;
-      tab-size: 2;
-      vertical-align: bottom;
-      display: inline-block;
-      padding-right: 12px; // Removed to match textarea padding
-
-      // 添加调试边框（开发时可以使用）
-      // outline: 1px solid red;
+      /* For Firefox */
     }
   }
 
-  // 变量高亮样式 - 简化版本
-  .variable-highlight {
+  // Chip styles for Variables
+  .variable-block-chip {
+    display: inline-block;
     background-color: #e6f7ff;
     color: #1890ff;
-    // border-radius: 2px;
-    // padding: 1px 2px;
-    // font-weight: 400;
-    transition: background-color 0.2s ease;
-    cursor: text;
+    // padding: 0 4px;
+    // border-radius: 4px;
+    margin: 0 1px;
+    font-size: 12px;
+    line-height: 20px;
+    // border: 1px solid #91d5ff;
+    user-select: none;
+    vertical-align: middle;
 
-    &:hover {
-      background-color: #bae7ff;
+    // Prevent editing inside the chip (though contentEditable handles this logic mostly)
+    // pointer-events: none; // We might want to select it to delete it
+
+    // Active state when cursor is inside the variable
+    &.variable-active {
+      background-color: rgba(46, 46, 56, 8%);
+      // border-radius: 2px;
     }
+  }
+
+  // Chip styles for Tools
+  .tool-block-chip {
+    display: inline-block;
+    background-color: #f6ffed;
+    color: #52c41a;
+    padding: 0 4px;
+    border-radius: 4px;
+    margin: 0 2px;
+    font-size: 12px;
+    line-height: 20px;
+    border: 1px solid #b7eb8f;
+    user-select: none;
+    vertical-align: middle;
   }
 }
 
-// 变量下拉框样式
-.variable-dropdown {
-  position: fixed;
-  z-index: 9999;
-  background: #fff;
-  border: 1px solid #d9d9d9;
-  border-radius: 8px;
-  padding: 8px 0;
-  min-width: 320px;
-  max-width: 400px;
-  max-height: 300px;
-  overflow: auto;
-  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
-    0 9px 28px 8px rgba(0, 0, 0, 5%);
-  transform: translateY(10px);
-
-  // 调试信息样式
-  .variable-debug-info {
-    padding: 4px 8px;
-    font-size: 12px;
-    color: #666;
-    background-color: #f9f9f9;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  // 变量列表项基础样式
-  .variable-item {
-    padding: 6px 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    border-bottom: 1px solid #f5f5f5;
-    transition: background-color 0.2s;
-    position: relative;
-
-    // 层级缩进
-    &.level-1 {
-      padding-left: 8px;
-    }
-
-    &.level-2 {
-      padding-left: 24px;
-    }
-
-    &.level-3 {
-      padding-left: 40px;
-    }
-
-    &.level-4 {
-      padding-left: 56px;
-    }
-
-    &.level-5 {
-      padding-left: 72px;
-    }
-
-    // 默认状态
-    &:hover {
-      background-color: #f5f5f5;
-    }
-
-    // 选中状态（键盘导航高亮）
-    &.selected {
-      background-color: #1890ff;
-      color: #fff;
-      border-left: 4px solid #0050b3;
-      box-shadow: inset 0 0 0 1px rgba(0, 80, 179, 30%),
-        0 2px 4px rgba(0, 0, 0, 10%);
-      font-weight: 600;
-
-      // 选中状态下的悬停效果
-      &:hover {
-        background-color: #096dd9;
-      }
-    }
-
-    // 图标样式
-    .variable-icon {
-      font-size: 12px;
-      opacity: 0.8;
-      flex-shrink: 0;
-    }
-
-    // 变量名样式
-    .variable-label {
-      flex: 1;
-      color: inherit;
-      font-weight: inherit;
-    }
-
-    // 变量类型样式
-    .variable-type {
-      font-size: 12px;
-      color: #8c8c8c;
-      margin-left: auto;
-      flex-shrink: 0;
-
-      .selected & {
-        color: rgba(255, 255, 255, 80%);
-      }
-    }
-
-    // 层级指示器
-    .level-indicator {
-      font-size: 10px;
-      color: #8c8c8c;
-      position: absolute;
-      left: 8px;
-      display: flex;
-      align-items: center;
-
-      .selected & {
-        color: rgba(255, 255, 255, 60%);
-      }
-    }
-  }
-
-  // 空状态样式
-  .variable-empty {
-    padding: 32px 16px;
-    text-align: center;
-    color: #8c8c8c;
-  }
-
-  // 底部提示样式
-  .variable-footer {
-    padding: 8px 12px;
-    border-top: 1px solid #f0f0f0;
-    background: #fafafa;
-    font-size: 12px;
-    color: #8c8c8c;
-    text-align: center;
-  }
-}
-
-// 变量树形选择器样式
-.variable-tree-select {
-  background: #fff;
-  border-radius: 8px;
-  overflow: hidden;
-
-  // 调试信息样式
-  .variable-debug-info {
-    padding: 4px 8px;
-    font-size: 12px;
-    color: #666;
-    background-color: #f9f9f9;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  // TreeSelect 定制样式
-  .ant-tree-select {
-    border: none;
-    border-radius: 0;
-
-    .ant-select-selector {
-      border: none !important;
-      box-shadow: none !important;
-      border-radius: 0 !important;
-    }
-
-    .ant-select-selection-placeholder {
-      color: #bfbfbf;
-    }
-  }
-
-  // TreeSelect 下拉框样式
-  .ant-select-tree {
-    .ant-select-tree-node-content-wrapper {
-      padding: 4px 8px;
-      border-radius: 4px;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      &:hover {
-        background-color: #f5f5f5;
-      }
-
-      &.ant-select-tree-node-selected {
-        background-color: #1890ff;
-        color: #fff;
-
-        .ant-select-tree-title {
-          color: #fff;
-        }
-      }
-    }
-
-    .ant-select-tree-switcher {
-      color: #8c8c8c;
-    }
-  }
-
-  // 底部提示样式
-  .variable-footer {
-    padding: 8px 12px;
-    border-top: 1px solid #f0f0f0;
-    background: #fafafa;
-    font-size: 12px;
-    color: #8c8c8c;
-    text-align: center;
-  }
-}
-
-// 变量树形列表样式
+// Variable Dropdown Styles
 .variable-tree-list {
   background: #fff;
   border-radius: 8px;
   overflow: hidden;
-  width: 300px; // 设置宽度为300px
-  min-width: 300px; // 最小宽度300px
-  max-width: 300px; // 最大宽度300px
-  padding: 8px; // 添加内边距
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
+  padding: 8px;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
+    0 9px 28px 8px rgba(0, 0, 0, 5%);
 
-  // 添加定位指示器（基于光标位置计算的结果）
-  position: relative;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: -8px;
-    left: 20px; // 动态调整以匹配实际光标位置
-    width: 0;
-    height: 0;
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-bottom: 8px solid #fff;
-    z-index: 1;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: -10px;
-    left: 19px; // 动态调整以匹配实际光标位置
-    width: 0;
-    height: 0;
-    border-left: 9px solid transparent;
-    border-right: 9px solid transparent;
-    border-bottom: 9px solid #d9d9d9;
-    z-index: 0;
-  }
-
-  // 调试信息样式
-  .variable-debug-info {
-    padding: 4px 8px;
-    font-size: 12px;
-    color: #666;
-    background-color: #f9f9f9;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  // 树列表内容
+  // Tree List Content
   .tree-list-content {
-    max-height: 240px; // 设置最大高度为240px
-    height: 240px; // 默认高度240px
-    overflow-y: auto; // 内容可滚动
+    max-height: 240px;
+    height: 240px;
+    overflow-y: auto;
   }
 
-  // 搜索提示样式
-  .variable-search-stats {
-    background-color: #f9f9f9;
-    color: #666;
-    text-align: center;
-  }
-
-  // 位置计算调试信息（开发环境显示）
-  .position-debug {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    background: rgba(0, 0, 0, 80%);
-    color: white;
-    padding: 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    z-index: 10000;
-    max-width: 300px;
-    word-wrap: break-word;
-  }
-
-  // 对齐指示器样式
-  .alignment-indicator {
-    position: absolute;
-    width: 2px;
-    height: 2px;
-    background: #ff4d4f;
-    border-radius: 50%;
-    z-index: 10001;
-
-    &.top-center {
-      top: -5px;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-
-    &.bottom-center {
-      bottom: -5px;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-
-    &.left-center {
-      left: -5px;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-
-    &.right-center {
-      right: -5px;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-  }
-
-  // Tree 组件样式定制
+  // Ant Tree Customization
   .ant-tree {
     background: transparent;
     border: none;
@@ -505,7 +160,6 @@
       }
     }
 
-    // 树节点标题样式
     .ant-tree-title {
       flex: 1;
       display: flex;
@@ -541,66 +195,4 @@
       }
     }
   }
-
-  // 空状态样式
-  .variable-empty {
-    padding: 32px 16px;
-    text-align: center;
-    color: #8c8c8c;
-  }
-
-  // 底部提示样式
-  .variable-footer {
-    padding: 8px 12px;
-    border-top: 1px solid #f0f0f0;
-    background: #fafafa;
-    font-size: 12px;
-    color: #8c8c8c;
-    text-align: center;
-    line-height: 1.4;
-  }
 }
-
-/* 响应式设计 */
-// @media (max-width: 768px) {
-//   .variable-dropdown {
-//     min-width: 280px;
-//     max-width: 350px;
-//   }
-// }
-
-/* 暗色主题支持 */
-// @media (prefers-color-scheme: dark) {
-//   .variable-dropdown {
-//     background-color: #1f1f1f;
-//     border-color: #434343;
-//     color: #fff;
-
-//     .variable-item {
-//       border-bottom-color: #434343;
-
-//       &:hover {
-//         background-color: #262626;
-//       }
-
-//       &.selected {
-//         background-color: #1890ff;
-//         color: #fff;
-//       }
-
-//       .variable-type {
-//         color: #8c8c8c;
-
-//         .selected & {
-//           color: rgba(255, 255, 255, 80%);
-//         }
-//       }
-//     }
-
-//     .variable-footer {
-//       background-color: #141414;
-//       border-top-color: #434343;
-//       color: #8c8c8c;
-//     }
-//   }
-// }

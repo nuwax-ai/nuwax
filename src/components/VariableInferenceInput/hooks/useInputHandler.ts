@@ -1,4 +1,10 @@
 import React, { useCallback } from 'react';
+import { VariableTreeNode } from '../types';
+import {
+  ExpressionEditorParser,
+  ExpressionEditorSegment,
+  ExpressionEditorSegmentType,
+} from '../utils/expressionParser';
 import { calculateDropdownPosition } from '../utils/positionUtils';
 import { extractSearchTextFromInput } from '../utils/textUtils';
 import { drillToPath } from '../utils/treeUtils';
@@ -7,440 +13,329 @@ export const useInputHandler = (
   internalValue: string,
   setInternalValue: (val: string) => void,
   onChange: ((val: string) => void) | undefined,
-  inputRef: React.RefObject<HTMLTextAreaElement>,
+  inputRef: React.RefObject<HTMLDivElement>,
   setVisible: (visible: boolean) => void,
   setSelectedKeys: (keys: React.Key[]) => void,
   textCursorPosition: number,
   setTextCursorPosition: (pos: number) => void,
   setCursorPosition: (pos: { x: number; y: number }) => void,
-  variableTree: any[],
+  variableTree: VariableTreeNode[],
   readonly: boolean,
-  deleteHighlightedBlock: (
-    cursorPos: number,
-    isBackspace: boolean,
-  ) => { handled: boolean; newValue?: string; newCursorPos?: number } | boolean,
-  forceSyncScroll?: () => void,
+  setCursorToPosition: (position: number) => void,
 ) => {
-  // 应用变量
+  // Apply variable or tool
   const handleApplyVariable = useCallback(
-    (nodeValue: string) => {
-      if (!inputRef.current) return;
+    (nodeValue: string, isTool: boolean = false, toolData?: any) => {
+      if (readonly) return;
 
-      const textarea = inputRef.current;
-      const startPos = textarea.selectionStart;
-      const endPos = textarea.selectionEnd;
-      const currentValue = internalValue;
+      // If it's a tool, nodeValue might be the tool name or we construct the block here
+      // The user said format: {#ToolBlock id="typeId" type="type" name="name"#}toolName{#/ToolBlock#}
 
-      // 查找光标前的 { 或 {{
-      const beforeText = currentValue.substring(0, startPos);
-      const afterText = currentValue.substring(endPos);
+      let valueToInsert = nodeValue;
+      let prefix = '';
+      let suffix = '';
+      let replaceStart = 0;
+      let searchText = '';
 
-      // 首先检查是否在单个 { } 之间
-      const lastBraceStart = beforeText.lastIndexOf('{');
-      const lastDoubleBraceStart = beforeText.lastIndexOf('{{');
+      if (isTool && toolData) {
+        // Construct ToolBlock
+        // Format: {#ToolBlock id="typeId" type="type" name="name"#}toolName{#/ToolBlock#}
+        const id = toolData.typeId || toolData.id;
+        const type = toolData.type;
+        const name = toolData.name;
+        const content = toolData.toolName || toolData.name;
 
-      // 重新设计模式检测逻辑
-      let mode: 'single' | 'double' = 'double';
-      let braceStartPos = lastDoubleBraceStart;
-
-      // 强制使用单大括号模式的条件：确实在单个 {} 中间
-      const isInSingleBraceContext = () => {
-        if (lastBraceStart !== -1) {
-          const afterBrace = currentValue.substring(lastBraceStart + 1);
-          const closingBracePos = afterBrace.indexOf('}');
-
-          if (closingBracePos !== -1) {
-            // 检查光标是否精确在 { 和 } 之间
-            const isInRange =
-              startPos > lastBraceStart &&
-              startPos <= lastBraceStart + 1 + closingBracePos;
-
-            // 额外检查：确保中间没有其他的大括号对
-            const betweenBraces = currentValue.substring(
-              lastBraceStart + 1,
-              startPos,
-            );
-            const hasOtherBraces =
-              betweenBraces.includes('{') || betweenBraces.includes('}');
-
-            // 确保这不是 {{}} 的情况
-            const isNotDoubleBrace = lastBraceStart !== lastDoubleBraceStart;
-
-            return isInRange && !hasOtherBraces && isNotDoubleBrace;
-          }
-        }
-        return false;
-      };
-
-      if (isInSingleBraceContext()) {
-        mode = 'single';
-        braceStartPos = lastBraceStart;
+        valueToInsert = `{#ToolBlock id="${id}" type="${type}" name="${name}"#}${content}{#/ToolBlock#}`;
+        // For tools, we might not be in a {{ context, or maybe we are?
+        // If we are in {{ context, we should replace {{...}} with the tool block?
+        // Or maybe tools are inserted differently.
+        // Assuming tools are selected from the same dropdown which is triggered by {{ or {.
+        // If so, we replace the trigger with the tool block.
+      } else {
+        // Variable
+        valueToInsert = nodeValue;
       }
 
-      let finalText: string;
-      let newCursorPos: number;
+      searchText = extractSearchTextFromInput(
+        internalValue,
+        textCursorPosition,
+      );
 
-      // 在处理前验证模式选择的正确性
-      const validateMode = () => {
-        if (mode === 'single') {
-          // 确保确实在单个 {} 上下文中
-          if (braceStartPos < 0 || braceStartPos >= currentValue.length) {
-            return false;
-          }
+      // Determine if we are in {{ or { mode
+      const beforeCursor = internalValue.substring(0, textCursorPosition);
+      const lastBraceStart = beforeCursor.lastIndexOf('{');
+      const lastDoubleBraceStart = beforeCursor.lastIndexOf('{{');
 
-          const braceContent = currentValue.substring(
-            braceStartPos,
-            Math.min(braceStartPos + 10, currentValue.length),
-          );
-          if (!braceContent.startsWith('{')) {
-            return false;
-          }
-        }
-        return true;
-      };
-
-      if (!validateMode()) {
-        mode = 'double';
-        braceStartPos = lastDoubleBraceStart;
-      }
-
-      if (mode === 'single') {
-        // 单个大括号模式：{...} -> {{xxx}}，光标移到末尾
-        const beforeBrace = currentValue.substring(0, braceStartPos);
-
-        // 找到对应的 } 位置
-        const afterOpeningBrace = currentValue.substring(braceStartPos + 1);
-        const closingBracePos = afterOpeningBrace.indexOf('}');
-
-        if (closingBracePos !== -1) {
-          // 完整的 {xxx} 结构，替换为 {{xxx}}
-          const completeBeforeBrace = currentValue.substring(0, braceStartPos);
-          const completeAfterBrace = currentValue.substring(
-            braceStartPos + 1 + closingBracePos + 1,
-          );
-
-          // 检查是否已经被双大括号包围，避免重复添加
-          const originalBraceContent = currentValue.substring(
-            braceStartPos,
-            braceStartPos + 1 + closingBracePos + 1,
-          );
-          const isAlreadyDoubleBrace =
-            originalBraceContent.startsWith('{{') &&
-            originalBraceContent.endsWith('}}');
-
-          if (isAlreadyDoubleBrace) {
-            // 如果已经是被 {{ }} 包围的，直接替换内容
-            const beforeDoubleBrace = currentValue.substring(0, braceStartPos);
-            const afterDoubleBrace = currentValue.substring(
-              braceStartPos + originalBraceContent.length,
-            );
-            finalText =
-              beforeDoubleBrace + `{{${nodeValue}}}` + afterDoubleBrace;
-            newCursorPos = beforeDoubleBrace.length + 2 + nodeValue.length + 2; // {{变量名}}
-          } else {
-            // 正常的 {xxx} -> {{xxx}} 转换
-            finalText =
-              completeBeforeBrace + `{{${nodeValue}}}` + completeAfterBrace;
-            newCursorPos =
-              completeBeforeBrace.length + 2 + nodeValue.length + 2; // {{变量名}}
-          }
+      if (lastBraceStart > lastDoubleBraceStart) {
+        // Single brace mode {
+        replaceStart = internalValue.lastIndexOf('{' + searchText);
+        // If it's a tool, we replace {searchText with ToolBlock
+        // If it's a variable, we replace {searchText with {{variable}}
+        if (isTool) {
+          prefix = '';
+          suffix = '';
         } else {
-          // 只有 {xxx，没有 }，添加 }} 变成 {{xxx}}
-          finalText = beforeBrace + `{{${nodeValue}}}` + afterText;
-          newCursorPos = beforeBrace.length + 2 + nodeValue.length + 2; // {{变量名}}
+          prefix = '{{';
+          suffix = '}}';
         }
       } else {
-        // 双大括号模式：保持原有逻辑
-        const lastStartPos = lastDoubleBraceStart;
-        if (lastStartPos !== -1) {
-          // 检查是否有匹配的 }} 结束位置
-          const afterStartText = beforeText.substring(lastStartPos + 2); // 从 {{ 后开始
-          const endPosMatch = afterStartText.indexOf('}}');
+        // Double brace mode {{
+        replaceStart = internalValue.lastIndexOf('{{' + searchText);
+        if (isTool) {
+          prefix = '';
+          suffix = '';
+        } else {
+          prefix = '{{';
+          suffix = '}}';
+        }
+      }
 
-          if (endPosMatch !== -1) {
-            // 替换现有的变量引用（包含 {{ 和 }}）
-            const beforeVariable = beforeText.substring(0, lastStartPos);
-            const afterVariable = afterText.substring(endPosMatch + 2); // 跳过 }}
-            finalText = beforeVariable + `{{${nodeValue}}}` + afterVariable;
-            newCursorPos = beforeVariable.length + 2 + nodeValue.length + 2; // {{变量名}}
-          } else {
-            // 完成新的变量引用
-            const beforeVariable = beforeText.substring(0, lastStartPos);
-            finalText = beforeVariable + `{{${nodeValue}}}` + afterText;
-            newCursorPos = beforeVariable.length + 2 + nodeValue.length + 2; // {{变量名}}
+      if (replaceStart >= 0) {
+        // If it's a tool, we need to remove the braces that triggered it
+        // If it was {{, we remove {{. If {, we remove {.
+        // The replaceStart points to the start of the trigger.
+
+        // Calculate length of text to replace
+        // It is prefix_len + searchText.length
+        // But prefix depends on what was there.
+
+        let triggerLen = 0;
+        if (lastBraceStart > lastDoubleBraceStart) {
+          triggerLen = 1; // '{'
+        } else {
+          triggerLen = 2; // '{{'
+        }
+
+        // Check if there are closing braces after the cursor/search text
+        const afterCursorIndex = replaceStart + triggerLen + searchText.length;
+        const contentAfter = internalValue.substring(afterCursorIndex);
+
+        let charsToSkip = 0;
+        if (!isTool) {
+          // For variables, check for '}}' or '}'
+          if (contentAfter.startsWith('}}')) {
+            charsToSkip = 2;
+          } else if (contentAfter.startsWith('}')) {
+            charsToSkip = 1;
           }
         } else {
-          // 如果没有找到 {{，则在当前位置插入变量
-          finalText =
-            currentValue.substring(0, startPos) +
-            `{{${nodeValue}}}` +
-            afterText;
-          newCursorPos = startPos + 2 + nodeValue.length + 2; // {{变量名}}
+          // For tools, check for '}' if it was triggered by '{'
+          // But tools replace the whole block usually.
+          // If we triggered with '{', and there is a closing '}', we might want to consume it?
+          // The tool block format is {#...#}...{#...#}. It doesn't use simple braces.
+          // But if the user typed '{', auto-completion might have added '}'.
+          if (contentAfter.startsWith('}')) {
+            charsToSkip = 1;
+          }
         }
+
+        const newValue =
+          internalValue.substring(0, replaceStart) +
+          prefix +
+          valueToInsert +
+          suffix +
+          internalValue.substring(afterCursorIndex + charsToSkip);
+
+        const newCursorPos =
+          replaceStart + prefix.length + valueToInsert.length + suffix.length;
+
+        setInternalValue(newValue);
+        onChange?.(newValue);
+        setTextCursorPosition(newCursorPos);
+
+        // Set cursor position in the DOM after a short delay to ensure the content is rendered
+        setTimeout(() => {
+          setCursorToPosition(newCursorPos);
+        }, 0);
       }
-
-      setInternalValue(finalText);
-      onChange?.(finalText);
-
-      // 添加最终检查：防止生成错误的大括号结构
-      const bracketError = finalText.match(/\{[^}]*\{[^}]*\}/);
-      if (bracketError && finalText.includes('{{{')) {
-        // 自动修正：移除多余的大括号
-        finalText = finalText.replace(/\{\{\{/g, '{{');
-        finalText = finalText.replace(/\}\}\}/g, '}}');
-        setInternalValue(finalText);
-        onChange?.(finalText);
-      }
-
-      // 设置光标位置到变量引用后面
-      setTimeout(() => {
-        if (inputRef.current) {
-          const textarea = inputRef.current;
-
-          // 验证光标位置是否在有效范围内
-          const maxPos = finalText.length;
-          const safeCursorPos = Math.min(Math.max(0, newCursorPos), maxPos);
-
-          textarea.setSelectionRange(safeCursorPos, safeCursorPos);
-          textarea.focus();
-
-          // 强制同步滚动位置，防止光标跳转导致不同步
-          forceSyncScroll?.();
-        }
-      }, 10); // 增加延时确保DOM更新完成
-
-      // 关闭下拉框
-      setVisible(false);
-      setSelectedKeys([]);
     },
     [
       internalValue,
-      onChange,
-      inputRef,
-      setVisible,
-      setSelectedKeys,
+      textCursorPosition,
+      readonly,
       setInternalValue,
-      forceSyncScroll,
+      onChange,
+      setTextCursorPosition,
+      setCursorToPosition,
+      setVisible,
     ],
   );
 
-  // 处理输入变化
+  // Handle input change (from contentEditable)
   const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newValue = e.target.value;
-      const cursorPosition = e.target.selectionStart || 0;
-      const prevValue = internalValue;
+    (newValue: string, explicitCursorPosition?: number) => {
+      // Calculate cursor position from selection first to know where the change happened
+      let cursorPosition = explicitCursorPosition;
 
-      // 更新文本光标位置
-      setTextCursorPosition(cursorPosition);
-
-      // 检测删除操作（文本长度减少）
-      if (!readonly && newValue.length < prevValue.length) {
-        // 检查是否为一次性删除高亮区块
-        // 使用当前光标位置和前一个光标位置来判断删除类型
-        const prevCursorPos = textCursorPosition; // 之前保存的光标位置
-        const isBackspace = cursorPosition <= prevCursorPos; // 光标位置没有移动或后退，说明是退格键
-        const result = deleteHighlightedBlock(cursorPosition, isBackspace);
-
-        if (typeof result === 'object' && result.handled) {
-          // 如果 hook 返回了新的值，我们需要在这里更新状态
-          if (result.newValue !== undefined) {
-            setInternalValue(result.newValue);
-            onChange?.(result.newValue);
-          }
-          if (result.newCursorPos !== undefined) {
-            setTextCursorPosition(result.newCursorPos);
-            // 同步设置输入框的光标位置
-            if (inputRef.current) {
-              // 使用 requestAnimationFrame 确保在下一帧渲染后执行
-              requestAnimationFrame(() => {
-                const textarea = inputRef.current;
-                if (textarea) {
-                  // 临时失去焦点再获取焦点，有助于浏览器重新定位滚动位置
-                  textarea.blur();
-                  textarea.setSelectionRange(
-                    result.newCursorPos!,
-                    result.newCursorPos!,
-                  );
-                  textarea.focus();
-
-                  // 再次强制同步滚动位置
-                  forceSyncScroll?.();
-                }
-              });
-            }
-          }
-          return; // 已经处理了删除操作，不执行后续逻辑
-        } else if (result === true) {
-          // 兼容旧的返回类型，如果返回 true 表示已处理（但状态更新可能在 hook 内部做了？不，我们在 hook 里移除了状态更新）
-          // 所以这里应该不会走到 result === true 的分支，除非 hook 实现变了
-          return;
+      if (cursorPosition === undefined) {
+        const selection = window.getSelection();
+        cursorPosition = 0;
+        if (selection && selection.rangeCount > 0 && inputRef.current) {
+          const range = selection.getRangeAt(0);
+          const preCaretRange = range.cloneRange();
+          preCaretRange.selectNodeContents(inputRef.current);
+          preCaretRange.setEnd(range.endContainer, range.endOffset);
+          cursorPosition = preCaretRange.toString().length;
         }
       }
 
-      // 检测是否刚输入了单个 {，如果是则自动补全 }
-      let shouldAutoCompleteBrace = false;
-      if (
-        !readonly &&
-        cursorPosition > 0 &&
-        newValue.length > prevValue.length
-      ) {
-        // 只在文本增加时检查（排除删除操作）
-        const charAtCursor =
-          cursorPosition > 0 ? newValue[cursorPosition - 1] : '';
-        // 优化检测条件：只对单个 { 触发自动补全，避免干扰 {{
-        if (charAtCursor === '{') {
-          // 检查光标位置附近是否有 {{，而不是检查整个文本
-          const nearbyText = newValue.substring(
-            Math.max(0, cursorPosition - 3),
-            Math.min(newValue.length, cursorPosition + 3),
-          );
-          const hasDoubleBraceNearby = nearbyText.includes('{{');
+      // Check if the change was a single '{' insertion
+      // We compare length and content around cursor
+      const isInsertion = newValue.length === internalValue.length + 1;
+      const insertedChar = newValue.charAt(cursorPosition - 1);
 
-          // 额外检查：确保不是连续的 { 字符
-          const prevChar =
-            cursorPosition > 1 ? newValue[cursorPosition - 2] : '';
+      let finalValue = newValue;
+      let finalCursorPos = cursorPosition;
 
-          if (!hasDoubleBraceNearby && prevChar !== '{') {
-            shouldAutoCompleteBrace = true;
-          }
+      if (isInsertion && insertedChar === '{') {
+        // Check if we should auto-close
+        // Don't auto-close if the next char is already '}' (avoid duplication)
+        const nextChar = newValue.charAt(cursorPosition);
+        if (nextChar !== '}') {
+          // Insert '}'
+          finalValue =
+            newValue.substring(0, cursorPosition) +
+            '}' +
+            newValue.substring(cursorPosition);
+          // We don't move cursor forward, it stays between {}
+          // But we need to tell the parent component about the new value
         }
       }
 
-      if (shouldAutoCompleteBrace) {
-        // 插入闭合的 } 并将光标移到中间
-        const beforeCursor = newValue.substring(0, cursorPosition);
-        const afterCursor = newValue.substring(cursorPosition);
-        const newText = beforeCursor + '}' + afterCursor;
+      setInternalValue(finalValue);
+      onChange?.(finalValue);
+      setTextCursorPosition(finalCursorPos);
 
-        // 计算新的光标位置：保持在 {} 中间
-        const newCursorPosition = cursorPosition; // 光标位置不变，正好在 {} 中间
+      // Check for braces to show dropdown
+      // Use finalValue and finalCursorPos
 
-        setInternalValue(newText);
-        onChange?.(newText);
+      // We need to pass the "line" to the parser.
+      // Since we are in a single-line-ish input (or multi-line), we should treat the whole content or the current line?
+      // The parser expects "lineContent" and "lineOffset".
+      // If we have newlines, we should probably find the current line.
+      // But for simplicity, let's treat the whole text as one "line" if possible,
+      // OR find the start/end of the current line.
 
-        // 强制设置可见状态，确保下拉框显示
-        setVisible(true);
+      // Let's find the current line boundaries around the cursor.
+      const lastNewline = finalValue.lastIndexOf('\n', finalCursorPos - 1);
+      const nextNewline = finalValue.indexOf('\n', finalCursorPos);
+      const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+      const lineEnd = nextNewline === -1 ? finalValue.length : nextNewline;
 
-        // 延迟设置光标位置，确保DOM更新完成
-        setTimeout(() => {
-          if (inputRef.current) {
-            const textarea = inputRef.current;
-            textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+      const lineContent = finalValue.substring(lineStart, lineEnd);
+      const lineOffset = finalCursorPos - lineStart;
 
-            // 强制同步滚动位置
-            forceSyncScroll?.();
-          }
-        }, 10);
-
-        // 检查是否需要显示变量选择框
-        const beforeBrace = newText.substring(0, cursorPosition);
-        const lastBraceStart = beforeBrace.lastIndexOf('{');
-        if (lastBraceStart !== -1) {
-          // 检查光标是否在 { } 之间
-          const afterBrace = newText.substring(lastBraceStart + 1);
-          const closingBracePos = afterBrace.indexOf('}');
-
-          if (closingBracePos !== -1) {
-            // 检查光标是否在 { 和 } 之间
-            const isInBraces =
-              cursorPosition > lastBraceStart &&
-              cursorPosition <= lastBraceStart + 1 + closingBracePos;
-
-            if (isInBraces) {
-              setVisible(true);
-
-              // 计算光标位置
-              if (inputRef.current) {
-                const textarea = inputRef.current;
-                const rect = textarea.getBoundingClientRect();
-                const computedStyle = window.getComputedStyle(textarea);
-                const lineHeight = parseInt(computedStyle.lineHeight) || 20;
-                const charWidth = parseFloat(computedStyle.fontSize) * 0.6; // 提高精度
-
-                // 计算光标在文本中的位置
-                const textBeforeCursor = newText.substring(0, cursorPosition);
-                const lines = textBeforeCursor.split('\n');
-                const currentLine = Math.max(0, lines.length - 1);
-                const currentCol = Math.max(
-                  0,
-                  lines[lines.length - 1]?.length || 0,
-                );
-
-                // 获取文本框的滚动偏移（增强版本）
-                const scrollLeft = textarea.scrollLeft || 0;
-                const scrollTop = textarea.scrollTop || 0;
-
-                // 计算光标相对于视口的像素位置（考虑滚动偏移）
-                const cursorX = rect.left + currentCol * charWidth - scrollLeft;
-                const cursorY =
-                  rect.top + currentLine * lineHeight + lineHeight - scrollTop;
-
-                // 使用改进的位置计算函数
-                const { position } = calculateDropdownPosition(
-                  cursorX,
-                  cursorY,
-                  inputRef.current, // DOM元素或undefined
-                  undefined, // dimensions，使用默认值
-                  {
-                    hasSearch: true, // 变量引用下拉框始终有搜索区域
-                    searchText: extractSearchTextFromInput(
-                      newText,
-                      cursorPosition,
-                    ),
-                    treeHeight: 240, // tree-list-content的固定高度
-                  },
-                );
-
-                setCursorPosition(position);
-              }
-            } else {
-              setVisible(false);
-            }
-          } else {
-            setVisible(false);
-          }
-        } else {
-          setVisible(false);
-        }
-
-        return; // 提前返回，不执行后续逻辑
-      }
-
-      setInternalValue(newValue);
-      onChange?.(newValue);
-
-      // 继续原有的 {{ 处理逻辑，同时支持 {} 模式
-      const beforeCursor = newValue.substring(0, cursorPosition);
-      const lastDoubleBraceStart = beforeCursor.lastIndexOf('{{');
-      const lastBraceStart = beforeCursor.lastIndexOf('{');
-
+      const parseResult = ExpressionEditorParser.parse({
+        lineContent,
+        lineOffset,
+      });
       let isInVariableContext = false;
+      let searchText = '';
+      let currentPath = '';
 
-      // 检查是否在 {{}} 中
-      if (lastDoubleBraceStart !== -1) {
-        const afterLastStart = beforeCursor.substring(lastDoubleBraceStart + 2);
-        const hasClosingBraces = afterLastStart.includes('}}');
-        isInVariableContext = !hasClosingBraces;
-      }
+      console.log('Debug InputHandler:', {
+        parseResult,
+        isInVariableContext,
+        finalValue,
+        finalCursorPos,
+      });
 
-      // 检查是否在 {} 中（单大括号模式）
-      if (
-        !isInVariableContext &&
-        lastBraceStart !== -1 &&
-        lastBraceStart !== lastDoubleBraceStart
-      ) {
-        const afterBrace = newValue.substring(lastBraceStart + 1);
-        const closingBracePos = afterBrace.indexOf('}');
+      if (parseResult) {
+        // If we got a result, it means we are inside {{...}}
+        isInVariableContext = true;
 
-        if (closingBracePos !== -1) {
-          // 检查光标是否在 { 和 } 之间
-          const isInBraces =
-            cursorPosition > lastBraceStart &&
-            cursorPosition <= lastBraceStart + 1 + closingBracePos;
+        // Construct search text / path from segments
+        // The parser returns "reachable" segments (what is before the cursor)
+        const segments = parseResult.segments.reachable;
+        if (segments && segments.length > 0) {
+          // Reconstruct path from segments
+          // e.g. ['user', 'name'] -> "user.name"
+          // e.g. ['array', '[0]'] -> "array[0]"
 
-          if (isInBraces) {
+          // Actually, drillToPath expects a string path like "user.name".
+          // We can reconstruct it.
+          currentPath = segments
+            .map((seg: ExpressionEditorSegment) => {
+              if (seg.type === ExpressionEditorSegmentType.ArrayIndex) {
+                return `[${seg.arrayIndex}]`;
+              }
+              return seg.objectKey || '';
+            })
+            .join('.');
+
+          // Fix join: array index shouldn't have dot before it?
+          // "user.[0]" is wrong. "user[0]" is right.
+          // But drillToPath might handle dots?
+          // Let's look at drillToPath in treeUtils.
+          // It splits by '.'.
+          // So "user[0]" might be treated as one key "user[0]"?
+          // Or "user" then "[0]"?
+          // If treeUtils expects dot-separated keys, we might need to adjust.
+          // But for now, let's just use the raw text from the start of the expression to the cursor.
+
+          // Actually, extractSearchTextFromInput was doing:
+          // return input.substring(start, cursor);
+
+          // parseResult.content.reachable is exactly that!
+          // It is the content inside {{...}} up to the cursor.
+          searchText = parseResult.content.reachable;
+          currentPath = searchText;
+        } else {
+          // Empty or just started
+          searchText = parseResult.content.reachable || '';
+          currentPath = searchText;
+        }
+      } else {
+        // Parser returned undefined - no complete {{...}} found
+        // But we still want to show dropdown for incomplete expressions like {{ or {
+        // Fallback to the original simple brace detection
+
+        const beforeCursor = finalValue.substring(0, finalCursorPos);
+        const lastDoubleBraceStart = beforeCursor.lastIndexOf('{{');
+        const lastBraceStart = beforeCursor.lastIndexOf('{');
+
+        // Check {{
+        if (lastDoubleBraceStart !== -1) {
+          const afterLastStart = beforeCursor.substring(
+            lastDoubleBraceStart + 2,
+          );
+          const hasClosingBraces = afterLastStart.includes('}}');
+
+          // Don't show dropdown if content starts with space
+          if (!hasClosingBraces && !afterLastStart.startsWith(' ')) {
             isInVariableContext = true;
+            currentPath = afterLastStart;
+            searchText = afterLastStart;
+          }
+        }
+
+        // Check { (single brace for Skill context)
+        // We only check for single brace if we are NOT already in a double brace context
+        if (!isInVariableContext && lastBraceStart !== -1) {
+          // Ensure this { is NOT part of {{
+          const isDoubleBrace =
+            lastBraceStart > 0 &&
+            beforeCursor.charAt(lastBraceStart - 1) === '{';
+
+          if (!isDoubleBrace) {
+            const contentAfterBrace = beforeCursor.substring(
+              lastBraceStart + 1,
+            );
+            const hasClosingBefore = contentAfterBrace.includes('}');
+
+            // Don't show dropdown if:
+            // 1. Content starts with space
+            // 2. Content starts with # (it's a tool block start)
+            // 3. It's already closed
+            if (
+              !hasClosingBefore &&
+              !contentAfterBrace.startsWith(' ') &&
+              !contentAfterBrace.startsWith('#')
+            ) {
+              isInVariableContext = true;
+              currentPath = contentAfterBrace;
+              searchText = contentAfterBrace;
+            }
           }
         }
       }
@@ -448,74 +343,47 @@ export const useInputHandler = (
       if (isInVariableContext) {
         setVisible(true);
 
-        // 强制同步滚动，确保光标位置正确
-        requestAnimationFrame(() => {
-          forceSyncScroll?.();
-        });
-
-        // 计算光标的屏幕位置
+        // Calculate dropdown position
         if (inputRef.current) {
-          const textarea = inputRef.current;
-          const rect = textarea.getBoundingClientRect();
-          const computedStyle = window.getComputedStyle(textarea);
-          const lineHeight = parseInt(computedStyle.lineHeight) || 20;
-          const charWidth = parseFloat(computedStyle.fontSize) * 0.6; // 提高精度
+          const rect = inputRef.current.getBoundingClientRect();
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const rangeRect = range.getBoundingClientRect();
 
-          // 计算光标在文本中的位置
-          const textBeforeCursor = newValue.substring(0, cursorPosition);
-          const lines = textBeforeCursor.split('\n');
-          const currentLine = Math.max(0, lines.length - 1);
-          const currentCol = Math.max(0, lines[lines.length - 1]?.length || 0);
+            const top = rangeRect.top === 0 ? rect.top : rangeRect.top;
+            const left = rangeRect.left === 0 ? rect.left : rangeRect.left;
+            const height = rangeRect.height === 0 ? 20 : rangeRect.height;
 
-          // 获取文本框的滚动偏移（增强版本）
-          const scrollLeft = textarea.scrollLeft || 0;
-          const scrollTop = textarea.scrollTop || 0;
-
-          // 计算光标相对于视口的像素位置（考虑滚动偏移）
-          const cursorX = rect.left + currentCol * charWidth - scrollLeft;
-          const cursorY =
-            rect.top + currentLine * lineHeight + lineHeight - scrollTop;
-
-          // 使用改进的位置计算函数
-          const { position } = calculateDropdownPosition(
-            cursorX,
-            cursorY,
-            inputRef.current, // DOM元素或undefined
-            undefined, // dimensions，使用默认值
-            {
-              hasSearch: true, // 变量引用下拉框始终有搜索区域
-              searchText: extractSearchTextFromInput(newValue, cursorPosition),
-              treeHeight: 240, // tree-list-content的固定高度
-            },
-          );
-
-          setCursorPosition(position);
+            const { position } = calculateDropdownPosition(
+              left,
+              top + height,
+              inputRef.current,
+              undefined,
+              {
+                hasSearch: true,
+                searchText: searchText, // Use extracted searchText
+                treeHeight: 240,
+              },
+            );
+            setCursorPosition(position);
+          }
         }
 
-        // 提取当前的变量路径
-        const currentPath = beforeCursor.substring(lastDoubleBraceStart + 2);
-
-        // 展开到当前路径
         drillToPath(variableTree, currentPath);
       } else {
         setVisible(false);
-        setSelectedKeys([]);
       }
     },
     [
-      internalValue,
-      readonly,
-      variableTree,
-      onChange,
-      textCursorPosition,
-      deleteHighlightedBlock,
-      inputRef,
+      internalValue, // Added dependency
       setInternalValue,
+      onChange,
       setTextCursorPosition,
+      inputRef,
       setVisible,
       setCursorPosition,
-      setSelectedKeys,
-      forceSyncScroll,
+      variableTree,
     ],
   );
 

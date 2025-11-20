@@ -22,6 +22,7 @@ export const ExpandableInputTextarea: React.FC<
   onOptimize,
   onOptimizeClick,
   variables,
+  skills,
 }) => {
   const [uuid, setUuid] = useState('');
   const { setExpanded, expanded } = useModel('workflow'); // 添加本地状态
@@ -74,6 +75,7 @@ export const ExpandableInputTextarea: React.FC<
         <VariableInferenceInput
           placeholder={placeholder}
           variables={variables}
+          skills={skills}
           className={cx(styles['prompt-editor-provider'])}
         />
       </Form.Item>
