@@ -1,5 +1,4 @@
-import { useCallback, useEffect } from 'react';
-import { extractSearchTextFromInput } from '../utils/textUtils';
+import { useCallback } from 'react';
 import { transformToTreeDataForTree } from '../utils/treeHelpers';
 
 export const useKeyboardNavigation = (
@@ -19,6 +18,14 @@ export const useKeyboardNavigation = (
   // 键盘导航的具体实现
   const handleTreeNavigation = useCallback(
     (e: KeyboardEvent) => {
+      // 优先处理 Escape 键，不需要依赖节点数据
+      if (e.key === 'Escape') {
+        console.log('Escape pressed, closing dropdown');
+        e.preventDefault();
+        setVisible(false);
+        return;
+      }
+
       const treeData = transformToTreeDataForTree(displayTree);
 
       // 获取所有可选择的节点
@@ -97,69 +104,6 @@ export const useKeyboardNavigation = (
           setVisible(false);
           console.log('Variable applied:', selectedNode.value);
         }
-      } else if (e.key === 'Escape') {
-        const searchText = extractSearchTextFromInput(
-          internalValue,
-          textCursorPosition,
-        );
-
-        if (searchText.trim()) {
-          // 如果有搜索文本，检查是单个大括号还是双大括号
-          const beforeCursor = internalValue.substring(0, textCursorPosition);
-          const lastBraceStart = beforeCursor.lastIndexOf('{');
-          const lastDoubleBraceStart = beforeCursor.lastIndexOf('{{');
-
-          if (lastBraceStart > lastDoubleBraceStart) {
-            // 单个大括号：删除 { 和搜索内容
-            const index = internalValue.lastIndexOf('{' + searchText);
-            if (index >= 0) {
-              setInternalValue(internalValue.substring(0, index));
-            }
-          } else {
-            // 双大括号：删除 {{ 和搜索内容
-            const index = internalValue.lastIndexOf('{{' + searchText);
-            if (index >= 0) {
-              setInternalValue(internalValue.substring(0, index));
-            }
-          }
-        } else {
-          // 检查是否有 { 或 {{
-          if (internalValue.includes('{')) {
-            const beforeCursor = internalValue.substring(0, textCursorPosition);
-            const lastBraceStart = beforeCursor.lastIndexOf('{');
-            const lastDoubleBraceStart = beforeCursor.lastIndexOf('{{');
-
-            if (lastBraceStart > lastDoubleBraceStart) {
-              // 单个大括号：删除 { 和对应的 }
-              const index = internalValue.lastIndexOf('{');
-              if (index >= 0) {
-                // 找到对应的 }
-                const afterBrace = internalValue.substring(index + 1);
-                const closingBracePos = afterBrace.indexOf('}');
-
-                if (closingBracePos !== -1) {
-                  // 删除 {xxx}
-                  setInternalValue(
-                    internalValue.substring(0, index) +
-                      internalValue.substring(index + 1 + closingBracePos + 1),
-                  );
-                } else {
-                  // 只有 {，删除 {
-                  setInternalValue(internalValue.substring(0, index));
-                }
-              }
-            } else if (internalValue.includes('{{')) {
-              // 双大括号：删除 {{
-              const index = internalValue.lastIndexOf('{{');
-              if (index >= 0) {
-                setInternalValue(
-                  internalValue.substring(0, index) +
-                    internalValue.substring(index + 2),
-                );
-              }
-            }
-          }
-        }
       }
     },
     [
@@ -176,37 +120,27 @@ export const useKeyboardNavigation = (
     ],
   );
 
-  // 全局键盘事件处理，作为 Tree 组件内置键盘导航的备选方案
-  useEffect(() => {
-    if (!visible) return;
-
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+  // 移除全局键盘事件监听，改为返回 onKeyDown 处理函数
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement> | KeyboardEvent) => {
       if (readonly) return;
 
-      console.log('Global keydown detected:', e.key, 'visible:', visible);
-
-      // 只处理我们的快捷键
-      if (
-        e.key === 'ArrowDown' ||
-        e.key === 'ArrowUp' ||
-        e.key === 'Enter' ||
-        e.key === 'Escape'
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // 直接在这里实现键盘导航逻辑，避免函数依赖问题
-        handleTreeNavigation(e);
+      // 只在下拉框可见时处理导航键
+      if (visible) {
+        if (
+          e.key === 'ArrowDown' ||
+          e.key === 'ArrowUp' ||
+          e.key === 'Enter' ||
+          e.key === 'Escape'
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleTreeNavigation(e as any);
+        }
       }
-    };
+    },
+    [visible, readonly, handleTreeNavigation],
+  );
 
-    console.log('Adding global keyboard listener');
-    document.addEventListener('keydown', handleGlobalKeyDown, true);
-    return () => {
-      console.log('Removing global keyboard listener');
-      document.removeEventListener('keydown', handleGlobalKeyDown, true);
-    };
-  }, [visible, readonly, handleTreeNavigation]);
-
-  return { handleTreeNavigation };
+  return { onKeyDown };
 };

@@ -84,9 +84,8 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
   );
 
   // 6. Keyboard Navigation Logic
-  useKeyboardNavigation(
+  const { onKeyDown } = useKeyboardNavigation(
     visible,
-    readonly,
     displayTree,
     selectedKeys,
     setSelectedKeys,
@@ -95,9 +94,9 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
     handleApplyVariable,
     setVisible,
     internalValue,
-    textCursorPosition,
     setInternalValue,
-    treeRef,
+    textCursorPosition,
+    readonly,
   );
 
   const popoverShouldShow =
@@ -123,6 +122,7 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
           ref={inputRef}
           value={internalValue}
           onChange={handleInputChange}
+          onKeyDown={onKeyDown}
           placeholder={placeholder}
           disabled={disabled}
           rows={4}
