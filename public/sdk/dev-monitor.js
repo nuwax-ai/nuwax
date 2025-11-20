@@ -1021,13 +1021,7 @@
         return null;
       }
     }
-
-    /**
-     * 添加「回到首页」悬浮图标
-     * - 默认固定在页面右下角
-     * - 单击 / 轻触：回到首页
-     */
-    function addBackToHomeButton() {
+    function handleBackToHome() {
       // 如果当前 URL 中不包含 _ticket 参数，则不显示按钮
       const currentUrl = window.location.href;
       const _ticket = getQueryParam(currentUrl, '_ticket');
@@ -1041,6 +1035,26 @@
         return;
       }
 
+      // 跳转类型主要区别是否是系统内部跳转还是分享链接跳转
+      if (jump_type === 'inner') {
+        // 内部页面在路由变化后添加按钮
+        onceHistoryChange(() => {
+          addBackToHomeButton(jump_type);
+        });
+      }
+      // 跳转类型主要区别是否是系统内部跳转还是分享链接跳转
+      if (jump_type === 'outer') {
+        // 外部页面直接添加按钮
+        addBackToHomeButton(jump_type);
+      }
+    }
+
+    /**
+     * 添加「回到首页」悬浮图标
+     * - 默认固定在页面右下角
+     * - 单击 / 轻触：回到首页
+     */
+    function addBackToHomeButton(jump_type) {
       const icon = document.createElement('div');
       icon.innerHTML = 'X';
 
@@ -1061,32 +1075,22 @@
         cursor: 'pointer',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        // boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
       });
 
-      // 1. child 第一次加载时记录进入 iframe 的历史位置
-      // if (!sessionStorage.getItem('entryIndex')) {
-      //   sessionStorage.setItem('entryIndex', window.history.length);
-      //   console.log('进入 iframe 时的历史位置记录为：', window.history.length);
-      // }
-      // 2. 回到首页
+      // 回到首页
       function goHome() {
-        if (jump_type === 'outer') {
-          // 如果是分享链接跳转，则使用 wx.miniProgram.reLaunch 跳转到首页
-          window.wx.miniProgram.reLaunch({ url: '/pages/index/index' });
-          return;
-        }
+        icon.remove();
+        setTimeout(() => {
+          if (jump_type === 'outer') {
+            // 如果是分享链接跳转，则使用 wx.miniProgram.reLaunch 跳转到首页
+            window.wx.miniProgram.reLaunch({ url: '/pages/index/index' });
+          }
 
-        if (jump_type === 'inner') {
-          // 如果是系统内部跳转，则使用 history.go 回退
-          // const entryIndex = Number(sessionStorage.getItem('entryIndex'));
-          // const diff = entryIndex - window.history.length;
-          // console.log('返回数量:', diff);
-
-          // window.history.go(diff);
-          window.wx.miniProgram.navigateBack();
-          return;
-        }
+          if (jump_type === 'inner') {
+            // 如果是系统内部跳转，则使用 wx.miniProgram.navigateBack 回退
+            window.wx.miniProgram.navigateBack();
+          }
+        }, 50);
       }
 
       // 点击 / 轻触：回到首页（PC + 移动端）
@@ -1100,11 +1104,7 @@
       icon.addEventListener(
         'touchend',
         (event) => {
-          try {
-            event.preventDefault();
-          } catch (e) {
-            // 忽略 preventDefault 失败
-          }
+          event?.preventDefault();
           try {
             goHome();
           } catch (e) {
@@ -1129,7 +1129,7 @@
       // 脚本加载成功回调
       script.onload = function () {
         // 添加回到首页按钮
-        addBackToHomeButton();
+        handleBackToHome();
 
         // 等待 wx 对象可用
         setTimeout(() => {
@@ -1175,6 +1175,49 @@
     } else {
       injectWeChatSDK();
     }
+  }
+
+  /**
+   * 监听一次历史记录变化
+   * @param callback
+   */
+  function onceHistoryChange(callback) {
+    let called = false;
+
+    const handler = (type) => {
+      if (called) return;
+      called = true;
+      callback();
+
+      // 移除监听
+      window.removeEventListener('popstate', handler);
+      window.removeEventListener('hashchange', handler);
+
+      history.pushState = originalPushState;
+      // history.replaceState = originalReplaceState;
+    };
+
+    const originalPushState = history.pushState;
+    // const originalReplaceState = history.replaceState;
+
+    history.pushState = function (...args) {
+      const result = originalPushState.apply(this, args);
+      handler(1);
+      return result;
+    };
+
+    // history.replaceState = function (...args) {
+    //   const result = originalReplaceState.apply(this, args);
+    //   handler(2);
+    //   return result;
+    // };
+
+    window.addEventListener('popstate', () => {
+      handler(3);
+    });
+    window.addEventListener('hashchange', () => {
+      handler(4);
+    });
   }
 
   // 简化的初始化
