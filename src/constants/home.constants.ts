@@ -9,6 +9,9 @@ export const SPACE_URL = 'SPACE_URL';
 // 租户配置信息
 export const TENANT_CONFIG_INFO = 'TENANT_CONFIG_INFO';
 
+// 应用版本号存储 key
+export const APP_VERSION = 'APP_VERSION';
+
 // 推荐聊天主题
 export const RECOMMEND_TEXT = [
   '女娲智能体设计平台功能概述',
