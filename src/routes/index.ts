@@ -164,6 +164,11 @@ const routes = [
     component: '@/examples/VariableRefTest/index',
     layout: false,
   },
+  {
+    path: '/examples/tiptap-editor',
+    component: '@/examples/TipTapEditorExample',
+    layout: false,
+  },
 ];
 
 export default routes;

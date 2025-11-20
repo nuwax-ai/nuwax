@@ -1,0 +1,553 @@
+/* TipTap 编辑器样式文件 */
+
+/* 编辑器容器 */
+.tiptap-editor-wrapper {
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #fff;
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+
+  &:hover {
+    border-color: #40a9ff;
+  }
+
+  &.dark-theme {
+    background: #1f1f1f;
+    border-color: #434343;
+    color: #fff;
+
+    .tiptap-editor-content {
+      color: #fff;
+    }
+
+    .editor-toolbar {
+      border-bottom-color: #434343;
+    }
+  }
+}
+
+/* 工具栏样式 */
+.editor-toolbar {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+  border-radius: 6px 6px 0 0;
+
+  .ant-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+
+    .ant-btn {
+      padding: 4px 8px;
+      font-size: 12px;
+      height: 24px;
+      line-height: 1;
+
+      &.is-active {
+        background: #1890ff;
+        color: #fff;
+        border-color: #1890ff;
+      }
+    }
+  }
+}
+
+/* 编辑器内容区域 */
+.tiptap-editor-container {
+  position: relative;
+  overflow-y: auto;
+
+  .tiptap-editor-content {
+    padding: 16px;
+    min-height: 200px;
+    outline: none;
+    line-height: 1.6;
+
+    /* 段落样式 */
+    p {
+      margin: 0 0 8px;
+      line-height: 1.6;
+    }
+
+    /* 标题样式 */
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin: 16px 0 12px;
+      line-height: 1.3;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 14px 0 10px;
+      line-height: 1.4;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 12px 0 8px;
+      line-height: 1.5;
+    }
+
+    /* 列表样式 */
+    ul,
+    ol {
+      margin: 8px 0;
+      padding-left: 24px;
+
+      li {
+        margin: 4px 0;
+      }
+    }
+
+    /* 引用样式 */
+    blockquote {
+      margin: 8px 0;
+      padding: 8px 16px;
+      border-left: 4px solid #d9d9d9;
+      background: #fafafa;
+      color: #666;
+    }
+
+    /* 代码样式 */
+    code {
+      background: #f5f5f5;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+      font-size: 14px;
+    }
+
+    pre {
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 8px 0;
+
+      code {
+        background: none;
+        padding: 0;
+        border-radius: 0;
+      }
+    }
+  }
+
+  .light-theme {
+    .tiptap-editor-content {
+      color: #000;
+    }
+  }
+
+  .dark-theme {
+    .tiptap-editor-content {
+      color: #fff;
+
+      code {
+        background: #2f2f2f;
+        color: #d4d4d4;
+      }
+
+      pre {
+        background: #2f2f2f;
+      }
+
+      blockquote {
+        background: #262626;
+        border-left-color: #434343;
+        color: #ccc;
+      }
+    }
+  }
+}
+
+/* ToolBlock 节点样式 */
+.toolblock-node {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: 2px solid #5a67d8;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+  color: #fff;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 25%);
+  overflow: hidden;
+
+  /* ToolBlock 头部 */
+  .toolblock-header {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.9;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 20%);
+  }
+
+  /* ToolBlock 内容区域 */
+  .toolblock-content {
+    min-height: 40px;
+    padding: 8px 0;
+    line-height: 1.6;
+
+    &:empty::after {
+      content: '在这里输入内容...';
+      opacity: 0.7;
+      font-style: italic;
+    }
+  }
+
+  /* ToolBlock 尾部 */
+  .toolblock-footer {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.9;
+    margin-top: 8px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 20%);
+  }
+
+  /* 悬停效果 */
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 35%);
+    transition: all 0.3s ease;
+  }
+
+  /* 选中状态 */
+  /* stylelint-disable-next-line selector-class-pattern */
+  &.ProseMirror-selectednode {
+    outline: 2px solid #ffd700;
+    box-shadow: 0 0 0 4px rgba(255, 215, 0, 20%);
+  }
+}
+
+/* 变量提及样式 */
+.mention-node {
+  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+  border: 1px solid #ff6b9d;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: #8b1538;
+  text-decoration: none;
+  display: inline-block;
+  margin: 0 2px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: linear-gradient(135deg, #ff6b9d 0%, #f093fb 100%);
+    color: #fff;
+    transform: scale(1.05);
+  }
+}
+
+/* 统一的建议弹窗样式（参考VariableInferenceInput） */
+.tiptap-suggestion-popup {
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
+    0 9px 28px 8px rgba(0, 0, 0, 5%);
+  width: 320px;
+  min-width: 320px;
+  max-width: 320px;
+  padding: 8px;
+  z-index: 9999;
+
+  .suggestion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #fafafa;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+    color: #666;
+    border-radius: 6px 6px 0 0;
+    margin: -8px -8px 8px;
+
+    .suggestion-title {
+      font-weight: 600;
+    }
+
+    .suggestion-count {
+      background: #e6f7ff;
+      color: #1890ff;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+  }
+
+  .suggestion-content {
+    .suggestion-tabs {
+      .ant-tabs-nav {
+        margin-bottom: 8px;
+
+        .ant-tabs-tab {
+          padding: 4px 12px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+      }
+
+      .ant-tabs-content-holder {
+        .ant-tabs-content {
+          .ant-tabs-pane {
+            padding: 0;
+          }
+        }
+      }
+    }
+
+    .tree-container {
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    /* Ant Tree 自定义样式（参考VariableInferenceInput） */
+    .ant-tree {
+      background: transparent;
+      border: none;
+
+      .ant-tree-node-content-wrapper {
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: auto !important;
+        line-height: 1.5;
+
+        &:hover {
+          background-color: #f5f5f5;
+        }
+
+        &.ant-tree-node-selected {
+          background-color: #1890ff !important;
+          color: #fff !important;
+
+          .ant-tree-title {
+            color: #fff !important;
+          }
+        }
+      }
+
+      .ant-tree-switcher {
+        color: #8c8c8c;
+
+        &:hover {
+          color: #1890ff;
+        }
+      }
+
+      .ant-tree-title {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .tree-node-content {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+
+          .node-type {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+            min-width: 32px;
+            text-align: center;
+
+            &.variable {
+              background: #e6f7ff;
+              color: #1890ff;
+            }
+
+            &.tool {
+              background: #f6ffed;
+              color: #52c41a;
+            }
+          }
+
+          .node-title {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+          }
+
+          .node-key {
+            font-size: 12px;
+            color: #8c8c8c;
+            flex-shrink: 0;
+            font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+
+            .ant-tree-node-selected & {
+              color: rgba(255, 255, 255, 80%);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/* 提及弹窗样式（保持原有样式以兼容） */
+.mention-popup {
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 8%);
+  z-index: 9999;
+
+  .mention-list {
+    max-height: 200px;
+    overflow-y: auto;
+    min-width: 200px;
+
+    .mention-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background: #f5f5f5;
+      }
+
+      &.selected {
+        background: #e6f7ff;
+        border-left: 3px solid #1890ff;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .mention-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #000;
+        margin-bottom: 2px;
+      }
+
+      .mention-key {
+        font-size: 12px;
+        color: #666;
+        font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+      }
+
+      .mention-desc {
+        font-size: 12px;
+        color: #999;
+        margin-top: 2px;
+        line-height: 1.3;
+      }
+    }
+  }
+}
+
+/* 编辑器状态栏 */
+.editor-status {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 12px;
+  background: #fafafa;
+  border-top: 1px solid #f0f0f0;
+  border-radius: 0 0 6px 6px;
+
+  .word-count {
+    font-size: 12px;
+    color: #999;
+  }
+}
+
+/* 加载状态 */
+.tiptap-editor-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #999;
+
+  .ant-spin {
+    margin-bottom: 12px;
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .tiptap-editor-wrapper {
+    .editor-toolbar {
+      padding: 6px 8px;
+
+      .ant-btn {
+        padding: 2px 6px;
+        font-size: 11px;
+        height: 20px;
+      }
+    }
+
+    .tiptap-editor-container {
+      .tiptap-editor-content {
+        padding: 12px;
+        font-size: 14px;
+      }
+    }
+  }
+
+  .tiptap-suggestion-popup {
+    width: 280px;
+    min-width: 280px;
+    max-width: 280px;
+
+    .suggestion-content {
+      .tree-container {
+        max-height: 200px;
+      }
+    }
+  }
+}
+
+/* 滚动条样式 */
+.tiptap-editor-container::-webkit-scrollbar,
+.tree-container::-webkit-scrollbar,
+.mention-list::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.tiptap-editor-container::-webkit-scrollbar-track,
+.tree-container::-webkit-scrollbar-track,
+.mention-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.tiptap-editor-container::-webkit-scrollbar-thumb,
+.tree-container::-webkit-scrollbar-thumb,
+.mention-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.tiptap-editor-container::-webkit-scrollbar-thumb:hover,
+.tree-container::-webkit-scrollbar-thumb:hover,
+.mention-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
