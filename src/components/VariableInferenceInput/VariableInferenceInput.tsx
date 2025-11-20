@@ -1,4 +1,4 @@
-import { Tree } from 'antd';
+import { theme, Tree } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useContentEditable } from './hooks/useContentEditable';
 import { useDropdownPosition } from './hooks/useDropdownPosition';
@@ -21,6 +21,7 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
   className,
   style,
 }) => {
+  const { token } = theme.useToken();
   const [internalValue, setInternalValue] = useState(value || '');
   const [visible, setVisible] = useState(false);
   const [textCursorPosition, setTextCursorPosition] = useState(0);
@@ -59,6 +60,7 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
     handlePaste,
     handleCompositionStart,
     handleCompositionEnd,
+    setCursorToPosition,
   } = useContentEditable(
     internalValue,
     (newValue) => {
@@ -85,6 +87,7 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
     setCursorPosition,
     variableTree,
     readonly,
+    setCursorToPosition,
   );
 
   // Store handleInputChange in ref for useContentEditable callback
@@ -110,7 +113,9 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
     visible &&
     !readonly &&
     !disabled &&
-    (internalValue.includes('{{') || internalValue.includes('{}'));
+    (internalValue.includes('{{') ||
+      internalValue.includes('{}') ||
+      internalValue.includes('{'));
 
   return (
     <div className={['prompt-variable-ref', className].join(' ')} style={style}>
@@ -125,16 +130,18 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
           onCompositionStart={handleCompositionStart}
           onCompositionEnd={handleCompositionEnd}
           dangerouslySetInnerHTML={{ __html: internalHtml }}
+          data-value={internalValue}
         />
         {!internalValue && (
           <div
             className="placeholder"
             style={{
               position: 'absolute',
-              top: '9px',
-              left: '9px',
+              top: token.paddingSM,
+              left: token.padding,
               color: '#bfbfbf',
               pointerEvents: 'none',
+              zIndex: 2,
             }}
           >
             {placeholder}

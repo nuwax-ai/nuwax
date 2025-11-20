@@ -13,15 +13,149 @@ const getCursorPosition = (root: Node): number => {
   if (!selection || selection.rangeCount === 0) return 0;
 
   const range = selection.getRangeAt(0);
-  const preCaretRange = range.cloneRange();
-  preCaretRange.selectNodeContents(root);
-  preCaretRange.setEnd(range.endContainer, range.endOffset);
 
-  // This length is based on text content, which matches our parseHtmlToValue logic roughly
-  // but we need to be careful about the chips.
-  // Our parseHtmlToValue treats chips as their content text or special markers.
-  // The browser's toString() of range might just concatenate text.
-  return preCaretRange.toString().length;
+  // Helper to get the length of a node
+  const getNodeLength = (node: Node): number => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent?.length || 0;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const element = node as HTMLElement;
+
+      // For BR tags, length is 1
+      if (element.tagName === 'BR') {
+        return 1;
+      }
+
+      // For tool blocks, they are treated as a single unit in the raw value
+      // But in the DOM they might have complex structure.
+      // However, parseHtmlToValue extracts their full text representation.
+      // So we should probably calculate the length of their "value" representation.
+      if (element.classList.contains('tool-block-chip')) {
+        const toolId = element.getAttribute('data-tool-id') || '';
+        const toolType = element.getAttribute('data-tool-type') || '';
+        const toolName = element.getAttribute('data-tool-name') || '';
+        const content = element.textContent || '';
+        return `{#ToolBlock id="${toolId}" type="${toolType}" name="${toolName}"#}${content}{#/ToolBlock#}`
+          .length;
+      }
+
+      // For variable blocks, in the "dirty" DOM state (user typing),
+      // they behave like normal elements with text content.
+      // We should NOT use fixed length here because the user might have added text inside.
+      // We will traverse their children in calculatePosition.
+      return 0;
+    }
+    return 0;
+  };
+
+  // Helper to get the full length of a node (recursive for elements)
+  const getFullNodeLength = (node: Node): number => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent?.length || 0;
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const element = node as HTMLElement;
+      if (element.tagName === 'BR') return 1;
+      if (element.classList.contains('tool-block-chip')) {
+        return getNodeLength(element);
+      }
+      // For variables and other containers, sum children
+      let len = 0;
+      node.childNodes.forEach((child) => {
+        len += getFullNodeLength(child);
+      });
+      return len;
+    }
+    return 0;
+  };
+
+  // Helper function to calculate position recursively
+  const calculatePosition = (
+    node: Node,
+    targetNode: Node,
+    targetOffset: number,
+  ): number | null => {
+    if (node === targetNode) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return targetOffset;
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        // targetOffset is the child index
+        // We need to calculate the length of all children before targetOffset
+        let position = 0;
+        for (let i = 0; i < targetOffset && i < node.childNodes.length; i++) {
+          const child = node.childNodes[i];
+          // If it's a tool block, use its special length
+          if (
+            child.nodeType === Node.ELEMENT_NODE &&
+            (child as HTMLElement).classList.contains('tool-block-chip')
+          ) {
+            position += getNodeLength(child);
+          } else {
+            // For other nodes (text, variables, BRs), we need to traverse or get length
+            // But getNodeLength returns 0 for container elements (like variables),
+            // so we need a way to get their full length if we are skipping them.
+            // Actually, if we are here, it means the cursor is in the container 'node',
+            // pointing to the 'targetOffset'-th child.
+            // We just need the length of previous siblings.
+            position += getFullNodeLength(child);
+          }
+        }
+        return position;
+      }
+      return 0;
+    }
+
+    let position = 0;
+
+    if (node.nodeType === Node.TEXT_NODE) {
+      return null; // Not found in this text node
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const element = node as HTMLElement;
+
+      // Handle tool chips - treat as atomic
+      if (element.classList.contains('tool-block-chip')) {
+        const toolLength = getNodeLength(element);
+        // Check if target is inside this chip (shouldn't happen if contenteditable=false, but just in case)
+        if (element.contains(targetNode) || element === targetNode) {
+          // If cursor is somehow inside, we just return the start of the tool block?
+          // Or maybe we should try to be more precise?
+          // Given tools are not editable, let's assume cursor is at end if matched
+          return toolLength;
+        }
+        return null;
+      }
+
+      // Handle BR tags
+      if (element.tagName === 'BR') {
+        if (element === targetNode || element.contains(targetNode)) {
+          return 1;
+        }
+        return null;
+      }
+
+      // Iterate through child nodes
+      for (let i = 0; i < node.childNodes.length; i++) {
+        const child = node.childNodes[i];
+        const childPosition = calculatePosition(
+          child,
+          targetNode,
+          targetOffset,
+        );
+
+        if (childPosition !== null) {
+          return position + childPosition;
+        }
+
+        // Add length of this child to position
+        position += getFullNodeLength(child);
+      }
+    }
+
+    return null;
+  };
+
+  const pos = calculatePosition(root, range.endContainer, range.endOffset);
+  return pos !== null ? pos : 0;
 };
 
 // Helper to set the cursor position based on linear index
@@ -44,7 +178,46 @@ const setCursorPosition = (root: Node, position: number) => {
         return;
       }
       charCount += textLength;
-    } else {
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const element = node as HTMLElement;
+
+      // Handle tool chips - treat as atomic
+      if (element.classList.contains('tool-block-chip')) {
+        const toolId = element.getAttribute('data-tool-id') || '';
+        const toolType = element.getAttribute('data-tool-type') || '';
+        const toolName = element.getAttribute('data-tool-name') || '';
+        const content = element.textContent || '';
+        const toolLength =
+          `{#ToolBlock id="${toolId}" type="${toolType}" name="${toolName}"#}${content}{#/ToolBlock#}`
+            .length;
+
+        if (charCount + toolLength >= position) {
+          // Position is within or at the end of this chip
+          // Place cursor after the chip
+          targetNode = element.parentNode;
+          targetOffset =
+            Array.from(element.parentNode?.childNodes || []).indexOf(element) +
+            1;
+          return;
+        }
+        charCount += toolLength;
+        return; // Don't traverse children
+      }
+
+      // Handle BR tags
+      if (element.tagName === 'BR') {
+        if (charCount + 1 >= position) {
+          targetNode = element.parentNode;
+          targetOffset =
+            Array.from(element.parentNode?.childNodes || []).indexOf(element) +
+            1;
+          return;
+        }
+        charCount += 1;
+        return;
+      }
+
+      // Traverse children for other elements (including variable blocks)
       for (let i = 0; i < node.childNodes.length; i++) {
         traverse(node.childNodes[i]);
         if (targetNode) return;
@@ -76,16 +249,30 @@ export const useContentEditable = (
   const cursorPositionRef = useRef<number | null>(null);
   const isComposingRef = useRef(false);
 
+  // Track previous value for auto-completion detection
+  const previousValueRef = useRef<string>(value);
+
   // Initialize HTML from value
   useEffect(() => {
-    const newHtml = parseValueToHtml(value);
+    // Get current cursor position before re-parsing
+    let cursorPos = -1;
+    if (
+      contentEditableRef.current &&
+      document.activeElement === contentEditableRef.current
+    ) {
+      cursorPos = getCursorPosition(contentEditableRef.current);
+    }
+
+    const newHtml = parseValueToHtml(value, cursorPos);
     // Only update if the parsed HTML is different from what's currently in the DOM
-    // or if we have a pending cursor restore
     if (contentEditableRef.current) {
       if (contentEditableRef.current.innerHTML !== newHtml) {
         setInternalHtml(newHtml);
       }
     }
+
+    // Update previousValueRef when value prop changes
+    previousValueRef.current = value;
   }, [value]);
 
   // Restore cursor position after render
@@ -106,10 +293,40 @@ export const useContentEditable = (
 
       const root = e.currentTarget;
       const html = root.innerHTML;
-      const newValue = parseHtmlToValue(html);
 
-      // Save cursor position before the update triggers a re-render
-      cursorPositionRef.current = getCursorPosition(root);
+      // Get current cursor position before parsing
+      const currentCursorPos = getCursorPosition(root);
+
+      // Parse to get the raw text value
+      let newValue = parseHtmlToValue(html);
+
+      // Auto-completion logic for '{'
+      // Check if a single '{' was just inserted
+      // Use previousValueRef to get the old value before this input event
+      const oldValue = previousValueRef.current;
+      const isInsertion = newValue.length === oldValue.length + 1;
+      const insertedChar = newValue.charAt(currentCursorPos - 1);
+
+      if (isInsertion && insertedChar === '{') {
+        // Check if we should auto-close (don't if next char is already '}')
+        const nextChar = newValue.charAt(currentCursorPos);
+        if (nextChar !== '}') {
+          // Insert '}'
+          newValue =
+            newValue.substring(0, currentCursorPos) +
+            '}' +
+            newValue.substring(currentCursorPos);
+
+          // Update the cursor position ref to stay between {}
+          cursorPositionRef.current = currentCursorPos;
+        }
+      } else {
+        // Save cursor position before the update triggers a re-render
+        cursorPositionRef.current = currentCursorPos;
+      }
+
+      // Update previousValueRef after processing
+      previousValueRef.current = newValue;
 
       onChange(newValue);
     },
@@ -145,5 +362,10 @@ export const useContentEditable = (
     handlePaste,
     handleCompositionStart,
     handleCompositionEnd,
+    setCursorToPosition: (position: number) => {
+      if (contentEditableRef.current) {
+        setCursorPosition(contentEditableRef.current, position);
+      }
+    },
   };
 };

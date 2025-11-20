@@ -97,13 +97,15 @@ export const useKeyboardNavigation = (
         }
       } else if (e.key === 'Enter') {
         console.log('Enter pressed');
-        e.preventDefault();
-        if (currentIndex >= 0) {
+        // Only prevent default if dropdown is visible and has a selection
+        if (visible && currentIndex >= 0) {
+          e.preventDefault();
           const selectedNode = allNodes[currentIndex];
           handleApplyVariable(selectedNode.value);
           setVisible(false);
           console.log('Variable applied:', selectedNode.value);
         }
+        // Otherwise, allow normal Enter behavior (newline)
       }
     },
     [
@@ -130,11 +132,14 @@ export const useKeyboardNavigation = (
         if (
           e.key === 'ArrowDown' ||
           e.key === 'ArrowUp' ||
-          e.key === 'Enter' ||
           e.key === 'Escape'
         ) {
           e.preventDefault();
           e.stopPropagation();
+          handleTreeNavigation(e as any);
+        } else if (e.key === 'Enter') {
+          // Enter 键交给 handleTreeNavigation 内部判断
+          // 只有在有选中项时才会阻止默认行为
           handleTreeNavigation(e as any);
         }
       }

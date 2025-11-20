@@ -12,6 +12,7 @@ export const transformToTreeDataForTree = (
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
+            whiteSpace: 'nowrap',
           }}
         >
           {/* <span style={{ fontSize: '12px', opacity: 0.8 }}>
@@ -22,7 +23,7 @@ export const transformToTreeDataForTree = (
           <span
             style={{
               flex: 1,
-              fontSize: '14px',
+              fontSize: '12px',
             }}
           >
             {node.label}
