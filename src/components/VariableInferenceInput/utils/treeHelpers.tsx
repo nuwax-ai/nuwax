@@ -1,5 +1,4 @@
 import { VariableTreeNode } from '../types';
-import { getVariableTypeIcon } from './treeUtils';
 
 // 将变量树节点转换为 Tree 组件格式
 export const transformToTreeDataForTree = (
@@ -15,11 +14,11 @@ export const transformToTreeDataForTree = (
             gap: '8px',
           }}
         >
-          <span style={{ fontSize: '12px', opacity: 0.8 }}>
+          {/* <span style={{ fontSize: '12px', opacity: 0.8 }}>
             {node.variable?.type
               ? getVariableTypeIcon(node.variable.type)
               : '📝'}
-          </span>
+          </span> */}
           <span
             style={{
               flex: 1,
