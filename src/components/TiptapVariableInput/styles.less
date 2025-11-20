@@ -1,0 +1,162 @@
+@import '@/styles/token.less';
+
+/*
+ * Tiptap Variable Input Component Styles
+ * Tiptap 变量输入组件样式
+ */
+
+.tiptap-variable-input {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: @borderRadius;
+
+  .tiptap-editor-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 100px;
+
+    // Tiptap 编辑器基础样式
+    :global {
+      /* stylelint-disable-next-line selector-class-pattern */
+      .ProseMirror {
+        outline: none;
+        padding: @paddingSm @padding;
+        min-height: 100px;
+        font-family: inherit;
+        font-size: @fontSize;
+        line-height: 1.5715;
+        color: @colorText;
+        background-color: #fff;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+
+        // 段落样式
+        p {
+          margin: 0;
+          padding: 0;
+
+          &.is-editor-empty:first-child::before {
+            content: attr(data-placeholder);
+            float: left;
+            color: #bfbfbf;
+            pointer-events: none;
+            height: 0;
+          }
+        }
+
+        // 选中状态
+        /* stylelint-disable-next-line selector-class-pattern */
+        &.ProseMirror-focused {
+          outline: none;
+        }
+      }
+    }
+  }
+
+  .tiptap-placeholder {
+    position: absolute;
+    top: @paddingSm;
+    left: @padding;
+    color: #bfbfbf;
+    pointer-events: none;
+    z-index: 2;
+  }
+}
+
+// Suggestion 弹窗样式
+.mention-suggestion-popup,
+.variable-suggestion-popup {
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
+    0 9px 28px 8px rgba(0, 0, 0, 5%);
+  width: 300px;
+  height: 240px;
+  z-index: 9999;
+}
+
+// Variable 节点样式（使用标准的 span 标签，大括号通过 CSS 伪类实现）
+.variable-block-chip {
+  display: inline-block !important;
+  background-color: #e6f7ff !important;
+  color: #1890ff !important;
+  margin: 0 1px !important;
+  font-size: 12px !important;
+  line-height: 20px !important;
+  user-select: none !important;
+  vertical-align: middle !important;
+  font-family: Monaco, Menlo, 'Courier New', monospace !important;
+}
+
+.variable-block-chip::before {
+  content: '{{' !important;
+}
+
+.variable-block-chip::after {
+  content: '}}' !important;
+}
+
+.variable-block-chip.variable-active {
+  background-color: rgba(46, 46, 56, 8%) !important;
+}
+
+// ToolBlock 节点样式（完全参考 VariableInferenceInput）
+.tool-block-chip {
+  display: inline-block !important;
+  background-color: #f6ffed !important;
+  color: #52c41a !important;
+  padding: 0 4px !important;
+  border-radius: 4px !important;
+  margin: 0 2px !important;
+  font-size: 12px !important;
+  line-height: 20px !important;
+  border: 1px solid #b7eb8f !important;
+  user-select: none !important;
+  vertical-align: middle !important;
+  cursor: default !important;
+}
+
+// 全局样式（确保样式能应用到 Tiptap 渲染的节点）
+// 使用 :global 防止 CSS Modules 作用域化
+// 注意：自定义 class 样式不嵌套，避免不生效
+:global {
+  // Mention 节点样式
+  .mention-node {
+    display: inline-block !important;
+    background-color: #e6f7ff !important;
+    color: #1890ff !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    margin: 0 2px !important;
+    font-size: 12px !important;
+    line-height: 20px !important;
+    border: 1px solid #91d5ff !important;
+    user-select: none !important;
+    vertical-align: middle !important;
+    cursor: default !important;
+  }
+
+  .mention-node:hover {
+    background-color: #bae7ff !important;
+  }
+
+  // 变量建议弹窗样式
+  .variable-suggestion-popup .ant-tree-node-selected {
+    background-color: #e6f7ff !important;
+  }
+
+  .variable-suggestion-popup .ant-tree-node-selected .ant-tree-title {
+    color: #1890ff !important;
+    font-weight: 500;
+  }
+
+  .variable-suggestion-popup .ant-tree-node-content-wrapper:hover {
+    background-color: #f5f5f5;
+  }
+}
