@@ -50,7 +50,9 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
   const { cursorPosition, setCursorPosition } = useDropdownPosition();
 
   // 3. Create ref to store handleInputChange before it's defined
-  const handleInputChangeRef = useRef<((value: string) => void) | null>(null);
+  const handleInputChangeRef = useRef<
+    ((value: string, cursorPosition?: number) => void) | null
+  >(null);
 
   // 4. Content Editable Logic (needs to be defined first to get ref)
   const {
@@ -63,11 +65,11 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
     setCursorToPosition,
   } = useContentEditable(
     internalValue,
-    (newValue) => {
+    (newValue, cursorPosition) => {
       // This callback is called when contentEditable changes
       // We need to pass this to useInputHandler to handle side effects (like showing dropdown)
       if (handleInputChangeRef.current) {
-        handleInputChangeRef.current(newValue);
+        handleInputChangeRef.current(newValue, cursorPosition);
       }
     },
     readonly,
@@ -116,6 +118,8 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
     (internalValue.includes('{{') ||
       internalValue.includes('{}') ||
       internalValue.includes('{'));
+
+  console.log('popoverShouldShow', popoverShouldShow, internalValue);
 
   return (
     <div className={['prompt-variable-ref', className].join(' ')} style={style}>

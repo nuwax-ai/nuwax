@@ -163,16 +163,20 @@ export const useInputHandler = (
 
   // Handle input change (from contentEditable)
   const handleInputChange = useCallback(
-    (newValue: string) => {
+    (newValue: string, explicitCursorPosition?: number) => {
       // Calculate cursor position from selection first to know where the change happened
-      const selection = window.getSelection();
-      let cursorPosition = 0;
-      if (selection && selection.rangeCount > 0 && inputRef.current) {
-        const range = selection.getRangeAt(0);
-        const preCaretRange = range.cloneRange();
-        preCaretRange.selectNodeContents(inputRef.current);
-        preCaretRange.setEnd(range.endContainer, range.endOffset);
-        cursorPosition = preCaretRange.toString().length;
+      let cursorPosition = explicitCursorPosition;
+
+      if (cursorPosition === undefined) {
+        const selection = window.getSelection();
+        cursorPosition = 0;
+        if (selection && selection.rangeCount > 0 && inputRef.current) {
+          const range = selection.getRangeAt(0);
+          const preCaretRange = range.cloneRange();
+          preCaretRange.selectNodeContents(inputRef.current);
+          preCaretRange.setEnd(range.endContainer, range.endOffset);
+          cursorPosition = preCaretRange.toString().length;
+        }
       }
 
       // Check if the change was a single '{' insertion
@@ -225,10 +229,16 @@ export const useInputHandler = (
         lineContent,
         lineOffset,
       });
-
       let isInVariableContext = false;
       let searchText = '';
       let currentPath = '';
+
+      console.log('Debug InputHandler:', {
+        parseResult,
+        isInVariableContext,
+        finalValue,
+        finalCursorPos,
+      });
 
       if (parseResult) {
         // If we got a result, it means we are inside {{...}}
@@ -300,24 +310,32 @@ export const useInputHandler = (
         }
 
         // Check { (single brace for Skill context)
-        if (
-          !isInVariableContext &&
-          lastBraceStart !== -1 &&
-          lastBraceStart !== lastDoubleBraceStart &&
-          lastBraceStart !== lastDoubleBraceStart - 1 // Don't match the second { of {{
-        ) {
-          const contentAfterBrace = beforeCursor.substring(lastBraceStart + 1);
-          const hasClosingBefore = contentAfterBrace.includes('}');
+        // We only check for single brace if we are NOT already in a double brace context
+        if (!isInVariableContext && lastBraceStart !== -1) {
+          // Ensure this { is NOT part of {{
+          const isDoubleBrace =
+            lastBraceStart > 0 &&
+            beforeCursor.charAt(lastBraceStart - 1) === '{';
 
-          // Don't show dropdown if content starts with space or #
-          if (
-            !hasClosingBefore &&
-            !contentAfterBrace.startsWith(' ') &&
-            !contentAfterBrace.startsWith('#')
-          ) {
-            isInVariableContext = true;
-            currentPath = contentAfterBrace;
-            searchText = contentAfterBrace;
+          if (!isDoubleBrace) {
+            const contentAfterBrace = beforeCursor.substring(
+              lastBraceStart + 1,
+            );
+            const hasClosingBefore = contentAfterBrace.includes('}');
+
+            // Don't show dropdown if:
+            // 1. Content starts with space
+            // 2. Content starts with # (it's a tool block start)
+            // 3. It's already closed
+            if (
+              !hasClosingBefore &&
+              !contentAfterBrace.startsWith(' ') &&
+              !contentAfterBrace.startsWith('#')
+            ) {
+              isInVariableContext = true;
+              currentPath = contentAfterBrace;
+              searchText = contentAfterBrace;
+            }
           }
         }
       }

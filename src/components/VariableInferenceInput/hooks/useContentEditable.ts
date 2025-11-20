@@ -89,15 +89,22 @@ const getCursorPosition = (root: Node): number => {
             child.nodeType === Node.ELEMENT_NODE &&
             (child as HTMLElement).classList.contains('tool-block-chip')
           ) {
-            position += getNodeLength(child);
+            const len = getNodeLength(child);
+            console.log('Debug Cursor: Found Tool Block', {
+              len,
+              html: (child as HTMLElement).outerHTML,
+            });
+            position += len;
           } else {
             // For other nodes (text, variables, BRs), we need to traverse or get length
-            // But getNodeLength returns 0 for container elements (like variables),
-            // so we need a way to get their full length if we are skipping them.
-            // Actually, if we are here, it means the cursor is in the container 'node',
-            // pointing to the 'targetOffset'-th child.
-            // We just need the length of previous siblings.
-            position += getFullNodeLength(child);
+            const len = getFullNodeLength(child);
+            console.log('Debug Cursor: Node', {
+              type: child.nodeType,
+              tagName: (child as HTMLElement).tagName,
+              className: (child as HTMLElement).className,
+              len,
+            });
+            position += len;
           }
         }
         return position;
@@ -132,21 +139,24 @@ const getCursorPosition = (root: Node): number => {
         }
         return null;
       }
+    }
 
-      // Iterate through child nodes
-      for (let i = 0; i < node.childNodes.length; i++) {
-        const child = node.childNodes[i];
-        const childPosition = calculatePosition(
-          child,
-          targetNode,
-          targetOffset,
-        );
+    // Recursive step for children
+    for (let i = 0; i < node.childNodes.length; i++) {
+      const child = node.childNodes[i];
+      const result = calculatePosition(child, targetNode, targetOffset);
 
-        if (childPosition !== null) {
-          return position + childPosition;
-        }
+      if (result !== null) {
+        return position + result;
+      }
 
-        // Add length of this child to position
+      // If child is not the target, add its length to position
+      if (
+        child.nodeType === Node.ELEMENT_NODE &&
+        (child as HTMLElement).classList.contains('tool-block-chip')
+      ) {
+        position += getNodeLength(child);
+      } else {
         position += getFullNodeLength(child);
       }
     }
@@ -238,7 +248,7 @@ const setCursorPosition = (root: Node, position: number) => {
 
 export const useContentEditable = (
   value: string,
-  onChange: (value: string) => void,
+  onChange: (value: string, cursorPosition?: number) => void,
   readonly: boolean,
   disabled: boolean,
 ) => {
@@ -328,7 +338,7 @@ export const useContentEditable = (
       // Update previousValueRef after processing
       previousValueRef.current = newValue;
 
-      onChange(newValue);
+      onChange(newValue, currentCursorPos);
     },
     [onChange, readonly, disabled],
   );
