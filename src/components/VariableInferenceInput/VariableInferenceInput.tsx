@@ -149,7 +149,7 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {visible && internalValue.includes('{{') && (
+          {/* {visible && internalValue.includes('{{') && (
             <>
               <div
                 className="variable-search-stats"
@@ -165,7 +165,7 @@ const VariableInferenceInput: React.FC<VariableInferenceInputProps> = ({
                   : `输入搜索词或浏览所有 ${variableTree.length} 个变量`}
               </div>
             </>
-          )}
+          )} */}
 
           <div className="tree-list-content">
             {displayTree.length > 0 ? (
