@@ -1073,7 +1073,7 @@
       function goHome() {
         if (jump_type === 'outer') {
           // 如果是分享链接跳转，则使用 wx.miniProgram.reLaunch 跳转到首页
-          window.wx.miniProgram.reLaunch({ url: '/pages/home/home' });
+          window.wx.miniProgram.reLaunch({ url: '/pages/index/index' });
           return;
         }
 
