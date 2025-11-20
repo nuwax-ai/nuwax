@@ -26,11 +26,13 @@ export interface CollectStarProps {
 }
 
 // 系统提示词组件属性
-export interface SystemTipsWordProps {
-  value?: string;
-  agentConfigInfo?: AgentConfigInfo;
-  onChange: (value: string) => void;
+export interface SystemUserTipsWordProps {
+  valueUser?: string;
+  valueSystem?: string;
+  onChangeUser: (value: string) => void;
+  onChangeSystem: (value: string) => void;
   onReplace: (value?: string) => void;
+  agentConfigInfo?: AgentConfigInfo;
 }
 
 // 智能体编排-单个配置选项header组件属性
