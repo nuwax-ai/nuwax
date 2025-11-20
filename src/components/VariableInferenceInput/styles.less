@@ -29,10 +29,11 @@
     line-height: 1.5715 !important;
     background-color: #fff;
     position: relative;
-    padding: 8px 12px;
-    z-index: 2;
+    padding: @paddingSm @padding;
+    z-index: 1;
     color: @colorText;
     height: 100%;
+    min-height: 100px;
     // overflow: auto;
     // border: 1px solid #d9d9d9;
     // border-radius: 4px;
@@ -79,6 +80,12 @@
 
     // Prevent editing inside the chip (though contentEditable handles this logic mostly)
     // pointer-events: none; // We might want to select it to delete it
+
+    // Active state when cursor is inside the variable
+    &.variable-active {
+      background-color: rgba(46, 46, 56, 8%);
+      border-radius: 2px;
+    }
   }
 
   // Chip styles for Tools

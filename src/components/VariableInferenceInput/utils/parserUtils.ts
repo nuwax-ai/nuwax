@@ -9,68 +9,87 @@ export interface ToolBlockData {
 // Matches {#ToolBlock id="..." type="..." name="..."#}content{#/ToolBlock#}
 // Using [\s\S]*? to match across lines
 const TOOL_BLOCK_REGEX =
-  /\{#ToolBlock\s+id="([^"]*)"\s+type="([^"]*)"\s+name="([^"]*)"\s*#\}([\s\S]*?)\{#\/ToolBlock#\}/g;
+  /\{#ToolBlock id="([^"]+)" type="([^"]+)" name="([^"]+)"#\}(.*?)\{#\/ToolBlock#\}/gs;
 
-// Regex for matching variables {{variable}}
 export const VARIABLE_REGEX = /\{\{([^}]+)\}\}/g;
 
 /**
- * Parses raw text value into HTML for contentEditable
+ * Escape HTML special characters
  */
-export const parseValueToHtml = (value: string): string => {
-  if (!value) return '';
-
-  // Replace ToolBlocks with HTML spans
-  // We need to unescape the content inside the block because it was just escaped above,
-  // but the regex runs on the escaped string.
-  // Actually, it's better to run regex on the original string and build the HTML.
-  // But simply replacing is easier if we are careful.
-
-  // Let's try a tokenizing approach for robustness
-
-  // 1. Replace ToolBlocks
-  // We use a placeholder to avoid messing up with variable replacement or HTML escaping
-  const toolBlocks: { placeholder: string; html: string }[] = [];
-  let toolBlockIndex = 0;
-
-  const valueWithToolPlaceholders = value.replace(
-    TOOL_BLOCK_REGEX,
-    (match, id, type, name, content) => {
-      const placeholder = `__TOOL_BLOCK_${toolBlockIndex++}__`;
-      const toolHtml = `<span
-      class="tool-block-chip"
-      contenteditable="false"
-      data-tool-id="${id}"
-      data-tool-type="${type}"
-      data-tool-name="${name}"
-    >${content}</span>`;
-      toolBlocks.push({ placeholder, html: toolHtml });
-      return placeholder;
-    },
-  );
-
-  // 2. Escape the remaining text (which contains placeholders and variables)
-  let escapedHtml = valueWithToolPlaceholders
+const escapeHtml = (text: string): string => {
+  return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+};
 
-  // 3. Replace Variables
-  escapedHtml = escapedHtml.replace(VARIABLE_REGEX, (match, variableName) => {
-    return `<span class="variable-block-chip" contenteditable="false" data-variable-name="${variableName}">{{${variableName}}}</span>`;
-  });
+/**
+ * Parses raw text value into HTML for contentEditable
+ */
+export const parseValueToHtml = (
+  value: string,
+  cursorPosition: number = -1,
+): string => {
+  if (!value) return '';
 
-  // 4. Restore ToolBlocks
-  toolBlocks.forEach(({ placeholder, html }) => {
-    escapedHtml = escapedHtml.replace(placeholder, html);
-  });
+  let resultHtml = '';
+  let currentIndex = 0;
 
-  // 5. Handle newlines
-  escapedHtml = escapedHtml.replace(/\n/g, '<br>');
+  // Combine regexes to search for both ToolBlocks and Variables
+  const regex = new RegExp(
+    `${TOOL_BLOCK_REGEX.source}|${VARIABLE_REGEX.source}`,
+    'g',
+  );
 
-  return escapedHtml;
+  let match;
+  while ((match = regex.exec(value)) !== null) {
+    const matchStart = match.index;
+    const matchEnd = matchStart + match[0].length;
+
+    // Append text before match
+    const textBefore = value.substring(currentIndex, matchStart);
+    resultHtml += escapeHtml(textBefore).replace(/\n/g, '<br>');
+
+    // Handle match - check if it's a ToolBlock or Variable
+    // TOOL_BLOCK_REGEX has 4 capturing groups (1-4)
+    // VARIABLE_REGEX has 1 capturing group (5)
+    if (match[1] !== undefined) {
+      // ToolBlock match (groups 1-4)
+      const id = match[1];
+      const type = match[2];
+      const name = match[3];
+      const content = match[4];
+
+      resultHtml += `<span
+            class="tool-block-chip"
+            contenteditable="false"
+            data-tool-id="${id}"
+            data-tool-type="${type}"
+            data-tool-name="${name}"
+          >${content}</span>`;
+    } else {
+      // Variable match (group 5)
+      const variableName = match[5];
+
+      // Check if active (cursor is inside this variable)
+      const isActive =
+        cursorPosition >= matchStart && cursorPosition <= matchEnd;
+      const activeClass = isActive ? ' variable-active' : '';
+
+      // Render as editable span
+      resultHtml += `<span class="variable-block-chip${activeClass}" data-variable-name="${variableName}">{{${variableName}}}</span>`;
+    }
+
+    currentIndex = matchEnd;
+  }
+
+  // Append remaining text
+  const textAfter = value.substring(currentIndex);
+  resultHtml += escapeHtml(textAfter).replace(/\n/g, '<br>');
+
+  return resultHtml;
 };
 
 /**
