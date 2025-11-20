@@ -29,11 +29,16 @@ import {
   type PromptVariable,
   VariableType,
 } from '../../components/VariableInferenceInput/types';
-import {
-  findAllVariableReferences,
-  isValidVariableReference,
-} from '../../components/VariableInferenceInput/utils/parser';
+import { VARIABLE_REGEX } from '../../components/VariableInferenceInput/utils/parserUtils';
 import { generateVariableReference } from '../../components/VariableInferenceInput/utils/treeUtils';
+
+const findAllVariableReferences = (text: string) => {
+  return text.match(VARIABLE_REGEX) || [];
+};
+
+const isValidVariableReference = (ref: string) => {
+  return new RegExp(/^\{\{([^}]+)\}\}$/).test(ref);
+};
 
 const { Title, Paragraph, Text } = Typography;
 const { Panel } = Collapse;

@@ -122,7 +122,7 @@ export const useKeyboardNavigation = (
 
   // 移除全局键盘事件监听，改为返回 onKeyDown 处理函数
   const onKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement> | KeyboardEvent) => {
+    (e: React.KeyboardEvent<HTMLDivElement> | KeyboardEvent) => {
       if (readonly) return;
 
       // 只在下拉框可见时处理导航键
