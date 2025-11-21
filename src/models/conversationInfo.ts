@@ -361,7 +361,7 @@ export default () => {
               // }
 
               // 显示页面预览
-              if (input.uri_type === 'Page') {
+              if (!input.uri_type || input.uri_type === 'Page') {
                 const previewData = {
                   uri: input.uri,
                   params: input.arguments || {},
