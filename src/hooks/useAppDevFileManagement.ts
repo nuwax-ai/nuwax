@@ -436,9 +436,10 @@ export const useAppDevFileManagement = ({
       }
     } catch (error) {
       // 保存文件失败
-      message.error(
-        `保存文件失败: ${error instanceof Error ? error.message : '未知错误'}`,
-      );
+      // message.error(
+      //   `保存文件失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      // );
+      console.error('保存文件失败', error);
       setFileContentState((prev) => ({ ...prev, isSavingFile: false }));
       return false;
     }
