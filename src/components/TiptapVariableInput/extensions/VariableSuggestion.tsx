@@ -205,15 +205,68 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               return result;
             };
 
-            // 创建状态对象
-            // 确保 items 是数组
-            const treeItems = Array.isArray(items) ? items : [];
+            // 分离变量和工具
+            const separateVariables = (nodes: VariableTreeNode[]) => {
+              const regularVars: VariableTreeNode[] = [];
+              const toolVars: VariableTreeNode[] = [];
 
-            const state = {
-              selectedIndex: 0,
-              currentTree: treeItems,
-              flatItems: flattenTree(treeItems),
+              // 检查是否有 "category-skills" 节点
+              const skillsCategory = nodes.find(
+                (n) => n.key === 'category-skills',
+              );
+
+              if (skillsCategory) {
+                // 如果有技能分类，它的子节点是工具，其他节点是普通变量
+                toolVars.push(...(skillsCategory.children || []));
+                regularVars.push(
+                  ...nodes.filter((n) => n.key !== 'category-skills'),
+                );
+              } else {
+                // 如果没有明确的分类，尝试根据 key 或 type 判断
+                regularVars.push(...nodes);
+              }
+
+              return { regularVars, toolVars };
             };
+
+            const { regularVars, toolVars } = separateVariables(items);
+            const hasRegular = regularVars.length > 0;
+            const hasTools = toolVars.length > 0;
+            const showTabs = hasRegular && hasTools;
+
+            console.log('VariableSuggestion onStart debug:', {
+              itemsLength: items.length,
+              hasRegular,
+              hasTools,
+              showTabs,
+              regularVarsLength: regularVars.length,
+              toolVarsLength: toolVars.length,
+              firstItemKey: items[0]?.key,
+              keys: items.map((n: any) => n.key),
+            });
+
+            // 初始 activeTab
+            let activeTab = 'variables';
+            if (!hasRegular && hasTools) {
+              activeTab = 'tools';
+            }
+
+            // 根据 activeTab 获取当前显示的树
+            const getCurrentTree = (
+              tab: string,
+              rVars: VariableTreeNode[],
+              tVars: VariableTreeNode[],
+            ) => {
+              if (showTabs) {
+                return tab === 'variables' ? rVars : tVars;
+              }
+              return items; // 如果不显示 tab，显示所有
+            };
+
+            // 初始 flatItems
+            let flatItems = flattenTree(
+              getCurrentTree(activeTab, regularVars, toolVars),
+            );
 
             // 先定义 handleKeyDown 的引用，稍后定义
             let handleKeyDownRef: ((event: KeyboardEvent) => void) | null =
@@ -266,35 +319,81 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               }
             };
 
-            // 定义 updateRender，使用已定义的 handleSelect
-            const updateRender = () => {
-              // 检查容器是否仍然存在且根没有被卸载
+            // 定义 updateRender
+            const updateRender = (
+              selectedIndex: number,
+              currentFlatItems: VariableSuggestionItem[],
+              currentTree: VariableTreeNode[],
+              currentActiveTab: string,
+              currentRegularVars: VariableTreeNode[],
+              currentToolVars: VariableTreeNode[],
+              currentShowTabs: boolean,
+              currentSearchText: string,
+            ) => {
               if (
                 document.body.contains(container) &&
-                popup &&
-                popup.root === root
+                // @ts-ignore - internal property check
+                root._internalRoot
               ) {
                 try {
                   root.render(
                     <VariableList
-                      tree={state.currentTree}
-                      selectedIndex={state.selectedIndex}
+                      tree={currentTree}
+                      selectedIndex={selectedIndex}
                       onSelect={handleSelect}
-                      searchText={searchText}
-                      flatItems={state.flatItems}
+                      searchText={currentSearchText}
+                      flatItems={currentFlatItems}
+                      showTabs={currentShowTabs}
+                      activeTab={currentActiveTab}
+                      onTabChange={(key) => {
+                        // 切换 tab
+                        activeTab = key;
+                        // 更新 popup 状态
+                        if (popup) {
+                          popup.activeTab = key;
+                          const newTree = getCurrentTree(
+                            key,
+                            currentRegularVars,
+                            currentToolVars,
+                          );
+                          popup.flatItems = flattenTree(newTree);
+                          popup.selectedIndex = 0;
+
+                          updateRender(
+                            0,
+                            popup.flatItems,
+                            newTree,
+                            key,
+                            currentRegularVars,
+                            currentToolVars,
+                            currentShowTabs,
+                            currentSearchText,
+                          );
+                        }
+                      }}
+                      regularVariables={currentRegularVars}
+                      toolVariables={currentToolVars}
                     />,
                   );
                 } catch (error) {
-                  // 如果根已经被卸载，忽略错误
-                  console.error(
-                    'VariableSuggestion updateRender error:',
-                    error,
-                  );
+                  console.error('VariableSuggestion render error:', error);
                 }
               }
             };
 
-            // 定义 handleKeyDown，使用已定义的 updateRender 和 handleSelect
+            // 初始渲染
+            updateRender(
+              0,
+              flatItems,
+              getCurrentTree(activeTab, regularVars, toolVars),
+              activeTab,
+              regularVars,
+              toolVars,
+              showTabs,
+              searchText,
+            );
+
+            // 键盘事件处理
             const handleKeyDown = (event: KeyboardEvent) => {
               // 检查 popup 是否仍然有效
               if (!popup || !document.body.contains(container)) {
@@ -309,49 +408,78 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 return;
               }
 
-              // 使用 popup.state 确保状态同步
-              const currentState = popup.state || state;
+              // 获取最新状态
+              const currentFlatItems = popup.flatItems;
+              const currentActiveTab = popup.activeTab;
+              const currentRegularVars = popup.regularVars;
+              const currentToolVars = popup.toolVars;
+              const currentShowTabs = popup.showTabs;
+              // 注意：这里我们需要最新的 searchText，但它不在 popup 状态中
+              // 不过键盘导航不改变 searchText，所以可以使用闭包中的 searchText
+              // 或者更好的是，将 searchText 也存入 popup 状态
+              const currentSearchText = popup.searchText || searchText;
+
+              if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                popup.selectedIndex =
+                  (popup.selectedIndex - 1 + currentFlatItems.length) %
+                  currentFlatItems.length;
+
+                updateRender(
+                  popup.selectedIndex,
+                  currentFlatItems,
+                  getCurrentTree(
+                    currentActiveTab,
+                    currentRegularVars,
+                    currentToolVars,
+                  ),
+                  currentActiveTab,
+                  currentRegularVars,
+                  currentToolVars,
+                  currentShowTabs,
+                  currentSearchText,
+                );
+                return;
+              }
 
               if (event.key === 'ArrowDown') {
                 event.preventDefault();
-                currentState.selectedIndex = Math.min(
-                  currentState.selectedIndex + 1,
-                  currentState.flatItems.length - 1,
+                popup.selectedIndex =
+                  (popup.selectedIndex + 1) % currentFlatItems.length;
+
+                updateRender(
+                  popup.selectedIndex,
+                  currentFlatItems,
+                  getCurrentTree(
+                    currentActiveTab,
+                    currentRegularVars,
+                    currentToolVars,
+                  ),
+                  currentActiveTab,
+                  currentRegularVars,
+                  currentToolVars,
+                  currentShowTabs,
+                  currentSearchText,
                 );
-                // 同步更新 state 对象
-                state.selectedIndex = currentState.selectedIndex;
-                updateRender();
-              } else if (event.key === 'ArrowUp') {
-                event.preventDefault();
-                currentState.selectedIndex = Math.max(
-                  currentState.selectedIndex - 1,
-                  0,
-                );
-                // 同步更新 state 对象
-                state.selectedIndex = currentState.selectedIndex;
-                updateRender();
-              } else if (event.key === 'Enter') {
-                event.preventDefault();
-                if (
-                  currentState.selectedIndex >= 0 &&
-                  currentState.selectedIndex < currentState.flatItems.length
-                ) {
-                  const selectedItem =
-                    currentState.flatItems[currentState.selectedIndex];
-                  if (selectedItem) {
-                    handleSelect(selectedItem);
-                  } else {
-                    console.warn(
-                      'VariableSuggestion: selectedItem is null/undefined',
-                    );
+                return;
+              }
+
+              if (event.key === 'Enter') {
+                // 只有当有选中项时才阻止默认行为并执行选择
+                if (currentFlatItems.length > 0) {
+                  event.preventDefault();
+                  event.stopPropagation(); // 阻止冒泡，防止编辑器插入换行
+                  const item = currentFlatItems[popup.selectedIndex];
+                  if (item) {
+                    handleSelect(item);
                   }
-                } else {
-                  console.warn(
-                    'VariableSuggestion: selectedIndex out of range',
-                  );
                 }
-              } else if (event.key === 'Escape') {
+                return;
+              }
+
+              if (event.key === 'Escape') {
                 event.preventDefault();
+                // 清理
                 try {
                   root.unmount();
                 } catch (e) {
@@ -360,10 +488,35 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 if (document.body.contains(container)) {
                   document.body.removeChild(container);
                 }
-                if (handleKeyDownRef) {
-                  document.removeEventListener('keydown', handleKeyDownRef);
-                }
+                document.removeEventListener('keydown', handleKeyDown);
                 popup = null;
+                return;
+              }
+
+              // 处理 Tab 键切换
+              if (currentShowTabs && event.key === 'Tab') {
+                event.preventDefault();
+                const newTab =
+                  currentActiveTab === 'variables' ? 'tools' : 'variables';
+                popup.activeTab = newTab;
+                const newTree = getCurrentTree(
+                  newTab,
+                  currentRegularVars,
+                  currentToolVars,
+                );
+                popup.flatItems = flattenTree(newTree);
+                popup.selectedIndex = 0;
+
+                updateRender(
+                  0,
+                  popup.flatItems,
+                  newTree,
+                  newTab,
+                  currentRegularVars,
+                  currentToolVars,
+                  currentShowTabs,
+                  currentSearchText,
+                );
               }
             };
 
@@ -393,118 +546,96 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             handleKeyDownRef = handleKeyDown;
             document.addEventListener('keydown', handleKeyDown);
 
-            // 先创建 popup 对象，然后再调用 updateRender
             popup = {
-              container,
               root,
+              container,
+              selectedIndex: 0,
               handleKeyDown,
-              updatePosition,
-              state,
+              // 状态
+              activeTab,
+              regularVars,
+              toolVars,
+              flatItems,
+              showTabs,
+              searchText, // 添加 searchText 到状态
+              // 方法
               updateRender,
+              flattenTree,
+              separateVariables,
+              getCurrentTree,
             };
 
             // 定位弹窗
             updatePosition();
-
-            // 直接渲染组件（不通过 updateRender，因为 popup 可能还没完全初始化）
-            try {
-              root.render(
-                <VariableList
-                  tree={state.currentTree}
-                  selectedIndex={state.selectedIndex}
-                  onSelect={handleSelect}
-                  searchText={searchText}
-                  flatItems={state.flatItems}
-                />,
-              );
-            } catch (error) {
-              console.error('VariableSuggestion onStart render error:', error);
-            }
-
-            // 也调用 updateRender（现在 popup 已经创建）
-            updateRender();
           },
           onUpdate: (props: any) => {
-            if (
-              popup &&
-              popup.state &&
-              popup.container &&
-              document.body.contains(popup.container)
-            ) {
-              const { items } = props;
+            const { items, query } = props;
+            if (!popup) return;
 
-              // 重新扁平化树节点（所有节点都可以选择）
-              const flattenTree = (
-                nodes: VariableTreeNode[],
-              ): VariableSuggestionItem[] => {
-                const result: VariableSuggestionItem[] = [];
-                for (const node of nodes) {
-                  if (!node) continue;
+            // 重新计算
+            const searchText = truncateQuery(query || '');
 
-                  // 所有节点都可以选择（包括非叶子节点）
-                  // 检查是否是工具：工具的 key 以 'skill-' 开头，或者 variable.type 是 'Tool'（通过 as any 设置）
-                  const isTool =
-                    (node.isLeaf && node.key.startsWith('skill-')) ||
-                    (node.isLeaf && (node.variable as any)?.type === 'Tool');
+            const { regularVars, toolVars } = popup.separateVariables(items);
+            const hasRegular = regularVars.length > 0;
+            const hasTools = toolVars.length > 0;
+            const showTabs = hasRegular && hasTools;
 
-                  result.push({
-                    key: node.key,
-                    label: node.label,
-                    value: node.value,
-                    node: node,
-                    isTool: isTool && node.isLeaf, // 只有叶子节点才能是工具
-                    toolData:
-                      isTool && node.isLeaf
-                        ? (node.variable as any)?.value
-                        : undefined,
-                  });
+            // 更新 popup 状态
+            popup.regularVars = regularVars;
+            popup.toolVars = toolVars;
+            popup.showTabs = showTabs;
+            popup.searchText = searchText; // 更新 searchText
 
-                  // 递归处理子节点
-                  if (node.children && node.children.length > 0) {
-                    result.push(...flattenTree(node.children));
-                  }
-                }
-                return result;
-              };
+            // 如果当前 tab 变为空，切换到另一个 tab
+            if (popup.activeTab === 'variables' && !hasRegular && hasTools) {
+              popup.activeTab = 'tools';
+            } else if (popup.activeTab === 'tools' && !hasTools && hasRegular) {
+              popup.activeTab = 'variables';
+            }
 
-              popup.state.currentTree = items;
-              popup.state.flatItems = flattenTree(items);
-              // 重置选中索引，确保不超出范围
-              popup.state.selectedIndex = Math.min(
-                popup.state.selectedIndex,
-                popup.state.flatItems.length - 1,
-              );
-              if (popup.state.selectedIndex < 0) {
-                popup.state.selectedIndex = 0;
-              }
+            const currentTree = popup.getCurrentTree(
+              popup.activeTab,
+              regularVars,
+              toolVars,
+            );
+            popup.flatItems = popup.flattenTree(currentTree);
 
-              // 安全地更新渲染
-              try {
-                popup.updateRender();
-                popup.updatePosition();
-              } catch (error) {
-                // 如果根已经被卸载，清理 popup
-                console.warn('Cannot update unmounted root:', error);
-                if (popup.root) {
-                  try {
-                    popup.root.unmount();
-                  } catch (e) {
-                    // 忽略卸载错误
-                  }
+            // 重置索引或保持（如果越界则重置）
+            if (popup.selectedIndex >= popup.flatItems.length) {
+              popup.selectedIndex = 0;
+            }
+
+            popup.updateRender(
+              popup.selectedIndex,
+              popup.flatItems,
+              currentTree,
+              popup.activeTab,
+              regularVars,
+              toolVars,
+              showTabs,
+              searchText,
+            );
+          },
+          onKeyDown: (props: any) => {
+            if (props.event.key === 'Escape') {
+              if (popup) {
+                try {
+                  popup.root.unmount();
+                } catch (e) {
+                  // 忽略卸载错误
                 }
                 if (document.body.contains(popup.container)) {
                   document.body.removeChild(popup.container);
                 }
+                if (popup.handleKeyDown) {
+                  document.removeEventListener('keydown', popup.handleKeyDown);
+                }
                 popup = null;
               }
+              return true;
             }
-          },
-          onKeyDown: (props: any) => {
-            // 键盘导航已经在 handleKeyDown 中处理
-            // 这里只处理 ESC 键的额外处理
-            if (props.event.key === 'Escape') {
-              if (popup && popup.handleKeyDown) {
-                // handleKeyDown 会处理清理工作
+            if (props.event.key === 'Enter') {
+              if (popup && popup.flatItems && popup.flatItems.length > 0) {
                 return true;
               }
             }
@@ -517,7 +648,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               } catch (e) {
                 // 忽略卸载错误
               }
-              if (popup.container && document.body.contains(popup.container)) {
+              if (document.body.contains(popup.container)) {
                 document.body.removeChild(popup.container);
               }
               if (popup.handleKeyDown) {
