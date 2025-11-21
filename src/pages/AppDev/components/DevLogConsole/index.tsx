@@ -17,6 +17,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   formatTimestampDisplay,
   groupLogsByTimestamp,
+  isErrorLog,
   type LogGroup,
 } from '../../utils/devLogParser';
 import './index.less';
@@ -47,8 +48,6 @@ interface DevLogConsoleProps {
   isChatLoading?: boolean;
   /** 重置自动重试计数回调 */
   onResetAutoRetry?: () => void;
-  /** 获取最新错误日志回调 */
-  latestErrorLogs?: string;
 }
 
 /**
@@ -143,7 +142,6 @@ const LogGroupItem: React.FC<{
 const DevLogConsole: React.FC<DevLogConsoleProps> = ({
   logs,
   hasErrorInLatestBlock,
-  latestErrorLogs,
   isLoading = false,
   lastLine = 0,
   onClear,
@@ -232,10 +230,17 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
   useEffect(() => {
     if (isChatLoading) return;
     // 查找到最新错误日志所在的组
-    if (latestErrorLogs) {
-      onAddToChat?.(latestErrorLogs, true);
+    const theLastLogGroup = logGroups.at(-1);
+    if (hasErrorInLatestBlock && theLastLogGroup) {
+      onAddToChat?.(
+        theLastLogGroup?.logs
+          .map((log) => log.content)
+          .join('\n')
+          .trim(),
+        true,
+      );
     }
-  }, [logs, isChatLoading, latestErrorLogs]);
+  }, [hasErrorInLatestBlock, logGroups, isChatLoading]);
 
   // 一键问题处理
   const handleFindLatestErrorLogs = useCallback(() => {
@@ -244,10 +249,18 @@ const DevLogConsole: React.FC<DevLogConsoleProps> = ({
     onResetAutoRetry?.();
 
     // 查找到最新错误日志所在的组
-    if (latestErrorLogs) {
-      onAddToChat?.(latestErrorLogs, true);
+    const theLastLogGroup = logGroups.at(-1);
+    const hasError = theLastLogGroup?.logs.some((log) => isErrorLog(log));
+    if (hasError && theLastLogGroup) {
+      onAddToChat?.(
+        theLastLogGroup?.logs
+          .map((log) => log.content)
+          .join('\n')
+          .trim(),
+        true,
+      );
     }
-  }, [logs, onAddToChat, onResetAutoRetry, latestErrorLogs]);
+  }, [logGroups, onAddToChat, onResetAutoRetry]);
 
   if (!visible) return null;
 

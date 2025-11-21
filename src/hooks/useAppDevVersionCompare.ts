@@ -1,6 +1,5 @@
 import {
   getProjectContentByVersion,
-  keepAlive,
   submitFilesUpdate,
 } from '@/services/appDev';
 import type { FileNode, PageFileInfo } from '@/types/interfaces/appDev';
@@ -240,7 +239,6 @@ export const useAppDevVersionCompare = ({
       if (response?.code === '0000') {
         // 退出对比模式
         cancelCompare();
-        keepAlive(projectId);
 
         // 调用成功回调
         onVersionSwitchSuccess?.();

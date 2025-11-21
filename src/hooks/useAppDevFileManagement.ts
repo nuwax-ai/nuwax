@@ -10,7 +10,6 @@ import {
 import {
   getFileContent,
   getProjectContent,
-  keepAlive,
   submitFilesUpdate,
   uploadSingleFile,
 } from '@/services/appDev';
@@ -421,7 +420,6 @@ export const useAppDevFileManagement = ({
       const response = await submitFilesUpdate(projectId, updatedFilesList);
 
       if (response.success && response.code === '0000') {
-        keepAlive(projectId);
         // 保存成功后更新状态
         setFileContentState((prev) => ({
           ...prev,
@@ -438,10 +436,9 @@ export const useAppDevFileManagement = ({
       }
     } catch (error) {
       // 保存文件失败
-      // message.error(
-      //   `保存文件失败: ${error instanceof Error ? error.message : '未知错误'}`,
-      // );
-      console.error('保存文件失败', error);
+      message.error(
+        `保存文件失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      );
       setFileContentState((prev) => ({ ...prev, isSavingFile: false }));
       return false;
     }
@@ -594,7 +591,6 @@ export const useAppDevFileManagement = ({
           // 文件删除成功
           // 删除成功后重新加载文件树
           await loadFileTree(true, true);
-          keepAlive(projectId);
 
           // 如果删除的是当前选中的文件，清空选择
           if (fileContentState.selectedFile === fileId) {
@@ -773,8 +769,6 @@ export const useAppDevFileManagement = ({
         if (response.success && response.code === '0000') {
           // 重命名成功后重新加载文件树
           await loadFileTree(true, true);
-
-          keepAlive(projectId);
 
           // 如果重命名的是当前选中的文件，更新选中状态
           if (fileContentState.selectedFile === fileId) {
