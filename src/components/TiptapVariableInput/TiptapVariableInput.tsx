@@ -16,7 +16,11 @@ import { VariableSuggestion } from './extensions/VariableSuggestion';
 import { useVariableTree } from './hooks/useVariableTree';
 import './styles.less';
 import type { TiptapVariableInputProps } from './types';
-import { convertTextToHTML, extractTextFromHTML } from './utils/htmlUtils';
+import {
+  cleanHTMLParagraphs,
+  convertTextToHTML,
+  extractTextFromHTML,
+} from './utils/htmlUtils';
 
 /**
  * Tiptap Variable Input 组件
@@ -44,17 +48,6 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
     '', // searchText 由 suggestion 内部管理
   );
 
-  // 调试：检查变量树
-  React.useEffect(() => {
-    console.log('TiptapVariableInput - variables:', variables);
-    console.log('TiptapVariableInput - skills:', skills);
-    console.log('TiptapVariableInput - variableTree:', variableTree);
-    console.log(
-      'TiptapVariableInput - variableTree length:',
-      variableTree?.length,
-    );
-  }, [variables, skills, variableTree]);
-
   // 将纯文本值转换为 HTML（如果包含工具块或变量格式）
   const initialContent = useMemo(() => {
     if (!value) return '';
@@ -66,30 +59,40 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
     ) {
       return convertTextToHTML(value);
     }
+    // 如果已经是 HTML 格式，清理首尾空段落
+    if (/<[^>]+>/.test(value)) {
+      return cleanHTMLParagraphs(value);
+    }
     return value;
   }, [value]);
 
   // 初始化编辑器
+  // 注意：扩展的顺序很重要，Suggestion 插件应该在 AutoCompleteBraces 之后
+  // 这样 Suggestion 插件能够检测到 AutoCompleteBraces 插入的 { 字符
   const editor = useEditor({
     extensions: [
       StarterKit,
-      AutoCompleteBraces, // 自动补全大括号
       MentionNode,
       VariableNode,
       ToolBlockNode,
-      MentionSuggestion.configure({
-        items: mentions,
-        onSelect: () => {
-          // Mentions 选择回调
-        },
-      }),
+      // VariableSuggestion 应该在 AutoCompleteBraces 之前，这样它能够检测到 { 字符
       VariableSuggestion.configure({
-        variables: variableTree,
+        variables: variableTree, // 初始化时可能为空，后续通过 useEffect 更新
         onSelect: (item) => {
           // 变量选择回调
           if (item.node?.variable && onVariableSelect) {
             onVariableSelect(item.node.variable, item.value);
           }
+        },
+      }),
+      // AutoCompleteBraces 应该在最后，这样它能够处理 { 输入
+      // 但是，由于 Suggestion 插件通过监听文档变化来检测触发字符，
+      // 所以即使 AutoCompleteBraces 返回 true，Suggestion 也应该能够检测到
+      AutoCompleteBraces, // 自动补全大括号（只在空白或行首时补全）
+      MentionSuggestion.configure({
+        items: mentions,
+        onSelect: () => {
+          // Mentions 选择回调
         },
       }),
     ],
@@ -116,6 +119,10 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
           value.includes('@'))
       ) {
         contentToSet = convertTextToHTML(value);
+      } else if (value && /<[^>]+>/.test(value)) {
+        // 如果已经是 HTML 格式，不再清理首尾空段落，以保留用户的换行
+        // contentToSet = cleanHTMLParagraphs(value);
+        contentToSet = value;
       }
       // 只有当内容不同时才更新
       if (contentToSet !== currentHtml) {
@@ -130,8 +137,15 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
       const variableSuggestion = editor.extensionManager.extensions.find(
         (ext) => ext.name === 'variableSuggestion',
       );
+
       if (variableSuggestion) {
         variableSuggestion.options.variables = variableTree;
+        // 强制更新插件
+        editor.view.dispatch(editor.state.tr);
+      } else {
+        console.warn(
+          'TiptapVariableInput: variableSuggestion extension not found',
+        );
       }
     }
   }, [editor, variableTree]);

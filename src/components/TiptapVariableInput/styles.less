@@ -19,44 +19,44 @@
     min-height: 100px;
 
     // Tiptap 编辑器基础样式
-    :global {
+    // :global {
+    /* stylelint-disable-next-line selector-class-pattern */
+    .ProseMirror {
+      outline: none;
+      padding: @paddingSm @padding;
+      min-height: 100px;
+      font-family: inherit;
+      font-size: @fontSize;
+      line-height: 1.5715;
+      color: @colorText;
+      background-color: #fff;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      word-break: break-word;
+      overflow-wrap: break-word;
+
+      // 段落样式
+      p {
+        margin: 0;
+        padding: 0;
+
+        &.is-editor-empty:first-child::before {
+          content: attr(data-placeholder);
+          float: left;
+          color: #bfbfbf;
+          pointer-events: none;
+          height: 0;
+        }
+      }
+
+      // 选中状态
       /* stylelint-disable-next-line selector-class-pattern */
-      .ProseMirror {
+      &.ProseMirror-focused {
         outline: none;
-        padding: @paddingSm @padding;
-        min-height: 100px;
-        font-family: inherit;
-        font-size: @fontSize;
-        line-height: 1.5715;
-        color: @colorText;
-        background-color: #fff;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        word-break: break-word;
-        overflow-wrap: break-word;
-
-        // 段落样式
-        p {
-          margin: 0;
-          padding: 0;
-
-          &.is-editor-empty:first-child::before {
-            content: attr(data-placeholder);
-            float: left;
-            color: #bfbfbf;
-            pointer-events: none;
-            height: 0;
-          }
-        }
-
-        // 选中状态
-        /* stylelint-disable-next-line selector-class-pattern */
-        &.ProseMirror-focused {
-          outline: none;
-        }
       }
     }
   }
+  // }
 
   .tiptap-placeholder {
     position: absolute;
