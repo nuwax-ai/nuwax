@@ -3,7 +3,7 @@
  * { 变量下拉列表组件
  */
 
-import { Tree } from 'antd';
+import { Tabs, Tree } from 'antd';
 import React, { useMemo, useState } from 'react';
 import type { VariableTreeNode } from '../../VariableInferenceInput/types';
 import { transformToTreeDataForTree } from '../../VariableInferenceInput/utils/treeHelpers';
@@ -30,11 +30,18 @@ function findNodeInTree(
 }
 
 interface VariableListProps {
-  tree: VariableTreeNode[];
+  tree: VariableTreeNode[]; // 当前显示的树（可能是全部，也可能是某个 tab 的）
   selectedIndex: number;
   onSelect: (item: VariableSuggestionItem) => void;
   searchText?: string;
   flatItems?: VariableSuggestionItem[]; // 扁平化的项列表，用于键盘导航
+
+  // Tab 相关属性
+  showTabs?: boolean;
+  activeTab?: string;
+  onTabChange?: (key: string) => void;
+  regularVariables?: VariableTreeNode[];
+  toolVariables?: VariableTreeNode[];
 }
 
 /**
@@ -46,7 +53,20 @@ const VariableList: React.FC<VariableListProps> = ({
   onSelect,
   searchText = '',
   flatItems,
+  showTabs = false,
+  activeTab = 'variables',
+  onTabChange,
+  regularVariables = [],
+  toolVariables = [],
 }) => {
+  console.log('VariableList render debug:', {
+    showTabs,
+    activeTab,
+    regularVariablesLength: regularVariables.length,
+    toolVariablesLength: toolVariables.length,
+    treeLength: tree.length,
+  });
+
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
 
@@ -117,15 +137,6 @@ const VariableList: React.FC<VariableListProps> = ({
   const treeData = useMemo(() => {
     return transformToTreeDataForTree(tree);
   }, [tree]);
-
-  if (!tree || tree.length === 0) {
-    console.warn('VariableList - tree is empty or undefined');
-    return (
-      <div style={{ padding: '8px', color: '#999', textAlign: 'center' }}>
-        未找到匹配变量
-      </div>
-    );
-  }
 
   const handleSelect = (selectedKeys: React.Key[]) => {
     if (selectedKeys.length === 0) {
@@ -232,30 +243,69 @@ const VariableList: React.FC<VariableListProps> = ({
     );
   };
 
-  return (
-    <Tree
-      treeData={treeData}
-      expandedKeys={expandedKeys as string[]}
-      selectedKeys={selectedKeys}
-      onExpand={(newExpandedKeys) => {
-        setExpandedKeys(newExpandedKeys);
-      }}
-      onSelect={handleSelect}
-      titleRender={titleRender}
-      showIcon={false}
-      // 允许所有节点（包括非叶子节点）被选中
-      selectable={true}
-      // 允许点击节点标题进行选择（不仅仅是图标）
-      blockNode={true}
-      style={{
-        maxHeight: '240px',
-        overflowY: 'auto',
-      }}
-      height={240}
-      itemHeight={28}
-      virtual={true}
-    />
-  );
+  const renderTree = (data: any[]) => {
+    if (!data || data.length === 0) {
+      return (
+        <div style={{ padding: '8px', color: '#999', textAlign: 'center' }}>
+          未找到匹配变量
+        </div>
+      );
+    }
+
+    return (
+      <Tree
+        treeData={data}
+        expandedKeys={expandedKeys as string[]}
+        selectedKeys={selectedKeys}
+        onExpand={(newExpandedKeys) => {
+          setExpandedKeys(newExpandedKeys);
+        }}
+        onSelect={handleSelect}
+        titleRender={titleRender}
+        showIcon={false}
+        // 允许所有节点（包括非叶子节点）被选中
+        selectable={true}
+        // 允许点击节点标题进行选择（不仅仅是图标）
+        blockNode={true}
+        style={{
+          maxHeight: '240px',
+          overflowY: 'auto',
+        }}
+        height={240}
+        itemHeight={28}
+        virtual={true}
+      />
+    );
+  };
+
+  if (showTabs) {
+    const items = [
+      {
+        key: 'variables',
+        label: '变量',
+        children: renderTree(transformToTreeDataForTree(regularVariables)),
+      },
+      {
+        key: 'tools',
+        label: '工具',
+        children: renderTree(transformToTreeDataForTree(toolVariables)),
+      },
+    ];
+
+    return (
+      <div className="variable-suggestion-tabs">
+        <Tabs
+          activeKey={activeTab}
+          onChange={onTabChange}
+          items={items}
+          size="small"
+          tabBarStyle={{ marginBottom: 8, padding: '0 8px' }}
+        />
+      </div>
+    );
+  }
+
+  return renderTree(treeData);
 };
 
 export default VariableList;
