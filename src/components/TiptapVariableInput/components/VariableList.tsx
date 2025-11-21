@@ -51,13 +51,15 @@ const VariableList: React.FC<VariableListProps> = ({
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
 
   // 将树节点转换为扁平化的建议项列表
+  // 优先使用 flatItems（从 VariableSuggestion 传递的扁平化列表）
+  // 这样可以确保键盘导航的索引与鼠标点击的索引一致
   const suggestions = useMemo(() => {
-    console.log('VariableList - tree:', tree);
-    console.log('VariableList - tree length:', tree?.length);
-    console.log('VariableList - flatItems:', flatItems);
-    const result = flatItems || convertTreeNodesToSuggestions(tree);
-    console.log('VariableList - suggestions:', result);
-    console.log('VariableList - suggestions length:', result?.length);
+    // 优先使用 flatItems，确保与键盘导航的索引一致
+    const result =
+      flatItems && flatItems.length > 0
+        ? flatItems
+        : convertTreeNodesToSuggestions(tree);
+
     return result;
   }, [tree, flatItems]);
 
@@ -113,14 +115,7 @@ const VariableList: React.FC<VariableListProps> = ({
 
   // 转换树数据为 Ant Design Tree 格式
   const treeData = useMemo(() => {
-    console.log('VariableList - treeData conversion - tree:', tree);
-    const result = transformToTreeDataForTree(tree);
-    console.log('VariableList - treeData conversion - result:', result);
-    console.log(
-      'VariableList - treeData conversion - result length:',
-      result?.length,
-    );
-    return result;
+    return transformToTreeDataForTree(tree);
   }, [tree]);
 
   if (!tree || tree.length === 0) {
@@ -133,7 +128,9 @@ const VariableList: React.FC<VariableListProps> = ({
   }
 
   const handleSelect = (selectedKeys: React.Key[]) => {
-    if (selectedKeys.length === 0) return;
+    if (selectedKeys.length === 0) {
+      return;
+    }
 
     const selectedKey = selectedKeys[0] as string;
 
@@ -208,18 +205,48 @@ const VariableList: React.FC<VariableListProps> = ({
     }
   };
 
-  console.log('VariableList render - treeData:', treeData);
-  console.log('VariableList render - treeData length:', treeData?.length);
-  console.log('VariableList render - expandedKeys:', expandedKeys);
+  // 自定义标题渲染，确保所有节点都可以点击选择
+  const titleRender = (nodeData: any) => {
+    const originalTitle = nodeData.title;
+
+    return (
+      <div
+        onClick={(e) => {
+          // 阻止事件冒泡，避免触发 Tree 的默认行为
+          e.stopPropagation();
+
+          // 如果点击的是展开/折叠图标区域，不处理选择
+          const target = e.target as HTMLElement;
+          if (target.closest('.ant-tree-switcher')) {
+            return;
+          }
+
+          // 触发选择
+          const keys = [nodeData.key];
+          handleSelect(keys);
+        }}
+        style={{ width: '100%', cursor: 'pointer' }}
+      >
+        {originalTitle}
+      </div>
+    );
+  };
 
   return (
     <Tree
       treeData={treeData}
       expandedKeys={expandedKeys as string[]}
       selectedKeys={selectedKeys}
-      onExpand={(newExpandedKeys) => setExpandedKeys(newExpandedKeys)}
+      onExpand={(newExpandedKeys) => {
+        setExpandedKeys(newExpandedKeys);
+      }}
       onSelect={handleSelect}
+      titleRender={titleRender}
       showIcon={false}
+      // 允许所有节点（包括非叶子节点）被选中
+      selectable={true}
+      // 允许点击节点标题进行选择（不仅仅是图标）
+      blockNode={true}
       style={{
         maxHeight: '240px',
         overflowY: 'auto',
