@@ -58,6 +58,8 @@ interface UseDevLogsReturn {
   markErrorAsSent: (errorFingerprint: string) => void;
   /** 检查是否有新错误 */
   hasNewErrors: () => boolean;
+
+  latestErrorLogs: string;
 }
 
 /**
@@ -80,6 +82,7 @@ export const useDevLogs = (
   const [hasErrorInLatestBlock, setHasErrorInLatestBlock] = useState(false);
   const [lastLine, setLastLine] = useState(0);
   const [isPolling, setIsPolling] = useState(false); // 轮询状态
+  const [latestErrorLogs, setLatestErrorLogs] = useState<string>('');
 
   // 引用管理
   const sentErrorsRef = useRef<Set<string>>(new Set());
@@ -92,18 +95,40 @@ export const useDevLogs = (
   useEffect(() => {
     projectIdRef.current = projectId;
   }, [projectId]);
-  const updateHasErrorInLatestBlock = useCallback((logs: DevLogEntry[]) => {
+
+  const getLatestErrorLogs = useCallback((logs: DevLogEntry[]): string => {
+    if (!logs || logs.length === 0) return '';
     const groups = groupLogsByTimestamp(logs);
-    // 检查最新日志块是否包含错误 仅检查最后一组
-    const newErrorLogs = filterErrorLogs(groups.at(-1)?.logs || []);
-    setHasErrorInLatestBlock(newErrorLogs.length > 0);
+    // 检查所有日志组中是否有错误日志命中
+    const theErrorLogs =
+      groups
+        .filter((group) => filterErrorLogs(group.logs || []).length > 0)
+        .at(-1)?.logs || [];
+    if (theErrorLogs.length > 0) {
+      return theErrorLogs
+        .map((log) => log.content)
+        .join('\n')
+        .trim();
+    }
+    return '';
+  }, []);
+
+  const updateHasErrorInLatestBlock = useCallback((logs: DevLogEntry[]) => {
+    // 检查所有日志组中是否有错误日志命中
+    const hasErrorInAllGroups = !!getLatestErrorLogs(logs);
+    setHasErrorInLatestBlock(hasErrorInAllGroups);
   }, []);
   /**
    * 解析和添加新日志
    * 使用稳定的回调，避免依赖项变化
    */
   const addNewLogs = useCallback((newLogs: DevLogEntry[]) => {
-    if (!newLogs || !isMountedRef.current || newLogs.length === 0) return;
+    if (!newLogs || !isMountedRef.current || newLogs.length === 0) {
+      // 如果新日志为空，则清空日志
+      setLogs([]);
+      setHasErrorInLatestBlock(false);
+      return;
+    }
 
     setLogs((prevLogs) => {
       if (prevLogs[0]?.timestamp !== newLogs[0]?.timestamp) {
@@ -175,8 +200,8 @@ export const useDevLogs = (
         const isSuccess =
           fullResponse?.code === '0000' || fullResponse?.success === true;
 
-        if (isSuccess && responseData?.logs?.length > 0) {
-          addNewLogs(responseData.logs);
+        if (isSuccess) {
+          addNewLogs(responseData?.logs || []);
         }
       },
       onError: () => {
@@ -307,6 +332,7 @@ export const useDevLogs = (
   // 更新previousLogsRef
   useEffect(() => {
     previousLogsRef.current = [...logs];
+    setLatestErrorLogs(getLatestErrorLogs(logs));
   }, [logs]);
 
   return {
@@ -316,6 +342,7 @@ export const useDevLogs = (
     isPolling, // 使用本地状态管理轮询状态
     lastLine,
     sentErrors: sentErrorsRef.current,
+    latestErrorLogs,
     clearLogs,
     refreshLogs,
     stopPolling,

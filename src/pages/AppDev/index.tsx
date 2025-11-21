@@ -1692,6 +1692,7 @@ const AppDev: React.FC = () => {
                 logs={devLogs.logs}
                 visible={showDevLogConsole}
                 hasErrorInLatestBlock={devLogs.hasErrorInLatestBlock}
+                latestErrorLogs={devLogs.latestErrorLogs}
                 isLoading={devLogs.isLoading}
                 lastLine={devLogs.lastLine}
                 onClear={devLogs.clearLogs}
