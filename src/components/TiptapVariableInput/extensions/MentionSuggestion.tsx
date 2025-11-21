@@ -70,15 +70,31 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
 
             const handleSelect = (item: MentionItem) => {
               command({ id: item.id, label: item.label, type: item.type });
-              root.unmount();
+              try {
+                root.unmount();
+              } catch (e) {
+                // 忽略卸载错误
+              }
               if (document.body.contains(container)) {
                 document.body.removeChild(container);
               }
-              document.removeEventListener('keydown', handleKeyDown);
+              if (handleKeyDown) {
+                document.removeEventListener('keydown', handleKeyDown);
+              }
               this.options.onSelect?.(item);
             };
 
             handleKeyDown = (event: KeyboardEvent) => {
+              // 如果正在输入中文等 IME 组合键，不处理
+              if (event.isComposing) {
+                return;
+              }
+
+              // 检查容器是否仍然存在
+              if (!document.body.contains(container)) {
+                document.removeEventListener('keydown', handleKeyDown);
+                return;
+              }
               if (event.key === 'ArrowDown') {
                 event.preventDefault();
                 selectedIndex = Math.min(
@@ -204,11 +220,17 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
           },
           onExit: () => {
             if (popup) {
-              popup.root.unmount();
+              try {
+                popup.root.unmount();
+              } catch (e) {
+                // 忽略卸载错误
+              }
               if (document.body.contains(popup.container)) {
                 document.body.removeChild(popup.container);
               }
-              document.removeEventListener('keydown', popup.handleKeyDown);
+              if (popup.handleKeyDown) {
+                document.removeEventListener('keydown', popup.handleKeyDown);
+              }
             }
           },
         };
