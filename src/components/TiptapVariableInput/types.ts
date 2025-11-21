@@ -50,6 +50,8 @@ export interface TiptapVariableInputProps {
   className?: string;
   /** 输入框样式 */
   style?: React.CSSProperties;
+  /** 是否禁用 @ mentions 建议 */
+  disableMentions?: boolean;
 }
 
 /**
