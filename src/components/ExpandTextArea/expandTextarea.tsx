@@ -1,8 +1,9 @@
 // import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import TiptapVariableInput from '@/components/TiptapVariableInput';
 import { CloseOutlined } from '@ant-design/icons';
-import { ConfigProvider, Input, Space } from 'antd';
+import { ConfigProvider, Space } from 'antd';
 import { Form } from 'antd/lib';
+import { PromptEditorProvider, PromptEditorRender } from 'prompt-kit-editor';
 import React from 'react';
 import './expandTextarea.less';
 import type { ExpandableInputTextareaState } from './type';
@@ -47,8 +48,11 @@ const ExpandTextArea: React.FC<
           </ConfigProvider>
         </div>
       </div>
-      <Form.Item name={inputFieldName} className="expand-textarea-pre-style">
-        {useTiptap ? (
+      {useTiptap ? (
+        <Form.Item
+          name={inputFieldName}
+          className="expand-textarea-pre-style scroll-container"
+        >
           <TiptapVariableInput
             className="prompt-editor-provider"
             placeholder={placeholder}
@@ -56,13 +60,21 @@ const ExpandTextArea: React.FC<
             skills={skills}
             style={{ height: '100%', minHeight: '400px' }}
           />
-        ) : (
-          <Input.TextArea
-            placeholder={placeholder}
-            className="no-resize-textarea"
-          />
-        )}
-      </Form.Item>
+        </Form.Item>
+      ) : (
+        <PromptEditorProvider>
+          <Form.Item
+            name={inputFieldName}
+            className="expand-textarea-pre-style scroll-container"
+          >
+            <PromptEditorRender
+              className="prompt-editor-provider"
+              isControled={true}
+              placeholder={placeholder}
+            />
+          </Form.Item>
+        </PromptEditorProvider>
+      )}
     </div>
   );
 };
