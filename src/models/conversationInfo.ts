@@ -370,7 +370,7 @@ export default () => {
                   request_id: input.request_id,
                   data_type: input.data_type,
                 };
-                console.log('CHART', previewData);
+                // console.log('CHART', previewData);
                 // 显示页面预览
                 showPagePreview(previewData);
               }
