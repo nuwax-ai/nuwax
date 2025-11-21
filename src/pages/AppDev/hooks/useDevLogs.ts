@@ -92,7 +92,12 @@ export const useDevLogs = (
   useEffect(() => {
     projectIdRef.current = projectId;
   }, [projectId]);
-
+  const updateHasErrorInLatestBlock = useCallback((logs: DevLogEntry[]) => {
+    const groups = groupLogsByTimestamp(logs);
+    // 检查最新日志块是否包含错误 仅检查最后一组
+    const newErrorLogs = filterErrorLogs(groups.at(-1)?.logs || []);
+    setHasErrorInLatestBlock(newErrorLogs.length > 0);
+  }, []);
   /**
    * 解析和添加新日志
    * 使用稳定的回调，避免依赖项变化
@@ -102,10 +107,12 @@ export const useDevLogs = (
 
     setLogs((prevLogs) => {
       if (prevLogs[0]?.timestamp !== newLogs[0]?.timestamp) {
+        updateHasErrorInLatestBlock(newLogs);
         return newLogs;
       }
 
       if (prevLogs.length === newLogs.length) {
+        updateHasErrorInLatestBlock(prevLogs);
         return prevLogs;
       }
 
@@ -118,10 +125,7 @@ export const useDevLogs = (
       // if (updatedLogs.length > maxLogLines) {
       //   resultLogs = updatedLogs.slice(-maxLogLines);
       // }
-      const groups = groupLogsByTimestamp(resultLogs);
-      // 检查最新日志块是否包含错误 仅检查最后一组
-      const newErrorLogs = filterErrorLogs(groups.at(-1)?.logs || []);
-      setHasErrorInLatestBlock(newErrorLogs.length > 0);
+      updateHasErrorInLatestBlock(resultLogs);
       return resultLogs;
     });
 
@@ -170,6 +174,7 @@ export const useDevLogs = (
         // 兼容不同的返回数据格式：code === '0000' 或 success === true
         const isSuccess =
           fullResponse?.code === '0000' || fullResponse?.success === true;
+
         if (isSuccess && responseData?.logs?.length > 0) {
           addNewLogs(responseData.logs);
         }
