@@ -197,13 +197,14 @@ export const getFileContent = async (
   projectId: string,
   filePath: string,
 ): Promise<string> => {
-  return request('/api/custom-page/file-content', {
-    method: 'POST',
-    data: {
-      projectId,
-      filePath,
+  return request(
+    `/api/custom-page/file-proxy-url?projectId=${encodeURIComponent(
+      projectId.toString(),
+    )}&filePath=${encodeURIComponent(filePath)}`,
+    {
+      method: 'GET',
     },
-  });
+  );
 };
 
 /**
