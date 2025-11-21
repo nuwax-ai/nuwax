@@ -2,5 +2,14 @@
 @import '@/styles/token';
 
 .container {
-  // 容器样式
+  .prompt-editor-provider {
+    border: 0.5px solid @colorBorderSecondary;
+    border-radius: @borderRadius;
+    height: 100px;
+
+    &:hover,
+    &:focus {
+      border-color: @colorPrimary;
+    }
+  }
 }
