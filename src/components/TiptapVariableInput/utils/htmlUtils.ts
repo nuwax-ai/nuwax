@@ -93,15 +93,55 @@ export const extractTextFromHTML = (html: string): string => {
 };
 
 /**
+ * 清理 HTML 内容中的首尾空段落
+ * @param html HTML 内容
+ * @returns 清理后的 HTML 内容
+ */
+export const cleanHTMLParagraphs = (html: string): string => {
+  if (!html) return '';
+
+  let cleaned = html.trim();
+
+  // 移除开头的空段落（<p></p>、<p> </p>、<p><br></p>、<p><br/></p> 等）
+  while (/^<p[^>]*>(\s|&nbsp;|<br\s*\/?>)*<\/p>/i.test(cleaned)) {
+    cleaned = cleaned
+      .replace(/^<p[^>]*>(\s|&nbsp;|<br\s*\/?>)*<\/p>/i, '')
+      .trim();
+  }
+
+  // 移除结尾的空段落
+  while (/<p[^>]*>(\s|&nbsp;|<br\s*\/?>)*<\/p>$/i.test(cleaned)) {
+    cleaned = cleaned
+      .replace(/<p[^>]*>(\s|&nbsp;|<br\s*\/?>)*<\/p>$/i, '')
+      .trim();
+  }
+
+  // 如果清理后为空，返回空字符串
+  if (!cleaned.trim()) return '';
+
+  return cleaned;
+};
+
+/**
  * 将纯文本转换为 Tiptap HTML
  * 识别 {{variable}} 和 @mentions 格式
- * @param text 纯文本内容
+ * @param text 纯文本内容或 HTML 内容
  * @returns Tiptap HTML 内容
  */
 export const convertTextToHTML = (text: string): string => {
   if (!text) return '';
 
+  // 检查是否已经是 HTML 格式（包含 HTML 标签）
+  const isHTML = /<[^>]+>/.test(text);
+
   let html = text;
+
+  // 如果已经是 HTML 格式，先清理首尾的空段落
+  if (isHTML) {
+    html = cleanHTMLParagraphs(html);
+    // 如果清理后为空，返回空字符串
+    if (!html) return '';
+  }
 
   // 转换 {#ToolBlock ...#}...{#/ToolBlock#} 格式
   html = html.replace(
@@ -121,6 +161,14 @@ export const convertTextToHTML = (text: string): string => {
     '<span class="mention-node" data-id="$1" data-label="$1" data-type="user">@$1</span>',
   );
 
-  // 包装在段落中
+  // 如果已经是 HTML 格式（包含段落标签），直接返回
+  if (isHTML && /<p[^>]*>/i.test(html)) {
+    return html;
+  }
+
+  // 如果内容为空，返回空字符串（不添加空段落）
+  if (!html.trim()) return '';
+
+  // 对于纯文本，包装在段落中
   return `<p>${html}</p>`;
 };

@@ -18,21 +18,23 @@ export const convertTreeNodesToSuggestions = (
 
   const traverse = (nodeList: VariableTreeNode[]) => {
     for (const node of nodeList) {
-      if (node.isLeaf) {
-        // 检查是否是工具：工具的 key 以 'skill-' 开头，或者 variable.type 是 'Tool'（通过 as any 设置）
-        const isTool =
-          node.key.startsWith('skill-') ||
-          (node.variable as any)?.type === 'Tool';
-        suggestions.push({
-          key: node.key,
-          label: node.label,
-          value: node.value,
-          node,
-          isTool,
-          toolData: isTool ? (node.variable as any)?.value : undefined,
-        });
-      }
+      // 所有节点都可以选择（包括非叶子节点）
+      // 检查是否是工具：工具的 key 以 'skill-' 开头，或者 variable.type 是 'Tool'（通过 as any 设置）
+      const isTool =
+        node.key.startsWith('skill-') ||
+        (node.variable as any)?.type === 'Tool';
 
+      suggestions.push({
+        key: node.key,
+        label: node.label,
+        value: node.value,
+        node,
+        isTool: isTool && node.isLeaf, // 只有叶子节点才能是工具
+        toolData:
+          isTool && node.isLeaf ? (node.variable as any)?.value : undefined,
+      });
+
+      // 递归处理子节点
       if (node.children && node.children.length > 0) {
         traverse(node.children);
       }
