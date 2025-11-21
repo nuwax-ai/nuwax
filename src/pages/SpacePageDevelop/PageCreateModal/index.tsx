@@ -238,7 +238,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
           name="projectDesc"
           label="描述"
           placeholder="请输入描述"
-          maxLength={10000}
+          maxLength={200}
         />
         <Form.Item name="icon" label="图标">
           <UploadAvatar
