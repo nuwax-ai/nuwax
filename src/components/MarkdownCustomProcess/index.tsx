@@ -209,7 +209,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
     const input: InputProps = (result as { input: InputProps }).input;
     // 判断页面类型
-    if (input.uri_type === 'Page') {
+    if (!input.uri_type || input.uri_type === 'Page') {
       // if (!input?.uri) {
       //   message.error('页面路径不存在');
       //   return;
