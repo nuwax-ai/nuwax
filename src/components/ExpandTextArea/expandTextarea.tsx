@@ -1,13 +1,19 @@
 // import { ICON_OPTIMIZE } from '@/constants/images.constants';
-import VariableInferenceInput from '@/components/VariableInferenceInput/VariableInferenceInput';
+import TiptapVariableInput from '@/components/TiptapVariableInput';
 import { CloseOutlined } from '@ant-design/icons';
 import { ConfigProvider, Space } from 'antd';
 import { Form } from 'antd/lib';
+import { PromptEditorProvider, PromptEditorRender } from 'prompt-kit-editor';
 import React from 'react';
 import './expandTextarea.less';
 import type { ExpandableInputTextareaState } from './type';
+
 const ExpandTextArea: React.FC<
-  ExpandableInputTextareaState & { visible: boolean }
+  ExpandableInputTextareaState & {
+    visible: boolean;
+    useTiptap?: boolean;
+    skills?: any[];
+  }
 > = ({
   marginRight,
   title,
@@ -16,6 +22,8 @@ const ExpandTextArea: React.FC<
   visible, // 接收 visible 属性
   onClose,
   variables,
+  skills,
+  useTiptap = false,
 }) => {
   return (
     <div
@@ -40,19 +48,33 @@ const ExpandTextArea: React.FC<
           </ConfigProvider>
         </div>
       </div>
-      {/*<Form.Item name={inputFieldName} className="expand-textarea-pre-style">*/}
-      {/*  <Input.TextArea*/}
-      {/*    placeholder={placeholder}*/}
-      {/*    className="no-resize-textarea"*/}
-      {/*  />*/}
-      {/*</Form.Item>*/}
-      <Form.Item name={inputFieldName} className="expand-textarea-pre-style">
-        <VariableInferenceInput
-          className="prompt-editor-provider"
-          placeholder={placeholder}
-          variables={variables}
-        />
-      </Form.Item>
+      {useTiptap ? (
+        <Form.Item
+          name={inputFieldName}
+          className="expand-textarea-pre-style scroll-container"
+        >
+          <TiptapVariableInput
+            className="prompt-editor-provider"
+            placeholder={placeholder}
+            variables={variables}
+            skills={skills}
+            style={{ height: '100%', minHeight: '400px' }}
+          />
+        </Form.Item>
+      ) : (
+        <PromptEditorProvider>
+          <Form.Item
+            name={inputFieldName}
+            className="expand-textarea-pre-style scroll-container"
+          >
+            <PromptEditorRender
+              className="prompt-editor-provider"
+              isControled={true}
+              placeholder={placeholder}
+            />
+          </Form.Item>
+        </PromptEditorProvider>
+      )}
     </div>
   );
 };

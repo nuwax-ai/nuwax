@@ -48,9 +48,13 @@ export const transformVariableToTreeNode = (
           name: '数组元素',
         },
         children: [],
+        isLeaf: true, // 数组索引节点是叶子节点
       },
     ];
   }
+
+  // 设置 isLeaf 属性：只有当节点没有子节点时才是叶子节点
+  node.isLeaf = !node.children || node.children.length === 0;
 
   return node;
 };
