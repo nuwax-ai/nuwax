@@ -151,17 +151,42 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
 
               const coords = this.editor.view.coordsAtPos(range.from);
               if (coords) {
+                const popupWidth = 300;
+                const popupHeight = 240;
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+
+                let left = coords.left;
+                let top = coords.bottom + 10; // 默认显示在下方
+
+                // 水平方向边界检测
+                if (left + popupWidth > viewportWidth) {
+                  left = Math.max(10, viewportWidth - popupWidth - 10);
+                }
+
+                // 垂直方向边界检测
+                if (top + popupHeight > viewportHeight) {
+                  // 如果下方空间不足，尝试显示在上方
+                  const topAbove = coords.top - popupHeight - 10;
+                  if (topAbove > 0) {
+                    top = topAbove;
+                  } else {
+                    // 如果上方也不足，则尽可能显示在视口内
+                    top = Math.max(10, viewportHeight - popupHeight - 10);
+                  }
+                }
+
                 container.style.position = 'fixed';
-                container.style.left = `${coords.left}px`;
-                container.style.top = `${coords.top + 20}px`;
+                container.style.left = `${left}px`;
+                container.style.top = `${top}px`;
                 container.style.zIndex = '9999';
                 container.style.background = '#fff';
                 container.style.border = '1px solid #d9d9d9';
                 container.style.borderRadius = '8px';
                 container.style.boxShadow =
                   '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)';
-                container.style.maxWidth = '300px';
-                container.style.maxHeight = '240px';
+                container.style.width = `${popupWidth}px`;
+                container.style.height = `${popupHeight}px`;
                 container.style.overflow = 'auto';
               }
             };
