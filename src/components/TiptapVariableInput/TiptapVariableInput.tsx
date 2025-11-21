@@ -6,7 +6,8 @@
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { theme } from 'antd';
-import React, { useEffect, useMemo } from 'react';
+import { isEqual } from 'lodash';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { AutoCompleteBraces } from './extensions/AutoCompleteBraces';
 import { MentionNode } from './extensions/MentionNode';
 import { MentionSuggestion } from './extensions/MentionSuggestion';
@@ -38,13 +39,29 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
   className,
   style,
   onVariableSelect,
+  disableMentions = true, // 默认禁用 mentions
 }) => {
   const { token } = theme.useToken();
 
+  // 使用 useRef 和 isEqual 确保 variables 和 skills 的引用稳定性
+  // 防止因父组件传入新引用但内容相同的 props 导致无限循环
+  const variablesRef = useRef(variables);
+  const skillsRef = useRef(skills);
+
+  if (!isEqual(variablesRef.current, variables)) {
+    variablesRef.current = variables;
+  }
+  if (!isEqual(skillsRef.current, skills)) {
+    skillsRef.current = skills;
+  }
+
+  const stableVariables = variablesRef.current;
+  const stableSkills = skillsRef.current;
+
   // 构建变量树
   const { variableTree } = useVariableTree(
-    variables,
-    skills,
+    stableVariables,
+    stableSkills,
     '', // searchText 由 suggestion 内部管理
   );
 
@@ -57,54 +74,60 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
       value.includes('{{') ||
       value.includes('@')
     ) {
-      return convertTextToHTML(value);
+      return convertTextToHTML(value, disableMentions);
     }
     // 如果已经是 HTML 格式，清理首尾空段落
     if (/<[^>]+>/.test(value)) {
       return cleanHTMLParagraphs(value);
     }
     return value;
-  }, [value]);
+  }, [value, disableMentions]);
 
   // 初始化编辑器
   // 注意：扩展的顺序很重要，Suggestion 插件应该在 AutoCompleteBraces 之后
   // 这样 Suggestion 插件能够检测到 AutoCompleteBraces 插入的 { 字符
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      MentionNode,
-      VariableNode,
-      ToolBlockNode,
-      // VariableSuggestion 应该在 AutoCompleteBraces 之前，这样它能够检测到 { 字符
-      VariableSuggestion.configure({
-        variables: variableTree, // 初始化时可能为空，后续通过 useEffect 更新
-        onSelect: (item) => {
-          // 变量选择回调
-          if (item.node?.variable && onVariableSelect) {
-            onVariableSelect(item.node.variable, item.value);
-          }
-        },
-      }),
-      // AutoCompleteBraces 应该在最后，这样它能够处理 { 输入
-      // 但是，由于 Suggestion 插件通过监听文档变化来检测触发字符，
-      // 所以即使 AutoCompleteBraces 返回 true，Suggestion 也应该能够检测到
-      AutoCompleteBraces, // 自动补全大括号（只在空白或行首时补全）
-      MentionSuggestion.configure({
-        items: mentions,
-        onSelect: () => {
-          // Mentions 选择回调
-        },
-      }),
-    ],
-    content: initialContent,
-    editable: !readonly && !disabled,
-    onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
-      // 同时提供 HTML 和纯文本格式
-      // 如果 onChange 期望纯文本，可以使用 extractTextFromHTML(html)
-      onChange?.(html);
+  const editor = useEditor(
+    {
+      extensions: [
+        StarterKit,
+        !disableMentions ? MentionNode : undefined,
+        VariableNode,
+        ToolBlockNode,
+        // VariableSuggestion 应该在 AutoCompleteBraces 之前，这样它能够检测到 { 字符
+        VariableSuggestion.configure({
+          variables: variableTree, // 初始化时可能为空，后续通过 useEffect 更新
+          onSelect: (item) => {
+            // 变量选择回调
+            if (item.node?.variable && onVariableSelect) {
+              onVariableSelect(item.node.variable, item.value);
+            }
+          },
+        }),
+        // AutoCompleteBraces 应该在最后，这样它能够处理 { 输入
+        // 但是，由于 Suggestion 插件通过监听文档变化来检测触发字符，
+        // 所以即使 AutoCompleteBraces 返回 true，Suggestion 也应该能够检测到
+        AutoCompleteBraces, // 自动补全大括号（只在空白或行首时补全）
+        // 只有当 disableMentions 为 false 时才启用 MentionSuggestion
+        !disableMentions
+          ? MentionSuggestion.configure({
+              items: mentions,
+              onSelect: () => {
+                // Mentions 选择回调
+              },
+            })
+          : undefined,
+      ].filter(Boolean) as any, // 过滤掉 undefined 并强制类型转换
+      content: initialContent,
+      editable: !readonly && !disabled,
+      onUpdate: ({ editor }) => {
+        const html = editor.getHTML();
+        // 同时提供 HTML 和纯文本格式
+        // 如果 onChange 期望纯文本，可以使用 extractTextFromHTML(html)
+        onChange?.(html);
+      },
     },
-  });
+    [disableMentions, readonly, disabled],
+  );
 
   // 同步外部 value 到编辑器
   useEffect(() => {
@@ -118,7 +141,7 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
           value.includes('{{') ||
           value.includes('@'))
       ) {
-        contentToSet = convertTextToHTML(value);
+        contentToSet = convertTextToHTML(value, disableMentions);
       } else if (value && /<[^>]+>/.test(value)) {
         // 如果已经是 HTML 格式，不再清理首尾空段落，以保留用户的换行
         // contentToSet = cleanHTMLParagraphs(value);
