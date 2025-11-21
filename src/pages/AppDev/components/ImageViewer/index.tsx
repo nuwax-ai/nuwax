@@ -28,7 +28,11 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
 }) => {
   // 判断是否为 base64 图片
   const isBase64 = isBase64Image(imageUrl);
-
+  //如果是相对地址就可
+  let _imageUrl = imageUrl;
+  if (_imageUrl.startsWith('/')) {
+    _imageUrl = `${process.env.BASE_URL}${_imageUrl}`;
+  }
   return (
     <div className={styles.imagePreviewContainer}>
       {imagePath && (
@@ -61,7 +65,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
         }}
       >
         <Image
-          src={imageUrl}
+          src={_imageUrl}
           alt={alt}
           style={{
             maxWidth: '100%',

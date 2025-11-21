@@ -24,6 +24,8 @@ export interface ExpandableInputTextareaProps {
   form?: FormInstance;
   // 变量列表
   variables?: any[];
+  // 技能列表
+  skills?: any[];
 }
 
 //
@@ -37,4 +39,6 @@ export interface ExpandableInputTextareaState {
   placeholder?: string;
   // 变量列表
   variables?: any[];
+  // 技能列表
+  skills?: any[];
 }

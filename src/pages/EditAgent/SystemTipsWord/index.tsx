@@ -169,7 +169,7 @@ const SystemTipsWord = forwardRef<
                 value={valueUser}
                 onChange={onChangeUser}
                 isControled={true}
-                placeholder="输入用户提示词，对大模型进行角色塑造"
+                placeholder="输入用户提示词，预置指令、问题或请求"
                 getEditor={(editor: any) => {
                   editorUserRef.current = editor;
                 }}

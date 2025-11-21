@@ -16,6 +16,8 @@ export interface PromptVariable {
   children?: PromptVariable[];
   /** 自定义显示标签 */
   label?: string;
+  /** 变量数据示例 */
+  example?: any;
 }
 
 export enum VariableType {
