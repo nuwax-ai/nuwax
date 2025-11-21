@@ -280,6 +280,23 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     [updateButtonStates],
   );
 
+  /**
+   * 刷新 iframe
+   * 参考 AppDev/components/Preview/index.tsx 中的实现
+   * 通过更新 iframeKey 来强制 iframe 重新渲染，这样更可靠，特别是对于跨域情况
+   */
+  function reload() {
+    // 更新 iframeKey 来触发 iframe 重新渲染
+    setIframeKey(Date.now());
+    setIsLoading(true);
+
+    // 同时清理历史记录状态，因为刷新后历史记录会重置
+    navigableHistoryRef.current = [];
+    currentIndexRef.current = 0;
+    setCanGoBack(false);
+    setCanGoForward(false);
+  }
+
   // 处理页面内容变化和上报
   useEffect(() => {
     // 需要调用后端接口返回 iframe 内容的 html/markdown
@@ -287,6 +304,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     if (!iframe) return;
     iframe.src = pageUrl; // 重新加载同一个地址，会触发 onload
     setIsLoading(true);
+    reload(); // 重新加载页面
     iframe.onload = async () => {
       // ⭐ 处理跨域访问错误
       let iframeDoc: Document | null = null;
@@ -469,23 +487,6 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   // 如果没有预览数据，不显示
   if (!pagePreviewData) {
     return null;
-  }
-
-  /**
-   * 刷新 iframe
-   * 参考 AppDev/components/Preview/index.tsx 中的实现
-   * 通过更新 iframeKey 来强制 iframe 重新渲染，这样更可靠，特别是对于跨域情况
-   */
-  function reload() {
-    // 更新 iframeKey 来触发 iframe 重新渲染
-    setIframeKey(Date.now());
-    setIsLoading(true);
-
-    // 同时清理历史记录状态，因为刷新后历史记录会重置
-    navigableHistoryRef.current = [];
-    currentIndexRef.current = 0;
-    setCanGoBack(false);
-    setCanGoForward(false);
   }
 
   /**
