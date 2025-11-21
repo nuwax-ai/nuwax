@@ -351,6 +351,11 @@ const TiptapVariableInputTestExample: React.FC = () => {
     setPromptValue((prev) => prev + text);
   }, []);
 
+  // 设置完整内容（用于测试初始化）
+  const setFullContent = useCallback((text: string) => {
+    setPromptValue(text);
+  }, []);
+
   const tabItems = [
     {
       key: 'test',
@@ -522,6 +527,155 @@ const TiptapVariableInputTestExample: React.FC = () => {
                   </div>
                 </div>
               </Space>
+            </Card>
+          </Col>
+
+          <Col span={24}>
+            <Card title="粘贴/初始化测试场景" size="small">
+              <Alert
+                message="测试说明"
+                description="测试粘贴带有变量引用的内容或初始化时，是否会出现上下各多出一行空行的问题。"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Row gutter={[16, 16]}>
+                <Col span={12}>
+                  <Card title="纯文本格式初始化" size="small" type="inner">
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Button
+                        size="small"
+                        block
+                        onClick={() => setFullContent('您好，{{user.name}}！')}
+                      >
+                        测试：纯文本变量初始化
+                      </Button>
+                      <Button
+                        size="small"
+                        block
+                        onClick={() =>
+                          setFullContent(
+                            '订单{{order.id}}总金额¥{{order.total}}',
+                          )
+                        }
+                      >
+                        测试：多个变量初始化
+                      </Button>
+                      <Button
+                        size="small"
+                        block
+                        onClick={() =>
+                          setFullContent(
+                            '{#ToolBlock id="web_search_tool" type="search" name="Web Search"#}网页搜索{#/ToolBlock#}',
+                          )
+                        }
+                      >
+                        测试：工具块初始化
+                      </Button>
+                      <Button
+                        size="small"
+                        block
+                        onClick={() =>
+                          setFullContent(
+                            '您好{{user.name}}，使用{#ToolBlock id="calculator_tool" type="math" name="Calculator"#}计算器{#/ToolBlock#}计算',
+                          )
+                        }
+                      >
+                        测试：变量+工具块混合
+                      </Button>
+                    </Space>
+                  </Card>
+                </Col>
+                <Col span={12}>
+                  <Card title="HTML 格式初始化/粘贴" size="small" type="inner">
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Button
+                        size="small"
+                        block
+                        onClick={() =>
+                          setFullContent(
+                            '<p>您好，<span class="variable-block-chip" data-key="user.name" data-label="user.name">user.name</span>！</p>',
+                          )
+                        }
+                      >
+                        测试：正常 HTML 初始化
+                      </Button>
+                      <Button
+                        size="small"
+                        block
+                        onClick={() =>
+                          setFullContent(
+                            '<p></p><p>您好，<span class="variable-block-chip" data-key="user.name" data-label="user.name">user.name</span>！</p><p></p>',
+                          )
+                        }
+                      >
+                        测试：带空段落 HTML（应自动清理）
+                      </Button>
+                      <Button
+                        size="small"
+                        block
+                        onClick={() =>
+                          setFullContent(
+                            '<p><br></p><p>订单<span class="variable-block-chip" data-key="order.id" data-label="order.id">order.id</span>已创建</p><p><br></p>',
+                          )
+                        }
+                      >
+                        测试：带空行 HTML（应自动清理）
+                      </Button>
+                      <Button
+                        size="small"
+                        block
+                        onClick={() =>
+                          setFullContent(
+                            '<p> </p><p>您的邮箱：<span class="variable-block-chip" data-key="user.email" data-label="user.email">user.email</span></p><p> </p>',
+                          )
+                        }
+                      >
+                        测试：带空格段落 HTML（应自动清理）
+                      </Button>
+                    </Space>
+                  </Card>
+                </Col>
+                <Col span={24}>
+                  <Card title="复杂场景测试" size="small" type="inner">
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Button
+                        size="small"
+                        block
+                        onClick={() =>
+                          setFullContent(
+                            '<p></p><p>尊敬的<span class="variable-block-chip" data-key="user.name" data-label="user.name">user.name</span>，订单<span class="variable-block-chip" data-key="order.id" data-label="order.id">order.id</span>总金额¥<span class="variable-block-chip" data-key="order.total" data-label="order.total">order.total</span>。</p><p></p>',
+                          )
+                        }
+                      >
+                        测试：复杂内容+空段落（应自动清理）
+                      </Button>
+                      <Button
+                        size="small"
+                        block
+                        onClick={() =>
+                          setFullContent(
+                            '<p><br></p><p>使用<span class="mention-node" data-id="datasource_001" data-label="用户数据库" data-type="datasource">用户数据库</span>查询<span class="variable-block-chip" data-key="user.email" data-label="user.email">user.email</span>的信息。</p><p><br></p>',
+                          )
+                        }
+                      >
+                        测试：Mentions+变量+空段落（应自动清理）
+                      </Button>
+                      <Button
+                        size="small"
+                        block
+                        onClick={() =>
+                          setFullContent(
+                            '<p></p><p>工具：<span class="tool-block-chip" data-tool-id="web_search_tool" data-tool-type="search" data-tool-name="Web Search">网页搜索</span>变量：<span class="variable-block-chip" data-key="user.name" data-label="user.name">user.name</span></p><p></p>',
+                          )
+                        }
+                      >
+                        测试：工具+变量+空段落（应自动清理）
+                      </Button>
+                    </Space>
+                  </Card>
+                </Col>
+              </Row>
             </Card>
           </Col>
         </Row>
