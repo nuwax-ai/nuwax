@@ -126,9 +126,13 @@ export const cleanHTMLParagraphs = (html: string): string => {
  * 将纯文本转换为 Tiptap HTML
  * 识别 {{variable}} 和 @mentions 格式
  * @param text 纯文本内容或 HTML 内容
+ * @param disableMentions 是否禁用 mentions 转换
  * @returns Tiptap HTML 内容
  */
-export const convertTextToHTML = (text: string): string => {
+export const convertTextToHTML = (
+  text: string,
+  disableMentions: boolean = false,
+): string => {
   if (!text) return '';
 
   // 检查是否已经是 HTML 格式（包含 HTML 标签）
@@ -156,10 +160,12 @@ export const convertTextToHTML = (text: string): string => {
   );
 
   // 转换 @mentions 格式（简单匹配，实际应该更智能）
-  html = html.replace(
-    /@(\w+)/g,
-    '<span class="mention-node" data-id="$1" data-label="$1" data-type="user">@$1</span>',
-  );
+  if (!disableMentions) {
+    html = html.replace(
+      /@(\w+)/g,
+      '<span class="mention-node" data-id="$1" data-label="$1" data-type="user">@$1</span>',
+    );
+  }
 
   // 如果已经是 HTML 格式（包含段落标签），直接返回
   if (isHTML && /<p[^>]*>/i.test(html)) {
@@ -169,6 +175,16 @@ export const convertTextToHTML = (text: string): string => {
   // 如果内容为空，返回空字符串（不添加空段落）
   if (!html.trim()) return '';
 
-  // 对于纯文本，包装在段落中
-  return `<p>${html}</p>`;
+  // 对于纯文本，将换行符转换为段落
+  // 将文本按换行符分割，每行包装在一个 <p> 标签中
+  const lines = html.split('\n');
+  const paragraphs = lines.map((line) => {
+    // 如果行为空，创建空段落（保留空行）
+    if (!line.trim()) {
+      return '<p></p>';
+    }
+    return `<p>${line}</p>`;
+  });
+
+  return paragraphs.join('');
 };
