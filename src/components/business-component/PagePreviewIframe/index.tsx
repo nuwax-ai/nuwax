@@ -4,6 +4,7 @@ import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
 import { copyTextToClipboard } from '@/utils';
 import { Button, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
+import { debounce } from 'lodash';
 import React, {
   useCallback,
   useEffect,
@@ -297,11 +298,6 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     setCanGoForward(false);
   }
 
-  function reloadIframe(iframe: any, url: string) {
-    // 重新加载同一个地址，会触发 onload
-    iframe.src = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
-  }
-
   // 处理页面内容变化和上报
   useEffect(() => {
     console.log('触发了1 useEffect - pagePreviewData');
@@ -309,8 +305,15 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     const iframe = iframeRef.current;
     if (!iframe) return;
     setIsLoading(true);
-    iframe.onload = async () => {
+    iframe.src = '';
+    setTimeout(() => {
+      iframe.src = pageUrl;
+    }, 50);
+    console.log('触发了2 useEffect - pagePreviewData');
+    iframe.onload = debounce(async () => {
       console.log('触发了3 useEffect - onload');
+      console.log('debounce 触发');
+
       // ⭐ 处理跨域访问错误
       let iframeDoc: Document | null = null;
       try {
@@ -399,11 +402,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         observer.disconnect();
         clearTimeout(timer);
       };
-    };
-    reloadIframe(iframe, pageUrl);
-    iframe.dispatchEvent(new Event('load')); // 手动触发 onload
-
-    console.log('触发了2 useEffect - pagePreviewData');
+    }, 100);
   }, [pagePreviewData]);
 
   /**
