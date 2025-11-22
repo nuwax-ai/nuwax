@@ -304,7 +304,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     if (!iframe) return;
     iframe.src = pageUrl; // 重新加载同一个地址，会触发 onload
     setIsLoading(true);
-    reload(); // 重新加载页面
+    // reload(); // 重新加载页面
     iframe.onload = async () => {
       // ⭐ 处理跨域访问错误
       let iframeDoc: Document | null = null;
@@ -418,19 +418,19 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
       // ⭐ 调试日志：记录 dev-monitor 相关消息以便排查
       const data = event.data;
-      // if (
-      //   data &&
-      //   typeof data === 'object' &&
-      //   data.type?.includes('dev-monitor')
-      // ) {
-      // console.log('[PagePreviewIframe] 🔍 DevMonitor message detected:', {
-      //   type: data.type,
-      //   origin: event.origin,
-      //   isFromIframe: !!isFromIframe,
-      //   sourceIsWindow: event.source instanceof Window,
-      //   iframeSrc: iframeRef.current?.src,
-      // });
-      // }
+      if (
+        data &&
+        typeof data === 'object' &&
+        data.type?.includes('dev-monitor')
+      ) {
+        console.log('[PagePreviewIframe] 🔍 DevMonitor message detected:', {
+          type: data.type,
+          origin: event.origin,
+          isFromIframe: !!isFromIframe,
+          sourceIsWindow: event.source instanceof Window,
+          iframeSrc: iframeRef.current?.src,
+        });
+      }
 
       // 如果不是来自 iframe，直接返回（避免处理其他来源的消息，如 React DevTools）
       if (!isFromIframe && data?.type?.includes('dev-monitor')) {
