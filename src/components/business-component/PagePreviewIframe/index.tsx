@@ -401,6 +401,8 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
       };
     };
     reloadIframe(iframe, pageUrl);
+    iframe.dispatchEvent(new Event('load')); // 手动触发 onload
+
     console.log('触发了2 useEffect - pagePreviewData');
   }, [pagePreviewData]);
 
