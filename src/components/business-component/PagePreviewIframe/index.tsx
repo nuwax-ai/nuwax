@@ -308,11 +308,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     // 需要调用后端接口返回 iframe 内容的 html/markdown
     const iframe = iframeRef.current;
     if (!iframe) return;
-    // iframe.src = pageUrl; // 重新加载同一个地址，会触发 onload
-    reloadIframe(iframe, pageUrl);
     setIsLoading(true);
-    // reload(); // 重新加载页面
-    console.log('触发了2 useEffect - pagePreviewData');
     iframe.onload = async () => {
       console.log('触发了3 useEffect - onload');
       // ⭐ 处理跨域访问错误
@@ -404,6 +400,8 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         clearTimeout(timer);
       };
     };
+    reloadIframe(iframe, pageUrl);
+    console.log('触发了2 useEffect - pagePreviewData');
   }, [pagePreviewData]);
 
   /**
