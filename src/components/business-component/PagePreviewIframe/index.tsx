@@ -310,7 +310,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
       iframe.src = pageUrl;
     }, 50);
     console.log('触发了2 useEffect - pagePreviewData');
-    iframe.onload = debounce(async () => {
+    const debouncedFn = debounce(async () => {
       console.log('触发了3 useEffect - onload');
       console.log('debounce 触发');
 
@@ -403,6 +403,9 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         clearTimeout(timer);
       };
     }, 100);
+    iframe.onload = () => {
+      debouncedFn();
+    };
   }, [pagePreviewData]);
 
   /**
