@@ -989,6 +989,134 @@
         },
       });
     }
+
+    /**
+     * 获取 URL 指定参数的值（支持 search 与 hash）
+     * @param {string} url - 要处理的 URL
+     * @param {string} key - 参数名
+     * @returns {string|null} - 返回参数值，不存在返回 null
+     */
+    function getQueryParam(url, key) {
+      try {
+        const u = new URL(url, window.location.origin);
+
+        // 1. 优先从 ?a=1&b=2 中读取
+        if (u.searchParams.has(key)) {
+          return u.searchParams.get(key);
+        }
+
+        // 2. 再从 hash 中读取: #/page?id=100&type=1
+        if (u.hash.includes('?')) {
+          const hashQuery = u.hash.split('?')[1]; // 取 ? 后部分
+          const hashParams = new URLSearchParams(hashQuery);
+
+          if (hashParams.has(key)) {
+            return hashParams.get(key);
+          }
+        }
+
+        return null;
+      } catch (e) {
+        console.warn('无效 URL：', url);
+        return null;
+      }
+    }
+    function handleBackToHome() {
+      // 如果当前 URL 中不包含 _ticket 参数，则不显示按钮
+      const currentUrl = window.location.href;
+      const _ticket = getQueryParam(currentUrl, '_ticket');
+      // 跳转类型主要区别是否是系统内部跳转还是分享链接跳转
+      const jump_type = getQueryParam(currentUrl, 'jump_type');
+
+      if (!_ticket || !jump_type) {
+        console.warn(
+          '[dev-monitor] 未检测到 _ticket 或 jump_type，跳过首页按钮渲染',
+        );
+        return;
+      }
+
+      // 跳转类型主要区别是否是系统内部跳转还是分享链接跳转
+      if (jump_type === 'inner') {
+        // 内部页面在路由变化后添加按钮
+        onceHistoryChange(() => {
+          addBackToHomeButton(jump_type);
+        });
+      }
+      // 跳转类型主要区别是否是系统内部跳转还是分享链接跳转
+      if (jump_type === 'outer') {
+        // 外部页面直接添加按钮
+        addBackToHomeButton(jump_type);
+      }
+    }
+
+    /**
+     * 添加「回到首页」悬浮图标
+     * - 默认固定在页面右下角
+     * - 单击 / 轻触：回到首页
+     */
+    function addBackToHomeButton(jump_type) {
+      const icon = document.createElement('div');
+      icon.innerHTML = 'X';
+
+      // 基础样式：右下角悬浮小圆角块
+      Object.assign(icon.style, {
+        position: 'fixed',
+        bottom: '16px',
+        right: '16px',
+        width: '30px',
+        height: '30px',
+        lineHeight: '30px',
+        textAlign: 'center',
+        borderRadius: '22px',
+        background: 'rgba(0, 0, 0, 0.15)',
+        color: '#fff',
+        fontSize: '14px',
+        zIndex: '99999',
+        cursor: 'pointer',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+      });
+
+      // 回到首页
+      function goHome() {
+        icon.remove();
+        setTimeout(() => {
+          if (jump_type === 'outer') {
+            // 如果是分享链接跳转，则使用 wx.miniProgram.reLaunch 跳转到首页
+            window.wx.miniProgram.reLaunch({ url: '/pages/index/index' });
+          }
+
+          if (jump_type === 'inner') {
+            // 如果是系统内部跳转，则使用 wx.miniProgram.navigateBack 回退
+            window.wx.miniProgram.navigateBack();
+          }
+        }, 50);
+      }
+
+      // 点击 / 轻触：回到首页（PC + 移动端）
+      icon.addEventListener('click', () => {
+        try {
+          goHome();
+        } catch (e) {
+          // 静默失败，避免影响页面
+        }
+      });
+      icon.addEventListener(
+        'touchend',
+        (event) => {
+          event?.preventDefault();
+          try {
+            goHome();
+          } catch (e) {
+            // 静默失败，避免影响页面
+          }
+        },
+        { passive: false },
+      );
+
+      document.body.appendChild(icon);
+    }
+
     /**
      * 注入微信 JS-SDK
      */
@@ -1000,6 +1128,9 @@
 
       // 脚本加载成功回调
       script.onload = function () {
+        // 添加回到首页按钮
+        handleBackToHome();
+
         // 等待 wx 对象可用
         setTimeout(() => {
           let timer = null;
@@ -1044,6 +1175,49 @@
     } else {
       injectWeChatSDK();
     }
+  }
+
+  /**
+   * 监听一次历史记录变化
+   * @param callback
+   */
+  function onceHistoryChange(callback) {
+    let called = false;
+
+    const handler = () => {
+      if (called) return;
+      called = true;
+      callback();
+
+      // 移除监听
+      window.removeEventListener('popstate', handler);
+      window.removeEventListener('hashchange', handler);
+
+      history.pushState = originalPushState;
+      // history.replaceState = originalReplaceState;
+    };
+
+    const originalPushState = history.pushState;
+    // const originalReplaceState = history.replaceState;
+
+    history.pushState = function (...args) {
+      const result = originalPushState.apply(this, args);
+      handler();
+      return result;
+    };
+
+    // history.replaceState = function (...args) {
+    //   const result = originalReplaceState.apply(this, args);
+    //   handler();
+    //   return result;
+    // };
+
+    window.addEventListener('popstate', () => {
+      handler();
+    });
+    window.addEventListener('hashchange', () => {
+      handler();
+    });
   }
 
   // 简化的初始化

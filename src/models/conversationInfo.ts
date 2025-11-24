@@ -361,7 +361,7 @@ export default () => {
               // }
 
               // 显示页面预览
-              if (input.uri_type === 'Page') {
+              if (!input.uri_type || input.uri_type === 'Page') {
                 const previewData = {
                   uri: input.uri,
                   params: input.arguments || {},
@@ -370,7 +370,7 @@ export default () => {
                   request_id: input.request_id,
                   data_type: input.data_type,
                 };
-                console.log('CHART', previewData);
+                // console.log('CHART', previewData);
                 // 显示页面预览
                 showPagePreview(previewData);
               }

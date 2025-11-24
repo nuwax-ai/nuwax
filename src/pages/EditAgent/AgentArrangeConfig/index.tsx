@@ -730,7 +730,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       case EventListEnum.Edit:
         handleAddEventBinding(item);
         break;
-      // 插入到系统提示词
+      // 插入到提示词
       case EventListEnum.InsertSystemPrompt:
         if (onInsertSystemPrompt) {
           // 格式化事件配置信息
@@ -738,13 +738,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             item.identification
           }" data='动态JSON参数'>[#引用编号]</div>\n
 ${item.identification}的动态JSON参数JsonSchema如下\n
-  \`\`\`
-  ${
-    item.argJsonSchema
-      ? JSON.stringify(JSON.parse(item.argJsonSchema), null, 2)
-      : '{\n "type": "object", "properties": {}, "required": []\n}'
-  }
-  \`\`\``;
+\`\`\`
+${
+  item.argJsonSchema
+    ? JSON.stringify(JSON.parse(item.argJsonSchema), null, 2)
+    : '{\n "type": "object", "properties": {}, "required": []\n}'
+}
+\`\`\``;
           onInsertSystemPrompt(eventText);
           message.success('已插入到系统提示词');
         } else {

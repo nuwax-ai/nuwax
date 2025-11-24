@@ -41,7 +41,7 @@ import ArrangeTitle from './ArrangeTitle';
 import DebugDetails from './DebugDetails';
 import styles from './index.less';
 import PreviewAndDebug from './PreviewAndDebug';
-import SystemTipsWord, { SystemTipsWordRef } from './SystemTipsWord';
+import SystemUserTipsWord, { SystemUserTipsWordRef } from './SystemTipsWord';
 
 const cx = classNames.bind(styles);
 
@@ -50,8 +50,8 @@ const cx = classNames.bind(styles);
  */
 const EditAgent: React.FC = () => {
   const params = useParams();
-  // 系统提示词组件引用
-  const systemTipsWordRef = useRef<SystemTipsWordRef>(null);
+  // 系统/用户提示词组件引用
+  const systemUserTipsWordRef = useRef<SystemUserTipsWordRef>(null);
   const spaceId = Number(params.spaceId);
   const agentId = Number(params.agentId);
   const [open, setOpen] = useState<boolean>(false);
@@ -236,7 +236,7 @@ const EditAgent: React.FC = () => {
    * @param text 要插入的文本内容
    */
   const handleInsertSystemPrompt = (text: string) => {
-    systemTipsWordRef.current?.insertText(text);
+    systemUserTipsWordRef.current?.insertText(text);
   };
 
   useEffect(() => {
@@ -395,12 +395,16 @@ const EditAgent: React.FC = () => {
               styles['edit-content'],
             )}
           >
-            {/*系统提示词*/}
-            <SystemTipsWord
-              ref={systemTipsWordRef}
+            {/*系统提示词/用户提示词*/}
+            <SystemUserTipsWord
+              ref={systemUserTipsWordRef}
               agentConfigInfo={agentConfigInfo}
-              value={agentConfigInfo?.systemPrompt}
-              onChange={(value) => handleChangeAgent(value, 'systemPrompt')}
+              valueUser={agentConfigInfo?.userPrompt}
+              valueSystem={agentConfigInfo?.systemPrompt}
+              onChangeUser={(value) => handleChangeAgent(value, 'userPrompt')}
+              onChangeSystem={(value) =>
+                handleChangeAgent(value, 'systemPrompt')
+              }
               onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
             />
             {/*配置区域*/}

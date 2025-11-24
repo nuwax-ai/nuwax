@@ -4,6 +4,7 @@ import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
 import { copyTextToClipboard } from '@/utils';
 import { Button, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
+import { debounce } from 'lodash';
 import React, {
   useCallback,
   useEffect,
@@ -280,14 +281,39 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     [updateButtonStates],
   );
 
+  /**
+   * 刷新 iframe
+   * 参考 AppDev/components/Preview/index.tsx 中的实现
+   * 通过更新 iframeKey 来强制 iframe 重新渲染，这样更可靠，特别是对于跨域情况
+   */
+  function reload() {
+    // 更新 iframeKey 来触发 iframe 重新渲染
+    setIframeKey(Date.now());
+    setIsLoading(true);
+
+    // 同时清理历史记录状态，因为刷新后历史记录会重置
+    navigableHistoryRef.current = [];
+    currentIndexRef.current = 0;
+    setCanGoBack(false);
+    setCanGoForward(false);
+  }
+
   // 处理页面内容变化和上报
   useEffect(() => {
+    console.log('触发了1 useEffect - pagePreviewData');
     // 需要调用后端接口返回 iframe 内容的 html/markdown
     const iframe = iframeRef.current;
     if (!iframe) return;
-    iframe.src = pageUrl; // 重新加载同一个地址，会触发 onload
     setIsLoading(true);
-    iframe.onload = async () => {
+    iframe.src = '';
+    setTimeout(() => {
+      iframe.src = pageUrl;
+    }, 50);
+    console.log('触发了2 useEffect - pagePreviewData');
+    const debouncedFn = debounce(async () => {
+      console.log('触发了3 useEffect - onload');
+      console.log('debounce 触发');
+
       // ⭐ 处理跨域访问错误
       let iframeDoc: Document | null = null;
       try {
@@ -331,9 +357,6 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
           // 如果是 markdown
           if (pagePreviewData.data_type === 'markdown') {
             str = turndownService.turndown(html);
-          }
-          if (!str) {
-            return;
           }
 
           if (pagePreviewData?.method === 'browser_navigate_page') {
@@ -379,6 +402,9 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         observer.disconnect();
         clearTimeout(timer);
       };
+    }, 100);
+    iframe.onload = () => {
+      debouncedFn();
     };
   }, [pagePreviewData]);
 
@@ -416,14 +442,14 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
       // 如果不是来自 iframe，直接返回（避免处理其他来源的消息，如 React DevTools）
       if (!isFromIframe && data?.type?.includes('dev-monitor')) {
-        console.warn(
-          '[PagePreviewIframe] ⚠️ DevMonitor message ignored (not from iframe):',
-          {
-            type: data.type,
-            origin: event.origin,
-            source: event.source,
-          },
-        );
+        // console.warn(
+        //   '[PagePreviewIframe] ⚠️ DevMonitor message ignored (not from iframe):',
+        //   {
+        //     type: data.type,
+        //     origin: event.origin,
+        //     source: event.source,
+        //   },
+        // );
         return;
       }
 
@@ -472,23 +498,6 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   }
 
   /**
-   * 刷新 iframe
-   * 参考 AppDev/components/Preview/index.tsx 中的实现
-   * 通过更新 iframeKey 来强制 iframe 重新渲染，这样更可靠，特别是对于跨域情况
-   */
-  function reload() {
-    // 更新 iframeKey 来触发 iframe 重新渲染
-    setIframeKey(Date.now());
-    setIsLoading(true);
-
-    // 同时清理历史记录状态，因为刷新后历史记录会重置
-    navigableHistoryRef.current = [];
-    currentIndexRef.current = 0;
-    setCanGoBack(false);
-    setCanGoForward(false);
-  }
-
-  /**
    * 后退功能
    * 参考 AppDev/components/Preview/index.tsx 中的实现
    * 添加错误处理，处理跨域限制等情况
@@ -499,7 +508,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
     // 检查是否可以后退
     if (!canGoBack) {
-      console.warn('[PagePreviewIframe] 无法后退：已在历史记录开头');
+      // console.warn('[PagePreviewIframe] 无法后退：已在历史记录开头');
       return;
     }
 
@@ -526,7 +535,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
     // 检查是否可以前进
     if (!canGoForward) {
-      console.warn('[PagePreviewIframe] 无法前进：已在历史记录末尾');
+      // console.warn('[PagePreviewIframe] 无法前进：已在历史记录末尾');
       return;
     }
 
