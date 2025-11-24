@@ -172,15 +172,15 @@ export const useAppDevServer = ({
     const data = isFullResponse ? responseOrData?.data : responseOrData;
 
     // 调试日志：打印返回数据格式
-    // console.log('[useAppDevServer] keepAlive response:', {
-    //   isFullResponse,
-    //   code: response?.code,
-    //   success: response?.success,
-    //   message: response?.message,
-    //   hasData: !!data,
-    //   devServerUrl: data?.devServerUrl,
-    //   fullResponse: responseOrData,
-    // });
+    console.log('[useAppDevServer] keepAlive response:', {
+      isFullResponse,
+      code: response?.code,
+      success: response?.success,
+      message: response?.message,
+      hasData: !!data,
+      devServerUrl: data?.devServerUrl,
+      fullResponse: responseOrData,
+    });
 
     // 检查接口返回状态码 - 兼容 code === '0000' 或 success === true
     const isSuccess = response?.code === '0000' || response?.success === true;
@@ -189,11 +189,11 @@ export const useAppDevServer = ({
       // 【关键变更】接口返回非成功状态码，设置错误信息和错误码
       const errorMessage = response?.message || '保活请求失败';
       const errorCode = response?.code || 'KEEPALIVE_ERROR';
-      // console.warn('[useAppDevServer] keepAlive failed:', {
-      //   code: errorCode,
-      //   message: errorMessage,
-      //   fullResponse: responseOrData,
-      // });
+      console.warn('[useAppDevServer] keepAlive failed:', {
+        code: errorCode,
+        message: errorMessage,
+        fullResponse: responseOrData,
+      });
       setServerMessage(errorMessage);
       setServerErrorCode(errorCode);
       setIsRunning(false);
@@ -216,17 +216,17 @@ export const useAppDevServer = ({
 
       // 如果返回的URL与当前URL不同，更新预览地址
       if (newDevServerUrl !== currentDevServerUrl) {
-        // console.log('[useAppDevServer] devServerUrl updated:', {
-        //   old: currentDevServerUrl,
-        //   new: newDevServerUrl,
-        // });
+        console.log('[useAppDevServer] devServerUrl updated:', {
+          old: currentDevServerUrl,
+          new: newDevServerUrl,
+        });
         setDevServerUrl(newDevServerUrl);
         devServerUrlRef.current = newDevServerUrl;
         onServerStartRef.current?.(newDevServerUrl);
       }
     } else {
       // 如果没有 devServerUrl，但请求成功，可能是首次请求或服务器未启动
-      // console.log('[useAppDevServer] keepAlive success but no devServerUrl');
+      console.log('[useAppDevServer] keepAlive success but no devServerUrl');
     }
   }, []); // 空依赖数组，使用 ref 访问最新值
 
@@ -258,9 +258,9 @@ export const useAppDevServer = ({
         // 我们需要使用完整的 response 对象
         handleKeepAliveResponse(response || data);
       },
-      onError: () => {
+      onError: (error: any) => {
         // 错误处理，不显示错误提示（已在 common.ts 中配置为静默请求）
-        // console.error('[useAppDevServer] keepAlive error:', error);
+        console.error('[useAppDevServer] keepAlive error:', error);
       },
     },
   );
