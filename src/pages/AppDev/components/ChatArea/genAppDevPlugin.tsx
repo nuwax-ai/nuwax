@@ -33,10 +33,10 @@ export default () => {
             />
           );
         } catch (error) {
-          console.error('❌ [genAppDevPlugin] Plan 数据解析失败:', error, {
-            data,
-            props,
-          });
+          // console.error('❌ [genAppDevPlugin] Plan 数据解析失败:', error, {
+          //   data,
+          //   props,
+          // });
           return (
             <div style={{ color: 'red' }}>
               Plan 解析失败: {(error as Error).message}
@@ -68,10 +68,10 @@ export default () => {
             />
           );
         } catch (error) {
-          console.error('❌ [genAppDevPlugin] ToolCall 数据解析失败:', error, {
-            data,
-            props,
-          });
+          // console.error('❌ [genAppDevPlugin] ToolCall 数据解析失败:', error, {
+          //   data,
+          //   props,
+          // });
           return (
             <div style={{ color: 'red' }}>
               ToolCall 解析失败: {(error as Error).message}

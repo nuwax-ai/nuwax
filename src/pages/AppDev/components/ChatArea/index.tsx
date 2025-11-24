@@ -142,7 +142,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       const lastMessage = chat.chatMessages[chat.chatMessages.length - 1];
       const sessionId = lastMessage?.sessionId;
 
-      console.log('aiChatSessionId', aiChatSessionId, sessionId);
+      // console.log('aiChatSessionId', aiChatSessionId, sessionId);
       // 如果Ai Chat会话ID存在，并且会话ID不存在，则取消Ai Chat Agent任务
       if (aiChatSessionId && !sessionId) {
         await cancelAiChatAgentTask(projectId, aiChatSessionId);

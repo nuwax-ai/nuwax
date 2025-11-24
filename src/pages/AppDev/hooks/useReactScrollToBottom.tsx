@@ -137,7 +137,7 @@ export const useReactScrollToBottom = (
           });
         }
       } catch (error) {
-        console.error('[useReactScrollToBottom] 滚动到底部失败:', error);
+        // console.error('[useReactScrollToBottom] 滚动到底部失败:', error);
       }
     },
     [],
@@ -149,10 +149,10 @@ export const useReactScrollToBottom = (
   const isAtBottom = useCallback(() => {
     try {
       // 这里将在 ScrollToBottom 组件内部通过 Context 获取实际的检查方法
-      console.log('[useReactScrollToBottom] 检查是否在底部');
+      // console.log('[useReactScrollToBottom] 检查是否在底部');
       return false;
     } catch (error) {
-      console.error('[useReactScrollToBottom] 检查滚动位置失败:', error);
+      // console.error('[useReactScrollToBottom] 检查滚动位置失败:', error);
       return false;
     }
   }, []);
@@ -164,7 +164,7 @@ export const useReactScrollToBottom = (
     try {
       // 这里将在 ScrollToBottom 组件内部通过 Context 获取实际的检查方法
     } catch (error) {
-      console.error('[useReactScrollToBottom] 检查滚动位置失败:', error);
+      // console.error('[useReactScrollToBottom] 检查滚动位置失败:', error);
     }
   }, []);
 
@@ -211,7 +211,7 @@ export const useReactScrollToBottom = (
         checkScrollPosition();
       }, throttleDelay);
     } catch (error) {
-      console.error('[useReactScrollToBottom] 处理用户滚动事件失败:', error);
+      // console.error('[useReactScrollToBottom] 处理用户滚动事件失败:', error);
     }
   }, [throttleDelay, checkScrollPosition]);
 
@@ -295,7 +295,7 @@ export const useReactScrollToBottom = (
           }
         }
       } catch (error) {
-        console.error('[useReactScrollToBottom] 处理新消息失败:', error);
+        // console.error('[useReactScrollToBottom] 处理新消息失败:', error);
       }
     },
     [scrollToBottom],
@@ -495,7 +495,7 @@ export const ScrollPositionObserver: React.FC<{
       }
 
       if (!scrollContainer) {
-        console.warn('[ScrollPositionObserver] 未找到滚动容器');
+        // console.warn('[ScrollPositionObserver] 未找到滚动容器');
         return;
       }
 
@@ -549,7 +549,7 @@ export const ScrollPositionObserver: React.FC<{
     }
 
     if (!scrollContainer) {
-      console.warn('[ScrollPositionObserver] 备用监听器未找到滚动容器');
+      // console.warn('[ScrollPositionObserver] 备用监听器未找到滚动容器');
       return;
     }
 

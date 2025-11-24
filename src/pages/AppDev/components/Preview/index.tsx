@@ -410,7 +410,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           jumpTo(-steps); //直接在父容器中回退
         }
       } catch (error) {
-        console.warn('[Preview] iframe 内部回退失败（可能是跨域限制）:', error);
+        // console.warn('[Preview] iframe 内部回退失败（可能是跨域限制）:', error);
         jumpTo(-steps); //直接在父容器中回退
       }
     }, []);
@@ -423,7 +423,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     // 截图 iframe 内容
     const captureIframeContent = async () => {
       const iframeElement = iframeRef.current;
-      console.log('截图 iframe 内容55555', iframeElement, devServerUrl);
+      // console.log('截图 iframe 内容55555', iframeElement, devServerUrl);
 
       if (!devServerUrl) {
         return;
@@ -439,7 +439,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
       // 如果 iframe 不存在，创建一个新的 iframe 元素
       if (!iframeElement) {
-        console.log('[Preview] 创建新的 iframe 元素进行截图');
+        // console.log('[Preview] 创建新的 iframe 元素进行截图');
 
         // 创建一个新的 iframe 元素
         const createIframe = document.createElement('iframe');
@@ -453,7 +453,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
         // 设置加载完成事件
         createIframe.onload = async () => {
-          console.log('[Preview] iframe 加载完成，开始截图');
+          // console.log('[Preview] iframe 加载完成，开始截图');
 
           try {
             // 等待一小段时间确保内容渲染完成
@@ -512,7 +512,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 const result = await response.json();
                 const imageUrl = result.data?.url || result.url || '';
 
-                console.log('[Preview] 图片上传成功:', imageUrl, result);
+                // console.log('[Preview] 图片上传成功:', imageUrl, result);
                 // 调用编辑页面接口，更新图标
                 const params = {
                   projectId: projectInfo?.projectId,
@@ -557,12 +557,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         document.body.appendChild(createIframe);
       } else {
         // 如果 iframe 存在，使用现有 iframe 进行截图
-        console.log('运行到这里了iframeElement', iframeElement);
+        // console.log('运行到这里了iframeElement', iframeElement);
         try {
           const iframeDoc =
             iframeElement.contentDocument ||
             iframeElement.contentWindow?.document;
-          console.log('iframeDoc', iframeDoc);
+          // console.log('iframeDoc', iframeDoc);
           if (!iframeDoc) {
             console.error('[Preview] 无法访问 iframe 文档');
             return;
@@ -576,12 +576,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           // 获取 iframe 高度 16:9比例
           const iframeHeight = iframeWidth * 0.5625;
 
-          console.log(
-            'iframeDoc?.body?.scrollWidth',
-            iframeDoc?.body?.scrollWidth,
-            'iframeDoc?.documentElement?.offsetWidth',
-            iframeDoc?.documentElement?.offsetWidth,
-          );
+          // console.log(
+          //   'iframeDoc?.body?.scrollWidth',
+          //   iframeDoc?.body?.scrollWidth,
+          //   'iframeDoc?.documentElement?.offsetWidth',
+          //   iframeDoc?.documentElement?.offsetWidth,
+          // );
 
           const canvas = await html2canvas(iframeDoc.body, {
             useCORS: true,
@@ -615,7 +615,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               const result = await response.json();
               const imageUrl = result.data?.url || result.url || '';
 
-              console.log('[Preview] 图片上传成功:', imageUrl, result);
+              // console.log('[Preview] 图片上传成功:', imageUrl, result);
               // 调用编辑页面接口，更新图标
               const params = {
                 projectId: projectInfo?.projectId,
@@ -669,24 +669,21 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     /**
      * iframe加载错误处理
      */
-    const handleIframeError = useCallback(
-      (...args: any[]) => {
-        setIsLoading(false);
-        setLoadError('预览加载失败，请检查开发服务器状态或网络连接');
-        console.info('[Preview] iframe加载错误', args);
+    const handleIframeError = useCallback(() => {
+      setIsLoading(false);
+      setLoadError('预览加载失败，请检查开发服务器状态或网络连接');
+      // console.info('[Preview] iframe加载错误', args);
 
-        // 统一通过 onWhiteScreenWithError 处理，指定错误类型为 iframe
-        if (onWhiteScreenOrIframeError) {
-          onWhiteScreenOrIframeError(
-            dayjs(Date.now()).format('YYYY/MM/DD HH:mm:ss') +
-              ' 预览加载失败，请检查开发服务器状态或网络连接',
-            'iframe',
-          );
-        }
-        // Iframe load error
-      },
-      [onWhiteScreenOrIframeError],
-    );
+      // 统一通过 onWhiteScreenWithError 处理，指定错误类型为 iframe
+      if (onWhiteScreenOrIframeError) {
+        onWhiteScreenOrIframeError(
+          dayjs(Date.now()).format('YYYY/MM/DD HH:mm:ss') +
+            ' 预览加载失败，请检查开发服务器状态或网络连接',
+          'iframe',
+        );
+      }
+      // Iframe load error
+    }, [onWhiteScreenOrIframeError]);
 
     /**
      * 处理来自 dev-monitor 的错误消息
@@ -745,12 +742,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               errorMessages,
               isWhiteScreen ? 'whiteScreen' : 'iframe',
             );
-            console.warn(
-              `[Preview] ${
-                isWhiteScreen ? '白屏' : '运行时'
-              } 通过 DevMonitor 捕获错误，已触发 AI Agent 自动处理:`,
-              errorMessages,
-            );
+            // console.warn(
+            //   `[Preview] ${
+            //     isWhiteScreen ? '白屏' : '运行时'
+            //   } 通过 DevMonitor 捕获错误，已触发 AI Agent 自动处理:`,
+            //   errorMessages,
+            // );
           }
         }
       },
@@ -860,12 +857,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             }
           }
         }
-        console.log(
-          '[Preview] pushCountRef',
-          pushCountRef.current,
-          'currentIndex',
-          currentIndexRef.current,
-        );
+        // console.log(
+        //   '[Preview] pushCountRef',
+        //   pushCountRef.current,
+        //   'currentIndex',
+        //   currentIndexRef.current,
+        // );
 
         // 更新最后 URL
         lastUrlRef.current = changeData.url;
@@ -889,34 +886,34 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
         // ⭐ 调试日志：记录所有消息以便排查
         const data = event.data;
-        if (
-          data &&
-          typeof data === 'object' &&
-          data.type?.includes('dev-monitor')
-        ) {
-          console.log('[Preview] 🔍 DevMonitor message detected:', {
-            type: data.type,
-            origin: event.origin,
-            isFromIframe: !!isFromIframe,
-            sourceIsWindow: event.source instanceof Window,
-            iframeSrc: iframeRef.current?.src,
-            errorCount: data.errorCount,
-            hasLatestError: !!data.latestError,
-            hasError: !!data.error,
-            fullData: data,
-          });
-        }
+        // if (
+        //   data &&
+        //   typeof data === 'object' &&
+        //   data.type?.includes('dev-monitor')
+        // ) {
+        // console.log('[Preview] 🔍 DevMonitor message detected:', {
+        //   type: data.type,
+        //   origin: event.origin,
+        //   isFromIframe: !!isFromIframe,
+        //   sourceIsWindow: event.source instanceof Window,
+        //   iframeSrc: iframeRef.current?.src,
+        //   errorCount: data.errorCount,
+        //   hasLatestError: !!data.latestError,
+        //   hasError: !!data.error,
+        //   fullData: data,
+        // });
+        // }
 
         // 如果不是来自 iframe，直接返回（避免处理其他来源的消息，如 React DevTools）
         if (!isFromIframe && data?.type?.includes('dev-monitor')) {
-          console.warn(
-            '[Preview] ⚠️ DevMonitor message ignored (not from iframe):',
-            {
-              type: data.type,
-              origin: event.origin,
-              source: event.source,
-            },
-          );
+          // console.warn(
+          //   '[Preview] ⚠️ DevMonitor message ignored (not from iframe):',
+          //   {
+          //     type: data.type,
+          //     origin: event.origin,
+          //     source: event.source,
+          //   },
+          // );
           return;
         }
 
@@ -927,10 +924,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               // ⭐ 实时错误消息（立即发送）
               if (data.error) {
                 const isWhiteScreen = data.isWhiteScreen;
-                console.debug(
-                  '[Preview] Received dev-monitor-error:',
-                  data.error,
-                );
+                // console.debug(
+                //   '[Preview] Received dev-monitor-error:',
+                //   data.error,
+                // );
                 handleDevMonitorError(data.error, isWhiteScreen);
               }
               break;

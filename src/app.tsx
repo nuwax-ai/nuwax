@@ -12,9 +12,9 @@ import { unifiedThemeService } from './services/unifiedThemeService';
  * 在应用运行期间保持活跃，处理全局事件
  */
 const GlobalEventPolling: React.FC = () => {
-  // 启动事件轮询
-  useEventPolling();
-  return null; // 这个组件不渲染任何内容
+  // 启动事件轮询，返回 contextHolder 用于渲染 Modal 上下文
+  const contextHolder = useEventPolling();
+  return contextHolder; // 返回 contextHolder 以支持 Modal 的动态主题
 };
 
 /**
@@ -192,8 +192,8 @@ export function render(oldRender: () => void) {
  * 路由变化监听
  * 可以在这里处理页面切换逻辑
  */
-export function onRouteChange(...params: any[]) {
-  console.info('[router] onRouteChange', ...params);
+export function onRouteChange() {
+  // console.info('[router] onRouteChange', ...params);
 
   // 如果是登录成功后的路由变化，确保轮询启动
   if (localStorage.getItem(ACCESS_TOKEN) && location.pathname !== '/login') {
