@@ -1,6 +1,6 @@
 {
-  "name": "agent-platform-front",
-  "version": "1.0.1",
+  "name": "nuwax-frontend",
+  "version": "1.0.4",
   "private": false,
   "homepage": "https://nuwax.com",
   "bugs": {
@@ -13,10 +13,14 @@
   "license": "Apache-2.0",
   "author": "Nuwax AI FE Team",
   "scripts": {
+    "prebuild:dev": "node scripts/generate-version.js",
     "build:dev": "cross-env UMI_ENV=development max build",
+    "prebuild:prod": "node scripts/generate-version.js",
     "build:prod": "cross-env UMI_ENV=production max build",
+    "predev": "node scripts/generate-version.js",
     "dev": "cross-env UMI_ENV=development max dev",
     "format": "prettier --cache --write .",
+    "generate:version": "node scripts/generate-version.js",
     "postinstall": "max setup",
     "lint-staged": "lint-staged",
     "prepare": "husky",

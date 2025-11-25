@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { useAntdConfigSetter } from 'umi';
 import { ACCESS_TOKEN } from './constants/home.constants';
 import { darkThemeTokens, themeTokens } from './constants/theme.constants';
+import { APP_NAME, APP_VERSION } from './constants/version';
 import useEventPolling from './hooks/useEventPolling';
 import { request as requestCommon } from './services/common';
 import { unifiedThemeService } from './services/unifiedThemeService';
@@ -27,6 +28,14 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
 }) => {
   const setAntdConfig = useAntdConfigSetter();
   const lastAppliedRef = useRef<string>('');
+
+  // 输出版本信息到控制台
+  useEffect(() => {
+    console.log(
+      `%c${APP_NAME} v${APP_VERSION}`,
+      'color: #1890ff; font-size: 14px; font-weight: bold;',
+    );
+  }, []);
 
   // 全局错误处理，捕获Monaco Editor的CanceledError
   useEffect(() => {
