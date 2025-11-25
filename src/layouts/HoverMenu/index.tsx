@@ -14,6 +14,7 @@ import SpaceSection from '../MenusLayout/SpaceSection';
 import SquareSection from '../MenusLayout/SquareSection';
 import SystemSection from '../MenusLayout/SystemSection';
 
+import SiteFooterLayout from '@/components/SiteFooter/layout';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 
@@ -107,6 +108,13 @@ const HoverMenu: React.FC = () => {
         width: NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
         left: firstMenuWidth,
         paddingLeft: token.padding,
+        // 通过 style 设置 CSS 变量会导致类型报错，推荐通过 className + :root 或 styled 方案实现
+        // 这里临时用 as any 绕过类型检查，实际项目建议将变量写到全局 less 或 css module
+        ...({
+          ['--xagi-layout-second-menu-text-color']: token.colorText, // 悬浮菜单文字颜色 覆写
+          ['--xagi-layout-second-menu-text-color-secondary']:
+            token.colorTextSecondary, // 悬浮菜单文字颜色 覆写
+        } as React.CSSProperties),
       }}
     >
       <HoverScrollbar
@@ -117,13 +125,6 @@ const HoverMenu: React.FC = () => {
         style={{
           width: '100%',
           padding: '12px 0',
-          // 通过 style 设置 CSS 变量会导致类型报错，推荐通过 className + :root 或 styled 方案实现
-          // 这里临时用 as any 绕过类型检查，实际项目建议将变量写到全局 less 或 css module
-          ...({
-            ['--xagi-layout-second-menu-text-color']: token.colorText, // 悬浮菜单文字颜色 覆写
-            ['--xagi-layout-second-menu-text-color-secondary']:
-              token.colorTextSecondary, // 悬浮菜单文字颜色 覆写
-          } as React.CSSProperties),
           display: 'flex',
           flexDirection: 'column',
           height: '100%',
@@ -141,10 +142,25 @@ const HoverMenu: React.FC = () => {
             </Typography.Title>
           </div>
         </ConditionRender>
-        <div style={{ flex: 1, minHeight: 0 }}>
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
           <MenuContent />
         </div>
       </HoverScrollbar>
+      <div
+        style={{
+          width: NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding,
+          opacity: 0.6,
+        }}
+      >
+        <SiteFooterLayout />
+      </div>
     </div>
   );
 };
