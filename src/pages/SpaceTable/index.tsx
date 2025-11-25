@@ -386,6 +386,7 @@ const SpaceTable = () => {
       // 防止重复处理同一个文件
       if (processingFileRef.current === info.file.uid) {
         console.log('文件正在处理中，跳过重复请求:', info.file.name);
+        setImportLoading(false);
         return;
       }
 
