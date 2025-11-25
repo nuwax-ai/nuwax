@@ -11,7 +11,7 @@ import { useParams, useRequest } from 'umi';
 interface UseAppDevServerProps {
   projectId: string;
 
-  onServerStart?: (devServerUrl: string) => void;
+  onServerStart?: (devServerUrl: string | null) => void;
   onServerStatusChange?: (isRunning: boolean) => void;
 }
 
@@ -317,6 +317,7 @@ export const useAppDevServer = ({
     try {
       hasStartedRef.current = true;
       setIsStarting(true);
+      setDevServerUrl(null);
       setServerMessage(null); // 清除之前的错误消息
       setServerErrorCode(null); // 清除之前的错误码
 
@@ -333,6 +334,8 @@ export const useAppDevServer = ({
       } else {
         // 启动失败，设置错误消息（已在 handleServerResponse 中设置）
         // 不需要额外操作
+        setDevServerUrl(null);
+        onServerStart?.(null);
       }
 
       // 重置启动状态
@@ -402,6 +405,8 @@ export const useAppDevServer = ({
         } else {
           // 重启失败，错误消息已在 handleServerResponse 中设置
           // serverMessage 会被 Preview 组件显示
+          setDevServerUrl(null);
+          onServerStart?.(null);
         }
 
         // 重置重启状态
