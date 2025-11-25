@@ -1,4 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
+import SiteFooterLayout from '@/components/SiteFooter/layout';
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import { DOCUMENT_URL, SITE_DOCUMENT_URL } from '@/constants/common.constants';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
@@ -302,6 +303,15 @@ const MenusLayout: React.FC<{
             </div>
           </div>
         </HoverScrollbar>
+        <div
+          style={{
+            width: NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding,
+            opacity: isSecondMenuCollapsed ? 0 : 0.6,
+            transition: 'all 0.3s ease-in-out',
+          }}
+        >
+          <SiteFooterLayout />
+        </div>
       </div>
       {/* 收起/展开按钮 */}
       <CollapseButton />
