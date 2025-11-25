@@ -110,6 +110,10 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   const [canGoBack, setCanGoBack] = useState<boolean>(false);
   const [canGoForward, setCanGoForward] = useState<boolean>(false);
 
+  // 用于存储 MutationObserver 实例，以便清理
+  const observerRef = useRef<MutationObserver | null>(null);
+  const observerTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // 构建页面 URL（拼接 query 参数）
   const pageUrl = useMemo(() => {
     if (!pagePreviewData) return '';
@@ -301,32 +305,32 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
   // 处理页面内容变化和上报
   useEffect(() => {
     console.log('触发了1 useEffect - pagePreviewData');
-    // 需要调用后端接口返回 iframe 内容的 html/markdown
     const iframe = iframeRef.current;
-    if (!iframe) return;
-    setIsLoading(true);
-    // 判断 pageUrl 是否包含 hash
-    const hasHash = pageUrl.includes('#');
-    if (hasHash) {
-      iframe.src = '';
-      setTimeout(() => {
-        iframe.src = pageUrl;
-      }, 50);
-    } else {
-      iframe.src = pageUrl;
-    }
-    console.log('触发了2 useEffect - pagePreviewData');
-    const debouncedFn = debounce(async () => {
-      console.log('触发了3 useEffect - onload');
-      console.log('debounce 触发');
+    if (!iframe || !pagePreviewData) return;
 
-      // ⭐ 处理跨域访问错误
+    // 清理函数：断开 observer，清除定时器
+    const cleanupObserver = () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
+      if (observerTimerRef.current) {
+        clearTimeout(observerTimerRef.current);
+        observerTimerRef.current = null;
+      }
+    };
+
+    // 每次 effect 执行前先清理
+    cleanupObserver();
+    setIsLoading(true);
+
+    const handleLoad = debounce(async () => {
+      console.log('触发了3 onload callback');
       let iframeDoc: Document | null = null;
       try {
         iframeDoc =
           iframe.contentDocument || iframe.contentWindow?.document || null;
       } catch (error) {
-        // 跨域访问被阻止
         console.warn(
           '[PagePreviewIframe] 无法访问 iframe 文档（可能是跨域限制）:',
           error,
@@ -339,32 +343,42 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
       const turndownService = new TurndownService();
 
-      let timer: NodeJS.Timeout;
-
-      // 监听 iframe 内部 DOM 变化
-      const observer = new MutationObserver(() => {
-        // 每次变化后延迟 500ms 再检测，确保渲染稳定
-        clearTimeout(timer);
-        timer = setTimeout(async () => {
-          // 确保 body 存在
+      // 定义 Observer 回调
+      const observerCallback = () => {
+        if (observerTimerRef.current) {
+          clearTimeout(observerTimerRef.current);
+        }
+        observerTimerRef.current = setTimeout(async () => {
           if (!iframeDoc?.body) return;
 
-          // 获取 head 中的 title 内容
           const title =
             iframeDoc.querySelector('head > title')?.textContent || '页面预览';
           setPreviewPageTitle(title);
 
           const html = iframeDoc.body.innerHTML;
 
+          // 检查 Nginx Welcome
+          if (pagePreviewData?.method === 'browser_navigate_page') {
+            const nginxWelcomeText =
+              iframeDoc.body.querySelector('body>h1')?.textContent;
+
+            if (nginxWelcomeText === 'Welcome to nginx!') {
+              const params = {
+                requestId: pagePreviewData?.request_id as string,
+                html: '无法读取数据',
+              };
+              console.log('CHART1', params);
+              await apiAgentComponentPageResultUpdate(params);
+              // 继续执行后续逻辑，或者 return
+            }
+          }
+
           if (!pagePreviewData?.method) return;
-          // 获取 iframe 内容
+
           let str = '';
-          // 如果是 html
           if (pagePreviewData.data_type === 'html') {
             str = html;
-          }
-          // 如果是 markdown
-          if (pagePreviewData.data_type === 'markdown') {
+          } else if (pagePreviewData.data_type === 'markdown') {
             str = turndownService.turndown(html);
           }
 
@@ -377,45 +391,43 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
             await apiAgentComponentPageResultUpdate(params);
           }
         }, 500);
-      });
+      };
 
-      observer.observe(iframeDoc.body, {
+      // 创建并启动 Observer
+      observerRef.current = new MutationObserver(observerCallback);
+      observerRef.current.observe(iframeDoc.body, {
         childList: true,
         subtree: true,
         characterData: true,
       });
-      // 添加一个空的 div，用于触发 observer
-      // setTimeout(() => {
-      //   iframeDoc.body.appendChild(iframeDoc.createElement('div'));
-      // }, 200);
 
-      if (pagePreviewData?.method === 'browser_navigate_page') {
-        const nginxWelcomeText =
-          iframeDoc.body.querySelector('body>h1')?.textContent;
-
-        if (nginxWelcomeText === 'Welcome to nginx!') {
-          // 添加一个空的 div，用于触发 observer
-          // iframeDoc.body.appendChild(iframeDoc.createElement('div'));
-
-          const params = {
-            requestId: pagePreviewData?.request_id as string,
-            html: '无法读取数据',
-          };
-          console.log('CHART1', params);
-          await apiAgentComponentPageResultUpdate(params);
-        }
-      }
-
-      // 清理
-      return () => {
-        observer.disconnect();
-        clearTimeout(timer);
-      };
+      // 立即触发一次处理
+      observerCallback();
     }, 100);
-    iframe.onload = () => {
-      debouncedFn();
+
+    // 绑定 onload
+    iframe.onload = handleLoad;
+
+    // 设置 src
+    console.log('触发了2 set src');
+    const hasHash = pageUrl.includes('#');
+    if (hasHash) {
+      iframe.src = '';
+      setTimeout(() => {
+        if (iframeRef.current) {
+          iframeRef.current.src = pageUrl;
+        }
+      }, 50);
+    } else {
+      iframe.src = pageUrl;
+    }
+
+    return () => {
+      iframe.onload = null;
+      handleLoad.cancel();
+      cleanupObserver();
     };
-  }, [pagePreviewData]);
+  }, [pagePreviewData, pageUrl, setPreviewPageTitle]);
 
   /**
    * 监听来自 iframe 的 postMessage 消息
