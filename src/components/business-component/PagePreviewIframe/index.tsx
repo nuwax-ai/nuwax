@@ -305,10 +305,16 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     const iframe = iframeRef.current;
     if (!iframe) return;
     setIsLoading(true);
-    iframe.src = '';
-    setTimeout(() => {
+    // 判断 pageUrl 是否包含 hash
+    const hasHash = pageUrl.includes('#');
+    if (hasHash) {
+      iframe.src = '';
+      setTimeout(() => {
+        iframe.src = pageUrl;
+      }, 50);
+    } else {
       iframe.src = pageUrl;
-    }, 50);
+    }
     console.log('触发了2 useEffect - pagePreviewData');
     const debouncedFn = debounce(async () => {
       console.log('触发了3 useEffect - onload');
