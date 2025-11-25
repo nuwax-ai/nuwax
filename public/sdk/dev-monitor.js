@@ -1184,7 +1184,7 @@
   function onceHistoryChange(callback) {
     let called = false;
 
-    const handler = (type) => {
+    const handler = () => {
       if (called) return;
       called = true;
       callback();
@@ -1202,21 +1202,21 @@
 
     history.pushState = function (...args) {
       const result = originalPushState.apply(this, args);
-      handler(1);
+      handler();
       return result;
     };
 
     // history.replaceState = function (...args) {
     //   const result = originalReplaceState.apply(this, args);
-    //   handler(2);
+    //   handler();
     //   return result;
     // };
 
     window.addEventListener('popstate', () => {
-      handler(3);
+      handler();
     });
     window.addEventListener('hashchange', () => {
-      handler(4);
+      handler();
     });
   }
 
