@@ -329,7 +329,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         return;
       }
 
-      if (!iframeDoc) return;
+      if (!iframeDoc || !iframeDoc.body) return;
 
       const turndownService = new TurndownService();
 
@@ -340,6 +340,9 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         // 每次变化后延迟 500ms 再检测，确保渲染稳定
         clearTimeout(timer);
         timer = setTimeout(async () => {
+          // 确保 body 存在
+          if (!iframeDoc?.body) return;
+
           // 获取 head 中的 title 内容
           const title =
             iframeDoc.querySelector('head > title')?.textContent || '页面预览';
