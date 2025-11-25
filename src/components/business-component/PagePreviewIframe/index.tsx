@@ -4,6 +4,7 @@ import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
 import { copyTextToClipboard } from '@/utils';
 import { Button, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
+import { debounce } from 'lodash';
 import React, {
   useCallback,
   useEffect,
@@ -299,13 +300,20 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
   // 处理页面内容变化和上报
   useEffect(() => {
+    console.log('触发了1 useEffect - pagePreviewData');
     // 需要调用后端接口返回 iframe 内容的 html/markdown
     const iframe = iframeRef.current;
     if (!iframe) return;
-    iframe.src = pageUrl; // 重新加载同一个地址，会触发 onload
     setIsLoading(true);
-    // reload(); // 重新加载页面
-    iframe.onload = async () => {
+    iframe.src = '';
+    setTimeout(() => {
+      iframe.src = pageUrl;
+    }, 50);
+    console.log('触发了2 useEffect - pagePreviewData');
+    const debouncedFn = debounce(async () => {
+      console.log('触发了3 useEffect - onload');
+      console.log('debounce 触发');
+
       // ⭐ 处理跨域访问错误
       let iframeDoc: Document | null = null;
       try {
@@ -349,9 +357,6 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
           // 如果是 markdown
           if (pagePreviewData.data_type === 'markdown') {
             str = turndownService.turndown(html);
-          }
-          if (!str) {
-            return;
           }
 
           if (pagePreviewData?.method === 'browser_navigate_page') {
@@ -397,6 +402,9 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
         observer.disconnect();
         clearTimeout(timer);
       };
+    }, 100);
+    iframe.onload = () => {
+      debouncedFn();
     };
   }, [pagePreviewData]);
 
