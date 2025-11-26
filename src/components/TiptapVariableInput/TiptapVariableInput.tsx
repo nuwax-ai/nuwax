@@ -38,6 +38,7 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
   style,
   onVariableSelect,
   disableMentions = true, // 默认禁用 mentions
+  getEditor,
 }) => {
   const { token } = theme.useToken();
 
@@ -94,13 +95,14 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
       return convertTextToHTML(value, disableMentions);
     }
     // 如果已经是 HTML 格式，保留空行，不清理首尾空段落
-    if (/<[^>]+>/.test(value)) {
+    if (/\u003c[^\u003e]+\u003e/.test(value)) {
       // 保留空行，不清理首尾空段落
       const trimmed = value.trim();
       if (!trimmed) return '';
       return value; // 保留原始格式，包括空段落
     }
-    return value;
+    // 对于普通文本，转换为 HTML 以正确处理换行
+    return convertTextToHTML(value, disableMentions);
   }, [value, disableMentions]);
 
   // 保存光标位置的 ref
@@ -162,6 +164,13 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
     [disableMentions, readonly, disabled, getNormalizedHtml],
   );
 
+  // 暴露编辑器实例
+  useEffect(() => {
+    if (editor && getEditor) {
+      getEditor(editor);
+    }
+  }, [editor, getEditor]);
+
   // 同步外部 value 到编辑器
   useEffect(() => {
     if (editor && value !== undefined) {
@@ -185,10 +194,16 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
           sanitizedValue.includes('@'))
       ) {
         contentToSet = convertTextToHTML(sanitizedValue, disableMentions);
-      } else if (sanitizedValue && /<[^>]+>/.test(sanitizedValue)) {
+      } else if (
+        sanitizedValue &&
+        /\u003c[^\u003e]+\u003e/.test(sanitizedValue)
+      ) {
         // 如果已经是 HTML 格式，不再清理首尾空段落，以保留用户的换行
         // contentToSet = cleanHTMLParagraphs(value);
         contentToSet = sanitizedValue;
+      } else if (sanitizedValue) {
+        // 对于普通文本，转换为 HTML 以正确处理换行
+        contentToSet = convertTextToHTML(sanitizedValue, disableMentions);
       }
       // 只有当内容不同时才更新
       if (contentToSet !== currentHtml) {

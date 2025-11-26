@@ -3,6 +3,7 @@ import CodeEditor from '@/components/CodeEditor';
 import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
+import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
 import {
   PromptVariable,
   VariableType,
@@ -164,7 +165,12 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
                   />
                 </span>
               </div>
-              <Form.Item name="content">
+              <Form.Item
+                name="content"
+                getValueFromEvent={(value) =>
+                  typeof value === 'string' ? extractTextFromHTML(value) : ''
+                }
+              >
                 <TiptapVariableInput
                   placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
                   style={{
@@ -482,7 +488,12 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   <Button type="text" icon={<SettingOutlined />} size="small" />
                 </Popover>
               </div>
-              <Form.Item name="text">
+              <Form.Item
+                name="text"
+                getValueFromEvent={(value) =>
+                  typeof value === 'string' ? extractTextFromHTML(value) : ''
+                }
+              >
                 <TiptapVariableInput
                   placeholder="可以使用{{变量名}}的方式引用输入参数中的变量"
                   style={{
