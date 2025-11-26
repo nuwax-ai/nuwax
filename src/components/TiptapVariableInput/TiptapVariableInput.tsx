@@ -3,6 +3,7 @@
  * 基于 Tiptap 的变量输入组件，支持 @ mentions 和 { 变量插入
  */
 
+import type { Editor } from '@tiptap/react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { theme } from 'antd';
@@ -43,6 +44,18 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
 }) => {
   const { token } = theme.useToken();
 
+  /**
+   * 将编辑器 HTML 规范化
+   * @description tiptap 在空内容时默认返回 `<p></p>`，这里统一转换为空字符串
+   */
+  const getNormalizedHtml = React.useCallback((editorInstance: Editor) => {
+    if (editorInstance.isEmpty) {
+      return '';
+    }
+    const html = editorInstance.getHTML();
+    return html === '<p></p>' || html === '<p></p>\n' ? '' : html;
+  }, []);
+
   // 使用 useRef 和 isEqual 确保 variables 和 skills 的引用稳定性
   // 防止因父组件传入新引用但内容相同的 props 导致无限循环
   const variablesRef = useRef(variables);
@@ -67,7 +80,7 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
 
   // 将纯文本值转换为 HTML（如果包含工具块或变量格式）
   const initialContent = useMemo(() => {
-    if (!value) return '';
+    if (!value || value === '<p></p>' || value === '<p></p>\n') return '';
     // 检查是否包含工具块或变量格式，如果是则转换为 HTML
     if (
       value.includes('{#ToolBlock') ||
@@ -120,32 +133,32 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
       content: initialContent,
       editable: !readonly && !disabled,
       onUpdate: ({ editor }) => {
-        const html = editor.getHTML();
-        // 同时提供 HTML 和纯文本格式
-        // 如果 onChange 期望纯文本，可以使用 extractTextFromHTML(html)
+        const html = getNormalizedHtml(editor);
         onChange?.(html);
       },
     },
-    [disableMentions, readonly, disabled],
+    [disableMentions, readonly, disabled, getNormalizedHtml],
   );
 
   // 同步外部 value 到编辑器
   useEffect(() => {
     if (editor && value !== undefined) {
+      const sanitizedValue =
+        value === '<p></p>' || value === '<p></p>\n' ? '' : value;
       const currentHtml = editor.getHTML();
       // 检查是否需要转换
-      let contentToSet = value;
+      let contentToSet = sanitizedValue;
       if (
-        value &&
-        (value.includes('{#ToolBlock') ||
-          value.includes('{{') ||
-          value.includes('@'))
+        sanitizedValue &&
+        (sanitizedValue.includes('{#ToolBlock') ||
+          sanitizedValue.includes('{{') ||
+          sanitizedValue.includes('@'))
       ) {
-        contentToSet = convertTextToHTML(value, disableMentions);
-      } else if (value && /<[^>]+>/.test(value)) {
+        contentToSet = convertTextToHTML(sanitizedValue, disableMentions);
+      } else if (sanitizedValue && /<[^>]+>/.test(sanitizedValue)) {
         // 如果已经是 HTML 格式，不再清理首尾空段落，以保留用户的换行
         // contentToSet = cleanHTMLParagraphs(value);
-        contentToSet = value;
+        contentToSet = sanitizedValue;
       }
       // 只有当内容不同时才更新
       if (contentToSet !== currentHtml) {
@@ -260,16 +273,16 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
   // 从编辑器 HTML 中提取原始文本格式（{{xxx}}、{#ToolBlock ...#}...{#/ToolBlock#}）
   const rawValue = React.useMemo(() => {
     if (!editor) return value || '';
-    const html = editor.getHTML();
+    const html = getNormalizedHtml(editor);
     return extractTextFromHTML(html);
-  }, [editor, value]);
+  }, [editor, value, getNormalizedHtml]);
 
   // 监听编辑器内容变化，更新 rawValue
   React.useEffect(() => {
     if (!editor) return;
 
     const updateRawValue = () => {
-      const html = editor.getHTML();
+      const html = getNormalizedHtml(editor);
       const extracted = extractTextFromHTML(html);
       // 更新 data-value 属性
       const wrapper = editor.view.dom.closest('.tiptap-editor-wrapper');
@@ -286,7 +299,7 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
       editor.off('update', updateRawValue);
       editor.off('create', updateRawValue);
     };
-  }, [editor]);
+  }, [editor, getNormalizedHtml]);
 
   if (!editor) {
     return null;
