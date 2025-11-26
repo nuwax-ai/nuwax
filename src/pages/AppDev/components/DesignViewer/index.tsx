@@ -138,7 +138,6 @@ interface DesignViewerProps {
     left?: number;
     vertical?: number;
     horizontal?: number;
-    isLinked?: boolean;
   };
   /** 内边距配置 */
   padding?: {
@@ -148,13 +147,12 @@ interface DesignViewerProps {
     left?: number;
     vertical?: number;
     horizontal?: number;
-    isLinked?: boolean;
   };
   /** 尺寸配置 */
   size?: {
     width: number;
     height: number;
-    isLinked?: boolean;
+    isLocked?: boolean;
   };
   /** 边框配置 */
   border?: {
@@ -175,8 +173,8 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   parentPath = 'Page',
   color = 'primary',
   background = 'Default',
-  margin = { vertical: 0, horizontal: 0, isLinked: true },
-  padding = { vertical: 0, horizontal: 0, isLinked: true },
+  margin = { vertical: 0, horizontal: 0 },
+  padding = { vertical: 0, horizontal: 0 },
   onChange,
 }) => {
   // 本地状态管理
@@ -187,27 +185,25 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     right: number | string;
     bottom: number | string;
     left: number | string;
-    isLinked: boolean;
   }>({
     top: margin?.top ?? margin?.vertical ?? '0px',
     right: margin?.right ?? margin?.horizontal ?? '0px',
     bottom: margin?.bottom ?? margin?.vertical ?? '0px',
     left: margin?.left ?? margin?.horizontal ?? '0px',
-    isLinked: margin?.isLinked ?? true,
   });
   const [localPadding, setLocalPadding] = useState<{
     top: number | string;
     right: number | string;
     bottom: number | string;
     left: number | string;
-    isLinked: boolean;
   }>({
     top: padding?.top ?? padding?.vertical ?? '0px',
     right: padding?.right ?? padding?.horizontal ?? '0px',
     bottom: padding?.bottom ?? padding?.vertical ?? '0px',
     left: padding?.left ?? padding?.horizontal ?? '0px',
-    isLinked: padding?.isLinked ?? true,
   });
+  const [isMarginLocked, setIsMarginLocked] = useState(true);
+  const [isPaddingLocked, setIsPaddingLocked] = useState(true);
   const [isMarginExpanded, setIsMarginExpanded] = useState(false);
   const [isPaddingExpanded, setIsPaddingExpanded] = useState(false);
   const [localTextContent, setLocalTextContent] = useState('');
@@ -275,12 +271,25 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    * 处理外边距变更（四边独立）
    */
   const handleMarginChange = (
-    type: 'top' | 'right' | 'bottom' | 'left' | 'vertical' | 'horizontal',
+    type:
+      | 'top'
+      | 'right'
+      | 'bottom'
+      | 'left'
+      | 'vertical'
+      | 'horizontal'
+      | 'all',
     value: string | null,
   ) => {
     const newMargin = { ...localMargin };
     if (value !== null) {
-      if (type === 'vertical') {
+      if (type === 'all') {
+        // 统一设置所有边
+        newMargin.top = value;
+        newMargin.right = value;
+        newMargin.bottom = value;
+        newMargin.left = value;
+      } else if (type === 'vertical') {
         newMargin.top = value;
         newMargin.bottom = value;
       } else if (type === 'horizontal') {
@@ -298,9 +307,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    * 切换外边距链接状态
    */
   const toggleMarginLink = () => {
-    const newMargin = { ...localMargin, isLinked: !localMargin.isLinked };
-    setLocalMargin(newMargin);
-    onChange?.('margin', newMargin);
+    setIsMarginLocked(!isMarginLocked);
   };
 
   /**
@@ -314,12 +321,25 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    * 处理内边距变更（四边独立）
    */
   const handlePaddingChange = (
-    type: 'top' | 'right' | 'bottom' | 'left' | 'vertical' | 'horizontal',
+    type:
+      | 'top'
+      | 'right'
+      | 'bottom'
+      | 'left'
+      | 'vertical'
+      | 'horizontal'
+      | 'all',
     value: string | null,
   ) => {
     const newPadding = { ...localPadding };
     if (value !== null) {
-      if (type === 'vertical') {
+      if (type === 'all') {
+        // 统一设置所有边
+        newPadding.top = value;
+        newPadding.right = value;
+        newPadding.bottom = value;
+        newPadding.left = value;
+      } else if (type === 'vertical') {
         newPadding.top = value;
         newPadding.bottom = value;
       } else if (type === 'horizontal') {
@@ -337,9 +357,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    * 切换内边距链接状态
    */
   const togglePaddingLink = () => {
-    const newPadding = { ...localPadding, isLinked: !localPadding.isLinked };
-    setLocalPadding(newPadding);
-    onChange?.('padding', newPadding);
+    setIsPaddingLocked(!isPaddingLocked);
   };
 
   /**
@@ -804,53 +822,82 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           <div className={cx(styles.layoutSubSection)}>
             <div className={cx(styles.layoutLabel)}>Margin</div>
             {!isMarginExpanded ? (
-              // 折叠状态：显示上下和左右两个输入框
+              // 折叠状态：根据锁定状态显示一个或两个输入框
               <div className={cx(styles.layoutInputs)}>
-                <div
-                  className={cx('flex items-center flex-1', styles['gap-8'])}
-                >
-                  <SelectList
-                    className={cx('flex-1')}
-                    value={
-                      typeof localMargin.top === 'string'
-                        ? localMargin.top
-                        : `${localMargin.top || 0}px`
-                    }
-                    onChange={(value) =>
-                      handleMarginChange('vertical', value as string)
-                    }
-                    prefix={
-                      <MarginHorizontalSvg className={cx(styles.layoutIcon)} />
-                    }
-                    options={pixelOptions}
-                  />
-                  <SelectList
-                    className={cx('flex-1')}
-                    value={
-                      typeof localMargin.left === 'string'
-                        ? localMargin.left
-                        : `${localMargin.left || 0}px`
-                    }
-                    onChange={(value) =>
-                      handleMarginChange('horizontal', value as string)
-                    }
-                    prefix={
-                      <MarginVerticalSvg className={cx(styles.layoutIcon)} />
-                    }
-                    options={pixelOptions}
-                  />
-                </div>
+                {isMarginLocked ? (
+                  // 锁定状态：显示一个输入框，统一设置所有边
+                  <div className={cx('flex items-center flex-1')}>
+                    <SelectList
+                      className={cx('flex-1')}
+                      value={
+                        typeof localMargin.top === 'string'
+                          ? localMargin.top
+                          : `${localMargin.top || 0}px`
+                      }
+                      onChange={(value) =>
+                        handleMarginChange('all', value as string)
+                      }
+                      prefix={
+                        <MarginHorizontalSvg
+                          className={cx(styles.layoutIcon)}
+                        />
+                      }
+                      options={pixelOptions}
+                    />
+                  </div>
+                ) : (
+                  // 解锁状态：显示两个输入框，分别设置上下和左右
+                  <div
+                    className={cx('flex items-center flex-1', styles['gap-8'])}
+                  >
+                    <SelectList
+                      className={cx('flex-1')}
+                      value={
+                        typeof localMargin.top === 'string'
+                          ? localMargin.top
+                          : `${localMargin.top || 0}px`
+                      }
+                      onChange={(value) =>
+                        handleMarginChange('vertical', value as string)
+                      }
+                      prefix={
+                        <MarginHorizontalSvg
+                          className={cx(styles.layoutIcon)}
+                        />
+                      }
+                      options={pixelOptions}
+                    />
+                    <SelectList
+                      className={cx('flex-1')}
+                      value={
+                        typeof localMargin.left === 'string'
+                          ? localMargin.left
+                          : `${localMargin.left || 0}px`
+                      }
+                      onChange={(value) =>
+                        handleMarginChange('horizontal', value as string)
+                      }
+                      prefix={
+                        <MarginVerticalSvg className={cx(styles.layoutIcon)} />
+                      }
+                      options={pixelOptions}
+                    />
+                  </div>
+                )}
                 <div className={cx(styles.layoutActions)}>
-                  <Button
-                    type="text"
-                    icon={<ExpandOutlined />}
-                    onClick={toggleMarginExpand}
-                  />
-                  {localMargin.isLinked ? (
+                  {!isMarginLocked && (
+                    <Button
+                      type="text"
+                      icon={<ExpandOutlined />}
+                      onClick={toggleMarginExpand}
+                    />
+                  )}
+                  {isMarginLocked ? (
                     <Button
                       type="text"
                       icon={<LockOutlined />}
                       onClick={toggleMarginLink}
+                      className={cx(styles.lockedButton)}
                     />
                   ) : (
                     <Button
@@ -862,10 +909,11 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 </div>
               </div>
             ) : (
-              // 展开状态：显示四边独立输入框（两行两列）
+              // 展开状态：根据锁定状态显示一个或四个输入框
               <div className={cx(styles.layoutInputs)}>
-                <div className={cx(styles.expandedLayout)}>
-                  <div className={cx(styles.expandedRow)}>
+                {isMarginLocked ? (
+                  // 锁定状态：显示一个输入框，统一设置所有边
+                  <div className={cx('flex items-center flex-1')}>
                     <SelectList
                       className={cx('flex-1')}
                       value={
@@ -874,73 +922,99 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                           : `${localMargin.top || 0}px`
                       }
                       onChange={(value) =>
-                        handleMarginChange('top', value as string)
+                        handleMarginChange('all', value as string)
                       }
                       prefix={
-                        <MarginTopSvg className={cx(styles.layoutIcon)} />
-                      }
-                      options={pixelOptions}
-                    />
-                    <SelectList
-                      className={cx('flex-1')}
-                      value={
-                        typeof localMargin.bottom === 'string'
-                          ? localMargin.bottom
-                          : `${localMargin.bottom || 0}px`
-                      }
-                      onChange={(value) =>
-                        handleMarginChange('bottom', value as string)
-                      }
-                      prefix={
-                        <MarginBottomSvg className={cx(styles.layoutIcon)} />
+                        <MarginHorizontalSvg
+                          className={cx(styles.layoutIcon)}
+                        />
                       }
                       options={pixelOptions}
                     />
                   </div>
-                  <div className={cx(styles.expandedRow)}>
-                    <SelectList
-                      className={cx('flex-1')}
-                      value={
-                        typeof localMargin.left === 'string'
-                          ? localMargin.left
-                          : `${localMargin.left || 0}px`
-                      }
-                      onChange={(value) =>
-                        handleMarginChange('left', value as string)
-                      }
-                      prefix={
-                        <MarginLeftSvg className={cx(styles.layoutIcon)} />
-                      }
-                      options={pixelOptions}
-                    />
-                    <SelectList
-                      className={cx('flex-1')}
-                      value={
-                        typeof localMargin.right === 'string'
-                          ? localMargin.right
-                          : `${localMargin.right || 0}px`
-                      }
-                      onChange={(value) =>
-                        handleMarginChange('right', value as string)
-                      }
-                      prefix={
-                        <MarginRightSvg className={cx(styles.layoutIcon)} />
-                      }
-                      options={pixelOptions}
-                    />
+                ) : (
+                  // 解锁状态：显示四边独立输入框（两行两列）
+                  <div className={cx(styles.expandedLayout)}>
+                    <div className={cx(styles.expandedRow)}>
+                      <SelectList
+                        className={cx('flex-1')}
+                        value={
+                          typeof localMargin.top === 'string'
+                            ? localMargin.top
+                            : `${localMargin.top || 0}px`
+                        }
+                        onChange={(value) =>
+                          handleMarginChange('top', value as string)
+                        }
+                        prefix={
+                          <MarginTopSvg className={cx(styles.layoutIcon)} />
+                        }
+                        options={pixelOptions}
+                      />
+                      <SelectList
+                        className={cx('flex-1')}
+                        value={
+                          typeof localMargin.bottom === 'string'
+                            ? localMargin.bottom
+                            : `${localMargin.bottom || 0}px`
+                        }
+                        onChange={(value) =>
+                          handleMarginChange('bottom', value as string)
+                        }
+                        prefix={
+                          <MarginBottomSvg className={cx(styles.layoutIcon)} />
+                        }
+                        options={pixelOptions}
+                      />
+                    </div>
+                    <div className={cx(styles.expandedRow)}>
+                      <SelectList
+                        className={cx('flex-1')}
+                        value={
+                          typeof localMargin.left === 'string'
+                            ? localMargin.left
+                            : `${localMargin.left || 0}px`
+                        }
+                        onChange={(value) =>
+                          handleMarginChange('left', value as string)
+                        }
+                        prefix={
+                          <MarginLeftSvg className={cx(styles.layoutIcon)} />
+                        }
+                        options={pixelOptions}
+                      />
+                      <SelectList
+                        className={cx('flex-1')}
+                        value={
+                          typeof localMargin.right === 'string'
+                            ? localMargin.right
+                            : `${localMargin.right || 0}px`
+                        }
+                        onChange={(value) =>
+                          handleMarginChange('right', value as string)
+                        }
+                        prefix={
+                          <MarginRightSvg className={cx(styles.layoutIcon)} />
+                        }
+                        options={pixelOptions}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className={cx(styles.layoutActions)}>
-                  <Button
-                    type="text"
-                    icon={<CompressOutlined />}
-                    onClick={toggleMarginExpand}
-                  />
-                  {localMargin.isLinked ? (
+                  {!isMarginLocked && (
+                    <Button
+                      type="text"
+                      icon={<CompressOutlined />}
+                      onClick={toggleMarginExpand}
+                    />
+                  )}
+                  {isMarginLocked ? (
                     <Button
                       type="text"
                       icon={<LockOutlined />}
                       onClick={toggleMarginLink}
+                      className={cx(styles.lockedButton)}
                     />
                   ) : (
                     <Button
@@ -958,53 +1032,82 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           <div className={cx(styles.layoutSubSection)}>
             <div className={cx(styles.layoutLabel)}>Padding</div>
             {!isPaddingExpanded ? (
-              // 折叠状态：显示上下和左右两个下拉选择
+              // 折叠状态：根据锁定状态显示一个或两个下拉选择
               <div className={cx(styles.layoutInputs)}>
-                <div
-                  className={cx('flex items-center flex-1', styles['gap-8'])}
-                >
-                  <SelectList
-                    className={cx('flex-1')}
-                    value={
-                      typeof localPadding.top === 'string'
-                        ? localPadding.top
-                        : `${localPadding.top || 0}px`
-                    }
-                    onChange={(value) =>
-                      handlePaddingChange('vertical', value as string)
-                    }
-                    prefix={
-                      <PaddingHorizontalSvg className={cx(styles.layoutIcon)} />
-                    }
-                    options={paddingPixelOptions}
-                  />
-                  <SelectList
-                    className={cx('flex-1')}
-                    value={
-                      typeof localPadding.left === 'string'
-                        ? localPadding.left
-                        : `${localPadding.left || 0}px`
-                    }
-                    onChange={(value) =>
-                      handlePaddingChange('horizontal', value as string)
-                    }
-                    prefix={
-                      <PaddingVerticalSvg className={cx(styles.layoutIcon)} />
-                    }
-                    options={paddingPixelOptions}
-                  />
-                </div>
+                {isPaddingLocked ? (
+                  // 锁定状态：显示一个下拉选择，统一设置所有边
+                  <div className={cx('flex items-center flex-1')}>
+                    <SelectList
+                      className={cx('flex-1')}
+                      value={
+                        typeof localPadding.top === 'string'
+                          ? localPadding.top
+                          : `${localPadding.top || 0}px`
+                      }
+                      onChange={(value) =>
+                        handlePaddingChange('all', value as string)
+                      }
+                      prefix={
+                        <PaddingHorizontalSvg
+                          className={cx(styles.layoutIcon)}
+                        />
+                      }
+                      options={paddingPixelOptions}
+                    />
+                  </div>
+                ) : (
+                  // 解锁状态：显示两个下拉选择，分别设置上下和左右
+                  <div
+                    className={cx('flex items-center flex-1', styles['gap-8'])}
+                  >
+                    <SelectList
+                      className={cx('flex-1')}
+                      value={
+                        typeof localPadding.top === 'string'
+                          ? localPadding.top
+                          : `${localPadding.top || 0}px`
+                      }
+                      onChange={(value) =>
+                        handlePaddingChange('vertical', value as string)
+                      }
+                      prefix={
+                        <PaddingHorizontalSvg
+                          className={cx(styles.layoutIcon)}
+                        />
+                      }
+                      options={paddingPixelOptions}
+                    />
+                    <SelectList
+                      className={cx('flex-1')}
+                      value={
+                        typeof localPadding.left === 'string'
+                          ? localPadding.left
+                          : `${localPadding.left || 0}px`
+                      }
+                      onChange={(value) =>
+                        handlePaddingChange('horizontal', value as string)
+                      }
+                      prefix={
+                        <PaddingVerticalSvg className={cx(styles.layoutIcon)} />
+                      }
+                      options={paddingPixelOptions}
+                    />
+                  </div>
+                )}
                 <div className={cx(styles.layoutActions)}>
-                  <Button
-                    type="text"
-                    icon={<ExpandOutlined />}
-                    onClick={togglePaddingExpand}
-                  />
-                  {localPadding.isLinked ? (
+                  {!isPaddingLocked && (
+                    <Button
+                      type="text"
+                      icon={<ExpandOutlined />}
+                      onClick={togglePaddingExpand}
+                    />
+                  )}
+                  {isPaddingLocked ? (
                     <Button
                       type="text"
                       icon={<LockOutlined />}
                       onClick={togglePaddingLink}
+                      className={cx(styles.lockedButton)}
                     />
                   ) : (
                     <Button
@@ -1016,10 +1119,11 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 </div>
               </div>
             ) : (
-              // 展开状态：显示四边独立下拉选择（两行两列）
+              // 展开状态：根据锁定状态显示一个或四个下拉选择
               <div className={cx(styles.layoutInputs)}>
-                <div className={cx(styles.expandedLayout)}>
-                  <div className={cx(styles.expandedRow)}>
+                {isPaddingLocked ? (
+                  // 锁定状态：显示一个下拉选择，统一设置所有边
+                  <div className={cx('flex items-center flex-1')}>
                     <SelectList
                       className={cx('flex-1')}
                       value={
@@ -1028,73 +1132,99 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                           : `${localPadding.top || 0}px`
                       }
                       onChange={(value) =>
-                        handlePaddingChange('top', value as string)
+                        handlePaddingChange('all', value as string)
                       }
                       prefix={
-                        <PaddingTopSvg className={cx(styles.layoutIcon)} />
-                      }
-                      options={paddingPixelOptions}
-                    />
-                    <SelectList
-                      className={cx('flex-1')}
-                      value={
-                        typeof localPadding.bottom === 'string'
-                          ? localPadding.bottom
-                          : `${localPadding.bottom || 0}px`
-                      }
-                      onChange={(value) =>
-                        handlePaddingChange('bottom', value as string)
-                      }
-                      prefix={
-                        <PaddingBottomSvg className={cx(styles.layoutIcon)} />
+                        <PaddingHorizontalSvg
+                          className={cx(styles.layoutIcon)}
+                        />
                       }
                       options={paddingPixelOptions}
                     />
                   </div>
-                  <div className={cx(styles.expandedRow)}>
-                    <SelectList
-                      className={cx('flex-1')}
-                      value={
-                        typeof localPadding.left === 'string'
-                          ? localPadding.left
-                          : `${localPadding.left || 0}px`
-                      }
-                      onChange={(value) =>
-                        handlePaddingChange('left', value as string)
-                      }
-                      prefix={
-                        <PaddingLeftSvg className={cx(styles.layoutIcon)} />
-                      }
-                      options={paddingPixelOptions}
-                    />
-                    <SelectList
-                      className={cx('flex-1')}
-                      value={
-                        typeof localPadding.right === 'string'
-                          ? localPadding.right
-                          : `${localPadding.right || 0}px`
-                      }
-                      onChange={(value) =>
-                        handlePaddingChange('right', value as string)
-                      }
-                      prefix={
-                        <PaddingRightSvg className={cx(styles.layoutIcon)} />
-                      }
-                      options={paddingPixelOptions}
-                    />
+                ) : (
+                  // 解锁状态：显示四边独立下拉选择（两行两列）
+                  <div className={cx(styles.expandedLayout)}>
+                    <div className={cx(styles.expandedRow)}>
+                      <SelectList
+                        className={cx('flex-1')}
+                        value={
+                          typeof localPadding.top === 'string'
+                            ? localPadding.top
+                            : `${localPadding.top || 0}px`
+                        }
+                        onChange={(value) =>
+                          handlePaddingChange('top', value as string)
+                        }
+                        prefix={
+                          <PaddingTopSvg className={cx(styles.layoutIcon)} />
+                        }
+                        options={paddingPixelOptions}
+                      />
+                      <SelectList
+                        className={cx('flex-1')}
+                        value={
+                          typeof localPadding.bottom === 'string'
+                            ? localPadding.bottom
+                            : `${localPadding.bottom || 0}px`
+                        }
+                        onChange={(value) =>
+                          handlePaddingChange('bottom', value as string)
+                        }
+                        prefix={
+                          <PaddingBottomSvg className={cx(styles.layoutIcon)} />
+                        }
+                        options={paddingPixelOptions}
+                      />
+                    </div>
+                    <div className={cx(styles.expandedRow)}>
+                      <SelectList
+                        className={cx('flex-1')}
+                        value={
+                          typeof localPadding.left === 'string'
+                            ? localPadding.left
+                            : `${localPadding.left || 0}px`
+                        }
+                        onChange={(value) =>
+                          handlePaddingChange('left', value as string)
+                        }
+                        prefix={
+                          <PaddingLeftSvg className={cx(styles.layoutIcon)} />
+                        }
+                        options={paddingPixelOptions}
+                      />
+                      <SelectList
+                        className={cx('flex-1')}
+                        value={
+                          typeof localPadding.right === 'string'
+                            ? localPadding.right
+                            : `${localPadding.right || 0}px`
+                        }
+                        onChange={(value) =>
+                          handlePaddingChange('right', value as string)
+                        }
+                        prefix={
+                          <PaddingRightSvg className={cx(styles.layoutIcon)} />
+                        }
+                        options={paddingPixelOptions}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className={cx(styles.layoutActions)}>
-                  <Button
-                    type="text"
-                    icon={<CompressOutlined />}
-                    onClick={togglePaddingExpand}
-                  />
-                  {localPadding.isLinked ? (
+                  {!isPaddingLocked && (
+                    <Button
+                      type="text"
+                      icon={<CompressOutlined />}
+                      onClick={togglePaddingExpand}
+                    />
+                  )}
+                  {isPaddingLocked ? (
                     <Button
                       type="text"
                       icon={<LockOutlined />}
                       onClick={togglePaddingLink}
+                      className={cx(styles.lockedButton)}
                     />
                   ) : (
                     <Button
