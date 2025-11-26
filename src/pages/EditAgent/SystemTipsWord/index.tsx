@@ -1,9 +1,10 @@
 import { SvgIcon } from '@/components/base';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
+import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
+import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
 import type { SystemUserTipsWordProps } from '@/types/interfaces/space';
 import { Button, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
-import { PromptEditorProvider, PromptEditorRender } from 'prompt-kit-editor';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import styles from './index.less';
 
@@ -56,8 +57,18 @@ const SystemTipsWord = forwardRef<
         onChange?.(newValue);
         return;
       }
-      // 获取当前光标位置
-      const cursorPosition = editorRef.current?.getCursorPosition();
+
+      // Tiptap editor instance
+      if (editorRef.current?.commands?.insertContent) {
+        editorRef.current.commands.insertContent(text);
+        return;
+      }
+
+      // 获取当前光标位置 (Legacy editor)
+      let cursorPosition = 0;
+      if (typeof editorRef.current?.getCursorPosition === 'function') {
+        cursorPosition = editorRef.current.getCursorPosition();
+      }
 
       try {
         // 检查编辑器是否有 replaceText 方法
@@ -150,33 +161,31 @@ const SystemTipsWord = forwardRef<
           )}
         </div>
 
-        <PromptEditorProvider>
-          <div className={'flex-1 scroll-container'}>
-            {valueSegmented === 'systemPrompt' ? (
-              <PromptEditorRender
-                key={'systemPrompt'}
-                value={valueSystem}
-                onChange={onChangeSystem}
-                isControled={true}
-                placeholder="输入系统提示词，对大模型进行角色塑造"
-                getEditor={(editor: any) => {
-                  editorSystemRef.current = editor;
-                }}
-              />
-            ) : (
-              <PromptEditorRender
-                key={'userPrompt'}
-                value={valueUser}
-                onChange={onChangeUser}
-                isControled={true}
-                placeholder="输入用户提示词，预置指令、问题或请求"
-                getEditor={(editor: any) => {
-                  editorUserRef.current = editor;
-                }}
-              />
-            )}
-          </div>
-        </PromptEditorProvider>
+        <div className={'flex-1 scroll-container'}>
+          {valueSegmented === 'systemPrompt' ? (
+            <TiptapVariableInput
+              key={'systemPrompt'}
+              value={valueSystem}
+              onChange={(html) => onChangeSystem(extractTextFromHTML(html))}
+              placeholder="输入系统提示词，对大模型进行角色塑造"
+              getEditor={(editor: any) => {
+                editorSystemRef.current = editor;
+              }}
+              style={{ height: '100%', border: 'none' }}
+            />
+          ) : (
+            <TiptapVariableInput
+              key={'userPrompt'}
+              value={valueUser}
+              onChange={(html) => onChangeUser(extractTextFromHTML(html))}
+              placeholder="输入用户提示词，预置指令、问题或请求"
+              getEditor={(editor: any) => {
+                editorUserRef.current = editor;
+              }}
+              style={{ height: '100%', border: 'none' }}
+            />
+          )}
+        </div>
 
         <PromptOptimizeModal
           open={open}

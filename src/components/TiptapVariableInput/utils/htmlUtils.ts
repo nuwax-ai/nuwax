@@ -225,12 +225,14 @@ export const convertTextToHTML = (
   // 对于纯文本，将换行符转换为段落或硬换行
   // 将文本按换行符分割，每行包装在一个 <p> 标签中
   // 连续的空行会被转换为多个空段落
-  const lines = html.split('\n');
+  // 统一换行符为 \n
+  const normalizedHtml = html.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = normalizedHtml.split('\n');
   const paragraphs: string[] = [];
 
   lines.forEach((line) => {
     // 如果行为空，创建空段落（保留空行）
-    if (!line.trim()) {
+    if (!line) {
       paragraphs.push('<p></p>');
     } else {
       paragraphs.push(`<p>${line}</p>`);
