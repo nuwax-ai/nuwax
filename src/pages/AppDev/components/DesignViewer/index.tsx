@@ -1,25 +1,3 @@
-import { ReactComponent as AlignCenterSvg } from '@/assets/icons/design/align_center.svg';
-import { ReactComponent as AlignJustifySvg } from '@/assets/icons/design/align_justify.svg';
-import { ReactComponent as AlignLeftSvg } from '@/assets/icons/design/align_left.svg';
-import { ReactComponent as AlignRightSvg } from '@/assets/icons/design/align_right.svg';
-import { ReactComponent as MarginBottomSvg } from '@/assets/icons/design/margin_bottom.svg';
-import { ReactComponent as MarginHorizontalSvg } from '@/assets/icons/design/margin_horizontal.svg';
-import { ReactComponent as MarginLeftSvg } from '@/assets/icons/design/margin_left.svg';
-import { ReactComponent as MarginRightSvg } from '@/assets/icons/design/margin_right.svg';
-import { ReactComponent as MarginTopSvg } from '@/assets/icons/design/margin_top.svg';
-import { ReactComponent as MarginVerticalSvg } from '@/assets/icons/design/margin_vertical.svg';
-import { ReactComponent as OpacitySvg } from '@/assets/icons/design/opacity.svg';
-import { ReactComponent as OverlineSvg } from '@/assets/icons/design/overline.svg';
-import { ReactComponent as PaddingBottomSvg } from '@/assets/icons/design/padding_bottom.svg';
-import { ReactComponent as PaddingHorizontalSvg } from '@/assets/icons/design/padding_horizontal.svg';
-import { ReactComponent as PaddingLeftSvg } from '@/assets/icons/design/padding_left.svg';
-import { ReactComponent as PaddingRightSvg } from '@/assets/icons/design/padding_right.svg';
-import { ReactComponent as PaddingTopSvg } from '@/assets/icons/design/padding_top.svg';
-import { ReactComponent as PaddingVerticalSvg } from '@/assets/icons/design/padding_vertical.svg';
-import { ReactComponent as RadiusSvg } from '@/assets/icons/design/radius.svg';
-import { ReactComponent as ResetSvg } from '@/assets/icons/design/reset.svg';
-import { ReactComponent as ShadowSvg } from '@/assets/icons/design/shadow.svg';
-import { ReactComponent as TabularNumbersSvg } from '@/assets/icons/design/tabular_numbers.svg';
 import SelectList from '@/components/custom/SelectList';
 import {
   CompressOutlined,
@@ -43,9 +21,100 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import {
+  AlignCenterSvg,
+  AlignJustifySvg,
+  AlignLeftSvg,
+  AlignRightSvg,
+  BorderBottomSvg,
+  BorderColorSvg,
+  BorderLeftSvg,
+  BorderRightSvg,
+  BorderTopSvg,
+  BorderWidthSvg,
+  MarginBottomSvg,
+  MarginHorizontalSvg,
+  MarginLeftSvg,
+  MarginRightSvg,
+  MarginTopSvg,
+  MarginVerticalSvg,
+  OpacitySvg,
+  OverlineSvg,
+  PaddingBottomSvg,
+  PaddingHorizontalSvg,
+  PaddingLeftSvg,
+  PaddingRightSvg,
+  PaddingTopSvg,
+  PaddingVerticalSvg,
+  RadiusSvg,
+  ResetSvg,
+  ShadowSvg,
+  TabularNumbersSvg,
+} from './design.images.constants';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/**
+ * 像素值选项列表（根据图片中的下拉选项）
+ */
+const pixelOptions = [
+  { label: '0px', value: '0px' },
+  { label: '1px', value: '1px' },
+  { label: '2px', value: '2px' },
+  { label: '4px', value: '4px' },
+  { label: '6px', value: '6px' },
+  { label: '8px', value: '8px' },
+  { label: '10px', value: '10px' },
+  { label: '12px', value: '12px' },
+  { label: '14px', value: '14px' },
+  { label: '16px', value: '16px' },
+  { label: '20px', value: '20px' },
+  { label: '24px', value: '24px' },
+  { label: '28px', value: '28px' },
+  { label: '32px', value: '32px' },
+  { label: '36px', value: '36px' },
+  { label: '40px', value: '40px' },
+  { label: '44px', value: '44px' },
+  { label: '48px', value: '48px' },
+  { label: '56px', value: '56px' },
+  { label: '64px', value: '64px' },
+  { label: '80px', value: '80px' },
+  { label: '96px', value: '96px' },
+  { label: '100px', value: '100px' },
+  { label: '112px', value: '112px' },
+  { label: '128px', value: '128px' },
+  { label: '144px', value: '144px' },
+  { label: '160px', value: '160px' },
+  { label: '176px', value: '176px' },
+  { label: '192px', value: '192px' },
+  { label: '208px', value: '208px' },
+  { label: '224px', value: '224px' },
+  { label: '240px', value: '240px' },
+  { label: '256px', value: '256px' },
+  { label: '288px', value: '288px' },
+  { label: '320px', value: '320px' },
+  { label: '384px', value: '384px' },
+  { label: 'auto', value: 'auto' },
+];
+
+/**
+ * Padding 像素值选项列表（不包含 auto）
+ */
+const paddingPixelOptions = pixelOptions.filter(
+  (option) => option.value !== 'auto',
+);
+
+/**
+ * Border Width 像素值选项列表（简化的选项：0px, 1px, 2px, 4px, 8px）
+ */
+const borderWidthOptions = [
+  { label: '0px', value: '0px' },
+  { label: '1px', value: '1px' },
+  { label: '2px', value: '2px' },
+  { label: '4px', value: '4px' },
+  { label: '8px', value: '8px' },
+];
 
 /**
  * 属性面板组件 Props
@@ -113,18 +182,30 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   // 本地状态管理
   const [localColor, setLocalColor] = useState(color);
   const [localBackground, setLocalBackground] = useState(background);
-  const [localMargin, setLocalMargin] = useState({
-    top: margin?.top ?? margin?.vertical ?? 0,
-    right: margin?.right ?? margin?.horizontal ?? 0,
-    bottom: margin?.bottom ?? margin?.vertical ?? 0,
-    left: margin?.left ?? margin?.horizontal ?? 0,
+  const [localMargin, setLocalMargin] = useState<{
+    top: number | string;
+    right: number | string;
+    bottom: number | string;
+    left: number | string;
+    isLinked: boolean;
+  }>({
+    top: margin?.top ?? margin?.vertical ?? '0px',
+    right: margin?.right ?? margin?.horizontal ?? '0px',
+    bottom: margin?.bottom ?? margin?.vertical ?? '0px',
+    left: margin?.left ?? margin?.horizontal ?? '0px',
     isLinked: margin?.isLinked ?? true,
   });
-  const [localPadding, setLocalPadding] = useState({
-    top: padding?.top ?? padding?.vertical ?? 0,
-    right: padding?.right ?? padding?.horizontal ?? 0,
-    bottom: padding?.bottom ?? padding?.vertical ?? 0,
-    left: padding?.left ?? padding?.horizontal ?? 0,
+  const [localPadding, setLocalPadding] = useState<{
+    top: number | string;
+    right: number | string;
+    bottom: number | string;
+    left: number | string;
+    isLinked: boolean;
+  }>({
+    top: padding?.top ?? padding?.vertical ?? '0px',
+    right: padding?.right ?? padding?.horizontal ?? '0px',
+    bottom: padding?.bottom ?? padding?.vertical ?? '0px',
+    left: padding?.left ?? padding?.horizontal ?? '0px',
     isLinked: padding?.isLinked ?? true,
   });
   const [isMarginExpanded, setIsMarginExpanded] = useState(false);
@@ -141,11 +222,17 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   const [textDecoration, setTextDecoration] = useState<string[]>([]);
   const [borderStyle, setBorderStyle] = useState('Default');
   const [borderColor, setBorderColor] = useState('Default');
-  const [localBorderWidth, setLocalBorderWidth] = useState({
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
+  const [localBorderWidth, setLocalBorderWidth] = useState<{
+    top: number | string;
+    right: number | string;
+    bottom: number | string;
+    left: number | string;
+    isOpen: boolean;
+  }>({
+    top: '0px',
+    right: '0px',
+    bottom: '0px',
+    left: '0px',
     isOpen: true,
   });
   const [isBorderWidthExpanded, setIsBorderWidthExpanded] = useState(false);
@@ -189,7 +276,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    */
   const handleMarginChange = (
     type: 'top' | 'right' | 'bottom' | 'left' | 'vertical' | 'horizontal',
-    value: number | null,
+    value: string | null,
   ) => {
     const newMargin = { ...localMargin };
     if (value !== null) {
@@ -228,7 +315,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    */
   const handlePaddingChange = (
     type: 'top' | 'right' | 'bottom' | 'left' | 'vertical' | 'horizontal',
-    value: number | null,
+    value: string | null,
   ) => {
     const newPadding = { ...localPadding };
     if (value !== null) {
@@ -267,7 +354,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    */
   const handleBorderWidthChange = (
     type: 'top' | 'right' | 'bottom' | 'left' | 'all',
-    value: number | null,
+    value: string | null,
   ) => {
     const newBorderWidth = { ...localBorderWidth };
     if (value !== null) {
@@ -722,27 +809,35 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 <div
                   className={cx('flex items-center flex-1', styles['gap-8'])}
                 >
-                  <InputNumber
+                  <SelectList
                     className={cx('flex-1')}
-                    value={localMargin.top}
-                    onChange={(value) => handleMarginChange('vertical', value)}
+                    value={
+                      typeof localMargin.top === 'string'
+                        ? localMargin.top
+                        : `${localMargin.top || 0}px`
+                    }
+                    onChange={(value) =>
+                      handleMarginChange('vertical', value as string)
+                    }
                     prefix={
                       <MarginHorizontalSvg className={cx(styles.layoutIcon)} />
                     }
-                    suffix="px"
-                    controls={false}
+                    options={pixelOptions}
                   />
-                  <InputNumber
+                  <SelectList
                     className={cx('flex-1')}
-                    value={localMargin.left}
+                    value={
+                      typeof localMargin.left === 'string'
+                        ? localMargin.left
+                        : `${localMargin.left || 0}px`
+                    }
                     onChange={(value) =>
-                      handleMarginChange('horizontal', value)
+                      handleMarginChange('horizontal', value as string)
                     }
                     prefix={
                       <MarginVerticalSvg className={cx(styles.layoutIcon)} />
                     }
-                    suffix="px"
-                    controls={false}
+                    options={pixelOptions}
                   />
                 </div>
                 <div className={cx(styles.layoutActions)}>
@@ -771,47 +866,67 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
               <div className={cx(styles.layoutInputs)}>
                 <div className={cx(styles.expandedLayout)}>
                   <div className={cx(styles.expandedRow)}>
-                    <InputNumber
+                    <SelectList
                       className={cx('flex-1')}
-                      value={localMargin.top}
-                      onChange={(value) => handleMarginChange('top', value)}
+                      value={
+                        typeof localMargin.top === 'string'
+                          ? localMargin.top
+                          : `${localMargin.top || 0}px`
+                      }
+                      onChange={(value) =>
+                        handleMarginChange('top', value as string)
+                      }
                       prefix={
                         <MarginTopSvg className={cx(styles.layoutIcon)} />
                       }
-                      suffix="px"
-                      controls={false}
+                      options={pixelOptions}
                     />
-                    <InputNumber
+                    <SelectList
                       className={cx('flex-1')}
-                      value={localMargin.bottom}
-                      onChange={(value) => handleMarginChange('bottom', value)}
+                      value={
+                        typeof localMargin.bottom === 'string'
+                          ? localMargin.bottom
+                          : `${localMargin.bottom || 0}px`
+                      }
+                      onChange={(value) =>
+                        handleMarginChange('bottom', value as string)
+                      }
                       prefix={
                         <MarginBottomSvg className={cx(styles.layoutIcon)} />
                       }
-                      suffix="px"
-                      controls={false}
+                      options={pixelOptions}
                     />
                   </div>
                   <div className={cx(styles.expandedRow)}>
-                    <InputNumber
+                    <SelectList
                       className={cx('flex-1')}
-                      value={localMargin.left}
-                      onChange={(value) => handleMarginChange('left', value)}
+                      value={
+                        typeof localMargin.left === 'string'
+                          ? localMargin.left
+                          : `${localMargin.left || 0}px`
+                      }
+                      onChange={(value) =>
+                        handleMarginChange('left', value as string)
+                      }
                       prefix={
                         <MarginLeftSvg className={cx(styles.layoutIcon)} />
                       }
-                      suffix="px"
-                      controls={false}
+                      options={pixelOptions}
                     />
-                    <InputNumber
+                    <SelectList
                       className={cx('flex-1')}
-                      value={localMargin.right}
-                      onChange={(value) => handleMarginChange('right', value)}
+                      value={
+                        typeof localMargin.right === 'string'
+                          ? localMargin.right
+                          : `${localMargin.right || 0}px`
+                      }
+                      onChange={(value) =>
+                        handleMarginChange('right', value as string)
+                      }
                       prefix={
                         <MarginRightSvg className={cx(styles.layoutIcon)} />
                       }
-                      suffix="px"
-                      controls={false}
+                      options={pixelOptions}
                     />
                   </div>
                 </div>
@@ -843,32 +958,40 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           <div className={cx(styles.layoutSubSection)}>
             <div className={cx(styles.layoutLabel)}>Padding</div>
             {!isPaddingExpanded ? (
-              // 折叠状态：显示上下和左右两个输入框
+              // 折叠状态：显示上下和左右两个下拉选择
               <div className={cx(styles.layoutInputs)}>
                 <div
                   className={cx('flex items-center flex-1', styles['gap-8'])}
                 >
-                  <InputNumber
+                  <SelectList
                     className={cx('flex-1')}
-                    value={localPadding.top}
-                    onChange={(value) => handlePaddingChange('vertical', value)}
+                    value={
+                      typeof localPadding.top === 'string'
+                        ? localPadding.top
+                        : `${localPadding.top || 0}px`
+                    }
+                    onChange={(value) =>
+                      handlePaddingChange('vertical', value as string)
+                    }
                     prefix={
                       <PaddingHorizontalSvg className={cx(styles.layoutIcon)} />
                     }
-                    suffix="px"
-                    controls={false}
+                    options={paddingPixelOptions}
                   />
-                  <InputNumber
+                  <SelectList
                     className={cx('flex-1')}
-                    value={localPadding.left}
+                    value={
+                      typeof localPadding.left === 'string'
+                        ? localPadding.left
+                        : `${localPadding.left || 0}px`
+                    }
                     onChange={(value) =>
-                      handlePaddingChange('horizontal', value)
+                      handlePaddingChange('horizontal', value as string)
                     }
                     prefix={
                       <PaddingVerticalSvg className={cx(styles.layoutIcon)} />
                     }
-                    suffix="px"
-                    controls={false}
+                    options={paddingPixelOptions}
                   />
                 </div>
                 <div className={cx(styles.layoutActions)}>
@@ -893,51 +1016,71 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 </div>
               </div>
             ) : (
-              // 展开状态：显示四边独立输入框（两行两列）
+              // 展开状态：显示四边独立下拉选择（两行两列）
               <div className={cx(styles.layoutInputs)}>
                 <div className={cx(styles.expandedLayout)}>
                   <div className={cx(styles.expandedRow)}>
-                    <InputNumber
+                    <SelectList
                       className={cx('flex-1')}
-                      value={localPadding.top}
-                      onChange={(value) => handlePaddingChange('top', value)}
+                      value={
+                        typeof localPadding.top === 'string'
+                          ? localPadding.top
+                          : `${localPadding.top || 0}px`
+                      }
+                      onChange={(value) =>
+                        handlePaddingChange('top', value as string)
+                      }
                       prefix={
                         <PaddingTopSvg className={cx(styles.layoutIcon)} />
                       }
-                      suffix="px"
-                      controls={false}
+                      options={paddingPixelOptions}
                     />
-                    <InputNumber
+                    <SelectList
                       className={cx('flex-1')}
-                      value={localPadding.bottom}
-                      onChange={(value) => handlePaddingChange('bottom', value)}
+                      value={
+                        typeof localPadding.bottom === 'string'
+                          ? localPadding.bottom
+                          : `${localPadding.bottom || 0}px`
+                      }
+                      onChange={(value) =>
+                        handlePaddingChange('bottom', value as string)
+                      }
                       prefix={
                         <PaddingBottomSvg className={cx(styles.layoutIcon)} />
                       }
-                      suffix="px"
-                      controls={false}
+                      options={paddingPixelOptions}
                     />
                   </div>
                   <div className={cx(styles.expandedRow)}>
-                    <InputNumber
+                    <SelectList
                       className={cx('flex-1')}
-                      value={localPadding.left}
-                      onChange={(value) => handlePaddingChange('left', value)}
+                      value={
+                        typeof localPadding.left === 'string'
+                          ? localPadding.left
+                          : `${localPadding.left || 0}px`
+                      }
+                      onChange={(value) =>
+                        handlePaddingChange('left', value as string)
+                      }
                       prefix={
                         <PaddingLeftSvg className={cx(styles.layoutIcon)} />
                       }
-                      suffix="px"
-                      controls={false}
+                      options={paddingPixelOptions}
                     />
-                    <InputNumber
+                    <SelectList
                       className={cx('flex-1')}
-                      value={localPadding.right}
-                      onChange={(value) => handlePaddingChange('right', value)}
+                      value={
+                        typeof localPadding.right === 'string'
+                          ? localPadding.right
+                          : `${localPadding.right || 0}px`
+                      }
+                      onChange={(value) =>
+                        handlePaddingChange('right', value as string)
+                      }
                       prefix={
                         <PaddingRightSvg className={cx(styles.layoutIcon)} />
                       }
-                      suffix="px"
-                      controls={false}
+                      options={paddingPixelOptions}
                     />
                   </div>
                 </div>
@@ -978,46 +1121,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
               <SelectList
                 className={cx(styles.typographySelect)}
                 value={borderStyle}
-                prefix={
-                  <div className={cx(styles.layoutIcon)}>
-                    <svg
-                      height="16"
-                      strokeLinejoin="round"
-                      viewBox="0 0 16 16"
-                      width="16"
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <g clipPath="url(#clip0_11223_26136)">
-                          <rect
-                            x="0.75"
-                            y="0.75"
-                            width="14.5"
-                            height="14.5"
-                            rx="3.25"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                          ></rect>
-                          <path
-                            opacity="0.33"
-                            d="M3 15L1.5 14.5L1 13H3V15ZM7 15H5V13H7V15ZM11 15H9V13H11V15ZM14.5 14.5L13 15V13H15L14.5 14.5ZM5 13H3V11H5V13ZM9 13H7V11H9V13ZM13 13H11V11H13V13ZM3 11H1V9H3V11ZM7 11H5V9H7V11ZM11 11H9V9H11V11ZM15 11H13V9H15V11ZM5 9H3V7H5V9ZM9 9H7V7H9V9ZM13 9H11V7H13V9ZM3 7H1V5H3V7ZM7 7H5V5H7V7ZM11 7H9V5H11V7ZM15 7H13V5H15V7ZM5 5H3V3H5V5ZM9 5H7V3H9V5ZM13 5H11V3H13V5ZM3 3H1L1.5 1.5L3 1V3ZM7 3H5V1H7V3ZM11 3H9V1H11V3ZM14.5 1.5L15 3H13V1L14.5 1.5Z"
-                            fill="currentColor"
-                          ></path>
-                        </g>
-                        <defs>
-                          <clipPath id="clip0_11223_26136">
-                            <rect width="16" height="16" fill="white"></rect>
-                          </clipPath>
-                        </defs>
-                      </svg>
-                    </svg>
-                  </div>
-                }
+                prefix={<BorderColorSvg className={cx(styles.layoutIcon)} />}
                 onChange={(value) => {
                   setBorderStyle(value as string);
                   onChange?.('borderStyle', value);
@@ -1044,199 +1148,103 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           <div className={cx(styles.layoutSubSection)}>
             <div className={cx(styles.layoutLabel)}>Border Width</div>
             {!isBorderWidthExpanded ? (
-              // 折叠状态：显示单个输入框
+              // 折叠状态：显示单个下拉选择
               <div className={cx(styles.layoutInputs)}>
                 <div className={cx('flex items-center gap-4 flex-1')}>
-                  <InputNumber
+                  <SelectList
                     className={cx('flex-1')}
-                    value={localBorderWidth.top}
-                    onChange={(value) => handleBorderWidthChange('all', value)}
-                    prefix={
-                      <div className={cx(styles.layoutIcon)}>
-                        <svg
-                          height="16"
-                          strokeLinejoin="round"
-                          viewBox="0 0 16 16"
-                          width="16"
-                        >
-                          <path
-                            d="M15 14.5H1V9.5H15V14.5ZM2.5 13H13.5V11H2.5V13ZM15 8.5H1V4.5H15V8.5ZM2.5 7H13.5V6H2.5V7ZM15 3.5H1V2H15V3.5Z"
-                            fill="currentColor"
-                          ></path>
-                        </svg>
-                      </div>
+                    value={
+                      typeof localBorderWidth.top === 'string'
+                        ? localBorderWidth.top
+                        : `${localBorderWidth.top || 0}px`
                     }
-                    suffix="px"
-                    controls={false}
-                    placeholder="0px"
+                    onChange={(value) =>
+                      handleBorderWidthChange('all', value as string)
+                    }
+                    prefix={
+                      <BorderWidthSvg className={cx(styles.layoutIcon)} />
+                    }
+                    options={borderWidthOptions}
                   />
                 </div>
                 <Button
                   type="text"
-                  icon={<CompressOutlined />}
+                  icon={<ExpandOutlined />}
                   onClick={toggleBorderWidthExpand}
                 />
               </div>
             ) : (
-              // 展开状态：显示四边独立输入框（两行两列）
+              // 展开状态：显示四边独立下拉选择（两行两列）
               <div className={cx(styles.layoutInputs)}>
                 <div className={cx(styles.expandedLayout)}>
                   <div className={cx(styles.expandedRow)}>
-                    <InputNumber
+                    <SelectList
                       className={cx('flex-1')}
-                      value={localBorderWidth.top}
+                      value={
+                        typeof localBorderWidth.top === 'string'
+                          ? localBorderWidth.top
+                          : `${localBorderWidth.top || 0}px`
+                      }
                       onChange={(value) =>
-                        handleBorderWidthChange('top', value)
+                        handleBorderWidthChange('top', value as string)
                       }
                       prefix={
-                        <div className={cx(styles.layoutIcon)}>
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              fill="none"
-                            />
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="2"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </div>
+                        <BorderTopSvg className={cx(styles.layoutIcon)} />
                       }
-                      suffix="px"
-                      controls={false}
+                      options={borderWidthOptions}
                     />
-                    <InputNumber
+                    <SelectList
                       className={cx('flex-1')}
-                      value={localBorderWidth.bottom}
+                      value={
+                        typeof localBorderWidth.bottom === 'string'
+                          ? localBorderWidth.bottom
+                          : `${localBorderWidth.bottom || 0}px`
+                      }
                       onChange={(value) =>
-                        handleBorderWidthChange('bottom', value)
+                        handleBorderWidthChange('bottom', value as string)
                       }
                       prefix={
-                        <div className={cx(styles.layoutIcon)}>
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              fill="none"
-                            />
-                            <rect
-                              x="2"
-                              y="12"
-                              width="12"
-                              height="2"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </div>
+                        <BorderBottomSvg className={cx(styles.layoutIcon)} />
                       }
-                      suffix="px"
-                      controls={false}
+                      options={borderWidthOptions}
                     />
                   </div>
                   <div className={cx(styles.expandedRow)}>
-                    <InputNumber
+                    <SelectList
                       className={cx('flex-1')}
-                      value={localBorderWidth.left}
+                      value={
+                        typeof localBorderWidth.left === 'string'
+                          ? localBorderWidth.left
+                          : `${localBorderWidth.left || 0}px`
+                      }
                       onChange={(value) =>
-                        handleBorderWidthChange('left', value)
+                        handleBorderWidthChange('left', value as string)
                       }
                       prefix={
-                        <div className={cx(styles.layoutIcon)}>
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              fill="none"
-                            />
-                            <rect
-                              x="2"
-                              y="2"
-                              width="2"
-                              height="12"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </div>
+                        <BorderLeftSvg className={cx(styles.layoutIcon)} />
                       }
-                      suffix="px"
-                      controls={false}
+                      options={borderWidthOptions}
                     />
-                    <InputNumber
+                    <SelectList
                       className={cx('flex-1')}
-                      value={localBorderWidth.right}
+                      value={
+                        typeof localBorderWidth.right === 'string'
+                          ? localBorderWidth.right
+                          : `${localBorderWidth.right || 0}px`
+                      }
                       onChange={(value) =>
-                        handleBorderWidthChange('right', value)
+                        handleBorderWidthChange('right', value as string)
                       }
                       prefix={
-                        <div className={cx(styles.layoutIcon)}>
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              fill="none"
-                            />
-                            <rect
-                              x="12"
-                              y="2"
-                              width="2"
-                              height="12"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </div>
+                        <BorderRightSvg className={cx(styles.layoutIcon)} />
                       }
-                      suffix="px"
-                      controls={false}
+                      options={borderWidthOptions}
                     />
                   </div>
                 </div>
                 <Button
                   type="text"
-                  icon={<ExpandOutlined />}
+                  icon={<CompressOutlined />}
                   onClick={toggleBorderWidthExpand}
                 />
               </div>
