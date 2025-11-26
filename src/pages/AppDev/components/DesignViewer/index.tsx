@@ -1706,7 +1706,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
         <div className={cx(styles.propertySection)}>
           <div className={cx(styles.propertyLabel)}>Shadow</div>
           <SelectList
-            className={cx(styles.typographySelect, styles.shadowSelect)}
+            className={cx(styles.shadowSelect)}
             value={shadowType}
             onChange={(value) => {
               setShadowType(value as string);
