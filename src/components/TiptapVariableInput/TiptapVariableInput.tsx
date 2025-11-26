@@ -3,6 +3,7 @@
  * 基于 Tiptap 的变量输入组件，支持 @ mentions 和 { 变量插入
  */
 
+import { TextSelection } from '@tiptap/pm/state';
 import type { Editor } from '@tiptap/react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -18,11 +19,7 @@ import { VariableSuggestion } from './extensions/VariableSuggestion';
 import { useVariableTree } from './hooks/useVariableTree';
 import './styles.less';
 import type { TiptapVariableInputProps } from './types';
-import {
-  cleanHTMLParagraphs,
-  convertTextToHTML,
-  extractTextFromHTML,
-} from './utils/htmlUtils';
+import { convertTextToHTML, extractTextFromHTML } from './utils/htmlUtils';
 
 /**
  * Tiptap Variable Input 组件
@@ -47,13 +44,20 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
   /**
    * 将编辑器 HTML 规范化
    * @description tiptap 在空内容时默认返回 `<p></p>`，这里统一转换为空字符串
+   * 但保留多个空段落（空行）
    */
   const getNormalizedHtml = React.useCallback((editorInstance: Editor) => {
     if (editorInstance.isEmpty) {
       return '';
     }
     const html = editorInstance.getHTML();
-    return html === '<p></p>' || html === '<p></p>\n' ? '' : html;
+    // 只检查单个空段落，多个空段落（空行）应该保留
+    const trimmed = html.trim();
+    if (trimmed === '<p></p>' || trimmed === '<p></p>\n') {
+      return '';
+    }
+    // 保留原始 HTML，包括空段落
+    return html;
   }, []);
 
   // 使用 useRef 和 isEqual 确保 variables 和 skills 的引用稳定性
@@ -89,12 +93,19 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
     ) {
       return convertTextToHTML(value, disableMentions);
     }
-    // 如果已经是 HTML 格式，清理首尾空段落
+    // 如果已经是 HTML 格式，保留空行，不清理首尾空段落
     if (/<[^>]+>/.test(value)) {
-      return cleanHTMLParagraphs(value);
+      // 保留空行，不清理首尾空段落
+      const trimmed = value.trim();
+      if (!trimmed) return '';
+      return value; // 保留原始格式，包括空段落
     }
     return value;
   }, [value, disableMentions]);
+
+  // 保存光标位置的 ref
+  const cursorPositionRef = useRef<number | null>(null);
+  const isUpdatingFromExternalRef = useRef(false);
 
   // 初始化编辑器
   // 注意：扩展的顺序很重要，Suggestion 插件应该在 AutoCompleteBraces 之后
@@ -133,8 +144,19 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
       content: initialContent,
       editable: !readonly && !disabled,
       onUpdate: ({ editor }) => {
+        // 如果是从外部更新，不触发 onChange，避免循环更新
+        if (isUpdatingFromExternalRef.current) {
+          return;
+        }
         const html = getNormalizedHtml(editor);
         onChange?.(html);
+      },
+      // 监听选择变化，保存光标位置
+      onSelectionUpdate: ({ editor }) => {
+        if (!isUpdatingFromExternalRef.current) {
+          const { from } = editor.state.selection;
+          cursorPositionRef.current = from;
+        }
       },
     },
     [disableMentions, readonly, disabled, getNormalizedHtml],
@@ -146,6 +168,14 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
       const sanitizedValue =
         value === '<p></p>' || value === '<p></p>\n' ? '' : value;
       const currentHtml = editor.getHTML();
+
+      // 优化：如果传入的值与当前的纯文本内容相同，则不进行更新
+      // 这可以避免因为 HTML 序列化差异导致的无限循环更新和滚动跳动
+      const currentRawValue = extractTextFromHTML(currentHtml);
+      if (sanitizedValue === currentRawValue) {
+        return;
+      }
+
       // 检查是否需要转换
       let contentToSet = sanitizedValue;
       if (
@@ -162,10 +192,106 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
       }
       // 只有当内容不同时才更新
       if (contentToSet !== currentHtml) {
+        // 保存当前光标位置和选择状态
+        const currentSelection = editor.state.selection;
+        const savedCursorPos = currentSelection.from;
+        const wasFocused = editor.isFocused;
+
+        // 标记正在从外部更新，避免触发 onChange
+        isUpdatingFromExternalRef.current = true;
+
+        // 设置内容，不触发历史记录
         editor.commands.setContent(contentToSet || '', false);
+
+        // 保存当前滚动位置
+        const editorElement = editor.view.dom;
+        const scrollContainer = editorElement?.closest(
+          '.tiptap-variable-input',
+        ) as HTMLElement;
+        const savedScrollTop = scrollContainer?.scrollTop || 0;
+        const savedScrollLeft = scrollContainer?.scrollLeft || 0;
+
+        // 尝试恢复光标位置
+        // 使用 requestAnimationFrame 确保 DOM 已更新
+        requestAnimationFrame(() => {
+          try {
+            const doc = editor.state.doc;
+            let targetPos = savedCursorPos;
+
+            // 如果保存的位置超出文档范围，调整到文档末尾
+            if (targetPos > doc.content.size) {
+              targetPos = doc.content.size;
+            }
+
+            // 如果位置有效，恢复光标
+            if (targetPos >= 0 && targetPos <= doc.content.size) {
+              // 使用 TextSelection 直接设置选择，不触发自动滚动
+              const selection = TextSelection.create(doc, targetPos);
+              const tr = editor.state.tr.setSelection(selection);
+              editor.view.dispatch(tr);
+
+              // 恢复滚动位置（防止自动滚动到底部）
+              if (scrollContainer) {
+                scrollContainer.scrollTop = savedScrollTop;
+                scrollContainer.scrollLeft = savedScrollLeft;
+              }
+
+              // 如果之前有焦点，恢复焦点，但阻止自动滚动
+              if (wasFocused) {
+                // 使用 preventScroll 选项阻止浏览器在聚焦时自动滚动
+                const editorDom = editor.view.dom as HTMLElement;
+                if (editorDom && editorDom.focus) {
+                  editorDom.focus({ preventScroll: true });
+                }
+                // 确保滚动位置保持不变
+                if (scrollContainer) {
+                  scrollContainer.scrollTop = savedScrollTop;
+                  scrollContainer.scrollLeft = savedScrollLeft;
+                }
+              }
+            } else if (doc.content.size > 0) {
+              // 如果位置无效，将光标放在文档末尾
+              const selection = TextSelection.create(doc, doc.content.size);
+              const tr = editor.state.tr.setSelection(selection);
+              editor.view.dispatch(tr);
+
+              // 恢复滚动位置
+              if (scrollContainer) {
+                scrollContainer.scrollTop = savedScrollTop;
+                scrollContainer.scrollLeft = savedScrollLeft;
+              }
+
+              if (wasFocused) {
+                // 使用 preventScroll 选项阻止浏览器在聚焦时自动滚动
+                const editorDom = editor.view.dom as HTMLElement;
+                if (editorDom && editorDom.focus) {
+                  editorDom.focus({ preventScroll: true });
+                }
+                // 确保滚动位置保持不变
+                if (scrollContainer) {
+                  scrollContainer.scrollTop = savedScrollTop;
+                  scrollContainer.scrollLeft = savedScrollLeft;
+                }
+              }
+            }
+          } catch (error) {
+            console.warn(
+              'TiptapVariableInput: Failed to restore cursor position',
+              error,
+            );
+            // 如果恢复失败，恢复滚动位置
+            if (scrollContainer) {
+              scrollContainer.scrollTop = savedScrollTop;
+              scrollContainer.scrollLeft = savedScrollLeft;
+            }
+          } finally {
+            // 重置标记
+            isUpdatingFromExternalRef.current = false;
+          }
+        });
       }
     }
-  }, [editor, value]);
+  }, [editor, value, disableMentions]);
 
   // 更新变量树（当 variables 或 skills 变化时）
   useEffect(() => {
