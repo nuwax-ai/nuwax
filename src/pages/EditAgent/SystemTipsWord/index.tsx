@@ -32,6 +32,8 @@ const SystemTipsWord = forwardRef<
       onChangeSystem,
       agentConfigInfo,
       onReplace,
+      variables,
+      skills,
     },
     ref,
   ) => {
@@ -172,6 +174,8 @@ const SystemTipsWord = forwardRef<
                 editorSystemRef.current = editor;
               }}
               style={{ height: '100%', border: 'none' }}
+              variables={variables}
+              skills={skills}
             />
           ) : (
             <TiptapVariableInput
@@ -183,6 +187,8 @@ const SystemTipsWord = forwardRef<
                 editorUserRef.current = editor;
               }}
               style={{ height: '100%', border: 'none' }}
+              variables={variables}
+              skills={skills}
             />
           )}
         </div>
