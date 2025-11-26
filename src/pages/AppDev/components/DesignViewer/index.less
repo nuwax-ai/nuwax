@@ -60,29 +60,43 @@
   flex: 1;
   overflow-y: auto;
   padding: 16px;
-}
 
-// 属性区块
-.propertySection {
-  margin-bottom: 24px;
+  // 属性区块
+  .propertySection {
+    margin-bottom: 24px;
 
-  &:last-child {
-    margin-bottom: 0;
-  }
+    &:last-child {
+      margin-bottom: 0;
+    }
 
-  .propertyInput {
-    width: 100%;
-  }
+    .propertyInput {
+      width: 100%;
+    }
 
-  .propertyLabel {
-    font-size: @fontSizeSm;
-    font-weight: @fontWeightStrong;
-    color: @colorTextBase;
-    margin-bottom: 8px;
-  }
+    .propertyLabel {
+      font-size: @fontSizeSm;
+      font-weight: @fontWeightStrong;
+      color: @colorTextBase;
+      margin-bottom: 8px;
+    }
 
-  .shadowSelect {
-    width: 100%;
+    .shadowSelect {
+      width: 100%;
+    }
+
+    .layoutIcon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: auto;
+      color: @colorTextTertiary;
+
+      svg {
+        width: 100%;
+        height: 100%;
+      }
+    }
   }
 }
 
@@ -130,20 +144,6 @@
 
   .gap-8 {
     gap: 8px;
-  }
-}
-
-.layoutIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  color: @colorTextTertiary;
-
-  svg {
-    width: 100%;
-    height: 100%;
   }
 }
 
@@ -221,17 +221,7 @@
     flex: 1;
     border: none;
     border-radius: 0;
-    background: @colorBgContainer;
-    color: @colorTextBase;
-    padding: 6px 4px;
-    height: 32px;
-    min-width: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     transition: all 0.2s ease;
-    position: relative;
-    cursor: pointer;
 
     &:not(:last-child) {
       border-right: 1px solid @colorBorder;
@@ -247,12 +237,6 @@
       color: @colorPrimary;
       font-weight: @fontWeightStrong;
       z-index: 1;
-    }
-
-    svg {
-      width: 16px;
-      height: 12px;
-      display: block;
     }
   }
 }
