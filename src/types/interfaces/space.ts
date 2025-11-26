@@ -33,6 +33,8 @@ export interface SystemUserTipsWordProps {
   onChangeSystem: (value: string) => void;
   onReplace: (value?: string) => void;
   agentConfigInfo?: AgentConfigInfo;
+  variables?: any[];
+  skills?: any[];
 }
 
 // 智能体编排-单个配置选项header组件属性
