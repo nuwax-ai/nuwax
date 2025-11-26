@@ -1,6 +1,8 @@
 import SelectList from '@/components/custom/SelectList';
 import {
+  CompressOutlined,
   ExpandAltOutlined,
+  ExpandOutlined,
   ItalicOutlined,
   LockOutlined,
   MoreOutlined,
@@ -40,14 +42,22 @@ interface DesignViewerProps {
   background?: string;
   /** 外边距配置 */
   margin?: {
-    vertical: number;
-    horizontal: number;
+    top?: number;
+    right?: number;
+    bottom?: number;
+    left?: number;
+    vertical?: number;
+    horizontal?: number;
     isLinked?: boolean;
   };
   /** 内边距配置 */
   padding?: {
-    vertical: number;
-    horizontal: number;
+    top?: number;
+    right?: number;
+    bottom?: number;
+    left?: number;
+    vertical?: number;
+    horizontal?: number;
     isLinked?: boolean;
   };
   /** 尺寸配置 */
@@ -82,8 +92,22 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   // 本地状态管理
   const [localColor, setLocalColor] = useState(color);
   const [localBackground, setLocalBackground] = useState(background);
-  const [localMargin, setLocalMargin] = useState(margin);
-  const [localPadding, setLocalPadding] = useState(padding);
+  const [localMargin, setLocalMargin] = useState({
+    top: margin?.top ?? margin?.vertical ?? 0,
+    right: margin?.right ?? margin?.horizontal ?? 0,
+    bottom: margin?.bottom ?? margin?.vertical ?? 0,
+    left: margin?.left ?? margin?.horizontal ?? 0,
+    isLinked: margin?.isLinked ?? true,
+  });
+  const [localPadding, setLocalPadding] = useState({
+    top: padding?.top ?? padding?.vertical ?? 0,
+    right: padding?.right ?? padding?.horizontal ?? 0,
+    bottom: padding?.bottom ?? padding?.vertical ?? 0,
+    left: padding?.left ?? padding?.horizontal ?? 0,
+    isLinked: padding?.isLinked ?? true,
+  });
+  const [isMarginExpanded, setIsMarginExpanded] = useState(false);
+  const [isPaddingExpanded, setIsPaddingExpanded] = useState(false);
   const [localTextContent, setLocalTextContent] = useState('');
   const [localTypography, setLocalTypography] = useState('body');
   const [fontWeight, setFontWeight] = useState('Semi Bold');
@@ -96,7 +120,14 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   const [textDecoration, setTextDecoration] = useState<string[]>([]);
   const [borderStyle, setBorderStyle] = useState('Default');
   const [borderColor, setBorderColor] = useState('Default');
-  const [borderWidth, setBorderWidth] = useState(0);
+  const [localBorderWidth, setLocalBorderWidth] = useState({
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    isOpen: true,
+  });
+  const [isBorderWidthExpanded, setIsBorderWidthExpanded] = useState(false);
   const [opacity, setOpacity] = useState(40);
   const [radius, setRadius] = useState('Small');
   const [shadowType, setShadowType] = useState('Default');
@@ -133,18 +164,22 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   };
 
   /**
-   * 处理外边距变更
+   * 处理外边距变更（四边独立）
    */
   const handleMarginChange = (
-    type: 'vertical' | 'horizontal',
+    type: 'top' | 'right' | 'bottom' | 'left' | 'vertical' | 'horizontal',
     value: number | null,
   ) => {
     const newMargin = { ...localMargin };
     if (value !== null) {
       if (type === 'vertical') {
-        newMargin.vertical = value;
+        newMargin.top = value;
+        newMargin.bottom = value;
+      } else if (type === 'horizontal') {
+        newMargin.left = value;
+        newMargin.right = value;
       } else {
-        newMargin.horizontal = value;
+        newMargin[type] = value;
       }
       setLocalMargin(newMargin);
       onChange?.('margin', newMargin);
@@ -161,18 +196,29 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   };
 
   /**
-   * 处理内边距变更
+   * 切换外边距展开状态
+   */
+  const toggleMarginExpand = () => {
+    setIsMarginExpanded(!isMarginExpanded);
+  };
+
+  /**
+   * 处理内边距变更（四边独立）
    */
   const handlePaddingChange = (
-    type: 'vertical' | 'horizontal',
+    type: 'top' | 'right' | 'bottom' | 'left' | 'vertical' | 'horizontal',
     value: number | null,
   ) => {
     const newPadding = { ...localPadding };
     if (value !== null) {
       if (type === 'vertical') {
-        newPadding.vertical = value;
+        newPadding.top = value;
+        newPadding.bottom = value;
+      } else if (type === 'horizontal') {
+        newPadding.left = value;
+        newPadding.right = value;
       } else {
-        newPadding.horizontal = value;
+        newPadding[type] = value;
       }
       setLocalPadding(newPadding);
       onChange?.('padding', newPadding);
@@ -189,11 +235,39 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   };
 
   /**
-   * 展开/折叠布局输入框
+   * 切换内边距展开状态
    */
-  const expandLayoutInputs = () => {
-    // 这里可以实现展开为四个独立输入框的逻辑
-    console.log('Expand layout inputs');
+  const togglePaddingExpand = () => {
+    setIsPaddingExpanded(!isPaddingExpanded);
+  };
+
+  /**
+   * 处理边框宽度变更（四边独立）
+   */
+  const handleBorderWidthChange = (
+    type: 'top' | 'right' | 'bottom' | 'left' | 'all',
+    value: number | null,
+  ) => {
+    const newBorderWidth = { ...localBorderWidth };
+    if (value !== null) {
+      if (type === 'all') {
+        newBorderWidth.top = value;
+        newBorderWidth.right = value;
+        newBorderWidth.bottom = value;
+        newBorderWidth.left = value;
+      } else {
+        newBorderWidth[type] = value;
+      }
+      setLocalBorderWidth(newBorderWidth);
+      onChange?.('borderWidth', newBorderWidth);
+    }
+  };
+
+  /**
+   * 切换边框宽度展开状态
+   */
+  const toggleBorderWidthExpand = () => {
+    setIsBorderWidthExpanded(!isBorderWidthExpanded);
   };
 
   // 颜色选项
@@ -774,141 +848,493 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           {/* Margin */}
           <div className={cx(styles.layoutSubSection)}>
             <div className={cx(styles.layoutLabel)}>Margin</div>
-            <div className={cx(styles.layoutInputs)}>
-              <div className={cx('flex items-center gap-4 flex-1')}>
-                <InputNumber
-                  className={cx('flex-1')}
-                  value={localMargin.vertical}
-                  onChange={(value) => handleMarginChange('vertical', value)}
-                  prefix={
-                    <div className={cx(styles.layoutIcon)}>
-                      <svg
-                        height="16"
-                        strokeLinejoin="round"
-                        viewBox="0 0 16 16"
-                        width="16"
-                      >
-                        <path
-                          d="M14 1V15H12.5V1H14ZM5.00488 5.89746C5.05621 5.39333 5.48232 5 6 5H10L10.1025 5.00488C10.573 5.05278 10.9472 5.42703 10.9951 5.89746L11 6V10L10.9951 10.1025C10.9472 10.573 10.573 10.9472 10.1025 10.9951L10 11H6C5.48232 11 5.05621 10.6067 5.00488 10.1025L5 10V6L5.00488 5.89746ZM9.5 9.5V6.5H6.5L6.5 9.5H9.5ZM3.5 1L3.5 15H2L2 1H3.5Z"
-                          fill="currentColor"
-                        ></path>
-                      </svg>
-                    </div>
-                  }
-                  suffix="px"
-                  controls={false}
-                />
-                <InputNumber
-                  className={cx('flex-1')}
-                  value={localMargin.horizontal}
-                  onChange={(value) => handleMarginChange('horizontal', value)}
-                  prefix={
-                    <div className={cx(styles.layoutIcon)}>
-                      <svg
-                        height="16"
-                        strokeLinejoin="round"
-                        viewBox="0 0 16 16"
-                        width="16"
-                      >
-                        <path
-                          d="M15 14H1V12.5H15V14ZM10.1025 5.00488C10.6067 5.05621 11 5.48232 11 6V10L10.9951 10.1025C10.9472 10.573 10.573 10.9472 10.1025 10.9951L10 11H6L5.89746 10.9951C5.42703 10.9472 5.05278 10.573 5.00488 10.1025L5 10V6C5 5.48232 5.39333 5.05621 5.89746 5.00488L6 5H10L10.1025 5.00488ZM6.5 9.5H9.5V6.5H6.5V9.5ZM15 3.5H1V2H15V3.5Z"
-                          fill="currentColor"
-                        ></path>
-                      </svg>
-                    </div>
-                  }
-                  suffix="px"
-                  controls={false}
-                />
-              </div>
-              <div className={cx(styles.layoutActions)}>
-                <ExpandAltOutlined
-                  className={cx(styles.actionIcon)}
-                  onClick={expandLayoutInputs}
-                />
-                {localMargin.isLinked ? (
-                  <LockOutlined
-                    className={cx(styles.actionIcon, styles.active)}
-                    onClick={toggleMarginLink}
+            {!isMarginExpanded ? (
+              // 折叠状态：显示上下和左右两个输入框
+              <div className={cx(styles.layoutInputs)}>
+                <div className={cx('flex items-center gap-4 flex-1')}>
+                  <InputNumber
+                    className={cx('flex-1')}
+                    value={localMargin.top}
+                    onChange={(value) => handleMarginChange('vertical', value)}
+                    prefix={
+                      <div className={cx(styles.layoutIcon)}>
+                        <svg
+                          height="16"
+                          strokeLinejoin="round"
+                          viewBox="0 0 16 16"
+                          width="16"
+                        >
+                          <path
+                            d="M14 1V15H12.5V1H14ZM5.00488 5.89746C5.05621 5.39333 5.48232 5 6 5H10L10.1025 5.00488C10.573 5.05278 10.9472 5.42703 10.9951 5.89746L11 6V10L10.9951 10.1025C10.9472 10.573 10.573 10.9472 10.1025 10.9951L10 11H6C5.48232 11 5.05621 10.6067 5.00488 10.1025L5 10V6L5.00488 5.89746ZM9.5 9.5V6.5H6.5L6.5 9.5H9.5ZM3.5 1L3.5 15H2L2 1H3.5Z"
+                            fill="currentColor"
+                          ></path>
+                        </svg>
+                      </div>
+                    }
+                    suffix="px"
+                    controls={false}
                   />
-                ) : (
-                  <UnlockOutlined
-                    className={cx(styles.actionIcon)}
-                    onClick={toggleMarginLink}
+                  <InputNumber
+                    className={cx('flex-1')}
+                    value={localMargin.left}
+                    onChange={(value) =>
+                      handleMarginChange('horizontal', value)
+                    }
+                    prefix={
+                      <div className={cx(styles.layoutIcon)}>
+                        <svg
+                          height="16"
+                          strokeLinejoin="round"
+                          viewBox="0 0 16 16"
+                          width="16"
+                        >
+                          <path
+                            d="M15 14H1V12.5H15V14ZM10.1025 5.00488C10.6067 5.05621 11 5.48232 11 6V10L10.9951 10.1025C10.9472 10.573 10.573 10.9472 10.1025 10.9951L10 11H6L5.89746 10.9951C5.42703 10.9472 5.05278 10.573 5.00488 10.1025L5 10V6C5 5.48232 5.39333 5.05621 5.89746 5.00488L6 5H10L10.1025 5.00488ZM6.5 9.5H9.5V6.5H6.5V9.5ZM15 3.5H1V2H15V3.5Z"
+                            fill="currentColor"
+                          ></path>
+                        </svg>
+                      </div>
+                    }
+                    suffix="px"
+                    controls={false}
                   />
-                )}
+                </div>
+                <div className={cx(styles.layoutActions)}>
+                  <ExpandAltOutlined
+                    className={cx(styles.actionIcon, styles.expandIcon)}
+                    onClick={toggleMarginExpand}
+                  />
+                  {localMargin.isLinked ? (
+                    <LockOutlined
+                      className={cx(styles.actionIcon, styles.active)}
+                      onClick={toggleMarginLink}
+                    />
+                  ) : (
+                    <UnlockOutlined
+                      className={cx(styles.actionIcon)}
+                      onClick={toggleMarginLink}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              // 展开状态：显示四边独立输入框（两行两列）
+              <div className={cx(styles.layoutInputs)}>
+                <div className={cx(styles.expandedLayout)}>
+                  <div className={cx(styles.expandedRow)}>
+                    <InputNumber
+                      className={cx(styles.expandedInput)}
+                      value={localMargin.top}
+                      onChange={(value) => handleMarginChange('top', value)}
+                      prefix={
+                        <div className={cx(styles.layoutIcon)}>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="12"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              fill="none"
+                            />
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="2"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </div>
+                      }
+                      suffix="px"
+                      controls={false}
+                    />
+                    <InputNumber
+                      className={cx(styles.expandedInput)}
+                      value={localMargin.bottom}
+                      onChange={(value) => handleMarginChange('bottom', value)}
+                      prefix={
+                        <div className={cx(styles.layoutIcon)}>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="12"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              fill="none"
+                            />
+                            <rect
+                              x="2"
+                              y="12"
+                              width="12"
+                              height="2"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </div>
+                      }
+                      suffix="px"
+                      controls={false}
+                    />
+                  </div>
+                  <div className={cx(styles.expandedRow)}>
+                    <InputNumber
+                      className={cx(styles.expandedInput)}
+                      value={localMargin.left}
+                      onChange={(value) => handleMarginChange('left', value)}
+                      prefix={
+                        <div className={cx(styles.layoutIcon)}>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="12"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              fill="none"
+                            />
+                            <rect
+                              x="2"
+                              y="2"
+                              width="2"
+                              height="12"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </div>
+                      }
+                      suffix="px"
+                      controls={false}
+                    />
+                    <InputNumber
+                      className={cx(styles.expandedInput)}
+                      value={localMargin.right}
+                      onChange={(value) => handleMarginChange('right', value)}
+                      prefix={
+                        <div className={cx(styles.layoutIcon)}>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="12"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              fill="none"
+                            />
+                            <rect
+                              x="12"
+                              y="2"
+                              width="2"
+                              height="12"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </div>
+                      }
+                      suffix="px"
+                      controls={false}
+                    />
+                  </div>
+                </div>
+                <div className={cx(styles.layoutActions)}>
+                  <ExpandAltOutlined
+                    className={cx(
+                      styles.actionIcon,
+                      styles.expandIcon,
+                      styles.collapsed,
+                    )}
+                    onClick={toggleMarginExpand}
+                  />
+                  {localMargin.isLinked ? (
+                    <LockOutlined
+                      className={cx(styles.actionIcon, styles.active)}
+                      onClick={toggleMarginLink}
+                    />
+                  ) : (
+                    <UnlockOutlined
+                      className={cx(styles.actionIcon)}
+                      onClick={toggleMarginLink}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Padding */}
           <div className={cx(styles.layoutSubSection)}>
             <div className={cx(styles.layoutLabel)}>Padding</div>
-            <div className={cx(styles.layoutInputs)}>
-              <div className={cx('flex items-center gap-4 flex-1')}>
-                <InputNumber
-                  className={cx('flex-1')}
-                  value={localPadding.vertical}
-                  onChange={(value) => handlePaddingChange('vertical', value)}
-                  prefix={
-                    <div className={cx(styles.layoutIcon)}>
-                      <svg
-                        height="16"
-                        strokeLinejoin="round"
-                        viewBox="0 0 16 16"
-                        width="16"
-                      >
-                        <path
-                          d="M14.9951 14.1025C14.9438 14.6067 14.5177 15 14 15H2L1.89746 14.9951C1.42703 14.9472 1.05278 14.573 1.00488 14.1025L1 14V2L1.00488 1.89746C1.05278 1.42703 1.42703 1.05278 1.89746 1.00488L2 1H14C14.5177 1 14.9438 1.39333 14.9951 1.89746L15 2V14L14.9951 14.1025ZM2.5 2.5V13.5H13.5V2.5H2.5ZM4.2666 12.375V3.625H5.66699V12.375H4.2666ZM10.333 12.375V3.625H11.7334V12.375H10.333Z"
-                          fill="currentColor"
-                        ></path>
-                      </svg>
-                    </div>
-                  }
-                  suffix="px"
-                  controls={false}
-                />
-                <InputNumber
-                  className={cx('flex-1')}
-                  value={localPadding.horizontal}
-                  onChange={(value) => handlePaddingChange('horizontal', value)}
-                  prefix={
-                    <div className={cx(styles.layoutIcon)}>
-                      <svg
-                        height="16"
-                        strokeLinejoin="round"
-                        viewBox="0 0 16 16"
-                        width="16"
-                      >
-                        <path
-                          d="M14.1025 1.00488C14.6067 1.05621 15 1.48232 15 2V14L14.9951 14.1025C14.9472 14.573 14.573 14.9472 14.1025 14.9951L14 15H2L1.89746 14.9951C1.42703 14.9472 1.05278 14.573 1.00488 14.1025L1 14V2C1 1.48232 1.39333 1.05621 1.89746 1.00488L2 1H14L14.1025 1.00488ZM2.5 13.5H13.5V2.5H2.5V13.5ZM12.375 11.7334H3.625V10.333H12.375V11.7334ZM12.375 5.66699H3.625V4.2666H12.375V5.66699Z"
-                          fill="currentColor"
-                        ></path>
-                      </svg>
-                    </div>
-                  }
-                  suffix="px"
-                  controls={false}
-                />
-              </div>
-              <div className={cx(styles.layoutActions)}>
-                <ExpandAltOutlined
-                  className={cx(styles.actionIcon)}
-                  onClick={expandLayoutInputs}
-                />
-                {localPadding.isLinked ? (
-                  <LockOutlined
-                    className={cx(styles.actionIcon, styles.active)}
-                    onClick={togglePaddingLink}
+            {!isPaddingExpanded ? (
+              // 折叠状态：显示上下和左右两个输入框
+              <div className={cx(styles.layoutInputs)}>
+                <div className={cx('flex items-center gap-4 flex-1')}>
+                  <InputNumber
+                    className={cx('flex-1')}
+                    value={localPadding.top}
+                    onChange={(value) => handlePaddingChange('vertical', value)}
+                    prefix={
+                      <div className={cx(styles.layoutIcon)}>
+                        <svg
+                          height="16"
+                          strokeLinejoin="round"
+                          viewBox="0 0 16 16"
+                          width="16"
+                        >
+                          <path
+                            d="M14.9951 14.1025C14.9438 14.6067 14.5177 15 14 15H2L1.89746 14.9951C1.42703 14.9472 1.05278 14.573 1.00488 14.1025L1 14V2L1.00488 1.89746C1.05278 1.42703 1.42703 1.05278 1.89746 1.00488L2 1H14C14.5177 1 14.9438 1.39333 14.9951 1.89746L15 2V14L14.9951 14.1025ZM2.5 2.5V13.5H13.5V2.5H2.5ZM4.2666 12.375V3.625H5.66699V12.375H4.2666ZM10.333 12.375V3.625H11.7334V12.375H10.333Z"
+                            fill="currentColor"
+                          ></path>
+                        </svg>
+                      </div>
+                    }
+                    suffix="px"
+                    controls={false}
                   />
-                ) : (
-                  <UnlockOutlined
-                    className={cx(styles.actionIcon)}
-                    onClick={togglePaddingLink}
+                  <InputNumber
+                    className={cx('flex-1')}
+                    value={localPadding.left}
+                    onChange={(value) =>
+                      handlePaddingChange('horizontal', value)
+                    }
+                    prefix={
+                      <div className={cx(styles.layoutIcon)}>
+                        <svg
+                          height="16"
+                          strokeLinejoin="round"
+                          viewBox="0 0 16 16"
+                          width="16"
+                        >
+                          <path
+                            d="M14.1025 1.00488C14.6067 1.05621 15 1.48232 15 2V14L14.9951 14.1025C14.9472 14.573 14.573 14.9472 14.1025 14.9951L14 15H2L1.89746 14.9951C1.42703 14.9472 1.05278 14.573 1.00488 14.1025L1 14V2C1 1.48232 1.39333 1.05621 1.89746 1.00488L2 1H14L14.1025 1.00488ZM2.5 13.5H13.5V2.5H2.5V13.5ZM12.375 11.7334H3.625V10.333H12.375V11.7334ZM12.375 5.66699H3.625V4.2666H12.375V5.66699Z"
+                            fill="currentColor"
+                          ></path>
+                        </svg>
+                      </div>
+                    }
+                    suffix="px"
+                    controls={false}
                   />
-                )}
+                </div>
+                <div className={cx(styles.layoutActions)}>
+                  <ExpandAltOutlined
+                    className={cx(styles.actionIcon, styles.expandIcon)}
+                    onClick={togglePaddingExpand}
+                  />
+                  {localPadding.isLinked ? (
+                    <LockOutlined
+                      className={cx(styles.actionIcon, styles.active)}
+                      onClick={togglePaddingLink}
+                    />
+                  ) : (
+                    <UnlockOutlined
+                      className={cx(styles.actionIcon)}
+                      onClick={togglePaddingLink}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              // 展开状态：显示四边独立输入框（两行两列）
+              <div className={cx(styles.layoutInputs)}>
+                <div className={cx(styles.expandedLayout)}>
+                  <div className={cx(styles.expandedRow)}>
+                    <InputNumber
+                      className={cx(styles.expandedInput)}
+                      value={localPadding.top}
+                      onChange={(value) => handlePaddingChange('top', value)}
+                      prefix={
+                        <div className={cx(styles.layoutIcon)}>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="12"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              fill="none"
+                            />
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="2"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </div>
+                      }
+                      suffix="px"
+                      controls={false}
+                    />
+                    <InputNumber
+                      className={cx(styles.expandedInput)}
+                      value={localPadding.bottom}
+                      onChange={(value) => handlePaddingChange('bottom', value)}
+                      prefix={
+                        <div className={cx(styles.layoutIcon)}>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="12"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              fill="none"
+                            />
+                            <rect
+                              x="2"
+                              y="12"
+                              width="12"
+                              height="2"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </div>
+                      }
+                      suffix="px"
+                      controls={false}
+                    />
+                  </div>
+                  <div className={cx(styles.expandedRow)}>
+                    <InputNumber
+                      className={cx(styles.expandedInput)}
+                      value={localPadding.left}
+                      onChange={(value) => handlePaddingChange('left', value)}
+                      prefix={
+                        <div className={cx(styles.layoutIcon)}>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="12"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              fill="none"
+                            />
+                            <rect
+                              x="2"
+                              y="2"
+                              width="2"
+                              height="12"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </div>
+                      }
+                      suffix="px"
+                      controls={false}
+                    />
+                    <InputNumber
+                      className={cx(styles.expandedInput)}
+                      value={localPadding.right}
+                      onChange={(value) => handlePaddingChange('right', value)}
+                      prefix={
+                        <div className={cx(styles.layoutIcon)}>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="12"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              fill="none"
+                            />
+                            <rect
+                              x="12"
+                              y="2"
+                              width="2"
+                              height="12"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </div>
+                      }
+                      suffix="px"
+                      controls={false}
+                    />
+                  </div>
+                </div>
+                <div className={cx(styles.layoutActions)}>
+                  <ExpandAltOutlined
+                    className={cx(
+                      styles.actionIcon,
+                      styles.expandIcon,
+                      styles.collapsed,
+                    )}
+                    onClick={togglePaddingExpand}
+                  />
+                  {localPadding.isLinked ? (
+                    <LockOutlined
+                      className={cx(styles.actionIcon, styles.active)}
+                      onClick={togglePaddingLink}
+                    />
+                  ) : (
+                    <UnlockOutlined
+                      className={cx(styles.actionIcon)}
+                      onClick={togglePaddingLink}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -987,47 +1413,208 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
             </div>
           </div>
           {/* Border Width */}
-          <div className={cx(styles.typographyRow)}>
-            <div className={cx(styles.typographyInputGroup, styles.fullWidth)}>
-              <div className={cx(styles.typographyInputLabel)}>
-                Border Width
+          <div className={cx(styles.layoutSubSection)}>
+            <div className={cx(styles.layoutLabel)}>Border Width</div>
+            {!isBorderWidthExpanded ? (
+              // 折叠状态：显示单个输入框
+              <div className={cx(styles.layoutInputs)}>
+                <div className={cx('flex items-center gap-4 flex-1')}>
+                  <InputNumber
+                    className={cx('flex-1')}
+                    value={localBorderWidth.top}
+                    onChange={(value) => handleBorderWidthChange('all', value)}
+                    prefix={
+                      <div className={cx(styles.layoutIcon)}>
+                        <svg
+                          height="16"
+                          strokeLinejoin="round"
+                          viewBox="0 0 16 16"
+                          width="16"
+                        >
+                          <path
+                            d="M15 14.5H1V9.5H15V14.5ZM2.5 13H13.5V11H2.5V13ZM15 8.5H1V4.5H15V8.5ZM2.5 7H13.5V6H2.5V7ZM15 3.5H1V2H15V3.5Z"
+                            fill="currentColor"
+                          ></path>
+                        </svg>
+                      </div>
+                    }
+                    suffix="px"
+                    controls={false}
+                    placeholder="0px"
+                  />
+                </div>
+                <div className={cx(styles.layoutActions)}>
+                  <CompressOutlined
+                    className={cx(styles.actionIcon)}
+                    onClick={toggleBorderWidthExpand}
+                  />
+                </div>
               </div>
-              <div className={cx(styles.borderWidthContainer)}>
-                <InputNumber
-                  className={cx('w-full')}
-                  value={borderWidth}
-                  onChange={(value) => {
-                    setBorderWidth(value || 0);
-                    onChange?.('borderWidth', value || 0);
-                  }}
-                  prefix={
-                    <div className={cx(styles.layoutIcon)}>
-                      <svg
-                        height="16"
-                        strokeLinejoin="round"
-                        viewBox="0 0 16 16"
-                        width="16"
-                      >
-                        <path
-                          d="M15 14.5H1V9.5H15V14.5ZM2.5 13H13.5V11H2.5V13ZM15 8.5H1V4.5H15V8.5ZM2.5 7H13.5V6H2.5V7ZM15 3.5H1V2H15V3.5Z"
-                          fill="currentColor"
-                        ></path>
-                      </svg>
-                    </div>
-                  }
-                  suffix="px"
-                  controls={false}
-                  placeholder="0px"
-                />
-                <ExpandAltOutlined
-                  className={cx(styles.actionIcon, styles.expandIcon)}
-                  onClick={() => {
-                    // 展开为独立输入框的逻辑
-                    console.log('Expand border width inputs');
-                  }}
-                />
+            ) : (
+              // 展开状态：显示四边独立输入框（两行两列）
+              <div className={cx(styles.layoutInputs)}>
+                <div className={cx(styles.expandedLayout)}>
+                  <div className={cx(styles.expandedRow)}>
+                    <InputNumber
+                      className={cx(styles.expandedInput)}
+                      value={localBorderWidth.top}
+                      onChange={(value) =>
+                        handleBorderWidthChange('top', value)
+                      }
+                      prefix={
+                        <div className={cx(styles.layoutIcon)}>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="12"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              fill="none"
+                            />
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="2"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </div>
+                      }
+                      suffix="px"
+                      controls={false}
+                    />
+                    <InputNumber
+                      className={cx(styles.expandedInput)}
+                      value={localBorderWidth.bottom}
+                      onChange={(value) =>
+                        handleBorderWidthChange('bottom', value)
+                      }
+                      prefix={
+                        <div className={cx(styles.layoutIcon)}>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="12"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              fill="none"
+                            />
+                            <rect
+                              x="2"
+                              y="12"
+                              width="12"
+                              height="2"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </div>
+                      }
+                      suffix="px"
+                      controls={false}
+                    />
+                  </div>
+                  <div className={cx(styles.expandedRow)}>
+                    <InputNumber
+                      className={cx(styles.expandedInput)}
+                      value={localBorderWidth.left}
+                      onChange={(value) =>
+                        handleBorderWidthChange('left', value)
+                      }
+                      prefix={
+                        <div className={cx(styles.layoutIcon)}>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="12"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              fill="none"
+                            />
+                            <rect
+                              x="2"
+                              y="2"
+                              width="2"
+                              height="12"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </div>
+                      }
+                      suffix="px"
+                      controls={false}
+                    />
+                    <InputNumber
+                      className={cx(styles.expandedInput)}
+                      value={localBorderWidth.right}
+                      onChange={(value) =>
+                        handleBorderWidthChange('right', value)
+                      }
+                      prefix={
+                        <div className={cx(styles.layoutIcon)}>
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <rect
+                              x="2"
+                              y="2"
+                              width="12"
+                              height="12"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              fill="none"
+                            />
+                            <rect
+                              x="12"
+                              y="2"
+                              width="2"
+                              height="12"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </div>
+                      }
+                      suffix="px"
+                      controls={false}
+                    />
+                  </div>
+                </div>
+                <div className={cx(styles.layoutActions)}>
+                  <ExpandOutlined
+                    className={cx(styles.actionIcon)}
+                    onClick={toggleBorderWidthExpand}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 

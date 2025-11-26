@@ -120,8 +120,9 @@
 
 .layoutInputs {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  width: 100%;
 }
 
 .layoutIcon {
@@ -141,8 +142,57 @@
 // 图标样式已移至 SVG，保留此注释以便将来扩展
 .layoutActions {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+// 展开状态布局
+.expandedLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.expandedRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.expandedInput {
+  flex: 1;
+
+  :global(.ant-input-number) {
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid @colorBorder;
+  }
+
+  :global(.ant-input-number-input) {
+    text-align: left;
+    padding-left: 8px;
+  }
+
+  :global(.ant-input-number-group-addon) {
+    background: @colorFillQuaternary;
+    border: 1px solid @colorBorder;
+    border-right: none;
+    padding: 0 8px;
+  }
+}
+
+.expandIcon {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+
+  &.collapsed {
+    transform: rotate(180deg);
+  }
 }
 
 .actionIcon {
