@@ -1,3 +1,25 @@
+import { ReactComponent as AlignCenterSvg } from '@/assets/icons/design/align_center.svg';
+import { ReactComponent as AlignJustifySvg } from '@/assets/icons/design/align_justify.svg';
+import { ReactComponent as AlignLeftSvg } from '@/assets/icons/design/align_left.svg';
+import { ReactComponent as AlignRightSvg } from '@/assets/icons/design/align_right.svg';
+import { ReactComponent as MarginBottomSvg } from '@/assets/icons/design/margin_bottom.svg';
+import { ReactComponent as MarginHorizontalSvg } from '@/assets/icons/design/margin_horizontal.svg';
+import { ReactComponent as MarginLeftSvg } from '@/assets/icons/design/margin_left.svg';
+import { ReactComponent as MarginRightSvg } from '@/assets/icons/design/margin_right.svg';
+import { ReactComponent as MarginTopSvg } from '@/assets/icons/design/margin_top.svg';
+import { ReactComponent as MarginVerticalSvg } from '@/assets/icons/design/margin_vertical.svg';
+import { ReactComponent as OpacitySvg } from '@/assets/icons/design/opacity.svg';
+import { ReactComponent as OverlineSvg } from '@/assets/icons/design/overline.svg';
+import { ReactComponent as PaddingBottomSvg } from '@/assets/icons/design/padding_bottom.svg';
+import { ReactComponent as PaddingHorizontalSvg } from '@/assets/icons/design/padding_horizontal.svg';
+import { ReactComponent as PaddingLeftSvg } from '@/assets/icons/design/padding_left.svg';
+import { ReactComponent as PaddingRightSvg } from '@/assets/icons/design/padding_right.svg';
+import { ReactComponent as PaddingTopSvg } from '@/assets/icons/design/padding_top.svg';
+import { ReactComponent as PaddingVerticalSvg } from '@/assets/icons/design/padding_vertical.svg';
+import { ReactComponent as RadiusSvg } from '@/assets/icons/design/radius.svg';
+import { ReactComponent as ResetSvg } from '@/assets/icons/design/reset.svg';
+import { ReactComponent as ShadowSvg } from '@/assets/icons/design/shadow.svg';
+import { ReactComponent as TabularNumbersSvg } from '@/assets/icons/design/tabular_numbers.svg';
 import SelectList from '@/components/custom/SelectList';
 import {
   CompressOutlined,
@@ -530,170 +552,36 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       [styles.active]: textAlign === 'reset',
                     })}
                     onClick={() => handleTextAlignChange('reset')}
-                    icon={
-                      <svg
-                        height="16"
-                        strokeLinejoin="round"
-                        viewBox="0 0 16 16"
-                        width="16"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M4.46967 9.09099L5 9.62132L6.06066 8.56066L5.53033 8.03033L3.56063 6.06063H10.125C11.989 6.06063 13.5 7.57167 13.5 9.43563C13.5 11.2996 11.989 12.8106 10.125 12.8106H4.5H3.75V14.3106H4.5H10.125C12.8174 14.3106 15 12.128 15 9.43563C15 6.74324 12.8174 4.56063 10.125 4.56063H3.56069L5.53033 2.59099L6.06066 2.06066L5 1L4.46967 1.53033L1.21967 4.78033C0.926777 5.07322 0.926777 5.5481 1.21967 5.84099L4.46967 9.09099Z"
-                          fill="currentColor"
-                        ></path>
-                      </svg>
-                    }
+                    icon={<ResetSvg className={cx(styles.layoutIcon)} />}
                   />
                   <Button
                     className={cx(styles.toggleButton, {
                       [styles.active]: textAlign === 'left',
                     })}
                     onClick={() => handleTextAlignChange('left')}
-                    title="Left Align"
-                  >
-                    <svg
-                      width="16"
-                      height="12"
-                      viewBox="0 0 16 12"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <rect
-                        x="0"
-                        y="1"
-                        width="12"
-                        height="1.5"
-                        fill="currentColor"
-                      />
-                      <rect
-                        x="0"
-                        y="5.25"
-                        width="10"
-                        height="1.5"
-                        fill="currentColor"
-                      />
-                      <rect
-                        x="0"
-                        y="9.5"
-                        width="14"
-                        height="1.5"
-                        fill="currentColor"
-                      />
-                    </svg>
-                  </Button>
+                    icon={<AlignLeftSvg className={cx(styles.layoutIcon)} />}
+                  />
                   <Button
                     className={cx(styles.toggleButton, {
                       [styles.active]: textAlign === 'center',
                     })}
                     onClick={() => handleTextAlignChange('center')}
-                    title="Center Align"
-                  >
-                    <svg
-                      width="16"
-                      height="12"
-                      viewBox="0 0 16 12"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <rect
-                        x="2"
-                        y="1"
-                        width="12"
-                        height="1.5"
-                        fill="currentColor"
-                      />
-                      <rect
-                        x="3"
-                        y="5.25"
-                        width="10"
-                        height="1.5"
-                        fill="currentColor"
-                      />
-                      <rect
-                        x="1"
-                        y="9.5"
-                        width="14"
-                        height="1.5"
-                        fill="currentColor"
-                      />
-                    </svg>
-                  </Button>
+                    icon={<AlignCenterSvg className={cx(styles.layoutIcon)} />}
+                  />
                   <Button
                     className={cx(styles.toggleButton, {
                       [styles.active]: textAlign === 'right',
                     })}
                     onClick={() => handleTextAlignChange('right')}
-                    title="Right Align"
-                  >
-                    <svg
-                      width="16"
-                      height="12"
-                      viewBox="0 0 16 12"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <rect
-                        x="4"
-                        y="1"
-                        width="12"
-                        height="1.5"
-                        fill="currentColor"
-                      />
-                      <rect
-                        x="6"
-                        y="5.25"
-                        width="10"
-                        height="1.5"
-                        fill="currentColor"
-                      />
-                      <rect
-                        x="2"
-                        y="9.5"
-                        width="14"
-                        height="1.5"
-                        fill="currentColor"
-                      />
-                    </svg>
-                  </Button>
+                    icon={<AlignRightSvg className={cx(styles.layoutIcon)} />}
+                  />
                   <Button
                     className={cx(styles.toggleButton, {
                       [styles.active]: textAlign === 'justify',
                     })}
                     onClick={() => handleTextAlignChange('justify')}
-                    title="Justify"
-                  >
-                    <svg
-                      width="16"
-                      height="12"
-                      viewBox="0 0 16 12"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <rect
-                        x="0"
-                        y="1"
-                        width="14"
-                        height="1.5"
-                        fill="currentColor"
-                      />
-                      <rect
-                        x="0"
-                        y="5.25"
-                        width="14"
-                        height="1.5"
-                        fill="currentColor"
-                      />
-                      <rect
-                        x="0"
-                        y="9.5"
-                        width="14"
-                        height="1.5"
-                        fill="currentColor"
-                      />
-                    </svg>
-                  </Button>
+                    icon={<AlignJustifySvg className={cx(styles.layoutIcon)} />}
+                  />
                 </div>
               </div>
               <div className={cx(styles.typographyInputGroup)}>
@@ -706,45 +594,35 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       [styles.active]: textDecoration.includes('italic'),
                     })}
                     onClick={() => handleTextDecorationChange('italic')}
-                    icon={<ItalicOutlined />}
+                    icon={<ItalicOutlined className={cx(styles.layoutIcon)} />}
                   />
                   <Button
                     className={cx(styles.toggleButton, {
                       [styles.active]: textDecoration.includes('strikethrough'),
                     })}
                     onClick={() => handleTextDecorationChange('strikethrough')}
-                    icon={<StrikethroughOutlined />}
+                    icon={
+                      <StrikethroughOutlined
+                        className={cx(styles.layoutIcon)}
+                      />
+                    }
                   />
                   <Button
                     className={cx(styles.toggleButton, {
                       [styles.active]: textDecoration.includes('underline'),
                     })}
                     onClick={() => handleTextDecorationChange('underline')}
-                    icon={<UnderlineOutlined />}
+                    icon={
+                      <UnderlineOutlined className={cx(styles.layoutIcon)} />
+                    }
                   />
                   <Button
                     className={cx(styles.toggleButton, {
                       [styles.active]: textDecoration.includes('overline'),
                     })}
                     onClick={() => handleTextDecorationChange('overline')}
-                    title="Overline"
-                  >
-                    <svg
-                      height="16"
-                      strokeLinejoin="round"
-                      viewBox="0 0 16 16"
-                      width="16"
-                    >
-                      <path
-                        d="M11.2002 9.25C11.2002 7.48269 9.76731 6.0498 8 6.0498C6.23269 6.0498 4.7998 7.48269 4.7998 9.25C4.7998 11.0173 6.23269 12.4502 8 12.4502V14.25C5.23858 14.25 3 12.0114 3 9.25C3 6.48858 5.23858 4.25 8 4.25C10.7614 4.25 13 6.48858 13 9.25C13 12.0114 10.7614 14.25 8 14.25V12.4502C9.76731 12.4502 11.2002 11.0173 11.2002 9.25Z"
-                        fill="currentColor"
-                      ></path>
-                      <path
-                        d="M3 1.25H13V2.75H3V1.25Z"
-                        fill="currentColor"
-                      ></path>
-                    </svg>
-                  </Button>
+                    icon={<OverlineSvg className={cx(styles.layoutIcon)} />}
+                  />
                   <Button
                     className={cx(styles.toggleButton, {
                       [styles.active]: textDecoration.length === 0,
@@ -753,19 +631,10 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       setTextDecoration([]);
                       onChange?.('textDecoration', []);
                     }}
-                  >
-                    <svg
-                      height="16"
-                      strokeLinejoin="round"
-                      viewBox="0 0 16 16"
-                      width="16"
-                    >
-                      <path
-                        d="M8.00371 14.804C5.07771 14.804 3.23471 12.068 3.23471 7.774C3.23471 3.442 5.07771 0.706 8.00371 0.706C10.9297 0.706 12.7727 3.442 12.7727 7.774C12.7727 12.068 10.9297 14.804 8.00371 14.804ZM4.88771 7.774C4.88771 9.047 5.05871 10.149 5.40071 11.023L9.80871 3.1C9.31471 2.568 8.70671 2.264 8.00371 2.264C6.10371 2.264 4.88771 4.392 4.88771 7.774ZM6.17971 12.41C6.67371 12.942 7.30071 13.246 8.00371 13.246C9.90371 13.246 11.1197 11.118 11.1197 7.774C11.1197 6.463 10.9297 5.323 10.5877 4.43L6.17971 12.41Z"
-                        fill="currentColor"
-                      ></path>
-                    </svg>
-                  </Button>
+                    icon={
+                      <TabularNumbersSvg className={cx(styles.layoutIcon)} />
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -858,19 +727,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                     value={localMargin.top}
                     onChange={(value) => handleMarginChange('vertical', value)}
                     prefix={
-                      <div className={cx(styles.layoutIcon)}>
-                        <svg
-                          height="16"
-                          strokeLinejoin="round"
-                          viewBox="0 0 16 16"
-                          width="16"
-                        >
-                          <path
-                            d="M14 1V15H12.5V1H14ZM5.00488 5.89746C5.05621 5.39333 5.48232 5 6 5H10L10.1025 5.00488C10.573 5.05278 10.9472 5.42703 10.9951 5.89746L11 6V10L10.9951 10.1025C10.9472 10.573 10.573 10.9472 10.1025 10.9951L10 11H6C5.48232 11 5.05621 10.6067 5.00488 10.1025L5 10V6L5.00488 5.89746ZM9.5 9.5V6.5H6.5L6.5 9.5H9.5ZM3.5 1L3.5 15H2L2 1H3.5Z"
-                            fill="currentColor"
-                          ></path>
-                        </svg>
-                      </div>
+                      <MarginHorizontalSvg className={cx(styles.layoutIcon)} />
                     }
                     suffix="px"
                     controls={false}
@@ -882,19 +739,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       handleMarginChange('horizontal', value)
                     }
                     prefix={
-                      <div className={cx(styles.layoutIcon)}>
-                        <svg
-                          height="16"
-                          strokeLinejoin="round"
-                          viewBox="0 0 16 16"
-                          width="16"
-                        >
-                          <path
-                            d="M15 14H1V12.5H15V14ZM10.1025 5.00488C10.6067 5.05621 11 5.48232 11 6V10L10.9951 10.1025C10.9472 10.573 10.573 10.9472 10.1025 10.9951L10 11H6L5.89746 10.9951C5.42703 10.9472 5.05278 10.573 5.00488 10.1025L5 10V6C5 5.48232 5.39333 5.05621 5.89746 5.00488L6 5H10L10.1025 5.00488ZM6.5 9.5H9.5V6.5H6.5V9.5ZM15 3.5H1V2H15V3.5Z"
-                            fill="currentColor"
-                          ></path>
-                        </svg>
-                      </div>
+                      <MarginVerticalSvg className={cx(styles.layoutIcon)} />
                     }
                     suffix="px"
                     controls={false}
@@ -931,32 +776,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       value={localMargin.top}
                       onChange={(value) => handleMarginChange('top', value)}
                       prefix={
-                        <div className={cx(styles.layoutIcon)}>
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              fill="none"
-                            />
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="2"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </div>
+                        <MarginTopSvg className={cx(styles.layoutIcon)} />
                       }
                       suffix="px"
                       controls={false}
@@ -966,32 +786,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       value={localMargin.bottom}
                       onChange={(value) => handleMarginChange('bottom', value)}
                       prefix={
-                        <div className={cx(styles.layoutIcon)}>
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              fill="none"
-                            />
-                            <rect
-                              x="2"
-                              y="12"
-                              width="12"
-                              height="2"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </div>
+                        <MarginBottomSvg className={cx(styles.layoutIcon)} />
                       }
                       suffix="px"
                       controls={false}
@@ -1003,32 +798,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       value={localMargin.left}
                       onChange={(value) => handleMarginChange('left', value)}
                       prefix={
-                        <div className={cx(styles.layoutIcon)}>
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              fill="none"
-                            />
-                            <rect
-                              x="2"
-                              y="2"
-                              width="2"
-                              height="12"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </div>
+                        <MarginLeftSvg className={cx(styles.layoutIcon)} />
                       }
                       suffix="px"
                       controls={false}
@@ -1038,32 +808,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       value={localMargin.right}
                       onChange={(value) => handleMarginChange('right', value)}
                       prefix={
-                        <div className={cx(styles.layoutIcon)}>
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              fill="none"
-                            />
-                            <rect
-                              x="12"
-                              y="2"
-                              width="2"
-                              height="12"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </div>
+                        <MarginRightSvg className={cx(styles.layoutIcon)} />
                       }
                       suffix="px"
                       controls={false}
@@ -1108,19 +853,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                     value={localPadding.top}
                     onChange={(value) => handlePaddingChange('vertical', value)}
                     prefix={
-                      <div className={cx(styles.layoutIcon)}>
-                        <svg
-                          height="16"
-                          strokeLinejoin="round"
-                          viewBox="0 0 16 16"
-                          width="16"
-                        >
-                          <path
-                            d="M14.9951 14.1025C14.9438 14.6067 14.5177 15 14 15H2L1.89746 14.9951C1.42703 14.9472 1.05278 14.573 1.00488 14.1025L1 14V2L1.00488 1.89746C1.05278 1.42703 1.42703 1.05278 1.89746 1.00488L2 1H14C14.5177 1 14.9438 1.39333 14.9951 1.89746L15 2V14L14.9951 14.1025ZM2.5 2.5V13.5H13.5V2.5H2.5ZM4.2666 12.375V3.625H5.66699V12.375H4.2666ZM10.333 12.375V3.625H11.7334V12.375H10.333Z"
-                            fill="currentColor"
-                          ></path>
-                        </svg>
-                      </div>
+                      <PaddingHorizontalSvg className={cx(styles.layoutIcon)} />
                     }
                     suffix="px"
                     controls={false}
@@ -1132,19 +865,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       handlePaddingChange('horizontal', value)
                     }
                     prefix={
-                      <div className={cx(styles.layoutIcon)}>
-                        <svg
-                          height="16"
-                          strokeLinejoin="round"
-                          viewBox="0 0 16 16"
-                          width="16"
-                        >
-                          <path
-                            d="M14.1025 1.00488C14.6067 1.05621 15 1.48232 15 2V14L14.9951 14.1025C14.9472 14.573 14.573 14.9472 14.1025 14.9951L14 15H2L1.89746 14.9951C1.42703 14.9472 1.05278 14.573 1.00488 14.1025L1 14V2C1 1.48232 1.39333 1.05621 1.89746 1.00488L2 1H14L14.1025 1.00488ZM2.5 13.5H13.5V2.5H2.5V13.5ZM12.375 11.7334H3.625V10.333H12.375V11.7334ZM12.375 5.66699H3.625V4.2666H12.375V5.66699Z"
-                            fill="currentColor"
-                          ></path>
-                        </svg>
-                      </div>
+                      <PaddingVerticalSvg className={cx(styles.layoutIcon)} />
                     }
                     suffix="px"
                     controls={false}
@@ -1181,32 +902,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       value={localPadding.top}
                       onChange={(value) => handlePaddingChange('top', value)}
                       prefix={
-                        <div className={cx(styles.layoutIcon)}>
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              fill="none"
-                            />
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="2"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </div>
+                        <PaddingTopSvg className={cx(styles.layoutIcon)} />
                       }
                       suffix="px"
                       controls={false}
@@ -1216,32 +912,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       value={localPadding.bottom}
                       onChange={(value) => handlePaddingChange('bottom', value)}
                       prefix={
-                        <div className={cx(styles.layoutIcon)}>
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              fill="none"
-                            />
-                            <rect
-                              x="2"
-                              y="12"
-                              width="12"
-                              height="2"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </div>
+                        <PaddingBottomSvg className={cx(styles.layoutIcon)} />
                       }
                       suffix="px"
                       controls={false}
@@ -1253,32 +924,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       value={localPadding.left}
                       onChange={(value) => handlePaddingChange('left', value)}
                       prefix={
-                        <div className={cx(styles.layoutIcon)}>
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              fill="none"
-                            />
-                            <rect
-                              x="2"
-                              y="2"
-                              width="2"
-                              height="12"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </div>
+                        <PaddingLeftSvg className={cx(styles.layoutIcon)} />
                       }
                       suffix="px"
                       controls={false}
@@ -1288,32 +934,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       value={localPadding.right}
                       onChange={(value) => handlePaddingChange('right', value)}
                       prefix={
-                        <div className={cx(styles.layoutIcon)}>
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <rect
-                              x="2"
-                              y="2"
-                              width="12"
-                              height="12"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              fill="none"
-                            />
-                            <rect
-                              x="12"
-                              y="2"
-                              width="2"
-                              height="12"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </div>
+                        <PaddingRightSvg className={cx(styles.layoutIcon)} />
                       }
                       suffix="px"
                       controls={false}
@@ -1637,34 +1258,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   setOpacity(value || 0);
                   onChange?.('opacity', value || 0);
                 }}
-                prefix={
-                  <div className={cx(styles.layoutIcon)}>
-                    <svg
-                      height="16"
-                      strokeLinejoin="round"
-                      viewBox="0 0 16 16"
-                      width="16"
-                    >
-                      <circle
-                        cx="8"
-                        cy="8"
-                        r="7.25"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        fill="transparent"
-                      ></circle>
-                      <path
-                        opacity="0.33"
-                        fillRule="evenodd"
-                        clipRule="evenodd"
-                        d="M5 1H7V3H5V1ZM5 5V3H3V5H1V7H3V9H1V11H3V13H5V15H7V13H9V15H11V13H13V11H15V9H13V7H15V5H13V3H11V1H9V3H7V5H5ZM5 7H3V5H5V7ZM7 7V5H9V7H7ZM7 9V7H5V9H3V11H5V13H7V11H9V13H11V11H13V9H11V7H13V5H11V3H9V5H11V7H9V9H7ZM9 9H11V11H9V9ZM7 9V11H5V9H7Z"
-                        fill="currentColor"
-                      ></path>
-                    </svg>
-                  </div>
-                }
+                prefix={<OpacitySvg className={cx(styles.layoutIcon)} />}
                 suffix="%"
                 min={0}
                 max={100}
@@ -1682,21 +1276,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   onChange?.('radius', value);
                 }}
                 options={radiusOptions}
-                prefix={
-                  <div className={cx(styles.layoutIcon)}>
-                    <svg
-                      height="16"
-                      strokeLinejoin="round"
-                      viewBox="0 0 16 16"
-                      width="16"
-                    >
-                      <path
-                        d="M13.9658 3.25024H7.72168C5.82405 3.25024 4.28522 4.78817 4.28516 6.68579V14.5002H2.78516V6.68579C2.78522 3.95975 4.99562 1.75024 7.72168 1.75024H13.9658V3.25024Z"
-                        fill="#666666"
-                      ></path>
-                    </svg>
-                  </div>
-                }
+                prefix={<RadiusSvg className={cx(styles.layoutIcon)} />}
               />
             </div>
           </div>
@@ -1713,48 +1293,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
               onChange?.('shadowType', value);
             }}
             options={shadowOptions}
-            prefix={
-              <div className={cx(styles.layoutIcon)}>
-                <svg
-                  height="16"
-                  strokeLinejoin="round"
-                  viewBox="0 0 16 16"
-                  width="16"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <g clipPath="url(#clip0_11223_26193)">
-                      <path
-                        opacity="0.33"
-                        d="M15.25 12C15.25 13.7949 13.7949 15.25 12 15.25H4C2.20508 15.25 0.750002 13.7949 0.75 12V11.9492C1.63982 13.0724 3.00385 13.7499 4.47168 13.75H11.2832C12.8846 13.7499 14.3732 12.9417 15.25 11.6074V12Z"
-                        fill="currentColor"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      ></path>
-                      <rect
-                        x="0.75"
-                        y="0.75"
-                        width="14.5"
-                        height="11.5"
-                        rx="3.25"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      ></rect>
-                    </g>
-                    <defs>
-                      <clipPath id="clip0_11223_26193">
-                        <rect width="16" height="16" fill="white"></rect>
-                      </clipPath>
-                    </defs>
-                  </svg>
-                </svg>
-              </div>
-            }
+            prefix={<ShadowSvg className={cx(styles.layoutIcon)} />}
           />
         </div>
       </div>
