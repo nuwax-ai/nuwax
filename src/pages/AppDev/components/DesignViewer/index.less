@@ -69,17 +69,21 @@
   &:last-child {
     margin-bottom: 0;
   }
-}
 
-.propertyLabel {
-  font-size: @fontSizeSm;
-  font-weight: @fontWeightStrong;
-  color: @colorTextBase;
-  margin-bottom: 8px;
-}
+  .propertyInput {
+    width: 100%;
+  }
 
-.propertyInput {
-  width: 100%;
+  .propertyLabel {
+    font-size: @fontSizeSm;
+    font-weight: @fontWeightStrong;
+    color: @colorTextBase;
+    margin-bottom: 8px;
+  }
+
+  .shadowSelect {
+    width: 100%;
+  }
 }
 
 // 颜色选择器
@@ -181,34 +185,26 @@
   &:last-child {
     margin-bottom: 0;
   }
-}
 
-.typographySelect {
-  width: 100%;
-}
-
-.typographyInputGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  &.fullWidth {
-    grid-column: 1 / -1;
+  .typographyInputLabel {
+    font-size: @fontSizeSm;
+    color: @colorTextSecondary;
+    font-weight: @fontWeightStrong;
   }
-}
 
-// Border Width 输入框容器
-.borderWidthContainer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
+  .typographySelect {
+    width: 100%;
+  }
 
-.typographyInputLabel {
-  font-size: @fontSizeSm;
-  color: @colorTextSecondary;
-  font-weight: @fontWeightStrong;
+  .typographyInputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    &.fullWidth {
+      grid-column: 1 / -1;
+    }
+  }
 }
 
 // 按钮组样式
@@ -220,43 +216,43 @@
   border: 1px solid @colorBorder;
   background: @colorBgContainer;
   width: 100%;
-}
 
-.toggleButton {
-  flex: 1;
-  border: none;
-  border-radius: 0;
-  background: @colorBgContainer;
-  color: @colorTextBase;
-  padding: 6px 4px;
-  height: 32px;
-  min-width: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  position: relative;
-  cursor: pointer;
-
-  &:not(:last-child) {
-    border-right: 1px solid @colorBorder;
-  }
-
-  &:hover:not(.active) {
-    background: @colorFillQuaternary;
+  .toggleButton {
+    flex: 1;
+    border: none;
+    border-radius: 0;
+    background: @colorBgContainer;
     color: @colorTextBase;
-  }
+    padding: 6px 4px;
+    height: 32px;
+    min-width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    position: relative;
+    cursor: pointer;
 
-  &.active {
-    background: @colorPrimaryBg;
-    color: @colorPrimary;
-    font-weight: @fontWeightStrong;
-    z-index: 1;
-  }
+    &:not(:last-child) {
+      border-right: 1px solid @colorBorder;
+    }
 
-  svg {
-    width: 16px;
-    height: 12px;
-    display: block;
+    &:hover:not(.active) {
+      background: @colorFillQuaternary;
+      color: @colorTextBase;
+    }
+
+    &.active {
+      background: @colorPrimaryBg;
+      color: @colorPrimary;
+      font-weight: @fontWeightStrong;
+      z-index: 1;
+    }
+
+    svg {
+      width: 16px;
+      height: 12px;
+      display: block;
+    }
   }
 }
