@@ -1,0 +1,11 @@
+<svg
+  height="16"
+  strokeLinejoin="round"
+  viewBox="0 0 16 16"
+  width="16"
+>
+  <path
+    d="M15 14.5H1V9.5H15V14.5ZM2.5 13H13.5V11H2.5V13ZM15 8.5H1V4.5H15V8.5ZM2.5 7H13.5V6H2.5V7ZM15 3.5H1V2H15V3.5Z"
+    fill="currentColor"
+  ></path>
+</svg>
