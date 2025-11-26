@@ -1,7 +1,6 @@
 import SelectList from '@/components/custom/SelectList';
 import {
   CompressOutlined,
-  ExpandAltOutlined,
   ExpandOutlined,
   ItalicOutlined,
   LockOutlined,
@@ -851,7 +850,9 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
             {!isMarginExpanded ? (
               // 折叠状态：显示上下和左右两个输入框
               <div className={cx(styles.layoutInputs)}>
-                <div className={cx('flex items-center gap-4 flex-1')}>
+                <div
+                  className={cx('flex items-center flex-1', styles['gap-8'])}
+                >
                   <InputNumber
                     className={cx('flex-1')}
                     value={localMargin.top}
@@ -900,18 +901,21 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   />
                 </div>
                 <div className={cx(styles.layoutActions)}>
-                  <ExpandAltOutlined
-                    className={cx(styles.actionIcon, styles.expandIcon)}
+                  <Button
+                    type="text"
+                    icon={<ExpandOutlined />}
                     onClick={toggleMarginExpand}
                   />
                   {localMargin.isLinked ? (
-                    <LockOutlined
-                      className={cx(styles.actionIcon, styles.active)}
+                    <Button
+                      type="text"
+                      icon={<LockOutlined />}
                       onClick={toggleMarginLink}
                     />
                   ) : (
-                    <UnlockOutlined
-                      className={cx(styles.actionIcon)}
+                    <Button
+                      type="text"
+                      icon={<UnlockOutlined />}
                       onClick={toggleMarginLink}
                     />
                   )}
@@ -923,7 +927,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 <div className={cx(styles.expandedLayout)}>
                   <div className={cx(styles.expandedRow)}>
                     <InputNumber
-                      className={cx(styles.expandedInput)}
+                      className={cx('flex-1')}
                       value={localMargin.top}
                       onChange={(value) => handleMarginChange('top', value)}
                       prefix={
@@ -958,7 +962,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       controls={false}
                     />
                     <InputNumber
-                      className={cx(styles.expandedInput)}
+                      className={cx('flex-1')}
                       value={localMargin.bottom}
                       onChange={(value) => handleMarginChange('bottom', value)}
                       prefix={
@@ -995,7 +999,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   </div>
                   <div className={cx(styles.expandedRow)}>
                     <InputNumber
-                      className={cx(styles.expandedInput)}
+                      className={cx('flex-1')}
                       value={localMargin.left}
                       onChange={(value) => handleMarginChange('left', value)}
                       prefix={
@@ -1030,7 +1034,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       controls={false}
                     />
                     <InputNumber
-                      className={cx(styles.expandedInput)}
+                      className={cx('flex-1')}
                       value={localMargin.right}
                       onChange={(value) => handleMarginChange('right', value)}
                       prefix={
@@ -1067,22 +1071,21 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   </div>
                 </div>
                 <div className={cx(styles.layoutActions)}>
-                  <ExpandAltOutlined
-                    className={cx(
-                      styles.actionIcon,
-                      styles.expandIcon,
-                      styles.collapsed,
-                    )}
+                  <Button
+                    type="text"
+                    icon={<CompressOutlined />}
                     onClick={toggleMarginExpand}
                   />
                   {localMargin.isLinked ? (
-                    <LockOutlined
-                      className={cx(styles.actionIcon, styles.active)}
+                    <Button
+                      type="text"
+                      icon={<LockOutlined />}
                       onClick={toggleMarginLink}
                     />
                   ) : (
-                    <UnlockOutlined
-                      className={cx(styles.actionIcon)}
+                    <Button
+                      type="text"
+                      icon={<UnlockOutlined />}
                       onClick={toggleMarginLink}
                     />
                   )}
@@ -1097,7 +1100,9 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
             {!isPaddingExpanded ? (
               // 折叠状态：显示上下和左右两个输入框
               <div className={cx(styles.layoutInputs)}>
-                <div className={cx('flex items-center gap-4 flex-1')}>
+                <div
+                  className={cx('flex items-center flex-1', styles['gap-8'])}
+                >
                   <InputNumber
                     className={cx('flex-1')}
                     value={localPadding.top}
@@ -1146,18 +1151,21 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   />
                 </div>
                 <div className={cx(styles.layoutActions)}>
-                  <ExpandAltOutlined
-                    className={cx(styles.actionIcon, styles.expandIcon)}
+                  <Button
+                    type="text"
+                    icon={<ExpandOutlined />}
                     onClick={togglePaddingExpand}
                   />
                   {localPadding.isLinked ? (
-                    <LockOutlined
-                      className={cx(styles.actionIcon, styles.active)}
+                    <Button
+                      type="text"
+                      icon={<LockOutlined />}
                       onClick={togglePaddingLink}
                     />
                   ) : (
-                    <UnlockOutlined
-                      className={cx(styles.actionIcon)}
+                    <Button
+                      type="text"
+                      icon={<UnlockOutlined />}
                       onClick={togglePaddingLink}
                     />
                   )}
@@ -1169,7 +1177,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 <div className={cx(styles.expandedLayout)}>
                   <div className={cx(styles.expandedRow)}>
                     <InputNumber
-                      className={cx(styles.expandedInput)}
+                      className={cx('flex-1')}
                       value={localPadding.top}
                       onChange={(value) => handlePaddingChange('top', value)}
                       prefix={
@@ -1204,7 +1212,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       controls={false}
                     />
                     <InputNumber
-                      className={cx(styles.expandedInput)}
+                      className={cx('flex-1')}
                       value={localPadding.bottom}
                       onChange={(value) => handlePaddingChange('bottom', value)}
                       prefix={
@@ -1241,7 +1249,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   </div>
                   <div className={cx(styles.expandedRow)}>
                     <InputNumber
-                      className={cx(styles.expandedInput)}
+                      className={cx('flex-1')}
                       value={localPadding.left}
                       onChange={(value) => handlePaddingChange('left', value)}
                       prefix={
@@ -1276,7 +1284,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       controls={false}
                     />
                     <InputNumber
-                      className={cx(styles.expandedInput)}
+                      className={cx('flex-1')}
                       value={localPadding.right}
                       onChange={(value) => handlePaddingChange('right', value)}
                       prefix={
@@ -1313,22 +1321,21 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   </div>
                 </div>
                 <div className={cx(styles.layoutActions)}>
-                  <ExpandAltOutlined
-                    className={cx(
-                      styles.actionIcon,
-                      styles.expandIcon,
-                      styles.collapsed,
-                    )}
+                  <Button
+                    type="text"
+                    icon={<CompressOutlined />}
                     onClick={togglePaddingExpand}
                   />
                   {localPadding.isLinked ? (
-                    <LockOutlined
-                      className={cx(styles.actionIcon, styles.active)}
+                    <Button
+                      type="text"
+                      icon={<LockOutlined />}
                       onClick={togglePaddingLink}
                     />
                   ) : (
-                    <UnlockOutlined
-                      className={cx(styles.actionIcon)}
+                    <Button
+                      type="text"
+                      icon={<UnlockOutlined />}
                       onClick={togglePaddingLink}
                     />
                   )}
@@ -1443,12 +1450,11 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                     placeholder="0px"
                   />
                 </div>
-                <div className={cx(styles.layoutActions)}>
-                  <CompressOutlined
-                    className={cx(styles.actionIcon)}
-                    onClick={toggleBorderWidthExpand}
-                  />
-                </div>
+                <Button
+                  type="text"
+                  icon={<CompressOutlined />}
+                  onClick={toggleBorderWidthExpand}
+                />
               </div>
             ) : (
               // 展开状态：显示四边独立输入框（两行两列）
@@ -1456,7 +1462,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 <div className={cx(styles.expandedLayout)}>
                   <div className={cx(styles.expandedRow)}>
                     <InputNumber
-                      className={cx(styles.expandedInput)}
+                      className={cx('flex-1')}
                       value={localBorderWidth.top}
                       onChange={(value) =>
                         handleBorderWidthChange('top', value)
@@ -1493,7 +1499,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       controls={false}
                     />
                     <InputNumber
-                      className={cx(styles.expandedInput)}
+                      className={cx('flex-1')}
                       value={localBorderWidth.bottom}
                       onChange={(value) =>
                         handleBorderWidthChange('bottom', value)
@@ -1532,7 +1538,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   </div>
                   <div className={cx(styles.expandedRow)}>
                     <InputNumber
-                      className={cx(styles.expandedInput)}
+                      className={cx('flex-1')}
                       value={localBorderWidth.left}
                       onChange={(value) =>
                         handleBorderWidthChange('left', value)
@@ -1569,7 +1575,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       controls={false}
                     />
                     <InputNumber
-                      className={cx(styles.expandedInput)}
+                      className={cx('flex-1')}
                       value={localBorderWidth.right}
                       onChange={(value) =>
                         handleBorderWidthChange('right', value)
@@ -1607,12 +1613,11 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                     />
                   </div>
                 </div>
-                <div className={cx(styles.layoutActions)}>
-                  <ExpandOutlined
-                    className={cx(styles.actionIcon)}
-                    onClick={toggleBorderWidthExpand}
-                  />
-                </div>
+                <Button
+                  type="text"
+                  icon={<ExpandOutlined />}
+                  onClick={toggleBorderWidthExpand}
+                />
               </div>
             )}
           </div>
