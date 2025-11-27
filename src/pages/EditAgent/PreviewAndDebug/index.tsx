@@ -395,8 +395,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                         </div>
                         <RecommendList
                           className="mt-16"
-                          loading={loadingSuggest}
-                          chatSuggestList={chatSuggestList}
+                          chatSuggestList={
+                            agentConfigInfo?.guidQuestionDtos || []
+                          }
                           onClick={handleMessageSend}
                         />
                       </div>
