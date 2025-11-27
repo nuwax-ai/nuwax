@@ -26,18 +26,21 @@ import {
   AgentBaseInfo,
   AgentComponentInfo,
   AgentConfigInfo,
+  AgentConfigUpdateParams,
   ComponentModelBindConfig,
   GuidQuestionDto,
 } from '@/types/interfaces/agent';
 import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
+import { RequestResponse } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import { exportConfigFile } from '@/utils/exportImportFile';
+import { useRequest } from 'ahooks';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
-import React, { useEffect, useRef, useState } from 'react';
-import { history, useModel, useParams, useRequest } from 'umi';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { history, useModel, useParams } from 'umi';
 import PagePreviewIframe from '../../components/business-component/PagePreviewIframe';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
@@ -72,7 +75,8 @@ const EditAgent: React.FC = () => {
     setIsSuggest,
     messageList,
     setChatSuggestList,
-    // setMessageList,
+    setIsLoadingConversation,
+    runQueryConversation,
   } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
   // 智能体组件列表
@@ -111,28 +115,31 @@ const EditAgent: React.FC = () => {
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
     manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: AgentConfigInfo) => {
-      setAgentConfigInfo(result);
+    debounceWait: 300,
+    onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
+      setAgentConfigInfo(result?.data);
     },
   });
 
   // 查询智能体组件列表
   const { run: runComponentList } = useRequest(apiAgentComponentList, {
     manual: true,
-    debounceInterval: 300,
-    onSuccess: (data: AgentComponentInfo[]) => {
+    debounceWait: 300,
+    onSuccess: (result: RequestResponse<AgentComponentInfo[]>) => {
+      const { data } = result;
       setAgentComponentList(data || []);
     },
   });
 
+  // 查询智能体配置信息
   const { run: runUpdateAgent } = useRequest(apiAgentConfigInfo, {
     manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: AgentConfigInfo) => {
+    debounceWait: 300,
+    onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
+      const { data } = result;
       const _agentConfigInfo = {
         ...agentConfigInfo,
-        pageHomeIndex: result.pageHomeIndex,
+        pageHomeIndex: data?.pageHomeIndex,
       } as AgentConfigInfo;
 
       setAgentConfigInfo(_agentConfigInfo);
@@ -140,9 +147,9 @@ const EditAgent: React.FC = () => {
   });
 
   // 更新智能体基础配置信息
-  const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
+  const { runAsync: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
-    debounceInterval: 1000,
+    debounceWait: 1000,
   });
 
   useEffect(() => {
@@ -232,8 +239,11 @@ const EditAgent: React.FC = () => {
   };
 
   // 更新智能体信息
-  const handleChangeAgent = React.useCallback(
-    (value: string | string[] | number | GuidQuestionDto[], attr: string) => {
+  const handleChangeAgent = useCallback(
+    async (
+      value: string | string[] | number | GuidQuestionDto[],
+      attr: string,
+    ) => {
       // 获取当前配置信息
       const currentConfig = agentConfigInfo;
 
@@ -250,12 +260,6 @@ const EditAgent: React.FC = () => {
       if (typeof value === 'string' && typeof currentValue === 'string') {
         // 如果值相同（都为空字符串或值相等），不触发更新
         if (value === currentValue) {
-          console.log(
-            '[EditAgent] 值无变化，跳过API调用111111:',
-            attr,
-            '=',
-            value,
-          );
           return;
         }
       }
@@ -283,16 +287,6 @@ const EditAgent: React.FC = () => {
           return;
         }
       }
-
-      // 记录有意义的更新
-      // console.log(
-      //   '[EditAgent] 检测到有效更新:',
-      //   attr,
-      //   '从',
-      //   currentValue,
-      //   '到',
-      //   value,
-      // );
 
       // 更新智能体配置信息
       const _agentConfigInfo = handleUpdateEventQuestions(value, attr);
@@ -322,8 +316,7 @@ const EditAgent: React.FC = () => {
         guidQuestionDtos,
       } = _agentConfigInfo;
 
-      // 更新智能体信息
-      runUpdate({
+      const params = {
         id,
         name,
         description,
@@ -337,7 +330,26 @@ const EditAgent: React.FC = () => {
         openLongMemory,
         expandPageArea,
         guidQuestionDtos,
-      });
+      } as AgentConfigUpdateParams;
+
+      // 更新智能体信息
+      await runUpdate(params);
+
+      // 获取消息列表长度
+      const messageListLength = messageList?.length || 0;
+
+      /**
+       * 更新开场白预置问题列表, 当消息列表长度小于等于1时，更新开场白预置问题列表，
+       * 如果消息长度等于1，此消息是由开场白内容由后端填充的，所以需要同步更新
+       */
+      if (attr === 'openingChatMsg' && messageListLength <= 1) {
+        if (agentConfigInfo) {
+          const { devConversationId } = agentConfigInfo;
+          setIsLoadingConversation(false);
+          // 查询会话
+          runQueryConversation(devConversationId);
+        }
+      }
     },
     [agentConfigInfo], // 添加依赖
   );
