@@ -148,12 +148,6 @@ interface DesignViewerProps {
     vertical?: number;
     horizontal?: number;
   };
-  /** 尺寸配置 */
-  size?: {
-    width: number;
-    height: number;
-    isLocked?: boolean;
-  };
   /** 边框配置 */
   border?: {
     width?: number;

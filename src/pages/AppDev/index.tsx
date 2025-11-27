@@ -1435,8 +1435,8 @@ const AppDev: React.FC = () => {
               icon="Sparkles"
               color="primary"
               background="Default"
-              margin={{ vertical: 0, horizontal: 0, isLinked: true }}
-              padding={{ vertical: 0, horizontal: 0, isLinked: true }}
+              margin={{ vertical: 0, horizontal: 0 }}
+              padding={{ vertical: 0, horizontal: 0 }}
             />
             {/* 右侧代码编辑器区域 */}
             <div className={styles.rightPanel}>
