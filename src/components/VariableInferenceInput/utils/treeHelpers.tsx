@@ -3,28 +3,9 @@ import { VariableTreeNode, VariableType } from '../types';
 /**
  * 根据变量类型生成默认示例数据
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getDefaultExample = (type: VariableType): any => {
-  switch (type) {
-    case VariableType.String:
-      return '"示例文本"';
-    case VariableType.Integer:
-      return 123;
-    case VariableType.Number:
-      return 123.45;
-    case VariableType.Boolean:
-      return true;
-    case VariableType.Object:
-      return '{ ... }';
-    case VariableType.Array:
-    case VariableType.ArrayString:
-    case VariableType.ArrayInteger:
-    case VariableType.ArrayBoolean:
-    case VariableType.ArrayNumber:
-    case VariableType.ArrayObject:
-      return '[ ... ]';
-    default:
-      return null;
-  }
+  return null;
 };
 
 /**
