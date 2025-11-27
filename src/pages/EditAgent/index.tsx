@@ -250,7 +250,12 @@ const EditAgent: React.FC = () => {
       if (typeof value === 'string' && typeof currentValue === 'string') {
         // 如果值相同（都为空字符串或值相等），不触发更新
         if (value === currentValue) {
-          console.log('[EditAgent] 值无变化，跳过API调用:', attr, '=', value);
+          console.log(
+            '[EditAgent] 值无变化，跳过API调用111111:',
+            attr,
+            '=',
+            value,
+          );
           return;
         }
       }
@@ -280,14 +285,14 @@ const EditAgent: React.FC = () => {
       }
 
       // 记录有意义的更新
-      console.log(
-        '[EditAgent] 检测到有效更新:',
-        attr,
-        '从',
-        currentValue,
-        '到',
-        value,
-      );
+      // console.log(
+      //   '[EditAgent] 检测到有效更新:',
+      //   attr,
+      //   '从',
+      //   currentValue,
+      //   '到',
+      //   value,
+      // );
 
       // 更新智能体配置信息
       const _agentConfigInfo = handleUpdateEventQuestions(value, attr);
