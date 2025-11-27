@@ -93,6 +93,7 @@ const TableOperationBar: React.FC<TableOperationBarProps> = ({
               清除所有数据
             </Button>
             <Upload
+              // 是否禁用
               disabled={importLoading}
               accept={'.xlsx,.xls'}
               onChange={onChangeFile}
