@@ -2,11 +2,18 @@
 import CodeEditor from '@/components/CodeEditor';
 import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
+import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
+import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
+import {
+  PromptVariable,
+  VariableType,
+} from '@/components/VariableInferenceInput/types';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { VARIABLE_CONFIG_TYPE_OPTIONS } from '@/constants/node.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum, VariableConfigTypeEnum } from '@/types/enums/node';
 import { CodeLangEnum } from '@/types/enums/plugin';
+import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import {
   ExclamationCircleOutlined,
@@ -30,6 +37,31 @@ import { cycleOption, outPutConfigs } from '../params';
 import { InputAndOut, OtherFormList, TreeOutput } from './commonNode';
 import './nodeItem.less';
 // 定义一些公共的数组
+
+// 转换变量类型的辅助函数
+const transformToPromptVariables = (
+  configs: InputAndOutConfig[],
+): PromptVariable[] => {
+  return configs.map((item) => {
+    const typeStr = item.dataType?.toLowerCase() || 'string';
+    // 简单的类型映射，根据实际情况调整
+    let type: VariableType = VariableType.String;
+    if (Object.values(VariableType).includes(typeStr as VariableType)) {
+      type = typeStr as VariableType;
+    }
+
+    return {
+      key: item.key || item.name,
+      name: item.name,
+      type: type,
+      label: item.name, // 使用 name 作为 label
+      description: item.description || '',
+      children: item.children
+        ? transformToPromptVariables(item.children)
+        : undefined,
+    };
+  });
+};
 
 // 定义开始节点
 const StartNode: React.FC<NodeDisposeProps> = ({
@@ -86,6 +118,11 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
     { label: '返回变量', value: 'VARIABLE' },
     { label: '返回文本', value: 'TEXT' },
   ];
+  const outputArgs =
+    Form.useWatch(InputItemNameEnum.outputArgs, {
+      form,
+      preserve: true,
+    }) || [];
 
   return (
     <>
@@ -128,11 +165,27 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
                   />
                 </span>
               </div>
-              <Form.Item name="content">
-                <Input.TextArea
+              <Form.Item
+                name="content"
+                getValueFromEvent={(value) =>
+                  typeof value === 'string' ? extractTextFromHTML(value) : ''
+                }
+              >
+                <TiptapVariableInput
                   placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
-                  autoSize={{ minRows: 3, maxRows: 5 }}
-                  style={{ marginBottom: '10px' }}
+                  style={{
+                    minHeight: '80px',
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '6px',
+                    padding: '4px 11px',
+                    marginBottom: '10px',
+                  }}
+                  variables={transformToPromptVariables(
+                    outputArgs.filter(
+                      (item: InputAndOutConfig) =>
+                        !['', null, undefined].includes(item.name),
+                    ),
+                  )}
                 />
               </Form.Item>
             </>
@@ -318,6 +371,12 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
     value: '',
   });
 
+  const inputArgs =
+    Form.useWatch(InputItemNameEnum.inputArgs, {
+      form,
+      preserve: true,
+    }) || [];
+
   // 添加新选项
   const addItem = (
     e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>,
@@ -429,10 +488,26 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   <Button type="text" icon={<SettingOutlined />} size="small" />
                 </Popover>
               </div>
-              <Form.Item name="text">
-                <Input.TextArea
+              <Form.Item
+                name="text"
+                getValueFromEvent={(value) =>
+                  typeof value === 'string' ? extractTextFromHTML(value) : ''
+                }
+              >
+                <TiptapVariableInput
                   placeholder="可以使用{{变量名}}的方式引用输入参数中的变量"
-                  autoSize={{ minRows: 3, maxRows: 5 }}
+                  style={{
+                    minHeight: '80px',
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '6px',
+                    padding: '4px 11px',
+                  }}
+                  variables={transformToPromptVariables(
+                    inputArgs.filter(
+                      (item: InputAndOutConfig) =>
+                        !['', null, undefined].includes(item.name),
+                    ),
+                  )}
                 />
               </Form.Item>
             </div>

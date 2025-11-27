@@ -2,7 +2,6 @@
 
 ## Development Setup
 
-
 1. Install Dependencies
 
 ```bash
@@ -26,8 +25,6 @@ npm run dev
 3. Access Application
 
 Open browser and visit `http://localhost:3000`
-
-
 
 ## Project Structure
 
@@ -72,11 +69,10 @@ public/
 └── bg/                 # Background image resources
 ```
 
-
 ## Building
 
-
 #### Development Environment Build
+
 ```bash
 pnpm build:dev
 ```
@@ -86,12 +82,12 @@ pnpm build:dev
 ```bash
 pnpm build:prod
 ```
+
 #### Local Preview of Build Results
 
 ```bash
 pnpm serve
 ```
-
 
 ### Code Standards
 
@@ -101,7 +97,6 @@ pnpm serve
 - **State Management**: Use UmiJS model for global state, useState/useReducer for local state
 - **Performance Optimization**: Use `useMemo` and `useCallback` to optimize rendering, routes and components must be lazy loaded
 - **Code Quality**: Follow ESLint and Prettier standards, each component must have detailed JSDoc comments
-
 
 #### Performance Optimization
 
