@@ -264,6 +264,7 @@ export default () => {
       }
       // 不存在会话消息时，才显示开场白预置问题
       else {
+        setMessageList([]);
         const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
         // 如果存在预置问题，显示预置问题
         setChatSuggestList(guidQuestionDtos);
