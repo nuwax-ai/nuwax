@@ -219,10 +219,6 @@ const EditAgent: React.FC = () => {
     }
 
     setAgentConfigInfo(_agentConfigInfo);
-    // @ts-ignore
-    // setMessageList(prev => prev.map(item =>
-    //   item.id === null ? {...item, text: _agentConfigInfo.openingChatMsg} : item
-    // ))
 
     // 预置问题, 并且没有消息时，更新建议预置问题列表
     if (attr === 'guidQuestionDtos' && !messageList?.length) {
@@ -549,7 +545,6 @@ const EditAgent: React.FC = () => {
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onChangeAgent={handleChangeAgent}
-              onConfirmUpdateEventQuestions={handleUpdateEventQuestions}
               onInsertSystemPrompt={handleInsertSystemPrompt}
             />
           </div>
