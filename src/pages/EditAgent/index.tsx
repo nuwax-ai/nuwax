@@ -232,55 +232,110 @@ const EditAgent: React.FC = () => {
   };
 
   // 更新智能体信息
-  const handleChangeAgent = (
-    value: string | string[] | number | GuidQuestionDto[],
-    attr: string,
-  ) => {
-    // 更新智能体配置信息
-    const _agentConfigInfo = handleUpdateEventQuestions(value, attr);
-    // 用户问题建议
-    if (attr === 'openSuggest') {
-      setIsSuggest(value === OpenCloseEnum.Open);
-    }
-    // 打开扩展页面时，检查页面是否存在
-    // 展开页面区在删除页面后重新添加没有后端接口没有返回添加的页面地址，需要前端手动刷新
-    if (attr === 'expandPageArea') {
-      runUpdateAgent(agentId);
-    }
+  const handleChangeAgent = React.useCallback(
+    (value: string | string[] | number | GuidQuestionDto[], attr: string) => {
+      // 获取当前配置信息
+      const currentConfig = agentConfigInfo;
 
-    const {
-      id,
-      name,
-      description,
-      icon,
-      userPrompt,
-      openSuggest,
-      systemPrompt,
-      suggestPrompt,
-      openingChatMsg,
-      openScheduledTask,
-      openLongMemory,
-      expandPageArea,
-      guidQuestionDtos,
-    } = _agentConfigInfo;
+      // 如果配置信息还未加载，跳过处理
+      if (!currentConfig) {
+        console.log('[EditAgent] 配置信息尚未加载，跳过更新:', attr);
+        return;
+      }
 
-    // 更新智能体信息
-    runUpdate({
-      id,
-      name,
-      description,
-      icon,
-      systemPrompt,
-      userPrompt,
-      openSuggest,
-      suggestPrompt,
-      openingChatMsg,
-      openScheduledTask,
-      openLongMemory,
-      expandPageArea,
-      guidQuestionDtos,
-    });
-  };
+      // 检查值是否有实际变化，避免不必要的API调用
+      const currentValue = currentConfig[attr as keyof AgentConfigInfo];
+
+      // 对于字符串类型，进行深度比较
+      if (typeof value === 'string' && typeof currentValue === 'string') {
+        // 如果值相同（都为空字符串或值相等），不触发更新
+        if (value === currentValue) {
+          console.log('[EditAgent] 值无变化，跳过API调用:', attr, '=', value);
+          return;
+        }
+      }
+
+      // 对于数组类型（如guidQuestionDtos），进行深度比较
+      if (Array.isArray(value) && Array.isArray(currentValue)) {
+        if (JSON.stringify(value) === JSON.stringify(currentValue)) {
+          console.log('[EditAgent] 数组值无变化，跳过API调用:', attr);
+          return;
+        }
+      }
+
+      // 对于布尔值，直接比较
+      if (typeof value === 'boolean' && typeof currentValue === 'boolean') {
+        if (value === currentValue) {
+          console.log('[EditAgent] 布尔值无变化，跳过API调用:', attr);
+          return;
+        }
+      }
+
+      // 对于数字类型，直接比较
+      if (typeof value === 'number' && typeof currentValue === 'number') {
+        if (value === currentValue) {
+          console.log('[EditAgent] 数字值无变化，跳过API调用:', attr);
+          return;
+        }
+      }
+
+      // 记录有意义的更新
+      console.log(
+        '[EditAgent] 检测到有效更新:',
+        attr,
+        '从',
+        currentValue,
+        '到',
+        value,
+      );
+
+      // 更新智能体配置信息
+      const _agentConfigInfo = handleUpdateEventQuestions(value, attr);
+      // 用户问题建议
+      if (attr === 'openSuggest') {
+        setIsSuggest(value === OpenCloseEnum.Open);
+      }
+      // 打开扩展页面时，检查页面是否存在
+      // 展开页面区在删除页面后重新添加没有后端接口没有返回添加的页面地址，需要前端手动刷新
+      if (attr === 'expandPageArea') {
+        runUpdateAgent(agentId);
+      }
+
+      const {
+        id,
+        name,
+        description,
+        icon,
+        userPrompt,
+        openSuggest,
+        systemPrompt,
+        suggestPrompt,
+        openingChatMsg,
+        openScheduledTask,
+        openLongMemory,
+        expandPageArea,
+        guidQuestionDtos,
+      } = _agentConfigInfo;
+
+      // 更新智能体信息
+      runUpdate({
+        id,
+        name,
+        description,
+        icon,
+        systemPrompt,
+        userPrompt,
+        openSuggest,
+        suggestPrompt,
+        openingChatMsg,
+        openScheduledTask,
+        openLongMemory,
+        expandPageArea,
+        guidQuestionDtos,
+      });
+    },
+    [agentConfigInfo], // 添加依赖
+  );
 
   /**
    * 处理插入系统提示词
