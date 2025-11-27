@@ -150,10 +150,8 @@
 .mention-suggestion-popup,
 .variable-suggestion-popup {
   background: #fff;
-  border: 1px solid #d9d9d9;
+  border: @lineWidth solid @colorBorderSecondary;
   border-radius: @borderRadius;
-  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
-    0 9px 28px 8px rgba(0, 0, 0, 5%);
   width: 300px;
   height: 240px;
   z-index: 9999;
@@ -173,6 +171,16 @@
   background-color: #f5f5f5;
 }
 
+.variable-suggestion-popup .ant-tree-list-holder-inner {
+  padding-top: 12px;
+  padding-right: 24px;
+}
+
+.variable-suggestion-popup
+  .ant-tabs-content-holder
+  .ant-tree-list-holder-inner {
+  padding-top: 0;
+}
 // Tabs 样式调整
 .variable-suggestion-tabs {
   height: 100%;
