@@ -70,35 +70,78 @@ export const extractTextFromHTML = (html: string): string => {
     mention.parentNode?.replaceChild(textNode, mention);
   });
 
-  // 提取纯文本（保留段落结构，但简化换行）
+  // 提取纯文本（保留段落结构和硬换行）
+  // 规则：每个段落（包括空段落）都转换为一个换行符
+  // <p>text</p> -> text\n
+  // <p></p> -> \n
+  // <p>text1</p><p>text2</p> -> text1\ntext2\n
+  // <p>text</p><p></p> -> text\n\n
+  // <p></p><p>text</p> -> \ntext\n
+  // <p></p><p></p> -> \n\n
+
   let result = '';
+
   const processNode = (node: Node) => {
     if (node.nodeType === Node.TEXT_NODE) {
       result += node.textContent || '';
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       const element = node as Element;
-      // 段落之间添加换行
-      if (element.tagName === 'P' && result && !result.endsWith('\n')) {
+      const childNodes = Array.from(node.childNodes);
+
+      // 处理硬换行（<br> 或 <br/>）
+      if (element.tagName === 'BR') {
         result += '\n';
+        return;
       }
-      // 递归处理子节点
-      Array.from(node.childNodes).forEach(processNode);
+
+      // 处理段落
+      if (element.tagName === 'P') {
+        // 递归处理子节点（获取段落内容）
+        childNodes.forEach((child) => {
+          processNode(child);
+        });
+
+        // 每个段落结束后都添加换行符（包括空段落）
+        // 这样空段落就会转换为一个换行符
+        result += '\n';
+      } else {
+        // 其他元素，递归处理子节点
+        childNodes.forEach((child) => {
+          processNode(child);
+        });
+      }
     }
   };
 
-  Array.from(temp.childNodes).forEach(processNode);
+  // 处理所有根节点
+  Array.from(temp.childNodes).forEach((node) => {
+    processNode(node);
+  });
 
-  // 清理多余的换行和空格
-  return result.replace(/\n{3,}/g, '\n\n').trim();
+  // 清理多余的连续换行（最多保留两个连续换行）
+  // 注意：不使用 trim()，保留首尾的换行符以保留空行
+  return result.replace(/\n{3,}/g, '\n\n');
 };
 
 /**
  * 清理 HTML 内容中的首尾空段落
  * @param html HTML 内容
+ * @param preserveEmptyLines 是否保留空行（默认 false，为了向后兼容）
  * @returns 清理后的 HTML 内容
  */
-export const cleanHTMLParagraphs = (html: string): string => {
+export const cleanHTMLParagraphs = (
+  html: string,
+  preserveEmptyLines: boolean = false,
+): string => {
   if (!html) return '';
+
+  // 如果保留空行，只移除完全为空的内容，不清理首尾空段落
+  if (preserveEmptyLines) {
+    const trimmed = html.trim();
+    // 如果清理后为空，返回空字符串
+    if (!trimmed) return '';
+    return html; // 保留原始格式，包括首尾的空段落
+  }
 
   let cleaned = html.trim();
 
@@ -140,11 +183,13 @@ export const convertTextToHTML = (
 
   let html = text;
 
-  // 如果已经是 HTML 格式，先清理首尾的空段落
+  // 如果已经是 HTML 格式，保留空行，不清理首尾的空段落
   if (isHTML) {
-    html = cleanHTMLParagraphs(html);
-    // 如果清理后为空，返回空字符串
-    if (!html) return '';
+    // 保留空行，不清理首尾空段落
+    const trimmed = html.trim();
+    if (!trimmed) return '';
+    // 直接返回，保留原始格式包括空段落
+    // html = cleanHTMLParagraphs(html, true);
   }
 
   // 转换 {#ToolBlock ...#}...{#/ToolBlock#} 格式
@@ -167,23 +212,31 @@ export const convertTextToHTML = (
     );
   }
 
-  // 如果已经是 HTML 格式（包含段落标签），直接返回
+  // 如果已经是 HTML 格式（包含段落标签），需要处理硬换行
   if (isHTML && /<p[^>]*>/i.test(html)) {
+    // 将 <br> 标签转换为硬换行节点（Tiptap 会识别）
+    html = html.replace(/<br\s*\/?>/gi, '<br>');
     return html;
   }
 
   // 如果内容为空，返回空字符串（不添加空段落）
   if (!html.trim()) return '';
 
-  // 对于纯文本，将换行符转换为段落
+  // 对于纯文本，将换行符转换为段落或硬换行
   // 将文本按换行符分割，每行包装在一个 <p> 标签中
-  const lines = html.split('\n');
-  const paragraphs = lines.map((line) => {
+  // 连续的空行会被转换为多个空段落
+  // 统一换行符为 \n
+  const normalizedHtml = html.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = normalizedHtml.split('\n');
+  const paragraphs: string[] = [];
+
+  lines.forEach((line) => {
     // 如果行为空，创建空段落（保留空行）
-    if (!line.trim()) {
-      return '<p></p>';
+    if (!line) {
+      paragraphs.push('<p></p>');
+    } else {
+      paragraphs.push(`<p>${line}</p>`);
     }
-    return `<p>${line}</p>`;
   });
 
   return paragraphs.join('');
