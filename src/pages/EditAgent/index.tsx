@@ -2,11 +2,16 @@ import CreateAgent from '@/components/CreateAgent';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import ResizableSplit from '@/components/ResizableSplit';
 import ShowStand from '@/components/ShowStand';
+import {
+  PromptVariable,
+  VariableType,
+} from '@/components/VariableInferenceInput/types';
 import VersionHistory from '@/components/VersionHistory';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import CreateTempChatModal from '@/pages/SpaceDevelop/CreateTempChatModal';
 import {
+  apiAgentComponentList,
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
@@ -70,6 +75,34 @@ const EditAgent: React.FC = () => {
     // setMessageList,
   } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
+  // 智能体组件列表
+  const [agentComponentList, setAgentComponentList] = useState<
+    AgentComponentInfo[]
+  >([]);
+
+  // 转换变量类型的辅助函数
+  const transformToPromptVariables = (configs: any[]): PromptVariable[] => {
+    if (!configs) return [];
+    return configs.map((item) => {
+      const typeStr = item.dataType?.toLowerCase() || 'string';
+      // 简单的类型映射，根据实际情况调整
+      let type: VariableType = VariableType.String;
+      if (Object.values(VariableType).includes(typeStr as VariableType)) {
+        type = typeStr as VariableType;
+      }
+
+      return {
+        key: item.key || item.name,
+        name: item.name,
+        type: type,
+        label: item.name, // 使用 name 作为 label
+        description: item.description || '',
+        children: item.children
+          ? transformToPromptVariables(item.children)
+          : undefined,
+      };
+    });
+  };
 
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -81,6 +114,15 @@ const EditAgent: React.FC = () => {
     debounceInterval: 300,
     onSuccess: (result: AgentConfigInfo) => {
       setAgentConfigInfo(result);
+    },
+  });
+
+  // 查询智能体组件列表
+  const { run: runComponentList } = useRequest(apiAgentComponentList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (data: AgentComponentInfo[]) => {
+      setAgentComponentList(data || []);
     },
   });
 
@@ -105,6 +147,7 @@ const EditAgent: React.FC = () => {
 
   useEffect(() => {
     run(agentId);
+    runComponentList(agentId);
     // 设置页面title
     setTitle();
   }, [agentId]);
@@ -112,6 +155,14 @@ const EditAgent: React.FC = () => {
   useEffect(() => {
     addBaseTarget();
   }, []);
+
+  // 绑定的变量信息
+  const variablesInfo = React.useMemo(() => {
+    return agentComponentList?.find(
+      (item: AgentComponentInfo) =>
+        item.type === AgentComponentTypeEnum.Variable,
+    );
+  }, [agentComponentList]);
 
   // 确认编辑智能体
   const handlerConfirmEditAgent = (info: AgentBaseInfo) => {
@@ -406,6 +457,17 @@ const EditAgent: React.FC = () => {
                 handleChangeAgent(value, 'systemPrompt')
               }
               onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
+              variables={transformToPromptVariables(
+                variablesInfo?.bindConfig?.variables || [],
+              )}
+              skills={
+                agentComponentList?.filter(
+                  (item: AgentComponentInfo) =>
+                    item.type === AgentComponentTypeEnum.Plugin ||
+                    item.type === AgentComponentTypeEnum.Workflow ||
+                    item.type === AgentComponentTypeEnum.MCP,
+                ) || []
+              }
             />
             {/*配置区域*/}
             <AgentArrangeConfig

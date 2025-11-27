@@ -1,0 +1,253 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.designViewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: @colorBgContainer;
+  border-left: @lineWidth solid @colorBorderSecondary;
+}
+
+// 面包屑容器
+.breadcrumbContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: @lineWidth solid @colorBorderSecondary;
+  background: @colorFillQuaternary;
+
+  :global(.ant-breadcrumb) {
+    flex: 1;
+
+    :global(.ant-breadcrumb-link) {
+      color: @colorTextBase;
+      font-size: @fontSize;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    :global(.ant-breadcrumb-separator) {
+      color: @colorTextTertiary;
+      margin: 0 8px;
+    }
+  }
+}
+
+.breadcrumbIcon {
+  color: @colorPrimary;
+  font-size: @fontSize;
+}
+
+.moreIcon {
+  color: @colorTextBase;
+  font-size: @fontSizeLg;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: @colorPrimary;
+    background: @colorPrimaryBg;
+  }
+}
+
+// 属性配置容器
+.propertiesContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+
+  // 属性区块
+  .propertySection {
+    margin-bottom: 24px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .propertyInput {
+      width: 100%;
+    }
+
+    .propertyLabel {
+      font-size: @fontSizeSm;
+      font-weight: @fontWeightStrong;
+      color: @colorTextBase;
+      margin-bottom: 8px;
+    }
+
+    .shadowSelect {
+      width: 100%;
+    }
+
+    .layoutIcon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: auto;
+      color: @colorTextTertiary;
+
+      svg {
+        width: 100%;
+        height: 100%;
+      }
+    }
+  }
+}
+
+// 颜色选择器
+.colorSwatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: @colorPrimary;
+  border: 1px solid @colorBorder;
+  flex-shrink: 0;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+}
+
+// 背景图标
+.backgroundIcon {
+  color: @colorTextTertiary;
+  font-size: @fontSize;
+}
+
+// 布局配置
+.layoutSubSection {
+  margin-bottom: 16px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.layoutLabel {
+  font-size: @fontSizeSm;
+  color: @colorTextSecondary;
+  margin-bottom: 8px;
+}
+
+.layoutInputs {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+
+  .gap-8 {
+    gap: 8px;
+  }
+}
+
+// 图标样式已移至 SVG，保留此注释以便将来扩展
+.layoutActions {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+// 锁定图标样式
+.lockedButton {
+  color: #1890ff !important;
+  background-color: #e6f7ff;
+  border-radius: 8px;
+
+  &:hover {
+    background-color: #bae7ff !important;
+  }
+}
+
+// 展开状态布局
+.expandedLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.expandedRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+// Typography 详细设置样式
+.typographyDetails {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.typographyRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .typographyInputLabel {
+    font-size: @fontSizeSm;
+    color: @colorTextSecondary;
+    font-weight: @fontWeightStrong;
+  }
+
+  .typographySelect {
+    width: 100%;
+  }
+
+  .typographyInputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    &.fullWidth {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+// 按钮组样式
+.buttonGroup {
+  display: flex;
+  gap: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid @colorBorder;
+  background: @colorBgContainer;
+  width: 100%;
+
+  .toggleButton {
+    flex: 1;
+    border: none;
+    border-radius: 0;
+    transition: all 0.2s ease;
+
+    &:not(:last-child) {
+      border-right: 1px solid @colorBorder;
+    }
+
+    &:hover:not(.active) {
+      background: @colorFillQuaternary;
+      color: @colorTextBase;
+    }
+
+    &.active {
+      background: @colorPrimaryBg;
+      color: @colorPrimary;
+      font-weight: @fontWeightStrong;
+      z-index: 1;
+    }
+  }
+}
