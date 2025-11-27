@@ -8,6 +8,7 @@ import type { OpenRemarksEditProps } from '@/types/interfaces/agentConfig';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Input, theme } from 'antd';
 import classNames from 'classnames';
+import { cloneDeep } from 'lodash';
 import React, { useEffect, useRef, useState } from 'react';
 import GuidQuestionSetModal from './GuidQuestionSetModal';
 import styles from './index.less';
@@ -74,7 +75,7 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
 
   // 修改开场白引导问题
   const handleChangeGuidQuestions = (index: number, value: string) => {
-    const _guidQuestionDtos = [...guidQuestionDtos];
+    const _guidQuestionDtos = cloneDeep(guidQuestionDtos);
     _guidQuestionDtos[index].info = value;
     setGuidQuestionDtos(_guidQuestionDtos);
     onChangeAgent(_guidQuestionDtos, 'guidQuestionDtos');

@@ -82,14 +82,99 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
     setConfigArgs(_configArgs);
   };
 
-  // 是否禁用默认值
-  const isDefaultValueDisabled = (record: BindConfigWithSub) => {
+  /**
+   * 判断是否为复杂类型（对象或数组类型）
+   * @param record - 参数配置记录
+   * @returns 是否为对象或数组类型
+   */
+  const isComplexType = (record: BindConfigWithSub): boolean => {
     return (
       DataTypeEnum.Object === record.dataType ||
       DataTypeEnum.Array_Object === record.dataType ||
-      record.dataType?.includes('Array') ||
-      !record.enable
+      !!record.dataType?.includes('Array')
     );
+  };
+
+  /**
+   * 判断是否有下级参数
+   * @param record - 参数配置记录
+   * @returns 是否有下级参数（subArgs 存在且长度大于 0）
+   */
+  const hasSubArgs = (record: BindConfigWithSub): boolean => {
+    return !!(record.subArgs && record.subArgs.length > 0);
+  };
+
+  // 是否禁用默认值
+  // 智能体中插件、工作流参数变量引用，数组和对象没有下级参数时（有下级时保持现状），允许引用（不允许输入）
+  const isDefaultValueDisabled = (record: BindConfigWithSub) => {
+    // return (
+    //   DataTypeEnum.Object === record.dataType ||
+    //   DataTypeEnum.Array_Object === record.dataType ||
+    //   record.dataType?.includes('Array') ||
+    //   !record.enable
+    // );
+
+    // 数组和对象没有下级参数时（有下级时保持现状），允许引用（不允许输入）
+    if (isComplexType(record)) {
+      return hasSubArgs(record);
+    }
+
+    // 其他类型保持现状
+    return !record.enable;
+  };
+
+  // 获取参数值设置默认下拉选项
+  const getOptions = (record: BindConfigWithSub) => {
+    if (isComplexType(record)) {
+      // 数组和对象没有下级参数时，只允许引用（不允许输入），所以只显示引用选项
+      if (!hasSubArgs(record)) {
+        return ParamsSettingDefaultOptions.filter(
+          (item) => item.value === BindValueType.Reference,
+        );
+      }
+      return ParamsSettingDefaultOptions;
+    }
+
+    return ParamsSettingDefaultOptions;
+  };
+
+  // 获取参数默认值
+  const getDefaultValue = (record: BindConfigWithSub) => {
+    // 对象或数组类型
+    if (isComplexType(record)) {
+      // 数组和对象没有下级参数时，允许引用（不允许输入）
+      if (!hasSubArgs(record)) {
+        return BindValueType.Reference;
+      }
+      // 存在下级时，显示默认值
+      return record.bindValueType;
+    }
+    // 其他类型
+    return record.bindValueType;
+  };
+
+  /**
+   * 是否显示输入框
+   * 规则：
+   * 1. 数组和对象类型：没有下级参数时，不允许输入（只显示引用选择框）
+   * 2. 数组和对象类型：有下级参数时，允许输入
+   * 3. 其他类型：根据 bindValueType 是否为 Input 来决定
+   * @param record - 参数配置记录
+   * @returns 是否显示输入框
+   */
+  const isShowInput = (record: BindConfigWithSub) => {
+    // 判断是否为复杂类型（对象或数组）
+    if (isComplexType(record)) {
+      // 如果没有下级参数（subArgs 为空或长度为 0），则不显示输入框
+      // 此时只能通过引用选择框选择变量，不能直接输入值
+      if (!hasSubArgs(record)) {
+        return false;
+      }
+      // 有下级参数时，允许输入
+      return true;
+    }
+    // 其他类型：只有当 bindValueType 为 Input 时才显示输入框
+    return record.bindValueType === BindValueType.Input;
   };
 
   // 入参配置columns
@@ -145,13 +230,16 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
             <SelectList
               className={cx(styles.select)}
               disabled={isDefaultValueDisabled(record)}
-              value={record.bindValueType}
+              // 获取参数默认值, 默认值为record.bindValueType, 但是数组和对象没有下级参数时，允许引用（不允许输入）
+              value={getDefaultValue(record)}
               onChange={(value) =>
                 handleInputValue(record.key, 'bindValueType', value)
               }
-              options={ParamsSettingDefaultOptions}
+              // 获取参数值设置默认下拉选项, 数组和对象没有下级参数时，允许引用（不允许输入）
+              options={getOptions(record)}
             />
-            {record.bindValueType === BindValueType.Input ? (
+            {/* 是否显示输入框，数组和对象没有下级参数时，不允许输入，只显示下拉选择框, 其他类型，根据record.bindValueType === BindValueType.Input显示输入框或下拉选择框 */}
+            {isShowInput(record) ? (
               <Input
                 rootClassName={cx(styles.select)}
                 placeholder="请填写"
