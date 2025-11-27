@@ -22,7 +22,6 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   agentConfigInfo,
   pageArgConfigs,
   onChangeAgent,
-  onConfirmUpdateEventQuestions,
 }) => {
   const { token } = theme.useToken();
   // 开场白内容
@@ -95,7 +94,7 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   const handleConfirmUpdateQuestions = (newQuestions: GuidQuestionDto[]) => {
     setOpen(false);
     setGuidQuestionDtos(newQuestions);
-    onConfirmUpdateEventQuestions(newQuestions, 'guidQuestionDtos');
+    onChangeAgent(newQuestions, 'guidQuestionDtos');
   };
 
   return (

@@ -70,7 +70,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   agentId,
   agentConfigInfo,
   onChangeAgent,
-  onConfirmUpdateEventQuestions,
   onInsertSystemPrompt,
 }) => {
   // 插件弹窗
@@ -768,7 +767,6 @@ ${
           agentConfigInfo={agentConfigInfo}
           pageArgConfigs={pageArgConfigs}
           onChangeAgent={onChangeAgent}
-          onConfirmUpdateEventQuestions={onConfirmUpdateEventQuestions}
         />
       ),
       classNames: {
