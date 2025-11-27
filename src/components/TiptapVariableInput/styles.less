@@ -87,11 +87,13 @@
     display: inline-block !important;
     background-color: #e6f7ff !important;
     color: #1890ff !important;
-    margin: 0 1px !important;
+    padding: 0 4px !important; // 增加内边距
+    border: 1px solid transparent !important; // 增加透明边框以对齐高度
+    margin: 0 2px !important; // 调整边距：移除上下边距，保留左右边距
     font-size: 12px !important;
     line-height: 20px !important;
     user-select: none !important;
-    vertical-align: middle !important;
+    vertical-align: baseline !important; // 改为 baseline 对齐
     font-family: Monaco, Menlo, 'Courier New', monospace !important;
   }
 
@@ -114,12 +116,12 @@
     color: #52c41a !important;
     padding: 0 4px !important;
     border-radius: 4px !important;
-    margin: 0 2px !important;
+    margin: 0 2px !important; // 调整边距：移除上下边距，保留左右边距
     font-size: 12px !important;
     line-height: 20px !important;
     border: 1px solid #b7eb8f !important;
     user-select: none !important;
-    vertical-align: middle !important;
+    vertical-align: baseline !important; // 改为 baseline 对齐
     cursor: default !important;
   }
 
@@ -130,12 +132,12 @@
     color: #1890ff !important;
     padding: 2px 6px !important;
     border-radius: 4px !important;
-    margin: 0 2px !important;
+    margin: 2px !important;
     font-size: 12px !important;
     line-height: 20px !important;
     border: 1px solid #91d5ff !important;
     user-select: none !important;
-    vertical-align: middle !important;
+    vertical-align: baseline !important;
     cursor: default !important;
   }
 

@@ -358,7 +358,7 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
       if (el instanceof HTMLElement && !el.getAttribute('style')) {
         el.setAttribute(
           'style',
-          'display: inline-block !important; background-color: #f6ffed !important; color: #52c41a !important; padding: 0 4px !important; border-radius: 4px !important; margin: 0 2px !important; font-size: 12px !important; line-height: 20px !important; border: 1px solid #b7eb8f !important; user-select: none !important; vertical-align: middle !important; cursor: default !important;',
+          'display: inline-block !important; background-color: #f6ffed !important; color: #52c41a !important; padding: 0 4px !important; border-radius: 4px !important; margin: 0 2px !important; font-size: 12px !important; line-height: 20px !important; border: 1px solid #b7eb8f !important; user-select: none !important; vertical-align: baseline !important; cursor: default !important;',
         );
       }
     });
@@ -379,7 +379,7 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
       if (el instanceof HTMLElement && !el.getAttribute('style')) {
         el.setAttribute(
           'style',
-          'display: inline-block !important; background-color: #e6f7ff !important; color: #1890ff !important; padding: 2px 6px !important; border-radius: 4px !important; margin: 0 2px !important; font-size: 12px !important; line-height: 20px !important; border: 1px solid #91d5ff !important; user-select: none !important; vertical-align: middle !important; cursor: default !important;',
+          'display: inline-block !important; background-color: #e6f7ff !important; color: #1890ff !important; padding: 2px 6px !important; border-radius: 4px !important; margin: 2px 2px !important; font-size: 12px !important; line-height: 20px !important; border: 1px solid #91d5ff !important; user-select: none !important; vertical-align: baseline !important; cursor: default !important;',
         );
       }
     });
