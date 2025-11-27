@@ -389,12 +389,17 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                     name={agentConfigInfo?.name as string}
                     // 会话建议
                     extra={
-                      <RecommendList
-                        className="mt-16"
-                        loading={loadingSuggest}
-                        chatSuggestList={chatSuggestList}
-                        onClick={handleMessageSend}
-                      />
+                      <div className="flex flex-col items-center content-center">
+                        <div className={cx(styles['opening-chat-msg'])}>
+                          {agentConfigInfo?.openingChatMsg}
+                        </div>
+                        <RecommendList
+                          className="mt-16"
+                          loading={loadingSuggest}
+                          chatSuggestList={chatSuggestList}
+                          onClick={handleMessageSend}
+                        />
+                      </div>
                     }
                   />
                 )
