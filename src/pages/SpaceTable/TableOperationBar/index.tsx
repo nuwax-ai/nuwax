@@ -93,6 +93,7 @@ const TableOperationBar: React.FC<TableOperationBarProps> = ({
               清除所有数据
             </Button>
             <Upload
+              disabled={importLoading}
               accept={'.xlsx,.xls'}
               onChange={onChangeFile}
               action={`${process.env.BASE_URL}/api/compose/db/table/importExcel/${tableId}`}
@@ -104,7 +105,11 @@ const TableOperationBar: React.FC<TableOperationBarProps> = ({
               showUploadList={false}
               beforeUpload={beforeUploadDefault}
             >
-              <Button icon={<UploadOutlined />} loading={importLoading}>
+              <Button
+                icon={<UploadOutlined />}
+                loading={importLoading}
+                disabled={importLoading}
+              >
                 导入
               </Button>
             </Upload>

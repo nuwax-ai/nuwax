@@ -380,21 +380,23 @@ const SpaceTable = () => {
 
   // 导入数据
   const handleChangeFile: UploadProps['onChange'] = (info) => {
+    setImportLoading(true);
     // 只在文件状态为 'done' 时处理上传完成逻辑
     if (info.file.status === 'done') {
       // 防止重复处理同一个文件
       if (processingFileRef.current === info.file.uid) {
         console.log('文件正在处理中，跳过重复请求:', info.file.name);
+        setImportLoading(false);
         return;
       }
 
       processingFileRef.current = info.file.uid;
-      setImportLoading(true);
 
       try {
         // 接口上传失败
         if (info.file.response?.code !== SUCCESS_CODE) {
           message.warning(info.file.response?.message);
+          setImportLoading(false);
           return;
         }
         message.success('导入成功');
@@ -412,6 +414,7 @@ const SpaceTable = () => {
     // 处理上传错误
     if (info.file.status === 'error') {
       message.error('文件上传失败，请重试');
+      setImportLoading(false);
       processingFileRef.current = null; // 重置处理状态
     }
 
