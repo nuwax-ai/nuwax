@@ -342,7 +342,10 @@ const EditAgent: React.FC = () => {
        * 更新开场白预置问题列表, 当消息列表长度小于等于1时，更新开场白预置问题列表，
        * 如果消息长度等于1，此消息是由开场白内容由后端填充的，所以需要同步更新
        */
-      if (attr === 'openingChatMsg' && messageListLength <= 1) {
+      if (
+        (attr === 'openingChatMsg' && messageListLength <= 1) ||
+        (attr === 'guidQuestionDtos' && messageListLength === 1)
+      ) {
         if (agentConfigInfo) {
           const { devConversationId } = agentConfigInfo;
           setIsLoadingConversation(false);
