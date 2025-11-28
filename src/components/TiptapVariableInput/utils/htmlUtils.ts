@@ -4,6 +4,46 @@
  */
 
 /**
+ * 转义 HTML 特殊字符
+ * @param text 需要转义的文本
+ * @returns 转义后的文本
+ */
+export const escapeHTML = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+/**
+ * 转义事件标签
+ * 将 <div class="event" event-type="xxx" data='xxx'>[xxx]</div> 格式的事件标签转义为纯文本显示
+ * @param text 需要处理的文本
+ * @returns 处理后的文本
+ */
+export const escapeEventTags = (text: string): string => {
+  if (!text) return '';
+
+  // 匹配事件标签: <div class="event" event-type="xxx" data='xxx'>[xxx]</div>
+  // 其中 xxx 是可变的
+  const eventTagRegex =
+    /<div\s+class="event"\s+event-type="[^"]*"\s+data='[^']*'>\[([^\]]*)\]<\/div>/g;
+
+  return text.replace(eventTagRegex, (match) => {
+    // 将整个事件标签转义
+    return match
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  });
+};
+
+/**
  * 从 Tiptap HTML 中提取纯文本内容
  * 将 mentions 和 variables 节点转换为对应的文本格式
  * @param html Tiptap HTML 内容
@@ -178,10 +218,11 @@ export const convertTextToHTML = (
 ): string => {
   if (!text) return '';
 
-  // 检查是否已经是 HTML 格式（包含 HTML 标签）
-  const isHTML = /<[^>]+>/.test(text);
+  // 首先转义事件标签,使其显示为纯文本而不是被浏览器解析
+  let html = escapeEventTags(text);
 
-  let html = text;
+  // 检查是否已经是 HTML 格式（包含 HTML 标签）
+  const isHTML = /<[^>]+>/.test(html);
 
   // 如果已经是 HTML 格式，保留空行，不清理首尾的空段落
   if (isHTML) {
