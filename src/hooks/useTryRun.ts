@@ -163,7 +163,7 @@ const useTryRun = () => {
               enable: record.enable,
               inputType: InputTypeEnum.Query,
               key: subItemKey,
-              name: 'xxxxxx',
+              name: 'name',
               require: record.require,
             },
           ],
