@@ -7,9 +7,9 @@ import { Extension } from '@tiptap/core';
 import { PluginKey } from '@tiptap/pm/state';
 import Suggestion from '@tiptap/suggestion';
 import { ConfigProvider } from 'antd';
+import { createRoot } from 'react-dom/client';
 import VariableList from '../components/VariableList';
 import type { VariableSuggestionItem, VariableTreeNode } from '../types';
-import { portalManager } from '../utils/portalManager';
 
 export interface VariableSuggestionOptions {
   variables: VariableTreeNode[];
@@ -163,6 +163,9 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             // 确保容器能够访问到 CSS 变量（CSS 变量定义在 document.documentElement 上，是全局的）
             document.body.appendChild(container);
 
+            // 创建 React 18 root
+            const root = createRoot(container);
+
             // Portal ID
             const portalId = `variable-suggestion-${Date.now()}-${Math.random()}`;
 
@@ -290,8 +293,8 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             // 定义关闭下拉框的函数
             const handleClose = () => {
               try {
-                // 注销 Portal
-                portalManager.unregister(portalId);
+                // 卸载 React 组件
+                root.unmount();
               } catch (e) {
                 // 忽略卸载错误
               }
@@ -354,7 +357,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               if (document.body.contains(container)) {
                 try {
                   // 使用 ConfigProvider 包裹，确保主题上下文和 CSS 变量正确应用
-                  // 通过 portalManager 注册，组件会使用 createPortal 渲染
+                  // 使用 React 18 createRoot API 渲染到容器
                   const content = (
                     <ConfigProvider
                       theme={{
@@ -403,8 +406,8 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                     </ConfigProvider>
                   );
 
-                  // 注册或更新 Portal
-                  portalManager.register(portalId, container, content);
+                  // 使用 React 18 root 渲染
+                  root.render(content);
                 } catch (error) {
                   console.error('VariableSuggestion render error:', error);
                 }
@@ -624,6 +627,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             popup = {
               portalId,
               container,
+              root,
               selectedIndex: 0,
               handleKeyDown,
               // 状态
@@ -697,7 +701,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 // 使用统一的关闭函数
                 const handleClose = () => {
                   try {
-                    portalManager.unregister(popup.portalId);
+                    popup.root.unmount();
                   } catch (e) {
                     // 忽略卸载错误
                   }
@@ -728,7 +732,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               // 使用统一的关闭函数
               const handleClose = () => {
                 try {
-                  portalManager.unregister(popup.portalId);
+                  popup.root.unmount();
                 } catch (e) {
                   // 忽略卸载错误
                 }

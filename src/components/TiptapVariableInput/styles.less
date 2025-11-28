@@ -159,13 +159,13 @@
 
 // 变量建议弹窗样式
 .variable-suggestion-popup .ant-tree-node-selected {
-  background-color: @colorInfoBg !important;
+  background-color: @colorFillSecondary !important;
 }
 
-.variable-suggestion-popup .ant-tree-node-selected .ant-tree-title {
-  color: @colorInfo !important;
-  font-weight: 500;
-}
+// .variable-suggestion-popup .ant-tree-node-selected .ant-tree-title {
+//   color: @colorInfo !important;
+//   font-weight: 500;
+// }
 
 .variable-suggestion-popup .ant-tree-node-content-wrapper:hover {
   background-color: @colorFillSecondary;
@@ -173,14 +173,14 @@
 
 .variable-suggestion-popup .ant-tree-list-holder-inner {
   padding-top: @paddingSm;
-  padding-right: @paddingLg;
+  padding-right: @padding;
 }
 
-.variable-suggestion-popup
-  .ant-tabs-content-holder
-  .ant-tree-list-holder-inner {
-  padding-top: 0;
-}
+// .variable-suggestion-popup
+//   .ant-tabs-content-holder
+//   .ant-tree-list-holder-inner {
+//   padding-top: 0;
+// }
 // Tabs 样式调整
 .variable-suggestion-tabs {
   height: 100%;
@@ -191,11 +191,64 @@
     height: 100%;
 
     .ant-tabs-content {
-      height: calc(100% - @controlHeight - @marginSm); // 减去 tab header 高度
+      overflow: hidden;
+      scrollbar-gutter: stable;
+      height: 100%;
+
+      &:hover {
+        overflow: auto;
+      }
     }
 
     .ant-tabs-tabpane {
       height: 100%;
     }
   }
+}
+
+// 工具变量列表容器样式
+.variable-tool-list-container {
+  padding: @paddingSm @padding @paddingSm 24px;
+}
+
+// 工具变量列表项样式
+.variable-tool-list-item {
+  padding: 0 @paddingSm;
+  line-height: 24px;
+  border-radius: @borderRadius;
+  cursor: pointer;
+  background-color: transparent;
+  transition: background-color 0.2s;
+
+  &:hover:not(.selected) {
+    background-color: @colorFillSecondary;
+  }
+
+  &.selected {
+    background-color: @colorFillSecondary;
+  }
+}
+
+// 工具变量列表项内容样式
+.variable-tool-list-item-content {
+  display: flex;
+  align-items: center;
+  gap: @marginSm;
+  white-space: nowrap;
+  width: 100%;
+}
+
+// 工具变量列表项标签样式
+.variable-tool-list-item-label {
+  flex: 1;
+  font-size: @fontSizeSm;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// 工具变量列表项类型标签样式
+.variable-tool-list-item-type {
+  font-size: 11px;
+  color: @colorTextTertiary;
+  flex-shrink: 0;
 }

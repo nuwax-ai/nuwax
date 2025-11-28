@@ -9,8 +9,7 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { theme } from 'antd';
 import { isEqual } from 'lodash';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { AutoCompleteBraces } from './extensions/AutoCompleteBraces';
 import { MentionNode } from './extensions/MentionNode';
 import { MentionSuggestion } from './extensions/MentionSuggestion';
@@ -25,7 +24,6 @@ import {
   extractTextFromHTML,
   shouldConvertTextToHTML,
 } from './utils/htmlUtils';
-import { portalManager, type PortalRegistration } from './utils/portalManager';
 
 /**
  * Tiptap Variable Input 内部组件
@@ -418,30 +416,6 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
     };
   }, [editor, getNormalizedHtml]);
 
-  // Portal 管理
-  const [portals, setPortals] = useState<Map<string, PortalRegistration>>(
-    new Map(),
-  );
-
-  // 监听 Portal 管理器
-  useEffect(() => {
-    const handlePortalsChange = (
-      newPortals: Map<string, PortalRegistration>,
-    ) => {
-      setPortals(new Map(newPortals));
-    };
-
-    // 初始获取所有 Portal
-    setPortals(portalManager.getAll());
-
-    // 添加监听器
-    portalManager.addListener(handlePortalsChange);
-
-    return () => {
-      portalManager.removeListener(handlePortalsChange);
-    };
-  }, []);
-
   if (!editor) {
     return null;
   }
@@ -469,10 +443,6 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
           </div>
         )}
       </div>
-      {/* 使用 createPortal 渲染所有弹窗内容，保持 React 上下文 */}
-      {Array.from(portals.values()).map((registration) =>
-        createPortal(registration.content, registration.container),
-      )}
     </div>
   );
 };

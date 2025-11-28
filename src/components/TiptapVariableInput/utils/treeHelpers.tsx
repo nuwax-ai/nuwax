@@ -9,31 +9,6 @@ const getDefaultExample = (type: VariableType): any => {
   return null;
 };
 
-/**
- * 格式化示例数据为显示字符串
- */
-const formatExample = (example: any, type: VariableType): string => {
-  if (example === null || example === undefined) {
-    const defaultExample = getDefaultExample(type);
-    if (defaultExample === null) return '';
-    return String(defaultExample);
-  }
-
-  if (typeof example === 'string') {
-    return example;
-  }
-
-  if (typeof example === 'object') {
-    try {
-      return JSON.stringify(example);
-    } catch {
-      return String(example);
-    }
-  }
-
-  return String(example);
-};
-
 // 将变量树节点转换为 Tree 组件格式
 export const transformToTreeDataForTree = (
   nodes: VariableTreeNode[],
@@ -66,14 +41,14 @@ export const transformToTreeDataForTree = (
   return nodes.map((node) => {
     const variable = node.variable;
     const type = variable?.type || 'unknown';
-    const example =
-      variable?.example !== undefined
-        ? variable.example
-        : getDefaultExample(type as VariableType);
-    const exampleText =
-      example !== null && example !== undefined
-        ? formatExample(example, type as VariableType)
-        : '';
+    // const example =
+    //   variable?.example !== undefined
+    //     ? variable.example
+    //     : getDefaultExample(type as VariableType);
+    // const exampleText =
+    //   example !== null && example !== undefined
+    //     ? formatExample(example, type as VariableType)
+    //     : '';
 
     return {
       title: (
@@ -96,22 +71,6 @@ export const transformToTreeDataForTree = (
           >
             {node.label}
           </span>
-          {exampleText && (
-            <span
-              style={{
-                fontSize: '11px',
-                color: finalToken.colorSuccess,
-                fontFamily: finalToken.fontFamilyCode,
-                opacity: 0.8,
-                maxWidth: '120px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-              title={exampleText}
-            >
-              {exampleText}
-            </span>
-          )}
           <span
             style={{
               fontSize: '11px',
