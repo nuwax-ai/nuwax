@@ -12,6 +12,7 @@ import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
+import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -37,7 +38,6 @@ import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import classNames from 'classnames';
-import { throttle } from 'lodash';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import DropdownChangeName from './DropdownChangeName';
@@ -75,8 +75,6 @@ const Chat: React.FC = () => {
   const [clearLoading, setClearLoading] = useState<boolean>(false);
   // 是否发送过消息,如果是,则禁用变量参数
   const isSendMessageRef = useRef<boolean>(false);
-  // 记录上一次滚动位置，用于判断滚动方向
-  const lastScrollTopRef = useRef<number>(0);
 
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
@@ -286,73 +284,13 @@ const Chat: React.FC = () => {
     }
   }, [agentId, defaultAgentDetail]);
 
-  // 在组件挂载时添加滚动事件监听器
-  useEffect(() => {
-    const messageView = messageViewRef.current;
-    if (messageView) {
-      // 初始化上一次滚动位置
-      lastScrollTopRef.current = messageView.scrollTop;
-
-      // 节流版本（用于向下滚动等非紧急情况）
-      const handleScrollThrottled = throttle(() => {
-        const { scrollTop, scrollHeight, clientHeight } = messageView;
-        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-
-        // 如果用户向下滚动到离底部50px内，重新启用自动滚动
-        if (distanceFromBottom <= 50) {
-          allowAutoScrollRef.current = true;
-          setShowScrollBtn(false);
-        } else if (distanceFromBottom > 100) {
-          // 如果距离底部超过 100px，确保显示滚动按钮
-          setShowScrollBtn(true);
-        }
-      }, 100);
-
-      // 使用 scroll 事件替代 wheel 事件，可以捕获所有类型的滚动行为
-      const scrollHandler = () => {
-        // 如果是程序触发的滚动，忽略（不处理用户滚动逻辑）
-        if ((messageView as any).__isProgrammaticScroll) {
-          return;
-        }
-
-        const { scrollTop } = messageView;
-        // 判断是否向上滚动（必须在更新 lastScrollTopRef 之前判断）
-        const isScrollingUp = scrollTop < lastScrollTopRef.current;
-
-        // 最高优先级：用户向上滚动时立即禁用自动滚动，无论距离底部多远
-        if (isScrollingUp) {
-          // 立即禁用自动滚动
-          allowAutoScrollRef.current = false;
-          // 清除滚动定时器
-          if (scrollTimeoutRef.current) {
-            clearTimeout(scrollTimeoutRef.current);
-            scrollTimeoutRef.current = null;
-          }
-          // 显示滚动按钮
-          setShowScrollBtn(true);
-          // 更新上一次滚动位置
-          lastScrollTopRef.current = scrollTop;
-          // 立即返回，不执行后续逻辑
-          return;
-        }
-
-        // 更新上一次滚动位置（向下滚动时）
-        lastScrollTopRef.current = scrollTop;
-
-        // 向下滚动时，使用节流处理（非紧急情况）
-        handleScrollThrottled();
-      };
-
-      messageView.addEventListener('scroll', scrollHandler, {
-        passive: true,
-      });
-
-      // 组件卸载时移除滚动事件监听器
-      return () => {
-        messageView.removeEventListener('scroll', scrollHandler);
-      };
-    }
-  }, []);
+  // 使用滚动检测 Hook
+  useConversationScrollDetection(
+    messageViewRef,
+    allowAutoScrollRef,
+    scrollTimeoutRef,
+    setShowScrollBtn,
+  );
 
   useEffect(() => {
     if (id) {
