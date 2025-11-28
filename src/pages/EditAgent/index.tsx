@@ -30,7 +30,10 @@ import {
   ComponentModelBindConfig,
   GuidQuestionDto,
 } from '@/types/interfaces/agent';
-import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
+import type {
+  AnalyzeStatisticsItem,
+  BindConfigWithSub,
+} from '@/types/interfaces/common';
 import { RequestResponse } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
@@ -68,6 +71,8 @@ const EditAgent: React.FC = () => {
   const { navigationStyle } = useUnifiedTheme();
   // 智能体配置信息
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
+  const [promptVariables, setPromptVariables] = useState<PromptVariable[]>([]);
+  const [promptTools, setPromptTools] = useState<AgentComponentInfo[]>([]);
   const {
     cardList,
     showType,
@@ -94,16 +99,15 @@ const EditAgent: React.FC = () => {
       if (Object.values(VariableType).includes(typeStr as VariableType)) {
         type = typeStr as VariableType;
       }
+      const children = item.children || item.subArgs;
 
       return {
-        key: item.key || item.name,
+        key: item.name,
         name: item.name,
         type: type,
         label: item.name, // 使用 name 作为 label
         description: item.description || '',
-        children: item.children
-          ? transformToPromptVariables(item.children)
-          : undefined,
+        children: children ? transformToPromptVariables(children) : undefined,
       };
     });
   };
@@ -146,6 +150,56 @@ const EditAgent: React.FC = () => {
     },
   });
 
+  useEffect(() => {
+    const _variablesInfo = agentComponentList?.find(
+      (item: AgentComponentInfo) =>
+        item.type === AgentComponentTypeEnum.Variable,
+    );
+    setPromptVariables(
+      transformToPromptVariables(_variablesInfo?.bindConfig?.variables || []),
+    );
+    setPromptTools(
+      agentComponentList
+        ?.filter(
+          (item: AgentComponentInfo) =>
+            item.type === AgentComponentTypeEnum.Plugin ||
+            item.type === AgentComponentTypeEnum.Workflow ||
+            item.type === AgentComponentTypeEnum.MCP,
+        )
+        ?.map((item: AgentComponentInfo) => ({
+          ...item,
+          id: item.targetId,
+        })) || [],
+    );
+  }, [agentComponentList]);
+
+  // 处理变量列表变化，同步到 promptVariables
+  const handleVariablesChange = useCallback(
+    (variables: BindConfigWithSub[]) => {
+      setPromptVariables(transformToPromptVariables(variables || []));
+    },
+    [],
+  );
+  // 处理工具列表变化，同步到 promptTools
+  const handleToolsChange = useCallback(
+    (_agentComponentList: AgentComponentInfo[]) => {
+      setPromptTools(
+        _agentComponentList
+          ?.filter(
+            (item: AgentComponentInfo) =>
+              item.type === AgentComponentTypeEnum.Plugin ||
+              item.type === AgentComponentTypeEnum.Workflow ||
+              item.type === AgentComponentTypeEnum.MCP,
+          )
+          ?.map((item: AgentComponentInfo) => ({
+            ...item,
+            id: item.targetId,
+          })) || [],
+      );
+    },
+    [],
+  );
+
   // 更新智能体基础配置信息
   const { runAsync: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
@@ -164,12 +218,12 @@ const EditAgent: React.FC = () => {
   }, []);
 
   // 绑定的变量信息
-  const variablesInfo = React.useMemo(() => {
-    return agentComponentList?.find(
-      (item: AgentComponentInfo) =>
-        item.type === AgentComponentTypeEnum.Variable,
-    );
-  }, [agentComponentList]);
+  // const variablesInfo = React.useMemo(() => {
+  //   return agentComponentList?.find(
+  //     (item: AgentComponentInfo) =>
+  //       item.type === AgentComponentTypeEnum.Variable,
+  //   );
+  // }, [agentComponentList]);
 
   // 确认编辑智能体
   const handlerConfirmEditAgent = (info: AgentBaseInfo) => {
@@ -528,22 +582,8 @@ const EditAgent: React.FC = () => {
                 handleChangeAgent(value, 'systemPrompt')
               }
               onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
-              variables={transformToPromptVariables(
-                variablesInfo?.bindConfig?.variables || [],
-              )}
-              skills={
-                agentComponentList
-                  ?.filter(
-                    (item: AgentComponentInfo) =>
-                      item.type === AgentComponentTypeEnum.Plugin ||
-                      item.type === AgentComponentTypeEnum.Workflow ||
-                      item.type === AgentComponentTypeEnum.MCP,
-                  )
-                  ?.map((item: AgentComponentInfo) => ({
-                    ...item,
-                    id: item.targetId,
-                  })) || []
-              }
+              variables={promptVariables}
+              skills={promptTools}
             />
             {/*配置区域*/}
             <AgentArrangeConfig
@@ -551,6 +591,8 @@ const EditAgent: React.FC = () => {
               agentConfigInfo={agentConfigInfo}
               onChangeAgent={handleChangeAgent}
               onInsertSystemPrompt={handleInsertSystemPrompt}
+              onVariablesChange={handleVariablesChange}
+              onToolsChange={handleToolsChange}
             />
           </div>
         </div>
