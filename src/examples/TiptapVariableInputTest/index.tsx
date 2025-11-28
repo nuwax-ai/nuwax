@@ -26,11 +26,11 @@ import {
 } from 'antd';
 import React, { useCallback, useState } from 'react';
 import TiptapVariableInput from '../../components/TiptapVariableInput';
-import type { MentionItem } from '../../components/TiptapVariableInput/types';
-import {
-  type PromptVariable,
-  VariableType,
-} from '../../components/VariableInferenceInput/types';
+import type {
+  MentionItem,
+  PromptVariable,
+} from '../../components/TiptapVariableInput/types';
+import { VariableType } from '../../components/TiptapVariableInput/types';
 
 const { Title, Paragraph, Text } = Typography;
 const { Panel } = Collapse;
@@ -44,7 +44,7 @@ const TiptapVariableInputTestExample: React.FC = () => {
   const [readonly, setReadonly] = useState(false);
   const [disabled, setDisabled] = useState(false);
 
-  // 测试变量数据（复用 VariableRefTest 的数据）
+  // 测试变量数据
   const testVariables: PromptVariable[] = [
     {
       key: 'user',
