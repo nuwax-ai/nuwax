@@ -6,6 +6,7 @@
 import { Extension } from '@tiptap/core';
 import { PluginKey } from '@tiptap/pm/state';
 import Suggestion from '@tiptap/suggestion';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
 import VariableList from '../components/VariableList';
 import type { VariableSuggestionItem, VariableTreeNode } from '../types';
@@ -271,6 +272,22 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             let handleKeyDownRef: ((event: KeyboardEvent) => void) | null =
               null;
 
+            // 定义关闭下拉框的函数
+            const handleClose = () => {
+              try {
+                root.unmount();
+              } catch (e) {
+                // 忽略卸载错误
+              }
+              if (document.body.contains(container)) {
+                document.body.removeChild(container);
+              }
+              if (handleKeyDownRef) {
+                document.removeEventListener('keydown', handleKeyDownRef);
+              }
+              popup = null;
+            };
+
             // 定义 handleSelect
             const handleSelect = (item: VariableSuggestionItem) => {
               try {
@@ -302,20 +319,15 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 console.error('VariableSuggestion handleSelect error:', error);
               } finally {
                 // 清理 - 确保总是执行
-                try {
-                  root.unmount();
-                } catch (e) {
-                  // 忽略卸载错误
-                }
-                if (document.body.contains(container)) {
-                  document.body.removeChild(container);
-                }
-                if (handleKeyDownRef) {
-                  document.removeEventListener('keydown', handleKeyDownRef);
-                }
-                popup = null;
+                handleClose();
                 this.options.onSelect?.(item);
               }
+            };
+
+            // 获取编辑器 DOM 元素的 ref（用于排除点击外部检测）
+            // 创建一个符合 RefObject 接口的对象
+            const editorDomRef: React.RefObject<HTMLElement> = {
+              current: (this.editor?.view?.dom as HTMLElement) || null,
             };
 
             // 定义 updateRender
@@ -372,6 +384,8 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                       }}
                       regularVariables={currentRegularVars}
                       toolVariables={currentToolVars}
+                      onClose={handleClose}
+                      excludeRefs={[editorDomRef]}
                     />,
                   );
                 } catch (error) {
@@ -479,16 +493,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               if (event.key === 'Escape') {
                 event.preventDefault();
                 // 清理
-                try {
-                  root.unmount();
-                } catch (e) {
-                  // 忽略卸载错误
-                }
-                if (document.body.contains(container)) {
-                  document.body.removeChild(container);
-                }
-                document.removeEventListener('keydown', handleKeyDown);
-                popup = null;
+                handleClose();
                 return;
               }
 
@@ -643,18 +648,25 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
           onKeyDown: (props: any) => {
             if (props.event.key === 'Escape') {
               if (popup) {
-                try {
-                  popup.root.unmount();
-                } catch (e) {
-                  // 忽略卸载错误
-                }
-                if (document.body.contains(popup.container)) {
-                  document.body.removeChild(popup.container);
-                }
-                if (popup.handleKeyDown) {
-                  document.removeEventListener('keydown', popup.handleKeyDown);
-                }
-                popup = null;
+                // 使用统一的关闭函数
+                const handleClose = () => {
+                  try {
+                    popup.root.unmount();
+                  } catch (e) {
+                    // 忽略卸载错误
+                  }
+                  if (document.body.contains(popup.container)) {
+                    document.body.removeChild(popup.container);
+                  }
+                  if (popup.handleKeyDown) {
+                    document.removeEventListener(
+                      'keydown',
+                      popup.handleKeyDown,
+                    );
+                  }
+                  popup = null;
+                };
+                handleClose();
               }
               return true;
             }
@@ -667,18 +679,22 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
           },
           onExit: () => {
             if (popup) {
-              try {
-                popup.root.unmount();
-              } catch (e) {
-                // 忽略卸载错误
-              }
-              if (document.body.contains(popup.container)) {
-                document.body.removeChild(popup.container);
-              }
-              if (popup.handleKeyDown) {
-                document.removeEventListener('keydown', popup.handleKeyDown);
-              }
-              popup = null;
+              // 使用统一的关闭函数
+              const handleClose = () => {
+                try {
+                  popup.root.unmount();
+                } catch (e) {
+                  // 忽略卸载错误
+                }
+                if (document.body.contains(popup.container)) {
+                  document.body.removeChild(popup.container);
+                }
+                if (popup.handleKeyDown) {
+                  document.removeEventListener('keydown', popup.handleKeyDown);
+                }
+                popup = null;
+              };
+              handleClose();
             }
           },
         };

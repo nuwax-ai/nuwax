@@ -3,8 +3,9 @@
  * { 变量下拉列表组件
  */
 
+import useClickOutside from '@/components/SmartVariableInput/hooks/useClickOutside';
 import { Tabs, Tree } from 'antd';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import type { VariableSuggestionItem, VariableTreeNode } from '../types';
 import { convertTreeNodesToSuggestions } from '../utils/suggestionUtils';
 import { transformToTreeDataForTree } from '../utils/treeHelpers';
@@ -41,6 +42,11 @@ interface VariableListProps {
   onTabChange?: (key: string) => void;
   regularVariables?: VariableTreeNode[];
   toolVariables?: VariableTreeNode[];
+
+  // 点击外部关闭回调
+  onClose?: () => void;
+  // 需要排除的元素 refs（例如编辑器元素）
+  excludeRefs?: React.RefObject<HTMLElement>[];
 }
 
 /**
@@ -57,6 +63,8 @@ const VariableList: React.FC<VariableListProps> = ({
   onTabChange,
   regularVariables = [],
   toolVariables = [],
+  onClose,
+  excludeRefs = [],
 }) => {
   console.log('VariableList render debug:', {
     showTabs,
@@ -68,6 +76,21 @@ const VariableList: React.FC<VariableListProps> = ({
 
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
+
+  // 创建容器 ref，用于点击外部检测
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // 使用 useClickOutside hook 检测点击外部事件
+  useClickOutside(
+    containerRef,
+    () => {
+      // 点击外部时关闭下拉框
+      if (onClose) {
+        onClose();
+      }
+    },
+    excludeRefs,
+  );
 
   // 将树节点转换为扁平化的建议项列表
   // 优先使用 flatItems（从 VariableSuggestion 传递的扁平化列表）
@@ -292,7 +315,7 @@ const VariableList: React.FC<VariableListProps> = ({
     ];
 
     return (
-      <div className="variable-suggestion-tabs">
+      <div ref={containerRef} className="variable-suggestion-tabs">
         <Tabs
           activeKey={activeTab}
           onChange={onTabChange}
@@ -304,7 +327,7 @@ const VariableList: React.FC<VariableListProps> = ({
     );
   }
 
-  return renderTree(treeData);
+  return <div ref={containerRef}>{renderTree(treeData)}</div>;
 };
 
 export default VariableList;
