@@ -11,6 +11,7 @@ import type {
 import {
   addChildNode,
   deleteNode,
+  findParentNode,
   getActiveKeys,
   updateNodeField,
 } from '@/utils/deepNode';
@@ -223,6 +224,38 @@ const usePluginConfig = () => {
     setPluginInfo(_pluginInfo);
   };
 
+  /**
+   * 判断当前项是否可以删除
+   * 如果当前项是父级的子级，父级的类型是Array<Object>，并且是唯一子级时，不能删除
+   * @param key 当前记录
+   * @returns 是否可以删除
+   */
+  const isCanDelete = (arr: BindConfigWithSub[], key: React.Key): boolean => {
+    // 查找父级节点
+    const parentNode = findParentNode(arr, key);
+
+    // 如果没有父级节点，说明是顶级节点，可以删除
+    if (!parentNode) {
+      return true;
+    }
+
+    // 如果父级类型不是 Array<Object>，可以删除
+    if (
+      parentNode.dataType !== DataTypeEnum.Array_Object &&
+      parentNode.dataType !== DataTypeEnum.Object
+    ) {
+      return true;
+    }
+
+    // 如果父级有子节点，且子节点数量大于1，可以删除
+    if (parentNode.subArgs && parentNode.subArgs.length > 1) {
+      return true;
+    }
+
+    // 如果父级类型是 Array<Object> 且只有一个子级（当前项），不能删除
+    return false;
+  };
+
   return {
     isModalOpen,
     setIsModalOpen,
@@ -257,6 +290,7 @@ const usePluginConfig = () => {
     handleConfirmPublishPlugin,
     handleUpdateSuccess,
     isClickSaveBtnRef,
+    isCanDelete,
   };
 };
 
