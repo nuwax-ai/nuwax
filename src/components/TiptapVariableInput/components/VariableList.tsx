@@ -168,6 +168,84 @@ const VariableList: React.FC<VariableListProps> = ({
           return null;
         };
         findNodeKey(tree, selectedItem.key);
+
+        // 滚动到选中项，确保在可视区域内
+        // 使用 setTimeout 确保 DOM 已经更新（特别是树形展开后）
+        setTimeout(() => {
+          if (!containerRef.current) return;
+
+          // 检查是否所有节点都是工具（扁平列表模式）
+          const allAreTools = tree.every((node) => {
+            return (
+              node.isLeaf &&
+              (node.key.startsWith('skill-') ||
+                (node.variable as any)?.type === 'Tool')
+            );
+          });
+          const isToolListMode =
+            allAreTools &&
+            tree.length > 0 &&
+            !tree.some((n) => n.key === 'category-skills');
+
+          // 查找滚动容器（可能是 Tabs 内容区域或直接容器）
+          const scrollContainer =
+            containerRef.current.querySelector('.ant-tabs-content-holder') ||
+            containerRef.current;
+
+          if (isToolListMode) {
+            // 工具列表模式：查找对应的列表项
+            const toolListContainer = containerRef.current.querySelector(
+              '.variable-tool-list-container',
+            );
+            if (toolListContainer) {
+              const items = toolListContainer.querySelectorAll(
+                '.variable-tool-list-item',
+              );
+              const targetItem = items[selectedIndex] as HTMLElement;
+              if (targetItem) {
+                // 检查元素是否在可视区域内
+                const containerRect = (
+                  scrollContainer as HTMLElement
+                ).getBoundingClientRect();
+                const itemRect = targetItem.getBoundingClientRect();
+
+                // 如果不在可视区域内，则滚动
+                if (
+                  itemRect.top < containerRect.top ||
+                  itemRect.bottom > containerRect.bottom
+                ) {
+                  targetItem.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                  });
+                }
+              }
+            }
+          } else {
+            // 树形模式：查找选中的树节点
+            const selectedNode = containerRef.current.querySelector(
+              '.ant-tree-node-selected',
+            ) as HTMLElement;
+            if (selectedNode) {
+              // 检查元素是否在可视区域内
+              const containerRect = (
+                scrollContainer as HTMLElement
+              ).getBoundingClientRect();
+              const nodeRect = selectedNode.getBoundingClientRect();
+
+              // 如果不在可视区域内，则滚动
+              if (
+                nodeRect.top < containerRect.top ||
+                nodeRect.bottom > containerRect.bottom
+              ) {
+                selectedNode.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'nearest',
+                });
+              }
+            }
+          }
+        }, 50);
       }
     }
   }, [selectedIndex, suggestions, tree]);
