@@ -19,13 +19,17 @@ import { VariableSuggestion } from './extensions/VariableSuggestion';
 import { useVariableTree } from './hooks/useVariableTree';
 import './styles.less';
 import type { TiptapVariableInputProps } from './types';
-import { convertTextToHTML, extractTextFromHTML } from './utils/htmlUtils';
+import {
+  convertTextToHTML,
+  extractTextFromHTML,
+  shouldConvertTextToHTML,
+} from './utils/htmlUtils';
 
 /**
- * Tiptap Variable Input 组件
+ * Tiptap Variable Input 内部组件
  * 支持 @ mentions 和 { 变量插入的富文本编辑器
  */
-const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
+const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
   value,
   onChange,
   variables = [],
@@ -87,11 +91,7 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
   const initialContent = useMemo(() => {
     if (!value || value === '<p></p>' || value === '<p></p>\n') return '';
     // 检查是否包含工具块或变量格式，如果是则转换为 HTML
-    if (
-      value.includes('{#ToolBlock') ||
-      value.includes('{{') ||
-      value.includes('@')
-    ) {
+    if (shouldConvertTextToHTML(value)) {
       return convertTextToHTML(value, disableMentions);
     }
     // 如果已经是 HTML 格式，保留空行，不清理首尾空段落
@@ -187,12 +187,7 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
 
       // 检查是否需要转换
       let contentToSet = sanitizedValue;
-      if (
-        sanitizedValue &&
-        (sanitizedValue.includes('{#ToolBlock') ||
-          sanitizedValue.includes('{{') ||
-          sanitizedValue.includes('@'))
-      ) {
+      if (sanitizedValue && shouldConvertTextToHTML(sanitizedValue)) {
         contentToSet = convertTextToHTML(sanitizedValue, disableMentions);
       } else if (
         sanitizedValue &&
@@ -347,21 +342,11 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
   }, [editor, readonly, disabled]);
 
   // 应用节点样式的函数
+  // 注意：由于样式已经在 Less 文件中定义，这里主要确保 contentEditable 等属性正确
   const applyNodeStyles = React.useCallback(() => {
     if (!editor?.view?.dom) return;
 
     const dom = editor.view.dom;
-
-    // 为 tool-block-chip 添加样式
-    const toolBlocks = dom.querySelectorAll('.tool-block-chip');
-    toolBlocks.forEach((el) => {
-      if (el instanceof HTMLElement && !el.getAttribute('style')) {
-        el.setAttribute(
-          'style',
-          'display: inline-block !important; background-color: #f6ffed !important; color: #52c41a !important; padding: 0 4px !important; border-radius: 4px !important; margin: 0 2px !important; font-size: 12px !important; line-height: 20px !important; border: 1px solid #b7eb8f !important; user-select: none !important; vertical-align: baseline !important; cursor: default !important;',
-        );
-      }
-    });
 
     // 为 variable-block-chip 添加样式（使用标准的 span 标签）
     // 注意：大括号通过 CSS ::before 和 ::after 实现，不需要内联样式
@@ -370,17 +355,6 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
       if (el instanceof HTMLElement) {
         // 确保 contentEditable 为 false
         el.contentEditable = 'false';
-      }
-    });
-
-    // 为 mention-node 添加样式
-    const mentions = dom.querySelectorAll('.mention-node');
-    mentions.forEach((el) => {
-      if (el instanceof HTMLElement && !el.getAttribute('style')) {
-        el.setAttribute(
-          'style',
-          'display: inline-block !important; background-color: #e6f7ff !important; color: #1890ff !important; padding: 2px 6px !important; border-radius: 4px !important; margin: 2px 2px !important; font-size: 12px !important; line-height: 20px !important; border: 1px solid #91d5ff !important; user-select: none !important; vertical-align: baseline !important; cursor: default !important;',
-        );
       }
     });
   }, [editor]);
@@ -460,7 +434,7 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
               position: 'absolute',
               top: token.paddingSM,
               left: token.padding,
-              color: '#bfbfbf',
+              color: token.colorTextPlaceholder,
               pointerEvents: 'none',
               zIndex: 2,
             }}
@@ -471,6 +445,15 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
       </div>
     </div>
   );
+};
+
+/**
+ * Tiptap Variable Input 组件
+ * 支持 @ mentions 和 { 变量插入的富文本编辑器
+ * 直接使用 Ant Design 的 theme.useToken() 获取主题变量
+ */
+const TiptapVariableInput: React.FC<TiptapVariableInputProps> = (props) => {
+  return <TiptapVariableInputInner {...props} />;
 };
 
 export default TiptapVariableInput;
