@@ -19,7 +19,11 @@ import { VariableSuggestion } from './extensions/VariableSuggestion';
 import { useVariableTree } from './hooks/useVariableTree';
 import './styles.less';
 import type { TiptapVariableInputProps } from './types';
-import { convertTextToHTML, extractTextFromHTML } from './utils/htmlUtils';
+import {
+  convertTextToHTML,
+  extractTextFromHTML,
+  shouldConvertTextToHTML,
+} from './utils/htmlUtils';
 
 /**
  * Tiptap Variable Input 组件
@@ -87,11 +91,7 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
   const initialContent = useMemo(() => {
     if (!value || value === '<p></p>' || value === '<p></p>\n') return '';
     // 检查是否包含工具块或变量格式，如果是则转换为 HTML
-    if (
-      value.includes('{#ToolBlock') ||
-      value.includes('{{') ||
-      value.includes('@')
-    ) {
+    if (shouldConvertTextToHTML(value)) {
       return convertTextToHTML(value, disableMentions);
     }
     // 如果已经是 HTML 格式，保留空行，不清理首尾空段落
@@ -187,12 +187,7 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
 
       // 检查是否需要转换
       let contentToSet = sanitizedValue;
-      if (
-        sanitizedValue &&
-        (sanitizedValue.includes('{#ToolBlock') ||
-          sanitizedValue.includes('{{') ||
-          sanitizedValue.includes('@'))
-      ) {
+      if (sanitizedValue && shouldConvertTextToHTML(sanitizedValue)) {
         contentToSet = convertTextToHTML(sanitizedValue, disableMentions);
       } else if (
         sanitizedValue &&
