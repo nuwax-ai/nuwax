@@ -53,12 +53,15 @@ export const useConversationScrollDetection = (
     const scrollHandler = () => {
       // 如果是程序触发的滚动，忽略（不处理用户滚动逻辑）
       if ((messageView as any).__isProgrammaticScroll) {
+        // 记录程序滚动后的位置，确保下一次用户滚动对比的是最新位置
+        lastScrollTopRef.current = messageView.scrollTop;
         return;
       }
 
       const { scrollTop } = messageView;
       // 判断是否向上滚动（必须在更新 lastScrollTopRef 之前判断）
-      const isScrollingUp = scrollTop < lastScrollTopRef.current;
+      // 增加 2px 的阈值补偿，防止微小的抖动误判，同时兼容触控板的平滑滚动
+      const isScrollingUp = scrollTop < lastScrollTopRef.current - 2;
 
       // 最高优先级：用户向上滚动时立即禁用自动滚动，无论距离底部多远
       if (isScrollingUp) {
