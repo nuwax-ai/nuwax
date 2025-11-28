@@ -4,11 +4,8 @@
  */
 
 import { useMemo } from 'react';
-import type {
-  PromptVariable,
-  VariableTreeNode,
-} from '../../VariableInferenceInput/types';
-import { buildVariableTree } from '../../VariableInferenceInput/utils/treeUtils';
+import type { PromptVariable, VariableTreeNode } from '../types';
+import { buildVariableTree } from '../utils/treeUtils';
 
 /**
  * 变量树管理 Hook

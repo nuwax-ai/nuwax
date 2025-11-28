@@ -3,11 +3,11 @@ import CodeEditor from '@/components/CodeEditor';
 import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
-import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
 import {
   PromptVariable,
   VariableType,
-} from '@/components/VariableInferenceInput/types';
+} from '@/components/TiptapVariableInput/types';
+import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { VARIABLE_CONFIG_TYPE_OPTIONS } from '@/constants/node.constants';
 import { DataTypeEnum } from '@/types/enums/common';

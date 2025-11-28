@@ -5,10 +5,9 @@
 
 import { Tabs, Tree } from 'antd';
 import React, { useMemo, useState } from 'react';
-import type { VariableTreeNode } from '../../VariableInferenceInput/types';
-import { transformToTreeDataForTree } from '../../VariableInferenceInput/utils/treeHelpers';
-import type { VariableSuggestionItem } from '../types';
+import type { VariableSuggestionItem, VariableTreeNode } from '../types';
 import { convertTreeNodesToSuggestions } from '../utils/suggestionUtils';
+import { transformToTreeDataForTree } from '../utils/treeHelpers';
 
 /**
  * 在树中查找节点

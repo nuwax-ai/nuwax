@@ -7,9 +7,8 @@ import { Extension } from '@tiptap/core';
 import { PluginKey } from '@tiptap/pm/state';
 import Suggestion from '@tiptap/suggestion';
 import ReactDOM from 'react-dom/client';
-import type { VariableTreeNode } from '../../VariableInferenceInput/types';
 import VariableList from '../components/VariableList';
-import type { VariableSuggestionItem } from '../types';
+import type { VariableSuggestionItem, VariableTreeNode } from '../types';
 
 export interface VariableSuggestionOptions {
   variables: VariableTreeNode[];
