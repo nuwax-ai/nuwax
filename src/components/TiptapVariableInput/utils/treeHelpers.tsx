@@ -1,3 +1,4 @@
+import type { AliasToken } from 'antd/es/theme/interface';
 import { VariableTreeNode, VariableType } from '../types';
 
 /**
@@ -36,7 +37,32 @@ const formatExample = (example: any, type: VariableType): string => {
 // 将变量树节点转换为 Tree 组件格式
 export const transformToTreeDataForTree = (
   nodes: VariableTreeNode[],
+  token?: Partial<AliasToken>,
 ): any[] => {
+  // 默认 token 值（如果未提供）
+  // 从 CSS 变量获取，确保与主题系统一致
+  const getCSSVariable = (varName: string, fallback: string) => {
+    if (typeof window === 'undefined') return fallback;
+    return (
+      getComputedStyle(document.documentElement)
+        .getPropertyValue(varName)
+        .trim() || fallback
+    );
+  };
+
+  const defaultToken = {
+    marginSM: parseInt(getCSSVariable('--xagi-margin-sm', '8')) || 8,
+    fontSizeSM: parseInt(getCSSVariable('--xagi-font-size-sm', '12')) || 12,
+    colorSuccess: getCSSVariable('--xagi-color-success', '#52c41a'),
+    colorTextTertiary: getCSSVariable('--xagi-color-text-tertiary', '#8c8c8c'),
+    fontFamilyCode: getCSSVariable(
+      '--xagi-font-family-code',
+      'Monaco, Menlo, "Courier New", monospace',
+    ),
+  };
+
+  const finalToken = { ...defaultToken, ...token };
+
   return nodes.map((node) => {
     const variable = node.variable;
     const type = variable?.type || 'unknown';
@@ -55,7 +81,7 @@ export const transformToTreeDataForTree = (
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            gap: finalToken.marginSM,
             whiteSpace: 'nowrap',
             width: '100%',
           }}
@@ -63,7 +89,7 @@ export const transformToTreeDataForTree = (
           <span
             style={{
               flex: 1,
-              fontSize: '12px',
+              fontSize: finalToken.fontSizeSM,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
             }}
@@ -74,8 +100,8 @@ export const transformToTreeDataForTree = (
             <span
               style={{
                 fontSize: '11px',
-                color: '#52c41a',
-                fontFamily: 'Monaco, Menlo, "Courier New", monospace',
+                color: finalToken.colorSuccess,
+                fontFamily: finalToken.fontFamilyCode,
                 opacity: 0.8,
                 maxWidth: '120px',
                 overflow: 'hidden',
@@ -89,7 +115,7 @@ export const transformToTreeDataForTree = (
           <span
             style={{
               fontSize: '11px',
-              color: '#8c8c8c',
+              color: finalToken.colorTextTertiary,
               flexShrink: 0,
             }}
           >
@@ -102,7 +128,7 @@ export const transformToTreeDataForTree = (
       selectable: true, // 所有节点都可选择
       disabled: false, // 不禁用任何节点
       children: node.children
-        ? transformToTreeDataForTree(node.children)
+        ? transformToTreeDataForTree(node.children, token)
         : undefined,
     };
   });

@@ -9,7 +9,8 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { theme } from 'antd';
 import { isEqual } from 'lodash';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AutoCompleteBraces } from './extensions/AutoCompleteBraces';
 import { MentionNode } from './extensions/MentionNode';
 import { MentionSuggestion } from './extensions/MentionSuggestion';
@@ -24,12 +25,13 @@ import {
   extractTextFromHTML,
   shouldConvertTextToHTML,
 } from './utils/htmlUtils';
+import { portalManager, type PortalRegistration } from './utils/portalManager';
 
 /**
- * Tiptap Variable Input 组件
+ * Tiptap Variable Input 内部组件
  * 支持 @ mentions 和 { 变量插入的富文本编辑器
  */
-const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
+const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
   value,
   onChange,
   variables = [],
@@ -342,21 +344,11 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
   }, [editor, readonly, disabled]);
 
   // 应用节点样式的函数
+  // 注意：由于样式已经在 Less 文件中定义，这里主要确保 contentEditable 等属性正确
   const applyNodeStyles = React.useCallback(() => {
     if (!editor?.view?.dom) return;
 
     const dom = editor.view.dom;
-
-    // 为 tool-block-chip 添加样式
-    const toolBlocks = dom.querySelectorAll('.tool-block-chip');
-    toolBlocks.forEach((el) => {
-      if (el instanceof HTMLElement && !el.getAttribute('style')) {
-        el.setAttribute(
-          'style',
-          'display: inline-block !important; background-color: #f6ffed !important; color: #52c41a !important; padding: 0 4px !important; border-radius: 4px !important; margin: 0 2px !important; font-size: 12px !important; line-height: 20px !important; border: 1px solid #b7eb8f !important; user-select: none !important; vertical-align: baseline !important; cursor: default !important;',
-        );
-      }
-    });
 
     // 为 variable-block-chip 添加样式（使用标准的 span 标签）
     // 注意：大括号通过 CSS ::before 和 ::after 实现，不需要内联样式
@@ -365,17 +357,6 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
       if (el instanceof HTMLElement) {
         // 确保 contentEditable 为 false
         el.contentEditable = 'false';
-      }
-    });
-
-    // 为 mention-node 添加样式
-    const mentions = dom.querySelectorAll('.mention-node');
-    mentions.forEach((el) => {
-      if (el instanceof HTMLElement && !el.getAttribute('style')) {
-        el.setAttribute(
-          'style',
-          'display: inline-block !important; background-color: #e6f7ff !important; color: #1890ff !important; padding: 2px 6px !important; border-radius: 4px !important; margin: 2px 2px !important; font-size: 12px !important; line-height: 20px !important; border: 1px solid #91d5ff !important; user-select: none !important; vertical-align: baseline !important; cursor: default !important;',
-        );
       }
     });
   }, [editor]);
@@ -437,6 +418,30 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
     };
   }, [editor, getNormalizedHtml]);
 
+  // Portal 管理
+  const [portals, setPortals] = useState<Map<string, PortalRegistration>>(
+    new Map(),
+  );
+
+  // 监听 Portal 管理器
+  useEffect(() => {
+    const handlePortalsChange = (
+      newPortals: Map<string, PortalRegistration>,
+    ) => {
+      setPortals(new Map(newPortals));
+    };
+
+    // 初始获取所有 Portal
+    setPortals(portalManager.getAll());
+
+    // 添加监听器
+    portalManager.addListener(handlePortalsChange);
+
+    return () => {
+      portalManager.removeListener(handlePortalsChange);
+    };
+  }, []);
+
   if (!editor) {
     return null;
   }
@@ -455,7 +460,7 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
               position: 'absolute',
               top: token.paddingSM,
               left: token.padding,
-              color: '#bfbfbf',
+              color: token.colorTextPlaceholder,
               pointerEvents: 'none',
               zIndex: 2,
             }}
@@ -464,8 +469,21 @@ const TiptapVariableInput: React.FC<TiptapVariableInputProps> = ({
           </div>
         )}
       </div>
+      {/* 使用 createPortal 渲染所有弹窗内容，保持 React 上下文 */}
+      {Array.from(portals.values()).map((registration) =>
+        createPortal(registration.content, registration.container),
+      )}
     </div>
   );
+};
+
+/**
+ * Tiptap Variable Input 组件
+ * 支持 @ mentions 和 { 变量插入的富文本编辑器
+ * 直接使用 Ant Design 的 theme.useToken() 获取主题变量
+ */
+const TiptapVariableInput: React.FC<TiptapVariableInputProps> = (props) => {
+  return <TiptapVariableInputInner {...props} />;
 };
 
 export default TiptapVariableInput;
