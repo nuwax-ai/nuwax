@@ -3,11 +3,8 @@ import CodeEditor from '@/components/CodeEditor';
 import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
-import {
-  PromptVariable,
-  VariableType,
-} from '@/components/TiptapVariableInput/types';
 import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
+import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { VARIABLE_CONFIG_TYPE_OPTIONS } from '@/constants/node.constants';
 import { DataTypeEnum } from '@/types/enums/common';
@@ -37,31 +34,6 @@ import { cycleOption, outPutConfigs } from '../params';
 import { InputAndOut, OtherFormList, TreeOutput } from './commonNode';
 import './nodeItem.less';
 // 定义一些公共的数组
-
-// 转换变量类型的辅助函数
-const transformToPromptVariables = (
-  configs: InputAndOutConfig[],
-): PromptVariable[] => {
-  return configs.map((item) => {
-    const typeStr = item.dataType?.toLowerCase() || 'string';
-    // 简单的类型映射，根据实际情况调整
-    let type: VariableType = VariableType.String;
-    if (Object.values(VariableType).includes(typeStr as VariableType)) {
-      type = typeStr as VariableType;
-    }
-
-    return {
-      key: item.key || item.name,
-      name: item.name,
-      type: type,
-      label: item.name, // 使用 name 作为 label
-      description: item.description || '',
-      children: item.children
-        ? transformToPromptVariables(item.children)
-        : undefined,
-    };
-  });
-};
 
 // 定义开始节点
 const StartNode: React.FC<NodeDisposeProps> = ({

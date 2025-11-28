@@ -432,8 +432,9 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
             className="tiptap-placeholder"
             style={{
               position: 'absolute',
-              top: token.paddingSM,
-              left: token.padding,
+              top: 4,
+              left: 12,
+              right: 2,
               color: token.colorTextPlaceholder,
               pointerEvents: 'none',
               zIndex: 2,

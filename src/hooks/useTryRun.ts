@@ -1,6 +1,6 @@
 import { ARRAY_ITEM } from '@/constants/common.constants';
 import { PLUGIN_INPUT_CONFIG } from '@/constants/space.constants';
-import { DataTypeEnum } from '@/types/enums/common';
+import { DataTypeEnum, InputTypeEnum } from '@/types/enums/common';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import { addChildNode, deleteNode, updateNodeField } from '@/utils/deepNode';
 import React, { useState } from 'react';
@@ -137,6 +137,37 @@ const useTryRun = () => {
         // 取第一行对象数据，作为添加的项，但是需要更新key值，以及它的子级的key值
         const currentSubArgs = record.subArgs?.[0] as BindConfigWithSub;
         newNode = handleChangeSubArgsKey(currentSubArgs, keys);
+      } else {
+        /**
+         * 添加一个默认的子级，做容错处理，避免报错，提示用户重新配置入参，添加子级
+         * 在输入参数处对数组对象进行处理，如果数组对象只有一个子级时，不再允许删除
+         */
+        const newNodeKey = uuidv4();
+        const subItemKey = uuidv4();
+        // 将 newNode 的 key 和子项的 key 添加到 keys 数组中，以便自动展开
+        keys.push(newNodeKey, subItemKey);
+        newNode = {
+          bindValue: '',
+          dataType: DataTypeEnum.Object,
+          description: '',
+          enable: record.enable,
+          inputType: InputTypeEnum.Query,
+          key: newNodeKey,
+          name: ARRAY_ITEM,
+          require: record.require,
+          subArgs: [
+            {
+              bindValue: '',
+              dataType: DataTypeEnum.String,
+              description: '请重新配置入参,添加子级',
+              enable: record.enable,
+              inputType: InputTypeEnum.Query,
+              key: subItemKey,
+              name: 'xxxxxx',
+              require: record.require,
+            },
+          ],
+        };
       }
     } else {
       const addDataType = dataType?.toString()?.split('_')?.[1] as DataTypeEnum;
@@ -153,6 +184,7 @@ const useTryRun = () => {
       key,
       newNode as BindConfigWithSub,
     );
+
     setDataSource(_dataSource);
 
     // 设置默认展开行

@@ -38,6 +38,8 @@ export interface PromptVariable {
   label?: string;
   /** 变量数据示例 */
   example?: any;
+  /** 是否是系统变量 */
+  systemVariable?: boolean;
 }
 
 /**
