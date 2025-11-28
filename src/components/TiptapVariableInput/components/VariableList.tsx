@@ -4,7 +4,7 @@
  */
 
 import useClickOutside from '@/components/SmartVariableInput/hooks/useClickOutside';
-import { Tabs, Tree } from 'antd';
+import { Tabs, theme, Tree } from 'antd';
 import React, { useMemo, useRef, useState } from 'react';
 import type { VariableSuggestionItem, VariableTreeNode } from '../types';
 import { convertTreeNodesToSuggestions } from '../utils/suggestionUtils';
@@ -66,6 +66,8 @@ const VariableList: React.FC<VariableListProps> = ({
   onClose,
   excludeRefs = [],
 }) => {
+  const { token } = theme.useToken();
+
   console.log('VariableList render debug:', {
     showTabs,
     activeTab,
@@ -157,8 +159,8 @@ const VariableList: React.FC<VariableListProps> = ({
 
   // 转换树数据为 Ant Design Tree 格式
   const treeData = useMemo(() => {
-    return transformToTreeDataForTree(tree);
-  }, [tree]);
+    return transformToTreeDataForTree(tree, token);
+  }, [tree, token]);
 
   const handleSelect = (selectedKeys: React.Key[]) => {
     if (selectedKeys.length === 0) {
@@ -268,7 +270,13 @@ const VariableList: React.FC<VariableListProps> = ({
   const renderTree = (data: any[]) => {
     if (!data || data.length === 0) {
       return (
-        <div style={{ padding: '8px', color: '#999', textAlign: 'center' }}>
+        <div
+          style={{
+            padding: token.paddingSM,
+            color: token.colorTextTertiary,
+            textAlign: 'center',
+          }}
+        >
           未找到匹配变量
         </div>
       );
@@ -293,9 +301,9 @@ const VariableList: React.FC<VariableListProps> = ({
       return (
         <div
           style={{
-            maxHeight: '240px',
+            maxHeight: `${(token.controlHeight || 32) * 7.5}px`, // 约 240px，基于 controlHeight
             overflowY: 'auto',
-            padding: '4px 0',
+            padding: `${token.paddingXXS}px 0`,
           }}
         >
           {suggestions.map((item, index) => {
@@ -308,17 +316,17 @@ const VariableList: React.FC<VariableListProps> = ({
                   onSelect(item);
                 }}
                 style={{
-                  padding: '4px 12px',
+                  padding: `${token.paddingXXS}px ${token.paddingSM}px`,
                   cursor: 'pointer',
-                  backgroundColor: isSelected ? '#e6f7ff' : 'transparent',
-                  borderLeft: isSelected
-                    ? '3px solid #1890ff'
-                    : '3px solid transparent',
+                  backgroundColor: isSelected
+                    ? token.colorInfoBg
+                    : 'transparent',
                   transition: 'background-color 0.2s',
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = '#f5f5f5';
+                    e.currentTarget.style.backgroundColor =
+                      token.colorFillSecondary;
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -331,7 +339,7 @@ const VariableList: React.FC<VariableListProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
+                    gap: token.marginSM,
                     whiteSpace: 'nowrap',
                     width: '100%',
                   }}
@@ -339,7 +347,7 @@ const VariableList: React.FC<VariableListProps> = ({
                   <span
                     style={{
                       flex: 1,
-                      fontSize: '12px',
+                      fontSize: token.fontSizeSM,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                     }}
@@ -348,8 +356,8 @@ const VariableList: React.FC<VariableListProps> = ({
                   </span>
                   <span
                     style={{
-                      fontSize: '11px',
-                      color: '#8c8c8c',
+                      fontSize: token.fontSizeSM - 1,
+                      color: token.colorTextTertiary,
                       flexShrink: 0,
                     }}
                   >
@@ -380,11 +388,11 @@ const VariableList: React.FC<VariableListProps> = ({
         // 允许点击节点标题进行选择（不仅仅是图标）
         blockNode={true}
         style={{
-          maxHeight: '240px',
+          maxHeight: `${(token.controlHeight || 32) * 7.5}px`, // 约 240px，基于 controlHeight
           overflowY: 'auto',
         }}
-        height={240}
-        itemHeight={28}
+        height={(token.controlHeight || 32) * 7.5} // 约 240px
+        itemHeight={token.controlHeightSM || 28}
         virtual={true}
       />
     );
@@ -395,12 +403,14 @@ const VariableList: React.FC<VariableListProps> = ({
       {
         key: 'variables',
         label: '变量',
-        children: renderTree(transformToTreeDataForTree(regularVariables)),
+        children: renderTree(
+          transformToTreeDataForTree(regularVariables, token),
+        ),
       },
       {
         key: 'tools',
         label: '工具',
-        children: renderTree(transformToTreeDataForTree(toolVariables)),
+        children: renderTree(transformToTreeDataForTree(toolVariables, token)),
       },
     ];
 
@@ -411,7 +421,10 @@ const VariableList: React.FC<VariableListProps> = ({
           onChange={onTabChange}
           items={items}
           size="small"
-          tabBarStyle={{ marginBottom: 8, padding: '0 8px' }}
+          tabBarStyle={{
+            marginBottom: token.marginSM,
+            padding: `0 ${token.paddingSM}px`,
+          }}
         />
       </div>
     );

@@ -6,9 +6,10 @@
 import { Extension } from '@tiptap/core';
 import { PluginKey } from '@tiptap/pm/state';
 import Suggestion from '@tiptap/suggestion';
-import ReactDOM from 'react-dom/client';
+import { ConfigProvider } from 'antd';
 import MentionList from '../components/MentionList';
 import type { MentionItem } from '../types';
+import { portalManager } from '../utils/portalManager';
 
 export interface MentionSuggestionOptions {
   items: MentionItem[];
@@ -60,8 +61,8 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
             container.className = 'mention-suggestion-popup';
             document.body.appendChild(container);
 
-            // 创建 React 根
-            const root = ReactDOM.createRoot(container);
+            // Portal ID
+            const portalId = `mention-suggestion-${Date.now()}-${Math.random()}`;
             let selectedIndex = 0;
             let currentItems = items;
 
@@ -71,7 +72,8 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
             const handleSelect = (item: MentionItem) => {
               command({ id: item.id, label: item.label, type: item.type });
               try {
-                root.unmount();
+                // 注销 Portal
+                portalManager.unregister(portalId);
               } catch (e) {
                 // 忽略卸载错误
               }
@@ -101,23 +103,39 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
                   selectedIndex + 1,
                   currentItems.length - 1,
                 );
-                root.render(
-                  <MentionList
-                    items={currentItems}
-                    selectedIndex={selectedIndex}
-                    onSelect={handleSelect}
-                  />,
+                // 更新 Portal 内容
+                const content = (
+                  <ConfigProvider
+                    theme={{
+                      cssVar: { prefix: 'xagi' },
+                    }}
+                  >
+                    <MentionList
+                      items={currentItems}
+                      selectedIndex={selectedIndex}
+                      onSelect={handleSelect}
+                    />
+                  </ConfigProvider>
                 );
+                portalManager.updateContent(portalId, content);
               } else if (event.key === 'ArrowUp') {
                 event.preventDefault();
                 selectedIndex = Math.max(selectedIndex - 1, 0);
-                root.render(
-                  <MentionList
-                    items={currentItems}
-                    selectedIndex={selectedIndex}
-                    onSelect={handleSelect}
-                  />,
+                // 更新 Portal 内容
+                const content = (
+                  <ConfigProvider
+                    theme={{
+                      cssVar: { prefix: 'xagi' },
+                    }}
+                  >
+                    <MentionList
+                      items={currentItems}
+                      selectedIndex={selectedIndex}
+                      onSelect={handleSelect}
+                    />
+                  </ConfigProvider>
                 );
+                portalManager.updateContent(portalId, content);
               } else if (event.key === 'Enter') {
                 event.preventDefault();
                 if (currentItems[selectedIndex]) {
@@ -125,7 +143,7 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
                 }
               } else if (event.key === 'Escape') {
                 event.preventDefault();
-                root.unmount();
+                portalManager.unregister(portalId);
                 if (document.body.contains(container)) {
                   document.body.removeChild(container);
                 }
@@ -136,13 +154,31 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
             document.addEventListener('keydown', handleKeyDown);
 
             // 渲染列表
-            root.render(
-              <MentionList
-                items={items}
-                selectedIndex={selectedIndex}
-                onSelect={handleSelect}
-              />,
+            // 使用 ConfigProvider 包裹，确保主题上下文和 CSS 变量正确应用
+            // 通过 portalManager 注册，组件会使用 createPortal 渲染
+            const content = (
+              <ConfigProvider
+                theme={{
+                  cssVar: { prefix: 'xagi' },
+                }}
+              >
+                <MentionList
+                  items={items}
+                  selectedIndex={selectedIndex}
+                  onSelect={handleSelect}
+                />
+              </ConfigProvider>
             );
+            portalManager.register(portalId, container, content);
+
+            // 获取 CSS 变量值的辅助函数（从 Ant Design 主题系统）
+            const getCSSVariable = (varName: string, fallback: string) => {
+              return (
+                getComputedStyle(document.documentElement)
+                  .getPropertyValue(varName)
+                  .trim() || fallback
+              );
+            };
 
             // 定位弹窗
             const updatePosition = () => {
@@ -151,8 +187,11 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
 
               const coords = this.editor.view.coordsAtPos(range.from);
               if (coords) {
+                // 从 CSS 变量获取尺寸值
+                const controlHeight =
+                  parseInt(getCSSVariable('--xagi-control-height', '32')) || 32;
                 const popupWidth = 300;
-                const popupHeight = 240;
+                const popupHeight = controlHeight * 7.5; // 约 240px，基于 controlHeight
                 const viewportWidth = window.innerWidth;
                 const viewportHeight = window.innerHeight;
 
@@ -179,12 +218,29 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
                 container.style.position = 'fixed';
                 container.style.left = `${left}px`;
                 container.style.top = `${top}px`;
-                container.style.zIndex = '9999';
-                container.style.background = '#fff';
-                container.style.border = '1px solid #d9d9d9';
-                container.style.borderRadius = '8px';
-                container.style.boxShadow =
-                  '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)';
+                container.style.zIndex = getCSSVariable(
+                  '--xagi-z-index-popup-base',
+                  '9999',
+                );
+                container.style.background = getCSSVariable(
+                  '--xagi-color-bg-container',
+                  '#fff',
+                );
+                container.style.border = `${getCSSVariable(
+                  '--xagi-line-width',
+                  '1px',
+                )} solid ${getCSSVariable(
+                  '--xagi-color-border-secondary',
+                  '#d9d9d9',
+                )}`;
+                container.style.borderRadius = getCSSVariable(
+                  '--xagi-border-radius',
+                  '8px',
+                );
+                container.style.boxShadow = getCSSVariable(
+                  '--xagi-box-shadow',
+                  '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
+                );
                 container.style.width = `${popupWidth}px`;
                 container.style.height = `${popupHeight}px`;
                 container.style.overflow = 'auto';
@@ -193,8 +249,8 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
 
             updatePosition();
             popup = {
+              portalId,
               container,
-              root,
               handleKeyDown,
               updatePosition,
               currentItems: items,
@@ -205,35 +261,43 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
               const { items } = props;
               popup.currentItems = items;
               let selectedIndex = 0;
-              popup.root.render(
-                <MentionList
-                  items={items}
-                  selectedIndex={selectedIndex}
-                  onSelect={(item) => {
-                    props.command({
-                      id: item.id,
-                      label: item.label,
-                      type: item.type,
-                    });
-                    popup.root.unmount();
-                    if (document.body.contains(popup.container)) {
-                      document.body.removeChild(popup.container);
-                    }
-                    document.removeEventListener(
-                      'keydown',
-                      popup.handleKeyDown,
-                    );
-                    this.options.onSelect?.(item);
+              // 更新 Portal 内容
+              const content = (
+                <ConfigProvider
+                  theme={{
+                    cssVar: { prefix: 'xagi' },
                   }}
-                />,
+                >
+                  <MentionList
+                    items={items}
+                    selectedIndex={selectedIndex}
+                    onSelect={(item) => {
+                      props.command({
+                        id: item.id,
+                        label: item.label,
+                        type: item.type,
+                      });
+                      portalManager.unregister(popup.portalId);
+                      if (document.body.contains(popup.container)) {
+                        document.body.removeChild(popup.container);
+                      }
+                      document.removeEventListener(
+                        'keydown',
+                        popup.handleKeyDown,
+                      );
+                      this.options.onSelect?.(item);
+                    }}
+                  />
+                </ConfigProvider>
               );
+              portalManager.updateContent(popup.portalId, content);
               popup.updatePosition();
             }
           },
           onKeyDown: (props: any) => {
             if (props.event.key === 'Escape') {
               if (popup) {
-                popup.root.unmount();
+                portalManager.unregister(popup.portalId);
                 if (document.body.contains(popup.container)) {
                   document.body.removeChild(popup.container);
                 }
@@ -246,7 +310,7 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
           onExit: () => {
             if (popup) {
               try {
-                popup.root.unmount();
+                portalManager.unregister(popup.portalId);
               } catch (e) {
                 // 忽略卸载错误
               }
