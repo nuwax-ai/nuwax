@@ -5,7 +5,7 @@ import ShowStand from '@/components/ShowStand';
 import {
   PromptVariable,
   VariableType,
-} from '@/components/VariableInferenceInput/types';
+} from '@/components/TiptapVariableInput/types';
 import VersionHistory from '@/components/VersionHistory';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';

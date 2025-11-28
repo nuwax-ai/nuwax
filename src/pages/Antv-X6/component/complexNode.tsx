@@ -6,7 +6,7 @@ import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import {
   PromptVariable,
   VariableType,
-} from '@/components/VariableInferenceInput/types';
+} from '@/components/TiptapVariableInput/types';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { SKILL_FORM_KEY } from '@/constants/node.constants';
