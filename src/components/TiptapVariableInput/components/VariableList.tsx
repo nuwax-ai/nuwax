@@ -274,6 +274,96 @@ const VariableList: React.FC<VariableListProps> = ({
       );
     }
 
+    // 检查是否所有节点都是工具（扁平列表，没有 category-skills 父节点）
+    // 如果所有节点都是叶子节点且都是工具，使用列表渲染而不是树形
+    const allAreTools = tree.every((node) => {
+      return (
+        node.isLeaf &&
+        (node.key.startsWith('skill-') ||
+          (node.variable as any)?.type === 'Tool')
+      );
+    });
+
+    // 如果所有节点都是工具且是扁平列表（没有 category-skills 父节点），使用简单的列表渲染
+    if (
+      allAreTools &&
+      tree.length > 0 &&
+      !tree.some((n) => n.key === 'category-skills')
+    ) {
+      return (
+        <div
+          style={{
+            maxHeight: '240px',
+            overflowY: 'auto',
+            padding: '4px 0',
+          }}
+        >
+          {suggestions.map((item, index) => {
+            const isSelected = selectedIndex === index;
+
+            return (
+              <div
+                key={item.key}
+                onClick={() => {
+                  onSelect(item);
+                }}
+                style={{
+                  padding: '4px 12px',
+                  cursor: 'pointer',
+                  backgroundColor: isSelected ? '#e6f7ff' : 'transparent',
+                  borderLeft: isSelected
+                    ? '3px solid #1890ff'
+                    : '3px solid transparent',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = '#f5f5f5';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    whiteSpace: 'nowrap',
+                    width: '100%',
+                  }}
+                >
+                  <span
+                    style={{
+                      flex: 1,
+                      fontSize: '12px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      color: '#8c8c8c',
+                      flexShrink: 0,
+                    }}
+                  >
+                    Tool
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // 否则使用树形组件渲染
     return (
       <Tree
         treeData={data}

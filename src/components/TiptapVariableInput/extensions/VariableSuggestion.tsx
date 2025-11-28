@@ -223,7 +223,17 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 );
               } else {
                 // 如果没有明确的分类，尝试根据 key 或 type 判断
-                regularVars.push(...nodes);
+                // 检查节点是否是工具（key 以 'skill-' 开头或 type 是 'Tool'）
+                for (const node of nodes) {
+                  const isTool =
+                    node.key.startsWith('skill-') ||
+                    (node.variable as any)?.type === 'Tool';
+                  if (isTool) {
+                    toolVars.push(node);
+                  } else {
+                    regularVars.push(node);
+                  }
+                }
               }
 
               return { regularVars, toolVars };
