@@ -532,12 +532,17 @@ const EditAgent: React.FC = () => {
                 variablesInfo?.bindConfig?.variables || [],
               )}
               skills={
-                agentComponentList?.filter(
-                  (item: AgentComponentInfo) =>
-                    item.type === AgentComponentTypeEnum.Plugin ||
-                    item.type === AgentComponentTypeEnum.Workflow ||
-                    item.type === AgentComponentTypeEnum.MCP,
-                ) || []
+                agentComponentList
+                  ?.filter(
+                    (item: AgentComponentInfo) =>
+                      item.type === AgentComponentTypeEnum.Plugin ||
+                      item.type === AgentComponentTypeEnum.Workflow ||
+                      item.type === AgentComponentTypeEnum.MCP,
+                  )
+                  ?.map((item: AgentComponentInfo) => ({
+                    ...item,
+                    id: item.targetId,
+                  })) || []
               }
             />
             {/*配置区域*/}
