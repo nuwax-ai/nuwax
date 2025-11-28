@@ -2,10 +2,8 @@ import CreateAgent from '@/components/CreateAgent';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import ResizableSplit from '@/components/ResizableSplit';
 import ShowStand from '@/components/ShowStand';
-import {
-  PromptVariable,
-  VariableType,
-} from '@/components/TiptapVariableInput/types';
+import type { PromptVariable } from '@/components/TiptapVariableInput/types';
+import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import VersionHistory from '@/components/VersionHistory';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
@@ -89,29 +87,6 @@ const EditAgent: React.FC = () => {
     AgentComponentInfo[]
   >([]);
 
-  // 转换变量类型的辅助函数
-  const transformToPromptVariables = (configs: any[]): PromptVariable[] => {
-    if (!configs) return [];
-    return configs.map((item) => {
-      const typeStr = item.dataType?.toLowerCase() || 'string';
-      // 简单的类型映射，根据实际情况调整
-      let type: VariableType = VariableType.String;
-      if (Object.values(VariableType).includes(typeStr as VariableType)) {
-        type = typeStr as VariableType;
-      }
-      const children = item.children || item.subArgs;
-
-      return {
-        key: item.name,
-        name: item.name,
-        type: type,
-        label: item.name, // 使用 name 作为 label
-        description: item.description || '',
-        children: children ? transformToPromptVariables(children) : undefined,
-      };
-    });
-  };
-
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
     useModel('chat');
@@ -176,10 +151,17 @@ const EditAgent: React.FC = () => {
   // 处理变量列表变化，同步到 promptVariables
   const handleVariablesChange = useCallback(
     (variables: BindConfigWithSub[]) => {
-      setPromptVariables(transformToPromptVariables(variables || []));
+      setPromptVariables((prev) => {
+        const systemVariables = prev.filter((item) => item.systemVariable);
+        return [
+          ...systemVariables,
+          ...transformToPromptVariables(variables || []),
+        ];
+      });
     },
     [],
   );
+
   // 处理工具列表变化，同步到 promptTools
   const handleToolsChange = useCallback(
     (_agentComponentList: AgentComponentInfo[]) => {

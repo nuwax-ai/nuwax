@@ -3,10 +3,7 @@ import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
-import {
-  PromptVariable,
-  VariableType,
-} from '@/components/TiptapVariableInput/types';
+import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { SKILL_FORM_KEY } from '@/constants/node.constants';
@@ -78,31 +75,6 @@ const skillCreatedTabs = CREATED_TABS.filter((item) =>
     AgentComponentTypeEnum.MCP,
   ].includes(item.key),
 );
-
-// 转换变量类型的辅助函数
-const transformToPromptVariables = (
-  configs: InputAndOutConfig[],
-): PromptVariable[] => {
-  return configs.map((item) => {
-    const typeStr = item.dataType?.toLowerCase() || 'string';
-    // 简单的类型映射，根据实际情况调整
-    let type: VariableType = VariableType.String;
-    if (Object.values(VariableType).includes(typeStr as VariableType)) {
-      type = typeStr as VariableType;
-    }
-
-    return {
-      key: item.key || item.name,
-      name: item.name,
-      type: type,
-      label: item.name, // 使用 name 作为 label
-      description: item.description || '',
-      children: item.children
-        ? transformToPromptVariables(item.children)
-        : undefined,
-    };
-  });
-};
 
 // 定义大模型节点
 const ModelNode: React.FC<NodeDisposeProps> = ({
