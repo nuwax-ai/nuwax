@@ -11,6 +11,8 @@ import { VariableType } from '../types';
  * 配置项接口（兼容多种配置格式）
  */
 interface VariableConfigItem {
+  /** 是否是系统变量 */
+  systemVariable?: boolean;
   /** 变量名称 */
   name: string;
   /** 变量键值（可选，支持多种类型） */
@@ -55,6 +57,7 @@ export const transformToPromptVariables = (
       type: type,
       label: item.name, // 使用 name 作为显示标签
       description: item.description || '',
+      systemVariable: item.systemVariable || false,
       children: children ? transformToPromptVariables(children) : undefined,
     };
   });

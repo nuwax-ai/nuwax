@@ -151,10 +151,17 @@ const EditAgent: React.FC = () => {
   // 处理变量列表变化，同步到 promptVariables
   const handleVariablesChange = useCallback(
     (variables: BindConfigWithSub[]) => {
-      setPromptVariables(transformToPromptVariables(variables || []));
+      setPromptVariables((prev) => {
+        const systemVariables = prev.filter((item) => item.systemVariable);
+        return [
+          ...systemVariables,
+          ...transformToPromptVariables(variables || []),
+        ];
+      });
     },
     [],
   );
+
   // 处理工具列表变化，同步到 promptTools
   const handleToolsChange = useCallback(
     (_agentComponentList: AgentComponentInfo[]) => {
