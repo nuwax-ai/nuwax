@@ -63,6 +63,9 @@ export interface AgentArrangeConfigProps {
   ) => void;
   // 插入系统提示词
   onInsertSystemPrompt?: (text: string) => void;
+  // 变量列表变化回调，用于同步变量列表到父组件
+  onVariablesChange?: (variables: BindConfigWithSub[]) => void;
+  onToolsChange?: (tools: AgentComponentInfo[]) => void;
 }
 
 // 组件设置弹窗

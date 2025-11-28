@@ -3,8 +3,7 @@
  * 变量树工具函数
  */
 
-import type { PromptVariable, VariableTreeNode } from '../types';
-import { VariableType } from '../types';
+import type { PromptVariable, VariableTreeNode, VariableType } from '../types';
 
 /**
  * 将 PromptVariable 转换为 Antd Tree 兼容的节点格式
@@ -220,17 +219,17 @@ export const generateVariableReference = (path: string): string => {
  */
 export const getVariableTypeIcon = (type: VariableType): string => {
   const iconMap = {
-    [VariableType.String]: '📝',
-    [VariableType.Integer]: '🔢',
-    [VariableType.Boolean]: '✅',
-    [VariableType.Number]: '➕',
-    [VariableType.Object]: '📦',
-    [VariableType.Array]: '📋',
-    [VariableType.ArrayString]: '📝',
-    [VariableType.ArrayInteger]: '🔢',
-    [VariableType.ArrayBoolean]: '✅',
-    [VariableType.ArrayNumber]: '➕',
-    [VariableType.ArrayObject]: '📦',
+    string: '📝',
+    integer: '🔢',
+    boolean: '✅',
+    number: '➕',
+    object: '📦',
+    array: '📋',
+    array_string: '📝',
+    array_integer: '🔢',
+    array_boolean: '✅',
+    array_number: '➕',
+    array_object: '📦',
   };
 
   return iconMap[type] || '📄';
