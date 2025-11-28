@@ -12,6 +12,7 @@ import {
   TEMP_CONVERSATION_CONNECTION_URL,
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
+import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import { apiTempChatConversationStop } from '@/services/agentConfig';
@@ -54,7 +55,6 @@ import { useRequest } from 'ahooks';
 import { Form, message } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import { throttle } from 'lodash';
 import React, {
   useCallback,
   useEffect,
@@ -534,20 +534,6 @@ const ChatTemp: React.FC = () => {
     }
   };
 
-  // 重置初始化
-  const resetInit = () => {
-    handleClearSideEffect();
-    setMessageList([]);
-    setConversationInfo(null);
-    allowAutoScrollRef.current = true;
-    setShowScrollBtn(false);
-    if (timeoutRef.current) {
-      //清除会话定时器
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-  };
-
   // 发送消息
   const onMessageSend = async (
     message: string,
@@ -707,36 +693,13 @@ const ChatTemp: React.FC = () => {
     }
   }, [tenantConfigInfo]);
 
-  // 在组件挂载时添加滚动事件监听器
-  useEffect(() => {
-    const messageView = messageViewRef.current;
-    if (messageView) {
-      const handleScroll = () => {
-        // 当用户手动滚动时，暂停自动滚动
-        const { scrollTop, scrollHeight, clientHeight } = messageView;
-        if (scrollTop + clientHeight < scrollHeight) {
-          allowAutoScrollRef.current = false;
-          // 清除滚动
-          if (scrollTimeoutRef.current) {
-            clearTimeout(scrollTimeoutRef.current);
-            scrollTimeoutRef.current = null;
-          }
-          setShowScrollBtn(true);
-        } else {
-          // 当用户滚动到底部时，重新允许自动滚动
-          allowAutoScrollRef.current = true;
-          setShowScrollBtn(false);
-        }
-      };
-
-      messageView.addEventListener('wheel', throttle(handleScroll, 300));
-      // 组件卸载时移除滚动事件监听器
-      return () => {
-        messageView.removeEventListener('wheel', throttle(handleScroll, 300));
-        resetInit();
-      };
-    }
-  }, []);
+  // 使用滚动检测 Hook
+  useConversationScrollDetection(
+    messageViewRef,
+    allowAutoScrollRef,
+    scrollTimeoutRef,
+    setShowScrollBtn,
+  );
 
   useEffect(() => {
     // 租户配置信息查询接口
