@@ -4,10 +4,7 @@ import CustomTree from '@/components/FormListItem/NestedForm';
 import TreeInput from '@/components/FormListItem/TreeInput';
 import DataTable from '@/components/Skill/database';
 import SqlOptimizeModal from '@/components/SqlOptimizeModal';
-import {
-  PromptVariable,
-  VariableType,
-} from '@/components/TiptapVariableInput/types';
+import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
@@ -60,31 +57,6 @@ const Database: React.FC<NodeDisposeProps> = ({
       form,
       preserve: true,
     }) || [];
-
-  // 转换变量类型的辅助函数
-  const transformToPromptVariables = (
-    configs: InputAndOutConfig[],
-  ): PromptVariable[] => {
-    return configs.map((item) => {
-      const typeStr = item.dataType?.toLowerCase() || 'string';
-      // 简单的类型映射，根据实际情况调整
-      let type: VariableType = VariableType.String;
-      if (Object.values(VariableType).includes(typeStr as VariableType)) {
-        type = typeStr as VariableType;
-      }
-
-      return {
-        key: item.key || item.name,
-        name: item.name,
-        type: type,
-        label: item.name, // 使用 name 作为 label
-        description: item.description || '',
-        children: item.children
-          ? transformToPromptVariables(item.children)
-          : undefined,
-      };
-    });
-  };
 
   // 打开自动生成弹窗
   const onOpenCreated = () => {
