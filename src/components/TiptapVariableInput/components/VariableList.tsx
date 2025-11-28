@@ -5,7 +5,7 @@
 
 import useClickOutside from '@/components/SmartVariableInput/hooks/useClickOutside';
 import { Tabs, theme, Tree } from 'antd';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type { VariableSuggestionItem, VariableTreeNode } from '../types';
 import { convertTreeNodesToSuggestions } from '../utils/suggestionUtils';
 import { transformToTreeDataForTree } from '../utils/treeHelpers';
@@ -47,6 +47,9 @@ interface VariableListProps {
   onClose?: () => void;
   // 需要排除的元素 refs（例如编辑器元素）
   excludeRefs?: React.RefObject<HTMLElement>[];
+  // 需要排除的 DOM 元素（直接传递 DOM 元素，更稳定）
+  // 使用单个元素而不是数组，避免每次创建新数组
+  excludeElement?: HTMLElement | null;
 }
 
 /**
@@ -65,6 +68,7 @@ const VariableList: React.FC<VariableListProps> = ({
   toolVariables = [],
   onClose,
   excludeRefs = [],
+  excludeElement,
 }) => {
   const { token } = theme.useToken();
 
@@ -82,17 +86,40 @@ const VariableList: React.FC<VariableListProps> = ({
   // 创建容器 ref，用于点击外部检测
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // 将 excludeElement 转换为 ref，并合并 excludeRefs
+  // 使用 useMemo 稳定化，避免每次渲染都创建新数组
+  const allExcludeRefs = useMemo(() => {
+    const refs: React.RefObject<HTMLElement>[] = [];
+
+    // 添加 excludeRefs
+    if (excludeRefs && excludeRefs.length > 0) {
+      refs.push(...excludeRefs);
+    }
+
+    // 将 excludeElement 转换为 ref 对象
+    if (excludeElement) {
+      refs.push({ current: excludeElement } as React.RefObject<HTMLElement>);
+    }
+
+    return refs;
+  }, [excludeRefs, excludeElement]);
+
+  // 稳定化 handler 回调函数
+  const handleClickOutside = useCallback(() => {
+    // 点击外部时关闭下拉框
+    if (onClose) {
+      onClose();
+    }
+  }, [onClose]);
+
   // 使用 useClickOutside hook 检测点击外部事件
-  useClickOutside(
-    containerRef,
-    () => {
-      // 点击外部时关闭下拉框
-      if (onClose) {
-        onClose();
-      }
-    },
-    excludeRefs,
-  );
+  // 排除 Portal 容器和编辑器（通过 class 名检查）
+  useClickOutside(containerRef, handleClickOutside, allExcludeRefs, [
+    'variable-suggestion-popup', // Portal 容器
+    'mention-suggestion-popup', // Mention Portal 容器
+    'tiptap-editor-wrapper', // 编辑器包装器
+    'ProseMirror', // Tiptap 编辑器
+  ]);
 
   // 将树节点转换为扁平化的建议项列表
   // 优先使用 flatItems（从 VariableSuggestion 传递的扁平化列表）
