@@ -36,7 +36,6 @@ import {
   Input,
   Radio,
   Select,
-  Space,
   Table,
   Tooltip,
 } from 'antd';
@@ -89,6 +88,7 @@ const SpacePluginTool: React.FC = () => {
     handleConfirmPublishPlugin,
     handleUpdateSuccess,
     isClickSaveBtnRef,
+    isCanDelete,
   } = usePluginConfig();
 
   // 查询插件信息
@@ -264,18 +264,35 @@ const SpacePluginTool: React.FC = () => {
       key: 'action',
       width: 80,
       align: 'right',
-      render: (_, record) => (
-        <Space size="middle">
-          {(DataTypeEnum.Object === record.dataType ||
-            DataTypeEnum.Array_Object === record.dataType) && (
-            <ICON_ADD_TR
-              className={cx('cursor-pointer')}
-              onClick={() => handleInputAddChild(record.key)}
-            />
-          )}
-          <DeleteOutlined onClick={() => handleInputDel(record.key)} />
-        </Space>
-      ),
+      render: (_, record) => {
+        const canDelete = isCanDelete(inputConfigArgs, record.key);
+        return (
+          <div className="flex items-center content-end gap-4">
+            {(DataTypeEnum.Object === record.dataType ||
+              DataTypeEnum.Array_Object === record.dataType) && (
+              <Button
+                type="text"
+                onClick={() => handleInputAddChild(record.key)}
+                icon={<ICON_ADD_TR />}
+              />
+            )}
+            <Tooltip
+              title={
+                !canDelete
+                  ? 'Array<Object> 或 Object 类型的父级必须至少保留一个子级，无法删除'
+                  : ''
+              }
+            >
+              <Button
+                type="text"
+                disabled={!canDelete}
+                onClick={() => handleInputDel(record.key)}
+                icon={<DeleteOutlined />}
+              />
+            </Tooltip>
+          </div>
+        );
+      },
     },
   ];
 
@@ -351,18 +368,35 @@ const SpacePluginTool: React.FC = () => {
       key: 'action',
       width: 80,
       align: 'right',
-      render: (_, record) => (
-        <Space size="middle">
-          {(DataTypeEnum.Object === record.dataType ||
-            DataTypeEnum.Array_Object === record.dataType) && (
-            <ICON_ADD_TR
-              className={cx('cursor-pointer')}
-              onClick={() => handleOutputAddChild(record.key)}
-            />
-          )}
-          <DeleteOutlined onClick={() => handleOutputDel(record.key)} />
-        </Space>
-      ),
+      render: (_, record) => {
+        const canDelete = isCanDelete(outputConfigArgs, record.key);
+        return (
+          <div className="flex items-center content-end gap-4">
+            {(DataTypeEnum.Object === record.dataType ||
+              DataTypeEnum.Array_Object === record.dataType) && (
+              <Button
+                type="text"
+                onClick={() => handleOutputAddChild(record.key)}
+                icon={<ICON_ADD_TR />}
+              />
+            )}
+            <Tooltip
+              title={
+                !canDelete
+                  ? 'Array<Object> 或 Object 类型的父级必须至少保留一个子级，无法删除'
+                  : ''
+              }
+            >
+              <Button
+                type="text"
+                disabled={!canDelete}
+                onClick={() => handleOutputDel(record.key)}
+                icon={<DeleteOutlined />}
+              />
+            </Tooltip>
+          </div>
+        );
+      },
     },
   ];
 
