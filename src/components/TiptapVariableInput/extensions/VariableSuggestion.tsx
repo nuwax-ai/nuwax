@@ -7,7 +7,6 @@ import { Extension } from '@tiptap/core';
 import { PluginKey } from '@tiptap/pm/state';
 import Suggestion from '@tiptap/suggestion';
 import { ConfigProvider } from 'antd';
-import React from 'react';
 import VariableList from '../components/VariableList';
 import type { VariableSuggestionItem, VariableTreeNode } from '../types';
 import { portalManager } from '../utils/portalManager';
@@ -166,6 +165,10 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
 
             // Portal ID
             const portalId = `variable-suggestion-${Date.now()}-${Math.random()}`;
+
+            // 获取编辑器 DOM 元素（用于排除点击外部检测）
+            // 在组件外部获取，确保引用稳定
+            const editorDom = (this.editor?.view?.dom as HTMLElement) || null;
 
             // 将树节点扁平化为可选择的项列表（所有节点都可以选择）
             const flattenTree = (
@@ -337,12 +340,6 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               }
             };
 
-            // 获取编辑器 DOM 元素的 ref（用于排除点击外部检测）
-            // 创建一个符合 RefObject 接口的对象
-            const editorDomRef: React.RefObject<HTMLElement> = {
-              current: (this.editor?.view?.dom as HTMLElement) || null,
-            };
-
             // 定义 updateRender
             const updateRender = (
               selectedIndex: number,
@@ -401,7 +398,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                         regularVariables={currentRegularVars}
                         toolVariables={currentToolVars}
                         onClose={handleClose}
-                        excludeRefs={[editorDomRef]}
+                        excludeElement={editorDom}
                       />
                     </ConfigProvider>
                   );
