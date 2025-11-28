@@ -4,6 +4,14 @@
  */
 
 /**
+ * 匹配事件标签的正则表达式
+ * 匹配 <div class="event" ...>...</div>
+ * 使用更通用的正则：只要是 div 且包含 class="event" 就匹配，忽略属性顺序和内容
+ */
+export const EVENT_TAG_REGEX =
+  /<div\s+class="event"\s+event-type="[^"]*"\s+data='[^']*'>\[([^\]]*)\]<\/div>/g;
+
+/**
  * 转义 HTML 特殊字符
  * @param text 需要转义的文本
  * @returns 转义后的文本
@@ -27,12 +35,7 @@ export const escapeHTML = (text: string): string => {
 export const escapeEventTags = (text: string): string => {
   if (!text) return '';
 
-  // 匹配事件标签: <div class="event" event-type="xxx" data='xxx'>[xxx]</div>
-  // 其中 xxx 是可变的
-  const eventTagRegex =
-    /<div\s+class="event"\s+event-type="[^"]*"\s+data='[^']*'>\[([^\]]*)\]<\/div>/g;
-
-  return text.replace(eventTagRegex, (match) => {
+  return text.replace(EVENT_TAG_REGEX, (match) => {
     // 将整个事件标签转义
     return match
       .replace(/&/g, '&amp;')
@@ -42,6 +45,8 @@ export const escapeEventTags = (text: string): string => {
       .replace(/'/g, '&#039;');
   });
 };
+
+// ... (intermediate code omitted) ...
 
 /**
  * 从 Tiptap HTML 中提取纯文本内容
@@ -281,4 +286,30 @@ export const convertTextToHTML = (
   });
 
   return paragraphs.join('');
+};
+
+/**
+ * 判断文本是否需要转换为 HTML
+ * 检查是否包含工具块、变量、Mentions 或事件标签
+ * @param text 需要检查的文本
+ * @returns 是否需要转换
+ */
+export const shouldConvertTextToHTML = (text: string): boolean => {
+  if (!text) return false;
+
+  // 检查工具块
+  if (text.includes('{#ToolBlock')) return true;
+
+  // 检查变量
+  if (text.includes('{{')) return true;
+
+  // 检查 Mentions
+  if (text.includes('@')) return true;
+
+  // 检查事件标签 (使用通用的正则)
+  // 重置正则的 lastIndex，因为它是全局匹配
+  EVENT_TAG_REGEX.lastIndex = 0;
+  if (EVENT_TAG_REGEX.test(text)) return true;
+
+  return false;
 };
