@@ -34,7 +34,9 @@ import type {
   GroupMcpInfo,
 } from '@/types/interfaces/agentConfig';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import { PageArgConfig } from '@/types/interfaces/pageDev';
+import type { RequestResponse } from '@/types/interfaces/request';
 import { loopSetBindValueType } from '@/utils/deepNode';
 import { useRequest } from 'ahooks';
 import { CollapseProps, message, Switch, Tooltip } from 'antd';
@@ -71,6 +73,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   agentConfigInfo,
   onChangeAgent,
   onInsertSystemPrompt,
+  onVariablesChange,
+  onToolsChange,
 }) => {
   // 插件弹窗
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
@@ -272,6 +276,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const { runAsync: runVariables } = useRequest(apiAgentVariables, {
     manual: true,
     debounceWait: 300,
+    onSuccess: (result: RequestResponse<BindConfigWithSub[]>) => {
+      const { data } = result;
+      // 同步变量列表到父组件
+      if (onVariablesChange && data) {
+        onVariablesChange(data);
+      }
+    },
+    onError: (error) => {
+      message.error(error.message);
+    },
   });
 
   // 删除智能体组件配置
@@ -350,6 +364,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       setAddComponents(list);
     }
   };
+  useEffect(() => {
+    if (onToolsChange && agentComponentList) {
+      onToolsChange(agentComponentList);
+    }
+  }, [agentComponentList]);
 
   // 新增智能体插件、工作流、知识库组件配置
   const { run: runComponentAdd } = useRequest(apiAgentComponentAdd, {
