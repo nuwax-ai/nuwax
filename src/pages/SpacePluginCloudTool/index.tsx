@@ -74,7 +74,6 @@ const SpacePluginCloudTool: React.FC = () => {
     handleConfirmPublishPlugin,
     handleUpdateSuccess,
     isClickSaveBtnRef,
-    isCanDelete,
   } = usePluginConfig();
 
   // 查询插件信息
@@ -227,7 +226,6 @@ const SpacePluginCloudTool: React.FC = () => {
       width: 66,
       align: 'right',
       render: (_, record) => {
-        const canDelete = isCanDelete(inputConfigArgs, record.key);
         return (
           <div className="flex items-center content-end gap-4">
             {(DataTypeEnum.Object === record.dataType ||
@@ -238,20 +236,11 @@ const SpacePluginCloudTool: React.FC = () => {
                 icon={<ICON_ADD_TR />}
               />
             )}
-            <Tooltip
-              title={
-                !canDelete
-                  ? 'Array<Object> 或 Object 类型的父级必须至少保留一个子级，无法删除'
-                  : ''
-              }
-            >
-              <Button
-                type="text"
-                disabled={!canDelete}
-                onClick={() => handleInputDel(record.key)}
-                icon={<DeleteOutlined />}
-              />
-            </Tooltip>
+            <Button
+              type="text"
+              onClick={() => handleInputDel(record.key)}
+              icon={<DeleteOutlined />}
+            />
           </div>
         );
       },
@@ -331,7 +320,6 @@ const SpacePluginCloudTool: React.FC = () => {
       width: 66,
       align: 'right',
       render: (_, record) => {
-        const canDelete = isCanDelete(outputConfigArgs, record.key);
         return (
           <div className="flex items-center content-end gap-4">
             {(DataTypeEnum.Object === record.dataType ||
@@ -342,20 +330,11 @@ const SpacePluginCloudTool: React.FC = () => {
                 icon={<ICON_ADD_TR />}
               />
             )}
-            <Tooltip
-              title={
-                !canDelete
-                  ? 'Array<Object> 或 Object 类型的父级必须至少保留一个子级，无法删除'
-                  : ''
-              }
-            >
-              <Button
-                type="text"
-                disabled={!canDelete}
-                onClick={() => handleOutputDel(record.key)}
-                icon={<DeleteOutlined />}
-              />
-            </Tooltip>
+            <Button
+              type="text"
+              onClick={() => handleOutputDel(record.key)}
+              icon={<DeleteOutlined />}
+            />
           </div>
         );
       },
