@@ -147,9 +147,6 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
                   placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
                   style={{
                     minHeight: '80px',
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '6px',
-                    padding: '4px 11px',
                     marginBottom: '10px',
                   }}
                   variables={transformToPromptVariables(
@@ -470,9 +467,6 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   placeholder="可以使用{{变量名}}的方式引用输入参数中的变量"
                   style={{
                     minHeight: '80px',
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '6px',
-                    padding: '4px 11px',
                   }}
                   variables={transformToPromptVariables(
                     inputArgs.filter(
