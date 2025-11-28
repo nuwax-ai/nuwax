@@ -6,10 +6,10 @@
 import { Extension } from '@tiptap/core';
 import { PluginKey } from '@tiptap/pm/state';
 import Suggestion from '@tiptap/suggestion';
-import ReactDOM from 'react-dom/client';
-import type { VariableTreeNode } from '../../VariableInferenceInput/types';
+import { ConfigProvider } from 'antd';
+import { createRoot } from 'react-dom/client';
 import VariableList from '../components/VariableList';
-import type { VariableSuggestionItem } from '../types';
+import type { VariableSuggestionItem, VariableTreeNode } from '../types';
 
 export interface VariableSuggestionOptions {
   variables: VariableTreeNode[];
@@ -160,10 +160,18 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             // 创建容器
             const container = document.createElement('div');
             container.className = 'variable-suggestion-popup';
+            // 确保容器能够访问到 CSS 变量（CSS 变量定义在 document.documentElement 上，是全局的）
             document.body.appendChild(container);
 
-            // 创建 React 根
-            const root = ReactDOM.createRoot(container);
+            // 创建 React 18 root
+            const root = createRoot(container);
+
+            // Portal ID
+            const portalId = `variable-suggestion-${Date.now()}-${Math.random()}`;
+
+            // 获取编辑器 DOM 元素（用于排除点击外部检测）
+            // 在组件外部获取，确保引用稳定
+            const editorDom = (this.editor?.view?.dom as HTMLElement) || null;
 
             // 将树节点扁平化为可选择的项列表（所有节点都可以选择）
             const flattenTree = (
@@ -223,7 +231,17 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 );
               } else {
                 // 如果没有明确的分类，尝试根据 key 或 type 判断
-                regularVars.push(...nodes);
+                // 检查节点是否是工具（key 以 'skill-' 开头或 type 是 'Tool'）
+                for (const node of nodes) {
+                  const isTool =
+                    node.key.startsWith('skill-') ||
+                    (node.variable as any)?.type === 'Tool';
+                  if (isTool) {
+                    toolVars.push(node);
+                  } else {
+                    regularVars.push(node);
+                  }
+                }
               }
 
               return { regularVars, toolVars };
@@ -272,6 +290,23 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             let handleKeyDownRef: ((event: KeyboardEvent) => void) | null =
               null;
 
+            // 定义关闭下拉框的函数
+            const handleClose = () => {
+              try {
+                // 卸载 React 组件
+                root.unmount();
+              } catch (e) {
+                // 忽略卸载错误
+              }
+              if (document.body.contains(container)) {
+                document.body.removeChild(container);
+              }
+              if (handleKeyDownRef) {
+                document.removeEventListener('keydown', handleKeyDownRef);
+              }
+              popup = null;
+            };
+
             // 定义 handleSelect
             const handleSelect = (item: VariableSuggestionItem) => {
               try {
@@ -303,18 +338,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 console.error('VariableSuggestion handleSelect error:', error);
               } finally {
                 // 清理 - 确保总是执行
-                try {
-                  root.unmount();
-                } catch (e) {
-                  // 忽略卸载错误
-                }
-                if (document.body.contains(container)) {
-                  document.body.removeChild(container);
-                }
-                if (handleKeyDownRef) {
-                  document.removeEventListener('keydown', handleKeyDownRef);
-                }
-                popup = null;
+                handleClose();
                 this.options.onSelect?.(item);
               }
             };
@@ -330,51 +354,60 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               currentShowTabs: boolean,
               currentSearchText: string,
             ) => {
-              if (
-                document.body.contains(container) &&
-                // @ts-ignore - internal property check
-                root._internalRoot
-              ) {
+              if (document.body.contains(container)) {
                 try {
-                  root.render(
-                    <VariableList
-                      tree={currentTree}
-                      selectedIndex={selectedIndex}
-                      onSelect={handleSelect}
-                      searchText={currentSearchText}
-                      flatItems={currentFlatItems}
-                      showTabs={currentShowTabs}
-                      activeTab={currentActiveTab}
-                      onTabChange={(key) => {
-                        // 切换 tab
-                        activeTab = key;
-                        // 更新 popup 状态
-                        if (popup) {
-                          popup.activeTab = key;
-                          const newTree = getCurrentTree(
-                            key,
-                            currentRegularVars,
-                            currentToolVars,
-                          );
-                          popup.flatItems = flattenTree(newTree);
-                          popup.selectedIndex = 0;
-
-                          updateRender(
-                            0,
-                            popup.flatItems,
-                            newTree,
-                            key,
-                            currentRegularVars,
-                            currentToolVars,
-                            currentShowTabs,
-                            currentSearchText,
-                          );
-                        }
+                  // 使用 ConfigProvider 包裹，确保主题上下文和 CSS 变量正确应用
+                  // 使用 React 18 createRoot API 渲染到容器
+                  const content = (
+                    <ConfigProvider
+                      theme={{
+                        cssVar: { prefix: 'xagi' },
                       }}
-                      regularVariables={currentRegularVars}
-                      toolVariables={currentToolVars}
-                    />,
+                    >
+                      <VariableList
+                        tree={currentTree}
+                        selectedIndex={selectedIndex}
+                        onSelect={handleSelect}
+                        searchText={currentSearchText}
+                        flatItems={currentFlatItems}
+                        showTabs={currentShowTabs}
+                        activeTab={currentActiveTab}
+                        onTabChange={(key) => {
+                          // 切换 tab
+                          activeTab = key;
+                          // 更新 popup 状态
+                          if (popup) {
+                            popup.activeTab = key;
+                            const newTree = getCurrentTree(
+                              key,
+                              currentRegularVars,
+                              currentToolVars,
+                            );
+                            popup.flatItems = flattenTree(newTree);
+                            popup.selectedIndex = 0;
+
+                            updateRender(
+                              0,
+                              popup.flatItems,
+                              newTree,
+                              key,
+                              currentRegularVars,
+                              currentToolVars,
+                              currentShowTabs,
+                              currentSearchText,
+                            );
+                          }
+                        }}
+                        regularVariables={currentRegularVars}
+                        toolVariables={currentToolVars}
+                        onClose={handleClose}
+                        excludeElement={editorDom}
+                      />
+                    </ConfigProvider>
                   );
+
+                  // 使用 React 18 root 渲染
+                  root.render(content);
                 } catch (error) {
                   console.error('VariableSuggestion render error:', error);
                 }
@@ -480,16 +513,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               if (event.key === 'Escape') {
                 event.preventDefault();
                 // 清理
-                try {
-                  root.unmount();
-                } catch (e) {
-                  // 忽略卸载错误
-                }
-                if (document.body.contains(container)) {
-                  document.body.removeChild(container);
-                }
-                document.removeEventListener('keydown', handleKeyDown);
-                popup = null;
+                handleClose();
                 return;
               }
 
@@ -520,6 +544,15 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               }
             };
 
+            // 获取 CSS 变量值的辅助函数（从 Ant Design 主题系统）
+            const getCSSVariable = (varName: string, fallback: string) => {
+              return (
+                getComputedStyle(document.documentElement)
+                  .getPropertyValue(varName)
+                  .trim() || fallback
+              );
+            };
+
             // 定位弹窗
             const updatePosition = () => {
               const { range } = props;
@@ -527,8 +560,11 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
 
               const coords = this.editor.view.coordsAtPos(range.from);
               if (coords) {
+                // 从 CSS 变量获取尺寸值
+                const controlHeight =
+                  parseInt(getCSSVariable('--xagi-control-height', '32')) || 32;
                 const popupWidth = 300;
-                const popupHeight = 240;
+                const popupHeight = controlHeight * 7.5; // 约 240px，基于 controlHeight
                 const viewportWidth = window.innerWidth;
                 const viewportHeight = window.innerHeight;
 
@@ -555,12 +591,29 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 container.style.position = 'fixed';
                 container.style.left = `${left}px`;
                 container.style.top = `${top}px`;
-                container.style.zIndex = '9999';
-                container.style.background = '#fff';
-                container.style.border = '1px solid #d9d9d9';
-                container.style.borderRadius = '8px';
-                container.style.boxShadow =
-                  '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)';
+                container.style.zIndex = getCSSVariable(
+                  '--xagi-z-index-popup-base',
+                  '9999',
+                );
+                container.style.background = getCSSVariable(
+                  '--xagi-color-bg-container',
+                  '#fff',
+                );
+                container.style.border = `${getCSSVariable(
+                  '--xagi-line-width',
+                  '1px',
+                )} solid ${getCSSVariable(
+                  '--xagi-color-border-secondary',
+                  '#d9d9d9',
+                )}`;
+                container.style.borderRadius = getCSSVariable(
+                  '--xagi-border-radius',
+                  '8px',
+                );
+                container.style.boxShadow = getCSSVariable(
+                  '--xagi-box-shadow',
+                  '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
+                );
                 container.style.width = `${popupWidth}px`;
                 container.style.height = `${popupHeight}px`;
                 container.style.overflow = 'hidden'; // 改为 hidden，内部 VariableList 会处理滚动
@@ -572,8 +625,9 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             document.addEventListener('keydown', handleKeyDown);
 
             popup = {
-              root,
+              portalId,
               container,
+              root,
               selectedIndex: 0,
               handleKeyDown,
               // 状态
@@ -644,18 +698,25 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
           onKeyDown: (props: any) => {
             if (props.event.key === 'Escape') {
               if (popup) {
-                try {
-                  popup.root.unmount();
-                } catch (e) {
-                  // 忽略卸载错误
-                }
-                if (document.body.contains(popup.container)) {
-                  document.body.removeChild(popup.container);
-                }
-                if (popup.handleKeyDown) {
-                  document.removeEventListener('keydown', popup.handleKeyDown);
-                }
-                popup = null;
+                // 使用统一的关闭函数
+                const handleClose = () => {
+                  try {
+                    popup.root.unmount();
+                  } catch (e) {
+                    // 忽略卸载错误
+                  }
+                  if (document.body.contains(popup.container)) {
+                    document.body.removeChild(popup.container);
+                  }
+                  if (popup.handleKeyDown) {
+                    document.removeEventListener(
+                      'keydown',
+                      popup.handleKeyDown,
+                    );
+                  }
+                  popup = null;
+                };
+                handleClose();
               }
               return true;
             }
@@ -668,18 +729,22 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
           },
           onExit: () => {
             if (popup) {
-              try {
-                popup.root.unmount();
-              } catch (e) {
-                // 忽略卸载错误
-              }
-              if (document.body.contains(popup.container)) {
-                document.body.removeChild(popup.container);
-              }
-              if (popup.handleKeyDown) {
-                document.removeEventListener('keydown', popup.handleKeyDown);
-              }
-              popup = null;
+              // 使用统一的关闭函数
+              const handleClose = () => {
+                try {
+                  popup.root.unmount();
+                } catch (e) {
+                  // 忽略卸载错误
+                }
+                if (document.body.contains(popup.container)) {
+                  document.body.removeChild(popup.container);
+                }
+                if (popup.handleKeyDown) {
+                  document.removeEventListener('keydown', popup.handleKeyDown);
+                }
+                popup = null;
+              };
+              handleClose();
             }
           },
         };

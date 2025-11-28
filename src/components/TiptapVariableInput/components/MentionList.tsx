@@ -3,7 +3,7 @@
  * @ mentions 下拉列表组件
  */
 
-import { List } from 'antd';
+import { List, theme } from 'antd';
 import React from 'react';
 import type { MentionItem } from '../types';
 
@@ -21,9 +21,17 @@ const MentionList: React.FC<MentionListProps> = ({
   selectedIndex,
   onSelect,
 }) => {
+  const { token } = theme.useToken();
+
   if (items.length === 0) {
     return (
-      <div style={{ padding: '8px', color: '#999', textAlign: 'center' }}>
+      <div
+        style={{
+          padding: token.paddingSM,
+          color: token.colorTextTertiary,
+          textAlign: 'center',
+        }}
+      >
         未找到匹配项
       </div>
     );
@@ -34,7 +42,7 @@ const MentionList: React.FC<MentionListProps> = ({
       size="small"
       dataSource={items}
       style={{
-        maxHeight: '240px',
+        maxHeight: `${(token.controlHeight || 32) * 7.5}px`, // 约 240px，基于 controlHeight
         overflowY: 'auto',
       }}
       renderItem={(item, index) => (
@@ -42,12 +50,12 @@ const MentionList: React.FC<MentionListProps> = ({
           style={{
             cursor: 'pointer',
             backgroundColor:
-              index === selectedIndex ? '#f0f0f0' : 'transparent',
-            padding: '4px 8px',
+              index === selectedIndex ? token.colorInfoBg : 'transparent',
+            padding: `${token.paddingXXS}px ${token.paddingSM}px`,
           }}
           onClick={() => onSelect(item)}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f0f0f0';
+            e.currentTarget.style.backgroundColor = token.colorFillSecondary;
           }}
           onMouseLeave={(e) => {
             if (index !== selectedIndex) {
@@ -55,14 +63,20 @@ const MentionList: React.FC<MentionListProps> = ({
             }
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ color: '#1890ff' }}>@</span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: token.marginSM,
+            }}
+          >
+            <span style={{ color: token.colorInfo }}>@</span>
             <span>{item.label}</span>
             {item.type && (
               <span
                 style={{
-                  fontSize: '12px',
-                  color: '#999',
+                  fontSize: token.fontSizeSM,
+                  color: token.colorTextTertiary,
                   marginLeft: 'auto',
                 }}
               >

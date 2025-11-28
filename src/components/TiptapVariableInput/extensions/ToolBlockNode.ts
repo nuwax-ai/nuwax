@@ -58,7 +58,7 @@ export const ToolBlockNode = Node.create({
   renderHTML({ HTMLAttributes }) {
     const { id, type, name, content } = HTMLAttributes;
 
-    // 直接使用 span 标签，确保样式被应用
+    // 直接使用 span 标签，样式通过 CSS 类应用（已在 styles.less 中定义）
     return [
       'span',
       mergeAttributes(HTMLAttributes, {
@@ -67,8 +67,7 @@ export const ToolBlockNode = Node.create({
         'data-tool-name': name,
         'data-tool-content': content,
         class: 'tool-block-chip',
-        style:
-          'display: inline-block !important; background-color: #f6ffed !important; color: #52c41a !important; padding: 0 4px !important; border-radius: 4px !important; margin: 0 2px !important; font-size: 12px !important; line-height: 20px !important; border: 1px solid #b7eb8f !important; user-select: none !important; vertical-align: middle !important; cursor: default !important;',
+        // 移除内联样式，使用 CSS 类
       }),
       content || '',
     ];
@@ -85,24 +84,30 @@ export const ToolBlockNode = Node.create({
       span.textContent = node.attrs.content || '';
       span.contentEditable = 'false';
 
-      // 直接使用 setAttribute 设置内联样式（确保样式被应用）
-      span.setAttribute(
-        'style',
-        'display: inline-block; background-color: #f6ffed; color: #52c41a; padding: 0 4px; border-radius: 4px; margin: 0 2px; font-size: 12px; line-height: 20px; border: 1px solid #b7eb8f; user-select: none; vertical-align: middle; cursor: default;',
-      );
+      // 样式通过 CSS 类应用（已在 styles.less 中定义），不需要内联样式
 
       return {
         dom: span,
         update: (node) => {
-          // 更新时也确保样式存在
-          if (span.getAttribute('style') === null) {
-            span.setAttribute(
-              'style',
-              'display: inline-block; background-color: #f6ffed; color: #52c41a; padding: 0 4px; border-radius: 4px; margin: 0 2px; font-size: 12px; line-height: 20px; border: 1px solid #b7eb8f; user-select: none; vertical-align: middle; cursor: default;',
-            );
-          }
+          // 更新内容
           if (span.textContent !== (node.attrs.content || '')) {
             span.textContent = node.attrs.content || '';
+          }
+          // 确保属性正确
+          if (span.getAttribute('data-tool-id') !== (node.attrs.id || '')) {
+            span.setAttribute('data-tool-id', node.attrs.id || '');
+          }
+          if (span.getAttribute('data-tool-type') !== (node.attrs.type || '')) {
+            span.setAttribute('data-tool-type', node.attrs.type || '');
+          }
+          if (span.getAttribute('data-tool-name') !== (node.attrs.name || '')) {
+            span.setAttribute('data-tool-name', node.attrs.name || '');
+          }
+          if (
+            span.getAttribute('data-tool-content') !==
+            (node.attrs.content || '')
+          ) {
+            span.setAttribute('data-tool-content', node.attrs.content || '');
           }
           return true;
         },

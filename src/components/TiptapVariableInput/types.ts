@@ -3,10 +3,54 @@
  * Tiptap 变量输入组件类型定义
  */
 
-import type {
-  PromptVariable,
-  VariableTreeNode,
-} from '../VariableInferenceInput/types';
+/**
+ * 变量类型枚举
+ */
+export enum VariableType {
+  String = 'string',
+  Integer = 'integer',
+  Boolean = 'boolean',
+  Number = 'number',
+  Object = 'object',
+  Array = 'array',
+  ArrayString = 'array_string',
+  ArrayInteger = 'array_integer',
+  ArrayBoolean = 'array_boolean',
+  ArrayNumber = 'array_number',
+  ArrayObject = 'array_object',
+}
+
+/**
+ * 变量定义接口
+ */
+export interface PromptVariable {
+  /** 变量标识符 */
+  key: string;
+  /** 变量类型 */
+  type: VariableType;
+  /** 变量显示名称 */
+  name: string;
+  /** 变量描述 */
+  description?: string;
+  /** 子变量 */
+  children?: PromptVariable[];
+  /** 自定义显示标签 */
+  label?: string;
+  /** 变量数据示例 */
+  example?: any;
+}
+
+/**
+ * 变量树节点接口
+ */
+export interface VariableTreeNode {
+  key: string;
+  label: string;
+  value: string;
+  variable?: PromptVariable;
+  children?: VariableTreeNode[];
+  isLeaf?: boolean;
+}
 
 /**
  * Mentions 项数据结构
