@@ -541,6 +541,66 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                   currentShowTabs,
                   currentSearchText,
                 );
+                return;
+              }
+
+              // 处理左右箭头键切换 tab
+              if (currentShowTabs) {
+                if (event.key === 'ArrowLeft') {
+                  event.preventDefault();
+                  // 左箭头：切换到左边的 tab（tools -> variables）
+                  if (currentActiveTab === 'tools') {
+                    const newTab = 'variables';
+                    popup.activeTab = newTab;
+                    const newTree = getCurrentTree(
+                      newTab,
+                      currentRegularVars,
+                      currentToolVars,
+                    );
+                    popup.flatItems = flattenTree(newTree);
+                    popup.selectedIndex = 0;
+
+                    updateRender(
+                      0,
+                      popup.flatItems,
+                      newTree,
+                      newTab,
+                      currentRegularVars,
+                      currentToolVars,
+                      currentShowTabs,
+                      currentSearchText,
+                    );
+                  }
+                  return;
+                }
+
+                if (event.key === 'ArrowRight') {
+                  event.preventDefault();
+                  // 右箭头：切换到右边的 tab（variables -> tools）
+                  if (currentActiveTab === 'variables') {
+                    const newTab = 'tools';
+                    popup.activeTab = newTab;
+                    const newTree = getCurrentTree(
+                      newTab,
+                      currentRegularVars,
+                      currentToolVars,
+                    );
+                    popup.flatItems = flattenTree(newTree);
+                    popup.selectedIndex = 0;
+
+                    updateRender(
+                      0,
+                      popup.flatItems,
+                      newTree,
+                      newTab,
+                      currentRegularVars,
+                      currentToolVars,
+                      currentShowTabs,
+                      currentSearchText,
+                    );
+                  }
+                  return;
+                }
               }
             };
 
