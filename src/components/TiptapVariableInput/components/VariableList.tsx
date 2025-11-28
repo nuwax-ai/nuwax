@@ -6,6 +6,7 @@
 import useClickOutside from '@/components/SmartVariableInput/hooks/useClickOutside';
 import { Tabs, theme, Tree } from 'antd';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import '../styles.less';
 import type { VariableSuggestionItem, VariableTreeNode } from '../types';
 import { convertTreeNodesToSuggestions } from '../utils/suggestionUtils';
 import { transformToTreeDataForTree } from '../utils/treeHelpers';
@@ -326,13 +327,7 @@ const VariableList: React.FC<VariableListProps> = ({
       !tree.some((n) => n.key === 'category-skills')
     ) {
       return (
-        <div
-          style={{
-            maxHeight: `${(token.controlHeight || 32) * 7.5}px`, // 约 240px，基于 controlHeight
-            overflowY: 'auto',
-            padding: `${token.paddingXXS}px 0`,
-          }}
-        >
+        <div className="variable-tool-list-container">
           {suggestions.map((item, index) => {
             const isSelected = selectedIndex === index;
 
@@ -342,54 +337,15 @@ const VariableList: React.FC<VariableListProps> = ({
                 onClick={() => {
                   onSelect(item);
                 }}
-                style={{
-                  padding: `${token.paddingXXS}px ${token.paddingSM}px`,
-                  cursor: 'pointer',
-                  backgroundColor: isSelected
-                    ? token.colorInfoBg
-                    : 'transparent',
-                  transition: 'background-color 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.backgroundColor =
-                      token.colorFillSecondary;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
+                className={`variable-tool-list-item ${
+                  isSelected ? 'selected' : ''
+                }`}
               >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: token.marginSM,
-                    whiteSpace: 'nowrap',
-                    width: '100%',
-                  }}
-                >
-                  <span
-                    style={{
-                      flex: 1,
-                      fontSize: token.fontSizeSM,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
+                <div className="variable-tool-list-item-content">
+                  <span className="variable-tool-list-item-label">
                     {item.label}
                   </span>
-                  <span
-                    style={{
-                      fontSize: token.fontSizeSM - 1,
-                      color: token.colorTextTertiary,
-                      flexShrink: 0,
-                    }}
-                  >
-                    Tool
-                  </span>
+                  <span className="variable-tool-list-item-type">Tool</span>
                 </div>
               </div>
             );
@@ -414,12 +370,6 @@ const VariableList: React.FC<VariableListProps> = ({
         selectable={true}
         // 允许点击节点标题进行选择（不仅仅是图标）
         blockNode={true}
-        style={{
-          maxHeight: `${(token.controlHeight || 32) * 7.5}px`, // 约 240px，基于 controlHeight
-          overflowY: 'auto',
-        }}
-        height={(token.controlHeight || 32) * 7.5} // 约 240px
-        itemHeight={token.controlHeightSM || 28}
         virtual={true}
       />
     );
@@ -442,22 +392,26 @@ const VariableList: React.FC<VariableListProps> = ({
     ];
 
     return (
-      <div ref={containerRef} className="variable-suggestion-tabs">
+      <div ref={containerRef} className="variable-suggestion-tabs css-var-r0">
         <Tabs
           activeKey={activeTab}
           onChange={onTabChange}
           items={items}
           size="small"
           tabBarStyle={{
-            marginBottom: token.marginSM,
             padding: `0 ${token.paddingSM}px`,
+            margin: 0,
           }}
         />
       </div>
     );
   }
 
-  return <div ref={containerRef}>{renderTree(treeData)}</div>;
+  return (
+    <div ref={containerRef} className="css-var-r0">
+      {renderTree(treeData)}
+    </div>
+  ); //TODO 这里的 css-var-r0 是一个临时方案
 };
 
 export default VariableList;

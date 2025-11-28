@@ -7,9 +7,9 @@ import { Extension } from '@tiptap/core';
 import { PluginKey } from '@tiptap/pm/state';
 import Suggestion from '@tiptap/suggestion';
 import { ConfigProvider } from 'antd';
+import { createRoot } from 'react-dom/client';
 import MentionList from '../components/MentionList';
 import type { MentionItem } from '../types';
-import { portalManager } from '../utils/portalManager';
 
 export interface MentionSuggestionOptions {
   items: MentionItem[];
@@ -61,6 +61,9 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
             container.className = 'mention-suggestion-popup';
             document.body.appendChild(container);
 
+            // 创建 React 18 root
+            const root = createRoot(container);
+
             // Portal ID
             const portalId = `mention-suggestion-${Date.now()}-${Math.random()}`;
             let selectedIndex = 0;
@@ -72,8 +75,8 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
             const handleSelect = (item: MentionItem) => {
               command({ id: item.id, label: item.label, type: item.type });
               try {
-                // 注销 Portal
-                portalManager.unregister(portalId);
+                // 卸载 React 组件
+                root.unmount();
               } catch (e) {
                 // 忽略卸载错误
               }
@@ -117,7 +120,7 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
                     />
                   </ConfigProvider>
                 );
-                portalManager.updateContent(portalId, content);
+                root.render(content);
               } else if (event.key === 'ArrowUp') {
                 event.preventDefault();
                 selectedIndex = Math.max(selectedIndex - 1, 0);
@@ -135,7 +138,7 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
                     />
                   </ConfigProvider>
                 );
-                portalManager.updateContent(portalId, content);
+                root.render(content);
               } else if (event.key === 'Enter') {
                 event.preventDefault();
                 if (currentItems[selectedIndex]) {
@@ -143,7 +146,7 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
                 }
               } else if (event.key === 'Escape') {
                 event.preventDefault();
-                portalManager.unregister(portalId);
+                root.unmount();
                 if (document.body.contains(container)) {
                   document.body.removeChild(container);
                 }
@@ -155,7 +158,7 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
 
             // 渲染列表
             // 使用 ConfigProvider 包裹，确保主题上下文和 CSS 变量正确应用
-            // 通过 portalManager 注册，组件会使用 createPortal 渲染
+            // 使用 React 18 createRoot API 渲染到容器
             const content = (
               <ConfigProvider
                 theme={{
@@ -169,7 +172,7 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
                 />
               </ConfigProvider>
             );
-            portalManager.register(portalId, container, content);
+            root.render(content);
 
             // 获取 CSS 变量值的辅助函数（从 Ant Design 主题系统）
             const getCSSVariable = (varName: string, fallback: string) => {
@@ -251,6 +254,7 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
             popup = {
               portalId,
               container,
+              root,
               handleKeyDown,
               updatePosition,
               currentItems: items,
@@ -277,7 +281,7 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
                         label: item.label,
                         type: item.type,
                       });
-                      portalManager.unregister(popup.portalId);
+                      popup.root.unmount();
                       if (document.body.contains(popup.container)) {
                         document.body.removeChild(popup.container);
                       }
@@ -290,14 +294,14 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
                   />
                 </ConfigProvider>
               );
-              portalManager.updateContent(popup.portalId, content);
+              popup.root.render(content);
               popup.updatePosition();
             }
           },
           onKeyDown: (props: any) => {
             if (props.event.key === 'Escape') {
               if (popup) {
-                portalManager.unregister(popup.portalId);
+                popup.root.unmount();
                 if (document.body.contains(popup.container)) {
                   document.body.removeChild(popup.container);
                 }
@@ -310,7 +314,7 @@ export const MentionSuggestion = Extension.create<MentionSuggestionOptions>({
           onExit: () => {
             if (popup) {
               try {
-                portalManager.unregister(popup.portalId);
+                popup.root.unmount();
               } catch (e) {
                 // 忽略卸载错误
               }
