@@ -10,15 +10,7 @@ import {
   UnderlineOutlined,
   UnlockOutlined,
 } from '@ant-design/icons';
-import {
-  Breadcrumb,
-  Button,
-  Dropdown,
-  Input,
-  InputNumber,
-  Select,
-  Space,
-} from 'antd';
+import { Breadcrumb, Button, Dropdown, Input, Select, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import {
@@ -51,6 +43,13 @@ import {
   ShadowSvg,
   TabularNumbersSvg,
 } from './design.images.constants';
+import {
+  generateFullTailwindColorOptions,
+  generateTailwindOpacityOptions,
+  generateTailwindRadiusOptions,
+  generateTailwindShadowOptions,
+  getColorFromTailwindClass,
+} from './getColor';
 import styles from './index.less';
 import { ElementInfo } from './messages';
 
@@ -117,22 +116,17 @@ const borderWidthOptions = [
   { label: '8px', value: '8px' },
 ];
 
-// 颜色选项
-const colorOptions = [
-  { label: 'primary', value: '#1890ff' },
-  { label: 'secondary', value: '#8c8c8c' },
-  { label: 'success', value: '#52c41a' },
-  { label: 'warning', value: '#faad14' },
-  { label: 'error', value: '#ff4d4f' },
-];
+/**
+ * Tailwind CSS 颜色选项列表
+ * 包含所有颜色和所有色阶（50-950）
+ */
+const colorOptions = generateFullTailwindColorOptions();
 
 // 背景选项
-const backgroundOptions = [
-  { label: 'Default', value: 'Default' },
-  { label: 'Transparent', value: 'Transparent' },
-  { label: 'White', value: '#fff' },
-  { label: 'Gray', value: '#8c8c8c' },
-];
+const backgroundOptions = colorOptions;
+
+// Border Color 选项
+const borderColorOptions = colorOptions;
 
 // 更多操作菜单
 const moreMenuItems = [
@@ -202,31 +196,14 @@ const borderStyleOptions = [
   { label: 'Dotted', value: 'Dotted' },
 ];
 
-// Border Color 选项
-const borderColorOptions = [
-  { label: 'Default', value: 'Default' },
-  { label: 'Black', value: '#000000' },
-  { label: 'White', value: '#ffffff' },
-  { label: 'Gray', value: '#8c8c8c' },
-];
+// Radius 选项 - 从 Tailwind CSS 生成
+const radiusOptions = generateTailwindRadiusOptions();
 
-// Radius 选项
-const radiusOptions = [
-  { label: 'None', value: 'None' },
-  { label: 'Small', value: 'Small' },
-  { label: 'Medium', value: 'Medium' },
-  { label: 'Large', value: 'Large' },
-  { label: 'Full', value: 'Full' },
-];
+// Shadow 选项 - 从 Tailwind CSS 生成
+const shadowOptions = generateTailwindShadowOptions();
 
-// Shadow 选项
-const shadowOptions = [
-  { label: 'Default', value: 'Default' },
-  { label: 'Small', value: 'Small' },
-  { label: 'Medium', value: 'Medium' },
-  { label: 'Large', value: 'Large' },
-  { label: 'None', value: 'None' },
-];
+// Opacity 选项 - 从 Tailwind CSS 生成
+const opacityOptions = generateTailwindOpacityOptions();
 
 /**
  * 属性面板组件 Props
@@ -336,7 +313,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     'left' | 'center' | 'right' | 'justify' | 'reset'
   >('center');
   /** 编辑中的文本装饰 */
-  const [textDecoration] = useState<string[]>([]);
+  const [textDecoration, setTextDecoration] = useState<string[]>([]);
   /** 编辑中的边框样式 */
   const [borderStyle, setBorderStyle] = useState('Default');
   /** 编辑中的边框颜色 */
@@ -384,6 +361,449 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     }>
   >([]);
 
+  /**
+   * 从样式字符串中解析数值（支持px、em、rem等单位）
+   * @param value 样式值字符串，如 "16px", "1rem", "0" 等
+   * @returns 解析后的数值（字符串形式，保留单位）或 "0px"
+   */
+  const parseStyleValue = (value: string | null | undefined): string => {
+    if (!value || value === '0' || value === '0px') return '0px';
+    // 如果已经是带单位的字符串，直接返回
+    if (typeof value === 'string' && /^\d+(\.\d+)?(px|em|rem|%)$/.test(value)) {
+      return value;
+    }
+    // 如果是纯数字，添加px单位
+    if (/^\d+(\.\d+)?$/.test(value)) {
+      return `${value}px`;
+    }
+    return value || '0px';
+  };
+
+  /**
+   * Tailwind CSS 间距值映射表
+   * 基于 Tailwind 默认配置：1 = 0.25rem = 4px
+   */
+  const tailwindSpacingMap: Record<string, string> = {
+    '0': '0px',
+    px: '1px',
+    '0.5': '0.125rem', // 2px
+    '1': '0.25rem', // 4px
+    '1.5': '0.375rem', // 6px
+    '2': '0.5rem', // 8px
+    '2.5': '0.625rem', // 10px
+    '3': '0.75rem', // 12px
+    '3.5': '0.875rem', // 14px
+    '4': '1rem', // 16px
+    '5': '1.25rem', // 20px
+    '6': '1.5rem', // 24px
+    '7': '1.75rem', // 28px
+    '8': '2rem', // 32px
+    '9': '2.25rem', // 36px
+    '10': '2.5rem', // 40px
+    '11': '2.75rem', // 44px
+    '12': '3rem', // 48px
+    '14': '3.5rem', // 56px
+    '16': '4rem', // 64px
+    '20': '5rem', // 80px
+    '24': '6rem', // 96px
+    '28': '7rem', // 112px
+    '32': '8rem', // 128px
+    '36': '9rem', // 144px
+    '40': '10rem', // 160px
+    '44': '11rem', // 176px
+    '48': '12rem', // 192px
+    '52': '13rem', // 208px
+    '56': '14rem', // 224px
+    '60': '15rem', // 240px
+    '64': '16rem', // 256px
+    '72': '18rem', // 288px
+    '80': '20rem', // 320px
+    '96': '24rem', // 384px
+  };
+
+  /**
+   * 从 Tailwind 类名中解析间距值
+   * @param className Tailwind 类名，如 "p-4", "m-2", "px-8" 等
+   * @returns 对应的 CSS 值，如 "1rem", "0.5rem" 等
+   */
+  const parseTailwindSpacing = (className: string): string => {
+    // 匹配类名中的数字部分，如 "p-4" 中的 "4"
+    const match = className.match(/-(\d+(?:\.\d+)?|px)$/);
+    if (match) {
+      const value = match[1];
+      return tailwindSpacingMap[value] || `${parseFloat(value) * 0.25}rem`;
+    }
+    // 处理特殊值 "px"
+    if (className.endsWith('-px')) {
+      return '1px';
+    }
+    // 处理 "0"
+    if (className.endsWith('-0')) {
+      return '0px';
+    }
+    return '0px';
+  };
+
+  /**
+   * 从 Tailwind 类名中解析颜色值
+   * @param className Tailwind 类名，如 "text-red-500", "bg-blue-600" 等
+   * @returns 对应的颜色值（需要从实际 CSS 中获取，这里返回类名用于后续处理）
+   */
+  const parseTailwindColor = (className: string): string | null => {
+    // 匹配颜色类名，如 "text-red-500", "bg-blue-600"
+    const colorMatch = className.match(/^(text|bg)-(.+)$/);
+    if (colorMatch) {
+      return className; // 返回完整类名，后续可以从 CSS 中获取实际颜色值
+    }
+    return null;
+  };
+
+  /**
+   * 从 Tailwind 阴影类名映射到本地阴影类型
+   * @param className Tailwind 阴影类名，如 "shadow-sm", "shadow-lg" 等
+   * @returns 对应的阴影类型值
+   */
+  const mapTailwindShadowToLocal = (className: string): string | null => {
+    const shadowMap: Record<string, string> = {
+      'shadow-none': 'None',
+      'shadow-sm': 'Small',
+      shadow: 'Medium', // shadow 默认是 medium
+      'shadow-md': 'Medium',
+      'shadow-lg': 'Large',
+      'shadow-xl': 'Large',
+      'shadow-2xl': 'Large',
+    };
+    return shadowMap[className] || null;
+  };
+
+  /**
+   * 从 Tailwind 圆角类名映射到本地圆角类型
+   * @param className Tailwind 圆角类名，如 "rounded-sm", "rounded-lg" 等
+   * @returns 对应的圆角类型值
+   */
+  const mapTailwindRadiusToLocal = (className: string): string | null => {
+    const radiusMap: Record<string, string> = {
+      'rounded-none': 'None',
+      'rounded-sm': 'Small',
+      rounded: 'Small', // rounded 默认是 small
+      'rounded-md': 'Medium',
+      'rounded-lg': 'Medium',
+      'rounded-xl': 'Large',
+      'rounded-2xl': 'Large',
+      'rounded-3xl': 'Large',
+      'rounded-full': 'Full',
+    };
+    return radiusMap[className] || null;
+  };
+
+  /**
+   * 从 Tailwind 透明度类名解析透明度百分比
+   * @param className Tailwind 透明度类名，如 "opacity-50", "opacity-75" 等
+   * @returns 透明度百分比 (0-100)
+   */
+  const parseTailwindOpacity = (className: string): number | null => {
+    const match = className.match(/^opacity-(\d+)$/);
+    if (match) {
+      const value = parseInt(match[1], 10);
+      if (value >= 0 && value <= 100) {
+        return value;
+      }
+    }
+    return null;
+  };
+
+  /**
+   * 从 Tailwind 边框宽度类名解析边框宽度
+   * @param className Tailwind 边框宽度类名，如 "border-2", "border-4" 等
+   * @returns 边框宽度值
+   */
+  const parseTailwindBorderWidth = (className: string): string | null => {
+    if (className === 'border-0' || className === 'border-none') {
+      return '0px';
+    }
+    if (className === 'border') {
+      return '1px'; // border 默认是 1px
+    }
+    const match = className.match(/^border-(\d+)$/);
+    if (match) {
+      const value = parseInt(match[1], 10);
+      return `${value}px`;
+    }
+    return null;
+  };
+
+  /**
+   * 从 Tailwind 边框样式类名映射到本地边框样式
+   * @param className Tailwind 边框样式类名，如 "border-solid", "border-dashed" 等
+   * @returns 对应的边框样式值
+   */
+  const mapTailwindBorderStyleToLocal = (className: string): string | null => {
+    const styleMap: Record<string, string> = {
+      'border-none': 'None',
+      'border-solid': 'Solid',
+      'border-dashed': 'Dashed',
+      'border-dotted': 'Dotted',
+    };
+    return styleMap[className] || null;
+  };
+
+  /**
+   * 从计算样式对象中解析并更新本地状态
+   * @param computedStyles 计算样式对象
+   */
+  const updateLocalStatesFromStyles = (computedStyles: {
+    paddingTop?: string;
+    paddingRight?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    marginTop?: string;
+    marginRight?: string;
+    marginBottom?: string;
+    marginLeft?: string;
+    color?: string;
+    backgroundColor?: string;
+  }) => {
+    // 更新padding（只要存在任何一个padding属性就更新）
+    if (
+      computedStyles.paddingTop !== undefined ||
+      computedStyles.paddingRight !== undefined ||
+      computedStyles.paddingBottom !== undefined ||
+      computedStyles.paddingLeft !== undefined
+    ) {
+      setLocalPadding({
+        top: parseStyleValue(computedStyles.paddingTop),
+        right: parseStyleValue(computedStyles.paddingRight),
+        bottom: parseStyleValue(computedStyles.paddingBottom),
+        left: parseStyleValue(computedStyles.paddingLeft),
+      });
+    }
+
+    // 更新margin（只要存在任何一个margin属性就更新）
+    if (
+      computedStyles.marginTop !== undefined ||
+      computedStyles.marginRight !== undefined ||
+      computedStyles.marginBottom !== undefined ||
+      computedStyles.marginLeft !== undefined
+    ) {
+      setLocalMargin({
+        top: parseStyleValue(computedStyles.marginTop),
+        right: parseStyleValue(computedStyles.marginRight),
+        bottom: parseStyleValue(computedStyles.marginBottom),
+        left: parseStyleValue(computedStyles.marginLeft),
+      });
+    }
+
+    // 更新color
+    if (computedStyles.color !== undefined) {
+      setLocalColor(computedStyles.color);
+    }
+
+    // 更新background
+    if (computedStyles.backgroundColor !== undefined) {
+      // 这里可以根据需要处理背景色
+      // setLocalBackground(computedStyles.backgroundColor);
+    }
+  };
+
+  /**
+   * 从 Tailwind CSS 类名中解析样式并更新本地状态
+   * @param className 元素的 className 字符串，可能包含多个 Tailwind 类名
+   */
+  const parseTailwindClassesAndUpdateStates = (className: string) => {
+    if (!className) return;
+
+    // 将 className 拆分成单个类名
+    const classes = className.split(/\s+/).filter((c) => c.trim());
+
+    // 初始化样式对象
+    const styles: {
+      paddingTop?: string;
+      paddingRight?: string;
+      paddingBottom?: string;
+      paddingLeft?: string;
+      marginTop?: string;
+      marginRight?: string;
+      marginBottom?: string;
+      marginLeft?: string;
+      color?: string;
+      backgroundColor?: string;
+    } = {};
+
+    // 用于存储需要更新的其他属性
+    let shadowValue: string | null = null;
+    let radiusValue: string | null = null;
+    let opacityValue: number | null = null;
+    let borderWidthValue: string | null = null;
+    let borderStyleValue: string | null = null;
+    // let borderColorValue: string | null = null;
+
+    // 遍历每个类名，解析样式
+    classes.forEach((cls) => {
+      // 解析 Padding 类名
+      if (cls.startsWith('p-')) {
+        const value = parseTailwindSpacing(cls);
+        styles.paddingTop = value;
+        styles.paddingRight = value;
+        styles.paddingBottom = value;
+        styles.paddingLeft = value;
+      } else if (cls.startsWith('px-')) {
+        const value = parseTailwindSpacing(cls);
+        styles.paddingLeft = value;
+        styles.paddingRight = value;
+      } else if (cls.startsWith('py-')) {
+        const value = parseTailwindSpacing(cls);
+        styles.paddingTop = value;
+        styles.paddingBottom = value;
+      } else if (cls.startsWith('pt-')) {
+        styles.paddingTop = parseTailwindSpacing(cls);
+      } else if (cls.startsWith('pr-')) {
+        styles.paddingRight = parseTailwindSpacing(cls);
+      } else if (cls.startsWith('pb-')) {
+        styles.paddingBottom = parseTailwindSpacing(cls);
+      } else if (cls.startsWith('pl-')) {
+        styles.paddingLeft = parseTailwindSpacing(cls);
+      }
+      // 解析 Margin 类名
+      else if (cls.startsWith('m-')) {
+        const value = parseTailwindSpacing(cls);
+        styles.marginTop = value;
+        styles.marginRight = value;
+        styles.marginBottom = value;
+        styles.marginLeft = value;
+      } else if (cls.startsWith('mx-')) {
+        const value = parseTailwindSpacing(cls);
+        styles.marginLeft = value;
+        styles.marginRight = value;
+      } else if (cls.startsWith('my-')) {
+        const value = parseTailwindSpacing(cls);
+        styles.marginTop = value;
+        styles.marginBottom = value;
+      } else if (cls.startsWith('mt-')) {
+        styles.marginTop = parseTailwindSpacing(cls);
+      } else if (cls.startsWith('mr-')) {
+        styles.marginRight = parseTailwindSpacing(cls);
+      } else if (cls.startsWith('mb-')) {
+        styles.marginBottom = parseTailwindSpacing(cls);
+      } else if (cls.startsWith('ml-')) {
+        styles.marginLeft = parseTailwindSpacing(cls);
+      }
+      // 解析 Shadow 类名
+      else if (cls.startsWith('shadow')) {
+        const mapped = mapTailwindShadowToLocal(cls);
+        if (mapped) {
+          shadowValue = mapped;
+        }
+      }
+      // 解析 Radius 类名
+      else if (cls.startsWith('rounded')) {
+        const mapped = mapTailwindRadiusToLocal(cls);
+        if (mapped) {
+          radiusValue = mapped;
+        }
+      }
+      // 解析 Opacity 类名
+      else if (cls.startsWith('opacity-')) {
+        const parsed = parseTailwindOpacity(cls);
+        if (parsed !== null) {
+          opacityValue = parsed;
+        }
+      }
+      // 解析 Border Width 类名
+      else if (cls.startsWith('border-') && /^border-(\d+|0|none)$/.test(cls)) {
+        const parsed = parseTailwindBorderWidth(cls);
+        if (parsed !== null) {
+          borderWidthValue = parsed;
+        }
+      } else if (cls === 'border') {
+        borderWidthValue = '1px';
+      }
+      // 解析 Border Style 类名
+      else if (
+        cls === 'border-solid' ||
+        cls === 'border-dashed' ||
+        cls === 'border-dotted' ||
+        cls === 'border-none'
+      ) {
+        const mapped = mapTailwindBorderStyleToLocal(cls);
+        if (mapped) {
+          borderStyleValue = mapped;
+        }
+      }
+      // 解析 Border Color 类名
+      else if (
+        cls.startsWith('border-') &&
+        !cls.match(/^border-(\d+|0|none|solid|dashed|dotted)$/)
+      ) {
+        // border-{color} 格式，如 border-red-500
+        const colorClass = cls;
+        getColorFromTailwindClass(colorClass, (color) => {
+          if (color) {
+            setBorderColor(color);
+          }
+        });
+      }
+      // 解析颜色类名（需要从实际 CSS 中获取颜色值）
+      else if (cls.startsWith('text-')) {
+        // 尝试从 iframe 中获取实际颜色值
+        const colorClass = parseTailwindColor(cls);
+        if (colorClass) {
+          // 这里可以尝试从 CSS 中获取实际颜色值
+          // 暂时先保存类名，后续可以通过计算样式获取
+          getColorFromTailwindClass(colorClass, (color) => {
+            if (color) {
+              setLocalColor(color);
+            }
+          });
+        }
+      } else if (cls.startsWith('bg-')) {
+        const colorClass = parseTailwindColor(cls);
+        if (colorClass) {
+          getColorFromTailwindClass(colorClass, (color) => {
+            if (color) {
+              setLocalBackground(color);
+            }
+          });
+        }
+      }
+    });
+
+    // 如果有解析到的样式，更新状态
+    if (Object.keys(styles).length > 0) {
+      updateLocalStatesFromStyles(styles);
+    }
+
+    // 更新 Shadow
+    if (shadowValue !== null) {
+      setShadowType(shadowValue);
+    }
+
+    // 更新 Radius
+    if (radiusValue !== null) {
+      setRadius(radiusValue);
+    }
+
+    // 更新 Opacity
+    if (opacityValue !== null) {
+      setOpacity(opacityValue);
+    }
+
+    // 更新 Border Width
+    if (borderWidthValue !== null) {
+      setLocalBorderWidth((prev) => ({
+        ...prev,
+        top: borderWidthValue as string,
+        right: borderWidthValue as string,
+        bottom: borderWidthValue as string,
+        left: borderWidthValue as string,
+      }));
+    }
+
+    // 更新 Border Style
+    if (borderStyleValue !== null) {
+      setBorderStyle(borderStyleValue);
+    }
+  };
+
   // Listen for messages from iframe
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -412,7 +832,39 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           setSelectedElement(payload.elementInfo);
           setEditingContent(payload.elementInfo.textContent);
           setEditingClass(payload.elementInfo.className);
+
+          // 从 className 中解析 Tailwind CSS 类名并更新状态
+          if (payload.elementInfo.className) {
+            parseTailwindClassesAndUpdateStates(payload.elementInfo.className);
+          }
+
+          // 如果elementInfo包含computedStyles，直接使用（优先级高于 Tailwind 解析）
+          if (payload.elementInfo.computedStyles) {
+            updateLocalStatesFromStyles(payload.elementInfo.computedStyles);
+          }
+          // else {
+          //   // 否则请求获取计算样式
+          //   fetchElementComputedStyles(payload.elementInfo.sourceInfo);
+          // }
           break;
+
+        // case 'ELEMENT_COMPUTED_STYLES':
+        //   // 接收到iframe返回的计算样式
+        //   if (payload.computedStyles) {
+        //     updateLocalStatesFromStyles(payload.computedStyles);
+        //   }
+        //   break;
+
+        // case 'TAILWIND_COLOR_RESPONSE':
+        //   // 接收到iframe返回的 Tailwind 颜色值
+        //   if (payload.color) {
+        //     if (payload.className?.startsWith('text-')) {
+        //       setLocalColor(payload.color);
+        //     } else if (payload.className?.startsWith('bg-')) {
+        //       // setLocalBackground(payload.color);
+        //     }
+        //   }
+        //   break;
 
         case 'ELEMENT_DESELECTED':
           setSelectedElement(null);
@@ -683,6 +1135,14 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   const handleColorChange = (color: string) => {
     setLocalColor(color);
     onChange?.('color', color);
+  };
+
+  /**
+   * 处理边框颜色变更
+   */
+  const handleBorderColorChange = (color: string) => {
+    setBorderColor(color);
+    onChange?.('borderColor', color);
   };
 
   /**
@@ -1081,10 +1541,14 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
             onChange={handleColorChange}
             options={colorOptions}
             prefix={
-              <div
-                className={cx(styles.colorSwatch)}
-                style={{ background: localColor }}
-              />
+              localColor === 'Default' ? (
+                <BorderColorSvg className={cx(styles.layoutIcon)} />
+              ) : (
+                <div
+                  className={cx(styles.colorSwatch)}
+                  style={{ background: localColor }}
+                />
+              )
             }
             optionRender={(option) => {
               return (
@@ -1115,10 +1579,14 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
             onChange={handleBackgroundChange}
             options={backgroundOptions}
             prefix={
-              <div
-                className={cx(styles.colorSwatch)}
-                style={{ background: localBackground }}
-              />
+              localBackground === 'Default' ? (
+                <BorderColorSvg className={cx(styles.layoutIcon)} />
+              ) : (
+                <div
+                  className={cx(styles.colorSwatch)}
+                  style={{ background: localBackground }}
+                />
+              )
             }
             optionRender={(option) => {
               return (
@@ -1574,15 +2042,38 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
               <div className={cx(styles.typographyInputLabel)}>
                 Border Color
               </div>
-              <SelectList
+              <Select
                 className={cx(styles.typographySelect)}
-                value={borderStyle}
-                prefix={<BorderColorSvg className={cx(styles.layoutIcon)} />}
-                onChange={(value) => {
-                  setBorderStyle(value as string);
-                  onChange?.('borderStyle', value);
+                value={borderColor}
+                onChange={handleBorderColorChange}
+                options={borderColorOptions}
+                prefix={
+                  borderColor === 'Default' ? (
+                    <BorderColorSvg className={cx(styles.layoutIcon)} />
+                  ) : (
+                    <div
+                      className={cx(styles.colorSwatch)}
+                      style={{ background: borderColor }}
+                    />
+                  )
+                }
+                optionRender={(option) => {
+                  return (
+                    <div className={cx('flex items-center gap-4')}>
+                      <span
+                        className={cx('radius-4')}
+                        style={{
+                          width: 16,
+                          height: 16,
+                          background: option.data.value,
+                        }}
+                      />
+                      <span className={cx('flex-1', 'text-ellipsis')}>
+                        {option.data.label}
+                      </span>
+                    </div>
+                  );
                 }}
-                options={borderStyleOptions}
               />
             </div>
             <div className={cx(styles.typographyInputGroup)}>
@@ -1591,12 +2082,12 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
               </div>
               <SelectList
                 className={cx(styles.typographySelect)}
-                value={borderColor}
+                value={borderStyle}
                 onChange={(value) => {
-                  setBorderColor(value as string);
-                  onChange?.('borderColor', value);
+                  setBorderStyle(value as string);
+                  onChange?.('borderStyle', value);
                 }}
-                options={borderColorOptions}
+                options={borderStyleOptions}
               />
             </div>
           </div>
@@ -1715,18 +2206,15 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
             {/* Opacity */}
             <div className={cx(styles.typographyInputGroup)}>
               <div className={cx(styles.typographyInputLabel)}>Opacity</div>
-              <InputNumber
+              <Select
                 className={cx('w-full')}
                 value={opacity}
                 onChange={(value) => {
-                  setOpacity(value || 0);
-                  onChange?.('opacity', value || 0);
+                  setOpacity(value);
+                  onChange?.('opacity', value);
                 }}
+                options={opacityOptions}
                 prefix={<OpacitySvg className={cx(styles.layoutIcon)} />}
-                suffix="%"
-                min={0}
-                max={100}
-                controls={false}
               />
             </div>
             {/* Radius */}
