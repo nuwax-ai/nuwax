@@ -98,6 +98,8 @@ export interface TiptapVariableInputProps {
   style?: React.CSSProperties;
   /** 是否禁用 @ mentions 建议 */
   disableMentions?: boolean;
+  /** 是否启用 Markdown 快捷语法（所见即所得），默认关闭 */
+  enableMarkdown?: boolean;
   /** 获取编辑器实例 */
   getEditor?: (editor: any) => void;
 }

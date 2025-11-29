@@ -86,6 +86,7 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
 // 定义结束和过程输出的节点渲染
 const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
+  const { referenceList } = useModel('workflow');
   const segOptions = [
     { label: '返回变量', value: 'VARIABLE' },
     { label: '返回文本', value: 'TEXT' },
@@ -154,6 +155,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
                       (item: InputAndOutConfig) =>
                         !['', null, undefined].includes(item.name),
                     ),
+                    referenceList?.argMap,
                   )}
                 />
               </Form.Item>
@@ -321,6 +323,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
 // 定义文本处理的节点渲染
 const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
+  const { referenceList } = useModel('workflow');
   const textTypeOptions = [
     { label: '字符串拼接', value: 'CONCAT' },
     { label: '字符串分割', value: 'SPLIT' },
@@ -473,6 +476,7 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                       (item: InputAndOutConfig) =>
                         !['', null, undefined].includes(item.name),
                     ),
+                    referenceList?.argMap,
                   )}
                 />
               </Form.Item>
