@@ -9,14 +9,15 @@ import { TextSelection } from '@tiptap/pm/state';
 
 /**
  * 验证变量格式是否有效
- * 变量格式：只允许字母、数字、点号、下划线
+ * 变量格式：允许字母、数字、点号、下划线、方括号（用于数组索引）
  * @param text 要验证的文本
  * @returns 是否为有效变量格式
  */
 const isValidVariableFormat = (text: string): boolean => {
   if (!text || text.trim() === '') return false;
-  // 变量格式：只允许字母、数字、点号、下划线
-  return /^[a-zA-Z0-9._]+$/.test(text);
+  // 变量格式：允许字母、数字、点号、下划线、方括号（用于数组索引如 array[0].property）
+  // eslint-disable-next-line no-useless-escape
+  return /^[a-zA-Z0-9._\[\]]+$/.test(text);
 };
 
 /**
@@ -256,6 +257,66 @@ export const EditableVariableNode = Node.create({
           observer.disconnect();
         },
       };
+    };
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      // 右箭头：在节点末尾时退出到节点后
+      ArrowRight: ({ editor }) => {
+        const { state } = editor.view;
+        const { selection } = state;
+        const { $from } = selection;
+
+        // 检查光标是否在 editableVariable 节点内
+        const parent = $from.parent;
+        if (parent.type.name !== 'editableVariable') {
+          return false; // 不处理
+        }
+
+        // 检查光标是否在节点内容的末尾
+        const endOfNode = $from.parentOffset === parent.content.size;
+        if (!endOfNode) {
+          return false; // 不在末尾，允许默认行为
+        }
+
+        // 在末尾，将光标移到节点后面
+        const posAfterNode = $from.after();
+        if (posAfterNode <= state.doc.content.size) {
+          editor.commands.setTextSelection(posAfterNode);
+          return true; // 阻止默认行为
+        }
+
+        return false;
+      },
+
+      // 左箭头：在节点开头时退出到节点前
+      ArrowLeft: ({ editor }) => {
+        const { state } = editor.view;
+        const { selection } = state;
+        const { $from } = selection;
+
+        // 检查光标是否在 editableVariable 节点内
+        const parent = $from.parent;
+        if (parent.type.name !== 'editableVariable') {
+          return false;
+        }
+
+        // 检查光标是否在节点内容的开头
+        const startOfNode = $from.parentOffset === 0;
+        if (!startOfNode) {
+          return false;
+        }
+
+        // 在开头，将光标移到节点前面
+        const posBeforeNode = $from.before();
+        if (posBeforeNode >= 0) {
+          editor.commands.setTextSelection(posBeforeNode);
+          return true;
+        }
+
+        return false;
+      },
     };
   },
 });
