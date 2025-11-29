@@ -4,7 +4,7 @@
  */
 
 import { Extension } from '@tiptap/core';
-import { PluginKey } from '@tiptap/pm/state';
+import { PluginKey, TextSelection } from '@tiptap/pm/state';
 import Suggestion from '@tiptap/suggestion';
 import { ConfigProvider } from 'antd';
 import { createRoot } from 'react-dom/client';
@@ -15,6 +15,8 @@ export interface VariableSuggestionOptions {
   variables: VariableTreeNode[];
   searchText?: string;
   onSelect?: (item: VariableSuggestionItem) => void;
+  /** 是否启用可编辑变量节点，默认开启 */
+  enableEditableVariables?: boolean;
 }
 
 /**
@@ -29,6 +31,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
       variables: [],
       searchText: '',
       onSelect: undefined,
+      enableEditableVariables: true, // 默认开启可编辑模式
     };
   },
 
@@ -328,10 +331,15 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                   });
                 } else {
                   // 变量插入
+                  // 根据 enableEditableVariables 配置决定使用可编辑或不可编辑节点
+                  const useEditable =
+                    this.options.enableEditableVariables !== false; // 默认为 true
                   command({
-                    key: item.key,
-                    label: item.label,
-                    isTool: false,
+                    type: useEditable ? 'editableVariable' : 'variable',
+                    attrs: {
+                      key: item.key,
+                      label: item.label,
+                    },
                   });
                 }
               } catch (error) {
@@ -842,6 +850,9 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
           // 插入变量节点
           let { from, to } = range;
 
+          // 检查是否是可编辑变量节点
+          const useEditable = this.options.enableEditableVariables !== false; // 默认为 true
+
           // 检查下一个字符是否是 }，如果是则包含它
           const { state } = editor.view;
           const doc = state.doc;
@@ -893,69 +904,143 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
           }
 
           // 删除 { 或 {} 并插入变量节点
-          editor
-            .chain()
-            .focus()
-            .deleteRange({ from, to })
-            .insertContent({
-              type: 'variable',
-              attrs: {
-                key: props.key,
-                label: props.label,
-                isTool: false,
-              },
-            })
-            .run();
+          if (useEditable) {
+            // 可编辑变量节点：插入包含文本内容的节点
+            editor
+              .chain()
+              .focus()
+              .deleteRange({ from, to })
+              .insertContent({
+                type: 'editableVariable',
+                attrs: {
+                  key: props.attrs?.key || props.key || '',
+                  label: props.attrs?.label || props.label || '',
+                },
+                content: [
+                  {
+                    type: 'text',
+                    text: props.attrs?.key || props.key || '',
+                  },
+                ],
+              })
+              .run();
 
-          // 检查插入后的文档状态
-          const afterInsertState = editor.state;
-          const afterInsertDoc = afterInsertState.doc;
-          const cursorPos = afterInsertState.selection.from;
+            // 将光标移动到变量节点之后
+            // 使用 requestAnimationFrame 确保 DOM 已更新
+            requestAnimationFrame(() => {
+              const { state, dispatch } = editor.view;
+              const { selection, doc } = state;
+              const { $from } = selection;
 
-          // 检查插入后下一个字符是否已经是 }
-          // 注意：需要检查变量节点后面的文本节点，因为变量节点本身不包含 }
-          const nextCharAfterInsert = afterInsertDoc.textBetween(
-            cursorPos,
-            cursorPos + 1,
-          );
-          const textAfterInsert = afterInsertDoc.textBetween(
-            Math.max(0, cursorPos - 2),
-            Math.min(cursorPos + 2, afterInsertDoc.content.size),
-          );
+              // 从当前光标位置向前查找变量节点
+              let foundNodePos = -1;
+              let foundNodeSize = 0;
 
-          console.log(
-            'VariableSuggestion command - cursor position:',
-            cursorPos,
-          );
-          console.log(
-            'VariableSuggestion command - text after insert:',
-            textAfterInsert,
-          );
-          console.log(
-            'VariableSuggestion command - nextCharAfterInsert:',
-            nextCharAfterInsert,
-          );
+              // 从当前光标位置向前查找（最多查找 200 个字符）
+              const searchRange = 200;
+              const startPos = Math.max(0, $from.pos - searchRange);
 
-          // 移除自动插入 } 的逻辑，因为 VariableNode 通过 CSS 伪类显示 }
-          // if (!hasClosingBrace && nextCharAfterInsert !== '}') {
-          //   console.log('VariableSuggestion command - inserting }');
-          //   // 在变量节点后插入 }
-          //   editor.chain().setTextSelection(cursorPos).insertContent('}').run();
-          // } else {
-          //   console.log(
-          //     'VariableSuggestion command - not inserting }, hasClosingBrace:',
-          //     hasClosingBrace,
-          //     'nextCharAfterInsert:',
-          //     nextCharAfterInsert,
-          //   );
-          // }
+              for (let pos = $from.pos; pos >= startPos; pos--) {
+                try {
+                  const resolvedPos = doc.resolve(pos);
+                  // 检查当前深度下的节点
+                  for (let depth = resolvedPos.depth; depth >= 0; depth--) {
+                    const node = resolvedPos.node(depth);
+                    if (
+                      node &&
+                      (node.type.name === 'editableVariable' ||
+                        node.type.name === 'variable')
+                    ) {
+                      const nodeStart = resolvedPos.start(depth);
+                      const nodeEnd = nodeStart + node.nodeSize;
+                      // 确保光标在节点内或节点后
+                      if (nodeStart <= $from.pos && $from.pos <= nodeEnd) {
+                        foundNodePos = nodeStart;
+                        foundNodeSize = node.nodeSize;
+                        break;
+                      }
+                    }
+                  }
+                  if (foundNodePos >= 0) break;
+                } catch (e) {
+                  // 忽略解析错误，继续查找
+                }
+              }
 
-          // 移除 setTimeout，因为 insertContent 已经正确设置了光标位置
-          // 且 setTimeout 可能会导致光标位置在某些情况下（如 inline node 后）出现问题
-          // setTimeout(() => {
-          //   const finalPos = editor.state.selection.from;
-          //   editor.commands.setTextSelection(finalPos);
-          // }, 0);
+              // 如果找到节点，将光标移动到节点之后
+              if (foundNodePos >= 0 && foundNodeSize > 0) {
+                const targetPos = foundNodePos + foundNodeSize;
+                if (targetPos <= doc.content.size) {
+                  const selection = TextSelection.create(doc, targetPos);
+                  const tr = state.tr.setSelection(selection);
+                  dispatch(tr);
+                }
+              }
+            });
+          } else {
+            // 不可编辑变量节点：插入原子节点
+            editor
+              .chain()
+              .focus()
+              .deleteRange({ from, to })
+              .insertContent({
+                type: 'variable',
+                attrs: {
+                  key: props.attrs?.key || props.key || '',
+                  label: props.attrs?.label || props.label || '',
+                  isTool: false,
+                },
+              })
+              .run();
+
+            // 对于原子节点，光标应该已经在节点之后，但为了确保，我们也设置一下
+            requestAnimationFrame(() => {
+              const { state, dispatch } = editor.view;
+              const { selection, doc } = state;
+              const { $from } = selection;
+
+              // 从当前光标位置向前查找变量节点
+              let foundNodePos = -1;
+              let foundNodeSize = 0;
+
+              // 从当前光标位置向前查找（最多查找 200 个字符）
+              const searchRange = 200;
+              const startPos = Math.max(0, $from.pos - searchRange);
+
+              for (let pos = $from.pos; pos >= startPos; pos--) {
+                try {
+                  const resolvedPos = doc.resolve(pos);
+                  // 检查当前深度下的节点
+                  for (let depth = resolvedPos.depth; depth >= 0; depth--) {
+                    const node = resolvedPos.node(depth);
+                    if (node && node.type.name === 'variable') {
+                      const nodeStart = resolvedPos.start(depth);
+                      const nodeEnd = nodeStart + node.nodeSize;
+                      // 确保光标在节点内或节点后
+                      if (nodeStart <= $from.pos && $from.pos <= nodeEnd) {
+                        foundNodePos = nodeStart;
+                        foundNodeSize = node.nodeSize;
+                        break;
+                      }
+                    }
+                  }
+                  if (foundNodePos >= 0) break;
+                } catch (e) {
+                  // 忽略解析错误，继续查找
+                }
+              }
+
+              // 如果找到节点，将光标移动到节点之后
+              if (foundNodePos >= 0 && foundNodeSize > 0) {
+                const targetPos = foundNodePos + foundNodeSize;
+                if (targetPos <= doc.content.size) {
+                  const selection = TextSelection.create(doc, targetPos);
+                  const tr = state.tr.setSelection(selection);
+                  dispatch(tr);
+                }
+              }
+            });
+          }
         }
       },
     });

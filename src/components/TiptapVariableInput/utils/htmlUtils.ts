@@ -77,9 +77,11 @@ export const extractTextFromHTML = (html: string): string => {
     toolBlock.parentNode?.replaceChild(textNode, toolBlock);
   });
 
-  // 处理 variables
-  // Tiptap 实际渲染为 span.variable-block-chip（标准 HTML 标签）
-  const variables = temp.querySelectorAll('span.variable-block-chip');
+  // 处理 variables（包括可编辑和不可编辑的变量节点）
+  // Tiptap 实际渲染为 span.variable-block-chip 或 span.variable-block-chip-editable（标准 HTML 标签）
+  const variables = temp.querySelectorAll(
+    'span.variable-block-chip, span.variable-block-chip-editable',
+  );
   variables.forEach((variable) => {
     // 变量转换为 {{key}} 格式
     // 从 data-key 属性获取 key，或者从文本内容获取（新格式中文本内容就是 key）
@@ -215,11 +217,13 @@ export const cleanHTMLParagraphs = (
  * 识别 {{variable}} 和 @mentions 格式
  * @param text 纯文本内容或 HTML 内容
  * @param disableMentions 是否禁用 mentions 转换
+ * @param enableEditableVariables 是否启用可编辑变量节点，默认开启
  * @returns Tiptap HTML 内容
  */
 export const convertTextToHTML = (
   text: string,
   disableMentions: boolean = false,
+  enableEditableVariables: boolean = true,
 ): string => {
   if (!text) return '';
 
@@ -245,9 +249,14 @@ export const convertTextToHTML = (
   );
 
   // 转换 {{variable}} 格式
+  // 根据 enableEditableVariables 配置决定使用可编辑或不可编辑节点
+  // 在节点前后添加零宽度空格，确保光标可以在节点前后放置
+  const variableClass = enableEditableVariables
+    ? 'variable-block-chip-editable'
+    : 'variable-block-chip';
   html = html.replace(
     /\{\{([^}]+)\}\}/g,
-    '<span class="variable-block-chip" data-key="$1" data-label="$1" data-variable-name="$1">$1</span>',
+    `\u200B<span class="${variableClass}" data-key="$1" data-label="$1" data-variable-name="$1">$1</span>\u200B`,
   );
 
   // 转换 @mentions 格式（简单匹配，实际应该更智能）

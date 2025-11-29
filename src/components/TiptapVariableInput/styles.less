@@ -143,7 +143,7 @@
     z-index: 2;
   }
 
-  // Variable 节点样式（使用标准的 span 标签，大括号通过 CSS 伪类实现）
+  // Variable 节点样式（使用标准的 span 标签，大括号通过真实 DOM 元素实现）
   .variable-block-chip {
     display: inline-block !important;
     background-color: @colorInfoBg !important;
@@ -158,16 +158,75 @@
     font-family: @fontFamilyCode !important;
   }
 
-  .variable-block-chip::before {
-    content: '{{' !important;
+  // 变量节点容器中的大括号样式（真实 DOM 元素）
+  // 大括号元素是变量节点的兄弟元素
+  span:has(+ .variable-block-chip),
+  .variable-block-chip + span {
+    color: @colorInfo !important;
+    font-family: @fontFamilyCode !important;
+    font-size: @fontSizeSm !important;
+    line-height: @lineHeight !important;
+    vertical-align: baseline !important;
+    user-select: none !important;
   }
 
-  .variable-block-chip::after {
-    content: '}}' !important;
-  }
+  // 移除 ::before 和 ::after 伪元素，改用真实 DOM 元素
+  // .variable-block-chip::before {
+  //   content: '{{' !important;
+  // }
+
+  // .variable-block-chip::after {
+  //   content: '}}' !important;
+  // }
 
   .variable-block-chip.variable-active {
     background-color: @colorFillSecondary !important;
+  }
+
+  // 可编辑 Variable 节点样式（仅高亮字符颜色，无背景和边距）
+  .variable-block-chip-editable {
+    display: inline !important;
+    background-color: transparent !important;
+    color: @colorInfo !important;
+    padding: 0 !important;
+    border: none !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    user-select: text !important; // 允许文本选择
+    vertical-align: baseline !important;
+    font-family: @fontFamilyCode !important;
+    cursor: text !important; // 显示文本光标
+    outline: none !important; // 移除默认轮廓
+  }
+
+  // 可编辑变量节点容器中的大括号样式（真实 DOM 元素）
+  // 大括号元素是可编辑变量节点的兄弟元素
+  span:has(+ .variable-block-chip-editable),
+  .variable-block-chip-editable + span {
+    color: @colorInfo !important;
+    font-family: @fontFamilyCode !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    vertical-align: baseline !important;
+    user-select: none !important;
+  }
+
+  // 移除 ::before 和 ::after 伪元素，改用真实 DOM 元素
+  // .variable-block-chip-editable::before {
+  //   content: '{{' !important;
+  //   color: @colorInfo !important;
+  // }
+
+  // .variable-block-chip-editable::after {
+  //   content: '}}' !important;
+  //   color: @colorInfo !important;
+  // }
+
+  // 可编辑变量节点聚焦状态（保持仅颜色高亮）
+  .variable-block-chip-editable:focus {
+    background-color: transparent !important;
+    border: none !important;
+    outline: none !important;
   }
 
   // ToolBlock 节点样式
