@@ -45,14 +45,12 @@ export const transformVariableToTreeNode = (
     ) {
       // 将子属性转换为数组节点的直接子节点
       // 路径格式为: 变量名[0].子属性名
+      // 构造带有索引的父路径，以便递归调用能正确处理所有深度的子节点
+      const arrayIndexPath = [...parentPath, `${variable.name}[0]`];
+
       node.children = variable.children.map((child) => {
-        const childNode = transformVariableToTreeNode(child, currentPath);
-        // 更新 value 和 key 以包含 [0] 索引
-        return {
-          ...childNode,
-          value: `${value}[0].${child.name}`,
-          key: `${uniqueKey}[0].${child.name}`,
-        };
+        // 使用带有索引的路径作为父路径
+        return transformVariableToTreeNode(child, arrayIndexPath);
       });
       node.isLeaf = false; // 有子节点，不是叶子节点
     } else {
