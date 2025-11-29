@@ -111,7 +111,11 @@ export const EditableVariableNode = Node.create({
       // ProseMirror 会自动管理这个容器内的文本节点
       const contentDOM = document.createElement('span');
       contentDOM.style.display = 'inline';
+
+      // 在内容前后添加零宽度空格，帮助光标定位和移动
+      wrapper.appendChild(document.createTextNode('\u200B'));
       wrapper.appendChild(contentDOM);
+      wrapper.appendChild(document.createTextNode('\u200B'));
 
       // 创建右大括号元素
       const rightBrace = document.createElement('span');
@@ -268,6 +272,11 @@ export const EditableVariableNode = Node.create({
         const { selection } = state;
         const { $from } = selection;
 
+        // 如果有选区，不处理（防止干扰选择）
+        if (!selection.empty) {
+          return false;
+        }
+
         // 检查光标是否在 editableVariable 节点内
         const parent = $from.parent;
         if (parent.type.name !== 'editableVariable') {
@@ -275,8 +284,9 @@ export const EditableVariableNode = Node.create({
         }
 
         // 检查光标是否在节点内容的末尾
-        const endOfNode = $from.parentOffset === parent.content.size;
-        if (!endOfNode) {
+        // 使用 $from.end() 更可靠
+        const isAtEnd = $from.pos === $from.end();
+        if (!isAtEnd) {
           return false; // 不在末尾，允许默认行为
         }
 
@@ -296,6 +306,11 @@ export const EditableVariableNode = Node.create({
         const { selection } = state;
         const { $from } = selection;
 
+        // 如果有选区，不处理
+        if (!selection.empty) {
+          return false;
+        }
+
         // 检查光标是否在 editableVariable 节点内
         const parent = $from.parent;
         if (parent.type.name !== 'editableVariable') {
@@ -303,8 +318,9 @@ export const EditableVariableNode = Node.create({
         }
 
         // 检查光标是否在节点内容的开头
-        const startOfNode = $from.parentOffset === 0;
-        if (!startOfNode) {
+        // 使用 $from.start() 更可靠
+        const isAtStart = $from.pos === $from.start();
+        if (!isAtStart) {
           return false;
         }
 
