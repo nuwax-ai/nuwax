@@ -72,18 +72,18 @@
       // Markdown 语法高亮样式
       // 这些样式直接应用到 ProseMirror 编辑器内容上
       .md-header-mark {
-        color: @colorPrimary;
-        font-weight: bold;
+        color: @colorInfo;
+        font-weight: @fontWeightStrong;
       }
 
       .md-header-text {
-        color: @colorPrimary;
-        font-weight: 600;
+        color: @colorInfo;
+        font-weight: @fontWeightStrong;
       }
 
       .md-bold {
         color: @colorWarning; // 使用警告色（通常是橙色/黄色）作为强调
-        font-weight: bold;
+        font-weight: @fontWeightStrong;
       }
 
       .md-italic {
@@ -102,12 +102,12 @@
 
       .md-list-mark {
         color: @colorSuccess;
-        font-weight: bold;
+        font-weight: @fontWeightStrong;
       }
 
       .md-quote-mark {
         color: @colorTextQuaternary;
-        font-weight: bold;
+        font-weight: @fontWeightStrong;
       }
 
       .md-quote-text {
