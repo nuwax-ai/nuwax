@@ -11,6 +11,7 @@ import { theme } from 'antd';
 import { isEqual } from 'lodash';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { AutoCompleteBraces } from './extensions/AutoCompleteBraces';
+import { MarkdownHighlight } from './extensions/MarkdownHighlight';
 import { MentionNode } from './extensions/MentionNode';
 import { MentionSuggestion } from './extensions/MentionSuggestion';
 import { ToolBlockNode } from './extensions/ToolBlockNode';
@@ -120,6 +121,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
         !disableMentions ? MentionNode : undefined,
         VariableNode,
         ToolBlockNode,
+        MarkdownHighlight, // 添加 Markdown 语法高亮扩展
         // VariableSuggestion 应该在 AutoCompleteBraces 之前，这样它能够检测到 { 字符
         VariableSuggestion.configure({
           variables: variableTree, // 初始化时可能为空，后续通过 useEffect 更新

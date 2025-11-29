@@ -68,6 +68,67 @@
       &.ProseMirror-focused {
         outline: none;
       }
+
+      // Markdown 语法高亮样式
+      // 这些样式直接应用到 ProseMirror 编辑器内容上
+      .md-header-mark {
+        color: @colorPrimary;
+        font-weight: bold;
+      }
+
+      .md-header-text {
+        color: @colorPrimary;
+        font-weight: 600;
+      }
+
+      .md-bold {
+        color: @colorWarning; // 使用警告色（通常是橙色/黄色）作为强调
+        font-weight: bold;
+      }
+
+      .md-italic {
+        color: @purple6; // 使用紫色作为斜体高亮
+        font-style: italic;
+      }
+
+      .md-code {
+        color: @colorError; // 使用错误色（通常是红色）作为代码高亮
+        background-color: @colorFillTertiary;
+        border-radius: 2px;
+        padding: 0 2px;
+        font-family: @fontFamilyCode;
+        font-size: 0.9em;
+      }
+
+      .md-list-mark {
+        color: @colorSuccess;
+        font-weight: bold;
+      }
+
+      .md-quote-mark {
+        color: @colorTextQuaternary;
+        font-weight: bold;
+      }
+
+      .md-quote-text {
+        color: @colorTextSecondary;
+        font-style: italic;
+      }
+
+      .md-link {
+        color: @colorLink;
+        text-decoration: underline;
+        cursor: pointer;
+
+        &:hover {
+          color: @colorLinkHover;
+        }
+      }
+
+      .md-strikethrough {
+        color: @colorTextTertiary;
+        text-decoration: line-through;
+      }
     }
   }
 
