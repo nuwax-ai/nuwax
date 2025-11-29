@@ -510,8 +510,70 @@ export const generateTailwindOpacityOptions = (): Array<{
 };
 
 /**
+ * Tailwind CSS 字体大小类名映射
+ * 包含所有 Tailwind CSS 字体大小选项
+ */
+const tailwindFontSizeMap: Record<string, string> = {
+  'text-xs': 'xs',
+  'text-sm': 'sm',
+  'text-base': 'base',
+  'text-lg': 'lg',
+  'text-xl': 'xl',
+  'text-2xl': '2xl',
+  'text-3xl': '3xl',
+  'text-4xl': '4xl',
+  'text-5xl': '5xl',
+  'text-6xl': '6xl',
+  'text-7xl': '7xl',
+  'text-8xl': '8xl',
+  'text-9xl': '9xl',
+};
+
+/**
+ * 生成 Tailwind CSS 字体大小选项列表
+ * 从 Tailwind CSS 中获取字体大小选项
+ * 顺序：Default, xs, sm, base, lg, xl, 2xl, 3xl, 4xl, 5xl, 6xl, 7xl, 8xl, 9xl
+ */
+export const generateTailwindFontSizeOptions = (): Array<{
+  label: string;
+  value: string;
+}> => {
+  const options: Array<{ label: string; value: string }> = [];
+
+  // 首先添加默认选项（排在最前面）
+  options.push({ label: 'Default', value: 'Default' });
+
+  // 添加 Tailwind CSS 字体大小选项
+  // 按照从小到大的顺序排列，匹配图片中的显示顺序
+  const fontSizeOrder = [
+    'text-xs', // xs
+    'text-sm', // sm
+    'text-base', // base
+    'text-lg', // lg
+    'text-xl', // xl
+    'text-2xl', // 2xl
+    'text-3xl', // 3xl
+    'text-4xl', // 4xl
+    'text-5xl', // 5xl
+    'text-6xl', // 6xl
+    'text-7xl', // 7xl
+    'text-8xl', // 8xl
+    'text-9xl', // 9xl
+  ];
+
+  fontSizeOrder.forEach((fontSizeClass) => {
+    const value = tailwindFontSizeMap[fontSizeClass];
+    if (value) {
+      options.push({ label: value, value });
+    }
+  });
+
+  return options;
+};
+
+/**
  * 从 Tailwind 颜色类名中获取实际颜色值
- * 通过创建临时 DOM 元素并应用 Tailwind 类名，然后获取计算后的颜色值
+ * 优先从 generateFullTailwindColorOptions() 生成的颜色列表中查找，找不到时再使用 DOM 计算样式
  * @param className Tailwind 颜色类名，如 "text-red-500", "bg-blue-600", "border-green-500"
  * @param callback 回调函数，返回实际颜色值
  */
@@ -524,82 +586,54 @@ export const getColorFromTailwindClass = (
     return;
   }
 
-  try {
-    // 创建一个临时的隐藏元素
-    const tempElement = document.createElement('div');
-
-    // 设置样式，确保元素不可见但可以计算样式
-    tempElement.style.position = 'absolute';
-    tempElement.style.visibility = 'hidden';
-    tempElement.style.opacity = '0';
-    tempElement.style.pointerEvents = 'none';
-    tempElement.style.top = '-9999px';
-    tempElement.style.left = '-9999px';
-    tempElement.style.width = '1px';
-    tempElement.style.height = '1px';
-
-    // 应用 Tailwind 类名
-    tempElement.className = className;
-
-    // 将元素添加到 DOM（必须添加到 DOM 才能计算样式）
-    document.body.appendChild(tempElement);
-
-    // 使用 requestAnimationFrame 确保样式已应用
-    requestAnimationFrame(() => {
-      try {
-        // 获取计算后的样式
-        const computedStyle = window.getComputedStyle(tempElement);
-
-        // 根据类名类型获取对应的颜色属性
-        let color: string | null = null;
-
-        if (className.startsWith('text-')) {
-          // 文本颜色
-          color = computedStyle.color;
-        } else if (className.startsWith('bg-')) {
-          // 背景颜色
-          color = computedStyle.backgroundColor;
-        } else if (className.startsWith('border-')) {
-          // 边框颜色 - 使用 borderTopColor 获取单一值
-          color = computedStyle.borderTopColor || computedStyle.borderColor;
-          // 如果 borderColor 是多个值（top right bottom left），取第一个
-          if (color && color.includes(' ')) {
-            color = color.split(' ')[0];
-          }
-        }
-
-        // 清理临时元素
-        if (document.body.contains(tempElement)) {
-          document.body.removeChild(tempElement);
-        }
-
-        // 验证颜色值是否有效
-        if (
-          color &&
-          color !== 'transparent' &&
-          color !== 'rgba(0, 0, 0, 0)' &&
-          color !== 'rgb(0, 0, 0)' &&
-          color.trim() !== ''
-        ) {
-          callback(color);
-        } else {
-          callback(null);
-        }
-      } catch (error) {
-        // 确保即使出错也清理元素
-        try {
-          if (document.body.contains(tempElement)) {
-            document.body.removeChild(tempElement);
-          }
-        } catch (cleanupError) {
-          console.error('清理临时元素失败:', cleanupError);
-        }
-        console.error('获取 Tailwind 颜色值失败:', error);
-        callback(null);
-      }
-    });
-  } catch (error) {
-    console.error('创建临时元素失败:', error);
-    callback(null);
+  // 处理特殊值
+  if (className === 'Default' || className === 'transparent') {
+    callback(className);
+    return;
   }
+
+  if (className === 'black') {
+    callback('#000000');
+    return;
+  }
+
+  if (className === 'white') {
+    callback('#ffffff');
+    return;
+  }
+
+  // 特殊处理：text-center 返回 Default
+  if (className === 'text-center' || className === 'text-sm') {
+    callback(null);
+    return;
+  }
+
+  // 从 Tailwind 颜色列表中查找
+  // 首先从 generateFullTailwindColorOptions() 生成的颜色列表中查找
+  const colorOptions = generateFullTailwindColorOptions();
+
+  // 提取颜色类名（如 "text-red-500" -> "red-500", "bg-blue-600" -> "blue-600"）
+  let colorClass = className;
+  if (className.startsWith('text-')) {
+    colorClass = className.replace('text-', '');
+  } else if (className.startsWith('bg-')) {
+    colorClass = className.replace('bg-', '');
+  } else if (className.startsWith('border-')) {
+    colorClass = className.replace('border-', '');
+  }
+
+  // 在颜色列表中查找匹配的项
+  const matchedOption = colorOptions.find((option) => {
+    // 匹配格式：red-500, blue-600 等
+    return option.label === colorClass;
+  });
+
+  if (matchedOption && matchedOption.value) {
+    // 如果找到了匹配的颜色，直接返回
+    callback(matchedOption.value);
+    return;
+  }
+
+  // 如果找不到匹配的颜色，返回 Default
+  return callback('Default');
 };

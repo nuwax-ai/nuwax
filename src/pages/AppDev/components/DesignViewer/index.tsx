@@ -45,6 +45,7 @@ import {
 } from './design.images.constants';
 import {
   generateFullTailwindColorOptions,
+  generateTailwindFontSizeOptions,
   generateTailwindOpacityOptions,
   generateTailwindRadiusOptions,
   generateTailwindShadowOptions,
@@ -128,6 +129,15 @@ const backgroundOptions = colorOptions;
 // Border Color 选项
 const borderColorOptions = colorOptions;
 
+// Radius 选项 - 从 Tailwind CSS 生成
+const radiusOptions = generateTailwindRadiusOptions();
+
+// Shadow 选项 - 从 Tailwind CSS 生成
+const shadowOptions = generateTailwindShadowOptions();
+
+// Opacity 选项 - 从 Tailwind CSS 生成
+const opacityOptions = generateTailwindOpacityOptions();
+
 // 更多操作菜单
 const moreMenuItems = [
   { key: 'copy', label: '复制属性' },
@@ -154,16 +164,8 @@ const fontWeightOptions = [
   { label: 'Extra Bold', value: 'Extra Bold' },
 ];
 
-// Font Size 选项
-const fontSizeOptions = [
-  { label: 'xs', value: 'xs' },
-  { label: 'sm', value: 'sm' },
-  { label: 'md', value: 'md' },
-  { label: 'lg', value: 'lg' },
-  { label: 'xl', value: 'xl' },
-  { label: '2xl', value: '2xl' },
-  { label: '3xl', value: '3xl' },
-];
+// Font Size 选项 - 从 Tailwind CSS 生成
+const fontSizeOptions = generateTailwindFontSizeOptions();
 
 // Line Height 选项
 const lineHeightOptions = [
@@ -196,15 +198,6 @@ const borderStyleOptions = [
   { label: 'Dotted', value: 'Dotted' },
 ];
 
-// Radius 选项 - 从 Tailwind CSS 生成
-const radiusOptions = generateTailwindRadiusOptions();
-
-// Shadow 选项 - 从 Tailwind CSS 生成
-const shadowOptions = generateTailwindShadowOptions();
-
-// Opacity 选项 - 从 Tailwind CSS 生成
-const opacityOptions = generateTailwindOpacityOptions();
-
 /**
  * 属性面板组件 Props
  */
@@ -216,7 +209,7 @@ interface DesignViewerProps {
   /** 图标值 */
   icon?: string;
   /** 颜色值 */
-  color?: string;
+  // color?: string;
   /** 背景值 */
   background?: string;
   /** 外边距配置 */
@@ -254,17 +247,17 @@ interface DesignViewerProps {
 const DesignViewer: React.FC<DesignViewerProps> = ({
   elementName = 'Sparkles',
   parentPath = 'Page',
-  color = 'primary',
+  // color = 'primary',
   background = 'Default',
   margin = { vertical: 0, horizontal: 0 },
   padding = { vertical: 0, horizontal: 0 },
   onChange,
 }) => {
-  // 本地状态管理
-  const [localColor, setLocalColor] = useState(color);
-  /** 本地背景 */
-  const [localBackground, setLocalBackground] = useState(background);
-  /** 本地外边距 */
+  // 字体颜色值
+  const [localColor, setLocalColor] = useState<string>('Default');
+  /** 背景颜色值 */
+  const [localBackground, setLocalBackground] = useState<string>(background);
+  /** 外边距值 */
   const [localMargin, setLocalMargin] = useState<{
     top: number | string;
     right: number | string;
@@ -307,7 +300,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   /** 编辑中的行高 */
   const [lineHeight, setLineHeight] = useState('1.75rem');
   /** 编辑中的字母间距 */
-  const [letterSpacing, setLetterSpacing] = useState('0em');
+  const [letterSpacing, setLetterSpacing] = useState<string>('0em');
   /** 编辑中的文本对齐方式 */
   const [textAlign, setTextAlign] = useState<
     'left' | 'center' | 'right' | 'justify' | 'reset'
@@ -333,24 +326,25 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     isOpen: true,
   });
   /** 是否展开边框宽度 */
-  const [isBorderWidthExpanded, setIsBorderWidthExpanded] = useState(false);
+  const [isBorderWidthExpanded, setIsBorderWidthExpanded] =
+    useState<boolean>(false);
   /** 编辑中的透明度 */
-  const [opacity, setOpacity] = useState(40);
+  const [opacity, setOpacity] = useState<number>(100);
   /** 编辑中的圆角 */
-  const [radius, setRadius] = useState('Small');
+  const [radius, setRadius] = useState<string>('Small');
   /** 编辑中的阴影类型 */
-  const [shadowType, setShadowType] = useState('Default');
+  const [shadowType, setShadowType] = useState<string>('Default');
 
   // 是否开启design模式
-  const [iframeDesignMode, setIframeDesignMode] = useState(false);
+  const [iframeDesignMode, setIframeDesignMode] = useState<boolean>(false);
   /** 选中的元素, 用于标识当前选中的元素, 包含className, sourceInfo, tagName, textContent等信息*/
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(
     null,
   );
   // 编辑中的内容(textContent)
-  const [editingContent, setEditingContent] = useState('');
+  const [editingContent, setEditingContent] = useState<string>('');
   // 编辑中的类
-  const [editingClass, setEditingClass] = useState('');
+  const [editingClass, setEditingClass] = useState<string>('');
   // 待处理的变更
   const [pendingChanges, setPendingChanges] = useState<
     Array<{
@@ -610,10 +604,25 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    * @param className 元素的 className 字符串，可能包含多个 Tailwind 类名
    */
   const parseTailwindClassesAndUpdateStates = (className: string) => {
+    // 解析className中的 Tailwind 类名前，先重置本地状态
+    setLocalColor('Default');
+    setLocalBackground('Default');
+    setShadowType('None');
+    setRadius('None');
+    setOpacity(100);
+    setBorderStyle('None');
+    setBorderColor('Default');
+    setFontSize('Default');
+    setLineHeight('1.5');
+    setLetterSpacing('0em');
+    setTextAlign('left');
+
     if (!className) return;
 
     // 将 className 拆分成单个类名
     const classes = className.split(/\s+/).filter((c) => c.trim());
+
+    console.log('classes555', classes);
 
     // 初始化样式对象
     const styles: {
@@ -746,11 +755,14 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
       else if (cls.startsWith('text-')) {
         // 尝试从 iframe 中获取实际颜色值
         const colorClass = parseTailwindColor(cls);
+
+        console.log('解析颜色类名（需要从实际', colorClass, cls);
         if (colorClass) {
           // 这里可以尝试从 CSS 中获取实际颜色值
           // 暂时先保存类名，后续可以通过计算样式获取
           getColorFromTailwindClass(colorClass, (color) => {
             if (color) {
+              console.log('解析颜色类名（需要从实际 CSS 中获取颜色值）', color);
               setLocalColor(color);
             }
           });
