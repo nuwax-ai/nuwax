@@ -481,23 +481,7 @@ export const generateTailwindOpacityOptions = (): Array<{
   const options: Array<{ label: string; value: number }> = [];
 
   // 按照透明度值从小到大排序
-  const opacityOrder = [
-    'opacity-0',
-    'opacity-5',
-    'opacity-10',
-    'opacity-20',
-    'opacity-25',
-    'opacity-30',
-    'opacity-40',
-    'opacity-50',
-    'opacity-60',
-    'opacity-70',
-    'opacity-75',
-    'opacity-80',
-    'opacity-90',
-    'opacity-95',
-    'opacity-100',
-  ];
+  const opacityOrder = Object.keys(tailwindOpacityMap);
 
   opacityOrder.forEach((opacityClass) => {
     const value = tailwindOpacityMap[opacityClass];
@@ -545,21 +529,7 @@ export const generateTailwindFontSizeOptions = (): Array<{
 
   // 添加 Tailwind CSS 字体大小选项
   // 按照从小到大的顺序排列，匹配图片中的显示顺序
-  const fontSizeOrder = [
-    'text-xs', // xs
-    'text-sm', // sm
-    'text-base', // base
-    'text-lg', // lg
-    'text-xl', // xl
-    'text-2xl', // 2xl
-    'text-3xl', // 3xl
-    'text-4xl', // 4xl
-    'text-5xl', // 5xl
-    'text-6xl', // 6xl
-    'text-7xl', // 7xl
-    'text-8xl', // 8xl
-    'text-9xl', // 9xl
-  ];
+  const fontSizeOrder = Object.keys(tailwindFontSizeMap);
 
   fontSizeOrder.forEach((fontSizeClass) => {
     const value = tailwindFontSizeMap[fontSizeClass];
@@ -602,8 +572,10 @@ export const getColorFromTailwindClass = (
     return;
   }
 
-  // 特殊处理：text-center 返回 Default
-  if (className === 'text-center' || className === 'text-sm') {
+  const fontSizeOrder = Object.keys(tailwindFontSizeMap);
+
+  // 特殊处理：text-center 或字体大小类名, 返回 null
+  if (className === 'text-center' || fontSizeOrder.includes(className)) {
     callback(null);
     return;
   }
