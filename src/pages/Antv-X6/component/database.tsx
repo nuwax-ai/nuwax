@@ -24,7 +24,7 @@ const Database: React.FC<NodeDisposeProps> = ({
 }) => {
   const [open, setOpen] = useState(false); // 自动生成sql的弹窗
 
-  const { setIsModified } = useModel('workflow');
+  const { setIsModified, referenceList } = useModel('workflow');
 
   const defaultConditionArgs = [
     {
@@ -305,6 +305,7 @@ const Database: React.FC<NodeDisposeProps> = ({
                 (item: InputAndOutConfig) =>
                   !['', null, undefined].includes(item.name),
               ),
+              referenceList?.argMap,
             )}
           />
         </div>

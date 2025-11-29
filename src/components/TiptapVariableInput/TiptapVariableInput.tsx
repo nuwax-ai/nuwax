@@ -11,6 +11,7 @@ import { theme } from 'antd';
 import { isEqual } from 'lodash';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { AutoCompleteBraces } from './extensions/AutoCompleteBraces';
+import { MarkdownHighlight } from './extensions/MarkdownHighlight';
 import { MentionNode } from './extensions/MentionNode';
 import { MentionSuggestion } from './extensions/MentionSuggestion';
 import { ToolBlockNode } from './extensions/ToolBlockNode';
@@ -42,6 +43,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
   style,
   onVariableSelect,
   disableMentions = true, // 默认禁用 mentions
+  enableMarkdown = false, // 默认关闭 Markdown 快捷语法
   getEditor,
 }) => {
   const { token } = theme.useToken();
@@ -119,6 +121,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
         !disableMentions ? MentionNode : undefined,
         VariableNode,
         ToolBlockNode,
+        MarkdownHighlight, // 添加 Markdown 语法高亮扩展
         // VariableSuggestion 应该在 AutoCompleteBraces 之前，这样它能够检测到 { 字符
         VariableSuggestion.configure({
           variables: variableTree, // 初始化时可能为空，后续通过 useEffect 更新
@@ -145,6 +148,8 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
       ].filter(Boolean) as any, // 过滤掉 undefined 并强制类型转换
       content: initialContent,
       editable: !readonly && !disabled,
+      enableInputRules: enableMarkdown, // 控制 Markdown 快捷语法
+      enablePasteRules: enableMarkdown, // 控制 Markdown 粘贴规则
       onUpdate: ({ editor }) => {
         // 如果是从外部更新，不触发 onChange，避免循环更新
         if (isUpdatingFromExternalRef.current) {
@@ -161,7 +166,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
         }
       },
     },
-    [disableMentions, readonly, disabled, getNormalizedHtml],
+    [disableMentions, readonly, disabled, getNormalizedHtml, enableMarkdown],
   );
 
   // 暴露编辑器实例
