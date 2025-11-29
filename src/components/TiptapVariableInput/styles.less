@@ -72,12 +72,12 @@
       // Markdown 语法高亮样式
       // 这些样式直接应用到 ProseMirror 编辑器内容上
       .md-header-mark {
-        color: @colorInfo;
+        color: @purple6;
         font-weight: @fontWeightStrong;
       }
 
       .md-header-text {
-        color: @colorInfo;
+        color: @purple6;
         font-weight: @fontWeightStrong;
       }
 
@@ -145,29 +145,29 @@
 
   // Variable 节点样式（使用标准的 span 标签，大括号通过真实 DOM 元素实现）
   .variable-block-chip {
-    display: inline-block !important;
-    background-color: @colorInfoBg !important;
-    color: @colorInfo !important;
-    padding: 0 @paddingXxs !important; // 增加内边距
-    border: 1px solid transparent !important; // 增加透明边框以对齐高度
-    margin: 0 @marginXxs !important; // 调整边距：移除上下边距，保留左右边距
-    font-size: @fontSizeSm !important;
-    line-height: @lineHeight !important;
-    user-select: none !important;
-    vertical-align: baseline !important; // 改为 baseline 对齐
-    font-family: @fontFamilyCode !important;
+    display: inline-block;
+    background-color: @colorInfoBg;
+    color: @colorInfo;
+    padding: 0 @paddingXxs; // 增加内边距
+    border: 1px solid transparent; // 增加透明边框以对齐高度
+    margin: 0 @marginXxs; // 调整边距：移除上下边距，保留左右边距
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    user-select: none;
+    vertical-align: baseline; // 改为 baseline 对齐
+    font-family: @fontFamilyCode;
   }
 
   // 变量节点容器中的大括号样式（真实 DOM 元素）
   // 大括号元素是变量节点的兄弟元素
   span:has(+ .variable-block-chip),
   .variable-block-chip + span {
-    color: @colorInfo !important;
-    font-family: @fontFamilyCode !important;
-    font-size: @fontSizeSm !important;
-    line-height: @lineHeight !important;
-    vertical-align: baseline !important;
-    user-select: none !important;
+    color: @colorInfo;
+    font-family: @fontFamilyCode;
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    vertical-align: baseline;
+    user-select: none;
   }
 
   // 移除 ::before 和 ::after 伪元素，改用真实 DOM 元素
@@ -185,18 +185,18 @@
 
   // 可编辑 Variable 节点样式（仅高亮字符颜色，无背景和边距）
   .variable-block-chip-editable {
-    display: inline !important;
-    background-color: transparent !important;
-    color: @colorInfo !important;
-    padding: 0 !important;
-    border: none !important;
-    font-size: inherit !important;
-    line-height: inherit !important;
-    user-select: text !important; // 允许文本选择
-    vertical-align: baseline !important;
-    font-family: @fontFamilyCode !important;
-    cursor: text !important; // 显示文本光标
-    outline: none !important; // 移除默认轮廓
+    display: inline;
+    background-color: transparent;
+    color: @colorInfo;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+    line-height: inherit;
+    user-select: text; // 允许文本选择
+    vertical-align: baseline;
+    font-family: @fontFamilyCode;
+    cursor: text; // 显示文本光标
+    outline: none; // 移除默认轮廓
   }
 
   // 可编辑变量节点容器中的大括号样式（真实 DOM 元素）
@@ -204,11 +204,11 @@
   span:has(+ .variable-block-chip-editable),
   .variable-block-chip-editable + span {
     color: @colorInfo !important;
-    font-family: @fontFamilyCode !important;
-    font-size: inherit !important;
-    line-height: inherit !important;
-    vertical-align: baseline !important;
-    user-select: none !important;
+    font-family: @fontFamilyCode;
+    font-size: inherit;
+    line-height: inherit;
+    vertical-align: baseline;
+    user-select: none;
   }
 
   // 移除 ::before 和 ::after 伪元素，改用真实 DOM 元素
@@ -224,45 +224,45 @@
 
   // 可编辑变量节点聚焦状态（保持仅颜色高亮）
   .variable-block-chip-editable:focus {
-    background-color: transparent !important;
-    border: none !important;
-    outline: none !important;
+    background-color: transparent;
+    border: none;
+    outline: none;
   }
 
   // ToolBlock 节点样式
   .tool-block-chip {
-    display: inline-block !important;
-    background-color: @colorSuccessBg !important;
-    color: @colorSuccess !important;
-    padding: 0 @paddingXxs !important;
-    border-radius: @borderRadiusSm !important;
-    margin: 0 @marginXxs !important; // 调整边距：移除上下边距，保留左右边距
-    font-size: @fontSizeSm !important;
-    line-height: @lineHeight !important;
-    border: 1px solid @colorSuccessBorder !important;
-    user-select: none !important;
-    vertical-align: baseline !important; // 改为 baseline 对齐
-    cursor: default !important;
+    display: inline-block;
+    background-color: @colorSuccessBg;
+    color: @colorSuccess;
+    padding: 0 @paddingXxs;
+    border-radius: @borderRadiusSm;
+    margin: 0 @marginXxs; // 调整边距：移除上下边距，保留左右边距
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    // border: 1px solid @colorSuccessBorder;
+    user-select: none;
+    vertical-align: baseline; // 改为 baseline 对齐
+    cursor: default;
   }
 
   // Mention 节点样式
   .mention-node {
-    display: inline-block !important;
-    background-color: @colorInfoBg !important;
-    color: @colorInfo !important;
-    padding: @paddingXxs @paddingXs !important;
-    border-radius: @borderRadiusSm !important;
-    margin: @marginXxs !important;
-    font-size: @fontSizeSm !important;
-    line-height: @lineHeight !important;
-    border: 1px solid @colorInfoBorder !important;
-    user-select: none !important;
-    vertical-align: baseline !important;
-    cursor: default !important;
+    display: inline-block;
+    background-color: @colorInfoBg;
+    color: @colorInfo;
+    padding: @paddingXxs @paddingXs;
+    border-radius: @borderRadiusSm;
+    margin: @marginXxs;
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    border: 1px solid @colorInfoBorder;
+    user-select: none;
+    vertical-align: baseline;
+    cursor: default;
   }
 
   .mention-node:hover {
-    background-color: @colorInfoBgHover !important;
+    background-color: @colorInfoBgHover;
   }
 }
 

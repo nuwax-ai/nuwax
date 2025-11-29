@@ -113,9 +113,9 @@ export const EditableVariableNode = Node.create({
       contentDOM.style.display = 'inline';
 
       // 在内容前后添加零宽度空格，帮助光标定位和移动
-      wrapper.appendChild(document.createTextNode('\u200B'));
+      // wrapper.appendChild(document.createTextNode('\u200B'));
       wrapper.appendChild(contentDOM);
-      wrapper.appendChild(document.createTextNode('\u200B'));
+      // wrapper.appendChild(document.createTextNode('\u200B'));
 
       // 创建右大括号元素
       const rightBrace = document.createElement('span');
