@@ -11,10 +11,12 @@ import { theme } from 'antd';
 import { isEqual } from 'lodash';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { AutoCompleteBraces } from './extensions/AutoCompleteBraces';
+import { EditableVariableNode } from './extensions/EditableVariableNode';
 import { MarkdownHighlight } from './extensions/MarkdownHighlight';
 import { MentionNode } from './extensions/MentionNode';
 import { MentionSuggestion } from './extensions/MentionSuggestion';
 import { ToolBlockNode } from './extensions/ToolBlockNode';
+import { VariableCursorPlaceholder } from './extensions/VariableCursorPlaceholder';
 import { VariableNode } from './extensions/VariableNode';
 import { VariableSuggestion } from './extensions/VariableSuggestion';
 import { useVariableTree } from './hooks/useVariableTree';
@@ -44,6 +46,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
   onVariableSelect,
   disableMentions = true, // 默认禁用 mentions
   enableMarkdown = false, // 默认关闭 Markdown 快捷语法
+  enableEditableVariables = true, // 默认开启可编辑变量模式
   getEditor,
 }) => {
   const { token } = theme.useToken();
@@ -94,7 +97,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
     if (!value || value === '<p></p>' || value === '<p></p>\n') return '';
     // 检查是否包含工具块或变量格式，如果是则转换为 HTML
     if (shouldConvertTextToHTML(value)) {
-      return convertTextToHTML(value, disableMentions);
+      return convertTextToHTML(value, disableMentions, enableEditableVariables);
     }
     // 如果已经是 HTML 格式，保留空行，不清理首尾空段落
     if (/\u003c[^\u003e]+\u003e/.test(value)) {
@@ -104,8 +107,8 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
       return value; // 保留原始格式，包括空段落
     }
     // 对于普通文本，转换为 HTML 以正确处理换行
-    return convertTextToHTML(value, disableMentions);
-  }, [value, disableMentions]);
+    return convertTextToHTML(value, disableMentions, enableEditableVariables);
+  }, [value, disableMentions, enableEditableVariables]);
 
   // 保存光标位置的 ref
   const cursorPositionRef = useRef<number | null>(null);
@@ -119,12 +122,16 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
       extensions: [
         StarterKit,
         !disableMentions ? MentionNode : undefined,
-        VariableNode,
+        // 根据 enableEditableVariables 配置互斥地使用 EditableVariableNode 或 VariableNode
+        enableEditableVariables ? EditableVariableNode : VariableNode,
         ToolBlockNode,
         MarkdownHighlight, // 添加 Markdown 语法高亮扩展
+        // VariableCursorPlaceholder 应该在 VariableSuggestion 之前，确保光标可以在变量节点前后停留
+        VariableCursorPlaceholder,
         // VariableSuggestion 应该在 AutoCompleteBraces 之前，这样它能够检测到 { 字符
         VariableSuggestion.configure({
           variables: variableTree, // 初始化时可能为空，后续通过 useEffect 更新
+          enableEditableVariables, // 传递配置选项
           onSelect: (item) => {
             // 变量选择回调
             if (item.node?.variable && onVariableSelect) {
@@ -193,7 +200,11 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
       // 检查是否需要转换
       let contentToSet = sanitizedValue;
       if (sanitizedValue && shouldConvertTextToHTML(sanitizedValue)) {
-        contentToSet = convertTextToHTML(sanitizedValue, disableMentions);
+        contentToSet = convertTextToHTML(
+          sanitizedValue,
+          disableMentions,
+          enableEditableVariables,
+        );
       } else if (
         sanitizedValue &&
         /\u003c[^\u003e]+\u003e/.test(sanitizedValue)
@@ -203,7 +214,11 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
         contentToSet = sanitizedValue;
       } else if (sanitizedValue) {
         // 对于普通文本，转换为 HTML 以正确处理换行
-        contentToSet = convertTextToHTML(sanitizedValue, disableMentions);
+        contentToSet = convertTextToHTML(
+          sanitizedValue,
+          disableMentions,
+          enableEditableVariables,
+        );
       }
       // 只有当内容不同时才更新
       if (contentToSet !== currentHtml) {
