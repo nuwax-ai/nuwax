@@ -20,7 +20,7 @@ import {
   Space,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AlignCenterSvg,
   AlignJustifySvg,
@@ -52,6 +52,7 @@ import {
   TabularNumbersSvg,
 } from './design.images.constants';
 import styles from './index.less';
+import { ElementInfo } from './messages';
 
 const cx = classNames.bind(styles);
 
@@ -116,6 +117,117 @@ const borderWidthOptions = [
   { label: '8px', value: '8px' },
 ];
 
+// 颜色选项
+const colorOptions = [
+  { label: 'primary', value: '#1890ff' },
+  { label: 'secondary', value: '#8c8c8c' },
+  { label: 'success', value: '#52c41a' },
+  { label: 'warning', value: '#faad14' },
+  { label: 'error', value: '#ff4d4f' },
+];
+
+// 背景选项
+const backgroundOptions = [
+  { label: 'Default', value: 'Default' },
+  { label: 'Transparent', value: 'Transparent' },
+  { label: 'White', value: '#fff' },
+  { label: 'Gray', value: '#8c8c8c' },
+];
+
+// 更多操作菜单
+const moreMenuItems = [
+  { key: 'copy', label: '复制属性' },
+  { key: 'reset', label: '重置' },
+  { key: 'delete', label: '删除' },
+];
+
+// Typography 选项
+const typographyOptions = [
+  { label: 'Default', value: 'Default' },
+  { label: 'Sans Serif', value: 'Sans Serif' },
+  { label: 'Serif', value: 'Serif' },
+  { label: 'Monospace', value: 'Monospace' },
+];
+
+// Font Weight 选项
+const fontWeightOptions = [
+  { label: 'Thin', value: 'Thin' },
+  { label: 'Light', value: 'Light' },
+  { label: 'Regular', value: 'Regular' },
+  { label: 'Medium', value: 'Medium' },
+  { label: 'Semi Bold', value: 'Semi Bold' },
+  { label: 'Bold', value: 'Bold' },
+  { label: 'Extra Bold', value: 'Extra Bold' },
+];
+
+// Font Size 选项
+const fontSizeOptions = [
+  { label: 'xs', value: 'xs' },
+  { label: 'sm', value: 'sm' },
+  { label: 'md', value: 'md' },
+  { label: 'lg', value: 'lg' },
+  { label: 'xl', value: 'xl' },
+  { label: '2xl', value: '2xl' },
+  { label: '3xl', value: '3xl' },
+];
+
+// Line Height 选项
+const lineHeightOptions = [
+  { label: '0.75rem', value: '0.75rem' },
+  { label: '1rem', value: '1rem' },
+  { label: '1.25rem', value: '1.25rem' },
+  { label: '1.5rem', value: '1.5rem' },
+  { label: '1.75rem', value: '1.75rem' },
+  { label: '2rem', value: '2rem' },
+  { label: '2.25rem', value: '2.25rem' },
+  { label: '2.5rem', value: '2.5rem' },
+];
+
+// Letter Spacing 选项
+const letterSpacingOptions = [
+  { label: '-0.05em', value: '-0.05em' },
+  { label: '-0.025em', value: '-0.025em' },
+  { label: '0em', value: '0em' },
+  { label: '0.025em', value: '0.025em' },
+  { label: '0.05em', value: '0.05em' },
+  { label: '0.1em', value: '0.1em' },
+];
+
+// Border Style 选项
+const borderStyleOptions = [
+  { label: 'Default', value: 'Default' },
+  { label: 'None', value: 'None' },
+  { label: 'Solid', value: 'Solid' },
+  { label: 'Dashed', value: 'Dashed' },
+  { label: 'Dotted', value: 'Dotted' },
+];
+
+// Border Color 选项
+const borderColorOptions = [
+  { label: 'Default', value: 'Default' },
+  { label: 'Black', value: '#000000' },
+  { label: 'White', value: '#ffffff' },
+  { label: 'Gray', value: '#8c8c8c' },
+];
+
+// Radius 选项
+const radiusOptions = [
+  { label: 'None', value: 'None' },
+  { label: 'Small', value: 'Small' },
+  { label: 'Medium', value: 'Medium' },
+  { label: 'Large', value: 'Large' },
+  { label: 'Full', value: 'Full' },
+];
+
+// Shadow 选项
+const shadowOptions = [
+  { label: 'Default', value: 'Default' },
+  { label: 'Small', value: 'Small' },
+  { label: 'Medium', value: 'Medium' },
+  { label: 'Large', value: 'Large' },
+  { label: 'None', value: 'None' },
+];
+
 /**
  * 属性面板组件 Props
  */
@@ -173,7 +285,9 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
 }) => {
   // 本地状态管理
   const [localColor, setLocalColor] = useState(color);
+  /** 本地背景 */
   const [localBackground, setLocalBackground] = useState(background);
+  /** 本地外边距 */
   const [localMargin, setLocalMargin] = useState<{
     top: number | string;
     right: number | string;
@@ -185,6 +299,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     bottom: margin?.bottom ?? margin?.vertical ?? '0px',
     left: margin?.left ?? margin?.horizontal ?? '0px',
   });
+  /** 本地内边距 */
   const [localPadding, setLocalPadding] = useState<{
     top: number | string;
     right: number | string;
@@ -196,22 +311,37 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     bottom: padding?.bottom ?? padding?.vertical ?? '0px',
     left: padding?.left ?? padding?.horizontal ?? '0px',
   });
+  /** 是否锁定外边距 */
   const [isMarginLocked, setIsMarginLocked] = useState(true);
+  /** 是否锁定内边距 */
   const [isPaddingLocked, setIsPaddingLocked] = useState(true);
+  /** 是否展开外边距 */
   const [isMarginExpanded, setIsMarginExpanded] = useState(false);
+  /** 是否展开内边距 */
   const [isPaddingExpanded, setIsPaddingExpanded] = useState(false);
+  /** 编辑中的文本内容 */
   const [localTextContent, setLocalTextContent] = useState('');
-  const [localTypography, setLocalTypography] = useState('body');
+  /** 编辑中的排版 */
+  const [localTypography, setLocalTypography] = useState('Default');
+  /** 编辑中的字体粗细 */
   const [fontWeight, setFontWeight] = useState('Semi Bold');
+  /** 编辑中的字体大小 */
   const [fontSize, setFontSize] = useState('lg');
+  /** 编辑中的行高 */
   const [lineHeight, setLineHeight] = useState('1.75rem');
+  /** 编辑中的字母间距 */
   const [letterSpacing, setLetterSpacing] = useState('0em');
+  /** 编辑中的文本对齐方式 */
   const [textAlign, setTextAlign] = useState<
     'left' | 'center' | 'right' | 'justify' | 'reset'
   >('center');
-  const [textDecoration, setTextDecoration] = useState<string[]>([]);
+  /** 编辑中的文本装饰 */
+  const [textDecoration] = useState<string[]>([]);
+  /** 编辑中的边框样式 */
   const [borderStyle, setBorderStyle] = useState('Default');
+  /** 编辑中的边框颜色 */
   const [borderColor, setBorderColor] = useState('Default');
+  /** 编辑中的边框宽度 */
   const [localBorderWidth, setLocalBorderWidth] = useState<{
     top: number | string;
     right: number | string;
@@ -225,10 +355,312 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     left: '0px',
     isOpen: true,
   });
+  /** 是否展开边框宽度 */
   const [isBorderWidthExpanded, setIsBorderWidthExpanded] = useState(false);
+  /** 编辑中的透明度 */
   const [opacity, setOpacity] = useState(40);
+  /** 编辑中的圆角 */
   const [radius, setRadius] = useState('Small');
+  /** 编辑中的阴影类型 */
   const [shadowType, setShadowType] = useState('Default');
+
+  // 是否开启design模式
+  const [iframeDesignMode, setIframeDesignMode] = useState(false);
+  /** 选中的元素, 用于标识当前选中的元素, 包含className, sourceInfo, tagName, textContent等信息*/
+  const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(
+    null,
+  );
+  // 编辑中的内容(textContent)
+  const [editingContent, setEditingContent] = useState('');
+  // 编辑中的类
+  const [editingClass, setEditingClass] = useState('');
+  // 待处理的变更
+  const [pendingChanges, setPendingChanges] = useState<
+    Array<{
+      type: 'style' | 'content';
+      sourceInfo: any;
+      newValue: string;
+      originalValue?: string;
+    }>
+  >([]);
+
+  // Listen for messages from iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const { type, payload } = event.data;
+      switch (type) {
+        case 'DESIGN_MODE_CHANGED':
+          setIframeDesignMode(event.data.enabled);
+          break;
+
+        case 'ELEMENT_SELECTED':
+          console.log('[Parent] Element selected - full payload:', payload);
+
+          // 验证 sourceInfo 是否有效
+          if (
+            !payload.elementInfo?.sourceInfo ||
+            !payload.elementInfo.sourceInfo.fileName ||
+            payload.elementInfo.sourceInfo.lineNumber === 0
+          ) {
+            // console.warn(
+            //   '[Parent] Invalid sourceInfo received:',
+            //   payload.elementInfo?.sourceInfo
+            // );
+            // console.warn('[Parent] This may cause update operations to fail');
+          }
+
+          setSelectedElement(payload.elementInfo);
+          setEditingContent(payload.elementInfo.textContent);
+          setEditingClass(payload.elementInfo.className);
+          break;
+
+        case 'ELEMENT_DESELECTED':
+          setSelectedElement(null);
+          console.log('[Parent] Element deselected');
+          break;
+
+        case 'CONTENT_UPDATED':
+          console.log('[Parent] Content updated:', payload);
+          break;
+
+        case 'STYLE_UPDATED':
+          console.log('[Parent] Style updated:', payload);
+          break;
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // Debounce hook
+  const useDebounce = <T,>(value: T, delay: number): T => {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedValue(value);
+      }, delay);
+      return () => clearTimeout(handler);
+    }, [value, delay]);
+    return debouncedValue;
+  };
+
+  const debouncedContent = useDebounce(editingContent, 300);
+  const debouncedClass = useDebounce(editingClass, 300);
+
+  // Upsert pending change
+  const upsertPendingChange = (
+    type: 'style' | 'content',
+    newValue: string,
+    originalValue?: string,
+  ) => {
+    if (!selectedElement) return;
+    setPendingChanges((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) =>
+          item.type === type &&
+          item.sourceInfo.fileName === selectedElement.sourceInfo.fileName &&
+          item.sourceInfo.lineNumber === selectedElement.sourceInfo.lineNumber,
+      );
+
+      const newChange = {
+        type,
+        sourceInfo: selectedElement.sourceInfo,
+        newValue,
+        originalValue:
+          originalValue ||
+          (type === 'style'
+            ? selectedElement.className
+            : selectedElement.textContent),
+      };
+
+      if (existingIndex >= 0) {
+        const newList = [...prev];
+        newList[existingIndex] = newChange;
+        return newList;
+      } else {
+        return [...prev, newChange];
+      }
+    });
+  };
+
+  // Real-time content update
+  useEffect(() => {
+    if (!selectedElement || debouncedContent === selectedElement.textContent)
+      return;
+
+    upsertPendingChange('content', debouncedContent);
+
+    const iframe = document.querySelector('iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        {
+          type: 'UPDATE_CONTENT',
+          payload: {
+            sourceInfo: selectedElement.sourceInfo,
+            newContent: debouncedContent,
+            persist: false,
+          },
+          timestamp: Date.now(),
+        },
+        '*',
+      );
+    }
+  }, [debouncedContent]);
+
+  // Real-time style update
+  useEffect(() => {
+    if (!selectedElement || debouncedClass === selectedElement.className)
+      return;
+
+    upsertPendingChange('style', debouncedClass);
+
+    const iframe = document.querySelector('iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        {
+          type: 'UPDATE_STYLE',
+          payload: {
+            sourceInfo: selectedElement.sourceInfo,
+            newClass: debouncedClass,
+            persist: false,
+          },
+          timestamp: Date.now(),
+        },
+        '*',
+      );
+    }
+  }, [debouncedClass]);
+
+  // Style Manager Logic
+  const toggleStyle = (newStyle: string, categoryRegex: RegExp) => {
+    let currentClasses = editingClass.split(' ').filter((c) => c.trim());
+
+    // Remove existing class in the same category
+    currentClasses = currentClasses.filter((c) => !categoryRegex.test(c));
+
+    // Add new style if it's not empty (allows clearing style)
+    if (newStyle) {
+      currentClasses.push(newStyle);
+    }
+
+    setEditingClass(currentClasses.join(' '));
+  };
+
+  const hasStyle = (style: string) => {
+    return editingClass.split(' ').includes(style);
+  };
+
+  // // UI Controls
+  // const renderColorPicker = (prefix: string, colors: string[], label: string) => (
+  //   <div className="mb-4">
+  //     <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+  //     <div className="flex flex-wrap gap-2">
+  //       {colors.map(color => {
+  //         const styleClass = `${prefix}-${color}`;
+  //         const isActive = hasStyle(styleClass);
+  //         return (
+  //           <button
+  //             key={color}
+  //             onClick={() => toggleStyle(styleClass, new RegExp(`^${prefix}-[a-z]+(-\\d+)?$`))}
+  //             className={`w-8 h-8 rounded-full border-2 transition-all ${
+  //               isActive ? 'border-gray-900 scale-110' : 'border-transparent hover:scale-105'
+  //             } ${styleClass.replace('text-', 'bg-')}`} // Use bg color for preview
+  //             title={color}
+  //           />
+  //         );
+  //       })}
+  //       <button
+  //           onClick={() => toggleStyle('', new RegExp(`^${prefix}-[a-z]+(-\\d+)?$`))}
+  //           className="px-2 py-1 text-xs text-gray-500 border border-gray-300 rounded hover:bg-gray-100"
+  //       >
+  //           清除
+  //       </button>
+  //     </div>
+  //   </div>
+  // );
+
+  // const renderSelect = (prefix: string, options: { label: string; value: string }[], label: string) => (
+  //   <div className="mb-4">
+  //     <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+  //     <div className="flex flex-wrap gap-2">
+  //       {options.map(opt => {
+  //           const styleClass = opt.value ? `${prefix}-${opt.value}` : '';
+  //           const isActive = styleClass ? hasStyle(styleClass) : !options.some(o => o.value && hasStyle(`${prefix}-${o.value}`));
+  //           return (
+  //               <button
+  //                   key={opt.label}
+  //                   onClick={() => toggleStyle(styleClass, new RegExp(`^${prefix}(-[a-z0-9]+)?$`))}
+  //                   className={`px-3 py-1 text-sm rounded border transition-all ${
+  //                       isActive
+  //                       ? 'bg-blue-600 text-white border-blue-600'
+  //                       : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+  //                   }`}
+  //               >
+  //                   {opt.label}
+  //               </button>
+  //           )
+  //       })}
+  //     </div>
+  //   </div>
+  // );
+
+  // Toggle design mode in iframe
+  const toggleIframeDesignMode = () => {
+    const iframe = document.querySelector('iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        {
+          type: 'TOGGLE_DESIGN_MODE',
+          enabled: !iframeDesignMode,
+          timestamp: Date.now(),
+        },
+        '*',
+      );
+    }
+  };
+
+  console.log('pendingChanges', pendingChanges, toggleStyle, hasStyle);
+
+  // // 保存所有更改
+  // const saveChanges = async () => {
+  //   if (pendingChanges.length === 0) return;
+
+  //   console.log('[Parent] Saving changes...', pendingChanges);
+
+  //   try {
+  //     const response = await fetch('/__appdev_design_mode/batch-update', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         updates: pendingChanges.map(change => ({
+  //           filePath: change.sourceInfo.fileName,
+  //           line: change.sourceInfo.lineNumber,
+  //           column: change.sourceInfo.columnNumber,
+  //           newValue: change.newValue,
+  //           type: change.type,
+  //           originalValue: change.originalValue,
+  //         })),
+  //       }),
+  //     });
+
+  //     if (response.ok) {
+  //       const result = await response.json();
+  //       console.log('[Parent] Batch update success:', result);
+  //       alert(`成功保存 ${result.summary.successful} 个更改！`);
+  //       setPendingChanges([]); // 清空待保存列表
+  //     } else {
+  //       const error = await response.json();
+  //       console.error('[Parent] Batch update failed:', error);
+  //       alert('保存失败，请查看控制台错误信息。');
+  //     }
+  //   } catch (error) {
+  //     console.error('[Parent] Error saving changes:', error);
+  //     alert('保存出错，请检查网络连接。');
+  //   }
+  // };
 
   /**
    * 处理Typography变更
@@ -390,117 +822,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     setIsBorderWidthExpanded(!isBorderWidthExpanded);
   };
 
-  // 颜色选项
-  const colorOptions = [
-    { label: 'primary', value: '#1890ff' },
-    { label: 'secondary', value: '#8c8c8c' },
-    { label: 'success', value: '#52c41a' },
-    { label: 'warning', value: '#faad14' },
-    { label: 'error', value: '#ff4d4f' },
-  ];
-
-  // 背景选项
-  const backgroundOptions = [
-    { label: 'Default', value: 'Default' },
-    { label: 'Transparent', value: 'Transparent' },
-    { label: 'White', value: '#fff' },
-    { label: 'Gray', value: '#8c8c8c' },
-  ];
-
-  // 更多操作菜单
-  const moreMenuItems = [
-    { key: 'copy', label: '复制属性' },
-    { key: 'reset', label: '重置' },
-    { key: 'delete', label: '删除' },
-  ];
-
-  // Typography 选项
-  const typographyOptions = [
-    { label: 'Default', value: 'Default' },
-    { label: 'Sans Serif', value: 'Sans Serif' },
-    { label: 'Serif', value: 'Serif' },
-    { label: 'Monospace', value: 'Monospace' },
-  ];
-
-  // Font Weight 选项
-  const fontWeightOptions = [
-    { label: 'Thin', value: 'Thin' },
-    { label: 'Light', value: 'Light' },
-    { label: 'Regular', value: 'Regular' },
-    { label: 'Medium', value: 'Medium' },
-    { label: 'Semi Bold', value: 'Semi Bold' },
-    { label: 'Bold', value: 'Bold' },
-    { label: 'Extra Bold', value: 'Extra Bold' },
-  ];
-
-  // Font Size 选项
-  const fontSizeOptions = [
-    { label: 'xs', value: 'xs' },
-    { label: 'sm', value: 'sm' },
-    { label: 'md', value: 'md' },
-    { label: 'lg', value: 'lg' },
-    { label: 'xl', value: 'xl' },
-    { label: '2xl', value: '2xl' },
-    { label: '3xl', value: '3xl' },
-  ];
-
-  // Line Height 选项
-  const lineHeightOptions = [
-    { label: '0.75rem', value: '0.75rem' },
-    { label: '1rem', value: '1rem' },
-    { label: '1.25rem', value: '1.25rem' },
-    { label: '1.5rem', value: '1.5rem' },
-    { label: '1.75rem', value: '1.75rem' },
-    { label: '2rem', value: '2rem' },
-    { label: '2.25rem', value: '2.25rem' },
-    { label: '2.5rem', value: '2.5rem' },
-  ];
-
-  // Letter Spacing 选项
-  const letterSpacingOptions = [
-    { label: '-0.05em', value: '-0.05em' },
-    { label: '-0.025em', value: '-0.025em' },
-    { label: '0em', value: '0em' },
-    { label: '0.025em', value: '0.025em' },
-    { label: '0.05em', value: '0.05em' },
-    { label: '0.1em', value: '0.1em' },
-  ];
-
-  // Border Style 选项
-  const borderStyleOptions = [
-    { label: 'Default', value: 'Default' },
-    { label: 'None', value: 'None' },
-    { label: 'Solid', value: 'Solid' },
-    { label: 'Dashed', value: 'Dashed' },
-    { label: 'Dotted', value: 'Dotted' },
-  ];
-
-  // Border Color 选项
-  const borderColorOptions = [
-    { label: 'Default', value: 'Default' },
-    { label: 'Black', value: '#000000' },
-    { label: 'White', value: '#ffffff' },
-    { label: 'Gray', value: '#8c8c8c' },
-  ];
-
-  // Radius 选项
-  const radiusOptions = [
-    { label: 'None', value: 'None' },
-    { label: 'Small', value: 'Small' },
-    { label: 'Medium', value: 'Medium' },
-    { label: 'Large', value: 'Large' },
-    { label: 'Full', value: 'Full' },
-  ];
-
-  // Shadow 选项
-  const shadowOptions = [
-    { label: 'Default', value: 'Default' },
-    { label: 'Small', value: 'Small' },
-    { label: 'Medium', value: 'Medium' },
-    { label: 'Large', value: 'Large' },
-    { label: 'None', value: 'None' },
-  ];
-
   /**
    * 处理对齐方式变更
    */
@@ -522,7 +843,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     const newDecorations = textDecoration.includes(decoration)
       ? textDecoration.filter((d) => d !== decoration)
       : [...textDecoration, decoration];
-    setTextDecoration(newDecorations);
+    // setTextDecoration(newDecorations);
     onChange?.('textDecoration', newDecorations);
   };
 
@@ -553,7 +874,17 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           <MoreOutlined className={cx(styles.moreIcon)} />
         </Dropdown>
       </div>
-
+      <Button
+        type="primary"
+        onClick={toggleIframeDesignMode}
+        className={`px-6 py-2 rounded-lg font-semibold transition-all ${
+          iframeDesignMode
+            ? 'bg-green-500 hover:bg-green-600 text-white'
+            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+        }`}
+      >
+        {iframeDesignMode ? '✓ 设计模式已启用' : '启用设计模式'}
+      </Button>
       {/* 属性配置区域 */}
       <div className={cx(styles.propertiesContainer)}>
         {/* Text Content 配置 */}
@@ -641,8 +972,8 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
               </div>
             </div>
 
-            {/* Alignment */}
             <div className={cx(styles.typographyRow)}>
+              {/* Alignment */}
               <div className={cx(styles.typographyInputGroup)}>
                 <div className={cx(styles.typographyInputLabel)}>Alignment</div>
                 <div className={cx(styles.buttonGroup)}>
@@ -683,6 +1014,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   />
                 </div>
               </div>
+              {/* 文本装饰 */}
               <div className={cx(styles.typographyInputGroup)}>
                 <div className={cx(styles.typographyInputLabel)}>
                   Decoration
