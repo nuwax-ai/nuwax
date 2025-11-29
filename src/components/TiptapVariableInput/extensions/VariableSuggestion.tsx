@@ -926,57 +926,12 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               .run();
 
             // 将光标移动到变量节点之后
-            // 使用 requestAnimationFrame 确保 DOM 已更新
-            requestAnimationFrame(() => {
-              const { state, dispatch } = editor.view;
-              const { selection, doc } = state;
-              const { $from } = selection;
-
-              // 从当前光标位置向前查找变量节点
-              let foundNodePos = -1;
-              let foundNodeSize = 0;
-
-              // 从当前光标位置向前查找（最多查找 200 个字符）
-              const searchRange = 200;
-              const startPos = Math.max(0, $from.pos - searchRange);
-
-              for (let pos = $from.pos; pos >= startPos; pos--) {
-                try {
-                  const resolvedPos = doc.resolve(pos);
-                  // 检查当前深度下的节点
-                  for (let depth = resolvedPos.depth; depth >= 0; depth--) {
-                    const node = resolvedPos.node(depth);
-                    if (
-                      node &&
-                      (node.type.name === 'editableVariable' ||
-                        node.type.name === 'variable')
-                    ) {
-                      const nodeStart = resolvedPos.start(depth);
-                      const nodeEnd = nodeStart + node.nodeSize;
-                      // 确保光标在节点内或节点后
-                      if (nodeStart <= $from.pos && $from.pos <= nodeEnd) {
-                        foundNodePos = nodeStart;
-                        foundNodeSize = node.nodeSize;
-                        break;
-                      }
-                    }
-                  }
-                  if (foundNodePos >= 0) break;
-                } catch (e) {
-                  // 忽略解析错误，继续查找
-                }
-              }
-
-              // 如果找到节点，将光标移动到节点之后
-              if (foundNodePos >= 0 && foundNodeSize > 0) {
-                const targetPos = foundNodePos + foundNodeSize;
-                if (targetPos <= doc.content.size) {
-                  const selection = TextSelection.create(doc, targetPos);
-                  const tr = state.tr.setSelection(selection);
-                  dispatch(tr);
-                }
-              }
-            });
+            // 简化逻辑：Tiptap 的 insertContent 已经正确处理光标位置
+            // 只需要确保编辑器保持焦点
+            setTimeout(() => {
+              const currentPos = editor.state.selection.from;
+              editor.commands.setTextSelection(currentPos);
+            }, 0);
           } else {
             // 不可编辑变量节点：插入原子节点
             editor
