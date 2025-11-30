@@ -3,7 +3,7 @@
  * { 变量下拉列表组件
  */
 
-import useClickOutside from '@/components/SmartVariableInput/hooks/useClickOutside';
+import useClickOutside from '@/hooks/useClickOutside';
 import { Tabs, theme, Tree } from 'antd';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import '../styles.less';
@@ -72,14 +72,6 @@ const VariableList: React.FC<VariableListProps> = ({
   excludeElement,
 }) => {
   const { token } = theme.useToken();
-
-  console.log('VariableList render debug:', {
-    showTabs,
-    activeTab,
-    regularVariablesLength: regularVariables.length,
-    toolVariablesLength: toolVariables.length,
-    treeLength: tree.length,
-  });
 
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
@@ -489,7 +481,7 @@ const VariableList: React.FC<VariableListProps> = ({
     <div ref={containerRef} className="css-var-r0">
       {renderTree(treeData)}
     </div>
-  ); //TODO 这里的 css-var-r0 是一个临时方案
+  );
 };
 
 export default VariableList;

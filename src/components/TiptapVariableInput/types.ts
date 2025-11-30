@@ -100,6 +100,10 @@ export interface TiptapVariableInputProps {
   disableMentions?: boolean;
   /** 是否启用 Markdown 快捷语法（所见即所得），默认关闭 */
   enableMarkdown?: boolean;
+  /** 是否启用可编辑变量节点，默认开启。开启时使用 EditableVariableNode 替代 VariableNode */
+  enableEditableVariables?: boolean;
+  /** 变量实现模式: 'node' | 'mark' | 'text'，默认 'text' */
+  variableMode?: 'node' | 'mark' | 'text';
   /** 获取编辑器实例 */
   getEditor?: (editor: any) => void;
 }
