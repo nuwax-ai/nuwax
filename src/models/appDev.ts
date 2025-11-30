@@ -61,6 +61,16 @@ export default () => {
   // iframe是否加载完毕
   const [isIframeLoaded, setIsIframeLoaded] = useState<boolean>(false);
 
+  // 待处理的变更
+  const [pendingChanges, setPendingChanges] = useState<
+    Array<{
+      type: 'style' | 'content';
+      sourceInfo: any;
+      newValue: string;
+      originalValue?: string;
+    }>
+  >([]);
+
   /**
    * 设置工作区
    */
@@ -240,5 +250,7 @@ export default () => {
     setIframeDesignMode,
     isIframeLoaded,
     setIsIframeLoaded,
+    pendingChanges,
+    setPendingChanges,
   };
 };
