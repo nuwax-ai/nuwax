@@ -1,4 +1,5 @@
 import TiptapVariableInput from '@/components/TiptapVariableInput';
+import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
 import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import { ExpandAltOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
@@ -14,7 +15,7 @@ const cx = classNames.bind(styles);
 
 // 特性开关：是否使用 Tiptap 编辑器
 // 如果遇到问题，将此值设置为 false 可回退到旧版 Input.TextArea
-const USE_TIPTAP_EDITOR = false; //TODO: 先切换回老的版本 下周再切换回来
+const USE_TIPTAP_EDITOR = true; //TODO: 先切换回老的版本 下周再切换回来
 /**
  * TODO:周再切换回来
  * 1. 提交后台时要用 rawValue 而不是 value
@@ -75,7 +76,12 @@ export const ExpandableInputTextarea: React.FC<
       </div>
       {/* 输入框 */}
       {USE_TIPTAP_EDITOR ? (
-        <Form.Item name={inputFieldName}>
+        <Form.Item
+          name={inputFieldName}
+          getValueFromEvent={(value) =>
+            typeof value === 'string' ? extractTextFromHTML(value) : ''
+          }
+        >
           <TiptapVariableInput
             placeholder={placeholder}
             variables={variables}

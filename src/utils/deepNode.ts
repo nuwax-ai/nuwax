@@ -324,6 +324,27 @@ export const findNode = (treeData: BindConfigWithSub[], key: React.Key) => {
   }
 };
 
+// 查找父级节点
+export const findParentNode = (
+  treeData: BindConfigWithSub[],
+  targetKey: React.Key,
+): BindConfigWithSub | null => {
+  for (const node of treeData) {
+    // 如果当前节点的子节点中包含目标节点，返回当前节点
+    if (node.subArgs) {
+      for (const child of node.subArgs) {
+        if (child.key === targetKey) {
+          return node;
+        }
+      }
+      // 递归查找子节点
+      const parent = findParentNode(node.subArgs, targetKey);
+      if (parent) return parent;
+    }
+  }
+  return null;
+};
+
 // 循环设置nameRequired、descRequired, 并获取flag
 // flag: true 表示存在未填写的字段，false 表示不存在未填写的字段
 export const loopInputRequired = (data: BindConfigWithSub[]) => {

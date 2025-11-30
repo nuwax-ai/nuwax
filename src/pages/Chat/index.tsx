@@ -12,6 +12,7 @@ import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
+import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -37,7 +38,6 @@ import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import classNames from 'classnames';
-import { throttle } from 'lodash';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import DropdownChangeName from './DropdownChangeName';
@@ -284,35 +284,13 @@ const Chat: React.FC = () => {
     }
   }, [agentId, defaultAgentDetail]);
 
-  // 在组件挂载时添加滚动事件监听器
-  useEffect(() => {
-    const messageView = messageViewRef.current;
-    if (messageView) {
-      const handleScroll = () => {
-        // 当用户手动滚动时，暂停自动滚动
-        const { scrollTop, scrollHeight, clientHeight } = messageView;
-        if (scrollTop + clientHeight < scrollHeight) {
-          allowAutoScrollRef.current = false;
-          // 清除滚动
-          if (scrollTimeoutRef.current) {
-            clearTimeout(scrollTimeoutRef.current);
-            scrollTimeoutRef.current = null;
-          }
-          setShowScrollBtn(true);
-        } else {
-          // 当用户滚动到底部时，重新允许自动滚动
-          allowAutoScrollRef.current = true;
-          setShowScrollBtn(false);
-        }
-      };
-
-      messageView.addEventListener('wheel', throttle(handleScroll, 300));
-      // 组件卸载时移除滚动事件监听器
-      return () => {
-        messageView.removeEventListener('wheel', throttle(handleScroll, 300));
-      };
-    }
-  }, []);
+  // 使用滚动检测 Hook
+  useConversationScrollDetection(
+    messageViewRef,
+    allowAutoScrollRef,
+    scrollTimeoutRef,
+    setShowScrollBtn,
+  );
 
   useEffect(() => {
     if (id) {
