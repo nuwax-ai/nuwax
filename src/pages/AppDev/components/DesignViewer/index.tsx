@@ -1,8 +1,7 @@
 import SelectList from '@/components/custom/SelectList';
-import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
-import { submitFilesUpdate } from '@/services/appDev';
-import { FileNode } from '@/types/interfaces/appDev';
-import { treeToFlatList } from '@/utils/appDevUtils';
+// import { submitFilesUpdate } from '@/services/appDev';
+// import { FileNode } from '@/types/interfaces/appDev';
+// import { treeToFlatList } from '@/utils/appDevUtils';
 import {
   CompressOutlined,
   ExpandOutlined,
@@ -14,15 +13,7 @@ import {
   UnderlineOutlined,
   UnlockOutlined,
 } from '@ant-design/icons';
-import {
-  Breadcrumb,
-  Button,
-  Dropdown,
-  Input,
-  message,
-  Select,
-  Space,
-} from 'antd';
+import { Breadcrumb, Button, Dropdown, Input, Select, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
@@ -251,13 +242,11 @@ interface DesignViewerProps {
   };
   /** 值变更回调 */
   onChange?: (key: string, value: any) => void;
-  /** 项目 ID */
-  projectId?: string;
-  /** 文件树数据 */
-  files?: FileNode[];
+  // /** 文件树数据 */
+  // files?: FileNode[];
 }
 
-import { applyDesignChanges } from './applyDesignChanges';
+// import { applyDesignChanges } from './applyDesignChanges';
 
 /**
  * 设计查看器组件
@@ -271,8 +260,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   margin = { vertical: 0, horizontal: 0 },
   padding = { vertical: 0, horizontal: 0 },
   onChange,
-  projectId,
-  files = [],
+  // files = [],
 }) => {
   // 字体颜色值
   const [localColor, setLocalColor] = useState<string>('Default');
@@ -364,25 +352,23 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   const [editingContent, setEditingContent] = useState<string>('');
   // 编辑中的类
   const [editingClass, setEditingClass] = useState<string>('');
-  // 待处理的变更
-  const [pendingChanges, setPendingChanges] = useState<
-    Array<{
-      type: 'style' | 'content';
-      sourceInfo: any;
-      newValue: string;
-      originalValue?: string;
-    }>
-  >([]);
+  // // 待处理的变更
+  // const [pendingChanges, setPendingChanges] = useState<
+  //   Array<{
+  //     type: 'style' | 'content';
+  //     sourceInfo: any;
+  //     newValue: string;
+  //     originalValue?: string;
+  //   }>
+  // >([]);
 
-  const { iframeDesignMode, setIframeDesignMode, isIframeLoaded } =
-    useModel('appDev');
-
-  // 保存状态
-  const [isSaving, setIsSaving] = useState(false);
-
-  const { updateFileClassName } = useAppDevFileManagement({
-    projectId: projectId || '',
-  });
+  const {
+    iframeDesignMode,
+    setIframeDesignMode,
+    isIframeLoaded,
+    pendingChanges,
+    setPendingChanges,
+  } = useModel('appDev');
 
   /**
    * 从样式字符串中解析数值（支持px、em、rem等单位）
@@ -930,9 +916,9 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     originalValue?: string,
   ) => {
     if (!selectedElement) return;
-    setPendingChanges((prev) => {
+    setPendingChanges((prev: any) => {
       const existingIndex = prev.findIndex(
-        (item) =>
+        (item: any) =>
           item.type === type &&
           item.sourceInfo.fileName === selectedElement.sourceInfo.fileName &&
           item.sourceInfo.lineNumber === selectedElement.sourceInfo.lineNumber,
@@ -1005,16 +991,16 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
         '*',
       );
 
-      const { fileName, lineNumber, columnNumber } = selectedElement.sourceInfo;
+      // const { fileName, lineNumber, columnNumber } = selectedElement.sourceInfo;
 
-      console.log('selectedElement11111111111111111', selectedElement);
+      // console.log('selectedElement11111111111111111', selectedElement);
 
-      const _fileName = fileName.replace(
-        `/app/project_workspace/${projectId}/`,
-        '',
-      );
+      // const _fileName = fileName.replace(
+      //   `/app/project_workspace/${projectId}/`,
+      //   '',
+      // );
 
-      updateFileClassName(_fileName, debouncedClass, lineNumber, columnNumber);
+      // updateFileClassName(_fileName, debouncedClass, lineNumber, columnNumber);
     }
   }, [debouncedClass]);
 
@@ -1057,108 +1043,108 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   /**
    * 保存所有更改
    */
-  const saveChanges = async () => {
-    if (!projectId) {
-      message.error('缺少项目ID，无法保存');
-      return;
-    }
+  // const saveChanges = async () => {
+  //   if (!projectId) {
+  //     message.error('缺少项目ID，无法保存');
+  //     return;
+  //   }
 
-    if (pendingChanges.length === 0) {
-      message.warning('没有待保存的更改');
-      return;
-    }
+  //   if (pendingChanges.length === 0) {
+  //     message.warning('没有待保存的更改');
+  //     return;
+  //   }
 
-    console.log('[DesignViewer] Saving changes...', pendingChanges);
-    setIsSaving(true);
+  //   console.log('[DesignViewer] Saving changes...', pendingChanges);
+  //   setIsSaving(true);
 
-    try {
-      // 将 pendingChanges 按文件分组
-      const fileChangesMap = new Map<
-        string,
-        Array<{
-          type: 'style' | 'content';
-          sourceInfo: any;
-          newValue: string;
-          originalValue?: string;
-        }>
-      >();
+  //   try {
+  //     // 将 pendingChanges 按文件分组
+  //     const fileChangesMap = new Map<
+  //       string,
+  //       Array<{
+  //         type: 'style' | 'content';
+  //         sourceInfo: any;
+  //         newValue: string;
+  //         originalValue?: string;
+  //       }>
+  //     >();
 
-      // 路径清理正则
-      const pathCleanRegex = /^\/app\/project_workspace\/[^/]+\//;
+  //     // 路径清理正则
+  //     const pathCleanRegex = /^\/app\/project_workspace\/[^/]+\//;
 
-      pendingChanges.forEach((change) => {
-        // 修正文件路径：移除 /app/project_workspace/{projectId}/ 前缀
-        let filePath = change.sourceInfo.fileName;
-        if (pathCleanRegex.test(filePath)) {
-          filePath = filePath.replace(pathCleanRegex, '');
-        }
+  //     pendingChanges.forEach((change: any) => {
+  //       // 修正文件路径：移除 /app/project_workspace/{projectId}/ 前缀
+  //       let filePath = change.sourceInfo.fileName;
+  //       if (pathCleanRegex.test(filePath)) {
+  //         filePath = filePath.replace(pathCleanRegex, '');
+  //       }
 
-        if (!fileChangesMap.has(filePath)) {
-          fileChangesMap.set(filePath, []);
-        }
-        fileChangesMap.get(filePath)!.push(change);
-      });
+  //       if (!fileChangesMap.has(filePath)) {
+  //         fileChangesMap.set(filePath, []);
+  //       }
+  //       fileChangesMap.get(filePath)!.push(change);
+  //     });
 
-      // 2. 获取全量文件列表（扁平化）
-      // 使用 files 属性作为基准，确保包含未修改的文件
-      const allFiles = treeToFlatList(files || []);
-      const filesToUpdate: any[] = [];
+  //     // 2. 获取全量文件列表（扁平化）
+  //     // 使用 files 属性作为基准，确保包含未修改的文件
+  //     const allFiles = treeToFlatList(files || []);
+  //     const filesToUpdate: any[] = [];
 
-      // 3. 遍历全量文件列表，应用修改
-      for (const file of allFiles) {
-        const filePath = file.name; // treeToFlatList 返回的 name 是文件路径(id)
+  //     // 3. 遍历全量文件列表，应用修改
+  //     for (const file of allFiles) {
+  //       const filePath = file.name; // treeToFlatList 返回的 name 是文件路径(id)
 
-        // 检查该文件是否有待保存的修改
-        if (fileChangesMap.has(filePath)) {
-          const changes = fileChangesMap.get(filePath)!;
-          try {
-            const fileContent = file.contents || '';
+  //       // 检查该文件是否有待保存的修改
+  //       if (fileChangesMap.has(filePath)) {
+  //         const changes = fileChangesMap.get(filePath)!;
+  //         try {
+  //           const fileContent = file.contents || '';
 
-            // 应用智能替换逻辑
-            const updatedContent = applyDesignChanges(fileContent, changes);
+  //           // 应用智能替换逻辑
+  //           const updatedContent = applyDesignChanges(fileContent, changes);
 
-            filesToUpdate.push({
-              name: filePath,
-              contents: updatedContent,
-              binary: file.binary || false,
-              sizeExceeded: file.sizeExceeded || false,
-            });
-          } catch (error) {
-            console.error(
-              `[DesignViewer] Error processing file ${filePath}:`,
-              error,
-            );
-            message.error(`处理文件 ${filePath} 时出错`);
-            // 出错时保留原内容，防止文件丢失？或者跳过？
-            // 这里选择保留原内容，避免破坏
-            filesToUpdate.push(file);
-          }
-        } else {
-          // 没有修改的文件，直接添加到更新列表
-          filesToUpdate.push(file);
-        }
-      }
+  //           filesToUpdate.push({
+  //             name: filePath,
+  //             contents: updatedContent,
+  //             binary: file.binary || false,
+  //             sizeExceeded: file.sizeExceeded || false,
+  //           });
+  //         } catch (error) {
+  //           console.error(
+  //             `[DesignViewer] Error processing file ${filePath}:`,
+  //             error,
+  //           );
+  //           message.error(`处理文件 ${filePath} 时出错`);
+  //           // 出错时保留原内容，防止文件丢失？或者跳过？
+  //           // 这里选择保留原内容，避免破坏
+  //           filesToUpdate.push(file);
+  //         }
+  //       } else {
+  //         // 没有修改的文件，直接添加到更新列表
+  //         filesToUpdate.push(file);
+  //       }
+  //     }
 
-      console.log('[DesignViewer] Files to update (full list):', filesToUpdate);
+  //     console.log('[DesignViewer] Files to update (full list):', filesToUpdate);
 
-      // 4. 调用 submitFilesUpdate 接口提交全量列表
-      const response = await submitFilesUpdate(projectId, filesToUpdate);
+  //     // 4. 调用 submitFilesUpdate 接口提交全量列表
+  //     const response = await submitFilesUpdate(projectId, filesToUpdate);
 
-      if (response.code === '200') {
-        message.success(`成功保存！`);
-        setPendingChanges([]); // 清空待保存列表
-        console.log('[DesignViewer] Batch update success:', response);
-      } else {
-        message.error('保存失败，请查看控制台错误信息');
-        console.error('[DesignViewer] Batch update failed:', response);
-      }
-    } catch (error) {
-      console.error('[DesignViewer] Error saving changes:', error);
-      message.error('保存出错，请检查网络连接');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  //     if (response.code === '200') {
+  //       message.success(`成功保存！`);
+  //       setPendingChanges([]); // 清空待保存列表
+  //       console.log('[DesignViewer] Batch update success:', response);
+  //     } else {
+  //       message.error('保存失败，请查看控制台错误信息');
+  //       console.error('[DesignViewer] Batch update failed:', response);
+  //     }
+  //   } catch (error) {
+  //     console.error('[DesignViewer] Error saving changes:', error);
+  //     message.error('保存出错，请检查网络连接');
+  //   } finally {
+  //     setIsSaving(false);
+  //   }
+  // };
 
   /**
    * 处理Typography变更
@@ -1401,7 +1387,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
       </Button>
 
       {/* 保存按钮 */}
-      <Button
+      {/* <Button
         type="primary"
         onClick={saveChanges}
         loading={isSaving}
@@ -1417,7 +1403,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           : pendingChanges.length > 0
           ? `保存 (${pendingChanges.length})`
           : '保存'}
-      </Button>
+      </Button> */}
 
       {/* 属性配置区域 */}
       <div className={cx(styles.propertiesContainer)}>

@@ -1429,9 +1429,9 @@ const AppDev: React.FC = () => {
               />
             </div>
 
-            <DesignViewer projectId={projectId} files={currentDisplayFiles} />
+            {/* <DesignViewer projectId={projectId} files={currentDisplayFiles} /> */}
             {/* 设计模式区域 */}
-            <DesignViewer projectId={projectId || ''} />
+            <DesignViewer />
             {/* 右侧代码编辑器区域 */}
             <div className={styles.rightPanel}>
               {/* 编辑器头部bar */}
@@ -1595,6 +1595,7 @@ const AppDev: React.FC = () => {
                       {/* 内容区域 */}
                       <div className={styles.editorContent}>
                         <ContentViewer
+                          files={currentDisplayFiles}
                           projectInfo={
                             projectInfo.projectInfoState?.projectInfo
                           }
