@@ -39,25 +39,6 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
   },
 
   addProseMirrorPlugins() {
-    // 调试：检查扩展是否被调用
-    console.log('VariableSuggestion addProseMirrorPlugins - called');
-    console.log(
-      'VariableSuggestion addProseMirrorPlugins - this.options:',
-      this.options,
-    );
-    console.log(
-      'VariableSuggestion addProseMirrorPlugins - variables:',
-      this.options.variables,
-    );
-    console.log(
-      'VariableSuggestion addProseMirrorPlugins - variables length:',
-      this.options.variables?.length,
-    );
-    console.log(
-      'VariableSuggestion addProseMirrorPlugins - editor:',
-      this.editor,
-    );
-
     // 辅助函数：截断 query，以 } 或空格为分隔符
     const truncateQuery = (query: string): string => {
       if (!query) return '';
@@ -289,17 +270,6 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             const hasTools = toolVars.length > 0;
             const showTabs = hasRegular && hasTools;
 
-            console.log('VariableSuggestion onStart debug:', {
-              itemsLength: items.length,
-              hasRegular,
-              hasTools,
-              showTabs,
-              regularVarsLength: regularVars.length,
-              toolVarsLength: toolVars.length,
-              firstItemKey: items[0]?.key,
-              keys: items.map((n: any) => n.key),
-            });
-
             // 初始 activeTab
             let activeTab = 'variables';
             if (!hasRegular && hasTools) {
@@ -377,7 +347,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                   });
                 }
               } catch (error) {
-                console.error('VariableSuggestion handleSelect error:', error);
+                // 静默处理错误，避免影响用户体验
               } finally {
                 // 清理 - 确保总是执行
                 handleClose();
@@ -451,7 +421,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                   // 使用 React 18 root 渲染
                   root.render(content);
                 } catch (error) {
-                  console.error('VariableSuggestion render error:', error);
+                  // 静默处理错误，避免影响用户体验
                 }
               }
             };
@@ -890,37 +860,12 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
           // 检查下一个字符是否是 }，如果是则包含它
           const { state } = editor.view;
           const doc = state.doc;
-          // 检查从 from 到 to+3 的文本，确保能检测到可能的 }
-          const textBeforeDelete = doc.textBetween(
-            from,
-            Math.min(to + 3, doc.content.size),
-          );
           const nextChar =
             to + 1 <= doc.content.size ? doc.textBetween(to, to + 1) : '';
           // 也检查 to+1 位置的字符，因为 AutoCompleteBraces 可能已经插入了 }
           const charAfterTo =
             to + 2 <= doc.content.size ? doc.textBetween(to + 1, to + 2) : '';
           const hasClosingBrace = nextChar === '}' || charAfterTo === '}';
-
-          console.log('VariableSuggestion command - range:', { from, to });
-          console.log(
-            'VariableSuggestion command - text before delete:',
-            textBeforeDelete,
-          );
-          console.log(
-            'VariableSuggestion command - nextChar:',
-            nextChar,
-            nextChar ? `(${nextChar.charCodeAt(0)})` : '(empty)',
-          );
-          console.log(
-            'VariableSuggestion command - charAfterTo:',
-            charAfterTo,
-            charAfterTo ? `(${charAfterTo.charCodeAt(0)})` : '(empty)',
-          );
-          console.log(
-            'VariableSuggestion command - hasClosingBrace:',
-            hasClosingBrace,
-          );
 
           // 如果下一个字符是 }，扩展 range 以包含它
           if (hasClosingBrace) {
@@ -931,10 +876,6 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             } else if (charAfterTo === '}') {
               to = to + 2; // 包含 }（跳过中间的一个字符）
             }
-            console.log(
-              'VariableSuggestion command - extended to to include }:',
-              to,
-            );
           }
 
           // 删除 { 或 {} 并插入变量节点/标记/文本

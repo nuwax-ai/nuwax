@@ -317,10 +317,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
               }
             }
           } catch (error) {
-            console.warn(
-              'TiptapVariableInput: Failed to restore cursor position',
-              error,
-            );
+            // 静默处理错误，避免影响用户体验
             // 如果恢复失败，恢复滚动位置
             if (scrollContainer) {
               scrollContainer.scrollTop = savedScrollTop;
@@ -346,10 +343,6 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
         variableSuggestion.options.variables = variableTree;
         // 强制更新插件
         editor.view.dispatch(editor.state.tr);
-      } else {
-        console.warn(
-          'TiptapVariableInput: variableSuggestion extension not found',
-        );
       }
     }
   }, [editor, variableTree]);
