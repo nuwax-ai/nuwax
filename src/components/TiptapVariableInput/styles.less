@@ -199,34 +199,18 @@
     outline: none; // 移除默认轮廓
   }
 
-  // 可编辑变量节点容器中的大括号样式（真实 DOM 元素）
-  // 大括号元素是可编辑变量节点的兄弟元素
-  span:has(+ .variable-block-chip-editable),
-  .variable-block-chip-editable + span {
-    color: @colorInfo !important;
-    font-family: @fontFamilyCode;
-    font-size: inherit;
-    line-height: inherit;
-    vertical-align: baseline;
-    user-select: none;
-  }
-
-  // 移除 ::before 和 ::after 伪元素，改用真实 DOM 元素
-  // .variable-block-chip-editable::before {
-  //   content: '{{' !important;
-  //   color: @colorInfo !important;
-  // }
-
-  // .variable-block-chip-editable::after {
-  //   content: '}}' !important;
-  //   color: @colorInfo !important;
-  // }
-
   // 可编辑变量节点聚焦状态（保持仅颜色高亮）
   .variable-block-chip-editable:focus {
     background-color: transparent;
     border: none;
     outline: none;
+  }
+
+  // 方案C：纯文本装饰样式
+  .variable-text-decoration {
+    color: @colorInfo;
+    font-family: @fontFamilyCode;
+    background-color: transparent;
   }
 
   // ToolBlock 节点样式

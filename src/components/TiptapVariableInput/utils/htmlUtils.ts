@@ -167,7 +167,8 @@ export const extractTextFromHTML = (html: string): string => {
 
   // 清理多余的连续换行（最多保留两个连续换行）
   // 注意：不使用 trim()，保留首尾的换行符以保留空行
-  return result.replace(/\n{3,}/g, '\n\n');
+  // 同时移除零宽度空格 (\u200B)
+  return result.replace(/\n{3,}/g, '\n\n').replace(/\u200B/g, '');
 };
 
 /**
@@ -218,12 +219,14 @@ export const cleanHTMLParagraphs = (
  * @param text 纯文本内容或 HTML 内容
  * @param disableMentions 是否禁用 mentions 转换
  * @param enableEditableVariables 是否启用可编辑变量节点，默认开启
+ * @param variableMode 变量模式：'node' | 'mark' | 'text'，默认 'text'
  * @returns Tiptap HTML 内容
  */
 export const convertTextToHTML = (
   text: string,
   disableMentions: boolean = false,
   enableEditableVariables: boolean = true,
+  variableMode: 'node' | 'mark' | 'text' = 'text',
 ): string => {
   if (!text) return '';
 
@@ -249,15 +252,18 @@ export const convertTextToHTML = (
   );
 
   // 转换 {{variable}} 格式
-  // 根据 enableEditableVariables 配置决定使用可编辑或不可编辑节点
-  // 在节点前后添加零宽度空格，确保光标可以在节点前后放置
-  const variableClass = enableEditableVariables
-    ? 'variable-block-chip-editable'
-    : 'variable-block-chip';
-  html = html.replace(
-    /\{\{([^}]+)\}\}/g,
-    `\u200B<span class="${variableClass}" data-key="$1" data-label="$1" data-variable-name="$1">$1</span>\u200B`,
-  );
+  // 如果是 'text' 模式，不进行转换，保留纯文本
+  if (variableMode !== 'text') {
+    // 根据 enableEditableVariables 配置决定使用可编辑或不可编辑节点
+    // 移除零宽度空格，避免光标跳动和输出污染
+    const variableClass = enableEditableVariables
+      ? 'variable-block-chip-editable'
+      : 'variable-block-chip';
+    html = html.replace(
+      /\{\{([^}]+)\}\}/g,
+      `<span class="${variableClass}" data-key="$1" data-label="$1" data-variable-name="$1">$1</span>`,
+    );
+  }
 
   // 转换 @mentions 格式（简单匹配，实际应该更智能）
   if (!disableMentions) {
