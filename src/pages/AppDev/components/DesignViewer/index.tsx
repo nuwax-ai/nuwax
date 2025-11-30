@@ -1,4 +1,5 @@
 import SelectList from '@/components/custom/SelectList';
+import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
 import { submitFilesUpdate } from '@/services/appDev';
 import { FileNode } from '@/types/interfaces/appDev';
 import { treeToFlatList } from '@/utils/appDevUtils';
@@ -378,6 +379,10 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
 
   // 保存状态
   const [isSaving, setIsSaving] = useState(false);
+
+  const { updateFileClassName } = useAppDevFileManagement({
+    projectId: projectId || '',
+  });
 
   /**
    * 从样式字符串中解析数值（支持px、em、rem等单位）
@@ -884,24 +889,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           // }
           break;
 
-        // case 'ELEMENT_COMPUTED_STYLES':
-        //   // 接收到iframe返回的计算样式
-        //   if (payload.computedStyles) {
-        //     updateLocalStatesFromStyles(payload.computedStyles);
-        //   }
-        //   break;
-
-        // case 'TAILWIND_COLOR_RESPONSE':
-        //   // 接收到iframe返回的 Tailwind 颜色值
-        //   if (payload.color) {
-        //     if (payload.className?.startsWith('text-')) {
-        //       setLocalColor(payload.color);
-        //     } else if (payload.className?.startsWith('bg-')) {
-        //       // setLocalBackground(payload.color);
-        //     }
-        //   }
-        //   break;
-
         case 'ELEMENT_DESELECTED':
           setSelectedElement(null);
           console.log('[Parent] Element deselected');
@@ -1017,6 +1004,17 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
         },
         '*',
       );
+
+      const { fileName, lineNumber, columnNumber } = selectedElement.sourceInfo;
+
+      console.log('selectedElement11111111111111111', selectedElement);
+
+      const _fileName = fileName.replace(
+        `/app/project_workspace/${projectId}/`,
+        '',
+      );
+
+      updateFileClassName(_fileName, debouncedClass, lineNumber, columnNumber);
     }
   }, [debouncedClass]);
 
@@ -1038,60 +1036,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   const hasStyle = (style: string) => {
     return editingClass.split(' ').includes(style);
   };
-
-  // // UI Controls
-  // const renderColorPicker = (prefix: string, colors: string[], label: string) => (
-  //   <div className="mb-4">
-  //     <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-  //     <div className="flex flex-wrap gap-2">
-  //       {colors.map(color => {
-  //         const styleClass = `${prefix}-${color}`;
-  //         const isActive = hasStyle(styleClass);
-  //         return (
-  //           <button
-  //             key={color}
-  //             onClick={() => toggleStyle(styleClass, new RegExp(`^${prefix}-[a-z]+(-\\d+)?$`))}
-  //             className={`w-8 h-8 rounded-full border-2 transition-all ${
-  //               isActive ? 'border-gray-900 scale-110' : 'border-transparent hover:scale-105'
-  //             } ${styleClass.replace('text-', 'bg-')}`} // Use bg color for preview
-  //             title={color}
-  //           />
-  //         );
-  //       })}
-  //       <button
-  //           onClick={() => toggleStyle('', new RegExp(`^${prefix}-[a-z]+(-\\d+)?$`))}
-  //           className="px-2 py-1 text-xs text-gray-500 border border-gray-300 rounded hover:bg-gray-100"
-  //       >
-  //           清除
-  //       </button>
-  //     </div>
-  //   </div>
-  // );
-
-  // const renderSelect = (prefix: string, options: { label: string; value: string }[], label: string) => (
-  //   <div className="mb-4">
-  //     <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-  //     <div className="flex flex-wrap gap-2">
-  //       {options.map(opt => {
-  //           const styleClass = opt.value ? `${prefix}-${opt.value}` : '';
-  //           const isActive = styleClass ? hasStyle(styleClass) : !options.some(o => o.value && hasStyle(`${prefix}-${o.value}`));
-  //           return (
-  //               <button
-  //                   key={opt.label}
-  //                   onClick={() => toggleStyle(styleClass, new RegExp(`^${prefix}(-[a-z0-9]+)?$`))}
-  //                   className={`px-3 py-1 text-sm rounded border transition-all ${
-  //                       isActive
-  //                       ? 'bg-blue-600 text-white border-blue-600'
-  //                       : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-  //                   }`}
-  //               >
-  //                   {opt.label}
-  //               </button>
-  //           )
-  //       })}
-  //     </div>
-  //   </div>
-  // );
 
   // Toggle design mode in iframe
   const toggleIframeDesignMode = () => {
@@ -1223,6 +1167,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     setLocalTypography(value);
     onChange?.('typography', value);
   };
+
   /**
    * 处理文本内容变更
    */
