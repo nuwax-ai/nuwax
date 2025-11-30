@@ -10,7 +10,10 @@ import {
   GlobalOutlined,
   ReloadOutlined,
   ThunderboltOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
+import { Button } from 'antd';
+import classNames from 'classnames';
 import dayjs from 'dayjs';
 import html2canvas from 'html2canvas';
 import React, {
@@ -20,9 +23,10 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
 import styles from './index.less';
 
+const cx = classNames.bind(styles);
 interface PreviewProps {
   devServerUrl?: string;
   projectInfo?: ProjectDetailData | null;
@@ -36,10 +40,18 @@ interface PreviewProps {
   serverMessage?: string | null;
   /** 服务器错误码 */
   serverErrorCode?: string | null;
+  /** 文件是否被修改 */
+  isFileModified?: boolean;
+  /** 是否正在保存文件 */
+  isSavingFile?: boolean;
   /** 启动开发服务器回调 */
   onStartDev?: () => void;
   /** 重启开发服务器回调 */
   onRestartDev?: () => void;
+  /** 保存文件回调 */
+  onSaveFile?: () => void;
+  /** 取消编辑回调（重置） */
+  onCancelEdit?: () => void;
   /** 白屏且 iframe 内错误时触发 AI Agent 自动处理回调
    * @param errorMessage 错误消息，为空字符串表示只有白屏没有错误
    * @param errorType 错误类型，用于区分不同的错误场景
@@ -76,8 +88,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       startError,
       serverMessage,
       serverErrorCode,
+      isFileModified = false,
+      isSavingFile = false,
       onStartDev,
       onRestartDev,
+      onSaveFile,
+      onCancelEdit,
       onWhiteScreenOrIframeError,
     },
     ref,
@@ -87,6 +103,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [retrying, setRetrying] = useState(false);
+
+    const { iframeDesignMode, setIsIframeLoaded } = useModel('appDev');
 
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -661,6 +679,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const handleIframeLoad = useCallback(() => {
       setIsLoading(false);
       setLoadError(null);
+      // 设置iframe加载完毕
+      setIsIframeLoaded(true);
 
       // 清空之前收集的错误信息
       devMonitorErrorsRef.current = [];
@@ -988,7 +1008,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     }, []);
 
     return (
-      <div className={`${styles.preview} ${className || ''}`}>
+      <div className={cx(`relative ${styles.preview} ${className || ''}`)}>
         <div className={styles.previewContainer}>
           {devServerUrl &&
           !loadError &&
@@ -1019,6 +1039,33 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             />
           )}
         </div>
+        {/* 未保存更改提示栏 todo 优化 : 还需要根据文件是否已被修改过来决定是否显示*/}
+        {(iframeDesignMode || isFileModified) && (
+          <div
+            className={cx(styles['unsaved-changes-bar'], {
+              [styles.show]: iframeDesignMode || isFileModified,
+            })}
+          >
+            <WarningOutlined className={styles['warning-icon']} />
+            <span className={styles['unsaved-text']}>Unsaved Changes</span>
+            <Button
+              type="text"
+              className={styles['reset-button']}
+              onClick={onCancelEdit}
+              disabled={isSavingFile}
+            >
+              重置
+            </Button>
+            <Button
+              type="primary"
+              className={styles['save-button']}
+              onClick={onSaveFile}
+              loading={isSavingFile}
+            >
+              保存
+            </Button>
+          </div>
+        )}
       </div>
     );
   },
