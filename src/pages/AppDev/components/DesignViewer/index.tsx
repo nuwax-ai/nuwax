@@ -1146,7 +1146,9 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    */
   const handleColorChange = (color: string) => {
     setLocalColor(color);
-    onChange?.('color', color);
+    const itemColor = colorOptions.find((item) => item.value === color);
+    const styleClass = `text-${itemColor?.label}`;
+    toggleStyle(styleClass, new RegExp(`^text-[a-z]+(-\\d+)?$`));
   };
 
   /**
@@ -1154,15 +1156,19 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    */
   const handleBorderColorChange = (color: string) => {
     setBorderColor(color);
-    onChange?.('borderColor', color);
+    const itemColor = colorOptions.find((item) => item.value === color);
+    const styleClass = `border-${itemColor?.label}`;
+    toggleStyle(styleClass, new RegExp(`^border-[a-z]+(-\\d+)?$`));
   };
 
   /**
    * 处理背景变更
    */
-  const handleBackgroundChange = (value: string) => {
-    setLocalBackground(value);
-    onChange?.('background', value);
+  const handleBackgroundChange = (color: string) => {
+    setLocalBackground(color);
+    const itemColor = colorOptions.find((item) => item.value === color);
+    const styleClass = `bg-${itemColor?.label}`;
+    toggleStyle(styleClass, new RegExp(`^bg-[a-z]+(-\\d+)?$`));
   };
 
   /**
