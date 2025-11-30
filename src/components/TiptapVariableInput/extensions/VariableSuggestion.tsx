@@ -17,6 +17,8 @@ export interface VariableSuggestionOptions {
   onSelect?: (item: VariableSuggestionItem) => void;
   /** 是否启用可编辑变量节点，默认开启 */
   enableEditableVariables?: boolean;
+  /** 变量实现模式: 'node' | 'mark' | 'text'，默认 'text' */
+  variableMode?: 'node' | 'mark' | 'text';
 }
 
 /**
@@ -32,6 +34,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
       searchText: '',
       onSelect: undefined,
       enableEditableVariables: true, // 默认开启可编辑模式
+      variableMode: 'text', // 默认使用纯文本模式（方案C）
     };
   },
 
@@ -99,6 +102,37 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
       // 默认值是 [' ']，只允许空格作为前缀
       // 设置为 null 表示允许所有字符作为前缀，这样 "121212{" 也能触发
       allowedPrefixes: null, // null 表示允许所有字符作为前缀
+      allow: ({ state }) => {
+        // 检查光标位置，避免在特定情况下显示建议框
+        const { $from } = state.selection;
+
+        // 使用 textBetween 获取光标前后的文本，这在文本节点内部也能正常工作
+        // nodeBefore/nodeAfter 在文本节点内部通常为 null，导致判断失效
+        const textBefore = state.doc.textBetween(
+          Math.max(0, $from.pos - 2),
+          $from.pos,
+          '\n',
+          '\n',
+        );
+        const textAfter = state.doc.textBetween(
+          $from.pos,
+          Math.min(state.doc.content.size, $from.pos + 2),
+          '\n',
+          '\n',
+        );
+
+        // 如果光标前一个字符是 } 或前两个字符是 }}，不显示
+        if (textBefore.endsWith('}') || textBefore.endsWith('}}')) {
+          return false;
+        }
+
+        // 如果光标后一个字符是 { 或后两个字符是 {{，不显示
+        if (textAfter.startsWith('{') || textAfter.startsWith('{{')) {
+          return false;
+        }
+
+        return true;
+      },
       items: ({ query }) => {
         // 从 options 获取最新的 variables（支持动态更新）
         const variables = this.options.variables || [];
@@ -553,63 +587,63 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               }
 
               // 处理左右箭头键切换 tab
-              if (currentShowTabs) {
-                if (event.key === 'ArrowLeft') {
-                  event.preventDefault();
-                  // 左箭头：切换到左边的 tab（tools -> variables）
-                  if (currentActiveTab === 'tools') {
-                    const newTab = 'variables';
-                    popup.activeTab = newTab;
-                    const newTree = getCurrentTree(
-                      newTab,
-                      currentRegularVars,
-                      currentToolVars,
-                    );
-                    popup.flatItems = flattenTree(newTree);
-                    popup.selectedIndex = 0;
+              // if (currentShowTabs) {
+              // if (event.key === 'ArrowLeft') {
+              //   event.preventDefault();
+              //   // 左箭头：切换到左边的 tab（tools -> variables）
+              //   if (currentActiveTab === 'tools') {
+              //     const newTab = 'variables';
+              //     popup.activeTab = newTab;
+              //     const newTree = getCurrentTree(
+              //       newTab,
+              //       currentRegularVars,
+              //       currentToolVars,
+              //     );
+              //     popup.flatItems = flattenTree(newTree);
+              //     popup.selectedIndex = 0;
 
-                    updateRender(
-                      0,
-                      popup.flatItems,
-                      newTree,
-                      newTab,
-                      currentRegularVars,
-                      currentToolVars,
-                      currentShowTabs,
-                      currentSearchText,
-                    );
-                  }
-                  return;
-                }
+              //     updateRender(
+              //       0,
+              //       popup.flatItems,
+              //       newTree,
+              //       newTab,
+              //       currentRegularVars,
+              //       currentToolVars,
+              //       currentShowTabs,
+              //       currentSearchText,
+              //     );
+              //   }
+              //   return;
+              // }
 
-                if (event.key === 'ArrowRight') {
-                  event.preventDefault();
-                  // 右箭头：切换到右边的 tab（variables -> tools）
-                  if (currentActiveTab === 'variables') {
-                    const newTab = 'tools';
-                    popup.activeTab = newTab;
-                    const newTree = getCurrentTree(
-                      newTab,
-                      currentRegularVars,
-                      currentToolVars,
-                    );
-                    popup.flatItems = flattenTree(newTree);
-                    popup.selectedIndex = 0;
+              // if (event.key === 'ArrowRight') {
+              //   event.preventDefault();
+              //   // 右箭头：切换到右边的 tab（variables -> tools）
+              //   if (currentActiveTab === 'variables') {
+              //     const newTab = 'tools';
+              //     popup.activeTab = newTab;
+              //     const newTree = getCurrentTree(
+              //       newTab,
+              //       currentRegularVars,
+              //       currentToolVars,
+              //     );
+              //     popup.flatItems = flattenTree(newTree);
+              //     popup.selectedIndex = 0;
 
-                    updateRender(
-                      0,
-                      popup.flatItems,
-                      newTree,
-                      newTab,
-                      currentRegularVars,
-                      currentToolVars,
-                      currentShowTabs,
-                      currentSearchText,
-                    );
-                  }
-                  return;
-                }
-              }
+              //     updateRender(
+              //       0,
+              //       popup.flatItems,
+              //       newTree,
+              //       newTab,
+              //       currentRegularVars,
+              //       currentToolVars,
+              //       currentShowTabs,
+              //       currentSearchText,
+              //     );
+              //   }
+              //   return;
+              // }
+              // }
             };
 
             // 获取 CSS 变量值的辅助函数（从 Ant Design 主题系统）
@@ -903,35 +937,75 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             );
           }
 
-          // 删除 { 或 {} 并插入变量节点
-          if (useEditable) {
-            // 可编辑变量节点：插入包含文本内容的节点
-            editor
-              .chain()
-              .focus()
-              .deleteRange({ from, to })
-              .insertContent({
-                type: 'editableVariable',
-                attrs: {
-                  key: props.attrs?.key || props.key || '',
-                  label: props.attrs?.label || props.label || '',
-                },
-                content: [
-                  {
-                    type: 'text',
-                    text: props.attrs?.key || props.key || '',
-                  },
-                ],
-              })
-              .run();
+          // 删除 { 或 {} 并插入变量节点/标记/文本
+          const variableKey = props.attrs?.key || props.key || '';
+          const variableText = '{{' + variableKey + '}}';
+          const variableMode = this.options.variableMode || 'text';
 
-            // 将光标移动到变量节点之后
-            // 简化逻辑：Tiptap 的 insertContent 已经正确处理光标位置
-            // 只需要确保编辑器保持焦点
-            setTimeout(() => {
-              const currentPos = editor.state.selection.from;
-              editor.commands.setTextSelection(currentPos);
-            }, 0);
+          if (useEditable) {
+            if (variableMode === 'text') {
+              // 方案C：纯文本模式
+              // 直接插入 {{variable}} 文本，依赖 VariableTextDecoration 自动应用样式
+              editor
+                .chain()
+                .focus()
+                .deleteRange({ from, to })
+                .insertContent(variableText)
+                .run();
+
+              // 将光标移到末尾
+              setTimeout(() => {
+                editor.commands.setTextSelection(from + variableText.length);
+              }, 0);
+            } else if (variableMode === 'mark') {
+              // 方案B：Mark模式
+              // 插入带标记的文本
+              editor
+                .chain()
+                .focus()
+                .deleteRange({ from, to })
+                .insertContent(variableText)
+                .run();
+
+              // 将刚插入的文本标记为 editableVariable
+              const insertPos = from;
+              const insertEnd = from + variableText.length;
+
+              editor
+                .chain()
+                .setTextSelection({ from: insertPos, to: insertEnd })
+                .setMark('editableVariable', {
+                  key: variableKey,
+                  label: props.attrs?.label || props.label || '',
+                })
+                .setTextSelection(insertEnd) // 将光标移到末尾
+                .run();
+            } else {
+              // 方案A：Node模式（保留作为备选）
+              editor
+                .chain()
+                .focus()
+                .deleteRange({ from, to })
+                .insertContent({
+                  type: 'editableVariable',
+                  attrs: {
+                    key: variableKey,
+                    label: props.attrs?.label || props.label || '',
+                  },
+                  content: [
+                    {
+                      type: 'text',
+                      text: variableText,
+                    },
+                  ],
+                })
+                .run();
+
+              setTimeout(() => {
+                const currentPos = editor.state.selection.from;
+                editor.commands.setTextSelection(currentPos);
+              }, 0);
+            }
           } else {
             // 不可编辑变量节点：插入原子节点
             editor
