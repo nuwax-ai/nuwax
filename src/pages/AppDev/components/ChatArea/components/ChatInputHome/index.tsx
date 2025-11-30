@@ -2,13 +2,13 @@ import SvgIcon from '@/components/base/SvgIcon';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import SelectList from '@/components/custom/SelectList';
-import useClickOutside from '@/components/SmartVariableInput/hooks/useClickOutside';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   MAX_IMAGE_COUNT,
   UPLOAD_FILE_ACTION,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import useClickOutside from '@/hooks/useClickOutside';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { ModelConfig } from '@/types/interfaces/appDev';
