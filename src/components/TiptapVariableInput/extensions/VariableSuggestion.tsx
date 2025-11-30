@@ -10,6 +10,7 @@ import { ConfigProvider } from 'antd';
 import { createRoot } from 'react-dom/client';
 import VariableList from '../components/VariableList';
 import type { VariableSuggestionItem, VariableTreeNode } from '../types';
+import { extractTextFromHTML } from '../utils/htmlUtils';
 
 export interface VariableSuggestionOptions {
   variables: VariableTreeNode[];
@@ -83,63 +84,199 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
       // 默认值是 [' ']，只允许空格作为前缀
       // 设置为 null 表示允许所有字符作为前缀，这样 "121212{" 也能触发
       allowedPrefixes: null, // null 表示允许所有字符作为前缀
-      allow: ({ state }) => {
+      allow: ({ state, editor }) => {
         // 检查光标位置，避免在特定情况下显示建议框
+        // 使用提取的文本内容来判断，因为 {{ 或 }} 可能跨元素
         const { $from } = state.selection;
 
-        // 扩大检查范围，检查光标前是否有已完成的变量引用（}}）
-        // 即使中间有其他文本，只要光标前有 }}，且之后没有未闭合的 {{，就不显示
-        const checkRange = 100; // 扩大检查范围到100个字符
-        const textBefore = state.doc.textBetween(
-          Math.max(0, $from.pos - checkRange),
-          $from.pos,
-          '\n',
-          '\n',
-        );
-        const textAfter = state.doc.textBetween(
-          $from.pos,
-          Math.min(state.doc.content.size, $from.pos + checkRange),
-          '\n',
-          '\n',
-        );
+        try {
+          // 获取光标前的文档文本（快速检查）
+          const docTextBefore = state.doc.textBetween(
+            Math.max(0, $from.pos - 10),
+            $from.pos,
+            '\n',
+            '\n',
+          );
+          const docTextAfter = state.doc.textBetween(
+            $from.pos,
+            Math.min(state.doc.content.size, $from.pos + 10),
+            '\n',
+            '\n',
+          );
 
-        // 如果光标前一个字符是 } 或前两个字符是 }}，不显示
-        // 这表示光标紧跟在已完成的变量引用之后
-        const recentBefore = textBefore.slice(-2);
-        if (recentBefore.endsWith('}') || recentBefore.endsWith('}}')) {
-          return false;
-        }
-
-        // 检查光标前是否有已完成的变量引用（}}）
-        // 从后向前查找最后一个 }} 的位置
-        const lastClosingBrace = textBefore.lastIndexOf('}}');
-        if (lastClosingBrace !== -1) {
-          // 找到了 }}，检查它之后是否还有未闭合的 {{
-          const afterClosingBrace = textBefore.substring(lastClosingBrace + 2);
-          const hasUnclosedOpening = afterClosingBrace.indexOf('{{') !== -1;
-
-          // 如果 }} 之后没有 {{，说明光标在一个已完成的变量引用之后，不应该触发
-          // 例如：{{arrary_object}}abc{ 这种情况
-          if (!hasUnclosedOpening) {
+          // 新增检查：如果光标前一个字符是字母或数字，说明在普通文本中间，不应该触发
+          // 例如：12dsds212| 输入 { 时不应该触发
+          const charBeforeCursor = docTextBefore.slice(-1);
+          if (charBeforeCursor && /[a-zA-Z0-9]/.test(charBeforeCursor)) {
             return false;
           }
-        }
 
-        // 如果光标后一个字符是 { 或后两个字符是 {{，不显示
-        const recentAfter = textAfter.slice(0, 2);
-        if (recentAfter.startsWith('{') || recentAfter.startsWith('{{')) {
-          return false;
-        }
+          // 快速检查：如果文档文本末尾是 }}，且距离光标很近（2个字符内），不显示
+          // 但是如果 }} 和光标之间有其他内容，应该允许显示（例如：{{xxx}}{|{{yy}}）
+          const recentBefore = docTextBefore.slice(-2);
+          if (recentBefore.endsWith('}') || recentBefore.endsWith('}}')) {
+            // 检查 }} 是否紧跟在光标前（没有其他内容）
+            // 如果 }} 距离光标超过2个字符，说明中间有其他内容，应该允许显示
+            const lastClosingBrace = docTextBefore.lastIndexOf('}}');
+            if (lastClosingBrace !== -1) {
+              const distanceFromEnd = docTextBefore.length - lastClosingBrace;
+              // 只有当 }} 紧跟在光标前（2个字符内）时，才进一步检查
+              if (distanceFromEnd <= 2) {
+                // 检查 }} 后面是否紧跟 {{（允许在两个紧邻的变量之间插入）
+                // 例如：{{xxx}}{|{{yy}} - 允许
+                // 例如：{{xxx}}|zzz{{yy}} - 不允许（中间有 zzz）
+                const afterClosingBrace = docTextBefore.substring(
+                  lastClosingBrace + 2,
+                );
 
-        // 检查光标前是否有 }}，且光标后是否有 {{
-        // 如果两者都存在，说明光标在 }}...{{ 之间，不应该显示
-        // 例如：}}xxx|xx{{ 这种情况
-        if (textBefore.includes('}}') && textAfter.includes('{{')) {
-          return false;
-        }
+                // 检查光标后面是否紧跟 {{
+                const textAfterCursor = docTextAfter.slice(0, 2);
 
-        // 其他情况都允许显示变量引用框
-        return true;
+                if (
+                  afterClosingBrace === '{' &&
+                  textAfterCursor.startsWith('{')
+                ) {
+                  // }}{{{ 模式：两个变量紧邻，允许在中间插入
+                  // 例如：{{xxx}}{|{{yy}}
+                } else {
+                  // 其他情况：阻止触发
+                  // 包括：{{xxx}}| (后面不是 {{)
+                  // 包括：{{xxx}}|zzz{{yy}} (后面不是紧跟 {{)
+                  return false;
+                }
+              }
+            } else if (recentBefore.endsWith('}')) {
+              // 单个 } 紧跟在光标前，也阻止显示
+              return false;
+            }
+          }
+
+          // 不检查光标后的文本，允许在 {{xxx}}{|{{yy}} 这种情况下触发建议
+          // 之前的逻辑过于严格，阻止了在两个变量之间插入新变量的场景
+
+          // 如果快速检查通过，使用提取的文本内容进行更精确的检查
+          const fullHtml = editor.getHTML();
+          if (!fullHtml) return true;
+
+          // 提取整个文本内容（将变量节点转换为 {{key}} 格式）
+          const fullExtractedText = extractTextFromHTML(fullHtml);
+          if (!fullExtractedText) return true;
+
+          // 获取光标前的文档文本长度，用于估算光标在提取文本中的位置
+          const docTextBeforeFull = state.doc.textBetween(
+            0,
+            $from.pos,
+            '\n',
+            '\n',
+          );
+          // 由于提取文本和文档文本的长度可能不同，我们使用一个近似方法
+          // 检查提取文本中，是否有 }} 在光标前，且 {{ 在光标后
+
+          // 方法：查找提取文本中所有 }} 和 {{ 的位置
+          // 然后判断光标是否在某个 }} 和 {{ 之间
+          const closingBraces: number[] = [];
+          const openingBraces: number[] = [];
+
+          let pos = 0;
+          while (pos < fullExtractedText.length) {
+            const closingIndex = fullExtractedText.indexOf('}}', pos);
+            if (closingIndex !== -1) {
+              closingBraces.push(closingIndex);
+              pos = closingIndex + 2;
+            } else {
+              break;
+            }
+          }
+
+          pos = 0;
+          while (pos < fullExtractedText.length) {
+            const openingIndex = fullExtractedText.indexOf('{{', pos);
+            if (openingIndex !== -1) {
+              openingBraces.push(openingIndex);
+              pos = openingIndex + 2;
+            } else {
+              break;
+            }
+          }
+
+          // 估算光标在提取文本中的位置（使用文档文本长度作为近似）
+          // 但是要更宽松，避免误判
+          const estimatedCursorPos = docTextBeforeFull.length;
+
+          // 检查光标是否在某个 }} 和 {{ 之间
+          // 只有当文档文本也确认有 }} 和 {{ 时，才阻止（双重验证，避免误判）
+          if (docTextBefore.includes('}}') && docTextAfter.includes('{{')) {
+            // 如果光标前最后一个字符是 {，说明用户正在输入新的变量引用，应该允许显示
+            // 例如：{{xxx}}{|{{yy}} 这种情况
+            const lastCharBefore = docTextBefore.slice(-1);
+            if (lastCharBefore === '{') {
+              // 光标前是 {，允许显示，不进行阻止检查
+              // 继续后续检查，不在这里返回 false
+            } else {
+              // 光标前不是 {，进行正常的检查
+              for (const closingPos of closingBraces) {
+                if (closingPos < estimatedCursorPos + 20) {
+                  // 放宽范围，避免误判
+                  // 找到了光标前的 }}
+                  // 检查光标后是否有 {{
+                  for (const openingPos of openingBraces) {
+                    if (openingPos > estimatedCursorPos - 20) {
+                      // 放宽范围，避免误判
+                      // 找到了光标后的 {{
+                      // 检查它们之间是否有其他 }} 或 {{
+                      const betweenText = fullExtractedText.substring(
+                        closingPos + 2,
+                        openingPos,
+                      );
+                      // 如果之间没有其他完整的变量引用，说明光标在 }}...{{ 之间
+                      if (
+                        !betweenText.includes('}}') &&
+                        !betweenText.includes('{{')
+                      ) {
+                        return false;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          // 检查提取文本中最后一个 }} 的位置
+          // 只有当文档文本也确认时，才阻止（避免误判）
+          const lastClosingBrace = fullExtractedText.lastIndexOf('}}');
+          if (lastClosingBrace !== -1) {
+            // 计算 }} 到提取文本末尾的距离
+            const distanceFromEnd = fullExtractedText.length - lastClosingBrace;
+            // 如果 }} 距离末尾很近（在最后15个字符内），检查它之后是否有 {{
+            if (distanceFromEnd <= 15) {
+              const afterClosingBrace = fullExtractedText.substring(
+                lastClosingBrace + 2,
+              );
+              const hasUnclosedOpening = afterClosingBrace.indexOf('{{') !== -1;
+              // 如果 }} 之后没有 {{，且文档文本末尾也没有 {{，说明光标在一个已完成的变量引用之后
+              if (!hasUnclosedOpening && !docTextAfter.includes('{{')) {
+                // 只有当文档文本末尾附近也有 }} 时，才阻止（双重验证，避免误判）
+                const lastClosingBraceInDoc = docTextBefore.lastIndexOf('}}');
+                if (lastClosingBraceInDoc !== -1) {
+                  const distanceFromEndInDoc =
+                    docTextBefore.length - lastClosingBraceInDoc;
+                  // 只有当文档文本中的 }} 也距离末尾很近（5个字符内）时，才阻止
+                  if (distanceFromEndInDoc <= 5) {
+                    return false;
+                  }
+                }
+              }
+            }
+          }
+
+          // 其他情况都允许显示变量引用框
+          // 默认允许，确保正常输入 { 时能够触发
+          return true;
+        } catch (error) {
+          // 如果出错，默认允许显示（避免阻止正常使用）
+          return true;
+        }
       },
       items: ({ query }) => {
         // 从 options 获取最新的 variables（支持动态更新）
