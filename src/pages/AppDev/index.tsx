@@ -1429,7 +1429,7 @@ const AppDev: React.FC = () => {
               />
             </div>
 
-            <DesignViewer />
+            <DesignViewer projectId={projectId} files={currentDisplayFiles} />
             {/* 右侧代码编辑器区域 */}
             <div className={styles.rightPanel}>
               {/* 编辑器头部bar */}
