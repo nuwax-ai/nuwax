@@ -56,6 +56,10 @@ export default () => {
   const [workspace, setWorkspace] = useState<AppDevWorkspace>(initialWorkspace);
   const [currentFile, setCurrentFile] = useState<FileNode | null>(null);
   const [isServiceRunning, setIsServiceRunning] = useState(false);
+  // 是否开启design模式
+  const [iframeDesignMode, setIframeDesignMode] = useState<boolean>(false);
+  // iframe是否加载完毕
+  const [isIframeLoaded, setIsIframeLoaded] = useState<boolean>(false);
 
   /**
    * 设置工作区
@@ -232,5 +236,9 @@ export default () => {
     updateSettings,
     updateDevServerUrl,
     updateProjectId,
+    iframeDesignMode,
+    setIframeDesignMode,
+    isIframeLoaded,
+    setIsIframeLoaded,
   };
 };

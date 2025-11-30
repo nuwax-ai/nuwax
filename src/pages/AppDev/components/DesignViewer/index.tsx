@@ -13,6 +13,7 @@ import {
 import { Breadcrumb, Button, Dropdown, Input, Select, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 import {
   AlignCenterSvg,
   AlignJustifySvg,
@@ -335,8 +336,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   /** 编辑中的阴影类型 */
   const [shadowType, setShadowType] = useState<string>('Default');
 
-  // 是否开启design模式
-  const [iframeDesignMode, setIframeDesignMode] = useState<boolean>(false);
   /** 选中的元素, 用于标识当前选中的元素, 包含className, sourceInfo, tagName, textContent等信息*/
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(
     null,
@@ -354,6 +353,9 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
       originalValue?: string;
     }>
   >([]);
+
+  const { iframeDesignMode, setIframeDesignMode, isIframeLoaded } =
+    useModel('appDev');
 
   /**
    * 从样式字符串中解析数值（支持px、em、rem等单位）
@@ -1355,6 +1357,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
       <Button
         type="primary"
         onClick={toggleIframeDesignMode}
+        disabled={!isIframeLoaded}
         className={`px-6 py-2 rounded-lg font-semibold transition-all ${
           iframeDesignMode
             ? 'bg-green-500 hover:bg-green-600 text-white'

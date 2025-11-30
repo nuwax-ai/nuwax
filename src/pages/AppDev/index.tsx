@@ -1429,15 +1429,7 @@ const AppDev: React.FC = () => {
               />
             </div>
 
-            <DesignViewer
-              elementName="Sparkles"
-              parentPath="Page"
-              icon="Sparkles"
-              color="primary"
-              background="Default"
-              margin={{ vertical: 0, horizontal: 0 }}
-              padding={{ vertical: 0, horizontal: 0 }}
-            />
+            <DesignViewer />
             {/* 右侧代码编辑器区域 */}
             <div className={styles.rightPanel}>
               {/* 编辑器头部bar */}
