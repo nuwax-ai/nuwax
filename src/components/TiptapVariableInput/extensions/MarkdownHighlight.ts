@@ -8,6 +8,8 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 
+import { getProtectedRanges, isOverlappingRange } from '../utils/markdownUtils';
+
 /**
  * 检查位置是否在变量节点内
  * @param state ProseMirror 状态
@@ -77,6 +79,18 @@ export const MarkdownHighlight = Extension.create({
                 return;
               }
 
+              // 预先计算当前文本节点中的所有受保护范围（变量和工具块）
+              // 因为现在变量是纯文本（Plan C），需要手动检测并避免在其中应用 Markdown 样式
+              const protectedRanges = getProtectedRanges(text, pos);
+
+              // 检查给定范围是否与任何受保护范围重叠
+              const isOverlappingProtectedRange = (
+                start: number,
+                end: number,
+              ): boolean => {
+                return isOverlappingRange(protectedRanges, start, end);
+              };
+
               let match: RegExpExecArray | null;
 
               // 1. Headers (# H1, ## H2, etc.)
@@ -87,10 +101,11 @@ export const MarkdownHighlight = Extension.create({
                 const end = start + match[0].length;
                 const key = `${start}-${end}`;
 
-                // 检查是否在变量节点内
+                // 检查是否在变量节点内或与变量重叠
                 if (
                   isInVariableNode(state, start) ||
-                  isInToolBlockNode(state, start)
+                  isInToolBlockNode(state, start) ||
+                  isOverlappingProtectedRange(start, end)
                 ) {
                   continue;
                 }
@@ -124,10 +139,11 @@ export const MarkdownHighlight = Extension.create({
                 const end = start + match[0].length;
                 const key = `${start}-${end}`;
 
-                // 检查是否在变量节点内
+                // 检查是否在变量节点内或与变量重叠
                 if (
                   isInVariableNode(state, start) ||
-                  isInToolBlockNode(state, start)
+                  isInToolBlockNode(state, start) ||
+                  isOverlappingProtectedRange(start, end)
                 ) {
                   continue;
                 }
@@ -169,10 +185,11 @@ export const MarkdownHighlight = Extension.create({
                 const end = pos + matchEnd;
                 const key = `${start}-${end}`;
 
-                // 检查是否在变量节点内
+                // 检查是否在变量节点内或与变量重叠
                 if (
                   isInVariableNode(state, start) ||
-                  isInToolBlockNode(state, start)
+                  isInToolBlockNode(state, start) ||
+                  isOverlappingProtectedRange(start, end)
                 ) {
                   continue;
                 }
@@ -212,10 +229,11 @@ export const MarkdownHighlight = Extension.create({
                 const end = pos + matchEnd;
                 const key = `${start}-${end}`;
 
-                // 检查是否在变量节点内
+                // 检查是否在变量节点内或与变量重叠
                 if (
                   isInVariableNode(state, start) ||
-                  isInToolBlockNode(state, start)
+                  isInToolBlockNode(state, start) ||
+                  isOverlappingProtectedRange(start, end)
                 ) {
                   continue;
                 }
@@ -244,10 +262,11 @@ export const MarkdownHighlight = Extension.create({
                 const end = start + match[0].length;
                 const key = `${start}-${end}`;
 
-                // 检查是否在变量节点内
+                // 检查是否在变量节点内或与变量重叠
                 if (
                   isInVariableNode(state, start) ||
-                  isInToolBlockNode(state, start)
+                  isInToolBlockNode(state, start) ||
+                  isOverlappingProtectedRange(start, end)
                 ) {
                   continue;
                 }
@@ -276,10 +295,11 @@ export const MarkdownHighlight = Extension.create({
                 const end = start + match[0].length;
                 const key = `${start}-${end}`;
 
-                // 检查是否在变量节点内
+                // 检查是否在变量节点内或与变量重叠
                 if (
                   isInVariableNode(state, start) ||
-                  isInToolBlockNode(state, start)
+                  isInToolBlockNode(state, start) ||
+                  isOverlappingProtectedRange(start, end)
                 ) {
                   continue;
                 }
@@ -302,10 +322,11 @@ export const MarkdownHighlight = Extension.create({
                 const end = start + match[0].length;
                 const key = `${start}-${end}`;
 
-                // 检查是否在变量节点内
+                // 检查是否在变量节点内或与变量重叠
                 if (
                   isInVariableNode(state, start) ||
-                  isInToolBlockNode(state, start)
+                  isInToolBlockNode(state, start) ||
+                  isOverlappingProtectedRange(start, end)
                 ) {
                   continue;
                 }
@@ -338,10 +359,11 @@ export const MarkdownHighlight = Extension.create({
                 const end = start + match[0].length;
                 const key = `${start}-${end}`;
 
-                // 检查是否在变量节点内
+                // 检查是否在变量节点内或与变量重叠
                 if (
                   isInVariableNode(state, start) ||
-                  isInToolBlockNode(state, start)
+                  isInToolBlockNode(state, start) ||
+                  isOverlappingProtectedRange(start, end)
                 ) {
                   continue;
                 }
@@ -369,10 +391,11 @@ export const MarkdownHighlight = Extension.create({
                 const end = start + match[0].length;
                 const key = `${start}-${end}`;
 
-                // 检查是否在变量节点内
+                // 检查是否在变量节点内或与变量重叠
                 if (
                   isInVariableNode(state, start) ||
-                  isInToolBlockNode(state, start)
+                  isInToolBlockNode(state, start) ||
+                  isOverlappingProtectedRange(start, end)
                 ) {
                   continue;
                 }

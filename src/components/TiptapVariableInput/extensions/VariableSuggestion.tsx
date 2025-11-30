@@ -87,31 +87,58 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
         // 检查光标位置，避免在特定情况下显示建议框
         const { $from } = state.selection;
 
-        // 使用 textBetween 获取光标前后的文本，这在文本节点内部也能正常工作
-        // nodeBefore/nodeAfter 在文本节点内部通常为 null，导致判断失效
+        // 扩大检查范围，检查光标前是否有已完成的变量引用（}}）
+        // 即使中间有其他文本，只要光标前有 }}，且之后没有未闭合的 {{，就不显示
+        const checkRange = 100; // 扩大检查范围到100个字符
         const textBefore = state.doc.textBetween(
-          Math.max(0, $from.pos - 2),
+          Math.max(0, $from.pos - checkRange),
           $from.pos,
           '\n',
           '\n',
         );
         const textAfter = state.doc.textBetween(
           $from.pos,
-          Math.min(state.doc.content.size, $from.pos + 2),
+          Math.min(state.doc.content.size, $from.pos + checkRange),
           '\n',
           '\n',
         );
 
         // 如果光标前一个字符是 } 或前两个字符是 }}，不显示
-        if (textBefore.endsWith('}') || textBefore.endsWith('}}')) {
+        // 这表示光标紧跟在已完成的变量引用之后
+        const recentBefore = textBefore.slice(-2);
+        if (recentBefore.endsWith('}') || recentBefore.endsWith('}}')) {
           return false;
+        }
+
+        // 检查光标前是否有已完成的变量引用（}}）
+        // 从后向前查找最后一个 }} 的位置
+        const lastClosingBrace = textBefore.lastIndexOf('}}');
+        if (lastClosingBrace !== -1) {
+          // 找到了 }}，检查它之后是否还有未闭合的 {{
+          const afterClosingBrace = textBefore.substring(lastClosingBrace + 2);
+          const hasUnclosedOpening = afterClosingBrace.indexOf('{{') !== -1;
+
+          // 如果 }} 之后没有 {{，说明光标在一个已完成的变量引用之后，不应该触发
+          // 例如：{{arrary_object}}abc{ 这种情况
+          if (!hasUnclosedOpening) {
+            return false;
+          }
         }
 
         // 如果光标后一个字符是 { 或后两个字符是 {{，不显示
-        if (textAfter.startsWith('{') || textAfter.startsWith('{{')) {
+        const recentAfter = textAfter.slice(0, 2);
+        if (recentAfter.startsWith('{') || recentAfter.startsWith('{{')) {
           return false;
         }
 
+        // 检查光标前是否有 }}，且光标后是否有 {{
+        // 如果两者都存在，说明光标在 }}...{{ 之间，不应该显示
+        // 例如：}}xxx|xx{{ 这种情况
+        if (textBefore.includes('}}') && textAfter.includes('{{')) {
+          return false;
+        }
+
+        // 其他情况都允许显示变量引用框
         return true;
       },
       items: ({ query }) => {
@@ -857,24 +884,136 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
           // 检查是否是可编辑变量节点
           const useEditable = this.options.enableEditableVariables !== false; // 默认为 true
 
-          // 检查下一个字符是否是 }，如果是则包含它
           const { state } = editor.view;
           const doc = state.doc;
-          const nextChar =
-            to + 1 <= doc.content.size ? doc.textBetween(to, to + 1) : '';
-          // 也检查 to+1 位置的字符，因为 AutoCompleteBraces 可能已经插入了 }
-          const charAfterTo =
-            to + 2 <= doc.content.size ? doc.textBetween(to + 1, to + 2) : '';
-          const hasClosingBrace = nextChar === '}' || charAfterTo === '}';
 
-          // 如果下一个字符是 }，扩展 range 以包含它
-          if (hasClosingBrace) {
-            // 如果 nextChar 是 }，扩展 to 包含它
-            // 如果 charAfterTo 是 }，扩展 to+1 包含它
-            if (nextChar === '}') {
-              to = to + 1; // 包含 }
-            } else if (charAfterTo === '}') {
-              to = to + 2; // 包含 }（跳过中间的一个字符）
+          // 检测光标是否在 {{...}} 中间
+          // 如果是，需要找到完整的 {{...}} 范围并替换整个范围
+          // 注意：只有当光标确实在已存在的 {{...}} 中间时，才替换整个范围
+          // 正常输入 { 时，应该使用原有逻辑
+          const findVariableRange = () => {
+            // 如果 from === to，说明只是输入了 {，还没有其他内容，使用原有逻辑
+            if (from === to) {
+              return null;
+            }
+
+            // 检查 from 位置是否是 { 字符
+            const charAtFrom = doc.textBetween(from, from + 1);
+            if (charAtFrom !== '{') {
+              return null; // from 位置不是 {，不在变量引用中间
+            }
+
+            // 检查 from 前一个字符是否是 {，如果是，说明 from 是第二个 {
+            const charBeforeFrom =
+              from > 0 ? doc.textBetween(from - 1, from) : '';
+            if (charBeforeFrom === '{') {
+              // from 是第二个 {，说明光标在 {{...}} 中间
+              // 从 from - 1 开始查找对应的 }}
+              const openingBracePos = from - 1;
+              const searchRange = 200;
+              const textAfterOpening = doc.textBetween(
+                from + 1,
+                Math.min(doc.content.size, from + 1 + searchRange),
+                '\n',
+                '\n',
+              );
+
+              // 查找第一个 }} 的位置
+              const firstClosingBrace = textAfterOpening.indexOf('}}');
+              if (firstClosingBrace === -1) {
+                return null; // 没有找到 }}，不是完整的变量引用，使用原有逻辑
+              }
+
+              // 计算 }} 的绝对位置
+              const closingBracePos = from + 1 + firstClosingBrace + 2;
+
+              // 检查光标是否在这个范围内，且 to 在 from 之后（说明有输入内容）
+              if (to > from && to <= closingBracePos) {
+                return {
+                  from: openingBracePos,
+                  to: closingBracePos,
+                };
+              }
+            } else {
+              // from 是第一个 {，需要检查是否在已有的 {{...}} 中间
+              // 只有当 to > from 时（说明有输入内容），才检查是否在 {{...}} 中间
+              if (to <= from) {
+                return null; // 没有输入内容，使用原有逻辑
+              }
+
+              // 从 from 向前查找是否有另一个 {
+              const searchRange = 200;
+              const startPos = Math.max(0, from - searchRange);
+              const textBefore = doc.textBetween(startPos, from, '\n', '\n');
+
+              // 查找最后一个 {{ 的位置
+              const lastOpeningBrace = textBefore.lastIndexOf('{{');
+              if (lastOpeningBrace === -1) {
+                return null; // 没有找到 {{，不在变量引用中间
+              }
+
+              // 计算 {{ 的绝对位置
+              const openingBracePos = startPos + lastOpeningBrace;
+
+              // 检查 {{ 之后是否有 }}
+              const textAfterOpening = doc.textBetween(
+                openingBracePos + 2,
+                Math.min(doc.content.size, openingBracePos + 2 + searchRange),
+                '\n',
+                '\n',
+              );
+
+              // 查找第一个 }} 的位置
+              const firstClosingBrace = textAfterOpening.indexOf('}}');
+              if (firstClosingBrace === -1) {
+                return null; // 没有找到 }}，不是完整的变量引用，使用原有逻辑
+              }
+
+              // 计算 }} 的绝对位置
+              const closingBracePos =
+                openingBracePos + 2 + firstClosingBrace + 2;
+
+              // 检查光标是否在这个范围内，且 to 在 from 之后（说明有输入内容）
+              // 同时确保 from 在 {{ 之后（说明确实在 {{...}} 中间）
+              if (
+                from > openingBracePos + 1 &&
+                to > from &&
+                to <= closingBracePos
+              ) {
+                return {
+                  from: openingBracePos,
+                  to: closingBracePos,
+                };
+              }
+            }
+
+            return null;
+          };
+
+          // 尝试查找完整的变量引用范围
+          const variableRange = findVariableRange();
+          if (variableRange) {
+            // 如果光标在 {{...}} 中间，使用完整的范围
+            from = variableRange.from;
+            to = variableRange.to;
+          } else {
+            // 否则，使用原有的逻辑：检查下一个字符是否是 }，如果是则包含它
+            const nextChar =
+              to + 1 <= doc.content.size ? doc.textBetween(to, to + 1) : '';
+            // 也检查 to+1 位置的字符，因为 AutoCompleteBraces 可能已经插入了 }
+            const charAfterTo =
+              to + 2 <= doc.content.size ? doc.textBetween(to + 1, to + 2) : '';
+            const hasClosingBrace = nextChar === '}' || charAfterTo === '}';
+
+            // 如果下一个字符是 }，扩展 range 以包含它
+            if (hasClosingBrace) {
+              // 如果 nextChar 是 }，扩展 to 包含它
+              // 如果 charAfterTo 是 }，扩展 to+1 包含它
+              if (nextChar === '}') {
+                to = to + 1; // 包含 }
+              } else if (charAfterTo === '}') {
+                to = to + 2; // 包含 }（跳过中间的一个字符）
+              }
             }
           }
 
