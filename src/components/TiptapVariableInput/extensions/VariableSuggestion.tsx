@@ -87,10 +87,11 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
         // 检查光标位置，避免在特定情况下显示建议框
         const { $from } = state.selection;
 
-        // 使用 textBetween 获取光标前后的文本，这在文本节点内部也能正常工作
-        // nodeBefore/nodeAfter 在文本节点内部通常为 null，导致判断失效
+        // 扩大检查范围，检查光标前最多100个字符，以检测是否有未闭合的变量引用
+        const checkRange = 100;
+        const startPos = Math.max(0, $from.pos - checkRange);
         const textBefore = state.doc.textBetween(
-          Math.max(0, $from.pos - 2),
+          startPos,
           $from.pos,
           '\n',
           '\n',
@@ -105,6 +106,20 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
         // 如果光标前一个字符是 } 或前两个字符是 }}，不显示
         if (textBefore.endsWith('}') || textBefore.endsWith('}}')) {
           return false;
+        }
+
+        // 检查光标前是否有已完成的变量引用（{{...}}）
+        // 从后向前查找，找到最后一个 }} 的位置
+        const lastClosingBrace = textBefore.lastIndexOf('}}');
+        if (lastClosingBrace !== -1) {
+          // 找到了 }}，检查它之后是否还有未闭合的 {{
+          const afterClosingBrace = textBefore.substring(lastClosingBrace + 2);
+          const hasUnclosedOpening = afterClosingBrace.indexOf('{{') !== -1;
+
+          // 如果 }} 之后没有 {{，说明当前光标在一个已完成的变量引用之后，不应该触发
+          if (!hasUnclosedOpening) {
+            return false;
+          }
         }
 
         // 如果光标后一个字符是 { 或后两个字符是 {{，不显示
