@@ -101,8 +101,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     /** 是否正在保存文件 */
     const [isSaving, setIsSaving] = useState(false);
 
-    const { setIsIframeLoaded, pendingChanges, setPendingChanges } =
-      useModel('appDev');
+    const {
+      setIsIframeLoaded,
+      setIframeDesignMode,
+      pendingChanges,
+      setPendingChanges,
+    } = useModel('appDev');
 
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -388,8 +392,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      * 刷新预览
      */
     const refreshPreview = useCallback(() => {
+      // 关闭设计模式
+      setIframeDesignMode(false);
       // 刷新预览
-
       if (devServerUrl) {
         loadDevServerPreview();
       } else if (iframeRef.current) {

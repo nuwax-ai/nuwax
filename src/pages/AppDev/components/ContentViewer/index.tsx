@@ -132,8 +132,6 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         serverErrorCode={serverErrorCode}
         onStartDev={onStartDev}
         onRestartDev={onRestartDev}
-        // isFileModified={isFileModified}
-        onCancelEdit={onCancelEdit}
         onWhiteScreenOrIframeError={onWhiteScreenOrIframeError}
       />
     ),
@@ -149,10 +147,6 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       serverErrorCode,
       onStartDev,
       onRestartDev,
-      isFileModified,
-      isSavingFile,
-      onSaveFile,
-      onCancelEdit,
       onWhiteScreenOrIframeError,
     ],
   );
