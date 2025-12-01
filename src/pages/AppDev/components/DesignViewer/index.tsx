@@ -46,6 +46,7 @@ import {
   generateTailwindOpacityOptions,
   generateTailwindRadiusOptions,
   generateTailwindShadowOptions,
+  generateTailwindSpacingPixelOptions,
   getColorFromTailwindClass,
   tailwindRadiusMap,
   tailwindShadowMap,
@@ -56,47 +57,11 @@ import { ElementInfo } from './messages';
 const cx = classNames.bind(styles);
 
 /**
- * 像素值选项列表（根据图片中的下拉选项）
+ * 像素值选项列表 - 从 Tailwind CSS spacing 配置中获取
+ * 基于 Tailwind CSS 默认 spacing 配置（用于 padding 和 margin）
+ * 包含所有标准的 Tailwind spacing 值：0, 1px, 2px, 4px, 6px, 8px, 10px, 12px, 14px, 16px, 20px, 24px, 28px, 32px, 36px, 40px, 44px, 48px, 56px, 64px, 80px, 96px, 112px, 128px, 144px, 160px, 176px, 192px, 208px, 224px, 240px, 256px, 288px, 320px, 384px, auto
  */
-const pixelOptions = [
-  { label: '0px', value: '0px' },
-  { label: '1px', value: '1px' },
-  { label: '2px', value: '2px' },
-  { label: '4px', value: '4px' },
-  { label: '6px', value: '6px' },
-  { label: '8px', value: '8px' },
-  { label: '10px', value: '10px' },
-  { label: '12px', value: '12px' },
-  { label: '14px', value: '14px' },
-  { label: '16px', value: '16px' },
-  { label: '20px', value: '20px' },
-  { label: '24px', value: '24px' },
-  { label: '28px', value: '28px' },
-  { label: '32px', value: '32px' },
-  { label: '36px', value: '36px' },
-  { label: '40px', value: '40px' },
-  { label: '44px', value: '44px' },
-  { label: '48px', value: '48px' },
-  { label: '56px', value: '56px' },
-  { label: '64px', value: '64px' },
-  { label: '80px', value: '80px' },
-  { label: '96px', value: '96px' },
-  { label: '100px', value: '100px' },
-  { label: '112px', value: '112px' },
-  { label: '128px', value: '128px' },
-  { label: '144px', value: '144px' },
-  { label: '160px', value: '160px' },
-  { label: '176px', value: '176px' },
-  { label: '192px', value: '192px' },
-  { label: '208px', value: '208px' },
-  { label: '224px', value: '224px' },
-  { label: '240px', value: '240px' },
-  { label: '256px', value: '256px' },
-  { label: '288px', value: '288px' },
-  { label: '320px', value: '320px' },
-  { label: '384px', value: '384px' },
-  { label: 'auto', value: 'auto' },
-];
+const pixelOptions = generateTailwindSpacingPixelOptions(true);
 
 /**
  * Padding 像素值选项列表（不包含 auto）
@@ -198,99 +163,14 @@ const borderStyleOptions = [
 ];
 
 /**
- * Tailwind CSS 间距值映射表
- * 基于 Tailwind 默认配置：1 = 0.25rem = 4px
- */
-const tailwindSpacingMap: Record<string, string> = {
-  '0': '0px',
-  px: '1px',
-  '0.5': '0.125rem', // 2px
-  '1': '0.25rem', // 4px
-  '1.5': '0.375rem', // 6px
-  '2': '0.5rem', // 8px
-  '2.5': '0.625rem', // 10px
-  '3': '0.75rem', // 12px
-  '3.5': '0.875rem', // 14px
-  '4': '1rem', // 16px
-  '5': '1.25rem', // 20px
-  '6': '1.5rem', // 24px
-  '7': '1.75rem', // 28px
-  '8': '2rem', // 32px
-  '9': '2.25rem', // 36px
-  '10': '2.5rem', // 40px
-  '11': '2.75rem', // 44px
-  '12': '3rem', // 48px
-  '14': '3.5rem', // 56px
-  '16': '4rem', // 64px
-  '20': '5rem', // 80px
-  '24': '6rem', // 96px
-  '28': '7rem', // 112px
-  '32': '8rem', // 128px
-  '36': '9rem', // 144px
-  '40': '10rem', // 160px
-  '44': '11rem', // 176px
-  '48': '12rem', // 192px
-  '52': '13rem', // 208px
-  '56': '14rem', // 224px
-  '60': '15rem', // 240px
-  '64': '16rem', // 256px
-  '72': '18rem', // 288px
-  '80': '20rem', // 320px
-  '96': '24rem', // 384px
-};
-
-/**
- * 属性面板组件 Props
- */
-interface DesignViewerProps {
-  /** 图标值 */
-  icon?: string;
-  /** 颜色值 */
-  // color?: string;
-  /** 背景值 */
-  background?: string;
-  /** 外边距配置 */
-  margin?: {
-    top?: number;
-    right?: number;
-    bottom?: number;
-    left?: number;
-    vertical?: number;
-    horizontal?: number;
-  };
-  /** 内边距配置 */
-  padding?: {
-    top?: number;
-    right?: number;
-    bottom?: number;
-    left?: number;
-    vertical?: number;
-    horizontal?: number;
-  };
-  /** 边框配置 */
-  border?: {
-    width?: number;
-    style?: string;
-    color?: string;
-  };
-  /** 值变更回调 */
-  onChange?: (key: string, value: any) => void;
-}
-
-/**
  * 设计查看器组件
  * 提供元素属性编辑面板，包括图标、颜色、背景、布局、尺寸和边框等配置
  */
-const DesignViewer: React.FC<DesignViewerProps> = ({
-  background = 'Default',
-  margin = { vertical: 0, horizontal: 0 },
-  padding = { vertical: 0, horizontal: 0 },
-  onChange,
-}) => {
+const DesignViewer: React.FC = () => {
   // 字体颜色值
   const [localColor, setLocalColor] = useState<string>('Default');
   /** 背景颜色值 */
-  const [localBackground, setLocalBackground] = useState<string>(background);
+  const [localBackground, setLocalBackground] = useState<string>('Default');
   /** 外边距值 */
   const [localMargin, setLocalMargin] = useState<{
     top: number | string;
@@ -298,10 +178,10 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     bottom: number | string;
     left: number | string;
   }>({
-    top: margin?.top ?? margin?.vertical ?? '0px',
-    right: margin?.right ?? margin?.horizontal ?? '0px',
-    bottom: margin?.bottom ?? margin?.vertical ?? '0px',
-    left: margin?.left ?? margin?.horizontal ?? '0px',
+    top: '0px',
+    right: '0px',
+    bottom: '0px',
+    left: '0px',
   });
   /** 本地内边距 */
   const [localPadding, setLocalPadding] = useState<{
@@ -310,10 +190,10 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     bottom: number | string;
     left: number | string;
   }>({
-    top: padding?.top ?? padding?.vertical ?? '0px',
-    right: padding?.right ?? padding?.horizontal ?? '0px',
-    bottom: padding?.bottom ?? padding?.vertical ?? '0px',
-    left: padding?.left ?? padding?.horizontal ?? '0px',
+    top: '0px',
+    right: '0px',
+    bottom: '0px',
+    left: '0px',
   });
   /** 是否锁定外边距 */
   const [isMarginLocked, setIsMarginLocked] = useState(true);
@@ -351,13 +231,11 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     right: number | string;
     bottom: number | string;
     left: number | string;
-    isOpen: boolean;
   }>({
     top: '0px',
     right: '0px',
     bottom: '0px',
     left: '0px',
-    isOpen: true,
   });
   /** 是否展开边框宽度 */
   const [isBorderWidthExpanded, setIsBorderWidthExpanded] =
@@ -380,6 +258,8 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
 
   const { iframeDesignMode, setIframeDesignMode, setPendingChanges } =
     useModel('appDev');
+
+  console.log('pixelOptions', pixelOptions);
 
   /**
    * 判断当前选中的元素是否可以编辑「文本内容」
@@ -469,17 +349,18 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     const match = className.match(/-(\d+(?:\.\d+)?|px)$/);
     if (match) {
       const value = match[1];
-      return tailwindSpacingMap[value] || `${parseFloat(value) * 0.25}rem`;
+      return value.toString();
+      // return tailwindSpacingMap[value] || `${parseFloat(value) * 0.25}rem`;
     }
-    // 处理特殊值 "px"
-    if (className.endsWith('-px')) {
-      return '1px';
-    }
-    // 处理 "0"
-    if (className.endsWith('-0')) {
-      return '0px';
-    }
-    return '0px';
+    // // 处理特殊值 "px"
+    // if (className.endsWith('-px')) {
+    //   return '1px';
+    // }
+    // // 处理 "0"
+    // if (className.endsWith('-0')) {
+    //   return '0px';
+    // }
+    return '0';
   };
 
   /**
@@ -640,6 +521,24 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     setLineHeight('1.5');
     setLetterSpacing('0em');
     setTextAlign('left');
+    setLocalBorderWidth({
+      top: '0px',
+      right: '0px',
+      bottom: '0px',
+      left: '0px',
+    });
+    setLocalPadding({
+      top: '0px',
+      right: '0px',
+      bottom: '0px',
+      left: '0px',
+    });
+    setLocalMargin({
+      top: '0px',
+      right: '0px',
+      bottom: '0px',
+      left: '0px',
+    });
 
     if (!className) return;
 
@@ -672,53 +571,48 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
 
     // 遍历每个类名，解析样式
     classes.forEach((cls) => {
+      const value = parseTailwindSpacing(cls);
       // 解析 Padding 类名
       if (cls.startsWith('p-')) {
-        const value = parseTailwindSpacing(cls);
         styles.paddingTop = value;
         styles.paddingRight = value;
         styles.paddingBottom = value;
         styles.paddingLeft = value;
       } else if (cls.startsWith('px-')) {
-        const value = parseTailwindSpacing(cls);
         styles.paddingLeft = value;
         styles.paddingRight = value;
       } else if (cls.startsWith('py-')) {
-        const value = parseTailwindSpacing(cls);
         styles.paddingTop = value;
         styles.paddingBottom = value;
       } else if (cls.startsWith('pt-')) {
-        styles.paddingTop = parseTailwindSpacing(cls);
+        styles.paddingTop = value;
       } else if (cls.startsWith('pr-')) {
-        styles.paddingRight = parseTailwindSpacing(cls);
+        styles.paddingRight = value;
       } else if (cls.startsWith('pb-')) {
-        styles.paddingBottom = parseTailwindSpacing(cls);
+        styles.paddingBottom = value;
       } else if (cls.startsWith('pl-')) {
-        styles.paddingLeft = parseTailwindSpacing(cls);
+        styles.paddingLeft = value;
       }
       // 解析 Margin 类名
       else if (cls.startsWith('m-')) {
-        const value = parseTailwindSpacing(cls);
         styles.marginTop = value;
         styles.marginRight = value;
         styles.marginBottom = value;
         styles.marginLeft = value;
       } else if (cls.startsWith('mx-')) {
-        const value = parseTailwindSpacing(cls);
         styles.marginLeft = value;
         styles.marginRight = value;
       } else if (cls.startsWith('my-')) {
-        const value = parseTailwindSpacing(cls);
         styles.marginTop = value;
         styles.marginBottom = value;
       } else if (cls.startsWith('mt-')) {
-        styles.marginTop = parseTailwindSpacing(cls);
+        styles.marginTop = value;
       } else if (cls.startsWith('mr-')) {
-        styles.marginRight = parseTailwindSpacing(cls);
+        styles.marginRight = value;
       } else if (cls.startsWith('mb-')) {
-        styles.marginBottom = parseTailwindSpacing(cls);
+        styles.marginBottom = value;
       } else if (cls.startsWith('ml-')) {
-        styles.marginLeft = parseTailwindSpacing(cls);
+        styles.marginLeft = value;
       }
       // 解析 Shadow 类名
       else if (cls.startsWith('shadow')) {
@@ -1052,17 +946,24 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     setLocalTextContent(value);
     // 同时更新 editingContent，用于实时更新到 iframe
     setEditingContent(value);
-    onChange?.('textContent', value);
+    // onChange?.('textContent', value);
   };
 
   /**
-   * 处理颜色变更
+   * 处理颜色切换
+   */
+  const handleToggleColor = (prefix: string, color: string) => {
+    const itemColor = colorOptions.find((item) => item.value === color);
+    const styleClass = `${prefix}-${itemColor?.label}`;
+    toggleStyle(styleClass, new RegExp(`^${prefix}-[a-z]+(-\\d+)?$`));
+  };
+
+  /**
+   * 处理文本颜色变更
    */
   const handleColorChange = (color: string) => {
     setLocalColor(color);
-    const itemColor = colorOptions.find((item) => item.value === color);
-    const styleClass = `text-${itemColor?.label}`;
-    toggleStyle(styleClass, new RegExp(`^text-[a-z]+(-\\d+)?$`));
+    handleToggleColor('text', color);
   };
 
   /**
@@ -1070,9 +971,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    */
   const handleBorderColorChange = (color: string) => {
     setBorderColor(color);
-    const itemColor = colorOptions.find((item) => item.value === color);
-    const styleClass = `border-${itemColor?.label}`;
-    toggleStyle(styleClass, new RegExp(`^border-[a-z]+(-\\d+)?$`));
+    handleToggleColor('border', color);
   };
 
   /**
@@ -1080,9 +979,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    */
   const handleBackgroundChange = (color: string) => {
     setLocalBackground(color);
-    const itemColor = colorOptions.find((item) => item.value === color);
-    const styleClass = `bg-${itemColor?.label}`;
-    toggleStyle(styleClass, new RegExp(`^bg-[a-z]+(-\\d+)?$`));
+    handleToggleColor('bg', color);
   };
 
   /**
@@ -1101,6 +998,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   ) => {
     const newMargin = { ...localMargin };
     if (value !== null) {
+      let prefix = 'm';
       if (type === 'all') {
         // 统一设置所有边
         newMargin.top = value;
@@ -1108,16 +1006,42 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
         newMargin.bottom = value;
         newMargin.left = value;
       } else if (type === 'vertical') {
+        prefix = 'my';
         newMargin.top = value;
         newMargin.bottom = value;
       } else if (type === 'horizontal') {
+        prefix = 'mx';
         newMargin.left = value;
         newMargin.right = value;
       } else {
+        switch (type) {
+          case 'top':
+            prefix = 'mt';
+            break;
+          case 'right':
+            prefix = 'mr';
+            break;
+          case 'bottom':
+            prefix = 'mb';
+            break;
+          case 'left':
+            prefix = 'ml';
+            break;
+        }
         newMargin[type] = value;
       }
       setLocalMargin(newMargin);
-      onChange?.('margin', newMargin);
+      // onChange?.('margin', newMargin);
+
+      // value 已经是 Tailwind spacing 值（如 '40'），直接使用
+      // 正则表达式：精确匹配相同前缀的 margin 类名
+      // 例如：m- 只匹配 m-*，不匹配 mx-*、my-*、mt-* 等
+      // mx- 只匹配 mx-*，不匹配 m-*、my-*、mt-* 等
+      const marginRegex =
+        prefix === 'm'
+          ? /^m-(?![xytrbl])/ // m- 后面不能是 x、y、t、r、b、l（避免匹配 mx-、my-、mt- 等）
+          : new RegExp(`^${prefix}-`);
+      toggleStyle(`${prefix}-${value}`, marginRegex);
     }
   };
 
@@ -1151,6 +1075,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   ) => {
     const newPadding = { ...localPadding };
     if (value !== null) {
+      let prefix = 'p';
       if (type === 'all') {
         // 统一设置所有边
         newPadding.top = value;
@@ -1158,16 +1083,41 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
         newPadding.bottom = value;
         newPadding.left = value;
       } else if (type === 'vertical') {
+        prefix = 'py';
         newPadding.top = value;
         newPadding.bottom = value;
       } else if (type === 'horizontal') {
+        prefix = 'px';
         newPadding.left = value;
         newPadding.right = value;
       } else {
+        switch (type) {
+          case 'top':
+            prefix = 'pt';
+            break;
+          case 'right':
+            prefix = 'pr';
+            break;
+          case 'bottom':
+            prefix = 'pb';
+            break;
+          case 'left':
+            prefix = 'pl';
+            break;
+        }
         newPadding[type] = value;
       }
       setLocalPadding(newPadding);
-      onChange?.('padding', newPadding);
+
+      // value 已经是 Tailwind spacing 值（如 '40'），直接使用
+      // 正则表达式：精确匹配相同前缀的 padding 类名
+      // 例如：p- 只匹配 p-*，不匹配 px-*、py-*、pt-* 等
+      // px- 只匹配 px-*，不匹配 p-*、py-*、pt-* 等
+      const paddingRegex =
+        prefix === 'p'
+          ? /^p-(?![xytrbl])/ // p- 后面不能是 x、y、t、r、b、l（避免匹配 px-、py-、pt- 等）
+          : new RegExp(`^${prefix}-`);
+      toggleStyle(`${prefix}-${value}`, paddingRegex);
     }
   };
 
@@ -1203,7 +1153,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
         newBorderWidth[type] = value;
       }
       setLocalBorderWidth(newBorderWidth);
-      onChange?.('borderWidth', newBorderWidth);
+      // onChange?.('borderWidth', newBorderWidth);
     }
   };
 
@@ -1225,7 +1175,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     } else {
       setTextAlign(align);
     }
-    onChange?.('textAlign', align === 'reset' ? 'left' : align);
+    // onChange?.('textAlign', align === 'reset' ? 'left' : align);
   };
 
   /**
@@ -1314,7 +1264,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   value={fontWeight}
                   onChange={(value) => {
                     setFontWeight(value as string);
-                    onChange?.('fontWeight', value);
+                    // onChange?.('fontWeight', value);
                   }}
                   options={fontWeightOptions}
                 />
@@ -1344,7 +1294,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   value={lineHeight}
                   onChange={(value) => {
                     setLineHeight(value as string);
-                    onChange?.('lineHeight', value);
+                    // onChange?.('lineHeight', value);
                   }}
                   options={lineHeightOptions}
                 />
@@ -1358,7 +1308,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   value={letterSpacing}
                   onChange={(value) => {
                     setLetterSpacing(value as string);
-                    onChange?.('letterSpacing', value);
+                    // onChange?.('letterSpacing', value);
                   }}
                   options={letterSpacingOptions}
                 />
@@ -2021,7 +1971,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 value={borderStyle}
                 onChange={(value) => {
                   setBorderStyle(value as string);
-                  onChange?.('borderStyle', value);
+                  // onChange?.('borderStyle', value);
                 }}
                 options={borderStyleOptions}
               />
@@ -2147,7 +2097,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 value={opacity}
                 onChange={(value) => {
                   setOpacity(value);
-                  onChange?.('opacity', value);
+                  // onChange?.('opacity', value);
                 }}
                 options={opacityOptions}
                 prefix={<OpacitySvg className={cx(styles.layoutIcon)} />}
@@ -2161,7 +2111,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 value={radius}
                 onChange={(value) => {
                   setRadius(value as string);
-                  onChange?.('radius', value);
+                  // onChange?.('radius', value);
                 }}
                 options={radiusOptions}
                 prefix={<RadiusSvg className={cx(styles.layoutIcon)} />}
@@ -2178,7 +2128,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
             value={shadowType}
             onChange={(value) => {
               setShadowType(value as string);
-              onChange?.('shadowType', value);
+              // onChange?.('shadowType', value);
             }}
             options={shadowOptions}
             prefix={<ShadowSvg className={cx(styles.layoutIcon)} />}
