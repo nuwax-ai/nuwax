@@ -249,7 +249,7 @@ export const submitFiles = async (
  * @returns Promise<SubmitFilesResponse> 提交结果
  */
 export const submitFilesUpdate = async (
-  projectId: number,
+  projectId: string,
   files: PageFileInfo[],
 ): Promise<SubmitFilesResponse> => {
   // 处理文件内容，对 content 字段进行 encodeURIComponent 编码

@@ -1,16 +1,10 @@
 import SelectList from '@/components/custom/SelectList';
-// import { submitFilesUpdate } from '@/services/appDev';
-// import { FileNode } from '@/types/interfaces/appDev';
-// import { treeToFlatList } from '@/utils/appDevUtils';
 import {
   CompressOutlined,
   ExpandOutlined,
-  ItalicOutlined,
   LockOutlined,
   MoreOutlined,
-  StrikethroughOutlined,
   ThunderboltOutlined,
-  UnderlineOutlined,
   UnlockOutlined,
 } from '@ant-design/icons';
 import { Breadcrumb, Button, Dropdown, Input, Select, Space } from 'antd';
@@ -35,7 +29,7 @@ import {
   MarginTopSvg,
   MarginVerticalSvg,
   OpacitySvg,
-  OverlineSvg,
+  // OverlineSvg,
   PaddingBottomSvg,
   PaddingHorizontalSvg,
   PaddingLeftSvg,
@@ -45,7 +39,6 @@ import {
   RadiusSvg,
   ResetSvg,
   ShadowSvg,
-  TabularNumbersSvg,
 } from './design.images.constants';
 import {
   generateFullTailwindColorOptions,
@@ -150,12 +143,12 @@ const moreMenuItems = [
 ];
 
 // Typography 选项
-const typographyOptions = [
-  { label: 'Default', value: 'Default' },
-  { label: 'Sans Serif', value: 'Sans Serif' },
-  { label: 'Serif', value: 'Serif' },
-  { label: 'Monospace', value: 'Monospace' },
-];
+// const typographyOptions = [
+//   { label: 'Default', value: 'Default' },
+//   { label: 'Sans Serif', value: 'Sans Serif' },
+//   { label: 'Serif', value: 'Serif' },
+//   { label: 'Monospace', value: 'Monospace' },
+// ];
 
 // Font Weight 选项
 const fontWeightOptions = [
@@ -301,7 +294,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   /** 编辑中的文本内容 */
   const [localTextContent, setLocalTextContent] = useState('');
   /** 编辑中的排版 */
-  const [localTypography, setLocalTypography] = useState('Default');
+  // const [localTypography, setLocalTypography] = useState('Default');
   /** 编辑中的字体粗细 */
   const [fontWeight, setFontWeight] = useState('Semi Bold');
   /** 编辑中的字体大小 */
@@ -315,7 +308,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     'left' | 'center' | 'right' | 'justify' | 'reset'
   >('center');
   /** 编辑中的文本装饰 */
-  const [textDecoration, setTextDecoration] = useState<string[]>([]);
+  // const [textDecoration, setTextDecoration] = useState<string[]>([]);
   /** 编辑中的边框样式 */
   const [borderStyle, setBorderStyle] = useState('Default');
   /** 编辑中的边框颜色 */
@@ -352,23 +345,9 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   const [editingContent, setEditingContent] = useState<string>('');
   // 编辑中的类
   const [editingClass, setEditingClass] = useState<string>('');
-  // // 待处理的变更
-  // const [pendingChanges, setPendingChanges] = useState<
-  //   Array<{
-  //     type: 'style' | 'content';
-  //     sourceInfo: any;
-  //     newValue: string;
-  //     originalValue?: string;
-  //   }>
-  // >([]);
 
-  const {
-    iframeDesignMode,
-    setIframeDesignMode,
-    isIframeLoaded,
-    pendingChanges,
-    setPendingChanges,
-  } = useModel('appDev');
+  const { iframeDesignMode, setIframeDesignMode, setPendingChanges } =
+    useModel('appDev');
 
   /**
    * 从样式字符串中解析数值（支持px、em、rem等单位）
@@ -1019,140 +998,17 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     setEditingClass(currentClasses.join(' '));
   };
 
-  const hasStyle = (style: string) => {
-    return editingClass.split(' ').includes(style);
-  };
-
-  // Toggle design mode in iframe
-  const toggleIframeDesignMode = () => {
-    const iframe = document.querySelector('iframe');
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage(
-        {
-          type: 'TOGGLE_DESIGN_MODE',
-          enabled: !iframeDesignMode,
-          timestamp: Date.now(),
-        },
-        '*',
-      );
-    }
-  };
-
-  console.log('pendingChanges', pendingChanges, toggleStyle, hasStyle);
-
-  /**
-   * 保存所有更改
-   */
-  // const saveChanges = async () => {
-  //   if (!projectId) {
-  //     message.error('缺少项目ID，无法保存');
-  //     return;
-  //   }
-
-  //   if (pendingChanges.length === 0) {
-  //     message.warning('没有待保存的更改');
-  //     return;
-  //   }
-
-  //   console.log('[DesignViewer] Saving changes...', pendingChanges);
-  //   setIsSaving(true);
-
-  //   try {
-  //     // 将 pendingChanges 按文件分组
-  //     const fileChangesMap = new Map<
-  //       string,
-  //       Array<{
-  //         type: 'style' | 'content';
-  //         sourceInfo: any;
-  //         newValue: string;
-  //         originalValue?: string;
-  //       }>
-  //     >();
-
-  //     // 路径清理正则
-  //     const pathCleanRegex = /^\/app\/project_workspace\/[^/]+\//;
-
-  //     pendingChanges.forEach((change: any) => {
-  //       // 修正文件路径：移除 /app/project_workspace/{projectId}/ 前缀
-  //       let filePath = change.sourceInfo.fileName;
-  //       if (pathCleanRegex.test(filePath)) {
-  //         filePath = filePath.replace(pathCleanRegex, '');
-  //       }
-
-  //       if (!fileChangesMap.has(filePath)) {
-  //         fileChangesMap.set(filePath, []);
-  //       }
-  //       fileChangesMap.get(filePath)!.push(change);
-  //     });
-
-  //     // 2. 获取全量文件列表（扁平化）
-  //     // 使用 files 属性作为基准，确保包含未修改的文件
-  //     const allFiles = treeToFlatList(files || []);
-  //     const filesToUpdate: any[] = [];
-
-  //     // 3. 遍历全量文件列表，应用修改
-  //     for (const file of allFiles) {
-  //       const filePath = file.name; // treeToFlatList 返回的 name 是文件路径(id)
-
-  //       // 检查该文件是否有待保存的修改
-  //       if (fileChangesMap.has(filePath)) {
-  //         const changes = fileChangesMap.get(filePath)!;
-  //         try {
-  //           const fileContent = file.contents || '';
-
-  //           // 应用智能替换逻辑
-  //           const updatedContent = applyDesignChanges(fileContent, changes);
-
-  //           filesToUpdate.push({
-  //             name: filePath,
-  //             contents: updatedContent,
-  //             binary: file.binary || false,
-  //             sizeExceeded: file.sizeExceeded || false,
-  //           });
-  //         } catch (error) {
-  //           console.error(
-  //             `[DesignViewer] Error processing file ${filePath}:`,
-  //             error,
-  //           );
-  //           message.error(`处理文件 ${filePath} 时出错`);
-  //           // 出错时保留原内容，防止文件丢失？或者跳过？
-  //           // 这里选择保留原内容，避免破坏
-  //           filesToUpdate.push(file);
-  //         }
-  //       } else {
-  //         // 没有修改的文件，直接添加到更新列表
-  //         filesToUpdate.push(file);
-  //       }
-  //     }
-
-  //     console.log('[DesignViewer] Files to update (full list):', filesToUpdate);
-
-  //     // 4. 调用 submitFilesUpdate 接口提交全量列表
-  //     const response = await submitFilesUpdate(projectId, filesToUpdate);
-
-  //     if (response.code === '200') {
-  //       message.success(`成功保存！`);
-  //       setPendingChanges([]); // 清空待保存列表
-  //       console.log('[DesignViewer] Batch update success:', response);
-  //     } else {
-  //       message.error('保存失败，请查看控制台错误信息');
-  //       console.error('[DesignViewer] Batch update failed:', response);
-  //     }
-  //   } catch (error) {
-  //     console.error('[DesignViewer] Error saving changes:', error);
-  //     message.error('保存出错，请检查网络连接');
-  //   } finally {
-  //     setIsSaving(false);
-  //   }
+  // const hasStyle = (style: string) => {
+  //   return editingClass.split(' ').includes(style);
   // };
 
   /**
    * 处理Typography变更
    */
-  const handleTypographyChange = (value: string) => {
-    setLocalTypography(value);
-    onChange?.('typography', value);
-  };
+  // const handleTypographyChange = (value: string) => {
+  //   setLocalTypography(value);
+  //   onChange?.('typography', value);
+  // };
 
   /**
    * 处理文本内容变更
@@ -1338,13 +1194,17 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   /**
    * 处理文本装饰变更
    */
-  const handleTextDecorationChange = (decoration: string) => {
-    const newDecorations = textDecoration.includes(decoration)
-      ? textDecoration.filter((d) => d !== decoration)
-      : [...textDecoration, decoration];
-    // setTextDecoration(newDecorations);
-    onChange?.('textDecoration', newDecorations);
-  };
+  // const handleTextDecorationChange = (decoration: string) => {
+  //   const newDecorations = textDecoration.includes(decoration)
+  //     ? textDecoration.filter((d) => d !== decoration)
+  //     : [...textDecoration, decoration];
+  //   // setTextDecoration(newDecorations);
+  //   onChange?.('textDecoration', newDecorations);
+  // };
+
+  if (!iframeDesignMode) {
+    return null;
+  }
 
   return (
     <div className={cx(styles.designViewer)}>
@@ -1373,37 +1233,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           <MoreOutlined className={cx(styles.moreIcon)} />
         </Dropdown>
       </div>
-      <Button
-        type="primary"
-        onClick={toggleIframeDesignMode}
-        disabled={!isIframeLoaded}
-        className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-          iframeDesignMode
-            ? 'bg-green-500 hover:bg-green-600 text-white'
-            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-        }`}
-      >
-        {iframeDesignMode ? '✓ 设计模式已启用' : '启用设计模式'}
-      </Button>
-
-      {/* 保存按钮 */}
-      {/* <Button
-        type="primary"
-        onClick={saveChanges}
-        loading={isSaving}
-        disabled={pendingChanges.length === 0 || isSaving}
-        className={`mt-2 px-6 py-2 rounded-lg font-semibold transition-all ${
-          pendingChanges.length > 0
-            ? 'bg-blue-500 hover:bg-blue-600 text-white'
-            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-        }`}
-      >
-        {isSaving
-          ? '保存中...'
-          : pendingChanges.length > 0
-          ? `保存 (${pendingChanges.length})`
-          : '保存'}
-      </Button> */}
 
       {/* 属性配置区域 */}
       <div className={cx(styles.propertiesContainer)}>
@@ -1421,12 +1250,12 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
         {/* Typography 配置 */}
         <div className={cx(styles.propertySection)}>
           <div className={cx(styles.propertyLabel)}>Typography</div>
-          <SelectList
+          {/* <SelectList
             className={cx(styles.propertyInput)}
             value={localTypography}
             onChange={(value) => handleTypographyChange(value as string)}
             options={typographyOptions}
-          />
+          /> */}
 
           {/* Typography 详细设置 */}
           <div className={cx(styles.typographyDetails)}>
@@ -1534,7 +1363,10 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   />
                 </div>
               </div>
-              {/* 文本装饰 */}
+            </div>
+
+            {/* 文本装饰 */}
+            {/* <div className={cx(styles.typographyRow)}>
               <div className={cx(styles.typographyInputGroup)}>
                 <div className={cx(styles.typographyInputLabel)}>
                   Decoration
@@ -1588,7 +1420,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   />
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 
