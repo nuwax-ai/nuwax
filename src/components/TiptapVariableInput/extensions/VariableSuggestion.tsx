@@ -106,10 +106,10 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
 
           // 新增检查：如果光标前一个字符是字母或数字，说明在普通文本中间，不应该触发
           // 例如：12dsds212| 输入 { 时不应该触发
-          const charBeforeCursor = docTextBefore.slice(-1);
-          if (charBeforeCursor && /[a-zA-Z0-9]/.test(charBeforeCursor)) {
-            return false;
-          }
+          // const charBeforeCursor = docTextBefore.slice(-1);
+          // if (charBeforeCursor && /[a-zA-Z0-9]/.test(charBeforeCursor)) {
+          //   return false;
+          // }
 
           // 快速检查：如果文档文本末尾是 }}，且距离光标很近（2个字符内），不显示
           // 但是如果 }} 和光标之间有其他内容，应该允许显示（例如：{{xxx}}{|{{yy}}）
@@ -263,7 +263,14 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                     docTextBefore.length - lastClosingBraceInDoc;
                   // 只有当文档文本中的 }} 也距离末尾很近（5个字符内）时，才阻止
                   if (distanceFromEndInDoc <= 5) {
-                    return false;
+                    // 检查 }} 后面是否有 {
+                    // 如果有 {，说明用户正在输入新的变量引用，应该允许显示
+                    const textAfterClosing = docTextBefore.slice(
+                      lastClosingBraceInDoc + 2,
+                    );
+                    if (!textAfterClosing.includes('{')) {
+                      return false;
+                    }
                   }
                 }
               }
