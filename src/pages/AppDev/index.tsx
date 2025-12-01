@@ -62,7 +62,7 @@ import React, {
   useState,
 } from 'react';
 import { useModel, useParams, useRequest } from 'umi';
-import { AppDevHeader, ContentViewer, DesignViewer } from './components';
+import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
 import DevLogConsole from './components/DevLogConsole';
 import EditorHeaderRight from './components/EditorHeaderRight';
@@ -1429,9 +1429,6 @@ const AppDev: React.FC = () => {
               />
             </div>
 
-            {/* <DesignViewer projectId={projectId} files={currentDisplayFiles} /> */}
-            {/* 设计模式区域 */}
-            <DesignViewer />
             {/* 右侧代码编辑器区域 */}
             <div className={styles.rightPanel}>
               {/* 编辑器头部bar */}

@@ -2,11 +2,16 @@
 @import '@/styles/token.less';
 
 .designViewer {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  width: 100%;
+  height: calc(100% - 140px);
   display: flex;
   flex-direction: column;
-  height: 100%;
   background: @colorBgContainer;
   border-left: @lineWidth solid @colorBorderSecondary;
+  z-index: 100;
 }
 
 // 面包屑容器

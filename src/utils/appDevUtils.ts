@@ -730,23 +730,23 @@ export const processImageContent = (
 /**
  * 在文件树中查找文件节点
  */
-export const findFileNodeByName = (
-  fileName: string,
-  treeData: FileNode[],
-): FileNode | null => {
-  for (const node of treeData) {
-    if (node.name === fileName) {
-      return node;
-    }
-    if (node.children) {
-      const found = findFileNode(fileName, node.children);
-      if (found) {
-        return found;
-      }
-    }
-  }
-  return null;
-};
+// export const findFileNodeByName = (
+//   fileName: string,
+//   treeData: FileNode[],
+// ): FileNode | null => {
+//   for (const node of treeData) {
+//     if (node.name === fileName) {
+//       return node;
+//     }
+//     if (node.children) {
+//       const found = findFileNode(fileName, node.children);
+//       if (found) {
+//         return found;
+//       }
+//     }
+//   }
+//   return null;
+// };
 
 // /**
 //  * 根据文件名、className、行号和列号更新文件树中对应文件的 content 属性

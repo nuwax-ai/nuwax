@@ -103,15 +103,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     /** 是否正在保存文件 */
     const [isSaving, setIsSaving] = useState(false);
 
-    const {
-      iframeDesignMode,
-      setIsIframeLoaded,
-      pendingChanges,
-      setPendingChanges,
-    } = useModel('appDev');
-
-    /** 文件是否被修改 */
-    // const isFileModified = pendingChanges?.length > 0;
+    const { setIsIframeLoaded, pendingChanges, setPendingChanges } =
+      useModel('appDev');
 
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -1158,10 +1151,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           )}
         </div>
         {/* 未保存更改提示栏 todo 优化 : 还需要根据文件是否已被修改过来决定是否显示*/}
-        {(iframeDesignMode || pendingChanges?.length > 0) && (
+        {pendingChanges?.length > 0 && (
           <div
             className={cx(styles['unsaved-changes-bar'], {
-              [styles.show]: iframeDesignMode || pendingChanges?.length > 0,
+              [styles.show]: pendingChanges?.length > 0,
             })}
           >
             <WarningOutlined className={styles['warning-icon']} />
