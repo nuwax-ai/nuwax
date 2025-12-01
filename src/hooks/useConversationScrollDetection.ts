@@ -27,6 +27,7 @@ export const useConversationScrollDetection = (
 
   useEffect(() => {
     const messageView = messageViewRef.current;
+
     if (!messageView) {
       return;
     }
@@ -51,14 +52,38 @@ export const useConversationScrollDetection = (
 
     // 使用 scroll 事件替代 wheel 事件，可以捕获所有类型的滚动行为
     const scrollHandler = () => {
+      const { scrollTop } = messageView;
+      const isProgrammatic = (messageView as any).__isProgrammaticScroll;
+
       // 如果是程序触发的滚动，忽略（不处理用户滚动逻辑）
-      if ((messageView as any).__isProgrammaticScroll) {
+      // 但如果用户在程序滚动期间向上滚动（试图停止自动滚动），则需要立即响应
+      if (isProgrammatic) {
+        // 判断是否向上滚动
+        // 增加 2px 的阈值补偿
+        const isScrollingUp = scrollTop < lastScrollTopRef.current - 2;
+
+        if (isScrollingUp) {
+          // 用户试图向上滚动，立即禁用自动滚动
+          allowAutoScrollRef.current = false;
+          // 清除滚动定时器
+          if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+            scrollTimeoutRef.current = null;
+          }
+          // 显示滚动按钮
+          setShowScrollBtn(true);
+          // 清除程序滚动标记，恢复正常处理
+          (messageView as any).__isProgrammaticScroll = false;
+          // 更新位置
+          lastScrollTopRef.current = scrollTop;
+          return;
+        }
+
         // 记录程序滚动后的位置，确保下一次用户滚动对比的是最新位置
         lastScrollTopRef.current = messageView.scrollTop;
         return;
       }
 
-      const { scrollTop } = messageView;
       // 判断是否向上滚动（必须在更新 lastScrollTopRef 之前判断）
       // 增加 2px 的阈值补偿，防止微小的抖动误判，同时兼容触控板的平滑滚动
       const isScrollingUp = scrollTop < lastScrollTopRef.current - 2;
@@ -95,5 +120,11 @@ export const useConversationScrollDetection = (
     return () => {
       messageView.removeEventListener('scroll', scrollHandler);
     };
-  }, [messageViewRef, allowAutoScrollRef, scrollTimeoutRef, setShowScrollBtn]);
+  }, [
+    messageViewRef,
+    messageViewRef.current,
+    allowAutoScrollRef,
+    scrollTimeoutRef,
+    setShowScrollBtn,
+  ]);
 };
