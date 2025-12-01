@@ -235,11 +235,7 @@ interface DesignViewerProps {
   };
   /** 值变更回调 */
   onChange?: (key: string, value: any) => void;
-  // /** 文件树数据 */
-  // files?: FileNode[];
 }
-
-// import { applyDesignChanges } from './applyDesignChanges';
 
 /**
  * 设计查看器组件
@@ -987,8 +983,22 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   const toggleStyle = (newStyle: string, categoryRegex: RegExp) => {
     let currentClasses = editingClass.split(' ').filter((c) => c.trim());
 
+    // 获取字体大小相关的类名列表（从 fontSizeOptions 中提取）
+    // fontSizeOptions 中的 value 是 'xs', 'sm' 等，需要转换为 'text-xs', 'text-sm' 等
+    const fontSizeClasses = fontSizeOptions
+      .filter((option) => option.value !== 'Default')
+      .map((option) => `text-${option.value}`);
+
     // Remove existing class in the same category
-    currentClasses = currentClasses.filter((c) => !categoryRegex.test(c));
+    // 排除字体大小相关的类（如 text-xs, text-sm 等）
+    currentClasses = currentClasses.filter((c) => {
+      // 如果是字体大小相关的类，不进行过滤
+      if (fontSizeClasses.includes(c) || c.includes('text-center')) {
+        return true;
+      }
+      // 其他类按原来的逻辑过滤
+      return !categoryRegex.test(c);
+    });
 
     // Add new style if it's not empty (allows clearing style)
     if (newStyle) {
