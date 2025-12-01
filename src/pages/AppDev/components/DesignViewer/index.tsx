@@ -259,8 +259,6 @@ const DesignViewer: React.FC = () => {
   const { iframeDesignMode, setIframeDesignMode, setPendingChanges } =
     useModel('appDev');
 
-  console.log('pixelOptions', pixelOptions);
-
   /**
    * 判断当前选中的元素是否可以编辑「文本内容」
    *
@@ -1041,6 +1039,9 @@ const DesignViewer: React.FC = () => {
         prefix === 'm'
           ? /^m-(?![xytrbl])/ // m- 后面不能是 x、y、t、r、b、l（避免匹配 mx-、my-、mt- 等）
           : new RegExp(`^${prefix}-`);
+      console.log('marginRegex', value, marginRegex);
+      // 如果 value 是 px，则转换为 1
+      // const tailwindValue = value === 'px' ? '1' : value;
       toggleStyle(`${prefix}-${value}`, marginRegex);
     }
   };
@@ -1117,6 +1118,8 @@ const DesignViewer: React.FC = () => {
         prefix === 'p'
           ? /^p-(?![xytrbl])/ // p- 后面不能是 x、y、t、r、b、l（避免匹配 px-、py-、pt- 等）
           : new RegExp(`^${prefix}-`);
+      // 如果 value 是 px，则转换为 1
+      // const tailwindValue = value === 'px' ? '1' : value;
       toggleStyle(`${prefix}-${value}`, paddingRegex);
     }
   };
@@ -1276,7 +1279,7 @@ const DesignViewer: React.FC = () => {
                   value={fontSize}
                   onChange={(value) => {
                     setFontSize(value as string);
-                    onChange?.('fontSize', value);
+                    // onChange?.('fontSize', value);
                   }}
                   options={fontSizeOptions}
                 />
