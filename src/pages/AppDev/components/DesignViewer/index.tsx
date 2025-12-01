@@ -382,14 +382,25 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     useModel('appDev');
 
   /**
-   * 判断元素是否可以编辑文本内容
-   * @param tagName 元素的标签名
+   * 判断当前选中的元素是否可以编辑「文本内容」
+   *
+   * 规则：
+   * 1. 本身标签必须是可编辑文本的标签（不是 img/input 等）
+   * 2. 如果元素内部还有子元素（不仅仅是纯文本），也认为不可编辑，避免误改一整块区域的文本
+   *
+   * @param element 当前选中的元素信息
    * @returns 是否可以编辑文本内容
    */
-  const canEditTextContent = (tagName?: string): boolean => {
-    if (!tagName) return false;
+  const canEditTextContent = (element?: ElementInfo | null): boolean => {
+    if (!element?.tagName) return false;
 
-    const tag = tagName.toLowerCase();
+    // 如果包含子元素，认为是复杂结构，不允许直接改整块文本
+    // 说明：hasChildElement 需要在 iframe 中选中元素时通过 element.childElementCount > 0 计算后传入
+    if (!element.contenteditable) {
+      return false;
+    }
+
+    const tag = element.tagName.toLowerCase();
 
     // 不能编辑文本的元素
     const nonEditableTags = [
@@ -857,7 +868,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           setEditingClass(payload.elementInfo.className);
 
           // 判断元素是否可以编辑文本内容，如果可以则回显到 Text Content 编辑框
-          if (canEditTextContent(payload.elementInfo.tagName)) {
+          if (canEditTextContent(payload.elementInfo)) {
             setLocalTextContent(payload.elementInfo.textContent || '');
           } else {
             // 如果不能编辑，清空 Text Content 编辑框
@@ -1240,7 +1251,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           items={[
             {
               // 组件文件路径
-              title: selectedElement?.sourceInfo?.fileName.replace(
+              title: selectedElement?.sourceInfo?.fileName?.replace(
                 /^\/app\/project_workspace\/[^/]+\//,
                 '',
               ),
@@ -1268,7 +1279,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
       {/* 属性配置区域 */}
       <div className={cx(styles.propertiesContainer)}>
         {/* Text Content 配置 */}
-        {canEditTextContent(selectedElement?.tagName) && (
+        {canEditTextContent(selectedElement) && (
           <div className={cx(styles.propertySection)}>
             <div className={cx(styles.propertyLabel)}>Text Content</div>
             <Input.TextArea
