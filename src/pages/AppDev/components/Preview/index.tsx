@@ -1,4 +1,5 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { SANDBOX, UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { submitFilesUpdate } from '@/services/appDev';
@@ -49,8 +50,6 @@ interface PreviewProps {
   onStartDev?: () => void;
   /** 重启开发服务器回调 */
   onRestartDev?: () => void;
-  /** 取消编辑回调（重置） */
-  onCancelEdit?: () => void;
   /** 白屏且 iframe 内错误时触发 AI Agent 自动处理回调
    * @param errorMessage 错误消息，为空字符串表示只有白屏没有错误
    * @param errorType 错误类型，用于区分不同的错误场景
@@ -90,7 +89,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       serverErrorCode,
       onStartDev,
       onRestartDev,
-      onCancelEdit,
       onWhiteScreenOrIframeError,
     },
     ref,
@@ -103,8 +101,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     /** 是否正在保存文件 */
     const [isSaving, setIsSaving] = useState(false);
 
-    const { setIsIframeLoaded, pendingChanges, setPendingChanges } =
-      useModel('appDev');
+    const {
+      setIsIframeLoaded,
+      setIframeDesignMode,
+      pendingChanges,
+      setPendingChanges,
+    } = useModel('appDev');
 
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -1011,7 +1013,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      * 保存所有更改
      */
     const saveChanges = async () => {
-      const { projectId } = projectInfo || {};
+      const projectId = projectInfo?.projectId || '';
       if (!projectId) {
         message.error('缺少项目ID，无法保存');
         return;
@@ -1093,29 +1095,31 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           }
         }
 
-        console.log(
-          '[DesignViewer] Files to update (full list):',
+        // 4. 调用 submitFilesUpdate 接口提交全量列表
+        const response = await submitFilesUpdate(
+          projectId.toString(),
           filesToUpdate,
         );
+        setIsSaving(false);
 
-        // 4. 调用 submitFilesUpdate 接口提交全量列表
-        const response = await submitFilesUpdate(projectId, filesToUpdate);
-
-        if (response.code === '200') {
+        if (response.code === SUCCESS_CODE) {
           message.success(`成功保存！`);
-          setPendingChanges([]); // 清空待保存列表
-          console.log('[DesignViewer] Batch update success:', response);
+          setIframeDesignMode(false);
+          // 清空待保存列表
+          setPendingChanges([]);
         } else {
-          message.error('保存失败，请查看控制台错误信息');
-          console.error('[DesignViewer] Batch update failed:', response);
+          message.error(response.message || '保存失败，请查看控制台错误信息');
         }
       } catch (error) {
         console.error('[DesignViewer] Error saving changes:', error);
         message.error('保存出错，请检查网络连接');
-      } finally {
-        setIsSaving(false);
-        setIsIframeLoaded(false);
       }
+    };
+
+    const onCancelEdit = () => {
+      setPendingChanges([]);
+      setIframeDesignMode(false);
+      setIsSaving(false);
     };
 
     return (
