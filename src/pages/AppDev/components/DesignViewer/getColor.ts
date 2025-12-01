@@ -328,7 +328,7 @@ export const generateFullTailwindColorOptions = (): Array<{
  * Tailwind CSS 阴影类名映射
  * 包含所有 Tailwind CSS 阴影选项，映射到用户友好的标签
  */
-const tailwindShadowMap: Record<string, string> = {
+export const tailwindShadowMap: Record<string, string> = {
   'shadow-none': 'None',
   'shadow-sm': 'Small',
   shadow: 'Normal', // shadow 默认是 normal
@@ -386,7 +386,7 @@ export const generateTailwindShadowOptions = (): Array<{
  * Tailwind CSS 圆角类名映射
  * 包含所有 Tailwind CSS 圆角选项，映射到用户友好的标签
  */
-const tailwindRadiusMap: Record<string, string> = {
+export const tailwindRadiusMap: Record<string, string> = {
   'rounded-none': 'None',
   'rounded-sm': 'Small',
   rounded: 'Small', // rounded 默认是 small

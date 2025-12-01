@@ -101,12 +101,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     /** 是否正在保存文件 */
     const [isSaving, setIsSaving] = useState(false);
 
-    const {
-      setIsIframeLoaded,
-      setIframeDesignMode,
-      pendingChanges,
-      setPendingChanges,
-    } = useModel('appDev');
+    const { setIsIframeLoaded, pendingChanges, setPendingChanges } =
+      useModel('appDev');
 
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -1104,8 +1100,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
         if (response.code === SUCCESS_CODE) {
           message.success(`成功保存！`);
-          // 设置为预览模式
-          setIframeDesignMode(false);
           // 清空待保存列表
           setPendingChanges([]);
         } else {
@@ -1119,7 +1113,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
     const onCancelEdit = () => {
       setPendingChanges([]);
-      setIframeDesignMode(false);
       setIsSaving(false);
     };
 
