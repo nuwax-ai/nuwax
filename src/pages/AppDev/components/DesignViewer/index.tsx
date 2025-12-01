@@ -1212,7 +1212,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
   //   onChange?.('textDecoration', newDecorations);
   // };
 
-  if (!iframeDesignMode) {
+  if (!iframeDesignMode || !selectedElement) {
     return null;
   }
 

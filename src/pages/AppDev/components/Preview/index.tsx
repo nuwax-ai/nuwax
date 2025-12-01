@@ -1104,6 +1104,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
         if (response.code === SUCCESS_CODE) {
           message.success(`成功保存！`);
+          // 设置为预览模式
           setIframeDesignMode(false);
           // 清空待保存列表
           setPendingChanges([]);
