@@ -478,7 +478,11 @@ const VariableList: React.FC<VariableListProps> = ({
   }
 
   return (
-    <div ref={containerRef} className="css-var-r0">
+    <div
+      ref={containerRef}
+      className="css-var-r0 scroll-container"
+      style={{ height: '100%' }}
+    >
       {renderTree(treeData)}
     </div>
   );
