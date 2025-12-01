@@ -47,6 +47,8 @@ import {
   generateTailwindRadiusOptions,
   generateTailwindShadowOptions,
   getColorFromTailwindClass,
+  tailwindRadiusMap,
+  tailwindShadowMap,
 } from './getColor';
 import styles from './index.less';
 import { ElementInfo } from './messages';
@@ -196,13 +198,51 @@ const borderStyleOptions = [
 ];
 
 /**
+ * Tailwind CSS 间距值映射表
+ * 基于 Tailwind 默认配置：1 = 0.25rem = 4px
+ */
+const tailwindSpacingMap: Record<string, string> = {
+  '0': '0px',
+  px: '1px',
+  '0.5': '0.125rem', // 2px
+  '1': '0.25rem', // 4px
+  '1.5': '0.375rem', // 6px
+  '2': '0.5rem', // 8px
+  '2.5': '0.625rem', // 10px
+  '3': '0.75rem', // 12px
+  '3.5': '0.875rem', // 14px
+  '4': '1rem', // 16px
+  '5': '1.25rem', // 20px
+  '6': '1.5rem', // 24px
+  '7': '1.75rem', // 28px
+  '8': '2rem', // 32px
+  '9': '2.25rem', // 36px
+  '10': '2.5rem', // 40px
+  '11': '2.75rem', // 44px
+  '12': '3rem', // 48px
+  '14': '3.5rem', // 56px
+  '16': '4rem', // 64px
+  '20': '5rem', // 80px
+  '24': '6rem', // 96px
+  '28': '7rem', // 112px
+  '32': '8rem', // 128px
+  '36': '9rem', // 144px
+  '40': '10rem', // 160px
+  '44': '11rem', // 176px
+  '48': '12rem', // 192px
+  '52': '13rem', // 208px
+  '56': '14rem', // 224px
+  '60': '15rem', // 240px
+  '64': '16rem', // 256px
+  '72': '18rem', // 288px
+  '80': '20rem', // 320px
+  '96': '24rem', // 384px
+};
+
+/**
  * 属性面板组件 Props
  */
 interface DesignViewerProps {
-  /** 当前选中的元素名称 */
-  elementName?: string;
-  /** 父级路径（用于面包屑） */
-  parentPath?: string;
   /** 图标值 */
   icon?: string;
   /** 颜色值 */
@@ -242,14 +282,10 @@ interface DesignViewerProps {
  * 提供元素属性编辑面板，包括图标、颜色、背景、布局、尺寸和边框等配置
  */
 const DesignViewer: React.FC<DesignViewerProps> = ({
-  elementName = 'Sparkles',
-  parentPath = 'Page',
-  // color = 'primary',
   background = 'Default',
   margin = { vertical: 0, horizontal: 0 },
   padding = { vertical: 0, horizontal: 0 },
   onChange,
-  // files = [],
 }) => {
   // 字体颜色值
   const [localColor, setLocalColor] = useState<string>('Default');
@@ -346,6 +382,55 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     useModel('appDev');
 
   /**
+   * 判断元素是否可以编辑文本内容
+   * @param tagName 元素的标签名
+   * @returns 是否可以编辑文本内容
+   */
+  const canEditTextContent = (tagName?: string): boolean => {
+    if (!tagName) return false;
+
+    const tag = tagName.toLowerCase();
+
+    // 不能编辑文本的元素
+    const nonEditableTags = [
+      'img',
+      'br',
+      'hr',
+      'input',
+      'textarea',
+      'select',
+      'iframe',
+      'video',
+      'audio',
+      'svg',
+      'canvas',
+      'embed',
+      'object',
+      'param',
+      'source',
+      'track',
+      'area',
+      'base',
+      'col',
+      'colgroup',
+      'meta',
+      'link',
+      'script',
+      'style',
+      'noscript',
+      'template',
+    ];
+
+    // 如果是不支持编辑的标签，返回 false
+    if (nonEditableTags.includes(tag)) {
+      return false;
+    }
+
+    // 其他标签通常可以编辑文本内容
+    return true;
+  };
+
+  /**
    * 从样式字符串中解析数值（支持px、em、rem等单位）
    * @param value 样式值字符串，如 "16px", "1rem", "0" 等
    * @returns 解析后的数值（字符串形式，保留单位）或 "0px"
@@ -361,48 +446,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
       return `${value}px`;
     }
     return value || '0px';
-  };
-
-  /**
-   * Tailwind CSS 间距值映射表
-   * 基于 Tailwind 默认配置：1 = 0.25rem = 4px
-   */
-  const tailwindSpacingMap: Record<string, string> = {
-    '0': '0px',
-    px: '1px',
-    '0.5': '0.125rem', // 2px
-    '1': '0.25rem', // 4px
-    '1.5': '0.375rem', // 6px
-    '2': '0.5rem', // 8px
-    '2.5': '0.625rem', // 10px
-    '3': '0.75rem', // 12px
-    '3.5': '0.875rem', // 14px
-    '4': '1rem', // 16px
-    '5': '1.25rem', // 20px
-    '6': '1.5rem', // 24px
-    '7': '1.75rem', // 28px
-    '8': '2rem', // 32px
-    '9': '2.25rem', // 36px
-    '10': '2.5rem', // 40px
-    '11': '2.75rem', // 44px
-    '12': '3rem', // 48px
-    '14': '3.5rem', // 56px
-    '16': '4rem', // 64px
-    '20': '5rem', // 80px
-    '24': '6rem', // 96px
-    '28': '7rem', // 112px
-    '32': '8rem', // 128px
-    '36': '9rem', // 144px
-    '40': '10rem', // 160px
-    '44': '11rem', // 176px
-    '48': '12rem', // 192px
-    '52': '13rem', // 208px
-    '56': '14rem', // 224px
-    '60': '15rem', // 240px
-    '64': '16rem', // 256px
-    '72': '18rem', // 288px
-    '80': '20rem', // 320px
-    '96': '24rem', // 384px
   };
 
   /**
@@ -448,16 +491,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    * @returns 对应的阴影类型值
    */
   const mapTailwindShadowToLocal = (className: string): string | null => {
-    const shadowMap: Record<string, string> = {
-      'shadow-none': 'None',
-      'shadow-sm': 'Small',
-      shadow: 'Medium', // shadow 默认是 medium
-      'shadow-md': 'Medium',
-      'shadow-lg': 'Large',
-      'shadow-xl': 'Large',
-      'shadow-2xl': 'Large',
-    };
-    return shadowMap[className] || null;
+    return tailwindShadowMap[className] || null;
   };
 
   /**
@@ -466,18 +500,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    * @returns 对应的圆角类型值
    */
   const mapTailwindRadiusToLocal = (className: string): string | null => {
-    const radiusMap: Record<string, string> = {
-      'rounded-none': 'None',
-      'rounded-sm': 'Small',
-      rounded: 'Small', // rounded 默认是 small
-      'rounded-md': 'Medium',
-      'rounded-lg': 'Medium',
-      'rounded-xl': 'Large',
-      'rounded-2xl': 'Large',
-      'rounded-3xl': 'Large',
-      'rounded-full': 'Full',
-    };
-    return radiusMap[className] || null;
+    return tailwindRadiusMap[className] || null;
   };
 
   /**
@@ -745,8 +768,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
       else if (cls.startsWith('text-')) {
         // 尝试从 iframe 中获取实际颜色值
         const colorClass = parseTailwindColor(cls);
-
-        console.log('解析颜色类名（需要从实际', colorClass, cls);
         if (colorClass) {
           // 这里可以尝试从 CSS 中获取实际颜色值
           // 暂时先保存类名，后续可以通过计算样式获取
@@ -835,6 +856,14 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           setEditingContent(payload.elementInfo.textContent);
           setEditingClass(payload.elementInfo.className);
 
+          // 判断元素是否可以编辑文本内容，如果可以则回显到 Text Content 编辑框
+          if (canEditTextContent(payload.elementInfo.tagName)) {
+            setLocalTextContent(payload.elementInfo.textContent || '');
+          } else {
+            // 如果不能编辑，清空 Text Content 编辑框
+            setLocalTextContent('');
+          }
+
           // 从 className 中解析 Tailwind CSS 类名并更新状态
           if (payload.elementInfo.className) {
             parseTailwindClassesAndUpdateStates(payload.elementInfo.className);
@@ -844,10 +873,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           if (payload.elementInfo.computedStyles) {
             updateLocalStatesFromStyles(payload.elementInfo.computedStyles);
           }
-          // else {
-          //   // 否则请求获取计算样式
-          //   fetchElementComputedStyles(payload.elementInfo.sourceInfo);
-          // }
           break;
 
         case 'ELEMENT_DESELECTED':
@@ -965,17 +990,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
         },
         '*',
       );
-
-      // const { fileName, lineNumber, columnNumber } = selectedElement.sourceInfo;
-
-      // console.log('selectedElement11111111111111111', selectedElement);
-
-      // const _fileName = fileName.replace(
-      //   `/app/project_workspace/${projectId}/`,
-      //   '',
-      // );
-
-      // updateFileClassName(_fileName, debouncedClass, lineNumber, columnNumber);
     }
   }, [debouncedClass]);
 
@@ -1025,6 +1039,8 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
    */
   const handleTextContentChange = (value: string) => {
     setLocalTextContent(value);
+    // 同时更新 editingContent，用于实时更新到 iframe
+    setEditingContent(value);
     onChange?.('textContent', value);
   };
 
@@ -1223,13 +1239,18 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
         <Breadcrumb
           items={[
             {
-              title: parentPath,
+              // 组件文件路径
+              title: selectedElement?.sourceInfo?.fileName.replace(
+                /^\/app\/project_workspace\/[^/]+\//,
+                '',
+              ),
             },
             {
               title: (
                 <Space>
                   <ThunderboltOutlined className={cx(styles.breadcrumbIcon)} />
-                  <span>{elementName}</span>
+                  {/* 元素标签名 */}
+                  <span>{selectedElement?.tagName}</span>
                 </Space>
               ),
             },
@@ -1247,15 +1268,17 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
       {/* 属性配置区域 */}
       <div className={cx(styles.propertiesContainer)}>
         {/* Text Content 配置 */}
-        <div className={cx(styles.propertySection)}>
-          <div className={cx(styles.propertyLabel)}>Text Content</div>
-          <Input.TextArea
-            className={cx('w-full')}
-            value={localTextContent}
-            onChange={(e) => handleTextContentChange(e.target.value)}
-            autoSize={{ minRows: 3, maxRows: 4 }}
-          />
-        </div>
+        {canEditTextContent(selectedElement?.tagName) && (
+          <div className={cx(styles.propertySection)}>
+            <div className={cx(styles.propertyLabel)}>Text Content</div>
+            <Input.TextArea
+              className={cx('w-full')}
+              value={localTextContent}
+              onChange={(e) => handleTextContentChange(e.target.value)}
+              autoSize={{ minRows: 3, maxRows: 4 }}
+            />
+          </div>
+        )}
 
         {/* Typography 配置 */}
         <div className={cx(styles.propertySection)}>
