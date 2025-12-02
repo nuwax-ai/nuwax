@@ -971,7 +971,22 @@ const DesignViewer: React.FC = () => {
    */
   const handleBorderColorChange = (color: string) => {
     setBorderColor(color);
-    handleToggleColor('border', color);
+
+    // 如果选择的是 Default，直接移除所有 border color 相关的样式
+    // border color 的类名格式包括：
+    // - border-transparent
+    // - border-black
+    // - border-white
+    // - border-{colorName}-{shade}，如 border-red-500
+    // 正则表达式匹配所有 border color 类名，但不匹配 border-solid, border-2 等（border style 和 border width）
+    if (color === 'Default') {
+      // 匹配 border-transparent, border-black, border-white, border-{colorName}-{shade}
+      // 排除 border-solid, border-dashed 等（border style）
+      // 排除 border-0, border-2, border-4, border-8 等（border width）
+      toggleStyle('', /^border-(transparent|black|white|[a-z]+-\d+)$/);
+    } else {
+      handleToggleColor('border', color);
+    }
   };
 
   /**
