@@ -19,7 +19,7 @@ export interface ElementInfo {
    * - false / 未传：只有文本节点（或未检测）
    * 说明：这个字段需要在 iframe 里选中元素时一并计算后传上来：
    */
-  contenteditable?: boolean;
+  isStaticText?: boolean;
   /** 元素的源信息（文件路径、行号等） */
   sourceInfo: SourceInfo;
   /** 元素的计算样式（可选） */
