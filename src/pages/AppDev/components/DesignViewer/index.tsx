@@ -53,6 +53,7 @@ import {
   getColorFromTailwindClass,
 } from './utils/tailwind-color';
 import { generateTailwindFontSizeOptions } from './utils/tailwind-fontSize';
+import { generateTailwindFontWeightOptions } from './utils/tailwind-fontWeight';
 import { generateTailwindOpacityOptions } from './utils/tailwind-opacity';
 import {
   generateTailwindRadiusOptions,
@@ -125,16 +126,12 @@ const moreMenuItems = [
 //   { label: 'Monospace', value: 'Monospace' },
 // ];
 
-// Font Weight 选项
-const fontWeightOptions = [
-  { label: 'Thin', value: 'Thin' },
-  { label: 'Light', value: 'Light' },
-  { label: 'Regular', value: 'Regular' },
-  { label: 'Medium', value: 'Medium' },
-  { label: 'Semi Bold', value: 'Semi Bold' },
-  { label: 'Bold', value: 'Bold' },
-  { label: 'Extra Bold', value: 'Extra Bold' },
-];
+/**
+ * Font Weight 选项列表 - 从 Tailwind CSS 字体粗细配置中获取
+ * 基于 Tailwind CSS 默认字体粗细配置
+ * 包含：Thin (font-thin), Extra Light (font-extralight), Light (font-light), Regular (font-normal), Medium (font-medium), Semi Bold (font-semibold), Bold (font-bold), Extra Bold (font-extrabold), Black (font-black)
+ */
+const fontWeightOptions = generateTailwindFontWeightOptions();
 
 // Line Height 选项
 const lineHeightOptions = [
@@ -201,7 +198,8 @@ const DesignViewer: React.FC = () => {
   /** 编辑中的排版 */
   // const [localTypography, setLocalTypography] = useState('Default');
   /** 编辑中的字体粗细 */
-  const [fontWeight, setFontWeight] = useState('Semi Bold');
+  // fontWeight 存储 Tailwind 类名（如 'font-medium'）
+  const [fontWeight, setFontWeight] = useState<string>('font-medium');
   /** 编辑中的字体大小 */
   const [fontSize, setFontSize] = useState('lg');
   /** 编辑中的行高 */
@@ -433,6 +431,7 @@ const DesignViewer: React.FC = () => {
     setBorderStyle('Default');
     setBorderColor('Default');
     setFontSize('Default');
+    setFontWeight('font-medium'); // 重置为默认字体粗细
     setLineHeight('1.5');
     setLetterSpacing('0em');
     setTextAlign('left');
@@ -460,8 +459,6 @@ const DesignViewer: React.FC = () => {
     // 将 className 拆分成单个类名
     const classes = className.split(/\s+/).filter((c) => c.trim());
 
-    console.log('classes555', classes);
-
     // 初始化样式对象
     const styles: {
       paddingTop?: string;
@@ -482,6 +479,7 @@ const DesignViewer: React.FC = () => {
     let opacityValue: number | null = null;
     let borderWidthValue: string | null = null;
     let borderStyleValue: string | null = null;
+    let fontWeightValue: string | null = null;
     // let borderColorValue: string | null = null;
 
     // 遍历每个类名，解析样式
@@ -608,6 +606,17 @@ const DesignViewer: React.FC = () => {
           });
         }
       }
+      // 解析 Font Weight 类名
+      else if (cls.startsWith('font-')) {
+        // 匹配 font-thin, font-light, font-normal, font-medium, font-semibold, font-bold, font-extrabold, font-black
+        if (
+          /^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/.test(
+            cls,
+          )
+        ) {
+          fontWeightValue = cls;
+        }
+      }
     });
 
     // 如果有解析到的样式，更新状态
@@ -644,6 +653,11 @@ const DesignViewer: React.FC = () => {
     // 更新 Border Style
     if (borderStyleValue !== null) {
       setBorderStyle(borderStyleValue);
+    }
+
+    // 更新 Font Weight
+    if (fontWeightValue !== null) {
+      setFontWeight(fontWeightValue);
     }
   };
 
@@ -853,6 +867,20 @@ const DesignViewer: React.FC = () => {
   //   setLocalTypography(value);
   //   onChange?.('typography', value);
   // };
+
+  /**
+   * 处理字体粗细变更
+   */
+  const handleFontWeightChange = (value: React.Key) => {
+    const weightValue = value as string;
+    setFontWeight(weightValue);
+    // 通过 toggleStyle 方法将 font weight 样式写入 editingClass
+    // value 已经是 Tailwind 字体粗细类名（如 'font-semibold'）
+    toggleStyle(
+      weightValue,
+      /^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/,
+    );
+  };
 
   /**
    * 处理文本内容变更
@@ -1141,10 +1169,7 @@ const DesignViewer: React.FC = () => {
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={fontWeight}
-                  onChange={(value) => {
-                    setFontWeight(value as string);
-                    // onChange?.('fontWeight', value);
-                  }}
+                  onChange={handleFontWeightChange}
                   options={fontWeightOptions}
                 />
               </div>
