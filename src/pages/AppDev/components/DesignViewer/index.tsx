@@ -1118,8 +1118,6 @@ const DesignViewer: React.FC = () => {
         prefix === 'p'
           ? /^p-(?![xytrbl])/ // p- 后面不能是 x、y、t、r、b、l（避免匹配 px-、py-、pt- 等）
           : new RegExp(`^${prefix}-`);
-      // 如果 value 是 px，则转换为 1
-      // const tailwindValue = value === 'px' ? '1' : value;
       toggleStyle(`${prefix}-${value}`, paddingRegex);
     }
   };
