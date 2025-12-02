@@ -40,20 +40,27 @@ import {
   ResetSvg,
   ShadowSvg,
 } from './design.images.constants';
-import {
-  generateFullTailwindColorOptions,
-  generateTailwindBorderWidthOptions,
-  generateTailwindFontSizeOptions,
-  generateTailwindOpacityOptions,
-  generateTailwindRadiusOptions,
-  generateTailwindShadowOptions,
-  generateTailwindSpacingPixelOptions,
-  getColorFromTailwindClass,
-  tailwindRadiusMap,
-  tailwindShadowMap,
-} from './getColor';
 import styles from './index.less';
 import { ElementInfo } from './messages';
+import {
+  generateTailwindBorderStyleOptions,
+  generateTailwindBorderWidthOptions,
+} from './utils/tailwind-border';
+import {
+  generateFullTailwindColorOptions,
+  getColorFromTailwindClass,
+} from './utils/tailwind-color';
+import { generateTailwindFontSizeOptions } from './utils/tailwind-fontSize';
+import { generateTailwindOpacityOptions } from './utils/tailwind-opacity';
+import {
+  generateTailwindRadiusOptions,
+  tailwindRadiusMap,
+} from './utils/tailwind-radius';
+import {
+  generateTailwindShadowOptions,
+  tailwindShadowMap,
+} from './utils/tailwind-shadow';
+import { generateTailwindSpacingPixelOptions } from './utils/tailwind-space';
 
 const cx = classNames.bind(styles);
 
@@ -84,12 +91,6 @@ const borderWidthOptions = generateTailwindBorderWidthOptions();
  */
 const colorOptions = generateFullTailwindColorOptions();
 
-// 背景选项
-const backgroundOptions = colorOptions;
-
-// Border Color 选项
-const borderColorOptions = colorOptions;
-
 // Radius 选项 - 从 Tailwind CSS 生成
 const radiusOptions = generateTailwindRadiusOptions();
 
@@ -98,6 +99,9 @@ const shadowOptions = generateTailwindShadowOptions();
 
 // Opacity 选项 - 从 Tailwind CSS 生成
 const opacityOptions = generateTailwindOpacityOptions();
+
+// Font Size 选项 - 从 Tailwind CSS 生成
+const fontSizeOptions = generateTailwindFontSizeOptions();
 
 // 更多操作菜单
 const moreMenuItems = [
@@ -125,9 +129,6 @@ const fontWeightOptions = [
   { label: 'Extra Bold', value: 'Extra Bold' },
 ];
 
-// Font Size 选项 - 从 Tailwind CSS 生成
-const fontSizeOptions = generateTailwindFontSizeOptions();
-
 // Line Height 选项
 const lineHeightOptions = [
   { label: '0.75rem', value: '0.75rem' },
@@ -150,14 +151,12 @@ const letterSpacingOptions = [
   { label: '0.1em', value: '0.1em' },
 ];
 
-// Border Style 选项
-const borderStyleOptions = [
-  { label: 'Default', value: 'Default' },
-  { label: 'None', value: 'None' },
-  { label: 'Solid', value: 'Solid' },
-  { label: 'Dashed', value: 'Dashed' },
-  { label: 'Dotted', value: 'Dotted' },
-];
+/**
+ * Border Style 选项列表 - 从 Tailwind CSS 边框样式配置中获取
+ * 基于 Tailwind CSS 默认边框样式配置
+ * 包含：None (border-none), Solid (border-solid), Dashed (border-dashed), Dotted (border-dotted), Double (border-double)
+ */
+const borderStyleOptions = generateTailwindBorderStyleOptions();
 
 /**
  * 设计查看器组件
@@ -219,7 +218,8 @@ const DesignViewer: React.FC = () => {
   /** 编辑中的文本装饰 */
   // const [textDecoration, setTextDecoration] = useState<string[]>([]);
   /** 编辑中的边框样式 */
-  const [borderStyle, setBorderStyle] = useState('Default');
+  // borderStyle 存储 Tailwind 类名（如 'border-solid'）或 'Default'
+  const [borderStyle, setBorderStyle] = useState<string>('Default');
   /** 编辑中的边框颜色 */
   const [borderColor, setBorderColor] = useState('Default');
   /** 编辑中的边框宽度 */
@@ -430,12 +430,18 @@ const DesignViewer: React.FC = () => {
    * @param className Tailwind 边框样式类名，如 "border-solid", "border-dashed" 等
    * @returns 对应的边框样式值
    */
+  /**
+   * 从 Tailwind 边框样式类名映射到本地边框样式值
+   * @param className Tailwind 边框样式类名，如 "border-solid", "border-dashed" 等
+   * @returns 对应的边框样式值（Tailwind 类名）
+   */
   const mapTailwindBorderStyleToLocal = (className: string): string | null => {
     const styleMap: Record<string, string> = {
-      'border-none': 'None',
-      'border-solid': 'Solid',
-      'border-dashed': 'Dashed',
-      'border-dotted': 'Dotted',
+      'border-none': 'border-none',
+      'border-solid': 'border-solid',
+      'border-dashed': 'border-dashed',
+      'border-dotted': 'border-dotted',
+      'border-double': 'border-double',
     };
     return styleMap[className] || null;
   };
@@ -509,7 +515,7 @@ const DesignViewer: React.FC = () => {
     setShadowType('None');
     setRadius('None');
     setOpacity(100);
-    setBorderStyle('None');
+    setBorderStyle('Default');
     setBorderColor('Default');
     setFontSize('Default');
     setLineHeight('1.5');
@@ -1462,7 +1468,7 @@ const DesignViewer: React.FC = () => {
             className={cx('w-full')}
             value={localBackground}
             onChange={handleBackgroundChange}
-            options={backgroundOptions}
+            options={colorOptions}
             prefix={
               localBackground === 'Default' ? (
                 <BorderColorSvg className={cx(styles.layoutIcon)} />
@@ -1931,7 +1937,7 @@ const DesignViewer: React.FC = () => {
                 className={cx(styles.typographySelect)}
                 value={borderColor}
                 onChange={handleBorderColorChange}
-                options={borderColorOptions}
+                options={colorOptions}
                 prefix={
                   borderColor === 'Default' ? (
                     <BorderColorSvg className={cx(styles.layoutIcon)} />
@@ -1969,8 +1975,24 @@ const DesignViewer: React.FC = () => {
                 className={cx(styles.typographySelect)}
                 value={borderStyle}
                 onChange={(value) => {
-                  setBorderStyle(value as string);
-                  // onChange?.('borderStyle', value);
+                  const styleValue = value as string;
+                  setBorderStyle(styleValue);
+                  // onChange?.('borderStyle', styleValue);
+
+                  // 通过 toggleStyle 方法将 border 样式写入 editingClass
+                  if (styleValue === 'Default') {
+                    // 如果是 Default，移除所有边框样式类名
+                    toggleStyle(
+                      '',
+                      /^border-(none|solid|dashed|dotted|double)$/,
+                    );
+                  } else {
+                    // 使用 Tailwind 边框样式类名（value 已经是类名，如 'border-solid'）
+                    toggleStyle(
+                      styleValue,
+                      /^border-(none|solid|dashed|dotted|double)$/,
+                    );
+                  }
                 }}
                 options={borderStyleOptions}
               />
