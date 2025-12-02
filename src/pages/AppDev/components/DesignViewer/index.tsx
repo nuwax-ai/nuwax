@@ -60,7 +60,10 @@ import {
   generateTailwindShadowOptions,
   tailwindShadowMap,
 } from './utils/tailwind-shadow';
-import { generateTailwindSpacingPixelOptions } from './utils/tailwind-space';
+import {
+  generateTailwindSpacingPixelOptions,
+  getPaddingOrMarginSpace,
+} from './utils/tailwind-space';
 
 const cx = classNames.bind(styles);
 
@@ -168,24 +171,14 @@ const DesignViewer: React.FC = () => {
   /** 背景颜色值 */
   const [localBackground, setLocalBackground] = useState<string>('Default');
   /** 外边距值 */
-  const [localMargin, setLocalMargin] = useState<{
-    top: number | string;
-    right: number | string;
-    bottom: number | string;
-    left: number | string;
-  }>({
+  const [localMargin, setLocalMargin] = useState<Record<string, string>>({
     top: '0px',
     right: '0px',
     bottom: '0px',
     left: '0px',
   });
   /** 本地内边距 */
-  const [localPadding, setLocalPadding] = useState<{
-    top: number | string;
-    right: number | string;
-    bottom: number | string;
-    left: number | string;
-  }>({
+  const [localPadding, setLocalPadding] = useState<Record<string, string>>({
     top: '0px',
     right: '0px',
     bottom: '0px',
@@ -967,6 +960,14 @@ const DesignViewer: React.FC = () => {
   };
 
   /**
+   * 处理背景变更
+   */
+  const handleBackgroundChange = (color: string) => {
+    setLocalBackground(color);
+    handleToggleColor('bg', color);
+  };
+
+  /**
    * 处理边框颜色变更
    */
   const handleBorderColorChange = (color: string) => {
@@ -990,14 +991,6 @@ const DesignViewer: React.FC = () => {
   };
 
   /**
-   * 处理背景变更
-   */
-  const handleBackgroundChange = (color: string) => {
-    setLocalBackground(color);
-    handleToggleColor('bg', color);
-  };
-
-  /**
    * 处理外边距变更（四边独立）
    */
   const handleMarginChange = (
@@ -1011,42 +1004,14 @@ const DesignViewer: React.FC = () => {
       | 'all',
     value: string | null,
   ) => {
-    const newMargin = { ...localMargin };
     if (value !== null) {
-      let prefix = 'm';
-      if (type === 'all') {
-        // 统一设置所有边
-        newMargin.top = value;
-        newMargin.right = value;
-        newMargin.bottom = value;
-        newMargin.left = value;
-      } else if (type === 'vertical') {
-        prefix = 'my';
-        newMargin.top = value;
-        newMargin.bottom = value;
-      } else if (type === 'horizontal') {
-        prefix = 'mx';
-        newMargin.left = value;
-        newMargin.right = value;
-      } else {
-        switch (type) {
-          case 'top':
-            prefix = 'mt';
-            break;
-          case 'right':
-            prefix = 'mr';
-            break;
-          case 'bottom':
-            prefix = 'mb';
-            break;
-          case 'left':
-            prefix = 'ml';
-            break;
-        }
-        newMargin[type] = value;
-      }
+      const { spaceObject: newMargin, prefix } = getPaddingOrMarginSpace(
+        type,
+        value,
+        'margin',
+        localMargin,
+      );
       setLocalMargin(newMargin);
-      // onChange?.('margin', newMargin);
 
       // value 已经是 Tailwind spacing 值（如 '40'），直接使用
       // 正则表达式：精确匹配相同前缀的 margin 类名
@@ -1056,23 +1021,8 @@ const DesignViewer: React.FC = () => {
         prefix === 'm'
           ? /^m-(?![xytrbl])/ // m- 后面不能是 x、y、t、r、b、l（避免匹配 mx-、my-、mt- 等）
           : new RegExp(`^${prefix}-`);
-      console.log('marginRegex', value, marginRegex);
       toggleStyle(`${prefix}-${value}`, marginRegex);
     }
-  };
-
-  /**
-   * 切换外边距链接状态
-   */
-  const toggleMarginLink = () => {
-    setIsMarginLocked(!isMarginLocked);
-  };
-
-  /**
-   * 切换外边距展开状态
-   */
-  const toggleMarginExpand = () => {
-    setIsMarginExpanded(!isMarginExpanded);
   };
 
   /**
@@ -1089,40 +1039,13 @@ const DesignViewer: React.FC = () => {
       | 'all',
     value: string | null,
   ) => {
-    const newPadding = { ...localPadding };
     if (value !== null) {
-      let prefix = 'p';
-      if (type === 'all') {
-        // 统一设置所有边
-        newPadding.top = value;
-        newPadding.right = value;
-        newPadding.bottom = value;
-        newPadding.left = value;
-      } else if (type === 'vertical') {
-        prefix = 'py';
-        newPadding.top = value;
-        newPadding.bottom = value;
-      } else if (type === 'horizontal') {
-        prefix = 'px';
-        newPadding.left = value;
-        newPadding.right = value;
-      } else {
-        switch (type) {
-          case 'top':
-            prefix = 'pt';
-            break;
-          case 'right':
-            prefix = 'pr';
-            break;
-          case 'bottom':
-            prefix = 'pb';
-            break;
-          case 'left':
-            prefix = 'pl';
-            break;
-        }
-        newPadding[type] = value;
-      }
+      const { spaceObject: newPadding, prefix } = getPaddingOrMarginSpace(
+        type,
+        value,
+        'padding',
+        localPadding,
+      );
       setLocalPadding(newPadding);
 
       // value 已经是 Tailwind spacing 值（如 '40'），直接使用
@@ -1135,20 +1058,6 @@ const DesignViewer: React.FC = () => {
           : new RegExp(`^${prefix}-`);
       toggleStyle(`${prefix}-${value}`, paddingRegex);
     }
-  };
-
-  /**
-   * 切换内边距链接状态
-   */
-  const togglePaddingLink = () => {
-    setIsPaddingLocked(!isPaddingLocked);
-  };
-
-  /**
-   * 切换内边距展开状态
-   */
-  const togglePaddingExpand = () => {
-    setIsPaddingExpanded(!isPaddingExpanded);
   };
 
   /**
@@ -1178,13 +1087,6 @@ const DesignViewer: React.FC = () => {
   };
 
   /**
-   * 切换边框宽度展开状态
-   */
-  const toggleBorderWidthExpand = () => {
-    setIsBorderWidthExpanded(!isBorderWidthExpanded);
-  };
-
-  /**
    * 处理对齐方式变更
    */
   const handleTextAlignChange = (
@@ -1196,6 +1098,41 @@ const DesignViewer: React.FC = () => {
       setTextAlign(align);
     }
     // onChange?.('textAlign', align === 'reset' ? 'left' : align);
+  };
+
+  /**
+   * 切换外边距链接状态
+   */
+  const toggleMarginLink = () => {
+    setIsMarginLocked(!isMarginLocked);
+  };
+
+  /**
+   * 切换外边距展开状态
+   */
+  const toggleMarginExpand = () => {
+    setIsMarginExpanded(!isMarginExpanded);
+  };
+
+  /**
+   * 切换内边距链接状态
+   */
+  const togglePaddingLink = () => {
+    setIsPaddingLocked(!isPaddingLocked);
+  };
+
+  /**
+   * 切换内边距展开状态
+   */
+  const togglePaddingExpand = () => {
+    setIsPaddingExpanded(!isPaddingExpanded);
+  };
+
+  /**
+   * 切换边框宽度展开状态
+   */
+  const toggleBorderWidthExpand = () => {
+    setIsBorderWidthExpanded(!isBorderWidthExpanded);
   };
 
   /**
