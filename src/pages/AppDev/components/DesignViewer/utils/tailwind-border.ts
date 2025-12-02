@@ -1,3 +1,9 @@
+// 边框颜色类名正则表达式
+export const BORDER_COLOR_REGEXP =
+  /^border-(transparent|black|white|[a-z]+-\d+)$/;
+// 边框样式类名正则表达式
+export const BORDER_STYLE_REGEXP = /^border-(none|solid|dashed|dotted|double)$/;
+
 /**
  * Tailwind CSS 边框宽度值映射表
  * 基于 Tailwind CSS 默认配置

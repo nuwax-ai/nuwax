@@ -43,6 +43,8 @@ import {
 import styles from './index.less';
 import { ElementInfo } from './messages';
 import {
+  BORDER_COLOR_REGEXP,
+  BORDER_STYLE_REGEXP,
   generateTailwindBorderStyleOptions,
   generateTailwindBorderWidthOptions,
   mapTailwindBorderStyleToLocal,
@@ -52,8 +54,19 @@ import {
   generateFullTailwindColorOptions,
   getColorFromTailwindClass,
 } from './utils/tailwind-color';
-import { generateTailwindFontSizeOptions } from './utils/tailwind-fontSize';
-import { generateTailwindFontWeightOptions } from './utils/tailwind-fontWeight';
+import {
+  FONT_SIZE_REGEXP,
+  generateTailwindFontSizeOptions,
+} from './utils/tailwind-fontSize';
+import {
+  FONT_WEIGHT_REGEXP,
+  generateTailwindFontWeightOptions,
+} from './utils/tailwind-fontWeight';
+import {
+  convertRemToLineHeightClass,
+  generateTailwindLineHeightOptions,
+  LINE_HEIGHT_REGEXP,
+} from './utils/tailwind-lineHeight';
 import { generateTailwindOpacityOptions } from './utils/tailwind-opacity';
 import {
   generateTailwindRadiusOptions,
@@ -66,6 +79,7 @@ import {
 import {
   generateTailwindSpacingPixelOptions,
   getPaddingOrMarginSpace,
+  PaddingOrMarginType,
   parseStyleValue,
   parseTailwindSpacing,
 } from './utils/tailwind-space';
@@ -133,17 +147,8 @@ const moreMenuItems = [
  */
 const fontWeightOptions = generateTailwindFontWeightOptions();
 
-// Line Height 选项
-const lineHeightOptions = [
-  { label: '0.75rem', value: '0.75rem' },
-  { label: '1rem', value: '1rem' },
-  { label: '1.25rem', value: '1.25rem' },
-  { label: '1.5rem', value: '1.5rem' },
-  { label: '1.75rem', value: '1.75rem' },
-  { label: '2rem', value: '2rem' },
-  { label: '2.25rem', value: '2.25rem' },
-  { label: '2.5rem', value: '2.5rem' },
-];
+// Line Height 选项 - 从 Tailwind CSS 行高配置中获取
+const lineHeightOptions = generateTailwindLineHeightOptions();
 
 // Letter Spacing 选项
 const letterSpacingOptions = [
@@ -432,7 +437,7 @@ const DesignViewer: React.FC = () => {
     setBorderColor('Default');
     setFontSize('Default');
     setFontWeight('font-medium'); // 重置为默认字体粗细
-    setLineHeight('1.5');
+    setLineHeight('1.75rem');
     setLetterSpacing('0em');
     setTextAlign('left');
     setLocalBorderWidth({
@@ -591,7 +596,6 @@ const DesignViewer: React.FC = () => {
           // 暂时先保存类名，后续可以通过计算样式获取
           getColorFromTailwindClass(colorClass, (color) => {
             if (color) {
-              console.log('解析颜色类名（需要从实际 CSS 中获取颜色值）', color);
               setLocalColor(color);
             }
           });
@@ -609,11 +613,7 @@ const DesignViewer: React.FC = () => {
       // 解析 Font Weight 类名
       else if (cls.startsWith('font-')) {
         // 匹配 font-thin, font-light, font-normal, font-medium, font-semibold, font-bold, font-extrabold, font-black
-        if (
-          /^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/.test(
-            cls,
-          )
-        ) {
+        if (FONT_WEIGHT_REGEXP.test(cls)) {
           fontWeightValue = cls;
         }
       }
@@ -828,7 +828,11 @@ const DesignViewer: React.FC = () => {
   }, [debouncedClass]);
 
   // Style Manager Logic
-  const toggleStyle = (newStyle: string, categoryRegex: RegExp) => {
+  const toggleStyle = (
+    newStyle: string,
+    regex: RegExp,
+    isFontSize: boolean = false,
+  ) => {
     let currentClasses = editingClass.split(' ').filter((c) => c.trim());
 
     // 获取字体大小相关的类名列表（从 fontSizeOptions 中提取）
@@ -838,14 +842,28 @@ const DesignViewer: React.FC = () => {
       .map((option) => `text-${option.value}`);
 
     // Remove existing class in the same category
-    // 排除字体大小相关的类（如 text-xs, text-sm 等）
     currentClasses = currentClasses.filter((c) => {
-      // 如果是字体大小相关的类，不进行过滤
+      // 如果是字体大小相关的操作
+      if (isFontSize) {
+        // 先测试是否匹配字体大小正则
+        const matchesFontSize = regex.test(c);
+        // 保留 text-center 等非字体大小的 text- 类名
+        if (
+          c === 'text-center' ||
+          (c.startsWith('text-') && !matchesFontSize)
+        ) {
+          return true;
+        }
+        // 过滤掉匹配正则的字体大小类名（如 text-lg, text-sm, text-3xl 等）
+        return !matchesFontSize;
+      }
+
+      // 非字体大小操作：排除字体大小相关的类（如 text-xs, text-sm 等）
       if (fontSizeClasses.includes(c) || c.includes('text-center')) {
         return true;
       }
       // 其他类按原来的逻辑过滤
-      return !categoryRegex.test(c);
+      return !regex.test(c);
     });
 
     // Add new style if it's not empty (allows clearing style)
@@ -876,10 +894,49 @@ const DesignViewer: React.FC = () => {
     setFontWeight(weightValue);
     // 通过 toggleStyle 方法将 font weight 样式写入 editingClass
     // value 已经是 Tailwind 字体粗细类名（如 'font-semibold'）
-    toggleStyle(
-      weightValue,
-      /^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/,
-    );
+    toggleStyle(weightValue, FONT_WEIGHT_REGEXP);
+  };
+
+  /**
+   * 处理字体大小变更
+   */
+  const handleFontSizeChange = (value: React.Key) => {
+    const sizeValue = value as string;
+    setFontSize(sizeValue);
+
+    // 通过 toggleStyle 方法将 font size 样式写入 editingClass
+    if (sizeValue === 'Default') {
+      // 如果是 Default，移除所有字体大小类名
+      // 字体大小类名格式是 text-xs, text-sm, text-base 等
+      toggleStyle('', FONT_SIZE_REGEXP, true);
+    } else {
+      // 将 value（如 'lg'）转换为 Tailwind 类名（如 'text-lg'）
+      const fontSizeClass = `text-${sizeValue}`;
+      toggleStyle(fontSizeClass, FONT_SIZE_REGEXP, true);
+    }
+  };
+
+  /**
+   * 处理行高变更
+   */
+  const handleLineHeightChange = (value: React.Key) => {
+    const heightValue = value as string;
+    setLineHeight(heightValue);
+
+    // 通过 toggleStyle 方法将 line height 样式写入 editingClass
+    // if (heightValue === 'None') {
+    //   // 如果是 None，移除所有行高类名
+    //   toggleStyle('', LINE_HEIGHT_REGEXP);
+    // } else {
+    // value 是 rem 值（如 '1.5rem'），需要转换为 Tailwind 类名（如 'leading-6'）
+    const lineHeightClass = convertRemToLineHeightClass(heightValue);
+    if (lineHeightClass) {
+      toggleStyle(lineHeightClass, LINE_HEIGHT_REGEXP);
+    } else {
+      // 如果找不到对应的类名，移除所有行高类名
+      toggleStyle('', LINE_HEIGHT_REGEXP);
+    }
+    // }
   };
 
   /**
@@ -896,9 +953,29 @@ const DesignViewer: React.FC = () => {
    * 处理颜色切换
    */
   const handleToggleColor = (prefix: string, color: string) => {
-    const itemColor = colorOptions.find((item) => item.value === color);
-    const styleClass = `${prefix}-${itemColor?.label}`;
-    toggleStyle(styleClass, new RegExp(`^${prefix}-[a-z]+(-\\d+)?$`));
+    // 如果选择的是 Default，直接移除所有该前缀的颜色样式
+    // 颜色类名格式包括：
+    // - {prefix}-transparent
+    // - {prefix}-black
+    // - {prefix}-white
+    // - {prefix}-{colorName}-{shade}，如 text-red-500, bg-blue-600
+    if (color === 'Default') {
+      // 匹配所有颜色类名，但不匹配其他样式类名
+      // 例如 text- 前缀：匹配 text-red-500, text-white 等，但不匹配 text-xs, text-center 等
+      // 例如 bg- 前缀：匹配 bg-blue-600, bg-white 等
+      // 例如 border- 前缀：已在 handleBorderColorChange 中特殊处理
+      toggleStyle(
+        '',
+        new RegExp(`^${prefix}-(transparent|black|white|[a-z]+-\\d+)$`),
+      );
+    } else {
+      const itemColor = colorOptions.find((item) => item.value === color);
+      const styleClass = `${prefix}-${itemColor?.label}`;
+      toggleStyle(
+        styleClass,
+        new RegExp(`^${prefix}-(transparent|black|white|[a-z]+-\\d+)$`),
+      );
+    }
   };
 
   /**
@@ -934,9 +1011,26 @@ const DesignViewer: React.FC = () => {
       // 匹配 border-transparent, border-black, border-white, border-{colorName}-{shade}
       // 排除 border-solid, border-dashed 等（border style）
       // 排除 border-0, border-2, border-4, border-8 等（border width）
-      toggleStyle('', /^border-(transparent|black|white|[a-z]+-\d+)$/);
+      toggleStyle('', BORDER_COLOR_REGEXP);
     } else {
       handleToggleColor('border', color);
+    }
+  };
+
+  /**
+   * 处理边框样式变更
+   */
+  const handleBorderStyleChange = (value: React.Key) => {
+    const styleValue = value as string;
+    setBorderStyle(styleValue);
+
+    // 通过 toggleStyle 方法将 border 样式写入 editingClass
+    if (styleValue === 'Default') {
+      // 如果是 Default，移除所有边框样式类名
+      toggleStyle('', BORDER_STYLE_REGEXP);
+    } else {
+      // 使用 Tailwind 边框样式类名（value 已经是类名，如 'border-solid'）
+      toggleStyle(styleValue, BORDER_STYLE_REGEXP);
     }
   };
 
@@ -944,14 +1038,7 @@ const DesignViewer: React.FC = () => {
    * 处理外边距变更（四边独立）
    */
   const handleMarginChange = (
-    type:
-      | 'top'
-      | 'right'
-      | 'bottom'
-      | 'left'
-      | 'vertical'
-      | 'horizontal'
-      | 'all',
+    type: PaddingOrMarginType,
     value: string | null,
   ) => {
     if (value !== null) {
@@ -979,14 +1066,7 @@ const DesignViewer: React.FC = () => {
    * 处理内边距变更（四边独立）
    */
   const handlePaddingChange = (
-    type:
-      | 'top'
-      | 'right'
-      | 'bottom'
-      | 'left'
-      | 'vertical'
-      | 'horizontal'
-      | 'all',
+    type: PaddingOrMarginType,
     value: string | null,
   ) => {
     if (value !== null) {
@@ -1178,10 +1258,7 @@ const DesignViewer: React.FC = () => {
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={fontSize}
-                  onChange={(value) => {
-                    setFontSize(value as string);
-                    // onChange?.('fontSize', value);
-                  }}
+                  onChange={handleFontSizeChange}
                   options={fontSizeOptions}
                 />
               </div>
@@ -1196,10 +1273,7 @@ const DesignViewer: React.FC = () => {
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={lineHeight}
-                  onChange={(value) => {
-                    setLineHeight(value as string);
-                    // onChange?.('lineHeight', value);
-                  }}
+                  onChange={handleLineHeightChange}
                   options={lineHeightOptions}
                 />
               </div>
@@ -1873,26 +1947,7 @@ const DesignViewer: React.FC = () => {
               <SelectList
                 className={cx(styles.typographySelect)}
                 value={borderStyle}
-                onChange={(value) => {
-                  const styleValue = value as string;
-                  setBorderStyle(styleValue);
-                  // onChange?.('borderStyle', styleValue);
-
-                  // 通过 toggleStyle 方法将 border 样式写入 editingClass
-                  if (styleValue === 'Default') {
-                    // 如果是 Default，移除所有边框样式类名
-                    toggleStyle(
-                      '',
-                      /^border-(none|solid|dashed|dotted|double)$/,
-                    );
-                  } else {
-                    // 使用 Tailwind 边框样式类名（value 已经是类名，如 'border-solid'）
-                    toggleStyle(
-                      styleValue,
-                      /^border-(none|solid|dashed|dotted|double)$/,
-                    );
-                  }
-                }}
+                onChange={handleBorderStyleChange}
                 options={borderStyleOptions}
               />
             </div>

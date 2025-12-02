@@ -1,3 +1,7 @@
+// 字体粗细类名正则表达式
+export const FONT_WEIGHT_REGEXP =
+  /^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/;
+
 /**
  * Tailwind CSS 字体粗细类名映射表
  * 包含所有 Tailwind CSS 字体粗细选项，映射到用户友好的标签
