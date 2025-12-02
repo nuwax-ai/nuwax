@@ -1,3 +1,4 @@
+// 内边距或外边距操作类型枚举
 export type PaddingOrMarginType =
   | 'top'
   | 'right'
@@ -6,6 +7,14 @@ export type PaddingOrMarginType =
   | 'vertical'
   | 'horizontal'
   | 'all';
+
+// 内边距或外边距、边框值类型
+export type SpaceValueType = {
+  top: number | string;
+  right: number | string;
+  bottom: number | string;
+  left: number | string;
+};
 
 /**
  * Tailwind CSS spacing 值映射表（用于 padding 和 margin）
@@ -129,9 +138,9 @@ export const getPaddingOrMarginSpace = (
   type: PaddingOrMarginType,
   value: string | null,
   prefixType: 'padding' | 'margin' = 'padding',
-  data: Record<string, string> = { top: '', right: '', bottom: '', left: '' },
+  data: SpaceValueType = { top: '', right: '', bottom: '', left: '' },
 ) => {
-  const spaceObject: Record<string, string> = { ...data };
+  const spaceObject: SpaceValueType = { ...data };
   if (value !== null) {
     let prefix = prefixType === 'padding' ? 'p' : 'm';
     if (type === 'all') {

@@ -52,6 +52,7 @@ import {
 } from './utils/tailwind-border';
 import {
   generateFullTailwindColorOptions,
+  getColorClassRegexp,
   getColorFromTailwindClass,
 } from './utils/tailwind-color';
 import {
@@ -76,6 +77,7 @@ import {
   convertNumberToOpacityClass,
   generateTailwindOpacityOptions,
   OPACITY_REGEXP,
+  parseTailwindOpacity,
 } from './utils/tailwind-opacity';
 import {
   convertLabelToRadiusClass,
@@ -95,6 +97,7 @@ import {
   PaddingOrMarginType,
   parseStyleValue,
   parseTailwindSpacing,
+  SpaceValueType,
 } from './utils/tailwind-space';
 
 const cx = classNames.bind(styles);
@@ -187,38 +190,38 @@ const DesignViewer: React.FC = () => {
   /** 背景颜色值 */
   const [localBackground, setLocalBackground] = useState<string>('Default');
   /** 外边距值 */
-  const [localMargin, setLocalMargin] = useState<Record<string, string>>({
+  const [localMargin, setLocalMargin] = useState<SpaceValueType>({
     top: '0px',
     right: '0px',
     bottom: '0px',
     left: '0px',
   });
   /** 本地内边距 */
-  const [localPadding, setLocalPadding] = useState<Record<string, string>>({
+  const [localPadding, setLocalPadding] = useState<SpaceValueType>({
     top: '0px',
     right: '0px',
     bottom: '0px',
     left: '0px',
   });
   /** 是否锁定外边距 */
-  const [isMarginLocked, setIsMarginLocked] = useState(true);
+  const [isMarginLocked, setIsMarginLocked] = useState<boolean>(true);
   /** 是否锁定内边距 */
-  const [isPaddingLocked, setIsPaddingLocked] = useState(true);
+  const [isPaddingLocked, setIsPaddingLocked] = useState<boolean>(true);
   /** 是否展开外边距 */
-  const [isMarginExpanded, setIsMarginExpanded] = useState(false);
+  const [isMarginExpanded, setIsMarginExpanded] = useState<boolean>(false);
   /** 是否展开内边距 */
-  const [isPaddingExpanded, setIsPaddingExpanded] = useState(false);
+  const [isPaddingExpanded, setIsPaddingExpanded] = useState<boolean>(false);
   /** 编辑中的文本内容 */
-  const [localTextContent, setLocalTextContent] = useState('');
+  const [localTextContent, setLocalTextContent] = useState<string>('');
   /** 编辑中的排版 */
   // const [localTypography, setLocalTypography] = useState('Default');
   /** 编辑中的字体粗细 */
   // fontWeight 存储 Tailwind 类名（如 'font-medium'）
   const [fontWeight, setFontWeight] = useState<string>('font-medium');
   /** 编辑中的字体大小 */
-  const [fontSize, setFontSize] = useState('lg');
+  const [fontSize, setFontSize] = useState<string>('Default');
   /** 编辑中的行高 */
-  const [lineHeight, setLineHeight] = useState('1.75rem');
+  const [lineHeight, setLineHeight] = useState<string>('1.75rem');
   /** 编辑中的字母间距 */
   const [letterSpacing, setLetterSpacing] = useState<string>('0em');
   /** 编辑中的文本对齐方式 */
@@ -231,14 +234,9 @@ const DesignViewer: React.FC = () => {
   // borderStyle 存储 Tailwind 类名（如 'border-solid'）或 'Default'
   const [borderStyle, setBorderStyle] = useState<string>('Default');
   /** 编辑中的边框颜色 */
-  const [borderColor, setBorderColor] = useState('Default');
+  const [borderColor, setBorderColor] = useState<string>('Default');
   /** 编辑中的边框宽度 */
-  const [localBorderWidth, setLocalBorderWidth] = useState<{
-    top: number | string;
-    right: number | string;
-    bottom: number | string;
-    left: number | string;
-  }>({
+  const [localBorderWidth, setLocalBorderWidth] = useState<SpaceValueType>({
     top: '0', // 使用 Tailwind 边框宽度值
     right: '0',
     bottom: '0',
@@ -250,9 +248,9 @@ const DesignViewer: React.FC = () => {
   /** 编辑中的透明度 */
   const [opacity, setOpacity] = useState<number>(100);
   /** 编辑中的圆角 */
-  const [radius, setRadius] = useState<string>('Small');
+  const [radius, setRadius] = useState<string>('None');
   /** 编辑中的阴影类型 */
-  const [shadowType, setShadowType] = useState<string>('Default');
+  const [shadowType, setShadowType] = useState<string>('None');
 
   /** 选中的元素, 用于标识当前选中的元素, 包含className, sourceInfo, tagName, textContent等信息*/
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(
@@ -359,22 +357,6 @@ const DesignViewer: React.FC = () => {
   };
 
   /**
-   * 从 Tailwind 透明度类名解析透明度百分比
-   * @param className Tailwind 透明度类名，如 "opacity-50", "opacity-75" 等
-   * @returns 透明度百分比 (0-100)
-   */
-  const parseTailwindOpacity = (className: string): number | null => {
-    const match = className.match(/^opacity-(\d+)$/);
-    if (match) {
-      const value = parseInt(match[1], 10);
-      if (value >= 0 && value <= 100) {
-        return value;
-      }
-    }
-    return null;
-  };
-
-  /**
    * 从计算样式对象中解析并更新本地状态
    * @param computedStyles 计算样式对象
    */
@@ -432,11 +414,8 @@ const DesignViewer: React.FC = () => {
     }
   };
 
-  /**
-   * 从 Tailwind CSS 类名中解析样式并更新本地状态
-   * @param className 元素的 className 字符串，可能包含多个 Tailwind 类名
-   */
-  const parseTailwindClassesAndUpdateStates = (className: string) => {
+  // 重置本地状态
+  const resetLocalStates = () => {
     // 解析className中的 Tailwind 类名前，先重置本地状态
     setLocalColor('Default');
     setLocalBackground('Default');
@@ -468,6 +447,21 @@ const DesignViewer: React.FC = () => {
       bottom: '0px',
       left: '0px',
     });
+    setLocalBorderWidth({
+      top: '0',
+      right: '0',
+      bottom: '0',
+      left: '0',
+    });
+  };
+
+  /**
+   * 从 Tailwind CSS 类名中解析样式并更新本地状态
+   * @param className 元素的 className 字符串，可能包含多个 Tailwind 类名
+   */
+  const parseTailwindClassesAndUpdateStates = (className: string) => {
+    // 重置本地状态
+    resetLocalStates();
 
     if (!className) return;
 
@@ -977,7 +971,6 @@ const DesignViewer: React.FC = () => {
    */
   const handleOpacityChange = (value: number) => {
     setOpacity(value);
-    // onChange?.('opacity', value);
 
     // 通过 toggleStyle 方法将 opacity 样式写入 editingClass
     // value 是数字值（如 50），需要转换为 Tailwind 类名（如 'opacity-50'）
@@ -996,7 +989,6 @@ const DesignViewer: React.FC = () => {
   const handleRadiusChange = (value: React.Key) => {
     const radiusValue = value as string;
     setRadius(radiusValue);
-    // onChange?.('radius', radiusValue);
 
     // 通过 toggleStyle 方法将 radius 样式写入 editingClass
     if (radiusValue === 'Default' || radiusValue === 'None') {
@@ -1020,7 +1012,6 @@ const DesignViewer: React.FC = () => {
   const handleShadowChange = (value: React.Key) => {
     const shadowValue = value as string;
     setShadowType(shadowValue);
-    // onChange?.('shadowType', shadowValue);
 
     // 通过 toggleStyle 方法将 shadow 样式写入 editingClass
     if (shadowValue === 'Default' || shadowValue === 'None') {
@@ -1045,13 +1036,13 @@ const DesignViewer: React.FC = () => {
     setLocalTextContent(value);
     // 同时更新 editingContent，用于实时更新到 iframe
     setEditingContent(value);
-    // onChange?.('textContent', value);
   };
 
   /**
    * 处理颜色切换
    */
   const handleToggleColor = (prefix: string, color: string) => {
+    const colorClassRegexp = getColorClassRegexp(prefix);
     // 如果选择的是 Default，直接移除所有该前缀的颜色样式
     // 颜色类名格式包括：
     // - {prefix}-transparent
@@ -1063,17 +1054,11 @@ const DesignViewer: React.FC = () => {
       // 例如 text- 前缀：匹配 text-red-500, text-white 等，但不匹配 text-xs, text-center 等
       // 例如 bg- 前缀：匹配 bg-blue-600, bg-white 等
       // 例如 border- 前缀：已在 handleBorderColorChange 中特殊处理
-      toggleStyle(
-        '',
-        new RegExp(`^${prefix}-(transparent|black|white|[a-z]+-\\d+)$`),
-      );
+      toggleStyle('', colorClassRegexp);
     } else {
       const itemColor = colorOptions.find((item) => item.value === color);
       const styleClass = `${prefix}-${itemColor?.label}`;
-      toggleStyle(
-        styleClass,
-        new RegExp(`^${prefix}-(transparent|black|white|[a-z]+-\\d+)$`),
-      );
+      toggleStyle(styleClass, colorClassRegexp);
     }
   };
 

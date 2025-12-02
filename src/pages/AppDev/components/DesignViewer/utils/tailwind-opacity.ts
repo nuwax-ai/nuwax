@@ -64,3 +64,19 @@ export const generateTailwindOpacityOptions = (): Array<{
 
   return options;
 };
+
+/**
+ * 从 Tailwind 透明度类名解析透明度百分比
+ * @param className Tailwind 透明度类名，如 "opacity-50", "opacity-75" 等
+ * @returns 透明度百分比 (0-100)
+ */
+export const parseTailwindOpacity = (className: string): number | null => {
+  const match = className.match(/^opacity-(\d+)$/);
+  if (match) {
+    const value = parseInt(match[1], 10);
+    if (value >= 0 && value <= 100) {
+      return value;
+    }
+  }
+  return null;
+};
