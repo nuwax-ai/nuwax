@@ -45,6 +45,8 @@ import { ElementInfo } from './messages';
 import {
   generateTailwindBorderStyleOptions,
   generateTailwindBorderWidthOptions,
+  mapTailwindBorderStyleToLocal,
+  parseTailwindBorderWidth,
 } from './utils/tailwind-border';
 import {
   generateFullTailwindColorOptions,
@@ -63,6 +65,8 @@ import {
 import {
   generateTailwindSpacingPixelOptions,
   getPaddingOrMarginSpace,
+  parseStyleValue,
+  parseTailwindSpacing,
 } from './utils/tailwind-space';
 
 const cx = classNames.bind(styles);
@@ -310,48 +314,6 @@ const DesignViewer: React.FC = () => {
   };
 
   /**
-   * 从样式字符串中解析数值（支持px、em、rem等单位）
-   * @param value 样式值字符串，如 "16px", "1rem", "0" 等
-   * @returns 解析后的数值（字符串形式，保留单位）或 "0px"
-   */
-  const parseStyleValue = (value: string | null | undefined): string => {
-    if (!value || value === '0' || value === '0px') return '0px';
-    // 如果已经是带单位的字符串，直接返回
-    if (typeof value === 'string' && /^\d+(\.\d+)?(px|em|rem|%)$/.test(value)) {
-      return value;
-    }
-    // 如果是纯数字，添加px单位
-    if (/^\d+(\.\d+)?$/.test(value)) {
-      return `${value}px`;
-    }
-    return value || '0px';
-  };
-
-  /**
-   * 从 Tailwind 类名中解析间距值
-   * @param className Tailwind 类名，如 "p-4", "m-2", "px-8" 等
-   * @returns 对应的 CSS 值，如 "1rem", "0.5rem" 等
-   */
-  const parseTailwindSpacing = (className: string): string => {
-    // 匹配类名中的数字部分，如 "p-4" 中的 "4"
-    const match = className.match(/-(\d+(?:\.\d+)?|px)$/);
-    if (match) {
-      const value = match[1];
-      return value.toString();
-      // return tailwindSpacingMap[value] || `${parseFloat(value) * 0.25}rem`;
-    }
-    // // 处理特殊值 "px"
-    // if (className.endsWith('-px')) {
-    //   return '1px';
-    // }
-    // // 处理 "0"
-    // if (className.endsWith('-0')) {
-    //   return '0px';
-    // }
-    return '0';
-  };
-
-  /**
    * 从 Tailwind 类名中解析颜色值
    * @param className Tailwind 类名，如 "text-red-500", "bg-blue-600" 等
    * @returns 对应的颜色值（需要从实际 CSS 中获取，这里返回类名用于后续处理）
@@ -397,46 +359,6 @@ const DesignViewer: React.FC = () => {
       }
     }
     return null;
-  };
-
-  /**
-   * 从 Tailwind 边框宽度类名解析边框宽度
-   * @param className Tailwind 边框宽度类名，如 "border-2", "border-4" 等
-   * @returns 边框宽度值
-   */
-  const parseTailwindBorderWidth = (className: string): string | null => {
-    if (className === 'border-0' || className === 'border-none') {
-      return '0'; // 返回 Tailwind 边框宽度值
-    }
-    if (className === 'border') {
-      return '1'; // border 默认是 1px，返回 Tailwind 边框宽度值 '1'
-    }
-    const match = className.match(/^border-(\d+)$/);
-    if (match) {
-      return match[1]; // 返回 Tailwind 边框宽度值（如 '2', '4', '8'）
-    }
-    return null;
-  };
-
-  /**
-   * 从 Tailwind 边框样式类名映射到本地边框样式
-   * @param className Tailwind 边框样式类名，如 "border-solid", "border-dashed" 等
-   * @returns 对应的边框样式值
-   */
-  /**
-   * 从 Tailwind 边框样式类名映射到本地边框样式值
-   * @param className Tailwind 边框样式类名，如 "border-solid", "border-dashed" 等
-   * @returns 对应的边框样式值（Tailwind 类名）
-   */
-  const mapTailwindBorderStyleToLocal = (className: string): string | null => {
-    const styleMap: Record<string, string> = {
-      'border-none': 'border-none',
-      'border-solid': 'border-solid',
-      'border-dashed': 'border-dashed',
-      'border-dotted': 'border-dotted',
-      'border-double': 'border-double',
-    };
-    return styleMap[className] || null;
   };
 
   /**
