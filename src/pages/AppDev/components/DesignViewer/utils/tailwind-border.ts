@@ -79,3 +79,40 @@ export const generateTailwindBorderStyleOptions = (): Array<{
 
   return options;
 };
+
+/**
+ * 从 Tailwind 边框样式类名映射到本地边框样式值
+ * @param className Tailwind 边框样式类名，如 "border-solid", "border-dashed" 等
+ * @returns 对应的边框样式值（Tailwind 类名）
+ */
+export const mapTailwindBorderStyleToLocal = (
+  className: string,
+): string | null => {
+  const styleMap: Record<string, string> = {
+    'border-none': 'border-none',
+    'border-solid': 'border-solid',
+    'border-dashed': 'border-dashed',
+    'border-dotted': 'border-dotted',
+    'border-double': 'border-double',
+  };
+  return styleMap[className] || null;
+};
+
+/**
+ * 从 Tailwind 边框宽度类名解析边框宽度
+ * @param className Tailwind 边框宽度类名，如 "border-2", "border-4" 等
+ * @returns 边框宽度值
+ */
+export const parseTailwindBorderWidth = (className: string): string | null => {
+  if (className === 'border-0' || className === 'border-none') {
+    return '0'; // 返回 Tailwind 边框宽度值
+  }
+  if (className === 'border') {
+    return '1'; // border 默认是 1px，返回 Tailwind 边框宽度值 '1'
+  }
+  const match = className.match(/^border-(\d+)$/);
+  if (match) {
+    return match[1]; // 返回 Tailwind 边框宽度值（如 '2', '4', '8'）
+  }
+  return null;
+};
