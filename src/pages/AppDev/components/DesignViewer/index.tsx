@@ -84,7 +84,9 @@ import {
   tailwindRadiusMap,
 } from './utils/tailwind-radius';
 import {
+  convertLabelToShadowClass,
   generateTailwindShadowOptions,
+  SHADOW_REGEXP,
   tailwindShadowMap,
 } from './utils/tailwind-shadow';
 import {
@@ -1008,6 +1010,30 @@ const DesignViewer: React.FC = () => {
       } else {
         // 如果找不到对应的类名，移除所有圆角类名
         toggleStyle('', RADIUS_REGEXP);
+      }
+    }
+  };
+
+  /**
+   * 处理阴影变更
+   */
+  const handleShadowChange = (value: React.Key) => {
+    const shadowValue = value as string;
+    setShadowType(shadowValue);
+    // onChange?.('shadowType', shadowValue);
+
+    // 通过 toggleStyle 方法将 shadow 样式写入 editingClass
+    if (shadowValue === 'Default' || shadowValue === 'None') {
+      // 如果是 Default 或 None，移除所有阴影类名
+      toggleStyle('', SHADOW_REGEXP);
+    } else {
+      // value 是用户友好的标签（如 'Small'），需要转换为 Tailwind 类名（如 'shadow-sm'）
+      const shadowClass = convertLabelToShadowClass(shadowValue);
+      if (shadowClass) {
+        toggleStyle(shadowClass, SHADOW_REGEXP);
+      } else {
+        // 如果找不到对应的类名，移除所有阴影类名
+        toggleStyle('', SHADOW_REGEXP);
       }
     }
   };
@@ -2165,10 +2191,7 @@ const DesignViewer: React.FC = () => {
           <SelectList
             className={cx(styles.shadowSelect)}
             value={shadowType}
-            onChange={(value) => {
-              setShadowType(value as string);
-              // onChange?.('shadowType', value);
-            }}
+            onChange={handleShadowChange}
             options={shadowOptions}
             prefix={<ShadowSvg className={cx(styles.layoutIcon)} />}
           />
