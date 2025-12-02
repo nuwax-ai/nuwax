@@ -112,3 +112,59 @@ export const generateTailwindSpacingPixelOptions = (
 
   return options;
 };
+
+/**
+ * 处理内边距变更（四边独立）
+ */
+export const getPaddingOrMarginSpace = (
+  type: 'top' | 'right' | 'bottom' | 'left' | 'vertical' | 'horizontal' | 'all',
+  value: string | null,
+  prefixType: 'padding' | 'margin' = 'padding',
+  data: Record<string, string> = { top: '', right: '', bottom: '', left: '' },
+) => {
+  const spaceObject: Record<string, string> = { ...data };
+  if (value !== null) {
+    let prefix = prefixType === 'padding' ? 'p' : 'm';
+    if (type === 'all') {
+      // 统一设置所有边
+      spaceObject.top = value;
+      spaceObject.right = value;
+      spaceObject.bottom = value;
+      spaceObject.left = value;
+    } else if (type === 'vertical') {
+      prefix = prefixType === 'padding' ? 'py' : 'my';
+      spaceObject.top = value;
+      spaceObject.bottom = value;
+    } else if (type === 'horizontal') {
+      prefix = prefixType === 'padding' ? 'px' : 'mx';
+      spaceObject.left = value;
+      spaceObject.right = value;
+    } else {
+      switch (type) {
+        case 'top':
+          prefix = prefixType === 'padding' ? 'pt' : 'mt';
+          break;
+        case 'right':
+          prefix = prefixType === 'padding' ? 'pr' : 'mr';
+          break;
+        case 'bottom':
+          prefix = prefixType === 'padding' ? 'pb' : 'mb';
+          break;
+        case 'left':
+          prefix = prefixType === 'padding' ? 'pl' : 'ml';
+          break;
+      }
+      spaceObject[type] = value;
+    }
+
+    return {
+      spaceObject,
+      prefix,
+    };
+  }
+
+  return {
+    spaceObject: { ...data },
+    prefix: '',
+  };
+};
