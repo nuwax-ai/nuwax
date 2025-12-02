@@ -7,15 +7,19 @@ import {
   ThunderboltOutlined,
   UnlockOutlined,
 } from '@ant-design/icons';
-import { Breadcrumb, Button, Dropdown, Input, Select, Space } from 'antd';
+import {
+  Breadcrumb,
+  Button,
+  Dropdown,
+  Input,
+  Select,
+  Space,
+  Tooltip,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import {
-  AlignCenterSvg,
-  AlignJustifySvg,
-  AlignLeftSvg,
-  AlignRightSvg,
   BorderBottomSvg,
   BorderColorSvg,
   BorderLeftSvg,
@@ -37,7 +41,6 @@ import {
   PaddingTopSvg,
   PaddingVerticalSvg,
   RadiusSvg,
-  ResetSvg,
   ShadowSvg,
 } from './design.images.constants';
 import styles from './index.less';
@@ -99,6 +102,11 @@ import {
   parseTailwindSpacing,
   SpaceValueType,
 } from './utils/tailwind-space';
+import {
+  convertLabelToTextAlignClass,
+  TEXT_ALIGN_OPTIONS,
+  TEXT_ALIGN_REGEXP,
+} from './utils/tailwind-textAlign';
 
 const cx = classNames.bind(styles);
 
@@ -226,8 +234,8 @@ const DesignViewer: React.FC = () => {
   const [letterSpacing, setLetterSpacing] = useState<string>('0em');
   /** 编辑中的文本对齐方式 */
   const [textAlign, setTextAlign] = useState<
-    'left' | 'center' | 'right' | 'justify' | 'reset'
-  >('center');
+    'left' | 'center' | 'right' | 'justify' | 'reset' | ''
+  >('');
   /** 编辑中的文本装饰 */
   // const [textDecoration, setTextDecoration] = useState<string[]>([]);
   /** 编辑中的边框样式 */
@@ -279,7 +287,7 @@ const DesignViewer: React.FC = () => {
 
     // 如果包含子元素，认为是复杂结构，不允许直接改整块文本
     // 说明：hasChildElement 需要在 iframe 中选中元素时通过 element.childElementCount > 0 计算后传入
-    if (!element.contenteditable) {
+    if (!element.isStaticText) {
       return false;
     }
 
@@ -428,7 +436,7 @@ const DesignViewer: React.FC = () => {
     setFontWeight('font-medium'); // 重置为默认字体粗细
     setLineHeight('1.75rem');
     setLetterSpacing('0em');
-    setTextAlign('left');
+    setTextAlign('');
     setLocalBorderWidth({
       top: '0', // 使用 Tailwind 边框宽度值
       right: '0',
@@ -725,6 +733,9 @@ const DesignViewer: React.FC = () => {
         case 'STYLE_UPDATED':
           console.log('[Parent] Style updated:', payload);
           break;
+        case 'ADD_TO_CHAT':
+          console.log('[Parent] Add to chat22222:', payload);
+          break;
       }
     };
 
@@ -835,7 +846,15 @@ const DesignViewer: React.FC = () => {
   const toggleStyle = (
     newStyle: string,
     regex: RegExp,
-    isFontSize: boolean = false,
+    attribute?:
+      | 'fontSize'
+      | 'fontWeight'
+      | 'lineHeight'
+      | 'letterSpacing'
+      | 'opacity'
+      | 'radius'
+      | 'shadow'
+      | 'textAlign',
   ) => {
     let currentClasses = editingClass.split(' ').filter((c) => c.trim());
 
@@ -848,7 +867,7 @@ const DesignViewer: React.FC = () => {
     // Remove existing class in the same category
     currentClasses = currentClasses.filter((c) => {
       // 如果是字体大小相关的操作
-      if (isFontSize) {
+      if (attribute === 'fontSize') {
         // 先测试是否匹配字体大小正则
         const matchesFontSize = regex.test(c);
         // 保留 text-center 等非字体大小的 text- 类名
@@ -860,6 +879,28 @@ const DesignViewer: React.FC = () => {
         }
         // 过滤掉匹配正则的字体大小类名（如 text-lg, text-sm, text-3xl 等）
         return !matchesFontSize;
+      }
+
+      // 如果是文本对齐相关的操作
+      if (attribute === 'textAlign') {
+        // 重置正则表达式的 lastIndex，避免状态问题
+        regex.lastIndex = 0;
+        // 先测试是否匹配文本对齐正则
+        const matchesTextAlign = regex.test(c);
+        // 如果匹配文本对齐正则（如 text-left, text-center, text-right, text-justify），过滤掉
+        if (matchesTextAlign) {
+          return false;
+        }
+        // 保留非文本对齐的 text- 类名（如字体大小、颜色等）
+        // 以及字体大小类名
+        if (
+          (c.startsWith('text-') && !matchesTextAlign) ||
+          fontSizeClasses.includes(c)
+        ) {
+          return true;
+        }
+        // 其他类名保留（非 text- 开头的类名）
+        return true;
       }
 
       // 非字体大小操作：排除字体大小相关的类（如 text-xs, text-sm 等）
@@ -912,11 +953,11 @@ const DesignViewer: React.FC = () => {
     if (sizeValue === 'Default') {
       // 如果是 Default，移除所有字体大小类名
       // 字体大小类名格式是 text-xs, text-sm, text-base 等
-      toggleStyle('', FONT_SIZE_REGEXP, true);
+      toggleStyle('', FONT_SIZE_REGEXP, 'fontSize');
     } else {
       // 将 value（如 'lg'）转换为 Tailwind 类名（如 'text-lg'）
       const fontSizeClass = `text-${sizeValue}`;
-      toggleStyle(fontSizeClass, FONT_SIZE_REGEXP, true);
+      toggleStyle(fontSizeClass, FONT_SIZE_REGEXP, 'fontSize');
     }
   };
 
@@ -1201,17 +1242,27 @@ const DesignViewer: React.FC = () => {
   };
 
   /**
-   * 处理对齐方式变更
+   * 处理文本对齐变更
    */
   const handleTextAlignChange = (
     align: 'left' | 'center' | 'right' | 'justify' | 'reset',
   ) => {
     if (align === 'reset') {
-      setTextAlign('left');
+      setTextAlign('');
+      // 移除所有文本对齐类名
+      toggleStyle('', TEXT_ALIGN_REGEXP, 'textAlign');
     } else {
       setTextAlign(align);
+      // 通过 toggleStyle 方法将 text align 样式写入 editingClass
+      // value 是用户友好的标签（如 'left'），需要转换为 Tailwind 类名（如 'text-left'）
+      const textAlignClass = convertLabelToTextAlignClass(align);
+      if (textAlignClass) {
+        toggleStyle(textAlignClass, TEXT_ALIGN_REGEXP, 'textAlign');
+      } else {
+        // 如果找不到对应的类名，移除所有文本对齐类名
+        toggleStyle('', TEXT_ALIGN_REGEXP, 'textAlign');
+      }
     }
-    // onChange?.('textAlign', align === 'reset' ? 'left' : align);
   };
 
   /**
@@ -1379,41 +1430,26 @@ const DesignViewer: React.FC = () => {
               <div className={cx(styles.typographyInputGroup)}>
                 <div className={cx(styles.typographyInputLabel)}>Alignment</div>
                 <div className={cx(styles.buttonGroup)}>
-                  <Button
-                    className={cx(styles.toggleButton, {
-                      [styles.active]: textAlign === 'reset',
-                    })}
-                    onClick={() => handleTextAlignChange('reset')}
-                    icon={<ResetSvg className={cx(styles.layoutIcon)} />}
-                  />
-                  <Button
-                    className={cx(styles.toggleButton, {
-                      [styles.active]: textAlign === 'left',
-                    })}
-                    onClick={() => handleTextAlignChange('left')}
-                    icon={<AlignLeftSvg className={cx(styles.layoutIcon)} />}
-                  />
-                  <Button
-                    className={cx(styles.toggleButton, {
-                      [styles.active]: textAlign === 'center',
-                    })}
-                    onClick={() => handleTextAlignChange('center')}
-                    icon={<AlignCenterSvg className={cx(styles.layoutIcon)} />}
-                  />
-                  <Button
-                    className={cx(styles.toggleButton, {
-                      [styles.active]: textAlign === 'right',
-                    })}
-                    onClick={() => handleTextAlignChange('right')}
-                    icon={<AlignRightSvg className={cx(styles.layoutIcon)} />}
-                  />
-                  <Button
-                    className={cx(styles.toggleButton, {
-                      [styles.active]: textAlign === 'justify',
-                    })}
-                    onClick={() => handleTextAlignChange('justify')}
-                    icon={<AlignJustifySvg className={cx(styles.layoutIcon)} />}
-                  />
+                  {TEXT_ALIGN_OPTIONS.map((option) => (
+                    <Tooltip title={option.label} key={option.type}>
+                      <Button
+                        className={cx(styles.toggleButton, {
+                          [styles.active]: textAlign === option.type,
+                        })}
+                        onClick={() =>
+                          handleTextAlignChange(
+                            option.type as
+                              | 'reset'
+                              | 'left'
+                              | 'center'
+                              | 'right'
+                              | 'justify',
+                          )
+                        }
+                        icon={option.icon}
+                      />
+                    </Tooltip>
+                  ))}
                 </div>
               </div>
             </div>

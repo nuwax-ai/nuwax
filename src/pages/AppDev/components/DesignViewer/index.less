@@ -246,6 +246,7 @@
     &:hover:not(.active) {
       background: @colorFillQuaternary;
       color: @colorTextBase;
+      border-color: @colorBorder;
     }
 
     &.active {
@@ -253,6 +254,10 @@
       color: @colorPrimary;
       font-weight: @fontWeightStrong;
       z-index: 1;
+    }
+
+    svg {
+      color: @colorTextTertiary;
     }
   }
 }
