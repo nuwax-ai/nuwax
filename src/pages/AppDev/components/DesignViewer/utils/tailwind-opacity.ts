@@ -21,6 +21,27 @@ const tailwindOpacityMap: Record<string, number> = {
 };
 
 /**
+ * 透明度类名正则表达式
+ */
+export const OPACITY_REGEXP =
+  /^opacity-(0|5|10|20|25|30|40|50|60|70|75|80|90|95|100)$/;
+
+/**
+ * 将数字值转换为 Tailwind 透明度类名
+ * @param value 透明度值，如 50
+ * @returns Tailwind 类名，如 'opacity-50'，如果找不到则返回 null
+ */
+export const convertNumberToOpacityClass = (value: number): string | null => {
+  // 创建反向映射：从数字值到类名
+  const valueToClass: Record<number, string> = {};
+  Object.entries(tailwindOpacityMap).forEach(([className, numValue]) => {
+    valueToClass[numValue] = className;
+  });
+
+  return valueToClass[value] || null;
+};
+
+/**
  * 生成 Tailwind CSS 透明度选项列表
  * 从 Tailwind CSS 中获取透明度选项
  * 返回格式：{ label: '50%', value: 50 }
