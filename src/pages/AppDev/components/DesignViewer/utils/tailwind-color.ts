@@ -394,3 +394,8 @@ export const getColorFromTailwindClass = (
   // 如果找不到匹配的颜色，返回 Default
   return callback('Default');
 };
+
+// 获取颜色类名正则表达式
+export const getColorClassRegexp = (prefix: string) => {
+  return new RegExp(`^${prefix}-(transparent|black|white|[a-z]+-\\d+)$`);
+};
