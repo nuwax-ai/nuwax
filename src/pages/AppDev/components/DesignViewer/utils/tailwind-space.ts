@@ -1,3 +1,12 @@
+export type PaddingOrMarginType =
+  | 'top'
+  | 'right'
+  | 'bottom'
+  | 'left'
+  | 'vertical'
+  | 'horizontal'
+  | 'all';
+
 /**
  * Tailwind CSS spacing 值映射表（用于 padding 和 margin）
  * 基于 Tailwind 默认配置：1 = 0.25rem = 4px
@@ -117,7 +126,7 @@ export const generateTailwindSpacingPixelOptions = (
  * 处理内边距变更（四边独立）
  */
 export const getPaddingOrMarginSpace = (
-  type: 'top' | 'right' | 'bottom' | 'left' | 'vertical' | 'horizontal' | 'all',
+  type: PaddingOrMarginType,
   value: string | null,
   prefixType: 'padding' | 'margin' = 'padding',
   data: Record<string, string> = { top: '', right: '', bottom: '', left: '' },

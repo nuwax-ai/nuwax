@@ -1,3 +1,7 @@
+// 字体大小类名正则表达式
+export const FONT_SIZE_REGEXP =
+  /^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$/;
+
 /**
  * Tailwind CSS 字体大小类名映射
  * 包含所有 Tailwind CSS 字体大小选项
