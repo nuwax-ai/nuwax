@@ -63,13 +63,24 @@ import {
   generateTailwindFontWeightOptions,
 } from './utils/tailwind-fontWeight';
 import {
+  convertEmToLetterSpacingClass,
+  generateTailwindLetterSpacingOptions,
+  LETTER_SPACING_REGEXP,
+} from './utils/tailwind-letterSpacing';
+import {
   convertRemToLineHeightClass,
   generateTailwindLineHeightOptions,
   LINE_HEIGHT_REGEXP,
 } from './utils/tailwind-lineHeight';
-import { generateTailwindOpacityOptions } from './utils/tailwind-opacity';
 import {
+  convertNumberToOpacityClass,
+  generateTailwindOpacityOptions,
+  OPACITY_REGEXP,
+} from './utils/tailwind-opacity';
+import {
+  convertLabelToRadiusClass,
   generateTailwindRadiusOptions,
+  RADIUS_REGEXP,
   tailwindRadiusMap,
 } from './utils/tailwind-radius';
 import {
@@ -150,15 +161,12 @@ const fontWeightOptions = generateTailwindFontWeightOptions();
 // Line Height 选项 - 从 Tailwind CSS 行高配置中获取
 const lineHeightOptions = generateTailwindLineHeightOptions();
 
-// Letter Spacing 选项
-const letterSpacingOptions = [
-  { label: '-0.05em', value: '-0.05em' },
-  { label: '-0.025em', value: '-0.025em' },
-  { label: '0em', value: '0em' },
-  { label: '0.025em', value: '0.025em' },
-  { label: '0.05em', value: '0.05em' },
-  { label: '0.1em', value: '0.1em' },
-];
+/**
+ * Letter Spacing 选项列表 - 从 Tailwind CSS 字母间距配置中获取
+ * 基于 Tailwind CSS 默认字母间距配置
+ * 包含：None, -0.05em (tracking-tighter), -0.025em (tracking-tight), 0em (tracking-normal), 0.025em (tracking-wide), 0.05em (tracking-wider), 0.1em (tracking-widest)
+ */
+const letterSpacingOptions = generateTailwindLetterSpacingOptions();
 
 /**
  * Border Style 选项列表 - 从 Tailwind CSS 边框样式配置中获取
@@ -940,6 +948,71 @@ const DesignViewer: React.FC = () => {
   };
 
   /**
+   * 处理字母间距变更
+   */
+  const handleLetterSpacingChange = (value: React.Key) => {
+    const spacingValue = value as string;
+    setLetterSpacing(spacingValue);
+
+    // 通过 toggleStyle 方法将 letter spacing 样式写入 editingClass
+    if (spacingValue === 'None') {
+      // 如果是 None，移除所有字母间距类名
+      toggleStyle('', LETTER_SPACING_REGEXP);
+    } else {
+      // value 是 em 值（如 '0.05em'），需要转换为 Tailwind 类名（如 'tracking-wider'）
+      const letterSpacingClass = convertEmToLetterSpacingClass(spacingValue);
+      if (letterSpacingClass) {
+        toggleStyle(letterSpacingClass, LETTER_SPACING_REGEXP);
+      } else {
+        // 如果找不到对应的类名，移除所有字母间距类名
+        toggleStyle('', LETTER_SPACING_REGEXP);
+      }
+    }
+  };
+
+  /**
+   * 处理透明度变更
+   */
+  const handleOpacityChange = (value: number) => {
+    setOpacity(value);
+    // onChange?.('opacity', value);
+
+    // 通过 toggleStyle 方法将 opacity 样式写入 editingClass
+    // value 是数字值（如 50），需要转换为 Tailwind 类名（如 'opacity-50'）
+    const opacityClass = convertNumberToOpacityClass(value);
+    if (opacityClass) {
+      toggleStyle(opacityClass, OPACITY_REGEXP);
+    } else {
+      // 如果找不到对应的类名，移除所有透明度类名
+      toggleStyle('', OPACITY_REGEXP);
+    }
+  };
+
+  /**
+   * 处理圆角变更
+   */
+  const handleRadiusChange = (value: React.Key) => {
+    const radiusValue = value as string;
+    setRadius(radiusValue);
+    // onChange?.('radius', radiusValue);
+
+    // 通过 toggleStyle 方法将 radius 样式写入 editingClass
+    if (radiusValue === 'Default' || radiusValue === 'None') {
+      // 如果是 Default 或 None，移除所有圆角类名
+      toggleStyle('', RADIUS_REGEXP);
+    } else {
+      // value 是用户友好的标签（如 'Small'），需要转换为 Tailwind 类名（如 'rounded-sm'）
+      const radiusClass = convertLabelToRadiusClass(radiusValue);
+      if (radiusClass) {
+        toggleStyle(radiusClass, RADIUS_REGEXP);
+      } else {
+        // 如果找不到对应的类名，移除所有圆角类名
+        toggleStyle('', RADIUS_REGEXP);
+      }
+    }
+  };
+
+  /**
    * 处理文本内容变更
    */
   const handleTextContentChange = (value: string) => {
@@ -1284,10 +1357,7 @@ const DesignViewer: React.FC = () => {
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={letterSpacing}
-                  onChange={(value) => {
-                    setLetterSpacing(value as string);
-                    // onChange?.('letterSpacing', value);
-                  }}
+                  onChange={handleLetterSpacingChange}
                   options={letterSpacingOptions}
                 />
               </div>
@@ -2070,10 +2140,7 @@ const DesignViewer: React.FC = () => {
               <Select
                 className={cx('w-full')}
                 value={opacity}
-                onChange={(value) => {
-                  setOpacity(value);
-                  // onChange?.('opacity', value);
-                }}
+                onChange={handleOpacityChange}
                 options={opacityOptions}
                 prefix={<OpacitySvg className={cx(styles.layoutIcon)} />}
               />
@@ -2084,10 +2151,7 @@ const DesignViewer: React.FC = () => {
               <SelectList
                 className={cx(styles.typographySelect)}
                 value={radius}
-                onChange={(value) => {
-                  setRadius(value as string);
-                  // onChange?.('radius', value);
-                }}
+                onChange={handleRadiusChange}
                 options={radiusOptions}
                 prefix={<RadiusSvg className={cx(styles.layoutIcon)} />}
               />
