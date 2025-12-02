@@ -42,6 +42,7 @@ import {
 } from './design.images.constants';
 import {
   generateFullTailwindColorOptions,
+  generateTailwindBorderWidthOptions,
   generateTailwindFontSizeOptions,
   generateTailwindOpacityOptions,
   generateTailwindRadiusOptions,
@@ -71,15 +72,11 @@ const paddingPixelOptions = pixelOptions.filter(
 );
 
 /**
- * Border Width 像素值选项列表（简化的选项：0px, 1px, 2px, 4px, 8px）
+ * Border Width 选项列表 - 从 Tailwind CSS 边框宽度配置中获取
+ * 基于 Tailwind CSS 默认边框宽度配置
+ * 包含：0px (border-0), 1px (border), 2px (border-2), 4px (border-4), 8px (border-8)
  */
-const borderWidthOptions = [
-  { label: '0px', value: '0px' },
-  { label: '1px', value: '1px' },
-  { label: '2px', value: '2px' },
-  { label: '4px', value: '4px' },
-  { label: '8px', value: '8px' },
-];
+const borderWidthOptions = generateTailwindBorderWidthOptions();
 
 /**
  * Tailwind CSS 颜色选项列表
@@ -232,10 +229,10 @@ const DesignViewer: React.FC = () => {
     bottom: number | string;
     left: number | string;
   }>({
-    top: '0px',
-    right: '0px',
-    bottom: '0px',
-    left: '0px',
+    top: '0', // 使用 Tailwind 边框宽度值
+    right: '0',
+    bottom: '0',
+    left: '0',
   });
   /** 是否展开边框宽度 */
   const [isBorderWidthExpanded, setIsBorderWidthExpanded] =
@@ -416,15 +413,14 @@ const DesignViewer: React.FC = () => {
    */
   const parseTailwindBorderWidth = (className: string): string | null => {
     if (className === 'border-0' || className === 'border-none') {
-      return '0px';
+      return '0'; // 返回 Tailwind 边框宽度值
     }
     if (className === 'border') {
-      return '1px'; // border 默认是 1px
+      return '1'; // border 默认是 1px，返回 Tailwind 边框宽度值 '1'
     }
     const match = className.match(/^border-(\d+)$/);
     if (match) {
-      const value = parseInt(match[1], 10);
-      return `${value}px`;
+      return match[1]; // 返回 Tailwind 边框宽度值（如 '2', '4', '8'）
     }
     return null;
   };
@@ -520,10 +516,10 @@ const DesignViewer: React.FC = () => {
     setLetterSpacing('0em');
     setTextAlign('left');
     setLocalBorderWidth({
-      top: '0px',
-      right: '0px',
-      bottom: '0px',
-      left: '0px',
+      top: '0', // 使用 Tailwind 边框宽度值
+      right: '0',
+      bottom: '0',
+      left: '0',
     });
     setLocalPadding({
       top: '0px',
@@ -1040,8 +1036,6 @@ const DesignViewer: React.FC = () => {
           ? /^m-(?![xytrbl])/ // m- 后面不能是 x、y、t、r、b、l（避免匹配 mx-、my-、mt- 等）
           : new RegExp(`^${prefix}-`);
       console.log('marginRegex', value, marginRegex);
-      // 如果 value 是 px，则转换为 1
-      // const tailwindValue = value === 'px' ? '1' : value;
       toggleStyle(`${prefix}-${value}`, marginRegex);
     }
   };
@@ -1155,6 +1149,10 @@ const DesignViewer: React.FC = () => {
       }
       setLocalBorderWidth(newBorderWidth);
       // onChange?.('borderWidth', newBorderWidth);
+      // 正则表达式：精确匹配 border 和 border-数字 类名（如 border, border-0, border-2, border-4, border-8）
+      // 注意：value 为 '1' 时，类名是 'border'（无数字后缀），其他值是 'border-数字'
+      const borderClass = value === '1' ? 'border' : `border-${value}`;
+      toggleStyle(borderClass, /^border(-\d+)?$/);
     }
   };
 
@@ -1990,7 +1988,7 @@ const DesignViewer: React.FC = () => {
                     value={
                       typeof localBorderWidth.top === 'string'
                         ? localBorderWidth.top
-                        : `${localBorderWidth.top || 0}px`
+                        : String(localBorderWidth.top || '0')
                     }
                     onChange={(value) =>
                       handleBorderWidthChange('all', value as string)
@@ -2017,7 +2015,7 @@ const DesignViewer: React.FC = () => {
                       value={
                         typeof localBorderWidth.top === 'string'
                           ? localBorderWidth.top
-                          : `${localBorderWidth.top || 0}px`
+                          : String(localBorderWidth.top || '0')
                       }
                       onChange={(value) =>
                         handleBorderWidthChange('top', value as string)
@@ -2032,7 +2030,7 @@ const DesignViewer: React.FC = () => {
                       value={
                         typeof localBorderWidth.bottom === 'string'
                           ? localBorderWidth.bottom
-                          : `${localBorderWidth.bottom || 0}px`
+                          : String(localBorderWidth.bottom || '0')
                       }
                       onChange={(value) =>
                         handleBorderWidthChange('bottom', value as string)
@@ -2049,7 +2047,7 @@ const DesignViewer: React.FC = () => {
                       value={
                         typeof localBorderWidth.left === 'string'
                           ? localBorderWidth.left
-                          : `${localBorderWidth.left || 0}px`
+                          : String(localBorderWidth.left || '0')
                       }
                       onChange={(value) =>
                         handleBorderWidthChange('left', value as string)
@@ -2064,7 +2062,7 @@ const DesignViewer: React.FC = () => {
                       value={
                         typeof localBorderWidth.right === 'string'
                           ? localBorderWidth.right
-                          : `${localBorderWidth.right || 0}px`
+                          : String(localBorderWidth.right || '0')
                       }
                       onChange={(value) =>
                         handleBorderWidthChange('right', value as string)
