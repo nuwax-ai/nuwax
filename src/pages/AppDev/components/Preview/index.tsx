@@ -597,13 +597,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           // 获取 iframe 高度 16:9比例
           const iframeHeight = iframeWidth * 0.5625;
 
-          // console.log(
-          //   'iframeDoc?.body?.scrollWidth',
-          //   iframeDoc?.body?.scrollWidth,
-          //   'iframeDoc?.documentElement?.offsetWidth',
-          //   iframeDoc?.documentElement?.offsetWidth,
-          // );
-
           const canvas = await html2canvas(iframeDoc.body, {
             useCORS: true,
             allowTaint: true,
@@ -680,6 +673,23 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      * iframe加载完成处理
      */
     const handleIframeLoad = useCallback(() => {
+      // console.log('iframe加载完成:', iframeDesignMode);
+      // // 如果设计模式为开启，则发送消息给 iframe 开启设计模式
+      // if (iframeDesignMode) {
+      //   const iframe = document.querySelector('iframe');
+      //   console.log('iframe', iframe, iframe?.contentWindow);
+      //   if (iframe && iframe.contentWindow) {
+      //     console.log('发送消息给 iframe 开启设计模式33333333333333333333');
+      //     iframe.contentWindow.postMessage(
+      //       {
+      //         type: 'TOGGLE_DESIGN_MODE',
+      //         enabled: true,
+      //         timestamp: Date.now(),
+      //       },
+      //       '*',
+      //     );
+      //   }
+      // }
       setIsLoading(false);
       setLoadError(null);
       // 设置iframe加载完毕
@@ -695,7 +705,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const handleIframeError = useCallback(() => {
       setIsLoading(false);
       setLoadError('预览加载失败，请检查开发服务器状态或网络连接');
-      // console.info('[Preview] iframe加载错误', args);
 
       // 统一通过 onWhiteScreenWithError 处理，指定错误类型为 iframe
       if (onWhiteScreenOrIframeError) {
@@ -705,7 +714,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           'iframe',
         );
       }
-      // Iframe load error
     }, [onWhiteScreenOrIframeError]);
 
     /**
@@ -765,12 +773,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               errorMessages,
               isWhiteScreen ? 'whiteScreen' : 'iframe',
             );
-            // console.warn(
-            //   `[Preview] ${
-            //     isWhiteScreen ? '白屏' : '运行时'
-            //   } 通过 DevMonitor 捕获错误，已触发 AI Agent 自动处理:`,
-            //   errorMessages,
-            // );
           }
         }
       },
@@ -880,12 +882,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             }
           }
         }
-        // console.log(
-        //   '[Preview] pushCountRef',
-        //   pushCountRef.current,
-        //   'currentIndex',
-        //   currentIndexRef.current,
-        // );
 
         // 更新最后 URL
         lastUrlRef.current = changeData.url;
@@ -909,34 +905,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
         // ⭐ 调试日志：记录所有消息以便排查
         const data = event.data;
-        // if (
-        //   data &&
-        //   typeof data === 'object' &&
-        //   data.type?.includes('dev-monitor')
-        // ) {
-        // console.log('[Preview] 🔍 DevMonitor message detected:', {
-        //   type: data.type,
-        //   origin: event.origin,
-        //   isFromIframe: !!isFromIframe,
-        //   sourceIsWindow: event.source instanceof Window,
-        //   iframeSrc: iframeRef.current?.src,
-        //   errorCount: data.errorCount,
-        //   hasLatestError: !!data.latestError,
-        //   hasError: !!data.error,
-        //   fullData: data,
-        // });
-        // }
 
         // 如果不是来自 iframe，直接返回（避免处理其他来源的消息，如 React DevTools）
         if (!isFromIframe && data?.type?.includes('dev-monitor')) {
-          // console.warn(
-          //   '[Preview] ⚠️ DevMonitor message ignored (not from iframe):',
-          //   {
-          //     type: data.type,
-          //     origin: event.origin,
-          //     source: event.source,
-          //   },
-          // );
           return;
         }
 
@@ -947,10 +918,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               // ⭐ 实时错误消息（立即发送）
               if (data.error) {
                 const isWhiteScreen = data.isWhiteScreen;
-                // console.debug(
-                //   '[Preview] Received dev-monitor-error:',
-                //   data.error,
-                // );
                 handleDevMonitorError(data.error, isWhiteScreen);
               }
               break;
@@ -1010,6 +977,23 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       };
     }, []);
 
+    // 关闭设计模式
+    const closeDesignMode = useCallback(() => {
+      // 关闭设计模式，防止用户在设计模式下修改元素，导致添加到会话的内容不准确
+      setIframeDesignMode(false);
+      const iframe = document.querySelector('iframe');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage(
+          {
+            type: 'TOGGLE_DESIGN_MODE',
+            enabled: false,
+            timestamp: Date.now(),
+          },
+          '*',
+        );
+      }
+    }, []);
+
     /**
      * 保存所有更改
      */
@@ -1025,7 +1009,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         return;
       }
 
-      console.log('[DesignViewer] Saving changes...', pendingChanges);
       setIsSaving(true);
 
       try {
@@ -1105,6 +1088,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
         if (response.code === SUCCESS_CODE) {
           message.success(`成功保存！`);
+          // 方案一，保存后关闭设计模式
+          closeDesignMode();
           // 清空待保存列表
           setPendingChanges([]);
         } else {
