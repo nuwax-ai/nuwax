@@ -175,7 +175,7 @@ const AppDev: React.FC = () => {
     useState(false);
   // 使用 Hook 控制抽屉打开时的滚动条
   useDrawerScroll(openVersionHistory);
-  const { setIframeDesignMode } = useModel('appDev');
+  const { setIframeDesignMode } = useModel('appDevDesign');
 
   // 文件操作遮罩延时显示逻辑
   useEffect(() => {

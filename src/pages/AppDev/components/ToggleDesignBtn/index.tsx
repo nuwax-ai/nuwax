@@ -12,7 +12,7 @@ interface ToggleDesignBtnProps {
 }
 
 const ToggleDesignBtn: React.FC<ToggleDesignBtnProps> = ({ className }) => {
-  const { iframeDesignMode, isIframeLoaded } = useModel('appDev');
+  const { iframeDesignMode, isIframeLoaded } = useModel('appDevDesign');
 
   const toggleIframeDesignMode = () => {
     const iframe = document.querySelector('iframe');
