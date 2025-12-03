@@ -189,6 +189,9 @@ importers:
         specifier: ^11.1.0
         version: 11.1.0
     devDependencies:
+      '@types/clean-css':
+        specifier: ^4.2.11
+        version: 4.2.11
       '@types/lodash':
         specifier: ^4.17.16
         version: 4.17.20
@@ -210,6 +213,9 @@ importers:
       '@types/turndown':
         specifier: ^5.0.5
         version: 5.0.5
+      clean-css:
+        specifier: ^5.3.3
+        version: 5.3.3
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -2337,6 +2343,9 @@ packages:
 
   '@types/babel__traverse@7.20.7':
     resolution: {integrity: sha512-dkO5fhS7+/oos4ciWxyEyjWe48zmG6wbCheo/G2ZnHx4fs3EU6YC6UM8rk56gAjNJ9P3MTH2jo5jb92/K6wbng==}
+
+  '@types/clean-css@4.2.11':
+    resolution: {integrity: sha512-Y8n81lQVTAfP2TOdtJJEsCoYl1AnOkqDqMvXb9/7pfgZZ7r8YrEyurrAvAoAjHOGXKRybay+5CsExqIH6liccw==}
 
   '@types/d3-array@3.2.1':
     resolution: {integrity: sha512-Y2Jn2idRrLzUfAKV2LyRImR+y4oa2AntrgID95SHJxuMUrkNXmanDSed71sRNZysveJVt1hLLemQZIady0FpEg==}
@@ -11563,6 +11572,11 @@ snapshots:
   '@types/babel__traverse@7.20.7':
     dependencies:
       '@babel/types': 7.28.4
+
+  '@types/clean-css@4.2.11':
+    dependencies:
+      '@types/node': 24.9.1
+      source-map: 0.6.1
 
   '@types/d3-array@3.2.1': {}
 
