@@ -77,6 +77,7 @@ const ChatTemp: React.FC = () => {
     disabledConversationActive,
     setCurrentConversationRequestId,
     setMessageList: setConversationInfoMessageList,
+    resetInit,
   } = useModel('conversationInfo');
 
   // 链接Key
@@ -192,11 +193,20 @@ const ChatTemp: React.FC = () => {
   const handleScrollBottom = () => {
     if (allowAutoScrollRef.current) {
       scrollTimeoutRef.current = setTimeout(() => {
-        // 滚动到底部
-        messageViewRef.current?.scrollTo({
-          top: messageViewRef.current?.scrollHeight,
-          behavior: 'smooth',
-        });
+        const element = messageViewRef.current;
+        if (element) {
+          // 标记为程序触发的滚动，避免被误判为用户滚动
+          (element as any).__isProgrammaticScroll = true;
+          // 滚动到底部
+          element.scrollTo({
+            top: element.scrollHeight,
+            behavior: 'smooth',
+          });
+          // 在滚动完成后清除标记（smooth 滚动大约需要 500ms）
+          setTimeout(() => {
+            (element as any).__isProgrammaticScroll = false;
+          }, 600);
+        }
       }, 400);
     }
   };
@@ -702,6 +712,8 @@ const ChatTemp: React.FC = () => {
   );
 
   useEffect(() => {
+    // 组件挂载时重置会话状态，防止其他会话（如开发调试会话）的消息污染当前会话
+    resetInit();
     // 租户配置信息查询接口
     runTenantConfig();
     addBaseTarget();
@@ -759,11 +771,20 @@ const ChatTemp: React.FC = () => {
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const onScrollBottom = () => {
     allowAutoScrollRef.current = true;
-    // 滚动到底部
-    messageViewRef.current?.scrollTo({
-      top: messageViewRef.current?.scrollHeight,
-      behavior: 'smooth',
-    });
+    const element = messageViewRef.current;
+    if (element) {
+      // 标记为程序触发的滚动，避免被误判为用户滚动
+      (element as any).__isProgrammaticScroll = true;
+      // 滚动到底部
+      element.scrollTo({
+        top: element.scrollHeight,
+        behavior: 'smooth',
+      });
+      // 在滚动完成后清除标记（smooth 滚动大约需要 500ms）
+      setTimeout(() => {
+        (element as any).__isProgrammaticScroll = false;
+      }, 600);
+    }
     setShowScrollBtn(false);
   };
 
