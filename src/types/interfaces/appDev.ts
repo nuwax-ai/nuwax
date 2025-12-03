@@ -29,6 +29,10 @@ export interface ProjectFileInfo {
 export interface ProjectContentRes {
   /** 项目文件内容对象 */
   files: Record<string, any> | ProjectFileInfo[];
+  // 前端框架
+  frontendFramework: string;
+  // 开发框架
+  devFramework: string;
 }
 
 /**
