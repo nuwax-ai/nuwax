@@ -192,11 +192,20 @@ const ChatTemp: React.FC = () => {
   const handleScrollBottom = () => {
     if (allowAutoScrollRef.current) {
       scrollTimeoutRef.current = setTimeout(() => {
-        // 滚动到底部
-        messageViewRef.current?.scrollTo({
-          top: messageViewRef.current?.scrollHeight,
-          behavior: 'smooth',
-        });
+        const element = messageViewRef.current;
+        if (element) {
+          // 标记为程序触发的滚动，避免被误判为用户滚动
+          (element as any).__isProgrammaticScroll = true;
+          // 滚动到底部
+          element.scrollTo({
+            top: element.scrollHeight,
+            behavior: 'smooth',
+          });
+          // 在滚动完成后清除标记（smooth 滚动大约需要 500ms）
+          setTimeout(() => {
+            (element as any).__isProgrammaticScroll = false;
+          }, 600);
+        }
       }, 400);
     }
   };
@@ -759,11 +768,20 @@ const ChatTemp: React.FC = () => {
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const onScrollBottom = () => {
     allowAutoScrollRef.current = true;
-    // 滚动到底部
-    messageViewRef.current?.scrollTo({
-      top: messageViewRef.current?.scrollHeight,
-      behavior: 'smooth',
-    });
+    const element = messageViewRef.current;
+    if (element) {
+      // 标记为程序触发的滚动，避免被误判为用户滚动
+      (element as any).__isProgrammaticScroll = true;
+      // 滚动到底部
+      element.scrollTo({
+        top: element.scrollHeight,
+        behavior: 'smooth',
+      });
+      // 在滚动完成后清除标记（smooth 滚动大约需要 500ms）
+      setTimeout(() => {
+        (element as any).__isProgrammaticScroll = false;
+      }, 600);
+    }
     setShowScrollBtn(false);
   };
 
