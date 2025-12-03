@@ -87,6 +87,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     requiredNameList,
     showType,
     setShowType,
+    resetInit,
   } = useModel('conversationInfo');
 
   // 获取 chat model 中的页面预览状态
@@ -197,6 +198,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
 
     return () => {
       eventBus.off(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
+      // 组件卸载时重置全局会话状态，防止污染其他页面（如临时会话页面）
+      resetInit();
     };
   }, []);
 

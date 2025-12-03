@@ -77,6 +77,7 @@ const ChatTemp: React.FC = () => {
     disabledConversationActive,
     setCurrentConversationRequestId,
     setMessageList: setConversationInfoMessageList,
+    resetInit,
   } = useModel('conversationInfo');
 
   // 链接Key
@@ -711,6 +712,8 @@ const ChatTemp: React.FC = () => {
   );
 
   useEffect(() => {
+    // 组件挂载时重置会话状态，防止其他会话（如开发调试会话）的消息污染当前会话
+    resetInit();
     // 租户配置信息查询接口
     runTenantConfig();
     addBaseTarget();
