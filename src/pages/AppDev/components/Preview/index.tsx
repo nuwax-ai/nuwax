@@ -1088,6 +1088,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           projectId.toString(),
           filesToUpdate,
         );
+        // 保存成功后，关闭保存状态
         setIsSaving(false);
 
         if (response.code === SUCCESS_CODE) {
@@ -1100,6 +1101,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           message.error(response.message || '保存失败，请查看控制台错误信息');
         }
       } catch (error) {
+        // 保存失败后，关闭保存状态
+        setIsSaving(false);
         console.error('[DesignViewer] Error saving changes:', error);
         message.error('保存出错，请检查网络连接');
       }
