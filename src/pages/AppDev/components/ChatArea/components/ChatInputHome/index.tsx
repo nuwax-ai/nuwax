@@ -461,9 +461,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       return;
     }
 
-    e.preventDefault();
-    const { value, selectionStart, selectionEnd } =
-      e.target as HTMLTextAreaElement;
+    const { value } = e.target as HTMLTextAreaElement;
 
     // 验证：prompt（输入内容）是必填的
     if (!value?.trim()) {
@@ -485,11 +483,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       e.nativeEvent.keyCode === 13 &&
       (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
     ) {
-      // 在光标位置插入换行符
-      const newValue =
-        value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
-      chat.setChatInput(newValue);
+      chat.setChatInput(value);
     } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
+      e.preventDefault();
       const files = attachmentFiles?.filter(
         (item) => item.status === UploadFileStatus.done && item.url && item.key,
       );
