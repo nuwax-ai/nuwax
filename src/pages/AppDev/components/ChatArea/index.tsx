@@ -608,6 +608,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   //   return Math.min((autoErrorRetryCount / 3) * 100, 100);
   // }, [autoErrorRetryCount]);
 
+  const handleAddToChat = useCallback(
+    (content: string) => {
+      console.log(chat.chatInput, 'content1111111');
+      const _content = chat.chatInput + content;
+      chat.setChatInput(_content);
+    },
+    [chat],
+  );
+
   return (
     <Card className={styles.chatCard} variant="outlined">
       {/* 聊天模式切换 */}
@@ -637,7 +646,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       </div>
 
       {/* 设计模式区域 */}
-      <DesignViewer />
+      <DesignViewer onAddToChat={handleAddToChat} />
 
       {/* 聊天消息区域 */}
       <ReactScrollToBottomContainer
