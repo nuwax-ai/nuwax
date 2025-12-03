@@ -1,3 +1,4 @@
+import { SyncOutlined } from '@ant-design/icons';
 import { Segmented } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -38,10 +39,16 @@ const ToggleDesignBtn: React.FC<ToggleDesignBtnProps> = ({ className }) => {
             options={[
               { label: 'Chat', value: 'chat' },
               {
-                label: 'Design',
+                label: (
+                  <div className="flex items-center gap-4">
+                    {!isIframeLoaded ? (
+                      <SyncOutlined spin style={{ fontSize: 12 }} />
+                    ) : null}
+                    Design
+                  </div>
+                ),
                 value: 'design',
                 disabled: !isIframeLoaded,
-                title: '暂未开放',
               },
             ]}
             className={styles.chatModeSegmented}
