@@ -1101,7 +1101,61 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       }
     };
 
+    // 重置编辑
     const onCancelEdit = () => {
+      // 如果有待恢复的更改，先向 iframe 发送恢复消息
+      const iframe = iframeRef.current;
+      if (pendingChanges.length > 0 && iframe?.contentWindow) {
+        // 遍历所有待恢复的更改，使用 originalValue 恢复
+        pendingChanges.forEach((change: any) => {
+          const { type, sourceInfo, originalValue } = change;
+
+          // 如果没有原始值，跳过（不应该发生，但做防御性检查）
+          if (!originalValue && originalValue !== '') {
+            return;
+          }
+
+          try {
+            if (type === 'style') {
+              // 恢复样式：使用原始 className
+              iframe.contentWindow?.postMessage(
+                {
+                  type: 'UPDATE_STYLE',
+                  payload: {
+                    sourceInfo,
+                    newClass: originalValue || '', // 使用原始值恢复
+                    persist: false,
+                  },
+                  timestamp: Date.now(),
+                },
+                '*',
+              );
+            } else if (type === 'content') {
+              // 恢复内容：使用原始文本内容
+              iframe.contentWindow?.postMessage(
+                {
+                  type: 'UPDATE_CONTENT',
+                  payload: {
+                    sourceInfo,
+                    newContent: originalValue || '', // 使用原始值恢复
+                    persist: false,
+                  },
+                  timestamp: Date.now(),
+                },
+                '*',
+              );
+            }
+          } catch (error) {
+            console.error(
+              `[Preview] 恢复更改失败 (${type}):`,
+              sourceInfo,
+              error,
+            );
+          }
+        });
+      }
+
+      // 清空待保存列表和保存状态
       setPendingChanges([]);
       setIsSaving(false);
     };
