@@ -7,6 +7,7 @@
   background: transparent;
   border: none;
   border-radius: 0;
+  overflow: hidden;
 
   :global(.ant-card-body) {
     padding: 0;
@@ -16,123 +17,13 @@
   }
 }
 
-// 聊天模式容器
-.chatModeContainer {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 12px 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 10%);
-  height: 40px;
-}
-
-// 聊天模式切换器
-.chatModeSwitcher {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  min-height: 32px;
-
-  // // 当屏幕较小时，调整布局
-  // @media (max-width: 1200px) {
-  //   flex-direction: column;
-  //   align-items: stretch;
-  //   gap: 12px;
-  // }
-}
-
-// 聊天模式分段控制器
-.chatModeSegmented {
-  font-size: @fontSize;
-  font-weight: @fontWeightStrong;
-  color: @colorTextBase;
-  // 使用默认样式，自定义样式已注释
-  display: block;
-  // :global(.ant-segmented) {
-  //   background: #f8fafc;
-  //   border: 1px solid #e2e8f0;
-  //   border-radius: 6px;
-  //   padding: 1px;
-  //   box-shadow: 0 1px 2px rgba(0, 0, 0, 5%);
-  // }
-
-  // :global(.ant-segmented-item) {
-  //   color: #64748b;
-  //   font-weight: 500;
-  //   font-size: 12px;
-  //   padding: 4px 12px;
-  //   border-radius: 4px;
-  //   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  //   position: relative;
-
-  //   &:hover {
-  //     color: #1e293b;
-  //     background: rgba(0, 0, 0, 5%);
-  //   }
-
-  //   &.ant-segmented-item-selected {
-  //     color: #3b82f6;
-  //     background: #fff;
-  //     box-shadow: 0 1px 2px rgba(0, 0, 0, 10%);
-  //   }
-  // }
-
-  // :global(.ant-segmented-thumb) {
-  //   background: #fff;
-  //   border-radius: 4px;
-  //   box-shadow: 0 1px 2px rgba(0, 0, 0, 10%);
-  //   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  // }
-}
-
-// // 版本选择器包装器
-// .versionSelectorWrapper {
-//   display: flex;
-//   align-items: center;
-// }
-
-// // 历史会话选择器包装器
-// .conversationSelectorWrapper {
-//   display: flex;
-//   align-items: center;
-// }
-
-// // 版本选择器
-// .versionSelector {
-//   // 使用默认样式，自定义样式已注释
-//   display: block;
-// }
-
-// // 版本下拉菜单
-// .versionDropdown {
-//   border-radius: 8px !important;
-//   box-shadow: 0 4px 12px rgba(0, 0, 0, 15%) !important;
-//   border: 1px solid #e2e8f0 !important;
-
-//   :global(.ant-select-item) {
-//     padding: 8px 12px !important;
-//     font-size: 12px !important;
-//     transition: all 0.2s ease !important;
-
-//     &:hover {
-//       background: rgba(59, 130, 246, 10%) !important;
-//       color: #3b82f6 !important;
-//     }
-
-//     &.ant-select-item-option-selected {
-//       background: rgba(59, 130, 246, 15%) !important;
-//       color: #3b82f6 !important;
-//       font-weight: 500 !important;
-//     }
-//   }
-// }
 // 聊天消息区域
 .chatMessagesWrapper {
   flex: 1;
   position: relative;
   min-height: 0; /* 确保 flex 子元素可以收缩 */
   height: 100%; /* 明确设置高度 */
+  overflow: hidden;
 
   /* 确保 StreamMessageScrollContainer 内部滚动容器有正确高度 */
   :global(.stream-message-scroll-container) {
@@ -146,14 +37,14 @@
     overflow: auto;
   }
 
-  /* 确保 ReactScrollToBottomContainer 内部滚动容器有正确高度 */
+  // 确保 ReactScrollToBottomContainer 内部滚动容器有正确高度
   :global(.react-scroll-to-bottom-container) {
     height: 100%;
     min-height: 0;
     overflow: hidden;
   }
 
-  /* 强制设置 react-scroll-to-bottom 组件的高度 */
+  // 强制设置 react-scroll-to-bottom 组件的高度
   :global([class*='react-scroll-to-bottom']) {
     height: 100% !important;
     min-height: 0 !important;

@@ -1,10 +1,29 @@
 @import '@/styles/token.less';
 
-.active {
-  background-color: blue;
+// 聊天模式容器
+.chatModeContainer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 10%);
+  height: 40px;
 }
 
-.default {
-  background-color: transparent;
-  color: @colorText;
+// 聊天模式切换器
+.chatModeSwitcher {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  min-height: 32px;
+}
+
+// 聊天模式分段控制器
+.chatModeSegmented {
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  color: @colorTextBase;
+  // 使用默认样式，自定义样式已注释
+  display: block;
 }
