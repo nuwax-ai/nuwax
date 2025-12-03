@@ -28,6 +28,7 @@ import type { UploadProps } from 'antd';
 import { Button, Input, message, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import { useMentionSelectorKeyboard } from '../../hooks/useMentionSelectorKeyboard';
 import { usePlaceholderCarousel } from '../../hooks/usePlaceholderCarousel';
@@ -140,6 +141,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     10000,
     300,
   );
+
+  const { pendingChanges } = useModel('appDev');
 
   // 同步 dataSourceList 中已选的数据源到 selectedMentions
   useEffect(() => {
@@ -408,6 +411,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         return;
       }
 
+      if (pendingChanges?.length > 0) {
+        message.error('请先保存或重置修改, 再发送消息');
+        return;
+      }
+
       if (chat.chatInput?.trim()) {
         const files = attachmentFiles?.filter(
           (item) =>
@@ -464,6 +472,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     if (chat.isChatLoading || isSendingMessage) {
       return;
     }
+
+    if (pendingChanges?.length > 0) {
+      message.error('请先保存或重置修改, 再发送消息');
+      return;
+    }
+
     // shift+enter或者ctrl+enter时换行
     if (
       e.nativeEvent.keyCode === 13 &&
