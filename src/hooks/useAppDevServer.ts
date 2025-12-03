@@ -172,15 +172,15 @@ export const useAppDevServer = ({
     const data = isFullResponse ? responseOrData?.data : responseOrData;
 
     // 调试日志：打印返回数据格式
-    console.log('[useAppDevServer] keepAlive response:', {
-      isFullResponse,
-      code: response?.code,
-      success: response?.success,
-      message: response?.message,
-      hasData: !!data,
-      devServerUrl: data?.devServerUrl,
-      fullResponse: responseOrData,
-    });
+    // console.log('[useAppDevServer] keepAlive response:', {
+    //   isFullResponse,
+    //   code: response?.code,
+    //   success: response?.success,
+    //   message: response?.message,
+    //   hasData: !!data,
+    //   devServerUrl: data?.devServerUrl,
+    //   fullResponse: responseOrData,
+    // });
 
     // 检查接口返回状态码 - 兼容 code === '0000' 或 success === true
     const isSuccess = response?.code === '0000' || response?.success === true;
