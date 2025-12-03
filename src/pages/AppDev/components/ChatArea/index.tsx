@@ -42,6 +42,7 @@ interface ChatAreaProps {
   selectedDataSources?: DataResource[];
   onUpdateDataSources: (dataSources: DataResource[]) => void;
   fileContentState: any;
+  isSupportDesignMode: boolean;
   // onSetSelectedFile: (fileId: string) => void; // 暂时未使用，保留以备后续使用
   modelSelector: any;
   // onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
@@ -66,6 +67,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   selectedDataSources = [],
   onUpdateDataSources,
   fileContentState,
+  isSupportDesignMode,
   // onSetSelectedFile, // 暂时未使用，保留以备后续使用
   modelSelector,
   // onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -615,15 +617,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   return (
     <Card className={styles.chatCard} variant="outlined">
-      {/* 聊天模式切换 */}
-      <div className={styles.chatModeContainer}>
-        <ToggleDesignBtn />
-      </div>
+      {
+        // 是否支持设计模式，则显示聊天模式切换
+        isSupportDesignMode && <ToggleDesignBtn />
+      }
 
       {/* 内容区域，设计模式区域和聊天消息区域 */}
       <div className={'flex-1 flex flex-col relative overflow-hide'}>
-        {/* 设计模式区域 */}
-        <DesignViewer onAddToChat={handleAddToChat} />
+        {
+          // 设计模式区域
+          isSupportDesignMode && <DesignViewer onAddToChat={handleAddToChat} />
+        }
 
         {/* 聊天消息区域 */}
         <ReactScrollToBottomContainer

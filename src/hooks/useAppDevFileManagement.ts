@@ -39,6 +39,11 @@ interface UseAppDevFileManagementProps {
   hasPermission?: boolean; // 新增：是否有权限访问项目
 }
 
+// design模式支持的开发框架
+const DESIGN_DEV_FRAMEWORK = 'vite';
+// design模式支持的前端框架
+const DESIGN_FRONTEND_FRAMEWORK = 'react';
+
 export const useAppDevFileManagement = ({
   projectId,
   onFileSelect,
@@ -82,6 +87,10 @@ export const useAppDevFileManagement = ({
     setFileContentState((prev) => ({ ...prev, selectedFile: fileId }));
   }, []);
 
+  // 是否支持设计模式
+  const [isSupportDesignMode, setIsSupportDesignMode] =
+    useState<boolean>(false);
+
   /**
    * 加载文件树数据
    * @param preserveState 是否保持当前状态（选中文件、展开文件夹等）
@@ -122,7 +131,13 @@ export const useAppDevFileManagement = ({
         const response = await getProjectContent(projectId);
 
         if (response && response.code === '0000' && response.data) {
-          const files = response.data.files || response.data;
+          const { files, devFramework, frontendFramework } = response.data;
+          // 是否支持设计模式
+          const _isSupportDesignMode =
+            devFramework === DESIGN_DEV_FRAMEWORK &&
+            frontendFramework === DESIGN_FRONTEND_FRAMEWORK;
+          // 设置是否支持设计模式
+          setIsSupportDesignMode(_isSupportDesignMode);
 
           let treeData: FileNode[] = [];
 
@@ -528,7 +543,7 @@ export const useAppDevFileManagement = ({
 
       // 将项目数据转换为扁平列表格式
       let filesList: any[] = [];
-      const files = projectResponse.data.files || projectResponse.data;
+      const files = projectResponse.data.files;
 
       if (Array.isArray(files) && files.length > 0 && files[0].name) {
         // 如果是扁平格式，直接使用
@@ -852,7 +867,7 @@ export const useAppDevFileManagement = ({
 
         // 将项目数据转换为扁平列表格式
         let filesList: any[] = [];
-        const files = projectResponse.data.files || projectResponse.data;
+        const files = projectResponse.data.files;
 
         if (Array.isArray(files) && files.length > 0 && files[0].name) {
           // 如果是扁平格式，直接使用
@@ -983,5 +998,8 @@ export const useAppDevFileManagement = ({
     findFileNode: (fileId: string) => findFileNode(fileId, fileTreeState.data),
     findFileNodeByPath: (path: string) =>
       findFileNodeByPath(path, fileTreeState.data),
+
+    // 是否支持设计模式
+    isSupportDesignMode,
   };
 };

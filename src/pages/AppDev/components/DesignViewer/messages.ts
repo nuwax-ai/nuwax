@@ -23,19 +23,19 @@ export interface ElementInfo {
   /** 元素的源信息（文件路径、行号等） */
   sourceInfo: SourceInfo;
   /** 元素的计算样式（可选） */
-  computedStyles?: {
-    paddingTop?: string;
-    paddingRight?: string;
-    paddingBottom?: string;
-    paddingLeft?: string;
-    marginTop?: string;
-    marginRight?: string;
-    marginBottom?: string;
-    marginLeft?: string;
-    color?: string;
-    backgroundColor?: string;
-    [key: string]: any;
-  };
+  // computedStyles?: {
+  //   paddingTop?: string;
+  //   paddingRight?: string;
+  //   paddingBottom?: string;
+  //   paddingLeft?: string;
+  //   marginTop?: string;
+  //   marginRight?: string;
+  //   marginBottom?: string;
+  //   marginLeft?: string;
+  //   color?: string;
+  //   backgroundColor?: string;
+  //   [key: string]: any;
+  // };
   [key: string]: any;
 }
 
