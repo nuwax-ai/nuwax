@@ -59,8 +59,8 @@ export const useConversationScrollDetection = (
       // 但如果用户在程序滚动期间向上滚动（试图停止自动滚动），则需要立即响应
       if (isProgrammatic) {
         // 判断是否向上滚动
-        // 增加 2px 的阈值补偿
-        const isScrollingUp = scrollTop < lastScrollTopRef.current - 2;
+        // 增加 1px 的阈值补偿，提高触控板滚动的灵敏度
+        const isScrollingUp = scrollTop < lastScrollTopRef.current - 1;
 
         if (isScrollingUp) {
           // 用户试图向上滚动，立即禁用自动滚动
@@ -85,8 +85,8 @@ export const useConversationScrollDetection = (
       }
 
       // 判断是否向上滚动（必须在更新 lastScrollTopRef 之前判断）
-      // 增加 2px 的阈值补偿，防止微小的抖动误判，同时兼容触控板的平滑滚动
-      const isScrollingUp = scrollTop < lastScrollTopRef.current - 2;
+      // 增加 1px 的阈值补偿，防止微小的抖动误判，同时提高触控板平滑滚动的响应速度
+      const isScrollingUp = scrollTop < lastScrollTopRef.current - 1;
 
       // 最高优先级：用户向上滚动时立即禁用自动滚动，无论距离底部多远
       if (isScrollingUp) {
