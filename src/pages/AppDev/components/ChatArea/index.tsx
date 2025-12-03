@@ -608,14 +608,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   //   return Math.min((autoErrorRetryCount / 3) * 100, 100);
   // }, [autoErrorRetryCount]);
 
-  const handleAddToChat = useCallback(
-    (content: string) => {
-      console.log(chat.chatInput, 'content1111111');
-      const _content = chat.chatInput + content;
-      chat.setChatInput(_content);
-    },
-    [chat],
-  );
+  // 添加到聊天输入框
+  const handleAddToChat = (content: string) => {
+    chat.setChatInput((prev: string) => prev + content);
+  };
 
   return (
     <Card className={styles.chatCard} variant="outlined">

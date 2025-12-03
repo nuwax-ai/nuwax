@@ -729,7 +729,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
           console.log('[Parent] Style updated:', payload);
           break;
         case 'ADD_TO_CHAT':
-          console.log('[Parent] Add to chat22222:', payload);
           if (payload?.context?.sourceInfo) {
             const { fileName, lineNumber, columnNumber } =
               payload?.context?.sourceInfo;
