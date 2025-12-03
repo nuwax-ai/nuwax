@@ -263,8 +263,12 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
   // 编辑中的类
   const [editingClass, setEditingClass] = useState<string>('');
 
-  const { iframeDesignMode, setIframeDesignMode, setPendingChanges } =
-    useModel('appDev');
+  const {
+    iframeDesignMode,
+    setIframeDesignMode,
+    pendingChanges,
+    setPendingChanges,
+  } = useModel('appDev');
 
   /**
    * 判断当前选中的元素是否可以编辑「文本内容」
@@ -667,6 +671,27 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
     }
   };
 
+  // 关闭设计模式
+  const closeDesignMode = () => {
+    // 关闭设计模式，防止用户在设计模式下修改元素，导致添加到会话的内容不准确
+    setIframeDesignMode(false);
+    // 清空选中元素
+    setSelectedElement(null);
+    // 清空文本内容
+    setLocalTextContent('');
+    const iframe = document.querySelector('iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        {
+          type: 'TOGGLE_DESIGN_MODE',
+          enabled: false,
+          timestamp: Date.now(),
+        },
+        '*',
+      );
+    }
+  };
+
   // 监听从iframe发送的消息
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -727,15 +752,24 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
           console.log('[Parent] Style updated:', payload);
           break;
         case 'ADD_TO_CHAT':
-          if (payload?.context?.sourceInfo) {
-            const { fileName, lineNumber, columnNumber } =
-              payload?.context?.sourceInfo;
-            const _fileName = fileName?.replace(FILENAME_REGEXP, '');
-            const content = `${_fileName}(${lineNumber}-${columnNumber})`;
-            const addToChatContent = `添加选中元素到会话：，请分析：\n\n\`\`\`\n${content}\n\`\`\``;
-            onAddToChat(addToChatContent);
-          } else {
-            message.error('sourceInfo is not valid');
+          {
+            console.log(pendingChanges, 9999);
+            if (pendingChanges?.length > 0) {
+              message.error('请先保存或重置修改, 再添加选中元素到会话');
+              return;
+            }
+            if (payload?.context?.sourceInfo) {
+              // 关闭设计模式，防止用户在设计模式下修改元素，导致添加到会话的内容不准确
+              closeDesignMode();
+              const { fileName, lineNumber, columnNumber } =
+                payload?.context?.sourceInfo;
+              const _fileName = fileName?.replace(FILENAME_REGEXP, '');
+              const content = `${_fileName}(${lineNumber}-${columnNumber})`;
+              const addToChatContent = `\n\`\`\`\n${content}\n\`\`\`\n`;
+              onAddToChat(addToChatContent);
+            } else {
+              message.error('sourceInfo is not valid');
+            }
           }
           break;
       }
