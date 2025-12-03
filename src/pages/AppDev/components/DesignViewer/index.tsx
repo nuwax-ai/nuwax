@@ -753,7 +753,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
           break;
         case 'ADD_TO_CHAT':
           {
-            console.log(pendingChanges, 9999);
             if (pendingChanges?.length > 0) {
               message.error('请先保存或重置修改, 再添加选中元素到会话');
               return;
@@ -777,7 +776,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [pendingChanges]);
 
   // Upsert pending change
   const upsertPendingChange = (
