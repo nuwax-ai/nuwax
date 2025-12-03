@@ -698,6 +698,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
       const { type, payload } = event.data;
       switch (type) {
         case 'DESIGN_MODE_CHANGED':
+          setSelectedElement(null);
           setIframeDesignMode(event.data.enabled);
           break;
 
