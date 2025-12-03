@@ -2,12 +2,9 @@ import SelectList from '@/components/custom/SelectList';
 import {
   CompressOutlined,
   ExpandOutlined,
-  ItalicOutlined,
   LockOutlined,
   MoreOutlined,
-  StrikethroughOutlined,
   ThunderboltOutlined,
-  UnderlineOutlined,
   UnlockOutlined,
 } from '@ant-design/icons';
 import {
@@ -15,17 +12,14 @@ import {
   Button,
   Dropdown,
   Input,
-  InputNumber,
   Select,
   Space,
+  Tooltip,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
 import {
-  AlignCenterSvg,
-  AlignJustifySvg,
-  AlignLeftSvg,
-  AlignRightSvg,
   BorderBottomSvg,
   BorderColorSvg,
   BorderLeftSvg,
@@ -39,7 +33,7 @@ import {
   MarginTopSvg,
   MarginVerticalSvg,
   OpacitySvg,
-  OverlineSvg,
+  // OverlineSvg,
   PaddingBottomSvg,
   PaddingHorizontalSvg,
   PaddingLeftSvg,
@@ -47,56 +41,81 @@ import {
   PaddingTopSvg,
   PaddingVerticalSvg,
   RadiusSvg,
-  ResetSvg,
   ShadowSvg,
-  TabularNumbersSvg,
 } from './design.images.constants';
 import styles from './index.less';
+import { ElementInfo } from './messages';
+import {
+  BORDER_COLOR_REGEXP,
+  BORDER_STYLE_REGEXP,
+  generateTailwindBorderStyleOptions,
+  generateTailwindBorderWidthOptions,
+  mapTailwindBorderStyleToLocal,
+  parseTailwindBorderWidth,
+} from './utils/tailwind-border';
+import {
+  generateFullTailwindColorOptions,
+  getColorClassRegexp,
+  getColorFromTailwindClass,
+} from './utils/tailwind-color';
+import {
+  FONT_SIZE_REGEXP,
+  generateTailwindFontSizeOptions,
+} from './utils/tailwind-fontSize';
+import {
+  FONT_WEIGHT_REGEXP,
+  generateTailwindFontWeightOptions,
+} from './utils/tailwind-fontWeight';
+import {
+  convertEmToLetterSpacingClass,
+  generateTailwindLetterSpacingOptions,
+  LETTER_SPACING_REGEXP,
+} from './utils/tailwind-letterSpacing';
+import {
+  convertRemToLineHeightClass,
+  generateTailwindLineHeightOptions,
+  LINE_HEIGHT_REGEXP,
+} from './utils/tailwind-lineHeight';
+import {
+  convertNumberToOpacityClass,
+  generateTailwindOpacityOptions,
+  OPACITY_REGEXP,
+  parseTailwindOpacity,
+} from './utils/tailwind-opacity';
+import {
+  convertLabelToRadiusClass,
+  generateTailwindRadiusOptions,
+  RADIUS_REGEXP,
+  tailwindRadiusMap,
+} from './utils/tailwind-radius';
+import {
+  convertLabelToShadowClass,
+  generateTailwindShadowOptions,
+  SHADOW_REGEXP,
+  tailwindShadowMap,
+} from './utils/tailwind-shadow';
+import {
+  generateTailwindSpacingPixelOptions,
+  getPaddingOrMarginSpace,
+  PaddingOrMarginType,
+  parseStyleValue,
+  parseTailwindSpacing,
+  SpaceValueType,
+} from './utils/tailwind-space';
+import {
+  convertLabelToTextAlignClass,
+  TEXT_ALIGN_OPTIONS,
+  TEXT_ALIGN_REGEXP,
+} from './utils/tailwind-textAlign';
 
 const cx = classNames.bind(styles);
 
 /**
- * 像素值选项列表（根据图片中的下拉选项）
+ * 像素值选项列表 - 从 Tailwind CSS spacing 配置中获取
+ * 基于 Tailwind CSS 默认 spacing 配置（用于 padding 和 margin）
+ * 包含所有标准的 Tailwind spacing 值：0, 1px, 2px, 4px, 6px, 8px, 10px, 12px, 14px, 16px, 20px, 24px, 28px, 32px, 36px, 40px, 44px, 48px, 56px, 64px, 80px, 96px, 112px, 128px, 144px, 160px, 176px, 192px, 208px, 224px, 240px, 256px, 288px, 320px, 384px, auto
  */
-const pixelOptions = [
-  { label: '0px', value: '0px' },
-  { label: '1px', value: '1px' },
-  { label: '2px', value: '2px' },
-  { label: '4px', value: '4px' },
-  { label: '6px', value: '6px' },
-  { label: '8px', value: '8px' },
-  { label: '10px', value: '10px' },
-  { label: '12px', value: '12px' },
-  { label: '14px', value: '14px' },
-  { label: '16px', value: '16px' },
-  { label: '20px', value: '20px' },
-  { label: '24px', value: '24px' },
-  { label: '28px', value: '28px' },
-  { label: '32px', value: '32px' },
-  { label: '36px', value: '36px' },
-  { label: '40px', value: '40px' },
-  { label: '44px', value: '44px' },
-  { label: '48px', value: '48px' },
-  { label: '56px', value: '56px' },
-  { label: '64px', value: '64px' },
-  { label: '80px', value: '80px' },
-  { label: '96px', value: '96px' },
-  { label: '100px', value: '100px' },
-  { label: '112px', value: '112px' },
-  { label: '128px', value: '128px' },
-  { label: '144px', value: '144px' },
-  { label: '160px', value: '160px' },
-  { label: '176px', value: '176px' },
-  { label: '192px', value: '192px' },
-  { label: '208px', value: '208px' },
-  { label: '224px', value: '224px' },
-  { label: '240px', value: '240px' },
-  { label: '256px', value: '256px' },
-  { label: '288px', value: '288px' },
-  { label: '320px', value: '320px' },
-  { label: '384px', value: '384px' },
-  { label: 'auto', value: 'auto' },
-];
+const pixelOptions = generateTailwindSpacingPixelOptions(true);
 
 /**
  * Padding 像素值选项列表（不包含 auto）
@@ -106,265 +125,1087 @@ const paddingPixelOptions = pixelOptions.filter(
 );
 
 /**
- * Border Width 像素值选项列表（简化的选项：0px, 1px, 2px, 4px, 8px）
+ * Border Width 选项列表 - 从 Tailwind CSS 边框宽度配置中获取
+ * 基于 Tailwind CSS 默认边框宽度配置
+ * 包含：0px (border-0), 1px (border), 2px (border-2), 4px (border-4), 8px (border-8)
  */
-const borderWidthOptions = [
-  { label: '0px', value: '0px' },
-  { label: '1px', value: '1px' },
-  { label: '2px', value: '2px' },
-  { label: '4px', value: '4px' },
-  { label: '8px', value: '8px' },
-];
+const borderWidthOptions = generateTailwindBorderWidthOptions();
 
 /**
- * 属性面板组件 Props
+ * Tailwind CSS 颜色选项列表
+ * 包含所有颜色和所有色阶（50-950）
  */
-interface DesignViewerProps {
-  /** 当前选中的元素名称 */
-  elementName?: string;
-  /** 父级路径（用于面包屑） */
-  parentPath?: string;
-  /** 图标值 */
-  icon?: string;
-  /** 颜色值 */
-  color?: string;
-  /** 背景值 */
-  background?: string;
-  /** 外边距配置 */
-  margin?: {
-    top?: number;
-    right?: number;
-    bottom?: number;
-    left?: number;
-    vertical?: number;
-    horizontal?: number;
-  };
-  /** 内边距配置 */
-  padding?: {
-    top?: number;
-    right?: number;
-    bottom?: number;
-    left?: number;
-    vertical?: number;
-    horizontal?: number;
-  };
-  /** 尺寸配置 */
-  size?: {
-    width: number;
-    height: number;
-    isLocked?: boolean;
-  };
-  /** 边框配置 */
-  border?: {
-    width?: number;
-    style?: string;
-    color?: string;
-  };
-  /** 值变更回调 */
-  onChange?: (key: string, value: any) => void;
-}
+const colorOptions = generateFullTailwindColorOptions();
+
+// Radius 选项 - 从 Tailwind CSS 生成
+const radiusOptions = generateTailwindRadiusOptions();
+
+// Shadow 选项 - 从 Tailwind CSS 生成
+const shadowOptions = generateTailwindShadowOptions();
+
+// Opacity 选项 - 从 Tailwind CSS 生成
+const opacityOptions = generateTailwindOpacityOptions();
+
+// Font Size 选项 - 从 Tailwind CSS 生成
+const fontSizeOptions = generateTailwindFontSizeOptions();
+
+// 更多操作菜单
+const moreMenuItems = [
+  { key: 'copy', label: '复制属性' },
+  { key: 'reset', label: '重置' },
+  { key: 'delete', label: '删除' },
+];
+
+// Typography 选项
+// const typographyOptions = [
+//   { label: 'Default', value: 'Default' },
+//   { label: 'Sans Serif', value: 'Sans Serif' },
+//   { label: 'Serif', value: 'Serif' },
+//   { label: 'Monospace', value: 'Monospace' },
+// ];
+
+/**
+ * Font Weight 选项列表 - 从 Tailwind CSS 字体粗细配置中获取
+ * 基于 Tailwind CSS 默认字体粗细配置
+ * 包含：Thin (font-thin), Extra Light (font-extralight), Light (font-light), Regular (font-normal), Medium (font-medium), Semi Bold (font-semibold), Bold (font-bold), Extra Bold (font-extrabold), Black (font-black)
+ */
+const fontWeightOptions = generateTailwindFontWeightOptions();
+
+// Line Height 选项 - 从 Tailwind CSS 行高配置中获取
+const lineHeightOptions = generateTailwindLineHeightOptions();
+
+/**
+ * Letter Spacing 选项列表 - 从 Tailwind CSS 字母间距配置中获取
+ * 基于 Tailwind CSS 默认字母间距配置
+ * 包含：None, -0.05em (tracking-tighter), -0.025em (tracking-tight), 0em (tracking-normal), 0.025em (tracking-wide), 0.05em (tracking-wider), 0.1em (tracking-widest)
+ */
+const letterSpacingOptions = generateTailwindLetterSpacingOptions();
+
+/**
+ * Border Style 选项列表 - 从 Tailwind CSS 边框样式配置中获取
+ * 基于 Tailwind CSS 默认边框样式配置
+ * 包含：None (border-none), Solid (border-solid), Dashed (border-dashed), Dotted (border-dotted), Double (border-double)
+ */
+const borderStyleOptions = generateTailwindBorderStyleOptions();
 
 /**
  * 设计查看器组件
  * 提供元素属性编辑面板，包括图标、颜色、背景、布局、尺寸和边框等配置
  */
-const DesignViewer: React.FC<DesignViewerProps> = ({
-  elementName = 'Sparkles',
-  parentPath = 'Page',
-  color = 'primary',
-  background = 'Default',
-  margin = { vertical: 0, horizontal: 0 },
-  padding = { vertical: 0, horizontal: 0 },
-  onChange,
-}) => {
-  // 本地状态管理
-  const [localColor, setLocalColor] = useState(color);
-  const [localBackground, setLocalBackground] = useState(background);
-  const [localMargin, setLocalMargin] = useState<{
-    top: number | string;
-    right: number | string;
-    bottom: number | string;
-    left: number | string;
-  }>({
-    top: margin?.top ?? margin?.vertical ?? '0px',
-    right: margin?.right ?? margin?.horizontal ?? '0px',
-    bottom: margin?.bottom ?? margin?.vertical ?? '0px',
-    left: margin?.left ?? margin?.horizontal ?? '0px',
-  });
-  const [localPadding, setLocalPadding] = useState<{
-    top: number | string;
-    right: number | string;
-    bottom: number | string;
-    left: number | string;
-  }>({
-    top: padding?.top ?? padding?.vertical ?? '0px',
-    right: padding?.right ?? padding?.horizontal ?? '0px',
-    bottom: padding?.bottom ?? padding?.vertical ?? '0px',
-    left: padding?.left ?? padding?.horizontal ?? '0px',
-  });
-  const [isMarginLocked, setIsMarginLocked] = useState(true);
-  const [isPaddingLocked, setIsPaddingLocked] = useState(true);
-  const [isMarginExpanded, setIsMarginExpanded] = useState(false);
-  const [isPaddingExpanded, setIsPaddingExpanded] = useState(false);
-  const [localTextContent, setLocalTextContent] = useState('');
-  const [localTypography, setLocalTypography] = useState('body');
-  const [fontWeight, setFontWeight] = useState('Semi Bold');
-  const [fontSize, setFontSize] = useState('lg');
-  const [lineHeight, setLineHeight] = useState('1.75rem');
-  const [letterSpacing, setLetterSpacing] = useState('0em');
-  const [textAlign, setTextAlign] = useState<
-    'left' | 'center' | 'right' | 'justify' | 'reset'
-  >('center');
-  const [textDecoration, setTextDecoration] = useState<string[]>([]);
-  const [borderStyle, setBorderStyle] = useState('Default');
-  const [borderColor, setBorderColor] = useState('Default');
-  const [localBorderWidth, setLocalBorderWidth] = useState<{
-    top: number | string;
-    right: number | string;
-    bottom: number | string;
-    left: number | string;
-    isOpen: boolean;
-  }>({
+const DesignViewer: React.FC = () => {
+  // 字体颜色值
+  const [localColor, setLocalColor] = useState<string>('Default');
+  /** 背景颜色值 */
+  const [localBackground, setLocalBackground] = useState<string>('Default');
+  /** 外边距值 */
+  const [localMargin, setLocalMargin] = useState<SpaceValueType>({
     top: '0px',
     right: '0px',
     bottom: '0px',
     left: '0px',
-    isOpen: true,
   });
-  const [isBorderWidthExpanded, setIsBorderWidthExpanded] = useState(false);
-  const [opacity, setOpacity] = useState(40);
-  const [radius, setRadius] = useState('Small');
-  const [shadowType, setShadowType] = useState('Default');
+  /** 本地内边距 */
+  const [localPadding, setLocalPadding] = useState<SpaceValueType>({
+    top: '0px',
+    right: '0px',
+    bottom: '0px',
+    left: '0px',
+  });
+  /** 是否锁定外边距 */
+  const [isMarginLocked, setIsMarginLocked] = useState<boolean>(true);
+  /** 是否锁定内边距 */
+  const [isPaddingLocked, setIsPaddingLocked] = useState<boolean>(true);
+  /** 是否展开外边距 */
+  const [isMarginExpanded, setIsMarginExpanded] = useState<boolean>(false);
+  /** 是否展开内边距 */
+  const [isPaddingExpanded, setIsPaddingExpanded] = useState<boolean>(false);
+  /** 编辑中的文本内容 */
+  const [localTextContent, setLocalTextContent] = useState<string>('');
+  /** 编辑中的排版 */
+  // const [localTypography, setLocalTypography] = useState('Default');
+  /** 编辑中的字体粗细 */
+  // fontWeight 存储 Tailwind 类名（如 'font-medium'）
+  const [fontWeight, setFontWeight] = useState<string>('font-medium');
+  /** 编辑中的字体大小 */
+  const [fontSize, setFontSize] = useState<string>('Default');
+  /** 编辑中的行高 */
+  const [lineHeight, setLineHeight] = useState<string>('1.75rem');
+  /** 编辑中的字母间距 */
+  const [letterSpacing, setLetterSpacing] = useState<string>('0em');
+  /** 编辑中的文本对齐方式 */
+  const [textAlign, setTextAlign] = useState<
+    'left' | 'center' | 'right' | 'justify' | 'reset' | ''
+  >('');
+  /** 编辑中的文本装饰 */
+  // const [textDecoration, setTextDecoration] = useState<string[]>([]);
+  /** 编辑中的边框样式 */
+  // borderStyle 存储 Tailwind 类名（如 'border-solid'）或 'Default'
+  const [borderStyle, setBorderStyle] = useState<string>('Default');
+  /** 编辑中的边框颜色 */
+  const [borderColor, setBorderColor] = useState<string>('Default');
+  /** 编辑中的边框宽度 */
+  const [localBorderWidth, setLocalBorderWidth] = useState<SpaceValueType>({
+    top: '0', // 使用 Tailwind 边框宽度值
+    right: '0',
+    bottom: '0',
+    left: '0',
+  });
+  /** 是否展开边框宽度 */
+  const [isBorderWidthExpanded, setIsBorderWidthExpanded] =
+    useState<boolean>(false);
+  /** 编辑中的透明度 */
+  const [opacity, setOpacity] = useState<number>(100);
+  /** 编辑中的圆角 */
+  const [radius, setRadius] = useState<string>('None');
+  /** 编辑中的阴影类型 */
+  const [shadowType, setShadowType] = useState<string>('None');
+
+  /** 选中的元素, 用于标识当前选中的元素, 包含className, sourceInfo, tagName, textContent等信息*/
+  const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(
+    null,
+  );
+  // 编辑中的内容(textContent)
+  const [editingContent, setEditingContent] = useState<string>('');
+  // 编辑中的类
+  const [editingClass, setEditingClass] = useState<string>('');
+
+  const { iframeDesignMode, setIframeDesignMode, setPendingChanges } =
+    useModel('appDev');
+
+  /**
+   * 判断当前选中的元素是否可以编辑「文本内容」
+   *
+   * 规则：
+   * 1. 本身标签必须是可编辑文本的标签（不是 img/input 等）
+   * 2. 如果元素内部还有子元素（不仅仅是纯文本），也认为不可编辑，避免误改一整块区域的文本
+   *
+   * @param element 当前选中的元素信息
+   * @returns 是否可以编辑文本内容
+   */
+  const canEditTextContent = (element?: ElementInfo | null): boolean => {
+    if (!element?.tagName) return false;
+
+    // 如果包含子元素，认为是复杂结构，不允许直接改整块文本
+    // 说明：hasChildElement 需要在 iframe 中选中元素时通过 element.childElementCount > 0 计算后传入
+    if (!element.isStaticText) {
+      return false;
+    }
+
+    const tag = element.tagName.toLowerCase();
+
+    // 不能编辑文本的元素
+    const nonEditableTags = [
+      'img',
+      'br',
+      'hr',
+      'input',
+      'textarea',
+      'select',
+      'iframe',
+      'video',
+      'audio',
+      'svg',
+      'canvas',
+      'embed',
+      'object',
+      'param',
+      'source',
+      'track',
+      'area',
+      'base',
+      'col',
+      'colgroup',
+      'meta',
+      'link',
+      'script',
+      'style',
+      'noscript',
+      'template',
+    ];
+
+    // 如果是不支持编辑的标签，返回 false
+    if (nonEditableTags.includes(tag)) {
+      return false;
+    }
+
+    // 其他标签通常可以编辑文本内容
+    return true;
+  };
+
+  /**
+   * 从 Tailwind 类名中解析颜色值
+   * @param className Tailwind 类名，如 "text-red-500", "bg-blue-600" 等
+   * @returns 对应的颜色值（需要从实际 CSS 中获取，这里返回类名用于后续处理）
+   */
+  const parseTailwindColor = (className: string): string | null => {
+    // 匹配颜色类名，如 "text-red-500", "bg-blue-600"
+    const colorMatch = className.match(/^(text|bg)-(.+)$/);
+    if (colorMatch) {
+      return className; // 返回完整类名，后续可以从 CSS 中获取实际颜色值
+    }
+    return null;
+  };
+
+  /**
+   * 从 Tailwind 阴影类名映射到本地阴影类型
+   * @param className Tailwind 阴影类名，如 "shadow-sm", "shadow-lg" 等
+   * @returns 对应的阴影类型值
+   */
+  const mapTailwindShadowToLocal = (className: string): string | null => {
+    return tailwindShadowMap[className] || null;
+  };
+
+  /**
+   * 从 Tailwind 圆角类名映射到本地圆角类型
+   * @param className Tailwind 圆角类名，如 "rounded-sm", "rounded-lg" 等
+   * @returns 对应的圆角类型值
+   */
+  const mapTailwindRadiusToLocal = (className: string): string | null => {
+    return tailwindRadiusMap[className] || null;
+  };
+
+  /**
+   * 从计算样式对象中解析并更新本地状态
+   * @param computedStyles 计算样式对象
+   */
+  const updateLocalStatesFromStyles = (computedStyles: {
+    paddingTop?: string;
+    paddingRight?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    marginTop?: string;
+    marginRight?: string;
+    marginBottom?: string;
+    marginLeft?: string;
+    color?: string;
+    backgroundColor?: string;
+  }) => {
+    // 更新padding（只要存在任何一个padding属性就更新）
+    if (
+      computedStyles.paddingTop !== undefined ||
+      computedStyles.paddingRight !== undefined ||
+      computedStyles.paddingBottom !== undefined ||
+      computedStyles.paddingLeft !== undefined
+    ) {
+      setLocalPadding({
+        top: parseStyleValue(computedStyles.paddingTop),
+        right: parseStyleValue(computedStyles.paddingRight),
+        bottom: parseStyleValue(computedStyles.paddingBottom),
+        left: parseStyleValue(computedStyles.paddingLeft),
+      });
+    }
+
+    // 更新margin（只要存在任何一个margin属性就更新）
+    if (
+      computedStyles.marginTop !== undefined ||
+      computedStyles.marginRight !== undefined ||
+      computedStyles.marginBottom !== undefined ||
+      computedStyles.marginLeft !== undefined
+    ) {
+      setLocalMargin({
+        top: parseStyleValue(computedStyles.marginTop),
+        right: parseStyleValue(computedStyles.marginRight),
+        bottom: parseStyleValue(computedStyles.marginBottom),
+        left: parseStyleValue(computedStyles.marginLeft),
+      });
+    }
+
+    // 更新color
+    if (computedStyles.color !== undefined) {
+      setLocalColor(computedStyles.color);
+    }
+
+    // 更新background
+    if (computedStyles.backgroundColor !== undefined) {
+      // 这里可以根据需要处理背景色
+      // setLocalBackground(computedStyles.backgroundColor);
+    }
+  };
+
+  // 重置本地状态
+  const resetLocalStates = () => {
+    // 解析className中的 Tailwind 类名前，先重置本地状态
+    setLocalColor('Default');
+    setLocalBackground('Default');
+    setShadowType('None');
+    setRadius('None');
+    setOpacity(100);
+    setBorderStyle('Default');
+    setBorderColor('Default');
+    setFontSize('Default');
+    setFontWeight('font-medium'); // 重置为默认字体粗细
+    setLineHeight('1.75rem');
+    setLetterSpacing('0em');
+    setTextAlign('');
+    setLocalBorderWidth({
+      top: '0', // 使用 Tailwind 边框宽度值
+      right: '0',
+      bottom: '0',
+      left: '0',
+    });
+    setLocalPadding({
+      top: '0px',
+      right: '0px',
+      bottom: '0px',
+      left: '0px',
+    });
+    setLocalMargin({
+      top: '0px',
+      right: '0px',
+      bottom: '0px',
+      left: '0px',
+    });
+    setLocalBorderWidth({
+      top: '0',
+      right: '0',
+      bottom: '0',
+      left: '0',
+    });
+  };
+
+  /**
+   * 从 Tailwind CSS 类名中解析样式并更新本地状态
+   * @param className 元素的 className 字符串，可能包含多个 Tailwind 类名
+   */
+  const parseTailwindClassesAndUpdateStates = (className: string) => {
+    // 重置本地状态
+    resetLocalStates();
+
+    if (!className) return;
+
+    // 将 className 拆分成单个类名
+    const classes = className.split(/\s+/).filter((c) => c.trim());
+
+    // 初始化样式对象
+    const styles: {
+      paddingTop?: string;
+      paddingRight?: string;
+      paddingBottom?: string;
+      paddingLeft?: string;
+      marginTop?: string;
+      marginRight?: string;
+      marginBottom?: string;
+      marginLeft?: string;
+      color?: string;
+      backgroundColor?: string;
+    } = {};
+
+    // 用于存储需要更新的其他属性
+    let shadowValue: string | null = null;
+    let radiusValue: string | null = null;
+    let opacityValue: number | null = null;
+    let borderWidthValue: string | null = null;
+    let borderStyleValue: string | null = null;
+    let fontWeightValue: string | null = null;
+    // let borderColorValue: string | null = null;
+
+    // 遍历每个类名，解析样式
+    classes.forEach((cls) => {
+      const value = parseTailwindSpacing(cls);
+      // 解析 Padding 类名
+      if (cls.startsWith('p-')) {
+        styles.paddingTop = value;
+        styles.paddingRight = value;
+        styles.paddingBottom = value;
+        styles.paddingLeft = value;
+      } else if (cls.startsWith('px-')) {
+        styles.paddingLeft = value;
+        styles.paddingRight = value;
+      } else if (cls.startsWith('py-')) {
+        styles.paddingTop = value;
+        styles.paddingBottom = value;
+      } else if (cls.startsWith('pt-')) {
+        styles.paddingTop = value;
+      } else if (cls.startsWith('pr-')) {
+        styles.paddingRight = value;
+      } else if (cls.startsWith('pb-')) {
+        styles.paddingBottom = value;
+      } else if (cls.startsWith('pl-')) {
+        styles.paddingLeft = value;
+      }
+      // 解析 Margin 类名
+      else if (cls.startsWith('m-')) {
+        styles.marginTop = value;
+        styles.marginRight = value;
+        styles.marginBottom = value;
+        styles.marginLeft = value;
+      } else if (cls.startsWith('mx-')) {
+        styles.marginLeft = value;
+        styles.marginRight = value;
+      } else if (cls.startsWith('my-')) {
+        styles.marginTop = value;
+        styles.marginBottom = value;
+      } else if (cls.startsWith('mt-')) {
+        styles.marginTop = value;
+      } else if (cls.startsWith('mr-')) {
+        styles.marginRight = value;
+      } else if (cls.startsWith('mb-')) {
+        styles.marginBottom = value;
+      } else if (cls.startsWith('ml-')) {
+        styles.marginLeft = value;
+      }
+      // 解析 Shadow 类名
+      else if (cls.startsWith('shadow')) {
+        const mapped = mapTailwindShadowToLocal(cls);
+        if (mapped) {
+          shadowValue = mapped;
+        }
+      }
+      // 解析 Radius 类名
+      else if (cls.startsWith('rounded')) {
+        const mapped = mapTailwindRadiusToLocal(cls);
+        if (mapped) {
+          radiusValue = mapped;
+        }
+      }
+      // 解析 Opacity 类名
+      else if (cls.startsWith('opacity-')) {
+        const parsed = parseTailwindOpacity(cls);
+        if (parsed !== null) {
+          opacityValue = parsed;
+        }
+      }
+      // 解析 Border Width 类名
+      else if (cls.startsWith('border-') && /^border-(\d+|0|none)$/.test(cls)) {
+        const parsed = parseTailwindBorderWidth(cls);
+        if (parsed !== null) {
+          borderWidthValue = parsed;
+        }
+      } else if (cls === 'border') {
+        borderWidthValue = '1px';
+      }
+      // 解析 Border Style 类名
+      else if (
+        cls === 'border-solid' ||
+        cls === 'border-dashed' ||
+        cls === 'border-dotted' ||
+        cls === 'border-none'
+      ) {
+        const mapped = mapTailwindBorderStyleToLocal(cls);
+        if (mapped) {
+          borderStyleValue = mapped;
+        }
+      }
+      // 解析 Border Color 类名
+      else if (
+        cls.startsWith('border-') &&
+        !cls.match(/^border-(\d+|0|none|solid|dashed|dotted)$/)
+      ) {
+        // border-{color} 格式，如 border-red-500
+        const colorClass = cls;
+        getColorFromTailwindClass(colorClass, (color) => {
+          if (color) {
+            setBorderColor(color);
+          }
+        });
+      }
+      // 解析颜色类名（需要从实际 CSS 中获取颜色值）
+      else if (cls.startsWith('text-')) {
+        // 尝试从 iframe 中获取实际颜色值
+        const colorClass = parseTailwindColor(cls);
+        if (colorClass) {
+          // 这里可以尝试从 CSS 中获取实际颜色值
+          // 暂时先保存类名，后续可以通过计算样式获取
+          getColorFromTailwindClass(colorClass, (color) => {
+            if (color) {
+              setLocalColor(color);
+            }
+          });
+        }
+      } else if (cls.startsWith('bg-')) {
+        const colorClass = parseTailwindColor(cls);
+        if (colorClass) {
+          getColorFromTailwindClass(colorClass, (color) => {
+            if (color) {
+              setLocalBackground(color);
+            }
+          });
+        }
+      }
+      // 解析 Font Weight 类名
+      else if (cls.startsWith('font-')) {
+        // 匹配 font-thin, font-light, font-normal, font-medium, font-semibold, font-bold, font-extrabold, font-black
+        if (FONT_WEIGHT_REGEXP.test(cls)) {
+          fontWeightValue = cls;
+        }
+      }
+    });
+
+    // 如果有解析到的样式，更新状态
+    if (Object.keys(styles).length > 0) {
+      updateLocalStatesFromStyles(styles);
+    }
+
+    // 更新 Shadow
+    if (shadowValue !== null) {
+      setShadowType(shadowValue);
+    }
+
+    // 更新 Radius
+    if (radiusValue !== null) {
+      setRadius(radiusValue);
+    }
+
+    // 更新 Opacity
+    if (opacityValue !== null) {
+      setOpacity(opacityValue);
+    }
+
+    // 更新 Border Width
+    if (borderWidthValue !== null) {
+      setLocalBorderWidth((prev) => ({
+        ...prev,
+        top: borderWidthValue as string,
+        right: borderWidthValue as string,
+        bottom: borderWidthValue as string,
+        left: borderWidthValue as string,
+      }));
+    }
+
+    // 更新 Border Style
+    if (borderStyleValue !== null) {
+      setBorderStyle(borderStyleValue);
+    }
+
+    // 更新 Font Weight
+    if (fontWeightValue !== null) {
+      setFontWeight(fontWeightValue);
+    }
+  };
+
+  // Listen for messages from iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const { type, payload } = event.data;
+      switch (type) {
+        case 'DESIGN_MODE_CHANGED':
+          setIframeDesignMode(event.data.enabled);
+          break;
+
+        case 'ELEMENT_SELECTED':
+          console.log('[Parent] Element selected - full payload:', payload);
+
+          // 验证 sourceInfo 是否有效
+          if (
+            !payload.elementInfo?.sourceInfo ||
+            !payload.elementInfo.sourceInfo.fileName ||
+            payload.elementInfo.sourceInfo.lineNumber === 0
+          ) {
+            // console.warn(
+            //   '[Parent] Invalid sourceInfo received:',
+            //   payload.elementInfo?.sourceInfo
+            // );
+            // console.warn('[Parent] This may cause update operations to fail');
+          }
+
+          setSelectedElement(payload.elementInfo);
+          setEditingContent(payload.elementInfo.textContent);
+          setEditingClass(payload.elementInfo.className);
+
+          // 判断元素是否可以编辑文本内容，如果可以则回显到 Text Content 编辑框
+          if (canEditTextContent(payload.elementInfo)) {
+            setLocalTextContent(payload.elementInfo.textContent || '');
+          } else {
+            // 如果不能编辑，清空 Text Content 编辑框
+            setLocalTextContent('');
+          }
+
+          // 从 className 中解析 Tailwind CSS 类名并更新状态
+          if (payload.elementInfo.className) {
+            parseTailwindClassesAndUpdateStates(payload.elementInfo.className);
+          }
+
+          // 如果elementInfo包含computedStyles，直接使用（优先级高于 Tailwind 解析）
+          if (payload.elementInfo.computedStyles) {
+            updateLocalStatesFromStyles(payload.elementInfo.computedStyles);
+          }
+          break;
+
+        case 'ELEMENT_DESELECTED':
+          setSelectedElement(null);
+          console.log('[Parent] Element deselected');
+          break;
+
+        case 'CONTENT_UPDATED':
+          console.log('[Parent] Content updated:', payload);
+          break;
+
+        case 'STYLE_UPDATED':
+          console.log('[Parent] Style updated:', payload);
+          break;
+        case 'ADD_TO_CHAT':
+          console.log('[Parent] Add to chat22222:', payload);
+          break;
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // Debounce hook
+  const useDebounce = <T,>(value: T, delay: number): T => {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedValue(value);
+      }, delay);
+      return () => clearTimeout(handler);
+    }, [value, delay]);
+    return debouncedValue;
+  };
+
+  const debouncedContent = useDebounce(editingContent, 300);
+  const debouncedClass = useDebounce(editingClass, 300);
+
+  // Upsert pending change
+  const upsertPendingChange = (
+    type: 'style' | 'content',
+    newValue: string,
+    originalValue?: string,
+  ) => {
+    if (!selectedElement) return;
+    setPendingChanges((prev: any) => {
+      const existingIndex = prev.findIndex(
+        (item: any) =>
+          item.type === type &&
+          item.sourceInfo.fileName === selectedElement.sourceInfo.fileName &&
+          item.sourceInfo.lineNumber === selectedElement.sourceInfo.lineNumber,
+      );
+
+      const newChange = {
+        type,
+        sourceInfo: selectedElement.sourceInfo,
+        newValue,
+        originalValue:
+          originalValue ||
+          (type === 'style'
+            ? selectedElement.className
+            : selectedElement.textContent),
+      };
+
+      if (existingIndex >= 0) {
+        const newList = [...prev];
+        newList[existingIndex] = newChange;
+        return newList;
+      } else {
+        return [...prev, newChange];
+      }
+    });
+  };
+
+  // Real-time content update
+  useEffect(() => {
+    if (!selectedElement || debouncedContent === selectedElement.textContent)
+      return;
+
+    upsertPendingChange('content', debouncedContent);
+
+    const iframe = document.querySelector('iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        {
+          type: 'UPDATE_CONTENT',
+          payload: {
+            sourceInfo: selectedElement.sourceInfo,
+            newContent: debouncedContent,
+            persist: false,
+          },
+          timestamp: Date.now(),
+        },
+        '*',
+      );
+    }
+  }, [debouncedContent]);
+
+  // Real-time style update
+  useEffect(() => {
+    if (!selectedElement || debouncedClass === selectedElement.className)
+      return;
+
+    upsertPendingChange('style', debouncedClass);
+
+    const iframe = document.querySelector('iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage(
+        {
+          type: 'UPDATE_STYLE',
+          payload: {
+            sourceInfo: selectedElement.sourceInfo,
+            newClass: debouncedClass,
+            persist: false,
+          },
+          timestamp: Date.now(),
+        },
+        '*',
+      );
+    }
+  }, [debouncedClass]);
+
+  // Style Manager Logic
+  const toggleStyle = (
+    newStyle: string,
+    regex: RegExp,
+    attribute?:
+      | 'fontSize'
+      | 'fontWeight'
+      | 'lineHeight'
+      | 'letterSpacing'
+      | 'opacity'
+      | 'radius'
+      | 'shadow'
+      | 'textAlign',
+  ) => {
+    let currentClasses = editingClass.split(' ').filter((c) => c.trim());
+
+    // 获取字体大小相关的类名列表（从 fontSizeOptions 中提取）
+    // fontSizeOptions 中的 value 是 'xs', 'sm' 等，需要转换为 'text-xs', 'text-sm' 等
+    const fontSizeClasses = fontSizeOptions
+      .filter((option) => option.value !== 'Default')
+      .map((option) => `text-${option.value}`);
+
+    // Remove existing class in the same category
+    currentClasses = currentClasses.filter((c) => {
+      // 如果是字体大小相关的操作
+      if (attribute === 'fontSize') {
+        // 先测试是否匹配字体大小正则
+        const matchesFontSize = regex.test(c);
+        // 保留 text-center 等非字体大小的 text- 类名
+        if (
+          c === 'text-center' ||
+          (c.startsWith('text-') && !matchesFontSize)
+        ) {
+          return true;
+        }
+        // 过滤掉匹配正则的字体大小类名（如 text-lg, text-sm, text-3xl 等）
+        return !matchesFontSize;
+      } else if (attribute === 'textAlign') {
+        // 如果是文本对齐相关的操作
+        // 重置正则表达式的 lastIndex，避免状态问题
+        // regex.lastIndex = 0;
+        // 先测试是否匹配文本对齐正则
+        const matchesTextAlign = regex.test(c);
+        // 如果匹配文本对齐正则（如 text-left, text-center, text-right, text-justify），过滤掉
+        // 这样当选择新的 textAlign 时，旧的会被清除，新的会被添加
+        // 当选择 reset 时，所有 textAlign 类名都会被清除
+        if (matchesTextAlign) {
+          return false;
+        }
+        // 保留非文本对齐的 text- 类名（如字体大小、颜色等）
+        // 以及字体大小类名和其他非 text- 开头的类名
+        return true;
+      } else {
+        // 非字体大小操作：排除字体大小相关的类（如 text-xs, text-sm 等）
+        if (fontSizeClasses.includes(c) || c.includes('text-center')) {
+          return true;
+        }
+        // 其他类按原来的逻辑过滤
+        return !regex.test(c);
+      }
+    });
+
+    // Add new style if it's not empty (allows clearing style)
+    if (newStyle) {
+      currentClasses.push(newStyle);
+    }
+
+    setEditingClass(currentClasses.join(' '));
+  };
+
+  // const hasStyle = (style: string) => {
+  //   return editingClass.split(' ').includes(style);
+  // };
 
   /**
    * 处理Typography变更
    */
-  const handleTypographyChange = (value: string) => {
-    setLocalTypography(value);
-    onChange?.('typography', value);
+  // const handleTypographyChange = (value: string) => {
+  //   setLocalTypography(value);
+  //   onChange?.('typography', value);
+  // };
+
+  /**
+   * 处理字体粗细变更
+   */
+  const handleFontWeightChange = (value: React.Key) => {
+    const weightValue = value as string;
+    setFontWeight(weightValue);
+    // 通过 toggleStyle 方法将 font weight 样式写入 editingClass
+    // value 已经是 Tailwind 字体粗细类名（如 'font-semibold'）
+    toggleStyle(weightValue, FONT_WEIGHT_REGEXP);
   };
+
+  /**
+   * 处理字体大小变更
+   */
+  const handleFontSizeChange = (value: React.Key) => {
+    const sizeValue = value as string;
+    setFontSize(sizeValue);
+
+    // 通过 toggleStyle 方法将 font size 样式写入 editingClass
+    if (sizeValue === 'Default') {
+      // 如果是 Default，移除所有字体大小类名
+      // 字体大小类名格式是 text-xs, text-sm, text-base 等
+      toggleStyle('', FONT_SIZE_REGEXP, 'fontSize');
+    } else {
+      // 将 value（如 'lg'）转换为 Tailwind 类名（如 'text-lg'）
+      const fontSizeClass = `text-${sizeValue}`;
+      toggleStyle(fontSizeClass, FONT_SIZE_REGEXP, 'fontSize');
+    }
+  };
+
+  /**
+   * 处理行高变更
+   */
+  const handleLineHeightChange = (value: React.Key) => {
+    const heightValue = value as string;
+    setLineHeight(heightValue);
+
+    // 通过 toggleStyle 方法将 line height 样式写入 editingClass
+    // if (heightValue === 'None') {
+    //   // 如果是 None，移除所有行高类名
+    //   toggleStyle('', LINE_HEIGHT_REGEXP);
+    // } else {
+    // value 是 rem 值（如 '1.5rem'），需要转换为 Tailwind 类名（如 'leading-6'）
+    const lineHeightClass = convertRemToLineHeightClass(heightValue);
+    if (lineHeightClass) {
+      toggleStyle(lineHeightClass, LINE_HEIGHT_REGEXP);
+    } else {
+      // 如果找不到对应的类名，移除所有行高类名
+      toggleStyle('', LINE_HEIGHT_REGEXP);
+    }
+    // }
+  };
+
+  /**
+   * 处理字母间距变更
+   */
+  const handleLetterSpacingChange = (value: React.Key) => {
+    const spacingValue = value as string;
+    setLetterSpacing(spacingValue);
+
+    // 通过 toggleStyle 方法将 letter spacing 样式写入 editingClass
+    if (spacingValue === 'None') {
+      // 如果是 None，移除所有字母间距类名
+      toggleStyle('', LETTER_SPACING_REGEXP);
+    } else {
+      // value 是 em 值（如 '0.05em'），需要转换为 Tailwind 类名（如 'tracking-wider'）
+      const letterSpacingClass = convertEmToLetterSpacingClass(spacingValue);
+      if (letterSpacingClass) {
+        toggleStyle(letterSpacingClass, LETTER_SPACING_REGEXP);
+      } else {
+        // 如果找不到对应的类名，移除所有字母间距类名
+        toggleStyle('', LETTER_SPACING_REGEXP);
+      }
+    }
+  };
+
+  /**
+   * 处理透明度变更
+   */
+  const handleOpacityChange = (value: number) => {
+    setOpacity(value);
+
+    // 通过 toggleStyle 方法将 opacity 样式写入 editingClass
+    // value 是数字值（如 50），需要转换为 Tailwind 类名（如 'opacity-50'）
+    const opacityClass = convertNumberToOpacityClass(value);
+    if (opacityClass) {
+      toggleStyle(opacityClass, OPACITY_REGEXP);
+    } else {
+      // 如果找不到对应的类名，移除所有透明度类名
+      toggleStyle('', OPACITY_REGEXP);
+    }
+  };
+
+  /**
+   * 处理圆角变更
+   */
+  const handleRadiusChange = (value: React.Key) => {
+    const radiusValue = value as string;
+    setRadius(radiusValue);
+
+    // 通过 toggleStyle 方法将 radius 样式写入 editingClass
+    if (radiusValue === 'Default' || radiusValue === 'None') {
+      // 如果是 Default 或 None，移除所有圆角类名
+      toggleStyle('', RADIUS_REGEXP);
+    } else {
+      // value 是用户友好的标签（如 'Small'），需要转换为 Tailwind 类名（如 'rounded-sm'）
+      const radiusClass = convertLabelToRadiusClass(radiusValue);
+      if (radiusClass) {
+        toggleStyle(radiusClass, RADIUS_REGEXP);
+      } else {
+        // 如果找不到对应的类名，移除所有圆角类名
+        toggleStyle('', RADIUS_REGEXP);
+      }
+    }
+  };
+
+  /**
+   * 处理阴影变更
+   */
+  const handleShadowChange = (value: React.Key) => {
+    const shadowValue = value as string;
+    setShadowType(shadowValue);
+
+    // 通过 toggleStyle 方法将 shadow 样式写入 editingClass
+    if (shadowValue === 'Default' || shadowValue === 'None') {
+      // 如果是 Default 或 None，移除所有阴影类名
+      toggleStyle('', SHADOW_REGEXP);
+    } else {
+      // value 是用户友好的标签（如 'Small'），需要转换为 Tailwind 类名（如 'shadow-sm'）
+      const shadowClass = convertLabelToShadowClass(shadowValue);
+      if (shadowClass) {
+        toggleStyle(shadowClass, SHADOW_REGEXP);
+      } else {
+        // 如果找不到对应的类名，移除所有阴影类名
+        toggleStyle('', SHADOW_REGEXP);
+      }
+    }
+  };
+
   /**
    * 处理文本内容变更
    */
   const handleTextContentChange = (value: string) => {
     setLocalTextContent(value);
-    onChange?.('textContent', value);
+    // 同时更新 editingContent，用于实时更新到 iframe
+    setEditingContent(value);
   };
 
   /**
-   * 处理颜色变更
+   * 处理颜色切换
+   */
+  const handleToggleColor = (prefix: string, color: string) => {
+    const colorClassRegexp = getColorClassRegexp(prefix);
+    // 如果选择的是 Default，直接移除所有该前缀的颜色样式
+    // 颜色类名格式包括：
+    // - {prefix}-transparent
+    // - {prefix}-black
+    // - {prefix}-white
+    // - {prefix}-{colorName}-{shade}，如 text-red-500, bg-blue-600
+    if (color === 'Default') {
+      // 匹配所有颜色类名，但不匹配其他样式类名
+      // 例如 text- 前缀：匹配 text-red-500, text-white 等，但不匹配 text-xs, text-center 等
+      // 例如 bg- 前缀：匹配 bg-blue-600, bg-white 等
+      // 例如 border- 前缀：已在 handleBorderColorChange 中特殊处理
+      toggleStyle('', colorClassRegexp);
+    } else {
+      const itemColor = colorOptions.find((item) => item.value === color);
+      const styleClass = `${prefix}-${itemColor?.label}`;
+      toggleStyle(styleClass, colorClassRegexp);
+    }
+  };
+
+  /**
+   * 处理文本颜色变更
    */
   const handleColorChange = (color: string) => {
     setLocalColor(color);
-    onChange?.('color', color);
+    handleToggleColor('text', color);
   };
 
   /**
    * 处理背景变更
    */
-  const handleBackgroundChange = (value: string) => {
-    setLocalBackground(value);
-    onChange?.('background', value);
+  const handleBackgroundChange = (color: string) => {
+    setLocalBackground(color);
+    handleToggleColor('bg', color);
+  };
+
+  /**
+   * 处理边框颜色变更
+   */
+  const handleBorderColorChange = (color: string) => {
+    setBorderColor(color);
+
+    // 如果选择的是 Default，直接移除所有 border color 相关的样式
+    // border color 的类名格式包括：
+    // - border-transparent
+    // - border-black
+    // - border-white
+    // - border-{colorName}-{shade}，如 border-red-500
+    // 正则表达式匹配所有 border color 类名，但不匹配 border-solid, border-2 等（border style 和 border width）
+    if (color === 'Default') {
+      // 匹配 border-transparent, border-black, border-white, border-{colorName}-{shade}
+      // 排除 border-solid, border-dashed 等（border style）
+      // 排除 border-0, border-2, border-4, border-8 等（border width）
+      toggleStyle('', BORDER_COLOR_REGEXP);
+    } else {
+      handleToggleColor('border', color);
+    }
+  };
+
+  /**
+   * 处理边框样式变更
+   */
+  const handleBorderStyleChange = (value: React.Key) => {
+    const styleValue = value as string;
+    setBorderStyle(styleValue);
+
+    // 通过 toggleStyle 方法将 border 样式写入 editingClass
+    if (styleValue === 'Default') {
+      // 如果是 Default，移除所有边框样式类名
+      toggleStyle('', BORDER_STYLE_REGEXP);
+    } else {
+      // 使用 Tailwind 边框样式类名（value 已经是类名，如 'border-solid'）
+      toggleStyle(styleValue, BORDER_STYLE_REGEXP);
+    }
   };
 
   /**
    * 处理外边距变更（四边独立）
    */
   const handleMarginChange = (
-    type:
-      | 'top'
-      | 'right'
-      | 'bottom'
-      | 'left'
-      | 'vertical'
-      | 'horizontal'
-      | 'all',
+    type: PaddingOrMarginType,
     value: string | null,
   ) => {
-    const newMargin = { ...localMargin };
     if (value !== null) {
-      if (type === 'all') {
-        // 统一设置所有边
-        newMargin.top = value;
-        newMargin.right = value;
-        newMargin.bottom = value;
-        newMargin.left = value;
-      } else if (type === 'vertical') {
-        newMargin.top = value;
-        newMargin.bottom = value;
-      } else if (type === 'horizontal') {
-        newMargin.left = value;
-        newMargin.right = value;
-      } else {
-        newMargin[type] = value;
-      }
+      const { spaceObject: newMargin, prefix } = getPaddingOrMarginSpace(
+        type,
+        value,
+        'margin',
+        localMargin,
+      );
       setLocalMargin(newMargin);
-      onChange?.('margin', newMargin);
+
+      // value 已经是 Tailwind spacing 值（如 '40'），直接使用
+      // 正则表达式：精确匹配相同前缀的 margin 类名
+      // 例如：m- 只匹配 m-*，不匹配 mx-*、my-*、mt-* 等
+      // mx- 只匹配 mx-*，不匹配 m-*、my-*、mt-* 等
+      const marginRegex =
+        prefix === 'm'
+          ? /^m-(?![xytrbl])/ // m- 后面不能是 x、y、t、r、b、l（避免匹配 mx-、my-、mt- 等）
+          : new RegExp(`^${prefix}-`);
+      toggleStyle(`${prefix}-${value}`, marginRegex);
     }
-  };
-
-  /**
-   * 切换外边距链接状态
-   */
-  const toggleMarginLink = () => {
-    setIsMarginLocked(!isMarginLocked);
-  };
-
-  /**
-   * 切换外边距展开状态
-   */
-  const toggleMarginExpand = () => {
-    setIsMarginExpanded(!isMarginExpanded);
   };
 
   /**
    * 处理内边距变更（四边独立）
    */
   const handlePaddingChange = (
-    type:
-      | 'top'
-      | 'right'
-      | 'bottom'
-      | 'left'
-      | 'vertical'
-      | 'horizontal'
-      | 'all',
+    type: PaddingOrMarginType,
     value: string | null,
   ) => {
-    const newPadding = { ...localPadding };
     if (value !== null) {
-      if (type === 'all') {
-        // 统一设置所有边
-        newPadding.top = value;
-        newPadding.right = value;
-        newPadding.bottom = value;
-        newPadding.left = value;
-      } else if (type === 'vertical') {
-        newPadding.top = value;
-        newPadding.bottom = value;
-      } else if (type === 'horizontal') {
-        newPadding.left = value;
-        newPadding.right = value;
-      } else {
-        newPadding[type] = value;
-      }
+      const { spaceObject: newPadding, prefix } = getPaddingOrMarginSpace(
+        type,
+        value,
+        'padding',
+        localPadding,
+      );
       setLocalPadding(newPadding);
-      onChange?.('padding', newPadding);
+
+      // value 已经是 Tailwind spacing 值（如 '40'），直接使用
+      // 正则表达式：精确匹配相同前缀的 padding 类名
+      // 例如：p- 只匹配 p-*，不匹配 px-*、py-*、pt-* 等
+      // px- 只匹配 px-*，不匹配 p-*、py-*、pt-* 等
+      const paddingRegex =
+        prefix === 'p'
+          ? /^p-(?![xytrbl])/ // p- 后面不能是 x、y、t、r、b、l（避免匹配 px-、py-、pt- 等）
+          : new RegExp(`^${prefix}-`);
+      toggleStyle(`${prefix}-${value}`, paddingRegex);
     }
-  };
-
-  /**
-   * 切换内边距链接状态
-   */
-  const togglePaddingLink = () => {
-    setIsPaddingLocked(!isPaddingLocked);
-  };
-
-  /**
-   * 切换内边距展开状态
-   */
-  const togglePaddingExpand = () => {
-    setIsPaddingExpanded(!isPaddingExpanded);
   };
 
   /**
@@ -385,8 +1226,65 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
         newBorderWidth[type] = value;
       }
       setLocalBorderWidth(newBorderWidth);
-      onChange?.('borderWidth', newBorderWidth);
+      // onChange?.('borderWidth', newBorderWidth);
+      // 正则表达式：精确匹配 border 和 border-数字 类名（如 border, border-0, border-2, border-4, border-8）
+      // 注意：value 为 '1' 时，类名是 'border'（无数字后缀），其他值是 'border-数字'
+      const borderClass = value === '1' ? 'border' : `border-${value}`;
+      toggleStyle(borderClass, /^border(-\d+)?$/);
     }
+  };
+
+  /**
+   * 处理文本对齐变更
+   */
+  const handleTextAlignChange = (
+    align: 'left' | 'center' | 'right' | 'justify' | 'reset',
+  ) => {
+    if (align === 'reset') {
+      setTextAlign('');
+      // 移除所有文本对齐类名
+      toggleStyle('', TEXT_ALIGN_REGEXP, 'textAlign');
+    } else {
+      setTextAlign(align);
+      // 通过 toggleStyle 方法将 text align 样式写入 editingClass
+      // value 是用户友好的标签（如 'left'），需要转换为 Tailwind 类名（如 'text-left'）
+      const textAlignClass = convertLabelToTextAlignClass(align);
+      console.log(textAlignClass, 'textAlignClass1111111');
+      if (textAlignClass) {
+        toggleStyle(textAlignClass, TEXT_ALIGN_REGEXP, 'textAlign');
+      } else {
+        // 如果找不到对应的类名，移除所有文本对齐类名
+        toggleStyle('', TEXT_ALIGN_REGEXP, 'textAlign');
+      }
+    }
+  };
+
+  /**
+   * 切换外边距链接状态
+   */
+  const toggleMarginLink = () => {
+    setIsMarginLocked(!isMarginLocked);
+  };
+
+  /**
+   * 切换外边距展开状态
+   */
+  const toggleMarginExpand = () => {
+    setIsMarginExpanded(!isMarginExpanded);
+  };
+
+  /**
+   * 切换内边距链接状态
+   */
+  const togglePaddingLink = () => {
+    setIsPaddingLocked(!isPaddingLocked);
+  };
+
+  /**
+   * 切换内边距展开状态
+   */
+  const togglePaddingExpand = () => {
+    setIsPaddingExpanded(!isPaddingExpanded);
   };
 
   /**
@@ -396,141 +1294,20 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
     setIsBorderWidthExpanded(!isBorderWidthExpanded);
   };
 
-  // 颜色选项
-  const colorOptions = [
-    { label: 'primary', value: '#1890ff' },
-    { label: 'secondary', value: '#8c8c8c' },
-    { label: 'success', value: '#52c41a' },
-    { label: 'warning', value: '#faad14' },
-    { label: 'error', value: '#ff4d4f' },
-  ];
-
-  // 背景选项
-  const backgroundOptions = [
-    { label: 'Default', value: 'Default' },
-    { label: 'Transparent', value: 'Transparent' },
-    { label: 'White', value: '#fff' },
-    { label: 'Gray', value: '#8c8c8c' },
-  ];
-
-  // 更多操作菜单
-  const moreMenuItems = [
-    { key: 'copy', label: '复制属性' },
-    { key: 'reset', label: '重置' },
-    { key: 'delete', label: '删除' },
-  ];
-
-  // Typography 选项
-  const typographyOptions = [
-    { label: 'Default', value: 'Default' },
-    { label: 'Sans Serif', value: 'Sans Serif' },
-    { label: 'Serif', value: 'Serif' },
-    { label: 'Monospace', value: 'Monospace' },
-  ];
-
-  // Font Weight 选项
-  const fontWeightOptions = [
-    { label: 'Thin', value: 'Thin' },
-    { label: 'Light', value: 'Light' },
-    { label: 'Regular', value: 'Regular' },
-    { label: 'Medium', value: 'Medium' },
-    { label: 'Semi Bold', value: 'Semi Bold' },
-    { label: 'Bold', value: 'Bold' },
-    { label: 'Extra Bold', value: 'Extra Bold' },
-  ];
-
-  // Font Size 选项
-  const fontSizeOptions = [
-    { label: 'xs', value: 'xs' },
-    { label: 'sm', value: 'sm' },
-    { label: 'md', value: 'md' },
-    { label: 'lg', value: 'lg' },
-    { label: 'xl', value: 'xl' },
-    { label: '2xl', value: '2xl' },
-    { label: '3xl', value: '3xl' },
-  ];
-
-  // Line Height 选项
-  const lineHeightOptions = [
-    { label: '0.75rem', value: '0.75rem' },
-    { label: '1rem', value: '1rem' },
-    { label: '1.25rem', value: '1.25rem' },
-    { label: '1.5rem', value: '1.5rem' },
-    { label: '1.75rem', value: '1.75rem' },
-    { label: '2rem', value: '2rem' },
-    { label: '2.25rem', value: '2.25rem' },
-    { label: '2.5rem', value: '2.5rem' },
-  ];
-
-  // Letter Spacing 选项
-  const letterSpacingOptions = [
-    { label: '-0.05em', value: '-0.05em' },
-    { label: '-0.025em', value: '-0.025em' },
-    { label: '0em', value: '0em' },
-    { label: '0.025em', value: '0.025em' },
-    { label: '0.05em', value: '0.05em' },
-    { label: '0.1em', value: '0.1em' },
-  ];
-
-  // Border Style 选项
-  const borderStyleOptions = [
-    { label: 'Default', value: 'Default' },
-    { label: 'None', value: 'None' },
-    { label: 'Solid', value: 'Solid' },
-    { label: 'Dashed', value: 'Dashed' },
-    { label: 'Dotted', value: 'Dotted' },
-  ];
-
-  // Border Color 选项
-  const borderColorOptions = [
-    { label: 'Default', value: 'Default' },
-    { label: 'Black', value: '#000000' },
-    { label: 'White', value: '#ffffff' },
-    { label: 'Gray', value: '#8c8c8c' },
-  ];
-
-  // Radius 选项
-  const radiusOptions = [
-    { label: 'None', value: 'None' },
-    { label: 'Small', value: 'Small' },
-    { label: 'Medium', value: 'Medium' },
-    { label: 'Large', value: 'Large' },
-    { label: 'Full', value: 'Full' },
-  ];
-
-  // Shadow 选项
-  const shadowOptions = [
-    { label: 'Default', value: 'Default' },
-    { label: 'Small', value: 'Small' },
-    { label: 'Medium', value: 'Medium' },
-    { label: 'Large', value: 'Large' },
-    { label: 'None', value: 'None' },
-  ];
-
-  /**
-   * 处理对齐方式变更
-   */
-  const handleTextAlignChange = (
-    align: 'left' | 'center' | 'right' | 'justify' | 'reset',
-  ) => {
-    if (align === 'reset') {
-      setTextAlign('left');
-    } else {
-      setTextAlign(align);
-    }
-    onChange?.('textAlign', align === 'reset' ? 'left' : align);
-  };
-
   /**
    * 处理文本装饰变更
    */
-  const handleTextDecorationChange = (decoration: string) => {
-    const newDecorations = textDecoration.includes(decoration)
-      ? textDecoration.filter((d) => d !== decoration)
-      : [...textDecoration, decoration];
-    setTextDecoration(newDecorations);
-    onChange?.('textDecoration', newDecorations);
-  };
+  // const handleTextDecorationChange = (decoration: string) => {
+  //   const newDecorations = textDecoration.includes(decoration)
+  //     ? textDecoration.filter((d) => d !== decoration)
+  //     : [...textDecoration, decoration];
+  //   // setTextDecoration(newDecorations);
+  //   onChange?.('textDecoration', newDecorations);
+  // };
+
+  if (!iframeDesignMode || !selectedElement) {
+    return null;
+  }
 
   return (
     <div className={cx(styles.designViewer)}>
@@ -539,13 +1316,18 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
         <Breadcrumb
           items={[
             {
-              title: parentPath,
+              // 组件文件路径
+              title: selectedElement?.sourceInfo?.fileName?.replace(
+                /^\/app\/project_workspace\/[^/]+\//,
+                '',
+              ),
             },
             {
               title: (
                 <Space>
                   <ThunderboltOutlined className={cx(styles.breadcrumbIcon)} />
-                  <span>{elementName}</span>
+                  {/* 元素标签名 */}
+                  <span>{selectedElement?.tagName}</span>
                 </Space>
               ),
             },
@@ -563,25 +1345,27 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
       {/* 属性配置区域 */}
       <div className={cx(styles.propertiesContainer)}>
         {/* Text Content 配置 */}
-        <div className={cx(styles.propertySection)}>
-          <div className={cx(styles.propertyLabel)}>Text Content</div>
-          <Input.TextArea
-            className={cx('w-full')}
-            value={localTextContent}
-            onChange={(e) => handleTextContentChange(e.target.value)}
-            autoSize={{ minRows: 3, maxRows: 4 }}
-          />
-        </div>
+        {canEditTextContent(selectedElement) && (
+          <div className={cx(styles.propertySection)}>
+            <div className={cx(styles.propertyLabel)}>Text Content</div>
+            <Input.TextArea
+              className={cx('w-full')}
+              value={localTextContent}
+              onChange={(e) => handleTextContentChange(e.target.value)}
+              autoSize={{ minRows: 3, maxRows: 4 }}
+            />
+          </div>
+        )}
 
         {/* Typography 配置 */}
         <div className={cx(styles.propertySection)}>
           <div className={cx(styles.propertyLabel)}>Typography</div>
-          <SelectList
+          {/* <SelectList
             className={cx(styles.propertyInput)}
             value={localTypography}
             onChange={(value) => handleTypographyChange(value as string)}
             options={typographyOptions}
-          />
+          /> */}
 
           {/* Typography 详细设置 */}
           <div className={cx(styles.typographyDetails)}>
@@ -594,10 +1378,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={fontWeight}
-                  onChange={(value) => {
-                    setFontWeight(value as string);
-                    onChange?.('fontWeight', value);
-                  }}
+                  onChange={handleFontWeightChange}
                   options={fontWeightOptions}
                 />
               </div>
@@ -606,10 +1387,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={fontSize}
-                  onChange={(value) => {
-                    setFontSize(value as string);
-                    onChange?.('fontSize', value);
-                  }}
+                  onChange={handleFontSizeChange}
                   options={fontSizeOptions}
                 />
               </div>
@@ -624,10 +1402,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={lineHeight}
-                  onChange={(value) => {
-                    setLineHeight(value as string);
-                    onChange?.('lineHeight', value);
-                  }}
+                  onChange={handleLineHeightChange}
                   options={lineHeightOptions}
                 />
               </div>
@@ -638,57 +1413,43 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={letterSpacing}
-                  onChange={(value) => {
-                    setLetterSpacing(value as string);
-                    onChange?.('letterSpacing', value);
-                  }}
+                  onChange={handleLetterSpacingChange}
                   options={letterSpacingOptions}
                 />
               </div>
             </div>
 
-            {/* Alignment */}
             <div className={cx(styles.typographyRow)}>
+              {/* Alignment */}
               <div className={cx(styles.typographyInputGroup)}>
                 <div className={cx(styles.typographyInputLabel)}>Alignment</div>
                 <div className={cx(styles.buttonGroup)}>
-                  <Button
-                    className={cx(styles.toggleButton, {
-                      [styles.active]: textAlign === 'reset',
-                    })}
-                    onClick={() => handleTextAlignChange('reset')}
-                    icon={<ResetSvg className={cx(styles.layoutIcon)} />}
-                  />
-                  <Button
-                    className={cx(styles.toggleButton, {
-                      [styles.active]: textAlign === 'left',
-                    })}
-                    onClick={() => handleTextAlignChange('left')}
-                    icon={<AlignLeftSvg className={cx(styles.layoutIcon)} />}
-                  />
-                  <Button
-                    className={cx(styles.toggleButton, {
-                      [styles.active]: textAlign === 'center',
-                    })}
-                    onClick={() => handleTextAlignChange('center')}
-                    icon={<AlignCenterSvg className={cx(styles.layoutIcon)} />}
-                  />
-                  <Button
-                    className={cx(styles.toggleButton, {
-                      [styles.active]: textAlign === 'right',
-                    })}
-                    onClick={() => handleTextAlignChange('right')}
-                    icon={<AlignRightSvg className={cx(styles.layoutIcon)} />}
-                  />
-                  <Button
-                    className={cx(styles.toggleButton, {
-                      [styles.active]: textAlign === 'justify',
-                    })}
-                    onClick={() => handleTextAlignChange('justify')}
-                    icon={<AlignJustifySvg className={cx(styles.layoutIcon)} />}
-                  />
+                  {TEXT_ALIGN_OPTIONS.map((option) => (
+                    <Tooltip title={option.label} key={option.type}>
+                      <Button
+                        className={cx(styles.toggleButton, {
+                          [styles.active]: textAlign === option.type,
+                        })}
+                        onClick={() =>
+                          handleTextAlignChange(
+                            option.type as
+                              | 'reset'
+                              | 'left'
+                              | 'center'
+                              | 'right'
+                              | 'justify',
+                          )
+                        }
+                        icon={option.icon}
+                      />
+                    </Tooltip>
+                  ))}
                 </div>
               </div>
+            </div>
+
+            {/* 文本装饰 */}
+            {/* <div className={cx(styles.typographyRow)}>
               <div className={cx(styles.typographyInputGroup)}>
                 <div className={cx(styles.typographyInputLabel)}>
                   Decoration
@@ -742,7 +1503,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                   />
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -755,10 +1516,14 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
             onChange={handleColorChange}
             options={colorOptions}
             prefix={
-              <div
-                className={cx(styles.colorSwatch)}
-                style={{ background: localColor }}
-              />
+              localColor === 'Default' ? (
+                <BorderColorSvg className={cx(styles.layoutIcon)} />
+              ) : (
+                <div
+                  className={cx(styles.colorSwatch)}
+                  style={{ background: localColor }}
+                />
+              )
             }
             optionRender={(option) => {
               return (
@@ -787,12 +1552,16 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
             className={cx('w-full')}
             value={localBackground}
             onChange={handleBackgroundChange}
-            options={backgroundOptions}
+            options={colorOptions}
             prefix={
-              <div
-                className={cx(styles.colorSwatch)}
-                style={{ background: localBackground }}
-              />
+              localBackground === 'Default' ? (
+                <BorderColorSvg className={cx(styles.layoutIcon)} />
+              ) : (
+                <div
+                  className={cx(styles.colorSwatch)}
+                  style={{ background: localBackground }}
+                />
+              )
             }
             optionRender={(option) => {
               return (
@@ -1248,15 +2017,38 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
               <div className={cx(styles.typographyInputLabel)}>
                 Border Color
               </div>
-              <SelectList
+              <Select
                 className={cx(styles.typographySelect)}
-                value={borderStyle}
-                prefix={<BorderColorSvg className={cx(styles.layoutIcon)} />}
-                onChange={(value) => {
-                  setBorderStyle(value as string);
-                  onChange?.('borderStyle', value);
+                value={borderColor}
+                onChange={handleBorderColorChange}
+                options={colorOptions}
+                prefix={
+                  borderColor === 'Default' ? (
+                    <BorderColorSvg className={cx(styles.layoutIcon)} />
+                  ) : (
+                    <div
+                      className={cx(styles.colorSwatch)}
+                      style={{ background: borderColor }}
+                    />
+                  )
+                }
+                optionRender={(option) => {
+                  return (
+                    <div className={cx('flex items-center gap-4')}>
+                      <span
+                        className={cx('radius-4')}
+                        style={{
+                          width: 16,
+                          height: 16,
+                          background: option.data.value,
+                        }}
+                      />
+                      <span className={cx('flex-1', 'text-ellipsis')}>
+                        {option.data.label}
+                      </span>
+                    </div>
+                  );
                 }}
-                options={borderStyleOptions}
               />
             </div>
             <div className={cx(styles.typographyInputGroup)}>
@@ -1265,12 +2057,9 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
               </div>
               <SelectList
                 className={cx(styles.typographySelect)}
-                value={borderColor}
-                onChange={(value) => {
-                  setBorderColor(value as string);
-                  onChange?.('borderColor', value);
-                }}
-                options={borderColorOptions}
+                value={borderStyle}
+                onChange={handleBorderStyleChange}
+                options={borderStyleOptions}
               />
             </div>
           </div>
@@ -1286,7 +2075,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                     value={
                       typeof localBorderWidth.top === 'string'
                         ? localBorderWidth.top
-                        : `${localBorderWidth.top || 0}px`
+                        : String(localBorderWidth.top || '0')
                     }
                     onChange={(value) =>
                       handleBorderWidthChange('all', value as string)
@@ -1313,7 +2102,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       value={
                         typeof localBorderWidth.top === 'string'
                           ? localBorderWidth.top
-                          : `${localBorderWidth.top || 0}px`
+                          : String(localBorderWidth.top || '0')
                       }
                       onChange={(value) =>
                         handleBorderWidthChange('top', value as string)
@@ -1328,7 +2117,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       value={
                         typeof localBorderWidth.bottom === 'string'
                           ? localBorderWidth.bottom
-                          : `${localBorderWidth.bottom || 0}px`
+                          : String(localBorderWidth.bottom || '0')
                       }
                       onChange={(value) =>
                         handleBorderWidthChange('bottom', value as string)
@@ -1345,7 +2134,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       value={
                         typeof localBorderWidth.left === 'string'
                           ? localBorderWidth.left
-                          : `${localBorderWidth.left || 0}px`
+                          : String(localBorderWidth.left || '0')
                       }
                       onChange={(value) =>
                         handleBorderWidthChange('left', value as string)
@@ -1360,7 +2149,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
                       value={
                         typeof localBorderWidth.right === 'string'
                           ? localBorderWidth.right
-                          : `${localBorderWidth.right || 0}px`
+                          : String(localBorderWidth.right || '0')
                       }
                       onChange={(value) =>
                         handleBorderWidthChange('right', value as string)
@@ -1389,18 +2178,12 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
             {/* Opacity */}
             <div className={cx(styles.typographyInputGroup)}>
               <div className={cx(styles.typographyInputLabel)}>Opacity</div>
-              <InputNumber
+              <Select
                 className={cx('w-full')}
                 value={opacity}
-                onChange={(value) => {
-                  setOpacity(value || 0);
-                  onChange?.('opacity', value || 0);
-                }}
+                onChange={handleOpacityChange}
+                options={opacityOptions}
                 prefix={<OpacitySvg className={cx(styles.layoutIcon)} />}
-                suffix="%"
-                min={0}
-                max={100}
-                controls={false}
               />
             </div>
             {/* Radius */}
@@ -1409,10 +2192,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
               <SelectList
                 className={cx(styles.typographySelect)}
                 value={radius}
-                onChange={(value) => {
-                  setRadius(value as string);
-                  onChange?.('radius', value);
-                }}
+                onChange={handleRadiusChange}
                 options={radiusOptions}
                 prefix={<RadiusSvg className={cx(styles.layoutIcon)} />}
               />
@@ -1426,10 +2206,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({
           <SelectList
             className={cx(styles.shadowSelect)}
             value={shadowType}
-            onChange={(value) => {
-              setShadowType(value as string);
-              onChange?.('shadowType', value);
-            }}
+            onChange={handleShadowChange}
             options={shadowOptions}
             prefix={<ShadowSvg className={cx(styles.layoutIcon)} />}
           />

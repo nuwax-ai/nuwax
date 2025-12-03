@@ -24,6 +24,8 @@ import { Button, Card, message, Spin, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useModel } from 'umi';
+import DesignViewer from '../DesignViewer';
+import ToggleDesignBtn from '../ToggleDesignBtn';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
 import ChatInputHome, { MentionItem } from './components/ChatInputHome';
 import MessageAttachment from './components/MessageAttachment';
@@ -629,6 +631,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       {/* </div> */}
       {/* </div>
       </div> */}
+
+      <div className={styles.chatModeContainer}>
+        <ToggleDesignBtn />
+      </div>
+
+      {/* 设计模式区域 */}
+      <DesignViewer />
 
       {/* 聊天消息区域 */}
       <ReactScrollToBottomContainer

@@ -1,16 +1,22 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { SANDBOX, UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { submitFilesUpdate } from '@/services/appDev';
 import { apiPageUpdateProject } from '@/services/pageDev';
 import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
-import { ProjectDetailData } from '@/types/interfaces/appDev';
+import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
+import { treeToFlatList } from '@/utils/appDevUtils';
 import { jumpTo } from '@/utils/router';
 import {
   ExclamationCircleOutlined,
   GlobalOutlined,
   ReloadOutlined,
   ThunderboltOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
+import { Button, message } from 'antd';
+import classNames from 'classnames';
 import dayjs from 'dayjs';
 import html2canvas from 'html2canvas';
 import React, {
@@ -20,10 +26,14 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
+import { applyDesignChanges } from '../DesignViewer/applyDesignChanges';
 import styles from './index.less';
 
+const cx = classNames.bind(styles);
 interface PreviewProps {
+  /** 文件树数据 */
+  files?: FileNode[];
   devServerUrl?: string;
   projectInfo?: ProjectDetailData | null;
   className?: string;
@@ -66,6 +76,7 @@ export interface PreviewRef {
 const Preview = React.forwardRef<PreviewRef, PreviewProps>(
   (
     {
+      files,
       projectInfo,
       devServerUrl,
       className,
@@ -87,6 +98,15 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [retrying, setRetrying] = useState(false);
+    /** 是否正在保存文件 */
+    const [isSaving, setIsSaving] = useState(false);
+
+    const {
+      setIsIframeLoaded,
+      setIframeDesignMode,
+      pendingChanges,
+      setPendingChanges,
+    } = useModel('appDev');
 
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -372,8 +392,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      * 刷新预览
      */
     const refreshPreview = useCallback(() => {
+      // 关闭设计模式
+      setIframeDesignMode(false);
       // 刷新预览
-
       if (devServerUrl) {
         loadDevServerPreview();
       } else if (iframeRef.current) {
@@ -661,6 +682,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const handleIframeLoad = useCallback(() => {
       setIsLoading(false);
       setLoadError(null);
+      // 设置iframe加载完毕
+      setIsIframeLoaded(true);
 
       // 清空之前收集的错误信息
       devMonitorErrorsRef.current = [];
@@ -987,8 +1010,119 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       };
     }, []);
 
+    /**
+     * 保存所有更改
+     */
+    const saveChanges = async () => {
+      const projectId = projectInfo?.projectId || '';
+      if (!projectId) {
+        message.error('缺少项目ID，无法保存');
+        return;
+      }
+
+      if (pendingChanges.length === 0) {
+        message.warning('没有待保存的更改');
+        return;
+      }
+
+      console.log('[DesignViewer] Saving changes...', pendingChanges);
+      setIsSaving(true);
+
+      try {
+        // 将 pendingChanges 按文件分组
+        const fileChangesMap = new Map<
+          string,
+          Array<{
+            type: 'style' | 'content';
+            sourceInfo: any;
+            newValue: string;
+            originalValue?: string;
+          }>
+        >();
+
+        // 路径清理正则
+        const pathCleanRegex = /^\/app\/project_workspace\/[^/]+\//;
+
+        pendingChanges.forEach((change: any) => {
+          // 修正文件路径：移除 /app/project_workspace/{projectId}/ 前缀
+          let filePath = change.sourceInfo.fileName;
+          if (pathCleanRegex.test(filePath)) {
+            filePath = filePath.replace(pathCleanRegex, '');
+          }
+
+          if (!fileChangesMap.has(filePath)) {
+            fileChangesMap.set(filePath, []);
+          }
+          fileChangesMap.get(filePath)!.push(change);
+        });
+
+        // 2. 获取全量文件列表（扁平化）
+        // 使用 files 属性作为基准，确保包含未修改的文件
+        const allFiles = treeToFlatList(files || []);
+        const filesToUpdate: any[] = [];
+
+        // 3. 遍历全量文件列表，应用修改
+        for (const file of allFiles) {
+          const filePath = file.name; // treeToFlatList 返回的 name 是文件路径(id)
+
+          // 检查该文件是否有待保存的修改
+          if (fileChangesMap.has(filePath)) {
+            const changes = fileChangesMap.get(filePath)!;
+            try {
+              const fileContent = file.contents || '';
+
+              // 应用智能替换逻辑
+              const updatedContent = applyDesignChanges(fileContent, changes);
+
+              filesToUpdate.push({
+                name: filePath,
+                contents: updatedContent,
+                binary: file.binary || false,
+                sizeExceeded: file.sizeExceeded || false,
+              });
+            } catch (error) {
+              console.error(
+                `[DesignViewer] Error processing file ${filePath}:`,
+                error,
+              );
+              message.error(`处理文件 ${filePath} 时出错`);
+              // 出错时保留原内容，防止文件丢失？或者跳过？
+              // 这里选择保留原内容，避免破坏
+              filesToUpdate.push(file);
+            }
+          } else {
+            // 没有修改的文件，直接添加到更新列表
+            filesToUpdate.push(file);
+          }
+        }
+
+        // 4. 调用 submitFilesUpdate 接口提交全量列表
+        const response = await submitFilesUpdate(
+          projectId.toString(),
+          filesToUpdate,
+        );
+        setIsSaving(false);
+
+        if (response.code === SUCCESS_CODE) {
+          message.success(`成功保存！`);
+          // 清空待保存列表
+          setPendingChanges([]);
+        } else {
+          message.error(response.message || '保存失败，请查看控制台错误信息');
+        }
+      } catch (error) {
+        console.error('[DesignViewer] Error saving changes:', error);
+        message.error('保存出错，请检查网络连接');
+      }
+    };
+
+    const onCancelEdit = () => {
+      setPendingChanges([]);
+      setIsSaving(false);
+    };
+
     return (
-      <div className={`${styles.preview} ${className || ''}`}>
+      <div className={cx(`relative ${styles.preview} ${className || ''}`)}>
         <div className={styles.previewContainer}>
           {devServerUrl &&
           !loadError &&
@@ -1019,6 +1153,33 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             />
           )}
         </div>
+        {/* 未保存更改提示栏 todo 优化 : 还需要根据文件是否已被修改过来决定是否显示*/}
+        {pendingChanges?.length > 0 && (
+          <div
+            className={cx(styles['unsaved-changes-bar'], {
+              [styles.show]: pendingChanges?.length > 0,
+            })}
+          >
+            <WarningOutlined className={styles['warning-icon']} />
+            <span className={styles['unsaved-text']}>Unsaved Changes</span>
+            <Button
+              type="text"
+              className={styles['reset-button']}
+              onClick={onCancelEdit}
+              disabled={isSaving}
+            >
+              重置
+            </Button>
+            <Button
+              type="primary"
+              className={styles['save-button']}
+              onClick={saveChanges}
+              loading={isSaving}
+            >
+              保存
+            </Button>
+          </div>
+        )}
       </div>
     );
   },
