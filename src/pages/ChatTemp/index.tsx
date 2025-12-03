@@ -12,6 +12,7 @@ import {
   TEMP_CONVERSATION_CONNECTION_URL,
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
@@ -67,7 +68,7 @@ import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
+const isDev = process.env.NODE_ENV === 'development';
 /**
  * 主页咨询聊天页面
  */
@@ -100,6 +101,11 @@ const ChatTemp: React.FC = () => {
     string[] | GuidQuestionDto[]
   >([]);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
+  const [messageView, setMessageView] = useState<HTMLDivElement | null>(null);
+  const setRef = useCallback((node: HTMLDivElement | null) => {
+    messageViewRef.current = node;
+    setMessageView(node);
+  }, []);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortConnectionRef = useRef<unknown>();
@@ -189,24 +195,31 @@ const ChatTemp: React.FC = () => {
     return false;
   }, [requiredNameList, variableParams]);
 
+  // 滚动到底部
+  const messageViewScrollToBottom = () => {
+    if (allowAutoScrollRef.current) {
+      const element = messageViewRef.current;
+      if (element) {
+        // 标记为程序触发的滚动，避免被误判为用户滚动
+        (element as any).__isProgrammaticScroll = true;
+        // 滚动到底部
+        element.scrollTo({
+          top: element.scrollHeight,
+          behavior: 'smooth',
+        });
+        // 在滚动完成后清除标记（smooth 滚动大约需要 500ms）
+        setTimeout(() => {
+          (element as any).__isProgrammaticScroll = false;
+        }, 600);
+      }
+    }
+  };
+
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const handleScrollBottom = () => {
     if (allowAutoScrollRef.current) {
       scrollTimeoutRef.current = setTimeout(() => {
-        const element = messageViewRef.current;
-        if (element) {
-          // 标记为程序触发的滚动，避免被误判为用户滚动
-          (element as any).__isProgrammaticScroll = true;
-          // 滚动到底部
-          element.scrollTo({
-            top: element.scrollHeight,
-            behavior: 'smooth',
-          });
-          // 在滚动完成后清除标记（smooth 滚动大约需要 500ms）
-          setTimeout(() => {
-            (element as any).__isProgrammaticScroll = false;
-          }, 600);
-        }
+        messageViewScrollToBottom();
       }, 400);
     }
   };
@@ -489,12 +502,15 @@ const ChatTemp: React.FC = () => {
       method: 'POST',
       headers: {
         Accept: 'application/json, text/plain, */* ',
+        ...(isDev
+          ? { Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}` }
+          : {}), // 只有在开发模式下才需要
       },
       body: params,
       onMessage: (res: ConversationChatResponse) => {
         handleChangeMessageList(res, currentMessageId);
         // 滚动到底部
-        handleScrollBottom();
+        messageViewScrollToBottom();
       },
       onError: () => {
         message.error('网络超时或服务不可用，请稍后再试');
@@ -612,7 +628,7 @@ const ChatTemp: React.FC = () => {
     // 隐藏点击下滚按钮
     setShowScrollBtn(false);
     // 滚动
-    handleScrollBottom();
+    messageViewScrollToBottom();
     // 会话请求参数
     const params: TempConversationChatParams = {
       chatKey,
@@ -705,7 +721,7 @@ const ChatTemp: React.FC = () => {
 
   // 使用滚动检测 Hook
   useConversationScrollDetection(
-    messageViewRef,
+    messageView,
     allowAutoScrollRef,
     scrollTimeoutRef,
     setShowScrollBtn,
@@ -771,20 +787,7 @@ const ChatTemp: React.FC = () => {
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const onScrollBottom = () => {
     allowAutoScrollRef.current = true;
-    const element = messageViewRef.current;
-    if (element) {
-      // 标记为程序触发的滚动，避免被误判为用户滚动
-      (element as any).__isProgrammaticScroll = true;
-      // 滚动到底部
-      element.scrollTo({
-        top: element.scrollHeight,
-        behavior: 'smooth',
-      });
-      // 在滚动完成后清除标记（smooth 滚动大约需要 500ms）
-      setTimeout(() => {
-        (element as any).__isProgrammaticScroll = false;
-      }, 600);
-    }
+    messageViewScrollToBottom();
     setShowScrollBtn(false);
   };
 
@@ -836,7 +839,7 @@ const ChatTemp: React.FC = () => {
               'overflow-y',
               styles['main-content'],
             )}
-            ref={messageViewRef}
+            ref={setRef}
           >
             <div className={cx(styles['chat-wrapper'], 'flex-1', 'w-full')}>
               {isLoadingConversation ? (
