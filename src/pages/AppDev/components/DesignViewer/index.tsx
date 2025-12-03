@@ -1353,7 +1353,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
         {/* Text Content 配置 */}
         {canEditTextContent(selectedElement) && (
           <div className={cx(styles.propertySection)}>
-            <div className={cx(styles.propertyLabel)}>Text Content</div>
+            <div className={cx(styles.propertyLabel)}>文本内容</div>
             <Input.TextArea
               className={cx('w-full')}
               value={localTextContent}
@@ -1365,7 +1365,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
 
         {/* Typography 配置 */}
         <div className={cx(styles.propertySection)}>
-          <div className={cx(styles.propertyLabel)}>Typography</div>
+          <div className={cx(styles.propertyLabel)}>字体</div>
           {/* <SelectList
             className={cx(styles.propertyInput)}
             value={localTypography}
@@ -1378,9 +1378,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
             {/* Font Weight 和 Font Size */}
             <div className={cx(styles.typographyRow)}>
               <div className={cx(styles.typographyInputGroup)}>
-                <div className={cx(styles.typographyInputLabel)}>
-                  Font Weight
-                </div>
+                <div className={cx(styles.typographyInputLabel)}>字重</div>
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={fontWeight}
@@ -1389,7 +1387,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
                 />
               </div>
               <div className={cx(styles.typographyInputGroup)}>
-                <div className={cx(styles.typographyInputLabel)}>Font Size</div>
+                <div className={cx(styles.typographyInputLabel)}>字体大小</div>
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={fontSize}
@@ -1402,9 +1400,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
             {/* Line Height 和 Letter Spacing */}
             <div className={cx(styles.typographyRow)}>
               <div className={cx(styles.typographyInputGroup)}>
-                <div className={cx(styles.typographyInputLabel)}>
-                  Line Height
-                </div>
+                <div className={cx(styles.typographyInputLabel)}>行高</div>
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={lineHeight}
@@ -1413,9 +1409,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
                 />
               </div>
               <div className={cx(styles.typographyInputGroup)}>
-                <div className={cx(styles.typographyInputLabel)}>
-                  Letter Spacing
-                </div>
+                <div className={cx(styles.typographyInputLabel)}>字间距</div>
                 <SelectList
                   className={cx(styles.typographySelect)}
                   value={letterSpacing}
@@ -1428,7 +1422,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
             <div className={cx(styles.typographyRow)}>
               {/* Alignment */}
               <div className={cx(styles.typographyInputGroup)}>
-                <div className={cx(styles.typographyInputLabel)}>Alignment</div>
+                <div className={cx(styles.typographyInputLabel)}>对齐方式</div>
                 <div className={cx(styles.buttonGroup)}>
                   {TEXT_ALIGN_OPTIONS.map((option) => (
                     <Tooltip title={option.label} key={option.type}>
@@ -1515,7 +1509,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
 
         {/* Color 配置 */}
         <div className={cx(styles.propertySection)}>
-          <div className={cx(styles.propertyLabel)}>Color</div>
+          <div className={cx(styles.propertyLabel)}>文字颜色</div>
           <Select
             className={cx('w-full')}
             value={localColor}
@@ -1553,7 +1547,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
 
         {/* Background 配置 */}
         <div className={cx(styles.propertySection)}>
-          <div className={cx(styles.propertyLabel)}>Background</div>
+          <div className={cx(styles.propertyLabel)}>背景</div>
           <Select
             className={cx('w-full')}
             value={localBackground}
@@ -1591,11 +1585,11 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
 
         {/* Layout 配置 */}
         <div className={cx(styles.propertySection)}>
-          <div className={cx(styles.propertyLabel)}>Layout</div>
+          <div className={cx(styles.propertyLabel)}>布局</div>
 
           {/* Margin */}
           <div className={cx(styles.layoutSubSection)}>
-            <div className={cx(styles.layoutLabel)}>Margin</div>
+            <div className={cx(styles.layoutLabel)}>外边距</div>
             {!isMarginExpanded ? (
               // 折叠状态：根据锁定状态显示一个或两个输入框
               <div className={cx(styles.layoutInputs)}>
@@ -1611,11 +1605,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
                       }
                       onChange={(value) =>
                         handleMarginChange('all', value as string)
-                      }
-                      prefix={
-                        <MarginHorizontalSvg
-                          className={cx(styles.layoutIcon)}
-                        />
                       }
                       options={pixelOptions}
                     />
@@ -1698,11 +1687,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
                       }
                       onChange={(value) =>
                         handleMarginChange('all', value as string)
-                      }
-                      prefix={
-                        <MarginHorizontalSvg
-                          className={cx(styles.layoutIcon)}
-                        />
                       }
                       options={pixelOptions}
                     />
@@ -1805,7 +1789,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
 
           {/* Padding */}
           <div className={cx(styles.layoutSubSection)}>
-            <div className={cx(styles.layoutLabel)}>Padding</div>
+            <div className={cx(styles.layoutLabel)}>内边距</div>
             {!isPaddingExpanded ? (
               // 折叠状态：根据锁定状态显示一个或两个下拉选择
               <div className={cx(styles.layoutInputs)}>
@@ -1821,11 +1805,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
                       }
                       onChange={(value) =>
                         handlePaddingChange('all', value as string)
-                      }
-                      prefix={
-                        <PaddingHorizontalSvg
-                          className={cx(styles.layoutIcon)}
-                        />
                       }
                       options={paddingPixelOptions}
                     />
@@ -1908,11 +1887,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
                       }
                       onChange={(value) =>
                         handlePaddingChange('all', value as string)
-                      }
-                      prefix={
-                        <PaddingHorizontalSvg
-                          className={cx(styles.layoutIcon)}
-                        />
                       }
                       options={paddingPixelOptions}
                     />
@@ -2016,13 +1990,11 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
 
         {/* Border 配置 */}
         <div className={cx(styles.propertySection)}>
-          <div className={cx(styles.propertyLabel)}>Border</div>
+          <div className={cx(styles.propertyLabel)}>边框</div>
           {/* Border Style 和 Border Color */}
           <div className={cx(styles.typographyRow)}>
             <div className={cx(styles.typographyInputGroup)}>
-              <div className={cx(styles.typographyInputLabel)}>
-                Border Color
-              </div>
+              <div className={cx(styles.typographyInputLabel)}>边框颜色</div>
               <Select
                 className={cx(styles.typographySelect)}
                 value={borderColor}
@@ -2058,9 +2030,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
               />
             </div>
             <div className={cx(styles.typographyInputGroup)}>
-              <div className={cx(styles.typographyInputLabel)}>
-                Border Style
-              </div>
+              <div className={cx(styles.typographyInputLabel)}>边框样式</div>
               <SelectList
                 className={cx(styles.typographySelect)}
                 value={borderStyle}
@@ -2071,7 +2041,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
           </div>
           {/* Border Width */}
           <div className={cx(styles.layoutSubSection)}>
-            <div className={cx(styles.layoutLabel)}>Border Width</div>
+            <div className={cx(styles.layoutLabel)}>边框宽度</div>
             {!isBorderWidthExpanded ? (
               // 折叠状态：显示单个下拉选择
               <div className={cx(styles.layoutInputs)}>
@@ -2179,11 +2149,11 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
 
         {/* Appearance 配置 */}
         <div className={cx(styles.propertySection)}>
-          <div className={cx(styles.propertyLabel)}>Appearance</div>
+          <div className={cx(styles.propertyLabel)}>外观</div>
           <div className={cx(styles.typographyRow)}>
             {/* Opacity */}
             <div className={cx(styles.typographyInputGroup)}>
-              <div className={cx(styles.typographyInputLabel)}>Opacity</div>
+              <div className={cx(styles.typographyInputLabel)}>透明度</div>
               <Select
                 className={cx('w-full')}
                 value={opacity}
@@ -2194,7 +2164,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
             </div>
             {/* Radius */}
             <div className={cx(styles.typographyInputGroup)}>
-              <div className={cx(styles.typographyInputLabel)}>Radius</div>
+              <div className={cx(styles.typographyInputLabel)}>圆角</div>
               <SelectList
                 className={cx(styles.typographySelect)}
                 value={radius}
@@ -2208,7 +2178,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
 
         {/* Shadow 配置 */}
         <div className={cx(styles.propertySection)}>
-          <div className={cx(styles.propertyLabel)}>Shadow</div>
+          <div className={cx(styles.propertyLabel)}>阴影</div>
           <SelectList
             className={cx(styles.shadowSelect)}
             value={shadowType}
