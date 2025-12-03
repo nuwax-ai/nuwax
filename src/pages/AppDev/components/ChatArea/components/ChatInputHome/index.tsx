@@ -142,7 +142,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     300,
   );
 
-  const { pendingChanges, setIframeDesignMode } = useModel('appDev');
+  const { pendingChanges, setIframeDesignMode } = useModel('appDevDesign');
 
   // 同步 dataSourceList 中已选的数据源到 selectedMentions
   useEffect(() => {
