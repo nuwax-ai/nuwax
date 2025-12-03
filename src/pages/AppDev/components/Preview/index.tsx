@@ -1107,7 +1107,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // 保存失败后，关闭保存状态
         setIsSaving(false);
         console.error('[DesignViewer] Error saving changes:', error);
-        message.error('保存出错，请检查网络连接');
       }
     };
 
@@ -1216,7 +1215,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             })}
           >
             <WarningOutlined className={styles['warning-icon']} />
-            <span className={styles['unsaved-text']}>Unsaved Changes</span>
+            <span className={styles['unsaved-text']}>未保存的更改</span>
             <Button
               type="text"
               className={styles['reset-button']}
