@@ -17,7 +17,7 @@ import { useEffect, useRef } from 'react';
  * @param setShowScrollBtn - 设置是否显示滚动按钮的函数
  */
 export const useConversationScrollDetection = (
-  messageViewRef: React.RefObject<HTMLDivElement>,
+  messageViewTarget: React.RefObject<HTMLDivElement> | HTMLDivElement | null,
   allowAutoScrollRef: React.MutableRefObject<boolean>,
   scrollTimeoutRef: React.MutableRefObject<NodeJS.Timeout | null>,
   setShowScrollBtn: (show: boolean) => void,
@@ -26,7 +26,10 @@ export const useConversationScrollDetection = (
   const lastScrollTopRef = useRef<number>(0);
 
   useEffect(() => {
-    const messageView = messageViewRef.current;
+    const messageView =
+      messageViewTarget && 'current' in messageViewTarget
+        ? messageViewTarget.current
+        : messageViewTarget;
 
     if (!messageView) {
       return;
@@ -121,8 +124,8 @@ export const useConversationScrollDetection = (
       messageView.removeEventListener('scroll', scrollHandler);
     };
   }, [
-    messageViewRef,
-    messageViewRef.current,
+    messageViewTarget,
+    (messageViewTarget as any)?.current,
     allowAutoScrollRef,
     scrollTimeoutRef,
     setShowScrollBtn,
