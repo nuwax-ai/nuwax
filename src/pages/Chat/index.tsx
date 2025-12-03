@@ -295,6 +295,9 @@ const Chat: React.FC = () => {
   useEffect(() => {
     if (id) {
       setIsLoadingConversation(false);
+      // 切换会话时，重置自动滚动标志，确保新会话能够自动滚动到底部
+      allowAutoScrollRef.current = true;
+
       const asyncFun = async () => {
         // 同步查询会话, 此处必须先同步查询会话信息，因为成功后会设置消息列表，如果是异步查询，会导致发送消息时，清空消息列表的bug
         const { data } = await runAsync(id);
@@ -327,14 +330,15 @@ const Chat: React.FC = () => {
         limit: 20,
       });
     }
-
-    return () => {
-      resetInit();
-    };
   }, [id, message, files, infos, firstVariableParams]);
 
   useEffect(() => {
     addBaseTarget();
+
+    return () => {
+      // 组件卸载时重置全局会话状态，防止污染其他页面
+      resetInit();
+    };
   }, []);
 
   useEffect(() => {
