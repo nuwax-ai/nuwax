@@ -3,20 +3,9 @@ import {
   CompressOutlined,
   ExpandOutlined,
   LockOutlined,
-  MoreOutlined,
-  ThunderboltOutlined,
   UnlockOutlined,
 } from '@ant-design/icons';
-import {
-  Breadcrumb,
-  Button,
-  Dropdown,
-  Input,
-  message,
-  Select,
-  Space,
-  Tooltip,
-} from 'antd';
+import { Breadcrumb, Button, Input, message, Select, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
@@ -151,11 +140,11 @@ const opacityOptions = generateTailwindOpacityOptions();
 const fontSizeOptions = generateTailwindFontSizeOptions();
 
 // 更多操作菜单
-const moreMenuItems = [
-  { key: 'copy', label: '复制属性' },
-  { key: 'reset', label: '重置' },
-  { key: 'delete', label: '删除' },
-];
+// const moreMenuItems = [
+//   { key: 'copy', label: '复制属性' },
+//   { key: 'reset', label: '重置' },
+//   { key: 'delete', label: '删除' },
+// ];
 
 // Typography 选项
 // const typographyOptions = [
@@ -740,7 +729,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
           console.log('[Parent] Style updated:', payload);
           break;
         case 'ADD_TO_CHAT':
-          console.log('[Parent] Add to chat22222:', payload);
           if (payload?.context?.sourceInfo) {
             const { fileName, lineNumber, columnNumber } =
               payload?.context?.sourceInfo;
@@ -1343,22 +1331,19 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
             },
             {
               title: (
-                <Space>
-                  <ThunderboltOutlined className={cx(styles.breadcrumbIcon)} />
-                  {/* 元素标签名 */}
-                  <span>{selectedElement?.tagName}</span>
-                </Space>
+                // 元素标签名
+                <span>{selectedElement?.tagName}</span>
               ),
             },
           ]}
         />
-        <Dropdown
+        {/* <Dropdown
           menu={{ items: moreMenuItems }}
           trigger={['click']}
           placement="bottomRight"
         >
           <MoreOutlined className={cx(styles.moreIcon)} />
-        </Dropdown>
+        </Dropdown> */}
       </div>
 
       {/* 属性配置区域 */}
