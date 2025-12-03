@@ -56,19 +56,18 @@ const ChatInputPhone: React.FC<ChatInputProps> = ({
 
   // enter事件
   const handlePressEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
     const { value } = e.target as HTMLInputElement;
     // shift+enter或者ctrl+enter时换行
     if (
       e.nativeEvent.keyCode === 13 &&
       (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
     ) {
-      const enterValue = `${value}\n`;
-      setMessageInfo(enterValue);
+      setMessageInfo(value);
     } else if (
       e.nativeEvent.keyCode === 13 &&
       (!!value.trim() || !!files?.length)
     ) {
+      e.preventDefault();
       // enter事件
       onEnter(value, files);
       // 置空

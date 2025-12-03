@@ -121,22 +121,18 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     if (isConversationActive || isStoppingConversation) {
       return;
     }
-    e.preventDefault();
-    const { value, selectionStart, selectionEnd } =
-      e.target as HTMLTextAreaElement;
+    const { value } = e.target as HTMLTextAreaElement;
     // shift+enter或者ctrl+enter时换行
     if (
       e.nativeEvent.keyCode === 13 &&
       (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
     ) {
-      // 在光标位置插入换行符
-      const newValue =
-        value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
-      setMessageInfo(newValue);
+      setMessageInfo(value);
     } else if (
       e.nativeEvent.keyCode === 13 &&
       (!!value.trim() || !!files?.length)
     ) {
+      e.preventDefault();
       // enter事件
       onEnter(value, files);
       if (isClearInput) {
