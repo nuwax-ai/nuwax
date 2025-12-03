@@ -2,11 +2,16 @@
 @import '@/styles/token.less';
 
 .designViewer {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  width: 100%;
+  height: calc(100% - 170px);
   display: flex;
   flex-direction: column;
-  height: 100%;
   background: @colorBgContainer;
   border-left: @lineWidth solid @colorBorderSecondary;
+  z-index: 100;
 }
 
 // 面包屑容器
@@ -102,8 +107,8 @@
 
 // 颜色选择器
 .colorSwatch {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border-radius: 4px;
   background: @colorPrimary;
   border: 1px solid @colorBorder;
@@ -241,6 +246,7 @@
     &:hover:not(.active) {
       background: @colorFillQuaternary;
       color: @colorTextBase;
+      border-color: @colorBorder;
     }
 
     &.active {
@@ -248,6 +254,10 @@
       color: @colorPrimary;
       font-weight: @fontWeightStrong;
       z-index: 1;
+    }
+
+    svg {
+      color: @colorTextTertiary;
     }
   }
 }

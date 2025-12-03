@@ -110,3 +110,56 @@
   border: none;
   background: @colorBgContainer;
 }
+
+// 未保存更改提示栏
+.unsaved-changes-bar {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 360px;
+  padding: 12px 20px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 5%), 0 24px 32px -8px rgba(0, 0, 0, 6%),
+    0 8px 16px -4px rgba(0, 0, 0, 4%);
+  opacity: 0;
+  z-index: -10;
+  transition: all 0.3s ease;
+
+  &.show {
+    opacity: 1;
+    z-index: 10;
+  }
+
+  .warning-icon {
+    font-size: 18px;
+    color: #8c8c8c;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .unsaved-text {
+    font-size: 14px;
+    color: #262626;
+    font-weight: 400;
+    flex: 1;
+    white-space: nowrap;
+    margin-right: auto;
+  }
+
+  .reset-button {
+    background: #fff;
+    border: 1px solid #d9d9d9;
+    border-radius: 16px;
+  }
+
+  .save-button {
+    border-radius: 16px;
+    color: #fff;
+  }
+}

@@ -175,6 +175,7 @@ const AppDev: React.FC = () => {
     useState(false);
   // 使用 Hook 控制抽屉打开时的滚动条
   useDrawerScroll(openVersionHistory);
+  const { setIframeDesignMode } = useModel('appDev');
 
   // 文件操作遮罩延时显示逻辑
   useEffect(() => {
@@ -1592,6 +1593,7 @@ const AppDev: React.FC = () => {
                       {/* 内容区域 */}
                       <div className={styles.editorContent}>
                         <ContentViewer
+                          files={currentDisplayFiles}
                           projectInfo={
                             projectInfo.projectInfoState?.projectInfo
                           }
@@ -1668,6 +1670,8 @@ const AppDev: React.FC = () => {
                           }}
                           onCancelEdit={handleCancelEdit}
                           onRefreshFile={() => {
+                            // 关闭设计模式
+                            setIframeDesignMode(false);
                             // 刷新整个文件树（保持状态，强制刷新）
                             fileManagement.loadFileTree(true, true);
                             // 重新加载当前文件内容
