@@ -12,6 +12,7 @@ import {
   Button,
   Dropdown,
   Input,
+  message,
   Select,
   Space,
   Tooltip,
@@ -188,11 +189,16 @@ const letterSpacingOptions = generateTailwindLetterSpacingOptions();
  */
 const borderStyleOptions = generateTailwindBorderStyleOptions();
 
+interface DesignViewerProps {
+  /** 添加选中元素到会话回调 */
+  onAddToChat: (content: string) => void;
+}
+
 /**
  * 设计查看器组件
  * 提供元素属性编辑面板，包括图标、颜色、背景、布局、尺寸和边框等配置
  */
-const DesignViewer: React.FC = () => {
+const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
   // 字体颜色值
   const [localColor, setLocalColor] = useState<string>('Default');
   /** 背景颜色值 */
@@ -735,6 +741,19 @@ const DesignViewer: React.FC = () => {
           break;
         case 'ADD_TO_CHAT':
           console.log('[Parent] Add to chat22222:', payload);
+          if (payload?.context?.sourceInfo) {
+            const { fileName, lineNumber, columnNumber } =
+              payload?.context?.sourceInfo;
+            const _fileName = fileName?.replace(
+              /^\/app\/project_workspace\/[^/]+\//,
+              '',
+            );
+            const content = `${_fileName}(${lineNumber}-${columnNumber})`;
+            const addToChatContent = `添加选中元素到会话：，请分析：\n\n\`\`\`\n${content}\n\`\`\``;
+            onAddToChat(addToChatContent);
+          } else {
+            message.error('sourceInfo is not valid');
+          }
           break;
       }
     };
