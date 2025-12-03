@@ -351,7 +351,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           rootClassName={cx(styles.input)}
           onPressEnter={handlePressEnter}
           onPaste={handlePaste}
-          placeholder="直接输入指令；可通过回车发送；支持粘贴图片==="
+          placeholder="直接输入指令；可通过回车发送；支持粘贴图片"
           autoSize={{ minRows: 2, maxRows: 6 }}
         />
         <footer className={cx('flex', 'flex-1', styles.footer)}>
