@@ -1,0 +1,3 @@
+# 忽略第三方生成的 CSS 文件
+public/sdk/tailwind_design_mode.all.css
+
