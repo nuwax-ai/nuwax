@@ -2,7 +2,7 @@ import { ChildNode } from '@/types/interfaces/graph';
 import { ErrorItem } from '@/types/interfaces/workflow';
 import { returnImg } from '@/utils/workflow';
 import { CloseOutlined } from '@ant-design/icons';
-import { Button, Popover } from 'antd'; // 引入 Popover
+import { Button, Popover, theme } from 'antd'; // 引入 Popover
 import React from 'react';
 import { useModel } from 'umi';
 import './index.less';
@@ -35,6 +35,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
   nodeList,
 }) => {
   const { setVolid } = useModel('workflow');
+  const { token } = theme.useToken();
   return (
     <div
       style={{
@@ -114,7 +115,12 @@ const ErrorList: React.FC<ErrorListProps> = ({
                         <p className="error-text">{item.error}</p>
                       </Popover>
                     ) : (
-                      <p className="error-text">{item.error}</p>
+                      <p
+                        className="error-text text-ellipsis-2"
+                        style={{ fontSize: 12, color: token.colorError }}
+                      >
+                        {item.error}
+                      </p>
                     )}
                   </div>
                 );
