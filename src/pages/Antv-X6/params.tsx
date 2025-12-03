@@ -313,6 +313,10 @@ export const dataTypes = [
     value: 'File',
     children: [
       {
+        label: 'Default',
+        value: DataTypeEnum.File_Default,
+      },
+      {
         label: 'Doc',
         value: DataTypeEnum.File_Doc,
       },
