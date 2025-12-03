@@ -35,6 +35,7 @@ import {
 } from './design.images.constants';
 import styles from './index.less';
 import { ElementInfo } from './messages';
+import { FILENAME_REGEXP, toggleStyleAttributeType } from './utils';
 import {
   BORDER_COLOR_REGEXP,
   BORDER_STYLE_REGEXP,
@@ -259,8 +260,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(
     null,
   );
-  // 编辑中的内容(textContent)
-  const [editingContent, setEditingContent] = useState<string>('');
   // 编辑中的类
   const [editingClass, setEditingClass] = useState<string>('');
 
@@ -668,7 +667,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
     }
   };
 
-  // Listen for messages from iframe
+  // 监听从iframe发送的消息
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const { type, payload } = event.data;
@@ -678,41 +677,40 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
           break;
 
         case 'ELEMENT_SELECTED':
-          console.log('[Parent] Element selected - full payload:', payload);
+          {
+            console.log('[Parent] Element selected - full payload:', payload);
 
-          // 验证 sourceInfo 是否有效
-          if (
-            !payload.elementInfo?.sourceInfo ||
-            !payload.elementInfo.sourceInfo.fileName ||
-            payload.elementInfo.sourceInfo.lineNumber === 0
-          ) {
-            // console.warn(
-            //   '[Parent] Invalid sourceInfo received:',
-            //   payload.elementInfo?.sourceInfo
-            // );
-            // console.warn('[Parent] This may cause update operations to fail');
-          }
+            // 验证 sourceInfo 是否有效
+            if (
+              !payload.elementInfo?.sourceInfo ||
+              !payload.elementInfo.sourceInfo.fileName ||
+              payload.elementInfo.sourceInfo.lineNumber === 0
+            ) {
+              return;
+            }
 
-          setSelectedElement(payload.elementInfo);
-          setEditingContent(payload.elementInfo.textContent);
-          setEditingClass(payload.elementInfo.className);
+            const elementInfo = payload.elementInfo;
+            const { isStaticText, textContent, className } = elementInfo;
+            setSelectedElement(elementInfo);
+            setEditingClass(className);
 
-          // 判断元素是否可以编辑文本内容，如果可以则回显到 Text Content 编辑框
-          if (canEditTextContent(payload.elementInfo)) {
-            setLocalTextContent(payload.elementInfo.textContent || '');
-          } else {
-            // 如果不能编辑，清空 Text Content 编辑框
-            setLocalTextContent('');
-          }
+            // 判断元素是否可以编辑文本内容，如果可以则回显到 Text Content 编辑框
+            if (isStaticText) {
+              setLocalTextContent(textContent || '');
+            } else {
+              // 如果不能编辑，清空 Text Content 编辑框
+              setLocalTextContent('');
+            }
 
-          // 从 className 中解析 Tailwind CSS 类名并更新状态
-          if (payload.elementInfo.className) {
-            parseTailwindClassesAndUpdateStates(payload.elementInfo.className);
-          }
+            // 从 className 中解析 Tailwind CSS 类名并更新状态
+            if (className) {
+              parseTailwindClassesAndUpdateStates(className);
+            }
 
-          // 如果elementInfo包含computedStyles，直接使用（优先级高于 Tailwind 解析）
-          if (payload.elementInfo.computedStyles) {
-            updateLocalStatesFromStyles(payload.elementInfo.computedStyles);
+            // 如果elementInfo包含computedStyles，直接使用（优先级高于 Tailwind 解析）
+            // if (payload.elementInfo.computedStyles) {
+            //   updateLocalStatesFromStyles(payload.elementInfo.computedStyles);
+            // }
           }
           break;
 
@@ -732,10 +730,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
           if (payload?.context?.sourceInfo) {
             const { fileName, lineNumber, columnNumber } =
               payload?.context?.sourceInfo;
-            const _fileName = fileName?.replace(
-              /^\/app\/project_workspace\/[^/]+\//,
-              '',
-            );
+            const _fileName = fileName?.replace(FILENAME_REGEXP, '');
             const content = `${_fileName}(${lineNumber}-${columnNumber})`;
             const addToChatContent = `添加选中元素到会话：，请分析：\n\n\`\`\`\n${content}\n\`\`\``;
             onAddToChat(addToChatContent);
@@ -749,21 +744,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
-
-  // Debounce hook
-  const useDebounce = <T,>(value: T, delay: number): T => {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-    useEffect(() => {
-      const handler = setTimeout(() => {
-        setDebouncedValue(value);
-      }, delay);
-      return () => clearTimeout(handler);
-    }, [value, delay]);
-    return debouncedValue;
-  };
-
-  const debouncedContent = useDebounce(editingContent, 300);
-  const debouncedClass = useDebounce(editingClass, 300);
 
   // Upsert pending change
   const upsertPendingChange = (
@@ -801,12 +781,12 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
     });
   };
 
-  // Real-time content update
-  useEffect(() => {
-    if (!selectedElement || debouncedContent === selectedElement.textContent)
+  // 处理内容更新
+  const handleContentUpdate = (newContent: string) => {
+    if (!selectedElement) {
       return;
-
-    upsertPendingChange('content', debouncedContent);
+    }
+    upsertPendingChange('content', newContent);
 
     const iframe = document.querySelector('iframe');
     if (iframe && iframe.contentWindow) {
@@ -814,8 +794,8 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
         {
           type: 'UPDATE_CONTENT',
           payload: {
-            sourceInfo: selectedElement.sourceInfo,
-            newContent: debouncedContent,
+            sourceInfo: selectedElement?.sourceInfo,
+            newContent,
             persist: false,
           },
           timestamp: Date.now(),
@@ -823,14 +803,11 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
         '*',
       );
     }
-  }, [debouncedContent]);
+  };
 
-  // Real-time style update
-  useEffect(() => {
-    if (!selectedElement || debouncedClass === selectedElement.className)
-      return;
-
-    upsertPendingChange('style', debouncedClass);
+  // 处理样式更新
+  const handleStyleUpdate = (newClass: string) => {
+    upsertPendingChange('style', newClass);
 
     const iframe = document.querySelector('iframe');
     if (iframe && iframe.contentWindow) {
@@ -838,8 +815,8 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
         {
           type: 'UPDATE_STYLE',
           payload: {
-            sourceInfo: selectedElement.sourceInfo,
-            newClass: debouncedClass,
+            sourceInfo: selectedElement?.sourceInfo,
+            newClass,
             persist: false,
           },
           timestamp: Date.now(),
@@ -847,23 +824,15 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
         '*',
       );
     }
-  }, [debouncedClass]);
+  };
 
   // Style Manager Logic
   const toggleStyle = (
     newStyle: string,
     regex: RegExp,
-    attribute?:
-      | 'fontSize'
-      | 'fontWeight'
-      | 'lineHeight'
-      | 'letterSpacing'
-      | 'opacity'
-      | 'radius'
-      | 'shadow'
-      | 'textAlign',
+    attribute?: toggleStyleAttributeType,
   ) => {
-    let currentClasses = editingClass.split(' ').filter((c) => c.trim());
+    const currentClasses = editingClass.split(' ').filter((c) => c.trim());
 
     // 获取字体大小相关的类名列表（从 fontSizeOptions 中提取）
     // fontSizeOptions 中的 value 是 'xs', 'sm' 等，需要转换为 'text-xs', 'text-sm' 等
@@ -872,7 +841,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
       .map((option) => `text-${option.value}`);
 
     // Remove existing class in the same category
-    currentClasses = currentClasses.filter((c) => {
+    const filterCurrentClasses = currentClasses.filter((c) => {
       // 如果是字体大小相关的操作
       if (attribute === 'fontSize') {
         // 先测试是否匹配字体大小正则
@@ -887,9 +856,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
         // 过滤掉匹配正则的字体大小类名（如 text-lg, text-sm, text-3xl 等）
         return !matchesFontSize;
       } else if (attribute === 'textAlign') {
-        // 如果是文本对齐相关的操作
-        // 重置正则表达式的 lastIndex，避免状态问题
-        // regex.lastIndex = 0;
         // 先测试是否匹配文本对齐正则
         const matchesTextAlign = regex.test(c);
         // 如果匹配文本对齐正则（如 text-left, text-center, text-right, text-justify），过滤掉
@@ -913,15 +879,14 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
 
     // Add new style if it's not empty (allows clearing style)
     if (newStyle) {
-      currentClasses.push(newStyle);
+      filterCurrentClasses.push(newStyle);
     }
 
-    setEditingClass(currentClasses.join(' '));
+    const finalClasses = filterCurrentClasses.join(' ');
+    setEditingClass(finalClasses);
+    // 更新样式到 iframe 中
+    handleStyleUpdate(finalClasses);
   };
-
-  // const hasStyle = (style: string) => {
-  //   return editingClass.split(' ').includes(style);
-  // };
 
   /**
    * 处理Typography变更
@@ -1075,8 +1040,8 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
    */
   const handleTextContentChange = (value: string) => {
     setLocalTextContent(value);
-    // 同时更新 editingContent，用于实时更新到 iframe
-    setEditingContent(value);
+    // 更新内容到 iframe 中
+    handleContentUpdate(value);
   };
 
   /**
@@ -1256,7 +1221,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
       // 通过 toggleStyle 方法将 text align 样式写入 editingClass
       // value 是用户友好的标签（如 'left'），需要转换为 Tailwind 类名（如 'text-left'）
       const textAlignClass = convertLabelToTextAlignClass(align);
-      console.log(textAlignClass, 'textAlignClass1111111');
       if (textAlignClass) {
         toggleStyle(textAlignClass, TEXT_ALIGN_REGEXP, 'textAlign');
       } else {
@@ -1325,7 +1289,7 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
             {
               // 组件文件路径
               title: selectedElement?.sourceInfo?.fileName?.replace(
-                /^\/app\/project_workspace\/[^/]+\//,
+                FILENAME_REGEXP,
                 '',
               ),
             },
