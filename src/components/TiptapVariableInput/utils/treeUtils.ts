@@ -3,8 +3,7 @@
  * 变量树工具函数
  */
 
-import type { PromptVariable, VariableTreeNode } from '../types';
-import { VariableType } from '../types';
+import type { PromptVariable, VariableTreeNode, VariableType } from '../types';
 
 /**
  * 将 PromptVariable 转换为 Antd Tree 兼容的节点格式
@@ -13,7 +12,7 @@ export const transformVariableToTreeNode = (
   variable: PromptVariable,
   parentPath: string[] = [],
 ): VariableTreeNode => {
-  const currentPath = [...parentPath, variable.key];
+  const currentPath = [...parentPath, variable.name];
   const value = currentPath.join('.');
   // 使用完整的路径作为 key，确保唯一性
   const uniqueKey = value;
@@ -34,23 +33,30 @@ export const transformVariableToTreeNode = (
   }
 
   // 处理数组类型的特殊结构
-  if (variable.type.startsWith('array_') && !variable.children) {
-    // 为数组类型添加索引示例节点
+  if (variable.type.startsWith('array_')) {
     const baseType = variable.type.replace('array_', '');
-    node.children = [
-      {
-        label: `[0] (数组索引)`,
-        value: `${value}[0]`,
-        key: `${uniqueKey}_index_0`,
-        variable: {
-          key: '0',
-          type: baseType as VariableType,
-          name: '数组元素',
-        },
-        children: [],
-        isLeaf: true, // 数组索引节点是叶子节点
-      },
-    ];
+
+    // 如果数组元素是对象类型且有子属性，直接将子属性作为数组节点的子节点
+    // 不显示中间的 [0] 索引层，但引用路径中仍包含 [0]
+    if (
+      baseType === 'object' &&
+      variable.children &&
+      variable.children.length > 0
+    ) {
+      // 将子属性转换为数组节点的直接子节点
+      // 路径格式为: 变量名[0].子属性名
+      // 构造带有索引的父路径，以便递归调用能正确处理所有深度的子节点
+      const arrayIndexPath = [...parentPath, `${variable.name}[0]`];
+
+      node.children = variable.children.map((child) => {
+        // 使用带有索引的路径作为父路径
+        return transformVariableToTreeNode(child, arrayIndexPath);
+      });
+      node.isLeaf = false; // 有子节点，不是叶子节点
+    } else {
+      // 对于非对象数组（如 array_string），仍然是叶子节点，可以直接选中
+      node.isLeaf = true;
+    }
   }
 
   // 设置 isLeaf 属性：只有当节点没有子节点时才是叶子节点
@@ -91,7 +97,34 @@ export const findNodeByPath = (
 
     const currentSegment = segments[index];
 
-    // 处理数组索引
+    // 检查当前段是否包含数组索引，例如 users[0]
+    const arrayMatch = currentSegment.match(/^(.+)\[(\d+)\]$/);
+
+    if (arrayMatch) {
+      // 如果是 users[0] 这种形式
+      // 这里的 node 应该是 users 节点
+      // 我们需要查找 key 为 users[0].nextSegment 的子节点
+
+      // 注意：对于 array_object，children 的 key 格式为 parentKey[0].childName
+      // 所以我们需要看下一个 segment
+
+      if (index + 1 < segments.length) {
+        const nextSegment = segments[index + 1];
+        const arrayIndex = arrayMatch[2];
+        const expectedKey = `${node.key}[${arrayIndex}].${nextSegment}`;
+
+        const child = node.children?.find((c) => c.key === expectedKey);
+        if (child) {
+          // 跳过下一个 segment，因为我们已经处理了
+          return findInNode(child, segments, index + 2);
+        }
+      }
+
+      // 如果没有下一个 segment，或者没找到，可能不是 array_object 的简化显示
+      // 继续尝试其他逻辑
+    }
+
+    // 处理数组索引 (旧逻辑，保留以防万一)
     if (currentSegment.startsWith('[') && currentSegment.endsWith(']')) {
       const arrayIndex = currentSegment.slice(1, -1);
       const child = node.children?.find(
@@ -118,8 +151,41 @@ export const findNodeByPath = (
   };
 
   for (const rootNode of tree) {
-    if (rootNode.key === pathSegments[0]) {
-      return findInNode(rootNode, pathSegments, 1);
+    // 检查根节点，支持 users[0] 形式的匹配
+    const rootMatch = pathSegments[0].match(/^(.+)\[(\d+)\]$/);
+    const rootName = rootMatch ? rootMatch[1] : pathSegments[0];
+
+    if (rootNode.key === rootName) {
+      // 如果是 users[0] 形式，我们需要从 index 0 开始处理，但在 findInNode 内部处理索引逻辑
+      // 或者我们可以传递 index 1，但是 findInNode 需要知道 context
+
+      // 简单起见，我们让 findInNode 从 0 开始，但跳过 root check?
+      // 不，findInNode 假设 node 是已经匹配的父节点。
+
+      // 如果 path 是 users[0].name
+      // rootNode 是 users
+      // segments 是 ['users[0]', 'name']
+      // index 应该是 0? 不，index 是 segments 的索引。
+
+      // 如果 rootNode 匹配了 users
+      // 我们调用 findInNode(rootNode, segments, 0) ?
+      // 如果 index 0 是 users[0]，findInNode 需要处理它。
+
+      // 修改 findInNode 逻辑：
+      // 如果 index 指向的 segment 包含了当前 node 的 key (作为前缀)，那么处理它？
+
+      // 让我们调整调用方式：
+      // 如果 pathSegments[0] 是 users[0]，而 rootNode.key 是 users
+      // 这是一个特殊的“根匹配但带有索引”的情况
+
+      if (rootMatch) {
+        // 特殊处理：我们在 users 节点，当前 segment 是 users[0]
+        // 我们需要查找 children
+        return findInNode(rootNode, pathSegments, 0);
+      } else {
+        // 标准匹配 users -> users
+        return findInNode(rootNode, pathSegments, 1);
+      }
     }
   }
 
@@ -220,17 +286,17 @@ export const generateVariableReference = (path: string): string => {
  */
 export const getVariableTypeIcon = (type: VariableType): string => {
   const iconMap = {
-    [VariableType.String]: '📝',
-    [VariableType.Integer]: '🔢',
-    [VariableType.Boolean]: '✅',
-    [VariableType.Number]: '➕',
-    [VariableType.Object]: '📦',
-    [VariableType.Array]: '📋',
-    [VariableType.ArrayString]: '📝',
-    [VariableType.ArrayInteger]: '🔢',
-    [VariableType.ArrayBoolean]: '✅',
-    [VariableType.ArrayNumber]: '➕',
-    [VariableType.ArrayObject]: '📦',
+    string: '📝',
+    integer: '🔢',
+    boolean: '✅',
+    number: '➕',
+    object: '📦',
+    array: '📋',
+    array_string: '📝',
+    array_integer: '🔢',
+    array_boolean: '✅',
+    array_number: '➕',
+    array_object: '📦',
   };
 
   return iconMap[type] || '📄';

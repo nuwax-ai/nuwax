@@ -5,6 +5,7 @@ import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
+import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { EditAgentShowType } from '@/types/enums/space';
@@ -20,7 +21,6 @@ import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message } from 'antd';
 import classNames from 'classnames';
-import { throttle } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
   useCallback,
@@ -81,7 +81,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     handleClearSideEffect,
     showScrollBtn,
     setShowScrollBtn,
-    resetInit,
     manualComponents,
     variables,
     userFillVariables,
@@ -153,38 +152,13 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     };
   }, [agentConfigInfo]);
 
-  // 在组件挂载时添加滚动事件监听器
-  useEffect(() => {
-    const messageView = messageViewRef.current;
-    if (messageView) {
-      const handleScroll = () => {
-        // 当用户手动滚动时，暂停自动滚动
-        const { scrollTop, scrollHeight, clientHeight } = messageView;
-        if (scrollTop + clientHeight < scrollHeight) {
-          allowAutoScrollRef.current = false;
-          // 清除滚动
-          if (scrollTimeoutRef.current) {
-            clearTimeout(scrollTimeoutRef.current);
-            scrollTimeoutRef.current = null;
-          }
-          setShowScrollBtn(true);
-        } else {
-          // 当用户滚动到底部时，重新允许自动滚动
-          allowAutoScrollRef.current = true;
-          setShowScrollBtn(false);
-        }
-      };
-
-      const handleScrollImmediate = throttle(handleScroll, 300);
-
-      messageView.addEventListener('wheel', handleScrollImmediate);
-      // 组件卸载时移除滚动事件监听器
-      return () => {
-        messageView.removeEventListener('wheel', handleScrollImmediate);
-        resetInit();
-      };
-    }
-  }, []);
+  // 使用滚动检测 Hook
+  useConversationScrollDetection(
+    messageViewRef,
+    allowAutoScrollRef,
+    scrollTimeoutRef,
+    setShowScrollBtn,
+  );
 
   useEffect(() => {
     // 初始化选中的组件列表
@@ -389,12 +363,18 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                     name={agentConfigInfo?.name as string}
                     // 会话建议
                     extra={
-                      <RecommendList
-                        className="mt-16"
-                        loading={loadingSuggest}
-                        chatSuggestList={chatSuggestList}
-                        onClick={handleMessageSend}
-                      />
+                      <div className="flex flex-col items-center content-center">
+                        <div className={cx(styles['opening-chat-msg'])}>
+                          {agentConfigInfo?.openingChatMsg}
+                        </div>
+                        <RecommendList
+                          className="mt-16"
+                          chatSuggestList={
+                            agentConfigInfo?.guidQuestionDtos || []
+                          }
+                          onClick={handleMessageSend}
+                        />
+                      </div>
                     }
                   />
                 )

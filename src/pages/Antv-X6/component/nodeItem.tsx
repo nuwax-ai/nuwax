@@ -4,10 +4,7 @@ import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
 import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
-import {
-  PromptVariable,
-  VariableType,
-} from '@/components/VariableInferenceInput/types';
+import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { VARIABLE_CONFIG_TYPE_OPTIONS } from '@/constants/node.constants';
 import { DataTypeEnum } from '@/types/enums/common';
@@ -37,31 +34,6 @@ import { cycleOption, outPutConfigs } from '../params';
 import { InputAndOut, OtherFormList, TreeOutput } from './commonNode';
 import './nodeItem.less';
 // 定义一些公共的数组
-
-// 转换变量类型的辅助函数
-const transformToPromptVariables = (
-  configs: InputAndOutConfig[],
-): PromptVariable[] => {
-  return configs.map((item) => {
-    const typeStr = item.dataType?.toLowerCase() || 'string';
-    // 简单的类型映射，根据实际情况调整
-    let type: VariableType = VariableType.String;
-    if (Object.values(VariableType).includes(typeStr as VariableType)) {
-      type = typeStr as VariableType;
-    }
-
-    return {
-      key: item.key || item.name,
-      name: item.name,
-      type: type,
-      label: item.name, // 使用 name 作为 label
-      description: item.description || '',
-      children: item.children
-        ? transformToPromptVariables(item.children)
-        : undefined,
-    };
-  });
-};
 
 // 定义开始节点
 const StartNode: React.FC<NodeDisposeProps> = ({
@@ -114,6 +86,7 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
 // 定义结束和过程输出的节点渲染
 const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
+  const { referenceList } = useModel('workflow');
   const segOptions = [
     { label: '返回变量', value: 'VARIABLE' },
     { label: '返回文本', value: 'TEXT' },
@@ -175,9 +148,6 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
                   placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
                   style={{
                     minHeight: '80px',
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '6px',
-                    padding: '4px 11px',
                     marginBottom: '10px',
                   }}
                   variables={transformToPromptVariables(
@@ -185,6 +155,7 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
                       (item: InputAndOutConfig) =>
                         !['', null, undefined].includes(item.name),
                     ),
+                    referenceList?.argMap,
                   )}
                 />
               </Form.Item>
@@ -352,6 +323,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
 // 定义文本处理的节点渲染
 const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
+  const { referenceList } = useModel('workflow');
   const textTypeOptions = [
     { label: '字符串拼接', value: 'CONCAT' },
     { label: '字符串分割', value: 'SPLIT' },
@@ -498,15 +470,13 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   placeholder="可以使用{{变量名}}的方式引用输入参数中的变量"
                   style={{
                     minHeight: '80px',
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '6px',
-                    padding: '4px 11px',
                   }}
                   variables={transformToPromptVariables(
                     inputArgs.filter(
                       (item: InputAndOutConfig) =>
                         !['', null, undefined].includes(item.name),
                     ),
+                    referenceList?.argMap,
                   )}
                 />
               </Form.Item>

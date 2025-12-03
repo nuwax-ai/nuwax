@@ -153,11 +153,25 @@ export default () => {
 
   // 滚动到底部
   const messageViewScrollToBottom = () => {
+    // 只有在允许自动滚动时才执行滚动
+    if (!allowAutoScrollRef.current) {
+      return;
+    }
     // 滚动到底部
-    messageViewRef.current?.scrollTo({
-      top: messageViewRef.current?.scrollHeight,
-      behavior: 'smooth',
-    });
+    const element = messageViewRef.current;
+    if (element) {
+      // 标记为程序触发的滚动，避免被误判为用户滚动
+      // 通过设置一个临时属性来标记
+      (element as any).__isProgrammaticScroll = true;
+      element.scrollTo({
+        top: element.scrollHeight,
+        behavior: 'smooth',
+      });
+      // 在滚动完成后清除标记（smooth 滚动大约需要 500ms）
+      setTimeout(() => {
+        (element as any).__isProgrammaticScroll = false;
+      }, 600);
+    }
   };
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
@@ -264,6 +278,7 @@ export default () => {
       }
       // 不存在会话消息时，才显示开场白预置问题
       else {
+        setMessageList([]);
         const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
         // 如果存在预置问题，显示预置问题
         setChatSuggestList(guidQuestionDtos);
@@ -271,8 +286,10 @@ export default () => {
 
       // 使用 setTimeout 确保在 DOM 完全渲染后再滚动
       setTimeout(() => {
-        // 滚动到底部
-        messageViewScrollToBottom();
+        // 只有在允许自动滚动时才滚动到底部
+        if (allowAutoScrollRef.current) {
+          messageViewScrollToBottom();
+        }
       }, 800);
     },
     onError: () => {

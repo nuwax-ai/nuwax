@@ -26,11 +26,11 @@ import {
 } from 'antd';
 import React, { useCallback, useState } from 'react';
 import TiptapVariableInput from '../../components/TiptapVariableInput';
-import type { MentionItem } from '../../components/TiptapVariableInput/types';
-import {
-  type PromptVariable,
-  VariableType,
-} from '../../components/VariableInferenceInput/types';
+import type {
+  MentionItem,
+  PromptVariable,
+} from '../../components/TiptapVariableInput/types';
+import { VariableType } from '../../components/TiptapVariableInput/types';
 
 const { Title, Paragraph, Text } = Typography;
 const { Panel } = Collapse;
@@ -44,7 +44,18 @@ const TiptapVariableInputTestExample: React.FC = () => {
   const [readonly, setReadonly] = useState(false);
   const [disabled, setDisabled] = useState(false);
 
-  // 测试变量数据（复用 VariableRefTest 的数据）
+  // 功能配置状态
+  const [disableMentions, setDisableMentions] = useState(true);
+  const [enableMarkdown, setEnableMarkdown] = useState(false);
+  const [enableEditableVariables, setEnableEditableVariables] = useState(true);
+  const [variableMode, setVariableMode] = useState<'node' | 'mark' | 'text'>(
+    'text',
+  );
+
+  // 编辑器实例
+  const [editorInstance, setEditorInstance] = useState<any>(null);
+
+  // 测试变量数据
   const testVariables: PromptVariable[] = [
     {
       key: 'user',
@@ -171,6 +182,29 @@ const TiptapVariableInputTestExample: React.FC = () => {
           key: 'category',
           type: VariableType.String,
           name: '分类',
+        },
+      ],
+    },
+    {
+      key: 'products',
+      type: VariableType.ArrayObject,
+      name: '商品列表',
+      description: '商品数组，支持数组索引访问',
+      children: [
+        {
+          key: 'id',
+          type: VariableType.String,
+          name: '商品ID',
+        },
+        {
+          key: 'name',
+          type: VariableType.String,
+          name: '商品名称',
+        },
+        {
+          key: 'price',
+          type: VariableType.Number,
+          name: '价格',
         },
       ],
     },
@@ -366,23 +400,74 @@ const TiptapVariableInputTestExample: React.FC = () => {
           <Col span={24}>
             <Card title="组件配置" size="small">
               <Row gutter={[16, 16]}>
-                <Col span={6}>
-                  <Text>只读模式：</Text>
-                  <Switch
-                    checked={readonly}
-                    onChange={setReadonly}
-                    size="small"
-                  />
+                <Col span={24}>
+                  <Space wrap>
+                    <Space>
+                      <Text>只读模式：</Text>
+                      <Switch
+                        checked={readonly}
+                        onChange={setReadonly}
+                        size="small"
+                      />
+                    </Space>
+                    <Space>
+                      <Text>禁用状态：</Text>
+                      <Switch
+                        checked={disabled}
+                        onChange={setDisabled}
+                        size="small"
+                      />
+                    </Space>
+                    <Space>
+                      <Text>禁用 Mentions：</Text>
+                      <Switch
+                        checked={disableMentions}
+                        onChange={setDisableMentions}
+                        size="small"
+                      />
+                    </Space>
+                    <Space>
+                      <Text>启用 Markdown：</Text>
+                      <Switch
+                        checked={enableMarkdown}
+                        onChange={setEnableMarkdown}
+                        size="small"
+                      />
+                    </Space>
+                    <Space>
+                      <Text>可编辑变量：</Text>
+                      <Switch
+                        checked={enableEditableVariables}
+                        onChange={setEnableEditableVariables}
+                        size="small"
+                      />
+                    </Space>
+                    <Space>
+                      <Text>变量模式：</Text>
+                      <Button.Group size="small">
+                        <Button
+                          type={variableMode === 'text' ? 'primary' : 'default'}
+                          onClick={() => setVariableMode('text')}
+                        >
+                          Text
+                        </Button>
+                        <Button
+                          type={variableMode === 'node' ? 'primary' : 'default'}
+                          onClick={() => setVariableMode('node')}
+                        >
+                          Node
+                        </Button>
+                        <Button
+                          type={variableMode === 'mark' ? 'primary' : 'default'}
+                          onClick={() => setVariableMode('mark')}
+                        >
+                          Mark
+                        </Button>
+                      </Button.Group>
+                    </Space>
+                  </Space>
                 </Col>
-                <Col span={6}>
-                  <Text>禁用状态：</Text>
-                  <Switch
-                    checked={disabled}
-                    onChange={setDisabled}
-                    size="small"
-                  />
-                </Col>
-                <Col span={12}>
+                <Col span={24}>
                   <Space>
                     <Button size="small" onClick={handleClear}>
                       清空
@@ -397,6 +482,36 @@ const TiptapVariableInputTestExample: React.FC = () => {
                     >
                       插入示例
                     </Button>
+                    {editorInstance && (
+                      <>
+                        <Button
+                          size="small"
+                          onClick={() => editorInstance.commands.focus()}
+                        >
+                          聚焦编辑器
+                        </Button>
+                        <Button
+                          size="small"
+                          onClick={() => {
+                            const html = editorInstance.getHTML();
+                            console.log('编辑器 HTML:', html);
+                            alert('HTML 已输出到控制台');
+                          }}
+                        >
+                          获取 HTML
+                        </Button>
+                        <Button
+                          size="small"
+                          onClick={() => {
+                            const text = editorInstance.getText();
+                            console.log('编辑器文本:', text);
+                            alert('文本已输出到控制台');
+                          }}
+                        >
+                          获取文本
+                        </Button>
+                      </>
+                    )}
                   </Space>
                 </Col>
               </Row>
@@ -465,6 +580,11 @@ const TiptapVariableInputTestExample: React.FC = () => {
                   readonly={readonly}
                   disabled={disabled}
                   placeholder="输入 @ 或 { 开始使用"
+                  disableMentions={disableMentions}
+                  enableMarkdown={enableMarkdown}
+                  enableEditableVariables={enableEditableVariables}
+                  variableMode={variableMode}
+                  getEditor={setEditorInstance}
                 />
               </div>
             </Card>
@@ -682,6 +802,508 @@ const TiptapVariableInputTestExample: React.FC = () => {
       ),
     },
     {
+      key: 'features',
+      label: '功能演示',
+      icon: <CodeOutlined />,
+      children: (
+        <Row gutter={[16, 16]}>
+          <Col span={24}>
+            <Card title="变量模式对比" size="small">
+              <Alert
+                message="变量模式说明"
+                description={
+                  <div>
+                    <p>
+                      <Text strong>Text 模式（默认）</Text>：变量以纯文本{' '}
+                      <Text code>{'{{variable}}'}</Text> 形式存储，通过 CSS
+                      装饰显示样式，无节点边界，光标移动自然
+                    </p>
+                    <p>
+                      <Text strong>Node 模式</Text>
+                      ：变量作为独立节点存储，支持可编辑变量节点，可以编辑变量内容
+                    </p>
+                    <p>
+                      <Text strong>Mark 模式</Text>
+                      ：变量作为标记应用在文本上，保持文本连续性
+                    </p>
+                  </div>
+                }
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    setVariableMode('text');
+                    setFullContent('Text 模式：{{user.name}}');
+                  }}
+                >
+                  切换到 Text 模式并插入变量
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    setVariableMode('node');
+                    setFullContent('Node 模式：{{user.name}}');
+                  }}
+                >
+                  切换到 Node 模式并插入变量
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    setVariableMode('mark');
+                    setFullContent('Mark 模式：{{user.name}}');
+                  }}
+                >
+                  切换到 Mark 模式并插入变量
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+
+          <Col span={12}>
+            <Card title="可编辑变量功能" size="small">
+              <Alert
+                message="可编辑变量说明"
+                description="开启后可编辑变量节点，支持在变量节点内部进行字符级编辑。关闭后使用不可编辑的原子节点。"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    setEnableEditableVariables(true);
+                    setFullContent(
+                      '可编辑变量：{{user.name}}（可以点击变量进行编辑）',
+                    );
+                  }}
+                >
+                  启用可编辑变量
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    setEnableEditableVariables(false);
+                    setFullContent('不可编辑变量：{{user.name}}（原子节点）');
+                  }}
+                >
+                  禁用可编辑变量
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+
+          <Col span={12}>
+            <Card title="Markdown 功能" size="small">
+              <Alert
+                message="Markdown 说明"
+                description="启用后支持 Markdown 快捷语法，如 **粗体**、*斜体*、# 标题等。"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    setEnableMarkdown(true);
+                    setFullContent(
+                      'Markdown 已启用，试试输入 **粗体** 或 *斜体*',
+                    );
+                  }}
+                >
+                  启用 Markdown
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    setEnableMarkdown(false);
+                    setFullContent('Markdown 已禁用');
+                  }}
+                >
+                  禁用 Markdown
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    setEnableMarkdown(true);
+                    setFullContent(
+                      '# 标题\n\n**粗体文本**\n\n*斜体文本*\n\n- 列表项1\n- 列表项2',
+                    );
+                  }}
+                >
+                  插入 Markdown 示例
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+
+          <Col span={12}>
+            <Card title="Mentions 功能" size="small">
+              <Alert
+                message="Mentions 说明"
+                description="启用后支持 @ 符号触发用户、文件、数据源等提及功能。"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    setDisableMentions(false);
+                    setFullContent('Mentions 已启用，试试输入 @ 触发选择');
+                  }}
+                >
+                  启用 Mentions
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    setDisableMentions(true);
+                    setFullContent('Mentions 已禁用');
+                  }}
+                >
+                  禁用 Mentions
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+
+          <Col span={12}>
+            <Card title="数组索引访问" size="small">
+              <Alert
+                message="数组索引说明"
+                description="支持通过数组索引访问数组元素，如 products[0].name、cart[1].price 等。"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    setFullContent(
+                      '第一个商品：{{products[0].name}}，价格：{{products[0].price}}',
+                    )
+                  }
+                >
+                  数组索引示例：products[0]
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    setFullContent(
+                      '购物车第一项：{{cart[0].name}}，数量：{{cart[0].quantity}}',
+                    )
+                  }
+                >
+                  数组索引示例：cart[0]
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    setFullContent(
+                      '多个索引：{{products[0].name}}、{{products[1].name}}、{{products[2].name}}',
+                    )
+                  }
+                >
+                  多个数组索引
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+
+          <Col span={24}>
+            <Card title="编辑器实例操作" size="small">
+              <Alert
+                message="编辑器实例说明"
+                description="通过 getEditor 回调获取编辑器实例，可以执行各种编辑器操作，如聚焦、获取内容、设置内容等。"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Space wrap>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    if (editorInstance) {
+                      editorInstance.commands.focus();
+                    } else {
+                      alert('编辑器实例未就绪');
+                    }
+                  }}
+                >
+                  聚焦编辑器
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    if (editorInstance) {
+                      const html = editorInstance.getHTML();
+                      console.log('HTML:', html);
+                      alert('HTML 已输出到控制台');
+                    } else {
+                      alert('编辑器实例未就绪');
+                    }
+                  }}
+                >
+                  获取 HTML
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    if (editorInstance) {
+                      const text = editorInstance.getText();
+                      console.log('文本:', text);
+                      alert('文本已输出到控制台');
+                    } else {
+                      alert('编辑器实例未就绪');
+                    }
+                  }}
+                >
+                  获取纯文本
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    if (editorInstance) {
+                      const isEmpty = editorInstance.isEmpty;
+                      alert(`编辑器是否为空: ${isEmpty}`);
+                    } else {
+                      alert('编辑器实例未就绪');
+                    }
+                  }}
+                >
+                  检查是否为空
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    if (editorInstance) {
+                      const isFocused = editorInstance.isFocused;
+                      alert(`编辑器是否聚焦: ${isFocused}`);
+                    } else {
+                      alert('编辑器实例未就绪');
+                    }
+                  }}
+                >
+                  检查是否聚焦
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    if (editorInstance) {
+                      editorInstance.commands.clearContent();
+                      alert('内容已清空');
+                    } else {
+                      alert('编辑器实例未就绪');
+                    }
+                  }}
+                >
+                  清空内容
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    if (editorInstance) {
+                      editorInstance.commands.insertContent(
+                        '<p>通过编辑器实例插入的内容</p>',
+                      );
+                    } else {
+                      alert('编辑器实例未就绪');
+                    }
+                  }}
+                >
+                  插入内容
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    if (editorInstance) {
+                      const { from, to } = editorInstance.state.selection;
+                      alert(`光标位置: from=${from}, to=${to}`);
+                    } else {
+                      alert('编辑器实例未就绪');
+                    }
+                  }}
+                >
+                  获取光标位置
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+
+          <Col span={24}>
+            <Card title="空行处理测试" size="small">
+              <Alert
+                message="空行处理说明"
+                description="测试组件对空行的处理，包括空段落、带换行的空段落等。"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => setFullContent('第一行\n\n第二行\n\n第三行')}
+                >
+                  多行文本（包含空行）
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    setFullContent(
+                      '<p>第一段</p><p></p><p>第二段</p><p></p><p>第三段</p>',
+                    )
+                  }
+                >
+                  HTML 多段落（包含空段落）
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    setFullContent('<p></p><p>中间段落</p><p></p>')
+                  }
+                >
+                  首尾空段落（应自动清理）
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+
+          <Col span={24}>
+            <Card title="光标位置测试" size="small">
+              <Alert
+                message="光标位置说明"
+                description="测试组件在内容更新时是否能正确保持光标位置，避免光标跳动。"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    setFullContent(
+                      '测试光标位置：在中间位置点击，然后点击下面的按钮更新内容',
+                    );
+                    setTimeout(() => {
+                      if (editorInstance) {
+                        const { from } = editorInstance.state.selection;
+                        alert(`当前光标位置: ${from}`);
+                      }
+                    }, 100);
+                  }}
+                >
+                  插入测试文本并显示光标位置
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    if (editorInstance) {
+                      const { from, to } = editorInstance.state.selection;
+                      if (from === to) {
+                        alert(`光标位置: ${from}`);
+                      } else {
+                        alert(`选中范围: ${from} - ${to}`);
+                      }
+                    } else {
+                      alert('编辑器实例未就绪');
+                    }
+                  }}
+                >
+                  获取当前光标/选中位置
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+
+          <Col span={24}>
+            <Card title="文本格式转换测试" size="small">
+              <Alert
+                message="格式转换说明"
+                description="测试纯文本格式和 HTML 格式之间的自动转换。"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    const text =
+                      '纯文本变量：{{user.name}}，工具：{#ToolBlock id="web_search_tool" type="search" name="Web Search"#}网页搜索{#/ToolBlock#}';
+                    setFullContent(text);
+                    alert('已插入纯文本格式，组件会自动转换为 HTML');
+                  }}
+                >
+                  插入纯文本格式（自动转换）
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    if (editorInstance) {
+                      const html = editorInstance.getHTML();
+                      // 使用 extractTextFromHTML 提取纯文本
+                      import(
+                        '../../components/TiptapVariableInput/utils/htmlUtils'
+                      ).then((module) => {
+                        const text = module.extractTextFromHTML(html);
+                        console.log('提取的纯文本:', text);
+                        alert('纯文本已输出到控制台');
+                      });
+                    } else {
+                      alert('编辑器实例未就绪');
+                    }
+                  }}
+                >
+                  提取纯文本格式
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() => {
+                    const html =
+                      '<p>HTML 格式：<span class="variable-block-chip" data-key="user.name">user.name</span></p>';
+                    setFullContent(html);
+                    alert('已插入 HTML 格式');
+                  }}
+                >
+                  插入 HTML 格式
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+        </Row>
+      ),
+    },
+    {
       key: 'examples',
       label: '使用示例',
       icon: <CodeOutlined />,
@@ -814,6 +1436,68 @@ const TiptapVariableInputTestExample: React.FC = () => {
                 >
                   订单信息：{'{{order.status}}'}
                 </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    insertPresetText(
+                      '<p>时区设置：<variable data-key="user.profile.preferences.timezone" data-label="user.profile.preferences.timezone" data-is-tool="false">user.profile.preferences.timezone</variable></p>',
+                    )
+                  }
+                >
+                  三层嵌套：{'{{user.profile.preferences.timezone}}'}
+                </Button>
+              </Space>
+            </Card>
+          </Col>
+
+          <Col span={12}>
+            <Card title="数组索引示例" size="small">
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    insertPresetText(
+                      '<p>第一个商品：<variable data-key="products[0].name" data-label="products[0].name" data-is-tool="false">products[0].name</variable>，价格：<variable data-key="products[0].price" data-label="products[0].price" data-is-tool="false">products[0].price</variable></p>',
+                    )
+                  }
+                >
+                  数组索引：{'{{products[0].name}}'}
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    insertPresetText(
+                      '<p>购物车第一项：<variable data-key="cart[0].name" data-label="cart[0].name" data-is-tool="false">cart[0].name</variable>，数量：<variable data-key="cart[0].quantity" data-label="cart[0].quantity" data-is-tool="false">cart[0].quantity</variable></p>',
+                    )
+                  }
+                >
+                  数组索引：{'{{cart[0].name}}'}
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    insertPresetText(
+                      '<p>第二个商品：<variable data-key="products[1].name" data-label="products[1].name" data-is-tool="false">products[1].name</variable></p>',
+                    )
+                  }
+                >
+                  数组索引：{'{{products[1].name}}'}
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    insertPresetText(
+                      '<p>多个索引：<variable data-key="products[0].name" data-label="products[0].name" data-is-tool="false">products[0].name</variable>、<variable data-key="products[1].name" data-label="products[1].name" data-is-tool="false">products[1].name</variable>、<variable data-key="products[2].name" data-label="products[2].name" data-is-tool="false">products[2].name</variable></p>',
+                    )
+                  }
+                >
+                  多个数组索引
+                </Button>
               </Space>
             </Card>
           </Col>
@@ -893,6 +1577,28 @@ const TiptapVariableInputTestExample: React.FC = () => {
                   }
                 >
                   Mentions + 变量 + 数据源
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    insertPresetText(
+                      '<p>使用 {#ToolBlock id="web_search_tool" type="search" name="Web Search"#}网页搜索{#/ToolBlock#} 查找 <variable data-key="products[0].name" data-label="products[0].name" data-is-tool="false">products[0].name</variable> 的信息。</p>',
+                    )
+                  }
+                >
+                  工具 + 数组索引变量
+                </Button>
+                <Button
+                  size="small"
+                  block
+                  onClick={() =>
+                    insertPresetText(
+                      '<p>@<mention data-id="user_001" data-label="张三" data-type="user">张三</mention> 购买了 <variable data-key="cart[0].name" data-label="cart[0].name" data-is-tool="false">cart[0].name</variable>，使用 {#ToolBlock id="calculator_tool" type="math" name="Calculator"#}计算器{#/ToolBlock#} 计算总价。</p>',
+                    )
+                  }
+                >
+                  完整组合：Mentions + 数组变量 + 工具
                 </Button>
               </Space>
             </Card>
@@ -1032,10 +1738,15 @@ const TiptapVariableInputTestExample: React.FC = () => {
               </p>
               <p>
                 • 使用 <Text code>↑</Text> <Text code>↓</Text> 键选择项,
-                <Text code>Enter</Text> 确认,<Text code>Esc</Text> 取消
+                <Text code>Enter</Text> 确认,<Text code>Esc</Text> 取消,
+                <Text code>Tab</Text> 在变量和工具之间切换
               </p>
-              <p>• 支持嵌套对象和数组索引访问</p>
+              <p>• 支持嵌套对象访问，如 {'{{user.profile.avatar}}'}</p>
+              <p>• 支持数组索引访问，如 {'{{products[0].name}}'}</p>
               <p>• 支持插入工具块(Tools)，工具会显示为特殊的块状标签</p>
+              <p>• 支持三种变量模式：Text（默认）、Node、Mark</p>
+              <p>• 支持可编辑变量节点，可在变量内部进行字符级编辑</p>
+              <p>• 支持 Markdown 快捷语法（需启用）</p>
               <p>• 基于 Tiptap 编辑器，提供更好的光标管理和编辑体验</p>
             </div>
           }

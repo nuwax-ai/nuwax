@@ -3,8 +3,7 @@
  * 自动补全工具函数
  */
 
-import type { VariableTreeNode } from '../../VariableInferenceInput/types';
-import type { VariableSuggestionItem } from '../types';
+import type { VariableSuggestionItem, VariableTreeNode } from '../types';
 
 /**
  * 将变量树节点转换为 Suggestion 项

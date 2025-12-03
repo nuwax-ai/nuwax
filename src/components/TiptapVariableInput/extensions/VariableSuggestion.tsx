@@ -4,17 +4,22 @@
  */
 
 import { Extension } from '@tiptap/core';
-import { PluginKey } from '@tiptap/pm/state';
+import { PluginKey, TextSelection } from '@tiptap/pm/state';
 import Suggestion from '@tiptap/suggestion';
-import ReactDOM from 'react-dom/client';
-import type { VariableTreeNode } from '../../VariableInferenceInput/types';
+import { ConfigProvider } from 'antd';
+import { createRoot } from 'react-dom/client';
 import VariableList from '../components/VariableList';
-import type { VariableSuggestionItem } from '../types';
+import type { VariableSuggestionItem, VariableTreeNode } from '../types';
+import { extractTextFromHTML } from '../utils/htmlUtils';
 
 export interface VariableSuggestionOptions {
   variables: VariableTreeNode[];
   searchText?: string;
   onSelect?: (item: VariableSuggestionItem) => void;
+  /** 是否启用可编辑变量节点，默认开启 */
+  enableEditableVariables?: boolean;
+  /** 变量实现模式: 'node' | 'mark' | 'text'，默认 'text' */
+  variableMode?: 'node' | 'mark' | 'text';
 }
 
 /**
@@ -29,29 +34,12 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
       variables: [],
       searchText: '',
       onSelect: undefined,
+      enableEditableVariables: true, // 默认开启可编辑模式
+      variableMode: 'text', // 默认使用纯文本模式（方案C）
     };
   },
 
   addProseMirrorPlugins() {
-    // 调试：检查扩展是否被调用
-    console.log('VariableSuggestion addProseMirrorPlugins - called');
-    console.log(
-      'VariableSuggestion addProseMirrorPlugins - this.options:',
-      this.options,
-    );
-    console.log(
-      'VariableSuggestion addProseMirrorPlugins - variables:',
-      this.options.variables,
-    );
-    console.log(
-      'VariableSuggestion addProseMirrorPlugins - variables length:',
-      this.options.variables?.length,
-    );
-    console.log(
-      'VariableSuggestion addProseMirrorPlugins - editor:',
-      this.editor,
-    );
-
     // 辅助函数：截断 query，以 } 或空格为分隔符
     const truncateQuery = (query: string): string => {
       if (!query) return '';
@@ -96,6 +84,207 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
       // 默认值是 [' ']，只允许空格作为前缀
       // 设置为 null 表示允许所有字符作为前缀，这样 "121212{" 也能触发
       allowedPrefixes: null, // null 表示允许所有字符作为前缀
+      allow: ({ state, editor }) => {
+        // 检查光标位置，避免在特定情况下显示建议框
+        // 使用提取的文本内容来判断，因为 {{ 或 }} 可能跨元素
+        const { $from } = state.selection;
+
+        try {
+          // 获取光标前的文档文本（快速检查）
+          const docTextBefore = state.doc.textBetween(
+            Math.max(0, $from.pos - 10),
+            $from.pos,
+            '\n',
+            '\n',
+          );
+          const docTextAfter = state.doc.textBetween(
+            $from.pos,
+            Math.min(state.doc.content.size, $from.pos + 10),
+            '\n',
+            '\n',
+          );
+
+          // 新增检查：如果光标前一个字符是字母或数字，说明在普通文本中间，不应该触发
+          // 例如：12dsds212| 输入 { 时不应该触发
+          // const charBeforeCursor = docTextBefore.slice(-1);
+          // if (charBeforeCursor && /[a-zA-Z0-9]/.test(charBeforeCursor)) {
+          //   return false;
+          // }
+
+          // 快速检查：如果文档文本末尾是 }}，且距离光标很近（2个字符内），不显示
+          // 但是如果 }} 和光标之间有其他内容，应该允许显示（例如：{{xxx}}{|{{yy}}）
+          const recentBefore = docTextBefore.slice(-2);
+          if (recentBefore.endsWith('}') || recentBefore.endsWith('}}')) {
+            // 检查 }} 是否紧跟在光标前（没有其他内容）
+            // 如果 }} 距离光标超过2个字符，说明中间有其他内容，应该允许显示
+            const lastClosingBrace = docTextBefore.lastIndexOf('}}');
+            if (lastClosingBrace !== -1) {
+              const distanceFromEnd = docTextBefore.length - lastClosingBrace;
+              // 只有当 }} 紧跟在光标前（2个字符内）时，才进一步检查
+              if (distanceFromEnd <= 2) {
+                // 检查 }} 后面是否紧跟 {{（允许在两个紧邻的变量之间插入）
+                // 例如：{{xxx}}{|{{yy}} - 允许
+                // 例如：{{xxx}}|zzz{{yy}} - 不允许（中间有 zzz）
+                const afterClosingBrace = docTextBefore.substring(
+                  lastClosingBrace + 2,
+                );
+
+                // 检查光标后面是否紧跟 {{
+                const textAfterCursor = docTextAfter.slice(0, 2);
+
+                if (
+                  afterClosingBrace === '{' &&
+                  textAfterCursor.startsWith('{')
+                ) {
+                  // }}{{{ 模式：两个变量紧邻，允许在中间插入
+                  // 例如：{{xxx}}{|{{yy}}
+                } else {
+                  // 其他情况：阻止触发
+                  // 包括：{{xxx}}| (后面不是 {{)
+                  // 包括：{{xxx}}|zzz{{yy}} (后面不是紧跟 {{)
+                  return false;
+                }
+              }
+            } else if (recentBefore.endsWith('}')) {
+              // 单个 } 紧跟在光标前，也阻止显示
+              return false;
+            }
+          }
+
+          // 不检查光标后的文本，允许在 {{xxx}}{|{{yy}} 这种情况下触发建议
+          // 之前的逻辑过于严格，阻止了在两个变量之间插入新变量的场景
+
+          // 如果快速检查通过，使用提取的文本内容进行更精确的检查
+          const fullHtml = editor.getHTML();
+          if (!fullHtml) return true;
+
+          // 提取整个文本内容（将变量节点转换为 {{key}} 格式）
+          const fullExtractedText = extractTextFromHTML(fullHtml);
+          if (!fullExtractedText) return true;
+
+          // 获取光标前的文档文本长度，用于估算光标在提取文本中的位置
+          const docTextBeforeFull = state.doc.textBetween(
+            0,
+            $from.pos,
+            '\n',
+            '\n',
+          );
+          // 由于提取文本和文档文本的长度可能不同，我们使用一个近似方法
+          // 检查提取文本中，是否有 }} 在光标前，且 {{ 在光标后
+
+          // 方法：查找提取文本中所有 }} 和 {{ 的位置
+          // 然后判断光标是否在某个 }} 和 {{ 之间
+          const closingBraces: number[] = [];
+          const openingBraces: number[] = [];
+
+          let pos = 0;
+          while (pos < fullExtractedText.length) {
+            const closingIndex = fullExtractedText.indexOf('}}', pos);
+            if (closingIndex !== -1) {
+              closingBraces.push(closingIndex);
+              pos = closingIndex + 2;
+            } else {
+              break;
+            }
+          }
+
+          pos = 0;
+          while (pos < fullExtractedText.length) {
+            const openingIndex = fullExtractedText.indexOf('{{', pos);
+            if (openingIndex !== -1) {
+              openingBraces.push(openingIndex);
+              pos = openingIndex + 2;
+            } else {
+              break;
+            }
+          }
+
+          // 估算光标在提取文本中的位置（使用文档文本长度作为近似）
+          // 但是要更宽松，避免误判
+          const estimatedCursorPos = docTextBeforeFull.length;
+
+          // 检查光标是否在某个 }} 和 {{ 之间
+          // 只有当文档文本也确认有 }} 和 {{ 时，才阻止（双重验证，避免误判）
+          if (docTextBefore.includes('}}') && docTextAfter.includes('{{')) {
+            // 如果光标前最后一个字符是 {，说明用户正在输入新的变量引用，应该允许显示
+            // 例如：{{xxx}}{|{{yy}} 这种情况
+            const lastCharBefore = docTextBefore.slice(-1);
+            if (lastCharBefore === '{') {
+              // 光标前是 {，允许显示，不进行阻止检查
+              // 继续后续检查，不在这里返回 false
+            } else {
+              // 光标前不是 {，进行正常的检查
+              for (const closingPos of closingBraces) {
+                if (closingPos < estimatedCursorPos + 20) {
+                  // 放宽范围，避免误判
+                  // 找到了光标前的 }}
+                  // 检查光标后是否有 {{
+                  for (const openingPos of openingBraces) {
+                    if (openingPos > estimatedCursorPos - 20) {
+                      // 放宽范围，避免误判
+                      // 找到了光标后的 {{
+                      // 检查它们之间是否有其他 }} 或 {{
+                      const betweenText = fullExtractedText.substring(
+                        closingPos + 2,
+                        openingPos,
+                      );
+                      // 如果之间没有其他完整的变量引用，说明光标在 }}...{{ 之间
+                      if (
+                        !betweenText.includes('}}') &&
+                        !betweenText.includes('{{')
+                      ) {
+                        return false;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          // 检查提取文本中最后一个 }} 的位置
+          // 只有当文档文本也确认时，才阻止（避免误判）
+          const lastClosingBrace = fullExtractedText.lastIndexOf('}}');
+          if (lastClosingBrace !== -1) {
+            // 计算 }} 到提取文本末尾的距离
+            const distanceFromEnd = fullExtractedText.length - lastClosingBrace;
+            // 如果 }} 距离末尾很近（在最后15个字符内），检查它之后是否有 {{
+            if (distanceFromEnd <= 15) {
+              const afterClosingBrace = fullExtractedText.substring(
+                lastClosingBrace + 2,
+              );
+              const hasUnclosedOpening = afterClosingBrace.indexOf('{{') !== -1;
+              // 如果 }} 之后没有 {{，且文档文本末尾也没有 {{，说明光标在一个已完成的变量引用之后
+              if (!hasUnclosedOpening && !docTextAfter.includes('{{')) {
+                // 只有当文档文本末尾附近也有 }} 时，才阻止（双重验证，避免误判）
+                const lastClosingBraceInDoc = docTextBefore.lastIndexOf('}}');
+                if (lastClosingBraceInDoc !== -1) {
+                  const distanceFromEndInDoc =
+                    docTextBefore.length - lastClosingBraceInDoc;
+                  // 只有当文档文本中的 }} 也距离末尾很近（5个字符内）时，才阻止
+                  if (distanceFromEndInDoc <= 5) {
+                    // 检查 }} 后面是否有 {
+                    // 如果有 {，说明用户正在输入新的变量引用，应该允许显示
+                    const textAfterClosing = docTextBefore.slice(
+                      lastClosingBraceInDoc + 2,
+                    );
+                    if (!textAfterClosing.includes('{')) {
+                      return false;
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          // 其他情况都允许显示变量引用框
+          // 默认允许，确保正常输入 { 时能够触发
+          return true;
+        } catch (error) {
+          // 如果出错，默认允许显示（避免阻止正常使用）
+          return true;
+        }
+      },
       items: ({ query }) => {
         // 从 options 获取最新的 variables（支持动态更新）
         const variables = this.options.variables || [];
@@ -160,10 +349,18 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             // 创建容器
             const container = document.createElement('div');
             container.className = 'variable-suggestion-popup';
+            // 确保容器能够访问到 CSS 变量（CSS 变量定义在 document.documentElement 上，是全局的）
             document.body.appendChild(container);
 
-            // 创建 React 根
-            const root = ReactDOM.createRoot(container);
+            // 创建 React 18 root
+            const root = createRoot(container);
+
+            // Portal ID
+            const portalId = `variable-suggestion-${Date.now()}-${Math.random()}`;
+
+            // 获取编辑器 DOM 元素（用于排除点击外部检测）
+            // 在组件外部获取，确保引用稳定
+            const editorDom = (this.editor?.view?.dom as HTMLElement) || null;
 
             // 将树节点扁平化为可选择的项列表（所有节点都可以选择）
             const flattenTree = (
@@ -223,7 +420,17 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 );
               } else {
                 // 如果没有明确的分类，尝试根据 key 或 type 判断
-                regularVars.push(...nodes);
+                // 检查节点是否是工具（key 以 'skill-' 开头或 type 是 'Tool'）
+                for (const node of nodes) {
+                  const isTool =
+                    node.key.startsWith('skill-') ||
+                    (node.variable as any)?.type === 'Tool';
+                  if (isTool) {
+                    toolVars.push(node);
+                  } else {
+                    regularVars.push(node);
+                  }
+                }
               }
 
               return { regularVars, toolVars };
@@ -233,17 +440,6 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             const hasRegular = regularVars.length > 0;
             const hasTools = toolVars.length > 0;
             const showTabs = hasRegular && hasTools;
-
-            console.log('VariableSuggestion onStart debug:', {
-              itemsLength: items.length,
-              hasRegular,
-              hasTools,
-              showTabs,
-              regularVarsLength: regularVars.length,
-              toolVarsLength: toolVars.length,
-              firstItemKey: items[0]?.key,
-              keys: items.map((n: any) => n.key),
-            });
 
             // 初始 activeTab
             let activeTab = 'variables';
@@ -272,6 +468,23 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             let handleKeyDownRef: ((event: KeyboardEvent) => void) | null =
               null;
 
+            // 定义关闭下拉框的函数
+            const handleClose = () => {
+              try {
+                // 卸载 React 组件
+                root.unmount();
+              } catch (e) {
+                // 忽略卸载错误
+              }
+              if (document.body.contains(container)) {
+                document.body.removeChild(container);
+              }
+              if (handleKeyDownRef) {
+                document.removeEventListener('keydown', handleKeyDownRef);
+              }
+              popup = null;
+            };
+
             // 定义 handleSelect
             const handleSelect = (item: VariableSuggestionItem) => {
               try {
@@ -293,28 +506,22 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                   });
                 } else {
                   // 变量插入
+                  // 根据 enableEditableVariables 配置决定使用可编辑或不可编辑节点
+                  const useEditable =
+                    this.options.enableEditableVariables !== false; // 默认为 true
                   command({
-                    key: item.key,
-                    label: item.label,
-                    isTool: false,
+                    type: useEditable ? 'editableVariable' : 'variable',
+                    attrs: {
+                      key: item.key,
+                      label: item.label,
+                    },
                   });
                 }
               } catch (error) {
-                console.error('VariableSuggestion handleSelect error:', error);
+                // 静默处理错误，避免影响用户体验
               } finally {
                 // 清理 - 确保总是执行
-                try {
-                  root.unmount();
-                } catch (e) {
-                  // 忽略卸载错误
-                }
-                if (document.body.contains(container)) {
-                  document.body.removeChild(container);
-                }
-                if (handleKeyDownRef) {
-                  document.removeEventListener('keydown', handleKeyDownRef);
-                }
-                popup = null;
+                handleClose();
                 this.options.onSelect?.(item);
               }
             };
@@ -330,53 +537,62 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               currentShowTabs: boolean,
               currentSearchText: string,
             ) => {
-              if (
-                document.body.contains(container) &&
-                // @ts-ignore - internal property check
-                root._internalRoot
-              ) {
+              if (document.body.contains(container)) {
                 try {
-                  root.render(
-                    <VariableList
-                      tree={currentTree}
-                      selectedIndex={selectedIndex}
-                      onSelect={handleSelect}
-                      searchText={currentSearchText}
-                      flatItems={currentFlatItems}
-                      showTabs={currentShowTabs}
-                      activeTab={currentActiveTab}
-                      onTabChange={(key) => {
-                        // 切换 tab
-                        activeTab = key;
-                        // 更新 popup 状态
-                        if (popup) {
-                          popup.activeTab = key;
-                          const newTree = getCurrentTree(
-                            key,
-                            currentRegularVars,
-                            currentToolVars,
-                          );
-                          popup.flatItems = flattenTree(newTree);
-                          popup.selectedIndex = 0;
-
-                          updateRender(
-                            0,
-                            popup.flatItems,
-                            newTree,
-                            key,
-                            currentRegularVars,
-                            currentToolVars,
-                            currentShowTabs,
-                            currentSearchText,
-                          );
-                        }
+                  // 使用 ConfigProvider 包裹，确保主题上下文和 CSS 变量正确应用
+                  // 使用 React 18 createRoot API 渲染到容器
+                  const content = (
+                    <ConfigProvider
+                      theme={{
+                        cssVar: { prefix: 'xagi' },
                       }}
-                      regularVariables={currentRegularVars}
-                      toolVariables={currentToolVars}
-                    />,
+                    >
+                      <VariableList
+                        tree={currentTree}
+                        selectedIndex={selectedIndex}
+                        onSelect={handleSelect}
+                        searchText={currentSearchText}
+                        flatItems={currentFlatItems}
+                        showTabs={currentShowTabs}
+                        activeTab={currentActiveTab}
+                        onTabChange={(key) => {
+                          // 切换 tab
+                          activeTab = key;
+                          // 更新 popup 状态
+                          if (popup) {
+                            popup.activeTab = key;
+                            const newTree = getCurrentTree(
+                              key,
+                              currentRegularVars,
+                              currentToolVars,
+                            );
+                            popup.flatItems = flattenTree(newTree);
+                            popup.selectedIndex = 0;
+
+                            updateRender(
+                              0,
+                              popup.flatItems,
+                              newTree,
+                              key,
+                              currentRegularVars,
+                              currentToolVars,
+                              currentShowTabs,
+                              currentSearchText,
+                            );
+                          }
+                        }}
+                        regularVariables={currentRegularVars}
+                        toolVariables={currentToolVars}
+                        onClose={handleClose}
+                        excludeElement={editorDom}
+                      />
+                    </ConfigProvider>
                   );
+
+                  // 使用 React 18 root 渲染
+                  root.render(content);
                 } catch (error) {
-                  console.error('VariableSuggestion render error:', error);
+                  // 静默处理错误，避免影响用户体验
                 }
               }
             };
@@ -480,16 +696,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               if (event.key === 'Escape') {
                 event.preventDefault();
                 // 清理
-                try {
-                  root.unmount();
-                } catch (e) {
-                  // 忽略卸载错误
-                }
-                if (document.body.contains(container)) {
-                  document.body.removeChild(container);
-                }
-                document.removeEventListener('keydown', handleKeyDown);
-                popup = null;
+                handleClose();
                 return;
               }
 
@@ -517,7 +724,76 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                   currentShowTabs,
                   currentSearchText,
                 );
+                return;
               }
+
+              // 处理左右箭头键切换 tab
+              // if (currentShowTabs) {
+              // if (event.key === 'ArrowLeft') {
+              //   event.preventDefault();
+              //   // 左箭头：切换到左边的 tab（tools -> variables）
+              //   if (currentActiveTab === 'tools') {
+              //     const newTab = 'variables';
+              //     popup.activeTab = newTab;
+              //     const newTree = getCurrentTree(
+              //       newTab,
+              //       currentRegularVars,
+              //       currentToolVars,
+              //     );
+              //     popup.flatItems = flattenTree(newTree);
+              //     popup.selectedIndex = 0;
+
+              //     updateRender(
+              //       0,
+              //       popup.flatItems,
+              //       newTree,
+              //       newTab,
+              //       currentRegularVars,
+              //       currentToolVars,
+              //       currentShowTabs,
+              //       currentSearchText,
+              //     );
+              //   }
+              //   return;
+              // }
+
+              // if (event.key === 'ArrowRight') {
+              //   event.preventDefault();
+              //   // 右箭头：切换到右边的 tab（variables -> tools）
+              //   if (currentActiveTab === 'variables') {
+              //     const newTab = 'tools';
+              //     popup.activeTab = newTab;
+              //     const newTree = getCurrentTree(
+              //       newTab,
+              //       currentRegularVars,
+              //       currentToolVars,
+              //     );
+              //     popup.flatItems = flattenTree(newTree);
+              //     popup.selectedIndex = 0;
+
+              //     updateRender(
+              //       0,
+              //       popup.flatItems,
+              //       newTree,
+              //       newTab,
+              //       currentRegularVars,
+              //       currentToolVars,
+              //       currentShowTabs,
+              //       currentSearchText,
+              //     );
+              //   }
+              //   return;
+              // }
+              // }
+            };
+
+            // 获取 CSS 变量值的辅助函数（从 Ant Design 主题系统）
+            const getCSSVariable = (varName: string, fallback: string) => {
+              return (
+                getComputedStyle(document.documentElement)
+                  .getPropertyValue(varName)
+                  .trim() || fallback
+              );
             };
 
             // 定位弹窗
@@ -527,8 +803,11 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
 
               const coords = this.editor.view.coordsAtPos(range.from);
               if (coords) {
+                // 从 CSS 变量获取尺寸值
+                const controlHeight =
+                  parseInt(getCSSVariable('--xagi-control-height', '32')) || 32;
                 const popupWidth = 300;
-                const popupHeight = 240;
+                const popupHeight = controlHeight * 7.5; // 约 240px，基于 controlHeight
                 const viewportWidth = window.innerWidth;
                 const viewportHeight = window.innerHeight;
 
@@ -555,12 +834,29 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 container.style.position = 'fixed';
                 container.style.left = `${left}px`;
                 container.style.top = `${top}px`;
-                container.style.zIndex = '9999';
-                container.style.background = '#fff';
-                container.style.border = '1px solid #d9d9d9';
-                container.style.borderRadius = '8px';
-                container.style.boxShadow =
-                  '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)';
+                container.style.zIndex = getCSSVariable(
+                  '--xagi-z-index-popup-base',
+                  '9999',
+                );
+                container.style.background = getCSSVariable(
+                  '--xagi-color-bg-container',
+                  '#fff',
+                );
+                container.style.border = `${getCSSVariable(
+                  '--xagi-line-width',
+                  '1px',
+                )} solid ${getCSSVariable(
+                  '--xagi-color-border-secondary',
+                  '#d9d9d9',
+                )}`;
+                container.style.borderRadius = getCSSVariable(
+                  '--xagi-border-radius',
+                  '8px',
+                );
+                container.style.boxShadow = getCSSVariable(
+                  '--xagi-box-shadow',
+                  '0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
+                );
                 container.style.width = `${popupWidth}px`;
                 container.style.height = `${popupHeight}px`;
                 container.style.overflow = 'hidden'; // 改为 hidden，内部 VariableList 会处理滚动
@@ -572,8 +868,9 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             document.addEventListener('keydown', handleKeyDown);
 
             popup = {
-              root,
+              portalId,
               container,
+              root,
               selectedIndex: 0,
               handleKeyDown,
               // 状态
@@ -644,18 +941,25 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
           onKeyDown: (props: any) => {
             if (props.event.key === 'Escape') {
               if (popup) {
-                try {
-                  popup.root.unmount();
-                } catch (e) {
-                  // 忽略卸载错误
-                }
-                if (document.body.contains(popup.container)) {
-                  document.body.removeChild(popup.container);
-                }
-                if (popup.handleKeyDown) {
-                  document.removeEventListener('keydown', popup.handleKeyDown);
-                }
-                popup = null;
+                // 使用统一的关闭函数
+                const handleClose = () => {
+                  try {
+                    popup.root.unmount();
+                  } catch (e) {
+                    // 忽略卸载错误
+                  }
+                  if (document.body.contains(popup.container)) {
+                    document.body.removeChild(popup.container);
+                  }
+                  if (popup.handleKeyDown) {
+                    document.removeEventListener(
+                      'keydown',
+                      popup.handleKeyDown,
+                    );
+                  }
+                  popup = null;
+                };
+                handleClose();
               }
               return true;
             }
@@ -668,18 +972,22 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
           },
           onExit: () => {
             if (popup) {
-              try {
-                popup.root.unmount();
-              } catch (e) {
-                // 忽略卸载错误
-              }
-              if (document.body.contains(popup.container)) {
-                document.body.removeChild(popup.container);
-              }
-              if (popup.handleKeyDown) {
-                document.removeEventListener('keydown', popup.handleKeyDown);
-              }
-              popup = null;
+              // 使用统一的关闭函数
+              const handleClose = () => {
+                try {
+                  popup.root.unmount();
+                } catch (e) {
+                  // 忽略卸载错误
+                }
+                if (document.body.contains(popup.container)) {
+                  document.body.removeChild(popup.container);
+                }
+                if (popup.handleKeyDown) {
+                  document.removeEventListener('keydown', popup.handleKeyDown);
+                }
+                popup = null;
+              };
+              handleClose();
             }
           },
         };
@@ -717,120 +1025,275 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
           // 插入变量节点
           let { from, to } = range;
 
-          // 检查下一个字符是否是 }，如果是则包含它
+          // 检查是否是可编辑变量节点
+          const useEditable = this.options.enableEditableVariables !== false; // 默认为 true
+
           const { state } = editor.view;
           const doc = state.doc;
-          // 检查从 from 到 to+3 的文本，确保能检测到可能的 }
-          const textBeforeDelete = doc.textBetween(
-            from,
-            Math.min(to + 3, doc.content.size),
-          );
-          const nextChar =
-            to + 1 <= doc.content.size ? doc.textBetween(to, to + 1) : '';
-          // 也检查 to+1 位置的字符，因为 AutoCompleteBraces 可能已经插入了 }
-          const charAfterTo =
-            to + 2 <= doc.content.size ? doc.textBetween(to + 1, to + 2) : '';
-          const hasClosingBrace = nextChar === '}' || charAfterTo === '}';
 
-          console.log('VariableSuggestion command - range:', { from, to });
-          console.log(
-            'VariableSuggestion command - text before delete:',
-            textBeforeDelete,
-          );
-          console.log(
-            'VariableSuggestion command - nextChar:',
-            nextChar,
-            nextChar ? `(${nextChar.charCodeAt(0)})` : '(empty)',
-          );
-          console.log(
-            'VariableSuggestion command - charAfterTo:',
-            charAfterTo,
-            charAfterTo ? `(${charAfterTo.charCodeAt(0)})` : '(empty)',
-          );
-          console.log(
-            'VariableSuggestion command - hasClosingBrace:',
-            hasClosingBrace,
-          );
-
-          // 如果下一个字符是 }，扩展 range 以包含它
-          if (hasClosingBrace) {
-            // 如果 nextChar 是 }，扩展 to 包含它
-            // 如果 charAfterTo 是 }，扩展 to+1 包含它
-            if (nextChar === '}') {
-              to = to + 1; // 包含 }
-            } else if (charAfterTo === '}') {
-              to = to + 2; // 包含 }（跳过中间的一个字符）
+          // 检测光标是否在 {{...}} 中间
+          // 如果是，需要找到完整的 {{...}} 范围并替换整个范围
+          // 注意：只有当光标确实在已存在的 {{...}} 中间时，才替换整个范围
+          // 正常输入 { 时，应该使用原有逻辑
+          const findVariableRange = () => {
+            // 如果 from === to，说明只是输入了 {，还没有其他内容，使用原有逻辑
+            if (from === to) {
+              return null;
             }
-            console.log(
-              'VariableSuggestion command - extended to to include }:',
-              to,
-            );
+
+            // 检查 from 位置是否是 { 字符
+            const charAtFrom = doc.textBetween(from, from + 1);
+            if (charAtFrom !== '{') {
+              return null; // from 位置不是 {，不在变量引用中间
+            }
+
+            // 检查 from 前一个字符是否是 {，如果是，说明 from 是第二个 {
+            const charBeforeFrom =
+              from > 0 ? doc.textBetween(from - 1, from) : '';
+            if (charBeforeFrom === '{') {
+              // from 是第二个 {，说明光标在 {{...}} 中间
+              // 从 from - 1 开始查找对应的 }}
+              const openingBracePos = from - 1;
+              const searchRange = 200;
+              const textAfterOpening = doc.textBetween(
+                from + 1,
+                Math.min(doc.content.size, from + 1 + searchRange),
+                '\n',
+                '\n',
+              );
+
+              // 查找第一个 }} 的位置
+              const firstClosingBrace = textAfterOpening.indexOf('}}');
+              if (firstClosingBrace === -1) {
+                return null; // 没有找到 }}，不是完整的变量引用，使用原有逻辑
+              }
+
+              // 计算 }} 的绝对位置
+              const closingBracePos = from + 1 + firstClosingBrace + 2;
+
+              // 检查光标是否在这个范围内，且 to 在 from 之后（说明有输入内容）
+              if (to > from && to <= closingBracePos) {
+                return {
+                  from: openingBracePos,
+                  to: closingBracePos,
+                };
+              }
+            } else {
+              // from 是第一个 {，需要检查是否在已有的 {{...}} 中间
+              // 只有当 to > from 时（说明有输入内容），才检查是否在 {{...}} 中间
+              if (to <= from) {
+                return null; // 没有输入内容，使用原有逻辑
+              }
+
+              // 从 from 向前查找是否有另一个 {
+              const searchRange = 200;
+              const startPos = Math.max(0, from - searchRange);
+              const textBefore = doc.textBetween(startPos, from, '\n', '\n');
+
+              // 查找最后一个 {{ 的位置
+              const lastOpeningBrace = textBefore.lastIndexOf('{{');
+              if (lastOpeningBrace === -1) {
+                return null; // 没有找到 {{，不在变量引用中间
+              }
+
+              // 计算 {{ 的绝对位置
+              const openingBracePos = startPos + lastOpeningBrace;
+
+              // 检查 {{ 之后是否有 }}
+              const textAfterOpening = doc.textBetween(
+                openingBracePos + 2,
+                Math.min(doc.content.size, openingBracePos + 2 + searchRange),
+                '\n',
+                '\n',
+              );
+
+              // 查找第一个 }} 的位置
+              const firstClosingBrace = textAfterOpening.indexOf('}}');
+              if (firstClosingBrace === -1) {
+                return null; // 没有找到 }}，不是完整的变量引用，使用原有逻辑
+              }
+
+              // 计算 }} 的绝对位置
+              const closingBracePos =
+                openingBracePos + 2 + firstClosingBrace + 2;
+
+              // 检查光标是否在这个范围内，且 to 在 from 之后（说明有输入内容）
+              // 同时确保 from 在 {{ 之后（说明确实在 {{...}} 中间）
+              if (
+                from > openingBracePos + 1 &&
+                to > from &&
+                to <= closingBracePos
+              ) {
+                return {
+                  from: openingBracePos,
+                  to: closingBracePos,
+                };
+              }
+            }
+
+            return null;
+          };
+
+          // 尝试查找完整的变量引用范围
+          const variableRange = findVariableRange();
+          if (variableRange) {
+            // 如果光标在 {{...}} 中间，使用完整的范围
+            from = variableRange.from;
+            to = variableRange.to;
+          } else {
+            // 否则，使用原有的逻辑：检查下一个字符是否是 }，如果是则包含它
+            const nextChar =
+              to + 1 <= doc.content.size ? doc.textBetween(to, to + 1) : '';
+            // 也检查 to+1 位置的字符，因为 AutoCompleteBraces 可能已经插入了 }
+            const charAfterTo =
+              to + 2 <= doc.content.size ? doc.textBetween(to + 1, to + 2) : '';
+            const hasClosingBrace = nextChar === '}' || charAfterTo === '}';
+
+            // 如果下一个字符是 }，扩展 range 以包含它
+            if (hasClosingBrace) {
+              // 如果 nextChar 是 }，扩展 to 包含它
+              // 如果 charAfterTo 是 }，扩展 to+1 包含它
+              if (nextChar === '}') {
+                to = to + 1; // 包含 }
+              } else if (charAfterTo === '}') {
+                to = to + 2; // 包含 }（跳过中间的一个字符）
+              }
+            }
           }
 
-          // 删除 { 或 {} 并插入变量节点
-          editor
-            .chain()
-            .focus()
-            .deleteRange({ from, to })
-            .insertContent({
-              type: 'variable',
-              attrs: {
-                key: props.key,
-                label: props.label,
-                isTool: false,
-              },
-            })
-            .run();
+          // 删除 { 或 {} 并插入变量节点/标记/文本
+          const variableKey = props.attrs?.key || props.key || '';
+          const variableText = '{{' + variableKey + '}}';
+          const variableMode = this.options.variableMode || 'text';
 
-          // 检查插入后的文档状态
-          const afterInsertState = editor.state;
-          const afterInsertDoc = afterInsertState.doc;
-          const cursorPos = afterInsertState.selection.from;
+          if (useEditable) {
+            if (variableMode === 'text') {
+              // 方案C：纯文本模式
+              // 直接插入 {{variable}} 文本，依赖 VariableTextDecoration 自动应用样式
+              editor
+                .chain()
+                .focus()
+                .deleteRange({ from, to })
+                .insertContent(variableText)
+                .run();
 
-          // 检查插入后下一个字符是否已经是 }
-          // 注意：需要检查变量节点后面的文本节点，因为变量节点本身不包含 }
-          const nextCharAfterInsert = afterInsertDoc.textBetween(
-            cursorPos,
-            cursorPos + 1,
-          );
-          const textAfterInsert = afterInsertDoc.textBetween(
-            Math.max(0, cursorPos - 2),
-            Math.min(cursorPos + 2, afterInsertDoc.content.size),
-          );
+              // 将光标移到末尾
+              setTimeout(() => {
+                editor.commands.setTextSelection(from + variableText.length);
+              }, 0);
+            } else if (variableMode === 'mark') {
+              // 方案B：Mark模式
+              // 插入带标记的文本
+              editor
+                .chain()
+                .focus()
+                .deleteRange({ from, to })
+                .insertContent(variableText)
+                .run();
 
-          console.log(
-            'VariableSuggestion command - cursor position:',
-            cursorPos,
-          );
-          console.log(
-            'VariableSuggestion command - text after insert:',
-            textAfterInsert,
-          );
-          console.log(
-            'VariableSuggestion command - nextCharAfterInsert:',
-            nextCharAfterInsert,
-          );
+              // 将刚插入的文本标记为 editableVariable
+              const insertPos = from;
+              const insertEnd = from + variableText.length;
 
-          // 移除自动插入 } 的逻辑，因为 VariableNode 通过 CSS 伪类显示 }
-          // if (!hasClosingBrace && nextCharAfterInsert !== '}') {
-          //   console.log('VariableSuggestion command - inserting }');
-          //   // 在变量节点后插入 }
-          //   editor.chain().setTextSelection(cursorPos).insertContent('}').run();
-          // } else {
-          //   console.log(
-          //     'VariableSuggestion command - not inserting }, hasClosingBrace:',
-          //     hasClosingBrace,
-          //     'nextCharAfterInsert:',
-          //     nextCharAfterInsert,
-          //   );
-          // }
+              editor
+                .chain()
+                .setTextSelection({ from: insertPos, to: insertEnd })
+                .setMark('editableVariable', {
+                  key: variableKey,
+                  label: props.attrs?.label || props.label || '',
+                })
+                .setTextSelection(insertEnd) // 将光标移到末尾
+                .run();
+            } else {
+              // 方案A：Node模式（保留作为备选）
+              editor
+                .chain()
+                .focus()
+                .deleteRange({ from, to })
+                .insertContent({
+                  type: 'editableVariable',
+                  attrs: {
+                    key: variableKey,
+                    label: props.attrs?.label || props.label || '',
+                  },
+                  content: [
+                    {
+                      type: 'text',
+                      text: variableText,
+                    },
+                  ],
+                })
+                .run();
 
-          // 移除 setTimeout，因为 insertContent 已经正确设置了光标位置
-          // 且 setTimeout 可能会导致光标位置在某些情况下（如 inline node 后）出现问题
-          // setTimeout(() => {
-          //   const finalPos = editor.state.selection.from;
-          //   editor.commands.setTextSelection(finalPos);
-          // }, 0);
+              setTimeout(() => {
+                const currentPos = editor.state.selection.from;
+                editor.commands.setTextSelection(currentPos);
+              }, 0);
+            }
+          } else {
+            // 不可编辑变量节点：插入原子节点
+            editor
+              .chain()
+              .focus()
+              .deleteRange({ from, to })
+              .insertContent({
+                type: 'variable',
+                attrs: {
+                  key: props.attrs?.key || props.key || '',
+                  label: props.attrs?.label || props.label || '',
+                  isTool: false,
+                },
+              })
+              .run();
+
+            // 对于原子节点，光标应该已经在节点之后，但为了确保，我们也设置一下
+            requestAnimationFrame(() => {
+              const { state, dispatch } = editor.view;
+              const { selection, doc } = state;
+              const { $from } = selection;
+
+              // 从当前光标位置向前查找变量节点
+              let foundNodePos = -1;
+              let foundNodeSize = 0;
+
+              // 从当前光标位置向前查找（最多查找 200 个字符）
+              const searchRange = 200;
+              const startPos = Math.max(0, $from.pos - searchRange);
+
+              for (let pos = $from.pos; pos >= startPos; pos--) {
+                try {
+                  const resolvedPos = doc.resolve(pos);
+                  // 检查当前深度下的节点
+                  for (let depth = resolvedPos.depth; depth >= 0; depth--) {
+                    const node = resolvedPos.node(depth);
+                    if (node && node.type.name === 'variable') {
+                      const nodeStart = resolvedPos.start(depth);
+                      const nodeEnd = nodeStart + node.nodeSize;
+                      // 确保光标在节点内或节点后
+                      if (nodeStart <= $from.pos && $from.pos <= nodeEnd) {
+                        foundNodePos = nodeStart;
+                        foundNodeSize = node.nodeSize;
+                        break;
+                      }
+                    }
+                  }
+                  if (foundNodePos >= 0) break;
+                } catch (e) {
+                  // 忽略解析错误，继续查找
+                }
+              }
+
+              // 如果找到节点，将光标移动到节点之后
+              if (foundNodePos >= 0 && foundNodeSize > 0) {
+                const targetPos = foundNodePos + foundNodeSize;
+                if (targetPos <= doc.content.size) {
+                  const selection = TextSelection.create(doc, targetPos);
+                  const tr = state.tr.setSelection(selection);
+                  dispatch(tr);
+                }
+              }
+            });
+          }
         }
       },
     });

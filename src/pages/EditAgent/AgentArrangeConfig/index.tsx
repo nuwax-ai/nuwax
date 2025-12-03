@@ -34,7 +34,9 @@ import type {
   GroupMcpInfo,
 } from '@/types/interfaces/agentConfig';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
 import { PageArgConfig } from '@/types/interfaces/pageDev';
+import type { RequestResponse } from '@/types/interfaces/request';
 import { loopSetBindValueType } from '@/utils/deepNode';
 import { useRequest } from 'ahooks';
 import { CollapseProps, message, Switch, Tooltip } from 'antd';
@@ -70,8 +72,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   agentId,
   agentConfigInfo,
   onChangeAgent,
-  onConfirmUpdateEventQuestions,
   onInsertSystemPrompt,
+  onVariablesChange,
+  onToolsChange,
 }) => {
   // 插件弹窗
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
@@ -273,6 +276,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const { runAsync: runVariables } = useRequest(apiAgentVariables, {
     manual: true,
     debounceWait: 300,
+    onSuccess: (result: RequestResponse<BindConfigWithSub[]>) => {
+      const { data } = result;
+      // 同步变量列表到父组件
+      if (onVariablesChange && data) {
+        onVariablesChange(data);
+      }
+    },
+    onError: (error) => {
+      message.error(error.message);
+    },
   });
 
   // 删除智能体组件配置
@@ -351,6 +364,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       setAddComponents(list);
     }
   };
+  useEffect(() => {
+    if (onToolsChange && agentComponentList) {
+      onToolsChange(agentComponentList);
+    }
+  }, [agentComponentList]);
 
   // 新增智能体插件、工作流、知识库组件配置
   const { run: runComponentAdd } = useRequest(apiAgentComponentAdd, {
@@ -734,17 +752,46 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       case EventListEnum.InsertSystemPrompt:
         if (onInsertSystemPrompt) {
           // 格式化事件配置信息
-          const eventText = `返回内容后面追加引用信息如下\n<div class="event" event-type="${
-            item.identification
-          }" data='动态JSON参数'>[#引用编号]</div>\n
-${item.identification}的动态JSON参数JsonSchema如下\n
-\`\`\`
-${
-  item.argJsonSchema
-    ? JSON.stringify(JSON.parse(item.argJsonSchema), null, 2)
-    : '{\n "type": "object", "properties": {}, "required": []\n}'
-}
-\`\`\``;
+          // 解析 JSON Schema
+          const jsonSchema = item.argJsonSchema
+            ? JSON.parse(item.argJsonSchema)
+            : { type: 'object', properties: {}, required: [] };
+          const jsonSchemaString = JSON.stringify(jsonSchema, null, 2);
+
+          // 导入转义函数（如果还没有导入，需要在文件顶部添加）
+          // import { escapeHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
+
+          // 将 JSON Schema 的每一行用 <p> 标签包裹（需要转义内容）
+          const jsonSchemaLines = jsonSchemaString
+            .split('\n')
+            .map(
+              (line) =>
+                `<p>${line
+                  .replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&#039;')}</p>`,
+            )
+            .join('');
+
+          // 构建事件标签的 HTML（需要转义）
+          const eventTagHtml = `<div class="event" event-type="${item.identification}" data='动态JSON参数'>[#引用编号]</div>`;
+          const escapedEventTag = eventTagHtml
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+          // 转义 identification 字段
+          const escapedIdentification = item.identification
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+
+          // 构建完整的 HTML 格式文本
+          const eventText = `<p>返回内容后面追加引用信息如下</p><p>${escapedEventTag}</p><p><br class="ProseMirror-trailingBreak"></p><p>${escapedIdentification}的动态JSON参数JsonSchema如下</p><p>\`\`\`</p>${jsonSchemaLines}<p>\`\`\`</p>`;
+
           onInsertSystemPrompt(eventText);
           message.success('已插入到系统提示词');
         } else {
@@ -768,7 +815,6 @@ ${
           agentConfigInfo={agentConfigInfo}
           pageArgConfigs={pageArgConfigs}
           onChangeAgent={onChangeAgent}
-          onConfirmUpdateEventQuestions={onConfirmUpdateEventQuestions}
         />
       ),
       classNames: {

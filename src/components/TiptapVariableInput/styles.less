@@ -34,13 +34,13 @@
     /* stylelint-disable-next-line selector-class-pattern */
     .ProseMirror {
       outline: none;
-      padding: @paddingSm @padding;
+      padding: 4px 2px 4px 12px;
       min-height: 100px;
       font-family: inherit;
       font-size: @fontSize;
       line-height: 1.5715;
       color: @colorText;
-      background-color: #fff;
+      background-color: @colorBgContainer;
 
       // 段落样式
       p {
@@ -50,7 +50,7 @@
         &.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
-          color: #bfbfbf;
+          color: @colorTextPlaceholder;
           pointer-events: none;
           height: 0;
         }
@@ -68,6 +68,67 @@
       &.ProseMirror-focused {
         outline: none;
       }
+
+      // Markdown 语法高亮样式
+      // 这些样式直接应用到 ProseMirror 编辑器内容上
+      .md-header-mark {
+        color: @purple6;
+        font-weight: @fontWeightStrong;
+      }
+
+      .md-header-text {
+        color: @purple6;
+        font-weight: @fontWeightStrong;
+      }
+
+      .md-bold {
+        color: @colorWarning; // 使用警告色（通常是橙色/黄色）作为强调
+        font-weight: @fontWeightStrong;
+      }
+
+      .md-italic {
+        color: @purple6; // 使用紫色作为斜体高亮
+        font-style: italic;
+      }
+
+      .md-code {
+        color: @colorError; // 使用错误色（通常是红色）作为代码高亮
+        background-color: @colorFillTertiary;
+        border-radius: 2px;
+        padding: 0 2px;
+        font-family: @fontFamilyCode;
+        font-size: 0.9em;
+      }
+
+      .md-list-mark {
+        color: @colorSuccess;
+        font-weight: @fontWeightStrong;
+      }
+
+      .md-quote-mark {
+        color: @colorTextQuaternary;
+        font-weight: @fontWeightStrong;
+      }
+
+      .md-quote-text {
+        color: @colorTextSecondary;
+        font-style: italic;
+      }
+
+      .md-link {
+        color: @colorLink;
+        text-decoration: underline;
+        cursor: pointer;
+
+        &:hover {
+          color: @colorLinkHover;
+        }
+      }
+
+      .md-strikethrough {
+        color: @colorTextTertiary;
+        text-decoration: line-through;
+      }
     }
   }
 
@@ -77,100 +138,153 @@
     position: absolute;
     top: @paddingSm;
     left: @padding;
-    color: #bfbfbf;
+    color: @colorTextPlaceholder;
     pointer-events: none;
     z-index: 2;
   }
 
-  // Variable 节点样式（使用标准的 span 标签，大括号通过 CSS 伪类实现）
+  // Variable 节点样式（使用标准的 span 标签，大括号通过真实 DOM 元素实现）
   .variable-block-chip {
-    display: inline-block !important;
-    background-color: #e6f7ff !important;
-    color: #1890ff !important;
-    margin: 0 1px !important;
-    font-size: 12px !important;
-    line-height: 20px !important;
-    user-select: none !important;
-    vertical-align: middle !important;
-    font-family: Monaco, Menlo, 'Courier New', monospace !important;
+    display: inline-block;
+    background-color: @colorInfoBg;
+    color: @colorInfo;
+    padding: 0 @paddingXxs; // 增加内边距
+    border: 1px solid transparent; // 增加透明边框以对齐高度
+    margin: 0 @marginXxs; // 调整边距：移除上下边距，保留左右边距
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    user-select: none;
+    vertical-align: baseline; // 改为 baseline 对齐
+    font-family: @fontFamilyCode;
   }
 
-  .variable-block-chip::before {
-    content: '{{' !important;
+  // 变量节点容器中的大括号样式（真实 DOM 元素）
+  // 大括号元素是变量节点的兄弟元素
+  span:has(+ .variable-block-chip),
+  .variable-block-chip + span {
+    color: @colorInfo;
+    font-family: @fontFamilyCode;
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    vertical-align: baseline;
+    user-select: none;
   }
 
-  .variable-block-chip::after {
-    content: '}}' !important;
-  }
+  // 移除 ::before 和 ::after 伪元素，改用真实 DOM 元素
+  // .variable-block-chip::before {
+  //   content: '{{' !important;
+  // }
+
+  // .variable-block-chip::after {
+  //   content: '}}' !important;
+  // }
 
   .variable-block-chip.variable-active {
-    background-color: rgba(46, 46, 56, 8%) !important;
+    background-color: @colorFillSecondary !important;
   }
 
-  // ToolBlock 节点样式（完全参考 VariableInferenceInput）
+  // 可编辑 Variable 节点样式（仅高亮字符颜色，无背景和边距）
+  .variable-block-chip-editable {
+    display: inline;
+    background-color: transparent;
+    color: @colorInfo;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+    line-height: inherit;
+    user-select: text; // 允许文本选择
+    vertical-align: baseline;
+    font-family: @fontFamilyCode;
+    cursor: text; // 显示文本光标
+    outline: none; // 移除默认轮廓
+  }
+
+  // 可编辑变量节点聚焦状态（保持仅颜色高亮）
+  .variable-block-chip-editable:focus {
+    background-color: transparent;
+    border: none;
+    outline: none;
+  }
+
+  // 方案C：纯文本装饰样式
+  .variable-text-decoration {
+    color: @colorInfo;
+    font-family: @fontFamilyCode;
+    background-color: transparent;
+  }
+
+  // ToolBlock 节点样式
   .tool-block-chip {
-    display: inline-block !important;
-    background-color: #f6ffed !important;
-    color: #52c41a !important;
-    padding: 0 4px !important;
-    border-radius: 4px !important;
-    margin: 0 2px !important;
-    font-size: 12px !important;
-    line-height: 20px !important;
-    border: 1px solid #b7eb8f !important;
-    user-select: none !important;
-    vertical-align: middle !important;
-    cursor: default !important;
+    display: inline-block;
+    background-color: @colorSuccessBg;
+    color: @colorSuccess;
+    padding: 0 @paddingXxs;
+    border-radius: @borderRadiusSm;
+    margin: 0 @marginXxs; // 调整边距：移除上下边距，保留左右边距
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    // border: 1px solid @colorSuccessBorder;
+    user-select: none;
+    vertical-align: baseline; // 改为 baseline 对齐
+    cursor: default;
   }
 
   // Mention 节点样式
   .mention-node {
-    display: inline-block !important;
-    background-color: #e6f7ff !important;
-    color: #1890ff !important;
-    padding: 2px 6px !important;
-    border-radius: 4px !important;
-    margin: 0 2px !important;
-    font-size: 12px !important;
-    line-height: 20px !important;
-    border: 1px solid #91d5ff !important;
-    user-select: none !important;
-    vertical-align: middle !important;
-    cursor: default !important;
+    display: inline-block;
+    background-color: @colorInfoBg;
+    color: @colorInfo;
+    padding: @paddingXxs @paddingXs;
+    border-radius: @borderRadiusSm;
+    margin: @marginXxs;
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    border: 1px solid @colorInfoBorder;
+    user-select: none;
+    vertical-align: baseline;
+    cursor: default;
   }
 
   .mention-node:hover {
-    background-color: #bae7ff !important;
+    background-color: @colorInfoBgHover;
   }
 }
 
 // Suggestion 弹窗样式
-.mention-suggestion-popup,
-.variable-suggestion-popup {
-  background: #fff;
-  border: 1px solid #d9d9d9;
-  border-radius: @borderRadius;
-  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 8%), 0 3px 6px -4px rgba(0, 0, 0, 12%),
-    0 9px 28px 8px rgba(0, 0, 0, 5%);
-  width: 300px;
-  height: 240px;
-  z-index: 9999;
-}
+// .mention-suggestion-popup,
+// .variable-suggestion-popup {
+//   background: @colorBgContainer;
+//   border: @lineWidth solid @colorBorderSecondary;
+//   border-radius: @borderRadius;
+//   width: 300px;
+//   height: calc(@controlHeight * 7.5); // 约 240px，基于 controlHeight
+//   z-index: @zIndexPopupBase;
+// }
 
 // 变量建议弹窗样式
 .variable-suggestion-popup .ant-tree-node-selected {
-  background-color: #e6f7ff !important;
+  background-color: @colorFillSecondary !important;
 }
 
-.variable-suggestion-popup .ant-tree-node-selected .ant-tree-title {
-  color: #1890ff !important;
-  font-weight: 500;
-}
+// .variable-suggestion-popup .ant-tree-node-selected .ant-tree-title {
+//   color: @colorInfo !important;
+//   font-weight: 500;
+// }
 
 .variable-suggestion-popup .ant-tree-node-content-wrapper:hover {
-  background-color: #f5f5f5;
+  background-color: @colorFillSecondary;
 }
 
+.variable-suggestion-popup .ant-tree-list-holder-inner {
+  padding-top: @paddingSm;
+  padding-right: @padding;
+}
+
+// .variable-suggestion-popup
+//   .ant-tabs-content-holder
+//   .ant-tree-list-holder-inner {
+//   padding-top: 0;
+// }
 // Tabs 样式调整
 .variable-suggestion-tabs {
   height: 100%;
@@ -181,11 +295,64 @@
     height: 100%;
 
     .ant-tabs-content {
-      height: calc(100% - 38px); // 减去 tab header 高度
+      overflow: hidden;
+      scrollbar-gutter: stable;
+      height: 100%;
+
+      &:hover {
+        overflow: auto;
+      }
     }
 
     .ant-tabs-tabpane {
       height: 100%;
     }
   }
+}
+
+// 工具变量列表容器样式
+.variable-tool-list-container {
+  padding: @paddingSm @padding @paddingSm 24px;
+}
+
+// 工具变量列表项样式
+.variable-tool-list-item {
+  padding: 0 @paddingSm;
+  line-height: 24px;
+  border-radius: @borderRadius;
+  cursor: pointer;
+  background-color: transparent;
+  transition: background-color 0.2s;
+
+  &:hover:not(.selected) {
+    background-color: @colorFillSecondary;
+  }
+
+  &.selected {
+    background-color: @colorFillSecondary;
+  }
+}
+
+// 工具变量列表项内容样式
+.variable-tool-list-item-content {
+  display: flex;
+  align-items: center;
+  gap: @marginSm;
+  white-space: nowrap;
+  width: 100%;
+}
+
+// 工具变量列表项标签样式
+.variable-tool-list-item-label {
+  flex: 1;
+  font-size: @fontSizeSm;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// 工具变量列表项类型标签样式
+.variable-tool-list-item-type {
+  font-size: 11px;
+  color: @colorTextTertiary;
+  flex-shrink: 0;
 }
