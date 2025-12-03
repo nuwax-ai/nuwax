@@ -106,7 +106,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       setIframeDesignMode,
       pendingChanges,
       setPendingChanges,
-    } = useModel('appDev');
+      selectedElement,
+      setLocalTextContent,
+      parseTailwindClassesAndUpdateStates,
+    } = useModel('appDevDesign');
 
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -1104,7 +1107,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // 保存失败后，关闭保存状态
         setIsSaving(false);
         console.error('[DesignViewer] Error saving changes:', error);
-        message.error('保存出错，请检查网络连接');
       }
     };
 
@@ -1152,6 +1154,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 '*',
               );
             }
+
+            // 根据当前选择的元素的 className和 textContent 解析 Tailwind 类名并更新本地状态
+            parseTailwindClassesAndUpdateStates(
+              selectedElement?.className || '',
+            );
+            setLocalTextContent(selectedElement?.textContent || '');
           } catch (error) {
             console.error(
               `[Preview] 恢复更改失败 (${type}):`,
@@ -1207,7 +1215,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             })}
           >
             <WarningOutlined className={styles['warning-icon']} />
-            <span className={styles['unsaved-text']}>Unsaved Changes</span>
+            <span className={styles['unsaved-text']}>未保存的更改</span>
             <Button
               type="text"
               className={styles['reset-button']}
