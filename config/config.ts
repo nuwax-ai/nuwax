@@ -157,6 +157,43 @@ export default defineConfig({
       },
     ]);
 
+    // 复制并压缩 tailwind_design_mode.all.css
+    config.plugin('copy-tailwind-css').use(CopyWebpackPlugin, [
+      {
+        patterns: [
+          {
+            from: path.resolve(
+              __dirname,
+              '../public/sdk/tailwind_design_mode.all.css',
+            ),
+            to: 'sdk/tailwind_design_mode.all.css',
+            force: true,
+            // 使用 transform 在复制时进行压缩
+            transform: async (content: Buffer) => {
+              const css = content.toString('utf-8');
+              // 动态导入 clean-css 进行压缩
+              const CleanCSS = (await import('clean-css')).default;
+              const minifier = new CleanCSS({
+                level: 2, // 启用所有优化级别
+                format: false, // 不格式化输出
+                returnPromise: false,
+              });
+              const result = minifier.minify(css);
+              if (result.errors && result.errors.length > 0) {
+                console.warn(
+                  'CSS minification warnings:',
+                  result.errors.join('\n'),
+                );
+              }
+              // 确保返回压缩后的 CSS
+              const minifiedCss = result.styles || css;
+              return Buffer.from(minifiedCss, 'utf-8');
+            },
+          },
+        ],
+      },
+    ]);
+
     config.plugin('monaco').use(MonacoWebpackPlugin, [
       {
         languages: [
