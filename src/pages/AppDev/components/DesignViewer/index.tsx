@@ -879,36 +879,29 @@ const DesignViewer: React.FC = () => {
         }
         // 过滤掉匹配正则的字体大小类名（如 text-lg, text-sm, text-3xl 等）
         return !matchesFontSize;
-      }
-
-      // 如果是文本对齐相关的操作
-      if (attribute === 'textAlign') {
+      } else if (attribute === 'textAlign') {
+        // 如果是文本对齐相关的操作
         // 重置正则表达式的 lastIndex，避免状态问题
-        regex.lastIndex = 0;
+        // regex.lastIndex = 0;
         // 先测试是否匹配文本对齐正则
         const matchesTextAlign = regex.test(c);
         // 如果匹配文本对齐正则（如 text-left, text-center, text-right, text-justify），过滤掉
+        // 这样当选择新的 textAlign 时，旧的会被清除，新的会被添加
+        // 当选择 reset 时，所有 textAlign 类名都会被清除
         if (matchesTextAlign) {
           return false;
         }
         // 保留非文本对齐的 text- 类名（如字体大小、颜色等）
-        // 以及字体大小类名
-        if (
-          (c.startsWith('text-') && !matchesTextAlign) ||
-          fontSizeClasses.includes(c)
-        ) {
+        // 以及字体大小类名和其他非 text- 开头的类名
+        return true;
+      } else {
+        // 非字体大小操作：排除字体大小相关的类（如 text-xs, text-sm 等）
+        if (fontSizeClasses.includes(c) || c.includes('text-center')) {
           return true;
         }
-        // 其他类名保留（非 text- 开头的类名）
-        return true;
+        // 其他类按原来的逻辑过滤
+        return !regex.test(c);
       }
-
-      // 非字体大小操作：排除字体大小相关的类（如 text-xs, text-sm 等）
-      if (fontSizeClasses.includes(c) || c.includes('text-center')) {
-        return true;
-      }
-      // 其他类按原来的逻辑过滤
-      return !regex.test(c);
     });
 
     // Add new style if it's not empty (allows clearing style)
@@ -1256,6 +1249,7 @@ const DesignViewer: React.FC = () => {
       // 通过 toggleStyle 方法将 text align 样式写入 editingClass
       // value 是用户友好的标签（如 'left'），需要转换为 Tailwind 类名（如 'text-left'）
       const textAlignClass = convertLabelToTextAlignClass(align);
+      console.log(textAlignClass, 'textAlignClass1111111');
       if (textAlignClass) {
         toggleStyle(textAlignClass, TEXT_ALIGN_REGEXP, 'textAlign');
       } else {
