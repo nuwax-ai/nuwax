@@ -778,7 +778,9 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
     };
 
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
   }, [pendingChanges]);
 
   // Upsert pending change
