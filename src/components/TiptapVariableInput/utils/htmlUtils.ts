@@ -4,6 +4,51 @@
  */
 
 /**
+ * 匹配事件标签的正则表达式
+ * 匹配 <div class="event" ...>...</div>
+ * 使用更通用的正则：只要是 div 且包含 class="event" 就匹配，忽略属性顺序和内容
+ */
+export const EVENT_TAG_REGEX =
+  /<div\s+class="event"\s+event-type="[^"]*"\s+data='[^']*'>\[([^\]]*)\]<\/div>/g;
+
+/**
+ * 转义 HTML 特殊字符
+ * @param text 需要转义的文本
+ * @returns 转义后的文本
+ */
+export const escapeHTML = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+/**
+ * 转义事件标签
+ * 将 <div class="event" event-type="xxx" data='xxx'>[xxx]</div> 格式的事件标签转义为纯文本显示
+ * @param text 需要处理的文本
+ * @returns 处理后的文本
+ */
+export const escapeEventTags = (text: string): string => {
+  if (!text) return '';
+
+  return text.replace(EVENT_TAG_REGEX, (match) => {
+    // 将整个事件标签转义
+    return match
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  });
+};
+
+// ... (intermediate code omitted) ...
+
+/**
  * 从 Tiptap HTML 中提取纯文本内容
  * 将 mentions 和 variables 节点转换为对应的文本格式
  * @param html Tiptap HTML 内容
@@ -32,9 +77,11 @@ export const extractTextFromHTML = (html: string): string => {
     toolBlock.parentNode?.replaceChild(textNode, toolBlock);
   });
 
-  // 处理 variables
-  // Tiptap 实际渲染为 span.variable-block-chip（标准 HTML 标签）
-  const variables = temp.querySelectorAll('span.variable-block-chip');
+  // 处理 variables（包括可编辑和不可编辑的变量节点）
+  // Tiptap 实际渲染为 span.variable-block-chip 或 span.variable-block-chip-editable（标准 HTML 标签）
+  const variables = temp.querySelectorAll(
+    'span.variable-block-chip, span.variable-block-chip-editable',
+  );
   variables.forEach((variable) => {
     // 变量转换为 {{key}} 格式
     // 从 data-key 属性获取 key，或者从文本内容获取（新格式中文本内容就是 key）
@@ -120,7 +167,8 @@ export const extractTextFromHTML = (html: string): string => {
 
   // 清理多余的连续换行（最多保留两个连续换行）
   // 注意：不使用 trim()，保留首尾的换行符以保留空行
-  return result.replace(/\n{3,}/g, '\n\n');
+  // 同时移除零宽度空格 (\u200B)
+  return result.replace(/\n{3,}/g, '\n\n').replace(/\u200B/g, '');
 };
 
 /**
@@ -170,18 +218,23 @@ export const cleanHTMLParagraphs = (
  * 识别 {{variable}} 和 @mentions 格式
  * @param text 纯文本内容或 HTML 内容
  * @param disableMentions 是否禁用 mentions 转换
+ * @param enableEditableVariables 是否启用可编辑变量节点，默认开启
+ * @param variableMode 变量模式：'node' | 'mark' | 'text'，默认 'text'
  * @returns Tiptap HTML 内容
  */
 export const convertTextToHTML = (
   text: string,
   disableMentions: boolean = false,
+  enableEditableVariables: boolean = true,
+  variableMode: 'node' | 'mark' | 'text' = 'text',
 ): string => {
   if (!text) return '';
 
-  // 检查是否已经是 HTML 格式（包含 HTML 标签）
-  const isHTML = /<[^>]+>/.test(text);
+  // 首先转义事件标签,使其显示为纯文本而不是被浏览器解析
+  let html = escapeEventTags(text);
 
-  let html = text;
+  // 检查是否已经是 HTML 格式（包含 HTML 标签）
+  const isHTML = /<[^>]+>/.test(html);
 
   // 如果已经是 HTML 格式，保留空行，不清理首尾的空段落
   if (isHTML) {
@@ -199,10 +252,18 @@ export const convertTextToHTML = (
   );
 
   // 转换 {{variable}} 格式
-  html = html.replace(
-    /\{\{([^}]+)\}\}/g,
-    '<span class="variable-block-chip" data-key="$1" data-label="$1" data-variable-name="$1">$1</span>',
-  );
+  // 如果是 'text' 模式，不进行转换，保留纯文本
+  if (variableMode !== 'text') {
+    // 根据 enableEditableVariables 配置决定使用可编辑或不可编辑节点
+    // 移除零宽度空格，避免光标跳动和输出污染
+    const variableClass = enableEditableVariables
+      ? 'variable-block-chip-editable'
+      : 'variable-block-chip';
+    html = html.replace(
+      /\{\{([^}]+)\}\}/g,
+      `<span class="${variableClass}" data-key="$1" data-label="$1" data-variable-name="$1">$1</span>`,
+    );
+  }
 
   // 转换 @mentions 格式（简单匹配，实际应该更智能）
   if (!disableMentions) {
@@ -240,4 +301,30 @@ export const convertTextToHTML = (
   });
 
   return paragraphs.join('');
+};
+
+/**
+ * 判断文本是否需要转换为 HTML
+ * 检查是否包含工具块、变量、Mentions 或事件标签
+ * @param text 需要检查的文本
+ * @returns 是否需要转换
+ */
+export const shouldConvertTextToHTML = (text: string): boolean => {
+  if (!text) return false;
+
+  // 检查工具块
+  if (text.includes('{#ToolBlock')) return true;
+
+  // 检查变量
+  if (text.includes('{{')) return true;
+
+  // 检查 Mentions
+  if (text.includes('@')) return true;
+
+  // 检查事件标签 (使用通用的正则)
+  // 重置正则的 lastIndex，因为它是全局匹配
+  EVENT_TAG_REGEX.lastIndex = 0;
+  if (EVENT_TAG_REGEX.test(text)) return true;
+
+  return false;
 };

@@ -2,10 +2,8 @@ import CreateAgent from '@/components/CreateAgent';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import ResizableSplit from '@/components/ResizableSplit';
 import ShowStand from '@/components/ShowStand';
-import {
-  PromptVariable,
-  VariableType,
-} from '@/components/VariableInferenceInput/types';
+import type { PromptVariable } from '@/components/TiptapVariableInput/types';
+import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import VersionHistory from '@/components/VersionHistory';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
@@ -26,18 +24,24 @@ import {
   AgentBaseInfo,
   AgentComponentInfo,
   AgentConfigInfo,
+  AgentConfigUpdateParams,
   ComponentModelBindConfig,
   GuidQuestionDto,
 } from '@/types/interfaces/agent';
-import { AnalyzeStatisticsItem } from '@/types/interfaces/common';
+import type {
+  AnalyzeStatisticsItem,
+  BindConfigWithSub,
+} from '@/types/interfaces/common';
+import { RequestResponse } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import { exportConfigFile } from '@/utils/exportImportFile';
+import { useRequest } from 'ahooks';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
-import React, { useEffect, useRef, useState } from 'react';
-import { history, useModel, useParams, useRequest } from 'umi';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { history, useModel, useParams } from 'umi';
 import PagePreviewIframe from '../../components/business-component/PagePreviewIframe';
 import AgentArrangeConfig from './AgentArrangeConfig';
 import AgentHeader from './AgentHeader';
@@ -65,6 +69,8 @@ const EditAgent: React.FC = () => {
   const { navigationStyle } = useUnifiedTheme();
   // 智能体配置信息
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
+  const [promptVariables, setPromptVariables] = useState<PromptVariable[]>([]);
+  const [promptTools, setPromptTools] = useState<AgentComponentInfo[]>([]);
   const {
     cardList,
     showType,
@@ -72,37 +78,14 @@ const EditAgent: React.FC = () => {
     setIsSuggest,
     messageList,
     setChatSuggestList,
-    // setMessageList,
+    setIsLoadingConversation,
+    runQueryConversation,
   } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
   // 智能体组件列表
   const [agentComponentList, setAgentComponentList] = useState<
     AgentComponentInfo[]
   >([]);
-
-  // 转换变量类型的辅助函数
-  const transformToPromptVariables = (configs: any[]): PromptVariable[] => {
-    if (!configs) return [];
-    return configs.map((item) => {
-      const typeStr = item.dataType?.toLowerCase() || 'string';
-      // 简单的类型映射，根据实际情况调整
-      let type: VariableType = VariableType.String;
-      if (Object.values(VariableType).includes(typeStr as VariableType)) {
-        type = typeStr as VariableType;
-      }
-
-      return {
-        key: item.key || item.name,
-        name: item.name,
-        type: type,
-        label: item.name, // 使用 name 作为 label
-        description: item.description || '',
-        children: item.children
-          ? transformToPromptVariables(item.children)
-          : undefined,
-      };
-    });
-  };
 
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -111,38 +94,98 @@ const EditAgent: React.FC = () => {
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
     manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: AgentConfigInfo) => {
-      setAgentConfigInfo(result);
+    debounceWait: 300,
+    onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
+      setAgentConfigInfo(result?.data);
     },
   });
 
   // 查询智能体组件列表
   const { run: runComponentList } = useRequest(apiAgentComponentList, {
     manual: true,
-    debounceInterval: 300,
-    onSuccess: (data: AgentComponentInfo[]) => {
+    debounceWait: 300,
+    onSuccess: (result: RequestResponse<AgentComponentInfo[]>) => {
+      const { data } = result;
       setAgentComponentList(data || []);
     },
   });
 
+  // 查询智能体配置信息
   const { run: runUpdateAgent } = useRequest(apiAgentConfigInfo, {
     manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: AgentConfigInfo) => {
+    debounceWait: 300,
+    onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
+      const { data } = result;
       const _agentConfigInfo = {
         ...agentConfigInfo,
-        pageHomeIndex: result.pageHomeIndex,
+        pageHomeIndex: data?.pageHomeIndex,
       } as AgentConfigInfo;
 
       setAgentConfigInfo(_agentConfigInfo);
     },
   });
 
+  useEffect(() => {
+    const _variablesInfo = agentComponentList?.find(
+      (item: AgentComponentInfo) =>
+        item.type === AgentComponentTypeEnum.Variable,
+    );
+    setPromptVariables(
+      transformToPromptVariables(_variablesInfo?.bindConfig?.variables || []),
+    );
+    setPromptTools(
+      agentComponentList
+        ?.filter(
+          (item: AgentComponentInfo) =>
+            item.type === AgentComponentTypeEnum.Plugin ||
+            item.type === AgentComponentTypeEnum.Workflow ||
+            item.type === AgentComponentTypeEnum.MCP,
+        )
+        ?.map((item: AgentComponentInfo) => ({
+          ...item,
+          id: item.targetId,
+        })) || [],
+    );
+  }, [agentComponentList]);
+
+  // 处理变量列表变化，同步到 promptVariables
+  const handleVariablesChange = useCallback(
+    (variables: BindConfigWithSub[]) => {
+      setPromptVariables((prev) => {
+        const systemVariables = prev.filter((item) => item.systemVariable);
+        return [
+          ...systemVariables,
+          ...transformToPromptVariables(variables || []),
+        ];
+      });
+    },
+    [],
+  );
+
+  // 处理工具列表变化，同步到 promptTools
+  const handleToolsChange = useCallback(
+    (_agentComponentList: AgentComponentInfo[]) => {
+      setPromptTools(
+        _agentComponentList
+          ?.filter(
+            (item: AgentComponentInfo) =>
+              item.type === AgentComponentTypeEnum.Plugin ||
+              item.type === AgentComponentTypeEnum.Workflow ||
+              item.type === AgentComponentTypeEnum.MCP,
+          )
+          ?.map((item: AgentComponentInfo) => ({
+            ...item,
+            id: item.targetId,
+          })) || [],
+      );
+    },
+    [],
+  );
+
   // 更新智能体基础配置信息
-  const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
+  const { runAsync: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
-    debounceInterval: 1000,
+    debounceWait: 600,
   });
 
   useEffect(() => {
@@ -157,12 +200,12 @@ const EditAgent: React.FC = () => {
   }, []);
 
   // 绑定的变量信息
-  const variablesInfo = React.useMemo(() => {
-    return agentComponentList?.find(
-      (item: AgentComponentInfo) =>
-        item.type === AgentComponentTypeEnum.Variable,
-    );
-  }, [agentComponentList]);
+  // const variablesInfo = React.useMemo(() => {
+  //   return agentComponentList?.find(
+  //     (item: AgentComponentInfo) =>
+  //       item.type === AgentComponentTypeEnum.Variable,
+  //   );
+  // }, [agentComponentList]);
 
   // 确认编辑智能体
   const handlerConfirmEditAgent = (info: AgentBaseInfo) => {
@@ -212,10 +255,6 @@ const EditAgent: React.FC = () => {
     }
 
     setAgentConfigInfo(_agentConfigInfo);
-    // @ts-ignore
-    // setMessageList(prev => prev.map(item =>
-    //   item.id === null ? {...item, text: _agentConfigInfo.openingChatMsg} : item
-    // ))
 
     // 预置问题, 并且没有消息时，更新建议预置问题列表
     if (attr === 'guidQuestionDtos' && !messageList?.length) {
@@ -232,55 +271,123 @@ const EditAgent: React.FC = () => {
   };
 
   // 更新智能体信息
-  const handleChangeAgent = (
-    value: string | string[] | number | GuidQuestionDto[],
-    attr: string,
-  ) => {
-    // 更新智能体配置信息
-    const _agentConfigInfo = handleUpdateEventQuestions(value, attr);
-    // 用户问题建议
-    if (attr === 'openSuggest') {
-      setIsSuggest(value === OpenCloseEnum.Open);
-    }
-    // 打开扩展页面时，检查页面是否存在
-    // 展开页面区在删除页面后重新添加没有后端接口没有返回添加的页面地址，需要前端手动刷新
-    if (attr === 'expandPageArea') {
-      runUpdateAgent(agentId);
-    }
+  const handleChangeAgent = useCallback(
+    async (
+      value: string | string[] | number | GuidQuestionDto[],
+      attr: string,
+    ) => {
+      // 获取当前配置信息
+      const currentConfig = agentConfigInfo;
 
-    const {
-      id,
-      name,
-      description,
-      icon,
-      userPrompt,
-      openSuggest,
-      systemPrompt,
-      suggestPrompt,
-      openingChatMsg,
-      openScheduledTask,
-      openLongMemory,
-      expandPageArea,
-      guidQuestionDtos,
-    } = _agentConfigInfo;
+      // 如果配置信息还未加载，跳过处理
+      if (!currentConfig) {
+        console.log('[EditAgent] 配置信息尚未加载，跳过更新:', attr);
+        return;
+      }
 
-    // 更新智能体信息
-    runUpdate({
-      id,
-      name,
-      description,
-      icon,
-      systemPrompt,
-      userPrompt,
-      openSuggest,
-      suggestPrompt,
-      openingChatMsg,
-      openScheduledTask,
-      openLongMemory,
-      expandPageArea,
-      guidQuestionDtos,
-    });
-  };
+      // 检查值是否有实际变化，避免不必要的API调用
+      const currentValue = currentConfig[attr as keyof AgentConfigInfo];
+
+      // 对于字符串类型，进行深度比较
+      if (typeof value === 'string' && typeof currentValue === 'string') {
+        // 如果值相同（都为空字符串或值相等），不触发更新
+        if (value === currentValue) {
+          return;
+        }
+      }
+
+      // 对于数组类型（如guidQuestionDtos），进行深度比较
+      if (Array.isArray(value) && Array.isArray(currentValue)) {
+        if (JSON.stringify(value) === JSON.stringify(currentValue)) {
+          console.log('[EditAgent] 数组值无变化，跳过API调用:', attr);
+          return;
+        }
+      }
+
+      // 对于布尔值，直接比较
+      if (typeof value === 'boolean' && typeof currentValue === 'boolean') {
+        if (value === currentValue) {
+          console.log('[EditAgent] 布尔值无变化，跳过API调用:', attr);
+          return;
+        }
+      }
+
+      // 对于数字类型，直接比较
+      if (typeof value === 'number' && typeof currentValue === 'number') {
+        if (value === currentValue) {
+          console.log('[EditAgent] 数字值无变化，跳过API调用:', attr);
+          return;
+        }
+      }
+
+      // 更新智能体配置信息
+      const _agentConfigInfo = handleUpdateEventQuestions(value, attr);
+      // 用户问题建议
+      if (attr === 'openSuggest') {
+        setIsSuggest(value === OpenCloseEnum.Open);
+      }
+      // 打开扩展页面时，检查页面是否存在
+      // 展开页面区在删除页面后重新添加没有后端接口没有返回添加的页面地址，需要前端手动刷新
+      if (attr === 'expandPageArea') {
+        runUpdateAgent(agentId);
+      }
+
+      const {
+        id,
+        name,
+        description,
+        icon,
+        userPrompt,
+        openSuggest,
+        systemPrompt,
+        suggestPrompt,
+        openingChatMsg,
+        openScheduledTask,
+        openLongMemory,
+        expandPageArea,
+        guidQuestionDtos,
+      } = _agentConfigInfo;
+
+      const params = {
+        id,
+        name,
+        description,
+        icon,
+        systemPrompt,
+        userPrompt,
+        openSuggest,
+        suggestPrompt,
+        openingChatMsg,
+        openScheduledTask,
+        openLongMemory,
+        expandPageArea,
+        guidQuestionDtos,
+      } as AgentConfigUpdateParams;
+
+      // 更新智能体信息
+      await runUpdate(params);
+
+      // 获取消息列表长度
+      const messageListLength = messageList?.length || 0;
+
+      /**
+       * 更新开场白预置问题列表, 当消息列表长度小于等于1时，更新开场白预置问题列表，
+       * 如果消息长度等于1，此消息是由开场白内容由后端填充的，所以需要同步更新
+       */
+      if (
+        (attr === 'openingChatMsg' && messageListLength <= 1) ||
+        (attr === 'guidQuestionDtos' && messageListLength === 1)
+      ) {
+        if (agentConfigInfo) {
+          const { devConversationId } = agentConfigInfo;
+          setIsLoadingConversation(false);
+          // 查询会话
+          runQueryConversation(devConversationId);
+        }
+      }
+    },
+    [agentConfigInfo], // 添加依赖
+  );
 
   /**
    * 处理插入系统提示词
@@ -457,25 +564,17 @@ const EditAgent: React.FC = () => {
                 handleChangeAgent(value, 'systemPrompt')
               }
               onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
-              variables={transformToPromptVariables(
-                variablesInfo?.bindConfig?.variables || [],
-              )}
-              skills={
-                agentComponentList?.filter(
-                  (item: AgentComponentInfo) =>
-                    item.type === AgentComponentTypeEnum.Plugin ||
-                    item.type === AgentComponentTypeEnum.Workflow ||
-                    item.type === AgentComponentTypeEnum.MCP,
-                ) || []
-              }
+              variables={promptVariables}
+              skills={promptTools}
             />
             {/*配置区域*/}
             <AgentArrangeConfig
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onChangeAgent={handleChangeAgent}
-              onConfirmUpdateEventQuestions={handleUpdateEventQuestions}
               onInsertSystemPrompt={handleInsertSystemPrompt}
+              onVariablesChange={handleVariablesChange}
+              onToolsChange={handleToolsChange}
             />
           </div>
         </div>
