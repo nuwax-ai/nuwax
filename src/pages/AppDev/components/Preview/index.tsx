@@ -966,6 +966,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         if (iframeRef.current) {
           iframeRef.current = null;
         }
+        // 退出页面时，重置设计模式状态、清空待保存列表、清空选中元素
+        setIframeDesignMode(false);
+        setPendingChanges([]);
+        setIsIframeLoaded(false);
         // 清理收集的错误信息和路由历史
         devMonitorErrorsRef.current = [];
         historyStackRef.current = [];
