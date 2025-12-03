@@ -142,7 +142,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     300,
   );
 
-  const { pendingChanges } = useModel('appDev');
+  const { pendingChanges, setIframeDesignMode } = useModel('appDev');
 
   // 同步 dataSourceList 中已选的数据源到 selectedMentions
   useEffect(() => {
@@ -427,6 +427,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         );
         // enter事件 - 传递上传的附件、原型图片 和 @ 提及的文件/目录/数据资源
         onEnter(files, prototypeImages, selectedMentions, requestId);
+        // 退出设计模式，回到聊天模式
+        setIframeDesignMode(false);
         // 清空输入框
         chat.setChatInput('');
         // 清空附件文件列表
@@ -496,6 +498,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       );
       // enter事件
       onEnter(files, prototypeImages, selectedMentionsParam);
+      // 退出设计模式，回到聊天模式
+      setIframeDesignMode(false);
       // 清空输入框
       chat.setChatInput('');
       // 清空附件文件列表
