@@ -698,7 +698,9 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
       const { type, payload } = event.data;
       switch (type) {
         case 'DESIGN_MODE_CHANGED':
+          // 清空选中元素
           setSelectedElement(null);
+          // 设置设计模式状态
           setIframeDesignMode(event.data.enabled);
           break;
 
