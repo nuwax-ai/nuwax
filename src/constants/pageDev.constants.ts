@@ -9,12 +9,12 @@ import {
 // 页面开发创建类型列表
 export const PAGE_DEVELOP_CREATE_TYPE_LIST = [
   {
-    value: PageDevelopCreateTypeEnum.Import_Project,
-    label: '导入项目',
+    value: PageDevelopCreateTypeEnum.Online_Develop,
+    label: '在线创建',
   },
   {
-    value: PageDevelopCreateTypeEnum.Online_Develop,
-    label: '在线开发',
+    value: PageDevelopCreateTypeEnum.Import_Project,
+    label: '本地导入',
   },
   // {
   //   value: PageDevelopCreateTypeEnum.Reverse_Proxy,
