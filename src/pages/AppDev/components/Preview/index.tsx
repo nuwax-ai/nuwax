@@ -37,6 +37,8 @@ interface PreviewProps {
   files?: FileNode[];
   devServerUrl?: string;
   projectInfo?: ProjectDetailData | null;
+  /** 刷新项目详情 */
+  refreshProjectInfo?: () => void;
   className?: string;
   isStarting?: boolean;
   isDeveloping?: boolean;
@@ -81,6 +83,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     {
       files,
       projectInfo,
+      refreshProjectInfo,
       devServerUrl,
       className,
       isStarting,
@@ -1109,6 +1112,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         setIsSaving(false);
         // 设置iframe加载完毕
         setIsIframeLoaded(false);
+        // 刷新项目版本信息
+        refreshProjectInfo?.();
 
         if (response.code === SUCCESS_CODE) {
           message.success(`成功保存！`);

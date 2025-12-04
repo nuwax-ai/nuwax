@@ -17,6 +17,8 @@ import styles from './index.less';
 
 interface ContentViewerProps {
   projectInfo?: ProjectDetailData | null;
+  /** 刷新项目详情 */
+  refreshProjectInfo?: () => void;
   /** 文件树数据 */
   files?: FileNode[];
   /** 显示模式 */
@@ -89,6 +91,7 @@ interface ContentViewerProps {
 const ContentViewer: React.FC<ContentViewerProps> = ({
   files,
   projectInfo,
+  refreshProjectInfo,
   mode,
   isComparing,
   selectedFileId,
@@ -124,6 +127,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         files={files}
         ref={previewRef}
         projectInfo={projectInfo}
+        refreshProjectInfo={refreshProjectInfo}
         devServerUrl={
           devServerUrl ? `${process.env.BASE_URL}${devServerUrl}` : undefined
         }

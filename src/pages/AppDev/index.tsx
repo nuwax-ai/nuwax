@@ -1601,6 +1601,10 @@ const AppDev: React.FC = () => {
                           projectInfo={
                             projectInfo.projectInfoState?.projectInfo
                           }
+                          refreshProjectInfo={() => {
+                            // 刷新项目详情(刷新版本列表)
+                            projectInfo.refreshProjectInfo();
+                          }}
                           mode={activeTab}
                           isComparing={versionCompare.isComparing}
                           selectedFileId={
