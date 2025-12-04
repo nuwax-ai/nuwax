@@ -27,6 +27,7 @@ import React, {
   useState,
 } from 'react';
 import { useModel, useRequest } from 'umi';
+import { type DesignViewerRef } from '../DesignViewer';
 import { applyDesignChanges } from '../DesignViewer/applyDesignChanges';
 import styles from './index.less';
 
@@ -58,6 +59,8 @@ interface PreviewProps {
     errorMessage: string,
     errorType?: 'whiteScreen' | 'iframe',
   ) => void;
+  /** DesignViewer组件ref */
+  designViewerRef?: React.RefObject<DesignViewerRef>;
 }
 
 export interface PreviewRef {
@@ -87,6 +90,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       startError,
       serverMessage,
       serverErrorCode,
+      designViewerRef,
       onStartDev,
       onRestartDev,
       onWhiteScreenOrIframeError,
@@ -107,8 +111,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       pendingChanges,
       setPendingChanges,
       selectedElement,
-      setLocalTextContent,
-      parseTailwindClassesAndUpdateStates,
     } = useModel('appDevDesign');
 
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
@@ -1156,10 +1158,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             }
 
             // 根据当前选择的元素的 className和 textContent 解析 Tailwind 类名并更新本地状态
-            parseTailwindClassesAndUpdateStates(
-              selectedElement?.className || '',
-            );
-            setLocalTextContent(selectedElement?.textContent || '');
+            // 通过 ref 调用 DesignViewer 的重置方法，而不是直接使用 model
+            if (designViewerRef?.current) {
+              designViewerRef.current.resetStates(selectedElement);
+            }
           } catch (error) {
             console.error(
               `[Preview] 恢复更改失败 (${type}):`,

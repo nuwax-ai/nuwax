@@ -192,30 +192,30 @@ export const getPaddingOrMarginSpace = (
  * @param value 样式值字符串，如 "16px", "1rem", "0" 等
  * @returns 解析后的数值（字符串形式，保留单位）或 "0px"
  */
-// export const parseStyleValue = (value: string | null | undefined): string => {
-//   if (!value || value === '0' || value === '0px') return '0px';
-//   // 如果已经是带单位的字符串，直接返回
-//   if (typeof value === 'string' && /^\d+(\.\d+)?(px|em|rem|%)$/.test(value)) {
-//     return value;
-//   }
-//   // 如果是纯数字，添加px单位
-//   if (/^\d+(\.\d+)?$/.test(value)) {
-//     return `${value}px`;
-//   }
-//   return value || '0px';
-// };
+export const parseStyleValue = (value: string | null | undefined): string => {
+  if (!value || value === '0' || value === '0px') return '0px';
+  // 如果已经是带单位的字符串，直接返回
+  if (typeof value === 'string' && /^\d+(\.\d+)?(px|em|rem|%)$/.test(value)) {
+    return value;
+  }
+  // 如果是纯数字，添加px单位
+  if (/^\d+(\.\d+)?$/.test(value)) {
+    return `${value}px`;
+  }
+  return value || '0px';
+};
 
-// /**
-//  * 从 Tailwind 类名中解析间距值
-//  * @param className Tailwind 类名，如 "p-4", "m-2", "px-8" 等
-//  * @returns 对应的 CSS 值，如 "1rem", "0.5rem" 等
-//  */
-// export const parseTailwindSpacing = (className: string): string => {
-//   // 匹配类名中的数字部分，如 "p-4" 中的 "4"
-//   const match = className.match(/-(\d+(?:\.\d+)?|px)$/);
-//   if (match) {
-//     const value = match[1];
-//     return value.toString();
-//   }
-//   return '0';
-// };
+/**
+ * 从 Tailwind 类名中解析间距值
+ * @param className Tailwind 类名，如 "p-4", "m-2", "px-8" 等
+ * @returns 对应的 CSS 值，如 "1rem", "0.5rem" 等
+ */
+export const parseTailwindSpacing = (className: string): string => {
+  // 匹配类名中的数字部分，如 "p-4" 中的 "4"
+  const match = className.match(/-(\d+(?:\.\d+)?|px)$/);
+  if (match) {
+    const value = match[1];
+    return value.toString();
+  }
+  return '0';
+};

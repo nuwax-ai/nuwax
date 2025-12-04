@@ -9,6 +9,7 @@ import {
 import { Button, Spin } from 'antd';
 import React, { useMemo } from 'react';
 import CodeViewer from '../CodeViewer';
+import { type DesignViewerRef } from '../DesignViewer';
 import FilePathHeader from '../FilePathHeader';
 import ImageViewer from '../ImageViewer';
 import Preview, { type PreviewRef } from '../Preview';
@@ -52,6 +53,8 @@ interface ContentViewerProps {
   serverErrorCode?: string | null;
   /** Preview组件ref */
   previewRef: React.RefObject<PreviewRef>;
+  /** DesignViewer组件ref */
+  designViewerRef?: React.RefObject<DesignViewerRef>;
   /** 内容变化回调 */
   onContentChange: (fileId: string, content: string) => void;
   /** 保存文件回调 */
@@ -103,6 +106,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   serverMessage,
   serverErrorCode,
   previewRef,
+  designViewerRef, // 新增
   onContentChange,
   onSaveFile,
   onCancelEdit,
@@ -130,6 +134,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         startError={startError}
         serverMessage={serverMessage}
         serverErrorCode={serverErrorCode}
+        designViewerRef={designViewerRef}
         onStartDev={onStartDev}
         onRestartDev={onRestartDev}
         onWhiteScreenOrIframeError={onWhiteScreenOrIframeError}
@@ -137,6 +142,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     ),
     [
       previewRef,
+      designViewerRef,
       devServerUrl,
       isStarting,
       isChatLoading,

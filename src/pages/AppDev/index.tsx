@@ -64,6 +64,7 @@ import React, {
 import { useModel, useParams, useRequest } from 'umi';
 import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
+import { type DesignViewerRef } from './components/DesignViewer';
 import DevLogConsole from './components/DevLogConsole';
 import EditorHeaderRight from './components/EditorHeaderRight';
 import FileOperatingMask from './components/FileOperatingMask';
@@ -250,6 +251,7 @@ const AppDev: React.FC = () => {
 
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
+  const designViewerRef = useRef<DesignViewerRef>(null);
 
   // Preview 状态跟踪
   const [previewIsLoading, setPreviewIsLoading] = useState(false);
@@ -1418,6 +1420,7 @@ const AppDev: React.FC = () => {
                 // onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
                 modelSelector={modelSelector} // 模型选择器状态
                 files={currentDisplayFiles} // 新增：文件树数据
+                designViewerRef={designViewerRef} // 新增：DesignViewer ref
                 onUserManualSendMessage={() => {
                   // 用户手动发送消息，重置自动重试计数、会话计数和 requestId
                   autoErrorHandling.resetAndEnableAutoHandling();
@@ -1638,6 +1641,7 @@ const AppDev: React.FC = () => {
                           serverMessage={server.serverMessage}
                           serverErrorCode={server.serverErrorCode}
                           previewRef={previewRef}
+                          designViewerRef={designViewerRef}
                           onStartDev={server.startServer}
                           onRestartDev={async () => {
                             // 使用重启开发服务器 Hook，不切换标签页
