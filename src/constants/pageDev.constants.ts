@@ -73,6 +73,10 @@ export const PAGE_DEVELOP_MORE_ACTIONS = [
     label: '复制到空间',
   },
   {
+    value: PageDevelopMoreActionEnum.Export_Project,
+    label: '导出项目',
+  },
+  {
     value: PageDevelopMoreActionEnum.Delete,
     label: '删除',
   },
