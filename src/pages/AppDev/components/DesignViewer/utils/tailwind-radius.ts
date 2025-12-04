@@ -90,3 +90,12 @@ export const generateTailwindRadiusOptions = (): Array<{
 
   return options;
 };
+
+/**
+ * 从 Tailwind 圆角类名映射到本地圆角类型
+ * @param className Tailwind 圆角类名，如 "rounded-sm", "rounded-lg" 等
+ * @returns 对应的圆角类型值
+ */
+export const mapTailwindRadiusToLocal = (className: string): string | null => {
+  return tailwindRadiusMap[className] || null;
+};
