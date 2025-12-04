@@ -235,105 +235,6 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
     parseTailwindClassesAndUpdateStates,
   } = useModel('appDevDesign');
 
-  // /**
-  //  * 从计算样式对象中解析并更新本地状态
-  //  * @param computedStyles 计算样式对象
-  //  */
-  // const updateLocalStatesFromStyles = (computedStyles: {
-  //   paddingTop?: string;
-  //   paddingRight?: string;
-  //   paddingBottom?: string;
-  //   paddingLeft?: string;
-  //   marginTop?: string;
-  //   marginRight?: string;
-  //   marginBottom?: string;
-  //   marginLeft?: string;
-  //   color?: string;
-  //   backgroundColor?: string;
-  // }) => {
-  //   // 更新padding（只要存在任何一个padding属性就更新）
-  //   if (
-  //     computedStyles.paddingTop !== undefined ||
-  //     computedStyles.paddingRight !== undefined ||
-  //     computedStyles.paddingBottom !== undefined ||
-  //     computedStyles.paddingLeft !== undefined
-  //   ) {
-  //     setLocalPadding({
-  //       top: parseStyleValue(computedStyles.paddingTop),
-  //       right: parseStyleValue(computedStyles.paddingRight),
-  //       bottom: parseStyleValue(computedStyles.paddingBottom),
-  //       left: parseStyleValue(computedStyles.paddingLeft),
-  //     });
-  //   }
-
-  //   // 更新margin（只要存在任何一个margin属性就更新）
-  //   if (
-  //     computedStyles.marginTop !== undefined ||
-  //     computedStyles.marginRight !== undefined ||
-  //     computedStyles.marginBottom !== undefined ||
-  //     computedStyles.marginLeft !== undefined
-  //   ) {
-  //     setLocalMargin({
-  //       top: parseStyleValue(computedStyles.marginTop),
-  //       right: parseStyleValue(computedStyles.marginRight),
-  //       bottom: parseStyleValue(computedStyles.marginBottom),
-  //       left: parseStyleValue(computedStyles.marginLeft),
-  //     });
-  //   }
-
-  //   // 更新color
-  //   if (computedStyles.color !== undefined) {
-  //     setLocalColor(computedStyles.color);
-  //   }
-
-  //   // 更新background
-  //   if (computedStyles.backgroundColor !== undefined) {
-  //     // 这里可以根据需要处理背景色
-  //     // setLocalBackground(computedStyles.backgroundColor);
-  //   }
-  // };
-
-  // // 重置本地状态
-  // const resetLocalStates = () => {
-  //   // 解析className中的 Tailwind 类名前，先重置本地状态
-  //   setLocalColor('Default');
-  //   setLocalBackground('Default');
-  //   setShadowType('None');
-  //   setRadius('None');
-  //   setOpacity(100);
-  //   setBorderStyle('Default');
-  //   setBorderColor('Default');
-  //   setFontSize('Default');
-  //   setFontWeight('font-medium'); // 重置为默认字体粗细
-  //   setLineHeight('1.75rem');
-  //   setLetterSpacing('0em');
-  //   setTextAlign('');
-  //   setLocalBorderWidth({
-  //     top: '0', // 使用 Tailwind 边框宽度值
-  //     right: '0',
-  //     bottom: '0',
-  //     left: '0',
-  //   });
-  //   setLocalPadding({
-  //     top: '0px',
-  //     right: '0px',
-  //     bottom: '0px',
-  //     left: '0px',
-  //   });
-  //   setLocalMargin({
-  //     top: '0px',
-  //     right: '0px',
-  //     bottom: '0px',
-  //     left: '0px',
-  //   });
-  //   setLocalBorderWidth({
-  //     top: '0',
-  //     right: '0',
-  //     bottom: '0',
-  //     left: '0',
-  //   });
-  // };
-
   // 关闭设计模式
   const closeDesignMode = () => {
     // 关闭设计模式，防止用户在设计模式下修改元素，导致添加到会话的内容不准确
@@ -976,6 +877,23 @@ const DesignViewer: React.FC<DesignViewerProps> = ({ onAddToChat }) => {
   //   // setTextDecoration(newDecorations);
   //   onChange?.('textDecoration', newDecorations);
   // };
+
+  if (iframeDesignMode && !selectedElement) {
+    return (
+      <div
+        className={cx(
+          'flex',
+          'flex-col',
+          'items-center',
+          'content-center',
+          styles.designViewer,
+          styles.empty,
+        )}
+      >
+        请选中右侧页面元素进行编辑
+      </div>
+    );
+  }
 
   if (!iframeDesignMode || !selectedElement) {
     return null;
