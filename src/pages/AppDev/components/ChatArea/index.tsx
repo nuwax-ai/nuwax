@@ -167,7 +167,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         );
       }
     } catch (error) {
-      message.error('取消 Agent 任务失败');
+      // message.error('取消 Agent 任务失败');
       // 即使 API 调用失败，也调用原有的取消功能
       chat.cancelChat();
     } finally {
@@ -382,7 +382,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
    * 渲染聊天消息 - 按 role 区分渲染
    */
   const renderChatMessage = useCallback(
-    (message: AppDevChatMessage) => {
+    (message: AppDevChatMessage, isLastMessage: boolean) => {
       const isUser = message.role === 'USER';
       const isAssistant = message.role === 'ASSISTANT';
 
@@ -532,7 +532,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             )}
 
             {/* 流式传输指示器 - 放在最下面 */}
-            {isStreaming && (
+            {isStreaming && isLastMessage && (
               <div className={styles.streamingIndicator}>
                 <Spin size="small" />
                 {/* <span className={styles.streamingText}>正在输出...</span> */}
@@ -584,7 +584,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     const renderedMessages: React.ReactNode[] = [];
     let currentSessionId: string | null = null;
 
-    messages.forEach((message: AppDevChatMessage) => {
+    const len = messages?.length;
+
+    messages.forEach((message: AppDevChatMessage, index: number) => {
       // 检查是否需要添加会话分隔符
       if (
         message.conversationTopic &&
@@ -601,8 +603,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         currentSessionId = message.sessionId;
       }
 
+      // 是否是最后一条消息
+      const isLastMessage = index === len;
+
       // 渲染消息
-      renderedMessages.push(renderChatMessage(message));
+      renderedMessages.push(renderChatMessage(message, isLastMessage));
     });
 
     return renderedMessages;
