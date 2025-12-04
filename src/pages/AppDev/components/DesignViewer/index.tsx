@@ -342,12 +342,6 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
         bottom: '0px',
         left: '0px',
       });
-      setLocalBorderWidth({
-        top: '0',
-        right: '0',
-        bottom: '0',
-        left: '0',
-      });
     };
 
     /**
@@ -621,6 +615,63 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
       }
     };
 
+    // Upsert pending change
+    const upsertPendingChange = (
+      type: 'style' | 'content',
+      newValue: string,
+      originalValue?: string,
+    ) => {
+      if (!selectedElement) return;
+      setPendingChanges((prev: any) => {
+        const existingIndex = prev.findIndex(
+          (item: any) =>
+            item.type === type &&
+            item.sourceInfo.fileName === selectedElement.sourceInfo.fileName &&
+            item.sourceInfo.lineNumber ===
+              selectedElement.sourceInfo.lineNumber,
+        );
+
+        const newChange = {
+          type,
+          sourceInfo: selectedElement.sourceInfo,
+          newValue,
+          originalValue:
+            originalValue ||
+            (type === 'style'
+              ? selectedElement.className
+              : selectedElement.textContent),
+        };
+
+        if (existingIndex >= 0) {
+          const newList = [...prev];
+          newList[existingIndex] = newChange;
+          return newList;
+        } else {
+          return [...prev, newChange];
+        }
+      });
+    };
+
+    // 处理添加选中元素到会话
+    const handleAddToChat = (payload: any) => {
+      if (pendingChanges?.length > 0) {
+        message.error('请先保存或重置修改, 再添加选中元素到会话');
+        return;
+      }
+      if (payload?.context?.sourceInfo) {
+        // 关闭设计模式，防止用户在设计模式下修改元素，导致添加到会话的内容不准确
+        closeDesignMode();
+        const { fileName, lineNumber, columnNumber } =
+          payload?.context?.sourceInfo;
+        const _fileName = fileName?.replace(FILENAME_REGEXP, '');
+        const content = `${_fileName}(${lineNumber}-${columnNumber})`;
+        const addToChatContent = `\n\`\`\`\n${content}\n\`\`\`\n`;
+        onAddToChat(addToChatContent);
+      } else {
+        message.error('sourceInfo is not valid');
+      }
+    };
+
     // 监听从iframe发送的消息
     useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
@@ -635,7 +686,7 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
 
           case 'ELEMENT_SELECTED':
             {
-              console.log('[Parent] Element selected - full payload:', payload);
+              // console.log('[Parent] Element selected - full payload:', payload);
 
               // 验证 sourceInfo 是否有效
               if (
@@ -677,31 +728,43 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
             break;
 
           case 'CONTENT_UPDATED':
-            console.log('[Parent] Content updated:', payload);
+            {
+              console.log('[Parent] Content updated:', payload);
+              // 同步iframe中的内容到面板
+              setLocalTextContent(payload.newValue);
+              // 将iframe中的内容修改记录到pendingChanges中
+              setPendingChanges((prev: any) => {
+                const existingIndex = prev.findIndex(
+                  (item: any) =>
+                    item.type === 'content' &&
+                    item.sourceInfo.fileName === payload.sourceInfo.fileName &&
+                    item.sourceInfo.lineNumber ===
+                      payload.sourceInfo.lineNumber,
+                );
+
+                const newChange = {
+                  type: 'content',
+                  sourceInfo: payload.sourceInfo,
+                  newValue: payload.newValue,
+                  originalValue: payload.oldValue,
+                };
+
+                if (existingIndex >= 0) {
+                  const newList = [...prev];
+                  newList[existingIndex] = newChange;
+                  return newList;
+                } else {
+                  return [...prev, newChange];
+                }
+              });
+            }
             break;
 
           case 'STYLE_UPDATED':
             console.log('[Parent] Style updated:', payload);
             break;
           case 'ADD_TO_CHAT':
-            {
-              if (pendingChanges?.length > 0) {
-                message.error('请先保存或重置修改, 再添加选中元素到会话');
-                return;
-              }
-              if (payload?.context?.sourceInfo) {
-                // 关闭设计模式，防止用户在设计模式下修改元素，导致添加到会话的内容不准确
-                closeDesignMode();
-                const { fileName, lineNumber, columnNumber } =
-                  payload?.context?.sourceInfo;
-                const _fileName = fileName?.replace(FILENAME_REGEXP, '');
-                const content = `${_fileName}(${lineNumber}-${columnNumber})`;
-                const addToChatContent = `\n\`\`\`\n${content}\n\`\`\`\n`;
-                onAddToChat(addToChatContent);
-              } else {
-                message.error('sourceInfo is not valid');
-              }
-            }
+            handleAddToChat(payload);
             break;
         }
       };
@@ -710,44 +773,8 @@ const DesignViewer = forwardRef<DesignViewerRef, DesignViewerProps>(
       return () => {
         window.removeEventListener('message', handleMessage);
       };
-    }, [pendingChanges]);
+    }, [handleAddToChat]);
 
-    // Upsert pending change
-    const upsertPendingChange = (
-      type: 'style' | 'content',
-      newValue: string,
-      originalValue?: string,
-    ) => {
-      if (!selectedElement) return;
-      setPendingChanges((prev: any) => {
-        const existingIndex = prev.findIndex(
-          (item: any) =>
-            item.type === type &&
-            item.sourceInfo.fileName === selectedElement.sourceInfo.fileName &&
-            item.sourceInfo.lineNumber ===
-              selectedElement.sourceInfo.lineNumber,
-        );
-
-        const newChange = {
-          type,
-          sourceInfo: selectedElement.sourceInfo,
-          newValue,
-          originalValue:
-            originalValue ||
-            (type === 'style'
-              ? selectedElement.className
-              : selectedElement.textContent),
-        };
-
-        if (existingIndex >= 0) {
-          const newList = [...prev];
-          newList[existingIndex] = newChange;
-          return newList;
-        } else {
-          return [...prev, newChange];
-        }
-      });
-    };
     // 处理内容更新
     const handleContentUpdate = (newContent: string) => {
       if (!selectedElement) {
