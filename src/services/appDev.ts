@@ -268,6 +268,32 @@ export const submitFilesUpdate = async (
   });
 };
 
+/**
+ * 指定文件修改
+ * @param projectId 项目ID
+ * @param files 文件列表
+ * @returns Promise<SubmitFilesResponse> 提交结果
+ */
+export const submitSpecifiedFilesUpdate = async (
+  projectId: string,
+  files: PageFileInfo[],
+): Promise<SubmitFilesResponse> => {
+  // 处理文件内容，对 content 字段进行 encodeURIComponent 编码
+  const processedFiles = files.map((file) => ({
+    ...file,
+    // 只有当 content 存在时才进行编码处理
+    contents: file.contents ? encodeURIComponent(file.contents) : file.contents,
+  }));
+
+  return request('/api/custom-page/specified-files-update', {
+    method: 'POST',
+    data: {
+      projectId,
+      files: processedFiles,
+    },
+  });
+};
+
 // ==================== AI聊天API服务 ====================
 
 /**

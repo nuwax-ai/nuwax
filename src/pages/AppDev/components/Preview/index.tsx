@@ -2,7 +2,7 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { SANDBOX, UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { submitFilesUpdate } from '@/services/appDev';
+import { submitSpecifiedFilesUpdate } from '@/services/appDev';
 import { apiPageUpdateProject } from '@/services/pageDev';
 import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
@@ -1055,6 +1055,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           fileChangesMap.get(filePath)!.push(change);
         });
 
+        // console.log(fileChangesMap, '======', pendingChanges)
+
         // 2. 获取全量文件列表（扁平化）
         // 使用 files 属性作为基准，确保包含未修改的文件
         const allFiles = treeToFlatList(files || []);
@@ -1078,6 +1080,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 contents: updatedContent,
                 binary: file.binary || false,
                 sizeExceeded: file.sizeExceeded || false,
+                operation: 'modify',
               });
             } catch (error) {
               console.error(
@@ -1091,12 +1094,14 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             }
           } else {
             // 没有修改的文件，直接添加到更新列表
-            filesToUpdate.push(file);
+            // filesToUpdate.push(file);
           }
         }
 
+        console.log(filesToUpdate, '======', pendingChanges);
+
         // 4. 调用 submitFilesUpdate 接口提交全量列表
-        const response = await submitFilesUpdate(
+        const response = await submitSpecifiedFilesUpdate(
           projectId.toString(),
           filesToUpdate,
         );
