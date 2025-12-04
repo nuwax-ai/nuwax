@@ -1,5 +1,7 @@
 // Message types for iframe ↔ parent window communication
 
+export const FILENAME_REGEXP = /^\/app\/project_workspace\/[^/]+\//;
+
 export interface SourceInfo {
   fileName: string;
   lineNumber: number;
@@ -335,4 +337,25 @@ export interface BridgeInterface {
   off: (type: string, handler: any) => void;
   isConnected: () => boolean;
   disconnect: () => void;
+}
+
+export type toggleStyleAttributeType =
+  | 'fontSize'
+  | 'fontWeight'
+  | 'lineHeight'
+  | 'letterSpacing'
+  | 'opacity'
+  | 'radius'
+  | 'shadow'
+  | 'textAlign';
+
+/**
+ * DesignViewer 组件暴露的方法接口
+ */
+export interface DesignViewerRef {
+  /**
+   * 根据选中的元素重置所有状态
+   * @param elementInfo 选中的元素信息，包含 className 和 textContent
+   */
+  resetStates: (elementInfo: ElementInfo | null) => void;
 }
