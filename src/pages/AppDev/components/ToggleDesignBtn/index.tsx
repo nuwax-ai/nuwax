@@ -31,30 +31,25 @@ const ToggleDesignBtn: React.FC<ToggleDesignBtnProps> = ({ className }) => {
   return (
     // 聊天模式切换
     <div className={cx(styles.chatModeContainer, className)}>
-      <div className={styles.chatModeSwitcher}>
-        <div className={styles.chatModeSegmented}>
-          <Segmented
-            value={iframeDesignMode ? 'design' : 'chat'}
-            onChange={toggleIframeDesignMode}
-            options={[
-              { label: 'Chat', value: 'chat' },
-              {
-                label: (
-                  <div className="flex items-center gap-4">
-                    {!isIframeLoaded ? (
-                      <SyncOutlined spin style={{ fontSize: 12 }} />
-                    ) : null}
-                    Design
-                  </div>
-                ),
-                value: 'design',
-                disabled: !isIframeLoaded,
-              },
-            ]}
-            className={styles.chatModeSegmented}
-          />
-        </div>
-      </div>
+      <Segmented
+        value={iframeDesignMode ? 'design' : 'chat'}
+        onChange={toggleIframeDesignMode}
+        options={[
+          { label: '对话', value: 'chat' },
+          {
+            label: (
+              <div className="flex items-center gap-4">
+                {!isIframeLoaded ? (
+                  <SyncOutlined spin style={{ fontSize: 12 }} />
+                ) : null}
+                设计
+              </div>
+            ),
+            value: 'design',
+            disabled: !isIframeLoaded,
+          },
+        ]}
+      />
     </div>
   );
 };

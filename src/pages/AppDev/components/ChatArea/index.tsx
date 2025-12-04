@@ -24,7 +24,7 @@ import { Button, Card, message, Spin, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useModel } from 'umi';
-import DesignViewer from '../DesignViewer';
+import DesignViewer, { type DesignViewerRef } from '../DesignViewer';
 import ToggleDesignBtn from '../ToggleDesignBtn';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
 import ChatInputHome, { MentionItem } from './components/ChatInputHome';
@@ -55,6 +55,8 @@ interface ChatAreaProps {
   onUserCancelAgentTask?: () => void;
   /** 文件树数据 */
   files?: FileNode[];
+  /** DesignViewer 组件的 ref */
+  designViewerRef?: React.RefObject<DesignViewerRef>;
 }
 
 /**
@@ -76,6 +78,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onUserManualSendMessage,
   onUserCancelAgentTask,
   files = [],
+  designViewerRef,
 }) => {
   const autoErrorRetryCount = useModel('autoErrorHandling').autoRetryCount;
   // 展开的思考过程消息
@@ -626,7 +629,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       <div className={'flex-1 flex flex-col relative overflow-hide'}>
         {
           // 设计模式区域
-          isSupportDesignMode && <DesignViewer onAddToChat={handleAddToChat} />
+          isSupportDesignMode && (
+            <DesignViewer ref={designViewerRef} onAddToChat={handleAddToChat} />
+          )
         }
 
         {/* 聊天消息区域 */}
