@@ -397,6 +397,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      * 刷新预览
      */
     const refreshPreview = useCallback(() => {
+      if (pendingChanges?.length > 0) {
+        message.error('请先保存或重置修改, 再刷新预览');
+        return;
+      }
       // 关闭设计模式
       setIframeDesignMode(false);
       // 刷新预览
@@ -407,8 +411,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         setLastRefreshed(new Date());
       } else {
         // iframeRef.current 为空，无法刷新
+        console.error('iframeRef.current 为空，无法刷新');
       }
-    }, [devServerUrl, loadDevServerPreview]);
+    }, [devServerUrl, loadDevServerPreview, pendingChanges]);
 
     /**
      * 计算需要回退的历史记录数量
@@ -678,7 +683,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      * iframe加载完成处理
      */
     const handleIframeLoad = useCallback(() => {
-      // console.log('iframe加载完成:', iframeDesignMode);
+      console.log('iframe加载完成:');
       // // 如果设计模式为开启，则发送消息给 iframe 开启设计模式
       // if (iframeDesignMode) {
       //   const iframe = document.querySelector('iframe');
@@ -695,6 +700,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       //     );
       //   }
       // }
+      // 设置iframe加载完毕
+      setIsIframeLoaded(true);
       setIsLoading(false);
       setLoadError(null);
       // 设置iframe加载完毕
@@ -1095,6 +1102,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         );
         // 保存成功后，关闭保存状态
         setIsSaving(false);
+        // 设置iframe加载完毕
+        setIsIframeLoaded(false);
 
         if (response.code === SUCCESS_CODE) {
           message.success(`成功保存！`);
