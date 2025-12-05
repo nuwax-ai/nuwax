@@ -57,6 +57,18 @@ const SUPPORTED_HTML_TAGS = [
 ];
 
 /**
+ * Tiptap 自定义节点使用的 class 名称列表
+ * 这些 class 的 span 标签不会被转义
+ */
+const TIPTAP_NODE_CLASSES = [
+  'tool-block-chip',
+  'variable-block-chip',
+  'variable-block-chip-editable',
+  'mention-node',
+  'raw-content',
+];
+
+/**
  * 转义不被 StarterKit 支持的 HTML 标签
  * @param html HTML 内容
  * @returns 转义后的 HTML 内容
@@ -65,14 +77,27 @@ export const escapeUnsupportedHTMLTags = (html: string): string => {
   if (!html) return html;
 
   // 匹配所有 HTML 标签
-  const tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9]*)(?:\s+[^>]*)?>/g;
+  const tagRegex =
+    /<\/?([a-zA-Z][a-zA-Z0-9]*)(?:\s+[^>]*)?>|<([a-zA-Z][a-zA-Z0-9]*)\s+[^>]*>/g;
 
-  return html.replace(tagRegex, (match, tagName) => {
+  return html.replace(tagRegex, (match, tagName1, tagName2) => {
+    const tagName = tagName1 || tagName2;
     const lowerTagName = tagName.toLowerCase();
 
-    // 如果标签被支持，不转义
+    // 如果标签被 StarterKit 支持（不包括 span），不转义
     if (SUPPORTED_HTML_TAGS.includes(lowerTagName)) {
       return match;
+    }
+
+    // 对于 span 标签，检查是否包含 Tiptap 节点相关的 class
+    if (lowerTagName === 'span') {
+      const hasNodeClass = TIPTAP_NODE_CLASSES.some(
+        (cls) =>
+          match.includes(`class="${cls}"`) || match.includes(`class='${cls}'`),
+      );
+      if (hasNodeClass) {
+        return match; // 保留 Tiptap 节点的 span
+      }
     }
 
     // 转义不被支持的标签
@@ -217,12 +242,55 @@ export const escapeCustomHTMLTags = (text: string): string => {
  * @param html Tiptap HTML 内容
  * @returns 纯文本内容（原始格式：{{xxx}}、{#ToolBlock ...#}...{#/ToolBlock#}、@xxx）
  */
+/**
+ * 匹配不被 StarterKit 支持的 HTML 标签的正则表达式
+ * 匹配所有 HTML 标签，但排除 StarterKit 支持的标签
+ */
+const UNSUPPORTED_HTML_TAG_REGEX = /<\/?([a-zA-Z][a-zA-Z0-9]*)(?:\s+[^>]*)?>/g;
+
 export const extractTextFromHTML = (html: string): string => {
   if (!html) return '';
 
+  // 在使用 innerHTML 解析之前，先转义不被 StarterKit 支持的 HTML 标签
+  // 参照事件标签的处理逻辑，直接使用正则匹配并转义
+  // 这样可以防止浏览器将这些标签（如 <a>、<div>、<span> 等）解析为真正的 HTML 元素
+  // 从而避免在提取文本时丢失这些标签
+  // 但保留 Tiptap 节点相关的 span 标签（如 tool-block-chip、variable-block-chip 等）
+  const escapedHtml = html.replace(
+    UNSUPPORTED_HTML_TAG_REGEX,
+    (match, tagName) => {
+      const lowerTagName = tagName.toLowerCase();
+
+      // 如果标签被 StarterKit 支持，不转义
+      if (SUPPORTED_HTML_TAGS.includes(lowerTagName)) {
+        return match;
+      }
+
+      // 对于 span 标签，检查是否包含 Tiptap 节点相关的 class
+      if (lowerTagName === 'span') {
+        const hasNodeClass = TIPTAP_NODE_CLASSES.some(
+          (cls) =>
+            match.includes(`class="${cls}"`) ||
+            match.includes(`class='${cls}'`),
+        );
+        if (hasNodeClass) {
+          return match; // 保留 Tiptap 节点的 span
+        }
+      }
+
+      // 转义不被支持的标签（参照 escapeEventTags 的处理方式）
+      return match
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    },
+  );
+
   // 创建临时 DOM 元素
   const temp = document.createElement('div');
-  temp.innerHTML = html;
+  temp.innerHTML = escapedHtml;
 
   // 处理 tool-blocks（优先处理，因为可能包含其他内容）
   // Tiptap 实际渲染为 span.tool-block-chip（标准 HTML 标签）
