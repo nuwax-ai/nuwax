@@ -61,6 +61,11 @@ interface PreviewProps {
     errorMessage: string,
     errorType?: 'whiteScreen' | 'iframe',
   ) => void;
+  /** 刷新文件树回调 */
+  onRefreshFileTree?: (
+    preserveExpandedState?: boolean,
+    forceUpdate?: boolean,
+  ) => void;
   /** DesignViewer组件ref */
   designViewerRef?: React.RefObject<DesignViewerRef>;
 }
@@ -97,6 +102,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       onStartDev,
       onRestartDev,
       onWhiteScreenOrIframeError,
+      onRefreshFileTree,
     },
     ref,
   ) => {
@@ -1116,6 +1122,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         setIsIframeLoaded(false);
         // 刷新项目版本信息
         refreshProjectInfo?.();
+        // 刷新文件树列表
+        onRefreshFileTree?.(true, true);
 
         if (response.code === SUCCESS_CODE) {
           message.success(`成功保存！`);

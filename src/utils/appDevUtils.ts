@@ -1043,6 +1043,36 @@ export async function smartReplaceInSource(
   }
 }
 
+/**
+ * Replace content safely by ignoring text inside <...> tags
+ */
+function safeReplaceContentInLine(
+  line: string,
+  originalValue: string,
+  newValue: string,
+): string {
+  if (!originalValue) return line;
+
+  // Split by tags: (<[^>]*>) captures the tags
+  // This is a simple heuristic that works for most standard JSX/HTML
+  const parts = line.split(/(<[^>]*>)/g);
+
+  return parts
+    .map((part) => {
+      // If it starts with < and ends with >, treat it as a tag and don't replace
+      if (part.startsWith('<') && part.endsWith('>')) {
+        return part;
+      } else {
+        // It's text outside of tags. Perform replacement here.
+        return part.replace(
+          new RegExp(escapeRegExp(originalValue), 'g'),
+          newValue,
+        );
+      }
+    })
+    .join('');
+}
+
 // 智能内容替换 - 支持多行搜索
 async function smartReplaceContentMultiLine(
   lines: string[],
@@ -1053,15 +1083,20 @@ async function smartReplaceContentMultiLine(
 
   // 1. 首先在当前行尝试
   const currentLine = lines[startLine];
-  if (originalValue && currentLine.includes(originalValue)) {
-    return {
-      found: true,
-      lineIndex: startLine,
-      newLine: currentLine.replace(
-        new RegExp(escapeRegExp(originalValue), 'g'),
-        newValue,
-      ),
-    };
+
+  if (originalValue) {
+    const safeReplaced = safeReplaceContentInLine(
+      currentLine,
+      originalValue,
+      newValue,
+    );
+    if (safeReplaced !== currentLine) {
+      return {
+        found: true,
+        lineIndex: startLine,
+        newLine: safeReplaced,
+      };
+    }
   }
 
   // 2. 向后搜索，直到找到内容或超出范围（最多搜索20行）
@@ -1070,16 +1105,20 @@ async function smartReplaceContentMultiLine(
   for (let i = startLine + 1; i < maxSearchLines; i++) {
     const searchLine = lines[i];
 
-    // 如果找到了原始值（行内包含）
-    if (originalValue && searchLine.includes(originalValue)) {
-      return {
-        found: true,
-        lineIndex: i,
-        newLine: searchLine.replace(
-          new RegExp(escapeRegExp(originalValue), 'g'),
-          newValue,
-        ),
-      };
+    // 如果找到了原始值（行内包含），且不在标签内
+    if (originalValue) {
+      const safeReplaced = safeReplaceContentInLine(
+        searchLine,
+        originalValue,
+        newValue,
+      );
+      if (safeReplaced !== searchLine) {
+        return {
+          found: true,
+          lineIndex: i,
+          newLine: safeReplaced,
+        };
+      }
     }
 
     // 检查整行（去除空白）是否就是原始值（用于处理独立行的纯文本）

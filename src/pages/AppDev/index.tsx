@@ -1692,6 +1692,7 @@ const AppDev: React.FC = () => {
                               handleCancelEdit(true);
                             }
                           }}
+                          onRefreshFileTree={fileManagement.loadFileTree}
                           findFileNode={fileManagement.findFileNode}
                           isChatLoading={chat.isChatLoading}
                         />
