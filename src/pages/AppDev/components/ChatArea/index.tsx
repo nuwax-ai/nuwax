@@ -604,7 +604,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       }
 
       // 是否是最后一条消息
-      const isLastMessage = index === len;
+      const isLastMessage = index === len - 1;
 
       // 渲染消息
       renderedMessages.push(renderChatMessage(message, isLastMessage));
