@@ -602,9 +602,14 @@ export default () => {
       },
       onClose: async () => {
         setMessageList((list) => {
-          const copyList = JSON.parse(JSON.stringify(list));
-          copyList[copyList.length - 1].status = MessageStatusEnum.Error;
-          return copyList;
+          try {
+            const copyList = JSON.parse(JSON.stringify(list));
+            copyList[copyList.length - 1].status = MessageStatusEnum.Error;
+            return copyList;
+          } catch (error) {
+            console.error('ERROR:', error);
+            return list;
+          }
         });
         disabledConversationActive(); // 主动关闭连接时，禁用会话
 

@@ -529,6 +529,17 @@ const ChatTemp: React.FC = () => {
       },
       onClose: () => {
         disabledConversationActive();
+
+        setMessageList((list) => {
+          try {
+            const copyList = JSON.parse(JSON.stringify(list));
+            copyList[copyList.length - 1].status = MessageStatusEnum.Error;
+            return copyList;
+          } catch (error) {
+            console.error('ERROR:', error);
+            return list;
+          }
+        });
       },
     });
     // 主动关闭连接
