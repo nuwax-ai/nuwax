@@ -11,6 +11,7 @@ import { jumpTo } from '@/utils/router';
 import {
   ExclamationCircleOutlined,
   GlobalOutlined,
+  Loading3QuartersOutlined,
   ReloadOutlined,
   ThunderboltOutlined,
   WarningOutlined,
@@ -271,6 +272,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       let icon: React.ReactNode;
       if (hasError) {
         icon = <ExclamationCircleOutlined />;
+      } else if (isDeveloping) {
+        icon = <Loading3QuartersOutlined spin />;
       } else if (isProjectUploading || isRestarting || isStarting) {
         icon = <ThunderboltOutlined />;
       } else if (hasStartError) {
