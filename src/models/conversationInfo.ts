@@ -601,6 +601,7 @@ export default () => {
         handleScrollBottom();
       },
       onClose: async () => {
+        // 将当前会话的loading状态的消息改为Error状态
         setMessageList((list) => {
           try {
             const copyList = JSON.parse(JSON.stringify(list));
@@ -611,7 +612,8 @@ export default () => {
             return list;
           }
         });
-        disabledConversationActive(); // 主动关闭连接时，禁用会话
+        // 主动关闭连接时，禁用会话
+        disabledConversationActive();
 
         const currentInfo = conversationInfo ?? data;
 
