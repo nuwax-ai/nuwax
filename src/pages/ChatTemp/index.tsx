@@ -528,8 +528,7 @@ const ChatTemp: React.FC = () => {
         });
       },
       onClose: () => {
-        disabledConversationActive();
-
+        // 将当前会话的loading状态的消息改为Error状态
         setMessageList((list) => {
           try {
             const copyList = JSON.parse(JSON.stringify(list));
@@ -540,6 +539,8 @@ const ChatTemp: React.FC = () => {
             return list;
           }
         });
+        // 主动关闭连接时，禁用会话
+        disabledConversationActive();
       },
     });
     // 主动关闭连接
