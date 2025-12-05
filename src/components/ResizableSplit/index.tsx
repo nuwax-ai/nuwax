@@ -25,7 +25,7 @@ const ResizableSplit: React.FC<Props> = ({
   right,
   minLeftWidth = 350,
   minRightWidth = 350,
-  defaultLeftWidth = 33, // 默认左侧占比33%
+  defaultLeftWidth = 50, // 默认左侧占比50%
   dividerColor = '#e0e0e0',
   dividerHoverColor = '#bbb',
   dividerDraggingColor = '#1890ff',
