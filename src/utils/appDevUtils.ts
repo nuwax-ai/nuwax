@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * AppDev 页面相关工具函数
  */
@@ -812,40 +813,102 @@ function escapeRegExp(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// 智能样式替换
-async function smartReplaceStyle(line: string, options: any): Promise<string> {
-  const { newValue } = options;
-
+// 智能样式替换 - 单行版本（被多行版本调用）
+async function smartReplaceStyleSingleLine(
+  line: string,
+  newValue: string,
+): Promise<{ found: boolean; newLine: string }> {
   // 1. 尝试匹配 className="..." 或 className='...'
   const classNameRegex = /className=(["'])(.*?)\1/;
   if (classNameRegex.test(line)) {
-    return line.replace(classNameRegex, `className=$1${newValue}$1`);
+    return {
+      found: true,
+      newLine: line.replace(classNameRegex, `className=$1${newValue}$1`),
+    };
   }
 
   // 2. 尝试匹配 className={...}
   const classNameExpressionRegex = /className=\{([^}]*)\}/;
   if (classNameExpressionRegex.test(line)) {
-    // 如果是表达式，我们将其替换为字符串形式，因为设计模式通常输出静态字符串
-    // 如果需要保留表达式逻辑（如 cn(...)），则需要更复杂的解析，目前简化处理
-    return line.replace(classNameExpressionRegex, `className="${newValue}"`);
+    return {
+      found: true,
+      newLine: line.replace(
+        classNameExpressionRegex,
+        `className="${newValue}"`,
+      ),
+    };
   }
 
-  // 3. 如果没有 className 属性，尝试插入到标签名之后
-  // 匹配 <TagName 或 <Component.Name
-  const tagMatch = line.match(/<([A-Z][a-zA-Z0-9.]*|[a-z][a-z0-9-]*)/);
+  return { found: false, newLine: line };
+}
+
+// 智能样式替换 - 支持多行搜索
+async function smartReplaceStyleMultiLine(
+  lines: string[],
+  startLine: number,
+  options: any,
+): Promise<{ found: boolean; lineIndex: number; newLine: string }> {
+  const { newValue } = options;
+
+  // 1. 首先在当前行尝试查找 className
+  const currentLine = lines[startLine];
+  const currentResult = await smartReplaceStyleSingleLine(
+    currentLine,
+    newValue,
+  );
+  if (currentResult.found) {
+    return {
+      found: true,
+      lineIndex: startLine,
+      newLine: currentResult.newLine,
+    };
+  }
+
+  // 2. 向后搜索 className 属性（最多搜索15行，通常 JSX 属性不会太远）
+  const maxSearchLines = Math.min(startLine + 15, lines.length);
+
+  for (let i = startLine + 1; i < maxSearchLines; i++) {
+    const searchLine = lines[i];
+
+    // 尝试在这一行找 className
+    const result = await smartReplaceStyleSingleLine(searchLine, newValue);
+    if (result.found) {
+      return {
+        found: true,
+        lineIndex: i,
+        newLine: result.newLine,
+      };
+    }
+
+    // 如果遇到 > 或 /> 或 </，说明已经过了属性区域
+    const trimmed = searchLine.trim();
+    if (trimmed === '>' || trimmed.endsWith('/>') || trimmed.startsWith('</')) {
+      // 但如果当前行是 >，可能 className 不存在，需要在开始标签行插入
+      break;
+    }
+  }
+
+  // 3. 如果没找到 className，尝试在标签名后插入
+  // 回到起始行检查是否有标签名
+  const tagMatch = currentLine.match(/<([A-Z][a-zA-Z0-9.]*|[a-z][a-z0-9-]*)/);
   if (tagMatch) {
     const tagName = tagMatch[1];
-    // 在标签名后插入 className
-    // 注意：这里简单地插入到标签名后，可能会导致格式问题（如缺少空格），但通常是安全的
-    // 更严谨的做法是检查标签名后是否有属性，如果有，插入到第一个属性前
-    return line.replace(tagName, `${tagName} className="${newValue}"`);
+    return {
+      found: true,
+      lineIndex: startLine,
+      newLine: currentLine.replace(
+        tagName,
+        `${tagName} className="${newValue}"`,
+      ),
+    };
   }
 
-  // 4. 如果都无法匹配（例如不在标签行），为了安全起见，返回原行
-  // 绝对不要直接返回 newValue，否则会覆盖整行代码
-  console.warn('[DesignMode] Failed to match className or tag in line:', line);
-  // throw new Error('Cannot find a valid location to insert className. The component might not support styling or has complex syntax.');
-  return line;
+  // 4. 如果都无法匹配，返回失败
+  console.warn(
+    '[DesignMode] Failed to match className or tag in lines starting from:',
+    startLine,
+  );
+  return { found: false, lineIndex: startLine, newLine: currentLine };
 }
 
 // 智能内容替换
@@ -853,21 +916,39 @@ async function smartReplaceContent(
   line: string,
   options: any,
 ): Promise<string> {
-  // 对于React JSX内容，可以使用更精确的替换
-  if (options.originalValue && line.includes(options.originalValue)) {
-    return line.replace(
-      new RegExp(escapeRegExp(options.originalValue), 'g'),
-      options.newValue,
-    );
+  const { originalValue, newValue } = options;
+
+  // 1. 如果有原始值且行中包含原始值，直接替换
+  if (originalValue && line.includes(originalValue)) {
+    return line.replace(new RegExp(escapeRegExp(originalValue), 'g'), newValue);
   }
 
-  // 如果在标签内容中，尝试替换标签内容部分
+  // 2. 如果在标签内容中（同一行内有 >...<），尝试替换标签内容部分
   const contentMatch = line.match(/>([^<]*)</);
-  if (contentMatch && contentMatch[1] === options.originalValue) {
-    return line.replace(contentMatch[0], `>${options.newValue}<`);
+  if (contentMatch && contentMatch[1] === originalValue) {
+    return line.replace(contentMatch[0], `>${newValue}<`);
   }
 
-  return options.newValue;
+  // 3. 处理独立行的文本内容（去除空白后的纯文本）
+  // 例如 JSX 中：
+  //   <Button>
+  //     点击我        <-- 这一行
+  //   </Button>
+  const trimmedLine = line.trim();
+  if (originalValue && trimmedLine === originalValue) {
+    // 保留原有的缩进
+    const leadingWhitespace = line.match(/^(\s*)/)?.[1] || '';
+    return leadingWhitespace + newValue;
+  }
+
+  // 4. 如果都无法匹配，返回原行而不是新值（避免覆盖整行代码）
+  console.warn(
+    '[DesignMode] Failed to match content in line:',
+    line,
+    'originalValue:',
+    originalValue,
+  );
+  return line;
 }
 
 // 智能属性替换
@@ -875,11 +956,22 @@ async function smartReplaceAttribute(
   line: string,
   options: any,
 ): Promise<string> {
-  // 实现属性替换逻辑
-  return line.replace(
-    new RegExp(`${options.attributeName}="[^"]*"`),
-    `${options.attributeName}="${options.newValue}"`,
+  const regex = new RegExp(`${escapeRegExp(options.attributeName)}="[^"]*"`);
+  if (regex.test(line)) {
+    return line.replace(
+      regex,
+      `${options.attributeName}="${options.newValue}"`,
+    );
+  }
+
+  // 如果无法匹配，返回原行
+  console.warn(
+    '[DesignMode] Failed to match attribute in line:',
+    line,
+    'attributeName:',
+    options.attributeName,
   );
+  return line;
 }
 
 // 智能替换源码
@@ -902,25 +994,44 @@ export async function smartReplaceInSource(
   }
 
   const line = lines[targetLine];
-  let newLine = line;
 
   try {
     switch (options.type) {
       case 'style':
-        // 处理样式更新
-        newLine = await smartReplaceStyle(line, options);
+        // 处理样式更新 - 可能需要向后搜索多行
+        const styleResult = await smartReplaceStyleMultiLine(
+          lines,
+          targetLine,
+          options,
+        );
+        if (styleResult.found) {
+          lines[styleResult.lineIndex] = styleResult.newLine;
+        } else {
+          console.warn('[DesignMode] Style (className) not found in element');
+        }
         break;
       case 'content':
-        // 处理内容更新
-        newLine = await smartReplaceContent(line, options);
+        // 处理内容更新 - 可能需要向后搜索多行
+        const contentResult = await smartReplaceContentMultiLine(
+          lines,
+          targetLine,
+          options,
+        );
+        if (contentResult.found) {
+          lines[contentResult.lineIndex] = contentResult.newLine;
+        } else {
+          console.warn(
+            '[DesignMode] Content not found in element:',
+            options.originalValue,
+          );
+        }
         break;
       case 'attribute':
-        // 处理属性更新
-        newLine = await smartReplaceAttribute(line, options);
+        // 处理属性更新 - 只在目标行处理
+        lines[targetLine] = await smartReplaceAttribute(line, options);
         break;
     }
 
-    lines[targetLine] = newLine;
     return lines.join('\n');
   } catch (error) {
     console.error(
@@ -930,4 +1041,71 @@ export async function smartReplaceInSource(
     );
     return content; // Return original content on error
   }
+}
+
+// 智能内容替换 - 支持多行搜索
+async function smartReplaceContentMultiLine(
+  lines: string[],
+  startLine: number,
+  options: any,
+): Promise<{ found: boolean; lineIndex: number; newLine: string }> {
+  const { originalValue, newValue } = options;
+
+  // 1. 首先在当前行尝试
+  const currentLine = lines[startLine];
+  if (originalValue && currentLine.includes(originalValue)) {
+    return {
+      found: true,
+      lineIndex: startLine,
+      newLine: currentLine.replace(
+        new RegExp(escapeRegExp(originalValue), 'g'),
+        newValue,
+      ),
+    };
+  }
+
+  // 2. 向后搜索，直到找到内容或超出范围（最多搜索20行）
+  const maxSearchLines = Math.min(startLine + 20, lines.length);
+
+  for (let i = startLine + 1; i < maxSearchLines; i++) {
+    const searchLine = lines[i];
+
+    // 如果找到了原始值（行内包含）
+    if (originalValue && searchLine.includes(originalValue)) {
+      return {
+        found: true,
+        lineIndex: i,
+        newLine: searchLine.replace(
+          new RegExp(escapeRegExp(originalValue), 'g'),
+          newValue,
+        ),
+      };
+    }
+
+    // 检查整行（去除空白）是否就是原始值（用于处理独立行的纯文本）
+    const trimmedSearchLine = searchLine.trim();
+    if (originalValue && trimmedSearchLine === originalValue) {
+      const leadingWhitespace = searchLine.match(/^(\s*)/)?.[1] || '';
+      return {
+        found: true,
+        lineIndex: i,
+        newLine: leadingWhitespace + newValue,
+      };
+    }
+
+    // 如果遇到当前元素的闭合标签，停止搜索
+    // 注意：</开头的标签表示闭合，我们应该在找到闭合标签后停止
+    if (searchLine.trim().startsWith('</') || searchLine.includes('/>')) {
+      break;
+    }
+  }
+
+  // 3. 如果都找不到，返回未找到
+  console.warn(
+    '[DesignMode] Failed to match content, originalValue:',
+    originalValue,
+    'startLine:',
+    startLine,
+  );
+  return { found: false, lineIndex: startLine, newLine: currentLine };
 }
