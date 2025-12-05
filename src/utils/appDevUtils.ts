@@ -911,46 +911,6 @@ async function smartReplaceStyleMultiLine(
   return { found: false, lineIndex: startLine, newLine: currentLine };
 }
 
-// 智能内容替换
-async function smartReplaceContent(
-  line: string,
-  options: any,
-): Promise<string> {
-  const { originalValue, newValue } = options;
-
-  // 1. 如果有原始值且行中包含原始值，直接替换
-  if (originalValue && line.includes(originalValue)) {
-    return line.replace(new RegExp(escapeRegExp(originalValue), 'g'), newValue);
-  }
-
-  // 2. 如果在标签内容中（同一行内有 >...<），尝试替换标签内容部分
-  const contentMatch = line.match(/>([^<]*)</);
-  if (contentMatch && contentMatch[1] === originalValue) {
-    return line.replace(contentMatch[0], `>${newValue}<`);
-  }
-
-  // 3. 处理独立行的文本内容（去除空白后的纯文本）
-  // 例如 JSX 中：
-  //   <Button>
-  //     点击我        <-- 这一行
-  //   </Button>
-  const trimmedLine = line.trim();
-  if (originalValue && trimmedLine === originalValue) {
-    // 保留原有的缩进
-    const leadingWhitespace = line.match(/^(\s*)/)?.[1] || '';
-    return leadingWhitespace + newValue;
-  }
-
-  // 4. 如果都无法匹配，返回原行而不是新值（避免覆盖整行代码）
-  console.warn(
-    '[DesignMode] Failed to match content in line:',
-    line,
-    'originalValue:',
-    originalValue,
-  );
-  return line;
-}
-
 // 智能属性替换
 async function smartReplaceAttribute(
   line: string,
@@ -983,6 +943,7 @@ export async function smartReplaceInSource(
     newValue: string;
     originalValue?: string;
     type: 'style' | 'content' | 'attribute';
+    tagName?: string;
   },
   // rootDir: string
 ): Promise<string> {
@@ -997,7 +958,7 @@ export async function smartReplaceInSource(
 
   try {
     switch (options.type) {
-      case 'style':
+      case 'style': {
         // 处理样式更新 - 可能需要向后搜索多行
         const styleResult = await smartReplaceStyleMultiLine(
           lines,
@@ -1010,15 +971,25 @@ export async function smartReplaceInSource(
           console.warn('[DesignMode] Style (className) not found in element');
         }
         break;
-      case 'content':
+      }
+      case 'content': {
         // 处理内容更新 - 可能需要向后搜索多行
-        const contentResult = await smartReplaceContentMultiLine(
+        const contentResult = await smartReplaceContentMultiLineImpl(
           lines,
           targetLine,
           options,
         );
         if (contentResult.found) {
-          lines[contentResult.lineIndex] = contentResult.newLine;
+          // Handle multi-line replacement (splicing)
+          const deleteCount =
+            (contentResult.endLine || contentResult.startLine) -
+            contentResult.startLine +
+            1;
+          lines.splice(
+            contentResult.startLine,
+            deleteCount,
+            ...contentResult.newLines,
+          );
         } else {
           console.warn(
             '[DesignMode] Content not found in element:',
@@ -1026,10 +997,12 @@ export async function smartReplaceInSource(
           );
         }
         break;
-      case 'attribute':
+      }
+      case 'attribute': {
         // 处理属性更新 - 只在目标行处理
         lines[targetLine] = await smartReplaceAttribute(line, options);
         break;
+      }
     }
 
     return lines.join('\n');
@@ -1073,13 +1046,33 @@ function safeReplaceContentInLine(
     .join('');
 }
 
-// 智能内容替换 - 支持多行搜索
-async function smartReplaceContentMultiLine(
+/**
+ * 智能内容替换 - 支持多行搜索
+ * 用例文档在：docs/ch/smart_replace_test_cases.md
+ * @param lines
+ * @param startLine
+ * @param options
+ * @returns
+ */
+async function smartReplaceContentMultiLineImpl(
   lines: string[],
   startLine: number,
   options: any,
-): Promise<{ found: boolean; lineIndex: number; newLine: string }> {
+): Promise<{
+  found: boolean;
+  startLine: number;
+  endLine?: number;
+  newLines: string[];
+}> {
   const { originalValue, newValue, columnNumber } = options;
+
+  // Legacy single line replacement helper wrapper
+  const singleLineResult = (lineIndex: number, lineContent: string) => ({
+    found: true,
+    startLine: lineIndex,
+    endLine: lineIndex,
+    newLines: [lineContent],
+  });
 
   // 1. First try exact match in current line
   const currentLine = lines[startLine];
@@ -1091,11 +1084,7 @@ async function smartReplaceContentMultiLine(
       newValue,
     );
     if (safeReplaced !== currentLine) {
-      return {
-        found: true,
-        lineIndex: startLine,
-        newLine: safeReplaced,
-      };
+      return singleLineResult(startLine, safeReplaced);
     }
   }
 
@@ -1113,11 +1102,7 @@ async function smartReplaceContentMultiLine(
         newValue,
       );
       if (safeReplaced !== searchLine) {
-        return {
-          found: true,
-          lineIndex: i,
-          newLine: safeReplaced,
-        };
+        return singleLineResult(i, safeReplaced);
       }
     }
 
@@ -1125,11 +1110,7 @@ async function smartReplaceContentMultiLine(
     const trimmedSearchLine = searchLine.trim();
     if (originalValue && trimmedSearchLine === originalValue) {
       const leadingWhitespace = searchLine.match(/^(\s*)/)?.[1] || '';
-      return {
-        found: true,
-        lineIndex: i,
-        newLine: leadingWhitespace + newValue,
-      };
+      return singleLineResult(i, leadingWhitespace + newValue);
     }
 
     // 如果遇到当前元素的闭合标签，停止搜索
@@ -1139,164 +1120,203 @@ async function smartReplaceContentMultiLine(
     }
   }
 
-  // 3. Fallback: Structural replacement using columnNumber
-  // If exact text match failed, we try to locate the element by column number
-  if (columnNumber !== undefined) {
-    const colIndex = columnNumber - 1; // 1-based to 0-based
+  // 3. Fallback: Structural replacement using columnNumber OR tagName (Fuzzy Match)
+  // If exact text match failed, we try to locate the element by column number or tag name
+  if (columnNumber !== undefined || options.tagName) {
+    let colIndex = -1;
+    let targetLineIndex = startLine;
 
-    // Check if the column points to a tag start '<'
-    // Verify we are at the right position roughly
+    // Strategy A: Try columnNumber (only valid if on startLine)
+    if (columnNumber !== undefined) {
+      colIndex = columnNumber - 1; // 1-based to 0-based
+    }
 
-    // We expect the tag to act as a container.
-    // Case A: Self-closing tag <Tag ... /> or <Tag ...> (void) -> Convert to <Tag ...>newValue</Tag>
-    // Case B: Paired tag <Tag ...> ... </Tag> -> Replace inner content
+    // Check if valid start of tag
+    const isValidTagStart = (index: number, line: string) => {
+      // Must start with < and not be </
+      return line[index] === '<' && line[index + 1] !== '/';
+    };
 
-    // Extract the tag name at the column position
-    const lineSuffix = currentLine.substring(colIndex);
-    const tagMatch = lineSuffix.match(/^<([a-zA-Z0-9\-\.]+)/);
+    // If columnNumber didn't point to a valid tag start, try Strategy B: Fuzzy Tag Match
+    if (
+      colIndex === -1 ||
+      colIndex >= currentLine.length ||
+      !isValidTagStart(colIndex, currentLine)
+    ) {
+      if (options.tagName) {
+        // Search window: startLine to startLine + 300 (handle large source map inaccuracies)
+        const searchLimit = Math.min(startLine + 300, lines.length);
+        const escapedTagName = escapeRegExp(options.tagName);
+        const tagRegex = new RegExp(`<${escapedTagName}(?=[\\s>/>])`);
 
-    if (tagMatch) {
-      const tagName = tagMatch[1];
-
-      // Check if it's a self-closing tag in the current line
-      // We need to find the end of this opening tag
-      let tagEndIndex = -1;
-      let isSelfClosing = false;
-
-      // Simple scan for '>' ignoring quotes
-      let inQuote = null;
-      for (let i = colIndex; i < currentLine.length; i++) {
-        const char = currentLine[i];
-        if (inQuote) {
-          if (char === inQuote) inQuote = null;
-        } else {
-          if (char === '"' || char === "'") inQuote = char;
-          else if (char === '>') {
-            tagEndIndex = i;
-            if (currentLine[i - 1] === '/') isSelfClosing = true;
+        for (let i = startLine; i < searchLimit; i++) {
+          const line = lines[i];
+          const match = line.match(tagRegex);
+          if (match && match.index !== undefined) {
+            colIndex = match.index;
+            targetLineIndex = i;
+            console.log(
+              `[DesignMode] Fuzzy match found for <${options.tagName}> at line ${i} index ${colIndex}`,
+            );
             break;
           }
         }
       }
+    }
 
-      if (tagEndIndex !== -1) {
-        // We found the end of the opening tag
+    // If we have a valid index, proceed with structural replacement
+    if (colIndex !== -1 && targetLineIndex < lines.length) {
+      const targetLine = lines[targetLineIndex];
+      // Re-verify start of tag in case we found it via fuzzy match
+      if (isValidTagStart(colIndex, targetLine)) {
+        // Extract the tag name at the column position
+        const lineSuffix = targetLine.substring(colIndex);
+        const tagMatch = lineSuffix.match(/^<([a-zA-Z0-9-.]+)/);
 
-        // Remove dangerouslySetInnerHTML if present (since we are replacing content)
-        // We'll treat the tag content from <... to ...> as the "open tag" to preserve attributes
-        let openTagContent = currentLine.substring(colIndex, tagEndIndex + 1);
+        if (tagMatch) {
+          const tagName = tagMatch[1];
+          const currentLineToReplace = targetLine;
 
-        // Filter out dangerouslySetInnerHTML
-        if (openTagContent.includes('dangerouslySetInnerHTML')) {
-          openTagContent = openTagContent.replace(
-            /dangerouslySetInnerHTML=\{[^}]+\}/g,
-            '',
-          );
-          openTagContent = openTagContent.replace(
-            /dangerouslySetInnerHTML/g,
-            '',
-          ); // cleanup leftovers
-          // fix double spaces
-          openTagContent = openTagContent
-            .replace(/\s+/g, ' ')
-            .replace(/\s+>/, '>')
-            .replace(/\s+\/>/, '/>');
-        }
+          // Check if it's a self-closing tag in the current line
+          let tagEndIndex = -1;
+          let isSelfClosing = false;
 
-        if (isSelfClosing) {
-          // Provide new structure: <Tag attributes>newValue</Tag>
-          // Convert <Tag ... /> to <Tag ...>
-          const newOpenTag = openTagContent.replace(/\s*\/>$/, '>');
-          const newContent = `${newOpenTag}${newValue}</${tagName}>`;
-
-          const newLine =
-            currentLine.substring(0, colIndex) +
-            newContent +
-            currentLine.substring(tagEndIndex + 1);
-          return {
-            found: true,
-            lineIndex: startLine,
-            newLine: newLine,
-          };
-        } else {
-          // It is an opening tag <Tag ...>
-          // We need to find the matching closing tag </Tag>
-          // and replace everything in between.
-
-          // If the closing tag is on the same line
-          const closingTag = `</${tagName}>`;
-          const closingTagIndex = currentLine.indexOf(closingTag, tagEndIndex);
-
-          if (closingTagIndex !== -1) {
-            const newLine =
-              currentLine.substring(0, colIndex) +
-              openTagContent +
-              newValue +
-              currentLine.substring(closingTagIndex);
-            return {
-              found: true,
-              lineIndex: startLine,
-              newLine: newLine,
-            };
+          // Simple scan for '>' ignoring quotes
+          let inQuote = null;
+          for (let i = colIndex; i < currentLineToReplace.length; i++) {
+            const char = currentLineToReplace[i];
+            if (inQuote) {
+              if (char === inQuote) inQuote = null;
+            } else {
+              if (char === '"' || char === "'") inQuote = char;
+              else if (char === '>') {
+                tagEndIndex = i;
+                if (currentLineToReplace[i - 1] === '/') isSelfClosing = true;
+                break;
+              }
+            }
           }
 
-          // If closing tag is NOT on the same line, we assume it's Multi-line content.
-          // However, `smartReplaceContentMultiLine` contract currently only returns a single `newLine` replacement for a specific lineIndex.
-          // It does not support replacing a range of lines or returning multiple modified lines directly in this interface easily
-          // without changing `smartReplaceInSource` to handle line deletions/merges.
+          if (tagEndIndex !== -1) {
+            // We found the end of the opening tag
 
-          // LIMITATION: `smartReplaceInSource` replaces `lines[contentResult.lineIndex] = contentResult.newLine`.
-          // It doesn't seem to support deleting intermediate lines.
+            // Remove dangerouslySetInnerHTML if present (since we are replacing content)
+            let openTagContent = currentLineToReplace.substring(
+              colIndex,
+              tagEndIndex + 1,
+            );
 
-          // If we modify this to only support replacing the *content* if it's empty or simple, we might be okay.
-          // But if we have:
-          // <Div>
-          //   Old Content
-          // </Div>
-          // And we want to replace "Old Content" with "New Content", we either:
-          // 1. Find "Old Content" and replace it (Text Match - failed).
-          // 2. Collapse everything into one line?
+            if (openTagContent.includes('dangerouslySetInnerHTML')) {
+              openTagContent = openTagContent.replace(
+                /dangerouslySetInnerHTML=\{[^}]+\}/g,
+                '',
+              );
+              openTagContent = openTagContent.replace(
+                /dangerouslySetInnerHTML/g,
+                '',
+              );
+              openTagContent = openTagContent
+                .replace(/\s+/g, ' ')
+                .replace(/\s+>/, '>')
+                .replace(/\s+\/>/, '/>');
+            }
 
-          // Given the current architecture where we return `{ lineIndex, newLine }`, we are restricted to updating ONE line.
-          // Unless we hack it by returning the whole block in one line? But the calling function `smartReplaceInSource`
-          // only updates `lines[index]`. It does NOT remove subsequent lines.
+            if (isSelfClosing) {
+              const newOpenTag = openTagContent.replace(/\s*\/>$/, '>');
+              const newContent = `${newOpenTag}${newValue}</${tagName}>`;
 
-          // Converting a multi-line block to single line will leave "ghost" lines of the old content if we don't clear them.
-          // `smartReplaceInSource` logic:
-          // if (contentResult.found) { lines[contentResult.lineIndex] = contentResult.newLine; }
+              const newLine =
+                currentLineToReplace.substring(0, colIndex) +
+                newContent +
+                currentLineToReplace.substring(tagEndIndex + 1);
+              return singleLineResult(targetLineIndex, newLine);
+            } else {
+              // Opening tag <Tag ...>
+              const closingTag = `</${tagName}>`;
+              const closingTagIndex = currentLineToReplace.indexOf(
+                closingTag,
+                tagEndIndex,
+              );
 
-          // IF we need to support multi-line structural replacement, we'd need to change `smartReplaceInSource` to handle line ranges.
+              if (closingTagIndex !== -1) {
+                const newLine =
+                  currentLineToReplace.substring(0, colIndex) +
+                  openTagContent +
+                  newValue +
+                  currentLineToReplace.substring(closingTagIndex);
+                return singleLineResult(targetLineIndex, newLine);
+              }
 
-          // For now, let's handle the case where we can just inject/replace content into the *opening* tag line
-          // if it was previously empty or if we just want to force it.
-          // But we can't delete the old content if it's on subsequent lines without changing the caller.
+              // Multi-line replacement logic
+              // 1. We found the opening tag at `targetLineIndex` (index `colIndex` to `tagEndIndex`)
+              // 2. We need to find the closing tag `</tagName>` starting from this line onwards
 
-          // However, for the user's specific case:
-          // The user says: "originalValue: 12121212天空地址"
-          // The code might be: `<h1>{tenantConfigInfo?.homeSlogan}</h1>` or similar dynamic content.
-          // Or `<h1 ...>{...}</h1>`.
+              let foundClosing = false;
+              let closingLineIndex = -1;
+              let closingTagInLineIndex = -1;
 
-          // If the element is on one line: `<h1>{foo}</h1>` -> `<h1>newValue</h1>`.
-          // This fits the logic above (closing tag on same line).
+              for (let j = targetLineIndex; j < lines.length; j++) {
+                const checkLine = lines[j];
+                // Search for closing tag
+                // If same line, we already checked above (closingTagIndex == -1), so start search after tagEndIndex if j==targetLineIndex
+                // But since indexOf returned -1, we know it's not on this line (or at least not after start)
 
-          // If it is multi-line:
-          // <h1>
-          //   {foo}
-          // </h1>
-          // We can't easily replace this without changing the caller to support deleting lines.
+                const searchStart = j === targetLineIndex ? tagEndIndex + 1 : 0;
+                const closeIdx = checkLine.indexOf(closingTag, searchStart);
 
-          // Let's at least support the single-line structural/fallback case and the self-closing case.
-          // This covers:
-          // 1. `<div />` -> `<div>txt</div>`
-          // 2. `<div>{val}</div>` -> `<div>txt</div>` (same line)
+                if (closeIdx !== -1) {
+                  foundClosing = true;
+                  closingLineIndex = j;
+                  closingTagInLineIndex = closeIdx;
+                  break;
+                }
+              }
 
-          // If we encounter multi-line matched tags, we might have to bail out or try to be clever.
-          // But seeing the user's error: "originalValue" is 1212... and they want to replace it using source info.
-          // If the original value is not found, it enters this fallback.
+              if (foundClosing) {
+                // We have the range! [targetLineIndex, closingLineIndex]
 
-          console.warn(
-            '[DesignMode] Structural replacement partial support: Multi-line structural replacement not fully supported yet in this patch.',
-          );
+                // Construct new content lines
+                // Line 1: BeforeOpenTag + OpenTag + NewValue + AfterClosingTag (if same line - handled above)
+
+                // Multi-line case:
+                // Line 1: BeforeOpenTag + OpenTag + NewValue (start) ... wait
+                // Actually we want to replace the INNER content or the whole element?
+                // Usually content replacement means replacing inner content.
+                // But here we are stripping attributes (dangerouslySetInnerHTML), so we are reconstructing the element.
+
+                // Reconstructed Block:
+                // <TagName>New Content</TagName>
+                // We want to put this where the old element was.
+
+                // Opening Line: ...prefix... <TagName ...> ...
+                // Closing Line: ... </TagName> ...suffix...
+
+                // If we just blast it into one line:
+                // ...prefix... <TagName>NewValue</TagName> ...suffix...
+
+                const prefix = lines[targetLineIndex].substring(0, colIndex);
+                const suffix = lines[closingLineIndex].substring(
+                  closingTagInLineIndex + closingTag.length,
+                );
+
+                const combinedNewLine =
+                  prefix + openTagContent + newValue + `</${tagName}>` + suffix;
+
+                // We replace lines [targetLineIndex] to [closingLineIndex] with [combinedNewLine]
+                return {
+                  found: true,
+                  startLine: targetLineIndex,
+                  endLine: closingLineIndex,
+                  newLines: [combinedNewLine],
+                };
+              }
+
+              // Multi-line not supported, warning below
+              console.warn(
+                '[DesignMode] Structural replacement partial support: Closing tag not found for multi-line element.',
+              );
+            }
+          }
         }
       }
     }
@@ -1309,5 +1329,5 @@ async function smartReplaceContentMultiLine(
     'startLine:',
     startLine,
   );
-  return { found: false, lineIndex: startLine, newLine: currentLine };
+  return { found: false, startLine: startLine, newLines: [] };
 }
