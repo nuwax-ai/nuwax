@@ -2,7 +2,8 @@ import SvgIcon from '@/components/base/SvgIcon';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
 import { SyncOutlined } from '@ant-design/icons';
 import { Alert, Badge, Button, Dropdown, Tag, Tooltip } from 'antd';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 // 版本对比模式相关接口
@@ -168,6 +169,36 @@ const PreviewStatusInfo: React.FC<PreviewStatusProps> = ({
   // 服务器连接状态
   const isServerConnected = useMemo(() => !!devServerUrl, [devServerUrl]);
 
+  const isConnectedState = useMemo(
+    () =>
+      !isProjectUploading &&
+      !isRestarting &&
+      !isStarting &&
+      !isLoading &&
+      isServerConnected,
+    [
+      isProjectUploading,
+      isRestarting,
+      isStarting,
+      isLoading,
+      isServerConnected,
+    ],
+  );
+
+  const isLoadingState = useMemo(
+    () => !isStarting && !isRestarting && !isProjectUploading && isLoading,
+    [isStarting, isRestarting, isProjectUploading],
+  );
+  const { setIsIframeLoaded } = useModel('appDevDesign');
+  useEffect(() => {
+    if (isConnectedState) {
+      setIsIframeLoaded(true);
+    } else if (isLoadingState) {
+      setIsIframeLoaded(false);
+    } else if (isStarting) {
+      setIsIframeLoaded(false);
+    }
+  }, [isConnectedState, isLoadingState, isStarting]);
   // 是否有加载状态
   // const hasLoadingState = useMemo(
   //   () => isStarting || isRestarting || isProjectUploading,
@@ -176,14 +207,10 @@ const PreviewStatusInfo: React.FC<PreviewStatusProps> = ({
 
   return (
     <div className={styles.previewStatusInfo}>
-      {!isProjectUploading &&
-        !isRestarting &&
-        !isStarting &&
-        !isLoading &&
-        isServerConnected && (
-          <span className={styles.statusBadge}>开发服务器已连接</span>
-        )}
-      {!isStarting && !isRestarting && !isProjectUploading && isLoading && (
+      {isConnectedState && (
+        <span className={styles.statusBadge}>开发服务器已连接</span>
+      )}
+      {isLoadingState && (
         <span className={styles.loadingBadge}>
           <SyncOutlined spin style={{ fontSize: 12 }} />
           加载中...
