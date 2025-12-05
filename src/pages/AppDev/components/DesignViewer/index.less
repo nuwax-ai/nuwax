@@ -3,15 +3,19 @@
 
 .designViewer {
   position: absolute;
-  top: 40px;
+  top: 0;
   left: 0;
   width: 100%;
-  height: calc(100% - 170px);
+  height: 100%;
   display: flex;
   flex-direction: column;
   background: @colorBgContainer;
   border-left: @lineWidth solid @colorBorderSecondary;
   z-index: 100;
+
+  &.empty {
+    color: @colorTextTertiary;
+  }
 }
 
 // 面包屑容器
@@ -39,11 +43,6 @@
       margin: 0 8px;
     }
   }
-}
-
-.breadcrumbIcon {
-  color: @colorPrimary;
-  font-size: @fontSize;
 }
 
 .moreIcon {

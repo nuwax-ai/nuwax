@@ -1235,7 +1235,7 @@
     monitorData.ready = true;
 
     //新增功能 支持 design mode 提前加载所有 tailwind 样式
-    setupTailwindStyles();
+    // setupTailwindStyles();
   }
 
   /**

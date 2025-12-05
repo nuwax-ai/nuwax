@@ -399,3 +399,17 @@ export const getColorFromTailwindClass = (
 export const getColorClassRegexp = (prefix: string) => {
   return new RegExp(`^${prefix}-(transparent|black|white|[a-z]+-\\d+)$`);
 };
+
+/**
+ * 从 Tailwind 类名中解析颜色值
+ * @param className Tailwind 类名，如 "text-red-500", "bg-blue-600" 等
+ * @returns 对应的颜色值（需要从实际 CSS 中获取，这里返回类名用于后续处理）
+ */
+export const parseTailwindColor = (className: string): string | null => {
+  // 匹配颜色类名，如 "text-red-500", "bg-blue-600"
+  const colorMatch = className.match(/^(text|bg)-(.+)$/);
+  if (colorMatch) {
+    return className; // 返回完整类名，后续可以从 CSS 中获取实际颜色值
+  }
+  return null;
+};

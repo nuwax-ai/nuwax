@@ -11,6 +11,7 @@ import {
   PAGE_DEVELOP_MORE_ACTIONS,
 } from '@/constants/pageDev.constants';
 import { CREATE_LIST } from '@/constants/space.constants';
+import { exportProject } from '@/services/appDev';
 import {
   apiCustomPageQueryList,
   apiPageDeleteProject,
@@ -35,7 +36,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import AuthConfigModal from './AuthConfigModal';
 import styles from './index.less';
@@ -274,6 +275,61 @@ const SpacePageDevelop: React.FC = () => {
     },
   });
 
+  /**
+   * 处理项目导出
+   */
+  const handleExportProject = useCallback(async (projectId: string) => {
+    // 检查项目ID是否有效
+    if (!projectId) {
+      message.error('项目ID不存在或无效，无法导出');
+      return;
+    }
+
+    try {
+      // setIsExporting(true); // 暂时注释掉，后续可能需要
+      const result = await exportProject(projectId);
+
+      // 从响应头中获取文件名
+      const contentDisposition = result.headers?.['content-disposition'];
+      let filename = `project-${projectId}.zip`;
+
+      if (contentDisposition) {
+        // 解析 Content-Disposition 头中的文件名
+        const filenameMatch = contentDisposition.match(
+          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
+        );
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+
+      // 创建下载链接
+      const blob = new Blob([result.data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+
+      // 触发下载
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // 清理URL对象
+      window.URL.revokeObjectURL(url);
+
+      message.success('项目导出成功！');
+    } catch (error) {
+      // 改进错误处理，兼容不同的错误格式
+      const errorMessage =
+        (error as any)?.message ||
+        (error as any)?.toString() ||
+        '导出过程中发生未知错误';
+
+      message.error(`导出失败: ${errorMessage}`);
+    }
+  }, []);
+
   // 点击更多操作
   const handleClickMore = (item: CustomPopoverItem, info: CustomPageDto) => {
     setProjectId(info.projectId);
@@ -299,6 +355,10 @@ const SpacePageDevelop: React.FC = () => {
       // 复制到空间
       case PageDevelopMoreActionEnum.Copy_To_Space:
         setOpenCopyToSpaceModal(true);
+        break;
+      // 导出项目
+      case PageDevelopMoreActionEnum.Export_Project:
+        handleExportProject(info.projectId.toString());
         break;
       // 删除页面项目
       case PageDevelopMoreActionEnum.Delete:
