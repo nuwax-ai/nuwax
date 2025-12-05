@@ -82,7 +82,10 @@ interface ContentViewerProps {
     errorType?: 'whiteScreen' | 'iframe',
   ) => void;
   /** 刷新文件树回调 */
-  onRefreshFileTree?: (preserveExpandedState?: boolean) => void;
+  onRefreshFileTree?: (
+    preserveExpandedState?: boolean,
+    forceUpdate?: boolean,
+  ) => void;
 }
 
 /**
