@@ -814,28 +814,38 @@ function escapeRegExp(string: string): string {
 
 // 智能样式替换
 async function smartReplaceStyle(line: string, options: any): Promise<string> {
-  // 这里可以实现更复杂的样式替换逻辑
-  // 比如使用AST解析或者正则表达式匹配
-  if (options.originalValue && line.includes(options.originalValue)) {
-    return line.replace(
-      new RegExp(escapeRegExp(options.originalValue), 'g'),
-      options.newValue,
-    );
+  const { newValue } = options;
+
+  // 1. 尝试匹配 className="..." 或 className='...'
+  const classNameRegex = /className=(["'])(.*?)\1/;
+  if (classNameRegex.test(line)) {
+    return line.replace(classNameRegex, `className=$1${newValue}$1`);
   }
 
-  // 如果没有原始值，使用列号信息进行更精确的替换
-  const parts = line.split('=');
-  if (parts.length >= 2) {
-    const attributeName = parts[0].trim();
-    // const attributeValue = parts.slice(1).join('=').trim();
-    const newAttributeValue = options.newValue;
-
-    if (attributeName === 'className') {
-      return `${attributeName}={${newAttributeValue}}`;
-    }
+  // 2. 尝试匹配 className={...}
+  const classNameExpressionRegex = /className=\{([^}]*)\}/;
+  if (classNameExpressionRegex.test(line)) {
+    // 如果是表达式，我们将其替换为字符串形式，因为设计模式通常输出静态字符串
+    // 如果需要保留表达式逻辑（如 cn(...)），则需要更复杂的解析，目前简化处理
+    return line.replace(classNameExpressionRegex, `className="${newValue}"`);
   }
 
-  return options.newValue;
+  // 3. 如果没有 className 属性，尝试插入到标签名之后
+  // 匹配 <TagName 或 <Component.Name
+  const tagMatch = line.match(/<([A-Z][a-zA-Z0-9.]*|[a-z][a-z0-9-]*)/);
+  if (tagMatch) {
+    const tagName = tagMatch[1];
+    // 在标签名后插入 className
+    // 注意：这里简单地插入到标签名后，可能会导致格式问题（如缺少空格），但通常是安全的
+    // 更严谨的做法是检查标签名后是否有属性，如果有，插入到第一个属性前
+    return line.replace(tagName, `${tagName} className="${newValue}"`);
+  }
+
+  // 4. 如果都无法匹配（例如不在标签行），为了安全起见，返回原行
+  // 绝对不要直接返回 newValue，否则会覆盖整行代码
+  console.warn('[DesignMode] Failed to match className or tag in line:', line);
+  // throw new Error('Cannot find a valid location to insert className. The component might not support styling or has complex syntax.');
+  return line;
 }
 
 // 智能内容替换
@@ -913,10 +923,11 @@ export async function smartReplaceInSource(
     lines[targetLine] = newLine;
     return lines.join('\n');
   } catch (error) {
-    throw new Error(
+    console.error(
       `Smart replacement failed: ${
         error instanceof Error ? error.message : 'Unknown error'
       }`,
     );
+    return content; // Return original content on error
   }
 }

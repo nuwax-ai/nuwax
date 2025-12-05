@@ -1076,8 +1076,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               const fileContent = file.contents || '';
 
               // 应用智能替换逻辑
-              const updatedContent = applyDesignChanges(fileContent, changes);
-
+              const updatedContent = await applyDesignChanges(
+                fileContent,
+                changes,
+              );
               filesToUpdate.push({
                 name: filePath,
                 contents: updatedContent,
