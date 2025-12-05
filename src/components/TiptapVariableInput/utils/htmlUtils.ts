@@ -46,6 +46,115 @@ export const escapeEventTags = (text: string): string => {
   });
 };
 
+/**
+ * 转义自定义 XML 标签（如 <OutputFormat>、<Constrains> 等）
+ * 这些标签在提示词中常用，需要被转义以避免被浏览器解析为 HTML 元素
+ *
+ * 支持的标签格式：
+ * - 开始标签：<OutputFormat>、<OutputFormat attr="value">
+ * - 结束标签：</OutputFormat>
+ * - 自闭合标签：<OutputFormat />、<OutputFormat/>、<OutputFormat attr="value" />
+ *
+ * @param text 需要处理的文本
+ * @returns 处理后的文本（自定义标签被转义为 &lt; 和 &gt;）
+ */
+export const escapeCustomHTMLTags = (text: string): string => {
+  if (!text) return '';
+
+  // 匹配自定义 XML 标签（以大写字母开头的标签名，如 <OutputFormat>、<Constrains> 等）
+  // 这些标签不是标准的 HTML 标签，需要被转义以避免被浏览器解析
+  // 正则匹配：
+  //   - 自闭合标签：<标签名 /> 或 <标签名/> 或 <标签名 属性 />
+  //   - 开始标签：<标签名> 或 <标签名 属性>
+  //   - 结束标签：</标签名>
+  // 排除已经转义的标签（&lt; 和 &gt;）
+  // 排除标准 HTML 标签（如 <p>、<br>、<span> 等）
+  // 注意：必须先匹配自闭合标签，再匹配普通开始标签，避免重复匹配
+  // 自闭合标签：以 /> 结尾，可能包含属性
+  const customSelfClosingTagRegex = /<([A-Z][A-Za-z0-9]*)(?:\s+[^>]*)?\s*\/>/g;
+  // 普通开始标签：以 > 结尾（不包含 /），可能包含属性
+  // 注意：由于先处理了自闭合标签，这里不会匹配到自闭合标签
+  const customTagRegex = /<([A-Z][A-Za-z0-9]*)(?:\s+[^>]*)?>/g;
+  // 结束标签：</标签名>
+  const customClosingTagRegex = /<\/([A-Z][A-Za-z0-9]*)>/g;
+
+  // 标准 HTML 标签列表（小写）
+  const standardTags = [
+    'p',
+    'br',
+    'span',
+    'div',
+    'strong',
+    'em',
+    'u',
+    's',
+    'code',
+    'pre',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'ul',
+    'ol',
+    'li',
+    'blockquote',
+    'a',
+    'img',
+    'table',
+    'tr',
+    'td',
+    'th',
+    'thead',
+    'tbody',
+    'thead',
+    'tfoot',
+  ];
+
+  // 先处理自闭合标签（必须在开始标签之前处理，避免重复匹配）
+  // 自闭合标签格式：<标签名 /> 或 <标签名/>
+  let result = text.replace(customSelfClosingTagRegex, (match, tagName) => {
+    // 如果标签名是小写的标准标签，不转义
+    if (standardTags.includes(tagName.toLowerCase())) {
+      return match;
+    }
+    // 转义自定义自闭合标签
+    return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  });
+
+  // 转义开始标签（排除已经被处理的自闭合标签）
+  // 注意：由于自闭合标签已经被处理，这里不会匹配到自闭合标签
+  result = result.replace(customTagRegex, (match, tagName) => {
+    // 如果标签名是小写的标准标签，不转义
+    if (standardTags.includes(tagName.toLowerCase())) {
+      return match;
+    }
+    // 检查是否已经被转义（避免重复处理）
+    if (match.includes('&lt;') || match.includes('&gt;')) {
+      return match;
+    }
+    // 转义自定义标签
+    return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  });
+
+  // 转义结束标签
+  result = result.replace(customClosingTagRegex, (match, tagName) => {
+    // 如果标签名是小写的标准标签，不转义
+    if (standardTags.includes(tagName.toLowerCase())) {
+      return match;
+    }
+    // 检查是否已经被转义（避免重复处理）
+    if (match.includes('&lt;') || match.includes('&gt;')) {
+      return match;
+    }
+    // 转义自定义标签
+    return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  });
+
+  return result;
+};
+
 // ... (intermediate code omitted) ...
 
 /**
@@ -130,6 +239,10 @@ export const extractTextFromHTML = (html: string): string => {
 
   const processNode = (node: Node) => {
     if (node.nodeType === Node.TEXT_NODE) {
+      // 处理文本节点
+      // 注意：如果 HTML 中包含转义的标签（&lt; 和 &gt;），
+      // 当通过 innerHTML 解析时，浏览器会自动将它们转换为 < 和 >
+      // 所以这里直接使用 textContent 即可
       result += node.textContent || '';
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       const element = node as Element;
@@ -232,6 +345,10 @@ export const convertTextToHTML = (
 
   // 首先转义事件标签,使其显示为纯文本而不是被浏览器解析
   let html = escapeEventTags(text);
+
+  // 转义自定义 XML 标签（如 <OutputFormat>、<Constrains> 等）
+  // 这些标签需要被转义以避免被浏览器解析为 HTML 元素，但保留在文本中
+  html = escapeCustomHTMLTags(html);
 
   // 检查是否已经是 HTML 格式（包含 HTML 标签）
   const isHTML = /<[^>]+>/.test(html);
