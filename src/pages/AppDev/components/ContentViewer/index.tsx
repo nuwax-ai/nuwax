@@ -81,6 +81,8 @@ interface ContentViewerProps {
     errorMessage: string,
     errorType?: 'whiteScreen' | 'iframe',
   ) => void;
+  /** 刷新文件树回调 */
+  onRefreshFileTree?: (preserveExpandedState?: boolean) => void;
 }
 
 /**
@@ -119,6 +121,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   onStartDev,
   onRestartDev,
   onWhiteScreenOrIframeError,
+  onRefreshFileTree,
 }) => {
   // 使用 useMemo 缓存 Preview 组件，避免重新创建
   const previewComponent = useMemo(
@@ -142,6 +145,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         onStartDev={onStartDev}
         onRestartDev={onRestartDev}
         onWhiteScreenOrIframeError={onWhiteScreenOrIframeError}
+        onRefreshFileTree={onRefreshFileTree}
       />
     ),
     [
@@ -158,6 +162,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       onStartDev,
       onRestartDev,
       onWhiteScreenOrIframeError,
+      onRefreshFileTree,
     ],
   );
 
