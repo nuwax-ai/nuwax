@@ -27,6 +27,60 @@ export const escapeHTML = (text: string): string => {
 };
 
 /**
+ * StarterKit 支持的 HTML 标签列表
+ * 这些标签不会被转义，会被 Tiptap 正常解析
+ */
+const SUPPORTED_HTML_TAGS = [
+  'p',
+  'br',
+  'strong',
+  'b',
+  'em',
+  'i',
+  'u',
+  's',
+  'strike',
+  'code',
+  'pre',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'ul',
+  'ol',
+  'li',
+  'blockquote',
+  'hr',
+  'hardBreak',
+];
+
+/**
+ * 转义不被 StarterKit 支持的 HTML 标签
+ * @param html HTML 内容
+ * @returns 转义后的 HTML 内容
+ */
+export const escapeUnsupportedHTMLTags = (html: string): string => {
+  if (!html) return html;
+
+  // 匹配所有 HTML 标签
+  const tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9]*)(?:\s+[^>]*)?>/g;
+
+  return html.replace(tagRegex, (match, tagName) => {
+    const lowerTagName = tagName.toLowerCase();
+
+    // 如果标签被支持，不转义
+    if (SUPPORTED_HTML_TAGS.includes(lowerTagName)) {
+      return match;
+    }
+
+    // 转义不被支持的标签
+    return escapeHTML(match);
+  });
+};
+
+/**
  * 转义事件标签
  * 将 <div class="event" event-type="xxx" data='xxx'>[xxx]</div> 格式的事件标签转义为纯文本显示
  * @param text 需要处理的文本
@@ -226,6 +280,17 @@ export const extractTextFromHTML = (html: string): string => {
     mention.parentNode?.replaceChild(textNode, mention);
   });
 
+  // 处理 Raw 节点（用于展示 HTML/XML 原始内容）
+  // Tiptap 实际渲染为 pre.raw-content 或 pre[data-raw]
+  const rawNodes = temp.querySelectorAll('pre[data-raw], pre.raw-content');
+  rawNodes.forEach((rawNode) => {
+    const content =
+      rawNode.getAttribute('data-content') || rawNode.textContent || '';
+    // Raw 节点内容直接作为文本输出，不进行任何转换
+    const textNode = document.createTextNode(content);
+    rawNode.parentNode?.replaceChild(textNode, rawNode);
+  });
+
   // 提取纯文本（保留段落结构和硬换行）
   // 规则：每个段落（包括空段落）都转换为一个换行符
   // <p>text</p> -> text\n
@@ -350,6 +415,10 @@ export const convertTextToHTML = (
   // 这些标签需要被转义以避免被浏览器解析为 HTML 元素，但保留在文本中
   html = escapeCustomHTMLTags(html);
 
+  // 转义不被 StarterKit 支持的 HTML 标签（如 <a>、<div>、<span> 等）
+  // 这些标签在 Tiptap 解析时会被移除，需要转义以保留原始标签
+  html = escapeUnsupportedHTMLTags(html);
+
   // 检查是否已经是 HTML 格式（包含 HTML 标签）
   const isHTML = /<[^>]+>/.test(html);
 
@@ -444,4 +513,93 @@ export const shouldConvertTextToHTML = (text: string): boolean => {
   if (EVENT_TAG_REGEX.test(text)) return true;
 
   return false;
+};
+
+/**
+ * 检测内容是否应该使用 Raw 节点展示
+ * 判断标准：包含完整的 HTML/XML 结构（如完整的文档、多个嵌套标签等）
+ * @param content 需要检测的内容
+ * @returns 是否应该使用 Raw 节点
+ */
+export const shouldUseRawNode = (content: string): boolean => {
+  if (!content) return false;
+
+  // 检查是否包含完整的 HTML/XML 文档结构
+  // 例如：<!DOCTYPE>、<html>、<xml> 等
+  if (
+    /<!DOCTYPE/i.test(content) ||
+    /<html[\s>]/i.test(content) ||
+    /<\?xml/i.test(content)
+  ) {
+    return true;
+  }
+
+  // 检查是否包含多个嵌套的标签结构（可能是完整的 HTML/XML 片段）
+  // 例如：<div><p>text</p></div>、<root><child>text</child></root> 等
+  const tagMatches = content.match(/<[^>]+>/g);
+  if (tagMatches && tagMatches.length >= 3) {
+    // 检查是否有开始和结束标签的配对
+    const openTags = tagMatches.filter((tag) => !tag.includes('/'));
+    const closeTags = tagMatches.filter((tag) => tag.includes('/'));
+    // 如果有多个标签对，可能是完整的 HTML/XML 结构
+    if (openTags.length >= 2 && closeTags.length >= 1) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * 将 HTML/XML 内容转换为 Raw 节点的 HTML 格式
+ * @param content 原始 HTML/XML 内容
+ * @param type 内容类型：'html' | 'xml'，默认 'html'
+ * @returns Raw 节点的 HTML 字符串
+ */
+export const convertToRawNodeHTML = (
+  content: string,
+  type: 'html' | 'xml' = 'html',
+): string => {
+  if (!content) return '';
+
+  // 转义内容中的特殊字符，确保在 HTML 中正确显示
+  const escapedContent = content
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+  // 返回 Raw 节点的 HTML 格式
+  return `<pre data-raw="true" data-content="${escapedContent}" data-type="${type}" class="raw-content">${escapedContent}</pre>`;
+};
+
+/**
+ * 从 HTML 中提取 Raw 节点的内容
+ * @param html 包含 Raw 节点的 HTML
+ * @returns Raw 节点的原始内容数组
+ */
+export const extractRawNodeContents = (html: string): string[] => {
+  if (!html) return [];
+
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+
+  const rawNodes = temp.querySelectorAll('pre[data-raw], pre.raw-content');
+  const contents: string[] = [];
+
+  rawNodes.forEach((rawNode) => {
+    const content =
+      rawNode.getAttribute('data-content') || rawNode.textContent || '';
+    // 反转义 HTML 实体
+    const decodedContent = content
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'");
+    contents.push(decodedContent);
+  });
+
+  return contents;
 };
