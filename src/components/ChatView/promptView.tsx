@@ -50,7 +50,7 @@ const PromptView: React.FC<PromptViewProps> = ({
   codeLanguage = CodeLangEnum.Text,
   theme = 'light',
 }) => {
-  console.log('codeLanguage', getCodeLanguage(codeLanguage), messageInfo);
+  // console.log('codeLanguage', getCodeLanguage(codeLanguage), messageInfo);
 
   const addCodeType = useCallback(
     (text: string) => {

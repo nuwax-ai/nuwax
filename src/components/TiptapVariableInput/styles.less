@@ -356,3 +356,28 @@
   color: @colorTextTertiary;
   flex-shrink: 0;
 }
+
+// Raw 节点样式（用于展示 HTML/XML 原始内容）
+.raw-content {
+  display: block;
+  background-color: @colorFillTertiary;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadiusSm;
+  padding: @paddingSm @padding;
+  margin: @marginSm 0;
+  font-family: @fontFamilyCode;
+  font-size: @fontSizeSm;
+  line-height: @lineHeight;
+  color: @colorText;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-x: auto;
+  user-select: text; // 允许选择文本
+  cursor: text;
+
+  // 选中状态样式
+  &:focus {
+    outline: 1px solid @colorPrimary;
+    outline-offset: -1px;
+  }
+}
