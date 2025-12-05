@@ -37,6 +37,7 @@ export const applyDesignChanges = async (
         newValue: change.newValue,
         originalValue: change.originalValue,
         type: change.type as any, // smartReplaceInSource 支持 'style' | 'content' | 'attribute'
+        tagName: change.sourceInfo.elementType, // Pass tagName for fuzzy matching fallback
       });
     } catch (error) {
       console.error('[DesignViewer] Apply change failed:', error, change);
