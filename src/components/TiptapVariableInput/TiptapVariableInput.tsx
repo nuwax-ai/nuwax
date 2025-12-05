@@ -107,14 +107,9 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
         variableMode,
       );
     }
-    // 如果已经是 HTML 格式，保留空行，不清理首尾空段落
-    if (/\u003c[^\u003e]+\u003e/.test(value)) {
-      // 保留空行，不清理首尾空段落
-      const trimmed = value.trim();
-      if (!trimmed) return '';
-      return value; // 保留原始格式，包括空段落
-    }
-    // 对于普通文本，转换为 HTML 以正确处理换行
+    // 无论是纯文本还是包含 HTML 标签的内容，都需要调用 convertTextToHTML
+    // 这样可以确保不被 StarterKit 支持的 HTML 标签（如 <a>、<div> 等）被正确转义
+    // 避免 Tiptap 将这些标签当作真正的 HTML 元素处理后丢弃
     return convertTextToHTML(
       value,
       disableMentions,
@@ -215,22 +210,10 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
       }
 
       // 检查是否需要转换
+      // 无论是纯文本还是包含 HTML 标签的内容，都需要调用 convertTextToHTML
+      // 这样可以确保不被 StarterKit 支持的 HTML 标签（如 <a>、<div> 等）被正确转义
       let contentToSet = sanitizedValue;
-      if (sanitizedValue && shouldConvertTextToHTML(sanitizedValue)) {
-        contentToSet = convertTextToHTML(
-          sanitizedValue,
-          disableMentions,
-          enableEditableVariables,
-        );
-      } else if (
-        sanitizedValue &&
-        /\u003c[^\u003e]+\u003e/.test(sanitizedValue)
-      ) {
-        // 如果已经是 HTML 格式，不再清理首尾空段落，以保留用户的换行
-        // contentToSet = cleanHTMLParagraphs(value);
-        contentToSet = sanitizedValue;
-      } else if (sanitizedValue) {
-        // 对于普通文本，转换为 HTML 以正确处理换行
+      if (sanitizedValue) {
         contentToSet = convertTextToHTML(
           sanitizedValue,
           disableMentions,
