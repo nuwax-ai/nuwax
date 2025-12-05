@@ -11,6 +11,7 @@ import { theme } from 'antd';
 import { isEqual } from 'lodash';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { AutoCompleteBraces } from './extensions/AutoCompleteBraces';
+import { CustomHTMLTagProtection } from './extensions/CustomHTMLTagProtection';
 import { MarkdownHighlight } from './extensions/MarkdownHighlight';
 import { MentionNode } from './extensions/MentionNode';
 import { MentionSuggestion } from './extensions/MentionSuggestion';
@@ -138,6 +139,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
         VariableTextDecoration, // 方案C：纯文本装饰
         ToolBlockNode,
         MarkdownHighlight, // 添加 Markdown 语法高亮扩展
+        CustomHTMLTagProtection, // 自定义 XML 标签保护扩展，自动转义自定义 XML 标签（如 <OutputFormat>）
         // VariableCursorPlaceholder 应该在 VariableSuggestion 之前，确保光标可以在变量节点前后停留
         VariableCursorPlaceholder,
         // VariableSuggestion 应该在 AutoCompleteBraces 之前，这样它能够检测到 { 字符
