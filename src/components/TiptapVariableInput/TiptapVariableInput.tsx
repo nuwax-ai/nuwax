@@ -439,7 +439,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
       style={style}
     >
       <div className="tiptap-editor-wrapper" data-value={rawValue}>
-        <EditorContent editor={editor} />
+        <EditorContent editor={editor} style={{ height: '100%' }} />
         {!value && (
           <div
             className="tiptap-placeholder"
