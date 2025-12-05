@@ -601,6 +601,13 @@ export default () => {
         handleScrollBottom();
       },
       onClose: async () => {
+        setMessageList((list) => {
+          const copyList = JSON.parse(JSON.stringify(list));
+          copyList[copyList.length - 1].status = MessageStatusEnum.Error;
+          return copyList;
+        });
+        disabledConversationActive(); // 主动关闭连接时，禁用会话
+
         const currentInfo = conversationInfo ?? data;
 
         if (isSync && currentInfo && currentInfo?.topicUpdated !== 1) {
@@ -629,8 +636,6 @@ export default () => {
             limit: 20,
           });
         }
-
-        disabledConversationActive();
       },
       onError: () => {
         message.error('网络超时或服务不可用，请稍后再试');
