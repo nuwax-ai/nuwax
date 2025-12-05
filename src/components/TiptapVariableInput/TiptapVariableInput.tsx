@@ -11,10 +11,11 @@ import { theme } from 'antd';
 import { isEqual } from 'lodash';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { AutoCompleteBraces } from './extensions/AutoCompleteBraces';
-import { CustomHTMLTagProtection } from './extensions/CustomHTMLTagProtection';
+import { HTMLTagProtection } from './extensions/HTMLTagProtection';
 import { MarkdownHighlight } from './extensions/MarkdownHighlight';
 import { MentionNode } from './extensions/MentionNode';
 import { MentionSuggestion } from './extensions/MentionSuggestion';
+import { RawNode } from './extensions/RawNode';
 import { ToolBlockNode } from './extensions/ToolBlockNode';
 import { VariableCursorPlaceholder } from './extensions/VariableCursorPlaceholder';
 import { VariableNode } from './extensions/VariableNode';
@@ -134,12 +135,14 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
       extensions: [
         StarterKit,
         !disableMentions ? MentionNode : undefined,
+        RawNode, // Raw 节点扩展，用于展示 HTML/XML 原始内容
         // 总是包含两种变量类型：Node 用于不可编辑
+        // CustomHTMLTagProtection, // 自定义 XML 标签保护扩展，自动转义自定义 XML 标签（如 <OutputFormat>）
+        HTMLTagProtection, // HTML 标签保护扩展，自动转义不被 StarterKit 支持的 HTML 标签（如 <a>、<div> 等）
         VariableNode,
         VariableTextDecoration, // 方案C：纯文本装饰
         ToolBlockNode,
         MarkdownHighlight, // 添加 Markdown 语法高亮扩展
-        CustomHTMLTagProtection, // 自定义 XML 标签保护扩展，自动转义自定义 XML 标签（如 <OutputFormat>）
         // VariableCursorPlaceholder 应该在 VariableSuggestion 之前，确保光标可以在变量节点前后停留
         VariableCursorPlaceholder,
         // VariableSuggestion 应该在 AutoCompleteBraces 之前，这样它能够检测到 { 字符
