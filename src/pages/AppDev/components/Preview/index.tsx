@@ -2,7 +2,7 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { SANDBOX, UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { submitFilesUpdate } from '@/services/appDev';
+import { submitSpecifiedFilesUpdate } from '@/services/appDev';
 import { apiPageUpdateProject } from '@/services/pageDev';
 import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
@@ -27,6 +27,7 @@ import React, {
   useState,
 } from 'react';
 import { useModel, useRequest } from 'umi';
+import { type DesignViewerRef } from '../DesignViewer';
 import { applyDesignChanges } from '../DesignViewer/applyDesignChanges';
 import styles from './index.less';
 
@@ -36,6 +37,8 @@ interface PreviewProps {
   files?: FileNode[];
   devServerUrl?: string;
   projectInfo?: ProjectDetailData | null;
+  /** 刷新项目详情 */
+  refreshProjectInfo?: () => void;
   className?: string;
   isStarting?: boolean;
   isDeveloping?: boolean;
@@ -58,6 +61,8 @@ interface PreviewProps {
     errorMessage: string,
     errorType?: 'whiteScreen' | 'iframe',
   ) => void;
+  /** DesignViewer组件ref */
+  designViewerRef?: React.RefObject<DesignViewerRef>;
 }
 
 export interface PreviewRef {
@@ -78,6 +83,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     {
       files,
       projectInfo,
+      refreshProjectInfo,
       devServerUrl,
       className,
       isStarting,
@@ -87,6 +93,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       startError,
       serverMessage,
       serverErrorCode,
+      designViewerRef,
       onStartDev,
       onRestartDev,
       onWhiteScreenOrIframeError,
@@ -106,7 +113,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       setIframeDesignMode,
       pendingChanges,
       setPendingChanges,
-    } = useModel('appDev');
+      selectedElement,
+    } = useModel('appDevDesign');
 
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -392,6 +400,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      * 刷新预览
      */
     const refreshPreview = useCallback(() => {
+      if (pendingChanges?.length > 0) {
+        message.error('请先保存或重置修改, 再刷新预览');
+        return;
+      }
       // 关闭设计模式
       setIframeDesignMode(false);
       // 刷新预览
@@ -402,8 +414,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         setLastRefreshed(new Date());
       } else {
         // iframeRef.current 为空，无法刷新
+        console.error('iframeRef.current 为空，无法刷新');
       }
-    }, [devServerUrl, loadDevServerPreview]);
+    }, [devServerUrl, loadDevServerPreview, pendingChanges]);
 
     /**
      * 计算需要回退的历史记录数量
@@ -597,13 +610,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           // 获取 iframe 高度 16:9比例
           const iframeHeight = iframeWidth * 0.5625;
 
-          // console.log(
-          //   'iframeDoc?.body?.scrollWidth',
-          //   iframeDoc?.body?.scrollWidth,
-          //   'iframeDoc?.documentElement?.offsetWidth',
-          //   iframeDoc?.documentElement?.offsetWidth,
-          // );
-
           const canvas = await html2canvas(iframeDoc.body, {
             useCORS: true,
             allowTaint: true,
@@ -680,6 +686,25 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      * iframe加载完成处理
      */
     const handleIframeLoad = useCallback(() => {
+      console.log('iframe加载完成:');
+      // // 如果设计模式为开启，则发送消息给 iframe 开启设计模式
+      // if (iframeDesignMode) {
+      //   const iframe = document.querySelector('iframe');
+      //   console.log('iframe', iframe, iframe?.contentWindow);
+      //   if (iframe && iframe.contentWindow) {
+      //     console.log('发送消息给 iframe 开启设计模式33333333333333333333');
+      //     iframe.contentWindow.postMessage(
+      //       {
+      //         type: 'TOGGLE_DESIGN_MODE',
+      //         enabled: true,
+      //         timestamp: Date.now(),
+      //       },
+      //       '*',
+      //     );
+      //   }
+      // }
+      // 设置iframe加载完毕
+      setIsIframeLoaded(true);
       setIsLoading(false);
       setLoadError(null);
       // 设置iframe加载完毕
@@ -695,7 +720,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     const handleIframeError = useCallback(() => {
       setIsLoading(false);
       setLoadError('预览加载失败，请检查开发服务器状态或网络连接');
-      // console.info('[Preview] iframe加载错误', args);
 
       // 统一通过 onWhiteScreenWithError 处理，指定错误类型为 iframe
       if (onWhiteScreenOrIframeError) {
@@ -705,7 +729,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           'iframe',
         );
       }
-      // Iframe load error
     }, [onWhiteScreenOrIframeError]);
 
     /**
@@ -765,12 +788,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               errorMessages,
               isWhiteScreen ? 'whiteScreen' : 'iframe',
             );
-            // console.warn(
-            //   `[Preview] ${
-            //     isWhiteScreen ? '白屏' : '运行时'
-            //   } 通过 DevMonitor 捕获错误，已触发 AI Agent 自动处理:`,
-            //   errorMessages,
-            // );
           }
         }
       },
@@ -880,12 +897,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             }
           }
         }
-        // console.log(
-        //   '[Preview] pushCountRef',
-        //   pushCountRef.current,
-        //   'currentIndex',
-        //   currentIndexRef.current,
-        // );
 
         // 更新最后 URL
         lastUrlRef.current = changeData.url;
@@ -909,34 +920,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
 
         // ⭐ 调试日志：记录所有消息以便排查
         const data = event.data;
-        // if (
-        //   data &&
-        //   typeof data === 'object' &&
-        //   data.type?.includes('dev-monitor')
-        // ) {
-        // console.log('[Preview] 🔍 DevMonitor message detected:', {
-        //   type: data.type,
-        //   origin: event.origin,
-        //   isFromIframe: !!isFromIframe,
-        //   sourceIsWindow: event.source instanceof Window,
-        //   iframeSrc: iframeRef.current?.src,
-        //   errorCount: data.errorCount,
-        //   hasLatestError: !!data.latestError,
-        //   hasError: !!data.error,
-        //   fullData: data,
-        // });
-        // }
 
         // 如果不是来自 iframe，直接返回（避免处理其他来源的消息，如 React DevTools）
         if (!isFromIframe && data?.type?.includes('dev-monitor')) {
-          // console.warn(
-          //   '[Preview] ⚠️ DevMonitor message ignored (not from iframe):',
-          //   {
-          //     type: data.type,
-          //     origin: event.origin,
-          //     source: event.source,
-          //   },
-          // );
           return;
         }
 
@@ -947,10 +933,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               // ⭐ 实时错误消息（立即发送）
               if (data.error) {
                 const isWhiteScreen = data.isWhiteScreen;
-                // console.debug(
-                //   '[Preview] Received dev-monitor-error:',
-                //   data.error,
-                // );
                 handleDevMonitorError(data.error, isWhiteScreen);
               }
               break;
@@ -999,6 +981,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         if (iframeRef.current) {
           iframeRef.current = null;
         }
+        // 退出页面时，重置设计模式状态、清空待保存列表、清空选中元素
+        setIframeDesignMode(false);
+        setPendingChanges([]);
+        setIsIframeLoaded(false);
         // 清理收集的错误信息和路由历史
         devMonitorErrorsRef.current = [];
         historyStackRef.current = [];
@@ -1008,6 +994,23 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         navigableHistoryRef.current = [];
         currentIndexRef.current = 0;
       };
+    }, []);
+
+    // 关闭设计模式
+    const closeDesignMode = useCallback(() => {
+      // 关闭设计模式，防止用户在设计模式下修改元素，导致添加到会话的内容不准确
+      setIframeDesignMode(false);
+      const iframe = document.querySelector('iframe');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage(
+          {
+            type: 'TOGGLE_DESIGN_MODE',
+            enabled: false,
+            timestamp: Date.now(),
+          },
+          '*',
+        );
+      }
     }, []);
 
     /**
@@ -1025,7 +1028,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         return;
       }
 
-      console.log('[DesignViewer] Saving changes...', pendingChanges);
       setIsSaving(true);
 
       try {
@@ -1056,6 +1058,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           fileChangesMap.get(filePath)!.push(change);
         });
 
+        // console.log(fileChangesMap, '======', pendingChanges)
+
         // 2. 获取全量文件列表（扁平化）
         // 使用 files 属性作为基准，确保包含未修改的文件
         const allFiles = treeToFlatList(files || []);
@@ -1079,6 +1083,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 contents: updatedContent,
                 binary: file.binary || false,
                 sizeExceeded: file.sizeExceeded || false,
+                operation: 'modify',
               });
             } catch (error) {
               console.error(
@@ -1092,31 +1097,101 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             }
           } else {
             // 没有修改的文件，直接添加到更新列表
-            filesToUpdate.push(file);
+            // filesToUpdate.push(file);
           }
         }
 
+        console.log(filesToUpdate, '======', pendingChanges);
+
         // 4. 调用 submitFilesUpdate 接口提交全量列表
-        const response = await submitFilesUpdate(
+        const response = await submitSpecifiedFilesUpdate(
           projectId.toString(),
           filesToUpdate,
         );
+        // 保存成功后，关闭保存状态
         setIsSaving(false);
+        // 设置iframe加载完毕
+        setIsIframeLoaded(false);
+        // 刷新项目版本信息
+        refreshProjectInfo?.();
 
         if (response.code === SUCCESS_CODE) {
           message.success(`成功保存！`);
+          // 方案一，保存后关闭设计模式
+          closeDesignMode();
           // 清空待保存列表
           setPendingChanges([]);
         } else {
           message.error(response.message || '保存失败，请查看控制台错误信息');
         }
       } catch (error) {
+        // 保存失败后，关闭保存状态
+        setIsSaving(false);
         console.error('[DesignViewer] Error saving changes:', error);
-        message.error('保存出错，请检查网络连接');
       }
     };
 
+    // 重置编辑
     const onCancelEdit = () => {
+      // 如果有待恢复的更改，先向 iframe 发送恢复消息
+      const iframe = iframeRef.current;
+      if (pendingChanges.length > 0 && iframe?.contentWindow) {
+        // 遍历所有待恢复的更改，使用 originalValue 恢复
+        pendingChanges.forEach((change: any) => {
+          const { type, sourceInfo, originalValue } = change;
+
+          // 如果没有原始值，跳过（不应该发生，但做防御性检查）
+          if (!originalValue && originalValue !== '') {
+            return;
+          }
+
+          try {
+            if (type === 'style') {
+              // 恢复样式：使用原始 className
+              iframe.contentWindow?.postMessage(
+                {
+                  type: 'UPDATE_STYLE',
+                  payload: {
+                    sourceInfo,
+                    newClass: originalValue || '', // 使用原始值恢复
+                    persist: false,
+                  },
+                  timestamp: Date.now(),
+                },
+                '*',
+              );
+            } else if (type === 'content') {
+              // 恢复内容：使用原始文本内容
+              iframe.contentWindow?.postMessage(
+                {
+                  type: 'UPDATE_CONTENT',
+                  payload: {
+                    sourceInfo,
+                    newContent: originalValue || '', // 使用原始值恢复
+                    persist: false,
+                  },
+                  timestamp: Date.now(),
+                },
+                '*',
+              );
+            }
+
+            // 根据当前选择的元素的 className和 textContent 解析 Tailwind 类名并更新本地状态
+            // 通过 ref 调用 DesignViewer 的重置方法，而不是直接使用 model
+            if (designViewerRef?.current) {
+              designViewerRef.current.resetStates(selectedElement);
+            }
+          } catch (error) {
+            console.error(
+              `[Preview] 恢复更改失败 (${type}):`,
+              sourceInfo,
+              error,
+            );
+          }
+        });
+      }
+
+      // 清空待保存列表和保存状态
       setPendingChanges([]);
       setIsSaving(false);
     };
@@ -1161,7 +1236,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             })}
           >
             <WarningOutlined className={styles['warning-icon']} />
-            <span className={styles['unsaved-text']}>Unsaved Changes</span>
+            <span className={styles['unsaved-text']}>未保存的更改</span>
             <Button
               type="text"
               className={styles['reset-button']}

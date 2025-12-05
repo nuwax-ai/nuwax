@@ -9,6 +9,7 @@ import {
 import { Button, Spin } from 'antd';
 import React, { useMemo } from 'react';
 import CodeViewer from '../CodeViewer';
+import { type DesignViewerRef } from '../DesignViewer';
 import FilePathHeader from '../FilePathHeader';
 import ImageViewer from '../ImageViewer';
 import Preview, { type PreviewRef } from '../Preview';
@@ -16,6 +17,8 @@ import styles from './index.less';
 
 interface ContentViewerProps {
   projectInfo?: ProjectDetailData | null;
+  /** 刷新项目详情 */
+  refreshProjectInfo?: () => void;
   /** 文件树数据 */
   files?: FileNode[];
   /** 显示模式 */
@@ -52,6 +55,8 @@ interface ContentViewerProps {
   serverErrorCode?: string | null;
   /** Preview组件ref */
   previewRef: React.RefObject<PreviewRef>;
+  /** DesignViewer组件ref */
+  designViewerRef?: React.RefObject<DesignViewerRef>;
   /** 内容变化回调 */
   onContentChange: (fileId: string, content: string) => void;
   /** 保存文件回调 */
@@ -86,6 +91,7 @@ interface ContentViewerProps {
 const ContentViewer: React.FC<ContentViewerProps> = ({
   files,
   projectInfo,
+  refreshProjectInfo,
   mode,
   isComparing,
   selectedFileId,
@@ -103,6 +109,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   serverMessage,
   serverErrorCode,
   previewRef,
+  designViewerRef, // 新增
   onContentChange,
   onSaveFile,
   onCancelEdit,
@@ -120,6 +127,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         files={files}
         ref={previewRef}
         projectInfo={projectInfo}
+        refreshProjectInfo={refreshProjectInfo}
         devServerUrl={
           devServerUrl ? `${process.env.BASE_URL}${devServerUrl}` : undefined
         }
@@ -130,6 +138,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         startError={startError}
         serverMessage={serverMessage}
         serverErrorCode={serverErrorCode}
+        designViewerRef={designViewerRef}
         onStartDev={onStartDev}
         onRestartDev={onRestartDev}
         onWhiteScreenOrIframeError={onWhiteScreenOrIframeError}
@@ -137,6 +146,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     ),
     [
       previewRef,
+      designViewerRef,
       devServerUrl,
       isStarting,
       isChatLoading,

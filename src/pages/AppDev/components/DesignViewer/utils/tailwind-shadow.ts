@@ -85,3 +85,12 @@ export const generateTailwindShadowOptions = (): Array<{
 
   return options;
 };
+
+/**
+ * 从 Tailwind 阴影类名映射到本地阴影类型
+ * @param className Tailwind 阴影类名，如 "shadow-sm", "shadow-lg" 等
+ * @returns 对应的阴影类型值
+ */
+export const mapTailwindShadowToLocal = (className: string): string | null => {
+  return tailwindShadowMap[className] || null;
+};

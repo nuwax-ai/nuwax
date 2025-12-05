@@ -28,6 +28,7 @@ import type { UploadProps } from 'antd';
 import { Button, Input, message, Popover, Tooltip, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import { useMentionSelectorKeyboard } from '../../hooks/useMentionSelectorKeyboard';
 import { usePlaceholderCarousel } from '../../hooks/usePlaceholderCarousel';
@@ -140,6 +141,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     10000,
     300,
   );
+
+  const { pendingChanges, setIframeDesignMode } = useModel('appDevDesign');
 
   // 同步 dataSourceList 中已选的数据源到 selectedMentions
   useEffect(() => {
@@ -408,6 +411,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         return;
       }
 
+      if (pendingChanges?.length > 0) {
+        message.error('请先保存或重置修改, 再发送消息');
+        return;
+      }
+
       if (chat.chatInput?.trim()) {
         const files = attachmentFiles?.filter(
           (item) =>
@@ -419,6 +427,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         );
         // enter事件 - 传递上传的附件、原型图片 和 @ 提及的文件/目录/数据资源
         onEnter(files, prototypeImages, selectedMentions, requestId);
+        // 退出设计模式，回到聊天模式
+        setIframeDesignMode(false);
         // 清空输入框
         chat.setChatInput('');
         // 清空附件文件列表
@@ -451,9 +461,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       return;
     }
 
-    e.preventDefault();
-    const { value, selectionStart, selectionEnd } =
-      e.target as HTMLTextAreaElement;
+    const { value } = e.target as HTMLTextAreaElement;
 
     // 验证：prompt（输入内容）是必填的
     if (!value?.trim()) {
@@ -464,16 +472,20 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     if (chat.isChatLoading || isSendingMessage) {
       return;
     }
+
+    if (pendingChanges?.length > 0) {
+      message.error('请先保存或重置修改, 再发送消息');
+      return;
+    }
+
     // shift+enter或者ctrl+enter时换行
     if (
       e.nativeEvent.keyCode === 13 &&
       (e.nativeEvent.shiftKey || e.nativeEvent.ctrlKey)
     ) {
-      // 在光标位置插入换行符
-      const newValue =
-        value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
-      chat.setChatInput(newValue);
+      chat.setChatInput(value);
     } else if (e.nativeEvent.keyCode === 13 && !!value.trim()) {
+      e.preventDefault();
       const files = attachmentFiles?.filter(
         (item) => item.status === UploadFileStatus.done && item.url && item.key,
       );
@@ -482,6 +494,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       );
       // enter事件
       onEnter(files, prototypeImages, selectedMentionsParam);
+      // 退出设计模式，回到聊天模式
+      setIframeDesignMode(false);
       // 清空输入框
       chat.setChatInput('');
       // 清空附件文件列表

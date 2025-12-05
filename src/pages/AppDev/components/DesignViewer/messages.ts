@@ -1,5 +1,7 @@
 // Message types for iframe ↔ parent window communication
 
+export const FILENAME_REGEXP = /^\/app\/project_workspace\/[^/]+\//;
+
 export interface SourceInfo {
   fileName: string;
   lineNumber: number;
@@ -23,19 +25,19 @@ export interface ElementInfo {
   /** 元素的源信息（文件路径、行号等） */
   sourceInfo: SourceInfo;
   /** 元素的计算样式（可选） */
-  computedStyles?: {
-    paddingTop?: string;
-    paddingRight?: string;
-    paddingBottom?: string;
-    paddingLeft?: string;
-    marginTop?: string;
-    marginRight?: string;
-    marginBottom?: string;
-    marginLeft?: string;
-    color?: string;
-    backgroundColor?: string;
-    [key: string]: any;
-  };
+  // computedStyles?: {
+  //   paddingTop?: string;
+  //   paddingRight?: string;
+  //   paddingBottom?: string;
+  //   paddingLeft?: string;
+  //   marginTop?: string;
+  //   marginRight?: string;
+  //   marginBottom?: string;
+  //   marginLeft?: string;
+  //   color?: string;
+  //   backgroundColor?: string;
+  //   [key: string]: any;
+  // };
   [key: string]: any;
 }
 
@@ -335,4 +337,25 @@ export interface BridgeInterface {
   off: (type: string, handler: any) => void;
   isConnected: () => boolean;
   disconnect: () => void;
+}
+
+export type toggleStyleAttributeType =
+  | 'fontSize'
+  | 'fontWeight'
+  | 'lineHeight'
+  | 'letterSpacing'
+  | 'opacity'
+  | 'radius'
+  | 'shadow'
+  | 'textAlign';
+
+/**
+ * DesignViewer 组件暴露的方法接口
+ */
+export interface DesignViewerRef {
+  /**
+   * 根据选中的元素重置所有状态
+   * @param elementInfo 选中的元素信息，包含 className 和 textContent
+   */
+  resetStates: (elementInfo: ElementInfo | null) => void;
 }

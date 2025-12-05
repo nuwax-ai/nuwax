@@ -3,6 +3,7 @@
  */
 
 import {
+  cancelAgentTask,
   listConversations,
   saveConversation,
   stopAgentService,
@@ -450,7 +451,8 @@ export const useAppDevChat = ({
         maskClosable: false,
         onOk: () => {
           return new Promise((resolve, reject) => {
-            stopAgentService(projectId)
+            // stopAgentService(projectId)
+            cancelAgentTask(projectId)
               .then((stopResponse) => {
                 if (stopResponse.code === '0000') {
                   message.success('Agent服务已停止');
