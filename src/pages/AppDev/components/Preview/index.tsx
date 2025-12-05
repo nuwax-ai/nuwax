@@ -710,7 +710,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       //   }
       // }
       // 设置iframe加载完毕
-      setIsIframeLoaded(true);
       setIsLoading(false);
       setLoadError(null);
       // 设置iframe加载完毕
@@ -1003,21 +1002,21 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     }, []);
 
     // 关闭设计模式
-    const closeDesignMode = useCallback(() => {
-      // 关闭设计模式，防止用户在设计模式下修改元素，导致添加到会话的内容不准确
-      setIframeDesignMode(false);
-      const iframe = document.querySelector('iframe');
-      if (iframe && iframe.contentWindow) {
-        iframe.contentWindow.postMessage(
-          {
-            type: 'TOGGLE_DESIGN_MODE',
-            enabled: false,
-            timestamp: Date.now(),
-          },
-          '*',
-        );
-      }
-    }, []);
+    // const closeDesignMode = useCallback(() => {
+    //   // 关闭设计模式，防止用户在设计模式下修改元素，导致添加到会话的内容不准确
+    //   setIframeDesignMode(false);
+    //   const iframe = document.querySelector('iframe');
+    //   if (iframe && iframe.contentWindow) {
+    //     iframe.contentWindow.postMessage(
+    //       {
+    //         type: 'TOGGLE_DESIGN_MODE',
+    //         enabled: false,
+    //         timestamp: Date.now(),
+    //       },
+    //       '*',
+    //     );
+    //   }
+    // }, []);
 
     /**
      * 保存所有更改
@@ -1119,16 +1118,15 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // 保存成功后，关闭保存状态
         setIsSaving(false);
         // 设置iframe加载完毕
-        setIsIframeLoaded(false);
+        // setIsIframeLoaded(false);
         // 刷新项目版本信息
         refreshProjectInfo?.();
         // 刷新文件树列表
         onRefreshFileTree?.(true, true);
-
         if (response.code === SUCCESS_CODE) {
           message.success(`成功保存！`);
           // 方案一，保存后关闭设计模式
-          closeDesignMode();
+          // closeDesignMode();
           // 清空待保存列表
           setPendingChanges([]);
         } else {
