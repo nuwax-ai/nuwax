@@ -249,7 +249,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
           <Select
             options={TABLE_FIELD_STRING_LIST}
             style={{ width: '100%' }}
-            defaultValue={value}
+            value={value}
             onChange={(value) => onChangeValue(record.id, 'dataLength', value)}
           />
         ) : (
