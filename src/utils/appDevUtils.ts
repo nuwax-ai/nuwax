@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * AppDev 页面相关工具函数
  */
@@ -518,3 +519,815 @@ export const processImageContent = (
   // 如果是普通 URL，直接返回
   return content;
 };
+
+// /**
+//  * 根据行号和列号更新 HTML/JSX 内容中元素的 class 属性
+//  * @param content - 文件内容（HTML 或 JSX 字符串）
+//  * @param className - 要设置的 class 属性值
+//  * @param row - 行号（从 0 开始，对应文件中的实际行号）
+//  * @param column - 列号（从 0 开始，对应该行中的字符位置）
+//  * @returns 更新后的文件内容
+//  */
+// export const updateElementClassNameByPosition = (
+//   content: string,
+//   className: string,
+//   row: number,
+//   column: number,
+// ): string => {
+//   if (!content || typeof content !== 'string') {
+//     console.warn('文件内容为空，无法更新元素的 class 属性');
+//     return content;
+//   }
+
+//   // 按行分割内容（考虑不同操作系统的换行符）
+//   const lines = content.split(/\r\n|\n|\r/);
+
+//   // 检查行号是否有效（row 从 0 开始，对应第 row+1 行）
+//   if (row < 0 || row >= lines.length) {
+//     console.warn(`行号 ${row} 超出范围，总行数: ${lines.length}`);
+//     return content;
+//   }
+
+//   // 获取目标行内容
+//   const targetLine = lines[row];
+
+//   // 检查列号是否在行内有效
+//   if (column < 0 || column > targetLine.length) {
+//     console.warn(
+//       `列号 ${column} 超出范围，第 ${row + 1} 行的长度为: ${targetLine.length}`,
+//     );
+//     return content;
+//   }
+
+//   // 匹配该行中的所有 HTML/JSX 元素标签
+//   // 支持格式：
+//   // 1. <tag>...</tag> （普通标签）
+//   // 2. <tag ... /> （自闭合标签）
+//   // 3. <Component prop={value} /> （JSX 组件，支持大写开头的标签名）
+//   // 4. 支持属性中包含 > 的情况（通过更智能的解析）
+//   const elementRegex = /<([\w-]+)([^>]*?)(?:\/>|>)/g;
+
+//   const elementMatches: Array<{
+//     fullMatch: string;
+//     tag: string;
+//     attributes: string;
+//     startIndex: number;
+//     endIndex: number;
+//     isSelfClosing: boolean;
+//   }> = [];
+
+//   let match;
+//   let lastIndex = 0;
+
+//   while ((match = elementRegex.exec(targetLine)) !== null) {
+//     // 避免重复匹配
+//     if (match.index < lastIndex) {
+//       continue;
+//     }
+
+//     const fullMatch = match[0];
+//     const tag = match[1];
+//     const attributes = (match[2] || '').trim();
+//     const isSelfClosing = fullMatch.trim().endsWith('/>');
+
+//     // 如果不是自闭合标签，需要找到对应的结束标签
+//     let endIndex = match.index + fullMatch.length;
+//     if (!isSelfClosing) {
+//       // 查找结束标签 </tag>
+//       const endTagRegex = new RegExp(`</${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}>`, 'gi');
+//       endTagRegex.lastIndex = endIndex;
+//       const endMatch = endTagRegex.exec(targetLine);
+//       if (endMatch) {
+//         endIndex = endMatch.index + endMatch[0].length;
+//         const fullElement = targetLine.substring(match.index, endIndex);
+//         elementMatches.push({
+//           fullMatch: fullElement,
+//           tag,
+//           attributes,
+//           startIndex: match.index,
+//           endIndex,
+//           isSelfClosing: false,
+//         });
+//       } else {
+//         // 如果找不到结束标签，只记录开始标签
+//         elementMatches.push({
+//           fullMatch,
+//           tag,
+//           attributes,
+//           startIndex: match.index,
+//           endIndex: match.index + fullMatch.length,
+//           isSelfClosing: true, // 当作自闭合处理
+//         });
+//       }
+//     } else {
+//       elementMatches.push({
+//         fullMatch,
+//         tag,
+//         attributes,
+//         startIndex: match.index,
+//         endIndex,
+//         isSelfClosing: true,
+//       });
+//     }
+
+//     lastIndex = endIndex;
+//   }
+
+//   // 根据列号（字符位置）找到包含该位置或最接近的元素
+//   let targetElement: typeof elementMatches[0] | null = null;
+
+//   // 首先尝试找到包含该列号位置的元素
+//   for (const element of elementMatches) {
+//     if (column >= element.startIndex && column < element.endIndex) {
+//       targetElement = element;
+//       break;
+//     }
+//   }
+
+//   // 如果没找到包含该位置的元素，找最接近的元素（最近的开始位置）
+//   if (!targetElement && elementMatches.length > 0) {
+//     // 按距离排序，选择最近的元素
+//     targetElement = elementMatches.reduce((closest, current) => {
+//       const closestDistance = Math.abs(closest.startIndex - column);
+//       const currentDistance = Math.abs(current.startIndex - column);
+//       return currentDistance < closestDistance ? current : closest;
+//     });
+//   }
+
+//   if (!targetElement) {
+//     console.warn(
+//       `第 ${row + 1} 行第 ${column + 1} 列位置附近未找到 HTML 元素。行内容: ${targetLine.substring(0, 100)}...`,
+//     );
+//     return content;
+//   }
+
+//   // 更新 class 属性
+//   // 处理 class 属性的正则表达式（支持单引号和双引号，以及 className）
+//   const classAttrRegex = /\s+(?:class|className)\s*=\s*(["'])([^"']*)\1/i;
+//   const classAttrMatch = targetElement.attributes.match(classAttrRegex);
+
+//   let updatedAttributes = targetElement.attributes.trim();
+
+//   if (classAttrMatch) {
+//     // 如果已存在 class 或 className 属性，替换它
+//     if (className.trim()) {
+//       updatedAttributes = updatedAttributes.replace(
+//         classAttrRegex,
+//         ` class="${className}"`,
+//       );
+//     } else {
+//       // 移除 class/className 属性
+//       updatedAttributes = updatedAttributes.replace(classAttrRegex, '').trim();
+//     }
+//   } else {
+//     // 如果不存在 class 属性，添加它
+//     if (className.trim()) {
+//       // 在标签名后添加 class 属性（如果有其他属性，在属性前添加；如果没有属性，在 > 或 /> 前添加）
+//       if (updatedAttributes) {
+//         updatedAttributes = `${updatedAttributes} class="${className}"`;
+//       } else {
+//         updatedAttributes = `class="${className}"`;
+//       }
+//     }
+//   }
+
+//   // 构建更新后的元素标签
+//   const attributesStr = updatedAttributes ? ` ${updatedAttributes}` : '';
+
+//   // 提取元素的原始内容（如果存在）
+//   let elementContent = '';
+//   if (!targetElement.isSelfClosing) {
+//     // 从完整匹配中提取标签之间的内容
+//     const contentMatch = targetElement.fullMatch.match(
+//       new RegExp(`<${targetElement.tag}[^>]*>([\\s\\S]*?)</${targetElement.tag}>`, 'i'),
+//     );
+//     if (contentMatch) {
+//       elementContent = contentMatch[1];
+//     }
+//   }
+
+//   const updatedElement = targetElement.isSelfClosing
+//     ? `<${targetElement.tag}${attributesStr} />`
+//     : `<${targetElement.tag}${attributesStr}>${elementContent}</${targetElement.tag}>`;
+
+//   // 替换目标行中的目标元素
+//   const updatedLine =
+//     targetLine.substring(0, targetElement.startIndex) +
+//     updatedElement +
+//     targetLine.substring(targetElement.endIndex);
+
+//   // 替换原始内容中的目标行
+//   // 检测换行符类型（\r\n, \n, 或 \r）
+//   const lineBreakMatch = content.match(/\r\n|\n|\r/);
+//   const lineBreak = lineBreakMatch ? lineBreakMatch[0] : '\n';
+
+//   // 重新拼接所有行（使用检测到的换行符）
+//   const updatedLines = [...lines];
+//   updatedLines[row] = updatedLine;
+
+//   return updatedLines.join(lineBreak);
+// };
+
+/**
+ * 在文件树中查找文件节点
+ */
+// export const findFileNodeByName = (
+//   fileName: string,
+//   treeData: FileNode[],
+// ): FileNode | null => {
+//   for (const node of treeData) {
+//     if (node.name === fileName) {
+//       return node;
+//     }
+//     if (node.children) {
+//       const found = findFileNode(fileName, node.children);
+//       if (found) {
+//         return found;
+//       }
+//     }
+//   }
+//   return null;
+// };
+
+// /**
+//  * 根据文件名、className、行号和列号更新文件树中对应文件的 content 属性
+//  * @param fileName - 文件名（文件ID，完整路径）
+//  * @param className - 要设置的 class 属性值
+//  * @param row - 行号（从 0 开始，对应 tr 标签）
+//  * @param column - 列号（从 0 开始，对应 td 或 th 标签）
+//  * @param fileTreeData - 文件树数据
+//  * @returns 更新后的文件树数据
+//  */
+// export const updateFileClassNameInTree = (
+//   fileName: string,
+//   className: string,
+//   row: number,
+//   column: number,
+//   fileTreeData: FileNode[],
+// ): FileNode[] => {
+//   // 查找文件节点
+//   const fileNode = findFileNodeByName(fileName, fileTreeData);
+
+//   console.log(' 根据文件名、className、行号和列号更新文件树中对应文件的 content 属性', fileNode);
+
+//   if (!fileNode || !fileNode.content) {
+//     console.warn(`文件 ${fileName} 不存在或内容为空`);
+//     return fileTreeData;
+//   }
+
+//   // 使用工具函数根据行列号更新元素的 class 属性
+//   const updatedContent = updateElementClassNameByPosition(
+//     fileNode.content,
+//     className,
+//     row,
+//     column,
+//   );
+
+//   // 如果内容没有变化，直接返回原始数据
+//   if (updatedContent === fileNode.content) {
+//     return fileTreeData;
+//   }
+
+//   // 递归更新文件树中对应文件的内容
+//   const updateFileInTree = (nodes: FileNode[]): FileNode[] => {
+//     return nodes.map((node) => {
+//       if (node.id === fileName) {
+//         return {
+//           ...node,
+//           content: updatedContent,
+//           lastModified: Date.now(),
+//         };
+//       }
+//       if (node.children) {
+//         return { ...node, children: updateFileInTree(node.children) };
+//       }
+//       return node;
+//     });
+//   };
+
+//   return updateFileInTree(fileTreeData);
+// };
+
+// 转义正则表达式
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// 智能样式替换 - 单行版本（被多行版本调用）
+async function smartReplaceStyleSingleLine(
+  line: string,
+  newValue: string,
+): Promise<{ found: boolean; newLine: string }> {
+  // 1. 尝试匹配 className="..." 或 className='...'
+  const classNameRegex = /className=(["'])(.*?)\1/;
+  if (classNameRegex.test(line)) {
+    return {
+      found: true,
+      newLine: line.replace(classNameRegex, `className=$1${newValue}$1`),
+    };
+  }
+
+  // 2. 尝试匹配 className={...}
+  const classNameExpressionRegex = /className=\{([^}]*)\}/;
+  if (classNameExpressionRegex.test(line)) {
+    return {
+      found: true,
+      newLine: line.replace(
+        classNameExpressionRegex,
+        `className="${newValue}"`,
+      ),
+    };
+  }
+
+  return { found: false, newLine: line };
+}
+
+// 智能样式替换 - 支持多行搜索
+async function smartReplaceStyleMultiLine(
+  lines: string[],
+  startLine: number,
+  options: any,
+): Promise<{ found: boolean; lineIndex: number; newLine: string }> {
+  const { newValue } = options;
+
+  // 1. 首先在当前行尝试查找 className
+  const currentLine = lines[startLine];
+  const currentResult = await smartReplaceStyleSingleLine(
+    currentLine,
+    newValue,
+  );
+  if (currentResult.found) {
+    return {
+      found: true,
+      lineIndex: startLine,
+      newLine: currentResult.newLine,
+    };
+  }
+
+  // 2. 向后搜索 className 属性（最多搜索15行，通常 JSX 属性不会太远）
+  const maxSearchLines = Math.min(startLine + 15, lines.length);
+
+  for (let i = startLine + 1; i < maxSearchLines; i++) {
+    const searchLine = lines[i];
+
+    // 尝试在这一行找 className
+    const result = await smartReplaceStyleSingleLine(searchLine, newValue);
+    if (result.found) {
+      return {
+        found: true,
+        lineIndex: i,
+        newLine: result.newLine,
+      };
+    }
+
+    // 如果遇到 > 或 /> 或 </，说明已经过了属性区域
+    const trimmed = searchLine.trim();
+    if (trimmed === '>' || trimmed.endsWith('/>') || trimmed.startsWith('</')) {
+      // 但如果当前行是 >，可能 className 不存在，需要在开始标签行插入
+      break;
+    }
+  }
+
+  // 3. 如果没找到 className，尝试在标签名后插入
+  // 回到起始行检查是否有标签名
+  const tagMatch = currentLine.match(/<([A-Z][a-zA-Z0-9.]*|[a-z][a-z0-9-]*)/);
+  if (tagMatch) {
+    const tagName = tagMatch[1];
+    return {
+      found: true,
+      lineIndex: startLine,
+      newLine: currentLine.replace(
+        tagName,
+        `${tagName} className="${newValue}"`,
+      ),
+    };
+  }
+
+  // 4. 如果都无法匹配，返回失败
+  console.warn(
+    '[DesignMode] Failed to match className or tag in lines starting from:',
+    startLine,
+  );
+  return { found: false, lineIndex: startLine, newLine: currentLine };
+}
+
+// 智能属性替换
+async function smartReplaceAttribute(
+  line: string,
+  options: any,
+): Promise<string> {
+  const regex = new RegExp(`${escapeRegExp(options.attributeName)}="[^"]*"`);
+  if (regex.test(line)) {
+    return line.replace(
+      regex,
+      `${options.attributeName}="${options.newValue}"`,
+    );
+  }
+
+  // 如果无法匹配，返回原行
+  console.warn(
+    '[DesignMode] Failed to match attribute in line:',
+    line,
+    'attributeName:',
+    options.attributeName,
+  );
+  return line;
+}
+
+// 智能替换源码
+export async function smartReplaceInSource(
+  content: string,
+  options: {
+    lineNumber: number;
+    columnNumber: number;
+    newValue: string;
+    originalValue?: string;
+    type: 'style' | 'content' | 'attribute';
+    tagName?: string;
+  },
+  // rootDir: string
+): Promise<string> {
+  const lines = content.split('\n');
+  const targetLine = Math.max(0, options.lineNumber - 1);
+
+  if (targetLine >= lines.length) {
+    throw new Error(`Line ${options.lineNumber} exceeds file length`);
+  }
+
+  const line = lines[targetLine];
+
+  try {
+    switch (options.type) {
+      case 'style': {
+        // 处理样式更新 - 可能需要向后搜索多行
+        const styleResult = await smartReplaceStyleMultiLine(
+          lines,
+          targetLine,
+          options,
+        );
+        if (styleResult.found) {
+          lines[styleResult.lineIndex] = styleResult.newLine;
+        } else {
+          console.warn('[DesignMode] Style (className) not found in element');
+        }
+        break;
+      }
+      case 'content': {
+        // 处理内容更新 - 可能需要向后搜索多行
+        const contentResult = await smartReplaceContentMultiLineImpl(
+          lines,
+          targetLine,
+          options,
+        );
+        if (contentResult.found) {
+          // Handle multi-line replacement (splicing)
+          const deleteCount =
+            (contentResult.endLine || contentResult.startLine) -
+            contentResult.startLine +
+            1;
+          lines.splice(
+            contentResult.startLine,
+            deleteCount,
+            ...contentResult.newLines,
+          );
+        } else {
+          console.warn(
+            '[DesignMode] Content not found in element:',
+            options.originalValue,
+          );
+        }
+        break;
+      }
+      case 'attribute': {
+        // 处理属性更新 - 只在目标行处理
+        lines[targetLine] = await smartReplaceAttribute(line, options);
+        break;
+      }
+    }
+
+    return lines.join('\n');
+  } catch (error) {
+    console.error(
+      `Smart replacement failed: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`,
+    );
+    return content; // Return original content on error
+  }
+}
+
+/**
+ * Replace content safely by ignoring text inside <...> tags
+ */
+function safeReplaceContentInLine(
+  line: string,
+  originalValue: string,
+  newValue: string,
+): string {
+  if (!originalValue) return line;
+
+  // Split by tags: (<[^>]*>) captures the tags
+  // This is a simple heuristic that works for most standard JSX/HTML
+  const parts = line.split(/(<[^>]*>)/g);
+
+  return parts
+    .map((part) => {
+      // If it starts with < and ends with >, treat it as a tag and don't replace
+      if (part.startsWith('<') && part.endsWith('>')) {
+        return part;
+      } else {
+        // It's text outside of tags. Perform replacement here.
+        return part.replace(
+          new RegExp(escapeRegExp(originalValue), 'g'),
+          newValue,
+        );
+      }
+    })
+    .join('');
+}
+
+/**
+ * 智能内容替换 - 支持多行搜索
+ * 用例文档在：docs/ch/smart_replace_test_cases.md
+ * @param lines
+ * @param startLine
+ * @param options
+ * @returns
+ */
+async function smartReplaceContentMultiLineImpl(
+  lines: string[],
+  startLine: number,
+  options: any,
+): Promise<{
+  found: boolean;
+  startLine: number;
+  endLine?: number;
+  newLines: string[];
+}> {
+  const { originalValue, newValue, columnNumber } = options;
+
+  // Legacy single line replacement helper wrapper
+  const singleLineResult = (lineIndex: number, lineContent: string) => ({
+    found: true,
+    startLine: lineIndex,
+    endLine: lineIndex,
+    newLines: [lineContent],
+  });
+
+  // 1. First try exact match in current line
+  const currentLine = lines[startLine];
+
+  if (originalValue) {
+    const safeReplaced = safeReplaceContentInLine(
+      currentLine,
+      originalValue,
+      newValue,
+    );
+    if (safeReplaced !== currentLine) {
+      return singleLineResult(startLine, safeReplaced);
+    }
+  }
+
+  // 2. Search forward for exact match (up to 20 lines)
+  const maxSearchLines = Math.min(startLine + 20, lines.length);
+
+  for (let i = startLine + 1; i < maxSearchLines; i++) {
+    const searchLine = lines[i];
+
+    // If original value found inline (and not inside tag)
+    if (originalValue) {
+      const safeReplaced = safeReplaceContentInLine(
+        searchLine,
+        originalValue,
+        newValue,
+      );
+      if (safeReplaced !== searchLine) {
+        return singleLineResult(i, safeReplaced);
+      }
+    }
+
+    // Check if trimmed line IS exactly the original value
+    const trimmedSearchLine = searchLine.trim();
+    if (originalValue && trimmedSearchLine === originalValue) {
+      const leadingWhitespace = searchLine.match(/^(\s*)/)?.[1] || '';
+      return singleLineResult(i, leadingWhitespace + newValue);
+    }
+
+    // 如果遇到当前元素的闭合标签，停止搜索
+    // 注意：</开头的标签表示闭合，我们应该在找到闭合标签后停止
+    if (searchLine.trim().startsWith('</') || searchLine.includes('/>')) {
+      break;
+    }
+  }
+
+  // 3. Fallback: Structural replacement using columnNumber OR tagName (Fuzzy Match)
+  // If exact text match failed, we try to locate the element by column number or tag name
+  if (columnNumber !== undefined || options.tagName) {
+    let colIndex = -1;
+    let targetLineIndex = startLine;
+
+    // Strategy A: Try columnNumber (only valid if on startLine)
+    if (columnNumber !== undefined) {
+      colIndex = columnNumber - 1; // 1-based to 0-based
+    }
+
+    // Check if valid start of tag
+    const isValidTagStart = (index: number, line: string) => {
+      // Must start with < and not be </
+      return line[index] === '<' && line[index + 1] !== '/';
+    };
+
+    // If columnNumber didn't point to a valid tag start, try Strategy B: Fuzzy Tag Match
+    if (
+      colIndex === -1 ||
+      colIndex >= currentLine.length ||
+      !isValidTagStart(colIndex, currentLine)
+    ) {
+      if (options.tagName) {
+        // Search window: startLine to startLine + 300 (handle large source map inaccuracies)
+        const searchLimit = Math.min(startLine + 300, lines.length);
+        const escapedTagName = escapeRegExp(options.tagName);
+        const tagRegex = new RegExp(`<${escapedTagName}(?=[\\s>/>])`);
+
+        for (let i = startLine; i < searchLimit; i++) {
+          const line = lines[i];
+          const match = line.match(tagRegex);
+          if (match && match.index !== undefined) {
+            colIndex = match.index;
+            targetLineIndex = i;
+            console.log(
+              `[DesignMode] Fuzzy match found for <${options.tagName}> at line ${i} index ${colIndex}`,
+            );
+            break;
+          }
+        }
+      }
+    }
+
+    // If we have a valid index, proceed with structural replacement
+    if (colIndex !== -1 && targetLineIndex < lines.length) {
+      const targetLine = lines[targetLineIndex];
+      // Re-verify start of tag in case we found it via fuzzy match
+      if (isValidTagStart(colIndex, targetLine)) {
+        // Extract the tag name at the column position
+        const lineSuffix = targetLine.substring(colIndex);
+        const tagMatch = lineSuffix.match(/^<([a-zA-Z0-9-.]+)/);
+
+        if (tagMatch) {
+          const tagName = tagMatch[1];
+          const currentLineToReplace = targetLine;
+
+          // Check if it's a self-closing tag in the current line
+          let tagEndIndex = -1;
+          let isSelfClosing = false;
+
+          // Simple scan for '>' ignoring quotes
+          let inQuote = null;
+          for (let i = colIndex; i < currentLineToReplace.length; i++) {
+            const char = currentLineToReplace[i];
+            if (inQuote) {
+              if (char === inQuote) inQuote = null;
+            } else {
+              if (char === '"' || char === "'") inQuote = char;
+              else if (char === '>') {
+                tagEndIndex = i;
+                if (currentLineToReplace[i - 1] === '/') isSelfClosing = true;
+                break;
+              }
+            }
+          }
+
+          if (tagEndIndex !== -1) {
+            // We found the end of the opening tag
+
+            // Remove dangerouslySetInnerHTML if present (since we are replacing content)
+            let openTagContent = currentLineToReplace.substring(
+              colIndex,
+              tagEndIndex + 1,
+            );
+
+            if (openTagContent.includes('dangerouslySetInnerHTML')) {
+              openTagContent = openTagContent.replace(
+                /dangerouslySetInnerHTML=\{[^}]+\}/g,
+                '',
+              );
+              openTagContent = openTagContent.replace(
+                /dangerouslySetInnerHTML/g,
+                '',
+              );
+              openTagContent = openTagContent
+                .replace(/\s+/g, ' ')
+                .replace(/\s+>/, '>')
+                .replace(/\s+\/>/, '/>');
+            }
+
+            if (isSelfClosing) {
+              const newOpenTag = openTagContent.replace(/\s*\/>$/, '>');
+              const newContent = `${newOpenTag}${newValue}</${tagName}>`;
+
+              const newLine =
+                currentLineToReplace.substring(0, colIndex) +
+                newContent +
+                currentLineToReplace.substring(tagEndIndex + 1);
+              return singleLineResult(targetLineIndex, newLine);
+            } else {
+              // Opening tag <Tag ...>
+              const closingTag = `</${tagName}>`;
+              const closingTagIndex = currentLineToReplace.indexOf(
+                closingTag,
+                tagEndIndex,
+              );
+
+              if (closingTagIndex !== -1) {
+                const newLine =
+                  currentLineToReplace.substring(0, colIndex) +
+                  openTagContent +
+                  newValue +
+                  currentLineToReplace.substring(closingTagIndex);
+                return singleLineResult(targetLineIndex, newLine);
+              }
+
+              // Multi-line replacement logic
+              // 1. We found the opening tag at `targetLineIndex` (index `colIndex` to `tagEndIndex`)
+              // 2. We need to find the closing tag `</tagName>` starting from this line onwards
+
+              let foundClosing = false;
+              let closingLineIndex = -1;
+              let closingTagInLineIndex = -1;
+
+              for (let j = targetLineIndex; j < lines.length; j++) {
+                const checkLine = lines[j];
+                // Search for closing tag
+                // If same line, we already checked above (closingTagIndex == -1), so start search after tagEndIndex if j==targetLineIndex
+                // But since indexOf returned -1, we know it's not on this line (or at least not after start)
+
+                const searchStart = j === targetLineIndex ? tagEndIndex + 1 : 0;
+                const closeIdx = checkLine.indexOf(closingTag, searchStart);
+
+                if (closeIdx !== -1) {
+                  foundClosing = true;
+                  closingLineIndex = j;
+                  closingTagInLineIndex = closeIdx;
+                  break;
+                }
+              }
+
+              if (foundClosing) {
+                // We have the range! [targetLineIndex, closingLineIndex]
+
+                // Construct new content lines
+                // Line 1: BeforeOpenTag + OpenTag + NewValue + AfterClosingTag (if same line - handled above)
+
+                // Multi-line case:
+                // Line 1: BeforeOpenTag + OpenTag + NewValue (start) ... wait
+                // Actually we want to replace the INNER content or the whole element?
+                // Usually content replacement means replacing inner content.
+                // But here we are stripping attributes (dangerouslySetInnerHTML), so we are reconstructing the element.
+
+                // Reconstructed Block:
+                // <TagName>New Content</TagName>
+                // We want to put this where the old element was.
+
+                // Opening Line: ...prefix... <TagName ...> ...
+                // Closing Line: ... </TagName> ...suffix...
+
+                // If we just blast it into one line:
+                // ...prefix... <TagName>NewValue</TagName> ...suffix...
+
+                const prefix = lines[targetLineIndex].substring(0, colIndex);
+                const suffix = lines[closingLineIndex].substring(
+                  closingTagInLineIndex + closingTag.length,
+                );
+
+                const combinedNewLine =
+                  prefix + openTagContent + newValue + `</${tagName}>` + suffix;
+
+                // We replace lines [targetLineIndex] to [closingLineIndex] with [combinedNewLine]
+                return {
+                  found: true,
+                  startLine: targetLineIndex,
+                  endLine: closingLineIndex,
+                  newLines: [combinedNewLine],
+                };
+              }
+
+              // Multi-line not supported, warning below
+              console.warn(
+                '[DesignMode] Structural replacement partial support: Closing tag not found for multi-line element.',
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 4. Default Fail
+  console.warn(
+    '[DesignMode] Failed to match content, originalValue:',
+    originalValue,
+    'startLine:',
+    startLine,
+  );
+  return { found: false, startLine: startLine, newLines: [] };
+}

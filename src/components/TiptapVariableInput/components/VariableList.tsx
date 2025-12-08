@@ -3,12 +3,13 @@
  * { 变量下拉列表组件
  */
 
-import { Tabs, Tree } from 'antd';
-import React, { useMemo, useState } from 'react';
-import type { VariableTreeNode } from '../../VariableInferenceInput/types';
-import { transformToTreeDataForTree } from '../../VariableInferenceInput/utils/treeHelpers';
-import type { VariableSuggestionItem } from '../types';
+import useClickOutside from '@/hooks/useClickOutside';
+import { Tabs, theme, Tree } from 'antd';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import '../styles.less';
+import type { VariableSuggestionItem, VariableTreeNode } from '../types';
 import { convertTreeNodesToSuggestions } from '../utils/suggestionUtils';
+import { transformToTreeDataForTree } from '../utils/treeHelpers';
 
 /**
  * 在树中查找节点
@@ -42,6 +43,14 @@ interface VariableListProps {
   onTabChange?: (key: string) => void;
   regularVariables?: VariableTreeNode[];
   toolVariables?: VariableTreeNode[];
+
+  // 点击外部关闭回调
+  onClose?: () => void;
+  // 需要排除的元素 refs（例如编辑器元素）
+  excludeRefs?: React.RefObject<HTMLElement>[];
+  // 需要排除的 DOM 元素（直接传递 DOM 元素，更稳定）
+  // 使用单个元素而不是数组，避免每次创建新数组
+  excludeElement?: HTMLElement | null;
 }
 
 /**
@@ -58,17 +67,52 @@ const VariableList: React.FC<VariableListProps> = ({
   onTabChange,
   regularVariables = [],
   toolVariables = [],
+  onClose,
+  excludeRefs = [],
+  excludeElement,
 }) => {
-  console.log('VariableList render debug:', {
-    showTabs,
-    activeTab,
-    regularVariablesLength: regularVariables.length,
-    toolVariablesLength: toolVariables.length,
-    treeLength: tree.length,
-  });
+  const { token } = theme.useToken();
 
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
+
+  // 创建容器 ref，用于点击外部检测
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // 将 excludeElement 转换为 ref，并合并 excludeRefs
+  // 使用 useMemo 稳定化，避免每次渲染都创建新数组
+  const allExcludeRefs = useMemo(() => {
+    const refs: React.RefObject<HTMLElement>[] = [];
+
+    // 添加 excludeRefs
+    if (excludeRefs && excludeRefs.length > 0) {
+      refs.push(...excludeRefs);
+    }
+
+    // 将 excludeElement 转换为 ref 对象
+    if (excludeElement) {
+      refs.push({ current: excludeElement } as React.RefObject<HTMLElement>);
+    }
+
+    return refs;
+  }, [excludeRefs, excludeElement]);
+
+  // 稳定化 handler 回调函数
+  const handleClickOutside = useCallback(() => {
+    // 点击外部时关闭下拉框
+    if (onClose) {
+      onClose();
+    }
+  }, [onClose]);
+
+  // 使用 useClickOutside hook 检测点击外部事件
+  // 排除 Portal 容器和编辑器（通过 class 名检查）
+  useClickOutside(containerRef, handleClickOutside, allExcludeRefs, [
+    'variable-suggestion-popup', // Portal 容器
+    'mention-suggestion-popup', // Mention Portal 容器
+    'tiptap-editor-wrapper', // 编辑器包装器
+    'ProseMirror', // Tiptap 编辑器
+  ]);
 
   // 将树节点转换为扁平化的建议项列表
   // 优先使用 flatItems（从 VariableSuggestion 传递的扁平化列表）
@@ -116,6 +160,84 @@ const VariableList: React.FC<VariableListProps> = ({
           return null;
         };
         findNodeKey(tree, selectedItem.key);
+
+        // 滚动到选中项，确保在可视区域内
+        // 使用 setTimeout 确保 DOM 已经更新（特别是树形展开后）
+        setTimeout(() => {
+          if (!containerRef.current) return;
+
+          // 检查是否所有节点都是工具（扁平列表模式）
+          const allAreTools = tree.every((node) => {
+            return (
+              node.isLeaf &&
+              (node.key.startsWith('skill-') ||
+                (node.variable as any)?.type === 'Tool')
+            );
+          });
+          const isToolListMode =
+            allAreTools &&
+            tree.length > 0 &&
+            !tree.some((n) => n.key === 'category-skills');
+
+          // 查找滚动容器（可能是 Tabs 内容区域或直接容器）
+          const scrollContainer =
+            containerRef.current.querySelector('.ant-tabs-content-holder') ||
+            containerRef.current;
+
+          if (isToolListMode) {
+            // 工具列表模式：查找对应的列表项
+            const toolListContainer = containerRef.current.querySelector(
+              '.variable-tool-list-container',
+            );
+            if (toolListContainer) {
+              const items = toolListContainer.querySelectorAll(
+                '.variable-tool-list-item',
+              );
+              const targetItem = items[selectedIndex] as HTMLElement;
+              if (targetItem) {
+                // 检查元素是否在可视区域内
+                const containerRect = (
+                  scrollContainer as HTMLElement
+                ).getBoundingClientRect();
+                const itemRect = targetItem.getBoundingClientRect();
+
+                // 如果不在可视区域内，则滚动
+                if (
+                  itemRect.top < containerRect.top ||
+                  itemRect.bottom > containerRect.bottom
+                ) {
+                  targetItem.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                  });
+                }
+              }
+            }
+          } else {
+            // 树形模式：查找选中的树节点
+            const selectedNode = containerRef.current.querySelector(
+              '.ant-tree-node-selected',
+            ) as HTMLElement;
+            if (selectedNode) {
+              // 检查元素是否在可视区域内
+              const containerRect = (
+                scrollContainer as HTMLElement
+              ).getBoundingClientRect();
+              const nodeRect = selectedNode.getBoundingClientRect();
+
+              // 如果不在可视区域内，则滚动
+              if (
+                nodeRect.top < containerRect.top ||
+                nodeRect.bottom > containerRect.bottom
+              ) {
+                selectedNode.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'nearest',
+                });
+              }
+            }
+          }
+        }, 50);
       }
     }
   }, [selectedIndex, suggestions, tree]);
@@ -135,8 +257,8 @@ const VariableList: React.FC<VariableListProps> = ({
 
   // 转换树数据为 Ant Design Tree 格式
   const treeData = useMemo(() => {
-    return transformToTreeDataForTree(tree);
-  }, [tree]);
+    return transformToTreeDataForTree(tree, token);
+  }, [tree, token]);
 
   const handleSelect = (selectedKeys: React.Key[]) => {
     if (selectedKeys.length === 0) {
@@ -246,12 +368,63 @@ const VariableList: React.FC<VariableListProps> = ({
   const renderTree = (data: any[]) => {
     if (!data || data.length === 0) {
       return (
-        <div style={{ padding: '8px', color: '#999', textAlign: 'center' }}>
+        <div
+          style={{
+            padding: token.paddingSM,
+            color: token.colorTextTertiary,
+            textAlign: 'center',
+          }}
+        >
           未找到匹配变量
         </div>
       );
     }
 
+    // 检查是否所有节点都是工具（扁平列表，没有 category-skills 父节点）
+    // 如果所有节点都是叶子节点且都是工具，使用列表渲染而不是树形
+    const allAreTools = tree.every((node) => {
+      return (
+        node.isLeaf &&
+        (node.key.startsWith('skill-') ||
+          (node.variable as any)?.type === 'Tool')
+      );
+    });
+
+    // 如果所有节点都是工具且是扁平列表（没有 category-skills 父节点），使用简单的列表渲染
+    if (
+      allAreTools &&
+      tree.length > 0 &&
+      !tree.some((n) => n.key === 'category-skills')
+    ) {
+      return (
+        <div className="variable-tool-list-container">
+          {suggestions.map((item, index) => {
+            const isSelected = selectedIndex === index;
+
+            return (
+              <div
+                key={item.key}
+                onClick={() => {
+                  onSelect(item);
+                }}
+                className={`variable-tool-list-item ${
+                  isSelected ? 'selected' : ''
+                }`}
+              >
+                <div className="variable-tool-list-item-content">
+                  <span className="variable-tool-list-item-label">
+                    {item.label}
+                  </span>
+                  <span className="variable-tool-list-item-type">Tool</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    // 否则使用树形组件渲染
     return (
       <Tree
         treeData={data}
@@ -267,12 +440,6 @@ const VariableList: React.FC<VariableListProps> = ({
         selectable={true}
         // 允许点击节点标题进行选择（不仅仅是图标）
         blockNode={true}
-        style={{
-          maxHeight: '240px',
-          overflowY: 'auto',
-        }}
-        height={240}
-        itemHeight={28}
         virtual={true}
       />
     );
@@ -283,29 +450,42 @@ const VariableList: React.FC<VariableListProps> = ({
       {
         key: 'variables',
         label: '变量',
-        children: renderTree(transformToTreeDataForTree(regularVariables)),
+        children: renderTree(
+          transformToTreeDataForTree(regularVariables, token),
+        ),
       },
       {
         key: 'tools',
         label: '工具',
-        children: renderTree(transformToTreeDataForTree(toolVariables)),
+        children: renderTree(transformToTreeDataForTree(toolVariables, token)),
       },
     ];
 
     return (
-      <div className="variable-suggestion-tabs">
+      <div ref={containerRef} className="variable-suggestion-tabs css-var-r0">
         <Tabs
           activeKey={activeTab}
           onChange={onTabChange}
           items={items}
           size="small"
-          tabBarStyle={{ marginBottom: 8, padding: '0 8px' }}
+          tabBarStyle={{
+            padding: `0 ${token.paddingSM}px`,
+            margin: 0,
+          }}
         />
       </div>
     );
   }
 
-  return renderTree(treeData);
+  return (
+    <div
+      ref={containerRef}
+      className="css-var-r0 scroll-container"
+      style={{ height: '100%' }}
+    >
+      {renderTree(treeData)}
+    </div>
+  );
 };
 
 export default VariableList;

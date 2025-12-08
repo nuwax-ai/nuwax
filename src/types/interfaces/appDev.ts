@@ -29,6 +29,10 @@ export interface ProjectFileInfo {
 export interface ProjectContentRes {
   /** 项目文件内容对象 */
   files: Record<string, any> | ProjectFileInfo[];
+  // 前端框架
+  frontendFramework: string;
+  // 开发框架
+  devFramework: string;
 }
 
 /**
@@ -166,6 +170,7 @@ export interface PageFileInfo {
   sizeExceeded?: boolean;
   /** 重命名之前的文件名（仅在重命名场景下使用） */
   renameFrom?: string;
+  operation?: 'create' | 'delete' | 'rename' | 'modify';
 }
 
 /**

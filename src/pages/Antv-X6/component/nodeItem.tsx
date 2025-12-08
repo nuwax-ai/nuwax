@@ -2,11 +2,15 @@
 import CodeEditor from '@/components/CodeEditor';
 import Monaco from '@/components/CodeEditor/monaco';
 import CustomTree from '@/components/FormListItem/NestedForm';
+import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
+import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
+import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { VARIABLE_CONFIG_TYPE_OPTIONS } from '@/constants/node.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum, VariableConfigTypeEnum } from '@/types/enums/node';
 import { CodeLangEnum } from '@/types/enums/plugin';
+import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import {
   ExclamationCircleOutlined,
@@ -82,10 +86,16 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
 // 定义结束和过程输出的节点渲染
 const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
+  const { referenceList } = useModel('workflow');
   const segOptions = [
     { label: '返回变量', value: 'VARIABLE' },
     { label: '返回文本', value: 'TEXT' },
   ];
+  const outputArgs =
+    Form.useWatch(InputItemNameEnum.outputArgs, {
+      form,
+      preserve: true,
+    }) || [];
 
   return (
     <>
@@ -128,11 +138,25 @@ const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
                   />
                 </span>
               </div>
-              <Form.Item name="content">
-                <Input.TextArea
+              <Form.Item
+                name="content"
+                getValueFromEvent={(value) =>
+                  typeof value === 'string' ? extractTextFromHTML(value) : ''
+                }
+              >
+                <TiptapVariableInput
                   placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、{{变量名[数组 索引]}}的方式引用输出参数中的变量"
-                  autoSize={{ minRows: 3, maxRows: 5 }}
-                  style={{ marginBottom: '10px' }}
+                  style={{
+                    minHeight: '80px',
+                    marginBottom: '10px',
+                  }}
+                  variables={transformToPromptVariables(
+                    outputArgs.filter(
+                      (item: InputAndOutConfig) =>
+                        !['', null, undefined].includes(item.name),
+                    ),
+                    referenceList?.argMap,
+                  )}
                 />
               </Form.Item>
             </>
@@ -299,6 +323,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
 // 定义文本处理的节点渲染
 const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
+  const { referenceList } = useModel('workflow');
   const textTypeOptions = [
     { label: '字符串拼接', value: 'CONCAT' },
     { label: '字符串分割', value: 'SPLIT' },
@@ -317,6 +342,12 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
     label: '',
     value: '',
   });
+
+  const inputArgs =
+    Form.useWatch(InputItemNameEnum.inputArgs, {
+      form,
+      preserve: true,
+    }) || [];
 
   // 添加新选项
   const addItem = (
@@ -429,10 +460,24 @@ const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
                   <Button type="text" icon={<SettingOutlined />} size="small" />
                 </Popover>
               </div>
-              <Form.Item name="text">
-                <Input.TextArea
+              <Form.Item
+                name="text"
+                getValueFromEvent={(value) =>
+                  typeof value === 'string' ? extractTextFromHTML(value) : ''
+                }
+              >
+                <TiptapVariableInput
                   placeholder="可以使用{{变量名}}的方式引用输入参数中的变量"
-                  autoSize={{ minRows: 3, maxRows: 5 }}
+                  style={{
+                    minHeight: '80px',
+                  }}
+                  variables={transformToPromptVariables(
+                    inputArgs.filter(
+                      (item: InputAndOutConfig) =>
+                        !['', null, undefined].includes(item.name),
+                    ),
+                    referenceList?.argMap,
+                  )}
                 />
               </Form.Item>
             </div>

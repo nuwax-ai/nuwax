@@ -11,7 +11,7 @@ import { useParams, useRequest } from 'umi';
 interface UseAppDevServerProps {
   projectId: string;
 
-  onServerStart?: (devServerUrl: string) => void;
+  onServerStart?: (devServerUrl: string | null) => void;
   onServerStatusChange?: (isRunning: boolean) => void;
 }
 
@@ -172,15 +172,15 @@ export const useAppDevServer = ({
     const data = isFullResponse ? responseOrData?.data : responseOrData;
 
     // 调试日志：打印返回数据格式
-    console.log('[useAppDevServer] keepAlive response:', {
-      isFullResponse,
-      code: response?.code,
-      success: response?.success,
-      message: response?.message,
-      hasData: !!data,
-      devServerUrl: data?.devServerUrl,
-      fullResponse: responseOrData,
-    });
+    // console.log('[useAppDevServer] keepAlive response:', {
+    //   isFullResponse,
+    //   code: response?.code,
+    //   success: response?.success,
+    //   message: response?.message,
+    //   hasData: !!data,
+    //   devServerUrl: data?.devServerUrl,
+    //   fullResponse: responseOrData,
+    // });
 
     // 检查接口返回状态码 - 兼容 code === '0000' 或 success === true
     const isSuccess = response?.code === '0000' || response?.success === true;
@@ -317,6 +317,7 @@ export const useAppDevServer = ({
     try {
       hasStartedRef.current = true;
       setIsStarting(true);
+      setDevServerUrl(null);
       setServerMessage(null); // 清除之前的错误消息
       setServerErrorCode(null); // 清除之前的错误码
 
@@ -333,6 +334,8 @@ export const useAppDevServer = ({
       } else {
         // 启动失败，设置错误消息（已在 handleServerResponse 中设置）
         // 不需要额外操作
+        setDevServerUrl(null);
+        onServerStart?.(null);
       }
 
       // 重置启动状态
@@ -402,6 +405,8 @@ export const useAppDevServer = ({
         } else {
           // 重启失败，错误消息已在 handleServerResponse 中设置
           // serverMessage 会被 Preview 组件显示
+          setDevServerUrl(null);
+          onServerStart?.(null);
         }
 
         // 重置重启状态

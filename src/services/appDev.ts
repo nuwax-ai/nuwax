@@ -180,7 +180,7 @@ export const getProjectContent = async (
   return request(
     `/api/custom-page/get-project-content?projectId=${encodeURIComponent(
       projectId.toString(),
-    )}`,
+    )}&t=${Date.now()}`,
     {
       method: 'GET',
     },
@@ -260,6 +260,32 @@ export const submitFilesUpdate = async (
   }));
 
   return request('/api/custom-page/submit-files-update', {
+    method: 'POST',
+    data: {
+      projectId,
+      files: processedFiles,
+    },
+  });
+};
+
+/**
+ * 指定文件修改
+ * @param projectId 项目ID
+ * @param files 文件列表
+ * @returns Promise<SubmitFilesResponse> 提交结果
+ */
+export const submitSpecifiedFilesUpdate = async (
+  projectId: string,
+  files: PageFileInfo[],
+): Promise<SubmitFilesResponse> => {
+  // 处理文件内容，对 content 字段进行 encodeURIComponent 编码
+  const processedFiles = files.map((file) => ({
+    ...file,
+    // 只有当 content 存在时才进行编码处理
+    contents: file.contents ? encodeURIComponent(file.contents) : file.contents,
+  }));
+
+  return request('/api/custom-page/specified-files-update', {
     method: 'POST',
     data: {
       projectId,
@@ -602,7 +628,7 @@ export const getDevLogs = async (
 
   // 处理后端返回的日志数据，确保包含所有必需字段
   const processedLogs: DevLogEntry[] =
-    response.data?.logs?.length > 0
+    response?.data?.logs?.length > 0
       ? response.data.logs.map((log: any) => {
           // 如果后端返回的日志对象缺少某些字段，使用 parseLogEntry 来补充
           if (!log.level || !log.isError) {
@@ -615,11 +641,12 @@ export const getDevLogs = async (
   return {
     ...response,
     data: {
-      ...response.data,
+      ...response?.data,
       logs: processedLogs,
       hasMore:
-        response.data.startIndex + response.data.logs.length <
-        response.data.totalLines,
+        (response?.data?.startIndex || 0) +
+          (response?.data?.logs?.length || 0) <
+        (response?.data?.totalLines || 0),
     },
   };
 };

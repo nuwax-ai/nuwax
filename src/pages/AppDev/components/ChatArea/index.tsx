@@ -24,6 +24,8 @@ import { Button, Card, message, Spin, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useModel } from 'umi';
+import DesignViewer, { type DesignViewerRef } from '../DesignViewer';
+import ToggleDesignBtn from '../ToggleDesignBtn';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
 import ChatInputHome, { MentionItem } from './components/ChatInputHome';
 import MessageAttachment from './components/MessageAttachment';
@@ -40,6 +42,7 @@ interface ChatAreaProps {
   selectedDataSources?: DataResource[];
   onUpdateDataSources: (dataSources: DataResource[]) => void;
   fileContentState: any;
+  isSupportDesignMode: boolean;
   // onSetSelectedFile: (fileId: string) => void; // 暂时未使用，保留以备后续使用
   modelSelector: any;
   // onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
@@ -52,6 +55,8 @@ interface ChatAreaProps {
   onUserCancelAgentTask?: () => void;
   /** 文件树数据 */
   files?: FileNode[];
+  /** DesignViewer 组件的 ref */
+  designViewerRef?: React.RefObject<DesignViewerRef>;
 }
 
 /**
@@ -64,6 +69,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   selectedDataSources = [],
   onUpdateDataSources,
   fileContentState,
+  isSupportDesignMode,
   // onSetSelectedFile, // 暂时未使用，保留以备后续使用
   modelSelector,
   // onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -72,6 +78,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onUserManualSendMessage,
   onUserCancelAgentTask,
   files = [],
+  designViewerRef,
 }) => {
   const autoErrorRetryCount = useModel('autoErrorHandling').autoRetryCount;
   // 展开的思考过程消息
@@ -160,7 +167,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         );
       }
     } catch (error) {
-      message.error('取消 Agent 任务失败');
+      // message.error('取消 Agent 任务失败');
       // 即使 API 调用失败，也调用原有的取消功能
       chat.cancelChat();
     } finally {
@@ -375,7 +382,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
    * 渲染聊天消息 - 按 role 区分渲染
    */
   const renderChatMessage = useCallback(
-    (message: AppDevChatMessage) => {
+    (message: AppDevChatMessage, isLastMessage: boolean) => {
       const isUser = message.role === 'USER';
       const isAssistant = message.role === 'ASSISTANT';
 
@@ -525,7 +532,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             )}
 
             {/* 流式传输指示器 - 放在最下面 */}
-            {isStreaming && (
+            {isStreaming && isLastMessage && (
               <div className={styles.streamingIndicator}>
                 <Spin size="small" />
                 {/* <span className={styles.streamingText}>正在输出...</span> */}
@@ -577,7 +584,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     const renderedMessages: React.ReactNode[] = [];
     let currentSessionId: string | null = null;
 
-    messages.forEach((message: AppDevChatMessage) => {
+    const len = messages?.length;
+
+    messages.forEach((message: AppDevChatMessage, index: number) => {
       // 检查是否需要添加会话分隔符
       if (
         message.conversationTopic &&
@@ -594,8 +603,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         currentSessionId = message.sessionId;
       }
 
+      // 是否是最后一条消息
+      const isLastMessage = index === len - 1;
+
       // 渲染消息
-      renderedMessages.push(renderChatMessage(message));
+      renderedMessages.push(renderChatMessage(message, isLastMessage));
     });
 
     return renderedMessages;
@@ -606,101 +618,99 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   //   return Math.min((autoErrorRetryCount / 3) * 100, 100);
   // }, [autoErrorRetryCount]);
 
+  // 添加到聊天输入框
+  const handleAddToChat = (content: string) => {
+    chat.setChatInput((prev: string) => prev + content);
+  };
+
   return (
     <Card className={styles.chatCard} variant="outlined">
-      {/* 聊天模式切换 */}
-      {/* <div className={styles.chatModeContainer}>
-        <div className={styles.chatModeSwitcher}> */}
-      {/* <div className={styles.chatModeSegmented}> */}
-      {/* <Segmented
-            value={chatMode}
-            onChange={(value) => setChatMode(value as 'chat' | 'code')}
-            options={[
-              { label: 'Chat', value: 'chat' },
-              {
-                label: 'Design',
-                value: 'design',
-                disabled: true,
-                title: '暂未开放',
-              },
-            ]}
-            className={styles.chatModeSegmented}
-          /> */}
-      {/* </div> */}
-      {/* </div>
-      </div> */}
+      {
+        // 是否支持设计模式，则显示聊天模式切换
+        isSupportDesignMode && <ToggleDesignBtn />
+      }
 
-      {/* 聊天消息区域 */}
-      <ReactScrollToBottomContainer
-        ref={scrollContainerRef}
-        messages={chat.chatMessages}
-        isStreaming={chat.isChatLoading}
-        enableAutoScroll={true}
-        className={styles.chatMessagesWrapper}
-        style={{ height: '100%', minHeight: 0 }}
-        onScrollPositionChange={(isAtBottom) => {
-          setShowScrollButton(!isAtBottom);
-        }}
-        onScrollToTop={() => {}}
-      >
-        <div className={styles.chatMessages}>
-          {chat.hasMoreHistoryRef.current &&
-            !chat.isLoadingMoreHistoryRef.current && (
-              <Button
-                type="text"
-                className={styles.loadMoreHistoryButton}
-                icon={<RollbackOutlined />}
-                onClick={async () => {
-                  // 1. 先记录当前内容的滚动位置与高度
-                  const scrollContainer =
-                    scrollContainerRef.current?.getScrollContainer();
-                  if (!scrollContainer) {
-                    return;
-                  }
+      {/* 内容区域，设计模式区域和聊天消息区域 */}
+      <div className={'flex-1 flex flex-col relative overflow-hide'}>
+        {
+          // 设计模式区域
+          isSupportDesignMode && (
+            <DesignViewer ref={designViewerRef} onAddToChat={handleAddToChat} />
+          )
+        }
 
-                  // 记录按钮元素（如果存在），用于计算高度变化
-                  const scrollPosition = scrollContainer.scrollTop;
-                  const scrollHeight = scrollContainer.scrollHeight;
+        {/* 聊天消息区域 */}
+        <ReactScrollToBottomContainer
+          ref={scrollContainerRef}
+          messages={chat.chatMessages}
+          isStreaming={chat.isChatLoading}
+          enableAutoScroll={true}
+          className={styles.chatMessagesWrapper}
+          style={{ height: '100%', minHeight: 0 }}
+          onScrollPositionChange={(isAtBottom) => {
+            setShowScrollButton(!isAtBottom);
+          }}
+        >
+          <div className={styles.chatMessages}>
+            {chat.hasMoreHistoryRef.current &&
+              !chat.isLoadingMoreHistoryRef.current && (
+                <Button
+                  type="text"
+                  className={styles.loadMoreHistoryButton}
+                  icon={<RollbackOutlined />}
+                  onClick={async () => {
+                    // 1. 先记录当前内容的滚动位置与高度
+                    const scrollContainer =
+                      scrollContainerRef.current?.getScrollContainer();
+                    if (!scrollContainer) {
+                      return;
+                    }
 
-                  // 2. 加载历史会话
-                  await chat.loadHistorySessions(
-                    chat.currentPageRef.current + 1,
-                    true,
-                  );
+                    // 记录按钮元素（如果存在），用于计算高度变化
+                    const scrollPosition = scrollContainer.scrollTop;
+                    const scrollHeight = scrollContainer.scrollHeight;
 
-                  // 3. 加载记录成功后，恢复到上一次历史会话的位置
-                  // 等待 DOM 更新完成，包括按钮状态变化
-                  setTimeout(() => {
-                    scrollContainerRef.current?.handleScrollTo(
-                      scrollPosition,
-                      scrollHeight,
+                    // 2. 加载历史会话
+                    await chat.loadHistorySessions(
+                      chat.currentPageRef.current + 1,
+                      true,
                     );
-                  }, 100);
-                }}
-              >
-                点击查看更多历史会话
-              </Button>
+
+                    // 3. 加载记录成功后，恢复到上一次历史会话的位置
+                    // 等待 DOM 更新完成，包括按钮状态变化
+                    setTimeout(() => {
+                      scrollContainerRef.current?.handleScrollTo(
+                        scrollPosition,
+                        scrollHeight,
+                      );
+                    }, 100);
+                  }}
+                >
+                  点击查看更多历史会话
+                </Button>
+              )}
+            {chat.isLoadingMoreHistoryRef.current && <Spin size="small" />}
+            {chat.isLoadingHistory ? (
+              <AppDevEmptyState
+                type="loading"
+                icon={<LoadingOutlined />}
+                title="正在加载历史会话"
+                description="请稍候..."
+              />
+            ) : !chat.chatMessages || chat.chatMessages.length === 0 ? (
+              <AppDevEmptyState
+                type="empty"
+                icon={<MessageOutlined />}
+                title="开始新对话"
+                description="向 AI 助手提问，开始您的项目开发"
+              />
+            ) : (
+              chatMessagesList
             )}
-          {chat.isLoadingMoreHistoryRef.current && <Spin size="small" />}
-          {chat.isLoadingHistory ? (
-            <AppDevEmptyState
-              type="loading"
-              icon={<LoadingOutlined />}
-              title="正在加载历史会话"
-              description="请稍候..."
-            />
-          ) : !chat.chatMessages || chat.chatMessages.length === 0 ? (
-            <AppDevEmptyState
-              type="empty"
-              icon={<MessageOutlined />}
-              title="开始新对话"
-              description="向 AI 助手提问，开始您的项目开发"
-            />
-          ) : (
-            chatMessagesList
-          )}
-        </div>
-      </ReactScrollToBottomContainer>
+          </div>
+        </ReactScrollToBottomContainer>
+      </div>
+
       {/* 聊天输入区域 */}
       <div className={styles.chatInputContainer}>
         <div

@@ -12,6 +12,8 @@ import {
   TEMP_CONVERSATION_CONNECTION_URL,
   TEMP_CONVERSATION_UID,
 } from '@/constants/common.constants';
+import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import { apiTempChatConversationStop } from '@/services/agentConfig';
@@ -54,7 +56,6 @@ import { useRequest } from 'ahooks';
 import { Form, message } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import { throttle } from 'lodash';
 import React, {
   useCallback,
   useEffect,
@@ -67,7 +68,7 @@ import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
+const isDev = process.env.NODE_ENV === 'development';
 /**
  * 主页咨询聊天页面
  */
@@ -77,6 +78,7 @@ const ChatTemp: React.FC = () => {
     disabledConversationActive,
     setCurrentConversationRequestId,
     setMessageList: setConversationInfoMessageList,
+    resetInit,
   } = useModel('conversationInfo');
 
   // 链接Key
@@ -99,6 +101,11 @@ const ChatTemp: React.FC = () => {
     string[] | GuidQuestionDto[]
   >([]);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
+  const [messageView, setMessageView] = useState<HTMLDivElement | null>(null);
+  const setRef = useCallback((node: HTMLDivElement | null) => {
+    messageViewRef.current = node;
+    setMessageView(node);
+  }, []);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortConnectionRef = useRef<unknown>();
@@ -188,15 +195,31 @@ const ChatTemp: React.FC = () => {
     return false;
   }, [requiredNameList, variableParams]);
 
+  // 滚动到底部
+  const messageViewScrollToBottom = () => {
+    if (allowAutoScrollRef.current) {
+      const element = messageViewRef.current;
+      if (element) {
+        // 标记为程序触发的滚动，避免被误判为用户滚动
+        (element as any).__isProgrammaticScroll = true;
+        // 滚动到底部
+        element.scrollTo({
+          top: element.scrollHeight,
+          behavior: 'smooth',
+        });
+        // 在滚动完成后清除标记（smooth 滚动大约需要 500ms）
+        setTimeout(() => {
+          (element as any).__isProgrammaticScroll = false;
+        }, 600);
+      }
+    }
+  };
+
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const handleScrollBottom = () => {
     if (allowAutoScrollRef.current) {
       scrollTimeoutRef.current = setTimeout(() => {
-        // 滚动到底部
-        messageViewRef.current?.scrollTo({
-          top: messageViewRef.current?.scrollHeight,
-          behavior: 'smooth',
-        });
+        messageViewScrollToBottom();
       }, 400);
     }
   };
@@ -479,12 +502,15 @@ const ChatTemp: React.FC = () => {
       method: 'POST',
       headers: {
         Accept: 'application/json, text/plain, */* ',
+        ...(isDev
+          ? { Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}` }
+          : {}), // 只有在开发模式下才需要
       },
       body: params,
       onMessage: (res: ConversationChatResponse) => {
         handleChangeMessageList(res, currentMessageId);
         // 滚动到底部
-        handleScrollBottom();
+        messageViewScrollToBottom();
       },
       onError: () => {
         message.error('网络超时或服务不可用，请稍后再试');
@@ -502,6 +528,18 @@ const ChatTemp: React.FC = () => {
         });
       },
       onClose: () => {
+        // 将当前会话的loading状态的消息改为Error状态
+        setMessageList((list) => {
+          try {
+            const copyList = JSON.parse(JSON.stringify(list));
+            copyList[copyList.length - 1].status = MessageStatusEnum.Error;
+            return copyList;
+          } catch (error) {
+            console.error('ERROR:', error);
+            return list;
+          }
+        });
+        // 主动关闭连接时，禁用会话
         disabledConversationActive();
       },
     });
@@ -531,20 +569,6 @@ const ChatTemp: React.FC = () => {
         abortConnectionRef.current();
       }
       abortConnectionRef.current = null;
-    }
-  };
-
-  // 重置初始化
-  const resetInit = () => {
-    handleClearSideEffect();
-    setMessageList([]);
-    setConversationInfo(null);
-    allowAutoScrollRef.current = true;
-    setShowScrollBtn(false);
-    if (timeoutRef.current) {
-      //清除会话定时器
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
     }
   };
 
@@ -616,7 +640,7 @@ const ChatTemp: React.FC = () => {
     // 隐藏点击下滚按钮
     setShowScrollBtn(false);
     // 滚动
-    handleScrollBottom();
+    messageViewScrollToBottom();
     // 会话请求参数
     const params: TempConversationChatParams = {
       chatKey,
@@ -707,38 +731,17 @@ const ChatTemp: React.FC = () => {
     }
   }, [tenantConfigInfo]);
 
-  // 在组件挂载时添加滚动事件监听器
-  useEffect(() => {
-    const messageView = messageViewRef.current;
-    if (messageView) {
-      const handleScroll = () => {
-        // 当用户手动滚动时，暂停自动滚动
-        const { scrollTop, scrollHeight, clientHeight } = messageView;
-        if (scrollTop + clientHeight < scrollHeight) {
-          allowAutoScrollRef.current = false;
-          // 清除滚动
-          if (scrollTimeoutRef.current) {
-            clearTimeout(scrollTimeoutRef.current);
-            scrollTimeoutRef.current = null;
-          }
-          setShowScrollBtn(true);
-        } else {
-          // 当用户滚动到底部时，重新允许自动滚动
-          allowAutoScrollRef.current = true;
-          setShowScrollBtn(false);
-        }
-      };
-
-      messageView.addEventListener('wheel', throttle(handleScroll, 300));
-      // 组件卸载时移除滚动事件监听器
-      return () => {
-        messageView.removeEventListener('wheel', throttle(handleScroll, 300));
-        resetInit();
-      };
-    }
-  }, []);
+  // 使用滚动检测 Hook
+  useConversationScrollDetection(
+    messageView,
+    allowAutoScrollRef,
+    scrollTimeoutRef,
+    setShowScrollBtn,
+  );
 
   useEffect(() => {
+    // 组件挂载时重置会话状态，防止其他会话（如开发调试会话）的消息污染当前会话
+    resetInit();
     // 租户配置信息查询接口
     runTenantConfig();
     addBaseTarget();
@@ -796,11 +799,7 @@ const ChatTemp: React.FC = () => {
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const onScrollBottom = () => {
     allowAutoScrollRef.current = true;
-    // 滚动到底部
-    messageViewRef.current?.scrollTo({
-      top: messageViewRef.current?.scrollHeight,
-      behavior: 'smooth',
-    });
+    messageViewScrollToBottom();
     setShowScrollBtn(false);
   };
 
@@ -852,7 +851,7 @@ const ChatTemp: React.FC = () => {
               'overflow-y',
               styles['main-content'],
             )}
-            ref={messageViewRef}
+            ref={setRef}
           >
             <div className={cx(styles['chat-wrapper'], 'flex-1', 'w-full')}>
               {isLoadingConversation ? (

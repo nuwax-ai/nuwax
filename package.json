@@ -1,6 +1,6 @@
 {
-  "name": "agent-platform-front",
-  "version": "1.0.1",
+  "name": "nuwax-frontend",
+  "version": "1.0.5",
   "private": false,
   "homepage": "https://nuwax.com",
   "bugs": {
@@ -13,10 +13,14 @@
   "license": "Apache-2.0",
   "author": "Nuwax AI FE Team",
   "scripts": {
+    "prebuild:dev": "node scripts/generate-version.js",
     "build:dev": "cross-env UMI_ENV=development max build",
+    "prebuild:prod": "node scripts/generate-version.js",
     "build:prod": "cross-env UMI_ENV=production max build",
+    "predev": "node scripts/generate-version.js",
     "dev": "cross-env UMI_ENV=development max dev",
     "format": "prettier --cache --write .",
+    "generate:version": "node scripts/generate-version.js",
     "postinstall": "max setup",
     "lint-staged": "lint-staged",
     "prepare": "husky",
@@ -100,6 +104,7 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@types/clean-css": "^4.2.11",
     "@types/lodash": "^4.17.16",
     "@types/prismjs": "^1.26.5",
     "@types/react": "^18.0.33",
@@ -107,6 +112,7 @@
     "@types/react-dom": "^18.0.11",
     "@types/react-scroll-to-bottom": "^4.2.5",
     "@types/turndown": "^5.0.5",
+    "clean-css": "^5.3.3",
     "cross-env": "^7.0.3",
     "esbuild": "^0.27.0",
     "husky": "^9.1.7",

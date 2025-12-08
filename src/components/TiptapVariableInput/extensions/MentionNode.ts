@@ -51,7 +51,7 @@ export const MentionNode = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    // 直接使用 span 标签，确保样式被应用
+    // 直接使用 span 标签，样式通过 CSS 类应用（已在 styles.less 中定义）
     return [
       'span',
       mergeAttributes(HTMLAttributes, {
@@ -59,8 +59,7 @@ export const MentionNode = Node.create({
         'data-label': HTMLAttributes.label,
         'data-type': HTMLAttributes.type,
         class: 'mention-node',
-        style:
-          'display: inline-block !important; background-color: #e6f7ff !important; color: #1890ff !important; padding: 2px 6px !important; border-radius: 4px !important; margin: 0 2px !important; font-size: 12px !important; line-height: 20px !important; border: 1px solid #91d5ff !important; user-select: none !important; vertical-align: middle !important; cursor: default !important;',
+        // 移除内联样式，使用 CSS 类
       }),
       `@${HTMLAttributes.label || ''}`,
     ];
@@ -76,24 +75,24 @@ export const MentionNode = Node.create({
       span.textContent = `@${node.attrs.label}`;
       span.contentEditable = 'false';
 
-      // 直接使用 setAttribute 设置内联样式（确保样式被应用）
-      span.setAttribute(
-        'style',
-        'display: inline-block; background-color: #e6f7ff; color: #1890ff; padding: 2px 6px; border-radius: 4px; margin: 0 2px; font-size: 12px; line-height: 20px; border: 1px solid #91d5ff; user-select: none; vertical-align: middle; cursor: default;',
-      );
+      // 样式通过 CSS 类应用（已在 styles.less 中定义），不需要内联样式
 
       return {
         dom: span,
         update: (node) => {
-          // 更新时也确保样式存在
-          if (span.getAttribute('style') === null) {
-            span.setAttribute(
-              'style',
-              'display: inline-block; background-color: #e6f7ff; color: #1890ff; padding: 2px 6px; border-radius: 4px; margin: 0 2px; font-size: 12px; line-height: 20px; border: 1px solid #91d5ff; user-select: none; vertical-align: middle; cursor: default;',
-            );
-          }
+          // 更新内容
           if (span.textContent !== `@${node.attrs.label}`) {
             span.textContent = `@${node.attrs.label}`;
+          }
+          // 确保属性正确
+          if (span.getAttribute('data-id') !== node.attrs.id) {
+            span.setAttribute('data-id', node.attrs.id);
+          }
+          if (span.getAttribute('data-label') !== node.attrs.label) {
+            span.setAttribute('data-label', node.attrs.label);
+          }
+          if (span.getAttribute('data-type') !== node.attrs.type) {
+            span.setAttribute('data-type', node.attrs.type);
           }
           return true;
         },

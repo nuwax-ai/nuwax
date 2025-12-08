@@ -28,39 +28,51 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
   useEffect(() => {
     setIsMultiple(item.dataType?.startsWith('Array_') ?? false);
   }, [item.dataType]);
-  const handleUploadData = useCallback((info: any): FileListItem[] | [] => {
-    const updateFileInfo = info.fileList
-      .filter((file: any) => {
-        if (file.status === UploadFileStatus.done && !file.response?.success) {
-          message.error('上传失败');
-          return false;
-        }
-        return file.status !== UploadFileStatus.removed;
-      })
-      .map((file: any) => {
-        const url = file.url || file.response?.data?.url;
-        const key = file.response?.data?.key;
-        const name = file.name || file.response?.data?.fileName || '';
-        return {
-          key: key || '',
-          status: file.status,
-          uid: file.uid || uuidv4(),
-          name, // 最url 地址最后一段作为文件名
-          url,
-        };
-      });
-    return updateFileInfo;
-  }, []);
+  const handleUploadData = useCallback(
+    (info: any): FileListItem[] | [] => {
+      console.log('上传文件信息:', info.fileList);
+      const updateFileInfo = info.fileList
+        .filter((file: any) => {
+          // 只有文件状态为 done 且响应明确表示失败时才过滤
+          if (file.status === UploadFileStatus.done) {
+            // 检查是否有响应且响应明确失败（success === false）
+            if (file.response && file.response.success === false) {
+              console.error('文件上传失败:', file.name, file.response);
+              message.error(`上传失败: ${file.name}`);
+              return false;
+            }
+          }
+          return file.status !== UploadFileStatus.removed;
+        })
+        .map((file: any) => {
+          const url = file.url || file.response?.data?.url;
+          const key = file.response?.data?.key;
+          const name = file.name || file.response?.data?.fileName || '';
+          const fileInfo = {
+            key: key || '',
+            status: file.status,
+            uid: file.uid || uuidv4(),
+            name, // 最url 地址最后一段作为文件名
+            url,
+          };
+          console.log('处理后的文件信息:', fileInfo);
+          return fileInfo;
+        });
+      console.log('最终文件列表:', updateFileInfo);
+      return updateFileInfo;
+    },
+    [message],
+  );
 
   const handleChange: any = useCallback(
     (info: any) => {
       const updateFileInfo = handleUploadData(info); //区分 单选 多选
-      setFileList(isMultiple ? updateFileInfo : updateFileInfo.splice(0, 1));
+      setFileList(isMultiple ? updateFileInfo : updateFileInfo.slice(0, 1));
       if (info.file.status === UploadFileStatus.error) {
         message.warning(info.file.response?.message);
       }
     },
-    [setFileList, isMultiple],
+    [setFileList, isMultiple, handleUploadData],
   );
 
   const handleFormInitFileList = useCallback(

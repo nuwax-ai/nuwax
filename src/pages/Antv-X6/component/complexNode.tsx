@@ -3,10 +3,7 @@ import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
-import {
-  PromptVariable,
-  VariableType,
-} from '@/components/VariableInferenceInput/types';
+import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { SKILL_FORM_KEY } from '@/constants/node.constants';
@@ -79,31 +76,6 @@ const skillCreatedTabs = CREATED_TABS.filter((item) =>
   ].includes(item.key),
 );
 
-// 转换变量类型的辅助函数
-const transformToPromptVariables = (
-  configs: InputAndOutConfig[],
-): PromptVariable[] => {
-  return configs.map((item) => {
-    const typeStr = item.dataType?.toLowerCase() || 'string';
-    // 简单的类型映射，根据实际情况调整
-    let type: VariableType = VariableType.String;
-    if (Object.values(VariableType).includes(typeStr as VariableType)) {
-      type = typeStr as VariableType;
-    }
-
-    return {
-      key: item.key || item.name,
-      name: item.name,
-      type: type,
-      label: item.name, // 使用 name 作为 label
-      description: item.description || '',
-      children: item.children
-        ? transformToPromptVariables(item.children)
-        : undefined,
-    };
-  });
-};
-
 // 定义大模型节点
 const ModelNode: React.FC<NodeDisposeProps> = ({
   form,
@@ -122,7 +94,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   const [needSubmit, setNeedSubmit] = useState(false);
   const skillLoadingRef = useRef<NodeJS.Timeout>();
 
-  const { setSkillChange, setIsModified, skillChange } = useModel('workflow');
+  const { setSkillChange, setIsModified, skillChange, referenceList } =
+    useModel('workflow');
   const [skillLoading, setSkillLoading] = useState(false);
   const updateAddComponents = (
     configs: CreatedNodeItem[],
@@ -293,7 +266,10 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           onOptimize
           onOptimizeClick={() => setShow(true)}
           placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量"
-          variables={transformToPromptVariables(variables)}
+          variables={transformToPromptVariables(
+            variables,
+            referenceList?.argMap,
+          )}
           skills={skillComponentConfigs}
         />
       </div>
@@ -314,7 +290,10 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
           // onOptimize
           // onOptimizeClick={() => setShow(true)}
           placeholder="用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量"
-          variables={transformToPromptVariables(variables)}
+          variables={transformToPromptVariables(
+            variables,
+            referenceList?.argMap,
+          )}
           skills={skillComponentConfigs}
         />
       </div>
@@ -365,6 +344,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
 
 // 定义意图识别
 const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
+  const { referenceList } = useModel('workflow');
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
@@ -410,6 +390,7 @@ const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
               (item: InputAndOutConfig) =>
                 !['', null, undefined].includes(item.name),
             ),
+            referenceList?.argMap,
           )}
         />
       </div>
@@ -435,6 +416,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
   type,
   id,
 }) => {
+  const { referenceList } = useModel('workflow');
   // 更改问答方式
   const changeType = (val: string) => {
     // 首次选中
@@ -502,6 +484,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
               (item: InputAndOutConfig) =>
                 !['', null, undefined].includes(item.name),
             ),
+            referenceList?.argMap,
           )}
         />
       </div>

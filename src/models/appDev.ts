@@ -23,7 +23,7 @@ export interface AppDevWorkspace {
   id: string;
   name: string;
   projectId: string;
-  devServerUrl?: string;
+  devServerUrl?: string | null;
   files: FileNode[];
   activeFile?: string;
   settings: {
@@ -201,7 +201,7 @@ export default () => {
   /**
    * 更新开发服务器URL
    */
-  const updateDevServerUrl = (devServerUrl: string) => {
+  const updateDevServerUrl = (devServerUrl: string | null) => {
     setWorkspace((prev) => ({
       ...prev,
       devServerUrl,

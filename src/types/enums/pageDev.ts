@@ -54,6 +54,8 @@ export enum PageDevelopMoreActionEnum {
   Page_Preview = 'Page_Preview',
   // 复制到空间
   Copy_To_Space = 'Copy_To_Space',
+  // 导出项目
+  Export_Project = 'Export_Project',
   // 删除
   Delete = 'Delete',
 }
