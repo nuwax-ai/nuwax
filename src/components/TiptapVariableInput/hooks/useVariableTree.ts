@@ -4,11 +4,8 @@
  */
 
 import { useMemo } from 'react';
-import type {
-  PromptVariable,
-  VariableTreeNode,
-} from '../../VariableInferenceInput/types';
-import { buildVariableTree } from '../../VariableInferenceInput/utils/treeUtils';
+import type { PromptVariable, VariableTreeNode } from '../types';
+import { buildVariableTree } from '../utils/treeUtils';
 
 /**
  * 变量树管理 Hook
@@ -40,18 +37,25 @@ export const useVariableTree = (
         } as any,
       }));
 
-      // 添加技能分类
-      tree.push({
-        key: 'category-skills',
-        value: 'Skills',
-        label: 'Skills',
-        isLeaf: false,
-        children: skillNodes,
-        variable: {
-          name: 'Skills',
-          type: 'Category' as any,
-        } as any,
-      });
+      // 只有当有变量时才添加 category-skills 分类节点
+      // 如果只有工具，直接返回工具列表，不创建分类节点
+      if (tree.length > 0) {
+        // 有变量时，添加技能分类节点
+        tree.push({
+          key: 'category-skills',
+          value: 'Skills',
+          label: 'Skills',
+          isLeaf: false,
+          children: skillNodes,
+          variable: {
+            name: 'Skills',
+            type: 'Category' as any,
+          } as any,
+        });
+      } else {
+        // 只有工具时，直接返回工具列表，不创建分类节点
+        return skillNodes;
+      }
     }
 
     return tree;

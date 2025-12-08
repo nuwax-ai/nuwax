@@ -4,6 +4,7 @@ import CustomTree from '@/components/FormListItem/NestedForm';
 import TreeInput from '@/components/FormListItem/TreeInput';
 import DataTable from '@/components/Skill/database';
 import SqlOptimizeModal from '@/components/SqlOptimizeModal';
+import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
@@ -23,7 +24,7 @@ const Database: React.FC<NodeDisposeProps> = ({
 }) => {
   const [open, setOpen] = useState(false); // 自动生成sql的弹窗
 
-  const { setIsModified } = useModel('workflow');
+  const { setIsModified, referenceList } = useModel('workflow');
 
   const defaultConditionArgs = [
     {
@@ -49,6 +50,13 @@ const Database: React.FC<NodeDisposeProps> = ({
       compareType: null,
     },
   ];
+
+  // 获取输入参数（在组件顶层调用，避免在条件渲染中使用 Hook）
+  const inputArgs =
+    Form.useWatch(InputItemNameEnum.inputArgs, {
+      form,
+      preserve: true,
+    }) || [];
 
   // 打开自动生成弹窗
   const onOpenCreated = () => {
@@ -292,6 +300,13 @@ const Database: React.FC<NodeDisposeProps> = ({
             onOptimize
             onOptimizeClick={onOpenCreated}
             placeholder="可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输出参数中的变量"
+            variables={transformToPromptVariables(
+              inputArgs.filter(
+                (item: InputAndOutConfig) =>
+                  !['', null, undefined].includes(item.name),
+              ),
+              referenceList?.argMap,
+            )}
           />
         </div>
       )}

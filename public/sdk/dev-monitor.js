@@ -12,7 +12,7 @@
 
   // 配置
   const config = {
-    version: '1.0.4',
+    version: '1.0.5',
     enabled: true,
     logLevel: 'error', // 只记录错误级别日志
     maxErrors: 10, // 减少存储量
@@ -1233,6 +1233,66 @@
     setupWeChatMiniProgram();
 
     monitorData.ready = true;
+
+    //新增功能 支持 design mode 提前加载所有 tailwind 样式
+    // setupTailwindStyles();
+  }
+
+  /**
+   * 检测 Tailwind CSS 是否已加载
+   * Tailwind v2/v3/v3.4 都会注入 --tw- 变量
+   * @returns {boolean} 如果检测到 Tailwind CSS 返回 true，否则返回 false
+   */
+  function isTailwindLoaded() {
+    try {
+      const style = getComputedStyle(document.documentElement);
+      // 遍历所有 CSS 变量，查找以 --tw- 开头的变量
+      for (const propertyName of style) {
+        if (propertyName && propertyName.startsWith('--tw-')) {
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * 设置 Tailwind 样式（仅在检测到 Tailwind CSS 时加载）
+   */
+  function setupTailwindStyles() {
+    // 延迟检测，等待 Tailwind CSS 加载
+    const delay = document.readyState === 'complete' ? 300 : 1000;
+
+    setTimeout(() => {
+      if (!isTailwindLoaded()) {
+        // 如果第一次检测失败，再延迟重试一次
+        setTimeout(() => {
+          if (!isTailwindLoaded()) {
+            return; // 仍未检测到，不加载样式
+          }
+          loadTailwindStyles();
+        }, 1000);
+        return;
+      }
+      loadTailwindStyles();
+    }, delay);
+  }
+
+  /**
+   * 加载 Tailwind 样式文件
+   */
+  function loadTailwindStyles() {
+    try {
+      const style = document.createElement('link');
+      style.rel = 'stylesheet';
+      style.type = 'text/css';
+      style.href = '/sdk/tailwind_design_mode.all.css?v=' + config.version;
+      document.head.appendChild(style);
+    } catch (error) {
+      console.warn('加载 tailwind_design_mode.all.css 失败', error);
+    }
   }
 
   // 立即初始化

@@ -3,6 +3,7 @@
  */
 
 import {
+  cancelAgentTask,
   listConversations,
   saveConversation,
   stopAgentService,
@@ -439,6 +440,30 @@ export const useAppDevChat = ({
   );
 
   /**
+   * 取消聊天任务
+   */
+  const cancelChat = useCallback(async () => {
+    if (!projectId) {
+      return;
+    }
+    setIsChatLoading(false);
+    // 将正在流式传输的消息标记为取消状态
+    setChatMessages((prev) => {
+      return prev.map((msg) => {
+        if (msg.isStreaming && msg.role === 'ASSISTANT') {
+          return (
+            markStreamingMessageCancelled(prev, msg.requestId).find(
+              (m) => m.id === msg.id,
+            ) || msg
+          );
+        }
+        return msg;
+      });
+    });
+    abortConnectionRef.current?.abort();
+  }, [projectId, appDevSseModel]);
+
+  /**
    * 显示停止Agent服务的确认对话框
    */
   const showStopAgentServiceModal = useCallback(
@@ -450,7 +475,8 @@ export const useAppDevChat = ({
         maskClosable: false,
         onOk: () => {
           return new Promise((resolve, reject) => {
-            stopAgentService(projectId)
+            // stopAgentService(projectId)
+            cancelAgentTask(projectId)
               .then((stopResponse) => {
                 if (stopResponse.code === '0000') {
                   message.success('Agent服务已停止');
@@ -460,11 +486,13 @@ export const useAppDevChat = ({
                   message.error(
                     `停止Agent服务失败: ${stopResponse.message || '未知错误'}`,
                   );
+                  cancelChat();
                   reject();
                 }
               })
               .catch(() => {
                 message.error('停止Agent服务失败');
+                cancelChat();
                 reject();
               });
           });
@@ -472,6 +500,7 @@ export const useAppDevChat = ({
         onCancel: () => {
           // 用户取消停止Agent服务，不发送消息，不增加计数
           message.info('已取消发送');
+          cancelChat();
         },
       });
     },
@@ -742,30 +771,6 @@ export const useAppDevChat = ({
     },
     [chatInput, sendMessageAndConnectSSE],
   );
-
-  /**
-   * 取消聊天任务
-   */
-  const cancelChat = useCallback(async () => {
-    if (!projectId) {
-      return;
-    }
-    setIsChatLoading(false);
-    // 将正在流式传输的消息标记为取消状态
-    setChatMessages((prev) => {
-      return prev.map((msg) => {
-        if (msg.isStreaming && msg.role === 'ASSISTANT') {
-          return (
-            markStreamingMessageCancelled(prev, msg.requestId).find(
-              (m) => m.id === msg.id,
-            ) || msg
-          );
-        }
-        return msg;
-      });
-    });
-    abortConnectionRef.current?.abort();
-  }, [projectId, appDevSseModel]);
 
   /**
    * 清理 AppDev SSE 连接

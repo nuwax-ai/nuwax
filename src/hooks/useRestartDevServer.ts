@@ -56,7 +56,7 @@ export const useRestartDevServer = ({
     }) => {
       const {
         shouldSwitchTab = true, // 默认切换到预览标签页
-        delayBeforeRefresh = 500, // 默认延迟 500ms
+        // delayBeforeRefresh 参数暂时未使用，保留在接口中以便将来使用
         showMessage = true, // 默认显示消息
       } = params || {};
 
@@ -82,12 +82,12 @@ export const useRestartDevServer = ({
         // 调用服务器重启方法，传递 shouldSwitchTab 参数
         const result = await server.restartServer(shouldSwitchTab);
 
-        // 如果成功，延迟刷新预览
-        if (result.success && previewRef?.current) {
-          setTimeout(() => {
-            previewRef.current?.refresh();
-          }, delayBeforeRefresh);
-        }
+        // 如果成功，延迟刷新预览 暂时注释，避免重复刷新 由于变化已经完成
+        // if (result.success && previewRef?.current) {
+        //   setTimeout(() => {
+        //     previewRef.current?.refresh();
+        //   }, delayBeforeRefresh);
+        // }
 
         // 显示结果消息
         if (showMessage) {

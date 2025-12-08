@@ -1,6 +1,6 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
-import { ProjectDetailData } from '@/types/interfaces/appDev';
+import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
 import {
   isImageFile,
   isPreviewableFile,
@@ -9,6 +9,7 @@ import {
 import { Button, Spin } from 'antd';
 import React, { useMemo } from 'react';
 import CodeViewer from '../CodeViewer';
+import { type DesignViewerRef } from '../DesignViewer';
 import FilePathHeader from '../FilePathHeader';
 import ImageViewer from '../ImageViewer';
 import Preview, { type PreviewRef } from '../Preview';
@@ -16,6 +17,10 @@ import styles from './index.less';
 
 interface ContentViewerProps {
   projectInfo?: ProjectDetailData | null;
+  /** 刷新项目详情 */
+  refreshProjectInfo?: () => void;
+  /** 文件树数据 */
+  files?: FileNode[];
   /** 显示模式 */
   mode: 'preview' | 'code';
   /** 是否在版本对比模式 */
@@ -50,6 +55,8 @@ interface ContentViewerProps {
   serverErrorCode?: string | null;
   /** Preview组件ref */
   previewRef: React.RefObject<PreviewRef>;
+  /** DesignViewer组件ref */
+  designViewerRef?: React.RefObject<DesignViewerRef>;
   /** 内容变化回调 */
   onContentChange: (fileId: string, content: string) => void;
   /** 保存文件回调 */
@@ -74,6 +81,11 @@ interface ContentViewerProps {
     errorMessage: string,
     errorType?: 'whiteScreen' | 'iframe',
   ) => void;
+  /** 刷新文件树回调 */
+  onRefreshFileTree?: (
+    preserveExpandedState?: boolean,
+    forceUpdate?: boolean,
+  ) => void;
 }
 
 /**
@@ -82,7 +94,9 @@ interface ContentViewerProps {
  * 优化：使用条件渲染和组件缓存来避免 iframe 重新加载
  */
 const ContentViewer: React.FC<ContentViewerProps> = ({
+  files,
   projectInfo,
+  refreshProjectInfo,
   mode,
   isComparing,
   selectedFileId,
@@ -100,6 +114,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   serverMessage,
   serverErrorCode,
   previewRef,
+  designViewerRef, // 新增
   onContentChange,
   onSaveFile,
   onCancelEdit,
@@ -109,13 +124,16 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   onStartDev,
   onRestartDev,
   onWhiteScreenOrIframeError,
+  onRefreshFileTree,
 }) => {
   // 使用 useMemo 缓存 Preview 组件，避免重新创建
   const previewComponent = useMemo(
     () => (
       <Preview
+        files={files}
         ref={previewRef}
         projectInfo={projectInfo}
+        refreshProjectInfo={refreshProjectInfo}
         devServerUrl={
           devServerUrl ? `${process.env.BASE_URL}${devServerUrl}` : undefined
         }
@@ -126,13 +144,16 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
         startError={startError}
         serverMessage={serverMessage}
         serverErrorCode={serverErrorCode}
+        designViewerRef={designViewerRef}
         onStartDev={onStartDev}
         onRestartDev={onRestartDev}
         onWhiteScreenOrIframeError={onWhiteScreenOrIframeError}
+        onRefreshFileTree={onRefreshFileTree}
       />
     ),
     [
       previewRef,
+      designViewerRef,
       devServerUrl,
       isStarting,
       isChatLoading,
@@ -144,6 +165,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       onStartDev,
       onRestartDev,
       onWhiteScreenOrIframeError,
+      onRefreshFileTree,
     ],
   );
 

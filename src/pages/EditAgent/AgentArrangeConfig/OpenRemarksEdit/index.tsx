@@ -8,6 +8,7 @@ import type { OpenRemarksEditProps } from '@/types/interfaces/agentConfig';
 import { DeleteOutlined } from '@ant-design/icons';
 import { Input, theme } from 'antd';
 import classNames from 'classnames';
+import { cloneDeep } from 'lodash';
 import React, { useEffect, useRef, useState } from 'react';
 import GuidQuestionSetModal from './GuidQuestionSetModal';
 import styles from './index.less';
@@ -21,7 +22,6 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   agentConfigInfo,
   pageArgConfigs,
   onChangeAgent,
-  onConfirmUpdateEventQuestions,
 }) => {
   const { token } = theme.useToken();
   // 开场白内容
@@ -74,7 +74,7 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
 
   // 修改开场白引导问题
   const handleChangeGuidQuestions = (index: number, value: string) => {
-    const _guidQuestionDtos = [...guidQuestionDtos];
+    const _guidQuestionDtos = cloneDeep(guidQuestionDtos);
     _guidQuestionDtos[index].info = value;
     setGuidQuestionDtos(_guidQuestionDtos);
     onChangeAgent(_guidQuestionDtos, 'guidQuestionDtos');
@@ -94,7 +94,7 @@ const OpenRemarksEdit: React.FC<OpenRemarksEditProps> = ({
   const handleConfirmUpdateQuestions = (newQuestions: GuidQuestionDto[]) => {
     setOpen(false);
     setGuidQuestionDtos(newQuestions);
-    onConfirmUpdateEventQuestions(newQuestions, 'guidQuestionDtos');
+    onChangeAgent(newQuestions, 'guidQuestionDtos');
   };
 
   return (

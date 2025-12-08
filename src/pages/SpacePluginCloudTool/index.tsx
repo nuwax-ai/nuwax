@@ -19,7 +19,7 @@ import { CascaderChange, CascaderValue } from '@/utils';
 import { getActiveKeys } from '@/utils/deepNode';
 import { DeleteOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { Button, Cascader, Checkbox, Input, Space, Table, Tooltip } from 'antd';
+import { Button, Cascader, Checkbox, Input, Table, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
@@ -223,20 +223,27 @@ const SpacePluginCloudTool: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 80,
+      width: 66,
       align: 'right',
-      render: (_, record) => (
-        <Space size="middle">
-          {(DataTypeEnum.Object === record.dataType ||
-            DataTypeEnum.Array_Object === record.dataType) && (
-            <ICON_ADD_TR
-              className={cx('cursor-pointer')}
-              onClick={() => handleInputAddChild(record.key)}
+      render: (_, record) => {
+        return (
+          <div className="flex items-center content-end gap-4">
+            {(DataTypeEnum.Object === record.dataType ||
+              DataTypeEnum.Array_Object === record.dataType) && (
+              <Button
+                type="text"
+                onClick={() => handleInputAddChild(record.key)}
+                icon={<ICON_ADD_TR />}
+              />
+            )}
+            <Button
+              type="text"
+              onClick={() => handleInputDel(record.key)}
+              icon={<DeleteOutlined />}
             />
-          )}
-          <DeleteOutlined onClick={() => handleInputDel(record.key)} />
-        </Space>
-      ),
+          </div>
+        );
+      },
     },
   ];
 
@@ -310,20 +317,27 @@ const SpacePluginCloudTool: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 80,
+      width: 66,
       align: 'right',
-      render: (_, record) => (
-        <Space size="middle">
-          {(DataTypeEnum.Object === record.dataType ||
-            DataTypeEnum.Array_Object === record.dataType) && (
-            <ICON_ADD_TR
-              className={cx('cursor-pointer')}
-              onClick={() => handleOutputAddChild(record.key)}
+      render: (_, record) => {
+        return (
+          <div className="flex items-center content-end gap-4">
+            {(DataTypeEnum.Object === record.dataType ||
+              DataTypeEnum.Array_Object === record.dataType) && (
+              <Button
+                type="text"
+                onClick={() => handleOutputAddChild(record.key)}
+                icon={<ICON_ADD_TR />}
+              />
+            )}
+            <Button
+              type="text"
+              onClick={() => handleOutputDel(record.key)}
+              icon={<DeleteOutlined />}
             />
-          )}
-          <DeleteOutlined onClick={() => handleOutputDel(record.key)} />
-        </Space>
-      ),
+          </div>
+        );
+      },
     },
   ];
 

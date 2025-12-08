@@ -61,12 +61,11 @@ export interface AgentArrangeConfigProps {
     value: string | string[] | number | GuidQuestionDto[],
     attr: string,
   ) => void;
-  onConfirmUpdateEventQuestions: (
-    value: string | string[] | number | GuidQuestionDto[],
-    attr: string,
-  ) => void;
   // 插入系统提示词
   onInsertSystemPrompt?: (text: string) => void;
+  // 变量列表变化回调，用于同步变量列表到父组件
+  onVariablesChange?: (variables: BindConfigWithSub[]) => void;
+  onToolsChange?: (tools: AgentComponentInfo[]) => void;
 }
 
 // 组件设置弹窗
@@ -252,10 +251,6 @@ export interface OpenRemarksEditProps {
   pageArgConfigs: PageArgConfig[];
   onChangeAgent: (
     value: string | string[] | GuidQuestionDto[],
-    attr: string,
-  ) => void;
-  onConfirmUpdateEventQuestions: (
-    value: string | string[] | number | GuidQuestionDto[],
     attr: string,
   ) => void;
 }

@@ -240,7 +240,7 @@ const StructureTable: React.FC<StructureTableProps> = ({
     },
     {
       title: '数据长度',
-      dataIndex: 'dataLength',
+      dataIndex: 'dataLength', // dataLength，前端自定义属性，用于区分短文本或长文本, 对应数据库类型: VARCHAR(255) 或 MEDIUMTEXT
       width: 140,
       render: (value, record) =>
         record.id === 0 ? (

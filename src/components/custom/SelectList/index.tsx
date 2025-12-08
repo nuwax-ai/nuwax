@@ -11,6 +11,7 @@ const SelectList: React.FC<SelectListType> = (props) => {
   const {
     className,
     value,
+    prefix,
     dropdownRenderComponent,
     placeholder,
     disabled,
@@ -24,6 +25,7 @@ const SelectList: React.FC<SelectListType> = (props) => {
     <Select
       rootClassName={cx(styles.container, className)}
       value={value}
+      prefix={prefix}
       placeholder={placeholder || '请选择'}
       disabled={disabled}
       onChange={onChange}
