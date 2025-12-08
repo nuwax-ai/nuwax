@@ -160,7 +160,7 @@ export async function createSSEConnection<T = any>(
           // 聊天对话结束标志 completed = true
           if (subType === 'end_turn' || completed === true) {
             console.log(
-              `✅ [SSE Utils] 页面开发结束或聊天对话结束，主动断开连接`,
+              `✅ [SSE Utils] 页面开发结束或聊天对话结束，主动断开连接 subType:${subType} completed:${completed}`,
             );
             abortFunction();
           }
