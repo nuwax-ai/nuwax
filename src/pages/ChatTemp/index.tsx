@@ -528,6 +528,18 @@ const ChatTemp: React.FC = () => {
         });
       },
       onClose: () => {
+        // 将当前会话的loading状态的消息改为Error状态
+        setMessageList((list) => {
+          try {
+            const copyList = JSON.parse(JSON.stringify(list));
+            copyList[copyList.length - 1].status = MessageStatusEnum.Error;
+            return copyList;
+          } catch (error) {
+            console.error('ERROR:', error);
+            return list;
+          }
+        });
+        // 主动关闭连接时，禁用会话
         disabledConversationActive();
       },
     });

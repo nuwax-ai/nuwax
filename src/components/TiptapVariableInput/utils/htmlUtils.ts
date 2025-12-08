@@ -27,6 +27,85 @@ export const escapeHTML = (text: string): string => {
 };
 
 /**
+ * StarterKit 支持的 HTML 标签列表
+ * 这些标签不会被转义，会被 Tiptap 正常解析
+ */
+const SUPPORTED_HTML_TAGS = [
+  'p',
+  'br',
+  'strong',
+  'b',
+  'em',
+  'i',
+  'u',
+  's',
+  'strike',
+  'code',
+  'pre',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'ul',
+  'ol',
+  'li',
+  'blockquote',
+  'hr',
+  'hardBreak',
+];
+
+/**
+ * Tiptap 自定义节点使用的 class 名称列表
+ * 这些 class 的 span 标签不会被转义
+ */
+const TIPTAP_NODE_CLASSES = [
+  'tool-block-chip',
+  'variable-block-chip',
+  'variable-block-chip-editable',
+  'mention-node',
+  'raw-content',
+];
+
+/**
+ * 转义不被 StarterKit 支持的 HTML 标签
+ * @param html HTML 内容
+ * @returns 转义后的 HTML 内容
+ */
+export const escapeUnsupportedHTMLTags = (html: string): string => {
+  if (!html) return html;
+
+  // 匹配所有 HTML 标签
+  const tagRegex =
+    /<\/?([a-zA-Z][a-zA-Z0-9]*)(?:\s+[^>]*)?>|<([a-zA-Z][a-zA-Z0-9]*)\s+[^>]*>/g;
+
+  return html.replace(tagRegex, (match, tagName1, tagName2) => {
+    const tagName = tagName1 || tagName2;
+    const lowerTagName = tagName.toLowerCase();
+
+    // 如果标签被 StarterKit 支持（不包括 span），不转义
+    if (SUPPORTED_HTML_TAGS.includes(lowerTagName)) {
+      return match;
+    }
+
+    // 对于 span 标签，检查是否包含 Tiptap 节点相关的 class
+    if (lowerTagName === 'span') {
+      const hasNodeClass = TIPTAP_NODE_CLASSES.some(
+        (cls) =>
+          match.includes(`class="${cls}"`) || match.includes(`class='${cls}'`),
+      );
+      if (hasNodeClass) {
+        return match; // 保留 Tiptap 节点的 span
+      }
+    }
+
+    // 转义不被支持的标签
+    return escapeHTML(match);
+  });
+};
+
+/**
  * 转义事件标签
  * 将 <div class="event" event-type="xxx" data='xxx'>[xxx]</div> 格式的事件标签转义为纯文本显示
  * @param text 需要处理的文本
@@ -46,6 +125,115 @@ export const escapeEventTags = (text: string): string => {
   });
 };
 
+/**
+ * 转义自定义 XML 标签（如 <OutputFormat>、<Constrains> 等）
+ * 这些标签在提示词中常用，需要被转义以避免被浏览器解析为 HTML 元素
+ *
+ * 支持的标签格式：
+ * - 开始标签：<OutputFormat>、<OutputFormat attr="value">
+ * - 结束标签：</OutputFormat>
+ * - 自闭合标签：<OutputFormat />、<OutputFormat/>、<OutputFormat attr="value" />
+ *
+ * @param text 需要处理的文本
+ * @returns 处理后的文本（自定义标签被转义为 &lt; 和 &gt;）
+ */
+export const escapeCustomHTMLTags = (text: string): string => {
+  if (!text) return '';
+
+  // 匹配自定义 XML 标签（以大写字母开头的标签名，如 <OutputFormat>、<Constrains> 等）
+  // 这些标签不是标准的 HTML 标签，需要被转义以避免被浏览器解析
+  // 正则匹配：
+  //   - 自闭合标签：<标签名 /> 或 <标签名/> 或 <标签名 属性 />
+  //   - 开始标签：<标签名> 或 <标签名 属性>
+  //   - 结束标签：</标签名>
+  // 排除已经转义的标签（&lt; 和 &gt;）
+  // 排除标准 HTML 标签（如 <p>、<br>、<span> 等）
+  // 注意：必须先匹配自闭合标签，再匹配普通开始标签，避免重复匹配
+  // 自闭合标签：以 /> 结尾，可能包含属性
+  const customSelfClosingTagRegex = /<([A-Z][A-Za-z0-9]*)(?:\s+[^>]*)?\s*\/>/g;
+  // 普通开始标签：以 > 结尾（不包含 /），可能包含属性
+  // 注意：由于先处理了自闭合标签，这里不会匹配到自闭合标签
+  const customTagRegex = /<([A-Z][A-Za-z0-9]*)(?:\s+[^>]*)?>/g;
+  // 结束标签：</标签名>
+  const customClosingTagRegex = /<\/([A-Z][A-Za-z0-9]*)>/g;
+
+  // 标准 HTML 标签列表（小写）
+  const standardTags = [
+    'p',
+    'br',
+    'span',
+    'div',
+    'strong',
+    'em',
+    'u',
+    's',
+    'code',
+    'pre',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'ul',
+    'ol',
+    'li',
+    'blockquote',
+    'a',
+    'img',
+    'table',
+    'tr',
+    'td',
+    'th',
+    'thead',
+    'tbody',
+    'thead',
+    'tfoot',
+  ];
+
+  // 先处理自闭合标签（必须在开始标签之前处理，避免重复匹配）
+  // 自闭合标签格式：<标签名 /> 或 <标签名/>
+  let result = text.replace(customSelfClosingTagRegex, (match, tagName) => {
+    // 如果标签名是小写的标准标签，不转义
+    if (standardTags.includes(tagName.toLowerCase())) {
+      return match;
+    }
+    // 转义自定义自闭合标签
+    return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  });
+
+  // 转义开始标签（排除已经被处理的自闭合标签）
+  // 注意：由于自闭合标签已经被处理，这里不会匹配到自闭合标签
+  result = result.replace(customTagRegex, (match, tagName) => {
+    // 如果标签名是小写的标准标签，不转义
+    if (standardTags.includes(tagName.toLowerCase())) {
+      return match;
+    }
+    // 检查是否已经被转义（避免重复处理）
+    if (match.includes('&lt;') || match.includes('&gt;')) {
+      return match;
+    }
+    // 转义自定义标签
+    return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  });
+
+  // 转义结束标签
+  result = result.replace(customClosingTagRegex, (match, tagName) => {
+    // 如果标签名是小写的标准标签，不转义
+    if (standardTags.includes(tagName.toLowerCase())) {
+      return match;
+    }
+    // 检查是否已经被转义（避免重复处理）
+    if (match.includes('&lt;') || match.includes('&gt;')) {
+      return match;
+    }
+    // 转义自定义标签
+    return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  });
+
+  return result;
+};
+
 // ... (intermediate code omitted) ...
 
 /**
@@ -54,12 +242,55 @@ export const escapeEventTags = (text: string): string => {
  * @param html Tiptap HTML 内容
  * @returns 纯文本内容（原始格式：{{xxx}}、{#ToolBlock ...#}...{#/ToolBlock#}、@xxx）
  */
+/**
+ * 匹配不被 StarterKit 支持的 HTML 标签的正则表达式
+ * 匹配所有 HTML 标签，但排除 StarterKit 支持的标签
+ */
+const UNSUPPORTED_HTML_TAG_REGEX = /<\/?([a-zA-Z][a-zA-Z0-9]*)(?:\s+[^>]*)?>/g;
+
 export const extractTextFromHTML = (html: string): string => {
   if (!html) return '';
 
+  // 在使用 innerHTML 解析之前，先转义不被 StarterKit 支持的 HTML 标签
+  // 参照事件标签的处理逻辑，直接使用正则匹配并转义
+  // 这样可以防止浏览器将这些标签（如 <a>、<div>、<span> 等）解析为真正的 HTML 元素
+  // 从而避免在提取文本时丢失这些标签
+  // 但保留 Tiptap 节点相关的 span 标签（如 tool-block-chip、variable-block-chip 等）
+  const escapedHtml = html.replace(
+    UNSUPPORTED_HTML_TAG_REGEX,
+    (match, tagName) => {
+      const lowerTagName = tagName.toLowerCase();
+
+      // 如果标签被 StarterKit 支持，不转义
+      if (SUPPORTED_HTML_TAGS.includes(lowerTagName)) {
+        return match;
+      }
+
+      // 对于 span 标签，检查是否包含 Tiptap 节点相关的 class
+      if (lowerTagName === 'span') {
+        const hasNodeClass = TIPTAP_NODE_CLASSES.some(
+          (cls) =>
+            match.includes(`class="${cls}"`) ||
+            match.includes(`class='${cls}'`),
+        );
+        if (hasNodeClass) {
+          return match; // 保留 Tiptap 节点的 span
+        }
+      }
+
+      // 转义不被支持的标签（参照 escapeEventTags 的处理方式）
+      return match
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    },
+  );
+
   // 创建临时 DOM 元素
   const temp = document.createElement('div');
-  temp.innerHTML = html;
+  temp.innerHTML = escapedHtml;
 
   // 处理 tool-blocks（优先处理，因为可能包含其他内容）
   // Tiptap 实际渲染为 span.tool-block-chip（标准 HTML 标签）
@@ -117,6 +348,17 @@ export const extractTextFromHTML = (html: string): string => {
     mention.parentNode?.replaceChild(textNode, mention);
   });
 
+  // 处理 Raw 节点（用于展示 HTML/XML 原始内容）
+  // Tiptap 实际渲染为 pre.raw-content 或 pre[data-raw]
+  const rawNodes = temp.querySelectorAll('pre[data-raw], pre.raw-content');
+  rawNodes.forEach((rawNode) => {
+    const content =
+      rawNode.getAttribute('data-content') || rawNode.textContent || '';
+    // Raw 节点内容直接作为文本输出，不进行任何转换
+    const textNode = document.createTextNode(content);
+    rawNode.parentNode?.replaceChild(textNode, rawNode);
+  });
+
   // 提取纯文本（保留段落结构和硬换行）
   // 规则：每个段落（包括空段落）都转换为一个换行符
   // <p>text</p> -> text\n
@@ -130,6 +372,10 @@ export const extractTextFromHTML = (html: string): string => {
 
   const processNode = (node: Node) => {
     if (node.nodeType === Node.TEXT_NODE) {
+      // 处理文本节点
+      // 注意：如果 HTML 中包含转义的标签（&lt; 和 &gt;），
+      // 当通过 innerHTML 解析时，浏览器会自动将它们转换为 < 和 >
+      // 所以这里直接使用 textContent 即可
       result += node.textContent || '';
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       const element = node as Element;
@@ -233,6 +479,14 @@ export const convertTextToHTML = (
   // 首先转义事件标签,使其显示为纯文本而不是被浏览器解析
   let html = escapeEventTags(text);
 
+  // 转义自定义 XML 标签（如 <OutputFormat>、<Constrains> 等）
+  // 这些标签需要被转义以避免被浏览器解析为 HTML 元素，但保留在文本中
+  html = escapeCustomHTMLTags(html);
+
+  // 转义不被 StarterKit 支持的 HTML 标签（如 <a>、<div>、<span> 等）
+  // 这些标签在 Tiptap 解析时会被移除，需要转义以保留原始标签
+  html = escapeUnsupportedHTMLTags(html);
+
   // 检查是否已经是 HTML 格式（包含 HTML 标签）
   const isHTML = /<[^>]+>/.test(html);
 
@@ -327,4 +581,93 @@ export const shouldConvertTextToHTML = (text: string): boolean => {
   if (EVENT_TAG_REGEX.test(text)) return true;
 
   return false;
+};
+
+/**
+ * 检测内容是否应该使用 Raw 节点展示
+ * 判断标准：包含完整的 HTML/XML 结构（如完整的文档、多个嵌套标签等）
+ * @param content 需要检测的内容
+ * @returns 是否应该使用 Raw 节点
+ */
+export const shouldUseRawNode = (content: string): boolean => {
+  if (!content) return false;
+
+  // 检查是否包含完整的 HTML/XML 文档结构
+  // 例如：<!DOCTYPE>、<html>、<xml> 等
+  if (
+    /<!DOCTYPE/i.test(content) ||
+    /<html[\s>]/i.test(content) ||
+    /<\?xml/i.test(content)
+  ) {
+    return true;
+  }
+
+  // 检查是否包含多个嵌套的标签结构（可能是完整的 HTML/XML 片段）
+  // 例如：<div><p>text</p></div>、<root><child>text</child></root> 等
+  const tagMatches = content.match(/<[^>]+>/g);
+  if (tagMatches && tagMatches.length >= 3) {
+    // 检查是否有开始和结束标签的配对
+    const openTags = tagMatches.filter((tag) => !tag.includes('/'));
+    const closeTags = tagMatches.filter((tag) => tag.includes('/'));
+    // 如果有多个标签对，可能是完整的 HTML/XML 结构
+    if (openTags.length >= 2 && closeTags.length >= 1) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+/**
+ * 将 HTML/XML 内容转换为 Raw 节点的 HTML 格式
+ * @param content 原始 HTML/XML 内容
+ * @param type 内容类型：'html' | 'xml'，默认 'html'
+ * @returns Raw 节点的 HTML 字符串
+ */
+export const convertToRawNodeHTML = (
+  content: string,
+  type: 'html' | 'xml' = 'html',
+): string => {
+  if (!content) return '';
+
+  // 转义内容中的特殊字符，确保在 HTML 中正确显示
+  const escapedContent = content
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+  // 返回 Raw 节点的 HTML 格式
+  return `<pre data-raw="true" data-content="${escapedContent}" data-type="${type}" class="raw-content">${escapedContent}</pre>`;
+};
+
+/**
+ * 从 HTML 中提取 Raw 节点的内容
+ * @param html 包含 Raw 节点的 HTML
+ * @returns Raw 节点的原始内容数组
+ */
+export const extractRawNodeContents = (html: string): string[] => {
+  if (!html) return [];
+
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+
+  const rawNodes = temp.querySelectorAll('pre[data-raw], pre.raw-content');
+  const contents: string[] = [];
+
+  rawNodes.forEach((rawNode) => {
+    const content =
+      rawNode.getAttribute('data-content') || rawNode.textContent || '';
+    // 反转义 HTML 实体
+    const decodedContent = content
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'");
+    contents.push(decodedContent);
+  });
+
+  return contents;
 };
