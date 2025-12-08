@@ -11,6 +11,7 @@ import { jumpTo } from '@/utils/router';
 import {
   ExclamationCircleOutlined,
   GlobalOutlined,
+  Loading3QuartersOutlined,
   ReloadOutlined,
   ThunderboltOutlined,
   WarningOutlined,
@@ -61,6 +62,11 @@ interface PreviewProps {
     errorMessage: string,
     errorType?: 'whiteScreen' | 'iframe',
   ) => void;
+  /** 刷新文件树回调 */
+  onRefreshFileTree?: (
+    preserveExpandedState?: boolean,
+    forceUpdate?: boolean,
+  ) => void;
   /** DesignViewer组件ref */
   designViewerRef?: React.RefObject<DesignViewerRef>;
 }
@@ -97,6 +103,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       onStartDev,
       onRestartDev,
       onWhiteScreenOrIframeError,
+      onRefreshFileTree,
     },
     ref,
   ) => {
@@ -265,6 +272,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       let icon: React.ReactNode;
       if (hasError) {
         icon = <ExclamationCircleOutlined />;
+      } else if (isDeveloping) {
+        icon = <Loading3QuartersOutlined spin />;
       } else if (isProjectUploading || isRestarting || isStarting) {
         icon = <ThunderboltOutlined />;
       } else if (hasStartError) {
@@ -704,7 +713,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       //   }
       // }
       // 设置iframe加载完毕
-      setIsIframeLoaded(true);
       setIsLoading(false);
       setLoadError(null);
       // 设置iframe加载完毕
@@ -997,21 +1005,21 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     }, []);
 
     // 关闭设计模式
-    const closeDesignMode = useCallback(() => {
-      // 关闭设计模式，防止用户在设计模式下修改元素，导致添加到会话的内容不准确
-      setIframeDesignMode(false);
-      const iframe = document.querySelector('iframe');
-      if (iframe && iframe.contentWindow) {
-        iframe.contentWindow.postMessage(
-          {
-            type: 'TOGGLE_DESIGN_MODE',
-            enabled: false,
-            timestamp: Date.now(),
-          },
-          '*',
-        );
-      }
-    }, []);
+    // const closeDesignMode = useCallback(() => {
+    //   // 关闭设计模式，防止用户在设计模式下修改元素，导致添加到会话的内容不准确
+    //   setIframeDesignMode(false);
+    //   const iframe = document.querySelector('iframe');
+    //   if (iframe && iframe.contentWindow) {
+    //     iframe.contentWindow.postMessage(
+    //       {
+    //         type: 'TOGGLE_DESIGN_MODE',
+    //         enabled: false,
+    //         timestamp: Date.now(),
+    //       },
+    //       '*',
+    //     );
+    //   }
+    // }, []);
 
     /**
      * 保存所有更改
@@ -1076,8 +1084,10 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               const fileContent = file.contents || '';
 
               // 应用智能替换逻辑
-              const updatedContent = applyDesignChanges(fileContent, changes);
-
+              const updatedContent = await applyDesignChanges(
+                fileContent,
+                changes,
+              );
               filesToUpdate.push({
                 name: filePath,
                 contents: updatedContent,
@@ -1111,14 +1121,15 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         // 保存成功后，关闭保存状态
         setIsSaving(false);
         // 设置iframe加载完毕
-        setIsIframeLoaded(false);
+        // setIsIframeLoaded(false);
         // 刷新项目版本信息
         refreshProjectInfo?.();
-
+        // 刷新文件树列表
+        onRefreshFileTree?.(true, true);
         if (response.code === SUCCESS_CODE) {
           message.success(`成功保存！`);
           // 方案一，保存后关闭设计模式
-          closeDesignMode();
+          // closeDesignMode();
           // 清空待保存列表
           setPendingChanges([]);
         } else {

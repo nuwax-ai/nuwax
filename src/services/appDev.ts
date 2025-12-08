@@ -180,7 +180,7 @@ export const getProjectContent = async (
   return request(
     `/api/custom-page/get-project-content?projectId=${encodeURIComponent(
       projectId.toString(),
-    )}`,
+    )}&t=${Date.now()}`,
     {
       method: 'GET',
     },
@@ -628,7 +628,7 @@ export const getDevLogs = async (
 
   // 处理后端返回的日志数据，确保包含所有必需字段
   const processedLogs: DevLogEntry[] =
-    response.data?.logs?.length > 0
+    response?.data?.logs?.length > 0
       ? response.data.logs.map((log: any) => {
           // 如果后端返回的日志对象缺少某些字段，使用 parseLogEntry 来补充
           if (!log.level || !log.isError) {
@@ -641,11 +641,12 @@ export const getDevLogs = async (
   return {
     ...response,
     data: {
-      ...response.data,
+      ...response?.data,
       logs: processedLogs,
       hasMore:
-        response.data.startIndex + response.data.logs.length <
-        response.data.totalLines,
+        (response?.data?.startIndex || 0) +
+          (response?.data?.logs?.length || 0) <
+        (response?.data?.totalLines || 0),
     },
   };
 };

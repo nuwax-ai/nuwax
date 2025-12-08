@@ -8,6 +8,7 @@
 - ✅ **可编辑变量**：支持在变量节点内部进行字符级编辑
 - ✅ **@ Mentions**：支持 @ 符号触发用户/文件等提及功能
 - ✅ **工具块**：支持 `{#ToolBlock ...#}` 格式的工具块插入
+- ✅ **Raw 节点**：支持展示 HTML/XML 原始内容，防止被 ProseMirror 解析
 - ✅ **Markdown 高亮**：支持 Markdown 语法高亮显示
 - ✅ **自动补全大括号**：智能补全 `{` 为 `{}`
 - ✅ **光标管理**：智能管理光标位置，避免跳字问题
@@ -249,6 +250,81 @@ useEffect(() => {
 }, [editor]);
 ```
 
+### 使用 Raw 节点展示 HTML/XML 原始内容
+
+Raw 节点用于展示 HTML 或 XML 的原始内容，防止被 ProseMirror 解析。适用于需要展示代码、配置或文档结构等场景。
+
+#### 通过编辑器 API 插入 Raw 节点
+
+```tsx
+import { RawNode } from '@/components/TiptapVariableInput';
+
+// 获取编辑器实例
+const [editor, setEditor] = useState<Editor | null>(null);
+
+<TiptapVariableInput value={value} onChange={setValue} getEditor={setEditor} />;
+
+// 插入 Raw 节点
+useEffect(() => {
+  if (editor) {
+    const htmlContent = '<div><p>Hello World</p></div>';
+    editor.commands.insertContent({
+      type: 'raw',
+      attrs: {
+        content: htmlContent,
+        type: 'html', // 或 'xml'
+      },
+    });
+  }
+}, [editor]);
+```
+
+#### 通过 HTML 格式使用 Raw 节点
+
+```tsx
+import { convertToRawNodeHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
+
+// 将 HTML/XML 内容转换为 Raw 节点的 HTML 格式
+const htmlContent = '<div><p>Hello World</p></div>';
+const rawNodeHTML = convertToRawNodeHTML(htmlContent, 'html');
+// 输出: <pre data-raw="true" data-content="&lt;div&gt;&lt;p&gt;Hello World&lt;/p&gt;&lt;/div&gt;" data-type="html" class="raw-content">...</pre>
+
+// 直接使用转换后的 HTML
+const value = `<p>普通文本</p>${rawNodeHTML}<p>更多文本</p>`;
+<TiptapVariableInput value={value} onChange={setValue} />;
+```
+
+#### 检测内容是否应该使用 Raw 节点
+
+```tsx
+import { shouldUseRawNode } from '@/components/TiptapVariableInput/utils/htmlUtils';
+
+const content = '<html><body><p>完整文档</p></body></html>';
+if (shouldUseRawNode(content)) {
+  // 使用 Raw 节点展示
+  const rawHTML = convertToRawNodeHTML(content, 'html');
+}
+```
+
+#### 从 HTML 中提取 Raw 节点内容
+
+```tsx
+import { extractRawNodeContents } from '@/components/TiptapVariableInput/utils/htmlUtils';
+
+const html =
+  '<p>文本</p><pre data-raw="true" data-content="&lt;div&gt;内容&lt;/div&gt;"></pre>';
+const rawContents = extractRawNodeContents(html);
+// 输出: ['<div>内容</div>']
+```
+
+#### Raw 节点特性
+
+- **原子节点**：Raw 节点是原子节点（`atom: true`），光标无法进入内部
+- **原始展示**：内容以纯文本形式展示，不会被 ProseMirror 解析
+- **样式支持**：使用代码字体和背景色，便于区分
+- **类型标识**：支持 `html` 和 `xml` 两种类型标识
+- **自动转义**：内容中的特殊字符会自动转义，确保正确显示
+
 ## 变量模式说明
 
 ### text 模式（默认）
@@ -321,6 +397,7 @@ const text = extractTextFromHTML(html);
 - `.variable-text-decoration`：文本模式变量装饰
 - `.tool-block-chip`：工具块节点
 - `.mention-node`：Mention 节点
+- `.raw-content`：Raw 节点（HTML/XML 原始内容）
 
 ## 目录结构
 
@@ -335,6 +412,7 @@ TiptapVariableInput/
 │   ├── MarkdownHighlight.ts       # Markdown 语法高亮
 │   ├── MentionNode.ts             # Mention 节点
 │   ├── MentionSuggestion.tsx      # Mention 建议
+│   ├── RawNode.ts                 # Raw 节点（HTML/XML 原始内容）
 │   ├── ToolBlockNode.ts            # 工具块节点
 │   ├── VariableCursorPlaceholder.ts # 变量光标占位符
 │   ├── VariableNode.ts            # 变量节点
@@ -389,6 +467,11 @@ A: 通过相应的 props 控制：
 - `enableEditableVariables={false}`：禁用可编辑变量
 
 ## 更新日志
+
+### v1.1.0
+
+- 新增 Raw 节点支持，用于展示 HTML/XML 原始内容
+- 添加 Raw 节点相关工具函数
 
 ### v1.0.0
 
