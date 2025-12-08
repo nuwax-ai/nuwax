@@ -578,6 +578,7 @@ const SpaceTable = () => {
           onClear={() => setOpenDelete(true)}
         />
         <div className="flex-1">
+          {/* 表结构 */}
           {activeKey === TableTabsEnum.Structure ? (
             <StructureTable
               existTableDataFlag={tableDetail?.existTableDataFlag}
@@ -588,6 +589,7 @@ const SpaceTable = () => {
               onDeleteField={handleDelField}
             />
           ) : (
+            // 表数据
             <DataTable
               columns={columns}
               tableData={tableData}
