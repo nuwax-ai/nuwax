@@ -17,7 +17,10 @@ import {
   type UnifiedSessionMessage,
 } from '@/types/interfaces/appDev';
 import { debounce } from '@/utils/appDevUtils';
-import { createSSEConnection } from '@/utils/fetchEventSource';
+import {
+  clearSSESharedTimeout,
+  createSSEConnection,
+} from '@/utils/fetchEventSource';
 import { message, Modal } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
@@ -447,6 +450,8 @@ export const useAppDevChat = ({
       return;
     }
     setIsChatLoading(false);
+    // 取消前主动清理 SSE 共享定时器，避免残留定时器影响后续请求
+    clearSSESharedTimeout();
     // 将正在流式传输的消息标记为取消状态
     setChatMessages((prev) => {
       return prev.map((msg) => {
@@ -888,6 +893,8 @@ export const useAppDevChat = ({
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      // 组件卸载时也清理 SSE 共享定时器，防止残留
+      clearSSESharedTimeout();
       abortConnectionRef.current?.abort();
     };
   }, []);
