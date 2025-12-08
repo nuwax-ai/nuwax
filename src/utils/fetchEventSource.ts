@@ -62,8 +62,8 @@ export async function createSSEConnection<T = any>(
     if (!isAborted) {
       console.log('🔌 [SSE Utils] 手动中止 SSE 连接');
       markAborted();
-      options.onClose?.();
-      controller.abort();
+      // options.onClose?.();
+      // controller.abort();
     }
   };
 
@@ -156,6 +156,8 @@ export async function createSSEConnection<T = any>(
           const { completed, subType } =
             (data as { completed?: boolean; subType?: string }) ?? {};
 
+          options.onMessage(data, event);
+
           // 页面开发结束标志 subType   = 'end_turn'
           // 聊天对话结束标志 completed = true
           if (subType === 'end_turn' || completed === true) {
@@ -164,8 +166,6 @@ export async function createSSEConnection<T = any>(
             );
             abortFunction();
           }
-
-          options.onMessage(data, event);
         } catch (error) {
           const normalizedError =
             error instanceof Error ? error : new Error(String(error));
