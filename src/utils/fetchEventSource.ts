@@ -16,6 +16,25 @@ export interface SSEOptions<T = any> {
   abortController?: AbortController;
 }
 
+// 共享级别的定时器引用与所有者标记，防止上一请求残留的定时器影响新请求
+let sharedTimeoutCheckInterval: NodeJS.Timeout | null = null;
+let sharedTimeoutOwner: symbol | null = null;
+
+const clearSharedTimeout = (owner?: symbol) => {
+  if (sharedTimeoutCheckInterval && (!owner || owner === sharedTimeoutOwner)) {
+    clearInterval(sharedTimeoutCheckInterval);
+    sharedTimeoutCheckInterval = null;
+    sharedTimeoutOwner = null;
+  }
+};
+
+/**
+ * 对外暴露的共享定时器清理函数，便于在组件层主动清除残留定时器
+ */
+export const clearSSESharedTimeout = () => {
+  clearSharedTimeout();
+};
+
 export async function createSSEConnection<T = any>(
   options: SSEOptions<T>,
 ): Promise<() => void> {
@@ -26,25 +45,38 @@ export async function createSSEConnection<T = any>(
   // 超时检查定时器
   let timeoutCheckInterval: NodeJS.Timeout | null = null;
 
+  // 为当前连接生成唯一标识，用于共享定时器管理
+  const timerOwner = Symbol('sse-timeout-owner');
+
+  // 清理定时器并标记中止
+  const markAborted = () => {
+    isAborted = true;
+    if (timeoutCheckInterval) {
+      clearInterval(timeoutCheckInterval);
+      timeoutCheckInterval = null;
+    }
+    clearSharedTimeout(timerOwner);
+  };
+
   const abortFunction = () => {
     if (!isAborted) {
       console.log('🔌 [SSE Utils] 手动中止 SSE 连接');
-      isAborted = true;
-      // 清除超时检查定时器
-      if (timeoutCheckInterval) {
-        clearInterval(timeoutCheckInterval);
-        timeoutCheckInterval = null;
-      }
+      markAborted();
+      options.onClose?.();
       controller.abort();
     }
   };
 
-  // 超时检查函数：每20秒检查一次，超过60秒未收到消息则断开连接
+  // 在真正发起新的 SSE 连接前，先清理可能残留的共享定时器，避免上一次请求影响本次
+  clearSharedTimeout();
+
+  // 超时检查函数：每5秒检查一次，超过60秒未收到消息则断开连接
   const startTimeoutCheck = () => {
-    // 清除之前的定时器（如果存在）
+    // 清除之前的定时器（如果存在），并清理潜在的上一请求残留
     if (timeoutCheckInterval) {
       clearInterval(timeoutCheckInterval);
     }
+    clearSharedTimeout();
 
     timeoutCheckInterval = setInterval(() => {
       // 如果连接已中止，清除定时器
@@ -53,6 +85,7 @@ export async function createSSEConnection<T = any>(
           clearInterval(timeoutCheckInterval);
           timeoutCheckInterval = null;
         }
+        clearSharedTimeout(timerOwner);
         return;
       }
 
@@ -64,6 +97,11 @@ export async function createSSEConnection<T = any>(
       // 计算距离最后一次消息的时间间隔（毫秒）
       const timeSinceLastMessage = Date.now() - lastMessageTimestamp;
       const timeoutThreshold = 60 * 1000; // 60秒超时阈值
+      console.log(
+        `⏰ [SSE Utils] 未收到消息，距离上次消息时间: ${Math.round(
+          timeSinceLastMessage / 1000,
+        )}秒`,
+      );
 
       // 如果超过60秒未收到消息，主动断开连接
       if (timeSinceLastMessage >= timeoutThreshold) {
@@ -73,16 +111,16 @@ export async function createSSEConnection<T = any>(
           )}秒)`,
         );
         if (!isAborted) {
-          isAborted = true;
-          if (timeoutCheckInterval) {
-            clearInterval(timeoutCheckInterval);
-            timeoutCheckInterval = null;
-          }
+          markAborted();
           options.onClose?.();
           controller.abort();
         }
       }
-    }, 20 * 1000); // 每20秒检查一次
+    }, 5 * 1000); // 每5秒检查一次
+
+    // 记录共享定时器引用，避免旧连接遗留的定时器干扰新连接
+    sharedTimeoutCheckInterval = timeoutCheckInterval;
+    sharedTimeoutOwner = timerOwner;
   };
 
   try {
@@ -115,6 +153,18 @@ export async function createSSEConnection<T = any>(
           // 更新最后一次收到消息的时间戳
           lastMessageTimestamp = Date.now();
           const data = event.data ? JSON.parse(event.data) : null;
+          const { completed, subType } =
+            (data as { completed?: boolean; subType?: string }) ?? {};
+
+          // 页面开发结束标志 subType   = 'end_turn'
+          // 聊天对话结束标志 completed = true
+          if (subType === 'end_turn' || completed === true) {
+            console.log(
+              `✅ [SSE Utils] 页面开发结束或聊天对话结束，主动断开连接`,
+            );
+            abortFunction();
+          }
+
           options.onMessage(data, event);
         } catch (error) {
           const normalizedError =
@@ -124,27 +174,24 @@ export async function createSSEConnection<T = any>(
       },
 
       onclose: () => {
-        console.log('🔌 [SSE Utils] SSE 连接已关闭');
-        // 清除超时检查定时器
-        if (timeoutCheckInterval) {
-          clearInterval(timeoutCheckInterval);
-          timeoutCheckInterval = null;
+        if (isAborted) {
+          return;
         }
+        console.log('🔌 [SSE Utils] SSE 连接已关闭');
+        markAborted();
         lastMessageTimestamp = null;
         options.onClose?.();
+        controller.abort(); // 阻止 fetchEventSource 继续自动重连
       },
 
       onerror: (error) => {
+        if (isAborted) {
+          return;
+        }
         console.error('❌ [SSE Utils] SSE 连接错误:', error);
-        // 清除超时检查定时器
-        if (timeoutCheckInterval) {
-          clearInterval(timeoutCheckInterval);
-          timeoutCheckInterval = null;
-        }
+        markAborted();
         options.onError?.(error);
-        if (!isAborted) {
-          controller.abort();
-        }
+        controller.abort();
         throw error; // 停止自动重试
       },
     });
@@ -152,11 +199,7 @@ export async function createSSEConnection<T = any>(
     const normalized =
       error instanceof Error ? error : new Error(String(error));
     console.error('❌ [SSE Utils] SSE 连接异常:', normalized);
-    // 清除超时检查定时器
-    if (timeoutCheckInterval) {
-      clearInterval(timeoutCheckInterval);
-      timeoutCheckInterval = null;
-    }
+    markAborted();
     options.onError?.(normalized);
   }
 

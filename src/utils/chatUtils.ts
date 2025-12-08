@@ -367,6 +367,11 @@ export const appendTextToStreamingMessage = (
     const updated = [...messages];
     const beforeText = updated[index].text || '';
 
+    // 如果消息已被标记为非流式（包括取消/完成/错误），忽略后续追加，避免插入到提示尾部
+    if (updated[index].isStreaming === false) {
+      return messages;
+    }
+
     // 检查是否包含 Plan 或 ToolCall 标记
     const hasPlanOrToolCallMarkers =
       chunkText.includes('<appdev-plan') ||
