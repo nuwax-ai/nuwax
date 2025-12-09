@@ -43,24 +43,6 @@ export interface VariableSelectorV2Props {
 // ==================== 工具函数 ====================
 
 /**
- * 递归查找参数
- */
-const findArgByKey = (
-  arg: InputAndOutConfigV2,
-  key: string,
-): InputAndOutConfigV2 | null => {
-  if (arg.key === key) return arg;
-  const children = arg.children || arg.subArgs;
-  if (children) {
-    for (const child of children) {
-      const found = findArgByKey(child, key);
-      if (found) return found;
-    }
-  }
-  return null;
-};
-
-/**
  * 获取变量显示名称
  */
 const deriveArgLabel = (key: string, arg?: InputAndOutConfigV2): string => {
@@ -74,23 +56,12 @@ const getDisplayValue = (
   referenceData?: NodePreviousAndArgMapV2,
   isLoop?: boolean,
 ): string => {
-  if (!value || !referenceData?.argMap?.[value]) return '';
+  if (!value) return '';
 
-  const argInfo = referenceData.argMap[value];
-  const nodeList = isLoop
-    ? referenceData.innerPreviousNodes
-    : referenceData.previousNodes;
-
-  // 找到所属节点
-  const node = nodeList?.find((n) =>
-    n.outputArgs?.some((arg) => findArgByKey(arg, value)),
-  );
-
-  const argLabel = deriveArgLabel(value, argInfo);
-  if (node?.name) {
-    return `${node.name}.${argLabel}`;
-  }
-  return argLabel;
+  const argInfo = referenceData?.argMap?.[value];
+  // 仅展示变量名，不附带节点名；缺失时根据 key 解析字段名
+  const argLabel = argInfo?.name || deriveArgLabel(value, argInfo);
+  return argLabel || value;
 };
 
 /**
