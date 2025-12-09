@@ -152,23 +152,26 @@
     //   transform: rotate(90deg);
     // }
   }
-}
 
-.folderIcon {
-  margin-right: 4px;
-  color: @colorTextBase;
-  transition: transform 0.2s ease;
+  .folderIcon {
+    margin-right: 4px;
+    // color: @colorTextBase;
+    color: #5e5e5b;
+    transition: transform 0.2s ease;
 
-  &.expanded {
-    transform: rotate(90deg);
+    &.expanded {
+      transform: rotate(90deg);
+    }
   }
-}
 
-.folderName {
-  color: @colorTextBase;
-  font-weight: @fontWeightStrong;
-  font-size: @fontSize;
-  font-family: @fontFamilyCode;
+  .folderName {
+    // color: @colorTextBase;
+    color: #5e5e5b;
+    font-weight: @fontWeightStrong;
+    // font-size: @fontSize;
+    font-size: 13px;
+    font-family: @fontFamilyCode;
+  }
 }
 
 .fileList {
@@ -193,27 +196,34 @@
 .fileItem {
   display: flex;
   align-items: center;
+  gap: 4px;
   padding: 4px;
   cursor: pointer;
   border-radius: 4px;
   // margin-bottom: 2px;
   transition: all 0.2s ease;
+  font-size: 13px;
+  color: #5e5e5b;
+
+  svg {
+    font-size: 16px;
+  }
 
   &:hover {
     background: rgba(0, 0, 0, 5%);
 
-    .fileIcon {
-      color: @colorPrimary;
-    }
+    // .fileIcon {
+    //   color: @colorPrimary;
+    // }
   }
 
   &.activeFile {
     background: @colorPrimaryBg;
     // border: 1px solid rgba(59, 130, 246, 30%);
 
-    .fileIcon {
-      color: @colorPrimary;
-    }
+    // .fileIcon {
+    //   color: @colorPrimary;
+    // }
   }
 }
 
@@ -225,8 +235,10 @@
 }
 
 .fileName {
-  color: @colorTextBase;
-  font-size: @fontSize;
+  // color: @colorTextBase;
+  color: #5e5e5b;
+  // font-size: @fontSize;
+  font-size: 13px;
   font-family: @fontFamilyCode;
   flex: 1;
 
@@ -246,29 +258,29 @@
 }
 
 // 删除按钮样式
-.deleteButton {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  margin-left: auto;
-  color: @colorTextBase;
-  padding: 2px;
-  height: 20px;
-  width: 20px;
-  min-width: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+// .deleteButton {
+//   opacity: 0;
+//   transition: opacity 0.2s ease;
+//   margin-left: auto;
+//   color: @colorTextBase;
+//   padding: 2px;
+//   height: 20px;
+//   width: 20px;
+//   min-width: 20px;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
 
-  &:hover {
-    color: @colorError;
-    background: @colorErrorBg;
-  }
+//   &:hover {
+//     color: @colorError;
+//     background: @colorErrorBg;
+//   }
 
-  .folderHeader:hover &,
-  .fileItem:hover & {
-    opacity: 1;
-  }
-}
+//   .folderHeader:hover &,
+//   .fileItem:hover & {
+//     opacity: 1;
+//   }
+// }
 
 // 折叠按钮样式 - 放在预览区域左下角
 .collapseButton {

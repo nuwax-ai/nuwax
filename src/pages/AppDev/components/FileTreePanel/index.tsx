@@ -2,7 +2,6 @@ import SvgIcon from '@/components/base/SvgIcon';
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import {
   EyeInvisibleOutlined,
-  FileOutlined,
   ImportOutlined,
   InboxOutlined,
   LeftOutlined,
@@ -13,6 +12,18 @@ import { Button, Card, Input, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import DataResourceList from '../DataResourceList';
 import FileContextMenu from '../FileContextMenu';
+import {
+  ICON_CSS,
+  ICON_HTML,
+  ICON_JPG,
+  ICON_JS,
+  ICON_JSON,
+  ICON_MD,
+  ICON_PNG,
+  ICON_SVG,
+  ICON_TS,
+  ICON_TSX,
+} from './images.constants';
 import styles from './index.less';
 import type { FileTreePanelProps } from './types';
 
@@ -243,6 +254,35 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
     [onUploadSingleFile],
   );
 
+  // 获取文件图标
+  const getFileIcon = useCallback((name: string) => {
+    if (name.endsWith('.ts')) {
+      return <ICON_TS />;
+    } else if (name.endsWith('.tsx') || name.endsWith('.jsx')) {
+      return <ICON_TSX />;
+    } else if (name.endsWith('.css')) {
+      return <ICON_CSS />;
+    } else if (
+      name.endsWith('.json') ||
+      name.endsWith('.yml') ||
+      name.endsWith('.yaml')
+    ) {
+      return <ICON_JSON />;
+    } else if (name.endsWith('.md')) {
+      return <ICON_MD />;
+    } else if (name.endsWith('.html') || name.endsWith('.htm')) {
+      return <ICON_HTML />;
+    } else if (name.endsWith('.js')) {
+      return <ICON_JS />;
+    } else if (name.endsWith('.png')) {
+      return <ICON_PNG />;
+    } else if (name.endsWith('.jpg') || name.endsWith('.jpeg')) {
+      return <ICON_JPG />;
+    } else if (name.endsWith('.svg')) {
+      return <ICON_SVG />;
+    }
+  }, []);
+
   /**
    * 渲染文件树节点
    */
@@ -330,7 +370,8 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
             {node.name.startsWith('.') ? (
               <EyeInvisibleOutlined className={styles.fileIcon} />
             ) : (
-              <FileOutlined className={styles.fileIcon} />
+              // <FileOutlined className={styles.fileIcon} />
+              getFileIcon(node.name)
             )}
 
             {isRenaming ? (
