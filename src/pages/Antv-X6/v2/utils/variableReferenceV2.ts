@@ -18,7 +18,23 @@ import type {
   PreviousListV2,
   WorkflowDataV2,
 } from '../types';
-import { NodeTypeEnumV2 } from '../types';
+import { DataTypeEnumV2, NodeTypeEnumV2 } from '../types';
+
+const EXECUTE_EXCEPTION_FLOW = 'EXECUTE_EXCEPTION_FLOW';
+const INDEX_SYSTEM_NAME = 'INDEX';
+const SYSTEM_VARIABLES: InputAndOutConfigV2[] = [
+  {
+    name: 'SYS_USER_ID',
+    dataType: DataTypeEnumV2.String,
+    description: '系统用户ID',
+    require: false,
+    systemVariable: true,
+    bindValueType: undefined,
+    bindValue: '',
+    key: 'SYS_USER_ID',
+    subArgs: [],
+  },
+];
 
 // ==================== 工具函数 ====================
 
@@ -48,7 +64,8 @@ function buildReverseGraph(
 
   // 方式1: 从节点的 nextNodeIds 构建反向边
   nodes.forEach((node) => {
-    const nextNodeIds = node.nextNodeIds || [];
+    const nextNodeIds =
+      (node.nextNodeIds || []).filter((id) => id !== node.loopNodeId) || [];
     nextNodeIds.forEach((nextId) => {
       const prevNodes = reverseGraph.get(nextId) || [];
       if (!prevNodes.includes(node.id)) {
@@ -107,6 +124,22 @@ function buildReverseGraph(
         }
       });
     }
+
+    // 处理异常分支节点 (EXECUTE_EXCEPTION_FLOW)
+    const exceptionHandleConfig = node.nodeConfig?.exceptionHandleConfig;
+    if (
+      exceptionHandleConfig?.exceptionHandleType === EXECUTE_EXCEPTION_FLOW &&
+      exceptionHandleConfig.exceptionHandleNodeIds &&
+      exceptionHandleConfig.exceptionHandleNodeIds.length > 0
+    ) {
+      exceptionHandleConfig.exceptionHandleNodeIds.forEach((nextId) => {
+        const prevNodes = reverseGraph.get(nextId) || [];
+        if (!prevNodes.includes(node.id)) {
+          prevNodes.push(node.id);
+          reverseGraph.set(nextId, prevNodes);
+        }
+      });
+    }
   });
 
   // 方式2: 从 edgeList 补充（以防 nextNodeIds 不完整）
@@ -126,6 +159,55 @@ function buildReverseGraph(
   }
 
   return reverseGraph;
+}
+
+/**
+ * 获取节点的所有下游节点 ID（用于排序）
+ */
+function collectNextNodeIds(node: ChildNodeV2): number[] {
+  const nextIds = new Set<number>();
+
+  (node.nextNodeIds || []).forEach((id) => {
+    if (id !== node.loopNodeId) {
+      nextIds.add(id);
+    }
+  });
+
+  if (
+    node.type === NodeTypeEnumV2.Condition &&
+    node.nodeConfig?.conditionBranchConfigs
+  ) {
+    node.nodeConfig.conditionBranchConfigs.forEach((branch) =>
+      branch.nextNodeIds?.forEach((id) => nextIds.add(id)),
+    );
+  }
+
+  if (
+    node.type === NodeTypeEnumV2.IntentRecognition &&
+    node.nodeConfig?.intentConfigs
+  ) {
+    node.nodeConfig.intentConfigs.forEach((intent) =>
+      intent.nextNodeIds?.forEach((id) => nextIds.add(id)),
+    );
+  }
+
+  if (node.type === NodeTypeEnumV2.QA && node.nodeConfig?.options) {
+    node.nodeConfig.options.forEach((option) =>
+      option.nextNodeIds?.forEach((id) => nextIds.add(id)),
+    );
+  }
+
+  const exceptionHandleConfig = node.nodeConfig?.exceptionHandleConfig;
+  if (
+    exceptionHandleConfig?.exceptionHandleType === EXECUTE_EXCEPTION_FLOW &&
+    exceptionHandleConfig.exceptionHandleNodeIds
+  ) {
+    exceptionHandleConfig.exceptionHandleNodeIds.forEach((id) =>
+      nextIds.add(id),
+    );
+  }
+
+  return Array.from(nextIds);
 }
 
 /**
@@ -161,8 +243,47 @@ function findAllPredecessors(
 /**
  * 获取节点的输出参数
  */
+function cloneArg(arg: InputAndOutConfigV2): InputAndOutConfigV2 {
+  return JSON.parse(JSON.stringify(arg)) as InputAndOutConfigV2;
+}
+
+function ensureVariableSuccessOutput(node: ChildNodeV2): InputAndOutConfigV2[] {
+  const outputs = [...(node.nodeConfig.outputArgs || [])];
+  const isSetVariable =
+    node.type === NodeTypeEnumV2.Variable &&
+    node.nodeConfig.configType === 'SET_VARIABLE';
+  const exists = outputs.some((o) => o.name === 'isSuccess');
+  if (isSetVariable && !exists) {
+    outputs.push({
+      name: 'isSuccess',
+      dataType: DataTypeEnumV2.Boolean,
+      description: '变量设置结果',
+      require: false,
+      systemVariable: false,
+      bindValueType: undefined,
+      bindValue: '',
+      key: 'isSuccess',
+      subArgs: [],
+    });
+  }
+  return outputs;
+}
+
 function getNodeOutputArgs(node: ChildNodeV2): InputAndOutConfigV2[] {
-  return node.nodeConfig.outputArgs || [];
+  // Start 节点：将 inputArgs 视为可引用输出，并保留原输出
+  if (node.type === NodeTypeEnumV2.Start) {
+    const outputFromInput =
+      node.nodeConfig.inputArgs?.map((arg) => ({
+        ...cloneArg(arg),
+        bindValueType: undefined,
+        bindValue: '',
+      })) || [];
+    const outputs = node.nodeConfig.outputArgs || [];
+    return [...outputFromInput, ...SYSTEM_VARIABLES, ...outputs];
+  }
+
+  // Variable 节点：补充 isSuccess
+  return ensureVariableSuccessOutput(node);
 }
 
 /**
@@ -306,7 +427,153 @@ export function calculateNodePreviousArgs(
         Object.assign(argMap, nodeArgMap);
       });
     }
+
+    // 循环节点自身的输入数组与变量也可作为可引用输出
+    if (loopNode) {
+      const extraOutputs: InputAndOutConfigV2[] = [];
+      const argMapSnapshot = { ...argMap };
+
+      // 数组输入展开为 item
+      loopNode.nodeConfig.inputArgs?.forEach((inputArg) => {
+        if (inputArg.bindValueType === 'Reference') {
+          const refArg = argMapSnapshot[inputArg.bindValue || ''];
+          if (
+            refArg &&
+            typeof refArg.dataType === 'string' &&
+            (refArg.dataType as string).startsWith('Array_')
+          ) {
+            const elementType =
+              (refArg.dataType as string).replace('Array_', '') || 'Object';
+            const elementTypeEnum =
+              (DataTypeEnumV2 as any)[elementType] || DataTypeEnumV2.Object;
+            const itemArg: InputAndOutConfigV2 = {
+              ...cloneArg(inputArg),
+              name: `${inputArg.name}_item`,
+              dataType: elementTypeEnum,
+              subArgs: refArg.subArgs
+                ? (JSON.parse(
+                    JSON.stringify(refArg.subArgs),
+                  ) as InputAndOutConfigV2[])
+                : refArg.subArgs,
+            };
+            extraOutputs.push(itemArg);
+          }
+        }
+      });
+
+      // 追加 INDEX 系统变量
+      extraOutputs.push({
+        name: INDEX_SYSTEM_NAME,
+        dataType: DataTypeEnumV2.Integer,
+        description: '数组索引',
+        require: false,
+        systemVariable: true,
+        bindValueType: undefined,
+        bindValue: '',
+        key: INDEX_SYSTEM_NAME,
+        subArgs: [],
+      });
+
+      // 循环变量 variableArgs 也暴露
+      loopNode.nodeConfig.variableArgs?.forEach((variableArg) => {
+        if (variableArg.bindValueType === 'Reference') {
+          const refArg = argMapSnapshot[variableArg.bindValue || ''];
+          if (refArg) {
+            const outArg = cloneArg(variableArg);
+            outArg.subArgs = refArg.subArgs
+              ? (JSON.parse(
+                  JSON.stringify(refArg.subArgs),
+                ) as InputAndOutConfigV2[])
+              : refArg.subArgs;
+            extraOutputs.push(outArg);
+          }
+        } else {
+          extraOutputs.push(cloneArg(variableArg));
+        }
+      });
+
+      if (extraOutputs.length > 0) {
+        previousNodes.push({
+          id: loopNode.id,
+          name: loopNode.name,
+          type: loopNode.type,
+          icon: loopNode.icon as string,
+          outputArgs: extraOutputs,
+        });
+        const loopArgMap = flattenArgsToMap(loopNode.id, extraOutputs);
+        Object.assign(argMap, loopArgMap);
+      }
+    }
   }
+
+  // 如果当前节点是 Loop，补充内部结束节点输出（转为 Array_*）到 innerPreviousNodes
+  if (currentNode.type === NodeTypeEnumV2.Loop && currentNode.innerNodes) {
+    const endNode = currentNode.innerNodes.find(
+      (n) => n.id === currentNode.innerEndNodeId,
+    );
+    if (endNode?.nodeConfig?.outputArgs) {
+      const transformed = endNode.nodeConfig.outputArgs.map((arg) => {
+        const newArg = cloneArg(arg);
+        // 记录原类型到 description，避免类型缺失（前端类型定义无 originDataType）
+        if (newArg.description) {
+          newArg.description = `${newArg.description} (origin:${
+            newArg.dataType || 'unknown'
+          })`;
+        } else {
+          newArg.description = `(origin:${newArg.dataType || 'unknown'})`;
+        }
+        if (
+          !newArg.dataType ||
+          (typeof newArg.dataType === 'string' &&
+            !(newArg.dataType as string).startsWith('Array_'))
+        ) {
+          const base =
+            typeof newArg.dataType === 'string' && newArg.dataType
+              ? newArg.dataType
+              : 'Object';
+          newArg.dataType = `Array_${base}` as DataTypeEnumV2;
+        }
+        return newArg;
+      });
+
+      const loopEndNodeEntry: PreviousListV2 = {
+        id: endNode.id,
+        name: endNode.name,
+        type: endNode.type,
+        icon: endNode.icon as string,
+        outputArgs: transformed,
+      };
+      innerPreviousNodes.push(loopEndNodeEntry);
+      Object.assign(argMap, flattenArgsToMap(endNode.id, transformed));
+    }
+  }
+
+  // 按从 Start 出发的拓扑顺序排序（靠近 Start 的在前）
+  const orderMap = new Map<number, number>();
+  const startNode = nodeList.find((n) => n.type === NodeTypeEnumV2.Start);
+  if (startNode) {
+    const visited = new Set<number>();
+    let order = 0;
+    const dfs = (id: number) => {
+      if (visited.has(id)) return;
+      visited.add(id);
+      if (!orderMap.has(id)) {
+        orderMap.set(id, order++);
+      }
+      const nextIds = collectNextNodeIds(nodeMap.get(id)!);
+      nextIds.forEach((nextId) => dfs(nextId));
+    };
+    dfs(startNode.id);
+  }
+
+  const sortByOrder = (a: PreviousListV2, b: PreviousListV2) => {
+    const oa = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+    const ob = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+    if (oa === ob) return a.id - b.id;
+    return oa - ob;
+  };
+
+  previousNodes.sort(sortByOrder);
 
   return {
     previousNodes,

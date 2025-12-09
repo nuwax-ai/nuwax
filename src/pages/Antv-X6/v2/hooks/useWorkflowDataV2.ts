@@ -20,6 +20,7 @@ import type {
   EdgeV2,
   HistoryItemV2,
   WorkflowDataV2,
+  WorkflowMetadataV2,
 } from '../types';
 import { HistoryActionTypeV2 } from '../types';
 import { extractEdgesFromNodes } from '../utils/graphV2';

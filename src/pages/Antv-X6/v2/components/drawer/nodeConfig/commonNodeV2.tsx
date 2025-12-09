@@ -5,11 +5,8 @@
  * 完全独立，不依赖 V1
  */
 
-import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { DataTypeMap } from '@/constants/common.constants';
-import { DataTypeEnum } from '@/types/enums/common';
 import type { DefaultObjectType } from '@/types/interfaces/common';
-import type { InputAndOutConfig } from '@/types/interfaces/node';
 import {
   DeleteOutlined,
   DownOutlined,
@@ -19,7 +16,11 @@ import {
 import { Button, Form, FormInstance, Input, Popover, Tag, Tree } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import type { InputAndOutConfigV2 } from '../../../types';
+import { DataTypeEnumV2 } from '../../../types';
 
+import type { NodePreviousAndArgMapV2 } from '../../../types';
+import InputOrReferenceV2 from '../../common/InputOrReferenceV2';
 import './commonNodeV2.less';
 
 // ==================== 类型定义 ====================
@@ -40,10 +41,11 @@ export interface NodeRenderPropsV2 {
   disabledDelete?: boolean;
   disabledInput?: boolean;
   isLoop?: boolean;
+  referenceData?: NodePreviousAndArgMapV2;
 }
 
 export interface TreeOutputPropsV2 {
-  treeData: InputAndOutConfig[];
+  treeData: InputAndOutConfigV2[];
 }
 
 export interface FormListPropsV2 {
@@ -62,7 +64,7 @@ export const outPutConfigsV2: FieldConfigV2[] = [
   { name: 'name', defaultValue: '' },
   { name: 'bindValue', defaultValue: '' },
   { name: 'bindType', defaultValue: '' },
-  { name: 'dataType', defaultValue: DataTypeEnum.String },
+  { name: 'dataType', defaultValue: DataTypeEnumV2.String },
   { name: 'description', defaultValue: '' },
   { name: 'require', defaultValue: false },
 ];
@@ -111,6 +113,7 @@ export const InputAndOutV2: React.FC<NodeRenderPropsV2> = ({
   disabledDelete,
   disabledInput,
   isLoop,
+  referenceData,
 }) => {
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
@@ -168,12 +171,13 @@ export const InputAndOutV2: React.FC<NodeRenderPropsV2> = ({
                         />
                       </Form.Item>
                       <Form.Item name={[item.name, 'bindValue']} noStyle>
-                        <InputOrReference
+                        <InputOrReferenceV2
                           form={form}
                           fieldName={[inputItemName, item.name, 'bindValue']}
                           style={{ flex: 1, marginRight: '10px' }}
                           referenceType={fieldValue}
                           isLoop={isLoop}
+                          referenceData={referenceData}
                         />
                       </Form.Item>
                       <Form.Item name={[item.name, 'bindType']} noStyle hidden>
@@ -230,7 +234,7 @@ export const TreeOutputV2: React.FC<TreeOutputPropsV2> = ({ treeData }) => {
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
   useEffect(() => {
-    const getAllParentKeys = (data: InputAndOutConfig[]): React.Key[] => {
+    const getAllParentKeys = (data: InputAndOutConfigV2[]): React.Key[] => {
       const keys: React.Key[] = [];
       data.forEach((node) => {
         if (node.subArgs && node.subArgs.length > 0) {
@@ -243,14 +247,14 @@ export const TreeOutputV2: React.FC<TreeOutputPropsV2> = ({ treeData }) => {
     setExpandedKeys(getAllParentKeys(treeData));
   }, [treeData]);
 
-  const convertToTreeData = (data: InputAndOutConfig[]): any[] => {
+  const convertToTreeData = (data: InputAndOutConfigV2[]): any[] => {
     return data.map((item) => ({
       ...item,
       title: (
         <span>
           {item.name}{' '}
           <Tag color="#C9CDD4" style={{ marginLeft: '5px' }}>
-            {DataTypeMap[item.dataType as DataTypeEnum]}
+            {DataTypeMap[item.dataType as DataTypeEnumV2]}
           </Tag>
         </span>
       ),
@@ -390,7 +394,7 @@ export const OtherFormListV2: React.FC<NodeRenderPropsV2> = ({
                       key: uuidv4(),
                       name: '',
                       bindValue: '',
-                      dataType: DataTypeEnum.String,
+                      dataType: DataTypeEnumV2.String,
                     })
                   }
                 />

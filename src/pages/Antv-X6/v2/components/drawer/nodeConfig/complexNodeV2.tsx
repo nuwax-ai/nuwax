@@ -24,7 +24,6 @@ import { InputItemNameEnum } from '@/types/enums/node';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { PromptOptimizeTypeEnum } from '@/types/interfaces/assistant';
 import { CreatedNodeItem } from '@/types/interfaces/common';
-import { InputAndOutConfig } from '@/types/interfaces/node';
 import { ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   Button,
@@ -40,7 +39,11 @@ import {
 import React, { useCallback, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-import type { NodeConfigV2 } from '../../../types';
+import type {
+  InputAndOutConfigV2,
+  NodeConfigV2,
+  NodePreviousAndArgMapV2,
+} from '../../../types';
 import {
   FormListV2,
   InputAndOutV2,
@@ -57,7 +60,7 @@ export interface NodeDisposePropsV2 {
   nodeConfig?: NodeConfigV2;
   id: number;
   type: string;
-  referenceData?: any;
+  referenceData?: NodePreviousAndArgMapV2;
 }
 
 // ==================== 常量配置 ====================
@@ -132,7 +135,7 @@ export const ModelNodeV2: React.FC<NodeDisposePropsV2> = ({
       preserve: true,
     }) || []
   ).filter(
-    (item: InputAndOutConfig) => !['', null, undefined].includes(item.name),
+    (item: InputAndOutConfigV2) => !['', null, undefined].includes(item.name),
   );
 
   // 技能配置
@@ -282,6 +285,7 @@ export const ModelNodeV2: React.FC<NodeDisposePropsV2> = ({
           fieldConfigs={outPutConfigsV2}
           inputItemName={InputItemNameEnum.inputArgs}
           form={form}
+          referenceData={referenceData}
         />
       </div>
 
@@ -304,7 +308,7 @@ export const ModelNodeV2: React.FC<NodeDisposePropsV2> = ({
           placeholder="系统提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量"
           variables={transformToPromptVariables(
             variables,
-            referenceData?.argMap,
+            referenceData?.argMap as any,
           )}
           skills={skillComponentConfigs}
         />
@@ -327,7 +331,7 @@ export const ModelNodeV2: React.FC<NodeDisposePropsV2> = ({
           placeholder="用户提示词，可以使用{{变量名}}、{{变量名.子变量名}}、 {{变量名[数组索引]}}的方式引用输入参数中的变量"
           variables={transformToPromptVariables(
             variables,
-            referenceData?.argMap,
+            referenceData?.argMap as any,
           )}
           skills={skillComponentConfigs}
         />
@@ -390,6 +394,7 @@ export const IntentionNodeV2: React.FC<NodeDisposePropsV2> = ({
           fieldConfigs={outPutConfigsV2}
           inputItemName={InputItemNameEnum.inputArgs}
           form={form}
+          referenceData={referenceData}
         />
       </div>
 
@@ -419,10 +424,10 @@ export const IntentionNodeV2: React.FC<NodeDisposePropsV2> = ({
                 preserve: true,
               }) || []
             ).filter(
-              (item: InputAndOutConfig) =>
+              (item: InputAndOutConfigV2) =>
                 !['', null, undefined].includes(item.name),
             ),
-            referenceData?.argMap,
+            referenceData?.argMap as any,
           )}
         />
       </div>
@@ -497,6 +502,7 @@ export const QuestionsNodeV2: React.FC<NodeDisposePropsV2> = ({
           fieldConfigs={outPutConfigsV2}
           inputItemName={InputItemNameEnum.inputArgs}
           form={form}
+          referenceData={referenceData}
         />
       </div>
 
@@ -514,10 +520,10 @@ export const QuestionsNodeV2: React.FC<NodeDisposePropsV2> = ({
                 preserve: true,
               }) || []
             ).filter(
-              (item: InputAndOutConfig) =>
+              (item: InputAndOutConfigV2) =>
                 !['', null, undefined].includes(item.name),
             ),
-            referenceData?.argMap,
+            referenceData?.argMap as any,
           )}
         />
       </div>
@@ -546,7 +552,7 @@ export const QuestionsNodeV2: React.FC<NodeDisposePropsV2> = ({
               key={`${type}-${id}-outputArgs`}
               title="输出"
               form={form}
-              params={nodeConfig?.outputArgs || []}
+              params={(nodeConfig?.outputArgs as any) || []}
               inputItemName="outputArgs"
               showCheck
             />
@@ -579,6 +585,7 @@ export const HttpToolNodeV2: React.FC<NodeDisposePropsV2> = ({
   nodeConfig,
   type,
   id,
+  referenceData,
 }) => {
   const bodyParams = nodeConfig?.body || [];
   const outputParams = nodeConfig?.outputArgs || [];
@@ -627,6 +634,7 @@ export const HttpToolNodeV2: React.FC<NodeDisposePropsV2> = ({
             fieldConfigs={outPutConfigsV2}
             inputItemName={InputItemNameEnum.headers}
             form={form}
+            referenceData={referenceData}
           />
         </div>
         <div className="node-item-style-v2">
@@ -635,6 +643,7 @@ export const HttpToolNodeV2: React.FC<NodeDisposePropsV2> = ({
             form={form}
             fieldConfigs={outPutConfigsV2}
             inputItemName={InputItemNameEnum.queries}
+            referenceData={referenceData}
           />
         </div>
         <div className="node-item-style-v2">
@@ -644,7 +653,7 @@ export const HttpToolNodeV2: React.FC<NodeDisposePropsV2> = ({
             form={form}
             inputItemName="body"
             isBody
-            params={bodyParams}
+            params={bodyParams as any}
           />
         </div>
       </div>
@@ -656,7 +665,7 @@ export const HttpToolNodeV2: React.FC<NodeDisposePropsV2> = ({
           title="出参"
           form={form}
           inputItemName="outputArgs"
-          params={outputParams}
+          params={outputParams as any}
         />
       </Form.Item>
     </div>
