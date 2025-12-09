@@ -1,7 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import {
-  EyeInvisibleOutlined,
   ImportOutlined,
   InboxOutlined,
   LeftOutlined,
@@ -14,12 +13,13 @@ import DataResourceList from '../DataResourceList';
 import FileContextMenu from '../FileContextMenu';
 import {
   ICON_CSS,
+  ICON_DEFAULT,
   ICON_HTML,
-  ICON_JPG,
   ICON_JS,
   ICON_JSON,
   ICON_MD,
   ICON_PNG,
+  ICON_SQL,
   ICON_SVG,
   ICON_TS,
   ICON_TSX,
@@ -274,12 +274,23 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
       return <ICON_HTML />;
     } else if (name.endsWith('.js')) {
       return <ICON_JS />;
-    } else if (name.endsWith('.png')) {
+    } else if (
+      name.endsWith('.png') ||
+      name.endsWith('.jpg') ||
+      name.endsWith('.jpeg') ||
+      name.endsWith('.gif') ||
+      name.endsWith('.bmp') ||
+      name.endsWith('.webp') ||
+      name.endsWith('.ico') ||
+      name.endsWith('.tiff')
+    ) {
       return <ICON_PNG />;
-    } else if (name.endsWith('.jpg') || name.endsWith('.jpeg')) {
-      return <ICON_JPG />;
     } else if (name.endsWith('.svg')) {
       return <ICON_SVG />;
+    } else if (name.endsWith('.sql')) {
+      return <ICON_SQL />;
+    } else {
+      return <ICON_DEFAULT />;
     }
   }, []);
 
@@ -368,7 +379,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
             style={{ marginLeft: level * 8 }}
           >
             {node.name.startsWith('.') ? (
-              <EyeInvisibleOutlined className={styles.fileIcon} />
+              <ICON_DEFAULT />
             ) : (
               // <FileOutlined className={styles.fileIcon} />
               getFileIcon(node.name)
