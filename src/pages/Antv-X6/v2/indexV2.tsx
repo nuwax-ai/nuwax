@@ -34,6 +34,7 @@ import { validateWorkflow, ValidationError } from './utils/workflowValidatorV2';
 
 // V2 独立导入 - 组件
 import NodeDrawerV2 from './components/drawer/NodeDrawerV2';
+import ErrorListV2, { type ErrorItemV2 } from './components/error/ErrorListV2';
 import GraphContainerV2 from './components/GraphContainerV2';
 import ControlPanelV2 from './components/layout/ControlPanelV2';
 import HeaderV2 from './components/layout/HeaderV2';
@@ -161,6 +162,10 @@ const WorkflowV2: React.FC = () => {
   // 试运行状态
   const [runStatus, setRunStatus] = useState<RunStatus>('idle');
   const [runResult, setRunResult] = useState<RunResult | undefined>();
+
+  // 错误列表
+  const [errorList, setErrorList] = useState<ErrorItemV2[]>([]);
+  const [errorListVisible, setErrorListVisible] = useState(false);
 
   // 试运行 SSE 连接中止函数
   const abortTestRunRef = useRef<(() => void) | null>(null);
@@ -613,6 +618,9 @@ const WorkflowV2: React.FC = () => {
       try {
         setRunStatus('running');
         setRunResult(undefined);
+        // 清空之前的错误列表
+        setErrorList([]);
+        setErrorListVisible(false);
 
         // 构建试运行参数
         const testRunParams: TestRunParamsV2 = {
@@ -691,6 +699,16 @@ const WorkflowV2: React.FC = () => {
                 nodeResults,
                 error: data.data.errorMessage || '运行失败',
               });
+
+              // 收集错误到错误列表
+              const newError: ErrorItemV2 = {
+                nodeId: data.data.nodeId,
+                error: data.data.errorMessage || '运行失败',
+                type: 'runtime',
+              };
+              setErrorList((prev) => [...prev, newError]);
+              setErrorListVisible(true);
+
               message.error(
                 '运行失败: ' + (data.data.errorMessage || '未知错误'),
               );
@@ -707,6 +725,14 @@ const WorkflowV2: React.FC = () => {
               nodeResults,
               error: error.message,
             });
+
+            // 添加错误到错误列表
+            setErrorList((prev) => [
+              ...prev,
+              { error: error.message, type: 'runtime' },
+            ]);
+            setErrorListVisible(true);
+
             message.error('运行失败: ' + error.message);
           },
           onOpen: () => {
@@ -1087,6 +1113,21 @@ const WorkflowV2: React.FC = () => {
               onZoomToFit={handleFitView}
               onAddNode={handleStencilNodeAdd}
               onTestRun={handleOpenTestRun}
+            />
+
+            {/* 错误列表面板 */}
+            <ErrorListV2
+              visible={errorListVisible}
+              drawerVisible={drawerVisible}
+              errorList={errorList}
+              nodeList={workflowData.nodeList}
+              onClose={() => setErrorListVisible(false)}
+              onClickItem={(node) => {
+                // 选中并高亮错误节点
+                graphRef.current?.graphSelectNode(node.id.toString());
+                setSelectedNode(node);
+                setDrawerVisible(true);
+              }}
             />
 
             {/* 节点添加面板 */}

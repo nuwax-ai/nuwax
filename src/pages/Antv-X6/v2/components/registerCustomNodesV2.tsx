@@ -38,6 +38,7 @@ import {
   ICON_WORKFLOW_VARIABLE,
   ICON_WORKFLOW_WORKFLOW,
 } from '@/constants/images.constants';
+import useNodeSelection from '@/hooks/useNodeSelection';
 
 import type { ChildNodeV2, RunResultItemV2 } from '../types';
 import {
@@ -312,6 +313,9 @@ const GeneralNodeComponent: React.FC<NodeComponentProps> = ({
   const data = node.getData();
   const [editValue, setEditValue] = useState(data?.name || '');
 
+  // 使用节点选中 hook
+  const isSelected = useNodeSelection({ graph, nodeId: data?.id });
+
   useEffect(() => {
     setEditValue(data?.name || '');
   }, [data?.name]);
@@ -337,11 +341,10 @@ const GeneralNodeComponent: React.FC<NodeComponentProps> = ({
   const isRunning = lastResult?.status === RunResultStatusEnumV2.EXECUTING;
   const isError = lastResult?.status === RunResultStatusEnumV2.FAILED;
   const isSuccess = lastResult?.status === RunResultStatusEnumV2.FINISHED;
-  const isFocus = data.isFocus;
 
   const nodeClassName = [
     'general-node-v2',
-    isFocus ? 'selected' : '',
+    isSelected ? 'selected' : '',
     isRunning ? 'running' : '',
     isSuccess ? 'success' : '',
     isError ? 'error' : '',
@@ -384,12 +387,12 @@ const GeneralNodeComponent: React.FC<NodeComponentProps> = ({
 /**
  * 循环节点组件 - 参考 V1 LoopNode
  */
-const LoopNodeComponent: React.FC<NodeComponentProps> = ({
-  node,
-  graph: _graph,
-}) => {
+const LoopNodeComponent: React.FC<NodeComponentProps> = ({ node, graph }) => {
   const data = node.getData();
   const [editValue, setEditValue] = useState(data?.name || '');
+
+  // 使用节点选中 hook
+  const isSelected = useNodeSelection({ graph, nodeId: data?.id });
 
   useEffect(() => {
     setEditValue(data?.name || '');
@@ -402,11 +405,10 @@ const LoopNodeComponent: React.FC<NodeComponentProps> = ({
   const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColorV2(
     data.type,
   )} 0%, white 42px)`;
-  const isFocus = data.isFocus;
 
   return (
     <div
-      className={`loop-node-v2 general-node-v2 ${isFocus ? 'selected' : ''}`}
+      className={`loop-node-v2 general-node-v2 ${isSelected ? 'selected' : ''}`}
       style={{ background: gradientBackground }}
     >
       <div className="loop-node-title-v2">
