@@ -573,6 +573,7 @@ export interface WorkflowMetadataV2 {
   description: string;
   spaceId: number;
   startNode?: ChildNodeV2;
+  endNode?: ChildNodeV2;
   extension?: {
     size?: number;
   };
@@ -780,6 +781,7 @@ export interface WorkflowDetailsV2 {
   spaceId: number;
   nodes: ChildNodeV2[];
   startNode: ChildNodeV2;
+  endNode?: ChildNodeV2;
   extension?: {
     size?: number;
   };
@@ -811,6 +813,7 @@ export interface SaveWorkflowRequestV2 {
   spaceId?: number;
   nodes: ChildNodeV2[];
   startNode?: ChildNodeV2;
+  endNode?: ChildNodeV2;
   extension?: {
     size?: number;
   };
