@@ -579,6 +579,8 @@ export interface WorkflowMetadataV2 {
   };
   category?: string;
   version?: string;
+  publishStatus?: string;
+  modified?: string;
 }
 
 /**

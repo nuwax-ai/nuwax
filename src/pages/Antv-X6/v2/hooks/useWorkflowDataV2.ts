@@ -823,6 +823,8 @@ export function useWorkflowDataV2({
           extension,
           category,
           version,
+          modified,
+          publishStatus,
         } = response.data;
 
         // 从节点数据中提取边（使用工具函数，支持特殊节点的端口信息）
@@ -838,6 +840,8 @@ export function useWorkflowDataV2({
           extension,
           category,
           version,
+          modified,
+          publishStatus,
         };
 
         const newData: WorkflowDataV2 = {
