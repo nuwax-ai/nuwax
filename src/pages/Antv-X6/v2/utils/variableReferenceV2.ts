@@ -581,13 +581,28 @@ export function calculateNodePreviousArgs(
       });
 
       if (extraOutputs.length > 0) {
-        previousNodes.push({
-          id: loopNode.id,
-          name: loopNode.name,
-          type: loopNode.type,
-          icon: loopNode.icon as string,
-          outputArgs: extraOutputs,
-        });
+        // 如果循环节点已在 previousNodes 中，合并输出，避免重复节点导致找不到新增变量
+        const loopIndex = previousNodes.findIndex(
+          (item) => item.id === loopNode.id,
+        );
+        if (loopIndex >= 0) {
+          const mergedOutputs = [
+            ...(previousNodes[loopIndex].outputArgs || []),
+            ...extraOutputs,
+          ];
+          previousNodes[loopIndex] = {
+            ...previousNodes[loopIndex],
+            outputArgs: mergedOutputs,
+          };
+        } else {
+          previousNodes.push({
+            id: loopNode.id,
+            name: loopNode.name,
+            type: loopNode.type,
+            icon: loopNode.icon as string,
+            outputArgs: extraOutputs,
+          });
+        }
         const loopArgMap = flattenArgsToMap(loopNode.id, extraOutputs);
         Object.assign(argMap, loopArgMap);
       }
