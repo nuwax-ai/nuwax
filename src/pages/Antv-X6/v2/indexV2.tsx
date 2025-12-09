@@ -182,29 +182,19 @@ const WorkflowV2: React.FC = () => {
 
   // ==================== 初始化 ====================
 
-  // 加载工作流详情
+  // 同步工作流基础信息（避免重复请求）
   useEffect(() => {
-    const loadWorkflowInfo = async () => {
-      try {
-        const response = await workflowServiceV2.getWorkflowDetails(workflowId);
-        if (workflowServiceV2.isSuccess(response)) {
-          const { name, description, modified, publishStatus, version } =
-            response.data;
-          setWorkflowInfo({
-            name,
-            description,
-            modified,
-            publishStatus,
-            version,
-          });
-        }
-      } catch (error) {
-        console.error('Failed to load workflow info:', error);
-      }
-    };
-
-    loadWorkflowInfo();
-  }, [workflowId]);
+    const metadata = workflowData.metadata;
+    if (metadata) {
+      setWorkflowInfo((prev) => ({
+        name: metadata.name ?? prev.name ?? '',
+        description: metadata.description ?? prev.description ?? '',
+        modified: metadata.modified ?? prev.modified,
+        publishStatus: metadata.publishStatus ?? prev.publishStatus,
+        version: metadata.version ?? prev.version,
+      }));
+    }
+  }, [workflowData.metadata]);
 
   // 初始校验
   useEffect(() => {
@@ -427,7 +417,10 @@ const WorkflowV2: React.FC = () => {
       if (targetNode && edgeId) {
         // 在边上创建节点：删除原边，插入新节点
         // 1. 先删除原来的边 (sourceNode -> targetNode)
-        handleEdgeDelete(sourceNode.id.toString(), targetNode.id.toString());
+        handleEdgeDelete({
+          source: sourceNode.id.toString(),
+          target: targetNode.id.toString(),
+        });
         graphRef.current?.graphDeleteEdge(edgeId);
 
         // 2. 创建新的边: sourceNode -> newNode -> targetNode
