@@ -270,6 +270,11 @@ export function useWorkflowDataV2({
       workflowData.nodeList.find((n) => n.type === 'Start') ||
       workflowData.metadata?.startNode;
 
+    // 获取结束节点（从 nodeList 中查找 End 类型节点，或使用元数据中的 endNode）
+    const endNode =
+      workflowData.nodeList.find((n) => n.type === 'End') ||
+      workflowData.metadata?.endNode;
+
     // 构建保存请求数据（与初始化数据结构一致）
     const savePayload = {
       workflowId,
@@ -278,6 +283,7 @@ export function useWorkflowDataV2({
       spaceId: workflowData.metadata?.spaceId,
       nodes: workflowData.nodeList,
       startNode,
+      endNode,
       extension: workflowData.metadata?.extension,
       category: workflowData.metadata?.category,
       version: workflowData.metadata?.version,
@@ -681,6 +687,7 @@ export function useWorkflowDataV2({
           description,
           spaceId,
           startNode,
+          endNode,
           extension,
           category,
           version,
@@ -695,6 +702,7 @@ export function useWorkflowDataV2({
           description,
           spaceId,
           startNode,
+          endNode,
           extension,
           category,
           version,
