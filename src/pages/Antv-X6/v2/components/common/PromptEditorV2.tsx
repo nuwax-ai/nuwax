@@ -4,12 +4,12 @@
  * 完全独立，不依赖 v1 任何代码
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Input, Dropdown, Tree, Tag, Popover, Empty, Button } from 'antd';
-import { PlusOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Dropdown, Empty, Input, Popover, Tag, Tree } from 'antd';
+import React, { useRef, useState } from 'react';
 
-import type { NodePreviousAndArgMapV2, OutputArgV2 } from '../../types';
 import { getNodeTypeIconV2 } from '../../constants/stencilConfigV2';
+import type { NodePreviousAndArgMapV2 } from '../../types';
 
 import './PromptEditorV2.less';
 
@@ -98,7 +98,7 @@ const PromptEditorV2: React.FC<PromptEditorV2Props> = ({
         const newPosition = cursorPosition + variableRef.length;
         textAreaRef.current.resizableTextArea.textArea.setSelectionRange(
           newPosition,
-          newPosition
+          newPosition,
         );
         textAreaRef.current.resizableTextArea.textArea.focus();
       }
@@ -150,12 +150,13 @@ const PromptEditorV2: React.FC<PromptEditorV2Props> = ({
 
     return nodeList.map((node) => {
       const hasChildren = node.outputArgs?.some(
-        (arg) => arg.children && arg.children.length > 0
+        (arg) => arg.children && arg.children.length > 0,
       );
 
       return {
         key: node.id,
-        label: node.name.length > 16 ? node.name.slice(0, 16) + '...' : node.name,
+        label:
+          node.name.length > 16 ? node.name.slice(0, 16) + '...' : node.name,
         icon: (
           <img
             src={getNodeTypeIconV2(node.type)}

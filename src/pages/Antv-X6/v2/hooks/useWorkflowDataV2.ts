@@ -265,11 +265,23 @@ export function useWorkflowDataV2({
 
     setIsSaving(true);
 
+    // 构建保存请求数据
+    const savePayload = {
+      workflowId,
+      nodes: workflowData.nodeList,
+    };
+
+    // 打印全量数据以便确认（后端接口未就绪时用于调试）
+    console.group('[V2] 工作流保存数据');
+    console.log('📦 完整保存请求:', JSON.stringify(savePayload, null, 2));
+    console.log('📊 节点总数:', workflowData.nodeList.length);
+    console.log('🔗 边总数:', workflowData.edgeList.length);
+    console.log('📝 节点列表:', workflowData.nodeList);
+    console.log('🔗 边列表:', workflowData.edgeList);
+    console.groupEnd();
+
     try {
-      const response = await workflowServiceV2.saveWorkflowFull({
-        workflowId,
-        nodes: workflowData.nodeList,
-      });
+      const response = await workflowServiceV2.saveWorkflowFull(savePayload);
 
       if (workflowServiceV2.isSuccess(response)) {
         // 保存成功
@@ -653,6 +665,8 @@ export function useWorkflowDataV2({
 
       if (workflowServiceV2.isSuccess(response)) {
         const { nodes, ...details } = response.data;
+        // details 包含工作流元信息，当前仅使用 nodes
+        console.log('[V2] 工作流元信息:', details);
 
         // 从节点数据中提取边（使用工具函数，支持特殊节点的端口信息）
         const edges = extractEdgesFromNodes(nodes);

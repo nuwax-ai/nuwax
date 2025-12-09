@@ -8,7 +8,7 @@
  */
 
 import { LoadingOutlined } from '@ant-design/icons';
-import { Form, Spin, message } from 'antd';
+import { Form, message, Modal, Spin } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useParams } from 'umi';
 
@@ -19,7 +19,7 @@ import type {
   EdgeV2,
   GraphContainerRefV2,
   NodeConfigV2,
-  ValidationErrorV2,
+  StencilChildNodeV2,
   WorkflowDataV2,
 } from './types';
 import { NodeTypeEnumV2 } from './types';
@@ -30,7 +30,7 @@ import { useWorkflowDataV2 } from './hooks/useWorkflowDataV2';
 // V2 独立导入 - 工具函数
 import { calculateNewNodePosition, getNodeShape } from './utils/graphV2';
 import { calculateNodePreviousArgs } from './utils/variableReferenceV2';
-import { validateWorkflow } from './utils/workflowValidatorV2';
+import { validateWorkflow, ValidationError } from './utils/workflowValidatorV2';
 
 // V2 独立导入 - 组件
 import NodeDrawerV2 from './components/drawer/NodeDrawerV2';
@@ -49,19 +49,26 @@ import type { VersionInfo } from './components/version';
 import { VersionHistoryV2 } from './components/version';
 
 // V2 独立导入 - 服务
-import workflowServiceV2 from './services/workflowV2';
+import workflowServiceV2, {
+  TEST_RUN_ENDPOINT,
+  type TestRunParamsV2,
+} from './services/workflowV2';
+
+// 公共工具
+import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { createSSEConnection } from '@/utils/fetchEventSource';
+import { v4 as uuidv4 } from 'uuid';
 
 // V2 独立导入 - 常量
-import { NODE_TEMPLATES_V2 } from './constants/stencilConfigV2';
 
 import './indexV2.less';
 
 // ==================== 组件实现 ====================
 
 const WorkflowV2: React.FC = () => {
-  const params = useParams<{ workflowId: string; spaceId: string }>();
+  const params = useParams() as { workflowId: string; spaceId: string };
   const workflowId = Number(params.workflowId);
-  const spaceId = Number(params.spaceId);
+  const _spaceId = Number(params.spaceId);
 
   // ==================== 状态管理 ====================
 
@@ -79,8 +86,8 @@ const WorkflowV2: React.FC = () => {
     deleteEdge,
     refreshData,
     saveNow,
-    canUndo,
-    canRedo,
+    canUndo: _canUndo,
+    canRedo: _canRedo,
     undo,
     redo,
   } = useWorkflowDataV2({
@@ -89,7 +96,7 @@ const WorkflowV2: React.FC = () => {
       message.success('保存成功');
     },
     onSaveError: (error) => {
-      message.error('保存失败: ' + error.message);
+      message.error('保存失败: ' + (error?.message || '未知错误'));
     },
   });
 
@@ -118,12 +125,29 @@ const WorkflowV2: React.FC = () => {
   const [zoom, setZoom] = useState(1);
 
   // 校验错误
-  const [validationErrors, setValidationErrors] = useState<ValidationErrorV2[]>(
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>(
     [],
   );
 
   // 节点添加弹窗
   const [stencilVisible, setStencilVisible] = useState(false);
+
+  // 端口点击添加节点弹窗状态
+  const [portClickPopup, setPortClickPopup] = useState<{
+    visible: boolean;
+    sourceNode: ChildNodeV2 | null;
+    targetNode?: ChildNodeV2 | null;
+    portId: string;
+    edgeId?: string;
+    position: { x: number; y: number };
+    isInLoop: boolean;
+  }>({
+    visible: false,
+    sourceNode: null,
+    portId: '',
+    position: { x: 0, y: 0 },
+    isInLoop: false,
+  });
 
   // 弹窗状态
   const [testRunModalVisible, setTestRunModalVisible] = useState(false);
@@ -137,6 +161,9 @@ const WorkflowV2: React.FC = () => {
   // 试运行状态
   const [runStatus, setRunStatus] = useState<RunStatus>('idle');
   const [runResult, setRunResult] = useState<RunResult | undefined>();
+
+  // 试运行 SSE 连接中止函数
+  const abortTestRunRef = useRef<(() => void) | null>(null);
 
   // 版本历史
   const [versions, setVersions] = useState<VersionInfo[]>([]);
@@ -219,8 +246,17 @@ const WorkflowV2: React.FC = () => {
    */
   const handleNodeAdd = useCallback(
     (node: ChildNodeV2) => {
+      // 1. 更新数据层
       addNode(node);
-      // 选中新添加的节点
+
+      // 2. 同步到画布
+      const position = node.nodeConfig?.extension || { x: 400, y: 300 };
+      graphRef.current?.graphAddNode(
+        { x: position.x || 400, y: position.y || 300 },
+        node,
+      );
+
+      // 3. 选中新添加的节点
       setSelectedNode(node);
       setDrawerVisible(true);
       form.setFieldsValue(node.nodeConfig);
@@ -232,7 +268,7 @@ const WorkflowV2: React.FC = () => {
    * 删除节点
    */
   const handleNodeDelete = useCallback(
-    (nodeId: number, node?: ChildNodeV2) => {
+    (nodeId: number, _node?: ChildNodeV2) => {
       deleteNode(nodeId);
       if (selectedNode?.id === nodeId) {
         setSelectedNode(null);
@@ -303,22 +339,24 @@ const WorkflowV2: React.FC = () => {
   /**
    * 放大
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleZoomIn = useCallback(() => {
-    graphRef.current?.zoomIn();
-  }, []);
+    graphRef.current?.graphChangeZoom(Math.min(zoom + 0.1, 3));
+  }, [zoom]);
 
   /**
    * 缩小
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleZoomOut = useCallback(() => {
-    graphRef.current?.zoomOut();
-  }, []);
+    graphRef.current?.graphChangeZoom(Math.max(zoom - 0.1, 0.2));
+  }, [zoom]);
 
   /**
    * 适应画布
    */
   const handleFitView = useCallback(() => {
-    graphRef.current?.fitView();
+    graphRef.current?.graphChangeZoomToFit();
   }, []);
 
   /**
@@ -380,27 +418,55 @@ const WorkflowV2: React.FC = () => {
       // 添加节点
       handleNodeAdd(newNode);
 
-      // 创建边
-      const isOutput = portId.endsWith('-out') || portId.includes('-out');
-      if (isOutput) {
+      // 判断是否是在边上创建节点
+      if (targetNode && edgeId) {
+        // 在边上创建节点：删除原边，插入新节点
+        // 1. 先删除原来的边 (sourceNode -> targetNode)
+        handleEdgeDelete(sourceNode.id.toString(), targetNode.id.toString());
+        graphRef.current?.graphDeleteEdge(edgeId);
+
+        // 2. 创建新的边: sourceNode -> newNode -> targetNode
         handleEdgeAdd({
           source: sourceNode.id.toString(),
           target: newNode.id.toString(),
         });
-      } else {
-        handleEdgeAdd({
-          source: newNode.id.toString(),
-          target: sourceNode.id.toString(),
-        });
-      }
+        graphRef.current?.graphCreateNewEdge(
+          sourceNode.id.toString(),
+          newNode.id.toString(),
+        );
 
-      // 如果是在边上创建节点，需要删除原来的边并创建新的边
-      if (targetNode && edgeId) {
-        handleEdgeDelete(sourceNode.id.toString(), targetNode.id.toString());
         handleEdgeAdd({
           source: newNode.id.toString(),
           target: targetNode.id.toString(),
         });
+        graphRef.current?.graphCreateNewEdge(
+          newNode.id.toString(),
+          targetNode.id.toString(),
+        );
+      } else {
+        // 端口点击创建节点：根据端口类型决定连线方向
+        const isOutput = portId.endsWith('-out') || portId.includes('-out');
+        if (isOutput) {
+          // 输出端口：sourceNode -> newNode
+          handleEdgeAdd({
+            source: sourceNode.id.toString(),
+            target: newNode.id.toString(),
+          });
+          graphRef.current?.graphCreateNewEdge(
+            sourceNode.id.toString(),
+            newNode.id.toString(),
+          );
+        } else {
+          // 输入端口：newNode -> sourceNode
+          handleEdgeAdd({
+            source: newNode.id.toString(),
+            target: sourceNode.id.toString(),
+          });
+          graphRef.current?.graphCreateNewEdge(
+            newNode.id.toString(),
+            sourceNode.id.toString(),
+          );
+        }
       }
     },
     [workflowId, handleNodeAdd, handleEdgeAdd, handleEdgeDelete],
@@ -451,6 +517,7 @@ const WorkflowV2: React.FC = () => {
   /**
    * 返回
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleBack = useCallback(() => {
     history.goBack();
   }, []);
@@ -492,7 +559,7 @@ const WorkflowV2: React.FC = () => {
       message.success('工作流配置正确');
     } else {
       const errorCount = result.errors.filter(
-        (e) => e.level === 'error',
+        (e) => e.severity === 'error',
       ).length;
       message.error(`发现 ${errorCount} 个错误，请检查`);
     }
@@ -503,14 +570,15 @@ const WorkflowV2: React.FC = () => {
   /**
    * 点击错误项
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleErrorClick = useCallback(
-    (error: ValidationErrorV2) => {
+    (error: ValidationError) => {
       if (error.nodeId) {
         const node = getNodeById(error.nodeId);
         if (node) {
           handleNodeSelect(node);
           // 定位到节点
-          graphRef.current?.focusNode(error.nodeId.toString());
+          graphRef.current?.graphSelectNode(error.nodeId.toString());
         }
       }
     },
@@ -525,7 +593,9 @@ const WorkflowV2: React.FC = () => {
   const handleOpenTestRun = useCallback(() => {
     // 先验证
     const validationResult = handleValidate();
-    if (validationResult.errors.filter((e) => e.level === 'error').length > 0) {
+    if (
+      validationResult.errors.filter((e) => e.severity === 'error').length > 0
+    ) {
       message.error('请先修复错误');
       return;
     }
@@ -533,38 +603,130 @@ const WorkflowV2: React.FC = () => {
   }, [handleValidate]);
 
   /**
-   * 执行试运行
+   * 执行试运行（使用 V1 SSE 接口）
    */
   const handleTestRun = useCallback(
     async (inputValues: Record<string, any>) => {
+      const startTime = Date.now();
+      const nodeResults: RunResult['nodeResults'] = [];
+
       try {
         setRunStatus('running');
         setRunResult(undefined);
 
-        // TODO: 调用试运行 API
-        // const result = await workflowServiceV2.testRun(workflowId, inputValues);
+        // 构建试运行参数
+        const testRunParams: TestRunParamsV2 = {
+          workflowId,
+          params: inputValues,
+          requestId: uuidv4(),
+        };
 
-        // 模拟运行结果
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        // 打印试运行参数以便调试
+        console.group('[V2] 试运行参数');
+        console.log('📤 请求参数:', JSON.stringify(testRunParams, null, 2));
+        console.groupEnd();
 
-        setRunStatus('success');
-        setRunResult({
-          status: 'success',
-          startTime: Date.now() - 2000,
-          endTime: Date.now(),
-          duration: 2000,
-          nodeResults: [],
-          finalOutput: { result: '运行成功' },
+        // 创建 SSE 连接
+        const abortFn = await createSSEConnection({
+          url: `${process.env.BASE_URL}${TEST_RUN_ENDPOINT}`,
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
+            Accept: 'application/json, text/plain, */*',
+          },
+          body: testRunParams,
+          onMessage: (data) => {
+            console.log('[V2] 试运行消息:', data);
+
+            if (data?.data?.nodeId) {
+              // 更新节点运行状态
+              const nodeResult = {
+                nodeId: data.data.nodeId.toString(),
+                nodeName: data.data.nodeName || '',
+                status:
+                  data.data.status === 'SUCCESS'
+                    ? ('success' as const)
+                    : data.data.status === 'FAILED'
+                    ? ('failed' as const)
+                    : ('running' as const),
+                output: data.data.result,
+              };
+
+              // 更新或添加节点结果
+              const existingIndex = nodeResults.findIndex(
+                (r) => r.nodeId === nodeResult.nodeId,
+              );
+              if (existingIndex >= 0) {
+                nodeResults[existingIndex] = nodeResult;
+              } else {
+                nodeResults.push(nodeResult);
+              }
+
+              // 高亮当前运行的节点
+              graphRef.current?.graphSelectNode(data.data.nodeId.toString());
+            }
+
+            // 检查是否完成
+            if (
+              data?.data?.status === 'SUCCESS' &&
+              data?.event === 'workflow_finished'
+            ) {
+              setRunStatus('success');
+              setRunResult({
+                status: 'success',
+                startTime,
+                endTime: Date.now(),
+                duration: Date.now() - startTime,
+                nodeResults,
+                finalOutput: data.data.result,
+              });
+              message.success('运行成功');
+            } else if (data?.data?.status === 'FAILED') {
+              setRunStatus('failed');
+              setRunResult({
+                status: 'failed',
+                startTime,
+                endTime: Date.now(),
+                duration: Date.now() - startTime,
+                nodeResults,
+                error: data.data.errorMessage || '运行失败',
+              });
+              message.error(
+                '运行失败: ' + (data.data.errorMessage || '未知错误'),
+              );
+            }
+          },
+          onError: (error) => {
+            console.error('[V2] 试运行错误:', error);
+            setRunStatus('failed');
+            setRunResult({
+              status: 'failed',
+              startTime,
+              endTime: Date.now(),
+              duration: Date.now() - startTime,
+              nodeResults,
+              error: error.message,
+            });
+            message.error('运行失败: ' + error.message);
+          },
+          onOpen: () => {
+            console.log('[V2] 试运行 SSE 连接已建立');
+          },
+          onClose: () => {
+            console.log('[V2] 试运行 SSE 连接已关闭');
+            abortTestRunRef.current = null;
+          },
         });
 
-        message.success('运行成功');
+        abortTestRunRef.current = abortFn;
       } catch (error: any) {
+        console.error('[V2] 试运行异常:', error);
         setRunStatus('failed');
         setRunResult({
           status: 'failed',
-          startTime: Date.now() - 1000,
+          startTime,
           endTime: Date.now(),
-          duration: 1000,
+          duration: Date.now() - startTime,
           nodeResults: [],
           error: error.message,
         });
@@ -579,7 +741,11 @@ const WorkflowV2: React.FC = () => {
    */
   const handleStopRun = useCallback(async () => {
     try {
-      // TODO: 调用停止 API
+      // 中止 SSE 连接
+      if (abortTestRunRef.current) {
+        abortTestRunRef.current();
+        abortTestRunRef.current = null;
+      }
       setRunStatus('stopped');
       message.info('已停止运行');
     } catch (error: any) {
@@ -592,27 +758,42 @@ const WorkflowV2: React.FC = () => {
    */
   const handleOpenPublish = useCallback(() => {
     // 先验证
-    const validationResult = handleValidate();
+    handleValidate();
     setPublishModalVisible(true);
   }, [handleValidate]);
 
   /**
-   * 执行发布
+   * 执行发布（使用 V1 接口）
    */
   const handlePublish = useCallback(
     async (data: { versionDescription: string; forcePublish: boolean }) => {
       try {
-        // TODO: 调用发布 API
-        // await workflowServiceV2.publish(workflowId, data);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        message.success('发布成功');
-        setPublishModalVisible(false);
+        // 打印发布参数以便调试
+        console.group('[V2] 发布参数');
+        console.log('📤 workflowId:', workflowId);
+        console.log('📤 发布数据:', JSON.stringify(data, null, 2));
+        console.groupEnd();
+
+        // 调用 V1 发布接口
+        const response = await workflowServiceV2.publishWorkflow({
+          workflowId,
+          description: data.versionDescription,
+        });
+
+        if (workflowServiceV2.isSuccess(response)) {
+          message.success('发布成功');
+          setPublishModalVisible(false);
+          // 刷新工作流信息
+          refreshData();
+        } else {
+          throw new Error(response.message || '发布失败');
+        }
       } catch (error: any) {
         message.error('发布失败: ' + error.message);
         throw error;
       }
     },
-    [workflowId],
+    [workflowId, refreshData],
   );
 
   /**
@@ -638,11 +819,17 @@ const WorkflowV2: React.FC = () => {
    * 创建组件
    */
   const handleCreateComponent = useCallback(
-    async (data: { name: string; description?: string; category?: string }) => {
+    async (_data: {
+      name: string;
+      description?: string;
+      category?: string;
+    }) => {
       try {
         // TODO: 调用创建组件 API
         // await workflowServiceV2.createComponent(workflowId, data);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 1000);
+        });
         message.success('组件创建成功');
         setCreateComponentModalVisible(false);
       } catch (error: any) {
@@ -662,7 +849,9 @@ const WorkflowV2: React.FC = () => {
     try {
       // TODO: 调用获取版本历史 API
       // const response = await workflowServiceV2.getVersionHistory(workflowId);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 500);
+      });
       setVersions([
         {
           id: '1',
@@ -685,11 +874,13 @@ const WorkflowV2: React.FC = () => {
    * 版本回滚
    */
   const handleVersionRollback = useCallback(
-    async (versionId: string) => {
+    async (_versionId: string) => {
       try {
         // TODO: 调用回滚 API
         // await workflowServiceV2.rollback(workflowId, versionId);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise<void>((resolve) => {
+          setTimeout(resolve, 1000);
+        });
         message.success('回滚成功');
         refreshData();
       } catch (error: any) {
@@ -702,7 +893,7 @@ const WorkflowV2: React.FC = () => {
   /**
    * 预览版本
    */
-  const handleVersionPreview = useCallback((versionId: string) => {
+  const handleVersionPreview = useCallback((_versionId: string) => {
     // TODO: 实现版本预览
     message.info('版本预览功能开发中');
   }, []);
@@ -712,28 +903,117 @@ const WorkflowV2: React.FC = () => {
   /**
    * 打开添加节点面板
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleOpenStencil = useCallback(() => {
     setStencilVisible(true);
   }, []);
 
   /**
+   * 端口点击 - 显示节点选择弹窗
+   */
+  const handlePortClick = useCallback(
+    (
+      sourceNode: ChildNodeV2,
+      portId: string,
+      position: { x: number; y: number },
+      isInLoop: boolean,
+    ) => {
+      setPortClickPopup({
+        visible: true,
+        sourceNode,
+        portId,
+        position,
+        isInLoop,
+      });
+    },
+    [],
+  );
+
+  /**
+   * 边上按钮点击 - 显示节点选择弹窗（用于在边中间插入节点）
+   */
+  const handleEdgeButtonClick = useCallback(
+    (
+      sourceNode: ChildNodeV2,
+      targetNode: ChildNodeV2,
+      portId: string,
+      edgeId: string,
+      position: { x: number; y: number },
+      isInLoop: boolean,
+    ) => {
+      setPortClickPopup({
+        visible: true,
+        sourceNode,
+        targetNode,
+        portId,
+        edgeId,
+        position,
+        isInLoop,
+      });
+    },
+    [],
+  );
+
+  /**
+   * 关闭端口点击弹窗
+   */
+  const handleClosePortClickPopup = useCallback(() => {
+    setPortClickPopup((prev) => ({
+      ...prev,
+      visible: false,
+    }));
+  }, []);
+
+  /**
+   * 端口点击弹窗中选择节点 - 创建节点并连线
+   */
+  const handlePortClickNodeSelect = useCallback(
+    (template: StencilChildNodeV2) => {
+      const {
+        sourceNode,
+        targetNode,
+        portId,
+        edgeId,
+        position,
+        isInLoop: _isInLoop,
+      } = portClickPopup;
+
+      if (!sourceNode) return;
+
+      // 关闭弹窗
+      handleClosePortClickPopup();
+
+      // 调用创建节点逻辑
+      handleCreateNodeByPortOrEdge({
+        child: template,
+        sourceNode,
+        portId,
+        position,
+        targetNode: targetNode || undefined,
+        edgeId,
+      });
+    },
+    [portClickPopup, handleClosePortClickPopup, handleCreateNodeByPortOrEdge],
+  );
+
+  /**
    * 从 Stencil 添加节点
    */
   const handleStencilNodeAdd = useCallback(
-    (template: (typeof NODE_TEMPLATES_V2)[0]) => {
+    (template: StencilChildNodeV2) => {
       // 计算新节点位置（画布中心）
-      const viewport = graphRef.current?.getViewport();
+      const viewport = graphRef.current?.getCurrentViewPort();
       const x = viewport ? viewport.x + viewport.width / 2 - 100 : 400;
       const y = viewport ? viewport.y + viewport.height / 2 - 40 : 300;
 
       const newNode: ChildNodeV2 = {
         id: Date.now(),
-        name: template.name,
+        name: template.name || template.type,
         description: template.description || '',
         workflowId,
         type: template.type as NodeTypeEnumV2,
         shape: getNodeShape(template.type as NodeTypeEnumV2),
-        icon: template.icon,
+        icon: template.icon || '',
         nodeConfig: {
           extension: { x, y },
         },
@@ -794,25 +1074,25 @@ const WorkflowV2: React.FC = () => {
               onClickBlank={handleClickBlank}
               onInit={handleInit}
               createNodeByPortOrEdge={handleCreateNodeByPortOrEdge}
+              onPortClick={handlePortClick}
+              onEdgeButtonClick={handleEdgeButtonClick}
             />
 
             {/* 左下角控制面板 */}
             <ControlPanelV2
-              zoom={zoom}
-              onZoomIn={handleZoomIn}
-              onZoomOut={handleZoomOut}
-              onFitView={handleFitView}
-              onAddNode={handleOpenStencil}
+              zoomSize={zoom}
+              onZoomChange={(newZoom) =>
+                graphRef.current?.graphChangeZoom(newZoom)
+              }
+              onZoomToFit={handleFitView}
+              onAddNode={handleStencilNodeAdd}
               onTestRun={handleOpenTestRun}
             />
 
             {/* 节点添加面板 */}
             {stencilVisible && (
               <div className="workflow-v2-stencil-panel">
-                <StencilContentV2
-                  onNodeClick={handleStencilNodeAdd}
-                  onClose={() => setStencilVisible(false)}
-                />
+                <StencilContentV2 onAddNode={handleStencilNodeAdd} />
               </div>
             )}
           </div>
@@ -825,6 +1105,7 @@ const WorkflowV2: React.FC = () => {
             onClose={handleDrawerClose}
             onNodeConfigChange={handleNodeConfigChange}
             onNodeDelete={handleNodeDelete}
+            onNodeCopy={handleNodeCopy}
           />
         </div>
       </Spin>
@@ -897,6 +1178,25 @@ const WorkflowV2: React.FC = () => {
         onRollback={handleVersionRollback}
         onPreview={handleVersionPreview}
       />
+
+      {/* 端口/边点击添加节点弹窗 */}
+      <Modal
+        open={portClickPopup.visible}
+        onCancel={handleClosePortClickPopup}
+        footer={null}
+        title={null}
+        closable={false}
+        width={280}
+        maskClosable={true}
+        centered
+        destroyOnClose
+        className="port-click-popup-modal"
+      >
+        <StencilContentV2
+          onAddNode={handlePortClickNodeSelect}
+          isLoop={portClickPopup.isInLoop}
+        />
+      </Modal>
     </div>
   );
 };

@@ -3,34 +3,67 @@
  * 完全独立，不依赖 v1 任何代码
  */
 
+import {
+  BranchesOutlined,
+  InfoCircleOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+import { Button, Empty, Form, Tag, Tooltip, Typography } from 'antd';
 import React from 'react';
-import { Form, Typography, Empty, Button } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
 
-import type { ChildNodeV2, NodePreviousAndArgMapV2 } from '../../../types';
-import InputArgsEditorV2 from '../../common/InputArgsEditorV2';
+import type {
+  ChildNodeV2,
+  InputAndOutConfigV2,
+  NodePreviousAndArgMapV2,
+} from '../../../types';
+import OutputArgsDisplayV2 from '../../common/OutputArgsDisplayV2';
+import VariableSelectorV2 from '../../common/VariableSelectorV2';
+
+import './WorkflowNodePanelV2.less';
 
 const { Text } = Typography;
+
+// ==================== 类型定义 ====================
 
 export interface WorkflowNodePanelV2Props {
   node: ChildNodeV2;
   referenceData?: NodePreviousAndArgMapV2;
 }
 
-const WorkflowNodePanelV2: React.FC<WorkflowNodePanelV2Props> = ({ node, referenceData }) => {
+// ==================== 组件实现 ====================
+
+const WorkflowNodePanelV2: React.FC<WorkflowNodePanelV2Props> = ({
+  node,
+  referenceData,
+}) => {
+  const form = Form.useFormInstance();
   const workflowId = node.typeId;
+  const workflowName = node.name;
+  const inputArgs: InputAndOutConfigV2[] =
+    Form.useWatch('inputArgs', form) || [];
+  const outputArgs: InputAndOutConfigV2[] =
+    Form.useWatch('outputArgs', form) || [];
 
   return (
-    <div className="node-panel-v2">
+    <div className="workflow-node-panel-v2">
       {/* 工作流信息 */}
       <div className="node-panel-v2-section">
         <div className="node-panel-v2-section-header">
           <Text strong>工作流信息</Text>
         </div>
         {workflowId ? (
-          <div className="workflow-info">
-            <Text>工作流 ID: {workflowId}</Text>
-            <Text type="secondary">{node.description}</Text>
+          <div className="workflow-node-panel-v2-info">
+            <div className="workflow-node-panel-v2-info-icon">
+              <BranchesOutlined style={{ fontSize: 24, color: '#722ed1' }} />
+            </div>
+            <div className="workflow-node-panel-v2-info-content">
+              <Text strong>{workflowName}</Text>
+              {node.description && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {node.description}
+                </Text>
+              )}
+            </div>
           </div>
         ) : (
           <Empty
@@ -45,20 +78,54 @@ const WorkflowNodePanelV2: React.FC<WorkflowNodePanelV2Props> = ({ node, referen
       </div>
 
       {/* 输入参数 */}
-      {workflowId && (
+      {inputArgs.length > 0 && (
         <div className="node-panel-v2-section">
           <div className="node-panel-v2-section-header">
             <Text strong>输入参数</Text>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              配置工作流的输入参数
-            </Text>
+            <Tooltip title="为工作流的输入参数设置值或引用变量">
+              <InfoCircleOutlined style={{ color: '#999' }} />
+            </Tooltip>
           </div>
-          <Form.Item name="inputArgs" noStyle>
-            <InputArgsEditorV2
-              referenceData={referenceData}
-              placeholder="添加输入参数"
-            />
-          </Form.Item>
+          <div className="workflow-node-panel-v2-inputs">
+            {inputArgs.map((arg, index) => (
+              <Form.Item
+                key={arg.key || index}
+                name={['inputArgs', index, 'bindValue']}
+                label={
+                  <span>
+                    {arg.name}
+                    {arg.require && (
+                      <span style={{ color: '#ff4d4f' }}> *</span>
+                    )}
+                    <Tag color="#C9CDD4" style={{ marginLeft: 4 }}>
+                      {arg.dataType}
+                    </Tag>
+                  </span>
+                }
+                tooltip={arg.description}
+                rules={
+                  arg.require
+                    ? [{ required: true, message: `请输入 ${arg.name}` }]
+                    : []
+                }
+              >
+                <VariableSelectorV2
+                  referenceData={referenceData}
+                  placeholder={arg.description || `请输入 ${arg.name}`}
+                />
+              </Form.Item>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 输出参数 */}
+      {outputArgs.length > 0 && (
+        <div className="node-panel-v2-section">
+          <div className="node-panel-v2-section-header">
+            <Text strong>输出参数</Text>
+          </div>
+          <OutputArgsDisplayV2 outputArgs={outputArgs} />
         </div>
       )}
     </div>

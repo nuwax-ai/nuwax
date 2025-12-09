@@ -4,12 +4,12 @@
  * 完全独立，不依赖 v1 任何代码
  */
 
-import React, { useState, useMemo } from 'react';
-import { Input, Dropdown, Tree, Tag, Popover, Empty } from 'antd';
-import { SettingOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
+import { Dropdown, Empty, Input, Popover, Tag, Tree } from 'antd';
+import React, { useMemo, useState } from 'react';
 
-import type { NodePreviousAndArgMapV2, OutputArgV2 } from '../../types';
 import { getNodeTypeIconV2 } from '../../constants/stencilConfigV2';
+import type { InputAndOutConfigV2, NodePreviousAndArgMapV2 } from '../../types';
 
 import './VariableSelectorV2.less';
 
@@ -28,6 +28,10 @@ export interface VariableSelectorV2Props {
   disabled?: boolean;
   /** 占位符 */
   placeholder?: string;
+  /** 过滤数据类型 */
+  filterType?: string[];
+  /** 自定义样式 */
+  style?: React.CSSProperties;
   /** 值变更 */
   onChange?: (value: string) => void;
   /** 引用选择 */
@@ -39,12 +43,30 @@ export interface VariableSelectorV2Props {
 // ==================== 工具函数 ====================
 
 /**
+ * 递归查找参数
+ */
+const findArgByKey = (
+  arg: InputAndOutConfigV2,
+  key: string,
+): InputAndOutConfigV2 | null => {
+  if (arg.key === key) return arg;
+  const children = arg.children || arg.subArgs;
+  if (children) {
+    for (const child of children) {
+      const found = findArgByKey(child, key);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+/**
  * 获取变量显示名称
  */
 const getDisplayValue = (
   value: string,
   referenceData?: NodePreviousAndArgMapV2,
-  isLoop?: boolean
+  isLoop?: boolean,
 ): string => {
   if (!value || !referenceData?.argMap?.[value]) return '';
 
@@ -55,7 +77,7 @@ const getDisplayValue = (
 
   // 找到所属节点
   const node = nodeList?.find((n) =>
-    n.outputArgs?.some((arg) => findArgByKey(arg, value))
+    n.outputArgs?.some((arg) => findArgByKey(arg, value)),
   );
 
   if (node) {
@@ -65,17 +87,19 @@ const getDisplayValue = (
 };
 
 /**
- * 递归查找参数
+ * 转换参数数据为 Tree 可用的格式
+ * 处理 subArgs/children 字段名不一致的问题
  */
-const findArgByKey = (arg: OutputArgV2, key: string): OutputArgV2 | null => {
-  if (arg.key === key) return arg;
-  if (arg.children) {
-    for (const child of arg.children) {
-      const found = findArgByKey(child, key);
-      if (found) return found;
-    }
-  }
-  return null;
+const convertArgsToTreeData = (
+  args: InputAndOutConfigV2[],
+): InputAndOutConfigV2[] => {
+  return args.map((arg) => {
+    const children = arg.children || arg.subArgs;
+    return {
+      ...arg,
+      children: children ? convertArgsToTreeData(children) : undefined,
+    };
+  });
 };
 
 /**
@@ -96,6 +120,8 @@ const VariableSelectorV2: React.FC<VariableSelectorV2Props> = ({
   isLoop = false,
   disabled = false,
   placeholder = '请输入或引用参数',
+  filterType,
+  style,
   onChange,
   onReferenceSelect,
   onClearReference,
@@ -110,13 +136,27 @@ const VariableSelectorV2: React.FC<VariableSelectorV2Props> = ({
     return '';
   }, [value, valueType, referenceData, isLoop]);
 
-  // 获取节点列表
+  // 获取节点列表（支持类型过滤）
   const nodeList = useMemo(() => {
     if (!referenceData) return [];
-    return isLoop
+    const list = isLoop
       ? referenceData.innerPreviousNodes || []
       : referenceData.previousNodes || [];
-  }, [referenceData, isLoop]);
+
+    // 如果没有指定过滤类型，返回全部
+    if (!filterType || filterType.length === 0) return list;
+
+    // 过滤节点的输出参数，只保留匹配类型的参数
+    return list
+      .map((node) => ({
+        ...node,
+        outputArgs:
+          node.outputArgs?.filter((arg) =>
+            filterType.some((type) => arg.dataType?.includes(type)),
+          ) || [],
+      }))
+      .filter((node) => node.outputArgs.length > 0);
+  }, [referenceData, isLoop, filterType]);
 
   // 处理输入变更
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,7 +178,7 @@ const VariableSelectorV2: React.FC<VariableSelectorV2Props> = ({
   };
 
   // 渲染树节点标题
-  const renderTreeTitle = (nodeData: OutputArgV2) => {
+  const renderTreeTitle = (nodeData: InputAndOutConfigV2) => {
     return (
       <div className="variable-selector-v2-tree-title">
         <span className="variable-selector-v2-tree-name">{nodeData.name}</span>
@@ -174,8 +214,11 @@ const VariableSelectorV2: React.FC<VariableSelectorV2Props> = ({
     }
 
     return nodeList.map((node) => {
-      const hasChildren = node.outputArgs?.some(
-        (arg) => arg.children && arg.children.length > 0
+      const treeData = node.outputArgs
+        ? convertArgsToTreeData(node.outputArgs)
+        : [];
+      const hasChildren = treeData.some(
+        (arg) => arg.children && arg.children.length > 0,
       );
 
       return {
@@ -189,41 +232,42 @@ const VariableSelectorV2: React.FC<VariableSelectorV2Props> = ({
           />
         ),
         popupClassName: 'variable-selector-v2-popup',
-        children: node.outputArgs
-          ? [
-              {
-                key: `${node.id}-tree`,
-                label: (
-                  <div
-                    className="variable-selector-v2-tree-wrapper"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Tree
-                      treeData={node.outputArgs}
-                      fieldNames={{
-                        title: 'name',
-                        key: 'key',
-                        children: 'children',
-                      }}
-                      titleRender={renderTreeTitle}
-                      defaultExpandAll
-                      blockNode
-                      onSelect={handleSelect}
-                      className={`variable-selector-v2-tree ${
-                        hasChildren ? '' : 'no-children'
-                      }`}
-                    />
-                  </div>
-                ),
-              },
-            ]
-          : undefined,
+        children:
+          treeData.length > 0
+            ? [
+                {
+                  key: `${node.id}-tree`,
+                  label: (
+                    <div
+                      className="variable-selector-v2-tree-wrapper"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Tree
+                        treeData={treeData}
+                        fieldNames={{
+                          title: 'name',
+                          key: 'key',
+                          children: 'children',
+                        }}
+                        titleRender={renderTreeTitle}
+                        defaultExpandAll
+                        blockNode
+                        onSelect={handleSelect}
+                        className={`variable-selector-v2-tree ${
+                          hasChildren ? '' : 'no-children'
+                        }`}
+                      />
+                    </div>
+                  ),
+                },
+              ]
+            : undefined,
       };
     });
   }, [nodeList]);
 
   return (
-    <div className="variable-selector-v2">
+    <div className="variable-selector-v2" style={style}>
       {/* 引用模式显示 Tag */}
       {valueType === 'Reference' && displayValue ? (
         <Tag
@@ -239,7 +283,9 @@ const VariableSelectorV2: React.FC<VariableSelectorV2Props> = ({
               </span>
             </Popover>
           ) : (
-            <span className="variable-selector-v2-tag-text">{displayValue}</span>
+            <span className="variable-selector-v2-tag-text">
+              {displayValue}
+            </span>
           )}
         </Tag>
       ) : (

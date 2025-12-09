@@ -4,18 +4,18 @@
  * 完全独立，不依赖 v1 任何代码
  */
 
-import React from 'react';
-import { Button, Input, Select, Form, Popover, Space } from 'antd';
 import {
-  PlusOutlined,
   DeleteOutlined,
   FileTextOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
+import { Button, Input, Popover } from 'antd';
+import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
+import type { NodePreviousAndArgMapV2 } from '../../types';
 import { DataTypeEnumV2 } from '../../types';
 import VariableSelectorV2 from './VariableSelectorV2';
-import type { NodePreviousAndArgMapV2 } from '../../types';
 
 import './InputArgsEditorV2.less';
 
@@ -56,13 +56,14 @@ export interface InputArgsEditorV2Props {
   readOnly?: boolean;
 }
 
-// 数据类型选项
+// 数据类型选项（暂未使用，保留以备后续扩展）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const DATA_TYPE_OPTIONS = [
   { label: '字符串', value: DataTypeEnumV2.String },
   { label: '数字', value: DataTypeEnumV2.Number },
   { label: '布尔', value: DataTypeEnumV2.Boolean },
   { label: '对象', value: DataTypeEnumV2.Object },
-  { label: '数组', value: DataTypeEnumV2.Array },
+  { label: '数组', value: DataTypeEnumV2.Array_Object },
   { label: '文件', value: DataTypeEnumV2.File },
 ];
 
@@ -106,8 +107,8 @@ const InputArgsEditorV2: React.FC<InputArgsEditorV2Props> = ({
     if (readOnly) return;
     onChange?.(
       value.map((item) =>
-        item.key === key ? { ...item, [field]: fieldValue } : item
-      )
+        item.key === key ? { ...item, [field]: fieldValue } : item,
+      ),
     );
   };
 
@@ -125,8 +126,8 @@ const InputArgsEditorV2: React.FC<InputArgsEditorV2Props> = ({
               dataType: argInfo?.dataType || item.dataType,
               name: item.name || argInfo?.name || '',
             }
-          : item
-      )
+          : item,
+      ),
     );
   };
 
@@ -141,8 +142,8 @@ const InputArgsEditorV2: React.FC<InputArgsEditorV2Props> = ({
               bindValue: '',
               bindValueType: 'Input' as const,
             }
-          : item
-      )
+          : item,
+      ),
     );
   };
 
@@ -215,7 +216,7 @@ const InputArgsEditorV2: React.FC<InputArgsEditorV2Props> = ({
                           handleItemChange(
                             item.key,
                             'description',
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         placeholder="请输入参数描述"

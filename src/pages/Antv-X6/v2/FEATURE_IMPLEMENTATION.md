@@ -1,0 +1,367 @@
+# V2 工作流编辑器功能实现文档
+
+> 本文档描述 V2 工作流编辑器已实现的功能点及技术细节
+
+## 架构概述
+
+### 设计目标
+
+1. **前端数据驱动** - 所有数据操作在前端完成，后端仅负责持久化
+2. **独立于 V1** - 完全独立实现，不依赖 V1 任何代码
+3. **全量更新** - 编辑时全量保存，而非增量保存单个节点/连线
+4. **支持撤销/重做** - 基于 X6 history 和前端数据快照
+5. **运行动画** - 支持节点运行状态可视化
+
+### 目录结构
+
+```
+src/pages/Antv-X6/v2/
+├── indexV2.tsx              # 主入口组件
+├── indexV2.less             # 主样式
+├── types/
+│   └── index.ts             # 类型定义
+├── constants/
+│   ├── index.ts             # 常量定义
+│   └── stencilConfigV2.ts   # 节点模板配置
+├── hooks/
+│   └── useWorkflowDataV2.ts # 数据管理 Hook
+├── services/
+│   └── workflowV2.ts        # API 服务
+├── utils/
+│   ├── graphV2.ts           # 图形工具函数
+│   ├── variableReferenceV2.ts # 变量引用计算
+│   ├── workflowValidatorV2.ts # 工作流校验
+│   └── nodeAnimationV2.ts   # 节点动画
+└── components/
+    ├── GraphContainerV2.tsx # 图形容器
+    ├── GraphV2.tsx          # 图形初始化
+    ├── EventHandlersV2.tsx  # 事件处理
+    ├── registerCustomNodesV2.tsx # 自定义节点注册
+    ├── common/              # 通用组件
+    ├── drawer/              # 抽屉面板
+    ├── layout/              # 布局组件
+    ├── modal/               # 弹窗组件
+    ├── error/               # 错误展示
+    └── version/             # 版本管理
+```
+
+---
+
+## 一、数据管理 (useWorkflowDataV2)
+
+### 1.1 核心数据结构
+
+```typescript
+interface WorkflowDataV2 {
+  nodeList: ChildNodeV2[]; // 节点列表（前端唯一数据源）
+  edgeList: EdgeV2[]; // 边列表（从 nodeList.nextNodeIds 派生）
+  lastSavedVersion: string; // 最后保存版本
+  isDirty: boolean; // 是否有未保存的修改
+}
+```
+
+### 1.2 节点操作
+
+| 方法                          | 功能     | 实现                     |
+| ----------------------------- | -------- | ------------------------ |
+| `addNode(node)`               | 添加节点 | 更新 nodeList，记录历史  |
+| `updateNode(nodeId, updates)` | 更新节点 | 合并更新，记录历史       |
+| `deleteNode(nodeId)`          | 删除节点 | 同时删除关联边，记录历史 |
+| `getNodeById(nodeId)`         | 获取节点 | 从 nodeList 查找         |
+
+### 1.3 边操作
+
+| 方法 | 功能 | 实现 |
+| --- | --- | --- |
+| `addEdge(edge)` | 添加边 | 更新 edgeList 和源节点 nextNodeIds |
+| `deleteEdge(source, target)` | 删除边 | 更新 edgeList 和源节点 nextNodeIds |
+| `getEdgesByNodeId(nodeId)` | 获取相关边 | 过滤 source/target |
+
+### 1.4 批量操作
+
+```typescript
+batchUpdate({
+  nodes?: { id: number; updates: Partial<ChildNodeV2> }[];
+  addEdges?: EdgeV2[];
+  deleteEdges?: { source: string; target: string }[];
+})
+```
+
+### 1.5 历史记录
+
+- 基于数据快照实现撤销/重做
+- 最大 50 步历史记录
+- 每次操作记录 before/after 状态
+
+### 1.6 自动保存
+
+```typescript
+const AUTO_SAVE_CONFIG_V2 = {
+  enabled: false, // 当前已禁用，待后端接口
+  debounceTime: 1000, // 防抖时间
+  throttleTime: 5000, // 节流时间
+  maxRetries: 3, // 最大重试次数
+  retryDelay: 1000, // 重试延迟
+};
+```
+
+---
+
+## 二、变量引用查找 (variableReferenceV2)
+
+### 2.1 核心算法
+
+**目标**: 根据连线关系，计算当前节点可引用的所有上游节点输出变量
+
+**实现**:
+
+1. 根据 `nextNodeIds` 构建反向邻接表
+2. 从当前节点 BFS 遍历找到所有前驱节点
+3. 收集所有前驱节点的 `outputArgs`
+
+```typescript
+// 反向图构建
+function buildReverseGraph(nodes: ChildNodeV2[]): Map<number, number[]> {
+  // A.nextNodeIds = [B] 表示 A → B
+  // 反向后：reverseGraph[B] = [A]
+  nodes.forEach((node) => {
+    node.nextNodeIds?.forEach((nextId) => {
+      reverseGraph.get(nextId)?.push(node.id);
+    });
+  });
+}
+
+// BFS 查找所有前驱
+function findAllPredecessors(nodeId, reverseGraph): number[] {
+  // 从 nodeId 出发，沿反向边遍历
+}
+```
+
+### 2.2 返回数据结构
+
+```typescript
+interface NodePreviousAndArgMapV2 {
+  previousNodes: PreviousListV2[]; // 上游节点列表
+  innerPreviousNodes: PreviousListV2[]; // 循环内部上游节点
+  argMap: ArgMapV2; // 扁平化参数映射 (key → arg)
+}
+```
+
+### 2.3 使用方式
+
+```typescript
+// indexV2.tsx
+const referenceData = selectedNode
+  ? calculateNodePreviousArgs(selectedNode.id, workflowData)
+  : undefined;
+
+// 传递给节点配置面板
+<NodeDrawerV2 referenceData={referenceData} />;
+```
+
+### 2.4 变量选择器 (VariableSelectorV2)
+
+**功能**:
+
+- 展示可引用的上游节点变量
+- 支持数据类型过滤 (`filterType` prop)
+- 支持循环内部引用 (`isLoop` prop)
+- 树形展示嵌套参数
+
+---
+
+## 三、图形容器 (GraphContainerV2)
+
+### 3.1 暴露方法 (ref)
+
+| 方法                                      | 功能           |
+| ----------------------------------------- | -------------- |
+| `getCurrentViewPort()`                    | 获取当前视口   |
+| `graphAddNode(position, node)`            | 添加节点到画布 |
+| `graphUpdateNode(nodeId, newData)`        | 更新画布节点   |
+| `graphDeleteNode(nodeId)`                 | 删除画布节点   |
+| `graphSelectNode(nodeId)`                 | 选中节点       |
+| `graphCreateNewEdge(source, target, ...)` | 创建边         |
+| `graphDeleteEdge(edgeId)`                 | 删除边         |
+| `graphChangeZoom(zoom)`                   | 设置缩放       |
+| `graphChangeZoomToFit()`                  | 适应视图       |
+| `drawGraph()`                             | 重绘图形       |
+| `canUndo() / canRedo()`                   | 撤销/重做状态  |
+| `undo() / redo()`                         | 执行撤销/重做  |
+
+### 3.2 事件处理
+
+- 节点点击 → 打开配置面板
+- 空白点击 → 关闭配置面板
+- 节点移动 → 更新位置数据
+- 连线创建/删除 → 更新 nextNodeIds
+
+---
+
+## 四、节点配置面板
+
+### 4.1 面板架构
+
+```
+NodeDrawerV2
+├── 节点名称编辑
+├── 节点描述
+├── 操作菜单 (复制/删除/试运行)
+└── NodePanelV2 (根据节点类型渲染)
+    ├── StartNodePanelV2
+    ├── EndNodePanelV2
+    ├── LLMNodePanelV2
+    ├── CodeNodePanelV2
+    ├── HTTPNodePanelV2
+    ├── ConditionNodePanelV2
+    ├── ...
+    └── DefaultNodePanelV2
+```
+
+### 4.2 已实现节点类型
+
+| 节点类型 | 面板组件 | 主要配置项 |
+| --- | --- | --- |
+| Start | StartNodePanelV2 | 输入参数 |
+| End | EndNodePanelV2 | 返回类型、输出变量/内容 |
+| LLM | LLMNodePanelV2 | 模型选择、系统/用户提示词、输入输出 |
+| Code | CodeNodePanelV2 | 输入参数、代码编辑器、输出参数 |
+| HTTPRequest | HTTPNodePanelV2 | 方法、URL、Headers/Query/Body |
+| Condition | ConditionNodePanelV2 | 条件分支配置 |
+| IntentRecognition | IntentNodePanelV2 | 模型、意图列表、补充提示词 |
+| QA | QANodePanelV2 | 问题、回答类型、选项 |
+| Loop | LoopNodePanelV2 | 循环类型、次数/数组、循环变量 |
+| Variable | VariableNodePanelV2 | 设置/获取变量 |
+| TextProcessing | TextProcessingNodePanelV2 | 拼接/分割配置 |
+| DocumentExtraction | DocumentExtractionNodePanelV2 | 文档输入输出 |
+| Knowledge | KnowledgeNodePanelV2 | 知识库选择、搜索策略 |
+| Plugin | PluginNodePanelV2 | 插件选择、参数配置 |
+| Workflow | WorkflowNodePanelV2 | 工作流选择 |
+| Table\* | TableNodePanelV2 | 数据表操作 |
+
+### 4.3 通用组件
+
+| 组件               | 功能                |
+| ------------------ | ------------------- |
+| VariableSelectorV2 | 变量引用选择器      |
+| PromptEditorV2     | 提示词编辑器        |
+| CodeEditorV2       | 代码编辑器 (Monaco) |
+| InputArgsEditorV2  | 输入参数编辑器      |
+| OutputArgsEditorV2 | 输出参数编辑器      |
+| KeyValueEditorV2   | 键值对编辑器        |
+| ConditionEditorV2  | 条件表达式编辑器    |
+
+---
+
+## 五、API 服务 (workflowServiceV2)
+
+### 5.1 接口列表
+
+| 接口           | 方法 | 路径                                     | 状态      |
+| -------------- | ---- | ---------------------------------------- | --------- |
+| 获取工作流详情 | GET  | `/api/workflow/{id}`                     | ✅        |
+| 全量保存       | POST | `/api/workflow/v2/save`                  | 🚧 待后端 |
+| 验证工作流     | GET  | `/api/workflow/valid/{id}`               | ❌        |
+| 发布工作流     | POST | `/api/workflow/publish`                  | ❌        |
+| 获取版本历史   | GET  | `/api/workflow/config/history/list/{id}` | ❌        |
+| 还原版本       | POST | `/api/workflow/restore/{historyId}`      | ❌        |
+
+### 5.2 全量保存数据结构
+
+```typescript
+// 请求
+interface SaveWorkflowRequestV2 {
+  workflowId: number;
+  nodes: ChildNodeV2[]; // 全量节点数据
+}
+
+// 响应
+interface SaveWorkflowResponseV2 {
+  success: boolean;
+  message?: string;
+  version?: string;
+  nodeIdMapping?: { [tempId: number]: number };
+}
+```
+
+---
+
+## 六、常量配置
+
+### 6.1 节点类型枚举
+
+```typescript
+enum NodeTypeEnumV2 {
+  Start,
+  End,
+  LLM,
+  Code,
+  HTTPRequest,
+  Condition,
+  IntentRecognition,
+  QA,
+  Loop,
+  LoopBreak,
+  LoopContinue,
+  Variable,
+  TextProcessing,
+  DocumentExtraction,
+  Knowledge,
+  Plugin,
+  Workflow,
+  Output,
+  MCP,
+  TableDataAdd,
+  TableDataDelete,
+  TableDataUpdate,
+  TableDataQuery,
+  TableSQL,
+}
+```
+
+### 6.2 图形配置
+
+```typescript
+const GRAPH_CONFIG_V2 = {
+  grid: { visible: true, type: 'dot', size: 22 },
+  background: { color: '#f2f2f2' },
+  mousewheel: { enabled: true, minScale: 0.2, maxScale: 3 },
+  connecting: { allowBlank: false, allowLoop: false, snap: { radius: 22 } },
+};
+```
+
+### 6.3 历史记录配置
+
+```typescript
+const HISTORY_CONFIG_V2 = {
+  enabled: true,
+  stackSize: 50,
+};
+```
+
+---
+
+## 七、待实现功能
+
+| 功能             | 优先级 | 备注                            |
+| ---------------- | ------ | ------------------------------- |
+| 全量保存接口对接 | P0     | 待后端接口                      |
+| 节点拖拽移动     | P0     |                                 |
+| 连线拖拽创建     | P0     |                                 |
+| 节点校验         | P1     | workflowValidatorV2.ts 框架已有 |
+| 快捷键支持       | P1     | Ctrl+Z/Y/S 等                   |
+| 运行动画         | P2     | nodeAnimationV2.ts 框架已有     |
+| 变量聚合节点     | P2     | 新功能                          |
+
+---
+
+## 更新日志
+
+### 2025-12-08
+
+- 初始化 V2 架构
+- 实现数据管理 Hook (useWorkflowDataV2)
+- 实现变量引用查找 (variableReferenceV2)
+- 实现变量选择器 UI (VariableSelectorV2)
+- 完成大部分节点配置面板
+- 定义全量保存接口

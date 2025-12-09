@@ -772,6 +772,7 @@ export interface WorkflowDetailsV2 {
   publishStatus?: string;
   category?: string;
   permissions?: string[];
+  version?: string;
 }
 
 /**
