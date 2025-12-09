@@ -8,7 +8,7 @@ import {
   InfoCircleOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Form, Tag, Tooltip, Typography } from 'antd';
+import { Button, Empty, Form, Input, Tag, Tooltip, Typography } from 'antd';
 import React from 'react';
 
 import type {
@@ -64,18 +64,59 @@ const PluginNodePanelV2: React.FC<PluginNodePanelV2Props> = ({
                 </Text>
               )}
             </div>
+            <Button
+              type="link"
+              size="small"
+              onClick={() => {
+                form.setFieldsValue({
+                  nodeConfig: {
+                    ...form.getFieldValue('nodeConfig'),
+                    pluginId: undefined,
+                    toolName: undefined,
+                  },
+                });
+              }}
+              style={{ marginLeft: 'auto' }}
+            >
+              更换
+            </Button>
           </div>
         ) : (
-          <Empty
-            description="暂未选择插件"
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          >
-            <Button type="primary" icon={<PlusOutlined />}>
-              选择插件
-            </Button>
-          </Empty>
+          <div className="plugin-node-panel-v2-empty">
+            <Empty
+              description="暂未选择插件"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            >
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() =>
+                  form.setFieldsValue({
+                    nodeConfig: {
+                      ...form.getFieldValue('nodeConfig'),
+                      pluginId: 'plugin-id',
+                    },
+                  })
+                }
+              >
+                选择插件
+              </Button>
+            </Empty>
+          </div>
         )}
       </div>
+
+      {/* 插件基本信息编辑 */}
+      <Form.Item
+        name={['nodeConfig', 'pluginId']}
+        label="插件 ID"
+        rules={[{ required: true, message: '请输入插件 ID' }]}
+      >
+        <Input placeholder="请输入插件 ID" />
+      </Form.Item>
+      <Form.Item name={['nodeConfig', 'toolName']} label="插件名称">
+        <Input placeholder="用于展示的插件名称" />
+      </Form.Item>
 
       {/* 输入参数 */}
       {inputArgs.length > 0 && (

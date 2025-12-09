@@ -261,6 +261,12 @@ const ConditionNodeV2: React.FC<ConditionNodeV2Props> = ({
                                                       'compareType',
                                                     ]}
                                                     noStyle
+                                                    rules={[
+                                                      {
+                                                        required: true,
+                                                        message: '请选择比较符',
+                                                      },
+                                                    ]}
                                                   >
                                                     <Select
                                                       popupMatchSelectWidth={
@@ -280,6 +286,12 @@ const ConditionNodeV2: React.FC<ConditionNodeV2Props> = ({
                                                         subField.name,
                                                         'firstArg',
                                                         'bindValue',
+                                                      ]}
+                                                      rules={[
+                                                        {
+                                                          required: true,
+                                                          message: '请引用参数',
+                                                        },
                                                       ]}
                                                     >
                                                       <InputOrReferenceV2
@@ -311,6 +323,50 @@ const ConditionNodeV2: React.FC<ConditionNodeV2Props> = ({
                                                         subField.name,
                                                         'secondArg',
                                                         'bindValue',
+                                                      ]}
+                                                      rules={[
+                                                        {
+                                                          validator: (
+                                                            _,
+                                                            value,
+                                                          ) => {
+                                                            const compareType =
+                                                              form.getFieldValue(
+                                                                [
+                                                                  'conditionBranchConfigs',
+                                                                  item.name,
+                                                                  'conditionArgs',
+                                                                  subField.name,
+                                                                  'compareType',
+                                                                ],
+                                                              );
+                                                            const noSecondArgTypes =
+                                                              [
+                                                                'IS_NULL',
+                                                                'NOT_NULL',
+                                                              ];
+                                                            if (
+                                                              noSecondArgTypes.includes(
+                                                                compareType,
+                                                              )
+                                                            ) {
+                                                              return Promise.resolve();
+                                                            }
+                                                            if (
+                                                              value === null ||
+                                                              value ===
+                                                                undefined ||
+                                                              value === ''
+                                                            ) {
+                                                              return Promise.reject(
+                                                                new Error(
+                                                                  '请输入或引用值',
+                                                                ),
+                                                              );
+                                                            }
+                                                            return Promise.resolve();
+                                                          },
+                                                        },
                                                       ]}
                                                     >
                                                       <InputOrReferenceV2

@@ -5,13 +5,16 @@
  * 完全独立，不依赖 V1
  */
 
+import Created from '@/components/Created';
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import TreeInput from '@/components/FormListItem/TreeInput';
 import DataTable from '@/components/Skill/database';
 import SqlOptimizeModal from '@/components/SqlOptimizeModal';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { InputItemNameEnum } from '@/types/enums/node';
+import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import {
@@ -23,7 +26,7 @@ import {
   Select,
   Space,
 } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import type { NodeConfigV2 } from '../../../types';
 import InputOrReferenceV2 from '../../common/InputOrReferenceV2';
@@ -78,7 +81,13 @@ const DatabaseNodeV2: React.FC<DatabaseNodeV2Props> = ({
   id,
   referenceData,
 }) => {
-  const [open, setOpen] = useState(false); // 自动生成sql的弹窗
+  // SQL 生成弹窗
+  const [sqlModalOpen, setSqlModalOpen] = useState(false);
+  // 数据表选择
+  const [tableSelectorOpen, setTableSelectorOpen] = useState(false);
+  const [selectedTable, setSelectedTable] = useState<CreatedNodeItem | null>(
+    null,
+  );
 
   // 获取输入参数
   const inputArgs =
@@ -89,7 +98,35 @@ const DatabaseNodeV2: React.FC<DatabaseNodeV2Props> = ({
 
   // 打开自动生成弹窗
   const onOpenCreated = () => {
-    setOpen(true);
+    setSqlModalOpen(true);
+  };
+
+  const tableLabel = useMemo(() => '数据表', []);
+
+  const handleTableAdded = (item: CreatedNodeItem) => {
+    setSelectedTable(item);
+    const baseFields: Record<string, any> = {
+      tableId: item.targetId,
+      name: form.getFieldValue('name') || item.name,
+    };
+
+    if (item.inputArgBindConfigs?.length) {
+      baseFields.inputArgs = item.inputArgBindConfigs;
+    }
+    if (item.outputArgBindConfigs?.length) {
+      baseFields.tableFields = item.outputArgBindConfigs;
+    }
+
+    form.setFieldsValue(baseFields);
+    setTableSelectorOpen(false);
+  };
+
+  const handleTableClear = () => {
+    setSelectedTable(null);
+    form.setFieldsValue({
+      tableId: undefined,
+      tableFields: undefined,
+    });
   };
 
   useEffect(() => {
@@ -100,6 +137,48 @@ const DatabaseNodeV2: React.FC<DatabaseNodeV2Props> = ({
 
   return (
     <div className="database-node-v2">
+      {/* 数据表选择 */}
+      <div className="node-item-style-v2">
+        <div className="dis-sb margin-bottom">
+          <span className="node-title-style-v2">{tableLabel}</span>
+          <Space>
+            {form.getFieldValue('tableId') && (
+              <Button
+                type="text"
+                danger
+                size="small"
+                onClick={handleTableClear}
+              >
+                清除
+              </Button>
+            )}
+            <Button
+              icon={<PlusOutlined />}
+              size="small"
+              type="text"
+              onClick={() => setTableSelectorOpen(true)}
+            />
+          </Space>
+        </div>
+        {form.getFieldValue('tableId') ? (
+          <DataTable
+            icon={selectedTable?.icon || form.getFieldValue('icon')}
+            name={selectedTable?.name || form.getFieldValue('name')}
+            description={
+              selectedTable?.description || form.getFieldValue('description')
+            }
+            params={
+              form
+                .getFieldValue('tableFields')
+                ?.map((item: InputAndOutConfig) => item.name) || []
+            }
+            showParams={type === 'TableSQL'}
+          />
+        ) : (
+          <Empty description="请先选择数据表" />
+        )}
+      </div>
+
       {/* 输入 - TableSQL 节点 */}
       {type === 'TableSQL' && (
         <div className="node-item-style-v2">
@@ -361,8 +440,8 @@ const DatabaseNodeV2: React.FC<DatabaseNodeV2Props> = ({
       {/* SQL 生成弹窗 */}
       <SqlOptimizeModal
         title="生成sql语句"
-        open={open}
-        onCancel={() => setOpen(false)}
+        open={sqlModalOpen}
+        onCancel={() => setSqlModalOpen(false)}
         onReplace={(newValue?: string) => {
           if (!newValue) return;
           let text = newValue;
@@ -376,6 +455,20 @@ const DatabaseNodeV2: React.FC<DatabaseNodeV2Props> = ({
         }}
         tableId={form.getFieldValue('tableId')}
         inputArgs={form.getFieldValue('inputArgs')}
+      />
+
+      {/* 数据表选择弹窗 */}
+      <Created
+        checkTag={AgentComponentTypeEnum.Table}
+        onAdded={handleTableAdded}
+        open={tableSelectorOpen}
+        onCancel={() => setTableSelectorOpen(false)}
+        hideTop={[
+          AgentComponentTypeEnum.Plugin,
+          AgentComponentTypeEnum.Workflow,
+          AgentComponentTypeEnum.Knowledge,
+          AgentComponentTypeEnum.MCP,
+        ]}
       />
     </div>
   );

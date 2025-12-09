@@ -3,14 +3,14 @@
  * 完全独立，不依赖 v1 任何代码
  */
 
-import React from 'react';
-import { Form, Select, Typography, Empty, Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import { Button, Empty, Form, Input, Select, Typography } from 'antd';
+import React from 'react';
 
 import type { ChildNodeV2, NodePreviousAndArgMapV2 } from '../../../types';
 import { NodeTypeEnumV2 } from '../../../types';
-import InputArgsEditorV2 from '../../common/InputArgsEditorV2';
 import ConditionEditorV2 from '../../common/ConditionEditorV2';
+import InputArgsEditorV2 from '../../common/InputArgsEditorV2';
 
 const { Text } = Typography;
 
@@ -19,7 +19,10 @@ export interface TableNodePanelV2Props {
   referenceData?: NodePreviousAndArgMapV2;
 }
 
-const TableNodePanelV2: React.FC<TableNodePanelV2Props> = ({ node, referenceData }) => {
+const TableNodePanelV2: React.FC<TableNodePanelV2Props> = ({
+  node,
+  referenceData,
+}) => {
   const tableId = node.typeId || node.nodeConfig?.tableId;
   const nodeType = node.type;
 
@@ -60,35 +63,47 @@ const TableNodePanelV2: React.FC<TableNodePanelV2Props> = ({ node, referenceData
             <Text>数据表 ID: {tableId}</Text>
           </div>
         ) : (
-          <Empty
-            description="暂未选择数据表"
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          >
-            <Button type="primary" icon={<PlusOutlined />}>
-              选择数据表
-            </Button>
-          </Empty>
+          <div className="table-info-empty">
+            <Empty
+              description="暂未选择数据表"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            >
+              <Button type="primary" icon={<PlusOutlined />}>
+                选择数据表
+              </Button>
+            </Empty>
+            <Form.Item
+              name={['nodeConfig', 'tableId']}
+              label="数据表 ID"
+              rules={[{ required: true, message: '请输入数据表 ID' }]}
+            >
+              <Input placeholder="请输入数据表 ID" />
+            </Form.Item>
+          </div>
         )}
       </div>
 
       {/* 数据新增/更新 - 字段配置 */}
       {(nodeType === NodeTypeEnumV2.TableDataAdd ||
-        nodeType === NodeTypeEnumV2.TableDataUpdate) && tableId && (
-        <div className="node-panel-v2-section">
-          <div className="node-panel-v2-section-header">
-            <Text strong>字段配置</Text>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              配置要{nodeType === NodeTypeEnumV2.TableDataAdd ? '新增' : '更新'}的字段值
-            </Text>
+        nodeType === NodeTypeEnumV2.TableDataUpdate) &&
+        tableId && (
+          <div className="node-panel-v2-section">
+            <div className="node-panel-v2-section-header">
+              <Text strong>字段配置</Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                配置要
+                {nodeType === NodeTypeEnumV2.TableDataAdd ? '新增' : '更新'}
+                的字段值
+              </Text>
+            </div>
+            <Form.Item name="inputArgs" noStyle>
+              <InputArgsEditorV2
+                referenceData={referenceData}
+                placeholder="添加字段"
+              />
+            </Form.Item>
           </div>
-          <Form.Item name="inputArgs" noStyle>
-            <InputArgsEditorV2
-              referenceData={referenceData}
-              placeholder="添加字段"
-            />
-          </Form.Item>
-        </div>
-      )}
+        )}
 
       {/* 条件配置 */}
       {needsCondition && tableId && (

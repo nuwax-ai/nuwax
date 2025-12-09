@@ -8,13 +8,15 @@
  */
 
 import { Graph, Node } from '@antv/x6';
-import { App } from 'antd';
+import { App, Dropdown, type MenuProps } from 'antd';
 import {
   forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
+  useState,
 } from 'react';
 
 import type {
@@ -111,6 +113,14 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
     const graphRef = useRef<Graph | null>(null);
     const hasInitialized = useRef(false);
     const animationCleanupRef = useRef<Map<string, () => void>>(new Map());
+    const copiedNodeRef = useRef<ChildNodeV2 | null>(null);
+    const [contextMenu, setContextMenu] = useState<{
+      visible: boolean;
+      x: number;
+      y: number;
+      type: 'node' | 'blank';
+      node?: ChildNodeV2 | null;
+    }>({ visible: false, x: 0, y: 0, type: 'blank', node: null });
 
     // 初始化动画样式
     useEffect(() => {
@@ -560,6 +570,114 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
       };
     }, []);
 
+    // 右键菜单
+    useEffect(() => {
+      const graph = graphRef.current;
+      if (!graph) return;
+
+      const handleNodeContextMenu = ({
+        e,
+        node,
+      }: {
+        e: MouseEvent;
+        node: Node;
+      }) => {
+        e.preventDefault();
+        const data = node.getData() as ChildNodeV2;
+        setContextMenu({
+          visible: true,
+          x: e.clientX,
+          y: e.clientY,
+          type: 'node',
+          node: data,
+        });
+      };
+
+      const handleBlankContextMenu = (e: MouseEvent) => {
+        e.preventDefault();
+        setContextMenu({
+          visible: true,
+          x: e.clientX,
+          y: e.clientY,
+          type: 'blank',
+          node: null,
+        });
+      };
+
+      graph.on('node:contextmenu', handleNodeContextMenu);
+      graph.on('blank:contextmenu', handleBlankContextMenu);
+
+      const handleHide = () =>
+        setContextMenu((prev) => ({ ...prev, visible: false }));
+      window.addEventListener('click', handleHide, true);
+
+      return () => {
+        graph.off('node:contextmenu', handleNodeContextMenu);
+        graph.off('blank:contextmenu', handleBlankContextMenu);
+        window.removeEventListener('click', handleHide, true);
+      };
+    }, []);
+
+    const contextMenuItems: MenuProps['items'] = useMemo(() => {
+      if (contextMenu.type === 'blank') {
+        return [
+          {
+            key: 'paste',
+            label: '粘贴节点',
+            disabled: !copiedNodeRef.current,
+          },
+        ];
+      }
+
+      if (!contextMenu.node) return [];
+      const disableDelete =
+        contextMenu.node.type === NodeTypeEnumV2.Start ||
+        contextMenu.node.type === NodeTypeEnumV2.End;
+      return [
+        { key: 'copy', label: '复制节点' },
+        {
+          key: 'paste',
+          label: '粘贴副本',
+          disabled: !contextMenu.node,
+        },
+        { key: 'delete', label: '删除节点', disabled: disableDelete },
+      ];
+    }, [contextMenu.node, contextMenu.type]);
+
+    const handleContextMenuClick: MenuProps['onClick'] = useCallback(
+      ({ key }) => {
+        const nodeData =
+          contextMenu.type === 'node'
+            ? contextMenu.node
+            : copiedNodeRef.current;
+
+        if (key === 'copy' && contextMenu.node) {
+          copiedNodeRef.current = JSON.parse(
+            JSON.stringify(contextMenu.node),
+          ) as ChildNodeV2;
+          onNodeCopy?.(contextMenu.node);
+        }
+
+        if (key === 'paste' && nodeData) {
+          onNodeCopy?.(nodeData);
+        }
+
+        if (key === 'delete' && contextMenu.node) {
+          onNodeDelete?.(contextMenu.node.id, contextMenu.node);
+          graphDeleteNode(contextMenu.node.id.toString());
+        }
+
+        setContextMenu((prev) => ({ ...prev, visible: false }));
+      },
+      [
+        contextMenu.node,
+        contextMenu.type,
+        onNodeCopy,
+        onNodeDelete,
+        graphDeleteNode,
+      ],
+    );
+
     // 数据变化时重绘
     useEffect(() => {
       if (workflowData.nodeList.length > 0 && !hasInitialized.current) {
@@ -576,11 +694,29 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
     }, [workflowData.nodeList]);
 
     return (
-      <div
-        ref={containerRef}
-        id={GRAPH_CONTAINER_ID}
-        style={{ width: '100%', height: '100%' }}
-      />
+      <>
+        <div
+          ref={containerRef}
+          id={GRAPH_CONTAINER_ID}
+          style={{ width: '100%', height: '100%' }}
+        />
+        <Dropdown
+          open={contextMenu.visible && contextMenuItems.length > 0}
+          trigger={[]}
+          menu={{ items: contextMenuItems, onClick: handleContextMenuClick }}
+        >
+          <div
+            style={{
+              position: 'fixed',
+              left: contextMenu.x,
+              top: contextMenu.y,
+              width: 1,
+              height: 1,
+              zIndex: 2000,
+            }}
+          />
+        </Dropdown>
+      </>
     );
   },
 );
