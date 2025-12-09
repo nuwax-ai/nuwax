@@ -16,6 +16,7 @@ import {
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import {
+  AgentTypeEnum,
   ApplicationMoreActionEnum,
   EditAgentShowType,
   OpenCloseEnum,
@@ -651,6 +652,7 @@ const EditAgent: React.FC = () => {
       />
       {/*编辑智能体弹窗*/}
       <CreateAgent
+        type={agentConfigInfo?.type as AgentTypeEnum}
         spaceId={spaceId}
         mode={CreateUpdateModeEnum.Update}
         agentConfigInfo={agentConfigInfo}
