@@ -13,7 +13,7 @@ import type {
 } from '@/types/enums/common';
 import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
-import { ApplicationMoreActionEnum } from '@/types/enums/space';
+import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
   AgentBaseInfo,
   AgentConfigInfo,
@@ -352,6 +352,7 @@ export interface MCPNodeItem {
 
 // 创建、编辑智能体
 export interface CreateAgentProps {
+  type: AgentTypeEnum;
   spaceId: number;
   mode?: CreateUpdateModeEnum;
   agentConfigInfo?: AgentConfigInfo;
@@ -406,6 +407,7 @@ export interface CustomPopoverItem {
   [key: string]: React.Key | React.ReactNode;
   label: string;
   isDel?: boolean;
+  tooltip?: string;
 }
 
 // 自定义popover弹窗组件
