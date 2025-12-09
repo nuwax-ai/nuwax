@@ -566,6 +566,21 @@ export interface CreateNodeByPortOrEdgePropsV2 {
 }
 
 /**
+ * 工作流元数据（保存初始化时的工作流信息，用于全量保存）
+ */
+export interface WorkflowMetadataV2 {
+  name: string;
+  description: string;
+  spaceId: number;
+  startNode?: ChildNodeV2;
+  extension?: {
+    size?: number;
+  };
+  category?: string;
+  version?: string;
+}
+
+/**
  * 工作流数据（V2核心数据结构）
  */
 export interface WorkflowDataV2 {
@@ -573,6 +588,7 @@ export interface WorkflowDataV2 {
   edgeList: EdgeV2[];
   lastSavedVersion: string;
   isDirty: boolean;
+  metadata?: WorkflowMetadataV2;
 }
 
 /**
@@ -786,10 +802,20 @@ export interface ValidationResultV2 {
 
 /**
  * 保存工作流请求
+ * 数据结构与 WorkflowDetailsV2 基本一致（全量保存）
  */
 export interface SaveWorkflowRequestV2 {
   workflowId: number;
+  name?: string;
+  description?: string;
+  spaceId?: number;
   nodes: ChildNodeV2[];
+  startNode?: ChildNodeV2;
+  extension?: {
+    size?: number;
+  };
+  category?: string;
+  version?: string;
 }
 
 /**

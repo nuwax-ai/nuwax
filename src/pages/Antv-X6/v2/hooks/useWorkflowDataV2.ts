@@ -265,19 +265,30 @@ export function useWorkflowDataV2({
 
     setIsSaving(true);
 
-    // 构建保存请求数据
+    // 获取开始节点（从 nodeList 中查找 Start 类型节点，或使用元数据中的 startNode）
+    const startNode =
+      workflowData.nodeList.find((n) => n.type === 'Start') ||
+      workflowData.metadata?.startNode;
+
+    // 构建保存请求数据（与初始化数据结构一致）
     const savePayload = {
       workflowId,
+      name: workflowData.metadata?.name,
+      description: workflowData.metadata?.description,
+      spaceId: workflowData.metadata?.spaceId,
       nodes: workflowData.nodeList,
+      startNode,
+      extension: workflowData.metadata?.extension,
+      category: workflowData.metadata?.category,
+      version: workflowData.metadata?.version,
     };
 
     // 打印全量数据以便确认（后端接口未就绪时用于调试）
-    console.group('[V2] 工作流保存数据');
+    console.group('[V2] 工作流保存数据（全量）');
     console.log('📦 完整保存请求:', JSON.stringify(savePayload, null, 2));
     console.log('📊 节点总数:', workflowData.nodeList.length);
     console.log('🔗 边总数:', workflowData.edgeList.length);
-    console.log('📝 节点列表:', workflowData.nodeList);
-    console.log('🔗 边列表:', workflowData.edgeList);
+    console.log('📝 工作流元数据:', workflowData.metadata);
     console.groupEnd();
 
     try {
@@ -664,19 +675,40 @@ export function useWorkflowDataV2({
       const response = await workflowServiceV2.getWorkflowDetails(workflowId);
 
       if (workflowServiceV2.isSuccess(response)) {
-        const { nodes, ...details } = response.data;
-        // details 包含工作流元信息，当前仅使用 nodes
-        console.log('[V2] 工作流元信息:', details);
+        const {
+          nodes,
+          name,
+          description,
+          spaceId,
+          startNode,
+          extension,
+          category,
+          version,
+        } = response.data;
 
         // 从节点数据中提取边（使用工具函数，支持特殊节点的端口信息）
         const edges = extractEdgesFromNodes(nodes);
+
+        // 保存工作流元数据，用于全量保存
+        const metadata: WorkflowMetadataV2 = {
+          name,
+          description,
+          spaceId,
+          startNode,
+          extension,
+          category,
+          version,
+        };
 
         const newData: WorkflowDataV2 = {
           nodeList: nodes,
           edgeList: edges,
           lastSavedVersion: Date.now().toString(),
           isDirty: false,
+          metadata,
         };
+
+        console.log('[V2] 工作流元数据已保存:', metadata);
 
         setWorkflowData(newData);
         lastSavedData.current = deepClone(newData);
