@@ -5,6 +5,7 @@
 **导航**: [📚 文档索引](./README.md) | [⬆️ 主文档](../V1-FEATURES.md)
 
 **相关文档**:
+
 - [X6 自定义节点](./X6-CUSTOM-NODES.md) - 节点的视觉渲染实现
 - [X6 连线](./X6-EDGES.md) - 连接桩之间的连线逻辑
 - [事件处理](./X6-EVENTS.md) - 端口相关的事件处理
@@ -28,8 +29,8 @@
 
 ```typescript
 enum PortGroupEnum {
-  in = 'in',           // 输入端口（左侧）
-  out = 'out',         // 输出端口（右侧）
+  in = 'in', // 输入端口（左侧）
+  out = 'out', // 输出端口（右侧）
   special = 'special', // 特殊端口（条件分支等）
   exception = 'exception', // 异常处理端口
 }
@@ -39,27 +40,27 @@ enum PortGroupEnum {
 
 ```typescript
 interface outputOrInputPortConfig {
-  id: string;              // 端口唯一标识
-  group: PortGroupEnum;    // 端口组
-  zIndex: number;          // 层级
-  magnet: boolean;         // 是否为磁吸点
-  markup: Markup[];        // DOM 结构
+  id: string; // 端口唯一标识
+  group: PortGroupEnum; // 端口组
+  zIndex: number; // 层级
+  magnet: boolean; // 是否为磁吸点
+  markup: Markup[]; // DOM 结构
   attrs: {
-    circle: object;        // 圆形样式
-    icon: object;          // 图标样式
-    hoverCircle: object;   // 悬停区域样式
+    circle: object; // 圆形样式
+    icon: object; // 图标样式
+    hoverCircle: object; // 悬停区域样式
   };
   args: {
-    x: number;             // X 坐标
-    y: number;             // Y 坐标
-    offsetY: number;       // Y 偏移
-    offsetX: number;       // X 偏移
+    x: number; // X 坐标
+    y: number; // Y 坐标
+    offsetY: number; // Y 偏移
+    offsetX: number; // X 偏移
   };
 }
 
 interface PortsConfig {
-  groups: object;                    // 端口组配置
-  items: outputOrInputPortConfig[];  // 端口项数组
+  groups: object; // 端口组配置
+  items: outputOrInputPortConfig[]; // 端口项数组
 }
 ```
 
@@ -72,7 +73,10 @@ interface PortsConfig {
 ### 生成端口组配置
 
 ```typescript
-export const generatePortGroupConfig = (basePortSize: number, data: ChildNode) => {
+export const generatePortGroupConfig = (
+  basePortSize: number,
+  data: ChildNode,
+) => {
   const fixedPortNode = [
     NodeTypeEnum.Loop,
     NodeTypeEnum.LoopStart,
@@ -80,10 +84,10 @@ export const generatePortGroupConfig = (basePortSize: number, data: ChildNode) =
     NodeTypeEnum.Start,
     NodeTypeEnum.End,
   ].includes(data.type);
-  
+
   const magnetRadius = 50;
   const isLoopNode = data.type === NodeTypeEnum.Loop;
-  
+
   return {
     // 输入端口组
     in: {
@@ -92,42 +96,42 @@ export const generatePortGroupConfig = (basePortSize: number, data: ChildNode) =
         circle: { r: basePortSize, magnet: true, magnetRadius },
       },
       connectable: {
-        source: isLoopNode,  // Loop 节点的 in 端口允许作为 source
-        target: true,        // 非 Loop 节点的 in 端口只能作为 target
+        source: isLoopNode, // Loop 节点的 in 端口允许作为 source
+        target: true, // 非 Loop 节点的 in 端口只能作为 target
       },
     },
-    
+
     // 输出端口组
     out: {
       position: {
         name: fixedPortNode ? 'right' : 'absolute',
       },
-      attrs: { 
-        circle: { r: basePortSize, magnet: true, magnetRadius } 
+      attrs: {
+        circle: { r: basePortSize, magnet: true, magnetRadius },
       },
       connectable: {
         source: true,
         target: isLoopNode,
       },
     },
-    
+
     // 特殊端口组（条件分支等）
     special: {
       position: { name: 'absolute' },
-      attrs: { 
-        circle: { r: basePortSize, magnet: true, magnetRadius } 
+      attrs: {
+        circle: { r: basePortSize, magnet: true, magnetRadius },
       },
       connectable: {
         source: true,
         target: isLoopNode,
       },
     },
-    
+
     // 异常处理端口组
     exception: {
       position: { name: 'absolute' },
-      attrs: { 
-        circle: { r: basePortSize, magnet: true, magnetRadius } 
+      attrs: {
+        circle: { r: basePortSize, magnet: true, magnetRadius },
       },
       connectable: {
         source: true,
@@ -151,7 +155,7 @@ export const generatePorts = (data: ChildNode): PortsConfig => {
   const basePortSize = 3;
   const defaultNodeHeaderHeight = DEFAULT_NODE_CONFIG_MAP.default.defaultHeight;
   const defaultNodeHeaderWidth = getWidthAndHeight(data).width;
-  
+
   // 端口配置生成器
   const generatePortConfig = ({
     group,
@@ -221,30 +225,42 @@ export const generatePorts = (data: ChildNode): PortsConfig => {
 
   let inputPorts = [];
   let outputPorts = [];
-  
+
   // 根据节点类型生成不同的端口配置
   switch (data.type) {
     case NodeTypeEnum.Start:
       inputPorts = [];
-      outputPorts = [generatePortConfig({ group: PortGroupEnum.out, idSuffix: 'out' })];
+      outputPorts = [
+        generatePortConfig({ group: PortGroupEnum.out, idSuffix: 'out' }),
+      ];
       break;
-      
+
     case NodeTypeEnum.End:
-      inputPorts = [generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' })];
+      inputPorts = [
+        generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
+      ];
       outputPorts = [];
       break;
-      
+
     // ... 其他节点类型
-    
+
     default:
-      inputPorts = [generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' })];
-      outputPorts = [generatePortConfig({ group: PortGroupEnum.out, idSuffix: 'out' })];
+      inputPorts = [
+        generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
+      ];
+      outputPorts = [
+        generatePortConfig({ group: PortGroupEnum.out, idSuffix: 'out' }),
+      ];
       break;
   }
-  
+
   // 处理异常输出端口
-  outputPorts = _handleExceptionOutputPort(data, outputPorts, generatePortConfig);
-  
+  outputPorts = _handleExceptionOutputPort(
+    data,
+    outputPorts,
+    generatePortConfig,
+  );
+
   return {
     groups: generatePortGroupConfig(basePortSize, data),
     items: [...inputPorts, ...outputPorts],
@@ -263,16 +279,16 @@ export const generatePorts = (data: ChildNode): PortsConfig => {
 ```typescript
 case NodeTypeEnum.Condition:
 case NodeTypeEnum.IntentRecognition: {
-  const configs = data.nodeConfig?.conditionBranchConfigs || 
+  const configs = data.nodeConfig?.conditionBranchConfigs ||
                   data.nodeConfig.intentConfigs || [];
   const baseY = defaultNodeHeaderHeight;
   const itemHeight = data.type === NodeTypeEnum.Condition ? 32 : 24;
   const step = data.type === NodeTypeEnum.Condition ? 16 : 12;
-  
+
   inputPorts = [
     generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
   ];
-  
+
   outputPorts = configs.map((item, index) => ({
     ...generatePortConfig({
       group: PortGroupEnum.special,
@@ -297,7 +313,7 @@ case NodeTypeEnum.QA: {
   const itemHeight = 24;
   const step = 12;
   let baseY = defaultNodeHeaderHeight;
-  
+
   if (type === AnswerTypeEnum.SELECT) {
     // 选项回答模式：每个选项一个端口
     baseY += itemHeight * 3;
@@ -360,7 +376,7 @@ export const showExceptionPort = (
 ): boolean => {
   return (
     showExceptionHandle(node) &&
-    node.nodeConfig?.exceptionHandleConfig?.exceptionHandleType === 
+    node.nodeConfig?.exceptionHandleConfig?.exceptionHandleType ===
       ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW &&
     protGroup === PortGroupEnum.exception
   );
@@ -380,7 +396,7 @@ const _handleExceptionOutputPort = (
   const xWidth = getWidthAndHeight(data).width;
   const baseY = outputPorts[outputPorts.length - 1]?.args?.offsetY;
   const itemHeight = 24;
-  
+
   if (showExceptionPort(data, PortGroupEnum.exception)) {
     // 添加异常端口
     return [
@@ -396,11 +412,11 @@ const _handleExceptionOutputPort = (
     ];
   } else if (showExceptionHandle(data) && outputPorts.length >= 1) {
     // 调整现有端口位置以容纳异常处理项
-    outputPorts[outputPorts.length - 1].args.offsetY = 
+    outputPorts[outputPorts.length - 1].args.offsetY =
       baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER;
     return outputPorts;
   }
-  
+
   return outputPorts;
 };
 ```
@@ -420,7 +436,7 @@ graph.on('node:mouseenter', ({ node }) => {
     in: 'active',
     out: 'active',
   };
-  
+
   // LoopStart 节点的 in 端口保持正常状态
   if (node.getData()?.type === 'LoopStart') {
     portStatusList.in = 'normal';
@@ -429,7 +445,7 @@ graph.on('node:mouseenter', ({ node }) => {
   if (node.getData()?.type === 'LoopEnd') {
     portStatusList.out = 'normal';
   }
-  
+
   // 更新端口样式
   const updatedPorts = currentPorts.map((port) => {
     return handlePortConfig(
@@ -492,7 +508,7 @@ const handlePortConfig = (
 ```typescript
 graph.on('node:port:click', ({ node, port, e }) => {
   const isLoopNode = node.getData()?.loopNodeId;
-  
+
   if (isLoopNode) {
     const isIn = port?.includes('in');
     const parentNode = node.getParent()?.getData();
@@ -505,7 +521,7 @@ graph.on('node:port:click', ({ node, port, e }) => {
       return;
     }
   }
-  
+
   // 弹出节点选择菜单
   createNodeAndEdge(graph, e, node.getData(), port as string);
   graph.select(node);
@@ -518,7 +534,11 @@ graph.on('node:port:click', ({ node, port, e }) => {
 graph.on('node:mouseleave', ({ node }) => {
   const ports = node.getPorts();
   const updatedPorts = ports.map((port) =>
-    handlePortConfig(port as PortConfig, 'normal', port.attrs?.circle?.fill as string),
+    handlePortConfig(
+      port as PortConfig,
+      'normal',
+      port.attrs?.circle?.fill as string,
+    ),
   );
   node.prop('ports/items', updatedPorts);
 });
@@ -528,28 +548,27 @@ graph.on('node:mouseleave', ({ node }) => {
 
 ## 端口 ID 命名规范
 
-| 端口类型 | ID 格式 | 示例 |
-|---------|---------|------|
-| 输入端口 | `{nodeId}-in` | `123-in` |
-| 输出端口 | `{nodeId}-out` | `123-out` |
-| 条件分支端口 | `{nodeId}-{uuid}-out` | `123-abc-def-out` |
+| 端口类型     | ID 格式                  | 示例                |
+| ------------ | ------------------------ | ------------------- |
+| 输入端口     | `{nodeId}-in`            | `123-in`            |
+| 输出端口     | `{nodeId}-out`           | `123-out`           |
+| 条件分支端口 | `{nodeId}-{uuid}-out`    | `123-abc-def-out`   |
 | 异常处理端口 | `{nodeId}-exception-out` | `123-exception-out` |
 
 ---
 
 ## 相关文件索引
 
-| 文件路径 | 说明 |
-|---------|------|
-| `src/utils/workflow.tsx` | 端口生成核心逻辑 |
-| `src/utils/graph.ts` | 端口组配置和验证逻辑 |
-| `src/pages/Antv-X6/component/graph.tsx` | 端口交互事件处理 |
-| `src/types/interfaces/node.ts` | 端口类型定义 |
-| `src/types/enums/node.ts` | 端口组枚举定义 |
+| 文件路径                                | 说明                 |
+| --------------------------------------- | -------------------- |
+| `src/utils/workflow.tsx`                | 端口生成核心逻辑     |
+| `src/utils/graph.ts`                    | 端口组配置和验证逻辑 |
+| `src/pages/Antv-X6/component/graph.tsx` | 端口交互事件处理     |
+| `src/types/interfaces/node.ts`          | 端口类型定义         |
+| `src/types/enums/node.ts`               | 端口组枚举定义       |
 
 ---
 
 **导航**: [📚 文档索引](./README.md) | [⬆️ 主文档](../V1-FEATURES.md)
 
-*文档生成时间: 2024-12*
-*用于 V2 重构参照*
+_文档生成时间: 2025-12_ _用于 V2 重构参照_

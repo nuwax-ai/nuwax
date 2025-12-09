@@ -1,7 +1,9 @@
 # Antv-X6 工作流编辑器 V1 版本功能文档
 
+> 本文档为 V2 重构的基线功能说明。V2 实现细节见 [v2/FEATURE_IMPLEMENTATION.md](./v2/FEATURE_IMPLEMENTATION.md)，回归验证清单见 [v2/REGRESSION_CHECKLIST.md](./v2/REGRESSION_CHECKLIST.md)。
+
 > 本文档梳理了 V1 版本的实现功能点和支持的节点类型，作为 V2 重构时的参照标准。
-> 
+>
 > 📚 **详细技术文档**: [docs/README.md](./docs/README.md) - 包含完整的文档索引和导航
 
 ## 目录
@@ -21,16 +23,16 @@ V1 版本共支持 **17+ 种节点类型**，分为以下几类：
 
 ### 1. 基础节点
 
-| 节点类型 | 枚举值 | 说明 |
-|---------|--------|------|
-| 开始节点 | `Start` | 工作流入口，支持配置开场白、引导问题、全局变量 |
-| 结束节点 | `End` | 工作流结束，支持配置结束回复内容 |
-| 过程输出 | `Output` | 中间输出节点 |
+| 节点类型 | 枚举值   | 说明                                           |
+| -------- | -------- | ---------------------------------------------- |
+| 开始节点 | `Start`  | 工作流入口，支持配置开场白、引导问题、全局变量 |
+| 结束节点 | `End`    | 工作流结束，支持配置结束回复内容               |
+| 过程输出 | `Output` | 中间输出节点                                   |
 
 ### 2. AI 节点
 
 | 节点类型 | 枚举值 | 说明 |
-|---------|--------|------|
+| --- | --- | --- |
 | 大模型节点 | `LLM` | LLM 调用，支持模型选择、提示词、技能、异常处理 |
 | 知识库节点 | `Knowledge` | 知识库检索，支持搜索策略、相似度阈值配置 |
 | 意图识别节点 | `IntentRecognition` | 意图分类，支持多意图分支配置 |
@@ -38,36 +40,36 @@ V1 版本共支持 **17+ 种节点类型**，分为以下几类：
 
 ### 3. 逻辑控制节点
 
-| 节点类型 | 枚举值 | 说明 |
-|---------|--------|------|
-| 条件分支节点 | `Condition` | 条件判断，支持多分支、拖拽排序 |
-| 循环节点 | `Loop` | 循环执行，支持数组循环、指定次数、无限循环 |
-| 终止循环 | `LoopBreak` | 跳出当前循环 |
-| 继续循环 | `LoopContinue` | 跳过当前迭代 |
-| 代码节点 | `Code` | 自定义代码执行（JavaScript/Python） |
+| 节点类型     | 枚举值         | 说明                                       |
+| ------------ | -------------- | ------------------------------------------ |
+| 条件分支节点 | `Condition`    | 条件判断，支持多分支、拖拽排序             |
+| 循环节点     | `Loop`         | 循环执行，支持数组循环、指定次数、无限循环 |
+| 终止循环     | `LoopBreak`    | 跳出当前循环                               |
+| 继续循环     | `LoopContinue` | 跳过当前迭代                               |
+| 代码节点     | `Code`         | 自定义代码执行（JavaScript/Python）        |
 
 ### 4. 数据操作节点
 
-| 节点类型 | 枚举值 | 说明 |
-|---------|--------|------|
-| 变量赋值节点 | `Variable` | 变量设置和获取 |
-| 文本处理 | `TextProcessing` | 字符串拼接和分割 |
-| 文档提取 | `DocumentExtraction` | 文档内容提取 |
-| 数据库新增 | `TableDataAdd` | 数据库插入操作 |
-| 数据库删除 | `TableDataDelete` | 数据库删除操作 |
-| 数据库更新 | `TableDataUpdate` | 数据库更新操作 |
-| 数据库查询 | `TableDataQuery` | 数据库查询操作 |
-| SQL 执行 | `TableSQL` | 自定义 SQL 执行 |
+| 节点类型     | 枚举值               | 说明             |
+| ------------ | -------------------- | ---------------- |
+| 变量赋值节点 | `Variable`           | 变量设置和获取   |
+| 文本处理     | `TextProcessing`     | 字符串拼接和分割 |
+| 文档提取     | `DocumentExtraction` | 文档内容提取     |
+| 数据库新增   | `TableDataAdd`       | 数据库插入操作   |
+| 数据库删除   | `TableDataDelete`    | 数据库删除操作   |
+| 数据库更新   | `TableDataUpdate`    | 数据库更新操作   |
+| 数据库查询   | `TableDataQuery`     | 数据库查询操作   |
+| SQL 执行     | `TableSQL`           | 自定义 SQL 执行  |
 
 ### 5. 集成节点
 
-| 节点类型 | 枚举值 | 说明 |
-|---------|--------|------|
-| 插件节点 | `Plugin` | 调用已配置的插件 |
-| 工作流节点 | `Workflow` | 调用子工作流 |
-| MCP 节点 | `Mcp` | MCP 协议集成 |
+| 节点类型     | 枚举值           | 说明               |
+| ------------ | ---------------- | ------------------ |
+| 插件节点     | `Plugin`         | 调用已配置的插件   |
+| 工作流节点   | `Workflow`       | 调用子工作流       |
+| MCP 节点     | `Mcp`            | MCP 协议集成       |
 | 长期记忆节点 | `LongTermMemory` | 长期记忆存储和检索 |
-| HTTP 请求 | `HTTPRequest` | HTTP 接口调用 |
+| HTTP 请求    | `HTTPRequest`    | HTTP 接口调用      |
 
 ---
 
@@ -181,14 +183,16 @@ switch (nodeType) {
 #### ExceptionItem (异常处理配置)
 
 支持以下节点的异常处理配置：
+
 - 大模型节点 (LLM)
 - 知识库节点 (Knowledge)
 - 插件节点 (Plugin)
 - 工作流节点 (Workflow)
 - MCP 节点 (Mcp)
-- 数据库节点 (TableData*)
+- 数据库节点 (TableData\*)
 
 配置项：
+
 - 超时时间 (timeout): 默认 180 秒
 - 重试次数 (retryCount): 默认 0 次
 - 异常处理方式 (exceptionHandleType):
@@ -205,7 +209,7 @@ switch (nodeType) {
 ### 配置概览
 
 | 节点类型 | 主要配置项 | 支持异常处理 |
-|---------|-----------|-------------|
+| --- | --- | --- |
 | Start | inputArgs | ❌ |
 | End/Output | returnType, outputArgs, content | ❌ |
 | LLM | modelId, systemPrompt, userPrompt, skillComponentConfigs | ✅ |
@@ -218,7 +222,7 @@ switch (nodeType) {
 | Code | codeLanguage, codeJavaScript/codePython | ❌ |
 | TextProcessing | textHandleType, text/join/splits | ❌ |
 | Plugin/Workflow/MCP | inputArgs, outputArgs | ✅ |
-| TableData* | tableId, conditionArgs, sql | ✅ |
+| TableData\* | tableId, conditionArgs, sql | ✅ |
 | HTTPRequest | method, url, headers, body, queries | ❌ |
 
 ---
@@ -227,14 +231,14 @@ switch (nodeType) {
 
 ### 核心依赖
 
-| 依赖 | 版本 | 用途 |
-|-----|------|------|
-| @antv/x6 | ^2.x | 图编辑引擎 |
-| @antv/x6-react-shape | ^2.x | React 节点渲染 |
-| react | ^18.x | UI 框架 |
-| antd | ^5.x | UI 组件库 |
-| react-beautiful-dnd | ^13.x | 拖拽排序 |
-| monaco-editor | ^0.x | 代码编辑器 |
+| 依赖                 | 版本  | 用途           |
+| -------------------- | ----- | -------------- |
+| @antv/x6             | ^2.x  | 图编辑引擎     |
+| @antv/x6-react-shape | ^2.x  | React 节点渲染 |
+| react                | ^18.x | UI 框架        |
+| antd                 | ^5.x  | UI 组件库      |
+| react-beautiful-dnd  | ^13.x | 拖拽排序       |
+| monaco-editor        | ^0.x  | 代码编辑器     |
 
 ### 状态管理
 
@@ -257,13 +261,13 @@ switch (nodeType) {
 ### 节点相关
 
 | 文档 | 说明 |
-|-----|------|
+| --- | --- |
 | [节点数据结构详情](./docs/NODE-DATA-STRUCTURES.md) | 各节点类型的完整数据结构字段定义，包含 TypeScript 接口和表单字段映射 |
 
 ### X6 画布相关
 
 | 文档 | 说明 |
-|-----|------|
+| --- | --- |
 | [X6 自定义节点](./docs/X6-CUSTOM-NODES.md) | 自定义节点注册、GeneralNode/LoopNode 组件、节点样式和尺寸计算 |
 | [X6 连接桩配置](./docs/X6-PORTS.md) | 端口组配置、端口生成逻辑、特殊节点端口、端口交互事件 |
 | [X6 连线实现](./docs/X6-EDGES.md) | 边配置、自定义连接器、边创建/验证/事件处理、边样式管理 |
@@ -272,7 +276,7 @@ switch (nodeType) {
 ### 后端交互相关
 
 | 文档 | 说明 |
-|-----|------|
+| --- | --- |
 | [后端 API 数据交互](./docs/API-DATA-INTERACTION.md) | 节点/连线增删改、属性更新、变量引用、位置同步、初始化/重置逻辑 |
 
 ---
@@ -342,7 +346,7 @@ switch (nodeType) {
 ## 相关文件索引
 
 | 文件路径 | 说明 |
-|---------|------|
+| --- | --- |
 | `src/types/interfaces/node.ts` | 节点类型定义 |
 | `src/types/interfaces/graph.ts` | 图相关类型定义 |
 | `src/types/enums/common.ts` | 通用枚举定义 (NodeTypeEnum 等) |
@@ -353,5 +357,4 @@ switch (nodeType) {
 
 ---
 
-*文档生成时间: 2024-12*
-*用于 V2 重构参照*
+_文档生成时间: 2025-12_ _用于 V2 重构参照_
