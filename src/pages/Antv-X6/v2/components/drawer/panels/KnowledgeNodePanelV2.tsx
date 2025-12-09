@@ -11,16 +11,16 @@ import {
 } from '@ant-design/icons';
 import {
   Button,
+  Card,
   Empty,
   Form,
-  List,
-  Popconfirm,
+  Input,
   Select,
   Slider,
   Tooltip,
   Typography,
 } from 'antd';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 
 import type {
   ChildNodeV2,
@@ -68,8 +68,6 @@ const KnowledgeNodePanelV2: React.FC<KnowledgeNodePanelV2Props> = ({
   referenceData,
 }) => {
   const form = Form.useFormInstance();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [knowledgeModalVisible, setKnowledgeModalVisible] = useState(false);
 
   // 监听知识库配置变化
   const knowledgeBaseConfigs: KnowledgeBaseConfig[] =
@@ -86,37 +84,22 @@ const KnowledgeNodePanelV2: React.FC<KnowledgeNodePanelV2Props> = ({
   );
 
   /**
-   * 打开知识库选择弹窗
-   * TODO: 接入知识库选择组件
+   * 添加知识库（临时用本地表单，后续可接入选择器）
    */
-  const handleOpenKnowledgeModal = useCallback(() => {
-    setKnowledgeModalVisible(true);
-    // 这里需要接入 Created 组件或者知识库选择器
-    console.log('[V2] 打开知识库选择弹窗');
-  }, []);
-
-  /**
-   * 添加知识库
-   * TODO: 待实现知识库选择后启用
-   */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleAddKnowledge = useCallback(
-    (item: KnowledgeBaseConfig) => {
-      const current = form.getFieldValue(KBC_FORM_KEY) || [];
-      // 检查是否已存在
-      if (
-        current.some(
-          (k: KnowledgeBaseConfig) =>
-            k.knowledgeBaseId === item.knowledgeBaseId,
-        )
-      ) {
-        return;
-      }
-      form.setFieldValue(KBC_FORM_KEY, [...current, item]);
-      setKnowledgeModalVisible(false);
-    },
-    [form],
-  );
+  const handleAddKnowledge = useCallback(() => {
+    const current = form.getFieldValue(KBC_FORM_KEY) || [];
+    form.setFieldsValue({
+      [KBC_FORM_KEY]: [
+        ...current,
+        {
+          knowledgeBaseId: undefined,
+          name: '',
+          description: '',
+          searchStrategy: 'SEMANTIC',
+        },
+      ],
+    });
+  }, [form]);
 
   /**
    * 移除知识库
@@ -180,66 +163,115 @@ const KnowledgeNodePanelV2: React.FC<KnowledgeNodePanelV2Props> = ({
             type="text"
             size="small"
             icon={<PlusOutlined />}
-            onClick={handleOpenKnowledgeModal}
+            onClick={handleAddKnowledge}
           >
             添加
           </Button>
         </div>
 
-        {knowledgeBaseConfigs.length > 0 ? (
-          <List
-            size="small"
-            dataSource={knowledgeBaseConfigs}
-            className="knowledge-node-panel-v2-list"
-            renderItem={(item: KnowledgeBaseConfig) => (
-              <List.Item
-                className="knowledge-node-panel-v2-item"
-                actions={[
-                  <Popconfirm
-                    key="delete"
-                    title="确定要移除此知识库吗？"
-                    onConfirm={() =>
-                      handleRemoveKnowledge(item.knowledgeBaseId)
+        <Form.List name={KBC_FORM_KEY}>
+          {(fields, { add, remove }) => (
+            <div className="knowledge-node-panel-v2-list">
+              {fields.length === 0 && (
+                <Empty
+                  description="暂未选择知识库"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                >
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<PlusOutlined />}
+                    onClick={() =>
+                      add({
+                        knowledgeBaseId: undefined,
+                        name: '',
+                        description: '',
+                        type: 'SEMANTIC',
+                      })
                     }
-                    okText="确定"
-                    cancelText="取消"
                   >
+                    添加知识库
+                  </Button>
+                </Empty>
+              )}
+
+              {fields.map((field) => (
+                <Card
+                  key={field.key}
+                  size="small"
+                  className="knowledge-node-panel-v2-item"
+                  title={
+                    <span style={{ display: 'flex', alignItems: 'center' }}>
+                      <FileTextOutlined
+                        style={{
+                          fontSize: 18,
+                          color: '#1890ff',
+                          marginRight: 8,
+                        }}
+                      />
+                      <Text strong>
+                        <Form.Item
+                          name={[field.name, 'name']}
+                          rules={[
+                            { required: true, message: '请输入知识库名称' },
+                          ]}
+                          style={{ marginBottom: 0 }}
+                        >
+                          <Input placeholder="知识库名称" />
+                        </Form.Item>
+                      </Text>
+                    </span>
+                  }
+                  extra={
                     <Button
                       type="text"
                       danger
                       size="small"
                       icon={<DeleteOutlined />}
-                    />
-                  </Popconfirm>,
-                ]}
-              >
-                <List.Item.Meta
-                  avatar={
-                    <FileTextOutlined
-                      style={{ fontSize: 20, color: '#1890ff' }}
+                      onClick={() => remove(field.name)}
                     />
                   }
-                  title={item.name}
-                  description={item.description}
-                />
-              </List.Item>
-            )}
-          />
-        ) : (
-          <Empty
-            description="暂未选择知识库"
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          >
-            <Button
-              type="primary"
-              size="small"
-              icon={<PlusOutlined />}
-              onClick={handleOpenKnowledgeModal}
-            >
-              添加知识库
-            </Button>
-          </Empty>
-        )}
+                >
+                  <Form.Item
+                    name={[field.name, 'knowledgeBaseId']}
+                    label="知识库 ID"
+                    rules={[{ required: true, message: '请输入知识库 ID' }]}
+                  >
+                    <Input placeholder="请输入知识库 ID" />
+                  </Form.Item>
+                  <Form.Item name={[field.name, 'description']} label="描述">
+                    <Input.TextArea rows={2} placeholder="可选描述" />
+                  </Form.Item>
+                  <Form.Item
+                    name={[field.name, 'searchStrategy']}
+                    label="检索策略"
+                    initialValue="SEMANTIC"
+                  >
+                    <Select options={SEARCH_STRATEGY_OPTIONS} />
+                  </Form.Item>
+                </Card>
+              ))}
+
+              {fields.length > 0 && (
+                <Button
+                  type="dashed"
+                  block
+                  icon={<PlusOutlined />}
+                  onClick={() =>
+                    add({
+                      knowledgeBaseId: undefined,
+                      name: '',
+                      description: '',
+                      type: 'SEMANTIC',
+                    })
+                  }
+                >
+                  添加知识库
+                </Button>
+              )}
+            </div>
+          )}
+        </Form.List>
       </div>
 
       {/* 搜索策略 */}

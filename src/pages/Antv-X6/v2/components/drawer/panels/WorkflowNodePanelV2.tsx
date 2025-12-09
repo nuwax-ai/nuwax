@@ -8,7 +8,7 @@ import {
   InfoCircleOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Form, Tag, Tooltip, Typography } from 'antd';
+import { Button, Empty, Form, Input, Tag, Tooltip, Typography } from 'antd';
 import React from 'react';
 
 import type {
@@ -64,18 +64,56 @@ const WorkflowNodePanelV2: React.FC<WorkflowNodePanelV2Props> = ({
                 </Text>
               )}
             </div>
+            <Button
+              type="link"
+              size="small"
+              onClick={() => {
+                form.setFieldsValue({
+                  typeId: undefined,
+                  nodeConfig: {
+                    ...form.getFieldValue('nodeConfig'),
+                    workflowName: undefined,
+                  },
+                });
+              }}
+              style={{ marginLeft: 'auto' }}
+            >
+              更换
+            </Button>
           </div>
         ) : (
-          <Empty
-            description="暂未选择工作流"
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          >
-            <Button type="primary" icon={<PlusOutlined />}>
-              选择工作流
-            </Button>
-          </Empty>
+          <div className="workflow-node-panel-v2-empty">
+            <Empty
+              description="暂未选择工作流"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            >
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() =>
+                  form.setFieldsValue({
+                    typeId: 'workflow-id',
+                  })
+                }
+              >
+                选择工作流
+              </Button>
+            </Empty>
+          </div>
         )}
       </div>
+
+      {/* 工作流基本信息编辑 */}
+      <Form.Item
+        name="typeId"
+        label="工作流 ID"
+        rules={[{ required: true, message: '请输入工作流 ID' }]}
+      >
+        <Input placeholder="请输入工作流 ID" />
+      </Form.Item>
+      <Form.Item name={['nodeConfig', 'workflowName']} label="工作流名称">
+        <Input placeholder="用于展示的工作流名称" />
+      </Form.Item>
 
       {/* 输入参数 */}
       {inputArgs.length > 0 && (
