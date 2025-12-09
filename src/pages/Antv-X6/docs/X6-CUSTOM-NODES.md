@@ -5,6 +5,7 @@
 **导航**: [📚 文档索引](./README.md) | [⬆️ 主文档](../V1-FEATURES.md)
 
 **相关文档**:
+
 - [节点数据结构](./NODE-DATA-STRUCTURES.md) - 节点的数据模型定义
 - [连接桩配置](./X6-PORTS.md) - 节点端口的配置和交互
 - [事件处理](./X6-EVENTS.md) - 节点相关的事件处理
@@ -27,10 +28,10 @@
 
 V1 版本使用 `@antv/x6-react-shape` 实现 React 组件作为自定义节点。共定义了两种节点形状：
 
-| 形状枚举 | 说明 | 使用场景 |
-|---------|------|---------|
-| `NodeShapeEnum.General` | 通用节点 | 大部分节点类型 |
-| `NodeShapeEnum.Loop` | 循环节点 | Loop 类型节点（支持嵌套子节点） |
+| 形状枚举                | 说明     | 使用场景                        |
+| ----------------------- | -------- | ------------------------------- |
+| `NodeShapeEnum.General` | 通用节点 | 大部分节点类型                  |
+| `NodeShapeEnum.Loop`    | 循环节点 | Loop 类型节点（支持嵌套子节点） |
 
 ```typescript
 enum NodeShapeEnum {
@@ -56,7 +57,7 @@ export function registerCustomNodes() {
     shape: NodeShapeEnum.General,
     component: GeneralNode,
   });
-  
+
   // 注册循环节点（支持调整大小和拖拽）
   register({
     shape: NodeShapeEnum.Loop,
@@ -89,12 +90,17 @@ const GraphContainer = forwardRef((props, ref) => {
 export const GeneralNode: React.FC<NodeProps> = (props) => {
   const { node, graph } = props;
   const data = node.getData<ChildNode>();
-  
+
   return (
     <>
-      <div className={`general-node ${selected ? 'selected-general-node' : ''}`}>
+      <div
+        className={`general-node ${selected ? 'selected-general-node' : ''}`}
+      >
         {/* 节点头部 */}
-        <div className="general-node-header" style={{ background: gradientBackground }}>
+        <div
+          className="general-node-header"
+          style={{ background: gradientBackground }}
+        >
           <div className="general-node-header-image">
             {returnImg(data.type)}
           </div>
@@ -104,20 +110,24 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
             disabled={canNotEditNode}
           />
         </div>
-        
+
         {/* 条件分支节点内容 */}
         {data.type === NodeTypeEnum.Condition && <ConditionNode data={data} />}
-        
+
         {/* 问答节点内容 */}
         {data.type === NodeTypeEnum.QA && <QANode data={data} />}
-        
+
         {/* 意图识别节点内容 */}
-        {data.type === NodeTypeEnum.IntentRecognition && <IntentRecognitionNode data={data} />}
-        
+        {data.type === NodeTypeEnum.IntentRecognition && (
+          <IntentRecognitionNode data={data} />
+        )}
+
         {/* 异常处理展示 */}
-        {showException && <ExceptionHandle data={data.nodeConfig.exceptionHandleConfig} />}
+        {showException && (
+          <ExceptionHandle data={data.nodeConfig.exceptionHandleConfig} />
+        )}
       </div>
-      
+
       {/* 运行结果展示 */}
       {showRunResult && <NodeRunResult data={runResults} />}
     </>
@@ -174,19 +184,18 @@ const handleEditingStatusChange = (val: boolean) => {
 export const LoopNode: React.FC<NodeProps> = ({ node, graph }) => {
   const data = node.getData<ChildNode>();
   const selected = useNodeSelection({ graph, nodeId: data?.id });
-  
+
   return (
     <>
       <div
-        className={`loop-node-style general-node ${selected ? 'selected-general-node' : ''}`}
+        className={`loop-node-style general-node ${
+          selected ? 'selected-general-node' : ''
+        }`}
         style={{ background: gradientBackground }}
       >
         <div className="loop-node-title-style dis-left">
           <ICON_WORKFLOW_LOOP style={{ marginRight: '6px' }} />
-          <EditableTitle
-            value={editValue}
-            onSave={handleSave}
-          />
+          <EditableTitle value={editValue} onSave={handleSave} />
         </div>
         <div className="loop-node-content" />
       </div>
@@ -227,7 +236,8 @@ const ConditionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
             {compareTypeMap[item.conditionArgs[0]?.compareType]}
           </span>
           <div className="condition-node-right-input">
-            {item.conditionArgs[0]?.secondArg?.name || item.conditionArgs[0]?.secondArg?.bindValue}
+            {item.conditionArgs[0]?.secondArg?.name ||
+              item.conditionArgs[0]?.secondArg?.bindValue}
           </div>
         </div>
       ))}
@@ -241,7 +251,7 @@ const ConditionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
 ```tsx
 const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
   const { inputArgs, question, answerType, options } = data.nodeConfig;
-  
+
   return (
     <div className="qa-node-content-style">
       {/* 输入参数 */}
@@ -251,26 +261,27 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
           <Tag key={index}>{item.name}</Tag>
         ))}
       </div>
-      
+
       {/* 提问内容 */}
       <div className="dis-left">
         <span className="qa-title-style">提问内容</span>
         <span>{question || '未配置提问内容'}</span>
       </div>
-      
+
       {/* 问答类型 */}
       <div className="dis-left">
         <span className="qa-title-style">问答类型</span>
         <span>{answerTypeMap[answerType]}</span>
       </div>
-      
+
       {/* 选项（选项回答模式） */}
-      {answerType === AnswerTypeEnum.SELECT && options?.map((item, index) => (
-        <div key={item.uuid} className="dis-left">
-          <Tag>{optionsMap[index]}</Tag>
-          <span>{item.content || '未配置内容'}</span>
-        </div>
-      ))}
+      {answerType === AnswerTypeEnum.SELECT &&
+        options?.map((item, index) => (
+          <div key={item.uuid} className="dis-left">
+            <Tag>{optionsMap[index]}</Tag>
+            <span>{item.content || '未配置内容'}</span>
+          </div>
+        ))}
     </div>
   );
 };
@@ -281,7 +292,7 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
 ```tsx
 const IntentRecognitionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
   const intentConfigs = data.nodeConfig.intentConfigs;
-  
+
   return (
     <div className="qa-node-content-style">
       {intentConfigs?.map((item, index) => (
@@ -361,7 +372,9 @@ export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
 节点头部使用渐变背景：
 
 ```typescript
-const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(data.type)} 0%, white 100%)`;
+const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColor(
+  data.type,
+)} 0%, white 100%)`;
 ```
 
 ---
@@ -398,21 +411,28 @@ export const DEFAULT_NODE_CONFIG_MAP = {
 export const getWidthAndHeight = (node: ChildNode) => {
   const { type, nodeConfig } = node;
   const extension = nodeConfig?.extension || {};
-  const { defaultWidth, defaultHeight } = DEFAULT_NODE_CONFIG_MAP[type] || DEFAULT_NODE_CONFIG_MAP.default;
-  
+  const { defaultWidth, defaultHeight } =
+    DEFAULT_NODE_CONFIG_MAP[type] || DEFAULT_NODE_CONFIG_MAP.default;
+
   // 异常处理项高度
   const hasExceptionHandleItem = EXCEPTION_NODES_TYPE.includes(type);
   const exceptionHandleItemHeight = 32;
   const extraHeight = hasExceptionHandleItem ? exceptionHandleItemHeight : 0;
-  
+
   // 特殊节点（QA、Condition、IntentRecognition）
-  if ([NodeTypeEnum.QA, NodeTypeEnum.Condition, NodeTypeEnum.IntentRecognition].includes(type)) {
+  if (
+    [
+      NodeTypeEnum.QA,
+      NodeTypeEnum.Condition,
+      NodeTypeEnum.IntentRecognition,
+    ].includes(type)
+  ) {
     return {
       width: defaultWidth,
       height: (extension.height || defaultHeight) + extraHeight,
     };
   }
-  
+
   // 循环节点
   if (type === NodeTypeEnum.Loop) {
     return {
@@ -420,7 +440,7 @@ export const getWidthAndHeight = (node: ChildNode) => {
       height: (extension.height || defaultHeight) + extraHeight,
     };
   }
-  
+
   // 通用节点
   return {
     width: defaultWidth,
@@ -432,14 +452,23 @@ export const getWidthAndHeight = (node: ChildNode) => {
 ### 节点尺寸更新
 
 ```typescript
-export const getNodeSize = ({ data, ports, type }: GraphNodeSizeGetParams): GraphNodeSize => {
-  const { width: defaultWidth, height: defaultHeight } = getWidthAndHeight(data);
+export const getNodeSize = ({
+  data,
+  ports,
+  type,
+}: GraphNodeSizeGetParams): GraphNodeSize => {
+  const { width: defaultWidth, height: defaultHeight } =
+    getWidthAndHeight(data);
   const isLoopNode = data.type === NodeTypeEnum.Loop;
-  
+
   // 根据端口位置计算高度
-  const offsetY = ports[ports.length - 1]?.args?.offsetY || defaultHeight - NODE_BOTTOM_PADDING_AND_BORDER;
-  const nodeHeight = isLoopNode ? defaultHeight : offsetY + NODE_BOTTOM_PADDING_AND_BORDER;
-  
+  const offsetY =
+    ports[ports.length - 1]?.args?.offsetY ||
+    defaultHeight - NODE_BOTTOM_PADDING_AND_BORDER;
+  const nodeHeight = isLoopNode
+    ? defaultHeight
+    : offsetY + NODE_BOTTOM_PADDING_AND_BORDER;
+
   return {
     type,
     width: defaultWidth,
@@ -456,16 +485,23 @@ export const getNodeSize = ({ data, ports, type }: GraphNodeSizeGetParams): Grap
 
 ```tsx
 const NodeRunResult: React.FC<{ data: RunResultItem[] }> = ({ data }) => {
-  const time = (data?.reduce((acc, item) => {
-    return acc + ((item?.options?.endTime || 0) - (item?.options?.startTime || 0));
-  }, 0) / 1000).toFixed(3);
-  
-  const success = data.every(item => item?.status === RunResultStatusEnum.FINISHED);
-  const isExecuting = data.some(item => 
-    item?.status === RunResultStatusEnum.EXECUTING ||
-    item?.status === RunResultStatusEnum.STOP_WAIT_ANSWER
+  const time = (
+    data?.reduce((acc, item) => {
+      return (
+        acc + ((item?.options?.endTime || 0) - (item?.options?.startTime || 0))
+      );
+    }, 0) / 1000
+  ).toFixed(3);
+
+  const success = data.every(
+    (item) => item?.status === RunResultStatusEnum.FINISHED,
   );
-  
+  const isExecuting = data.some(
+    (item) =>
+      item?.status === RunResultStatusEnum.EXECUTING ||
+      item?.status === RunResultStatusEnum.STOP_WAIT_ANSWER,
+  );
+
   return (
     <RunResult
       success={success}
@@ -484,7 +520,7 @@ const NodeRunResult: React.FC<{ data: RunResultItem[] }> = ({ data }) => {
 ## 相关文件索引
 
 | 文件路径 | 说明 |
-|---------|------|
+| --- | --- |
 | `src/pages/Antv-X6/component/registerCustomNodes.tsx` | 自定义节点注册和组件定义 |
 | `src/pages/Antv-X6/component/runResult.tsx` | 运行结果展示组件 |
 | `src/utils/workflow.tsx` | 节点样式和图标配置 |
@@ -496,5 +532,4 @@ const NodeRunResult: React.FC<{ data: RunResultItem[] }> = ({ data }) => {
 
 **导航**: [📚 文档索引](./README.md) | [⬆️ 主文档](../V1-FEATURES.md)
 
-*文档生成时间: 2024-12*
-*用于 V2 重构参照*
+_文档生成时间: 2025-12_ _用于 V2 重构参照_
