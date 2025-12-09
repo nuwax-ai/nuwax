@@ -21,7 +21,11 @@ import type {
   TooltipTitleTypeEnum,
 } from '@/types/enums/common';
 import type { UpdateModeComponentEnum } from '@/types/enums/library';
-import type { HistoryActionTypeEnum, OpenCloseEnum } from '@/types/enums/space';
+import type {
+  AgentTypeEnum,
+  HistoryActionTypeEnum,
+  OpenCloseEnum,
+} from '@/types/enums/space';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
@@ -413,6 +417,8 @@ export interface AgentConfigInfo {
   hideChatArea: HideChatAreaEnum;
   // 扩展页面首页
   pageHomeIndex: string;
+  // 智能体类型
+  type: AgentTypeEnum;
 }
 
 // 智能体历史配置信息

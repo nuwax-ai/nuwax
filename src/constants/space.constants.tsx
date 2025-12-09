@@ -10,6 +10,7 @@ import SvgIcon from '@/components/base/SvgIcon';
 import { InputTypeEnum } from '@/types/enums/agent';
 import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
 import {
+  AgentTypeEnum,
   ApplicationMoreActionEnum,
   ComponentSettingEnum,
   ComponentTypeEnum,
@@ -49,6 +50,23 @@ export const LIBRARY_ALL_RESOURCE = [
     value: ComponentTypeEnum.Model,
     label: '模型',
     icon: <ICON_MODEL />,
+  },
+];
+
+// 智能体类型列表
+export const AGENT_TYPE_LIST = [
+  {
+    value: AgentTypeEnum.ChatBot,
+    label: '问答型智能体',
+    // icon: <ICON_AGENT />,
+    tooltip: '问答型智能体：适合知识问答、智能客服等快问快答的场景。',
+  },
+  {
+    value: AgentTypeEnum.TaskAgent,
+    label: '长任务型智能体',
+    // icon: <ICON_AGENT />,
+    tooltip:
+      '为智能体分配独立的执行电脑，适合应用开发、深度调研、数据分析、演示文稿制作等复杂任务场景，比较消耗内存资源且输出结果较慢。',
   },
 ];
 
