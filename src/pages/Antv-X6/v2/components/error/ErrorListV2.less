@@ -1,144 +1,113 @@
-/**
- * ErrorListV2 样式
- */
+@import '@/styles/color.less';
+@import '@/styles/token.less';
 
 .error-list-v2 {
-  &-trigger {
-    padding: 4px 8px;
+  position: absolute;
+  top: 70%;
+  left: 10px;
+  bottom: 10px;
+  width: 320px;
+  border-radius: 16px;
+  background-color: #fff;
+  z-index: 99;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 8%);
 
-    &.has-errors {
-      .anticon {
-        animation: error-pulse 2s infinite;
-      }
+  .error-list-v2-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 48px;
+    padding: 0 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 6%);
+
+    .error-list-v2-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
     }
   }
 
-  &-content {
-    width: 360px;
-    max-height: 400px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  &-summary {
-    display: flex;
-    gap: 16px;
-    padding: 8px 0;
-    border-bottom: 1px solid #f0f0f0;
-    margin-bottom: 8px;
-
-    &-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 12px;
-
-      &.error {
-        color: #ff4d4f;
-      }
-
-      &.warning {
-        color: #faad14;
-      }
-
-      &.info {
-        color: #1890ff;
-      }
-    }
-  }
-
-  &-list {
+  .error-list-v2-content {
     flex: 1;
     overflow-y: auto;
-    max-height: 320px;
+    padding: 12px;
 
-    .ant-list-item {
-      padding: 8px 0;
+    .error-list-v2-empty {
+      text-align: center;
+      color: #999;
+      font-size: 14px;
+      padding: 40px 0;
+    }
+
+    .error-list-v2-item {
+      display: flex;
+      align-items: flex-start;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(82, 100, 154, 15%);
       cursor: pointer;
-      border-radius: 4px;
-      transition: background 0.2s;
+      transition: all 0.2s;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 4%), 0 2px 10px 0 rgba(0, 0, 0, 2%);
 
       &:hover {
-        background: #f5f5f5;
+        border-color: rgba(81, 71, 255, 30%);
+        box-shadow: 0 2px 8px rgba(81, 71, 255, 15%);
+      }
+
+      &.global {
+        cursor: default;
+
+        &:hover {
+          border-color: rgba(82, 100, 154, 15%);
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 4%),
+            0 2px 10px 0 rgba(0, 0, 0, 2%);
+        }
+      }
+
+      .error-list-v2-item-icon {
+        width: 24px;
+        height: 24px;
+        margin-right: 10px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+          width: 20px;
+          height: 20px;
+        }
+      }
+
+      .error-list-v2-item-content {
+        flex: 1;
+        min-width: 0;
+
+        .error-list-v2-item-name {
+          font-size: 13px;
+          font-weight: 500;
+          color: #333;
+          margin-bottom: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .error-list-v2-item-error {
+          font-size: 12px;
+          color: #ff441e;
+          line-height: 1.4;
+          display: box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
       }
     }
-  }
-
-  &-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-
-    &-content {
-      flex: 1;
-      min-width: 0;
-    }
-
-    &-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-
-    &-icon {
-      font-size: 14px;
-    }
-
-    &-tag {
-      margin: 0;
-      font-size: 10px;
-      line-height: 16px;
-      padding: 0 4px;
-    }
-
-    &-node {
-      font-size: 12px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    &-message {
-      font-size: 13px;
-      color: rgba(0, 0, 0, 0.85);
-      line-height: 1.4;
-      word-break: break-word;
-    }
-
-    &-arrow {
-      color: rgba(0, 0, 0, 0.25);
-      font-size: 12px;
-      margin-left: 8px;
-    }
-  }
-
-  &-empty {
-    padding: 24px;
-  }
-}
-
-.error-list-v2-popover {
-  .ant-popover-inner {
-    padding: 12px;
-  }
-
-  .ant-popover-title {
-    padding-bottom: 8px;
-    border-bottom: 1px solid #f0f0f0;
-  }
-}
-
-@keyframes error-pulse {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 1;
   }
 }

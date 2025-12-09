@@ -1,202 +1,187 @@
 /**
  * V2 错误列表组件
- * 显示工作流校验错误信息
- * 完全独立，不依赖 v1 任何代码
+ *
+ * 显示工作流验证错误和试运行错误
+ * 参考 V1 实现
  */
 
-import React, { useState } from 'react';
-import { Badge, Popover, List, Typography, Button, Empty, Tag } from 'antd';
-import {
-  WarningOutlined,
-  CloseCircleOutlined,
-  InfoCircleOutlined,
-  RightOutlined,
-} from '@ant-design/icons';
+import { CloseOutlined } from '@ant-design/icons';
+import { Button, Popover, theme } from 'antd';
+import React from 'react';
 
-import type { ValidationErrorV2 } from '../../types';
+import { getNodeTypeIconV2 } from '../../constants/stencilConfigV2';
+import type { ChildNodeV2 } from '../../types';
 
 import './ErrorListV2.less';
 
-const { Text } = Typography;
-
 // ==================== 类型定义 ====================
 
-export interface ErrorListV2Props {
-  /** 错误列表 */
-  errors: ValidationErrorV2[];
-  /** 点击错误项回调 */
-  onErrorClick?: (error: ValidationErrorV2) => void;
-  /** 是否显示徽章 */
-  showBadge?: boolean;
-  /** 自定义触发器 */
-  trigger?: React.ReactNode;
+export interface ErrorItemV2 {
+  /** 节点 ID */
+  nodeId?: number;
+  /** 错误信息 */
+  error: string;
+  /** 错误类型 */
+  type?: 'validation' | 'runtime';
 }
 
-// 错误级别配置
-const ERROR_LEVEL_CONFIG = {
-  error: {
-    icon: <CloseCircleOutlined />,
-    color: '#ff4d4f',
-    tag: '错误',
-    tagColor: 'error',
-  },
-  warning: {
-    icon: <WarningOutlined />,
-    color: '#faad14',
-    tag: '警告',
-    tagColor: 'warning',
-  },
-  info: {
-    icon: <InfoCircleOutlined />,
-    color: '#1890ff',
-    tag: '提示',
-    tagColor: 'processing',
-  },
+export interface ErrorListV2Props {
+  /** 右侧节点抽屉是否在显示 */
+  drawerVisible?: boolean;
+  /** 错误列表 */
+  errorList: ErrorItemV2[];
+  /** 是否显示错误面板 */
+  visible: boolean;
+  /** 关闭回调 */
+  onClose: () => void;
+  /** 节点列表 */
+  nodeList: ChildNodeV2[];
+  /** 点击错误项回调 */
+  onClickItem?: (node: ChildNodeV2) => void;
+}
+
+// ==================== 常量 ====================
+
+const MAX_ERROR_LENGTH = 500;
+
+// ==================== 工具函数 ====================
+
+/**
+ * 截断错误内容
+ */
+const getDisplayErrorContent = (error: string): string => {
+  return (error || '').length > MAX_ERROR_LENGTH
+    ? error.slice(0, MAX_ERROR_LENGTH) + '...'
+    : error;
 };
 
 // ==================== 组件实现 ====================
 
 const ErrorListV2: React.FC<ErrorListV2Props> = ({
-  errors = [],
-  onErrorClick,
-  showBadge = true,
-  trigger,
+  drawerVisible = false,
+  errorList,
+  visible,
+  onClose,
+  onClickItem,
+  nodeList,
 }) => {
-  const [visible, setVisible] = useState(false);
+  const { token } = theme.useToken();
 
-  // 统计各级别错误数量
-  const errorCount = errors.filter((e) => e.level === 'error').length;
-  const warningCount = errors.filter((e) => e.level === 'warning').length;
-  const infoCount = errors.filter((e) => e.level === 'info').length;
-
-  // 处理错误项点击
-  const handleErrorClick = (error: ValidationErrorV2) => {
-    onErrorClick?.(error);
-    setVisible(false);
-  };
-
-  // 渲染错误项
-  const renderErrorItem = (error: ValidationErrorV2) => {
-    const config = ERROR_LEVEL_CONFIG[error.level] || ERROR_LEVEL_CONFIG.error;
-
-    return (
-      <List.Item
-        className="error-list-v2-item"
-        onClick={() => handleErrorClick(error)}
-      >
-        <div className="error-list-v2-item-content">
-          <div className="error-list-v2-item-header">
-            <span
-              className="error-list-v2-item-icon"
-              style={{ color: config.color }}
-            >
-              {config.icon}
-            </span>
-            <Tag color={config.tagColor} className="error-list-v2-item-tag">
-              {config.tag}
-            </Tag>
-            {error.nodeName && (
-              <Text type="secondary" className="error-list-v2-item-node">
-                {error.nodeName}
-              </Text>
-            )}
-          </div>
-          <div className="error-list-v2-item-message">{error.message}</div>
-        </div>
-        <RightOutlined className="error-list-v2-item-arrow" />
-      </List.Item>
-    );
-  };
-
-  // 渲染弹出内容
-  const renderContent = () => {
-    if (errors.length === 0) {
-      return (
-        <div className="error-list-v2-empty">
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="暂无错误"
-          />
-        </div>
-      );
-    }
-
-    return (
-      <div className="error-list-v2-content">
-        {/* 统计信息 */}
-        <div className="error-list-v2-summary">
-          {errorCount > 0 && (
-            <span className="error-list-v2-summary-item error">
-              <CloseCircleOutlined /> {errorCount} 个错误
-            </span>
-          )}
-          {warningCount > 0 && (
-            <span className="error-list-v2-summary-item warning">
-              <WarningOutlined /> {warningCount} 个警告
-            </span>
-          )}
-          {infoCount > 0 && (
-            <span className="error-list-v2-summary-item info">
-              <InfoCircleOutlined /> {infoCount} 个提示
-            </span>
-          )}
-        </div>
-
-        {/* 错误列表 */}
-        <List
-          className="error-list-v2-list"
-          dataSource={errors}
-          renderItem={renderErrorItem}
-          size="small"
-        />
-      </div>
-    );
-  };
-
-  // 默认触发器
-  const defaultTrigger = (
-    <Button
-      type="text"
-      className={`error-list-v2-trigger ${errors.length > 0 ? 'has-errors' : ''}`}
-    >
-      {showBadge ? (
-        <Badge
-          count={errorCount}
-          offset={[-2, 2]}
-          size="small"
-          overflowCount={99}
-        >
-          <WarningOutlined
-            style={{
-              fontSize: 18,
-              color: errorCount > 0 ? '#ff4d4f' : 'rgba(0, 0, 0, 0.45)',
-            }}
-          />
-        </Badge>
-      ) : (
-        <WarningOutlined
-          style={{
-            fontSize: 18,
-            color: errorCount > 0 ? '#ff4d4f' : 'rgba(0, 0, 0, 0.45)',
-          }}
-        />
-      )}
-    </Button>
-  );
+  if (!visible) {
+    return null;
+  }
 
   return (
-    <Popover
-      content={renderContent()}
-      title="校验结果"
-      trigger="click"
-      open={visible}
-      onOpenChange={setVisible}
-      placement="bottomRight"
-      overlayClassName="error-list-v2-popover"
-      arrow={{ pointAtCenter: true }}
+    <div
+      className="error-list-v2"
+      style={{
+        right: drawerVisible ? '388px' : '10px',
+      }}
     >
-      {trigger || defaultTrigger}
-    </Popover>
+      {/* 头部 */}
+      <div className="error-list-v2-header">
+        <span className="error-list-v2-title">
+          错误列表 ({errorList.length})
+        </span>
+        <Button
+          type="text"
+          size="small"
+          icon={<CloseOutlined />}
+          onClick={onClose}
+        />
+      </div>
+
+      {/* 错误列表内容 */}
+      <div className="error-list-v2-content">
+        {errorList.length === 0 ? (
+          <div className="error-list-v2-empty">暂无错误</div>
+        ) : (
+          errorList.map((item, index) => {
+            // 有节点 ID 的错误
+            if (item.nodeId) {
+              const node = nodeList.find((n) => n.id === item.nodeId);
+              if (!node) {
+                return null;
+              }
+
+              const NodeIcon = getNodeTypeIconV2(node.type);
+
+              return (
+                <div
+                  key={`${item.nodeId}-${index}`}
+                  className="error-list-v2-item"
+                  onClick={() => onClickItem?.(node)}
+                >
+                  <div className="error-list-v2-item-icon">
+                    {NodeIcon && <NodeIcon />}
+                  </div>
+                  <div className="error-list-v2-item-content">
+                    <div className="error-list-v2-item-name">
+                      {node.name || '未命名节点'}
+                    </div>
+                    {item.error.length > 110 ? (
+                      <Popover
+                        content={
+                          <p style={{ maxWidth: 400 }}>
+                            {getDisplayErrorContent(item.error)}
+                          </p>
+                        }
+                        trigger="hover"
+                        mouseEnterDelay={0.5}
+                        placement="top"
+                      >
+                        <div className="error-list-v2-item-error">
+                          {item.error}
+                        </div>
+                      </Popover>
+                    ) : (
+                      <div className="error-list-v2-item-error">
+                        {item.error}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
+            // 没有节点 ID 的全局错误
+            return (
+              <div
+                key={`global-${index}`}
+                className="error-list-v2-item global"
+              >
+                {item.error.length > 200 ? (
+                  <Popover
+                    content={
+                      <p style={{ maxWidth: 400 }}>
+                        {getDisplayErrorContent(item.error)}
+                      </p>
+                    }
+                    trigger="hover"
+                    mouseEnterDelay={0.5}
+                    placement="top"
+                  >
+                    <div
+                      className="error-list-v2-item-error"
+                      style={{ color: token.colorError }}
+                    >
+                      {item.error}
+                    </div>
+                  </Popover>
+                ) : (
+                  <div
+                    className="error-list-v2-item-error"
+                    style={{ color: token.colorError }}
+                  >
+                    {item.error}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
   );
 };
 
