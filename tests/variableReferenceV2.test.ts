@@ -1,15 +1,17 @@
-import type {
-  ChildNodeV2,
-  InputAndOutConfigV2,
-  WorkflowDataV2,
+import {
+  DataTypeEnumV2,
+  NodeTypeEnumV2,
+  type ChildNodeV2,
+  type InputAndOutConfigV2,
+  type WorkflowDataV2,
 } from '@/pages/Antv-X6/v2/types';
-import { DataTypeEnumV2, NodeTypeEnumV2 } from '@/pages/Antv-X6/v2/types';
 import {
   calculateNodePreviousArgs,
   findReferencesToNode,
   getReferencedArg,
   isValidReference,
 } from '@/pages/Antv-X6/v2/utils/variableReferenceV2';
+import { describe, expect, test } from 'vitest';
 
 const arg = (
   name: string,

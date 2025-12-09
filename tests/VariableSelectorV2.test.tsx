@@ -1,7 +1,11 @@
+import VariableSelectorV2 from '@/pages/Antv-X6/v2/components/common/VariableSelectorV2';
+import {
+  DataTypeEnumV2,
+  type NodePreviousAndArgMapV2,
+} from '@/pages/Antv-X6/v2/types';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import VariableSelectorV2 from '../src/pages/Antv-X6/v2/components/common/VariableSelectorV2';
-import type { NodePreviousAndArgMapV2 } from '../src/pages/Antv-X6/v2/types';
+import { describe, expect, test, vi } from 'vitest';
 
 const buildReferenceData = (): NodePreviousAndArgMapV2 => ({
   previousNodes: [
@@ -13,7 +17,7 @@ const buildReferenceData = (): NodePreviousAndArgMapV2 => ({
       outputArgs: [
         {
           name: 'userInput',
-          dataType: 'String',
+          dataType: DataTypeEnumV2.String,
           description: '用户输入',
           require: true,
           systemVariable: false,
@@ -23,7 +27,7 @@ const buildReferenceData = (): NodePreviousAndArgMapV2 => ({
         },
         {
           name: 'numberArg',
-          dataType: 'Number',
+          dataType: DataTypeEnumV2.Number,
           description: '数字',
           require: false,
           systemVariable: false,
@@ -41,7 +45,7 @@ const buildReferenceData = (): NodePreviousAndArgMapV2 => ({
       outputArgs: [
         {
           name: 'isSuccess',
-          dataType: 'Boolean',
+          dataType: DataTypeEnumV2.Boolean,
           description: '变量设置结果',
           require: false,
           systemVariable: false,
@@ -61,7 +65,7 @@ const buildReferenceData = (): NodePreviousAndArgMapV2 => ({
       outputArgs: [
         {
           name: 'loopVar',
-          dataType: 'String',
+          dataType: DataTypeEnumV2.String,
           description: '循环内部变量',
           require: false,
           systemVariable: false,
