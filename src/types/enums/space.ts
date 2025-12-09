@@ -9,6 +9,12 @@ export enum ComponentTypeEnum {
   Model = 'Model',
 }
 
+// 智能体类型枚举
+export enum AgentTypeEnum {
+  ChatBot = 'ChatBot',
+  TaskAgent = 'TaskAgent',
+}
+
 // 过滤状态枚举
 export enum FilterStatusEnum {
   // 全部
