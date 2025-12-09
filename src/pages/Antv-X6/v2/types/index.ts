@@ -650,7 +650,7 @@ export interface BindEventHandlersV2 {
   graph: Graph;
   onNodeChange: (node: ChildNodeV2) => void;
   onEdgeAdd: (edge: EdgeV2) => void;
-  onEdgeDelete: (edgeId: string) => void;
+  onEdgeDelete: (edge: EdgeV2) => void;
   onNodeCopy: (node: ChildNodeV2) => void;
   onNodeDelete: (nodeId: number) => void;
   modal: ModalHookAPI;
@@ -665,7 +665,7 @@ export interface GraphPropV2 {
   onNodeSelect: (node: ChildNodeV2 | null) => void;
   onNodeChange: (node: ChildNodeV2) => void;
   onEdgeAdd: (edge: EdgeV2) => void;
-  onEdgeDelete: (edgeId: string) => void;
+  onEdgeDelete: (edge: EdgeV2) => void;
   onZoomChange: (zoom: number) => void;
   createNodeByPortOrEdge: (config: CreateNodeByPortOrEdgePropsV2) => void;
   onClickBlank: () => void;

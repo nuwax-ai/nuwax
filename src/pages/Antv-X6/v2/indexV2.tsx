@@ -326,8 +326,8 @@ const WorkflowV2: React.FC = () => {
    * 删除边
    */
   const handleEdgeDelete = useCallback(
-    (source: string, target: string) => {
-      deleteEdge(source, target);
+    (edge: EdgeV2) => {
+      deleteEdge(edge.source, edge.target, edge.sourcePort, edge.targetPort);
     },
     [deleteEdge],
   );

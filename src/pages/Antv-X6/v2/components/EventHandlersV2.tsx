@@ -1,19 +1,22 @@
 /**
  * V2 事件处理器
- * 
+ *
  * 绑定键盘快捷键和图形事件
  * 支持撤销/重做功能
- * 
+ *
  * 完全独立，不依赖 v1 任何代码
  */
 
-import type { Graph, Node, Edge } from '@antv/x6';
+import type { Edge, Graph, Node } from '@antv/x6';
 import type { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
 
+import {
+  LOOP_RELATED_NODE_TYPES_V2,
+  NON_DELETABLE_NODE_TYPES_V2,
+} from '../constants';
 import type { ChildNodeV2, EdgeV2 } from '../types';
 import { NodeTypeEnumV2 } from '../types';
-import { NON_DELETABLE_NODE_TYPES_V2, LOOP_RELATED_NODE_TYPES_V2 } from '../constants';
 import { canDeleteEdge } from '../utils/graphV2';
 
 // ==================== 类型定义 ====================
@@ -22,7 +25,7 @@ export interface EventHandlersV2Options {
   graph: Graph;
   onNodeCopy: (node: ChildNodeV2) => void;
   onNodeDelete: (nodeId: number, node?: ChildNodeV2) => void;
-  onEdgeDelete: (sourceId: string, targetId: string) => void;
+  onEdgeDelete: (edge: EdgeV2) => void;
   onUndo: () => void;
   onRedo: () => void;
   modal: ModalHookAPI;
@@ -34,7 +37,9 @@ export interface EventHandlersV2Options {
 /**
  * 绑定事件处理器
  */
-export function bindEventHandlersV2(options: EventHandlersV2Options): () => void {
+export function bindEventHandlersV2(
+  options: EventHandlersV2Options,
+): () => void {
   const {
     graph,
     onNodeCopy,
@@ -114,7 +119,7 @@ export function bindEventHandlersV2(options: EventHandlersV2Options): () => void
   // Delete / Backspace: 删除选中的元素
   graph.bindKey(['delete', 'backspace'], () => {
     const cells = graph.getSelectedCells();
-    
+
     if (cells.length === 0) {
       return false;
     }
@@ -150,23 +155,32 @@ export function bindEventHandlersV2(options: EventHandlersV2Options): () => void
 
     // 特殊处理：循环节点与子节点的连线
     if (sourceNode.type === NodeTypeEnumV2.Loop) {
-      if (targetNode.loopNodeId === sourceNode.id && 
-          targetNode.id === sourceNode.innerStartNodeId) {
+      if (
+        targetNode.loopNodeId === sourceNode.id &&
+        targetNode.id === sourceNode.innerStartNodeId
+      ) {
         message.warning('不能删除循环节点与开始节点的连线');
         return;
       }
     }
 
     if (targetNode.type === NodeTypeEnumV2.Loop) {
-      if (sourceNode.loopNodeId === targetNode.id && 
-          sourceNode.id === targetNode.innerEndNodeId) {
+      if (
+        sourceNode.loopNodeId === targetNode.id &&
+        sourceNode.id === targetNode.innerEndNodeId
+      ) {
         message.warning('不能删除循环节点与结束节点的连线');
         return;
       }
     }
 
     // 执行删除
-    onEdgeDelete(edge.getSourceCellId(), edge.getTargetCellId());
+    onEdgeDelete({
+      source: edge.getSourceCellId(),
+      target: edge.getTargetCellId(),
+      sourcePort: edge.getSourcePortId() || undefined,
+      targetPort: edge.getTargetPortId() || undefined,
+    });
     graph.removeCells([edge]);
   }
 

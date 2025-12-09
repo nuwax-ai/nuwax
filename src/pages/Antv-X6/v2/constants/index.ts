@@ -336,7 +336,7 @@ export const GRAPH_CONFIG_V2 = {
     zoomAtMousePosition: true,
     minScale: 0.2,
     maxScale: 3,
-    modifiers: ['ctrl', 'meta'],
+    modifiers: ['ctrl', 'meta'] as ('ctrl' | 'meta' | 'shift' | 'alt')[],
   },
   connecting: {
     allowBlank: false,

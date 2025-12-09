@@ -279,6 +279,8 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
       const newEdge: EdgeV2 = {
         source: sourceCell.id,
         target: targetCell.id,
+        sourcePort: edge.getSourcePortId() || undefined,
+        targetPort: edge.getTargetPortId() || undefined,
         zIndex: 1,
       };
       onEdgeAdd(newEdge);
@@ -287,7 +289,13 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
 
   // 边删除
   graph.on('edge:removed', ({ edge }) => {
-    onEdgeDelete(edge.id);
+    onEdgeDelete({
+      source: edge.getSourceCellId(),
+      target: edge.getTargetCellId(),
+      sourcePort: edge.getSourcePortId() || undefined,
+      targetPort: edge.getTargetPortId() || undefined,
+      zIndex: edge.getZIndex?.(),
+    });
   });
 
   // 画布缩放

@@ -22,7 +22,7 @@ import type {
   WorkflowDataV2,
   WorkflowMetadataV2,
 } from '../types';
-import { HistoryActionTypeV2 } from '../types';
+import { ExceptionHandleTypeEnumV2, HistoryActionTypeV2 } from '../types';
 import { extractEdgesFromNodes } from '../utils/graphV2';
 
 /**
@@ -52,14 +52,24 @@ interface UseWorkflowDataV2Return {
 
   // 边操作
   addEdge: (edge: EdgeV2) => void;
-  deleteEdge: (source: string, target: string) => void;
+  deleteEdge: (
+    source: string,
+    target: string,
+    sourcePort?: string,
+    targetPort?: string,
+  ) => void;
   getEdgesByNodeId: (nodeId: number) => EdgeV2[];
 
   // 批量操作
   batchUpdate: (updates: {
     nodes?: { id: number; updates: Partial<ChildNodeV2> }[];
     addEdges?: EdgeV2[];
-    deleteEdges?: { source: string; target: string }[];
+    deleteEdges?: {
+      source: string;
+      target: string;
+      sourcePort?: string;
+      targetPort?: string;
+    }[];
   }) => void;
 
   // 数据刷新
@@ -498,31 +508,80 @@ export function useWorkflowDataV2({
   const addEdge = useCallback(
     (edge: EdgeV2) => {
       setWorkflowData((prev) => {
-        // 检查是否已存在
+        const normalizedEdge: EdgeV2 = {
+          ...edge,
+          sourcePort: edge.sourcePort,
+          targetPort: edge.targetPort,
+        };
+
+        // 检查是否已存在（包含端口信息以支持异常/特殊端口）
         const exists = prev.edgeList.some(
-          (e) => e.source === edge.source && e.target === edge.target,
+          (e) =>
+            e.source === normalizedEdge.source &&
+            e.target === normalizedEdge.target &&
+            (e.sourcePort || '') === (normalizedEdge.sourcePort || '') &&
+            (e.targetPort || '') === (normalizedEdge.targetPort || ''),
         );
         if (exists) return prev;
 
         const beforeData = deepClone(prev);
-        const newEdgeList = [...prev.edgeList, edge];
-
-        // 更新源节点的 nextNodeIds
-        const sourceNodeId = parseInt(edge.source, 10);
-        const targetNodeId = parseInt(edge.target, 10);
+        const isExceptionEdge = (normalizedEdge.sourcePort || '').includes(
+          'exception',
+        );
+        const sourceNodeId = parseInt(normalizedEdge.source, 10);
+        const targetNodeId = parseInt(normalizedEdge.target, 10);
 
         const newNodeList = prev.nodeList.map((node) => {
-          if (node.id === sourceNodeId) {
-            const nextNodeIds = node.nextNodeIds || [];
-            if (!nextNodeIds.includes(targetNodeId)) {
-              return {
-                ...node,
-                nextNodeIds: [...nextNodeIds, targetNodeId],
-              };
-            }
+          if (node.id !== sourceNodeId) {
+            return node;
           }
+
+          if (isExceptionEdge) {
+            const currentConfig = node.nodeConfig?.exceptionHandleConfig || {
+              timeout: node.nodeConfig?.exceptionHandleConfig?.timeout ?? 180,
+              retryCount:
+                node.nodeConfig?.exceptionHandleConfig?.retryCount ?? 0,
+              exceptionHandleType:
+                node.nodeConfig?.exceptionHandleConfig?.exceptionHandleType ??
+                ExceptionHandleTypeEnumV2.EXECUTE_EXCEPTION_FLOW,
+            };
+            const currentIds = currentConfig.exceptionHandleNodeIds || [];
+            if (currentIds.includes(targetNodeId)) {
+              return node;
+            }
+
+            return {
+              ...node,
+              nodeConfig: {
+                ...node.nodeConfig,
+                exceptionHandleConfig: {
+                  ...currentConfig,
+                  exceptionHandleType:
+                    currentConfig.exceptionHandleType ||
+                    ExceptionHandleTypeEnumV2.EXECUTE_EXCEPTION_FLOW,
+                  exceptionHandleNodeIds: [...currentIds, targetNodeId],
+                  specificContent:
+                    currentConfig.exceptionHandleType ===
+                    ExceptionHandleTypeEnumV2.SPECIFIC_CONTENT
+                      ? currentConfig.specificContent
+                      : undefined,
+                },
+              },
+            };
+          }
+
+          const nextNodeIds = node.nextNodeIds || [];
+          if (!nextNodeIds.includes(targetNodeId)) {
+            return {
+              ...node,
+              nextNodeIds: [...nextNodeIds, targetNodeId],
+            };
+          }
+
           return node;
         });
+
+        const newEdgeList = [...prev.edgeList, normalizedEdge];
 
         const afterData = {
           ...prev,
@@ -548,25 +607,70 @@ export function useWorkflowDataV2({
    * 删除边
    */
   const deleteEdge = useCallback(
-    (source: string, target: string) => {
+    (
+      source: string,
+      target: string,
+      sourcePort?: string,
+      targetPort?: string,
+    ) => {
       setWorkflowData((prev) => {
         const beforeData = deepClone(prev);
 
-        const newEdgeList = prev.edgeList.filter(
-          (e) => !(e.source === source && e.target === target),
-        );
+        const matchEdge = (e: EdgeV2) =>
+          e.source === source &&
+          e.target === target &&
+          (e.sourcePort || '') === (sourcePort || '') &&
+          (e.targetPort || '') === (targetPort || '');
 
-        // 更新源节点的 nextNodeIds
+        const existingEdge = prev.edgeList.find(matchEdge);
+        const isExceptionEdge = (
+          sourcePort ||
+          existingEdge?.sourcePort ||
+          ''
+        ).includes('exception');
+
+        const newEdgeList = prev.edgeList.filter((e) => !matchEdge(e));
+
+        // 更新源节点的关联 ID
         const sourceNodeId = parseInt(source, 10);
         const targetNodeId = parseInt(target, 10);
 
         const newNodeList = prev.nodeList.map((node) => {
-          if (node.id === sourceNodeId && node.nextNodeIds) {
+          if (node.id !== sourceNodeId) {
+            return node;
+          }
+
+          if (isExceptionEdge) {
+            const config = node.nodeConfig?.exceptionHandleConfig;
+            if (!config?.exceptionHandleNodeIds) {
+              return node;
+            }
+            const filtered = config.exceptionHandleNodeIds.filter(
+              (id) => id !== targetNodeId,
+            );
+            if (filtered.length === config.exceptionHandleNodeIds.length) {
+              return node;
+            }
+
+            return {
+              ...node,
+              nodeConfig: {
+                ...node.nodeConfig,
+                exceptionHandleConfig: {
+                  ...config,
+                  exceptionHandleNodeIds: filtered,
+                },
+              },
+            };
+          }
+
+          if (node.nextNodeIds?.includes(targetNodeId)) {
             return {
               ...node,
               nextNodeIds: node.nextNodeIds.filter((id) => id !== targetNodeId),
             };
           }
+
           return node;
         });
 
@@ -612,7 +716,12 @@ export function useWorkflowDataV2({
     (updates: {
       nodes?: { id: number; updates: Partial<ChildNodeV2> }[];
       addEdges?: EdgeV2[];
-      deleteEdges?: { source: string; target: string }[];
+      deleteEdges?: {
+        source: string;
+        target: string;
+        sourcePort?: string;
+        targetPort?: string;
+      }[];
     }) => {
       setWorkflowData((prev) => {
         const beforeData = deepClone(prev);
@@ -633,7 +742,11 @@ export function useWorkflowDataV2({
         if (updates.addEdges) {
           updates.addEdges.forEach((edge) => {
             const exists = newEdgeList.some(
-              (e) => e.source === edge.source && e.target === edge.target,
+              (e) =>
+                e.source === edge.source &&
+                e.target === edge.target &&
+                (e.sourcePort || '') === (edge.sourcePort || '') &&
+                (e.targetPort || '') === (edge.targetPort || ''),
             );
             if (!exists) {
               newEdgeList.push(edge);
@@ -643,11 +756,29 @@ export function useWorkflowDataV2({
 
         // 批量删除边
         if (updates.deleteEdges) {
-          updates.deleteEdges.forEach(({ source, target }) => {
-            newEdgeList = newEdgeList.filter(
-              (e) => !(e.source === source && e.target === target),
-            );
-          });
+          updates.deleteEdges.forEach(
+            ({
+              source,
+              target,
+              sourcePort,
+              targetPort,
+            }: {
+              source: string;
+              target: string;
+              sourcePort?: string;
+              targetPort?: string;
+            }) => {
+              newEdgeList = newEdgeList.filter(
+                (e) =>
+                  !(
+                    e.source === source &&
+                    e.target === target &&
+                    (e.sourcePort || '') === (sourcePort || '') &&
+                    (e.targetPort || '') === (targetPort || '')
+                  ),
+              );
+            },
+          );
         }
 
         const afterData = {
