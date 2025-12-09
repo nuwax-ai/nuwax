@@ -4,17 +4,12 @@
  * 完全独立，不依赖 v1 任何代码
  */
 
+import { DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Input, Select, Tag, Tree, Typography } from 'antd';
 import React from 'react';
-import { Button, Input, Select, Tree, Tag, Typography } from 'antd';
-import {
-  PlusOutlined,
-  DeleteOutlined,
-  DownOutlined,
-} from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
 
 import { DataTypeEnumV2 } from '../../types';
-import type { OutputArgV2 } from '../../types';
 
 import './OutputArgsEditorV2.less';
 
@@ -22,8 +17,12 @@ const { Text } = Typography;
 
 // ==================== 类型定义 ====================
 
-export interface OutputArgItem extends OutputArgV2 {
-  // 继承 OutputArgV2 类型
+export interface OutputArgItem {
+  key: string;
+  name: string;
+  dataType: DataTypeEnumV2 | string;
+  description?: string;
+  children?: OutputArgItem[];
 }
 
 export interface OutputArgsEditorV2Props {
@@ -47,7 +46,7 @@ const DATA_TYPE_OPTIONS = [
   { label: '数字', value: DataTypeEnumV2.Number },
   { label: '布尔', value: DataTypeEnumV2.Boolean },
   { label: '对象', value: DataTypeEnumV2.Object },
-  { label: '数组', value: DataTypeEnumV2.Array },
+  { label: '数组', value: DataTypeEnumV2.Array_Object },
   { label: '文件', value: DataTypeEnumV2.File },
 ];
 
@@ -57,7 +56,7 @@ const DATA_TYPE_MAP: Record<string, string> = {
   [DataTypeEnumV2.Number]: '数字',
   [DataTypeEnumV2.Boolean]: '布尔',
   [DataTypeEnumV2.Object]: '对象',
-  [DataTypeEnumV2.Array]: '数组',
+  [DataTypeEnumV2.Array_Object]: '数组',
   [DataTypeEnumV2.File]: '文件',
 };
 
@@ -94,8 +93,8 @@ const OutputArgsEditorV2: React.FC<OutputArgsEditorV2Props> = ({
     if (readOnly) return;
     onChange?.(
       value.map((item) =>
-        item.key === key ? { ...item, [field]: fieldValue } : item
-      )
+        item.key === key ? { ...item, [field]: fieldValue } : item,
+      ),
     );
   };
 

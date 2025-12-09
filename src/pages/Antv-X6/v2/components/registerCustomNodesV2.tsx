@@ -2,15 +2,183 @@
  * V2 自定义节点注册
  *
  * 注册工作流中使用的自定义节点类型
- * 完全独立，不依赖 v1 任何代码
+ * 参考 V1 实现，保持相同的视觉效果
  */
 
 import { Graph, Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
-import React from 'react';
-import { NODE_BACKGROUND_COLOR_MAP_V2 } from '../constants';
+import { Tag } from 'antd';
+import React, { useEffect, useState } from 'react';
+
+import {
+  ICON_END,
+  ICON_NEW_AGENT,
+  ICON_START,
+  ICON_WORKFLOW_CODE,
+  ICON_WORKFLOW_CONDITION,
+  ICON_WORKFLOW_DATABASE,
+  ICON_WORKFLOW_DATABASEADD,
+  ICON_WORKFLOW_DATABASEDELETE,
+  ICON_WORKFLOW_DATABASEQUERY,
+  ICON_WORKFLOW_DATABASEUPDATE,
+  ICON_WORKFLOW_DOCUMENT_EXTRACTION,
+  ICON_WORKFLOW_HTTP_REQUEST,
+  ICON_WORKFLOW_INTENT_RECOGNITION,
+  ICON_WORKFLOW_KNOWLEDGE_BASE,
+  ICON_WORKFLOW_LLM,
+  ICON_WORKFLOW_LONG_TERM_MEMORY,
+  ICON_WORKFLOW_LOOP,
+  ICON_WORKFLOW_LOOPBREAK,
+  ICON_WORKFLOW_LOOPCONTINUE,
+  ICON_WORKFLOW_MCP,
+  ICON_WORKFLOW_OUTPUT,
+  ICON_WORKFLOW_PLUGIN,
+  ICON_WORKFLOW_QA,
+  ICON_WORKFLOW_TEXT_PROCESSING,
+  ICON_WORKFLOW_VARIABLE,
+  ICON_WORKFLOW_WORKFLOW,
+} from '@/constants/images.constants';
+
 import type { ChildNodeV2, RunResultItemV2 } from '../types';
-import { NodeShapeEnumV2, RunResultStatusEnumV2 } from '../types';
+import {
+  NodeShapeEnumV2,
+  NodeTypeEnumV2,
+  RunResultStatusEnumV2,
+} from '../types';
+import './registerCustomNodesV2.less';
+
+// ==================== 工具函数 ====================
+
+/**
+ * 根据节点类型返回图标
+ */
+const returnImgV2 = (type: NodeTypeEnumV2): React.ReactNode => {
+  switch (type) {
+    case NodeTypeEnumV2.Start:
+    case NodeTypeEnumV2.LoopStart:
+      return <ICON_START />;
+    case NodeTypeEnumV2.End:
+    case NodeTypeEnumV2.LoopEnd:
+      return <ICON_END />;
+    case NodeTypeEnumV2.Output:
+      return <ICON_WORKFLOW_OUTPUT />;
+    case NodeTypeEnumV2.Code:
+      return <ICON_WORKFLOW_CODE />;
+    case NodeTypeEnumV2.Condition:
+      return <ICON_WORKFLOW_CONDITION />;
+    case NodeTypeEnumV2.DocumentExtraction:
+      return <ICON_WORKFLOW_DOCUMENT_EXTRACTION />;
+    case NodeTypeEnumV2.HTTPRequest:
+      return <ICON_WORKFLOW_HTTP_REQUEST />;
+    case NodeTypeEnumV2.IntentRecognition:
+      return <ICON_WORKFLOW_INTENT_RECOGNITION />;
+    case NodeTypeEnumV2.Knowledge:
+      return <ICON_WORKFLOW_KNOWLEDGE_BASE />;
+    case NodeTypeEnumV2.LLM:
+      return <ICON_WORKFLOW_LLM />;
+    case NodeTypeEnumV2.LongTermMemory:
+      return <ICON_WORKFLOW_LONG_TERM_MEMORY />;
+    case NodeTypeEnumV2.Loop:
+      return <ICON_WORKFLOW_LOOP />;
+    case NodeTypeEnumV2.LoopContinue:
+      return <ICON_WORKFLOW_LOOPCONTINUE />;
+    case NodeTypeEnumV2.LoopBreak:
+      return <ICON_WORKFLOW_LOOPBREAK />;
+    case NodeTypeEnumV2.Plugin:
+      return <ICON_WORKFLOW_PLUGIN />;
+    case NodeTypeEnumV2.QA:
+      return <ICON_WORKFLOW_QA />;
+    case NodeTypeEnumV2.TextProcessing:
+      return <ICON_WORKFLOW_TEXT_PROCESSING />;
+    case NodeTypeEnumV2.Variable:
+      return <ICON_WORKFLOW_VARIABLE />;
+    case NodeTypeEnumV2.Workflow:
+      return <ICON_WORKFLOW_WORKFLOW />;
+    case NodeTypeEnumV2.TableDataAdd:
+      return <ICON_WORKFLOW_DATABASEADD />;
+    case NodeTypeEnumV2.TableDataDelete:
+      return <ICON_WORKFLOW_DATABASEDELETE />;
+    case NodeTypeEnumV2.TableDataUpdate:
+      return <ICON_WORKFLOW_DATABASEUPDATE />;
+    case NodeTypeEnumV2.TableDataQuery:
+      return <ICON_WORKFLOW_DATABASEQUERY />;
+    case NodeTypeEnumV2.TableSQL:
+      return <ICON_WORKFLOW_DATABASE />;
+    case NodeTypeEnumV2.MCP:
+      return <ICON_WORKFLOW_MCP />;
+    default:
+      return <ICON_NEW_AGENT />;
+  }
+};
+
+/**
+ * 根据节点类型返回背景色
+ */
+const returnBackgroundColorV2 = (type: NodeTypeEnumV2): string => {
+  switch (type) {
+    case NodeTypeEnumV2.Start:
+    case NodeTypeEnumV2.End:
+      return '#EEEEFF';
+    case NodeTypeEnumV2.Code:
+    case NodeTypeEnumV2.Loop:
+    case NodeTypeEnumV2.LoopContinue:
+    case NodeTypeEnumV2.LoopBreak:
+    case NodeTypeEnumV2.Condition:
+    case NodeTypeEnumV2.IntentRecognition:
+      return '#ebf9f9';
+    case NodeTypeEnumV2.Knowledge:
+    case NodeTypeEnumV2.Variable:
+    case NodeTypeEnumV2.LongTermMemory:
+    case NodeTypeEnumV2.MCP:
+      return '#FFF0DF';
+    case NodeTypeEnumV2.QA:
+    case NodeTypeEnumV2.DocumentExtraction:
+    case NodeTypeEnumV2.TextProcessing:
+    case NodeTypeEnumV2.HTTPRequest:
+      return '#fef9eb';
+    case NodeTypeEnumV2.LLM:
+      return '#E9EBED';
+    case NodeTypeEnumV2.Plugin:
+      return '#E7E1FF';
+    case NodeTypeEnumV2.Workflow:
+      return '#D0FFDB';
+    case NodeTypeEnumV2.Output:
+      return '#E7E1FF';
+    default:
+      return '#EEEEFF';
+  }
+};
+
+// 条件分支类型映射
+const branchTypeMapV2: Record<string, string> = {
+  IF: '如果',
+  ELSE_IF: '否则如果',
+  ELSE: '否则',
+};
+
+// 比较类型映射
+const compareTypeMapV2: Record<string, string> = {
+  EQ: '=',
+  NEQ: '≠',
+  GT: '>',
+  GTE: '≥',
+  LT: '<',
+  LTE: '≤',
+  CONTAINS: '包含',
+  NOT_CONTAINS: '不包含',
+  IS_EMPTY: '为空',
+  IS_NOT_EMPTY: '不为空',
+};
+
+// 回答类型映射
+const answerTypeMapV2: Record<string, string> = {
+  TEXT: '文本输入',
+  SELECT: '选项选择',
+  FILE: '文件上传',
+};
+
+// 选项标签
+const optionsMapV2 = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
 // ==================== 节点组件 ====================
 
@@ -19,234 +187,233 @@ interface NodeComponentProps {
     getData: () => ChildNodeV2 & {
       isFocus?: boolean;
       runResults?: RunResultItemV2[];
-      isEditingName?: boolean;
+      enableMove?: boolean;
     };
     getSize: () => { width: number; height: number };
+    setData: (data: any) => void;
   };
+  graph: Graph;
 }
 
 /**
- * 通用节点组件
+ * 条件节点内容
  */
-const GeneralNodeComponent: React.FC<NodeComponentProps> = ({ node }) => {
-  const data = node.getData();
-  const size = node.getSize();
-  const backgroundColor =
-    NODE_BACKGROUND_COLOR_MAP_V2[data.type] ||
-    NODE_BACKGROUND_COLOR_MAP_V2.default;
+const ConditionNodeContent: React.FC<{ data: ChildNodeV2 }> = ({ data }) => {
+  const conditionBranchConfigs = data.nodeConfig?.conditionBranchConfigs || [];
 
-  // 运行状态样式
+  return (
+    <div className="condition-node-content-v2">
+      {conditionBranchConfigs.map((item) => {
+        const firstArgName = item.conditionArgs?.[0]?.firstArg?.name || '';
+        const secondArgName =
+          item.conditionArgs?.[0]?.secondArg?.name ||
+          item.conditionArgs?.[0]?.secondArg?.bindValue ||
+          '';
+        const compareType = item.conditionArgs?.[0]?.compareType;
+
+        return (
+          <div key={item.uuid} className="condition-item-v2">
+            <span className="condition-title-v2">
+              {branchTypeMapV2[item.branchType || 'ELSE_IF']}
+            </span>
+            <div className="condition-input-v2">{firstArgName}</div>
+            {item.conditionArgs && item.conditionArgs.length > 0 && (
+              <>
+                <span className="condition-compare-v2">
+                  {compareType ? compareTypeMapV2[compareType] : ''}
+                </span>
+                <div className="condition-input-v2">{secondArgName}</div>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+/**
+ * 问答节点内容
+ */
+const QANodeContent: React.FC<{ data: ChildNodeV2 }> = ({ data }) => {
+  const inputArgs = data.nodeConfig?.inputArgs;
+  const question = data.nodeConfig?.question;
+  const answerType = data.nodeConfig?.answerType || 'TEXT';
+  const options = data.nodeConfig?.options || [];
+
+  return (
+    <div className="qa-node-content-v2">
+      <div className="qa-item-v2">
+        <span className="qa-title-v2">输入</span>
+        <div>
+          {inputArgs?.slice(0, 2).map((item, index) => (
+            <Tag key={`inputArgs-${item.name}-${index}`}>{item.name}</Tag>
+          ))}
+          {inputArgs && inputArgs.length > 2 && (
+            <Tag>+{inputArgs.length - 2}</Tag>
+          )}
+          {!inputArgs && <span>未配置输入内容</span>}
+        </div>
+      </div>
+      <div className="qa-item-v2">
+        <span className="qa-title-v2">提问内容</span>
+        <span className="qa-content-v2">{question || '未配置提问内容'}</span>
+      </div>
+      <div className="qa-item-v2">
+        <span className="qa-title-v2">问答类型</span>
+        <span>{answerTypeMapV2[answerType]}</span>
+      </div>
+      {answerType === 'SELECT' &&
+        options.map((item, index) => (
+          <div
+            key={`options-${item.uuid || optionsMapV2[index]}-${index}`}
+            className="qa-item-v2"
+          >
+            <span className="qa-title-v2"></span>
+            <Tag>{optionsMapV2[index]}</Tag>
+            <span className="qa-content-v2">
+              {item.content || '未配置内容'}
+            </span>
+          </div>
+        ))}
+    </div>
+  );
+};
+
+/**
+ * 意图识别节点内容
+ */
+const IntentRecognitionContent: React.FC<{ data: ChildNodeV2 }> = ({
+  data,
+}) => {
+  const intentConfigs = data.nodeConfig?.intentConfigs || [];
+
+  return (
+    <div className="intent-node-content-v2">
+      {intentConfigs.map((item, index) => (
+        <div className="intent-item-v2" key={index}>
+          <span className="intent-title-v2">选项{index + 1}</span>
+          <span className="intent-content-v2">
+            {item.intent || '未配置意图'}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+/**
+ * 通用节点组件 - 参考 V1 GeneralNode
+ */
+const GeneralNodeComponent: React.FC<NodeComponentProps> = ({
+  node,
+  graph,
+}) => {
+  const data = node.getData();
+  const [editValue, setEditValue] = useState(data?.name || '');
+
+  useEffect(() => {
+    setEditValue(data?.name || '');
+  }, [data?.name]);
+
+  if (!data) {
+    return null;
+  }
+
+  const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColorV2(
+    data.type,
+  )} 0%, white 100%)`;
+
+  const isSpecialNode = [
+    NodeTypeEnumV2.QA,
+    NodeTypeEnumV2.Condition,
+    NodeTypeEnumV2.IntentRecognition,
+  ].includes(data.type);
+  const marginBottom = isSpecialNode ? '10px' : '0';
+
+  // 运行状态
   const runResults = data.runResults || [];
   const lastResult = runResults[runResults.length - 1];
   const isRunning = lastResult?.status === RunResultStatusEnumV2.EXECUTING;
   const isError = lastResult?.status === RunResultStatusEnumV2.FAILED;
   const isSuccess = lastResult?.status === RunResultStatusEnumV2.FINISHED;
+  const isFocus = data.isFocus;
 
-  const borderColor = isError
-    ? '#ff4d4f'
-    : isSuccess
-    ? '#52c41a'
-    : isRunning
-    ? '#1890ff'
-    : '#d9d9d9';
-  const boxShadow = isRunning ? '0 0 10px rgba(24, 144, 255, 0.5)' : 'none';
+  const nodeClassName = [
+    'general-node-v2',
+    isFocus ? 'selected' : '',
+    isRunning ? 'running' : '',
+    isSuccess ? 'success' : '',
+    isError ? 'error' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div
-      style={{
-        width: size.width,
-        height: size.height,
-        backgroundColor,
-        border: `1px solid ${borderColor}`,
-        borderRadius: 8,
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 12px',
-        boxSizing: 'border-box',
-        boxShadow,
-        transition: 'all 0.3s',
-        cursor: 'pointer',
-      }}
-    >
-      {/* 节点图标 */}
+    <div className={nodeClassName}>
+      {/* 节点头部 */}
       <div
+        className="general-node-header-v2"
         style={{
-          width: 24,
-          height: 24,
-          marginRight: 8,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 16,
+          background: gradientBackground,
+          marginBottom,
         }}
       >
-        {typeof data.icon === 'string' ? (
-          <img src={data.icon} alt="" style={{ width: 20, height: 20 }} />
-        ) : (
-          data.icon || '📦'
-        )}
+        <div className="general-node-header-image-v2">
+          {returnImgV2(data.type)}
+        </div>
+        <span className="general-node-header-title-v2">{editValue}</span>
       </div>
 
-      {/* 节点名称 */}
-      <div
-        style={{
-          flex: 1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          fontSize: 14,
-          color: '#333',
-        }}
-      >
-        {data.name}
-      </div>
-
-      {/* 运行状态指示器 */}
-      {isRunning && (
-        <div
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            backgroundColor: '#1890ff',
-            animation: 'pulse 1s infinite',
-          }}
-        />
+      {/* 条件节点内容 */}
+      {data.type === NodeTypeEnumV2.Condition && (
+        <ConditionNodeContent data={data} />
       )}
-      {isSuccess && <div style={{ color: '#52c41a', fontSize: 12 }}>✓</div>}
-      {isError && <div style={{ color: '#ff4d4f', fontSize: 12 }}>✗</div>}
+
+      {/* 问答节点内容 */}
+      {data.type === NodeTypeEnumV2.QA && <QANodeContent data={data} />}
+
+      {/* 意图识别节点内容 */}
+      {data.type === NodeTypeEnumV2.IntentRecognition && (
+        <IntentRecognitionContent data={data} />
+      )}
     </div>
   );
 };
 
 /**
- * 循环节点组件
+ * 循环节点组件 - 参考 V1 LoopNode
  */
-const LoopNodeComponent: React.FC<NodeComponentProps> = ({ node }) => {
+const LoopNodeComponent: React.FC<NodeComponentProps> = ({
+  node,
+  graph: _graph,
+}) => {
   const data = node.getData();
-  const size = node.getSize();
+  const [editValue, setEditValue] = useState(data?.name || '');
+
+  useEffect(() => {
+    setEditValue(data?.name || '');
+  }, [data?.name]);
+
+  if (!data) {
+    return null;
+  }
+
+  const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColorV2(
+    data.type,
+  )} 0%, white 42px)`;
+  const isFocus = data.isFocus;
 
   return (
     <div
-      style={{
-        width: size.width,
-        height: size.height,
-        backgroundColor: '#f0fff4',
-        border: '2px dashed #52c41a',
-        borderRadius: 12,
-        position: 'relative',
-        boxSizing: 'border-box',
-      }}
+      className={`loop-node-v2 general-node-v2 ${isFocus ? 'selected' : ''}`}
+      style={{ background: gradientBackground }}
     >
-      {/* 循环节点标题 */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 8,
-          left: 12,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-        }}
-      >
-        <span style={{ fontSize: 16 }}>🔄</span>
-        <span style={{ fontSize: 14, fontWeight: 500, color: '#333' }}>
-          {data.name}
-        </span>
-        <span style={{ fontSize: 12, color: '#999' }}>
-          {data.nodeConfig?.loopType === 'FIXED'
-            ? `循环 ${data.nodeConfig?.loopTimes || 0} 次`
-            : '条件循环'}
-        </span>
+      <div className="loop-node-title-v2">
+        <ICON_WORKFLOW_LOOP />
+        <span className="loop-title-text-v2">{editValue}</span>
       </div>
-
-      {/* 循环体区域（子节点会渲染在这里） */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 40,
-          left: 20,
-          right: 20,
-          bottom: 20,
-          backgroundColor: 'rgba(255, 255, 255, 0.5)',
-          borderRadius: 8,
-          border: '1px solid rgba(82, 196, 26, 0.3)',
-        }}
-      />
-    </div>
-  );
-};
-
-/**
- * 条件分支节点组件
- */
-const ConditionNodeComponent: React.FC<NodeComponentProps> = ({ node }) => {
-  const data = node.getData();
-  const size = node.getSize();
-  const branches = data.nodeConfig?.conditionBranchConfigs || [];
-
-  return (
-    <div
-      style={{
-        width: size.width,
-        height: size.height,
-        backgroundColor: '#e6f7ff',
-        border: '1px solid #91d5ff',
-        borderRadius: 8,
-        boxSizing: 'border-box',
-        overflow: 'hidden',
-      }}
-    >
-      {/* 标题栏 */}
-      <div
-        style={{
-          height: 36,
-          padding: '0 12px',
-          display: 'flex',
-          alignItems: 'center',
-          borderBottom: '1px solid #91d5ff',
-          backgroundColor: 'rgba(24, 144, 255, 0.1)',
-        }}
-      >
-        <span style={{ marginRight: 8 }}>🔀</span>
-        <span style={{ fontSize: 14, fontWeight: 500 }}>{data.name}</span>
-      </div>
-
-      {/* 分支列表 */}
-      <div style={{ padding: '4px 0' }}>
-        {branches.map((branch, index) => (
-          <div
-            key={branch.uuid}
-            style={{
-              height: 28,
-              padding: '0 12px',
-              display: 'flex',
-              alignItems: 'center',
-              fontSize: 12,
-              color: '#666',
-            }}
-          >
-            <span
-              style={{
-                padding: '2px 6px',
-                backgroundColor:
-                  branch.branchType === 'ELSE' ? '#f5f5f5' : '#e6f7ff',
-                borderRadius: 4,
-                marginRight: 8,
-              }}
-            >
-              {branch.branchType === 'IF'
-                ? '如果'
-                : branch.branchType === 'ELSE_IF'
-                ? '否则如果'
-                : '否则'}
-            </span>
-            {branch.branchType !== 'ELSE' && (
-              <span style={{ color: '#999' }}>...</span>
-            )}
-          </div>
-        ))}
-      </div>
+      <div className="loop-node-content-v2" />
     </div>
   );
 };
@@ -275,11 +442,11 @@ export function registerCustomNodesV2(): void {
           position: 'left',
           attrs: {
             circle: {
-              r: 4,
+              r: 3,
               magnet: true,
               stroke: '#5147FF',
               strokeWidth: 1,
-              fill: '#fff',
+              fill: '#5147FF',
             },
           },
         },
@@ -287,11 +454,11 @@ export function registerCustomNodesV2(): void {
           position: 'right',
           attrs: {
             circle: {
-              r: 4,
+              r: 3,
               magnet: true,
               stroke: '#5147FF',
               strokeWidth: 1,
-              fill: '#fff',
+              fill: '#5147FF',
             },
           },
         },
@@ -299,11 +466,11 @@ export function registerCustomNodesV2(): void {
           position: 'right',
           attrs: {
             circle: {
-              r: 4,
+              r: 3,
               magnet: true,
               stroke: '#5147FF',
               strokeWidth: 1,
-              fill: '#fff',
+              fill: '#5147FF',
             },
           },
         },
@@ -311,11 +478,11 @@ export function registerCustomNodesV2(): void {
           position: 'bottom',
           attrs: {
             circle: {
-              r: 4,
+              r: 3,
               magnet: true,
-              stroke: '#ff4d4f',
+              stroke: '#e67e22',
               strokeWidth: 1,
-              fill: '#fff',
+              fill: '#e67e22',
             },
           },
         },
@@ -335,11 +502,11 @@ export function registerCustomNodesV2(): void {
           position: 'left',
           attrs: {
             circle: {
-              r: 4,
+              r: 3,
               magnet: true,
-              stroke: '#52c41a',
+              stroke: '#5147FF',
               strokeWidth: 1,
-              fill: '#fff',
+              fill: '#5147FF',
             },
           },
         },
@@ -347,11 +514,11 @@ export function registerCustomNodesV2(): void {
           position: 'right',
           attrs: {
             circle: {
-              r: 4,
+              r: 3,
               magnet: true,
-              stroke: '#52c41a',
+              stroke: '#5147FF',
               strokeWidth: 1,
-              fill: '#fff',
+              fill: '#5147FF',
             },
           },
         },
@@ -365,40 +532,43 @@ export function registerCustomNodesV2(): void {
 // ==================== 自定义连接器 ====================
 
 /**
- * 创建曲线路径（用于连线）
- * 使用 SVG 路径字符串格式
+ * 创建曲线路径（用于连线）- 参考 V1 createCurvePath
  */
 export function createCurvePathV2(
   sourcePoint: { x: number; y: number },
   targetPoint: { x: number; y: number },
-  vertices: { x: number; y: number }[],
-  options: any,
+  _vertices: { x: number; y: number }[],
+  _options: any,
 ): string {
-  let pathData = `M ${sourcePoint.x} ${sourcePoint.y}`;
+  const startOffset = 2;
+  const endOffset = 2;
+  const deltaX = Math.abs(targetPoint.x - sourcePoint.x);
+  const control = Math.floor((deltaX / 3) * 2);
 
-  if (vertices && vertices.length > 0) {
-    // 有中间点时使用折线
-    vertices.forEach((vertex, index) => {
-      if (index === 0) {
-        const midX = (sourcePoint.x + vertex.x) / 2;
-        pathData += ` C ${midX} ${sourcePoint.y} ${midX} ${vertex.y} ${vertex.x} ${vertex.y}`;
-      } else {
-        const prevVertex = vertices[index - 1];
-        const midX = (prevVertex.x + vertex.x) / 2;
-        pathData += ` C ${midX} ${prevVertex.y} ${midX} ${vertex.y} ${vertex.x} ${vertex.y}`;
-      }
-    });
+  let newStartX =
+    sourcePoint.x < targetPoint.x
+      ? sourcePoint.x + startOffset
+      : sourcePoint.x - startOffset;
+  let newEndX =
+    targetPoint.x > sourcePoint.x
+      ? targetPoint.x - endOffset
+      : targetPoint.x + endOffset;
 
-    const lastVertex = vertices[vertices.length - 1];
-    const midX = (lastVertex.x + targetPoint.x) / 2;
-    pathData += ` C ${midX} ${lastVertex.y} ${midX} ${targetPoint.y} ${targetPoint.x} ${targetPoint.y}`;
-  } else {
-    // 直接连接 - 使用贝塞尔曲线
-    const midX = (sourcePoint.x + targetPoint.x) / 2;
-    pathData += ` C ${midX} ${sourcePoint.y} ${midX} ${targetPoint.y} ${targetPoint.x} ${targetPoint.y}`;
-  }
+  const startY = sourcePoint.y;
+  const endY = targetPoint.y;
 
-  return Path.normalize(pathData);
+  const v1 = { x: newStartX + control, y: startY };
+  const v2 = { x: newEndX - control, y: endY };
+
+  return Path.normalize(
+    `M ${newStartX} ${startY}
+     L ${
+       newStartX + (sourcePoint.x < targetPoint.x ? startOffset : -startOffset)
+     } ${startY}
+     C ${v1.x} ${v1.y} ${v2.x} ${v2.y} ${newEndX} ${endY}
+     L ${newEndX} ${endY}
+    `,
+  );
 }
 
 /**

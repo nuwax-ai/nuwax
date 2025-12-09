@@ -4,13 +4,13 @@
  */
 
 import {
-  NodeTypeEnumV2,
-  NodeShapeEnumV2,
-  ExceptionHandleTypeEnumV2,
-  CompareTypeEnumV2,
   AnswerTypeEnumV2,
-  FoldFormIdEnumV2,
   ChildNodeV2,
+  CompareTypeEnumV2,
+  ExceptionHandleTypeEnumV2,
+  FoldFormIdEnumV2,
+  NodeShapeEnumV2,
+  NodeTypeEnumV2,
   PortGroupEnumV2,
 } from '../types';
 
@@ -172,9 +172,32 @@ export const DEFAULT_NODE_SIZE_MAP_V2: Record<
  * 选项字母映射（A-Z）
  */
 export const OPTIONS_MAP_V2 = [
-  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-  'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
-  'U', 'V', 'W', 'X', 'Y', 'Z',
+  'A',
+  'B',
+  'C',
+  'D',
+  'E',
+  'F',
+  'G',
+  'H',
+  'I',
+  'J',
+  'K',
+  'L',
+  'M',
+  'N',
+  'O',
+  'P',
+  'Q',
+  'R',
+  'S',
+  'T',
+  'U',
+  'V',
+  'W',
+  'X',
+  'Y',
+  'Z',
 ];
 
 // ==================== 默认表单数据 ====================
@@ -348,7 +371,7 @@ export const HISTORY_CONFIG_V2 = {
  * 自动保存配置
  */
 export const AUTO_SAVE_CONFIG_V2 = {
-  enabled: true,
+  enabled: false, // TODO: 暂时禁用自动保存，待后端接口完善后启用
   debounceTime: 1000, // 防抖时间（毫秒）
   throttleTime: 5000, // 节流时间（毫秒）
   maxRetries: 3, // 最大重试次数

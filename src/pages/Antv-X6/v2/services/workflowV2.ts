@@ -130,7 +130,7 @@ export async function getModelListV2(data: {
   });
 }
 
-// ==================== 试运行接口 ====================
+// ==================== 试运行接口（使用 V1 接口）====================
 
 /**
  * 试运行参数
@@ -139,6 +139,7 @@ export interface TestRunParamsV2 {
   workflowId: number;
   params?: Record<string, any>;
   requestId: string;
+  answer?: string;
 }
 
 /**
@@ -146,7 +147,38 @@ export interface TestRunParamsV2 {
  */
 export interface NodeTestRunParamsV2 {
   nodeId: number;
+  requestId?: string;
   params?: Record<string, any>;
+}
+
+/**
+ * 试运行 SSE 端点
+ * 注意：试运行使用 SSE 流式接口，需要在组件中使用 createSSEConnection 调用
+ *
+ * @endpoint POST /api/workflow/test/execute
+ * @body TestRunParamsV2
+ */
+export const TEST_RUN_ENDPOINT = '/api/workflow/test/execute';
+
+/**
+ * 单节点试运行 SSE 端点
+ *
+ * @endpoint POST /api/workflow/test/node/execute
+ * @body NodeTestRunParamsV2
+ */
+export const NODE_TEST_RUN_ENDPOINT = '/api/workflow/test/node/execute';
+
+/**
+ * 单节点试运行（非 SSE 接口）
+ * @param data 节点试运行参数
+ */
+export async function executeNodeV2(
+  data: NodeTestRunParamsV2,
+): Promise<ResponseV2<any>> {
+  return request(`/api/workflow/test/node/execute`, {
+    method: 'POST',
+    data,
+  });
 }
 
 // ==================== 版本历史接口 ====================
@@ -218,6 +250,11 @@ const workflowServiceV2 = {
 
   // 模型相关
   getModelList: getModelListV2,
+
+  // 试运行相关
+  executeNode: executeNodeV2,
+  TEST_RUN_ENDPOINT,
+  NODE_TEST_RUN_ENDPOINT,
 
   // 版本历史
   getVersionHistory: getVersionHistoryV2,

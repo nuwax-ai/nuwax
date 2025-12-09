@@ -1,28 +1,45 @@
 /**
  * V2 图形初始化
- * 
+ *
  * 初始化 AntV X6 图形编辑器
  * 包含 History 插件配置，支持撤销/重做
- * 
+ *
  * 完全独立，不依赖 v1 任何代码
  */
 
-import { Graph, Edge, Shape, Cell, Node } from '@antv/x6';
+import { Edge, Graph, Shape } from '@antv/x6';
 import { Clipboard } from '@antv/x6-plugin-clipboard';
 import { History } from '@antv/x6-plugin-history';
 import { Keyboard } from '@antv/x6-plugin-keyboard';
 import { Selection } from '@antv/x6-plugin-selection';
 import { Snapline } from '@antv/x6-plugin-snapline';
 
+import { GRAPH_CONFIG_V2, HISTORY_CONFIG_V2 } from '../constants';
 import type { ChildNodeV2, EdgeV2, GraphPropV2 } from '../types';
 import { NodeTypeEnumV2, PortGroupEnumV2 } from '../types';
-import { GRAPH_CONFIG_V2, HISTORY_CONFIG_V2 } from '../constants';
-import { registerCustomNodesV2, registerCustomConnectorV2, createCurvePathV2 } from './registerCustomNodesV2';
+import {
+  registerCustomConnectorV2,
+  registerCustomNodesV2,
+} from './registerCustomNodesV2';
 
 // ==================== 图形初始化 ====================
 
 export interface InitGraphV2Options extends GraphPropV2 {
   onHistoryChange?: (canUndo: boolean, canRedo: boolean) => void;
+  onPortClick?: (
+    sourceNode: ChildNodeV2,
+    portId: string,
+    position: { x: number; y: number },
+    isInLoop: boolean,
+  ) => void;
+  onEdgeButtonClick?: (
+    sourceNode: ChildNodeV2,
+    targetNode: ChildNodeV2,
+    portId: string,
+    edgeId: string,
+    position: { x: number; y: number },
+    isInLoop: boolean,
+  ) => void;
 }
 
 /**
@@ -36,9 +53,11 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
     onEdgeAdd,
     onEdgeDelete,
     onZoomChange,
-    createNodeByPortOrEdge,
+    createNodeByPortOrEdge: _createNodeByPortOrEdge,
     onClickBlank,
     onHistoryChange,
+    onPortClick,
+    onEdgeButtonClick,
   } = options;
 
   const container = document.getElementById(containerId);
@@ -103,7 +122,12 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
           },
         });
       },
-      validateConnection({ sourceMagnet, targetMagnet, sourceCell, targetCell }) {
+      validateConnection({
+        sourceMagnet,
+        targetMagnet,
+        sourceCell,
+        targetCell,
+      }) {
         // 基础验证
         if (!sourceMagnet || !targetMagnet || !sourceCell || !targetCell) {
           return false;
@@ -116,7 +140,10 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
 
         // 获取端口组信息
         const sourcePortGroup = sourceMagnet.getAttribute('port-group') || '';
-        const targetPortGroup = (targetMagnet.closest('.x6-port-body') as HTMLElement)?.getAttribute('port-group') || '';
+        const targetPortGroup =
+          (targetMagnet.closest('.x6-port-body') as HTMLElement)?.getAttribute(
+            'port-group',
+          ) || '';
 
         // 验证端口连接规则
         const sourceData = sourceCell.getData() as ChildNodeV2;
@@ -133,8 +160,8 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
         // 普通节点：out -> in
         if (
           (sourcePortGroup === PortGroupEnumV2.out ||
-           sourcePortGroup === PortGroupEnumV2.special ||
-           sourcePortGroup === PortGroupEnumV2.exception) &&
+            sourcePortGroup === PortGroupEnumV2.special ||
+            sourcePortGroup === PortGroupEnumV2.exception) &&
           targetPortGroup === PortGroupEnumV2.in
         ) {
           return true;
@@ -178,7 +205,7 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
         ignoreChange: HISTORY_CONFIG_V2.ignoreChange,
         ignoreAdd: HISTORY_CONFIG_V2.ignoreAdd,
         ignoreRemove: HISTORY_CONFIG_V2.ignoreRemove,
-      })
+      }),
     )
     .use(new Selection());
 
@@ -189,7 +216,22 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
     onHistoryChange?.(graph.canUndo(), graph.canRedo());
   });
 
-  // 节点选中
+  // 节点点击 - 选中节点并打开配置面板
+  graph.on('node:click', ({ node }) => {
+    const data = node.getData() as ChildNodeV2;
+
+    // 如果之前已经聚焦了，需要重新打开右侧属性面板
+    if (data?.isFocus) {
+      // 清除并重置之前 runResult 时的 focus 数据
+      node.updateData({ isFocus: false });
+      graph.cleanSelection();
+    }
+
+    // 选中节点
+    graph.select(node);
+  });
+
+  // 节点选中事件 - 触发配置面板打开
   graph.on('node:selected', ({ node }) => {
     const data = node.getData() as ChildNodeV2;
     if (data && !data.isFocus) {
@@ -209,7 +251,7 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
   graph.on('node:moved', ({ node }) => {
     const { x, y } = node.getPosition();
     const data = node.getData() as ChildNodeV2;
-    
+
     if (data) {
       const updatedData = {
         ...data,
@@ -232,7 +274,7 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
 
     const sourceCell = edge.getSourceCell();
     const targetCell = edge.getTargetCell();
-    
+
     if (sourceCell && targetCell) {
       const newEdge: EdgeV2 = {
         source: sourceCell.id,
@@ -285,8 +327,60 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
     node.prop('ports/items', updatedPorts);
   });
 
+  // 端口点击 - 快捷添加节点
+  graph.on('node:port:click', ({ node, port, e }) => {
+    const data = node.getData() as ChildNodeV2;
+    if (!data || !port) return;
+
+    // 检查是否在循环节点内
+    const isInLoop = !!data.loopNodeId;
+
+    // 如果是循环内的节点，检查是否可以添加
+    if (isInLoop) {
+      const isInputPort = port.includes('in');
+      const parentNode = node.getParent()?.getData() as ChildNodeV2;
+
+      if (parentNode) {
+        const isStartNode = data.id === parentNode.innerStartNodeId;
+        const isEndNode = data.id === parentNode.innerEndNodeId;
+
+        // 循环开始节点的输入端口和结束节点的输出端口不能添加节点
+        if ((isStartNode && isInputPort) || (isEndNode && !isInputPort)) {
+          return;
+        }
+      }
+    }
+
+    // 计算点击位置
+    const targetRect = (e.target as HTMLElement).getBoundingClientRect();
+    const centerX = targetRect.left + targetRect.width / 2;
+    const centerY = targetRect.top + targetRect.height / 2;
+
+    const position = graph.clientToLocal({
+      x: centerX,
+      y: centerY,
+    });
+
+    // 触发端口点击回调
+    onPortClick?.(data, port, position, isInLoop);
+
+    // 选中节点
+    graph.select(node);
+  });
+
   // 边鼠标进入 - 显示添加按钮
   graph.on('edge:mouseenter', ({ edge }) => {
+    const sourceNode = edge.getSourceCell()?.getData() as ChildNodeV2;
+    const targetNode = edge.getTargetCell()?.getData() as ChildNodeV2;
+
+    // 循环节点与其内部节点之间的边不显示添加按钮
+    if (
+      (sourceNode?.type === NodeTypeEnumV2.Loop && targetNode?.loopNodeId) ||
+      (sourceNode?.loopNodeId && targetNode?.type === NodeTypeEnumV2.Loop)
+    ) {
+      return;
+    }
+
     edge.addTools([
       {
         name: 'button',
@@ -308,10 +402,11 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
               selector: 'icon',
               attrs: {
                 fill: '#fff',
-                fontSize: 14,
+                fontSize: 16,
                 textAnchor: 'middle',
                 dominantBaseline: 'central',
                 pointerEvents: 'none',
+                text: '+',
               },
             },
           ],
@@ -322,9 +417,27 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
             const sourcePort = edge.getSourcePortId();
 
             if (source && target) {
-              const position = graph.clientToLocal({ x: e.clientX, y: e.clientY });
-              // 触发创建节点
-              // createNodeByPortOrEdge({ ... });
+              const position = graph.clientToLocal({
+                x: e.clientX,
+                y: e.clientY,
+              });
+
+              // 检查是否在循环内
+              const isInLoop = !!(source.loopNodeId || false);
+
+              // 触发边上按钮点击回调
+              onEdgeButtonClick?.(
+                source,
+                target,
+                sourcePort || `${source.id}-out`,
+                edge.id,
+                position,
+                isInLoop,
+              );
+
+              // 清除选中状态
+              onClickBlank();
+              graph.cleanSelection();
             }
           },
         },
@@ -358,8 +471,8 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
  */
 export function drawGraphV2(
   graph: Graph,
-  nodes: ChildNodeV2[],
-  edges: EdgeV2[]
+  _nodes: ChildNodeV2[],
+  _edges: EdgeV2[],
 ): void {
   // 清除现有元素
   graph.clearCells();

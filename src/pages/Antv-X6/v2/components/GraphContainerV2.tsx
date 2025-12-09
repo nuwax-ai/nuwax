@@ -64,6 +64,22 @@ export interface GraphContainerV2Props {
   onClickBlank: () => void;
   onInit?: () => void;
   createNodeByPortOrEdge: (config: CreateNodeByPortOrEdgePropsV2) => void;
+  /** 端口点击回调 - 用于显示节点选择弹窗 */
+  onPortClick?: (
+    sourceNode: ChildNodeV2,
+    portId: string,
+    position: { x: number; y: number },
+    isInLoop: boolean,
+  ) => void;
+  /** 边上按钮点击回调 - 用于在边中间插入节点 */
+  onEdgeButtonClick?: (
+    sourceNode: ChildNodeV2,
+    targetNode: ChildNodeV2,
+    portId: string,
+    edgeId: string,
+    position: { x: number; y: number },
+    isInLoop: boolean,
+  ) => void;
 }
 
 const GRAPH_CONTAINER_ID = 'graph-container-v2';
@@ -75,7 +91,7 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
     const {
       workflowData,
       onNodeChange,
-      onNodeAdd,
+      onNodeAdd: _onNodeAdd,
       onNodeDelete,
       onNodeCopy,
       onNodeSelect,
@@ -86,6 +102,8 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
       onClickBlank,
       onInit,
       createNodeByPortOrEdge,
+      onPortClick,
+      onEdgeButtonClick,
     } = props;
 
     const { modal, message } = App.useApp();
@@ -124,12 +142,12 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
       (position: GraphRectV2, node: ChildNodeV2) => {
         if (!graphRef.current) return;
 
-        const point = graphRef.current.clientToGraph(position.x, position.y);
+        // 直接使用传入的画布坐标
         const nodeData = createBaseNodeData({
           ...node,
           nodeConfig: {
             ...node.nodeConfig,
-            extension: { x: point.x, y: point.y },
+            extension: { x: position.x, y: position.y },
           },
         });
 
@@ -507,6 +525,8 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
         createNodeByPortOrEdge,
         onClickBlank,
         onHistoryChange,
+        onPortClick,
+        onEdgeButtonClick,
       });
 
       // 绑定事件处理器

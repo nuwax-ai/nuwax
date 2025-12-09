@@ -9,21 +9,22 @@
  * 完全独立，不依赖 v1 任何代码
  */
 
-import React, { useCallback, useState, useEffect } from 'react';
-import { Button, Dropdown, Input, Tooltip, Form } from 'antd';
-import type { MenuProps } from 'antd';
 import {
   CloseOutlined,
+  CopyOutlined,
+  DeleteOutlined,
   EditOutlined,
   MoreOutlined,
-  DeleteOutlined,
-  CopyOutlined,
   PlayCircleOutlined,
 } from '@ant-design/icons';
+import type { MenuProps } from 'antd';
+import { Button, Dropdown, Form, Input, Tooltip } from 'antd';
+import React, { useCallback, useEffect, useState } from 'react';
 
+import { ICONS } from '../../constants/stencilConfigV2';
 import type { ChildNodeV2, NodeConfigV2 } from '../../types';
 import { NodeTypeEnumV2 } from '../../types';
-import { ICONS } from '../../constants/stencilConfigV2';
+import NodePanelDrawerV2 from './nodeConfig/NodePanelDrawerV2';
 
 import './NodeDrawerV2.less';
 
@@ -31,25 +32,21 @@ import './NodeDrawerV2.less';
 
 export interface NodeDrawerV2Props {
   /** 是否可见 */
-  visible: boolean;
+  open: boolean;
   /** 当前节点数据 */
   node: ChildNodeV2 | null;
-  /** 表单实例 */
-  form: ReturnType<typeof Form.useForm<NodeConfigV2>>[0];
+  /** 变量引用数据 */
+  referenceData?: any;
   /** 关闭回调 */
   onClose: () => void;
-  /** 节点名称修改回调 */
-  onNameChange: (name: string, description?: string) => void;
+  /** 节点配置变更回调 */
+  onNodeConfigChange?: (config: NodeConfigV2) => void;
   /** 删除节点回调 */
-  onDelete: () => void;
+  onNodeDelete?: (nodeId: number, node?: ChildNodeV2) => void;
   /** 复制节点回调 */
-  onCopy: () => void;
+  onNodeCopy?: (node: ChildNodeV2) => void;
   /** 试运行回调 */
-  onTestRun: () => void;
-  /** 表单值变化回调 */
-  onFormValuesChange?: (changedValues: any, allValues: any) => void;
-  /** 子组件（表单内容） */
-  children?: React.ReactNode;
+  onTestRun?: () => void;
 }
 
 // ==================== 工具函数 ====================
@@ -133,27 +130,31 @@ function canTestRunNode(type: NodeTypeEnumV2): boolean {
 // ==================== 组件实现 ====================
 
 const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
-  visible,
+  open,
   node,
-  form,
+  referenceData,
   onClose,
-  onNameChange,
-  onDelete,
-  onCopy,
+  onNodeConfigChange,
+  onNodeDelete,
+  onNodeCopy,
   onTestRun,
-  onFormValuesChange,
-  children,
 }) => {
+  // 内部表单实例
+  const [form] = Form.useForm<NodeConfigV2>();
+
   // 是否编辑名称
   const [isEditingName, setIsEditingName] = useState(false);
   // 临时名称
   const [tempName, setTempName] = useState('');
 
-  // 当节点变化时，重置编辑状态
+  // 当节点变化时，重置编辑状态并设置表单值
   useEffect(() => {
     setIsEditingName(false);
     setTempName(node?.name || '');
-  }, [node?.id]);
+    if (node?.nodeConfig) {
+      form.setFieldsValue(node.nodeConfig);
+    }
+  }, [node?.id, node?.nodeConfig, form]);
 
   /**
    * 开始编辑名称
@@ -167,11 +168,15 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
    * 保存名称
    */
   const handleSaveName = useCallback(() => {
-    if (tempName.trim()) {
-      onNameChange(tempName.trim());
+    if (tempName.trim() && node && onNodeConfigChange) {
+      // 通过 nodeConfig 更新名称
+      onNodeConfigChange({
+        ...node.nodeConfig,
+        // 名称通常不在 nodeConfig 中，需要其他方式处理
+      });
     }
     setIsEditingName(false);
-  }, [tempName, onNameChange]);
+  }, [tempName, node, onNodeConfigChange]);
 
   /**
    * 取消编辑
@@ -196,61 +201,73 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
   );
 
   /**
+   * 表单值变化处理
+   */
+  const handleFormValuesChange = useCallback(
+    (changedValues: any, allValues: any) => {
+      if (node && onNodeConfigChange) {
+        onNodeConfigChange({
+          ...node.nodeConfig,
+          ...allValues,
+        });
+      }
+    },
+    [node, onNodeConfigChange],
+  );
+
+  /**
    * 操作菜单
    */
   const menuItems: MenuProps['items'] = node
-    ? [
-        canTestRunNode(node.type) && {
-          key: 'testRun',
-          icon: <PlayCircleOutlined />,
-          label: '试运行',
-          onClick: onTestRun,
-        },
+    ? ([
+        canTestRunNode(node.type) &&
+          onTestRun && {
+            key: 'testRun',
+            icon: <PlayCircleOutlined />,
+            label: '试运行',
+            onClick: onTestRun,
+          },
         {
           key: 'rename',
           icon: <EditOutlined />,
           label: '重命名',
           onClick: handleStartEditName,
         },
-        {
+        onNodeCopy && {
           key: 'copy',
           icon: <CopyOutlined />,
           label: '复制',
-          onClick: onCopy,
+          onClick: () => onNodeCopy(node),
         },
-        canDeleteNode(node.type) && {
-          type: 'divider',
-        },
-        canDeleteNode(node.type) && {
-          key: 'delete',
-          icon: <DeleteOutlined />,
-          label: '删除',
-          danger: true,
-          onClick: onDelete,
-        },
-      ].filter(Boolean) as MenuProps['items']
+        canDeleteNode(node.type) &&
+          onNodeDelete && {
+            type: 'divider',
+          },
+        canDeleteNode(node.type) &&
+          onNodeDelete && {
+            key: 'delete',
+            icon: <DeleteOutlined />,
+            label: '删除',
+            danger: true,
+            onClick: () => onNodeDelete(node.id, node),
+          },
+      ].filter(Boolean) as MenuProps['items'])
     : [];
 
-  if (!visible || !node) {
+  if (!open || !node) {
     return null;
   }
 
   const backgroundColor = getNodeBackgroundColor(node.type);
-  const iconUrl = typeof node.icon === 'string' ? node.icon : getNodeIcon(node.type);
+  const iconUrl =
+    typeof node.icon === 'string' ? node.icon : getNodeIcon(node.type);
 
   return (
     <div className="node-drawer-v2">
       {/* 头部 */}
-      <div
-        className="node-drawer-v2-header"
-        style={{ backgroundColor }}
-      >
+      <div className="node-drawer-v2-header" style={{ backgroundColor }}>
         <div className="node-drawer-v2-header-left">
-          <img
-            src={iconUrl}
-            alt=""
-            className="node-drawer-v2-icon"
-          />
+          <img src={iconUrl} alt="" className="node-drawer-v2-icon" />
           <div className="node-drawer-v2-info">
             {isEditingName ? (
               <Input
@@ -263,7 +280,10 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
                 className="node-drawer-v2-name-input"
               />
             ) : (
-              <div className="node-drawer-v2-name" onClick={handleStartEditName}>
+              <div
+                className="node-drawer-v2-name"
+                onClick={handleStartEditName}
+              >
                 <span>{node.name}</span>
                 <EditOutlined className="node-drawer-v2-edit-icon" />
               </div>
@@ -289,10 +309,14 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
         <Form
           form={form}
           layout="vertical"
-          onValuesChange={onFormValuesChange}
+          onValuesChange={handleFormValuesChange}
           className="node-drawer-v2-form"
         >
-          {children}
+          <NodePanelDrawerV2
+            node={node}
+            form={form}
+            referenceData={referenceData}
+          />
         </Form>
       </div>
     </div>
