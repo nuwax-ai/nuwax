@@ -63,6 +63,12 @@ const findArgByKey = (
 /**
  * 获取变量显示名称
  */
+const deriveArgLabel = (key: string, arg?: InputAndOutConfigV2): string => {
+  if (arg?.name) return arg.name;
+  const parts = key?.split('.') || [];
+  return parts.length > 1 ? parts.slice(1).join('.') : key || '';
+};
+
 const getDisplayValue = (
   value: string,
   referenceData?: NodePreviousAndArgMapV2,
@@ -80,10 +86,11 @@ const getDisplayValue = (
     n.outputArgs?.some((arg) => findArgByKey(arg, value)),
   );
 
-  if (node) {
-    return `${node.name}.${argInfo.name}`;
+  const argLabel = deriveArgLabel(value, argInfo);
+  if (node?.name) {
+    return `${node.name}.${argLabel}`;
   }
-  return argInfo.name;
+  return argLabel;
 };
 
 /**
@@ -92,12 +99,20 @@ const getDisplayValue = (
  */
 const convertArgsToTreeData = (
   args: InputAndOutConfigV2[],
+  nodeId: number,
+  parentPath: string[] = [],
 ): InputAndOutConfigV2[] => {
   return args.map((arg) => {
+    const currentPath = [...parentPath, arg.name];
     const children = arg.children || arg.subArgs;
+    const fallbackKey = `${nodeId}.${currentPath.join('.')}`;
     return {
       ...arg,
-      children: children ? convertArgsToTreeData(children) : undefined,
+      // 强制使用与 argMap 相同的路径 key，确保选中值与 argMap 对齐
+      key: fallbackKey,
+      children: children
+        ? convertArgsToTreeData(children, nodeId, currentPath)
+        : undefined,
     };
   });
 };
@@ -179,9 +194,11 @@ const VariableSelectorV2: React.FC<VariableSelectorV2Props> = ({
 
   // 渲染树节点标题
   const renderTreeTitle = (nodeData: InputAndOutConfigV2) => {
+    const displayName =
+      nodeData.name || deriveArgLabel(nodeData.key || '', nodeData);
     return (
       <div className="variable-selector-v2-tree-title">
-        <span className="variable-selector-v2-tree-name">{nodeData.name}</span>
+        <span className="variable-selector-v2-tree-name">{displayName}</span>
         {nodeData.description && (
           <Popover content={nodeData.description}>
             <InfoCircleOutlined className="variable-selector-v2-tree-info" />
@@ -215,7 +232,7 @@ const VariableSelectorV2: React.FC<VariableSelectorV2Props> = ({
 
     return nodeList.map((node) => {
       const treeData = node.outputArgs
-        ? convertArgsToTreeData(node.outputArgs)
+        ? convertArgsToTreeData(node.outputArgs, node.id)
         : [];
       const hasChildren = treeData.some(
         (arg) => arg.children && arg.children.length > 0,

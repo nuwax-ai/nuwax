@@ -13,10 +13,8 @@ import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/html
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { VARIABLE_CONFIG_TYPE_OPTIONS } from '@/constants/node.constants';
-import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum, VariableConfigTypeEnum } from '@/types/enums/node';
 import { CodeLangEnum } from '@/types/enums/plugin';
-import { InputAndOutConfig } from '@/types/interfaces/node';
 import {
   ExclamationCircleOutlined,
   ExpandAltOutlined,
@@ -36,7 +34,8 @@ import {
 } from 'antd';
 import React, { useEffect, useState } from 'react';
 
-import type { NodeConfigV2 } from '../../../types';
+import type { InputAndOutConfigV2, NodeConfigV2 } from '../../../types';
+import { DataTypeEnumV2 } from '../../../types';
 import {
   InputAndOutV2,
   OtherFormListV2,
@@ -81,7 +80,7 @@ export const StartNodeV2: React.FC<NodeDisposePropsV2> = ({
         key={`${type}-${id}-inputArgs`}
         title="输入"
         inputItemName="inputArgs"
-        params={nodeConfig?.inputArgs || []}
+        params={(nodeConfig?.inputArgs as any) || []}
         form={form}
         showCheck
       />
@@ -94,6 +93,7 @@ export const StartNodeV2: React.FC<NodeDisposePropsV2> = ({
  */
 export const DocumentExtractionNodeV2: React.FC<NodeDisposePropsV2> = ({
   form,
+  referenceData,
 }) => {
   return (
     <>
@@ -106,6 +106,7 @@ export const DocumentExtractionNodeV2: React.FC<NodeDisposePropsV2> = ({
           disabledAdd
           disabledDelete
           disabledInput
+          referenceData={referenceData}
         />
       </div>
       <Form.Item shouldUpdate>
@@ -165,6 +166,7 @@ export const EndNodeV2: React.FC<NodeDisposePropsV2> = ({
           fieldConfigs={outPutConfigsV2}
           showCopy={true}
           inputItemName={InputItemNameEnum.outputArgs}
+          referenceData={referenceData}
         />
       </div>
 
@@ -195,7 +197,7 @@ export const EndNodeV2: React.FC<NodeDisposePropsV2> = ({
                   }}
                   variables={transformToPromptVariables(
                     outputArgs.filter(
-                      (item: InputAndOutConfig) =>
+                      (item: InputAndOutConfigV2) =>
                         !['', null, undefined].includes(item.name),
                     ),
                     referenceData?.argMap,
@@ -213,7 +215,10 @@ export const EndNodeV2: React.FC<NodeDisposePropsV2> = ({
 /**
  * 循环节点配置
  */
-export const CycleNodeV2: React.FC<NodeDisposePropsV2> = ({ form }) => {
+export const CycleNodeV2: React.FC<NodeDisposePropsV2> = ({
+  form,
+  referenceData,
+}) => {
   return (
     <div>
       <div className="node-item-style-v2">
@@ -267,6 +272,7 @@ export const CycleNodeV2: React.FC<NodeDisposePropsV2> = ({ form }) => {
                   fieldConfigs={outPutConfigsV2}
                   inputItemName={InputItemNameEnum.inputArgs}
                   form={form}
+                  referenceData={referenceData}
                 />
               </div>
             );
@@ -288,6 +294,7 @@ export const CycleNodeV2: React.FC<NodeDisposePropsV2> = ({ form }) => {
           fieldConfigs={outPutConfigsV2}
           inputItemName={InputItemNameEnum.variableArgs}
           form={form}
+          referenceData={referenceData}
         />
       </div>
 
@@ -297,6 +304,7 @@ export const CycleNodeV2: React.FC<NodeDisposePropsV2> = ({ form }) => {
         inputItemName={InputItemNameEnum.outputArgs}
         form={form}
         isLoop
+        referenceData={referenceData}
       />
     </div>
   );
@@ -305,7 +313,10 @@ export const CycleNodeV2: React.FC<NodeDisposePropsV2> = ({ form }) => {
 /**
  * 变量节点配置
  */
-export const VariableNodeV2: React.FC<NodeDisposePropsV2> = ({ form }) => {
+export const VariableNodeV2: React.FC<NodeDisposePropsV2> = ({
+  form,
+  referenceData,
+}) => {
   const options = VARIABLE_CONFIG_TYPE_OPTIONS;
   const configType = form.getFieldValue('configType');
   const isSetVariable = configType === VariableConfigTypeEnum.SET_VARIABLE;
@@ -328,6 +339,7 @@ export const VariableNodeV2: React.FC<NodeDisposePropsV2> = ({ form }) => {
                 fieldConfigs={outPutConfigsV2}
                 inputItemName={InputItemNameEnum.inputArgs}
                 form={form}
+                referenceData={referenceData}
               />
             </div>
           ) : null
@@ -354,7 +366,7 @@ export const VariableNodeV2: React.FC<NodeDisposePropsV2> = ({ form }) => {
                 treeData={[
                   {
                     name: 'isSuccess',
-                    dataType: DataTypeEnum.Boolean,
+                    dataType: DataTypeEnumV2.Boolean,
                     description: '',
                     require: true,
                     systemVariable: false,
@@ -445,6 +457,7 @@ export const TextProcessingNodeV2: React.FC<NodeDisposePropsV2> = ({
           fieldConfigs={outPutConfigsV2}
           inputItemName={InputItemNameEnum.inputArgs}
           form={form}
+          referenceData={referenceData}
         />
       </div>
       <Form.Item shouldUpdate noStyle>
@@ -526,7 +539,7 @@ export const TextProcessingNodeV2: React.FC<NodeDisposePropsV2> = ({
                   }}
                   variables={transformToPromptVariables(
                     inputArgs.filter(
-                      (item: InputAndOutConfig) =>
+                      (item: InputAndOutConfigV2) =>
                         !['', null, undefined].includes(item.name),
                     ),
                     referenceData?.argMap,
@@ -602,7 +615,7 @@ export const TextProcessingNodeV2: React.FC<NodeDisposePropsV2> = ({
                     ? [
                         {
                           name: 'output',
-                          dataType: DataTypeEnum.String,
+                          dataType: DataTypeEnumV2.String,
                           description: '',
                           require: true,
                           systemVariable: false,
@@ -613,7 +626,7 @@ export const TextProcessingNodeV2: React.FC<NodeDisposePropsV2> = ({
                     : [
                         {
                           name: 'output',
-                          dataType: DataTypeEnum.Array_String,
+                          dataType: DataTypeEnumV2.Array_String,
                           description: '',
                           require: true,
                           systemVariable: false,
@@ -639,6 +652,7 @@ export const CodeNodeV2: React.FC<NodeDisposePropsV2> = ({
   nodeConfig,
   type,
   id,
+  referenceData,
 }) => {
   const [show, setShow] = useState(false);
   const fieldName =
@@ -657,6 +671,7 @@ export const CodeNodeV2: React.FC<NodeDisposePropsV2> = ({
           fieldConfigs={outPutConfigsV2}
           inputItemName={InputItemNameEnum.inputArgs}
           form={form}
+          referenceData={referenceData}
         />
       </div>
       <div className="node-item-style-v2">
@@ -684,7 +699,7 @@ export const CodeNodeV2: React.FC<NodeDisposePropsV2> = ({
       <CustomTree
         title="输出"
         key={`${type}-${id}-outputArgs`}
-        params={nodeConfig?.outputArgs || []}
+        params={(nodeConfig?.outputArgs as any) || []}
         form={form}
         inputItemName="outputArgs"
       />

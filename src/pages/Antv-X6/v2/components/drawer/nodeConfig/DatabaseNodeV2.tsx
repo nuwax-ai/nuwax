@@ -6,7 +6,6 @@
  */
 
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
-import InputOrReference from '@/components/FormListItem/InputOrReference';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import TreeInput from '@/components/FormListItem/TreeInput';
 import DataTable from '@/components/Skill/database';
@@ -27,6 +26,7 @@ import {
 import React, { useEffect, useState } from 'react';
 
 import type { NodeConfigV2 } from '../../../types';
+import InputOrReferenceV2 from '../../common/InputOrReferenceV2';
 import { InputAndOutV2, TreeOutputV2, outPutConfigsV2 } from './commonNodeV2';
 
 import './DatabaseNodeV2.less';
@@ -108,6 +108,7 @@ const DatabaseNodeV2: React.FC<DatabaseNodeV2Props> = ({
             fieldConfigs={outPutConfigsV2}
             inputItemName={InputItemNameEnum.inputArgs}
             form={form}
+            referenceData={referenceData}
           />
         </div>
       )}
@@ -211,7 +212,7 @@ const DatabaseNodeV2: React.FC<DatabaseNodeV2Props> = ({
                                         'bindValue',
                                       ]}
                                     >
-                                      <InputOrReference
+                                      <InputOrReferenceV2
                                         form={form}
                                         referenceType={bindValueType}
                                         style={{
@@ -224,6 +225,7 @@ const DatabaseNodeV2: React.FC<DatabaseNodeV2Props> = ({
                                           'secondArg',
                                           'bindValue',
                                         ]}
+                                        referenceData={referenceData}
                                       />
                                     </Form.Item>
                                   </div>

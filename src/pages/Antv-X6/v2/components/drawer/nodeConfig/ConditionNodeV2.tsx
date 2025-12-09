@@ -5,7 +5,6 @@
  * 完全独立，不依赖 V1
  */
 
-import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { branchTypeMap } from '@/constants/node.constants';
 import { ConditionBranchConfigs } from '@/types/interfaces/node';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
@@ -15,6 +14,7 @@ import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { v4 as uuidv4 } from 'uuid';
 
 import type { NodeConfigV2 } from '../../../types';
+import InputOrReferenceV2 from '../../common/InputOrReferenceV2';
 
 import './ConditionNodeV2.less';
 
@@ -59,7 +59,10 @@ const conditionOptions = [
 
 // ==================== 组件实现 ====================
 
-const ConditionNodeV2: React.FC<ConditionNodeV2Props> = ({ form }) => {
+const ConditionNodeV2: React.FC<ConditionNodeV2Props> = ({
+  form,
+  referenceData,
+}) => {
   const onDragEnd = (result: any) => {
     if (!result.destination) return;
 
@@ -279,7 +282,7 @@ const ConditionNodeV2: React.FC<ConditionNodeV2Props> = ({ form }) => {
                                                         'bindValue',
                                                       ]}
                                                     >
-                                                      <InputOrReference
+                                                      <InputOrReferenceV2
                                                         isDisabled
                                                         form={form}
                                                         fieldName={[
@@ -297,6 +300,10 @@ const ConditionNodeV2: React.FC<ConditionNodeV2Props> = ({ form }) => {
                                                               ? 150
                                                               : 180,
                                                         }}
+                                                        referenceType="Reference"
+                                                        referenceData={
+                                                          referenceData
+                                                        }
                                                       />
                                                     </Form.Item>
                                                     <Form.Item
@@ -306,7 +313,7 @@ const ConditionNodeV2: React.FC<ConditionNodeV2Props> = ({ form }) => {
                                                         'bindValue',
                                                       ]}
                                                     >
-                                                      <InputOrReference
+                                                      <InputOrReferenceV2
                                                         form={form}
                                                         referenceType={
                                                           bindValueType
@@ -325,6 +332,9 @@ const ConditionNodeV2: React.FC<ConditionNodeV2Props> = ({ form }) => {
                                                           'secondArg',
                                                           'bindValue',
                                                         ]}
+                                                        referenceData={
+                                                          referenceData
+                                                        }
                                                       />
                                                     </Form.Item>
                                                   </div>
