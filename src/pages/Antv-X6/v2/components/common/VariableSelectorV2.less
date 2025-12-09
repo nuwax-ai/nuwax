@@ -1,0 +1,90 @@
+/**
+ * VariableSelectorV2 样式
+ */
+
+.variable-selector-v2 {
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  &-input {
+    flex: 1;
+    margin-right: 8px;
+  }
+
+  &-tag {
+    flex: 1;
+    margin-right: 8px;
+    max-width: calc(100% - 30px);
+    display: flex;
+    align-items: center;
+
+    &-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &-icon {
+    cursor: pointer;
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+
+    &:hover {
+      color: #1890ff;
+      background: rgba(24, 144, 255, 0.1);
+    }
+  }
+
+  &-empty {
+    padding: 16px;
+  }
+
+  &-tree-wrapper {
+    padding: 12px;
+    max-height: 300px;
+    overflow: auto;
+  }
+
+  &-tree {
+    &.no-children {
+      .ant-tree-switcher {
+        display: none;
+      }
+    }
+  }
+
+  &-tree-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &-tree-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &-tree-info {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.45);
+  }
+
+  &-tree-tag {
+    font-size: 10px;
+    line-height: 14px;
+    margin-left: 4px;
+  }
+}
+
+.variable-selector-v2-popup {
+  .ant-dropdown-menu-submenu-title {
+    padding-right: 24px;
+  }
+}
