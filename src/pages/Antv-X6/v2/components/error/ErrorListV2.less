@@ -1,0 +1,144 @@
+/**
+ * ErrorListV2 样式
+ */
+
+.error-list-v2 {
+  &-trigger {
+    padding: 4px 8px;
+
+    &.has-errors {
+      .anticon {
+        animation: error-pulse 2s infinite;
+      }
+    }
+  }
+
+  &-content {
+    width: 360px;
+    max-height: 400px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &-summary {
+    display: flex;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 8px;
+
+    &-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+
+      &.error {
+        color: #ff4d4f;
+      }
+
+      &.warning {
+        color: #faad14;
+      }
+
+      &.info {
+        color: #1890ff;
+      }
+    }
+  }
+
+  &-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 320px;
+
+    .ant-list-item {
+      padding: 8px 0;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #f5f5f5;
+      }
+    }
+  }
+
+  &-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+
+    &-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    &-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    &-icon {
+      font-size: 14px;
+    }
+
+    &-tag {
+      margin: 0;
+      font-size: 10px;
+      line-height: 16px;
+      padding: 0 4px;
+    }
+
+    &-node {
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &-message {
+      font-size: 13px;
+      color: rgba(0, 0, 0, 0.85);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    &-arrow {
+      color: rgba(0, 0, 0, 0.25);
+      font-size: 12px;
+      margin-left: 8px;
+    }
+  }
+
+  &-empty {
+    padding: 24px;
+  }
+}
+
+.error-list-v2-popover {
+  .ant-popover-inner {
+    padding: 12px;
+  }
+
+  .ant-popover-title {
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+}
+
+@keyframes error-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}

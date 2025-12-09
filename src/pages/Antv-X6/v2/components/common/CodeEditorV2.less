@@ -1,0 +1,36 @@
+/**
+ * CodeEditorV2 样式
+ */
+
+.code-editor-v2 {
+  position: relative;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  overflow: hidden;
+
+  &-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 13px;
+  }
+
+  &-placeholder {
+    position: absolute;
+    top: 10px;
+    left: 60px;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 13px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    pointer-events: none;
+  }
+
+  // Monaco 编辑器样式调整
+  .monaco-editor {
+    .margin {
+      background: transparent !important;
+    }
+  }
+}

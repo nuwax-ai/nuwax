@@ -1,0 +1,570 @@
+/**
+ * V2 图形容器组件
+ *
+ * 封装 AntV X6 图形编辑器
+ * 提供图形操作的统一接口
+ *
+ * 完全独立，不依赖 v1 任何代码
+ */
+
+import { Graph, Node } from '@antv/x6';
+import { App } from 'antd';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from 'react';
+
+import type {
+  ChildNodeV2,
+  CreateNodeByPortOrEdgePropsV2,
+  EdgeV2,
+  GraphContainerRefV2,
+  GraphRectV2,
+  RunResultItemV2,
+  ViewGraphPropsV2,
+  WorkflowDataV2,
+} from '../types';
+import { NodeTypeEnumV2, RunResultStatusEnumV2 } from '../types';
+import {
+  adjustLoopNodeSize,
+  calculateNodeSize,
+  createBaseNodeData,
+  createEdgeData,
+  createLoopChildNodeData,
+  extractEdgesFromNodes,
+  generatePorts,
+} from '../utils/graphV2';
+import {
+  errorNode,
+  highlightNode,
+  injectAnimationStyles,
+  resetAllAnimations,
+  runningNode,
+} from '../utils/nodeAnimationV2';
+import { bindEventHandlersV2 } from './EventHandlersV2';
+import { initGraphV2 } from './GraphV2';
+import { registerCustomNodesV2 } from './registerCustomNodesV2';
+
+// ==================== 类型定义 ====================
+
+export interface GraphContainerV2Props {
+  workflowData: WorkflowDataV2;
+  onNodeChange: (node: ChildNodeV2) => void;
+  onNodeAdd: (node: ChildNodeV2) => void;
+  onNodeDelete: (nodeId: number, node?: ChildNodeV2) => void;
+  onNodeCopy: (node: ChildNodeV2) => void;
+  onNodeSelect: (node: ChildNodeV2 | null) => void;
+  onEdgeAdd: (edge: EdgeV2) => void;
+  onEdgeDelete: (source: string, target: string) => void;
+  onZoomChange: (zoom: number) => void;
+  onHistoryChange?: (canUndo: boolean, canRedo: boolean) => void;
+  onClickBlank: () => void;
+  onInit?: () => void;
+  createNodeByPortOrEdge: (config: CreateNodeByPortOrEdgePropsV2) => void;
+}
+
+const GRAPH_CONTAINER_ID = 'graph-container-v2';
+
+// ==================== 组件实现 ====================
+
+const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
+  (props, ref) => {
+    const {
+      workflowData,
+      onNodeChange,
+      onNodeAdd,
+      onNodeDelete,
+      onNodeCopy,
+      onNodeSelect,
+      onEdgeAdd,
+      onEdgeDelete,
+      onZoomChange,
+      onHistoryChange,
+      onClickBlank,
+      onInit,
+      createNodeByPortOrEdge,
+    } = props;
+
+    const { modal, message } = App.useApp();
+    const containerRef = useRef<HTMLDivElement>(null);
+    const graphRef = useRef<Graph | null>(null);
+    const hasInitialized = useRef(false);
+    const animationCleanupRef = useRef<Map<string, () => void>>(new Map());
+
+    // 初始化动画样式
+    useEffect(() => {
+      injectAnimationStyles();
+    }, []);
+
+    // ==================== 图形操作方法 ====================
+
+    /**
+     * 获取当前视口
+     */
+    const getCurrentViewPort = useCallback((): ViewGraphPropsV2 => {
+      if (!graphRef.current) {
+        return { x: 0, y: 0, width: 0, height: 0 };
+      }
+      const area = graphRef.current.getGraphArea();
+      return {
+        x: area.x,
+        y: area.y,
+        width: area.width,
+        height: area.height,
+      };
+    }, []);
+
+    /**
+     * 添加节点
+     */
+    const graphAddNode = useCallback(
+      (position: GraphRectV2, node: ChildNodeV2) => {
+        if (!graphRef.current) return;
+
+        const point = graphRef.current.clientToGraph(position.x, position.y);
+        const nodeData = createBaseNodeData({
+          ...node,
+          nodeConfig: {
+            ...node.nodeConfig,
+            extension: { x: point.x, y: point.y },
+          },
+        });
+
+        graphRef.current.addNode(nodeData);
+
+        // 如果是循环内部节点，设置父子关系
+        if (node.loopNodeId) {
+          const childNode = graphRef.current.getCellById(node.id.toString());
+          const parentNode = graphRef.current.getCellById(
+            node.loopNodeId.toString(),
+          );
+          if (childNode && parentNode && parentNode.isNode()) {
+            (parentNode as Node).addChild(childNode);
+            // 调整父节点大小
+            const newSize = adjustLoopNodeSize(
+              parentNode.getData() as ChildNodeV2,
+              (parentNode as Node)
+                .getChildren()
+                ?.map((c) => c.getData() as ChildNodeV2) || [],
+            );
+            (parentNode as Node).resize(newSize.width, newSize.height);
+          }
+        }
+      },
+      [],
+    );
+
+    /**
+     * 更新节点
+     */
+    const graphUpdateNode = useCallback(
+      (nodeId: string, newData: ChildNodeV2 | null) => {
+        if (!graphRef.current || !newData) return;
+
+        const node = graphRef.current.getCellById(nodeId);
+        if (node && node.isNode()) {
+          // 更新位置
+          const position = (node as Node).getPosition();
+          newData.nodeConfig = {
+            ...newData.nodeConfig,
+            extension: {
+              ...newData.nodeConfig?.extension,
+              x: position.x,
+              y: position.y,
+            },
+          };
+
+          // 更新端口配置
+          const newPorts = generatePorts(newData);
+          const size = calculateNodeSize(newData);
+          (node as Node).setSize(size.width, size.height);
+          node.prop('ports', newPorts);
+          node.updateData(newData);
+        }
+      },
+      [],
+    );
+
+    /**
+     * 通过表单数据更新节点
+     */
+    const graphUpdateByFormData = useCallback(
+      (changedValues: any, fullFormValues: any, nodeId: string) => {
+        if (!graphRef.current) return;
+
+        const cell = graphRef.current.getCellById(nodeId);
+        if (!cell || !cell.isNode()) return;
+
+        const oldData = cell.getData() as ChildNodeV2;
+        const newData: ChildNodeV2 = {
+          ...oldData,
+          nodeConfig: {
+            ...oldData.nodeConfig,
+            ...fullFormValues,
+          },
+        };
+
+        graphUpdateNode(nodeId, newData);
+      },
+      [graphUpdateNode],
+    );
+
+    /**
+     * 删除节点
+     */
+    const graphDeleteNode = useCallback((nodeId: string) => {
+      if (!graphRef.current) return;
+      graphRef.current.removeCell(nodeId);
+    }, []);
+
+    /**
+     * 选中节点
+     */
+    const graphSelectNode = useCallback((nodeId: string) => {
+      if (!graphRef.current) return;
+
+      const node = graphRef.current.getCellById(nodeId);
+      if (node) {
+        graphRef.current.cleanSelection();
+        graphRef.current.select(node);
+      }
+    }, []);
+
+    /**
+     * 删除边
+     */
+    const graphDeleteEdge = useCallback((edgeId: string) => {
+      if (!graphRef.current) return;
+      graphRef.current.removeCell(edgeId);
+    }, []);
+
+    /**
+     * 创建新边
+     */
+    const graphCreateNewEdge = useCallback(
+      (
+        source: string,
+        target: string,
+        isLoop?: boolean,
+        sourcePort?: string,
+        targetPort?: string,
+      ) => {
+        if (!graphRef.current) return;
+
+        const edgeData = createEdgeData({
+          source,
+          target,
+          sourcePort: sourcePort || `${source}-out`,
+          targetPort: targetPort || `${target}-in`,
+          zIndex: isLoop ? 25 : 1,
+        });
+        graphRef.current.addEdge(edgeData);
+      },
+      [],
+    );
+
+    /**
+     * 设置缩放
+     */
+    const graphChangeZoom = useCallback((zoom: number) => {
+      if (!graphRef.current) return;
+      graphRef.current.zoomTo(zoom);
+    }, []);
+
+    /**
+     * 缩放到适合
+     */
+    const graphChangeZoomToFit = useCallback(() => {
+      if (!graphRef.current) return;
+      graphRef.current.zoomToFit({
+        padding: { top: 128, left: 18, right: 18, bottom: 18 },
+        maxScale: 1,
+        minScale: 0.2,
+      });
+    }, []);
+
+    /**
+     * 绘制图形
+     */
+    const drawGraph = useCallback(() => {
+      if (!graphRef.current || workflowData.nodeList.length === 0) return;
+
+      // 清除现有元素
+      graphRef.current.clearCells();
+
+      // 过滤出非循环子节点
+      const mainNodes = workflowData.nodeList.filter((n) => !n.loopNodeId);
+
+      // 创建主节点
+      const nodeDataList = mainNodes.map((node) => createBaseNodeData(node));
+      graphRef.current.fromJSON({ nodes: nodeDataList });
+
+      // 添加循环节点的子节点
+      const loopNodes = graphRef.current.getNodes().filter((n) => {
+        const data = n.getData() as ChildNodeV2;
+        return data?.type === NodeTypeEnumV2.Loop;
+      });
+
+      loopNodes.forEach((loopNode) => {
+        const data = loopNode.getData() as ChildNodeV2;
+        if (data.innerNodes) {
+          data.innerNodes.forEach((childDef) => {
+            const childData = createLoopChildNodeData(data.id, childDef);
+            const childNode = graphRef.current!.addNode(childData);
+            loopNode.addChild(childNode);
+          });
+        }
+      });
+
+      // 添加边
+      const edges = extractEdgesFromNodes(workflowData.nodeList);
+      edges.forEach((edge) => {
+        const edgeData = createEdgeData(edge);
+        graphRef.current!.addEdge(edgeData);
+      });
+
+      // 自适应视图
+      setTimeout(() => {
+        graphChangeZoomToFit();
+        onInit?.();
+      }, 100);
+    }, [workflowData.nodeList, graphChangeZoomToFit, onInit]);
+
+    /**
+     * 获取图形引用
+     */
+    const getGraphRef = useCallback((): Graph => {
+      return graphRef.current!;
+    }, []);
+
+    /**
+     * 触发空白区域点击
+     */
+    const graphTriggerBlankClick = useCallback(() => {
+      if (!graphRef.current) return;
+      graphRef.current.trigger('blank:click');
+    }, []);
+
+    /**
+     * 重置运行结果
+     */
+    const graphResetRunResult = useCallback(() => {
+      if (!graphRef.current) return;
+
+      // 清理所有动画
+      animationCleanupRef.current.forEach((cleanup) => cleanup());
+      animationCleanupRef.current.clear();
+
+      resetAllAnimations(graphRef.current);
+
+      // 重置节点数据
+      graphRef.current.getNodes().forEach((node) => {
+        node.updateData({ runResults: [], isFocus: false });
+      });
+    }, []);
+
+    /**
+     * 激活节点运行结果
+     */
+    const graphActiveNodeRunResult = useCallback(
+      (nodeId: string, runResult: RunResultItemV2) => {
+        if (!graphRef.current) return;
+
+        const node = graphRef.current.getCellById(nodeId);
+        if (!node || !node.isNode()) return;
+
+        const data = node.getData() as ChildNodeV2;
+        const runResults = data.runResults || [];
+
+        // 更新运行结果
+        node.updateData({
+          isFocus: true,
+          runResults: [
+            ...runResults.filter(
+              (r) => r.status !== RunResultStatusEnumV2.EXECUTING,
+            ),
+            runResult,
+          ],
+        });
+
+        // 选中节点
+        graphRef.current.select(node);
+
+        // 清理之前的动画
+        const prevCleanup = animationCleanupRef.current.get(nodeId);
+        if (prevCleanup) {
+          prevCleanup();
+        }
+
+        // 根据状态应用动画
+        let cleanup: () => void;
+        switch (runResult.status) {
+          case RunResultStatusEnumV2.EXECUTING:
+            cleanup = runningNode(node as Node);
+            break;
+          case RunResultStatusEnumV2.FAILED:
+            cleanup = errorNode(node as Node);
+            break;
+          case RunResultStatusEnumV2.FINISHED:
+            cleanup = highlightNode(node as Node, {
+              color: '#52c41a',
+              duration: 1000,
+            });
+            break;
+          default:
+            cleanup = () => {};
+        }
+
+        animationCleanupRef.current.set(nodeId, cleanup);
+      },
+      [],
+    );
+
+    /**
+     * 是否可以撤销
+     */
+    const canUndo = useCallback((): boolean => {
+      return graphRef.current?.canUndo() || false;
+    }, []);
+
+    /**
+     * 是否可以重做
+     */
+    const canRedo = useCallback((): boolean => {
+      return graphRef.current?.canRedo() || false;
+    }, []);
+
+    /**
+     * 撤销
+     */
+    const undo = useCallback(() => {
+      graphRef.current?.undo();
+    }, []);
+
+    /**
+     * 重做
+     */
+    const redo = useCallback(() => {
+      graphRef.current?.redo();
+    }, []);
+
+    // ==================== 暴露方法给父组件 ====================
+
+    useImperativeHandle(ref, () => ({
+      getCurrentViewPort,
+      graphAddNode,
+      graphUpdateNode,
+      graphUpdateByFormData,
+      graphDeleteNode,
+      graphSelectNode,
+      graphDeleteEdge,
+      graphCreateNewEdge,
+      graphChangeZoom,
+      graphChangeZoomToFit,
+      drawGraph,
+      getGraphRef,
+      graphTriggerBlankClick,
+      graphResetRunResult,
+      graphActiveNodeRunResult,
+      canUndo,
+      canRedo,
+      undo,
+      redo,
+    }));
+
+    // ==================== 初始化 ====================
+
+    useEffect(() => {
+      if (!containerRef.current) return;
+
+      // 注册自定义节点
+      registerCustomNodesV2();
+
+      // 创建图形容器
+      const graphContainer = document.createElement('div');
+      graphContainer.id = GRAPH_CONTAINER_ID;
+      graphContainer.style.width = '100%';
+      graphContainer.style.height = '100%';
+      containerRef.current.appendChild(graphContainer);
+
+      // 初始化图形
+      graphRef.current = initGraphV2({
+        containerId: GRAPH_CONTAINER_ID,
+        onNodeSelect,
+        onNodeChange,
+        onEdgeAdd,
+        onEdgeDelete: (edgeId) => {
+          // 从 edgeId 解析 source 和 target
+          const edge = graphRef.current?.getCellById(edgeId);
+          if (edge && edge.isEdge()) {
+            onEdgeDelete(edge.getSourceCellId(), edge.getTargetCellId());
+          }
+        },
+        onZoomChange,
+        createNodeByPortOrEdge,
+        onClickBlank,
+        onHistoryChange,
+      });
+
+      // 绑定事件处理器
+      const cleanupEventHandlers = bindEventHandlersV2({
+        graph: graphRef.current,
+        onNodeCopy,
+        onNodeDelete,
+        onEdgeDelete,
+        onUndo: () => {
+          onHistoryChange?.(canUndo(), canRedo());
+        },
+        onRedo: () => {
+          onHistoryChange?.(canUndo(), canRedo());
+        },
+        modal,
+        message,
+      });
+
+      return () => {
+        // 清理
+        cleanupEventHandlers();
+        animationCleanupRef.current.forEach((cleanup) => cleanup());
+        animationCleanupRef.current.clear();
+
+        setTimeout(() => {
+          if (graphRef.current) {
+            graphRef.current.dispose();
+            graphRef.current = null;
+          }
+        }, 100);
+      };
+    }, []);
+
+    // 数据变化时重绘
+    useEffect(() => {
+      if (workflowData.nodeList.length > 0 && !hasInitialized.current) {
+        drawGraph();
+        hasInitialized.current = true;
+      }
+    }, [workflowData.nodeList, drawGraph]);
+
+    // 数据清空时重置
+    useEffect(() => {
+      if (workflowData.nodeList.length === 0) {
+        hasInitialized.current = false;
+      }
+    }, [workflowData.nodeList]);
+
+    return (
+      <div
+        ref={containerRef}
+        id={GRAPH_CONTAINER_ID}
+        style={{ width: '100%', height: '100%' }}
+      />
+    );
+  },
+);
+
+GraphContainerV2.displayName = 'GraphContainerV2';
+
+export default GraphContainerV2;

@@ -1,0 +1,88 @@
+/**
+ * ConditionEditorV2 样式
+ */
+
+.condition-editor-v2 {
+  &-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  &-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.85);
+  }
+
+  &-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &-group {
+    .ant-card-head {
+      min-height: 40px;
+      padding: 0 12px;
+    }
+
+    .ant-card-head-title {
+      padding: 8px 0;
+    }
+
+    .ant-card-body {
+      padding: 12px;
+    }
+  }
+
+  &-item {
+    margin-bottom: 8px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &-logic {
+    text-align: center;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.45);
+    padding: 4px 0;
+  }
+
+  &-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &-variable {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  &-operator {
+    flex: 0 0 100px;
+  }
+
+  &-value {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  &-add-condition {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  &-empty {
+    padding: 24px;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.25);
+    font-size: 12px;
+    background: #fafafa;
+    border-radius: 4px;
+  }
+}
