@@ -352,7 +352,7 @@ export interface MCPNodeItem {
 
 // 创建、编辑智能体
 export interface CreateAgentProps {
-  type: AgentTypeEnum;
+  type?: AgentTypeEnum | undefined;
   spaceId: number;
   mode?: CreateUpdateModeEnum;
   agentConfigInfo?: AgentConfigInfo;
