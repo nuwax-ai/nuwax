@@ -171,7 +171,7 @@ const referenceData = selectedNode
 - 支持数据类型过滤 (`filterType` prop)
 - 支持循环内部引用 (`isLoop` prop)
 - 树形展示嵌套参数
-- 规则对应《VARIABLE*REFERENCE_RULES.md》：展示 Start 入参 + SYS*\* 系统变量（含空间/工作流/租户/用户等）、循环节点 INDEX 与 `<name>_item` 展开、Variable 节点 isSuccess。
+- 规则对应《VARIABLE*REFERENCE_RULES.md》：展示 Start 入参 + `SYS*\*`系统变量（含空间/工作流/租户/用户等）、循环节点 INDEX 与`<name>\_item` 展开、Variable 节点 isSuccess。
 
 ---
 
