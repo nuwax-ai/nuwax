@@ -60,7 +60,7 @@ export interface GraphContainerV2Props {
   onNodeCopy: (node: ChildNodeV2) => void;
   onNodeSelect: (node: ChildNodeV2 | null) => void;
   onEdgeAdd: (edge: EdgeV2) => void;
-  onEdgeDelete: (source: string, target: string) => void;
+  onEdgeDelete: (edge: EdgeV2) => void;
   onZoomChange: (zoom: number) => void;
   onHistoryChange?: (canUndo: boolean, canRedo: boolean) => void;
   onClickBlank: () => void;
@@ -524,13 +524,7 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
         onNodeSelect,
         onNodeChange,
         onEdgeAdd,
-        onEdgeDelete: (edgeId) => {
-          // 从 edgeId 解析 source 和 target
-          const edge = graphRef.current?.getCellById(edgeId);
-          if (edge && edge.isEdge()) {
-            onEdgeDelete(edge.getSourceCellId(), edge.getTargetCellId());
-          }
-        },
+        onEdgeDelete,
         onZoomChange,
         createNodeByPortOrEdge,
         onClickBlank,
@@ -645,7 +639,7 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
     }, [contextMenu.node, contextMenu.type]);
 
     const handleContextMenuClick: MenuProps['onClick'] = useCallback(
-      ({ key }) => {
+      ({ key }: { key: string | number }) => {
         const nodeData =
           contextMenu.type === 'node'
             ? contextMenu.node

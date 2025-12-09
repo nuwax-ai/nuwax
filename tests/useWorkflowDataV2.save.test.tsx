@@ -1,6 +1,7 @@
 import { useWorkflowDataV2 } from '@/pages/Antv-X6/v2/hooks/useWorkflowDataV2';
 import workflowServiceV2 from '@/pages/Antv-X6/v2/services/workflowV2';
 import type { SaveWorkflowResponseV2 } from '@/pages/Antv-X6/v2/types';
+import { NodeTypeEnumV2 } from '@/pages/Antv-X6/v2/types';
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 
@@ -169,5 +170,72 @@ describe('useWorkflowDataV2 saveNow', () => {
     expect(result.current.isDirty).toBe(true);
     saveSpy.mockRestore();
     vi.useRealTimers();
+  });
+});
+
+describe('useWorkflowDataV2 exception edge sync', () => {
+  test('exception edge updates exceptionHandleNodeIds instead of nextNodeIds', () => {
+    const { result } = renderHook(() =>
+      useWorkflowDataV2({
+        workflowId: 0,
+      }),
+    );
+
+    act(() => {
+      result.current.addNode({
+        id: 1,
+        name: 'LLM',
+        type: NodeTypeEnumV2.LLM,
+        workflowId: 0,
+        icon: '',
+        nodeConfig: {},
+      } as any);
+      result.current.addNode({
+        id: 2,
+        name: 'Code',
+        type: NodeTypeEnumV2.Code,
+        workflowId: 0,
+        icon: '',
+        nodeConfig: {},
+      } as any);
+    });
+
+    act(() => {
+      result.current.addEdge({
+        source: '1',
+        target: '2',
+        sourcePort: '1-exception',
+        targetPort: '2-in',
+      });
+    });
+
+    const sourceNode = result.current.getNodeById(1)!;
+
+    expect(
+      sourceNode.nodeConfig?.exceptionHandleConfig?.exceptionHandleNodeIds,
+    ).toContain(2);
+    expect(sourceNode.nextNodeIds?.includes(2)).toBeFalsy();
+    expect(
+      result.current.workflowData.edgeList.find(
+        (e) => e.sourcePort === '1-exception' && e.target === '2',
+      ),
+    ).toBeTruthy();
+
+    act(() => {
+      result.current.deleteEdge('1', '2', '1-exception', '2-in');
+    });
+
+    const updatedSource = result.current.getNodeById(1)!;
+    expect(
+      updatedSource.nodeConfig?.exceptionHandleConfig?.exceptionHandleNodeIds,
+    ).not.toContain(2);
+    expect(
+      result.current.workflowData.edgeList.find(
+        (e) =>
+          e.source === '1' &&
+          e.target === '2' &&
+          e.sourcePort === '1-exception',
+      ),
+    ).toBeFalsy();
   });
 });
