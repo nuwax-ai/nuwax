@@ -125,6 +125,10 @@ export interface ChangeEdgeProps {
   targetId: string;
   sourceNode: ChildNode;
   id?: string;
+  /**
+   * 可选：提供最新的 nextNodeIds，用于防止使用旧快照造成覆盖
+   */
+  overrideNextNodeIds?: number[];
 }
 export interface CreateNodeByPortOrEdgeProps {
   child: StencilChildNode;
