@@ -1,4 +1,5 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import CodeViewer from '@/components/CodeViewer';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
 import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
 import {
@@ -8,7 +9,6 @@ import {
 } from '@/utils/appDevUtils';
 import { Button, Spin } from 'antd';
 import React, { useMemo } from 'react';
-import CodeViewer from '../CodeViewer';
 import { type DesignViewerRef } from '../DesignViewer';
 import FilePathHeader from '../FilePathHeader';
 import ImageViewer from '../ImageViewer';

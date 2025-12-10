@@ -35,10 +35,10 @@ const FileTree: React.FC<FileTreeProps> = ({
 
   useEffect(() => {
     // 自动展开第一层文件夹
-    const rootFolders = files
-      .filter((node) => node.type === 'folder')
-      .map((node) => node.id);
-    if (rootFolders.length > 0) {
+    const rootFolders =
+      files?.filter((node) => node.type === 'folder')?.map((node) => node.id) ||
+      [];
+    if (rootFolders?.length > 0) {
       setExpandedFolders(new Set(rootFolders));
     }
   }, [files]);
@@ -49,6 +49,7 @@ const FileTree: React.FC<FileTreeProps> = ({
   const onToggleFolder = useCallback((folderId: string) => {
     setExpandedFolders((prev) => {
       const newExpanded = new Set(prev);
+      // 如果已展开则删除，否则添加，实现切换效果
       if (newExpanded.has(folderId)) {
         newExpanded.delete(folderId);
       } else {
