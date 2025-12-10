@@ -6,7 +6,7 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-interface SpaceLayoutProps {
+interface WorkspaceLayoutProps {
   children: React.ReactNode;
   leftSlot?: React.ReactNode;
   centerSlot?: React.ReactNode;
@@ -20,7 +20,7 @@ interface SpaceLayoutProps {
   hideScroll?: boolean;
 }
 
-const SpaceLayout: React.FC<SpaceLayoutProps> = ({
+const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   children,
   leftSlot,
   centerSlot,
@@ -103,4 +103,4 @@ const SpaceLayout: React.FC<SpaceLayoutProps> = ({
   );
 };
 
-export default SpaceLayout;
+export default WorkspaceLayout;
