@@ -125,6 +125,11 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
     text: '应用页面开发',
   },
   {
+    type: SpaceApplicationListEnum.Skill_Manage,
+    icon: <SvgIcon name="icons-nav-doc" />,
+    text: '技能管理',
+  },
+  {
     type: SpaceApplicationListEnum.Component_Library,
     icon: <SvgIcon name="icons-nav-components" />,
     text: '组件库',

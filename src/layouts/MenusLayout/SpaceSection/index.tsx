@@ -84,6 +84,10 @@ const SpaceSection: React.FC<{
         case SpaceApplicationListEnum.Team_Setting:
           url = 'team';
           break;
+        // 技能管理
+        case SpaceApplicationListEnum.Skill_Manage:
+          url = 'skill-manage';
+          break;
         default:
           url = 'develop';
       }

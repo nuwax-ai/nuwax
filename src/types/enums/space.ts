@@ -71,6 +71,8 @@ export enum SpaceApplicationListEnum {
   Space_Square,
   // 成员与设置
   Team_Setting,
+  // 技能管理
+  Skill_Manage,
 }
 
 // 智能体配置 - 编排类型枚举
