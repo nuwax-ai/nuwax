@@ -505,6 +505,12 @@ const WorkflowV2: React.FC = () => {
           ...selectedNode,
           nodeConfig: config,
         });
+        // 同步更新画布节点（端口/尺寸等联动）
+        graphRef.current?.graphUpdateByFormData(
+          config,
+          config,
+          selectedNode.id.toString(),
+        );
       }
     },
     [selectedNode, updateNode],
