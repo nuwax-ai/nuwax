@@ -241,22 +241,149 @@ const WorkflowV2: React.FC = () => {
    */
   const handleNodeAdd = useCallback(
     (node: ChildNodeV2) => {
+      // 如果是循环节点，自动创建默认内置 Start/End 子节点（与 V1 对齐）
+      const isLoopNode = node.type === NodeTypeEnumV2.Loop;
+      const basePosition = node.nodeConfig?.extension || { x: 400, y: 300 };
+      const baseX = basePosition.x ?? 400;
+      const baseY = basePosition.y ?? 300;
+      const enhancedLoopNode: ChildNodeV2 = (() => {
+        if (!isLoopNode) return node;
+        if (
+          node.innerNodes &&
+          node.innerNodes.length > 0 &&
+          node.innerStartNodeId &&
+          node.innerEndNodeId
+        ) {
+          return node;
+        }
+        // 使用父节点 ID 派生子节点 ID，保持与 v1 一致的稳定命名，避免时间戳导致的错连
+        const startId = Number(`${node.id}01`);
+        const endId = Number(`${node.id}02`);
+        const innerStart: ChildNodeV2 = {
+          id: startId,
+          name: '循环开始',
+          description: '',
+          workflowId: node.workflowId,
+          // 与 v1 一致：使用 LoopStart，具备 in/out 端口，确保 Loop -> innerStart 连线可用
+          type: NodeTypeEnumV2.LoopStart,
+          shape: getNodeShape(NodeTypeEnumV2.LoopStart),
+          icon: '',
+          loopNodeId: node.id,
+          nodeConfig: {
+            extension: {
+              x: baseX + 72,
+              y: baseY + 48,
+            },
+          },
+          nextNodeIds: [endId],
+        };
+        const innerEnd: ChildNodeV2 = {
+          id: endId,
+          name: '循环结束',
+          description: '',
+          workflowId: node.workflowId,
+          // 与 v1 一致：使用 LoopEnd，保留 in/out 端口，方便内部结束到后续节点连线
+          type: NodeTypeEnumV2.LoopEnd,
+          shape: getNodeShape(NodeTypeEnumV2.LoopEnd),
+          icon: '',
+          loopNodeId: node.id,
+          nodeConfig: {
+            extension: {
+              x: baseX + 72,
+              y: baseY + 168,
+            },
+          },
+          nextNodeIds: [],
+        };
+        return {
+          ...node,
+          innerNodes: [innerStart, innerEnd],
+          innerStartNodeId: startId,
+          innerEndNodeId: endId,
+        };
+      })();
+
       // 1. 更新数据层
-      addNode(node);
+      addNode(enhancedLoopNode);
+      if (isLoopNode && enhancedLoopNode.innerStartNodeId) {
+        // 与 v1 对齐：Loop 的 in 端口作为 source，连到内部开始节点的 in
+        addEdge({
+          source: enhancedLoopNode.id.toString(),
+          target: enhancedLoopNode.innerStartNodeId.toString(),
+          sourcePort: `${enhancedLoopNode.id}-in`,
+          targetPort: `${enhancedLoopNode.innerStartNodeId}-in`,
+          zIndex: 25,
+        });
+      }
+      if (
+        isLoopNode &&
+        enhancedLoopNode.innerStartNodeId &&
+        enhancedLoopNode.innerEndNodeId
+      ) {
+        addEdge({
+          source: enhancedLoopNode.innerStartNodeId.toString(),
+          target: enhancedLoopNode.innerEndNodeId.toString(),
+          sourcePort: `${enhancedLoopNode.innerStartNodeId}-out`,
+          targetPort: `${enhancedLoopNode.innerEndNodeId}-in`,
+          zIndex: 25,
+        });
+        // 与 v1 对齐：内部结束节点连回 Loop 的 out 端口，形成完整闭环
+        addEdge({
+          source: enhancedLoopNode.innerEndNodeId.toString(),
+          target: enhancedLoopNode.id.toString(),
+          sourcePort: `${enhancedLoopNode.innerEndNodeId}-out`,
+          targetPort: `${enhancedLoopNode.id}-out`,
+          zIndex: 25,
+        });
+      }
 
       // 2. 同步到画布
-      const position = node.nodeConfig?.extension || { x: 400, y: 300 };
-      graphRef.current?.graphAddNode(
-        { x: position.x || 400, y: position.y || 300 },
-        node,
-      );
+      // graphAddNode 会自动处理循环节点的子节点渲染（addLoopChildNodes）
+      const position = enhancedLoopNode.nodeConfig?.extension || {
+        x: 400,
+        y: 300,
+      };
+      const posX = position.x ?? 400;
+      const posY = position.y ?? 300;
+      graphRef.current?.graphAddNode({ x: posX, y: posY }, enhancedLoopNode);
+
+      // 循环节点：添加内部边到画布（子节点已由 graphAddNode -> addLoopChildNodes 处理）
+      if (isLoopNode && enhancedLoopNode.innerStartNodeId) {
+        graphRef.current?.graphCreateNewEdge(
+          enhancedLoopNode.id.toString(),
+          enhancedLoopNode.innerStartNodeId.toString(),
+          true,
+          `${enhancedLoopNode.id}-in`,
+          `${enhancedLoopNode.innerStartNodeId}-in`,
+        );
+      }
+      if (
+        isLoopNode &&
+        enhancedLoopNode.innerStartNodeId &&
+        enhancedLoopNode.innerEndNodeId
+      ) {
+        graphRef.current?.graphCreateNewEdge(
+          enhancedLoopNode.innerStartNodeId.toString(),
+          enhancedLoopNode.innerEndNodeId.toString(),
+          true,
+          `${enhancedLoopNode.innerStartNodeId}-out`,
+          `${enhancedLoopNode.innerEndNodeId}-in`,
+        );
+        graphRef.current?.graphCreateNewEdge(
+          enhancedLoopNode.innerEndNodeId.toString(),
+          enhancedLoopNode.id.toString(),
+          true,
+          `${enhancedLoopNode.innerEndNodeId}-out`,
+          `${enhancedLoopNode.id}-out`,
+        );
+      }
 
       // 3. 选中新添加的节点
-      setSelectedNode(node);
+      setSelectedNode(enhancedLoopNode);
       setDrawerVisible(true);
-      form.setFieldsValue(node.nodeConfig);
+      form.setFieldsValue(enhancedLoopNode.nodeConfig);
     },
-    [addNode, form],
+    [addNode, addEdge, form],
   );
 
   /**
@@ -499,16 +626,16 @@ const WorkflowV2: React.FC = () => {
    * 节点配置变更
    */
   const handleNodeConfigChange = useCallback(
-    (config: NodeConfigV2) => {
+    (changedValues: any, allValues: NodeConfigV2) => {
       if (selectedNode) {
         updateNode(selectedNode.id, {
           ...selectedNode,
-          nodeConfig: config,
+          nodeConfig: allValues,
         });
-        // 同步更新画布节点（端口/尺寸等联动）
+        // 同步更新画布节点（端口/尺寸/失效边联动）
         graphRef.current?.graphUpdateByFormData(
-          config,
-          config,
+          changedValues,
+          allValues,
           selectedNode.id.toString(),
         );
       }
@@ -1144,6 +1271,22 @@ const WorkflowV2: React.FC = () => {
             referenceData={referenceData}
             onClose={handleDrawerClose}
             onNodeConfigChange={handleNodeConfigChange}
+            onNodeNameChange={(nodeId, name) => {
+              const origin =
+                (selectedNode && selectedNode.id === nodeId && selectedNode) ||
+                workflowData.nodeList.find((n) => n.id === nodeId);
+              if (!origin) return;
+              const newData = { ...origin, name };
+              setSelectedNode(newData);
+              updateNode(nodeId, newData);
+              graphRef.current?.graphUpdateNode(nodeId.toString(), newData);
+              graphRef.current
+                ?.getGraphRef?.()
+                ?.trigger('node:custom:save', {
+                  data: newData,
+                  payload: { name },
+                });
+            }}
             onNodeDelete={handleNodeDelete}
             onNodeCopy={handleNodeCopy}
           />

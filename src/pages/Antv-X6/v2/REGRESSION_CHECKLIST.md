@@ -83,6 +83,17 @@
 | 移动后位置自动保存   | ✅      |          | onNodeChange 回调 |
 | 方向键移动选中节点   | ✅      |          | EventHandlersV2   |
 
+### 2.5 节点可视与运行反馈
+
+| V1 功能 | V2 状态 | 测试结果 | 备注 |
+| --- | --- | --- | --- |
+| 节点标题可编辑并触发保存 | 🚧 |  | `EditableTitle` 触发 `node:custom:save` |
+| 编辑标题时禁用拖拽 | 🚧 |  | `enableMove=false` during editing |
+| 运行结果渲染（分页/只看错误/展开） | 🚧 |  | `NodeRunResultV2` 需验证状态与数据映射 |
+| 异常处理区块展示 | 🚧 |  | 异常节点展示 `exceptionHandleType` |
+| 循环节点拖拽与可调尺寸 | 🚧 |  | `draggable/resizable` on Loop 节点 |
+| 运行态样式（running/success/error） | 🚧 |  | runResults 状态驱动类名 |
+
 ---
 
 ## 三、连线操作
@@ -123,6 +134,9 @@
 | 问答选项增删时端口联动 | ✅ |  | 删除端口时自动删除关联边 |
 | 异常处理配置变化时端口联动 | ✅ |  | exception 端口显示/隐藏 |
 | 循环内节点更新时父节点大小调整 | ✅ |  | adjustLoopNodeSize |
+| 节点属性面板修改时画布端口/尺寸联动 | ✅ |  | graphUpdateByFormData 同步画布 |
+| 循环节点默认内置 Start/End | ✅ |  | 创建循环时生成 innerNodes 与 innerStart/End |
+| 循环内部添加节点限制 | ✅ |  | 仅选中循环或端口快捷添加，拖拽不入容器 |
 | 节点属性面板修改时画布端口/尺寸联动 | ✅ |  | graphUpdateByFormData 同步画布 |
 
 ### 3.3 连线删除

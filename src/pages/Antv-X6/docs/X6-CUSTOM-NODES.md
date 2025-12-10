@@ -82,6 +82,22 @@ const GraphContainer = forwardRef((props, ref) => {
 
 ---
 
+## V1 / V2 差异与修复进度
+
+> V2 参考实现文件：`src/pages/Antv-X6/v2/components/registerCustomNodesV2.tsx`
+
+| 差异点 | V1 行为 | V2（修复前） | 修复方案/状态 |
+| --- | --- | --- | --- |
+| 标题可编辑 | `EditableTitle` 支持保存事件 `node:custom:save`，编辑时禁用移动 | 仅静态文本，未触发保存，也未禁用移动 | V2 已恢复 `EditableTitle`、保存事件与 `enableMove` 锁定 |
+| 运行结果展示 | `NodeRunResult` 支持分页/只看错误/展开收起 | 未渲染运行结果，样式占位未用 | V2 已挂载 `NodeRunResult`，状态映射 `FINISHED/FAILED/EXECUTING/STOP_WAIT_ANSWER` |
+| 异常处理块 | 展示异常处理配置文案 | 仅定义组件未挂载 | V2 在支持异常的节点中展示 |
+| 循环节点交互 | 支持拖拽、可调大小、标题可编辑、运行结果 | 缺少拖拽/可调大小，标题不可编辑，运行结果缺失 | V2 注册时开启 `draggable/resizable`，补齐编辑与运行结果 |
+| 选中/运行状态样式 | 根据运行状态增加边框颜色 | 仅选中态，缺少运行/成功/失败态 | V2 基于运行结果状态添加类名 |
+
+> 备注：以上修复已在 V2 代码中落地（2025-12），仍需回归验证：标题保存事件是否触发数据同步、运行结果分页/只看错误交互、异常处理块展示及循环节点拖拽/缩放。
+
+---
+
 ## GeneralNode 通用节点
 
 ### 组件结构

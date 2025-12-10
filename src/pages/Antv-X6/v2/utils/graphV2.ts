@@ -639,14 +639,23 @@ export function extractEdgesFromNodes(nodes: ChildNodeV2[]): EdgeV2[] {
         edges.push({
           source: node.id.toString(),
           target: node.innerStartNodeId.toString(),
-          sourcePort: `${node.id}-out`,
+          // 与 v1 保持一致：Loop 的 in 端口作为 source
+          sourcePort: `${node.id}-in`,
           targetPort: `${node.innerStartNodeId}-in`,
           zIndex: 25,
         });
       }
 
-      // 内部结束节点到循环节点的边（循环回来）
-      // 注意：这里不应该连接到循环节点，而是循环节点的下一个节点由 nextNodeIds 决定
+      // 内部结束节点到循环节点 out 端口的边（闭环回到 Loop 出口）
+      if (node.innerEndNodeId && node.innerEndNodeId !== -1) {
+        edges.push({
+          source: node.innerEndNodeId.toString(),
+          target: node.id.toString(),
+          sourcePort: `${node.innerEndNodeId}-out`,
+          targetPort: `${node.id}-out`,
+          zIndex: 25,
+        });
+      }
     }
 
     // 异常处理节点

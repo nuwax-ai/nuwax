@@ -146,6 +146,37 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
     }, []);
 
     /**
+     * 添加循环节点的子节点（与 V1 addLoopChildNode 对齐）
+     * 参考 V1：graphContainer.tsx 的 addLoopChildNode 函数
+     */
+    const addLoopChildNodes = useCallback((loopNode: Node) => {
+      if (!graphRef.current) return;
+
+      const data = loopNode.getData() as ChildNodeV2;
+      if (!data.innerNodes?.length) return;
+
+      // 设置循环节点的 zIndex（与 V1 保持一致）
+      loopNode.prop('zIndex', 4);
+
+      // 遍历 innerNodes，使用 createLoopChildNodeData 创建子节点（与 V1 createChildNode 对齐）
+      data.innerNodes.forEach((childDef) => {
+        const childData = createLoopChildNodeData(data.id, childDef);
+        const childNode = graphRef.current!.addNode(childData);
+        // 建立父子关系
+        loopNode.addChild(childNode);
+      });
+
+      // 调整父节点大小以包含所有子节点
+      const children =
+        loopNode
+          .getChildren()
+          ?.filter((c) => c.isNode())
+          .map((c) => c.getData() as ChildNodeV2) || [];
+      const newSize = adjustLoopNodeSize(data, children);
+      loopNode.resize(newSize.width, newSize.height);
+    }, []);
+
+    /**
      * 添加节点
      */
     const graphAddNode = useCallback(
@@ -162,6 +193,16 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
         });
 
         graphRef.current.addNode(nodeData);
+
+        // 如果是循环节点且有 innerNodes，添加内置子节点（与 V1 对齐）
+        if (node.type === NodeTypeEnumV2.Loop && node.innerNodes?.length) {
+          const loopNode = graphRef.current.getCellById(
+            node.id.toString(),
+          ) as Node;
+          if (loopNode) {
+            addLoopChildNodes(loopNode);
+          }
+        }
 
         // 如果是循环内部节点，设置父子关系
         if (node.loopNodeId) {
@@ -182,7 +223,7 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
           }
         }
       },
-      [],
+      [addLoopChildNodes],
     );
 
     /**
