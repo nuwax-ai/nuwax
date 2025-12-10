@@ -25,6 +25,7 @@ import type {
   EdgeV2,
   GraphContainerRefV2,
   GraphRectV2,
+  NodeConfigV2,
   RunResultItemV2,
   ViewGraphPropsV2,
   WorkflowDataV2,
@@ -292,20 +293,25 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
      * 参考 V1：需要处理循环节点父子大小调整
      */
     const graphUpdateByFormData = useCallback(
-      (changedValues: any, fullFormValues: any, nodeId: string) => {
+      (changedValues: any, fullNodeConfig: NodeConfigV2, nodeId: string) => {
         if (!graphRef.current) return;
 
         const cell = graphRef.current.getCellById(nodeId);
         if (!cell || !cell.isNode()) return;
 
+        // 从画布获取当前节点数据作为基础
         const oldData = cell.getData() as ChildNodeV2;
+        // 用传入的完整 nodeConfig 替换（不是浅合并）
         const newData: ChildNodeV2 = {
           ...oldData,
-          nodeConfig: {
-            ...oldData.nodeConfig,
-            ...fullFormValues,
-          },
+          nodeConfig: fullNodeConfig,
         };
+
+        console.log('[V2 DEBUG] graphUpdateByFormData:', {
+          nodeId,
+          oldNodeConfig: oldData.nodeConfig,
+          newNodeConfig: fullNodeConfig,
+        });
 
         graphUpdateNode(nodeId, newData);
 
