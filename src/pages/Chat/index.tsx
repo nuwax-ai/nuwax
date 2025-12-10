@@ -23,7 +23,10 @@ import {
   MessageTypeEnum,
 } from '@/types/enums/agent';
 import { AgentDetailDto } from '@/types/interfaces/agent';
-import type { UploadFileInfo } from '@/types/interfaces/common';
+import type {
+  MessageSourceType,
+  UploadFileInfo,
+} from '@/types/interfaces/common';
 import type {
   MessageInfo,
   RoleInfo,
@@ -60,6 +63,9 @@ const Chat: React.FC = () => {
   const message = location.state?.message;
   const files = location.state?.files;
   const infos = location.state?.infos;
+  // 消息来源
+  const messageSourceType: MessageSourceType =
+    (location.state?.messageSourceType as MessageSourceType) || 'new_chat'; // new_chat 新增会话
   // 默认的智能体详情信息
   const defaultAgentDetail = location.state?.defaultAgentDetail;
   // 用户填写的变量参数，此处用于第一次发送消息时，传递变量参数
@@ -85,7 +91,7 @@ const Chat: React.FC = () => {
     selectedComponentList,
     setSelectedComponentList,
     handleSelectComponent,
-    // initSelectedComponentList,
+    initSelectedComponentList,
   } = useSelectedComponent();
 
   const {
@@ -338,19 +344,19 @@ const Chat: React.FC = () => {
     return () => {
       // 组件卸载时重置全局会话状态，防止污染其他页面
       resetInit();
+      setSelectedComponentList([]);
     };
   }, []);
 
   useEffect(() => {
-    // 初始化选中的组件列表 - 聊天页面使用外面传过来的组件列表
-    setSelectedComponentList(infos || []);
-    // if (infos?.length) {
-    //   setSelectedComponentList(infos || []);
-    // } else {
-    //   // 初始化选中的组件列表
-    //   initSelectedComponentList(manualComponents);
-    // }
-  }, [infos /*, manualComponents*/]);
+    if (messageSourceType === 'new_chat') {
+      // 新建会话时，初始化选中的组件列表
+      initSelectedComponentList(manualComponents);
+    } else {
+      // 非新建会话时，使用外面传过来的组件列表
+      setSelectedComponentList(infos || []);
+    }
+  }, [infos, messageSourceType, manualComponents]);
 
   // 监听会话更新事件，更新会话记录
   const handleConversationUpdate = (data: {

@@ -3,7 +3,10 @@ import {
   AgentDetailDto,
   AgentSelectedComponentInfo,
 } from '@/types/interfaces/agent';
-import type { UploadFileInfo } from '@/types/interfaces/common';
+import type {
+  MessageSourceType,
+  UploadFileInfo,
+} from '@/types/interfaces/common';
 import { useRequest } from 'ahooks';
 import { history } from 'umi';
 
@@ -28,6 +31,8 @@ const useConversation = () => {
       defaultAgentDetail?: AgentDetailDto;
       // 变量参数
       variableParams?: Record<string, string | number> | null;
+      // 消息来源
+      messageSourceType?: MessageSourceType;
     },
   ) => {
     const variableParams = attach?.variableParams;
