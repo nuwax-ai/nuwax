@@ -79,6 +79,14 @@ export interface InputAndOutConfig {
   inputType?: string;
 }
 
+// 变量聚合分组
+export interface VariableGroup {
+  id: string;
+  name: string;
+  dataType: DataTypeEnum;
+  inputs: InputAndOutConfig[];
+}
+
 interface ConditionArgs {
   secondArg: BindConfigWithSub | null;
   compareType: string | null;
@@ -136,6 +144,9 @@ export interface NodeConfig {
   outputArgs?: InputAndOutConfig[];
   // 节点变量
   variableArgs?: InputAndOutConfig[];
+  // 变量聚合配置
+  aggregationStrategy?: string;
+  variableGroups?: VariableGroup[];
   // 技能列表
   // 条件分支
   conditionBranchConfigs?: ConditionBranchConfigs[];
