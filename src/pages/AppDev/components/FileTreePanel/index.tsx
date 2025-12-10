@@ -1,29 +1,17 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import { FileNode } from '@/types/interfaces/appDev';
 import {
   ImportOutlined,
   InboxOutlined,
   LeftOutlined,
   RightOutlined,
 } from '@ant-design/icons';
-import type { InputRef } from 'antd';
-import { Button, Card, Input, Tooltip } from 'antd';
+import { Button, Card, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import DataResourceList from '../DataResourceList';
-import FileContextMenu from '../FileContextMenu';
-import {
-  ICON_CSS,
-  ICON_DEFAULT,
-  ICON_HTML,
-  ICON_JS,
-  ICON_JSON,
-  ICON_MD,
-  ICON_PNG,
-  ICON_SQL,
-  ICON_SVG,
-  ICON_TS,
-  ICON_TSX,
-} from './images.constants';
+import AppDevFileTree from './AppDevFileTree';
+import DataResourceList from './DataResourceList';
+import FileContextMenu from './FileContextMenu';
 import styles from './index.less';
 import type { FileTreePanelProps } from './types';
 
@@ -57,24 +45,25 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   isFileTreeInitializing = false,
 }) => {
   // 文件树折叠状态
-  const [isFileTreeCollapsed, setIsFileTreeCollapsed] = useState(false);
+  const [isFileTreeCollapsed, setIsFileTreeCollapsed] =
+    useState<boolean>(false);
 
   // 滚动位置保持相关状态
   const fileTreeScrollRef = useRef<HTMLDivElement>(null);
-  const [scrollPosition, setScrollPosition] = useState(0);
+  const [scrollPosition, setScrollPosition] = useState<number>(0);
 
   // 右键菜单状态
-  const [contextMenuVisible, setContextMenuVisible] = useState(false);
+  const [contextMenuVisible, setContextMenuVisible] = useState<boolean>(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({
     x: 0,
     y: 0,
   });
-  const [contextMenuTarget, setContextMenuTarget] = useState<any>(null);
+  const [contextMenuTarget, setContextMenuTarget] = useState<FileNode | null>(
+    null,
+  );
 
   // 内联重命名状态
-  const [renamingNode, setRenamingNode] = useState<any>(null);
-  const [renameValue, setRenameValue] = useState('');
-  const renameInputRef = useRef<InputRef>(null);
+  const [renamingNode, setRenamingNode] = useState<FileNode | null>(null);
 
   /**
    * 保存滚动位置
@@ -103,9 +92,11 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
 
   /**
    * 处理右键菜单显示
+   * @param e - 鼠标事件
+   * @param node - 目标节点, 可以为 null 表示点击空白区域，清空目标节点
    */
   const handleContextMenu = useCallback(
-    (e: React.MouseEvent, node: any) => {
+    (e: React.MouseEvent, node: FileNode | null) => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -122,26 +113,6 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   );
 
   /**
-   * 处理空白区域右键菜单显示
-   */
-  const handleEmptyAreaContextMenu = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // 如果正在聊天加载或版本对比模式，禁用右键菜单
-      if (isChatLoading || isComparing) {
-        return;
-      }
-
-      setContextMenuTarget(null); // 空白区域没有目标节点
-      setContextMenuPosition({ x: e.clientX, y: e.clientY });
-      setContextMenuVisible(true);
-    },
-    [isChatLoading, isComparing],
-  );
-
-  /**
    * 关闭右键菜单
    */
   const closeContextMenu = useCallback(() => {
@@ -149,98 +120,30 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
     setContextMenuTarget(null);
   }, []);
 
-  /**
-   * 取消重命名
-   */
-  const cancelRename = useCallback(() => {
-    setRenamingNode(null);
-    setRenameValue('');
-  }, []);
-
-  /**
-   * 确认重命名
-   */
-  const confirmRename = useCallback(async () => {
-    if (!renamingNode || !onRenameFile) return;
-
-    const trimmedValue = renameValue.trim();
-    if (!trimmedValue || trimmedValue === renamingNode.name) {
-      cancelRename();
-      return;
-    }
-
-    // 验证文件名
-    const invalidChars = /[/\\:*?"<>|]/;
-    if (invalidChars.test(trimmedValue)) {
-      // 这里可以显示错误提示
-      return;
-    }
-
-    // 先立即更新UI显示新名字，提供即时反馈
-    setRenamingNode(null);
-    setRenameValue('');
-
-    // 异步执行重命名操作
-    try {
-      await onRenameFile(renamingNode, trimmedValue);
-    } catch (error) {
-      // 如果重命名失败，可以考虑恢复原名字或显示错误提示
-      // console.error('重命名失败:', error);
-    }
-  }, [renamingNode, renameValue, onRenameFile, cancelRename]);
-
-  /**
-   * 处理重命名输入框键盘事件
-   */
-  const handleRenameKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        confirmRename();
-      } else if (e.key === 'Escape') {
-        cancelRename();
-      }
-    },
-    [confirmRename, cancelRename],
-  );
-
-  /**
-   * 处理重命名输入框失焦
-   */
-  const handleRenameBlur = useCallback(() => {
-    // 延迟执行，避免与点击事件冲突
-    setTimeout(() => {
-      if (renamingNode) {
-        confirmRename();
-      }
-    }, 100);
-  }, [renamingNode, confirmRename]);
-
   // 点击外部关闭右键菜单
   useEffect(() => {
     const handleClickOutside = () => {
       closeContextMenu();
     };
 
-    if (contextMenuVisible) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [contextMenuVisible, closeContextMenu]);
+    // if (contextMenuVisible) {
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+    // }
+  }, [closeContextMenu]);
 
-  // 重命名输入框自动聚焦
-  useEffect(() => {
-    if (renamingNode && renameInputRef.current) {
-      renameInputRef.current.focus();
-      renameInputRef.current.select();
-    }
-  }, [renamingNode]);
+  /**
+   * 取消重命名
+   */
+  const cancelRename = useCallback(() => {
+    setRenamingNode(null);
+  }, []);
 
   /**
    * 处理重命名操作（从右键菜单触发）
    */
   const handleRenameFromMenu = useCallback((node: any) => {
     setRenamingNode(node);
-    setRenameValue(node.name);
   }, []);
 
   /**
@@ -252,187 +155,6 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
       onUploadSingleFile(node);
     },
     [onUploadSingleFile],
-  );
-
-  // 获取文件图标
-  const getFileIcon = useCallback((name: string) => {
-    if (name.endsWith('.ts')) {
-      return <ICON_TS />;
-    } else if (name.endsWith('.tsx') || name.endsWith('.jsx')) {
-      return <ICON_TSX />;
-    } else if (name.endsWith('.css')) {
-      return <ICON_CSS />;
-    } else if (
-      name.endsWith('.json') ||
-      name.endsWith('.yml') ||
-      name.endsWith('.yaml')
-    ) {
-      return <ICON_JSON />;
-    } else if (name.endsWith('.md')) {
-      return <ICON_MD />;
-    } else if (name.endsWith('.html') || name.endsWith('.htm')) {
-      return <ICON_HTML />;
-    } else if (name.endsWith('.js')) {
-      return <ICON_JS />;
-    } else if (
-      name.endsWith('.png') ||
-      name.endsWith('.jpg') ||
-      name.endsWith('.jpeg') ||
-      name.endsWith('.gif') ||
-      name.endsWith('.bmp') ||
-      name.endsWith('.webp') ||
-      name.endsWith('.ico') ||
-      name.endsWith('.tiff')
-    ) {
-      return <ICON_PNG />;
-    } else if (name.endsWith('.svg')) {
-      return <ICON_SVG />;
-    } else if (name.endsWith('.sql')) {
-      return <ICON_SQL />;
-    } else {
-      return <ICON_DEFAULT />;
-    }
-  }, []);
-
-  /**
-   * 渲染文件树节点
-   */
-  const renderFileTreeNode = useCallback(
-    (node: any, level: number = 0) => {
-      const isExpanded = expandedFolders.has(node.id);
-      const isSelected = isComparing
-        ? workspace?.activeFile === node.id
-        : selectedFileId === node.id;
-      const isRenaming = renamingNode?.id === node.id;
-
-      // 为版本模式添加特殊的前缀，避免 key 冲突
-      const nodeKey = isComparing ? `version-${node.id}` : node.id;
-
-      if (node.type === 'folder') {
-        return (
-          <div
-            key={nodeKey}
-            className={styles.folderItem}
-            style={{ marginLeft: level * 8 }}
-          >
-            <div
-              className={`${styles.folderHeader} ${
-                isRenaming ? styles.renameMode : ''
-              }`}
-              onClick={() => !isRenaming && onToggleFolder(node.id)}
-              onContextMenu={(e) => handleContextMenu(e, node)}
-            >
-              <SvgIcon
-                name="icons-common-caret_right"
-                style={{ fontSize: '16px' }}
-                className={`${styles.folderIcon} ${
-                  isExpanded ? styles.expanded : ''
-                }`}
-              />
-
-              {isRenaming ? (
-                <Input
-                  ref={renameInputRef}
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  onKeyDown={handleRenameKeyDown}
-                  onBlur={handleRenameBlur}
-                  className={styles.inlineRenameInput}
-                  size="small"
-                />
-              ) : (
-                <span className={styles.folderName}>{node.name}</span>
-              )}
-            </div>
-            {isExpanded && node.children && (
-              <div className={styles.fileList}>
-                {node.children.map((child: any) =>
-                  renderFileTreeNode(child, level + 1),
-                )}
-              </div>
-            )}
-          </div>
-        );
-      } else {
-        return (
-          <div
-            key={nodeKey}
-            className={`${styles.fileItem} ${
-              isSelected ? styles.activeFile : ''
-            } ${isRenaming ? styles.renameMode : ''}`}
-            onClick={() => {
-              // 跳过以"."为前缀的隐藏文件和重命名模式
-              if (node.name.startsWith('.') || isRenaming) {
-                return;
-              }
-
-              if (isComparing) {
-                // 版本模式下，直接设置选中的文件到 workspace.activeFile
-                onFileSelect(node.id);
-              } else {
-                // 正常模式下，使用文件管理逻辑并自动切换到代码查看模式
-                fileManagement.switchToFile(node.id);
-                onFileSelect(node.id);
-              }
-            }}
-            onContextMenu={(e) => handleContextMenu(e, node)}
-            style={{ marginLeft: level * 8 }}
-          >
-            {node.name.startsWith('.') ? (
-              <ICON_DEFAULT />
-            ) : (
-              // <FileOutlined className={styles.fileIcon} />
-              getFileIcon(node.name)
-            )}
-
-            {isRenaming ? (
-              <Input
-                ref={renameInputRef}
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onKeyDown={handleRenameKeyDown}
-                onBlur={handleRenameBlur}
-                className={styles.inlineRenameInput}
-                size="small"
-              />
-            ) : (
-              <span
-                className={`${styles.fileName} ${
-                  node.name.startsWith('.') ? styles.hiddenFile : ''
-                }`}
-              >
-                {node.name}
-              </span>
-            )}
-
-            {/* 正常模式：显示文件状态 */}
-            {!isComparing && !isChatLoading && !isRenaming && (
-              <>
-                {node.status && (
-                  <span className={styles.fileStatus}>{node.status}</span>
-                )}
-              </>
-            )}
-          </div>
-        );
-      }
-    },
-    [
-      expandedFolders,
-      isComparing,
-      workspace?.activeFile,
-      selectedFileId,
-      renamingNode,
-      renameValue,
-      onToggleFolder,
-      onFileSelect,
-      fileManagement,
-      onDeleteFile,
-      isChatLoading,
-      handleContextMenu,
-      handleRenameKeyDown,
-      handleRenameBlur,
-    ],
   );
 
   return (
@@ -449,7 +171,6 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         onRename={onRenameFile ? handleRenameFromMenu : undefined}
         onUploadSingleFile={handleUploadFromMenu}
         onUploadProject={onUploadProject}
-        onAddDataResource={onAddDataResource}
       />
 
       {/* 悬浮折叠/展开按钮 - 放在预览区域左下角 */}
@@ -480,7 +201,8 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                 className={styles.fileTreeContainer}
                 ref={fileTreeScrollRef}
                 onScroll={saveScrollPosition}
-                onContextMenu={handleEmptyAreaContextMenu}
+                // 处理空白区域右键菜单显示
+                onContextMenu={(e) => handleContextMenu(e, null)}
               >
                 {/* 文件树结构 */}
                 {isFileTreeInitializing ? (
@@ -509,9 +231,22 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                     }
                   />
                 ) : (
-                  <div className={styles.fileTree}>
-                    {files.map((node: any) => renderFileTreeNode(node))}
-                  </div>
+                  // 文件树组件
+                  <AppDevFileTree
+                    files={files}
+                    isComparing={isComparing}
+                    selectedFileId={selectedFileId}
+                    expandedFolders={expandedFolders}
+                    renamingNode={renamingNode}
+                    onCancelRename={cancelRename}
+                    onContextMenu={handleContextMenu}
+                    onFileSelect={onFileSelect}
+                    onToggleFolder={onToggleFolder}
+                    onRenameFile={onRenameFile}
+                    workspace={workspace}
+                    fileManagement={fileManagement}
+                    isChatLoading={isChatLoading}
+                  />
                 )}
               </div>
 
@@ -540,9 +275,6 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                       resources={dataResources}
                       loading={dataResourcesLoading}
                       onDelete={onDeleteDataResource}
-                      // selectedResourceIds={selectedDataResourceIds}
-                      // onSelectionChange={onDataResourceSelectionChange}
-                      // isChatLoading={isChatLoading || isComparing}
                       projectId={projectId}
                     />
                   </div>
