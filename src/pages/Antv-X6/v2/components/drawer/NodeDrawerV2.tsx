@@ -40,7 +40,9 @@ export interface NodeDrawerV2Props {
   /** 关闭回调 */
   onClose: () => void;
   /** 节点配置变更回调 */
-  onNodeConfigChange?: (config: NodeConfigV2) => void;
+  onNodeConfigChange?: (changedValues: any, allValues: NodeConfigV2) => void;
+  /** 节点名称变更回调 */
+  onNodeNameChange?: (nodeId: number, name: string) => void;
   /** 删除节点回调 */
   onNodeDelete?: (nodeId: number, node?: ChildNodeV2) => void;
   /** 复制节点回调 */
@@ -135,6 +137,7 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
   referenceData,
   onClose,
   onNodeConfigChange,
+  onNodeNameChange,
   onNodeDelete,
   onNodeCopy,
   onTestRun,
@@ -168,15 +171,12 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
    * 保存名称
    */
   const handleSaveName = useCallback(() => {
-    if (tempName.trim() && node && onNodeConfigChange) {
-      // 通过 nodeConfig 更新名称
-      onNodeConfigChange({
-        ...node.nodeConfig,
-        // 名称通常不在 nodeConfig 中，需要其他方式处理
-      });
+    const newName = tempName.trim();
+    if (newName && node && newName !== node.name) {
+      onNodeNameChange?.(node.id, newName);
     }
     setIsEditingName(false);
-  }, [tempName, node, onNodeConfigChange]);
+  }, [tempName, node, onNodeNameChange]);
 
   /**
    * 取消编辑
@@ -206,7 +206,7 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
   const handleFormValuesChange = useCallback(
     (changedValues: any, allValues: any) => {
       if (node && onNodeConfigChange) {
-        onNodeConfigChange({
+        onNodeConfigChange(changedValues, {
           ...node.nodeConfig,
           ...allValues,
         });

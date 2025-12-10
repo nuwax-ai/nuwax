@@ -259,6 +259,16 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
     graph.select(node);
   });
 
+  // 节点双击 - 进入标题编辑（触发 EditableTitle 的 onEditTitle 事件）
+  graph.on('node:dblclick', ({ node }) => {
+    const data = node.getData() as ChildNodeV2;
+    if (!data) return;
+    const editableTitleEl = document.querySelector(
+      `[data-id="${data.id}"]`,
+    ) as HTMLElement | null;
+    editableTitleEl?.dispatchEvent(new Event('onEditTitle'));
+  });
+
   // 节点选中事件 - 触发配置面板打开
   graph.on('node:selected', ({ node }) => {
     const data = node.getData() as ChildNodeV2;
@@ -266,6 +276,42 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
       onNodeSelect(data);
     }
   });
+
+  /**
+   * 自定义保存事件（标题编辑等）- 参考 V1 node:custom:save
+   * 将最新数据同步到外部状态并回写到画布节点
+   */
+  graph.on(
+    'node:custom:save',
+    ({
+      data,
+      payload,
+    }: {
+      data: ChildNodeV2;
+      payload: Partial<ChildNodeV2>;
+    }) => {
+      if (!data) return;
+      const merged: ChildNodeV2 = {
+        ...data,
+        ...payload,
+        nodeConfig: { ...data.nodeConfig, ...(payload.nodeConfig || {}) },
+      };
+      // 回写到图实例，保持 enableMove 等字段一致
+      const cell = graph.getCellById(data.id?.toString());
+      if (cell && cell.isNode()) {
+        cell.setData(merged);
+      }
+      // 调试日志，便于确认标题保存事件
+      // eslint-disable-next-line no-console
+      console.debug('[GraphV2] node:custom:save', {
+        id: data.id,
+        oldName: data.name,
+        newName: merged.name,
+        payload,
+      });
+      onNodeChange?.(merged);
+    },
+  );
 
   // 空白区域点击
   graph.on('blank:click', () => {
