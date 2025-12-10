@@ -193,7 +193,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         }`}
         style={{ transition: 'all 0.3s ease' }}
       >
-        <Card className={styles.fileTreeCard} bordered={false}>
+        <Card className={styles.fileTreeCard} variant="borderless">
           {!isFileTreeCollapsed && (
             <>
               {/* 文件树容器 */}
