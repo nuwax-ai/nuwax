@@ -7,7 +7,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 interface WorkspaceLayoutProps {
-  children: React.ReactNode;
+  children?: React.ReactNode | null;
   leftSlot?: React.ReactNode;
   centerSlot?: React.ReactNode;
   rightPrefixSlot?: React.ReactNode;
@@ -21,7 +21,7 @@ interface WorkspaceLayoutProps {
 }
 
 const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
-  children,
+  children = null,
   leftSlot,
   centerSlot,
   rightPrefixSlot,
