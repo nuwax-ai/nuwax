@@ -4,14 +4,8 @@
 // 内联重命名样式
 .inlineRenameInput {
   flex: 1;
-  margin-right: 8px;
-
-  :global(.ant-input) {
-    font-size: @fontSizeSm;
-    padding: 2px 6px;
-    height: 24px;
-    border-radius: 4px;
-  }
+  font-size: @fontSize;
+  height: 22px;
 }
 
 .renameMode {
@@ -55,11 +49,11 @@
   }
 
   .folderName {
+    height: 22px;
     // color: @colorTextBase;
     color: #5e5e5b;
     font-weight: @fontWeightStrong;
-    // font-size: @fontSize;
-    font-size: 13px;
+    font-size: @fontSize;
     font-family: @fontFamilyCode;
   }
 }
@@ -107,10 +101,10 @@
 }
 
 .fileName {
+  height: 22px;
   // color: @colorTextBase;
   color: #5e5e5b;
-  // font-size: @fontSize;
-  font-size: 13px;
+  font-size: @fontSize;
   font-family: @fontFamilyCode;
   flex: 1;
 
