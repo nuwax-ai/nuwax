@@ -114,17 +114,24 @@ function canDeleteNode(type: NodeTypeEnumV2): boolean {
 }
 
 /**
- * 是否支持试运行的节点类型
+ * 是否支持试运行的节点类型（与 V1 testRunList 保持一致）
  */
 function canTestRunNode(type: NodeTypeEnumV2): boolean {
   const testRunTypes = [
+    NodeTypeEnumV2.Start,
     NodeTypeEnumV2.LLM,
+    NodeTypeEnumV2.Plugin,
     NodeTypeEnumV2.Code,
     NodeTypeEnumV2.HTTPRequest,
-    NodeTypeEnumV2.Knowledge,
     NodeTypeEnumV2.TextProcessing,
+    NodeTypeEnumV2.Workflow,
     NodeTypeEnumV2.DocumentExtraction,
-    NodeTypeEnumV2.Start,
+    NodeTypeEnumV2.Knowledge,
+    NodeTypeEnumV2.TableSQL,
+    NodeTypeEnumV2.TableDataQuery,
+    NodeTypeEnumV2.TableDataUpdate,
+    NodeTypeEnumV2.TableDataDelete,
+    NodeTypeEnumV2.TableDataAdd,
   ];
   return testRunTypes.includes(type);
 }

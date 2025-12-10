@@ -339,6 +339,25 @@
 | 运行结果展示   | ✅      |                |
 | 停止运行       | ✅      |                |
 
+**支持试运行的节点类型**（与 V1 `testRunList` 一致）：
+
+| 节点类型           | V2 支持 | 说明          |
+| ------------------ | ------- | ------------- |
+| Start              | ✅      | 开始节点      |
+| LLM                | ✅      | 大模型节点    |
+| Plugin             | ✅      | 插件节点      |
+| Code               | ✅      | 代码节点      |
+| HTTPRequest        | ✅      | HTTP 请求节点 |
+| TextProcessing     | ✅      | 文本处理节点  |
+| Workflow           | ✅      | 工作流节点    |
+| DocumentExtraction | ✅      | 文档提取节点  |
+| Knowledge          | ✅      | 知识库节点    |
+| TableSQL           | ✅      | 数据表 SQL    |
+| TableDataQuery     | ✅      | 数据表查询    |
+| TableDataUpdate    | ✅      | 数据表更新    |
+| TableDataDelete    | ✅      | 数据表删除    |
+| TableDataAdd       | ✅      | 数据表新增    |
+
 ### 8.2 发布弹窗
 
 | V1 功能      | V2 状态 | 备注           |
