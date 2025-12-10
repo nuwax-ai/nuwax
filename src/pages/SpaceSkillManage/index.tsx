@@ -1,26 +1,18 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import { PlusOutlined } from '@ant-design/icons';
-import { Button } from 'antd';
+import LeftSlot from './LeftSlot';
+import MainContent from './MainContent';
+import RightSuffixSlot from './RightSuffixSlot';
 
 export default function SpaceSkillManage() {
-  // 工作空间
-  // WorkspaceLayout
-  const handleCreate = () => {
-    console.log('创建技能');
-  };
-
   return (
     <WorkspaceLayout
       title="技能管理"
-      rightSuffixSlot={
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          创建技能
-        </Button>
-      }
+      leftSlot={<LeftSlot />}
+      rightSuffixSlot={<RightSuffixSlot />}
+      hideScroll={true}
     >
-      {Array.from({ length: 10 }).map((item: any, index: number) => (
-        <div key={index}>{index}333</div>
-      ))}
+      {/* 主要内容区域 */}
+      <MainContent />
     </WorkspaceLayout>
   );
 }
