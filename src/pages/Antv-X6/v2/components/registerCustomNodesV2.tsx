@@ -266,21 +266,17 @@ const NodeRunResultV2: React.FC<{ data: RunResultItemV2[] | [] }> = ({
   }, [innerData]);
 
   const genRunResultTitle = useCallback(() => {
-    const statusList = data.map((item) => item?.status);
+    const statusList = data.map((item) => String(item?.status));
 
     switch (true) {
-      case statusList.some(
-        (status) => status === RunResultStatusEnumV2.STOP_WAIT_ANSWER,
-      ):
+      case statusList.some((s) => s === RunResultStatusEnumV2.STOP_WAIT_ANSWER):
         return '请答复问题';
-      case statusList.some(
-        (status) => status === RunResultStatusEnumV2.EXECUTING,
-      ):
+      case statusList.some((s) => s === RunResultStatusEnumV2.EXECUTING):
         return '运行中';
-      case statusList.some((status) => status === RunResultStatusEnumV2.FAILED):
+      case statusList.some((s) => s === RunResultStatusEnumV2.FAILED):
         return '运行失败';
       case statusList.every(
-        (status) => status === RunResultStatusEnumV2.FINISHED,
+        (s) => s === RunResultStatusEnumV2.FINISHED || s === 'SUCCESS',
       ):
         return '运行成功';
       default:
