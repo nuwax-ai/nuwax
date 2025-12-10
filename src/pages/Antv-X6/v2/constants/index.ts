@@ -241,45 +241,49 @@ export const PORT_GROUPS_V2 = {
       circle: {
         r: 3,
         magnet: true,
+        magnetRadius: 30,
         stroke: '#5147FF',
         strokeWidth: 1,
-        fill: '#fff',
+        fill: '#5147FF',
       },
     },
   },
   [PortGroupEnumV2.out]: {
-    position: { name: 'right' },
+    position: { name: 'absolute' },
     attrs: {
       circle: {
         r: 3,
         magnet: true,
+        magnetRadius: 30,
         stroke: '#5147FF',
         strokeWidth: 1,
-        fill: '#fff',
+        fill: '#5147FF',
       },
     },
   },
   [PortGroupEnumV2.special]: {
-    position: { name: 'right' },
+    position: { name: 'absolute' },
     attrs: {
       circle: {
         r: 3,
         magnet: true,
+        magnetRadius: 30,
         stroke: '#5147FF',
         strokeWidth: 1,
-        fill: '#fff',
+        fill: '#5147FF',
       },
     },
   },
   [PortGroupEnumV2.exception]: {
-    position: { name: 'bottom' },
+    position: { name: 'absolute' },
     attrs: {
       circle: {
         r: 3,
         magnet: true,
-        stroke: '#FF4D4F',
+        magnetRadius: 30,
+        stroke: '#e67e22',
         strokeWidth: 1,
-        fill: '#fff',
+        fill: '#e67e22',
       },
     },
   },
