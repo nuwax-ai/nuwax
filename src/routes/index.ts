@@ -35,6 +35,11 @@ const routes = [
         path: '/space/:spaceId/page-develop',
         component: '@/pages/SpacePageDevelop',
       },
+      // 技能管理
+      {
+        path: '/space/:spaceId/skill-manage',
+        component: '@/pages/SpaceSkillManage',
+      },
       { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
       { path: '/space/:spaceId/mcp', component: '@/pages/SpaceMcpManage' },
