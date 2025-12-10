@@ -675,3 +675,6 @@ export interface SiteFooterProps {
 
 // 直接继承antd的UploadFile，避免重复定义
 export type NativeUploadFile = UploadFile;
+
+// 消息来源
+export type MessageSourceType = 'home' | 'agent' | 'new_chat';

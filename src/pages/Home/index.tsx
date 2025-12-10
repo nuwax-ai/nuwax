@@ -116,6 +116,7 @@ const Home: React.FC = () => {
       message: _message,
       files,
       infos: selectedComponentList,
+      messageSourceType: 'home',
     });
   };
 
