@@ -5,29 +5,58 @@ import type { InputRef } from 'antd';
 import { Input } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
-import type { AppDevFileTreeProps } from './types';
+import type { FileTreeProps } from './types';
 
 /**
- * 页面应用开发文件树组件
+ * 文件树组件
  * 提供文件树展示、数据资源管理和折叠/展开功能
  */
-const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
+const FileTree: React.FC<FileTreeProps> = ({
   files,
-  isComparing,
   selectedFileId,
-  expandedFolders,
+  // 正在重命名的节点
   renamingNode,
+  // 取消重命名回调
   onCancelRename,
+  // 文件选择回调
   onFileSelect,
-  onToggleFolder,
+  // 重命名文件回调
   onRenameFile,
+  // 右键菜单回调
   onContextMenu,
-  workspace,
-  fileManagement,
-  isChatLoading = false,
 }) => {
+  // 重命名值
   const [renameValue, setRenameValue] = useState<string>('');
   const renameInputRef = useRef<InputRef>(null);
+  // 已展开的文件夹ID集合
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
+    new Set(),
+  );
+
+  useEffect(() => {
+    // 自动展开第一层文件夹
+    const rootFolders = files
+      .filter((node) => node.type === 'folder')
+      .map((node) => node.id);
+    if (rootFolders.length > 0) {
+      setExpandedFolders(new Set(rootFolders));
+    }
+  }, [files]);
+
+  /**
+   * 切换文件夹展开状态，用于展开/折叠回调
+   */
+  const onToggleFolder = useCallback((folderId: string) => {
+    setExpandedFolders((prev) => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(folderId)) {
+        newExpanded.delete(folderId);
+      } else {
+        newExpanded.add(folderId);
+      }
+      return newExpanded;
+    });
+  }, []);
 
   /**
    * 取消重命名
@@ -113,14 +142,13 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
   const renderFileTreeNode = useCallback(
     (node: FileNode, level: number = 0) => {
       const isExpanded = expandedFolders.has(node.id);
-      const isSelected = isComparing
-        ? workspace?.activeFile === node.id
-        : selectedFileId === node.id;
+      const isSelected = selectedFileId === node.id;
       const isRenaming = renamingNode?.id === node.id;
 
       // 为版本模式添加特殊的前缀，避免 key 冲突
-      const nodeKey = isComparing ? `version-${node.id}` : node.id;
+      const nodeKey = node.id;
 
+      // 文件夹节点
       if (node.type === 'folder') {
         return (
           <div
@@ -177,10 +205,10 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
                 return;
               }
 
-              if (!isComparing) {
-                // 正常模式下，使用文件管理逻辑并自动切换到代码查看模式
-                fileManagement.switchToFile(node.id);
-              }
+              // if (!isComparing) {
+              //   // 正常模式下，使用文件管理逻辑并自动切换到代码查看模式
+              //   fileManagement.switchToFile(node.id);
+              // }
               // 版本模式下，直接设置选中的文件到 workspace.activeFile
               onFileSelect(node.id);
             }}
@@ -213,28 +241,24 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
             )}
 
             {/* 正常模式：显示文件状态 */}
-            {!isComparing && !isChatLoading && !isRenaming && (
+            {/* {!isComparing && !isChatLoading && !isRenaming && (
               <>
                 {node.status && (
                   <span className={styles.fileStatus}>{node.status}</span>
                 )}
               </>
-            )}
+            )} */}
           </div>
         );
       }
     },
     [
       expandedFolders,
-      isComparing,
-      workspace?.activeFile,
       selectedFileId,
       renamingNode,
       renameValue,
       onToggleFolder,
       onFileSelect,
-      fileManagement,
-      isChatLoading,
       onContextMenu,
       handleRenameKeyDown,
       handleRenameBlur,
@@ -248,4 +272,4 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
   );
 };
 
-export default AppDevFileTree;
+export default FileTree;

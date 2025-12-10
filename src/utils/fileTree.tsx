@@ -14,6 +14,11 @@ import {
 
 // 获取文件图标
 export const getFileIcon = (name: string) => {
+  if (name.startsWith('.')) {
+    return <ICON_DEFAULT />;
+  }
+
+  // 代码文件
   if (name.endsWith('.ts')) {
     return <ICON_TS />;
   } else if (name.endsWith('.tsx') || name.endsWith('.jsx')) {
