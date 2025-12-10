@@ -1,0 +1,124 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+// 内联重命名样式
+.inlineRenameInput {
+  flex: 1;
+  font-size: @fontSize;
+  height: 22px;
+}
+
+.renameMode {
+  // background: @colorPrimaryBg !important;
+  // border: 1px solid @colorPrimaryBorder;
+  border-radius: 4px;
+}
+
+// 文件树样式
+.fileTree {
+  // padding: 8px 0;
+  min-width: max-content; // 确保内容不会被压缩
+  width: 100%;
+}
+
+.folderItem {
+  margin-bottom: 0;
+}
+
+.folderHeader {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 5%);
+  }
+
+  .folderIcon {
+    margin-right: 4px;
+    // color: @colorTextBase;
+    color: #5e5e5b;
+    transition: transform 0.2s ease;
+
+    &.expanded {
+      transform: rotate(90deg);
+    }
+  }
+
+  .folderName {
+    height: 22px;
+    // color: @colorTextBase;
+    color: #5e5e5b;
+    font-weight: @fontWeightStrong;
+    font-size: @fontSize;
+    font-family: @fontFamilyCode;
+  }
+}
+
+.fileList {
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slide-down 0.3s ease-out;
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+.fileItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  color: #5e5e5b;
+
+  svg {
+    font-size: 16px;
+  }
+
+  &:hover {
+    background: rgba(0, 0, 0, 5%);
+  }
+
+  &.activeFile {
+    background: @colorPrimaryBg;
+  }
+}
+
+.fileName {
+  height: 22px;
+  // color: @colorTextBase;
+  color: #5e5e5b;
+  font-size: @fontSize;
+  font-family: @fontFamilyCode;
+  flex: 1;
+
+  &.hiddenFile {
+    color: @colorTextQuaternary;
+    font-style: italic;
+  }
+}
+
+.fileStatus {
+  color: @colorTextBase;
+  font-size: @fontSizeSm;
+  background: rgba(0, 0, 0, 5%);
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 8px;
+}
