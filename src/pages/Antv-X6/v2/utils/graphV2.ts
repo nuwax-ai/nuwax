@@ -479,13 +479,7 @@ export function createEdgeData(edge: EdgeV2): any {
         },
       },
     },
-    router: {
-      name: 'manhattan',
-      args: {
-        startDirections: ['right'], // out port 从右侧开始，防止向左折回
-        endDirections: ['left'], // in port 在左侧结束
-      },
-    },
+    router: 'manhattan',
   };
 
   // 处理 source - 可能是 nodeId 或 { cell, port }

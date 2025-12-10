@@ -104,13 +104,7 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
     panning: true,
     connecting: {
       ...GRAPH_CONFIG_V2.connecting,
-      router: {
-        name: 'manhattan',
-        args: {
-          startDirections: ['right'], // out port 从右侧开始，防止向左折回
-          endDirections: ['left'], // in port 在左侧结束
-        },
-      },
+      router: 'manhattan',
       connector: 'curveConnectorV2',
       connectionPoint: 'anchor',
       createEdge() {

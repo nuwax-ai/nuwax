@@ -347,18 +347,22 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
         }
       });
 
-      // 添加边
-      const edges = extractEdgesFromNodes(workflowData.nodeList);
-      edges.forEach((edge) => {
-        const edgeData = createEdgeData(edge);
-        graphRef.current!.addEdge(edgeData);
-      });
+      // 等待节点渲染完成后再添加边，防止初始化时 out port 连线回折
+      // 参考 V1：使用 render:done 事件确保节点完全渲染后再创建边
+      graphRef.current.once('render:done', () => {
+        // 添加边
+        const edges = extractEdgesFromNodes(workflowData.nodeList);
+        edges.forEach((edge) => {
+          const edgeData = createEdgeData(edge);
+          graphRef.current!.addEdge(edgeData);
+        });
 
-      // 自适应视图
-      setTimeout(() => {
-        graphChangeZoomToFit();
-        onInit?.();
-      }, 100);
+        // 自适应视图
+        setTimeout(() => {
+          graphChangeZoomToFit();
+          onInit?.();
+        }, 20);
+      });
     }, [workflowData.nodeList, graphChangeZoomToFit, onInit]);
 
     /**
