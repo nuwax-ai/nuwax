@@ -1,10 +1,10 @@
 /**
  * 工作流页面主入口
- * 
+ *
  * 支持 v1 和 v2 两种方案：
  * - v1: 原有方案（后端数据驱动）
  * - v2: 新方案（前端数据驱动、全量更新、支持撤销重做）
- * 
+ *
  * 切换方式见 config.ts
  */
 
@@ -337,9 +337,15 @@ const Workflow: React.FC = () => {
     callback: () => Promise<boolean> | void = () =>
       getReference(getWorkflow('drawerForm').id),
   ) => {
-    const { type, targetId, sourceNode, id } = config;
+    const { type, targetId, sourceNode, id, overrideNextNodeIds } = config;
     if (!graphRef.current) return false;
     const { graphUpdateNode, graphDeleteEdge } = graphRef.current;
+    console.groupCollapsed('[workflow][edge] nodeChangeEdge', {
+      type,
+      targetId,
+      sourceId: sourceNode.id,
+      overrideNextNodeIds,
+    });
     const newNodeIds = await updateNodeEdges({
       type,
       targetId,
@@ -348,6 +354,7 @@ const Workflow: React.FC = () => {
       graphUpdateNode,
       graphDeleteEdge,
       callback,
+      overrideNextNodeIds,
     });
 
     if (newNodeIds) {
@@ -356,6 +363,7 @@ const Workflow: React.FC = () => {
         nextNodeIds: newNodeIds,
       });
     }
+    console.groupEnd();
     return newNodeIds;
   };
 
@@ -686,7 +694,7 @@ const Workflow: React.FC = () => {
     newNodeId: number;
     sourceNode: ChildNode;
     isLoop: boolean;
-  }) => {
+  }): Promise<number[] | false> => {
     const newNodeIds = await nodeChangeEdge(
       {
         type: UpdateEdgeType.created,
@@ -702,6 +710,7 @@ const Workflow: React.FC = () => {
         isLoop,
       );
     }
+    return newNodeIds;
   };
 
   /**
@@ -834,12 +843,14 @@ const Workflow: React.FC = () => {
     sourceNode,
     edgeId,
     isLoop,
+    overrideNextNodeIds,
   }: {
     newNode: ChildNode;
     targetNode: ChildNode;
     sourceNode: ChildNode;
     edgeId: string;
     isLoop: boolean;
+    overrideNextNodeIds?: number[];
   }) => {
     if (isConditionalNode(newNode.type)) {
       await handleConditionalNodeConnection({
@@ -868,6 +879,7 @@ const Workflow: React.FC = () => {
         type: UpdateEdgeType.deleted,
         targetId: targetNode.id.toString(),
         sourceNode,
+        overrideNextNodeIds,
       },
       noop,
     );
@@ -922,6 +934,7 @@ const Workflow: React.FC = () => {
       const { portId, edgeId } = currentNodeRef.current;
       const isLoop = Boolean(nodeData.loopNodeId);
       const isOut = portId.endsWith('out');
+      let latestSourceNode = currentNodeRef.current.sourceNode;
       try {
         if (portId.includes(PortGroupEnum.exception)) {
           // 处理异常端口连接
@@ -943,11 +956,18 @@ const Workflow: React.FC = () => {
           });
         } else if (isOut) {
           // 处理输出端口连接
-          await handleOutputPortConnection({
+          const nextNodeIds = await handleOutputPortConnection({
             newNodeId: nodeData.id,
             sourceNode: currentNodeRef.current.sourceNode,
             isLoop,
           });
+          if (nextNodeIds && Array.isArray(nextNodeIds)) {
+            latestSourceNode = {
+              ...currentNodeRef.current.sourceNode,
+              nextNodeIds,
+            };
+            currentNodeRef.current.sourceNode = latestSourceNode;
+          }
         } else {
           // 处理输入端口连接
           await handleInputPortConnection({
@@ -963,9 +983,12 @@ const Workflow: React.FC = () => {
           await handleTargetNodeConnection({
             newNode: newNodeData,
             targetNode: currentNodeRef.current.targetNode,
-            sourceNode: currentNodeRef.current.sourceNode,
+            sourceNode: latestSourceNode,
             edgeId: edgeId!,
             isLoop,
+            overrideNextNodeIds: latestSourceNode.nextNodeIds as
+              | number[]
+              | undefined,
           });
         }
 

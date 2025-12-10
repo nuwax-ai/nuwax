@@ -614,6 +614,12 @@ const initGraph = ({
             const sourcePort = edge.getSourcePortId();
 
             if (!source || !target) return;
+            console.log('[workflow][edge] plus-button clicked', {
+              edgeId: edge.id,
+              sourceId: source?.id,
+              targetId: target?.id,
+              sourcePort,
+            });
             createNodeAndEdge(
               graph,
               e,
@@ -852,10 +858,25 @@ const initGraph = ({
 
   // 新增连线
   graph.on('edge:connected', ({ isNew, edge }) => {
+    const sourceId = edge.getSourceCellId();
+    const targetId = edge.getTargetCellId();
+    const sourcePortId = edge.getSourcePortId();
+    const targetPortId = edge.getTargetPortId();
+    console.groupCollapsed('[workflow][edge] edge:connected', {
+      isNew,
+      edgeId: edge.id,
+      sourceId,
+      targetId,
+      sourcePortId,
+      targetPortId,
+    });
     changePortSize();
     // 是否是连接桩到连接桩
     edge.setRouter('manhattan');
-    if (!isNew) return;
+    if (!isNew) {
+      console.groupEnd();
+      return;
+    }
     // 查看当前的边是否已经有了
     const edges = graph.getEdges();
     const targetNodeId = edge.getTargetCellId();
@@ -865,7 +886,10 @@ const initGraph = ({
     const sourceNode = edge.getSourceNode()?.getData();
     const targetNode = edge.getTargetNode()?.getData();
 
-    if (!sourceNode || !targetNode || !sourcePort || !targetPort) return;
+    if (!sourceNode || !targetNode || !sourcePort || !targetPort) {
+      console.groupEnd();
+      return;
+    }
     // 校验是否可以连接
     const result = validateConnect(edge, edges);
     if (result !== false) {
@@ -873,6 +897,7 @@ const initGraph = ({
       if (result && typeof result === 'string') {
         message.warning(result);
       }
+      console.groupEnd();
       return;
     }
 
@@ -890,7 +915,10 @@ const initGraph = ({
         updateEdgeArrows(graph);
       },
     );
-    if (isException) return;
+    if (isException) {
+      console.groupEnd();
+      return;
+    }
 
     // 处理循环节点的逻辑
     if (sourceNode.type === 'Loop' || targetNode.type === 'Loop') {
@@ -908,6 +936,7 @@ const initGraph = ({
         graph.addEdge(edge);
         setEdgeAttributes(edge);
         edge.toFront();
+        console.groupEnd();
         return;
       }
     }
@@ -952,6 +981,7 @@ const initGraph = ({
       updateEdgeArrows(graph);
     }, 0);
     // 统一调用更新
+    console.groupEnd();
   });
 
   // 监听画布缩放
