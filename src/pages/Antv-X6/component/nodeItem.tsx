@@ -6,15 +6,18 @@ import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariable
 import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { DataTypeMap } from '@/constants/common.constants';
 import { VARIABLE_CONFIG_TYPE_OPTIONS } from '@/constants/node.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum, VariableConfigTypeEnum } from '@/types/enums/node';
 import { CodeLangEnum } from '@/types/enums/plugin';
-import { InputAndOutConfig } from '@/types/interfaces/node';
+import { InputAndOutConfig, VariableGroup } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import {
+  DeleteOutlined,
   ExclamationCircleOutlined,
   ExpandAltOutlined,
+  PlusOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
 import {
@@ -30,6 +33,7 @@ import {
 } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import { cycleOption, outPutConfigs } from '../params';
 import { InputAndOut, OtherFormList, TreeOutput } from './commonNode';
 import './nodeItem.less';
@@ -316,6 +320,174 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
             </>
           ) : null
         }
+      </Form.Item>
+    </>
+  );
+};
+
+// 变量聚合节点
+const VariableAggregatorNode: React.FC<NodeDisposeProps> = ({ form }) => {
+  const strategyOptions = [
+    { label: '返回每个分组中第一个非空的值', value: 'FIRST_NON_NULL' },
+  ];
+
+  const variableGroups: VariableGroup[] =
+    Form.useWatch('variableGroups', { form, preserve: true }) || [];
+
+  // 初始化至少一个分组
+  useEffect(() => {
+    if (!variableGroups || variableGroups.length === 0) {
+      const defaultGroup: VariableGroup = {
+        id: uuidv4(),
+        name: 'Group1',
+        dataType: DataTypeEnum.String,
+        inputs: [],
+      };
+      form.setFieldsValue({ variableGroups: [defaultGroup] });
+    }
+  }, []);
+
+  // 根据分组生成输出结构
+  useEffect(() => {
+    if (!variableGroups || variableGroups.length === 0) return;
+    const outputArgs: InputAndOutConfig[] = variableGroups.map((group) => {
+      const base: InputAndOutConfig = {
+        name: group.name || 'Group',
+        dataType: group.dataType || DataTypeEnum.String,
+        description: `${group.name || 'Group'} ${
+          DataTypeMap[group.dataType || DataTypeEnum.String] || ''
+        }`,
+        require: false,
+        systemVariable: false,
+        bindValue: '',
+        key: group.id || group.name || uuidv4(),
+      };
+      if (
+        group.dataType === DataTypeEnum.Object &&
+        Array.isArray(group.inputs) &&
+        group.inputs.length > 0
+      ) {
+        base.subArgs = group.inputs.map((item) => ({
+          ...item,
+          dataType: item.dataType || DataTypeEnum.String,
+          description: item.description || '',
+          require: item.require ?? false,
+          systemVariable: item.systemVariable ?? false,
+          bindValue: item.bindValue || '',
+          key: item.key || item.name || uuidv4(),
+        }));
+      }
+      return base;
+    });
+    form.setFieldsValue({ outputArgs });
+  }, [variableGroups, form]);
+
+  const handleAddGroup = () => {
+    const nextGroups = [
+      ...(variableGroups || []),
+      {
+        id: uuidv4(),
+        name: `Group${(variableGroups?.length || 0) + 1}`,
+        dataType: DataTypeEnum.String,
+        inputs: [],
+      },
+    ];
+    form.setFieldsValue({ variableGroups: nextGroups });
+  };
+
+  const handleRemoveGroup = (groupId: string) => {
+    const nextGroups = (variableGroups || []).filter((g) => g.id !== groupId);
+    form.setFieldsValue({ variableGroups: nextGroups });
+  };
+
+  const handleUpdateGroup = (
+    groupId: string,
+    updates: Partial<VariableGroup>,
+  ) => {
+    const nextGroups = (variableGroups || []).map((group) =>
+      group.id === groupId ? { ...group, ...updates } : group,
+    );
+    form.setFieldsValue({ variableGroups: nextGroups });
+  };
+
+  return (
+    <>
+      <div className="node-item-style">
+        <div className="node-title-style margin-bottom">聚合策略</div>
+        <Form.Item name="aggregationStrategy" initialValue="FIRST_NON_NULL">
+          <Select options={strategyOptions} />
+        </Form.Item>
+      </div>
+
+      <div className="node-item-style">
+        <div className="dis-sb margin-bottom">
+          <span className="node-title-style">分组配置</span>
+        </div>
+        {variableGroups?.map((group, index) => (
+          <div key={group.id} className="margin-bottom">
+            <div className="dis-sb margin-bottom">
+              <Form.Item
+                name={['variableGroups', index, 'name']}
+                initialValue={group.name}
+                style={{ marginBottom: 0, flex: 1, marginRight: 8 }}
+              >
+                <Input size="small" />
+              </Form.Item>
+              <Form.Item
+                name={['variableGroups', index, 'dataType']}
+                initialValue={group.dataType || DataTypeEnum.String}
+                style={{ marginBottom: 0, width: 160, marginRight: 8 }}
+              >
+                <Select
+                  size="small"
+                  options={Object.values(DataTypeEnum).map((value) => ({
+                    value,
+                    label: DataTypeMap[value as DataTypeEnum] || value,
+                  }))}
+                  onChange={(value) =>
+                    handleUpdateGroup(group.id, {
+                      dataType: value as DataTypeEnum,
+                    })
+                  }
+                />
+              </Form.Item>
+              <Button
+                type="text"
+                size="small"
+                icon={<DeleteOutlined />}
+                onClick={() => handleRemoveGroup(group.id)}
+              />
+            </div>
+            <Form.Item name={['variableGroups', index, 'inputs']} noStyle>
+              <InputAndOut
+                title=""
+                fieldConfigs={outPutConfigs}
+                inputItemName={['variableGroups', index, 'inputs']}
+                form={form}
+              />
+            </Form.Item>
+          </div>
+        ))}
+        <Button
+          type="dashed"
+          block
+          icon={<PlusOutlined />}
+          onClick={handleAddGroup}
+        >
+          新增分组
+        </Button>
+      </div>
+
+      <Form.Item shouldUpdate noStyle>
+        {() => {
+          const outputArgs = form.getFieldValue('outputArgs') || [];
+          return outputArgs.length > 0 ? (
+            <>
+              <div className="node-title-style margin-bottom">输出</div>
+              <TreeOutput treeData={outputArgs} />
+            </>
+          ) : null;
+        }}
       </Form.Item>
     </>
   );
@@ -644,6 +816,7 @@ export default {
   EndNode,
   CycleNode,
   VariableNode,
+  VariableAggregatorNode,
   CodeNode,
   TextProcessingNode,
   DocumentExtractionNode,
