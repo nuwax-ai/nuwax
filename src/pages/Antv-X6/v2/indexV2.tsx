@@ -10,7 +10,10 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message, Modal, Spin } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { history, useParams } from 'umi';
+import { history, useModel, useParams } from 'umi';
+
+// V2 独立组件
+import TestRunV2 from './components/testRun';
 
 // V2 独立导入 - 类型
 import type {
@@ -44,7 +47,6 @@ import {
   CreateComponentModalV2,
   EditWorkflowModalV2,
   PublishModalV2,
-  TestRunModalV2,
 } from './components/modal';
 import type { VersionInfo } from './components/version';
 import { VersionHistoryV2 } from './components/version';
@@ -151,7 +153,6 @@ const WorkflowV2: React.FC = () => {
   });
 
   // 弹窗状态
-  const [testRunModalVisible, setTestRunModalVisible] = useState(false);
   const [publishModalVisible, setPublishModalVisible] = useState(false);
   const [editWorkflowModalVisible, setEditWorkflowModalVisible] =
     useState(false);
@@ -159,9 +160,15 @@ const WorkflowV2: React.FC = () => {
     useState(false);
   const [versionHistoryVisible, setVersionHistoryVisible] = useState(false);
 
-  // 试运行状态
+  // 试运行状态（复用 V1 的 useModel 全局状态）
+  const { testRun, setTestRun } = useModel('model');
   const [runStatus, setRunStatus] = useState<RunStatus>('idle');
   const [runResult, setRunResult] = useState<RunResult | undefined>();
+  const [testRunResult, setTestRunResult] = useState<string>('');
+  const [testRunLoading, setTestRunLoading] = useState(false);
+  const [stopWait, setStopWait] = useState(false);
+  const [formItemValue, setFormItemValue] = useState<Record<string, any>>({});
+  const [testRunParams, setTestRunParams] = useState<any>({});
 
   // 错误列表
   const [errorList, setErrorList] = useState<ErrorItemV2[]>([]);
@@ -866,19 +873,125 @@ const WorkflowV2: React.FC = () => {
   // ==================== 弹窗操作 ====================
 
   /**
-   * 打开试运行
+   * 打开试运行（复用 V1 的 testRun 全局状态）
    */
   const handleOpenTestRun = useCallback(() => {
+    console.log('[V2] handleOpenTestRun 被调用');
     // 先验证
     const validationResult = handleValidate();
+    console.log('[V2] 验证结果:', validationResult);
     if (
       validationResult.errors.filter((e) => e.severity === 'error').length > 0
     ) {
       message.error('请先修复错误');
       return;
     }
-    setTestRunModalVisible(true);
-  }, [handleValidate]);
+    // 打开试运行面板
+    console.log('[V2] 设置 testRun = true');
+    setTestRun(true);
+  }, [handleValidate, setTestRun]);
+
+  /**
+   * 清除运行结果
+   */
+  const handleClearRunResult = useCallback(() => {
+    setTestRunResult('');
+    graphRef.current?.graphResetRunResult();
+  }, []);
+
+  /**
+   * 节点试运行（复用 V1 逻辑）
+   */
+  const runTest = useCallback(
+    async (type: string, params?: Record<string, any>) => {
+      setErrorList([]);
+      setErrorListVisible(false);
+      handleClearRunResult();
+      setTestRunLoading(true);
+
+      if (type === 'Start') {
+        // 工作流试运行
+        const testRunPayload: TestRunParamsV2 = {
+          workflowId,
+          params: params || {},
+          requestId: uuidv4(),
+        };
+
+        try {
+          const abortFn = await createSSEConnection({
+            url: `${process.env.BASE_URL}${TEST_RUN_ENDPOINT}`,
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
+              Accept: 'application/json, text/plain, */*',
+            },
+            body: testRunPayload,
+            onMessage: (data) => {
+              console.log('[V2] 试运行消息:', data);
+              if (data?.data?.nodeId) {
+                // 构建运行结果并高亮节点
+                const runResult = {
+                  requestId: data.requestId,
+                  options: {
+                    ...data.data.result,
+                    nodeId: data.data.nodeId,
+                    nodeName: data.data.nodeName,
+                  },
+                  status: data.data.status,
+                };
+                graphRef.current?.graphActiveNodeRunResult(
+                  data.data.nodeId.toString(),
+                  runResult,
+                );
+              }
+              if (data?.data?.status === 'STOP_WAIT_ANSWER') {
+                setTestRunLoading(false);
+                setStopWait(true);
+                if (data.data.result) {
+                  setTestRunParams(data.data.result.data);
+                }
+              }
+              if (data?.complete && data?.data?.output) {
+                setTestRunResult(JSON.stringify(data.data, null, 2));
+                setTestRunLoading(false);
+                setStopWait(false);
+              }
+              if (data?.data?.status === 'FAILED') {
+                setTestRunLoading(false);
+                setErrorList((prev) => [
+                  ...prev,
+                  {
+                    nodeId: data.data.nodeId,
+                    error: data.data.errorMessage || '运行失败',
+                    type: 'runtime',
+                  },
+                ]);
+                setErrorListVisible(true);
+              }
+            },
+            onError: (error) => {
+              console.error('[V2] 试运行错误:', error);
+              setTestRunLoading(false);
+              message.error('运行失败: ' + error.message);
+            },
+            onClose: () => {
+              setTestRunLoading(false);
+            },
+          });
+          abortTestRunRef.current = abortFn;
+        } catch (error: any) {
+          console.error('[V2] 试运行异常:', error);
+          setTestRunLoading(false);
+          message.error('运行失败: ' + error.message);
+        }
+      } else {
+        // 单节点试运行 - TODO: 实现单节点试运行逻辑
+        setTestRunLoading(false);
+        message.info('单节点试运行功能待实现');
+      }
+    },
+    [workflowId, handleClearRunResult],
+  );
 
   /**
    * 执行试运行（使用 V1 SSE 接口）
@@ -1449,15 +1562,20 @@ const WorkflowV2: React.FC = () => {
         )}
       </div>
 
-      {/* 试运行弹窗 */}
-      <TestRunModalV2
-        open={testRunModalVisible}
-        onClose={() => setTestRunModalVisible(false)}
-        workflowData={workflowData as WorkflowDataV2}
-        onRun={handleTestRun}
-        onStop={handleStopRun}
-        runStatus={runStatus}
-        runResult={runResult}
+      {/* 试运行面板（V2 独立组件）*/}
+      <TestRunV2
+        node={
+          // 试运行需要 startNode，从 nodeList 中查找
+          (workflowData.nodeList?.find((n) => n.type === 'Start') ||
+            selectedNode) as any
+        }
+        run={runTest}
+        testRunResult={testRunResult}
+        clearRunResult={handleClearRunResult}
+        loading={testRunLoading}
+        stopWait={stopWait}
+        formItemValue={formItemValue}
+        testRunParams={testRunParams}
       />
 
       {/* 发布弹窗 */}
