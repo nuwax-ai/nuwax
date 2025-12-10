@@ -116,7 +116,9 @@ const SpaceSection: React.FC<{
       (type === SpaceApplicationListEnum.Space_Square &&
         pathname.includes('space-square')) ||
       (type === SpaceApplicationListEnum.Team_Setting &&
-        pathname.includes('team'))
+        pathname.includes('team')) ||
+      (type === SpaceApplicationListEnum.Skill_Manage &&
+        pathname.includes('skill-manage'))
     );
   };
 
