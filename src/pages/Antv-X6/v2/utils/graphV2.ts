@@ -5,10 +5,10 @@
  * 完全独立，不依赖 v1 任何代码
  */
 
+import PlusIcon from '@/assets/svg/plus_icon.svg';
 import {
   DEFAULT_NODE_SIZE_MAP_V2,
   EXCEPTION_NODES_TYPE_V2,
-  PORT_GROUPS_V2,
 } from '../constants';
 import type {
   ChildNodeV2,
@@ -20,12 +20,25 @@ import type {
 } from '../types';
 import {
   AnswerTypeEnumV2,
+  ExceptionHandleTypeEnumV2,
   NodeShapeEnumV2,
   NodeTypeEnumV2,
   PortGroupEnumV2,
 } from '../types';
 
 // ==================== 节点尺寸计算 ====================
+const BASE_PORT_SIZE = 3;
+const NODE_BOTTOM_PADDING = 10;
+const NODE_BOTTOM_PADDING_AND_BORDER = NODE_BOTTOM_PADDING + 1;
+const MAGNET_RADIUS = 30;
+const DEFAULT_HEADER_HEIGHT = DEFAULT_NODE_SIZE_MAP_V2.default.defaultHeight;
+const FIXED_PORT_NODES: NodeTypeEnumV2[] = [
+  NodeTypeEnumV2.Loop,
+  NodeTypeEnumV2.LoopStart,
+  NodeTypeEnumV2.LoopEnd,
+  NodeTypeEnumV2.Start,
+  NodeTypeEnumV2.End,
+];
 
 /**
  * 获取节点默认尺寸
@@ -44,174 +57,347 @@ export function getNodeDefaultSize(type: NodeTypeEnumV2): {
 }
 
 /**
- * 计算节点实际尺寸
+ * 计算节点实际尺寸（参考 V1：高度由端口 offsetY 决定）
  */
-export function calculateNodeSize(node: ChildNodeV2): {
+export function calculateNodeSize(
+  node: ChildNodeV2,
+  ports?: OutputOrInputPortConfigV2[],
+): {
   width: number;
   height: number;
 } {
   const defaultSize = getNodeDefaultSize(node.type);
-  const extension = node.nodeConfig?.extension;
+  const width = node.nodeConfig?.extension?.width ?? defaultSize.width;
 
-  // 如果有保存的尺寸，使用保存的
-  if (extension?.width && extension?.height) {
-    return {
-      width: extension.width,
-      height: extension.height,
-    };
-  }
+  const portItems = ports ?? generatePorts(node).items;
+  const lastOffsetY =
+    portItems.length > 0
+      ? Math.max(...portItems.map((p) => p.args?.offsetY ?? 0))
+      : defaultSize.height - NODE_BOTTOM_PADDING_AND_BORDER;
 
-  // 特殊节点需要根据内容计算高度
-  if (node.type === NodeTypeEnumV2.Condition) {
-    const branches = node.nodeConfig?.conditionBranchConfigs || [];
-    const height = Math.max(defaultSize.height, 40 + branches.length * 32);
-    return { width: defaultSize.width, height };
-  }
+  const baseHeight =
+    node.nodeConfig?.extension?.height ?? defaultSize.height ?? 0;
+  const contentHeight = lastOffsetY + NODE_BOTTOM_PADDING_AND_BORDER;
+  const height = Math.max(baseHeight, contentHeight);
 
-  if (
-    node.type === NodeTypeEnumV2.QA &&
-    node.nodeConfig?.answerType === AnswerTypeEnumV2.SELECT
-  ) {
-    const options = node.nodeConfig?.options || [];
-    const height = Math.max(defaultSize.height, 40 + options.length * 32);
-    return { width: defaultSize.width, height };
-  }
-
-  if (node.type === NodeTypeEnumV2.IntentRecognition) {
-    const intents = node.nodeConfig?.intentConfigs || [];
-    const height = Math.max(defaultSize.height, 40 + intents.length * 32);
-    return { width: defaultSize.width, height };
-  }
-
-  // 检查是否需要异常处理端口的额外高度
-  if (EXCEPTION_NODES_TYPE_V2.includes(node.type)) {
-    return {
-      width: defaultSize.width,
-      height: defaultSize.height + 32, // 异常端口额外高度
-    };
-  }
-
-  return defaultSize;
+  return { width, height };
 }
 
 // ==================== 端口生成 ====================
 
-/**
- * 生成基础端口配置
- */
-function createPort(
-  id: string,
+const getNodeWidth = (node: ChildNodeV2): number => {
+  const defaultSize = getNodeDefaultSize(node.type);
+  return node.nodeConfig?.extension?.width ?? defaultSize.width;
+};
+
+const showExceptionHandle = (node: ChildNodeV2): boolean =>
+  EXCEPTION_NODES_TYPE_V2.includes(node.type);
+
+const showExceptionPort = (
+  node: ChildNodeV2,
   group: PortGroupEnumV2,
-  position: { x: number; y: number },
-  color: string = '#5147FF',
+): boolean => {
+  return (
+    showExceptionHandle(node) &&
+    node.nodeConfig?.exceptionHandleConfig?.exceptionHandleType ===
+      ExceptionHandleTypeEnumV2.EXECUTE_EXCEPTION_FLOW &&
+    group === PortGroupEnumV2.exception
+  );
+};
+
+const generatePortGroupConfig = (
+  node: ChildNodeV2,
+): PortsConfigV2['groups'] => {
+  const isLoopNode = node.type === NodeTypeEnumV2.Loop;
+  const isFixedPortNode = FIXED_PORT_NODES.includes(node.type);
+  const baseCircle = {
+    r: BASE_PORT_SIZE,
+    magnet: true,
+    magnetRadius: MAGNET_RADIUS,
+    stroke: '#5147FF',
+    strokeWidth: 1,
+    fill: '#5147FF',
+  };
+
+  return {
+    [PortGroupEnumV2.in]: {
+      position: { name: 'left' },
+      attrs: { circle: baseCircle },
+      connectable: { source: isLoopNode, target: true },
+    },
+    [PortGroupEnumV2.out]: {
+      position: { name: isFixedPortNode ? 'right' : 'absolute' },
+      attrs: { circle: baseCircle },
+      connectable: { source: true, target: isLoopNode },
+    },
+    [PortGroupEnumV2.special]: {
+      position: { name: 'absolute' },
+      attrs: { circle: baseCircle },
+      connectable: { source: true, target: isLoopNode },
+    },
+    [PortGroupEnumV2.exception]: {
+      position: { name: 'absolute' },
+      attrs: {
+        circle: {
+          ...baseCircle,
+          stroke: '#e67e22',
+          fill: '#e67e22',
+        },
+      },
+      connectable: { source: true, target: isLoopNode },
+    },
+  };
+};
+
+function generatePortConfig(
+  node: ChildNodeV2,
+  {
+    group,
+    idSuffix,
+    color = '#5147FF',
+    yHeight = (DEFAULT_HEADER_HEIGHT - 1) / 2 + 1,
+    xWidth = idSuffix === 'in' ? 0 : getNodeWidth(node),
+    offsetY = DEFAULT_HEADER_HEIGHT - NODE_BOTTOM_PADDING_AND_BORDER,
+    offsetX = xWidth,
+  }: {
+    group: PortGroupEnumV2;
+    idSuffix: string;
+    color?: string;
+    yHeight?: number;
+    xWidth?: number;
+    offsetY?: number;
+    offsetX?: number;
+  },
 ): OutputOrInputPortConfigV2 {
   return {
-    id,
     group,
-    zIndex: 10,
+    markup: [
+      {
+        tagName: 'circle',
+        selector: 'circle',
+        attrs: {
+          // @ts-ignore
+          magnet: true,
+          pointerEvents: 'auto',
+        },
+      },
+      {
+        tagName: 'image',
+        selector: 'icon',
+        attrs: {
+          // @ts-ignore
+          magnet: false,
+        },
+      },
+      {
+        tagName: 'circle',
+        selector: 'hoverCircle',
+        attrs: {
+          r: BASE_PORT_SIZE + 10,
+          opacity: 0,
+          pointerEvents: 'visiblePainted',
+          zIndex: -1,
+          // @ts-ignore
+          magnet: false,
+        },
+      },
+    ],
+    id: `${node.id}-${idSuffix}`,
+    zIndex: 99,
     magnet: true,
-    args: {
-      x: position.x,
-      y: position.y,
-      offsetX: 0,
-      offsetY: 0,
-    },
     attrs: {
       circle: {
-        r: 3,
+        r: BASE_PORT_SIZE,
+        magnet: true,
         stroke: color,
-        fill: '#fff',
-        strokeWidth: 1,
+        fill: color,
+        magnetRadius: MAGNET_RADIUS,
+        zIndex: 2,
       },
+      icon: {
+        xlinkHref: PlusIcon,
+        magnet: false,
+        width: 0,
+        height: 0,
+        fill: '#fff',
+        zIndex: -2,
+        pointerEvents: 'none',
+        opacity: 0,
+      },
+    },
+    args: {
+      x: xWidth,
+      y: yHeight,
+      offsetY,
+      offsetX,
     },
   };
 }
 
+const handleExceptionOutputPort = (
+  node: ChildNodeV2,
+  outputPorts: OutputOrInputPortConfigV2[],
+  generate: (config: {
+    group: PortGroupEnumV2;
+    idSuffix: string;
+    color?: string;
+    yHeight?: number;
+    xWidth?: number;
+    offsetY?: number;
+    offsetX?: number;
+  }) => OutputOrInputPortConfigV2,
+): OutputOrInputPortConfigV2[] => {
+  if (!outputPorts.length) return outputPorts;
+
+  const baseY = outputPorts[outputPorts.length - 1]?.args?.offsetY ?? 0;
+  const xWidth = getNodeWidth(node);
+  const itemHeight = 24;
+
+  if (showExceptionPort(node, PortGroupEnumV2.exception)) {
+    return [
+      ...outputPorts,
+      generate({
+        group: PortGroupEnumV2.exception,
+        idSuffix: 'exception-out',
+        yHeight: baseY + NODE_BOTTOM_PADDING + itemHeight / 2,
+        offsetY: baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER,
+        xWidth,
+        color: '#e67e22',
+      }),
+    ];
+  }
+
+  if (showExceptionHandle(node)) {
+    const updated = [...outputPorts];
+    const last = updated[updated.length - 1];
+    if (last) {
+      if (updated.length === 1) {
+        last.args = {
+          ...last.args,
+          y: (baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER + 1) / 2,
+        };
+      }
+      last.args = {
+        ...last.args,
+        offsetY: baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER,
+      };
+    }
+    return updated;
+  }
+
+  return outputPorts;
+};
+
 /**
- * 生成节点的端口配置
+ * 生成节点的端口配置（对齐 V1 逻辑）
  */
 export function generatePorts(node: ChildNodeV2): PortsConfigV2 {
-  const size = calculateNodeSize(node);
-  const items: OutputOrInputPortConfigV2[] = [];
+  const nodeWidth = getNodeWidth(node);
+  const generate = (config: {
+    group: PortGroupEnumV2;
+    idSuffix: string;
+    color?: string;
+    yHeight?: number;
+    xWidth?: number;
+    offsetY?: number;
+    offsetX?: number;
+  }) => generatePortConfig(node, config);
 
-  // 基础输入端口（左侧）
-  if (
-    node.type !== NodeTypeEnumV2.Start &&
-    node.type !== NodeTypeEnumV2.LoopStart
-  ) {
-    items.push(
-      createPort(`${node.id}-in`, PortGroupEnumV2.in, {
-        x: 0,
-        y: size.height / 2,
-      }),
-    );
-  }
+  let inputPorts: OutputOrInputPortConfigV2[] = [
+    generate({ group: PortGroupEnumV2.in, idSuffix: 'in' }),
+  ];
+  let outputPorts: OutputOrInputPortConfigV2[] = [];
 
-  // 基础输出端口（右侧）
-  if (
-    node.type !== NodeTypeEnumV2.End &&
-    node.type !== NodeTypeEnumV2.LoopEnd
-  ) {
-    // 特殊节点有多个输出端口
-    if (node.type === NodeTypeEnumV2.Condition) {
-      const branches = node.nodeConfig?.conditionBranchConfigs || [];
-      branches.forEach((branch, index) => {
-        items.push(
-          createPort(`${branch.uuid}-out`, PortGroupEnumV2.special, {
-            x: size.width,
-            y: 40 + index * 32 + 16,
-          }),
-        );
-      });
-    } else if (
-      node.type === NodeTypeEnumV2.QA &&
-      node.nodeConfig?.answerType === AnswerTypeEnumV2.SELECT
-    ) {
-      const options = node.nodeConfig?.options || [];
-      options.forEach((option, index) => {
-        items.push(
-          createPort(`${option.uuid}-out`, PortGroupEnumV2.special, {
-            x: size.width,
-            y: 40 + index * 32 + 16,
-          }),
-        );
-      });
-    } else if (node.type === NodeTypeEnumV2.IntentRecognition) {
-      const intents = node.nodeConfig?.intentConfigs || [];
-      intents.forEach((intent, index) => {
-        items.push(
-          createPort(`${intent.uuid}-out`, PortGroupEnumV2.special, {
-            x: size.width,
-            y: 40 + index * 32 + 16,
-          }),
-        );
-      });
-    } else {
-      // 普通输出端口
-      items.push(
-        createPort(`${node.id}-out`, PortGroupEnumV2.out, {
-          x: size.width,
-          y: size.height / 2,
+  switch (node.type) {
+    case NodeTypeEnumV2.Start:
+      inputPorts = [];
+      outputPorts = [generate({ group: PortGroupEnumV2.out, idSuffix: 'out' })];
+      break;
+    case NodeTypeEnumV2.End:
+      inputPorts = [
+        generate({
+          group: PortGroupEnumV2.in,
+          idSuffix: 'in',
+        }),
+      ];
+      outputPorts = [];
+      break;
+    case NodeTypeEnumV2.Condition:
+    case NodeTypeEnumV2.IntentRecognition: {
+      const configs =
+        node.nodeConfig?.conditionBranchConfigs ||
+        node.nodeConfig?.intentConfigs ||
+        [];
+      const baseY = DEFAULT_HEADER_HEIGHT;
+      const itemHeight = node.type === NodeTypeEnumV2.Condition ? 32 : 24;
+      const step = node.type === NodeTypeEnumV2.Condition ? 16 : 12;
+
+      inputPorts = [
+        generate({
+          group: PortGroupEnumV2.in,
+          idSuffix: 'in',
+        }),
+      ];
+
+      outputPorts = configs.map((item, index) =>
+        generate({
+          group: PortGroupEnumV2.special,
+          idSuffix: `${item.uuid || index}-out`,
+          yHeight: baseY + (index + 1) * itemHeight - step,
+          xWidth: nodeWidth,
+          offsetY: baseY + (index + 1) * itemHeight,
         }),
       );
+      break;
     }
+    case NodeTypeEnumV2.QA: {
+      const type = node.nodeConfig?.answerType;
+      const configs = node.nodeConfig?.options;
+      const itemHeight = 24;
+      const step = 12;
+      let baseY = DEFAULT_HEADER_HEIGHT;
+
+      if (type === AnswerTypeEnumV2.SELECT) {
+        baseY += itemHeight * 3;
+        outputPorts = (configs || []).map((item, index) =>
+          generate({
+            group: PortGroupEnumV2.special,
+            idSuffix: `${item.uuid || index}-out`,
+            yHeight: baseY + (index + 1) * itemHeight - step,
+            xWidth: nodeWidth,
+            offsetY: baseY + (index + 1) * itemHeight,
+          }),
+        );
+      } else {
+        baseY += itemHeight * 2;
+        outputPorts = [
+          generate({
+            group: PortGroupEnumV2.out,
+            idSuffix: 'out',
+            yHeight: baseY + itemHeight - step,
+            xWidth: nodeWidth,
+            offsetY: baseY + itemHeight,
+          }),
+        ];
+      }
+      break;
+    }
+    default:
+      inputPorts = [
+        generate({
+          group: PortGroupEnumV2.in,
+          idSuffix: 'in',
+        }),
+      ];
+      outputPorts = [generate({ group: PortGroupEnumV2.out, idSuffix: 'out' })];
+      break;
   }
 
-  // 异常处理端口（底部）
-  if (EXCEPTION_NODES_TYPE_V2.includes(node.type)) {
-    items.push(
-      createPort(
-        `${node.id}-exception`,
-        PortGroupEnumV2.exception,
-        { x: size.width / 2, y: size.height },
-        '#FF4D4F',
-      ),
-    );
-  }
+  outputPorts = handleExceptionOutputPort(node, outputPorts, generate);
 
   return {
-    groups: PORT_GROUPS_V2,
-    items,
+    groups: generatePortGroupConfig(node),
+    items: [...inputPorts, ...outputPorts],
   };
 }
 
@@ -231,7 +417,8 @@ export function getNodeShape(type: NodeTypeEnumV2): NodeShapeEnumV2 {
  * 创建基础节点数据
  */
 export function createBaseNodeData(node: ChildNodeV2): NodeMetadataV2 {
-  const size = calculateNodeSize(node);
+  const ports = generatePorts(node);
+  const size = calculateNodeSize(node, ports.items);
   const position = node.nodeConfig?.extension || { x: 0, y: 0 };
 
   return {
@@ -246,7 +433,7 @@ export function createBaseNodeData(node: ChildNodeV2): NodeMetadataV2 {
       nodeConfig: node.nodeConfig,
       parentId: node.loopNodeId?.toString() || null,
     },
-    ports: generatePorts(node),
+    ports,
     zIndex: node.type === NodeTypeEnumV2.Loop ? 5 : 4,
   };
 }

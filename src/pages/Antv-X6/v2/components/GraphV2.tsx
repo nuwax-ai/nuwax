@@ -303,35 +303,91 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
     onZoomChange(sx);
   });
 
-  // 节点鼠标进入 - 显示端口
-  graph.on('node:mouseenter', ({ node }) => {
-    const ports = node.getPorts();
-    const updatedPorts = ports.map((port) => ({
+  const handlePortConfig = (
+    port: any,
+    portStatus: 'normal' | 'active' = 'active',
+    color?: string,
+  ) => {
+    const baseConfig = {
       ...port,
       attrs: {
         ...port.attrs,
         circle: {
           ...(port.attrs?.circle || {}),
-          r: 8,
+          stroke: color || '#5147FF',
+          fill: color || '#5147FF',
         },
       },
-    }));
+    };
+
+    const configs = {
+      normal: {
+        ...baseConfig,
+        attrs: {
+          ...baseConfig.attrs,
+          circle: { ...baseConfig.attrs.circle, r: 3 },
+          icon: {
+            ...(port.attrs?.icon || {}),
+            width: 0,
+            height: 0,
+            opacity: 0,
+          },
+          hoverCircle: { pointerEvents: 'visiblePainted' },
+        },
+      },
+      active: {
+        ...baseConfig,
+        attrs: {
+          ...baseConfig.attrs,
+          circle: { ...baseConfig.attrs.circle, r: 8 },
+          icon: {
+            ...(port.attrs?.icon || {}),
+            width: 10,
+            height: 10,
+            x: -5,
+            y: -5,
+            opacity: 1,
+          },
+          hoverCircle: { pointerEvents: 'none' },
+        },
+      },
+    };
+
+    return configs[portStatus];
+  };
+
+  // 节点鼠标进入 - 显示端口
+  graph.on('node:mouseenter', ({ node }) => {
+    const data = node.getData() as ChildNodeV2;
+    const ports = node.getPorts();
+    const portStatusList: Record<string, 'normal' | 'active'> = {
+      in: 'active',
+      out: 'active',
+    };
+
+    if (data?.type === NodeTypeEnumV2.LoopStart) {
+      portStatusList.in = 'normal';
+    }
+    if (data?.type === NodeTypeEnumV2.LoopEnd) {
+      portStatusList.out = 'normal';
+    }
+
+    const updatedPorts = ports.map((port) =>
+      handlePortConfig(
+        port,
+        portStatusList[port.group || PortGroupEnumV2.in] || 'active',
+        port.attrs?.circle?.fill as string,
+      ),
+    );
     node.prop('ports/items', updatedPorts);
   });
 
   // 节点鼠标离开 - 隐藏端口
   graph.on('node:mouseleave', ({ node }) => {
     const ports = node.getPorts();
-    const updatedPorts = ports.map((port) => ({
-      ...port,
-      attrs: {
-        ...port.attrs,
-        circle: {
-          ...(port.attrs?.circle || {}),
-          r: 3,
-        },
-      },
-    }));
+    const updatedPorts = ports.map((port) =>
+      handlePortConfig(port, 'normal', port.attrs?.circle?.fill as string),
+    );
     node.prop('ports/items', updatedPorts);
   });
 

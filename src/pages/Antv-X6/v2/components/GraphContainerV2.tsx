@@ -207,7 +207,7 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
 
           // 更新端口配置
           const newPorts = generatePorts(newData);
-          const size = calculateNodeSize(newData);
+          const size = calculateNodeSize(newData, newPorts.items);
           (node as Node).setSize(size.width, size.height);
           node.prop('ports', newPorts);
           node.updateData(newData);

@@ -39,6 +39,11 @@ import {
   ICON_WORKFLOW_WORKFLOW,
 } from '@/constants/images.constants';
 import useNodeSelection from '@/hooks/useNodeSelection';
+import {
+  EXCEPTION_HANDLE_OPTIONS_V2,
+  EXCEPTION_NODES_TYPE_V2,
+  PORT_GROUPS_V2,
+} from '../constants';
 
 import type { ChildNodeV2, RunResultItemV2 } from '../types';
 import {
@@ -304,6 +309,22 @@ const IntentRecognitionContent: React.FC<{ data: ChildNodeV2 }> = ({
 };
 
 /**
+ * 异常处理展示
+ */
+const ExceptionHandleV2: React.FC<{ type?: string }> = ({ type }) => {
+  const label =
+    EXCEPTION_HANDLE_OPTIONS_V2.find((item) => item.value === type)?.label ||
+    '未配置';
+
+  return (
+    <div className="exception-handle-v2">
+      <span className="exception-title-v2">异常时</span>
+      <span className="exception-content-v2">{label}</span>
+    </div>
+  );
+};
+
+/**
  * 通用节点组件 - 参考 V1 GeneralNode
  */
 const GeneralNodeComponent: React.FC<NodeComponentProps> = ({
@@ -341,6 +362,9 @@ const GeneralNodeComponent: React.FC<NodeComponentProps> = ({
   const isRunning = lastResult?.status === RunResultStatusEnumV2.EXECUTING;
   const isError = lastResult?.status === RunResultStatusEnumV2.FAILED;
   const isSuccess = lastResult?.status === RunResultStatusEnumV2.FINISHED;
+  const showException = EXCEPTION_NODES_TYPE_V2.includes(data.type);
+  const exceptionHandleType =
+    data.nodeConfig?.exceptionHandleConfig?.exceptionHandleType;
 
   const nodeClassName = [
     'general-node-v2',
@@ -380,6 +404,9 @@ const GeneralNodeComponent: React.FC<NodeComponentProps> = ({
       {data.type === NodeTypeEnumV2.IntentRecognition && (
         <IntentRecognitionContent data={data} />
       )}
+
+      {/* 异常处理展示 */}
+      {showException && <ExceptionHandleV2 type={exceptionHandleType} />}
     </div>
   );
 };
@@ -438,58 +465,7 @@ export function registerCustomNodesV2(): void {
     width: 220,
     height: 44,
     component: GeneralNodeComponent,
-    ports: {
-      groups: {
-        in: {
-          position: 'left',
-          attrs: {
-            circle: {
-              r: 3,
-              magnet: true,
-              stroke: '#5147FF',
-              strokeWidth: 1,
-              fill: '#5147FF',
-            },
-          },
-        },
-        out: {
-          position: 'right',
-          attrs: {
-            circle: {
-              r: 3,
-              magnet: true,
-              stroke: '#5147FF',
-              strokeWidth: 1,
-              fill: '#5147FF',
-            },
-          },
-        },
-        special: {
-          position: 'right',
-          attrs: {
-            circle: {
-              r: 3,
-              magnet: true,
-              stroke: '#5147FF',
-              strokeWidth: 1,
-              fill: '#5147FF',
-            },
-          },
-        },
-        exception: {
-          position: 'bottom',
-          attrs: {
-            circle: {
-              r: 3,
-              magnet: true,
-              stroke: '#e67e22',
-              strokeWidth: 1,
-              fill: '#e67e22',
-            },
-          },
-        },
-      },
-    },
+    ports: { groups: PORT_GROUPS_V2 },
   });
 
   // 注册循环节点
@@ -498,34 +474,7 @@ export function registerCustomNodesV2(): void {
     width: 660,
     height: 240,
     component: LoopNodeComponent,
-    ports: {
-      groups: {
-        in: {
-          position: 'left',
-          attrs: {
-            circle: {
-              r: 3,
-              magnet: true,
-              stroke: '#5147FF',
-              strokeWidth: 1,
-              fill: '#5147FF',
-            },
-          },
-        },
-        out: {
-          position: 'right',
-          attrs: {
-            circle: {
-              r: 3,
-              magnet: true,
-              stroke: '#5147FF',
-              strokeWidth: 1,
-              fill: '#5147FF',
-            },
-          },
-        },
-      },
-    },
+    ports: { groups: PORT_GROUPS_V2 },
   });
 
   isRegistered = true;
