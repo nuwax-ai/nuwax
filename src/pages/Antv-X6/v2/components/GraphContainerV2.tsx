@@ -187,6 +187,7 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
 
     /**
      * 更新节点
+     * 参考 V1：需要处理端口变化时的边删除逻辑
      */
     const graphUpdateNode = useCallback(
       (nodeId: string, newData: ChildNodeV2 | null) => {
@@ -194,6 +195,10 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
 
         const node = graphRef.current.getCellById(nodeId);
         if (node && node.isNode()) {
+          // 获取旧的端口列表
+          const oldPorts = (node as Node).getPorts();
+          const oldPortIds = new Set(oldPorts.map((p) => p.id));
+
           // 更新位置
           const position = (node as Node).getPosition();
           newData.nodeConfig = {
@@ -205,8 +210,33 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
             },
           };
 
-          // 更新端口配置
+          // 生成新的端口配置
           const newPorts = generatePorts(newData);
+          const newPortIds = new Set(
+            newPorts.items.map((p) => p.id).filter(Boolean),
+          );
+
+          // 找出被删除的端口（旧端口中存在但新端口中不存在）
+          const deletedPortIds = [...oldPortIds].filter(
+            (id): id is string => !!id && !newPortIds.has(id),
+          );
+
+          // 删除与被删除端口相关的边（与 V1 保持一致）
+          if (deletedPortIds.length > 0) {
+            const edges = graphRef.current.getEdges();
+            edges.forEach((edge) => {
+              const sourcePortId = edge.getSourcePortId();
+              const targetPortId = edge.getTargetPortId();
+              if (
+                (sourcePortId && deletedPortIds.includes(sourcePortId)) ||
+                (targetPortId && deletedPortIds.includes(targetPortId))
+              ) {
+                edge.remove();
+              }
+            });
+          }
+
+          // 更新端口配置
           const size = calculateNodeSize(newData, newPorts.items);
           (node as Node).setSize(size.width, size.height);
           node.prop('ports', newPorts);
@@ -218,6 +248,7 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
 
     /**
      * 通过表单数据更新节点
+     * 参考 V1：需要处理循环节点父子大小调整
      */
     const graphUpdateByFormData = useCallback(
       (changedValues: any, fullFormValues: any, nodeId: string) => {
@@ -236,6 +267,23 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
         };
 
         graphUpdateNode(nodeId, newData);
+
+        // 如果节点在循环内，调整父循环节点大小（与 V1 保持一致）
+        if (oldData.loopNodeId) {
+          const parentNode = graphRef.current.getCellById(
+            oldData.loopNodeId.toString(),
+          );
+          if (parentNode && parentNode.isNode()) {
+            const parentData = parentNode.getData() as ChildNodeV2;
+            const childNodes =
+              (parentNode as Node)
+                .getChildren()
+                ?.filter((c) => c.isNode())
+                .map((c) => c.getData() as ChildNodeV2) || [];
+            const newSize = adjustLoopNodeSize(parentData, childNodes);
+            (parentNode as Node).resize(newSize.width, newSize.height);
+          }
+        }
       },
       [graphUpdateNode],
     );
