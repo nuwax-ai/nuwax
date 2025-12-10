@@ -117,13 +117,16 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
 
   // 获取标题
   const getTitle = useCallback(() => {
-    const _type = {
-      [AgentTypeEnum.ChatBot]: '问答型',
-      [AgentTypeEnum.TaskAgent]: '长任务型',
-    };
-    return mode === CreateUpdateModeEnum.Create
-      ? `创建${_type[type]}智能体`
-      : `编辑${_type[type]}智能体`;
+    if (type) {
+      const _type = {
+        [AgentTypeEnum.ChatBot]: '问答型',
+        [AgentTypeEnum.TaskAgent]: '长任务型',
+      };
+      return mode === CreateUpdateModeEnum.Create
+        ? `创建${_type[type]}智能体`
+        : `更新${_type[type]}智能体`;
+    }
+    return mode === CreateUpdateModeEnum.Create ? '创建智能体' : '更新智能体';
   }, [type, mode]);
 
   return (
