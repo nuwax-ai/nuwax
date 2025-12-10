@@ -104,7 +104,13 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
     panning: true,
     connecting: {
       ...GRAPH_CONFIG_V2.connecting,
-      router: 'manhattan',
+      router: {
+        name: 'manhattan',
+        args: {
+          startDirections: ['right'], // out port 从右侧开始，防止向左折回
+          endDirections: ['left'], // in port 在左侧结束
+        },
+      },
       connector: 'curveConnectorV2',
       connectionPoint: 'anchor',
       createEdge() {
@@ -270,6 +276,9 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
 
   // 边连接完成
   graph.on('edge:connected', ({ isNew, edge }) => {
+    // 设置路由算法（与 V1 保持一致）
+    edge.setRouter('manhattan');
+
     if (!isNew) return;
 
     const sourceCell = edge.getSourceCell();

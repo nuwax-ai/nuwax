@@ -30,7 +30,8 @@ import {
 const BASE_PORT_SIZE = 3;
 const NODE_BOTTOM_PADDING = 10;
 const NODE_BOTTOM_PADDING_AND_BORDER = NODE_BOTTOM_PADDING + 1;
-const MAGNET_RADIUS = 30;
+const MAGNET_RADIUS = 30; // 端口项配置使用（与 V1 保持一致）
+const PORT_GROUP_MAGNET_RADIUS = 50; // 端口组配置使用（与 V1 保持一致）
 const DEFAULT_HEADER_HEIGHT = DEFAULT_NODE_SIZE_MAP_V2.default.defaultHeight;
 const FIXED_PORT_NODES: NodeTypeEnumV2[] = [
   NodeTypeEnumV2.Loop,
@@ -113,7 +114,7 @@ const generatePortGroupConfig = (
   const baseCircle = {
     r: BASE_PORT_SIZE,
     magnet: true,
-    magnetRadius: MAGNET_RADIUS,
+    magnetRadius: PORT_GROUP_MAGNET_RADIUS, // 使用端口组专用配置，与 V1 保持一致
     stroke: '#5147FF',
     strokeWidth: 1,
     fill: '#5147FF',
@@ -478,7 +479,13 @@ export function createEdgeData(edge: EdgeV2): any {
         },
       },
     },
-    router: 'manhattan',
+    router: {
+      name: 'manhattan',
+      args: {
+        startDirections: ['right'], // out port 从右侧开始，防止向左折回
+        endDirections: ['left'], // in port 在左侧结束
+      },
+    },
   };
 
   // 处理 source - 可能是 nodeId 或 { cell, port }
