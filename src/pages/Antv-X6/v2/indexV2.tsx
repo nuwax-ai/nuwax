@@ -22,7 +22,7 @@ import type {
   StencilChildNodeV2,
   WorkflowDataV2,
 } from './types';
-import { NodeTypeEnumV2 } from './types';
+import { AnswerTypeEnumV2, NodeTypeEnumV2 } from './types';
 
 // V2 独立导入 - Hooks
 import { useWorkflowDataV2 } from './hooks/useWorkflowDataV2';
@@ -211,6 +211,12 @@ const WorkflowV2: React.FC = () => {
    */
   const handleNodeSelect = useCallback(
     (node: ChildNodeV2 | null) => {
+      console.log('[V2 DEBUG] handleNodeSelect called with:', {
+        nodeId: node?.id,
+        nodeType: node?.type,
+        nodeConfig: node?.nodeConfig,
+        exceptionHandleConfig: node?.nodeConfig?.exceptionHandleConfig,
+      });
       setSelectedNode(node);
       if (node) {
         setDrawerVisible(true);
@@ -604,6 +610,90 @@ const WorkflowV2: React.FC = () => {
     console.log('[V2] Graph initialized');
   }, []);
 
+  /**
+   * 保护分支/意图/选项列表中的 uuid、nextNodeIds，不在表单里展示但需要持久化
+   */
+  const mergeListWithIdentity = useCallback(
+    <T extends { uuid?: string; nextNodeIds?: number[] }>(
+      prevList: T[] | undefined,
+      nextList: Partial<T>[] | undefined,
+    ): T[] | undefined => {
+      if (!nextList) return prevList;
+      const previous = prevList || [];
+      return nextList.map((item, index) => {
+        const matched =
+          item.uuid !== undefined && item.uuid !== null && item.uuid !== ''
+            ? previous.find((p) => p.uuid === item.uuid)
+            : previous[index];
+        const merged = {
+          ...(matched || {}),
+          ...item,
+        } as T;
+        if (!merged.uuid) {
+          merged.uuid = matched?.uuid || uuidv4();
+        }
+        if (merged.nextNodeIds === undefined) {
+          merged.nextNodeIds = matched?.nextNodeIds || [];
+        }
+        return merged;
+      });
+    },
+    [],
+  );
+
+  const buildMergedNodeConfig = useCallback(
+    (node: ChildNodeV2, formValues: NodeConfigV2): NodeConfigV2 => {
+      // 过滤掉 formValues 中的 undefined 值，避免覆盖原有数据
+      const definedFormValues = Object.fromEntries(
+        Object.entries(formValues).filter(([_, v]) => v !== undefined),
+      ) as Partial<NodeConfigV2>;
+
+      const merged: NodeConfigV2 = {
+        ...node.nodeConfig,
+        ...definedFormValues,
+      };
+
+      // 深度合并 exceptionHandleConfig：过滤掉 undefined 属性
+      if (formValues.exceptionHandleConfig) {
+        const definedExceptionConfig = Object.fromEntries(
+          Object.entries(formValues.exceptionHandleConfig).filter(
+            ([_, v]) => v !== undefined,
+          ),
+        );
+        merged.exceptionHandleConfig = {
+          ...node.nodeConfig?.exceptionHandleConfig,
+          ...definedExceptionConfig,
+        } as typeof merged.exceptionHandleConfig;
+      }
+
+      if (formValues.conditionBranchConfigs) {
+        merged.conditionBranchConfigs = mergeListWithIdentity(
+          node.nodeConfig?.conditionBranchConfigs,
+          formValues.conditionBranchConfigs,
+        );
+      }
+
+      if (formValues.intentConfigs) {
+        merged.intentConfigs = mergeListWithIdentity(
+          node.nodeConfig?.intentConfigs,
+          formValues.intentConfigs,
+        );
+      }
+
+      const mergedAnswerType =
+        formValues.answerType || node.nodeConfig?.answerType;
+      if (formValues.options && mergedAnswerType === AnswerTypeEnumV2.SELECT) {
+        merged.options = mergeListWithIdentity(
+          node.nodeConfig?.options,
+          formValues.options,
+        );
+      }
+
+      return merged;
+    },
+    [mergeListWithIdentity],
+  );
+
   // ==================== 抽屉操作 ====================
 
   /**
@@ -612,35 +702,47 @@ const WorkflowV2: React.FC = () => {
   const handleDrawerClose = useCallback(() => {
     // 保存当前编辑的节点
     if (selectedNode) {
-      const values = form.getFieldsValue(true);
+      const values = form.getFieldsValue(true) as NodeConfigV2;
+      const mergedConfig = buildMergedNodeConfig(selectedNode, values);
       updateNode(selectedNode.id, {
         ...selectedNode,
-        nodeConfig: { ...selectedNode.nodeConfig, ...values },
+        nodeConfig: mergedConfig,
       });
     }
     setSelectedNode(null);
     setDrawerVisible(false);
-  }, [selectedNode, form, updateNode]);
+  }, [selectedNode, form, updateNode, buildMergedNodeConfig]);
 
   /**
    * 节点配置变更
    */
   const handleNodeConfigChange = useCallback(
     (changedValues: any, allValues: NodeConfigV2) => {
+      console.log('[V2 DEBUG] handleNodeConfigChange called:', {
+        changedValues,
+        allValues,
+        selectedNodeId: selectedNode?.id,
+      });
       if (selectedNode) {
-        updateNode(selectedNode.id, {
+        const mergedConfig = buildMergedNodeConfig(selectedNode, allValues);
+        console.log('[V2 DEBUG] mergedConfig:', mergedConfig);
+        const updatedNode: ChildNodeV2 = {
           ...selectedNode,
-          nodeConfig: allValues,
-        });
-        // 同步更新画布节点（端口/尺寸/失效边联动）
+          nodeConfig: mergedConfig,
+        };
+        console.log('[V2 DEBUG] updatedNode:', updatedNode);
+        updateNode(selectedNode.id, updatedNode);
+        // 同步更新 selectedNode 以便后续操作使用最新数据
+        setSelectedNode(updatedNode);
+        // 同步更新画布节点（端口/尺寸/失效边联动）- 传入完整 nodeConfig
         graphRef.current?.graphUpdateByFormData(
           changedValues,
-          allValues,
+          mergedConfig,
           selectedNode.id.toString(),
         );
       }
     },
-    [selectedNode, updateNode],
+    [selectedNode, updateNode, buildMergedNodeConfig],
   );
 
   // ==================== 工具栏操作 ====================
@@ -1280,12 +1382,10 @@ const WorkflowV2: React.FC = () => {
               setSelectedNode(newData);
               updateNode(nodeId, newData);
               graphRef.current?.graphUpdateNode(nodeId.toString(), newData);
-              graphRef.current
-                ?.getGraphRef?.()
-                ?.trigger('node:custom:save', {
-                  data: newData,
-                  payload: { name },
-                });
+              graphRef.current?.getGraphRef?.()?.trigger('node:custom:save', {
+                data: newData,
+                payload: { name },
+              });
             }}
             onNodeDelete={handleNodeDelete}
             onNodeCopy={handleNodeCopy}

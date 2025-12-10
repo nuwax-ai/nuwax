@@ -551,7 +551,17 @@ export function extractEdgesFromNodes(nodes: ChildNodeV2[]): EdgeV2[] {
 
   nodes.forEach((node) => {
     // 普通节点的 nextNodeIds
-    if (node.nextNodeIds && node.nextNodeIds.length > 0) {
+    // 与 v1 对齐：Condition / IntentRecognition / QA(选择题) 使用分支配置，不走通用 nextNodeIds
+    const isSpecialBranchNode =
+      node.type === NodeTypeEnumV2.Condition ||
+      node.type === NodeTypeEnumV2.IntentRecognition ||
+      (node.type === NodeTypeEnumV2.QA &&
+        node.nodeConfig?.answerType === AnswerTypeEnumV2.SELECT);
+    if (
+      !isSpecialBranchNode &&
+      node.nextNodeIds &&
+      node.nextNodeIds.length > 0
+    ) {
       node.nextNodeIds.forEach((targetId) => {
         if (targetId !== node.id && targetId !== node.loopNodeId) {
           edges.push({
