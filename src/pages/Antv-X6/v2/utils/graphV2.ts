@@ -30,8 +30,7 @@ import {
 const BASE_PORT_SIZE = 3;
 const NODE_BOTTOM_PADDING = 10;
 const NODE_BOTTOM_PADDING_AND_BORDER = NODE_BOTTOM_PADDING + 1;
-const MAGNET_RADIUS = 30; // 端口项配置使用（与 V1 保持一致）
-const PORT_GROUP_MAGNET_RADIUS = 50; // 端口组配置使用（与 V1 保持一致）
+const MAGNET_RADIUS = 30;
 const DEFAULT_HEADER_HEIGHT = DEFAULT_NODE_SIZE_MAP_V2.default.defaultHeight;
 const FIXED_PORT_NODES: NodeTypeEnumV2[] = [
   NodeTypeEnumV2.Loop,
@@ -114,7 +113,7 @@ const generatePortGroupConfig = (
   const baseCircle = {
     r: BASE_PORT_SIZE,
     magnet: true,
-    magnetRadius: PORT_GROUP_MAGNET_RADIUS, // 使用端口组专用配置，与 V1 保持一致
+    magnetRadius: MAGNET_RADIUS,
     stroke: '#5147FF',
     strokeWidth: 1,
     fill: '#5147FF',
@@ -325,10 +324,49 @@ export function generatePorts(node: ChildNodeV2): PortsConfigV2 {
       break;
     case NodeTypeEnumV2.Condition:
     case NodeTypeEnumV2.IntentRecognition: {
+      const originConfigs =
+        node.type === NodeTypeEnumV2.Condition
+          ? node.nodeConfig?.conditionBranchConfigs
+          : node.nodeConfig?.intentConfigs;
+
+      const defaultConfig =
+        node.type === NodeTypeEnumV2.Condition
+          ? [
+              {
+                uuid: `${node.id}-branch-if`,
+                branchType: 'IF',
+                conditionArgs: [],
+              },
+              {
+                uuid: `${node.id}-branch-else`,
+                branchType: 'ELSE',
+                conditionArgs: [],
+              },
+            ]
+          : [
+              {
+                uuid: `${node.id}-intent-default`,
+                intent: '选项1',
+                nextNodeIds: [],
+              },
+            ];
+
       const configs =
-        node.nodeConfig?.conditionBranchConfigs ||
-        node.nodeConfig?.intentConfigs ||
-        [];
+        originConfigs && originConfigs.length > 0
+          ? originConfigs
+          : defaultConfig;
+
+      if (node.type === NodeTypeEnumV2.Condition) {
+        node.nodeConfig = {
+          ...node.nodeConfig,
+          conditionBranchConfigs: configs as any,
+        };
+      } else {
+        node.nodeConfig = {
+          ...node.nodeConfig,
+          intentConfigs: configs as any,
+        };
+      }
       const baseY = DEFAULT_HEADER_HEIGHT;
       const itemHeight = node.type === NodeTypeEnumV2.Condition ? 32 : 24;
       const step = node.type === NodeTypeEnumV2.Condition ? 16 : 12;
@@ -469,6 +507,7 @@ export function createLoopChildNodeData(
 export function createEdgeData(edge: EdgeV2): any {
   const edgeConfig: any = {
     zIndex: edge.zIndex || 1,
+    connector: 'curveConnectorV2',
     attrs: {
       line: {
         stroke: '#5147FF',
@@ -479,7 +518,9 @@ export function createEdgeData(edge: EdgeV2): any {
         },
       },
     },
-    router: 'manhattan',
+    // 使用 orth 路由器，与 V1 保持一致
+    // 避免 manhattan 路由器在某些情况下产生复杂路径导致连线回折
+    router: { name: 'orth' },
   };
 
   // 处理 source - 可能是 nodeId 或 { cell, port }
@@ -525,6 +566,7 @@ export function extractEdgesFromNodes(nodes: ChildNodeV2[]): EdgeV2[] {
     }
 
     // 条件分支节点
+    // 端口ID格式与V1保持一致：${node.id}-${uuid}-out
     if (
       node.type === NodeTypeEnumV2.Condition &&
       node.nodeConfig?.conditionBranchConfigs
@@ -535,7 +577,7 @@ export function extractEdgesFromNodes(nodes: ChildNodeV2[]): EdgeV2[] {
             edges.push({
               source: node.id.toString(),
               target: targetId.toString(),
-              sourcePort: `${branch.uuid}-out`,
+              sourcePort: `${node.id}-${branch.uuid}-out`,
               targetPort: `${targetId}-in`,
               zIndex: node.loopNodeId ? 25 : 1,
             });
@@ -545,6 +587,7 @@ export function extractEdgesFromNodes(nodes: ChildNodeV2[]): EdgeV2[] {
     }
 
     // 意图识别节点
+    // 端口ID格式与V1保持一致：${node.id}-${uuid}-out
     if (
       node.type === NodeTypeEnumV2.IntentRecognition &&
       node.nodeConfig?.intentConfigs
@@ -555,7 +598,7 @@ export function extractEdgesFromNodes(nodes: ChildNodeV2[]): EdgeV2[] {
             edges.push({
               source: node.id.toString(),
               target: targetId.toString(),
-              sourcePort: `${intent.uuid}-out`,
+              sourcePort: `${node.id}-${intent.uuid}-out`,
               targetPort: `${targetId}-in`,
               zIndex: node.loopNodeId ? 25 : 1,
             });
@@ -565,6 +608,7 @@ export function extractEdgesFromNodes(nodes: ChildNodeV2[]): EdgeV2[] {
     }
 
     // 问答选项节点
+    // 端口ID格式与V1保持一致：${node.id}-${uuid}-out
     if (
       node.type === NodeTypeEnumV2.QA &&
       node.nodeConfig?.answerType === AnswerTypeEnumV2.SELECT &&
@@ -576,7 +620,7 @@ export function extractEdgesFromNodes(nodes: ChildNodeV2[]): EdgeV2[] {
             edges.push({
               source: node.id.toString(),
               target: targetId.toString(),
-              sourcePort: `${option.uuid}-out`,
+              sourcePort: `${node.id}-${option.uuid}-out`,
               targetPort: `${targetId}-in`,
               zIndex: node.loopNodeId ? 25 : 1,
             });
@@ -606,15 +650,16 @@ export function extractEdgesFromNodes(nodes: ChildNodeV2[]): EdgeV2[] {
     }
 
     // 异常处理节点
+    // 端口ID格式与V1保持一致：${node.id}-exception-out
     if (node.nodeConfig?.exceptionHandleConfig?.exceptionHandleNodeIds) {
       node.nodeConfig.exceptionHandleConfig.exceptionHandleNodeIds.forEach(
         (targetId) => {
           edges.push({
             source: node.id.toString(),
             target: targetId.toString(),
-            sourcePort: `${node.id}-exception`,
+            sourcePort: `${node.id}-exception-out`,
             targetPort: `${targetId}-in`,
-            zIndex: 1,
+            zIndex: node.loopNodeId ? 25 : 1,
           });
         },
       );
@@ -738,6 +783,16 @@ export function canCreateEdge(
     return { canCreate: false, message: '不能自己连接自己' };
   }
 
+  // 非循环节点的输入端口不能作为起点
+  if (sourceNode.type !== NodeTypeEnumV2.Loop && sourcePortId.includes('in')) {
+    return { canCreate: false };
+  }
+
+  // 方向限制（兼容 left/right 命名）
+  if (sourcePortId.includes('left') || targetPortId.includes('right')) {
+    return { canCreate: false };
+  }
+
   // 循环节点内外不能互连（除了循环节点本身）
   if (sourceNode.loopNodeId !== targetNode.loopNodeId) {
     if (
@@ -754,6 +809,31 @@ export function canCreateEdge(
     targetNode.type !== NodeTypeEnumV2.LoopEnd
   ) {
     return { canCreate: false, message: '终止循环节点只能连接到循环结束节点' };
+  }
+
+  // Loop 节点内部/外部限制
+  if (
+    sourceNode.type === NodeTypeEnumV2.Loop &&
+    targetNode.loopNodeId !== sourceNode.id &&
+    sourcePortId.includes('in')
+  ) {
+    return { canCreate: false, message: '不能连接外部的节点' };
+  }
+  if (
+    targetNode.type === NodeTypeEnumV2.Loop &&
+    sourceNode.loopNodeId !== targetNode.id &&
+    targetPortId.includes('out')
+  ) {
+    return { canCreate: false, message: '不能连接外部的节点' };
+  }
+
+  // Loop 节点出 -> 出 不允许
+  if (
+    sourceNode.type === NodeTypeEnumV2.Loop &&
+    sourcePortId.includes('out') &&
+    targetPortId.includes('out')
+  ) {
+    return { canCreate: false };
   }
 
   return { canCreate: true };
