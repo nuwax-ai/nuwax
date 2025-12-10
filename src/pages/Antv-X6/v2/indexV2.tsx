@@ -179,6 +179,10 @@ const WorkflowV2: React.FC = () => {
 
   // Refs
   const graphRef = useRef<GraphContainerRefV2>(null);
+  // 标记是否正在初始化表单（防止初始化时的 onValuesChange 覆盖原有数据）
+  const isInitializingFormRef = useRef(false);
+  // 存储初始化超时 ID，用于快速切换节点时清除旧超时
+  const initTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // ==================== 初始化 ====================
 
@@ -217,15 +221,28 @@ const WorkflowV2: React.FC = () => {
         nodeConfig: node?.nodeConfig,
         exceptionHandleConfig: node?.nodeConfig?.exceptionHandleConfig,
       });
+      // 清除旧的初始化超时（处理快速切换节点的情况）
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current);
+        initTimeoutRef.current = null;
+      }
       setSelectedNode(node);
       if (node) {
         setDrawerVisible(true);
+        // 标记开始初始化表单，防止 onValuesChange 触发覆盖原有数据
+        isInitializingFormRef.current = true;
         form.setFieldsValue(node.nodeConfig);
+        // 使用 setTimeout 确保表单初始化完成后再允许变更处理
+        initTimeoutRef.current = setTimeout(() => {
+          isInitializingFormRef.current = false;
+          initTimeoutRef.current = null;
+        }, 100);
 
         // 计算变量引用
         const previousArgs = calculateNodePreviousArgs(node.id, workflowData);
         console.log('[V2] Node previous args:', previousArgs);
       } else {
+        isInitializingFormRef.current = false;
         setDrawerVisible(false);
       }
     },
@@ -643,7 +660,26 @@ const WorkflowV2: React.FC = () => {
 
   const buildMergedNodeConfig = useCallback(
     (node: ChildNodeV2, formValues: NodeConfigV2): NodeConfigV2 => {
-      // 过滤掉 formValues 中的 undefined 值，避免覆盖原有数据
+      // 辅助函数：深度合并对象，过滤掉 undefined 值
+      const deepMergeObject = <T extends Record<string, any>>(
+        original: T | undefined | null,
+        updates: T | undefined | null,
+      ): T | undefined => {
+        if (!updates) return original as T | undefined;
+        if (!original) {
+          // 仅返回非 undefined 的字段
+          const defined = Object.fromEntries(
+            Object.entries(updates).filter(([_, v]) => v !== undefined),
+          );
+          return Object.keys(defined).length > 0 ? (defined as T) : undefined;
+        }
+        const definedUpdates = Object.fromEntries(
+          Object.entries(updates).filter(([_, v]) => v !== undefined),
+        );
+        return { ...original, ...definedUpdates } as T;
+      };
+
+      // 过滤掉 formValues 顶层的 undefined 值，避免覆盖原有数据
       const definedFormValues = Object.fromEntries(
         Object.entries(formValues).filter(([_, v]) => v !== undefined),
       ) as Partial<NodeConfigV2>;
@@ -653,19 +689,23 @@ const WorkflowV2: React.FC = () => {
         ...definedFormValues,
       };
 
-      // 深度合并 exceptionHandleConfig：过滤掉 undefined 属性
-      if (formValues.exceptionHandleConfig) {
-        const definedExceptionConfig = Object.fromEntries(
-          Object.entries(formValues.exceptionHandleConfig).filter(
-            ([_, v]) => v !== undefined,
-          ),
-        );
-        merged.exceptionHandleConfig = {
-          ...node.nodeConfig?.exceptionHandleConfig,
-          ...definedExceptionConfig,
-        } as typeof merged.exceptionHandleConfig;
-      }
+      // 深度合并嵌套对象
+      merged.extension = deepMergeObject(
+        node.nodeConfig?.extension,
+        formValues.extension,
+      );
 
+      merged.exceptionHandleConfig = deepMergeObject(
+        node.nodeConfig?.exceptionHandleConfig,
+        formValues.exceptionHandleConfig,
+      );
+
+      merged.modelConfig = deepMergeObject(
+        node.nodeConfig?.modelConfig,
+        formValues.modelConfig,
+      );
+
+      // 数组字段：使用 mergeListWithIdentity 处理带 uuid 的列表
       if (formValues.conditionBranchConfigs) {
         merged.conditionBranchConfigs = mergeListWithIdentity(
           node.nodeConfig?.conditionBranchConfigs,
@@ -718,6 +758,11 @@ const WorkflowV2: React.FC = () => {
    */
   const handleNodeConfigChange = useCallback(
     (changedValues: any, allValues: NodeConfigV2) => {
+      // 如果正在初始化表单，忽略变更事件
+      if (isInitializingFormRef.current) {
+        console.log('[V2 DEBUG] Ignoring form change during initialization');
+        return;
+      }
       console.log('[V2 DEBUG] handleNodeConfigChange called:', {
         changedValues,
         allValues,
