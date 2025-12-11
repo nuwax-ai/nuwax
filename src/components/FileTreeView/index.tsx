@@ -152,6 +152,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({ files }) => {
         position={contextMenuPosition}
         // 右键菜单目标节点
         targetNode={contextMenuTarget}
+        // 是否禁用删除功能(SKILL.md文件不能删除)
+        disableDelete={contextMenuTarget?.name?.toLowerCase() === 'skill.md'}
         // 关闭右键菜单
         onClose={closeContextMenu}
         // 处理删除操作
