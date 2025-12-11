@@ -751,11 +751,13 @@ export function adjustLoopNodeSize(
   loopNode: ChildNodeV2,
   childNodes: ChildNodeV2[],
 ): { width: number; height: number; x: number; y: number } {
+  const defaultSize = getNodeDefaultSize(NodeTypeEnumV2.Loop);
+  const extension = loopNode.nodeConfig?.extension || { x: 0, y: 0 };
+
   if (childNodes.length === 0) {
-    const defaultSize = getNodeDefaultSize(NodeTypeEnumV2.Loop);
-    const extension = loopNode.nodeConfig?.extension || { x: 0, y: 0 };
     return {
-      ...defaultSize,
+      width: extension.width || defaultSize.width,
+      height: extension.height || defaultSize.height,
       x: extension.x || 0,
       y: extension.y || 0,
     };
@@ -778,11 +780,19 @@ export function adjustLoopNodeSize(
     maxY = Math.max(maxY, (ext.y || 0) + size.height);
   });
 
+  // 计算的尺寸
+  const calculatedWidth = maxX - minX + padding.left + padding.right;
+  const calculatedHeight = maxY - minY + padding.top + padding.bottom;
+
+  // 确保最小尺寸（与 V1 adjustParentSize 一致）
+  const minWidth = extension.width || defaultSize.width;
+  const minHeight = extension.height || defaultSize.height;
+
   return {
     x: minX - padding.left,
     y: minY - padding.top,
-    width: maxX - minX + padding.left + padding.right,
-    height: maxY - minY + padding.top + padding.bottom,
+    width: Math.max(calculatedWidth, minWidth),
+    height: Math.max(calculatedHeight, minHeight),
   };
 }
 

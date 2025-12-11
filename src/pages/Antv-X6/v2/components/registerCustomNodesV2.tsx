@@ -663,7 +663,7 @@ export function registerCustomNodesV2(): void {
   // 注册循环节点
   register({
     shape: NodeShapeEnumV2.Loop,
-    width: 660,
+    width: 860, // 含内部开始/结束节点宽度
     height: 240,
     component: LoopNodeComponent,
     ports: { groups: PORT_GROUPS_V2 },
