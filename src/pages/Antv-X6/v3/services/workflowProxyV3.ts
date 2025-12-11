@@ -243,6 +243,65 @@ class WorkflowProxyV3 {
   }
 
   /**
+   * 复制节点
+   * @param nodeId 源节点 ID
+   */
+  copyNode(nodeId: number): ProxyResult & { newNode?: ChildNode } {
+    if (!this.workflowData) {
+      return { success: false, message: '工作流数据未初始化' };
+    }
+
+    const sourceNode = this.workflowData.nodes.find((n) => n.id === nodeId);
+    if (!sourceNode) {
+      return { success: false, message: `节点 ${nodeId} 不存在` };
+    }
+
+    // 1. Clone data
+    const newNode = cloneDeep(sourceNode);
+
+    // 2. Generate new ID
+    newNode.id = Date.now();
+
+    // 3. Update Name
+    const existingNames = this.workflowData.nodes.map((n) => n.name);
+    let newName = `${newNode.name}_copy`;
+    let counter = 1;
+    while (existingNames.includes(newName)) {
+      newName = `${newNode.name}_copy${counter}`;
+      counter++;
+    }
+    newNode.name = newName;
+
+    // 4. Offset Position
+    if (newNode.nodeConfig?.extension) {
+      newNode.nodeConfig.extension.x =
+        (newNode.nodeConfig.extension.x || 0) + 20;
+      newNode.nodeConfig.extension.y =
+        (newNode.nodeConfig.extension.y || 0) + 20;
+    }
+
+    // 5. Reset status
+    // newNode.waitStatus = 0; // Removed as not in type
+    // newNode.excutionStatus = 0; // Removed as not in type
+
+    // 6. Loop handling (if copies into same loop)
+    // Inherit loopNodeId from source.
+
+    this.workflowData.nodes.push(newNode);
+
+    this.recordUpdate({
+      type: 'node',
+      action: 'add',
+      data: newNode,
+      timestamp: Date.now(),
+    });
+    this.markDirty();
+    this.notify('mutation');
+
+    return { success: true, data: this.getFullWorkflowData()!, newNode };
+  }
+
+  /**
    * 更新节点位置
    * @param nodeId 节点 ID
    * @param x X 坐标
