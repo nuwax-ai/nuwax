@@ -55,6 +55,25 @@ class WorkflowProxyV3 {
     this.pendingUpdates = [];
     this.isDirty = false;
     console.log('[V3 Proxy] 工作流数据初始化完成:', data.workflowId);
+    console.log(
+      '[V3 Proxy] 节点数量:',
+      data.nodes.length,
+      '边数量:',
+      data.edges.length,
+    );
+
+    // 调试：打印节点的 nextNodeIds
+    data.nodes.forEach((node) => {
+      if (node.nextNodeIds && node.nextNodeIds.length > 0) {
+        console.log(
+          '[V3 Proxy] 节点',
+          node.id,
+          node.name,
+          'nextNodeIds:',
+          node.nextNodeIds,
+        );
+      }
+    });
   }
 
   /**

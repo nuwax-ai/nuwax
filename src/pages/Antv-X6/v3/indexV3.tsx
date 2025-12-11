@@ -346,11 +346,46 @@ const Workflow: React.FC = () => {
         isDirty: false,
       };
 
+      // 调试：查看目标节点和连线情况
+      const targetNode = nodeList.find((n: any) => n.id === id);
+      console.log('[V3] 目标节点:', targetNode?.name, 'id:', id);
+      console.log('[V3] 目标节点的上级连线 preNodes:', targetNode?.preNodes);
+      console.log('[V3] edgeList 数量:', edgeList.length);
+
+      // 查看哪些节点的 nextNodeIds 包含目标节点
+      const predecessors = nodeList.filter(
+        (n: any) => n.nextNodeIds && n.nextNodeIds.includes(id),
+      );
+      console.log(
+        '[V3] 前驱节点 (通过 nextNodeIds):',
+        predecessors.map((n: any) => ({
+          id: n.id,
+          name: n.name,
+          nextNodeIds: n.nextNodeIds,
+        })),
+      );
+
+      // 查看 edgeList 中指向目标节点的边
+      const incomingEdges = edgeList.filter(
+        (e: any) => e.target === String(id),
+      );
+      console.log('[V3] 指向目标节点的边 (edgeList):', incomingEdges);
+
+      // 打印所有节点的 nextNodeIds 汇总
+      const allNextNodeIds = nodeList.map((n: any) => ({
+        id: n.id,
+        name: n.name,
+        nextNodeIds: n.nextNodeIds || [],
+      }));
+      console.log('[V3] 所有节点的 nextNodeIds:', allNextNodeIds);
+
       console.log(
         '[V3] 调用 calculateNodePreviousArgs, nodeId:',
         id,
         'nodeList:',
         nodeList.length,
+        'edgeList:',
+        edgeList.length,
       );
       const result = calculateNodePreviousArgs(id, workflowData);
       console.log('[V3] 计算结果:', result);
