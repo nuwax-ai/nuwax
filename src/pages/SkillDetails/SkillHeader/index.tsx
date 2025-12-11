@@ -1,8 +1,7 @@
 import agentImage from '@/assets/images/agent_image.png';
-import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
 import { PermissionsEnum } from '@/types/enums/common';
-import { FormOutlined } from '@ant-design/icons';
+import { FormOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -39,9 +38,9 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
 
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
-      <SvgIcon
-        name="icons-nav-backward"
-        className={cx(styles['icon-backward'])}
+      <Button
+        type="text"
+        icon={<LeftOutlined />}
         onClick={() => {
           history.push(`/space/${spaceId}/skill-manage`);
         }}
