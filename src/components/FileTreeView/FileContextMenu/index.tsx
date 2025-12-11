@@ -19,6 +19,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onDelete,
   onRename,
   onUploadSingleFile,
+  disableDelete = false,
   // onUploadProject,
 }) => {
   /**
@@ -78,42 +79,12 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
     });
   }, [targetNode, onUploadSingleFile, handleMenuItemClick]);
 
-  /**
-   * 处理上传项目操作（空白区域菜单）
-   */
-  // const handleUploadProject = useCallback(() => {
-  //   if (!onUploadProject) return;
-  //   handleMenuItemClick(() => {
-  //     onUploadProject();
-  //   });
-  // }, [onUploadProject, handleMenuItemClick]);
-
-  /**
-   * 点击外部关闭菜单
-   */
-  // useEffect(() => {
-  //   const handleClickOutside = () => {
-  //     onClose();
-  //   };
-
-  //   if (visible) {
-  //     document.addEventListener('click', handleClickOutside);
-  //     return () => document.removeEventListener('click', handleClickOutside);
-  //   }
-  // }, [visible, onClose]);
-
   // 如果不显示，返回 null
   if (!visible) {
     return null;
   }
-
-  // // 如果正在聊天加载或版本对比模式，禁用菜单
-  // if (isChatLoading || isComparing) {
-  //   return null;
-  // }
-
   // 构建菜单项 - 根据是否有目标节点显示不同菜单
-  const menuItems = [
+  const allMenuItems = [
     // 文件/文件夹菜单项
     {
       key: 'rename',
@@ -141,6 +112,13 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
       danger: true,
     },
   ];
+
+  // 如果禁用删除功能，过滤掉删除菜单项和 divider
+  const menuItems = disableDelete
+    ? allMenuItems.filter(
+        (item) => item.key !== 'delete' && item.key !== 'divider',
+      )
+    : allMenuItems;
 
   return (
     <div
