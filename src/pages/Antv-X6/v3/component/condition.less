@@ -1,0 +1,74 @@
+.condition-card-style {
+  border: 1px solid #e8e8e8;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  user-select: none; /* 必须设置 */
+  pointer-events: auto; /* 确保未被覆盖 */
+  &:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 10%);
+  }
+
+  .condition-header-style {
+    font-size: 16px;
+    color: #000;
+    margin-bottom: 10px;
+  }
+}
+
+.condition-right-item {
+  flex: 1;
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  line-height: 1;
+
+  .ant-form-item {
+    margin-bottom: 4px;
+  }
+
+  .condition-type-select-style {
+    width: 50px;
+  }
+}
+
+.position-relative {
+  position: relative;
+}
+
+.select-condition-border {
+  height: 100%;
+}
+
+.select-condition-border::before {
+  width: 24px;
+  position: absolute;
+  content: '';
+  display: block;
+  top: 34px;
+  left: 26px;
+  bottom: 70px;
+  border-left: 1px solid #d9d9d9; /* 线条颜色 */
+  border-top: 1px solid #d9d9d9;
+  border-bottom: 1px solid #d9d9d9;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+  // border-top: 1px solid #d9d9d9;
+}
+
+.select-condition-type-style {
+  width: 56px;
+
+  .ant-select-selector {
+    border: none !important;
+  }
+}
+
+.margin-right-6 {
+  margin-right: 6px;
+}
+
+.select-groud-label-style {
+  margin-left: 10px;
+  font-size: 12px;
+}

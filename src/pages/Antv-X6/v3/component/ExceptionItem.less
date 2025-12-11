@@ -1,0 +1,196 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.exceptionItem {
+  width: 100%;
+  padding-top: 14px;
+  border-top: 1px solid @colorBorder;
+
+  &Header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+
+    .exceptionItemTitle {
+      font-size: 14px;
+      font-weight: @fontWeightStrong;
+      color: #262626;
+      margin-right: 4px;
+    }
+
+    .exceptionItemTip {
+      font-size: 14px;
+      color: #8c8c8c;
+      cursor: pointer;
+    }
+  }
+
+  &Form {
+    width: 100%;
+    margin-left: -12px;
+    margin-right: -12px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  &Row {
+    display: flex;
+    width: 100%;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  &FormItem {
+    margin-bottom: 0;
+
+    // Label 样式
+    :global(.ant-form-item-label) {
+      padding-bottom: 4px !important;
+
+      > label {
+        height: 26px !important;
+        font-size: 12px;
+        color: #595959;
+        // height: auto;
+        line-height: 1.2;
+
+        &::after {
+          display: none; // 隐藏冒号
+        }
+
+        &.ant-form-item-required {
+          &::before {
+            color: #ff4d4f;
+            font-size: 12px;
+            margin-right: 4px;
+          }
+        }
+      }
+    }
+
+    // 控件容器样式
+    :global(.ant-form-item-control) {
+      line-height: 1;
+    }
+
+    // 错误信息样式
+    :global(.ant-form-item-explain-error) {
+      font-size: 11px;
+      margin-top: 2px;
+      line-height: 1.2;
+    }
+
+    // 超时时间 - 30% 宽度
+    &.timeoutItem {
+      flex: 0 0 30%;
+      width: 30%;
+    }
+
+    // 重试次数 - 30% 宽度
+    &.retryItem {
+      flex: 0 0 30%;
+      width: 30%;
+    }
+
+    // 异常处理方式 - 40% 宽度
+    &.handleTypeItem {
+      flex: 0 0 40%;
+      width: 40%;
+    }
+
+    // 异常内容项 - 全宽度
+    &.exceptionContentItem {
+      flex: 1;
+      width: 100%;
+      margin-top: 0;
+    }
+  }
+
+  &Input {
+    width: 100%;
+
+    :global(.ant-input) {
+      font-size: 12px;
+      padding: 4px 8px;
+      height: 28px;
+      border-radius: 4px;
+    }
+
+    :global(.ant-input-suffix) {
+      font-size: 12px;
+      color: #8c8c8c;
+    }
+  }
+
+  &Select {
+    width: 100%;
+
+    :global(.ant-select-selector) {
+      font-size: 12px;
+      padding: 0 8px;
+      height: 28px !important;
+      border-radius: 4px;
+
+      .ant-select-selection-item {
+        line-height: 26px;
+      }
+
+      .ant-select-selection-placeholder {
+        line-height: 26px;
+      }
+    }
+
+    &.disabled {
+      :global(.ant-select-selector) {
+        background-color: #f5f5f5;
+        color: #bfbfbf;
+      }
+    }
+  }
+
+  // 异常内容包装器
+  &ContentWrapper {
+    margin-left: -24px;
+    margin-right: -24px;
+    padding-left: 24px;
+    padding-right: 0;
+  }
+
+  // 异常内容标签
+  &ContentLabel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+
+    span {
+      font-size: 14px;
+      color: #595959;
+    }
+  }
+
+  // 编辑器包装器
+  .editorWrapper {
+    border: 1px solid #d9d9d9;
+    border-radius: 2px;
+    overflow: hidden;
+
+    &:hover {
+      border-color: #40a9ff;
+    }
+
+    &:focus-within {
+      border-color: #1890ff;
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%);
+    }
+
+    :global(.monaco-editor) {
+      padding: 0;
+      border-radius: 2px;
+    }
+  }
+
+  :global(.anticon-info-circle.ant-form-item-tooltip) {
+    cursor: pointer !important;
+  }
+}
