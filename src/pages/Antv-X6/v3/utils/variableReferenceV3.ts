@@ -145,20 +145,56 @@ function buildReverseGraph(
 ): Map<number, number[]> {
   const reverseGraph = new Map<number, number[]>();
 
-  // 初始化
+  // 初始化 - 确保 ID 转换为 number
   nodes.forEach((node) => {
-    reverseGraph.set(node.id, []);
+    const nodeId = Number(node.id);
+    reverseGraph.set(nodeId, []);
   });
+
+  console.log('[V3 buildReverseGraph] 初始化完成, 节点数:', reverseGraph.size);
 
   // 方式1: 从节点的 nextNodeIds 构建反向边
   nodes.forEach((node) => {
+    const nodeId = Number(node.id);
     const nextNodeIds =
       (node.nextNodeIds || []).filter((id) => id !== node.loopNodeId) || [];
+
+    // 调试：打印当前节点的处理情况
+    if (nextNodeIds.length > 0) {
+      console.log(
+        '[V3 buildReverseGraph] 处理节点',
+        nodeId,
+        node.name,
+        '-> nextNodeIds:',
+        nextNodeIds,
+      );
+    }
+
     nextNodeIds.forEach((nextId) => {
-      const prevNodes = reverseGraph.get(nextId) || [];
-      if (!prevNodes.includes(node.id)) {
-        prevNodes.push(node.id);
-        reverseGraph.set(nextId, prevNodes);
+      const nextIdNum = Number(nextId);
+      const prevNodes = reverseGraph.get(nextIdNum);
+
+      // 调试：检查 get 结果
+      console.log(
+        '[V3 buildReverseGraph] reverseGraph.get(',
+        nextIdNum,
+        ') =',
+        prevNodes,
+        '(type:',
+        typeof nextIdNum,
+        ')',
+      );
+
+      const safePrevNodes = prevNodes || [];
+      if (!safePrevNodes.includes(nodeId)) {
+        safePrevNodes.push(nodeId);
+        reverseGraph.set(nextIdNum, safePrevNodes);
+        console.log(
+          '[V3 buildReverseGraph] 设置 reverseGraph[',
+          nextIdNum,
+          '] =',
+          safePrevNodes,
+        );
       }
     });
 
@@ -170,10 +206,11 @@ function buildReverseGraph(
       node.nodeConfig.conditionBranchConfigs.forEach((branch) => {
         if (branch.nextNodeIds) {
           branch.nextNodeIds.forEach((nextId) => {
-            const prevNodes = reverseGraph.get(nextId) || [];
-            if (!prevNodes.includes(node.id)) {
-              prevNodes.push(node.id);
-              reverseGraph.set(nextId, prevNodes);
+            const nextIdNum = Number(nextId);
+            const prevNodes = reverseGraph.get(nextIdNum) || [];
+            if (!prevNodes.includes(nodeId)) {
+              prevNodes.push(nodeId);
+              reverseGraph.set(nextIdNum, prevNodes);
             }
           });
         }
@@ -188,10 +225,11 @@ function buildReverseGraph(
       node.nodeConfig.intentConfigs.forEach((intent) => {
         if (intent.nextNodeIds) {
           intent.nextNodeIds.forEach((nextId) => {
-            const prevNodes = reverseGraph.get(nextId) || [];
-            if (!prevNodes.includes(node.id)) {
-              prevNodes.push(node.id);
-              reverseGraph.set(nextId, prevNodes);
+            const nextIdNum = Number(nextId);
+            const prevNodes = reverseGraph.get(nextIdNum) || [];
+            if (!prevNodes.includes(nodeId)) {
+              prevNodes.push(nodeId);
+              reverseGraph.set(nextIdNum, prevNodes);
             }
           });
         }
@@ -203,10 +241,11 @@ function buildReverseGraph(
       node.nodeConfig.options.forEach((option) => {
         if (option.nextNodeIds) {
           option.nextNodeIds.forEach((nextId) => {
-            const prevNodes = reverseGraph.get(nextId) || [];
-            if (!prevNodes.includes(node.id)) {
-              prevNodes.push(node.id);
-              reverseGraph.set(nextId, prevNodes);
+            const nextIdNum = Number(nextId);
+            const prevNodes = reverseGraph.get(nextIdNum) || [];
+            if (!prevNodes.includes(nodeId)) {
+              prevNodes.push(nodeId);
+              reverseGraph.set(nextIdNum, prevNodes);
             }
           });
         }
@@ -221,10 +260,11 @@ function buildReverseGraph(
       exceptionHandleConfig.exceptionHandleNodeIds.length > 0
     ) {
       exceptionHandleConfig.exceptionHandleNodeIds.forEach((nextId) => {
-        const prevNodes = reverseGraph.get(nextId) || [];
-        if (!prevNodes.includes(node.id)) {
-          prevNodes.push(node.id);
-          reverseGraph.set(nextId, prevNodes);
+        const nextIdNum = Number(nextId);
+        const prevNodes = reverseGraph.get(nextIdNum) || [];
+        if (!prevNodes.includes(nodeId)) {
+          prevNodes.push(nodeId);
+          reverseGraph.set(nextIdNum, prevNodes);
         }
       });
     }
@@ -430,12 +470,44 @@ export function calculateNodePreviousArgs(
 ): NodePreviousAndArgMapV2 {
   const { nodeList, edgeList } = workflowData;
 
+  // 调试日志
+  console.log(
+    '[V3 variableRef] nodeId:',
+    nodeId,
+    'nodeList 长度:',
+    nodeList.length,
+    'edgeList 长度:',
+    edgeList?.length || 0,
+  );
+
+  // 打印所有节点的 nextNodeIds
+  nodeList.forEach((node) => {
+    if (node.nextNodeIds && node.nextNodeIds.length > 0) {
+      console.log(
+        '[V3 variableRef] 节点',
+        node.id,
+        node.name,
+        'nextNodeIds:',
+        node.nextNodeIds,
+      );
+    }
+  });
+
+  // 打印 edgeList
+  if (edgeList && edgeList.length > 0) {
+    console.log(
+      '[V3 variableRef] edgeList:',
+      edgeList.map((e) => `${e.source}->${e.target}`),
+    );
+  }
+
   // 构建节点映射
   const nodeMap = buildNodeMap(nodeList);
 
   // 获取当前节点
   const currentNode = nodeMap.get(nodeId);
   if (!currentNode) {
+    console.log('[V3 variableRef] 未找到目标节点:', nodeId);
     return {
       previousNodes: [],
       innerPreviousNodes: [],
@@ -446,8 +518,21 @@ export function calculateNodePreviousArgs(
   // 构建反向图（同时使用 nextNodeIds 和 edgeList）
   const reverseGraph = buildReverseGraph(nodeList, edgeList);
 
+  // 确保 nodeId 是 number 类型
+  const nodeIdNum = Number(nodeId);
+  console.log(
+    '[V3 variableRef] reverseGraph 中目标节点的前驱:',
+    reverseGraph.get(nodeIdNum),
+    '(nodeId:',
+    nodeIdNum,
+    'type:',
+    typeof nodeIdNum,
+    ')',
+  );
+
   // 找到所有前驱节点
-  const predecessorIds = findAllPredecessors(nodeId, reverseGraph);
+  const predecessorIds = findAllPredecessors(nodeIdNum, reverseGraph);
+  console.log('[V3 variableRef] 所有前驱节点 IDs:', predecessorIds);
 
   // 构建上级节点列表
   const previousNodes: PreviousListV2[] = [];
