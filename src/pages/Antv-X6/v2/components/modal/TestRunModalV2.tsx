@@ -4,31 +4,31 @@
  * 完全独立，不依赖 v1 任何代码
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Modal,
-  Form,
-  Input,
-  Button,
-  Spin,
-  Collapse,
-  Typography,
-  Space,
-  Tag,
-  message,
-  Divider,
-} from 'antd';
-import {
-  PlayCircleOutlined,
-  StopOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  LoadingOutlined,
-  ExpandOutlined,
   CompressOutlined,
+  ExpandOutlined,
+  LoadingOutlined,
+  PlayCircleOutlined,
+  StopOutlined,
 } from '@ant-design/icons';
+import {
+  Button,
+  Collapse,
+  Divider,
+  Form,
+  Input,
+  Modal,
+  Space,
+  Spin,
+  Tag,
+  Typography,
+  message,
+} from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
 
-import type { InputArgV2, WorkflowDataV2 } from '../../types';
+import type { WorkflowDataV2 } from '../../types';
 
 import './TestRunModalV2.less';
 
@@ -96,18 +96,31 @@ const TestRunModalV2: React.FC<TestRunModalV2Props> = ({
   const [form] = Form.useForm();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // 获取开始节点：优先从 nodeList 查找，回退到 metadata
+  const startNode = useMemo(() => {
+    // 从 nodeList 中查找 Start 类型的节点
+    const startNodeFromList = workflowData?.nodeList?.find(
+      (node) => node.type === 'Start',
+    );
+    if (startNodeFromList) {
+      return startNodeFromList;
+    }
+    // 回退到 metadata 中的 startNode
+    return workflowData?.metadata?.startNode;
+  }, [workflowData]);
+
   // 获取输入参数
-  const inputArgs = workflowData?.startNode?.inputArgs || [];
+  const inputArgs = startNode?.nodeConfig?.inputArgs || [];
 
   // 重置表单
   useEffect(() => {
     if (open) {
       form.resetFields();
-      // 设置默认值
+      // 设置默认值（使用 bindValue 作为默认值）
       const defaultValues: Record<string, any> = {};
       inputArgs.forEach((arg) => {
-        if (arg.defaultValue !== undefined) {
-          defaultValues[arg.name] = arg.defaultValue;
+        if (arg.bindValue !== undefined && arg.bindValue !== null) {
+          defaultValues[arg.name] = arg.bindValue;
         }
       });
       form.setFieldsValue(defaultValues);
@@ -141,10 +154,21 @@ const TestRunModalV2: React.FC<TestRunModalV2Props> = ({
 
   // 获取状态标签
   const getStatusTag = (status: string) => {
-    const config: Record<string, { color: string; text: string; icon: React.ReactNode }> = {
+    const config: Record<
+      string,
+      { color: string; text: string; icon: React.ReactNode }
+    > = {
       pending: { color: 'default', text: '等待中', icon: null },
-      running: { color: 'processing', text: '运行中', icon: <LoadingOutlined /> },
-      success: { color: 'success', text: '成功', icon: <CheckCircleOutlined /> },
+      running: {
+        color: 'processing',
+        text: '运行中',
+        icon: <LoadingOutlined />,
+      },
+      success: {
+        color: 'success',
+        text: '成功',
+        icon: <CheckCircleOutlined />,
+      },
       failed: { color: 'error', text: '失败', icon: <CloseCircleOutlined /> },
       skipped: { color: 'warning', text: '跳过', icon: null },
     };
@@ -160,9 +184,7 @@ const TestRunModalV2: React.FC<TestRunModalV2Props> = ({
   const renderInputForm = () => {
     if (inputArgs.length === 0) {
       return (
-        <div className="test-run-modal-v2-empty">
-          该工作流没有输入参数
-        </div>
+        <div className="test-run-modal-v2-empty">该工作流没有输入参数</div>
       );
     }
 
@@ -170,24 +192,25 @@ const TestRunModalV2: React.FC<TestRunModalV2Props> = ({
       <Form form={form} layout="vertical" className="test-run-modal-v2-form">
         {inputArgs.map((arg) => (
           <Form.Item
-            key={arg.key}
+            key={arg.key || arg.name}
             name={arg.name}
             label={
               <Space>
                 <span>{arg.name}</span>
                 <Tag color="#C9CDD4">{arg.dataType}</Tag>
-                {arg.required && <span style={{ color: '#ff4d4f' }}>*</span>}
+                {arg.require && <span style={{ color: '#ff4d4f' }}>*</span>}
               </Space>
             }
             rules={[
               {
-                required: arg.required,
+                required: arg.require,
                 message: `请输入 ${arg.name}`,
               },
             ]}
             extra={arg.description}
           >
-            {arg.dataType === 'Object' || arg.dataType === 'Array' ? (
+            {arg.dataType === 'Object' ||
+            String(arg.dataType).startsWith('Array') ? (
               <TextArea
                 rows={4}
                 placeholder={`请输入 JSON 格式的 ${arg.dataType}`}

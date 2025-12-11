@@ -10,7 +10,10 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message, Modal, Spin } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { history, useParams } from 'umi';
+import { history, useModel, useParams } from 'umi';
+
+// V2 独立组件
+import TestRunV2 from './components/testRun';
 
 // V2 独立导入 - 类型
 import type {
@@ -22,7 +25,7 @@ import type {
   StencilChildNodeV2,
   WorkflowDataV2,
 } from './types';
-import { NodeTypeEnumV2 } from './types';
+import { AnswerTypeEnumV2, NodeTypeEnumV2 } from './types';
 
 // V2 独立导入 - Hooks
 import { useWorkflowDataV2 } from './hooks/useWorkflowDataV2';
@@ -44,10 +47,11 @@ import {
   CreateComponentModalV2,
   EditWorkflowModalV2,
   PublishModalV2,
-  TestRunModalV2,
 } from './components/modal';
-import type { VersionInfo } from './components/version';
-import { VersionHistoryV2 } from './components/version';
+// 复用 V1 版本历史组件
+import VersionHistory from '@/components/VersionHistory';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import VersionAction from '../components/VersionAction';
 
 // V2 独立导入 - 服务
 import workflowServiceV2, {
@@ -151,7 +155,6 @@ const WorkflowV2: React.FC = () => {
   });
 
   // 弹窗状态
-  const [testRunModalVisible, setTestRunModalVisible] = useState(false);
   const [publishModalVisible, setPublishModalVisible] = useState(false);
   const [editWorkflowModalVisible, setEditWorkflowModalVisible] =
     useState(false);
@@ -159,9 +162,15 @@ const WorkflowV2: React.FC = () => {
     useState(false);
   const [versionHistoryVisible, setVersionHistoryVisible] = useState(false);
 
-  // 试运行状态
+  // 试运行状态（复用 V1 的 useModel 全局状态）
+  const { testRun, setTestRun } = useModel('model');
   const [runStatus, setRunStatus] = useState<RunStatus>('idle');
   const [runResult, setRunResult] = useState<RunResult | undefined>();
+  const [testRunResult, setTestRunResult] = useState<string>('');
+  const [testRunLoading, setTestRunLoading] = useState(false);
+  const [stopWait, setStopWait] = useState(false);
+  const [formItemValue, setFormItemValue] = useState<Record<string, any>>({});
+  const [testRunParams, setTestRunParams] = useState<any>({});
 
   // 错误列表
   const [errorList, setErrorList] = useState<ErrorItemV2[]>([]);
@@ -170,15 +179,15 @@ const WorkflowV2: React.FC = () => {
   // 试运行 SSE 连接中止函数
   const abortTestRunRef = useRef<(() => void) | null>(null);
 
-  // 版本历史
-  const [versions, setVersions] = useState<VersionInfo[]>([]);
-  const [versionsLoading, setVersionsLoading] = useState(false);
-
   // 表单
   const [form] = Form.useForm<NodeConfigV2>();
 
   // Refs
   const graphRef = useRef<GraphContainerRefV2>(null);
+  // 标记是否正在初始化表单（防止初始化时的 onValuesChange 覆盖原有数据）
+  const isInitializingFormRef = useRef(false);
+  // 存储初始化超时 ID，用于快速切换节点时清除旧超时
+  const initTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // ==================== 初始化 ====================
 
@@ -211,15 +220,34 @@ const WorkflowV2: React.FC = () => {
    */
   const handleNodeSelect = useCallback(
     (node: ChildNodeV2 | null) => {
+      console.log('[V2 DEBUG] handleNodeSelect called with:', {
+        nodeId: node?.id,
+        nodeType: node?.type,
+        nodeConfig: node?.nodeConfig,
+        exceptionHandleConfig: node?.nodeConfig?.exceptionHandleConfig,
+      });
+      // 清除旧的初始化超时（处理快速切换节点的情况）
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current);
+        initTimeoutRef.current = null;
+      }
       setSelectedNode(node);
       if (node) {
         setDrawerVisible(true);
+        // 标记开始初始化表单，防止 onValuesChange 触发覆盖原有数据
+        isInitializingFormRef.current = true;
         form.setFieldsValue(node.nodeConfig);
+        // 使用 setTimeout 确保表单初始化完成后再允许变更处理
+        initTimeoutRef.current = setTimeout(() => {
+          isInitializingFormRef.current = false;
+          initTimeoutRef.current = null;
+        }, 100);
 
         // 计算变量引用
         const previousArgs = calculateNodePreviousArgs(node.id, workflowData);
         console.log('[V2] Node previous args:', previousArgs);
       } else {
+        isInitializingFormRef.current = false;
         setDrawerVisible(false);
       }
     },
@@ -241,22 +269,149 @@ const WorkflowV2: React.FC = () => {
    */
   const handleNodeAdd = useCallback(
     (node: ChildNodeV2) => {
+      // 如果是循环节点，自动创建默认内置 Start/End 子节点（与 V1 对齐）
+      const isLoopNode = node.type === NodeTypeEnumV2.Loop;
+      const basePosition = node.nodeConfig?.extension || { x: 400, y: 300 };
+      const baseX = basePosition.x ?? 400;
+      const baseY = basePosition.y ?? 300;
+      const enhancedLoopNode: ChildNodeV2 = (() => {
+        if (!isLoopNode) return node;
+        if (
+          node.innerNodes &&
+          node.innerNodes.length > 0 &&
+          node.innerStartNodeId &&
+          node.innerEndNodeId
+        ) {
+          return node;
+        }
+        // 使用父节点 ID 派生子节点 ID，保持与 v1 一致的稳定命名，避免时间戳导致的错连
+        const startId = Number(`${node.id}01`);
+        const endId = Number(`${node.id}02`);
+        const innerStart: ChildNodeV2 = {
+          id: startId,
+          name: '循环开始',
+          description: '',
+          workflowId: node.workflowId,
+          // 与 v1 一致：使用 LoopStart，具备 in/out 端口，确保 Loop -> innerStart 连线可用
+          type: NodeTypeEnumV2.LoopStart,
+          shape: getNodeShape(NodeTypeEnumV2.LoopStart),
+          icon: '',
+          loopNodeId: node.id,
+          nodeConfig: {
+            extension: {
+              x: baseX + 72,
+              y: baseY + 48,
+            },
+          },
+          nextNodeIds: [endId],
+        };
+        const innerEnd: ChildNodeV2 = {
+          id: endId,
+          name: '循环结束',
+          description: '',
+          workflowId: node.workflowId,
+          // 与 v1 一致：使用 LoopEnd，保留 in/out 端口，方便内部结束到后续节点连线
+          type: NodeTypeEnumV2.LoopEnd,
+          shape: getNodeShape(NodeTypeEnumV2.LoopEnd),
+          icon: '',
+          loopNodeId: node.id,
+          nodeConfig: {
+            extension: {
+              x: baseX + 72,
+              y: baseY + 168,
+            },
+          },
+          nextNodeIds: [],
+        };
+        return {
+          ...node,
+          innerNodes: [innerStart, innerEnd],
+          innerStartNodeId: startId,
+          innerEndNodeId: endId,
+        };
+      })();
+
       // 1. 更新数据层
-      addNode(node);
+      addNode(enhancedLoopNode);
+      if (isLoopNode && enhancedLoopNode.innerStartNodeId) {
+        // 与 v1 对齐：Loop 的 in 端口作为 source，连到内部开始节点的 in
+        addEdge({
+          source: enhancedLoopNode.id.toString(),
+          target: enhancedLoopNode.innerStartNodeId.toString(),
+          sourcePort: `${enhancedLoopNode.id}-in`,
+          targetPort: `${enhancedLoopNode.innerStartNodeId}-in`,
+          zIndex: 25,
+        });
+      }
+      if (
+        isLoopNode &&
+        enhancedLoopNode.innerStartNodeId &&
+        enhancedLoopNode.innerEndNodeId
+      ) {
+        addEdge({
+          source: enhancedLoopNode.innerStartNodeId.toString(),
+          target: enhancedLoopNode.innerEndNodeId.toString(),
+          sourcePort: `${enhancedLoopNode.innerStartNodeId}-out`,
+          targetPort: `${enhancedLoopNode.innerEndNodeId}-in`,
+          zIndex: 25,
+        });
+        // 与 v1 对齐：内部结束节点连回 Loop 的 out 端口，形成完整闭环
+        addEdge({
+          source: enhancedLoopNode.innerEndNodeId.toString(),
+          target: enhancedLoopNode.id.toString(),
+          sourcePort: `${enhancedLoopNode.innerEndNodeId}-out`,
+          targetPort: `${enhancedLoopNode.id}-out`,
+          zIndex: 25,
+        });
+      }
 
       // 2. 同步到画布
-      const position = node.nodeConfig?.extension || { x: 400, y: 300 };
-      graphRef.current?.graphAddNode(
-        { x: position.x || 400, y: position.y || 300 },
-        node,
-      );
+      // graphAddNode 会自动处理循环节点的子节点渲染（addLoopChildNodes）
+      const position = enhancedLoopNode.nodeConfig?.extension || {
+        x: 400,
+        y: 300,
+      };
+      const posX = position.x ?? 400;
+      const posY = position.y ?? 300;
+      graphRef.current?.graphAddNode({ x: posX, y: posY }, enhancedLoopNode);
+
+      // 循环节点：添加内部边到画布（子节点已由 graphAddNode -> addLoopChildNodes 处理）
+      if (isLoopNode && enhancedLoopNode.innerStartNodeId) {
+        graphRef.current?.graphCreateNewEdge(
+          enhancedLoopNode.id.toString(),
+          enhancedLoopNode.innerStartNodeId.toString(),
+          true,
+          `${enhancedLoopNode.id}-in`,
+          `${enhancedLoopNode.innerStartNodeId}-in`,
+        );
+      }
+      if (
+        isLoopNode &&
+        enhancedLoopNode.innerStartNodeId &&
+        enhancedLoopNode.innerEndNodeId
+      ) {
+        graphRef.current?.graphCreateNewEdge(
+          enhancedLoopNode.innerStartNodeId.toString(),
+          enhancedLoopNode.innerEndNodeId.toString(),
+          true,
+          `${enhancedLoopNode.innerStartNodeId}-out`,
+          `${enhancedLoopNode.innerEndNodeId}-in`,
+        );
+        graphRef.current?.graphCreateNewEdge(
+          enhancedLoopNode.innerEndNodeId.toString(),
+          enhancedLoopNode.id.toString(),
+          true,
+          `${enhancedLoopNode.innerEndNodeId}-out`,
+          `${enhancedLoopNode.id}-out`,
+        );
+      }
 
       // 3. 选中新添加的节点
-      setSelectedNode(node);
+      setSelectedNode(enhancedLoopNode);
       setDrawerVisible(true);
-      form.setFieldsValue(node.nodeConfig);
+      form.setFieldsValue(enhancedLoopNode.nodeConfig);
     },
-    [addNode, form],
+    [addNode, addEdge, form],
   );
 
   /**
@@ -477,6 +632,113 @@ const WorkflowV2: React.FC = () => {
     console.log('[V2] Graph initialized');
   }, []);
 
+  /**
+   * 保护分支/意图/选项列表中的 uuid、nextNodeIds，不在表单里展示但需要持久化
+   */
+  const mergeListWithIdentity = useCallback(
+    <T extends { uuid?: string; nextNodeIds?: number[] }>(
+      prevList: T[] | undefined,
+      nextList: Partial<T>[] | undefined,
+    ): T[] | undefined => {
+      if (!nextList) return prevList;
+      const previous = prevList || [];
+      return nextList.map((item, index) => {
+        const matched =
+          item.uuid !== undefined && item.uuid !== null && item.uuid !== ''
+            ? previous.find((p) => p.uuid === item.uuid)
+            : previous[index];
+        const merged = {
+          ...(matched || {}),
+          ...item,
+        } as T;
+        if (!merged.uuid) {
+          merged.uuid = matched?.uuid || uuidv4();
+        }
+        if (merged.nextNodeIds === undefined) {
+          merged.nextNodeIds = matched?.nextNodeIds || [];
+        }
+        return merged;
+      });
+    },
+    [],
+  );
+
+  const buildMergedNodeConfig = useCallback(
+    (node: ChildNodeV2, formValues: NodeConfigV2): NodeConfigV2 => {
+      // 辅助函数：深度合并对象，过滤掉 undefined 值
+      const deepMergeObject = <T extends Record<string, any>>(
+        original: T | undefined | null,
+        updates: T | undefined | null,
+      ): T | undefined => {
+        if (!updates) return original as T | undefined;
+        if (!original) {
+          // 仅返回非 undefined 的字段
+          const defined = Object.fromEntries(
+            Object.entries(updates).filter(([_, v]) => v !== undefined),
+          );
+          return Object.keys(defined).length > 0 ? (defined as T) : undefined;
+        }
+        const definedUpdates = Object.fromEntries(
+          Object.entries(updates).filter(([_, v]) => v !== undefined),
+        );
+        return { ...original, ...definedUpdates } as T;
+      };
+
+      // 过滤掉 formValues 顶层的 undefined 值，避免覆盖原有数据
+      const definedFormValues = Object.fromEntries(
+        Object.entries(formValues).filter(([_, v]) => v !== undefined),
+      ) as Partial<NodeConfigV2>;
+
+      const merged: NodeConfigV2 = {
+        ...node.nodeConfig,
+        ...definedFormValues,
+      };
+
+      // 深度合并嵌套对象
+      merged.extension = deepMergeObject(
+        node.nodeConfig?.extension,
+        formValues.extension,
+      );
+
+      merged.exceptionHandleConfig = deepMergeObject(
+        node.nodeConfig?.exceptionHandleConfig,
+        formValues.exceptionHandleConfig,
+      );
+
+      merged.modelConfig = deepMergeObject(
+        node.nodeConfig?.modelConfig,
+        formValues.modelConfig,
+      );
+
+      // 数组字段：使用 mergeListWithIdentity 处理带 uuid 的列表
+      if (formValues.conditionBranchConfigs) {
+        merged.conditionBranchConfigs = mergeListWithIdentity(
+          node.nodeConfig?.conditionBranchConfigs,
+          formValues.conditionBranchConfigs,
+        );
+      }
+
+      if (formValues.intentConfigs) {
+        merged.intentConfigs = mergeListWithIdentity(
+          node.nodeConfig?.intentConfigs,
+          formValues.intentConfigs,
+        );
+      }
+
+      const mergedAnswerType =
+        formValues.answerType || node.nodeConfig?.answerType;
+      if (formValues.options && mergedAnswerType === AnswerTypeEnumV2.SELECT) {
+        merged.options = mergeListWithIdentity(
+          node.nodeConfig?.options,
+          formValues.options,
+        );
+      }
+
+      return merged;
+    },
+    [mergeListWithIdentity],
+  );
+
   // ==================== 抽屉操作 ====================
 
   /**
@@ -485,29 +747,52 @@ const WorkflowV2: React.FC = () => {
   const handleDrawerClose = useCallback(() => {
     // 保存当前编辑的节点
     if (selectedNode) {
-      const values = form.getFieldsValue(true);
+      const values = form.getFieldsValue(true) as NodeConfigV2;
+      const mergedConfig = buildMergedNodeConfig(selectedNode, values);
       updateNode(selectedNode.id, {
         ...selectedNode,
-        nodeConfig: { ...selectedNode.nodeConfig, ...values },
+        nodeConfig: mergedConfig,
       });
     }
     setSelectedNode(null);
     setDrawerVisible(false);
-  }, [selectedNode, form, updateNode]);
+  }, [selectedNode, form, updateNode, buildMergedNodeConfig]);
 
   /**
    * 节点配置变更
    */
   const handleNodeConfigChange = useCallback(
-    (config: NodeConfigV2) => {
+    (changedValues: any, allValues: NodeConfigV2) => {
+      // 如果正在初始化表单，忽略变更事件
+      if (isInitializingFormRef.current) {
+        console.log('[V2 DEBUG] Ignoring form change during initialization');
+        return;
+      }
+      console.log('[V2 DEBUG] handleNodeConfigChange called:', {
+        changedValues,
+        allValues,
+        selectedNodeId: selectedNode?.id,
+      });
       if (selectedNode) {
-        updateNode(selectedNode.id, {
+        const mergedConfig = buildMergedNodeConfig(selectedNode, allValues);
+        console.log('[V2 DEBUG] mergedConfig:', mergedConfig);
+        const updatedNode: ChildNodeV2 = {
           ...selectedNode,
-          nodeConfig: config,
-        });
+          nodeConfig: mergedConfig,
+        };
+        console.log('[V2 DEBUG] updatedNode:', updatedNode);
+        updateNode(selectedNode.id, updatedNode);
+        // 同步更新 selectedNode 以便后续操作使用最新数据
+        setSelectedNode(updatedNode);
+        // 同步更新画布节点（端口/尺寸/失效边联动）- 传入完整 nodeConfig
+        graphRef.current?.graphUpdateByFormData(
+          changedValues,
+          mergedConfig,
+          selectedNode.id.toString(),
+        );
       }
     },
-    [selectedNode, updateNode],
+    [selectedNode, updateNode, buildMergedNodeConfig],
   );
 
   // ==================== 工具栏操作 ====================
@@ -586,19 +871,141 @@ const WorkflowV2: React.FC = () => {
   // ==================== 弹窗操作 ====================
 
   /**
-   * 打开试运行
+   * 打开试运行（复用 V1 的 testRun 全局状态）
    */
   const handleOpenTestRun = useCallback(() => {
+    console.log('[V2] handleOpenTestRun 被调用');
     // 先验证
     const validationResult = handleValidate();
+    console.log('[V2] 验证结果:', validationResult);
     if (
       validationResult.errors.filter((e) => e.severity === 'error').length > 0
     ) {
       message.error('请先修复错误');
       return;
     }
-    setTestRunModalVisible(true);
-  }, [handleValidate]);
+    // 打开试运行面板
+    console.log('[V2] 设置 testRun = true');
+    setTestRun(true);
+  }, [handleValidate, setTestRun]);
+
+  /**
+   * 清除运行结果
+   */
+  const handleClearRunResult = useCallback(() => {
+    setTestRunResult('');
+    graphRef.current?.graphResetRunResult();
+  }, []);
+
+  /**
+   * 节点试运行（复用 V1 逻辑）
+   */
+  const runTest = useCallback(
+    async (type: string, params?: Record<string, any>) => {
+      setErrorList([]);
+      setErrorListVisible(false);
+      handleClearRunResult();
+      setTestRunLoading(true);
+
+      if (type === 'Start') {
+        // 工作流试运行
+        const testRunPayload: TestRunParamsV2 = {
+          workflowId,
+          params: params || {},
+          requestId: uuidv4(),
+        };
+
+        try {
+          const abortFn = await createSSEConnection({
+            url: `${process.env.BASE_URL}${TEST_RUN_ENDPOINT}`,
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem(ACCESS_TOKEN)}`,
+              Accept: 'application/json, text/plain, */*',
+            },
+            body: testRunPayload,
+            onMessage: (data) => {
+              console.log('[V2] 试运行消息:', data);
+              if (data?.data?.nodeId) {
+                // 构建运行结果并高亮节点
+                const runResult = {
+                  requestId: data.requestId,
+                  options: {
+                    ...data.data.result,
+                    nodeId: data.data.nodeId,
+                    nodeName: data.data.nodeName,
+                  },
+                  status: data.data.status,
+                };
+                graphRef.current?.graphActiveNodeRunResult(
+                  data.data.nodeId.toString(),
+                  runResult,
+                );
+              }
+              if (data?.data?.status === 'STOP_WAIT_ANSWER') {
+                setTestRunLoading(false);
+                setStopWait(true);
+                if (data.data.result) {
+                  setTestRunParams(data.data.result.data);
+                }
+              }
+              // 完成时设置运行结果（参考 V1 逻辑）
+              if (data?.complete) {
+                if (data?.data?.output) {
+                  setTestRunResult(data.data.output);
+                }
+                // 设置表单值（用于回显输入参数）
+                if (data?.nodeExecuteResultMap) {
+                  const startNode = workflowData.nodeList?.find(
+                    (n) => n.type === 'Start',
+                  );
+                  if (startNode && data.nodeExecuteResultMap[startNode.id]) {
+                    setFormItemValue(
+                      data.nodeExecuteResultMap[startNode.id.toString()]
+                        ?.data || {},
+                    );
+                  }
+                }
+                setTestRunResult(JSON.stringify(data.data, null, 2));
+                setTestRunLoading(false);
+                setStopWait(false);
+              }
+              if (data?.data?.status === 'FAILED') {
+                setTestRunLoading(false);
+                setErrorList((prev) => [
+                  ...prev,
+                  {
+                    nodeId: data.data.nodeId,
+                    error: data.data.errorMessage || '运行失败',
+                    type: 'runtime',
+                  },
+                ]);
+                setErrorListVisible(true);
+              }
+            },
+            onError: (error) => {
+              console.error('[V2] 试运行错误:', error);
+              setTestRunLoading(false);
+              message.error('运行失败: ' + error.message);
+            },
+            onClose: () => {
+              setTestRunLoading(false);
+            },
+          });
+          abortTestRunRef.current = abortFn;
+        } catch (error: any) {
+          console.error('[V2] 试运行异常:', error);
+          setTestRunLoading(false);
+          message.error('运行失败: ' + error.message);
+        }
+      } else {
+        // 单节点试运行 - TODO: 实现单节点试运行逻辑
+        setTestRunLoading(false);
+        message.info('单节点试运行功能待实现');
+      }
+    },
+    [workflowId, handleClearRunResult],
+  );
 
   /**
    * 执行试运行（使用 V1 SSE 接口）
@@ -859,62 +1266,13 @@ const WorkflowV2: React.FC = () => {
     [workflowId],
   );
 
+  // 版本历史相关逻辑已由 V1 VersionHistory 组件内部处理
+
   /**
    * 打开版本历史
    */
-  const handleOpenVersionHistory = useCallback(async () => {
+  const handleOpenVersionHistory = useCallback(() => {
     setVersionHistoryVisible(true);
-    setVersionsLoading(true);
-    try {
-      // TODO: 调用获取版本历史 API
-      // const response = await workflowServiceV2.getVersionHistory(workflowId);
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 500);
-      });
-      setVersions([
-        {
-          id: '1',
-          version: 'v1.0.0',
-          description: '初始版本',
-          createdAt: new Date().toISOString(),
-          createdBy: 'Admin',
-          isCurrent: true,
-          isPublished: true,
-        },
-      ]);
-    } catch (error) {
-      message.error('加载版本历史失败');
-    } finally {
-      setVersionsLoading(false);
-    }
-  }, [workflowId]);
-
-  /**
-   * 版本回滚
-   */
-  const handleVersionRollback = useCallback(
-    async (_versionId: string) => {
-      try {
-        // TODO: 调用回滚 API
-        // await workflowServiceV2.rollback(workflowId, versionId);
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, 1000);
-        });
-        message.success('回滚成功');
-        refreshData();
-      } catch (error: any) {
-        message.error('回滚失败: ' + error.message);
-      }
-    },
-    [workflowId, refreshData],
-  );
-
-  /**
-   * 预览版本
-   */
-  const handleVersionPreview = useCallback((_versionId: string) => {
-    // TODO: 实现版本预览
-    message.info('版本预览功能开发中');
   }, []);
 
   // ==================== Stencil 操作 ====================
@@ -1138,6 +1496,20 @@ const WorkflowV2: React.FC = () => {
             referenceData={referenceData}
             onClose={handleDrawerClose}
             onNodeConfigChange={handleNodeConfigChange}
+            onNodeNameChange={(nodeId, name) => {
+              const origin =
+                (selectedNode && selectedNode.id === nodeId && selectedNode) ||
+                workflowData.nodeList.find((n) => n.id === nodeId);
+              if (!origin) return;
+              const newData = { ...origin, name };
+              setSelectedNode(newData);
+              updateNode(nodeId, newData);
+              graphRef.current?.graphUpdateNode(nodeId.toString(), newData);
+              graphRef.current?.getGraphRef?.()?.trigger('node:custom:save', {
+                data: newData,
+                payload: { name },
+              });
+            }}
             onNodeDelete={handleNodeDelete}
             onNodeCopy={handleNodeCopy}
           />
@@ -1155,15 +1527,20 @@ const WorkflowV2: React.FC = () => {
         )}
       </div>
 
-      {/* 试运行弹窗 */}
-      <TestRunModalV2
-        open={testRunModalVisible}
-        onClose={() => setTestRunModalVisible(false)}
-        workflowData={workflowData as WorkflowDataV2}
-        onRun={handleTestRun}
-        onStop={handleStopRun}
-        runStatus={runStatus}
-        runResult={runResult}
+      {/* 试运行面板（V2 独立组件）*/}
+      <TestRunV2
+        node={
+          // 试运行需要 startNode，从 nodeList 中查找
+          (workflowData.nodeList?.find((n) => n.type === 'Start') ||
+            selectedNode) as any
+        }
+        run={runTest}
+        testRunResult={testRunResult}
+        clearRunResult={handleClearRunResult}
+        loading={testRunLoading}
+        stopWait={stopWait}
+        formItemValue={formItemValue}
+        testRunParams={testRunParams}
       />
 
       {/* 发布弹窗 */}
@@ -1203,14 +1580,22 @@ const WorkflowV2: React.FC = () => {
         onCreate={handleCreateComponent}
       />
 
-      {/* 版本历史抽屉 */}
-      <VersionHistoryV2
-        open={versionHistoryVisible}
+      {/* 版本历史抽屉 - 复用 V1 组件 */}
+      <VersionHistory
+        targetId={workflowId}
+        targetName={workflowInfo.name}
+        targetType={AgentComponentTypeEnum.Workflow}
+        permissions={(workflowInfo as any).permissions || []}
+        visible={versionHistoryVisible}
+        isDrawer={true}
         onClose={() => setVersionHistoryVisible(false)}
-        versions={versions}
-        loading={versionsLoading}
-        onRollback={handleVersionRollback}
-        onPreview={handleVersionPreview}
+        renderActions={(item: any) => (
+          <VersionAction
+            data={item}
+            onRefresh={refreshData}
+            onClose={() => setVersionHistoryVisible(false)}
+          />
+        )}
       />
 
       {/* 端口/边点击添加节点弹窗 */}

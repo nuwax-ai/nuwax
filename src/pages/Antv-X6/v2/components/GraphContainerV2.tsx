@@ -25,6 +25,7 @@ import type {
   EdgeV2,
   GraphContainerRefV2,
   GraphRectV2,
+  NodeConfigV2,
   RunResultItemV2,
   ViewGraphPropsV2,
   WorkflowDataV2,
@@ -146,6 +147,37 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
     }, []);
 
     /**
+     * 添加循环节点的子节点（与 V1 addLoopChildNode 对齐）
+     * 参考 V1：graphContainer.tsx 的 addLoopChildNode 函数
+     */
+    const addLoopChildNodes = useCallback((loopNode: Node) => {
+      if (!graphRef.current) return;
+
+      const data = loopNode.getData() as ChildNodeV2;
+      if (!data.innerNodes?.length) return;
+
+      // 设置循环节点的 zIndex（与 V1 保持一致）
+      loopNode.prop('zIndex', 4);
+
+      // 遍历 innerNodes，使用 createLoopChildNodeData 创建子节点（与 V1 createChildNode 对齐）
+      data.innerNodes.forEach((childDef) => {
+        const childData = createLoopChildNodeData(data.id, childDef);
+        const childNode = graphRef.current!.addNode(childData);
+        // 建立父子关系
+        loopNode.addChild(childNode);
+      });
+
+      // 调整父节点大小以包含所有子节点
+      const children =
+        loopNode
+          .getChildren()
+          ?.filter((c) => c.isNode())
+          .map((c) => c.getData() as ChildNodeV2) || [];
+      const newSize = adjustLoopNodeSize(data, children);
+      loopNode.resize(newSize.width, newSize.height);
+    }, []);
+
+    /**
      * 添加节点
      */
     const graphAddNode = useCallback(
@@ -162,6 +194,16 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
         });
 
         graphRef.current.addNode(nodeData);
+
+        // 如果是循环节点且有 innerNodes，添加内置子节点（与 V1 对齐）
+        if (node.type === NodeTypeEnumV2.Loop && node.innerNodes?.length) {
+          const loopNode = graphRef.current.getCellById(
+            node.id.toString(),
+          ) as Node;
+          if (loopNode) {
+            addLoopChildNodes(loopNode);
+          }
+        }
 
         // 如果是循环内部节点，设置父子关系
         if (node.loopNodeId) {
@@ -182,11 +224,12 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
           }
         }
       },
-      [],
+      [addLoopChildNodes],
     );
 
     /**
      * 更新节点
+     * 参考 V1：需要处理端口变化时的边删除逻辑
      */
     const graphUpdateNode = useCallback(
       (nodeId: string, newData: ChildNodeV2 | null) => {
@@ -194,6 +237,10 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
 
         const node = graphRef.current.getCellById(nodeId);
         if (node && node.isNode()) {
+          // 获取旧的端口列表
+          const oldPorts = (node as Node).getPorts();
+          const oldPortIds = new Set(oldPorts.map((p) => p.id));
+
           // 更新位置
           const position = (node as Node).getPosition();
           newData.nodeConfig = {
@@ -205,8 +252,33 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
             },
           };
 
-          // 更新端口配置
+          // 生成新的端口配置
           const newPorts = generatePorts(newData);
+          const newPortIds = new Set(
+            newPorts.items.map((p) => p.id).filter(Boolean),
+          );
+
+          // 找出被删除的端口（旧端口中存在但新端口中不存在）
+          const deletedPortIds = [...oldPortIds].filter(
+            (id): id is string => !!id && !newPortIds.has(id),
+          );
+
+          // 删除与被删除端口相关的边（与 V1 保持一致）
+          if (deletedPortIds.length > 0) {
+            const edges = graphRef.current.getEdges();
+            edges.forEach((edge) => {
+              const sourcePortId = edge.getSourcePortId();
+              const targetPortId = edge.getTargetPortId();
+              if (
+                (sourcePortId && deletedPortIds.includes(sourcePortId)) ||
+                (targetPortId && deletedPortIds.includes(targetPortId))
+              ) {
+                edge.remove();
+              }
+            });
+          }
+
+          // 更新端口配置
           const size = calculateNodeSize(newData, newPorts.items);
           (node as Node).setSize(size.width, size.height);
           node.prop('ports', newPorts);
@@ -218,24 +290,47 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
 
     /**
      * 通过表单数据更新节点
+     * 参考 V1：需要处理循环节点父子大小调整
      */
     const graphUpdateByFormData = useCallback(
-      (changedValues: any, fullFormValues: any, nodeId: string) => {
+      (changedValues: any, fullNodeConfig: NodeConfigV2, nodeId: string) => {
         if (!graphRef.current) return;
 
         const cell = graphRef.current.getCellById(nodeId);
         if (!cell || !cell.isNode()) return;
 
+        // 从画布获取当前节点数据作为基础
         const oldData = cell.getData() as ChildNodeV2;
+        // 用传入的完整 nodeConfig 替换（不是浅合并）
         const newData: ChildNodeV2 = {
           ...oldData,
-          nodeConfig: {
-            ...oldData.nodeConfig,
-            ...fullFormValues,
-          },
+          nodeConfig: fullNodeConfig,
         };
 
+        console.log('[V2 DEBUG] graphUpdateByFormData:', {
+          nodeId,
+          oldNodeConfig: oldData.nodeConfig,
+          newNodeConfig: fullNodeConfig,
+        });
+
         graphUpdateNode(nodeId, newData);
+
+        // 如果节点在循环内，调整父循环节点大小（与 V1 保持一致）
+        if (oldData.loopNodeId) {
+          const parentNode = graphRef.current.getCellById(
+            oldData.loopNodeId.toString(),
+          );
+          if (parentNode && parentNode.isNode()) {
+            const parentData = parentNode.getData() as ChildNodeV2;
+            const childNodes =
+              (parentNode as Node)
+                .getChildren()
+                ?.filter((c) => c.isNode())
+                .map((c) => c.getData() as ChildNodeV2) || [];
+            const newSize = adjustLoopNodeSize(parentData, childNodes);
+            (parentNode as Node).resize(newSize.width, newSize.height);
+          }
+        }
       },
       [graphUpdateNode],
     );

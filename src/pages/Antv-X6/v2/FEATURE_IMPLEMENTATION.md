@@ -268,8 +268,8 @@ NodeDrawerV2
 | 全量保存       | POST | `/api/workflow/v2/save`                  | 🚧 待后端 |
 | 验证工作流     | GET  | `/api/workflow/valid/{id}`               | ❌        |
 | 发布工作流     | POST | `/api/workflow/publish`                  | ❌        |
-| 获取版本历史   | GET  | `/api/workflow/config/history/list/{id}` | ❌        |
-| 还原版本       | POST | `/api/workflow/restore/{historyId}`      | ❌        |
+| 获取版本历史   | GET  | `/api/workflow/config/history/list/{id}` | ✅        |
+| 还原版本       | POST | `/api/workflow/restore/{historyId}`      | ✅        |
 
 ### 5.2 全量保存数据结构
 
@@ -346,19 +346,85 @@ const HISTORY_CONFIG_V2 = {
 
 ---
 
-## 七、待实现功能
+## 七、边配置对齐 V1
 
-| 功能                 | 优先级 | 备注                         |
-| -------------------- | ------ | ---------------------------- |
-| 全量保存接口对接     | P0     | 待后端接口                   |
-| 试运行/发布/版本联调 | P0     | 现占位/沿用 V1，需要 V2 接口 |
-| 节点校验增强         | P1     | 条件分支校验已补，需回归边界 |
-| 运行动画             | P2     | nodeAnimationV2.ts 框架已有  |
-| 变量聚合节点         | P2     | 新功能                       |
+### 7.1 路由器配置
+
+| 场景             | 路由器      | 说明                         |
+| ---------------- | ----------- | ---------------------------- |
+| 初始化批量添加边 | `orth`      | 避免回折问题，简单直接的路径 |
+| 拖拽创建边       | `manhattan` | 提供更好的路径规划体验       |
+| 边连接完成后     | `manhattan` | 保持一致性                   |
+
+### 7.2 端口 ID 格式（与 V1 对齐）
+
+| 节点类型 | 端口 ID 格式               | 边 sourcePort 格式         |
+| -------- | -------------------------- | -------------------------- |
+| 普通节点 | `${node.id}-out`           | `${node.id}-out`           |
+| 条件分支 | `${node.id}-${uuid}-out`   | `${node.id}-${uuid}-out`   |
+| 意图识别 | `${node.id}-${uuid}-out`   | `${node.id}-${uuid}-out`   |
+| 问答选项 | `${node.id}-${uuid}-out`   | `${node.id}-${uuid}-out`   |
+| 异常处理 | `${node.id}-exception-out` | `${node.id}-exception-out` |
+
+### 7.3 边连接完成后处理
+
+```typescript
+// 边连接完成事件处理（与 V1 保持一致）
+graph.on('edge:connected', ({ isNew, edge }) => {
+  setEdgeStyle(edge); // 设置边样式
+
+  if (isNew) {
+    // 异常端口连线 → edge.toFront()
+    // 循环节点连线 → edge.toFront()
+    // 普通节点连线 → setTimeout 设置 zIndex
+    //   - 循环内节点：zIndex = 15
+    //   - 普通节点：zIndex = 1
+  }
+});
+```
+
+### 7.4 节点更新时的边联动
+
+```typescript
+// graphUpdateNode 处理端口变化
+const graphUpdateNode = (nodeId, newData) => {
+  // 1. 获取旧端口列表
+  // 2. 生成新端口配置
+  // 3. 找出被删除的端口
+  // 4. 删除与被删除端口相关的边
+  // 5. 更新端口配置和节点数据
+};
+```
+
+---
+
+## 八、待实现功能
+
+| 功能                 | 优先级 | 状态 | 备注                        |
+| -------------------- | ------ | ---- | --------------------------- |
+| 全量保存接口对接     | P0     | 🚧   | 待后端接口                  |
+| 试运行/发布/版本联调 | P0     | ✅   | 使用 V1 接口                |
+| 节点校验增强         | P1     | ✅   | 条件分支校验已补            |
+| 边配置对齐 V1        | P1     | ✅   | 路由器、端口 ID、边联动     |
+| 运行动画             | P2     | 🚧   | nodeAnimationV2.ts 框架已有 |
+| 变量聚合节点         | P2     | ❌   | 新功能                      |
 
 ---
 
 ## 更新日志
+
+### 2025-12-10
+
+- **边配置对齐 V1**
+  - 初始化批量添加边使用 `orth` 路由器，避免回折
+  - 拖拽/交互时使用 `manhattan` 路由器
+  - sourcePort 格式对齐：`${node.id}-${uuid}-out`、`${node.id}-exception-out`
+  - 边连接完成后添加 `toFront()` 和 `zIndex` 设置
+- **节点更新端口联动**
+  - 特殊节点（条件分支、意图识别、问答选项）选项变更时端口联动
+  - 删除端口时自动删除关联边
+  - 异常处理配置变化时端口显示/隐藏联动
+  - 循环内节点更新时父节点大小调整
 
 ### 2025-12-09
 

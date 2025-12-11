@@ -5,10 +5,11 @@
  * 参考 V1 实现，保持相同的视觉效果
  */
 
-import { Graph, Path } from '@antv/x6';
+import EditableTitle from '@/components/editableTitle';
+import { Graph, Node, Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { Tag } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import {
   ICON_END,
@@ -39,6 +40,7 @@ import {
   ICON_WORKFLOW_WORKFLOW,
 } from '@/constants/images.constants';
 import useNodeSelection from '@/hooks/useNodeSelection';
+import RunResult from '../../component/runResult';
 import {
   EXCEPTION_HANDLE_OPTIONS_V2,
   EXCEPTION_NODES_TYPE_V2,
@@ -186,20 +188,134 @@ const answerTypeMapV2: Record<string, string> = {
 // 选项标签
 const optionsMapV2 = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
+// 禁止标题编辑的节点类型（与 V1 保持一致）
+const DISABLE_EDIT_NODE_TYPES_V2 = [
+  NodeTypeEnumV2.LoopStart,
+  NodeTypeEnumV2.LoopEnd,
+  NodeTypeEnumV2.Start,
+  NodeTypeEnumV2.End,
+];
+
 // ==================== 节点组件 ====================
 
 interface NodeComponentProps {
-  node: {
-    getData: () => ChildNodeV2 & {
-      isFocus?: boolean;
-      runResults?: RunResultItemV2[];
-      enableMove?: boolean;
-    };
-    getSize: () => { width: number; height: number };
-    setData: (data: any) => void;
-  };
+  node: Node;
   graph: Graph;
 }
+
+/**
+ * 运行结果展示（对齐 V1 NodeRunResult）
+ */
+const NodeRunResultV2: React.FC<{ data: RunResultItemV2[] | [] }> = ({
+  data,
+}) => {
+  const time = (
+    (data?.reduce((acc, item) => {
+      return (
+        acc + ((item?.options?.endTime || 0) - (item?.options?.startTime || 0))
+      );
+    }, 0) || 0) / 1000
+  ).toFixed(3);
+
+  const total = data?.length || 0;
+  const [pageTotal, setPageTotal] = useState(total);
+  const [current, setCurrent] = useState(1);
+  const [onlyError, setOnlyError] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [innerData, setInnerData] = useState<RunResultItemV2[] | []>([]);
+
+  const success = data.every(
+    (item) => item?.status === RunResultStatusEnumV2.FINISHED,
+  );
+  const isExecuting = data.some(
+    (item) =>
+      item?.status === RunResultStatusEnumV2.EXECUTING ||
+      item?.status === RunResultStatusEnumV2.STOP_WAIT_ANSWER,
+  );
+
+  const handlePageChange = (page: number) => {
+    setCurrent(page);
+  };
+
+  const handleOnlyErrorChange = (checked: boolean) => {
+    setOnlyError(checked);
+  };
+
+  const handleExpandChange = (nextExpanded: boolean) => {
+    setExpanded(nextExpanded);
+  };
+
+  useEffect(() => {
+    setInnerData(data);
+  }, [data]);
+
+  useEffect(() => {
+    if (onlyError && !success) {
+      const errorData = data.filter(
+        (item) => item?.status === RunResultStatusEnumV2.FAILED,
+      );
+      setInnerData(errorData.length > 0 ? errorData : []);
+    } else {
+      setInnerData(data);
+    }
+  }, [onlyError, success, data]);
+
+  useEffect(() => {
+    setPageTotal(innerData.length);
+    setCurrent(1);
+  }, [innerData]);
+
+  const genRunResultTitle = useCallback(() => {
+    const statusList = data.map((item) => String(item?.status));
+
+    switch (true) {
+      case statusList.some((s) => s === RunResultStatusEnumV2.STOP_WAIT_ANSWER):
+        return '请答复问题';
+      case statusList.some((s) => s === RunResultStatusEnumV2.EXECUTING):
+        return '运行中';
+      case statusList.some((s) => s === RunResultStatusEnumV2.FAILED):
+        return '运行失败';
+      case statusList.every(
+        (s) => s === RunResultStatusEnumV2.FINISHED || s === 'SUCCESS',
+      ):
+        return '运行成功';
+      default:
+        return '运行失败';
+    }
+  }, [data]);
+
+  const normalizeParams = (params: any) => {
+    if (Array.isArray(params)) {
+      return { list: params };
+    }
+    return params || {};
+  };
+
+  if (data?.length === 0) {
+    return null;
+  }
+
+  const currentItem = innerData[current - 1];
+
+  return (
+    <RunResult
+      success={success}
+      title={genRunResultTitle()}
+      loading={isExecuting}
+      collapsible={!isExecuting}
+      time={`${time}s`}
+      total={pageTotal}
+      current={current}
+      onlyError={onlyError}
+      onPageChange={handlePageChange}
+      onOnlyErrorChange={handleOnlyErrorChange}
+      expanded={expanded}
+      onExpandChange={handleExpandChange}
+      inputParams={normalizeParams(currentItem?.options?.input)}
+      outputResult={normalizeParams(currentItem?.options?.data)}
+    />
+  );
+};
 
 /**
  * 条件节点内容
@@ -331,7 +447,7 @@ const GeneralNodeComponent: React.FC<NodeComponentProps> = ({
   node,
   graph,
 }) => {
-  const data = node.getData();
+  const data = node.getData<ChildNodeV2>();
   const [editValue, setEditValue] = useState(data?.name || '');
 
   // 使用节点选中 hook
@@ -344,6 +460,21 @@ const GeneralNodeComponent: React.FC<NodeComponentProps> = ({
   if (!data) {
     return null;
   }
+
+  const handleEditingStatusChange = (val: boolean) => {
+    const current = node.getData<ChildNodeV2>() || ({} as ChildNodeV2);
+    node.setData({ ...current, enableMove: !val });
+  };
+
+  const handleSave = (saveValue: string): boolean => {
+    setEditValue(saveValue);
+    const currentData = node.getData<ChildNodeV2>();
+    graph.trigger('node:custom:save', {
+      data: currentData,
+      payload: { name: saveValue },
+    });
+    return true;
+  };
 
   const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColorV2(
     data.type,
@@ -359,12 +490,21 @@ const GeneralNodeComponent: React.FC<NodeComponentProps> = ({
   // 运行状态
   const runResults = data.runResults || [];
   const lastResult = runResults[runResults.length - 1];
-  const isRunning = lastResult?.status === RunResultStatusEnumV2.EXECUTING;
+  const isRunning =
+    lastResult?.status === RunResultStatusEnumV2.EXECUTING ||
+    lastResult?.status === RunResultStatusEnumV2.STOP_WAIT_ANSWER;
   const isError = lastResult?.status === RunResultStatusEnumV2.FAILED;
   const isSuccess = lastResult?.status === RunResultStatusEnumV2.FINISHED;
   const showException = EXCEPTION_NODES_TYPE_V2.includes(data.type);
   const exceptionHandleType =
     data.nodeConfig?.exceptionHandleConfig?.exceptionHandleType;
+  const canNotEditNode = DISABLE_EDIT_NODE_TYPES_V2.includes(data.type);
+  const showRunResult = [
+    NodeTypeEnumV2.LoopStart,
+    NodeTypeEnumV2.LoopEnd,
+  ].includes(data.type)
+    ? false
+    : !!runResults.length;
 
   const nodeClassName = [
     'general-node-v2',
@@ -389,7 +529,14 @@ const GeneralNodeComponent: React.FC<NodeComponentProps> = ({
         <div className="general-node-header-image-v2">
           {returnImgV2(data.type)}
         </div>
-        <span className="general-node-header-title-v2">{editValue}</span>
+        <EditableTitle
+          key={data.id?.toString()}
+          value={editValue}
+          dataId={data.id?.toString()}
+          onEditingStatusChange={handleEditingStatusChange}
+          onSave={handleSave}
+          disabled={canNotEditNode}
+        />
       </div>
 
       {/* 条件节点内容 */}
@@ -407,6 +554,9 @@ const GeneralNodeComponent: React.FC<NodeComponentProps> = ({
 
       {/* 异常处理展示 */}
       {showException && <ExceptionHandleV2 type={exceptionHandleType} />}
+
+      {/* 运行结果 */}
+      {showRunResult && <NodeRunResultV2 data={runResults} />}
     </div>
   );
 };
@@ -415,7 +565,7 @@ const GeneralNodeComponent: React.FC<NodeComponentProps> = ({
  * 循环节点组件 - 参考 V1 LoopNode
  */
 const LoopNodeComponent: React.FC<NodeComponentProps> = ({ node, graph }) => {
-  const data = node.getData();
+  const data = node.getData<ChildNodeV2>();
   const [editValue, setEditValue] = useState(data?.name || '');
 
   // 使用节点选中 hook
@@ -429,21 +579,62 @@ const LoopNodeComponent: React.FC<NodeComponentProps> = ({ node, graph }) => {
     return null;
   }
 
+  const handleEditingStatusChange = (val: boolean) => {
+    const current = node.getData<ChildNodeV2>() || ({} as ChildNodeV2);
+    node.setData({ ...current, enableMove: !val });
+  };
+
+  const handleSave = (saveValue: string): boolean => {
+    setEditValue(saveValue);
+    const currentData = node.getData<ChildNodeV2>();
+    graph.trigger('node:custom:save', {
+      data: currentData,
+      payload: { name: saveValue },
+    });
+    return true;
+  };
+
+  const runResults = data.runResults || [];
+  const lastResult = runResults[runResults.length - 1];
+  const isRunning =
+    lastResult?.status === RunResultStatusEnumV2.EXECUTING ||
+    lastResult?.status === RunResultStatusEnumV2.STOP_WAIT_ANSWER;
+  const isError = lastResult?.status === RunResultStatusEnumV2.FAILED;
+  const isSuccess = lastResult?.status === RunResultStatusEnumV2.FINISHED;
+  const showRunResult = !!runResults.length;
+
   const gradientBackground = `linear-gradient(to bottom, ${returnBackgroundColorV2(
     data.type,
   )} 0%, white 42px)`;
 
+  const nodeClassName = [
+    'loop-node-v2',
+    'general-node-v2',
+    isSelected ? 'selected' : '',
+    isRunning ? 'running' : '',
+    isSuccess ? 'success' : '',
+    isError ? 'error' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div
-      className={`loop-node-v2 general-node-v2 ${isSelected ? 'selected' : ''}`}
-      style={{ background: gradientBackground }}
-    >
-      <div className="loop-node-title-v2">
-        <ICON_WORKFLOW_LOOP />
-        <span className="loop-title-text-v2">{editValue}</span>
+    <>
+      <div className={nodeClassName} style={{ background: gradientBackground }}>
+        <div className="loop-node-title-v2">
+          <ICON_WORKFLOW_LOOP />
+          <EditableTitle
+            key={data.id?.toString()}
+            value={editValue}
+            dataId={data.id?.toString()}
+            onEditingStatusChange={handleEditingStatusChange}
+            onSave={handleSave}
+          />
+        </div>
+        <div className="loop-node-content-v2" />
       </div>
-      <div className="loop-node-content-v2" />
-    </div>
+      {showRunResult && <NodeRunResultV2 data={runResults} />}
+    </>
   );
 };
 
@@ -466,6 +657,7 @@ export function registerCustomNodesV2(): void {
     height: 44,
     component: GeneralNodeComponent,
     ports: { groups: PORT_GROUPS_V2 },
+    draggable: true,
   });
 
   // 注册循环节点
@@ -475,6 +667,8 @@ export function registerCustomNodesV2(): void {
     height: 240,
     component: LoopNodeComponent,
     ports: { groups: PORT_GROUPS_V2 },
+    resizable: true,
+    draggable: true,
   });
 
   isRegistered = true;
