@@ -316,10 +316,17 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
             ) : (
               <div
                 className="node-drawer-v2-name"
-                onClick={handleStartEditName}
+                onClick={
+                  canRenameNode(node.type) ? handleStartEditName : undefined
+                }
+                style={{
+                  cursor: canRenameNode(node.type) ? 'pointer' : 'default',
+                }}
               >
                 <span>{node.name}</span>
-                <EditOutlined className="node-drawer-v2-edit-icon" />
+                {canRenameNode(node.type) && (
+                  <EditOutlined className="node-drawer-v2-edit-icon" />
+                )}
               </div>
             )}
             {node.description && (
