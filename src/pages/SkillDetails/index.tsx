@@ -1,4 +1,5 @@
 import FileTreeView from '@/components/FileTreeView';
+import PublishComponentModal from '@/components/PublishComponentModal';
 import { getProjectContent } from '@/services/appDev';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { transformFlatListToTree } from '@/utils/appDevUtils';
@@ -13,11 +14,13 @@ const cx = classNames.bind(styles);
  * 技能详情页面
  */
 const SkillDetails: React.FC = () => {
-  const { skillId } = useParams();
+  const { spaceId, skillId } = useParams();
   // 技能信息
   const [skillInfo, setSkillInfo] = useState<any>(null);
   // 文件树数据
   const [files, setFiles] = useState<FileNode[]>([]);
+  // 发布技能弹窗是否打开
+  const [open, setOpen] = useState<boolean>(false);
 
   // 查询技能信息
   const { run: runSkillInfo } = useRequest(
@@ -50,6 +53,11 @@ const SkillDetails: React.FC = () => {
     }
   }, [skillId]);
 
+  // 确认发布技能回调
+  const handleConfirmPublish = () => {
+    console.log('handleConfirmPublish');
+  };
+
   return (
     <div
       className={cx('skill-details-container', 'flex', 'h-full', 'flex-col')}
@@ -58,10 +66,22 @@ const SkillDetails: React.FC = () => {
       <SkillHeader
         skillInfo={skillInfo}
         onEditAgent={() => {}}
-        onPublish={() => {}}
+        onPublish={() => setOpen(true)}
       />
       {/* 文件树视图 */}
       <FileTreeView files={files} />
+
+      {/*发布技能弹窗*/}
+      <PublishComponentModal
+        // mode={AgentComponentTypeEnum.Skill}
+        targetId={skillId}
+        open={open}
+        spaceId={spaceId}
+        // category={agentConfigInfo?.category}
+        // 取消发布
+        onCancel={() => setOpen(false)}
+        onConfirm={handleConfirmPublish}
+      />
     </div>
   );
 };
