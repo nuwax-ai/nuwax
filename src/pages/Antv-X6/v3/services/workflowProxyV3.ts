@@ -54,7 +54,6 @@ class WorkflowProxyV3 {
     this.workflowData = cloneDeep(data);
     this.pendingUpdates = [];
     this.isDirty = false;
-    console.log('[V3 Proxy] 工作流数据初始化完成:', data.workflowId);
     console.log(
       '[V3 Proxy] 节点数量:',
       data.nodes.length,
@@ -151,7 +150,6 @@ class WorkflowProxyV3 {
     });
     this.markDirty();
 
-    console.log('[V3 Proxy] 节点更新:', node.id, node.name);
     return { success: true, data: this.getFullWorkflowData()! };
   }
 
@@ -179,7 +177,6 @@ class WorkflowProxyV3 {
     });
     this.markDirty();
 
-    console.log('[V3 Proxy] 节点新增:', node.id, node.name);
     return { success: true, data: this.getFullWorkflowData()! };
   }
 
@@ -219,7 +216,6 @@ class WorkflowProxyV3 {
     });
     this.markDirty();
 
-    console.log('[V3 Proxy] 节点删除:', nodeId);
     return { success: true, data: this.getFullWorkflowData()! };
   }
 
@@ -269,7 +265,6 @@ class WorkflowProxyV3 {
     });
     this.markDirty();
 
-    console.log('[V3 Proxy] 节点位置更新:', nodeId, { x, y });
     return { success: true, data: this.getFullWorkflowData()! };
   }
 
@@ -317,7 +312,6 @@ class WorkflowProxyV3 {
     });
     this.markDirty();
 
-    console.log('[V3 Proxy] 边新增:', edge.source, '->', edge.target);
     return { success: true, data: this.getFullWorkflowData()! };
   }
 
@@ -360,7 +354,6 @@ class WorkflowProxyV3 {
     });
     this.markDirty();
 
-    console.log('[V3 Proxy] 边删除:', source, '->', target);
     return { success: true, data: this.getFullWorkflowData()! };
   }
 
@@ -382,7 +375,6 @@ class WorkflowProxyV3 {
     node.nextNodeIds = [...nextNodeIds];
     this.markDirty();
 
-    console.log('[V3 Proxy] 节点 nextNodeIds 更新:', nodeId, nextNodeIds);
     return { success: true, data: this.getFullWorkflowData()! };
   }
 
@@ -428,7 +420,6 @@ class WorkflowProxyV3 {
   clearPendingUpdates(): void {
     this.pendingUpdates = [];
     this.isDirty = false;
-    console.log('[V3 Proxy] 待发送记录已清除');
   }
 
   /**
@@ -436,7 +427,6 @@ class WorkflowProxyV3 {
    */
   setBackendReady(ready: boolean): void {
     this.isBackendReady = ready;
-    console.log('[V3 Proxy] 后端状态:', ready ? 'ready' : 'not ready');
   }
 
   /**
