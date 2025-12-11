@@ -48,8 +48,10 @@ import {
   EditWorkflowModalV2,
   PublishModalV2,
 } from './components/modal';
-import type { VersionInfo } from './components/version';
-import { VersionHistoryV2 } from './components/version';
+// 复用 V1 版本历史组件
+import VersionHistory from '@/components/VersionHistory';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import VersionAction from '../components/VersionAction';
 
 // V2 独立导入 - 服务
 import workflowServiceV2, {
@@ -176,10 +178,6 @@ const WorkflowV2: React.FC = () => {
 
   // 试运行 SSE 连接中止函数
   const abortTestRunRef = useRef<(() => void) | null>(null);
-
-  // 版本历史
-  const [versions, setVersions] = useState<VersionInfo[]>([]);
-  const [versionsLoading, setVersionsLoading] = useState(false);
 
   // 表单
   const [form] = Form.useForm<NodeConfigV2>();
@@ -1268,62 +1266,13 @@ const WorkflowV2: React.FC = () => {
     [workflowId],
   );
 
+  // 版本历史相关逻辑已由 V1 VersionHistory 组件内部处理
+
   /**
    * 打开版本历史
    */
-  const handleOpenVersionHistory = useCallback(async () => {
+  const handleOpenVersionHistory = useCallback(() => {
     setVersionHistoryVisible(true);
-    setVersionsLoading(true);
-    try {
-      // TODO: 调用获取版本历史 API
-      // const response = await workflowServiceV2.getVersionHistory(workflowId);
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 500);
-      });
-      setVersions([
-        {
-          id: '1',
-          version: 'v1.0.0',
-          description: '初始版本',
-          createdAt: new Date().toISOString(),
-          createdBy: 'Admin',
-          isCurrent: true,
-          isPublished: true,
-        },
-      ]);
-    } catch (error) {
-      message.error('加载版本历史失败');
-    } finally {
-      setVersionsLoading(false);
-    }
-  }, [workflowId]);
-
-  /**
-   * 版本回滚
-   */
-  const handleVersionRollback = useCallback(
-    async (_versionId: string) => {
-      try {
-        // TODO: 调用回滚 API
-        // await workflowServiceV2.rollback(workflowId, versionId);
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, 1000);
-        });
-        message.success('回滚成功');
-        refreshData();
-      } catch (error: any) {
-        message.error('回滚失败: ' + error.message);
-      }
-    },
-    [workflowId, refreshData],
-  );
-
-  /**
-   * 预览版本
-   */
-  const handleVersionPreview = useCallback((_versionId: string) => {
-    // TODO: 实现版本预览
-    message.info('版本预览功能开发中');
   }, []);
 
   // ==================== Stencil 操作 ====================
@@ -1631,14 +1580,22 @@ const WorkflowV2: React.FC = () => {
         onCreate={handleCreateComponent}
       />
 
-      {/* 版本历史抽屉 */}
-      <VersionHistoryV2
-        open={versionHistoryVisible}
+      {/* 版本历史抽屉 - 复用 V1 组件 */}
+      <VersionHistory
+        targetId={workflowId}
+        targetName={workflowInfo.name}
+        targetType={AgentComponentTypeEnum.Workflow}
+        permissions={(workflowInfo as any).permissions || []}
+        visible={versionHistoryVisible}
+        isDrawer={true}
         onClose={() => setVersionHistoryVisible(false)}
-        versions={versions}
-        loading={versionsLoading}
-        onRollback={handleVersionRollback}
-        onPreview={handleVersionPreview}
+        renderActions={(item: any) => (
+          <VersionAction
+            data={item}
+            onRefresh={refreshData}
+            onClose={() => setVersionHistoryVisible(false)}
+          />
+        )}
       />
 
       {/* 端口/边点击添加节点弹窗 */}

@@ -268,8 +268,8 @@ NodeDrawerV2
 | 全量保存       | POST | `/api/workflow/v2/save`                  | 🚧 待后端 |
 | 验证工作流     | GET  | `/api/workflow/valid/{id}`               | ❌        |
 | 发布工作流     | POST | `/api/workflow/publish`                  | ❌        |
-| 获取版本历史   | GET  | `/api/workflow/config/history/list/{id}` | ❌        |
-| 还原版本       | POST | `/api/workflow/restore/{historyId}`      | ❌        |
+| 获取版本历史   | GET  | `/api/workflow/config/history/list/{id}` | ✅        |
+| 还原版本       | POST | `/api/workflow/restore/{historyId}`      | ✅        |
 
 ### 5.2 全量保存数据结构
 
@@ -400,14 +400,14 @@ const graphUpdateNode = (nodeId, newData) => {
 
 ## 八、待实现功能
 
-| 功能                 | 优先级 | 状态 | 备注                         |
-| -------------------- | ------ | ---- | ---------------------------- |
-| 全量保存接口对接     | P0     | 🚧   | 待后端接口                   |
-| 试运行/发布/版本联调 | P0     | 🚧   | 现占位/沿用 V1，需要 V2 接口 |
-| 节点校验增强         | P1     | ✅   | 条件分支校验已补             |
-| 边配置对齐 V1        | P1     | ✅   | 路由器、端口 ID、边联动      |
-| 运行动画             | P2     | 🚧   | nodeAnimationV2.ts 框架已有  |
-| 变量聚合节点         | P2     | ❌   | 新功能                       |
+| 功能                 | 优先级 | 状态 | 备注                        |
+| -------------------- | ------ | ---- | --------------------------- |
+| 全量保存接口对接     | P0     | 🚧   | 待后端接口                  |
+| 试运行/发布/版本联调 | P0     | ✅   | 使用 V1 接口                |
+| 节点校验增强         | P1     | ✅   | 条件分支校验已补            |
+| 边配置对齐 V1        | P1     | ✅   | 路由器、端口 ID、边联动     |
+| 运行动画             | P2     | 🚧   | nodeAnimationV2.ts 框架已有 |
+| 变量聚合节点         | P2     | ❌   | 新功能                      |
 
 ---
 
