@@ -19,6 +19,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onDelete,
   onRename,
   onUploadSingleFile,
+  disableDelete = false,
   // onUploadProject,
 }) => {
   /**
@@ -83,7 +84,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
     return null;
   }
   // 构建菜单项 - 根据是否有目标节点显示不同菜单
-  const menuItems = [
+  const allMenuItems = [
     // 文件/文件夹菜单项
     {
       key: 'rename',
@@ -111,6 +112,13 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
       danger: true,
     },
   ];
+
+  // 如果禁用删除功能，过滤掉删除菜单项和 divider
+  const menuItems = disableDelete
+    ? allMenuItems.filter(
+        (item) => item.key !== 'delete' && item.key !== 'divider',
+      )
+    : allMenuItems;
 
   return (
     <div

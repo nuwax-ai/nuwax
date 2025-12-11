@@ -32,6 +32,8 @@ export interface FileContextMenuProps {
   isChatLoading?: boolean;
   /** 是否处于版本对比模式 */
   isComparing?: boolean;
+  /** 是否禁用删除功能（为 true 时隐藏删除菜单项和 divider） */
+  disableDelete?: boolean;
   /** 关闭菜单回调 */
   onClose: () => void;
   /** 删除文件回调 */
