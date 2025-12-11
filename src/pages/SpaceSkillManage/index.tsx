@@ -1,14 +1,15 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import LeftSlot from './LeftSlot';
 import MainContent from './MainContent';
-import RightSuffixSlot from './RightSuffixSlot';
+
+import HeaderLeftSlot from './HeaderLeftSlot';
+import HeaderRightSlot from './HeaderRightSlot';
 
 export default function SpaceSkillManage() {
   return (
     <WorkspaceLayout
       title="技能管理"
-      leftSlot={<LeftSlot />}
-      rightSuffixSlot={<RightSuffixSlot />}
+      leftSlot={<HeaderLeftSlot />}
+      rightSlot={<HeaderRightSlot />}
       hideScroll={true}
     >
       {/* 主要内容区域 */}
