@@ -7,6 +7,8 @@ export enum ComponentTypeEnum {
   Knowledge = 'Knowledge',
   Table = 'Table',
   Model = 'Model',
+  // 技能
+  Skill = 'Skill',
 }
 
 // 智能体类型枚举
@@ -33,6 +35,8 @@ export enum CreateListEnum {
 
 // 应用开发、组件库等更多操作枚举(自定义枚举)
 export enum ApplicationMoreActionEnum {
+  // 详情
+  Detail = 'Detail',
   // 分析
   Analyze = 'Analyze',
   // 复制
