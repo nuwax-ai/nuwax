@@ -70,8 +70,8 @@ const FileTree: React.FC<FileTreeProps> = ({
   /**
    * 确认重命名
    */
-  const confirmRename = useCallback(async () => {
-    if (!renamingNode || !onRenameFile) return;
+  const confirmRename = async () => {
+    if (!renamingNode) return;
 
     const trimmedValue = renameValue.trim();
     if (!trimmedValue || trimmedValue === renamingNode.name) {
@@ -97,7 +97,7 @@ const FileTree: React.FC<FileTreeProps> = ({
       // 如果重命名失败，可以考虑恢复原名字或显示错误提示
       // console.error('重命名失败:', error);
     }
-  }, [renamingNode, renameValue, onRenameFile, cancelRename]);
+  };
 
   /**
    * 处理重命名输入框键盘事件
