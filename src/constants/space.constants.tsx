@@ -130,6 +130,11 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
     text: '技能管理',
   },
   {
+    type: SpaceApplicationListEnum.Task_Center,
+    icon: <SvgIcon name="icons-chat-share" />,
+    text: '任务中心',
+  },
+  {
     type: SpaceApplicationListEnum.Component_Library,
     icon: <SvgIcon name="icons-nav-components" />,
     text: '组件库',

@@ -58,6 +58,7 @@ const SpaceSection: React.FC<{
 
   const handlerApplication = useCallback(
     (type: SpaceApplicationListEnum) => {
+      console.log('🚀 [handlerApplication] type:', type);
       let url = '';
       switch (type) {
         // 应用开发
@@ -87,6 +88,10 @@ const SpaceSection: React.FC<{
         // 技能管理
         case SpaceApplicationListEnum.Skill_Manage:
           url = 'skill-manage';
+          break;
+        // 任务中心
+        case SpaceApplicationListEnum.Task_Center:
+          url = 'task-center';
           break;
         default:
           url = 'develop';
