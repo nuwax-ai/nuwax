@@ -39,6 +39,25 @@ import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { BarsOutlined } from '@ant-design/icons';
 
 /**
+ * 技能库更多操作
+ * 技能：详情
+ * 技能：删除
+ */
+export const SKILL_MORE_ACTION: CustomPopoverItem[] = [
+  {
+    action: ApplicationMoreActionEnum.Detail,
+    label: '详情',
+    type: ComponentTypeEnum.Skill,
+  },
+  {
+    action: ApplicationMoreActionEnum.Del,
+    label: '删除',
+    isDel: true,
+    type: ComponentTypeEnum.Skill,
+  },
+];
+
+/**
  * 组件库更多操作
  * 插件： 创建副本、导出配置、删除
  * 模型：删除

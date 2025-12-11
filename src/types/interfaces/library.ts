@@ -127,6 +127,44 @@ export interface UpdateWorkflowParams {
   icon: string;
 }
 
+// 技能基础信息
+export interface SkillBaseInfo {
+  id: number;
+  spaceId: number;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+// 更新、创建技能弹窗
+export interface CreateSkillProps {
+  type?: CreateUpdateModeEnum;
+  spaceId?: number;
+  id?: number;
+  name?: string;
+  description?: string;
+  icon?: string;
+  open: boolean;
+  onCancel: () => void;
+  onConfirm?: (info: SkillBaseInfo) => void;
+}
+
+// 添加技能传入参数
+export interface AddSkillParams {
+  spaceId: number;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+// 更新技能传入参数
+export interface UpdateSkillParams {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+}
+
 // 组件信息
 export interface ComponentInfo {
   // 是否启用
