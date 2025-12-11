@@ -951,7 +951,23 @@ const WorkflowV2: React.FC = () => {
                   setTestRunParams(data.data.result.data);
                 }
               }
-              if (data?.complete && data?.data?.output) {
+              // 完成时设置运行结果（参考 V1 逻辑）
+              if (data?.complete) {
+                if (data?.data?.output) {
+                  setTestRunResult(data.data.output);
+                }
+                // 设置表单值（用于回显输入参数）
+                if (data?.nodeExecuteResultMap) {
+                  const startNode = workflowData.nodeList?.find(
+                    (n) => n.type === 'Start',
+                  );
+                  if (startNode && data.nodeExecuteResultMap[startNode.id]) {
+                    setFormItemValue(
+                      data.nodeExecuteResultMap[startNode.id.toString()]
+                        ?.data || {},
+                    );
+                  }
+                }
                 setTestRunResult(JSON.stringify(data.data, null, 2));
                 setTestRunLoading(false);
                 setStopWait(false);
