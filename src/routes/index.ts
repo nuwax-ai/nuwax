@@ -40,6 +40,10 @@ const routes = [
         path: '/space/:spaceId/skill-manage',
         component: '@/pages/SpaceSkillManage',
       },
+      {
+        path: '/space/:spaceId/skill-details/:skillId',
+        component: '@/pages/SkillDetails',
+      },
       { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
       { path: '/space/:spaceId/mcp', component: '@/pages/SpaceMcpManage' },
