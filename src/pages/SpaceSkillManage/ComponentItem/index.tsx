@@ -4,7 +4,7 @@ import CustomPopover from '@/components/CustomPopover';
 import { ICON_MORE, ICON_SUCCESS } from '@/constants/images.constants';
 import {
   COMPONENT_LIST,
-  COMPONENT_MORE_ACTION,
+  SKILL_MORE_ACTION,
 } from '@/constants/library.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
@@ -46,14 +46,17 @@ const ComponentItem: React.FC<ComponentItemProps> = ({
 
   useEffect(() => {
     // 根据组件类型，过滤更多操作
-    const list = COMPONENT_MORE_ACTION.filter((item) => {
+    const list = SKILL_MORE_ACTION.filter((item) => {
       const { type, action } = item;
       return (
         type === componentInfo.type &&
         hasPermission(action as ApplicationMoreActionEnum)
       );
     });
-    setActionList(list);
+    // TODO: 临时测试
+    console.log(list);
+
+    setActionList(SKILL_MORE_ACTION);
   }, [componentInfo]);
 
   return (
