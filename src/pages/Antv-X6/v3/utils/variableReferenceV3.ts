@@ -707,10 +707,14 @@ export function calculateNodePreviousArgs(
     const dfs = (id: number) => {
       if (visited.has(id)) return;
       visited.add(id);
+
+      const node = nodeMap.get(id);
+      if (!node) return;
+
       if (!orderMap.has(id)) {
         orderMap.set(id, order++);
       }
-      const nextIds = collectNextNodeIds(nodeMap.get(id)!);
+      const nextIds = collectNextNodeIds(node);
       nextIds.forEach((nextId) => dfs(nextId));
     };
     dfs(startNode.id);
