@@ -1,11 +1,11 @@
 /**
- * 工作流页面主入口
+ * V3 工作流页面主入口
  *
- * 支持 v1 和 v2 两种方案：
- * - v1: 原有方案（后端数据驱动）
- * - v2: 新方案（前端数据驱动、全量更新、支持撤销重做）
- *
- * 切换方式见 config.ts
+ * 基于 V1 代码重构，解决前后端数据不同步问题
+ * 核心改动：
+ * - 使用统一代理层管理节点/边操作
+ * - 组装全量数据后统一更新（后端接口 ready 后发送）
+ * - 使用前端变量引用计算（替代 getOutputArgs 接口）
  */
 
 import Created from '@/components/Created';
@@ -75,7 +75,6 @@ import { createSSEConnection } from '@/utils/fetchEventSource';
 import { calculateNodePosition, getCoordinates } from '@/utils/graph';
 import { updateNodeEdges } from '@/utils/updateEdge';
 import {
-  apiUpdateNode,
   changeNodeConfig,
   updateCurrentNode,
   updateSkillComponentConfigs,
@@ -100,16 +99,18 @@ import { Form, message, Spin } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import NodePanelDrawer from './components/NodePanelDrawer';
-import VersionAction from './components/VersionAction';
-import ControlPanel from './controlPanel';
-import ErrorList from './errorList';
-import GraphContainer from './graphContainer';
-import Header from './header';
-import './index.less';
+import NodePanelDrawer from '../components/NodePanelDrawer';
+import VersionAction from '../components/VersionAction';
+import ControlPanel from './ControlPanelV3';
+import ErrorList from './ErrorListV3';
+import GraphContainer from './GraphContainerV3';
+import Header from './HeaderV3';
+import './indexV3.less';
 
-// V2 方案切换配置
-import { WORKFLOW_CONFIG } from './config';
+// V3 数据代理层
+import { workflowProxy } from './services/workflowProxyV3';
+import type { WorkflowDataV2 } from './types';
+import { calculateNodePreviousArgs } from './utils/variableReferenceV3';
 const workflowCreatedTabs = CREATED_TABS.filter((item) =>
   [
     AgentComponentTypeEnum.Plugin,
@@ -261,6 +262,15 @@ const Workflow: React.FC = () => {
       const _edgeList = getEdges(_nodeList);
       // 修改数据，更新画布
       setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
+
+      // V3: 初始化代理层数据
+      workflowProxy.initialize({
+        workflowId: workflowId,
+        nodes: _nodeList,
+        edges: _edgeList,
+        modified: _res.data.modified || new Date().toISOString(),
+      });
+      console.log('[V3] 代理层数据初始化完成');
     } catch (error) {
       console.error('Failed to fetch graph data:', error);
     }
@@ -296,29 +306,75 @@ const Workflow: React.FC = () => {
       };
     });
   };
-  // 获取当前节点的参数
+  // 获取当前节点的参数 - V3 使用前端计算替代后端接口
   const getReference = async (id: number): Promise<boolean> => {
     if (id === FoldFormIdEnum.empty || preventGetReference.current === id)
       return false;
-    // 获取节点需要的引用参数
-    const _res = await service.getOutputArgs(id);
-    const isSuccess = _res.code === Constant.success;
-    if (isSuccess) {
-      if (
-        _res.data &&
-        _res.data.previousNodes &&
-        _res.data.previousNodes.length
-      ) {
-        setReferenceList(_res.data);
+
+    // V3: 使用前端计算代替后端接口调用
+    try {
+      const fullData = workflowProxy.getFullWorkflowData();
+      console.log('[V3] getReference 调用, nodeId:', id);
+      console.log(
+        '[V3] 代理层数据:',
+        fullData ? `有 ${fullData.nodes.length} 个节点` : '无数据',
+      );
+      console.log(
+        '[V3] graphParams 数据:',
+        graphParams.nodeList.length,
+        '个节点',
+      );
+
+      // 优先使用 graphParams（因为代理层可能还没初始化）
+      const nodeList = fullData?.nodes || graphParams.nodeList;
+      const edgeList = fullData?.edges || graphParams.edgeList;
+
+      if (!nodeList || nodeList.length === 0) {
+        console.warn('[V3] 无节点数据，无法计算变量引用');
+        setReferenceList({
+          previousNodes: [],
+          innerPreviousNodes: [],
+          argMap: {},
+        });
+        return false;
+      }
+
+      const workflowData: WorkflowDataV2 = {
+        nodeList: nodeList as any,
+        edgeList: edgeList as any,
+        lastSavedVersion: '',
+        isDirty: false,
+      };
+
+      console.log(
+        '[V3] 调用 calculateNodePreviousArgs, nodeId:',
+        id,
+        'nodeList:',
+        nodeList.length,
+      );
+      const result = calculateNodePreviousArgs(id, workflowData);
+      console.log('[V3] 计算结果:', result);
+
+      if (result && result.previousNodes && result.previousNodes.length) {
+        setReferenceList({
+          previousNodes: result.previousNodes as any,
+          innerPreviousNodes: result.innerPreviousNodes as any,
+          argMap: result.argMap as any,
+        });
+        console.log('[V3] 找到', result.previousNodes.length, '个上级节点');
       } else {
         setReferenceList({
           previousNodes: [],
           innerPreviousNodes: [],
           argMap: {},
         });
+        console.log('[V3] 未找到上级节点');
       }
+      return true;
+    } catch (error) {
+      console.error('[V3] 前端计算变量引用失败:', error);
+      return false;
     }
-    return isSuccess;
   };
   // 查询节点的指定信息
   const getNodeConfig = async (id: number): Promise<ChildNode | false> => {
@@ -359,7 +415,7 @@ const Workflow: React.FC = () => {
     return newNodeIds;
   };
 
-  // 自动保存节点配置
+  // 自动保存节点配置 - V3 使用代理层替代后端接口
   const autoSaveNodeConfig = async (
     updateFormConfig: ChildNode,
   ): Promise<boolean> => {
@@ -367,23 +423,27 @@ const Workflow: React.FC = () => {
 
     const params = cloneDeep(updateFormConfig);
     graphRef.current?.graphUpdateNode(String(params.id), params);
-    let result = false;
-    const _res = await apiUpdateNode(params);
-    if (_res.code === Constant.success) {
+
+    // V3: 使用代理层更新数据，不调用后端接口
+    const proxyResult = workflowProxy.updateNode(params);
+
+    if (proxyResult.success) {
       // 如果是修改节点的参数，那么就要更新当前节点的参数
       if (updateFormConfig.id === getWorkflow('drawerForm').id) {
-        // TODO 是否应该更新drawerForm
         setFoldWrapItem(params);
       }
-      // 跟新当前节点的上级参数
+      // 更新当前节点的上级参数（使用前端计算）
       await getReference(getWorkflow('drawerForm').id);
       changeUpdateTime();
-      result = true;
+      console.log('[V3] 节点配置自动保存成功 (本地):', params.id);
+      return true;
     }
-    return result;
+
+    console.error('[V3] 节点配置自动保存失败:', proxyResult.message);
+    return false;
   };
 
-  // 更新节点
+  // 更新节点 - V3 使用代理层替代后端接口调用
   const changeNode = async (
     { nodeData, update, targetNodeId }: ChangeNodeProps,
     callback: () => Promise<boolean> | void = () =>
@@ -407,11 +467,17 @@ const Workflow: React.FC = () => {
       }
     }
     if (params.id === FoldFormIdEnum.empty) return false;
+
+    // 更新画布节点
     graphRef.current?.graphUpdateNode(String(params.id), params);
-    const _res = await apiUpdateNode(params);
-    const isSuccess = _res && _res.code === Constant.success;
-    if (isSuccess) {
+
+    // V3: 使用代理层更新数据，不调用后端接口
+    const proxyResult = workflowProxy.updateNode(params);
+
+    if (proxyResult.success) {
       changeUpdateTime();
+      console.log('[V3] 节点更新成功 (本地):', params.id, params.name);
+
       if (isOnlyUpdate) {
         // 仅更新节点大小和位置 不需要更新form表单
         return true;
@@ -430,6 +496,8 @@ const Workflow: React.FC = () => {
       callback();
       return true;
     }
+
+    console.error('[V3] 节点更新失败:', proxyResult.message);
     return false;
   };
   // 优化后的onFinish方法
@@ -1978,64 +2046,5 @@ const Workflow: React.FC = () => {
   );
 };
 
-// V2 方案组件（懒加载，避免不使用时加载）
-const WorkflowV2 = React.lazy(() => import('./v2/indexV2'));
-
-// V3 方案组件（懒加载，避免不使用时加载）
-const WorkflowV3 = React.lazy(() => import('./v3/indexV3'));
-
-/**
- * 工作流页面入口组件
- * 根据配置决定使用 v1、v2 还是 v3 方案
- * 优先级：V3 > V2 > V1
- */
-const WorkflowEntry: React.FC = () => {
-  // V3 优先级最高
-  if (WORKFLOW_CONFIG.useV3) {
-    return (
-      <React.Suspense
-        fallback={
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100vh',
-            }}
-          >
-            <Spin size="large" tip="加载 V3 版本..." />
-          </div>
-        }
-      >
-        <WorkflowV3 />
-      </React.Suspense>
-    );
-  }
-
-  // 根据配置决定使用哪个版本
-  if (WORKFLOW_CONFIG.useV2) {
-    return (
-      <React.Suspense
-        fallback={
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100vh',
-            }}
-          >
-            <Spin size="large" tip="加载中..." />
-          </div>
-        }
-      >
-        <WorkflowV2 />
-      </React.Suspense>
-    );
-  }
-
-  // 默认使用 v1 方案
-  return <Workflow />;
-};
-
-export default WorkflowEntry;
+// V3 直接导出 Workflow 组件
+export default Workflow;
