@@ -146,7 +146,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({ files }) => {
   const isPreviewable = isPreviewableFile(selectedFileId);
 
   return (
-    <div className={cx('flex', 'flex-1')}>
+    <div className={cx('flex', 'flex-1', 'overflow-hide')}>
       {/* 右键菜单 */}
       <FileContextMenu
         visible={contextMenuVisible}
@@ -167,7 +167,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({ files }) => {
         onUploadProject={handleUpload}
       />
       {/* 左边文件树 */}
-      <div className={cx(styles['file-tree-view'])}>
+      <div className={cx(styles['file-tree-view'], 'h-full')}>
         <FileTree
           files={files}
           // 当前选中的文件ID
