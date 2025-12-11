@@ -18,19 +18,33 @@
   z-index: 50;
   overflow: hidden;
 
-  // 头部
+  // 头部 - 对齐 V1 FoldWrap (两行布局)
   &-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
+    flex-direction: column;
+    padding: 0 12px; // V1: stand-header padding
     border-bottom: 1px solid #e8e8e8;
-    min-height: 56px;
+    min-height: 66px; // V1: stand-header height
+
+    // 第一行：标题 + 按钮
+    &-row1 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 32px;
+      margin-top: 6px;
+    }
+
+    // 第二行：描述
+    &-row2 {
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
 
     &-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 6px; // V1: icon-margin margin-left: 6px
       flex: 1;
       min-width: 0;
     }
@@ -39,7 +53,6 @@
       display: flex;
       align-items: center;
       gap: 4px;
-      margin-left: 8px;
 
       .ant-btn-text {
         color: rgba(0, 0, 0, 45%);
@@ -65,15 +78,14 @@
     min-width: 0;
   }
 
-  // 名称
+  // 名称 - 对齐 V1: title-style
   &-name {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 14px;
+    font-size: 16px; // V1: stand-header span font-size
     font-weight: 600;
     color: rgba(0, 0, 0, 85%);
-    cursor: pointer;
 
     span {
       overflow: hidden;
@@ -104,14 +116,21 @@
     max-width: 200px;
   }
 
-  // 描述
+  // 描述 - 对齐 V1 desc 样式
   &-desc {
     font-size: 12px;
-    color: rgba(0, 0, 0, 45%);
+    line-height: 22px; // V1: desc line-height
+    color: rgba(0, 0, 0, 65%); // V1: GRAY07
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    margin-top: 2px;
+    cursor: pointer;
+  }
+
+  // 分割线 - 对齐 V1 divider-horizontal
+  &-divider {
+    border-bottom: 1px solid rgba(0, 0, 0, 6%); // V1: GRAY06
+    margin: 0 12px;
   }
 
   // 内容区

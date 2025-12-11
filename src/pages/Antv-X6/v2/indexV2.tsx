@@ -137,6 +137,9 @@ const WorkflowV2: React.FC = () => {
   // 节点添加弹窗
   const [stencilVisible, setStencilVisible] = useState(false);
 
+  // 连续添加节点计数（用于计算位置偏移，与 V1 对齐）
+  const [continueDragCount, setContinueDragCount] = useState(0);
+
   // 端口点击添加节点弹窗状态
   const [portClickPopup, setPortClickPopup] = useState<{
     visible: boolean;
@@ -325,6 +328,17 @@ const WorkflowV2: React.FC = () => {
         };
         return {
           ...node,
+          nodeConfig: {
+            ...node.nodeConfig,
+            extension: {
+              ...node.nodeConfig?.extension,
+              x: baseX,
+              y: baseY,
+              // V1 对齐：Loop 节点需要设置默认宽高
+              width: node.nodeConfig?.extension?.width || 660,
+              height: node.nodeConfig?.extension?.height || 240,
+            },
+          },
           innerNodes: [innerStart, innerEnd],
           innerStartNodeId: startId,
           innerEndNodeId: endId,
@@ -1283,6 +1297,8 @@ const WorkflowV2: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleOpenStencil = useCallback(() => {
     setStencilVisible(true);
+    // 重置连续添加计数（与 V1 handleOpenChange 一致）
+    setContinueDragCount(0);
   }, []);
 
   /**
@@ -1378,10 +1394,13 @@ const WorkflowV2: React.FC = () => {
    */
   const handleStencilNodeAdd = useCallback(
     (template: StencilChildNodeV2) => {
-      // 计算新节点位置（画布中心）
+      // 计算新节点位置（画布中心 + 连续添加偏移量）
+      // 与 V1 getCoordinates 保持一致：每次连续添加偏移 16px
       const viewport = graphRef.current?.getCurrentViewPort();
-      const x = viewport ? viewport.x + viewport.width / 2 - 100 : 400;
-      const y = viewport ? viewport.y + viewport.height / 2 - 40 : 300;
+      const baseX = viewport ? viewport.x + viewport.width / 2 - 100 : 400;
+      const baseY = viewport ? viewport.y + viewport.height / 2 - 40 : 300;
+      const x = baseX + continueDragCount * 16;
+      const y = baseY + continueDragCount * 16;
 
       const newNode: ChildNodeV2 = {
         id: Date.now(),
@@ -1397,9 +1416,10 @@ const WorkflowV2: React.FC = () => {
       };
 
       handleNodeAdd(newNode);
-      setStencilVisible(false);
+      // 递增连续添加计数（不关闭 stencil，允许连续添加）
+      setContinueDragCount((prev) => prev + 1);
     },
-    [workflowId, handleNodeAdd],
+    [workflowId, handleNodeAdd, continueDragCount],
   );
 
   // ==================== 渲染 ====================
@@ -1510,6 +1530,20 @@ const WorkflowV2: React.FC = () => {
                 payload: { name },
               });
             }}
+            onNodeDescChange={(nodeId, description) => {
+              const origin =
+                (selectedNode && selectedNode.id === nodeId && selectedNode) ||
+                workflowData.nodeList.find((n) => n.id === nodeId);
+              if (!origin) return;
+              const newData = { ...origin, description };
+              setSelectedNode(newData);
+              updateNode(nodeId, newData);
+              graphRef.current?.graphUpdateNode(nodeId.toString(), newData);
+              graphRef.current?.getGraphRef?.()?.trigger('node:custom:save', {
+                data: newData,
+                payload: { description },
+              });
+            }}
             onNodeDelete={handleNodeDelete}
             onNodeCopy={handleNodeCopy}
           />
@@ -1517,7 +1551,7 @@ const WorkflowV2: React.FC = () => {
       </Spin>
 
       {/* 底部状态栏 */}
-      <div className="workflow-v2-footer">
+      {/* <div className="workflow-v2-footer">
         <span>节点数: {workflowData.nodeList.length}</span>
         <span>边数: {workflowData.edgeList.length}</span>
         <span>缩放: {Math.round(zoom * 100)}%</span>
@@ -1525,7 +1559,7 @@ const WorkflowV2: React.FC = () => {
         {isDirty && !isSaving && (
           <span className="unsaved">有未保存的更改</span>
         )}
-      </div>
+      </div> */}
 
       {/* 试运行面板（V2 独立组件）*/}
       <TestRunV2

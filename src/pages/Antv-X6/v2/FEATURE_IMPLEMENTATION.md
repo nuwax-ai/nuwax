@@ -266,8 +266,8 @@ NodeDrawerV2
 | -------------- | ---- | ---------------------------------------- | --------- |
 | 获取工作流详情 | GET  | `/api/workflow/{id}`                     | ✅        |
 | 全量保存       | POST | `/api/workflow/v2/save`                  | 🚧 待后端 |
-| 验证工作流     | GET  | `/api/workflow/valid/{id}`               | ❌        |
-| 发布工作流     | POST | `/api/workflow/publish`                  | ❌        |
+| 验证工作流     | GET  | `/api/workflow/valid/{id}`               | ✅        |
+| 发布工作流     | POST | `/api/workflow/publish`                  | ✅        |
 | 获取版本历史   | GET  | `/api/workflow/config/history/list/{id}` | ✅        |
 | 还原版本       | POST | `/api/workflow/restore/{historyId}`      | ✅        |
 

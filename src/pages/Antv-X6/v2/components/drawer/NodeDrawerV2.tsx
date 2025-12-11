@@ -10,15 +10,15 @@
  */
 
 import {
+  CaretRightFilled,
   CloseOutlined,
   CopyOutlined,
   DeleteOutlined,
   EditOutlined,
   MoreOutlined,
-  PlayCircleOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Button, Dropdown, Form, Input, Tooltip } from 'antd';
+import { Button, Dropdown, Form, Input, Popover } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { ICONS } from '../../constants/stencilConfigV2';
@@ -47,6 +47,8 @@ export interface NodeDrawerV2Props {
   onNodeConfigChange?: (changedValues: any, allValues: NodeConfigV2) => void;
   /** 节点名称变更回调 */
   onNodeNameChange?: (nodeId: number, name: string) => void;
+  /** 节点描述变更回调 */
+  onNodeDescChange?: (nodeId: number, description: string) => void;
   /** 删除节点回调 */
   onNodeDelete?: (nodeId: number, node?: ChildNodeV2) => void;
   /** 复制节点回调 */
@@ -163,6 +165,7 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
   onClose,
   onNodeConfigChange,
   onNodeNameChange,
+  onNodeDescChange,
   onNodeDelete,
   onNodeCopy,
   onTestRun,
@@ -175,14 +178,21 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
   // 临时名称
   const [tempName, setTempName] = useState('');
 
+  // 是否编辑描述
+  const [isEditingDesc, setIsEditingDesc] = useState(false);
+  // 临时描述
+  const [tempDesc, setTempDesc] = useState('');
+
   // 当节点变化时，重置编辑状态并设置表单值
   useEffect(() => {
     setIsEditingName(false);
     setTempName(node?.name || '');
+    setIsEditingDesc(false);
+    setTempDesc(node?.description || '');
     if (node?.nodeConfig) {
       form.setFieldsValue(node.nodeConfig);
     }
-  }, [node?.id, node?.nodeConfig, form]);
+  }, [node?.id, node?.nodeConfig, form, node?.name, node?.description]);
 
   /**
    * 开始编辑名称
@@ -226,6 +236,40 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
   );
 
   /**
+   * 开始编辑描述
+   */
+  const handleStartEditDesc = useCallback(() => {
+    setTempDesc(node?.description || '');
+    setIsEditingDesc(true);
+  }, [node?.description]);
+
+  /**
+   * 保存描述
+   */
+  const handleSaveDesc = useCallback(() => {
+    const newDesc = tempDesc.trim();
+    if (node && newDesc !== node.description) {
+      // 保存描述到节点的 description 属性
+      onNodeDescChange?.(node.id, newDesc);
+    }
+    setIsEditingDesc(false);
+  }, [tempDesc, node, onNodeDescChange]);
+
+  /**
+   * 描述键盘事件
+   */
+  const handleDescKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        handleSaveDesc();
+      } else if (e.key === 'Escape') {
+        setIsEditingDesc(false);
+      }
+    },
+    [handleSaveDesc],
+  );
+
+  /**
    * 表单值变化处理
    */
   const handleFormValuesChange = useCallback(
@@ -248,7 +292,7 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
         canTestRunNode(node.type) &&
           onTestRun && {
             key: 'testRun',
-            icon: <PlayCircleOutlined />,
+            icon: <CaretRightFilled />,
             label: '试运行',
             onClick: onTestRun,
           },
@@ -295,14 +339,18 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
       className="node-drawer-v2 fold-wrap-style"
       style={{ background: gradientBackground, paddingTop: '3px' }}
     >
-      {/* 头部 */}
+      {/* 头部 - 对齐 V1 FoldWrap 布局 */}
       <div className="node-drawer-v2-header">
-        <div className="node-drawer-v2-header-left">
-          {/* 使用 V1 的 returnImg 渲染 SVG 图标 */}
-          <div className="node-drawer-v2-icon">
-            {returnImg(node.type as any)}
-          </div>
-          <div className="node-drawer-v2-info">
+        {/* 第一行：图标 + 标题 + 操作按钮 + 关闭按钮 */}
+        <div
+          className="node-drawer-v2-header-row1"
+          style={{ color: backgroundColor }}
+        >
+          <div className="node-drawer-v2-header-left">
+            {/* 使用 V1 的 returnImg 渲染 SVG 图标 */}
+            <div className="node-drawer-v2-icon">
+              {returnImg(node.type as any)}
+            </div>
             {isEditingName ? (
               <Input
                 value={tempName}
@@ -310,13 +358,13 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
                 onBlur={handleSaveName}
                 onKeyDown={handleKeyDown}
                 autoFocus
-                size="small"
+                maxLength={25}
                 className="node-drawer-v2-name-input"
               />
             ) : (
               <div
                 className="node-drawer-v2-name"
-                onClick={
+                onDoubleClick={
                   canRenameNode(node.type) ? handleStartEditName : undefined
                 }
                 style={{
@@ -324,39 +372,72 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
                 }}
               >
                 <span>{node.name}</span>
-                {canRenameNode(node.type) && (
-                  <EditOutlined className="node-drawer-v2-edit-icon" />
-                )}
               </div>
             )}
-            {node.description && (
-              <Tooltip title={node.description}>
-                <div className="node-drawer-v2-desc">{node.description}</div>
-              </Tooltip>
+          </div>
+
+          <div className="node-drawer-v2-header-right">
+            {/* 试运行按钮 - 仅对支持试运行的节点显示 */}
+            {canTestRunNode(node.type) && onTestRun && (
+              <Popover placement="top" content={'测试该节点'}>
+                <Button
+                  type="text"
+                  icon={<CaretRightFilled />}
+                  size="small"
+                  style={{ marginRight: '6px', fontSize: '12px' }}
+                  onClick={onTestRun}
+                />
+              </Popover>
             )}
+            {/* 更多操作按钮 - 开始/结束节点不显示 */}
+            {canRenameNode(node.type) && (
+              <Dropdown menu={{ items: menuItems }} trigger={['click']}>
+                <Button type="text" size="small" icon={<MoreOutlined />} />
+              </Dropdown>
+            )}
+            <Button
+              type="text"
+              size="small"
+              icon={<CloseOutlined />}
+              onClick={onClose}
+            />
           </div>
         </div>
 
-        <div className="node-drawer-v2-header-right">
-          {/* 试运行按钮 - 仅对支持试运行的节点显示 */}
-          {canTestRunNode(node.type) && onTestRun && (
-            <Tooltip title="试运行">
-              <Button
-                type="text"
-                icon={<PlayCircleOutlined />}
-                onClick={onTestRun}
+        {/* 第二行：节点描述 */}
+        {(node.description || isEditingDesc) && (
+          <div className="node-drawer-v2-header-row2">
+            {isEditingDesc ? (
+              <Input.TextArea
+                value={tempDesc}
+                onChange={(e) => setTempDesc(e.target.value)}
+                onBlur={handleSaveDesc}
+                onKeyDown={handleDescKeyDown}
+                autoFocus
+                rows={2}
+                style={{ resize: 'none' }}
+                className="node-drawer-v2-desc-input"
               />
-            </Tooltip>
-          )}
-          {/* 更多操作按钮 - 开始/结束节点不显示 */}
-          {canRenameNode(node.type) && (
-            <Dropdown menu={{ items: menuItems }} trigger={['click']}>
-              <Button type="text" icon={<MoreOutlined />} />
-            </Dropdown>
-          )}
-          <Button type="text" icon={<CloseOutlined />} onClick={onClose} />
-        </div>
+            ) : (
+              <Popover
+                title={node.description}
+                styles={{ body: { width: '300px' } }}
+                trigger="click"
+              >
+                <div
+                  className="node-drawer-v2-desc"
+                  onDoubleClick={handleStartEditDesc}
+                >
+                  {node.description}
+                </div>
+              </Popover>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* 分割线 - 对齐 V1 divider-horizontal */}
+      <div className="node-drawer-v2-divider" />
 
       {/* 表单内容 */}
       <div className="node-drawer-v2-body dispose-node-style">
