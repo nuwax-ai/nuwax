@@ -1,10 +1,9 @@
 import agentImage from '@/assets/images/agent_image.png';
 import ConditionRender from '@/components/ConditionRender';
-import { PermissionsEnum } from '@/types/enums/common';
 import { FormOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { history, useParams } from 'umi';
 import styles from './index.less';
 
@@ -27,14 +26,14 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
 }) => {
   const { spaceId } = useParams();
 
-  // 发布按钮是否禁用
-  const disabledBtn = useMemo(() => {
-    if (skillInfo) {
-      return !skillInfo?.permissions?.includes(PermissionsEnum.Publish);
-    } else {
-      return false;
-    }
-  }, [skillInfo]);
+  // // 发布按钮是否禁用
+  // const disabledBtn = useMemo(() => {
+  //   if (skillInfo) {
+  //     return !skillInfo?.permissions?.includes(PermissionsEnum.Publish);
+  //   } else {
+  //     return false;
+  //   }
+  // }, [skillInfo]);
 
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
@@ -78,7 +77,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
           type="primary"
           className={cx(styles['publish-btn'])}
           onClick={onPublish}
-          disabled={disabledBtn}
+          // disabled={disabledBtn}
         >
           发布
         </Button>
