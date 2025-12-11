@@ -60,10 +60,15 @@ export async function createSSEConnection<T = any>(
 
   const abortFunction = () => {
     if (!isAborted) {
-      console.log('🔌 [SSE Utils] 手动中止 SSE 连接');
-      markAborted();
-      // options.onClose?.();
-      // controller.abort();
+      // 防止页面流式数据输出不全问题，延迟1秒关闭连接
+      setTimeout(() => {
+        console.log('🔌 [SSE Utils] 手动中止 SSE 连接');
+        // 清除共享定时器
+        markAborted();
+        // options.onClose?.();
+        // 中止连接
+        controller.abort();
+      }, 1000);
     }
   };
 
