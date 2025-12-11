@@ -23,7 +23,7 @@
   flex: 1;
   overflow: hidden;
   position: relative;
-  height: calc(100vh - 56px); // 减去 header 高度
+  height: 100%; // 铺满父容器
 }
 
 // 图形区域
@@ -85,7 +85,7 @@
 
 // 加载状态
 .ant-spin-nested-loading {
-  height: calc(100% - 56px - 32px);
+  height: 100%;
 
   > div > .ant-spin {
     max-height: unset;

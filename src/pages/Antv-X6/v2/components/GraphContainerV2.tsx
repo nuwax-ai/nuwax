@@ -184,12 +184,16 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
       (position: GraphRectV2, node: ChildNodeV2) => {
         if (!graphRef.current) return;
 
-        // 直接使用传入的画布坐标
+        // 保留原来的 extension 属性（包括 width/height），只更新 x/y
         const nodeData = createBaseNodeData({
           ...node,
           nodeConfig: {
             ...node.nodeConfig,
-            extension: { x: position.x, y: position.y },
+            extension: {
+              ...node.nodeConfig?.extension, // 保留 width/height
+              x: position.x,
+              y: position.y,
+            },
           },
         });
 
