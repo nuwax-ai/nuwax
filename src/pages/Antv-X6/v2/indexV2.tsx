@@ -334,8 +334,8 @@ const WorkflowV2: React.FC = () => {
               ...node.nodeConfig?.extension,
               x: baseX,
               y: baseY,
-              // V1 对齐：Loop 节点需要设置默认宽高
-              width: node.nodeConfig?.extension?.width || 660,
+              // V1 对齐：Loop 节点需要设置默认宽高（含内部开始/结束节点）
+              width: node.nodeConfig?.extension?.width || 860,
               height: node.nodeConfig?.extension?.height || 240,
             },
           },

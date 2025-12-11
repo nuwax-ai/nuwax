@@ -145,7 +145,7 @@ export const DEFAULT_NODE_SIZE_MAP_V2: Record<
   { defaultWidth: number; defaultHeight: number }
 > = {
   [NodeTypeEnumV2.Loop]: {
-    defaultWidth: 660, // 循环节点宽度
+    defaultWidth: 860, // 循环节点宽度（660 + 内部开始/结束节点宽度 200）
     defaultHeight: 240, // 循环节点高度
   },
   [NodeTypeEnumV2.Condition]: {
