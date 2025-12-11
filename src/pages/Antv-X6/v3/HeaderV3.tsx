@@ -9,8 +9,10 @@ import {
   FormOutlined,
   InfoCircleOutlined,
   LeftOutlined,
+  RedoOutlined,
+  UndoOutlined,
 } from '@ant-design/icons';
-import { Button, Popover, Tag } from 'antd';
+import { Button, Popover, Tag, Tooltip } from 'antd';
 import React, { useMemo } from 'react';
 import { useParams } from 'umi';
 interface HeaderProp {
@@ -30,6 +32,10 @@ interface HeaderProp {
   onToggleVersionHistory: () => void;
   showPublish: () => void;
   setShowCreateWorkflow: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 const Header: React.FC<HeaderProp> = ({
@@ -38,6 +44,10 @@ const Header: React.FC<HeaderProp> = ({
   onToggleVersionHistory,
   setShowCreateWorkflow,
   showPublish,
+  canUndo = false,
+  canRedo = false,
+  onUndo,
+  onRedo,
 }) => {
   const { spaceId } = useParams();
   const { name, icon, publishStatus, modified, description, publishDate } =
@@ -109,6 +119,34 @@ const Header: React.FC<HeaderProp> = ({
           </Tag>
         )}
       </div>
+
+      {/* 撤销/重做按钮 */}
+      <div
+        className="flex items-center gap-8 mr-12"
+        style={{ display: 'flex', gap: '16px' }}
+      >
+        <Tooltip title="撤销 (Cmd+Z)">
+          <UndoOutlined
+            style={{
+              fontSize: '18px',
+              color: canUndo ? 'rgba(0, 0, 0, 0.85)' : 'rgba(0, 0, 0, 0.25)',
+              cursor: canUndo ? 'pointer' : 'not-allowed',
+            }}
+            onClick={canUndo ? onUndo : undefined}
+          />
+        </Tooltip>
+        <Tooltip title="重做 (Cmd+Shift+Z)">
+          <RedoOutlined
+            style={{
+              fontSize: '18px',
+              color: canRedo ? 'rgba(0, 0, 0, 0.85)' : 'rgba(0, 0, 0, 0.25)',
+              cursor: canRedo ? 'pointer' : 'not-allowed',
+            }}
+            onClick={canRedo ? onRedo : undefined}
+          />
+        </Tooltip>
+      </div>
+
       <ClockCircleOutlined
         className={'ico cursor-pointer'}
         onClick={onToggleVersionHistory}

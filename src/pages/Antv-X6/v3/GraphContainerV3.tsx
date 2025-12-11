@@ -533,11 +533,11 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     }, [graphParams.nodeList]);
 
     useEffect(() => {
-      if (graphParams.nodeList.length > 0 && !hasInitialized.current) {
+      if (graphParams.nodeList.length > 0) {
         drawGraph();
         hasInitialized.current = true;
       }
-    }, [graphParams.nodeList]);
+    }, [graphParams]);
 
     return <div ref={containerRef} id={GRAPH_CONTAINER_ID} />;
   },

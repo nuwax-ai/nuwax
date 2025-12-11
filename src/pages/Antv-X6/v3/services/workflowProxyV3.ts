@@ -36,6 +36,16 @@ export interface ProxyResult {
   data?: WorkflowDataV3;
 }
 
+export interface ProxyResult {
+  success: boolean;
+  message?: string;
+  data?: WorkflowDataV3;
+}
+
+export type ProxyEventType = 'mutation' | 'history' | 'reset';
+
+// Removed manual history interfaces and properties
+
 // ==================== 代理服务类 ====================
 
 class WorkflowProxyV3 {
@@ -43,6 +53,10 @@ class WorkflowProxyV3 {
   private pendingUpdates: PendingUpdate[] = [];
   private isBackendReady = false;
   private isDirty = false;
+
+  // History
+  private maxHistorySize = 50;
+  private listeners: ((type: ProxyEventType) => void)[] = [];
 
   // ==================== 初始化 ====================
 
@@ -54,6 +68,9 @@ class WorkflowProxyV3 {
     this.workflowData = cloneDeep(data);
     this.pendingUpdates = [];
     this.isDirty = false;
+
+    this.notify('mutation');
+
     console.log(
       '[V3 Proxy] 节点数量:',
       data.nodes.length,
@@ -82,6 +99,7 @@ class WorkflowProxyV3 {
     this.workflowData = null;
     this.pendingUpdates = [];
     this.isDirty = false;
+    this.notify('reset');
   }
 
   // ==================== 数据获取 ====================
@@ -151,6 +169,7 @@ class WorkflowProxyV3 {
       timestamp: Date.now(),
     });
     this.markDirty();
+    this.notify('mutation');
 
     return { success: true, data: this.getFullWorkflowData()! };
   }
@@ -178,6 +197,7 @@ class WorkflowProxyV3 {
       timestamp: Date.now(),
     });
     this.markDirty();
+    this.notify('mutation');
 
     return { success: true, data: this.getFullWorkflowData()! };
   }
@@ -217,6 +237,7 @@ class WorkflowProxyV3 {
       timestamp: Date.now(),
     });
     this.markDirty();
+    this.notify('mutation');
 
     return { success: true, data: this.getFullWorkflowData()! };
   }
@@ -266,6 +287,7 @@ class WorkflowProxyV3 {
       timestamp: Date.now(),
     });
     this.markDirty();
+    this.notify('mutation');
 
     return { success: true, data: this.getFullWorkflowData()! };
   }
@@ -313,6 +335,7 @@ class WorkflowProxyV3 {
       timestamp: Date.now(),
     });
     this.markDirty();
+    this.notify('mutation');
 
     return { success: true, data: this.getFullWorkflowData()! };
   }
@@ -355,6 +378,7 @@ class WorkflowProxyV3 {
       timestamp: Date.now(),
     });
     this.markDirty();
+    this.notify('mutation');
 
     return { success: true, data: this.getFullWorkflowData()! };
   }
@@ -376,6 +400,7 @@ class WorkflowProxyV3 {
 
     node.nextNodeIds = [...nextNodeIds];
     this.markDirty();
+    this.notify('mutation');
 
     return { success: true, data: this.getFullWorkflowData()! };
   }
@@ -436,6 +461,28 @@ class WorkflowProxyV3 {
    */
   isReady(): boolean {
     return this.isBackendReady;
+  }
+
+  /**
+   * 从 X6 Graph 同步数据
+   */
+  syncFromGraph(nodes: ChildNode[], edges: Edge[]) {
+    if (this.workflowData) {
+      this.workflowData.nodes = cloneDeep(nodes);
+      this.workflowData.edges = cloneDeep(edges);
+      this.notify('mutation');
+    }
+  }
+
+  subscribe(listener: (type: ProxyEventType) => void): () => void {
+    this.listeners.push(listener);
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== listener);
+    };
+  }
+
+  private notify(type: ProxyEventType) {
+    this.listeners.forEach((l) => l(type));
   }
 }
 

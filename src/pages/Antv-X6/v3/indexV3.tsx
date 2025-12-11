@@ -173,6 +173,10 @@ const Workflow: React.FC = () => {
     edgeList: Edge[];
   }>({ nodeList: [], edgeList: [] });
   // 针对问答节点，试运行的问答参数
+  const [historyState, setHistoryState] = useState({
+    canUndo: false,
+    canRedo: false,
+  });
   const [testRunParams, setTestRunParams] = useState<TestRunParams>({
     question: '',
     options: [],
@@ -1038,6 +1042,10 @@ const Workflow: React.FC = () => {
     let _params = JSON.parse(JSON.stringify(child));
     _params.workflowId = workflowId;
     _params.extension = dragEvent;
+
+    // V3: Generate ID locally
+    _params.id = Date.now();
+
     const { width, height } = getNodeSize({
       data: _params,
       ports: [],
@@ -1069,10 +1077,10 @@ const Workflow: React.FC = () => {
       }
       _params.loopNodeId =
         Number(foldWrapItem.loopNodeId) || Number(foldWrapItem.id);
-      // 点击增加的节点，需要通过接口获取父节点的数据
-      const _parent = await service.getNodeConfig(_params.loopNodeId);
-      if (_parent.code === Constant.success) {
-        const loopNode: ChildNode = _parent.data;
+
+      // V3: Use Proxy to get parent node info instead of API
+      const loopNode = workflowProxy.getNodeById(_params.loopNodeId);
+      if (loopNode) {
         const extension = loopNode.nodeConfig.extension;
         _params.extension = {
           ..._params.extension,
@@ -1089,19 +1097,25 @@ const Workflow: React.FC = () => {
       }
     }
 
-    const { nodeConfig, ...rest } = _params;
-    const _res = await service.apiAddNode({
-      nodeConfigDto: { ...nodeConfig },
-      ...rest,
-    });
+    // Ensure nodeConfig exists
+    if (!_params.nodeConfig) {
+      _params.nodeConfig = { extension: _params.extension };
+    } else if (!_params.extension) {
+      _params.extension = _params.nodeConfig.extension;
+    }
 
-    if (_res.code === Constant.success) {
+    // V3: Use Proxy to add node
+    const proxyResult = workflowProxy.addNode(_params as ChildNode);
+
+    if (proxyResult.success) {
       try {
-        await handleNodeCreationSuccess(_res.data, child);
+        // Use the params as the created node data
+        await handleNodeCreationSuccess(_params as AddNodeResponse, child);
       } catch (error) {
         console.error('处理节点创建成功后的操作失败:', error);
-        // 可以添加用户友好的错误提示
       }
+    } else {
+      message.error(proxyResult.message || '添加节点失败');
     }
   };
   // 复制节点
@@ -1156,9 +1170,28 @@ const Workflow: React.FC = () => {
       name: '',
       icon: '',
     });
-    const _res = await service.apiDeleteNode(id);
-    if (_res.code === Constant.success) {
+    const res = workflowProxy.deleteNode(Number(id));
+    if (res.success) {
+      const graph = graphRef.current?.getGraphRef();
       graphRef.current?.graphDeleteNode(String(id));
+
+      // Update neighbors in graph to match proxy (clean nextNodeIds)
+      if (graph && res.data) {
+        res.data.nodes.forEach((n) => {
+          const cell = graph.getCellById(String(n.id));
+          if (cell && cell.isNode()) {
+            const currentData = cell.getData();
+            // Update nextNodeIds if changed (e.g. removed reference to deleted node)
+            if (
+              JSON.stringify(currentData.nextNodeIds) !==
+              JSON.stringify(n.nextNodeIds)
+            ) {
+              cell.setData({ nextNodeIds: n.nextNodeIds });
+            }
+          }
+        });
+      }
+
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
@@ -1170,6 +1203,8 @@ const Workflow: React.FC = () => {
           getNodeConfig(node.loopNodeId as number);
         }
       }
+    } else {
+      message.error(res.message || '删除失败');
     }
   };
 
@@ -1870,6 +1905,88 @@ const Workflow: React.FC = () => {
     },
   );
 
+  // 绑定快捷键
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeElement = document.activeElement;
+      const isInput =
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement ||
+        (activeElement as HTMLElement)?.isContentEditable;
+
+      if (isInput) return;
+
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+      const graph = graphRef.current?.getGraphRef();
+
+      if (!graph) return;
+
+      // Undo: Command + Z
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        if (graph.canUndo()) {
+          graph.undo();
+          message.success('已撤销');
+        }
+      }
+
+      // Redo: Command + Shift + Z or Command + Y
+      if (
+        (isCmdOrCtrl && e.key.toLowerCase() === 'z' && e.shiftKey) ||
+        (isCmdOrCtrl && e.key.toLowerCase() === 'y')
+      ) {
+        e.preventDefault();
+        if (graph.canRedo()) {
+          graph.redo();
+          message.success('已重做');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // 监听 X6 历史记录变化
+  useEffect(() => {
+    // 轮询或者在 onInit 中绑定？由于 graph 实例初始化时机问题，使用轮询检查或者依赖 graphParams 变化
+    const checkGraph = setInterval(() => {
+      const graph = graphRef.current?.getGraphRef();
+      if (graph) {
+        clearInterval(checkGraph);
+
+        const updateHistory = () => {
+          setHistoryState({
+            canUndo: graph.canUndo(),
+            canRedo: graph.canRedo(),
+          });
+
+          // Sync graph data to Proxy to ensure consistency after Undo/Redo
+          if (workflowProxy) {
+            const nodes = graph.getNodes().map((n) => n.getData());
+            const edges = graph.getEdges().map((e) => {
+              const source = e.getSource() as any;
+              const target = e.getTarget() as any;
+              return {
+                id: e.id,
+                source: source?.cell || source,
+                target: target?.cell || target,
+                zIndex: e.getZIndex(),
+                // Keep other potential props if needed
+              };
+            });
+            workflowProxy.syncFromGraph(nodes, edges as any);
+          }
+        };
+        graph.on('history:change', updateHistory);
+        // Initial state
+        updateHistory();
+      }
+    }, 500);
+
+    return () => clearInterval(checkGraph);
+  }, []);
+
   return (
     <div id="container">
       {/* 顶部的名称和发布等按钮 */}
@@ -1879,6 +1996,22 @@ const Workflow: React.FC = () => {
         onToggleVersionHistory={() => setShowVersionHistory(true)}
         setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
         showPublish={handleShowPublish}
+        canUndo={historyState.canUndo}
+        canRedo={historyState.canRedo}
+        onUndo={() => {
+          const graph = graphRef.current?.getGraphRef();
+          if (graph && graph.canUndo()) {
+            graph.undo();
+            message.success('已撤销');
+          }
+        }}
+        onRedo={() => {
+          const graph = graphRef.current?.getGraphRef();
+          if (graph && graph.canRedo()) {
+            graph.redo();
+            message.success('已重做');
+          }
+        }}
       />
       <Spin
         spinning={globalLoadingTime > 0}
