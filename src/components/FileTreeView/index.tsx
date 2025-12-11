@@ -11,6 +11,7 @@ import React, { useEffect, useState } from 'react';
 import AppDevEmptyState from '../business-component/AppDevEmptyState';
 import CodeViewer from '../CodeViewer';
 import FileContextMenu from './FileContextMenu';
+import FilePathHeader from './FilePathHeader';
 import FileTree from './FileTree';
 import styles from './index.less';
 
@@ -183,42 +184,53 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({ files }) => {
           onRenameFile={handleRenameFile}
         />
       </div>
-      {/* 右边内容 */}
-      <div className={cx('flex-1')}>
-        {!isPreviewable && !selectedFileNode?.content ? (
-          // 不支持预览的文件类型
-          <AppDevEmptyState
-            type="error"
-            title="无法预览此文件类型"
-            description={`当前不支持预览 ${
-              selectedFileId.split('.').pop() || selectedFileId
-            } 格式的文件。`}
-          />
-        ) : isImage ? (
-          <ImageViewer
-            imageUrl={processImageContent(
-              selectedFileNode?.content,
-              // devServerUrl
-              //   ? `${devServerUrl}/${selectedFileId}`
-              //   : `/${selectedFileId}`,
-            )}
-            alt={selectedFileId}
-            onRefresh={() => {
-              // if (previewRef.current) {
-              //   previewRef.current.refresh();
-              // }
-            }}
-          />
-        ) : (
-          <CodeViewer
-            fileId={selectedFileId}
-            fileName={selectedFileId.split('/').pop() || selectedFileId}
-            filePath={`app/${selectedFileId}`}
-            content={selectedFileNode?.content}
-            readOnly={false}
-            onContentChange={handleContentChange}
-          />
-        )}
+      <div
+        className={cx('h-full', 'flex', 'flex-col', 'flex-1', 'overflow-hide')}
+      >
+        {/* 文件路径显示 */}
+        <FilePathHeader
+          filePath={selectedFileNode?.path || selectedFileId}
+          fileName={selectedFileNode?.name}
+          fileSize={selectedFileNode?.size}
+          lastModified={selectedFileNode?.lastModified}
+        />
+        {/* 右边内容 */}
+        <div className={cx(styles['content-container'])}>
+          {!isPreviewable && !selectedFileNode?.content ? (
+            // 不支持预览的文件类型
+            <AppDevEmptyState
+              type="error"
+              title="无法预览此文件类型"
+              description={`当前不支持预览 ${
+                selectedFileId.split('.').pop() || selectedFileId
+              } 格式的文件。`}
+            />
+          ) : isImage ? (
+            <ImageViewer
+              imageUrl={processImageContent(
+                selectedFileNode?.content,
+                // devServerUrl
+                //   ? `${devServerUrl}/${selectedFileId}`
+                //   : `/${selectedFileId}`,
+              )}
+              alt={selectedFileId}
+              onRefresh={() => {
+                // if (previewRef.current) {
+                //   previewRef.current.refresh();
+                // }
+              }}
+            />
+          ) : (
+            <CodeViewer
+              fileId={selectedFileId}
+              fileName={selectedFileId.split('/').pop() || selectedFileId}
+              filePath={`app/${selectedFileId}`}
+              content={selectedFileNode?.content}
+              readOnly={false}
+              onContentChange={handleContentChange}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
