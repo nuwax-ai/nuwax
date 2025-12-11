@@ -68,7 +68,7 @@ export async function createSSEConnection<T = any>(
         // options.onClose?.();
         // 中止连接
         controller.abort();
-      }, 1000);
+      }, 500);
     }
   };
 
