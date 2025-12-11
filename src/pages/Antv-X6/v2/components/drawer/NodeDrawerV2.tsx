@@ -25,8 +25,12 @@ import { ICONS } from '../../constants/stencilConfigV2';
 import type { ChildNodeV2, NodeConfigV2 } from '../../types';
 import { NodeTypeEnumV2 } from '../../types';
 import NodePanelDrawerV2 from './nodeConfig/NodePanelDrawerV2';
+// 导入 V1 的 returnImg 用于获取 SVG 图标
+import { returnImg } from '@/utils/workflow';
 
 import './NodeDrawerV2.less';
+// 导入 V1 样式以确保节点配置组件样式兼容
+import '@/pages/Antv-X6/index.less';
 
 // ==================== 类型定义 ====================
 
@@ -110,6 +114,20 @@ function getNodeIcon(type: NodeTypeEnumV2): string {
  * 是否可以删除的节点类型
  */
 function canDeleteNode(type: NodeTypeEnumV2): boolean {
+  return type !== NodeTypeEnumV2.Start && type !== NodeTypeEnumV2.End;
+}
+
+/**
+ * 是否可以重命名的节点类型（开始/结束节点不可重命名）
+ */
+function canRenameNode(type: NodeTypeEnumV2): boolean {
+  return type !== NodeTypeEnumV2.Start && type !== NodeTypeEnumV2.End;
+}
+
+/**
+ * 是否可以复制的节点类型（开始/结束节点不可复制）
+ */
+function canCopyNode(type: NodeTypeEnumV2): boolean {
   return type !== NodeTypeEnumV2.Start && type !== NodeTypeEnumV2.End;
 }
 
@@ -234,18 +252,19 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
             label: '试运行',
             onClick: onTestRun,
           },
-        {
+        canRenameNode(node.type) && {
           key: 'rename',
           icon: <EditOutlined />,
           label: '重命名',
           onClick: handleStartEditName,
         },
-        onNodeCopy && {
-          key: 'copy',
-          icon: <CopyOutlined />,
-          label: '复制',
-          onClick: () => onNodeCopy(node),
-        },
+        canCopyNode(node.type) &&
+          onNodeCopy && {
+            key: 'copy',
+            icon: <CopyOutlined />,
+            label: '复制',
+            onClick: () => onNodeCopy(node),
+          },
         canDeleteNode(node.type) &&
           onNodeDelete && {
             type: 'divider',
@@ -268,13 +287,21 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
   const backgroundColor = getNodeBackgroundColor(node.type);
   const iconUrl =
     typeof node.icon === 'string' ? node.icon : getNodeIcon(node.type);
+  // V1 样式：渐变背景从节点颜色到白色
+  const gradientBackground = `linear-gradient(to bottom, ${backgroundColor} 0, white 42px)`;
 
   return (
-    <div className="node-drawer-v2">
+    <div
+      className="node-drawer-v2 fold-wrap-style"
+      style={{ background: gradientBackground, paddingTop: '3px' }}
+    >
       {/* 头部 */}
-      <div className="node-drawer-v2-header" style={{ backgroundColor }}>
+      <div className="node-drawer-v2-header">
         <div className="node-drawer-v2-header-left">
-          <img src={iconUrl} alt="" className="node-drawer-v2-icon" />
+          {/* 使用 V1 的 returnImg 渲染 SVG 图标 */}
+          <div className="node-drawer-v2-icon">
+            {returnImg(node.type as any)}
+          </div>
           <div className="node-drawer-v2-info">
             {isEditingName ? (
               <Input
@@ -304,15 +331,28 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
         </div>
 
         <div className="node-drawer-v2-header-right">
-          <Dropdown menu={{ items: menuItems }} trigger={['click']}>
-            <Button type="text" icon={<MoreOutlined />} />
-          </Dropdown>
+          {/* 试运行按钮 - 仅对支持试运行的节点显示 */}
+          {canTestRunNode(node.type) && onTestRun && (
+            <Tooltip title="试运行">
+              <Button
+                type="text"
+                icon={<PlayCircleOutlined />}
+                onClick={onTestRun}
+              />
+            </Tooltip>
+          )}
+          {/* 更多操作按钮 - 开始/结束节点不显示 */}
+          {canRenameNode(node.type) && (
+            <Dropdown menu={{ items: menuItems }} trigger={['click']}>
+              <Button type="text" icon={<MoreOutlined />} />
+            </Dropdown>
+          )}
           <Button type="text" icon={<CloseOutlined />} onClick={onClose} />
         </div>
       </div>
 
       {/* 表单内容 */}
-      <div className="node-drawer-v2-body">
+      <div className="node-drawer-v2-body dispose-node-style">
         <Form
           form={form}
           layout="vertical"

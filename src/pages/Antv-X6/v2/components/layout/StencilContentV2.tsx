@@ -10,8 +10,12 @@
  */
 
 import React, { useCallback } from 'react';
+import {
+  asideListV2,
+  StencilChildNodeV2,
+} from '../../constants/stencilConfigV2';
 import { NodeTypeEnumV2 } from '../../types';
-import { asideListV2, StencilChildNodeV2 } from '../../constants/stencilConfigV2';
+// 导入 V1 的 returnImg 用于获取 SVG 图标
 
 import './StencilContentV2.less';
 
@@ -54,14 +58,19 @@ const StencilContentV2: React.FC<StencilContentV2Props> = ({
   );
 
   /**
-   * 渲染节点图标
+   * 渲染节点图标 - 使用 V1 的背景图片方式
    */
   const renderIcon = (url: string) => {
     return (
       <div
         className="stencil-v2-icon"
         style={{
-          backgroundImage: url ? `url("${url}")` : undefined,
+          width: '20px',
+          height: '20px',
+          backgroundSize: '100% 100%',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          ...(url && { backgroundImage: `url("${url}")` }),
         }}
       />
     );
@@ -103,21 +112,19 @@ const StencilContentV2: React.FC<StencilContentV2Props> = ({
 
             {/* 节点列表 */}
             <div className="stencil-v2-group-content">
-              {group.children
-                .filter(shouldShowNode)
-                .map((child) => (
-                  <div
-                    className="stencil-v2-item"
-                    key={child.type}
-                    draggable
-                    onDragEnd={(e) => handleDragEnd(child, e)}
-                    onClick={() => handleClick(child)}
-                    title={child.description}
-                  >
-                    {renderIcon(child.bgIcon)}
-                    <span className="stencil-v2-item-name">{child.name}</span>
-                  </div>
-                ))}
+              {group.children.filter(shouldShowNode).map((child) => (
+                <div
+                  className="stencil-v2-item"
+                  key={child.type}
+                  draggable
+                  onDragEnd={(e) => handleDragEnd(child, e)}
+                  onClick={() => handleClick(child)}
+                  title={child.description}
+                >
+                  {renderIcon(child.bgIcon)}
+                  <span className="stencil-v2-item-name">{child.name}</span>
+                </div>
+              ))}
             </div>
           </div>
         ))}
