@@ -73,7 +73,6 @@ import { ErrorParams } from '@/types/interfaces/workflow';
 import { cloneDeep, noop } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { calculateNodePosition, getCoordinates } from '@/utils/graph';
-import { updateNodeEdges } from '@/utils/updateEdge';
 import {
   changeNodeConfig,
   updateCurrentNode,
@@ -365,15 +364,30 @@ const Workflow: React.FC = () => {
       return false;
     }
   };
-  // 查询节点的指定信息
-  const getNodeConfig = async (id: number): Promise<ChildNode | false> => {
-    const _res = await service.getNodeConfig(id);
-    if (_res.code === Constant.success) {
-      setFoldWrapItem(_res.data);
-      graphRef.current?.graphUpdateNode(String(_res.data.id), _res.data);
-      return _res.data;
+  // 获取当前节点数据
+  const getNodeConfig = async (id: number) => {
+    if (id === FoldFormIdEnum.empty) return;
+
+    // V3: 优先从代理层获取数据（确保是最新状态）
+    const node = workflowProxy.getNodeById(id);
+    if (node) {
+      setFoldWrapItem(cloneDeep(node));
+    } else {
+      // 降级尝试从接口获取
+      try {
+        const _res = await service.getNodeConfig(id);
+        if (_res.code === Constant.success) {
+          const data = _res.data;
+          // 兜底：接口获取后同步到代理层与画布
+          workflowProxy.updateNode(data);
+          graphRef.current?.graphUpdateNode(String(data.id), data);
+          setFoldWrapItem(data);
+          changeUpdateTime();
+        }
+      } catch (e) {
+        console.error('获取节点详情失败', e);
+      }
     }
-    return false;
   };
 
   // 节点添加或移除边
@@ -384,24 +398,54 @@ const Workflow: React.FC = () => {
   ) => {
     const { type, targetId, sourceNode, id } = config;
     if (!graphRef.current) return false;
-    const { graphUpdateNode, graphDeleteEdge } = graphRef.current;
-    const newNodeIds = await updateNodeEdges({
-      type,
-      targetId,
-      sourceNode,
-      id,
-      graphUpdateNode,
-      graphDeleteEdge,
-      callback,
-    });
 
-    if (newNodeIds) {
-      changeUpdateTime();
-      updateCurrentNodeRef('sourceNode', {
-        nextNodeIds: newNodeIds,
-      });
+    if (type === UpdateEdgeType.created) {
+      // 添加边
+      const edgeDef = { source: String(sourceNode.id), target: targetId };
+      // TODO: edgeDef inside Proxy needs to match Edge interface (might need more props if Edge has them)
+      // But Proxy only uses source/target to check existence and update nextNodeIds.
+      // So this minimal object is fine for now, or existing proxy type allows it.
+      // Checking Proxy: uses `e.source === edge.source`.
+      const res = workflowProxy.addEdge(edgeDef as any);
+
+      if (res.success) {
+        changeUpdateTime();
+        await callback(); // Update references
+
+        const updatedNode = workflowProxy.getNodeById(sourceNode.id);
+        const newNodeIds = updatedNode?.nextNodeIds || [];
+        updateCurrentNodeRef('sourceNode', {
+          nextNodeIds: newNodeIds,
+        });
+        return newNodeIds;
+      } else {
+        // Rollback visual edge
+        if (id) {
+          graphRef.current.graphDeleteEdge(id);
+        }
+        message.error(res.message);
+        return false;
+      }
+    } else if (type === UpdateEdgeType.deleted) {
+      // 删除边
+      const res = workflowProxy.deleteEdge(String(sourceNode.id), targetId);
+
+      if (res.success) {
+        changeUpdateTime();
+        await callback();
+
+        const updatedNode = workflowProxy.getNodeById(sourceNode.id);
+        const newNodeIds = updatedNode?.nextNodeIds || [];
+        updateCurrentNodeRef('sourceNode', {
+          nextNodeIds: newNodeIds,
+        });
+        return newNodeIds;
+      } else {
+        message.error(res.message);
+        return false;
+      }
     }
-    return newNodeIds;
+    return false;
   };
 
   // 自动保存节点配置 - V3 使用代理层替代后端接口
@@ -1120,40 +1164,21 @@ const Workflow: React.FC = () => {
   };
   // 复制节点
   const copyNode = async (child: ChildNode) => {
-    const _res = await service.apiCopyNode(child.id.toString());
-    if (_res.code === Constant.success) {
-      const { nodeConfig, ...rest } = _res.data;
-      const resExtension = nodeConfig?.extension || {};
-      const { toolName, mcpId } = child.nodeConfig || {};
-      const _newNode = {
-        ...rest,
-        shape: getShape(_res.data.type),
-        nodeConfig: {
-          ...nodeConfig,
-          ...(toolName ? { toolName, mcpId } : {}),
-          extension: {
-            ...resExtension,
-            x: (resExtension.x || 0) + 32,
-            y: (resExtension.y || 0) + 32,
-          },
-        },
-      };
+    const res = workflowProxy.copyNode(Number(child.id));
+    if (res.success && res.newNode) {
+      const newNode = res.newNode;
 
-      const extension = {
-        x: (resExtension.x || 0) + 20,
-        y: (resExtension.y || 0) + 20,
-      };
+      // X6 画布添加节点
+      graphRef.current?.graphAddNode(
+        newNode.nodeConfig.extension as GraphRect,
+        newNode,
+      );
 
-      graphRef.current?.graphAddNode(extension as GraphRect, _newNode);
-      const shape = getShape(_res.data.type);
-      const newNode = {
-        ..._res.data,
-        shape,
-      };
-      changeNode({ nodeData: newNode });
       // 选中新增的节点
-      graphRef.current?.graphSelectNode(String(_res.data.id));
-      // changeUpdateTime();
+      graphRef.current?.graphSelectNode(String(newNode.id));
+      changeUpdateTime();
+    } else {
+      message.error(res.message || '复制失败');
     }
   };
   // 删除指定的节点
@@ -1173,21 +1198,27 @@ const Workflow: React.FC = () => {
     const res = workflowProxy.deleteNode(Number(id));
     if (res.success) {
       const graph = graphRef.current?.getGraphRef();
-      graphRef.current?.graphDeleteNode(String(id));
 
-      // Update neighbors in graph to match proxy (clean nextNodeIds)
-      if (graph && res.data) {
-        res.data.nodes.forEach((n) => {
-          const cell = graph.getCellById(String(n.id));
-          if (cell && cell.isNode()) {
-            const currentData = cell.getData();
-            // Update nextNodeIds if changed (e.g. removed reference to deleted node)
-            if (
-              JSON.stringify(currentData.nextNodeIds) !==
-              JSON.stringify(n.nextNodeIds)
-            ) {
-              cell.setData({ nextNodeIds: n.nextNodeIds });
-            }
+      // Use batchUpdate to group history events
+      if (graph) {
+        graph.batchUpdate('delete-node', () => {
+          graphRef.current?.graphDeleteNode(String(id));
+
+          // Update neighbors in graph to match proxy (clean nextNodeIds)
+          if (res.data) {
+            res.data.nodes.forEach((n) => {
+              const cell = graph.getCellById(String(n.id));
+              if (cell && cell.isNode()) {
+                const currentData = cell.getData();
+                // Update nextNodeIds if changed (e.g. removed reference to deleted node)
+                if (
+                  JSON.stringify(currentData.nextNodeIds) !==
+                  JSON.stringify(n.nextNodeIds)
+                ) {
+                  cell.setData({ nextNodeIds: n.nextNodeIds });
+                }
+              }
+            });
           }
         });
       }
