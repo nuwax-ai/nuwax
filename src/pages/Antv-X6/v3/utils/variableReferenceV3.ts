@@ -157,42 +157,14 @@ function buildReverseGraph(
     const nextNodeIds =
       (node.nextNodeIds || []).filter((id) => id !== node.loopNodeId) || [];
 
-    // 调试：打印当前节点的处理情况
-    if (nextNodeIds.length > 0) {
-      console.log(
-        '[V3 buildReverseGraph] 处理节点',
-        nodeId,
-        node.name,
-        '-> nextNodeIds:',
-        nextNodeIds,
-      );
-    }
-
     nextNodeIds.forEach((nextId) => {
       const nextIdNum = Number(nextId);
       const prevNodes = reverseGraph.get(nextIdNum);
-
-      // 调试：检查 get 结果
-      console.log(
-        '[V3 buildReverseGraph] reverseGraph.get(',
-        nextIdNum,
-        ') =',
-        prevNodes,
-        '(type:',
-        typeof nextIdNum,
-        ')',
-      );
 
       const safePrevNodes = prevNodes || [];
       if (!safePrevNodes.includes(nodeId)) {
         safePrevNodes.push(nodeId);
         reverseGraph.set(nextIdNum, safePrevNodes);
-        console.log(
-          '[V3 buildReverseGraph] 设置 reverseGraph[',
-          nextIdNum,
-          '] =',
-          safePrevNodes,
-        );
       }
     });
 
@@ -468,37 +440,6 @@ export function calculateNodePreviousArgs(
 ): NodePreviousAndArgMapV2 {
   const { nodeList, edgeList } = workflowData;
 
-  // 调试日志
-  console.log(
-    '[V3 variableRef] nodeId:',
-    nodeId,
-    'nodeList 长度:',
-    nodeList.length,
-    'edgeList 长度:',
-    edgeList?.length || 0,
-  );
-
-  // 打印所有节点的 nextNodeIds
-  nodeList.forEach((node) => {
-    if (node.nextNodeIds && node.nextNodeIds.length > 0) {
-      console.log(
-        '[V3 variableRef] 节点',
-        node.id,
-        node.name,
-        'nextNodeIds:',
-        node.nextNodeIds,
-      );
-    }
-  });
-
-  // 打印 edgeList
-  if (edgeList && edgeList.length > 0) {
-    console.log(
-      '[V3 variableRef] edgeList:',
-      edgeList.map((e) => `${e.source}->${e.target}`),
-    );
-  }
-
   // 构建节点映射
   const nodeMap = buildNodeMap(nodeList);
 
@@ -517,15 +458,6 @@ export function calculateNodePreviousArgs(
 
   // 确保 nodeId 是 number 类型
   const nodeIdNum = Number(nodeId);
-  console.log(
-    '[V3 variableRef] reverseGraph 中目标节点的前驱:',
-    reverseGraph.get(nodeIdNum),
-    '(nodeId:',
-    nodeIdNum,
-    'type:',
-    typeof nodeIdNum,
-    ')',
-  );
 
   // 找到所有前驱节点
   const predecessorIds = findAllPredecessors(nodeIdNum, reverseGraph);

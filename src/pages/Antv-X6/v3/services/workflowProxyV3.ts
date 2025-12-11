@@ -137,9 +137,11 @@ class WorkflowProxyV3 {
     const index = this.workflowData.nodes.findIndex((n) => n.id === node.id);
     if (index >= 0) {
       this.workflowData.nodes[index] = cloneDeep(node);
+      console.log('[V3 Proxy] 节点更新成功:', node.id, node.name);
     } else {
       // 节点不存在，作为新增处理
       this.workflowData.nodes.push(cloneDeep(node));
+      console.log('[V3 Proxy] 节点新增（通过更新）:', node.id, node.name);
     }
 
     this.recordUpdate({

@@ -242,9 +242,15 @@ const Workflow: React.FC = () => {
   useEffect(() => {
     // 直接使用 setDrawerForm 进行更新
     storeWorkflow('drawerForm', foldWrapItem);
+
+    // V3: 当 foldWrapItem 变化时，同步更新表单数据
+    // 确保 UI 显示与本地数据一致
+    if (foldWrapItem && foldWrapItem.nodeConfig) {
+      form.setFieldsValue(foldWrapItem.nodeConfig);
+    }
+
     if (skillChange) {
       // 处理技能变化时的表单更新
-      form.setFieldsValue(foldWrapItem.nodeConfig);
       setSkillChange(false);
     }
   }, [foldWrapItem]);
