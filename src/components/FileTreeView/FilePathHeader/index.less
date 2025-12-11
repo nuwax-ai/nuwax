@@ -1,0 +1,118 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 文件路径头部
+.filePathHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: @colorBgContainer;
+  border-bottom: @lineWidth solid @colorBorder;
+  padding: 12px 16px;
+  gap: 16px;
+
+  // 左侧：文件信息
+  .fileInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 0 auto;
+    min-width: 0;
+
+    .fileIcon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: @colorFillTertiary;
+      border-radius: 6px;
+      flex-shrink: 0;
+      color: @colorText;
+    }
+
+    .fileDetails {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+      flex: 1;
+
+      .fileName {
+        font-size: @fontSize;
+        font-weight: @fontWeightStrong;
+        color: @colorText;
+        line-height: 1.4;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .fileMeta {
+        font-size: @fontSizeSm;
+        color: @colorTextSecondary;
+        line-height: 1.4;
+      }
+    }
+  }
+
+  // 中间：视图模式切换按钮
+  .viewModeButtons {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex: 0 0 auto;
+    margin-left: auto;
+    border-radius: @borderRadius;
+    overflow: hidden;
+    border: 1px solid @colorBorder;
+
+    .viewModeButton {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 4px 16px;
+      border-radius: 0;
+      font-size: @fontSizeSm;
+      border: none;
+      border-right: 1px solid @colorBorder;
+
+      &:last-child {
+        border-right: none;
+        border-top-right-radius: @borderRadius;
+        border-bottom-right-radius: @borderRadius;
+      }
+
+      &:first-child {
+        border-top-left-radius: @borderRadius;
+        border-bottom-left-radius: @borderRadius;
+      }
+    }
+  }
+
+  // 右侧：操作按钮
+  .actionButtons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+
+    .actionButton {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-radius: @borderRadius;
+      color: @colorTextSecondary;
+      transition: all 0.2s;
+
+      &:hover {
+        color: @colorText;
+        background: @colorFillTertiary;
+      }
+    }
+  }
+}
