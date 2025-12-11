@@ -225,6 +225,121 @@ switch (nodeType) {
 | TableData\* | tableId, conditionArgs, sql | ✅ |
 | HTTPRequest | method, url, headers, body, queries | ❌ |
 
+### 节点属性面板行为
+
+> 每个节点在属性面板中的头部操作行为不同，以下梳理各节点的功能限制：
+
+#### 属性面板头部按钮
+
+| 节点类型               | 试运行按钮 | 重命名 | 复制 | 删除 | 编辑标题 |
+| ---------------------- | :--------: | :----: | :--: | :--: | :------: |
+| Start                  |     ✅     |   ❌   |  ❌  |  ❌  |    ❌    |
+| End                    |     ❌     |   ❌   |  ❌  |  ❌  |    ❌    |
+| LLM                    |     ✅     |   ✅   |  ✅  |  ✅  |    ✅    |
+| Knowledge              |     ✅     |   ✅   |  ✅  |  ✅  |    ✅    |
+| IntentRecognition      |     ❌     |   ✅   |  ✅  |  ✅  |    ✅    |
+| QA                     |     ❌     |   ✅   |  ✅  |  ✅  |    ✅    |
+| Condition              |     ❌     |   ✅   |  ✅  |  ✅  |    ✅    |
+| Loop                   |     ❌     |   ✅   |  ✅  |  ✅  |    ✅    |
+| LoopBreak/LoopContinue |     ❌     |   ✅   |  ✅  |  ✅  |    ✅    |
+| Code                   |     ✅     |   ✅   |  ✅  |  ✅  |    ✅    |
+| Variable               |     ❌     |   ✅   |  ✅  |  ✅  |    ✅    |
+| TextProcessing         |     ✅     |   ✅   |  ✅  |  ✅  |    ✅    |
+| DocumentExtraction     |     ✅     |   ✅   |  ✅  |  ✅  |    ✅    |
+| Plugin                 |     ✅     |   ✅   |  ✅  |  ✅  |    ✅    |
+| Workflow               |     ✅     |   ✅   |  ✅  |  ✅  |    ✅    |
+| MCP                    |     ❌     |   ✅   |  ✅  |  ✅  |    ✅    |
+| LongTermMemory         |     ❌     |   ✅   |  ✅  |  ✅  |    ✅    |
+| HTTPRequest            |     ✅     |   ✅   |  ✅  |  ✅  |    ✅    |
+| TableDataAdd           |     ✅     |   ✅   |  ✅  |  ✅  |    ✅    |
+| TableDataDelete        |     ✅     |   ✅   |  ✅  |  ✅  |    ✅    |
+| TableDataUpdate        |     ✅     |   ✅   |  ✅  |  ✅  |    ✅    |
+| TableDataQuery         |     ✅     |   ✅   |  ✅  |  ✅  |    ✅    |
+| TableSQL               |     ✅     |   ✅   |  ✅  |  ✅  |    ✅    |
+| Output                 |     ❌     |   ✅   |  ✅  |  ✅  |    ✅    |
+
+#### 试运行支持列表 (testRunList)
+
+支持试运行的节点类型：
+
+```typescript
+const testRunList = [
+  NodeTypeEnum.Start,
+  NodeTypeEnum.LLM,
+  NodeTypeEnum.Plugin,
+  NodeTypeEnum.Code,
+  NodeTypeEnum.HTTPRequest,
+  NodeTypeEnum.TextProcessing,
+  NodeTypeEnum.Workflow,
+  NodeTypeEnum.DocumentExtraction,
+  NodeTypeEnum.Knowledge,
+  NodeTypeEnum.TableSQL,
+  NodeTypeEnum.TableDataQuery,
+  NodeTypeEnum.TableDataUpdate,
+  NodeTypeEnum.TableDataDelete,
+  NodeTypeEnum.TableDataAdd,
+];
+```
+
+#### 开始/结束节点特殊限制
+
+| 限制项         | 开始节点 (Start) | 结束节点 (End) |
+| -------------- | :--------------: | :------------: |
+| 可删除         |        ❌        |       ❌       |
+| 可复制         |        ❌        |       ❌       |
+| 可重命名       |        ❌        |       ❌       |
+| 显示 more 按钮 |        ❌        |       ❌       |
+| 点击标题编辑   |        ❌        |       ❌       |
+| 试运行按钮     |        ✅        |       ❌       |
+
+### 节点功能特性
+
+#### 基础节点功能
+
+| 节点类型 | 功能描述                     | 特殊行为                       |
+| -------- | ---------------------------- | ------------------------------ |
+| Start    | 工作流入口，定义全局输入变量 | 支持配置开场白、引导问题       |
+| End      | 工作流结束，输出最终结果     | 支持变量输出和文本输出两种模式 |
+| Output   | 中间过程输出                 | 支持流式和非流式输出           |
+
+#### AI 节点功能
+
+| 节点类型 | 功能描述 | 特殊行为 |
+| --- | --- | --- |
+| LLM | 调用大语言模型生成回复 | 支持技能管理（插件/工作流/MCP）、提示词优化 |
+| Knowledge | 知识库检索 | 支持语义搜索/混合搜索/全文搜索 |
+| IntentRecognition | 用户意图识别 | 多意图分支、支持补充提示词 |
+| QA | 问答交互 | 支持文本回答和选项回答 |
+
+#### 逻辑控制节点功能
+
+| 节点类型     | 功能描述       | 特殊行为                           |
+| ------------ | -------------- | ---------------------------------- |
+| Condition    | 条件分支判断   | 支持 AND/OR 逻辑、拖拽排序分支     |
+| Loop         | 循环执行       | 支持数组循环/指定次数/无限循环     |
+| LoopBreak    | 终止循环       | 仅在循环节点内可用                 |
+| LoopContinue | 继续下一次循环 | 仅在循环节点内可用                 |
+| Code         | 自定义代码执行 | 支持 JavaScript/Python，代码编辑器 |
+
+#### 数据操作节点功能
+
+| 节点类型           | 功能描述   | 特殊行为                       |
+| ------------------ | ---------- | ------------------------------ |
+| Variable           | 变量读写   | 支持设置变量和获取变量两种模式 |
+| TextProcessing     | 文本处理   | 支持文本拼接和文本分割         |
+| DocumentExtraction | 文档提取   | 支持多种文件类型               |
+| TableData\*        | 数据库操作 | 支持增删改查、SQL 生成优化     |
+
+#### 集成节点功能
+
+| 节点类型       | 功能描述      | 特殊行为               |
+| -------------- | ------------- | ---------------------- |
+| Plugin         | 调用插件      | 插件参数绑定           |
+| Workflow       | 调用子工作流  | 工作流参数映射         |
+| MCP            | MCP 协议集成  | 工具选择、参数配置     |
+| LongTermMemory | 长期记忆      | 用户个性化信息存储检索 |
+| HTTPRequest    | HTTP 接口调用 | 支持 GET/POST 等方法   |
+
 ---
 
 ## 技术栈
