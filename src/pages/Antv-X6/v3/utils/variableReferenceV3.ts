@@ -151,8 +151,6 @@ function buildReverseGraph(
     reverseGraph.set(nodeId, []);
   });
 
-  console.log('[V3 buildReverseGraph] 初始化完成, 节点数:', reverseGraph.size);
-
   // 方式1: 从节点的 nextNodeIds 构建反向边
   nodes.forEach((node) => {
     const nodeId = Number(node.id);
@@ -507,7 +505,6 @@ export function calculateNodePreviousArgs(
   // 获取当前节点
   const currentNode = nodeMap.get(nodeId);
   if (!currentNode) {
-    console.log('[V3 variableRef] 未找到目标节点:', nodeId);
     return {
       previousNodes: [],
       innerPreviousNodes: [],
@@ -532,7 +529,6 @@ export function calculateNodePreviousArgs(
 
   // 找到所有前驱节点
   const predecessorIds = findAllPredecessors(nodeIdNum, reverseGraph);
-  console.log('[V3 variableRef] 所有前驱节点 IDs:', predecessorIds);
 
   // 构建上级节点列表
   const previousNodes: PreviousListV2[] = [];

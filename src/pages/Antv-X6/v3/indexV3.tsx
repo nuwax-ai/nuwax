@@ -270,7 +270,6 @@ const Workflow: React.FC = () => {
         edges: _edgeList,
         modified: _res.data.modified || new Date().toISOString(),
       });
-      console.log('[V3] 代理层数据初始化完成');
     } catch (error) {
       console.error('Failed to fetch graph data:', error);
     }
@@ -314,23 +313,12 @@ const Workflow: React.FC = () => {
     // V3: 使用前端计算代替后端接口调用
     try {
       const fullData = workflowProxy.getFullWorkflowData();
-      console.log('[V3] getReference 调用, nodeId:', id);
-      console.log(
-        '[V3] 代理层数据:',
-        fullData ? `有 ${fullData.nodes.length} 个节点` : '无数据',
-      );
-      console.log(
-        '[V3] graphParams 数据:',
-        graphParams.nodeList.length,
-        '个节点',
-      );
 
-      // 优先使用 graphParams（因为代理层可能还没初始化）
+      // 优先使用代理层数据，回退到 graphParams
       const nodeList = fullData?.nodes || graphParams.nodeList;
       const edgeList = fullData?.edges || graphParams.edgeList;
 
       if (!nodeList || nodeList.length === 0) {
-        console.warn('[V3] 无节点数据，无法计算变量引用');
         setReferenceList({
           previousNodes: [],
           innerPreviousNodes: [],
@@ -346,49 +334,7 @@ const Workflow: React.FC = () => {
         isDirty: false,
       };
 
-      // 调试：查看目标节点和连线情况
-      const targetNode = nodeList.find((n: any) => n.id === id);
-      console.log('[V3] 目标节点:', targetNode?.name, 'id:', id);
-      console.log('[V3] 目标节点的上级连线 preNodes:', targetNode?.preNodes);
-      console.log('[V3] edgeList 数量:', edgeList.length);
-
-      // 查看哪些节点的 nextNodeIds 包含目标节点
-      const predecessors = nodeList.filter(
-        (n: any) => n.nextNodeIds && n.nextNodeIds.includes(id),
-      );
-      console.log(
-        '[V3] 前驱节点 (通过 nextNodeIds):',
-        predecessors.map((n: any) => ({
-          id: n.id,
-          name: n.name,
-          nextNodeIds: n.nextNodeIds,
-        })),
-      );
-
-      // 查看 edgeList 中指向目标节点的边
-      const incomingEdges = edgeList.filter(
-        (e: any) => e.target === String(id),
-      );
-      console.log('[V3] 指向目标节点的边 (edgeList):', incomingEdges);
-
-      // 打印所有节点的 nextNodeIds 汇总
-      const allNextNodeIds = nodeList.map((n: any) => ({
-        id: n.id,
-        name: n.name,
-        nextNodeIds: n.nextNodeIds || [],
-      }));
-      console.log('[V3] 所有节点的 nextNodeIds:', allNextNodeIds);
-
-      console.log(
-        '[V3] 调用 calculateNodePreviousArgs, nodeId:',
-        id,
-        'nodeList:',
-        nodeList.length,
-        'edgeList:',
-        edgeList.length,
-      );
       const result = calculateNodePreviousArgs(id, workflowData);
-      console.log('[V3] 计算结果:', result);
 
       if (result && result.previousNodes && result.previousNodes.length) {
         setReferenceList({
@@ -396,14 +342,12 @@ const Workflow: React.FC = () => {
           innerPreviousNodes: result.innerPreviousNodes as any,
           argMap: result.argMap as any,
         });
-        console.log('[V3] 找到', result.previousNodes.length, '个上级节点');
       } else {
         setReferenceList({
           previousNodes: [],
           innerPreviousNodes: [],
           argMap: {},
         });
-        console.log('[V3] 未找到上级节点');
       }
       return true;
     } catch (error) {
@@ -470,7 +414,6 @@ const Workflow: React.FC = () => {
       // 更新当前节点的上级参数（使用前端计算）
       await getReference(getWorkflow('drawerForm').id);
       changeUpdateTime();
-      console.log('[V3] 节点配置自动保存成功 (本地):', params.id);
       return true;
     }
 
@@ -511,7 +454,6 @@ const Workflow: React.FC = () => {
 
     if (proxyResult.success) {
       changeUpdateTime();
-      console.log('[V3] 节点更新成功 (本地):', params.id, params.name);
 
       if (isOnlyUpdate) {
         // 仅更新节点大小和位置 不需要更新form表单
