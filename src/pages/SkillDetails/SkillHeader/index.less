@@ -1,0 +1,61 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.header {
+  padding: @paddingSm @padding @paddingSm 0;
+  overflow-x: auto;
+
+  .icon-backward {
+    padding: @paddingXxs @paddingXs @paddingXxs @paddingXs;
+    margin-right: @marginXxs;
+    color: @navFirstMenuTextSecondary;
+  }
+
+  .avatar {
+    width: 27px;
+    height: 27px;
+    border-radius: @borderRadius;
+  }
+
+  .header-info {
+    padding-left: @paddingSm;
+
+    .h-title {
+      max-width: 360px;
+      margin-right: @marginSm;
+      font-size: 16px;
+      font-weight: @fontWeightStrong;
+      line-height: 24px;
+      color: @navFirstMenuTextSecondary;
+      white-space: nowrap;
+    }
+
+    .edit-ico {
+      color: @navFirstMenuTextSecondary;
+      font-size: 16px;
+    }
+
+    .rel-info {
+      gap: @marginXs;
+      color: @colorTextTertiary;
+      font-size: 12px;
+      margin-right: 10px;
+      line-height: 24px;
+
+      img {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        object-fit: cover;
+      }
+    }
+  }
+
+  .right-box {
+    margin-left: auto;
+
+    .publish-btn {
+      margin-left: @marginXs;
+    }
+  }
+}
