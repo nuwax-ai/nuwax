@@ -399,6 +399,28 @@ function generateArgKey(
 }
 
 /**
+ * 递归为参数添加带节点ID前缀的 key
+ */
+function prefixOutputArgsKeys(
+  nodeId: number,
+  args: InputAndOutConfigV2[],
+  parentPath: string[] = [],
+): InputAndOutConfigV2[] {
+  return args.map((arg) => {
+    const currentPath = [...parentPath, arg.name];
+    const key = `${nodeId}.${currentPath.join('.')}`;
+    const newArg = { ...arg, key };
+
+    const subArgs = arg.subArgs || arg.children;
+    if (subArgs && subArgs.length > 0) {
+      newArg.subArgs = prefixOutputArgsKeys(nodeId, subArgs, currentPath);
+      newArg.children = newArg.subArgs;
+    }
+    return newArg;
+  });
+}
+
+/**
  * 递归展开参数的子属性，生成 argMap
  */
 function flattenArgsToMap(
@@ -428,9 +450,8 @@ function flattenArgsToMap(
 // ==================== 主要函数 ====================
 
 /**
- * 计算节点的上级节点参数
- *
- * @param nodeId 目标节点 ID
+ * 计算节点的可引用变量（PreviousNodes）和变量映射表（ArgMap）
+ * @param nodeId 当前节点ID
  * @param workflowData 工作流数据
  * @returns 上级节点列表和参数映射
  */
@@ -442,16 +463,6 @@ export function calculateNodePreviousArgs(
 
   // 构建节点映射
   const nodeMap = buildNodeMap(nodeList);
-
-  // 获取当前节点
-  const currentNode = nodeMap.get(nodeId);
-  if (!currentNode) {
-    return {
-      previousNodes: [],
-      innerPreviousNodes: [],
-      argMap: {},
-    };
-  }
 
   // 构建反向图（同时使用 nextNodeIds 和 edgeList）
   const reverseGraph = buildReverseGraph(nodeList, edgeList);
@@ -478,7 +489,9 @@ export function calculateNodePreviousArgs(
       return;
     }
 
+    // 获取并处理输出参数，添加 key 前缀
     const outputArgs = getNodeOutputArgs(predNode);
+    const prefixedOutputArgs = prefixOutputArgsKeys(predNode.id, outputArgs);
 
     // 添加到上级节点列表
     previousNodes.push({
@@ -486,15 +499,24 @@ export function calculateNodePreviousArgs(
       name: predNode.name,
       type: predNode.type,
       icon: predNode.icon as string,
-      outputArgs,
+      outputArgs: prefixedOutputArgs,
     });
 
-    // 展开参数到 argMap
-    const nodeArgMap = flattenArgsToMap(predNode.id, outputArgs);
+    // 展开参数到 argMap（使用处理后的参数，虽然 keys 生成逻辑一致，但这样对象也一致）
+    const nodeArgMap = flattenArgsToMap(predNode.id, prefixedOutputArgs);
     Object.assign(argMap, nodeArgMap);
   });
 
   // 处理循环内部节点的特殊情况
+  const currentNode = nodeMap.get(nodeId);
+  if (!currentNode) {
+    return {
+      previousNodes,
+      innerPreviousNodes: [],
+      argMap,
+    };
+  }
+
   let innerPreviousNodes: PreviousListV2[] = [];
 
   if (currentNode.loopNodeId) {
@@ -505,7 +527,7 @@ export function calculateNodePreviousArgs(
       // 构建循环内部节点的反向图
       const innerReverseGraph = buildReverseGraph(loopNode.innerNodes);
       const innerPredecessorIds = findAllPredecessors(
-        nodeId,
+        nodeIdNum, // 使用 number 类型的 ID
         innerReverseGraph,
       );
 
@@ -514,17 +536,21 @@ export function calculateNodePreviousArgs(
         if (!predNode) return;
 
         const outputArgs = getNodeOutputArgs(predNode);
+        const prefixedOutputArgs = prefixOutputArgsKeys(
+          predNode.id,
+          outputArgs,
+        );
 
         innerPreviousNodes.push({
           id: predNode.id,
           name: predNode.name,
           type: predNode.type,
           icon: predNode.icon as string,
-          outputArgs,
+          outputArgs: prefixedOutputArgs,
         });
 
         // 展开参数到 argMap
-        const nodeArgMap = flattenArgsToMap(predNode.id, outputArgs);
+        const nodeArgMap = flattenArgsToMap(predNode.id, prefixedOutputArgs);
         Object.assign(argMap, nodeArgMap);
       });
     }
@@ -547,6 +573,10 @@ export function calculateNodePreviousArgs(
               (refArg.dataType as string).replace('Array_', '') || 'Object';
             const elementTypeEnum =
               (DataTypeEnumV2 as any)[elementType] || DataTypeEnumV2.Object;
+
+            // Item 看起来不需要 prefix? 等等，item 的 key 应该是 loopNodeId.argName_item ?
+            // V1 逻辑可能是这样。这里先保持 key 生成逻辑。
+            // 但 extraOutputs 也需要 key。
             const itemArg: InputAndOutConfigV2 = {
               ...cloneArg(inputArg),
               name: `${inputArg.name}_item`,
@@ -593,31 +623,35 @@ export function calculateNodePreviousArgs(
         }
       });
 
-      if (extraOutputs.length > 0) {
+      // 给 extraOutputs 添加前缀
+      const prefixedExtraOutputs = prefixOutputArgsKeys(
+        loopNode.id,
+        extraOutputs,
+      );
+
+      if (prefixedExtraOutputs.length > 0) {
         // 如果循环节点已在 previousNodes 中，合并输出，避免重复节点导致找不到新增变量
         const loopIndex = previousNodes.findIndex(
           (item) => item.id === loopNode.id,
         );
-        if (loopIndex >= 0) {
-          const mergedOutputs = [
-            ...(previousNodes[loopIndex].outputArgs || []),
-            ...extraOutputs,
-          ];
-          previousNodes[loopIndex] = {
-            ...previousNodes[loopIndex],
-            outputArgs: mergedOutputs,
-          };
+        if (loopIndex > -1) {
+          previousNodes[loopIndex].outputArgs.push(...prefixedExtraOutputs);
         } else {
           previousNodes.push({
             id: loopNode.id,
             name: loopNode.name,
             type: loopNode.type,
             icon: loopNode.icon as string,
-            outputArgs: extraOutputs,
+            outputArgs: prefixedExtraOutputs,
           });
         }
-        const loopArgMap = flattenArgsToMap(loopNode.id, extraOutputs);
-        Object.assign(argMap, loopArgMap);
+
+        // 更新 innerPreviousNodes ? 不，extraOutputs 是放在 previousNodes 里的（作为循环节点的输出）
+        // 但是循环内节点引用这些变量时，它们可以视为"外部"变量或者"上级"变量。
+        // 上面代码是放在 previousNodes。
+
+        const extraArgMap = flattenArgsToMap(loopNode.id, prefixedExtraOutputs);
+        Object.assign(argMap, extraArgMap);
       }
     }
   }
