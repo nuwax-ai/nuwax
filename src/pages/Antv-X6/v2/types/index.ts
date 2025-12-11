@@ -618,7 +618,7 @@ export interface GraphContainerRefV2 {
   graphUpdateNode: (nodeId: string, newData: ChildNodeV2 | null) => void;
   graphUpdateByFormData: (
     changedValues: any,
-    fullFormValues: any,
+    fullNodeConfig: NodeConfigV2,
     nodeId: string,
   ) => void;
   graphDeleteNode: (id: string) => void;

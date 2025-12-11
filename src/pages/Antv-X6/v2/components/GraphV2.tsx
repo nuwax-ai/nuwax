@@ -17,6 +17,7 @@ import { Snapline } from '@antv/x6-plugin-snapline';
 import { GRAPH_CONFIG_V2, HISTORY_CONFIG_V2 } from '../constants';
 import type { ChildNodeV2, EdgeV2, GraphPropV2 } from '../types';
 import { NodeTypeEnumV2, PortGroupEnumV2 } from '../types';
+import { canCreateEdge } from '../utils/graphV2';
 import {
   registerCustomConnectorV2,
   registerCustomNodesV2,
@@ -104,6 +105,7 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
     panning: true,
     connecting: {
       ...GRAPH_CONFIG_V2.connecting,
+      // 拖拽创建边时使用 manhattan 路由器（与 V1 保持一致）
       router: 'manhattan',
       connector: 'curveConnectorV2',
       connectionPoint: 'anchor',
@@ -138,26 +140,52 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
           return false;
         }
 
-        // 获取端口组信息
+        const targetMagnetEl = targetMagnet.closest(
+          '.x6-port-body',
+        ) as HTMLElement;
+
         const sourcePortGroup = sourceMagnet.getAttribute('port-group') || '';
         const targetPortGroup =
-          (targetMagnet.closest('.x6-port-body') as HTMLElement)?.getAttribute(
-            'port-group',
-          ) || '';
+          targetMagnetEl?.getAttribute('port-group') || '';
 
-        // 验证端口连接规则
+        const sourcePortId = sourceMagnet.getAttribute('port') || '';
+        const targetPortId = targetMagnetEl?.getAttribute('port') || '';
+        if (!sourcePortId || !targetPortId) return false;
+
+        // 重复边检查（含端口）
+        const isDuplicateEdge = graph.getEdges().some((edge) => {
+          const edgeSource = edge.getSource();
+          const edgeTarget = edge.getTarget();
+          if (
+            typeof edgeSource === 'object' &&
+            'cell' in edgeSource &&
+            'port' in edgeSource &&
+            typeof edgeTarget === 'object' &&
+            'cell' in edgeTarget &&
+            'port' in edgeTarget
+          ) {
+            return (
+              edgeSource.cell === sourceCell.id &&
+              edgeSource.port === sourcePortId &&
+              edgeTarget.cell === targetCell.id &&
+              edgeTarget.port === targetPortId
+            );
+          }
+          return false;
+        });
+        if (isDuplicateEdge) return false;
+
         const sourceData = sourceCell.getData() as ChildNodeV2;
         const targetData = targetCell.getData() as ChildNodeV2;
-
-        // 循环节点特殊处理
         const isSourceLoop = sourceData?.type === NodeTypeEnumV2.Loop;
         const isTargetLoop = targetData?.type === NodeTypeEnumV2.Loop;
 
+        // 循环节点：允许但由后续 canCreateEdge 再校验内外规则
         if (isSourceLoop || isTargetLoop) {
-          return true; // 循环节点有特殊规则，允许连接
+          return true;
         }
 
-        // 普通节点：out -> in
+        // 普通节点：仅 out/special/exception -> in
         if (
           (sourcePortGroup === PortGroupEnumV2.out ||
             sourcePortGroup === PortGroupEnumV2.special ||
@@ -231,6 +259,16 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
     graph.select(node);
   });
 
+  // 节点双击 - 进入标题编辑（触发 EditableTitle 的 onEditTitle 事件）
+  graph.on('node:dblclick', ({ node }) => {
+    const data = node.getData() as ChildNodeV2;
+    if (!data) return;
+    const editableTitleEl = document.querySelector(
+      `[data-id="${data.id}"]`,
+    ) as HTMLElement | null;
+    editableTitleEl?.dispatchEvent(new Event('onEditTitle'));
+  });
+
   // 节点选中事件 - 触发配置面板打开
   graph.on('node:selected', ({ node }) => {
     const data = node.getData() as ChildNodeV2;
@@ -238,6 +276,42 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
       onNodeSelect(data);
     }
   });
+
+  /**
+   * 自定义保存事件（标题编辑等）- 参考 V1 node:custom:save
+   * 将最新数据同步到外部状态并回写到画布节点
+   */
+  graph.on(
+    'node:custom:save',
+    ({
+      data,
+      payload,
+    }: {
+      data: ChildNodeV2;
+      payload: Partial<ChildNodeV2>;
+    }) => {
+      if (!data) return;
+      const merged: ChildNodeV2 = {
+        ...data,
+        ...payload,
+        nodeConfig: { ...data.nodeConfig, ...(payload.nodeConfig || {}) },
+      };
+      // 回写到图实例，保持 enableMove 等字段一致
+      const cell = graph.getCellById(data.id?.toString());
+      if (cell && cell.isNode()) {
+        cell.setData(merged);
+      }
+      // 调试日志，便于确认标题保存事件
+      // eslint-disable-next-line no-console
+      console.debug('[GraphV2] node:custom:save', {
+        id: data.id,
+        oldName: data.name,
+        newName: merged.name,
+        payload,
+      });
+      onNodeChange?.(merged);
+    },
+  );
 
   // 空白区域点击
   graph.on('blank:click', () => {
@@ -268,26 +342,166 @@ export function initGraphV2(options: InitGraphV2Options): Graph {
     }
   });
 
+  /**
+   * 边样式统一（参考 V1 setEdgeAttributes）
+   */
+  const setEdgeStyle = (edge: Edge) => {
+    edge.attr({
+      line: {
+        strokeDasharray: '',
+        stroke: '#5147FF',
+        strokeWidth: 1,
+        targetMarker: {
+          name: 'classic',
+          size: 6,
+        },
+      },
+    });
+    // 边连接完成后使用 manhattan 路由器（与 V1 保持一致）
+    edge.setRouter('manhattan');
+  };
+
+  const isDuplicateEdge = (edge: Edge) => {
+    const source = edge.getSource();
+    const target = edge.getTarget();
+    const sourcePort = edge.getSourcePortId();
+    const targetPort = edge.getTargetPortId();
+
+    return graph.getEdges().some((e) => {
+      if (e.id === edge.id) return false;
+      const es = e.getSource();
+      const et = e.getTarget();
+      if (
+        typeof es === 'object' &&
+        'cell' in es &&
+        'port' in es &&
+        typeof et === 'object' &&
+        'cell' in et &&
+        'port' in et &&
+        typeof source === 'object' &&
+        'cell' in source &&
+        'port' in source &&
+        typeof target === 'object' &&
+        'cell' in target &&
+        'port' in target
+      ) {
+        return (
+          es.cell === source.cell &&
+          es.port === sourcePort &&
+          et.cell === target.cell &&
+          et.port === targetPort
+        );
+      }
+      return false;
+    });
+  };
+
+  /**
+   * 处理异常端口连线：当 sourcePort 包含 exception 时，记录异常流程节点
+   */
+  const handleExceptionEdgeAdd = (edge: Edge): boolean => {
+    const sourcePort = edge.getSourcePortId() || '';
+    if (!sourcePort.includes('exception')) return false;
+
+    const sourceCell = edge.getSourceCell();
+    const targetCell = edge.getTargetCell();
+    if (!sourceCell || !targetCell) return true;
+
+    const newEdge: EdgeV2 = {
+      source: sourceCell.id,
+      target: targetCell.id,
+      sourcePort,
+      targetPort: edge.getTargetPortId() || undefined,
+      zIndex: 1,
+    };
+    onEdgeAdd(newEdge);
+    return true;
+  };
+
   // 边连接完成
   graph.on('edge:connected', ({ isNew, edge }) => {
-    // 设置路由算法（与 V1 保持一致）
-    edge.setRouter('manhattan');
-
+    setEdgeStyle(edge);
     if (!isNew) return;
 
     const sourceCell = edge.getSourceCell();
     const targetCell = edge.getTargetCell();
 
-    if (sourceCell && targetCell) {
+    const sourcePort = edge.getSourcePortId();
+    const targetPort = edge.getTargetPortId();
+
+    if (!sourceCell || !targetCell || !sourcePort || !targetPort) {
+      edge.remove();
+      return;
+    }
+
+    // 重复边检查
+    if (isDuplicateEdge(edge)) {
+      edge.remove();
+      return;
+    }
+
+    const sourceData = sourceCell.getData() as ChildNodeV2;
+    const targetData = targetCell.getData() as ChildNodeV2;
+
+    const { canCreate } = canCreateEdge(
+      sourceData,
+      targetData,
+      sourcePort,
+      targetPort,
+    );
+    if (!canCreate) {
+      edge.remove();
+      return;
+    }
+
+    // 异常处理 out port 连线
+    if (sourcePort.includes('exception')) {
+      const handled = handleExceptionEdgeAdd(edge);
+      if (!handled) {
+        edge.remove();
+      } else {
+        // 异常端口连线后将边置顶（与 V1 保持一致）
+        edge.toFront();
+      }
+      return;
+    }
+
+    // 处理循环节点的连线（与 V1 保持一致）
+    if (
+      sourceData.type === NodeTypeEnumV2.Loop ||
+      targetData.type === NodeTypeEnumV2.Loop
+    ) {
       const newEdge: EdgeV2 = {
         source: sourceCell.id,
         target: targetCell.id,
-        sourcePort: edge.getSourcePortId() || undefined,
-        targetPort: edge.getTargetPortId() || undefined,
-        zIndex: 1,
+        sourcePort,
+        targetPort,
+        zIndex: 15,
       };
       onEdgeAdd(newEdge);
+      // 循环节点连线后将边置顶
+      edge.toFront();
+      return;
     }
+
+    // 普通节点连线
+    const newEdge: EdgeV2 = {
+      source: sourceCell.id,
+      target: targetCell.id,
+      sourcePort,
+      targetPort,
+      zIndex: 1,
+    };
+    onEdgeAdd(newEdge);
+
+    // 设置边的 zIndex（与 V1 保持一致）
+    setTimeout(() => {
+      if (sourceData.loopNodeId || targetData.loopNodeId) {
+        edge.prop('zIndex', 15);
+      } else {
+        edge.prop('zIndex', 1);
+      }
+    }, 0);
   });
 
   // 边删除

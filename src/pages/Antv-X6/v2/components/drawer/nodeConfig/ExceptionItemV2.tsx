@@ -17,6 +17,7 @@ import { CodeLangEnum } from '@/types/enums/plugin';
 import { convertValueToEditorValue } from '@/utils/graph';
 import { ExpandAltOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Form, FormInstance, Input, Select } from 'antd';
+import { isEqual } from 'lodash';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { ChildNodeV2 } from '../../../types';
@@ -53,6 +54,22 @@ export interface ExceptionItemV2Props {
 export const showExceptionHandleV2 = (node: ChildNodeV2): boolean => {
   // 使用 NodeTypeEnumV2 对应的字符串与 EXCEPTION_NODES_TYPE 比较
   return EXCEPTION_NODES_TYPE.includes(node.type as any);
+};
+
+/**
+ * 比较异常处理配置 props 是否相等（用于 memo 优化）
+ */
+const isEqualExceptionPropsV2 = (
+  prev: ExceptionItemV2Props,
+  next: ExceptionItemV2Props,
+): boolean => {
+  return (
+    prev.exceptionHandleType === next.exceptionHandleType &&
+    prev.specificContent === next.specificContent &&
+    prev.timeout === next.timeout &&
+    prev.retryCount === next.retryCount &&
+    isEqual(prev.exceptionHandleNodeIds, next.exceptionHandleNodeIds)
+  );
 };
 
 // ==================== 组件实现 ====================
@@ -315,6 +332,9 @@ export const ExceptionItemV2: React.FC<ExceptionItemV2Props> = memo(
         </div>
       </div>
     );
+  },
+  (prevProps, nextProps) => {
+    return isEqualExceptionPropsV2(prevProps, nextProps);
   },
 );
 
