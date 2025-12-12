@@ -57,6 +57,10 @@ const McpComponentItem: React.FC<McpComponentItemProps> = ({
       ) {
         list.push(item);
       }
+      // 日志按钮: 可查看日志
+      if (item.type === McpMoreActionEnum.Log) {
+        list.push(item);
+      }
     });
     return list;
   }, []);

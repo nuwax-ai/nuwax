@@ -539,6 +539,18 @@ const SpaceLibrary: React.FC = () => {
     }
   };
 
+  // 点击更多操作 日志
+  const handleClickLog = (type: ComponentTypeEnum, info: ComponentInfo) => {
+    switch (type) {
+      case ComponentTypeEnum.Workflow:
+        history.push(`/space/${spaceId}/library-log?query=${info?.id ?? ''}`);
+        break;
+      case ComponentTypeEnum.Plugin:
+        history.push(`/space/${spaceId}/library-log?query=${info?.id ?? ''}`);
+        break;
+    }
+  };
+
   // 点击更多操作
   const handleClickMore = (item: CustomPopoverItem, info: ComponentInfo) => {
     const { action, type } = item as unknown as {
@@ -548,6 +560,8 @@ const SpaceLibrary: React.FC = () => {
     // 删除操作，所有类型的组件都有删除操作，所以单独处理, 知识库只有删除操作
     if (action === ApplicationMoreActionEnum.Del) {
       showDeleteConfirm(type, info);
+    } else if (action === ApplicationMoreActionEnum.Log) {
+      handleClickLog(type, info);
     } else {
       switch (type) {
         // 插件

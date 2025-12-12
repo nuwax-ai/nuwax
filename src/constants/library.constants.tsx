@@ -115,11 +115,6 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
   // 知识库
   // { type: ApplicationMoreActionEnum.Statistics, label: '统计' },
   {
-    action: ApplicationMoreActionEnum.Log,
-    label: '日志',
-    type: ComponentTypeEnum.Knowledge,
-  },
-  {
     action: ApplicationMoreActionEnum.Del,
     label: '删除',
     isDel: true,
@@ -134,11 +129,6 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
   {
     action: ApplicationMoreActionEnum.Export_Config,
     label: '导出配置',
-    type: ComponentTypeEnum.Table,
-  },
-  {
-    action: ApplicationMoreActionEnum.Log,
-    label: '日志',
     type: ComponentTypeEnum.Table,
   },
   {

@@ -93,6 +93,10 @@ const SpaceSection: React.FC<{
         case SpaceApplicationListEnum.Task_Center:
           url = 'task-center';
           break;
+        // 插件、工作流、MCP日志
+        case SpaceApplicationListEnum.Library_Log:
+          url = 'library-log';
+          break;
         default:
           url = 'develop';
       }
@@ -106,25 +110,40 @@ const SpaceSection: React.FC<{
 
   // 判断是否active
   const handleActive = (type: SpaceApplicationListEnum) => {
-    return (
-      (type === SpaceApplicationListEnum.Application_Develop &&
-        (pathname.includes('/develop') || pathname.includes('log'))) ||
-      (type === SpaceApplicationListEnum.Component_Library &&
-        (pathname.includes('library') ||
-          pathname.includes('knowledge') ||
-          pathname.includes('plugin') ||
-          pathname.includes('table'))) ||
-      (type === SpaceApplicationListEnum.MCP_Manage &&
-        pathname.includes('mcp')) ||
-      (type === SpaceApplicationListEnum.Page_Develop &&
-        pathname.includes('page-develop')) ||
-      (type === SpaceApplicationListEnum.Space_Square &&
-        pathname.includes('space-square')) ||
-      (type === SpaceApplicationListEnum.Team_Setting &&
-        pathname.includes('team')) ||
-      (type === SpaceApplicationListEnum.Skill_Manage &&
-        pathname.includes('skill-manage'))
-    );
+    // pathname 示例：/space/836/develop?query=123 得到 develop
+    const path = pathname.split('/').pop();
+
+    switch (type) {
+      // 智能体开发
+      case SpaceApplicationListEnum.Application_Develop:
+        return ['develop', 'log'].includes(path);
+      // 组件库
+      case SpaceApplicationListEnum.Component_Library:
+        return ['library', 'knowledge', 'plugin', 'table'].includes(path);
+      // MCP管理
+      case SpaceApplicationListEnum.MCP_Manage:
+        return ['mcp'].includes(path);
+      // 应用页面开发
+      case SpaceApplicationListEnum.Page_Develop:
+        return ['page-develop'].includes(path);
+      // 空间广场
+      case SpaceApplicationListEnum.Space_Square:
+        return ['space-square'].includes(path);
+      // 成员与设置
+      case SpaceApplicationListEnum.Team_Setting:
+        return ['team'].includes(path);
+      // 技能管理
+      case SpaceApplicationListEnum.Skill_Manage:
+        return ['skill-manage'].includes(path);
+      // 插件、工作流、MCP日志
+      case SpaceApplicationListEnum.Library_Log:
+        return ['library-log'].includes(path);
+      // 任务中心
+      case SpaceApplicationListEnum.Task_Center:
+        return ['task-center'].includes(path);
+      default:
+        return false;
+    }
   };
 
   // 点击进入"工作空间智能体"
