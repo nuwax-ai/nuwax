@@ -14,6 +14,7 @@ import FileContextMenu from './FileContextMenu';
 import FilePathHeader from './FilePathHeader';
 import FileTree from './FileTree';
 import styles from './index.less';
+import SearchView from './SearchView';
 
 const cx = classNames.bind(styles);
 
@@ -167,7 +168,10 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({ files }) => {
         onUploadProject={handleUpload}
       />
       {/* 左边文件树 */}
-      <div className={cx(styles['file-tree-view'], 'h-full')}>
+      <div
+        className={cx(styles['file-tree-view'], 'h-full', 'flex', 'flex-col')}
+      >
+        <SearchView files={files} onFileSelect={handleFileSelect} />
         <FileTree
           files={files}
           // 当前选中的文件ID
