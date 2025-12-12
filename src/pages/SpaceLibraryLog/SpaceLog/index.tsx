@@ -1,5 +1,5 @@
-import { apiAgentLogDetail, apiAgentLogList } from '@/services/agentDev';
-import { logInfo, LogQueryFilter } from '@/types/interfaces/agent';
+import { apiAgentLogDetail, apiSpaceLogList } from '@/services/agentDev';
+import { SpaceLogInfo, SpaceLogQueryFilter } from '@/types/interfaces/agent';
 import { Page } from '@/types/interfaces/request';
 import { AgentLogFormProps } from '@/types/interfaces/space';
 import {
@@ -10,6 +10,7 @@ import {
   FormProps,
   Input,
   Row,
+  Select,
   Table,
   TableColumnsType,
 } from 'antd';
@@ -28,11 +29,11 @@ const { RangePicker } = DatePicker;
 // 日志
 const SpaceLog: React.FC = () => {
   const params = useParams();
-  const agentId = Number(params.agentId);
+  const spaceId = Number(params.spaceId);
   const [form] = Form.useForm();
-  const [dataSource, setDataSource] = useState<logInfo[]>([]);
+  const [dataSource, setDataSource] = useState<SpaceLogInfo[]>([]);
   const [visible, setVisible] = useState<boolean>(false);
-  const [currentLog, setCurrentLog] = useState<logInfo | null>(null);
+  const [currentLog, setCurrentLog] = useState<SpaceLogInfo | null>(null);
   const [loadingLogList, setLoadingLogList] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   // 当前分页的数据
@@ -43,12 +44,12 @@ const SpaceLog: React.FC = () => {
   });
 
   // 日志查询
-  const { run: runLogList } = useRequest(apiAgentLogList, {
+  const { run: runLogList } = useRequest(apiSpaceLogList, {
     manual: true,
     debounceWait: 300,
     // 设置显示 loading 的延迟时间，避免闪烁
     loadingDelay: 300,
-    onSuccess: (result: Page<logInfo>) => {
+    onSuccess: (result: Page<SpaceLogInfo>) => {
       const { total, current, size, records } = result;
       setPagination({
         total: total,
@@ -70,7 +71,7 @@ const SpaceLog: React.FC = () => {
     debounceWait: 300,
     // 设置显示 loading 的延迟时间，避免闪烁
     loadingDelay: 300,
-    onSuccess: (result: logInfo) => {
+    onSuccess: (result: SpaceLogInfo) => {
       setCurrentLog(result);
       setLoading(false);
     },
@@ -78,7 +79,7 @@ const SpaceLog: React.FC = () => {
 
   // 查询日志
   const handleQuery = (
-    queryFilter: LogQueryFilter,
+    queryFilter: SpaceLogQueryFilter,
     current: number = 1,
     pageSize: number = pagination.pageSize,
   ) => {
@@ -93,9 +94,9 @@ const SpaceLog: React.FC = () => {
   useEffect(() => {
     // 查询日志
     handleQuery({
-      agentId,
+      spaceId,
     });
-  }, [agentId]);
+  }, [spaceId]);
 
   const handleDataSearch = (
     values: AgentLogFormProps,
@@ -113,14 +114,14 @@ const SpaceLog: React.FC = () => {
     // \s：匹配任何空白字符，包括空格、制表符（\t）、换行符（\n）等
     // \s+：匹配一个或多个连续的空白字符 => 多个空格会被过滤掉
     // filter(Boolean)：过滤掉空字符串
-    const userInput: string[] = userInputString?.split(/\s+/).filter(Boolean);
-    const output: string[] = outputString?.split(/\s+/).filter(Boolean);
-    const queryFilter = {
-      agentId,
-      startTime: startTime?.toISOString(),
-      endTime: endTime?.toISOString(),
-      userInput,
-      output,
+    // const userInput: string[] = userInputString?.split(/\s+/).filter(Boolean);
+    // const output: string[] = outputString?.split(/\s+/).filter(Boolean);
+    const queryFilter: SpaceLogQueryFilter = {
+      spaceId,
+      createTimeGt: startTime?.valueOf(),
+      createTimeLt: endTime?.valueOf(),
+      input: userInputString,
+      output: outputString,
       ...info,
     };
     handleQuery(queryFilter, current, pageSize);
@@ -149,18 +150,18 @@ const SpaceLog: React.FC = () => {
     // 关闭详情
     handleClose();
     // 查询日志
-    handleQuery({ agentId });
+    handleQuery({ spaceId });
   };
 
   // 入参配置columns
-  const inputColumns: TableColumnsType<logInfo> = [
-    {
-      title: '消息ID',
-      dataIndex: 'messageId',
-      key: 'messageId',
-      width: 150,
-      ellipsis: true,
-    },
+  const inputColumns: TableColumnsType<SpaceLogInfo> = [
+    // {
+    //   title: '请求ID',
+    //   dataIndex: 'requestId',
+    //   key: 'requestId',
+    //   width: 100,
+    //   ellipsis: true,
+    // },
     {
       title: '会话ID',
       dataIndex: 'conversationId',
@@ -169,9 +170,16 @@ const SpaceLog: React.FC = () => {
       ellipsis: true,
     },
     {
+      title: '对象名称',
+      dataIndex: 'targetName',
+      key: 'targetName',
+      width: 100,
+      ellipsis: true,
+    },
+    {
       title: '用户UID',
-      dataIndex: 'userUid',
-      key: 'userUid',
+      dataIndex: 'userId',
+      key: 'userId',
       width: 100,
       ellipsis: true,
     },
@@ -183,9 +191,9 @@ const SpaceLog: React.FC = () => {
       ellipsis: true,
     },
     {
-      title: '用户输入',
-      dataIndex: 'userInput',
-      key: 'userInput',
+      title: '输入内容',
+      dataIndex: 'input',
+      key: 'input',
       minWidth: 150,
       width: 200,
       render: (text: string) => {
@@ -193,7 +201,7 @@ const SpaceLog: React.FC = () => {
       },
     },
     {
-      title: '输出',
+      title: '输出内容',
       dataIndex: 'output',
       key: 'output',
       minWidth: 150,
@@ -231,19 +239,28 @@ const SpaceLog: React.FC = () => {
       key: 'elapsedTimeMs',
       width: 100,
       align: 'center',
-      render: (text: number) => {
-        return <span>{text} ms</span>;
+      render: (_: number, record: SpaceLogInfo) => {
+        const endTime = record.requestEndTime;
+        const startTime = record.requestStartTime;
+        if (!endTime || !startTime) {
+          return <span>0 ms</span>;
+        }
+        const elapsedTime = dayjs(endTime).diff(
+          dayjs(startTime),
+          'millisecond',
+        );
+        return <span>{elapsedTime} ms</span>;
       },
     },
   ];
 
   // 点击行
-  const handleClick = (record: logInfo) => {
+  const handleClick = (record: SpaceLogInfo) => {
     setLoading(true);
-    const { requestId, agentId } = record;
+    const { requestId, spaceId } = record;
     const data = {
       requestId,
-      agentId,
+      spaceId,
     };
     // 查询日志详情
     runLogDetail(data);
@@ -268,22 +285,46 @@ const SpaceLog: React.FC = () => {
             <Row gutter={16}>
               <Col span={8}>
                 <Form.Item
-                  name="messageId"
-                  label="消息ID"
+                  name="targetType"
+                  label="类型"
+                  labelCol={{ flex: '70px' }}
+                >
+                  <Select
+                    allowClear
+                    placeholder="请选择类型"
+                    options={[
+                      { label: '智能体', value: 'Agent' },
+                      { label: '插件', value: 'Plugin' },
+                      { label: '工作流', value: 'Workflow' },
+                      { label: 'Mcp', value: 'Mcp' },
+                    ]}
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="requestId"
+                  label="请求ID"
                   labelCol={{ flex: '70px' }}
                 >
                   <Input placeholder="请输入消息ID" />
                 </Form.Item>
                 <Form.Item
-                  name="userUid"
-                  label="用户UID"
+                  name="userId"
+                  label="用户ID"
                   labelCol={{ flex: '70px' }}
                   className={cx('mb-0')}
                 >
-                  <Input placeholder="请输入用户UID" />
+                  <Input placeholder="请输入用户ID" />
                 </Form.Item>
               </Col>
               <Col span={8}>
+                <Form.Item
+                  name="userName"
+                  label="用户名"
+                  labelCol={{ flex: '70px' }}
+                  className={cx('mb-0')}
+                >
+                  <Input placeholder="请输入用户名" />
+                </Form.Item>
                 <Form.Item
                   name="conversationId"
                   label="会话ID"
@@ -293,11 +334,11 @@ const SpaceLog: React.FC = () => {
                 </Form.Item>
                 <Form.Item
                   name="userInputString"
-                  label="用户输入"
+                  label="输入内容"
                   labelCol={{ flex: '70px' }}
                   className={cx('mb-0')}
                 >
-                  <Input placeholder="多个关键字以空格分隔，请输入用户消息" />
+                  <Input placeholder="多个关键字以空格分隔，请输入内容" />
                 </Form.Item>
               </Col>
               <Col span={8}>
@@ -320,11 +361,19 @@ const SpaceLog: React.FC = () => {
                 </Form.Item>
                 <Form.Item
                   name="outputString"
-                  label="输出"
+                  label="输出内容"
                   labelCol={{ flex: '70px' }}
                   className={cx('mb-0')}
                 >
-                  <Input placeholder="多个关键字以空格分隔，请输入要查询的输出消息" />
+                  <Input placeholder="多个关键字以空格分隔，请输入内容" />
+                </Form.Item>
+                <Form.Item
+                  name="targetName"
+                  label="对象名称"
+                  labelCol={{ flex: '70px' }}
+                  className={cx('mb-0')}
+                >
+                  <Input placeholder="请输入对象名称" />
                 </Form.Item>
               </Col>
             </Row>
@@ -341,7 +390,7 @@ const SpaceLog: React.FC = () => {
         </Form>
         <div className={cx('flex-1', 'overflow-y')}>
           {/* table列表区域 */}
-          <Table<logInfo>
+          <Table<SpaceLogInfo>
             className={cx(styles['table-area'])}
             columns={inputColumns}
             dataSource={dataSource}
@@ -374,7 +423,7 @@ const SpaceLog: React.FC = () => {
         loading={loading}
         visible={visible}
         requestId={currentLog?.requestId}
-        executeResult={currentLog?.executeResult}
+        executeResult={currentLog?.processData}
         onClose={handleClose}
       />
     </div>

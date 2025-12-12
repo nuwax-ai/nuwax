@@ -6,7 +6,9 @@ import type {
   AgentInfo,
   AgentLogDetailParams,
   apiAgentLogListParams,
+  apiSpaceLogListParams,
   logInfo,
+  SpaceLogInfo,
   UserApiKeyInfo,
 } from '@/types/interfaces/agent';
 import type { HomeAgentCategoryInfo } from '@/types/interfaces/agentConfig';
@@ -154,6 +156,15 @@ export async function apiAgentLogList(
   });
 }
 
+// 工作空间日志查询
+export async function apiSpaceLogList(
+  data: apiSpaceLogListParams,
+): Promise<RequestResponse<Page<SpaceLogInfo>>> {
+  return request('/api/requestLogs/list', {
+    method: 'POST',
+    data,
+  });
+}
 // 日志详情
 export async function apiAgentLogDetail(
   data: AgentLogDetailParams,
