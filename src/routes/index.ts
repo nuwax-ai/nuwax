@@ -40,12 +40,22 @@ const routes = [
         path: '/space/:spaceId/skill-manage',
         component: '@/pages/SpaceSkillManage',
       },
+      // 任务中心
+      {
+        path: '/space/:spaceId/task-center',
+        component: '@/pages/SpaceTaskCenter',
+      },
       {
         path: '/space/:spaceId/skill-details/:skillId',
         component: '@/pages/SkillDetails',
       },
       { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
+      // 组件库详情日志
+      {
+        path: '/space/:spaceId/:id/log-library',
+        component: '@/pages/SpaceLibraryLog',
+      },
       { path: '/space/:spaceId/mcp', component: '@/pages/SpaceMcpManage' },
       {
         path: '/space/:spaceId/mcp/create',
