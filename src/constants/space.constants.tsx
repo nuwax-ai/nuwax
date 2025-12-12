@@ -125,9 +125,19 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
     text: '应用页面开发',
   },
   {
+    type: SpaceApplicationListEnum.Component_Library,
+    icon: <SvgIcon name="icons-nav-components" />,
+    text: '组件库',
+  },
+  {
     type: SpaceApplicationListEnum.Skill_Manage,
     icon: <SvgIcon name="icons-nav-doc" />,
     text: '技能管理',
+  },
+  {
+    type: SpaceApplicationListEnum.MCP_Manage,
+    icon: <SvgIcon name="icons-nav-mcp" />,
+    text: 'MCP管理',
   },
   {
     type: SpaceApplicationListEnum.Task_Center,
@@ -135,14 +145,9 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
     text: '任务中心',
   },
   {
-    type: SpaceApplicationListEnum.Component_Library,
-    icon: <SvgIcon name="icons-nav-components" />,
-    text: '组件库',
-  },
-  {
-    type: SpaceApplicationListEnum.MCP_Manage,
-    icon: <SvgIcon name="icons-nav-mcp" />,
-    text: 'MCP管理',
+    type: SpaceApplicationListEnum.Library_Log,
+    icon: <SvgIcon name="icons-chat-history" />,
+    text: '日志查询',
   },
   {
     type: SpaceApplicationListEnum.Space_Square,

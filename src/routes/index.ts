@@ -51,9 +51,9 @@ const routes = [
       },
       { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
-      // 组件库详情日志
+      // 插件、工作流、MCP日志
       {
-        path: '/space/:spaceId/:id/log-library',
+        path: '/space/:spaceId/library-log',
         component: '@/pages/SpaceLibraryLog',
       },
       { path: '/space/:spaceId/mcp', component: '@/pages/SpaceMcpManage' },

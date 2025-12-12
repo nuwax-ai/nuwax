@@ -309,6 +309,12 @@ const SpaceLibrary: React.FC = () => {
       case McpMoreActionEnum.Service_Export:
         setServerExportModalVisible(true);
         break;
+      // 日志
+      case McpMoreActionEnum.Log:
+        history.push(`/space/${spaceId}/library-log`);
+        break;
+      default:
+        break;
     }
   };
 

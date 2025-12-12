@@ -59,6 +59,8 @@ export enum ApplicationMoreActionEnum {
   Off_Shelf = 'Off_Shelf',
   // 删除
   Del = 'Del',
+  // 插件、工作流、MCP日志
+  Library_Log = 'Library_Log',
 }
 
 // 工作空间应用列表枚举
@@ -79,6 +81,8 @@ export enum SpaceApplicationListEnum {
   Skill_Manage,
   // 任务中心
   Task_Center,
+  // 插件、工作流、MCP日志
+  Library_Log,
 }
 
 // 智能体配置 - 编排类型枚举
