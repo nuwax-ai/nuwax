@@ -77,6 +77,8 @@ export enum SpaceApplicationListEnum {
   Team_Setting,
   // 技能管理
   Skill_Manage,
+  // 任务中心
+  Task_Center,
 }
 
 // 智能体配置 - 编排类型枚举
