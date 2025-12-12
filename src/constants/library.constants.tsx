@@ -67,29 +67,6 @@ export const SKILL_MORE_ACTION: CustomPopoverItem[] = [
  * 导出配置接口，支持Agent、Workflow、Plugin、Table
  */
 export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
-  // 插件
-  {
-    action: ApplicationMoreActionEnum.Copy_To_Space,
-    label: '复制到空间',
-    type: ComponentTypeEnum.Plugin,
-  },
-  {
-    action: ApplicationMoreActionEnum.Export_Config,
-    label: '导出配置',
-    type: ComponentTypeEnum.Plugin,
-  },
-  {
-    action: ApplicationMoreActionEnum.Del,
-    label: '删除',
-    isDel: true,
-    type: ComponentTypeEnum.Plugin,
-  },
-  {
-    action: ApplicationMoreActionEnum.Del,
-    label: '删除',
-    isDel: true,
-    type: ComponentTypeEnum.Model,
-  },
   // 工作流
   {
     action: ApplicationMoreActionEnum.Copy_To_Space,
@@ -102,13 +79,46 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
     type: ComponentTypeEnum.Workflow,
   },
   {
+    action: ApplicationMoreActionEnum.Log,
+    label: '日志',
+    type: ComponentTypeEnum.Workflow,
+  },
+  {
     action: ApplicationMoreActionEnum.Del,
     label: '删除',
     isDel: true,
     type: ComponentTypeEnum.Workflow,
   },
+  // 插件
+  {
+    action: ApplicationMoreActionEnum.Copy_To_Space,
+    label: '复制到空间',
+    type: ComponentTypeEnum.Plugin,
+  },
+  {
+    action: ApplicationMoreActionEnum.Export_Config,
+    label: '导出配置',
+    type: ComponentTypeEnum.Plugin,
+  },
+  {
+    action: ApplicationMoreActionEnum.Log,
+    label: '日志',
+    type: ComponentTypeEnum.Plugin,
+  },
+  {
+    action: ApplicationMoreActionEnum.Del,
+    label: '删除',
+    isDel: true,
+    type: ComponentTypeEnum.Plugin,
+  },
+
   // 知识库
   // { type: ApplicationMoreActionEnum.Statistics, label: '统计' },
+  {
+    action: ApplicationMoreActionEnum.Log,
+    label: '日志',
+    type: ComponentTypeEnum.Knowledge,
+  },
   {
     action: ApplicationMoreActionEnum.Del,
     label: '删除',
@@ -127,10 +137,22 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
     type: ComponentTypeEnum.Table,
   },
   {
+    action: ApplicationMoreActionEnum.Log,
+    label: '日志',
+    type: ComponentTypeEnum.Table,
+  },
+  {
     action: ApplicationMoreActionEnum.Del,
     label: '删除',
     isDel: true,
     type: ComponentTypeEnum.Table,
+  },
+  // 模型
+  {
+    action: ApplicationMoreActionEnum.Del,
+    label: '删除',
+    isDel: true,
+    type: ComponentTypeEnum.Model,
   },
 ];
 
