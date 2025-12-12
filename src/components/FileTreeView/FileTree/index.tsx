@@ -240,15 +240,6 @@ const FileTree: React.FC<FileTreeProps> = ({
                 {node.name}
               </span>
             )}
-
-            {/* 正常模式：显示文件状态 */}
-            {/* {!isComparing && !isChatLoading && !isRenaming && (
-              <>
-                {node.status && (
-                  <span className={styles.fileStatus}>{node.status}</span>
-                )}
-              </>
-            )} */}
           </div>
         );
       }
