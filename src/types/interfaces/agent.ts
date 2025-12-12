@@ -606,6 +606,121 @@ export interface LogQueryFilter {
   spaceId?: string[];
 }
 
+// 日志查询过滤条件-工作空间
+export interface SpaceLogQueryFilter {
+  /** 请求唯一标识，可以用于关联一次请求中所有相关的操作 */
+  requestId?: string;
+
+  /** 日志产生对象所在的空间 ID */
+  spaceId?: number;
+
+  /** 请求发起的用户 ID */
+  userId?: number;
+
+  /** 用户名 */
+  userName?: string;
+
+  /** 日志对象类型，Agent、Plugin、Workflow、Mcp */
+  targetType?: string;
+
+  /** 日志对象名称 */
+  targetName?: string;
+
+  /** 日志对象 ID */
+  targetId?: string;
+
+  /** 会话 ID */
+  conversationId?: string;
+
+  /** 输入参数 */
+  input?: string;
+
+  /** 执行结果 */
+  output?: string;
+
+  /** 执行过程数据 */
+  processData?: string;
+
+  /** 执行结果码，0000 为成功 */
+  resultCode?: string;
+
+  /** 日志产生时间（大于） */
+  createTimeGt?: number;
+
+  /** 日志产生时间（小于） */
+  createTimeLt?: number;
+}
+
+// 日志查询请求参数-工作空间
+export interface apiSpaceLogListParams {
+  /*分页查询过滤条件 */
+  queryFilter?: SpaceLogQueryFilter;
+  // 当前页,示例值(1)
+  current: number;
+  // 分页pageSize,示例值(10)
+  pageSize: number;
+}
+
+// 日志查询响应-工作空间
+export interface SpaceLogInfo {
+  /** 日志 ID，不用于展示，仅用于查询详情 */
+  id?: string;
+
+  /** 请求唯一标识，可用于关联一次请求中所有相关操作 */
+  requestId?: string;
+
+  /** 日志产生对象所在的空间 ID */
+  spaceId?: number;
+
+  /** 请求发起的用户 ID */
+  userId?: number;
+
+  /** 用户名 */
+  userName?: string;
+
+  /** 日志对象类型 */
+  targetType?: string;
+
+  /** 日志对象名称 */
+  targetName?: string;
+
+  /** 日志对象 ID */
+  targetId?: string;
+
+  /** 会话 ID */
+  conversationId?: string;
+
+  /** 输入参数 */
+  input?: string;
+
+  /** 执行结果 */
+  output?: string;
+
+  /** 执行过程数据 */
+  processData?: string;
+
+  /** 输入 token 数量 */
+  inputToken?: number;
+
+  /** 输出 token 数量 */
+  outputToken?: number;
+
+  /** 请求开始时间（时间戳） */
+  requestStartTime?: number;
+
+  /** 请求结束时间（时间戳） */
+  requestEndTime?: number;
+
+  /** 执行结果码，0000 为成功 */
+  resultCode?: string;
+
+  /** 执行结果描述 */
+  resultMsg?: string;
+
+  /** 日志产生时间（时间戳） */
+  createTime?: number;
+}
+
 // 日志查询请求参数
 export interface apiAgentLogListParams {
   /*分页查询过滤条件 */
