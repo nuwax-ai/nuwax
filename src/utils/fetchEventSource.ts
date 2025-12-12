@@ -40,6 +40,8 @@ export async function createSSEConnection<T = any>(
 ): Promise<() => void> {
   const controller = options.abortController || new AbortController();
   let isAborted = false;
+  // 防止 onClose 被多处路径重复触发（abortFunction / onclose / timeout）
+  let hasClosed = false;
   // 记录最后一次收到消息的时间戳
   let lastMessageTimestamp: number | null = null;
   // 超时检查定时器
@@ -47,6 +49,14 @@ export async function createSSEConnection<T = any>(
 
   // 为当前连接生成唯一标识，用于共享定时器管理
   const timerOwner = Symbol('sse-timeout-owner');
+
+  const safeOnClose = () => {
+    if (hasClosed) {
+      return;
+    }
+    hasClosed = true;
+    options.onClose?.();
+  };
 
   // 清理定时器并标记中止
   const markAborted = () => {
@@ -62,12 +72,16 @@ export async function createSSEConnection<T = any>(
     if (!isAborted) {
       // 防止页面流式数据输出不全问题，延迟1秒关闭连接
       setTimeout(() => {
+        // 延迟期间如果已经走了 onclose/onerror/timeout，则不再重复触发关闭逻辑
+        if (isAborted) {
+          return;
+        }
         console.log('🔌 [SSE Utils] 手动中止 SSE 连接');
         // 清除共享定时器
         markAborted();
-        // options.onClose?.();
+        safeOnClose();
         // 中止连接
-        controller.abort();
+        // controller.abort();
       }, 500);
     }
   };
@@ -117,7 +131,7 @@ export async function createSSEConnection<T = any>(
         );
         if (!isAborted) {
           markAborted();
-          options.onClose?.();
+          safeOnClose();
           controller.abort();
         }
       }
@@ -185,7 +199,7 @@ export async function createSSEConnection<T = any>(
         console.log('🔌 [SSE Utils] SSE 连接已关闭');
         markAborted();
         lastMessageTimestamp = null;
-        options.onClose?.();
+        safeOnClose();
         controller.abort(); // 阻止 fetchEventSource 继续自动重连
       },
 
