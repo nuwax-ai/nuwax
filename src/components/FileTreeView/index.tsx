@@ -169,7 +169,13 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({ files }) => {
       />
       {/* 左边文件树 */}
       <div
-        className={cx(styles['file-tree-view'], 'h-full', 'flex', 'flex-col')}
+        className={cx(
+          styles['file-tree-view'],
+          'h-full',
+          'flex',
+          'flex-col',
+          'overflow-hide',
+        )}
       >
         <SearchView files={files} onFileSelect={handleFileSelect} />
         <FileTree
