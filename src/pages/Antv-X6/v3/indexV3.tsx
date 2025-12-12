@@ -1957,7 +1957,7 @@ const Workflow: React.FC = () => {
         e.preventDefault();
         if (graph.canUndo()) {
           graph.undo();
-          message.success('已撤销');
+          // message.success('已撤销');
         }
       }
 
@@ -1969,7 +1969,7 @@ const Workflow: React.FC = () => {
         e.preventDefault();
         if (graph.canRedo()) {
           graph.redo();
-          message.success('已重做');
+          // message.success('已重做');
         }
       }
     };
@@ -1994,7 +1994,25 @@ const Workflow: React.FC = () => {
 
           // Sync graph data to Proxy to ensure consistency after Undo/Redo
           if (workflowProxy) {
-            const nodes = graph.getNodes().map((n) => n.getData());
+            const nodes = graph.getNodes().map((n) => {
+              const data = n.getData();
+              const position = n.getPosition(); // 读取 X6 的实际位置
+              const size = n.getSize();
+              // 将 X6 的位置同步到业务数据的 nodeConfig.extension
+              return {
+                ...data,
+                nodeConfig: {
+                  ...data.nodeConfig,
+                  extension: {
+                    ...data.nodeConfig?.extension,
+                    x: position.x,
+                    y: position.y,
+                    width: size.width,
+                    height: size.height,
+                  },
+                },
+              };
+            });
             const edges = graph.getEdges().map((e) => {
               const source = e.getSource() as any;
               const target = e.getTarget() as any;
@@ -2033,14 +2051,14 @@ const Workflow: React.FC = () => {
           const graph = graphRef.current?.getGraphRef();
           if (graph && graph.canUndo()) {
             graph.undo();
-            message.success('已撤销');
+            // message.success('已撤销');
           }
         }}
         onRedo={() => {
           const graph = graphRef.current?.getGraphRef();
           if (graph && graph.canRedo()) {
             graph.redo();
-            message.success('已重做');
+            // message.success('已重做');
           }
         }}
       />

@@ -426,7 +426,11 @@ const initGraph = ({
     .use(new Snapline()) // 启用对齐辅助线插件，帮助节点对齐
     .use(new Keyboard()) // 启用键盘插件，支持快捷键操作
     .use(new Clipboard()) // 启用剪贴板插件，支持复制和粘贴
-    .use(new History()) // 启用历史记录插件，支持撤销和重做
+    .use(
+      new History({
+        enabled: true,
+      }),
+    ) // 启用历史记录插件，支持撤销和重做
     .use(
       new Selection({
         // enabled: true,
@@ -642,15 +646,20 @@ const initGraph = ({
     const data = node.getData();
 
     // 将节点的extension属性设置为拖拽后的位置
-    if (data.nodeConfig && data.nodeConfig.extension) {
-      data.nodeConfig.extension.x = x;
-      data.nodeConfig.extension.y = y;
-    } else {
-      data.nodeConfig.extension = {
-        x,
-        y,
-      };
-    }
+    // 使用 updateData 而非直接修改，确保 History 插件能记录变化
+    const extension = data.nodeConfig?.extension || {};
+    node.updateData({
+      nodeConfig: {
+        ...data.nodeConfig,
+        extension: {
+          ...extension,
+          x,
+          y,
+        },
+      },
+    });
+    // 重新获取更新后的 data
+    const updatedData = node.getData();
     // 如果是循环内部的节点，要一并修改循环的宽度和位置
     if (data.loopNodeId) {
       const parentNode = graph.getCellById(data.loopNodeId) as Node;
@@ -692,9 +701,9 @@ const initGraph = ({
       return;
     }
 
-    if (data.type === NodeTypeEnum.Loop) {
+    if (updatedData.type === NodeTypeEnum.Loop) {
       const children = node.getChildren();
-      const innerNodes = data.innerNodes || [];
+      const innerNodes = updatedData.innerNodes || [];
 
       if (children && children.length) {
         // 找到循环节点中当前被移动的节点
@@ -729,12 +738,12 @@ const initGraph = ({
       data.nodeConfig.extension.width = _size.width;
       data.nodeConfig.extension.height = _size.height;
 
-      changeCondition({ nodeData: data, update: NodeUpdateEnum.moved });
+      changeCondition({ nodeData: updatedData, update: NodeUpdateEnum.moved });
       return;
     }
 
     // node.prop('zIndex', 99);
-    changeCondition({ nodeData: data, update: NodeUpdateEnum.moved });
+    changeCondition({ nodeData: updatedData, update: NodeUpdateEnum.moved });
     changeZIndex(node);
   });
 
