@@ -95,7 +95,14 @@ import {
 import { LoadingOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import { Form, message, Spin } from 'antd';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { debounce } from 'lodash';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import NodePanelDrawer from '../components/NodePanelDrawer';
@@ -279,6 +286,8 @@ const Workflow: React.FC = () => {
         edges: _edgeList,
         modified: _res.data.modified || new Date().toISOString(),
       });
+      // V3: 存储完整的工作流信息（用于全量保存）
+      workflowProxy.setWorkflowInfo(_res.data);
     } catch (error) {
       console.error('Failed to fetch graph data:', error);
     }
@@ -296,6 +305,44 @@ const Workflow: React.FC = () => {
       getDetails();
     }
   };
+
+  // V3: 全量保存工作流配置
+  const saveFullWorkflow = useCallback(async (): Promise<boolean> => {
+    try {
+      const fullConfig = workflowProxy.buildFullConfig();
+      if (!fullConfig) {
+        return false;
+      }
+
+      const _res = await service.saveWorkflow(fullConfig);
+
+      if (_res.code === Constant.success) {
+        workflowProxy.clearPendingUpdates();
+        changeUpdateTime();
+        return true;
+      } else {
+        console.error('[V3] 工作流保存失败:', _res.message);
+        message.error(_res.message || '保存失败');
+        return false;
+      }
+    } catch (error) {
+      console.error('[V3] 工作流保存异常:', error);
+      message.error('保存失败，请稍后重试');
+      return false;
+    }
+  }, [changeUpdateTime]);
+
+  // V3: 防抖保存（自动保存用）
+  const debouncedSaveFullWorkflow = useMemo(
+    () =>
+      debounce(async () => {
+        if (workflowProxy.hasPendingChanges()) {
+          await saveFullWorkflow();
+        }
+      }, 2000), // 2秒防抖
+    [saveFullWorkflow],
+  );
+
   // 调整画布的大小（左下角select）
   const changeGraph = (val: number | string) => {
     if (val === -1) {
@@ -417,6 +464,8 @@ const Workflow: React.FC = () => {
         updateCurrentNodeRef('sourceNode', {
           nextNodeIds: newNodeIds,
         });
+        // V3: 连线变化后触发全量保存
+        debouncedSaveFullWorkflow();
         return newNodeIds;
       } else {
         // Rollback visual edge
@@ -439,6 +488,8 @@ const Workflow: React.FC = () => {
         updateCurrentNodeRef('sourceNode', {
           nextNodeIds: newNodeIds,
         });
+        // V3: 连线变化后触发全量保存
+        debouncedSaveFullWorkflow();
         return newNodeIds;
       } else {
         message.error(res.message);
@@ -468,6 +519,8 @@ const Workflow: React.FC = () => {
       // 更新当前节点的上级参数（使用前端计算）
       await getReference(getWorkflow('drawerForm').id);
       changeUpdateTime();
+      // V3: 触发防抖全量保存
+      debouncedSaveFullWorkflow();
       return true;
     }
 
@@ -525,6 +578,8 @@ const Workflow: React.FC = () => {
       }
       // 更新当前节点的上级引用参数
       callback();
+      // V3: 触发防抖全量保存
+      debouncedSaveFullWorkflow();
       return true;
     }
 
@@ -1087,9 +1142,6 @@ const Workflow: React.FC = () => {
     _params.workflowId = workflowId;
     _params.extension = dragEvent;
 
-    // V3: Generate ID locally
-    _params.id = Date.now();
-
     const { width, height } = getNodeSize({
       data: _params,
       ports: [],
@@ -1148,6 +1200,72 @@ const Workflow: React.FC = () => {
       _params.extension = _params.nodeConfig.extension;
     }
 
+    // V3: 生成备用节点 ID（当 API 失败时使用）
+    // 规则：工作流 ID 前三位（不足补 0，超过截取）+ 时间戳
+    const generateFallbackNodeId = (wfId: number): number => {
+      const wfIdStr = String(wfId);
+      let prefix: string;
+
+      if (wfIdStr.length < 3) {
+        // 不足三位，后面补 0
+        prefix = wfIdStr.padEnd(3, '0');
+      } else {
+        // 超过三位，截取前三位
+        prefix = wfIdStr.substring(0, 3);
+      }
+
+      const timestamp = Date.now();
+      return Number(prefix + timestamp);
+    };
+
+    // V3: 先调用后端 API 获取节点 ID，失败则前端生成
+    let nodeId: number;
+    let apiNodeData: AddNodeResponse | null = null;
+
+    try {
+      const apiRes = await service.apiAddNode({
+        workflowId: workflowId,
+        type: _params.type,
+        loopNodeId: _params.loopNodeId,
+        extension: _params.extension,
+        nodeConfigDto: _params.nodeConfigDto,
+      });
+
+      if (apiRes.code === Constant.success && apiRes.data) {
+        // API 成功，使用后端返回的数据
+        nodeId = apiRes.data.id;
+        apiNodeData = apiRes.data;
+        console.log('[V3] 添加节点 API 成功, nodeId:', nodeId);
+      } else {
+        // API 失败，前端生成 ID
+        nodeId = generateFallbackNodeId(workflowId);
+        console.warn(
+          '[V3] 添加节点 API 失败，使用前端生成 ID:',
+          nodeId,
+          apiRes.message,
+        );
+      }
+    } catch (error) {
+      // API 异常，前端生成 ID
+      nodeId = generateFallbackNodeId(workflowId);
+      console.warn('[V3] 添加节点 API 异常，使用前端生成 ID:', nodeId, error);
+    }
+
+    // 更新节点 ID
+    _params.id = nodeId;
+
+    // 如果 API 返回了完整数据，使用 API 返回的数据
+    if (apiNodeData) {
+      _params = {
+        ..._params,
+        ...apiNodeData,
+        nodeConfig: {
+          ...apiNodeData.nodeConfig,
+          extension: _params.extension,
+        },
+      };
+    }
+
     // V3: Use Proxy to add node
     const proxyResult = workflowProxy.addNode(_params as ChildNode);
 
@@ -1155,6 +1273,8 @@ const Workflow: React.FC = () => {
       try {
         // Use the params as the created node data
         await handleNodeCreationSuccess(_params as AddNodeResponse, child);
+        // V3: 触发防抖全量保存
+        debouncedSaveFullWorkflow();
       } catch (error) {
         console.error('处理节点创建成功后的操作失败:', error);
       }
@@ -1801,7 +1921,33 @@ const Workflow: React.FC = () => {
   // 保存当前画布中节点的位置
   useEffect(() => {
     getDetails();
+
+    // V3: 页面离开前保存（处理刷新/关闭页面）
+    const handleBeforeUnload = () => {
+      if (workflowProxy.hasPendingChanges()) {
+        // 同步保存（beforeunload 不支持异步）
+        const fullConfig = workflowProxy.buildFullConfig();
+        if (fullConfig) {
+          // 使用 sendBeacon 尝试同步发送
+          const url = `${process.env.BASE_URL}/api/workflow/save`;
+          const blob = new Blob(
+            [JSON.stringify({ workflowConfig: fullConfig })],
+            { type: 'application/json' },
+          );
+          navigator.sendBeacon(url, blob);
+        }
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+
+      // V3: 离开页面时全量保存
+      if (workflowProxy.hasPendingChanges()) {
+        saveFullWorkflow();
+      }
+
       setIsModified((prev: boolean) => {
         if (prev === true) {
           onSaveWorkflow(getWorkflow('drawerForm'));
@@ -1836,6 +1982,11 @@ const Workflow: React.FC = () => {
 
   const validPublishWorkflow = async () => {
     setLoading(false);
+
+    // V3: 发布前全量保存
+    if (workflowProxy.hasPendingChanges()) {
+      await saveFullWorkflow();
+    }
 
     if (getWorkflow('isModified') === true) {
       // 如果当前有未保存的修改，则先保存一下
