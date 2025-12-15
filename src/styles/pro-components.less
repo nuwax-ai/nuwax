@@ -1,0 +1,85 @@
+@import '@/styles/color';
+
+/**
+ * ProComponents / ProTable 相关样式集中维护
+ * 目标：
+ * - 横向滚动只发生在表格内容区域（表单/分页不跟随横向滚动）
+ * - 固定右侧列（如“操作”列）背景不透明，hover 不透底
+ * - 表格滚动条只保留滑块（thumb），风格与全局一致
+ */
+
+.ant-pro-table {
+  .ant-table-content {
+    width: 100% !important;
+    height: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+
+    // ---------- 表格滚动条：只保留滑块 ----------
+    // Firefox
+    scrollbar-color: @GRAY19 transparent;
+    scrollbar-width: thin;
+
+    // Chrome / Safari / Edge
+    &::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-track,
+    &::-webkit-scrollbar-track-piece,
+    &::-webkit-scrollbar-corner {
+      background: transparent;
+      box-shadow: none;
+      border: none;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: @GRAY19;
+      border-radius: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: @GRAY;
+    }
+
+    // ---------- 固定列背景（右侧“操作”列） ----------
+    .ant-table-cell-fix-right,
+    .ant-table-cell-fix-right-first,
+    .ant-table-cell-fix-right-last {
+      background: #fff !important;
+    }
+  }
+
+  // ---------- 分页：间距优化 ----------
+  .ant-pagination,
+  .ant-table-pagination {
+    padding-right: 0 !important;
+  }
+
+  .ant-pagination-total-text {
+    margin-right: 16px !important;
+  }
+
+  .ant-pagination-item {
+    margin-inline: 6px !important;
+  }
+
+  .ant-pagination-prev,
+  .ant-pagination-next {
+    margin-inline: 8px !important;
+  }
+
+  .ant-pagination-options {
+    margin-left: 16px !important;
+  }
+
+  .ant-pagination-options-size-changer {
+    margin-right: 12px !important;
+  }
+
+  .ant-pagination-options-quick-jumper {
+    margin-left: 12px !important;
+  }
+}

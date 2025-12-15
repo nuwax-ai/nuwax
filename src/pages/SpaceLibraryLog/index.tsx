@@ -1,10 +1,10 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import SpaceLog from '@/pages/SpaceLibraryLog/SpaceLog';
+import LogProTable from '@/pages/SpaceLibraryLog/LogProTable';
 
 const SpaceLibraryLog = () => {
   return (
     <WorkspaceLayout title="日志查询" hideScroll={true}>
-      <SpaceLog />
+      <LogProTable />
     </WorkspaceLayout>
   );
 };
