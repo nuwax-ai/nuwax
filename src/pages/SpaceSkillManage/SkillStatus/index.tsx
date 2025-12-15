@@ -12,7 +12,9 @@ export default function SkillStatus({
       return <span>审核中</span>;
     case PublishStatusEnum.Developing:
       return <span>开发中</span>;
+    case PublishStatusEnum.Rejected:
+      return <span>已拒绝</span>;
     default:
-      return null;
+      return <span>&nbsp;</span>;
   }
 }
