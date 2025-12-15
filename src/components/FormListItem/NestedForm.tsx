@@ -28,7 +28,20 @@ const CustomTree: React.FC<TreeFormProps> = ({
   showCheck,
   isBody,
   isNotAdd,
+  onNodeConfigChange,
 }) => {
+  const handleDataChange = useCallback(
+    (newData: any[]) => {
+      if (onNodeConfigChange) {
+        onNodeConfigChange(
+          { [inputItemName]: newData },
+          { ...form.getFieldsValue(), [inputItemName]: newData },
+        );
+      }
+    },
+    [onNodeConfigChange, form, inputItemName],
+  );
+
   // 使用自定义Hook管理树形数据
   const {
     treeData,
@@ -39,7 +52,7 @@ const CustomTree: React.FC<TreeFormProps> = ({
     deleteNode,
     updateNodeField,
     updateTreeData,
-  } = useTreeData(params, form, inputItemName);
+  } = useTreeData(params, form, inputItemName, handleDataChange);
 
   // 使用自定义Hook管理必填状态
   const { updateRequireStatus } = useRequireStatus(treeData, updateTreeData);

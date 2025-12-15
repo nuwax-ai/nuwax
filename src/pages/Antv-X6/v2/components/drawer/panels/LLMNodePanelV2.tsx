@@ -1,17 +1,26 @@
 /**
  * V2 LLM 节点配置面板
- * 完全独立，不依赖 v1 任何代码
+ * 从 v1 迁移，保持相同的功能和交互方式
  */
 
+import { ModelSelected } from '@/components/ModelSetting';
+import { InputItemNameEnum } from '@/types/enums/node';
+import { Collapse, Form, InputNumber, Slider, Typography } from 'antd';
 import React from 'react';
-import { Form, Input, Select, Slider, InputNumber, Typography, Space, Collapse } from 'antd';
 
-import type { ChildNodeV2, NodePreviousAndArgMapV2 } from '../../../types';
-import VariableSelectorV2 from '../../common/VariableSelectorV2';
+import CustomTree from '@/components/FormListItem/NestedForm';
+import type {
+  ChildNodeV2,
+  InputAndOutConfigV2,
+  NodePreviousAndArgMapV2,
+} from '../../../types';
 import PromptEditorV2 from '../../common/PromptEditorV2';
+import {
+  InputAndOutV2,
+  outPutConfigsV2,
+} from '../../drawer/nodeConfig/commonNodeV2';
 
 const { Text } = Typography;
-const { TextArea } = Input;
 const { Panel } = Collapse;
 
 export interface LLMNodePanelV2Props {
@@ -27,68 +36,82 @@ const MODEL_OPTIONS = [
   { label: 'DeepSeek', value: 4 },
 ];
 
-const LLMNodePanelV2: React.FC<LLMNodePanelV2Props> = ({ node, referenceData }) => {
+const LLMNodePanelV2: React.FC<LLMNodePanelV2Props> = ({
+  node,
+  referenceData,
+}) => {
+  const form = Form.useFormInstance();
+
+  // 输入变量
+  const variables = (
+    Form.useWatch(InputItemNameEnum.inputArgs, {
+      form,
+      preserve: true,
+    }) || []
+  ).filter(
+    (item: InputAndOutConfigV2) => !['', null, undefined].includes(item.name),
+  );
+
   return (
-    <div className="node-panel-v2">
-      {/* 模型选择 */}
-      <div className="node-panel-v2-section">
-        <div className="node-panel-v2-section-header">
-          <Text strong>模型</Text>
-        </div>
-        <Form.Item
-          name="modelId"
-          rules={[{ required: true, message: '请选择模型' }]}
-        >
-          <Select
-            placeholder="选择模型"
-            options={MODEL_OPTIONS}
-            style={{ width: '100%' }}
-          />
-        </Form.Item>
+    <div className="model-node-style-v2">
+      {/* 模型模块 */}
+      <ModelSelected form={form} modelConfig={node.nodeConfig?.modelConfig} />
+
+      {/* 输入参数 */}
+      <div className="node-item-style-v2">
+        <InputAndOutV2
+          title="输入"
+          fieldConfigs={outPutConfigsV2}
+          inputItemName={InputItemNameEnum.inputArgs}
+          form={form}
+          referenceData={referenceData}
+        />
       </div>
 
       {/* 系统提示词 */}
-      <div className="node-panel-v2-section">
-        <div className="node-panel-v2-section-header">
-          <Text strong>系统提示词</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            设定模型的角色和行为
-          </Text>
-        </div>
-        <Form.Item name="systemPrompt">
-          <PromptEditorV2
-            placeholder="输入系统提示词，如：你是一个专业的助手..."
-            referenceData={referenceData}
-            rows={4}
-          />
-        </Form.Item>
-      </div>
+      <Form.Item name="systemPrompt">
+        <PromptEditorV2
+          placeholder="系统提示词，可以使用 {{变量名}} {{变量名.子变量名}} {{变量名[索引]}} 引用变量"
+          referenceData={referenceData}
+          minRows={6}
+          maxRows={12}
+        />
+      </Form.Item>
 
       {/* 用户提示词 */}
-      <div className="node-panel-v2-section">
-        <div className="node-panel-v2-section-header">
-          <Text strong>用户提示词</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            发送给模型的消息，可以引用变量
-          </Text>
-        </div>
-        <Form.Item
-          name="userPrompt"
-          rules={[{ required: true, message: '请输入用户提示词' }]}
-        >
-          <PromptEditorV2
-            placeholder="输入用户提示词，使用 {{ }} 引用变量"
-            referenceData={referenceData}
-            rows={6}
-          />
-        </Form.Item>
-      </div>
+      <Form.Item
+        name="userPrompt"
+        rules={[{ required: true, message: '请输入用户提示词' }]}
+      >
+        <PromptEditorV2
+          placeholder="用户提示词，可以使用 {{变量名}}、{{变量名.子变量名}}、{{变量名[索引]}} 引用变量"
+          referenceData={referenceData}
+          minRows={8}
+          maxRows={14}
+        />
+      </Form.Item>
+
+      {/* 输出参数 */}
+      <Form.Item shouldUpdate name="outputArgs">
+        <CustomTree
+          key={`${node.type}-${node.id}-outputArgs`}
+          title="输出"
+          notShowTitle
+          form={form}
+          params={(node.nodeConfig?.outputArgs || []) as any}
+          inputItemName="outputArgs"
+        />
+      </Form.Item>
 
       {/* 高级设置 */}
       <Collapse ghost>
         <Panel header="高级设置" key="advanced">
           <div className="node-panel-v2-section">
-            <Form.Item label="最大回复长度" name="maxTokens" initialValue={2000}>
+            <Form.Item
+              label="最大回复长度"
+              name="maxTokens"
+              initialValue={2000}
+            >
               <InputNumber
                 min={1}
                 max={8000}
@@ -97,7 +120,11 @@ const LLMNodePanelV2: React.FC<LLMNodePanelV2Props> = ({ node, referenceData }) 
               />
             </Form.Item>
 
-            <Form.Item label="生成随机性 (Temperature)" name="temperature" initialValue={0.7}>
+            <Form.Item
+              label="生成随机性 (Temperature)"
+              name="temperature"
+              initialValue={0.7}
+            >
               <Slider
                 min={0}
                 max={2}
@@ -107,11 +134,7 @@ const LLMNodePanelV2: React.FC<LLMNodePanelV2Props> = ({ node, referenceData }) 
             </Form.Item>
 
             <Form.Item label="Top P" name="topP" initialValue={0.9}>
-              <Slider
-                min={0}
-                max={1}
-                step={0.1}
-              />
+              <Slider min={0} max={1} step={0.1} />
             </Form.Item>
           </div>
         </Panel>

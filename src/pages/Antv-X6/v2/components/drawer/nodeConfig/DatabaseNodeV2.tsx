@@ -42,6 +42,7 @@ export interface DatabaseNodeV2Props {
   id: number;
   type: string;
   referenceData?: any;
+  onNodeConfigChange?: (changedValues: any, allValues: NodeConfigV2) => void;
 }
 
 // ==================== 常量配置 ====================
@@ -80,6 +81,7 @@ const DatabaseNodeV2: React.FC<DatabaseNodeV2Props> = ({
   nodeConfig,
   id,
   referenceData,
+  onNodeConfigChange,
 }) => {
   // SQL 生成弹窗
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
@@ -119,6 +121,14 @@ const DatabaseNodeV2: React.FC<DatabaseNodeV2Props> = ({
 
     form.setFieldsValue(baseFields);
     setTableSelectorOpen(false);
+
+    // 手动触发保存
+    if (onNodeConfigChange) {
+      onNodeConfigChange(baseFields, {
+        ...form.getFieldsValue(),
+        ...baseFields,
+      });
+    }
   };
 
   const handleTableClear = () => {
@@ -127,6 +137,17 @@ const DatabaseNodeV2: React.FC<DatabaseNodeV2Props> = ({
       tableId: undefined,
       tableFields: undefined,
     });
+    // 手动触发保存
+    if (onNodeConfigChange) {
+      onNodeConfigChange(
+        { tableId: undefined, tableFields: undefined },
+        {
+          ...form.getFieldsValue(),
+          tableId: undefined,
+          tableFields: undefined,
+        },
+      );
+    }
   };
 
   useEffect(() => {
@@ -422,6 +443,7 @@ const DatabaseNodeV2: React.FC<DatabaseNodeV2Props> = ({
             form={form}
             showCheck
             isNotAdd
+            onNodeConfigChange={onNodeConfigChange}
           />
         </Form.Item>
       ) : (
@@ -451,7 +473,15 @@ const DatabaseNodeV2: React.FC<DatabaseNodeV2Props> = ({
           const finalSql = text.startsWith('sql')
             ? text.replace('sql', '').trim()
             : text.trim();
-          form.setFieldsValue({ sql: finalSql || '' });
+          const newSql = finalSql || '';
+          form.setFieldsValue({ sql: newSql });
+          // 手动触发保存
+          if (onNodeConfigChange) {
+            onNodeConfigChange(
+              { sql: newSql },
+              { ...form.getFieldsValue(), sql: newSql },
+            );
+          }
         }}
         tableId={form.getFieldValue('tableId')}
         inputArgs={form.getFieldValue('inputArgs')}

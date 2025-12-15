@@ -1,107 +1,90 @@
 /**
  * V2 代码节点配置面板
- * 完全独立，不依赖 v1 任何代码
+ * 从 v1 迁移，保持相同的功能和交互方式
  */
 
-import React from 'react';
-import { Form, Radio, Typography, Button } from 'antd';
-import { PlayCircleOutlined } from '@ant-design/icons';
+import CodeEditor from '@/components/CodeEditor';
+import Monaco from '@/components/CodeEditor/monaco';
+import CustomTree from '@/components/FormListItem/NestedForm';
+import { ExpandAltOutlined } from '@ant-design/icons';
+import { Button, Form } from 'antd';
+import React, { useState } from 'react';
 
+import { InputItemNameEnum } from '@/types/enums/node';
+import { CodeLangEnum } from '@/types/enums/plugin';
 import type { ChildNodeV2, NodePreviousAndArgMapV2 } from '../../../types';
-import InputArgsEditorV2 from '../../common/InputArgsEditorV2';
-import OutputArgsEditorV2 from '../../common/OutputArgsEditorV2';
-import CodeEditorV2 from '../../common/CodeEditorV2';
-
-const { Text } = Typography;
+import {
+  InputAndOutV2,
+  outPutConfigsV2,
+} from '../../drawer/nodeConfig/commonNodeV2';
 
 export interface CodeNodePanelV2Props {
   node: ChildNodeV2;
   referenceData?: NodePreviousAndArgMapV2;
 }
 
-const CodeNodePanelV2: React.FC<CodeNodePanelV2Props> = ({ node, referenceData }) => {
-  const codeLanguage = Form.useWatch('codeLanguage');
+const CodeNodePanelV2: React.FC<CodeNodePanelV2Props> = ({
+  node,
+  referenceData,
+}) => {
+  const form = Form.useFormInstance();
+  const [show, setShow] = useState(false);
+
+  // 根据 codeLanguage 动态选择字段名
+  const codeLanguage =
+    form.getFieldValue('codeLanguage') || CodeLangEnum.JavaScript;
+  const fieldName =
+    codeLanguage === CodeLangEnum.JavaScript ? 'codeJavaScript' : 'codePython';
 
   return (
-    <div className="node-panel-v2">
+    <>
       {/* 输入参数 */}
-      <div className="node-panel-v2-section">
-        <div className="node-panel-v2-section-header">
-          <Text strong>输入参数</Text>
-        </div>
-        <Form.Item name="inputArgs" noStyle>
-          <InputArgsEditorV2
-            referenceData={referenceData}
-            placeholder="添加输入参数"
-          />
-        </Form.Item>
-      </div>
-
-      {/* 代码语言 */}
-      <div className="node-panel-v2-section">
-        <div className="node-panel-v2-section-header">
-          <Text strong>代码语言</Text>
-        </div>
-        <Form.Item name="codeLanguage" initialValue="JavaScript">
-          <Radio.Group>
-            <Radio value="JavaScript">JavaScript</Radio>
-            <Radio value="Python">Python</Radio>
-          </Radio.Group>
-        </Form.Item>
+      <div className="node-item-style-v2">
+        <InputAndOutV2
+          title="输入"
+          fieldConfigs={outPutConfigsV2}
+          inputItemName={InputItemNameEnum.inputArgs}
+          form={form}
+          referenceData={referenceData}
+        />
       </div>
 
       {/* 代码编辑器 */}
-      <div className="node-panel-v2-section">
-        <div className="node-panel-v2-section-header">
-          <Text strong>代码</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            使用 args 访问输入参数，返回值需赋值给 result
-          </Text>
+      <div className="node-item-style-v2">
+        <div>
+          <div className="dis-sb margin-bottom">
+            <span className="node-title-style-v2">代码</span>
+            <Button
+              icon={<ExpandAltOutlined />}
+              size="small"
+              type="text"
+              onClick={() => setShow(true)}
+            />
+          </div>
+          <CodeEditor
+            form={form}
+            value={form.getFieldValue(fieldName)}
+            onChange={(value) => {
+              form.setFieldValue(fieldName, value);
+            }}
+            codeLanguage={codeLanguage}
+            height="180px"
+          />
         </div>
-        {codeLanguage === 'JavaScript' ? (
-          <Form.Item
-            name="codeJavaScript"
-            rules={[{ required: true, message: '请输入代码' }]}
-          >
-            <CodeEditorV2
-              language="javascript"
-              placeholder={`// 示例代码
-function main(args) {
-  const result = {};
-  // 你的代码逻辑
-  return result;
-}`}
-            />
-          </Form.Item>
-        ) : (
-          <Form.Item
-            name="codePython"
-            rules={[{ required: true, message: '请输入代码' }]}
-          >
-            <CodeEditorV2
-              language="python"
-              placeholder={`# 示例代码
-def main(args):
-    result = {}
-    # 你的代码逻辑
-    return result`}
-            />
-          </Form.Item>
-        )}
       </div>
 
       {/* 输出参数 */}
-      <div className="node-panel-v2-section">
-        <div className="node-panel-v2-section-header">
-          <Text strong>输出参数</Text>
-        </div>
-        <Form.Item name="outputArgs" noStyle>
-          <OutputArgsEditorV2
-            placeholder="添加输出参数"
-          />
-        </Form.Item>
-      </div>
-    </div>
+      <CustomTree
+        title="输出"
+        key={`${node.type}-${node.id}-outputArgs`}
+        params={(node.nodeConfig?.outputArgs as any) || []}
+        form={form}
+        inputItemName="outputArgs"
+      />
+
+      {/* Monaco 全屏编辑器 */}
+      <Monaco form={form} isShow={show} close={() => setShow(false)} />
+    </>
   );
 };
 

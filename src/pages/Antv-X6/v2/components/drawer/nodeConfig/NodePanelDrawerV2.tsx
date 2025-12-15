@@ -44,6 +44,8 @@ export interface NodePanelDrawerV2Props {
   form: FormInstance;
   /** 变量引用数据 */
   referenceData?: any;
+  /** 节点配置变更回调 */
+  onNodeConfigChange?: (changedValues: any, allValues: NodeConfigV2) => void;
 }
 
 // ==================== 工具函数 ====================
@@ -63,6 +65,7 @@ const nodeTemplate = (
     form,
     nodeConfig: node.nodeConfig as NodeConfigV2,
     referenceData,
+    onNodeConfigChange: (form as any).onNodeConfigChange,
   };
 
   switch (nodeType) {
@@ -159,7 +162,12 @@ const NodePanelDrawerV2: React.FC<NodePanelDrawerV2Props> = ({
   node,
   form,
   referenceData,
+  onNodeConfigChange,
 }) => {
+  // 将回调挂载到 form 实例上以便 nodeTemplate 访问（避免修改所有子组件接口）
+  // 或者更好的方式是修改 nodeTemplate 签名
+  (form as any).onNodeConfigChange = onNodeConfigChange;
+
   // 判断是否显示异常处理配置
   const showException = showExceptionHandleV2(node);
   const exceptionConfig = node.nodeConfig?.exceptionHandleConfig;

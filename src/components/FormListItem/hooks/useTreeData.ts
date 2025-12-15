@@ -123,6 +123,7 @@ export const useTreeData = (
   params: InputAndOutConfig[] | undefined,
   form: FormInstance,
   inputItemName: string,
+  onDataChange?: (newData: TreeNodeConfig[]) => void,
 ) => {
   const [treeData, setTreeData] = useState<TreeNodeConfig[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
@@ -142,9 +143,12 @@ export const useTreeData = (
     (newData: TreeNodeConfig[]) => {
       form.setFieldValue(inputItemName, newData);
       setIsModified(true);
+      if (onDataChange) {
+        onDataChange(newData);
+      }
       return newData;
     },
-    [form, inputItemName, setIsModified],
+    [form, inputItemName, setIsModified, onDataChange],
   );
 
   // 获取节点深度函数

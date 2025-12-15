@@ -344,18 +344,69 @@ const ConditionNodePanelV2: React.FC<ConditionNodePanelV2Props> = ({
                                           }
                                           return (
                                             <Form.Item
-                                              name={[
-                                                condField.name,
-                                                'secondArg',
-                                                'bindValue',
-                                              ]}
                                               noStyle
+                                              shouldUpdate={(
+                                                prevValues,
+                                                currentValues,
+                                              ) => {
+                                                const prevPath =
+                                                  prevValues
+                                                    ?.conditionBranchConfigs?.[
+                                                    field.name
+                                                  ]?.conditionArgs?.[
+                                                    condField.name
+                                                  ]?.secondArg?.bindValueType;
+                                                const currentPath =
+                                                  currentValues
+                                                    ?.conditionBranchConfigs?.[
+                                                    field.name
+                                                  ]?.conditionArgs?.[
+                                                    condField.name
+                                                  ]?.secondArg?.bindValueType;
+                                                return prevPath !== currentPath;
+                                              }}
                                             >
-                                              <VariableSelectorV2
-                                                referenceData={referenceData}
-                                                placeholder="输入值或引用"
-                                                style={{ width: 120 }}
-                                              />
+                                              {() => {
+                                                const form =
+                                                  Form.useFormInstance();
+                                                const bindValueType =
+                                                  form.getFieldValue([
+                                                    'conditionBranchConfigs',
+                                                    field.name,
+                                                    'conditionArgs',
+                                                    condField.name,
+                                                    'secondArg',
+                                                    'bindValueType',
+                                                  ]);
+                                                return (
+                                                  <Form.Item
+                                                    name={[
+                                                      condField.name,
+                                                      'secondArg',
+                                                      'bindValue',
+                                                    ]}
+                                                    noStyle
+                                                  >
+                                                    <VariableSelectorV2
+                                                      referenceData={
+                                                        referenceData
+                                                      }
+                                                      placeholder="输入值或引用"
+                                                      style={{ width: 120 }}
+                                                      form={form}
+                                                      fieldName={[
+                                                        'conditionBranchConfigs',
+                                                        field.name,
+                                                        'conditionArgs',
+                                                        condField.name,
+                                                        'secondArg',
+                                                        'bindValue',
+                                                      ]}
+                                                      valueType={bindValueType}
+                                                    />
+                                                  </Form.Item>
+                                                );
+                                              }}
                                             </Form.Item>
                                           );
                                         }}

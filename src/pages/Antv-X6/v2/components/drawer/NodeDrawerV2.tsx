@@ -274,6 +274,11 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
    */
   const handleFormValuesChange = useCallback(
     (changedValues: any, allValues: any) => {
+      console.log('[V2 DEBUG] NodeDrawerV2 onValuesChange:', {
+        changedValues,
+        allValues,
+        nodeId: node?.id,
+      });
       if (node && onNodeConfigChange) {
         onNodeConfigChange(changedValues, {
           ...node.nodeConfig,
@@ -451,6 +456,7 @@ const NodeDrawerV2: React.FC<NodeDrawerV2Props> = ({
             node={node}
             form={form}
             referenceData={referenceData}
+            onNodeConfigChange={onNodeConfigChange}
           />
         </Form>
       </div>
