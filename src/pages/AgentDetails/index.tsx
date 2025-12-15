@@ -231,6 +231,7 @@ const AgentDetails: React.FC = () => {
       infos: selectedComponentList,
       defaultAgentDetail: agentDetail,
       variableParams,
+      messageSourceType: 'agent',
     });
   };
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
