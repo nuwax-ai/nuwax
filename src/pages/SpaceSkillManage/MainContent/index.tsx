@@ -2,11 +2,7 @@ import Loading from '@/components/custom/Loading';
 import useSearchParamsCustom from '@/hooks/useSearchParamsCustom';
 import { apiSkillList } from '@/services/library';
 import { PublishStatusEnum } from '@/types/enums/common';
-import {
-  ComponentTypeEnum,
-  CreateListEnum,
-  FilterStatusEnum,
-} from '@/types/enums/space';
+import { FilterStatusEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { SkillInfo } from '@/types/interfaces/library';
 import { debounce } from '@/utils/debounce';
@@ -19,13 +15,13 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useModel, useParams, useRequest } from 'umi';
+import { useParams, useRequest } from 'umi';
 import ComponentItem from '../ComponentItem';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 
 // 查询参数
-export type IQuery = 'type' | 'create' | 'status' | 'keyword';
+export type IQuery = 'status' | 'keyword';
 
 // 暴露给父组件的方法
 export interface MainContentRef {
@@ -96,17 +92,9 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
     const params = useParams();
     const spaceId = Number(params.spaceId);
     const { searchParams } = useSearchParamsCustom<IQuery>();
-    // 类型
-    const [type, setType] = useState<ComponentTypeEnum>(
-      searchParams.get('type') || ComponentTypeEnum.All_Type,
-    );
     // 过滤状态
     const [status, setStatus] = useState<FilterStatusEnum>(
       Number(searchParams.get('status')) || FilterStatusEnum.All,
-    );
-    // 创建
-    const [create, setCreate] = useState<CreateListEnum>(
-      Number(searchParams.get('create')) || CreateListEnum.All_Person,
     );
     // 搜索关键词
     const [keyword, setKeyword] = useState<string>(
@@ -119,14 +107,10 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
     const [skillList, setSkillList] = useState<SkillInfo[]>([]);
     // 所有技能列表
     const skillListAllRef = useRef<SkillInfo[]>([]);
-    // 获取用户信息
-    const { userInfo } = useModel('userInfo');
 
     // 过滤筛选智能体列表数据
     const handleFilterList = (
-      filterType: ComponentTypeEnum,
       filterStatus: FilterStatusEnum,
-      filterCreate: CreateListEnum,
       filterKeyword: string,
       list = skillListAllRef.current,
     ) => {
@@ -135,16 +119,10 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
       }
 
       let _list = list;
-      if (filterType !== ComponentTypeEnum.All_Type) {
-        _list = _list.filter((item) => item.type === filterType);
-      }
       if (filterStatus === FilterStatusEnum.Published) {
         _list = _list.filter(
           (item) => item.publishStatus === PublishStatusEnum.Published,
         );
-      }
-      if (filterCreate === CreateListEnum.Me) {
-        _list = _list.filter((item) => item.creatorId === userInfo?.id);
       }
       if (filterKeyword) {
         _list = _list.filter((item) => item.name.includes(filterKeyword));
@@ -161,7 +139,7 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
       onSuccess: (result: SkillInfo[]) => {
         setLoading(false);
         skillListAllRef.current = result;
-        debounceFilterList(type, status, create, keyword, result);
+        debounceFilterList(status, keyword, result);
       },
       onError: () => {
         setLoading(false);
@@ -184,24 +162,16 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
 
     // 监听 URL 改变（支持浏览器前进/后退）
     useEffect(() => {
-      const _type =
-        (searchParams.get('type') as ComponentTypeEnum) ||
-        ComponentTypeEnum.All_Type;
       const _status =
         (Number(searchParams.get('status')) as FilterStatusEnum) ||
         FilterStatusEnum.All;
-      const _create =
-        (Number(searchParams.get('create')) as CreateListEnum) ||
-        CreateListEnum.All_Person;
       const _keyword = searchParams.get('keyword') || '';
 
-      setType(_type);
       setStatus(_status);
-      setCreate(_create);
       setKeyword(_keyword);
 
       // 使用最新的参数过滤，避免依赖旧的 state
-      debounceFilterList(_type, _status, _create, _keyword);
+      debounceFilterList(_status, _keyword);
     }, [searchParams]);
 
     // 暴露给父组件的方法

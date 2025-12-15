@@ -18,8 +18,6 @@ const ComponentItem: React.FC<SkillItemProps> = ({
   onClick,
   onClickMore,
 }) => {
-  console.log(skillInfo);
-
   return (
     <CardWrapper
       title={skillInfo.name}

@@ -1,4 +1,5 @@
 import { PublishStatusEnum } from '@/types/enums/common';
+import { Tag } from 'antd';
 
 export default function SkillStatus({
   publishStatus,
@@ -7,14 +8,14 @@ export default function SkillStatus({
 }) {
   switch (publishStatus) {
     case PublishStatusEnum.Published:
-      return <span>已发布</span>;
+      return <Tag color="green">已发布</Tag>;
     case PublishStatusEnum.Applying:
-      return <span>审核中</span>;
+      return <Tag color="blue">审核中</Tag>;
     case PublishStatusEnum.Developing:
-      return <span>开发中</span>;
+      return <Tag color="orange">开发中</Tag>;
     case PublishStatusEnum.Rejected:
-      return <span>已拒绝</span>;
+      return <Tag color="red">已拒绝</Tag>;
     default:
-      return <span>&nbsp;</span>;
+      return <Tag color="default">-</Tag>;
   }
 }
