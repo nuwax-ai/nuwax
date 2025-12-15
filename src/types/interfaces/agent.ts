@@ -714,10 +714,10 @@ export interface SpaceLogInfo {
   outputToken?: number;
 
   /** 请求开始时间（时间戳） */
-  requestStartTime?: number;
+  requestStartTime: number;
 
   /** 请求结束时间（时间戳） */
-  requestEndTime?: number;
+  requestEndTime: number;
 
   /** 执行结果码，0000 为成功 */
   resultCode?: string;
