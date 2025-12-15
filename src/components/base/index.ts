@@ -8,6 +8,8 @@ export { default as CopyButton } from './CopyButton';
 export { default as CopyIconButton } from './CopyIconButton';
 export { default as EcoShareStatus } from './EcoShareStatus';
 export { default as HoverScrollbar } from './HoverScrollbar';
+export { default as LimitedTooltip } from './LimitedTooltip';
+export type { LimitedTooltipProps } from './LimitedTooltip';
 export { default as McpInstallType } from './McpInstallType';
 export { default as McpStatus } from './McpStatus';
 export { default as MenuListItem } from './MenuListItem';
