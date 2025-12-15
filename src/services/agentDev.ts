@@ -8,6 +8,7 @@ import type {
   apiAgentLogListParams,
   apiSpaceLogListParams,
   logInfo,
+  SpaceLogDetailParams,
   SpaceLogInfo,
   UserApiKeyInfo,
 } from '@/types/interfaces/agent';
@@ -161,6 +162,19 @@ export async function apiSpaceLogList(
   data: apiSpaceLogListParams,
 ): Promise<RequestResponse<Page<SpaceLogInfo>>> {
   return request('/api/requestLogs/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 工作空间日志详情
+ * 注意：后端与“智能体日志详情”复用同一路径，但入参为 requestId + spaceId。
+ */
+export async function apiSpaceLogDetail(
+  data: SpaceLogDetailParams,
+): Promise<RequestResponse<SpaceLogInfo>> {
+  return request('/api/logPlatform/agent/detail', {
     method: 'POST',
     data,
   });
