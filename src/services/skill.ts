@@ -27,13 +27,17 @@ export async function apiSkillUpdate(
 
 // 导入技能
 export async function apiSkillImport(
-  data: SkillImportParams,
+  params: SkillImportParams,
 ): Promise<RequestResponse<number>> {
+  const { file, targetSkillId, targetSpaceId } = params;
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('targetSkillId', targetSkillId);
+  formData.append('targetSpaceId', targetSpaceId);
+
   return request('/api/skill/import', {
     method: 'POST',
-    params: {
-      ...data,
-    },
+    data: formData,
   });
 }
 

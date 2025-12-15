@@ -28,10 +28,6 @@ export interface FileContextMenuProps {
   position: { x: number; y: number };
   /** 目标文件/文件夹节点 */
   targetNode: FileNode | null;
-  /** 是否正在聊天加载中 */
-  isChatLoading?: boolean;
-  /** 是否处于版本对比模式 */
-  isComparing?: boolean;
   /** 是否禁用删除功能（为 true 时隐藏删除菜单项和 divider） */
   disableDelete?: boolean;
   /** 关闭菜单回调 */
@@ -42,6 +38,4 @@ export interface FileContextMenuProps {
   onRename?: (node: FileNode) => void;
   /** 上传单个文件回调（直接调用，不弹窗） */
   onUploadSingleFile?: (node: FileNode | null) => void;
-  /** 上传项目回调（空白区域菜单） */
-  onUploadProject?: () => void;
 }

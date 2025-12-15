@@ -20,7 +20,6 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onRename,
   onUploadSingleFile,
   disableDelete = false,
-  // onUploadProject,
 }) => {
   /**
    * 处理菜单项点击
@@ -83,35 +82,46 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   if (!visible) {
     return null;
   }
+
   // 构建菜单项 - 根据是否有目标节点显示不同菜单
-  const allMenuItems = [
-    // 文件/文件夹菜单项
-    {
-      key: 'rename',
-      label: '重命名',
-      icon: <EditOutlined />,
-      onClick: handleRename,
-      disabled: !onRename,
-    },
-    {
-      key: 'upload',
-      label: '上传文件',
-      icon: <UploadOutlined />,
-      onClick: handleUpload,
-      disabled: !onUploadSingleFile || targetNode?.name?.startsWith('.'),
-    },
-    {
-      key: 'divider',
-      type: 'divider' as const,
-    },
-    {
-      key: 'delete',
-      label: '删除',
-      icon: <DeleteOutlined />,
-      onClick: handleDelete,
-      danger: true,
-    },
-  ];
+  const allMenuItems = targetNode
+    ? [
+        // 文件/文件夹菜单项
+        {
+          key: 'rename',
+          label: '重命名',
+          icon: <EditOutlined />,
+          onClick: handleRename,
+          disabled: !onRename,
+        },
+        {
+          key: 'upload',
+          label: '上传文件',
+          icon: <UploadOutlined />,
+          onClick: handleUpload,
+          disabled: !onUploadSingleFile || targetNode?.name?.startsWith('.'),
+        },
+        {
+          key: 'divider',
+          type: 'divider' as const,
+        },
+        {
+          key: 'delete',
+          label: '删除',
+          icon: <DeleteOutlined />,
+          onClick: handleDelete,
+          danger: true,
+        },
+      ]
+    : [
+        {
+          key: 'upload',
+          label: '上传文件',
+          icon: <UploadOutlined />,
+          onClick: handleUpload,
+          disabled: !onUploadSingleFile,
+        },
+      ];
 
   // 如果禁用删除功能，过滤掉删除菜单项和 divider
   const menuItems = disableDelete

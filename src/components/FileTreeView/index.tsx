@@ -20,12 +20,16 @@ const cx = classNames.bind(styles);
 
 interface FileTreeViewProps {
   files: FileNode[];
+  onUploadSingleFile?: (node: FileNode | null) => void;
 }
 
 /**
  * 文件树视图组件
  */
-const FileTreeView: React.FC<FileTreeViewProps> = ({ files }) => {
+const FileTreeView: React.FC<FileTreeViewProps> = ({
+  files,
+  onUploadSingleFile,
+}) => {
   // 当前选中的文件ID
   const [selectedFileId, setSelectedFileId] = useState<string>('');
   // 选中的文件节点
@@ -113,7 +117,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({ files }) => {
    */
   const handleUploadFromMenu = (node: any) => {
     // 直接调用现有的上传单个文件功能
-    // onUploadSingleFile(node);
+    onUploadSingleFile?.(node);
     console.log('handleUploadFromMenu', node);
   };
 
@@ -124,14 +128,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({ files }) => {
     // 直接调用现有的删除文件功能
     // onDeleteFile(node);
     console.log('handleDelete', node);
-  };
-
-  /**
-   * 处理上传操作
-   */
-  const handleUpload = () => {
-    // 直接调用现有的上传文件功能
-    // onUploadFile(node);
   };
 
   /**
@@ -160,12 +156,10 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({ files }) => {
         onClose={closeContextMenu}
         // 处理删除操作
         onDelete={handleDelete}
-        // 处理重命名操作（从右键菜单触发）
+        // 处理重命名操作
         onRename={handleRenameFromMenu}
-        // 处理上传操作（从右键菜单触发）
+        // 处理上传文件操作
         onUploadSingleFile={handleUploadFromMenu}
-        // 处理上传操作
-        onUploadProject={handleUpload}
       />
       {/* 左边文件树 */}
       <div
