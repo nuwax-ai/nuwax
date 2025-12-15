@@ -38,8 +38,14 @@ export interface UseWorkflowDataV3Return {
   getNodeById: (nodeId: number) => ChildNode | null;
 
   // 边操作
-  addEdge: (edge: Edge) => ProxyResult;
-  deleteEdge: (source: string, target: string) => ProxyResult;
+  addEdge: (
+    edge: Edge & { sourcePort?: string; targetPort?: string },
+  ) => ProxyResult;
+  deleteEdge: (
+    source: string,
+    target: string,
+    sourcePort?: string,
+  ) => ProxyResult;
   updateNodeNextIds: (nodeId: number, nextNodeIds: number[]) => ProxyResult;
 
   // 数据获取
@@ -149,7 +155,9 @@ export function useWorkflowDataV3(): UseWorkflowDataV3Return {
 
   // 添加边
   const addEdge = useCallback(
-    (edge: Edge): ProxyResult => {
+    (
+      edge: Edge & { sourcePort?: string; targetPort?: string },
+    ): ProxyResult => {
       const result = workflowProxy.addEdge(edge);
       if (result.success) {
         syncState();
@@ -161,8 +169,8 @@ export function useWorkflowDataV3(): UseWorkflowDataV3Return {
 
   // 删除边
   const deleteEdge = useCallback(
-    (source: string, target: string): ProxyResult => {
-      const result = workflowProxy.deleteEdge(source, target);
+    (source: string, target: string, sourcePort?: string): ProxyResult => {
+      const result = workflowProxy.deleteEdge(source, target, sourcePort);
       if (result.success) {
         syncState();
       }
