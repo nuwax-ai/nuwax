@@ -23,6 +23,13 @@ export interface ComponentItemProps {
   onClickMore: (item: CustomPopoverItem) => void;
 }
 
+// 技能库单个技能项
+export interface SkillItemProps {
+  skillInfo: SkillInfo;
+  onClick: () => void;
+  onClickMore: (item: CustomPopoverItem) => void;
+}
+
 // 工作流基础信息
 export interface WorkflowBaseInfo {
   // 工作流ID
@@ -119,6 +126,13 @@ export interface AddWorkflowParams {
   icon: string;
 }
 
+// 添加技能传入参数
+export interface AddSkillParams {
+  spaceId: number;
+  name: string;
+  description: string;
+}
+
 // 更新工作流传入参数
 export interface UpdateWorkflowParams {
   id: number;
@@ -146,7 +160,7 @@ export interface CreateSkillProps {
   icon?: string;
   open: boolean;
   onCancel: () => void;
-  onConfirm?: (info: SkillBaseInfo) => void;
+  onConfirm?: () => void;
 }
 
 // 添加技能传入参数
@@ -194,6 +208,60 @@ export interface ComponentInfo {
   ext: any;
   // 权限列表
   permissions?: PermissionsEnum[];
+}
+
+// 技能文件信息
+export interface SkillFileInfo {
+  // 文件名称
+  name: string;
+  // 文件内容
+  contents: string;
+  // 重命名前的文件名
+  renameFrom: string;
+  // 操作类型
+  operation: string;
+}
+
+// 技能查询过滤条件
+export interface SkillQueryFilter {
+  // 空间ID
+  spaceId?: number;
+  // 技能名称
+  name?: string;
+  // 发布状态
+  publishStatus?: PublishStatusEnum[];
+}
+
+// 技能信息
+export interface SkillInfo {
+  // 技能 ID
+  id: number;
+  // 技能名称
+  name: string;
+  // 技能描述
+  description: string;
+  // 技能图标
+  icon: string;
+  // 文件内容列表
+  files: SkillFileInfo[];
+  // 发布状态，可用值：Developing, Applying, Published, Rejected
+  publishStatus: PublishStatusEnum;
+  // 租户 ID
+  tenantId: number;
+  // 空间 ID
+  spaceId: number;
+  // 创建时间
+  created: string;
+  // 创建人 ID
+  creatorId: number;
+  // 创建人名称
+  creatorName: string;
+  // 最后修改时间
+  modified: string;
+  // 最后修改人 ID
+  modifiedId: number;
+  // 最后修改人名称
+  modifiedName: string;
 }
 
 // box组件

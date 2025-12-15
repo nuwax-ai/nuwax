@@ -1,6 +1,6 @@
 import Loading from '@/components/custom/Loading';
 import useSearchParamsCustom from '@/hooks/useSearchParamsCustom';
-import { apiComponentList } from '@/services/library';
+import { apiSkillList } from '@/services/library';
 import { PublishStatusEnum } from '@/types/enums/common';
 import {
   ComponentTypeEnum,
@@ -8,7 +8,7 @@ import {
   FilterStatusEnum,
 } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
-import type { ComponentInfo } from '@/types/interfaces/library';
+import type { SkillInfo } from '@/types/interfaces/library';
 import { debounce } from '@/utils/debounce';
 import { Empty } from 'antd';
 import classNames from 'classnames';
@@ -35,19 +35,19 @@ export interface MainContentRef {
 
 export interface MainContentProps {
   // 点击技能
-  onClickItem?: (info: ComponentInfo) => void;
+  onClickItem?: (info: SkillInfo) => void;
   // 点击更多
-  onClickMore?: (item: CustomPopoverItem, info: ComponentInfo) => void;
+  onClickMore?: (item: CustomPopoverItem, info: SkillInfo) => void;
 }
 export interface MainContentCardProps {
   // 加载中
   loading: boolean;
   // 技能列表
-  skillList: ComponentInfo[];
+  skillList: SkillInfo[];
   // 点击技能
-  onClickItem?: (info: ComponentInfo) => void;
+  onClickItem?: (info: SkillInfo) => void;
   // 点击更多
-  onClickMore?: (item: CustomPopoverItem, info: ComponentInfo) => void;
+  onClickMore?: (item: CustomPopoverItem, info: SkillInfo) => void;
 }
 
 const MainContentCard: React.FC<MainContentCardProps> = ({
@@ -81,8 +81,8 @@ const MainContentCard: React.FC<MainContentCardProps> = ({
     >
       {skillList?.map((info) => (
         <ComponentItem
-          key={`${info.id}${info.type}`}
-          componentInfo={info}
+          key={`${info.id}${info.publishStatus}`}
+          skillInfo={info}
           onClick={() => onClickItem(info)}
           onClickMore={(item) => onClickMore(item, info)}
         />
@@ -116,9 +116,9 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
     // 是否加载中
     const [loading, setLoading] = useState(false);
     // 技能列表
-    const [skillList, setSkillList] = useState<ComponentInfo[]>([]);
+    const [skillList, setSkillList] = useState<SkillInfo[]>([]);
     // 所有技能列表
-    const skillListAllRef = useRef<ComponentInfo[]>([]);
+    const skillListAllRef = useRef<SkillInfo[]>([]);
     // 获取用户信息
     const { userInfo } = useModel('userInfo');
 
@@ -155,10 +155,10 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
     const debounceFilterList = debounce(handleFilterList, 100);
 
     // 查询组件列表接口
-    const { run: runComponent } = useRequest(apiComponentList, {
+    const { run: runSkillList } = useRequest(apiSkillList, {
       manual: true,
       debounceInterval: 300,
-      onSuccess: (result: ComponentInfo[]) => {
+      onSuccess: (result: SkillInfo[]) => {
         setLoading(false);
         skillListAllRef.current = result;
         debounceFilterList(type, status, create, keyword, result);
@@ -174,7 +174,7 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
         return;
       }
       setLoading(true);
-      runComponent(spaceId);
+      runSkillList({ spaceId });
     };
 
     // 查询技能列表
@@ -213,7 +213,7 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
       <>
         <MainContentCard
           loading={loading}
-          skillList={skillList}
+          skillList={skillList ?? []}
           onClickItem={onClickItem}
           onClickMore={onClickMore}
         />
