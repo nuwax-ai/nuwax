@@ -1,13 +1,10 @@
-import workflowIcon from '@/assets/images/workflow_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
-import UploadAvatar from '@/components/UploadAvatar';
-import { apiAddWorkflow, apiUpdateWorkflow } from '@/services/library';
+import { apiAddSkill, apiUpdateWorkflow } from '@/services/library';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type {
   AddSkillParams,
   CreateSkillProps,
-  SkillBaseInfo,
   UpdateSkillParams,
 } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
@@ -15,7 +12,7 @@ import type { FormProps } from 'antd';
 import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useRequest } from 'umi';
+import { useRequest } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -38,13 +35,13 @@ const CreateSkill: React.FC<CreateSkillProps> = ({
   const [imageUrl, setImageUrl] = useState<string>('');
 
   // 新增工作流
-  const { run } = useRequest(apiAddWorkflow, {
+  const { run } = useRequest(apiAddSkill, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: number) => {
+    onSuccess: () => {
       message.success('技能已创建成功');
       onCancel();
-      history.push(`/space/${spaceId}/skill/${result}`);
+      onConfirm?.();
     },
   });
 
@@ -52,10 +49,9 @@ const CreateSkill: React.FC<CreateSkillProps> = ({
   const { run: runUpdate } = useRequest(apiUpdateWorkflow, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (_: null, params: UpdateSkillParams[]) => {
+    onSuccess: () => {
       message.success('技能更新成功');
-      const info = params[0];
-      onConfirm?.(info as SkillBaseInfo);
+      onConfirm?.();
     },
   });
 
@@ -135,14 +131,6 @@ const CreateSkill: React.FC<CreateSkillProps> = ({
           placeholder="请输入描述，让大模型理解什么情况下应该调用此技能"
           maxLength={10000}
         />
-        <Form.Item name="icon" label="图标">
-          <UploadAvatar
-            onUploadSuccess={setImageUrl}
-            imageUrl={imageUrl}
-            defaultImage={workflowIcon as string}
-            svgIconName="icons-workspace-workflow"
-          />
-        </Form.Item>
       </Form>
     </CustomFormModal>
   );

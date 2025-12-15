@@ -1,7 +1,10 @@
 import type {
+  AddSkillParams,
   AddWorkflowParams,
   ComponentInfo,
   CopyTableParams,
+  SkillInfo,
+  SkillQueryFilter,
   UpdateWorkflowParams,
 } from '@/types/interfaces/library';
 import type { RequestResponse } from '@/types/interfaces/request';
@@ -12,6 +15,16 @@ export async function apiAddWorkflow(
   data: AddWorkflowParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/workflow/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 添加技能
+export async function apiAddSkill(
+  data: AddSkillParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/skill/add', {
     method: 'POST',
     data,
   });
@@ -52,6 +65,16 @@ export async function apiComponentList(
 ): Promise<RequestResponse<ComponentInfo[]>> {
   return request(`/api/component/list/${spaceId}`, {
     method: 'GET',
+  });
+}
+
+// 查询技能列表接口
+export async function apiSkillList(
+  queryFilter: SkillQueryFilter,
+): Promise<RequestResponse<SkillInfo[]>> {
+  return request(`/api/skill/list`, {
+    method: 'GET',
+    params: queryFilter,
   });
 }
 
