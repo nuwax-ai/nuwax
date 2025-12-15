@@ -581,6 +581,7 @@ export interface WorkflowMetadataV2 {
   version?: string;
   publishStatus?: string;
   modified?: string;
+  icon?: string;
 }
 
 /**
@@ -793,6 +794,7 @@ export interface WorkflowDetailsV2 {
   category?: string;
   permissions?: string[];
   version?: string;
+  icon?: string;
 }
 
 /**
@@ -828,6 +830,44 @@ export interface SaveWorkflowRequestV2 {
  */
 export interface SaveWorkflowResponseV2 {
   success: boolean;
+  message?: string;
+  version?: string;
+}
+
+/**
+ * 工作流整体配置（按照初始化接口返回的数据结构）
+ */
+export interface WorkflowConfigV2 {
+  id: number;
+  spaceId: number;
+  name: string;
+  functionName?: string | null;
+  description?: string | null;
+  icon?: string;
+  startNode: ChildNodeV2;
+  endNode: ChildNodeV2;
+  inputArgs: InputAndOutConfigV2[];
+  outputArgs: InputAndOutConfigV2[];
+  nodes: ChildNodeV2[];
+  extension?: {
+    size?: number;
+  };
+  category?: string;
+  version?: string;
+}
+
+/**
+ * 保存工作流配置请求
+ */
+export interface SaveWorkflowConfigRequestV2 {
+  workflowConfig: WorkflowConfigV2;
+}
+
+/**
+ * 保存工作流配置响应
+ */
+export interface SaveWorkflowConfigResponseV2 {
+  success?: boolean;
   message?: string;
   version?: string;
 }

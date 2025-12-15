@@ -271,7 +271,7 @@ const WorkflowV2: React.FC = () => {
    * 添加节点
    */
   const handleNodeAdd = useCallback(
-    (node: ChildNodeV2) => {
+    async (node: ChildNodeV2) => {
       // 如果是循环节点，自动创建默认内置 Start/End 子节点（与 V1 对齐）
       const isLoopNode = node.type === NodeTypeEnumV2.Loop;
       const basePosition = node.nodeConfig?.extension || { x: 400, y: 300 };
@@ -346,84 +346,87 @@ const WorkflowV2: React.FC = () => {
       })();
 
       // 1. 更新数据层
-      addNode(enhancedLoopNode);
-      if (isLoopNode && enhancedLoopNode.innerStartNodeId) {
+      const addedNode = await addNode(enhancedLoopNode);
+      if (isLoopNode && addedNode.innerStartNodeId) {
         // 与 v1 对齐：Loop 的 in 端口作为 source，连到内部开始节点的 in
         addEdge({
-          source: enhancedLoopNode.id.toString(),
-          target: enhancedLoopNode.innerStartNodeId.toString(),
-          sourcePort: `${enhancedLoopNode.id}-in`,
-          targetPort: `${enhancedLoopNode.innerStartNodeId}-in`,
+          source: addedNode.id.toString(),
+          target: addedNode.innerStartNodeId.toString(),
+          sourcePort: `${addedNode.id}-in`,
+          targetPort: `${addedNode.innerStartNodeId}-in`,
           zIndex: 25,
         });
       }
       if (
         isLoopNode &&
-        enhancedLoopNode.innerStartNodeId &&
-        enhancedLoopNode.innerEndNodeId
+        addedNode.innerStartNodeId &&
+        addedNode.innerEndNodeId
       ) {
         addEdge({
-          source: enhancedLoopNode.innerStartNodeId.toString(),
-          target: enhancedLoopNode.innerEndNodeId.toString(),
-          sourcePort: `${enhancedLoopNode.innerStartNodeId}-out`,
-          targetPort: `${enhancedLoopNode.innerEndNodeId}-in`,
+          source: addedNode.innerStartNodeId.toString(),
+          target: addedNode.innerEndNodeId.toString(),
+          sourcePort: `${addedNode.innerStartNodeId}-out`,
+          targetPort: `${addedNode.innerEndNodeId}-in`,
           zIndex: 25,
         });
         // 与 v1 对齐：内部结束节点连回 Loop 的 out 端口，形成完整闭环
         addEdge({
-          source: enhancedLoopNode.innerEndNodeId.toString(),
-          target: enhancedLoopNode.id.toString(),
-          sourcePort: `${enhancedLoopNode.innerEndNodeId}-out`,
-          targetPort: `${enhancedLoopNode.id}-out`,
+          source: addedNode.innerEndNodeId.toString(),
+          target: addedNode.id.toString(),
+          sourcePort: `${addedNode.innerEndNodeId}-out`,
+          targetPort: `${addedNode.id}-out`,
           zIndex: 25,
         });
       }
 
       // 2. 同步到画布
       // graphAddNode 会自动处理循环节点的子节点渲染（addLoopChildNodes）
-      const position = enhancedLoopNode.nodeConfig?.extension || {
+      const position = addedNode.nodeConfig?.extension || {
         x: 400,
         y: 300,
       };
       const posX = position.x ?? 400;
       const posY = position.y ?? 300;
-      graphRef.current?.graphAddNode({ x: posX, y: posY }, enhancedLoopNode);
+      graphRef.current?.graphAddNode({ x: posX, y: posY }, addedNode);
 
       // 循环节点：添加内部边到画布（子节点已由 graphAddNode -> addLoopChildNodes 处理）
-      if (isLoopNode && enhancedLoopNode.innerStartNodeId) {
+      if (isLoopNode && addedNode.innerStartNodeId) {
         graphRef.current?.graphCreateNewEdge(
-          enhancedLoopNode.id.toString(),
-          enhancedLoopNode.innerStartNodeId.toString(),
+          addedNode.id.toString(),
+          addedNode.innerStartNodeId.toString(),
           true,
-          `${enhancedLoopNode.id}-in`,
-          `${enhancedLoopNode.innerStartNodeId}-in`,
+          `${addedNode.id}-in`,
+          `${addedNode.innerStartNodeId}-in`,
         );
       }
       if (
         isLoopNode &&
-        enhancedLoopNode.innerStartNodeId &&
-        enhancedLoopNode.innerEndNodeId
+        addedNode.innerStartNodeId &&
+        addedNode.innerEndNodeId
       ) {
         graphRef.current?.graphCreateNewEdge(
-          enhancedLoopNode.innerStartNodeId.toString(),
-          enhancedLoopNode.innerEndNodeId.toString(),
+          addedNode.innerStartNodeId.toString(),
+          addedNode.innerEndNodeId.toString(),
           true,
-          `${enhancedLoopNode.innerStartNodeId}-out`,
-          `${enhancedLoopNode.innerEndNodeId}-in`,
+          `${addedNode.innerStartNodeId}-out`,
+          `${addedNode.innerEndNodeId}-in`,
         );
         graphRef.current?.graphCreateNewEdge(
-          enhancedLoopNode.innerEndNodeId.toString(),
-          enhancedLoopNode.id.toString(),
+          addedNode.innerEndNodeId.toString(),
+          addedNode.id.toString(),
           true,
-          `${enhancedLoopNode.innerEndNodeId}-out`,
-          `${enhancedLoopNode.id}-out`,
+          `${addedNode.innerEndNodeId}-out`,
+          `${addedNode.id}-out`,
         );
       }
 
       // 3. 选中新添加的节点
-      setSelectedNode(enhancedLoopNode);
+      setSelectedNode(addedNode);
       setDrawerVisible(true);
-      form.setFieldsValue(enhancedLoopNode.nodeConfig);
+      form.setFieldsValue(addedNode.nodeConfig);
+
+      // 返回添加的节点
+      return addedNode;
     },
     [addNode, addEdge, form],
   );
@@ -446,7 +449,7 @@ const WorkflowV2: React.FC = () => {
    * 复制节点
    */
   const handleNodeCopy = useCallback(
-    (node: ChildNodeV2) => {
+    async (node: ChildNodeV2) => {
       // 创建节点副本
       const newNode: ChildNodeV2 = {
         ...node,
@@ -463,7 +466,7 @@ const WorkflowV2: React.FC = () => {
         nextNodeIds: [],
       };
 
-      handleNodeAdd(newNode);
+      await handleNodeAdd(newNode);
       message.success('节点已复制');
     },
     [handleNodeAdd],
@@ -554,7 +557,7 @@ const WorkflowV2: React.FC = () => {
    * 通过端口或边创建节点
    */
   const handleCreateNodeByPortOrEdge = useCallback(
-    (config: CreateNodeByPortOrEdgePropsV2) => {
+    async (config: CreateNodeByPortOrEdgePropsV2) => {
       const { child, sourceNode, portId, targetNode, edgeId } = config;
 
       // 计算新节点位置
@@ -580,57 +583,91 @@ const WorkflowV2: React.FC = () => {
       };
 
       // 添加节点
-      handleNodeAdd(newNode);
+      const addedNode = await handleNodeAdd(newNode);
 
       // 判断是否是在边上创建节点
       if (targetNode && edgeId) {
         // 在边上创建节点：删除原边，插入新节点
-        // 1. 先删除原来的边 (sourceNode -> targetNode)
+        // 1. 从画布获取原边的完整信息（包括 sourcePort 和 targetPort）
+        let sourcePort = portId || `${sourceNode.id}-out`;
+        let targetPort = `${targetNode.id}-in`;
+
+        // 从 workflowData 中查找原边的完整信息
+        const existingEdge = workflowData.edgeList.find(
+          (e) =>
+            e.source === sourceNode.id.toString() &&
+            e.target === targetNode.id.toString(),
+        );
+        if (existingEdge) {
+          // 使用原边的端口信息
+          if (existingEdge.sourcePort) {
+            sourcePort = existingEdge.sourcePort;
+          }
+          if (existingEdge.targetPort) {
+            targetPort = existingEdge.targetPort;
+          }
+        }
+
+        // 2. 先删除原来的边 (sourceNode -> targetNode)
+        // 需要传递完整的端口信息，确保能正确匹配和删除边
         handleEdgeDelete({
           source: sourceNode.id.toString(),
           target: targetNode.id.toString(),
+          sourcePort,
+          targetPort,
         });
         graphRef.current?.graphDeleteEdge(edgeId);
 
-        // 2. 创建新的边: sourceNode -> newNode -> targetNode
+        // 3. 创建新的边: sourceNode -> addedNode -> targetNode
+        // 保持原有的端口信息
         handleEdgeAdd({
           source: sourceNode.id.toString(),
-          target: newNode.id.toString(),
+          target: addedNode.id.toString(),
+          sourcePort,
+          targetPort: `${addedNode.id}-in`,
         });
         graphRef.current?.graphCreateNewEdge(
           sourceNode.id.toString(),
-          newNode.id.toString(),
+          addedNode.id.toString(),
+          false,
+          sourcePort,
+          `${addedNode.id}-in`,
         );
 
         handleEdgeAdd({
-          source: newNode.id.toString(),
+          source: addedNode.id.toString(),
           target: targetNode.id.toString(),
+          sourcePort: `${addedNode.id}-out`,
+          targetPort,
         });
         graphRef.current?.graphCreateNewEdge(
-          newNode.id.toString(),
+          addedNode.id.toString(),
           targetNode.id.toString(),
+          false,
+          `${addedNode.id}-out`,
+          targetPort,
         );
       } else {
         // 端口点击创建节点：根据端口类型决定连线方向
         const isOutput = portId.endsWith('-out') || portId.includes('-out');
         if (isOutput) {
-          // 输出端口：sourceNode -> newNode
+          // 输出端口：sourceNode -> addedNode
           handleEdgeAdd({
             source: sourceNode.id.toString(),
-            target: newNode.id.toString(),
+            target: addedNode.id.toString(),
           });
           graphRef.current?.graphCreateNewEdge(
             sourceNode.id.toString(),
-            newNode.id.toString(),
+            addedNode.id.toString(),
           );
         } else {
-          // 输入端口：newNode -> sourceNode
+          // 输入端口：addedNode -> sourceNode
           handleEdgeAdd({
-            source: newNode.id.toString(),
+            source: addedNode.id.toString(),
             target: sourceNode.id.toString(),
           });
           graphRef.current?.graphCreateNewEdge(
-            newNode.id.toString(),
+            addedNode.id.toString(),
             sourceNode.id.toString(),
           );
         }
@@ -1208,6 +1245,19 @@ const WorkflowV2: React.FC = () => {
   const handlePublish = useCallback(
     async (data: { versionDescription: string; forcePublish: boolean }) => {
       try {
+        // 发布前自动保存：如果有未保存的更改，先保存
+        if (isDirty) {
+          message.loading('发布前自动保存中...', 0);
+          const saveSuccess = await saveNow();
+          message.destroy();
+
+          if (!saveSuccess) {
+            message.error('发布前保存失败，请先手动保存');
+            throw new Error('发布前保存失败');
+          }
+          message.success('已自动保存');
+        }
+
         // 打印发布参数以便调试
         console.group('[V2] 发布参数');
         console.log('📤 workflowId:', workflowId);
@@ -1233,7 +1283,7 @@ const WorkflowV2: React.FC = () => {
         throw error;
       }
     },
-    [workflowId, refreshData],
+    [workflowId, refreshData, isDirty, saveNow],
   );
 
   /**
@@ -1393,7 +1443,7 @@ const WorkflowV2: React.FC = () => {
    * 从 Stencil 添加节点
    */
   const handleStencilNodeAdd = useCallback(
-    (template: StencilChildNodeV2) => {
+    async (template: StencilChildNodeV2) => {
       // 计算新节点位置（画布中心 + 连续添加偏移量）
       // 与 V1 getCoordinates 保持一致：每次连续添加偏移 16px
       const viewport = graphRef.current?.getCurrentViewPort();
@@ -1415,7 +1465,7 @@ const WorkflowV2: React.FC = () => {
         },
       };
 
-      handleNodeAdd(newNode);
+      await handleNodeAdd(newNode);
       // 递增连续添加计数（不关闭 stencil，允许连续添加）
       setContinueDragCount((prev) => prev + 1);
     },
