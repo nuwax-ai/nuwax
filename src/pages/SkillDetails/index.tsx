@@ -1,6 +1,6 @@
 import FileTreeView from '@/components/FileTreeView';
 import PublishComponentModal from '@/components/PublishComponentModal';
-import { getProjectContent } from '@/services/appDev';
+import { apiSkillDetail } from '@/services/skill';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { transformFlatListToTree } from '@/utils/appDevUtils';
 import classNames from 'classnames';
@@ -23,33 +23,30 @@ const SkillDetails: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
 
   // 查询技能信息
-  const { run: runSkillInfo } = useRequest(
-    getProjectContent || 'apiSkillDetail',
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: (result: any) => {
-        setSkillInfo(result);
-        const { files } = result || {};
+  const { run: runSkillInfo } = useRequest(apiSkillDetail, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: any) => {
+      setSkillInfo(result);
+      const { files } = result || {};
 
-        let treeData: FileNode[] = [];
+      let treeData: FileNode[] = [];
 
-        // 检查是否是新的扁平格式
-        if (Array.isArray(files) && files.length > 0 && files[0].name) {
-          treeData = transformFlatListToTree(files);
-        } else if (Array.isArray(files)) {
-          // 如果是原有的树形格式，直接使用
-          treeData = files as FileNode[];
-        }
+      // 检查是否是新的扁平格式
+      if (Array.isArray(files) && files.length > 0 && files[0].name) {
+        treeData = transformFlatListToTree(files);
+      } else if (Array.isArray(files)) {
+        // 如果是原有的树形格式，直接使用
+        treeData = files as FileNode[];
+      }
 
-        setFiles(treeData);
-      },
+      setFiles(treeData);
     },
-  );
+  });
 
   useEffect(() => {
     if (skillId) {
-      runSkillInfo('5022159017283584');
+      runSkillInfo(skillId);
     }
   }, [skillId]);
 
