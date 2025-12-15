@@ -1,0 +1,64 @@
+import { PublishStatusEnum } from '../enums/common';
+
+// 技能文件
+export interface SkillFileInfo {
+  // 文件名称
+  name: string;
+  // 文件内容
+  contents: string;
+  // 重命名前的文件名
+  renameFrom: string;
+  // 操作类型
+  operation: string;
+}
+
+// 技能详情
+export interface SkillDetailInfo {
+  // 技能ID
+  id: number;
+  // 技能名称
+  name: string;
+  // 技能描述
+  description: string;
+  // 技能图标
+  icon: string;
+  // 文件内容
+  files: SkillFileInfo[];
+  // 发布状态,可用值:Developing,Applying,Published,Rejected
+  publishStatus: PublishStatusEnum;
+  // 租户ID
+  tenantId: number;
+  // 空间ID
+  spaceId: number;
+  // 技能创建时间
+  created: string;
+  // 创建人ID
+  creatorId: number;
+  // 创建人名称
+  creatorName: string;
+  // 	更新时间
+  modified: string;
+  // 最后修改人ID
+  modifiedId: number;
+  // 最后修改人名称
+  modifiedName: string;
+}
+
+// 修改技能
+export interface SkillUpdateParams {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  // 文件内容
+  files?: SkillFileInfo[];
+  // 发布状态,可用值:Developing,Applying,Published,Rejected
+  publishStatus: PublishStatusEnum;
+}
+
+// 导入技能
+export interface SkillImportParams {
+  file: any;
+  targetSkillId?: number;
+  targetSpaceId?: number;
+}
