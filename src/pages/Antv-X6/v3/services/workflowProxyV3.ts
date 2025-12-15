@@ -9,18 +9,45 @@
  *
  * 解决问题：V1 中每个操作都独立调用后端接口，导致前后端数据不同步
  * 解决方案：统一在前端组装完整数据，全量发送给后端
+ *
+ * 特殊端口处理：
+ * - 条件节点 (Condition): conditionBranchConfigs[].nextNodeIds
+ * - 意图节点 (IntentRecognition): intentConfigs[].nextNodeIds
+ * - 问答节点 (QA): options[].nextNodeIds (仅 answerType === 'SELECT')
+ * - 异常处理: exceptionHandleConfig.exceptionHandleNodeIds
  */
 
 import type { IgetDetails } from '@/services/workflow';
+import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode, Edge } from '@/types/interfaces/graph';
 import { cloneDeep } from '@/utils/common';
 
 // ==================== 类型定义 ====================
 
+/**
+ * 特殊端口类型枚举
+ */
+export enum SpecialPortType {
+  Normal = 'normal', // 普通节点的 out 端口
+  Condition = 'condition', // 条件分支端口
+  Intent = 'intent', // 意图识别端口
+  QAOption = 'qa_option', // 问答选项端口
+  Exception = 'exception', // 异常处理端口
+  Loop = 'loop', // 循环节点特殊端口
+}
+
+/**
+ * 扩展的边接口，支持 sourcePort/targetPort
+ */
+export interface EdgeV3 extends Edge {
+  sourcePort?: string;
+  targetPort?: string;
+}
+
 export interface WorkflowDataV3 {
   workflowId: number;
   nodes: ChildNode[];
-  edges: Edge[];
+  edges: EdgeV3[];
   modified: string;
 }
 
@@ -270,10 +297,64 @@ class WorkflowProxyV3 {
       (e) => e.source !== String(nodeId) && e.target !== String(nodeId),
     );
 
-    // 同时更新其他节点的 nextNodeIds
+    // 清理其他节点中对该节点的引用
     this.workflowData.nodes.forEach((node) => {
+      // 普通节点的 nextNodeIds
       if (node.nextNodeIds && node.nextNodeIds.includes(nodeId)) {
         node.nextNodeIds = node.nextNodeIds.filter((id) => id !== nodeId);
+      }
+
+      // 条件节点的分支配置
+      if (
+        node.type === NodeTypeEnum.Condition &&
+        node.nodeConfig?.conditionBranchConfigs
+      ) {
+        node.nodeConfig.conditionBranchConfigs.forEach((branch) => {
+          if (branch.nextNodeIds && branch.nextNodeIds.includes(nodeId)) {
+            branch.nextNodeIds = branch.nextNodeIds.filter(
+              (id) => id !== nodeId,
+            );
+          }
+        });
+      }
+
+      // 意图节点的分支配置
+      if (
+        node.type === NodeTypeEnum.IntentRecognition &&
+        node.nodeConfig?.intentConfigs
+      ) {
+        node.nodeConfig.intentConfigs.forEach((intent) => {
+          if (intent.nextNodeIds && intent.nextNodeIds.includes(nodeId)) {
+            intent.nextNodeIds = intent.nextNodeIds.filter(
+              (id) => id !== nodeId,
+            );
+          }
+        });
+      }
+
+      // 问答节点的选项配置
+      if (
+        node.type === NodeTypeEnum.QA &&
+        node.nodeConfig?.answerType === AnswerTypeEnum.SELECT &&
+        node.nodeConfig?.options
+      ) {
+        node.nodeConfig.options.forEach((option) => {
+          if (option.nextNodeIds && option.nextNodeIds.includes(nodeId)) {
+            option.nextNodeIds = option.nextNodeIds.filter(
+              (id) => id !== nodeId,
+            );
+          }
+        });
+      }
+
+      // 异常处理配置
+      if (node.nodeConfig?.exceptionHandleConfig?.exceptionHandleNodeIds) {
+        const exceptionIds =
+          node.nodeConfig.exceptionHandleConfig.exceptionHandleNodeIds;
+        if (exceptionIds.includes(nodeId)) {
+          node.nodeConfig.exceptionHandleConfig.exceptionHandleNodeIds =
+            exceptionIds.filter((id) => id !== nodeId);
+        }
       }
     });
 
@@ -400,38 +481,227 @@ class WorkflowProxyV3 {
 
   // ==================== 边操作代理 ====================
 
+  // ==================== 辅助方法：解析端口信息 ====================
+
+  /**
+   * 解析源端口类型
+   * @param sourcePort 源端口 ID
+   * @param sourceNode 源节点
+   * @returns 端口类型和相关信息
+   */
+  private parseSourcePort(
+    sourcePort: string | undefined,
+    sourceNode: ChildNode,
+  ): {
+    type: SpecialPortType;
+    uuid?: string; // 用于条件/意图/问答的分支 UUID
+  } {
+    if (!sourcePort) {
+      return { type: SpecialPortType.Normal };
+    }
+
+    // 检查异常端口：格式为 ${nodeId}-exception-out
+    if (sourcePort.includes('-exception-out')) {
+      return { type: SpecialPortType.Exception };
+    }
+
+    // 检查循环节点特殊端口
+    if (sourceNode.type === NodeTypeEnum.Loop && sourcePort.includes('-in')) {
+      return { type: SpecialPortType.Loop };
+    }
+
+    // 检查条件/意图/问答节点的分支端口
+    // 格式为 ${nodeId}-${uuid}-out
+    if (
+      sourceNode.type === NodeTypeEnum.Condition ||
+      sourceNode.type === NodeTypeEnum.IntentRecognition ||
+      (sourceNode.type === NodeTypeEnum.QA &&
+        sourceNode.nodeConfig?.answerType === AnswerTypeEnum.SELECT)
+    ) {
+      // 从端口 ID 中提取 uuid
+      // 格式：{nodeId}-{uuid}-out 或 {nodeId}-{uuid}
+      const parts = sourcePort.split('-');
+      if (parts.length >= 2) {
+        // 移除 nodeId 和 out，剩余部分就是 uuid
+        const nodeIdStr = String(sourceNode.id);
+        let uuid = sourcePort;
+        if (sourcePort.startsWith(nodeIdStr + '-')) {
+          uuid = sourcePort.substring(nodeIdStr.length + 1);
+        }
+        if (uuid.endsWith('-out')) {
+          uuid = uuid.substring(0, uuid.length - 4);
+        }
+
+        if (sourceNode.type === NodeTypeEnum.Condition) {
+          return { type: SpecialPortType.Condition, uuid };
+        } else if (sourceNode.type === NodeTypeEnum.IntentRecognition) {
+          return { type: SpecialPortType.Intent, uuid };
+        } else {
+          return { type: SpecialPortType.QAOption, uuid };
+        }
+      }
+    }
+
+    return { type: SpecialPortType.Normal };
+  }
+
+  /**
+   * 更新特殊节点的分支 nextNodeIds
+   * @param sourceNode 源节点
+   * @param portInfo 端口信息
+   * @param targetNodeId 目标节点 ID
+   * @param action 'add' 或 'remove'
+   */
+  private updateSpecialNodeConnection(
+    sourceNode: ChildNode,
+    portInfo: { type: SpecialPortType; uuid?: string },
+    targetNodeId: number,
+    action: 'add' | 'remove',
+  ): boolean {
+    const { type, uuid } = portInfo;
+
+    switch (type) {
+      case SpecialPortType.Condition: {
+        const configs = sourceNode.nodeConfig?.conditionBranchConfigs;
+        if (!configs) return false;
+        const branch = configs.find((c) => c.uuid === uuid);
+        if (!branch) return false;
+        if (!branch.nextNodeIds) branch.nextNodeIds = [];
+
+        if (action === 'add') {
+          if (!branch.nextNodeIds.includes(targetNodeId)) {
+            branch.nextNodeIds.push(targetNodeId);
+          }
+        } else {
+          branch.nextNodeIds = branch.nextNodeIds.filter(
+            (id) => id !== targetNodeId,
+          );
+        }
+        return true;
+      }
+
+      case SpecialPortType.Intent: {
+        const configs = sourceNode.nodeConfig?.intentConfigs;
+        if (!configs) return false;
+        const intent = configs.find((c) => c.uuid === uuid);
+        if (!intent) return false;
+        if (!intent.nextNodeIds) intent.nextNodeIds = [];
+
+        if (action === 'add') {
+          if (!intent.nextNodeIds.includes(targetNodeId)) {
+            intent.nextNodeIds.push(targetNodeId);
+          }
+        } else {
+          intent.nextNodeIds = intent.nextNodeIds.filter(
+            (id) => id !== targetNodeId,
+          );
+        }
+        return true;
+      }
+
+      case SpecialPortType.QAOption: {
+        const options = sourceNode.nodeConfig?.options;
+        if (!options) return false;
+        const option = options.find((o) => o.uuid === uuid);
+        if (!option) return false;
+        if (!option.nextNodeIds) option.nextNodeIds = [];
+
+        if (action === 'add') {
+          if (!option.nextNodeIds.includes(targetNodeId)) {
+            option.nextNodeIds.push(targetNodeId);
+          }
+        } else {
+          option.nextNodeIds = option.nextNodeIds.filter(
+            (id) => id !== targetNodeId,
+          );
+        }
+        return true;
+      }
+
+      case SpecialPortType.Exception: {
+        if (!sourceNode.nodeConfig) return false;
+        if (!sourceNode.nodeConfig.exceptionHandleConfig) {
+          sourceNode.nodeConfig.exceptionHandleConfig = {} as any;
+        }
+        const config = sourceNode.nodeConfig.exceptionHandleConfig!;
+        if (!config.exceptionHandleNodeIds) {
+          config.exceptionHandleNodeIds = [];
+        }
+
+        if (action === 'add') {
+          if (!config.exceptionHandleNodeIds.includes(targetNodeId)) {
+            config.exceptionHandleNodeIds.push(targetNodeId);
+          }
+        } else {
+          config.exceptionHandleNodeIds = config.exceptionHandleNodeIds.filter(
+            (id) => id !== targetNodeId,
+          );
+        }
+        return true;
+      }
+
+      default:
+        return false;
+    }
+  }
+
   /**
    * 添加边
-   * @param edge 边数据
+   * @param edge 边数据（支持 sourcePort/targetPort）
    */
-  addEdge(edge: Edge): ProxyResult {
+  addEdge(edge: EdgeV3): ProxyResult {
     if (!this.workflowData) {
       return { success: false, message: '工作流数据未初始化' };
     }
 
-    // 检查边是否已存在
+    // 检查边是否已存在（考虑 sourcePort）
     const exists = this.workflowData.edges.find(
-      (e) => e.source === edge.source && e.target === edge.target,
+      (e) =>
+        e.source === edge.source &&
+        e.target === edge.target &&
+        (e.sourcePort || '') === (edge.sourcePort || ''),
     );
     if (exists) {
       return { success: false, message: '边已存在' };
     }
 
-    this.workflowData.edges.push(cloneDeep(edge));
+    this.workflowData.edges.push(cloneDeep(edge) as EdgeV3);
 
-    // 同步更新源节点的 nextNodeIds
+    // 同步更新源节点的连接关系
     const sourceNodeId = Number(edge.source);
     const targetNodeId = Number(edge.target);
 
     const sourceNode = this.workflowData.nodes.find(
       (n) => n.id === sourceNodeId,
     );
+
     if (sourceNode) {
-      if (!sourceNode.nextNodeIds) {
-        sourceNode.nextNodeIds = [];
-      }
-      if (!sourceNode.nextNodeIds.includes(targetNodeId)) {
-        sourceNode.nextNodeIds.push(targetNodeId);
+      const portInfo = this.parseSourcePort(edge.sourcePort, sourceNode);
+
+      if (portInfo.type !== SpecialPortType.Normal) {
+        // 特殊端口：更新相应的分支配置
+        this.updateSpecialNodeConnection(
+          sourceNode,
+          portInfo,
+          targetNodeId,
+          'add',
+        );
+        console.log(
+          '[V3 Proxy] 特殊端口连线添加:',
+          portInfo.type,
+          'uuid:',
+          portInfo.uuid,
+          '->',
+          targetNodeId,
+        );
+      } else {
+        // 普通端口：更新 nextNodeIds
+        if (!sourceNode.nextNodeIds) {
+          sourceNode.nextNodeIds = [];
+        }
+        if (!sourceNode.nextNodeIds.includes(targetNodeId)) {
+          sourceNode.nextNodeIds.push(targetNodeId);
+        }
       }
     }
 
@@ -451,34 +721,68 @@ class WorkflowProxyV3 {
    * 删除边
    * @param source 源节点 ID
    * @param target 目标节点 ID
+   * @param sourcePort 可选的源端口 ID（用于特殊节点的分支连线）
    */
-  deleteEdge(source: string, target: string): ProxyResult {
+  deleteEdge(source: string, target: string, sourcePort?: string): ProxyResult {
     if (!this.workflowData) {
       return { success: false, message: '工作流数据未初始化' };
     }
 
     // 使用字符串比较，确保类型一致
-    const index = this.workflowData.edges.findIndex(
-      (e) =>
-        String(e.source) === String(source) &&
-        String(e.target) === String(target),
-    );
+    // 如果提供了 sourcePort，则需要精确匹配
+    const index = this.workflowData.edges.findIndex((e) => {
+      const sourceMatch = String(e.source) === String(source);
+      const targetMatch = String(e.target) === String(target);
+      if (sourcePort) {
+        return (
+          sourceMatch && targetMatch && (e.sourcePort || '') === sourcePort
+        );
+      }
+      return sourceMatch && targetMatch;
+    });
+
     if (index < 0) {
       return { success: false, message: '边不存在' };
     }
 
     const deleted = this.workflowData.edges.splice(index, 1)[0];
 
-    // 同步更新源节点的 nextNodeIds
+    // 同步更新源节点的连接关系
     const sourceNodeId = Number(source);
     const targetNodeId = Number(target);
     const sourceNode = this.workflowData.nodes.find(
       (n) => n.id === sourceNodeId,
     );
-    if (sourceNode && sourceNode.nextNodeIds) {
-      sourceNode.nextNodeIds = sourceNode.nextNodeIds.filter(
-        (id) => id !== targetNodeId,
-      );
+
+    if (sourceNode) {
+      // 使用删除的边的 sourcePort 来确定端口类型
+      const effectiveSourcePort = sourcePort || deleted.sourcePort;
+      const portInfo = this.parseSourcePort(effectiveSourcePort, sourceNode);
+
+      if (portInfo.type !== SpecialPortType.Normal) {
+        // 特殊端口：更新相应的分支配置
+        this.updateSpecialNodeConnection(
+          sourceNode,
+          portInfo,
+          targetNodeId,
+          'remove',
+        );
+        console.log(
+          '[V3 Proxy] 特殊端口连线删除:',
+          portInfo.type,
+          'uuid:',
+          portInfo.uuid,
+          '->',
+          targetNodeId,
+        );
+      } else {
+        // 普通端口：更新 nextNodeIds
+        if (sourceNode.nextNodeIds) {
+          sourceNode.nextNodeIds = sourceNode.nextNodeIds.filter(
+            (id) => id !== targetNodeId,
+          );
+        }
+      }
     }
 
     this.recordUpdate({
@@ -575,68 +879,215 @@ class WorkflowProxyV3 {
 
   /**
    * 从 X6 Graph 同步数据
-   * 注意：需要保留业务数据（如 nextNodeIds），X6 图表不存储这些信息
+   * 注意：需要保留业务数据（如 nextNodeIds、分支配置等）
+   *
+   * 特殊处理：
+   * - 普通节点：更新 nextNodeIds
+   * - 条件节点：更新 conditionBranchConfigs[].nextNodeIds
+   * - 意图节点：更新 intentConfigs[].nextNodeIds
+   * - 问答节点：更新 options[].nextNodeIds
+   * - 异常处理：更新 exceptionHandleConfig.exceptionHandleNodeIds
    */
-  syncFromGraph(nodes: ChildNode[], edges: Edge[]) {
-    if (this.workflowData) {
-      // 创建现有节点的 nextNodeIds 映射
-      const existingNextNodeIds = new Map<number, number[]>();
-      this.workflowData.nodes.forEach((node) => {
-        if (node.nextNodeIds && node.nextNodeIds.length > 0) {
-          existingNextNodeIds.set(node.id, [...node.nextNodeIds]);
-        }
-      });
+  syncFromGraph(nodes: ChildNode[], edges: EdgeV3[]) {
+    if (!this.workflowData) return;
 
-      // 从边数据重新计算 nextNodeIds
-      const edgeNextNodeIds = new Map<number, number[]>();
+    // 创建节点 ID 到节点的映射
+    const nodeMap = new Map<number, ChildNode>();
+    nodes.forEach((node) => nodeMap.set(node.id, cloneDeep(node)));
 
-      // 关键：先为所有之前有 nextNodeIds 的节点初始化空数组
-      // 这样如果边被删除了，节点会得到空数组而不是保留旧值
-      existingNextNodeIds.forEach((_, nodeId) => {
-        edgeNextNodeIds.set(nodeId, []);
-      });
+    // 创建结构来存储各类连接关系
+    // 普通连接：nodeId -> targetIds
+    const normalNextNodeIds = new Map<number, number[]>();
+    // 特殊分支连接：nodeId -> uuid -> targetIds
+    const branchNextNodeIds = new Map<number, Map<string, number[]>>();
+    // 异常处理连接：nodeId -> targetIds
+    const exceptionNextNodeIds = new Map<number, number[]>();
 
-      // 从当前边数据填充
-      edges.forEach((edge) => {
-        const sourceId = Number(edge.source);
-        const targetId = Number(edge.target);
-        if (!edgeNextNodeIds.has(sourceId)) {
-          edgeNextNodeIds.set(sourceId, []);
-        }
-        const arr = edgeNextNodeIds.get(sourceId)!;
-        if (!arr.includes(targetId)) {
-          arr.push(targetId);
-        }
-      });
+    // 先为所有节点初始化空数组，确保删除的边会清空对应的 nextNodeIds
+    this.workflowData.nodes.forEach((existingNode) => {
+      normalNextNodeIds.set(existingNode.id, []);
 
-      // 合并节点数据
-      // 关键：边数据（edges）是 nextNodeIds 的唯一可靠来源
-      // X6 图表的 node.nextNodeIds 可能包含过时数据，不应该使用
-      const mergedNodes = nodes.map((node) => {
-        const nodeId = Number(node.id);
+      // 初始化分支连接
+      if (
+        existingNode.type === NodeTypeEnum.Condition &&
+        existingNode.nodeConfig?.conditionBranchConfigs
+      ) {
+        const branchMap = new Map<string, number[]>();
+        existingNode.nodeConfig.conditionBranchConfigs.forEach((branch) => {
+          branchMap.set(branch.uuid, []);
+        });
+        branchNextNodeIds.set(existingNode.id, branchMap);
+      }
 
-        let nextNodeIds: number[];
-        if (edgeNextNodeIds.has(nodeId)) {
-          nextNodeIds = edgeNextNodeIds.get(nodeId)!;
-        } else {
-          const existingNextIds = existingNextNodeIds.get(nodeId);
-          if (existingNextIds !== undefined) {
-            nextNodeIds = existingNextIds;
-          } else {
-            nextNodeIds = [];
+      if (
+        existingNode.type === NodeTypeEnum.IntentRecognition &&
+        existingNode.nodeConfig?.intentConfigs
+      ) {
+        const branchMap = new Map<string, number[]>();
+        existingNode.nodeConfig.intentConfigs.forEach((intent) => {
+          branchMap.set(intent.uuid, []);
+        });
+        branchNextNodeIds.set(existingNode.id, branchMap);
+      }
+
+      if (
+        existingNode.type === NodeTypeEnum.QA &&
+        existingNode.nodeConfig?.answerType === AnswerTypeEnum.SELECT &&
+        existingNode.nodeConfig?.options
+      ) {
+        const branchMap = new Map<string, number[]>();
+        existingNode.nodeConfig.options.forEach((option) => {
+          branchMap.set(option.uuid, []);
+        });
+        branchNextNodeIds.set(existingNode.id, branchMap);
+      }
+
+      // 初始化异常处理连接
+      if (existingNode.nodeConfig?.exceptionHandleConfig) {
+        exceptionNextNodeIds.set(existingNode.id, []);
+      }
+    });
+
+    // 从边数据填充连接关系
+    edges.forEach((edge) => {
+      const sourceId = Number(edge.source);
+      const targetId = Number(edge.target);
+      const sourceNode = nodeMap.get(sourceId);
+
+      if (!sourceNode) return;
+
+      if (edge.sourcePort) {
+        const portInfo = this.parseSourcePort(edge.sourcePort, sourceNode);
+
+        switch (portInfo.type) {
+          case SpecialPortType.Condition:
+          case SpecialPortType.Intent:
+          case SpecialPortType.QAOption: {
+            if (portInfo.uuid) {
+              let branchMap = branchNextNodeIds.get(sourceId);
+              if (!branchMap) {
+                branchMap = new Map<string, number[]>();
+                branchNextNodeIds.set(sourceId, branchMap);
+              }
+              let targetIds = branchMap.get(portInfo.uuid);
+              if (!targetIds) {
+                targetIds = [];
+                branchMap.set(portInfo.uuid, targetIds);
+              }
+              if (!targetIds.includes(targetId)) {
+                targetIds.push(targetId);
+              }
+            }
+            break;
+          }
+
+          case SpecialPortType.Exception: {
+            let targetIds = exceptionNextNodeIds.get(sourceId);
+            if (!targetIds) {
+              targetIds = [];
+              exceptionNextNodeIds.set(sourceId, targetIds);
+            }
+            if (!targetIds.includes(targetId)) {
+              targetIds.push(targetId);
+            }
+            break;
+          }
+
+          case SpecialPortType.Loop:
+          case SpecialPortType.Normal:
+          default: {
+            // 普通连接或循环节点连接
+            let targetIds = normalNextNodeIds.get(sourceId);
+            if (!targetIds) {
+              targetIds = [];
+              normalNextNodeIds.set(sourceId, targetIds);
+            }
+            if (!targetIds.includes(targetId)) {
+              targetIds.push(targetId);
+            }
+            break;
           }
         }
+      } else {
+        // 没有 sourcePort 的边，按普通连接处理
+        let targetIds = normalNextNodeIds.get(sourceId);
+        if (!targetIds) {
+          targetIds = [];
+          normalNextNodeIds.set(sourceId, targetIds);
+        }
+        if (!targetIds.includes(targetId)) {
+          targetIds.push(targetId);
+        }
+      }
+    });
 
-        return {
-          ...cloneDeep(node),
-          nextNodeIds,
-        };
-      });
+    // 合并节点数据，应用连接关系
+    const mergedNodes = nodes.map((node) => {
+      const nodeId = node.id;
+      const mergedNode = cloneDeep(node);
 
-      this.workflowData.nodes = mergedNodes;
-      this.workflowData.edges = cloneDeep(edges);
-      this.notify('mutation');
-    }
+      // 更新普通 nextNodeIds
+      // 对于特殊分支节点，普通 nextNodeIds 应该保持为空
+      const isSpecialBranchNode =
+        mergedNode.type === NodeTypeEnum.Condition ||
+        mergedNode.type === NodeTypeEnum.IntentRecognition ||
+        (mergedNode.type === NodeTypeEnum.QA &&
+          mergedNode.nodeConfig?.answerType === AnswerTypeEnum.SELECT);
+
+      if (!isSpecialBranchNode) {
+        mergedNode.nextNodeIds = normalNextNodeIds.get(nodeId) || [];
+      } else {
+        // 特殊分支节点的 nextNodeIds 应该为空，连接关系存储在分支配置中
+        mergedNode.nextNodeIds = [];
+      }
+
+      // 更新分支连接
+      const branchMap = branchNextNodeIds.get(nodeId);
+      if (branchMap) {
+        if (
+          mergedNode.type === NodeTypeEnum.Condition &&
+          mergedNode.nodeConfig?.conditionBranchConfigs
+        ) {
+          mergedNode.nodeConfig.conditionBranchConfigs.forEach((branch) => {
+            branch.nextNodeIds = branchMap.get(branch.uuid) || [];
+          });
+        }
+
+        if (
+          mergedNode.type === NodeTypeEnum.IntentRecognition &&
+          mergedNode.nodeConfig?.intentConfigs
+        ) {
+          mergedNode.nodeConfig.intentConfigs.forEach((intent) => {
+            intent.nextNodeIds = branchMap.get(intent.uuid) || [];
+          });
+        }
+
+        if (
+          mergedNode.type === NodeTypeEnum.QA &&
+          mergedNode.nodeConfig?.answerType === AnswerTypeEnum.SELECT &&
+          mergedNode.nodeConfig?.options
+        ) {
+          mergedNode.nodeConfig.options.forEach((option) => {
+            option.nextNodeIds = branchMap.get(option.uuid) || [];
+          });
+        }
+      }
+
+      // 更新异常处理连接
+      const exceptionTargetIds = exceptionNextNodeIds.get(nodeId);
+      if (exceptionTargetIds && mergedNode.nodeConfig?.exceptionHandleConfig) {
+        mergedNode.nodeConfig.exceptionHandleConfig.exceptionHandleNodeIds =
+          exceptionTargetIds;
+      }
+
+      return mergedNode;
+    });
+
+    this.workflowData.nodes = mergedNodes;
+    this.workflowData.edges = cloneDeep(edges) as EdgeV3[];
+    this.notify('mutation');
+
+    console.log('[V3 Proxy] syncFromGraph 完成，处理了', edges.length, '条边');
   }
 
   subscribe(listener: (type: ProxyEventType) => void): () => void {

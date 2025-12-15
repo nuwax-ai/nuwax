@@ -2171,8 +2171,9 @@ const Workflow: React.FC = () => {
                 id: e.id,
                 source: source?.cell || source,
                 target: target?.cell || target,
+                sourcePort: source?.port || undefined,
+                targetPort: target?.port || undefined,
                 zIndex: e.getZIndex(),
-                // Keep other potential props if needed
               };
             });
             workflowProxy.syncFromGraph(nodes, edges as any);
