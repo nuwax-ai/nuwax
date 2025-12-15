@@ -131,6 +131,19 @@ export interface AddSkillParams {
   spaceId: number;
   name: string;
   description: string;
+  icon: string;
+  files?: SkillFileInfo[];
+}
+
+// 更新技能传入参数
+export interface UpdateSkillParams {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  files?: SkillFileInfo[];
+  // 发布状态,可用值:Developing,Applying,Published,Rejected
+  publishStatus?: PublishStatusEnum;
 }
 
 // 更新工作流传入参数
@@ -153,6 +166,7 @@ export interface SkillBaseInfo {
 // 更新、创建技能弹窗
 export interface CreateSkillProps {
   type?: CreateUpdateModeEnum;
+  skillInfo?: SkillInfo;
   spaceId?: number;
   id?: number;
   name?: string;

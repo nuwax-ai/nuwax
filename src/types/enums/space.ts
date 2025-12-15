@@ -35,6 +35,8 @@ export enum CreateListEnum {
 
 // 应用开发、组件库等更多操作枚举(自定义枚举)
 export enum ApplicationMoreActionEnum {
+  // 编辑
+  Edit = 'Edit',
   // 详情
   Detail = 'Detail',
   // 分析

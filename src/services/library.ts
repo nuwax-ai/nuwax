@@ -5,6 +5,7 @@ import type {
   CopyTableParams,
   SkillInfo,
   SkillQueryFilter,
+  UpdateSkillParams,
   UpdateWorkflowParams,
 } from '@/types/interfaces/library';
 import type { RequestResponse } from '@/types/interfaces/request';
@@ -27,6 +28,25 @@ export async function apiAddSkill(
   return request('/api/skill/add', {
     method: 'POST',
     data,
+  });
+}
+
+// 更新技能
+export async function apiUpdateSkill(
+  data: UpdateSkillParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/skill/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除技能
+export async function apiDeleteSkill(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/skill/delete/${id}`, {
+    method: 'POST',
   });
 }
 

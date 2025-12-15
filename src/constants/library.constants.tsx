@@ -45,6 +45,11 @@ import { BarsOutlined } from '@ant-design/icons';
  */
 export const SKILL_MORE_ACTION: CustomPopoverItem[] = [
   {
+    action: ApplicationMoreActionEnum.Edit,
+    label: '编辑',
+    type: ComponentTypeEnum.Skill,
+  },
+  {
     action: ApplicationMoreActionEnum.Detail,
     label: '详情',
     type: ComponentTypeEnum.Skill,
