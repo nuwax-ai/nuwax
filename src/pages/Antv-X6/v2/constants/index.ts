@@ -375,9 +375,9 @@ export const HISTORY_CONFIG_V2 = {
  * 自动保存配置
  */
 export const AUTO_SAVE_CONFIG_V2 = {
-  enabled: false, // TODO: 暂时禁用自动保存，待后端接口完善后启用
-  debounceTime: 1000, // 防抖时间（毫秒）
-  throttleTime: 5000, // 节流时间（毫秒）
+  enabled: true, // 启用自动保存（节点修改后延迟保存）
+  debounceTime: 1000, // 防抖时间（毫秒）- 用于输入等频繁操作
+  throttleTime: 5000, // 节流时间（毫秒）- 用于节点添加/删除等操作
   maxRetries: 3, // 最大重试次数
   retryDelay: 1000, // 重试延迟（毫秒）
 };

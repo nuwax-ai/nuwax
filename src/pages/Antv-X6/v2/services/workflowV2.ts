@@ -9,6 +9,8 @@ import { request } from 'umi';
 import type {
   ChildNodeV2,
   NodePreviousAndArgMapV2,
+  SaveWorkflowConfigRequestV2,
+  SaveWorkflowConfigResponseV2,
   SaveWorkflowRequestV2,
   SaveWorkflowResponseV2,
   ValidationResultV2,
@@ -59,6 +61,21 @@ export async function saveWorkflowFullV2(
 }
 
 /**
+ * 保存工作流整体配置
+ * 按照工作流初始化接口返回的数据结构进行保存
+ *
+ * @param data 工作流配置数据
+ */
+export async function saveWorkflowConfigV2(
+  data: SaveWorkflowConfigRequestV2,
+): Promise<ResponseV2<SaveWorkflowConfigResponseV2>> {
+  return request(`/api/workflow/save`, {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
  * 验证工作流配置
  * @param workflowId 工作流ID
  */
@@ -87,6 +104,71 @@ export async function publishWorkflowV2(data: {
 }
 
 // ==================== 节点相关接口 ====================
+
+/**
+ * 添加节点请求参数
+ */
+export interface AddNodeRequestV2 {
+  workflowId: number;
+  type: string;
+  loopNodeId?: number;
+  typeId?: number;
+  extension?: {
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
+  };
+  nodeConfigDto?: {
+    knowledgeBaseConfigs?: {
+      knowledgeBaseId: number;
+      name: string;
+      description: string;
+      icon: string;
+      type: string;
+    }[];
+    toolName?: string;
+    mcpId?: number;
+  };
+}
+
+/**
+ * 添加节点响应
+ */
+export interface AddNodeResponseV2 {
+  id: number;
+  name: string;
+  description: string;
+  type: string;
+  workflowId: number;
+  nodeConfig: any;
+  nextNodeIds: number[] | null;
+  preNodes: number[] | null;
+  loopNodeId?: number;
+  innerStartNodeId?: number | null;
+  innerEndNodeId?: number | null;
+  innerNodes?: ChildNodeV2[] | null;
+  icon: string;
+  created: string;
+  modified: string;
+  innerEndNode?: boolean;
+  unreachableNextNodeIds?: number[] | null;
+  virtualExecute?: boolean;
+  key?: string;
+}
+
+/**
+ * 添加节点
+ * @param data 节点数据
+ */
+export async function addNodeV2(
+  data: AddNodeRequestV2,
+): Promise<ResponseV2<AddNodeResponseV2>> {
+  return request(`/api/workflow/node/add`, {
+    method: 'POST',
+    data,
+  });
+}
 
 /**
  * 获取节点的上级节点参数（前端计算备用）
@@ -241,10 +323,12 @@ const workflowServiceV2 = {
   // 工作流基础
   getWorkflowDetails: getWorkflowDetailsV2,
   saveWorkflowFull: saveWorkflowFullV2,
+  saveWorkflowConfig: saveWorkflowConfigV2,
   validateWorkflow: validateWorkflowV2,
   publishWorkflow: publishWorkflowV2,
 
   // 节点相关
+  addNode: addNodeV2,
   getNodePreviousArgs: getNodePreviousArgsV2,
   getNodeConfig: getNodeConfigV2,
 
