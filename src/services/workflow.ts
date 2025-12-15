@@ -94,7 +94,7 @@ export interface IgetDetails {
   icon: string;
   id: number;
   inputArgs: InputAndOutConfig[];
-  modified: string;
+  modified?: string;
   name: string;
   nodes: ChildNode[];
   outputArgs: InputAndOutConfig[];
@@ -306,6 +306,17 @@ export async function apiRestoreWorkflowVersion(
     method: 'POST',
   });
 }
+
+// 全量保存工作流配置
+export async function saveWorkflow(
+  workflowConfig: IgetDetails,
+): Promise<RequestResponse<null>> {
+  return request(`/api/workflow/save`, {
+    method: 'POST',
+    data: { workflowConfig },
+  });
+}
+
 export default {
   apiDeleteNode,
   apiCopyNode,
@@ -322,4 +333,5 @@ export default {
   publishWorkflow,
   validWorkflow,
   apiRestoreWorkflowVersion,
+  saveWorkflow,
 };

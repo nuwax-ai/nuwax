@@ -11,6 +11,7 @@
  * 解决方案：统一在前端组装完整数据，全量发送给后端
  */
 
+import type { IgetDetails } from '@/services/workflow';
 import type { ChildNode, Edge } from '@/types/interfaces/graph';
 import { cloneDeep } from '@/utils/common';
 
@@ -50,6 +51,7 @@ export type ProxyEventType = 'mutation' | 'history' | 'reset';
 
 class WorkflowProxyV3 {
   private workflowData: WorkflowDataV3 | null = null;
+  private workflowInfo: IgetDetails | null = null; // 存储完整的工作流信息
   private pendingUpdates: PendingUpdate[] = [];
   private isBackendReady = false;
   private isDirty = false;
@@ -97,9 +99,54 @@ class WorkflowProxyV3 {
    */
   reset(): void {
     this.workflowData = null;
+    this.workflowInfo = null;
     this.pendingUpdates = [];
     this.isDirty = false;
     this.notify('reset');
+  }
+
+  /**
+   * 设置完整的工作流信息（从 getDetails 接口返回的数据）
+   * @param info 工作流完整信息
+   */
+  setWorkflowInfo(info: IgetDetails): void {
+    this.workflowInfo = cloneDeep(info);
+  }
+
+  /**
+   * 获取工作流信息
+   */
+  getWorkflowInfo(): IgetDetails | null {
+    return this.workflowInfo ? cloneDeep(this.workflowInfo) : null;
+  }
+
+  /**
+   * 构建完整的工作流配置（用于全量保存）
+   * 将当前的节点数据合并到原始的工作流信息中
+   */
+  buildFullConfig(): IgetDetails | null {
+    if (!this.workflowInfo || !this.workflowData) {
+      return null;
+    }
+
+    const nodes = this.workflowData.nodes;
+    const startNode = nodes.find((n) => n.type === 'Start');
+    const endNode = nodes.find((n) => n.type === 'End');
+
+    // 构建完整的工作流配置，符合 IgetDetails 结构
+    const config: IgetDetails = {
+      ...this.workflowInfo,
+      nodes: cloneDeep(nodes),
+      startNode: startNode ? cloneDeep(startNode) : this.workflowInfo.startNode,
+      endNode: endNode ? cloneDeep(endNode) : this.workflowInfo.endNode,
+      inputArgs:
+        startNode?.nodeConfig?.inputArgs || this.workflowInfo.inputArgs,
+      outputArgs:
+        endNode?.nodeConfig?.outputArgs || this.workflowInfo.outputArgs,
+      modified: new Date().toISOString(),
+    };
+
+    return config;
   }
 
   // ==================== 数据获取 ====================
@@ -375,6 +422,7 @@ class WorkflowProxyV3 {
     // 同步更新源节点的 nextNodeIds
     const sourceNodeId = Number(edge.source);
     const targetNodeId = Number(edge.target);
+
     const sourceNode = this.workflowData.nodes.find(
       (n) => n.id === sourceNodeId,
     );
@@ -409,8 +457,11 @@ class WorkflowProxyV3 {
       return { success: false, message: '工作流数据未初始化' };
     }
 
+    // 使用字符串比较，确保类型一致
     const index = this.workflowData.edges.findIndex(
-      (e) => e.source === source && e.target === target,
+      (e) =>
+        String(e.source) === String(source) &&
+        String(e.target) === String(target),
     );
     if (index < 0) {
       return { success: false, message: '边不存在' };
@@ -524,10 +575,65 @@ class WorkflowProxyV3 {
 
   /**
    * 从 X6 Graph 同步数据
+   * 注意：需要保留业务数据（如 nextNodeIds），X6 图表不存储这些信息
    */
   syncFromGraph(nodes: ChildNode[], edges: Edge[]) {
     if (this.workflowData) {
-      this.workflowData.nodes = cloneDeep(nodes);
+      // 创建现有节点的 nextNodeIds 映射
+      const existingNextNodeIds = new Map<number, number[]>();
+      this.workflowData.nodes.forEach((node) => {
+        if (node.nextNodeIds && node.nextNodeIds.length > 0) {
+          existingNextNodeIds.set(node.id, [...node.nextNodeIds]);
+        }
+      });
+
+      // 从边数据重新计算 nextNodeIds
+      const edgeNextNodeIds = new Map<number, number[]>();
+
+      // 关键：先为所有之前有 nextNodeIds 的节点初始化空数组
+      // 这样如果边被删除了，节点会得到空数组而不是保留旧值
+      existingNextNodeIds.forEach((_, nodeId) => {
+        edgeNextNodeIds.set(nodeId, []);
+      });
+
+      // 从当前边数据填充
+      edges.forEach((edge) => {
+        const sourceId = Number(edge.source);
+        const targetId = Number(edge.target);
+        if (!edgeNextNodeIds.has(sourceId)) {
+          edgeNextNodeIds.set(sourceId, []);
+        }
+        const arr = edgeNextNodeIds.get(sourceId)!;
+        if (!arr.includes(targetId)) {
+          arr.push(targetId);
+        }
+      });
+
+      // 合并节点数据
+      // 关键：边数据（edges）是 nextNodeIds 的唯一可靠来源
+      // X6 图表的 node.nextNodeIds 可能包含过时数据，不应该使用
+      const mergedNodes = nodes.map((node) => {
+        const nodeId = Number(node.id);
+
+        let nextNodeIds: number[];
+        if (edgeNextNodeIds.has(nodeId)) {
+          nextNodeIds = edgeNextNodeIds.get(nodeId)!;
+        } else {
+          const existingNextIds = existingNextNodeIds.get(nodeId);
+          if (existingNextIds !== undefined) {
+            nextNodeIds = existingNextIds;
+          } else {
+            nextNodeIds = [];
+          }
+        }
+
+        return {
+          ...cloneDeep(node),
+          nextNodeIds,
+        };
+      });
+
+      this.workflowData.nodes = mergedNodes;
       this.workflowData.edges = cloneDeep(edges);
       this.notify('mutation');
     }
