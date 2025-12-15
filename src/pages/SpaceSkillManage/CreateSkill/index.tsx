@@ -1,6 +1,6 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
-import { apiAddSkill, apiUpdateWorkflow } from '@/services/library';
+import { apiAddSkill, apiUpdateSkill } from '@/services/library';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type {
   AddSkillParams,
@@ -22,15 +22,13 @@ const cx = classNames.bind(styles);
  */
 const CreateSkill: React.FC<CreateSkillProps> = ({
   type = CreateUpdateModeEnum.Create,
-  name,
   spaceId,
-  id,
-  icon,
-  description,
+  skillInfo,
   open,
   onCancel,
   onConfirm,
 }) => {
+  const { id, name, description, icon } = skillInfo || {};
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
 
@@ -46,7 +44,7 @@ const CreateSkill: React.FC<CreateSkillProps> = ({
   });
 
   // 更新技能
-  const { run: runUpdate } = useRequest(apiUpdateWorkflow, {
+  const { run: runUpdate } = useRequest(apiUpdateSkill, {
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
