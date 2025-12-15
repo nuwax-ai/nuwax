@@ -10,7 +10,7 @@ import { ProTable } from '@ant-design/pro-components';
 import { Button, message } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { useParams } from 'umi';
+import { useLocation, useParams, useSearchParams } from 'umi';
 import LogDetailDrawer from '../LogDetailDrawer';
 
 /**
@@ -20,6 +20,8 @@ import LogDetailDrawer from '../LogDetailDrawer';
  */
 const LogProTable: React.FC = () => {
   const params = useParams();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const spaceId = Number(params.spaceId);
   const actionRef = useRef<ActionType>();
 
@@ -27,6 +29,26 @@ const LogProTable: React.FC = () => {
   const [currentRequestId, setCurrentRequestId] = useState<string>();
   const [currentExecuteResult, setCurrentExecuteResult] =
     useState<SpaceLogInfo>();
+
+  // 从 URL 查询参数中获取 targetType，用于初始化查询表单
+  const targetTypeFromUrl = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get('targetType') || undefined;
+  }, [location.search]);
+
+  // 当 targetType 变化时，更新 URL 参数
+  const handleTargetTypeChange = useCallback(
+    (value: string) => {
+      const newParams = new URLSearchParams(searchParams);
+      if (value) {
+        newParams.set('targetType', value);
+      } else {
+        newParams.delete('targetType');
+      }
+      setSearchParams(newParams);
+    },
+    [searchParams, setSearchParams],
+  );
 
   const handleCloseDetails = useCallback(() => {
     setDetailsVisible(false);
@@ -47,7 +69,12 @@ const LogProTable: React.FC = () => {
           Mcp: { text: 'Mcp' },
         },
         hideInTable: true,
-        fieldProps: { placeholder: '请选择类型', allowClear: true },
+        initialValue: targetTypeFromUrl,
+        fieldProps: {
+          placeholder: '请选择类型',
+          allowClear: true,
+          onChange: handleTargetTypeChange,
+        },
       },
       {
         title: '请求ID',
@@ -159,7 +186,7 @@ const LogProTable: React.FC = () => {
         },
       },
     ],
-    [],
+    [handleTargetTypeChange, targetTypeFromUrl],
   );
 
   const request = useCallback(
