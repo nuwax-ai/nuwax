@@ -24,15 +24,12 @@ import { NodeDetails } from './NodeDetails';
 const cx = classNames.bind(styles);
 
 /**
- * 日志详情组件
+ * 日志详情内容组件（不包含外层容器）
+ * 说明：为适配不同承载方式（右侧固定栏 / Drawer 抽屉），将内容部分抽出复用。
  */
-const LogDetails: React.FC<LogDetailsProps> = ({
-  loading,
-  visible,
-  requestId,
-  executeResult,
-  onClose,
-}) => {
+export const LogDetailsContent: React.FC<
+  Pick<LogDetailsProps, 'loading' | 'requestId' | 'executeResult'>
+> = ({ loading, requestId, executeResult }) => {
   // 当前执行结果
   const [executeInfo, setExecuteInfo] = useState<ExecuteResultInfo | null>();
   const [finalResult, setFinalResult] =
@@ -53,7 +50,8 @@ const LogDetails: React.FC<LogDetailsProps> = ({
     if (!executeResult) {
       return;
     }
-    const _finalResult = JSON.parse(executeResult);
+    console.log('executeResult', executeResult);
+    const _finalResult = JSON.parse(executeResult?.processData || '{}');
     setFinalResult(_finalResult);
     // 执行结果列表
     const result = _finalResult?.componentExecuteResults || [];
@@ -110,7 +108,7 @@ const LogDetails: React.FC<LogDetailsProps> = ({
   };
 
   return (
-    <ToggleWrap title="日志详情" onClose={onClose} visible={visible}>
+    <>
       {loading ? (
         <Loading className="h-full" />
       ) : !!finalResult ? (
@@ -188,6 +186,27 @@ const LogDetails: React.FC<LogDetailsProps> = ({
           <Empty description="暂无数据" />
         </div>
       )}
+    </>
+  );
+};
+
+/**
+ * 日志详情组件（右侧固定栏版本，历史页面使用）
+ */
+const LogDetails: React.FC<LogDetailsProps> = ({
+  loading,
+  visible,
+  requestId,
+  executeResult,
+  onClose,
+}) => {
+  return (
+    <ToggleWrap title="日志详情" onClose={onClose} visible={visible}>
+      <LogDetailsContent
+        loading={loading}
+        requestId={requestId}
+        executeResult={executeResult}
+      />
     </ToggleWrap>
   );
 };

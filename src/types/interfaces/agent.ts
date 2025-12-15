@@ -661,13 +661,21 @@ export interface apiSpaceLogListParams {
   pageSize: number;
 }
 
+// 日志详情请求参数-工作空间
+export interface SpaceLogDetailParams {
+  /** 请求唯一标识 */
+  requestId: string;
+  /** 空间 ID */
+  spaceId: number;
+}
+
 // 日志查询响应-工作空间
 export interface SpaceLogInfo {
   /** 日志 ID，不用于展示，仅用于查询详情 */
-  id?: string;
+  id: string;
 
   /** 请求唯一标识，可用于关联一次请求中所有相关操作 */
-  requestId?: string;
+  requestId: string;
 
   /** 日志产生对象所在的空间 ID */
   spaceId?: number;
