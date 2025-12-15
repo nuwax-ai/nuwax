@@ -4,8 +4,9 @@
  * 基于 V1 代码重构，解决前后端数据不同步问题
  * 核心改动：
  * - 使用统一代理层管理节点/边操作
- * - 组装全量数据后统一更新（后端接口 ready 后发送）
+ * - 组装全量数据后统一更新
  * - 使用前端变量引用计算（替代 getOutputArgs 接口）
+ * - 要支持 撤销/重做 操作（X6 提供）
  */
 
 import Created from '@/components/Created';
@@ -115,8 +116,11 @@ import './indexV3.less';
 
 // V3 数据代理层
 import { workflowProxy } from './services/workflowProxyV3';
+// V3 新保存服务（单一数据源优化）
+import { workflowSaveService } from './services/WorkflowSaveService';
 import type { WorkflowDataV2 } from './types';
 import { calculateNodePreviousArgs } from './utils/variableReferenceV3';
+
 const workflowCreatedTabs = CREATED_TABS.filter((item) =>
   [
     AgentComponentTypeEnum.Plugin,
@@ -288,6 +292,9 @@ const Workflow: React.FC = () => {
       });
       // V3: 存储完整的工作流信息（用于全量保存）
       workflowProxy.setWorkflowInfo(_res.data);
+
+      // V3-NEW: 初始化新的保存服务（单一数据源优化）
+      workflowSaveService.initialize(_res.data);
     } catch (error) {
       console.error('Failed to fetch graph data:', error);
     }
@@ -307,18 +314,32 @@ const Workflow: React.FC = () => {
   };
 
   // V3: 全量保存工作流配置
+  // 使用 WorkflowSaveService 从画布直接提取数据（单一数据源）
+  // 验证结论：新服务正确计算 nextNodeIds，旧 workflowProxy 在面板更新时丢失 nextNodeIds
   const saveFullWorkflow = useCallback(async (): Promise<boolean> => {
     try {
-      const fullConfig = workflowProxy.buildFullConfig();
-      if (!fullConfig) {
+      const graph = graphRef.current?.getGraphRef?.();
+      if (!graph) {
+        console.error('[V3] 画布未初始化');
         return false;
       }
 
-      const _res = await service.saveWorkflow(fullConfig);
+      // 使用新保存服务从画布构建数据（单一数据源）
+      const payload = workflowSaveService.buildPayload(graph);
+      if (!payload) {
+        console.error('[V3] 构建保存数据失败');
+        return false;
+      }
+
+      console.log('[V3] 使用单一数据源保存, 节点数:', payload.nodes.length);
+
+      const _res = await service.saveWorkflow(payload);
 
       if (_res.code === Constant.success) {
+        workflowSaveService.clearDirty();
         workflowProxy.clearPendingUpdates();
         changeUpdateTime();
+        console.log('[V3] 保存成功 ✓');
         return true;
       } else {
         console.error('[V3] 工作流保存失败:', _res.message);
@@ -336,7 +357,11 @@ const Workflow: React.FC = () => {
   const debouncedSaveFullWorkflow = useMemo(
     () =>
       debounce(async () => {
-        if (workflowProxy.hasPendingChanges()) {
+        // 使用新保存服务检查脏数据，同时兼容旧代理层
+        if (
+          workflowSaveService.hasPendingChanges() ||
+          workflowProxy.hasPendingChanges()
+        ) {
           await saveFullWorkflow();
         }
       }, 2000), // 2秒防抖
