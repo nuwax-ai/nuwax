@@ -30,7 +30,7 @@ const SpaceSkillManage: React.FC = () => {
   // 点击技能卡片
   const handleClickItem = (info: ComponentInfo) => {
     const { id } = info;
-    history.push(`/space/${spaceId}/agent/${id}`);
+    history.push(`/space/${spaceId}/skill-details/${id}`);
   };
 
   // 删除技能
