@@ -258,7 +258,10 @@ const FileTree: React.FC<FileTreeProps> = ({
   );
 
   return (
-    <div className={styles.fileTree}>
+    <div
+      className={styles.fileTree}
+      onContextMenu={(e) => onContextMenu(e, null)}
+    >
       {files.map((node: FileNode) => renderFileTreeNode(node))}
     </div>
   );
