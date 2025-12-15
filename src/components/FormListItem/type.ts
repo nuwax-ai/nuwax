@@ -1,3 +1,4 @@
+import { NodeConfigV2 } from '@/pages/Antv-X6/v2/types';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { FormInstance } from 'antd';
@@ -63,6 +64,7 @@ export interface TreeFormProps {
   showCheck?: boolean;
   isBody?: boolean;
   isNotAdd?: boolean;
+  onNodeConfigChange?: (changedValues: any, allValues: NodeConfigV2) => void;
 }
 
 export interface TreeFormSubProps {

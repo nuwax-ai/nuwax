@@ -6,7 +6,8 @@
 
 import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Empty, Input, Popover, Tag, Tree } from 'antd';
-import React, { useMemo, useState } from 'react';
+import type { FormInstance } from 'antd/es/form';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { getNodeTypeIconV2 } from '../../constants/stencilConfigV2';
 import type { InputAndOutConfigV2, NodePreviousAndArgMapV2 } from '../../types';
@@ -38,6 +39,10 @@ export interface VariableSelectorV2Props {
   onReferenceSelect?: (refKey: string) => void;
   /** 清除引用 */
   onClearReference?: () => void;
+  /** 表单实例（用于自动获取 bindValueType） */
+  form?: FormInstance;
+  /** 字段路径（用于自动获取 bindValueType） */
+  fieldName?: (string | number)[];
 }
 
 // ==================== 工具函数 ====================
@@ -101,7 +106,7 @@ const truncateText = (text: string, maxLength: number): string => {
 
 const VariableSelectorV2: React.FC<VariableSelectorV2Props> = ({
   value = '',
-  valueType = 'Input',
+  valueType: propValueType,
   referenceData,
   isLoop = false,
   disabled = false,
@@ -111,16 +116,53 @@ const VariableSelectorV2: React.FC<VariableSelectorV2Props> = ({
   onChange,
   onReferenceSelect,
   onClearReference,
+  form,
+  fieldName,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [actualValue, setActualValue] = useState(value || '');
+  const [actualValueType, setActualValueType] = useState(
+    propValueType || 'Input',
+  );
+
+  // 如果提供了 form 和 fieldName，自动从表单获取 bindValueType 和 value
+  // 使用 useEffect 监听表单值变化（参考 v1 的实现）
+  useEffect(() => {
+    if (value !== undefined && value !== '') {
+      setActualValue(value);
+    } else if (form && fieldName && fieldName.length > 0) {
+      const formValue = form.getFieldValue(fieldName) || '';
+      setActualValue(formValue);
+    } else {
+      setActualValue('');
+    }
+  }, [value, form, fieldName]);
+
+  useEffect(() => {
+    if (propValueType) {
+      setActualValueType(propValueType);
+    } else if (form && fieldName && fieldName.length > 0) {
+      const basePath = fieldName.slice(0, -1);
+      const bindValueType = form.getFieldValue([...basePath, 'bindValueType']);
+      setActualValueType(bindValueType || 'Input');
+    } else {
+      setActualValueType('Input');
+    }
+  }, [propValueType, form, fieldName]);
+
+  // 监听表单值变化（参考 v1 的实现）
+  // 注意：由于 Ant Design Form 没有直接的订阅机制，需要在父组件中使用 Form.Item 的 shouldUpdate
+  // 这里只做初始化和基本更新
+
+  const valueType = actualValueType;
 
   // 获取显示值
   const displayValue = useMemo(() => {
-    if (valueType === 'Reference' && value) {
-      return getDisplayValue(value, referenceData, isLoop);
+    if (valueType === 'Reference' && actualValue) {
+      return getDisplayValue(actualValue, referenceData, isLoop);
     }
     return '';
-  }, [value, valueType, referenceData, isLoop]);
+  }, [actualValue, valueType, referenceData, isLoop]);
 
   // 获取节点列表（支持类型过滤）
   const nodeList = useMemo(() => {
@@ -146,13 +188,28 @@ const VariableSelectorV2: React.FC<VariableSelectorV2Props> = ({
 
   // 处理输入变更
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange?.(e.target.value);
+    const newValue = e.target.value;
+    // 如果提供了 form 和 fieldName，自动更新 bindValueType
+    if (form && fieldName && fieldName.length > 0) {
+      const basePath = fieldName.slice(0, -1);
+      form.setFieldValue([...basePath, 'bindValueType'], 'Input');
+    }
+    onChange?.(newValue);
   };
 
   // 处理引用选择
   const handleSelect = (keys: React.Key[]) => {
     if (keys.length > 0) {
       const key = keys[0] as string;
+      // 如果提供了 form 和 fieldName，自动更新 bindValueType
+      if (form && fieldName && fieldName.length > 0) {
+        const basePath = fieldName.slice(0, -1);
+        form.setFieldValue([...basePath, 'bindValueType'], 'Reference');
+        const refArg = referenceData?.argMap?.[key];
+        if (refArg?.dataType) {
+          form.setFieldValue([...basePath, 'dataType'], refArg.dataType);
+        }
+      }
       onReferenceSelect?.(key);
       setDropdownOpen(false);
     }
@@ -160,6 +217,12 @@ const VariableSelectorV2: React.FC<VariableSelectorV2Props> = ({
 
   // 处理清除
   const handleTagClose = () => {
+    // 如果提供了 form 和 fieldName，自动更新 bindValueType
+    if (form && fieldName && fieldName.length > 0) {
+      const basePath = fieldName.slice(0, -1);
+      form.setFieldValue([...basePath, 'bindValueType'], 'Input');
+      form.setFieldValue(fieldName, '');
+    }
     onClearReference?.();
   };
 
@@ -279,7 +342,7 @@ const VariableSelectorV2: React.FC<VariableSelectorV2Props> = ({
       ) : (
         <Input
           size="small"
-          value={value}
+          value={actualValue}
           placeholder={placeholder}
           disabled={disabled}
           onChange={handleInputChange}

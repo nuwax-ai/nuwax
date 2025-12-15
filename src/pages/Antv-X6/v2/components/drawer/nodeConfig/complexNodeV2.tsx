@@ -61,6 +61,7 @@ export interface NodeDisposePropsV2 {
   id: number;
   type: string;
   referenceData?: NodePreviousAndArgMapV2;
+  onNodeConfigChange?: (changedValues: any, allValues: NodeConfigV2) => void;
 }
 
 // ==================== 常量配置 ====================
@@ -116,6 +117,7 @@ export const ModelNodeV2: React.FC<NodeDisposePropsV2> = ({
   nodeConfig,
   type,
   referenceData,
+  onNodeConfigChange,
 }) => {
   // 技能弹窗状态
   const [open, setOpen] = useState(false);
@@ -174,10 +176,18 @@ export const ModelNodeV2: React.FC<NodeDisposePropsV2> = ({
       const currentConfigs = form.getFieldValue(SKILL_FORM_KEY) || [];
       item.type = item.targetType as unknown as NodeTypeEnum;
       item.typeId = item.targetId;
-      form.setFieldValue(SKILL_FORM_KEY, currentConfigs.concat([item]));
+      const newSkillList = currentConfigs.concat([item]);
+      form.setFieldValue(SKILL_FORM_KEY, newSkillList);
       setNeedSubmit(true);
+      // 手动触发保存
+      if (onNodeConfigChange) {
+        onNodeConfigChange(
+          { [SKILL_FORM_KEY]: newSkillList },
+          { ...form.getFieldsValue(), [SKILL_FORM_KEY]: newSkillList },
+        );
+      }
     },
-    [form],
+    [form, onNodeConfigChange],
   );
 
   // 移除技能
@@ -193,9 +203,16 @@ export const ModelNodeV2: React.FC<NodeDisposePropsV2> = ({
             ),
         );
         form.setFieldValue(SKILL_FORM_KEY, newConfigs);
+        // 手动触发保存
+        if (onNodeConfigChange) {
+          onNodeConfigChange(
+            { [SKILL_FORM_KEY]: newConfigs },
+            { ...form.getFieldsValue(), [SKILL_FORM_KEY]: newConfigs },
+          );
+        }
       }
     },
-    [form],
+    [form, onNodeConfigChange],
   );
 
   // 修改技能参数
@@ -209,10 +226,18 @@ export const ModelNodeV2: React.FC<NodeDisposePropsV2> = ({
             ? item
             : i,
         );
+
         form.setFieldValue(SKILL_FORM_KEY, newConfigs);
+        // 手动触发保存
+        if (onNodeConfigChange) {
+          onNodeConfigChange(
+            { [SKILL_FORM_KEY]: newConfigs },
+            { ...form.getFieldsValue(), [SKILL_FORM_KEY]: newConfigs },
+          );
+        }
       }
     },
-    [form],
+    [form, onNodeConfigChange],
   );
 
   // 显示新增技能弹窗
@@ -346,6 +371,7 @@ export const ModelNodeV2: React.FC<NodeDisposePropsV2> = ({
           form={form}
           params={(nodeConfig?.outputArgs || []) as any}
           inputItemName="outputArgs"
+          onNodeConfigChange={onNodeConfigChange}
         />
       </Form.Item>
 
@@ -456,6 +482,7 @@ export const QuestionsNodeV2: React.FC<NodeDisposePropsV2> = ({
   type,
   id,
   referenceData,
+  onNodeConfigChange,
 }) => {
   // 更改问答方式
   const changeType = (val: string) => {
@@ -484,10 +511,15 @@ export const QuestionsNodeV2: React.FC<NodeDisposePropsV2> = ({
       }));
     }
 
-    form.setFieldsValue({
+    const newValues = {
       answerType: val,
       options,
-    });
+    };
+    form.setFieldsValue(newValues);
+    // 手动触发保存
+    if (onNodeConfigChange) {
+      onNodeConfigChange(newValues, { ...form.getFieldsValue(), ...newValues });
+    }
   };
 
   return (
@@ -555,6 +587,7 @@ export const QuestionsNodeV2: React.FC<NodeDisposePropsV2> = ({
               params={(nodeConfig?.outputArgs as any) || []}
               inputItemName="outputArgs"
               showCheck
+              onNodeConfigChange={onNodeConfigChange}
             />
           ) : null
         }
@@ -586,6 +619,7 @@ export const HttpToolNodeV2: React.FC<NodeDisposePropsV2> = ({
   type,
   id,
   referenceData,
+  onNodeConfigChange,
 }) => {
   const bodyParams = nodeConfig?.body || [];
   const outputParams = nodeConfig?.outputArgs || [];
@@ -654,6 +688,7 @@ export const HttpToolNodeV2: React.FC<NodeDisposePropsV2> = ({
             inputItemName="body"
             isBody
             params={bodyParams as any}
+            onNodeConfigChange={onNodeConfigChange}
           />
         </div>
       </div>
@@ -666,6 +701,7 @@ export const HttpToolNodeV2: React.FC<NodeDisposePropsV2> = ({
           form={form}
           inputItemName="outputArgs"
           params={outputParams as any}
+          onNodeConfigChange={onNodeConfigChange}
         />
       </Form.Item>
     </div>

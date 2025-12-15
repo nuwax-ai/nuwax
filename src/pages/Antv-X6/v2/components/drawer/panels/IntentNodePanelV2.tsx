@@ -3,9 +3,9 @@
  * 完全独立，不依赖 v1 任何代码
  */
 
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button, Card, Form, Input, Space, Typography } from 'antd';
 import React from 'react';
-import { Form, Input, Button, Typography, Card, Space } from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
 import type { ChildNodeV2, NodePreviousAndArgMapV2 } from '../../../types';
 import VariableSelectorV2 from '../../common/VariableSelectorV2';
@@ -17,7 +17,10 @@ export interface IntentNodePanelV2Props {
   referenceData?: NodePreviousAndArgMapV2;
 }
 
-const IntentNodePanelV2: React.FC<IntentNodePanelV2Props> = ({ node, referenceData }) => {
+const IntentNodePanelV2: React.FC<IntentNodePanelV2Props> = ({
+  node,
+  referenceData,
+}) => {
   return (
     <div className="node-panel-v2">
       {/* 输入文本 */}
@@ -29,13 +32,36 @@ const IntentNodePanelV2: React.FC<IntentNodePanelV2Props> = ({ node, referenceDa
           </Text>
         </div>
         <Form.Item
-          name={['inputArgs', 0, 'bindValue']}
-          rules={[{ required: true, message: '请选择输入文本' }]}
+          noStyle
+          shouldUpdate={(prevValues, currentValues) => {
+            const prevBindValueType = prevValues?.inputArgs?.[0]?.bindValueType;
+            const currentBindValueType =
+              currentValues?.inputArgs?.[0]?.bindValueType;
+            return prevBindValueType !== currentBindValueType;
+          }}
         >
-          <VariableSelectorV2
-            referenceData={referenceData}
-            placeholder="选择文本变量"
-          />
+          {() => {
+            const form = Form.useFormInstance();
+            const bindValueType = form.getFieldValue([
+              'inputArgs',
+              0,
+              'bindValueType',
+            ]);
+            return (
+              <Form.Item
+                name={['inputArgs', 0, 'bindValue']}
+                rules={[{ required: true, message: '请选择输入文本' }]}
+              >
+                <VariableSelectorV2
+                  referenceData={referenceData}
+                  placeholder="选择文本变量"
+                  form={form}
+                  fieldName={['inputArgs', 0, 'bindValue']}
+                  valueType={bindValueType}
+                />
+              </Form.Item>
+            );
+          }}
         </Form.Item>
       </div>
 

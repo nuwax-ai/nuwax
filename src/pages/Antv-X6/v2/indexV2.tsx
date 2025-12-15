@@ -95,6 +95,7 @@ const WorkflowV2: React.FC = () => {
     canRedo: _canRedo,
     undo,
     redo,
+    batchUpdate,
   } = useWorkflowDataV2({
     workflowId,
     onSaveSuccess: () => {
@@ -588,6 +589,7 @@ const WorkflowV2: React.FC = () => {
       // 判断是否是在边上创建节点
       if (targetNode && edgeId) {
         // 在边上创建节点：删除原边，插入新节点
+        // 使用批量操作，避免多次触发保存
         // 1. 从画布获取原边的完整信息（包括 sourcePort 和 targetPort）
         let sourcePort = portId || `${sourceNode.id}-out`;
         let targetPort = `${targetNode.id}-in`;
@@ -608,24 +610,35 @@ const WorkflowV2: React.FC = () => {
           }
         }
 
-        // 2. 先删除原来的边 (sourceNode -> targetNode)
-        // 需要传递完整的端口信息，确保能正确匹配和删除边
-        handleEdgeDelete({
-          source: sourceNode.id.toString(),
-          target: targetNode.id.toString(),
-          sourcePort,
-          targetPort,
+        // 2. 使用批量操作：删除原边，添加两条新边
+        // 这样只会触发一次保存，而不是多次
+        batchUpdate({
+          deleteEdges: [
+            {
+              source: sourceNode.id.toString(),
+              target: targetNode.id.toString(),
+              sourcePort,
+              targetPort,
+            },
+          ],
+          addEdges: [
+            {
+              source: sourceNode.id.toString(),
+              target: addedNode.id.toString(),
+              sourcePort,
+              targetPort: `${addedNode.id}-in`,
+            },
+            {
+              source: addedNode.id.toString(),
+              target: targetNode.id.toString(),
+              sourcePort: `${addedNode.id}-out`,
+              targetPort,
+            },
+          ],
         });
-        graphRef.current?.graphDeleteEdge(edgeId);
 
-        // 3. 创建新的边: sourceNode -> addedNode -> targetNode
-        // 保持原有的端口信息
-        handleEdgeAdd({
-          source: sourceNode.id.toString(),
-          target: addedNode.id.toString(),
-          sourcePort,
-          targetPort: `${addedNode.id}-in`,
-        });
+        // 3. 更新画布：删除原边，添加两条新边
+        graphRef.current?.graphDeleteEdge(edgeId);
         graphRef.current?.graphCreateNewEdge(
           sourceNode.id.toString(),
           addedNode.id.toString(),
@@ -633,13 +646,6 @@ const WorkflowV2: React.FC = () => {
           sourcePort,
           `${addedNode.id}-in`,
         );
-
-        handleEdgeAdd({
-          source: addedNode.id.toString(),
-          target: targetNode.id.toString(),
-          sourcePort: `${addedNode.id}-out`,
-          targetPort,
-        });
         graphRef.current?.graphCreateNewEdge(
           addedNode.id.toString(),
           targetNode.id.toString(),
@@ -825,15 +831,19 @@ const WorkflowV2: React.FC = () => {
         selectedNodeId: selectedNode?.id,
       });
       if (selectedNode) {
-        const mergedConfig = buildMergedNodeConfig(selectedNode, allValues);
+        // 获取最新的节点数据，避免 selectedNode 状态陈旧导致的数据回退
+        const latestNode = getNodeById(selectedNode.id) || selectedNode;
+
+        const mergedConfig = buildMergedNodeConfig(latestNode, allValues);
         console.log('[V2 DEBUG] mergedConfig:', mergedConfig);
         const updatedNode: ChildNodeV2 = {
-          ...selectedNode,
+          ...latestNode,
           nodeConfig: mergedConfig,
         };
         console.log('[V2 DEBUG] updatedNode:', updatedNode);
         updateNode(selectedNode.id, updatedNode);
         // 同步更新 selectedNode 以便后续操作使用最新数据
+        // 注意：这里仍然更新 selectedNode 状态，但下一次计算会基于 getNodeById 获取的最新值
         setSelectedNode(updatedNode);
         // 同步更新画布节点（端口/尺寸/失效边联动）- 传入完整 nodeConfig
         graphRef.current?.graphUpdateByFormData(
@@ -843,7 +853,7 @@ const WorkflowV2: React.FC = () => {
         );
       }
     },
-    [selectedNode, updateNode, buildMergedNodeConfig],
+    [selectedNode, updateNode, buildMergedNodeConfig, getNodeById],
   );
 
   // ==================== 工具栏操作 ====================

@@ -128,29 +128,52 @@ const WorkflowNodePanelV2: React.FC<WorkflowNodePanelV2Props> = ({
             {inputArgs.map((arg, index) => (
               <Form.Item
                 key={arg.key || index}
-                name={['inputArgs', index, 'bindValue']}
-                label={
-                  <span>
-                    {arg.name}
-                    {arg.require && (
-                      <span style={{ color: '#ff4d4f' }}> *</span>
-                    )}
-                    <Tag color="#C9CDD4" style={{ marginLeft: 4 }}>
-                      {arg.dataType}
-                    </Tag>
-                  </span>
-                }
-                tooltip={arg.description}
-                rules={
-                  arg.require
-                    ? [{ required: true, message: `请输入 ${arg.name}` }]
-                    : []
-                }
+                noStyle
+                shouldUpdate={(prevValues, currentValues) => {
+                  const prevBindValueType =
+                    prevValues?.inputArgs?.[index]?.bindValueType;
+                  const currentBindValueType =
+                    currentValues?.inputArgs?.[index]?.bindValueType;
+                  return prevBindValueType !== currentBindValueType;
+                }}
               >
-                <VariableSelectorV2
-                  referenceData={referenceData}
-                  placeholder={arg.description || `请输入 ${arg.name}`}
-                />
+                {() => {
+                  const bindValueType = form.getFieldValue([
+                    'inputArgs',
+                    index,
+                    'bindValueType',
+                  ]);
+                  return (
+                    <Form.Item
+                      name={['inputArgs', index, 'bindValue']}
+                      label={
+                        <span>
+                          {arg.name}
+                          {arg.require && (
+                            <span style={{ color: '#ff4d4f' }}> *</span>
+                          )}
+                          <Tag color="#C9CDD4" style={{ marginLeft: 4 }}>
+                            {arg.dataType}
+                          </Tag>
+                        </span>
+                      }
+                      tooltip={arg.description}
+                      rules={
+                        arg.require
+                          ? [{ required: true, message: `请输入 ${arg.name}` }]
+                          : []
+                      }
+                    >
+                      <VariableSelectorV2
+                        referenceData={referenceData}
+                        placeholder={arg.description || `请输入 ${arg.name}`}
+                        form={form}
+                        fieldName={['inputArgs', index, 'bindValue']}
+                        valueType={bindValueType}
+                      />
+                    </Form.Item>
+                  );
+                }}
               </Form.Item>
             ))}
           </div>

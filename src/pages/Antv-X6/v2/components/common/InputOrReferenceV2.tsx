@@ -1,4 +1,3 @@
-import { Input } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import React, { useMemo } from 'react';
 import type { NodePreviousAndArgMapV2 } from '../../types';
@@ -63,31 +62,19 @@ const InputOrReferenceV2: React.FC<InputOrReferenceV2Props> = ({
     onChange?.('');
   };
 
-  if (referenceType === 'Reference') {
-    return (
-      <VariableSelectorV2
-        value={value}
-        valueType="Reference"
-        referenceData={referenceData}
-        isLoop={isLoop}
-        filterType={filterType}
-        disabled={isDisabled}
-        placeholder={placeholder}
-        onChange={handleInputChange}
-        onReferenceSelect={handleReferenceSelect}
-        onClearReference={handleClearReference}
-        style={style}
-      />
-    );
-  }
-
+  // 始终使用 VariableSelectorV2，确保下拉按钮可见
   return (
-    <Input
-      size="small"
+    <VariableSelectorV2
       value={value}
-      placeholder={placeholder}
+      valueType={referenceType === 'Reference' ? 'Reference' : 'Input'}
+      referenceData={referenceData}
+      isLoop={isLoop}
+      filterType={filterType}
       disabled={isDisabled}
-      onChange={(e) => handleInputChange(e.target.value)}
+      placeholder={placeholder}
+      onChange={handleInputChange}
+      onReferenceSelect={handleReferenceSelect}
+      onClearReference={handleClearReference}
       style={style}
     />
   );

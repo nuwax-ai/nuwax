@@ -132,25 +132,71 @@ const KnowledgeNodePanelV2: React.FC<KnowledgeNodePanelV2Props> = ({
           inputArgs.map((arg: InputAndOutConfigV2, index: number) => (
             <Form.Item
               key={arg.key || index}
-              name={[KBC_INPUT_ARGS_KEY, index, 'bindValue']}
-              label={arg.name}
-              tooltip={arg.description}
+              noStyle
+              shouldUpdate={(prevValues, currentValues) => {
+                const prevBindValueType =
+                  prevValues?.[KBC_INPUT_ARGS_KEY]?.[index]?.bindValueType;
+                const currentBindValueType =
+                  currentValues?.[KBC_INPUT_ARGS_KEY]?.[index]?.bindValueType;
+                return prevBindValueType !== currentBindValueType;
+              }}
             >
-              <VariableSelectorV2
-                referenceData={referenceData}
-                placeholder="输入或引用变量"
-              />
+              {() => {
+                const bindValueType = form.getFieldValue([
+                  KBC_INPUT_ARGS_KEY,
+                  index,
+                  'bindValueType',
+                ]);
+                return (
+                  <Form.Item
+                    name={[KBC_INPUT_ARGS_KEY, index, 'bindValue']}
+                    label={arg.name}
+                    tooltip={arg.description}
+                  >
+                    <VariableSelectorV2
+                      referenceData={referenceData}
+                      placeholder="输入或引用变量"
+                      form={form}
+                      fieldName={[KBC_INPUT_ARGS_KEY, index, 'bindValue']}
+                      valueType={bindValueType}
+                    />
+                  </Form.Item>
+                );
+              }}
             </Form.Item>
           ))
         ) : (
           <Form.Item
-            name={[KBC_INPUT_ARGS_KEY, 0, 'bindValue']}
-            rules={[{ required: true, message: '请输入检索关键词' }]}
+            noStyle
+            shouldUpdate={(prevValues, currentValues) => {
+              const prevBindValueType =
+                prevValues?.[KBC_INPUT_ARGS_KEY]?.[0]?.bindValueType;
+              const currentBindValueType =
+                currentValues?.[KBC_INPUT_ARGS_KEY]?.[0]?.bindValueType;
+              return prevBindValueType !== currentBindValueType;
+            }}
           >
-            <VariableSelectorV2
-              referenceData={referenceData}
-              placeholder="输入检索关键词"
-            />
+            {() => {
+              const bindValueType = form.getFieldValue([
+                KBC_INPUT_ARGS_KEY,
+                0,
+                'bindValueType',
+              ]);
+              return (
+                <Form.Item
+                  name={[KBC_INPUT_ARGS_KEY, 0, 'bindValue']}
+                  rules={[{ required: true, message: '请输入检索关键词' }]}
+                >
+                  <VariableSelectorV2
+                    referenceData={referenceData}
+                    placeholder="输入检索关键词"
+                    form={form}
+                    fieldName={[KBC_INPUT_ARGS_KEY, 0, 'bindValue']}
+                    valueType={bindValueType}
+                  />
+                </Form.Item>
+              );
+            }}
           </Form.Item>
         )}
       </div>
