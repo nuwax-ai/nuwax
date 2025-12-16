@@ -5,6 +5,7 @@ import type {
   CopyTableParams,
   SkillInfo,
   SkillQueryFilter,
+  TaskInfo,
   UpdateSkillParams,
   UpdateWorkflowParams,
 } from '@/types/interfaces/library';
@@ -85,6 +86,15 @@ export async function apiComponentList(
 ): Promise<RequestResponse<ComponentInfo[]>> {
   return request(`/api/component/list/${spaceId}`, {
     method: 'GET',
+  });
+}
+
+// 查询任务列表接口
+export async function apiTaskList(
+  spaceId: number,
+): Promise<RequestResponse<TaskInfo[]>> {
+  return request(`/api/task/list/${spaceId}`, {
+    method: 'POST',
   });
 }
 
