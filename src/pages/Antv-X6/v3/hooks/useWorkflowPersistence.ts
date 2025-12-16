@@ -13,12 +13,14 @@ interface UseWorkflowPersistenceProps {
   graphRef: MutableRefObject<GraphContainerRef | null>;
   changeUpdateTime: () => void;
   getReference: (id: number) => Promise<boolean>;
+  setFoldWrapItem?: (data: ChildNode) => void;
 }
 
 export const useWorkflowPersistence = ({
   graphRef,
   changeUpdateTime,
   getReference,
+  setFoldWrapItem,
 }: UseWorkflowPersistenceProps) => {
   const { getWorkflow } = useModel('workflow');
 
@@ -79,7 +81,7 @@ export const useWorkflowPersistence = ({
   const autoSaveNodeConfig = useCallback(
     async (
       updateFormConfig: ChildNode,
-      setCurrentFoldWrapItem: (data: ChildNode) => void,
+      setCurrentFoldWrapItem?: (data: ChildNode) => void,
     ): Promise<boolean> => {
       if (updateFormConfig.id === FoldFormIdEnum.empty) return false;
 
@@ -93,7 +95,11 @@ export const useWorkflowPersistence = ({
         // 如果是修改节点的参数，那么就要更新当前节点的参数
         const drawerForm = getWorkflow('drawerForm');
         if (updateFormConfig.id === drawerForm?.id) {
-          setCurrentFoldWrapItem(params);
+          if (setCurrentFoldWrapItem) {
+            setCurrentFoldWrapItem(params);
+          } else if (setFoldWrapItem) {
+            setFoldWrapItem(params);
+          }
         }
 
         // 更新当前节点的上级参数（使用前端计算）
@@ -115,6 +121,7 @@ export const useWorkflowPersistence = ({
       debouncedSaveFullWorkflow,
       getWorkflow,
       graphRef,
+      setFoldWrapItem,
     ],
   );
 
