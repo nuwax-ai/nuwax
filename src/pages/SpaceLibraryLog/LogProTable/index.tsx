@@ -1,5 +1,6 @@
 import LimitedTooltip from '@/components/base/LimitedTooltip';
 import { apiSpaceLogList } from '@/services/agentDev';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
   SpaceLogInfo,
   SpaceLogQueryFilter,
@@ -83,10 +84,10 @@ const LogProTable: React.FC = () => {
         dataIndex: 'targetType',
         valueType: 'select',
         valueEnum: {
-          Agent: { text: '智能体' },
-          Plugin: { text: '插件' },
-          Workflow: { text: '工作流' },
-          Mcp: { text: 'Mcp' },
+          [AgentComponentTypeEnum.Agent]: { text: '智能体' },
+          [AgentComponentTypeEnum.Plugin]: { text: '插件' },
+          [AgentComponentTypeEnum.Workflow]: { text: '工作流' },
+          [AgentComponentTypeEnum.MCP]: { text: 'Mcp' },
         },
         hideInTable: false,
         initialValue: targetTypeFromUrl,
