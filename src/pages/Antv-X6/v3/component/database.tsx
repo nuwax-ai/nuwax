@@ -12,7 +12,7 @@ import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Empty, Form, InputNumber, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
-import { outPutConfigs, tableOptions } from '../params';
+import { outPutConfigs, tableOptions } from '../ParamsV3';
 import { InputAndOut, TreeOutput } from './commonNode';
 
 // 定义数据增，删，改的节点
