@@ -62,3 +62,10 @@ export interface SkillImportParams {
   targetSkillId: string;
   targetSpaceId: string;
 }
+
+// 上传技能文件
+export interface SkillUploadFileParams {
+  file: any;
+  skillId: string;
+  filePath: string;
+}
