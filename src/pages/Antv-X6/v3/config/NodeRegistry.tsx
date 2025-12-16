@@ -2,12 +2,12 @@ import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { FormInstance } from 'antd';
 import React from 'react';
-import ComplexNode from '../../component/complexNode';
-import ConditionNode from '../../component/condition';
-import Database from '../../component/database';
-import Library from '../../component/library';
-import NodeItem from '../../component/nodeItem';
-import ReferenceNode from '../../component/pluginNode';
+import ComplexNode from '../component/complexNode';
+import ConditionNode from '../component/condition';
+import Database from '../component/database';
+import Library from '../component/library';
+import NodeItem from '../component/nodeItem';
+import ReferenceNode from '../component/pluginNode';
 
 const {
   StartNode,
