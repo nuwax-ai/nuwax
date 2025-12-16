@@ -29,11 +29,7 @@ import useDrawerScroll from '@/hooks/useDrawerScroll';
 import useModifiedSaveUpdate from '@/hooks/useModifiedSaveUpdate';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import type { AddNodeResponse } from '@/services/workflow';
-import service, {
-  IgetDetails,
-  ITestRun,
-  IUpdateDetails,
-} from '@/services/workflow';
+import service, { IgetDetails, ITestRun } from '@/services/workflow';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -47,18 +43,14 @@ import {
 import {
   FoldFormIdEnum,
   NodeSizeGetTypeEnum,
-  NodeUpdateEnum,
   PortGroupEnum,
   UpdateEdgeType,
 } from '@/types/enums/node';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import {
-  ChangeEdgeProps,
-  ChangeNodeProps,
   ChildNode,
   CreateNodeByPortOrEdgeProps,
   CurrentNodeRefProps,
-  Edge,
   GraphContainerRef,
   GraphRect,
   RunResultItem,
@@ -67,7 +59,6 @@ import {
 import {
   CurrentNodeRefKey,
   NodeConfig,
-  NodeDrawerRef,
   TestRunParams,
 } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
@@ -80,7 +71,6 @@ import {
   updateSkillComponentConfigs,
 } from '@/utils/updateNode';
 import {
-  getEdges,
   getNodeSize,
   getShape,
   getWorkflowTestRun,
@@ -96,14 +86,7 @@ import {
 import { LoadingOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import { Form, message, Spin } from 'antd';
-import { debounce } from 'lodash';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import VersionAction from '../components/VersionAction';
@@ -114,10 +97,13 @@ import Header from './components/layout/Header';
 import NodePanelDrawer from './components/panels/PropertyPanel';
 import './indexV3.less';
 
+// V3 Hooks
+import { useGraphInteraction } from './hooks/useGraphInteraction';
+import { useWorkflowLifecycle } from './hooks/useWorkflowLifecycle';
+import { useWorkflowPersistence } from './hooks/useWorkflowPersistence';
+
 // V3 数据代理层
 import { workflowProxy } from './services/workflowProxyV3';
-// V3 新保存服务（单一数据源优化）
-import { workflowSaveService } from './services/WorkflowSaveService';
 import type { WorkflowDataV2 } from './types';
 import { calculateNodePreviousArgs } from './utils/variableReferenceV3';
 
@@ -248,8 +234,34 @@ const Workflow: React.FC = () => {
   const [foldWrapItem, setFoldWrapItem] =
     useState<ChildNode>(DEFAULT_DRAWER_FORM);
 
-  // 工作流左上角的详细信息
-  const [info, setInfo] = useState<IgetDetails | null>();
+  // V3 Hooks Integration
+  const {
+    info,
+    setInfo,
+    graphParams,
+    setGraphParams,
+    onConfirm,
+    refreshGraphData,
+  } = useWorkflowLifecycle({
+    workflowId,
+    handleInitLoading,
+  });
+
+  // Alias refreshGraphData to getDetails for compatibility with existing code
+  const getDetails = refreshGraphData;
+
+  // Define changeUpdateTime for use in this component and hooks
+  const changeUpdateTime = useCallback(() => {
+    const _time = new Date();
+    setInfo((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        modified: _time.toString(),
+      };
+    });
+  }, [setInfo]);
+
   // 定义一个节点试运行返回值
   const [testRunResult, setTestRunResult] = useState<string>('');
   // 节点试运行
@@ -276,11 +288,6 @@ const Workflow: React.FC = () => {
   const [form] = Form.useForm<NodeConfig>();
   // 修改右侧抽屉的名称
   const [showNameInput, setShowNameInput] = useState<boolean>(false);
-  // 当前画布中的节点和边的数据
-  const [graphParams, setGraphParams] = useState<{
-    nodeList: ChildNode[];
-    edgeList: Edge[];
-  }>({ nodeList: [], edgeList: [] });
   // 针对问答节点，试运行的问答参数
   const [historyState, setHistoryState] = useState({
     canUndo: false,
@@ -305,7 +312,6 @@ const Workflow: React.FC = () => {
   const preventGetReference = useRef<number>(0);
   // 新增定时器引用
   const timerRef = useRef<NodeJS.Timeout>();
-  const nodeDrawerRef = useRef<NodeDrawerRef>(null);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   // 按钮是否处于loading
   const [loading, setLoading] = useState(false);
@@ -318,20 +324,7 @@ const Workflow: React.FC = () => {
     skillChange,
     setSkillChange,
     isModified,
-    setSpaceId,
   } = useModel('workflow');
-  // 修改更新时间
-  const changeUpdateTime = () => {
-    const _time = new Date();
-    // 修改时间
-    setInfo((prev) => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        modified: _time.toString(),
-      };
-    });
-  };
 
   // 使用 Hook 控制抽屉打开时的滚动条
   useDrawerScroll(showVersionHistory);
@@ -350,6 +343,7 @@ const Workflow: React.FC = () => {
     },
     [currentNodeRef],
   );
+
   /** -----------------  需要调用接口的方法  --------------------- */
   // 同步 foldWrapItem 到 model 中的 drawerForm
   useEffect(() => {
@@ -368,104 +362,33 @@ const Workflow: React.FC = () => {
     }
   }, [foldWrapItem]);
 
-  // 获取当前画布的信息
-  const getDetails = async () => {
-    try {
-      // 调用接口，获取当前画布的所有节点和边
-      const _res = await service.getDetails(workflowId);
-      // 获取左上角的信息
-      setInfo(_res.data);
-      setSpaceId(_res.data.spaceId);
-      // 获取节点和边的数据
-      const _nodeList = _res.data.nodes;
-      const _edgeList = getEdges(_nodeList);
-      // 修改数据，更新画布
-      setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
+  // V3 Hooks Integration for Interaction
+  // Moved here because it needs getReference which is defined below,
+  // but getReference also needs graphRef...
+  // Wait, component functions are hoisted or can be used if defined before usage.
+  // getReference is defined below line 489. Hooks need it passed in.
+  // The hook call must be at the top level.
+  // I need to use `useCallback` for getReference wrapper or simpler,
+  // let's define getReference BEFORE hooks if possible?
+  // No, hooks must be at top. params to hooks can be functions defined later?
+  // No, variables used in hook props must be defined before hook call.
+  // Solution: I will define `getReference` using a ref or just keep `getReference` here
+  // and pass `(id) => getReference(id)` to hook?
+  // The closure will capture the function variable. BUT `getReference` is `const` so it's not hoisted.
+  // I must move `getReference` definition UP, above the hook calls.
 
-      // V3: 初始化代理层数据
-      workflowProxy.initialize({
-        workflowId: workflowId,
-        nodes: _nodeList,
-        edges: _edgeList,
-        modified: _res.data.modified || new Date().toISOString(),
-      });
-      // V3: 存储完整的工作流信息（用于全量保存）
-      workflowProxy.setWorkflowInfo(_res.data);
+  // Or simpler: I can't move getReference up easily because it uses graphRef which is defined.
+  // graphRef is defined at line 303.
+  // Hooks are at line 250+.
+  // Correct order:
+  // 1. refs (graphRef etc)
+  // 2. auxiliary functions (getReference - if it doesn't depend on other things)
+  // 3. Hooks
 
-      // V3-NEW: 初始化新的保存服务（单一数据源优化）
-      workflowSaveService.initialize(_res.data);
-    } catch (error) {
-      console.error('Failed to fetch graph data:', error);
-    }
-  };
-  // 修改当前工作流的基础信息
-  const onConfirm = async (value: IUpdateDetails) => {
-    // if (!value.name) return;
-    if (showCreateWorkflow) {
-      setShowCreateWorkflow(false);
-    }
-    const _res = await service.updateDetails(value);
-    if (_res.code === Constant.success) {
-      changeUpdateTime();
-      // setInfo({ ...(info as IgetDetails), extension: value.extension });
-      getDetails();
-    }
-  };
-
-  // V3: 全量保存工作流配置
-  // 使用 WorkflowSaveService 从画布直接提取数据（单一数据源）
-  // 验证结论：新服务正确计算 nextNodeIds，旧 workflowProxy 在面板更新时丢失 nextNodeIds
-  const saveFullWorkflow = useCallback(async (): Promise<boolean> => {
-    try {
-      const graph = graphRef.current?.getGraphRef?.();
-      if (!graph) {
-        console.error('[V3] 画布未初始化');
-        return false;
-      }
-
-      // 使用新保存服务从画布构建数据（单一数据源）
-      const payload = workflowSaveService.buildPayload(graph);
-      if (!payload) {
-        console.error('[V3] 构建保存数据失败');
-        return false;
-      }
-
-      console.log('[V3] 使用单一数据源保存, 节点数:', payload.nodes.length);
-
-      const _res = await service.saveWorkflow(payload);
-
-      if (_res.code === Constant.success) {
-        workflowSaveService.clearDirty();
-        workflowProxy.clearPendingUpdates();
-        changeUpdateTime();
-        console.log('[V3] 保存成功 ✓');
-        return true;
-      } else {
-        console.error('[V3] 工作流保存失败:', _res.message);
-        message.error(_res.message || '保存失败');
-        return false;
-      }
-    } catch (error) {
-      console.error('[V3] 工作流保存异常:', error);
-      message.error('保存失败，请稍后重试');
-      return false;
-    }
-  }, [changeUpdateTime]);
-
-  // V3: 防抖保存（自动保存用）
-  const debouncedSaveFullWorkflow = useMemo(
-    () =>
-      debounce(async () => {
-        // 使用新保存服务检查脏数据，同时兼容旧代理层
-        if (
-          workflowSaveService.hasPendingChanges() ||
-          workflowProxy.hasPendingChanges()
-        ) {
-          await saveFullWorkflow();
-        }
-      }, 2000), // 2秒防抖
-    [saveFullWorkflow],
-  );
+  // For now, I will Comment out the removed functions and Add the Interaction Hook call after getReference is defined?
+  // No, Hooks must be at top level unconditionally.
+  // React allows hooks anywhere at top level.
+  // I will move the hook calls DOWN, after `getReference` is defined.
 
   // 调整画布的大小（左下角select）
   const changeGraph = (val: number | string) => {
@@ -596,157 +519,25 @@ const Workflow: React.FC = () => {
       }
     }
   };
-
-  // 节点添加或移除边
-  const nodeChangeEdge = async (
-    config: ChangeEdgeProps,
-    callback: () => Promise<boolean> | void = () =>
-      getReference(getWorkflow('drawerForm').id),
-  ) => {
-    const { type, targetId, sourceNode, id } = config;
-    if (!graphRef.current) return false;
-
-    if (type === UpdateEdgeType.created) {
-      // 添加边
-      const edgeDef = { source: String(sourceNode.id), target: targetId };
-      // TODO: edgeDef inside Proxy needs to match Edge interface (might need more props if Edge has them)
-      // But Proxy only uses source/target to check existence and update nextNodeIds.
-      // So this minimal object is fine for now, or existing proxy type allows it.
-      // Checking Proxy: uses `e.source === edge.source`.
-      const res = workflowProxy.addEdge(edgeDef as any);
-
-      if (res.success) {
-        changeUpdateTime();
-        await callback(); // Update references
-
-        const updatedNode = workflowProxy.getNodeById(sourceNode.id);
-        const newNodeIds = updatedNode?.nextNodeIds || [];
-        updateCurrentNodeRef('sourceNode', {
-          nextNodeIds: newNodeIds,
-        });
-        // V3: 连线变化后触发全量保存
-        debouncedSaveFullWorkflow();
-        return newNodeIds;
-      } else {
-        // Rollback visual edge
-        if (id) {
-          graphRef.current.graphDeleteEdge(id);
-        }
-        message.error(res.message);
-        return false;
-      }
-    } else if (type === UpdateEdgeType.deleted) {
-      // 删除边
-      const res = workflowProxy.deleteEdge(String(sourceNode.id), targetId);
-
-      if (res.success) {
-        changeUpdateTime();
-        await callback();
-
-        const updatedNode = workflowProxy.getNodeById(sourceNode.id);
-        const newNodeIds = updatedNode?.nextNodeIds || [];
-        updateCurrentNodeRef('sourceNode', {
-          nextNodeIds: newNodeIds,
-        });
-        // V3: 连线变化后触发全量保存
-        debouncedSaveFullWorkflow();
-        return newNodeIds;
-      } else {
-        message.error(res.message);
-        return false;
-      }
-    }
-    return false;
-  };
-
-  // 自动保存节点配置 - V3 使用代理层替代后端接口
-  const autoSaveNodeConfig = async (
-    updateFormConfig: ChildNode,
-  ): Promise<boolean> => {
-    if (updateFormConfig.id === FoldFormIdEnum.empty) return false;
-
-    const params = cloneDeep(updateFormConfig);
-    graphRef.current?.graphUpdateNode(String(params.id), params);
-
-    // V3: 使用代理层更新数据，不调用后端接口
-    const proxyResult = workflowProxy.updateNode(params);
-
-    if (proxyResult.success) {
-      // 如果是修改节点的参数，那么就要更新当前节点的参数
-      if (updateFormConfig.id === getWorkflow('drawerForm').id) {
-        setFoldWrapItem(params);
-      }
-      // 更新当前节点的上级参数（使用前端计算）
-      await getReference(getWorkflow('drawerForm').id);
-      changeUpdateTime();
-      // V3: 触发防抖全量保存
-      debouncedSaveFullWorkflow();
-      return true;
-    }
-
-    console.error('[V3] 节点配置自动保存失败:', proxyResult.message);
-    return false;
-  };
-
-  // 更新节点 - V3 使用代理层替代后端接口调用
-  const changeNode = async (
-    { nodeData, update, targetNodeId }: ChangeNodeProps,
-    callback: () => Promise<boolean> | void = () =>
-      getReference(getWorkflow('drawerForm').id),
-  ): Promise<boolean> => {
-    let params = cloneDeep(nodeData);
-    const isOnlyUpdate = update && update === NodeUpdateEnum.moved;
-    if (isOnlyUpdate) {
-      if (nodeData.id === getWorkflow('drawerForm').id) {
-        const values = nodeDrawerRef.current?.getFormValues();
-        params = {
-          ...nodeData,
-          nodeConfig: {
-            ...nodeData.nodeConfig,
-            ...values,
-            extension: {
-              ...nodeData.nodeConfig.extension,
-            },
-          },
-        };
-      }
-    }
-    if (params.id === FoldFormIdEnum.empty) return false;
-
-    // 更新画布节点
-    graphRef.current?.graphUpdateNode(String(params.id), params);
-
-    // V3: 使用代理层更新数据，不调用后端接口
-    const proxyResult = workflowProxy.updateNode(params);
-
-    if (proxyResult.success) {
-      changeUpdateTime();
-
-      if (isOnlyUpdate) {
-        // 仅更新节点大小和位置 不需要更新form表单
-        return true;
-      }
-      if (targetNodeId) {
-        if (params.type === NodeTypeEnum.Loop) {
-          // 如果传递的是boolean，那么证明要更新这个节点
-          getNodeConfig(Number(nodeData.id));
-        }
-      }
-      // 如果是修改节点的参数，那么就要更新当前节点的参数
-      if (params.id === getWorkflow('drawerForm').id) {
-        setFoldWrapItem(params);
-      }
-      // 更新当前节点的上级引用参数
-      callback();
-      // V3: 触发防抖全量保存
-      debouncedSaveFullWorkflow();
-      return true;
-    }
-
-    console.error('[V3] 节点更新失败:', proxyResult.message);
-    return false;
-  };
   // 优化后的onFinish方法
+  // V3 Hooks Integration for Persistence and Interaction
+  const { saveFullWorkflow, debouncedSaveFullWorkflow, autoSaveNodeConfig } =
+    useWorkflowPersistence({
+      graphRef,
+      changeUpdateTime,
+      getReference: (id) => getReference(id),
+    });
+
+  const { nodeChangeEdge, changeNode } = useGraphInteraction({
+    graphRef,
+    debouncedSaveFullWorkflow,
+    changeUpdateTime,
+    getReference: (id) => getReference(id),
+    setFoldWrapItem,
+    getNodeConfig: (id) => getNodeConfig(id),
+    updateCurrentNodeRef,
+  });
+
   const onSaveWorkflow = useCallback(
     async (currentFoldWrapItem: ChildNode): Promise<boolean> => {
       let result = false;
