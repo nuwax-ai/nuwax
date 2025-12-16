@@ -6,6 +6,8 @@ export enum SquareAgentTypeEnum {
   Knowledge = 'Knowledge',
   // 模板
   Template = 'Template',
+  // 技能
+  Skill = 'Skill',
 }
 
 // 自定义广场-模板目标类型（全部、智能体、工作流、页面应用）
