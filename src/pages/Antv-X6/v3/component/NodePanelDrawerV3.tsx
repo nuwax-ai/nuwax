@@ -129,7 +129,8 @@ const ExceptionHandle: React.FC<{
 
 /**
  * V3 专用的 NodePanelDrawer
- * 与 V2 版本的区别：从 V3 的 component 目录导入组件
+ * 参考 v1 版本（src/pages/Antv-X6/components/NodePanelDrawer）实现
+ * 区别：从 V3 的 component 目录导入组件，而非 src/pages/Antv-X6/component/
  */
 export default function NodePanelDrawerV3({ params }: { params: ChildNode }) {
   const form = Form.useFormInstance();
