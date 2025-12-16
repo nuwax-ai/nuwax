@@ -1,0 +1,35 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.modal-container {
+  width: 760px !important;
+}
+
+.container {
+  height: 650px;
+  border-radius: 10px;
+  background: #fff;
+  pointer-events: auto;
+
+  .left {
+    padding-left: 12px;
+    padding-top: 12px;
+
+    h3 {
+      font-size: 22px;
+      font-weight: @fontWeightStrong;
+      color: @BLANK04;
+      line-height: 2;
+    }
+  }
+
+  .right {
+    padding: 0;
+  }
+
+  .close {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+  }
+}

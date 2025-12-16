@@ -1,8 +1,7 @@
 // 知识库，数据库等节点
 import Created from '@/components/Created';
-import TreeInput from '@/components/FormListItem/TreeInput';
-import { SkillList } from '@/components/Skill';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import TreeInput from '@/components/FormListItem/TreeInput';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -17,6 +16,7 @@ import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import '../indexV3.less';
 import { TreeOutput } from './commonNode';
+import { SkillList } from './NewSkillV3';
 
 const DEFAULT_INPUT_ARGS_DESC = '检索关键词';
 const KBC_FORM_KEY = 'knowledgeBaseConfigs';
@@ -48,9 +48,9 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
 
     form.setFieldValue(KBC_FORM_KEY, knowledgeBaseConfigs.concat(item));
     setIsModified(true);
-    // form.submit();
+    // V3: 触发全量保存
+    form.submit();
     setOpen(false);
-    // setSkillChange(true);
     setAddComponents([
       ...addComponents,
       {
@@ -70,6 +70,8 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
       );
       form.setFieldValue(KBC_FORM_KEY, newSkillComponentConfigs);
       setIsModified(true);
+      // V3: 触发全量保存
+      form.submit();
     }
   };
 
@@ -83,6 +85,8 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
           i.knowledgeBaseId === item.knowledgeBaseId ? item : i,
       );
       form.setFieldValue(KBC_FORM_KEY, newSkillComponentConfigs);
+      // V3: 触发全量保存
+      form.submit();
     }
   };
 

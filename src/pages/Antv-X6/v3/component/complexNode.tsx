@@ -7,7 +7,6 @@ import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { SKILL_FORM_KEY } from '@/constants/node.constants';
-import { SkillList } from '@/pages/Antv-X6/components/NewSkill';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -36,6 +35,7 @@ import { v4 as uuidv4 } from 'uuid';
 import '../indexV3.less';
 import { outPutConfigs } from '../ParamsV3';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
+import { SkillList } from './NewSkillV3';
 // 请求方法的选项
 const REQUEST_METHOD_OPTIONS = [
   { label: 'GET', value: 'GET' },
@@ -138,8 +138,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       );
       form.setFieldValue(SKILL_FORM_KEY, newSkillComponentConfigs);
       setIsModified(true);
-      // V3: 前端同步操作，不需要 loading
-      // setSkillChange(true);
+      // V3: 触发全量保存
+      form.submit();
     }
   };
 
@@ -156,8 +156,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       );
       form.setFieldValue(SKILL_FORM_KEY, newSkillComponentConfigs);
       setIsModified(true);
-      // V3: 前端同步操作，不需要 loading
-      // setSkillChange(true);
+      // V3: 触发全量保存
+      form.submit();
     }
   };
 
@@ -221,7 +221,6 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
                 form={form}
                 removeItem={removeItem}
                 modifyItem={modifyItem}
-                loading={skillLoading}
               />
             </div>
           ) : (
@@ -301,7 +300,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
         checkTag={AgentComponentTypeEnum.Plugin}
         onAdded={onAddedSkill}
         open={open}
-        addSkillLoading={skillLoading}
+        addSkillLoading={false}
         onCancel={handleCreatedCancel}
         addComponents={addComponents}
         tabs={skillCreatedTabs}
