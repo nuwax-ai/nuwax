@@ -492,11 +492,47 @@ const Workflow: React.FC = () => {
 
     // V3: 使用前端计算代替后端接口调用
     try {
-      const fullData = workflowProxy.getFullWorkflowData();
+      // 优先从画布获取最新节点数据（确保是最新编辑状态）
+      let nodeList: any[] = [];
+      let edgeList: any[] = [];
 
-      // 优先使用代理层数据，回退到 graphParams
-      const nodeList = fullData?.nodes || graphParams.nodeList;
-      const edgeList = fullData?.edges || graphParams.edgeList;
+      const graph = graphRef.current?.getGraphRef?.();
+      if (graph) {
+        // 从画布直接获取节点数据
+        nodeList = graph.getNodes().map((n: any) => {
+          const data = n.getData();
+          // 合并位置信息
+          const position = n.getPosition();
+          const size = n.getSize();
+          return {
+            ...data,
+            nodeConfig: {
+              ...data.nodeConfig,
+              extension: {
+                ...data.nodeConfig?.extension,
+                x: position.x,
+                y: position.y,
+                width: size.width,
+                height: size.height,
+              },
+            },
+          };
+        });
+
+        // 从画布获取边数据
+        edgeList = graph.getEdges().map((e: any) => ({
+          id: e.id,
+          source: e.getSourceCellId(),
+          target: e.getTargetCellId(),
+          sourcePort: (e.getSource() as any)?.port,
+          targetPort: (e.getTarget() as any)?.port,
+        }));
+      } else {
+        // 回退到 workflowProxy 数据
+        const fullData = workflowProxy.getFullWorkflowData();
+        nodeList = fullData?.nodes || graphParams.nodeList;
+        edgeList = fullData?.edges || graphParams.edgeList;
+      }
 
       if (!nodeList || nodeList.length === 0) {
         setReferenceList({
