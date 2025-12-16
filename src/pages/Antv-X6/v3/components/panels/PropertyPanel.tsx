@@ -4,14 +4,14 @@ import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { showExceptionHandle } from '@/utils/graph';
 import { Form, FormInstance } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
-import '../../index.less';
-import ComplexNode from './complexNode';
-import ConditionNode from './condition';
-import Database from './database';
-import { ExceptionItem } from './ExceptionItem';
-import Library from './library';
-import NodeItem from './nodeItem';
-import ReferenceNode from './pluginNode';
+import '../../../index.less';
+import ComplexNode from '../../component/complexNode';
+import ConditionNode from '../../component/condition';
+import Database from '../../component/database';
+import { ExceptionItem } from '../../component/ExceptionItem';
+import Library from '../../component/library';
+import NodeItem from '../../component/nodeItem';
+import ReferenceNode from '../../component/pluginNode';
 
 const {
   StartNode,
