@@ -156,6 +156,9 @@ class WorkflowProxyV3 {
       return null;
     }
 
+    // 在构建配置前验证数据一致性
+    this.validateDataConsistency();
+
     const nodes = this.workflowData.nodes;
     const startNode = nodes.find((n) => n.type === 'Start');
     const endNode = nodes.find((n) => n.type === 'End');
@@ -174,6 +177,89 @@ class WorkflowProxyV3 {
     };
 
     return config;
+  }
+
+  /**
+   * 验证数据一致性
+   * 检查节点和边的对应关系，确保数据完整
+   */
+  private validateDataConsistency(): void {
+    if (!this.workflowData) return;
+
+    const { nodes, edges } = this.workflowData;
+    const nodeIds = new Set(nodes.map((n) => n.id));
+
+    // 1. 验证所有边的 source/target 节点都存在
+    const invalidEdges: EdgeV3[] = [];
+    edges.forEach((edge) => {
+      const sourceId = parseInt(edge.source, 10);
+      const targetId = parseInt(edge.target, 10);
+
+      if (!nodeIds.has(sourceId)) {
+        console.warn(
+          `[WorkflowProxy] 边的源节点不存在: ${edge.source}, 将移除此边`,
+        );
+        invalidEdges.push(edge);
+      } else if (!nodeIds.has(targetId)) {
+        console.warn(
+          `[WorkflowProxy] 边的目标节点不存在: ${edge.target}, 将移除此边`,
+        );
+        invalidEdges.push(edge);
+      }
+    });
+
+    // 移除无效的边
+    if (invalidEdges.length > 0) {
+      this.workflowData.edges = edges.filter((e) => !invalidEdges.includes(e));
+      console.log(`[WorkflowProxy] 已移除 ${invalidEdges.length} 条无效边`);
+    }
+
+    // 2. 验证 nextNodeIds 与边的一致性（仅警告，不自动修复）
+    nodes.forEach((node) => {
+      // 跳过特殊分支节点（它们使用分支配置管理连线）
+      if (
+        node.type === NodeTypeEnum.Condition ||
+        node.type === NodeTypeEnum.IntentRecognition ||
+        node.type === NodeTypeEnum.QA
+      ) {
+        return;
+      }
+
+      // 获取画布上从该节点出发的边
+      const nodeEdges = this.workflowData!.edges.filter(
+        (e) => parseInt(e.source, 10) === node.id,
+      );
+      const expectedNextIds = new Set(
+        nodeEdges
+          .filter((e) => !e.sourcePort || !e.sourcePort.includes('-exception-'))
+          .map((e) => parseInt(e.target, 10)),
+      );
+
+      const actualNextIds = new Set(node.nextNodeIds || []);
+
+      // 检查画布上有边但 nextNodeIds 没有的情况
+      expectedNextIds.forEach((id) => {
+        if (!actualNextIds.has(id)) {
+          console.warn(
+            `[WorkflowProxy] 节点 ${node.id} (${node.name}) 画布有边到 ${id}，但 nextNodeIds 缺少此连接，已自动添加`,
+          );
+          if (!node.nextNodeIds) node.nextNodeIds = [];
+          node.nextNodeIds.push(id);
+        }
+      });
+
+      // 检查 nextNodeIds 有但画布上没边的情况（可能是历史遗留数据）
+      actualNextIds.forEach((id) => {
+        if (!expectedNextIds.has(id)) {
+          console.warn(
+            `[WorkflowProxy] 节点 ${node.id} (${node.name}) nextNodeIds 包含 ${id}，但画布无对应边，已自动移除`,
+          );
+          node.nextNodeIds = (node.nextNodeIds || []).filter(
+            (nid) => nid !== id,
+          );
+        }
+      });
+    });
   }
 
   // ==================== 数据获取 ====================
@@ -1087,7 +1173,7 @@ class WorkflowProxyV3 {
     this.workflowData.edges = cloneDeep(edges) as EdgeV3[];
     this.notify('mutation');
 
-    console.log('[V3 Proxy] syncFromGraph 完成，处理了', edges.length, '条边');
+    // console.log('[V3 Proxy] syncFromGraph 完成，处理了', edges.length, '条边');
   }
 
   subscribe(listener: (type: ProxyEventType) => void): () => void {

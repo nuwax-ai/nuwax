@@ -128,10 +128,14 @@ const SYSTEM_VARIABLES: InputAndOutConfigV2[] = [
 
 /**
  * 构建节点 ID 到节点的映射
+ * 注意：node.id 可能是字符串或数字，统一转换为数字作为 key
  */
 function buildNodeMap(nodes: ChildNodeV2[]): Map<number, ChildNodeV2> {
   const map = new Map<number, ChildNodeV2>();
-  nodes.forEach((node) => map.set(node.id, node));
+  nodes.forEach((node) => {
+    const nodeId = Number(node.id);
+    map.set(nodeId, node);
+  });
   return map;
 }
 
@@ -371,12 +375,12 @@ function getNodeOutputArgs(node: ChildNodeV2): InputAndOutConfigV2[] {
   // Start 节点：将 inputArgs 视为可引用输出，并保留原输出
   if (node.type === NodeTypeEnumV2.Start) {
     const outputFromInput =
-      node.nodeConfig.inputArgs?.map((arg) => ({
+      node.nodeConfig?.inputArgs?.map((arg) => ({
         ...cloneArg(arg),
         bindValueType: undefined,
         bindValue: '',
       })) || [];
-    const outputs = node.nodeConfig.outputArgs || [];
+    const outputs = node.nodeConfig?.outputArgs || [];
     return [...outputFromInput, ...SYSTEM_VARIABLES, ...outputs];
   }
 
@@ -493,9 +497,15 @@ export function calculateNodePreviousArgs(
     const outputArgs = getNodeOutputArgs(predNode);
     const prefixedOutputArgs = prefixOutputArgsKeys(predNode.id, outputArgs);
 
-    // 添加到上级节点列表
+    // 简化逻辑：如果节点没有有效的 outputArgs（无法展示任何可引用变量），跳过此节点
+    if (!prefixedOutputArgs || prefixedOutputArgs.length === 0) {
+      return;
+    }
+
+    // 添加到上级节点列表 - 确保 id 是数字类型
+    const numericId = Number(predNode.id);
     previousNodes.push({
-      id: predNode.id,
+      id: numericId,
       name: predNode.name,
       type: predNode.type,
       icon: predNode.icon as string,
@@ -503,7 +513,7 @@ export function calculateNodePreviousArgs(
     });
 
     // 展开参数到 argMap（使用处理后的参数，虽然 keys 生成逻辑一致，但这样对象也一致）
-    const nodeArgMap = flattenArgsToMap(predNode.id, prefixedOutputArgs);
+    const nodeArgMap = flattenArgsToMap(numericId, prefixedOutputArgs);
     Object.assign(argMap, nodeArgMap);
   });
 
