@@ -17,7 +17,7 @@ export interface FileTreeProps {
   onCancelRename: () => void;
 
   /** 右键菜单回调 */
-  onContextMenu: (e: React.MouseEvent, node: FileNode) => void;
+  onContextMenu: (e: React.MouseEvent, node: FileNode | null) => void;
 
   /** 文件选择回调 */
   onFileSelect: (fileId: string) => void;
