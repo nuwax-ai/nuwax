@@ -6,6 +6,7 @@ import {
   isPreviewableFile,
   processImageContent,
 } from '@/utils/appDevUtils';
+import { Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import AppDevEmptyState from '../business-component/AppDevEmptyState';
@@ -49,6 +50,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   });
   // 右键菜单可见
   const [contextMenuVisible, setContextMenuVisible] = useState<boolean>(false);
+  // 全屏状态
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   // 文件选择
   const handleFileSelect = (fileId: string) => {
@@ -144,102 +147,193 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   const isImage = isImageFile(selectedFileId);
   const isPreviewable = isPreviewableFile(selectedFileId);
 
+  /**
+   * 处理全屏切换
+   */
+  const handleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  /**
+   * 关闭全屏
+   */
+  const handleCloseFullscreen = () => {
+    setIsFullscreen(false);
+  };
+
   return (
-    <div className={cx('flex', 'flex-1', 'overflow-hide')}>
-      {/* 右键菜单 */}
-      <FileContextMenu
-        visible={contextMenuVisible}
-        position={contextMenuPosition}
-        // 右键菜单目标节点
-        targetNode={contextMenuTarget}
-        // 是否禁用删除功能(SKILL.md文件不能删除)
-        disableDelete={contextMenuTarget?.name?.toLowerCase() === 'skill.md'}
-        // 关闭右键菜单
-        onClose={closeContextMenu}
-        // 处理删除操作
-        onDelete={handleDelete}
-        // 处理重命名操作
-        onRename={handleRenameFromMenu}
-        // 处理上传文件操作
-        onUploadSingleFile={handleUploadFromMenu}
-      />
-      {/* 左边文件树 */}
-      <div
-        className={cx(
-          styles['file-tree-view'],
-          'h-full',
-          'flex',
-          'flex-col',
-          'overflow-hide',
-        )}
+    <>
+      {/* 全屏代码编辑器 Modal */}
+      <Modal
+        open={isFullscreen}
+        onCancel={handleCloseFullscreen}
+        footer={null}
+        closable={false}
+        mask={false}
+        width="100%"
+        style={{
+          top: 0,
+          paddingBottom: 0,
+          maxWidth: '100%',
+        }}
+        styles={{
+          body: {
+            height: '100vh',
+            padding: 0,
+            display: 'flex',
+            flexDirection: 'column',
+          },
+        }}
+        className={cx(styles['fullscreen-modal'])}
+        destroyOnHidden={false}
       >
-        <SearchView files={files} onFileSelect={handleFileSelect} />
-        <FileTree
-          files={files}
-          // 当前选中的文件ID
-          selectedFileId={selectedFileId}
-          // 正在重命名的节点
-          renamingNode={renamingNode}
-          // 取消重命名回调
-          onCancelRename={handleCancelRename}
-          // 右键菜单回调
-          onContextMenu={handleContextMenu}
-          // 文件选择回调
-          onFileSelect={handleFileSelect}
-          // 重命名文件回调
-          onRenameFile={handleRenameFile}
+        <div className={cx(styles['fullscreen-container'])}>
+          {/* 全屏模式下的文件路径显示 */}
+          <div className={cx(styles['fullscreen-header'])}>
+            <FilePathHeader
+              filePath={selectedFileNode?.path || selectedFileId}
+              fileName={selectedFileNode?.name}
+              fileSize={selectedFileNode?.size}
+              lastModified={selectedFileNode?.lastModified}
+              onDownload={onDownload}
+              onFullscreen={handleFullscreen}
+              isFullscreen={true}
+            />
+          </div>
+          {/* 全屏模式下的代码编辑器 */}
+          <div className={cx(styles['fullscreen-content'])}>
+            {!isPreviewable && !selectedFileNode?.content ? (
+              <AppDevEmptyState
+                type="error"
+                title="无法预览此文件类型"
+                description={`当前不支持预览 ${
+                  selectedFileId.split('.').pop() || selectedFileId
+                } 格式的文件。`}
+              />
+            ) : isImage ? (
+              <ImageViewer
+                imageUrl={processImageContent(selectedFileNode?.content)}
+                alt={selectedFileId}
+                onRefresh={() => {}}
+              />
+            ) : (
+              <CodeViewer
+                fileId={selectedFileId}
+                fileName={selectedFileId.split('/').pop() || selectedFileId}
+                filePath={`app/${selectedFileId}`}
+                content={selectedFileNode?.content}
+                readOnly={false}
+                onContentChange={handleContentChange}
+              />
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      <div className={cx('flex', 'flex-1', 'overflow-hide')}>
+        {/* 右键菜单 */}
+        <FileContextMenu
+          visible={contextMenuVisible}
+          position={contextMenuPosition}
+          // 右键菜单目标节点
+          targetNode={contextMenuTarget}
+          // 是否禁用删除功能(SKILL.md文件不能删除)
+          disableDelete={contextMenuTarget?.name?.toLowerCase() === 'skill.md'}
+          // 关闭右键菜单
+          onClose={closeContextMenu}
+          // 处理删除操作
+          onDelete={handleDelete}
+          // 处理重命名操作
+          onRename={handleRenameFromMenu}
+          // 处理上传文件操作
+          onUploadSingleFile={handleUploadFromMenu}
         />
-      </div>
-      <div
-        className={cx('h-full', 'flex', 'flex-col', 'flex-1', 'overflow-hide')}
-      >
-        {/* 文件路径显示 */}
-        <FilePathHeader
-          filePath={selectedFileNode?.path || selectedFileId}
-          fileName={selectedFileNode?.name}
-          fileSize={selectedFileNode?.size}
-          lastModified={selectedFileNode?.lastModified}
-          onDownload={onDownload}
-        />
-        {/* 右边内容 */}
-        <div className={cx(styles['content-container'])}>
-          {!isPreviewable && !selectedFileNode?.content ? (
-            // 不支持预览的文件类型
-            <AppDevEmptyState
-              type="error"
-              title="无法预览此文件类型"
-              description={`当前不支持预览 ${
-                selectedFileId.split('.').pop() || selectedFileId
-              } 格式的文件。`}
-            />
-          ) : isImage ? (
-            <ImageViewer
-              imageUrl={processImageContent(
-                selectedFileNode?.content,
-                // devServerUrl
-                //   ? `${devServerUrl}/${selectedFileId}`
-                //   : `/${selectedFileId}`,
-              )}
-              alt={selectedFileId}
-              onRefresh={() => {
-                // if (previewRef.current) {
-                //   previewRef.current.refresh();
-                // }
-              }}
-            />
-          ) : (
-            <CodeViewer
-              fileId={selectedFileId}
-              fileName={selectedFileId.split('/').pop() || selectedFileId}
-              filePath={`app/${selectedFileId}`}
-              content={selectedFileNode?.content}
-              readOnly={false}
-              onContentChange={handleContentChange}
-            />
+        {/* 左边文件树 */}
+        <div
+          className={cx(
+            styles['file-tree-view'],
+            'h-full',
+            'flex',
+            'flex-col',
+            'overflow-hide',
           )}
+        >
+          <SearchView files={files} onFileSelect={handleFileSelect} />
+          <FileTree
+            files={files}
+            // 当前选中的文件ID
+            selectedFileId={selectedFileId}
+            // 正在重命名的节点
+            renamingNode={renamingNode}
+            // 取消重命名回调
+            onCancelRename={handleCancelRename}
+            // 右键菜单回调
+            onContextMenu={handleContextMenu}
+            // 文件选择回调
+            onFileSelect={handleFileSelect}
+            // 重命名文件回调
+            onRenameFile={handleRenameFile}
+          />
+        </div>
+        <div
+          className={cx(
+            'h-full',
+            'flex',
+            'flex-col',
+            'flex-1',
+            'overflow-hide',
+          )}
+        >
+          {/* 文件路径显示 */}
+          <FilePathHeader
+            filePath={selectedFileNode?.path || selectedFileId}
+            fileName={selectedFileNode?.name}
+            fileSize={selectedFileNode?.size}
+            lastModified={selectedFileNode?.lastModified}
+            onDownload={onDownload}
+            onFullscreen={handleFullscreen}
+            isFullscreen={false}
+          />
+          {/* 右边内容 */}
+          <div className={cx(styles['content-container'])}>
+            {!isPreviewable && !selectedFileNode?.content ? (
+              // 不支持预览的文件类型
+              <AppDevEmptyState
+                type="error"
+                title="无法预览此文件类型"
+                description={`当前不支持预览 ${
+                  selectedFileId.split('.').pop() || selectedFileId
+                } 格式的文件。`}
+              />
+            ) : isImage ? (
+              <ImageViewer
+                imageUrl={processImageContent(
+                  selectedFileNode?.content,
+                  // devServerUrl
+                  //   ? `${devServerUrl}/${selectedFileId}`
+                  //   : `/${selectedFileId}`,
+                )}
+                alt={selectedFileId}
+                onRefresh={() => {
+                  // if (previewRef.current) {
+                  //   previewRef.current.refresh();
+                  // }
+                }}
+              />
+            ) : (
+              <CodeViewer
+                fileId={selectedFileId}
+                fileName={selectedFileId.split('/').pop() || selectedFileId}
+                filePath={`app/${selectedFileId}`}
+                content={selectedFileNode?.content}
+                readOnly={false}
+                onContentChange={handleContentChange}
+              />
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

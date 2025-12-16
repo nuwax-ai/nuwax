@@ -1,6 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { formatFileSize } from '@/utils/appDevUtils';
-import { DesktopOutlined } from '@ant-design/icons';
+import { DesktopOutlined, FullscreenExitOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import React, { useMemo } from 'react';
 import styles from './index.less';
@@ -22,6 +22,8 @@ interface FilePathHeaderProps {
   onDownload?: () => void;
   /** 全屏回调 */
   onFullscreen?: () => void;
+  /** 是否处于全屏状态 */
+  isFullscreen?: boolean;
 }
 
 /**
@@ -53,6 +55,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onViewModeChange,
   onDownload,
   onFullscreen,
+  isFullscreen = false,
 }) => {
   // 显示的文件名
   const displayFileName = useMemo(() => {
@@ -130,15 +133,19 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             className={styles.actionButton}
           />
         </Tooltip>
-        <Tooltip title="全屏">
+        <Tooltip title={isFullscreen ? '退出全屏' : '全屏'}>
           <Button
             type="text"
             size="small"
             icon={
-              <SvgIcon
-                name="icons-common-fullscreen"
-                style={{ fontSize: 16 }}
-              />
+              isFullscreen ? (
+                <FullscreenExitOutlined style={{ fontSize: 16 }} />
+              ) : (
+                <SvgIcon
+                  name="icons-common-fullscreen"
+                  style={{ fontSize: 16 }}
+                />
+              )
             }
             onClick={onFullscreen}
             className={styles.actionButton}

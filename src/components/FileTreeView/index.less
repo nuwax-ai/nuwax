@@ -14,3 +14,42 @@
   background: @colorBgContainer;
   overflow: hidden;
 }
+
+// 全屏 Modal 样式
+.fullscreen-modal {
+  :global(.ant-modal-content) {
+    height: 100vh;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :global(.ant-modal-body) {
+    flex: 1;
+    overflow: hidden;
+    padding: 0;
+  }
+}
+
+// 全屏容器样式
+.fullscreen-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: @colorBgContainer;
+}
+
+// 全屏头部样式
+.fullscreen-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid @colorBorder;
+  background: @colorBgContainer;
+}
+
+// 全屏内容样式
+.fullscreen-content {
+  flex: 1;
+  overflow: hidden;
+  background: @colorBgContainer;
+  min-height: 0;
+}
