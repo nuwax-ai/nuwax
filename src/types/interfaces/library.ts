@@ -23,6 +23,13 @@ export interface ComponentItemProps {
   onClickMore: (item: CustomPopoverItem) => void;
 }
 
+// 任务库单个任务项
+export interface TaskItemProps {
+  taskInfo: TaskInfo;
+  onClick: () => void;
+  onClickMore: (item: CustomPopoverItem) => void;
+}
+
 // 技能库单个技能项
 export interface SkillItemProps {
   skillInfo: SkillInfo;
@@ -222,6 +229,54 @@ export interface ComponentInfo {
   ext: any;
   // 权限列表
   permissions?: PermissionsEnum[];
+}
+
+// 任务创建者信息
+export interface TaskCreatorInfo {
+  // 用户ID
+  userId: number;
+  // 用户名称
+  userName: string;
+  // 用户头像
+  avatar: string;
+}
+
+// 任务信息
+export interface TaskInfo {
+  // 任务ID
+  id: number;
+  // 空间ID
+  spaceId: number;
+  // 目标名称
+  targetName: string;
+  // 目标图标
+  targetIcon: string;
+  // 目标类型
+  targetType: string;
+  // 目标ID
+  targetId: string;
+  // 任务名称
+  taskName: string;
+  // 定时任务
+  cron: string;
+  // 参数
+  params: any;
+  // 状态
+  status: string;
+  // 最新执行时间
+  latestExecTime: string;
+  // 锁定时间
+  lockTime: string;
+  // 执行次数
+  execTimes: number;
+  // 错误信息
+  error: string;
+  // 最后修改时间
+  modified: string;
+  // 创建时间
+  created: string;
+  // 创建者
+  creator: TaskCreatorInfo;
 }
 
 // 技能文件信息
