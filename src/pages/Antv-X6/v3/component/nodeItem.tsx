@@ -322,7 +322,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
 };
 
 // 变量聚合节点 - 已抽取到单独文件
-import VariableAggregationNode from './VariableAggregationNode';
+import VariableAggregationNode from './variableAggregation/VariableAggregationNode';
 
 // 定义文本处理的节点渲染
 const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
