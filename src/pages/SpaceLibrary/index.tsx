@@ -543,10 +543,18 @@ const SpaceLibrary: React.FC = () => {
   const handleClickLog = (type: ComponentTypeEnum, info: ComponentInfo) => {
     switch (type) {
       case ComponentTypeEnum.Workflow:
-        history.push(`/space/${spaceId}/library-log?query=${info?.id ?? ''}`);
+        history.push(
+          `/space/${spaceId}/library-log?targetType=${
+            AgentComponentTypeEnum.Workflow
+          }&targetId=${info?.id ?? ''}`,
+        );
         break;
       case ComponentTypeEnum.Plugin:
-        history.push(`/space/${spaceId}/library-log?query=${info?.id ?? ''}`);
+        history.push(
+          `/space/${spaceId}/library-log?targetType=${
+            AgentComponentTypeEnum.Plugin
+          }&targetId=${info?.id ?? ''}`,
+        );
         break;
     }
   };
