@@ -42,6 +42,7 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
   });
 
   // 使用 ref 标记是否已经初始化过
+  // 使用 ref 标记是否已经初始化过
   const isInitialized = React.useRef(false);
 
   // 初始化：从 inputArgs 生成 variableGroups（用于回显已保存的数据）
@@ -56,6 +57,23 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
     if (!inputArgsFromForm?.length) return;
 
+    // 检查是否有需要从 argMap 获取 subArgs 的变量引用
+    const hasComplexTypeWithBindValue = inputArgsFromForm.some((arg: any) => {
+      const isComplexType =
+        arg.dataType === DataTypeEnum.Object ||
+        arg.dataType === DataTypeEnum.Array_Object;
+      const hasBindValue = (arg.subArgs || arg.children || []).some(
+        (subArg: any) => subArg.bindValue,
+      );
+      return isComplexType && hasBindValue;
+    });
+
+    // 如果有复杂类型需要 subArgs，但 argMap 还没加载，则等待
+    const argMapKeys = Object.keys(referenceList?.argMap || {});
+    if (hasComplexTypeWithBindValue && argMapKeys.length === 0) {
+      return; // 等待 referenceList 加载完成
+    }
+
     // 将 inputArgs 转换为 variableGroups 格式
     const initialGroups: VariableGroup[] = inputArgsFromForm.map(
       (arg: any) => ({
@@ -63,18 +81,29 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
         name: arg.name || 'Group',
         dataType: arg.dataType || DataTypeEnum.String,
         inputs:
-          (arg.subArgs || arg.children || []).map((subArg: any) => ({
-            key: subArg.key || uuidv4(),
-            name: subArg.name || '',
-            dataType: subArg.dataType || DataTypeEnum.String,
-            description: subArg.description || '',
-            require: subArg.require ?? false,
-            systemVariable: subArg.systemVariable ?? false,
-            bindValue: subArg.bindValue || '',
-            bindValueType: subArg.bindValueType || 'Reference',
-            // 保存子字段信息用于输出展示
-            subArgs: subArg.subArgs || subArg.children || [],
-          })) || [],
+          (arg.subArgs || arg.children || []).map((subArg: any) => {
+            // 从 referenceList.argMap 获取完整的子字段信息
+            // 因为后端返回的 inputArgs 中变量引用的 subArgs 可能是 null
+            const bindValue = subArg.bindValue || '';
+            const refInfo = referenceList?.argMap?.[bindValue];
+            const refSubArgs = refInfo?.subArgs || refInfo?.children || [];
+
+            return {
+              key: subArg.key || uuidv4(),
+              name: subArg.name || '',
+              dataType: subArg.dataType || DataTypeEnum.String,
+              description: subArg.description || '',
+              require: subArg.require ?? false,
+              systemVariable: subArg.systemVariable ?? false,
+              bindValue: bindValue,
+              bindValueType: subArg.bindValueType || 'Reference',
+              // 优先使用 referenceList 中的子字段信息，其次使用原有数据
+              subArgs:
+                refSubArgs.length > 0
+                  ? refSubArgs
+                  : subArg.subArgs || subArg.children || [],
+            };
+          }) || [],
       }),
     );
 
@@ -82,7 +111,7 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
       isInitialized.current = true;
       form.setFieldsValue({ variableGroups: initialGroups });
     }
-  }, [inputArgsFromForm, form]);
+  }, [inputArgsFromForm, form, referenceList]);
 
   // 当 variableGroups 变化时，同步更新 inputArgs 和 outputArgs
   useEffect(() => {
