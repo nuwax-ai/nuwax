@@ -10,6 +10,7 @@ import {
 import type { FileNode } from '@/types/interfaces/appDev';
 import { SkillDetailInfo } from '@/types/interfaces/skill';
 import { transformFlatListToTree } from '@/utils/appDevUtils';
+import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -150,45 +151,17 @@ const SkillDetails: React.FC = () => {
     }
 
     try {
-      // setIsExporting(true); // 暂时注释掉，后续可能需要
       const result = await apiSkillExport(skillId);
-
-      // 从响应头中获取文件名
-      const contentDisposition = result.headers?.['content-disposition'];
-      let filename = `skill-${skillId}.zip`;
-
-      if (contentDisposition) {
-        // 解析 Content-Disposition 头中的文件名
-        const filenameMatch = contentDisposition.match(
-          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
-        );
-        if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1].replace(/['"]/g, '');
-        }
-      }
-
-      // 创建下载链接
-      const blob = new Blob([result.data], { type: 'application/zip' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-
-      // 触发下载
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // 清理URL对象
-      window.URL.revokeObjectURL(url);
-
-      message.success('技能导出成功！');
+      const filename = `skill-${skillId}.zip`;
+      // 导出整个项目压缩包
+      exportWholeProjectZip(result, filename);
+      message.success('导出成功！');
     } catch (error) {
       // 改进错误处理，兼容不同的错误格式
       const errorMessage =
         (error as any)?.message ||
         (error as any)?.toString() ||
-        '技能导出过程中发生未知错误';
+        '导出过程中发生未知错误';
 
       message.error(`导出失败: ${errorMessage}`);
     }

@@ -33,6 +33,7 @@ import {
   CustomPageDto,
 } from '@/types/interfaces/pageDev';
 import { modalConfirm } from '@/utils/ant-custom';
+import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Col, Empty, Input, message, Row, Space } from 'antd';
 import classNames from 'classnames';
@@ -286,38 +287,10 @@ const SpacePageDevelop: React.FC = () => {
     }
 
     try {
-      // setIsExporting(true); // 暂时注释掉，后续可能需要
       const result = await exportProject(projectId);
-
-      // 从响应头中获取文件名
-      const contentDisposition = result.headers?.['content-disposition'];
-      let filename = `project-${projectId}.zip`;
-
-      if (contentDisposition) {
-        // 解析 Content-Disposition 头中的文件名
-        const filenameMatch = contentDisposition.match(
-          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
-        );
-        if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1].replace(/['"]/g, '');
-        }
-      }
-
-      // 创建下载链接
-      const blob = new Blob([result.data], { type: 'application/zip' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-
-      // 触发下载
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // 清理URL对象
-      window.URL.revokeObjectURL(url);
-
+      const filename = `project-${projectId}.zip`;
+      // 导出整个项目压缩包
+      exportWholeProjectZip(result, filename);
       message.success('项目导出成功！');
     } catch (error) {
       // 改进错误处理，兼容不同的错误格式
