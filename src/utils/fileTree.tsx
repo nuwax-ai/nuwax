@@ -11,6 +11,7 @@ import {
   ICON_TS,
   ICON_TSX,
 } from '@/constants/fileTreeImages.constants';
+import type { FileNode } from '@/types/interfaces/appDev';
 
 // 获取文件图标
 export const getFileIcon = (name: string) => {
@@ -55,4 +56,94 @@ export const getFileIcon = (name: string) => {
   } else {
     return <ICON_DEFAULT />;
   }
+};
+
+/**
+ * 更新文件树中的文件名、路径（用于即时反馈），用于文件树视图
+ */
+export const updateFileTreeName = (
+  fileTree: FileNode[],
+  fileId: string,
+  newName: string,
+): FileNode[] => {
+  return fileTree.map((node) => {
+    if (node.id === fileId) {
+      return {
+        ...node,
+        name: newName,
+        path:
+          node.path.substring(0, node.path.lastIndexOf('/')) + '/' + newName,
+      };
+    }
+    if (node.children && node.children.length > 0) {
+      return {
+        ...node,
+        children: updateFileTreeName(node.children, fileId, newName),
+      };
+    }
+    return node;
+  });
+};
+
+/**
+ * 更新技能原始文件列表中的文件名（用于提交更新）
+ * @param files 更新原始文件列表中的文件名（用于提交更新）
+ * @param fileNode 当前重命名的文件节点
+ * @param newName 新的文件名
+ * @returns 更新后的文件列表
+ */
+export const updateFilesListName = (
+  files: any[],
+  fileNode: FileNode,
+  newName: string,
+  operation: 'create' | 'delete' | 'rename' | 'modify',
+): FileNode[] => {
+  const oldPath = fileNode.path;
+  const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
+  const newPath = parentPath
+    ? `${parentPath}/${newName.trim()}`
+    : newName.trim();
+
+  // 更新文件列表中的文件名（包含完整路径+文件名+后缀）
+  const updatedFilesList = files?.map((file: any) => {
+    // 如果是文件夹，需要更新文件夹本身以及所有子文件
+    if (fileNode.type === 'folder') {
+      // 检查是否是文件夹本身（虽然扁平列表中文件夹可能不存在）
+      if (file.name === oldPath) {
+        return {
+          ...file,
+          name: newPath, // 更新为新的完整路径
+          renameFrom: oldPath, // 记录重命名前的名字
+          operation, // 操作类型
+        };
+      }
+
+      // 检查是否是文件夹的子文件
+      if (file.name.startsWith(oldPath + '/')) {
+        // 计算新路径：将 oldPath 前缀替换为 newPath
+        const relativePath = file.name.substring(oldPath.length);
+        const newFilePath = newPath + relativePath;
+
+        return {
+          ...file,
+          name: newFilePath, // 更新为新的完整路径
+          renameFrom: file.name, // 记录重命名前的名字
+          operation, // 操作类型
+        };
+      }
+    } else {
+      // 如果是文件，直接更新匹配的文件
+      if (file.name === oldPath) {
+        return {
+          ...file,
+          name: newPath, // 更新为新的完整路径
+          renameFrom: oldPath, // 记录重命名前的名字
+          operation, // 操作类型
+        };
+      }
+    }
+
+    return file;
+  });
+  return updatedFilesList;
 };
