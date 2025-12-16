@@ -3,7 +3,7 @@
 import { NodeTypeEnum } from '@/types/enums/common';
 import { StencilChildNode } from '@/types/interfaces/graph';
 import '../indexV3.less';
-import { asideList } from '../params';
+import { asideList } from '../ParamsV3';
 // 定义组件的属性接口，规定了组件接受的属性及其类型
 interface Prop {
   // 当前正在展示的节点
