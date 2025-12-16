@@ -326,7 +326,7 @@ const VariableNode: React.FC<NodeDisposeProps> = ({ form }) => {
 };
 
 // 变量聚合节点
-const VariableAggregatorNode: React.FC<NodeDisposeProps> = ({ form }) => {
+const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const strategyOptions = [
     { label: '返回每个分组中第一个非空的值', value: 'FIRST_NON_NULL' },
   ];
@@ -816,7 +816,7 @@ export default {
   EndNode,
   CycleNode,
   VariableNode,
-  VariableAggregatorNode,
+  VariableAggregationNode,
   CodeNode,
   TextProcessingNode,
   DocumentExtractionNode,
