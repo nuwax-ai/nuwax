@@ -1,6 +1,15 @@
+import databaseImage from '@/assets/images/database_image.png';
+import knowledgeImage from '@/assets/images/knowledge_image.png';
+import mcpImage from '@/assets/images/mcp_image.png';
+import modelImage from '@/assets/images/model_image.png';
+import pluginImage from '@/assets/images/plugin_image.png';
+import variableImage from '@/assets/images/variable_image.png';
+import workflowImage from '@/assets/images/workflow_image.png';
 import Loading from '@/components/custom/Loading';
 import { apiSpaceLogDetail } from '@/services/agentDev';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { SpaceLogInfoDetail } from '@/types/interfaces/agent';
+import { ExecuteResultInfo } from '@/types/interfaces/conversationInfo';
 import { CopyOutlined } from '@ant-design/icons';
 import { Drawer, Empty, message } from 'antd';
 import classNames from 'classnames';
@@ -18,6 +27,16 @@ export interface LogDetailDrawerProps {
   open: boolean;
   id: string | undefined;
   onClose: () => void;
+}
+
+export interface FinalResult {
+  targetType: string;
+  success: boolean;
+  targetName: string;
+  requestStartTime: number;
+  requestEndTime: number;
+  input: string;
+  output: string;
 }
 
 const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
@@ -40,6 +59,33 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
   const [spaceLogInfoDetail, setSpaceLogInfoDetail] =
     useState<SpaceLogInfoDetail>();
 
+  // 最终详情
+  const [finalResult, setFinalResult] = useState<FinalResult | null>(null);
+
+  const [componentExecuteResults, setComponentExecuteResults] = useState<
+    ExecuteResultInfo[]
+  >([]);
+  // 当前执行结果索引，默认为0
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+
+  const handleClickExecuteResult = (
+    index: number,
+    componentExecuteResults: any,
+  ) => {
+    setCurrentIndex(index);
+    const info: ExecuteResultInfo = componentExecuteResults?.[index];
+
+    setFinalResult({
+      targetType: info?.type,
+      success: info?.success,
+      targetName: info?.name,
+      requestStartTime: info?.startTime,
+      requestEndTime: info?.endTime,
+      input: info?.input ? JSON.stringify(info?.input) : '',
+      output: info?.data ? JSON.stringify(info?.data) : '',
+    });
+  };
+
   // 获取详情信息
   const getDetailById = async () => {
     if (id) {
@@ -47,6 +93,33 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
         setLoading(true);
         const { data } = await apiSpaceLogDetail({ id });
         setSpaceLogInfoDetail(data);
+        // 智能体
+        if (data.targetType === AgentComponentTypeEnum.Agent) {
+          const _processData = JSON.parse(data.processData || '{}');
+
+          setComponentExecuteResults(
+            _processData?.componentExecuteResults || [],
+          );
+
+          const _componentExecuteResults =
+            _processData?.componentExecuteResults || [];
+          if (_componentExecuteResults?.length > 0) {
+            handleClickExecuteResult(0, _componentExecuteResults);
+          }
+        } else {
+          // 其它
+          setComponentExecuteResults([]);
+          setCurrentIndex(0);
+          setFinalResult({
+            targetType: data.targetType,
+            success: true,
+            targetName: data.targetName,
+            requestStartTime: data.requestStartTime,
+            requestEndTime: data.requestEndTime,
+            input: data.input,
+            output: data.output,
+          });
+        }
       } finally {
         setLoading(false);
       }
@@ -54,6 +127,28 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
   };
   const handleCopy = () => {
     message.success('复制成功');
+  };
+
+  // 获取图标，如果不存在则使用默认图
+  const getDefaultIcon = (info: ExecuteResultInfo) => {
+    switch (info.type) {
+      case AgentComponentTypeEnum.Plugin:
+        return pluginImage;
+      case AgentComponentTypeEnum.Workflow:
+        return workflowImage;
+      case AgentComponentTypeEnum.Knowledge:
+        return knowledgeImage;
+      case AgentComponentTypeEnum.Variable:
+        return variableImage;
+      case AgentComponentTypeEnum.Table:
+        return databaseImage;
+      case AgentComponentTypeEnum.Model:
+        return modelImage;
+      case AgentComponentTypeEnum.MCP:
+        return mcpImage;
+      default:
+        return pluginImage;
+    }
   };
 
   useEffect(() => {
@@ -108,33 +203,75 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
               </CopyToClipboard>
             </div>
           </header>
+          {spaceLogInfoDetail.targetType === AgentComponentTypeEnum.Agent && (
+            <div className={cx(styles.wrap)}>
+              <h5 className={cx(styles.title)}>调用组件</h5>
+              {componentExecuteResults?.map(
+                (info: ExecuteResultInfo, index: number) => (
+                  // 模型可能不存在id，所以使用index作为key
+                  <div
+                    key={info?.id || index}
+                    className={cx(
+                      styles['execute-box'],
+                      'flex',
+                      'items-center',
+                    )}
+                  >
+                    <img
+                      className={cx(styles['component-img'])}
+                      src={info?.icon || getDefaultIcon(info)}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = getDefaultIcon(info);
+                      }}
+                      alt=""
+                    />
+                    <span
+                      className={cx(styles.name, 'cursor-pointer', {
+                        [styles.active]: currentIndex === index,
+                      })}
+                      onClick={() => {
+                        handleClickExecuteResult(
+                          index,
+                          componentExecuteResults,
+                        );
+                      }}
+                    >
+                      {info.name}
+                    </span>
+                  </div>
+                ),
+              )}
+            </div>
+          )}
+
           <div className={cx(styles.wrap)}>
             <h5 className={cx(styles.title)}>节点详情</h5>
-            <NodeDetails node={spaceLogInfoDetail} />
+            <NodeDetails node={finalResult} />
           </div>
           <div className={cx(styles.wrap, styles['render-container'])}>
             <h5 className={cx(styles.title)}>
               输入&nbsp;
               <CopyToClipboard
-                text={spaceLogInfoDetail.input || ''}
+                text={finalResult?.input || ''}
                 onCopy={handleCopy}
               >
                 <CopyOutlined />
               </CopyToClipboard>
             </h5>
-            <pre>{spaceLogInfoDetail.input}</pre>
+            <pre>{finalResult?.input}</pre>
           </div>
           <div className={cx(styles.wrap, styles['render-container'])}>
             <h5 className={cx(styles.title)}>
               输出&nbsp;
               <CopyToClipboard
-                text={spaceLogInfoDetail.output || ''}
+                text={finalResult?.output || ''}
                 onCopy={handleCopy}
               >
                 <CopyOutlined />
               </CopyToClipboard>
             </h5>
-            <pre>{spaceLogInfoDetail.output}</pre>
+            <pre>{finalResult?.output}</pre>
           </div>
           <div className={cx(styles.wrap, styles['render-container'])}>
             <h5 className={cx(styles.title)}>

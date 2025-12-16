@@ -1,16 +1,16 @@
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import type { SpaceLogInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import type React from 'react';
 import { useMemo } from 'react';
+import { FinalResult } from '../LogDetailDrawer';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 export interface NodeDetailsProps {
-  node: SpaceLogInfo;
+  node: FinalResult | null;
 }
 
 // 节点详情
