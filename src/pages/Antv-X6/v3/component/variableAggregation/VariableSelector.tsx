@@ -4,7 +4,7 @@ import { InputAndOutConfig, PreviousList } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Popover, Tag, Tree } from 'antd';
-import React from 'react';
+import React, { useRef } from 'react';
 
 // 扩展类型，添加 disabled 和 originalKey 属性
 type FilteredArg = InputAndOutConfig & {
@@ -33,14 +33,15 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
   onSelect,
   onClear,
 }) => {
-  // 全局计数器用于生成唯一 key
-  let keyCounter = 0;
+  // 使用 useRef 持久化计数器，确保跨渲染唯一
+  const keyCounterRef = useRef(0);
 
-  // 过滤变量树
+  // 过滤变量树，添加节点前缀确保不同节点的树有不同的 key
   const filterOutputArgs = (
     outputArgs: InputAndOutConfig[],
     allowedType: DataTypeEnum | undefined,
     selectedKeys: Set<string>,
+    nodePrefix: string,
   ): FilteredArg[] => {
     return outputArgs
       .map((arg): FilteredArg => {
@@ -50,11 +51,16 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
           (allowedType && arg.dataType !== allowedType);
 
         const filteredChildren = arg.children
-          ? filterOutputArgs(arg.children, allowedType, selectedKeys)
+          ? filterOutputArgs(
+              arg.children,
+              allowedType,
+              selectedKeys,
+              nodePrefix,
+            )
           : undefined;
 
-        // 生成唯一 key 用于 React 渲染，保留原始 key 用于引用查找
-        const uniqueKey = `${originalKey}__${keyCounter++}`;
+        // 生成唯一 key：节点前缀 + 原始key + 递增计数器
+        const uniqueKey = `${nodePrefix}_${originalKey}__${keyCounterRef.current++}`;
 
         return {
           ...arg,
@@ -113,6 +119,7 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
         node.outputArgs || [],
         allowedType,
         selectedKeys,
+        String(node.id), // 添加节点ID作为前缀确保唯一性
       );
 
       return {

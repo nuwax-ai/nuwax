@@ -127,18 +127,15 @@ export const useVariableAggregation = ({
       form.setFieldsValue({ inputArgs: [], outputArgs: [] });
       return;
     }
-
-    // 递归深度复制子字段结构
+    // 递归深度复制子字段结构，确保每个节点有唯一的 key
     const deepCopySubArgs = (
       items: InputAndOutConfig[] | undefined,
       parentKey: string = '',
     ): InputAndOutConfig[] => {
       if (!items || items.length === 0) return [];
       return items.map((item, index) => {
-        const uniqueKey = `${parentKey}_${item.name || index}_${uuidv4().slice(
-          0,
-          8,
-        )}`;
+        // 使用完整的 uuid 确保全局唯一，避免任何可能的冲突
+        const uniqueKey = `out_${parentKey}_${index}_${uuidv4()}`;
         return {
           name: item.name || '',
           dataType: item.dataType || DataTypeEnum.String,

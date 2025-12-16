@@ -1,8 +1,9 @@
 // 变量聚合节点
+import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
-import React from 'react';
+import React, { useMemo, useRef } from 'react';
 import { TreeOutput } from '../commonNode';
 import { useVariableAggregation } from './useVariableAggregation';
 import VariableGroupItem from './VariableGroupItem';
@@ -15,6 +16,21 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const strategyOptions = [
     { label: '返回每个分组中第一个非空的值', value: 'FIRST_NON_NULL' },
   ];
+
+  // 使用 useRef 持久化计数器，确保跨渲染唯一
+  const keyCounterRef = useRef(0);
+
+  // 确保 outputArgs 的 key 唯一，避免 Tree 组件警告
+  const ensureUniqueKeys = (
+    items: InputAndOutConfig[] | undefined,
+  ): InputAndOutConfig[] => {
+    if (!items || items.length === 0) return [];
+    return items.map((item) => ({
+      ...item,
+      key: `${item.key || item.name}_${keyCounterRef.current++}`,
+      subArgs: ensureUniqueKeys(item.subArgs),
+    }));
+  };
 
   // 使用自定义 Hook 管理状态和逻辑
   const {
@@ -32,6 +48,14 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
     getSelectedKeys,
     getGroupTypeDisplay,
   } = useVariableAggregation({ form });
+
+  // 监听 outputArgs 并确保 key 唯一
+  const outputArgs =
+    Form.useWatch('outputArgs', { form, preserve: true }) || [];
+  const processedOutputArgs = useMemo(() => {
+    keyCounterRef.current = 0; // 重置计数器
+    return ensureUniqueKeys(outputArgs);
+  }, [outputArgs]);
 
   return (
     <>
@@ -101,18 +125,13 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
         )}
       </div>
 
-      {/* 输出展示 */}
-      <Form.Item shouldUpdate noStyle>
-        {() => {
-          const outputArgs = form.getFieldValue('outputArgs') || [];
-          return outputArgs.length > 0 ? (
-            <>
-              <div className="node-title-style margin-bottom">输出</div>
-              <TreeOutput treeData={outputArgs} />
-            </>
-          ) : null;
-        }}
-      </Form.Item>
+      {/* 输出展示 - 使用处理后的数据确保 key 唯一 */}
+      {processedOutputArgs.length > 0 && (
+        <>
+          <div className="node-title-style margin-bottom">输出</div>
+          <TreeOutput treeData={processedOutputArgs} />
+        </>
+      )}
     </>
   );
 };
