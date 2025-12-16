@@ -526,6 +526,7 @@ const Workflow: React.FC = () => {
       graphRef,
       changeUpdateTime,
       getReference: (id) => getReference(id),
+      setFoldWrapItem,
     });
 
   const { nodeChangeEdge, changeNode } = useGraphInteraction({
