@@ -7,6 +7,7 @@ import {
   apiSkillTemplate,
   apiSkillUploadFile,
 } from '@/services/skill';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { SkillDetailInfo } from '@/types/interfaces/skill';
 import { transformFlatListToTree } from '@/utils/appDevUtils';
@@ -68,6 +69,15 @@ const SkillDetails: React.FC = () => {
   // 确认发布技能回调
   const handleConfirmPublish = () => {
     console.log('handleConfirmPublish');
+    setOpen(false);
+    // // 同步发布时间和修改时间
+    // const time = dayjs().toString();
+    // // 更新技能配置信息
+    // const _skillInfo = {
+    //   ...skillInfo,
+    //   publishDate: time,
+    //   modified: time,
+    // };
   };
 
   /**
@@ -186,11 +196,11 @@ const SkillDetails: React.FC = () => {
 
       {/*发布技能弹窗*/}
       <PublishComponentModal
-        // mode={AgentComponentTypeEnum.Skill}
+        mode={AgentComponentTypeEnum.Skill}
         targetId={skillId}
         open={open}
         spaceId={spaceId}
-        // category={agentConfigInfo?.category}
+        category={skillInfo?.category}
         // 取消发布
         onCancel={() => setOpen(false)}
         onConfirm={handleConfirmPublish}
