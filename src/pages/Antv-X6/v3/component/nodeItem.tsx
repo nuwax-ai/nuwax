@@ -86,7 +86,7 @@ const DocumentExtractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
 
 // 定义结束和过程输出的节点渲染
 const EndNode: React.FC<NodeDisposeProps> = ({ form, type }) => {
-  const { referenceList } = useModel('workflow');
+  const { referenceList } = useModel('workflowV3');
   const segOptions = [
     { label: '返回变量', value: 'VARIABLE' },
     { label: '返回文本', value: 'TEXT' },
@@ -326,7 +326,7 @@ import VariableAggregationNode from './variableAggregation/VariableAggregationNo
 
 // 定义文本处理的节点渲染
 const TextProcessingNode: React.FC<NodeDisposeProps> = ({ form }) => {
-  const { referenceList } = useModel('workflow');
+  const { referenceList } = useModel('workflowV3');
   const textTypeOptions = [
     { label: '字符串拼接', value: 'CONCAT' },
     { label: '字符串分割', value: 'SPLIT' },
@@ -589,7 +589,7 @@ const CodeNode: React.FC<NodeDisposeProps> = ({
   id,
 }) => {
   const [show, setShow] = useState(false);
-  const { setIsModified } = useModel('workflow');
+  const { setIsModified } = useModel('workflowV3');
   const fieldName =
     form.getFieldValue('codeLanguage') === CodeLangEnum.JavaScript
       ? 'codeJavaScript'

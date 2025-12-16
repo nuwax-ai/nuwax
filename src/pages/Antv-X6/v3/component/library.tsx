@@ -29,7 +29,7 @@ const KnowledgeNode: React.FC<NodeDisposeProps> = ({
 }) => {
   // 打开、关闭弹窗
   const [open, setOpen] = useState(false);
-  const { setIsModified } = useModel('workflow');
+  const { setIsModified } = useModel('workflowV3');
   // 处于loading状态的组件列表
   const [addComponents, setAddComponents] = useState<
     AgentAddComponentStatusInfo[]

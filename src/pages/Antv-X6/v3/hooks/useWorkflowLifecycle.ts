@@ -16,7 +16,7 @@ export const useWorkflowLifecycle = ({
   workflowId,
   handleInitLoading,
 }: UseWorkflowLifecycleProps) => {
-  const { setSpaceId } = useModel('workflow');
+  const { setSpaceId } = useModel('workflowV3');
 
   // 工作流左上角的详细信息
   const [info, setInfo] = useState<IgetDetails | null>(null);

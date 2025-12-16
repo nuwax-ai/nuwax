@@ -41,7 +41,7 @@ interface UseVariableAggregationReturn {
 export const useVariableAggregation = ({
   form,
 }: UseVariableAggregationProps): UseVariableAggregationReturn => {
-  const { setIsModified, referenceList, getValue } = useModel('workflow');
+  const { setIsModified, referenceList, getValue } = useModel('workflowV3');
 
   // 使用 Form.useWatch 监听 variableGroups
   const variableGroups: VariableGroup[] =
