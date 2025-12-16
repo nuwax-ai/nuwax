@@ -12,6 +12,7 @@ import {
   apiMcpOfficialList,
   apiMcpStop,
 } from '@/services/mcp';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   DeployStatusEnum,
   FilterDeployEnum,
@@ -311,7 +312,12 @@ const SpaceLibrary: React.FC = () => {
         break;
       // 日志
       case McpMoreActionEnum.Log:
-        history.push(`/space/${spaceId}/library-log`);
+        // history.push(`/space/${spaceId}/library-log`);
+        history.push(
+          `/space/${spaceId}/library-log?targetType=${
+            AgentComponentTypeEnum.MCP
+          }&targetId=${info?.id ?? ''}`,
+        );
         break;
       default:
         break;

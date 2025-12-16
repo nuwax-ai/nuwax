@@ -360,7 +360,9 @@ const SpaceDevelop: React.FC = () => {
         break;
       // 日志
       case ApplicationMoreActionEnum.Log:
-        history.push(`/space/${spaceId}/${id}/log`);
+        history.push(
+          `/space/${spaceId}/library-log?targetType=${AgentComponentTypeEnum.Agent}&targetId=${id}`,
+        );
         break;
       case ApplicationMoreActionEnum.Del:
         modalConfirm('您确定要删除此智能体吗?', agentInfo?.name, () => {
