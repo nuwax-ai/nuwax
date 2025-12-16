@@ -9,20 +9,12 @@
  * - 要支持 撤销/重做 操作（X6 提供）
  */
 
-import Created from '@/components/Created';
-import CreateWorkflow from '@/components/CreateWorkflow';
-import FoldWrap from '@/components/FoldWrap';
-import OtherOperations from '@/components/OtherAction';
-import PublishComponentModal from '@/components/PublishComponentModal';
-import TestRun from '@/components/TestRun';
-import VersionHistory from '@/components/VersionHistory';
 import Constant from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   DEFAULT_DRAWER_FORM,
   SKILL_FORM_KEY,
-  testRunList,
 } from '@/constants/node.constants';
 import useDisableSaveShortcut from '@/hooks/useDisableSaveShortcut';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
@@ -30,13 +22,9 @@ import useModifiedSaveUpdate from '@/hooks/useModifiedSaveUpdate';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import type { AddNodeResponse } from '@/services/workflow';
 import service, { IgetDetails, ITestRun } from '@/services/workflow';
-import {
-  AgentAddComponentStatusEnum,
-  AgentComponentTypeEnum,
-} from '@/types/enums/agent';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   AnswerTypeEnum,
-  CreateUpdateModeEnum,
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
@@ -78,23 +66,16 @@ import {
   handleSpecialNodesNextIndex,
   QuicklyCreateEdgeConditionConfig,
   removeWorkflowTestRun,
-  returnBackgroundColor,
-  returnImg,
   setFormDefaultValues,
   setWorkflowTestRun,
 } from '@/utils/workflow';
-import { LoadingOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
-import { Form, message, Spin } from 'antd';
+import { Form, message } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import VersionAction from '../components/VersionAction';
-import GraphContainer from './components/graph/GraphContainer';
-import ControlPanel from './components/layout/ControlPanel';
-import ErrorList from './components/layout/ErrorList';
-import Header from './components/layout/Header';
-import NodePanelDrawer from './components/panels/PropertyPanel';
+import WorkflowLayout from './components/layout/WorkflowLayout';
+// Components moved to WorkflowLayout
 import './indexV3.less';
 
 // V3 Hooks
@@ -2155,177 +2136,77 @@ const Workflow: React.FC = () => {
   }, []);
 
   return (
-    <div id="container">
-      {/* 顶部的名称和发布等按钮 */}
-      <Header
-        isValidLoading={isValidLoading}
-        info={info ?? {}}
-        onToggleVersionHistory={() => setShowVersionHistory(true)}
-        setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
-        showPublish={handleShowPublish}
-        canUndo={historyState.canUndo}
-        canRedo={historyState.canRedo}
-        onUndo={() => {
-          const graph = graphRef.current?.getGraphRef();
-          if (graph && graph.canUndo()) {
-            graph.undo();
-            // message.success('已撤销');
-          }
-        }}
-        onRedo={() => {
-          const graph = graphRef.current?.getGraphRef();
-          if (graph && graph.canRedo()) {
-            graph.redo();
-            // message.success('已重做');
-          }
-        }}
-      />
-      <Spin
-        spinning={globalLoadingTime > 0}
-        indicator={<LoadingOutlined spin />}
-        wrapperClassName="spin-workflow-global-style"
-      >
-        <GraphContainer
-          graphParams={graphParams}
-          ref={graphRef}
-          changeDrawer={handleNodeClick}
-          changeEdge={nodeChangeEdge}
-          changeCondition={changeNode}
-          removeNode={deleteNode}
-          copyNode={copyNode}
-          changeZoom={changeZoom}
-          createNodeByPortOrEdge={createNodeByPortOrEdge}
-          onSaveNode={handleSaveNode}
-          onClickBlank={handleClickBlank}
-          onInit={handleInitLoading}
-          onRefresh={handleRefreshGraph}
-        />
-      </Spin>
-      <ControlPanel
-        dragChild={dragChild}
-        foldWrapItem={foldWrapItem}
-        changeGraph={changeGraph}
-        handleTestRun={testRunAll}
-        testRunLoading={testRunLoading}
-        zoomSize={(info?.extension?.size as number) ?? 1}
-      />
-      <FoldWrap
-        className="fold-wrap-style"
-        lineMargin
-        title={foldWrapItem.name}
-        visible={visible}
-        key={`${foldWrapItem.type}-${foldWrapItem.id}-foldWrap`}
-        onClose={handleDrawerClose}
-        description={foldWrapItem.description}
-        backgroundColor={returnBackgroundColor(foldWrapItem.type)}
-        icon={returnImg(foldWrapItem.type)}
-        showNameInput={showNameInput}
-        changeFoldWrap={changeFoldWrap}
-        otherAction={
-          <OtherOperations
-            onChange={handleOperationsChange}
-            testRun={testRunList.includes(foldWrapItem.type)}
-            nodeType={foldWrapItem.type}
-            action={
-              foldWrapItem.type !== NodeTypeEnum.Start &&
-              foldWrapItem.type !== NodeTypeEnum.End
-            }
-          />
+    <WorkflowLayout
+      isValidLoading={isValidLoading}
+      info={info}
+      setShowCreateWorkflow={setShowCreateWorkflow}
+      setShowVersionHistory={setShowVersionHistory}
+      handleShowPublish={handleShowPublish}
+      showPublish={showPublish}
+      setShowPublish={setShowPublish}
+      canUndo={historyState.canUndo}
+      canRedo={historyState.canRedo}
+      onUndo={() => {
+        const graph = graphRef.current?.getGraphRef();
+        if (graph && graph.canUndo()) {
+          graph.undo();
         }
-      >
-        <div className="dispose-node-style">
-          <Form
-            form={form}
-            layout={'vertical'}
-            onFinishFailed={doSubmitFormData}
-            onFinish={doSubmitFormData}
-            key={`${foldWrapItem.type}-${foldWrapItem.id}-form`}
-            clearOnDestroy={true}
-            onValuesChange={(values) => {
-              // 使用节流处理，确保最后一次调用必须触发更新
-              throttledHandleGraphUpdate(values, form.getFieldsValue(true));
-            }}
-          >
-            <NodePanelDrawer
-              params={foldWrapItem}
-              key={`${foldWrapItem.type}-${foldWrapItem.id}-nodePanelDrawer`}
-            />
-          </Form>
-        </div>
-      </FoldWrap>
-      <Created
-        checkTag={createdItem as AgentComponentTypeEnum}
-        onAdded={onAdded}
-        open={open}
-        tabs={workflowCreatedTabs}
-        addComponents={[
-          {
-            type: AgentComponentTypeEnum.Workflow,
-            targetId: workflowId,
-            status: AgentAddComponentStatusEnum.Added,
-          },
-        ]}
-        onCancel={() => setOpen(false)}
-      />
-      <TestRun
-        node={foldWrapItem}
-        run={runTest}
-        testRunResult={testRunResult}
-        clearRunResult={handleClearRunResult}
-        loading={loading}
-        stopWait={stopWait}
-        formItemValue={formItemValue}
-        testRunParams={testRunParams}
-      />
-
-      <CreateWorkflow
-        onConfirm={onConfirm}
-        onCancel={() => setShowCreateWorkflow(false)}
-        open={showCreateWorkflow}
-        type={CreateUpdateModeEnum.Update}
-        {...info}
-      />
-
-      <ErrorList
-        visible={visible}
-        errorList={errorParams.errorList}
-        show={errorParams.show}
-        onClose={() =>
-          setErrorParams({ ...errorParams, errorList: [], show: false })
+      }}
+      onRedo={() => {
+        const graph = graphRef.current?.getGraphRef();
+        if (graph && graph.canRedo()) {
+          graph.redo();
         }
-        onClickItem={handleErrorNodeClick}
-        nodeList={graphParams.nodeList}
-      />
-
-      {/*工作流发布弹窗*/}
-      <PublishComponentModal
-        mode={AgentComponentTypeEnum.Workflow}
-        targetId={workflowId}
-        spaceId={spaceId}
-        category={info?.category}
-        open={showPublish}
-        // 取消发布
-        onCancel={() => setShowPublish(false)}
-        onConfirm={handleConfirmPublishWorkflow}
-      />
-      {/*版本历史*/}
-      <VersionHistory
-        targetId={workflowId}
-        targetName={info?.name}
-        targetType={AgentComponentTypeEnum.Workflow}
-        permissions={info?.permissions || []}
-        visible={showVersionHistory}
-        isDrawer={true}
-        onClose={() => setShowVersionHistory(false)}
-        renderActions={(item) => (
-          <VersionAction
-            data={item}
-            onRefresh={handleRefreshGraph}
-            onClose={() => setShowVersionHistory(false)}
-          />
-        )}
-      />
-    </div>
+      }}
+      onConfirm={onConfirm}
+      handleConfirmPublishWorkflow={handleConfirmPublishWorkflow}
+      globalLoadingTime={globalLoadingTime}
+      graphParams={graphParams}
+      graphRef={graphRef}
+      handleNodeClick={handleNodeClick}
+      nodeChangeEdge={nodeChangeEdge}
+      changeNode={changeNode}
+      deleteNode={deleteNode}
+      copyNode={copyNode}
+      changeZoom={changeZoom}
+      createNodeByPortOrEdge={createNodeByPortOrEdge}
+      handleSaveNode={handleSaveNode}
+      handleClickBlank={handleClickBlank}
+      handleInitLoading={handleInitLoading}
+      handleRefreshGraph={handleRefreshGraph}
+      dragChild={dragChild}
+      foldWrapItem={foldWrapItem}
+      changeGraph={changeGraph}
+      testRunAll={testRunAll}
+      testRunLoading={testRunLoading}
+      visible={visible}
+      handleDrawerClose={handleDrawerClose}
+      showNameInput={showNameInput}
+      changeFoldWrap={changeFoldWrap}
+      handleOperationsChange={handleOperationsChange}
+      form={form}
+      doSubmitFormData={doSubmitFormData}
+      throttledHandleGraphUpdate={throttledHandleGraphUpdate}
+      createdItem={createdItem}
+      onAdded={onAdded}
+      open={open}
+      setOpen={setOpen}
+      workflowCreatedTabs={workflowCreatedTabs}
+      workflowId={workflowId}
+      runTest={runTest}
+      testRunResult={testRunResult}
+      handleClearRunResult={handleClearRunResult}
+      loading={loading}
+      stopWait={stopWait}
+      formItemValue={formItemValue}
+      testRunParams={testRunParams}
+      errorParams={errorParams}
+      setErrorParams={setErrorParams}
+      handleErrorNodeClick={handleErrorNodeClick}
+      spaceId={spaceId}
+      showCreateWorkflow={showCreateWorkflow}
+      showVersionHistory={showVersionHistory}
+    />
   );
 };
 
