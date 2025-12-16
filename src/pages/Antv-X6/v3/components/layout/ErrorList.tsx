@@ -34,7 +34,7 @@ const ErrorList: React.FC<ErrorListProps> = ({
   onClickItem,
   nodeList,
 }) => {
-  const { setVolid } = useModel('workflow');
+  const { setVolid } = useModel('workflowV3');
   const { token } = theme.useToken();
   return (
     <div

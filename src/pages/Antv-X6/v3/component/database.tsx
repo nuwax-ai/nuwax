@@ -24,7 +24,7 @@ const Database: React.FC<NodeDisposeProps> = ({
 }) => {
   const [open, setOpen] = useState(false); // 自动生成sql的弹窗
 
-  const { setIsModified, referenceList } = useModel('workflow');
+  const { setIsModified, referenceList } = useModel('workflowV3');
 
   const defaultConditionArgs = [
     {

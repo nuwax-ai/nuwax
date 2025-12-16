@@ -22,7 +22,7 @@ export const useWorkflowPersistence = ({
   getReference,
   setFoldWrapItem,
 }: UseWorkflowPersistenceProps) => {
-  const { getWorkflow } = useModel('workflow');
+  const { getWorkflow } = useModel('workflowV3');
 
   // V3: 全量保存工作流配置
   const saveFullWorkflow = useCallback(async (): Promise<boolean> => {

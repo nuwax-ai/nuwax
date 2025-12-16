@@ -37,7 +37,7 @@ export const ExceptionItem: React.FC<ExceptionItemProps> = memo(
     specificContent,
     exceptionHandleNodeIds,
   }) => {
-    const { setIsModified } = useModel('workflow');
+    const { setIsModified } = useModel('workflowV3');
     const outerForm = Form.useFormInstance();
     // 异常处理方式选项
     const exceptionHandleOptions = useMemo(() => EXCEPTION_HANDLE_OPTIONS, []);

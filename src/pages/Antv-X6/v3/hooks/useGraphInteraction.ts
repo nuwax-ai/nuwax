@@ -34,7 +34,7 @@ export const useGraphInteraction = ({
   getNodeConfig,
   updateCurrentNodeRef,
 }: UseGraphInteractionProps) => {
-  const { getWorkflow } = useModel('workflow');
+  const { getWorkflow } = useModel('workflowV3');
 
   // 节点添加或移除边
   const nodeChangeEdge = useCallback(

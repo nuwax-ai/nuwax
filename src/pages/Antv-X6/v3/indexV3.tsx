@@ -205,7 +205,7 @@ const Workflow: React.FC = () => {
     setVisible,
     handleInitLoading,
     globalLoadingTime,
-  } = useModel('workflow');
+  } = useModel('workflowV3');
 
   const params = useParams();
   // 当前工作流的id
@@ -305,7 +305,7 @@ const Workflow: React.FC = () => {
     skillChange,
     setSkillChange,
     isModified,
-  } = useModel('workflow');
+  } = useModel('workflowV3');
 
   // 使用 Hook 控制抽屉打开时的滚动条
   useDrawerScroll(showVersionHistory);
@@ -334,7 +334,13 @@ const Workflow: React.FC = () => {
     // V3: 当 foldWrapItem 变化时，同步更新表单数据
     // 确保 UI 显示与本地数据一致
     if (foldWrapItem && foldWrapItem.nodeConfig) {
+      // 保留当前表单中的技能数据，避免被 foldWrapItem 覆盖
+      const currentSkills = form.getFieldValue(SKILL_FORM_KEY);
       form.setFieldsValue(foldWrapItem.nodeConfig);
+      // 如果当前表单有技能数据，恢复它（优先使用表单中的最新数据）
+      if (Array.isArray(currentSkills) && currentSkills.length > 0) {
+        form.setFieldValue(SKILL_FORM_KEY, currentSkills);
+      }
     }
 
     if (skillChange) {
@@ -584,8 +590,16 @@ const Workflow: React.FC = () => {
 
   const doSubmitFormData = useCallback(async (): Promise<boolean> => {
     let result = false;
-    const hasSkillChange = getWorkflow('skillChange');
-    if (getWorkflow('isModified') === false) return result;
+    // V3: 直接使用 skillChange 状态，而非 getWorkflow('skillChange')
+    // 因为 workflow.ts 中有一个 bug，storeWorkflow('skillChange', visible) 存储了错误的值
+    const hasSkillChange = skillChange;
+    if (getWorkflow('isModified') === false) {
+      // 即使没有修改，也要清除 skillChange 状态以停止 loading
+      if (hasSkillChange) {
+        setSkillChange(false);
+      }
+      return result;
+    }
     //重新获取节点配置信息 并更新表单 与节点配置数据
     try {
       setIsModified(false);
@@ -613,7 +627,7 @@ const Workflow: React.FC = () => {
       setSkillChange(false);
     }
     return result;
-  }, [setIsModified, form, setSkillChange]);
+  }, [setIsModified, form, setSkillChange, skillChange]);
 
   // 点击组件，显示抽屉
   const changeDrawer = useCallback(async (child: ChildNode | null) => {

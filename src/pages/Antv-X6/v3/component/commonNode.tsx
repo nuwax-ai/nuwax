@@ -48,7 +48,7 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
   disabledInput,
   isLoop,
 }) => {
-  const { volid } = useModel('workflow');
+  const { volid } = useModel('workflowV3');
   // 根据传递的fieldConfigs生成表单项
   const formItem = fieldConfigs.reduce(
     (acc: DefaultObjectType, field: FieldConfig) => {

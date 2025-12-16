@@ -30,7 +30,7 @@ import {
   Select,
   Space,
 } from 'antd';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../indexV3.less';
@@ -92,11 +92,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     AgentAddComponentStatusInfo[]
   >([]);
   const [needSubmit, setNeedSubmit] = useState(false);
-  const skillLoadingRef = useRef<NodeJS.Timeout>();
 
-  const { setSkillChange, setIsModified, skillChange, referenceList } =
-    useModel('workflow');
-  const [skillLoading, setSkillLoading] = useState(false);
+  const { setIsModified, referenceList } = useModel('workflowV3');
   const updateAddComponents = (
     configs: CreatedNodeItem[],
     customize: (item: CreatedNodeItem) => AgentAddComponentStatusEnum,
@@ -125,20 +122,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     // setOpen(false);
   };
 
-  useEffect(() => {
-    //如果300ms内的变化不做显示loading
-    if (skillChange) {
-      skillLoadingRef.current = setTimeout(() => {
-        setSkillLoading(true);
-      }, 300);
-    } else {
-      clearTimeout(skillLoadingRef.current);
-      setSkillLoading(false);
-    }
-    return () => {
-      clearTimeout(skillLoadingRef.current);
-    };
-  }, [skillChange]);
+  // V3: 技能添加现在是前端同步操作，不需要 loading 效果
+  // 移除基于 skillChange 的 loading 逻辑
 
   // 移出技能
   const removeItem = (item: CreatedNodeItem) => {
@@ -153,7 +138,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       );
       form.setFieldValue(SKILL_FORM_KEY, newSkillComponentConfigs);
       setIsModified(true);
-      setSkillChange(true);
+      // V3: 前端同步操作，不需要 loading
+      // setSkillChange(true);
     }
   };
 
@@ -170,7 +156,8 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       );
       form.setFieldValue(SKILL_FORM_KEY, newSkillComponentConfigs);
       setIsModified(true);
-      setSkillChange(true);
+      // V3: 前端同步操作，不需要 loading
+      // setSkillChange(true);
     }
   };
 
@@ -199,14 +186,16 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
     setOpen(false);
     if (needSubmit) {
       setNeedSubmit(false);
-      setSkillChange(true);
+      // V3: 技能添加现在是前端同步操作，不需要显示 loading
+      // setSkillChange(true);  // 移除，避免触发不必要的 loading
       setIsModified(true);
       // 一起提交表单
       form.submit();
     }
-  }, [needSubmit, form, setSkillChange, setNeedSubmit, setOpen]);
+  }, [needSubmit, form, setNeedSubmit, setOpen]);
 
-  const formSkillList = form.getFieldValue(SKILL_FORM_KEY);
+  const formSkillList =
+    Form.useWatch(SKILL_FORM_KEY, { form, preserve: true }) || [];
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
@@ -344,7 +333,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
 
 // 定义意图识别
 const IntentionNode: React.FC<NodeDisposeProps> = ({ form }) => {
-  const { referenceList } = useModel('workflow');
+  const { referenceList } = useModel('workflowV3');
   return (
     <div className="model-node-style">
       {/* 模型模块 */}
@@ -416,7 +405,7 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
   type,
   id,
 }) => {
-  const { referenceList } = useModel('workflow');
+  const { referenceList } = useModel('workflowV3');
   // 更改问答方式
   const changeType = (val: string) => {
     // 首次选中
