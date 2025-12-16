@@ -1,3 +1,6 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
 .drawer {
   :global {
     .ant-drawer-header {
@@ -11,6 +14,134 @@
 
     .ant-drawer-content-wrapper {
       overflow: hidden;
+    }
+  }
+
+  .header {
+    padding: 24px 16px 20px;
+    border-bottom: 1px solid @GRAY01;
+
+    .time-box {
+      gap: 6px;
+      margin-bottom: 16px;
+
+      .num {
+        gap: 12px;
+        color: @BLANK14;
+        font-size: 14px;
+        font-weight: @fontWeightStrong;
+        margin-right: 8px;
+
+        .vertical-line {
+          display: inline-block;
+          width: 1px;
+          height: 12px;
+          background-color: @GRAY05;
+        }
+      }
+    }
+
+    .box {
+      gap: 6px;
+      color: @GRAY05;
+      font-size: 12px;
+
+      .value {
+        color: @BLANK03;
+      }
+    }
+  }
+
+  .wrap {
+    padding: 24px 16px 20px;
+    border-bottom: 1px solid @GRAY01;
+
+    .title {
+      margin-bottom: 16px;
+      font-weight: @fontWeightStrong;
+    }
+
+    .execute-box {
+      gap: 6px;
+      margin-bottom: 4px;
+
+      .component-img {
+        width: 12px;
+        height: 12px;
+        object-fit: cover;
+        border-radius: 2px;
+      }
+
+      .name {
+        display: inline-block;
+        padding: 2px;
+        color: @BLANK14;
+        font-size: 12px;
+        border-radius: 2px;
+        transition: background-color 0.3s;
+
+        &.active {
+          background-color: @BLANK25;
+        }
+
+        &:hover {
+          background-color: @BLANK25;
+        }
+      }
+    }
+  }
+
+  .render-container {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-weight: @fontWeightStrong;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    h1 {
+      font-size: calc(1.143 * 24px);
+    }
+
+    h2 {
+      font-size: calc(1.143 * 20px);
+    }
+
+    h3 {
+      font-size: calc(1.143 * 16px);
+    }
+
+    img {
+      display: inline-block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    ol {
+      padding-inline-start: 10px;
+    }
+
+    hr {
+      visibility: hidden;
+    }
+
+    pre {
+      min-height: 200px;
+      padding: 10px;
+      color: @BLANK14;
+      font-size: 12px;
+      background-color: @GRAY01;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      overflow-x: auto;
     }
   }
 }
