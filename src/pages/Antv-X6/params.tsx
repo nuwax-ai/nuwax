@@ -181,14 +181,7 @@ export const asideList: StencilList[] = [
         description:
           '用于读取和写入项目中的变量，变量名须与项目中的变量名相匹配',
       },
-      {
-        name: '变量聚合',
-        icon: <ICON_WORKFLOW_VARIABLE />,
-        bgIcon: BG_ICON_WORKFLOW_VARIABLE,
-        type: NodeTypeEnum.VariableAggregation,
-        shape: NodeShapeEnum.General,
-        description: '将多个分支或变量聚合成分组输出',
-      },
+
       {
         name: '长期记忆',
         icon: <ICON_WORKFLOW_LONG_TERM_MEMORY />,
