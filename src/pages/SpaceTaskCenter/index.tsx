@@ -1,7 +1,7 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
-import type { ComponentInfo } from '@/types/interfaces/library';
+import type { TaskInfo } from '@/types/interfaces/library';
 import { useRef, useState } from 'react';
 import { history, useParams } from 'umi';
 import CreateSkill from './CreateSkill';
@@ -23,28 +23,28 @@ const SpaceTaskCenter: React.FC = () => {
   };
   const handleCreateTaskConfirm = () => {
     // 查询任务列表
-    mainContentRef.current?.exposeQueryComponentList();
+    mainContentRef.current?.exposeQueryTaskList();
     setOpenCreateTask(false);
   };
 
   // 点击任务卡片
-  const handleClickItem = (info: ComponentInfo) => {
+  const handleClickItem = (info: TaskInfo) => {
     const { id } = info;
     history.push(`/space/${spaceId}/agent/${id}`);
   };
 
   // 删除任务
-  const handleClickDelete = (info: ComponentInfo) => {
+  const handleClickDelete = (info: TaskInfo) => {
     console.log(info);
   };
 
   // 详情任务
-  const handleClickDetail = (info: ComponentInfo) => {
+  const handleClickDetail = (info: TaskInfo) => {
     console.log(info);
   };
 
   // 点击任务卡片更多操作
-  const handleClickMore = (item: CustomPopoverItem, info: ComponentInfo) => {
+  const handleClickMore = (item: CustomPopoverItem, info: TaskInfo) => {
     const { action } = item as unknown as {
       action: ApplicationMoreActionEnum;
     };

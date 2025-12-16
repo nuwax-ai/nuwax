@@ -7,7 +7,7 @@ import {
 } from '@/components/base/AgentType/images.constants';
 import SvgIcon from '@/components/base/SvgIcon';
 
-import { InputTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, InputTypeEnum } from '@/types/enums/agent';
 import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
 import {
   AgentTypeEnum,
@@ -78,6 +78,27 @@ export const LIBRARY_ALL_TYPE = [
     icon: null,
   },
   ...LIBRARY_ALL_RESOURCE,
+];
+
+// 任务库所有类型
+export const TASK_ALL_TYPE = [
+  {
+    value: ComponentTypeEnum.All_Type,
+    label: '所有类型',
+    icon: null,
+  },
+  // 智能体
+  {
+    value: AgentComponentTypeEnum.Agent,
+    label: '智能体',
+    icon: null,
+  },
+  // 工作流
+  {
+    value: AgentComponentTypeEnum.Workflow,
+    label: '工作流',
+    icon: null,
+  },
 ];
 
 // 过滤状态
