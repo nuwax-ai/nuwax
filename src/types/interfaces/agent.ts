@@ -664,9 +664,7 @@ export interface apiSpaceLogListParams {
 // 日志详情请求参数-工作空间
 export interface SpaceLogDetailParams {
   /** 请求唯一标识 */
-  requestId: string;
-  /** 空间 ID */
-  spaceId: number;
+  id: string;
 }
 
 // 日志查询响应-工作空间
@@ -727,6 +725,66 @@ export interface SpaceLogInfo {
 
   /** 日志产生时间（时间戳） */
   createTime?: number;
+}
+
+// 日志查询详情响应-工作空间
+export interface SpaceLogInfoDetail {
+  /** 日志 ID */
+  id: string;
+
+  /** 请求唯一标识，可用于关联一次请求中所有相关操作 */
+  requestId: string;
+
+  /** 日志产生对象所在的空间 ID */
+  spaceId: number;
+
+  /** 请求发起的用户 ID */
+  userId: number;
+
+  /** 用户名 */
+  userName: string;
+
+  /** 日志对象类型 */
+  targetType: string;
+
+  /** 日志对象名称 */
+  targetName: string;
+
+  /** 日志对象 ID */
+  targetId: string;
+
+  /** 会话 ID */
+  conversationId: string;
+
+  /** 输入参数 */
+  input: string;
+
+  /** 执行结果 */
+  output: string;
+
+  /** 执行过程数据 */
+  processData: string;
+
+  /** 输入 token 数量 */
+  inputToken: number;
+
+  /** 输出 token 数量 */
+  outputToken: number;
+
+  /** 请求开始时间（时间戳） */
+  requestStartTime: number;
+
+  /** 请求结束时间（时间戳） */
+  requestEndTime: number;
+
+  /** 执行结果码，0000 为成功 */
+  resultCode: string;
+
+  /** 执行结果描述 */
+  resultMsg: string;
+
+  /** 日志产生时间（时间戳） */
+  createTime: number;
 }
 
 // 日志查询请求参数

@@ -26,9 +26,7 @@ const LogProTable: React.FC = () => {
   const actionRef = useRef<ActionType>();
 
   const [detailsVisible, setDetailsVisible] = useState<boolean>(false);
-  const [currentRequestId, setCurrentRequestId] = useState<string>();
-  const [currentExecuteResult, setCurrentExecuteResult] =
-    useState<SpaceLogInfo>();
+  const [currentId, setCurrentId] = useState<string>();
 
   // 从 URL 查询参数中获取 targetType，用于初始化查询表单
   const targetTypeFromUrl = useMemo(() => {
@@ -36,29 +34,51 @@ const LogProTable: React.FC = () => {
     return searchParams.get('targetType') || undefined;
   }, [location.search]);
 
-  // 当 targetType 变化时，更新 URL 参数
-  const handleTargetTypeChange = useCallback(
-    (value: string) => {
+  // 从 URL 查询参数中获取 targetId，用于初始化查询表单
+  const targetIdFromUrl = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get('targetId') || undefined;
+  }, [location.search]);
+
+  // 通用：更新 URL 查询参数
+  const handleSearchParamChange = useCallback(
+    (key: 'targetType' | 'targetId', value?: string) => {
       const newParams = new URLSearchParams(searchParams);
       if (value) {
-        newParams.set('targetType', value);
+        newParams.set(key, value);
       } else {
-        newParams.delete('targetType');
+        newParams.delete(key);
       }
       setSearchParams(newParams);
     },
     [searchParams, setSearchParams],
   );
 
+  // 当 targetType 变化时，更新 URL 参数
+  const handleTargetTypeChange = useCallback(
+    (value: string) => {
+      handleSearchParamChange('targetType', value);
+    },
+    [handleSearchParamChange],
+  );
+
+  // 当 targetId 变化时，更新 URL 参数
+  const handleTargetIdChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      handleSearchParamChange('targetId', e.target.value);
+    },
+    [handleSearchParamChange],
+  );
+
   const handleCloseDetails = useCallback(() => {
     setDetailsVisible(false);
-    setCurrentRequestId(undefined);
-    setCurrentExecuteResult(undefined);
+    setCurrentId(undefined);
   }, []);
 
   const columns: ProColumns<SpaceLogInfo>[] = useMemo(
     () => [
       {
+        width: 100,
         title: '类型',
         dataIndex: 'targetType',
         valueType: 'select',
@@ -68,7 +88,7 @@ const LogProTable: React.FC = () => {
           Workflow: { text: '工作流' },
           Mcp: { text: 'Mcp' },
         },
-        hideInTable: true,
+        hideInTable: false,
         initialValue: targetTypeFromUrl,
         fieldProps: {
           placeholder: '请选择类型',
@@ -77,10 +97,29 @@ const LogProTable: React.FC = () => {
         },
       },
       {
+        title: '对象ID',
+        dataIndex: 'targetId',
+        width: 140,
+        ellipsis: true,
+        initialValue: targetIdFromUrl,
+        fieldProps: {
+          placeholder: '请输入对象ID',
+          onChange: handleTargetIdChange,
+        },
+      },
+      {
+        title: '对象名称',
+        dataIndex: 'targetName',
+        width: 140,
+        ellipsis: true,
+        fieldProps: { placeholder: '请输入对象名称' },
+      },
+      {
         title: '请求ID',
         dataIndex: 'requestId',
         width: 160,
         ellipsis: true,
+        hideInTable: true,
         fieldProps: { placeholder: '请输入请求ID' },
       },
       {
@@ -104,6 +143,7 @@ const LogProTable: React.FC = () => {
         ellipsis: true,
         fieldProps: { placeholder: '请输入会话ID' },
       },
+
       {
         title: '输入内容',
         dataIndex: 'input',
@@ -128,13 +168,7 @@ const LogProTable: React.FC = () => {
         ),
         fieldProps: { placeholder: '多个关键字以空格分隔，请输入内容' },
       },
-      {
-        title: '对象名称',
-        dataIndex: 'targetName',
-        width: 140,
-        ellipsis: true,
-        fieldProps: { placeholder: '请输入对象名称' },
-      },
+
       {
         title: '时间范围',
         dataIndex: 'createTimeRange',
@@ -186,7 +220,12 @@ const LogProTable: React.FC = () => {
         },
       },
     ],
-    [handleTargetTypeChange, targetTypeFromUrl],
+    [
+      handleTargetIdChange,
+      handleTargetTypeChange,
+      targetIdFromUrl,
+      targetTypeFromUrl,
+    ],
   );
 
   const request = useCallback(
@@ -208,6 +247,7 @@ const LogProTable: React.FC = () => {
 
       const queryFilter: SpaceLogQueryFilter = {
         spaceId: Number.isFinite(spaceId) ? spaceId : undefined,
+        targetId: tableParams.targetId || undefined,
         targetType: tableParams.targetType || undefined,
         requestId: tableParams.requestId || undefined,
         userId: Number.isFinite(userIdNum as number)
@@ -261,15 +301,13 @@ const LogProTable: React.FC = () => {
    * 直接使用当前行的数据，不调用接口
    */
   const handleOpenDetails = useCallback((record: SpaceLogInfo) => {
-    if (!record?.requestId) {
+    if (!record?.id) {
       message.warning('该条记录缺少 requestId，无法查看详情');
       return;
     }
 
     setDetailsVisible(true);
-    setCurrentRequestId(record.requestId);
-    // 直接使用当前行的 processData，不调用接口
-    setCurrentExecuteResult(record);
+    setCurrentId(record.id);
   }, []);
 
   const columnsWithActions: ProColumns<SpaceLogInfo>[] = useMemo(() => {
@@ -322,15 +360,13 @@ const LogProTable: React.FC = () => {
           defaultCollapsed: false,
         }}
         dateFormatter="number"
-        onSubmit={() => handleCloseDetails()}
-        onReset={() => handleCloseDetails()}
+        onSubmit={handleCloseDetails}
+        onReset={handleCloseDetails}
       />
 
       <LogDetailDrawer
-        loading={false}
         open={detailsVisible}
-        requestId={currentRequestId}
-        executeResult={currentExecuteResult}
+        id={currentId}
         onClose={handleCloseDetails}
       />
     </>
