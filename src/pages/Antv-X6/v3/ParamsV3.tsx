@@ -185,7 +185,7 @@ export const asideList: StencilList[] = [
         name: '变量聚合',
         icon: <ICON_WORKFLOW_VARIABLE />,
         bgIcon: BG_ICON_WORKFLOW_VARIABLE,
-        type: NodeTypeEnum.VariableAggregator,
+        type: NodeTypeEnum.VariableAggregation,
         shape: NodeShapeEnum.General,
         description: '将多个分支或变量聚合成分组输出',
       },

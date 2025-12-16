@@ -46,7 +46,7 @@ export enum NodeTypeEnum {
   // 变量
   Variable = 'Variable',
   // 变量聚合
-  VariableAggregator = 'VariableAggregator',
+  VariableAggregation = 'VariableAggregation',
   // 循环
   Loop = 'Loop',
   // 终止循环
