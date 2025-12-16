@@ -106,8 +106,8 @@ import React, {
 } from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import NodePanelDrawer from '../components/NodePanelDrawer';
 import VersionAction from '../components/VersionAction';
+import NodePanelDrawer from './component/NodePanelDrawerV3';
 import ControlPanel from './ControlPanelV3';
 import ErrorList from './ErrorListV3';
 import GraphContainer from './GraphContainerV3';

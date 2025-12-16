@@ -1,10 +1,10 @@
 import Created from '@/components/Created';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
-import TooltipIcon from '@/components/custom/TooltipIcon';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { SKILL_FORM_KEY } from '@/constants/node.constants';
 import { SkillList } from '@/pages/Antv-X6/components/NewSkill';
@@ -34,7 +34,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../indexV3.less';
-import { outPutConfigs } from '../params';
+import { outPutConfigs } from '../ParamsV3';
 import { FormList, InputAndOut, TreeOutput } from './commonNode';
 // 请求方法的选项
 const REQUEST_METHOD_OPTIONS = [

@@ -339,6 +339,69 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const variableGroups: VariableGroup[] =
     Form.useWatch('variableGroups', { form, preserve: true }) || [];
 
+  // 监听 inputArgs 用于初始化回显
+  const inputArgsFromForm = Form.useWatch('inputArgs', {
+    form,
+    preserve: true,
+  });
+
+  // 使用 ref 标记是否已经初始化过
+  const isInitialized = React.useRef(false);
+
+  // 初始化：从 inputArgs 生成 variableGroups（用于回显已保存的数据）
+  useEffect(() => {
+    // 如果已经初始化过，跳过
+    if (isInitialized.current) {
+      return;
+    }
+
+    const existingGroups = form.getFieldValue('variableGroups');
+
+    // 如果已有 variableGroups 数据，标记为已初始化并跳过
+    if (existingGroups?.length > 0) {
+      isInitialized.current = true;
+      return;
+    }
+
+    // 如果没有 inputArgs 数据，跳过（但不标记为已初始化，等待数据加载）
+    if (!inputArgsFromForm?.length) {
+      console.log('[VariableAggregation] 等待 inputArgs 数据...');
+      return;
+    }
+
+    console.log(
+      '[VariableAggregation] 开始从 inputArgs 初始化 variableGroups:',
+      inputArgsFromForm,
+    );
+
+    // 将 inputArgs 转换为 variableGroups 格式
+    const initialGroups: VariableGroup[] = inputArgsFromForm.map(
+      (arg: any) => ({
+        id: arg.key || uuidv4(),
+        name: arg.name || 'Group',
+        dataType: arg.dataType || DataTypeEnum.String,
+        inputs:
+          (arg.subArgs || arg.children || []).map((subArg: any) => ({
+            key: subArg.key || uuidv4(),
+            name: subArg.name || '',
+            dataType: subArg.dataType || DataTypeEnum.String,
+            description: subArg.description || '',
+            require: subArg.require ?? false,
+            systemVariable: subArg.systemVariable ?? false,
+            bindValue: subArg.bindValue || '',
+            bindValueType: subArg.bindValueType || 'Reference',
+          })) || [],
+      }),
+    );
+
+    console.log('[VariableAggregation] 生成的 variableGroups:', initialGroups);
+
+    if (initialGroups.length > 0) {
+      isInitialized.current = true;
+      form.setFieldsValue({ variableGroups: initialGroups });
+    }
+  }, [inputArgsFromForm, form]);
+
   // 当 variableGroups 变化时，同步更新 inputArgs 和 outputArgs
   useEffect(() => {
     if (!variableGroups || variableGroups.length === 0) {

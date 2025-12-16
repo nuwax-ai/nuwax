@@ -136,27 +136,35 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
 
   // 监听表单值变化
   useEffect(() => {
-    if (fieldName && form) {
-      const value = form.getFieldValue(fieldName);
-      const bindValueType = form.getFieldValue([
-        ...fieldName.slice(0, -1),
-        'bindValueType',
-      ]);
+    // 支持受控模式：如果传入了 value prop，优先使用它
+    const currentValue =
+      value !== undefined
+        ? value
+        : fieldName && form
+        ? form.getFieldValue(fieldName)
+        : '';
 
-      if (bindValueType === 'Reference') {
-        const isReferenceKey = value && referenceList.argMap[value];
-        setDisplayValue(
-          isReferenceKey
-            ? isLoop
-              ? getLoopValue(value)
-              : getValue(value)
-            : '',
-        );
-      } else {
-        setDisplayValue(''); // Input类型时不显示Tag
-      }
+    // 获取 bindValueType：先尝试从 form 获取，否则使用 referenceType prop
+    let bindValueType = referenceType;
+    if (fieldName && form && fieldName[0] !== '__temp_ref') {
+      bindValueType =
+        form.getFieldValue([...fieldName.slice(0, -1), 'bindValueType']) ||
+        referenceType;
     }
-  }, [form?.getFieldsValue(), referenceList.argMap]);
+
+    if (bindValueType === 'Reference') {
+      const isReferenceKey = currentValue && referenceList.argMap[currentValue];
+      setDisplayValue(
+        isReferenceKey
+          ? isLoop
+            ? getLoopValue(currentValue)
+            : getValue(currentValue)
+          : '',
+      );
+    } else {
+      setDisplayValue(''); // Input类型时不显示Tag
+    }
+  }, [form?.getFieldsValue(), referenceList.argMap, value, referenceType]);
 
   // 清除引用值
   const handleTagClose = () => {

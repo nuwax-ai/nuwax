@@ -7,7 +7,7 @@ import { Button, Form, Select, Space, Tag } from 'antd';
 import React from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { v4 as uuidv4 } from 'uuid';
-import { options } from '../params';
+import { options } from '../ParamsV3';
 import './condition.less';
 
 const ConditionNode: React.FC<NodeDisposeProps> = ({ form }) => {
