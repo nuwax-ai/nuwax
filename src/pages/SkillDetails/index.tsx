@@ -31,6 +31,8 @@ const SkillDetails: React.FC = () => {
   const [files, setFiles] = useState<FileNode[]>([]);
   // 发布技能弹窗是否打开
   const [open, setOpen] = useState<boolean>(false);
+  // 编辑技能信息弹窗是否打开
+  const [editSkillModalOpen, setEditSkillModalOpen] = useState<boolean>(false);
 
   // 查询技能信息
   const { run: runSkillInfo } = useRequest(apiSkillDetail, {
@@ -177,6 +179,12 @@ const SkillDetails: React.FC = () => {
     }
   };
 
+  // 编辑技能信息
+  const handleEditSkill = () => {
+    console.log('handleEditSkill', editSkillModalOpen);
+    setEditSkillModalOpen(true);
+  };
+
   return (
     <div
       className={cx('skill-details-container', 'flex', 'h-full', 'flex-col')}
@@ -184,7 +192,7 @@ const SkillDetails: React.FC = () => {
       {/* 技能头部 */}
       <SkillHeader
         skillInfo={skillInfo}
-        onEditAgent={() => {}}
+        onEditAgent={handleEditSkill}
         onPublish={() => setOpen(true)}
       />
       {/* 文件树视图 */}
