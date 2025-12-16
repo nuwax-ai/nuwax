@@ -72,6 +72,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   isLoop,
   value, // 接收注入的 value
   onChange, // 接收注入的 onChange
+  onReferenceSelect, // 受控模式的引用选择回调
 }) => {
   const { referenceList, getValue, getLoopValue, setIsModified } =
     useModel('workflow');
@@ -200,9 +201,23 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   // 处理 TreeSelect 的选中事件
   const handleTreeSelectChange = (key: React.Key[]) => {
     if (!key || !key.length) return;
-    updateValues(key[0] as string, 'Reference');
+    const selectedValue = key[0] as string;
+    const refDataType =
+      referenceList?.argMap?.[selectedValue]?.dataType || 'String';
+    const refName = referenceList?.argMap?.[selectedValue]?.name || '';
+
+    // 如果提供了 onReferenceSelect 回调，使用它（受控模式）
+    if (onReferenceSelect) {
+      onReferenceSelect(selectedValue, 'Reference', refDataType, refName);
+    } else {
+      // 否则使用传统的 form.setFieldValue 方式
+      updateValues(selectedValue, 'Reference');
+    }
+
+    onChange?.(selectedValue); // 通知 Form.Item 值已更新
     setDisplayValue(getValue(key[0]));
     setSelectKey(key); // 更新 selectKey 状态
+    setIsModified(true);
   };
   // 动态生成 Dropdown 的 items
   const getMenu = (nodes: PreviousList[]) => {

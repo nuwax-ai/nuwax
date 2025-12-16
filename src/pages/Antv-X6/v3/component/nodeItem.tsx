@@ -1,6 +1,7 @@
 // 这个页面定义普通的节点，如输入，输出，等
 import CodeEditor from '@/components/CodeEditor';
 import Monaco from '@/components/CodeEditor/monaco';
+import InputOrReference from '@/components/FormListItem/InputOrReference';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
 import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
@@ -34,7 +35,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import { cycleOption, outPutConfigs } from '../params';
+import { cycleOption, outPutConfigs } from '../ParamsV3';
 import { InputAndOut, OtherFormList, TreeOutput } from './commonNode';
 import './nodeItem.less';
 // 定义一些公共的数组
@@ -331,25 +332,52 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
     { label: '返回每个分组中第一个非空的值', value: 'FIRST_NON_NULL' },
   ];
 
+  // 获取 workflow model 中的 setIsModified 用于触发保存
+  const { setIsModified } = useModel('workflow');
+
+  // 使用 Form.useWatch 监听 variableGroups
   const variableGroups: VariableGroup[] =
     Form.useWatch('variableGroups', { form, preserve: true }) || [];
 
-  // 初始化至少一个分组
+  // 当 variableGroups 变化时，同步更新 inputArgs 和 outputArgs
   useEffect(() => {
     if (!variableGroups || variableGroups.length === 0) {
-      const defaultGroup: VariableGroup = {
-        id: uuidv4(),
-        name: 'Group1',
-        dataType: DataTypeEnum.String,
-        inputs: [],
-      };
-      form.setFieldsValue({ variableGroups: [defaultGroup] });
+      form.setFieldsValue({ inputArgs: [], outputArgs: [] });
+      return;
     }
-  }, []);
 
-  // 根据分组生成输出结构
-  useEffect(() => {
-    if (!variableGroups || variableGroups.length === 0) return;
+    // 生成 inputArgs（嵌套结构，每个分组作为一个条目，inputs 作为 subArgs）
+    const inputArgs: InputAndOutConfig[] = variableGroups.map((group) => {
+      const groupEntry: InputAndOutConfig = {
+        key: group.id || group.name || uuidv4(),
+        name: group.name || 'Group',
+        dataType: group.dataType || DataTypeEnum.String,
+        description: `${group.name || 'Group'} ${
+          DataTypeMap[group.dataType || DataTypeEnum.String] || ''
+        }`,
+        require: false,
+        systemVariable: false,
+        bindValue: '',
+      };
+
+      // 将 inputs 作为 subArgs
+      if (Array.isArray(group.inputs) && group.inputs.length > 0) {
+        groupEntry.subArgs = group.inputs.map((input) => ({
+          key: input.key || input.name || uuidv4(),
+          name: input.name || '',
+          dataType: input.dataType || DataTypeEnum.String,
+          description: input.description || '',
+          require: input.require ?? false,
+          systemVariable: input.systemVariable ?? false,
+          bindValue: input.bindValue || '',
+          bindValueType: input.bindValueType || 'Reference',
+        }));
+      }
+
+      return groupEntry;
+    });
+
+    // 生成 outputArgs
     const outputArgs: InputAndOutConfig[] = variableGroups.map((group) => {
       const base: InputAndOutConfig = {
         name: group.name || 'Group',
@@ -368,7 +396,7 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
         group.inputs.length > 0
       ) {
         base.subArgs = group.inputs.map((item) => ({
-          ...item,
+          name: item.name || '',
           dataType: item.dataType || DataTypeEnum.String,
           description: item.description || '',
           require: item.require ?? false,
@@ -379,35 +407,81 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
       }
       return base;
     });
-    form.setFieldsValue({ outputArgs });
+
+    form.setFieldsValue({ inputArgs, outputArgs });
   }, [variableGroups, form]);
 
+  // 更新分组并触发保存
+  const updateGroups = (newGroups: VariableGroup[]) => {
+    form.setFieldsValue({ variableGroups: newGroups });
+    // 由于 form.setFieldsValue 不会触发 onValuesChange，需要手动标记为已修改
+    setIsModified(true);
+  };
+
+  // 添加分组
   const handleAddGroup = () => {
-    const nextGroups = [
-      ...(variableGroups || []),
-      {
-        id: uuidv4(),
-        name: `Group${(variableGroups?.length || 0) + 1}`,
-        dataType: DataTypeEnum.String,
-        inputs: [],
-      },
-    ];
-    form.setFieldsValue({ variableGroups: nextGroups });
+    const newGroup: VariableGroup = {
+      id: uuidv4(),
+      name: `Group${variableGroups.length + 1}`,
+      dataType: DataTypeEnum.String,
+      inputs: [],
+    };
+    updateGroups([...variableGroups, newGroup]);
   };
 
-  const handleRemoveGroup = (groupId: string) => {
-    const nextGroups = (variableGroups || []).filter((g) => g.id !== groupId);
-    form.setFieldsValue({ variableGroups: nextGroups });
+  // 删除分组
+  const handleRemoveGroup = (groupIndex: number) => {
+    const newGroups = variableGroups.filter((_, i) => i !== groupIndex);
+    updateGroups(newGroups);
   };
 
+  // 更新分组属性
   const handleUpdateGroup = (
-    groupId: string,
+    groupIndex: number,
     updates: Partial<VariableGroup>,
   ) => {
-    const nextGroups = (variableGroups || []).map((group) =>
-      group.id === groupId ? { ...group, ...updates } : group,
+    const newGroups = variableGroups.map((group, i) =>
+      i === groupIndex ? { ...group, ...updates } : group,
     );
-    form.setFieldsValue({ variableGroups: nextGroups });
+    updateGroups(newGroups);
+  };
+
+  // 添加输入项
+  const handleAddInput = (groupIndex: number) => {
+    const group = variableGroups[groupIndex];
+    const newInput: InputAndOutConfig = {
+      key: uuidv4(),
+      name: '',
+      bindValue: '',
+      bindValueType: 'Reference',
+      dataType: DataTypeEnum.String,
+      description: '',
+      require: false,
+      systemVariable: false,
+    };
+    handleUpdateGroup(groupIndex, {
+      inputs: [...(group.inputs || []), newInput],
+    });
+  };
+
+  // 删除输入项
+  const handleRemoveInput = (groupIndex: number, inputIndex: number) => {
+    const group = variableGroups[groupIndex];
+    const newInputs = (group.inputs || []).filter((_, i) => i !== inputIndex);
+    handleUpdateGroup(groupIndex, { inputs: newInputs });
+  };
+
+  // 更新输入项
+  const handleUpdateInput = (
+    groupIndex: number,
+    inputIndex: number,
+    updates: Partial<InputAndOutConfig>,
+  ) => {
+    const group = variableGroups[groupIndex];
+    const newInputs = (group.inputs || []).map((input, i) =>
+      i === inputIndex ? { ...input, ...updates } : input,
+    );
+    handleUpdateGroup(groupIndex, { inputs: newInputs });
   };
 
   return (
@@ -422,61 +496,130 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
       <div className="node-item-style">
         <div className="dis-sb margin-bottom">
           <span className="node-title-style">分组配置</span>
+          <Button
+            icon={<PlusOutlined />}
+            onClick={handleAddGroup}
+            size="small"
+            type="text"
+          />
         </div>
-        {variableGroups?.map((group, index) => (
-          <div key={group.id} className="margin-bottom">
+
+        {variableGroups.map((group, groupIndex) => (
+          <div key={group.id || groupIndex} className="margin-bottom">
             <div className="dis-sb margin-bottom">
-              <Form.Item
-                name={['variableGroups', index, 'name']}
-                initialValue={group.name}
-                style={{ marginBottom: 0, flex: 1, marginRight: 8 }}
-              >
-                <Input size="small" />
-              </Form.Item>
-              <Form.Item
-                name={['variableGroups', index, 'dataType']}
-                initialValue={group.dataType || DataTypeEnum.String}
-                style={{ marginBottom: 0, width: 160, marginRight: 8 }}
-              >
-                <Select
-                  size="small"
-                  options={Object.values(DataTypeEnum).map((value) => ({
-                    value,
-                    label: DataTypeMap[value as DataTypeEnum] || value,
-                  }))}
-                  onChange={(value) =>
-                    handleUpdateGroup(group.id, {
-                      dataType: value as DataTypeEnum,
-                    })
-                  }
-                />
-              </Form.Item>
+              <Input
+                size="small"
+                placeholder="分组名称"
+                value={group.name}
+                onChange={(e) =>
+                  handleUpdateGroup(groupIndex, { name: e.target.value })
+                }
+                style={{ flex: 1, marginRight: 8 }}
+              />
+              <Select
+                size="small"
+                value={group.dataType || DataTypeEnum.String}
+                options={Object.values(DataTypeEnum).map((value) => ({
+                  value,
+                  label: DataTypeMap[value as DataTypeEnum] || value,
+                }))}
+                onChange={(value) =>
+                  handleUpdateGroup(groupIndex, {
+                    dataType: value as DataTypeEnum,
+                  })
+                }
+                style={{ width: 160, marginRight: 8 }}
+              />
               <Button
                 type="text"
                 size="small"
                 icon={<DeleteOutlined />}
-                onClick={() => handleRemoveGroup(group.id)}
+                onClick={() => handleRemoveGroup(groupIndex)}
               />
             </div>
-            <Form.Item name={['variableGroups', index, 'inputs']} noStyle>
-              <InputAndOut
-                title=""
-                fieldConfigs={outPutConfigs}
-                inputItemName={['variableGroups', index, 'inputs']}
-                form={form}
-              />
-            </Form.Item>
+
+            {/* 分组内的输入项 - 使用受控组件 */}
+            <div className="form-list-style">
+              <div className="dis-sb">
+                <span className="node-title-style gap-6 flex items-center"></span>
+                <Button
+                  icon={<PlusOutlined />}
+                  onClick={() => handleAddInput(groupIndex)}
+                  size="small"
+                  type="text"
+                />
+              </div>
+              {(group.inputs || []).map((input, inputIndex) => (
+                <div key={input.key || inputIndex}>
+                  {inputIndex === 0 && (
+                    <div className="font-color-gray07 font-12 mt-6">
+                      <span>参数名</span>
+                      <span style={{ marginLeft: '22%' }}>变量值</span>
+                    </div>
+                  )}
+                  <div className="dis-left" style={{ marginBottom: 8 }}>
+                    <Input
+                      size="small"
+                      style={{ width: '30%', marginRight: '10px' }}
+                      placeholder="请输入参数名"
+                      value={input.name}
+                      onChange={(e) =>
+                        handleUpdateInput(groupIndex, inputIndex, {
+                          name: e.target.value,
+                        })
+                      }
+                    />
+                    <InputOrReference
+                      form={form}
+                      fieldName={['__temp_ref']} // 临时字段名，不实际使用
+                      style={{ flex: 1, marginRight: '10px' }}
+                      referenceType={input.bindValueType || 'Reference'}
+                      value={input.bindValue}
+                      onChange={(value: string) => {
+                        // Input 类型时直接更新
+                        handleUpdateInput(groupIndex, inputIndex, {
+                          bindValue: value,
+                          bindValueType: 'Input',
+                        });
+                      }}
+                      onReferenceSelect={(
+                        value,
+                        bindValueType,
+                        dataType,
+                        name,
+                      ) => {
+                        // Reference 类型时更新所有相关字段
+                        const updates: Partial<InputAndOutConfig> = {
+                          bindValue: value,
+                          bindValueType: bindValueType,
+                          dataType: dataType as DataTypeEnum,
+                        };
+                        // 如果当前 input.name 为空，使用引用的 name
+                        if (!input.name && name) {
+                          updates.name = name;
+                        }
+                        handleUpdateInput(groupIndex, inputIndex, updates);
+                      }}
+                    />
+                    <Button
+                      icon={<DeleteOutlined />}
+                      size="small"
+                      type="text"
+                      onClick={() => handleRemoveInput(groupIndex, inputIndex)}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ))}
-        <Button
-          type="dashed"
-          block
-          icon={<PlusOutlined />}
-          onClick={handleAddGroup}
-        >
-          新增分组
-        </Button>
       </div>
+
+      {/* 
+        注意：不使用隐藏的 Form.Item 包裹 Input 来存储复杂数据
+        因为 Input 组件只能存储字符串值，会破坏数组/对象数据
+        直接使用 form.setFieldsValue 设置的值会被 form.getFieldsValue(true) 正确获取
+      */}
 
       <Form.Item shouldUpdate noStyle>
         {() => {
