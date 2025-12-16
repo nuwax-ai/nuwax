@@ -10,7 +10,7 @@ import {
 import { Button, Popover, Select } from 'antd';
 import React, { useState } from 'react';
 
-import StencilContent from './component/stencil';
+import StencilContent from './Sidebar';
 interface ControlPanelProps {
   // 拖拽节点到画布
   dragChild: (

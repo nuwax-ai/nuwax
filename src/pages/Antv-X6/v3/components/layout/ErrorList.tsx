@@ -5,7 +5,7 @@ import { CloseOutlined } from '@ant-design/icons';
 import { Button, Popover, theme } from 'antd'; // 引入 Popover
 import React from 'react';
 import { useModel } from 'umi';
-import './indexV3.less';
+import '../../indexV3.less';
 const MAX_ERROR_LENGTH = 500;
 
 const getDisplayErrorContent = (error: string) => {

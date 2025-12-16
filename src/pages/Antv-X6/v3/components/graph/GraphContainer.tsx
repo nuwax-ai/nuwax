@@ -34,9 +34,9 @@ import {
   useImperativeHandle,
   useRef,
 } from 'react';
-import EventHandlers from './component/eventHandlers';
-import InitGraph from './component/graph';
-import { registerCustomNodes } from './component/registerCustomNodes';
+import EventHandlers from '../../component/eventHandlers';
+import InitGraph from '../../component/graph';
+import { registerCustomNodes } from '../../component/registerCustomNodes';
 const GRAPH_CONTAINER_ID = 'graph-container';
 const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
   (

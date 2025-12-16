@@ -107,11 +107,11 @@ import React, {
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import VersionAction from '../components/VersionAction';
-import NodePanelDrawer from './component/NodePanelDrawerV3';
-import ControlPanel from './ControlPanelV3';
-import ErrorList from './ErrorListV3';
-import GraphContainer from './GraphContainerV3';
-import Header from './HeaderV3';
+import GraphContainer from './components/graph/GraphContainer';
+import ControlPanel from './components/layout/ControlPanel';
+import ErrorList from './components/layout/ErrorList';
+import Header from './components/layout/Header';
+import NodePanelDrawer from './components/panels/PropertyPanel';
 import './indexV3.less';
 
 // V3 数据代理层

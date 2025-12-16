@@ -38,8 +38,8 @@ import {
   setEdgeAttributes,
   updateEdgeArrows,
 } from '@/utils/graph';
+import StencilContent from '../components/layout/Sidebar';
 import { createCurvePath } from './registerCustomNodes';
-import StencilContent from './stencil';
 /**
  * 端口配置接口
  */
