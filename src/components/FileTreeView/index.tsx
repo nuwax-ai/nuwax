@@ -21,6 +21,7 @@ const cx = classNames.bind(styles);
 interface FileTreeViewProps {
   files: FileNode[];
   onUploadSingleFile?: (node: FileNode | null) => void;
+  onDownload?: () => void;
 }
 
 /**
@@ -29,6 +30,7 @@ interface FileTreeViewProps {
 const FileTreeView: React.FC<FileTreeViewProps> = ({
   files,
   onUploadSingleFile,
+  onDownload,
 }) => {
   // 当前选中的文件ID
   const [selectedFileId, setSelectedFileId] = useState<string>('');
@@ -197,6 +199,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           fileName={selectedFileNode?.name}
           fileSize={selectedFileNode?.size}
           lastModified={selectedFileNode?.lastModified}
+          onDownload={onDownload}
         />
         {/* 右边内容 */}
         <div className={cx(styles['content-container'])}>
