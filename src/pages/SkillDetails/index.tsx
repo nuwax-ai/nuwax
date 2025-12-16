@@ -1,7 +1,14 @@
 import FileTreeView from '@/components/FileTreeView';
 import PublishComponentModal from '@/components/PublishComponentModal';
-import { apiSkillDetail, apiSkillImport } from '@/services/skill';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  apiSkillDetail,
+  apiSkillExport,
+  apiSkillTemplate,
+  apiSkillUploadFile,
+} from '@/services/skill';
 import type { FileNode } from '@/types/interfaces/appDev';
+import { SkillDetailInfo } from '@/types/interfaces/skill';
 import { transformFlatListToTree } from '@/utils/appDevUtils';
 import { message } from 'antd';
 import classNames from 'classnames';
@@ -27,20 +34,26 @@ const SkillDetails: React.FC = () => {
   const { run: runSkillInfo } = useRequest(apiSkillDetail, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: any) => {
+    onSuccess: async (result: SkillDetailInfo) => {
       setSkillInfo(result);
       const { files } = result || {};
-
       let treeData: FileNode[] = [];
-
-      // 检查是否是新的扁平格式
+      // 如果文件列表不为空，则转换为树形结构
       if (Array.isArray(files) && files.length > 0 && files[0].name) {
         treeData = transformFlatListToTree(files);
-      } else if (Array.isArray(files)) {
-        // 如果是原有的树形格式，直接使用
-        treeData = files as FileNode[];
+      } else {
+        // 从模板中获取文件列表
+        const {
+          data: templateInfo,
+          code,
+          message: errorMessage,
+        } = await apiSkillTemplate();
+        if (code === SUCCESS_CODE) {
+          treeData = transformFlatListToTree(templateInfo.files);
+        } else {
+          message.error(errorMessage || '获取技能模板失败');
+        }
       }
-
       setFiles(treeData);
     },
   });
@@ -65,17 +78,17 @@ const SkillDetails: React.FC = () => {
       message.error('技能ID不能为空');
       return;
     }
-    //两种情况 第一个是文件夹，第二个是文件
-    // let relativePath = '';
-    // if (node) {
-    //   if (node.type === 'file') {
-    //     relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
-    //   } else if (node.type === 'folder') {
-    //     relativePath = node.path + '/';
-    //   }
-    // } else {
-    //   relativePath = '';
-    // }
+    // 两种情况 第一个是文件夹，第二个是文件
+    let relativePath = '';
+
+    if (node) {
+      if (node.type === 'file') {
+        relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
+      } else if (node.type === 'folder') {
+        relativePath = node.path + '/';
+      }
+    }
+
     // 创建一个隐藏的文件输入框
     const input = document.createElement('input');
     input.type = 'file';
@@ -100,24 +113,23 @@ const SkillDetails: React.FC = () => {
         console.log('file', file);
 
         // 直接调用上传接口，使用文件名作为路径
-        const result = await apiSkillImport({
+        const result = await apiSkillUploadFile({
           file,
-          targetSkillId: skillId,
-          targetSpaceId: spaceId,
+          skillId,
+          filePath: relativePath + file.name,
         });
 
         if (result) {
           message.success('上传成功');
-          // 与弹窗上传成功后逻辑保持一致
-          // 刷新项目详情(刷新版本列表)
-          // projectInfo.refreshProjectInfo();
+          // 刷新项目详情
+          runSkillInfo(skillId);
         }
       } catch (error) {
         console.error('上传失败', error);
       } finally {
         // 清理加载状态和DOM
         // setSingleFileUploadLoading(false);
-        // document.body.removeChild(input);
+        document.body.removeChild(input);
         // setIsFileOperating(false);
       }
     };
@@ -127,6 +139,59 @@ const SkillDetails: React.FC = () => {
       document.body.removeChild(input);
       // setIsFileOperating(false);
     };
+  };
+
+  // 下载技能文件
+  const handleDownload = async () => {
+    // 检查项目ID是否有效
+    if (!skillId) {
+      message.error('技能ID不存在或无效，无法导出');
+      return;
+    }
+
+    try {
+      // setIsExporting(true); // 暂时注释掉，后续可能需要
+      const result = await apiSkillExport(skillId);
+
+      // 从响应头中获取文件名
+      const contentDisposition = result.headers?.['content-disposition'];
+      let filename = `skill-${skillId}.zip`;
+
+      if (contentDisposition) {
+        // 解析 Content-Disposition 头中的文件名
+        const filenameMatch = contentDisposition.match(
+          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
+        );
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+
+      // 创建下载链接
+      const blob = new Blob([result.data], { type: 'application/zip' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+
+      // 触发下载
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // 清理URL对象
+      window.URL.revokeObjectURL(url);
+
+      message.success('技能导出成功！');
+    } catch (error) {
+      // 改进错误处理，兼容不同的错误格式
+      const errorMessage =
+        (error as any)?.message ||
+        (error as any)?.toString() ||
+        '技能导出过程中发生未知错误';
+
+      message.error(`导出失败: ${errorMessage}`);
+    }
   };
 
   return (
@@ -140,7 +205,11 @@ const SkillDetails: React.FC = () => {
         onPublish={() => setOpen(true)}
       />
       {/* 文件树视图 */}
-      <FileTreeView files={files} onUploadSingleFile={handleUploadSingleFile} />
+      <FileTreeView
+        files={files}
+        onUploadSingleFile={handleUploadSingleFile}
+        onDownload={handleDownload}
+      />
 
       {/*发布技能弹窗*/}
       <PublishComponentModal
