@@ -154,6 +154,7 @@ export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
     case NodeTypeEnum.TextProcessing:
       return <ICON_WORKFLOW_TEXT_PROCESSING />;
     case NodeTypeEnum.Variable:
+    case NodeTypeEnum.VariableAggregation:
       return <ICON_WORKFLOW_VARIABLE />;
     case NodeTypeEnum.Workflow:
       return <ICON_WORKFLOW_WORKFLOW />;
@@ -190,6 +191,7 @@ export const returnBackgroundColor = (type: NodeTypeEnum) => {
     case NodeTypeEnum.Knowledge:
     // case 'Database':
     case NodeTypeEnum.Variable:
+    case NodeTypeEnum.VariableAggregation:
     case NodeTypeEnum.LongTermMemory:
     case NodeTypeEnum.MCP:
       return '#FFF0DF';
