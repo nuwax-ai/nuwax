@@ -7,10 +7,10 @@ import type { FormProps } from 'antd';
 import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useRequest } from 'umi';
 import TimedPeriodSelector from './components/TimedPeriodSelector';
 import styles from './index.less';
 
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { apiPublishedWorkflowInfo } from '@/services/plugin';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -44,26 +44,25 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
   const taskTarget = Form.useWatch('taskTarget', form);
 
   // 新增定时任务
-  const { run } = useRequest(apiAddTimedTask, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
+  const run = async (data: any) => {
+    const resp = await apiAddTimedTask(data);
+    console.log(resp);
+    if (resp?.code === SUCCESS_CODE) {
       message.success('定时任务已创建成功');
       onCancel?.();
       onConfirm?.();
-    },
-  });
+    }
+  };
 
   // 更新定时任务
-  const { run: runUpdate } = useRequest(apiUpdateTimedTask, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
+  const runUpdate = async (data: any) => {
+    const resp = await apiUpdateTimedTask(data);
+    if (resp?.code === SUCCESS_CODE) {
       message.success('定时任务更新成功');
       onCancel?.();
       onConfirm?.();
-    },
-  });
+    }
+  };
 
   // 获取参数配置
   const getParameterConfig = (values: any) => {

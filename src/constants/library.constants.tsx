@@ -26,6 +26,7 @@ import {
   ModelStrategyEnum,
   ModelTypeEnum,
 } from '@/types/enums/modelConfig';
+import { PageDevelopMoreActionEnum } from '@/types/enums/pageDev';
 import {
   CodeLangEnum,
   PluginCodeModeEnum,
@@ -49,6 +50,11 @@ export const SKILL_MORE_ACTION: CustomPopoverItem[] = [
   //   label: '编辑',
   //   type: ComponentTypeEnum.Skill,
   // },
+  {
+    action: PageDevelopMoreActionEnum.Copy_To_Space,
+    label: '复制到空间',
+    type: PageDevelopMoreActionEnum.Copy_To_Space,
+  },
   {
     action: ApplicationMoreActionEnum.Detail,
     label: '详情',
