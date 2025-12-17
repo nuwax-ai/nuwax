@@ -208,7 +208,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   /**
    * 处理删除操作
    */
-  const handleDelete = (node: any) => {
+  const handleDelete = (node: FileNode) => {
     // 直接调用现有的删除文件功能
     // onDeleteFile(node);
     console.log('handleDelete', node);

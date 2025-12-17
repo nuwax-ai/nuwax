@@ -123,11 +123,9 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
         },
       ];
 
-  // 如果禁用删除功能，过滤掉删除菜单项和 divider
+  // 如果对于SKILL.md文件禁用删除功能和重命名功能，过滤掉删除菜单项和 divider，只保留上传菜单项
   const menuItems = disableDelete
-    ? allMenuItems.filter(
-        (item) => item.key !== 'delete' && item.key !== 'divider',
-      )
+    ? allMenuItems.filter((item) => item.key === 'upload')
     : allMenuItems;
 
   return (
