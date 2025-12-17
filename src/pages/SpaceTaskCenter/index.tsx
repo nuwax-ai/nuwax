@@ -24,7 +24,6 @@ const SpaceTaskCenter: React.FC = () => {
   const handleCreateTaskConfirm = () => {
     // 查询任务列表
     mainContentRef.current?.exposeQueryTaskList();
-    setOpenCreateTask(false);
   };
 
   // 点击任务卡片
