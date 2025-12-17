@@ -4,7 +4,7 @@ import { InputAndOutConfig, PreviousList } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Popover, Tag, Tree } from 'antd';
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 
 // 扩展类型，添加 disabled 和 originalKey 属性
 type FilteredArg = InputAndOutConfig & {
@@ -35,6 +35,8 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
 }) => {
   // 使用 useRef 持久化计数器，确保跨渲染唯一
   const keyCounterRef = useRef(0);
+  // 控制下拉菜单显示状态
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // 过滤变量树，添加节点前缀确保不同节点的树有不同的 key
   const filterOutputArgs = (
@@ -92,12 +94,6 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
     );
   };
 
-  // 从唯一 key 中提取原始 key
-  const extractOriginalKey = (uniqueKey: string): string => {
-    const idx = uniqueKey.lastIndexOf('__');
-    return idx > 0 ? uniqueKey.substring(0, idx) : uniqueKey;
-  };
-
   // 生成下拉菜单
   const getMenu = (nodes: PreviousList[]) => {
     if (!nodes?.length) {
@@ -137,10 +133,11 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
                 onClick={(e) => e.stopPropagation()}
               >
                 <Tree
-                  onSelect={(keys) => {
-                    if (keys[0]) {
-                      const originalKey = extractOriginalKey(keys[0] as string);
-                      onSelect(originalKey);
+                  onSelect={(_, info) => {
+                    const nodeData = info.node as unknown as FilteredArg;
+                    if (nodeData.originalKey) {
+                      onSelect(nodeData.originalKey);
+                      setDropdownOpen(false); // 选中后关闭下拉菜单
                     }
                   }}
                   defaultExpandAll
@@ -189,6 +186,8 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
       <Dropdown
         menu={{ items: getMenu(previousNodes) }}
         trigger={['click']}
+        open={dropdownOpen}
+        onOpenChange={setDropdownOpen}
         overlayStyle={{ minWidth: 200 }}
         placement="bottomRight"
       >
