@@ -1293,6 +1293,30 @@ const Workflow: React.FC = () => {
           width: LOOP_NODE_DEFAULT_WIDTH,
           height: LOOP_NODE_DEFAULT_HEIGHT,
         };
+        // 清除 innerNodes 中 LoopStart/LoopEnd 的 extension 位置，让 GraphContainer 使用默认 40px 偏移
+        if (apiNodeData.innerNodes && apiNodeData.innerNodes.length > 0) {
+          _params.innerNodes = apiNodeData.innerNodes.map(
+            (innerNode: ChildNode) => {
+              if (
+                innerNode.type === NodeTypeEnum.LoopStart ||
+                innerNode.type === NodeTypeEnum.LoopEnd
+              ) {
+                return {
+                  ...innerNode,
+                  nodeConfig: {
+                    ...innerNode.nodeConfig,
+                    extension: {
+                      ...innerNode.nodeConfig?.extension,
+                      x: undefined, // 清除 x，让 GraphContainer 使用默认偏移
+                      y: undefined, // 清除 y，让 GraphContainer 使用默认偏移
+                    },
+                  },
+                };
+              }
+              return innerNode;
+            },
+          );
+        }
       }
     }
 
