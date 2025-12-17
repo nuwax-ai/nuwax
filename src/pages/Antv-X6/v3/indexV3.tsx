@@ -1879,11 +1879,10 @@ const Workflow: React.FC = () => {
     await dragChild(child, newPosition);
   };
 
-  // 保存当前画布中节点的位置
+  // 页面离开前保存
   useEffect(() => {
-    getDetails();
-
     // V3: 页面离开前保存（处理刷新/关闭页面）
+    // 注意：初始数据加载已由 useWorkflowLifecycle 处理，这里不需要再调用 getDetails()
     const handleBeforeUnload = () => {
       if (workflowProxy.hasPendingChanges()) {
         // 同步保存（beforeunload 不支持异步）
