@@ -51,7 +51,6 @@ import {
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { cloneDeep, noop } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
-import { calculateNodePosition, getCoordinates } from '@/utils/graph';
 import {
   changeNodeConfig,
   updateCurrentNode,
@@ -64,6 +63,7 @@ import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import WorkflowLayout from './components/layout/WorkflowLayout';
 import useModifiedSaveUpdateV3 from './hooks/useModifiedSaveUpdateV3';
+import { calculateNodePosition, getCoordinates } from './utils/graphV3';
 import {
   getNodeSize,
   getShape,
@@ -1022,12 +1022,6 @@ const Workflow: React.FC = () => {
         isLoop,
       });
     }
-
-    console.timeLog(
-      'createNoeByPortOrEdge',
-      'addNode:handleTargetNodeConnection:deleteEdge',
-      edgeId,
-    );
 
     // 删除原有连接
     const newNodeIds = await nodeChangeEdge(

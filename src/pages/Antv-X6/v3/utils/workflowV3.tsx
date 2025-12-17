@@ -29,6 +29,18 @@ import {
 import { DEFAULT_NODE_CONFIG_MAP } from '@/constants/node.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
+  AnswerTypeEnum,
+  HttpContentTypeEnum,
+  HttpMethodEnum,
+  NodeShapeEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
+import {
+  NodeSizeGetTypeEnum,
+  PortGroupEnum,
+  VariableConfigTypeEnum,
+} from '@/types/enums/node';
+import {
   ChildNode,
   Edge,
   GraphNodeSize,
@@ -37,10 +49,15 @@ import {
 } from '@/types/interfaces/graph';
 
 import {
+  ConditionBranchConfigs,
+  IntentConfigs,
+  NodeConfig,
   outputOrInputPortConfig,
   PortConfig,
   PortsConfig,
+  QANodeOption,
 } from '@/types/interfaces/node';
+import { FileListItem } from '@/types/interfaces/workflow';
 // 引用默认图标
 import Agent from '@/assets/images/agent_image.png';
 import Table from '@/assets/images/database_image.png';
@@ -54,34 +71,16 @@ import {
   default as Workflow,
 } from '@/assets/images/workflow_image.png';
 import PlusIcon from '@/assets/svg/plus_icon.svg';
-import {
-  AnswerTypeEnum,
-  HttpContentTypeEnum,
-  HttpMethodEnum,
-  NodeShapeEnum,
-  NodeTypeEnum,
-} from '@/types/enums/common';
-import {
-  NodeSizeGetTypeEnum,
-  PortGroupEnum,
-  VariableConfigTypeEnum,
-} from '@/types/enums/node';
-import {
-  ConditionBranchConfigs,
-  IntentConfigs,
-  NodeConfig,
-  QANodeOption,
-} from '@/types/interfaces/node';
-import { FileListItem } from '@/types/interfaces/workflow';
+
+import { getWidthAndHeight } from '@/utils/updateNode';
+import { Graph, Node } from '@antv/x6';
+import { FormInstance } from 'antd';
 import {
   adjustParentSize,
   generatePortGroupConfig,
   showExceptionHandle,
   showExceptionPort,
-} from '@/utils/graph';
-import { getWidthAndHeight } from '@/utils/updateNode';
-import { Graph, Node } from '@antv/x6';
-import { FormInstance } from 'antd';
+} from './graphV3';
 
 const NODE_BOTTOM_PADDING = 10;
 const NODE_BOTTOM_PADDING_AND_BORDER = NODE_BOTTOM_PADDING + 1;
@@ -234,157 +233,6 @@ export const getNodeSize = ({
     width: defaultWidth,
     height: nodeHeight,
   };
-};
-
-// 处理 Condition 和 IntentRecognition 节点的边
-const handleSpecialNodes = (node: ChildNode, isLoopNode: boolean): Edge[] => {
-  if (!node.nodeConfig) return [];
-  // 是否是循环内的节点
-
-  let configs;
-  switch (node.type) {
-    case NodeTypeEnum.Condition:
-      configs = node.nodeConfig.conditionBranchConfigs;
-      break;
-    case NodeTypeEnum.IntentRecognition:
-      configs = node.nodeConfig.intentConfigs;
-      break;
-    default:
-      configs = node.nodeConfig.options;
-      break;
-  }
-
-  return (
-    configs?.flatMap((config) => {
-      if (!config.nextNodeIds) config.nextNodeIds = [];
-      return config.nextNodeIds.map((nextNodeId) => ({
-        source: `${node.id}-${config.uuid}`,
-        target: nextNodeId.toString(),
-        zIndex: isLoopNode ? 5 : 1,
-      }));
-    }) || []
-  );
-};
-
-// 处理 Loop 节点的边
-const handleLoopEdges = (node: ChildNode): Edge[] => {
-  const edges: Edge[] = [];
-
-  if (node.innerStartNodeId && node.innerStartNodeId !== -1) {
-    edges.push({
-      source: `${node.id}-in`, // Loop 节点的 in 端口连接到内部起始节点
-      target: node.innerStartNodeId.toString(),
-      zIndex: 5, // 新增层级设置
-    });
-  }
-
-  if (node.innerEndNodeId && node.innerEndNodeId !== -1) {
-    edges.push({
-      source: node.innerEndNodeId.toString(),
-      target: `${node.id}-out`, // 内部结束节点连接到 Loop 节点的 out 端口
-      zIndex: 5, // 新增层级设置
-    });
-  }
-
-  const _edge = (node.nextNodeIds || [])
-    .filter((item) => {
-      // 过滤掉内部节点，防止出现 Loop-Out -> LoopStart-In 的错误连线
-      return item !== node.innerStartNodeId && item !== node.innerEndNodeId;
-    })
-    .map((item) => ({
-      source: Number(node.id).toString(),
-      target: Number(item).toString(),
-      zIndex: 5,
-    }));
-  edges.push(..._edge);
-  return edges;
-};
-
-// 处理所有节点异常项目上的 port edge 连线
-const handleAllNodesExceptionItem = (
-  nodes: ChildNode[],
-  edges: Edge[],
-): Edge[] => {
-  let resultEdges = [...edges]; // 创建一个新数组，避免修改原参数
-  nodes.forEach((node) => {
-    const { exceptionHandleNodeIds = [] } =
-      node.nodeConfig?.exceptionHandleConfig || {};
-    if (
-      showExceptionPort(node, PortGroupEnum.exception) &&
-      exceptionHandleNodeIds.length > 0
-    ) {
-      const isLoopNode = node.loopNodeId ? true : false;
-      resultEdges = resultEdges.concat([
-        ...exceptionHandleNodeIds.map((item) => {
-          return {
-            source: `${node.id}-exception-out`,
-            target: `${item}`,
-            zIndex: isLoopNode ? 5 : 1,
-          };
-        }),
-      ]);
-    }
-  });
-  return resultEdges;
-};
-// 递归获取节点的边
-export const getEdges = (
-  nodes: ChildNode[],
-  needValidate: boolean = true,
-): Edge[] => {
-  const allEdges: Edge[] = handleAllNodesExceptionItem(
-    nodes,
-    nodes.flatMap((node) => {
-      let isLoopNode: boolean = false;
-      if (node.loopNodeId) {
-        isLoopNode = true;
-      }
-      if (
-        node.type === NodeTypeEnum.Condition ||
-        node.type === NodeTypeEnum.IntentRecognition ||
-        (node.type === NodeTypeEnum.QA &&
-          node.nodeConfig.answerType === AnswerTypeEnum.SELECT)
-      ) {
-        return handleSpecialNodes(node, isLoopNode);
-      } else if (node.type === NodeTypeEnum.Loop) {
-        return handleLoopEdges(node);
-      } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {
-        const _arr = node.nextNodeIds.filter(
-          (item) => item !== node.loopNodeId && item !== node.id,
-        );
-        return _arr.map((nextNodeId) => {
-          return {
-            source: Number(node.id).toString(),
-            target: Number(nextNodeId).toString(),
-            zIndex: isLoopNode ? 5 : 1,
-          };
-        });
-      }
-
-      return [];
-    }),
-  );
-
-  // 过滤目标节点不存在的边（新增过滤逻辑）
-  const validEdges = needValidate
-    ? allEdges.filter((edge) => {
-        // 检查目标节点是否存在于节点列表中
-        return nodes.some((n) => edge.target.includes(n.id.toString()));
-      })
-    : allEdges;
-  // 使用 Set 来移除重复的边
-  const uniqueEdges = new Set<string>();
-  const resultEdges: Edge[] = [];
-
-  validEdges.forEach((edge) => {
-    const edgeKey = `${edge.source}-${edge.target}`;
-    if (!uniqueEdges.has(edgeKey)) {
-      uniqueEdges.add(edgeKey);
-      resultEdges.push(edge);
-    }
-  });
-  console.log('getEdges:resultEdges', resultEdges);
-  return resultEdges;
 };
 
 const _handleExceptionOutputPort = (

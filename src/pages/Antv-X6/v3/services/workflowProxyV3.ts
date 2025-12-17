@@ -1084,10 +1084,15 @@ class WorkflowProxyV3 {
             break;
           }
 
-          case SpecialPortType.Loop:
+          case SpecialPortType.Loop: {
+            // 循环节点的内部连线（Loop-in -> LoopStart）是内部逻辑，不应计入节点的 nextNodeIds
+            // 否则会在 V1 中渲染出错误的连线
+            break;
+          }
+
           case SpecialPortType.Normal:
           default: {
-            // 普通连接或循环节点连接
+            // 普通连接
             let targetIds = normalNextNodeIds.get(sourceId);
             if (!targetIds) {
               targetIds = [];

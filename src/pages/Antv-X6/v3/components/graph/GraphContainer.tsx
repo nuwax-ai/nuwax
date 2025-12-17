@@ -11,11 +11,6 @@ import type {
 import { ChangeEdgeProps, ChangeNodeProps } from '@/types/interfaces/graph';
 import { NodeConfig } from '@/types/interfaces/node';
 import { cloneDeep, mergeObject } from '@/utils/common';
-import {
-  adjustParentSize,
-  needUpdateNodes,
-  updateEdgeArrows,
-} from '@/utils/graph';
 import { getWidthAndHeight } from '@/utils/updateNode';
 import { Graph, Node } from '@antv/x6';
 import { App } from 'antd';
@@ -35,11 +30,16 @@ import {
   LOOP_START_NODE_X_OFFSET,
 } from '../../constants/loopNodeConstants';
 import {
+  adjustParentSize,
+  getEdges,
+  needUpdateNodes,
+  updateEdgeArrows,
+} from '../../utils/graphV3';
+import {
   createBaseNode,
   createChildNode,
   createEdge,
   generatePorts,
-  getEdges,
   getNodeSize,
 } from '../../utils/workflowV3';
 
