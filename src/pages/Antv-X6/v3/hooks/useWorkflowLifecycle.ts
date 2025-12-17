@@ -2,7 +2,7 @@ import Constant from '@/constants/codes.constants';
 import service, { IgetDetails, IUpdateDetails } from '@/services/workflow';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 import { getEdges } from '@/utils/workflow';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
@@ -17,6 +17,9 @@ export const useWorkflowLifecycle = ({
   handleInitLoading,
 }: UseWorkflowLifecycleProps) => {
   const { setSpaceId } = useModel('workflowV3');
+
+  // 防止 React StrictMode 双重调用
+  const isInitializedRef = useRef(false);
 
   // 工作流左上角的详细信息
   const [info, setInfo] = useState<IgetDetails | null>(null);
@@ -73,6 +76,10 @@ export const useWorkflowLifecycle = ({
   // 初始化加载数据
   useEffect(() => {
     const initGraphData = async () => {
+      // 防止 StrictMode 双重调用
+      if (isInitializedRef.current) return;
+      isInitializedRef.current = true;
+
       handleInitLoading(true);
       try {
         // 调用接口，获取当前画布的所有节点和边
