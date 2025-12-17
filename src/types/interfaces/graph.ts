@@ -147,7 +147,7 @@ export interface GraphContainerProps {
     config: ChangeNodeProps,
     callback?: () => Promise<boolean> | void,
   ) => Promise<boolean>;
-  copyNode: (child: ChildNode) => void;
+  copyNode: (child: ChildNode, offset?: { x: number; y: number }) => void;
   // 删除节点
   removeNode: (id: string) => void;
   // 改变画布大小
@@ -216,7 +216,7 @@ export interface BindEventHandlers {
     config: ChangeEdgeProps,
   ) => Promise<number[] | boolean>;
   changeNodeConfigWithRefresh: (config: ChangeNodeProps) => Promise<boolean>;
-  copyNode: (child: ChildNode) => void;
+  copyNode: (child: ChildNode, offset?: { x: number; y: number }) => void;
   // 删除节点
   removeNode: (id: string, node?: ChildNode) => void;
   modal: ModalHookAPI;

@@ -460,8 +460,12 @@ class WorkflowProxyV3 {
   /**
    * 复制节点
    * @param nodeId 源节点 ID
+   * @param offset 可选的偏移量，用于多次粘贴时的累积偏移
    */
-  copyNode(nodeId: number): ProxyResult & { newNode?: ChildNode } {
+  copyNode(
+    nodeId: number,
+    offset?: { x: number; y: number },
+  ): ProxyResult & { newNode?: ChildNode } {
     if (!this.workflowData) {
       return { success: false, message: '工作流数据未初始化' };
     }
@@ -487,12 +491,12 @@ class WorkflowProxyV3 {
     }
     newNode.name = newName;
 
-    // 4. Offset Position
-    if (newNode.nodeConfig?.extension) {
+    // 4. Apply offset to position
+    if (newNode.nodeConfig?.extension && offset) {
       newNode.nodeConfig.extension.x =
-        (newNode.nodeConfig.extension.x || 0) + 20;
+        (sourceNode.nodeConfig?.extension?.x || 0) + offset.x;
       newNode.nodeConfig.extension.y =
-        (newNode.nodeConfig.extension.y || 0) + 20;
+        (sourceNode.nodeConfig?.extension?.y || 0) + offset.y;
     }
 
     // 5. Reset status
