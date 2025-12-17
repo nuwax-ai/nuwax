@@ -248,17 +248,19 @@ const SkillDetails: React.FC = () => {
     const { code } = await apiSkillUpdate(newSkillInfo);
     if (code === SUCCESS_CODE) {
       // 这里根据fileNode的name，找到skillInfo对象中files数组中对应的文件，然后更新文件名
-      const updatedFilesList =
-        skillInfo?.files?.map((item) => {
-          if (item.name === fileNode.name) {
-            item.name = newName;
-          }
-          return item;
-        }) || [];
-      setSkillInfo({
-        ...skillInfo,
-        files: updatedFilesList,
-      } as SkillDetailInfo);
+      // const updatedFilesList =
+      //   skillInfo?.files?.map((item) => {
+      //     if (item.name === fileNode.name) {
+      //       item.name = newName;
+      //     }
+      //     return item;
+      //   }) || [];
+      // setSkillInfo({
+      //   ...skillInfo,
+      //   files: updatedFilesList,
+      // } as SkillDetailInfo);
+      // 重新查询技能信息，因为更新了文件名或文件夹名称，需要刷新文件树
+      runSkillInfo(skillId);
     }
     return code === SUCCESS_CODE;
   };
