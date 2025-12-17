@@ -12,6 +12,7 @@ import {
   ICON_TSX,
 } from '@/constants/fileTreeImages.constants';
 import type { FileNode } from '@/types/interfaces/appDev';
+import { SkillFileInfo } from '@/types/interfaces/skill';
 
 // 获取文件图标
 export const getFileIcon = (name: string) => {
@@ -172,4 +173,31 @@ export const updateFileTreeContent = (
   };
 
   return updateFileInTree(fileTree);
+};
+
+/**
+ * 更新技能原始文件列表中的文件名（用于提交更新）
+ * @param files 更新原始文件列表中的文件名（用于提交更新）
+ * @param fileNode 当前重命名的文件节点
+ * @param newName 新的文件名
+ * @returns 更新后的文件列表
+ */
+export const updateFilesListContent = (
+  files: SkillFileInfo[],
+  // fileId: string,
+  // newContent: string,
+  changeFiles: {
+    fileId: string;
+    fileContent: string;
+    originalFileContent: string;
+  }[],
+  operation: 'create' | 'delete' | 'rename' | 'modify',
+): SkillFileInfo[] => {
+  return files.map((file: SkillFileInfo) => {
+    const changeFile = changeFiles.find((item) => item.fileId === file.fileId);
+    if (changeFile) {
+      return { ...file, contents: changeFile.fileContent, operation };
+    }
+    return file;
+  });
 };

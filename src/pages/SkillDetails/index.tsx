@@ -16,7 +16,7 @@ import {
   SkillUpdateParams,
 } from '@/types/interfaces/skill';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
-import { updateFilesListName } from '@/utils/fileTree';
+import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -44,7 +44,13 @@ const SkillDetails: React.FC = () => {
     onSuccess: async (result: SkillDetailInfo) => {
       const { files } = result || {};
       if (Array.isArray(files) && files.length > 0) {
-        setSkillInfo(result);
+        setSkillInfo(() => ({
+          ...result,
+          files: files.map((item) => ({
+            ...item,
+            fileId: item.name,
+          })),
+        }));
       } else {
         const {
           data: templateInfo,
@@ -54,10 +60,19 @@ const SkillDetails: React.FC = () => {
         if (code === SUCCESS_CODE) {
           setSkillInfo(() => ({
             ...result,
-            files: templateInfo.files,
+            files: templateInfo?.files?.map((item) => ({
+              ...item,
+              fileId: item.name,
+            })),
           }));
         } else {
-          setSkillInfo(result);
+          setSkillInfo(() => ({
+            ...result,
+            files: files?.map((item) => ({
+              ...item,
+              fileId: item.name,
+            })),
+          }));
           message.error(errorMessage || '获取技能模板失败');
         }
       }
@@ -204,19 +219,62 @@ const SkillDetails: React.FC = () => {
     };
 
     // 使用文件全量更新逻辑
-    const response = await apiSkillUpdate(newSkillInfo);
-    return response.code === SUCCESS_CODE;
+    const { code } = await apiSkillUpdate(newSkillInfo);
+    if (code === SUCCESS_CODE) {
+      // 这里根据fileNode的name，找到skillInfo对象中files数组中对应的文件，然后更新文件名
+      const updatedFilesList =
+        skillInfo?.files?.map((item) => {
+          if (item.name === fileNode.name) {
+            item.name = newName;
+          }
+          return item;
+        }) || [];
+      setSkillInfo({
+        ...skillInfo,
+        files: updatedFilesList,
+      } as SkillDetailInfo);
+    }
+    return code === SUCCESS_CODE;
   };
 
+  // console.log('skillInfo77777', skillInfo);
+
   // 保存文件
-  const handleSaveFiles = (
+  const handleSaveFiles = async (
     data: {
       fileId: string;
       fileContent: string;
       originalFileContent: string;
     }[],
   ) => {
-    console.log('handleSaveFiles', data);
+    console.log('handleSaveFiles', data, '2222', skillInfo);
+
+    const updatedFilesList = updateFilesListContent(
+      skillInfo?.files || [],
+      data,
+      'modify',
+    );
+
+    console.log('updatedFilesList77777', updatedFilesList);
+
+    // 更新技能信息，用于提交更新
+    const newSkillInfo: SkillUpdateParams = {
+      id: skillInfo?.id || 0,
+      files: updatedFilesList,
+    };
+
+    // 使用文件全量更新逻辑
+    const { code } = await apiSkillUpdate(newSkillInfo);
+    console.log('handleSaveFiles code44444444444444', code);
+    return code === SUCCESS_CODE;
+    // data.forEach(item => {
+    //   const updatedFilesList = updateFilesListContent(
+    //     skillInfo?.files || [],
+    //     item.fileId,
+    //     item.fileContent,
+    //     'modify',
+    //   );
+    // });
     // 保存文件
     // const response = await apiSkillSaveFile(data);
     // if (response.code === SUCCESS_CODE) {
