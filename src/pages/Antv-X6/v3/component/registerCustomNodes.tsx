@@ -9,6 +9,10 @@ import {
 } from '@/constants/node.constants';
 import useNodeSelection from '@/hooks/useNodeSelection';
 import {
+  returnBackgroundColor,
+  returnImg,
+} from '@/pages/Antv-X6/v3/utils/workflowV3';
+import {
   AnswerTypeEnum,
   NodeShapeEnum,
   NodeTypeEnum,
@@ -18,7 +22,6 @@ import { ConditionBranchTypeEnum } from '@/types/enums/node';
 import { ChildNode, NodeProps, RunResultItem } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { showExceptionHandle } from '@/utils/graph';
-import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { Tag } from 'antd';

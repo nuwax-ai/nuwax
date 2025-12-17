@@ -17,14 +17,6 @@ import {
   updateEdgeArrows,
 } from '@/utils/graph';
 import { getWidthAndHeight } from '@/utils/updateNode';
-import {
-  createBaseNode,
-  createChildNode,
-  createEdge,
-  generatePorts,
-  getEdges,
-  getNodeSize,
-} from '@/utils/workflow';
 import { Graph, Node } from '@antv/x6';
 import { App } from 'antd';
 import {
@@ -37,6 +29,20 @@ import {
 import EventHandlers from '../../component/eventHandlers';
 import InitGraph from '../../component/graph';
 import { registerCustomNodes } from '../../component/registerCustomNodes';
+import {
+  LOOP_END_NODE_X_OFFSET,
+  LOOP_INNER_NODE_Y_OFFSET,
+  LOOP_START_NODE_X_OFFSET,
+} from '../../constants/loopNodeConstants';
+import {
+  createBaseNode,
+  createChildNode,
+  createEdge,
+  generatePorts,
+  getEdges,
+  getNodeSize,
+} from '../../utils/workflowV3';
+
 const GRAPH_CONTAINER_ID = 'graph-container';
 const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
   (
@@ -83,10 +89,29 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           element.prop('zIndex', 4);
           const data = element.getData();
           if (!data.innerNodes?.length) return;
+          // 获取循环节点的位置
+          const loopPosition = element.getPosition();
           data.innerNodes.forEach((childDef: ChildNode) => {
-            const child = createChildNode(data.id, childDef); // 创建子节点配置
+            // 调整内部节点位置：往右偏移 200px，确保在循环容器内
+            const adjustedChildDef = {
+              ...childDef,
+              nodeConfig: {
+                ...childDef.nodeConfig,
+                extension: {
+                  ...childDef.nodeConfig?.extension,
+                  // 内部节点 X 位置：根据节点类型区分 Start/End 偏移
+                  x:
+                    (loopPosition?.x || 0) +
+                    (childDef.type === NodeTypeEnum.LoopStart
+                      ? LOOP_START_NODE_X_OFFSET
+                      : LOOP_END_NODE_X_OFFSET),
+                  // Y 位置保持在循环节点内部
+                  y: (loopPosition?.y || 0) + LOOP_INNER_NODE_Y_OFFSET,
+                },
+              },
+            };
+            const child = createChildNode(data.id, adjustedChildDef); // 创建子节点配置
             const childNode = graphRef.current.addNode(child); // 添加子节点到图中
-            // childNode.setZIndex(6);  // 新增显式层级设置方法
             // 更新父节点的子节点列表（如果必要）
             element.addChild(childNode);
           });

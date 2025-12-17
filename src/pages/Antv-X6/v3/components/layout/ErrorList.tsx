@@ -1,11 +1,11 @@
 import { ChildNode } from '@/types/interfaces/graph';
 import { ErrorItem } from '@/types/interfaces/workflow';
-import { returnImg } from '@/utils/workflow';
 import { CloseOutlined } from '@ant-design/icons';
 import { Button, Popover, theme } from 'antd'; // 引入 Popover
 import React from 'react';
 import { useModel } from 'umi';
 import '../../indexV3.less';
+import { returnImg } from '../../utils/workflowV3';
 const MAX_ERROR_LENGTH = 500;
 
 const getDisplayErrorContent = (error: string) => {

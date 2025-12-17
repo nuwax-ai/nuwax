@@ -57,6 +57,13 @@ import {
   updateCurrentNode,
   updateSkillComponentConfigs,
 } from '@/utils/updateNode';
+import { Graph } from '@antv/x6';
+import { Form, message } from 'antd';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useModel, useParams } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
+import WorkflowLayout from './components/layout/WorkflowLayout';
+import useModifiedSaveUpdateV3 from './hooks/useModifiedSaveUpdateV3';
 import {
   getNodeSize,
   getShape,
@@ -67,14 +74,7 @@ import {
   removeWorkflowTestRun,
   setFormDefaultValues,
   setWorkflowTestRun,
-} from '@/utils/workflow';
-import { Graph } from '@antv/x6';
-import { Form, message } from 'antd';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useModel, useParams } from 'umi';
-import { v4 as uuidv4 } from 'uuid';
-import WorkflowLayout from './components/layout/WorkflowLayout';
-import useModifiedSaveUpdateV3 from './hooks/useModifiedSaveUpdateV3';
+} from './utils/workflowV3';
 // Components moved to WorkflowLayout
 import './indexV3.less';
 
@@ -85,6 +85,10 @@ import { useWorkflowPersistence } from './hooks/useWorkflowPersistence';
 
 // V3 数据代理层
 import { WorkflowVersionProvider } from '@/contexts/WorkflowVersionContext';
+import {
+  LOOP_NODE_DEFAULT_HEIGHT,
+  LOOP_NODE_DEFAULT_WIDTH,
+} from './constants/loopNodeConstants';
 import { workflowProxy } from './services/workflowProxyV3';
 import type { WorkflowDataV2 } from './types';
 import { generateFallbackNodeId } from './utils/nodeUtils';
@@ -1167,10 +1171,15 @@ const Workflow: React.FC = () => {
 
     // 如果当前节点类型需要固定尺寸，则设置扩展属性
     if (child.type && fixedSizeNodeTypes.includes(child.type)) {
+      // 循环节点使用统一的默认尺寸常量
+      const nodeWidth =
+        child.type === NodeTypeEnum.Loop ? LOOP_NODE_DEFAULT_WIDTH : width;
+      const nodeHeight =
+        child.type === NodeTypeEnum.Loop ? LOOP_NODE_DEFAULT_HEIGHT : height;
       _params.extension = {
         ...dragEvent,
-        height,
-        width,
+        height: nodeHeight,
+        width: nodeWidth,
       };
     }
     // 查看当前是否有选中的节点以及被选中的节点的type是否是Loop

@@ -1,8 +1,8 @@
+import { getImg } from '@/pages/Antv-X6/v3/utils/workflowV3';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PermissionsEnum } from '@/types/enums/common';
 import { getTime } from '@/utils';
 import { jumpBack } from '@/utils/router';
-import { getImg } from '@/utils/workflow';
 import {
   CheckCircleFilled,
   ClockCircleOutlined,

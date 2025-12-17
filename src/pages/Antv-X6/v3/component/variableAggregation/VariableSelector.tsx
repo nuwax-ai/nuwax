@@ -1,10 +1,10 @@
 // 变量选择器组件
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputAndOutConfig, PreviousList } from '@/types/interfaces/node';
-import { returnImg } from '@/utils/workflow';
 import { SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Popover, Tag, Tree } from 'antd';
 import React, { useRef, useState } from 'react';
+import { returnImg } from '../../utils/workflowV3';
 
 // 扩展类型，添加 disabled 和 originalKey 属性
 type FilteredArg = InputAndOutConfig & {
