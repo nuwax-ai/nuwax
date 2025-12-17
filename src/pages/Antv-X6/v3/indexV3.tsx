@@ -1231,12 +1231,38 @@ const Workflow: React.FC = () => {
     let apiNodeData: AddNodeResponse | null = null;
 
     try {
+      // V3: 构建 nodeConfigDto（API 格式）从 nodeConfig（前端格式）
+      const nodeConfigDto =
+        _params.nodeConfigDto || _params.nodeConfig
+          ? {
+              ..._params.nodeConfigDto,
+              // MCP 节点需要 toolName 和 mcpId
+              ...(_params.nodeConfig?.toolName
+                ? { toolName: _params.nodeConfig.toolName }
+                : {}),
+              ...(_params.nodeConfig?.mcpId
+                ? { mcpId: _params.nodeConfig.mcpId }
+                : {}),
+              // Knowledge 节点需要 knowledgeBaseConfigs
+              ...(_params.nodeConfig?.knowledgeBaseConfigs
+                ? {
+                    knowledgeBaseConfigs:
+                      _params.nodeConfig.knowledgeBaseConfigs,
+                  }
+                : {}),
+            }
+          : undefined;
+
       const apiRes = await service.apiAddNode({
         workflowId: workflowId,
         type: _params.type,
+        typeId: _params.typeId, // 添加 typeId
+        name: _params.name, // 添加 name
+        shape: _params.shape, // 添加 shape
+        description: _params.description, // 添加 description
         loopNodeId: _params.loopNodeId,
         extension: _params.extension,
-        nodeConfigDto: _params.nodeConfigDto,
+        nodeConfigDto: nodeConfigDto,
       });
 
       if (apiRes.code === Constant.success && apiRes.data) {
