@@ -1,3 +1,4 @@
+import { useWorkflowModel } from '@/hooks/useWorkflowModel';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import {
   DeleteOutlined,
@@ -7,7 +8,6 @@ import {
 import { Button, Popover, Tag, Tree } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
 import TooltipIcon from '../custom/TooltipIcon';
 import InputOrReferenceFormTree from './InputOrReferenceFormTree';
 import { TreeInputProps } from './type';
@@ -23,7 +23,7 @@ const TreeInput: React.FC<TreeInputProps> = ({
   nameText = '变量名',
 }) => {
   const [treeData, setTreeData] = useState<InputAndOutConfig[]>(params || []);
-  const { setIsModified, referenceList } = useModel('workflow');
+  const { setIsModified, referenceList } = useWorkflowModel();
 
   useEffect(() => {
     if (params && !_.isEqual(params, treeData)) {
@@ -144,14 +144,14 @@ const TreeInput: React.FC<TreeInputProps> = ({
         <div className={'dis-left font-12 mb-6 font-color-gray07'}>
           <span
             style={{
-              marginLeft: `1%`,
+              marginLeft: `1 % `,
             }}
           >
             {nameText}
           </span>
           <span
             style={{
-              marginLeft: showDelete ? '30%' : `35%`,
+              marginLeft: showDelete ? '30%' : `35 % `,
             }}
           >
             {descText}

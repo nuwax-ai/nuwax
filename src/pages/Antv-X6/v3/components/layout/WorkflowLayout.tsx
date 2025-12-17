@@ -259,6 +259,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
             onFinishFailed={doSubmitFormData}
             onFinish={doSubmitFormData}
             key={`${foldWrapItem.type}-${foldWrapItem.id}-form`}
+            initialValues={foldWrapItem.nodeConfig}
             clearOnDestroy={true}
             onValuesChange={(values) => {
               // 使用节流处理，确保最后一次调用必须触发更新

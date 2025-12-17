@@ -1,9 +1,9 @@
+import { useWorkflowModel } from '@/hooks/useWorkflowModel';
 import { InputAndOutConfig, PreviousList } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Input, Popover, Tag, Tree } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
 import './index.less';
 import { InputOrReferenceProps } from './type';
 
@@ -75,7 +75,8 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   onReferenceSelect, // 受控模式的引用选择回调
 }) => {
   const { referenceList, getValue, getLoopValue, setIsModified } =
-    useModel('workflow');
+    useWorkflowModel();
+
   const [displayValue, setDisplayValue] = useState('');
   const [selectKey, setSelectKey] = useState<React.Key[]>([value || '']);
   // 添加状态来存储 Tree 的最大高度

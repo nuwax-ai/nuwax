@@ -1,5 +1,5 @@
+import { useWorkflowModel } from '@/hooks/useWorkflowModel';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useModel } from 'umi';
 import { TreeNodeConfig } from './useTreeData';
 
 /**
@@ -13,7 +13,7 @@ export const useRequireStatus = (
   treeData: TreeNodeConfig[],
   updateTreeData: (data: TreeNodeConfig[]) => void,
 ) => {
-  const { setIsModified } = useModel('workflow');
+  const { setIsModified } = useWorkflowModel();
   const treeDataRef = useRef(treeData);
 
   /**
