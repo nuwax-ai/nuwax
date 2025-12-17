@@ -66,8 +66,10 @@ export const adjustParentSize = (parentNode: Node | Cell) => {
   let newWidth = globalMaxX - globalMinX;
   let newHeight = globalMaxY - globalMinY;
 
-  // 应用最小尺寸限制
-  const MIN_WIDTH = 220;
+  // 应用最小尺寸限制 - Loop 节点使用更大的最小宽度
+  const parentData = (parentNode as Node).getData?.();
+  const isLoopNode = parentData?.type === NodeTypeEnum.Loop;
+  const MIN_WIDTH = isLoopNode ? 860 : 220; // Loop 节点使用 LOOP_NODE_DEFAULT_WIDTH，其他节点使用 220
   const MIN_HEIGHT = 240;
 
   // 修改：直接应用新尺寸，不再与当前尺寸比较

@@ -80,6 +80,7 @@ import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
 import {
   adjustParentSize,
+  generatePortGroupConfig,
   showExceptionHandle,
   showExceptionPort,
 } from './graphV3';
