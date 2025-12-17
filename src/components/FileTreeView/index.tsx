@@ -85,31 +85,11 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   };
 
   useEffect(() => {
-    console.log('originalFiles55555555555555', originalFiles);
-    let treeData: FileNode[] = [];
     // 如果文件列表不为空，则转换为树形结构
     if (Array.isArray(originalFiles) && originalFiles.length > 0) {
-      console.log('useEffect00111111');
-      treeData = transformFlatListToTree(originalFiles);
+      const treeData: FileNode[] = transformFlatListToTree(originalFiles);
+      setFiles(treeData);
     }
-    // else if (Array.isArray(originalFiles)) {
-    //   console.log('useEffect002');
-    //   treeData = originalFiles;
-    // }
-    // else {
-    //   // 从模板中获取文件列表
-    //   const {
-    //     data: templateInfo,
-    //     code,
-    //     message: errorMessage,
-    //   } = await apiSkillTemplate();
-    //   if (code === SUCCESS_CODE) {
-    //     treeData = transformFlatListToTree(templateInfo.files);
-    //   } else {
-    //     message.error(errorMessage || '获取技能模板失败');
-    //   }
-    // }
-    setFiles(treeData);
 
     return () => {
       setFiles([]);
@@ -203,10 +183,12 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   /**
    * 处理上传操作（从右键菜单触发）
    */
-  const handleUploadFromMenu = (node: any) => {
+  const handleUploadFromMenu = (node: FileNode | null) => {
+    if (!node) {
+      return;
+    }
     // 直接调用现有的上传单个文件功能
     onUploadSingleFile?.(node);
-    console.log('handleUploadFromMenu', node);
   };
 
   /**
@@ -218,48 +200,60 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     console.log('handleDelete', node);
   };
 
-  console.log('处理内容变化', files);
   /**
    * 处理内容变化
    */
   const handleContentChange = (fileId: string, content: string) => {
-    // 更新当前选中的文件内容
-    setSelectedFileNode({
-      ...selectedFileNode,
-      content,
+    console.log('处理内容变化', changeFiles);
+    // 保存原始内容的引用（用于首次修改时记录）
+    let originalContent = '';
+
+    // 使用函数式更新获取最新的 files 状态
+    setFiles((prevFiles) => {
+      // 从最新的 files 中获取原始内容
+      const currentFile = findFileNode(fileId, prevFiles);
+      originalContent = currentFile?.content || '';
+
+      const updatedFiles: FileNode[] = updateFileTreeContent(
+        fileId,
+        content,
+        prevFiles,
+      );
+      return updatedFiles;
     });
-    // 更新文件内容
-    const updatedFiles: FileNode[] = updateFileTreeContent(
-      fileId,
+
+    // 更新当前选中的文件内容
+    setSelectedFileNode((prevNode: any) => ({
+      ...prevNode,
       content,
-      files,
-    );
-    setFiles(updatedFiles);
+    }));
 
-    // 检查是否已存在该文件的修改记录
-    const existingIndex = changeFiles.findIndex(
-      (item) => item.fileId === fileId,
-    );
+    // 使用函数式更新获取最新的 changeFiles 状态
+    setChangeFiles((prevChangeFiles) => {
+      const existingIndex = prevChangeFiles.findIndex(
+        (item) => item.fileId === fileId,
+      );
 
-    if (existingIndex !== -1) {
-      // 如果已存在，更新该项的 fileContent，保留原始的 originalFileContent
-      const updatedChangeFiles = [...changeFiles];
-      updatedChangeFiles[existingIndex] = {
-        ...updatedChangeFiles[existingIndex],
-        fileContent: content,
-      };
-      setChangeFiles(updatedChangeFiles);
-    } else {
-      // 如果不存在，追加新项
-      setChangeFiles([
-        ...changeFiles,
-        {
-          fileId,
+      if (existingIndex !== -1) {
+        // 如果已存在，更新该项的 fileContent，保留原始的 originalFileContent
+        const updatedChangeFiles = [...prevChangeFiles];
+        updatedChangeFiles[existingIndex] = {
+          ...updatedChangeFiles[existingIndex],
           fileContent: content,
-          originalFileContent: selectedFileNode?.content,
-        },
-      ]);
-    }
+        };
+        return updatedChangeFiles;
+      } else {
+        // 如果不存在，追加新项，使用从最新 files 中获取的原始内容
+        return [
+          ...prevChangeFiles,
+          {
+            fileId,
+            fileContent: content,
+            originalFileContent: originalContent,
+          },
+        ];
+      }
+    });
   };
 
   const isImage = isImageFile(selectedFileId);
@@ -283,7 +277,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   const saveFiles = async () => {
     // setIsFullscreen(false);
     const result = await onSaveFiles?.(changeFiles);
-    // console.log('saveFiles result33333', result);
     if (result) {
       // 清空已修改文件列表
       setChangeFiles([]);
@@ -302,7 +295,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
         restoredFiles,
       );
     });
-    console.log('restoredFiles888888', restoredFiles);
     setFiles(restoredFiles);
     // 还原当前选中的文件内容
     // setSelectedFileNode({

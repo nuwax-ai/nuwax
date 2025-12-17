@@ -28,7 +28,7 @@ export const transformFlatListToTree = (files: any[]): FileNode[] => {
     const isFile = fileName.includes('.');
 
     const node: FileNode = {
-      id: file?.fileId || file.name,
+      id: file.name,
       name: fileName,
       type: isFile ? 'file' : 'folder',
       path: file.name,
