@@ -51,7 +51,9 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   // 当前选中的文件ID
   const [selectedFileId, setSelectedFileId] = useState<string>('');
   // 选中的文件节点
-  const [selectedFileNode, setSelectedFileNode] = useState<any>(null);
+  const [selectedFileNode, setSelectedFileNode] = useState<FileNode | null>(
+    null,
+  );
   // 内联重命名状态
   const [renamingNode, setRenamingNode] = useState<FileNode | null>(null);
   // 右键菜单目标节点
@@ -71,6 +73,9 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   const [changeFiles, setChangeFiles] = useState<
     { fileId: string; fileContent: string; originalFileContent: string }[]
   >([]);
+
+  // 是否正在保存文件
+  const [isSavingFiles, setIsSavingFiles] = useState<boolean>(false);
 
   // 文件选择
   const handleFileSelect = (fileId: string) => {
@@ -165,13 +170,22 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
         newName.trim(),
       );
 
-      console.log('处理重命名操作', updatedFileTree);
-
       setFiles(updatedFileTree);
 
       // 直接调用现有的重命名文件功能
-      const result = await onRenameFile?.(fileNode, newName);
-      if (!result) {
+      const isChangeSuccess = await onRenameFile?.(fileNode, newName);
+      if (isChangeSuccess) {
+        // setChangeFiles((prevChangeFiles) => {
+        //   return prevChangeFiles.filter((item) => item.fileId !== fileNode.id);
+        // });
+        // 如果当前选中的文件节点是重命名的文件节点，则更新当前选中的文件节点
+        if (selectedFileNode?.id === fileNode.id) {
+          setSelectedFileNode((prevNode: any) => ({
+            ...prevNode,
+            name: newName,
+          }));
+        }
+      } else {
         setFiles(filesBackup);
       }
     } catch {
@@ -204,7 +218,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
    * 处理内容变化
    */
   const handleContentChange = (fileId: string, content: string) => {
-    console.log('处理内容变化', changeFiles);
     // 保存原始内容的引用（用于首次修改时记录）
     let originalContent = '';
 
@@ -242,7 +255,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           fileContent: content,
         };
         return updatedChangeFiles;
-      } else {
+      } else if (content !== originalContent) {
         // 如果不存在，追加新项，使用从最新 files 中获取的原始内容
         return [
           ...prevChangeFiles,
@@ -252,6 +265,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
             originalFileContent: originalContent,
           },
         ];
+      } else {
+        return prevChangeFiles;
       }
     });
   };
@@ -275,15 +290,15 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
 
   // 保存文件
   const saveFiles = async () => {
-    // setIsFullscreen(false);
-    const result = await onSaveFiles?.(changeFiles);
-    if (result) {
+    setIsSavingFiles(true);
+    const isSaveSuccess = await onSaveFiles?.(changeFiles);
+    setIsSavingFiles(false);
+    if (isSaveSuccess) {
       // 清空已修改文件列表
       setChangeFiles([]);
     }
   };
 
-  // console.log('changeFil11111111111', changeFiles);
   // 取消保存文件
   const cancelSaveFiles = () => {
     // 还原所有已修改文件的内容
@@ -297,10 +312,13 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     });
     setFiles(restoredFiles);
     // 还原当前选中的文件内容
-    // setSelectedFileNode({
-    //   ...selectedFileNode,
-    //   content: restoredFiles.find((file) => file.id === selectedFileId)?.content,
-    // });
+    const oldContent = restoredFiles.find(
+      (file) => file.id === selectedFileId,
+    )?.content;
+    setSelectedFileNode((prevNode: any) => ({
+      ...prevNode,
+      content: oldContent,
+    }));
     // 清空已修改文件列表
     setChangeFiles([]);
   };
@@ -345,6 +363,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               onSaveFiles={saveFiles}
               onCancelSaveFiles={cancelSaveFiles}
               hasModifiedFiles={changeFiles.length > 0}
+              isSavingFiles={isSavingFiles}
             />
           </div>
           {/* 全屏模式下的代码编辑器 */}
@@ -359,7 +378,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               />
             ) : isImage ? (
               <ImageViewer
-                imageUrl={processImageContent(selectedFileNode?.content)}
+                imageUrl={processImageContent(selectedFileNode?.content || '')}
                 alt={selectedFileId}
                 onRefresh={() => {}}
               />
@@ -368,7 +387,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                 fileId={selectedFileId}
                 fileName={selectedFileId.split('/').pop() || selectedFileId}
                 filePath={`app/${selectedFileId}`}
-                content={selectedFileNode?.content}
+                content={selectedFileNode?.content || ''}
                 readOnly={false}
                 onContentChange={handleContentChange}
               />
@@ -443,6 +462,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
             onSaveFiles={saveFiles}
             onCancelSaveFiles={cancelSaveFiles}
             hasModifiedFiles={changeFiles.length > 0}
+            isSavingFiles={isSavingFiles}
           />
           {/* 右边内容 */}
           <div className={cx(styles['content-container'])}>
@@ -458,7 +478,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
             ) : isImage ? (
               <ImageViewer
                 imageUrl={processImageContent(
-                  selectedFileNode?.content,
+                  selectedFileNode?.content || '',
                   // devServerUrl
                   //   ? `${devServerUrl}/${selectedFileId}`
                   //   : `/${selectedFileId}`,
@@ -475,7 +495,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
                 fileId={selectedFileId}
                 fileName={selectedFileId.split('/').pop() || selectedFileId}
                 filePath={`app/${selectedFileId}`}
-                content={selectedFileNode?.content}
+                content={selectedFileNode?.content || ''}
                 readOnly={false}
                 onContentChange={handleContentChange}
               />
