@@ -27,6 +27,7 @@ interface FileTreeViewProps {
   onUploadSingleFile?: (node: FileNode | null) => void;
   onDownload?: () => void;
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
+  onDeleteFile?: (node: FileNode) => void;
   onSaveFiles?: (
     data: {
       fileId: string;
@@ -44,6 +45,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onUploadSingleFile,
   onDownload,
   onRenameFile,
+  onDeleteFile,
   onSaveFiles,
 }) => {
   // 文件树数据
@@ -210,8 +212,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
    */
   const handleDelete = (node: FileNode) => {
     // 直接调用现有的删除文件功能
-    // onDeleteFile(node);
-    console.log('handleDelete', node);
+    onDeleteFile?.(node);
+    // console.log('handleDelete', node);
   };
 
   /**

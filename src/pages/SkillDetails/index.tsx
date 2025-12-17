@@ -87,7 +87,6 @@ const SkillDetails: React.FC = () => {
 
   // 确认发布技能回调
   const handleConfirmPublish = () => {
-    console.log('handleConfirmPublish');
     setOpen(false);
     // // 同步发布时间和修改时间
     // const time = dayjs().toString();
@@ -199,6 +198,33 @@ const SkillDetails: React.FC = () => {
     setEditSkillModalOpen(true);
   };
 
+  // 删除文件
+  const handleDeleteFile = async (fileNode: FileNode) => {
+    const updatedFilesList =
+      skillInfo?.files?.map((item) => {
+        if (item.fileId === fileNode.id) {
+          item.operation = 'delete';
+        }
+        return item;
+      }) || [];
+
+    const newSkillInfo: SkillUpdateParams = {
+      id: skillInfo?.id || 0,
+      files: updatedFilesList as unknown as SkillFileInfo[],
+    };
+    const { code } = await apiSkillUpdate(newSkillInfo);
+    if (code === SUCCESS_CODE) {
+      setSkillInfo(
+        (prev) =>
+          ({
+            ...prev,
+            files:
+              prev?.files?.filter((item) => item.fileId !== fileNode.id) || [],
+          } as SkillDetailInfo),
+      );
+    }
+  };
+
   // 确认重命名文件
   const handleConfirmRenameFile = async (
     fileNode: FileNode,
@@ -301,6 +327,7 @@ const SkillDetails: React.FC = () => {
         onDownload={handleDownload}
         onRenameFile={handleConfirmRenameFile}
         onSaveFiles={handleSaveFiles}
+        onDeleteFile={handleDeleteFile}
       />
 
       {/*发布技能弹窗*/}
@@ -309,7 +336,7 @@ const SkillDetails: React.FC = () => {
         targetId={skillId}
         open={open}
         spaceId={spaceId}
-        // category={skillInfo?.category}
+        category={skillInfo?.category}
         // 取消发布
         onCancel={() => setOpen(false)}
         onConfirm={handleConfirmPublish}

@@ -19,6 +19,8 @@ export interface SkillFileInfo {
 export interface SkillDetailInfo {
   // 技能ID
   id: number;
+  // 技能分类
+  category?: string;
   // 技能名称
   name: string;
   // 技能描述
