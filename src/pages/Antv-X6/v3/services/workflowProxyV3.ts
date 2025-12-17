@@ -21,6 +21,7 @@ import type { IgetDetails } from '@/services/workflow';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode, Edge } from '@/types/interfaces/graph';
 import { cloneDeep } from '@/utils/common';
+import { generateFallbackNodeId } from '../utils/nodeUtils';
 
 // ==================== 类型定义 ====================
 
@@ -473,8 +474,8 @@ class WorkflowProxyV3 {
     // 1. Clone data
     const newNode = cloneDeep(sourceNode);
 
-    // 2. Generate new ID
-    newNode.id = Date.now();
+    // 2. Generate new ID (使用工具函数)
+    newNode.id = generateFallbackNodeId(this.workflowData.workflowId);
 
     // 3. Update Name
     const existingNames = this.workflowData.nodes.map((n) => n.name);
