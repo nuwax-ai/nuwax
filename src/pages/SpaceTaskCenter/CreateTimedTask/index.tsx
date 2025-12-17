@@ -248,7 +248,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
               : ''
           }
           rules={[
-            { required: false, message: '请填写入参配置', type: 'array' },
+            { required: false, message: '请填写参数配置', type: 'array' },
           ]}
         >
           <ParameterConfig />
