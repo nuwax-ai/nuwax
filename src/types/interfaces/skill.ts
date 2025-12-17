@@ -1,3 +1,4 @@
+import { AgentComponentTypeEnum } from '../enums/agent';
 import { PublishStatusEnum } from '../enums/common';
 
 // 技能文件
@@ -68,4 +69,22 @@ export interface SkillUploadFileParams {
   file: any;
   skillId: string;
   filePath: string;
+}
+
+// 已发布技能列表接口
+export interface PublishedSkillListParams {
+  // 目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill
+  targetType?: AgentComponentTypeEnum;
+  // 页码，从1开始
+  page: number;
+  // 每页数量
+  pageSize: number;
+  // 分类名称
+  category: string;
+  // 关键字搜索
+  kw?: string;
+  // 空间ID（可选）需要通过空间过滤时有用
+  spaceId?: number;
+  // 只返回空间的组件
+  justReturnSpaceData?: boolean;
 }

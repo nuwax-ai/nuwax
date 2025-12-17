@@ -1,10 +1,12 @@
-import { RequestResponse } from '@/types/interfaces/request';
+import { Page, RequestResponse } from '@/types/interfaces/request';
 import {
+  PublishedSkillListParams,
   SkillDetailInfo,
   SkillImportParams,
   SkillUpdateParams,
   SkillUploadFileParams,
 } from '@/types/interfaces/skill';
+import { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { request } from 'umi';
 
 // 查询技能详情
@@ -80,5 +82,15 @@ export async function apiSkillExport(skillId: number): Promise<{
     method: 'GET',
     responseType: 'blob', // 指定响应类型为blob
     getResponse: true, // 获取完整响应对象
+  });
+}
+
+// 已发布技能列表接口
+export async function apiPublishedSkillList(
+  data: PublishedSkillListParams,
+): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
+  return request('/api/published/skill/list', {
+    method: 'POST',
+    data,
   });
 }
