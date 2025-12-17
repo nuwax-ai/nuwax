@@ -30,6 +30,8 @@ interface FilePathHeaderProps {
   onCancelSaveFiles?: () => void;
   /** 是否存在修改过的文件 */
   hasModifiedFiles?: boolean;
+  /** 是否正在保存文件 */
+  isSavingFiles?: boolean;
 }
 
 /**
@@ -65,6 +67,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onSaveFiles,
   onCancelSaveFiles,
   hasModifiedFiles = false,
+  isSavingFiles = false,
 }) => {
   // 显示的文件名
   const displayFileName = useMemo(() => {
@@ -108,7 +111,12 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       {/* 底部：保存和取消按钮 */}
       {hasModifiedFiles && (
         <div className="flex content-end gap-4 py-16">
-          <Button size="small" type="primary" onClick={onSaveFiles}>
+          <Button
+            size="small"
+            type="primary"
+            onClick={onSaveFiles}
+            loading={isSavingFiles}
+          >
             保存
           </Button>
           <Button size="small" type="default" onClick={onCancelSaveFiles}>
