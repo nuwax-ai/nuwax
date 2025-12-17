@@ -316,6 +316,23 @@ export interface SkillQueryFilter {
   publishStatus?: PublishStatusEnum[];
 }
 
+export enum SkillCopyTypeEnum {
+  // 开发
+  DEVELOP = 'DEVELOP',
+  // 广场
+  SQUARE = 'SQUARE',
+}
+
+// 技能复制到空间传入参数
+export interface SkillCopyToSpaceParams {
+  // 技能ID
+  skillId: number;
+  // 目标空间ID
+  targetSpaceId: number;
+  // 目标空间类型,可用值:DEVELOP,SQUARE
+  copyType: SkillCopyTypeEnum;
+}
+
 // 技能信息
 export interface SkillInfo {
   // 技能 ID

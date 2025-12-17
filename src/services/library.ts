@@ -4,6 +4,7 @@ import type {
   AddWorkflowParams,
   ComponentInfo,
   CopyTableParams,
+  SkillCopyToSpaceParams,
   SkillInfo,
   SkillQueryFilter,
   TaskInfo,
@@ -163,6 +164,16 @@ export async function apiSkillList(
   return request(`/api/skill/list`, {
     method: 'GET',
     params: queryFilter,
+  });
+}
+
+// 技能 - 复制技能到空间
+export async function apiSkillCopyToSpace(
+  data: SkillCopyToSpaceParams,
+): Promise<RequestResponse<number>> {
+  return request(`/api/skill/copy`, {
+    method: 'POST',
+    data,
   });
 }
 
