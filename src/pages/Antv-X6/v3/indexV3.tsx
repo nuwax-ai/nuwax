@@ -87,6 +87,7 @@ import { useWorkflowPersistence } from './hooks/useWorkflowPersistence';
 import { WorkflowVersionProvider } from '@/contexts/WorkflowVersionContext';
 import { workflowProxy } from './services/workflowProxyV3';
 import type { WorkflowDataV2 } from './types';
+import { generateFallbackNodeId } from './utils/nodeUtils';
 import { calculateNodePreviousArgs } from './utils/variableReferenceV3';
 
 const workflowCreatedTabs = CREATED_TABS.filter((item) =>
@@ -1208,24 +1209,7 @@ const Workflow: React.FC = () => {
       _params.extension = _params.nodeConfig.extension;
     }
 
-    // V3: 生成备用节点 ID（当 API 失败时使用）
-    // 规则：工作流 ID 前三位（不足补 0，超过截取）+ 时间戳
-    const generateFallbackNodeId = (wfId: number): number => {
-      const wfIdStr = String(wfId);
-      let prefix: string;
-
-      if (wfIdStr.length < 3) {
-        // 不足三位，后面补 0
-        prefix = wfIdStr.padEnd(3, '0');
-      } else {
-        // 超过三位，截取前三位
-        prefix = wfIdStr.substring(0, 3);
-      }
-
-      const timestamp = Date.now();
-      return Number(prefix + timestamp);
-    };
-
+    // V3: 使用工具函数生成备用节点 ID（当 API 失败时使用）
     // V3: 先调用后端 API 获取节点 ID，失败则前端生成
     let nodeId: number;
     let apiNodeData: AddNodeResponse | null = null;
@@ -1322,6 +1306,11 @@ const Workflow: React.FC = () => {
     if (res.success && res.newNode) {
       const newNode = res.newNode;
 
+      // 确保 shape 正确设置（复制的节点可能没有 shape）
+      if (!newNode.shape) {
+        newNode.shape = getShape(newNode.type);
+      }
+
       // X6 画布添加节点
       graphRef.current?.graphAddNode(
         newNode.nodeConfig.extension as GraphRect,
@@ -1331,6 +1320,8 @@ const Workflow: React.FC = () => {
       // 选中新增的节点
       graphRef.current?.graphSelectNode(String(newNode.id));
       changeUpdateTime();
+      // V3: 触发防抖全量保存
+      debouncedSaveFullWorkflow();
     } else {
       message.error(res.message || '复制失败');
     }
@@ -1381,6 +1372,8 @@ const Workflow: React.FC = () => {
         clearTimeout(timerRef.current);
       }
       changeUpdateTime();
+      // V3: 触发防抖全量保存
+      debouncedSaveFullWorkflow();
       if (node) {
         if (node.type === 'Loop') {
           changeDrawer(null);
@@ -2219,6 +2212,8 @@ const Workflow: React.FC = () => {
               };
             });
             workflowProxy.syncFromGraph(nodes, edges as any);
+            // V3: Undo/Redo 后触发保存
+            debouncedSaveFullWorkflow();
           }
         };
         graph.on('history:change', updateHistory);
