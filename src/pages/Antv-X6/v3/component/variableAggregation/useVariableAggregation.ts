@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface UseVariableAggregationProps {
   form: FormInstance;
+  nodeId?: number; // 节点 ID，用于检测节点切换
 }
 
 interface UseVariableAggregationReturn {
@@ -40,6 +41,7 @@ interface UseVariableAggregationReturn {
  */
 export const useVariableAggregation = ({
   form,
+  nodeId,
 }: UseVariableAggregationProps): UseVariableAggregationReturn => {
   const { setIsModified, referenceList, getValue } = useModel('workflowV3');
 
@@ -55,18 +57,51 @@ export const useVariableAggregation = ({
 
   // 使用 ref 标记是否已经初始化过
   const isInitialized = React.useRef(false);
+  // 跟踪上一个节点 ID，用于检测节点切换
+  const prevNodeIdRef = React.useRef<number | undefined>(nodeId);
+  // 标记是否需要强制重新初始化（节点切换时）
+  const forceReinitRef = React.useRef(false);
+
+  // 当节点切换时重置初始化状态
+  useEffect(() => {
+    if (nodeId !== undefined && prevNodeIdRef.current !== nodeId) {
+      console.log(
+        '[VariableAggregation] 节点切换:',
+        prevNodeIdRef.current,
+        '->',
+        nodeId,
+        '重置初始化状态',
+      );
+      isInitialized.current = false;
+      forceReinitRef.current = true; // 标记需要强制重新初始化
+      prevNodeIdRef.current = nodeId;
+    }
+  }, [nodeId]);
 
   // ========== 初始化逻辑 ==========
   useEffect(() => {
-    if (isInitialized.current) return;
+    console.log('[VariableAggregation] 初始化检查:', {
+      nodeId,
+      isInitialized: isInitialized.current,
+      forceReinit: forceReinitRef.current,
+      inputArgsFromForm: inputArgsFromForm?.length || 0,
+      variableGroups: variableGroups?.length || 0,
+    });
 
-    const existingGroups = form.getFieldValue('variableGroups');
-    if (existingGroups?.length > 0) {
-      isInitialized.current = true;
+    // 如果已初始化且不是强制重新初始化，跳过
+    if (isInitialized.current && !forceReinitRef.current) {
+      console.log('[VariableAggregation] 已初始化，跳过');
       return;
     }
 
-    if (!inputArgsFromForm?.length) return;
+    // 如果 inputArgsFromForm 为空，等待数据加载
+    // 注意：不要在这里清空 variableGroups，否则会导致数据丢失
+    if (!inputArgsFromForm?.length) {
+      console.log('[VariableAggregation] inputArgsFromForm 为空，等待数据加载');
+      // 只有在强制重新初始化（真正的节点切换）且确认目标节点没有数据时才清空
+      // 这里我们选择不清空，让数据保持原样，等待正确的数据加载
+      return;
+    }
 
     // 检查是否有需要从 argMap 获取 subArgs 的变量引用
     const hasComplexTypeWithBindValue = inputArgsFromForm.some((arg: any) => {
@@ -117,12 +152,19 @@ export const useVariableAggregation = ({
 
     if (initialGroups.length > 0) {
       isInitialized.current = true;
+      forceReinitRef.current = false; // 重置强制初始化标记
       form.setFieldsValue({ variableGroups: initialGroups });
     }
   }, [inputArgsFromForm, form, referenceList]);
 
   // ========== 同步 inputArgs 和 outputArgs ==========
+  // 注意：只在初始化完成后才同步，避免在数据加载前清空表单
   useEffect(() => {
+    // 如果还没初始化完成，不执行同步逻辑
+    if (!isInitialized.current) {
+      return;
+    }
+
     if (!variableGroups || variableGroups.length === 0) {
       form.setFieldsValue({ inputArgs: [], outputArgs: [] });
       return;

@@ -12,7 +12,7 @@ import VariableGroupItem from './VariableGroupItem';
  * 变量聚合节点组件
  * 重构版本 - 使用抽取的 Hook 和组件，更清晰的代码结构
  */
-const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
+const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
   const strategyOptions = [
     { label: '返回每个分组中第一个非空的值', value: 'FIRST_NON_NULL' },
   ];
@@ -32,7 +32,7 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
     }));
   };
 
-  // 使用自定义 Hook 管理状态和逻辑
+  // 使用自定义 Hook 管理状态和逻辑，传入 nodeId 用于检测节点切换
   const {
     variableGroups,
     referenceList,
@@ -47,7 +47,7 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form }) => {
     getGroupAllowedType,
     getSelectedKeys,
     getGroupTypeDisplay,
-  } = useVariableAggregation({ form });
+  } = useVariableAggregation({ form, nodeId: id });
 
   // 监听 outputArgs 并确保 key 唯一
   const outputArgs =
