@@ -120,6 +120,42 @@ export async function apiTaskList(
   });
 }
 
+// 执行任务接口
+export async function apiTaskExecute(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/task/execute/${id}`, {
+    method: 'POST',
+  });
+}
+
+// 启用定时任务
+export async function apiTaskEnable(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/task/enable/${id}`, {
+    method: 'POST',
+  });
+}
+
+// 停用定时任务
+export async function apiTaskDisable(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/task/cancel/${id}`, {
+    method: 'POST',
+  });
+}
+
+// 删除定时任务
+export async function apiTaskDelete(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/task/delete/${id}`, {
+    method: 'POST',
+  });
+}
+
 // 查询技能列表接口
 export async function apiSkillList(
   queryFilter: SkillQueryFilter,

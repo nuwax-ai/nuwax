@@ -1,4 +1,11 @@
-import { apiTaskList } from '@/services/library';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  apiTaskDelete,
+  apiTaskDisable,
+  apiTaskEnable,
+  apiTaskExecute,
+  apiTaskList,
+} from '@/services/library';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { TaskInfo } from '@/types/interfaces/library';
 import { PlusOutlined } from '@ant-design/icons';
@@ -110,7 +117,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           return {
             color: 'default' as const,
             text: '已结束，不再执行',
-            isEnded: true,
+            isEnded: false,
           };
         default:
           return {
@@ -217,6 +224,66 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       [ensureTaskList, spaceId],
     );
 
+    // 执行任务
+    const handleExecuteTask = useCallback(
+      async (id: number) => {
+        const resp = await apiTaskExecute(id);
+        if (resp?.code === SUCCESS_CODE) {
+          message.success('执行任务成功');
+          // 执行成功后需要重新请求接口刷新列表：清空缓存并触发表格 reload
+          cacheRef.current = null;
+          fetchingRef.current = null;
+          actionRef.current?.reload();
+        }
+      },
+      [actionRef, cacheRef, fetchingRef],
+    );
+
+    // 启用定时任务
+    const handleEnableTask = useCallback(
+      async (id: number) => {
+        const resp = await apiTaskEnable(id);
+        if (resp?.code === SUCCESS_CODE) {
+          message.success('启用任务成功');
+          // 执行成功后需要重新请求接口刷新列表：清空缓存并触发表格 reload
+          cacheRef.current = null;
+          fetchingRef.current = null;
+          actionRef.current?.reload();
+        }
+      },
+      [actionRef],
+    );
+
+    // 停用定时任务
+    const handleDisableTask = useCallback(
+      async (id: number) => {
+        const resp = await apiTaskDisable(id);
+        if (resp?.code === SUCCESS_CODE) {
+          message.success('停用任务成功');
+          // 执行成功后需要重新请求接口刷新列表：清空缓存并触发表格 reload
+          cacheRef.current = null;
+          fetchingRef.current = null;
+          actionRef.current?.reload();
+        }
+      },
+      [actionRef],
+    );
+
+    // 删除任务
+    const handleDeleteTask = useCallback(
+      async (id: number) => {
+        const resp = await apiTaskDelete(id);
+        if (resp?.code === SUCCESS_CODE) {
+          message.success('删除任务成功');
+          // 执行成功后需要重新请求接口刷新列表：清空缓存并触发表格 reload
+          cacheRef.current = null;
+          fetchingRef.current = null;
+          actionRef.current?.reload();
+        }
+      },
+      [actionRef, cacheRef, fetchingRef],
+    );
+
     const columns: ProColumns<TaskInfo>[] = useMemo(
       () => [
         {
@@ -320,11 +387,11 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
             const meta = getStatusMeta(record.status);
             const isEnded = meta.isEnded;
             return (
-              <Space size={8}>
+              <Space size={0}>
                 <Button
                   type="link"
                   onClick={(e) => {
-                    e.stopPropagation();
+                    e?.stopPropagation();
                     // 预留：后续接入详情弹窗/路由跳转
                     message.info(`详情功能待接入（任务ID：${record.id}）`);
                   }}
@@ -333,9 +400,8 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                 </Button>
                 <Button
                   type="link"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    message.info('手动执行功能待接入');
+                  onClick={() => {
+                    handleExecuteTask(record.id);
                   }}
                 >
                   手动执行
@@ -347,12 +413,10 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                     cancelText="取消"
                     onConfirm={(e) => {
                       e?.stopPropagation();
-                      message.info('启用功能待接入');
+                      handleEnableTask(record.id);
                     }}
                   >
-                    <Button type="link" onClick={(e) => e.stopPropagation()}>
-                      启用
-                    </Button>
+                    <Button type="link">启用</Button>
                   </Popconfirm>
                 ) : (
                   <Popconfirm
@@ -361,14 +425,23 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                     cancelText="取消"
                     onConfirm={(e) => {
                       e?.stopPropagation();
-                      message.info('停用功能待接入');
+                      handleDisableTask(record.id);
                     }}
                   >
-                    <Button type="link" onClick={(e) => e.stopPropagation()}>
-                      停用
-                    </Button>
+                    <Button type="link">停用</Button>
                   </Popconfirm>
                 )}
+                <Popconfirm
+                  title="确认删除该任务？"
+                  okText="确认"
+                  cancelText="取消"
+                  onConfirm={(e) => {
+                    e?.stopPropagation();
+                    handleDeleteTask(record.id);
+                  }}
+                >
+                  <Button type="link">删除</Button>
+                </Popconfirm>
               </Space>
             );
           },
