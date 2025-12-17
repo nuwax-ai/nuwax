@@ -29,20 +29,52 @@ const bindEventHandlers = ({
   modal,
   message,
 }: BindEventHandlers) => {
+  // 存储复制的节点数据，支持多次粘贴
+  let copiedNodeData: ChildNode | null = null;
+  // 粘贴计数，用于计算累积偏移
+  let pasteCount = 0;
+
   // 快捷键绑定：复制选中的单元格
   graph.bindKey(['meta+c', 'ctrl+c'], () => {
     const cells = graph.getSelectedCells(); // 获取当前选中的单元格
     if (cells.length) {
-      graph.copy(cells); // 如果有选中的单元格，则执行复制操作
+      const node = cells[0];
+      if (node.isNode()) {
+        const nodeData = node.getData();
+        // 检查是否为不可复制的节点类型
+        if (
+          nodeData.type === NodeTypeEnum.LoopStart ||
+          nodeData.type === NodeTypeEnum.LoopEnd ||
+          nodeData.type === NodeTypeEnum.Loop ||
+          nodeData.type === NodeTypeEnum.Start ||
+          nodeData.type === NodeTypeEnum.End
+        ) {
+          message.warning('该节点类型不支持复制');
+          return false;
+        }
+        // 存储复制的节点数据
+        copiedNodeData = cloneDeep(nodeData);
+        // 重置粘贴计数
+        pasteCount = 0;
+        graph.copy(cells); // 执行复制操作
+        message.success('已复制节点');
+      }
     }
     return false; // 阻止默认行为
   });
 
   // 快捷键绑定：粘贴已复制的单元格
   graph.bindKey(['meta+v', 'ctrl+v'], () => {
-    if (!graph.isClipboardEmpty()) {
-      // 检查剪贴板是否为空
-      const cells = graph.getSelectedCells(); // 粘贴并偏移一定距离
+    // 使用存储的节点数据进行粘贴
+    if (copiedNodeData) {
+      // 增加粘贴计数
+      pasteCount++;
+      // 累积偏移：每次粘贴偏移 30px
+      const offset = pasteCount * 30;
+      copyNode(copiedNodeData, { x: offset, y: offset });
+    } else if (!graph.isClipboardEmpty()) {
+      // 兼容：如果没有存储的节点数据，尝试从选中的单元格获取
+      const cells = graph.getSelectedCells();
       if (cells && cells.length > 0) {
         const node = cells[0].getData();
         if (
@@ -61,13 +93,10 @@ const bindEventHandlers = ({
           message.error('不能粘贴结束节点');
           return;
         }
-
         copyNode(node);
       }
-      graph.cleanSelection(); // 清除当前选择
-      // graph.select(cells); // 选择新粘贴的单元格
-      // const _cell = cells[0]
-      // const sourceNode =_cell.getSourceNode()?.getData()
+    } else {
+      message.warning('请先复制一个节点');
     }
     return false; // 阻止默认行为
   });

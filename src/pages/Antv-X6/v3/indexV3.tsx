@@ -1301,8 +1301,11 @@ const Workflow: React.FC = () => {
     }
   };
   // 复制节点
-  const copyNode = async (child: ChildNode) => {
-    const res = workflowProxy.copyNode(Number(child.id));
+  const copyNode = async (
+    child: ChildNode,
+    offset?: { x: number; y: number },
+  ) => {
+    const res = workflowProxy.copyNode(Number(child.id), offset);
     if (res.success && res.newNode) {
       const newNode = res.newNode;
 
