@@ -21,11 +21,11 @@ import {
 } from '@/types/interfaces/graph';
 import { TestRunParams } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
-import { returnBackgroundColor, returnImg } from '@/utils/workflow';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, FormInstance, Spin } from 'antd';
 import React, { MutableRefObject } from 'react';
 import VersionAction from '../../../components/VersionAction';
+import { returnBackgroundColor, returnImg } from '../../utils/workflowV3';
 import GraphContainer from '../graph/GraphContainer';
 import NodePanelDrawer from '../panels/PropertyPanel';
 import ControlPanel from './ControlPanel';

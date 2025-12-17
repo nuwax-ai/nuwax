@@ -5,7 +5,6 @@ import type {
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { SkillProps } from '@/types/interfaces/workflow';
 import { loopSetBindValueType } from '@/utils/deepNode';
-import { getImg } from '@/utils/workflow';
 import {
   DeleteOutlined,
   // DownOutlined,
@@ -15,6 +14,7 @@ import {
 import { Popover, Tag } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';
+import { getImg } from '../../utils/workflowV3';
 import styles from './index.less';
 import SettingModal from './SettingModal';
 

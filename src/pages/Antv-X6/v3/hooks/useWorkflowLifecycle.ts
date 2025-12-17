@@ -1,11 +1,11 @@
 import Constant from '@/constants/codes.constants';
 import service, { IgetDetails, IUpdateDetails } from '@/services/workflow';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
-import { getEdges } from '@/utils/workflow';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
+import { getEdges } from '../utils/workflowV3';
 
 interface UseWorkflowLifecycleProps {
   workflowId: number;
