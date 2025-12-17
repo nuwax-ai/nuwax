@@ -456,8 +456,12 @@ class WorkflowSaveService {
         return true;
       }
 
+      case PortType.Loop: {
+        // 循环节点的内部连线（Loop-in -> LoopStart）是内部逻辑，不应计入节点的 nextNodeIds
+        return true;
+      }
+
       case PortType.Normal:
-      case PortType.Loop:
       default: {
         if (!sourceNode.nextNodeIds) {
           sourceNode.nextNodeIds = [];

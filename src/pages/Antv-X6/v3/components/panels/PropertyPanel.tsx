@@ -1,12 +1,12 @@
 import { ExceptionHandleTypeEnum } from '@/types/enums/common';
 import { ChildNode, ExceptionItemProps } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
-import { showExceptionHandle } from '@/utils/graph';
 import { Form } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import '../../../index.less';
 import { ExceptionItem } from '../../component/ExceptionItem';
 import { getNodeComponent } from '../../config/NodeRegistry';
+import { showExceptionHandle } from '../../utils/graphV3';
 
 const ExceptionHandle: React.FC<{
   data: ExceptionHandleConfig | undefined;

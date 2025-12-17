@@ -3,12 +3,12 @@ import { UpdateEdgeType } from '@/types/enums/node';
 import { BindEventHandlers, ChildNode } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
+import { Edge } from '@antv/x6';
 import {
   getPortGroup,
   isEdgeDeletable,
   showExceptionPort,
-} from '@/utils/graph';
-import { Edge } from '@antv/x6';
+} from '../utils/graphV3';
 const isResistNodeType = [
   NodeTypeEnum.Start,
   NodeTypeEnum.End,

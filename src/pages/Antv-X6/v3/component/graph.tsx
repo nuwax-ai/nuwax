@@ -13,13 +13,13 @@ import { Snapline } from '@antv/x6-plugin-snapline';
 // 变换插件，支持缩放和平移操作
 // import { Transform } from '@antv/x6-plugin-transform';
 import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
+import { message, Modal } from 'antd';
 import {
   adjustParentSize,
   registerNodeClickAndDblclick,
   showExceptionPort,
   validateConnect,
-} from '@/utils/graph';
-import { message, Modal } from 'antd';
+} from '../utils/graphV3';
 // 自定义类型定义
 import PlusIcon from '@/assets/svg/plus_icon.svg';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
@@ -31,14 +31,14 @@ import {
 import { GraphProp } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
+import StencilContent from '../components/layout/Sidebar';
 import {
   getPortGroup,
   handleLoopEdge,
   handleSpecialNodeTypes,
   setEdgeAttributes,
   updateEdgeArrows,
-} from '@/utils/graph';
-import StencilContent from '../components/layout/Sidebar';
+} from '../utils/graphV3';
 import { createCurvePath } from './registerCustomNodes';
 /**
  * 端口配置接口

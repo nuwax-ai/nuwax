@@ -21,12 +21,12 @@ import {
 import { ConditionBranchTypeEnum } from '@/types/enums/node';
 import { ChildNode, NodeProps, RunResultItem } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
-import { showExceptionHandle } from '@/utils/graph';
 import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { Tag } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import '../indexV3.less';
+import { showExceptionHandle } from '../utils/graphV3';
 import './registerCustomNodes.less';
 import RunResult from './runResult';
 // 定义那些节点有试运行

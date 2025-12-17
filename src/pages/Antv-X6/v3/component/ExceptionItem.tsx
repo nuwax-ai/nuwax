@@ -9,16 +9,16 @@ import { useSpecificContent } from '@/hooks/useSpecificContent';
 import { ExceptionHandleTypeEnum } from '@/types/enums/common';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { ExceptionItemProps } from '@/types/interfaces/graph';
-import {
-  convertValueToEditorValue,
-  isEqualExceptionHandleConfig,
-} from '@/utils/graph';
 import { ExpandAltOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Form, Input, Select } from 'antd';
 import cx from 'classnames';
 import { debounce } from 'lodash';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useModel } from 'umi';
+import {
+  convertValueToEditorValue,
+  isEqualExceptionHandleConfig,
+} from '../utils/graphV3';
 import styles from './ExceptionItem.less';
 
 // 默认的JSON格式内容

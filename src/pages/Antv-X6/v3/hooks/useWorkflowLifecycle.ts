@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
-import { getEdges } from '../utils/workflowV3';
+import { getEdges } from '../utils/graphV3';
 
 interface UseWorkflowLifecycleProps {
   workflowId: number;
