@@ -4,7 +4,7 @@ import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { TaskInfo } from '@/types/interfaces/library';
 import { useRef, useState } from 'react';
 import { history, useParams } from 'umi';
-import CreateSkill from './CreateSkill';
+import CreateTimedTask from './CreateTimedTask';
 import HeaderLeftSlot from './HeaderLeftSlot';
 import HeaderRightSlot from './HeaderRightSlot';
 import MainContent, { MainContentRef } from './MainContent';
@@ -77,7 +77,7 @@ const SpaceTaskCenter: React.FC = () => {
         onClickMore={handleClickMore}
       />
       {/* 创建任务弹窗 */}
-      <CreateSkill
+      <CreateTimedTask
         spaceId={spaceId}
         open={openCreateTask}
         onCancel={() => setOpenCreateTask(false)}
