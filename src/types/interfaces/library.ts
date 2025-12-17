@@ -133,6 +133,16 @@ export interface AddWorkflowParams {
   icon: string;
 }
 
+// 添加定时任务传入参数
+export interface AddTimedTaskParams {
+  spaceId: number;
+  targetType: string;
+  targetId: string;
+  taskName: string;
+  cron: string;
+  params: any;
+}
+
 // 添加技能传入参数
 export interface AddSkillParams {
   spaceId: number;
@@ -159,6 +169,11 @@ export interface UpdateWorkflowParams {
   name: string;
   description: string;
   icon: string;
+}
+
+// 更新定时任务传入参数
+export interface UpdateTimedTaskParams extends AddTimedTaskParams {
+  id: number;
 }
 
 // 技能基础信息

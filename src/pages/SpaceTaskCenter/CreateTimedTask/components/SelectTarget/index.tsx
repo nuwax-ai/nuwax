@@ -168,7 +168,6 @@ const SelectTarget: React.FC<SelectTargetProps> = ({ value, onChange }) => {
       return [info.targetType];
     });
 
-    console.log('info', info);
     onChange?.({
       targetId: info.targetId.toString(),
       targetType: info.targetType as

@@ -1,5 +1,6 @@
 import type {
   AddSkillParams,
+  AddTimedTaskParams,
   AddWorkflowParams,
   ComponentInfo,
   CopyTableParams,
@@ -7,6 +8,7 @@ import type {
   SkillQueryFilter,
   TaskInfo,
   UpdateSkillParams,
+  UpdateTimedTaskParams,
   UpdateWorkflowParams,
 } from '@/types/interfaces/library';
 import type { RequestResponse } from '@/types/interfaces/request';
@@ -17,6 +19,16 @@ export async function apiAddWorkflow(
   data: AddWorkflowParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/workflow/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 添加定时任务
+export async function apiAddTimedTask(
+  data: AddTimedTaskParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/task/create', {
     method: 'POST',
     data,
   });
@@ -56,6 +68,16 @@ export async function apiUpdateWorkflow(
   data: UpdateWorkflowParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/workflow/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新定时任务
+export async function apiUpdateTimedTask(
+  data: UpdateTimedTaskParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/task/update', {
     method: 'POST',
     data,
   });
