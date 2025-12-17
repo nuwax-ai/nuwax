@@ -1,7 +1,7 @@
 import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { FieldConfig } from '@/components/FormListItem/type';
 import { DataTypeMap } from '@/constants/common.constants';
-import { optionsMap } from '@/constants/node.constants';
+import { optionsMap } from '@/pages/Antv-X6/v3/constants/node.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import type { DefaultObjectType } from '@/types/interfaces/common';
 import type { InputAndOutConfig } from '@/types/interfaces/node';

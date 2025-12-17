@@ -11,7 +11,6 @@ import type {
 import { ChangeEdgeProps, ChangeNodeProps } from '@/types/interfaces/graph';
 import { NodeConfig } from '@/types/interfaces/node';
 import { cloneDeep, mergeObject } from '@/utils/common';
-import { getWidthAndHeight } from '@/utils/updateNode';
 import { Graph, Node } from '@antv/x6';
 import { App } from 'antd';
 import {
@@ -41,6 +40,7 @@ import {
   createEdge,
   generatePorts,
   getNodeSize,
+  getWidthAndHeight,
 } from '../../utils/workflowV3';
 
 const GRAPH_CONTAINER_ID = 'graph-container';

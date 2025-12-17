@@ -6,7 +6,7 @@ import { ModelSelected } from '@/components/ModelSetting';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { CREATED_TABS } from '@/constants/common.constants';
-import { SKILL_FORM_KEY } from '@/constants/node.constants';
+import { SKILL_FORM_KEY } from '@/pages/Antv-X6/v3/constants/node.constants';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
