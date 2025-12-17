@@ -38,4 +38,8 @@ export interface FileContextMenuProps {
   onRename?: (node: FileNode) => void;
   /** 上传单个文件回调（直接调用，不弹窗） */
   onUploadSingleFile?: (node: FileNode | null) => void;
+  /** 新建文件回调 */
+  onCreateFile?: (parentNode: FileNode | null) => void;
+  /** 新建文件夹回调 */
+  onCreateFolder?: (parentNode: FileNode | null) => void;
 }

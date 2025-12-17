@@ -217,6 +217,30 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   };
 
   /**
+   * 处理新建文件操作
+   */
+  const handleCreateFile = (parentNode: FileNode | null) => {
+    console.log('handleCreateFile', parentNode);
+    // TODO: 实现新建文件逻辑
+    // 1. 显示输入框让用户输入文件名
+    // 2. 验证文件名是否合法
+    // 3. 在文件树中添加新文件
+    // 4. 调用 API 创建文件
+  };
+
+  /**
+   * 处理新建文件夹操作
+   */
+  const handleCreateFolder = (parentNode: FileNode | null) => {
+    console.log('handleCreateFolder', parentNode);
+    // TODO: 实现新建文件夹逻辑
+    // 1. 显示输入框让用户输入文件夹名
+    // 2. 验证文件夹名是否合法
+    // 3. 在文件树中添加新文件夹
+    // 4. 调用 API 创建文件夹
+  };
+
+  /**
    * 处理内容变化
    */
   const handleContentChange = (fileId: string, content: string) => {
@@ -415,6 +439,10 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           onRename={handleRenameFromMenu}
           // 处理上传文件操作
           onUploadSingleFile={handleUploadFromMenu}
+          // 处理新建文件操作
+          onCreateFile={handleCreateFile}
+          // 处理新建文件夹操作
+          onCreateFolder={handleCreateFolder}
         />
         {/* 左边文件树 */}
         <div
