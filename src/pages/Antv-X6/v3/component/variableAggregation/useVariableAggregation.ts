@@ -65,13 +65,6 @@ export const useVariableAggregation = ({
   // 当节点切换时重置初始化状态
   useEffect(() => {
     if (nodeId !== undefined && prevNodeIdRef.current !== nodeId) {
-      console.log(
-        '[VariableAggregation] 节点切换:',
-        prevNodeIdRef.current,
-        '->',
-        nodeId,
-        '重置初始化状态',
-      );
       isInitialized.current = false;
       forceReinitRef.current = true; // 标记需要强制重新初始化
       prevNodeIdRef.current = nodeId;
@@ -80,26 +73,14 @@ export const useVariableAggregation = ({
 
   // ========== 初始化逻辑 ==========
   useEffect(() => {
-    console.log('[VariableAggregation] 初始化检查:', {
-      nodeId,
-      isInitialized: isInitialized.current,
-      forceReinit: forceReinitRef.current,
-      inputArgsFromForm: inputArgsFromForm?.length || 0,
-      variableGroups: variableGroups?.length || 0,
-    });
-
     // 如果已初始化且不是强制重新初始化，跳过
     if (isInitialized.current && !forceReinitRef.current) {
-      console.log('[VariableAggregation] 已初始化，跳过');
       return;
     }
 
     // 如果 inputArgsFromForm 为空，等待数据加载
     // 注意：不要在这里清空 variableGroups，否则会导致数据丢失
     if (!inputArgsFromForm?.length) {
-      console.log('[VariableAggregation] inputArgsFromForm 为空，等待数据加载');
-      // 只有在强制重新初始化（真正的节点切换）且确认目标节点没有数据时才清空
-      // 这里我们选择不清空，让数据保持原样，等待正确的数据加载
       return;
     }
 
