@@ -429,6 +429,18 @@ const initGraph = ({
     .use(
       new History({
         enabled: true,
+        // 过滤不需要记录的操作，避免历史记录过多
+        beforeAddCommand: (_event, args: any) => {
+          // 忽略端口属性变化（hover 效果）
+          if (args.key === 'ports' || args.key === 'ports/items') {
+            return false;
+          }
+          // 忽略 zIndex 变化
+          if (args.key === 'zIndex') {
+            return false;
+          }
+          return true;
+        },
       }),
     ) // 启用历史记录插件，支持撤销和重做
     .use(
