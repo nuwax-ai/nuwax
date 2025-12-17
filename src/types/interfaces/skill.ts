@@ -3,6 +3,8 @@ import { PublishStatusEnum } from '../enums/common';
 
 // 技能文件
 export interface SkillFileInfo {
+  // 文件ID (自定义，初始值时name的值)
+  fileId?: string;
   // 文件名称
   name: string;
   // 文件内容
