@@ -24,6 +24,12 @@ interface FilePathHeaderProps {
   onFullscreen?: () => void;
   /** 是否处于全屏状态 */
   isFullscreen?: boolean;
+  /** 保存回调 */
+  onSaveFiles?: () => void;
+  /** 取消保存回调 */
+  onCancelSaveFiles?: () => void;
+  /** 是否存在修改过的文件 */
+  hasModifiedFiles?: boolean;
 }
 
 /**
@@ -56,6 +62,9 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onDownload,
   onFullscreen,
   isFullscreen = false,
+  onSaveFiles,
+  onCancelSaveFiles,
+  hasModifiedFiles = false,
 }) => {
   // 显示的文件名
   const displayFileName = useMemo(() => {
@@ -95,6 +104,18 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           )}
         </div>
       </div>
+
+      {/* 底部：保存和取消按钮 */}
+      {hasModifiedFiles && (
+        <div className="flex content-end gap-4 py-16">
+          <Button size="small" type="primary" onClick={onSaveFiles}>
+            保存
+          </Button>
+          <Button size="small" type="default" onClick={onCancelSaveFiles}>
+            取消
+          </Button>
+        </div>
+      )}
 
       {/* 中间：视图模式切换按钮 */}
       <div className={styles.viewModeButtons}>

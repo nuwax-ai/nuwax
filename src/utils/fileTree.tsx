@@ -104,8 +104,8 @@ export const updateFilesListName = (
     ? `${parentPath}/${newName.trim()}`
     : newName.trim();
 
-  // 更新文件列表中的文件名（包含完整路径+文件名+后缀）
-  const updatedFilesList = files?.map((file: any) => {
+  // 更新原始文件列表中的文件名（包含完整路径+文件名+后缀）
+  return files?.map((file: any) => {
     // 如果是文件夹，需要更新文件夹本身以及所有子文件
     if (fileNode.type === 'folder') {
       // 检查是否是文件夹本身（虽然扁平列表中文件夹可能不存在）
@@ -145,5 +145,31 @@ export const updateFilesListName = (
 
     return file;
   });
-  return updatedFilesList;
+};
+
+/**
+ * 更新文件内容
+ * @param fileId 文件ID
+ * @param content 文件内容
+ * @param fileTree 当前文件树列表
+ * @returns 更新后的文件列表
+ */
+export const updateFileTreeContent = (
+  fileId: string,
+  content: string,
+  fileTree: FileNode[],
+): FileNode[] => {
+  const updateFileInTree = (files: FileNode[]): FileNode[] => {
+    return files.map((file) => {
+      if (file.id === fileId) {
+        return { ...file, content, lastModified: Date.now() };
+      }
+      if (file.children) {
+        return { ...file, children: updateFileInTree(file.children) };
+      }
+      return file;
+    });
+  };
+
+  return updateFileInTree(fileTree);
 };

@@ -15,12 +15,10 @@ import {
   SkillFileInfo,
   SkillUpdateParams,
 } from '@/types/interfaces/skill';
-import { transformFlatListToTree } from '@/utils/appDevUtils';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
-import { updateFilesListName, updateFileTreeName } from '@/utils/fileTree';
+import { updateFilesListName } from '@/utils/fileTree';
 import { message } from 'antd';
 import classNames from 'classnames';
-import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import styles from './index.less';
@@ -34,8 +32,6 @@ const SkillDetails: React.FC = () => {
   const { spaceId, skillId } = useParams();
   // 技能信息
   const [skillInfo, setSkillInfo] = useState<SkillDetailInfo | null>(null);
-  // 文件树数据
-  const [files, setFiles] = useState<FileNode[]>([]);
   // 发布技能弹窗是否打开
   const [open, setOpen] = useState<boolean>(false);
   // 编辑技能信息弹窗是否打开
@@ -46,26 +42,25 @@ const SkillDetails: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: async (result: SkillDetailInfo) => {
-      setSkillInfo(result);
       const { files } = result || {};
-      let treeData: FileNode[] = [];
-      // 如果文件列表不为空，则转换为树形结构
-      if (Array.isArray(files) && files.length > 0 && files[0].name) {
-        treeData = transformFlatListToTree(files);
+      if (Array.isArray(files) && files.length > 0) {
+        setSkillInfo(result);
       } else {
-        // 从模板中获取文件列表
         const {
           data: templateInfo,
           code,
           message: errorMessage,
         } = await apiSkillTemplate();
         if (code === SUCCESS_CODE) {
-          treeData = transformFlatListToTree(templateInfo.files);
+          setSkillInfo(() => ({
+            ...result,
+            files: templateInfo.files,
+          }));
         } else {
+          setSkillInfo(result);
           message.error(errorMessage || '获取技能模板失败');
         }
       }
-      setFiles(treeData);
     },
   });
 
@@ -93,7 +88,6 @@ const SkillDetails: React.FC = () => {
    * 处理上传单个文件回调
    */
   const handleUploadSingleFile = async (node: FileNode | null) => {
-    console.log('node', node);
     if (!skillId) {
       message.error('技能ID不能为空');
       return;
@@ -129,8 +123,6 @@ const SkillDetails: React.FC = () => {
         // 设置加载状态，与弹窗上传保持一致
         // setSingleFileUploadLoading(true);
         // setIsFileOperating(true);
-
-        console.log('file', file);
 
         // 直接调用上传接口，使用文件名作为路径
         const result = await apiSkillUploadFile({
@@ -197,56 +189,41 @@ const SkillDetails: React.FC = () => {
     fileNode: FileNode,
     newName: string,
   ) => {
-    console.log('handleConfirmRenameFile', fileNode, newName);
-    if (!newName.trim()) {
-      // 重命名文件失败：新文件名为空
-      return;
-    }
+    // 更新原始文件列表中的文件名（用于提交更新）
+    const updatedFilesList = updateFilesListName(
+      skillInfo?.files || [],
+      fileNode,
+      newName,
+      'rename',
+    );
 
-    const filesBackup = cloneDeep(files);
+    // 更新技能信息，用于提交更新
+    const newSkillInfo: SkillUpdateParams = {
+      id: skillInfo?.id || 0,
+      files: updatedFilesList as unknown as SkillFileInfo[],
+    };
 
-    try {
-      // const fileNode = findFileNode(fileNode.id, files);
-      // 重命名文件失败：找不到文件节点
-      if (!fileNode) {
-        return;
-      }
+    // 使用文件全量更新逻辑
+    const response = await apiSkillUpdate(newSkillInfo);
+    return response.code === SUCCESS_CODE;
+  };
 
-      // 先立即更新文件树中的显示名字，提供即时反馈
-      const updatedFileTree = updateFileTreeName(
-        files,
-        fileNode.id,
-        newName.trim(),
-      );
-
-      setFiles(updatedFileTree);
-
-      // 更新原始文件列表中的文件名（用于提交更新）
-      const updatedFilesList = updateFilesListName(
-        skillInfo?.files || [],
-        fileNode,
-        newName,
-        'rename',
-      );
-
-      console.log(skillInfo?.files, 'updatedFilesList2222', updatedFilesList);
-      const newSkillInfo: SkillUpdateParams = {
-        id: skillInfo?.id || 0,
-        files: updatedFilesList as unknown as SkillFileInfo[],
-      };
-
-      // 使用文件全量更新逻辑
-      const response = await apiSkillUpdate(newSkillInfo);
-      console.log('response', response);
-
-      if (response.code !== SUCCESS_CODE) {
-        // 重命名文件失败，重新加载文件树以恢复原状态
-        setFiles(filesBackup);
-      }
-    } catch (error) {
-      // 重命名文件失败，重新加载文件树以恢复原状态
-      setFiles(filesBackup);
-    }
+  // 保存文件
+  const handleSaveFiles = (
+    data: {
+      fileId: string;
+      fileContent: string;
+      originalFileContent: string;
+    }[],
+  ) => {
+    console.log('handleSaveFiles', data);
+    // 保存文件
+    // const response = await apiSkillSaveFile(data);
+    // if (response.code === SUCCESS_CODE) {
+    //   message.success('保存成功');
+    // } else {
+    //   message.error('保存失败');
+    // }
   };
 
   return (
@@ -261,10 +238,11 @@ const SkillDetails: React.FC = () => {
       />
       {/* 文件树视图 */}
       <FileTreeView
-        files={files}
+        originalFiles={skillInfo?.files || []}
         onUploadSingleFile={handleUploadSingleFile}
         onDownload={handleDownload}
         onRenameFile={handleConfirmRenameFile}
+        onSaveFiles={handleSaveFiles}
       />
 
       {/*发布技能弹窗*/}

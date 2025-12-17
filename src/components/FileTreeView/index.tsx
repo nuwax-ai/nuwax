@@ -5,9 +5,12 @@ import {
   isImageFile,
   isPreviewableFile,
   processImageContent,
+  transformFlatListToTree,
 } from '@/utils/appDevUtils';
+import { updateFileTreeContent, updateFileTreeName } from '@/utils/fileTree';
 import { Modal } from 'antd';
 import classNames from 'classnames';
+import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
 import AppDevEmptyState from '../business-component/AppDevEmptyState';
 import CodeViewer from '../CodeViewer';
@@ -20,21 +23,31 @@ import SearchView from './SearchView';
 const cx = classNames.bind(styles);
 
 interface FileTreeViewProps {
-  files: FileNode[];
+  originalFiles: any[];
   onUploadSingleFile?: (node: FileNode | null) => void;
   onDownload?: () => void;
-  onRenameFile?: (node: FileNode, newName: string) => void;
+  onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
+  onSaveFiles?: (
+    data: {
+      fileId: string;
+      fileContent: string;
+      originalFileContent: string;
+    }[],
+  ) => void;
 }
 
 /**
  * 文件树视图组件
  */
 const FileTreeView: React.FC<FileTreeViewProps> = ({
-  files,
+  originalFiles,
   onUploadSingleFile,
   onDownload,
   onRenameFile,
+  onSaveFiles,
 }) => {
+  // 文件树数据
+  const [files, setFiles] = useState<FileNode[]>([]);
   // 当前选中的文件ID
   const [selectedFileId, setSelectedFileId] = useState<string>('');
   // 选中的文件节点
@@ -54,6 +67,10 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   const [contextMenuVisible, setContextMenuVisible] = useState<boolean>(false);
   // 全屏状态
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  // 修改的文件列表
+  const [changeFiles, setChangeFiles] = useState<
+    { fileId: string; fileContent: string; originalFileContent: string }[]
+  >([]);
 
   // 文件选择
   const handleFileSelect = (fileId: string) => {
@@ -66,6 +83,34 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
       setSelectedFileNode(null);
     }
   };
+
+  useEffect(() => {
+    let treeData: FileNode[] = [];
+    // 如果文件列表不为空，则转换为树形结构
+    if (
+      Array.isArray(originalFiles) &&
+      originalFiles.length > 0 &&
+      originalFiles[0].name
+    ) {
+      treeData = transformFlatListToTree(originalFiles);
+    } else if (Array.isArray(originalFiles)) {
+      treeData = originalFiles as FileNode[];
+    }
+    // else {
+    //   // 从模板中获取文件列表
+    //   const {
+    //     data: templateInfo,
+    //     code,
+    //     message: errorMessage,
+    //   } = await apiSkillTemplate();
+    //   if (code === SUCCESS_CODE) {
+    //     treeData = transformFlatListToTree(templateInfo.files);
+    //   } else {
+    //     message.error(errorMessage || '获取技能模板失败');
+    //   }
+    // }
+    setFiles(treeData);
+  }, [originalFiles]);
 
   /**
    * 处理右键菜单显示
@@ -113,11 +158,39 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   /**
    * 处理重命名操作
    */
-  const handleRenameFile = (node: FileNode, newName: string) => {
-    // 直接调用现有的重命名文件功能
-    onRenameFile?.(node, newName);
-    // console.log('handleRenameFile', node, newName);
-    return Promise.resolve(true);
+  const handleRenameFile = async (fileNode: FileNode, newName: string) => {
+    if (!newName || !newName?.trim()) {
+      // 重命名文件失败：新文件名为空
+      return;
+    }
+
+    // 备份文件列表,用于重命名失败时恢复文件树
+    const filesBackup = cloneDeep(files);
+
+    try {
+      // 重命名文件失败：找不到文件节点
+      if (!fileNode) {
+        return;
+      }
+
+      // 先立即更新文件树中的显示名字，提供即时反馈
+      const updatedFileTree = updateFileTreeName(
+        files,
+        fileNode.id,
+        newName.trim(),
+      );
+
+      setFiles(updatedFileTree);
+
+      // 直接调用现有的重命名文件功能
+      const result = await onRenameFile?.(fileNode, newName);
+      if (!result) {
+        setFiles(filesBackup);
+      }
+    } catch {
+      // 重命名文件失败，重新加载文件树以恢复原状态
+      setFiles(filesBackup);
+    }
   };
 
   /**
@@ -143,8 +216,22 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
    */
   const handleContentChange = (fileId: string, content: string) => {
     // 直接调用现有的内容变化功能
-    // onContentChange(fileId, content);
-    console.log('handleContentChange', fileId, content);
+    // onUpdateFileContent?.(fileId, content);
+    // 更新文件内容
+    const updatedFiles: FileNode[] = updateFileTreeContent(
+      fileId,
+      content,
+      files,
+    );
+    setFiles(updatedFiles);
+    setChangeFiles([
+      ...changeFiles,
+      {
+        fileId,
+        fileContent: content,
+        originalFileContent: selectedFileNode?.content,
+      },
+    ]);
   };
 
   const isImage = isImageFile(selectedFileId);
@@ -162,6 +249,18 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
    */
   const handleCloseFullscreen = () => {
     setIsFullscreen(false);
+  };
+
+  // 保存文件
+  const saveFiles = () => {
+    // setIsFullscreen(false);
+    onSaveFiles?.(changeFiles);
+  };
+
+  // 取消保存文件
+  const cancelSaveFiles = () => {
+    // setIsFullscreen(false);
+    setChangeFiles([]);
   };
 
   return (
@@ -201,6 +300,9 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               onDownload={onDownload}
               onFullscreen={handleFullscreen}
               isFullscreen={true}
+              onSaveFiles={saveFiles}
+              onCancelSaveFiles={cancelSaveFiles}
+              hasModifiedFiles={changeFiles.length > 0}
             />
           </div>
           {/* 全屏模式下的代码编辑器 */}
@@ -296,6 +398,9 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
             onDownload={onDownload}
             onFullscreen={handleFullscreen}
             isFullscreen={false}
+            onSaveFiles={saveFiles}
+            onCancelSaveFiles={cancelSaveFiles}
+            hasModifiedFiles={changeFiles.length > 0}
           />
           {/* 右边内容 */}
           <div className={cx(styles['content-container'])}>
