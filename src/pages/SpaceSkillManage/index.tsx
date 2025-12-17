@@ -1,9 +1,17 @@
+import MoveCopyComponent from '@/components/MoveCopyComponent';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import { apiDeleteSkill } from '@/services/library';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { apiDeleteSkill, apiSkillCopyToSpace } from '@/services/library';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { PageDevelopMoreActionEnum } from '@/types/enums/pageDev';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
-import type { SkillInfo } from '@/types/interfaces/library';
+import {
+  SkillCopyToSpaceParams,
+  SkillCopyTypeEnum,
+  type SkillInfo,
+} from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
 import { message } from 'antd';
 import { useRef, useState } from 'react';
@@ -73,13 +81,60 @@ const SpaceSkillManage: React.FC = () => {
     setOpenCreateSkill(true);
   };
 
+  // 迁移、复制弹窗
+  const [openMove, setOpenMove] = useState<boolean>(false);
+  // 当前组件信息
+  const [currentComponentInfo, setCurrentComponentInfo] =
+    useState<SkillInfo | null>(null);
+
+  // 加载中
+  const [loadingSkill, setLoadingSkill] = useState<boolean>(false);
+
+  // 复制到空间
+  const handleClickCopyToSpace = (info: SkillInfo) => {
+    console.log('复制到空间', info);
+    setOpenMove(true);
+    setCurrentComponentInfo(info);
+  };
+
+  // 确认复制到空间
+  const handlerConfirmCopyToSpace = async (targetSpaceId: number) => {
+    if (!currentComponentInfo) {
+      message.error('技能信息不存在');
+      return;
+    }
+    const data: SkillCopyToSpaceParams = {
+      skillId: currentComponentInfo.id,
+      targetSpaceId,
+      copyType: SkillCopyTypeEnum.DEVELOP,
+    };
+
+    try {
+      setLoadingSkill(true);
+      const result = await apiSkillCopyToSpace(data);
+      if (result.code === SUCCESS_CODE) {
+        message.success('技能复制成功');
+        // 查询技能列表
+        mainContentRef.current?.exposeQueryComponentList();
+        // 关闭弹窗
+        setOpenMove(false);
+      }
+    } finally {
+      setLoadingSkill(false);
+    }
+  };
+
   // 点击技能卡片更多操作
   const handleClickMore = (item: CustomPopoverItem, info: SkillInfo) => {
     const { action } = item as unknown as {
-      action: ApplicationMoreActionEnum;
+      action: ApplicationMoreActionEnum | PageDevelopMoreActionEnum;
     };
 
     switch (action) {
+      // 复制到空间
+      case PageDevelopMoreActionEnum.Copy_To_Space:
+        handleClickCopyToSpace(info);
+        break;
       // 编辑
       case ApplicationMoreActionEnum.Edit:
         handleClickEdit(info);
@@ -118,6 +173,18 @@ const SpaceSkillManage: React.FC = () => {
         skillInfo={currentSkillInfo as SkillInfo | undefined}
         onCancel={() => setOpenCreateSkill(false)}
         onConfirm={handleCreateSkillConfirm}
+      />
+
+      {/*复制到空间弹窗*/}
+      <MoveCopyComponent
+        spaceId={spaceId}
+        loading={loadingSkill}
+        type={ApplicationMoreActionEnum.Copy_To_Space}
+        mode={AgentComponentTypeEnum.Skill}
+        open={openMove}
+        title={currentComponentInfo?.name}
+        onCancel={() => setOpenMove(false)}
+        onConfirm={handlerConfirmCopyToSpace}
       />
     </WorkspaceLayout>
   );
