@@ -49,7 +49,7 @@ export interface CurrentPublishItemProps {
 
 // 查询指定智能体插件或工作流已发布列表请求参数
 export interface PublishItemListParams {
-  // 类型，智能体、插件、工作流可以下架,可用值:Agent,Plugin,Workflow,Knowledge,Table
+  // 类型，智能体、插件、工作流、技能可以下架,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill
   targetType: AgentComponentTypeEnum;
   // 智能体、插件或工作流ID
   targetId: number;
