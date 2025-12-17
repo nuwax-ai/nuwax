@@ -37,6 +37,9 @@ interface IAddNode {
   type: string;
   loopNodeId?: number;
   typeId?: number;
+  name?: string;
+  shape?: string;
+  description?: string;
   extension?: {
     x: number;
     y: number;
