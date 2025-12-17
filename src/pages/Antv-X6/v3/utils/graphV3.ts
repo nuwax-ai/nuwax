@@ -2,7 +2,7 @@ import {
   DEFAULT_NODE_CONFIG,
   DEFAULT_NODE_CONFIG_MAP,
   EXCEPTION_NODES_TYPE,
-} from '@/constants/node.constants';
+} from '@/pages/Antv-X6/v3/constants/node.constants';
 import {
   AnswerTypeEnum,
   ExceptionHandleTypeEnum,
@@ -17,10 +17,11 @@ import {
 } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig, NodeConfig } from '@/types/interfaces/node';
 import { isEmptyObject } from '@/utils/index';
-import { getWidthAndHeight } from '@/utils/updateNode';
+// import { getWidthAndHeight } from '@/utils/updateNode';
 import { Cell, Edge, Graph, Node } from '@antv/x6';
 import { message } from 'antd';
 import { isEqual, isPlainObject } from 'lodash';
+import { getWidthAndHeight } from './workflowV3';
 // 边界检查并调整子节点位置
 // 调整父节点尺寸以包含所有子节点
 

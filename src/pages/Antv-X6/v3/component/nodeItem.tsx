@@ -6,7 +6,7 @@ import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariable
 import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import { VARIABLE_CONFIG_TYPE_OPTIONS } from '@/constants/node.constants';
+import { VARIABLE_CONFIG_TYPE_OPTIONS } from '@/pages/Antv-X6/v3/constants/node.constants';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum, VariableConfigTypeEnum } from '@/types/enums/node';
 import { CodeLangEnum } from '@/types/enums/plugin';

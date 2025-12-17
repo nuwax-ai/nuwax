@@ -5,7 +5,7 @@ import OtherOperations from '@/components/OtherAction';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import TestRun from '@/components/TestRun';
 import VersionHistory from '@/components/VersionHistory';
-import { testRunList } from '@/constants/node.constants';
+import { testRunList } from '@/pages/Antv-X6/v3/constants/node.constants';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,

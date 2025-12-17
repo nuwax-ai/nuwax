@@ -12,13 +12,13 @@
 import Constant from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import {
-  DEFAULT_DRAWER_FORM,
-  SKILL_FORM_KEY,
-} from '@/constants/node.constants';
 import useDisableSaveShortcut from '@/hooks/useDisableSaveShortcut';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
+import {
+  DEFAULT_DRAWER_FORM,
+  SKILL_FORM_KEY,
+} from '@/pages/Antv-X6/v3/constants/node.constants';
 import type { AddNodeResponse } from '@/services/workflow';
 import service, { IgetDetails, ITestRun } from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -1285,6 +1285,15 @@ const Workflow: React.FC = () => {
           extension: _params.extension,
         },
       };
+
+      // 强制覆盖 Loop 节点的宽高为前端常量，防止被 API 返回的默认值覆盖
+      if (_params.type === NodeTypeEnum.Loop) {
+        _params.nodeConfig.extension = {
+          ..._params.nodeConfig.extension,
+          width: LOOP_NODE_DEFAULT_WIDTH,
+          height: LOOP_NODE_DEFAULT_HEIGHT,
+        };
+      }
     }
 
     // V3: Use Proxy to add node

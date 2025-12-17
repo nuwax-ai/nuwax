@@ -1,5 +1,5 @@
 import InputOrReference from '@/components/FormListItem/InputOrReference';
-import { branchTypeMap } from '@/constants/node.constants';
+import { branchTypeMap } from '@/pages/Antv-X6/v3/constants/node.constants';
 import { ConditionBranchConfigs } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';

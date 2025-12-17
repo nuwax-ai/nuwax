@@ -1,11 +1,11 @@
 import CodeEditor from '@/components/CodeEditor';
 import NewMonaco from '@/components/CodeEditor/NewMonaco';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { useSpecificContent } from '@/hooks/useSpecificContent';
 import {
   EXCEPTION_HANDLE_OPTIONS,
   RETRY_COUNT_OPTIONS,
-} from '@/constants/node.constants';
-import { useSpecificContent } from '@/hooks/useSpecificContent';
+} from '@/pages/Antv-X6/v3/constants/node.constants';
 import { ExceptionHandleTypeEnum } from '@/types/enums/common';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { ExceptionItemProps } from '@/types/interfaces/graph';

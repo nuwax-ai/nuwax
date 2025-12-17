@@ -26,7 +26,10 @@ import {
   ICON_WORKFLOW_VARIABLE,
   ICON_WORKFLOW_WORKFLOW,
 } from '@/constants/images.constants';
-import { DEFAULT_NODE_CONFIG_MAP } from '@/constants/node.constants';
+import {
+  DEFAULT_NODE_CONFIG_MAP,
+  EXCEPTION_NODES_TYPE,
+} from '@/pages/Antv-X6/v3/constants/node.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   AnswerTypeEnum,
@@ -72,15 +75,51 @@ import {
 } from '@/assets/images/workflow_image.png';
 import PlusIcon from '@/assets/svg/plus_icon.svg';
 
-import { getWidthAndHeight } from '@/utils/updateNode';
+// import { getWidthAndHeight } from '@/utils/updateNode';
 import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
 import {
   adjustParentSize,
-  generatePortGroupConfig,
   showExceptionHandle,
   showExceptionPort,
 } from './graphV3';
+
+// 根据节点动态给予宽高
+export const getWidthAndHeight = (node: ChildNode) => {
+  const { type, nodeConfig } = node;
+  const extension = nodeConfig?.extension || {};
+  const { defaultWidth, defaultHeight } =
+    DEFAULT_NODE_CONFIG_MAP[type as keyof typeof DEFAULT_NODE_CONFIG_MAP] ||
+    DEFAULT_NODE_CONFIG_MAP.default;
+  const hasExceptionHandleItem = EXCEPTION_NODES_TYPE.includes(type);
+  const exceptionHandleItemHeight = 32;
+  const extraHeight = hasExceptionHandleItem ? exceptionHandleItemHeight : 0;
+  if (
+    type === NodeTypeEnum.QA ||
+    type === NodeTypeEnum.Condition ||
+    type === NodeTypeEnum.IntentRecognition
+  ) {
+    return {
+      width: defaultWidth,
+      height: (extension.height || defaultHeight) + extraHeight,
+    };
+  }
+  if (type === NodeTypeEnum.Loop) {
+    return {
+      width:
+        extension.width && extension.width > defaultWidth
+          ? extension.width
+          : defaultWidth,
+      height: (extension.height || defaultHeight) + extraHeight,
+    };
+  }
+
+  // 通用节点
+  return {
+    width: defaultWidth,
+    height: defaultHeight + extraHeight,
+  }; // 通用节点的默认大小
+};
 
 const NODE_BOTTOM_PADDING = 10;
 const NODE_BOTTOM_PADDING_AND_BORDER = NODE_BOTTOM_PADDING + 1;

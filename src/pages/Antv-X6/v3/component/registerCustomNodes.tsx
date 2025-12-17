@@ -1,13 +1,13 @@
 import EditableTitle from '@/components/editableTitle';
 import { ICON_WORKFLOW_LOOP } from '@/constants/images.constants';
+import useNodeSelection from '@/hooks/useNodeSelection';
 import {
   answerTypeMap,
   branchTypeMap,
   compareTypeMap,
   EXCEPTION_HANDLE_OPTIONS,
   optionsMap,
-} from '@/constants/node.constants';
-import useNodeSelection from '@/hooks/useNodeSelection';
+} from '@/pages/Antv-X6/v3/constants/node.constants';
 import {
   returnBackgroundColor,
   returnImg,
