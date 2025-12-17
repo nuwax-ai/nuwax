@@ -23,7 +23,7 @@ export interface FileTreeProps {
   onFileSelect: (fileId: string) => void;
 
   /** 重命名文件回调 */
-  onRenameFile: (node: FileNode, newName: string) => Promise<boolean>;
+  onConfirmRenameFile: (node: FileNode, newName: string) => Promise<boolean>;
 
   /** 文件管理方法 */
   // fileManagement: {

@@ -23,7 +23,7 @@ interface FileTreeViewProps {
   files: FileNode[];
   onUploadSingleFile?: (node: FileNode | null) => void;
   onDownload?: () => void;
-  onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
+  onRenameFile?: (node: FileNode, newName: string) => void;
 }
 
 /**
@@ -116,7 +116,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   const handleRenameFile = (node: FileNode, newName: string) => {
     // 直接调用现有的重命名文件功能
     onRenameFile?.(node, newName);
-    console.log('handleRenameFile', node, newName);
+    // console.log('handleRenameFile', node, newName);
     return Promise.resolve(true);
   };
 
@@ -275,7 +275,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
             // 文件选择回调
             onFileSelect={handleFileSelect}
             // 重命名文件回调
-            onRenameFile={handleRenameFile}
+            onConfirmRenameFile={handleRenameFile}
           />
         </div>
         <div
