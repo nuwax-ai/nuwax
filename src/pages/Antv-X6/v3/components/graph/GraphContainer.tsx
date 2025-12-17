@@ -99,14 +99,32 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
                 ...childDef.nodeConfig,
                 extension: {
                   ...childDef.nodeConfig?.extension,
-                  // 内部节点 X 位置：根据节点类型区分 Start/End 偏移
-                  x:
-                    (loopPosition?.x || 0) +
-                    (childDef.type === NodeTypeEnum.LoopStart
-                      ? LOOP_START_NODE_X_OFFSET
-                      : LOOP_END_NODE_X_OFFSET),
-                  // Y 位置保持在循环节点内部
-                  y: (loopPosition?.y || 0) + LOOP_INNER_NODE_Y_OFFSET,
+                  // 内部节点 X 位置：优先使用保存的位置，否则根据节点类型计算默认偏移
+                  // 增加逻辑：如果保存的位置小于循环节点位置，说明是相对坐标，需要转换为绝对坐标
+                  x: (() => {
+                    const savedX = childDef.nodeConfig?.extension?.x;
+                    const loopX = loopPosition?.x || 0;
+                    if (savedX !== undefined) {
+                      return savedX < loopX ? loopX + savedX : savedX;
+                    }
+                    return (
+                      loopX +
+                      (childDef.type === NodeTypeEnum.LoopStart
+                        ? LOOP_START_NODE_X_OFFSET
+                        : childDef.type === NodeTypeEnum.LoopEnd
+                        ? LOOP_END_NODE_X_OFFSET
+                        : 0)
+                    );
+                  })(),
+                  // Y 位置：优先使用保存的位置，否则保持在循环节点内部
+                  y: (() => {
+                    const savedY = childDef.nodeConfig?.extension?.y;
+                    const loopY = loopPosition?.y || 0;
+                    if (savedY !== undefined) {
+                      return savedY < loopY ? loopY + savedY : savedY;
+                    }
+                    return loopY + LOOP_INNER_NODE_Y_OFFSET;
+                  })(),
                 },
               },
             };
