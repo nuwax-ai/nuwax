@@ -18,7 +18,6 @@ import {
 } from '@/constants/node.constants';
 import useDisableSaveShortcut from '@/hooks/useDisableSaveShortcut';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
-import useModifiedSaveUpdate from '@/hooks/useModifiedSaveUpdate';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import type { AddNodeResponse } from '@/services/workflow';
 import service, { IgetDetails, ITestRun } from '@/services/workflow';
@@ -75,6 +74,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import WorkflowLayout from './components/layout/WorkflowLayout';
+import useModifiedSaveUpdateV3 from './hooks/useModifiedSaveUpdateV3';
 // Components moved to WorkflowLayout
 import './indexV3.less';
 
@@ -84,6 +84,7 @@ import { useWorkflowLifecycle } from './hooks/useWorkflowLifecycle';
 import { useWorkflowPersistence } from './hooks/useWorkflowPersistence';
 
 // V3 数据代理层
+import { WorkflowVersionProvider } from '@/contexts/WorkflowVersionContext';
 import { workflowProxy } from './services/workflowProxyV3';
 import type { WorkflowDataV2 } from './types';
 import { calculateNodePreviousArgs } from './utils/variableReferenceV3';
@@ -293,6 +294,8 @@ const Workflow: React.FC = () => {
   const preventGetReference = useRef<number>(0);
   // 新增定时器引用
   const timerRef = useRef<NodeJS.Timeout>();
+  // 标记节点切换中，防止表单初始化触发保存
+  const isNodeSwitchingRef = useRef(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   // 按钮是否处于loading
   const [loading, setLoading] = useState(false);
@@ -397,6 +400,12 @@ const Workflow: React.FC = () => {
   };
   // 获取当前节点的参数 - V3 使用前端计算替代后端接口
   const getReference = async (id: number): Promise<boolean> => {
+    console.log(
+      '[getReference] 调用, id:',
+      id,
+      'preventGetReference:',
+      preventGetReference.current,
+    );
     if (id === FoldFormIdEnum.empty || preventGetReference.current === id)
       return false;
 
@@ -461,6 +470,14 @@ const Workflow: React.FC = () => {
       };
 
       const result = calculateNodePreviousArgs(id, workflowData);
+
+      console.log('[getReference] 计算结果:', {
+        id,
+        nodeListLength: nodeList.length,
+        edgeListLength: edgeList.length,
+        previousNodesLength: result?.previousNodes?.length || 0,
+        argMapKeys: Object.keys(result?.argMap || {}).length,
+      });
 
       if (result && result.previousNodes && result.previousNodes.length) {
         setReferenceList({
@@ -634,8 +651,26 @@ const Workflow: React.FC = () => {
     const _isModified = getWorkflow('isModified');
     const _drawerForm = getWorkflow('drawerForm');
 
+    console.log(
+      '[changeDrawer] 节点切换, isModified:',
+      _isModified,
+      'currentNode:',
+      _drawerForm?.id,
+      '->',
+      child?.id,
+    );
+
+    // 标记节点切换开始，防止表单初始化触发 isModified
+    isNodeSwitchingRef.current = true;
+    // 使用 setTimeout 在下一个事件循环重置标记
+    // 600ms 足够让 throttledHandleGraphUpdate (500ms) 完成
+    setTimeout(() => {
+      isNodeSwitchingRef.current = false;
+    }, 600);
+
     if (_isModified === true && _drawerForm?.id !== 0) {
       //如果有修改先保存
+      console.log('[changeDrawer] 检测到修改，触发保存');
       setIsModified(false);
       onSaveWorkflow(_drawerForm);
       if (timerRef.current) {
@@ -653,29 +688,41 @@ const Workflow: React.FC = () => {
     }
 
     const _visible = getWorkflow('visible');
-    setFoldWrapItem((prev: ChildNode) => {
-      setTestRun(false);
-      if (prev.id === FoldFormIdEnum.empty && child === null) {
-        setVisible(false);
-        return prev;
-      } else {
-        if (child !== null) {
-          if (!_visible) setVisible(true);
-          return child;
-        }
-        setVisible(false);
-        return {
-          id: FoldFormIdEnum.empty,
-          shape: NodeShapeEnum.General,
-          description: '',
-          workflowId: workflowId,
-          type: NodeTypeEnum.Start,
-          nodeConfig: {},
-          name: '',
-          icon: '',
-        };
-      }
-    });
+
+    // 计算新的 foldWrapItem 和 visible 状态（避免在 updater 函数内调用 setState）
+    let newVisible = _visible;
+    let newFold: ChildNode;
+
+    const currentFold = getWorkflow('drawerForm');
+
+    if (currentFold?.id === FoldFormIdEnum.empty && child === null) {
+      newVisible = false;
+      newFold = currentFold;
+    } else if (child !== null) {
+      if (!_visible) newVisible = true;
+      newFold = child;
+    } else {
+      newVisible = false;
+      newFold = {
+        id: FoldFormIdEnum.empty,
+        shape: NodeShapeEnum.General,
+        description: '',
+        workflowId: workflowId,
+        type: NodeTypeEnum.Start,
+        nodeConfig: {},
+        name: '',
+        icon: '',
+      };
+    }
+
+    // 先更新 visible 和 testRun 状态
+    setTestRun(false);
+    if (newVisible !== _visible) {
+      setVisible(newVisible);
+    }
+
+    // 最后更新 foldWrapItem
+    setFoldWrapItem(newFold);
   }, []);
 
   // ==================== 节点创建相关辅助函数 ====================
@@ -1992,11 +2039,11 @@ const Workflow: React.FC = () => {
   };
 
   // 监听保存更新修改
-  useModifiedSaveUpdate({
+  useModifiedSaveUpdateV3({
     run: useCallback(async () => {
       const _drawerForm = getWorkflow('drawerForm');
       // console.log(
-      //   'useModifiedSaveUpdate: run: onSaveWorkflow',
+      //   'useModifiedSaveUpdateV3: run: onSaveWorkflow',
       //   _drawerForm.id,
       //   JSON.stringify(_drawerForm.nodeConfig),
       // );
@@ -2034,11 +2081,20 @@ const Workflow: React.FC = () => {
   // 使用节流处理表单值变化，确保最后一次调用必须触发更新
   const throttledHandleGraphUpdate = useThrottledCallback(
     (changedValues: any, fullFormValues: any) => {
+      console.log(
+        '[throttledHandleGraphUpdate] 触发, changedValues:',
+        Object.keys(changedValues),
+        'isNodeSwitching:',
+        isNodeSwitchingRef.current,
+      );
       // 先关闭之前修改的标记
       setIsModified(false);
       handleGraphUpdateByFormData(changedValues, fullFormValues);
-      // 再打开新的修改标记
-      setIsModified(true);
+      // 只有在非节点切换期间才标记为已修改
+      // 节点切换时的表单初始化不应触发保存
+      if (!isNodeSwitchingRef.current) {
+        setIsModified(true);
+      }
     },
     500, // 500ms 的节流延迟
     {
@@ -2149,77 +2205,79 @@ const Workflow: React.FC = () => {
   }, []);
 
   return (
-    <WorkflowLayout
-      isValidLoading={isValidLoading}
-      info={info}
-      setShowCreateWorkflow={setShowCreateWorkflow}
-      setShowVersionHistory={setShowVersionHistory}
-      handleShowPublish={handleShowPublish}
-      showPublish={showPublish}
-      setShowPublish={setShowPublish}
-      canUndo={historyState.canUndo}
-      canRedo={historyState.canRedo}
-      onUndo={() => {
-        const graph = graphRef.current?.getGraphRef();
-        if (graph && graph.canUndo()) {
-          graph.undo();
-        }
-      }}
-      onRedo={() => {
-        const graph = graphRef.current?.getGraphRef();
-        if (graph && graph.canRedo()) {
-          graph.redo();
-        }
-      }}
-      onConfirm={onConfirm}
-      handleConfirmPublishWorkflow={handleConfirmPublishWorkflow}
-      globalLoadingTime={globalLoadingTime}
-      graphParams={graphParams}
-      graphRef={graphRef}
-      handleNodeClick={handleNodeClick}
-      nodeChangeEdge={nodeChangeEdge}
-      changeNode={changeNode}
-      deleteNode={deleteNode}
-      copyNode={copyNode}
-      changeZoom={changeZoom}
-      createNodeByPortOrEdge={createNodeByPortOrEdge}
-      handleSaveNode={handleSaveNode}
-      handleClickBlank={handleClickBlank}
-      handleInitLoading={handleInitLoading}
-      handleRefreshGraph={handleRefreshGraph}
-      dragChild={dragChild}
-      foldWrapItem={foldWrapItem}
-      changeGraph={changeGraph}
-      testRunAll={testRunAll}
-      testRunLoading={testRunLoading}
-      visible={visible}
-      handleDrawerClose={handleDrawerClose}
-      showNameInput={showNameInput}
-      changeFoldWrap={changeFoldWrap}
-      handleOperationsChange={handleOperationsChange}
-      form={form}
-      doSubmitFormData={doSubmitFormData}
-      throttledHandleGraphUpdate={throttledHandleGraphUpdate}
-      createdItem={createdItem}
-      onAdded={onAdded}
-      open={open}
-      setOpen={setOpen}
-      workflowCreatedTabs={workflowCreatedTabs}
-      workflowId={workflowId}
-      runTest={runTest}
-      testRunResult={testRunResult}
-      handleClearRunResult={handleClearRunResult}
-      loading={loading}
-      stopWait={stopWait}
-      formItemValue={formItemValue}
-      testRunParams={testRunParams}
-      errorParams={errorParams}
-      setErrorParams={setErrorParams}
-      handleErrorNodeClick={handleErrorNodeClick}
-      spaceId={spaceId}
-      showCreateWorkflow={showCreateWorkflow}
-      showVersionHistory={showVersionHistory}
-    />
+    <WorkflowVersionProvider version="v3">
+      <WorkflowLayout
+        isValidLoading={isValidLoading}
+        info={info}
+        setShowCreateWorkflow={setShowCreateWorkflow}
+        setShowVersionHistory={setShowVersionHistory}
+        handleShowPublish={handleShowPublish}
+        showPublish={showPublish}
+        setShowPublish={setShowPublish}
+        canUndo={historyState.canUndo}
+        canRedo={historyState.canRedo}
+        onUndo={() => {
+          const graph = graphRef.current?.getGraphRef();
+          if (graph && graph.canUndo()) {
+            graph.undo();
+          }
+        }}
+        onRedo={() => {
+          const graph = graphRef.current?.getGraphRef();
+          if (graph && graph.canRedo()) {
+            graph.redo();
+          }
+        }}
+        onConfirm={onConfirm}
+        handleConfirmPublishWorkflow={handleConfirmPublishWorkflow}
+        globalLoadingTime={globalLoadingTime}
+        graphParams={graphParams}
+        graphRef={graphRef}
+        handleNodeClick={handleNodeClick}
+        nodeChangeEdge={nodeChangeEdge}
+        changeNode={changeNode}
+        deleteNode={deleteNode}
+        copyNode={copyNode}
+        changeZoom={changeZoom}
+        createNodeByPortOrEdge={createNodeByPortOrEdge}
+        handleSaveNode={handleSaveNode}
+        handleClickBlank={handleClickBlank}
+        handleInitLoading={handleInitLoading}
+        handleRefreshGraph={handleRefreshGraph}
+        dragChild={dragChild}
+        foldWrapItem={foldWrapItem}
+        changeGraph={changeGraph}
+        testRunAll={testRunAll}
+        testRunLoading={testRunLoading}
+        visible={visible}
+        handleDrawerClose={handleDrawerClose}
+        showNameInput={showNameInput}
+        changeFoldWrap={changeFoldWrap}
+        handleOperationsChange={handleOperationsChange}
+        form={form}
+        doSubmitFormData={doSubmitFormData}
+        throttledHandleGraphUpdate={throttledHandleGraphUpdate}
+        createdItem={createdItem}
+        onAdded={onAdded}
+        open={open}
+        setOpen={setOpen}
+        workflowCreatedTabs={workflowCreatedTabs}
+        workflowId={workflowId}
+        runTest={runTest}
+        testRunResult={testRunResult}
+        handleClearRunResult={handleClearRunResult}
+        loading={loading}
+        stopWait={stopWait}
+        formItemValue={formItemValue}
+        testRunParams={testRunParams}
+        errorParams={errorParams}
+        setErrorParams={setErrorParams}
+        handleErrorNodeClick={handleErrorNodeClick}
+        spaceId={spaceId}
+        showCreateWorkflow={showCreateWorkflow}
+        showVersionHistory={showVersionHistory}
+      />
+    </WorkflowVersionProvider>
   );
 };
 

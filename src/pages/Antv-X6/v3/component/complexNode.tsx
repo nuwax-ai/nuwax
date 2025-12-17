@@ -173,13 +173,26 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       return AgentAddComponentStatusEnum.Added;
     });
   }, [skillComponentConfigs]);
+
+  // Form.useWatch 在第一次渲染时可能返回空，使用 nodeConfig.inputArgs 作为 fallback
+  const watchedInputArgs = Form.useWatch(InputItemNameEnum.inputArgs, {
+    form,
+    preserve: true,
+  });
   const variables = (
-    Form.useWatch(InputItemNameEnum.inputArgs, {
-      form,
-      preserve: true,
-    }) || []
+    (watchedInputArgs && watchedInputArgs.length > 0
+      ? watchedInputArgs
+      : nodeConfig?.inputArgs) || []
   ).filter(
     (item: InputAndOutConfig) => !['', null, undefined].includes(item.name),
+  );
+
+  // Debug: Check variables and referenceList
+  console.log(
+    '[LLMNode] variables:',
+    variables?.length,
+    'referenceList argMapKeys:',
+    Object.keys(referenceList?.argMap || {}).length,
   );
 
   const handleCreatedCancel = useCallback(() => {

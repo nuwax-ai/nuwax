@@ -1,12 +1,12 @@
 import TiptapVariableInput from '@/components/TiptapVariableInput';
 import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
 import { ICON_OPTIMIZE } from '@/constants/images.constants';
+import { useWorkflowModel } from '@/hooks/useWorkflowModel';
 import { ExpandAltOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import classNames from 'classnames';
 import { PromptEditorProvider, PromptEditorRender } from 'prompt-kit-editor';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import ExpandTextArea from './expandTextarea';
 import styles from './index.less';
@@ -36,7 +36,7 @@ export const ExpandableInputTextarea: React.FC<
   skills,
 }) => {
   const [uuid, setUuid] = useState('');
-  const { setExpanded, expanded } = useModel('workflow'); // 添加本地状态
+  const { setExpanded, expanded } = useWorkflowModel(); // 添加本地状态
   useEffect(() => {
     setUuid(uuidv4());
     return () => {

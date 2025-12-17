@@ -25,9 +25,9 @@ export interface InputOrReferenceProps {
   // 用于受控模式的引用选择回调，传递完整的字段更新
   onReferenceSelect?: (
     value: string,
-    bindValueType: 'Input' | 'Reference',
+    type: string,
     dataType: string,
-    name?: string,
+    name: string,
   ) => void;
 }
 

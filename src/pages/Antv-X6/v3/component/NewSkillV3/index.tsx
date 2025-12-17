@@ -94,15 +94,21 @@ export const SkillList: React.FC<SkillProps> = ({
       (currentComponentInfo?.toolName || '') === (item.toolName || '')
     );
   };
-  const genKey = useCallback((item: CreatedNodeItem, prefix: string) => {
-    return `${prefix}-${item?.type}-${item?.typeId}-${item?.toolName || ''}`;
-  }, []);
+  const genKey = useCallback(
+    (item: CreatedNodeItem, prefix: string, index: number) => {
+      // 包含 index 以确保即使 typeId 为 undefined 也能生成唯一 key
+      return `${prefix}-${item?.type}-${item?.typeId ?? index}-${
+        item?.toolName || ''
+      }`;
+    },
+    [],
+  );
   return (
     <div className={cx(styles['skill-list'], 'relative')}>
       {/* V3: 前端同步操作，移除 loading */}
       {params.map((item, index) => (
         <div
-          key={genKey(item, 'skill')}
+          key={genKey(item, 'skill', index)}
           className={cx(
             styles['skill-item-container'],
             index === 0 && 'margin-top-10',
@@ -182,7 +188,7 @@ export const SkillList: React.FC<SkillProps> = ({
       ))}
       <SettingModal
         open={open}
-        key={genKey(currentComponentInfo as CreatedNodeItem, 'setting')}
+        key={genKey(currentComponentInfo as CreatedNodeItem, 'setting', 0)}
         variables={variables}
         inputArgBindConfigs={
           currentComponentInfo?.inputArgBindConfigs as BindConfigWithSub[]
