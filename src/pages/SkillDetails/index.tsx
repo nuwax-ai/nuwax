@@ -5,15 +5,22 @@ import {
   apiSkillDetail,
   apiSkillExport,
   apiSkillTemplate,
+  apiSkillUpdate,
   apiSkillUploadFile,
 } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
-import { SkillDetailInfo } from '@/types/interfaces/skill';
+import {
+  SkillDetailInfo,
+  SkillFileInfo,
+  SkillUpdateParams,
+} from '@/types/interfaces/skill';
 import { transformFlatListToTree } from '@/utils/appDevUtils';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
+import { updateFilesListName, updateFileTreeName } from '@/utils/fileTree';
 import { message } from 'antd';
 import classNames from 'classnames';
+import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import styles from './index.less';
@@ -26,11 +33,13 @@ const cx = classNames.bind(styles);
 const SkillDetails: React.FC = () => {
   const { spaceId, skillId } = useParams();
   // 技能信息
-  const [skillInfo, setSkillInfo] = useState<any>(null);
+  const [skillInfo, setSkillInfo] = useState<SkillDetailInfo | null>(null);
   // 文件树数据
   const [files, setFiles] = useState<FileNode[]>([]);
   // 发布技能弹窗是否打开
   const [open, setOpen] = useState<boolean>(false);
+  // 编辑技能信息弹窗是否打开
+  const [editSkillModalOpen, setEditSkillModalOpen] = useState<boolean>(false);
 
   // 查询技能信息
   const { run: runSkillInfo } = useRequest(apiSkillDetail, {
@@ -177,6 +186,69 @@ const SkillDetails: React.FC = () => {
     }
   };
 
+  // 编辑技能信息
+  const handleEditSkill = () => {
+    console.log('handleEditSkill', editSkillModalOpen);
+    setEditSkillModalOpen(true);
+  };
+
+  // 确认重命名文件
+  const handleConfirmRenameFile = async (
+    fileNode: FileNode,
+    newName: string,
+  ) => {
+    console.log('handleConfirmRenameFile', fileNode, newName);
+    if (!newName.trim()) {
+      // 重命名文件失败：新文件名为空
+      return;
+    }
+
+    const filesBackup = cloneDeep(files);
+
+    try {
+      // const fileNode = findFileNode(fileNode.id, files);
+      // 重命名文件失败：找不到文件节点
+      if (!fileNode) {
+        return;
+      }
+
+      // 先立即更新文件树中的显示名字，提供即时反馈
+      const updatedFileTree = updateFileTreeName(
+        files,
+        fileNode.id,
+        newName.trim(),
+      );
+
+      setFiles(updatedFileTree);
+
+      // 更新原始文件列表中的文件名（用于提交更新）
+      const updatedFilesList = updateFilesListName(
+        skillInfo?.files || [],
+        fileNode,
+        newName,
+        'rename',
+      );
+
+      console.log(skillInfo?.files, 'updatedFilesList2222', updatedFilesList);
+      const newSkillInfo: SkillUpdateParams = {
+        id: skillInfo?.id || 0,
+        files: updatedFilesList as unknown as SkillFileInfo[],
+      };
+
+      // 使用文件全量更新逻辑
+      const response = await apiSkillUpdate(newSkillInfo);
+      console.log('response', response);
+
+      if (response.code !== SUCCESS_CODE) {
+        // 重命名文件失败，重新加载文件树以恢复原状态
+        setFiles(filesBackup);
+      }
+    } catch (error) {
+      // 重命名文件失败，重新加载文件树以恢复原状态
+      setFiles(filesBackup);
+    }
+  };
+
   return (
     <div
       className={cx('skill-details-container', 'flex', 'h-full', 'flex-col')}
@@ -184,7 +256,7 @@ const SkillDetails: React.FC = () => {
       {/* 技能头部 */}
       <SkillHeader
         skillInfo={skillInfo}
-        onEditAgent={() => {}}
+        onEditAgent={handleEditSkill}
         onPublish={() => setOpen(true)}
       />
       {/* 文件树视图 */}
@@ -192,6 +264,7 @@ const SkillDetails: React.FC = () => {
         files={files}
         onUploadSingleFile={handleUploadSingleFile}
         onDownload={handleDownload}
+        onRenameFile={handleConfirmRenameFile}
       />
 
       {/*发布技能弹窗*/}
@@ -200,7 +273,7 @@ const SkillDetails: React.FC = () => {
         targetId={skillId}
         open={open}
         spaceId={spaceId}
-        category={skillInfo?.category}
+        // category={skillInfo?.category}
         // 取消发布
         onCancel={() => setOpen(false)}
         onConfirm={handleConfirmPublish}

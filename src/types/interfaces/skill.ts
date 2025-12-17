@@ -6,10 +6,10 @@ export interface SkillFileInfo {
   name: string;
   // 文件内容
   contents: string;
-  // 重命名前的文件名
-  renameFrom: string;
+  /** 重命名之前的文件名（仅在重命名场景下使用） */
+  renameFrom?: string;
   // 操作类型
-  operation: string;
+  operation?: 'create' | 'delete' | 'rename' | 'modify';
 }
 
 // 技能详情
@@ -47,13 +47,13 @@ export interface SkillDetailInfo {
 // 修改技能
 export interface SkillUpdateParams {
   id: number;
-  name: string;
-  description: string;
-  icon: string;
+  name?: string;
+  description?: string;
+  icon?: string;
   // 文件内容
   files?: SkillFileInfo[];
   // 发布状态,可用值:Developing,Applying,Published,Rejected
-  publishStatus: PublishStatusEnum;
+  publishStatus?: PublishStatusEnum;
 }
 
 // 导入技能

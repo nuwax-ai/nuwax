@@ -21,7 +21,7 @@ const FileTree: React.FC<FileTreeProps> = ({
   // 文件选择回调
   onFileSelect,
   // 重命名文件回调
-  onRenameFile,
+  onConfirmRenameFile,
   // 右键菜单回调
   onContextMenu,
 }) => {
@@ -62,10 +62,10 @@ const FileTree: React.FC<FileTreeProps> = ({
   /**
    * 取消重命名
    */
-  const cancelRename = useCallback(() => {
+  const cancelRename = () => {
     onCancelRename();
     setRenameValue('');
-  }, []);
+  };
 
   /**
    * 确认重命名
@@ -86,13 +86,12 @@ const FileTree: React.FC<FileTreeProps> = ({
       return;
     }
 
-    setRenameValue('');
-    // 先立即更新UI显示新名字，提供即时反馈
-    onCancelRename();
+    // 恢复数据状态
+    cancelRename();
 
     // 异步执行重命名操作
     try {
-      await onRenameFile(renamingNode, trimmedValue);
+      await onConfirmRenameFile(renamingNode, trimmedValue);
     } catch (error) {
       // 如果重命名失败，可以考虑恢复原名字或显示错误提示
       // console.error('重命名失败:', error);

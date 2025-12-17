@@ -1,5 +1,4 @@
 import agentImage from '@/assets/images/agent_image.png';
-import ConditionRender from '@/components/ConditionRender';
 import { FormOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
@@ -49,25 +48,14 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
         src={skillInfo?.icon || (agentImage as string)}
         alt=""
       />
-      <div
-        className={cx(
-          'flex',
-          'flex-col',
-          'items-center',
-          styles['header-info'],
-        )}
-      >
+      <div className={cx('flex', 'items-center', styles['header-info'])}>
         <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
           {skillInfo?.name}
         </h3>
 
-        <div className={cx('flex', 'items-center', styles['rel-info'])}>
-          <ConditionRender condition={skillInfo?.icon}>
-            <img src={skillInfo?.icon} alt="" />
-          </ConditionRender>
-        </div>
-
-        <FormOutlined
+        <Button
+          type="text"
+          icon={<FormOutlined />}
           className={cx(styles['edit-ico'])}
           onClick={onEditAgent}
         />
