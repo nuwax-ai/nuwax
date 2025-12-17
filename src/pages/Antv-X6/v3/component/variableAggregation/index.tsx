@@ -61,7 +61,7 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
     <>
       <div className="node-item-style">
         <div className="node-title-style margin-bottom">聚合策略</div>
-        <Form.Item name="aggregationStrategy" initialValue="FIRST_NON_NULL">
+        <Form.Item name="aggregationStrategy">
           <select
             className="ant-select ant-select-sm"
             style={{
