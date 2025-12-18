@@ -225,11 +225,60 @@ const SkillDetails: React.FC = () => {
     }
   };
 
+  // 新建文件（空内容）
+  const handleCreateFileNode = async (
+    fileNode: FileNode,
+    newName: string,
+  ): Promise<boolean> => {
+    if (!skillInfo) {
+      message.error('技能信息不存在，无法新建文件');
+      return false;
+    }
+
+    const trimmedName = newName.trim();
+    if (!trimmedName) {
+      return false;
+    }
+
+    // 计算新文件的完整路径：父路径 + 新文件名
+    const parentPath = fileNode.parentPath || '';
+    const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
+
+    const newFile: SkillFileInfo = {
+      fileId: newPath,
+      name: newPath,
+      contents: '',
+      operation: 'create',
+      isDir: fileNode.type === 'folder',
+    };
+
+    console.log('newFile77777', newFile, skillInfo?.files, fileNode);
+
+    const updatedFilesList: SkillFileInfo[] = [
+      // ...(skillInfo.files || []),
+      newFile,
+    ];
+
+    const newSkillInfo: SkillUpdateParams = {
+      id: skillInfo.id,
+      files: updatedFilesList,
+    };
+
+    const { code } = await apiSkillUpdate(newSkillInfo);
+    if (code === SUCCESS_CODE && skillId) {
+      // 新建成功后，重新拉取技能详情以刷新文件树和文件列表
+      runSkillInfo(skillId);
+      return true;
+    }
+
+    return false;
+  };
   // 确认重命名文件
   const handleConfirmRenameFile = async (
     fileNode: FileNode,
     newName: string,
   ) => {
+    console.log('handleConfirmRenameFile', fileNode, newName);
     // 更新原始文件列表中的文件名（用于提交更新）
     const updatedFilesList = updateFilesListName(
       skillInfo?.files || [],
@@ -328,6 +377,7 @@ const SkillDetails: React.FC = () => {
         onUploadSingleFile={handleUploadSingleFile}
         onDownload={handleDownload}
         onRenameFile={handleConfirmRenameFile}
+        onCreateFileNode={handleCreateFileNode}
         onSaveFiles={handleSaveFiles}
         onDeleteFile={handleDeleteFile}
       />

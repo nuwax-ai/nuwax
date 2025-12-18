@@ -13,6 +13,8 @@ export interface SkillFileInfo {
   renameFrom?: string;
   // 操作类型
   operation?: 'create' | 'delete' | 'rename' | 'modify';
+  // 是否为文件夹
+  isDir?: boolean;
 }
 
 // 技能详情

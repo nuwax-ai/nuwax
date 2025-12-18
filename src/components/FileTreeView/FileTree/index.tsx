@@ -63,7 +63,13 @@ const FileTree: React.FC<FileTreeProps> = ({
    * 取消重命名
    */
   const cancelRename = () => {
-    onCancelRename();
+    const trimmedValue = renameValue.trim();
+    const shouldRemove = renamingNode?.status === 'create' && !trimmedValue;
+
+    onCancelRename({
+      removeIfNew: shouldRemove,
+      node: renamingNode || null,
+    });
     setRenameValue('');
   };
 
