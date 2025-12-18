@@ -280,8 +280,76 @@ export interface CurrentNodeRefProps {
   edgeId?: string;
 }
 
-export interface GraphNodeSize {
-  type: NodeSizeGetTypeEnum; // 创建或更新
-  width: number;
-  height: number;
+export interface WorkflowData {
+  nodes: ChildNode[];
+  edges: Edge[];
+  workflowId: number;
+  lastSavedVersion?: string;
+  isDirty?: boolean;
+  modified?: string;
+}
+
+export interface WorkflowDetails {
+  id: number;
+  name: string;
+  description: string;
+  spaceId: number;
+  nodes: ChildNode[];
+  startNode: ChildNode;
+  endNode?: ChildNode;
+  extension?: {
+    size?: number;
+  };
+  modified?: string;
+  publishDate?: string;
+  publishStatus?: string;
+  category?: string;
+  permissions?: string[];
+  version?: string;
+}
+
+/**
+ * 历史记录项 (用于撤销重做)
+ */
+export interface HistoryItem {
+  id: string;
+  type: string;
+  timestamp: number;
+  data: {
+    before: WorkflowData;
+    after: WorkflowData;
+  };
+}
+
+export interface SaveWorkflowRequest {
+  workflowId: number;
+  name?: string;
+  description?: string;
+  spaceId?: number;
+  nodes: ChildNode[];
+  startNode?: ChildNode;
+  endNode?: ChildNode;
+  extension?: {
+    size?: number;
+  };
+  category?: string;
+  version?: string;
+}
+
+export interface SaveWorkflowResponse {
+  success: boolean;
+  message?: string;
+  version?: string;
+}
+
+export interface ValidationResult {
+  nodeId: number;
+  success: boolean;
+  messages: string[];
+}
+
+export interface NodeAnimationConfig {
+  type: 'highlight' | 'flash' | 'pulse';
+  duration: number;
+  color?: string;
 }
