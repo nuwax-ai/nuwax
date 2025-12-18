@@ -9,23 +9,23 @@
  * 替代后端 getOutputArgs 接口，解决 V1 前后端数据不同步问题
  */
 
+import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type {
-  ArgMapV2,
-  ChildNodeV2,
-  EdgeV2,
-  InputAndOutConfigV2,
-  NodePreviousAndArgMapV2,
-  PreviousListV2,
-  WorkflowDataV2,
+  ArgMapV3,
+  ChildNodeV3,
+  EdgeV3,
+  InputAndOutConfigV3,
+  NodePreviousAndArgMapV3,
+  PreviousListV3,
+  WorkflowDataV3,
 } from '../types';
-import { DataTypeEnumV2, NodeTypeEnumV2 } from '../types';
 
 const EXECUTE_EXCEPTION_FLOW = 'EXECUTE_EXCEPTION_FLOW';
 const INDEX_SYSTEM_NAME = 'INDEX';
-const SYSTEM_VARIABLES: InputAndOutConfigV2[] = [
+const SYSTEM_VARIABLES: InputAndOutConfigV3[] = [
   {
     name: 'SYS_USER_ID',
-    dataType: DataTypeEnumV2.String,
+    dataType: DataTypeEnum.String,
     description: '系统用户ID',
     require: false,
     systemVariable: true,
@@ -36,7 +36,7 @@ const SYSTEM_VARIABLES: InputAndOutConfigV2[] = [
   },
   {
     name: 'SYS_USER_NAME',
-    dataType: DataTypeEnumV2.String,
+    dataType: DataTypeEnum.String,
     description: '系统用户名',
     require: false,
     systemVariable: true,
@@ -47,7 +47,7 @@ const SYSTEM_VARIABLES: InputAndOutConfigV2[] = [
   },
   {
     name: 'SYS_SPACE_ID',
-    dataType: DataTypeEnumV2.Integer,
+    dataType: DataTypeEnum.Integer,
     description: '空间/租户 ID',
     require: false,
     systemVariable: true,
@@ -58,7 +58,7 @@ const SYSTEM_VARIABLES: InputAndOutConfigV2[] = [
   },
   {
     name: 'SYS_WORKFLOW_ID',
-    dataType: DataTypeEnumV2.Integer,
+    dataType: DataTypeEnum.Integer,
     description: '当前工作流 ID',
     require: false,
     systemVariable: true,
@@ -69,7 +69,7 @@ const SYSTEM_VARIABLES: InputAndOutConfigV2[] = [
   },
   {
     name: 'SYS_REQUEST_ID',
-    dataType: DataTypeEnumV2.String,
+    dataType: DataTypeEnum.String,
     description: '请求唯一标识',
     require: false,
     systemVariable: true,
@@ -80,7 +80,7 @@ const SYSTEM_VARIABLES: InputAndOutConfigV2[] = [
   },
   {
     name: 'SYS_TIMESTAMP',
-    dataType: DataTypeEnumV2.Integer,
+    dataType: DataTypeEnum.Integer,
     description: '请求时间戳 (ms)',
     require: false,
     systemVariable: true,
@@ -91,7 +91,7 @@ const SYSTEM_VARIABLES: InputAndOutConfigV2[] = [
   },
   {
     name: 'SYS_SPACE_NAME',
-    dataType: DataTypeEnumV2.String,
+    dataType: DataTypeEnum.String,
     description: '空间名称',
     require: false,
     systemVariable: true,
@@ -102,7 +102,7 @@ const SYSTEM_VARIABLES: InputAndOutConfigV2[] = [
   },
   {
     name: 'SYS_WORKFLOW_NAME',
-    dataType: DataTypeEnumV2.String,
+    dataType: DataTypeEnum.String,
     description: '工作流名称',
     require: false,
     systemVariable: true,
@@ -113,7 +113,7 @@ const SYSTEM_VARIABLES: InputAndOutConfigV2[] = [
   },
   {
     name: 'SYS_TENANT_ID',
-    dataType: DataTypeEnumV2.Integer,
+    dataType: DataTypeEnum.Integer,
     description: '租户ID',
     require: false,
     systemVariable: true,
@@ -129,7 +129,7 @@ const SYSTEM_VARIABLES: InputAndOutConfigV2[] = [
 /**
  * 获取节点的所有下游节点 ID（用于排序）
  */
-function collectNextNodeIds(node: ChildNodeV2): number[] {
+function collectNextNodeIds(node: ChildNodeV3): number[] {
   const nextIds = new Set<number>();
 
   (node.nextNodeIds || []).forEach((id) => {
@@ -139,7 +139,7 @@ function collectNextNodeIds(node: ChildNodeV2): number[] {
   });
 
   if (
-    node.type === NodeTypeEnumV2.Condition &&
+    node.type === NodeTypeEnum.Condition &&
     node.nodeConfig?.conditionBranchConfigs
   ) {
     node.nodeConfig.conditionBranchConfigs.forEach((branch) =>
@@ -148,7 +148,7 @@ function collectNextNodeIds(node: ChildNodeV2): number[] {
   }
 
   if (
-    node.type === NodeTypeEnumV2.IntentRecognition &&
+    node.type === NodeTypeEnum.IntentRecognition &&
     node.nodeConfig?.intentConfigs
   ) {
     node.nodeConfig.intentConfigs.forEach((intent) =>
@@ -156,7 +156,7 @@ function collectNextNodeIds(node: ChildNodeV2): number[] {
     );
   }
 
-  if (node.type === NodeTypeEnumV2.QA && node.nodeConfig?.options) {
+  if (node.type === NodeTypeEnum.QA && node.nodeConfig?.options) {
     node.nodeConfig.options.forEach((option) =>
       option.nextNodeIds?.forEach((id) => nextIds.add(id)),
     );
@@ -179,8 +179,8 @@ function collectNextNodeIds(node: ChildNodeV2): number[] {
  * 构建节点 ID 到节点的映射
  * 注意：node.id 可能是字符串或数字，统一转换为数字作为 key
  */
-function buildNodeMap(nodes: ChildNodeV2[]): Map<number, ChildNodeV2> {
-  const map = new Map<number, ChildNodeV2>();
+function buildNodeMap(nodes: ChildNodeV3[]): Map<number, ChildNodeV3> {
+  const map = new Map<number, ChildNodeV3>();
   nodes.forEach((node) => {
     const nodeId = Number(node.id);
     map.set(nodeId, node);
@@ -193,8 +193,8 @@ function buildNodeMap(nodes: ChildNodeV2[]): Map<number, ChildNodeV2> {
  * 同时支持从 nextNodeIds、分支连线和异常处理流连线建立索引
  */
 function buildReverseGraph(
-  nodes: ChildNodeV2[],
-  edgeList?: EdgeV2[],
+  nodes: ChildNodeV3[],
+  edgeList?: EdgeV3[],
 ): Map<number, number[]> {
   const reverseGraph = new Map<number, number[]>();
 
@@ -234,7 +234,7 @@ function buildReverseGraph(
  * 构建正向邻接表（找到每个节点的后继节点）
  * 同步 Java 的 nextNodeIds 处理逻辑
  */
-function buildForwardGraph(nodes: ChildNodeV2[]): Map<number, number[]> {
+function buildForwardGraph(nodes: ChildNodeV3[]): Map<number, number[]> {
   const forwardGraph = new Map<number, number[]>();
   nodes.forEach((node) => {
     forwardGraph.set(Number(node.id), collectNextNodeIds(node));
@@ -297,20 +297,20 @@ function findAllPredecessors(
 /**
  * 获取节点的输出参数
  */
-function cloneArg(arg: InputAndOutConfigV2): InputAndOutConfigV2 {
-  return JSON.parse(JSON.stringify(arg)) as InputAndOutConfigV2;
+function cloneArg(arg: InputAndOutConfigV3): InputAndOutConfigV3 {
+  return JSON.parse(JSON.stringify(arg)) as InputAndOutConfigV3;
 }
 
-function ensureVariableSuccessOutput(node: ChildNodeV2): InputAndOutConfigV2[] {
+function ensureVariableSuccessOutput(node: ChildNodeV3): InputAndOutConfigV3[] {
   const outputs = [...(node.nodeConfig.outputArgs || [])];
   const isSetVariable =
-    node.type === NodeTypeEnumV2.Variable &&
+    node.type === NodeTypeEnum.Variable &&
     node.nodeConfig.configType === 'SET_VARIABLE';
   const exists = outputs.some((o) => o.name === 'isSuccess');
   if (isSetVariable && !exists) {
     outputs.push({
       name: 'isSuccess',
-      dataType: DataTypeEnumV2.Boolean,
+      dataType: DataTypeEnum.Boolean,
       description: '变量设置结果',
       require: false,
       systemVariable: false,
@@ -323,9 +323,9 @@ function ensureVariableSuccessOutput(node: ChildNodeV2): InputAndOutConfigV2[] {
   return outputs;
 }
 
-function getNodeOutputArgs(node: ChildNodeV2): InputAndOutConfigV2[] {
+function getNodeOutputArgs(node: ChildNodeV3): InputAndOutConfigV3[] {
   // Start 节点：将 inputArgs 视为可引用输出，并保留原输出
-  if (node.type === NodeTypeEnumV2.Start) {
+  if (node.type === NodeTypeEnum.Start) {
     const outputFromInput =
       node.nodeConfig?.inputArgs?.map((arg) => ({
         ...cloneArg(arg),
@@ -338,13 +338,13 @@ function getNodeOutputArgs(node: ChildNodeV2): InputAndOutConfigV2[] {
 
   // Loop 节点：根据 JSON 示例，输出中包含带 -input 前缀的系统变量
   // 注意：这里仅处理暴露给下游的输出，内部引用的逻辑在 calculateNodePreviousArgs 中处理
-  if (node.type === NodeTypeEnumV2.Loop) {
+  if (node.type === NodeTypeEnum.Loop) {
     const outputs = [...(node.nodeConfig.outputArgs || [])];
     // 如果没有 INDEX，根据后端示例补充
     if (!outputs.some((o) => o.name === 'INDEX')) {
       outputs.push({
         name: 'INDEX',
-        dataType: DataTypeEnumV2.Integer,
+        dataType: DataTypeEnum.Integer,
         description: '数组索引',
         require: false,
         systemVariable: true,
@@ -380,9 +380,9 @@ function generateArgKey(
  */
 function prefixOutputArgsKeys(
   nodeIdOrPrefix: number | string,
-  args: InputAndOutConfigV2[],
+  args: InputAndOutConfigV3[],
   parentPath: string[] = [],
-): InputAndOutConfigV2[] {
+): InputAndOutConfigV3[] {
   return args.map((arg) => {
     const currentPath = [...parentPath, arg.name];
     const key = `${nodeIdOrPrefix}.${currentPath.join('.')}`;
@@ -406,10 +406,10 @@ function prefixOutputArgsKeys(
  */
 function flattenArgsToMap(
   nodeIdOrPrefix: number | string,
-  args: InputAndOutConfigV2[],
+  args: InputAndOutConfigV3[],
   parentPath: string[] = [],
-): ArgMapV2 {
-  const argMap: ArgMapV2 = {};
+): ArgMapV3 {
+  const argMap: ArgMapV3 = {};
 
   args.forEach((arg) => {
     const currentPath = [...parentPath, arg.name];
@@ -438,8 +438,8 @@ function flattenArgsToMap(
  */
 export function calculateNodePreviousArgs(
   nodeId: number,
-  workflowData: WorkflowDataV2,
-): NodePreviousAndArgMapV2 {
+  workflowData: WorkflowDataV3,
+): NodePreviousAndArgMapV3 {
   const { nodeList, edgeList } = workflowData;
 
   // 构建节点映射
@@ -462,8 +462,8 @@ export function calculateNodePreviousArgs(
   );
 
   // 构建上级节点列表
-  const previousNodes: PreviousListV2[] = [];
-  const argMap: ArgMapV2 = {};
+  const previousNodes: PreviousListV3[] = [];
+  const argMap: ArgMapV3 = {};
 
   predecessorIds.forEach((predId) => {
     const predNode = nodeMap.get(predId);
@@ -471,8 +471,8 @@ export function calculateNodePreviousArgs(
 
     // 跳过循环相关的内部节点（LoopStart, LoopEnd）
     if (
-      predNode.type === NodeTypeEnumV2.LoopStart ||
-      predNode.type === NodeTypeEnumV2.LoopEnd
+      predNode.type === NodeTypeEnum.LoopStart ||
+      predNode.type === NodeTypeEnum.LoopEnd
     ) {
       return;
     }
@@ -481,8 +481,8 @@ export function calculateNodePreviousArgs(
     const outputArgs = getNodeOutputArgs(predNode);
 
     // V3: 针对 Loop 节点，部分输出参数使用 -input 前缀以匹配后端格式
-    let prefixedOutputArgs: InputAndOutConfigV2[];
-    if (predNode.type === NodeTypeEnumV2.Loop) {
+    let prefixedOutputArgs: InputAndOutConfigV3[];
+    if (predNode.type === NodeTypeEnum.Loop) {
       prefixedOutputArgs = outputArgs.map((arg) => {
         // 同步 Java: INDEX 和 _item 使用 -input，其他普通输出使用 nodeId
         const prefix =
@@ -512,7 +512,7 @@ export function calculateNodePreviousArgs(
 
     // 展开参数到 argMap
     // 针对 Loop 节点，需要分别根据 -input 和 nodeId 展开
-    if (predNode.type === NodeTypeEnumV2.Loop) {
+    if (predNode.type === NodeTypeEnumV3.Loop) {
       const inputPart = prefixedOutputArgs.filter((a) =>
         a.key.includes('-input'),
       );
@@ -543,7 +543,7 @@ export function calculateNodePreviousArgs(
     };
   }
 
-  let innerPreviousNodes: PreviousListV2[] = [];
+  let innerPreviousNodes: PreviousListV3[] = [];
 
   if (currentNode.loopNodeId) {
     // 当前节点在循环内部，需要添加循环内部的上级节点
@@ -592,8 +592,8 @@ export function calculateNodePreviousArgs(
 
     // 循环节点自身的输入数组与变量也可作为可引用输出
     if (loopNode) {
-      const inputBasedOutputs: InputAndOutConfigV2[] = [];
-      const varBasedOutputs: InputAndOutConfigV2[] = [];
+      const inputBasedOutputs: InputAndOutConfigV3[] = [];
+      const varBasedOutputs: InputAndOutConfigV3[] = [];
       const argMapSnapshot = { ...argMap };
 
       // 1. 数组输入展开为 item (使用 -input 后缀)
@@ -608,16 +608,16 @@ export function calculateNodePreviousArgs(
             const elementType =
               (refArg.dataType as string).replace('Array_', '') || 'Object';
             const elementTypeEnum =
-              (DataTypeEnumV2 as any)[elementType] || DataTypeEnumV2.Object;
+              (DataTypeEnum as any)[elementType] || DataTypeEnum.Object;
 
-            const itemArg: InputAndOutConfigV2 = {
+            const itemArg: InputAndOutConfigV3 = {
               ...cloneArg(inputArg),
               name: `${inputArg.name}_item`,
               dataType: elementTypeEnum,
               subArgs: refArg.subArgs
                 ? (JSON.parse(
                     JSON.stringify(refArg.subArgs),
-                  ) as InputAndOutConfigV2[])
+                  ) as InputAndOutConfigV3[])
                 : refArg.subArgs,
             };
             inputBasedOutputs.push(itemArg);
@@ -628,7 +628,7 @@ export function calculateNodePreviousArgs(
       // 2. 追加 INDEX 系统变量 (使用 -input 后缀)
       inputBasedOutputs.push({
         name: INDEX_SYSTEM_NAME,
-        dataType: DataTypeEnumV2.Integer,
+        dataType: DataTypeEnum.Integer,
         description: '数组索引',
         require: false,
         systemVariable: true,
@@ -647,7 +647,7 @@ export function calculateNodePreviousArgs(
             outArg.subArgs = refArg.subArgs
               ? (JSON.parse(
                   JSON.stringify(refArg.subArgs),
-                ) as InputAndOutConfigV2[])
+                ) as InputAndOutConfigV3[])
               : refArg.subArgs;
           }
         }
@@ -701,7 +701,7 @@ export function calculateNodePreviousArgs(
   }
 
   // 如果当前节点是 Loop，补充内部变量到 innerPreviousNodes (用于配置 Loop 自己的输出，同步 Java Line 112-167)
-  if (currentNode.type === NodeTypeEnumV2.Loop) {
+  if (currentNode.type === NodeTypeEnumV3.Loop) {
     // 1. 内部结束节点输出 (Line 112-139)
     if (currentNode.innerNodes) {
       const endNode = currentNode.innerNodes.find(
@@ -724,12 +724,12 @@ export function calculateNodePreviousArgs(
               typeof newArg.dataType === 'string' && newArg.dataType
                 ? newArg.dataType
                 : 'Object';
-            newArg.dataType = `Array_${base}` as DataTypeEnumV2;
+            newArg.dataType = `Array_${base}` as DataTypeEnumV3;
           }
           return newArg;
         });
 
-        const loopEndNodeEntry: PreviousListV2 = {
+        const loopEndNodeEntry: PreviousListV3 = {
           id: endNode.id,
           name: endNode.name,
           type: endNode.type,
@@ -742,13 +742,13 @@ export function calculateNodePreviousArgs(
     }
 
     // 2. 循环节点自身的内部变量 (INDEX, variableArgs) (Line 140-167)
-    const inputBasedOutputs: InputAndOutConfigV2[] = [];
-    const varBasedOutputs: InputAndOutConfigV2[] = [];
+    const inputBasedOutputs: InputAndOutConfigV3[] = [];
+    const varBasedOutputs: InputAndOutConfigV3[] = [];
     const argMapSnapshot = { ...argMap };
 
     inputBasedOutputs.push({
       name: INDEX_SYSTEM_NAME,
-      dataType: DataTypeEnumV2.Integer,
+      dataType: DataTypeEnumV3.Integer,
       description: '数组索引',
       require: false,
       systemVariable: true,
@@ -766,7 +766,7 @@ export function calculateNodePreviousArgs(
           outArg.subArgs = refArg.subArgs
             ? (JSON.parse(
                 JSON.stringify(refArg.subArgs),
-              ) as InputAndOutConfigV2[])
+              ) as InputAndOutConfigV3[])
             : refArg.subArgs;
         }
       }
@@ -805,7 +805,7 @@ export function calculateNodePreviousArgs(
   // 按执行流顺序排序 (同步 Java sortPreviousNodes)
   const orderMap = new Map<number, number>();
   const startNodeInWorkflow = nodeList.find(
-    (n) => n.type === NodeTypeEnumV2.Start,
+    (n) => n.type === NodeTypeEnumV3.Start,
   );
   if (startNodeInWorkflow) {
     const visited = new Set<number>();
@@ -820,7 +820,7 @@ export function calculateNodePreviousArgs(
     dfs(Number(startNodeInWorkflow.id));
   }
 
-  const sortByOrder = (a: PreviousListV2, b: PreviousListV2) => {
+  const sortByOrder = (a: PreviousListV3, b: PreviousListV3) => {
     const oa = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
     const ob = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
     if (oa === ob) return a.id - b.id;
@@ -876,7 +876,7 @@ export function parseVariableReference(bindValue: string): {
  * @param argMap 参数映射
  * @returns 是否有效
  */
-export function isValidReference(bindValue: string, argMap: ArgMapV2): boolean {
+export function isValidReference(bindValue: string, argMap: ArgMapV3): boolean {
   if (!bindValue) return true; // 空值视为有效
 
   const parsed = parseVariableReference(bindValue);
@@ -895,8 +895,8 @@ export function isValidReference(bindValue: string, argMap: ArgMapV2): boolean {
  */
 export function getReferencedArg(
   bindValue: string,
-  argMap: ArgMapV2,
-): InputAndOutConfigV2 | null {
+  argMap: ArgMapV3,
+): InputAndOutConfigV3 | null {
   if (!bindValue || !argMap[bindValue]) {
     return null;
   }
@@ -913,7 +913,7 @@ export function getReferencedArg(
  */
 export function findReferencesToNode(
   nodeId: number,
-  targetNode: ChildNodeV2,
+  targetNode: ChildNodeV3,
 ): { field: string; bindValue: string }[] {
   const references: { field: string; bindValue: string }[] = [];
   const nodeIdStr = nodeId.toString();
@@ -961,11 +961,11 @@ export function findReferencesToNode(
  */
 export function getAvailableVariables(
   nodeId: number,
-  workflowData: WorkflowDataV2,
+  workflowData: WorkflowDataV3,
 ): {
   nodeId: number;
   nodeName: string;
-  nodeType: NodeTypeEnumV2;
+  nodeType: NodeTypeEnumV3;
   variables: {
     key: string;
     name: string;
