@@ -294,7 +294,6 @@ const SkillDetails: React.FC = () => {
       skillInfo?.files || [],
       fileNode,
       newName,
-      'rename',
     );
 
     // 更新技能信息，用于提交更新
