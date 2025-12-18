@@ -74,9 +74,9 @@ export const SKILL_MORE_ACTION: CustomPopoverItem[] = [
 // 任务中心更多操作
 export const TASK_CENTER_MORE_ACTION: CustomPopoverItem[] = [
   {
-    action: TaskCenterMoreActionEnum.Detail,
-    label: '详情',
-    type: TaskCenterMoreActionEnum.Detail,
+    action: TaskCenterMoreActionEnum.Record,
+    label: '执行记录',
+    type: TaskCenterMoreActionEnum.Record,
   },
   {
     action: TaskCenterMoreActionEnum.Edit,

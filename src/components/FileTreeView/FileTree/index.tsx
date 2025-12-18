@@ -3,9 +3,12 @@ import { FileNode } from '@/types/interfaces/appDev';
 import { getFileIcon } from '@/utils/fileTree';
 import type { InputRef } from 'antd';
 import { Input } from 'antd';
+import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
 import type { FileTreeProps } from './types';
+
+const cx = classNames.bind(styles);
 
 /**
  * 文件树组件
@@ -30,18 +33,14 @@ const FileTree: React.FC<FileTreeProps> = ({
   const renameInputRef = useRef<InputRef>(null);
   // 已展开的文件夹ID集合
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
-    new Set(),
+    () =>
+      // 初次渲染时自动展开第一层文件夹，后续文件列表变更时不重置，避免已展开的节点被折叠
+      new Set(
+        (files || [])
+          .filter((node) => node.type === 'folder')
+          .map((node) => node.id),
+      ),
   );
-
-  useEffect(() => {
-    // 自动展开第一层文件夹
-    const rootFolders =
-      files?.filter((node) => node.type === 'folder')?.map((node) => node.id) ||
-      [];
-    if (rootFolders?.length > 0) {
-      setExpandedFolders(new Set(rootFolders));
-    }
-  }, [files]);
 
   /**
    * 切换文件夹展开状态，用于展开/折叠回调
@@ -63,7 +62,13 @@ const FileTree: React.FC<FileTreeProps> = ({
    * 取消重命名
    */
   const cancelRename = () => {
-    onCancelRename();
+    const trimmedValue = renameValue.trim();
+    const shouldRemove = renamingNode?.status === 'create' && !trimmedValue;
+
+    onCancelRename({
+      removeIfNew: shouldRemove,
+      node: renamingNode || null,
+    });
     setRenameValue('');
   };
 
@@ -94,7 +99,7 @@ const FileTree: React.FC<FileTreeProps> = ({
       onConfirmRenameFile(renamingNode, trimmedValue);
     } catch (error) {
       // 如果重命名失败，可以考虑恢复原名字或显示错误提示
-      // console.error('重命名失败:', error);
+      console.error('重命名失败:', error);
     }
   };
 
@@ -119,13 +124,21 @@ const FileTree: React.FC<FileTreeProps> = ({
     // 延迟执行，避免与点击事件冲突
     setTimeout(() => {
       if (renamingNode) {
-        confirmRename();
+        // 对于新建节点（status === 'create'），失焦视为取消新建
+        // 用户需要按 Enter 显式确认新建
+        if (renamingNode.status === 'create') {
+          cancelRename();
+        } else {
+          // 其它场景（普通重命名）失焦仍然走确认逻辑
+          confirmRename();
+        }
       }
     }, 100);
-  }, [renamingNode, confirmRename]);
+  }, [renamingNode, confirmRename, cancelRename]);
 
   // 重命名输入框自动聚焦
   useEffect(() => {
+    // 当进入重命名 / 新建状态，且输入框已经渲染到 DOM 中时，自动聚焦并选中
     if (renamingNode && renameInputRef.current) {
       renameInputRef.current.focus();
       renameInputRef.current.select();
@@ -134,6 +147,31 @@ const FileTree: React.FC<FileTreeProps> = ({
     if (renamingNode) {
       setRenameValue(renamingNode.name);
     }
+  }, [renamingNode, expandedFolders]);
+
+  /**
+   * 当进入新建状态时，自动展开其父级及祖先文件夹
+   * 确保在折叠状态下新建文件/文件夹也能立刻可见
+   */
+  useEffect(() => {
+    if (!renamingNode || renamingNode.status !== 'create') {
+      return;
+    }
+
+    const parentPath = renamingNode.parentPath;
+    if (!parentPath) return;
+
+    const parts = parentPath.split('/').filter(Boolean);
+
+    setExpandedFolders((prev) => {
+      const next = new Set(prev);
+      let currentPath = '';
+      parts.forEach((part) => {
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
+        next.add(currentPath);
+      });
+      return next;
+    });
   }, [renamingNode]);
 
   /**
@@ -180,7 +218,9 @@ const FileTree: React.FC<FileTreeProps> = ({
                   size="small"
                 />
               ) : (
-                <span className={styles.folderName}>{node.name}</span>
+                <span className={cx(styles.folderName, 'text-ellipsis')}>
+                  {node.name}
+                </span>
               )}
             </div>
             {isExpanded && node.children && (
@@ -204,12 +244,6 @@ const FileTree: React.FC<FileTreeProps> = ({
               if (node.name.startsWith('.') || isRenaming) {
                 return;
               }
-
-              // if (!isComparing) {
-              //   // 正常模式下，使用文件管理逻辑并自动切换到代码查看模式
-              //   fileManagement.switchToFile(node.id);
-              // }
-              // 版本模式下，直接设置选中的文件到 workspace.activeFile
               onFileSelect(node.id);
             }}
             onContextMenu={(e) => onContextMenu(e, node)}

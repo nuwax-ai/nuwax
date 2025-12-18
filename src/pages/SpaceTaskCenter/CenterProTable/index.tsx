@@ -25,7 +25,7 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { useParams } from 'umi';
+import { history, useParams } from 'umi';
 
 export interface CenterProTableRef {
   /**
@@ -36,7 +36,7 @@ export interface CenterProTableRef {
 
 export interface CenterProTableProps {
   // 编辑
-  onEdit?: (id: number) => void;
+  onEdit?: (info: TaskInfo) => void;
 }
 
 /**
@@ -296,11 +296,14 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       };
       switch (action) {
         case TaskCenterMoreActionEnum.Edit:
-          onEdit(info.id);
+          onEdit(info);
           break;
-        case TaskCenterMoreActionEnum.Detail:
-          // onDetail(info.id);
-          message.info(`详情功能待接入（任务ID：${info.id}）`);
+        case TaskCenterMoreActionEnum.Record:
+          history.push(
+            `/space/${spaceId}/library-log?targetType=${
+              info.targetType
+            }&targetId=${info.targetId ?? ''}&from=task_center`,
+          );
           break;
         case TaskCenterMoreActionEnum.Delete:
           handleDeleteTask(info.id);

@@ -1,5 +1,6 @@
 import FileTreeView from '@/components/FileTreeView';
 import PublishComponentModal from '@/components/PublishComponentModal';
+import VersionHistory from '@/components/VersionHistory';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiSkillDetail,
@@ -9,18 +10,22 @@ import {
   apiSkillUploadFile,
 } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { FileNode } from '@/types/interfaces/appDev';
+import { SkillInfo } from '@/types/interfaces/library';
 import {
   SkillDetailInfo,
   SkillFileInfo,
   SkillUpdateParams,
 } from '@/types/interfaces/skill';
+import { modalConfirm } from '@/utils/ant-custom';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
+import CreateSkill from '../SpaceSkillManage/CreateSkill';
 import styles from './index.less';
 import SkillHeader from './SkillHeader';
 
@@ -36,6 +41,9 @@ const SkillDetails: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   // 编辑技能信息弹窗是否打开
   const [editSkillModalOpen, setEditSkillModalOpen] = useState<boolean>(false);
+  // 版本历史弹窗是否打开
+  const [versionHistoryModal, setVersionHistoryModal] =
+    useState<boolean>(false);
 
   // 查询技能信息
   const { run: runSkillInfo } = useRequest(apiSkillDetail, {
@@ -200,29 +208,86 @@ const SkillDetails: React.FC = () => {
 
   // 删除文件
   const handleDeleteFile = async (fileNode: FileNode) => {
-    const updatedFilesList =
-      skillInfo?.files?.map((item) => {
-        if (item.fileId === fileNode.id) {
-          item.operation = 'delete';
-        }
-        return item;
-      }) || [];
+    modalConfirm('您确定要删除此文件吗?', fileNode.name, async () => {
+      // 找到要删除的文件
+      const currentFile = skillInfo?.files?.find(
+        (item) => item.fileId === fileNode.id,
+      );
+      if (!currentFile) {
+        message.error('文件不存在，无法删除');
+        return;
+      }
+
+      // 更新文件操作
+      currentFile.operation = 'delete';
+      // 更新文件列表
+      const updatedFilesList = [currentFile] as SkillFileInfo[];
+
+      // 更新技能信息
+      const newSkillInfo: SkillUpdateParams = {
+        id: skillInfo?.id || 0,
+        files: updatedFilesList,
+      };
+      const { code } = await apiSkillUpdate(newSkillInfo);
+      if (code === SUCCESS_CODE) {
+        setSkillInfo(
+          (prev) =>
+            ({
+              ...prev,
+              files:
+                prev?.files?.filter((item) => item.fileId !== fileNode.id) ||
+                [],
+            } as SkillDetailInfo),
+        );
+      }
+      return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
+    });
+  };
+
+  // 新建文件（空内容）、文件夹
+  const handleCreateFileNode = async (
+    fileNode: FileNode,
+    newName: string,
+  ): Promise<boolean> => {
+    if (!skillInfo) {
+      message.error('技能信息不存在，无法新建文件');
+      return false;
+    }
+
+    const trimmedName = newName.trim();
+    if (!trimmedName) {
+      return false;
+    }
+
+    // 计算新文件的完整路径：父路径 + 新文件名
+    const parentPath = fileNode.parentPath || '';
+    const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
+
+    const newFile: SkillFileInfo = {
+      fileId: newPath,
+      name: newPath,
+      contents: '',
+      operation: 'create',
+      isDir: fileNode.type === 'folder',
+    };
+
+    const updatedFilesList: SkillFileInfo[] = [newFile];
 
     const newSkillInfo: SkillUpdateParams = {
-      id: skillInfo?.id || 0,
-      files: updatedFilesList as unknown as SkillFileInfo[],
+      id: skillInfo.id,
+      files: updatedFilesList,
     };
+
     const { code } = await apiSkillUpdate(newSkillInfo);
-    if (code === SUCCESS_CODE) {
-      setSkillInfo(
-        (prev) =>
-          ({
-            ...prev,
-            files:
-              prev?.files?.filter((item) => item.fileId !== fileNode.id) || [],
-          } as SkillDetailInfo),
-      );
+    if (code === SUCCESS_CODE && skillId) {
+      // 新建成功后，重新拉取技能详情以刷新文件树和文件列表
+      runSkillInfo(skillId);
+      return true;
     }
+
+    return false;
   };
 
   // 确认重命名文件
@@ -230,12 +295,12 @@ const SkillDetails: React.FC = () => {
     fileNode: FileNode,
     newName: string,
   ) => {
+    console.log('handleConfirmRenameFile', fileNode, newName);
     // 更新原始文件列表中的文件名（用于提交更新）
     const updatedFilesList = updateFilesListName(
       skillInfo?.files || [],
       fileNode,
       newName,
-      'rename',
     );
 
     // 更新技能信息，用于提交更新
@@ -265,8 +330,6 @@ const SkillDetails: React.FC = () => {
     return code === SUCCESS_CODE;
   };
 
-  // console.log('skillInfo77777', skillInfo);
-
   // 保存文件
   const handleSaveFiles = async (
     data: {
@@ -275,15 +338,12 @@ const SkillDetails: React.FC = () => {
       originalFileContent: string;
     }[],
   ) => {
-    console.log('handleSaveFiles', data, '2222', skillInfo);
-
+    // 更新文件列表(只更新修改过的文件)
     const updatedFilesList = updateFilesListContent(
       skillInfo?.files || [],
       data,
       'modify',
     );
-
-    console.log('updatedFilesList77777', updatedFilesList);
 
     // 更新技能信息，用于提交更新
     const newSkillInfo: SkillUpdateParams = {
@@ -293,44 +353,50 @@ const SkillDetails: React.FC = () => {
 
     // 使用文件全量更新逻辑
     const { code } = await apiSkillUpdate(newSkillInfo);
-    console.log('handleSaveFiles code44444444444444', code);
     return code === SUCCESS_CODE;
-    // data.forEach(item => {
-    //   const updatedFilesList = updateFilesListContent(
-    //     skillInfo?.files || [],
-    //     item.fileId,
-    //     item.fileContent,
-    //     'modify',
-    //   );
-    // });
-    // 保存文件
-    // const response = await apiSkillSaveFile(data);
-    // if (response.code === SUCCESS_CODE) {
-    //   message.success('保存成功');
-    // } else {
-    //   message.error('保存失败');
-    // }
+  };
+
+  // 确认编辑技能信息
+  const handleEditSkillConfirm = () => {
+    setEditSkillModalOpen(false);
+    // 重新查询技能信息，因为更新了技能信息，需要刷新文件树和文件列表
+    runSkillInfo(skillId);
   };
 
   return (
-    <div
-      className={cx('skill-details-container', 'flex', 'h-full', 'flex-col')}
-    >
+    <div className={cx('flex', 'h-full', 'flex-col')}>
       {/* 技能头部 */}
       <SkillHeader
+        spaceId={spaceId}
         skillInfo={skillInfo}
         onEditAgent={handleEditSkill}
         onPublish={() => setOpen(true)}
+        onToggleHistory={() => setVersionHistoryModal(!versionHistoryModal)}
       />
-      {/* 文件树视图 */}
-      <FileTreeView
-        originalFiles={skillInfo?.files || []}
-        onUploadSingleFile={handleUploadSingleFile}
-        onDownload={handleDownload}
-        onRenameFile={handleConfirmRenameFile}
-        onSaveFiles={handleSaveFiles}
-        onDeleteFile={handleDeleteFile}
-      />
+
+      <div className={cx('flex', 'flex-1')}>
+        {/* 文件树视图 */}
+        <FileTreeView
+          originalFiles={skillInfo?.files || []}
+          onUploadSingleFile={handleUploadSingleFile}
+          onDownload={handleDownload}
+          onRenameFile={handleConfirmRenameFile}
+          onCreateFileNode={handleCreateFileNode}
+          onSaveFiles={handleSaveFiles}
+          onDeleteFile={handleDeleteFile}
+        />
+
+        {/*版本历史*/}
+        <VersionHistory
+          headerClassName={cx(styles['version-history-header'])}
+          targetId={skillId}
+          targetName={skillInfo?.name}
+          targetType={AgentComponentTypeEnum.Skill}
+          // permissions={skillInfo?.permissions || []}
+          visible={versionHistoryModal}
+          onClose={() => setVersionHistoryModal(false)}
+        />
+      </div>
 
       {/*发布技能弹窗*/}
       <PublishComponentModal
@@ -342,6 +408,16 @@ const SkillDetails: React.FC = () => {
         // 取消发布
         onCancel={() => setOpen(false)}
         onConfirm={handleConfirmPublish}
+      />
+
+      {/* 创建技能弹窗 */}
+      <CreateSkill
+        spaceId={spaceId}
+        open={editSkillModalOpen}
+        type={CreateUpdateModeEnum.Update}
+        skillInfo={skillInfo as SkillInfo}
+        onCancel={() => setEditSkillModalOpen(false)}
+        onConfirm={handleEditSkillConfirm}
       />
     </div>
   );

@@ -61,6 +61,7 @@ const defaultTabs = CREATED_TABS.filter((item) =>
 
 // 创建插件、工作流、知识库、数据库
 const Created: React.FC<CreatedProp> = ({
+  isSpaceOnly = false,
   open,
   onCancel,
   checkTag,
@@ -126,7 +127,7 @@ const Created: React.FC<CreatedProp> = ({
       key: 'collect',
       label: '收藏',
     },
-  ];
+  ].filter((item) => !isSpaceOnly || item.key === 'library');
 
   const pageItem = [
     {
@@ -144,7 +145,7 @@ const Created: React.FC<CreatedProp> = ({
       key: 'library',
       label: '当前空间智能体',
     },
-  ];
+  ].filter((item) => !isSpaceOnly || item.key === 'library');
 
   const knowledgeItem = [
     {
@@ -215,7 +216,7 @@ const Created: React.FC<CreatedProp> = ({
       }
 
       // 如果需要只返回空间数据，则设置justReturnSpaceData为true
-      if (justReturnSpaceDataRef.current) {
+      if (justReturnSpaceDataRef.current || isSpaceOnly) {
         params.justReturnSpaceData = true;
       }
 
@@ -229,7 +230,6 @@ const Created: React.FC<CreatedProp> = ({
         params.targetType = AgentComponentTypeEnum.Agent;
         params.targetSubType = 'ChatBot';
       }
-
       const {
         code,
         data,
@@ -447,7 +447,7 @@ const Created: React.FC<CreatedProp> = ({
     const _select = val as string;
     const _item = tabs.find((item) => item.key === _select);
     if (_item) {
-      setSelectMenu('all');
+      setSelectMenu(isSpaceOnly ? 'library' : 'all');
       setSearch('');
       SetSelected(_item);
 
