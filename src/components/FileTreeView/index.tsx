@@ -397,7 +397,9 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     });
   };
 
+  // 判断文件是否为图片类型
   const isImage = isImageFile(selectedFileId);
+  // 判断文件是否支持预览（白名单方案）
   const isPreviewable = isPreviewableFile(selectedFileId);
 
   /**
@@ -449,6 +451,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     setChangeFiles([]);
   };
 
+  console.log('selectedFileNode', selectedFileNode);
+
   return (
     <>
       {/* 全屏代码编辑器 Modal */}
@@ -493,12 +497,18 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           </div>
           {/* 全屏模式下的代码编辑器 */}
           <div className={cx(styles['fullscreen-content'])}>
-            {!isPreviewable && !selectedFileNode?.content ? (
+            {!selectedFileNode ? (
+              <AppDevEmptyState
+                type="error"
+                title="请从左侧文件树选择一个文件进行预览"
+                description="当前没有可预览的文件，请从左侧文件树选择一个文件进行预览"
+              />
+            ) : !isPreviewable && selectedFileNode?.content ? (
               <AppDevEmptyState
                 type="error"
                 title="无法预览此文件类型"
                 description={`当前不支持预览 ${
-                  selectedFileId.split('.').pop() || selectedFileId
+                  selectedFileId?.split('.')?.pop() || selectedFileId
                 } 格式的文件。`}
               />
             ) : isImage ? (
@@ -595,13 +605,18 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           />
           {/* 右边内容 */}
           <div className={cx(styles['content-container'])}>
-            {!isPreviewable && !selectedFileNode?.content ? (
-              // 不支持预览的文件类型
+            {!selectedFileNode ? (
+              <AppDevEmptyState
+                type="error"
+                title="请从左侧文件树选择一个文件进行预览"
+                description="当前没有可预览的文件，请从左侧文件树选择一个文件进行预览"
+              />
+            ) : !isPreviewable && selectedFileNode?.content ? (
               <AppDevEmptyState
                 type="error"
                 title="无法预览此文件类型"
                 description={`当前不支持预览 ${
-                  selectedFileId.split('.').pop() || selectedFileId
+                  selectedFileId?.split('.')?.pop() || selectedFileId
                 } 格式的文件。`}
               />
             ) : isImage ? (
