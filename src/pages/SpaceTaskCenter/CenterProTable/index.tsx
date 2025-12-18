@@ -13,6 +13,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { TaskCenterMoreActionEnum } from '@/types/enums/pageDev';
 import { CustomPopoverItem } from '@/types/interfaces/common';
 import type { TaskInfo } from '@/types/interfaces/library';
+import { modalConfirm } from '@/utils/ant-custom';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import { Avatar, Button, Popconfirm, Space, Tag, message } from 'antd';
@@ -274,14 +275,16 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     // 删除任务
     const handleDeleteTask = useCallback(
       async (id: number) => {
-        const resp = await apiTaskDelete(id);
-        if (resp?.code === SUCCESS_CODE) {
-          message.success('删除任务成功');
-          // 执行成功后需要重新请求接口刷新列表：清空缓存并触发表格 reload
-          cacheRef.current = null;
-          fetchingRef.current = null;
-          actionRef.current?.reload();
-        }
+        modalConfirm('提示', '确认删除该任务？', async () => {
+          const resp = await apiTaskDelete(id);
+          if (resp?.code === SUCCESS_CODE) {
+            message.success('删除任务成功');
+            // 执行成功后需要重新请求接口刷新列表：清空缓存并触发表格 reload
+            cacheRef.current = null;
+            fetchingRef.current = null;
+            actionRef.current?.reload();
+          }
+        });
       },
       [actionRef, cacheRef, fetchingRef],
     );
@@ -316,13 +319,13 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       }
     };
 
-    const getMoreActionList = (isEnded: boolean) => {
+    const getMoreActionList = () => {
       return TASK_CENTER_MORE_ACTION.filter((item) => {
-        if (!isEnded) {
-          return item.action !== TaskCenterMoreActionEnum.Enable;
-        } else {
-          return item.action !== TaskCenterMoreActionEnum.Disable;
-        }
+        return ![
+          TaskCenterMoreActionEnum.Enable,
+          TaskCenterMoreActionEnum.Disable,
+          TaskCenterMoreActionEnum.Execute,
+        ].includes(item.action as TaskCenterMoreActionEnum);
       });
     };
 
@@ -432,31 +435,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
               <Space size={0}>
                 <Button
                   type="link"
-                  onClick={(e) => {
-                    e?.stopPropagation();
-                    // 预留：后续接入详情弹窗/路由跳转
-                    message.info(`详情功能待接入（任务ID：${record.id}）`);
-                  }}
-                >
-                  详情
-                </Button>
-
-                {/*更多操作*/}
-                <CustomPopover
-                  list={getMoreActionList(isEnded)}
-                  onClick={(item) => {
-                    onClickMore(item, record);
-                  }}
-                >
-                  <Button
-                    size="small"
-                    type="text"
-                    icon={<ICON_MORE />}
-                  ></Button>
-                </CustomPopover>
-
-                <Button
-                  type="link"
+                  size="small"
                   onClick={() => {
                     handleExecuteTask(record.id);
                   }}
@@ -473,7 +452,9 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                       handleEnableTask(record.id);
                     }}
                   >
-                    <Button type="link">启用</Button>
+                    <Button type="link" size="small">
+                      启用
+                    </Button>
                   </Popconfirm>
                 ) : (
                   <Popconfirm
@@ -485,20 +466,25 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                       handleDisableTask(record.id);
                     }}
                   >
-                    <Button type="link">停用</Button>
+                    <Button type="link" size="small">
+                      停用
+                    </Button>
                   </Popconfirm>
                 )}
-                <Popconfirm
-                  title="确认删除该任务？"
-                  okText="确认"
-                  cancelText="取消"
-                  onConfirm={(e) => {
-                    e?.stopPropagation();
-                    handleDeleteTask(record.id);
+
+                {/*更多操作*/}
+                <CustomPopover
+                  list={getMoreActionList()}
+                  onClick={(item) => {
+                    onClickMore(item, record);
                   }}
                 >
-                  <Button type="link">删除</Button>
-                </Popconfirm>
+                  <Button
+                    size="small"
+                    type="link"
+                    icon={<ICON_MORE />}
+                  ></Button>
+                </CustomPopover>
               </Space>
             );
           },

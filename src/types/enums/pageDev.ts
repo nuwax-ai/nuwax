@@ -62,6 +62,8 @@ export enum PageDevelopMoreActionEnum {
 
 // 任务中心更多操作枚举
 export enum TaskCenterMoreActionEnum {
+  // 复制
+  Copy = 'Copy',
   // 详情
   Detail = 'Detail',
   // 删除
