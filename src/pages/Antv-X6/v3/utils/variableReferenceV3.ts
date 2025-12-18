@@ -700,9 +700,9 @@ export function calculateNodePreviousArgs(
     }
   }
 
-  // 如果当前节点是 Loop，补充内部变量到 innerPreviousNodes (用于配置 Loop 自己的输出)
+  // 如果当前节点是 Loop，补充内部变量到 innerPreviousNodes (用于配置 Loop 自己的输出，同步 Java Line 112-167)
   if (currentNode.type === NodeTypeEnumV2.Loop) {
-    // 1. 内部结束节点输出
+    // 1. 内部结束节点输出 (Line 112-139)
     if (currentNode.innerNodes) {
       const endNode = currentNode.innerNodes.find(
         (n) => n.id === currentNode.innerEndNodeId,
@@ -710,13 +710,11 @@ export function calculateNodePreviousArgs(
       if (endNode?.nodeConfig?.outputArgs) {
         const transformed = endNode.nodeConfig.outputArgs.map((arg) => {
           const newArg = cloneArg(arg);
-          if (newArg.description) {
-            newArg.description = `${newArg.description} (origin:${
-              newArg.dataType || 'unknown'
-            })`;
-          } else {
-            newArg.description = `(origin:${newArg.dataType || 'unknown'})`;
-          }
+          // 后端会将类型全部改成 Array (Line 119-138)
+          newArg.description = `${newArg.description || ''} (origin:${
+            newArg.dataType || 'unknown'
+          })`;
+
           if (
             !newArg.dataType ||
             (typeof newArg.dataType === 'string' &&
@@ -743,7 +741,7 @@ export function calculateNodePreviousArgs(
       }
     }
 
-    // 2. 循环节点自身的内部变量 (INDEX, variableArgs)
+    // 2. 循环节点自身的内部变量 (INDEX, variableArgs) (Line 140-167)
     const inputBasedOutputs: InputAndOutConfigV2[] = [];
     const varBasedOutputs: InputAndOutConfigV2[] = [];
     const argMapSnapshot = { ...argMap };
