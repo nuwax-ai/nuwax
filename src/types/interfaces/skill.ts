@@ -1,5 +1,5 @@
 import { AgentComponentTypeEnum } from '../enums/agent';
-import { PublishStatusEnum } from '../enums/common';
+import { PermissionsEnum, PublishStatusEnum } from '../enums/common';
 
 // 技能文件
 export interface SkillFileInfo {
@@ -49,6 +49,8 @@ export interface SkillDetailInfo {
   modifiedId: number;
   // 最后修改人名称
   modifiedName: string;
+  // 权限列表
+  permissions: PermissionsEnum[];
 }
 
 // 修改技能

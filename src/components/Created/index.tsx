@@ -176,6 +176,13 @@ const Created: React.FC<CreatedProp> = ({
     },
   ];
 
+  const skillItem = [
+    {
+      key: 'all', // 子项也需要唯一的 key
+      label: '全部',
+    },
+  ];
+
   const getItems = () => {
     switch (selected.key) {
       case AgentComponentTypeEnum.Knowledge:
@@ -188,6 +195,8 @@ const Created: React.FC<CreatedProp> = ({
         return pageItem;
       case AgentComponentTypeEnum.Agent:
         return agentItem;
+      case AgentComponentTypeEnum.Skill:
+        return skillItem;
       default:
         return items;
     }
@@ -725,6 +734,10 @@ const Created: React.FC<CreatedProp> = ({
     );
   };
 
+  const jumpToSkillCreate = (spaceId: number) => {
+    history.push(`/space/${spaceId}/skill-manage`);
+  };
+
   // 点击创建
   const handleClickCreate = (
     selectedKey: AgentComponentTypeEnum,
@@ -734,6 +747,8 @@ const Created: React.FC<CreatedProp> = ({
       jumpToMcpCreate(spaceId);
     } else if (selectedKey === AgentComponentTypeEnum.Page) {
       jumpToPageDevelop(spaceId);
+    } else if (selectedKey === AgentComponentTypeEnum.Skill) {
+      jumpToSkillCreate(spaceId);
     } else {
       setShowCreate(true);
     }

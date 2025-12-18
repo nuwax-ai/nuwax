@@ -2,6 +2,7 @@ import ToggleWrap from '@/components/ToggleWrap';
 import { apiAgentConfigHistoryList } from '@/services/agentConfig';
 import { apiPluginConfigHistoryList } from '@/services/plugin';
 import { apiPublishItemList, apiPublishOffShelf } from '@/services/publish';
+import { apiSkillConfigHistoryList } from '@/services/skill';
 import { apiWorkflowConfigHistoryList } from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
@@ -28,6 +29,7 @@ const cx = classNames.bind(styles);
  * 版本历史组件
  */
 const VersionHistory: React.FC<VersionHistoryProps> = ({
+  headerClassName,
   targetId,
   targetName,
   targetType = AgentComponentTypeEnum.Agent,
@@ -58,6 +60,8 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
       ? apiAgentConfigHistoryList
       : targetType === AgentComponentTypeEnum.Plugin
       ? apiPluginConfigHistoryList
+      : targetType === AgentComponentTypeEnum.Skill
+      ? apiSkillConfigHistoryList
       : apiWorkflowConfigHistoryList;
 
   // 版本历史记录
@@ -170,7 +174,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
       ))}
     </div>
   ) : (
-    <div className={cx('flex', 'h-full', 'items-center', 'justify-center')}>
+    <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
       <Empty
         description="暂无版本历史记录"
         image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -211,7 +215,12 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   }
 
   return (
-    <ToggleWrap title={'版本历史'} visible={visible} onClose={onClose}>
+    <ToggleWrap
+      title={'版本历史'}
+      visible={visible}
+      onClose={onClose}
+      headerClassName={headerClassName}
+    >
       {content}
     </ToggleWrap>
   );
