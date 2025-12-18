@@ -18,9 +18,22 @@ const cx = classNames.bind(styles);
 
 // 调用方式
 const InvokeType: React.FC<InvokeTypeProps> = ({
+  options = CALL_METHOD_OPTIONS,
   invokeType,
   onSaveSet,
   defaultSelected,
+  tooltip = (
+    <div>
+      <p>自动调用：用户每次发送消息后都会触发调用一次</p>
+      <p>按需调用：由模型根据任务情况决定是否需要调用</p>
+      <p>
+        手动选择：由用户决定是否使用该工具，在用户选择的情况下和自动调用效果一样
+      </p>
+      <p>
+        手动选择+按需调用：用户选择后，由模型根据任务情况选择是否需要调用；用户不选择则不会调用
+      </p>
+    </div>
+  ),
 }) => {
   const [type, setType] = useState<InvokeTypeEnum>();
   // 是否默认选中
@@ -55,25 +68,12 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
       <div className={cx('flex-1')}>
         <h3 className={cx('gap-6', 'flex', 'items-center')}>
           <span>调用方式</span>
-          <Tooltip
-            title={
-              <div>
-                <p>自动调用：用户每次发送消息后都会触发调用一次</p>
-                <p>按需调用：由模型根据任务情况决定是否需要调用</p>
-                <p>
-                  手动选择：由用户决定是否使用该工具，在用户选择的情况下和自动调用效果一样
-                </p>
-                <p>
-                  手动选择+按需调用：用户选择后，由模型根据任务情况选择是否需要调用；用户不选择则不会调用
-                </p>
-              </div>
-            }
-          >
+          <Tooltip title={tooltip}>
             <ExclamationCircleOutlined className={cx(styles.icon)} />
           </Tooltip>
         </h3>
         <Radio.Group
-          options={CALL_METHOD_OPTIONS}
+          options={options}
           onChange={handleChangeType}
           value={type}
         />
