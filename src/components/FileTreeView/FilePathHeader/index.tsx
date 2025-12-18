@@ -54,7 +54,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 }) => {
   // 显示的文件名
   const displayFileName = useMemo(() => {
-    return fileName || filePath.split('/').pop() || '未知文件';
+    return fileName || filePath.split('/').pop() || '';
   }, [fileName, filePath]);
 
   // 格式化的文件大小
