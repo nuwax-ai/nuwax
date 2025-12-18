@@ -1011,12 +1011,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             items={SkillList}
             defaultActiveKey={skillActiveKey}
           />
-          {/* <HeaderToolButton
-            title="技能"
-            onClick={() => {
-              alert('添加技能 - 暂未实现');
-            }}
-          /> */}
         </>
       )}
 
