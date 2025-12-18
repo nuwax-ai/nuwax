@@ -28,6 +28,7 @@ const cx = classNames.bind(styles);
  * 版本历史组件
  */
 const VersionHistory: React.FC<VersionHistoryProps> = ({
+  headerClassName,
   targetId,
   targetName,
   targetType = AgentComponentTypeEnum.Agent,
@@ -211,7 +212,12 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   }
 
   return (
-    <ToggleWrap title={'版本历史'} visible={visible} onClose={onClose}>
+    <ToggleWrap
+      title={'版本历史'}
+      visible={visible}
+      onClose={onClose}
+      headerClassName={headerClassName}
+    >
       {content}
     </ToggleWrap>
   );
