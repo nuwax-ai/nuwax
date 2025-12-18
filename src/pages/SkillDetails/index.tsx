@@ -1,5 +1,6 @@
 import FileTreeView from '@/components/FileTreeView';
 import PublishComponentModal from '@/components/PublishComponentModal';
+import VersionHistory from '@/components/VersionHistory';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiSkillDetail,
@@ -9,7 +10,9 @@ import {
   apiSkillUploadFile,
 } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { FileNode } from '@/types/interfaces/appDev';
+import { SkillInfo } from '@/types/interfaces/library';
 import {
   SkillDetailInfo,
   SkillFileInfo,
@@ -22,6 +25,7 @@ import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
+import CreateSkill from '../SpaceSkillManage/CreateSkill';
 import styles from './index.less';
 import SkillHeader from './SkillHeader';
 
@@ -37,6 +41,9 @@ const SkillDetails: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   // 编辑技能信息弹窗是否打开
   const [editSkillModalOpen, setEditSkillModalOpen] = useState<boolean>(false);
+  // 版本历史弹窗是否打开
+  const [versionHistoryModal, setVersionHistoryModal] =
+    useState<boolean>(false);
 
   // 查询技能信息
   const { run: runSkillInfo } = useRequest(apiSkillDetail, {
@@ -349,26 +356,47 @@ const SkillDetails: React.FC = () => {
     return code === SUCCESS_CODE;
   };
 
+  // 确认编辑技能信息
+  const handleEditSkillConfirm = () => {
+    setEditSkillModalOpen(false);
+    // 重新查询技能信息，因为更新了技能信息，需要刷新文件树和文件列表
+    runSkillInfo(skillId);
+  };
+
   return (
-    <div
-      className={cx('skill-details-container', 'flex', 'h-full', 'flex-col')}
-    >
+    <div className={cx('flex', 'h-full', 'flex-col')}>
       {/* 技能头部 */}
       <SkillHeader
+        spaceId={spaceId}
         skillInfo={skillInfo}
         onEditAgent={handleEditSkill}
         onPublish={() => setOpen(true)}
+        onToggleHistory={() => setVersionHistoryModal(!versionHistoryModal)}
       />
-      {/* 文件树视图 */}
-      <FileTreeView
-        originalFiles={skillInfo?.files || []}
-        onUploadSingleFile={handleUploadSingleFile}
-        onDownload={handleDownload}
-        onRenameFile={handleConfirmRenameFile}
-        onCreateFileNode={handleCreateFileNode}
-        onSaveFiles={handleSaveFiles}
-        onDeleteFile={handleDeleteFile}
-      />
+
+      <div className={cx('flex', 'flex-1')}>
+        {/* 文件树视图 */}
+        <FileTreeView
+          originalFiles={skillInfo?.files || []}
+          onUploadSingleFile={handleUploadSingleFile}
+          onDownload={handleDownload}
+          onRenameFile={handleConfirmRenameFile}
+          onCreateFileNode={handleCreateFileNode}
+          onSaveFiles={handleSaveFiles}
+          onDeleteFile={handleDeleteFile}
+        />
+
+        {/*版本历史*/}
+        <VersionHistory
+          headerClassName={cx(styles['version-history-header'])}
+          targetId={skillId}
+          targetName={skillInfo?.name}
+          targetType={AgentComponentTypeEnum.Skill}
+          permissions={skillInfo?.permissions || []}
+          visible={versionHistoryModal}
+          onClose={() => setVersionHistoryModal(false)}
+        />
+      </div>
 
       {/*发布技能弹窗*/}
       <PublishComponentModal
@@ -380,6 +408,16 @@ const SkillDetails: React.FC = () => {
         // 取消发布
         onCancel={() => setOpen(false)}
         onConfirm={handleConfirmPublish}
+      />
+
+      {/* 创建技能弹窗 */}
+      <CreateSkill
+        spaceId={spaceId}
+        open={editSkillModalOpen}
+        type={CreateUpdateModeEnum.Update}
+        skillInfo={skillInfo as SkillInfo}
+        onCancel={() => setEditSkillModalOpen(false)}
+        onConfirm={handleEditSkillConfirm}
       />
     </div>
   );

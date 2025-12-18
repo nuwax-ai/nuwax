@@ -149,7 +149,6 @@ const SearchView: React.FC<SearchViewProps> = ({ files, onFileSelect }) => {
               setIsDropdownVisible(true);
             }
           }}
-          className={cx(styles['search-input'])}
         />
       </div>
 

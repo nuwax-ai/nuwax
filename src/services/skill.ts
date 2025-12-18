@@ -1,3 +1,4 @@
+import { HistoryData } from '@/types/interfaces/publish';
 import { Page, RequestResponse } from '@/types/interfaces/request';
 import {
   PublishedSkillListParams,
@@ -92,5 +93,14 @@ export async function apiPublishedSkillList(
   return request('/api/published/skill/list', {
     method: 'POST',
     data,
+  });
+}
+
+// 查询技能历史配置信息接口
+export async function apiSkillConfigHistoryList(
+  skillId: number,
+): Promise<RequestResponse<HistoryData[]>> {
+  return request(`/api/skill/config/history/list/${skillId}`, {
+    method: 'GET',
   });
 }

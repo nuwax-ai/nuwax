@@ -11,6 +11,7 @@ const cx = classNames.bind(styles);
  */
 const ToggleWrap: React.FC<PropsWithChildren<ToggleWrapProps>> = ({
   className,
+  headerClassName,
   title,
   visible,
   onClose,
@@ -30,7 +31,13 @@ const ToggleWrap: React.FC<PropsWithChildren<ToggleWrapProps>> = ({
       )}
     >
       <div
-        className={cx(styles.header, 'flex', 'items-center', 'content-between')}
+        className={cx(
+          styles.header,
+          'flex',
+          'items-center',
+          'content-between',
+          headerClassName,
+        )}
       >
         <h3>{title}</h3>
         <CloseOutlined

@@ -218,12 +218,15 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
         // 直接调用现有的重命名文件功能
         const isChangeSuccess = await onRenameFile?.(fileNode, newName);
         if (isChangeSuccess) {
-          // 如果当前选中的文件节点是重命名的文件节点，则更新当前选中的文件节点
-          if (selectedFileNode?.id === fileNode.id) {
-            setSelectedFileNode((prevNode: any) => ({
-              ...prevNode,
-              name: newName,
-            }));
+          // 如果当前选中的文件节点是被重命名的节点，则同步更新名称
+          if (
+            selectedFileNode &&
+            (selectedFileNode.id === fileNode.id ||
+              selectedFileNode.name === fileNode.name)
+          ) {
+            setSelectedFileNode((prevNode) =>
+              prevNode ? { ...prevNode, name: newName } : prevNode,
+            );
           }
         } else {
           setFiles(filesBackup);
@@ -397,8 +400,10 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     });
   };
 
-  const isImage = isImageFile(selectedFileId);
-  const isPreviewable = isPreviewableFile(selectedFileId);
+  // 判断文件是否为图片类型
+  const isImage = isImageFile(selectedFileNode?.name || '');
+  // 判断文件是否支持预览（白名单方案）
+  const isPreviewable = isPreviewableFile(selectedFileNode?.name || '');
 
   /**
    * 处理全屏切换
@@ -493,12 +498,18 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           </div>
           {/* 全屏模式下的代码编辑器 */}
           <div className={cx(styles['fullscreen-content'])}>
-            {!isPreviewable && !selectedFileNode?.content ? (
+            {!selectedFileNode ? (
+              <AppDevEmptyState
+                type="error"
+                title="请从左侧文件树选择一个文件进行预览"
+                description="当前没有可预览的文件，请从左侧文件树选择一个文件进行预览"
+              />
+            ) : !isPreviewable ? (
               <AppDevEmptyState
                 type="error"
                 title="无法预览此文件类型"
                 description={`当前不支持预览 ${
-                  selectedFileId.split('.').pop() || selectedFileId
+                  selectedFileId?.split('.')?.pop() || selectedFileId
                 } 格式的文件。`}
               />
             ) : isImage ? (
@@ -595,13 +606,18 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           />
           {/* 右边内容 */}
           <div className={cx(styles['content-container'])}>
-            {!isPreviewable && !selectedFileNode?.content ? (
-              // 不支持预览的文件类型
+            {!selectedFileNode ? (
+              <AppDevEmptyState
+                type="error"
+                title="请从左侧文件树选择一个文件进行预览"
+                description="当前没有可预览的文件，请从左侧文件树选择一个文件进行预览"
+              />
+            ) : !isPreviewable ? (
               <AppDevEmptyState
                 type="error"
                 title="无法预览此文件类型"
                 description={`当前不支持预览 ${
-                  selectedFileId.split('.').pop() || selectedFileId
+                  selectedFileId?.split('.')?.pop() || selectedFileId
                 } 格式的文件。`}
               />
             ) : isImage ? (
