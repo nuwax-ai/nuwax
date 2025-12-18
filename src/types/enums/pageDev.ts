@@ -60,6 +60,22 @@ export enum PageDevelopMoreActionEnum {
   Delete = 'Delete',
 }
 
+// 任务中心更多操作枚举
+export enum TaskCenterMoreActionEnum {
+  // 详情
+  Detail = 'Detail',
+  // 删除
+  Delete = 'Delete',
+  // 启用
+  Enable = 'Enable',
+  // 停用
+  Disable = 'Disable',
+  // 手动执行
+  Execute = 'Execute',
+  // 编辑
+  Edit = 'Edit',
+}
+
 // 发布状态,true:已发布;false:未发布
 export enum BuildRunningEnum {
   // 已发布
