@@ -14,6 +14,8 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { apiPublishedWorkflowInfo } from '@/services/plugin';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { BindConfigWithSub } from '@/types/interfaces/common';
+import { TaskInfo } from '@/types/interfaces/library';
 import { McpConfigComponentInfo } from '@/types/interfaces/mcp';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import ParameterConfig from './components/ParameterConfig';
@@ -22,7 +24,7 @@ const cx = classNames.bind(styles);
 
 export interface CreateTimedTaskProps {
   spaceId: number;
-  id?: number;
+  info?: TaskInfo | null;
   mode?: CreateUpdateModeEnum;
   open: boolean;
   onCancel?: () => void;
@@ -33,7 +35,7 @@ export interface CreateTimedTaskProps {
  */
 const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
   spaceId,
-  id,
+  info,
   mode = CreateUpdateModeEnum.Create,
   open,
   onCancel = () => {},
@@ -121,7 +123,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     if (mode === CreateUpdateModeEnum.Create) {
       run(data);
     } else {
-      runUpdate({ ...data, id });
+      runUpdate({ ...data, id: info?.id });
     }
   };
 
@@ -163,20 +165,103 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     getTargetConfig(value);
   };
 
-  useEffect(() => {
-    // 更新
-    if (open && mode === CreateUpdateModeEnum.Update && id) {
-      console.log(id);
+  // 更新回显任务信息-智能体
+  const updateTaskInfoAgent = async (info: TaskInfo) => {
+    const { cron, taskName, targetType, targetId, params } = info;
+    // 查询智能体信息
+    const {
+      data: { name, description, variables, icon },
+    } = await apiPublishedAgentInfo(Number(targetId));
+    const { message, variables: paramsVariables } = params;
+    // 初始化参数对象
+    const paramsObj = variables.reduce((acc: any, item: BindConfigWithSub) => {
+      if (item.dataType === 'Object') {
+        acc[item.name] = JSON.stringify(paramsVariables[item.name] || '{}');
+      } else if (item.dataType === 'Array_String') {
+        acc[item.name] = JSON.stringify(paramsVariables[item.name] || '[]');
+      } else if (item.dataType === 'File_Image') {
+        acc[item.name] = paramsVariables[item.name] || '';
+      } else {
+        acc[item.name] = paramsVariables[item.name] || '';
+      }
+      return acc;
+    }, {});
 
-      // form.setFieldsValue({
-      //   taskName: taskName,
-      //   message: message,
-      //   variables: variables,
-      //   cron: cron,
-      //   taskTarget: taskTarget,
-      // });
+    form.setFieldsValue({
+      cron,
+      taskName,
+      taskTarget: {
+        name: name,
+        icon: icon,
+        description: description,
+        type: targetType,
+        targetId: targetId,
+        targetConfig: '',
+      },
+      message,
+      variables: variables, // 智能体变量配置
+      ...paramsObj, // 初始化参数对象
+    });
+  };
+
+  // 更新回显任务信息-工作流
+  const updateTaskInfoWorkflow = async (info: TaskInfo) => {
+    const { cron, taskName, targetType, targetId, params } = info;
+    // 查询工作流入参配置
+    const {
+      data: { name, description, inputArgs, icon },
+    } = await apiPublishedWorkflowInfo(Number(targetId));
+    // 初始化参数对象
+    const paramsObj = inputArgs.reduce((acc: any, item: BindConfigWithSub) => {
+      if (item.dataType === 'Object') {
+        acc[item.name] = JSON.stringify(params[item.name] || '{}');
+      } else if (item.dataType === 'Array_String') {
+        acc[item.name] = JSON.stringify(params[item.name] || '[]');
+      } else if (item.dataType === 'File_Image') {
+        acc[item.name] = params[item.name] || '';
+      } else {
+        acc[item.name] = params[item.name] || '';
+      }
+      return acc;
+    }, {});
+
+    // 配置表单值
+
+    form.setFieldsValue({
+      cron,
+      taskName,
+      taskTarget: {
+        name: name,
+        icon: icon,
+        description: description,
+        type: targetType,
+        targetId: targetId,
+        targetConfig: '',
+      },
+      variables: inputArgs, // 工作流入参配置
+      ...paramsObj, // 初始化参数对象
+    });
+  };
+
+  // 更新定时任务
+  const updateTaskInfo = async (info: TaskInfo) => {
+    // 根据任务对象类型更新回显任务信息
+    switch (info.targetType) {
+      case AgentComponentTypeEnum.Agent:
+        updateTaskInfoAgent(info);
+        break;
+      case AgentComponentTypeEnum.Workflow:
+        updateTaskInfoWorkflow(info);
+        break;
     }
-  }, [open, mode, id]);
+  };
+
+  useEffect(() => {
+    // 更新定时任务
+    if (open && mode === CreateUpdateModeEnum.Update && info) {
+      updateTaskInfo(info);
+    }
+  }, [open, mode, info]);
 
   return (
     <CustomFormModal
@@ -222,7 +307,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
         />
 
         {/* 只有智能体有任务内容 */}
-        {taskTarget?.targetType === AgentComponentTypeEnum.Agent && (
+        {taskTarget?.type === AgentComponentTypeEnum.Agent && (
           <Form.Item
             name="message"
             label="任务内容"

@@ -64,8 +64,8 @@ export enum PageDevelopMoreActionEnum {
 export enum TaskCenterMoreActionEnum {
   // 复制
   Copy = 'Copy',
-  // 详情
-  Detail = 'Detail',
+  // 执行记录
+  Record = 'Record',
   // 删除
   Delete = 'Delete',
   // 启用
