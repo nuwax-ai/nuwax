@@ -392,7 +392,7 @@ const SkillDetails: React.FC = () => {
           targetId={skillId}
           targetName={skillInfo?.name}
           targetType={AgentComponentTypeEnum.Skill}
-          // permissions={skillInfo?.permissions || []}
+          permissions={skillInfo?.permissions || []}
           visible={versionHistoryModal}
           onClose={() => setVersionHistoryModal(false)}
         />
