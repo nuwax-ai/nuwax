@@ -21,48 +21,17 @@ import type { IgetDetails } from '@/services/workflow';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode, Edge } from '@/types/interfaces/graph';
 import { cloneDeep } from '@/utils/common';
+import { SpecialPortType } from '../types/enums';
+import type { EdgeV3, WorkflowDataV3 } from '../types/interfaces';
 import { generateFallbackNodeId } from '../utils/nodeUtils';
 
 // ==================== 类型定义 ====================
-
-/**
- * 特殊端口类型枚举
- */
-export enum SpecialPortType {
-  Normal = 'normal', // 普通节点的 out 端口
-  Condition = 'condition', // 条件分支端口
-  Intent = 'intent', // 意图识别端口
-  QAOption = 'qa_option', // 问答选项端口
-  Exception = 'exception', // 异常处理端口
-  Loop = 'loop', // 循环节点特殊端口
-}
-
-/**
- * 扩展的边接口，支持 sourcePort/targetPort
- */
-export interface EdgeV3 extends Edge {
-  sourcePort?: string;
-  targetPort?: string;
-}
-
-export interface WorkflowDataV3 {
-  workflowId: number;
-  nodes: ChildNode[];
-  edges: EdgeV3[];
-  modified: string;
-}
 
 export interface PendingUpdate {
   type: 'node' | 'edge';
   action: 'add' | 'update' | 'delete' | 'move';
   data: ChildNode | Edge;
   timestamp: number;
-}
-
-export interface ProxyResult {
-  success: boolean;
-  message?: string;
-  data?: WorkflowDataV3;
 }
 
 export interface ProxyResult {

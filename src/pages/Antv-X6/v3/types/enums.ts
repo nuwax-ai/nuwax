@@ -33,3 +33,15 @@ export enum HistoryActionTypeV3 {
   MOVE_NODE = 'MOVE_NODE',
   BATCH = 'BATCH',
 }
+
+/**
+ * 特殊端口类型枚举
+ */
+export enum SpecialPortType {
+  Normal = 'normal', // 普通节点的 out 端口
+  Condition = 'condition', // 条件分支端口
+  Intent = 'intent', // 意图识别端口
+  QAOption = 'qa_option', // 问答选项端口
+  Exception = 'exception', // 异常处理端口
+  Loop = 'loop', // 循环节点特殊端口
+}
