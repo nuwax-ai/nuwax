@@ -121,7 +121,15 @@ export const InputAndOut: React.FC<NodeRenderProps> = ({
                       >
                         <InputOrReference
                           form={form}
-                          fieldName={[inputItemName, item.name, 'bindValue']}
+                          fieldName={
+                            [
+                              ...(Array.isArray(inputItemName)
+                                ? inputItemName
+                                : [inputItemName]),
+                              item.name,
+                              'bindValue',
+                            ] as (string | number)[]
+                          }
                           style={{ flex: 1, marginRight: '10px' }}
                           referenceType={fieldValue}
                           isLoop={isLoop}
