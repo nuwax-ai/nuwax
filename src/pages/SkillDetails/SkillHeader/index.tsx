@@ -1,39 +1,36 @@
 import agentImage from '@/assets/images/agent_image.png';
-import { FormOutlined, LeftOutlined } from '@ant-design/icons';
+import {
+  ClockCircleOutlined,
+  FormOutlined,
+  LeftOutlined,
+} from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { history, useParams } from 'umi';
+import { history } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 // 技能详情顶部header组件
 export interface SkillHeaderProps {
+  spaceId: number;
   skillInfo?: any;
   onEditAgent: () => void;
   onPublish: () => void;
+  onToggleHistory: () => void;
 }
 
 /**
  * 技能详情顶部header
  */
 const SkillHeader: React.FC<SkillHeaderProps> = ({
+  spaceId,
   skillInfo,
   onEditAgent,
   onPublish,
+  onToggleHistory,
 }) => {
-  const { spaceId } = useParams();
-
-  // // 发布按钮是否禁用
-  // const disabledBtn = useMemo(() => {
-  //   if (skillInfo) {
-  //     return !skillInfo?.permissions?.includes(PermissionsEnum.Publish);
-  //   } else {
-  //     return false;
-  //   }
-  // }, [skillInfo]);
-
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
       <Button
@@ -61,11 +58,16 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
         />
       </div>
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
+        {/* 版本历史 */}
+        <Button
+          type="text"
+          icon={<ClockCircleOutlined />}
+          onClick={onToggleHistory}
+        />
         <Button
           type="primary"
           className={cx(styles['publish-btn'])}
           onClick={onPublish}
-          // disabled={disabledBtn}
         >
           发布
         </Button>

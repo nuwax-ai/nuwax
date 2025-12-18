@@ -264,6 +264,9 @@ const LogProTable: React.FC = () => {
       };
 
       try {
+        const from = searchParams.get('from') || undefined;
+        // 额外查询条件
+        if (from) queryFilter.from = from;
         const resp = (await apiSpaceLogList({
           queryFilter,
           current,

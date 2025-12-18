@@ -29,6 +29,7 @@ export interface HistoryData {
 
 // 版本历史组件
 export interface VersionHistoryProps {
+  headerClassName?: string;
   targetId: number;
   targetName?: string;
   targetType?: AgentComponentTypeEnum;
