@@ -15,6 +15,7 @@ import {
   SkillFileInfo,
   SkillUpdateParams,
 } from '@/types/interfaces/skill';
+import { modalConfirm } from '@/utils/ant-custom';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { message } from 'antd';
@@ -200,32 +201,45 @@ const SkillDetails: React.FC = () => {
 
   // 删除文件
   const handleDeleteFile = async (fileNode: FileNode) => {
-    const updatedFilesList =
-      skillInfo?.files?.map((item) => {
-        if (item.fileId === fileNode.id) {
-          item.operation = 'delete';
-        }
-        return item;
-      }) || [];
-
-    const newSkillInfo: SkillUpdateParams = {
-      id: skillInfo?.id || 0,
-      files: updatedFilesList as unknown as SkillFileInfo[],
-    };
-    const { code } = await apiSkillUpdate(newSkillInfo);
-    if (code === SUCCESS_CODE) {
-      setSkillInfo(
-        (prev) =>
-          ({
-            ...prev,
-            files:
-              prev?.files?.filter((item) => item.fileId !== fileNode.id) || [],
-          } as SkillDetailInfo),
+    modalConfirm('您确定要删除此文件吗?', fileNode.name, async () => {
+      // 找到要删除的文件
+      const currentFile = skillInfo?.files?.find(
+        (item) => item.fileId === fileNode.id,
       );
-    }
+      if (!currentFile) {
+        message.error('文件不存在，无法删除');
+        return;
+      }
+
+      // 更新文件操作
+      currentFile.operation = 'delete';
+      // 更新文件列表
+      const updatedFilesList = [currentFile] as SkillFileInfo[];
+
+      // 更新技能信息
+      const newSkillInfo: SkillUpdateParams = {
+        id: skillInfo?.id || 0,
+        files: updatedFilesList,
+      };
+      const { code } = await apiSkillUpdate(newSkillInfo);
+      if (code === SUCCESS_CODE) {
+        setSkillInfo(
+          (prev) =>
+            ({
+              ...prev,
+              files:
+                prev?.files?.filter((item) => item.fileId !== fileNode.id) ||
+                [],
+            } as SkillDetailInfo),
+        );
+      }
+      return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
+    });
   };
 
-  // 新建文件（空内容）
+  // 新建文件（空内容）、文件夹
   const handleCreateFileNode = async (
     fileNode: FileNode,
     newName: string,
@@ -252,12 +266,7 @@ const SkillDetails: React.FC = () => {
       isDir: fileNode.type === 'folder',
     };
 
-    console.log('newFile77777', newFile, skillInfo?.files, fileNode);
-
-    const updatedFilesList: SkillFileInfo[] = [
-      // ...(skillInfo.files || []),
-      newFile,
-    ];
+    const updatedFilesList: SkillFileInfo[] = [newFile];
 
     const newSkillInfo: SkillUpdateParams = {
       id: skillInfo.id,
@@ -273,6 +282,7 @@ const SkillDetails: React.FC = () => {
 
     return false;
   };
+
   // 确认重命名文件
   const handleConfirmRenameFile = async (
     fileNode: FileNode,
@@ -314,8 +324,6 @@ const SkillDetails: React.FC = () => {
     return code === SUCCESS_CODE;
   };
 
-  // console.log('skillInfo77777', skillInfo);
-
   // 保存文件
   const handleSaveFiles = async (
     data: {
@@ -324,15 +332,12 @@ const SkillDetails: React.FC = () => {
       originalFileContent: string;
     }[],
   ) => {
-    console.log('handleSaveFiles', data, '2222', skillInfo);
-
+    // 更新文件列表(只更新修改过的文件)
     const updatedFilesList = updateFilesListContent(
       skillInfo?.files || [],
       data,
       'modify',
     );
-
-    console.log('updatedFilesList77777', updatedFilesList);
 
     // 更新技能信息，用于提交更新
     const newSkillInfo: SkillUpdateParams = {
@@ -342,23 +347,7 @@ const SkillDetails: React.FC = () => {
 
     // 使用文件全量更新逻辑
     const { code } = await apiSkillUpdate(newSkillInfo);
-    console.log('handleSaveFiles code44444444444444', code);
     return code === SUCCESS_CODE;
-    // data.forEach(item => {
-    //   const updatedFilesList = updateFilesListContent(
-    //     skillInfo?.files || [],
-    //     item.fileId,
-    //     item.fileContent,
-    //     'modify',
-    //   );
-    // });
-    // 保存文件
-    // const response = await apiSkillSaveFile(data);
-    // if (response.code === SUCCESS_CODE) {
-    //   message.success('保存成功');
-    // } else {
-    //   message.error('保存失败');
-    // }
   };
 
   return (

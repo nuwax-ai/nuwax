@@ -208,14 +208,11 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
 
       setFiles(updatedFileTree);
 
-      // 如果是新建文件节点，走创建逻辑；否则走重命名逻辑
+      // 如果是新建节点（文件或文件夹），走创建逻辑；否则走重命名逻辑
       if (isNewNode) {
-        // 仅对文件类型走创建逻辑；文件夹创建只在前端生效即可
-        if (fileNode.type === 'file') {
-          const isCreateSuccess = await onCreateFileNode?.(fileNode, newName);
-          if (!isCreateSuccess) {
-            setFiles(filesBackup);
-          }
+        const isCreateSuccess = await onCreateFileNode?.(fileNode, newName);
+        if (!isCreateSuccess) {
+          setFiles(filesBackup);
         }
       } else {
         // 直接调用现有的重命名文件功能
@@ -255,7 +252,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   const handleDelete = (node: FileNode) => {
     // 直接调用现有的删除文件功能
     onDeleteFile?.(node);
-    // console.log('handleDelete', node);
   };
 
   /**
