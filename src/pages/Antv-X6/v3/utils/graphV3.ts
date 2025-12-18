@@ -265,8 +265,12 @@ const _validateLoopInnerNode = (
   sourceNode: ChildNode,
   targetNode: ChildNode,
 ): string | boolean => {
-  if (targetNode.type === 'Loop') {
-    const isInvalidSource = ['IntentRecognition', 'Condition', 'QA'];
+  if (targetNode.type === NodeTypeEnum.Loop) {
+    const isInvalidSource = [
+      NodeTypeEnum.IntentRecognition,
+      NodeTypeEnum.Condition,
+      NodeTypeEnum.QA,
+    ];
     if (isInvalidSource.includes(sourceNode.type) && sourceNode.loopNodeId) {
       return '条件分支，意图识别，问答不能作为循环的出口连接节点';
     }
@@ -278,7 +282,7 @@ const _validateLoopInnerNode = (
     }
   }
 
-  if (sourceNode.type === 'Loop') {
+  if (sourceNode.type === NodeTypeEnum.Loop) {
     // 源节点是循环节点
     if (targetNode.loopNodeId && targetNode.loopNodeId === sourceNode.id) {
       // 目标节点是循环内部节点
@@ -305,7 +309,9 @@ export const validateConnect = (
   const targetNode = edge.getTargetNode()?.getData();
   const edgeId = edge.id;
 
-  const isLoopNode = sourceNode.type === 'Loop' || targetNode.type === 'Loop';
+  const isLoopNode =
+    sourceNode.type === NodeTypeEnum.Loop ||
+    targetNode.type === NodeTypeEnum.Loop;
   // 检查是否存在具有相同source和target的边
   if (
     hasDuplicateEdge(
@@ -323,10 +329,10 @@ export const validateConnect = (
   // Loop 节点逻辑
   if (isLoopNode) {
     if (
-      (sourceNode.type === 'Loop' &&
+      (sourceNode.type === NodeTypeEnum.Loop &&
         !targetNode.loopNodeId &&
         sourcePort.includes('in')) ||
-      (targetNode.type === 'Loop' &&
+      (targetNode.type === NodeTypeEnum.Loop &&
         !sourceNode.loopNodeId &&
         targetPort.includes('out'))
     ) {
@@ -338,7 +344,7 @@ export const validateConnect = (
     }
   }
   // 如果当前节点不是循环节点，in 就不能拉连线
-  if (sourceNode.type !== 'Loop' && sourcePort?.includes('in')) {
+  if (sourceNode.type !== NodeTypeEnum.Loop && sourcePort?.includes('in')) {
     return '';
   }
 
@@ -359,7 +365,7 @@ export const validateConnect = (
 
   // sourceNode 为 Loop 节点 为出，targetNode 为出 不能连线
   if (
-    sourceNode.type === 'Loop' &&
+    sourceNode.type === NodeTypeEnum.Loop &&
     sourcePort?.includes('out') &&
     targetPort?.includes('out')
   ) {

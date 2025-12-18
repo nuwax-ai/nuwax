@@ -158,8 +158,10 @@ const initGraph = ({
         edgeId,
       });
     };
-    // 如果当前节点在循环内，则不展示循环节点
-    const isInLoop = !!(sourceNode?.loopNodeId || false);
+    // 如果当前节点在循环内，或者源节点本身就是循环节点，则不展示循环节点选项
+    const isInLoop = !!(
+      sourceNode?.loopNodeId || sourceNode?.type === NodeTypeEnum.Loop
+    );
     const popoverContent = (
       <div className="confirm-popover">
         <StencilContent

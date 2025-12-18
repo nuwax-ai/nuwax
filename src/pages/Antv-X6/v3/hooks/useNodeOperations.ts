@@ -12,7 +12,11 @@ import * as service from '@/services/workflow';
 import { AddNodeResponse } from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
-import { NodeSizeGetTypeEnum, UpdateEdgeType } from '@/types/enums/node';
+import {
+  NodeSizeGetTypeEnum,
+  PortGroupEnum,
+  UpdateEdgeType,
+} from '@/types/enums/node';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import {
   ChildNode,
@@ -95,11 +99,14 @@ interface UseNodeOperationsReturn {
   handleConditionalNodeConnection: (params: any) => Promise<void>;
   handleNormalNodeConnection: (params: any) => Promise<void>;
   handleInputPortConnection: (params: any) => Promise<void>;
-  handleTargetNodeConnection: (params: any) => Promise<void>;
-  handleNodeCreationSuccess: (
-    nodeData: AddNodeResponse,
-    child: Partial<ChildNode>,
-  ) => Promise<void>;
+  handleTargetNodeConnection: (params: {
+    newNode: ChildNode;
+    targetNode: ChildNode;
+    sourceNode: ChildNode;
+    edgeId: string;
+    isLoop: boolean;
+  }) => Promise<void>;
+  handleNodeCreationSuccess: (nodeData: AddNodeResponse) => Promise<void>;
   // 核心操作
   addNode: (child: Partial<ChildNode>, dragEvent: GraphRect) => Promise<void>;
   copyNode: (
@@ -372,17 +379,16 @@ export const useNodeOperations = ({
     async ({
       newNode,
       targetNode,
+      sourceNode,
       edgeId,
       isLoop,
     }: {
       newNode: ChildNode;
       targetNode: ChildNode;
+      sourceNode: ChildNode;
       edgeId: string;
       isLoop: boolean;
     }) => {
-      // 删除原有边
-      graphRef.current?.graphDeleteEdge(edgeId);
-
       // 建立新边：newNode -> targetNode
       if (isConditionalNode(newNode.type)) {
         await handleConditionalNodeConnection({
@@ -398,12 +404,29 @@ export const useNodeOperations = ({
           isLoop,
         });
       }
+
+      // V3: 删除原有连接关系 (同步数据模型)
+      // 参考 V1 连线规则：在快捷插入节点时，需要删除原 sourceNode -> targetNode 的关系
+      const newNodeIds = await nodeChangeEdge(
+        {
+          type: UpdateEdgeType.deleted,
+          targetId: targetNode.id.toString(),
+          sourceNode,
+        },
+        noop,
+      );
+
+      // 如果数据删除成功，则同步删除画布上的边
+      if (newNodeIds) {
+        graphRef.current?.graphDeleteEdge(edgeId);
+      }
     },
     [
       graphRef,
       isConditionalNode,
       handleConditionalNodeConnection,
       handleNormalNodeConnection,
+      nodeChangeEdge,
     ],
   );
 
@@ -423,47 +446,59 @@ export const useNodeOperations = ({
 
       // 处理连接桩或边创建的节点
       if (currentNodeRef.current) {
-        const { portId, edgeId, isOut, isException, isSpecial } =
+        const { portId, edgeId, sourceNode, targetNode } =
           currentNodeRef.current as any;
-        const isLoop = !!currentNodeRef.current?.sourceNode?.loopNodeId;
+        // V3: isLoop 应该基于新创建节点的 loopNodeId（和 V1 保持一致）
+        const isLoop = Boolean(nodeData.loopNodeId);
         const newNodeData = nodeData as unknown as ChildNode;
 
+        // V3: 通过 portId 动态计算端口类型（和 V1 保持一致）
+        const isOut = portId.endsWith('out');
+        const isException = portId.includes(PortGroupEnum.exception);
+        const isSpecial = !isException && portId.length > 15;
+
         try {
-          if (isSpecial) {
-            await handleSpecialPortConnection({
-              sourceNode: currentNodeRef.current.sourceNode,
+          if (isException) {
+            // 处理异常端口连接
+            await handleExceptionPortConnection({
+              sourceNode,
               portId,
               newNodeId: nodeData.id,
-              targetNode: currentNodeRef.current.targetNode,
+              targetNode,
               isLoop,
             });
-          } else if (isException) {
-            await handleExceptionPortConnection({
-              sourceNode: currentNodeRef.current.sourceNode,
+          } else if (isSpecial) {
+            // 处理特殊端口连接（条件分支、意图识别等）
+            await handleSpecialPortConnection({
+              sourceNode,
               portId,
               newNodeId: nodeData.id,
-              targetNode: currentNodeRef.current.targetNode,
+              targetNode,
               isLoop,
             });
           } else if (isOut) {
+            // 处理输出端口连接
             await handleOutputPortConnection({
               newNodeId: nodeData.id,
-              sourceNode: currentNodeRef.current.sourceNode,
+              sourceNode,
               isLoop,
             });
           } else {
+            // 处理输入端口连接
             await handleInputPortConnection({
               newNode: newNodeData,
-              sourceNode: currentNodeRef.current.sourceNode,
+              sourceNode,
               portId,
               isLoop,
             });
           }
 
-          if (currentNodeRef.current.targetNode) {
+          // 处理目标节点连接（在边上快捷添加节点时）
+          if (targetNode) {
             await handleTargetNodeConnection({
               newNode: newNodeData,
-              targetNode: currentNodeRef.current.targetNode,
+              targetNode,
+              sourceNode,
               edgeId: edgeId!,
               isLoop,
             });
@@ -545,9 +580,17 @@ export const useNodeOperations = ({
       }
 
       if (currentNodeRef.current) {
-        const { sourceNode } = currentNodeRef.current;
+        const { sourceNode, portId } = currentNodeRef.current;
         if (sourceNode.loopNodeId) {
+          // 源节点是循环内的子节点，新节点继承其 loopNodeId
           _params.loopNodeId = sourceNode.loopNodeId;
+        } else if (
+          sourceNode.type === NodeTypeEnum.Loop &&
+          portId &&
+          portId.includes('in')
+        ) {
+          // 从循环节点的 in 端口创建节点，新节点应该在循环内部
+          _params.loopNodeId = Number(sourceNode.id);
         }
       }
 
@@ -657,7 +700,7 @@ export const useNodeOperations = ({
 
       if (proxyResult.success) {
         try {
-          await handleNodeCreationSuccess(_params as AddNodeResponse, child);
+          await handleNodeCreationSuccess(_params as AddNodeResponse);
           debouncedSaveFullWorkflow();
         } catch (error) {
           console.error('处理节点创建成功后的操作失败:', error);
