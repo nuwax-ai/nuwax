@@ -184,8 +184,6 @@ export const updateFileTreeContent = (
  */
 export const updateFilesListContent = (
   files: SkillFileInfo[],
-  // fileId: string,
-  // newContent: string,
   changeFiles: {
     fileId: string;
     fileContent: string;
@@ -193,11 +191,24 @@ export const updateFilesListContent = (
   }[],
   operation: 'create' | 'delete' | 'rename' | 'modify',
 ): SkillFileInfo[] => {
-  return files.map((file: SkillFileInfo) => {
-    const changeFile = changeFiles.find((item) => item.fileId === file.fileId);
-    if (changeFile) {
-      return { ...file, contents: changeFile.fileContent, operation };
+  // 先将变更列表转换为 Map，避免在循环中多次 find，提升性能到 O(n + m)
+  const changeMap = new Map(
+    changeFiles.map((item) => [item.fileId, item] as const),
+  );
+
+  // 只返回那些在 changeFiles 中有对应记录的文件，并更新其内容和 operation
+  return files.reduce<SkillFileInfo[]>((result, file) => {
+    if (!file.fileId) {
+      return result;
     }
-    return file;
-  });
+    const changeFile = changeMap.get(file.fileId);
+    if (changeFile) {
+      result.push({
+        ...file,
+        contents: changeFile.fileContent,
+        operation,
+      });
+    }
+    return result;
+  }, []);
 };
