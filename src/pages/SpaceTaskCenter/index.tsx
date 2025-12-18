@@ -1,4 +1,6 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { PlusOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
 import { useRef, useState } from 'react';
 import { useParams } from 'umi';
 import CenterProTable, { CenterProTableRef } from './CenterProTable';
@@ -22,9 +24,22 @@ const SpaceTaskCenter: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout title="任务中心" hideScroll={true}>
+    <WorkspaceLayout
+      title="任务中心"
+      hideScroll={true}
+      rightSlot={
+        <Button
+          key="create"
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleCreateTask}
+        >
+          创建任务
+        </Button>
+      }
+    >
       {/* 主要内容区域 */}
-      <CenterProTable ref={centerProTableRef} onCreate={handleCreateTask} />
+      <CenterProTable ref={centerProTableRef} />
       {/* 创建任务弹窗 */}
       <CreateTimedTask
         spaceId={spaceId}

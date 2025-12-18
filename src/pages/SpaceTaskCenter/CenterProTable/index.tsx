@@ -13,7 +13,6 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { TaskCenterMoreActionEnum } from '@/types/enums/pageDev';
 import { CustomPopoverItem } from '@/types/interfaces/common';
 import type { TaskInfo } from '@/types/interfaces/library';
-import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import { Avatar, Button, Popconfirm, Space, Tag, message } from 'antd';
@@ -35,10 +34,6 @@ export interface CenterProTableRef {
 }
 
 export interface CenterProTableProps {
-  /**
-   * 点击“新增”按钮回调（建议由父组件打开创建弹窗）
-   */
-  onCreate?: () => void;
   // 编辑
   onEdit?: (id: number) => void;
 }
@@ -54,7 +49,7 @@ export interface CenterProTableProps {
  *   - 任务名称：模糊搜索（taskName）
  */
 const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
-  ({ onCreate = () => {}, onEdit = () => {} }, ref) => {
+  ({ onEdit = () => {} }, ref) => {
     const params = useParams();
     const spaceId = Number(params.spaceId);
     const actionRef = useRef<ActionType>();
@@ -522,16 +517,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         // 开启表格自身横向滚动，fixed 列才会固定不跟随滚动
         scroll={{ x: 'max-content' }}
         debounceTime={300}
-        toolBarRender={() => [
-          <Button
-            key="create"
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={onCreate}
-          >
-            创建任务
-          </Button>,
-        ]}
+        toolBarRender={false}
         options={false}
         cardProps={{ bodyStyle: { padding: 0 } }}
         pagination={{
