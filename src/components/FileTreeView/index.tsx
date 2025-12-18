@@ -27,6 +27,7 @@ interface FileTreeViewProps {
   onUploadSingleFile?: (node: FileNode | null) => void;
   onDownload?: () => void;
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
+  onCreateFileNode?: (node: FileNode, newName: string) => Promise<boolean>;
   onDeleteFile?: (node: FileNode) => void;
   onSaveFiles?: (
     data: {
@@ -45,6 +46,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   onUploadSingleFile,
   onDownload,
   onRenameFile,
+  onCreateFileNode,
   onDeleteFile,
   onSaveFiles,
 }) => {
@@ -135,7 +137,37 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   /**
    * 取消重命名
    */
-  const handleCancelRename = () => {
+  const handleCancelRename = (options?: {
+    removeIfNew?: boolean;
+    node?: FileNode | null;
+  }) => {
+    // 如果是新建节点且未输入内容，则需要从文件树中移除该临时节点
+    if (options?.removeIfNew && options.node) {
+      const targetId = options.node.id;
+
+      const removeNodeById = (nodes: FileNode[]): FileNode[] => {
+        return nodes
+          .filter((node) => node.id !== targetId)
+          .map((node) => {
+            if (node.children && node.children.length > 0) {
+              return {
+                ...node,
+                children: removeNodeById(node.children),
+              };
+            }
+            return node;
+          });
+      };
+
+      setFiles((prevFiles) => removeNodeById(prevFiles));
+
+      // 如果当前选中的是这个临时节点，清空选中状态
+      if (selectedFileId === targetId) {
+        setSelectedFileId('');
+        setSelectedFileNode(null);
+      }
+    }
+
     setRenamingNode(null);
   };
 
@@ -165,6 +197,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
         return;
       }
 
+      const isNewNode = fileNode.status === 'create';
+
       // 先立即更新文件树中的显示名字，提供即时反馈
       const updatedFileTree = updateFileTreeName(
         files,
@@ -174,21 +208,29 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
 
       setFiles(updatedFileTree);
 
-      // 直接调用现有的重命名文件功能
-      const isChangeSuccess = await onRenameFile?.(fileNode, newName);
-      if (isChangeSuccess) {
-        // setChangeFiles((prevChangeFiles) => {
-        //   return prevChangeFiles.filter((item) => item.fileId !== fileNode.id);
-        // });
-        // 如果当前选中的文件节点是重命名的文件节点，则更新当前选中的文件节点
-        if (selectedFileNode?.id === fileNode.id) {
-          setSelectedFileNode((prevNode: any) => ({
-            ...prevNode,
-            name: newName,
-          }));
+      // 如果是新建文件节点，走创建逻辑；否则走重命名逻辑
+      if (isNewNode) {
+        // 仅对文件类型走创建逻辑；文件夹创建只在前端生效即可
+        if (fileNode.type === 'file') {
+          const isCreateSuccess = await onCreateFileNode?.(fileNode, newName);
+          if (!isCreateSuccess) {
+            setFiles(filesBackup);
+          }
         }
       } else {
-        setFiles(filesBackup);
+        // 直接调用现有的重命名文件功能
+        const isChangeSuccess = await onRenameFile?.(fileNode, newName);
+        if (isChangeSuccess) {
+          // 如果当前选中的文件节点是重命名的文件节点，则更新当前选中的文件节点
+          if (selectedFileNode?.id === fileNode.id) {
+            setSelectedFileNode((prevNode: any) => ({
+              ...prevNode,
+              name: newName,
+            }));
+          }
+        } else {
+          setFiles(filesBackup);
+        }
       }
     } catch {
       // 重命名文件失败，重新加载文件树以恢复原状态
@@ -217,27 +259,89 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   };
 
   /**
+   * 在文件树中指定位置创建一个临时节点，并进入重命名状态
+   * @param parentNode 目标父级文件夹；为空表示在根目录创建
+   * @param type 创建类型：file 或 folder
+   */
+  const createTempNodeAndStartRename = (
+    parentNode: FileNode | null,
+    type: 'file' | 'folder',
+  ) => {
+    const parentPath = parentNode?.path || null;
+    const tempIdSuffix = `__new__${Date.now()}`;
+    const fullPath = parentPath
+      ? `${parentPath}/${tempIdSuffix}`
+      : tempIdSuffix;
+
+    // 预先构造好要插入的临时节点
+    const newNode: FileNode = {
+      id: fullPath,
+      name: '',
+      type,
+      path: fullPath,
+      children: type === 'folder' ? [] : undefined,
+      parentPath: parentPath,
+      content: type === 'file' ? '' : undefined,
+      lastModified: Date.now(),
+      status: 'create',
+    };
+
+    setFiles((prevFiles) => {
+      const parentId = parentNode?.id || null;
+
+      const insertNodeAtTop = (
+        nodes: FileNode[],
+        targetParentId: string | null,
+      ): FileNode[] => {
+        // 在根目录创建
+        if (!targetParentId) {
+          return [newNode, ...nodes];
+        }
+
+        return nodes.map((node) => {
+          if (node.id === targetParentId) {
+            const children = node.children || [];
+            return {
+              ...node,
+              children: [newNode, ...children],
+            };
+          }
+
+          if (node.children && node.children.length > 0) {
+            return {
+              ...node,
+              children: insertNodeAtTop(node.children, targetParentId),
+            };
+          }
+
+          return node;
+        });
+      };
+
+      const updatedFiles = insertNodeAtTop(prevFiles, parentId);
+      return updatedFiles;
+    });
+
+    // 将新建的节点设置为当前重命名目标和选中节点
+    if (newNode) {
+      setRenamingNode(newNode);
+      setSelectedFileId(newNode.id);
+      setSelectedFileNode(newNode);
+    }
+  };
+
+  /**
    * 处理新建文件操作
    */
   const handleCreateFile = (parentNode: FileNode | null) => {
-    console.log('handleCreateFile', parentNode);
-    // TODO: 实现新建文件逻辑
-    // 1. 显示输入框让用户输入文件名
-    // 2. 验证文件名是否合法
-    // 3. 在文件树中添加新文件
-    // 4. 调用 API 创建文件
+    createTempNodeAndStartRename(parentNode, 'file');
   };
 
   /**
    * 处理新建文件夹操作
    */
   const handleCreateFolder = (parentNode: FileNode | null) => {
-    console.log('handleCreateFolder', parentNode);
-    // TODO: 实现新建文件夹逻辑
-    // 1. 显示输入框让用户输入文件夹名
-    // 2. 验证文件夹名是否合法
-    // 3. 在文件树中添加新文件夹
-    // 4. 调用 API 创建文件夹
+    createTempNodeAndStartRename(parentNode, 'folder');
   };
 
   /**
