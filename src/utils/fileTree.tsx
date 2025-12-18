@@ -94,58 +94,65 @@ export const updateFileTreeName = (
  * @returns 更新后的文件列表
  */
 export const updateFilesListName = (
-  files: any[],
+  files: SkillFileInfo[],
   fileNode: FileNode,
   newName: string,
-  operation: 'create' | 'delete' | 'rename' | 'modify',
-): FileNode[] => {
+): SkillFileInfo[] => {
+  // 获取旧路径和新路径
   const oldPath = fileNode.path;
   const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
   const newPath = parentPath
     ? `${parentPath}/${newName.trim()}`
     : newName.trim();
 
-  // 更新原始文件列表中的文件名（包含完整路径+文件名+后缀）
-  return files?.map((file: any) => {
-    // 如果是文件夹，需要更新文件夹本身以及所有子文件
-    if (fileNode.type === 'folder') {
-      // 检查是否是文件夹本身（虽然扁平列表中文件夹可能不存在）
-      if (file.name === oldPath) {
-        return {
-          ...file,
+  // 如果是文件，则更新文件名
+  if (fileNode.type === 'file') {
+    const currentFile = files?.find((file: SkillFileInfo) => {
+      return file.fileId === fileNode.id;
+    }) as SkillFileInfo;
+    // 如果文件存在，则更新文件名
+    if (currentFile) {
+      return [
+        {
+          ...currentFile,
           name: newPath, // 更新为新的完整路径
-          renameFrom: oldPath, // 记录重命名前的名字
-          operation, // 操作类型
-        };
-      }
-
-      // 检查是否是文件夹的子文件
-      if (file.name.startsWith(oldPath + '/')) {
-        // 计算新路径：将 oldPath 前缀替换为 newPath
-        const relativePath = file.name.substring(oldPath.length);
-        const newFilePath = newPath + relativePath;
-
-        return {
-          ...file,
-          name: newFilePath, // 更新为新的完整路径
-          renameFrom: file.name, // 记录重命名前的名字
-          operation, // 操作类型
-        };
-      }
-    } else {
-      // 如果是文件，直接更新匹配的文件
-      if (file.name === oldPath) {
-        return {
-          ...file,
-          name: newPath, // 更新为新的完整路径
-          renameFrom: oldPath, // 记录重命名前的名字
-          operation, // 操作类型
-        };
-      }
+          renameFrom: oldPath, // 记录重命名前的路径
+          operation: 'rename', // 操作类型
+        },
+      ];
     }
+    return [];
+  }
+  // 如果是文件夹，则更新文件夹中的文件名
+  else {
+    // 更新文件夹本身（同后端商量后，直接将此文件夹更新为新的文件夹，不传入子文件信息，达到直接修改文件夹名称的效果）
+    return [
+      {
+        contents: '',
+        name: newPath, // 更新为新的完整路径
+        renameFrom: oldPath, // 记录重命名前的名字
+        operation: 'rename', // 操作类型
+        isDir: true,
+      },
+    ];
+    // const folderFiles =
+    //   files?.filter((file: SkillFileInfo) => {
+    //     return file.name?.startsWith(oldPath + '/');
+    //   }) || [];
 
-    return file;
-  });
+    // return folderFiles.map((file: SkillFileInfo) => {
+    //   // 计算新路径：将 oldPath 前缀替换为 newPath
+    //   const relativePath = file.name.substring(oldPath.length);
+    //   const newFilePath = newPath + relativePath;
+
+    //   return {
+    //     ...file,
+    //     name: newFilePath, // 更新为新的完整路径
+    //     renameFrom: file.name, // 记录重命名前的名字
+    //     operation, // 操作类型
+    //   };
+    // });
+  }
 };
 
 /**
