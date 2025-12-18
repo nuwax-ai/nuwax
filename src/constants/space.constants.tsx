@@ -7,9 +7,10 @@ import {
 } from '@/components/base/AgentType/images.constants';
 import SvgIcon from '@/components/base/SvgIcon';
 
-import { InputTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, InputTypeEnum } from '@/types/enums/agent';
 import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
 import {
+  AgentTypeEnum,
   ApplicationMoreActionEnum,
   ComponentSettingEnum,
   ComponentTypeEnum,
@@ -52,6 +53,23 @@ export const LIBRARY_ALL_RESOURCE = [
   },
 ];
 
+// 智能体类型列表
+export const AGENT_TYPE_LIST = [
+  {
+    value: AgentTypeEnum.ChatBot,
+    label: '问答型智能体',
+    // icon: <ICON_AGENT />,
+    tooltip: '问答型智能体：适合知识问答、智能客服等快问快答的场景。',
+  },
+  {
+    value: AgentTypeEnum.TaskAgent,
+    label: '长任务型智能体',
+    // icon: <ICON_AGENT />,
+    tooltip:
+      '为智能体分配独立的执行电脑，适合应用开发、深度调研、数据分析、演示文稿制作等复杂任务场景，比较消耗内存资源且输出结果较慢。',
+  },
+];
+
 // 组件库所有类型
 export const LIBRARY_ALL_TYPE = [
   {
@@ -60,6 +78,27 @@ export const LIBRARY_ALL_TYPE = [
     icon: null,
   },
   ...LIBRARY_ALL_RESOURCE,
+];
+
+// 任务库所有类型
+export const TASK_ALL_TYPE = [
+  {
+    value: ComponentTypeEnum.All_Type,
+    label: '所有类型',
+    icon: null,
+  },
+  // 智能体
+  {
+    value: AgentComponentTypeEnum.Agent,
+    label: '智能体',
+    icon: null,
+  },
+  // 工作流
+  {
+    value: AgentComponentTypeEnum.Workflow,
+    label: '工作流',
+    icon: null,
+  },
 ];
 
 // 过滤状态
@@ -112,9 +151,24 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
     text: '组件库',
   },
   {
+    type: SpaceApplicationListEnum.Skill_Manage,
+    icon: <SvgIcon name="icons-nav-doc" />,
+    text: '技能管理',
+  },
+  {
     type: SpaceApplicationListEnum.MCP_Manage,
     icon: <SvgIcon name="icons-nav-mcp" />,
     text: 'MCP管理',
+  },
+  {
+    type: SpaceApplicationListEnum.Task_Center,
+    icon: <SvgIcon name="icons-chat-share" />,
+    text: '任务中心',
+  },
+  {
+    type: SpaceApplicationListEnum.Library_Log,
+    icon: <SvgIcon name="icons-chat-history" />,
+    text: '日志查询',
   },
   {
     type: SpaceApplicationListEnum.Space_Square,

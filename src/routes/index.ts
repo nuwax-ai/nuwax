@@ -35,8 +35,27 @@ const routes = [
         path: '/space/:spaceId/page-develop',
         component: '@/pages/SpacePageDevelop',
       },
+      // 技能管理
+      {
+        path: '/space/:spaceId/skill-manage',
+        component: '@/pages/SpaceSkillManage',
+      },
+      // 任务中心
+      {
+        path: '/space/:spaceId/task-center',
+        component: '@/pages/SpaceTaskCenter',
+      },
+      {
+        path: '/space/:spaceId/skill-details/:skillId',
+        component: '@/pages/SkillDetails',
+      },
       { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
+      // 插件、工作流、MCP日志
+      {
+        path: '/space/:spaceId/library-log',
+        component: '@/pages/SpaceLibraryLog',
+      },
       { path: '/space/:spaceId/mcp', component: '@/pages/SpaceMcpManage' },
       {
         path: '/space/:spaceId/mcp/create',

@@ -21,7 +21,11 @@ import type {
   TooltipTitleTypeEnum,
 } from '@/types/enums/common';
 import type { UpdateModeComponentEnum } from '@/types/enums/library';
-import type { HistoryActionTypeEnum, OpenCloseEnum } from '@/types/enums/space';
+import type {
+  AgentTypeEnum,
+  HistoryActionTypeEnum,
+  OpenCloseEnum,
+} from '@/types/enums/space';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
@@ -413,6 +417,8 @@ export interface AgentConfigInfo {
   hideChatArea: HideChatAreaEnum;
   // 扩展页面首页
   pageHomeIndex: string;
+  // 智能体类型
+  type: AgentTypeEnum;
 }
 
 // 智能体历史配置信息
@@ -598,6 +604,187 @@ export interface LogQueryFilter {
 
   // 空间ID，可选，用于查询特定空间的日志，支持多个ID（OR关系）
   spaceId?: string[];
+}
+
+// 日志查询过滤条件-工作空间
+export interface SpaceLogQueryFilter {
+  /** 请求唯一标识，可以用于关联一次请求中所有相关的操作 */
+  requestId?: string;
+
+  /** 日志产生对象所在的空间 ID */
+  spaceId?: number;
+
+  /** 请求发起的用户 ID */
+  userId?: number;
+
+  /** 用户名 */
+  userName?: string;
+
+  /** 日志对象类型，Agent、Plugin、Workflow、Mcp */
+  targetType?: string;
+
+  /** 日志对象名称 */
+  targetName?: string;
+
+  /** 日志对象 ID */
+  targetId?: string;
+
+  /** 会话 ID */
+  conversationId?: string;
+
+  /** 输入参数 */
+  input?: string;
+
+  /** 执行结果 */
+  output?: string;
+
+  /** 执行过程数据 */
+  processData?: string;
+
+  /** 执行结果码，0000 为成功 */
+  resultCode?: string;
+
+  /** 日志产生时间（大于） */
+  createTimeGt?: number;
+
+  /** 日志产生时间（小于） */
+  createTimeLt?: number;
+}
+
+// 日志查询请求参数-工作空间
+export interface apiSpaceLogListParams {
+  /*分页查询过滤条件 */
+  queryFilter?: SpaceLogQueryFilter;
+  // 当前页,示例值(1)
+  current: number;
+  // 分页pageSize,示例值(10)
+  pageSize: number;
+}
+
+// 日志详情请求参数-工作空间
+export interface SpaceLogDetailParams {
+  /** 请求唯一标识 */
+  id: string;
+}
+
+// 日志查询响应-工作空间
+export interface SpaceLogInfo {
+  /** 日志 ID，不用于展示，仅用于查询详情 */
+  id: string;
+
+  /** 请求唯一标识，可用于关联一次请求中所有相关操作 */
+  requestId: string;
+
+  /** 日志产生对象所在的空间 ID */
+  spaceId?: number;
+
+  /** 请求发起的用户 ID */
+  userId?: number;
+
+  /** 用户名 */
+  userName?: string;
+
+  /** 日志对象类型 */
+  targetType?: string;
+
+  /** 日志对象名称 */
+  targetName?: string;
+
+  /** 日志对象 ID */
+  targetId?: string;
+
+  /** 会话 ID */
+  conversationId?: string;
+
+  /** 输入参数 */
+  input?: string;
+
+  /** 执行结果 */
+  output?: string;
+
+  /** 执行过程数据 */
+  processData?: string;
+
+  /** 输入 token 数量 */
+  inputToken?: number;
+
+  /** 输出 token 数量 */
+  outputToken?: number;
+
+  /** 请求开始时间（时间戳） */
+  requestStartTime: number;
+
+  /** 请求结束时间（时间戳） */
+  requestEndTime: number;
+
+  /** 执行结果码，0000 为成功 */
+  resultCode?: string;
+
+  /** 执行结果描述 */
+  resultMsg?: string;
+
+  /** 日志产生时间（时间戳） */
+  createTime?: number;
+}
+
+// 日志查询详情响应-工作空间
+export interface SpaceLogInfoDetail {
+  /** 日志 ID */
+  id: string;
+
+  /** 请求唯一标识，可用于关联一次请求中所有相关操作 */
+  requestId: string;
+
+  /** 日志产生对象所在的空间 ID */
+  spaceId: number;
+
+  /** 请求发起的用户 ID */
+  userId: number;
+
+  /** 用户名 */
+  userName: string;
+
+  /** 日志对象类型 */
+  targetType: string;
+
+  /** 日志对象名称 */
+  targetName: string;
+
+  /** 日志对象 ID */
+  targetId: string;
+
+  /** 会话 ID */
+  conversationId: string;
+
+  /** 输入参数 */
+  input: string;
+
+  /** 执行结果 */
+  output: string;
+
+  /** 执行过程数据 */
+  processData: string;
+
+  /** 输入 token 数量 */
+  inputToken: number;
+
+  /** 输出 token 数量 */
+  outputToken: number;
+
+  /** 请求开始时间（时间戳） */
+  requestStartTime: number;
+
+  /** 请求结束时间（时间戳） */
+  requestEndTime: number;
+
+  /** 执行结果码，0000 为成功 */
+  resultCode: string;
+
+  /** 执行结果描述 */
+  resultMsg: string;
+
+  /** 日志产生时间（时间戳） */
+  createTime: number;
 }
 
 // 日志查询请求参数

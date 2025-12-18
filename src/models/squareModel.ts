@@ -8,6 +8,7 @@ const useSquareModel = () => {
     [],
   );
   const [templateList, setTemplateList] = useState<SquareAgentInfo[]>([]);
+  const [skillInfoList, setSkillInfoList] = useState<SquareAgentInfo[]>([]);
 
   return {
     agentInfoList,
@@ -18,6 +19,8 @@ const useSquareModel = () => {
     setWorkflowInfoList,
     templateList,
     setTemplateList,
+    skillInfoList,
+    setSkillInfoList,
   };
 };
 

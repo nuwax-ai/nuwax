@@ -18,7 +18,7 @@ export async function apiPublishTemplateCopy(
   });
 }
 
-// 智能体、插件、工作流下架
+// 智能体、插件、工作流、技能下架
 export async function apiPublishOffShelf(
   data: PublishOffShelfParams,
 ): Promise<RequestResponse<null>> {

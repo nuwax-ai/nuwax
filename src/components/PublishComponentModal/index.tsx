@@ -65,7 +65,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   // 已发布列表
   const [publishList, setPublishList] = useState<PublishItemInfo[]>([]);
   // 智能体、插件、工作流等信息列表
-  const { agentInfoList, pluginInfoList, workflowInfoList } =
+  const { agentInfoList, pluginInfoList, workflowInfoList, skillInfoList } =
     useModel('squareModel');
   // 查询分类列表信息
   const { runQueryCategory } = useCategory();
@@ -174,7 +174,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
         targetType: mode,
       });
     }
-  }, [open]);
+  }, [open, targetId, mode]);
 
   // 设置title以及分类选择列表
   useEffect(() => {
@@ -192,6 +192,10 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
         _classifyList = workflowInfoList;
         setTitle('工作流');
         break;
+      case AgentComponentTypeEnum.Skill:
+        _classifyList = skillInfoList;
+        setTitle('技能');
+        break;
     }
     // 分类选择列表 - 数据类型转换
     const list = _classifyList?.map((item: SquareAgentInfo) => ({
@@ -204,7 +208,14 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       const initCategory = category || list[0].value;
       form.setFieldValue('category', initCategory);
     }
-  }, [mode, category, agentInfoList, pluginInfoList, workflowInfoList]);
+  }, [
+    mode,
+    category,
+    agentInfoList,
+    pluginInfoList,
+    workflowInfoList,
+    skillInfoList,
+  ]);
 
   // 智能体、插件、工作流等 - 提交发布申请
   const { run, loading } = useRequest(apiPublishApply, {

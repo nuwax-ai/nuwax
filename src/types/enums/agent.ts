@@ -11,6 +11,8 @@ export enum AgentComponentTypeEnum {
   Page = 'Page',
   // 事件
   Event = 'Event',
+  // 技能
+  Skill = 'Skill',
 }
 
 // 用户APIKEY目标类型,可用值:Agent,Mcp,TempChat

@@ -42,6 +42,4 @@ export interface FileContextMenuProps {
   onUploadSingleFile?: (node: FileNode | null) => void;
   /** 上传项目回调（空白区域菜单） */
   onUploadProject?: () => void;
-  /** 添加数据资源回调（空白区域菜单） */
-  onAddDataResource?: () => void;
 }

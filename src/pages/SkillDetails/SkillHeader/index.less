@@ -1,0 +1,43 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.header {
+  padding: @paddingSm @padding;
+  overflow-x: auto;
+  border-bottom: 1px solid @WHITE07;
+
+  .avatar {
+    width: 27px;
+    height: 27px;
+    border-radius: @borderRadius;
+  }
+
+  .header-info {
+    padding-left: @paddingSm;
+
+    .h-title {
+      max-width: 360px;
+      margin-right: @marginSm;
+      font-size: 16px;
+      font-weight: @fontWeightStrong;
+      line-height: 24px;
+      // color: @navFirstMenuTextSecondary;
+      color: #3d3d3d;
+      white-space: nowrap;
+    }
+
+    .edit-ico {
+      // color: @navFirstMenuTextSecondary;
+      color: #95979c;
+      font-size: 16px;
+    }
+  }
+
+  .right-box {
+    margin-left: auto;
+
+    .publish-btn {
+      margin-left: @marginXs;
+    }
+  }
+}
