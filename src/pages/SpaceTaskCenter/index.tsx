@@ -1,4 +1,5 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import { useRef, useState } from 'react';
@@ -15,12 +16,32 @@ const SpaceTaskCenter: React.FC = () => {
 
   // 创建任务
   const [openCreateTask, setOpenCreateTask] = useState(false);
+
+  // 模式
+  const [mode, setMode] = useState<CreateUpdateModeEnum>(
+    CreateUpdateModeEnum.Create,
+  );
+  // 任务ID
+  const [taskId, setTaskId] = useState<number>(0);
+
+  // 创建任务
   const handleCreateTask = () => {
+    setMode(CreateUpdateModeEnum.Create);
+    setTaskId(0);
     setOpenCreateTask(true);
   };
+
+  // 创建任务确认
   const handleCreateTaskConfirm = () => {
     // 查询任务列表
     centerProTableRef.current?.reload();
+  };
+
+  // 编辑任务
+  const handleEditTask = (id: number) => {
+    setMode(CreateUpdateModeEnum.Update);
+    setTaskId(id);
+    setOpenCreateTask(true);
   };
 
   return (
@@ -39,10 +60,12 @@ const SpaceTaskCenter: React.FC = () => {
       }
     >
       {/* 主要内容区域 */}
-      <CenterProTable ref={centerProTableRef} />
+      <CenterProTable ref={centerProTableRef} onEdit={handleEditTask} />
       {/* 创建任务弹窗 */}
       <CreateTimedTask
         spaceId={spaceId}
+        mode={mode}
+        id={taskId}
         open={openCreateTask}
         onCancel={() => setOpenCreateTask(false)}
         onConfirm={handleCreateTaskConfirm}
