@@ -1,4 +1,7 @@
+import CustomPopover from '@/components/CustomPopover';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { ICON_MORE } from '@/constants/images.constants';
+import { TASK_CENTER_MORE_ACTION } from '@/constants/library.constants';
 import {
   apiTaskDelete,
   apiTaskDisable,
@@ -7,6 +10,8 @@ import {
   apiTaskList,
 } from '@/services/library';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { TaskCenterMoreActionEnum } from '@/types/enums/pageDev';
+import { CustomPopoverItem } from '@/types/interfaces/common';
 import type { TaskInfo } from '@/types/interfaces/library';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
@@ -34,6 +39,8 @@ export interface CenterProTableProps {
    * 点击“新增”按钮回调（建议由父组件打开创建弹窗）
    */
   onCreate?: () => void;
+  // 编辑
+  onEdit?: (id: number) => void;
 }
 
 /**
@@ -47,7 +54,7 @@ export interface CenterProTableProps {
  *   - 任务名称：模糊搜索（taskName）
  */
 const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
-  ({ onCreate = () => {} }, ref) => {
+  ({ onCreate = () => {}, onEdit = () => {} }, ref) => {
     const params = useParams();
     const spaceId = Number(params.spaceId);
     const actionRef = useRef<ActionType>();
@@ -284,6 +291,27 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       [actionRef, cacheRef, fetchingRef],
     );
 
+    // 点击更多操作
+    const onClickMore = (item: CustomPopoverItem, info: TaskInfo) => {
+      const { action } = item as unknown as {
+        action: TaskCenterMoreActionEnum;
+      };
+      switch (action) {
+        case TaskCenterMoreActionEnum.Edit:
+          onEdit(info.id);
+      }
+    };
+
+    const getMoreActionList = (isEnded: boolean) => {
+      return TASK_CENTER_MORE_ACTION.filter((item) => {
+        if (!isEnded) {
+          return item.action !== TaskCenterMoreActionEnum.Enable;
+        } else {
+          return item.action !== TaskCenterMoreActionEnum.Disable;
+        }
+      });
+    };
+
     const columns: ProColumns<TaskInfo>[] = useMemo(
       () => [
         {
@@ -398,6 +426,21 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
                 >
                   详情
                 </Button>
+
+                {/*更多操作*/}
+                <CustomPopover
+                  list={getMoreActionList(isEnded)}
+                  onClick={(item) => {
+                    onClickMore(item, record);
+                  }}
+                >
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={<ICON_MORE />}
+                  ></Button>
+                </CustomPopover>
+
                 <Button
                   type="link"
                   onClick={() => {
