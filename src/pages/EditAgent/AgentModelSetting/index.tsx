@@ -11,6 +11,7 @@ import { apiModelList } from '@/services/modelConfig';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type { ComponentModelBindConfig } from '@/types/interfaces/agent';
 import type { AgentModelSettingProps } from '@/types/interfaces/agentConfig';
 import { option } from '@/types/interfaces/common';
@@ -29,6 +30,7 @@ const cx = classnames.bind(styles);
  */
 const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   spaceId,
+  agentConfigInfo,
   modelComponentConfig,
   devConversationId,
   open,
@@ -192,6 +194,33 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
     const name = String(info?.label) || '';
     onCancel(targetId, name, componentBindConfig);
   };
+  if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
+    return (
+      <Modal
+        title="模型设置"
+        classNames={{
+          content: cx(styles['modal-wrapper']),
+        }}
+        open={open}
+        footer={null}
+        onCancel={handleCancel}
+      >
+        <Flex gap={20}>
+          <div className="flex-1">
+            <h3 className={cx(styles.title)}>会话模型</h3>
+            <SelectList
+              placeholder="请选择会话模型"
+              className={cx(styles.select)}
+              onChange={handleChangeModelTarget}
+              options={modelConfigList}
+              value={targetId}
+            />
+          </div>
+        </Flex>
+        <br />
+      </Modal>
+    );
+  }
 
   return (
     <Modal

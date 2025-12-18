@@ -78,6 +78,7 @@ export interface FoldWrapType {
 // 容器组件
 export interface ToggleWrapProps {
   className?: string;
+  headerClassName?: string;
   title: string;
   visible?: boolean;
   onClose: () => void;

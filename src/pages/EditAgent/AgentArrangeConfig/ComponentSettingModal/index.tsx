@@ -1,4 +1,8 @@
 import ParamsSetting from '@/components/ParamsSetting';
+import {
+  CALL_METHOD_OPTIONS,
+  SKILL_METHOD_OPTIONS,
+} from '@/constants/agent.constants';
 import { COMPONENT_SETTING_ACTIONS } from '@/constants/space.constants';
 import {
   apiAgentCardList,
@@ -71,7 +75,14 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
   const { runQueryConversation } = useModel('conversationInfo');
 
   useEffect(() => {
-    setAction(ComponentSettingEnum.Params);
+    if (currentComponentInfo?.type === AgentComponentTypeEnum.Skill) {
+      // 技能组件默认展示调用方式
+      setAction(ComponentSettingEnum.Method_Call);
+    } else {
+      // 其他组件默认展示参数设置
+      setAction(ComponentSettingEnum.Params);
+    }
+
     setComponentInfo(currentComponentInfo);
   }, [currentComponentInfo]);
 
@@ -221,6 +232,31 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
     message.success('保存成功');
   };
 
+  const getTooltip = () => {
+    if (currentComponentInfo?.type === AgentComponentTypeEnum.Skill) {
+      return (
+        <div>
+          <p>按需调用：由模型根据任务情况决定是否需要调用</p>
+          <p>
+            手动选择：由用户决定是否使用该工具，在用户选择的情况下和自动调用效果一样
+          </p>
+        </div>
+      );
+    }
+    return (
+      <div>
+        <p>自动调用：用户每次发送消息后都会触发调用一次</p>
+        <p>按需调用：由模型根据任务情况决定是否需要调用</p>
+        <p>
+          手动选择：由用户决定是否使用该工具，在用户选择的情况下和自动调用效果一样
+        </p>
+        <p>
+          手动选择+按需调用：用户选择后，由模型根据任务情况选择是否需要调用；用户不选择则不会调用
+        </p>
+      </div>
+    );
+  };
+
   const getContent = () => {
     switch (action) {
       // 参数
@@ -236,8 +272,14 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
       case ComponentSettingEnum.Method_Call:
         return (
           <InvokeType
+            options={
+              currentComponentInfo?.type === AgentComponentTypeEnum.Skill
+                ? SKILL_METHOD_OPTIONS
+                : CALL_METHOD_OPTIONS
+            }
             invokeType={componentInfo?.bindConfig?.invokeType}
             defaultSelected={componentInfo?.bindConfig?.defaultSelected}
+            tooltip={getTooltip()}
             onSaveSet={(data) => handleSaveSetting(data, null, action)}
           />
         );

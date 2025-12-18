@@ -49,6 +49,12 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
           text: '页面是智能体的可视化界面，用户可以通过页面与智能体进行交互。',
           image: databaseImage,
         };
+      // 技能
+      case AgentComponentTypeEnum.Skill:
+        return {
+          text: '技能是智能体的技能，用户可以通过技能与智能体进行交互。',
+          image: databaseImage,
+        };
     }
   };
 

@@ -62,7 +62,6 @@ import LongMemoryContent from './LongMemoryContent';
 import McpGroupComponentItem from './McpGroupComponentItem';
 import OpenRemarksEdit from './OpenRemarksEdit';
 import PageSettingModal from './PageSettingModal';
-import HeaderToolButton from './ToolButton';
 import VariableList from './VariableList';
 
 const cx = classNames.bind(styles);
@@ -199,25 +198,33 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     );
   };
 
-  // 技能列表 - 当前激活 tab 面板的 key
-  const skillActiveKey = useMemo(() => {
-    const skill: AgentArrangeConfigEnum[] = [];
+  // 工具 - 当前激活 tab 面板的 key
+  const toolActiveKey = useMemo(() => {
+    const tool: AgentArrangeConfigEnum[] = [];
     if (isExistComponent(AgentComponentTypeEnum.Plugin)) {
-      skill.push(AgentArrangeConfigEnum.Plugin);
+      tool.push(AgentArrangeConfigEnum.Plugin);
     }
     if (isExistComponent(AgentComponentTypeEnum.Workflow)) {
-      skill.push(AgentArrangeConfigEnum.Workflow);
+      tool.push(AgentArrangeConfigEnum.Workflow);
     }
     if (isExistComponent(AgentComponentTypeEnum.MCP)) {
-      skill.push(AgentArrangeConfigEnum.MCP);
+      tool.push(AgentArrangeConfigEnum.MCP);
     }
-    return skill;
+    return tool;
   }, [agentComponentList]);
 
   // 知识 - 当前激活 tab 面板的 key
   const knowledgeActiveKey = useMemo(() => {
     if (isExistComponent(AgentComponentTypeEnum.Knowledge)) {
       return [AgentArrangeConfigEnum.Text];
+    }
+    return [];
+  }, [agentComponentList]);
+
+  // 技能 - 当前激活 tab 面板的 key
+  const skillActiveKey = useMemo(() => {
+    if (isExistComponent(AgentComponentTypeEnum.Skill)) {
+      return [AgentArrangeConfigEnum.Skill];
     }
     return [];
   }, [agentComponentList]);
@@ -443,8 +450,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     setOpenPluginModel(true);
   };
 
-  // 技能列表
-  const SkillList: CollapseProps['items'] = [
+  // 工具列表
+  const ToolList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.Plugin,
       label: '插件',
@@ -547,6 +554,34 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           onClick={(e) =>
             handlerComponentPlus(e, AgentComponentTypeEnum.Knowledge)
           }
+        />
+      ),
+      classNames: {
+        header: 'collapse-header',
+        body: 'collapse-body',
+      },
+    },
+  ];
+
+  // 技能
+  const SkillList: CollapseProps['items'] = [
+    {
+      key: AgentArrangeConfigEnum.Skill,
+      label: '技能',
+      children: (
+        <CollapseComponentList
+          textClassName={cx(styles.text)}
+          type={AgentComponentTypeEnum.Skill}
+          list={filterList(AgentComponentTypeEnum.Skill)}
+          deleteList={deleteList}
+          onSet={handlePluginSet}
+          onDel={handleAgentComponentDel}
+        />
+      ),
+      extra: (
+        <TooltipIcon
+          title="添加技能"
+          onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.Skill)}
         />
       ),
       classNames: {
@@ -907,7 +942,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
   ];
 
-  // 添加插件、工作流、知识库、数据库、MCP、页面
+  // 添加插件、工作流、知识库、数据库、MCP、页面、技能
   const handleAddComponent = (info: AgentAddComponentBaseInfo) => {
     setAddComponents((list) => {
       return [
@@ -940,6 +975,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           ].includes(item.type),
       );
     }
+    if (type === AgentComponentTypeEnum.Skill) {
+      return COMPONENT_SETTING_ACTIONS.filter((item) =>
+        // 调用方式
+        [ComponentSettingEnum.Method_Call].includes(item.type),
+      );
+    }
     return COMPONENT_SETTING_ACTIONS;
   }, []);
 
@@ -960,19 +1001,17 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   return (
     <div className={classNames('overflow-y', 'flex-1', styles.container)}>
       <ConfigOptionsHeader title="工具" />
-      <ConfigOptionCollapse
-        items={SkillList}
-        defaultActiveKey={skillActiveKey}
-      />
+      <ConfigOptionCollapse items={ToolList} defaultActiveKey={toolActiveKey} />
 
       {/* 长任务型智能体显示技能 */}
       {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
-        <HeaderToolButton
-          title="技能"
-          onClick={() => {
-            alert('添加技能 - 暂未实现');
-          }}
-        />
+        <>
+          <ConfigOptionsHeader title="技能" />
+          <ConfigOptionCollapse
+            items={SkillList}
+            defaultActiveKey={skillActiveKey}
+          />
+        </>
       )}
 
       <ConfigOptionsHeader title="知识" />

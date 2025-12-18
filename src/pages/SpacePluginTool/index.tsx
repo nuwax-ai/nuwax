@@ -545,6 +545,7 @@ const SpacePluginTool: React.FC = () => {
       />
       {/*版本历史*/}
       <VersionHistory
+        headerClassName={cx(styles['version-history-header'])}
         targetId={pluginId}
         targetName={pluginInfo?.name}
         targetType={AgentComponentTypeEnum.Plugin}
