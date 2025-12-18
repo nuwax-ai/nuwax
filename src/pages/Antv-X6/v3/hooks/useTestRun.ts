@@ -11,6 +11,7 @@ import { GraphContainerRef, RunResultItem } from '@/types/interfaces/graph';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useCallback, useState } from 'react';
+import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import {
   getWorkflowTestRun,
@@ -71,9 +72,11 @@ export const useTestRun = ({
   changeUpdateTime,
   setErrorParams,
 }: UseTestRunParams): UseTestRunReturn => {
-  // 状态
+  // 使用全局 model 中的 testRun 状态，确保 TestRun 组件能正确响应状态变化
+  const { testRun, setTestRun } = useModel('model');
+
+  // 局部状态
   const [loading, setLoading] = useState(false);
-  const [testRun, setTestRun] = useState(false);
   const [testRunResult, setTestRunResult] = useState('');
   const [testRunLoading, setTestRunLoading] = useState(false);
   const [stopWait, setStopWait] = useState(false);
