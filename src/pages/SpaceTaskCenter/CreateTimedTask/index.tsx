@@ -6,7 +6,7 @@ import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps } from 'antd';
 import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import TimedPeriodSelector from './components/TimedPeriodSelector';
 import styles from './index.less';
 
@@ -46,24 +46,37 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
   const variables = Form.useWatch('variables', form);
   const taskTarget = Form.useWatch('taskTarget', form);
 
+  // 加载中
+  const [loading, setLoading] = useState<boolean>(false);
+
   // 新增定时任务
   const run = async (data: any) => {
-    const resp = await apiAddTimedTask(data);
-    console.log(resp);
-    if (resp?.code === SUCCESS_CODE) {
-      message.success('定时任务已创建成功');
-      onCancel?.();
-      onConfirm?.();
+    try {
+      setLoading(true);
+      const resp = await apiAddTimedTask(data);
+      console.log(resp);
+      if (resp?.code === SUCCESS_CODE) {
+        message.success('定时任务已创建成功');
+        onCancel?.();
+        onConfirm?.();
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   // 更新定时任务
   const runUpdate = async (data: any) => {
-    const resp = await apiUpdateTimedTask(data);
-    if (resp?.code === SUCCESS_CODE) {
-      message.success('定时任务更新成功');
-      onCancel?.();
-      onConfirm?.();
+    try {
+      setLoading(true);
+      const resp = await apiUpdateTimedTask(data);
+      if (resp?.code === SUCCESS_CODE) {
+        message.success('定时任务更新成功');
+        onCancel?.();
+        onConfirm?.();
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -265,6 +278,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
 
   return (
     <CustomFormModal
+      loading={loading}
       form={form}
       title={
         mode === CreateUpdateModeEnum.Create ? '创建定时任务' : '更新定时任务'
