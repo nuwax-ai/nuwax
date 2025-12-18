@@ -94,58 +94,99 @@ export const updateFileTreeName = (
  * @returns 更新后的文件列表
  */
 export const updateFilesListName = (
-  files: any[],
+  files: SkillFileInfo[],
   fileNode: FileNode,
   newName: string,
   operation: 'create' | 'delete' | 'rename' | 'modify',
-): FileNode[] => {
+): SkillFileInfo[] => {
+  // 获取旧路径和新路径
   const oldPath = fileNode.path;
   const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
   const newPath = parentPath
     ? `${parentPath}/${newName.trim()}`
     : newName.trim();
 
-  // 更新原始文件列表中的文件名（包含完整路径+文件名+后缀）
-  return files?.map((file: any) => {
-    // 如果是文件夹，需要更新文件夹本身以及所有子文件
-    if (fileNode.type === 'folder') {
-      // 检查是否是文件夹本身（虽然扁平列表中文件夹可能不存在）
-      if (file.name === oldPath) {
-        return {
-          ...file,
+  // 如果是文件，则更新文件名
+  if (fileNode.type === 'file') {
+    const currentFile = files?.find((file: SkillFileInfo) => {
+      return file.fileId === fileNode.id;
+    }) as SkillFileInfo;
+    // 如果文件存在，则更新文件名
+    if (currentFile) {
+      return [
+        {
+          ...currentFile,
           name: newPath, // 更新为新的完整路径
-          renameFrom: oldPath, // 记录重命名前的名字
+          renameFrom: oldPath, // 记录重命名前的路径
           operation, // 操作类型
-        };
-      }
-
-      // 检查是否是文件夹的子文件
-      if (file.name.startsWith(oldPath + '/')) {
-        // 计算新路径：将 oldPath 前缀替换为 newPath
-        const relativePath = file.name.substring(oldPath.length);
-        const newFilePath = newPath + relativePath;
-
-        return {
-          ...file,
-          name: newFilePath, // 更新为新的完整路径
-          renameFrom: file.name, // 记录重命名前的名字
-          operation, // 操作类型
-        };
-      }
-    } else {
-      // 如果是文件，直接更新匹配的文件
-      if (file.name === oldPath) {
-        return {
-          ...file,
-          name: newPath, // 更新为新的完整路径
-          renameFrom: oldPath, // 记录重命名前的名字
-          operation, // 操作类型
-        };
-      }
+        },
+      ];
     }
+    return [];
+  }
+  // 如果是文件夹，则更新文件夹中的文件名
+  else {
+    const folderFiles =
+      files?.filter((file: SkillFileInfo) => {
+        return file.name?.startsWith(oldPath + '/');
+      }) || [];
 
-    return file;
-  });
+    return folderFiles.map((file: SkillFileInfo) => {
+      // 计算新路径：将 oldPath 前缀替换为 newPath
+      const relativePath = file.name.substring(oldPath.length);
+      const newFilePath = newPath + relativePath;
+
+      return {
+        ...file,
+        name: newFilePath, // 更新为新的完整路径
+        renameFrom: file.name, // 记录重命名前的名字
+        operation, // 操作类型
+      };
+    });
+  }
+
+  // // 更新原始文件列表中的文件名（包含完整路径+文件名+后缀）
+  // return files?.map((file: any) => {
+  //   // 如果是文件夹，需要更新文件夹本身以及所有子文件
+  //   if (fileNode.type === 'folder') {
+  //     console.log('file1111111', file.name, oldPath, newPath);
+  //     // 检查是否是文件夹本身（虽然扁平列表中文件夹可能不存在）
+  //     if (file.name === oldPath) {
+  //       return {
+  //         ...file,
+  //         name: newPath, // 更新为新的完整路径
+  //         renameFrom: oldPath, // 记录重命名前的名字
+  //         operation, // 操作类型
+  //       };
+  //     }
+
+  //     // 检查是否是文件夹的子文件
+  //     if (file.name.startsWith(oldPath + '/')) {
+  //       // 计算新路径：将 oldPath 前缀替换为 newPath
+  //       const relativePath = file.name.substring(oldPath.length);
+  //       const newFilePath = newPath + relativePath;
+
+  //       return {
+  //         ...file,
+  //         name: newFilePath, // 更新为新的完整路径
+  //         renameFrom: file.name, // 记录重命名前的名字
+  //         operation, // 操作类型
+  //       };
+  //     }
+  //   } else {
+  //     // 如果是文件，直接更新匹配的文件
+  //     if (file.name === oldPath) {
+  //       return {
+  //         ...file,
+  //         name: newPath, // 更新为新的完整路径
+  //         renameFrom: oldPath, // 记录重命名前的名字
+  //         operation, // 操作类型
+  //       };
+  //     }
+  //   }
+
+  //   return file;
+  // });
 };
 
 /**
@@ -184,8 +225,6 @@ export const updateFileTreeContent = (
  */
 export const updateFilesListContent = (
   files: SkillFileInfo[],
-  // fileId: string,
-  // newContent: string,
   changeFiles: {
     fileId: string;
     fileContent: string;
@@ -193,11 +232,24 @@ export const updateFilesListContent = (
   }[],
   operation: 'create' | 'delete' | 'rename' | 'modify',
 ): SkillFileInfo[] => {
-  return files.map((file: SkillFileInfo) => {
-    const changeFile = changeFiles.find((item) => item.fileId === file.fileId);
-    if (changeFile) {
-      return { ...file, contents: changeFile.fileContent, operation };
+  // 先将变更列表转换为 Map，避免在循环中多次 find，提升性能到 O(n + m)
+  const changeMap = new Map(
+    changeFiles.map((item) => [item.fileId, item] as const),
+  );
+
+  // 只返回那些在 changeFiles 中有对应记录的文件，并更新其内容和 operation
+  return files.reduce<SkillFileInfo[]>((result, file) => {
+    if (!file.fileId) {
+      return result;
     }
-    return file;
-  });
+    const changeFile = changeMap.get(file.fileId);
+    if (changeFile) {
+      result.push({
+        ...file,
+        contents: changeFile.fileContent,
+        operation,
+      });
+    }
+    return result;
+  }, []);
 };

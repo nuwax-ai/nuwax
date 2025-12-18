@@ -35,22 +35,6 @@ interface FilePathHeaderProps {
 }
 
 /**
- * 格式化日期时间
- * @param timestamp 时间戳（毫秒）
- * @returns 格式化后的日期时间字符串
- */
-const formatDateTime = (timestamp?: number): string => {
-  if (!timestamp) return '';
-  const date = new Date(timestamp);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
-};
-
-/**
  * 文件路径头部组件
  * 显示文件信息、视图模式切换按钮和操作按钮
  */
@@ -58,7 +42,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   filePath,
   fileName,
   fileSize,
-  lastModified,
   viewMode = 'preview',
   onViewModeChange,
   onDownload,
@@ -80,19 +63,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     return formatFileSize(fileSize);
   }, [fileSize]);
 
-  // 格式化的日期时间
-  const formattedDate = useMemo(() => {
-    return formatDateTime(lastModified);
-  }, [lastModified]);
-
-  // 文件信息文本
-  const fileInfoText = useMemo(() => {
-    const parts: string[] = [];
-    if (formattedSize) parts.push(formattedSize);
-    if (formattedDate) parts.push(formattedDate);
-    return parts.join(' • ');
-  }, [formattedSize, formattedDate]);
-
   return (
     <div className={styles.filePathHeader}>
       {/* 左侧：文件信息 */}
@@ -102,8 +72,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         </div>
         <div className={styles.fileDetails}>
           <div className={styles.fileName}>{displayFileName}</div>
-          {fileInfoText && (
-            <div className={styles.fileMeta}>{fileInfoText}</div>
+          {formattedSize && (
+            <div className={styles.fileMeta}>{formattedSize}</div>
           )}
         </div>
       </div>
@@ -126,28 +96,30 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       )}
 
       {/* 中间：视图模式切换按钮 */}
-      <div className={styles.viewModeButtons}>
-        <Button
-          type={viewMode === 'preview' ? 'primary' : 'default'}
-          size="small"
-          icon={
-            <SvgIcon name="icons-common-preview" style={{ fontSize: 14 }} />
-          }
-          onClick={() => onViewModeChange?.('preview')}
-          className={styles.viewModeButton}
-        >
-          文件预览
-        </Button>
-        <Button
-          type={viewMode === 'desktop' ? 'primary' : 'default'}
-          size="small"
-          icon={<DesktopOutlined style={{ fontSize: 14 }} />}
-          onClick={() => onViewModeChange?.('desktop')}
-          className={styles.viewModeButton}
-        >
-          远程桌面
-        </Button>
-      </div>
+      {onViewModeChange && (
+        <div className={styles.viewModeButtons}>
+          <Button
+            type={viewMode === 'preview' ? 'primary' : 'default'}
+            size="small"
+            icon={
+              <SvgIcon name="icons-common-preview" style={{ fontSize: 14 }} />
+            }
+            onClick={() => onViewModeChange?.('preview')}
+            className={styles.viewModeButton}
+          >
+            文件预览
+          </Button>
+          <Button
+            type={viewMode === 'desktop' ? 'primary' : 'default'}
+            size="small"
+            icon={<DesktopOutlined style={{ fontSize: 14 }} />}
+            onClick={() => onViewModeChange?.('desktop')}
+            className={styles.viewModeButton}
+          >
+            远程桌面
+          </Button>
+        </div>
+      )}
 
       {/* 右侧：操作按钮 */}
       <div className={styles.actionButtons}>
