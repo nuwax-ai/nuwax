@@ -14,13 +14,9 @@ export interface VncPreviewProps {
    */
   serviceUrl: string;
   /**
-   * Active User ID
+   * Container ID or Session ID
    */
-  userId: string;
-  /**
-   * Project ID
-   */
-  projectId: string;
+  cId: string;
   /**
    * Whether to enable view-only mode
    * @default false
@@ -39,14 +35,17 @@ export interface VncPreviewProps {
    * Custom class name for the container
    */
   className?: string;
+  /**
+   * @deprecated User ID is no longer needed for the URL
+   */
+  userId?: string;
 }
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
 const VncPreview: React.FC<VncPreviewProps> = ({
   serviceUrl,
-  userId,
-  projectId,
+  cId,
   readOnly = false,
   autoConnect = false,
   style,
@@ -59,9 +58,9 @@ const VncPreview: React.FC<VncPreviewProps> = ({
 
   // Helper to build the VNC URL
   const buildVncUrl = () => {
-    if (!serviceUrl || !userId || !projectId) {
+    if (!serviceUrl || !cId) {
       setErrorMessage(
-        'Missing required configuration (Service URL, User ID, or Project ID)',
+        'Missing required configuration (Service URL or Container ID)',
       );
       return null;
     }
@@ -79,7 +78,7 @@ const VncPreview: React.FC<VncPreviewProps> = ({
       params.set('view_only', 'true');
     }
 
-    return `${cleanBaseUrl}/computer/vnc/${userId}/${projectId}/vnc.html?${params.toString()}`;
+    return `${cleanBaseUrl}/computer/desktop/${cId}/vnc.html?${params.toString()}`;
   };
 
   const connect = () => {
@@ -113,7 +112,7 @@ const VncPreview: React.FC<VncPreviewProps> = ({
       connect();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serviceUrl, userId, projectId, readOnly]);
+  }, [serviceUrl, cId, readOnly]);
 
   const handleIframeLoad = () => {
     // If we were connecting, we mark as connected when iframe loads.

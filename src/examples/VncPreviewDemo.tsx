@@ -25,9 +25,8 @@ const VncPreviewDemo: React.FC = () => {
 
   // 测试配置
   const config = {
-    serviceUrl: 'https://testagent.xspaceagi.com',
-    userId: '5',
-    projectId: '123',
+    serviceUrl: process.env.BASE_URL as string,
+    cId: '1459972',
     autoConnect: true,
   };
 
@@ -55,10 +54,7 @@ const VncPreviewDemo: React.FC = () => {
                     <strong>服务地址:</strong> {config.serviceUrl}
                   </li>
                   <li>
-                    <strong>用户 ID:</strong> {config.userId}
-                  </li>
-                  <li>
-                    <strong>会话 ID (项目 ID):</strong> {config.projectId}
+                    <strong>容器 ID (cId):</strong> {config.cId}
                   </li>
                   <li>
                     <strong>自动连接:</strong> 已启用
@@ -105,8 +101,7 @@ const VncPreviewDemo: React.FC = () => {
           >
             <VncPreview
               serviceUrl={config.serviceUrl}
-              userId={config.userId}
-              projectId={config.projectId}
+              cId={config.cId}
               autoConnect={config.autoConnect}
               readOnly={readOnly}
             />
