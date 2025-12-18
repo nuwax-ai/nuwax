@@ -139,9 +139,22 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     };
 
     const batchAddEdges = (edgeList: Edge[]) => {
-      // 4. 创建边（需要验证节点存在性）
+      // 4. 创建边（验证节点存在性以防止 X6 报错）
       const edges = edgeList
         .map((edge: Edge) => {
+          const sourceId = edge.source.split('-')[0];
+          const targetId = edge.target.split('-')[0];
+
+          const sourceCell = graphRef.current.getCellById(sourceId);
+          const targetCell = graphRef.current.getCellById(targetId);
+
+          if (!sourceCell || !targetCell) {
+            console.warn(
+              `[GraphContainer] 边的源节点(${sourceId})或目标节点(${targetId})不存在，跳过创建边`,
+            );
+            return null;
+          }
+
           return createEdge(edge);
         })
         .filter(Boolean);
@@ -172,8 +185,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         zIndex: 99,
         ports: generatePorts(child),
       });
-      // 添加节点
-      graphRef.current.addNode(newNode);
+      // 添加节点 (注释掉，因为上面的 addNode 已经添加了)
+      // graphRef.current.addNode(newNode);
       if (child.loopNodeId) {
         // 获取刚刚添加的子节点的实例，并设置父子关系
         const childNodeInstance = graphRef.current.getCellById(newNode.id);
@@ -348,6 +361,20 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       target: string,
       isLoop?: boolean,
     ) => {
+      // 验证源节点和目标节点是否存在
+      const sourceId = source.split('-')[0];
+      const targetId = target.split('-')[0];
+
+      if (
+        !graphRef.current.getCellById(sourceId) ||
+        !graphRef.current.getCellById(targetId)
+      ) {
+        console.warn(
+          `[GraphContainer] 无法创建边：源节点(${sourceId})或目标节点(${targetId})在画布中未找到`,
+        );
+        return;
+      }
+
       // graphRef.current.addEdge({source,target})
       const edge = createEdge({ source, target, zIndex: isLoop ? 25 : 1 });
 

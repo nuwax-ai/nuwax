@@ -364,7 +364,10 @@ export const getEdges = (
   const validEdges = needValidate
     ? allEdges.filter((edge) => {
         // 检查目标节点是否存在于节点列表中
-        return nodes.some((n) => edge.target.includes(n.id.toString()));
+        return nodes.some((n) => {
+          const targetId = edge.target.split('-')[0];
+          return targetId === n.id.toString();
+        });
       })
     : allEdges;
   // 使用 Set 来移除重复的边

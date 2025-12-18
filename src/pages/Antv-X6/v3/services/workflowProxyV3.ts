@@ -412,6 +412,16 @@ class WorkflowProxyV3 {
             exceptionIds.filter((id) => id !== nodeId);
         }
       }
+
+      // 循环节点的内部开始/结束节点引用
+      if (node.type === NodeTypeEnum.Loop) {
+        if (node.innerStartNodeId === nodeId) {
+          node.innerStartNodeId = -1;
+        }
+        if (node.innerEndNodeId === nodeId) {
+          node.innerEndNodeId = -1;
+        }
+      }
     });
 
     this.recordUpdate({
