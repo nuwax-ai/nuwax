@@ -10,6 +10,7 @@ import {
   Typography,
 } from 'antd';
 import React, { useState } from 'react';
+import { useSearchParams } from 'umi';
 
 const { Title, Paragraph, Text } = Typography;
 const { Content } = Layout;
@@ -22,11 +23,15 @@ const { Content } = Layout;
  */
 const VncPreviewDemo: React.FC = () => {
   const [readOnly, setReadOnly] = useState(false);
+  const [searchParams] = useSearchParams();
+
+  // 从 URL 参数获取 cId，如果不存在则使用默认值
+  const urlCId = searchParams.get('cId') || '1459972';
 
   // 测试配置
   const config = {
     serviceUrl: process.env.BASE_URL as string,
-    cId: '1459972',
+    cId: urlCId,
     autoConnect: true,
   };
 
