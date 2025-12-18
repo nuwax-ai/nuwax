@@ -107,6 +107,14 @@ const VncPreview: React.FC<VncPreviewProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoConnect]);
 
+  // Handle re-connection when configuration changes and we are already connected or connecting
+  useEffect(() => {
+    if (status === 'connected' || status === 'connecting') {
+      connect();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serviceUrl, userId, projectId, readOnly]);
+
   const handleIframeLoad = () => {
     // If we were connecting, we mark as connected when iframe loads.
     // Note: VNC might still be negotiating inside the iframe, but from container perspective, it's loaded.

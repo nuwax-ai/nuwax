@@ -3,6 +3,7 @@ import {
   AppstoreOutlined,
   BulbOutlined,
   CodeOutlined,
+  DesktopOutlined,
   ExperimentOutlined,
   EyeOutlined,
   HeartOutlined,
@@ -93,6 +94,20 @@ const ExamplesIndex: React.FC = () => {
       icon: <BulbOutlined />,
       path: '/examples/theme-demo',
       featured: false,
+    },
+    {
+      id: 'vnc-preview-demo',
+      title: isChineseLanguage ? 'VNC 远程桌面演示' : 'VNC Preview Demo',
+      description: isChineseLanguage
+        ? '演示 VncPreview 组件的使用，连接到远程 VNC 会话，支持自动连接、自适应缩放等功能。'
+        : 'Demonstrate the usage of VncPreview component, connecting to a remote VNC session with auto-connect and responsive scaling.',
+      tags: [
+        { text: isChineseLanguage ? '远程桌面' : 'VNC', color: 'blue' },
+        { text: isChineseLanguage ? '组件演示' : 'Demo', color: 'green' },
+      ],
+      icon: <DesktopOutlined />,
+      path: '/examples/vnc-preview-demo',
+      featured: true,
     },
   ];
 
