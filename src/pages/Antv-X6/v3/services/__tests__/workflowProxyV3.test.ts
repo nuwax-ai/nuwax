@@ -10,7 +10,8 @@
 import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import WorkflowProxyV3, { EdgeV3, WorkflowDataV3 } from '../workflowProxyV3';
+import type { EdgeV3, WorkflowDataV3 } from '../../types/interfaces';
+import WorkflowProxyV3 from '../workflowProxyV3';
 
 // ========== 测试数据 ==========
 

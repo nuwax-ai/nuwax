@@ -7,11 +7,9 @@
 
 import type { ChildNode, Edge } from '@/types/interfaces/graph';
 import { useCallback, useState } from 'react';
-import {
-  ProxyResult,
-  WorkflowDataV3,
-  workflowProxy,
-} from '../services/workflowProxyV3';
+import type { ProxyResult } from '../services/workflowProxyV3';
+import { workflowProxy } from '../services/workflowProxyV3';
+import type { EdgeV3, WorkflowDataV3 } from '../types/interfaces';
 
 export interface UseWorkflowDataV3Return {
   // 状态
@@ -38,9 +36,7 @@ export interface UseWorkflowDataV3Return {
   getNodeById: (nodeId: number) => ChildNode | null;
 
   // 边操作
-  addEdge: (
-    edge: Edge & { sourcePort?: string; targetPort?: string },
-  ) => ProxyResult;
+  addEdge: (edge: EdgeV3) => ProxyResult;
   deleteEdge: (
     source: string,
     target: string,
@@ -155,9 +151,7 @@ export function useWorkflowDataV3(): UseWorkflowDataV3Return {
 
   // 添加边
   const addEdge = useCallback(
-    (
-      edge: Edge & { sourcePort?: string; targetPort?: string },
-    ): ProxyResult => {
+    (edge: EdgeV3): ProxyResult => {
       const result = workflowProxy.addEdge(edge);
       if (result.success) {
         syncState();

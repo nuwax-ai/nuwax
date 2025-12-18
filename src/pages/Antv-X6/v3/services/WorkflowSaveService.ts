@@ -20,30 +20,10 @@ import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
 import { cloneDeep } from '@/utils/common';
 import { Graph } from '@antv/x6';
+import { SpecialPortType as PortType } from '../types/enums';
+import type { EdgeV3 as EdgeData } from '../types/interfaces';
 
 // ==================== 类型定义 ====================
-
-/**
- * 特殊端口类型枚举
- */
-export enum PortType {
-  Normal = 'normal',
-  Condition = 'condition',
-  Intent = 'intent',
-  QAOption = 'qa_option',
-  Exception = 'exception',
-  Loop = 'loop',
-}
-
-/**
- * 边数据接口
- */
-export interface EdgeData {
-  source: string;
-  target: string;
-  sourcePort?: string;
-  targetPort?: string;
-}
 
 /**
  * 工作流元数据（不包含节点/边）

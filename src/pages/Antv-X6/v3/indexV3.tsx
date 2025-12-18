@@ -412,10 +412,9 @@ const Workflow: React.FC = () => {
       }
 
       const workflowData: WorkflowDataV3 = {
-        nodeList: nodeList as any,
-        edgeList: edgeList as any,
-        lastSavedVersion: '',
-        isDirty: false,
+        workflowId: workflowId,
+        nodes: nodeList as any,
+        edges: edgeList as any,
       };
 
       const result = calculateNodePreviousArgs(id, workflowData);

@@ -11,18 +11,18 @@
 
 import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type {
-  ArgMapV3,
-  ChildNodeV3,
+  ArgMap,
+  ChildNode,
   EdgeV3,
-  InputAndOutConfigV3,
-  NodePreviousAndArgMapV3,
-  PreviousListV3,
+  InputAndOutConfig,
+  NodePreviousAndArgMap,
+  PreviousList,
   WorkflowDataV3,
 } from '../types';
 
 const EXECUTE_EXCEPTION_FLOW = 'EXECUTE_EXCEPTION_FLOW';
 const INDEX_SYSTEM_NAME = 'INDEX';
-const SYSTEM_VARIABLES: InputAndOutConfigV3[] = [
+const SYSTEM_VARIABLES: InputAndOutConfig[] = [
   {
     name: 'SYS_USER_ID',
     dataType: DataTypeEnum.String,
@@ -129,7 +129,7 @@ const SYSTEM_VARIABLES: InputAndOutConfigV3[] = [
 /**
  * 获取节点的所有下游节点 ID（用于排序）
  */
-function collectNextNodeIds(node: ChildNodeV3): number[] {
+function collectNextNodeIds(node: ChildNode): number[] {
   const nextIds = new Set<number>();
 
   (node.nextNodeIds || []).forEach((id) => {
@@ -179,8 +179,8 @@ function collectNextNodeIds(node: ChildNodeV3): number[] {
  * 构建节点 ID 到节点的映射
  * 注意：node.id 可能是字符串或数字，统一转换为数字作为 key
  */
-function buildNodeMap(nodes: ChildNodeV3[]): Map<number, ChildNodeV3> {
-  const map = new Map<number, ChildNodeV3>();
+function buildNodeMap(nodes: ChildNode[]): Map<number, ChildNode> {
+  const map = new Map<number, ChildNode>();
   nodes.forEach((node) => {
     const nodeId = Number(node.id);
     map.set(nodeId, node);
@@ -193,7 +193,7 @@ function buildNodeMap(nodes: ChildNodeV3[]): Map<number, ChildNodeV3> {
  * 同时支持从 nextNodeIds、分支连线和异常处理流连线建立索引
  */
 function buildReverseGraph(
-  nodes: ChildNodeV3[],
+  nodes: ChildNode[],
   edgeList?: EdgeV3[],
 ): Map<number, number[]> {
   const reverseGraph = new Map<number, number[]>();
@@ -234,7 +234,7 @@ function buildReverseGraph(
  * 构建正向邻接表（找到每个节点的后继节点）
  * 同步 Java 的 nextNodeIds 处理逻辑
  */
-function buildForwardGraph(nodes: ChildNodeV3[]): Map<number, number[]> {
+function buildForwardGraph(nodes: ChildNode[]): Map<number, number[]> {
   const forwardGraph = new Map<number, number[]>();
   nodes.forEach((node) => {
     forwardGraph.set(Number(node.id), collectNextNodeIds(node));
@@ -297,11 +297,11 @@ function findAllPredecessors(
 /**
  * 获取节点的输出参数
  */
-function cloneArg(arg: InputAndOutConfigV3): InputAndOutConfigV3 {
-  return JSON.parse(JSON.stringify(arg)) as InputAndOutConfigV3;
+function cloneArg(arg: InputAndOutConfig): InputAndOutConfig {
+  return JSON.parse(JSON.stringify(arg)) as InputAndOutConfig;
 }
 
-function ensureVariableSuccessOutput(node: ChildNodeV3): InputAndOutConfigV3[] {
+function ensureVariableSuccessOutput(node: ChildNode): InputAndOutConfig[] {
   const outputs = [...(node.nodeConfig.outputArgs || [])];
   const isSetVariable =
     node.type === NodeTypeEnum.Variable &&
@@ -323,7 +323,7 @@ function ensureVariableSuccessOutput(node: ChildNodeV3): InputAndOutConfigV3[] {
   return outputs;
 }
 
-function getNodeOutputArgs(node: ChildNodeV3): InputAndOutConfigV3[] {
+function getNodeOutputArgs(node: ChildNode): InputAndOutConfig[] {
   // Start 节点：将 inputArgs 视为可引用输出，并保留原输出
   if (node.type === NodeTypeEnum.Start) {
     const outputFromInput =
@@ -380,9 +380,9 @@ function generateArgKey(
  */
 function prefixOutputArgsKeys(
   nodeIdOrPrefix: number | string,
-  args: InputAndOutConfigV3[],
+  args: InputAndOutConfig[],
   parentPath: string[] = [],
-): InputAndOutConfigV3[] {
+): InputAndOutConfig[] {
   return args.map((arg) => {
     const currentPath = [...parentPath, arg.name];
     const key = `${nodeIdOrPrefix}.${currentPath.join('.')}`;
@@ -406,10 +406,10 @@ function prefixOutputArgsKeys(
  */
 function flattenArgsToMap(
   nodeIdOrPrefix: number | string,
-  args: InputAndOutConfigV3[],
+  args: InputAndOutConfig[],
   parentPath: string[] = [],
-): ArgMapV3 {
-  const argMap: ArgMapV3 = {};
+): ArgMap {
+  const argMap: ArgMap = {};
 
   args.forEach((arg) => {
     const currentPath = [...parentPath, arg.name];
@@ -439,8 +439,8 @@ function flattenArgsToMap(
 export function calculateNodePreviousArgs(
   nodeId: number,
   workflowData: WorkflowDataV3,
-): NodePreviousAndArgMapV3 {
-  const { nodeList, edgeList } = workflowData;
+): NodePreviousAndArgMap {
+  const { nodes: nodeList, edges: edgeList } = workflowData;
 
   // 构建节点映射
   const nodeMap = buildNodeMap(nodeList);
@@ -462,8 +462,8 @@ export function calculateNodePreviousArgs(
   );
 
   // 构建上级节点列表
-  const previousNodes: PreviousListV3[] = [];
-  const argMap: ArgMapV3 = {};
+  const previousNodes: PreviousList[] = [];
+  const argMap: ArgMap = {};
 
   predecessorIds.forEach((predId) => {
     const predNode = nodeMap.get(predId);
@@ -481,7 +481,7 @@ export function calculateNodePreviousArgs(
     const outputArgs = getNodeOutputArgs(predNode);
 
     // V3: 针对 Loop 节点，部分输出参数使用 -input 前缀以匹配后端格式
-    let prefixedOutputArgs: InputAndOutConfigV3[];
+    let prefixedOutputArgs: InputAndOutConfig[];
     if (predNode.type === NodeTypeEnum.Loop) {
       prefixedOutputArgs = outputArgs.map((arg) => {
         // 同步 Java: INDEX 和 _item 使用 -input，其他普通输出使用 nodeId
@@ -543,7 +543,7 @@ export function calculateNodePreviousArgs(
     };
   }
 
-  let innerPreviousNodes: PreviousListV3[] = [];
+  let innerPreviousNodes: PreviousList[] = [];
 
   if (currentNode.loopNodeId) {
     // 当前节点在循环内部，需要添加循环内部的上级节点
@@ -592,8 +592,8 @@ export function calculateNodePreviousArgs(
 
     // 循环节点自身的输入数组与变量也可作为可引用输出
     if (loopNode) {
-      const inputBasedOutputs: InputAndOutConfigV3[] = [];
-      const varBasedOutputs: InputAndOutConfigV3[] = [];
+      const inputBasedOutputs: InputAndOutConfig[] = [];
+      const varBasedOutputs: InputAndOutConfig[] = [];
       const argMapSnapshot = { ...argMap };
 
       // 1. 数组输入展开为 item (使用 -input 后缀)
@@ -610,14 +610,14 @@ export function calculateNodePreviousArgs(
             const elementTypeEnum =
               (DataTypeEnum as any)[elementType] || DataTypeEnum.Object;
 
-            const itemArg: InputAndOutConfigV3 = {
+            const itemArg: InputAndOutConfig = {
               ...cloneArg(inputArg),
               name: `${inputArg.name}_item`,
               dataType: elementTypeEnum,
               subArgs: refArg.subArgs
                 ? (JSON.parse(
                     JSON.stringify(refArg.subArgs),
-                  ) as InputAndOutConfigV3[])
+                  ) as InputAndOutConfig[])
                 : refArg.subArgs,
             };
             inputBasedOutputs.push(itemArg);
@@ -647,7 +647,7 @@ export function calculateNodePreviousArgs(
             outArg.subArgs = refArg.subArgs
               ? (JSON.parse(
                   JSON.stringify(refArg.subArgs),
-                ) as InputAndOutConfigV3[])
+                ) as InputAndOutConfig[])
               : refArg.subArgs;
           }
         }
@@ -729,7 +729,7 @@ export function calculateNodePreviousArgs(
           return newArg;
         });
 
-        const loopEndNodeEntry: PreviousListV3 = {
+        const loopEndNodeEntry: PreviousList = {
           id: endNode.id,
           name: endNode.name,
           type: endNode.type,
@@ -742,8 +742,8 @@ export function calculateNodePreviousArgs(
     }
 
     // 2. 循环节点自身的内部变量 (INDEX, variableArgs) (Line 140-167)
-    const inputBasedOutputs: InputAndOutConfigV3[] = [];
-    const varBasedOutputs: InputAndOutConfigV3[] = [];
+    const inputBasedOutputs: InputAndOutConfig[] = [];
+    const varBasedOutputs: InputAndOutConfig[] = [];
     const argMapSnapshot = { ...argMap };
 
     inputBasedOutputs.push({
@@ -766,7 +766,7 @@ export function calculateNodePreviousArgs(
           outArg.subArgs = refArg.subArgs
             ? (JSON.parse(
                 JSON.stringify(refArg.subArgs),
-              ) as InputAndOutConfigV3[])
+              ) as InputAndOutConfig[])
             : refArg.subArgs;
         }
       }
@@ -820,7 +820,7 @@ export function calculateNodePreviousArgs(
     dfs(Number(startNodeInWorkflow.id));
   }
 
-  const sortByOrder = (a: PreviousListV3, b: PreviousListV3) => {
+  const sortByOrder = (a: PreviousList, b: PreviousList) => {
     const oa = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
     const ob = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
     if (oa === ob) return a.id - b.id;
@@ -876,7 +876,7 @@ export function parseVariableReference(bindValue: string): {
  * @param argMap 参数映射
  * @returns 是否有效
  */
-export function isValidReference(bindValue: string, argMap: ArgMapV3): boolean {
+export function isValidReference(bindValue: string, argMap: ArgMap): boolean {
   if (!bindValue) return true; // 空值视为有效
 
   const parsed = parseVariableReference(bindValue);
@@ -895,8 +895,8 @@ export function isValidReference(bindValue: string, argMap: ArgMapV3): boolean {
  */
 export function getReferencedArg(
   bindValue: string,
-  argMap: ArgMapV3,
-): InputAndOutConfigV3 | null {
+  argMap: ArgMap,
+): InputAndOutConfig | null {
   if (!bindValue || !argMap[bindValue]) {
     return null;
   }
@@ -913,7 +913,7 @@ export function getReferencedArg(
  */
 export function findReferencesToNode(
   nodeId: number,
-  targetNode: ChildNodeV3,
+  targetNode: ChildNode,
 ): { field: string; bindValue: string }[] {
   const references: { field: string; bindValue: string }[] = [];
   const nodeIdStr = nodeId.toString();
