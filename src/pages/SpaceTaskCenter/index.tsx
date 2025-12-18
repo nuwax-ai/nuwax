@@ -1,5 +1,6 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { TaskInfo } from '@/types/interfaces/library';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import { useRef, useState } from 'react';
@@ -21,13 +22,14 @@ const SpaceTaskCenter: React.FC = () => {
   const [mode, setMode] = useState<CreateUpdateModeEnum>(
     CreateUpdateModeEnum.Create,
   );
-  // 任务ID
-  const [taskId, setTaskId] = useState<number>(0);
+
+  // 任务信息
+  const [taskInfo, setTaskInfo] = useState<TaskInfo | null>(null);
 
   // 创建任务
   const handleCreateTask = () => {
     setMode(CreateUpdateModeEnum.Create);
-    setTaskId(0);
+    setTaskInfo(null);
     setOpenCreateTask(true);
   };
 
@@ -38,9 +40,9 @@ const SpaceTaskCenter: React.FC = () => {
   };
 
   // 编辑任务
-  const handleEditTask = (id: number) => {
+  const handleEditTask = (info: TaskInfo) => {
     setMode(CreateUpdateModeEnum.Update);
-    setTaskId(id);
+    setTaskInfo(info);
     setOpenCreateTask(true);
   };
 
@@ -65,7 +67,7 @@ const SpaceTaskCenter: React.FC = () => {
       <CreateTimedTask
         spaceId={spaceId}
         mode={mode}
-        id={taskId}
+        info={taskInfo}
         open={openCreateTask}
         onCancel={() => setOpenCreateTask(false)}
         onConfirm={handleCreateTaskConfirm}
