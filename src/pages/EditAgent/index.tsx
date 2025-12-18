@@ -663,6 +663,7 @@ const EditAgent: React.FC = () => {
       {/*智能体模型设置*/}
       <AgentModelSetting
         spaceId={spaceId}
+        agentConfigInfo={agentConfigInfo}
         modelComponentConfig={
           agentConfigInfo?.modelComponentConfig as AgentComponentInfo
         }
