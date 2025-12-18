@@ -80,7 +80,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
       {/* 底部：保存和取消按钮 */}
       {hasModifiedFiles && (
-        <div className="flex content-end gap-4 py-16">
+        <div className="flex items-center content-end gap-4 ml-auto">
           <Button
             size="small"
             type="primary"
