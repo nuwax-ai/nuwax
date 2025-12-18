@@ -194,7 +194,6 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
     const name = String(info?.label) || '';
     onCancel(targetId, name, componentBindConfig);
   };
-  console.log('agentConfigInfo', agentConfigInfo);
   if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
     return (
       <Modal
