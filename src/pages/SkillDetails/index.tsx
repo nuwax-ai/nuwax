@@ -9,7 +9,9 @@ import {
   apiSkillUploadFile,
 } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { FileNode } from '@/types/interfaces/appDev';
+import { SkillInfo } from '@/types/interfaces/library';
 import {
   SkillDetailInfo,
   SkillFileInfo,
@@ -22,6 +24,7 @@ import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
+import CreateSkill from '../SpaceSkillManage/CreateSkill';
 import styles from './index.less';
 import SkillHeader from './SkillHeader';
 
@@ -349,6 +352,13 @@ const SkillDetails: React.FC = () => {
     return code === SUCCESS_CODE;
   };
 
+  // 确认编辑技能信息
+  const handleEditSkillConfirm = () => {
+    setEditSkillModalOpen(false);
+    // 重新查询技能信息，因为更新了技能信息，需要刷新文件树和文件列表
+    runSkillInfo(skillId);
+  };
+
   return (
     <div
       className={cx('skill-details-container', 'flex', 'h-full', 'flex-col')}
@@ -380,6 +390,15 @@ const SkillDetails: React.FC = () => {
         // 取消发布
         onCancel={() => setOpen(false)}
         onConfirm={handleConfirmPublish}
+      />
+      {/* 创建技能弹窗 */}
+      <CreateSkill
+        spaceId={spaceId}
+        open={editSkillModalOpen}
+        type={CreateUpdateModeEnum.Update}
+        skillInfo={skillInfo as SkillInfo}
+        onCancel={() => setEditSkillModalOpen(false)}
+        onConfirm={handleEditSkillConfirm}
       />
     </div>
   );
