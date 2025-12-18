@@ -608,6 +608,8 @@ export interface LogQueryFilter {
 
 // 日志查询过滤条件-工作空间
 export interface SpaceLogQueryFilter {
+  // 来源，可用值:task_center
+  from?: string;
   /** 请求唯一标识，可以用于关联一次请求中所有相关的操作 */
   requestId?: string;
 

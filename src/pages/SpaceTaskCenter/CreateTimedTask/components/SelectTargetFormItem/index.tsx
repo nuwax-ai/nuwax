@@ -77,6 +77,7 @@ const SelectTarget: React.FC<SelectTargetProps> = ({
           alignItems: 'flex-start',
           gap: '8px',
           width: '100%',
+          marginBottom: '10px',
         }}
       >
         <Form.Item
