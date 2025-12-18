@@ -268,6 +268,12 @@ export interface NodeMetadata extends Node.Metadata {
   ports: PortsConfig;
 }
 
+export interface GraphNodeSize {
+  width: number;
+  height: number;
+  type?: NodeSizeGetTypeEnum;
+}
+
 export interface GraphNodeSizeGetParams {
   data: ChildNode;
   ports: outputOrInputPortConfig[];
