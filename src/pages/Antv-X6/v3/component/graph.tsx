@@ -790,9 +790,9 @@ const initGraph = ({
     edge.attr('line/stroke', '#5147FF'); // 恢复默认颜色
   });
 
-  graph.on('node:change:data', (...args) => {
-    console.log('node:change:data', args);
-  });
+  // graph.on('node:change:data', (...args) => {
+  //   console.log('node:change:data', args);
+  // });
   graph.on(
     'node:custom:save',
     ({ data, payload }: { data: ChildNode; payload: Partial<ChildNode> }) => {

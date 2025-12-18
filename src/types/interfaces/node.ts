@@ -87,7 +87,7 @@ export interface VariableGroup {
   inputs: InputAndOutConfig[];
 }
 
-interface ConditionArgs {
+export interface ConditionArgs {
   secondArg: BindConfigWithSub | null;
   compareType: string | null;
   firstArg: BindConfigWithSub | null;
@@ -107,7 +107,7 @@ export interface IntentConfigs {
   intentType?: string;
 }
 
-interface Extension {
+export interface Extension {
   x?: number;
   y?: number;
   width?: number;
