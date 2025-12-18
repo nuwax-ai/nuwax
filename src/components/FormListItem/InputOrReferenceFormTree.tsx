@@ -69,7 +69,10 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       <div className="tree-custom-title-style">
         <span title="">{nodeData.name}</span>
         <Popover content={nodeData.description || '暂无描述'}>
-          <InfoCircleOutlined title="" style={{ marginLeft: '4px' }} />
+          <InfoCircleOutlined
+            title=""
+            style={{ marginLeft: '4px', cursor: 'help' }}
+          />
         </Popover>
         <Tag className="ml-20" color="#C9CDD4">
           {nodeData.dataType}

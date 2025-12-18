@@ -1,7 +1,7 @@
 // 变量选择器组件
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputAndOutConfig, PreviousList } from '@/types/interfaces/node';
-import { SettingOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Popover, Tag, Tree } from 'antd';
 import React, { useRef, useState } from 'react';
 import { returnImg } from '../../utils/workflowV3';
@@ -84,6 +84,11 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
         style={{ opacity: isDisabled ? 0.5 : 1 }}
       >
         <span>{nodeData.name}</span>
+        <Popover content={nodeData.description || '暂无描述'}>
+          <InfoCircleOutlined
+            style={{ marginLeft: '4px', fontSize: 12, cursor: 'help' }}
+          />
+        </Popover>
         <Tag
           color="#C9CDD4"
           style={{ marginLeft: 8, fontSize: 10, lineHeight: '14px' }}

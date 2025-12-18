@@ -284,12 +284,17 @@ export const TreeOutput: React.FC<TreeOutputProps> = ({ treeData }) => {
     return data.map((item) => ({
       ...item,
       title: (
-        <span>
-          {item.name}{' '}
+        <div className="tree-custom-title-style">
+          <span>{item.name}</span>
+          <Popover content={item.description || '暂无描述'}>
+            <InfoCircleOutlined
+              style={{ marginLeft: '4px', fontSize: 12, cursor: 'help' }}
+            />
+          </Popover>
           <Tag color="#C9CDD4" style={{ marginLeft: '5px' }}>
             {DataTypeMap[item.dataType as DataTypeEnum]}
           </Tag>
-        </span>
+        </div>
       ),
       children: item.subArgs ? convertToTreeData(item.subArgs) : undefined,
     }));

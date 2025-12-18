@@ -986,6 +986,7 @@ export function getAvailableVariables(
       name: arg.name,
       dataType: arg.dataType || 'String',
       path: arg.name,
+      description: arg.description,
     })),
   }));
 }
