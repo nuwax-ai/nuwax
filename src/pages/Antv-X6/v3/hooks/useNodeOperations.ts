@@ -33,6 +33,10 @@ import {
 import { workflowProxy } from '../services/workflowProxyV3';
 import { generateFallbackNodeId } from '../utils/nodeUtils';
 import {
+  createOfflineNode,
+  ensureNodeShape,
+} from '../utils/offlineNodeFactory';
+import {
   getNodeSize,
   getShape,
   handleExceptionNodesNextIndex,
@@ -640,16 +644,24 @@ export const useNodeOperations = ({
           apiNodeData = apiRes.data;
           console.log('[V3] 添加节点 API 成功, nodeId:', nodeId);
         } else {
+          // 离线模式：完全由前端生成节点数据
           nodeId = generateFallbackNodeId(workflowId);
+          apiNodeData = ensureNodeShape(
+            createOfflineNode(nodeId, _params, workflowId),
+          );
           console.warn(
-            '[V3] 添加节点 API 失败，使用前端生成 ID:',
+            '[V3] 添加节点 API 失败，进入离线模式:',
             nodeId,
             apiRes.message,
           );
         }
       } catch (error) {
+        // 网络异常：进入离线模式
         nodeId = generateFallbackNodeId(workflowId);
-        console.warn('[V3] 添加节点 API 异常，使用前端生成 ID:', nodeId, error);
+        apiNodeData = ensureNodeShape(
+          createOfflineNode(nodeId, _params, workflowId),
+        );
+        console.warn('[V3] 添加节点 API 异常，进入离线模式:', nodeId, error);
       }
 
       _params.id = nodeId;
