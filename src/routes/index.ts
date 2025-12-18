@@ -183,6 +183,11 @@ const routes = [
     component: '@/examples/TiptapVariableInputTest/index',
     layout: false,
   },
+  {
+    path: '/examples/vnc-preview-demo',
+    component: '@/examples/VncPreviewDemo',
+    layout: false,
+  },
 ];
 
 export default routes;
