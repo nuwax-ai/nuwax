@@ -299,6 +299,25 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       switch (action) {
         case TaskCenterMoreActionEnum.Edit:
           onEdit(info.id);
+          break;
+        case TaskCenterMoreActionEnum.Detail:
+          // onDetail(info.id);
+          message.info(`详情功能待接入（任务ID：${info.id}）`);
+          break;
+        case TaskCenterMoreActionEnum.Delete:
+          handleDeleteTask(info.id);
+          break;
+        case TaskCenterMoreActionEnum.Enable:
+          handleEnableTask(info.id);
+          break;
+        case TaskCenterMoreActionEnum.Disable:
+          handleDisableTask(info.id);
+          break;
+        case TaskCenterMoreActionEnum.Execute:
+          handleExecuteTask(info.id);
+          break;
+        default:
+          break;
       }
     };
 
