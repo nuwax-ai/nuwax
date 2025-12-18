@@ -6,7 +6,7 @@ import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps } from 'antd';
 import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useEffect } from 'react';
 import TimedPeriodSelector from './components/TimedPeriodSelector';
 import styles from './index.less';
 
@@ -14,9 +14,10 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { apiPublishedWorkflowInfo } from '@/services/plugin';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { McpConfigComponentInfo } from '@/types/interfaces/mcp';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import ParameterConfig from './components/ParameterConfig';
-import SelectTarget from './components/SelectTarget';
+import SelectTargetFormItem from './components/SelectTargetFormItem';
 const cx = classNames.bind(styles);
 
 export interface CreateTimedTaskProps {
@@ -90,9 +91,8 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     name: string;
     description: string;
   }>['onFinish'] = (values: any) => {
-    console.log(values);
     const {
-      taskTarget: { targetId, targetType },
+      taskTarget: { targetId, type: targetType },
       message,
       taskName,
       cron,
@@ -130,14 +130,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
   };
 
   // 获取智能体或工作流入参配置
-  const getTargetConfig = async (
-    value: {
-      targetId: string;
-      targetType:
-        | AgentComponentTypeEnum.Workflow
-        | AgentComponentTypeEnum.Agent;
-    } | null,
-  ) => {
+  const getTargetConfig = async (value: McpConfigComponentInfo | null) => {
     // 重置variables字段 防止表单校验不通过
     variables?.forEach((item: InputAndOutConfig) => {
       form.resetFields([item.name]);
@@ -148,7 +141,7 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
       return;
     }
 
-    switch (value.targetType) {
+    switch (value.type) {
       case AgentComponentTypeEnum.Workflow: {
         const {
           data: { inputArgs },
@@ -166,16 +159,24 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     }
   };
 
-  const handleChangeTarget = (
-    value: {
-      targetId: string;
-      targetType:
-        | AgentComponentTypeEnum.Workflow
-        | AgentComponentTypeEnum.Agent;
-    } | null,
-  ) => {
+  const handleChangeTarget = (value: McpConfigComponentInfo | null) => {
     getTargetConfig(value);
   };
+
+  useEffect(() => {
+    // 更新
+    if (open && mode === CreateUpdateModeEnum.Update && id) {
+      console.log(id);
+
+      // form.setFieldsValue({
+      //   taskName: taskName,
+      //   message: message,
+      //   variables: variables,
+      //   cron: cron,
+      //   taskTarget: taskTarget,
+      // });
+    }
+  }, [open, mode, id]);
 
   return (
     <CustomFormModal
@@ -212,15 +213,13 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
           <Input placeholder="请输入任务名称" showCount maxLength={100} />
         </Form.Item>
 
-        <Form.Item
+        {/* 任务对象 自定义 Form.Item */}
+        <SelectTargetFormItem
+          form={form}
           name="taskTarget"
           label="任务对象"
-          rules={[
-            { required: true, message: '请选择任务对象', type: 'object' },
-          ]}
-        >
-          <SelectTarget onChange={handleChangeTarget} />
-        </Form.Item>
+          onChange={handleChangeTarget}
+        />
 
         {/* 只有智能体有任务内容 */}
         {taskTarget?.targetType === AgentComponentTypeEnum.Agent && (
