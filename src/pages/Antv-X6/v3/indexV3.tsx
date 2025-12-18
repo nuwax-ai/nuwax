@@ -62,7 +62,7 @@ import { useWorkflowValidation } from './hooks/useWorkflowValidation';
 // V3 数据代理层
 import { WorkflowVersionProvider } from '@/contexts/WorkflowVersionContext';
 import { workflowProxy } from './services/workflowProxyV3';
-import type { WorkflowDataV2 } from './types';
+import type { WorkflowDataV3 } from './types';
 import { calculateNodePreviousArgs } from './utils/variableReferenceV3';
 
 const workflowCreatedTabs = CREATED_TABS.filter((item) =>
@@ -411,7 +411,7 @@ const Workflow: React.FC = () => {
         return false;
       }
 
-      const workflowData: WorkflowDataV2 = {
+      const workflowData: WorkflowDataV3 = {
         nodeList: nodeList as any,
         edgeList: edgeList as any,
         lastSavedVersion: '',
