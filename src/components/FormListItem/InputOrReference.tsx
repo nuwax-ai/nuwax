@@ -190,7 +190,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         <Popover content={nodeData.description || '暂无描述'}>
           <InfoCircleOutlined
             title=""
-            style={{ marginLeft: '4px', fontSize: 12 }}
+            style={{ marginLeft: '4px', fontSize: 12, cursor: 'help' }}
           />
         </Popover>
         <Tag
