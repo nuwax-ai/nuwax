@@ -17,6 +17,7 @@ export const FILTER_DEPLOY = [
 export const MCP_MORE_ACTION = [
   { type: McpMoreActionEnum.Stop_Service, label: '停止服务' },
   { type: McpMoreActionEnum.Service_Export, label: '服务导出' },
+  { type: McpMoreActionEnum.Log, label: '日志' },
   { type: McpMoreActionEnum.Del, label: '删除', isDel: true },
 ];
 

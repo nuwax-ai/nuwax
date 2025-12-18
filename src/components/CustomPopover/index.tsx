@@ -2,7 +2,8 @@ import type {
   CustomPopoverItem,
   CustomPopoverProps,
 } from '@/types/interfaces/common';
-import { Popover } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
+import { Popover, Tooltip } from 'antd';
 import classNames from 'classnames';
 import type { PropsWithChildren } from 'react';
 import React, { useState } from 'react';
@@ -51,6 +52,11 @@ const CustomPopover: React.FC<PropsWithChildren<CustomPopoverProps>> = ({
             >
               {item.icon}
               {item.label}
+              {item.tooltip && (
+                <Tooltip title={item.tooltip}>
+                  <InfoCircleOutlined />
+                </Tooltip>
+              )}
             </li>
           ))}
         </ul>

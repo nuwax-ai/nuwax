@@ -19,6 +19,7 @@ import {
 } from '@/types/enums/agent';
 import {
   AgentArrangeConfigEnum,
+  AgentTypeEnum,
   ComponentSettingEnum,
   OpenCloseEnum,
 } from '@/types/enums/space';
@@ -61,6 +62,7 @@ import LongMemoryContent from './LongMemoryContent';
 import McpGroupComponentItem from './McpGroupComponentItem';
 import OpenRemarksEdit from './OpenRemarksEdit';
 import PageSettingModal from './PageSettingModal';
+import HeaderToolButton from './ToolButton';
 import VariableList from './VariableList';
 
 const cx = classNames.bind(styles);
@@ -957,11 +959,22 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   return (
     <div className={classNames('overflow-y', 'flex-1', styles.container)}>
-      <ConfigOptionsHeader title="技能" />
+      <ConfigOptionsHeader title="工具" />
       <ConfigOptionCollapse
         items={SkillList}
         defaultActiveKey={skillActiveKey}
       />
+
+      {/* 长任务型智能体显示技能 */}
+      {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+        <HeaderToolButton
+          title="技能"
+          onClick={() => {
+            alert('添加技能 - 暂未实现');
+          }}
+        />
+      )}
+
       <ConfigOptionsHeader title="知识" />
       <ConfigOptionCollapse
         items={KnowledgeList}

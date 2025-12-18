@@ -1,25 +1,6 @@
 @import '@/styles/color.less';
 @import '@/styles/token.less';
 
-// 内联重命名样式
-.inlineRenameInput {
-  flex: 1;
-  margin-right: 8px;
-
-  :global(.ant-input) {
-    font-size: @fontSizeSm;
-    padding: 2px 6px;
-    height: 24px;
-    border-radius: 4px;
-  }
-}
-
-.renameMode {
-  background: @colorPrimaryBg !important;
-  border: 1px solid @colorPrimaryBorder;
-  border-radius: 4px;
-}
-
 // 文件树列
 .fileTreeCol {
   flex: 0 0 15%; // 默认占25%宽度
@@ -28,7 +9,6 @@
   background: @colorBgContainer;
   border-right: @lineWidth solid @colorBorderSecondary;
   padding: 0;
-  // box-shadow: 2px 0 8px rgba(0, 0, 0, 5%);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-x: auto; // 启用横向滚动
 
@@ -96,178 +76,12 @@
   color: @colorTextBase;
 }
 
-.addButton {
-  display: flex;
-  align-items: center;
-  color: @colorTextBase;
-  height: 32px;
-  width: 32px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  border: none;
-  background: transparent;
-
-  &:hover {
-    color: @colorPrimary;
-    background: @colorPrimaryBg;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
 .fileTreeContainer {
   flex: 1;
   overflow-y: auto;
   overflow-x: auto; // 启用横向滚动
   padding: 8px;
   min-height: 0; // 允许 flex 子项收缩
-}
-
-// 文件树样式
-.fileTree {
-  // padding: 8px 0;
-  min-width: max-content; // 确保内容不会被压缩
-  width: 100%;
-}
-
-.folderItem {
-  margin-bottom: 0;
-}
-
-.folderHeader {
-  display: flex;
-  align-items: center;
-  padding: 4px;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background: rgba(0, 0, 0, 5%);
-
-    // .folderIcon {
-    //   transform: rotate(90deg);
-    // }
-  }
-}
-
-.folderIcon {
-  margin-right: 4px;
-  color: @colorTextBase;
-  transition: transform 0.2s ease;
-
-  &.expanded {
-    transform: rotate(90deg);
-  }
-}
-
-.folderName {
-  color: @colorTextBase;
-  font-weight: @fontWeightStrong;
-  font-size: @fontSize;
-  font-family: @fontFamilyCode;
-}
-
-.fileList {
-  // margin-top: 4px;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: slide-down 0.3s ease-out;
-}
-
-@keyframes slide-down {
-  from {
-    opacity: 0;
-    max-height: 0;
-  }
-
-  to {
-    opacity: 1;
-    max-height: 1000px;
-  }
-}
-
-.fileItem {
-  display: flex;
-  align-items: center;
-  padding: 4px;
-  cursor: pointer;
-  border-radius: 4px;
-  // margin-bottom: 2px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: rgba(0, 0, 0, 5%);
-
-    .fileIcon {
-      color: @colorPrimary;
-    }
-  }
-
-  &.activeFile {
-    background: @colorPrimaryBg;
-    // border: 1px solid rgba(59, 130, 246, 30%);
-
-    .fileIcon {
-      color: @colorPrimary;
-    }
-  }
-}
-
-.fileIcon {
-  margin-right: 8px;
-  font-size: @fontSize;
-  color: @colorTextBase;
-  transition: color 0.2s ease;
-}
-
-.fileName {
-  color: @colorTextBase;
-  font-size: @fontSize;
-  font-family: @fontFamilyCode;
-  flex: 1;
-
-  &.hiddenFile {
-    color: @colorTextQuaternary;
-    font-style: italic;
-  }
-}
-
-.fileStatus {
-  color: @colorTextBase;
-  font-size: @fontSizeSm;
-  background: rgba(0, 0, 0, 5%);
-  padding: 2px 6px;
-  border-radius: 3px;
-  margin-left: 8px;
-}
-
-// 删除按钮样式
-.deleteButton {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  margin-left: auto;
-  color: @colorTextBase;
-  padding: 2px;
-  height: 20px;
-  width: 20px;
-  min-width: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    color: @colorError;
-    background: @colorErrorBg;
-  }
-
-  .folderHeader:hover &,
-  .fileItem:hover & {
-    opacity: 1;
-  }
 }
 
 // 折叠按钮样式 - 放在预览区域左下角
@@ -278,7 +92,6 @@
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  // background: rgba(255, 255, 255, 95%);
   color: @colorTextBase;
   font-size: @fontSizeSm;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -335,7 +148,6 @@
   flex-direction: column;
   background: @colorBgContainer;
   border-top: @lineWidth solid @colorBorderSecondary;
-  // margin-top: 8px;
 }
 
 .dataSourceHeader {
@@ -345,7 +157,6 @@
   padding: 8px 12px;
   border-bottom: @lineWidth solid @colorBorder;
   background: @colorBgContainer;
-  // backdrop-filter: blur(10px);
 
   h3 {
     margin: 0;
@@ -364,28 +175,6 @@
 // 数据资源列表样式
 .dataResourceList {
   height: 200px; // 减少高度以适应底部固定布局
-
-  // 自定义滚动条样式
-  // &::-webkit-scrollbar {
-  //   width: 6px;
-  // }
-
-  // &::-webkit-scrollbar-track {
-  //   background: transparent;
-  // }
-
-  // &::-webkit-scrollbar-thumb {
-  //   background: rgba(0, 0, 0, 20%);
-  //   border-radius: 3px;
-
-  //   &:hover {
-  //     background: rgba(0, 0, 0, 30%);
-  //   }
-  // }
-
-  // &::-webkit-scrollbar-corner {
-  //   background: transparent;
-  // }
 }
 
 // 资源项样式
@@ -513,49 +302,27 @@
   }
 }
 
-// 响应式设计
-// @media (max-width: 1200px) {
-//   .fileTreeCol {
-//     flex: 0 0 25%;
-//     max-width: 25%;
-//     min-width: 240px;
-//   }
-// }
+.addButton {
+  display: flex;
+  align-items: center;
+  color: @colorTextBase;
+  height: 32px;
+  width: 32px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  border: none;
+  background: transparent;
 
-// @media (max-width: 768px) {
-//   .fileTreeCol {
-//     height: 200px;
-//     flex: 0 0 200px; // 固定高度
-//     min-width: 0;
-//     border-right: none;
-//     border-bottom: 1px solid rgba(0, 0, 0, 10%);
-//   }
+  &:hover {
+    color: @colorPrimary;
+    background: @colorPrimaryBg;
+  }
 
-//   .dataSourceHeader {
-//     padding: 8px 12px;
-//     flex-direction: column;
-//     align-items: flex-start;
-//     gap: 8px;
-
-//     h3 {
-//       font-size: 14px;
-//     }
-//   }
-
-//   .dataSourceContent {
-//     padding: 0 8px;
-//   }
-
-//   .dataResourceList {
-//     :global(.ant-list-item) {
-//       padding: 8px 12px;
-//     }
-
-//     :global(.ant-list-item-meta-avatar) {
-//       margin-right: 8px;
-//     }
-//   }
-// }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
 
 // 暗色主题支持
 [data-theme='dark'] {

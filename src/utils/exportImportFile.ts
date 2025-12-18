@@ -54,3 +54,39 @@ export const exportTableExcel = async (tableId: number, fileName: string) => {
   } finally {
   }
 };
+
+/**
+ * 导出整个项目压缩包
+ * @param result 下载接口响应结果
+ * @param name 文件名称
+ */
+export const exportWholeProjectZip = async (result: any, name: string) => {
+  // 从响应头中获取文件名
+  const contentDisposition = result.headers?.['content-disposition'];
+  let filename = name;
+
+  if (contentDisposition) {
+    // 解析 Content-Disposition 头中的文件名
+    const filenameMatch = contentDisposition.match(
+      /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/,
+    );
+    if (filenameMatch && filenameMatch[1]) {
+      filename = filenameMatch[1].replace(/['"]/g, '');
+    }
+  }
+
+  // 创建下载链接
+  const blob = new Blob([result.data], { type: 'application/zip' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+
+  // 触发下载
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  // 清理URL对象
+  window.URL.revokeObjectURL(url);
+};

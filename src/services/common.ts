@@ -112,10 +112,14 @@ const errorHandler = (error: any, opts: any) => {
         default:
           // 只有当请求不在过滤列表中才显示错误消息
           message.warning(errorMessage);
+          break;
       }
 
-      // 返回一个空的Promise.reject以防止错误继续传播
-      return Promise.reject();
+      /**
+       * 统一返回错误信息，方便调用方处理
+       * return Promise.reject() 会立即终止当前函数的执行，并将错误状态传递给接口调用方。所以此处注释掉了
+       */
+      // return Promise.reject();
     }
   } else if (error.response) {
     // 处理HTTP错误

@@ -1,5 +1,5 @@
 import React from 'react';
-import MonacoEditor from '../MonacoEditor';
+import MonacoEditor from './MonacoEditor';
 import styles from './index.less';
 
 interface CodeViewerProps {

@@ -54,3 +54,10 @@ export function apiAgentTaskCronList(): Promise<
     method: 'GET',
   });
 }
+
+// 可选定时范围 - 任务
+export function apiTaskCronList(): Promise<RequestResponse<TaskCronInfo[]>> {
+  return request(`/api/task/cron/list`, {
+    method: 'GET',
+  });
+}

@@ -9,6 +9,7 @@ const useCategory = () => {
     setPluginInfoList,
     setWorkflowInfoList,
     setTemplateList,
+    setSkillInfoList,
   } = useModel('squareModel');
 
   // 广场分类列表信息
@@ -17,6 +18,7 @@ const useCategory = () => {
     let _pluginInfoList: SquareAgentInfo[] = [];
     let _workflowInfoList: SquareAgentInfo[] = [];
     let _templateList: SquareAgentInfo[] = [];
+    let _skillInfoList: SquareAgentInfo[] = [];
     result?.forEach((info) => {
       const list = info?.children?.map((item) => {
         return {
@@ -38,11 +40,15 @@ const useCategory = () => {
       if (info.type === SquareAgentTypeEnum.Template) {
         _templateList = list;
       }
+      if (info.type === SquareAgentTypeEnum.Skill) {
+        _skillInfoList = list;
+      }
     });
     setAgentInfoList(_agentInfoList);
     setPluginInfoList(_pluginInfoList);
     setWorkflowInfoList(_workflowInfoList);
     setTemplateList(_templateList);
+    setSkillInfoList(_skillInfoList);
   };
 
   // 广场-智能体与插件分类
