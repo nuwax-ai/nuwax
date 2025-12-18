@@ -475,7 +475,9 @@ export function calculateNodePreviousArgs(
   const nodeIdNum = Number(nodeId);
 
   // 找到所有前驱节点
-  const predecessorIds = findAllPredecessors(nodeIdNum, reverseGraph);
+  const predecessorIds = findAllPredecessors(nodeIdNum, reverseGraph).filter(
+    (id) => id !== nodeIdNum,
+  );
 
   // 构建上级节点列表
   const previousNodes: PreviousListV2[] = [];
@@ -539,7 +541,7 @@ export function calculateNodePreviousArgs(
       const innerPredecessorIds = findAllPredecessors(
         nodeIdNum, // 使用 number 类型的 ID
         innerReverseGraph,
-      );
+      ).filter((id) => id !== nodeIdNum);
 
       innerPredecessorIds.forEach((predId) => {
         const predNode = loopNode.innerNodes?.find((n) => n.id === predId);
