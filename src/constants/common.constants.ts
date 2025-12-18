@@ -125,6 +125,7 @@ export const CREATED_TABS: {
   { label: '智能体', key: AgentComponentTypeEnum.Agent },
   { label: 'MCP服务', key: AgentComponentTypeEnum.MCP },
   { label: '页面', key: AgentComponentTypeEnum.Page },
+  { label: '技能', key: AgentComponentTypeEnum.Skill },
 ];
 
 // 组件类型名称

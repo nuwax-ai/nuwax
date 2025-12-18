@@ -158,7 +158,10 @@ export interface InvokeTypeSaveParams {
 export interface InvokeTypeProps {
   invokeType: InvokeTypeEnum;
   defaultSelected?: DefaultSelectedEnum;
+  options?: { value: InvokeTypeEnum; label: string }[];
   onSaveSet: (data: InvokeTypeSaveParams) => void;
+  // 调用方式 提示信息
+  tooltip?: React.ReactNode;
 }
 
 // 输出方式保存形参

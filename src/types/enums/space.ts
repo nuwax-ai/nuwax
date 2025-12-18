@@ -89,6 +89,8 @@ export enum SpaceApplicationListEnum {
 
 // 智能体配置 - 编排类型枚举
 export enum AgentArrangeConfigEnum {
+  // 技能
+  Skill = 'Skill',
   // 插件
   Plugin = 'Plugin',
   // 工作流
