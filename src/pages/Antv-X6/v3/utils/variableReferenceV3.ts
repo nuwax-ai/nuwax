@@ -512,7 +512,7 @@ export function calculateNodePreviousArgs(
 
     // 展开参数到 argMap
     // 针对 Loop 节点，需要分别根据 -input 和 nodeId 展开
-    if (predNode.type === NodeTypeEnumV3.Loop) {
+    if (predNode.type === NodeTypeEnum.Loop) {
       const inputPart = prefixedOutputArgs.filter((a) =>
         a.key.includes('-input'),
       );
@@ -701,7 +701,7 @@ export function calculateNodePreviousArgs(
   }
 
   // 如果当前节点是 Loop，补充内部变量到 innerPreviousNodes (用于配置 Loop 自己的输出，同步 Java Line 112-167)
-  if (currentNode.type === NodeTypeEnumV3.Loop) {
+  if (currentNode.type === NodeTypeEnum.Loop) {
     // 1. 内部结束节点输出 (Line 112-139)
     if (currentNode.innerNodes) {
       const endNode = currentNode.innerNodes.find(
@@ -724,7 +724,7 @@ export function calculateNodePreviousArgs(
               typeof newArg.dataType === 'string' && newArg.dataType
                 ? newArg.dataType
                 : 'Object';
-            newArg.dataType = `Array_${base}` as DataTypeEnumV3;
+            newArg.dataType = `Array_${base}` as DataTypeEnum;
           }
           return newArg;
         });
@@ -748,7 +748,7 @@ export function calculateNodePreviousArgs(
 
     inputBasedOutputs.push({
       name: INDEX_SYSTEM_NAME,
-      dataType: DataTypeEnumV3.Integer,
+      dataType: DataTypeEnum.Integer,
       description: '数组索引',
       require: false,
       systemVariable: true,
@@ -805,7 +805,7 @@ export function calculateNodePreviousArgs(
   // 按执行流顺序排序 (同步 Java sortPreviousNodes)
   const orderMap = new Map<number, number>();
   const startNodeInWorkflow = nodeList.find(
-    (n) => n.type === NodeTypeEnumV3.Start,
+    (n) => n.type === NodeTypeEnum.Start,
   );
   if (startNodeInWorkflow) {
     const visited = new Set<number>();
@@ -965,7 +965,7 @@ export function getAvailableVariables(
 ): {
   nodeId: number;
   nodeName: string;
-  nodeType: NodeTypeEnumV3;
+  nodeType: NodeTypeEnum;
   variables: {
     key: string;
     name: string;
