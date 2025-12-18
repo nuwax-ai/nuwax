@@ -110,6 +110,7 @@ export interface CollapseComponentItemProps {
 
 // 智能体模型设置弹窗组件
 export interface AgentModelSettingProps {
+  agentConfigInfo?: AgentConfigInfo;
   spaceId: number;
   modelComponentConfig: AgentComponentInfo;
   open: boolean;
