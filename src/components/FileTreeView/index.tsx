@@ -482,7 +482,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
               filePath={selectedFileNode?.path || selectedFileId}
               fileName={selectedFileNode?.name}
               fileSize={selectedFileNode?.size}
-              lastModified={selectedFileNode?.lastModified}
               onDownload={onDownload}
               onFullscreen={handleFullscreen}
               isFullscreen={true}

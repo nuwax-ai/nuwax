@@ -30,18 +30,14 @@ const FileTree: React.FC<FileTreeProps> = ({
   const renameInputRef = useRef<InputRef>(null);
   // 已展开的文件夹ID集合
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
-    new Set(),
+    () =>
+      // 初次渲染时自动展开第一层文件夹，后续文件列表变更时不重置，避免已展开的节点被折叠
+      new Set(
+        (files || [])
+          .filter((node) => node.type === 'folder')
+          .map((node) => node.id),
+      ),
   );
-
-  useEffect(() => {
-    // 自动展开第一层文件夹
-    const rootFolders =
-      files?.filter((node) => node.type === 'folder')?.map((node) => node.id) ||
-      [];
-    if (rootFolders?.length > 0) {
-      setExpandedFolders(new Set(rootFolders));
-    }
-  }, [files]);
 
   /**
    * 切换文件夹展开状态，用于展开/折叠回调
