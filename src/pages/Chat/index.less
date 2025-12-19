@@ -115,11 +115,36 @@
   .agent-sidebar {
     display: none;
   }
+
+  .file-tree-sidebar {
+    display: none;
+  }
 }
 
 /* 当屏幕宽度小于等于 720px 时应用的样式 */
 @media screen and (max-width: 720px) {
   .main-content {
     width: 100%;
+  }
+}
+
+/* 文件树侧边栏样式 */
+.file-tree-sidebar {
+  position: sticky;
+  height: 100%;
+  min-width: 600px;
+  max-width: 1000px;
+  margin: 0;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  border-left: @lineWidth @lineType @colorBorderSecondary;
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
+
+  .file-tree-content {
+    flex: 1;
+    overflow: hidden;
+    height: 100%;
   }
 }

@@ -7,6 +7,7 @@ import {
 } from '@/components/business-component';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
+import FileTreeView from '@/components/FileTreeView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
@@ -17,6 +18,7 @@ import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
+import { apiGetStaticFileList } from '@/services/vncDesktop';
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -31,6 +33,10 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import {
+  StaticFileInfo,
+  StaticFileListResponse,
+} from '@/types/interfaces/vncDesktop';
 import {
   addBaseTarget,
   arraysContainSameItems,
@@ -422,6 +428,12 @@ const Chat: React.FC = () => {
 
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const sidebarRef = useRef<AgentSidebarRef>(null);
+  // 文件树显隐状态
+  const [isFileTreeVisible, setIsFileTreeVisible] = useState<boolean>(false);
+  // 文件树数据
+  const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
+  // 文件树视图模式
+  const [viewMode, setViewMode] = useState<'preview' | 'desktop'>('preview');
 
   // 互斥面板控制器：管理 PagePreview、AgentSidebar、ShowArea 的互斥展示
   useExclusivePanels({
@@ -432,6 +444,33 @@ const Chat: React.FC = () => {
     showType,
     setShowType,
   });
+
+  // 当 AgentSidebar 显示时，自动关闭文件树
+  useEffect(() => {
+    if (isSidebarVisible) {
+      setIsFileTreeVisible(false);
+    }
+  }, [isSidebarVisible]);
+
+  // 查询文件列表
+  const { run: runGetStaticFileList } = useRequest(apiGetStaticFileList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: StaticFileListResponse) => {
+      setFileTreeData(result?.files || []);
+    },
+    onError: () => {
+      setFileTreeData([]);
+    },
+  });
+
+  // 当文件树显示时，自动关闭 AgentSidebar，并获取文件列表数据
+  useEffect(() => {
+    if (isFileTreeVisible) {
+      sidebarRef.current?.close();
+      runGetStaticFileList(id);
+    }
+  }, [isFileTreeVisible, id]);
 
   // 消息事件代理（处理会话输出中的点击事件）
   useMessageEventDelegate({
@@ -461,6 +500,7 @@ const Chat: React.FC = () => {
             />
             <div>
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
+              {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
               {!isSidebarVisible && !isMobile && (
                 <Button
                   type="text"
@@ -473,7 +513,13 @@ const Chat: React.FC = () => {
                   }
                   onClick={() => {
                     hidePagePreview();
-                    sidebarRef.current?.open();
+                    // 先关闭文件树
+                    setIsFileTreeVisible(false);
+                    // 然后打开 AgentSidebar
+                    // 使用 setTimeout 确保状态更新完成后再打开，避免状态冲突
+                    setTimeout(() => {
+                      sidebarRef.current?.open();
+                    }, 100);
                   }}
                 />
               )}
@@ -493,10 +539,30 @@ const Chat: React.FC = () => {
                     }
                     onClick={() => {
                       sidebarRef.current?.close();
+                      setIsFileTreeVisible(false); // 关闭文件树
                       handleOpenPreview(agentDetail);
                     }}
                   />
                 )}
+
+              {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
+              {!isFileTreeVisible && !isSidebarVisible && (
+                <Button
+                  type="text"
+                  className={cx(styles.sidebarButton)}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-components"
+                      className={cx(styles['icons-nav-sidebar'])}
+                    />
+                  }
+                  onClick={() => {
+                    // 关闭 AgentSidebar 并显示文件树
+                    sidebarRef.current?.close();
+                    setIsFileTreeVisible(true);
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -597,14 +663,14 @@ const Chat: React.FC = () => {
       {loading ? (
         // 接口加载中，显示 loading 状态，避免右侧渲染时挤压左侧
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flex: 1,
-            height: '100%',
-            width: '100%',
-          }}
+          className={cx(
+            'flex',
+            'items-center',
+            'justify-center',
+            'flex-1',
+            'h-full',
+            'w-full',
+          )}
         >
           <LoadingOutlined />
         </div>
@@ -651,17 +717,59 @@ const Chat: React.FC = () => {
         />
       )}
 
-      <AgentSidebar
-        ref={sidebarRef}
-        className={cx(
-          styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
-        )}
-        agentId={agentId}
-        loading={loading}
-        agentDetail={agentDetail}
-        onToggleCollectSuccess={handleToggleCollectSuccess}
-        onVisibleChange={setIsSidebarVisible}
-      />
+      {/* AgentSidebar - 只在文件树隐藏时显示 */}
+      {!isFileTreeVisible && (
+        <AgentSidebar
+          ref={sidebarRef}
+          className={cx(
+            styles[isSidebarVisible ? 'agent-sidebar-w' : 'agent-sidebar'],
+          )}
+          agentId={agentId}
+          loading={loading}
+          agentDetail={agentDetail}
+          onToggleCollectSuccess={handleToggleCollectSuccess}
+          onVisibleChange={setIsSidebarVisible}
+        />
+      )}
+
+      {/*文件树侧边栏 - 只在 AgentSidebar 隐藏时显示 */}
+      {isFileTreeVisible && (
+        <div className={cx(styles['file-tree-sidebar'], 'flex', 'flex-col')}>
+          <div className={cx(styles['file-tree-content'], 'flex')}>
+            <FileTreeView
+              originalFiles={fileTreeData}
+              viewMode={viewMode}
+              onViewModeChange={(mode) => {
+                setViewMode(mode);
+              }}
+              onUploadSingleFile={(node) => {
+                console.log('上传文件', node);
+                // TODO: 实现文件上传逻辑
+              }}
+              onRenameFile={async (node, newName) => {
+                console.log('重命名文件', node, newName);
+                // TODO: 实现文件重命名逻辑
+                return true;
+              }}
+              onCreateFileNode={async (node, newName) => {
+                console.log('创建文件', node, newName);
+                // TODO: 实现文件创建逻辑
+                return true;
+              }}
+              onDeleteFile={(node) => {
+                console.log('删除文件', node);
+                // TODO: 实现文件删除逻辑
+              }}
+              onSaveFiles={async (data) => {
+                console.log('保存文件', data);
+                // TODO: 实现文件保存逻辑
+                return true;
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/*展示台区域*/}
       <ShowArea />
     </div>
