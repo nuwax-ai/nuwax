@@ -95,7 +95,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     setPublishList(_publishList);
   };
 
-  // 智能体、插件、工作流下架
+  // 智能体、插件、工作流、技能下架
   const { run: runOffShelf } = useRequest(apiPublishOffShelf, {
     manual: true,
     debounceInterval: 300,

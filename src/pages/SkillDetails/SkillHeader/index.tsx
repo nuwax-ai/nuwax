@@ -1,11 +1,13 @@
 import agentImage from '@/assets/images/agent_image.png';
+import { SkillDetailInfo } from '@/types/interfaces/skill';
 import {
   ClockCircleOutlined,
   FormOutlined,
   LeftOutlined,
 } from '@ant-design/icons';
-import { Button } from 'antd';
+import { Button, Tag } from 'antd';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import React from 'react';
 import { history } from 'umi';
 import styles from './index.less';
@@ -15,7 +17,7 @@ const cx = classNames.bind(styles);
 // 技能详情顶部header组件
 export interface SkillHeaderProps {
   spaceId: number;
-  skillInfo?: any;
+  skillInfo?: SkillDetailInfo | null;
   onEditAgent: () => void;
   onPublish: () => void;
   onToggleHistory: () => void;
@@ -56,6 +58,18 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
           className={cx(styles['edit-ico'])}
           onClick={onEditAgent}
         />
+
+        {/* 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布 */}
+        {skillInfo?.publishDate !== null &&
+          dayjs(skillInfo?.publishDate).isBefore(skillInfo?.modified) && (
+            <Tag
+              bordered={false}
+              color="volcano"
+              className={cx(styles['volcano'])}
+            >
+              有更新未发布
+            </Tag>
+          )}
       </div>
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         {/* 版本历史 */}
