@@ -16,7 +16,7 @@ import type { TaskInfo } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
-import { Avatar, Button, Popconfirm, Space, Tag, message } from 'antd';
+import { Button, Popconfirm, Space, Tag, message } from 'antd';
 import dayjs from 'dayjs';
 import {
   forwardRef,
@@ -26,6 +26,7 @@ import {
   useRef,
 } from 'react';
 import { history, useParams } from 'umi';
+import EllipsisWithAvatar from './components/EllipsisWithAvatar';
 
 export interface CenterProTableRef {
   /**
@@ -42,10 +43,11 @@ export interface CenterProTableProps {
 /**
  * 任务中心表格（ProTable）
  *
- * 需求：
- * - 初始化只请求一次任务列表（apiTaskList）
- * - 本地分页：分页切换不再请求接口（只在内存中做 slice）
- * - 筛选：
+ * 优化后的查询逻辑：
+ * - 初始化加载时请求接口获取任务列表
+ * - 点击查询按钮时始终调用后端接口（实时获取最新数据）
+ * - 分页切换时使用本地缓存（提升性能）
+ * - 筛选条件：
  *   - 任务对象：智能体 / 工作流（targetType）
  *   - 任务名称：模糊搜索（taskName）
  */
@@ -55,17 +57,20 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     const spaceId = Number(params.spaceId);
     const actionRef = useRef<ActionType>();
 
-    // 缓存：确保仅在首次加载时请求一次接口
+    // 数据缓存：存储最近一次请求的完整列表
     const cacheRef = useRef<{
       spaceId: number;
       list: TaskInfo[];
     } | null>(null);
 
-    // 防止首屏时 request 被多次触发导致并发请求
+    // 防止并发请求
     const fetchingRef = useRef<{
       spaceId: number;
       promise: Promise<TaskInfo[]>;
     } | null>(null);
+
+    // 标记是否需要强制刷新（点击查询按钮时为 true）
+    const forceRefreshRef = useRef<boolean>(false);
 
     /**
      * 安全格式化时间：兼容 number/字符串/空值
@@ -132,65 +137,87 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     }, []);
 
     /**
-     * 仅在首次加载时请求一次任务列表
+     * 获取任务列表（支持强制刷新）
+     * @param sid - 空间 ID
+     * @param forceRefresh - 是否强制刷新（忽略缓存）
      */
-    const ensureTaskList = useCallback(async (sid: number) => {
-      if (!Number.isFinite(sid) || sid <= 0) {
-        return [];
-      }
-
-      // 已缓存且同空间：直接使用
-      if (cacheRef.current?.spaceId === sid) {
-        return cacheRef.current.list;
-      }
-
-      // 正在请求且同空间：复用 promise
-      if (fetchingRef.current?.spaceId === sid) {
-        return fetchingRef.current.promise;
-      }
-
-      const promise = (async () => {
-        try {
-          const resp = (await apiTaskList(sid)) as any;
-          const list: TaskInfo[] = Array.isArray(resp)
-            ? resp
-            : Array.isArray(resp?.data)
-            ? resp.data
-            : [];
-          cacheRef.current = { spaceId: sid, list };
-          return list;
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.error('查询任务列表失败', e);
-          message.error('查询任务列表失败');
-          cacheRef.current = { spaceId: sid, list: [] };
+    const fetchTaskList = useCallback(
+      async (sid: number, forceRefresh = false) => {
+        if (!Number.isFinite(sid) || sid <= 0) {
           return [];
-        } finally {
-          if (fetchingRef.current?.spaceId === sid) {
-            fetchingRef.current = null;
-          }
         }
-      })();
 
-      fetchingRef.current = { spaceId: sid, promise };
-      return promise;
-    }, []);
-
-    // 暴露给父组件：刷新表格（清缓存 + reload）
-    useImperativeHandle(
-      ref,
-      () => ({
-        reload: () => {
+        // 强制刷新时清空缓存
+        if (forceRefresh) {
           cacheRef.current = null;
           fetchingRef.current = null;
-          actionRef.current?.reload();
-        },
-      }),
+        }
+
+        // 已缓存且同空间：直接使用
+        if (cacheRef.current?.spaceId === sid && !forceRefresh) {
+          return cacheRef.current.list;
+        }
+
+        // 正在请求且同空间：复用 promise（避免重复请求）
+        if (fetchingRef.current?.spaceId === sid && !forceRefresh) {
+          return fetchingRef.current.promise;
+        }
+
+        const promise = (async () => {
+          try {
+            const resp = (await apiTaskList(sid)) as any;
+            const list: TaskInfo[] = Array.isArray(resp)
+              ? resp
+              : Array.isArray(resp?.data)
+              ? resp.data
+              : [];
+            cacheRef.current = { spaceId: sid, list };
+            return list;
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.error('查询任务列表失败', e);
+            message.error('查询任务列表失败');
+            cacheRef.current = { spaceId: sid, list: [] };
+            return [];
+          } finally {
+            if (fetchingRef.current?.spaceId === sid) {
+              fetchingRef.current = null;
+            }
+          }
+        })();
+
+        fetchingRef.current = { spaceId: sid, promise };
+        return promise;
+      },
       [],
     );
 
     /**
-     * ProTable request：只做一次接口获取；分页/筛选在本地完成
+     * 刷新列表：清空缓存并重新请求接口
+     */
+    const refreshList = useCallback(() => {
+      cacheRef.current = null;
+      fetchingRef.current = null;
+      forceRefreshRef.current = true;
+      actionRef.current?.reload();
+    }, []);
+
+    /**
+     * 暴露给父组件的方法：刷新表格（清缓存并重新请求接口）
+     */
+    useImperativeHandle(
+      ref,
+      () => ({
+        reload: refreshList,
+      }),
+      [refreshList],
+    );
+
+    /**
+     * ProTable request 函数
+     * - 点击查询按钮时：强制刷新，调用后端接口
+     * - 分页切换时：使用本地缓存数据
+     * - 筛选逻辑：在客户端完成（支持任务对象类型、任务名称搜索）
      */
     const request = useCallback(
       async (tableParams: Record<string, any>) => {
@@ -202,7 +229,12 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         const targetType = tableParams.targetType as string | undefined;
         const taskName = (tableParams.taskName as string | undefined)?.trim();
 
-        const all = await ensureTaskList(sid);
+        // 检查是否需要强制刷新（点击查询按钮）
+        const shouldForceRefresh = forceRefreshRef.current;
+        forceRefreshRef.current = false; // 重置标志
+
+        // 获取任务列表（根据标志决定是否使用缓存）
+        const all = await fetchTaskList(sid, shouldForceRefresh);
 
         // 本地筛选
         let filtered = all;
@@ -216,7 +248,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           );
         }
 
-        // 本地分页（不请求接口）
+        // 本地分页（提升性能，避免每次分页都请求接口）
         const total = filtered.length;
         const start = (current - 1) * pageSize;
         const end = start + pageSize;
@@ -224,69 +256,65 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
 
         return { data: pageData, total, success: true };
       },
-      [ensureTaskList, spaceId],
+      [fetchTaskList, spaceId],
     );
 
-    // 执行任务
+    /**
+     * 执行任务
+     */
     const handleExecuteTask = useCallback(
       async (id: number) => {
         const resp = await apiTaskExecute(id);
         if (resp?.code === SUCCESS_CODE) {
           message.success('执行任务成功');
-          // 执行成功后需要重新请求接口刷新列表：清空缓存并触发表格 reload
-          cacheRef.current = null;
-          fetchingRef.current = null;
-          actionRef.current?.reload();
+          refreshList();
         }
       },
-      [actionRef, cacheRef, fetchingRef],
+      [refreshList],
     );
 
-    // 启用定时任务
+    /**
+     * 启用定时任务
+     */
     const handleEnableTask = useCallback(
       async (id: number) => {
         const resp = await apiTaskEnable(id);
         if (resp?.code === SUCCESS_CODE) {
           message.success('启用任务成功');
-          // 执行成功后需要重新请求接口刷新列表：清空缓存并触发表格 reload
-          cacheRef.current = null;
-          fetchingRef.current = null;
-          actionRef.current?.reload();
+          refreshList();
         }
       },
-      [actionRef],
+      [refreshList],
     );
 
-    // 停用定时任务
+    /**
+     * 停用定时任务
+     */
     const handleDisableTask = useCallback(
       async (id: number) => {
         const resp = await apiTaskDisable(id);
         if (resp?.code === SUCCESS_CODE) {
           message.success('停用任务成功');
-          // 执行成功后需要重新请求接口刷新列表：清空缓存并触发表格 reload
-          cacheRef.current = null;
-          fetchingRef.current = null;
-          actionRef.current?.reload();
+          refreshList();
         }
       },
-      [actionRef],
+      [refreshList],
     );
 
-    // 删除任务
+    /**
+     * 删除任务
+     */
     const handleDeleteTask = useCallback(
       async (id: number) => {
         modalConfirm('提示', '确认删除该任务？', async () => {
           const resp = await apiTaskDelete(id);
           if (resp?.code === SUCCESS_CODE) {
             message.success('删除任务成功');
-            // 执行成功后需要重新请求接口刷新列表：清空缓存并触发表格 reload
-            cacheRef.current = null;
-            fetchingRef.current = null;
-            actionRef.current?.reload();
+            refreshList();
           }
         });
       },
-      [actionRef, cacheRef, fetchingRef],
+      [refreshList],
     );
 
     // 点击更多操作
@@ -372,19 +400,20 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           dataIndex: 'targetName',
           hideInSearch: true,
           ellipsis: true,
+          width: 200,
           render: (_: any, record: TaskInfo) => {
             return (
-              <Space size={8}>
-                <Avatar size={24} src={record.targetIcon} />
-                <span>{record.targetName || record.targetId || '-'}</span>
-              </Space>
+              <EllipsisWithAvatar
+                avatarSrc={record.targetIcon}
+                text={record.targetName}
+              />
             );
           },
         },
         {
           title: '任务状态',
           dataIndex: 'status',
-          width: 110,
+          width: 200,
           hideInSearch: true,
           render: (_: any, record: TaskInfo) => {
             const meta = getStatusMeta(record.status);
@@ -414,9 +443,10 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         {
           title: '创建人',
           dataIndex: ['creator', 'userName'],
-          width: 110,
+          ellipsis: true,
+          width: 170,
           hideInSearch: true,
-          render: (_: any, record: TaskInfo) => record.creator?.userName || '-',
+          // render: (_: any, record: TaskInfo) => record.creator?.userName || '-',
         },
         {
           title: '创建时间',
@@ -430,7 +460,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           align: 'center',
           valueType: 'option',
           fixed: 'right',
-          width: 220,
+          width: 170,
           render: (_: any, record: TaskInfo) => {
             const meta = getStatusMeta(record.status);
             const isEnded = meta.isEnded;
@@ -496,6 +526,15 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       [formatDateTime, getStatusMeta],
     );
 
+    /**
+     * 表单提交前的处理：设置强制刷新标志
+     * 这样点击查询按钮时会调用后端接口
+     */
+    const beforeSearchSubmit = useCallback((params: Record<string, any>) => {
+      forceRefreshRef.current = true;
+      return params;
+    }, []);
+
     return (
       <ProTable<TaskInfo>
         actionRef={actionRef}
@@ -503,8 +542,6 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         columns={columns}
         request={request}
         params={{ spaceId }}
-        // 开启表格自身横向滚动，fixed 列才会固定不跟随滚动
-        scroll={{ x: 'max-content' }}
         debounceTime={300}
         toolBarRender={false}
         options={false}
@@ -518,13 +555,19 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         search={{
           span: 6,
           labelWidth: 70,
-          defaultCollapsed: false,
+          defaultCollapsed: true,
           style: {
             paddingTop: 0,
             paddingBottom: 0,
             paddingLeft: 0,
             paddingRight: 0,
           },
+        }}
+        // 表单提交前处理：点击查询按钮时设置强制刷新标志
+        beforeSearchSubmit={beforeSearchSubmit}
+        // 重置后也需要强制刷新
+        onReset={() => {
+          forceRefreshRef.current = true;
         }}
       />
     );
