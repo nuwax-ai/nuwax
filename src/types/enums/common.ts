@@ -45,6 +45,8 @@ export enum NodeTypeEnum {
   LLM = 'LLM',
   // 变量
   Variable = 'Variable',
+  // 变量聚合
+  VariableAggregation = 'VariableAggregation',
   // 循环
   Loop = 'Loop',
   // 终止循环

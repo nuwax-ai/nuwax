@@ -1,0 +1,113 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.error-list-v2 {
+  position: absolute;
+  top: 70%;
+  left: 10px;
+  bottom: 10px;
+  width: 320px;
+  border-radius: 16px;
+  background-color: #fff;
+  z-index: 99;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 8%);
+
+  .error-list-v2-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 48px;
+    padding: 0 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 6%);
+
+    .error-list-v2-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+  }
+
+  .error-list-v2-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+
+    .error-list-v2-empty {
+      text-align: center;
+      color: #999;
+      font-size: 14px;
+      padding: 40px 0;
+    }
+
+    .error-list-v2-item {
+      display: flex;
+      align-items: flex-start;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(82, 100, 154, 15%);
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 4%), 0 2px 10px 0 rgba(0, 0, 0, 2%);
+
+      &:hover {
+        border-color: rgba(81, 71, 255, 30%);
+        box-shadow: 0 2px 8px rgba(81, 71, 255, 15%);
+      }
+
+      &.global {
+        cursor: default;
+
+        &:hover {
+          border-color: rgba(82, 100, 154, 15%);
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 4%),
+            0 2px 10px 0 rgba(0, 0, 0, 2%);
+        }
+      }
+
+      .error-list-v2-item-icon {
+        width: 24px;
+        height: 24px;
+        margin-right: 10px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+          width: 20px;
+          height: 20px;
+        }
+      }
+
+      .error-list-v2-item-content {
+        flex: 1;
+        min-width: 0;
+
+        .error-list-v2-item-name {
+          font-size: 13px;
+          font-weight: 500;
+          color: #333;
+          margin-bottom: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .error-list-v2-item-error {
+          font-size: 12px;
+          color: #ff441e;
+          line-height: 1.4;
+          display: box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+    }
+  }
+}

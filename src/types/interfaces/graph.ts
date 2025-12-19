@@ -147,7 +147,7 @@ export interface GraphContainerProps {
     config: ChangeNodeProps,
     callback?: () => Promise<boolean> | void,
   ) => Promise<boolean>;
-  copyNode: (child: ChildNode) => void;
+  copyNode: (child: ChildNode, offset?: { x: number; y: number }) => void;
   // 删除节点
   removeNode: (id: string) => void;
   // 改变画布大小
@@ -164,6 +164,8 @@ export interface GraphRect {
   y: number;
   height?: number;
   width?: number;
+  /** 标识坐标是否已经是图形坐标系（无需再次转换） */
+  isGraphCoordinate?: boolean;
 }
 export interface ViewGraphProps {
   x: number;
@@ -174,6 +176,8 @@ export interface ViewGraphProps {
 
 export interface GraphContainerRef {
   getCurrentViewPort: () => ViewGraphProps;
+  // 获取视口中心点（图形坐标）
+  getViewportCenterPoint?: () => { x: number; y: number };
   // 新增节点
   graphAddNode: (e: GraphRect, child: ChildNode) => void;
   // 修改节点
@@ -216,7 +220,7 @@ export interface BindEventHandlers {
     config: ChangeEdgeProps,
   ) => Promise<number[] | boolean>;
   changeNodeConfigWithRefresh: (config: ChangeNodeProps) => Promise<boolean>;
-  copyNode: (child: ChildNode) => void;
+  copyNode: (child: ChildNode, offset?: { x: number; y: number }) => void;
   // 删除节点
   removeNode: (id: string, node?: ChildNode) => void;
   modal: ModalHookAPI;
@@ -268,6 +272,12 @@ export interface NodeMetadata extends Node.Metadata {
   ports: PortsConfig;
 }
 
+export interface GraphNodeSize {
+  width: number;
+  height: number;
+  type?: NodeSizeGetTypeEnum;
+}
+
 export interface GraphNodeSizeGetParams {
   data: ChildNode;
   ports: outputOrInputPortConfig[];
@@ -280,8 +290,76 @@ export interface CurrentNodeRefProps {
   edgeId?: string;
 }
 
-export interface GraphNodeSize {
-  type: NodeSizeGetTypeEnum; // 创建或更新
-  width: number;
-  height: number;
+export interface WorkflowData {
+  nodes: ChildNode[];
+  edges: Edge[];
+  workflowId: number;
+  lastSavedVersion?: string;
+  isDirty?: boolean;
+  modified?: string;
+}
+
+export interface WorkflowDetails {
+  id: number;
+  name: string;
+  description: string;
+  spaceId: number;
+  nodes: ChildNode[];
+  startNode: ChildNode;
+  endNode?: ChildNode;
+  extension?: {
+    size?: number;
+  };
+  modified?: string;
+  publishDate?: string;
+  publishStatus?: string;
+  category?: string;
+  permissions?: string[];
+  version?: string;
+}
+
+/**
+ * 历史记录项 (用于撤销重做)
+ */
+export interface HistoryItem {
+  id: string;
+  type: string;
+  timestamp: number;
+  data: {
+    before: WorkflowData;
+    after: WorkflowData;
+  };
+}
+
+export interface SaveWorkflowRequest {
+  workflowId: number;
+  name?: string;
+  description?: string;
+  spaceId?: number;
+  nodes: ChildNode[];
+  startNode?: ChildNode;
+  endNode?: ChildNode;
+  extension?: {
+    size?: number;
+  };
+  category?: string;
+  version?: string;
+}
+
+export interface SaveWorkflowResponse {
+  success: boolean;
+  message?: string;
+  version?: string;
+}
+
+export interface ValidationResult {
+  nodeId: number;
+  success: boolean;
+  messages: string[];
+}
+
+export interface NodeAnimationConfig {
+  type: 'highlight' | 'flash' | 'pulse';
+  duration: number;
+  color?: string;
 }
