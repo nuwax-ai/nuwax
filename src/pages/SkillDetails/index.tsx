@@ -153,13 +153,13 @@ const SkillDetails: React.FC = () => {
         // setIsFileOperating(true);
 
         // 直接调用上传接口，使用文件名作为路径
-        const result = await apiSkillUploadFile({
+        const { code } = await apiSkillUploadFile({
           file,
           skillId,
           filePath: relativePath + file.name,
         });
 
-        if (result) {
+        if (code === SUCCESS_CODE) {
           message.success('上传成功');
           // 刷新项目详情
           runSkillInfo(skillId);
