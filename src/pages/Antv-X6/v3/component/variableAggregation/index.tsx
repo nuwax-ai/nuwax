@@ -5,6 +5,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import React, { useMemo, useRef } from 'react';
 import { TreeOutput } from '../commonNode';
+import './index.less';
 import { useVariableAggregation } from './useVariableAggregation';
 import VariableGroupItem from './VariableGroupItem';
 
@@ -62,16 +63,7 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
       <div className="node-item-style">
         <div className="node-title-style margin-bottom">聚合策略</div>
         <Form.Item name="aggregationStrategy">
-          <select
-            className="ant-select ant-select-sm"
-            style={{
-              width: '100%',
-              height: 24,
-              borderRadius: 4,
-              border: '1px solid #d9d9d9',
-              padding: '0 8px',
-            }}
-          >
+          <select className="ant-select ant-select-sm aggregation-strategy-select">
             {strategyOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
@@ -85,8 +77,8 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
         <div className="dis-sb margin-bottom">
           <span className="node-title-style">分组配置</span>
           <Button
-            icon={<PlusOutlined />}
             onClick={handleAddGroup}
+            icon={<PlusOutlined />}
             size="small"
             type="text"
           />
@@ -112,16 +104,7 @@ const VariableAggregationNode: React.FC<NodeDisposeProps> = ({ form, id }) => {
         ))}
 
         {variableGroups.length === 0 && (
-          <div
-            style={{
-              color: '#bbb',
-              fontSize: 12,
-              textAlign: 'center',
-              padding: 16,
-            }}
-          >
-            点击 + 添加分组
-          </div>
+          <div className="empty-state-tip">点击 + 添加分组</div>
         )}
       </div>
 

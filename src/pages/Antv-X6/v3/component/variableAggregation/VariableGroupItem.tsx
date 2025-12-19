@@ -1,10 +1,11 @@
 // 变量分组项组件
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputAndOutConfig, VariableGroup } from '@/types/interfaces/node';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { MinusOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Input, Tag } from 'antd';
 import React from 'react';
 import VariableSelector from './VariableSelector';
+import './index.less';
 
 interface VariableGroupItemProps {
   group: VariableGroup;
@@ -46,9 +47,9 @@ const VariableGroupItem: React.FC<VariableGroupItemProps> = ({
   onClearReference,
 }) => {
   return (
-    <div className="form-list-style" style={{ marginBottom: 8, padding: 8 }}>
+    <div className="form-list-style group-item-container">
       {/* 分组头部 - 紧凑布局 */}
-      <div className="dis-sb" style={{ marginBottom: 4 }}>
+      <div className="dis-sb group-header">
         <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
           <Input
             size="small"
@@ -57,9 +58,9 @@ const VariableGroupItem: React.FC<VariableGroupItemProps> = ({
             onChange={(e) =>
               onUpdateGroup(groupIndex, { name: e.target.value })
             }
-            style={{ width: 100, marginRight: 8 }}
+            className="group-name-input"
           />
-          <Tag color="#E8E8E8" style={{ fontSize: 10 }}>
+          <Tag color="#C9CDD4" className="group-type-tag">
             {getGroupTypeDisplay(group)}
           </Tag>
         </div>
@@ -69,15 +70,14 @@ const VariableGroupItem: React.FC<VariableGroupItemProps> = ({
             onClick={() => onAddInput(groupIndex)}
             size="small"
             type="text"
-            style={{ padding: '0 4px' }}
+            className="action-button"
           />
           <Button
-            icon={<DeleteOutlined />}
+            icon={<MinusOutlined />}
             onClick={() => onRemoveGroup(groupIndex)}
             size="small"
             type="text"
-            danger
-            style={{ padding: '0 4px' }}
+            className="action-button"
           />
         </div>
       </div>
@@ -86,8 +86,7 @@ const VariableGroupItem: React.FC<VariableGroupItemProps> = ({
       {(group.inputs || []).map((input: InputAndOutConfig, inputIndex) => (
         <div
           key={input.key || inputIndex}
-          className="dis-sb"
-          style={{ marginTop: 4 }}
+          className="dis-sb variable-reference-item"
         >
           <VariableSelector
             displayValue={input.bindValue ? getValue(input.bindValue) : ''}
@@ -100,27 +99,18 @@ const VariableGroupItem: React.FC<VariableGroupItemProps> = ({
             onClear={() => onClearReference(groupIndex, inputIndex)}
           />
           <Button
-            icon={<DeleteOutlined />}
+            icon={<MinusOutlined />}
             size="small"
             type="text"
             onClick={() => onRemoveInput(groupIndex, inputIndex)}
-            style={{ marginLeft: 4, padding: '0 4px' }}
+            className="remove-input-button"
           />
         </div>
       ))}
 
       {/* 空状态提示 */}
       {(!group.inputs || group.inputs.length === 0) && (
-        <div
-          style={{
-            color: '#bbb',
-            fontSize: 12,
-            textAlign: 'center',
-            padding: '8px 0',
-          }}
-        >
-          点击 + 添加变量引用
-        </div>
+        <div className="group-empty-tip">点击 + 添加变量引用</div>
       )}
     </div>
   );
