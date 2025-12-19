@@ -1151,6 +1151,7 @@ const Workflow: React.FC = () => {
             graph.redo();
           }
         }}
+        onManualSave={saveFullWorkflow}
         onConfirm={onConfirm}
         handleConfirmPublishWorkflow={
           validationHook.handleConfirmPublishWorkflow

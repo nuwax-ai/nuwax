@@ -206,6 +206,16 @@ export async function apiAddNode(
     data,
   });
 }
+// 给工作流添加节点(V3)
+export async function apiAddNodeV3(
+  data: IAddNode,
+): Promise<RequestResponse<AddNodeResponse>> {
+  return request(`/api/workflow/node/add`, {
+    method: 'POST',
+    skipErrorHandler: true, // 跳过错误处理
+    data,
+  });
+}
 
 // 复制工作流
 export async function apiCopyNode(
@@ -316,6 +326,7 @@ export async function saveWorkflow(
 ): Promise<RequestResponse<null>> {
   return request(`/api/workflow/save`, {
     method: 'POST',
+    skipErrorHandler: true, // 跳过错误处理
     data: { workflowConfig },
   });
 }
@@ -326,6 +337,7 @@ export default {
   apiAddEdge,
   getDetails,
   apiAddNode,
+  apiAddNodeV3,
   updateDetails,
   getNodeList,
   getModelList,

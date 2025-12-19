@@ -627,7 +627,7 @@ export const useNodeOperations = ({
               }
             : undefined;
 
-        const apiRes = await service.apiAddNode({
+        const apiRes = await service.apiAddNodeV3({
           workflowId: workflowId,
           type: _params.type,
           typeId: _params.typeId,
