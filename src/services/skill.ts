@@ -61,7 +61,7 @@ export async function apiSkillUploadFile(
   const { file, skillId, filePath } = params;
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('skillId', skillId);
+  formData.append('skillId', skillId.toString());
   formData.append('filePath', filePath);
 
   return request('/api/skill/upload-file', {

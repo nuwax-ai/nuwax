@@ -135,7 +135,10 @@ const SearchView: React.FC<SearchViewProps> = ({ files, onFileSelect }) => {
   }, [selectedIndex]);
 
   return (
-    <div className={cx(styles['search-view'])} ref={searchContainerRef}>
+    <div
+      className={cx(styles['search-view'], 'relative')}
+      ref={searchContainerRef}
+    >
       {/* 搜索栏 */}
       <div className={cx(styles['search-bar'])}>
         <Input

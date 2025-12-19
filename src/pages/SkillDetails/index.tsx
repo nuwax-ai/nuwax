@@ -10,7 +10,7 @@ import {
   apiSkillUploadFile,
 } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { SkillInfo } from '@/types/interfaces/library';
 import {
@@ -23,6 +23,7 @@ import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { message } from 'antd';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import CreateSkill from '../SpaceSkillManage/CreateSkill';
@@ -34,7 +35,9 @@ const cx = classNames.bind(styles);
  * 技能详情页面
  */
 const SkillDetails: React.FC = () => {
-  const { spaceId, skillId } = useParams();
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+  const skillId = Number(params.skillId);
   // 技能信息
   const [skillInfo, setSkillInfo] = useState<SkillDetailInfo | null>(null);
   // 发布技能弹窗是否打开
@@ -96,14 +99,17 @@ const SkillDetails: React.FC = () => {
   // 确认发布技能回调
   const handleConfirmPublish = () => {
     setOpen(false);
-    // // 同步发布时间和修改时间
-    // const time = dayjs().toString();
-    // // 更新技能配置信息
-    // const _skillInfo = {
-    //   ...skillInfo,
-    //   publishDate: time,
-    //   modified: time,
-    // };
+
+    // 同步发布时间和修改时间
+    const time = dayjs().toString();
+    // 更新智能体配置信息
+    const _skillInfo = {
+      ...skillInfo,
+      publishDate: time,
+      modified: time,
+      publishStatus: PublishStatusEnum.Published,
+    } as SkillDetailInfo;
+    setSkillInfo(_skillInfo);
   };
 
   /**
@@ -147,13 +153,13 @@ const SkillDetails: React.FC = () => {
         // setIsFileOperating(true);
 
         // 直接调用上传接口，使用文件名作为路径
-        const result = await apiSkillUploadFile({
+        const { code } = await apiSkillUploadFile({
           file,
           skillId,
           filePath: relativePath + file.name,
         });
 
-        if (result) {
+        if (code === SUCCESS_CODE) {
           message.success('上传成功');
           // 刷新项目详情
           runSkillInfo(skillId);
