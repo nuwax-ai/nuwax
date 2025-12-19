@@ -164,6 +164,8 @@ export interface GraphRect {
   y: number;
   height?: number;
   width?: number;
+  /** 标识坐标是否已经是图形坐标系（无需再次转换） */
+  isGraphCoordinate?: boolean;
 }
 export interface ViewGraphProps {
   x: number;
@@ -174,6 +176,8 @@ export interface ViewGraphProps {
 
 export interface GraphContainerRef {
   getCurrentViewPort: () => ViewGraphProps;
+  // 获取视口中心点（图形坐标）
+  getViewportCenterPoint?: () => { x: number; y: number };
   // 新增节点
   graphAddNode: (e: GraphRect, child: ChildNode) => void;
   // 修改节点

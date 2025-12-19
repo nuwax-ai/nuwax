@@ -166,16 +166,36 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     };
 
     const _doAddNode = (e: GraphRect, child: ChildNode) => {
-      const point = graphRef.current.clientToGraph(e.x, e.y);
+      // 判断坐标是否需要转换：
+      // - 如果坐标是通过拖拽事件（clientX/clientY）获取的，需要 clientToGraph 转换
+      // - 如果坐标是通过 getGraphArea 计算的视口中心，则已经是图坐标，不需要转换
+      // 更可靠的方式是检查坐标是否在画布容器的客户端范围内
+      const container = graphRef.current.container;
+      const containerRect = container?.getBoundingClientRect();
+      const isClientCoordinate =
+        containerRect &&
+        e.x >= containerRect.left &&
+        e.x <= containerRect.right &&
+        e.y >= containerRect.top &&
+        e.y <= containerRect.bottom;
+
+      const point = isClientCoordinate
+        ? graphRef.current.clientToGraph(e.x, e.y)
+        : { x: e.x, y: e.y }; // 已经是图坐标，直接使用
 
       const { width, height } = getWidthAndHeight(child);
+
+      // 如果坐标是视口中心（非客户端坐标），需要将节点中心对齐到该点
+      // 即节点位置 = 中心点 - 节点宽高的一半
+      const nodeX = isClientCoordinate ? point.x : point.x - width / 2;
+      const nodeY = isClientCoordinate ? point.y : point.y - height / 2;
 
       // 根据情况，动态给予右侧的out连接桩
       const newNode = graphRef.current.addNode({
         shape: child.shape,
         id: child.id,
-        x: point.x,
-        y: point.y,
+        x: nodeX,
+        y: nodeY,
         width: width,
         height: height,
         data: {
@@ -505,9 +525,10 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       }
     };
 
-    // 获取当前可视区域的x，y，width，height
+    // 获取当前可视区域的x，y，width，height（返回图坐标系，与 V1 保持一致）
     const getCurrentViewPort = () => {
       if (!graphRef.current) return { x: 0, y: 0, width: 0, height: 0 };
+      // 使用 getGraphArea 获取图坐标系的可视区域，与 V1 保持一致
       const viewport = graphRef.current.getGraphArea();
       return {
         x: viewport.x as number,

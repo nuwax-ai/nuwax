@@ -45,6 +45,7 @@ export interface WorkflowLayoutProps {
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  onManualSave?: () => Promise<boolean>;
   onConfirm: (values: any, callback?: () => void) => void;
   handleConfirmPublishWorkflow: () => void;
 
@@ -133,6 +134,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   canRedo,
   onUndo,
   onRedo,
+  onManualSave,
   onConfirm,
   handleConfirmPublishWorkflow,
   globalLoadingTime,
@@ -195,6 +197,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         canRedo={canRedo}
         onUndo={onUndo}
         onRedo={onRedo}
+        onManualSave={onManualSave}
       />
 
       <Spin
