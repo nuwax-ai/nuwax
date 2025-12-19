@@ -21,8 +21,6 @@ export interface SkillFileInfo {
 export interface SkillDetailInfo {
   // 技能ID
   id: number;
-  // 技能分类
-  category?: string;
   // 技能名称
   name: string;
   // 技能描述
@@ -49,6 +47,12 @@ export interface SkillDetailInfo {
   modifiedId: number;
   // 最后修改人名称
   modifiedName: string;
+  // 已发布的范围，用于发布时做默认选中,可用值:Space,Tenant,Global
+  scope: string;
+  // 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布
+  publishDate: string;
+  // 已发布的分类
+  category: string;
   // 权限列表
   permissions: PermissionsEnum[];
 }
@@ -75,7 +79,7 @@ export interface SkillImportParams {
 // 上传技能文件
 export interface SkillUploadFileParams {
   file: any;
-  skillId: string;
+  skillId: number;
   filePath: string;
 }
 
