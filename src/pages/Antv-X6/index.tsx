@@ -1,3 +1,13 @@
+/**
+ * 工作流页面主入口
+ *
+ * 支持 v1 和 v2 两种方案：
+ * - v1: 原有方案（后端数据驱动）
+ * - v2: 新方案（前端数据驱动、全量更新、支持撤销重做）
+ *
+ * 切换方式见 config.ts
+ */
+
 import Created from '@/components/Created';
 import CreateWorkflow from '@/components/CreateWorkflow';
 import FoldWrap from '@/components/FoldWrap';
@@ -97,6 +107,9 @@ import ErrorList from './errorList';
 import GraphContainer from './graphContainer';
 import Header from './header';
 import './index.less';
+
+// V2 方案切换配置
+import { WORKFLOW_CONFIG } from './config';
 const workflowCreatedTabs = CREATED_TABS.filter((item) =>
   [
     AgentComponentTypeEnum.Plugin,
@@ -1965,4 +1978,64 @@ const Workflow: React.FC = () => {
   );
 };
 
-export default Workflow;
+// V2 方案组件（懒加载，避免不使用时加载）
+const WorkflowV2 = React.lazy(() => import('./v2/indexV2'));
+
+// V3 方案组件（懒加载，避免不使用时加载）
+const WorkflowV3 = React.lazy(() => import('./v3/indexV3'));
+
+/**
+ * 工作流页面入口组件
+ * 根据配置决定使用 v1、v2 还是 v3 方案
+ * 优先级：V3 > V2 > V1
+ */
+const WorkflowEntry: React.FC = () => {
+  // V3 优先级最高
+  if (WORKFLOW_CONFIG.useV3) {
+    return (
+      <React.Suspense
+        fallback={
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100vh',
+            }}
+          >
+            <Spin size="large" tip="加载 V3 版本..." />
+          </div>
+        }
+      >
+        <WorkflowV3 />
+      </React.Suspense>
+    );
+  }
+
+  // 根据配置决定使用哪个版本
+  if (WORKFLOW_CONFIG.useV2) {
+    return (
+      <React.Suspense
+        fallback={
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100vh',
+            }}
+          >
+            <Spin size="large" tip="加载中..." />
+          </div>
+        }
+      >
+        <WorkflowV2 />
+      </React.Suspense>
+    );
+  }
+
+  // 默认使用 v1 方案
+  return <Workflow />;
+};
+
+export default WorkflowEntry;

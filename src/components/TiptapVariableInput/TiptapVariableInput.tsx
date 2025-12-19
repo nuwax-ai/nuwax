@@ -188,6 +188,23 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
     [disableMentions, readonly, disabled, getNormalizedHtml, enableMarkdown],
   );
 
+  // 监听 variableTree 变化，更新 Suggestion 插件的配置
+  // 修复：第一次渲染时 variables 可能为空，后续更新时需要同步到 extension
+  useEffect(() => {
+    if (editor && !editor.isDestroyed) {
+      // 获取 variableSuggestion 扩展
+      const extension = editor.extensionManager.extensions.find(
+        (ext) => ext.name === 'variableSuggestion',
+      );
+
+      if (extension) {
+        // 直接更新 options
+        // 这是必要的，因为 Tiptap Extension 的 configure 只在初始化时生效
+        extension.options.variables = variableTree;
+      }
+    }
+  }, [editor, variableTree]);
+
   // 暴露编辑器实例
   useEffect(() => {
     if (editor && getEditor) {

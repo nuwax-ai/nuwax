@@ -1,0 +1,266 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+// V2 节点样式 - 参考 V1 实现
+
+.general-node-v2 {
+  position: relative;
+  background: #fff;
+  box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 4%), 0 4px 12px 0 rgba(0, 0, 0, 2%);
+  overflow: hidden;
+  border: 1px solid rgba(6, 7, 9, 15%);
+  padding-bottom: 10px;
+  border-radius: 10px;
+
+  &.selected {
+    border: 1px solid rgb(81, 71, 255) !important;
+  }
+
+  &.running {
+    border: 1px solid #1890ff !important;
+    box-shadow: 0 0 10px rgba(24, 144, 255, 50%);
+  }
+
+  &.success {
+    border: 1px solid #52c41a !important;
+  }
+
+  &.error {
+    border: 1px solid #ff4d4f !important;
+  }
+
+  .general-node-header-v2 {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    line-height: 22px;
+    padding: 10px 16px 0;
+    width: 100%;
+
+    .general-node-header-image-v2 {
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+
+      svg {
+        margin-right: 6px;
+        width: 20px;
+        height: 20px;
+        font-size: 20px;
+        margin-bottom: -2px;
+      }
+    }
+
+    .general-node-header-title-v2 {
+      color: #333;
+      max-width: 124px;
+      font-size: 14px;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .general-node-content-v2 {
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 22px;
+    padding: 0 16px;
+    color: #666;
+  }
+}
+
+// 条件节点内容
+.condition-node-content-v2 {
+  padding: 0 20px;
+
+  .condition-item-v2 {
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+
+    .condition-title-v2 {
+      font-size: 12px;
+      width: 60px;
+      color: #929090;
+    }
+
+    .condition-input-v2 {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      height: 28px;
+      line-height: 28px;
+      font-size: 12px;
+      text-indent: 4px;
+      overflow: hidden;
+      background-color: #f5f5f5;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .condition-compare-v2 {
+      width: 24px;
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+    }
+  }
+}
+
+// 问答节点内容
+.qa-node-content-v2 {
+  font-size: 12px;
+  padding: 0 20px;
+
+  .qa-item-v2 {
+    padding-bottom: 2px;
+    line-height: 22px;
+    display: flex;
+    align-items: center;
+
+    .qa-title-v2 {
+      width: 60px;
+      color: #929090;
+      margin-right: 10px;
+      text-align: right;
+    }
+
+    .qa-content-v2 {
+      width: 160px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
+// 意图识别节点内容
+.intent-node-content-v2 {
+  font-size: 12px;
+  padding: 0 20px;
+
+  .intent-item-v2 {
+    padding-bottom: 2px;
+    line-height: 22px;
+    display: flex;
+    align-items: center;
+
+    .intent-title-v2 {
+      width: 60px;
+      color: #929090;
+      margin-right: 10px;
+    }
+
+    .intent-content-v2 {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
+// 异常处理样式
+.exception-handle-v2 {
+  padding: 2px 6px;
+  border-radius: 3px;
+  background-color: #f5f5f5;
+  margin-top: 10px;
+  height: 24px;
+  line-height: 24px;
+  margin-left: 12px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .exception-title-v2 {
+    font-size: 12px;
+    color: #606060;
+  }
+
+  .exception-content-v2 {
+    font-size: 12px;
+    color: #3d3d3d;
+  }
+}
+
+// 循环节点样式
+.loop-node-v2 {
+  height: 100%;
+  background: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 10%), 0 -4px 8px rgba(0, 0, 0, 10%),
+    -4px 0 8px rgba(0, 0, 0, 10%), 4px 0 8px rgba(0, 0, 0, 10%);
+  overflow: hidden;
+  padding-bottom: 10px;
+  border-radius: 10px;
+
+  &.selected {
+    border: 1px solid rgb(81, 71, 255) !important;
+  }
+
+  .loop-node-title-v2 {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    line-height: 22px;
+    padding: 10px 16px 0;
+
+    svg {
+      margin-right: 6px;
+      width: 20px;
+      height: 20px;
+    }
+
+    .loop-title-text-v2 {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+  }
+
+  .loop-node-content-v2 {
+    // 循环体内容区域
+  }
+}
+
+// 运行结果样式
+.run-result-v2 {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-radius: 4px;
+  font-size: 12px;
+
+  &.success {
+    background: #f6ffed;
+    border: 1px solid #b7eb8f;
+  }
+
+  &.error {
+    background: #fff2f0;
+    border: 1px solid #ffccc7;
+  }
+
+  &.running {
+    background: #e6f7ff;
+    border: 1px solid #91d5ff;
+  }
+
+  .run-result-header-v2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .run-result-title-v2 {
+      font-weight: 500;
+    }
+
+    .run-result-time-v2 {
+      color: #999;
+    }
+  }
+}
