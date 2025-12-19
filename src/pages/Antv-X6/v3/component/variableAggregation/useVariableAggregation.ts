@@ -243,11 +243,23 @@ export const useVariableAggregation = ({
   };
 
   const handleAddGroup = () => {
+    // 创建默认的空输入项
+    const defaultInput: InputAndOutConfig = {
+      key: uuidv4(),
+      name: '',
+      bindValue: '',
+      bindValueType: 'Reference',
+      dataType: DataTypeEnum.String,
+      description: '',
+      require: false,
+      systemVariable: false,
+    };
+
     const newGroup: VariableGroup = {
       id: uuidv4(),
       name: `Group${variableGroups.length + 1}`,
       dataType: DataTypeEnum.String,
-      inputs: [],
+      inputs: [defaultInput],
     };
     updateGroups([...variableGroups, newGroup]);
   };
