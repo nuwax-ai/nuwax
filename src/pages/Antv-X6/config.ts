@@ -1,24 +1,42 @@
 /**
  * 工作流方案切换配置
  *
- * 临时配置文件，用于在 v1、v2 和 v3 方案之间切换
+ * 配置文件，用于在 v1、v2 和 v3 方案之间切换
+ * 默认使用 V3 方案
  *
  * 切换方式：
- * 1. 环境变量：设置 USE_WORKFLOW_V2=true 或 USE_WORKFLOW_V3=true
- * 2. localStorage：设置 useWorkflowV2=true 或 useWorkflowV3=true
- * 3. URL 参数：添加 ?v2=true 或 ?v3=true
+ * 1. 环境变量：设置 USE_WORKFLOW_V2=true 或 USE_WORKFLOW_V3=false
+ * 2. localStorage：设置 useWorkflowV2=true 或 useWorkflowV3=false
+ * 3. URL 参数：添加 ?v1=true 或 ?v2=true 或 ?v3=true/false
  *
  * V3 优先级高于 V2
  */
+
+/**
+ * 检查 URL 参数中是否指定了 v1=true
+ */
+const isV1Requested = (): boolean => {
+  if (typeof window !== 'undefined') {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('v1') === 'true';
+  }
+  return false;
+};
 
 /**
  * 获取是否使用 V3 方案
  * 优先级：URL 参数 > localStorage > 环境变量 > 默认值
  */
 const getUseV3 = (): boolean => {
+  // 如果指定了 v1=true，则禁用 V3
+  if (isV1Requested()) {
+    return false;
+  }
+
   // 方式三：URL 参数控制（最高优先级，便于临时测试）
   if (typeof window !== 'undefined') {
     const urlParams = new URLSearchParams(window.location.search);
+    // 如果指定了 v3 参数，则使用该值
     const v3Param = urlParams.get('v3');
     if (v3Param !== null) {
       return v3Param === 'true';
@@ -38,8 +56,8 @@ const getUseV3 = (): boolean => {
     return process.env.USE_WORKFLOW_V3 === 'true';
   }
 
-  // 默认不使用 v3 方案
-  return false;
+  // 默认使用 v3 方案
+  return true;
 };
 
 /**
@@ -47,6 +65,11 @@ const getUseV3 = (): boolean => {
  * 优先级：URL 参数 > localStorage > 环境变量 > 默认值
  */
 const getUseV2 = (): boolean => {
+  // 如果指定了 v1=true，则禁用 V2
+  if (isV1Requested()) {
+    return false;
+  }
+
   // 如果 V3 已启用，则不使用 V2
   if (getUseV3()) {
     return false;
@@ -55,6 +78,7 @@ const getUseV2 = (): boolean => {
   // 方式三：URL 参数控制（最高优先级，便于临时测试）
   if (typeof window !== 'undefined') {
     const urlParams = new URLSearchParams(window.location.search);
+    // 如果指定了 v2 参数，则使用该值
     const v2Param = urlParams.get('v2');
     if (v2Param !== null) {
       return v2Param === 'true';
@@ -74,7 +98,7 @@ const getUseV2 = (): boolean => {
     return process.env.USE_WORKFLOW_V2 === 'true';
   }
 
-  // 默认使用 v1 方案，确保向后兼容
+  // 默认不使用 v2 方案（V3 已作为默认方案）
   return false;
 };
 
