@@ -484,7 +484,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           {/* 全屏模式下的文件路径显示 */}
           <div className={cx(styles['fullscreen-header'])}>
             <FilePathHeader
-              filePath={selectedFileNode?.path || selectedFileId}
               fileName={selectedFileNode?.name}
               fileSize={selectedFileNode?.size}
               onDownload={onDownload}
@@ -592,10 +591,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
         >
           {/* 文件路径显示 */}
           <FilePathHeader
-            filePath={selectedFileNode?.path || selectedFileId}
             fileName={selectedFileNode?.name}
             fileSize={selectedFileNode?.size}
-            lastModified={selectedFileNode?.lastModified}
             onDownload={onDownload}
             onFullscreen={handleFullscreen}
             isFullscreen={false}
