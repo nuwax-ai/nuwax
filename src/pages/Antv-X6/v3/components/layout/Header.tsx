@@ -13,7 +13,6 @@ import {
   LeftOutlined,
   LoadingOutlined,
   RedoOutlined,
-  ReloadOutlined,
   UndoOutlined,
 } from '@ant-design/icons';
 import { Button, Popover, Tag, Tooltip } from 'antd';
@@ -89,7 +88,7 @@ const Header: React.FC<HeaderProp> = ({
         );
       case SaveStatusEnum.Failed:
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="flex items-center gap-8" style={{ marginRight: 8 }}>
             <Tooltip title={saveError || '保存失败，请检查网络连接'}>
               <Tag
                 color="error"
@@ -100,36 +99,22 @@ const Header: React.FC<HeaderProp> = ({
               </Tag>
             </Tooltip>
             {onManualSave && (
-              <Tooltip title="点击重试保存">
-                <ReloadOutlined
-                  style={{
-                    fontSize: '14px',
-                    color: '#1890ff',
-                    cursor: 'pointer',
-                  }}
-                  onClick={onManualSave}
-                />
-              </Tooltip>
+              <Button type="default" onClick={onManualSave} size="small">
+                点击重试保存
+              </Button>
             )}
           </div>
         );
       case SaveStatusEnum.Unsaved:
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="flex items-center gap-8" style={{ marginRight: 8 }}>
             <Tag color="warning" bordered={false}>
               有未保存的更改
             </Tag>
             {onManualSave && (
-              <Tooltip title="点击立即保存">
-                <ReloadOutlined
-                  style={{
-                    fontSize: '14px',
-                    color: '#1890ff',
-                    cursor: 'pointer',
-                  }}
-                  onClick={onManualSave}
-                />
-              </Tooltip>
+              <Button type="default" onClick={onManualSave} size="small">
+                点击立即保存
+              </Button>
             )}
           </div>
         );
@@ -179,7 +164,7 @@ const Header: React.FC<HeaderProp> = ({
         </div>
       </div>
 
-      <div className="header-tag-style">
+      <div className="header-tag-style flex items-center gap-8">
         {/* <Tag color="#C9CDD4">
               {publishStatus === 'Published' ? '已发布' : '未发布'}
             </Tag> */}
