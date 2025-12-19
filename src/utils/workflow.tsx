@@ -154,6 +154,7 @@ export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
     case NodeTypeEnum.TextProcessing:
       return <ICON_WORKFLOW_TEXT_PROCESSING />;
     case NodeTypeEnum.Variable:
+    case NodeTypeEnum.VariableAggregation:
       return <ICON_WORKFLOW_VARIABLE />;
     case NodeTypeEnum.Workflow:
       return <ICON_WORKFLOW_WORKFLOW />;
@@ -190,6 +191,7 @@ export const returnBackgroundColor = (type: NodeTypeEnum) => {
     case NodeTypeEnum.Knowledge:
     // case 'Database':
     case NodeTypeEnum.Variable:
+    case NodeTypeEnum.VariableAggregation:
     case NodeTypeEnum.LongTermMemory:
     case NodeTypeEnum.MCP:
       return '#FFF0DF';
@@ -362,7 +364,10 @@ export const getEdges = (
   const validEdges = needValidate
     ? allEdges.filter((edge) => {
         // 检查目标节点是否存在于节点列表中
-        return nodes.some((n) => edge.target.includes(n.id.toString()));
+        return nodes.some((n) => {
+          const targetId = edge.target.split('-')[0];
+          return targetId === n.id.toString();
+        });
       })
     : allEdges;
   // 使用 Set 来移除重复的边

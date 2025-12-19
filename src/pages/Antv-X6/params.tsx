@@ -181,6 +181,7 @@ export const asideList: StencilList[] = [
         description:
           '用于读取和写入项目中的变量，变量名须与项目中的变量名相匹配',
       },
+
       {
         name: '长期记忆',
         icon: <ICON_WORKFLOW_LONG_TERM_MEMORY />,

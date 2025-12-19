@@ -79,7 +79,15 @@ export interface InputAndOutConfig {
   inputType?: string;
 }
 
-interface ConditionArgs {
+// 变量聚合分组
+export interface VariableGroup {
+  id: string;
+  name: string;
+  dataType: DataTypeEnum;
+  inputs: InputAndOutConfig[];
+}
+
+export interface ConditionArgs {
   secondArg: BindConfigWithSub | null;
   compareType: string | null;
   firstArg: BindConfigWithSub | null;
@@ -99,7 +107,7 @@ export interface IntentConfigs {
   intentType?: string;
 }
 
-interface Extension {
+export interface Extension {
   x?: number;
   y?: number;
   width?: number;
@@ -136,6 +144,9 @@ export interface NodeConfig {
   outputArgs?: InputAndOutConfig[];
   // 节点变量
   variableArgs?: InputAndOutConfig[];
+  // 变量聚合配置
+  aggregationStrategy?: string;
+  variableGroups?: VariableGroup[];
   // 技能列表
   // 条件分支
   conditionBranchConfigs?: ConditionBranchConfigs[];

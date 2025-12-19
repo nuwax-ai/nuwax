@@ -1,9 +1,9 @@
+import { useWorkflowModel } from '@/hooks/useWorkflowModel';
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
 import { FormInstance } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -126,7 +126,7 @@ export const useTreeData = (
 ) => {
   const [treeData, setTreeData] = useState<TreeNodeConfig[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
-  const { setIsModified } = useModel('workflow');
+  const { setIsModified } = useWorkflowModel();
 
   // 初始化和同步逻辑
   useEffect(() => {

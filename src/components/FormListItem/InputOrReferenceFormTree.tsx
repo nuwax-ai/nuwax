@@ -1,3 +1,4 @@
+import { useWorkflowModel } from '@/hooks/useWorkflowModel';
 import { DataTypeEnum } from '@/types/enums/common';
 import {
   InputAndOutConfig,
@@ -8,7 +9,6 @@ import { returnImg } from '@/utils/workflow';
 import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Input, Popover, Tag, Tree } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
 import './index.less';
 
 interface InputOrReferenceProps {
@@ -35,7 +35,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   value,
   onChange,
 }) => {
-  const { getValue, setIsModified } = useModel('workflow');
+  const { getValue, setIsModified } = useWorkflowModel();
   const [displayValue, setDisplayValue] = useState('');
   const updateValues = (
     newValue: string,
@@ -69,7 +69,10 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
       <div className="tree-custom-title-style">
         <span title="">{nodeData.name}</span>
         <Popover content={nodeData.description || '暂无描述'}>
-          <InfoCircleOutlined title="" style={{ marginLeft: '4px' }} />
+          <InfoCircleOutlined
+            title=""
+            style={{ marginLeft: '4px', cursor: 'help' }}
+          />
         </Popover>
         <Tag className="ml-20" color="#C9CDD4">
           {nodeData.dataType}
