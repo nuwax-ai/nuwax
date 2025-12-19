@@ -6,6 +6,7 @@ import type {
   SpaceLogQueryFilter,
 } from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { getIntegerOnlyFieldProps } from '@/utils/inputValidation';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import { Button, message } from 'antd';
@@ -87,7 +88,7 @@ const LogProTable: React.FC = () => {
           [AgentComponentTypeEnum.Agent]: { text: '智能体' },
           [AgentComponentTypeEnum.Plugin]: { text: '插件' },
           [AgentComponentTypeEnum.Workflow]: { text: '工作流' },
-          [AgentComponentTypeEnum.MCP]: { text: 'Mcp' },
+          [AgentComponentTypeEnum.MCP]: { text: 'MCP' },
         },
         hideInTable: false,
         initialValue: targetTypeFromUrl,
@@ -128,7 +129,7 @@ const LogProTable: React.FC = () => {
         dataIndex: 'userId',
         width: 100,
         ellipsis: true,
-        fieldProps: { placeholder: '请输入用户ID' },
+        fieldProps: getIntegerOnlyFieldProps('请输入用户ID，仅支持输入整数'),
       },
       {
         title: '用户名',
