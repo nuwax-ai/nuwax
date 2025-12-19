@@ -1,4 +1,5 @@
 import Constant from '@/constants/codes.constants';
+import { SaveStatusEnum } from '@/models/workflowV3';
 import service from '@/services/workflow';
 import { FoldFormIdEnum } from '@/types/enums/node';
 import { ChildNode, GraphContainerRef } from '@/types/interfaces/graph';
@@ -21,7 +22,8 @@ export const useWorkflowPersistence = ({
   getReference,
   setFoldWrapItem,
 }: UseWorkflowPersistenceProps) => {
-  const { getWorkflow } = useModel('workflowV3');
+  const { getWorkflow, setSaveStatus, setLastSaveTime, setSaveError } =
+    useModel('workflowV3');
 
   // V3: 全量保存工作流配置
   const saveFullWorkflow = useCallback(async (): Promise<boolean> => {
@@ -41,25 +43,44 @@ export const useWorkflowPersistence = ({
 
       console.log('[V3] 使用单一数据源保存, 节点数:', payload.nodes.length);
 
+      // 标记保存中状态
+      setSaveStatus(SaveStatusEnum.Saving);
+
       const _res = await service.saveWorkflow(payload);
 
       if (_res.code === Constant.success) {
         workflowSaveService.clearDirty();
         workflowProxy.clearPendingUpdates();
         changeUpdateTime();
+        // 更新保存状态为成功
+        setSaveStatus(SaveStatusEnum.Saved);
+        setLastSaveTime(new Date());
+        setSaveError(null);
         console.log('[V3] 保存成功 ✓');
         return true;
       } else {
         console.error('[V3] 工作流保存失败:', _res.message);
-        // 静默异常消息，不弹出提示
+        // 更新保存状态为失败
+        setSaveStatus(SaveStatusEnum.Failed);
+        setSaveError(_res.message || '保存失败');
         return false;
       }
     } catch (error) {
       console.error('[V3] 工作流保存异常:', error);
-      // 静默异常消息，不弹出提示
+      // 更新保存状态为失败
+      setSaveStatus(SaveStatusEnum.Failed);
+      setSaveError(
+        error instanceof Error ? error.message : '网络异常，保存失败',
+      );
       return false;
     }
-  }, [changeUpdateTime, graphRef]);
+  }, [
+    changeUpdateTime,
+    graphRef,
+    setSaveStatus,
+    setLastSaveTime,
+    setSaveError,
+  ]);
 
   // V3: 防抖保存（自动保存用）
   const debouncedSaveFullWorkflow = useMemo(
@@ -91,6 +112,9 @@ export const useWorkflowPersistence = ({
       const proxyResult = workflowProxy.updateNode(params);
 
       if (proxyResult.success) {
+        // 标记为有未保存的更改
+        setSaveStatus(SaveStatusEnum.Unsaved);
+
         // 如果是修改节点的参数，那么就要更新当前节点的参数
         const drawerForm = getWorkflow('drawerForm');
         if (updateFormConfig.id === drawerForm?.id) {
@@ -121,6 +145,7 @@ export const useWorkflowPersistence = ({
       getWorkflow,
       graphRef,
       setFoldWrapItem,
+      setSaveStatus,
     ],
   );
 

@@ -1,3 +1,4 @@
+import { SaveStatusEnum } from '@/models/workflowV3';
 import { getImg } from '@/pages/Antv-X6/v3/utils/workflowV3';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PermissionsEnum } from '@/types/enums/common';
@@ -6,15 +7,18 @@ import { jumpBack } from '@/utils/router';
 import {
   CheckCircleFilled,
   ClockCircleOutlined,
+  ExclamationCircleFilled,
   FormOutlined,
   InfoCircleOutlined,
   LeftOutlined,
+  LoadingOutlined,
   RedoOutlined,
+  ReloadOutlined,
   UndoOutlined,
 } from '@ant-design/icons';
 import { Button, Popover, Tag, Tooltip } from 'antd';
 import React, { useMemo } from 'react';
-import { useParams } from 'umi';
+import { useModel, useParams } from 'umi';
 interface HeaderProp {
   isValidLoading?: boolean;
   info: {
@@ -36,6 +40,7 @@ interface HeaderProp {
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
+  onManualSave?: () => Promise<boolean>;
 }
 
 const Header: React.FC<HeaderProp> = ({
@@ -48,8 +53,10 @@ const Header: React.FC<HeaderProp> = ({
   canRedo = false,
   onUndo,
   onRedo,
+  onManualSave,
 }) => {
   const { spaceId } = useParams();
+  const { saveStatus, saveError, lastSaveTime } = useModel('workflowV3');
   const { name, icon, publishStatus, modified, description, publishDate } =
     info;
 
@@ -61,6 +68,79 @@ const Header: React.FC<HeaderProp> = ({
       return false;
     }
   }, [info]);
+
+  // 渲染保存状态标签
+  const renderSaveStatus = () => {
+    switch (saveStatus) {
+      case SaveStatusEnum.Saving:
+        return (
+          <Tag color="processing" bordered={false} icon={<LoadingOutlined />}>
+            保存中...
+          </Tag>
+        );
+      case SaveStatusEnum.Saved:
+        return (
+          <Tag color="default" bordered={false}>
+            已自动保存{' '}
+            {getTime(
+              lastSaveTime?.toString() ?? modified ?? new Date().toString(),
+            )}
+          </Tag>
+        );
+      case SaveStatusEnum.Failed:
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Tooltip title={saveError || '保存失败，请检查网络连接'}>
+              <Tag
+                color="error"
+                bordered={false}
+                icon={<ExclamationCircleFilled />}
+              >
+                保存失败
+              </Tag>
+            </Tooltip>
+            {onManualSave && (
+              <Tooltip title="点击重试保存">
+                <ReloadOutlined
+                  style={{
+                    fontSize: '14px',
+                    color: '#1890ff',
+                    cursor: 'pointer',
+                  }}
+                  onClick={onManualSave}
+                />
+              </Tooltip>
+            )}
+          </div>
+        );
+      case SaveStatusEnum.Unsaved:
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Tag color="warning" bordered={false}>
+              有未保存的更改
+            </Tag>
+            {onManualSave && (
+              <Tooltip title="点击立即保存">
+                <ReloadOutlined
+                  style={{
+                    fontSize: '14px',
+                    color: '#1890ff',
+                    cursor: 'pointer',
+                  }}
+                  onClick={onManualSave}
+                />
+              </Tooltip>
+            )}
+          </div>
+        );
+      default:
+        return (
+          <Tag color="default" bordered={false}>
+            已自动保存 {getTime(modified ?? new Date().toString())}
+          </Tag>
+        );
+    }
+  };
 
   return (
     <div className="fold-header-style flex items-center gap-20">
@@ -103,9 +183,7 @@ const Header: React.FC<HeaderProp> = ({
         {/* <Tag color="#C9CDD4">
               {publishStatus === 'Published' ? '已发布' : '未发布'}
             </Tag> */}
-        <Tag color="default" bordered={false}>
-          已自动保存 {getTime(modified ?? new Date().toString())}
-        </Tag>
+        {renderSaveStatus()}
 
         {publishDate === null && (
           <Tag color="#EBECF5" style={{ color: 'rgba(15,21,40,0.82)' }}>

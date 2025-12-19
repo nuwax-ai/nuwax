@@ -9,12 +9,31 @@ import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { NodePreviousAndArgMap } from '@/types/interfaces/node';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+/** 保存状态枚举 */
+export enum SaveStatusEnum {
+  /** 已保存 */
+  Saved = 'saved',
+  /** 保存中 */
+  Saving = 'saving',
+  /** 保存失败 */
+  Failed = 'failed',
+  /** 有未保存的更改 */
+  Unsaved = 'unsaved',
+}
+
 const useWorkflowV3 = () => {
   // 是否要校验当前的数据
   const [volid, setVolid] = useState<boolean>(false);
   const [globalLoadingTime, setGlobalLoadingTime] = useState<number>(0);
 
   const [visible, setVisible] = useState<boolean>(false); // 显示隐藏右侧节点抽屉
+
+  // 保存状态管理
+  const [saveStatus, setSaveStatus] = useState<SaveStatusEnum>(
+    SaveStatusEnum.Saved,
+  );
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [spaceId, setSpaceId] = useState<number>(0);
   const [updateLoading, setUpdateLoading] = useState<boolean>(false);
@@ -174,6 +193,13 @@ const useWorkflowV3 = () => {
     setUpdateLoading,
     globalLoadingTime,
     handleInitLoading,
+    // 保存状态
+    saveStatus,
+    setSaveStatus,
+    lastSaveTime,
+    setLastSaveTime,
+    saveError,
+    setSaveError,
   };
 };
 
