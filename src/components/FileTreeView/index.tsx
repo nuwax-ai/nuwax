@@ -102,6 +102,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
 
   // 文件选择
   const handleFileSelect = (fileId: string) => {
+    // 切换到预览模式
+    onViewModeChange?.('preview');
     setSelectedFileId(fileId);
     // 根据文件ID查找文件节点
     const fileNode = findFileNode(fileId, files);
