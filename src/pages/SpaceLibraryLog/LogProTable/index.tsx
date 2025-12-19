@@ -360,9 +360,15 @@ const LogProTable: React.FC = () => {
           defaultPageSize: 10,
         }}
         search={{
-          span: 6, // 24 栅格 => 3 列表单
+          span: 6,
           labelWidth: 70,
-          defaultCollapsed: false,
+          defaultCollapsed: true,
+          style: {
+            paddingTop: 0,
+            paddingBottom: 0,
+            paddingLeft: 0,
+            paddingRight: 0,
+          },
         }}
         dateFormatter="number"
         onSubmit={handleCloseDetails}

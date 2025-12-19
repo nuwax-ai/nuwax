@@ -518,7 +518,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         search={{
           span: 6,
           labelWidth: 70,
-          defaultCollapsed: false,
+          defaultCollapsed: true,
           style: {
             paddingTop: 0,
             paddingBottom: 0,
