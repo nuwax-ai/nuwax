@@ -6,14 +6,10 @@ import React, { useMemo } from 'react';
 import styles from './index.less';
 
 interface FilePathHeaderProps {
-  /** 文件路径 */
-  filePath: string;
   /** 文件名 */
   fileName?: string;
   /** 文件大小（字节） */
   fileSize?: number;
-  /** 最后修改时间（时间戳） */
-  lastModified?: number;
   /** 当前视图模式 */
   viewMode?: 'preview' | 'desktop';
   /** 视图模式切换回调 */
@@ -39,7 +35,6 @@ interface FilePathHeaderProps {
  * 显示文件信息、视图模式切换按钮和操作按钮
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
-  filePath,
   fileName,
   fileSize,
   viewMode = 'preview',
@@ -52,11 +47,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   hasModifiedFiles = false,
   isSavingFiles = false,
 }) => {
-  // 显示的文件名
-  const displayFileName = useMemo(() => {
-    return fileName || filePath.split('/').pop() || '';
-  }, [fileName, filePath]);
-
   // 格式化的文件大小
   const formattedSize = useMemo(() => {
     if (!fileSize) return '';
@@ -71,7 +61,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           <SvgIcon name="icons-common-preview" style={{ fontSize: 20 }} />
         </div>
         <div className={styles.fileDetails}>
-          <div className={styles.fileName}>{displayFileName}</div>
+          <div className={styles.fileName}>{fileName}</div>
           {formattedSize && (
             <div className={styles.fileMeta}>{formattedSize}</div>
           )}
