@@ -18,6 +18,7 @@ import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
+import { apiUrl } from '@/services/skill';
 import { apiGetStaticFileList } from '@/services/vncDesktop';
 import {
   AgentComponentTypeEnum,
@@ -657,6 +658,41 @@ const Chat: React.FC = () => {
     );
   };
 
+  useEffect(() => {
+    /**
+     * 通过后端提供的URL地址获取内容
+     * 支持两种场景：
+     * 1. 直接传入相对路径（如 '/api/computer/static/1461016/今日新闻PPT报告.md'）
+     * 2. 后端返回一个URL字符串，需要再次请求获取内容
+     */
+    const fetchData = async () => {
+      try {
+        // 场景1: 直接使用相对路径获取内容
+        const url = '/api/computer/static/1461016/今日新闻PPT报告.md';
+        const res = await apiUrl(url);
+
+        // 检查响应是否成功
+        if (res.success && res.data) {
+          const text = res.data;
+          console.log('获取到的内容:', text);
+
+          // // 场景2: 如果后端返回的 data 是一个URL字符串，需要再次请求获取内容
+          // if (typeof res.data === 'string' && (res.data.startsWith('http') || res.data.startsWith('/'))) {
+          //   // 使用工具函数获取URL内容
+          //   const contentRes = await fetchContentFromUrl(res.data);
+          //   console.log('从URL获取到的内容:', contentRes);
+          // }
+        } else {
+          console.error('获取内容失败:', res.message);
+        }
+      } catch (error) {
+        console.error('获取URL内容时发生错误:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <div className={cx('flex', 'h-full')}>
       {/*智能体聊天和预览页面*/}
@@ -738,7 +774,9 @@ const Chat: React.FC = () => {
           <div className={cx(styles['file-tree-content'], 'flex')}>
             <FileTreeView
               originalFiles={fileTreeData}
+              targetId={id?.toString() || ''}
               viewMode={viewMode}
+              readOnly={true}
               onViewModeChange={(mode) => {
                 setViewMode(mode);
               }}
