@@ -24,11 +24,21 @@ const cx = classNames.bind(styles);
 
 interface FileTreeViewProps {
   originalFiles: any[];
+  /** 当前视图模式 */
+  viewMode?: 'preview' | 'desktop';
+  /** 上传单个文件回调 */
   onUploadSingleFile?: (node: FileNode | null) => void;
+  /** 下载文件回调 */
   onDownload?: () => void;
+  /** 重命名文件回调 */
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
+  /** 创建文件回调 */
   onCreateFileNode?: (node: FileNode, newName: string) => Promise<boolean>;
+  /** 删除文件回调 */
   onDeleteFile?: (node: FileNode) => void;
+  /** 视图模式切换回调 */
+  onViewModeChange?: (mode: 'preview' | 'desktop') => void;
+  /** 保存文件回调 */
   onSaveFiles?: (
     data: {
       fileId: string;
@@ -43,11 +53,13 @@ interface FileTreeViewProps {
  */
 const FileTreeView: React.FC<FileTreeViewProps> = ({
   originalFiles,
+  viewMode,
   onUploadSingleFile,
   onDownload,
   onRenameFile,
   onCreateFileNode,
   onDeleteFile,
+  onViewModeChange,
   onSaveFiles,
 }) => {
   // 文件树数据
@@ -483,6 +495,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
             <FilePathHeader
               fileName={selectedFileNode?.name}
               fileSize={selectedFileNode?.size}
+              viewMode={viewMode}
+              onViewModeChange={onViewModeChange}
               onDownload={onDownload}
               onFullscreen={handleFullscreen}
               isFullscreen={true}
@@ -590,6 +604,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           <FilePathHeader
             fileName={selectedFileNode?.name}
             fileSize={selectedFileNode?.size}
+            viewMode={viewMode}
+            onViewModeChange={onViewModeChange}
             onDownload={onDownload}
             onFullscreen={handleFullscreen}
             isFullscreen={false}

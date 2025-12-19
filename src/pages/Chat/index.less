@@ -126,14 +126,17 @@
 
 /* 文件树侧边栏样式 */
 .file-tree-sidebar {
-  width: 800px;
-  box-sizing: content-box;
+  position: sticky;
+  height: 100%;
+  min-width: 800px;
+  max-width: 1200px;
+  margin: 0;
+  box-sizing: border-box;
+  flex-shrink: 0;
   border-left: @lineWidth @lineType @colorBorderSecondary;
   visibility: visible;
   opacity: 1;
   transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
-  position: relative;
-  height: 100%;
 
   .file-tree-content {
     flex: 1;
