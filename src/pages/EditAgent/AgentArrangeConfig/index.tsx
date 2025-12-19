@@ -859,87 +859,99 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-    {
-      key: AgentArrangeConfigEnum.Page,
-      label: '页面',
-      children: (
-        <CollapseComponentList
-          textClassName={cx(styles.text)}
-          type={AgentComponentTypeEnum.Page}
-          list={allPageComponentList}
-          deleteList={deleteList}
-          onSet={handlePageSet}
-          onDel={handleAgentComponentDel}
-        />
-      ),
-      extra: (
-        <TooltipIcon
-          title="添加页面"
-          onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.Page)}
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
-    {
-      key: AgentArrangeConfigEnum.Default_Expand_Page_Area,
-      label: '展开页面区',
-      children: (
-        // 默认展开页面区”，当选中时，用户进入智能体详情或会话时为左右分栏，左边是对话框，右边是页面
-        <p className={cx(styles.text)}>
-          当给智能体绑定了页面后，打开该配置项时，会在智能体对话框旁边默认展开页面
-        </p>
-      ),
-      extra: (
-        <Tooltip title={!allPageComponentList?.length ? '请先添加页面' : ''}>
-          <Switch
-            disabled={!allPageComponentList?.length}
-            value={agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.Yes}
-            // 阻止冒泡事件
-            onClick={(_, e: any) => {
-              e.stopPropagation();
-            }}
-            onChange={(value: boolean) =>
-              onChangeAgent(
-                value ? ExpandPageAreaEnum.Yes : ExpandPageAreaEnum.No,
-                'expandPageArea',
-              )
-            }
-          />
-        </Tooltip>
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
-    {
-      key: AgentArrangeConfigEnum.Page_Event_Binding,
-      label: '事件绑定',
-      children: (
-        // 事件绑定列表
-        <EventList
-          textClassName={cx(styles.text)}
-          list={eventsInfo?.bindConfig?.eventConfigs || []}
-          onClick={handleClickEventBindingItem}
-        />
-      ),
-      extra: (
-        <TooltipIcon
-          title="添加事件绑定"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleAddEventBinding();
-          }}
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
+
+    // 长任务型智能体不显示 【页面/展开页面区/事件绑定】
+    ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+      ? []
+      : [
+          {
+            key: AgentArrangeConfigEnum.Page,
+            label: '页面',
+            children: (
+              <CollapseComponentList
+                textClassName={cx(styles.text)}
+                type={AgentComponentTypeEnum.Page}
+                list={allPageComponentList}
+                deleteList={deleteList}
+                onSet={handlePageSet}
+                onDel={handleAgentComponentDel}
+              />
+            ),
+            extra: (
+              <TooltipIcon
+                title="添加页面"
+                onClick={(e) =>
+                  handlerComponentPlus(e, AgentComponentTypeEnum.Page)
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+          {
+            key: AgentArrangeConfigEnum.Default_Expand_Page_Area,
+            label: '展开页面区',
+            children: (
+              // 默认展开页面区”，当选中时，用户进入智能体详情或会话时为左右分栏，左边是对话框，右边是页面
+              <p className={cx(styles.text)}>
+                当给智能体绑定了页面后，打开该配置项时，会在智能体对话框旁边默认展开页面
+              </p>
+            ),
+            extra: (
+              <Tooltip
+                title={!allPageComponentList?.length ? '请先添加页面' : ''}
+              >
+                <Switch
+                  disabled={!allPageComponentList?.length}
+                  value={
+                    agentConfigInfo?.expandPageArea === ExpandPageAreaEnum.Yes
+                  }
+                  // 阻止冒泡事件
+                  onClick={(_, e: any) => {
+                    e.stopPropagation();
+                  }}
+                  onChange={(value: boolean) =>
+                    onChangeAgent(
+                      value ? ExpandPageAreaEnum.Yes : ExpandPageAreaEnum.No,
+                      'expandPageArea',
+                    )
+                  }
+                />
+              </Tooltip>
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+          {
+            key: AgentArrangeConfigEnum.Page_Event_Binding,
+            label: '事件绑定',
+            children: (
+              // 事件绑定列表
+              <EventList
+                textClassName={cx(styles.text)}
+                list={eventsInfo?.bindConfig?.eventConfigs || []}
+                onClick={handleClickEventBindingItem}
+              />
+            ),
+            extra: (
+              <TooltipIcon
+                title="添加事件绑定"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddEventBinding();
+                }}
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]),
   ];
 
   // 添加插件、工作流、知识库、数据库、MCP、页面、技能
