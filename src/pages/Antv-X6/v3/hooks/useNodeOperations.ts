@@ -718,7 +718,8 @@ export const useNodeOperations = ({
           console.error('处理节点创建成功后的操作失败:', error);
         }
       } else {
-        message.error(proxyResult.message || '添加节点失败');
+        // 静默异常消息，不弹出提示
+        console.warn('[V3] 添加节点代理层失败:', proxyResult.message);
       }
     },
     [
