@@ -113,17 +113,22 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
       {/* 右侧：操作按钮 */}
       <div className={styles.actionButtons}>
-        <Tooltip title="下载">
-          <Button
-            type="text"
-            size="small"
-            icon={
-              <SvgIcon name="icons-common-download" style={{ fontSize: 16 }} />
-            }
-            onClick={onDownload}
-            className={styles.actionButton}
-          />
-        </Tooltip>
+        {onDownload && (
+          <Tooltip title="下载">
+            <Button
+              type="text"
+              size="small"
+              icon={
+                <SvgIcon
+                  name="icons-common-download"
+                  style={{ fontSize: 16 }}
+                />
+              }
+              onClick={onDownload}
+              className={styles.actionButton}
+            />
+          </Tooltip>
+        )}
         <Tooltip title={isFullscreen ? '退出全屏' : '全屏'}>
           <Button
             type="text"

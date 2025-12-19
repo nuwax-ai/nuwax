@@ -13,6 +13,7 @@ import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';
 import AppDevEmptyState from '../business-component/AppDevEmptyState';
+import VncPreview from '../business-component/VncPreview';
 import CodeViewer from '../CodeViewer';
 import FileContextMenu from './FileContextMenu';
 import FilePathHeader from './FilePathHeader';
@@ -24,11 +25,25 @@ const cx = classNames.bind(styles);
 
 interface FileTreeViewProps {
   originalFiles: any[];
+  /** 是否只读 */
+  readOnly?: boolean;
+  /** 目标ID */
+  targetId?: string;
+  /** 当前视图模式 */
+  viewMode?: 'preview' | 'desktop';
+  /** 上传单个文件回调 */
   onUploadSingleFile?: (node: FileNode | null) => void;
+  /** 下载文件回调 */
   onDownload?: () => void;
+  /** 重命名文件回调 */
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
+  /** 创建文件回调 */
   onCreateFileNode?: (node: FileNode, newName: string) => Promise<boolean>;
+  /** 删除文件回调 */
   onDeleteFile?: (node: FileNode) => void;
+  /** 视图模式切换回调 */
+  onViewModeChange?: (mode: 'preview' | 'desktop') => void;
+  /** 保存文件回调 */
   onSaveFiles?: (
     data: {
       fileId: string;
@@ -43,11 +58,15 @@ interface FileTreeViewProps {
  */
 const FileTreeView: React.FC<FileTreeViewProps> = ({
   originalFiles,
+  readOnly = false,
+  targetId,
+  viewMode,
   onUploadSingleFile,
   onDownload,
   onRenameFile,
   onCreateFileNode,
   onDeleteFile,
+  onViewModeChange,
   onSaveFiles,
 }) => {
   // 文件树数据
@@ -83,6 +102,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
 
   // 文件选择
   const handleFileSelect = (fileId: string) => {
+    // 切换到预览模式
+    onViewModeChange?.('preview');
     setSelectedFileId(fileId);
     // 根据文件ID查找文件节点
     const fileNode = findFileNode(fileId, files);
@@ -112,6 +133,9 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
    * @param node - 目标节点, 可以为 null 表示点击空白区域，清空目标节点
    */
   const handleContextMenu = (e: React.MouseEvent, node: FileNode | null) => {
+    if (readOnly) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
 
@@ -175,7 +199,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
    * 处理重命名操作（从右键菜单触发）
    */
   const handleRenameFromMenu = (node: FileNode) => {
-    console.log('handleRenameFromMenu', node);
     setRenamingNode(node);
   };
 
@@ -451,6 +474,77 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
     setChangeFiles([]);
   };
 
+  /**
+   * 渲染内容区域
+   * 根据视图模式和文件类型渲染不同的预览组件
+   */
+  const renderContent = () => {
+    // 桌面模式：显示 VNC 预览
+    if (viewMode === 'desktop') {
+      return (
+        <VncPreview
+          serviceUrl={process.env.BASE_URL || ''}
+          cId={targetId || ''}
+          readOnly={readOnly}
+          autoConnect={true}
+          className={cx(styles['vnc-preview'])}
+        />
+      );
+    }
+
+    // 预览模式：根据文件状态和类型渲染不同内容
+    // 未选择文件
+    if (!selectedFileNode) {
+      return (
+        <AppDevEmptyState
+          type="empty"
+          title="请从左侧文件树选择一个文件进行预览"
+          description="当前没有可预览的文件，请从左侧文件树选择一个文件进行预览"
+        />
+      );
+    }
+
+    // 文件类型不支持预览
+    if (!isPreviewable) {
+      const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
+      return (
+        <AppDevEmptyState
+          type="error"
+          title="无法预览此文件类型"
+          description={`当前不支持预览 ${fileExtension} 格式的文件。`}
+        />
+      );
+    }
+
+    // 图片文件：使用图片查看器
+    if (isImage) {
+      return (
+        <ImageViewer
+          imageUrl={processImageContent(selectedFileNode?.content || '')}
+          alt={selectedFileId}
+          onRefresh={() => {
+            // 刷新图片预览
+            // if (previewRef.current) {
+            //   previewRef.current.refresh();
+            // }
+          }}
+        />
+      );
+    }
+
+    // 代码文件：使用代码查看器
+    return (
+      <CodeViewer
+        fileId={selectedFileId}
+        fileName={selectedFileId.split('/').pop() || selectedFileId}
+        filePath={`app/${selectedFileId}`}
+        content={selectedFileNode?.content || ''}
+        readOnly={readOnly}
+        onContentChange={handleContentChange}
+      />
+    );
+  };
+
   return (
     <>
       {/* 全屏代码编辑器 Modal */}
@@ -483,6 +577,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
             <FilePathHeader
               fileName={selectedFileNode?.name}
               fileSize={selectedFileNode?.size}
+              viewMode={viewMode}
+              onViewModeChange={onViewModeChange}
               onDownload={onDownload}
               onFullscreen={handleFullscreen}
               isFullscreen={true}
@@ -494,36 +590,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           </div>
           {/* 全屏模式下的代码编辑器 */}
           <div className={cx(styles['fullscreen-content'])}>
-            {!selectedFileNode ? (
-              <AppDevEmptyState
-                type="error"
-                title="请从左侧文件树选择一个文件进行预览"
-                description="当前没有可预览的文件，请从左侧文件树选择一个文件进行预览"
-              />
-            ) : !isPreviewable ? (
-              <AppDevEmptyState
-                type="error"
-                title="无法预览此文件类型"
-                description={`当前不支持预览 ${
-                  selectedFileId?.split('.')?.pop() || selectedFileId
-                } 格式的文件。`}
-              />
-            ) : isImage ? (
-              <ImageViewer
-                imageUrl={processImageContent(selectedFileNode?.content || '')}
-                alt={selectedFileId}
-                onRefresh={() => {}}
-              />
-            ) : (
-              <CodeViewer
-                fileId={selectedFileId}
-                fileName={selectedFileId.split('/').pop() || selectedFileId}
-                filePath={`app/${selectedFileId}`}
-                content={selectedFileNode?.content || ''}
-                readOnly={false}
-                onContentChange={handleContentChange}
-              />
-            )}
+            {renderContent()}
           </div>
         </div>
       </Modal>
@@ -590,6 +657,8 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           <FilePathHeader
             fileName={selectedFileNode?.name}
             fileSize={selectedFileNode?.size}
+            viewMode={viewMode}
+            onViewModeChange={onViewModeChange}
             onDownload={onDownload}
             onFullscreen={handleFullscreen}
             isFullscreen={false}
@@ -600,45 +669,7 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           />
           {/* 右边内容 */}
           <div className={cx(styles['content-container'])}>
-            {!selectedFileNode ? (
-              <AppDevEmptyState
-                type="error"
-                title="请从左侧文件树选择一个文件进行预览"
-                description="当前没有可预览的文件，请从左侧文件树选择一个文件进行预览"
-              />
-            ) : !isPreviewable ? (
-              <AppDevEmptyState
-                type="error"
-                title="无法预览此文件类型"
-                description={`当前不支持预览 ${
-                  selectedFileId?.split('.')?.pop() || selectedFileId
-                } 格式的文件。`}
-              />
-            ) : isImage ? (
-              <ImageViewer
-                imageUrl={processImageContent(
-                  selectedFileNode?.content || '',
-                  // devServerUrl
-                  //   ? `${devServerUrl}/${selectedFileId}`
-                  //   : `/${selectedFileId}`,
-                )}
-                alt={selectedFileId}
-                onRefresh={() => {
-                  // if (previewRef.current) {
-                  //   previewRef.current.refresh();
-                  // }
-                }}
-              />
-            ) : (
-              <CodeViewer
-                fileId={selectedFileId}
-                fileName={selectedFileId.split('/').pop() || selectedFileId}
-                filePath={`app/${selectedFileId}`}
-                content={selectedFileNode?.content || ''}
-                readOnly={false}
-                onContentChange={handleContentChange}
-              />
-            )}
+            {renderContent()}
           </div>
         </div>
       </div>
