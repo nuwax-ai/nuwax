@@ -1,5 +1,6 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiAddSkill, apiUpdateSkill } from '@/services/library';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type {
@@ -12,7 +13,7 @@ import type { FormProps } from 'antd';
 import { Form, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useRequest } from 'umi';
+import { history } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -31,27 +32,36 @@ const CreateSkill: React.FC<CreateSkillProps> = ({
   const { id, name, description, icon } = skillInfo || {};
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
-  // 新增工作流
-  const { run } = useRequest(apiAddSkill, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      message.success('技能已创建成功');
-      onCancel();
-      onConfirm?.();
-    },
-  });
+  // 新增技能
+  const run = async (data: AddSkillParams) => {
+    try {
+      setLoading(true);
+      const resp = await apiAddSkill(data);
+      if (resp?.code === SUCCESS_CODE) {
+        message.success('技能已创建成功');
+        onConfirm?.();
+        history.push(`/space/${spaceId}/skill-details/${resp?.data}`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 更新技能
-  const { run: runUpdate } = useRequest(apiUpdateSkill, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: () => {
-      message.success('技能更新成功');
-      onConfirm?.();
-    },
-  });
+  const runUpdate = async (data: UpdateSkillParams) => {
+    try {
+      setLoading(true);
+      const resp = await apiUpdateSkill(data);
+      if (resp?.code === SUCCESS_CODE) {
+        message.success('技能更新成功');
+        onConfirm?.();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (open) {
@@ -85,6 +95,7 @@ const CreateSkill: React.FC<CreateSkillProps> = ({
 
   return (
     <CustomFormModal
+      loading={loading}
       form={form}
       title={type === CreateUpdateModeEnum.Create ? '创建技能' : '更新技能'}
       classNames={{
