@@ -432,6 +432,8 @@ const Chat: React.FC = () => {
   const [isFileTreeVisible, setIsFileTreeVisible] = useState<boolean>(false);
   // 文件树数据
   const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
+  // 文件树视图模式
+  const [viewMode, setViewMode] = useState<'preview' | 'desktop'>('preview');
 
   // 互斥面板控制器：管理 PagePreview、AgentSidebar、ShowArea 的互斥展示
   useExclusivePanels({
@@ -732,24 +734,17 @@ const Chat: React.FC = () => {
 
       {/*文件树侧边栏 - 只在 AgentSidebar 隐藏时显示 */}
       {isFileTreeVisible && (
-        <div
-          className={cx(
-            styles['file-tree-sidebar'],
-            'flex',
-            'flex-col',
-            styles['agent-sidebar-w'],
-          )}
-        >
+        <div className={cx(styles['file-tree-sidebar'], 'flex', 'flex-col')}>
           <div className={cx(styles['file-tree-content'], 'flex')}>
             <FileTreeView
               originalFiles={fileTreeData}
+              viewMode={viewMode}
+              onViewModeChange={(mode) => {
+                setViewMode(mode);
+              }}
               onUploadSingleFile={(node) => {
                 console.log('上传文件', node);
                 // TODO: 实现文件上传逻辑
-              }}
-              onDownload={() => {
-                console.log('下载文件');
-                // TODO: 实现文件下载逻辑
               }}
               onRenameFile={async (node, newName) => {
                 console.log('重命名文件', node, newName);
