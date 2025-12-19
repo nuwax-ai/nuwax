@@ -81,8 +81,15 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
       targetName: info?.name,
       requestStartTime: info?.startTime,
       requestEndTime: info?.endTime,
-      input: info?.input ? JSON.stringify(info?.input) : '',
-      output: info?.data ? JSON.stringify(info?.data) : '',
+      input:
+        typeof info?.input === 'string'
+          ? info?.input
+          : JSON.stringify(info?.input),
+
+      output:
+        typeof info?.data === 'string'
+          ? info?.data
+          : JSON.stringify(info?.data),
     });
   };
 
@@ -105,6 +112,19 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
             _processData?.componentExecuteResults || [];
           if (_componentExecuteResults?.length > 0) {
             handleClickExecuteResult(0, _componentExecuteResults);
+          } else {
+            // 其它
+            setComponentExecuteResults([]);
+            setCurrentIndex(0);
+            setFinalResult({
+              targetType: data.targetType,
+              success: true,
+              targetName: data.targetName,
+              requestStartTime: data.requestStartTime,
+              requestEndTime: data.requestEndTime,
+              input: data.input,
+              output: data.output,
+            });
           }
         } else {
           // 其它
@@ -203,47 +223,48 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
               </CopyToClipboard>
             </div>
           </header>
-          {spaceLogInfoDetail.targetType === AgentComponentTypeEnum.Agent && (
-            <div className={cx(styles.wrap)}>
-              <h5 className={cx(styles.title)}>调用组件</h5>
-              {componentExecuteResults?.map(
-                (info: ExecuteResultInfo, index: number) => (
-                  // 模型可能不存在id，所以使用index作为key
-                  <div
-                    key={info?.id || index}
-                    className={cx(
-                      styles['execute-box'],
-                      'flex',
-                      'items-center',
-                    )}
-                  >
-                    <img
-                      className={cx(styles['component-img'])}
-                      src={info?.icon || getDefaultIcon(info)}
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = getDefaultIcon(info);
-                      }}
-                      alt=""
-                    />
-                    <span
-                      className={cx(styles.name, 'cursor-pointer', {
-                        [styles.active]: currentIndex === index,
-                      })}
-                      onClick={() => {
-                        handleClickExecuteResult(
-                          index,
-                          componentExecuteResults,
-                        );
-                      }}
+          {spaceLogInfoDetail.targetType === AgentComponentTypeEnum.Agent &&
+            !!componentExecuteResults?.length && (
+              <div className={cx(styles.wrap)}>
+                <h5 className={cx(styles.title)}>调用组件</h5>
+                {componentExecuteResults?.map(
+                  (info: ExecuteResultInfo, index: number) => (
+                    // 模型可能不存在id，所以使用index作为key
+                    <div
+                      key={info?.id || index}
+                      className={cx(
+                        styles['execute-box'],
+                        'flex',
+                        'items-center',
+                      )}
                     >
-                      {info.name}
-                    </span>
-                  </div>
-                ),
-              )}
-            </div>
-          )}
+                      <img
+                        className={cx(styles['component-img'])}
+                        src={info?.icon || getDefaultIcon(info)}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = getDefaultIcon(info);
+                        }}
+                        alt=""
+                      />
+                      <span
+                        className={cx(styles.name, 'cursor-pointer', {
+                          [styles.active]: currentIndex === index,
+                        })}
+                        onClick={() => {
+                          handleClickExecuteResult(
+                            index,
+                            componentExecuteResults,
+                          );
+                        }}
+                      >
+                        {info.name}
+                      </span>
+                    </div>
+                  ),
+                )}
+              </div>
+            )}
 
           <div className={cx(styles.wrap)}>
             <h5 className={cx(styles.title)}>节点详情</h5>
