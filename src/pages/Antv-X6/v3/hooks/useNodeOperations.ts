@@ -51,9 +51,17 @@ const getCoordinates = (
   continueDragCount?: number,
 ): GraphRect => {
   if (!position) {
+    // 没有拖拽位置时，返回视口中心点（图坐标系）
+    const _continueDragCount = continueDragCount || 0;
     return {
-      x: (viewGraph?.x || 0) + (continueDragCount || 0) * 20,
-      y: (viewGraph?.y || 0) + (continueDragCount || 0) * 20,
+      x:
+        (viewGraph?.x || 0) +
+        (viewGraph?.width || 0) / 2 +
+        _continueDragCount * 16,
+      y:
+        (viewGraph?.y || 0) +
+        (viewGraph?.height || 0) / 2 +
+        _continueDragCount * 16,
     };
   }
   if ('clientX' in position) {
