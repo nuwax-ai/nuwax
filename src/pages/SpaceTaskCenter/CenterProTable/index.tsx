@@ -16,7 +16,7 @@ import type { TaskInfo } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
-import { Avatar, Button, Popconfirm, Space, Tag, message } from 'antd';
+import { Button, Popconfirm, Space, Tag, message } from 'antd';
 import dayjs from 'dayjs';
 import {
   forwardRef,
@@ -26,6 +26,7 @@ import {
   useRef,
 } from 'react';
 import { history, useParams } from 'umi';
+import EllipsisWithAvatar from './components/EllipsisWithAvatar';
 
 export interface CenterProTableRef {
   /**
@@ -372,19 +373,20 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           dataIndex: 'targetName',
           hideInSearch: true,
           ellipsis: true,
+          width: 200,
           render: (_: any, record: TaskInfo) => {
             return (
-              <Space size={8}>
-                <Avatar size={24} src={record.targetIcon} />
-                <span>{record.targetName || record.targetId || '-'}</span>
-              </Space>
+              <EllipsisWithAvatar
+                avatarSrc={record.targetIcon}
+                text={record.targetName}
+              />
             );
           },
         },
         {
           title: '任务状态',
           dataIndex: 'status',
-          width: 110,
+          width: 200,
           hideInSearch: true,
           render: (_: any, record: TaskInfo) => {
             const meta = getStatusMeta(record.status);
@@ -414,9 +416,10 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         {
           title: '创建人',
           dataIndex: ['creator', 'userName'],
-          width: 110,
+          ellipsis: true,
+          width: 170,
           hideInSearch: true,
-          render: (_: any, record: TaskInfo) => record.creator?.userName || '-',
+          // render: (_: any, record: TaskInfo) => record.creator?.userName || '-',
         },
         {
           title: '创建时间',
@@ -430,7 +433,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           align: 'center',
           valueType: 'option',
           fixed: 'right',
-          width: 220,
+          width: 170,
           render: (_: any, record: TaskInfo) => {
             const meta = getStatusMeta(record.status);
             const isEnded = meta.isEnded;
@@ -503,8 +506,6 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         columns={columns}
         request={request}
         params={{ spaceId }}
-        // 开启表格自身横向滚动，fixed 列才会固定不跟随滚动
-        scroll={{ x: 'max-content' }}
         debounceTime={300}
         toolBarRender={false}
         options={false}
