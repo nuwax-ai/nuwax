@@ -1,10 +1,11 @@
 // 变量选择器组件
 import { DataTypeEnum } from '@/types/enums/common';
 import { InputAndOutConfig, PreviousList } from '@/types/interfaces/node';
-import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Popover, Tag, Tree } from 'antd';
 import React, { useRef, useState } from 'react';
 import { returnImg } from '../../utils/workflowV3';
+import './index.less';
 
 // 扩展类型，添加 disabled 和 originalKey 属性
 type FilteredArg = InputAndOutConfig & {
@@ -80,19 +81,15 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
     const isDisabled = nodeData.disabled;
     return (
       <div
-        className="tree-custom-title-style"
-        style={{ opacity: isDisabled ? 0.5 : 1 }}
+        className={`tree-custom-title-style tree-title-container ${
+          isDisabled ? 'disabled' : ''
+        }`}
       >
         <span>{nodeData.name}</span>
         <Popover content={nodeData.description || '暂无描述'}>
-          <InfoCircleOutlined
-            style={{ marginLeft: '4px', fontSize: 12, cursor: 'help' }}
-          />
+          <span className="info-icon">?</span>
         </Popover>
-        <Tag
-          color="#C9CDD4"
-          style={{ marginLeft: 8, fontSize: 10, lineHeight: '14px' }}
-        >
+        <Tag color="#C9CDD4" className="data-type-tag">
           {nodeData.dataType}
         </Tag>
       </div>
@@ -106,7 +103,7 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
         {
           key: 'no-data',
           label: (
-            <div style={{ padding: 8, color: 'red' }}>
+            <div className="no-data-tip">
               未添加上级节点连线或上级节点无参数
             </div>
           ),
@@ -134,7 +131,7 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
             key: `${node.id}-tree`,
             label: (
               <div
-                style={{ padding: '12px 12px 8px' }}
+                className="tree-container"
                 onClick={(e) => e.stopPropagation()}
               >
                 <Tree
@@ -154,8 +151,7 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
                   }}
                   titleRender={renderTitle}
                   blockNode
-                  className="custom-tree-style"
-                  style={{ maxHeight: 300, overflow: 'auto' }}
+                  className="custom-tree-style custom-tree"
                 />
               </div>
             ),
@@ -166,14 +162,13 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
   };
 
   return (
-    <div className="dis-sb" style={{ flex: 1 }}>
+    <div className="dis-sb variable-selector-container">
       {displayValue ? (
         <Tag
           closable
           onClose={onClear}
-          className="input-or-reference-tag text-ellipsis"
+          className="input-or-reference-tag text-ellipsis variable-tag"
           color="#C9CDD4"
-          style={{ maxWidth: '100%', marginRight: 8 }}
         >
           {displayValue.length > 15 ? (
             <Popover content={displayValue} placement="topRight">
@@ -184,9 +179,7 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
           )}
         </Tag>
       ) : (
-        <span style={{ color: '#bbb', fontSize: 12, marginRight: 8 }}>
-          选择变量
-        </span>
+        <span className="placeholder-text">选择变量</span>
       )}
       <Dropdown
         menu={{ items: getMenu(previousNodes) }}
