@@ -247,6 +247,7 @@ export const useTestRun = ({
       setTestRunLoading(true);
     }, 300);
     try {
+      // V3: validWorkflow 中已经包含了保存逻辑，这里直接调用即可
       const result = await validWorkflow();
       if (result) {
         setTestRunResult('');

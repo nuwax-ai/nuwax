@@ -63,6 +63,15 @@ export const useWorkflowValidation = ({
    * 校验当前工作流
    */
   const validWorkflow = useCallback(async (): Promise<boolean> => {
+    // V3: 校验前先保存工作流
+    if (workflowProxy.hasPendingChanges()) {
+      const saveResult = await saveFullWorkflow();
+      if (!saveResult) {
+        console.error('[V3] 工作流保存失败，无法进行校验');
+        return false;
+      }
+    }
+
     if (getWorkflow('isModified') === true) {
       await doSubmitFormData();
     }
@@ -101,6 +110,7 @@ export const useWorkflowValidation = ({
     changeDrawer,
     setErrorParams,
     doSubmitFormData,
+    saveFullWorkflow,
   ]);
 
   /**
