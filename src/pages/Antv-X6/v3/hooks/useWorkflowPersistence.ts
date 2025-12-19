@@ -2,7 +2,6 @@ import Constant from '@/constants/codes.constants';
 import service from '@/services/workflow';
 import { FoldFormIdEnum } from '@/types/enums/node';
 import { ChildNode, GraphContainerRef } from '@/types/interfaces/graph';
-import { message } from 'antd';
 import { debounce } from 'lodash';
 import { MutableRefObject, useCallback, useMemo } from 'react';
 import { useModel } from 'umi';
@@ -52,12 +51,12 @@ export const useWorkflowPersistence = ({
         return true;
       } else {
         console.error('[V3] 工作流保存失败:', _res.message);
-        message.error(_res.message || '保存失败');
+        // 静默异常消息，不弹出提示
         return false;
       }
     } catch (error) {
       console.error('[V3] 工作流保存异常:', error);
-      message.error('保存失败，请稍后重试');
+      // 静默异常消息，不弹出提示
       return false;
     }
   }, [changeUpdateTime, graphRef]);

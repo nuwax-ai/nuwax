@@ -33,8 +33,8 @@ export const NODE_DEFAULT_NAMES: Partial<Record<NodeTypeEnum, string>> = {
   [NodeTypeEnum.Condition]: '条件分支',
   [NodeTypeEnum.IntentRecognition]: '意图识别',
   [NodeTypeEnum.Loop]: '循环',
-  [NodeTypeEnum.LoopStart]: '循环开始',
-  [NodeTypeEnum.LoopEnd]: '循环结束',
+  [NodeTypeEnum.LoopStart]: '单次开始',
+  [NodeTypeEnum.LoopEnd]: '单次结束',
   [NodeTypeEnum.LoopBreak]: '终止循环',
   [NodeTypeEnum.LoopContinue]: '继续循环',
   [NodeTypeEnum.QA]: '问答',
@@ -432,47 +432,69 @@ export function createLoopInnerNodes(
   const loopX = loopExtension.x || 0;
   const loopY = loopExtension.y || 0;
 
-  const loopStartNode: ChildNode = {
+  const loopStartNode = {
     id: loopStartId,
-    name: NODE_DEFAULT_NAMES[NodeTypeEnum.LoopStart] || '循环开始',
-    description: '',
+    name: NODE_DEFAULT_NAMES[NodeTypeEnum.LoopStart] || '单次开始',
+    description: '循环单次起始节点',
     workflowId,
     type: NodeTypeEnum.LoopStart,
     shape: NodeShapeEnum.General,
     icon: '',
     loopNodeId,
     nextNodeIds: [loopEndId],
+    preNodes: [],
+    nextNodes: [],
+    unreachableNextNodeIds: [],
+    originalNextNodeIds: null,
+    innerNodes: null,
+    innerStartNodeId: null,
+    innerEndNodeId: null,
+    virtualExecute: false,
+    startNode: null,
+    endNode: null,
+    innerEndNode: false,
     nodeConfig: {
       ...createDefaultNodeConfig(NodeTypeEnum.LoopStart),
+      inputArgs: undefined,
+      outputArgs: undefined,
       extension: {
         x: loopX + LOOP_START_NODE_X_OFFSET,
         y: loopY + LOOP_INNER_NODE_Y_OFFSET,
-        width: 220,
-        height: 44,
       },
     },
-  };
+  } as ChildNode;
 
-  const loopEndNode: ChildNode = {
+  const loopEndNode = {
     id: loopEndId,
-    name: NODE_DEFAULT_NAMES[NodeTypeEnum.LoopEnd] || '循环结束',
-    description: '',
+    name: NODE_DEFAULT_NAMES[NodeTypeEnum.LoopEnd] || '单次结束',
+    description: '循环单次结束节点',
     workflowId,
     type: NodeTypeEnum.LoopEnd,
     shape: NodeShapeEnum.General,
     icon: '',
     loopNodeId,
     nextNodeIds: [],
+    preNodes: [],
+    nextNodes: [],
+    unreachableNextNodeIds: [],
+    originalNextNodeIds: null,
+    innerNodes: null,
+    innerStartNodeId: null,
+    innerEndNodeId: null,
+    virtualExecute: false,
+    startNode: null,
+    endNode: null,
+    innerEndNode: false,
     nodeConfig: {
       ...createDefaultNodeConfig(NodeTypeEnum.LoopEnd),
+      inputArgs: undefined,
+      outputArgs: undefined,
       extension: {
         x: loopX + LOOP_END_NODE_X_OFFSET,
         y: loopY + LOOP_INNER_NODE_Y_OFFSET,
-        width: 220,
-        height: 44,
       },
     },
-  };
+  } as ChildNode;
 
   return {
     innerNodes: [loopStartNode, loopEndNode],
