@@ -17,6 +17,7 @@ const {
   EndNode,
   CycleNode,
   VariableNode,
+  VariableAggregationNode,
   TextProcessingNode,
   CodeNode,
   DocumentExtractionNode,
@@ -58,6 +59,8 @@ const nodeTemplate = (params: ChildNode, form: FormInstance) => {
       return <CycleNode {...commonProps} />;
     case NodeTypeEnum.Variable:
       return <VariableNode {...commonProps} />;
+    case NodeTypeEnum.VariableAggregation:
+      return <VariableAggregationNode {...commonProps} />;
     case NodeTypeEnum.TextProcessing:
       return <TextProcessingNode {...commonProps} />;
     case NodeTypeEnum.LLM:

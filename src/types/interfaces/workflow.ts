@@ -164,7 +164,7 @@ export interface NodeRenderProps {
   fieldConfigs: FieldConfig[];
   form: FormInstance;
   // 如果有多个相同组件时，传递不同的inputListName区分
-  inputItemName?: InputItemNameEnum;
+  inputItemName?: InputItemNameEnum | (string | number)[];
   // 是否显示复制按钮
   showCopy?: boolean;
   style?: any;

@@ -1,4 +1,5 @@
 // import squareImage from '@/assets/images/square_bg.png';
+import { useWorkflowModel } from '@/hooks/useWorkflowModel';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { DefaultObjectType } from '@/types/interfaces/common';
 import { ChildNode } from '@/types/interfaces/graph';
@@ -214,7 +215,7 @@ const TestRun: React.FC<TestRunProps> = ({
   testRunParams,
 }) => {
   const { testRun, setTestRun } = useModel('model');
-  const { referenceList, storeWorkflow } = useModel('workflow');
+  const { referenceList, storeWorkflow } = useWorkflowModel();
   const [form] = Form.useForm();
 
   // 问答的选项
