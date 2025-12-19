@@ -242,9 +242,6 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
    * 处理上传操作（从右键菜单触发）
    */
   const handleUploadFromMenu = (node: FileNode | null) => {
-    if (!node) {
-      return;
-    }
     // 直接调用现有的上传单个文件功能
     onUploadSingleFile?.(node);
   };
