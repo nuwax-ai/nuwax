@@ -28,6 +28,7 @@ const cx = classNames.bind(styles);
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
   ({
     id: requestId = '',
+    conversationId = '',
     className,
     markdownRef,
     headerActions = true,
@@ -36,7 +37,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
   }: MarkdownRendererProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const plugins = useMemo(
-      () => [mermaidPlugin, katexPlugin, genCustomPlugin()],
+      () => [mermaidPlugin, katexPlugin, genCustomPlugin(conversationId)],
       [],
     );
     // 使用导入的 mermaidConfig，而不是重新创建
@@ -84,6 +85,7 @@ const PureMarkdownRenderer = memo(
     disableTyping = false,
     interval = 30,
     timerType = 'requestAnimationFrame',
+    conversationId = '',
   }: {
     id: string;
     theme?: 'light' | 'dark';
@@ -92,8 +94,12 @@ const PureMarkdownRenderer = memo(
     disableTyping?: boolean;
     interval?: number;
     timerType?: 'requestAnimationFrame' | 'setTimeout';
+    conversationId?: string | number;
   }) => {
-    const plugins = useMemo(() => [katexPlugin, genCustomPlugin()], []);
+    const plugins = useMemo(
+      () => [katexPlugin, genCustomPlugin(conversationId)],
+      [],
+    );
     return (
       <div
         key={`${requestId}`}
