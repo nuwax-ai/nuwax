@@ -220,12 +220,6 @@ const WorkflowV2: React.FC = () => {
    */
   const handleNodeSelect = useCallback(
     (node: ChildNodeV2 | null) => {
-      console.log('[V2 DEBUG] handleNodeSelect called with:', {
-        nodeId: node?.id,
-        nodeType: node?.type,
-        nodeConfig: node?.nodeConfig,
-        exceptionHandleConfig: node?.nodeConfig?.exceptionHandleConfig,
-      });
       // 清除旧的初始化超时（处理快速切换节点的情况）
       if (initTimeoutRef.current) {
         clearTimeout(initTimeoutRef.current);
@@ -765,22 +759,14 @@ const WorkflowV2: React.FC = () => {
     (changedValues: any, allValues: NodeConfigV2) => {
       // 如果正在初始化表单，忽略变更事件
       if (isInitializingFormRef.current) {
-        console.log('[V2 DEBUG] Ignoring form change during initialization');
         return;
       }
-      console.log('[V2 DEBUG] handleNodeConfigChange called:', {
-        changedValues,
-        allValues,
-        selectedNodeId: selectedNode?.id,
-      });
       if (selectedNode) {
         const mergedConfig = buildMergedNodeConfig(selectedNode, allValues);
-        console.log('[V2 DEBUG] mergedConfig:', mergedConfig);
         const updatedNode: ChildNodeV2 = {
           ...selectedNode,
           nodeConfig: mergedConfig,
         };
-        console.log('[V2 DEBUG] updatedNode:', updatedNode);
         updateNode(selectedNode.id, updatedNode);
         // 同步更新 selectedNode 以便后续操作使用最新数据
         setSelectedNode(updatedNode);
