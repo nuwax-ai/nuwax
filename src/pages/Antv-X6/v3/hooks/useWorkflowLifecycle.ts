@@ -100,6 +100,7 @@ export const useWorkflowLifecycle = ({
             workflowId: workflowId,
             nodes: _nodeList,
             edges: _edgeList,
+            systemVariables: data.systemVariables, // 后端返回的系统变量
             modified: data.modified || new Date().toISOString(),
           });
           // V3: 存储完整的工作流信息（用于全量保存）
