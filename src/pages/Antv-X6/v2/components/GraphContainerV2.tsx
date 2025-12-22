@@ -307,12 +307,6 @@ const GraphContainerV2 = forwardRef<GraphContainerRefV2, GraphContainerV2Props>(
           nodeConfig: fullNodeConfig,
         };
 
-        console.log('[V2 DEBUG] graphUpdateByFormData:', {
-          nodeId,
-          oldNodeConfig: oldData.nodeConfig,
-          newNodeConfig: fullNodeConfig,
-        });
-
         graphUpdateNode(nodeId, newData);
 
         // 如果节点在循环内，调整父循环节点大小（与 V1 保持一致）

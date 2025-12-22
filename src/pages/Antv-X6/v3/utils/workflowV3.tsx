@@ -717,6 +717,63 @@ export const handleSpecialNodesNextIndex = (
   return newNode;
 };
 
+// 从特殊节点的配置中移除目标节点ID（handleSpecialNodesNextIndex的反向操作）
+export const removeFromSpecialNodesNextIndex = (
+  node: ChildNode,
+  portId: string,
+  targetId: number,
+): ChildNode => {
+  // 从 portId 中提取 uuid（格式: {nodeId}-{uuid}-out）
+  const segments = portId.split('-');
+  const uuid = segments.slice(1, -1).join('-'); // 移除 nodeId 和 out
+
+  let configs: ConditionBranchConfigs[] | IntentConfigs[] | QANodeOption[];
+  switch (node.type) {
+    case 'Condition': {
+      configs = node.nodeConfig
+        ?.conditionBranchConfigs as ConditionBranchConfigs[];
+      break;
+    }
+    case 'IntentRecognition': {
+      configs = node.nodeConfig?.intentConfigs as IntentConfigs[];
+      break;
+    }
+    case 'QA': {
+      configs = node.nodeConfig?.options as QANodeOption[];
+      break;
+    }
+    default: {
+      configs = [];
+      break;
+    }
+  }
+
+  configs?.forEach((config) => {
+    if (uuid.includes(config.uuid)) {
+      // 从 nextNodeIds 中移除目标节点ID
+      config.nextNodeIds = (config.nextNodeIds || []).filter(
+        (id: number) => id !== targetId,
+      );
+    }
+  });
+
+  const newNode = {
+    ...node,
+    nodeConfig: {
+      ...node.nodeConfig,
+      // 根据节点类型更新对应的配置数组
+      ...(node.type === NodeTypeEnum.Condition && {
+        conditionBranchConfigs: configs,
+      }),
+      ...(node.type === NodeTypeEnum.IntentRecognition && {
+        intentConfigs: configs,
+      }),
+      ...(node.type === NodeTypeEnum.QA && { options: configs }),
+    } as NodeConfig,
+  };
+  return newNode;
+};
+
 // 三个特殊节点处理nextIndex
 export const handleExceptionNodesNextIndex = ({
   sourceNode,
@@ -764,8 +821,17 @@ export const QuicklyCreateEdgeConditionConfig = (
 ) => {
   const nodeData = JSON.parse(JSON.stringify(newNodeData));
   let _arr =
-    nodeData.nodeConfig.conditionBranchConfigs ||
-    nodeData.nodeConfig.intentConfigs;
+    nodeData.nodeConfig?.conditionBranchConfigs ||
+    nodeData.nodeConfig?.intentConfigs;
+
+  // 如果配置数组不存在或为空，返回空结果（节点可能刚创建还没有配置）
+  if (!_arr || _arr.length === 0) {
+    console.warn(
+      '[QuicklyCreateEdgeConditionConfig] 条件/意图配置为空，跳过连线',
+    );
+    return { nodeData, sourcePortId: '' };
+  }
+
   _arr[0].nextNodeIds = [targetNode.id];
   // 获取端口的id
   let sourcePortId: string = `${nodeData.id}-${_arr[0].uuid}`;
