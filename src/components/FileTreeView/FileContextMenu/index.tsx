@@ -209,13 +209,17 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
           onClick: handleCreateFolder,
           disabled: !onCreateFolder,
         },
-        {
-          key: 'importProject',
-          label: '导入项目',
-          icon: <ImportOutlined />,
-          onClick: onImportProject,
-          disabled: !onImportProject,
-        },
+        // 只有当 onImportProject 存在时才显示导入项目选项
+        ...(onImportProject
+          ? [
+              {
+                key: 'importProject',
+                label: '导入项目',
+                icon: <ImportOutlined />,
+                onClick: onImportProject,
+              },
+            ]
+          : []),
         {
           key: 'divider1',
           type: 'divider' as const,
