@@ -22,96 +22,6 @@ import type {
 
 const EXECUTE_EXCEPTION_FLOW = 'EXECUTE_EXCEPTION_FLOW';
 const INDEX_SYSTEM_NAME = 'INDEX';
-const SYSTEM_VARIABLES: InputAndOutConfig[] = [
-  {
-    name: 'SYS_USER_ID',
-    dataType: DataTypeEnum.String,
-    description: '平台用户ID',
-    require: true,
-    systemVariable: true,
-    bindValueType: undefined,
-    bindValue: '',
-    key: 'SYS_USER_ID',
-    subArgs: [],
-  },
-  {
-    name: 'USER_UID',
-    dataType: DataTypeEnum.String,
-    description: '用户唯一标识',
-    require: true,
-    systemVariable: true,
-    bindValueType: undefined,
-    bindValue: '',
-    key: 'USER_UID',
-    subArgs: [],
-  },
-  {
-    name: 'USER_NAME',
-    dataType: DataTypeEnum.String,
-    description: '用户名称',
-    require: true,
-    systemVariable: true,
-    bindValueType: undefined,
-    bindValue: '',
-    key: 'USER_NAME',
-    subArgs: [],
-  },
-  {
-    name: 'AGENT_ID',
-    dataType: DataTypeEnum.String,
-    description: '智能体唯一标识',
-    require: true,
-    systemVariable: true,
-    bindValueType: undefined,
-    bindValue: '',
-    key: 'AGENT_ID',
-    subArgs: [],
-  },
-  {
-    name: 'CONVERSATION_ID',
-    dataType: DataTypeEnum.String,
-    description: '会话唯一标识',
-    require: true,
-    systemVariable: true,
-    bindValueType: undefined,
-    bindValue: '',
-    key: 'CONVERSATION_ID',
-    subArgs: [],
-  },
-  {
-    name: 'REQUEST_ID',
-    dataType: DataTypeEnum.String,
-    description: '请求唯一标识',
-    require: true,
-    systemVariable: true,
-    bindValueType: undefined,
-    bindValue: '',
-    key: 'REQUEST_ID',
-    subArgs: [],
-  },
-  {
-    name: 'AGENT_USER_MSG',
-    dataType: DataTypeEnum.String,
-    description: '用户消息',
-    require: true,
-    systemVariable: true,
-    bindValueType: undefined,
-    bindValue: '',
-    key: 'AGENT_USER_MSG',
-    subArgs: [],
-  },
-  {
-    name: 'CHAT_CONTEXT',
-    dataType: DataTypeEnum.String,
-    description: '会话上下文消息列表',
-    require: true,
-    systemVariable: true,
-    bindValueType: undefined,
-    bindValue: '',
-    key: 'CHAT_CONTEXT',
-    subArgs: [],
-  },
-];
 
 // ==================== 工具函数 ====================
 
@@ -312,7 +222,10 @@ function ensureVariableSuccessOutput(node: ChildNode): InputAndOutConfig[] {
   return outputs;
 }
 
-function getNodeOutputArgs(node: ChildNode): InputAndOutConfig[] {
+function getNodeOutputArgs(
+  node: ChildNode,
+  systemVariables: InputAndOutConfig[] = [],
+): InputAndOutConfig[] {
   // Start 节点：将 inputArgs 视为可引用输出，并保留原输出
   if (node.type === NodeTypeEnum.Start) {
     const outputFromInput =
@@ -322,7 +235,7 @@ function getNodeOutputArgs(node: ChildNode): InputAndOutConfig[] {
         bindValue: '',
       })) || [];
     const outputs = node.nodeConfig?.outputArgs || [];
-    return [...outputFromInput, ...SYSTEM_VARIABLES, ...outputs];
+    return [...outputFromInput, ...systemVariables, ...outputs];
   }
 
   // Loop 节点：根据 JSON 示例，输出中包含带 -input 前缀的系统变量
@@ -429,7 +342,11 @@ export function calculateNodePreviousArgs(
   nodeId: number,
   workflowData: WorkflowDataV3,
 ): NodePreviousAndArgMap {
-  const { nodes: nodeList, edges: edgeList } = workflowData;
+  const {
+    nodes: nodeList,
+    edges: edgeList,
+    systemVariables = [],
+  } = workflowData;
 
   // 构建节点映射
   const nodeMap = buildNodeMap(nodeList);
@@ -467,7 +384,7 @@ export function calculateNodePreviousArgs(
     }
 
     // 获取并处理输出参数，添加 key 前缀
-    const outputArgs = getNodeOutputArgs(predNode);
+    const outputArgs = getNodeOutputArgs(predNode, systemVariables);
 
     // V3: 针对 Loop 节点，部分输出参数使用 -input 前缀以匹配后端格式
     let prefixedOutputArgs: InputAndOutConfig[];
@@ -559,7 +476,7 @@ export function calculateNodePreviousArgs(
         const predNode = loopNode.innerNodes?.find((n) => n.id === predId);
         if (!predNode) return;
 
-        const outputArgs = getNodeOutputArgs(predNode);
+        const outputArgs = getNodeOutputArgs(predNode, systemVariables);
         const prefixedOutputArgs = prefixOutputArgsKeys(
           predNode.id,
           outputArgs,
