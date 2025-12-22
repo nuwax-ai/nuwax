@@ -294,18 +294,20 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
             </h5>
             <pre>{finalResult?.output}</pre>
           </div>
-          <div className={cx(styles.wrap, styles['render-container'])}>
-            <h5 className={cx(styles.title)}>
-              执行过程&nbsp;
-              <CopyToClipboard
-                text={spaceLogInfoDetail.processData || ''}
-                onCopy={handleCopy}
-              >
-                <CopyOutlined />
-              </CopyToClipboard>
-            </h5>
-            <pre>{spaceLogInfoDetail.processData}</pre>
-          </div>
+          {spaceLogInfoDetail?.targetType !== AgentComponentTypeEnum.Agent && (
+            <div className={cx(styles.wrap, styles['render-container'])}>
+              <h5 className={cx(styles.title)}>
+                执行过程&nbsp;
+                <CopyToClipboard
+                  text={spaceLogInfoDetail.processData || ''}
+                  onCopy={handleCopy}
+                >
+                  <CopyOutlined />
+                </CopyToClipboard>
+              </h5>
+              <pre>{spaceLogInfoDetail.processData}</pre>
+            </div>
+          )}
         </>
       ) : (
         <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
