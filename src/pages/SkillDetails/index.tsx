@@ -1,13 +1,14 @@
-import FileTreeView from '@/components/FileTreeView';
+import FileTreeView, { FileTreeViewRef } from '@/components/FileTreeView';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiSkillDetail,
   apiSkillExport,
+  apiSkillImport,
   apiSkillTemplate,
   apiSkillUpdate,
-  apiSkillUploadFile,
+  apiSkillUploadFiles,
 } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
@@ -24,7 +25,7 @@ import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { message } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import CreateSkill from '../SpaceSkillManage/CreateSkill';
 import styles from './index.less';
@@ -47,6 +48,8 @@ const SkillDetails: React.FC = () => {
   // 版本历史弹窗是否打开
   const [versionHistoryModal, setVersionHistoryModal] =
     useState<boolean>(false);
+  // 文件树视图ref
+  const fileTreeViewRef = useRef<FileTreeViewRef>(null);
 
   // 查询技能信息
   const { run: runSkillInfo } = useRequest(apiSkillDetail, {
@@ -112,10 +115,74 @@ const SkillDetails: React.FC = () => {
     setSkillInfo(_skillInfo);
   };
 
+  // 导入项目
+  const handleImportProject = async () => {
+    if (!skillId) {
+      message.error('技能ID不能为空');
+      return;
+    }
+
+    if (!spaceId) {
+      message.error('空间ID不能为空');
+      return;
+    }
+
+    // 创建一个隐藏的文件输入框
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.style.display = 'none';
+    input.accept = '.zip'; // 只接受 zip 文件
+    document.body.appendChild(input);
+
+    // 等待用户选择文件
+    input.click();
+
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) {
+        document.body.removeChild(input);
+        return;
+      }
+
+      // 校验文件类型
+      const isZip = file.name?.toLowerCase().endsWith('.zip');
+      if (!isZip) {
+        message.error('仅支持 .zip 压缩文件格式');
+        document.body.removeChild(input);
+        return;
+      }
+
+      try {
+        // 调用导入接口
+        const result = await apiSkillImport({
+          file,
+          targetSkillId: skillId,
+          targetSpaceId: spaceId,
+        });
+
+        if (result.code === SUCCESS_CODE) {
+          message.success('导入成功');
+          // 刷新技能信息
+          runSkillInfo(skillId);
+        }
+      } catch (error) {
+        console.error('导入失败', error);
+      } finally {
+        // 清理DOM
+        document.body.removeChild(input);
+      }
+    };
+
+    // 如果用户取消选择，也要清理DOM
+    input.oncancel = () => {
+      document.body.removeChild(input);
+    };
+  };
+
   /**
-   * 处理上传单个文件回调
+   * 处理上传多个文件回调
    */
-  const handleUploadSingleFile = async (node: FileNode | null) => {
+  const handleUploadMultipleFiles = async (node: FileNode | null) => {
     if (!skillId) {
       message.error('技能ID不能为空');
       return;
@@ -135,6 +202,7 @@ const SkillDetails: React.FC = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.style.display = 'none';
+    input.multiple = true;
     document.body.appendChild(input);
 
     // 等待用户选择文件
@@ -152,11 +220,14 @@ const SkillDetails: React.FC = () => {
         // setSingleFileUploadLoading(true);
         // setIsFileOperating(true);
 
+        const files = Array.from((e.target as HTMLInputElement).files || []);
+
+        const filePaths = files.map((file) => relativePath + file.name);
         // 直接调用上传接口，使用文件名作为路径
-        const { code } = await apiSkillUploadFile({
-          file,
+        const { code } = await apiSkillUploadFiles({
+          files,
           skillId,
-          filePath: relativePath + file.name,
+          filePaths,
         });
 
         if (code === SUCCESS_CODE) {
@@ -204,12 +275,6 @@ const SkillDetails: React.FC = () => {
 
       message.error(`导出失败: ${errorMessage}`);
     }
-  };
-
-  // 编辑技能信息
-  const handleEditSkill = () => {
-    console.log('handleEditSkill', editSkillModalOpen);
-    setEditSkillModalOpen(true);
   };
 
   // 删除文件
@@ -369,27 +434,40 @@ const SkillDetails: React.FC = () => {
     runSkillInfo(skillId);
   };
 
+  // 发布技能
+  const handlePublishSkill = () => {
+    const changeFiles = fileTreeViewRef.current?.changeFiles;
+    if (changeFiles && changeFiles.length > 0) {
+      message.warning('请先保存文件后再发布');
+      return;
+    }
+    setOpen(true);
+  };
+
   return (
     <div className={cx('flex', 'h-full', 'flex-col')}>
       {/* 技能头部 */}
       <SkillHeader
         spaceId={spaceId}
         skillInfo={skillInfo}
-        onEditAgent={handleEditSkill}
-        onPublish={() => setOpen(true)}
+        // 编辑技能信息
+        onEditAgent={() => setEditSkillModalOpen(true)}
+        onPublish={handlePublishSkill}
         onToggleHistory={() => setVersionHistoryModal(!versionHistoryModal)}
       />
 
       <div className={cx('flex', 'flex-1')}>
         {/* 文件树视图 */}
         <FileTreeView
+          ref={fileTreeViewRef}
           originalFiles={skillInfo?.files || []}
-          onUploadSingleFile={handleUploadSingleFile}
+          onUploadFiles={handleUploadMultipleFiles}
           onDownload={handleDownload}
           onRenameFile={handleConfirmRenameFile}
           onCreateFileNode={handleCreateFileNode}
           onSaveFiles={handleSaveFiles}
           onDeleteFile={handleDeleteFile}
+          onImportProject={handleImportProject}
         />
 
         {/*版本历史*/}

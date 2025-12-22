@@ -3,6 +3,7 @@ import {
   EditOutlined,
   FileAddOutlined,
   FolderAddOutlined,
+  ImportOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import React, { useCallback } from 'react';
@@ -20,9 +21,11 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onClose,
   onDelete,
   onRename,
-  onUploadSingleFile,
+  onUploadFiles,
   onCreateFile,
   onCreateFolder,
+  // 导入项目
+  onImportProject,
   disableDelete = false,
 }) => {
   /**
@@ -76,11 +79,11 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
    * 处理上传操作
    */
   const handleUpload = useCallback(() => {
-    if (!onUploadSingleFile) return;
+    if (!onUploadFiles) return;
     handleMenuItemClick(() => {
-      onUploadSingleFile(targetNode);
+      onUploadFiles(targetNode);
     });
-  }, [targetNode, onUploadSingleFile, handleMenuItemClick]);
+  }, [targetNode, onUploadFiles, handleMenuItemClick]);
 
   /**
    * 处理新建文件操作
@@ -148,7 +151,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
             label: '上传文件',
             icon: <UploadOutlined />,
             onClick: handleUpload,
-            disabled: !onUploadSingleFile || targetNode?.name?.startsWith('.'),
+            disabled: !onUploadFiles || targetNode?.name?.startsWith('.'),
           },
           {
             key: 'divider2',
@@ -176,7 +179,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
             label: '上传文件',
             icon: <UploadOutlined />,
             onClick: handleUpload,
-            disabled: !onUploadSingleFile || targetNode?.name?.startsWith('.'),
+            disabled: !onUploadFiles || targetNode?.name?.startsWith('.'),
           },
           {
             key: 'divider',
@@ -207,6 +210,13 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
           disabled: !onCreateFolder,
         },
         {
+          key: 'importProject',
+          label: '导入项目',
+          icon: <ImportOutlined />,
+          onClick: onImportProject,
+          disabled: !onImportProject,
+        },
+        {
           key: 'divider1',
           type: 'divider' as const,
         },
@@ -215,7 +225,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
           label: '上传文件',
           icon: <UploadOutlined />,
           onClick: handleUpload,
-          disabled: !onUploadSingleFile,
+          disabled: !onUploadFiles,
         },
       ];
 
