@@ -7,6 +7,7 @@ import {
   apiAgentConversationChatSuggest,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
+import { apiGetStaticFileList } from '@/services/vncDesktop';
 import {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
@@ -45,6 +46,10 @@ import {
   ConversationFinalResult,
 } from '@/types/interfaces/conversationInfo';
 import { RequestResponse } from '@/types/interfaces/request';
+import {
+  StaticFileInfo,
+  StaticFileListResponse,
+} from '@/types/interfaces/vncDesktop';
 import { isEmptyObject } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useRequest } from 'ahooks';
@@ -150,6 +155,37 @@ export default () => {
   // 历史记录
   const { runHistory } = useModel('conversationHistory');
   const { handleChatProcessingList } = useModel('chat');
+
+  // 文件树显隐状态
+  const [isFileTreeVisible, setIsFileTreeVisible] = useState<boolean>(false);
+  // 文件树数据
+  const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
+  // 文件树视图模式
+  const [viewMode, setViewMode] = useState<'preview' | 'desktop'>('preview');
+
+  // 查询文件列表
+  const { run: runGetStaticFileList } = useRequest(apiGetStaticFileList, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: RequestResponse<StaticFileListResponse>) => {
+      setFileTreeData(result?.data?.files || []);
+    },
+    onError: () => {
+      setFileTreeData([]);
+    },
+  });
+
+  // 处理文件列表刷新事件
+  const handleRefreshFileList = useCallback(
+    (conversationId?: number) => {
+      // 如果传入了会话ID，则使用传入的ID，否则使用当前的会话ID
+      const targetId = conversationId;
+      if (targetId) {
+        runGetStaticFileList(targetId);
+      }
+    },
+    [runGetStaticFileList],
+  );
 
   // 滚动到底部
   const messageViewScrollToBottom = () => {
@@ -872,5 +908,15 @@ export default () => {
     openTimedTask,
     closeTimedTask,
     setConversationInfo,
+    // 文件树显隐状态
+    isFileTreeVisible,
+    setIsFileTreeVisible,
+    // 文件树数据
+    fileTreeData,
+    // 文件树视图模式
+    viewMode,
+    setViewMode,
+    // 处理文件列表刷新事件
+    handleRefreshFileList,
   };
 };
