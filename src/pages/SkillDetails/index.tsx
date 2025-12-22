@@ -156,8 +156,8 @@ const SkillDetails: React.FC = () => {
         // 调用导入接口
         const result = await apiSkillImport({
           file,
-          targetSkillId: skillId.toString(),
-          targetSpaceId: spaceId.toString(),
+          targetSkillId: skillId,
+          targetSpaceId: spaceId,
         });
 
         if (result.code === SUCCESS_CODE) {
