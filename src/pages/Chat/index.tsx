@@ -128,6 +128,7 @@ const Chat: React.FC = () => {
     setViewMode,
     // 处理文件列表刷新事件
     handleRefreshFileList,
+    openPreviewView,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -471,12 +472,10 @@ const Chat: React.FC = () => {
 
   // 显示文件树
   const handleFileTreeVisible = () => {
-    // 关闭 AgentSidebar 并显示文件树
-    setIsFileTreeVisible(true);
     // 关闭 AgentSidebar，确保文件树显示时，AgentSidebar 不会显示
     sidebarRef.current?.close();
     // 触发文件列表刷新事件
-    eventBus.emit(EVENT_TYPE.RefreshFileList, id);
+    openPreviewView(id);
   };
 
   const LeftContent = () => {
