@@ -28,7 +28,14 @@ const cx = classNames.bind(styles);
 
 // 聊天视图组件
 const ChatView: React.FC<ChatViewProps> = memo(
-  ({ className, contentClassName, roleInfo, messageInfo, mode = 'chat' }) => {
+  ({
+    className,
+    contentClassName,
+    roleInfo,
+    messageInfo,
+    mode = 'chat',
+    conversationId = '',
+  }) => {
     const { userInfo } = useModel('userInfo');
     const { data } = useUnifiedTheme();
     const isDarkMode = data.antdTheme === 'dark';
@@ -168,6 +175,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     key={`${messageIdRef.current}`}
                     id={`${messageIdRef.current}`}
                     markdownRef={markdownRef}
+                    conversationId={conversationId}
                   />
                 </div>
               </div>

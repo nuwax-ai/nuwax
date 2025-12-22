@@ -71,16 +71,23 @@ export interface SkillUpdateParams {
 
 // 导入技能
 export interface SkillImportParams {
-  file: any;
-  targetSkillId: string;
-  targetSpaceId: string;
+  file: File;
+  targetSkillId: number;
+  targetSpaceId: number;
 }
 
 // 上传技能文件
 export interface SkillUploadFileParams {
-  file: any;
+  file: File;
   skillId: number;
   filePath: string;
+}
+
+// 批量上传技能文件
+export interface SkillUploadFilesParams {
+  files: File[];
+  skillId: number;
+  filePaths: string[];
 }
 
 // 已发布技能列表接口

@@ -354,6 +354,8 @@ export interface ChatViewProps {
   roleInfo: RoleInfo;
   // 聊天框底部样式 none: 不显示底部 home: 聊天主页底部 chat: 智能体编排页底部
   mode?: 'none' | 'home' | 'chat';
+  // 会话 id
+  conversationId?: string | number;
 }
 
 // 卡片信息

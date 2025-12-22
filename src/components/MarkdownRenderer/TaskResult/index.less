@@ -1,0 +1,40 @@
+@import '@/styles/color';
+@import '@/styles/theme';
+
+.task-result {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  margin: 5px 0;
+  border-radius: 14px;
+  color: #858481;
+  background-color: #37352f0a;
+  font-size: 12px;
+  line-height: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+
+  &:hover {
+    background-color: #37352f14;
+  }
+
+  .task-result-icon {
+    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .task-result-content {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+  }
+}
