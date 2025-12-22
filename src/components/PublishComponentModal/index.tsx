@@ -1,6 +1,7 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import LabelIcon from '@/components/LabelIcon';
 import SelectList from '@/components/custom/SelectList';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useCategory from '@/hooks/useCategory';
 import { apiPublishApply, apiPublishItemList } from '@/services/publish';
 import { apiSpaceList } from '@/services/workspace';
@@ -14,6 +15,7 @@ import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { ReceivePublishEnum } from '@/types/enums/space';
 import { option, PublishScope } from '@/types/interfaces/common';
 import { PublishItem, PublishItemInfo } from '@/types/interfaces/publish';
+import { RequestResponse } from '@/types/interfaces/request';
 import { PublishComponentModalProps } from '@/types/interfaces/space';
 import { SquareAgentInfo } from '@/types/interfaces/square';
 import { SpaceInfo } from '@/types/interfaces/workspace';
@@ -221,6 +223,14 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   const { run, loading } = useRequest(apiPublishApply, {
     manual: true,
     debounceInterval: 300,
+    // 使用 formatResult 返回完整的响应对象，而不是只返回 data 字段
+    // formatResult: (response: RequestResponse<number>) => response,
+    formatResult: (res: RequestResponse<string>) => {
+      if (res.code !== SUCCESS_CODE) {
+        throw new Error(res.message);
+      }
+      return res.data;
+    },
     onSuccess: (data: string) => {
       message.success(data || '发布申请已提交，等待审核中');
       onConfirm();
