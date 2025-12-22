@@ -1,4 +1,4 @@
-import FileTreeView from '@/components/FileTreeView';
+import FileTreeView, { FileTreeViewRef } from '@/components/FileTreeView';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -24,7 +24,7 @@ import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { message } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import CreateSkill from '../SpaceSkillManage/CreateSkill';
 import styles from './index.less';
@@ -47,6 +47,8 @@ const SkillDetails: React.FC = () => {
   // 版本历史弹窗是否打开
   const [versionHistoryModal, setVersionHistoryModal] =
     useState<boolean>(false);
+  // 文件树视图ref
+  const fileTreeViewRef = useRef<FileTreeViewRef>(null);
 
   // 查询技能信息
   const { run: runSkillInfo } = useRequest(apiSkillDetail, {
@@ -206,12 +208,6 @@ const SkillDetails: React.FC = () => {
     }
   };
 
-  // 编辑技能信息
-  const handleEditSkill = () => {
-    console.log('handleEditSkill', editSkillModalOpen);
-    setEditSkillModalOpen(true);
-  };
-
   // 删除文件
   const handleDeleteFile = async (fileNode: FileNode) => {
     modalConfirm('您确定要删除此文件吗?', fileNode.name, async () => {
@@ -369,20 +365,32 @@ const SkillDetails: React.FC = () => {
     runSkillInfo(skillId);
   };
 
+  // 发布技能
+  const handlePublishSkill = () => {
+    const changeFiles = fileTreeViewRef.current?.changeFiles;
+    if (changeFiles && changeFiles.length > 0) {
+      message.warning('请先保存文件后再发布');
+      return;
+    }
+    setOpen(true);
+  };
+
   return (
     <div className={cx('flex', 'h-full', 'flex-col')}>
       {/* 技能头部 */}
       <SkillHeader
         spaceId={spaceId}
         skillInfo={skillInfo}
-        onEditAgent={handleEditSkill}
-        onPublish={() => setOpen(true)}
+        // 编辑技能信息
+        onEditAgent={() => setEditSkillModalOpen(true)}
+        onPublish={handlePublishSkill}
         onToggleHistory={() => setVersionHistoryModal(!versionHistoryModal)}
       />
 
       <div className={cx('flex', 'flex-1')}>
         {/* 文件树视图 */}
         <FileTreeView
+          ref={fileTreeViewRef}
           originalFiles={skillInfo?.files || []}
           onUploadSingleFile={handleUploadSingleFile}
           onDownload={handleDownload}
