@@ -52,8 +52,8 @@ interface FileTreeViewProps {
   targetId?: string;
   /** 当前视图模式 */
   viewMode?: 'preview' | 'desktop';
-  /** 上传单个文件回调 */
-  onUploadSingleFile?: (node: FileNode | null) => void;
+  /** 上传多个文件回调 */
+  onUploadFiles?: (node: FileNode | null) => void;
   /** 下载文件回调 */
   onDownload?: () => void;
   /** 重命名文件回调 */
@@ -78,7 +78,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       readOnly = false,
       targetId,
       viewMode,
-      onUploadSingleFile,
+      onUploadFiles,
       onDownload,
       onRenameFile,
       onCreateFileNode,
@@ -311,8 +311,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 处理上传操作（从右键菜单触发）
      */
     const handleUploadFromMenu = (node: FileNode | null) => {
-      // 直接调用现有的上传单个文件功能
-      onUploadSingleFile?.(node);
+      // 直接调用现有的上传多个文件功能
+      onUploadFiles?.(node);
     };
 
     /**
