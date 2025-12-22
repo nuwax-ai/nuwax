@@ -168,7 +168,14 @@ export default () => {
     manual: true,
     debounceWait: 300,
     onSuccess: (result: RequestResponse<StaticFileListResponse>) => {
-      setFileTreeData(result?.data?.files || []);
+      const files = result?.data?.files || [];
+      if (files?.length) {
+        const _fileTreeData = files.map((item) => ({
+          ...item,
+          fileId: item.name,
+        }));
+        setFileTreeData(_fileTreeData);
+      }
     },
     onError: () => {
       setFileTreeData([]);
@@ -929,6 +936,7 @@ export default () => {
     setIsFileTreeVisible,
     // 文件树数据
     fileTreeData,
+    setFileTreeData,
     // 文件树视图模式
     viewMode,
     setViewMode,

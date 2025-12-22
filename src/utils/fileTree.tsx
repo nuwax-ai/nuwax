@@ -13,6 +13,7 @@ import {
 } from '@/constants/fileTreeImages.constants';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { SkillFileInfo } from '@/types/interfaces/skill';
+import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 
 // 获取文件图标
 export const getFileIcon = (name: string) => {
@@ -94,10 +95,10 @@ export const updateFileTreeName = (
  * @returns 更新后的文件列表
  */
 export const updateFilesListName = (
-  files: SkillFileInfo[],
+  files: SkillFileInfo[] | StaticFileInfo[],
   fileNode: FileNode,
   newName: string,
-): SkillFileInfo[] => {
+): SkillFileInfo[] | StaticFileInfo[] => {
   // 获取旧路径和新路径
   const oldPath = fileNode.path;
   const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
@@ -107,9 +108,9 @@ export const updateFilesListName = (
 
   // 如果是文件，则更新文件名
   if (fileNode.type === 'file') {
-    const currentFile = files?.find((file: SkillFileInfo) => {
+    const currentFile = files?.find((file: SkillFileInfo | StaticFileInfo) => {
       return file.fileId === fileNode.id;
-    }) as SkillFileInfo;
+    });
     // 如果文件存在，则更新文件名
     if (currentFile) {
       return [
