@@ -138,9 +138,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           const fileProxyUrl = fileNode?.fileProxyUrl || '';
           // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
           if (fileProxyUrl) {
-            const { data: fileContent } = await fetchContentFromUrl(
-              fileProxyUrl,
-            );
+            const fileContent = await fetchContentFromUrl(fileProxyUrl);
             setSelectedFileNode({
               ...fileNode,
               content: fileContent,
