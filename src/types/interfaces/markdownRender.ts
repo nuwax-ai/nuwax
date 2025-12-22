@@ -11,4 +11,6 @@ export interface MarkdownRendererProps {
   answerType?: 'answer' | 'thinking';
   markdownRef: React.RefObject<MarkdownCMDRef>;
   headerActions?: boolean;
+  // 会话 id
+  conversationId?: string | number;
 }

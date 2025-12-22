@@ -572,6 +572,7 @@ const Chat: React.FC = () => {
                       roleInfo={roleInfo}
                       contentClassName={styles['chat-inner']}
                       mode={'home'}
+                      conversationId={id}
                     />
                   ))}
                   {/*会话建议*/}
