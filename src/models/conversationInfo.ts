@@ -506,6 +506,16 @@ export default () => {
             });
           }
 
+          // 长任务型任务处理(打开远程桌面)
+          if (
+            data.type === 'Event' &&
+            data.subEventType === 'OPEN_DESKTOP' &&
+            conversationInfo?.id
+          ) {
+            // 处理长任务型任务
+            openDesktopView(conversationInfo.id);
+          }
+
           handleChatProcessingList([
             ...(currentMessage?.processingList || []),
             { ...data },
