@@ -660,14 +660,6 @@ export function calculateNodePreviousArgs(
       if (endNodeId) {
         const innerPredIds = findAllPredecessors(endNodeId, innerReverseGraph);
 
-        console.log('[innerPreviousNodes] 计算前:', {
-          currentNodeId: currentNode.id,
-          endNodeId,
-          innerNodesCount: currentNode.innerNodes?.length,
-          innerPredIdsCount: innerPredIds.length,
-          innerPredIds,
-        });
-
         // 过滤：只保留属于当前循环的节点 (loopNodeId === currentNode.id)，排除 LoopStart/LoopEnd
         // 注意：需要使用 Number() 统一类型，因为保存后 currentNode.id 可能变成字符串
         const currentLoopId = Number(currentNode.id);
@@ -680,15 +672,6 @@ export function calculateNodePreviousArgs(
               n.type !== NodeTypeEnum.LoopStart &&
               n.type !== NodeTypeEnum.LoopEnd,
           );
-
-        console.log('[innerPreviousNodes] 过滤后:', {
-          validInnerNodesCount: validInnerNodes.length,
-          validInnerNodes: validInnerNodes.map((n) => ({
-            id: n.id,
-            name: n.name,
-            loopNodeId: n.loopNodeId,
-          })),
-        });
 
         validInnerNodes.forEach((innerNode) => {
           const outputArgs = getNodeOutputArgs(innerNode, systemVariables);

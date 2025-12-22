@@ -420,16 +420,6 @@ const Workflow: React.FC = () => {
 
       const result = calculateNodePreviousArgs(id, workflowData);
 
-      console.log('[getReference] 计算结果:', {
-        id,
-        nodeListLength: nodeList.length,
-        edgeListLength: edgeList.length,
-        previousNodesLength: result?.previousNodes?.length || 0,
-        innerPreviousNodesLength: result?.innerPreviousNodes?.length || 0,
-        argMapKeys: Object.keys(result?.argMap || {}).length,
-        allArgMapKeys: Object.keys(result?.argMap || {}),
-      });
-
       if (result && result.previousNodes && result.previousNodes.length) {
         setReferenceList({
           previousNodes: result.previousNodes as any,
