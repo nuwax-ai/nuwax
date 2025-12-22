@@ -140,9 +140,7 @@ export async function apiSkillConfigHistoryList(
  * @param url 相对路径URL，如 '/api/computer/static/1461016/今日新闻PPT报告.md'
  * @returns Promise<RequestResponse<string>> 返回URL的内容
  */
-export async function fetchContentFromUrl(
-  url: string,
-): Promise<RequestResponse<string>> {
+export async function fetchContentFromUrl(url: string): Promise<string> {
   return request(url, {
     method: 'GET',
   });

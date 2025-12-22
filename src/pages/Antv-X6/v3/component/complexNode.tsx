@@ -215,7 +215,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
       <ModelSelected form={form} modelConfig={nodeConfig?.modelConfig} />
       {/* 技能模块 */}
       <div className="dis-sb">
-        <span className="node-title-style">技能</span>
+        <span className="node-title-style">工具</span>
         <Button
           icon={<PlusOutlined />}
           size="small"
