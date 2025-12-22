@@ -31,11 +31,6 @@ import {
   LOOP_NODE_DEFAULT_WIDTH,
 } from '../constants/loopNodeConstants';
 import { workflowProxy } from '../services/workflowProxyV3';
-import { generateFallbackNodeId } from '../utils/nodeUtils';
-import {
-  createOfflineNode,
-  ensureNodeShape,
-} from '../utils/offlineNodeFactory';
 import {
   getNodeSize,
   getShape,
@@ -704,24 +699,16 @@ export const useNodeOperations = ({
           nodeId = apiRes.data.id;
           apiNodeData = apiRes.data;
         } else {
-          // 离线模式：完全由前端生成节点数据
-          nodeId = generateFallbackNodeId(workflowId);
-          apiNodeData = ensureNodeShape(
-            createOfflineNode(nodeId, _params, workflowId),
-          );
-          console.warn(
-            '[V3] 添加节点 API 失败，进入离线模式:',
-            nodeId,
-            apiRes.message,
-          );
+          // API 失败：显示错误消息并阻止添加节点
+          message.error(apiRes.message || '添加节点失败');
+          console.error('[V3] 添加节点 API 失败:', apiRes.message);
+          return;
         }
       } catch (error) {
-        // 网络异常：进入离线模式
-        nodeId = generateFallbackNodeId(workflowId);
-        apiNodeData = ensureNodeShape(
-          createOfflineNode(nodeId, _params, workflowId),
-        );
-        console.warn('[V3] 添加节点 API 异常，进入离线模式:', nodeId, error);
+        // 网络异常：显示错误消息并阻止添加节点
+        message.error('网络异常，添加节点失败');
+        console.error('[V3] 添加节点 API 异常:', error);
+        return;
       }
 
       _params.id = nodeId;
