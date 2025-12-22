@@ -6,6 +6,7 @@ import {
   SkillImportParams,
   SkillUpdateParams,
   SkillUploadFileParams,
+  SkillUploadFilesParams,
 } from '@/types/interfaces/skill';
 import { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { request } from 'umi';
@@ -45,8 +46,8 @@ export async function apiSkillImport(
   const { file, targetSkillId, targetSpaceId } = params;
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('targetSkillId', targetSkillId);
-  formData.append('targetSpaceId', targetSpaceId);
+  formData.append('targetSkillId', targetSkillId.toString());
+  formData.append('targetSpaceId', targetSpaceId.toString());
 
   return request('/api/skill/import', {
     method: 'POST',
@@ -54,7 +55,7 @@ export async function apiSkillImport(
   });
 }
 
-// 上传技能文件
+// 上传文件到技能
 export async function apiSkillUploadFile(
   params: SkillUploadFileParams,
 ): Promise<RequestResponse<number>> {
@@ -65,6 +66,34 @@ export async function apiSkillUploadFile(
   formData.append('filePath', filePath);
 
   return request('/api/skill/upload-file', {
+    method: 'POST',
+    data: formData,
+  });
+}
+
+// 批量上传文件到技能
+export async function apiSkillUploadFiles(
+  params: SkillUploadFilesParams,
+): Promise<RequestResponse<number>> {
+  const { files, skillId, filePaths } = params;
+  const formData = new FormData();
+
+  // 批量上传文件：将每个文件 append 到 FormData
+  // 注意：多个文件使用相同的 key 'files'，后端会以数组形式接收
+  files.forEach((file) => {
+    formData.append('files', file);
+  });
+
+  // 添加技能ID
+  formData.append('skillId', skillId.toString());
+
+  // 批量添加文件路径：将每个路径 append 到 FormData
+  // 注意：多个路径使用相同的 key 'filePaths'，后端会以数组形式接收
+  filePaths.forEach((filePath) => {
+    formData.append('filePaths', filePath);
+  });
+
+  return request('/api/skill/upload-files', {
     method: 'POST',
     data: formData,
   });
@@ -118,59 +147,3 @@ export async function fetchContentFromUrl(
     method: 'GET',
   });
 }
-
-/**
- * 从URL获取内容（通用方法）
- * 支持相对路径和完整URL，自动判断使用哪种方式获取
- * @param url URL地址（可以是相对路径或完整URL）
- * @returns Promise<string> 返回URL的内容文本
- * @throws 如果请求失败会抛出错误
- */
-// export async function fetchContentFromUrl(url: string): Promise<string> {
-//   // 如果是相对路径（以 / 开头），使用 apiUrl
-//   if (url.startsWith('/')) {
-//     const res = await apiUrl(url);
-//     if (res.success && res.data) {
-//       return res.data;
-//     } else {
-//       throw new Error(res.message || '获取内容失败');
-//     }
-//   }
-
-//   // 如果是完整URL，判断是否为同源
-//   const baseUrl = process.env.BASE_URL || '';
-//   const isSameOrigin = url.startsWith(baseUrl);
-
-//   if (isSameOrigin) {
-//     // 同源URL，提取相对路径部分
-//     const relativePath = url.replace(baseUrl, '');
-//     const res = await apiUrl(relativePath);
-//     if (res.success && res.data) {
-//       return res.data;
-//     } else {
-//       throw new Error(res.message || '获取内容失败');
-//     }
-//   } else {
-//     // 跨域URL，使用原生 fetch（需要后端支持CORS或使用代理）
-//     // 注意：如果跨域URL需要认证，可能需要通过后端代理
-//     try {
-//       const response = await fetch(url);
-//       if (!response.ok) {
-//         throw new Error(`HTTP error! status: ${response.status}`);
-//       }
-//       return await response.text();
-//     } catch (error) {
-//       // 如果直接fetch失败，尝试通过后端代理
-//       // 假设后端有代理接口：/api/proxy?url=xxx
-//       const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
-//       const res = await apiUrl(proxyUrl);
-//       if (res.success && res.data) {
-//         return res.data;
-//       } else {
-//         throw new Error(
-//           `无法获取URL内容: ${error instanceof Error ? error.message : '未知错误'}`
-//         );
-//       }
-//     }
-//   }
-// }
