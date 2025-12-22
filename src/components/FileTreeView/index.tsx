@@ -1,4 +1,5 @@
 import { ImageViewer } from '@/pages/AppDev/components';
+import { fetchContentFromUrl } from '@/services/skill';
 import { FileNode } from '@/types/interfaces/appDev';
 import {
   findFileNode,
@@ -101,14 +102,31 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
   const [isSavingFiles, setIsSavingFiles] = useState<boolean>(false);
 
   // 文件选择
-  const handleFileSelect = (fileId: string) => {
+  const handleFileSelect = async (fileId: string) => {
     // 切换到预览模式
     onViewModeChange?.('preview');
     setSelectedFileId(fileId);
     // 根据文件ID查找文件节点
     const fileNode = findFileNode(fileId, files);
     if (fileNode) {
-      setSelectedFileNode(fileNode);
+      // 获取文件内容
+      const fileContent = fileNode?.content || '';
+      if (fileContent) {
+        setSelectedFileNode(fileNode);
+      } else {
+        // 获取文件代理URL
+        const fileProxyUrl = fileNode?.fileProxyUrl || '';
+        // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
+        if (fileProxyUrl) {
+          const { data: fileContent } = await fetchContentFromUrl(fileProxyUrl);
+          setSelectedFileNode({
+            ...fileNode,
+            content: fileContent,
+          });
+        } else {
+          setSelectedFileNode(fileNode);
+        }
+      }
     } else {
       setSelectedFileNode(null);
     }
@@ -532,13 +550,16 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
       );
     }
 
+    // 获取文件内容
+    const fileContent = selectedFileNode?.content || '';
+
     // 代码文件：使用代码查看器
     return (
       <CodeViewer
         fileId={selectedFileId}
         fileName={selectedFileId.split('/').pop() || selectedFileId}
         filePath={`app/${selectedFileId}`}
-        content={selectedFileNode?.content || ''}
+        content={fileContent}
         readOnly={readOnly}
         onContentChange={handleContentChange}
       />
