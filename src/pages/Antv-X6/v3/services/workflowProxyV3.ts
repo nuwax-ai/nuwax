@@ -138,9 +138,21 @@ class WorkflowProxyV3 {
     const endNode = nodes.find((n) => n.type === 'End');
 
     // 构建完整的工作流配置，符合 IgetDetails 结构
-    const config: IgetDetails = {
+    const cleanNodes = cloneDeep(nodes).map((node) => {
+      // 清理 icon 字段：如果是对象（React 元素元数据），则移除
+      if (node.icon && typeof node.icon === 'object') {
+        node.icon = null;
+      }
+      // V3: 确保 systemVariables 不会包含在节点数据中（如果有）
+      if ((node as any).systemVariables) {
+        delete (node as any).systemVariables;
+      }
+      return node;
+    });
+
+    const config: IgetDetails & { systemVariables?: any } = {
       ...this.workflowInfo,
-      nodes: cloneDeep(nodes),
+      nodes: cleanNodes,
       startNode: startNode ? cloneDeep(startNode) : this.workflowInfo.startNode,
       endNode: endNode ? cloneDeep(endNode) : this.workflowInfo.endNode,
       inputArgs:
@@ -149,6 +161,11 @@ class WorkflowProxyV3 {
         endNode?.nodeConfig?.outputArgs || this.workflowInfo.outputArgs,
       modified: new Date().toISOString(),
     };
+
+    // 移除系统变量，不提交给后端
+    if (config.systemVariables) {
+      delete config.systemVariables;
+    }
 
     return config;
   }
