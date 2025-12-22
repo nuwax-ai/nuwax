@@ -606,6 +606,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       );
     };
 
+    // console.log('changeFiles', changeFiles);
+
     return (
       <>
         {/* 全屏代码编辑器 Modal */}
@@ -645,7 +647,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 isFullscreen={true}
                 onSaveFiles={saveFiles}
                 onCancelSaveFiles={cancelSaveFiles}
-                hasModifiedFiles={changeFiles.length > 0}
+                hasModifiedFiles={changeFiles?.length > 0}
                 isSavingFiles={isSavingFiles}
               />
             </div>

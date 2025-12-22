@@ -11,6 +11,7 @@ import FileTreeView from '@/components/FileTreeView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
@@ -18,12 +19,14 @@ import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
+import { apiUpdateStaticFile } from '@/services/vncDesktop';
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
 import { AgentDetailDto } from '@/types/interfaces/agent';
+import { FileNode } from '@/types/interfaces/appDev';
 import type {
   MessageSourceType,
   UploadFileInfo,
@@ -33,11 +36,18 @@ import type {
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
 import {
+  IUpdateStaticFileParams,
+  StaticFileInfo,
+  VncDesktopUpdateFileInfo,
+} from '@/types/interfaces/vncDesktop';
+import { modalConfirm } from '@/utils/ant-custom';
+import {
   addBaseTarget,
   arraysContainSameItems,
   parsePageAppProjectId,
 } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
+import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
@@ -122,6 +132,7 @@ const Chat: React.FC = () => {
     setIsFileTreeVisible,
     // 文件树数据
     fileTreeData,
+    // setFileTreeData,
     // 文件树视图模式
     viewMode,
     setViewMode,
@@ -168,17 +179,6 @@ const Chat: React.FC = () => {
   // 判断是否显示复制按钮（智能体允许复制即可显示，支持复制智能体或工作流模板）
   const showCopyButton = useMemo(() => {
     const shouldShow = agentDetail?.allowCopy === AllowCopyEnum.Yes;
-    // 调试：输出相关信息
-    // console.log('[Chat] 复制按钮显示条件:', {
-    //   workflowId,
-    //   agentId: agentDetail?.agentId,
-    //   allowCopy: agentDetail?.allowCopy,
-    //   allowCopyEnum: AllowCopyEnum.Yes,
-    //   showCopyButton: shouldShow,
-    //   pagePreviewData: pagePreviewData,
-    //   uri: pagePreviewData?.uri,
-    //   params: pagePreviewData?.params,
-    // });
     return shouldShow;
   }, [
     workflowId,
@@ -463,6 +463,143 @@ const Chat: React.FC = () => {
     openPreviewView(id);
   };
 
+  // 新建文件（空内容）、文件夹
+  const handleCreateFileNode = async (
+    fileNode: FileNode,
+    newName: string,
+  ): Promise<boolean> => {
+    if (!id) {
+      message.error('会话ID不存在，无法新建文件');
+      return false;
+    }
+
+    const trimmedName = newName.trim();
+    if (!trimmedName) {
+      return false;
+    }
+
+    // 计算新文件的完整路径：父路径 + 新文件名
+    const parentPath = fileNode.parentPath || '';
+    const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
+
+    const newFile: VncDesktopUpdateFileInfo = {
+      name: newPath,
+      binary: false,
+      // 文件大小是否超过限制
+      sizeExceeded: false,
+      // 文件内容
+      contents: '',
+      // 重命名之前的文件名
+      renameFrom: '',
+      // 操作类型
+      operation: 'create',
+      // 是否为目录
+      isDir: fileNode.type === 'folder',
+    };
+
+    const updatedFilesList: VncDesktopUpdateFileInfo[] = [newFile];
+
+    const newSkillInfo: IUpdateStaticFileParams = {
+      cId: id,
+      files: updatedFilesList,
+    };
+
+    const { code } = await apiUpdateStaticFile(newSkillInfo);
+    if (code === SUCCESS_CODE && id) {
+      // 新建成功后，重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
+      handleRefreshFileList(id);
+    }
+
+    return code === SUCCESS_CODE;
+  };
+
+  // 删除文件
+  const handleDeleteFile = async (fileNode: FileNode) => {
+    modalConfirm('您确定要删除此文件吗?', fileNode.name, async () => {
+      // 找到要删除的文件
+      const currentFile = fileTreeData?.find(
+        (item: StaticFileInfo) => item.fileId === fileNode.id,
+      );
+      if (!currentFile) {
+        message.error('文件不存在，无法删除');
+        return;
+      }
+
+      // 更新文件操作
+      currentFile.operation = 'delete';
+      // 更新文件列表
+      const updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
+
+      // 更新技能信息
+      const newSkillInfo: IUpdateStaticFileParams = {
+        cId: id,
+        files: updatedFilesList,
+      };
+      const { code } = await apiUpdateStaticFile(newSkillInfo);
+      if (code === SUCCESS_CODE) {
+        // setFileTreeData((prev: StaticFileInfo[]) => prev?.filter((item: StaticFileInfo) => item.fileId !== fileNode.id))
+        // 重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
+        handleRefreshFileList(id);
+      }
+      return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
+    });
+  };
+
+  // 确认重命名文件
+  const handleConfirmRenameFile = async (
+    fileNode: FileNode,
+    newName: string,
+  ) => {
+    // 更新原始文件列表中的文件名（用于提交更新）
+    const updatedFilesList = updateFilesListName(
+      fileTreeData || [],
+      fileNode,
+      newName,
+    );
+
+    // 更新技能信息，用于提交更新
+    const newSkillInfo: IUpdateStaticFileParams = {
+      cId: id,
+      files: updatedFilesList as VncDesktopUpdateFileInfo[],
+    };
+
+    // 使用文件全量更新逻辑
+    const { code } = await apiUpdateStaticFile(newSkillInfo);
+    if (code === SUCCESS_CODE) {
+      // 重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
+      handleRefreshFileList(id);
+    }
+    return code === SUCCESS_CODE;
+  };
+
+  // 保存文件
+  const handleSaveFiles = async (
+    data: {
+      fileId: string;
+      fileContent: string;
+      originalFileContent: string;
+    }[],
+  ) => {
+    // 更新文件列表(只更新修改过的文件)
+    const updatedFilesList = updateFilesListContent(
+      fileTreeData || [],
+      data,
+      'modify',
+    );
+
+    // 更新技能信息，用于提交更新
+    const newSkillInfo: IUpdateStaticFileParams = {
+      cId: id,
+      files: updatedFilesList as VncDesktopUpdateFileInfo[],
+    };
+
+    // 使用文件全量更新逻辑
+    const { code } = await apiUpdateStaticFile(newSkillInfo);
+    return code === SUCCESS_CODE;
+  };
+
   const LeftContent = () => {
     return (
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
@@ -724,33 +861,23 @@ const Chat: React.FC = () => {
               originalFiles={fileTreeData}
               targetId={id?.toString() || ''}
               viewMode={viewMode}
-              readOnly={true}
+              readOnly={false}
               onViewModeChange={(mode) => {
                 setViewMode(mode);
               }}
+              // 上传文件
               onUploadFiles={(node) => {
                 console.log('上传文件', node);
                 // TODO: 实现文件上传逻辑
               }}
-              onRenameFile={async (node, newName) => {
-                console.log('重命名文件', node, newName);
-                // TODO: 实现文件重命名逻辑
-                return true;
-              }}
-              onCreateFileNode={async (node, newName) => {
-                console.log('创建文件', node, newName);
-                // TODO: 实现文件创建逻辑
-                return true;
-              }}
-              onDeleteFile={(node) => {
-                console.log('删除文件', node);
-                // TODO: 实现文件删除逻辑
-              }}
-              onSaveFiles={async (data) => {
-                console.log('保存文件', data);
-                // TODO: 实现文件保存逻辑
-                return true;
-              }}
+              // 重命名文件
+              onRenameFile={handleConfirmRenameFile}
+              // 新建文件、文件夹
+              onCreateFileNode={handleCreateFileNode}
+              // 删除文件
+              onDeleteFile={handleDeleteFile}
+              // 保存文件
+              onSaveFiles={handleSaveFiles}
             />
           </div>
         </div>

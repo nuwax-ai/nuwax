@@ -436,13 +436,21 @@ const SkillDetails: React.FC = () => {
         {/* 文件树视图 */}
         <FileTreeView
           ref={fileTreeViewRef}
+          // 技能文件列表
           originalFiles={skillInfo?.files || []}
+          // 上传文件
           onUploadFiles={handleUploadMultipleFiles}
+          // 下载文件
           onDownload={handleDownload}
+          // 重命名文件
           onRenameFile={handleConfirmRenameFile}
+          // 新建文件
           onCreateFileNode={handleCreateFileNode}
+          // 保存文件
           onSaveFiles={handleSaveFiles}
+          // 删除文件
           onDeleteFile={handleDeleteFile}
+          // 导入项目
           onImportProject={handleImportProject}
         />
 
