@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 
-import { EditOutlined } from '@ant-design/icons';
+import { FileTextOutlined, RightOutlined } from '@ant-design/icons';
 import React from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
@@ -54,6 +54,25 @@ const TaskResult: React.FC<TaskResultProps> = ({
     openPreviewView(conversationId);
   };
 
+  // 有文件描述显示文件描述
+  // const fileDescription = node?.props?.fileDescription;
+  console.log(children);
+  const fileDescription = (children as React.ReactNode[])
+    ?.filter((item: any) => item.type === 'description')
+    .map((item: any) => item.props.children)
+    .join('');
+  console.log('fileDescription', fileDescription);
+  // 有文件名显示文件名
+  const fileName = (children as React.ReactNode[])
+    ?.filter((item: any) => item.type === 'file')
+    .map((item: any) => item.props.children)
+    .join('');
+  console.log('fileName', fileName);
+  // 没有文件名不显示组件
+  if (!fileName) {
+    return null;
+  }
+
   return (
     <div
       key={taskResultKey}
@@ -63,9 +82,14 @@ const TaskResult: React.FC<TaskResultProps> = ({
       title={textContent.replaceAll('\n', ' ')}
     >
       <span className={cx(styles['task-result-icon'])}>
-        <EditOutlined />
+        <FileTextOutlined />
       </span>
-      <span className={cx(styles['task-result-content'])}>{children}</span>
+      <span className={cx(styles['task-result-action'])}>
+        {fileDescription ? fileDescription : fileName}
+      </span>
+      <span className={cx(styles['task-result-arrow'])}>
+        <RightOutlined />
+      </span>
     </div>
   );
 };
