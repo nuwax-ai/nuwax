@@ -415,6 +415,7 @@ const Workflow: React.FC = () => {
         workflowId: workflowId,
         nodes: nodeList as any,
         edges: edgeList as any,
+        systemVariables: workflowProxy.getSystemVariables(),
       };
 
       const result = calculateNodePreviousArgs(id, workflowData);

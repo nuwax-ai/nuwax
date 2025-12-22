@@ -22,7 +22,11 @@ import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode, Edge } from '@/types/interfaces/graph';
 import { cloneDeep } from '@/utils/common';
 import { SpecialPortType } from '../types/enums';
-import type { EdgeV3, WorkflowDataV3 } from '../types/interfaces';
+import type {
+  EdgeV3,
+  InputAndOutConfig,
+  WorkflowDataV3,
+} from '../types/interfaces';
 import { generateFallbackNodeId } from '../utils/nodeUtils';
 
 // ==================== 类型定义 ====================
@@ -253,6 +257,15 @@ class WorkflowProxyV3 {
    */
   getEdges(): Edge[] {
     return this.workflowData ? cloneDeep(this.workflowData.edges) : [];
+  }
+
+  /**
+   * 获取系统变量列表（后端返回）
+   */
+  getSystemVariables(): InputAndOutConfig[] {
+    return this.workflowData?.systemVariables
+      ? cloneDeep(this.workflowData.systemVariables)
+      : [];
   }
 
   /**
