@@ -7,7 +7,7 @@ import {
   apiSkillExport,
   apiSkillTemplate,
   apiSkillUpdate,
-  apiSkillUploadFile,
+  apiSkillUploadFiles,
 } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
@@ -115,9 +115,9 @@ const SkillDetails: React.FC = () => {
   };
 
   /**
-   * 处理上传单个文件回调
+   * 处理上传多个文件回调
    */
-  const handleUploadSingleFile = async (node: FileNode | null) => {
+  const handleUploadMultipleFiles = async (node: FileNode | null) => {
     if (!skillId) {
       message.error('技能ID不能为空');
       return;
@@ -137,6 +137,7 @@ const SkillDetails: React.FC = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.style.display = 'none';
+    input.multiple = true;
     document.body.appendChild(input);
 
     // 等待用户选择文件
@@ -154,11 +155,14 @@ const SkillDetails: React.FC = () => {
         // setSingleFileUploadLoading(true);
         // setIsFileOperating(true);
 
+        const files = Array.from((e.target as HTMLInputElement).files || []);
+
+        const filePaths = files.map((file) => relativePath + file.name);
         // 直接调用上传接口，使用文件名作为路径
-        const { code } = await apiSkillUploadFile({
-          file,
+        const { code } = await apiSkillUploadFiles({
+          files,
           skillId,
-          filePath: relativePath + file.name,
+          filePaths,
         });
 
         if (code === SUCCESS_CODE) {
@@ -392,7 +396,7 @@ const SkillDetails: React.FC = () => {
         <FileTreeView
           ref={fileTreeViewRef}
           originalFiles={skillInfo?.files || []}
-          onUploadSingleFile={handleUploadSingleFile}
+          onUploadFiles={handleUploadMultipleFiles}
           onDownload={handleDownload}
           onRenameFile={handleConfirmRenameFile}
           onCreateFileNode={handleCreateFileNode}
