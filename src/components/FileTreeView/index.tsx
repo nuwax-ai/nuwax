@@ -48,7 +48,7 @@ interface FileTreeViewProps {
   originalFiles: any[];
   /** 是否只读 */
   readOnly?: boolean;
-  /** 目标ID */
+  /** 目标ID, 可以是技能ID、会话ID等 */
   targetId?: string;
   /** 当前视图模式 */
   viewMode?: 'preview' | 'desktop';
