@@ -43,6 +43,7 @@ export const transformFlatListToTree = (files: any[]): FileNode[] => {
       parentPath: pathParts.slice(0, -1).join('/') || null,
       content: file.contents || '',
       lastModified: Date.now(),
+      fileProxyUrl: file?.fileProxyUrl || '',
     };
 
     map.set(file.name, node);

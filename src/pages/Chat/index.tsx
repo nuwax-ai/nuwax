@@ -18,7 +18,6 @@ import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
-import { fetchContentFromUrl } from '@/services/skill';
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -128,6 +127,7 @@ const Chat: React.FC = () => {
     setViewMode,
     // 处理文件列表刷新事件
     handleRefreshFileList,
+    openPreviewView,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -389,11 +389,15 @@ const Chat: React.FC = () => {
   useEffect(() => {
     // 监听新消息事件
     eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
+    // 订阅文件列表刷新事件
+    eventBus.on(EVENT_TYPE.RefreshFileList, () => handleRefreshFileList(id));
 
     return () => {
       eventBus.off(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
+      // 组件卸载时取消订阅
+      eventBus.off(EVENT_TYPE.RefreshFileList, () => handleRefreshFileList(id));
     };
-  }, []);
+  }, [id]);
 
   // 清空会话记录，实际上是跳转到智能体详情页面
   const handleClear = () => {
@@ -445,24 +449,6 @@ const Chat: React.FC = () => {
     setShowType,
   });
 
-  // 当 AgentSidebar 显示时，自动关闭文件树
-  useEffect(() => {
-    if (isSidebarVisible) {
-      setIsFileTreeVisible(false);
-    }
-  }, [isSidebarVisible]);
-
-  // 订阅文件列表刷新事件
-  useEffect(() => {
-    // 订阅事件
-    eventBus.on(EVENT_TYPE.RefreshFileList, () => handleRefreshFileList(id));
-
-    return () => {
-      // 组件卸载时取消订阅
-      eventBus.off(EVENT_TYPE.RefreshFileList, () => handleRefreshFileList(id));
-    };
-  }, [handleRefreshFileList, id]);
-
   // 消息事件代理（处理会话输出中的点击事件）
   useMessageEventDelegate({
     containerRef: messageViewRef,
@@ -471,12 +457,10 @@ const Chat: React.FC = () => {
 
   // 显示文件树
   const handleFileTreeVisible = () => {
-    // 关闭 AgentSidebar 并显示文件树
-    setIsFileTreeVisible(true);
     // 关闭 AgentSidebar，确保文件树显示时，AgentSidebar 不会显示
     sidebarRef.current?.close();
     // 触发文件列表刷新事件
-    eventBus.emit(EVENT_TYPE.RefreshFileList, id);
+    openPreviewView(id);
   };
 
   const LeftContent = () => {
@@ -618,13 +602,15 @@ const Chat: React.FC = () => {
                   />
                 ) : (
                   <div
+                    className={cx(
+                      'flex',
+                      'items-center',
+                      'content-center',
+                      'flex-1',
+                      'h-full',
+                      'w-full',
+                    )}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flex: 1,
-                      height: '100%',
-                      width: '100%',
                       margin: '50px auto',
                     }}
                   >
@@ -654,40 +640,40 @@ const Chat: React.FC = () => {
     );
   };
 
-  useEffect(() => {
-    /**
-     * 通过后端提供的URL地址获取内容
-     * 支持两种场景：
-     * 1. 直接传入相对路径（如 '/api/computer/static/1461016/今日新闻PPT报告.md'）
-     * 2. 后端返回一个URL字符串，需要再次请求获取内容
-     */
-    const fetchData = async () => {
-      try {
-        // 场景1: 直接使用相对路径获取内容
-        const url = '/api/computer/static/1461016/今日新闻PPT报告.md';
-        const res = await fetchContentFromUrl(url);
+  // useEffect(() => {
+  //   /**
+  //    * 通过后端提供的URL地址获取内容
+  //    * 支持两种场景：
+  //    * 1. 直接传入相对路径（如 '/api/computer/static/1461016/今日新闻PPT报告.md'）
+  //    * 2. 后端返回一个URL字符串，需要再次请求获取内容
+  //    */
+  //   const fetchData = async () => {
+  //     try {
+  //       // 场景1: 直接使用相对路径获取内容
+  //       const url = '/api/computer/static/1461016/今日新闻PPT报告.md';
+  //       const res = await fetchContentFromUrl(url);
 
-        // 检查响应是否成功
-        if (res.success && res.data) {
-          const text = res.data;
-          console.log('获取到的内容:', text);
+  //       // 检查响应是否成功
+  //       if (res.success && res.data) {
+  //         const text = res.data;
+  //         console.log('获取到的内容:', text);
 
-          // // 场景2: 如果后端返回的 data 是一个URL字符串，需要再次请求获取内容
-          // if (typeof res.data === 'string' && (res.data.startsWith('http') || res.data.startsWith('/'))) {
-          //   // 使用工具函数获取URL内容
-          //   const contentRes = await fetchContentFromUrl(res.data);
-          //   console.log('从URL获取到的内容:', contentRes);
-          // }
-        } else {
-          console.error('获取内容失败:', res.message);
-        }
-      } catch (error) {
-        console.error('获取URL内容时发生错误:', error);
-      }
-    };
+  //         // // 场景2: 如果后端返回的 data 是一个URL字符串，需要再次请求获取内容
+  //         // if (typeof res.data === 'string' && (res.data.startsWith('http') || res.data.startsWith('/'))) {
+  //         //   // 使用工具函数获取URL内容
+  //         //   const contentRes = await fetchContentFromUrl(res.data);
+  //         //   console.log('从URL获取到的内容:', contentRes);
+  //         // }
+  //       } else {
+  //         console.error('获取内容失败:', res.message);
+  //       }
+  //     } catch (error) {
+  //       console.error('获取URL内容时发生错误:', error);
+  //     }
+  //   };
 
-    fetchData();
-  }, []);
+  //   fetchData();
+  // }, []);
 
   return (
     <div className={cx('flex', 'h-full')}>
