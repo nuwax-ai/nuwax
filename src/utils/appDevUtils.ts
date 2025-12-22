@@ -25,7 +25,8 @@ export const transformFlatListToTree = (files: any[]): FileNode[] => {
   filteredFiles.forEach((file) => {
     const pathParts = file.name.split('/').filter(Boolean);
     const fileName = pathParts[pathParts.length - 1];
-    const isFile = fileName.includes('.');
+    // 如果文件是目录，则认为是文件（后端给了isDir字段，表示是否为目录），兼容之前逻辑
+    const isFile = !file.isDir || fileName.includes('.');
 
     const node: FileNode = {
       id: file.name,
