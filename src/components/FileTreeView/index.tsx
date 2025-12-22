@@ -66,6 +66,8 @@ interface FileTreeViewProps {
   onViewModeChange?: (mode: 'preview' | 'desktop') => void;
   /** 保存文件回调 */
   onSaveFiles?: (data: ChangeFileInfo[]) => Promise<boolean>;
+  // 导入项目
+  onImportProject?: () => void;
 }
 
 /**
@@ -85,6 +87,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onDeleteFile,
       onViewModeChange,
       onSaveFiles,
+      onImportProject,
     },
     ref,
   ) => {
@@ -673,11 +676,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             // 处理重命名操作
             onRename={handleRenameFromMenu}
             // 处理上传文件操作
-            onUploadSingleFile={handleUploadFromMenu}
+            onUploadFiles={handleUploadFromMenu}
             // 处理新建文件操作
             onCreateFile={handleCreateFile}
             // 处理新建文件夹操作
             onCreateFolder={handleCreateFolder}
+            onImportProject={onImportProject}
           />
           {/* 左边文件树 - 远程桌面模式下隐藏 */}
           {viewMode !== 'desktop' && (
