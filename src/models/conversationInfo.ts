@@ -1,4 +1,5 @@
 import { CONVERSATION_CONNECTION_URL } from '@/constants/common.constants';
+import { EVENT_TYPE } from '@/constants/event.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
@@ -51,6 +52,7 @@ import {
   StaticFileListResponse,
 } from '@/types/interfaces/vncDesktop';
 import { isEmptyObject } from '@/utils/common';
+import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
@@ -60,8 +62,9 @@ import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 
 export default () => {
-  const { runHistoryItem } = useModel('conversationHistory');
-  const { showPagePreview } = useModel('chat');
+  // 历史记录
+  const { runHistory, runHistoryItem } = useModel('conversationHistory');
+  const { showPagePreview, handleChatProcessingList } = useModel('chat');
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();
@@ -152,9 +155,6 @@ export default () => {
   > | null>(null);
   // 必填变量参数name列表
   const [requiredNameList, setRequiredNameList] = useState<string[]>([]);
-  // 历史记录
-  const { runHistory } = useModel('conversationHistory');
-  const { handleChatProcessingList } = useModel('chat');
 
   // 文件树显隐状态
   const [isFileTreeVisible, setIsFileTreeVisible] = useState<boolean>(false);
@@ -186,6 +186,22 @@ export default () => {
     },
     [runGetStaticFileList],
   );
+
+  // 打开桌面视图
+  const openDesktopView = useCallback((cId: number) => {
+    setViewMode('desktop');
+    setIsFileTreeVisible(true);
+    // 触发文件列表刷新事件
+    eventBus.emit(EVENT_TYPE.RefreshFileList, cId);
+  }, []);
+
+  // 打开预览视图
+  const openPreviewView = useCallback((cId: number) => {
+    setViewMode('preview');
+    setIsFileTreeVisible(true);
+    // 触发文件列表刷新事件
+    eventBus.emit(EVENT_TYPE.RefreshFileList, cId);
+  }, []);
 
   // 滚动到底部
   const messageViewScrollToBottom = () => {
@@ -918,5 +934,7 @@ export default () => {
     setViewMode,
     // 处理文件列表刷新事件
     handleRefreshFileList,
+    openDesktopView,
+    openPreviewView,
   };
 };
