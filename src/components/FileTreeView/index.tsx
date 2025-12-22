@@ -508,14 +508,24 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         );
       });
       setFiles(restoredFiles);
-      // 还原当前选中的文件内容
-      const oldContent = restoredFiles.find(
-        (file) => file.id === selectedFileId,
-      )?.content;
-      setSelectedFileNode((prevNode: any) => ({
-        ...prevNode,
-        content: oldContent,
-      }));
+
+      // 从最新的 files 中获取原始内容
+      // const currentFile = findFileNode(selectedFileId, restoredFiles);
+      // const oldContent = currentFile?.content || '';
+
+      // 从已修改文件列表中获取原始内容，用于还原当前选中的文件内容
+      const changeFile = changeFiles?.find(
+        (item) => item.fileId === selectedFileId,
+      );
+      if (changeFile) {
+        const originalFileContent = changeFile?.originalFileContent;
+
+        setSelectedFileNode((prevNode: any) => ({
+          ...prevNode,
+          content: originalFileContent,
+        }));
+      }
+
       // 清空已修改文件列表
       setChangeFiles([]);
     };
