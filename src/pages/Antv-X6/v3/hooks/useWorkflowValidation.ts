@@ -13,6 +13,7 @@ import { GraphContainerRef } from '@/types/interfaces/graph';
 import { ErrorParams } from '@/types/interfaces/workflow';
 
 import { workflowProxy } from '../services/workflowProxyV3';
+import { getEdges } from '../utils/graphV3';
 
 interface UseWorkflowValidationParams {
   workflowId: number;
@@ -78,7 +79,14 @@ export const useWorkflowValidation = ({
 
     const _detail = await service.getDetails(workflowId);
     const _nodeList = _detail.data.nodes;
-    setGraphParams((prev: any) => ({ ...prev, nodeList: _nodeList }));
+    // V3修复：更新 nodeList 时同时更新 edgeList，从节点数据中重新计算边
+    // 这样确保边引用的节点 ID 与当前节点列表一致
+    const _edgeList = getEdges(_nodeList);
+    setGraphParams((prev: any) => ({
+      ...prev,
+      nodeList: _nodeList,
+      edgeList: _edgeList,
+    }));
     changeDrawer(_detail.data.startNode);
     graphRef.current?.graphSelectNode(String(_detail.data.startNode.id));
 
