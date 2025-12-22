@@ -42,6 +42,7 @@ import {
   handleExceptionNodesNextIndex,
   handleSpecialNodesNextIndex,
   QuicklyCreateEdgeConditionConfig,
+  removeFromSpecialNodesNextIndex,
 } from '../utils/workflowV3';
 
 // 辅助函数：获取坐标
@@ -91,7 +92,6 @@ interface UseNodeOperationsParams {
   changeDrawer: (val: any) => void;
   getNodeConfig: (id: number) => void;
   getReference: (id: number) => Promise<boolean>;
-  getWorkflow: (key: string) => any;
   changeNode: (
     params: { nodeData: any },
     callback?: () => void,
@@ -117,6 +117,7 @@ interface UseNodeOperationsReturn {
     sourceNode: ChildNode;
     edgeId: string;
     isLoop: boolean;
+    portId: string;
   }) => Promise<void>;
   handleNodeCreationSuccess: (nodeData: AddNodeResponse) => Promise<void>;
   // 核心操作
@@ -152,7 +153,6 @@ export const useNodeOperations = ({
   changeDrawer,
   getNodeConfig,
   getReference,
-  getWorkflow,
   changeNode,
   nodeChangeEdge,
 }: UseNodeOperationsParams): UseNodeOperationsReturn => {
@@ -190,6 +190,7 @@ export const useNodeOperations = ({
         newNodeId,
         targetNode,
       );
+
       const isSuccess = await changeNode({ nodeData: params }, noop);
       if (isSuccess) {
         const sourcePortId = portId.split('-').slice(0, -1).join('-');
@@ -287,6 +288,15 @@ export const useNodeOperations = ({
         newNode,
         targetNode,
       );
+
+      // 如果 sourcePortId 为空，说明条件配置还未初始化，跳过连线
+      if (!sourcePortId) {
+        console.warn(
+          '[handleConditionalNodeConnection] sourcePortId 为空，跳过连线创建',
+        );
+        return;
+      }
+
       const isSuccess = await changeNode({ nodeData: nodeData }, noop);
       if (isSuccess) {
         graphRef.current?.graphCreateNewEdge(
@@ -394,15 +404,23 @@ export const useNodeOperations = ({
       sourceNode,
       edgeId,
       isLoop,
+      portId,
     }: {
       newNode: ChildNode;
       targetNode: ChildNode;
       sourceNode: ChildNode;
       edgeId: string;
       isLoop: boolean;
+      portId: string;
     }) => {
       // 建立新边：newNode -> targetNode
-      if (isConditionalNode(newNode.type)) {
+      // 注意：QA TEXT 模式应该作为普通节点处理，因为它只有一个普通 out 端口
+      // 只有 QA SELECT 模式才有多个选项端口，需要特殊处理
+      const isQaTextMode =
+        newNode.type === NodeTypeEnum.QA &&
+        newNode.nodeConfig?.answerType !== 'SELECT';
+
+      if (isConditionalNode(newNode.type) && !isQaTextMode) {
         await handleConditionalNodeConnection({
           newNode,
           targetNode,
@@ -419,18 +437,40 @@ export const useNodeOperations = ({
 
       // V3: 删除原有连接关系 (同步数据模型)
       // 参考 V1 连线规则：在快捷插入节点时，需要删除原 sourceNode -> targetNode 的关系
-      const newNodeIds = await nodeChangeEdge(
-        {
-          type: UpdateEdgeType.deleted,
-          targetId: targetNode.id.toString(),
-          sourceNode,
-        },
-        noop,
-      );
 
-      // 如果数据删除成功，则同步删除画布上的边
-      if (newNodeIds) {
-        graphRef.current?.graphDeleteEdge(edgeId);
+      // 检查是否是特殊端口（QA SELECT、条件分支、意图识别）
+      const portSegments = portId.split('-');
+      const hasUuidSegment =
+        portSegments.length >= 3 &&
+        portSegments.slice(1, -1).join('-').length >= 8;
+      const isSpecialPort = hasUuidSegment;
+
+      if (isSpecialPort) {
+        // 特殊端口：需要从源节点的配置中移除目标节点ID
+        // 使用 handleSpecialNodesNextIndex 的反向操作
+        const params = removeFromSpecialNodesNextIndex(
+          sourceNode,
+          portId,
+          targetNode.id,
+        );
+        const isSuccess = await changeNode({ nodeData: params }, noop);
+        if (isSuccess) {
+          graphRef.current?.graphDeleteEdge(edgeId);
+        }
+      } else {
+        // 普通端口：使用 nodeChangeEdge 删除
+        const newNodeIds = await nodeChangeEdge(
+          {
+            type: UpdateEdgeType.deleted,
+            targetId: targetNode.id.toString(),
+            sourceNode,
+          },
+          noop,
+        );
+        // 如果数据删除成功，则同步删除画布上的边
+        if (newNodeIds) {
+          graphRef.current?.graphDeleteEdge(edgeId);
+        }
       }
     },
     [
@@ -439,6 +479,7 @@ export const useNodeOperations = ({
       handleConditionalNodeConnection,
       handleNormalNodeConnection,
       nodeChangeEdge,
+      changeNode,
     ],
   );
 
@@ -456,6 +497,9 @@ export const useNodeOperations = ({
       // 选中新增的节点
       graphRef.current?.graphSelectNode(String(nodeData.id));
 
+      // 显式打开右侧属性面板（确保快捷添加节点后面板正确打开）
+      changeDrawer(nodeData as unknown as ChildNode);
+
       // 处理连接桩或边创建的节点
       if (currentNodeRef.current) {
         const { portId, edgeId, sourceNode, targetNode } =
@@ -467,7 +511,14 @@ export const useNodeOperations = ({
         // V3: 通过 portId 动态计算端口类型（和 V1 保持一致）
         const isOut = portId.endsWith('out');
         const isException = portId.includes(PortGroupEnum.exception);
-        const isSpecial = !isException && portId.length > 15;
+        // 特殊端口格式: {nodeId}-{uuid}-out (条件分支、意图识别、QA选项)
+        // 普通端口格式: {nodeId}-out
+        // 检测方法: 分割后至少有3段（nodeId, uuid, out），且中间段是UUID格式（长度>=8）
+        const portSegments = portId.split('-');
+        const hasUuidSegment =
+          portSegments.length >= 3 &&
+          portSegments.slice(1, -1).join('-').length >= 8; // UUID至少有8个字符
+        const isSpecial = !isException && hasUuidSegment;
 
         try {
           if (isException) {
@@ -513,10 +564,12 @@ export const useNodeOperations = ({
               sourceNode,
               edgeId: edgeId!,
               isLoop,
+              portId,
             });
           }
 
-          await getReference(getWorkflow('drawerForm').id);
+          // 重新获取新节点的引用信息
+          await getReference(nodeData.id);
         } catch (error) {
           console.error('处理节点连接时发生错误:', error);
           throw error;
@@ -528,13 +581,13 @@ export const useNodeOperations = ({
     [
       graphRef,
       currentNodeRef,
+      changeDrawer,
       handleSpecialPortConnection,
       handleExceptionPortConnection,
       handleOutputPortConnection,
       handleInputPortConnection,
       handleTargetNodeConnection,
       getReference,
-      getWorkflow,
     ],
   );
 
@@ -650,7 +703,6 @@ export const useNodeOperations = ({
         if (apiRes.code === Constant.success && apiRes.data) {
           nodeId = apiRes.data.id;
           apiNodeData = apiRes.data;
-          console.log('[V3] 添加节点 API 成功, nodeId:', nodeId);
         } else {
           // 离线模式：完全由前端生成节点数据
           nodeId = generateFallbackNodeId(workflowId);

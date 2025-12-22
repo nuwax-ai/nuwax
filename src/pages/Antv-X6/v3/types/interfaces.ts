@@ -50,6 +50,7 @@ export {
 
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
+import { InputAndOutConfig } from '@/types/interfaces/node';
 import { HistoryActionTypeV3 } from './enums';
 
 // ==================== V3 专属/定制接口 (不是直接引用的，保留 V3 后缀) ====================
@@ -96,6 +97,7 @@ export interface WorkflowDataV3 {
   workflowId: number;
   nodes: ChildNode[];
   edges: EdgeV3[];
+  systemVariables?: InputAndOutConfig[]; // 系统变量（后端返回）
   lastSavedVersion?: string;
   isDirty?: boolean;
   modified?: string;

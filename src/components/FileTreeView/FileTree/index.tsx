@@ -124,17 +124,22 @@ const FileTree: React.FC<FileTreeProps> = ({
     // 延迟执行，避免与点击事件冲突
     setTimeout(() => {
       if (renamingNode) {
-        // 对于新建节点（status === 'create'），失焦视为取消新建
-        // 用户需要按 Enter 显式确认新建
+        // 对于新建节点（status === 'create'），根据输入值决定是创建还是取消
         if (renamingNode.status === 'create') {
-          cancelRename();
+          const trimmedValue = renameValue.trim();
+          // 如果输入了有效名称，则确认创建；否则取消并移除临时节点
+          if (trimmedValue) {
+            confirmRename();
+          } else {
+            cancelRename();
+          }
         } else {
           // 其它场景（普通重命名）失焦仍然走确认逻辑
           confirmRename();
         }
       }
     }, 100);
-  }, [renamingNode, confirmRename, cancelRename]);
+  }, [renamingNode, renameValue, confirmRename, cancelRename]);
 
   // 重命名输入框自动聚焦
   useEffect(() => {

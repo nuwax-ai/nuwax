@@ -617,33 +617,35 @@ const FileTreeView: React.FC<FileTreeViewProps> = ({
           // 处理新建文件夹操作
           onCreateFolder={handleCreateFolder}
         />
-        {/* 左边文件树 */}
-        <div
-          className={cx(
-            styles['file-tree-view'],
-            'h-full',
-            'flex',
-            'flex-col',
-            'overflow-hide',
-          )}
-        >
-          <SearchView files={files} onFileSelect={handleFileSelect} />
-          <FileTree
-            files={files}
-            // 当前选中的文件ID
-            selectedFileId={selectedFileId}
-            // 正在重命名的节点
-            renamingNode={renamingNode}
-            // 取消重命名回调
-            onCancelRename={handleCancelRename}
-            // 右键菜单回调
-            onContextMenu={handleContextMenu}
-            // 文件选择回调
-            onFileSelect={handleFileSelect}
-            // 重命名文件回调
-            onConfirmRenameFile={handleRenameFile}
-          />
-        </div>
+        {/* 左边文件树 - 远程桌面模式下隐藏 */}
+        {viewMode !== 'desktop' && (
+          <div
+            className={cx(
+              styles['file-tree-view'],
+              'h-full',
+              'flex',
+              'flex-col',
+              'overflow-hide',
+            )}
+          >
+            <SearchView files={files} onFileSelect={handleFileSelect} />
+            <FileTree
+              files={files}
+              // 当前选中的文件ID
+              selectedFileId={selectedFileId}
+              // 正在重命名的节点
+              renamingNode={renamingNode}
+              // 取消重命名回调
+              onCancelRename={handleCancelRename}
+              // 右键菜单回调
+              onContextMenu={handleContextMenu}
+              // 文件选择回调
+              onFileSelect={handleFileSelect}
+              // 重命名文件回调
+              onConfirmRenameFile={handleRenameFile}
+            />
+          </div>
+        )}
         <div
           className={cx(
             'h-full',
