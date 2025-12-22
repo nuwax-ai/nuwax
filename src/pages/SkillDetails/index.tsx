@@ -6,7 +6,6 @@ import {
   apiSkillDetail,
   apiSkillExport,
   apiSkillImport,
-  apiSkillTemplate,
   apiSkillUpdate,
   apiSkillUploadFiles,
 } from '@/services/skill';
@@ -66,29 +65,7 @@ const SkillDetails: React.FC = () => {
           })),
         }));
       } else {
-        const {
-          data: templateInfo,
-          code,
-          message: errorMessage,
-        } = await apiSkillTemplate();
-        if (code === SUCCESS_CODE) {
-          setSkillInfo(() => ({
-            ...result,
-            files: templateInfo?.files?.map((item) => ({
-              ...item,
-              fileId: item.name,
-            })),
-          }));
-        } else {
-          setSkillInfo(() => ({
-            ...result,
-            files: files?.map((item) => ({
-              ...item,
-              fileId: item.name,
-            })),
-          }));
-          message.error(errorMessage || '获取技能模板失败');
-        }
+        setSkillInfo(result);
       }
     },
   });
@@ -366,7 +343,6 @@ const SkillDetails: React.FC = () => {
     fileNode: FileNode,
     newName: string,
   ) => {
-    console.log('handleConfirmRenameFile', fileNode, newName);
     // 更新原始文件列表中的文件名（用于提交更新）
     const updatedFilesList = updateFilesListName(
       skillInfo?.files || [],
