@@ -114,6 +114,8 @@ export interface IgetDetails {
   category?: string;
   // 权限列表
   permissions?: PermissionsEnum[];
+  // 系统变量列表（后端返回）
+  systemVariables?: InputAndOutConfig[];
 }
 // 试运行所有节点
 export interface ITestRun {
