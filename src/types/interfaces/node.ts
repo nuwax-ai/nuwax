@@ -59,6 +59,8 @@ export interface InputAndOutConfig {
   description: string | null;
   // 数据类型
   dataType: DataTypeEnum | null;
+  // 原始数据类型（类型转换前的类型，如循环内节点输出会被转换为Array_*）
+  originDataType?: DataTypeEnum | null;
   // 是否必须
   require: boolean;
   // 是否为系统内置变量参数
@@ -274,6 +276,10 @@ export interface PreviousList {
   icon: string | number;
   // 节点的出参列表
   outputArgs: InputAndOutConfig[];
+  // 所属循环节点ID（可选，仅循环内节点有）
+  loopNodeId?: number;
+  // 排序（可选）
+  sort?: number;
 }
 
 // 引用类型的map
