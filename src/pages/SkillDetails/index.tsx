@@ -117,14 +117,66 @@ const SkillDetails: React.FC = () => {
 
   // 导入项目
   const handleImportProject = async () => {
-    console.log('handleImportProject', apiSkillImport);
-    // const result = await apiSkillImport({
-    //   skillId,
-    //   file,
-    // });
-    // if (result.code === SUCCESS_CODE) {
-    //   message.success('导入成功');
-    // }
+    if (!skillId) {
+      message.error('技能ID不能为空');
+      return;
+    }
+
+    if (!spaceId) {
+      message.error('空间ID不能为空');
+      return;
+    }
+
+    // 创建一个隐藏的文件输入框
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.style.display = 'none';
+    input.accept = '.zip'; // 只接受 zip 文件
+    document.body.appendChild(input);
+
+    // 等待用户选择文件
+    input.click();
+
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) {
+        document.body.removeChild(input);
+        return;
+      }
+
+      // 校验文件类型
+      const isZip = file.name?.toLowerCase().endsWith('.zip');
+      if (!isZip) {
+        message.error('仅支持 .zip 压缩文件格式');
+        document.body.removeChild(input);
+        return;
+      }
+
+      try {
+        // 调用导入接口
+        const result = await apiSkillImport({
+          file,
+          targetSkillId: skillId.toString(),
+          targetSpaceId: spaceId.toString(),
+        });
+
+        if (result.code === SUCCESS_CODE) {
+          message.success('导入成功');
+          // 刷新技能信息
+          runSkillInfo(skillId);
+        }
+      } catch (error) {
+        console.error('导入失败', error);
+      } finally {
+        // 清理DOM
+        document.body.removeChild(input);
+      }
+    };
+
+    // 如果用户取消选择，也要清理DOM
+    input.oncancel = () => {
+      document.body.removeChild(input);
+    };
   };
 
   /**
