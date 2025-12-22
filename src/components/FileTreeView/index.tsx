@@ -48,12 +48,12 @@ interface FileTreeViewProps {
   originalFiles: any[];
   /** 是否只读 */
   readOnly?: boolean;
-  /** 目标ID */
+  /** 目标ID, 可以是技能ID、会话ID等 */
   targetId?: string;
   /** 当前视图模式 */
   viewMode?: 'preview' | 'desktop';
-  /** 上传单个文件回调 */
-  onUploadSingleFile?: (node: FileNode | null) => void;
+  /** 上传多个文件回调 */
+  onUploadFiles?: (node: FileNode | null) => void;
   /** 下载文件回调 */
   onDownload?: () => void;
   /** 重命名文件回调 */
@@ -66,6 +66,8 @@ interface FileTreeViewProps {
   onViewModeChange?: (mode: 'preview' | 'desktop') => void;
   /** 保存文件回调 */
   onSaveFiles?: (data: ChangeFileInfo[]) => Promise<boolean>;
+  // 导入项目
+  onImportProject?: () => void;
 }
 
 /**
@@ -78,13 +80,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       readOnly = false,
       targetId,
       viewMode,
-      onUploadSingleFile,
+      onUploadFiles,
       onDownload,
       onRenameFile,
       onCreateFileNode,
       onDeleteFile,
       onViewModeChange,
       onSaveFiles,
+      onImportProject,
     },
     ref,
   ) => {
@@ -311,8 +314,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 处理上传操作（从右键菜单触发）
      */
     const handleUploadFromMenu = (node: FileNode | null) => {
-      // 直接调用现有的上传单个文件功能
-      onUploadSingleFile?.(node);
+      // 直接调用现有的上传多个文件功能
+      onUploadFiles?.(node);
     };
 
     /**
@@ -673,11 +676,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             // 处理重命名操作
             onRename={handleRenameFromMenu}
             // 处理上传文件操作
-            onUploadSingleFile={handleUploadFromMenu}
+            onUploadFiles={handleUploadFromMenu}
             // 处理新建文件操作
             onCreateFile={handleCreateFile}
             // 处理新建文件夹操作
             onCreateFolder={handleCreateFolder}
+            onImportProject={onImportProject}
           />
           {/* 左边文件树 - 远程桌面模式下隐藏 */}
           {viewMode !== 'desktop' && (

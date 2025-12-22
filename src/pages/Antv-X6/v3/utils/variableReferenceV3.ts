@@ -7,6 +7,8 @@
  * 3. 支持从 nextNodeIds 和 edgeList 两种方式获取连线关系
  *
  * 替代后端 getOutputArgs 接口，解决 V1 前后端数据不同步问题
+ *
+ * 规则可以参考: ../../docs/VARIABLE_REFERENCE_RULES.md
  */
 
 import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
@@ -286,7 +288,9 @@ function prefixOutputArgsKeys(
   parentPath: string[] = [],
 ): InputAndOutConfig[] {
   return args.map((arg) => {
-    const currentPath = [...parentPath, arg.name];
+    // 使用 arg.name 作为主要标识，如果为空则使用 arg.key (用于 variableArgs 等场景)
+    const argIdentifier = arg.name || arg.key || '';
+    const currentPath = [...parentPath, argIdentifier];
     const key = `${nodeIdOrPrefix}.${currentPath.join('.')}`;
     const newArg = { ...arg, key };
 
@@ -314,7 +318,9 @@ function flattenArgsToMap(
   const argMap: ArgMap = {};
 
   args.forEach((arg) => {
-    const currentPath = [...parentPath, arg.name];
+    // 使用 arg.name 作为主要标识，如果为空则使用 arg.key (用于 variableArgs 等场景)
+    const argIdentifier = arg.name || arg.key || '';
+    const currentPath = [...parentPath, argIdentifier];
     const key = `${nodeIdOrPrefix}.${currentPath.join('.')}`;
 
     argMap[key] = arg;
@@ -392,17 +398,19 @@ export function calculateNodePreviousArgs(
     }
 
     // 跳过属于其他循环的内部节点（loopNodeId 存在但不等于当前节点的 loopNodeId）
+    // 注意：使用 Number() 统一类型
     if (
       predNode.loopNodeId &&
-      predNode.loopNodeId !== currentNode?.loopNodeId
+      Number(predNode.loopNodeId) !== Number(currentNode?.loopNodeId)
     ) {
       return;
     }
 
     // 如果当前节点是 Loop，跳过自己的内部节点（这些会在 innerPreviousNodes 中处理）
+    // 注意：使用 Number() 统一类型
     if (
       currentNode?.type === NodeTypeEnum.Loop &&
-      predNode.loopNodeId === currentNode.id
+      Number(predNode.loopNodeId) === Number(currentNode.id)
     ) {
       return;
     }
@@ -653,12 +661,14 @@ export function calculateNodePreviousArgs(
         const innerPredIds = findAllPredecessors(endNodeId, innerReverseGraph);
 
         // 过滤：只保留属于当前循环的节点 (loopNodeId === currentNode.id)，排除 LoopStart/LoopEnd
+        // 注意：需要使用 Number() 统一类型，因为保存后 currentNode.id 可能变成字符串
+        const currentLoopId = Number(currentNode.id);
         const validInnerNodes = innerPredIds
           .map((id) => innerNodeMap.get(id))
           .filter(
             (n): n is ChildNode =>
               n !== undefined &&
-              n.loopNodeId === currentNode.id &&
+              Number(n.loopNodeId) === currentLoopId &&
               n.type !== NodeTypeEnum.LoopStart &&
               n.type !== NodeTypeEnum.LoopEnd,
           );
@@ -705,10 +715,7 @@ export function calculateNodePreviousArgs(
             loopNodeId: innerNode.loopNodeId,
           });
 
-          Object.assign(
-            argMap,
-            flattenArgsToMap(innerNode.id, prefixedOutputArgs),
-          );
+          Object.assign(argMap, flattenArgsToMap(innerNode.id, transformed));
         });
       }
     }

@@ -5,9 +5,9 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiSkillDetail,
   apiSkillExport,
-  apiSkillTemplate,
+  apiSkillImport,
   apiSkillUpdate,
-  apiSkillUploadFile,
+  apiSkillUploadFiles,
 } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
@@ -65,29 +65,7 @@ const SkillDetails: React.FC = () => {
           })),
         }));
       } else {
-        const {
-          data: templateInfo,
-          code,
-          message: errorMessage,
-        } = await apiSkillTemplate();
-        if (code === SUCCESS_CODE) {
-          setSkillInfo(() => ({
-            ...result,
-            files: templateInfo?.files?.map((item) => ({
-              ...item,
-              fileId: item.name,
-            })),
-          }));
-        } else {
-          setSkillInfo(() => ({
-            ...result,
-            files: files?.map((item) => ({
-              ...item,
-              fileId: item.name,
-            })),
-          }));
-          message.error(errorMessage || '获取技能模板失败');
-        }
+        setSkillInfo(result);
       }
     },
   });
@@ -114,10 +92,74 @@ const SkillDetails: React.FC = () => {
     setSkillInfo(_skillInfo);
   };
 
+  // 导入项目
+  const handleImportProject = async () => {
+    if (!skillId) {
+      message.error('技能ID不能为空');
+      return;
+    }
+
+    if (!spaceId) {
+      message.error('空间ID不能为空');
+      return;
+    }
+
+    // 创建一个隐藏的文件输入框
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.style.display = 'none';
+    input.accept = '.zip'; // 只接受 zip 文件
+    document.body.appendChild(input);
+
+    // 等待用户选择文件
+    input.click();
+
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) {
+        document.body.removeChild(input);
+        return;
+      }
+
+      // 校验文件类型
+      const isZip = file.name?.toLowerCase().endsWith('.zip');
+      if (!isZip) {
+        message.error('仅支持 .zip 压缩文件格式');
+        document.body.removeChild(input);
+        return;
+      }
+
+      try {
+        // 调用导入接口
+        const result = await apiSkillImport({
+          file,
+          targetSkillId: skillId,
+          targetSpaceId: spaceId,
+        });
+
+        if (result.code === SUCCESS_CODE) {
+          message.success('导入成功');
+          // 刷新技能信息
+          runSkillInfo(skillId);
+        }
+      } catch (error) {
+        console.error('导入失败', error);
+      } finally {
+        // 清理DOM
+        document.body.removeChild(input);
+      }
+    };
+
+    // 如果用户取消选择，也要清理DOM
+    input.oncancel = () => {
+      document.body.removeChild(input);
+    };
+  };
+
   /**
-   * 处理上传单个文件回调
+   * 处理上传多个文件回调
    */
-  const handleUploadSingleFile = async (node: FileNode | null) => {
+  const handleUploadMultipleFiles = async (node: FileNode | null) => {
     if (!skillId) {
       message.error('技能ID不能为空');
       return;
@@ -137,6 +179,7 @@ const SkillDetails: React.FC = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.style.display = 'none';
+    input.multiple = true;
     document.body.appendChild(input);
 
     // 等待用户选择文件
@@ -154,11 +197,14 @@ const SkillDetails: React.FC = () => {
         // setSingleFileUploadLoading(true);
         // setIsFileOperating(true);
 
+        const files = Array.from((e.target as HTMLInputElement).files || []);
+
+        const filePaths = files.map((file) => relativePath + file.name);
         // 直接调用上传接口，使用文件名作为路径
-        const { code } = await apiSkillUploadFile({
-          file,
+        const { code } = await apiSkillUploadFiles({
+          files,
           skillId,
-          filePath: relativePath + file.name,
+          filePaths,
         });
 
         if (code === SUCCESS_CODE) {
@@ -297,7 +343,6 @@ const SkillDetails: React.FC = () => {
     fileNode: FileNode,
     newName: string,
   ) => {
-    console.log('handleConfirmRenameFile', fileNode, newName);
     // 更新原始文件列表中的文件名（用于提交更新）
     const updatedFilesList = updateFilesListName(
       skillInfo?.files || [],
@@ -392,12 +437,13 @@ const SkillDetails: React.FC = () => {
         <FileTreeView
           ref={fileTreeViewRef}
           originalFiles={skillInfo?.files || []}
-          onUploadSingleFile={handleUploadSingleFile}
+          onUploadFiles={handleUploadMultipleFiles}
           onDownload={handleDownload}
           onRenameFile={handleConfirmRenameFile}
           onCreateFileNode={handleCreateFileNode}
           onSaveFiles={handleSaveFiles}
           onDeleteFile={handleDeleteFile}
+          onImportProject={handleImportProject}
         />
 
         {/*版本历史*/}

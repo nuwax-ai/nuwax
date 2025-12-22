@@ -6,6 +6,7 @@ import {
   SkillImportParams,
   SkillUpdateParams,
   SkillUploadFileParams,
+  SkillUploadFilesParams,
 } from '@/types/interfaces/skill';
 import { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { request } from 'umi';
@@ -45,8 +46,8 @@ export async function apiSkillImport(
   const { file, targetSkillId, targetSpaceId } = params;
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('targetSkillId', targetSkillId);
-  formData.append('targetSpaceId', targetSpaceId);
+  formData.append('targetSkillId', targetSkillId.toString());
+  formData.append('targetSpaceId', targetSpaceId.toString());
 
   return request('/api/skill/import', {
     method: 'POST',
@@ -54,7 +55,7 @@ export async function apiSkillImport(
   });
 }
 
-// 上传技能文件
+// 上传文件到技能
 export async function apiSkillUploadFile(
   params: SkillUploadFileParams,
 ): Promise<RequestResponse<number>> {
@@ -65,6 +66,34 @@ export async function apiSkillUploadFile(
   formData.append('filePath', filePath);
 
   return request('/api/skill/upload-file', {
+    method: 'POST',
+    data: formData,
+  });
+}
+
+// 批量上传文件到技能
+export async function apiSkillUploadFiles(
+  params: SkillUploadFilesParams,
+): Promise<RequestResponse<number>> {
+  const { files, skillId, filePaths } = params;
+  const formData = new FormData();
+
+  // 批量上传文件：将每个文件 append 到 FormData
+  // 注意：多个文件使用相同的 key 'files'，后端会以数组形式接收
+  files.forEach((file) => {
+    formData.append('files', file);
+  });
+
+  // 添加技能ID
+  formData.append('skillId', skillId.toString());
+
+  // 批量添加文件路径：将每个路径 append 到 FormData
+  // 注意：多个路径使用相同的 key 'filePaths'，后端会以数组形式接收
+  filePaths.forEach((filePath) => {
+    formData.append('filePaths', filePath);
+  });
+
+  return request('/api/skill/upload-files', {
     method: 'POST',
     data: formData,
   });
