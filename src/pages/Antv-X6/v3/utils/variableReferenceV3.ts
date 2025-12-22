@@ -7,6 +7,8 @@
  * 3. 支持从 nextNodeIds 和 edgeList 两种方式获取连线关系
  *
  * 替代后端 getOutputArgs 接口，解决 V1 前后端数据不同步问题
+ *
+ * 规则可以参考: ../../docs/VARIABLE_REFERENCE_RULES.md
  */
 
 import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
