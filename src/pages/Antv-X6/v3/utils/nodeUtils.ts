@@ -4,7 +4,7 @@
 
 /**
  * 生成备用节点 ID
- * 规则：工作流 ID 前三位（不足补 0，超过截取）+ 时间戳
+ * 规则： 时间戳 + 工作流 ID 前三位（不足补 0，超过截取）
  * @param workflowId 工作流 ID
  */
 export function generateFallbackNodeId(workflowId: number): number {
@@ -15,5 +15,5 @@ export function generateFallbackNodeId(workflowId: number): number {
   } else {
     prefix = wfIdStr.substring(0, 3);
   }
-  return Number(prefix + Date.now());
+  return Number(Date.now() + prefix);
 }
