@@ -5,6 +5,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiSkillDetail,
   apiSkillExport,
+  apiSkillImport,
   apiSkillTemplate,
   apiSkillUpdate,
   apiSkillUploadFiles,
@@ -112,6 +113,18 @@ const SkillDetails: React.FC = () => {
       publishStatus: PublishStatusEnum.Published,
     } as SkillDetailInfo;
     setSkillInfo(_skillInfo);
+  };
+
+  // 导入项目
+  const handleImportProject = async () => {
+    console.log('handleImportProject', apiSkillImport);
+    // const result = await apiSkillImport({
+    //   skillId,
+    //   file,
+    // });
+    // if (result.code === SUCCESS_CODE) {
+    //   message.success('导入成功');
+    // }
   };
 
   /**
@@ -402,6 +415,7 @@ const SkillDetails: React.FC = () => {
           onCreateFileNode={handleCreateFileNode}
           onSaveFiles={handleSaveFiles}
           onDeleteFile={handleDeleteFile}
+          onImportProject={handleImportProject}
         />
 
         {/*版本历史*/}
