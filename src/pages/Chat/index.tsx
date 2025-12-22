@@ -18,8 +18,7 @@ import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
-import { apiUrl } from '@/services/skill';
-import { apiGetStaticFileList } from '@/services/vncDesktop';
+import { fetchContentFromUrl } from '@/services/skill';
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -34,10 +33,6 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import {
-  StaticFileInfo,
-  StaticFileListResponse,
-} from '@/types/interfaces/vncDesktop';
 import {
   addBaseTarget,
   arraysContainSameItems,
@@ -123,6 +118,16 @@ const Chat: React.FC = () => {
     variables,
     showType,
     setShowType,
+    // 文件树显隐状态
+    isFileTreeVisible,
+    setIsFileTreeVisible,
+    // 文件树数据
+    fileTreeData,
+    // 文件树视图模式
+    viewMode,
+    setViewMode,
+    // 处理文件列表刷新事件
+    handleRefreshFileList,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -164,16 +169,16 @@ const Chat: React.FC = () => {
   const showCopyButton = useMemo(() => {
     const shouldShow = agentDetail?.allowCopy === AllowCopyEnum.Yes;
     // 调试：输出相关信息
-    console.log('[Chat] 复制按钮显示条件:', {
-      workflowId,
-      agentId: agentDetail?.agentId,
-      allowCopy: agentDetail?.allowCopy,
-      allowCopyEnum: AllowCopyEnum.Yes,
-      showCopyButton: shouldShow,
-      pagePreviewData: pagePreviewData,
-      uri: pagePreviewData?.uri,
-      params: pagePreviewData?.params,
-    });
+    // console.log('[Chat] 复制按钮显示条件:', {
+    //   workflowId,
+    //   agentId: agentDetail?.agentId,
+    //   allowCopy: agentDetail?.allowCopy,
+    //   allowCopyEnum: AllowCopyEnum.Yes,
+    //   showCopyButton: shouldShow,
+    //   pagePreviewData: pagePreviewData,
+    //   uri: pagePreviewData?.uri,
+    //   params: pagePreviewData?.params,
+    // });
     return shouldShow;
   }, [
     workflowId,
@@ -429,12 +434,6 @@ const Chat: React.FC = () => {
 
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const sidebarRef = useRef<AgentSidebarRef>(null);
-  // 文件树显隐状态
-  const [isFileTreeVisible, setIsFileTreeVisible] = useState<boolean>(false);
-  // 文件树数据
-  const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
-  // 文件树视图模式
-  const [viewMode, setViewMode] = useState<'preview' | 'desktop'>('preview');
 
   // 互斥面板控制器：管理 PagePreview、AgentSidebar、ShowArea 的互斥展示
   useExclusivePanels({
@@ -453,31 +452,32 @@ const Chat: React.FC = () => {
     }
   }, [isSidebarVisible]);
 
-  // 查询文件列表
-  const { run: runGetStaticFileList } = useRequest(apiGetStaticFileList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: StaticFileListResponse) => {
-      setFileTreeData(result?.files || []);
-    },
-    onError: () => {
-      setFileTreeData([]);
-    },
-  });
-
-  // 当文件树显示时，自动关闭 AgentSidebar，并获取文件列表数据
+  // 订阅文件列表刷新事件
   useEffect(() => {
-    if (isFileTreeVisible) {
-      sidebarRef.current?.close();
-      runGetStaticFileList(id);
-    }
-  }, [isFileTreeVisible, id]);
+    // 订阅事件
+    eventBus.on(EVENT_TYPE.RefreshFileList, () => handleRefreshFileList(id));
+
+    return () => {
+      // 组件卸载时取消订阅
+      eventBus.off(EVENT_TYPE.RefreshFileList, () => handleRefreshFileList(id));
+    };
+  }, [handleRefreshFileList, id]);
 
   // 消息事件代理（处理会话输出中的点击事件）
   useMessageEventDelegate({
     containerRef: messageViewRef,
     eventBindConfig: conversationInfo?.agent?.eventBindConfig,
   });
+
+  // 显示文件树
+  const handleFileTreeVisible = () => {
+    // 关闭 AgentSidebar 并显示文件树
+    setIsFileTreeVisible(true);
+    // 关闭 AgentSidebar，确保文件树显示时，AgentSidebar 不会显示
+    sidebarRef.current?.close();
+    // 触发文件列表刷新事件
+    eventBus.emit(EVENT_TYPE.RefreshFileList, id);
+  };
 
   const LeftContent = () => {
     return (
@@ -557,11 +557,7 @@ const Chat: React.FC = () => {
                       className={cx(styles['icons-nav-sidebar'])}
                     />
                   }
-                  onClick={() => {
-                    // 关闭 AgentSidebar 并显示文件树
-                    sidebarRef.current?.close();
-                    setIsFileTreeVisible(true);
-                  }}
+                  onClick={handleFileTreeVisible}
                 />
               )}
             </div>
@@ -669,7 +665,7 @@ const Chat: React.FC = () => {
       try {
         // 场景1: 直接使用相对路径获取内容
         const url = '/api/computer/static/1461016/今日新闻PPT报告.md';
-        const res = await apiUrl(url);
+        const res = await fetchContentFromUrl(url);
 
         // 检查响应是否成功
         if (res.success && res.data) {
