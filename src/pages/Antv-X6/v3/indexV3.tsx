@@ -1058,7 +1058,7 @@ const Workflow: React.FC = () => {
         graphInstanceRef.current = graph;
         clearInterval(checkGraph);
 
-        const updateHistory = () => {
+        const updateHistory = (isInitial = false) => {
           setHistoryState({
             canUndo: graph.canUndo(),
             canRedo: graph.canRedo(),
@@ -1097,14 +1097,18 @@ const Workflow: React.FC = () => {
                 zIndex: e.getZIndex(),
               };
             });
-            workflowProxy.syncFromGraph(nodes, edges as any);
-            // V3: Undo/Redo 后触发保存
-            debouncedSaveFullWorkflow();
+            // 初始加载时不标记为dirty，也不触发保存
+            workflowProxy.syncFromGraph(nodes, edges as any, !isInitial);
+
+            // V3: Undo/Redo 后触发保存（仅非初始加载时）
+            if (!isInitial) {
+              debouncedSaveFullWorkflow();
+            }
           }
         };
-        graph.on('history:change', updateHistory);
+        graph.on('history:change', () => updateHistory(false));
         // Initial state
-        updateHistory();
+        updateHistory(true);
       }
     }, 500);
 
