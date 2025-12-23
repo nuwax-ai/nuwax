@@ -56,7 +56,7 @@ interface FileTreeViewProps {
   /** 上传多个文件回调 */
   onUploadFiles?: (node: FileNode | null) => void;
   /** 下载文件回调 */
-  onDownload?: () => void;
+  onDownload?: () => Promise<void>;
   /** 重命名文件回调 */
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
   /** 创建文件回调 */
@@ -121,7 +121,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     // 是否正在保存文件
     const [isSavingFiles, setIsSavingFiles] = useState<boolean>(false);
-
+    // 是否正在下载项目文件压缩包
+    const [isDownloading, setIsDownloading] = useState<boolean>(false);
     // 文件选择
     const handleFileSelect = async (fileId: string) => {
       // 切换到预览模式
@@ -658,6 +659,13 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     // console.log('changeFiles', changeFiles);
 
+    // 处理下载项目操作
+    const handleDownloadProject = async () => {
+      setIsDownloading(true);
+      await onDownload?.();
+      setIsDownloading(false);
+    };
+
     return (
       <>
         {/* 全屏代码编辑器 Modal */}
@@ -692,7 +700,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 fileSize={selectedFileNode?.size}
                 viewMode={viewMode}
                 onViewModeChange={onViewModeChange}
-                onDownload={onDownload}
+                onDownload={handleDownloadProject}
+                isDownloading={isDownloading}
                 onFullscreen={handleFullscreen}
                 isFullscreen={true}
                 onSaveFiles={saveFiles}
@@ -780,7 +789,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               fileSize={selectedFileNode?.size}
               viewMode={viewMode}
               onViewModeChange={onViewModeChange}
-              onDownload={onDownload}
+              onDownload={handleDownloadProject}
+              isDownloading={isDownloading}
               onFullscreen={handleFullscreen}
               isFullscreen={false}
               onSaveFiles={saveFiles}
