@@ -1016,6 +1016,7 @@ export default () => {
     openDesktopView,
     openPreviewView,
     restartVncPod,
+    // 远程桌面容器信息, 暂时未使用
     vncContainerInfo,
   };
 };
