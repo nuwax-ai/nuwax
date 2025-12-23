@@ -66,7 +66,6 @@ const VncPreview: React.FC<VncPreviewProps> = ({
     }
 
     const cleanBaseUrl = serviceUrl?.replace(/\/+$/, '');
-    console.log(serviceUrl, 'VncPreview-cleanBaseUrl', cleanBaseUrl);
     const params = new URLSearchParams();
 
     // Always use scaling
