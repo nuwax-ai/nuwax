@@ -23,6 +23,7 @@ import React, {
   useState,
 } from 'react';
 import AppDevEmptyState from '../business-component/AppDevEmptyState';
+import FilePreview from '../business-component/FilePreview';
 import VncPreview from '../business-component/VncPreview';
 import CodeViewer from '../CodeViewer';
 import FileContextMenu from './FileContextMenu';
@@ -542,6 +543,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // 图片文件：使用图片查看器
       if (isImage) {
+        // 如果文件代理URL存在，使用FilePreview组件
+        if (selectedFileNode?.fileProxyUrl) {
+          const imageUrl = `${process.env.BASE_URL}${
+            selectedFileNode?.fileProxyUrl || ''
+          }`;
+          return <FilePreview src={imageUrl} fileType="image" />;
+        }
+
         return (
           <ImageViewer
             imageUrl={processImageContent(selectedFileNode?.content || '')}
