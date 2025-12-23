@@ -32,6 +32,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   open,
   onCancel,
   onConfirm,
+  onUpdate,
 }) => {
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
@@ -47,7 +48,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     },
   });
 
-  // 更新工作流
+  // 更新工作流（内部接口，当未提供 onUpdate 时使用）
   const { run: runUpdate } = useRequest(apiUpdateWorkflow, {
     manual: true,
     debounceInterval: 300,
@@ -55,6 +56,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
       message.success('工作流更新成功');
       const info = params[0];
       onConfirm?.(info as WorkflowBaseInfo);
+      onCancel(); // 关闭对话框
     },
   });
 
@@ -71,8 +73,8 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   const onFinish: FormProps<{
     name: string;
     description: string;
-  }>['onFinish'] = (values) => {
-    const params = {
+  }>['onFinish'] = async (values) => {
+    const baseParams = {
       name: values?.name,
       description: values?.description,
       icon: imageUrl,
@@ -80,13 +82,31 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     if (type === CreateUpdateModeEnum.Create) {
       run({
         spaceId,
-        ...params,
+        ...baseParams,
       });
     } else {
-      runUpdate({
-        id,
-        ...params,
-      });
+      // 构建完整的更新参数
+      const updateParams: WorkflowBaseInfo = {
+        id: id as number,
+        spaceId: spaceId as number,
+        ...baseParams,
+        extension: { size: 1 },
+      };
+      // 如果提供了外部更新回调，则使用外部处理
+      if (onUpdate) {
+        const success = await onUpdate(updateParams);
+        if (success) {
+          message.success('工作流更新成功');
+          onConfirm?.(updateParams);
+          onCancel();
+        }
+      } else {
+        // 否则使用内部接口
+        runUpdate({
+          id: id as number,
+          ...baseParams,
+        });
+      }
     }
   };
 
