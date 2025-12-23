@@ -193,12 +193,9 @@ const SkillDetails: React.FC = () => {
       }
 
       try {
-        // 设置加载状态，与弹窗上传保持一致
-        // setSingleFileUploadLoading(true);
-        // setIsFileOperating(true);
-
+        // 获取上传的文件列表
         const files = Array.from((e.target as HTMLInputElement).files || []);
-
+        // 获取上传的文件路径列表
         const filePaths = files.map((file) => relativePath + file.name);
         // 直接调用上传接口，使用文件名作为路径
         const { code } = await apiSkillUploadFiles({
@@ -215,17 +212,13 @@ const SkillDetails: React.FC = () => {
       } catch (error) {
         console.error('上传失败', error);
       } finally {
-        // 清理加载状态和DOM
-        // setSingleFileUploadLoading(false);
         document.body.removeChild(input);
-        // setIsFileOperating(false);
       }
     };
 
     // 如果用户取消选择，也要清理DOM
     input.oncancel = () => {
       document.body.removeChild(input);
-      // setIsFileOperating(false);
     };
   };
 

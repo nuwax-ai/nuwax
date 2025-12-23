@@ -28,6 +28,8 @@ interface FilePathHeaderProps {
   hasModifiedFiles?: boolean;
   /** 是否正在保存文件 */
   isSavingFiles?: boolean;
+  /** 是否正在下载文件 */
+  isDownloading?: boolean;
 }
 
 /**
@@ -46,6 +48,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onCancelSaveFiles,
   hasModifiedFiles = false,
   isSavingFiles = false,
+  isDownloading = false,
 }) => {
   // 格式化的文件大小
   const formattedSize = useMemo(() => {
@@ -114,7 +117,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       {/* 右侧：操作按钮 */}
       <div className={styles.actionButtons}>
         {onDownload && (
-          <Tooltip title="下载">
+          <Tooltip title={isDownloading ? '下载中...' : '下载'}>
             <Button
               type="text"
               size="small"
@@ -126,6 +129,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               }
               onClick={onDownload}
               className={styles.actionButton}
+              loading={isDownloading}
+              disabled={isDownloading}
             />
           </Tooltip>
         )}
