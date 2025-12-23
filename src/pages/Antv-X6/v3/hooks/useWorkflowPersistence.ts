@@ -11,6 +11,7 @@ import { workflowSaveService } from '../services/WorkflowSaveService';
 
 interface UseWorkflowPersistenceProps {
   graphRef: MutableRefObject<GraphContainerRef | null>;
+  graphInstanceRef?: MutableRefObject<any | null>; // Fallback ref for unmount
   changeUpdateTime: () => void;
   getReference: (id: number) => Promise<boolean>;
   setFoldWrapItem?: (data: ChildNode) => void;
@@ -18,6 +19,7 @@ interface UseWorkflowPersistenceProps {
 
 export const useWorkflowPersistence = ({
   graphRef,
+  graphInstanceRef,
   changeUpdateTime,
   getReference,
   setFoldWrapItem,
@@ -28,7 +30,8 @@ export const useWorkflowPersistence = ({
   // V3: 全量保存工作流配置
   const saveFullWorkflow = useCallback(async (): Promise<boolean> => {
     try {
-      const graph = graphRef.current?.getGraphRef?.();
+      const graph =
+        graphRef.current?.getGraphRef?.() || graphInstanceRef?.current;
       if (!graph) {
         console.error('[V3] 画布未初始化');
         return false;
@@ -93,24 +96,7 @@ export const useWorkflowPersistence = ({
         ) {
           await saveFullWorkflow();
         }
-      }, 2000), // 2秒防抖
-    [saveFullWorkflow],
-  );
-
-  // V3: 立即保存（短防抖 100ms）
-  // 用于关键操作：连线添加/删除、节点删除、变量增删等
-  const saveImmediately = useMemo(
-    () =>
-      debounce(async () => {
-        // 使用新保存服务检查脏数据，同时兼容旧代理层
-        if (
-          workflowSaveService.hasPendingChanges() ||
-          workflowProxy.hasPendingChanges()
-        ) {
-          console.log('[V3] 立即保存触发 (100ms 防抖)');
-          await saveFullWorkflow();
-        }
-      }, 100), // 100ms 短防抖，保证实时性同时防止连续操作频繁请求
+      }, 1500), // 1.5秒防抖
     [saveFullWorkflow],
   );
 
@@ -169,7 +155,6 @@ export const useWorkflowPersistence = ({
   return {
     saveFullWorkflow,
     debouncedSaveFullWorkflow,
-    saveImmediately,
     autoSaveNodeConfig,
   };
 };

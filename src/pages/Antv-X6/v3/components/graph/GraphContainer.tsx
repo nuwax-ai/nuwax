@@ -519,6 +519,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         graphRef.current.once('render:done', () => {
           setTimeout(() => {
             graphChangeZoomToFit();
+            graphRef.current?.cleanHistory?.();
             onInit();
           }, 20);
         });

@@ -988,7 +988,11 @@ class WorkflowProxyV3 {
    * - 问答节点：更新 options[].nextNodeIds
    * - 异常处理：更新 exceptionHandleConfig.exceptionHandleNodeIds
    */
-  syncFromGraph(nodes: ChildNode[], edges: EdgeV3[]) {
+  syncFromGraph(
+    nodes: ChildNode[],
+    edges: EdgeV3[],
+    shouldMarkDirty: boolean = true,
+  ) {
     if (!this.workflowData) return;
 
     // 创建节点 ID 到节点的映射
@@ -1190,6 +1194,11 @@ class WorkflowProxyV3 {
 
     this.workflowData.nodes = mergedNodes;
     this.workflowData.edges = cloneDeep(edges) as EdgeV3[];
+
+    if (shouldMarkDirty) {
+      this.markDirty();
+    }
+
     this.notify('mutation');
 
     // console.log('[V3 Proxy] syncFromGraph 完成，处理了', edges.length, '条边');

@@ -72,6 +72,8 @@ interface FileTreeViewProps {
   onSaveFiles?: (data: ChangeFileInfo[]) => Promise<boolean>;
   // 导入项目
   onImportProject?: () => void;
+  /** 重启容器回调 */
+  onRestartServer?: () => void;
 }
 
 /**
@@ -92,6 +94,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onViewModeChange,
       onSaveFiles,
       onImportProject,
+      onRestartServer,
     },
     ref,
   ) => {
@@ -546,7 +549,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         return (
           <VncPreview
             serviceUrl={process.env.BASE_URL || ''}
-            cId={targetId || ''}
+            cId={targetId?.toString() || ''}
             readOnly={readOnly}
             autoConnect={true}
             className={cx(styles['vnc-preview'])}
@@ -656,6 +659,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 onExportProject={handleDownloadProject}
                 // 处理导入项目操作
                 onImportProject={onImportProject}
+                // 重启容器
+                onRestartServer={onRestartServer}
                 isDownloading={isDownloading}
                 onFullscreen={handleFullscreen}
                 isFullscreen={true}
@@ -747,6 +752,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               onExportProject={handleDownloadProject}
               // 处理导入项目操作
               onImportProject={onImportProject}
+              // 重启容器
+              onRestartServer={onRestartServer}
               isDownloading={isDownloading}
               onFullscreen={handleFullscreen}
               isFullscreen={false}
