@@ -21,7 +21,7 @@ import { useModel } from 'umi';
 import ChatBottomDebug from './ChatBottomDebug';
 import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
-import RunOver from './RunOver';
+// import RunOver from './RunOver';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -103,13 +103,13 @@ const ChatView: React.FC<ChatViewProps> = memo(
                 }}
               />
               <div className={cx(styles.author)}>{info?.name}</div>
-              <ConditionRender condition={!!messageInfo?.status}>
+              {/* <ConditionRender condition={!!messageInfo?.status}>
                 <div style={{ display: 'flex', flexDirection: 'row', gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <RunOver messageInfo={messageInfo} />
                   </div>
                 </div>
-              </ConditionRender>
+              </ConditionRender> */}
             </div>
           )}
           {!!messageInfo?.attachments?.length && (

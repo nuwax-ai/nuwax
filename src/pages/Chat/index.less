@@ -43,7 +43,6 @@
     display: flex;
     flex-direction: column;
     position: relative;
-    justify-content: space-between;
 
     //隐藏滚动条
     &::-webkit-scrollbar {
@@ -53,12 +52,16 @@
     .chat-wrapper-content {
       overflow: auto;
       margin-bottom: 5px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
 
       .chat-wrapper {
         padding-bottom: 40px - 16px;
         max-width: 800px;
         width: 100%;
         margin: 0 auto;
+        flex: 1;
 
         .loading {
           color: @colorPrimary;
@@ -89,7 +92,33 @@
       border-radius: @borderRadiusLg @borderRadiusLg 0 0;
       padding-bottom: @paddingSm;
       width: 100%;
+
+      // 调整滚动按钮位置，让它显示在会话状态栏的上方
+      :global(.chat-action .to-bottom) {
+        bottom: 100px !important;
+      }
     }
+
+    // 会话状态栏样式
+    .conversation-status-bar {
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto 8px;
+      animation: slide-in-up 0.3s ease-out;
+    }
+  }
+}
+
+// 状态栏滑入动画
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
