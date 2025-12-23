@@ -145,7 +145,6 @@ const Chat: React.FC = () => {
     openPreviewView,
     openDesktopView,
     restartVncPod,
-    vncContainerInfo,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -988,7 +987,6 @@ const Chat: React.FC = () => {
               onSaveFiles={handleSaveFiles}
               // 重启容器
               onRestartServer={() => restartVncPod(id)}
-              vncContainerInfo={vncContainerInfo}
             />
           </div>
         </div>
