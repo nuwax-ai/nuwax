@@ -16,12 +16,13 @@ const FilePreviewDemo: React.FC = () => {
     xlsx: 'https://501351981.github.io/vue-office/examples/dist/static/test-files/test.xlsx',
     pdf: 'https://501351981.github.io/vue-office/examples/dist/static/test-files/test.pdf',
     pptx: 'https://501351981.github.io/vue-office/examples/dist/static/test-files/test.pptx',
-    // Media
-    image: 'https://picsum.photos/800/600',
+    // Media - using more reliable image sources
+    image:
+      'https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=800&h=600&fit=crop',
     images: [
-      'https://picsum.photos/800/600?random=1',
-      'https://picsum.photos/800/600?random=2',
-      'https://picsum.photos/800/600?random=3',
+      'https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=600&fit=crop',
     ],
     audio: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
     video: 'https://www.w3schools.com/html/mov_bbb.mp4',
@@ -46,8 +47,10 @@ const FilePreviewDemo: React.FC = () => {
           <Title level={4}>Image Preview (Single)</Title>
           <FilePreview
             src={testFiles.image}
+            fileType="image"
             height={400}
             showDownload
+            showRefresh
             onRendered={() => console.log('Image rendered')}
             onError={(e) => console.error('Image error:', e)}
           />
@@ -60,6 +63,7 @@ const FilePreviewDemo: React.FC = () => {
             srcList={testFiles.images}
             height={400}
             showDownload
+            showRefresh
             onRendered={() => console.log('Image gallery rendered')}
           />
         </div>
@@ -71,6 +75,7 @@ const FilePreviewDemo: React.FC = () => {
             src={testFiles.audio}
             height={200}
             showDownload
+            showRefresh
             onRendered={() => console.log('Audio rendered')}
           />
         </div>
@@ -82,6 +87,7 @@ const FilePreviewDemo: React.FC = () => {
             src={testFiles.video}
             height={400}
             showDownload
+            showRefresh
             onRendered={() => console.log('Video rendered')}
           />
         </div>
@@ -120,6 +126,7 @@ const FilePreviewDemo: React.FC = () => {
             fileType="html"
             height={350}
             showDownload
+            showRefresh
             downloadFileName="demo.html"
             onRendered={() => console.log('HTML rendered')}
           />

@@ -64,6 +64,8 @@ export interface FilePreviewProps {
   srcList?: Array<string | File>;
   /** File type (auto-detected if not provided) */
   fileType?: FileType;
+  /** Show refresh button @default false */
+  showRefresh?: boolean;
   /** Container height @default '100%' */
   height?: number | string;
   /** Container width @default '100%' */
@@ -241,6 +243,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   height = '100%',
   width = '100%',
   showDownload = false,
+  showRefresh = false,
   downloadFileName,
   onRendered,
   onError,
@@ -601,15 +604,30 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       className={`${styles.filePreviewContainer} ${className || ''}`}
       style={{ width, height, ...style }}
     >
-      {showDownload && src && status === 'success' && (
-        <Tooltip title="Download">
-          <Button
-            className={styles.downloadBtn}
-            icon={<CloudDownloadOutlined />}
-            onClick={handleDownload}
-            type="text"
-          />
-        </Tooltip>
+      {/* Toolbar */}
+      {(showRefresh || showDownload) && src && status === 'success' && (
+        <div className={styles.toolbar}>
+          {showRefresh && (
+            <Tooltip title="Refresh">
+              <Button
+                className={styles.toolbarBtn}
+                icon={<ReloadOutlined />}
+                onClick={handleRetry}
+                type="text"
+              />
+            </Tooltip>
+          )}
+          {showDownload && (
+            <Tooltip title="Download">
+              <Button
+                className={styles.toolbarBtn}
+                icon={<CloudDownloadOutlined />}
+                onClick={handleDownload}
+                type="text"
+              />
+            </Tooltip>
+          )}
+        </div>
       )}
 
       {status === 'idle' && !src && !srcList?.length && (
