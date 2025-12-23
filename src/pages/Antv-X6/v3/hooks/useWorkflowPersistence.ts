@@ -96,7 +96,7 @@ export const useWorkflowPersistence = ({
         ) {
           await saveFullWorkflow();
         }
-      }, 2000), // 2秒防抖
+      }, 1500), // 1.5秒防抖
     [saveFullWorkflow],
   );
 
