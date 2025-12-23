@@ -1,6 +1,7 @@
 import { ImageViewer } from '@/pages/AppDev/components';
 import { fetchContentFromUrl } from '@/services/skill';
 import { FileNode } from '@/types/interfaces/appDev';
+import { VncDesktopContainerInfo } from '@/types/interfaces/vncDesktop';
 import {
   findFileNode,
   isImageFile,
@@ -72,6 +73,10 @@ interface FileTreeViewProps {
   onSaveFiles?: (data: ChangeFileInfo[]) => Promise<boolean>;
   // 导入项目
   onImportProject?: () => void;
+  /** 重启容器回调 */
+  onRestartServer?: () => void;
+  /** 远程桌面容器信息 */
+  vncContainerInfo?: VncDesktopContainerInfo;
 }
 
 /**
@@ -92,6 +97,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onViewModeChange,
       onSaveFiles,
       onImportProject,
+      onRestartServer,
+      vncContainerInfo,
     },
     ref,
   ) => {
@@ -545,7 +552,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       if (viewMode === 'desktop') {
         return (
           <VncPreview
-            serviceUrl={process.env.BASE_URL || ''}
+            serviceUrl={vncContainerInfo?.service_url || ''}
             cId={targetId || ''}
             readOnly={readOnly}
             autoConnect={true}
@@ -656,6 +663,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 onExportProject={handleDownloadProject}
                 // 处理导入项目操作
                 onImportProject={onImportProject}
+                // 重启容器
+                onRestartServer={onRestartServer}
                 isDownloading={isDownloading}
                 onFullscreen={handleFullscreen}
                 isFullscreen={true}
@@ -747,6 +756,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               onExportProject={handleDownloadProject}
               // 处理导入项目操作
               onImportProject={onImportProject}
+              // 重启容器
+              onRestartServer={onRestartServer}
               isDownloading={isDownloading}
               onFullscreen={handleFullscreen}
               isFullscreen={false}
