@@ -25,8 +25,8 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
   const isLoopNode = nodeType === NodeTypeEnum.Loop; // 循环节点不支持创建副本
 
   const changeNode = (val: string) => {
-    if (isLoopNode) {
-      //删除先提示
+    // 只有删除循环节点时才需要确认
+    if (isLoopNode && val === 'Delete') {
       modal.confirm({
         title: '确定要删除循环节点吗？',
         okText: '确认',
@@ -44,6 +44,7 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
   const content = (
     <>
       <p
+        key="rename"
         onClick={() => changeNode('Rename')}
         className="cursor-pointer"
         style={{ padding: '3px 0' }}
@@ -52,6 +53,7 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
       </p>
       {!isLoopNode && (
         <p
+          key="duplicate"
           onClick={() => changeNode('Duplicate')}
           className="cursor-pointer"
           style={{ padding: '3px 0' }}
@@ -60,6 +62,7 @@ const OtherOperations: React.FC<OtherOperationsProps> = ({
         </p>
       )}
       <p
+        key="delete"
         onClick={() => changeNode('Delete')}
         className="cursor-pointer"
         style={{ padding: '3px 0' }}
