@@ -57,9 +57,9 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     <div className={styles.filePathHeader}>
       {/* 左侧：文件信息 */}
       <div className={styles.fileInfo}>
-        <div className={styles.fileIcon}>
+        {/* <div className={styles.fileIcon}>
           <SvgIcon name="icons-common-preview" style={{ fontSize: 20 }} />
-        </div>
+        </div> */}
         <div className={styles.fileDetails}>
           <div className={styles.fileName}>{fileName}</div>
           {formattedSize && (
