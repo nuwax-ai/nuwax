@@ -54,40 +54,50 @@ const TaskResult: React.FC<TaskResultProps> = ({
     openPreviewView(conversationId);
   };
 
-  // 有文件描述显示文件描述
-  const fileDescription = (children as React.ReactNode[])
-    ?.filter((item: any) => item.type === 'description')
-    .map((item: any) => item.props.children)
-    .join('');
-  // 有文件名显示文件名
-  const fileName = (children as React.ReactNode[])
-    ?.filter((item: any) => item.type === 'file')
-    .map((item: any) => item.props.children)
-    .join('');
-  // 没有文件名不显示组件
-  if (!fileName) {
+  if (!children) {
     return null;
   }
 
-  return (
-    <div
-      key={taskResultKey}
-      data-key={taskResultKey}
-      className={cx(styles['task-result'])}
-      onClick={handleClick}
-      title={textContent.replaceAll('\n', ' ')}
-    >
-      <span className={cx(styles['task-result-icon'])}>
-        <FileTextOutlined />
-      </span>
-      <span className={cx(styles['task-result-action'])}>
-        {fileDescription ? fileDescription : fileName}
-      </span>
-      <span className={cx(styles['task-result-arrow'])}>
-        <RightOutlined />
-      </span>
-    </div>
-  );
+  try {
+    console.log('children1', children);
+    // 有文件描述显示文件描述
+    const fileDescription = (children as React.ReactNode[])
+      ?.filter((item: any) => item.type === 'description')
+      .map((item: any) => item.props.children)
+      .join('');
+    // 有文件名显示文件名
+    const fileName = (children as React.ReactNode[])
+      ?.filter((item: any) => item.type === 'file')
+      .map((item: any) => item.props.children)
+      .join('');
+    // 没有文件名不显示组件
+    if (!fileName) {
+      return null;
+    }
+
+    return (
+      <div
+        key={taskResultKey}
+        data-key={taskResultKey}
+        className={cx(styles['task-result'])}
+        onClick={handleClick}
+        title={textContent.replaceAll('\n', ' ')}
+      >
+        <span className={cx(styles['task-result-icon'])}>
+          <FileTextOutlined />
+        </span>
+        <span className={cx(styles['task-result-action'])}>
+          {fileDescription ? fileDescription : fileName}
+        </span>
+        <span className={cx(styles['task-result-arrow'])}>
+          <RightOutlined />
+        </span>
+      </div>
+    );
+  } catch (error) {
+    console.error('TaskResult error', error);
+    return null;
+  }
 };
 
 export default TaskResult;
