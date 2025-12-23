@@ -174,7 +174,7 @@ const responseInterceptors = [
     const { data = {} as any, config } = response;
 
     // 如果响应数据是字符串，直接返回响应对象(用于直接通过fetchContentFromUrl获取的内容)
-    if (typeof data === 'string') {
+    if (typeof data !== 'object') {
       return response;
     }
 
