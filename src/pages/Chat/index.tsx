@@ -59,6 +59,7 @@ import { Button, Form, message as messageAntd } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
+import ConversationStatus from './components/ConversationStatus';
 import DropdownChangeName from './DropdownChangeName';
 import styles from './index.less';
 import ShowArea from './ShowArea';
@@ -867,6 +868,15 @@ const Chat: React.FC = () => {
               )}
             </div>
           </div>
+
+          {/* 会话状态显示 - 有消息时就显示 */}
+          {messageList?.length > 0 && conversationInfo && (
+            <ConversationStatus
+              messageList={messageList}
+              className={cx(styles['conversation-status-bar'])}
+            />
+          )}
+
           <ChatInputHome
             // key={`chat-${id}-${agentId}`}
             key={`agent-details-${agentId}`}
@@ -901,6 +911,13 @@ const Chat: React.FC = () => {
             'h-full',
             'w-full',
           )}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            height: '100%',
+          }}
         >
           <LoadingOutlined />
         </div>
@@ -929,7 +946,7 @@ const Chat: React.FC = () => {
                 {/* 复制模板弹窗 */}
                 {showCopyButton && agentDetail && pagePreviewData?.uri && (
                   <CopyToSpaceComponent
-                    spaceId={agentDetail.spaceId}
+                    spaceId={agentDetail!.spaceId}
                     mode={AgentComponentTypeEnum.Page}
                     componentId={parsePageAppProjectId(pagePreviewData?.uri)}
                     title={''}

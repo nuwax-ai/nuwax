@@ -1,0 +1,108 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.conversationStatus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px 5px 0;
+  // background: @colorBgContainer;
+  // border-radius: @borderRadiusLg;
+  // border: 1px solid @colorBorderSecondary;
+  // margin-bottom: 12px;
+  transition: all 0.3s ease;
+
+  // &:hover {
+  //   border-color: @colorPrimary;
+  //   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  // }
+
+  .statusInfo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+
+    .agentIcon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .agentName {
+      font-size: @fontSize;
+      font-weight: 500;
+      color: @colorText;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px;
+    }
+
+    .statusBadge {
+      padding: 2px 10px;
+      border-radius: @borderRadiusSm;
+      font-size: @fontSizeSm;
+      font-weight: 500;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.3s ease;
+
+      // 准备中状态
+      &.status-idle {
+        background: @colorFillSecondary;
+        color: @colorTextSecondary;
+      }
+
+      // 运行中状态
+      &.status-running {
+        background: @colorInfoBg;
+        color: @colorInfo;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      // 运行完毕状态
+      &.status-completed {
+        background: @colorSuccessBg;
+        color: @colorSuccess;
+      }
+
+      // 运行失败状态
+      &.status-error {
+        background: @colorErrorBg;
+        color: @colorError;
+      }
+    }
+  }
+
+  .timer {
+    font-size: @fontSizeSm;
+    font-weight: 600;
+    color: @colorTextTertiary;
+    font-family: Monaco, Menlo, Consolas, monospace;
+    flex-shrink: 0;
+    min-width: 50px;
+    text-align: right;
+  }
+}
+
+// 脉冲动画
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
