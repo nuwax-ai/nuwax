@@ -59,7 +59,6 @@ const TaskResult: React.FC<TaskResultProps> = ({
   }
 
   try {
-    console.log('children1', children);
     // 有文件描述显示文件描述
     const fileDescription = (children as React.ReactNode[])
       ?.filter((item: any) => item.type === 'description')
