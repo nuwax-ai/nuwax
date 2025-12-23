@@ -100,3 +100,39 @@ export async function apiDownloadAllFiles(cId: number): Promise<{
     },
   });
 }
+
+// 启动容器
+export async function apiEnsurePod(
+  cId: number,
+): Promise<RequestResponse<null>> {
+  return request('/api/computer/pod/ensure', {
+    method: 'POST',
+    params: {
+      cId,
+    },
+  });
+}
+
+// 重启容器(销毁后重建)
+export async function apiRestartPod(
+  cId: number,
+): Promise<RequestResponse<null>> {
+  return request('/api/computer/pod/restart', {
+    method: 'POST',
+    params: {
+      cId,
+    },
+  });
+}
+
+// 容器保活
+export async function apiKeepalivePod(
+  cId: number,
+): Promise<RequestResponse<null>> {
+  return request('/api/computer/pod/keepalive', {
+    method: 'POST',
+    params: {
+      cId,
+    },
+  });
+}

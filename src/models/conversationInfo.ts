@@ -1,3 +1,4 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CONVERSATION_CONNECTION_URL } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
@@ -8,7 +9,12 @@ import {
   apiAgentConversationChatSuggest,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
-import { apiGetStaticFileList } from '@/services/vncDesktop';
+import {
+  apiEnsurePod,
+  apiGetStaticFileList,
+  apiKeepalivePod,
+  apiRestartPod,
+} from '@/services/vncDesktop';
 import {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
@@ -162,6 +168,8 @@ export default () => {
   const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
   // 文件树视图模式
   const [viewMode, setViewMode] = useState<'preview' | 'desktop'>('preview');
+  // 远程桌面保活定时器
+  const vncKeepaliveRef = useRef<NodeJS.Timeout | null>(null);
 
   // 查询文件列表
   const { run: runGetStaticFileList } = useRequest(apiGetStaticFileList, {
@@ -182,6 +190,20 @@ export default () => {
     },
   });
 
+  // 重启容器
+  const restartVncPod = useCallback(async (cId: number) => {
+    try {
+      const { code } = await apiRestartPod(cId);
+      if (code === SUCCESS_CODE) {
+        message.success('重启容器成功');
+      } else {
+        message.error('重启容器失败');
+      }
+    } catch (error) {
+      console.error('重启容器失败', error);
+    }
+  }, []);
+
   // 处理文件列表刷新事件
   const handleRefreshFileList = useCallback(
     (conversationId?: number) => {
@@ -194,8 +216,26 @@ export default () => {
     [runGetStaticFileList],
   );
 
-  // 打开桌面视图
-  const openDesktopView = useCallback((cId: number) => {
+  // 打开远程桌面视图
+  const openDesktopView = useCallback(async (cId: number) => {
+    // 停止保活
+    if (vncKeepaliveRef.current) {
+      clearInterval(vncKeepaliveRef.current);
+      vncKeepaliveRef.current = null;
+    }
+    try {
+      // 启动容器
+      const { code } = await apiEnsurePod(cId);
+      if (code === SUCCESS_CODE) {
+        // 启动保活
+        vncKeepaliveRef.current = setInterval(() => {
+          apiKeepalivePod(cId);
+        }, 5000);
+      }
+    } catch (error) {
+      console.error('打开远程桌面视图失败', error);
+    }
+
     setViewMode('desktop');
     setIsFileTreeVisible(true);
     // 触发文件列表刷新事件
@@ -203,7 +243,12 @@ export default () => {
   }, []);
 
   // 打开预览视图
-  const openPreviewView = useCallback((cId: number) => {
+  const openPreviewView = useCallback(async (cId: number) => {
+    // 停止保活
+    if (vncKeepaliveRef.current) {
+      clearInterval(vncKeepaliveRef.current);
+      vncKeepaliveRef.current = null;
+    }
     setViewMode('preview');
     setIsFileTreeVisible(true);
     // 触发文件列表刷新事件
@@ -787,6 +832,16 @@ export default () => {
       timeoutRef.current = null;
     }
 
+    // 关闭文件树
+    setIsFileTreeVisible(false);
+    setFileTreeData([]);
+    setViewMode('preview');
+    // 停止保活
+    if (vncKeepaliveRef.current) {
+      clearInterval(vncKeepaliveRef.current);
+      vncKeepaliveRef.current = null;
+    }
+
     // 停止当前会话【强制】
     abortController?.abort();
   };
@@ -954,5 +1009,6 @@ export default () => {
     handleRefreshFileList,
     openDesktopView,
     openPreviewView,
+    restartVncPod,
   };
 };
