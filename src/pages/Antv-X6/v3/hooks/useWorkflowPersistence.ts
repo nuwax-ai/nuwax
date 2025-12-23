@@ -97,6 +97,23 @@ export const useWorkflowPersistence = ({
     [saveFullWorkflow],
   );
 
+  // V3: 立即保存（短防抖 100ms）
+  // 用于关键操作：连线添加/删除、节点删除、变量增删等
+  const saveImmediately = useMemo(
+    () =>
+      debounce(async () => {
+        // 使用新保存服务检查脏数据，同时兼容旧代理层
+        if (
+          workflowSaveService.hasPendingChanges() ||
+          workflowProxy.hasPendingChanges()
+        ) {
+          console.log('[V3] 立即保存触发 (100ms 防抖)');
+          await saveFullWorkflow();
+        }
+      }, 100), // 100ms 短防抖，保证实时性同时防止连续操作频繁请求
+    [saveFullWorkflow],
+  );
+
   // 自动保存节点配置
   const autoSaveNodeConfig = useCallback(
     async (
@@ -152,6 +169,7 @@ export const useWorkflowPersistence = ({
   return {
     saveFullWorkflow,
     debouncedSaveFullWorkflow,
+    saveImmediately,
     autoSaveNodeConfig,
   };
 };
