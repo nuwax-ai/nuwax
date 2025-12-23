@@ -12,7 +12,7 @@ export interface VncPreviewProps {
    * RCoder service base URL
    * e.g., "http://rcoder-service.example.com"
    */
-  serviceUrl: string;
+  serviceUrl?: string;
   /**
    * Container ID or Session ID
    */
@@ -58,14 +58,14 @@ const VncPreview: React.FC<VncPreviewProps> = ({
 
   // Helper to build the VNC URL
   const buildVncUrl = () => {
-    if (!serviceUrl || !cId) {
+    if (!cId) {
       setErrorMessage(
         'Missing required configuration (Service URL or Container ID)',
       );
       return null;
     }
 
-    const cleanBaseUrl = serviceUrl.replace(/\/+$/, '');
+    const cleanBaseUrl = serviceUrl?.replace(/\/+$/, '');
     const params = new URLSearchParams();
 
     // Always use scaling
