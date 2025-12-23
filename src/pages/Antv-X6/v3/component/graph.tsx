@@ -425,7 +425,12 @@ const initGraph = ({
   // 使用多个插件来增强图形编辑器的功能
   graph
     // .use(new Transform({ resizing: true, rotating: true })) // 启用变换插件，允许节点缩放和旋转
-    .use(new Snapline()) // 启用对齐辅助线插件，帮助节点对齐
+    .use(
+      new Snapline({
+        sharp: true, // 使用尖角对齐参考线
+        clean: 100, // 对齐线延迟 100ms 后自动清除
+      }),
+    ) // 启用对齐辅助线插件，帮助节点对齐
     .use(new Keyboard()) // 启用键盘插件，支持快捷键操作
     .use(new Clipboard()) // 启用剪贴板插件，支持复制和粘贴
     .use(
@@ -441,18 +446,30 @@ const initGraph = ({
           if (args.key === 'zIndex') {
             return false;
           }
+          // 忽略工具栏变化（Edge hover）
+          if (args.key === 'tools') {
+            return false;
+          }
+          // 忽略 Edge 选中样式的颜色变化
+          // args.key 可能是 'attrs/line/stroke' 或 'attrs'
+          if (
+            (args.key as string)?.startsWith('attrs/line') ||
+            (args.key as string)?.startsWith('attrs')
+          ) {
+            return false;
+          }
           return true;
         },
       }),
     ) // 启用历史记录插件，支持撤销和重做
     .use(
       new Selection({
-        // enabled: true,
-        // multiple: true,
-        // rubberband: true,
-        // showNodeSelectionBox: true,
-        // showEdgeSelectionBox: true,
-        // modifiers: ['alt'],
+        enabled: true,
+        multiple: false,
+        rubberband: false,
+        showNodeSelectionBox: false,
+        showEdgeSelectionBox: false,
+        pointerEvents: 'none', // 防止选择框干扰鼠标事件
       }),
     ); // 启用选择插件，并配置选择限制
 
@@ -831,9 +848,9 @@ const initGraph = ({
         isFocus: false,
       });
       graph.cleanSelection();
-      graph.select(node);
-      return;
     }
+    // 每次 mousedown 都选中节点，解决需要点击两次才能选中的问题
+    graph.select(node);
   });
 
   // 处理异常处理节点连边的逻辑，返回是否是异常处理节点

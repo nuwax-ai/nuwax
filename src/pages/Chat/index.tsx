@@ -907,6 +907,8 @@ const Chat: React.FC = () => {
       ) : (
         <ResizableSplit
           minLeftWidth={400}
+          // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
+          className={cx(isFileTreeVisible && 'flex-1')}
           left={agentDetail?.hideChatArea ? null : LeftContent()}
           right={
             pagePreviewData && (
@@ -964,7 +966,14 @@ const Chat: React.FC = () => {
 
       {/*文件树侧边栏 - 只在 AgentSidebar 隐藏时显示 */}
       {isFileTreeVisible && (
-        <div className={cx(styles['file-tree-sidebar'], 'flex', 'flex-col')}>
+        <div
+          className={cx(
+            styles['file-tree-sidebar'],
+            styles['flex-2'],
+            'flex',
+            'flex-col',
+          )}
+        >
           <div className={cx(styles['file-tree-content'], 'flex')}>
             <FileTreeView
               originalFiles={fileTreeData}
