@@ -133,7 +133,7 @@
   position: sticky;
   height: 100%;
   min-width: 800px;
-  max-width: 1000px;
+  // max-width: 1000px;
   margin: 0;
   box-sizing: border-box;
   flex-shrink: 0;
@@ -141,6 +141,10 @@
   visibility: visible;
   opacity: 1;
   transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
+
+  &.flex-2 {
+    flex: 2;
+  }
 
   .file-tree-content {
     flex: 1;
