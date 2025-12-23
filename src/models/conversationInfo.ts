@@ -224,6 +224,8 @@ export default () => {
       clearInterval(vncKeepaliveRef.current);
       vncKeepaliveRef.current = null;
     }
+    setViewMode('desktop');
+    setIsFileTreeVisible(true);
     try {
       // 启动容器
       const { code } = await apiEnsurePod(cId);
@@ -236,11 +238,6 @@ export default () => {
     } catch (error) {
       console.error('打开远程桌面视图失败', error);
     }
-
-    setViewMode('desktop');
-    setIsFileTreeVisible(true);
-    // 触发文件列表刷新事件
-    eventBus.emit(EVENT_TYPE.RefreshFileList, cId);
   }, []);
 
   // 打开预览视图
