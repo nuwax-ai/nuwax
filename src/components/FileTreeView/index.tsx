@@ -1,6 +1,7 @@
 import { ImageViewer } from '@/pages/AppDev/components';
 import { fetchContentFromUrl } from '@/services/skill';
 import { FileNode } from '@/types/interfaces/appDev';
+import { VncDesktopContainerInfo } from '@/types/interfaces/vncDesktop';
 import {
   findFileNode,
   isImageFile,
@@ -74,6 +75,8 @@ interface FileTreeViewProps {
   onImportProject?: () => void;
   /** 重启容器回调 */
   onRestartServer?: () => void;
+  /** 远程桌面容器信息 */
+  vncContainerInfo?: VncDesktopContainerInfo;
 }
 
 /**
@@ -95,6 +98,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onSaveFiles,
       onImportProject,
       onRestartServer,
+      vncContainerInfo,
     },
     ref,
   ) => {
@@ -548,7 +552,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       if (viewMode === 'desktop') {
         return (
           <VncPreview
-            serviceUrl={process.env.BASE_URL || ''}
+            serviceUrl={vncContainerInfo?.service_url || ''}
             cId={targetId || ''}
             readOnly={readOnly}
             autoConnect={true}
