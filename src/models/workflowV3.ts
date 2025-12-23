@@ -106,6 +106,9 @@ const useWorkflowV3 = () => {
   // 提取当前的数据
   const getValue = (val: string) => {
     if (referenceList.previousNodes?.length && referenceList.argMap[val]) {
+      if (!referenceList.argMap[val].name) {
+        return '';
+      }
       return `${getName(val)} - ${referenceList.argMap[val].name}`;
     }
     return '';
@@ -114,6 +117,9 @@ const useWorkflowV3 = () => {
   // 单独处理循环的数据
   const getLoopValue = (val: string) => {
     if (referenceList.innerPreviousNodes?.length && referenceList.argMap[val]) {
+      if (!referenceList.argMap[val].name) {
+        return '';
+      }
       return `${getLoopName(val)} - ${referenceList.argMap[val].name}`;
     }
     return '';
