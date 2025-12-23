@@ -63,6 +63,7 @@ import { useWorkflowValidation } from './hooks/useWorkflowValidation';
 // V3 数据代理层
 import { WorkflowVersionProvider } from '@/contexts/WorkflowVersionContext';
 import { workflowProxy } from './services/workflowProxyV3';
+import { workflowSaveService } from './services/WorkflowSaveService';
 import type { WorkflowDataV3 } from './types';
 import { calculateNodePreviousArgs } from './utils/variableReferenceV3';
 
@@ -503,6 +504,13 @@ const Workflow: React.FC = () => {
             icon: updateInfo.icon ?? currentInfo.icon,
           });
         }
+
+        // 更新 workflowSaveService 的元数据（避免被全量保存覆盖）
+        workflowSaveService.updateMeta({
+          name: updateInfo.name,
+          description: updateInfo.description,
+          icon: updateInfo.icon,
+        });
 
         // 调用全量保存接口
         const success = await saveFullWorkflow();
