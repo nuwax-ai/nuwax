@@ -67,12 +67,14 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     <div className={styles.filePathHeader}>
       {/* 左侧：文件信息 */}
       <div className={styles.fileInfo}>
-        <div className={styles.fileDetails}>
-          <div className={styles.fileName}>{fileName}</div>
-          {formattedSize && (
-            <div className={styles.fileMeta}>{formattedSize}</div>
-          )}
-        </div>
+        {viewMode === 'preview' && (
+          <div className={styles.fileDetails}>
+            <div className={styles.fileName}>{fileName}</div>
+            {formattedSize && (
+              <div className={styles.fileMeta}>{formattedSize}</div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 底部：保存和取消按钮 */}
