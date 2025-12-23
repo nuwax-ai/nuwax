@@ -59,3 +59,13 @@ export interface ISkillUploadFileParams {
   // 文件路径
   filePath: string;
 }
+
+// 批量上传文件参数
+export interface IUploadFilesParams {
+  // 文件列表
+  files: File[];
+  // 会话ID
+  cId: number;
+  // 文件路径列表
+  filePaths: string[];
+}

@@ -8,7 +8,11 @@ import {
   processImageContent,
   transformFlatListToTree,
 } from '@/utils/appDevUtils';
-import { updateFileTreeContent, updateFileTreeName } from '@/utils/fileTree';
+import {
+  handleDownloadFile,
+  updateFileTreeContent,
+  updateFileTreeName,
+} from '@/utils/fileTree';
 import { Modal } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
@@ -54,8 +58,8 @@ interface FileTreeViewProps {
   viewMode?: 'preview' | 'desktop';
   /** 上传多个文件回调 */
   onUploadFiles?: (node: FileNode | null) => void;
-  /** 下载文件回调 */
-  onDownload?: () => void;
+  /** 导出项目回调 */
+  onExportProject?: () => Promise<void>;
   /** 重命名文件回调 */
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
   /** 创建文件回调 */
@@ -81,7 +85,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       targetId,
       viewMode,
       onUploadFiles,
-      onDownload,
+      onExportProject,
       onRenameFile,
       onCreateFileNode,
       onDeleteFile,
@@ -120,7 +124,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     // 是否正在保存文件
     const [isSavingFiles, setIsSavingFiles] = useState<boolean>(false);
-
+    // 是否正在下载项目文件压缩包
+    const [isDownloading, setIsDownloading] = useState<boolean>(false);
     // 文件选择
     const handleFileSelect = async (fileId: string) => {
       // 切换到预览模式
@@ -605,8 +610,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         />
       );
     };
-
     // console.log('changeFiles', changeFiles);
+
+    // 处理下载项目操作
+    const handleDownloadProject = async () => {
+      setIsDownloading(true);
+      await onExportProject?.();
+      setIsDownloading(false);
+    };
 
     return (
       <>
@@ -642,7 +653,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 fileSize={selectedFileNode?.size}
                 viewMode={viewMode}
                 onViewModeChange={onViewModeChange}
-                onDownload={onDownload}
+                onExportProject={handleDownloadProject}
+                // 处理导入项目操作
+                onImportProject={onImportProject}
+                isDownloading={isDownloading}
                 onFullscreen={handleFullscreen}
                 isFullscreen={true}
                 onSaveFiles={saveFiles}
@@ -681,7 +695,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             onCreateFile={handleCreateFile}
             // 处理新建文件夹操作
             onCreateFolder={handleCreateFolder}
+            // 处理导入项目操作
             onImportProject={onImportProject}
+            // 处理通过URL下载文件操作
+            onDownloadFileByUrl={handleDownloadFile}
           />
           {/* 左边文件树 - 远程桌面模式下隐藏 */}
           {viewMode !== 'desktop' && (
@@ -727,7 +744,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               fileSize={selectedFileNode?.size}
               viewMode={viewMode}
               onViewModeChange={onViewModeChange}
-              onDownload={onDownload}
+              onExportProject={handleDownloadProject}
+              // 处理导入项目操作
+              onImportProject={onImportProject}
+              isDownloading={isDownloading}
               onFullscreen={handleFullscreen}
               isFullscreen={false}
               onSaveFiles={saveFiles}
