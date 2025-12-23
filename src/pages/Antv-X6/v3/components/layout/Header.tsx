@@ -59,33 +59,6 @@ const Header: React.FC<HeaderProp> = ({
   const { name, icon, publishStatus, modified, description, publishDate } =
     info;
 
-  // 延迟显示"保存中"状态，避免快速闪烁
-  // 只有保存时间超过 300ms 才显示"保存中"
-  const [showSaving, setShowSaving] = React.useState(false);
-  const savingTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  React.useEffect(() => {
-    if (saveStatus === SaveStatusEnum.Saving) {
-      // 延迟 300ms 后才显示"保存中"
-      savingTimerRef.current = setTimeout(() => {
-        setShowSaving(true);
-      }, 300);
-    } else {
-      // 保存完成，立即清除定时器并隐藏
-      if (savingTimerRef.current) {
-        clearTimeout(savingTimerRef.current);
-        savingTimerRef.current = null;
-      }
-      setShowSaving(false);
-    }
-
-    return () => {
-      if (savingTimerRef.current) {
-        clearTimeout(savingTimerRef.current);
-      }
-    };
-  }, [saveStatus]);
-
   // 发布按钮是否禁用
   const disabledBtn = useMemo(() => {
     if (info) {
@@ -99,18 +72,6 @@ const Header: React.FC<HeaderProp> = ({
   const renderSaveStatus = () => {
     switch (saveStatus) {
       case SaveStatusEnum.Saving:
-        // 只有超过 300ms 才显示"保存中"
-        if (!showSaving) {
-          // 保存中但未超过 300ms，显示上一次的状态（已保存）
-          return (
-            <Tag color="default" bordered={false}>
-              已自动保存{' '}
-              {getTime(
-                lastSaveTime?.toString() ?? modified ?? new Date().toString(),
-              )}
-            </Tag>
-          );
-        }
         return (
           <Tag color="processing" bordered={false} icon={<LoadingOutlined />}>
             保存中...

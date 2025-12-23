@@ -84,7 +84,6 @@ interface UseNodeOperationsParams {
   timerRef: React.MutableRefObject<NodeJS.Timeout | undefined>;
   changeUpdateTime: () => void;
   debouncedSaveFullWorkflow: () => void;
-  saveImmediately: () => void;
   changeDrawer: (val: any) => void;
   getNodeConfig: (id: number) => void;
   getReference: (id: number) => Promise<boolean>;
@@ -96,7 +95,6 @@ interface UseNodeOperationsParams {
     params: any,
     callback?: () => void,
   ) => Promise<number[] | null>;
-  getWorkflow: (key: string) => any;
 }
 
 interface UseNodeOperationsReturn {
@@ -147,14 +145,11 @@ export const useNodeOperations = ({
   timerRef,
   changeUpdateTime,
   debouncedSaveFullWorkflow,
-  saveImmediately,
   changeDrawer,
   getNodeConfig,
   getReference,
   changeNode,
   nodeChangeEdge,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getWorkflow,
 }: UseNodeOperationsParams): UseNodeOperationsReturn => {
   /**
    * 检查节点类型是否为条件分支或意图识别节点
@@ -858,8 +853,7 @@ export const useNodeOperations = ({
           clearTimeout(timerRef.current);
         }
         changeUpdateTime();
-        // V3: 删除节点后立即保存（短防抖）
-        saveImmediately();
+        debouncedSaveFullWorkflow();
         if (node) {
           if (node.type === 'Loop') {
             changeDrawer(null);
@@ -879,7 +873,7 @@ export const useNodeOperations = ({
       preventGetReference,
       timerRef,
       changeUpdateTime,
-      saveImmediately,
+      debouncedSaveFullWorkflow,
       changeDrawer,
       getNodeConfig,
     ],
