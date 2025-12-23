@@ -69,3 +69,42 @@ export interface IUploadFilesParams {
   // 文件路径列表
   filePaths: string[];
 }
+
+// 容器信息
+export interface VncDesktopContainerInfo {
+  // 容器ID
+  container_id: string;
+  // 容器IP地址
+  container_ip: string;
+  // 容器名称
+  container_name: string;
+  // 服务URL
+  service_url: string;
+  // 容器状态
+  status: string;
+}
+
+// 启动容器响应
+export interface EnsurePodResponse {
+  // 容器是否已存在
+  existed: boolean;
+  // 容器是否已创建
+  created: boolean;
+  current_activity_time: string;
+  message: string;
+  previous_activity_time: string;
+  time_until_cleanup: number;
+  // 远程桌面容器信息
+  container_info: VncDesktopContainerInfo;
+}
+
+// 重启容器响应
+export interface RestartPodResponse {
+  // 远程桌面容器信息
+  container_info: VncDesktopContainerInfo;
+  // 容器是否已重启
+  restarted: boolean;
+  // 容器是否已存在
+  was_existing: boolean;
+  message: string;
+}
