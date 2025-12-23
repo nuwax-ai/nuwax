@@ -188,6 +188,11 @@ const routes = [
     component: '@/examples/VncPreviewDemo',
     layout: false,
   },
+  {
+    path: '/examples/file-preview-demo',
+    component: '@/examples/file-preview-demo',
+    layout: false,
+  },
 ];
 
 export default routes;
