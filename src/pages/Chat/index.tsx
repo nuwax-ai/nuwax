@@ -140,10 +140,11 @@ const Chat: React.FC = () => {
     // setFileTreeData,
     // 文件树视图模式
     viewMode,
-    setViewMode,
     // 处理文件列表刷新事件
     handleRefreshFileList,
     openPreviewView,
+    openDesktopView,
+    restartVncPod,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -697,6 +698,17 @@ const Chat: React.FC = () => {
     }
   };
 
+  /**
+   * 切换视图、远程桌面模式
+   */
+  const onViewModeChange = (mode: 'preview' | 'desktop') => {
+    if (mode === 'desktop') {
+      openDesktopView(id);
+    } else {
+      openPreviewView(id);
+    }
+  };
+
   const LeftContent = () => {
     return (
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
@@ -959,9 +971,8 @@ const Chat: React.FC = () => {
               targetId={id?.toString() || ''}
               viewMode={viewMode}
               readOnly={false}
-              onViewModeChange={(mode) => {
-                setViewMode(mode);
-              }}
+              // 切换视图、远程桌面模式
+              onViewModeChange={onViewModeChange}
               // 导出项目
               onExportProject={handleExportProject}
               // 上传文件
@@ -974,6 +985,8 @@ const Chat: React.FC = () => {
               onDeleteFile={handleDeleteFile}
               // 保存文件
               onSaveFiles={handleSaveFiles}
+              // 重启容器
+              onRestartServer={() => restartVncPod(id)}
             />
           </div>
         </div>
