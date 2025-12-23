@@ -9,7 +9,7 @@ import {
   transformFlatListToTree,
 } from '@/utils/appDevUtils';
 import { updateFileTreeContent, updateFileTreeName } from '@/utils/fileTree';
-import { Modal } from 'antd';
+import { message, Modal } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -610,26 +610,50 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     /**
      * 处理下载文件操作
      */
-    const handleDownload = useCallback((targetNode: FileNode) => {
+    const handleDownload = useCallback(async (targetNode: FileNode) => {
       const fileProxyUrl = targetNode.fileProxyUrl;
       if (!fileProxyUrl) return;
 
       const fileName = targetNode.name || 'download';
 
-      // 创建下载链接
-      const link = document.createElement('a');
-      link.href = fileProxyUrl.startsWith('http')
-        ? fileProxyUrl
-        : `${process.env.BASE_URL || ''}${fileProxyUrl}`;
-      link.download = fileName;
-      link.style.display = 'none';
+      try {
+        // 构建完整的 URL
+        const fullUrl = fileProxyUrl.startsWith('http')
+          ? fileProxyUrl
+          : `${process.env.BASE_URL || ''}${fileProxyUrl}`;
 
-      // 添加到 DOM 并触发下载
-      document.body.appendChild(link);
-      link.click();
+        // 使用 fetch 获取文件内容
+        const response = await fetch(fullUrl);
+        if (!response.ok) {
+          throw new Error(`下载失败: ${response.statusText}`);
+        }
 
-      // 清理
-      document.body.removeChild(link);
+        // 将响应转换为 Blob
+        const blob = await response.blob();
+
+        // 创建临时 URL
+        const objectURL = URL.createObjectURL(blob);
+
+        // 创建下载链接
+        const link = document.createElement('a');
+        link.href = objectURL;
+        link.download = fileName;
+        link.style.display = 'none';
+
+        // 添加到 DOM 并触发下载
+        document.body.appendChild(link);
+        link.click();
+
+        // 清理
+        document.body.removeChild(link);
+        // 释放 URL 对象
+        setTimeout(() => {
+          URL.revokeObjectURL(objectURL);
+        }, 100);
+      } catch (error) {
+        console.error('下载文件失败:', error);
+        message.error('下载文件失败，请重试');
+      }
     }, []);
 
     // console.log('changeFiles', changeFiles);
