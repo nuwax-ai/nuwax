@@ -466,22 +466,17 @@ const Workflow: React.FC = () => {
   };
   // 优化后的onFinish方法
   // V3 Hooks Integration for Persistence and Interaction
-  const {
-    saveFullWorkflow,
-    debouncedSaveFullWorkflow,
-    saveImmediately,
-    autoSaveNodeConfig,
-  } = useWorkflowPersistence({
-    graphRef,
-    changeUpdateTime,
-    getReference: (id) => getReference(id),
-    setFoldWrapItem,
-  });
+  const { saveFullWorkflow, debouncedSaveFullWorkflow, autoSaveNodeConfig } =
+    useWorkflowPersistence({
+      graphRef,
+      changeUpdateTime,
+      getReference: (id) => getReference(id),
+      setFoldWrapItem,
+    });
 
   const { nodeChangeEdge, changeNode } = useGraphInteraction({
     graphRef,
     debouncedSaveFullWorkflow,
-    saveImmediately,
     changeUpdateTime,
     getReference: (id) => getReference(id),
     setFoldWrapItem,
@@ -504,7 +499,6 @@ const Workflow: React.FC = () => {
     timerRef,
     changeUpdateTime,
     debouncedSaveFullWorkflow,
-    saveImmediately,
     changeDrawer: (val) => changeDrawerRef.current?.(val),
     getNodeConfig: (id) => getNodeConfig(id),
     getReference: (id) => getReference(id),
