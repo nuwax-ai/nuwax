@@ -44,33 +44,26 @@ export const useWorkflowLifecycle = ({
     }
   }, [workflowId]);
 
-  // 修改当前工作流的基础信息
+  // 修改当前工作流的基础信息（由 CreateWorkflow 组件调用，接口已在组件内调用过）
   const onConfirm = useCallback(
     async (value: IUpdateDetails, callback?: () => void) => {
-      try {
-        const _res = await service.updateDetails(value);
-        if (_res.code === Constant.success) {
-          const _time = new Date();
-          setInfo((prev) => {
-            if (!prev) return null;
-            return {
-              ...prev,
-              modified: _time.toString(),
-              // Update other fields if returned or necessary
-              ...(_res.data || {}),
-            };
-          });
+      // 直接使用传入的参数更新本地状态（接口已在 CreateWorkflow 组件中调用过）
+      const _time = new Date();
+      setInfo((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          modified: _time.toString(),
+          // 使用传入的 value 更新 name、description、icon 等字段
+          name: value.name ?? prev.name,
+          description: value.description ?? prev.description,
+          icon: value.icon ?? prev.icon,
+        };
+      });
 
-          // Refresh full details to ensure consistency
-          refreshGraphData();
-
-          if (callback) callback();
-        }
-      } catch (error) {
-        console.error('Update details failed:', error);
-      }
+      if (callback) callback();
     },
-    [refreshGraphData],
+    [],
   );
 
   // 初始化加载数据

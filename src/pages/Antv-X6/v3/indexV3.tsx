@@ -473,6 +473,48 @@ const Workflow: React.FC = () => {
       setFoldWrapItem,
     });
 
+  // V3: 更新工作流基础信息（名称、描述、图标），走全量保存接口
+  const onUpdateWorkflow = useCallback(
+    async (updateInfo: {
+      name?: string;
+      description?: string;
+      icon?: string;
+    }) => {
+      try {
+        // 更新本地 info 状态
+        setInfo((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            name: updateInfo.name ?? prev.name,
+            description: updateInfo.description ?? prev.description,
+            icon: updateInfo.icon ?? prev.icon,
+            modified: new Date().toString(),
+          };
+        });
+
+        // 更新 workflowProxy 中的工作流信息
+        const currentInfo = workflowProxy.getWorkflowInfo();
+        if (currentInfo) {
+          workflowProxy.setWorkflowInfo({
+            ...currentInfo,
+            name: updateInfo.name ?? currentInfo.name,
+            description: updateInfo.description ?? currentInfo.description,
+            icon: updateInfo.icon ?? currentInfo.icon,
+          });
+        }
+
+        // 调用全量保存接口
+        const success = await saveFullWorkflow();
+        return success;
+      } catch (error) {
+        console.error('更新工作流基础信息失败:', error);
+        return false;
+      }
+    },
+    [setInfo, saveFullWorkflow],
+  );
+
   const { nodeChangeEdge, changeNode } = useGraphInteraction({
     graphRef,
     debouncedSaveFullWorkflow,
@@ -1149,6 +1191,7 @@ const Workflow: React.FC = () => {
         }}
         onManualSave={saveFullWorkflow}
         onConfirm={onConfirm}
+        onUpdateWorkflow={onUpdateWorkflow}
         handleConfirmPublishWorkflow={
           validationHook.handleConfirmPublishWorkflow
         }

@@ -47,6 +47,7 @@ export interface WorkflowLayoutProps {
   onRedo: () => void;
   onManualSave?: () => Promise<boolean>;
   onConfirm: (values: any, callback?: () => void) => void;
+  onUpdateWorkflow?: (info: any) => Promise<boolean>;
   handleConfirmPublishWorkflow: () => void;
 
   // Global Loading
@@ -136,6 +137,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   onRedo,
   onManualSave,
   onConfirm,
+  onUpdateWorkflow,
   handleConfirmPublishWorkflow,
   globalLoadingTime,
   graphParams,
@@ -305,6 +307,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
 
       <CreateWorkflow
         onConfirm={onConfirm}
+        onUpdate={onUpdateWorkflow}
         onCancel={() => setShowCreateWorkflow(false)}
         open={showCreateWorkflow}
         type={CreateUpdateModeEnum.Update}
