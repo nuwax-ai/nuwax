@@ -11,6 +11,7 @@ import { workflowSaveService } from '../services/WorkflowSaveService';
 
 interface UseWorkflowPersistenceProps {
   graphRef: MutableRefObject<GraphContainerRef | null>;
+  graphInstanceRef?: MutableRefObject<any | null>; // Fallback ref for unmount
   changeUpdateTime: () => void;
   getReference: (id: number) => Promise<boolean>;
   setFoldWrapItem?: (data: ChildNode) => void;
@@ -18,6 +19,7 @@ interface UseWorkflowPersistenceProps {
 
 export const useWorkflowPersistence = ({
   graphRef,
+  graphInstanceRef,
   changeUpdateTime,
   getReference,
   setFoldWrapItem,
@@ -28,7 +30,8 @@ export const useWorkflowPersistence = ({
   // V3: 全量保存工作流配置
   const saveFullWorkflow = useCallback(async (): Promise<boolean> => {
     try {
-      const graph = graphRef.current?.getGraphRef?.();
+      const graph =
+        graphRef.current?.getGraphRef?.() || graphInstanceRef?.current;
       if (!graph) {
         console.error('[V3] 画布未初始化');
         return false;

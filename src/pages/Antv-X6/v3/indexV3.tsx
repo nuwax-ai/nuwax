@@ -52,6 +52,7 @@ import { setFormDefaultValues } from './utils/workflowV3';
 import './indexV3.less';
 
 // V3 Hooks
+import { useBeforeUnload } from './hooks/useBeforeUnload';
 import { useGraphInteraction } from './hooks/useGraphInteraction';
 import { useNodeOperations } from './hooks/useNodeOperations';
 import { useTestRun } from './hooks/useTestRun';
@@ -266,6 +267,7 @@ const Workflow: React.FC = () => {
   // 发布前的校验
   // 画布的ref
   const graphRef = useRef<GraphContainerRef>(null);
+  const graphInstanceRef = useRef<Graph | null>(null); // 持久化引用，解决 undo/redo 及 unmount 时 graphRef 失效问题
   // 阻止获取当前节点的上级参数
   const preventGetReference = useRef<number>(0);
   // 新增定时器引用
@@ -469,8 +471,9 @@ const Workflow: React.FC = () => {
   const { saveFullWorkflow, debouncedSaveFullWorkflow, autoSaveNodeConfig } =
     useWorkflowPersistence({
       graphRef,
+      graphInstanceRef,
       changeUpdateTime,
-      getReference: (id) => getReference(id),
+      getReference,
       setFoldWrapItem,
     });
 
@@ -891,30 +894,16 @@ const Workflow: React.FC = () => {
     await nodeOperationsHook.dragChild(child, newPosition);
   };
 
-  // 页面离开前保存
+  // V3: 页面离开保护（刷新/关闭/SPA路由跳转）
+  useBeforeUnload({
+    getGraph: () =>
+      graphRef.current?.getGraphRef?.() || graphInstanceRef.current,
+    onSave: saveFullWorkflow,
+  });
+
+  // 组件卸载时的清理
   useEffect(() => {
-    // V3: 页面离开前保存（处理刷新/关闭页面）
-    // 注意：初始数据加载已由 useWorkflowLifecycle 处理，这里不需要再调用 getDetails()
-    const handleBeforeUnload = () => {
-      if (workflowProxy.hasPendingChanges()) {
-        // 同步保存（beforeunload 不支持异步）
-        const fullConfig = workflowProxy.buildFullConfig();
-        if (fullConfig) {
-          // 使用 sendBeacon 尝试同步发送
-          const url = `${process.env.BASE_URL}/api/workflow/save`;
-          const blob = new Blob(
-            [JSON.stringify({ workflowConfig: fullConfig })],
-            { type: 'application/json' },
-          );
-          navigator.sendBeacon(url, blob);
-        }
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-
       // V3: 离开页面时全量保存
       if (workflowProxy.hasPendingChanges()) {
         saveFullWorkflow();
@@ -1063,8 +1052,10 @@ const Workflow: React.FC = () => {
   useEffect(() => {
     // 轮询或者在 onInit 中绑定？由于 graph 实例初始化时机问题，使用轮询检查或者依赖 graphParams 变化
     const checkGraph = setInterval(() => {
+      // 优先从 graphRef 获取，并更新到 stable ref
       const graph = graphRef.current?.getGraphRef();
       if (graph) {
+        graphInstanceRef.current = graph;
         clearInterval(checkGraph);
 
         const updateHistory = () => {
