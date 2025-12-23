@@ -81,3 +81,22 @@ export async function apiUploadFiles(
     data: formData,
   });
 }
+
+// 下载全部文件
+export async function apiDownloadAllFiles(cId: number): Promise<{
+  data: Blob;
+  headers: {
+    'content-disposition': string;
+    'content-length': string;
+    'content-type': string;
+  };
+}> {
+  return request(`/api/computer/static/download-all-files`, {
+    method: 'GET',
+    responseType: 'blob', // 指定响应类型为blob
+    getResponse: true, // 获取完整响应对象
+    params: {
+      cId,
+    },
+  });
+}

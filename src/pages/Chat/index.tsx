@@ -19,7 +19,11 @@ import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
-import { apiUpdateStaticFile, apiUploadFiles } from '@/services/vncDesktop';
+import {
+  apiDownloadAllFiles,
+  apiUpdateStaticFile,
+  apiUploadFiles,
+} from '@/services/vncDesktop';
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -47,6 +51,7 @@ import {
   parsePageAppProjectId,
 } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
+import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
@@ -667,6 +672,31 @@ const Chat: React.FC = () => {
     };
   };
 
+  // 下载全部文件
+  const handleDownloadAllFiles = async () => {
+    // 检查项目ID是否有效
+    if (!id) {
+      messageAntd.error('会话ID不存在或无效，无法导出');
+      return;
+    }
+
+    try {
+      const result = await apiDownloadAllFiles(id);
+      const filename = `chat-${id}.zip`;
+      // 导出整个项目压缩包
+      exportWholeProjectZip(result, filename);
+      messageAntd.success('导出成功！');
+    } catch (error) {
+      // 改进错误处理，兼容不同的错误格式
+      const errorMessage =
+        (error as any)?.message ||
+        (error as any)?.toString() ||
+        '导出过程中发生未知错误';
+
+      messageAntd.error(`导出失败: ${errorMessage}`);
+    }
+  };
+
   const LeftContent = () => {
     return (
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
@@ -932,6 +962,7 @@ const Chat: React.FC = () => {
               onViewModeChange={(mode) => {
                 setViewMode(mode);
               }}
+              onDownload={handleDownloadAllFiles}
               // 上传文件
               onUploadFiles={handleUploadMultipleFiles}
               // 重命名文件
