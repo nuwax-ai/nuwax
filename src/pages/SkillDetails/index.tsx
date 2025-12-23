@@ -222,8 +222,8 @@ const SkillDetails: React.FC = () => {
     };
   };
 
-  // 下载技能文件
-  const handleDownload = async () => {
+  // 导出项目
+  const handleExportProject = async () => {
     // 检查项目ID是否有效
     if (!skillId) {
       message.error('技能ID不存在或无效，无法导出');
@@ -433,8 +433,8 @@ const SkillDetails: React.FC = () => {
           originalFiles={skillInfo?.files || []}
           // 上传文件
           onUploadFiles={handleUploadMultipleFiles}
-          // 下载文件
-          onDownload={handleDownload}
+          // 导出项目
+          onExportProject={handleExportProject}
           // 重命名文件
           onRenameFile={handleConfirmRenameFile}
           // 新建文件
