@@ -14,6 +14,7 @@ import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useState,
@@ -606,6 +607,31 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       );
     };
 
+    /**
+     * 处理下载文件操作
+     */
+    const handleDownload = useCallback((targetNode: FileNode) => {
+      const fileProxyUrl = targetNode.fileProxyUrl;
+      if (!fileProxyUrl) return;
+
+      const fileName = targetNode.name || 'download';
+
+      // 创建下载链接
+      const link = document.createElement('a');
+      link.href = fileProxyUrl.startsWith('http')
+        ? fileProxyUrl
+        : `${process.env.BASE_URL || ''}${fileProxyUrl}`;
+      link.download = fileName;
+      link.style.display = 'none';
+
+      // 添加到 DOM 并触发下载
+      document.body.appendChild(link);
+      link.click();
+
+      // 清理
+      document.body.removeChild(link);
+    }, []);
+
     // console.log('changeFiles', changeFiles);
 
     return (
@@ -681,7 +707,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             onCreateFile={handleCreateFile}
             // 处理新建文件夹操作
             onCreateFolder={handleCreateFolder}
+            // 处理导入项目操作
             onImportProject={onImportProject}
+            // 处理通过URL下载文件操作
+            onDownloadFileByUrl={handleDownload}
           />
           {/* 左边文件树 - 远程桌面模式下隐藏 */}
           {viewMode !== 'desktop' && (

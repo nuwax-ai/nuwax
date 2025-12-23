@@ -1,5 +1,6 @@
 import {
   DeleteOutlined,
+  DownloadOutlined,
   EditOutlined,
   FileAddOutlined,
   FolderAddOutlined,
@@ -26,6 +27,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onCreateFolder,
   // 导入项目
   onImportProject,
+  onDownloadFileByUrl,
   disableDelete = false,
 }) => {
   /**
@@ -111,6 +113,17 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
     });
   }, [targetNode, onCreateFolder, handleMenuItemClick]);
 
+  /**
+   * 处理下载文件操作
+   */
+  const handleDownload = useCallback(() => {
+    if (!targetNode || !targetNode.fileProxyUrl) return;
+
+    handleMenuItemClick(() => {
+      onDownloadFileByUrl?.(targetNode);
+    });
+  }, [targetNode, handleMenuItemClick]);
+
   // 如果不显示，返回 null
   if (!visible) {
     return null;
@@ -174,6 +187,17 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
             onClick: handleRename,
             disabled: !onRename,
           },
+          // 只有当 fileProxyUrl 存在且不为空时才显示下载选项
+          ...(targetNode?.fileProxyUrl
+            ? [
+                {
+                  key: 'download',
+                  label: '下载',
+                  icon: <DownloadOutlined />,
+                  onClick: handleDownload,
+                },
+              ]
+            : []),
           {
             key: 'upload',
             label: '上传文件',
