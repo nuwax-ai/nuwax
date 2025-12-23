@@ -1,9 +1,10 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { formatFileSize } from '@/utils/appDevUtils';
-import { DesktopOutlined, FullscreenExitOutlined } from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
+import { DesktopOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
 import React, { useMemo } from 'react';
 import styles from './index.less';
+import MoreActionsMenu from './MoreActionsMenu/index';
 
 interface FilePathHeaderProps {
   /** 文件名 */
@@ -14,8 +15,12 @@ interface FilePathHeaderProps {
   viewMode?: 'preview' | 'desktop';
   /** 视图模式切换回调 */
   onViewModeChange?: (mode: 'preview' | 'desktop') => void;
-  /** 下载回调 */
-  onDownload?: () => void;
+  /** 重启服务器回调 */
+  onRestartServer?: () => void;
+  /** 导入项目回调 */
+  onImportProject?: () => void;
+  /** 导出项目回调 */
+  onExportProject?: () => void;
   /** 全屏回调 */
   onFullscreen?: () => void;
   /** 是否处于全屏状态 */
@@ -28,6 +33,8 @@ interface FilePathHeaderProps {
   hasModifiedFiles?: boolean;
   /** 是否正在保存文件 */
   isSavingFiles?: boolean;
+  /** 是否正在下载文件 */
+  isDownloading?: boolean;
 }
 
 /**
@@ -39,13 +46,16 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   fileSize,
   viewMode = 'preview',
   onViewModeChange,
-  onDownload,
+  onRestartServer,
+  onImportProject,
+  onExportProject,
   onFullscreen,
-  isFullscreen = false,
+  // isFullscreen = false,
   onSaveFiles,
   onCancelSaveFiles,
   hasModifiedFiles = false,
   isSavingFiles = false,
+  // isDownloading = false,
 }) => {
   // 格式化的文件大小
   const formattedSize = useMemo(() => {
@@ -57,9 +67,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     <div className={styles.filePathHeader}>
       {/* 左侧：文件信息 */}
       <div className={styles.fileInfo}>
-        <div className={styles.fileIcon}>
-          <SvgIcon name="icons-common-preview" style={{ fontSize: 20 }} />
-        </div>
         <div className={styles.fileDetails}>
           <div className={styles.fileName}>{fileName}</div>
           {formattedSize && (
@@ -111,10 +118,18 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         </div>
       )}
 
+      {/* 更多操作菜单 */}
+      <MoreActionsMenu
+        onImportProject={onImportProject}
+        onRestartServer={onRestartServer}
+        onFullscreenPreview={onFullscreen}
+        onExportProject={onExportProject}
+      />
+
       {/* 右侧：操作按钮 */}
-      <div className={styles.actionButtons}>
+      {/* <div className={styles.actionButtons}>
         {onDownload && (
-          <Tooltip title="下载">
+          <Tooltip title={isDownloading ? '下载中...' : '下载'}>
             <Button
               type="text"
               size="small"
@@ -126,6 +141,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               }
               onClick={onDownload}
               className={styles.actionButton}
+              loading={isDownloading}
+              disabled={isDownloading}
             />
           </Tooltip>
         )}
@@ -147,7 +164,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             className={styles.actionButton}
           />
         </Tooltip>
-      </div>
+      </div> */}
     </div>
   );
 };

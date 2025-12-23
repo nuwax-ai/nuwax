@@ -13,6 +13,8 @@ import {
 } from '@/constants/fileTreeImages.constants';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { SkillFileInfo } from '@/types/interfaces/skill';
+import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
+import { message } from 'antd';
 
 // 获取文件图标
 export const getFileIcon = (name: string) => {
@@ -94,10 +96,10 @@ export const updateFileTreeName = (
  * @returns 更新后的文件列表
  */
 export const updateFilesListName = (
-  files: SkillFileInfo[],
+  files: SkillFileInfo[] | StaticFileInfo[],
   fileNode: FileNode,
   newName: string,
-): SkillFileInfo[] => {
+): SkillFileInfo[] | StaticFileInfo[] => {
   // 获取旧路径和新路径
   const oldPath = fileNode.path;
   const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
@@ -107,9 +109,9 @@ export const updateFilesListName = (
 
   // 如果是文件，则更新文件名
   if (fileNode.type === 'file') {
-    const currentFile = files?.find((file: SkillFileInfo) => {
+    const currentFile = files?.find((file: SkillFileInfo | StaticFileInfo) => {
       return file.fileId === fileNode.id;
-    }) as SkillFileInfo;
+    });
     // 如果文件存在，则更新文件名
     if (currentFile) {
       return [
@@ -218,4 +220,53 @@ export const updateFilesListContent = (
     }
     return result;
   }, []);
+};
+
+/**
+ * 处理下载单个文件操作
+ */
+export const handleDownloadFile = async (targetNode: FileNode) => {
+  const fileProxyUrl = targetNode.fileProxyUrl;
+  if (!fileProxyUrl) return;
+
+  const fileName = targetNode.name || 'download';
+
+  try {
+    // 构建完整的 URL
+    const fullUrl = fileProxyUrl.startsWith('http')
+      ? fileProxyUrl
+      : `${process.env.BASE_URL || ''}${fileProxyUrl}`;
+
+    // 使用 fetch 获取文件内容
+    const response = await fetch(fullUrl);
+    if (!response.ok) {
+      throw new Error(`下载失败: ${response.statusText}`);
+    }
+
+    // 将响应转换为 Blob
+    const blob = await response.blob();
+
+    // 创建临时 URL
+    const objectURL = URL.createObjectURL(blob);
+
+    // 创建下载链接
+    const link = document.createElement('a');
+    link.href = objectURL;
+    link.download = fileName;
+    link.style.display = 'none';
+
+    // 添加到 DOM 并触发下载
+    document.body.appendChild(link);
+    link.click();
+
+    // 清理
+    document.body.removeChild(link);
+    // 释放 URL 对象
+    setTimeout(() => {
+      URL.revokeObjectURL(objectURL);
+    }, 100);
+  } catch (error) {
+    console.error('下载文件失败:', error);
+    message.error('下载文件失败，请重试');
+  }
 };
