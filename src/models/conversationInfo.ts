@@ -10,6 +10,7 @@ import {
 } from '@/services/agentConfig';
 import { apiGetStaticFileList } from '@/services/vncDesktop';
 import {
+  AgentComponentTypeEnum,
   AssistantRoleEnum,
   ConversationEventTypeEnum,
   MessageModeEnum,
@@ -515,7 +516,7 @@ export default () => {
 
           // 长任务型任务处理(打开远程桌面)
           if (
-            data.type === 'Event' &&
+            data.type === AgentComponentTypeEnum.Event &&
             data.subEventType === 'OPEN_DESKTOP' &&
             conversationInfo?.id
           ) {
