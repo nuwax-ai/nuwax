@@ -41,7 +41,7 @@ import {
   updateSkillComponentConfigs,
 } from '@/utils/updateNode';
 import { Graph } from '@antv/x6';
-import { Form } from 'antd';
+import { App, Form } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import WorkflowLayout from './components/layout/WorkflowLayout';
@@ -81,11 +81,6 @@ const workflowCreatedTabs = CREATED_TABS.filter((item) =>
  * 并重新生成 inputArgs
  */
 const cleanVariableAggregationFormValues = (values: any): any => {
-  console.log(
-    '[VariableAggregation] 输入的表单值:',
-    JSON.stringify(values, null, 2),
-  );
-
   const cleanedValues = { ...values };
   const variableGroups = [...(cleanedValues.variableGroups || [])];
 
@@ -175,6 +170,7 @@ const cleanVariableAggregationFormValues = (values: any): any => {
 };
 
 const Workflow: React.FC = () => {
+  const { message } = App.useApp();
   const {
     getWorkflow,
     storeWorkflow,
@@ -1028,6 +1024,8 @@ const Workflow: React.FC = () => {
         if (graph.canUndo()) {
           graph.undo();
           // message.success('已撤销');
+        } else {
+          message.warning('没有可撤销的操作');
         }
       }
 
@@ -1040,6 +1038,8 @@ const Workflow: React.FC = () => {
         if (graph.canRedo()) {
           graph.redo();
           // message.success('已重做');
+        } else {
+          message.warning('没有可重做的操作');
         }
       }
     };
@@ -1129,14 +1129,22 @@ const Workflow: React.FC = () => {
         canRedo={historyState.canRedo}
         onUndo={() => {
           const graph = graphRef.current?.getGraphRef();
-          if (graph && graph.canUndo()) {
-            graph.undo();
+          if (graph) {
+            if (graph.canUndo()) {
+              graph.undo();
+            } else {
+              message.warning('没有可撤销的操作');
+            }
           }
         }}
         onRedo={() => {
           const graph = graphRef.current?.getGraphRef();
-          if (graph && graph.canRedo()) {
-            graph.redo();
+          if (graph) {
+            if (graph.canRedo()) {
+              graph.redo();
+            } else {
+              message.warning('没有可重做的操作');
+            }
           }
         }}
         onManualSave={saveFullWorkflow}

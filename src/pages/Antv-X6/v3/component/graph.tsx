@@ -441,6 +441,18 @@ const initGraph = ({
           if (args.key === 'zIndex') {
             return false;
           }
+          // 忽略工具栏变化（Edge hover）
+          if (args.key === 'tools') {
+            return false;
+          }
+          // 忽略 Edge 选中样式的颜色变化
+          // args.key 可能是 'attrs/line/stroke' 或 'attrs'
+          if (
+            (args.key as string)?.startsWith('attrs/line') ||
+            (args.key as string)?.startsWith('attrs')
+          ) {
+            return false;
+          }
           return true;
         },
       }),
