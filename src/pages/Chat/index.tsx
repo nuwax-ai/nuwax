@@ -672,8 +672,8 @@ const Chat: React.FC = () => {
     };
   };
 
-  // 下载全部文件
-  const handleDownloadAllFiles = async () => {
+  // 导出项目
+  const handleExportProject = async () => {
     // 检查项目ID是否有效
     if (!id) {
       messageAntd.error('会话ID不存在或无效，无法导出');
@@ -962,7 +962,8 @@ const Chat: React.FC = () => {
               onViewModeChange={(mode) => {
                 setViewMode(mode);
               }}
-              onDownload={handleDownloadAllFiles}
+              // 导出项目
+              onExportProject={handleExportProject}
               // 上传文件
               onUploadFiles={handleUploadMultipleFiles}
               // 重命名文件

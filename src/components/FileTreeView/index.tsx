@@ -58,8 +58,8 @@ interface FileTreeViewProps {
   viewMode?: 'preview' | 'desktop';
   /** 上传多个文件回调 */
   onUploadFiles?: (node: FileNode | null) => void;
-  /** 下载文件回调 */
-  onDownload?: () => Promise<void>;
+  /** 导出项目回调 */
+  onExportProject?: () => Promise<void>;
   /** 重命名文件回调 */
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
   /** 创建文件回调 */
@@ -85,7 +85,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       targetId,
       viewMode,
       onUploadFiles,
-      onDownload,
+      onExportProject,
       onRenameFile,
       onCreateFileNode,
       onDeleteFile,
@@ -615,7 +615,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 处理下载项目操作
     const handleDownloadProject = async () => {
       setIsDownloading(true);
-      await onDownload?.();
+      await onExportProject?.();
       setIsDownloading(false);
     };
 
@@ -653,7 +653,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 fileSize={selectedFileNode?.size}
                 viewMode={viewMode}
                 onViewModeChange={onViewModeChange}
-                onDownload={handleDownloadProject}
+                onExportProject={handleDownloadProject}
+                // 处理导入项目操作
+                onImportProject={onImportProject}
                 isDownloading={isDownloading}
                 onFullscreen={handleFullscreen}
                 isFullscreen={true}
@@ -742,7 +744,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               fileSize={selectedFileNode?.size}
               viewMode={viewMode}
               onViewModeChange={onViewModeChange}
-              onDownload={handleDownloadProject}
+              onExportProject={handleDownloadProject}
+              // 处理导入项目操作
+              onImportProject={onImportProject}
               isDownloading={isDownloading}
               onFullscreen={handleFullscreen}
               isFullscreen={false}
