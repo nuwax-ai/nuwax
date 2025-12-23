@@ -1,8 +1,10 @@
 import { RequestResponse } from '@/types/interfaces/request';
 import type {
+  EnsurePodResponse,
   ISkillUploadFileParams,
   IUpdateStaticFileParams,
   IUploadFilesParams,
+  RestartPodResponse,
   StaticFileListResponse,
 } from '@/types/interfaces/vncDesktop';
 import { request } from 'umi';
@@ -104,7 +106,7 @@ export async function apiDownloadAllFiles(cId: number): Promise<{
 // 启动容器
 export async function apiEnsurePod(
   cId: number,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<EnsurePodResponse>> {
   return request('/api/computer/pod/ensure', {
     method: 'POST',
     params: {
@@ -116,7 +118,7 @@ export async function apiEnsurePod(
 // 重启容器(销毁后重建)
 export async function apiRestartPod(
   cId: number,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<RestartPodResponse>> {
   return request('/api/computer/pod/restart', {
     method: 'POST',
     params: {
@@ -128,7 +130,7 @@ export async function apiRestartPod(
 // 容器保活
 export async function apiKeepalivePod(
   cId: number,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<EnsurePodResponse>> {
   return request('/api/computer/pod/keepalive', {
     method: 'POST',
     params: {

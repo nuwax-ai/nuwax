@@ -57,6 +57,7 @@ import { RequestResponse } from '@/types/interfaces/request';
 import {
   StaticFileInfo,
   StaticFileListResponse,
+  VncDesktopContainerInfo,
 } from '@/types/interfaces/vncDesktop';
 import { isEmptyObject } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
@@ -171,6 +172,9 @@ export default () => {
   const [viewMode, setViewMode] = useState<'preview' | 'desktop'>('preview');
   // 远程桌面保活定时器
   const vncKeepaliveRef = useRef<NodeJS.Timeout | null>(null);
+  // 远程桌面容器信息
+  const [vncContainerInfo, setVncContainerInfo] =
+    useState<VncDesktopContainerInfo | null>(null);
 
   // 查询文件列表
   const { run: runGetStaticFileList } = useRequest(apiGetStaticFileList, {
@@ -228,8 +232,10 @@ export default () => {
     setIsFileTreeVisible(true);
     try {
       // 启动容器
-      const { code } = await apiEnsurePod(cId);
+      const { code, data } = await apiEnsurePod(cId);
       if (code === SUCCESS_CODE) {
+        // 设置远程桌面容器信息
+        setVncContainerInfo(data?.container_info);
         // 启动保活
         vncKeepaliveRef.current = setInterval(() => {
           apiKeepalivePod(cId);
@@ -834,6 +840,8 @@ export default () => {
     setIsFileTreeVisible(false);
     setFileTreeData([]);
     setViewMode('preview');
+    // 设置远程桌面容器信息为空
+    setVncContainerInfo(null);
     // 停止保活
     if (vncKeepaliveRef.current) {
       clearInterval(vncKeepaliveRef.current);
@@ -1008,5 +1016,6 @@ export default () => {
     openDesktopView,
     openPreviewView,
     restartVncPod,
+    vncContainerInfo,
   };
 };
