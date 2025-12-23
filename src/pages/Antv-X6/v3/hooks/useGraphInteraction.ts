@@ -18,6 +18,7 @@ import { workflowProxy } from '../services/workflowProxyV3';
 interface UseGraphInteractionProps {
   graphRef: MutableRefObject<GraphContainerRef | null>;
   debouncedSaveFullWorkflow: () => void;
+  saveImmediately: () => void;
   changeUpdateTime: () => void;
   getReference: (id: number) => Promise<boolean>;
   setFoldWrapItem: (data: ChildNode) => void;
@@ -28,6 +29,7 @@ interface UseGraphInteractionProps {
 export const useGraphInteraction = ({
   graphRef,
   debouncedSaveFullWorkflow,
+  saveImmediately,
   changeUpdateTime,
   getReference,
   setFoldWrapItem,
@@ -60,8 +62,8 @@ export const useGraphInteraction = ({
           updateCurrentNodeRef('sourceNode', {
             nextNodeIds: newNodeIds,
           });
-          // V3: 连线变化后触发全量保存
-          debouncedSaveFullWorkflow();
+          // V3: 连线变化后立即保存（短防抖）
+          saveImmediately();
           return newNodeIds;
         } else {
           // Rollback visual edge
@@ -84,8 +86,8 @@ export const useGraphInteraction = ({
           updateCurrentNodeRef('sourceNode', {
             nextNodeIds: newNodeIds,
           });
-          // V3: 连线变化后触发全量保存
-          debouncedSaveFullWorkflow();
+          // V3: 连线变化后立即保存（短防抖）
+          saveImmediately();
           return newNodeIds;
         } else {
           message.error(res.message);
@@ -97,7 +99,7 @@ export const useGraphInteraction = ({
     [
       getReference,
       changeUpdateTime,
-      debouncedSaveFullWorkflow,
+      saveImmediately,
       graphRef,
       updateCurrentNodeRef,
       getWorkflow,
