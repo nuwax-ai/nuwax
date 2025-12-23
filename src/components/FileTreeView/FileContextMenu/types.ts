@@ -44,4 +44,6 @@ export interface FileContextMenuProps {
   onCreateFolder?: (parentNode: FileNode | null) => void;
   /** 导入项目回调 */
   onImportProject?: () => void;
+  /** 通过URL下载文件回调 */
+  onDownloadFileByUrl?: (node: FileNode) => void;
 }
