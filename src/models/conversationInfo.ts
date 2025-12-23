@@ -337,6 +337,24 @@ export default () => {
     setIsConversationActive(false);
   };
 
+  // 设置所有的详细信息
+  const setChatProcessingList = (messageList: any[]) => {
+    const list: any[] = [];
+    messageList
+      .filter((item) => item.role === AssistantRoleEnum.ASSISTANT)
+      .forEach((item) => {
+        const componentExecutedList = item?.componentExecutedList || [];
+        // 补充执行ID
+        const _list = componentExecutedList.map((item: any) => ({
+          ...item,
+          executeId: item.result.executeId,
+        }));
+        list.push(..._list);
+      });
+
+    handleChatProcessingList(list);
+  };
+
   // 查询会话
   const {
     run: runQueryConversation,
@@ -348,6 +366,9 @@ export default () => {
     onSuccess: (result: RequestResponse<ConversationInfo>) => {
       setIsLoadingConversation(true);
       const { data } = result;
+      // 设置所有的详细信息
+      setChatProcessingList(data.messageList);
+      // 设置会话信息
       setConversationInfo(data);
       // 是否开启用户问题建议
       setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
@@ -566,10 +587,25 @@ export default () => {
           if (
             data.type === AgentComponentTypeEnum.Event &&
             data.subEventType === 'OPEN_DESKTOP' &&
-            conversationInfo?.id
+            // 优先使用本次会话请求携带的 conversationId，避免闭包中拿到的旧会话信息
+            params.conversationId
           ) {
-            // 处理长任务型任务
-            openDesktopView(conversationInfo.id);
+            // 打开远程桌面
+            openDesktopView(params.conversationId);
+            console.log('打开远程桌面');
+          }
+
+          // 长任务型任务处理(刷新文件树)
+          if (
+            data.type === AgentComponentTypeEnum.ToolCall &&
+            // isFileTreeVisible && // 是否已经打开文件预览窗口
+            // viewMode === 'preview' && // 文件预览
+            // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
+            params.conversationId
+          ) {
+            // 刷新文件树
+            handleRefreshFileList(params.conversationId);
+            console.log('刷新文件树');
           }
 
           handleChatProcessingList([
