@@ -59,6 +59,10 @@ const Header: React.FC<HeaderProp> = ({
   const { name, icon, publishStatus, modified, description, publishDate } =
     info;
 
+  const isMac = /mac/i.test(navigator.userAgent);
+  const undoShortcut = isMac ? 'Cmd+Z' : 'Ctrl+Z';
+  const redoShortcut = isMac ? 'Cmd+Shift+Z' : 'Ctrl+Shift+Z';
+
   // 延迟显示"保存中"状态，避免快速闪烁
   // 只有保存时间超过 300ms 才显示"保存中"
   const [showSaving, setShowSaving] = React.useState(false);
@@ -222,12 +226,11 @@ const Header: React.FC<HeaderProp> = ({
         )}
       </div>
 
-      {/* 撤销/重做按钮 */}
       <div
         className="flex items-center gap-8 mr-12"
         style={{ display: 'flex', gap: '16px' }}
       >
-        <Tooltip title="撤销 (Cmd+Z)">
+        <Tooltip title={`撤销 (${undoShortcut})`}>
           <UndoOutlined
             style={{
               fontSize: '18px',
@@ -237,7 +240,7 @@ const Header: React.FC<HeaderProp> = ({
             onClick={canUndo ? onUndo : undefined}
           />
         </Tooltip>
-        <Tooltip title="重做 (Cmd+Shift+Z)">
+        <Tooltip title={`重做 (${redoShortcut})`}>
           <RedoOutlined
             style={{
               fontSize: '18px',
