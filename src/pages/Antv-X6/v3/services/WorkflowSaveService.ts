@@ -82,6 +82,28 @@ class WorkflowSaveService {
   }
 
   /**
+   * 更新工作流元数据（名称、描述、图标等）
+   */
+  updateMeta(updates: Partial<WorkflowMeta>): void {
+    if (!this.meta) {
+      console.error('[SaveService] 未初始化，无法更新元数据');
+      return;
+    }
+    this.meta = {
+      ...this.meta,
+      ...updates,
+    };
+    // 同时更新 originalDetails 以确保数据一致性
+    if (this.originalDetails) {
+      if (updates.name !== undefined) this.originalDetails.name = updates.name;
+      if (updates.description !== undefined)
+        this.originalDetails.description = updates.description;
+      if (updates.icon !== undefined) this.originalDetails.icon = updates.icon;
+    }
+    this.markDirty();
+  }
+
+  /**
    * 重置服务状态
    */
   reset(): void {

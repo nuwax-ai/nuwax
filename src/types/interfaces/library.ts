@@ -62,6 +62,12 @@ export interface CreateWorkflowProps {
   open: boolean;
   onCancel: () => void;
   onConfirm?: (info: WorkflowBaseInfo) => void;
+  /**
+   * 外部更新回调（可选）
+   * 如果提供，更新操作将由外部处理（如 V3 的全量保存接口）
+   * 返回 Promise<boolean>，true 表示更新成功
+   */
+  onUpdate?: (info: WorkflowBaseInfo) => Promise<boolean>;
 }
 
 // 新建、更新插件组件
