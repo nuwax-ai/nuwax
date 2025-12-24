@@ -27,5 +27,26 @@
       padding-bottom: 30px;
       mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
     }
+
+    // 会话状态栏样式
+    .conversation-status-bar {
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto 8px;
+      animation: slide-in-up 0.3s ease-out;
+    }
+  }
+}
+
+// 状态栏滑入动画
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
