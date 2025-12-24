@@ -1,4 +1,5 @@
 import agentImage from '@/assets/images/agent_image.png';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { SkillDetailInfo } from '@/types/interfaces/skill';
 import {
@@ -7,7 +8,7 @@ import {
   FormOutlined,
   LeftOutlined,
 } from '@ant-design/icons';
-import { Button, Popover, Tag } from 'antd';
+import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -71,12 +72,12 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
           onClick={onEditAgent}
         />
 
-        {skillInfo &&
-          skillInfo.publishStatus === PublishStatusEnum.Published && (
-            <Popover content={'已发布'}>
-              <CheckCircleFilled className={cx(styles.circle)} />
-            </Popover>
-          )}
+        {skillInfo?.publishStatus === PublishStatusEnum.Published && (
+          <TooltipIcon
+            title="已发布"
+            icon={<CheckCircleFilled className={cx(styles.circle)} />}
+          />
+        )}
 
         {/* 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布 */}
         {skillInfo?.publishDate !== null &&
