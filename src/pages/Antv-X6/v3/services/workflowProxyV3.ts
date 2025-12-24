@@ -29,6 +29,43 @@ import type {
 } from '../types/interfaces';
 import { generateFallbackNodeId } from '../utils/nodeUtils';
 
+// ==================== 工具函数 ====================
+
+/**
+ * 将节点 ID 统一转换为 number 类型
+ * 解决 X6 Graph 中 ID 可能是 string 类型的问题
+ *
+ * 注意：JavaScript 的安全整数范围是 -2^53+1 到 2^53-1 (约 ±9007199254740991)
+ * 16位以上的整数可能会丢失精度，需要特别注意
+ *
+ * @param id 节点 ID（可能是 string 或 number）
+ * @returns number 类型的节点 ID
+ */
+function toNodeId(id: string | number | undefined | null): number {
+  if (id === undefined || id === null) return 0;
+  const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+
+  // 检查是否是有效的数字
+  if (isNaN(numId)) {
+    console.warn('[WorkflowProxy] 无效的节点 ID:', id);
+    return 0;
+  }
+
+  // 如果是字符串，先检查长度
+  if (typeof id === 'string') {
+    const cleanStr = id.trim();
+    if (cleanStr.length >= 16 && !Number.isSafeInteger(Number(cleanStr))) {
+      console.warn(
+        '[WorkflowProxy] 节点 ID 超出安全整数范围，精度丢失:',
+        cleanStr,
+      );
+      return 0;
+    }
+  }
+
+  return numId;
+}
+
 // ==================== 类型定义 ====================
 
 export interface PendingUpdate {
@@ -290,7 +327,9 @@ class WorkflowProxyV3 {
    */
   getNodeById(nodeId: number): ChildNode | null {
     if (!this.workflowData) return null;
-    const node = this.workflowData.nodes.find((n) => n.id === nodeId);
+    const node = this.workflowData.nodes.find(
+      (n) => toNodeId(n.id) === toNodeId(nodeId),
+    );
     return node ? cloneDeep(node) : null;
   }
 
@@ -312,7 +351,9 @@ class WorkflowProxyV3 {
       return { success: false, message: '工作流数据未初始化' };
     }
 
-    const index = this.workflowData.nodes.findIndex((n) => n.id === node.id);
+    const index = this.workflowData.nodes.findIndex(
+      (n) => toNodeId(n.id) === toNodeId(node.id),
+    );
     if (index >= 0) {
       this.workflowData.nodes[index] = cloneDeep(node);
       console.log('[V3 Proxy] 节点更新成功:', node.id, node.name);
@@ -344,7 +385,9 @@ class WorkflowProxyV3 {
     }
 
     // 检查节点是否已存在
-    const exists = this.workflowData.nodes.find((n) => n.id === node.id);
+    const exists = this.workflowData.nodes.find(
+      (n) => toNodeId(n.id) === toNodeId(node.id),
+    );
     if (exists) {
       return { success: false, message: `节点 ${node.id} 已存在` };
     }
@@ -371,7 +414,9 @@ class WorkflowProxyV3 {
       return { success: false, message: '工作流数据未初始化' };
     }
 
-    const index = this.workflowData.nodes.findIndex((n) => n.id === nodeId);
+    const index = this.workflowData.nodes.findIndex(
+      (n) => toNodeId(n.id) === toNodeId(nodeId),
+    );
     if (index < 0) {
       return { success: false, message: `节点 ${nodeId} 不存在` };
     }
@@ -445,10 +490,10 @@ class WorkflowProxyV3 {
 
       // 循环节点的内部开始/结束节点引用
       if (node.type === NodeTypeEnum.Loop) {
-        if (node.innerStartNodeId === nodeId) {
+        if (toNodeId(node.innerStartNodeId) === nodeId) {
           node.innerStartNodeId = -1;
         }
-        if (node.innerEndNodeId === nodeId) {
+        if (toNodeId(node.innerEndNodeId) === nodeId) {
           node.innerEndNodeId = -1;
         }
       }
@@ -479,7 +524,9 @@ class WorkflowProxyV3 {
       return { success: false, message: '工作流数据未初始化' };
     }
 
-    const sourceNode = this.workflowData.nodes.find((n) => n.id === nodeId);
+    const sourceNode = this.workflowData.nodes.find(
+      (n) => toNodeId(n.id) === toNodeId(nodeId),
+    );
     if (!sourceNode) {
       return { success: false, message: `节点 ${nodeId} 不存在` };
     }
@@ -546,7 +593,9 @@ class WorkflowProxyV3 {
       return { success: false, message: '工作流数据未初始化' };
     }
 
-    const node = this.workflowData.nodes.find((n) => n.id === nodeId);
+    const node = this.workflowData.nodes.find(
+      (n) => toNodeId(n.id) === toNodeId(nodeId),
+    );
     if (!node) {
       return { success: false, message: `节点 ${nodeId} 不存在` };
     }
@@ -772,7 +821,7 @@ class WorkflowProxyV3 {
     const targetNodeId = Number(edge.target);
 
     const sourceNode = this.workflowData.nodes.find(
-      (n) => n.id === sourceNodeId,
+      (n) => toNodeId(n.id) === sourceNodeId,
     );
 
     if (sourceNode) {
@@ -851,7 +900,7 @@ class WorkflowProxyV3 {
     const sourceNodeId = Number(source);
     const targetNodeId = Number(target);
     const sourceNode = this.workflowData.nodes.find(
-      (n) => n.id === sourceNodeId,
+      (n) => toNodeId(n.id) === sourceNodeId,
     );
 
     if (sourceNode) {
@@ -907,7 +956,9 @@ class WorkflowProxyV3 {
       return { success: false, message: '工作流数据未初始化' };
     }
 
-    const node = this.workflowData.nodes.find((n) => n.id === nodeId);
+    const node = this.workflowData.nodes.find(
+      (n) => toNodeId(n.id) === toNodeId(nodeId),
+    );
     if (!node) {
       return { success: false, message: `节点 ${nodeId} 不存在` };
     }
@@ -995,9 +1046,9 @@ class WorkflowProxyV3 {
   ) {
     if (!this.workflowData) return;
 
-    // 创建节点 ID 到节点的映射
+    // 创建节点 ID 到节点的映射（使用 toNodeId 确保 key 是 number）
     const nodeMap = new Map<number, ChildNode>();
-    nodes.forEach((node) => nodeMap.set(node.id, cloneDeep(node)));
+    nodes.forEach((node) => nodeMap.set(toNodeId(node.id), cloneDeep(node)));
 
     // 创建结构来存储各类连接关系
     // 普通连接：nodeId -> targetIds
@@ -1009,7 +1060,8 @@ class WorkflowProxyV3 {
 
     // 先为所有节点初始化空数组，确保删除的边会清空对应的 nextNodeIds
     this.workflowData.nodes.forEach((existingNode) => {
-      normalNextNodeIds.set(existingNode.id, []);
+      const existingNodeId = toNodeId(existingNode.id);
+      normalNextNodeIds.set(existingNodeId, []);
 
       // 初始化分支连接
       if (
@@ -1020,7 +1072,7 @@ class WorkflowProxyV3 {
         existingNode.nodeConfig.conditionBranchConfigs.forEach((branch) => {
           branchMap.set(branch.uuid, []);
         });
-        branchNextNodeIds.set(existingNode.id, branchMap);
+        branchNextNodeIds.set(existingNodeId, branchMap);
       }
 
       if (
@@ -1031,7 +1083,7 @@ class WorkflowProxyV3 {
         existingNode.nodeConfig.intentConfigs.forEach((intent) => {
           branchMap.set(intent.uuid, []);
         });
-        branchNextNodeIds.set(existingNode.id, branchMap);
+        branchNextNodeIds.set(existingNodeId, branchMap);
       }
 
       if (
@@ -1043,12 +1095,12 @@ class WorkflowProxyV3 {
         existingNode.nodeConfig.options.forEach((option) => {
           branchMap.set(option.uuid, []);
         });
-        branchNextNodeIds.set(existingNode.id, branchMap);
+        branchNextNodeIds.set(existingNodeId, branchMap);
       }
 
       // 初始化异常处理连接
       if (existingNode.nodeConfig?.exceptionHandleConfig) {
-        exceptionNextNodeIds.set(existingNode.id, []);
+        exceptionNextNodeIds.set(existingNodeId, []);
       }
     });
 
