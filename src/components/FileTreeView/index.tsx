@@ -98,7 +98,13 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 是否正在下载项目文件压缩包
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
 
+    /** 当前文件查看类型：预览、代码 */
+    const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
+      'code',
+    );
+
     useEffect(() => {
+      // 如果通过父组件全屏预览模式打开，则设置全屏状态
       if (isFullscreenPreview) {
         setIsFullscreen(true);
       }
@@ -106,11 +112,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     // 文件选择
     const handleFileSelect = async (fileId: string) => {
-      // // 只有在当前不是预览模式时才切换，避免不必要的刷新
-      // if (viewMode !== 'preview') {
-      //   onViewModeChange?.('preview');
-      // }
       setSelectedFileId(fileId);
+      setViewFileType('code');
       // 根据文件ID查找文件节点
       const fileNode = findFileNode(fileId, files);
       if (fileNode) {
@@ -636,12 +639,22 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // 获取文件内容
       const fileContent = selectedFileNode?.content || '';
+      // 获取文件名
+      const fileName = selectedFileId?.split('/')?.pop() || '';
+
+      // 如果是html、md文件，并且处于预览模式，则使用iframe预览
+      if (
+        (fileName?.includes('.htm') || fileName?.includes('.md')) &&
+        viewFileType === 'preview'
+      ) {
+        return <iframe src={fileProxyUrl} width="100%" height="100%" />;
+      }
 
       // 代码文件：使用代码查看器
       return (
         <CodeViewer
           fileId={selectedFileId}
-          fileName={selectedFileId.split('/').pop() || selectedFileId}
+          fileName={fileName}
           filePath={`app/${selectedFileId}`}
           content={fileContent}
           readOnly={readOnly}
@@ -705,6 +718,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 hasModifiedFiles={changeFiles?.length > 0}
                 isSavingFiles={isSavingFiles}
                 showMoreActions={showMoreActions}
+                viewFileType={viewFileType}
+                // 针对html、md文件，切换预览和代码视图
+                onViewFileTypeChange={setViewFileType}
               />
             </div>
             {/* 全屏模式下的代码编辑器 */}
@@ -804,6 +820,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               hasModifiedFiles={changeFiles.length > 0}
               isSavingFiles={isSavingFiles}
               showMoreActions={showMoreActions}
+              viewFileType={viewFileType}
+              // 针对html、md文件，切换预览和代码视图
+              onViewFileTypeChange={setViewFileType}
             />
             {/* 右边内容 */}
             <div className={cx(styles['content-container'])}>

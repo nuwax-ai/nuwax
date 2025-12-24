@@ -2,10 +2,15 @@ import SvgIcon from '@/components/base/SvgIcon';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { USER_INFO } from '@/constants/home.constants';
 import { formatFileSize } from '@/utils/appDevUtils';
-import { DesktopOutlined, FullscreenExitOutlined } from '@ant-design/icons';
-import { Button } from 'antd';
+import {
+  DesktopOutlined,
+  EyeOutlined,
+  FullscreenExitOutlined,
+} from '@ant-design/icons';
+import { Button, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import { ReactComponent as CodeIconSvg } from './code.svg';
 import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
 import pcIcon from './pc.svg';
@@ -44,6 +49,10 @@ interface FilePathHeaderProps {
   isDownloading?: boolean;
   /** 是否显示更多操作菜单 */
   showMoreActions?: boolean;
+  /** 文件类型 */
+  viewFileType?: 'preview' | 'code';
+  /** 针对html、md文件，切换预览和代码视图 */
+  onViewFileTypeChange?: (type: 'preview' | 'code') => void;
 }
 
 /**
@@ -67,6 +76,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   isSavingFiles = false,
   // isDownloading = false,
   showMoreActions = true,
+  viewFileType = 'preview',
+  onViewFileTypeChange,
 }) => {
   // 格式化的文件大小
   const formattedSize = useMemo(() => {
@@ -83,12 +94,40 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       {/* 左侧：文件信息 */}
       <div className={styles.fileInfo}>
         {viewMode === 'preview' ? (
-          <div className={styles.fileDetails}>
-            <div className={styles.fileName}>{fileName}</div>
-            {formattedSize && (
-              <div className={styles.fileMeta}>{formattedSize}</div>
+          <>
+            <div className={styles.fileDetails}>
+              <div className={styles.fileName}>{fileName}</div>
+              {formattedSize && (
+                <div className={styles.fileMeta}>{formattedSize}</div>
+              )}
+            </div>
+            {(fileName?.includes('.htm') || fileName?.includes('.md')) && (
+              <Segmented
+                value={viewFileType}
+                onChange={onViewFileTypeChange}
+                options={[
+                  {
+                    label: (
+                      <Tooltip title="预览">
+                        <EyeOutlined />
+                      </Tooltip>
+                    ),
+                    value: 'preview',
+                  },
+                  {
+                    label: (
+                      <Tooltip title="源代码">
+                        <span className={styles['svg-box']}>
+                          <CodeIconSvg />
+                        </span>
+                      </Tooltip>
+                    ),
+                    value: 'code',
+                  },
+                ]}
+              />
             )}
-          </div>
+          </>
         ) : (
           <div className={styles['pc-box']}>
             <img src={pcIcon} alt="" />
