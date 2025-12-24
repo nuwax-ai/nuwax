@@ -4,14 +4,14 @@ import workflowImage from '@/assets/images/workflow_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import CollectStar from '@/pages/SpaceDevelop/ApplicationItem/CollectStar';
 import {
-  apiPublishedPluginCollect,
   apiPublishedPluginUnCollect,
-  apiPublishedWorkflowCollect,
   apiPublishedWorkflowUnCollect,
 } from '@/services/plugin';
+import { apiPublishedSkillUnCollect } from '@/services/square';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type {
   PublishPluginInfo,
+  PublishSkillInfo,
   PublishWorkflowInfo,
 } from '@/types/interfaces/plugin';
 import { LeftOutlined } from '@ant-design/icons';
@@ -25,8 +25,11 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 // 插件http头部组件
 interface PluginHeaderProps {
-  targetInfo: PublishPluginInfo | PublishWorkflowInfo;
-  targetType: SquareAgentTypeEnum.Workflow | SquareAgentTypeEnum.Plugin;
+  targetInfo: PublishPluginInfo | PublishWorkflowInfo | PublishSkillInfo;
+  targetType:
+    | SquareAgentTypeEnum.Workflow
+    | SquareAgentTypeEnum.Plugin
+    | SquareAgentTypeEnum.Skill;
 }
 
 /**
@@ -44,32 +47,36 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
 
   const { publishUser } = targetInfo;
 
+  // 枚举 收藏接口
+  const collectApiMap = {
+    [SquareAgentTypeEnum.Plugin]: apiPublishedPluginUnCollect,
+    [SquareAgentTypeEnum.Workflow]: apiPublishedWorkflowUnCollect,
+    [SquareAgentTypeEnum.Skill]: apiPublishedSkillUnCollect,
+  };
+
+  // 枚举 取消收藏接口
+  const unCollectApiMap = {
+    [SquareAgentTypeEnum.Plugin]: apiPublishedPluginUnCollect,
+    [SquareAgentTypeEnum.Workflow]: apiPublishedWorkflowUnCollect,
+    [SquareAgentTypeEnum.Skill]: apiPublishedSkillUnCollect,
+  };
+
   // 开发智能体收藏
-  const { run: runCancelCollect } = useRequest(
-    targetType === SquareAgentTypeEnum.Plugin
-      ? apiPublishedPluginUnCollect
-      : apiPublishedWorkflowUnCollect,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: () => {
-        message.success('取消收藏成功');
-      },
+  const { run: runCancelCollect } = useRequest(unCollectApiMap[targetType], {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success('取消收藏成功');
     },
-  );
+  });
   // 开发智能体收藏
-  const { run: runDevCollect } = useRequest(
-    targetType === SquareAgentTypeEnum.Plugin
-      ? apiPublishedPluginCollect
-      : apiPublishedWorkflowCollect,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: () => {
-        message.success('收藏成功');
-      },
+  const { run: runDevCollect } = useRequest(collectApiMap[targetType], {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success('收藏成功');
     },
-  );
+  });
 
   // 收藏、取消收藏事件
   const handlerCollect = async () => {

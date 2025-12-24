@@ -13,6 +13,7 @@ import type {
 import { PluginAnalysisOutputParams } from '@/types/interfaces/plugin';
 import { HistoryData } from '@/types/interfaces/publish';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { SkillDetailInfo } from '@/types/interfaces/skill';
 import { request } from 'umi';
 
 // 插件试运行接口
@@ -120,6 +121,14 @@ export async function apiPublishedWorkflowInfo(
   });
 }
 
+// 查询已发布技能信息
+export async function apiPublishedSkillInfo(
+  skillId: number,
+): Promise<RequestResponse<SkillDetailInfo>> {
+  return request(`/api/published/skill/${skillId}`, {
+    method: 'GET',
+  });
+}
 // 查询插件历史配置信息接口
 export async function apiPluginConfigHistoryList(
   pluginId: number,

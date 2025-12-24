@@ -220,6 +220,29 @@ export interface PublishWorkflowInfo {
   collect: boolean;
 }
 
+/** 技能文件结构 */
+export interface SkillFile {
+  name: string;
+  contents: string | null;
+  isDir: boolean;
+}
+
+// 已发布技能信息
+export interface PublishSkillInfo {
+  id: number;
+  name: string;
+  icon: string;
+  remark: string | null;
+  description: string | null;
+  files: SkillFile[];
+  publishUser: CreatorInfo;
+  statistics: AgentStatisticsInfo;
+  allowCopy: number; // 0 | 1 也可以根据业务收窄
+  created: string; // ISO 时间字符串
+  category: string;
+  collect: boolean;
+}
+
 // 插件http头部组件
 export interface PluginHeaderProps {
   pluginInfo: PluginInfo;

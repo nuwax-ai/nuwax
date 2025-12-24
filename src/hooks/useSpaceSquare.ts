@@ -32,6 +32,10 @@ const useSpaceSquare = () => {
     if (targetType === SquareAgentTypeEnum.Workflow) {
       history.push(`/square/publish/workflow/${targetId}`);
     }
+    // 技能
+    if (targetType === SquareAgentTypeEnum.Skill) {
+      history.push(`/square/publish/skill/${targetId}`);
+    }
   };
 
   // 切换收藏与取消收藏
