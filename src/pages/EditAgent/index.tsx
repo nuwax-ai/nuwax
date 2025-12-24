@@ -489,7 +489,7 @@ const EditAgent: React.FC = () => {
   // 显示文件树
   const handleFileTreeVisible = () => {
     if (!devConversationId) {
-      messageAntd.warning('开发会话ID不存在，无法打开文件树');
+      messageAntd.warning('会话ID不存在，无法打开文件树');
       return;
     }
 
@@ -501,13 +501,14 @@ const EditAgent: React.FC = () => {
   const onViewModeChange = useCallback(
     (mode: 'preview' | 'desktop') => {
       if (!devConversationId) {
-        messageAntd.warning('开发会话ID不存在，无法切换视图模式');
+        messageAntd.warning('会话ID不存在，无法切换视图模式');
         return;
       }
-      if (mode === 'preview') {
-        openPreviewView(devConversationId);
-      } else if (mode === 'desktop') {
+
+      if (mode === 'desktop') {
         openDesktopView(devConversationId);
+      } else {
+        openPreviewView(devConversationId);
       }
     },
     [devConversationId, openPreviewView, openDesktopView],
@@ -519,7 +520,7 @@ const EditAgent: React.FC = () => {
     newName: string,
   ): Promise<boolean> => {
     if (!devConversationId) {
-      messageAntd.error('开发会话ID不存在，无法新建文件');
+      messageAntd.error('会话ID不存在，无法新建文件');
       return false;
     }
 
@@ -561,7 +562,7 @@ const EditAgent: React.FC = () => {
   const handleDeleteFile = async (fileNode: FileNode) => {
     modalConfirm('您确定要删除此文件吗?', fileNode.name, async () => {
       if (!devConversationId) {
-        messageAntd.error('开发会话ID不存在，无法删除文件');
+        messageAntd.error('会话ID不存在，无法删除文件');
         return;
       }
 
@@ -600,7 +601,7 @@ const EditAgent: React.FC = () => {
     newName: string,
   ) => {
     if (!devConversationId) {
-      messageAntd.error('开发会话ID不存在，无法重命名文件');
+      messageAntd.error('会话ID不存在，无法重命名文件');
       return false;
     }
 
@@ -634,7 +635,7 @@ const EditAgent: React.FC = () => {
     }[],
   ) => {
     if (!devConversationId) {
-      messageAntd.error('开发会话ID不存在，无法保存文件');
+      messageAntd.error('会话ID不存在，无法保存文件');
       return false;
     }
 
@@ -661,7 +662,7 @@ const EditAgent: React.FC = () => {
    */
   const handleUploadMultipleFiles = async (node: FileNode | null) => {
     if (!devConversationId) {
-      messageAntd.error('开发会话ID不存在，无法上传文件');
+      messageAntd.error('会话ID不存在，无法上传文件');
       return;
     }
     // 两种情况 第一个是文件夹，第二个是文件
@@ -682,6 +683,12 @@ const EditAgent: React.FC = () => {
     document.body.appendChild(input);
 
     input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) {
+        document.body.removeChild(input);
+        return;
+      }
+
       try {
         // 获取上传的文件列表
         const files = Array.from((e.target as HTMLInputElement).files || []);
