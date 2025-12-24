@@ -76,6 +76,10 @@ export default () => {
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();
+  // 当前会话ID
+  const [currentConversationId, setCurrentConversationId] = useState<
+    number | null
+  >(null);
   // 会话消息ID
   const [currentConversationRequestId, setCurrentConversationRequestId] =
     useState<string>('');
@@ -393,6 +397,10 @@ export default () => {
       setChatProcessingList(data?.messageList || []);
       // 设置会话信息
       setConversationInfo(data);
+      // 缓存当前会话ID
+      if (data?.id) {
+        setCurrentConversationId(data.id);
+      }
       // 是否开启用户问题建议
       setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
       // 可手动选择的组件列表
@@ -880,6 +888,8 @@ export default () => {
     setMessageList([]);
     // 重置会话信息
     setConversationInfo(null);
+    // 重置当前会话ID
+    setCurrentConversationId(null);
     // 重置问题建议
     setIsSuggest(false);
     // 重置请求ID
@@ -1018,6 +1028,11 @@ export default () => {
     return currentConversationRequestId;
   }, [currentConversationRequestId]);
 
+  // 获取当前会话ID
+  const getCurrentConversationId = useCallback(() => {
+    return currentConversationId;
+  }, [currentConversationId]);
+
   return {
     setIsSuggest,
     conversationInfo,
@@ -1060,6 +1075,7 @@ export default () => {
     disabledConversationActive,
     setCurrentConversationRequestId,
     getCurrentConversationRequestId,
+    getCurrentConversationId,
     isHistoryConversationOpen,
     openHistoryConversation,
     closeHistoryConversation,
