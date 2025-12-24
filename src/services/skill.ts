@@ -46,8 +46,12 @@ export async function apiSkillImport(
   const { file, targetSkillId, targetSpaceId } = params;
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('targetSkillId', targetSkillId.toString());
-  formData.append('targetSpaceId', targetSpaceId.toString());
+  if (targetSkillId) {
+    formData.append('targetSkillId', targetSkillId.toString());
+  }
+  if (targetSpaceId) {
+    formData.append('targetSpaceId', targetSpaceId.toString());
+  }
 
   return request('/api/skill/import', {
     method: 'POST',

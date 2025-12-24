@@ -15,6 +15,7 @@ import {
   ComponentSettingEnum,
   ComponentTypeEnum,
   CreateListEnum,
+  CreateSkillWayEnum,
   FilterStatusEnum,
   OpenCloseEnum,
   PageSettingEnum,
@@ -67,6 +68,20 @@ export const AGENT_TYPE_LIST = [
     // icon: <ICON_AGENT />,
     tooltip:
       '为智能体分配独立的执行电脑，适合应用开发、深度调研、数据分析、演示文稿制作等复杂任务场景，比较消耗内存资源且输出结果较慢。',
+  },
+];
+
+// 技能库所有资源类型
+export const SKILL_ALL_RESOURCE = [
+  {
+    value: CreateSkillWayEnum.Create,
+    label: '创建技能',
+    // icon: <PlusOutlined />,
+  },
+  {
+    value: CreateSkillWayEnum.Import,
+    label: '导入技能',
+    // icon: <ImportOutlined />,
   },
 ];
 
