@@ -39,6 +39,8 @@ interface FilePathHeaderProps {
   isSavingFiles?: boolean;
   /** 是否正在下载文件 */
   isDownloading?: boolean;
+  /** 是否显示更多操作菜单 */
+  showMoreActions?: boolean;
 }
 
 /**
@@ -61,6 +63,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   hasModifiedFiles = false,
   isSavingFiles = false,
   // isDownloading = false,
+  showMoreActions = true,
 }) => {
   // 格式化的文件大小
   const formattedSize = useMemo(() => {
@@ -126,12 +129,14 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       )}
 
       {/* 更多操作菜单 */}
-      <MoreActionsMenu
-        onImportProject={onImportProject}
-        onRestartServer={onRestartServer}
-        onFullscreenPreview={onFullscreen}
-        onExportProject={onExportProject}
-      />
+      {showMoreActions && (
+        <MoreActionsMenu
+          onImportProject={onImportProject}
+          onRestartServer={onRestartServer}
+          onFullscreenPreview={onFullscreen}
+          onExportProject={onExportProject}
+        />
+      )}
 
       {/* 右侧：操作按钮 */}
       {/* <div className={styles.actionButtons}>
