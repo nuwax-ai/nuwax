@@ -821,7 +821,6 @@ export const useNodeOperations = ({
             // 选中新增的节点
             graphRef.current?.graphSelectNode(String(newNode.id));
             changeUpdateTime();
-            debouncedSaveFullWorkflow();
           } else {
             console.warn('[V3] 复制节点代理层添加失败:', proxyResult.message);
           }
@@ -833,7 +832,7 @@ export const useNodeOperations = ({
         message.error('网络异常，复制节点失败');
       }
     },
-    [graphRef, changeUpdateTime, debouncedSaveFullWorkflow],
+    [graphRef, changeUpdateTime],
   );
 
   /**
