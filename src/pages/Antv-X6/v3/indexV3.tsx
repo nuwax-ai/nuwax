@@ -1112,57 +1112,65 @@ const Workflow: React.FC = () => {
         graphInstanceRef.current = graph;
         clearInterval(checkGraph);
 
-        const updateHistory = (isInitial = false) => {
+        // 更新撤销/重做按钮状态
+        const updateHistoryState = () => {
           setHistoryState({
             canUndo: graph.canUndo(),
             canRedo: graph.canRedo(),
           });
-
-          // Sync graph data to Proxy to ensure consistency after Undo/Redo
-          if (workflowProxy) {
-            const nodes = graph.getNodes().map((n) => {
-              const data = n.getData();
-              const position = n.getPosition(); // 读取 X6 的实际位置
-              const size = n.getSize();
-              // 将 X6 的位置同步到业务数据的 nodeConfig.extension
-              return {
-                ...data,
-                nodeConfig: {
-                  ...data.nodeConfig,
-                  extension: {
-                    ...data.nodeConfig?.extension,
-                    x: position.x,
-                    y: position.y,
-                    width: size.width,
-                    height: size.height,
-                  },
-                },
-              };
-            });
-            const edges = graph.getEdges().map((e) => {
-              const source = e.getSource() as any;
-              const target = e.getTarget() as any;
-              return {
-                id: e.id,
-                source: source?.cell || source,
-                target: target?.cell || target,
-                sourcePort: source?.port || undefined,
-                targetPort: target?.port || undefined,
-                zIndex: e.getZIndex(),
-              };
-            });
-            // 初始加载时不标记为dirty，也不触发保存
-            workflowProxy.syncFromGraph(nodes, edges as any, !isInitial);
-
-            // V3: Undo/Redo 后触发保存（仅非初始加载时）
-            if (!isInitial) {
-              debouncedSaveFullWorkflow();
-            }
-          }
         };
-        graph.on('history:change', () => updateHistory(false));
+
+        // 同步数据到 Proxy（仅在 undo/redo 操作后调用）
+        const syncGraphToProxy = () => {
+          if (!workflowProxy) return;
+
+          const nodes = graph.getNodes().map((n) => {
+            const data = n.getData();
+            const position = n.getPosition(); // 读取 X6 的实际位置
+            const size = n.getSize();
+            // 将 X6 的位置同步到业务数据的 nodeConfig.extension
+            return {
+              ...data,
+              nodeConfig: {
+                ...data.nodeConfig,
+                extension: {
+                  ...data.nodeConfig?.extension,
+                  x: position.x,
+                  y: position.y,
+                  width: size.width,
+                  height: size.height,
+                },
+              },
+            };
+          });
+          const edges = graph.getEdges().map((e) => {
+            const source = e.getSource() as any;
+            const target = e.getTarget() as any;
+            return {
+              id: e.id,
+              source: source?.cell || source,
+              target: target?.cell || target,
+              sourcePort: source?.port || undefined,
+              targetPort: target?.port || undefined,
+              zIndex: e.getZIndex(),
+            };
+          });
+          // 同步时标记为 dirty，以便后续保存
+          workflowProxy.syncFromGraph(nodes, edges as any, true);
+          // 触发保存
+          debouncedSaveFullWorkflow();
+        };
+
+        // 监听 history:change 只更新按钮状态，不同步数据
+        // 这样可以避免在添加命令时触发同步导致 redo 栈被清空
+        graph.on('history:change', updateHistoryState);
+
+        // 仅在 undo/redo 操作后才同步数据到 Proxy
+        graph.on('history:undo', syncGraphToProxy);
+        graph.on('history:redo', syncGraphToProxy);
+
         // Initial state
-        updateHistory(true);
+        updateHistoryState();
       }
     }, 500);
 
