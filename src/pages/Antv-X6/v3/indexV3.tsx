@@ -806,11 +806,15 @@ const Workflow: React.FC = () => {
           break;
         }
         case 'Delete': {
-          nodeOperationsHook.deleteNode(foldWrapItem.id);
+          // 使用 getWorkflow 获取最新的 drawerForm，避免闭包中的 foldWrapItem 过期
+          const currentNode = getWorkflow('drawerForm');
+          nodeOperationsHook.deleteNode(currentNode.id);
           break;
         }
         case 'Duplicate': {
-          nodeOperationsHook.copyNode(foldWrapItem);
+          // 使用 getWorkflow 获取最新的 drawerForm，避免闭包中的 foldWrapItem 过期
+          const currentNode = getWorkflow('drawerForm');
+          nodeOperationsHook.copyNode(currentNode);
           break;
         }
         case 'TestRun': {
@@ -830,7 +834,7 @@ const Workflow: React.FC = () => {
           break;
       }
     },
-    [isModified, foldWrapItem.id, nodeOperationsHook, testRunHook],
+    [isModified, nodeOperationsHook, testRunHook],
   );
 
   const handleDrawerClose = useCallback(() => {
