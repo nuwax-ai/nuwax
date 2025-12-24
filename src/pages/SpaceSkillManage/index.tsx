@@ -1,7 +1,9 @@
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useFileImport } from '@/hooks/useFileImport';
 import { apiDeleteSkill, apiSkillCopyToSpace } from '@/services/library';
+import { apiSkillImport } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { PageDevelopMoreActionEnum } from '@/types/enums/pageDev';
@@ -44,6 +46,21 @@ const SpaceSkillManage: React.FC = () => {
     setCreateMode(CreateUpdateModeEnum.Create);
     setOpenCreateSkill(true);
   };
+
+  // 导入技能
+  const { triggerImport: handleImportSkill } = useFileImport({
+    importApi: apiSkillImport,
+    buildApiParams: (files) => ({
+      file: files[0],
+      // targetSkillId: 0, // 导入新技能时，targetSkillId 为 0
+      targetSpaceId: spaceId,
+    }),
+    onSuccess: () => {
+      // 刷新技能列表
+      mainContentRef.current?.exposeQueryComponentList();
+    },
+  });
+
   const handleCreateSkillConfirm = () => {
     // 查询技能列表
     mainContentRef.current?.exposeQueryComponentList();
@@ -156,7 +173,12 @@ const SpaceSkillManage: React.FC = () => {
     <WorkspaceLayout
       title="技能管理"
       leftSlot={<HeaderLeftSlot />}
-      rightSlot={<HeaderRightSlot onCreate={handleCreateSkill} />}
+      rightSlot={
+        <HeaderRightSlot
+          onCreate={handleCreateSkill}
+          onImport={handleImportSkill}
+        />
+      }
       hideScroll={true}
     >
       {/* 主要内容区域 */}

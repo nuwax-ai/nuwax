@@ -72,8 +72,8 @@ export interface SkillUpdateParams {
 // 导入技能
 export interface SkillImportParams {
   file: File;
-  targetSkillId: number;
-  targetSpaceId: number;
+  targetSkillId?: number;
+  targetSpaceId?: number;
 }
 
 // 上传技能文件
