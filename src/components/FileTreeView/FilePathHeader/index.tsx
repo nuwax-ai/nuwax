@@ -2,11 +2,15 @@ import SvgIcon from '@/components/base/SvgIcon';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { DesktopOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
+import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
 
+const cx = classNames.bind(styles);
+
 interface FilePathHeaderProps {
+  className?: string;
   /** 文件名 */
   fileName?: string;
   /** 文件大小（字节） */
@@ -42,6 +46,7 @@ interface FilePathHeaderProps {
  * 显示文件信息、视图模式切换按钮和操作按钮
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
+  className,
   fileName,
   fileSize,
   viewMode = 'preview',
@@ -64,7 +69,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   }, [fileSize]);
 
   return (
-    <div className={styles.filePathHeader}>
+    <div className={cx(styles.filePathHeader, className)}>
       {/* 左侧：文件信息 */}
       <div className={styles.fileInfo}>
         {viewMode === 'preview' && (
