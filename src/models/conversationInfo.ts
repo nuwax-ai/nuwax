@@ -179,7 +179,7 @@ export default () => {
   // 查询文件列表
   const { run: runGetStaticFileList } = useRequest(apiGetStaticFileList, {
     manual: true,
-    debounceWait: 300,
+    debounceWait: 2000,
     onSuccess: (result: RequestResponse<StaticFileListResponse>) => {
       const files = result?.data?.files || [];
       if (files?.length) {
@@ -195,31 +195,28 @@ export default () => {
     },
   });
 
-  // 重启容器
+  // 重启远程电脑
   const restartVncPod = useCallback(async (cId: number) => {
     try {
       const { code } = await apiRestartPod(cId);
       if (code === SUCCESS_CODE) {
-        message.success('重启容器成功');
+        message.success('重启远程电脑成功');
       } else {
-        message.error('重启容器失败');
+        message.error('重启远程电脑失败');
       }
     } catch (error) {
-      console.error('重启容器失败', error);
+      console.error('重启远程电脑失败', error);
     }
   }, []);
 
   // 处理文件列表刷新事件
-  const handleRefreshFileList = useCallback(
-    (conversationId?: number) => {
-      // 如果传入了会话ID，则使用传入的ID，否则使用当前的会话ID
-      const targetId = conversationId;
-      if (targetId) {
-        runGetStaticFileList(targetId);
-      }
-    },
-    [runGetStaticFileList],
-  );
+  const handleRefreshFileList = useCallback((conversationId?: number) => {
+    // 如果传入了会话ID，则使用传入的ID，否则使用当前的会话ID
+    const targetId = conversationId;
+    if (targetId) {
+      runGetStaticFileList(targetId);
+    }
+  }, []);
 
   // 打开远程桌面视图
   const openDesktopView = useCallback(async (cId: number) => {
@@ -236,10 +233,10 @@ export default () => {
       if (code === SUCCESS_CODE) {
         // 设置远程桌面容器信息
         setVncContainerInfo(data?.container_info);
-        // 启动保活
+        // 启动保活, 60秒保活一次
         vncKeepaliveRef.current = setInterval(() => {
           apiKeepalivePod(cId);
-        }, 5000);
+        }, 60000);
       }
     } catch (error) {
       console.error('打开远程桌面视图失败', error);

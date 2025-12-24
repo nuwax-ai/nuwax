@@ -58,6 +58,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onSaveFiles,
       onImportProject,
       onRestartServer,
+      // 是否显示更多操作菜单
+      showMoreActions = true,
     },
     ref,
   ) => {
@@ -685,6 +687,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 onCancelSaveFiles={cancelSaveFiles}
                 hasModifiedFiles={changeFiles?.length > 0}
                 isSavingFiles={isSavingFiles}
+                showMoreActions={showMoreActions}
               />
             </div>
             {/* 全屏模式下的代码编辑器 */}
@@ -783,6 +786,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               onCancelSaveFiles={cancelSaveFiles}
               hasModifiedFiles={changeFiles.length > 0}
               isSavingFiles={isSavingFiles}
+              showMoreActions={showMoreActions}
             />
             {/* 右边内容 */}
             <div className={cx(styles['content-container'])}>

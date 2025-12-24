@@ -11,6 +11,7 @@ import dayjs from 'dayjs';
 import React from 'react';
 import { history } from 'umi';
 import styles from './index.less';
+import MoreActionsMenu from './MoreActionsMenu';
 
 const cx = classNames.bind(styles);
 
@@ -21,6 +22,12 @@ export interface SkillHeaderProps {
   onEditAgent: () => void;
   onPublish: () => void;
   onToggleHistory: () => void;
+  /** 导入项目回调 */
+  onImportProject?: () => void;
+  /** 导出项目回调 */
+  onExportProject?: () => void;
+  /** 全屏回调 */
+  onFullscreen?: () => void;
 }
 
 /**
@@ -32,6 +39,9 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
   onEditAgent,
   onPublish,
   onToggleHistory,
+  onImportProject,
+  onExportProject,
+  onFullscreen,
 }) => {
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
@@ -72,6 +82,11 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
           )}
       </div>
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
+        <MoreActionsMenu
+          onImportProject={onImportProject}
+          onFullscreenPreview={onFullscreen}
+          onExportProject={onExportProject}
+        />
         {/* 版本历史 */}
         <Button
           type="text"
