@@ -36,9 +36,11 @@ import {
   getPortGroup,
   handleLoopEdge,
   handleSpecialNodeTypes,
+  needUpdateNodes,
   setEdgeAttributes,
   updateEdgeArrows,
 } from '../utils/graphV3';
+import { generatePorts } from '../utils/workflowV3';
 import { createCurvePath } from './registerCustomNodes';
 /**
  * 端口配置接口
@@ -999,21 +1001,45 @@ const initGraph = ({
     changeZoom(sx);
   });
 
-  // 修复撤销/重做后边变成虚线的问题
+  // 修复撤销/重做后边变成虚线的问题，以及动态端口未更新的问题
   // 边在创建时使用虚线样式，但 attrs 变化被 History 插件过滤，
   // 所以撤销/重做恢复边时会带着虚线样式，需要在这里修复
-  const fixEdgeStylesAfterHistory = () => {
+  // 同时，动态端口（Condition/IntentRecognition/QA/Exception）也不会被 History 记录，
+  // 需要根据节点数据重新生成端口
+  const fixAfterHistory = () => {
     // 使用 setTimeout 确保在 undo/redo 操作完成后执行
     setTimeout(() => {
-      graph.getEdges().forEach((edge) => {
-        setEdgeAttributes(edge);
-      });
-      updateEdgeArrows(graph);
+      // 暂时禁用历史记录，避免修复操作被记录到 undo/redo 栈
+      graph.disableHistory();
+
+      try {
+        // 1. 修复边样式
+        graph.getEdges().forEach((edge) => {
+          setEdgeAttributes(edge);
+        });
+        updateEdgeArrows(graph);
+
+        // 2. 修复动态端口：重新生成需要动态端口的节点的端口配置
+        graph.getNodes().forEach((node) => {
+          const data = node.getData() as ChildNode;
+          if (!data) return;
+
+          // 检查是否需要更新端口（Condition/IntentRecognition/QA/Exception 等节点）
+          if (needUpdateNodes(data)) {
+            const newPorts = generatePorts(data);
+            // 使用 setProp 更新端口配置，不使用 silent 以确保 UI 更新
+            node.prop('ports', newPorts);
+          }
+        });
+      } finally {
+        // 重新启用历史记录
+        graph.enableHistory();
+      }
     }, 0);
   };
 
-  graph.on('history:undo', fixEdgeStylesAfterHistory);
-  graph.on('history:redo', fixEdgeStylesAfterHistory);
+  graph.on('history:undo', fixAfterHistory);
+  graph.on('history:redo', fixAfterHistory);
 
   graph.on('node:change:size', ({ node }) => {
     const children = node.getChildren();
