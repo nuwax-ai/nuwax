@@ -229,6 +229,112 @@ export const isImageFile = (fileName: string): boolean => {
 };
 
 /**
+ * 判断文件是否为视频类型
+ */
+export const isVideoFile = (fileName: string): boolean => {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  const videoExtensions = [
+    'mp4',
+    'avi',
+    'mov',
+    'mkv',
+    'webm',
+    'flv',
+    'wmv',
+    'm4v',
+    'm4p',
+    'm4b',
+    'm4r',
+    'm4a',
+  ];
+  return videoExtensions.includes(ext);
+};
+
+/**
+ * 判断文件是否为音频类型
+ */
+export const isAudioFile = (fileName: string): boolean => {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  const audioExtensions = ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'];
+  return audioExtensions.includes(ext);
+};
+
+/**
+ * 判断文件是否为文档类型
+ */
+export const isDocumentFile = (fileName: string) => {
+  if (!fileName || typeof fileName !== 'string') {
+    return {
+      isDoc: false,
+      fileType: '',
+    };
+  }
+
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  const documentExtensions = [
+    'doc',
+    'docx',
+    'ppt',
+    'pptx',
+    'xls',
+    'xlsx',
+    'pdf',
+  ];
+  const isDoc = documentExtensions.includes(ext);
+
+  if (!isDoc) {
+    return {
+      isDoc: false,
+      fileType: '',
+    };
+  }
+
+  // 判断文件是否为DOC类型
+  const idDocExtensions = ['doc', 'docx'];
+  const isIdDoc = idDocExtensions.includes(ext);
+
+  if (isIdDoc) {
+    return {
+      isDoc: true,
+      fileType: 'docx',
+    };
+  }
+
+  // 判断文件是否为PPT类型
+  const pptExtensions = ['ppt', 'pptx'];
+  const isPpt = pptExtensions.includes(ext);
+
+  if (isPpt) {
+    return {
+      isDoc: true,
+      fileType: 'pptx',
+    };
+  }
+
+  // 判断文件是否为PDF类型
+  const pdfExtensions = ['pdf'];
+  const isPdf = pdfExtensions.includes(ext);
+
+  if (isPdf) {
+    return {
+      isDoc: true,
+      fileType: 'pdf',
+    };
+  }
+
+  // 判断文件是否为Excel类型
+  const excelExtensions = ['xls', 'xlsx'];
+  const isExcel = excelExtensions.includes(ext);
+
+  if (isExcel) {
+    return {
+      isDoc: true,
+      fileType: 'xlsx',
+    };
+  }
+};
+
+/**
  * 判断文件是否支持预览（白名单方案）
  */
 export const isPreviewableFile = (fileName: string): boolean => {
