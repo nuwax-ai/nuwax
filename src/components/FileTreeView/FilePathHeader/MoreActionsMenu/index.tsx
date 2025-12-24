@@ -6,7 +6,7 @@ import { useMemo } from 'react';
 interface MoreActionsProps {
   // 导入项目
   onImportProject?: () => void;
-  // 重启服务器
+  // 重启远程电脑
   onRestartServer?: () => void;
   // 全屏页面预览
   onFullscreenPreview?: () => void;
@@ -55,31 +55,49 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
               icon: (
                 <SvgIcon name="icons-common-restart" style={{ fontSize: 16 }} />
               ),
-              label: '重启服务器',
+              label: '重启远程电脑',
               onClick: onRestartServer,
               disabled: isChatLoading,
             },
           ]
         : []),
-      {
-        key: 'fullscreen',
-        icon: (
-          <SvgIcon name="icons-common-fullscreen" style={{ fontSize: 16 }} />
-        ),
-        label: '全屏页面预览',
-        onClick: onFullscreenPreview,
-        disabled: isChatLoading,
-      },
-      {
-        type: 'divider' as const,
-      },
-      {
-        key: 'export',
-        icon: <SvgIcon name="icons-common-download" style={{ fontSize: 16 }} />,
-        label: '导出项目',
-        onClick: onExportProject,
-        disabled: isChatLoading,
-      },
+      // 只有当 onFullscreenPreview 存在时才显示全屏页面预览选项
+      ...(onFullscreenPreview
+        ? [
+            {
+              key: 'fullscreen',
+              icon: (
+                <SvgIcon
+                  name="icons-common-fullscreen"
+                  style={{ fontSize: 16 }}
+                />
+              ),
+              label: '全屏页面预览',
+              onClick: onFullscreenPreview,
+              disabled: isChatLoading,
+            },
+          ]
+        : []),
+      // 只有当 onExportProject 存在时才显示导出项目选项和分隔线
+      ...(onExportProject
+        ? [
+            {
+              type: 'divider' as const,
+            },
+            {
+              key: 'export',
+              icon: (
+                <SvgIcon
+                  name="icons-common-download"
+                  style={{ fontSize: 16 }}
+                />
+              ),
+              label: '导出项目',
+              onClick: onExportProject,
+              disabled: isChatLoading,
+            },
+          ]
+        : []),
     ],
     [
       onImportProject,
@@ -90,6 +108,11 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
     ],
   );
 
+  // 如果没有菜单项，则不显示
+  if (!menuItems?.length) {
+    return null;
+  }
+
   return (
     <Dropdown
       trigger={['click']}
@@ -98,7 +121,6 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
     >
       <Button
         type="text"
-        // className={styles.moreActionsButton}
         icon={<SvgIcon name="icons-common-more" style={{ fontSize: '16px' }} />}
       />
     </Dropdown>

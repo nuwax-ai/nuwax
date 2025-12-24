@@ -1,4 +1,5 @@
-import FileTreeView, { FileTreeViewRef } from '@/components/FileTreeView';
+import FileTreeView from '@/components/FileTreeView';
+import type { FileTreeViewRef } from '@/components/FileTreeView/type';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -49,6 +50,9 @@ const SkillDetails: React.FC = () => {
     useState<boolean>(false);
   // 文件树视图ref
   const fileTreeViewRef = useRef<FileTreeViewRef>(null);
+  // 是否显示全屏预览
+  const [isFullscreenPreview, setIsFullscreenPreview] =
+    useState<boolean>(false);
 
   // 查询技能信息
   const { run: runSkillInfo } = useRequest(apiSkillDetail, {
@@ -423,6 +427,14 @@ const SkillDetails: React.FC = () => {
         onEditAgent={() => setEditSkillModalOpen(true)}
         onPublish={handlePublishSkill}
         onToggleHistory={() => setVersionHistoryModal(!versionHistoryModal)}
+        // 导入项目
+        onImportProject={handleImportProject}
+        // 导出项目
+        onExportProject={handleExportProject}
+        // 全屏
+        onFullscreen={() => {
+          setIsFullscreenPreview(true);
+        }}
       />
 
       <div className={cx('flex', 'flex-1')}>
@@ -445,6 +457,11 @@ const SkillDetails: React.FC = () => {
           onDeleteFile={handleDeleteFile}
           // 导入项目
           onImportProject={handleImportProject}
+          // 是否显示更多操作菜单
+          showMoreActions={false}
+          // 是否显示全屏预览
+          isFullscreenPreview={isFullscreenPreview}
+          onFullscreenPreview={setIsFullscreenPreview}
         />
 
         {/*版本历史*/}

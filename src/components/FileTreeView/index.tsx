@@ -58,6 +58,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onSaveFiles,
       onImportProject,
       onRestartServer,
+      // 是否显示更多操作菜单
+      showMoreActions = true,
+      // 是否显示全屏预览，由父组件控制
+      isFullscreenPreview = false,
+      onFullscreenPreview,
     },
     ref,
   ) => {
@@ -92,6 +97,13 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const [isSavingFiles, setIsSavingFiles] = useState<boolean>(false);
     // 是否正在下载项目文件压缩包
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
+
+    useEffect(() => {
+      if (isFullscreenPreview) {
+        setIsFullscreen(true);
+      }
+    }, [isFullscreenPreview]);
+
     // 文件选择
     const handleFileSelect = async (fileId: string) => {
       // 切换到预览模式
@@ -105,17 +117,32 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         if (fileContent) {
           setSelectedFileNode(fileNode);
         } else {
+          // 判断文件是否为图片类型
+          const isImage = isImageFile(fileNode?.name || '');
+          // 判断文件是否为视频类型
+          const isVideo = isVideoFile(fileNode?.name || '');
+          // 判断文件是否为音频类型
+          const isAudio = isAudioFile(fileNode?.name || '');
+          // 判断文件是否为文档类型
+          const result = isDocumentFile(fileNode?.name || '');
+          const isDocument = result?.isDoc || false;
           // 获取文件代理URL
           const fileProxyUrl = fileNode?.fileProxyUrl || '';
+
+          // 如果文件为图片、视频、音频、文档类型，或则没有文件代理URL，则直接设置为选中文件节点
+          if (isImage || isVideo || isAudio || isDocument || !fileProxyUrl) {
+            setSelectedFileNode(fileNode);
+          }
+          // 其他类型文件：使用文件代理URL获取文件内容
           // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
-          if (fileProxyUrl) {
+          else if (fileProxyUrl) {
+            // 获取文件内容
             const fileContent = await fetchContentFromUrl(fileProxyUrl);
+            // 设置选中文件节点
             setSelectedFileNode({
               ...fileNode,
-              content: fileContent,
+              content: fileContent || '',
             });
-          } else {
-            setSelectedFileNode(fileNode);
           }
         }
       } else {
@@ -456,6 +483,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleFullscreen = () => {
       setIsFullscreen(!isFullscreen);
+      onFullscreenPreview?.(!isFullscreen);
     };
 
     /**
@@ -463,6 +491,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleCloseFullscreen = () => {
       setIsFullscreen(false);
+      onFullscreenPreview?.(false);
     };
 
     // 保存文件
@@ -529,8 +558,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
 
       // 预览模式：根据文件状态和类型渲染不同内容
-      // 未选择文件
-      if (!selectedFileNode) {
+      // 未选择文件或新建文件时
+      if (!selectedFileNode || selectedFileNode?.id?.includes('__new__')) {
         return (
           <AppDevEmptyState
             type="empty"
@@ -594,7 +623,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <AppDevEmptyState
             type="error"
             title="无法预览此文件类型"
-            description={`当前不支持预览 ${fileExtension} 格式的文件。`}
+            description={`当前不支持预览【${fileExtension}】格式的文件。`}
           />
         );
       }
@@ -614,7 +643,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         />
       );
     };
-    // console.log('changeFiles', changeFiles);
 
     // 处理下载项目操作
     const handleDownloadProject = async () => {
@@ -670,6 +698,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 onCancelSaveFiles={cancelSaveFiles}
                 hasModifiedFiles={changeFiles?.length > 0}
                 isSavingFiles={isSavingFiles}
+                showMoreActions={showMoreActions}
               />
             </div>
             {/* 全屏模式下的代码编辑器 */}
@@ -768,6 +797,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               onCancelSaveFiles={cancelSaveFiles}
               hasModifiedFiles={changeFiles.length > 0}
               isSavingFiles={isSavingFiles}
+              showMoreActions={showMoreActions}
             />
             {/* 右边内容 */}
             <div className={cx(styles['content-container'])}>
