@@ -28,7 +28,6 @@ let isInitializing = true;
 // 导出控制初始化标志的函数
 export const setGraphInitializing = (value: boolean) => {
   isInitializing = value;
-  console.log('[Graph] setGraphInitializing:', value);
 };
 // 自定义类型定义
 import PlusIcon from '@/assets/svg/plus_icon.svg';
