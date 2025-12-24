@@ -7,6 +7,7 @@ import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { HistoryActionTypeEnum } from '@/types/enums/space';
 import { CreatorInfo } from '@/types/interfaces/agent';
+import { SkillCopyTypeEnum } from './library';
 
 // 历史记录数据
 export interface HistoryData {
@@ -59,6 +60,13 @@ export interface PublishItemListParams {
 // 智能体、工作流模板复制请求参数
 export interface PublishTemplateCopyParams extends PublishItemListParams {
   targetSpaceId: number;
+}
+
+// 技能模板复制请求参数
+export interface PublishSkillTemplateCopyParams {
+  skillId?: number;
+  targetSpaceId?: number;
+  copyType?: SkillCopyTypeEnum;
 }
 
 // 智能体、插件、工作流下架请求参数

@@ -3,6 +3,7 @@ import {
   PublishItemInfo,
   PublishItemListParams,
   PublishOffShelfParams,
+  PublishSkillTemplateCopyParams,
   PublishTemplateCopyParams,
 } from '@/types/interfaces/publish';
 import { RequestResponse } from '@/types/interfaces/request';
@@ -13,6 +14,16 @@ export async function apiPublishTemplateCopy(
   data: PublishTemplateCopyParams,
 ): Promise<RequestResponse<number>> {
   return request('/api/publish/template/copy', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 技能模板复制
+export async function apiPublishSkillTemplateCopy(
+  data: PublishSkillTemplateCopyParams,
+): Promise<RequestResponse<number>> {
+  return request('/api/skill/copy', {
     method: 'POST',
     data,
   });

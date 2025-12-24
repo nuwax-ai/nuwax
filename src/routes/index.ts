@@ -98,6 +98,10 @@ const routes = [
         component: '@/pages/Square/WorkflowIdDetail',
       },
       {
+        path: '/square/publish/skill/:skillId',
+        component: '@/pages/Square/SkillDetail',
+      },
+      {
         path: '/system/published/manage',
         component: '@/pages/PublishedManage',
       },
