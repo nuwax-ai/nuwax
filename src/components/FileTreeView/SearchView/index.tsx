@@ -10,6 +10,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 interface SearchViewProps {
+  className?: string;
   files: FileNode[];
   onFileSelect?: (fileId: string) => void;
 }
@@ -18,7 +19,11 @@ interface SearchViewProps {
  * 搜索视图组件
  * 提供文件搜索功能和项目根目录显示
  */
-const SearchView: React.FC<SearchViewProps> = ({ files, onFileSelect }) => {
+const SearchView: React.FC<SearchViewProps> = ({
+  className,
+  files,
+  onFileSelect,
+}) => {
   const [searchValue, setSearchValue] = useState<string>('');
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isDropdownVisible, setIsDropdownVisible] = useState<boolean>(false);
@@ -136,7 +141,7 @@ const SearchView: React.FC<SearchViewProps> = ({ files, onFileSelect }) => {
 
   return (
     <div
-      className={cx(styles['search-view'], 'relative')}
+      className={cx(styles['search-view'], 'relative', className)}
       ref={searchContainerRef}
     >
       {/* 搜索栏 */}

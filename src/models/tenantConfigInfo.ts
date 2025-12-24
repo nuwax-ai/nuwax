@@ -16,6 +16,7 @@ export default () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: async (result: TenantConfigInfo) => {
+      if (!result) return;
       setLoadEnd(true);
 
       // 如果 result 为 null，走错误处理逻辑

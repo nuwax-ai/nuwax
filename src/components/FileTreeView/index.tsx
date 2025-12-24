@@ -41,6 +41,7 @@ const cx = classNames.bind(styles);
 const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
   (
     {
+      headerClassName,
       originalFiles,
       readOnly = false,
       targetId,
@@ -619,6 +620,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             {/* 全屏模式下的文件路径显示 */}
             <div className={cx(styles['fullscreen-header'])}>
               <FilePathHeader
+                className={headerClassName}
                 fileName={selectedFileNode?.name}
                 fileSize={selectedFileNode?.size}
                 viewMode={viewMode}
@@ -683,7 +685,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 'overflow-hide',
               )}
             >
-              <SearchView files={files} onFileSelect={handleFileSelect} />
+              <SearchView
+                className={headerClassName}
+                files={files}
+                onFileSelect={handleFileSelect}
+              />
               <FileTree
                 files={files}
                 // 当前选中的文件ID
@@ -712,6 +718,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           >
             {/* 文件路径显示 */}
             <FilePathHeader
+              className={headerClassName}
               fileName={selectedFileNode?.name}
               fileSize={selectedFileNode?.size}
               viewMode={viewMode}

@@ -367,7 +367,7 @@ export default () => {
       setIsLoadingConversation(true);
       const { data } = result;
       // 设置所有的详细信息
-      setChatProcessingList(data.messageList);
+      setChatProcessingList(data?.messageList || []);
       // 设置会话信息
       setConversationInfo(data);
       // 是否开启用户问题建议
@@ -982,6 +982,8 @@ export default () => {
       setFinalResult(result);
     }
     setShowType(EditAgentShowType.Debug_Details);
+    // 关闭文件树
+    setIsFileTreeVisible(false);
   }, []);
 
   const getCurrentConversationRequestId = useCallback(() => {
