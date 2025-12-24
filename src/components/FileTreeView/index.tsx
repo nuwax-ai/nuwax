@@ -92,6 +92,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const [isSavingFiles, setIsSavingFiles] = useState<boolean>(false);
     // 是否正在下载项目文件压缩包
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
+
     // 文件选择
     const handleFileSelect = async (fileId: string) => {
       // 切换到预览模式
@@ -105,17 +106,32 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         if (fileContent) {
           setSelectedFileNode(fileNode);
         } else {
+          // 判断文件是否为图片类型
+          const isImage = isImageFile(fileNode?.name || '');
+          // 判断文件是否为视频类型
+          const isVideo = isVideoFile(fileNode?.name || '');
+          // 判断文件是否为音频类型
+          const isAudio = isAudioFile(fileNode?.name || '');
+          // 判断文件是否为文档类型
+          const result = isDocumentFile(fileNode?.name || '');
+          const isDocument = result?.isDoc || false;
           // 获取文件代理URL
           const fileProxyUrl = fileNode?.fileProxyUrl || '';
+
+          // 如果文件为图片、视频、音频、文档类型，或则没有文件代理URL，则直接设置为选中文件节点
+          if (isImage || isVideo || isAudio || isDocument || !fileProxyUrl) {
+            setSelectedFileNode(fileNode);
+          }
+          // 其他类型文件：使用文件代理URL获取文件内容
           // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
-          if (fileProxyUrl) {
+          else if (fileProxyUrl) {
+            // 获取文件内容
             const fileContent = await fetchContentFromUrl(fileProxyUrl);
+            // 设置选中文件节点
             setSelectedFileNode({
               ...fileNode,
-              content: fileContent,
+              content: fileContent || '',
             });
-          } else {
-            setSelectedFileNode(fileNode);
           }
         }
       } else {
@@ -614,7 +630,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         />
       );
     };
-    // console.log('changeFiles', changeFiles);
 
     // 处理下载项目操作
     const handleDownloadProject = async () => {
