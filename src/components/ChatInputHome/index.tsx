@@ -48,6 +48,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const {
     runStopConversation,
     loadingStopConversation,
+    getCurrentConversationId,
     getCurrentConversationRequestId,
     isConversationActive,
     disabledConversationActive,
@@ -280,13 +281,15 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
     // 获取当前会话请求ID
     const requestId = getCurrentConversationRequestId();
+    // 获取当前会话ID
+    const conversationId = getCurrentConversationId();
 
     if (requestId) {
       if (onTempChatStop) {
         onTempChatStop(requestId);
       } else {
-        // 调用停止会话方法
-        runStopConversation(requestId);
+        // 调用停止会话方法，传递会话ID
+        runStopConversation(conversationId);
       }
     }
   }, [
