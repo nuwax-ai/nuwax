@@ -10,7 +10,7 @@ import { apiAgentComponentModelUpdate } from '@/services/agentConfig';
 import { apiModelList } from '@/services/modelConfig';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
-import { ModelTypeEnum } from '@/types/enums/modelConfig';
+import { ModelApiProtocolEnum, ModelTypeEnum } from '@/types/enums/modelConfig';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { ComponentModelBindConfig } from '@/types/interfaces/agent';
 import type { AgentModelSettingProps } from '@/types/interfaces/agentConfig';
@@ -65,12 +65,25 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
     debounceInterval: 300,
     onSuccess: (result: ModelConfigInfo[]) => {
       modelConfigListRef.current = result;
-      const list: option[] =
-        result?.map((item) => ({
-          label: item.name,
-          value: item.id,
-        })) || [];
-      setModelConfigList(list);
+      if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
+        const list: option[] =
+          result
+            ?.filter(
+              (item) => item.apiProtocol === ModelApiProtocolEnum.Anthropic, // 只能使用Anthropic模型
+            )
+            ?.map((item) => ({
+              label: item.name,
+              value: item.id,
+            })) || [];
+        setModelConfigList(list);
+      } else {
+        const list: option[] =
+          result?.map((item) => ({
+            label: item.name,
+            value: item.id,
+          })) || [];
+        setModelConfigList(list);
+      }
     },
   });
 

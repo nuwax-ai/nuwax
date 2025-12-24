@@ -795,7 +795,11 @@ const EditAgent: React.FC = () => {
         break;
       // 日志
       case ApplicationMoreActionEnum.Log:
-        history.push(`/space/${spaceId}/${agentConfigInfo?.id}/log`);
+        history.push(
+          `/space/${spaceId}/library-log?targetType=${
+            AgentComponentTypeEnum.Agent
+          }&targetId=${agentConfigInfo?.id ?? ''}`,
+        );
         break;
     }
   };

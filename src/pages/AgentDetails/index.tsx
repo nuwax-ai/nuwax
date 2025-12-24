@@ -274,16 +274,16 @@ const AgentDetails: React.FC = () => {
   const showCopyButton = useMemo(() => {
     const shouldShow = agentDetail?.allowCopy === AllowCopyEnum.Yes;
     // 调试：输出相关信息
-    console.log('[AgentDetails] 复制按钮显示条件:', {
-      workflowId,
-      agentId: agentDetail?.agentId,
-      allowCopy: agentDetail?.allowCopy,
-      allowCopyEnum: AllowCopyEnum.Yes,
-      showCopyButton: shouldShow,
-      pagePreviewData: pagePreviewData,
-      uri: pagePreviewData?.uri,
-      params: pagePreviewData?.params,
-    });
+    // console.log('[AgentDetails] 复制按钮显示条件:', {
+    //   workflowId,
+    //   agentId: agentDetail?.agentId,
+    //   allowCopy: agentDetail?.allowCopy,
+    //   allowCopyEnum: AllowCopyEnum.Yes,
+    //   showCopyButton: shouldShow,
+    //   pagePreviewData: pagePreviewData,
+    //   uri: pagePreviewData?.uri,
+    //   params: pagePreviewData?.params,
+    // });
     return shouldShow;
   }, [
     workflowId,

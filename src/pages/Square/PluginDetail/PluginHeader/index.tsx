@@ -4,10 +4,16 @@ import workflowImage from '@/assets/images/workflow_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import CollectStar from '@/pages/SpaceDevelop/ApplicationItem/CollectStar';
 import {
+  apiPublishedPluginCollect,
   apiPublishedPluginUnCollect,
-  apiPublishedWorkflowUnCollect,
 } from '@/services/plugin';
-import { apiPublishedSkillUnCollect } from '@/services/square';
+import {
+  apiPublishedSkillCollect,
+  apiPublishedSkillUnCollect,
+  apiPublishedWorkflowCollect,
+  apiPublishedWorkflowUnCollect,
+} from '@/services/square';
+
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type {
   PublishPluginInfo,
@@ -15,7 +21,7 @@ import type {
   PublishWorkflowInfo,
 } from '@/types/interfaces/plugin';
 import { LeftOutlined } from '@ant-design/icons';
-import { message } from 'antd';
+import { message, Space } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
@@ -30,6 +36,8 @@ interface PluginHeaderProps {
     | SquareAgentTypeEnum.Workflow
     | SquareAgentTypeEnum.Plugin
     | SquareAgentTypeEnum.Skill;
+  /** 收藏前面的插槽 */
+  extraBeforeCollect?: React.ReactNode;
 }
 
 /**
@@ -38,10 +46,12 @@ interface PluginHeaderProps {
 const PluginHeader: React.FC<PluginHeaderProps> = ({
   targetInfo,
   targetType,
+  extraBeforeCollect,
 }) => {
   const handleBack = () => {
     history.back();
   };
+
   const [collect, setCollect] = useState(targetInfo?.collect);
   const [count, setCount] = useState(targetInfo?.statistics?.collectCount || 0);
 
@@ -49,9 +59,9 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
 
   // 枚举 收藏接口
   const collectApiMap = {
-    [SquareAgentTypeEnum.Plugin]: apiPublishedPluginUnCollect,
-    [SquareAgentTypeEnum.Workflow]: apiPublishedWorkflowUnCollect,
-    [SquareAgentTypeEnum.Skill]: apiPublishedSkillUnCollect,
+    [SquareAgentTypeEnum.Plugin]: apiPublishedPluginCollect,
+    [SquareAgentTypeEnum.Workflow]: apiPublishedWorkflowCollect,
+    [SquareAgentTypeEnum.Skill]: apiPublishedSkillCollect,
   };
 
   // 枚举 取消收藏接口
@@ -143,11 +153,13 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
       </section>
 
       <div className={cx('flex items-center content-center')}>
-        {/*收藏与取消收藏*/}
-        <CollectStar devCollected={collect} onClick={handlerCollect} />
-        <span className={cx('ml-10', styles['collect'])}>
-          收藏 {`(${count})`}
-        </span>
+        <Space>
+          {/* 收藏前面的插槽 */}
+          {extraBeforeCollect}
+          {/*收藏与取消收藏*/}
+          <CollectStar devCollected={collect} onClick={handlerCollect} />
+          <span className={cx(styles['collect'])}>收藏 {`(${count})`}</span>
+        </Space>
       </div>
     </header>
   );
