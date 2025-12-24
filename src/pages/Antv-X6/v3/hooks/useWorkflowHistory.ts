@@ -11,6 +11,7 @@ import type { GraphContainerRef } from '@/types/interfaces/graph';
 import { Graph } from '@antv/x6';
 import { message } from 'antd';
 import { useEffect, useState } from 'react';
+import { setHistoryProcessing } from '../component/graph';
 import { workflowProxy } from '../services/workflowProxyV3';
 
 export interface UseWorkflowHistoryParams {
@@ -60,7 +61,12 @@ export const useWorkflowHistory = ({
       if (isCmdOrCtrl && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault();
         if (graph.canUndo()) {
+          setHistoryProcessing(true);
           graph.undo();
+          // 延迟恢复记录，等待副作用（如自动布局、rerender）完成
+          setTimeout(() => {
+            setHistoryProcessing(false);
+          }, 200);
         } else {
           message.warning('没有可撤销的操作');
         }
@@ -73,7 +79,12 @@ export const useWorkflowHistory = ({
       ) {
         e.preventDefault();
         if (graph.canRedo()) {
+          setHistoryProcessing(true);
           graph.redo();
+          // 延迟恢复记录
+          setTimeout(() => {
+            setHistoryProcessing(false);
+          }, 200);
         } else {
           message.warning('没有可重做的操作');
         }
@@ -146,8 +157,12 @@ export const useWorkflowHistory = ({
         graph.on('history:change', updateHistoryState);
 
         // 仅在 undo/redo 操作后才同步数据到 Proxy
-        graph.on('history:undo', syncGraphToProxy);
-        graph.on('history:redo', syncGraphToProxy);
+        graph.on('history:undo', () => {
+          syncGraphToProxy();
+        });
+        graph.on('history:redo', () => {
+          syncGraphToProxy();
+        });
 
         // Initial state
         updateHistoryState();
@@ -160,23 +175,29 @@ export const useWorkflowHistory = ({
   // 提供给外部调用的 undo/redo 方法
   const handleUndo = () => {
     const graph = graphRef.current?.getGraphRef();
-    if (graph) {
-      if (graph.canUndo()) {
-        graph.undo();
-      } else {
-        message.warning('没有可撤销的操作');
-      }
+    if (graph?.canUndo()) {
+      setHistoryProcessing(true);
+      graph.undo();
+      // 延迟恢复记录，等待副作用（如自动布局、rerender）完成
+      setTimeout(() => {
+        setHistoryProcessing(false);
+      }, 200);
+    } else {
+      message.warning('没有可撤销的操作');
     }
   };
 
   const handleRedo = () => {
     const graph = graphRef.current?.getGraphRef();
-    if (graph) {
-      if (graph.canRedo()) {
-        graph.redo();
-      } else {
-        message.warning('没有可重做的操作');
-      }
+    if (graph?.canRedo()) {
+      setHistoryProcessing(true);
+      graph.redo();
+      // 延迟恢复记录
+      setTimeout(() => {
+        setHistoryProcessing(false);
+      }, 200);
+    } else {
+      message.warning('没有可重做的操作');
     }
   };
 

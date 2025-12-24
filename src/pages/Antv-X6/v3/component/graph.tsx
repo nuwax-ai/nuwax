@@ -23,11 +23,21 @@ import {
 
 // 初始化标志：当为true时，所有历史记录操作将被忽略
 // 用于在工作流加载时阻止初始化操作被记录到历史栈
+// 初始化标志：当为true时，所有历史记录操作将被忽略
+// 用于在工作流加载时阻止初始化操作被记录到历史栈
 let isInitializing = true;
+// 内部处理标志：当为 true 时，忽略新的历史记录
+// 用于防止 undo/redo 过程中触发的副作用（如自动布局调整）被记录为新操作，从而清空 redo 栈
+let isHistoryProcessing = false;
 
 // 导出控制初始化标志的函数
 export const setGraphInitializing = (value: boolean) => {
   isInitializing = value;
+};
+
+// 导出控制内部处理标志的函数
+export const setHistoryProcessing = (value: boolean) => {
+  isHistoryProcessing = value;
 };
 // 自定义类型定义
 import PlusIcon from '@/assets/svg/plus_icon.svg';
@@ -449,8 +459,8 @@ const initGraph = ({
         enabled: true, // 启用历史记录，但通过 beforeAddCommand 中的 isInitializing 标志控制
         // 过滤不需要记录的操作，避免历史记录过多
         beforeAddCommand: (_event, args: any) => {
-          // 初始化阶段忽略所有历史记录
-          if (isInitializing) {
+          // 初始化阶段或正在处理 Undo/Redo 时忽略所有历史记录
+          if (isInitializing || isHistoryProcessing) {
             return false;
           }
           // 忽略端口属性变化（hover 效果）
