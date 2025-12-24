@@ -63,7 +63,10 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
           return hasPermission(PermissionsEnum.Copy);
         // 临时会话
         case ApplicationMoreActionEnum.Temporary_Session:
-          return hasPermission(PermissionsEnum.TempChat);
+          return (
+            hasPermission(PermissionsEnum.TempChat) &&
+            agentConfigInfo.type !== AgentTypeEnum.TaskAgent
+          );
         // 迁移
         case ApplicationMoreActionEnum.Move:
           // 迁移操作：仅创建者和管理员展示
