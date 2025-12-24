@@ -47,6 +47,10 @@ export const jumpToWorkflow = (targetSpaceId: number, workflowId: number) => {
   jumpTo(`/space/${targetSpaceId}/workflow/${workflowId}`);
 };
 
+export const jumpToSkill = (targetSpaceId: number, skillId: number) => {
+  jumpTo(`/space/${targetSpaceId}/skill-details/${skillId}`);
+};
+
 export const jumpToAgent = (targetSpaceId: number, agentId: number) => {
   jumpTo(`/space/${targetSpaceId}/agent/${agentId}`);
 };
