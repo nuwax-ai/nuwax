@@ -51,7 +51,6 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
   const handleBack = () => {
     history.back();
   };
-  console.log('targetInfo', targetInfo);
 
   const [collect, setCollect] = useState(targetInfo?.collect);
   const [count, setCount] = useState(targetInfo?.statistics?.collectCount || 0);
