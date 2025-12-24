@@ -99,6 +99,12 @@ const Chat: React.FC = () => {
   // 是否发送过消息,如果是,则禁用变量参数
   const isSendMessageRef = useRef<boolean>(false);
 
+  const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
+  const sidebarRef = useRef<AgentSidebarRef>(null);
+
+  // 复制模板弹窗状态
+  const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
+
   // 智能体详情
   const { agentDetail, setAgentDetail, handleToggleCollectSuccess } =
     useAgentDetails();
@@ -138,7 +144,6 @@ const Chat: React.FC = () => {
     setIsFileTreeVisible,
     // 文件树数据
     fileTreeData,
-    // setFileTreeData,
     // 文件树视图模式
     viewMode,
     // 处理文件列表刷新事件
@@ -151,9 +156,6 @@ const Chat: React.FC = () => {
   // 页面预览相关状态
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
-
-  // 复制模板弹窗状态
-  const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
 
   // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
   // 支持多种可能的参数名：workflowId, workflow_id, id
@@ -442,9 +444,6 @@ const Chat: React.FC = () => {
     messageViewScrollToBottom();
     setShowScrollBtn(false);
   };
-
-  const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
-  const sidebarRef = useRef<AgentSidebarRef>(null);
 
   // 互斥面板控制器：管理 PagePreview、AgentSidebar、ShowArea 的互斥展示
   useExclusivePanels({
