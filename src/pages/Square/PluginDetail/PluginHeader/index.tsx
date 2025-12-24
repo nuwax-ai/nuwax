@@ -15,7 +15,7 @@ import type {
   PublishWorkflowInfo,
 } from '@/types/interfaces/plugin';
 import { LeftOutlined } from '@ant-design/icons';
-import { message } from 'antd';
+import { message, Space } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
@@ -30,6 +30,8 @@ interface PluginHeaderProps {
     | SquareAgentTypeEnum.Workflow
     | SquareAgentTypeEnum.Plugin
     | SquareAgentTypeEnum.Skill;
+  /** 收藏前面的插槽 */
+  extraBeforeCollect?: React.ReactNode;
 }
 
 /**
@@ -38,6 +40,7 @@ interface PluginHeaderProps {
 const PluginHeader: React.FC<PluginHeaderProps> = ({
   targetInfo,
   targetType,
+  extraBeforeCollect,
 }) => {
   const handleBack = () => {
     history.back();
@@ -143,11 +146,13 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
       </section>
 
       <div className={cx('flex items-center content-center')}>
-        {/*收藏与取消收藏*/}
-        <CollectStar devCollected={collect} onClick={handlerCollect} />
-        <span className={cx('ml-10', styles['collect'])}>
-          收藏 {`(${count})`}
-        </span>
+        <Space>
+          {/* 收藏前面的插槽 */}
+          {extraBeforeCollect}
+          {/*收藏与取消收藏*/}
+          <CollectStar devCollected={collect} onClick={handlerCollect} />
+          <span className={cx(styles['collect'])}>收藏 {`(${count})`}</span>
+        </Space>
       </div>
     </header>
   );
