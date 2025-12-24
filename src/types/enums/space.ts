@@ -11,6 +11,12 @@ export enum ComponentTypeEnum {
   Skill = 'Skill',
 }
 
+// 创建技能方式
+export enum CreateSkillWayEnum {
+  Create = 'Create',
+  Import = 'Import',
+}
+
 // 智能体类型枚举
 export enum AgentTypeEnum {
   ChatBot = 'ChatBot',
