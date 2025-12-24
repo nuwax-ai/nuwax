@@ -4,10 +4,16 @@ import workflowImage from '@/assets/images/workflow_image.png';
 import ConditionRender from '@/components/ConditionRender';
 import CollectStar from '@/pages/SpaceDevelop/ApplicationItem/CollectStar';
 import {
+  apiPublishedPluginCollect,
   apiPublishedPluginUnCollect,
-  apiPublishedWorkflowUnCollect,
 } from '@/services/plugin';
-import { apiPublishedSkillUnCollect } from '@/services/square';
+import {
+  apiPublishedSkillCollect,
+  apiPublishedSkillUnCollect,
+  apiPublishedWorkflowCollect,
+  apiPublishedWorkflowUnCollect,
+} from '@/services/square';
+
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type {
   PublishPluginInfo,
@@ -45,6 +51,8 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
   const handleBack = () => {
     history.back();
   };
+  console.log('targetInfo', targetInfo);
+
   const [collect, setCollect] = useState(targetInfo?.collect);
   const [count, setCount] = useState(targetInfo?.statistics?.collectCount || 0);
 
@@ -52,9 +60,9 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
 
   // 枚举 收藏接口
   const collectApiMap = {
-    [SquareAgentTypeEnum.Plugin]: apiPublishedPluginUnCollect,
-    [SquareAgentTypeEnum.Workflow]: apiPublishedWorkflowUnCollect,
-    [SquareAgentTypeEnum.Skill]: apiPublishedSkillUnCollect,
+    [SquareAgentTypeEnum.Plugin]: apiPublishedPluginCollect,
+    [SquareAgentTypeEnum.Workflow]: apiPublishedWorkflowCollect,
+    [SquareAgentTypeEnum.Skill]: apiPublishedSkillCollect,
   };
 
   // 枚举 取消收藏接口
