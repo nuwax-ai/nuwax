@@ -999,6 +999,22 @@ const initGraph = ({
     changeZoom(sx);
   });
 
+  // 修复撤销/重做后边变成虚线的问题
+  // 边在创建时使用虚线样式，但 attrs 变化被 History 插件过滤，
+  // 所以撤销/重做恢复边时会带着虚线样式，需要在这里修复
+  const fixEdgeStylesAfterHistory = () => {
+    // 使用 setTimeout 确保在 undo/redo 操作完成后执行
+    setTimeout(() => {
+      graph.getEdges().forEach((edge) => {
+        setEdgeAttributes(edge);
+      });
+      updateEdgeArrows(graph);
+    }, 0);
+  };
+
+  graph.on('history:undo', fixEdgeStylesAfterHistory);
+  graph.on('history:redo', fixEdgeStylesAfterHistory);
+
   graph.on('node:change:size', ({ node }) => {
     const children = node.getChildren();
     if (children && children.length) {

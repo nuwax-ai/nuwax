@@ -41,7 +41,7 @@ import {
   updateSkillComponentConfigs,
 } from '@/utils/updateNode';
 import { Graph } from '@antv/x6';
-import { App, Form } from 'antd';
+import { Form } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel, useParams } from 'umi';
 import WorkflowLayout from './components/layout/WorkflowLayout';
@@ -56,6 +56,7 @@ import { useBeforeUnload } from './hooks/useBeforeUnload';
 import { useGraphInteraction } from './hooks/useGraphInteraction';
 import { useNodeOperations } from './hooks/useNodeOperations';
 import { useTestRun } from './hooks/useTestRun';
+import { useWorkflowHistory } from './hooks/useWorkflowHistory';
 import { useWorkflowLifecycle } from './hooks/useWorkflowLifecycle';
 import { useWorkflowPersistence } from './hooks/useWorkflowPersistence';
 import { useWorkflowValidation } from './hooks/useWorkflowValidation';
@@ -171,7 +172,6 @@ const cleanVariableAggregationFormValues = (values: any): any => {
 };
 
 const Workflow: React.FC = () => {
-  const { message } = App.useApp();
   const {
     getWorkflow,
     storeWorkflow,
@@ -251,11 +251,6 @@ const Workflow: React.FC = () => {
   const [form] = Form.useForm<NodeConfig>();
   // 修改右侧抽屉的名称
   const [showNameInput, setShowNameInput] = useState<boolean>(false);
-  // 针对问答节点，试运行的问答参数
-  const [historyState, setHistoryState] = useState({
-    canUndo: false,
-    canRedo: false,
-  });
   // 错误列表的参数
   const [errorParams, setErrorParams] = useState<ErrorParams>({
     errorList: [],
@@ -806,11 +801,15 @@ const Workflow: React.FC = () => {
           break;
         }
         case 'Delete': {
-          nodeOperationsHook.deleteNode(foldWrapItem.id);
+          // 使用 getWorkflow 获取最新的 drawerForm，避免闭包中的 foldWrapItem 过期
+          const currentNode = getWorkflow('drawerForm');
+          nodeOperationsHook.deleteNode(currentNode.id);
           break;
         }
         case 'Duplicate': {
-          nodeOperationsHook.copyNode(foldWrapItem);
+          // 使用 getWorkflow 获取最新的 drawerForm，避免闭包中的 foldWrapItem 过期
+          const currentNode = getWorkflow('drawerForm');
+          nodeOperationsHook.copyNode(currentNode);
           break;
         }
         case 'TestRun': {
@@ -830,7 +829,7 @@ const Workflow: React.FC = () => {
           break;
       }
     },
-    [isModified, foldWrapItem.id, nodeOperationsHook, testRunHook],
+    [isModified, nodeOperationsHook, testRunHook],
   );
 
   const handleDrawerClose = useCallback(() => {
@@ -1052,118 +1051,12 @@ const Workflow: React.FC = () => {
     },
   );
 
-  // 绑定快捷键
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const activeElement = document.activeElement;
-      const isInput =
-        activeElement instanceof HTMLInputElement ||
-        activeElement instanceof HTMLTextAreaElement ||
-        (activeElement as HTMLElement)?.isContentEditable;
-
-      if (isInput) return;
-
-      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
-      const graph = graphRef.current?.getGraphRef();
-
-      if (!graph) return;
-
-      // Undo: Command + Z
-      if (isCmdOrCtrl && e.key.toLowerCase() === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        if (graph.canUndo()) {
-          graph.undo();
-          // message.success('已撤销');
-        } else {
-          message.warning('没有可撤销的操作');
-        }
-      }
-
-      // Redo: Command + Shift + Z or Command + Y
-      if (
-        (isCmdOrCtrl && e.key.toLowerCase() === 'z' && e.shiftKey) ||
-        (isCmdOrCtrl && e.key.toLowerCase() === 'y')
-      ) {
-        e.preventDefault();
-        if (graph.canRedo()) {
-          graph.redo();
-          // message.success('已重做');
-        } else {
-          message.warning('没有可重做的操作');
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // 监听 X6 历史记录变化
-  useEffect(() => {
-    // 轮询或者在 onInit 中绑定？由于 graph 实例初始化时机问题，使用轮询检查或者依赖 graphParams 变化
-    const checkGraph = setInterval(() => {
-      // 优先从 graphRef 获取，并更新到 stable ref
-      const graph = graphRef.current?.getGraphRef();
-      if (graph) {
-        graphInstanceRef.current = graph;
-        clearInterval(checkGraph);
-
-        const updateHistory = (isInitial = false) => {
-          setHistoryState({
-            canUndo: graph.canUndo(),
-            canRedo: graph.canRedo(),
-          });
-
-          // Sync graph data to Proxy to ensure consistency after Undo/Redo
-          if (workflowProxy) {
-            const nodes = graph.getNodes().map((n) => {
-              const data = n.getData();
-              const position = n.getPosition(); // 读取 X6 的实际位置
-              const size = n.getSize();
-              // 将 X6 的位置同步到业务数据的 nodeConfig.extension
-              return {
-                ...data,
-                nodeConfig: {
-                  ...data.nodeConfig,
-                  extension: {
-                    ...data.nodeConfig?.extension,
-                    x: position.x,
-                    y: position.y,
-                    width: size.width,
-                    height: size.height,
-                  },
-                },
-              };
-            });
-            const edges = graph.getEdges().map((e) => {
-              const source = e.getSource() as any;
-              const target = e.getTarget() as any;
-              return {
-                id: e.id,
-                source: source?.cell || source,
-                target: target?.cell || target,
-                sourcePort: source?.port || undefined,
-                targetPort: target?.port || undefined,
-                zIndex: e.getZIndex(),
-              };
-            });
-            // 初始加载时不标记为dirty，也不触发保存
-            workflowProxy.syncFromGraph(nodes, edges as any, !isInitial);
-
-            // V3: Undo/Redo 后触发保存（仅非初始加载时）
-            if (!isInitial) {
-              debouncedSaveFullWorkflow();
-            }
-          }
-        };
-        graph.on('history:change', () => updateHistory(false));
-        // Initial state
-        updateHistory(true);
-      }
-    }, 500);
-
-    return () => clearInterval(checkGraph);
-  }, []);
+  // V3: 历史记录操作（快捷键及状态管理）
+  const { historyState, handleUndo, handleRedo } = useWorkflowHistory({
+    graphRef,
+    graphInstanceRef,
+    debouncedSaveFullWorkflow,
+  });
 
   return (
     <WorkflowVersionProvider version="v3">
@@ -1177,26 +1070,8 @@ const Workflow: React.FC = () => {
         setShowPublish={validationHook.setShowPublish}
         canUndo={historyState.canUndo}
         canRedo={historyState.canRedo}
-        onUndo={() => {
-          const graph = graphRef.current?.getGraphRef();
-          if (graph) {
-            if (graph.canUndo()) {
-              graph.undo();
-            } else {
-              message.warning('没有可撤销的操作');
-            }
-          }
-        }}
-        onRedo={() => {
-          const graph = graphRef.current?.getGraphRef();
-          if (graph) {
-            if (graph.canRedo()) {
-              graph.redo();
-            } else {
-              message.warning('没有可重做的操作');
-            }
-          }
-        }}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
         onManualSave={saveFullWorkflow}
         onConfirm={onConfirm}
         onUpdateWorkflow={onUpdateWorkflow}
