@@ -7,7 +7,7 @@ import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { PublishTemplateCopyParams } from '@/types/interfaces/publish';
 import { jumpToSkill } from '@/utils/router';
-import { Button, Divider, message } from 'antd';
+import { Button, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useParams, useRequest } from 'umi';
@@ -73,40 +73,33 @@ const SkillDetail: React.FC = ({}) => {
         <PluginHeader
           targetInfo={skillInfo}
           targetType={SquareAgentTypeEnum.Skill}
+          extraBeforeCollect={
+            <ConditionRender
+              condition={skillInfo?.allowCopy === AllowCopyEnum.Yes}
+            >
+              <Button
+                type="primary"
+                className={cx(styles['copy-btn'])}
+                onClick={() => setOpenMove(true)}
+              >
+                复制模板
+              </Button>
+              {/*智能体迁移弹窗*/}
+              <MoveCopyComponent
+                spaceId={skillInfo?.spaceId || 0}
+                loading={loadingCopyTemplate}
+                type={ApplicationMoreActionEnum.Copy_To_Space}
+                mode={AgentComponentTypeEnum.Skill}
+                open={openMove}
+                isTemplate={true}
+                title={skillInfo?.name}
+                onCancel={() => setOpenMove(false)}
+                onConfirm={handlerConfirmCopyTemplate}
+              />
+            </ConditionRender>
+          }
         />
       )}
-      <div className={cx(styles['main-container'], 'scroll-container')}>
-        <div className={cx('flex', 'items-center', 'content-between')}>
-          <span className={cx(styles.title)}>工作流描述</span>
-          <ConditionRender
-            condition={skillInfo?.allowCopy === AllowCopyEnum.Yes}
-          >
-            <Button
-              type="primary"
-              className={cx(styles['copy-btn'])}
-              onClick={() => setOpenMove(true)}
-            >
-              复制模板
-            </Button>
-            {/*智能体迁移弹窗*/}
-            <MoveCopyComponent
-              spaceId={skillInfo?.spaceId || 0}
-              loading={loadingCopyTemplate}
-              type={ApplicationMoreActionEnum.Copy_To_Space}
-              mode={AgentComponentTypeEnum.Skill}
-              open={openMove}
-              isTemplate={true}
-              title={skillInfo?.name}
-              onCancel={() => setOpenMove(false)}
-              onConfirm={handlerConfirmCopyTemplate}
-            />
-          </ConditionRender>
-        </div>
-        <p className={cx(styles.desc, 'text-ellipsis-2')}>
-          {skillInfo?.description}
-        </p>
-        <Divider style={{ margin: '20px 0' }} />
-      </div>
     </div>
   );
 };
