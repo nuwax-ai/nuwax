@@ -21,7 +21,7 @@ import {
   useRef,
 } from 'react';
 import EventHandlers from '../../component/eventHandlers';
-import InitGraph from '../../component/graph';
+import InitGraph, { setGraphInitializing } from '../../component/graph';
 import { registerCustomNodes } from '../../component/registerCustomNodes';
 import {
   LOOP_END_NODE_X_OFFSET,
@@ -493,6 +493,12 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
     const drawGraph = () => {
       if (graphRef.current && graphParams.nodeList.length > 0) {
+        // 设置初始化标志为 true，阻止所有历史记录
+        setGraphInitializing(true);
+
+        // 清空历史记录
+        graphRef.current.cleanHistory?.();
+
         // 清除现有元素，防止重复渲染
         graphRef.current.clearCells();
 
@@ -515,14 +521,38 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         // 批量添加边
         batchAddEdges(graphParams.edgeList);
 
+        // 用于跟踪是否已完成初始化
+        let initCompleted = false;
+        const completeInit = () => {
+          if (initCompleted) return;
+          initCompleted = true;
+          graphChangeZoomToFit();
+
+          // 延迟关闭初始化标志，确保所有异步操作完成
+          // 这里用 setTimeout 确保 React 渲染和 X6 内部异步操作都完成
+          setTimeout(() => {
+            // 清空可能在异步操作中积累的历史记录
+            graphRef.current?.cleanHistory?.();
+            // 关闭初始化标志，开始记录用户操作
+            setGraphInitializing(false);
+            onInit();
+          }, 100);
+        };
+
         // 添加zoomToFit调用，确保在绘制完成后自动调整视图
         graphRef.current.once('render:done', () => {
-          setTimeout(() => {
-            graphChangeZoomToFit();
-            graphRef.current?.cleanHistory?.();
-            onInit();
-          }, 20);
+          setTimeout(completeInit, 50);
         });
+
+        // 备用方案：如果 render:done 没有在 800ms 内触发，强制完成初始化
+        setTimeout(() => {
+          if (!initCompleted) {
+            console.warn(
+              '[GraphContainer] render:done not fired, forcing init complete',
+            );
+            completeInit();
+          }
+        }, 800);
       }
     };
 
