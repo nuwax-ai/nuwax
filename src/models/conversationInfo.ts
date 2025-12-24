@@ -982,6 +982,8 @@ export default () => {
       setFinalResult(result);
     }
     setShowType(EditAgentShowType.Debug_Details);
+    // 关闭文件树
+    setIsFileTreeVisible(false);
   }, []);
 
   const getCurrentConversationRequestId = useCallback(() => {
