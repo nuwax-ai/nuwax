@@ -106,8 +106,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     // 文件选择
     const handleFileSelect = async (fileId: string) => {
-      // 切换到预览模式
-      onViewModeChange?.('preview');
+      // // 只有在当前不是预览模式时才切换，避免不必要的刷新
+      // if (viewMode !== 'preview') {
+      //   onViewModeChange?.('preview');
+      // }
       setSelectedFileId(fileId);
       // 根据文件ID查找文件节点
       const fileNode = findFileNode(fileId, files);
@@ -389,8 +391,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 将新建的节点设置为当前重命名目标和选中节点
       if (newNode) {
         setRenamingNode(newNode);
-        setSelectedFileId(newNode.id);
-        setSelectedFileNode(newNode);
+        // setSelectedFileId(newNode.id);
+        // setSelectedFileNode(newNode);
       }
     };
 
@@ -412,6 +414,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 处理内容变化
      */
     const handleContentChange = (fileId: string, content: string) => {
+      console.log('处理内容变化fileId', fileId);
       // 保存原始内容的引用（用于首次修改时记录）
       let originalContent = '';
 
@@ -434,6 +437,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         ...prevNode,
         content,
       }));
+
+      console.log('处理内容变化新内容', content);
+      console.log('处理内容变化原始内容', originalContent);
 
       // 使用函数式更新获取最新的 changeFiles 状态
       setChangeFiles((prevChangeFiles) => {
