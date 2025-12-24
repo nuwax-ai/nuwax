@@ -782,8 +782,8 @@ export function calculateNodePreviousArgs(
   const sortByOrder = (a: PreviousList, b: PreviousList) => {
     const oa = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
     const ob = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
-    if (oa === ob) return a.id - b.id;
-    return oa - ob;
+    if (oa === ob) return b.id - a.id;
+    return ob - oa;
   };
 
   previousNodes.sort(sortByOrder);
