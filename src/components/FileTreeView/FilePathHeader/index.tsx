@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { USER_INFO } from '@/constants/home.constants';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { DesktopOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
@@ -6,6 +7,7 @@ import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
+import pcIcon from './pc.svg';
 
 const cx = classNames.bind(styles);
 
@@ -71,16 +73,27 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     return formatFileSize(fileSize);
   }, [fileSize]);
 
+  // 获取用户信息
+  const _userInfo = localStorage.getItem(USER_INFO);
+  const userInfo = _userInfo ? JSON.parse(_userInfo) : null;
+
   return (
     <div className={cx(styles.filePathHeader, className)}>
       {/* 左侧：文件信息 */}
       <div className={styles.fileInfo}>
-        {viewMode === 'preview' && (
+        {viewMode === 'preview' ? (
           <div className={styles.fileDetails}>
             <div className={styles.fileName}>{fileName}</div>
             {formattedSize && (
               <div className={styles.fileMeta}>{formattedSize}</div>
             )}
+          </div>
+        ) : (
+          <div className={styles['pc-box']}>
+            <img src={pcIcon} alt="" />
+            <div className={styles.fileName}>
+              {userInfo?.nickName || userInfo?.userName || '远程'}的电脑
+            </div>
           </div>
         )}
       </div>
