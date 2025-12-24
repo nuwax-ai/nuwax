@@ -50,6 +50,9 @@ const SkillDetails: React.FC = () => {
     useState<boolean>(false);
   // 文件树视图ref
   const fileTreeViewRef = useRef<FileTreeViewRef>(null);
+  // 是否显示全屏预览
+  const [isFullscreenPreview, setIsFullscreenPreview] =
+    useState<boolean>(false);
 
   // 查询技能信息
   const { run: runSkillInfo } = useRequest(apiSkillDetail, {
@@ -429,7 +432,9 @@ const SkillDetails: React.FC = () => {
         // 导出项目
         onExportProject={handleExportProject}
         // 全屏
-        // onFullscreen={() => {}}
+        onFullscreen={() => {
+          setIsFullscreenPreview(true);
+        }}
       />
 
       <div className={cx('flex', 'flex-1')}>
@@ -454,6 +459,9 @@ const SkillDetails: React.FC = () => {
           onImportProject={handleImportProject}
           // 是否显示更多操作菜单
           showMoreActions={false}
+          // 是否显示全屏预览
+          isFullscreenPreview={isFullscreenPreview}
+          onFullscreenPreview={setIsFullscreenPreview}
         />
 
         {/*版本历史*/}

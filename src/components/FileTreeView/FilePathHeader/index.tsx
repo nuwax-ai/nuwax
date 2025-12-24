@@ -1,7 +1,8 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { USER_INFO } from '@/constants/home.constants';
 import { formatFileSize } from '@/utils/appDevUtils';
-import { DesktopOutlined } from '@ant-design/icons';
+import { DesktopOutlined, FullscreenExitOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -59,7 +60,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onImportProject,
   onExportProject,
   onFullscreen,
-  // isFullscreen = false,
+  isFullscreen = false,
   onSaveFiles,
   onCancelSaveFiles,
   hasModifiedFiles = false,
@@ -149,6 +150,16 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           onFullscreenPreview={onFullscreen}
           onExportProject={onExportProject}
         />
+      )}
+
+      {isFullscreen && (
+        <div className={styles.fullscreenButton}>
+          <TooltipIcon
+            title="退出全屏"
+            icon={<FullscreenExitOutlined />}
+            onClick={onFullscreen}
+          />
+        </div>
       )}
 
       {/* 右侧：操作按钮 */}

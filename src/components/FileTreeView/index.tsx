@@ -60,6 +60,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onRestartServer,
       // 是否显示更多操作菜单
       showMoreActions = true,
+      // 是否显示全屏预览，由父组件控制
+      isFullscreenPreview = false,
+      onFullscreenPreview,
     },
     ref,
   ) => {
@@ -94,6 +97,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const [isSavingFiles, setIsSavingFiles] = useState<boolean>(false);
     // 是否正在下载项目文件压缩包
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
+
+    useEffect(() => {
+      if (isFullscreenPreview) {
+        setIsFullscreen(true);
+      }
+    }, [isFullscreenPreview]);
 
     // 文件选择
     const handleFileSelect = async (fileId: string) => {
@@ -474,6 +483,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleFullscreen = () => {
       setIsFullscreen(!isFullscreen);
+      onFullscreenPreview?.(!isFullscreen);
     };
 
     /**
@@ -481,6 +491,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleCloseFullscreen = () => {
       setIsFullscreen(false);
+      onFullscreenPreview?.(false);
     };
 
     // 保存文件
