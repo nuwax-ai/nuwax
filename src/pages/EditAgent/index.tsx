@@ -1,10 +1,13 @@
 import CreateAgent from '@/components/CreateAgent';
+import FileTreeView from '@/components/FileTreeView';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import ResizableSplit from '@/components/ResizableSplit';
 import ShowStand from '@/components/ShowStand';
 import type { PromptVariable } from '@/components/TiptapVariableInput/types';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import VersionHistory from '@/components/VersionHistory';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { EVENT_TYPE } from '@/constants/event.constants';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import CreateTempChatModal from '@/pages/SpaceDevelop/CreateTempChatModal';
@@ -13,6 +16,11 @@ import {
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
+import {
+  apiDownloadAllFiles,
+  apiUpdateStaticFile,
+  apiUploadFiles,
+} from '@/services/vncDesktop';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import {
@@ -29,15 +37,27 @@ import {
   ComponentModelBindConfig,
   GuidQuestionDto,
 } from '@/types/interfaces/agent';
+import { FileNode } from '@/types/interfaces/appDev';
 import type {
   AnalyzeStatisticsItem,
   BindConfigWithSub,
 } from '@/types/interfaces/common';
 import { RequestResponse } from '@/types/interfaces/request';
+import {
+  IUpdateStaticFileParams,
+  StaticFileInfo,
+  VncDesktopUpdateFileInfo,
+} from '@/types/interfaces/vncDesktop';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
-import { exportConfigFile } from '@/utils/exportImportFile';
+import eventBus from '@/utils/eventBus';
+import {
+  exportConfigFile,
+  exportWholeProjectZip,
+} from '@/utils/exportImportFile';
+import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { useRequest } from 'ahooks';
+import { message as messageAntd } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
@@ -81,12 +101,32 @@ const EditAgent: React.FC = () => {
     setChatSuggestList,
     setIsLoadingConversation,
     runQueryConversation,
+    // 文件树显隐状态
+    isFileTreeVisible,
+    setIsFileTreeVisible,
+    // 文件树数据
+    fileTreeData,
+    // 文件树视图模式
+    viewMode,
+    // 处理文件列表刷新事件
+    handleRefreshFileList,
+    openPreviewView,
+    openDesktopView,
+    restartVncPod,
   } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
   // 智能体组件列表
   const [agentComponentList, setAgentComponentList] = useState<
     AgentComponentInfo[]
   >([]);
+
+  const [agentStatistics, setAgentStatistics] = useState<
+    AnalyzeStatisticsItem[]
+  >([]);
+  // 打开分析弹窗
+  const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
+  // 打开创建临时会话弹窗
+  const [openTempChat, setOpenTempChat] = useState<boolean>(false);
 
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -404,6 +444,13 @@ const EditAgent: React.FC = () => {
     }
   }, [pagePreviewData]);
 
+  useEffect(() => {
+    // 如果文件树可见，则关闭展示台
+    if (isFileTreeVisible) {
+      setShowType(EditAgentShowType.Hide);
+    }
+  }, [isFileTreeVisible]);
+
   // 发布智能体
   const handleConfirmPublish = () => {
     setOpen(false);
@@ -418,13 +465,277 @@ const EditAgent: React.FC = () => {
     } as AgentConfigInfo;
     setAgentConfigInfo(_agentConfigInfo);
   };
-  const [agentStatistics, setAgentStatistics] = useState<
-    AnalyzeStatisticsItem[]
-  >([]);
-  // 打开分析弹窗
-  const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
-  // 打开创建临时会话弹窗
-  const [openTempChat, setOpenTempChat] = useState<boolean>(false);
+
+  // 获取开发会话ID
+  const devConversationId = agentConfigInfo?.devConversationId;
+
+  useEffect(() => {
+    if (!devConversationId) {
+      return;
+    }
+    // 订阅文件列表刷新事件
+    eventBus.on(EVENT_TYPE.RefreshFileList, () =>
+      handleRefreshFileList(devConversationId),
+    );
+
+    return () => {
+      // 组件卸载时取消订阅
+      eventBus.off(EVENT_TYPE.RefreshFileList, () =>
+        handleRefreshFileList(devConversationId),
+      );
+    };
+  }, [devConversationId]);
+
+  // 显示文件树
+  const handleFileTreeVisible = () => {
+    if (!devConversationId) {
+      messageAntd.warning('会话ID不存在，无法打开文件树');
+      return;
+    }
+
+    // 触发文件列表刷新事件
+    openPreviewView(devConversationId);
+  };
+
+  // 切换视图模式
+  const onViewModeChange = useCallback(
+    (mode: 'preview' | 'desktop') => {
+      if (!devConversationId) {
+        messageAntd.warning('会话ID不存在，无法切换视图模式');
+        return;
+      }
+
+      if (mode === 'desktop') {
+        openDesktopView(devConversationId);
+      } else {
+        openPreviewView(devConversationId);
+      }
+    },
+    [devConversationId, openPreviewView, openDesktopView],
+  );
+
+  // 新建文件（空内容）、文件夹
+  const handleCreateFileNode = async (
+    fileNode: FileNode,
+    newName: string,
+  ): Promise<boolean> => {
+    if (!devConversationId) {
+      messageAntd.error('会话ID不存在，无法新建文件');
+      return false;
+    }
+
+    const trimmedName = newName.trim();
+    if (!trimmedName) {
+      return false;
+    }
+
+    // 计算新文件的完整路径：父路径 + 新文件名
+    const parentPath = fileNode.parentPath || '';
+    const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
+
+    const newFile: VncDesktopUpdateFileInfo = {
+      name: newPath,
+      binary: false,
+      sizeExceeded: false,
+      contents: '',
+      renameFrom: '',
+      operation: 'create',
+      isDir: fileNode.type === 'folder',
+    };
+
+    const updatedFilesList: VncDesktopUpdateFileInfo[] = [newFile];
+
+    const newSkillInfo: IUpdateStaticFileParams = {
+      cId: devConversationId,
+      files: updatedFilesList,
+    };
+
+    const { code } = await apiUpdateStaticFile(newSkillInfo);
+    if (code === SUCCESS_CODE && devConversationId) {
+      handleRefreshFileList(devConversationId);
+    }
+
+    return code === SUCCESS_CODE;
+  };
+
+  // 删除文件
+  const handleDeleteFile = async (fileNode: FileNode) => {
+    modalConfirm('您确定要删除此文件吗?', fileNode.name, async () => {
+      if (!devConversationId) {
+        messageAntd.error('会话ID不存在，无法删除文件');
+        return;
+      }
+
+      // 找到要删除的文件
+      const currentFile = fileTreeData?.find(
+        (item: StaticFileInfo) => item.fileId === fileNode.id,
+      );
+      if (!currentFile) {
+        messageAntd.error('文件不存在，无法删除');
+        return;
+      }
+
+      // 更新文件操作
+      currentFile.operation = 'delete';
+      // 更新文件列表
+      const updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
+
+      // 更新技能信息
+      const newSkillInfo: IUpdateStaticFileParams = {
+        cId: devConversationId,
+        files: updatedFilesList,
+      };
+      const { code } = await apiUpdateStaticFile(newSkillInfo);
+      if (code === SUCCESS_CODE) {
+        handleRefreshFileList(devConversationId);
+      }
+      return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
+    });
+  };
+
+  // 确认重命名文件
+  const handleConfirmRenameFile = async (
+    fileNode: FileNode,
+    newName: string,
+  ) => {
+    if (!devConversationId) {
+      messageAntd.error('会话ID不存在，无法重命名文件');
+      return false;
+    }
+
+    // 更新原始文件列表中的文件名（用于提交更新）
+    const updatedFilesList = updateFilesListName(
+      fileTreeData || [],
+      fileNode,
+      newName,
+    );
+
+    // 更新技能信息，用于提交更新
+    const newSkillInfo: IUpdateStaticFileParams = {
+      cId: devConversationId,
+      files: updatedFilesList as VncDesktopUpdateFileInfo[],
+    };
+
+    // 使用文件全量更新逻辑
+    const { code } = await apiUpdateStaticFile(newSkillInfo);
+    if (code === SUCCESS_CODE) {
+      handleRefreshFileList(devConversationId);
+    }
+    return code === SUCCESS_CODE;
+  };
+
+  // 保存文件
+  const handleSaveFiles = async (
+    data: {
+      fileId: string;
+      fileContent: string;
+      originalFileContent: string;
+    }[],
+  ) => {
+    if (!devConversationId) {
+      messageAntd.error('会话ID不存在，无法保存文件');
+      return false;
+    }
+
+    // 更新文件列表(只更新修改过的文件)
+    const updatedFilesList = updateFilesListContent(
+      fileTreeData || [],
+      data,
+      'modify',
+    );
+
+    // 更新技能信息，用于提交更新
+    const newSkillInfo: IUpdateStaticFileParams = {
+      cId: devConversationId,
+      files: updatedFilesList as VncDesktopUpdateFileInfo[],
+    };
+
+    // 使用文件全量更新逻辑
+    const { code } = await apiUpdateStaticFile(newSkillInfo);
+    return code === SUCCESS_CODE;
+  };
+
+  /**
+   * 处理上传多个文件回调
+   */
+  const handleUploadMultipleFiles = async (node: FileNode | null) => {
+    if (!devConversationId) {
+      messageAntd.error('会话ID不存在，无法上传文件');
+      return;
+    }
+    // 两种情况 第一个是文件夹，第二个是文件
+    let relativePath = '';
+
+    if (node) {
+      if (node.type === 'file') {
+        relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
+      } else {
+        relativePath = node.path + '/';
+      }
+    }
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) {
+        document.body.removeChild(input);
+        return;
+      }
+
+      try {
+        // 获取上传的文件列表
+        const files = Array.from((e.target as HTMLInputElement).files || []);
+        // 获取上传的文件路径列表
+        const filePaths = files.map((file) => relativePath + file.name);
+        // 直接调用上传接口，使用文件名作为路径
+        const { code } = await apiUploadFiles({
+          files,
+          cId: devConversationId,
+          filePaths,
+        });
+        if (code === SUCCESS_CODE && devConversationId) {
+          // 上传成功后，重新查询文件树列表
+          handleRefreshFileList(devConversationId);
+        }
+      } catch (error) {
+        console.error('上传失败', error);
+      } finally {
+        document.body.removeChild(input);
+      }
+    };
+
+    input.oncancel = () => {
+      document.body.removeChild(input);
+    };
+
+    input.click();
+  };
+
+  // 导出项目
+  const handleExportProject = async () => {
+    // 检查项目ID是否有效
+    if (!devConversationId) {
+      messageAntd.error('开发会话ID不存在或无效，无法导出');
+      return;
+    }
+
+    try {
+      const result = await apiDownloadAllFiles(devConversationId);
+      const filename = `agent-${agentId}-${devConversationId}.zip`;
+      // 导出整个项目压缩包
+      exportWholeProjectZip(result, filename);
+    } catch (error) {
+      console.error('导出项目失败:', error);
+      messageAntd.error('导出项目失败，请重试');
+    }
+  };
 
   // 设置统计信息
   const handleSetStatistics = (agentInfo: AgentConfigInfo) => {
@@ -517,10 +828,14 @@ const EditAgent: React.FC = () => {
         onToggleShowStand={() => {
           hidePagePreview();
           setShowType(EditAgentShowType.Show_Stand);
+          // 关闭文件树
+          setIsFileTreeVisible(false);
         }}
         onToggleVersionHistory={() => {
           hidePagePreview();
           setShowType(EditAgentShowType.Version_History);
+          // 关闭文件树
+          setIsFileTreeVisible(false);
         }}
         // 点击编辑智能体按钮，打开弹窗
         onEditAgent={() => setOpenEditAgent(true)}
@@ -582,6 +897,7 @@ const EditAgent: React.FC = () => {
 
         {(!agentConfigInfo?.hideChatArea || pagePreviewData) && (
           <div
+            className={cx(isFileTreeVisible && 'flex-1')}
             style={{
               flex: pagePreviewData ? '9 1' : '4 1',
               minWidth: pagePreviewData ? '1050px' : '350px',
@@ -598,9 +914,13 @@ const EditAgent: React.FC = () => {
                     onPressDebug={() => {
                       hidePagePreview();
                       setShowType(EditAgentShowType.Debug_Details);
+                      // 关闭文件树
+                      setIsFileTreeVisible(false);
                     }}
                     onAgentConfigInfo={setAgentConfigInfo}
                     onOpenPreview={handleOpenPreview}
+                    onToggleFileTree={handleFileTreeVisible}
+                    isFileTreeVisible={isFileTreeVisible}
                   />
                 )
               }
@@ -616,6 +936,44 @@ const EditAgent: React.FC = () => {
                 )
               }
             />
+          </div>
+        )}
+
+        {/*文件树侧边栏 - 只在文件树可见时显示 */}
+        {isFileTreeVisible && devConversationId && (
+          <div
+            className={cx(
+              styles['file-tree-sidebar'],
+              styles['flex-2'],
+              'flex',
+              'flex-col',
+            )}
+          >
+            <div className={cx(styles['file-tree-content'], 'flex')}>
+              <FileTreeView
+                headerClassName={styles['file-tree-header']}
+                originalFiles={fileTreeData}
+                targetId={devConversationId.toString()}
+                viewMode={viewMode}
+                readOnly={false}
+                // 切换视图、远程桌面模式
+                onViewModeChange={onViewModeChange}
+                // 导出项目
+                onExportProject={handleExportProject}
+                // 上传文件
+                onUploadFiles={handleUploadMultipleFiles}
+                // 重命名文件
+                onRenameFile={handleConfirmRenameFile}
+                // 新建文件、文件夹
+                onCreateFileNode={handleCreateFileNode}
+                // 删除文件
+                onDeleteFile={handleDeleteFile}
+                // 保存文件
+                onSaveFiles={handleSaveFiles}
+                // 重启容器
+                onRestartServer={() => restartVncPod(devConversationId)}
+              />
+            </div>
           </div>
         )}
 

@@ -12,12 +12,16 @@ interface PreviewAndDebugHeaderProps {
   isShowPreview?: boolean;
   onShowPreview?: () => void;
   onPressDebug: () => void;
+  onToggleFileTree?: () => void;
+  isFileTreeVisible?: boolean;
 }
 
 const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
   onPressDebug,
   onShowPreview,
   isShowPreview,
+  onToggleFileTree,
+  isFileTreeVisible,
 }) => {
   const { showType } = useModel('conversationInfo');
 
@@ -57,6 +61,18 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
               <SvgIcon name="icons-nav-ecosystem" style={{ fontSize: 16 }} />
             }
             onClick={() => onShowPreview?.()}
+          />
+        )}
+
+        {/*文件树切换按钮*/}
+        {onToggleFileTree && !isFileTreeVisible && (
+          <Button
+            type="text"
+            className={cx(styles.debug)}
+            icon={
+              <SvgIcon name="icons-nav-components" style={{ fontSize: 16 }} />
+            }
+            onClick={onToggleFileTree}
           />
         )}
       </div>
