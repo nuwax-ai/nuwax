@@ -6,6 +6,7 @@ import { apiPublishOffShelf } from '@/services/publish';
 import {
   apiPublishedAgentList,
   apiPublishedPluginList,
+  apiPublishedSkillList,
   apiPublishedTemplateList,
   apiPublishedWorkflowList,
 } from '@/services/square';
@@ -118,6 +119,9 @@ const SpaceSection: React.FC = () => {
     commonConfig,
   );
 
+  // 广场-已发布技能列表接口
+  const { run: runSkillList } = useRequest(apiPublishedSkillList, commonConfig);
+
   // 查询列表
   const handleQuery = (
     targetType: SquareAgentTypeEnum,
@@ -146,10 +150,13 @@ const SpaceSection: React.FC = () => {
       case SquareAgentTypeEnum.Template:
         runTemplateList(params);
         break;
+      case SquareAgentTypeEnum.Skill:
+        runSkillList(params);
+        break;
     }
   };
 
-  // 智能体、插件、工作流下架
+  // 智能体、插件、工作流、技能下架
   const { run: runOffShelf } = useRequest(apiPublishOffShelf, {
     manual: true,
     debounceInterval: 300,
@@ -254,8 +261,22 @@ const SpaceSection: React.FC = () => {
           />
         );
       } else {
-        const componentTypeName =
-          type === SquareAgentTypeEnum.Plugin ? '插件' : '工作流';
+        // 枚举组件类型名称
+        let componentTypeName = '';
+        switch (type) {
+          case SquareAgentTypeEnum.Plugin:
+            componentTypeName = '插件';
+            break;
+          case SquareAgentTypeEnum.Workflow:
+            componentTypeName = '工作流';
+            break;
+          case SquareAgentTypeEnum.Skill:
+            componentTypeName = '技能';
+            break;
+          default:
+            componentTypeName = '';
+            break;
+        }
         return (
           <SquareComponentInfo
             key={index}
