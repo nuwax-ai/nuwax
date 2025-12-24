@@ -298,4 +298,8 @@ export const SPACE_SQUARE_TABS: TabsProps['items'] = [
     key: SquareAgentTypeEnum.Template,
     label: '模板',
   },
+  {
+    key: SquareAgentTypeEnum.Skill,
+    label: '技能',
+  },
 ];
