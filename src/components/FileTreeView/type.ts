@@ -43,4 +43,9 @@ export interface FileTreeViewProps {
   onImportProject?: () => void;
   /** 重启容器回调 */
   onRestartServer?: () => void;
+  // 是否显示更多操作菜单
+  showMoreActions?: boolean;
+  /** 是否显示全屏预览，由父组件控制 */
+  isFullscreenPreview?: boolean;
+  onFullscreenPreview?: (isFullscreen: boolean) => void;
 }

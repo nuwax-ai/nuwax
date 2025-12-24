@@ -1,11 +1,14 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
+import { USER_INFO } from '@/constants/home.constants';
 import { formatFileSize } from '@/utils/appDevUtils';
-import { DesktopOutlined } from '@ant-design/icons';
+import { DesktopOutlined, FullscreenExitOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
+import pcIcon from './pc.svg';
 
 const cx = classNames.bind(styles);
 
@@ -39,6 +42,8 @@ interface FilePathHeaderProps {
   isSavingFiles?: boolean;
   /** 是否正在下载文件 */
   isDownloading?: boolean;
+  /** 是否显示更多操作菜单 */
+  showMoreActions?: boolean;
 }
 
 /**
@@ -55,12 +60,13 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onImportProject,
   onExportProject,
   onFullscreen,
-  // isFullscreen = false,
+  isFullscreen = false,
   onSaveFiles,
   onCancelSaveFiles,
   hasModifiedFiles = false,
   isSavingFiles = false,
   // isDownloading = false,
+  showMoreActions = true,
 }) => {
   // 格式化的文件大小
   const formattedSize = useMemo(() => {
@@ -68,16 +74,27 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     return formatFileSize(fileSize);
   }, [fileSize]);
 
+  // 获取用户信息
+  const _userInfo = localStorage.getItem(USER_INFO);
+  const userInfo = _userInfo ? JSON.parse(_userInfo) : null;
+
   return (
     <div className={cx(styles.filePathHeader, className)}>
       {/* 左侧：文件信息 */}
       <div className={styles.fileInfo}>
-        {viewMode === 'preview' && (
+        {viewMode === 'preview' ? (
           <div className={styles.fileDetails}>
             <div className={styles.fileName}>{fileName}</div>
             {formattedSize && (
               <div className={styles.fileMeta}>{formattedSize}</div>
             )}
+          </div>
+        ) : (
+          <div className={styles['pc-box']}>
+            <img src={pcIcon} alt="" />
+            <div className={styles.fileName}>
+              {userInfo?.nickName || userInfo?.userName || '远程'}的电脑
+            </div>
           </div>
         )}
       </div>
@@ -126,12 +143,24 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       )}
 
       {/* 更多操作菜单 */}
-      <MoreActionsMenu
-        onImportProject={onImportProject}
-        onRestartServer={onRestartServer}
-        onFullscreenPreview={onFullscreen}
-        onExportProject={onExportProject}
-      />
+      {showMoreActions && (
+        <MoreActionsMenu
+          onImportProject={onImportProject}
+          onRestartServer={onRestartServer}
+          onFullscreenPreview={onFullscreen}
+          onExportProject={onExportProject}
+        />
+      )}
+
+      {isFullscreen && (
+        <div className={styles.fullscreenButton}>
+          <TooltipIcon
+            title="退出全屏"
+            icon={<FullscreenExitOutlined />}
+            onClick={onFullscreen}
+          />
+        </div>
+      )}
 
       {/* 右侧：操作按钮 */}
       {/* <div className={styles.actionButtons}>
