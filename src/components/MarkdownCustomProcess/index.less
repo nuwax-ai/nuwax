@@ -142,6 +142,39 @@
       }
     }
   }
+
+  // Plan 类型展开内容样式
+  .plan-details {
+    padding: 0 16px 12px;
+    border-top: 1px solid rgba(0, 0, 0, 6%);
+
+    .plan-task-list {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 8px;
+
+      .plan-task-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        font-size: 13px;
+        min-height: 24px;
+
+        .task-icon {
+          font-size: 14px;
+          color: #8c8c8c;
+          flex-shrink: 0;
+        }
+
+        .plan-task-text {
+          flex: 1;
+          color: #262626;
+          line-height: 1.5;
+        }
+      }
+    }
+  }
 }
 
 @keyframes spin {
