@@ -558,8 +558,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
 
       // 预览模式：根据文件状态和类型渲染不同内容
-      // 未选择文件
-      if (!selectedFileNode) {
+      // 未选择文件或新建文件时
+      if (!selectedFileNode || selectedFileNode?.id?.includes('__new__')) {
         return (
           <AppDevEmptyState
             type="empty"
@@ -623,7 +623,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <AppDevEmptyState
             type="error"
             title="无法预览此文件类型"
-            description={`当前不支持预览 ${fileExtension} 格式的文件。`}
+            description={`当前不支持预览【${fileExtension}】格式的文件。`}
           />
         );
       }
