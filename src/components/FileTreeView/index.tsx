@@ -3,8 +3,11 @@ import { fetchContentFromUrl } from '@/services/skill';
 import { FileNode } from '@/types/interfaces/appDev';
 import {
   findFileNode,
+  isAudioFile,
+  isDocumentFile,
   isImageFile,
   isPreviewableFile,
+  isVideoFile,
   processImageContent,
   transformFlatListToTree,
 } from '@/utils/appDevUtils';
@@ -23,7 +26,7 @@ import React, {
   useState,
 } from 'react';
 import AppDevEmptyState from '../business-component/AppDevEmptyState';
-import FilePreview from '../business-component/FilePreview';
+import FilePreview, { FileType } from '../business-component/FilePreview';
 import VncPreview from '../business-component/VncPreview';
 import CodeViewer from '../CodeViewer';
 import FileContextMenu from './FileContextMenu';
@@ -437,6 +440,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     // 判断文件是否为图片类型
     const isImage = isImageFile(selectedFileNode?.name || '');
+    // 判断文件是否为视频类型
+    const isVideo = isVideoFile(selectedFileNode?.name || '');
+    // 判断文件是否为音频类型
+    const isAudio = isAudioFile(selectedFileNode?.name || '');
+    // 判断文件是否为文档类型
+    const result = isDocumentFile(selectedFileNode?.name || '');
+    const isDocument = result?.isDoc || false;
+    const documentFileType = result?.fileType;
     // 判断文件是否支持预览（白名单方案）
     const isPreviewable = isPreviewableFile(selectedFileNode?.name || '');
 
@@ -529,15 +540,27 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         );
       }
 
-      // 文件类型不支持预览
-      if (!isPreviewable) {
-        const fileExtension =
-          selectedFileId?.split('.')?.pop() || selectedFileId;
+      // 获取文件代理URL
+      const fileProxyUrl = selectedFileNode?.fileProxyUrl
+        ? `${process.env.BASE_URL}${selectedFileNode?.fileProxyUrl}`
+        : '';
+
+      // 视频文件：使用FilePreview组件
+      if (isVideo && fileProxyUrl) {
+        return <FilePreview src={fileProxyUrl} fileType="video" />;
+      }
+
+      // 音频文件：使用FilePreview组件
+      if (isAudio && fileProxyUrl) {
+        return <FilePreview src={fileProxyUrl} fileType="audio" />;
+      }
+
+      // 文档文件：使用FilePreview组件
+      if (isDocument && fileProxyUrl) {
         return (
-          <AppDevEmptyState
-            type="error"
-            title="无法预览此文件类型"
-            description={`当前不支持预览 ${fileExtension} 格式的文件。`}
+          <FilePreview
+            src={fileProxyUrl}
+            fileType={documentFileType as FileType}
           />
         );
       }
@@ -545,11 +568,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 图片文件：使用图片查看器
       if (isImage) {
         // 如果文件代理URL存在，使用FilePreview组件
-        if (selectedFileNode?.fileProxyUrl) {
-          const imageUrl = `${process.env.BASE_URL}${
-            selectedFileNode?.fileProxyUrl || ''
-          }`;
-          return <FilePreview src={imageUrl} fileType="image" />;
+        if (fileProxyUrl) {
+          return <FilePreview src={fileProxyUrl} fileType="image" />;
         }
 
         return (
@@ -562,6 +582,19 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               //   previewRef.current.refresh();
               // }
             }}
+          />
+        );
+      }
+
+      // 文件类型不支持预览
+      if (!isPreviewable) {
+        const fileExtension =
+          selectedFileId?.split('.')?.pop() || selectedFileId;
+        return (
+          <AppDevEmptyState
+            type="error"
+            title="无法预览此文件类型"
+            description={`当前不支持预览 ${fileExtension} 格式的文件。`}
           />
         );
       }
