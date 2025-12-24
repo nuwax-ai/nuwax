@@ -397,6 +397,18 @@ const SkillDetails: React.FC = () => {
 
     // 使用文件全量更新逻辑
     const { code } = await apiSkillUpdate(newSkillInfo);
+    if (code === SUCCESS_CODE && skillId) {
+      // 已发布的技能，修改时需要更新修改时间
+      if (
+        skillInfo &&
+        skillInfo.publishStatus === PublishStatusEnum.Published
+      ) {
+        setSkillInfo({
+          ...skillInfo,
+          modified: dayjs().toString(),
+        } as SkillDetailInfo);
+      }
+    }
     return code === SUCCESS_CODE;
   };
 
