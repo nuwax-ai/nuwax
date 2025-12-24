@@ -779,28 +779,58 @@ export const useNodeOperations = ({
   );
 
   /**
-   * 复制节点
+   * 复制节点 - 调用后端 API（与 V1 保持一致）
    */
   const copyNode = useCallback(
     async (child: ChildNode, offset?: { x: number; y: number }) => {
-      const res = workflowProxy.copyNode(Number(child.id), offset);
-      if (res.success && res.newNode) {
-        const newNode = res.newNode;
+      try {
+        // 调用后端 copy 接口
+        const _res = await service.apiCopyNode(child.id.toString());
+        if (_res.code === Constant.success && _res.data) {
+          const { nodeConfig, ...rest } = _res.data;
+          const resExtension = nodeConfig?.extension || {};
+          const { toolName, mcpId } = child.nodeConfig || {};
 
-        if (!newNode.shape) {
-          newNode.shape = getShape(newNode.type);
+          // 计算偏移位置
+          const offsetX = offset?.x ?? 32;
+          const offsetY = offset?.y ?? 32;
+
+          const newNode: ChildNode = {
+            ...rest,
+            shape: getShape(_res.data.type),
+            nodeConfig: {
+              ...nodeConfig,
+              ...(toolName ? { toolName, mcpId } : {}),
+              extension: {
+                ...resExtension,
+                x: (resExtension.x || 0) + offsetX,
+                y: (resExtension.y || 0) + offsetY,
+              },
+            },
+          } as ChildNode;
+
+          // 添加到代理层
+          const proxyResult = workflowProxy.addNode(newNode);
+          if (proxyResult.success) {
+            // 添加节点到画布
+            graphRef.current?.graphAddNode(
+              newNode.nodeConfig.extension as GraphRect,
+              newNode,
+            );
+
+            // 选中新增的节点
+            graphRef.current?.graphSelectNode(String(newNode.id));
+            changeUpdateTime();
+            debouncedSaveFullWorkflow();
+          } else {
+            console.warn('[V3] 复制节点代理层添加失败:', proxyResult.message);
+          }
+        } else {
+          message.error(_res.message || '复制失败');
         }
-
-        graphRef.current?.graphAddNode(
-          newNode.nodeConfig.extension as GraphRect,
-          newNode,
-        );
-
-        graphRef.current?.graphSelectNode(String(newNode.id));
-        changeUpdateTime();
-        debouncedSaveFullWorkflow();
-      } else {
-        message.error(res.message || '复制失败');
+      } catch (error) {
+        console.error('[V3] 复制节点 API 异常:', error);
+        message.error('网络异常，复制节点失败');
       }
     },
     [graphRef, changeUpdateTime, debouncedSaveFullWorkflow],

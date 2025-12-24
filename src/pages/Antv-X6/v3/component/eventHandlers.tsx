@@ -50,6 +50,9 @@ const bindEventHandlers = ({
           nodeData.type === NodeTypeEnum.End
         ) {
           message.warning('该节点类型不支持复制');
+          // 清除之前保存的节点数据，防止粘贴出错误的节点
+          copiedNodeData = null;
+          pasteCount = 0;
           return false;
         }
         // 存储复制的节点数据
