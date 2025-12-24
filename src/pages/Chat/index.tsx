@@ -690,10 +690,7 @@ const Chat: React.FC = () => {
       messageAntd.success('导出成功！');
     } catch (error) {
       // 改进错误处理，兼容不同的错误格式
-      const errorMessage =
-        (error as any)?.message ||
-        (error as any)?.toString() ||
-        '导出过程中发生未知错误';
+      const errorMessage = (error as any)?.message || '导出过程中发生未知错误';
 
       messageAntd.error(`导出失败: ${errorMessage}`);
     }
