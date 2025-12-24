@@ -38,13 +38,20 @@ export const useWorkflowPersistence = ({
       }
 
       // 使用新保存服务从画布构建数据（单一数据源）
-      const payload = workflowSaveService.buildPayload(graph);
-      if (!payload) {
-        console.error('[V3] 构建保存数据失败');
-        return false;
-      }
+      let payload = workflowSaveService.buildPayload(graph);
 
-      console.log('[V3] 使用单一数据源保存, 节点数:', payload.nodes.length);
+      // 如果画布数据无效（页面离开时画布已清除），回退到使用 workflowProxy 的数据
+      if (!payload) {
+        console.warn('[V3] 画布数据无效，尝试使用 workflowProxy 数据');
+        payload = workflowProxy.buildFullConfig();
+        if (!payload) {
+          console.error('[V3] 构建保存数据失败，无可用数据源');
+          return false;
+        }
+        console.log('[V3] 使用 workflowProxy 数据保存');
+      } else {
+        console.log('[V3] 使用单一数据源保存, 节点数:', payload.nodes.length);
+      }
 
       // 标记保存中状态
       setSaveStatus(SaveStatusEnum.Saving);

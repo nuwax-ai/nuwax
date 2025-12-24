@@ -151,6 +151,16 @@ class WorkflowSaveService {
     // 1. 从画布提取原始节点数据
     const rawNodes = this.extractNodes(graph);
 
+    // 验证：确保画布有节点且包含开始节点（防止页面离开时画布已清除）
+    if (rawNodes.length === 0 || !rawNodes.some((n) => n.type === 'Start')) {
+      console.warn(
+        '[SaveService] 画布无有效节点，尝试使用 workflowProxy 数据保存',
+      );
+      // 动态导入 workflowProxy 避免循环依赖
+      // 返回 null 让调用方使用 workflowProxy.buildFullConfig()
+      return null;
+    }
+
     // 2. 从画布提取边数据
     const edges = this.extractEdges(graph);
 
