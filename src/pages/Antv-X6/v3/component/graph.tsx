@@ -20,6 +20,16 @@ import {
   showExceptionPort,
   validateConnect,
 } from '../utils/graphV3';
+
+// 初始化标志：当为true时，所有历史记录操作将被忽略
+// 用于在工作流加载时阻止初始化操作被记录到历史栈
+let isInitializing = true;
+
+// 导出控制初始化标志的函数
+export const setGraphInitializing = (value: boolean) => {
+  isInitializing = value;
+  console.log('[Graph] setGraphInitializing:', value);
+};
 // 自定义类型定义
 import PlusIcon from '@/assets/svg/plus_icon.svg';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
@@ -437,9 +447,13 @@ const initGraph = ({
     .use(new Clipboard()) // 启用剪贴板插件，支持复制和粘贴
     .use(
       new History({
-        enabled: true,
+        enabled: true, // 启用历史记录，但通过 beforeAddCommand 中的 isInitializing 标志控制
         // 过滤不需要记录的操作，避免历史记录过多
         beforeAddCommand: (_event, args: any) => {
+          // 初始化阶段忽略所有历史记录
+          if (isInitializing) {
+            return false;
+          }
           // 忽略端口属性变化（hover 效果）
           if (args.key === 'ports' || args.key === 'ports/items') {
             return false;
