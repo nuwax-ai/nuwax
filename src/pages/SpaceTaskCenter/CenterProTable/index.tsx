@@ -389,9 +389,10 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         {
           title: '任务名称',
           dataIndex: 'taskName',
+          width: 200,
           ellipsis: true,
           fieldProps: {
-            placeholder: '请输入任务名称（模糊搜索）',
+            placeholder: '请输入任务名称',
             allowClear: true,
           },
         },
