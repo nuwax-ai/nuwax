@@ -167,7 +167,7 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
   },
   {
     type: SpaceApplicationListEnum.Skill_Manage,
-    icon: <SvgIcon name="icons-nav-doc" />,
+    icon: <SvgIcon name="icons-nav-skill" />,
     text: '技能管理',
   },
   {
@@ -177,7 +177,7 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
   },
   {
     type: SpaceApplicationListEnum.Task_Center,
-    icon: <SvgIcon name="icons-chat-share" />,
+    icon: <SvgIcon name="icons-nav-task" />,
     text: '任务中心',
   },
   {
