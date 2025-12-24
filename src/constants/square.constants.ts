@@ -18,4 +18,8 @@ export const SQUARE_TEMPLATE_SEGMENTED_LIST = [
     value: SquareTemplateTargetTypeEnum.Page,
     label: '应用页面',
   },
+  {
+    value: SquareTemplateTargetTypeEnum.Skill,
+    label: '技能',
+  },
 ];

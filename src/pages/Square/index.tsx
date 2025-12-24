@@ -219,6 +219,9 @@ const Square: React.FC = () => {
       case SquareTemplateTargetTypeEnum.Page:
         handleQuery(1, value, AgentComponentTypeEnum.Agent, 'PageApp');
         break;
+      case SquareTemplateTargetTypeEnum.Skill:
+        handleQuery(1, value, AgentComponentTypeEnum.Skill);
+        break;
     }
   };
 
@@ -349,6 +352,24 @@ const Square: React.FC = () => {
                       />
                     );
                   }
+                } else if (
+                  categoryTypeRef.current === SquareAgentTypeEnum.Skill
+                ) {
+                  return (
+                    <PageCard
+                      key={index}
+                      coverImg={item.coverImg}
+                      name={item.name}
+                      avatar={item.publishUser?.avatar}
+                      userName={
+                        item.publishUser?.nickName || item.publishUser?.userName
+                      }
+                      created={item.created}
+                      onClick={() =>
+                        handleClick(item.targetId, item.targetType, item)
+                      }
+                    />
+                  );
                 } else {
                   return (
                     <SquareComponentInfo

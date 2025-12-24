@@ -295,11 +295,11 @@ export const SPACE_SQUARE_TABS: TabsProps['items'] = [
     label: '工作流',
   },
   {
-    key: SquareAgentTypeEnum.Template,
-    label: '模板',
-  },
-  {
     key: SquareAgentTypeEnum.Skill,
     label: '技能',
+  },
+  {
+    key: SquareAgentTypeEnum.Template,
+    label: '模板',
   },
 ];
