@@ -170,6 +170,9 @@ export default () => {
   const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
   // 文件树视图模式
   const [viewMode, setViewMode] = useState<'preview' | 'desktop'>('preview');
+  // 使用 ref 跟踪当前视图模式和文件树可见状态，用于避免不必要的刷新
+  const viewModeRef = useRef<'preview' | 'desktop'>('preview');
+  const isFileTreeVisibleRef = useRef<boolean>(false);
   // 远程桌面保活定时器
   const vncKeepaliveRef = useRef<NodeJS.Timeout | null>(null);
   // 远程桌面容器信息
@@ -218,6 +221,15 @@ export default () => {
     }
   }, []);
 
+  // 打开预览视图或远程桌面视图时修改状态值
+  const openPreviewChangeState = useCallback((mode: 'preview' | 'desktop') => {
+    setViewMode(mode);
+    setIsFileTreeVisible(true);
+    // 更新 ref 值
+    viewModeRef.current = mode;
+    isFileTreeVisibleRef.current = true;
+  }, []);
+
   // 打开远程桌面视图
   const openDesktopView = useCallback(async (cId: number) => {
     // 停止保活
@@ -225,8 +237,8 @@ export default () => {
       clearInterval(vncKeepaliveRef.current);
       vncKeepaliveRef.current = null;
     }
-    setViewMode('desktop');
-    setIsFileTreeVisible(true);
+    // 打开预览视图或远程桌面视图时修改状态值
+    openPreviewChangeState('desktop');
     try {
       // 启动容器
       const { code, data } = await apiEnsurePod(cId);
@@ -243,6 +255,12 @@ export default () => {
     }
   }, []);
 
+  // 关闭预览视图
+  const closePreviewView = useCallback(() => {
+    setIsFileTreeVisible(false);
+    isFileTreeVisibleRef.current = false;
+  }, []);
+
   // 打开预览视图
   const openPreviewView = useCallback(async (cId: number) => {
     // 停止保活
@@ -250,10 +268,18 @@ export default () => {
       clearInterval(vncKeepaliveRef.current);
       vncKeepaliveRef.current = null;
     }
-    setViewMode('preview');
-    setIsFileTreeVisible(true);
-    // 触发文件列表刷新事件
-    eventBus.emit(EVENT_TYPE.RefreshFileList, cId);
+
+    // 检查是否需要刷新文件列表
+    // 只有在模式发生变化（从 desktop 切换到 preview）或首次打开文件树时才刷新
+    const needRefresh =
+      viewModeRef.current !== 'preview' || !isFileTreeVisibleRef.current;
+
+    // 打开预览视图或远程桌面视图时修改状态值
+    openPreviewChangeState('preview');
+    // 只在需要时触发文件列表刷新事件
+    if (needRefresh) {
+      eventBus.emit(EVENT_TYPE.RefreshFileList, cId);
+    }
   }, []);
 
   // 滚动到底部
@@ -873,6 +899,9 @@ export default () => {
     setIsFileTreeVisible(false);
     setFileTreeData([]);
     setViewMode('preview');
+    // 更新 ref 值
+    isFileTreeVisibleRef.current = false;
+    viewModeRef.current = 'preview';
     // 设置远程桌面容器信息为空
     setVncContainerInfo(null);
     // 停止保活
@@ -981,6 +1010,8 @@ export default () => {
     setShowType(EditAgentShowType.Debug_Details);
     // 关闭文件树
     setIsFileTreeVisible(false);
+    // 更新 ref 值
+    isFileTreeVisibleRef.current = false;
   }, []);
 
   const getCurrentConversationRequestId = useCallback(() => {
@@ -1039,7 +1070,7 @@ export default () => {
     setConversationInfo,
     // 文件树显隐状态
     isFileTreeVisible,
-    setIsFileTreeVisible,
+    closePreviewView,
     // 文件树数据
     fileTreeData,
     setFileTreeData,

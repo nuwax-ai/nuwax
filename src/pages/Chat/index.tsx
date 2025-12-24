@@ -141,7 +141,7 @@ const Chat: React.FC = () => {
     setShowType,
     // 文件树显隐状态
     isFileTreeVisible,
-    setIsFileTreeVisible,
+    closePreviewView,
     // 文件树数据
     fileTreeData,
     // 文件树视图模式
@@ -742,7 +742,7 @@ const Chat: React.FC = () => {
                   onClick={() => {
                     hidePagePreview();
                     // 先关闭文件树
-                    setIsFileTreeVisible(false);
+                    closePreviewView();
                     // 然后打开 AgentSidebar
                     // 使用 setTimeout 确保状态更新完成后再打开，避免状态冲突
                     setTimeout(() => {
@@ -767,7 +767,7 @@ const Chat: React.FC = () => {
                     }
                     onClick={() => {
                       sidebarRef.current?.close();
-                      setIsFileTreeVisible(false); // 关闭文件树
+                      closePreviewView(); // 关闭文件树
                       handleOpenPreview(agentDetail);
                     }}
                   />

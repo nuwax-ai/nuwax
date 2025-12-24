@@ -103,7 +103,7 @@ const EditAgent: React.FC = () => {
     runQueryConversation,
     // 文件树显隐状态
     isFileTreeVisible,
-    setIsFileTreeVisible,
+    closePreviewView,
     // 文件树数据
     fileTreeData,
     // 文件树视图模式
@@ -821,22 +821,26 @@ const EditAgent: React.FC = () => {
     handleOpenPreview();
   }, [agentConfigInfo?.expandPageArea, agentConfigInfo?.pageHomeIndex]);
 
+  /**
+   * 关闭预览
+   */
+  const handleClosePreview = (type: EditAgentShowType) => {
+    hidePagePreview();
+    setShowType(type);
+    // 关闭文件树
+    closePreviewView();
+  };
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
         agentConfigInfo={agentConfigInfo}
-        onToggleShowStand={() => {
-          hidePagePreview();
-          setShowType(EditAgentShowType.Show_Stand);
-          // 关闭文件树
-          setIsFileTreeVisible(false);
-        }}
-        onToggleVersionHistory={() => {
-          hidePagePreview();
-          setShowType(EditAgentShowType.Version_History);
-          // 关闭文件树
-          setIsFileTreeVisible(false);
-        }}
+        onToggleShowStand={() =>
+          handleClosePreview(EditAgentShowType.Show_Stand)
+        }
+        onToggleVersionHistory={() =>
+          handleClosePreview(EditAgentShowType.Version_History)
+        }
         // 点击编辑智能体按钮，打开弹窗
         onEditAgent={() => setOpenEditAgent(true)}
         // 点击发布按钮，打开发布智能体弹窗
@@ -911,12 +915,9 @@ const EditAgent: React.FC = () => {
                   <PreviewAndDebug
                     agentConfigInfo={agentConfigInfo}
                     agentId={agentId}
-                    onPressDebug={() => {
-                      hidePagePreview();
-                      setShowType(EditAgentShowType.Debug_Details);
-                      // 关闭文件树
-                      setIsFileTreeVisible(false);
-                    }}
+                    onPressDebug={() =>
+                      handleClosePreview(EditAgentShowType.Debug_Details)
+                    }
                     onAgentConfigInfo={setAgentConfigInfo}
                     onOpenPreview={handleOpenPreview}
                     onToggleFileTree={handleFileTreeVisible}
