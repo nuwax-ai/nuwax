@@ -16,6 +16,8 @@ export interface FileTreeViewRef {
 }
 
 export interface FileTreeViewProps {
+  // 文件树头部样式
+  headerClassName?: string;
   originalFiles: any[];
   /** 是否只读 */
   readOnly?: boolean;

@@ -16,10 +16,11 @@ export default () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: async (result: TenantConfigInfo) => {
+      if (!result) return;
       setLoadEnd(true);
       setTenantConfigInfo(result);
       localStorage.setItem(TENANT_CONFIG_INFO, JSON.stringify(result));
-      localStorage.setItem('AUTH_TYPE', result.authType.toString());
+      localStorage.setItem('AUTH_TYPE', result?.authType?.toString());
 
       // 设置页面标题和图标
       const { siteName, siteDescription, faviconUrl } = result;
