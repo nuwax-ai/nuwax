@@ -36,6 +36,8 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
   const editorCreatedRef = useRef(false);
   const createEditorRef = useRef<() => Promise<void>>();
   const updateEditorContentRef = useRef<() => Promise<void>>();
+  // 标记是否正在程序更新内容（用于避免程序更新时触发 onContentChange）
+  const isUpdatingContentRef = useRef(false);
 
   /**
    * 动态加载语言支持
@@ -380,6 +382,10 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       // 监听内容变化（只在非只读模式下）
       if (!readOnly) {
         editor.onDidChangeModelContent(() => {
+          // 如果是程序更新内容，不触发 onContentChange
+          if (isUpdatingContentRef.current) {
+            return;
+          }
           if (currentFile && onContentChange && !isDisposingRef.current) {
             const value = editor.getValue();
             onContentChange(currentFile.id, value);
@@ -444,11 +450,22 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           const newValue = currentFile.content || '';
 
           if (currentValue !== newValue) {
-            model.setValue(newValue);
+            // 标记正在程序更新内容，避免触发 onContentChange
+            isUpdatingContentRef.current = true;
+            try {
+              model.setValue(newValue);
+            } finally {
+              // 使用 setTimeout 确保 setValue 操作完成后再重置标记
+              // Monaco Editor 的 setValue 是同步的，但事件处理可能是异步的
+              setTimeout(() => {
+                isUpdatingContentRef.current = false;
+              }, 0);
+            }
           }
         }
       } catch (error) {
         // 内容更新错误（可忽略）
+        isUpdatingContentRef.current = false;
       }
       return;
     }
@@ -470,10 +487,20 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
           // 更新语言
           try {
             monaco.editor.setModelLanguage(model, language);
-            // 更新内容
-            model.setValue(newValue);
+            // 标记正在程序更新内容，避免触发 onContentChange
+            isUpdatingContentRef.current = true;
+            try {
+              // 更新内容
+              model.setValue(newValue);
+            } finally {
+              // 使用 setTimeout 确保 setValue 操作完成后再重置标记
+              setTimeout(() => {
+                isUpdatingContentRef.current = false;
+              }, 0);
+            }
           } catch (modelError) {
             // Monaco Editor 模型更新错误（可忽略）
+            isUpdatingContentRef.current = false;
           }
         }
       } else if (editor) {
