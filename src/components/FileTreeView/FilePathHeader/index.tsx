@@ -108,32 +108,34 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                 <div className={styles.fileMeta}>{formattedSize}</div>
               )}
             </div>
-            {(fileName?.includes('.htm') || fileName?.includes('.md')) && (
-              <Segmented
-                value={viewFileType}
-                onChange={onViewFileTypeChange}
-                options={[
-                  {
-                    label: (
-                      <Tooltip title="预览">
-                        <EyeOutlined />
-                      </Tooltip>
-                    ),
-                    value: 'preview',
-                  },
-                  {
-                    label: (
-                      <Tooltip title="源代码">
-                        <span className={styles['svg-box']}>
-                          <CodeIconSvg />
-                        </span>
-                      </Tooltip>
-                    ),
-                    value: 'code',
-                  },
-                ]}
-              />
-            )}
+            {/* 只有存在 fileProxyUrl 时，才显示预览和代码视图切换按钮，可以通过 fileProxyUrl 预览和代码视图 */}
+            {targetNode?.fileProxyUrl &&
+              (fileName?.includes('.htm') || fileName?.includes('.md')) && (
+                <Segmented
+                  value={viewFileType}
+                  onChange={onViewFileTypeChange}
+                  options={[
+                    {
+                      label: (
+                        <Tooltip title="预览">
+                          <EyeOutlined />
+                        </Tooltip>
+                      ),
+                      value: 'preview',
+                    },
+                    {
+                      label: (
+                        <Tooltip title="源代码">
+                          <span className={styles['svg-box']}>
+                            <CodeIconSvg />
+                          </span>
+                        </Tooltip>
+                      ),
+                      value: 'code',
+                    },
+                  ]}
+                />
+              )}
           </>
         ) : (
           <div className={styles['pc-box']}>
@@ -162,8 +164,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         </div>
       )}
 
-      {/* 下载文件按钮 */}
-      {onDownloadFileByUrl && targetNode && viewMode === 'preview' && (
+      {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
+      {targetNode?.fileProxyUrl && viewMode === 'preview' && (
         <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
           <Button
             type="text"
