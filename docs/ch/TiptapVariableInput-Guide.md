@@ -21,6 +21,7 @@
 TiptapVariableInput 是基于 Tiptap 的富文本输入组件，支持变量插入、@ 提及、工具块、Raw 原始内容以及 Markdown 高亮，可用于智能体提示词、工作流节点配置等需要“结构化占位符 + 自由编辑”的场景。
 
 **核心优势**
+
 - 变量插入与自动补全：`{{variable}}` 语法，支持可编辑/不可编辑两种形态
 - @ Mentions：可选择用户/文件/自定义实体
 - 工具块与技能：`{#ToolBlock ...#}{#/ToolBlock#}` 结构化占位
@@ -31,6 +32,7 @@ TiptapVariableInput 是基于 Tiptap 的富文本输入组件，支持变量插�
 ## 核心架构
 
 ### 技术栈
+
 - React 18 + TypeScript
 - Tiptap + ProseMirror
 - Ant Design 主题变量
@@ -110,44 +112,61 @@ const handleChange = (html: string) => {
 ```
 
 ### UmiJS 集成
+
 - 直接从 `@/components/TiptapVariableInput` 导入组件与类型
 - 在布局或入口引入 `styles.less` 保证样式
 
 ### 普通 React 项目
+
 - 路径改为本地组件目录
 - 确保样式被构建工具加载（Less/CSS Modules 均可）
 
 ## 功能详解
 
 ### 变量插入与建议
+
 - 输入 `{` 或 `{}` 触发变量建议框
 - 支持紧邻变量之间、变量内部完整替换、普通文本中间插入
 - 完整触发与替换规则见 `../../src/components/TiptapVariableInput/VARIABLE_SUGGESTION_RULES.md`
 - 变量模式：`text`（默认，无跳字，显示装饰）、`node`（可编辑节点）、`mark`（不推荐）
 
 ### @ Mentions
+
 - `@` 触发建议，数据通过 `mentions` 传入
 - `disableMentions` 为 `true` 时默认关闭，按需开启
 
 ### 工具块 / 技能
+
 - 以 `{#ToolBlock id="xxx" type="yyy" name="zzz"#}content{#/ToolBlock#}` 存储
 - 可在建议面板中插入，便于结构化指令
 
 ### Raw 节点
+
 - 安全展示 HTML/XML 原始文本，不被 ProseMirror 解析
 - 使用 `convertToRawNodeHTML` 生成 `<pre data-raw="true" ...>` 片段直接放入 value
 - 适用于展示完整文档片段或配置
 
 ### Markdown 高亮
+
 - `enableMarkdown` 控制输入/粘贴规则
 - 内置 MarkdownHighlight 扩展提供颜色提示
+- 自动保护 XML 标签中的下划线，避免被识别为斜体
+
+### XML 标签支持
+
+- 支持自定义 XML 标签（如 `<task_result>`、`<OutputFormat>`）正确显示
+- 自动转义防止被浏览器解析
+- Markdown 高亮自动跳过 XML 标签范围
+- 详细规则见 `../../src/components/TiptapVariableInput/HTML_XML_PROCESSING_RULES.md`
 
 ### 文本转换
+
 - `convertTextToHTML`：纯文本（含变量/工具块）转可编辑 HTML
 - `extractTextFromHTML`：编辑器 HTML 转纯文本
 - `shouldConvertTextToHTML`：判断是否需要转换
 
 ### 光标与滚动恢复
+
 - 外部 value 变化时自动保存/恢复光标与滚动，避免闪烁
 - 受控模式下避免因序列化差异导致的无限循环
 
@@ -257,10 +276,7 @@ function MyFormWithInitialValue() {
         label="提示词"
         getValueFromEvent={(html) => extractTextFromHTML(html)}
       >
-        <TiptapVariableInput
-          placeholder="输入提示词"
-          variables={variables}
-        />
+        <TiptapVariableInput placeholder="输入提示词" variables={variables} />
       </Form.Item>
     </Form>
   );
@@ -353,10 +369,7 @@ function MyFormWithConditional() {
   return (
     <Form form={form} layout="vertical">
       <Form.Item name="enableVariable" label="启用变量">
-        <Switch
-          checked={enableVariable}
-          onChange={setEnableVariable}
-        />
+        <Switch checked={enableVariable} onChange={setEnableVariable} />
       </Form.Item>
 
       <Form.Item
@@ -458,10 +471,7 @@ function WorkflowNodeForm({ variables, onSubmit }: WorkflowNodeFormProps) {
         <Button type="primary" htmlType="submit">
           保存配置
         </Button>
-        <Button
-          style={{ marginLeft: 8 }}
-          onClick={() => form.resetFields()}
-        >
+        <Button style={{ marginLeft: 8 }} onClick={() => form.resetFields()}>
           重置
         </Button>
       </Form.Item>
@@ -473,6 +483,7 @@ function WorkflowNodeForm({ variables, onSubmit }: WorkflowNodeFormProps) {
 #### 关键要点
 
 1. **值转换**：必须使用 `getValueFromEvent` 将组件返回的 HTML 转换为纯文本格式存储
+
    ```tsx
    getValueFromEvent={(html) => extractTextFromHTML(html)}
    ```
@@ -488,6 +499,7 @@ function WorkflowNodeForm({ variables, onSubmit }: WorkflowNodeFormProps) {
 ## API 文档
 
 ### Props（常用）
+
 - `value: string` 受控值（HTML 或纯文本，内部会转换）
 - `onChange: (html: string) => void` 内容变化回调（返回 HTML）
 - `variables?: PromptVariable[]` 变量列表
@@ -540,6 +552,7 @@ interface MentionItem {
 ```
 
 ### 工具函数（来自 `utils/htmlUtils.ts` 等）
+
 - `extractTextFromHTML(html)`：HTML → 纯文本（保留 `{{}}`、ToolBlock）
 - `convertTextToHTML(text, disableMentions, enableEditableVariables, mode)`：纯文本 → HTML
 - `shouldConvertTextToHTML(text)`：是否需要转换
@@ -570,14 +583,14 @@ interface MentionItem {
 4. **如何自定义变量/工具块样式？**  
    修改或覆盖 `styles.less` 中对应类名，或通过 `className` 传入容器自定义样式。
 
-5. **如何关闭某些功能？**  
-   - `disableMentions` 设为 `true` 关闭 @  
-   - `enableMarkdown` 设为 `false` 关闭 Markdown 快捷  
+5. **如何关闭某些功能？**
+   - `disableMentions` 设为 `true` 关闭 @
+   - `enableMarkdown` 设为 `false` 关闭 Markdown 快捷
    - `enableEditableVariables` 设为 `false` 禁用可编辑变量节点
 
 ## 参考资料
 
 - 组件 README：`../../src/components/TiptapVariableInput/README.md`
 - 变量建议规则：`../../src/components/TiptapVariableInput/VARIABLE_SUGGESTION_RULES.md`
+- HTML/XML 处理规则：`../../src/components/TiptapVariableInput/HTML_XML_PROCESSING_RULES.md`
 - Markdown 自定义渲染指南：`./Markdown-Custom-Renderer-Guide.md`
-
