@@ -1,4 +1,3 @@
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { RequestResponse } from '@/types/interfaces/request';
 import type {
   EnsurePodResponse,
@@ -132,35 +131,10 @@ export async function apiRestartPod(
 export async function apiKeepalivePod(
   cId: number,
 ): Promise<RequestResponse<EnsurePodResponse>> {
-  // 获取认证 token
-  const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-
-  // 构建请求 URL，将 cId 作为查询参数
-  const url = `${process.env.BASE_URL}/api/computer/pod/keepalive?cId=${cId}`;
-
-  // 构建请求头
-  const headers: HeadersInit = {
-    Accept: 'application/json, text/plain, */*',
-  };
-
-  // 如果有 token，添加认证头
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  // 发送请求（POST 请求，参数在 URL 查询字符串中）
-  const response = await fetch(url, {
+  return request('/api/computer/pod/keepalive', {
     method: 'POST',
-    headers,
+    params: {
+      cId,
+    },
   });
-
-  // 检查响应状态
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  // 解析 JSON 响应
-  const data = await response.json();
-
-  return data as RequestResponse<EnsurePodResponse>;
 }

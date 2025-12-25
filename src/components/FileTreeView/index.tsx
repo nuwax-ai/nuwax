@@ -16,7 +16,7 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
-import { Modal } from 'antd';
+import { message, Modal } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -103,6 +103,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       useState<boolean>(false);
     // 是否正在下载文件
     const [isDownloadingFile, setIsDownloadingFile] = useState<boolean>(false);
+    // 是否正在重命名文件
+    const [isRenamingFile, setIsRenamingFile] = useState<boolean>(false);
 
     /** 当前文件查看类型：预览、代码 */
     const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
@@ -121,16 +123,23 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     // 文件选择
     const handleFileSelect = async (fileId: string) => {
-      setSelectedFileId(fileId);
-      setViewFileType('preview');
       // 根据文件ID查找文件节点
       const fileNode = findFileNode(fileId, files);
       if (fileNode) {
         // 获取文件内容
         const fileContent = fileNode?.content || '';
         if (fileContent) {
+          setSelectedFileId(fileId);
+          setViewFileType('preview');
           setSelectedFileNode(fileNode);
         } else {
+          if (isRenamingFile) {
+            message.warning('文件正在重命名中，请稍后再试');
+            return;
+          }
+
+          setSelectedFileId(fileId);
+          setViewFileType('preview');
           // 判断文件是否为图片类型
           const isImage = isImageFile(fileNode?.name || '');
           // 判断文件是否为视频类型
@@ -325,8 +334,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             setFiles(filesBackup);
           }
         } else {
-          // 直接调用现有的重命名文件功能
+          setIsRenamingFile(true);
+          // 直接调用现有的重命名文件功能(异步更新文件树)
           const isChangeSuccess = await onRenameFile?.(fileNode, newName);
+          setIsRenamingFile(false);
           if (isChangeSuccess) {
             // 如果当前选中的文件节点是被重命名的节点，则同步更新名称
             if (
