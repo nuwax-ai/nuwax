@@ -175,6 +175,9 @@ export default () => {
     useState<string>('');
   // 文件树数据
   const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
+  // 文件树数据加载状态
+  const [fileTreeDataLoading, setFileTreeDataLoading] =
+    useState<boolean>(false);
   // 文件树视图模式
   const [viewMode, setViewMode] = useState<'preview' | 'desktop'>('preview');
   // 使用 ref 跟踪当前视图模式和文件树可见状态，用于避免不必要的刷新
@@ -191,6 +194,7 @@ export default () => {
     manual: true,
     debounceWait: 2000,
     onSuccess: (result: RequestResponse<StaticFileListResponse>) => {
+      setFileTreeDataLoading(false);
       const files = result?.data?.files || [];
       if (files?.length) {
         const _fileTreeData = files.map((item) => ({
@@ -201,6 +205,7 @@ export default () => {
       }
     },
     onError: () => {
+      setFileTreeDataLoading(false);
       setFileTreeData([]);
     },
   });
@@ -220,13 +225,15 @@ export default () => {
   }, []);
 
   // 处理文件列表刷新事件
-  const handleRefreshFileList = useCallback((conversationId?: number) => {
-    // 如果传入了会话ID，则使用传入的ID，否则使用当前的会话ID
-    const targetId = conversationId;
-    if (targetId) {
-      runGetStaticFileList(targetId);
-    }
-  }, []);
+  const handleRefreshFileList = useCallback(
+    (conversationId?: number) => {
+      if (conversationId) {
+        setFileTreeDataLoading(true);
+        runGetStaticFileList(conversationId);
+      }
+    },
+    [runGetStaticFileList],
+  );
 
   // 打开预览视图或远程桌面视图时修改状态值
   const openPreviewChangeState = useCallback((mode: 'preview' | 'desktop') => {
@@ -748,31 +755,6 @@ export default () => {
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
-    // //模拟数据 一定删除 ====
-    // let index = 0;
-    // const mockData = mockChatData;
-    // const len = mockData.length;
-    // console.log('mockChatData', mockData);
-
-    // console.time('mockData');
-
-    // const interval = setInterval(() => {
-    //   if (index < len) {
-    //     console.timeLog('mockData', index);
-
-    //     handleChangeMessageList(params, mockData[index], currentMessageId);
-    //     // 滚动到底部
-    //     handleScrollBottom();
-    //   } else {
-    //     clearInterval(interval);
-    //     console.timeEnd('mockData');
-    //   }
-    //   index++;
-    // }, 100);
-
-    // return;
-    // //===== 模拟数据 一定删除 ====
-
     // 启动连接
     abortConnectionRef.current = await createSSEConnection({
       url: CONVERSATION_CONNECTION_URL,
@@ -1092,6 +1074,7 @@ export default () => {
     closePreviewView,
     // 文件树数据
     fileTreeData,
+    fileTreeDataLoading,
     setFileTreeData,
     // 文件树视图模式
     viewMode,

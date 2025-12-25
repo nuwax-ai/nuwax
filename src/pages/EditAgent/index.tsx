@@ -112,6 +112,7 @@ const EditAgent: React.FC = () => {
     closePreviewView,
     // 文件树数据
     fileTreeData,
+    fileTreeDataLoading,
     // 文件树视图模式
     viewMode,
     // 处理文件列表刷新事件
@@ -987,6 +988,7 @@ const EditAgent: React.FC = () => {
                 headerClassName={styles['file-tree-header']}
                 taskAgentSelectedFileId={taskAgentSelectedFileId}
                 originalFiles={fileTreeData}
+                fileTreeDataLoading={fileTreeDataLoading}
                 targetId={devConversationId.toString()}
                 viewMode={viewMode}
                 readOnly={false}
