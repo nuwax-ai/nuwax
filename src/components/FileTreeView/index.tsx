@@ -47,6 +47,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       headerClassName,
       taskAgentSelectedFileId,
       originalFiles,
+      fileTreeDataLoading,
       readOnly = false,
       targetId,
       viewMode,
@@ -823,6 +824,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 onFileSelect={handleFileSelect}
               />
               <FileTree
+                fileTreeDataLoading={fileTreeDataLoading}
                 files={files}
                 taskAgentSelectedFileId={taskAgentSelectedFileId}
                 // 当前选中的文件ID

@@ -22,6 +22,8 @@ export interface FileTreeViewProps {
   taskAgentSelectedFileId?: string;
   // 原始文件列表
   originalFiles: any[];
+  /** 文件树数据加载状态 */
+  fileTreeDataLoading?: boolean;
   /** 是否只读 */
   readOnly?: boolean;
   /** 目标ID, 可以是技能ID、会话ID等 */

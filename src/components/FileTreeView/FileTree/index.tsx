@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import Loading from '@/components/custom/Loading';
 import { FileNode } from '@/types/interfaces/appDev';
 import { findFileNode } from '@/utils/appDevUtils';
 import { getFileIcon } from '@/utils/fileTree';
@@ -17,6 +18,7 @@ const cx = classNames.bind(styles);
  */
 const FileTree: React.FC<FileTreeProps> = ({
   files,
+  fileTreeDataLoading,
   taskAgentSelectedFileId,
   selectedFileId,
   // 正在重命名的节点
@@ -379,7 +381,26 @@ const FileTree: React.FC<FileTreeProps> = ({
       className={styles.fileTree}
       onContextMenu={(e) => onContextMenu(e, null)}
     >
-      {files.map((node: FileNode) => renderFileTreeNode(node))}
+      {/* 文件树数据加载状态 */}
+      {fileTreeDataLoading && !files?.length ? (
+        <div className={cx('flex', 'content-center', 'items-center', 'h-full')}>
+          <Loading />
+        </div>
+      ) : files?.length > 0 ? (
+        files?.map((node: FileNode) => renderFileTreeNode(node))
+      ) : (
+        <div
+          className={cx(
+            styles['no-files'],
+            'flex',
+            'content-center',
+            'items-center',
+            'h-full',
+          )}
+        >
+          暂无文件
+        </div>
+      )}
     </div>
   );
 };
