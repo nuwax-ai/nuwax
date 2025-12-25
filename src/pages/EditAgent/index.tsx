@@ -12,7 +12,6 @@ import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import CreateTempChatModal from '@/pages/SpaceDevelop/CreateTempChatModal';
 import {
-  apiAgentComponentList,
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
@@ -123,10 +122,7 @@ const EditAgent: React.FC = () => {
     taskAgentSelectedFileId,
   } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
-  // 智能体组件列表
-  const [agentComponentList, setAgentComponentList] = useState<
-    AgentComponentInfo[]
-  >([]);
+  const { agentComponentList } = useModel('spaceAgent');
 
   const [agentStatistics, setAgentStatistics] = useState<
     AnalyzeStatisticsItem[]
@@ -165,16 +161,6 @@ const EditAgent: React.FC = () => {
     debounceWait: 300,
     onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
       setAgentConfigInfo(result?.data);
-    },
-  });
-
-  // 查询智能体组件列表
-  const { run: runComponentList } = useRequest(apiAgentComponentList, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: (result: RequestResponse<AgentComponentInfo[]>) => {
-      const { data } = result;
-      setAgentComponentList(data || []);
     },
   });
 
@@ -258,7 +244,7 @@ const EditAgent: React.FC = () => {
 
   useEffect(() => {
     run(agentId);
-    runComponentList(agentId);
+    // runComponentList(agentId);
     // 设置页面title
     setTitle();
   }, [agentId]);
@@ -266,14 +252,6 @@ const EditAgent: React.FC = () => {
   useEffect(() => {
     addBaseTarget();
   }, []);
-
-  // 绑定的变量信息
-  // const variablesInfo = React.useMemo(() => {
-  //   return agentComponentList?.find(
-  //     (item: AgentComponentInfo) =>
-  //       item.type === AgentComponentTypeEnum.Variable,
-  //   );
-  // }, [agentComponentList]);
 
   // 确认编辑智能体
   const handlerConfirmEditAgent = (info: AgentBaseInfo) => {
