@@ -57,7 +57,13 @@ const TaskResult: React.FC<TaskResultProps> = ({
     // 点击事件处理
     const handleClick = () => {
       openPreviewView(conversationId);
-      setTaskAgentSelectedFileId(fileName);
+      /**
+       * fileName: /home/user/1465924/workspace/2025-financial-statistics.pptx
+       * conversationId: 1465924
+       * fileId: workspace/2025-financial-statistics.pptx
+       */
+      const fileId = fileName.split(`${conversationId}/`).pop();
+      setTaskAgentSelectedFileId(fileId);
     };
 
     return (
