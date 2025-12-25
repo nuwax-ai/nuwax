@@ -151,6 +151,8 @@ const Chat: React.FC = () => {
     openPreviewView,
     openDesktopView,
     restartVncPod,
+    // 任务智能体会话中点击选中的文件ID
+    taskAgentSelectedFileId,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -989,6 +991,7 @@ const Chat: React.FC = () => {
         >
           <div className={cx(styles['file-tree-content'], 'flex')}>
             <FileTreeView
+              taskAgentSelectedFileId={taskAgentSelectedFileId}
               originalFiles={fileTreeData}
               targetId={id?.toString() || ''}
               viewMode={viewMode}

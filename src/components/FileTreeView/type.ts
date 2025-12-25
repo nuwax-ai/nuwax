@@ -18,6 +18,9 @@ export interface FileTreeViewRef {
 export interface FileTreeViewProps {
   // 文件树头部样式
   headerClassName?: string;
+  // 任务智能体会话中点击选中的文件ID
+  taskAgentSelectedFileId?: string;
+  // 原始文件列表
   originalFiles: any[];
   /** 是否只读 */
   readOnly?: boolean;

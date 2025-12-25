@@ -170,6 +170,9 @@ export default () => {
 
   // 文件树显隐状态
   const [isFileTreeVisible, setIsFileTreeVisible] = useState<boolean>(false);
+  // 任务智能体会话中点击选中的文件ID
+  const [taskAgentSelectedFileId, setTaskAgentSelectedFileId] =
+    useState<string>('');
   // 文件树数据
   const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
   // 文件树视图模式
@@ -1100,5 +1103,8 @@ export default () => {
     restartVncPod,
     // 远程桌面容器信息, 暂时未使用
     vncContainerInfo,
+    // 任务智能体会话中点击选中的文件ID
+    taskAgentSelectedFileId,
+    setTaskAgentSelectedFileId,
   };
 };
