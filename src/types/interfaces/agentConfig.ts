@@ -116,7 +116,7 @@ export interface AgentModelSettingProps {
   open: boolean;
   devConversationId?: number;
   onCancel: (
-    targetId: number,
+    targetId: number | null,
     name: string,
     data: ComponentModelBindConfig,
   ) => void;
