@@ -2,7 +2,7 @@ import RunOver from '@/components/ChatView/RunOver';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -23,6 +23,12 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
   className,
 }) => {
   const [elapsedTime, setElapsedTime] = useState<number>(0);
+  // 使用 useRef 保存 timer，避免频繁创建/清理
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  // 使用 useRef 保存开始时间，避免依赖项变化导致时间重置
+  const startTimeRef = useRef<number | null>(null);
+  // 使用 useRef 保存上一次的运行状态，用于判断状态变化
+  const prevIsRunningRef = useRef<boolean>(false);
 
   // 最近一条助手消息（用于状态展示和时间计算）
   const lastAssistantMessage = useMemo(() => {
@@ -36,9 +42,17 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
 
   // 计算会话时长
   useEffect(() => {
+    // 清理之前的 timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
     // 如果没有消息，不计时
     if (!messageList || messageList.length === 0) {
       setElapsedTime(0);
+      startTimeRef.current = null;
+      prevIsRunningRef.current = false;
       return;
     }
 
@@ -47,6 +61,8 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
       const { startTime, endTime } = lastAssistantMessage.finalResult;
       const elapsed = Math.floor((endTime - startTime) / 1000);
       setElapsedTime(elapsed);
+      startTimeRef.current = null;
+      prevIsRunningRef.current = false;
       return;
     }
 
@@ -62,15 +78,26 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
 
       if (!lastUserMessage?.time) {
         setElapsedTime(0);
+        startTimeRef.current = null;
+        prevIsRunningRef.current = false;
         return;
       }
 
       const startTime = new Date(lastUserMessage.time).getTime();
 
+      // 如果运行状态从 false 变为 true，或者开始时间发生变化，重新设置开始时间
+      if (!prevIsRunningRef.current || startTimeRef.current !== startTime) {
+        startTimeRef.current = startTime;
+        prevIsRunningRef.current = true;
+      }
+
       // 启动计时器，实时更新
       const updateElapsedTime = () => {
+        if (startTimeRef.current === null) {
+          return;
+        }
         const currentTime = Date.now();
-        const elapsed = Math.floor((currentTime - startTime) / 1000);
+        const elapsed = Math.floor((currentTime - startTimeRef.current) / 1000);
         setElapsedTime(elapsed);
       };
 
@@ -78,16 +105,20 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
       updateElapsedTime();
 
       // 每秒更新一次
-      const timer = setInterval(updateElapsedTime, 1000);
-
-      return () => {
-        clearInterval(timer);
-      };
+      timerRef.current = setInterval(updateElapsedTime, 1000);
+    } else {
+      // 非运行中时，保持当前 elapsedTime，不重置为 0，
+      // 避免在状态切换过程中闪一下 00:00
+      prevIsRunningRef.current = false;
     }
 
-    // 非运行中且没有 finalResult 时，保持当前 elapsedTime，不重置为 0，
-    // 避免在状态切换过程中闪一下 00:00
-    return;
+    // 清理函数：组件卸载或依赖项变化时清理 timer
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [messageList, lastAssistantMessage]);
 
   // 格式化时间显示（分:秒）
