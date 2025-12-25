@@ -583,7 +583,7 @@ const Chat: React.FC = () => {
     const { code } = await apiUpdateStaticFile(newSkillInfo);
     if (code === SUCCESS_CODE) {
       // 重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
-      handleRefreshFileList(id);
+      await handleRefreshFileList(id);
     }
     return code === SUCCESS_CODE;
   };
