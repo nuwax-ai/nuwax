@@ -36,7 +36,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   open,
   onCancel,
 }) => {
-  const [targetId, setTargetId] = useState<number>(0);
+  const [targetId, setTargetId] = useState<number | null>(null);
   // 模型列表
   const [modelConfigList, setModelConfigList] = useState<option[]>([]);
   // 模型列表缓存
@@ -93,7 +93,21 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
       setComponentBindConfig(
         modelComponentConfig.bindConfig as ComponentModelBindConfig,
       );
-      setTargetId(modelComponentConfig.targetId);
+
+      // 任务智能体，需要根据任务智能体配置的模型类型，查询可使用模型列表接口
+      if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
+        const targetId = modelComponentConfig.targetId;
+        const targetModelInfo = modelConfigList?.find(
+          (item) => item.value === targetId,
+        );
+        if (targetModelInfo) {
+          setTargetId(modelComponentConfig.targetId);
+        } else {
+          setTargetId(null);
+        }
+      } else {
+        setTargetId(modelComponentConfig.targetId);
+      }
     }
   }, [open, modelComponentConfig]);
 
