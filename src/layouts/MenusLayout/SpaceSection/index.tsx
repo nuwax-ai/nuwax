@@ -113,6 +113,13 @@ const SpaceSection: React.FC<{
     // pathname 示例：/space/836/develop?query=123 得到 develop
     const path = pathname.split('/').pop();
 
+    // /space/publish/skill/74 得到 space/publish
+    const publishPath = pathname.split('/').slice(1, 3).join('/');
+    // 判断是否是空间广场的详情页
+    if (publishPath === 'space/publish') {
+      return type === SpaceApplicationListEnum.Space_Square;
+    }
+
     switch (type) {
       // 智能体开发
       case SpaceApplicationListEnum.Application_Develop:
