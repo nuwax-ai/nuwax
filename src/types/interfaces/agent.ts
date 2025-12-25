@@ -458,7 +458,7 @@ export interface AgentComponentInfo {
   // 绑定组件配置，不同组件配置不一样
   bindConfig: any;
   // 关联的组件ID
-  targetId: number;
+  targetId: number | null;
   spaceId: number;
   // 组件原始配置
   targetConfig: any;
