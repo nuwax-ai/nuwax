@@ -198,7 +198,7 @@ export interface AgentComponentBaseInfo {
   // 组件描述
   description?: string;
   // 目标组件ID
-  targetId: number;
+  targetId: number | null;
   // 异常时中断流程
   exceptionOut?: DefaultSelectedEnum;
   // 异常时输出给大模型的默认信息
