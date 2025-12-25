@@ -86,9 +86,9 @@ export interface ModelListParams {
   // 模型类型,可用值:Completions,Chat,Edits,Images,Embeddings,Audio,Other
   modelType: ModelTypeEnum;
   // 模型接口协议，可选值：OpenAI, Ollama
-  apiProtocol: ModelApiProtocolEnum;
+  apiProtocol?: ModelApiProtocolEnum;
   // 模型范围，不传则返回所有有权限的模型,可用值:Space,Tenant,Global
-  scope: ModelScopeEnum;
+  scope?: ModelScopeEnum;
   // 空间ID，可选，传递后会返回当前空间管理的模型
   spaceId: number;
 }

@@ -16,6 +16,7 @@ import {
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
+import { apiModelList } from '@/services/modelConfig';
 import {
   apiDownloadAllFiles,
   apiUpdateStaticFile,
@@ -23,6 +24,7 @@ import {
 } from '@/services/vncDesktop';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
+import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import {
   AgentTypeEnum,
   ApplicationMoreActionEnum,
@@ -42,6 +44,10 @@ import type {
   AnalyzeStatisticsItem,
   BindConfigWithSub,
 } from '@/types/interfaces/common';
+import type {
+  ModelConfigInfo,
+  ModelListParams,
+} from '@/types/interfaces/model';
 import { RequestResponse } from '@/types/interfaces/request';
 import {
   IUpdateStaticFileParams,
@@ -133,6 +139,25 @@ const EditAgent: React.FC = () => {
   const { pagePreviewData, hidePagePreview, showPagePreview } =
     useModel('chat');
 
+  // 原始模型列表
+  const [originalModelConfigList, setOriginalModelConfigList] = useState<
+    ModelConfigInfo[]
+  >([]);
+
+  // 查询可使用模型列表接口
+  const runMode = async (params: ModelListParams) => {
+    const result = await apiModelList(params);
+    setOriginalModelConfigList(result?.data || []);
+  };
+
+  useEffect(() => {
+    // 查询可使用模型列表接口
+    runMode({
+      spaceId: spaceId,
+      modelType: ModelTypeEnum.Chat,
+    });
+  }, [spaceId]);
+
   // 查询智能体配置信息
   const { run } = useRequest(apiAgentConfigInfo, {
     manual: true,
@@ -185,7 +210,7 @@ const EditAgent: React.FC = () => {
         )
         ?.map((item: AgentComponentInfo) => ({
           ...item,
-          id: item.targetId,
+          id: item.targetId || 0,
         })) || [],
     );
   }, [agentComponentList]);
@@ -217,7 +242,7 @@ const EditAgent: React.FC = () => {
           )
           ?.map((item: AgentComponentInfo) => ({
             ...item,
-            id: item.targetId,
+            id: item.targetId || 0,
           })) || [],
       );
     },
@@ -266,7 +291,7 @@ const EditAgent: React.FC = () => {
    * @param config: 模型配置信息
    */
   const handleSetModel = (
-    targetId: number,
+    targetId: number | null,
     name: string,
     config: ComponentModelBindConfig,
   ) => {
@@ -866,6 +891,8 @@ const EditAgent: React.FC = () => {
         >
           {/*编排title*/}
           <ArrangeTitle
+            originalModelConfigList={originalModelConfigList}
+            agentConfigInfo={agentConfigInfo}
             icon={agentConfigInfo?.modelComponentConfig?.icon}
             modelName={agentConfigInfo?.modelComponentConfig?.name}
             onClick={() => setOpenAgentModel(true)}
@@ -1027,6 +1054,7 @@ const EditAgent: React.FC = () => {
       />
       {/*智能体模型设置*/}
       <AgentModelSetting
+        originalModelConfigList={originalModelConfigList}
         spaceId={spaceId}
         agentConfigInfo={agentConfigInfo}
         modelComponentConfig={
