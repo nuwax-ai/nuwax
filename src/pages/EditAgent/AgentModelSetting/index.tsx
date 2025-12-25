@@ -7,10 +7,9 @@ import {
   GENERATE_DIVERSITY_OPTIONS,
 } from '@/constants/agent.constants';
 import { apiAgentComponentModelUpdate } from '@/services/agentConfig';
-import { apiModelList } from '@/services/modelConfig';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
-import { ModelApiProtocolEnum, ModelTypeEnum } from '@/types/enums/modelConfig';
+import { ModelApiProtocolEnum } from '@/types/enums/modelConfig';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { ComponentModelBindConfig } from '@/types/interfaces/agent';
 import type { AgentModelSettingProps } from '@/types/interfaces/agentConfig';
@@ -20,7 +19,7 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 import { Flex, Modal, Segmented } from 'antd';
 import classnames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useModel, useRequest } from 'umi';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classnames.bind(styles);
@@ -28,8 +27,12 @@ const cx = classnames.bind(styles);
 /**
  * 智能体模型设置组件，待核实交互逻辑以及内容
  */
-const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
-  spaceId,
+const AgentModelSetting: React.FC<
+  {
+    originalModelConfigList?: ModelConfigInfo[];
+  } & AgentModelSettingProps
+> = ({
+  originalModelConfigList = [],
   agentConfigInfo,
   modelComponentConfig,
   devConversationId,
@@ -39,8 +42,10 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   const [targetId, setTargetId] = useState<number | null>(null);
   // 模型列表
   const [modelConfigList, setModelConfigList] = useState<option[]>([]);
+  // 原始模型列表
+  // const [originalModelConfigList, setOriginalModelConfigList] = useState<ModelConfigInfo[]>([]);
   // 模型列表缓存
-  const modelConfigListRef = useRef<ModelConfigInfo[]>([]);
+  // const modelConfigListRef = useRef<ModelConfigInfo[]>([]);
   // 绑定组件配置，不同组件配置不一样
   const [componentBindConfig, setComponentBindConfig] =
     useState<ComponentModelBindConfig>({
@@ -60,14 +65,21 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   const { runQueryConversation } = useModel('conversationInfo');
 
   // 查询可使用模型列表接口
-  const { run: runMode } = useRequest(apiModelList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: ModelConfigInfo[]) => {
-      modelConfigListRef.current = result;
+  // const { run: runMode } = useRequest(apiModelList, {
+  //   manual: true,
+  //   debounceInterval: 300,
+  //   onSuccess: (result: ModelConfigInfo[]) => {
+  //     modelConfigListRef.current = result;
+  //     setOriginalModelConfigList(result);
+
+  //   },
+  // });
+
+  useEffect(() => {
+    if (originalModelConfigList?.length && agentConfigInfo) {
       if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
         const list: option[] =
-          result
+          originalModelConfigList
             ?.filter(
               (item) => item.apiProtocol === ModelApiProtocolEnum.Anthropic, // 只能使用Anthropic模型
             )
@@ -78,14 +90,14 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
         setModelConfigList(list);
       } else {
         const list: option[] =
-          result?.map((item) => ({
+          originalModelConfigList?.map((item) => ({
             label: item.name,
             value: item.id,
           })) || [];
         setModelConfigList(list);
       }
-    },
-  });
+    }
+  }, [originalModelConfigList, agentConfigInfo]);
 
   useEffect(() => {
     if (open && modelComponentConfig) {
@@ -111,32 +123,30 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
     }
   }, [open, modelComponentConfig]);
 
-  useEffect(() => {
-    if (agentConfigInfo) {
-      // 查询可使用模型列表接口
-      runMode({
-        spaceId,
-        modelType: ModelTypeEnum.Chat,
-      });
-    }
-  }, [spaceId, agentConfigInfo]);
+  // useEffect(() => {
+  //   // 查询可使用模型列表接口
+  //   runMode({
+  //     spaceId,
+  //     modelType: ModelTypeEnum.Chat,
+  //   });
+  // }, [spaceId]);
 
   // 推理模型列表
   const reasonModelList: option[] = useMemo(() => {
     return (
-      modelConfigListRef.current
+      originalModelConfigList
         ?.filter((item) => item.isReasonModel === 1 && item.id !== targetId)
         ?.map((item) => ({
           label: item.name,
           value: item.id,
         })) || []
     );
-  }, [modelConfigListRef.current, targetId]);
+  }, [originalModelConfigList, targetId]);
 
   // 当前模型信息
   const currentModelInfo = useMemo(() => {
-    return modelConfigListRef.current?.find((item) => item.id === targetId);
-  }, [modelConfigListRef.current, targetId]);
+    return originalModelConfigList?.find((item) => item.id === targetId);
+  }, [originalModelConfigList, targetId]);
 
   // 更新模型配置
   const handleChangeModel = async (
@@ -154,7 +164,7 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   const handleChangeModelTarget = (id: React.Key) => {
     const _id = Number(id);
     setTargetId(_id);
-    const _currentModelInfo = modelConfigListRef.current?.find(
+    const _currentModelInfo = originalModelConfigList?.find(
       (item) => item.id === _id,
     );
     let _componentBindConfig = { ...componentBindConfig };

@@ -33,6 +33,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import React, { MouseEvent } from 'react';
 import { CardBindConfig } from './cardInfo';
+import { ModelConfigInfo } from './model';
 import { PageArgConfig } from './pageDev';
 
 // 智能体header组件
@@ -47,6 +48,8 @@ export interface AgentHeaderProps {
 
 // 编配title组件
 export interface ArrangeTitleProps {
+  originalModelConfigList?: ModelConfigInfo[];
+  agentConfigInfo?: AgentConfigInfo;
   icon?: string;
   modelName?: string;
   onClick: () => void;
