@@ -746,7 +746,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 全屏回调
           onFullscreen={handleFullscreen}
           // 是否处于全屏状态
-          isFullscreen={false}
+          isFullscreen={isFullscreen}
           // 保存文件回调
           onSaveFiles={saveFiles}
           // 取消保存文件回调

@@ -6,7 +6,7 @@ import { useMemo } from 'react';
 interface MoreActionsProps {
   // 导入项目
   onImportProject?: () => void;
-  // 全屏页面预览
+  // 全屏预览
   onFullscreenPreview?: () => void;
   // 导出项目
   onExportProject?: () => void;
@@ -42,7 +42,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
         icon: (
           <SvgIcon name="icons-common-fullscreen" style={{ fontSize: 16 }} />
         ),
-        label: '全屏页面预览',
+        label: '全屏预览',
         onClick: onFullscreenPreview,
         disabled: isChatLoading,
       },
