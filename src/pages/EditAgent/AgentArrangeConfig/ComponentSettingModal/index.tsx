@@ -8,6 +8,7 @@ import {
   apiAgentCardList,
   apiAgentComponentMcpUpdate,
   apiAgentComponentPluginUpdate,
+  apiAgentComponentSkillUpdate,
   apiAgentComponentTableUpdate,
   apiAgentComponentWorkflowUpdate,
 } from '@/services/agentConfig';
@@ -23,6 +24,7 @@ import {
   AgentComponentInfo,
   AgentComponentMcpUpdateParams,
   AgentComponentPluginUpdateParams,
+  AgentComponentSkillUpdateParams,
   AgentComponentTableUpdateParams,
   AgentComponentWorkflowUpdateParams,
 } from '@/types/interfaces/agent';
@@ -115,6 +117,12 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
     apiConfig,
   );
 
+  // 更新技能组件配置
+  const { runAsync: runSkillUpdate } = useRequest(
+    apiAgentComponentSkillUpdate,
+    apiConfig,
+  );
+
   // 查询卡片列表
   const { run: runCard } = useRequest(apiAgentCardList, {
     ...apiConfig,
@@ -149,6 +157,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
     exceptionOut?: DefaultSelectedEnum;
     fallbackMsg?: string;
   }) => {
+    console.log('componentInfo', componentInfo);
     // 插件
     if (componentInfo?.type === AgentComponentTypeEnum.Plugin) {
       await runPluginUpdate(params as AgentComponentPluginUpdateParams);
@@ -164,6 +173,10 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
     // MCP
     if (componentInfo?.type === AgentComponentTypeEnum.MCP) {
       await runMcpUpdate(params as AgentComponentMcpUpdateParams);
+    }
+    // 技能
+    if (componentInfo?.type === AgentComponentTypeEnum.Skill) {
+      await runSkillUpdate(params as AgentComponentSkillUpdateParams);
     }
   };
 
