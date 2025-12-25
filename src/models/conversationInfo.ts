@@ -183,8 +183,6 @@ export default () => {
   // 使用 ref 跟踪当前视图模式和文件树可见状态，用于避免不必要的刷新
   const viewModeRef = useRef<'preview' | 'desktop'>('preview');
   const isFileTreeVisibleRef = useRef<boolean>(false);
-  // 远程桌面保活定时器
-  const vncKeepaliveRef = useRef<NodeJS.Timeout | null>(null);
   // 远程桌面容器信息
   const [vncContainerInfo, setVncContainerInfo] =
     useState<VncDesktopContainerInfo | null>(null);
@@ -244,13 +242,23 @@ export default () => {
     isFileTreeVisibleRef.current = true;
   }, []);
 
+  // 远程桌面容器保活轮询
+  const { run: runKeepalivePodPolling, cancel: stopKeepalivePodPolling } =
+    useRequest(apiKeepalivePod, {
+      manual: true,
+      loadingDelay: 30000,
+      debounceWait: 5000,
+      pollingInterval: 60000, // 轮询间隔，单位ms
+      // 在屏幕不可见时，暂时暂停定时任务。
+      pollingWhenHidden: false,
+      // 轮询错误重试次数。如果设置为 -1，则无限次
+      pollingErrorRetryCount: -1,
+    });
+
   // 打开远程桌面视图
   const openDesktopView = useCallback(async (cId: number) => {
     // 停止保活
-    if (vncKeepaliveRef.current) {
-      clearInterval(vncKeepaliveRef.current);
-      vncKeepaliveRef.current = null;
-    }
+    stopKeepalivePodPolling();
     // 打开预览视图或远程桌面视图时修改状态值
     openPreviewChangeState('desktop');
     try {
@@ -260,9 +268,7 @@ export default () => {
         // 设置远程桌面容器信息
         setVncContainerInfo(data?.container_info);
         // 启动保活, 60秒保活一次
-        vncKeepaliveRef.current = setInterval(() => {
-          apiKeepalivePod(cId);
-        }, 60000);
+        runKeepalivePodPolling(cId);
       }
     } catch (error) {
       console.error('打开远程桌面视图失败', error);
@@ -275,19 +281,13 @@ export default () => {
     isFileTreeVisibleRef.current = false;
 
     // 停止保活
-    if (vncKeepaliveRef.current) {
-      clearInterval(vncKeepaliveRef.current);
-      vncKeepaliveRef.current = null;
-    }
+    stopKeepalivePodPolling();
   }, []);
 
   // 打开预览视图
   const openPreviewView = useCallback(async (cId: number) => {
     // 停止保活
-    if (vncKeepaliveRef.current) {
-      clearInterval(vncKeepaliveRef.current);
-      vncKeepaliveRef.current = null;
-    }
+    stopKeepalivePodPolling();
 
     // 检查是否需要刷新文件列表
     // 只有在模式发生变化（从 desktop 切换到 preview）或首次打开文件树时才刷新
@@ -906,10 +906,7 @@ export default () => {
     // 设置远程桌面容器信息为空
     setVncContainerInfo(null);
     // 停止保活
-    if (vncKeepaliveRef.current) {
-      clearInterval(vncKeepaliveRef.current);
-      vncKeepaliveRef.current = null;
-    }
+    stopKeepalivePodPolling();
 
     // 停止当前会话【强制】
     abortController?.abort();
