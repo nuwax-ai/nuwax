@@ -61,7 +61,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   // 添加 WebSearchProModal 的状态管理
   const [openModal, setOpenModal] = useState(false);
   // Plan 类型展开/收起状态
-  const [isPlanExpanded, setIsPlanExpanded] = useState(false);
+  const [isPlanExpanded, setIsPlanExpanded] = useState(true);
 
   useEffect(() => {
     // if (innerProcessing.status !== ProcessingEnum.EXECUTING) {
