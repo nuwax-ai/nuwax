@@ -148,6 +148,16 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               ...fileNode,
               content: fileContent || '',
             });
+
+            // 更新文件树中的文件内容
+            setFiles((prevFiles) => {
+              const updatedFiles: FileNode[] = updateFileTreeContent(
+                fileId,
+                fileContent,
+                prevFiles,
+              );
+              return updatedFiles;
+            });
           }
         }
       } else {
@@ -417,14 +427,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 处理内容变化
      */
     const handleContentChange = (fileId: string, content: string) => {
-      console.log('处理内容变化fileId', fileId);
       // 保存原始内容的引用（用于首次修改时记录）
       let originalContent = '';
 
-      // 使用函数式更新获取最新的 files 状态
+      // 更新文件树中的文件内容
       setFiles((prevFiles) => {
         // 从最新的 files 中获取原始内容
         const currentFile = findFileNode(fileId, prevFiles);
+        // 获取原始内容
         originalContent = currentFile?.content || '';
 
         const updatedFiles: FileNode[] = updateFileTreeContent(
@@ -440,9 +450,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         ...prevNode,
         content,
       }));
-
-      console.log('处理内容变化新内容', content);
-      console.log('处理内容变化原始内容', originalContent);
 
       // 使用函数式更新获取最新的 changeFiles 状态
       setChangeFiles((prevChangeFiles) => {
