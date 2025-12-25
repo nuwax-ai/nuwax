@@ -248,7 +248,9 @@ const SpaceSection: React.FC = () => {
             publishedItemInfo={item}
             extra={getExtra('智能体', item, type)}
             onToggleCollectSuccess={handleToggleCollectSuccess}
-            onClick={() => handleClick(item.targetId, item.targetType, item)}
+            onClick={() =>
+              handleClick(item.targetId, item.targetType, item, 'space')
+            }
           />
         );
       } else if (type === SquareAgentTypeEnum.Template) {
@@ -257,7 +259,9 @@ const SpaceSection: React.FC = () => {
             key={index}
             publishedItemInfo={item}
             extra={getExtra('模板', item, type, true)}
-            onClick={() => handleClick(item.targetId, item.targetType, item)}
+            onClick={() =>
+              handleClick(item.targetId, item.targetType, item, 'space')
+            }
           />
         );
       } else {
@@ -283,7 +287,9 @@ const SpaceSection: React.FC = () => {
             publishedItemInfo={item}
             extra={getExtra(componentTypeName, item, type)}
             onToggleCollectSuccess={handleToggleCollectSuccess}
-            onClick={() => handleClick(item.targetId, item.targetType)}
+            onClick={() =>
+              handleClick(item.targetId, item.targetType, item, 'space')
+            }
           />
         );
       }

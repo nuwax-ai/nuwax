@@ -89,14 +89,32 @@ const routes = [
 
       { path: '/square', component: '@/pages/Square' },
       { path: '/system/publish/audit', component: '@/pages/PublishAudit' },
+      // 空间广场-插件详情
+      {
+        path: '/space/publish/plugin/:pluginId',
+        component: '@/pages/Square/PluginDetail',
+      },
+      // 空间广场-工作流详情
+      {
+        path: '/space/publish/workflow/:workflowId',
+        component: '@/pages/Square/WorkflowIdDetail',
+      },
+      // 空间广场-技能详情
+      {
+        path: '/space/publish/skill/:skillId',
+        component: '@/pages/Square/SkillDetail',
+      },
+      // 广场-插件详情
       {
         path: '/square/publish/plugin/:pluginId',
         component: '@/pages/Square/PluginDetail',
       },
+      // 广场-工作流详情
       {
         path: '/square/publish/workflow/:workflowId',
         component: '@/pages/Square/WorkflowIdDetail',
       },
+      // 广场-技能详情
       {
         path: '/square/publish/skill/:skillId',
         component: '@/pages/Square/SkillDetail',

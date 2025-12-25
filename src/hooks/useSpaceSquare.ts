@@ -15,6 +15,7 @@ const useSpaceSquare = () => {
     targetId: number,
     targetType: SquareAgentTypeEnum,
     info?: SquarePublishedItemInfo,
+    from: 'space' | 'square' = 'square',
   ) => {
     // 智能体
     if (targetType === SquareAgentTypeEnum.Agent) {
@@ -26,15 +27,15 @@ const useSpaceSquare = () => {
     }
     // 插件
     if (targetType === SquareAgentTypeEnum.Plugin) {
-      history.push(`/square/publish/plugin/${targetId}`);
+      history.push(`/${from}/publish/plugin/${targetId}`);
     }
     // 工作流
     if (targetType === SquareAgentTypeEnum.Workflow) {
-      history.push(`/square/publish/workflow/${targetId}`);
+      history.push(`/${from}/publish/workflow/${targetId}`);
     }
     // 技能
     if (targetType === SquareAgentTypeEnum.Skill) {
-      history.push(`/square/publish/skill/${targetId}`);
+      history.push(`/${from}/publish/skill/${targetId}`);
     }
   };
 
