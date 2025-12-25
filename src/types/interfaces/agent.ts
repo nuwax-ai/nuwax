@@ -261,6 +261,12 @@ export interface AgentComponentMcpUpdateParams
   toolName: string;
 }
 
+// 更新技能组件配置输入参数
+export interface AgentComponentSkillUpdateParams
+  extends AgentComponentWorkflowUpdateParams {
+  toolName: string;
+}
+
 // 智能体组件模型设置
 export interface ComponentModelBindConfig {
   // 模式：Precision 精确模式；Balanced 平衡模式；Creative 创意模式；Customization 自定义,可用值:Precision,Balanced,Creative,Customization
