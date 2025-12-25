@@ -78,7 +78,8 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
             icon={<CheckCircleFilled className={cx(styles.circle)} />}
           />
         )}
-
+      </div>
+      <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         {/* 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布 */}
         {skillInfo?.publishDate !== null &&
           dayjs(skillInfo?.publishDate).isBefore(skillInfo?.modified) && (
@@ -90,8 +91,6 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
               有更新未发布
             </Tag>
           )}
-      </div>
-      <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         <MoreActionsMenu
           onImportProject={onImportProject}
           onFullscreenPreview={onFullscreen}
