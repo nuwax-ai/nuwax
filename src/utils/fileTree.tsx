@@ -224,8 +224,10 @@ export const updateFilesListContent = (
 
 /**
  * 处理下载单个文件操作
+ * @param targetNode 文件节点
+ * @returns 下载文件
  */
-export const handleDownloadFile = async (targetNode: FileNode) => {
+export const downloadFileByUrl = async (targetNode: FileNode) => {
   const fileProxyUrl = targetNode.fileProxyUrl;
   if (!fileProxyUrl) return;
 
