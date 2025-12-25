@@ -23,6 +23,7 @@ import React, {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useRef,
   useState,
 } from 'react';
 import AppDevEmptyState from '../business-component/AppDevEmptyState';
@@ -108,6 +109,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       'preview',
     );
 
+    // 用于记录上次的 taskAgentSelectedFileId，避免 originalFiles 更新时重复触发
+    const prevTaskAgentSelectedFileIdRef = useRef<string>('');
+
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
       if (isFullscreenPreview) {
@@ -180,11 +184,22 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     );
 
     useEffect(() => {
-      // 如果任务智能体会话中点击选中了文件，则设置选中文件ID
-      if (taskAgentSelectedFileId && files?.length > 0) {
+      // 如果 taskAgentSelectedFileId 被清空，重置记录的值
+      if (!taskAgentSelectedFileId) {
+        prevTaskAgentSelectedFileIdRef.current = '';
+        return;
+      }
+
+      // 如果任务智能体会话中点击选中了文件，且文件ID发生了变化，则设置选中文件ID
+      // 注意：只有 taskAgentSelectedFileId 变化时才触发，避免 originalFiles 更新时重复调用
+      if (
+        originalFiles?.length > 0 &&
+        taskAgentSelectedFileId !== prevTaskAgentSelectedFileIdRef.current // 避免重复选择同一个文件
+      ) {
+        prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
         handleFileSelect(taskAgentSelectedFileId);
       }
-    }, [taskAgentSelectedFileId, files]);
+    }, [taskAgentSelectedFileId, originalFiles]);
 
     useEffect(() => {
       // 如果文件列表不为空，则转换为树形结构

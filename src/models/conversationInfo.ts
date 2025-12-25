@@ -273,6 +273,12 @@ export default () => {
   const closePreviewView = useCallback(() => {
     setIsFileTreeVisible(false);
     isFileTreeVisibleRef.current = false;
+
+    // 停止保活
+    if (vncKeepaliveRef.current) {
+      clearInterval(vncKeepaliveRef.current);
+      vncKeepaliveRef.current = null;
+    }
   }, []);
 
   // 打开预览视图
