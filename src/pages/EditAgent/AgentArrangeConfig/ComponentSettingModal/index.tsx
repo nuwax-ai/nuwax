@@ -238,7 +238,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
         <div>
           <p>按需调用：由模型根据任务情况决定是否需要调用</p>
           <p>
-            手动选择：由用户决定是否使用该工具，在用户选择的情况下和自动调用效果一样
+            手动选择：由用户决定是否使用该技能，在用户选择的情况下和按需调用效果一样
           </p>
         </div>
       );
