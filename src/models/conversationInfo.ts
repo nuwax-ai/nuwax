@@ -190,7 +190,7 @@ export default () => {
     useState<VncDesktopContainerInfo | null>(null);
 
   // 查询文件列表
-  const { run: runGetStaticFileList } = useRequest(apiGetStaticFileList, {
+  const { runAsync: runGetStaticFileList } = useRequest(apiGetStaticFileList, {
     manual: true,
     debounceWait: 2000,
     onSuccess: (result: RequestResponse<StaticFileListResponse>) => {
@@ -226,10 +226,10 @@ export default () => {
 
   // 处理文件列表刷新事件
   const handleRefreshFileList = useCallback(
-    (conversationId?: number) => {
+    async (conversationId?: number) => {
       if (conversationId) {
         setFileTreeDataLoading(true);
-        runGetStaticFileList(conversationId);
+        await runGetStaticFileList(conversationId);
       }
     },
     [runGetStaticFileList],

@@ -27,6 +27,7 @@ const beSilentRequestList = (url: string): boolean => {
     '/api/custom-page/start-dev', // 开发页面启动
     '/api/custom-page/restart-dev', // 开发页面重启
     '/api/custom-page/get-dev-log', // 开发页面获取日志
+    '/api/computer/pod/keepalive', // 远程桌面容器保活
     // 可以在此添加其他不需要显示错误消息的API
   ];
   return list.some((api) => url.includes(api));
