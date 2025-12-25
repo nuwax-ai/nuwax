@@ -14,6 +14,8 @@
   // 内联重命名样式
   .inlineRenameInput {
     flex: 1;
+    min-width: 0; // 允许输入框收缩
+    max-width: 100%; // 限制最大宽度
     font-size: @fontSize;
     height: 22px;
   }
@@ -21,6 +23,8 @@
 
 .folderItem {
   margin-bottom: 0;
+  max-width: 100%;
+  min-width: 0; // 允许 flex 子元素收缩
 }
 
 .folderHeader {
@@ -30,6 +34,9 @@
   cursor: pointer;
   border-radius: 4px;
   transition: background-color 0.2s ease;
+  max-width: 100%;
+  min-width: 0; // 允许 flex 子元素收缩
+  overflow: hidden; // 防止内容溢出
 
   &:hover {
     background: rgba(0, 0, 0, 5%);
@@ -37,6 +44,7 @@
 
   .folderIcon {
     margin-right: 4px;
+    flex-shrink: 0; // 图标不收缩
     // color: @colorTextBase;
     color: #5e5e5b;
     transition: transform 0.2s ease;
@@ -53,6 +61,11 @@
     font-weight: @fontWeightStrong;
     font-size: @fontSize;
     font-family: @fontFamilyCode;
+    flex: 1;
+    min-width: 0; // 允许文本收缩
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -84,9 +97,13 @@
   transition: all 0.2s ease;
   font-size: 13px;
   color: #5e5e5b;
+  max-width: 100%;
+  min-width: 0; // 允许 flex 子元素收缩
+  overflow: hidden; // 防止内容溢出
 
   svg {
     font-size: 16px;
+    flex-shrink: 0; // 图标不收缩
   }
 
   &:hover {
@@ -105,6 +122,10 @@
   font-size: @fontSize;
   font-family: @fontFamilyCode;
   flex: 1;
+  min-width: 0; // 允许文本收缩
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   &.hiddenFile {
     color: @colorTextQuaternary;
