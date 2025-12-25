@@ -144,6 +144,7 @@ const Chat: React.FC = () => {
     closePreviewView,
     // 文件树数据
     fileTreeData,
+    fileTreeDataLoading,
     // 文件树视图模式
     viewMode,
     // 处理文件列表刷新事件
@@ -993,6 +994,7 @@ const Chat: React.FC = () => {
             <FileTreeView
               taskAgentSelectedFileId={taskAgentSelectedFileId}
               originalFiles={fileTreeData}
+              fileTreeDataLoading={fileTreeDataLoading}
               targetId={id?.toString() || ''}
               viewMode={viewMode}
               readOnly={false}

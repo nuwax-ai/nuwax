@@ -41,6 +41,9 @@ const SkillDetails: React.FC = () => {
   const skillId = Number(params.skillId);
   // 技能信息
   const [skillInfo, setSkillInfo] = useState<SkillDetailInfo | null>(null);
+  // 文件树数据加载状态
+  const [fileTreeDataLoading, setFileTreeDataLoading] =
+    useState<boolean>(false);
   // 发布技能弹窗是否打开
   const [open, setOpen] = useState<boolean>(false);
   // 编辑技能信息弹窗是否打开
@@ -59,6 +62,7 @@ const SkillDetails: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: async (result: SkillDetailInfo) => {
+      setFileTreeDataLoading(false);
       const { files } = result || {};
       if (Array.isArray(files) && files.length > 0) {
         setSkillInfo(() => ({
@@ -72,10 +76,14 @@ const SkillDetails: React.FC = () => {
         setSkillInfo(result);
       }
     },
+    onError: () => {
+      setFileTreeDataLoading(false);
+    },
   });
 
   useEffect(() => {
     if (skillId) {
+      setFileTreeDataLoading(true);
       runSkillInfo(skillId);
     }
   }, [skillId]);
@@ -453,6 +461,7 @@ const SkillDetails: React.FC = () => {
         {/* 文件树视图 */}
         <FileTreeView
           ref={fileTreeViewRef}
+          fileTreeDataLoading={fileTreeDataLoading}
           // 技能文件列表
           originalFiles={skillInfo?.files || []}
           // 上传文件

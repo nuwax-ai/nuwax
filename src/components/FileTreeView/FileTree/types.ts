@@ -7,6 +7,9 @@ export interface FileTreeProps {
   /** 文件树数据 */
   files: FileNode[];
 
+  /** 文件树数据加载状态 */
+  fileTreeDataLoading?: boolean;
+
   /** 任务智能体会话中点击选中的文件ID */
   taskAgentSelectedFileId?: string;
 
@@ -32,9 +35,4 @@ export interface FileTreeProps {
 
   /** 重命名文件回调 */
   onConfirmRenameFile: (node: FileNode, newName: string) => void;
-
-  /** 文件管理方法 */
-  // fileManagement: {
-  //   switchToFile: (fileId: string) => void;
-  // };
 }
