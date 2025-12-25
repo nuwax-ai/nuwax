@@ -365,12 +365,6 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     addBaseTarget();
-
-    return () => {
-      // 组件卸载时重置全局会话状态，防止污染其他页面
-      resetInit();
-      setSelectedComponentList([]);
-    };
   }, []);
 
   useEffect(() => {
@@ -409,6 +403,10 @@ const Chat: React.FC = () => {
       eventBus.off(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
       // 组件卸载时取消订阅
       eventBus.off(EVENT_TYPE.RefreshFileList, () => handleRefreshFileList(id));
+
+      // 组件卸载时重置全局会话状态，防止污染其他页面
+      resetInit();
+      setSelectedComponentList([]);
     };
   }, [id]);
 
