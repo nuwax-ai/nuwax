@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { FileNode } from '@/types/interfaces/appDev';
+import { findFileNode } from '@/utils/appDevUtils';
 import { getFileIcon } from '@/utils/fileTree';
 import type { InputRef } from 'antd';
 import { Input } from 'antd';
@@ -16,6 +17,7 @@ const cx = classNames.bind(styles);
  */
 const FileTree: React.FC<FileTreeProps> = ({
   files,
+  taskAgentSelectedFileId,
   selectedFileId,
   // 正在重命名的节点
   renamingNode,
@@ -191,6 +193,63 @@ const FileTree: React.FC<FileTreeProps> = ({
       return next;
     });
   }, [renamingNode]);
+
+  /**
+   * 根据 taskAgentSelectedFileId 自动展开包含该文件的文件夹路径
+   * 当 taskAgentSelectedFileId 和 files 都不为空时，展开所有父级文件夹
+   */
+  useEffect(() => {
+    // 如果 taskAgentSelectedFileId 或 files 为空，则不处理
+    if (!taskAgentSelectedFileId || !files || files.length === 0) {
+      return;
+    }
+
+    // 查找选中的文件节点
+    const selectedFileNode = findFileNode(taskAgentSelectedFileId, files);
+    if (!selectedFileNode) {
+      return;
+    }
+
+    // 获取所有父级文件夹ID
+    // 通过路径分割直接获取所有父级路径，避免重复查找节点
+    const getParentFolderIds = (filePath: string): string[] => {
+      const parentIds: string[] = [];
+      const pathParts = filePath.split('/').filter(Boolean);
+
+      // 如果是根目录文件，则没有父级文件夹
+      if (pathParts.length <= 1) {
+        return parentIds;
+      }
+
+      // 从根目录开始，逐步构建所有父级路径
+      // 例如：folder1/folder2/file.txt -> ['folder1', 'folder1/folder2']
+      let currentPath = '';
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        currentPath = currentPath
+          ? `${currentPath}/${pathParts[i]}`
+          : pathParts[i];
+        parentIds.push(currentPath);
+      }
+
+      return parentIds;
+    };
+
+    // 获取所有需要展开的文件夹ID
+    const parentFolderIds = getParentFolderIds(
+      selectedFileNode.path || selectedFileNode.id,
+    );
+
+    // 如果有父级文件夹，则展开它们
+    if (parentFolderIds.length > 0) {
+      setExpandedFolders((prev) => {
+        const next = new Set(prev);
+        parentFolderIds.forEach((folderId) => {
+          next.add(folderId);
+        });
+        return next;
+      });
+    }
+  }, [taskAgentSelectedFileId, files]);
 
   /**
    * 渲染文件树节点
