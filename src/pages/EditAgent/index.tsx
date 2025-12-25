@@ -113,6 +113,7 @@ const EditAgent: React.FC = () => {
     openPreviewView,
     openDesktopView,
     restartVncPod,
+    taskAgentSelectedFileId,
   } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
   // 智能体组件列表
@@ -957,6 +958,7 @@ const EditAgent: React.FC = () => {
             <div className={cx(styles['file-tree-content'], 'flex')}>
               <FileTreeView
                 headerClassName={styles['file-tree-header']}
+                taskAgentSelectedFileId={taskAgentSelectedFileId}
                 originalFiles={fileTreeData}
                 targetId={devConversationId.toString()}
                 viewMode={viewMode}

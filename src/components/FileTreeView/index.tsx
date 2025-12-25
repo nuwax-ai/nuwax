@@ -45,6 +45,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
   (
     {
       headerClassName,
+      taskAgentSelectedFileId,
       originalFiles,
       readOnly = false,
       targetId,
@@ -176,6 +177,13 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }),
       [changeFiles],
     );
+
+    useEffect(() => {
+      // 如果任务智能体会话中点击选中了文件，则设置选中文件ID
+      if (taskAgentSelectedFileId && files?.length > 0) {
+        handleFileSelect(taskAgentSelectedFileId);
+      }
+    }, [taskAgentSelectedFileId, files]);
 
     useEffect(() => {
       // 如果文件列表不为空，则转换为树形结构
