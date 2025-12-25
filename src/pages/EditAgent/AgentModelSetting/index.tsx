@@ -98,12 +98,14 @@ const AgentModelSetting: React.FC<AgentModelSettingProps> = ({
   }, [open, modelComponentConfig]);
 
   useEffect(() => {
-    // 查询可使用模型列表接口
-    runMode({
-      spaceId,
-      modelType: ModelTypeEnum.Chat,
-    });
-  }, [spaceId]);
+    if (agentConfigInfo) {
+      // 查询可使用模型列表接口
+      runMode({
+        spaceId,
+        modelType: ModelTypeEnum.Chat,
+      });
+    }
+  }, [spaceId, agentConfigInfo]);
 
   // 推理模型列表
   const reasonModelList: option[] = useMemo(() => {
