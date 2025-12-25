@@ -690,7 +690,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 如果是html、md文件，并且处于预览模式，则使用iframe预览
       if (
         (fileName?.includes('.htm') || fileName?.includes('.md')) &&
-        viewFileType === 'preview'
+        viewFileType === 'preview' &&
+        fileProxyUrl
       ) {
         return <iframe src={fileProxyUrl} width="100%" height="100%" />;
       }
