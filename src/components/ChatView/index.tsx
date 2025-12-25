@@ -1,9 +1,9 @@
 import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
+import CopyButton from '@/components/base/CopyButton';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
-import CopyButton from '@/components/base/CopyButton';
 import { USER_INFO } from '@/constants/home.constants';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
@@ -23,6 +23,7 @@ import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
 // import RunOver from './RunOver';
 import styles from './index.less';
+import RunOver from './RunOver';
 
 const cx = classNames.bind(styles);
 
@@ -103,13 +104,13 @@ const ChatView: React.FC<ChatViewProps> = memo(
                 }}
               />
               <div className={cx(styles.author)}>{info?.name}</div>
-              {/* <ConditionRender condition={!!messageInfo?.status}>
+              <ConditionRender condition={!!messageInfo?.status}>
                 <div style={{ display: 'flex', flexDirection: 'row', gap: 12 }}>
                   <div style={{ flex: 1 }}>
                     <RunOver messageInfo={messageInfo} />
                   </div>
                 </div>
-              </ConditionRender> */}
+              </ConditionRender>
             </div>
           )}
           {!!messageInfo?.attachments?.length && (
