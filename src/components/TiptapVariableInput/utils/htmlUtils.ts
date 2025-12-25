@@ -126,13 +126,18 @@ export const escapeEventTags = (text: string): string => {
 };
 
 /**
- * 转义自定义 XML 标签（如 <OutputFormat>、<Constrains> 等）
+ * 转义自定义 XML 标签（如 <OutputFormat>、<Constrains>、<task_result>、<task-result> 等）
  * 这些标签在提示词中常用，需要被转义以避免被浏览器解析为 HTML 元素
  *
  * 支持的标签格式：
- * - 开始标签：<OutputFormat>、<OutputFormat attr="value">
- * - 结束标签：</OutputFormat>
- * - 自闭合标签：<OutputFormat />、<OutputFormat/>、<OutputFormat attr="value" />
+ * - 开始标签：<OutputFormat>、<task_result attr="value">
+ * - 结束标签：</OutputFormat>、</task-result>
+ * - 自闭合标签：<OutputFormat />、<task_result/>、<task-result attr="value" />
+ *
+ * 支持的标签命名：
+ * - 大写字母开头的标签：<OutputFormat>、<Constrains>
+ * - 小写字母开头包含下划线的标签：<task_result>、<tool_call>
+ * - 小写字母开头包含连字符的标签：<task-result>、<tool-call>
  *
  * @param text 需要处理的文本
  * @returns 处理后的文本（自定义标签被转义为 &lt; 和 &gt;）
@@ -140,95 +145,184 @@ export const escapeEventTags = (text: string): string => {
 export const escapeCustomHTMLTags = (text: string): string => {
   if (!text) return '';
 
-  // 匹配自定义 XML 标签（以大写字母开头的标签名，如 <OutputFormat>、<Constrains> 等）
-  // 这些标签不是标准的 HTML 标签，需要被转义以避免被浏览器解析
-  // 正则匹配：
-  //   - 自闭合标签：<标签名 /> 或 <标签名/> 或 <标签名 属性 />
-  //   - 开始标签：<标签名> 或 <标签名 属性>
-  //   - 结束标签：</标签名>
-  // 排除已经转义的标签（&lt; 和 &gt;）
-  // 排除标准 HTML 标签（如 <p>、<br>、<span> 等）
-  // 注意：必须先匹配自闭合标签，再匹配普通开始标签，避免重复匹配
-  // 自闭合标签：以 /> 结尾，可能包含属性
-  const customSelfClosingTagRegex = /<([A-Z][A-Za-z0-9]*)(?:\s+[^>]*)?\s*\/>/g;
-  // 普通开始标签：以 > 结尾（不包含 /），可能包含属性
-  // 注意：由于先处理了自闭合标签，这里不会匹配到自闭合标签
-  const customTagRegex = /<([A-Z][A-Za-z0-9]*)(?:\s+[^>]*)?>/g;
-  // 结束标签：</标签名>
-  const customClosingTagRegex = /<\/([A-Z][A-Za-z0-9]*)>/g;
-
   // 标准 HTML 标签列表（小写）
+  // 这些标签不会被转义，会被浏览器正常解析
   const standardTags = [
+    // 文档结构
+    'html',
+    'head',
+    'body',
+    'title',
+    'meta',
+    'link',
+    'script',
+    'style',
+    'base',
+    // 文本内容
     'p',
     'br',
+    'hr',
     'span',
     'div',
     'strong',
+    'b',
     'em',
+    'i',
     'u',
     's',
+    'strike',
+    'del',
+    'ins',
+    'sub',
+    'sup',
+    'small',
+    'big',
+    'mark',
+    'abbr',
+    'address',
+    'cite',
+    'q',
+    'blockquote',
     'code',
     'pre',
+    'kbd',
+    'samp',
+    'var',
+    // 标题
     'h1',
     'h2',
     'h3',
     'h4',
     'h5',
     'h6',
+    // 列表
     'ul',
     'ol',
     'li',
-    'blockquote',
+    'dl',
+    'dt',
+    'dd',
+    // 链接和媒体
     'a',
     'img',
+    'audio',
+    'video',
+    'source',
+    'track',
+    'picture',
+    'figure',
+    'figcaption',
+    'map',
+    'area',
+    'canvas',
+    'svg',
+    'iframe',
+    'embed',
+    'object',
+    'param',
+    // 表格
     'table',
-    'tr',
-    'td',
-    'th',
+    'caption',
+    'colgroup',
+    'col',
     'thead',
     'tbody',
-    'thead',
     'tfoot',
+    'tr',
+    'th',
+    'td',
+    // 表单
+    'form',
+    'input',
+    'button',
+    'select',
+    'option',
+    'optgroup',
+    'textarea',
+    'label',
+    'fieldset',
+    'legend',
+    'datalist',
+    'output',
+    'progress',
+    'meter',
+    // 语义化
+    'header',
+    'footer',
+    'main',
+    'nav',
+    'aside',
+    'section',
+    'article',
+    'details',
+    'summary',
+    'dialog',
+    'menu',
+    'menuitem',
+    // 其他
+    'template',
+    'slot',
+    'noscript',
+    'wbr',
+    'bdi',
+    'bdo',
+    'ruby',
+    'rt',
+    'rp',
+    'data',
+    'time',
+    // 废弃但仍常用
+    'font',
+    'center',
+    'tt',
+    'frame',
+    'frameset',
+    'noframes',
   ];
 
-  // 先处理自闭合标签（必须在开始标签之前处理，避免重复匹配）
-  // 自闭合标签格式：<标签名 /> 或 <标签名/>
-  let result = text.replace(customSelfClosingTagRegex, (match, tagName) => {
-    // 如果标签名是小写的标准标签，不转义
-    if (standardTags.includes(tagName.toLowerCase())) {
-      return match;
-    }
-    // 转义自定义自闭合标签
-    return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  });
+  // 检查标签名是否是标准 HTML 标签
+  const isStandardTag = (tagName: string): boolean => {
+    return standardTags.includes(tagName.toLowerCase());
+  };
 
-  // 转义开始标签（排除已经被处理的自闭合标签）
-  // 注意：由于自闭合标签已经被处理，这里不会匹配到自闭合标签
-  result = result.replace(customTagRegex, (match, tagName) => {
-    // 如果标签名是小写的标准标签，不转义
-    if (standardTags.includes(tagName.toLowerCase())) {
-      return match;
+  // 检查标签名是否是自定义 XML 标签（需要被转义）
+  // 自定义标签的特征：
+  // 1. 以大写字母开头（如 <OutputFormat>）
+  // 2. 包含下划线（如 <task_result>）
+  // 3. 包含连字符（如 <task-result>）
+  const isCustomXmlTag = (tagName: string): boolean => {
+    // 如果是标准 HTML 标签，不是自定义标签
+    if (isStandardTag(tagName)) {
+      return false;
     }
+    // 如果以大写字母开头，是自定义标签
+    if (/^[A-Z]/.test(tagName)) {
+      return true;
+    }
+    // 如果包含下划线或连字符，是自定义标签
+    if (tagName.includes('_') || tagName.includes('-')) {
+      return true;
+    }
+    return false;
+  };
+
+  // 统一的标签正则表达式
+  // 匹配所有 XML 风格的标签（包括自闭合、开始、结束标签）
+  // 标签名可以包含字母、数字、下划线、连字符
+  const allTagRegex = /<\/?([a-zA-Z][a-zA-Z0-9_-]*)(?:\s+[^>]*)?\s*\/?>/g;
+
+  // 处理所有标签
+  const result = text.replace(allTagRegex, (match, tagName) => {
     // 检查是否已经被转义（避免重复处理）
     if (match.includes('&lt;') || match.includes('&gt;')) {
       return match;
     }
-    // 转义自定义标签
-    return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  });
-
-  // 转义结束标签
-  result = result.replace(customClosingTagRegex, (match, tagName) => {
-    // 如果标签名是小写的标准标签，不转义
-    if (standardTags.includes(tagName.toLowerCase())) {
-      return match;
+    // 如果是自定义 XML 标签，转义
+    if (isCustomXmlTag(tagName)) {
+      return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
-    // 检查是否已经被转义（避免重复处理）
-    if (match.includes('&lt;') || match.includes('&gt;')) {
-      return match;
-    }
-    // 转义自定义标签
-    return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // 标准 HTML 标签不转义
+    return match;
   });
 
   return result;
