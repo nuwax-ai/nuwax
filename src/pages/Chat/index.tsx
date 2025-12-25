@@ -29,6 +29,7 @@ import {
   AllowCopyEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
+import { AgentTypeEnum } from '@/types/enums/space';
 import { AgentDetailDto } from '@/types/interfaces/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import type {
@@ -466,10 +467,14 @@ const Chat: React.FC = () => {
 
   // 显示文件树
   const handleFileTreeVisible = () => {
-    // 关闭 AgentSidebar，确保文件树显示时，AgentSidebar 不会显示
-    sidebarRef.current?.close();
-    // 触发文件列表刷新事件
-    openPreviewView(id);
+    if (isFileTreeVisible) {
+      closePreviewView();
+    } else {
+      // 关闭 AgentSidebar，确保文件树显示时，AgentSidebar 不会显示
+      sidebarRef.current?.close();
+      // 触发文件列表刷新事件
+      openPreviewView(id);
+    }
   };
 
   // 新建文件（空内容）、文件夹
@@ -777,7 +782,7 @@ const Chat: React.FC = () => {
                 )}
 
               {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
-              {!isFileTreeVisible && !isSidebarVisible && (
+              {agentDetail?.type === AgentTypeEnum.TaskAgent && (
                 <Button
                   type="text"
                   className={cx(styles.sidebarButton)}
