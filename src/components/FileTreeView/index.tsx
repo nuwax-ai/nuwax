@@ -12,7 +12,7 @@ import {
   transformFlatListToTree,
 } from '@/utils/appDevUtils';
 import {
-  handleDownloadFile,
+  downloadFileByUrl,
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
@@ -96,11 +96,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 是否正在保存文件
     const [isSavingFiles, setIsSavingFiles] = useState<boolean>(false);
     // 是否正在下载项目文件压缩包
-    const [isDownloading, setIsDownloading] = useState<boolean>(false);
+    const [isExportingProjecting, setIsExportingProjecting] =
+      useState<boolean>(false);
+    // 是否正在下载文件
+    const [isDownloadingFile, setIsDownloadingFile] = useState<boolean>(false);
 
     /** 当前文件查看类型：预览、代码 */
     const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
-      'code',
+      'preview',
     );
 
     useEffect(() => {
@@ -113,7 +116,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 文件选择
     const handleFileSelect = async (fileId: string) => {
       setSelectedFileId(fileId);
-      setViewFileType('code');
+      setViewFileType('preview');
       // 根据文件ID查找文件节点
       const fileNode = findFileNode(fileId, files);
       if (fileNode) {
@@ -672,9 +675,63 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     // 处理下载项目操作
     const handleDownloadProject = async () => {
-      setIsDownloading(true);
+      setIsExportingProjecting(true);
       await onExportProject?.();
-      setIsDownloading(false);
+      setIsExportingProjecting(false);
+    };
+
+    // 处理下载文件操作
+    const handleDownloadFileByUrl = async (node: FileNode) => {
+      setIsDownloadingFile(true);
+      await downloadFileByUrl?.(node);
+      setIsDownloadingFile(false);
+    };
+
+    /**
+     * 渲染头部组件
+     */
+    const renderHeader = () => {
+      return (
+        <FilePathHeader
+          className={headerClassName}
+          // 文件节点
+          targetNode={selectedFileNode}
+          // 当前视图模式
+          viewMode={viewMode}
+          // 视图模式切换回调
+          onViewModeChange={onViewModeChange}
+          // 导出项目回调
+          onExportProject={handleDownloadProject}
+          // 处理导入项目操作
+          onImportProject={onImportProject}
+          // 重启容器
+          onRestartServer={onRestartServer}
+          // 是否正在导出项目
+          isExportingProjecting={isExportingProjecting}
+          // 全屏回调
+          onFullscreen={handleFullscreen}
+          // 是否处于全屏状态
+          isFullscreen={false}
+          // 保存文件回调
+          onSaveFiles={saveFiles}
+          // 取消保存文件回调
+          onCancelSaveFiles={cancelSaveFiles}
+          // 是否存在修改过的文件
+          hasModifiedFiles={changeFiles.length > 0}
+          // 是否正在保存文件
+          isSavingFiles={isSavingFiles}
+          // 是否显示更多操作菜单
+          showMoreActions={showMoreActions}
+          // 当前文件类型
+          viewFileType={viewFileType}
+          // 针对html、md文件，切换预览和代码视图
+          onViewFileTypeChange={setViewFileType}
+          // 处理通过URL下载文件操作
+          onDownloadFileByUrl={handleDownloadFileByUrl}
+          // 是否正在下载文件
+          isDownloadingFile={isDownloadingFile}
+        />
+      );
     };
 
     return (
@@ -704,32 +761,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           destroyOnHidden={false}
         >
           <div className={cx(styles['fullscreen-container'])}>
-            {/* 全屏模式下的文件路径显示 */}
-            <div className={cx(styles['fullscreen-header'])}>
-              <FilePathHeader
-                className={headerClassName}
-                fileName={selectedFileNode?.name}
-                fileSize={selectedFileNode?.size}
-                viewMode={viewMode}
-                onViewModeChange={onViewModeChange}
-                onExportProject={handleDownloadProject}
-                // 处理导入项目操作
-                onImportProject={onImportProject}
-                // 重启容器
-                onRestartServer={onRestartServer}
-                isDownloading={isDownloading}
-                onFullscreen={handleFullscreen}
-                isFullscreen={true}
-                onSaveFiles={saveFiles}
-                onCancelSaveFiles={cancelSaveFiles}
-                hasModifiedFiles={changeFiles?.length > 0}
-                isSavingFiles={isSavingFiles}
-                showMoreActions={showMoreActions}
-                viewFileType={viewFileType}
-                // 针对html、md文件，切换预览和代码视图
-                onViewFileTypeChange={setViewFileType}
-              />
-            </div>
+            {/* 全屏模式下的头部组件 */}
+            {renderHeader()}
             {/* 全屏模式下的代码编辑器 */}
             <div className={cx(styles['fullscreen-content'])}>
               {renderContent()}
@@ -763,7 +796,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             // 处理导入项目操作
             onImportProject={onImportProject}
             // 处理通过URL下载文件操作
-            onDownloadFileByUrl={handleDownloadFile}
+            onDownloadFileByUrl={handleDownloadFileByUrl}
           />
           {/* 左边文件树 - 远程桌面模式下隐藏 */}
           {viewMode !== 'desktop' && (
@@ -798,6 +831,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               />
             </div>
           )}
+          {/* 右边内容 */}
           <div
             className={cx(
               'h-full',
@@ -807,30 +841,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               'overflow-hide',
             )}
           >
-            {/* 文件路径显示 */}
-            <FilePathHeader
-              className={headerClassName}
-              fileName={selectedFileNode?.name}
-              fileSize={selectedFileNode?.size}
-              viewMode={viewMode}
-              onViewModeChange={onViewModeChange}
-              onExportProject={handleDownloadProject}
-              // 处理导入项目操作
-              onImportProject={onImportProject}
-              // 重启容器
-              onRestartServer={onRestartServer}
-              isDownloading={isDownloading}
-              onFullscreen={handleFullscreen}
-              isFullscreen={false}
-              onSaveFiles={saveFiles}
-              onCancelSaveFiles={cancelSaveFiles}
-              hasModifiedFiles={changeFiles.length > 0}
-              isSavingFiles={isSavingFiles}
-              showMoreActions={showMoreActions}
-              viewFileType={viewFileType}
-              // 针对html、md文件，切换预览和代码视图
-              onViewFileTypeChange={setViewFileType}
-            />
+            {/* 渲染头部组件 */}
+            {renderHeader()}
             {/* 右边内容 */}
             <div className={cx(styles['content-container'])}>
               {renderContent()}
