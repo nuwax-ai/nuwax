@@ -24,7 +24,8 @@ const TaskResult: React.FC<TaskResultProps> = ({
   node,
   conversationId,
 }) => {
-  const { openPreviewView } = useModel('conversationInfo');
+  const { openPreviewView, setTaskAgentSelectedFileId } =
+    useModel('conversationInfo');
 
   // 生成唯一 key
   const {
@@ -32,11 +33,6 @@ const TaskResult: React.FC<TaskResultProps> = ({
     start: { offset: startOffset } = { offset: 0 },
   } = node?.position || {};
   const taskResultKey = `${startOffset}-${endOffset}-task-result`;
-
-  // 点击事件处理
-  const handleClick = () => {
-    openPreviewView(conversationId);
-  };
 
   if (!children) {
     return null;
@@ -57,6 +53,12 @@ const TaskResult: React.FC<TaskResultProps> = ({
     if (!fileName) {
       return null;
     }
+
+    // 点击事件处理
+    const handleClick = () => {
+      openPreviewView(conversationId);
+      setTaskAgentSelectedFileId(fileName);
+    };
 
     return (
       <div
