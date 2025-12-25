@@ -8,6 +8,7 @@ import {
   AgentComponentMcpUpdateParams,
   AgentComponentModelUpdateParams,
   AgentComponentPluginUpdateParams,
+  AgentComponentSkillUpdateParams,
   AgentComponentTableUpdateParams,
   AgentComponentVariableUpdateParams,
   AgentComponentWorkflowUpdateParams,
@@ -134,6 +135,16 @@ export async function apiAgentComponentMcpUpdate(
   data: AgentComponentMcpUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/mcp/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新技能组件配置
+export async function apiAgentComponentSkillUpdate(
+  data: AgentComponentSkillUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/skill/update', {
     method: 'POST',
     data,
   });
