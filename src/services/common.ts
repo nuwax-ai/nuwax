@@ -173,8 +173,11 @@ const responseInterceptors = [
     // 拦截响应数据，进行错误处理
     const { data = {} as any, config } = response;
 
-    // 如果响应数据是字符串，直接返回响应对象(用于直接通过fetchContentFromUrl获取的内容)
-    if (typeof data !== 'object') {
+    /**
+     * 如果响应数据是字符串，直接返回响应对象(用于直接通过fetchContentFromUrl获取的内容)
+     * 如果响应数据是对象，但是没有code属性，直接返回响应对象(用于直接通过fetchContentFromUrl获取的内容)
+     */
+    if (typeof data !== 'object' || (typeof data === 'object' && !data.code)) {
       return response;
     }
 
