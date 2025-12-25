@@ -7,7 +7,11 @@ import type {
 } from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { getIntegerOnlyFieldProps } from '@/utils/inputValidation';
-import type { ActionType, ProColumns } from '@ant-design/pro-components';
+import type {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import { Button, message } from 'antd';
 import dayjs from 'dayjs';
@@ -26,6 +30,7 @@ const LogProTable: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const spaceId = Number(params.spaceId);
   const actionRef = useRef<ActionType>();
+  const formRef = useRef<FormInstance>();
 
   const [detailsVisible, setDetailsVisible] = useState<boolean>(false);
   const [currentId, setCurrentId] = useState<string>();
@@ -230,8 +235,28 @@ const LogProTable: React.FC = () => {
     ],
   );
 
+  // 中间变量用于判断是否是点击重置按钮
+  const isReset = useRef(false);
+
   const request = useCallback(
     async (tableParams: Record<string, any>) => {
+      // 判断是否是点击重置按钮
+      if (isReset.current) {
+        isReset.current = false;
+        // 设置表单值为空
+        formRef.current?.setFieldsValue({
+          targetType: undefined,
+          targetId: undefined,
+        });
+
+        // 删除查询参数，防止重复查询
+        searchParams.delete('targetType');
+        searchParams.delete('targetId');
+        searchParams.delete('from');
+        tableParams.targetId = undefined;
+        tableParams.targetType = undefined;
+        setSearchParams(searchParams);
+      }
       const current = Number(tableParams.current || 1);
       const pageSize = Number(tableParams.pageSize || 10);
 
@@ -343,9 +368,14 @@ const LogProTable: React.FC = () => {
     ];
   }, [columns, handleOpenDetails, spaceId]);
 
+  const handleReset = () => {
+    isReset.current = true;
+  };
+
   return (
     <>
       <ProTable<SpaceLogInfo>
+        formRef={formRef}
         actionRef={actionRef}
         rowKey={(record) => record.id}
         columns={columnsWithActions}
@@ -372,9 +402,8 @@ const LogProTable: React.FC = () => {
         }}
         dateFormatter="number"
         onSubmit={handleCloseDetails}
-        onReset={handleCloseDetails}
+        onReset={handleReset}
       />
-
       <LogDetailDrawer
         open={detailsVisible}
         id={currentId}
