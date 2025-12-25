@@ -33,22 +33,6 @@ const TaskResult: React.FC<TaskResultProps> = ({
   } = node?.position || {};
   const taskResultKey = `${startOffset}-${endOffset}-task-result`;
 
-  // 提取文本内容
-  const extractTextContent = (node: any): string => {
-    if (typeof node === 'string') {
-      return node;
-    }
-    if (Array.isArray(node)) {
-      return node.map(extractTextContent).join('');
-    }
-    if (node?.props?.children) {
-      return extractTextContent(node.props.children);
-    }
-    return '';
-  };
-
-  const textContent = extractTextContent(children);
-
   // 点击事件处理
   const handleClick = () => {
     openPreviewView(conversationId);
@@ -80,7 +64,7 @@ const TaskResult: React.FC<TaskResultProps> = ({
         data-key={taskResultKey}
         className={cx(styles['task-result'])}
         onClick={handleClick}
-        title={textContent.replaceAll('\n', ' ')}
+        title={fileDescription ? fileDescription : fileName}
       >
         <span className={cx(styles['task-result-icon'])}>
           <FileTextOutlined />
@@ -94,7 +78,7 @@ const TaskResult: React.FC<TaskResultProps> = ({
       </div>
     );
   } catch (error) {
-    console.error('TaskResult error', error);
+    console.warn('TaskResult error', error);
     return null;
   }
 };
