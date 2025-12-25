@@ -824,6 +824,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               />
               <FileTree
                 files={files}
+                taskAgentSelectedFileId={taskAgentSelectedFileId}
                 // 当前选中的文件ID
                 selectedFileId={selectedFileId}
                 // 正在重命名的节点

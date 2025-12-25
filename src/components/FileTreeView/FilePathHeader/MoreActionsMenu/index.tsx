@@ -72,7 +72,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
                   style={{ fontSize: 16 }}
                 />
               ),
-              label: '全屏页面预览',
+              label: '全屏预览',
               onClick: onFullscreenPreview,
               disabled: isChatLoading,
             },

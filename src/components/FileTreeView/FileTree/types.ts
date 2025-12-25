@@ -7,6 +7,9 @@ export interface FileTreeProps {
   /** 文件树数据 */
   files: FileNode[];
 
+  /** 任务智能体会话中点击选中的文件ID */
+  taskAgentSelectedFileId?: string;
+
   /** 当前选中的文件ID */
   selectedFileId: string;
 
