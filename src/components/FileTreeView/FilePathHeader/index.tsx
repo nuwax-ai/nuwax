@@ -163,7 +163,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       )}
 
       {/* 下载文件按钮 */}
-      {onDownloadFileByUrl && targetNode && (
+      {onDownloadFileByUrl && targetNode && viewMode === 'preview' && (
         <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
           <Button
             type="text"
