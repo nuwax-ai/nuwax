@@ -30,7 +30,8 @@
 - ✅ **@ Mentions**：支持 @ 符号触发用户/文件等提及功能
 - ✅ **工具块**：支持 `{#ToolBlock ...#}` 格式的工具块插入
 - ✅ **Raw 节点**：支持展示 HTML/XML 原始内容，防止被 ProseMirror 解析
-- ✅ **Markdown 高亮**：支持 Markdown 语法高亮显示
+- ✅ **XML 标签支持**：支持自定义 XML 标签的正确显示（[HTML/XML 处理规则](./HTML_XML_PROCESSING_RULES.md)）
+- ✅ **Markdown 高亮**：支持 Markdown 语法高亮显示（自动保护 XML 标签中的下划线）
 - ✅ **自动补全大括号**：智能补全 `{` 为 `{}`
 - ✅ **光标管理**：智能管理光标位置，避免跳字问题
 - ✅ **文本转换**：支持纯文本和 HTML 格式之间的自动转换
@@ -719,7 +720,10 @@ TiptapVariableInput/
 ├── index.ts             # 组件导出
 ├── styles.less          # 样式文件
 ├── types.ts             # 类型定义
-└── TiptapVariableInput.tsx # 主组件
+├── TiptapVariableInput.tsx # 主组件
+├── README.md            # 组件使用文档
+├── VARIABLE_SUGGESTION_RULES.md  # 变量建议触发规则
+└── HTML_XML_PROCESSING_RULES.md  # HTML/XML 处理规则
 ```
 
 ## 最佳实践
