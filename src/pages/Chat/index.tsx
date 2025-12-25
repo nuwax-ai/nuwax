@@ -988,39 +988,32 @@ const Chat: React.FC = () => {
       {/*文件树侧边栏 - 只在 AgentSidebar 隐藏时显示 */}
       {isFileTreeVisible && (
         <div
-          className={cx(
-            styles['file-tree-sidebar'],
-            styles['flex-2'],
-            'flex',
-            'flex-col',
-          )}
+          className={cx(styles['file-tree-sidebar'], styles['flex-2'], 'flex')}
         >
-          <div className={cx(styles['file-tree-content'], 'flex')}>
-            <FileTreeView
-              taskAgentSelectedFileId={taskAgentSelectedFileId}
-              originalFiles={fileTreeData}
-              fileTreeDataLoading={fileTreeDataLoading}
-              targetId={id?.toString() || ''}
-              viewMode={viewMode}
-              readOnly={false}
-              // 切换视图、远程桌面模式
-              onViewModeChange={onViewModeChange}
-              // 导出项目
-              onExportProject={handleExportProject}
-              // 上传文件
-              onUploadFiles={handleUploadMultipleFiles}
-              // 重命名文件
-              onRenameFile={handleConfirmRenameFile}
-              // 新建文件、文件夹
-              onCreateFileNode={handleCreateFileNode}
-              // 删除文件
-              onDeleteFile={handleDeleteFile}
-              // 保存文件
-              onSaveFiles={handleSaveFiles}
-              // 重启容器
-              onRestartServer={() => restartVncPod(id)}
-            />
-          </div>
+          <FileTreeView
+            taskAgentSelectedFileId={taskAgentSelectedFileId}
+            originalFiles={fileTreeData}
+            fileTreeDataLoading={fileTreeDataLoading}
+            targetId={id?.toString() || ''}
+            viewMode={viewMode}
+            readOnly={false}
+            // 切换视图、远程桌面模式
+            onViewModeChange={onViewModeChange}
+            // 导出项目
+            onExportProject={handleExportProject}
+            // 上传文件
+            onUploadFiles={handleUploadMultipleFiles}
+            // 重命名文件
+            onRenameFile={handleConfirmRenameFile}
+            // 新建文件、文件夹
+            onCreateFileNode={handleCreateFileNode}
+            // 删除文件
+            onDeleteFile={handleDeleteFile}
+            // 保存文件
+            onSaveFiles={handleSaveFiles}
+            // 重启容器
+            onRestartServer={() => restartVncPod(id)}
+          />
         </div>
       )}
 
