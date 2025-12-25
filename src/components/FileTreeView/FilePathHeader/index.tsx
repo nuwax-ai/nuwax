@@ -1,6 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { USER_INFO } from '@/constants/home.constants';
+import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
 import {
   DesktopOutlined,
@@ -19,10 +20,8 @@ const cx = classNames.bind(styles);
 
 interface FilePathHeaderProps {
   className?: string;
-  /** 文件名 */
-  fileName?: string;
-  /** 文件大小（字节） */
-  fileSize?: number;
+  /** 文件节点 */
+  targetNode: FileNode | null;
   /** 当前视图模式 */
   viewMode?: 'preview' | 'desktop';
   /** 视图模式切换回调 */
@@ -45,14 +44,18 @@ interface FilePathHeaderProps {
   hasModifiedFiles?: boolean;
   /** 是否正在保存文件 */
   isSavingFiles?: boolean;
+  /** 是否正在导出项目 */
+  isExportingProjecting?: boolean;
   /** 是否正在下载文件 */
-  isDownloading?: boolean;
+  isDownloadingFile?: boolean;
   /** 是否显示更多操作菜单 */
   showMoreActions?: boolean;
   /** 文件类型 */
   viewFileType?: 'preview' | 'code';
   /** 针对html、md文件，切换预览和代码视图 */
   onViewFileTypeChange?: (type: 'preview' | 'code') => void;
+  /** 通过URL下载文件回调 */
+  onDownloadFileByUrl?: (node: FileNode) => void;
 }
 
 /**
@@ -61,8 +64,7 @@ interface FilePathHeaderProps {
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
-  fileName,
-  fileSize,
+  targetNode,
   viewMode = 'preview',
   onViewModeChange,
   onRestartServer,
@@ -74,11 +76,16 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onCancelSaveFiles,
   hasModifiedFiles = false,
   isSavingFiles = false,
-  // isDownloading = false,
+  isDownloadingFile = false,
   showMoreActions = true,
   viewFileType = 'preview',
   onViewFileTypeChange,
+  onDownloadFileByUrl,
 }) => {
+  // 文件名
+  const fileName = targetNode?.name;
+  // 文件大小
+  const fileSize = targetNode?.size;
   // 格式化的文件大小
   const formattedSize = useMemo(() => {
     if (!fileSize) return '';
@@ -153,6 +160,23 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             取消
           </Button>
         </div>
+      )}
+
+      {/* 下载文件按钮 */}
+      {onDownloadFileByUrl && targetNode && (
+        <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
+          <Button
+            type="text"
+            size="small"
+            icon={
+              <SvgIcon name="icons-common-download" style={{ fontSize: 16 }} />
+            }
+            onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
+            className={styles.actionButton}
+            loading={isDownloadingFile}
+            disabled={isDownloadingFile}
+          />
+        </Tooltip>
       )}
 
       {/* 中间：视图模式切换按钮 */}
