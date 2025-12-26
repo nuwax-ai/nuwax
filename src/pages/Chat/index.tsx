@@ -872,12 +872,14 @@ const Chat: React.FC = () => {
           </div>
 
           {/* 会话状态显示 - 有消息时就显示 */}
-          {messageList?.length > 0 && conversationInfo && (
-            <ConversationStatus
-              messageList={messageList}
-              className={cx(styles['conversation-status-bar'])}
-            />
-          )}
+          {messageList?.length > 0 &&
+            conversationInfo &&
+            agentDetail?.type === AgentTypeEnum.TaskAgent && (
+              <ConversationStatus
+                messageList={messageList}
+                className={cx(styles['conversation-status-bar'])}
+              />
+            )}
 
           <ChatInputHome
             // key={`chat-${id}-${agentId}`}
