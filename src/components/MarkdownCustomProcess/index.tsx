@@ -85,18 +85,18 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
         return (
           <div className={cx(styles['status-completed'])}>
             <CheckOutlined />
-            已完成
+            {/* 已完成 */}
           </div>
         );
       case ProcessingEnum.EXECUTING:
         return (
           <div className={cx(styles['status-running'])}>
             <div className={cx(styles['loading-spinner'])} />
-            运行中
+            {/* 运行中 */}
           </div>
         );
       case ProcessingEnum.FAILED:
-        return <div className={cx(styles['status-error'])}>❌ 错误</div>;
+        return <div className={cx(styles['status-error'])}>⚠️{/* 错误 */}</div>;
       default:
         return null;
     }
