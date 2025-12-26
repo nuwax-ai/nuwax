@@ -9,7 +9,7 @@ import { useConversationScrollDetection } from '@/hooks/useConversationScrollDet
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
-import { EditAgentShowType } from '@/types/enums/space';
+import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
@@ -391,12 +391,14 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               )}
             </div>
             {/* 会话状态显示 - 有消息时就显示 */}
-            {messageList?.length > 0 && conversationInfo && (
-              <ConversationStatus
-                messageList={messageList}
-                className={cx(styles['conversation-status-bar'])}
-              />
-            )}
+            {messageList?.length > 0 &&
+              conversationInfo &&
+              agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+                <ConversationStatus
+                  messageList={messageList}
+                  className={cx(styles['conversation-status-bar'])}
+                />
+              )}
             {/*会话输入框*/}
             <ChatInputHome
               key={`edit-agent-${agentId}`}
