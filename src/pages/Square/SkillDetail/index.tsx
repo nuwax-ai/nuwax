@@ -1,4 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
+import FileTreeView from '@/components/FileTreeView';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import { apiPublishedSkillInfo } from '@/services/plugin';
 import { apiPublishTemplateCopy } from '@/services/publish';
@@ -26,13 +27,14 @@ const SkillDetail: React.FC = ({}) => {
   const [openMove, setOpenMove] = useState<boolean>(false);
 
   // 查询技能信息
-  const { run: runSkillInfo, data: skillInfo } = useRequest(
-    apiPublishedSkillInfo,
-    {
-      manual: true,
-      debounceInterval: 300,
-    },
-  );
+  const {
+    run: runSkillInfo,
+    data: skillInfo,
+    loading: loadingSkillInfo,
+  } = useRequest(apiPublishedSkillInfo, {
+    manual: true,
+    debounceInterval: 300,
+  });
 
   // 智能体、工作流、技能模板复制
   const { run: runCopyTemplate, loading: loadingCopyTemplate } = useRequest(
@@ -100,6 +102,18 @@ const SkillDetail: React.FC = ({}) => {
           }
         />
       )}
+
+      {/* 文件树视图 */}
+      <FileTreeView
+        // 加载状态
+        fileTreeDataLoading={loadingSkillInfo}
+        // 技能文件列表
+        originalFiles={skillInfo?.files || []}
+        // 是否只读
+        readOnly={true}
+        // 是否显示更多操作菜单
+        showMoreActions={false}
+      />
     </div>
   );
 };
