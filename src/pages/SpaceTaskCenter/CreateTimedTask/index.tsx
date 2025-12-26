@@ -4,7 +4,7 @@ import { apiAddTimedTask, apiUpdateTimedTask } from '@/services/library';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps } from 'antd';
-import { Form, Input, message } from 'antd';
+import { Form, Input, message, Switch } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import TimedPeriodSelector from './components/TimedPeriodSelector';
@@ -54,7 +54,6 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     try {
       setLoading(true);
       const resp = await apiAddTimedTask(data);
-      console.log(resp);
       if (resp?.code === SUCCESS_CODE) {
         message.success('定时任务已创建成功');
         onCancel?.();
@@ -90,7 +89,10 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
           obj[item.name] = JSON.parse(values[item.name] || '{}');
         } else if (item.dataType === 'Array_String') {
           obj[item.name] = JSON.parse(values[item.name] || '[]');
-        } else if (item.dataType === 'File_Image') {
+        } else if (
+          item.dataType &&
+          ['File_Image', 'File_Default'].includes(item.dataType)
+        ) {
           obj[item.name] = values[item.name]?.url || '';
         } else {
           obj[item.name] = values[item.name] || '';
@@ -111,10 +113,18 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
       message,
       taskName,
       cron,
+      keepConversation,
     } = values;
 
     // 基础数据
-    let data: any = { spaceId, targetType, targetId, taskName, cron };
+    let data: any = {
+      spaceId,
+      targetType,
+      targetId,
+      taskName,
+      cron,
+      keepConversation: keepConversation ? 1 : 0,
+    };
 
     // 获取参数配置
     const params = getParameterConfig(values);
@@ -178,21 +188,55 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     getTargetConfig(value);
   };
 
-  // 更新回显任务信息-智能体
-  const updateTaskInfoAgent = async (info: TaskInfo) => {
-    const { cron, taskName, targetType, targetId, params } = info;
-    // 查询智能体信息
-    const {
-      data: { name, description, variables, icon },
-    } = await apiPublishedAgentInfo(Number(targetId));
-    const { message, variables: paramsVariables } = params;
+  // 更新定时任务
+  const updateTaskInfo = async (info: TaskInfo) => {
+    const { cron, taskName, targetType, targetId, params, keepConversation } =
+      info;
+    let result: any = null;
+    let message: string = '';
+    let paramsVariables: Record<string, any> = {};
+    if (info.targetType === AgentComponentTypeEnum.Agent) {
+      message = params.message;
+      paramsVariables = params.variables;
+      // 查询智能体信息
+      const {
+        data: { name, description, variables, icon },
+      } = await apiPublishedAgentInfo(Number(targetId));
+      result = {
+        name,
+        description,
+        variables,
+        icon,
+      };
+    }
+
+    if (info.targetType === AgentComponentTypeEnum.Workflow) {
+      paramsVariables = params;
+      // 查询工作流入参配置
+      const {
+        data: { name, description, inputArgs, icon },
+      } = await apiPublishedWorkflowInfo(Number(targetId));
+      result = {
+        name,
+        description,
+        variables: inputArgs,
+        icon,
+      };
+    }
+    if (!result) {
+      return;
+    }
+    const { name, description, variables, icon } = result;
     // 初始化参数对象
     const paramsObj = variables.reduce((acc: any, item: BindConfigWithSub) => {
       if (item.dataType === 'Object') {
         acc[item.name] = JSON.stringify(paramsVariables[item.name] || '{}');
       } else if (item.dataType === 'Array_String') {
         acc[item.name] = JSON.stringify(paramsVariables[item.name] || '[]');
-      } else if (item.dataType === 'File_Image') {
+      } else if (
+        item.dataType &&
+        ['File_Image', 'File_Default'].includes(item.dataType)
+      ) {
         acc[item.name] = paramsVariables[item.name] || '';
       } else {
         acc[item.name] = paramsVariables[item.name] || '';
@@ -200,9 +244,11 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
       return acc;
     }, {});
 
+    // 更新回显任务信息表单值
     form.setFieldsValue({
       cron,
       taskName,
+      keepConversation: keepConversation ? 1 : 0,
       taskTarget: {
         name: name,
         icon: icon,
@@ -211,62 +257,10 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
         targetId: targetId,
         targetConfig: '',
       },
-      message,
-      variables: variables, // 智能体变量配置
+      variables: variables, // 工作流入参配置
       ...paramsObj, // 初始化参数对象
+      ...(info.targetType === AgentComponentTypeEnum.Agent ? { message } : {}),
     });
-  };
-
-  // 更新回显任务信息-工作流
-  const updateTaskInfoWorkflow = async (info: TaskInfo) => {
-    const { cron, taskName, targetType, targetId, params } = info;
-    // 查询工作流入参配置
-    const {
-      data: { name, description, inputArgs, icon },
-    } = await apiPublishedWorkflowInfo(Number(targetId));
-    // 初始化参数对象
-    const paramsObj = inputArgs.reduce((acc: any, item: BindConfigWithSub) => {
-      if (item.dataType === 'Object') {
-        acc[item.name] = JSON.stringify(params[item.name] || '{}');
-      } else if (item.dataType === 'Array_String') {
-        acc[item.name] = JSON.stringify(params[item.name] || '[]');
-      } else if (item.dataType === 'File_Image') {
-        acc[item.name] = params[item.name] || '';
-      } else {
-        acc[item.name] = params[item.name] || '';
-      }
-      return acc;
-    }, {});
-
-    // 配置表单值
-
-    form.setFieldsValue({
-      cron,
-      taskName,
-      taskTarget: {
-        name: name,
-        icon: icon,
-        description: description,
-        type: targetType,
-        targetId: targetId,
-        targetConfig: '',
-      },
-      variables: inputArgs, // 工作流入参配置
-      ...paramsObj, // 初始化参数对象
-    });
-  };
-
-  // 更新定时任务
-  const updateTaskInfo = async (info: TaskInfo) => {
-    // 根据任务对象类型更新回显任务信息
-    switch (info.targetType) {
-      case AgentComponentTypeEnum.Agent:
-        updateTaskInfoAgent(info);
-        break;
-      case AgentComponentTypeEnum.Workflow:
-        updateTaskInfoWorkflow(info);
-        break;
-    }
   };
 
   useEffect(() => {
@@ -299,6 +293,9 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
         onFinish={onFinish}
         autoComplete="off"
         style={{ maxHeight: '70vh', overflowY: 'auto', paddingRight: '10px' }}
+        initialValues={{
+          keepConversation: true,
+        }}
       >
         <Form.Item name="cron" label={<LabelStar label="定时周期" />}>
           <TimedPeriodSelector />
@@ -310,6 +307,14 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
           rules={[{ required: true, message: '请输入任务名称' }]}
         >
           <Input placeholder="请输入任务名称" showCount maxLength={100} />
+        </Form.Item>
+        <Form.Item
+          name="keepConversation"
+          label="保持对话"
+          tooltip="选择“否”时将为每次任务执行创建一个全新的会话）"
+          rules={[{ required: true, message: '请选择是否保持对话' }]}
+        >
+          <Switch checkedChildren="是" unCheckedChildren="否" />
         </Form.Item>
 
         {/* 任务对象 自定义 Form.Item */}
