@@ -190,13 +190,14 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
 
   // 更新定时任务
   const updateTaskInfo = async (info: TaskInfo) => {
-    const { cron, taskName, targetType, targetId, params, keepConversation } =
-      info;
+    const { cron, taskName, targetType, targetId, params } = info;
     let result: any = null;
     let message: string = '';
+    let keepConversation: string = '';
     let paramsVariables: Record<string, any> = {};
     if (info.targetType === AgentComponentTypeEnum.Agent) {
       message = params.message;
+      keepConversation = params.keepConversation;
       paramsVariables = params.variables;
       // 查询智能体信息
       const {
@@ -248,7 +249,6 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
     form.setFieldsValue({
       cron,
       taskName,
-      keepConversation: keepConversation ? 1 : 0,
       taskTarget: {
         name: name,
         icon: icon,
@@ -259,7 +259,12 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
       },
       variables: variables, // 工作流入参配置
       ...paramsObj, // 初始化参数对象
-      ...(info.targetType === AgentComponentTypeEnum.Agent ? { message } : {}),
+      ...(info.targetType === AgentComponentTypeEnum.Agent
+        ? {
+            message,
+            keepConversation: keepConversation ? true : false,
+          }
+        : {}),
     });
   };
 
@@ -308,14 +313,6 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
         >
           <Input placeholder="请输入任务名称" showCount maxLength={100} />
         </Form.Item>
-        <Form.Item
-          name="keepConversation"
-          label="保持对话"
-          tooltip="选择“否”时将为每次任务执行创建一个全新的会话）"
-          rules={[{ required: true, message: '请选择是否保持对话' }]}
-        >
-          <Switch checkedChildren="是" unCheckedChildren="否" />
-        </Form.Item>
 
         {/* 任务对象 自定义 Form.Item */}
         <SelectTargetFormItem
@@ -327,18 +324,28 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
 
         {/* 只有智能体有任务内容 */}
         {taskTarget?.type === AgentComponentTypeEnum.Agent && (
-          <Form.Item
-            name="message"
-            label="任务内容"
-            rules={[{ required: true, message: '请输入任务内容' }]}
-          >
-            <Input.TextArea
-              placeholder="请输入你要执行的任务信息，信息提供的越详细执行成功率越高"
-              showCount
-              autoSize={{ minRows: 3, maxRows: 6 }}
-              maxLength={10000}
-            />
-          </Form.Item>
+          <>
+            <Form.Item
+              name="keepConversation"
+              label="保持对话"
+              tooltip="选择“否”时将为每次任务执行创建一个全新的会话）"
+              rules={[{ required: true, message: '请选择是否保持对话' }]}
+            >
+              <Switch checkedChildren="是" unCheckedChildren="否" />
+            </Form.Item>
+            <Form.Item
+              name="message"
+              label="任务内容"
+              rules={[{ required: true, message: '请输入任务内容' }]}
+            >
+              <Input.TextArea
+                placeholder="请输入你要执行的任务信息，信息提供的越详细执行成功率越高"
+                showCount
+                autoSize={{ minRows: 3, maxRows: 6 }}
+                maxLength={10000}
+              />
+            </Form.Item>
+          </>
         )}
 
         {/* 不能直接不显示存在 否则无法触发表单校验 【variables】 */}
