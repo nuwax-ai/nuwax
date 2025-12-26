@@ -86,20 +86,38 @@ export async function collect(
   type: string,
   id: number,
 ): Promise<RequestResponse<any>> {
+  // 智能体收藏
+  if (type === AgentComponentTypeEnum.Agent.toLowerCase()) {
+    return request(`/api/user/agent/collect/${id}`, {
+      method: 'POST',
+    }).then((res: any) => {
+      return res;
+    });
+  }
   return request(`/api/published/${type}/collect/${id}`, {
     method: 'POST',
     data: { [`${type}Id`]: id },
   });
 }
 
-// 取消收藏当前的插件、工作流、知识库、数据库
+// 取消收藏当前的插件、工作流、知识库、数据库、智能体
 export async function unCollect(
   type: string,
   id: number,
 ): Promise<RequestResponse<any>> {
+  // 智能体取消收藏
+  if (type === AgentComponentTypeEnum.Agent.toLowerCase()) {
+    return request(`/api/user/agent/unCollect/${id}`, {
+      method: 'POST',
+    }).then((res: any) => {
+      return res;
+    });
+  }
   return request(`/api/published/${type}/unCollect/${id}`, {
     method: 'POST',
     data: { [`${type}Id`]: id },
+  }).then((res: any) => {
+    return res;
   });
 }
 
