@@ -95,6 +95,12 @@ const RecommendList: React.FC<RecommendListProps> = ({
         if (!item) {
           return null;
         }
+        if (typeof item === 'object' && !item.info) {
+          return null;
+        }
+        if (typeof item === 'string' && !item) {
+          return null;
+        }
         return (
           <div
             key={index}
