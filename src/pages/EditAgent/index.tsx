@@ -498,8 +498,13 @@ const EditAgent: React.FC = () => {
       return;
     }
 
-    // 触发文件列表刷新事件
-    openPreviewView(devConversationId);
+    if (isFileTreeVisible) {
+      // 关闭文件树
+      closePreviewView();
+    } else {
+      // 触发文件列表刷新事件
+      openPreviewView(devConversationId);
+    }
   };
 
   // 切换视图模式
@@ -932,7 +937,6 @@ const EditAgent: React.FC = () => {
                     onAgentConfigInfo={setAgentConfigInfo}
                     onOpenPreview={handleOpenPreview}
                     onToggleFileTree={handleFileTreeVisible}
-                    isFileTreeVisible={isFileTreeVisible}
                   />
                 )
               }
