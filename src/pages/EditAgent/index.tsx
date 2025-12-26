@@ -958,36 +958,33 @@ const EditAgent: React.FC = () => {
               styles['file-tree-sidebar'],
               styles['flex-2'],
               'flex',
-              'flex-col',
             )}
           >
-            <div className={cx(styles['file-tree-content'], 'flex')}>
-              <FileTreeView
-                headerClassName={styles['file-tree-header']}
-                taskAgentSelectedFileId={taskAgentSelectedFileId}
-                originalFiles={fileTreeData}
-                fileTreeDataLoading={fileTreeDataLoading}
-                targetId={devConversationId.toString()}
-                viewMode={viewMode}
-                readOnly={false}
-                // 切换视图、远程桌面模式
-                onViewModeChange={onViewModeChange}
-                // 导出项目
-                onExportProject={handleExportProject}
-                // 上传文件
-                onUploadFiles={handleUploadMultipleFiles}
-                // 重命名文件
-                onRenameFile={handleConfirmRenameFile}
-                // 新建文件、文件夹
-                onCreateFileNode={handleCreateFileNode}
-                // 删除文件
-                onDeleteFile={handleDeleteFile}
-                // 保存文件
-                onSaveFiles={handleSaveFiles}
-                // 重启容器
-                onRestartServer={() => restartVncPod(devConversationId)}
-              />
-            </div>
+            <FileTreeView
+              headerClassName={styles['file-tree-header']}
+              taskAgentSelectedFileId={taskAgentSelectedFileId}
+              originalFiles={fileTreeData}
+              fileTreeDataLoading={fileTreeDataLoading}
+              targetId={devConversationId.toString()}
+              viewMode={viewMode}
+              readOnly={false}
+              // 切换视图、远程桌面模式
+              onViewModeChange={onViewModeChange}
+              // 导出项目
+              onExportProject={handleExportProject}
+              // 上传文件
+              onUploadFiles={handleUploadMultipleFiles}
+              // 重命名文件
+              onRenameFile={handleConfirmRenameFile}
+              // 新建文件、文件夹
+              onCreateFileNode={handleCreateFileNode}
+              // 删除文件
+              onDeleteFile={handleDeleteFile}
+              // 保存文件
+              onSaveFiles={handleSaveFiles}
+              // 重启容器
+              onRestartServer={() => restartVncPod(devConversationId)}
+            />
           </div>
         )}
 

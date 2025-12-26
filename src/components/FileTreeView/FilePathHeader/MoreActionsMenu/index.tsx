@@ -8,7 +8,7 @@ interface MoreActionsProps {
   onImportProject?: () => void;
   // 重启远程电脑
   onRestartServer?: () => void;
-  // 全屏页面预览
+  // 全屏预览
   onFullscreenPreview?: () => void;
   // 导出项目
   onExportProject?: () => void;
@@ -61,7 +61,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
             },
           ]
         : []),
-      // 只有当 onFullscreenPreview 存在时才显示全屏页面预览选项
+      // 只有当 onFullscreenPreview 存在时才显示全屏预览选项
       ...(onFullscreenPreview
         ? [
             {

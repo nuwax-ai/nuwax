@@ -200,15 +200,15 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
 
       // 如果任务智能体会话中点击选中了文件，且文件ID发生了变化，则设置选中文件ID
-      // 注意：只有 taskAgentSelectedFileId 变化时才触发，避免 originalFiles 更新时重复调用
+      // 注意：依赖 files 而不是 originalFiles，确保在 files 更新后再调用
       if (
-        originalFiles?.length > 0 &&
+        files?.length > 0 &&
         taskAgentSelectedFileId !== prevTaskAgentSelectedFileIdRef.current // 避免重复选择同一个文件
       ) {
         prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
         handleFileSelect(taskAgentSelectedFileId);
       }
-    }, [taskAgentSelectedFileId, originalFiles]);
+    }, [taskAgentSelectedFileId, files]);
 
     useEffect(() => {
       // 如果文件列表不为空，则转换为树形结构
@@ -690,7 +690,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 如果是html、md文件，并且处于预览模式，则使用iframe预览
       if (
         (fileName?.includes('.htm') || fileName?.includes('.md')) &&
-        viewFileType === 'preview'
+        viewFileType === 'preview' &&
+        fileProxyUrl
       ) {
         return <iframe src={fileProxyUrl} width="100%" height="100%" />;
       }
@@ -746,7 +747,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 全屏回调
           onFullscreen={handleFullscreen}
           // 是否处于全屏状态
-          isFullscreen={false}
+          isFullscreen={isFullscreen}
           // 保存文件回调
           onSaveFiles={saveFiles}
           // 取消保存文件回调
