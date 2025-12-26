@@ -200,6 +200,9 @@ export default () => {
           fileId: item.name,
         }));
         setFileTreeData(_fileTreeData);
+      } else {
+        // 如果文件列表为空，则清空文件树数据(比如：删除所有文件后，文件树数据为空)
+        setFileTreeData([]);
       }
     },
     onError: () => {
