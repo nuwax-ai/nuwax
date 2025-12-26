@@ -26,16 +26,18 @@ import React, {
 import ReactMarkdown from 'react-markdown';
 import styles from './index.less';
 
-// @ts-ignore
-import jsPreviewDocx from '@js-preview/docx';
+// 样式静态导入（确保样式提前加载）
 import '@js-preview/docx/lib/index.css';
-// @ts-ignore
-import jsPreviewExcel from '@js-preview/excel';
 import '@js-preview/excel/lib/index.css';
-// @ts-ignore
-import jsPreviewPdf from '@js-preview/pdf';
-// @ts-ignore
-import { init as pptxInit } from 'pptx-preview';
+
+// 预览库动态加载函数
+const loadDocxPreview = () => import('@js-preview/docx');
+const loadExcelPreview = () => import('@js-preview/excel');
+const loadPdfPreview = () => import('@js-preview/pdf');
+const loadPptxPreview = () => import('pptx-preview');
+
+// 导入 PPTX 降级渲染工具
+import { parsePPTX, renderFallback } from '@/utils/pptxFallbackRenderer';
 
 // File type categories
 export type DocumentType = 'docx' | 'xlsx' | 'pptx' | 'pdf';
@@ -236,6 +238,63 @@ const getSourceUrl = (src: string | ArrayBuffer | Blob | File): string => {
   return URL.createObjectURL(new Blob([src]));
 };
 
+/**
+ * 将技术性错误信息转换为用户友好的中文提示
+ * @param error 原始错误信息
+ * @param fileType 文件类型
+ * @returns 用户友好的中文错误信息
+ */
+const getLocalizedErrorMessage = (
+  error: string | undefined,
+  fileType?: string,
+): string => {
+  const errorStr = error?.toLowerCase() || '';
+
+  // PPTX 相关错误
+  if (
+    errorStr.includes('central directory') ||
+    errorStr.includes('zip file') ||
+    errorStr.includes('jszip')
+  ) {
+    return '文件格式无效或已损坏，请确认是否为有效的 PPTX 文件';
+  }
+
+  // 网络相关错误
+  if (
+    errorStr.includes('network') ||
+    errorStr.includes('fetch') ||
+    errorStr.includes('failed to fetch')
+  ) {
+    return '网络请求失败，请检查网络连接后重试';
+  }
+
+  // 文件加载错误
+  if (errorStr.includes('load') || errorStr.includes('loading')) {
+    return '文件加载失败，请重试';
+  }
+
+  // 解析错误
+  if (errorStr.includes('parse') || errorStr.includes('parsing')) {
+    return '文件解析失败，文件可能已损坏或格式不支持';
+  }
+
+  // 根据文件类型返回默认错误
+  switch (fileType) {
+    case 'docx':
+      return '文档预览失败，请确认文件格式正确';
+    case 'xlsx':
+      return '表格预览失败，请确认文件格式正确';
+    case 'pdf':
+      return 'PDF 预览失败，请确认文件格式正确';
+    case 'pptx':
+      return '演示文稿预览失败，请确认文件格式正确';
+    case 'image':
+      return '图片加载失败';
+    default:
+      return '文件预览失败，请重试';
+  }
+};
+
 const FilePreview: React.FC<FilePreviewProps> = ({
   src,
   srcList,
@@ -372,7 +431,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         onRendered?.();
       } catch (error: any) {
         setStatus('error');
-        setErrorMessage(error?.message || 'Failed to load file content');
+        setErrorMessage('文件内容加载失败，请重试');
         onError?.(error);
       }
       return;
@@ -400,7 +459,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           onRendered?.();
         } catch (error: any) {
           setStatus('error');
-          setErrorMessage(error?.message || 'Failed to load HTML content');
+          setErrorMessage('HTML 内容加载失败，请重试');
           onError?.(error);
         }
       }
@@ -431,19 +490,32 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       }
 
       switch (type) {
-        case 'docx':
+        case 'docx': {
+          // 动态加载 docx 预览库
+          const docxModule = await loadDocxPreview();
+          const jsPreviewDocx = docxModule.default;
           previewer = jsPreviewDocx.init(containerRef.current);
           await previewer.preview(previewSrc);
           break;
-        case 'xlsx':
+        }
+        case 'xlsx': {
+          // 动态加载 excel 预览库
+          const excelModule = await loadExcelPreview();
+          const jsPreviewExcel = excelModule.default;
           previewer = jsPreviewExcel.init(containerRef.current);
           await previewer.preview(previewSrc);
           break;
-        case 'pdf':
+        }
+        case 'pdf': {
+          // 动态加载 pdf 预览库
+          const pdfModule = await loadPdfPreview();
+          const jsPreviewPdf = pdfModule.default;
+          // 设置 PDF 预览器，使用容器宽度自适应
           previewer = jsPreviewPdf.init(containerRef.current, {
+            width: containerRef.current.clientWidth || undefined,
             onError: (e: any) => {
               setStatus('error');
-              setErrorMessage(e?.message || 'Failed to load PDF');
+              setErrorMessage(getLocalizedErrorMessage(e?.message, 'pdf'));
               onError?.(e);
             },
             onRendered: () => {
@@ -453,17 +525,116 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           });
           await previewer.preview(previewSrc);
           break;
-        case 'pptx':
-          previewer = pptxInit(containerRef.current, {
-            width: containerRef.current.clientWidth || 800,
-            height: containerRef.current.clientHeight || 600,
+        }
+        case 'pptx': {
+          // 动态加载 pptx 预览库
+          const pptxModule = await loadPptxPreview();
+          const pptxInit = pptxModule.init;
+
+          // 等待容器渲染完成
+          await new Promise((resolve) => {
+            setTimeout(resolve, 100);
           });
+
+          // 获取容器宽度，用于计算幻灯片尺寸
+          const containerWidth = containerRef.current?.clientWidth || 0;
+          const containerHeight = containerRef.current?.clientHeight || 0;
+
+          // 计算幻灯片尺寸：使用容器宽度的 90% 或默认 800px
+          // 幻灯片按 16:9 比例（标准 PPT 比例）
+          const slideWidth =
+            containerWidth > 100 ? Math.min(containerWidth * 0.9, 960) : 800;
+          const slideHeight = Math.round(slideWidth * (9 / 16));
+
+          console.log('[PPTX Debug] Container size:', {
+            containerWidth,
+            containerHeight,
+          });
+          console.log('[PPTX Debug] Slide size:', { slideWidth, slideHeight });
+
+          // 使用 list 模式显示所有幻灯片
+          previewer = pptxInit(containerRef.current, {
+            width: slideWidth,
+            height: slideHeight,
+            mode: 'list', // 列表模式，显示所有幻灯片
+          });
+
           if (typeof previewSrc === 'string') {
+            console.log('[PPTX Debug] Fetching file:', previewSrc);
             const response = await fetch(previewSrc);
+            if (!response.ok) {
+              throw new Error('文件加载失败，请检查文件路径');
+            }
             previewSrc = await response.arrayBuffer();
+            console.log(
+              '[PPTX Debug] File loaded, size:',
+              previewSrc.byteLength,
+            );
           }
-          await previewer.preview(previewSrc);
+
+          // 检查文件是否有效（PPTX 文件至少应该有一定大小）
+          if (
+            previewSrc instanceof ArrayBuffer &&
+            previewSrc.byteLength < 100
+          ) {
+            throw new Error('文件内容无效或为空');
+          }
+
+          try {
+            console.log('[PPTX Debug] Starting load...');
+            // 先使用 load 方法加载文件，获取更多信息
+            const pptxData = await previewer.load(previewSrc);
+            console.log('[PPTX Debug] PPTX data loaded:', pptxData);
+            console.log('[PPTX Debug] Slide count:', previewer.slideCount);
+
+            // 检查是否有幻灯片
+            if (previewer.slideCount === 0) {
+              console.warn(
+                '[PPTX Debug] No slides found, attempting fallback rendering...',
+              );
+
+              // 使用降级渲染器
+              try {
+                console.log('[PPTX Debug] Loading PPTX fallback renderer...');
+                // 直接使用 pptx-preview 已加载的数据
+                const parsedResult = await parsePPTX(pptxData);
+                console.log(
+                  '[PPTX Debug] Fallback parser result:',
+                  parsedResult,
+                );
+
+                if (containerRef.current) {
+                  renderFallback(containerRef.current, parsedResult);
+                }
+                console.log('[PPTX Debug] Fallback rendering completed');
+                break; // 降级渲染成功，退出
+              } catch (fallbackError: any) {
+                console.error(
+                  '[PPTX Debug] Fallback rendering error:',
+                  fallbackError,
+                );
+                // 降级渲染也失败了
+                throw new Error('该 PPTX 文件格式暂不支持预览');
+              }
+            }
+
+            // 尝试渲染所有幻灯片
+            console.log('[PPTX Debug] Rendering slides...');
+            for (let i = 0; i < previewer.slideCount; i++) {
+              console.log('[PPTX Debug] Rendering slide:', i);
+              previewer.renderSingleSlide(i);
+            }
+            console.log('[PPTX Debug] All slides rendered');
+          } catch (pptxError: any) {
+            console.error('[PPTX Debug] Preview error:', pptxError);
+            console.error('[PPTX Debug] Error stack:', pptxError?.stack);
+            // 如果渲染失败，提供用户友好的中文错误提示
+            throw new Error(
+              getLocalizedErrorMessage(pptxError?.message, 'pptx'),
+            );
+          }
           break;
+        }
       }
 
       previewerRef.current = previewer;
@@ -474,7 +645,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     } catch (error: any) {
       console.error('File preview error:', error);
       setStatus('error');
-      setErrorMessage(error?.message || 'Failed to preview file');
+      // 使用用户友好的中文错误信息
+      const friendlyMessage = getLocalizedErrorMessage(error?.message, type);
+      setErrorMessage(friendlyMessage);
       onError?.(error);
     }
   };
@@ -534,7 +707,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
               className={styles.previewImage}
               onError={() => {
                 setStatus('error');
-                setErrorMessage('Failed to load image');
+                setErrorMessage('图片加载失败，请检查文件是否有效');
               }}
             />
             {imageSources.length > 1 && (
@@ -599,16 +772,23 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     }
   };
 
+  // 判断是否需要滚动支持（文档类型需要滚动）
+  const needsScroll = ['docx', 'xlsx', 'pdf', 'pptx'].includes(
+    resolvedType || '',
+  );
+
   return (
     <div
-      className={`${styles.filePreviewContainer} ${className || ''}`}
+      className={`${styles.filePreviewContainer} ${
+        needsScroll ? styles.scrollable : ''
+      } ${className || ''}`}
       style={{ width, height, ...style }}
     >
-      {/* Toolbar */}
+      {/* 工具栏 */}
       {(showRefresh || showDownload) && src && status === 'success' && (
         <div className={styles.toolbar}>
           {showRefresh && (
-            <Tooltip title="Refresh">
+            <Tooltip title="刷新">
               <Button
                 className={styles.toolbarBtn}
                 icon={<ReloadOutlined />}
@@ -618,7 +798,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             </Tooltip>
           )}
           {showDownload && (
-            <Tooltip title="Download">
+            <Tooltip title="下载">
               <Button
                 className={styles.toolbarBtn}
                 icon={<CloudDownloadOutlined />}
@@ -635,7 +815,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           <FileOutlined
             style={{ fontSize: 48, color: '#bfbfbf', marginBottom: 16 }}
           />
-          <p>No file to preview</p>
+          <p>暂无文件可预览</p>
         </div>
       )}
 
@@ -643,15 +823,15 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         <div className={styles.loadingOverlay}>
           {resolvedType && getFileIcon(resolvedType)}
           <Spin size="large" />
-          <span className={styles.loadingText}>Loading preview...</span>
+          <span className={styles.loadingText}>正在加载预览...</span>
         </div>
       )}
 
       {status === 'error' && (
         <div className={styles.errorOverlay}>
           <Alert
-            message="Preview Error"
-            description={errorMessage || 'Unable to preview this file.'}
+            message="预览失败"
+            description={errorMessage || '无法预览此文件'}
             type="error"
             showIcon
             action={
@@ -661,7 +841,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                 icon={<ReloadOutlined />}
                 onClick={handleRetry}
               >
-                Retry
+                重试
               </Button>
             }
           />
@@ -671,9 +851,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       {status === 'unsupported' && (
         <div className={styles.unsupportedOverlay}>
           {getFileIcon('unsupported', 64)}
-          <p className={styles.unsupportedText}>Preview not supported</p>
+          <p className={styles.unsupportedText}>暂不支持预览此文件类型</p>
           <p className={styles.unsupportedHint}>
-            File type: .{getExtension(fileName)}
+            文件类型: .{getExtension(fileName)}
           </p>
           {showDownload && (
             <Button
@@ -681,7 +861,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
               icon={<CloudDownloadOutlined />}
               onClick={handleDownload}
             >
-              Download File
+              下载文件
             </Button>
           )}
         </div>

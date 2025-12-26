@@ -6,6 +6,11 @@
   background-color: #fafafa;
   border: 1px solid #f0f0f0;
   border-radius: 8px;
+
+  // 确保文档类型预览时可以滚动
+  &.scrollable {
+    overflow: auto;
+  }
 }
 
 .placeholder {
@@ -102,6 +107,8 @@
   width: 100%;
   height: 100%;
   overflow: auto;
+  flex: 1;
+  min-height: 0; // 确保在 flex 容器中可以正确滚动
 
   // Docx styles override
   :global {
@@ -123,18 +130,69 @@
       height: 100% !important;
     }
 
-    // PDF styles override
-    .pdf-preview-container {
-      padding: 10px;
+    // PDF styles override - 确保多页可以正确显示和滚动
+    .vue-office-pdf-wrapper {
+      position: relative !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      gap: 20px !important;
+      padding: 20px !important;
+      height: auto !important;
+      min-height: auto !important;
+      box-sizing: border-box !important;
+      width: 100% !important;
+
+      // 修复 canvas 定位，让页面垂直排列而非重叠，并适配宽度等比缩放
+      canvas {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        transform: none !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
+        border-radius: 2px;
+        // 适配容器宽度，等比缩放
+        max-width: calc(100% - 40px) !important;
+        height: auto !important;
+      }
     }
 
-    // PPTX styles override
-    .pptx-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
-      gap: 20px;
+    .bindHeightDivSpacing {
+      overflow: visible !important;
+    }
+
+    .bindHeightDiv {
+      height: auto !important;
+      overflow: visible !important;
+    }
+
+    // PPTX styles override - 确保幻灯片正确显示
+    .pptx-wrapper,
+    .bindHeightDivSpacing {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      padding: 20px !important;
+      gap: 20px !important;
+      background: #f5f5f5 !important;
+      height: auto !important;
+      min-height: 100% !important;
+    }
+
+    // PPTX 幻灯片样式
+    .bindHeightDivSpacing > div,
+    .slide-wrapper {
+      background: #fff !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 15%) !important;
+      border-radius: 4px;
+      overflow: hidden;
+
+      // 确保 canvas 和 svg 正确显示
+      canvas,
+      svg {
+        display: block !important;
+        max-width: 100% !important;
+      }
     }
   }
 }

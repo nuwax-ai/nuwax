@@ -14,8 +14,10 @@ const FilePreviewDemo: React.FC = () => {
     // Documents
     docx: 'https://501351981.github.io/vue-office/examples/dist/static/test-files/test.docx',
     xlsx: 'https://501351981.github.io/vue-office/examples/dist/static/test-files/test.xlsx',
-    pdf: 'https://501351981.github.io/vue-office/examples/dist/static/test-files/test.pdf',
-    pptx: 'https://501351981.github.io/vue-office/examples/dist/static/test-files/test.pptx',
+    // 使用本地 public 目录中的测试文件
+    pdf: '/金价分析报告_2025.pdf',
+    // 本地文件 - 如果解析失败会尝试显示缩略图
+    pptx: '/Huawei_Mate80.pptx',
     // Media - using more reliable image sources
     image:
       'https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=800&h=600&fit=crop',
