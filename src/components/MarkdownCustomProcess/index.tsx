@@ -316,7 +316,10 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   //   }
   // }, [innerProcessing]);
 
-  if (!innerProcessing.executeId) {
+  if (
+    !innerProcessing.executeId ||
+    innerProcessing.type === AgentComponentTypeEnum.Event // 所有事件都不显示
+  ) {
     return null;
   }
 
