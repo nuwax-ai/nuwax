@@ -7,7 +7,7 @@ import {
   ImportOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
-import React, { useCallback } from 'react';
+import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import styles from './index.less';
 import type { FileContextMenuProps } from './types';
 
@@ -123,6 +123,56 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
       onDownloadFileByUrl?.(targetNode);
     });
   }, [targetNode, handleMenuItemClick]);
+
+  // 菜单 DOM 引用（必须在条件返回之前）
+  const menuRef = useRef<HTMLDivElement>(null);
+  // 调整后的菜单位置（必须在条件返回之前）
+  const [adjustedPosition, setAdjustedPosition] = useState(position);
+
+  // 计算并调整菜单位置，避免超出视口（必须在条件返回之前）
+  useLayoutEffect(() => {
+    if (!visible || !menuRef.current) {
+      // 菜单不可见时，重置为原始位置
+      if (!visible) {
+        setAdjustedPosition(position);
+      }
+      return;
+    }
+
+    const menuElement = menuRef.current;
+    const menuHeight = menuElement.offsetHeight;
+    const menuWidth = menuElement.offsetWidth;
+
+    // 如果菜单还未渲染完成（高度为 0），使用原始位置
+    if (menuHeight === 0) {
+      setAdjustedPosition(position);
+      return;
+    }
+
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    let adjustedTop = position.y;
+    let adjustedLeft = position.x;
+
+    // 如果菜单底部超出视口，向上调整位置
+    if (position.y + menuHeight > viewportHeight) {
+      adjustedTop = position.y - menuHeight;
+      // 确保调整后的菜单顶部不会超出视口顶部，且至少距离顶部 8px
+      adjustedTop = Math.max(8, adjustedTop);
+      // 如果菜单高度超过视口高度，确保菜单顶部从视口顶部开始（保留 8px 边距）
+      if (menuHeight > viewportHeight - 16) {
+        adjustedTop = 8;
+      }
+    }
+
+    // 如果菜单右侧超出视口，向左调整位置
+    if (position.x + menuWidth > viewportWidth) {
+      adjustedLeft = Math.max(8, viewportWidth - menuWidth - 8); // 至少距离右侧 8px
+    }
+
+    setAdjustedPosition({ x: adjustedLeft, y: adjustedTop });
+  }, [visible, position]);
 
   // 如果不显示，返回 null
   if (!visible) {
@@ -270,11 +320,12 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
 
   return (
     <div
+      ref={menuRef}
       className={styles.contextMenu}
       style={{
         position: 'fixed',
-        left: position.x,
-        top: position.y,
+        left: adjustedPosition.x,
+        top: adjustedPosition.y,
         zIndex: 1000,
       }}
       onClick={(e) => e.stopPropagation()}
