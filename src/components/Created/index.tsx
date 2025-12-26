@@ -259,6 +259,16 @@ const Created: React.FC<CreatedProp> = ({
         page: data.current,
         total: data.total,
       }));
+
+      // 如果statistics为空，则设置为0 避免第一次点击收藏时没有任何效果
+      data?.records?.forEach((item: any) => {
+        if (!item.statistics) {
+          item.statistics = {
+            collectCount: 0,
+          };
+        }
+      });
+
       setList((prev) => {
         const newList =
           params.page === 1 ? [...data.records] : [...prev, ...data.records];
@@ -302,12 +312,14 @@ const Created: React.FC<CreatedProp> = ({
       const newArr = list.map((child) => {
         if (item.targetId === child.targetId) {
           if (child.collect) {
+            // 取消收藏
             child.collect = false;
             if (child.statistics) {
               child.statistics.collectCount =
                 (child.statistics.collectCount || 1) - 1;
             }
           } else {
+            // 收藏
             child.collect = true;
             if (child.statistics) {
               child.statistics.collectCount =
