@@ -141,7 +141,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           <div className={styles['pc-box']}>
             <img src={pcIcon} alt="" />
             <div className={styles.fileName}>
-              {userInfo?.nickName || userInfo?.userName || '远程'}的电脑
+              {userInfo?.nickName || userInfo?.userName || '远程'}的智能体电脑
             </div>
           </div>
         )}
@@ -202,7 +202,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             onClick={() => onViewModeChange?.('desktop')}
             className={styles.viewModeButton}
           >
-            远程桌面
+            智能体电脑
           </Button>
         </div>
       )}

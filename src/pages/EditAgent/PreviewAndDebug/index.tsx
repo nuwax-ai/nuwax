@@ -44,7 +44,6 @@ interface PreviewAndDebugProps extends PreviewAndDebugHeaderProps {
   onAgentConfigInfo: (info: AgentConfigInfo) => void;
   onOpenPreview?: () => void;
   onToggleFileTree?: () => void;
-  isFileTreeVisible?: boolean;
 }
 
 /**
@@ -57,7 +56,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   onPressDebug,
   onOpenPreview,
   onToggleFileTree,
-  isFileTreeVisible,
 }) => {
   const [form] = Form.useForm();
   // 会话ID
@@ -310,7 +308,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               onOpenPreview?.();
             }}
             onToggleFileTree={onToggleFileTree}
-            isFileTreeVisible={isFileTreeVisible}
+            // 是否是任务智能体
+            isTaskAgent={agentConfigInfo?.type === AgentTypeEnum.TaskAgent}
           />
           <div
             className={cx(

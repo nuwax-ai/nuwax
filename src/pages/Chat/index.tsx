@@ -56,7 +56,7 @@ import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Button, Form, message as messageAntd } from 'antd';
+import { Button, Form, message as messageAntd, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
@@ -736,62 +736,65 @@ const Chat: React.FC = () => {
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
               {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
               {!isSidebarVisible && !isMobile && (
-                <Button
-                  type="text"
-                  className={cx(styles.sidebarButton)}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-sidebar"
-                      className={cx(styles['icons-nav-sidebar'])}
-                    />
-                  }
-                  onClick={() => {
-                    hidePagePreview();
-                    // 先关闭文件树
-                    closePreviewView();
-                    // 然后打开 AgentSidebar
-                    // 使用 setTimeout 确保状态更新完成后再打开，避免状态冲突
-                    setTimeout(() => {
-                      sidebarRef.current?.open();
-                    }, 100);
-                  }}
-                />
+                <Tooltip title="查看智能体详情">
+                  <Button
+                    type="text"
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-sidebar"
+                        className={cx(styles['icons-nav-sidebar'])}
+                      />
+                    }
+                    onClick={() => {
+                      hidePagePreview();
+                      // 先关闭文件树
+                      closePreviewView();
+                      // 然后打开 AgentSidebar
+                      // 使用 setTimeout 确保状态更新完成后再打开，避免状态冲突
+                      setTimeout(() => {
+                        sidebarRef.current?.open();
+                      }, 100);
+                    }}
+                  />
+                </Tooltip>
               )}
 
               {/*打开预览页面*/}
               {!!agentDetail?.expandPageArea &&
                 !!agentDetail?.pageHomeIndex &&
                 !pagePreviewData && (
-                  <Button
-                    type="text"
-                    className={cx(styles.sidebarButton)}
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-ecosystem"
-                        className={cx(styles['icons-nav-sidebar'])}
-                      />
-                    }
-                    onClick={() => {
-                      sidebarRef.current?.close();
-                      closePreviewView(); // 关闭文件树
-                      handleOpenPreview(agentDetail);
-                    }}
-                  />
+                  <Tooltip title="打开预览页面">
+                    <Button
+                      type="text"
+                      icon={
+                        <SvgIcon
+                          name="icons-nav-ecosystem"
+                          className={cx(styles['icons-nav-sidebar'])}
+                        />
+                      }
+                      onClick={() => {
+                        sidebarRef.current?.close();
+                        closePreviewView(); // 关闭文件树
+                        handleOpenPreview(agentDetail);
+                      }}
+                    />
+                  </Tooltip>
                 )}
 
               {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
               {agentDetail?.type === AgentTypeEnum.TaskAgent && (
-                <Button
-                  type="text"
-                  className={cx(styles.sidebarButton)}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-components"
-                      className={cx(styles['icons-nav-sidebar'])}
-                    />
-                  }
-                  onClick={handleFileTreeVisible}
-                />
+                <Tooltip title="文件预览或打开智能体电脑">
+                  <Button
+                    type="text"
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-components"
+                        className={cx(styles['icons-nav-sidebar'])}
+                      />
+                    }
+                    onClick={handleFileTreeVisible}
+                  />
+                </Tooltip>
               )}
             </div>
           </div>
