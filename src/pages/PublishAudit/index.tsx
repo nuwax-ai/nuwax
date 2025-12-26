@@ -17,6 +17,7 @@ const selectOptions = [
   { value: SquareAgentTypeEnum.Agent, label: '智能体' },
   { value: SquareAgentTypeEnum.Plugin, label: '插件' },
   { value: SquareAgentTypeEnum.Workflow, label: '工作流' },
+  { value: SquareAgentTypeEnum.Skill, label: '技能' },
 ];
 
 const selectPublishOptions = [
@@ -144,6 +145,9 @@ const PublishAudit: React.FC = () => {
     if (record.targetType === SquareAgentTypeEnum.Workflow) {
       url = `/space/${record.spaceId}/workflow/${record.targetId}?applyId=${record.id}`;
     }
+    if (record.targetType === SquareAgentTypeEnum.Skill) {
+      url = `/space/${record.spaceId}/skill-details/${record.targetId}?applyId=${record.id}`;
+    }
     if (url) {
       // 在新窗口中打开页面
       window.open(url, '_blank', 'noopener,noreferrer');
@@ -159,6 +163,8 @@ const PublishAudit: React.FC = () => {
         return '插件';
       case SquareAgentTypeEnum.Workflow:
         return '工作流';
+      case SquareAgentTypeEnum.Skill:
+        return '技能';
     }
   };
 
