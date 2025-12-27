@@ -438,7 +438,7 @@ const SkillDetails: React.FC = () => {
   };
 
   return (
-    <div className={cx('flex', 'h-full', 'flex-col')}>
+    <div className={cx('flex', 'h-full', 'flex-col', 'overflow-hide')}>
       {/* 技能头部 */}
       <SkillHeader
         spaceId={spaceId}
@@ -457,7 +457,7 @@ const SkillDetails: React.FC = () => {
         }}
       />
 
-      <div className={cx('flex', 'flex-1')}>
+      <div className={cx('flex', 'flex-1', 'overflow-y')}>
         {/* 文件树视图 */}
         <FileTreeView
           ref={fileTreeViewRef}
