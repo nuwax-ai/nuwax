@@ -927,7 +927,7 @@ export interface ApiAgentConversationChatPageResultParams {
  * 智能体会话、桌面分享参数
  */
 export interface AgentConversationShareParams {
-  conversationId: number;
+  conversationId: number | string;
   type: string;
   expireSeconds?: number;
   content: string;

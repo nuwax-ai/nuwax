@@ -122,7 +122,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   // 分享文件
   const onSharePreviewFile = async () => {
     const data: AgentConversationShareParams = {
-      conversationId: Number(conversationId),
+      conversationId,
       type: 'CONVERSATION',
       content: targetNode?.fileProxyUrl || '',
     };
@@ -130,7 +130,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     const { data: shareData, code } = await apiAgentConversationShare(data);
     if (code === SUCCESS_CODE) {
       const baseUrl = window?.location?.origin || '';
-      const path = '/file-preview.html';
+      const path = '/static/file-preview.html';
 
       const query = new URLSearchParams();
       query.set('sk', shareData?.shareKey);
