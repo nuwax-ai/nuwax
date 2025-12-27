@@ -20,6 +20,7 @@ import {
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
+import { AgentTypeEnum } from '@/types/enums/space';
 import { AgentDetailDto, GuidQuestionDto } from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
@@ -225,7 +226,13 @@ const AgentDetails: React.FC = () => {
       return;
     }
 
-    history.push(`/home/chat/${conversationId}/${agentId}`, {
+    let url = `/home/chat/${conversationId}/${agentId}`;
+    // 如果是任务智能体，则隐藏菜单
+    if (agentDetail?.type === AgentTypeEnum.TaskAgent) {
+      url += '?hideMenu=true';
+    }
+
+    history.push(url, {
       message: messageInfo,
       files,
       infos: selectedComponentList,

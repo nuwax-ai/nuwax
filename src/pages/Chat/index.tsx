@@ -290,7 +290,13 @@ const Chat: React.FC = () => {
     debounceInterval: 300,
     onSuccess: (result: AgentDetailDto) => {
       const { agentId, conversationId } = result;
-      history.replace(`/home/chat/${conversationId}/${agentId}`, {
+      // 默认跳转地址
+      let url = `/home/chat/${conversationId}/${agentId}`;
+      // 如果是任务智能体，则隐藏菜单
+      if (agentDetail?.type === AgentTypeEnum.TaskAgent) {
+        url += '?hideMenu=true';
+      }
+      history.replace(url, {
         message: '',
         files: [],
         infos,
