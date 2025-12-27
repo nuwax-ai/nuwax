@@ -1,26 +1,33 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { USER_INFO } from '@/constants/home.constants';
+import { apiAgentConversationShare } from '@/services/agentConfig';
+import { AgentConversationShareParams } from '@/types/interfaces/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
-import { isMarkdownFile } from '@/utils/common';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import {
   DesktopOutlined,
   EyeOutlined,
-  FilePdfOutlined,
   FullscreenExitOutlined,
+  ShareAltOutlined,
 } from '@ant-design/icons';
-import { Button, Segmented, Tooltip } from 'antd';
+import { Button, message, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ReactComponent as CodeIconSvg } from './code.svg';
 import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
 import pcIcon from './pc.svg';
+import ShareDesktopModal from './ShareDesktopModal';
 
 const cx = classNames.bind(styles);
 
 interface FilePathHeaderProps {
   className?: string;
+  /** 会话ID */
+  conversationId?: string;
   /** 文件节点 */
   targetNode: FileNode | null;
   /** 当前视图模式 */
@@ -57,14 +64,6 @@ interface FilePathHeaderProps {
   onViewFileTypeChange?: (type: 'preview' | 'code') => void;
   /** 通过URL下载文件回调 */
   onDownloadFileByUrl?: (node: FileNode) => void;
-  /** 分享回调 */
-  onShare?: () => void;
-  // 是否显示分享按钮
-  isShowShare?: boolean;
-  /** 导出为 PDF 回调（仅 Markdown 文件） */
-  onExportPdf?: (node: FileNode) => void;
-  /** 是否正在导出 PDF */
-  isExportingPdf?: boolean;
 }
 
 /**
@@ -73,6 +72,7 @@ interface FilePathHeaderProps {
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
+  conversationId,
   targetNode,
   viewMode = 'preview',
   onViewModeChange,
@@ -90,10 +90,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   viewFileType = 'preview',
   onViewFileTypeChange,
   onDownloadFileByUrl,
-  onShare,
-  isShowShare = true,
-  onExportPdf,
-  isExportingPdf = false,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -109,6 +105,61 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   const _userInfo = localStorage.getItem(USER_INFO);
   const userInfo = _userInfo ? JSON.parse(_userInfo) : null;
 
+  // 远程桌面分享弹窗显示状态
+  const [shareDesktopModalVisible, setShareDesktopModalVisible] =
+    useState(false);
+
+
+
+  // 分享文件
+  const onSharePreviewFile = async () => {
+    const data: AgentConversationShareParams = {
+      conversationId: Number(conversationId),
+      type: 'CONVERSATION',
+      content: targetNode?.fileProxyUrl || '',
+    };
+
+    const { data: shareData, code } = await apiAgentConversationShare(data);
+    if (code === SUCCESS_CODE) {
+      const baseUrl = window?.location?.origin || '';
+      const path = '/file-preview.html';
+
+      const query = new URLSearchParams();
+      query.set('sk', shareData?.shareKey);
+      query.set(
+        'isDev',
+        process.env.NODE_ENV === 'development' ? 'true' : 'false',
+      );
+      const previewUrl = baseUrl + path + '?' + query.toString();
+
+      // 复制到剪切板
+      copyTextToClipboard(previewUrl);
+      message.success('分享成功，链接已复制到剪切板');
+    }
+  };
+
+  // 分享桌面
+  const onShareDesktop = () => {
+    setShareDesktopModalVisible(true);
+  };
+
+  // 分享
+  const onShare = (mode: 'preview' | 'desktop') => {
+    if (!conversationId) {
+      return;
+    }
+
+    // 分享文件
+    if (mode === 'preview') {
+      onSharePreviewFile();
+    }
+
+    // 分享桌面
+    if (mode === 'desktop') {
+      onShareDesktop();
+    }
+  };
+
   return (
     <div className={cx(styles.filePathHeader, className)}>
       {/* 左侧：文件信息 */}
@@ -123,8 +174,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             </div>
             {/* 只有存在 fileProxyUrl 时，才显示预览和代码视图切换按钮，可以通过 fileProxyUrl 预览和代码视图 */}
             {targetNode?.fileProxyUrl &&
-              fileName &&
-              (fileName?.includes('.htm') || isMarkdownFile(fileName)) && (
+              (fileName?.includes('.htm') || fileName?.includes('.md')) && (
                 <Segmented
                   value={viewFileType}
                   onChange={onViewFileTypeChange}
@@ -155,7 +205,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           <div className={styles['pc-box']}>
             <img src={pcIcon} alt="" />
             <div className={styles.fileName}>
-              {userInfo?.nickName || userInfo?.userName || '远程'}的智能体电脑
+              {userInfo?.nickName || userInfo?.userName || '远程'}的电脑
             </div>
           </div>
         )}
@@ -195,23 +245,18 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         </Tooltip>
       )}
 
-      {/* Markdown 文件显示导出 PDF 按钮 */}
-      {targetNode &&
-        fileName &&
-        isMarkdownFile(fileName) &&
-        viewMode === 'preview' && (
-          <Tooltip title={isExportingPdf ? '导出中...' : '导出为 PDF'}>
-            <Button
-              type="text"
-              size="small"
-              icon={<FilePdfOutlined style={{ fontSize: 16 }} />}
-              onClick={() => onExportPdf?.(targetNode as FileNode)}
-              className={styles.actionButton}
-              loading={isExportingPdf}
-              disabled={isExportingPdf}
-            />
-          </Tooltip>
-        )}
+      {/* 分享 */}
+      {(viewMode === 'desktop' ||
+        (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
+        <Tooltip title="分享">
+          <Button
+            type="text"
+            size="small"
+            icon={<ShareAltOutlined />}
+            onClick={() => onShare(viewMode)}
+          />
+        </Tooltip>
+      )}
 
       {/* 中间：视图模式切换按钮 */}
       {onViewModeChange && (
@@ -234,29 +279,35 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             onClick={() => onViewModeChange?.('desktop')}
             className={styles.viewModeButton}
           >
-            智能体电脑
+            远程桌面
           </Button>
         </div>
       )}
 
+      {/* 更多操作菜单 */}
+      {showMoreActions && (
+        <MoreActionsMenu
+          onImportProject={onImportProject}
+          onRestartServer={onRestartServer}
+          onFullscreenPreview={onFullscreen}
+          onExportProject={onExportProject}
+        />
+      )}
+
+      {isFullscreen && (
+        <div className={styles.fullscreenButton}>
+          <TooltipIcon
+            title="退出全屏"
+            icon={<FullscreenExitOutlined />}
+            onClick={onFullscreen}
+          />
+        </div>
+      )}
+
       {/* 右侧：操作按钮 */}
-      <div className={styles.actionButtons}>
-        {isShowShare && (
-          <Tooltip title="分享">
-            <Button
-              type="text"
-              size="small"
-              icon={
-                <SvgIcon name="icons-chat-share" style={{ fontSize: 16 }} />
-              }
-              onClick={onShare}
-              className={styles.actionButton}
-            />
-          </Tooltip>
-        )}
-        {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
-        {targetNode?.fileProxyUrl && viewMode === 'preview' && (
-          <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
+      {/* <div className={styles.actionButtons}>
+        {onDownload && (
+          <Tooltip title={isDownloading ? '下载中...' : '下载'}>
             <Button
               type="text"
               size="small"
@@ -266,14 +317,13 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                   style={{ fontSize: 16 }}
                 />
               }
-              onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
+              onClick={onDownload}
               className={styles.actionButton}
-              loading={isDownloadingFile}
-              disabled={isDownloadingFile}
+              loading={isDownloading}
+              disabled={isDownloading}
             />
           </Tooltip>
         )}
-
         <Tooltip title={isFullscreen ? '退出全屏' : '全屏'}>
           <Button
             type="text"
@@ -292,15 +342,14 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             className={styles.actionButton}
           />
         </Tooltip>
-        {/* 更多操作菜单 */}
-        {showMoreActions && (
-          <MoreActionsMenu
-            onImportProject={onImportProject}
-            onRestartServer={onRestartServer}
-            onExportProject={onExportProject}
-          />
-        )}
-      </div>
+      </div> */}
+
+      {/* 远程桌面分享弹窗 */}
+      <ShareDesktopModal
+        visible={shareDesktopModalVisible}
+        onClose={() => setShareDesktopModalVisible(false)}
+        conversationId={conversationId || ''}
+      />
     </div>
   );
 };

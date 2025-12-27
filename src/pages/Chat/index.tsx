@@ -56,7 +56,7 @@ import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Button, Form, message as messageAntd, Tooltip } from 'antd';
+import { Button, Form, message as messageAntd } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
@@ -290,13 +290,7 @@ const Chat: React.FC = () => {
     debounceInterval: 300,
     onSuccess: (result: AgentDetailDto) => {
       const { agentId, conversationId } = result;
-      // 默认跳转地址
-      let url = `/home/chat/${conversationId}/${agentId}`;
-      // 如果是任务智能体，则隐藏菜单
-      if (agentDetail?.type === AgentTypeEnum.TaskAgent) {
-        url += '?hideMenu=true';
-      }
-      history.replace(url, {
+      history.replace(`/home/chat/${conversationId}/${agentId}`, {
         message: '',
         files: [],
         infos,
@@ -487,7 +481,7 @@ const Chat: React.FC = () => {
     newName: string,
   ): Promise<boolean> => {
     if (!id) {
-      messageAntd.error('会话ID不存在，无法新建文件');
+      message.error('会话ID不存在，无法新建文件');
       return false;
     }
 
@@ -532,55 +526,36 @@ const Chat: React.FC = () => {
   };
 
   // 删除文件
-  const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
-    return new Promise((resolve) => {
-      modalConfirm(
-        '您确定要删除此文件吗?',
-        fileNode.name,
-        async () => {
-          try {
-            // 找到要删除的文件
-            const currentFile = fileTreeData?.find(
-              (item: StaticFileInfo) => item.fileId === fileNode.id,
-            );
-            if (!currentFile) {
-              messageAntd.error('文件不存在，无法删除');
-              resolve(false);
-              return;
-            }
-
-            // 更新文件操作
-            currentFile.operation = 'delete';
-            // 更新文件列表
-            const updatedFilesList = [
-              currentFile,
-            ] as VncDesktopUpdateFileInfo[];
-
-            // 更新技能信息
-            const newSkillInfo: IUpdateStaticFileParams = {
-              cId: id,
-              files: updatedFilesList,
-            };
-            const { code } = await apiUpdateStaticFile(newSkillInfo);
-            if (code === SUCCESS_CODE) {
-              // 重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
-              handleRefreshFileList(id);
-              messageAntd.success('删除成功');
-              resolve(true);
-            } else {
-              resolve(false);
-            }
-          } catch (error) {
-            console.error('删除文件失败:', error);
-            messageAntd.error('删除文件时发生错误');
-            resolve(false);
-          }
-        },
-        () => {
-          // 用户取消删除
-          resolve(false);
-        },
+  const handleDeleteFile = async (fileNode: FileNode) => {
+    modalConfirm('您确定要删除此文件吗?', fileNode.name, async () => {
+      // 找到要删除的文件
+      const currentFile = fileTreeData?.find(
+        (item: StaticFileInfo) => item.fileId === fileNode.id,
       );
+      if (!currentFile) {
+        message.error('文件不存在，无法删除');
+        return;
+      }
+
+      // 更新文件操作
+      currentFile.operation = 'delete';
+      // 更新文件列表
+      const updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
+
+      // 更新技能信息
+      const newSkillInfo: IUpdateStaticFileParams = {
+        cId: id,
+        files: updatedFilesList,
+      };
+      const { code } = await apiUpdateStaticFile(newSkillInfo);
+      if (code === SUCCESS_CODE) {
+        // setFileTreeData((prev: StaticFileInfo[]) => prev?.filter((item: StaticFileInfo) => item.fileId !== fileNode.id))
+        // 重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
+        handleRefreshFileList(id);
+      }
+      return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
     });
   };
 
@@ -642,7 +617,7 @@ const Chat: React.FC = () => {
    */
   const handleUploadMultipleFiles = async (node: FileNode | null) => {
     if (!id) {
-      messageAntd.error('会话ID不存在，无法上传文件');
+      message.error('会话ID不存在，无法上传文件');
       return;
     }
     // 两种情况 第一个是文件夹，第二个是文件
@@ -761,65 +736,62 @@ const Chat: React.FC = () => {
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
               {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
               {!isSidebarVisible && !isMobile && (
-                <Tooltip title="查看智能体详情">
-                  <Button
-                    type="text"
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-sidebar"
-                        className={cx(styles['icons-nav-sidebar'])}
-                      />
-                    }
-                    onClick={() => {
-                      hidePagePreview();
-                      // 先关闭文件树
-                      closePreviewView();
-                      // 然后打开 AgentSidebar
-                      // 使用 setTimeout 确保状态更新完成后再打开，避免状态冲突
-                      setTimeout(() => {
-                        sidebarRef.current?.open();
-                      }, 100);
-                    }}
-                  />
-                </Tooltip>
+                <Button
+                  type="text"
+                  className={cx(styles.sidebarButton)}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-sidebar"
+                      className={cx(styles['icons-nav-sidebar'])}
+                    />
+                  }
+                  onClick={() => {
+                    hidePagePreview();
+                    // 先关闭文件树
+                    closePreviewView();
+                    // 然后打开 AgentSidebar
+                    // 使用 setTimeout 确保状态更新完成后再打开，避免状态冲突
+                    setTimeout(() => {
+                      sidebarRef.current?.open();
+                    }, 100);
+                  }}
+                />
               )}
 
               {/*打开预览页面*/}
               {!!agentDetail?.expandPageArea &&
                 !!agentDetail?.pageHomeIndex &&
                 !pagePreviewData && (
-                  <Tooltip title="打开预览页面">
-                    <Button
-                      type="text"
-                      icon={
-                        <SvgIcon
-                          name="icons-nav-ecosystem"
-                          className={cx(styles['icons-nav-sidebar'])}
-                        />
-                      }
-                      onClick={() => {
-                        sidebarRef.current?.close();
-                        closePreviewView(); // 关闭文件树
-                        handleOpenPreview(agentDetail);
-                      }}
-                    />
-                  </Tooltip>
+                  <Button
+                    type="text"
+                    className={cx(styles.sidebarButton)}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-ecosystem"
+                        className={cx(styles['icons-nav-sidebar'])}
+                      />
+                    }
+                    onClick={() => {
+                      sidebarRef.current?.close();
+                      closePreviewView(); // 关闭文件树
+                      handleOpenPreview(agentDetail);
+                    }}
+                  />
                 )}
 
               {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
               {agentDetail?.type === AgentTypeEnum.TaskAgent && (
-                <Tooltip title="文件预览或打开智能体电脑">
-                  <Button
-                    type="text"
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-components"
-                        className={cx(styles['icons-nav-sidebar'])}
-                      />
-                    }
-                    onClick={handleFileTreeVisible}
-                  />
-                </Tooltip>
+                <Button
+                  type="text"
+                  className={cx(styles.sidebarButton)}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-components"
+                      className={cx(styles['icons-nav-sidebar'])}
+                    />
+                  }
+                  onClick={handleFileTreeVisible}
+                />
               )}
             </div>
           </div>

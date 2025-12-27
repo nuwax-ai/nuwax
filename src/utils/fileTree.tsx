@@ -15,8 +15,6 @@ import type { FileNode } from '@/types/interfaces/appDev';
 import { SkillFileInfo } from '@/types/interfaces/skill';
 import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { message } from 'antd';
-import { isMarkdownFile } from './common';
-import { markdownToPdf } from './markdownToPdf';
 
 // 获取文件图标
 export const getFileIcon = (name: string) => {
@@ -37,7 +35,7 @@ export const getFileIcon = (name: string) => {
     name.endsWith('.yaml')
   ) {
     return <ICON_JSON />;
-  } else if (isMarkdownFile(name)) {
+  } else if (name.endsWith('.md')) {
     return <ICON_MD />;
   } else if (name.endsWith('.html') || name.endsWith('.htm')) {
     return <ICON_HTML />;
@@ -139,6 +137,23 @@ export const updateFilesListName = (
         isDir: true,
       },
     ];
+    // const folderFiles =
+    //   files?.filter((file: SkillFileInfo) => {
+    //     return file.name?.startsWith(oldPath + '/');
+    //   }) || [];
+
+    // return folderFiles.map((file: SkillFileInfo) => {
+    //   // 计算新路径：将 oldPath 前缀替换为 newPath
+    //   const relativePath = file.name.substring(oldPath.length);
+    //   const newFilePath = newPath + relativePath;
+
+    //   return {
+    //     ...file,
+    //     name: newFilePath, // 更新为新的完整路径
+    //     renameFrom: file.name, // 记录重命名前的名字
+    //     operation, // 操作类型
+    //   };
+    // });
   }
 };
 
@@ -210,38 +225,15 @@ export const updateFilesListContent = (
 /**
  * 处理下载单个文件操作
  * @param targetNode 文件节点
- * @param exportAsPdf 如果是 Markdown 文件，是否导出为 PDF（默认 false）
  * @returns 下载文件
  */
-export const downloadFileByUrl = async (
-  targetNode: FileNode,
-  exportAsPdf = false,
-) => {
+export const downloadFileByUrl = async (targetNode: FileNode) => {
+  const fileProxyUrl = targetNode.fileProxyUrl;
+  if (!fileProxyUrl) return;
+
   const fileName = targetNode.name || 'download';
 
   try {
-    // 如果是 Markdown 文件且需要导出为 PDF，直接使用 content 属性
-    if (exportAsPdf && isMarkdownFile(fileName)) {
-      const markdownContent = targetNode.content || '';
-      if (!markdownContent) {
-        message.warning('文件内容为空，无法导出 PDF');
-        return;
-      }
-      // 使用静态导入的 markdownToPdf
-      const pdfFileName = fileName.replace(/\.(md|markdown)$/i, '');
-      await markdownToPdf(markdownContent, {
-        fileName: pdfFileName,
-        pageSize: 'a4',
-        orientation: 'portrait',
-      });
-      message.success('PDF 导出成功');
-      return;
-    }
-
-    // 其他文件类型需要通过 URL 下载
-    const fileProxyUrl = targetNode.fileProxyUrl;
-    if (!fileProxyUrl) return;
-
     // 构建完整的 URL
     const fullUrl = fileProxyUrl.startsWith('http')
       ? fileProxyUrl

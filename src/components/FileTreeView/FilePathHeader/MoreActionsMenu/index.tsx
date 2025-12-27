@@ -8,8 +8,12 @@ interface MoreActionsProps {
   onImportProject?: () => void;
   // 重启远程电脑
   onRestartServer?: () => void;
+  // 全屏预览
+  onFullscreenPreview?: () => void;
   // 导出项目
   onExportProject?: () => void;
+  // 是否正在加载
+  isChatLoading?: boolean;
 }
 
 /**
@@ -19,7 +23,9 @@ interface MoreActionsProps {
 const MoreActionsMenu: React.FC<MoreActionsProps> = ({
   onImportProject,
   onRestartServer,
+  onFullscreenPreview,
   onExportProject,
+  isChatLoading,
 }) => {
   // 菜单项配置
   const menuItems = useMemo(
@@ -34,6 +40,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
               ),
               label: '导入项目',
               onClick: onImportProject,
+              disabled: isChatLoading,
             },
             {
               type: 'divider' as const,
@@ -50,6 +57,24 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
               ),
               label: '重启远程电脑',
               onClick: onRestartServer,
+              disabled: isChatLoading,
+            },
+          ]
+        : []),
+      // 只有当 onFullscreenPreview 存在时才显示全屏预览选项
+      ...(onFullscreenPreview
+        ? [
+            {
+              key: 'fullscreen',
+              icon: (
+                <SvgIcon
+                  name="icons-common-fullscreen"
+                  style={{ fontSize: 16 }}
+                />
+              ),
+              label: '全屏预览',
+              onClick: onFullscreenPreview,
+              disabled: isChatLoading,
             },
           ]
         : []),
@@ -69,11 +94,18 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
               ),
               label: '导出项目',
               onClick: onExportProject,
+              disabled: isChatLoading,
             },
           ]
         : []),
     ],
-    [onImportProject, onRestartServer, onExportProject],
+    [
+      onImportProject,
+      onRestartServer,
+      onFullscreenPreview,
+      onExportProject,
+      isChatLoading,
+    ],
   );
 
   // 如果没有菜单项，则不显示

@@ -1,6 +1,6 @@
 import { SvgIcon } from '@/components/base';
 import { EditAgentShowType } from '@/types/enums/space';
-import { Button, Tooltip } from 'antd';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';
@@ -13,7 +13,7 @@ interface PreviewAndDebugHeaderProps {
   onShowPreview?: () => void;
   onPressDebug: () => void;
   onToggleFileTree?: () => void;
-  isTaskAgent?: boolean;
+  isFileTreeVisible?: boolean;
 }
 
 const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
@@ -21,7 +21,7 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
   onShowPreview,
   isShowPreview,
   onToggleFileTree,
-  isTaskAgent,
+  isFileTreeVisible,
 }) => {
   const { showType } = useModel('conversationInfo');
 
@@ -35,7 +35,7 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
       )}
     >
       <h3>预览与调试</h3>
-      <div className={cx(styles['extra-box'], 'flex', 'items-center')}>
+      <div className={cx(styles['extra-box'], 'flex')}>
         {/*<MessageOutlined className={cx('cursor-pointer')} />*/}
         {(showType === EditAgentShowType.Version_History ||
           showType === EditAgentShowType.Show_Stand ||
@@ -54,36 +54,26 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
 
         {/*打开预览页面*/}
         {isShowPreview && (
-          <Tooltip title="打开预览页面">
-            <Button
-              type="text"
-              className={cx(styles.debug)}
-              icon={
-                <SvgIcon
-                  name="icons-nav-ecosystem"
-                  className={cx(styles.svg)}
-                />
-              }
-              onClick={() => onShowPreview?.()}
-            />
-          </Tooltip>
+          <Button
+            type="text"
+            className={cx(styles.debug)}
+            icon={
+              <SvgIcon name="icons-nav-ecosystem" style={{ fontSize: 16 }} />
+            }
+            onClick={() => onShowPreview?.()}
+          />
         )}
 
         {/*文件树切换按钮*/}
-        {isTaskAgent && (
-          <Tooltip title="文件预览或打开智能体电脑">
-            <Button
-              type="text"
-              className={cx(styles.preview)}
-              icon={
-                <SvgIcon
-                  name="icons-nav-components"
-                  className={cx(styles.svg)}
-                />
-              }
-              onClick={onToggleFileTree}
-            />
-          </Tooltip>
+        {onToggleFileTree && !isFileTreeVisible && (
+          <Button
+            type="text"
+            className={cx(styles.debug)}
+            icon={
+              <SvgIcon name="icons-nav-components" style={{ fontSize: 16 }} />
+            }
+            onClick={onToggleFileTree}
+          />
         )}
       </div>
     </header>

@@ -498,13 +498,8 @@ const EditAgent: React.FC = () => {
       return;
     }
 
-    if (isFileTreeVisible) {
-      // 关闭文件树
-      closePreviewView();
-    } else {
-      // 触发文件列表刷新事件
-      openPreviewView(devConversationId);
-    }
+    // 触发文件列表刷新事件
+    openPreviewView(devConversationId);
   };
 
   // 切换视图模式
@@ -569,60 +564,39 @@ const EditAgent: React.FC = () => {
   };
 
   // 删除文件
-  const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
-    return new Promise((resolve) => {
-      modalConfirm(
-        '您确定要删除此文件吗?',
-        fileNode.name,
-        async () => {
-          try {
-            if (!devConversationId) {
-              messageAntd.error('会话ID不存在，无法删除文件');
-              resolve(false);
-              return;
-            }
+  const handleDeleteFile = async (fileNode: FileNode) => {
+    modalConfirm('您确定要删除此文件吗?', fileNode.name, async () => {
+      if (!devConversationId) {
+        messageAntd.error('会话ID不存在，无法删除文件');
+        return;
+      }
 
-            // 找到要删除的文件
-            const currentFile = fileTreeData?.find(
-              (item: StaticFileInfo) => item.fileId === fileNode.id,
-            );
-            if (!currentFile) {
-              messageAntd.error('文件不存在，无法删除');
-              resolve(false);
-              return;
-            }
-
-            // 更新文件操作
-            currentFile.operation = 'delete';
-            // 更新文件列表
-            const updatedFilesList = [
-              currentFile,
-            ] as VncDesktopUpdateFileInfo[];
-
-            // 更新技能信息
-            const newSkillInfo: IUpdateStaticFileParams = {
-              cId: devConversationId,
-              files: updatedFilesList,
-            };
-            const { code } = await apiUpdateStaticFile(newSkillInfo);
-            if (code === SUCCESS_CODE) {
-              handleRefreshFileList(devConversationId);
-              messageAntd.success('删除成功');
-              resolve(true);
-            } else {
-              resolve(false);
-            }
-          } catch (error) {
-            console.error('删除文件失败:', error);
-            messageAntd.error('删除文件时发生错误');
-            resolve(false);
-          }
-        },
-        () => {
-          // 用户取消删除
-          resolve(false);
-        },
+      // 找到要删除的文件
+      const currentFile = fileTreeData?.find(
+        (item: StaticFileInfo) => item.fileId === fileNode.id,
       );
+      if (!currentFile) {
+        messageAntd.error('文件不存在，无法删除');
+        return;
+      }
+
+      // 更新文件操作
+      currentFile.operation = 'delete';
+      // 更新文件列表
+      const updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
+
+      // 更新技能信息
+      const newSkillInfo: IUpdateStaticFileParams = {
+        cId: devConversationId,
+        files: updatedFilesList,
+      };
+      const { code } = await apiUpdateStaticFile(newSkillInfo);
+      if (code === SUCCESS_CODE) {
+        handleRefreshFileList(devConversationId);
+      }
+      return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
     });
   };
 
@@ -958,6 +932,7 @@ const EditAgent: React.FC = () => {
                     onAgentConfigInfo={setAgentConfigInfo}
                     onOpenPreview={handleOpenPreview}
                     onToggleFileTree={handleFileTreeVisible}
+                    isFileTreeVisible={isFileTreeVisible}
                   />
                 )
               }

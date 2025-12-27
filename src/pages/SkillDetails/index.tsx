@@ -260,53 +260,42 @@ const SkillDetails: React.FC = () => {
   };
 
   // 删除文件
-  const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
-    return new Promise((resolve) => {
-      modalConfirm(
-        '您确定要删除此文件吗?',
-        fileNode.name,
-        async () => {
-          try {
-            // 找到要删除的文件
-            const currentFile = skillInfo?.files?.find(
-              (item) => item.fileId === fileNode.id,
-            );
-            if (!currentFile) {
-              message.error('文件不存在，无法删除');
-              resolve(false);
-              return;
-            }
-
-            // 更新文件操作
-            currentFile.operation = 'delete';
-            // 更新文件列表
-            const updatedFilesList = [currentFile] as SkillFileInfo[];
-
-            // 更新技能信息
-            const newSkillInfo: SkillUpdateParams = {
-              id: skillInfo?.id || 0,
-              files: updatedFilesList,
-            };
-            const { code } = await apiSkillUpdate(newSkillInfo);
-            if (code === SUCCESS_CODE) {
-              // 重新查询技能信息，因为更新了文件名或文件夹名称，需要刷新文件树
-              runSkillInfo(skillId);
-              message.success('删除成功');
-              resolve(true);
-            } else {
-              resolve(false);
-            }
-          } catch (error) {
-            console.error('删除文件失败:', error);
-            message.error('删除文件时发生错误');
-            resolve(false);
-          }
-        },
-        () => {
-          // 用户取消删除
-          resolve(false);
-        },
+  const handleDeleteFile = async (fileNode: FileNode) => {
+    modalConfirm('您确定要删除此文件吗?', fileNode.name, async () => {
+      // 找到要删除的文件
+      const currentFile = skillInfo?.files?.find(
+        (item) => item.fileId === fileNode.id,
       );
+      if (!currentFile) {
+        message.error('文件不存在，无法删除');
+        return;
+      }
+
+      // 更新文件操作
+      currentFile.operation = 'delete';
+      // 更新文件列表
+      const updatedFilesList = [currentFile] as SkillFileInfo[];
+
+      // 更新技能信息
+      const newSkillInfo: SkillUpdateParams = {
+        id: skillInfo?.id || 0,
+        files: updatedFilesList,
+      };
+      const { code } = await apiSkillUpdate(newSkillInfo);
+      if (code === SUCCESS_CODE) {
+        setSkillInfo(
+          (prev) =>
+            ({
+              ...prev,
+              files:
+                prev?.files?.filter((item) => item.fileId !== fileNode.id) ||
+                [],
+            } as SkillDetailInfo),
+        );
+      }
+      return new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
     });
   };
 
@@ -449,7 +438,7 @@ const SkillDetails: React.FC = () => {
   };
 
   return (
-    <div className={cx('flex', 'h-full', 'flex-col', 'overflow-hide')}>
+    <div className={cx('flex', 'h-full', 'flex-col')}>
       {/* 技能头部 */}
       <SkillHeader
         spaceId={spaceId}
@@ -468,7 +457,7 @@ const SkillDetails: React.FC = () => {
         }}
       />
 
-      <div className={cx('flex', 'flex-1', 'overflow-y')}>
+      <div className={cx('flex', 'flex-1')}>
         {/* 文件树视图 */}
         <FileTreeView
           ref={fileTreeViewRef}

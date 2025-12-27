@@ -20,7 +20,6 @@ import {
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
-import { AgentTypeEnum } from '@/types/enums/space';
 import { AgentDetailDto, GuidQuestionDto } from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
@@ -33,7 +32,7 @@ import type {
 import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Button, Form, message, Tooltip, Typography } from 'antd';
+import { Button, Form, message, Typography } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -226,13 +225,7 @@ const AgentDetails: React.FC = () => {
       return;
     }
 
-    let url = `/home/chat/${conversationId}/${agentId}`;
-    // 如果是任务智能体，则隐藏菜单
-    if (agentDetail?.type === AgentTypeEnum.TaskAgent) {
-      url += '?hideMenu=true';
-    }
-
-    history.push(url, {
+    history.push(`/home/chat/${conversationId}/${agentId}`, {
       message: messageInfo,
       files,
       infos: selectedComponentList,
@@ -318,44 +311,40 @@ const AgentDetails: React.FC = () => {
             <div>
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
               {!isSidebarVisible && !isMobile && (
-                <Tooltip title="查看智能体详情">
-                  <Button
-                    type="text"
-                    className={cx(styles.sidebarButton)}
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-sidebar"
-                        className={cx(styles['icons-nav-sidebar'])}
-                      />
-                    }
-                    onClick={() => {
-                      hidePagePreview();
-                      sidebarRef.current?.open();
-                    }}
-                  />
-                </Tooltip>
+                <Button
+                  type="text"
+                  className={cx(styles.sidebarButton)}
+                  icon={
+                    <SvgIcon
+                      name="icons-nav-sidebar"
+                      className={cx(styles['icons-nav-sidebar'])}
+                    />
+                  }
+                  onClick={() => {
+                    hidePagePreview();
+                    sidebarRef.current?.open();
+                  }}
+                />
               )}
 
               {/*打开预览页面*/}
               {!!agentDetail?.expandPageArea &&
                 !!agentDetail?.pageHomeIndex &&
                 !pagePreviewData && (
-                  <Tooltip title="打开预览页面">
-                    <Button
-                      type="text"
-                      className={cx(styles.sidebarButton)}
-                      icon={
-                        <SvgIcon
-                          name="icons-nav-ecosystem"
-                          className={cx(styles['icons-nav-sidebar'])}
-                        />
-                      }
-                      onClick={() => {
-                        sidebarRef.current?.close();
-                        handleOpenPreview(agentDetail);
-                      }}
-                    />
-                  </Tooltip>
+                  <Button
+                    type="text"
+                    className={cx(styles.sidebarButton)}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-ecosystem"
+                        className={cx(styles['icons-nav-sidebar'])}
+                      />
+                    }
+                    onClick={() => {
+                      sidebarRef.current?.close();
+                      handleOpenPreview(agentDetail);
+                    }}
+                  />
                 )}
             </div>
           </div>

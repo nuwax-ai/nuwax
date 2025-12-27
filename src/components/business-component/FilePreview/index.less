@@ -2,15 +2,10 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background-color: #fafafa;
+  border: 1px solid #f0f0f0;
   border-radius: 8px;
-  height: 100%;
-  width: 100%;
-
-  // 确保文档类型预览时可以滚动
-  &.scrollable {
-    overflow: auto;
-  }
 }
 
 .placeholder {
@@ -107,8 +102,6 @@
   width: 100%;
   height: 100%;
   overflow: auto;
-  flex: 1;
-  min-height: 0; // 确保在 flex 容器中可以正确滚动
 
   // Docx styles override
   :global {
@@ -125,84 +118,23 @@
       }
     }
 
-    // Excel styles override - 确保高度正确继承
-    // .x-spreadsheet {
-    //   height: 100% !important;
-
-    //   .x-spreadsheet-sheet {
-    //     height: 100% !important;
-    //   }
-
-    //   .x-spreadsheet-scrollbar {
-    //     height: 100% !important;
-    //   }
-    // }
-
-    // PPTX styles override - 修复横向滚动条问题，设置最大宽度和居中
-    .pptx-preview-wrapper {
-      width: 100% !important;
-      max-width: 100% !important;
-      margin: 0 auto !important;
-      overflow-x: hidden !important;
-      overflow-y: auto !important;
-      background: #f5f5f5 !important;
-
-      // 幻灯片容器 - 保持 16:9 宽幅比例
-      .pptx-preview-slide-wrapper,
-      [class*='pptx-preview-slide-wrapper'] {
-        margin: 20px auto !important;
-        max-width: calc(100% - 40px) !important;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 12%);
-        border-radius: 4px;
-        overflow: hidden;
-        aspect-ratio: 16 / 9;
-      }
-
-      // 幻灯片内容 - 16:9 宽幅比例
-      .slide {
-        width: 100% !important;
-        height: auto !important;
-        aspect-ratio: 16 / 9;
-      }
+    // Excel styles override
+    .x-spreadsheet {
+      height: 100% !important;
     }
 
-    // PDF styles override - 确保多页可以正确显示和滚动，提高清晰度
-    // .vue-office-pdf-wrapper {
-    //   position: relative !important;
-    //   display: flex !important;
-    //   flex-direction: column !important;
-    //   align-items: center !important;
-    //   gap: 20px !important;
-    //   padding: 20px !important;
-    //   height: auto !important;
-    //   min-height: auto !important;
-    //   box-sizing: border-box !important;
-    //   width: 100% !important;
-
-    //   // 修复 canvas 定位，让页面垂直排列而非重叠
-    //   canvas {
-    //     position: relative !important;
-    //     top: auto !important;
-    //     left: auto !important;
-    //     transform: none !important;
-    //     box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
-    //     border-radius: 2px;
-    //     // 保持较高的渲染质量
-    //     max-width: calc(100% - 40px) !important;
-    //     height: auto !important;
-    //     // 使用高清渲染
-    //     image-rendering: -webkit-optimize-contrast;
-    //     image-rendering: crisp-edges;
-    //   }
-    // }
-
-    .bindHeightDivSpacing {
-      overflow: visible !important;
+    // PDF styles override
+    .pdf-preview-container {
+      padding: 10px;
     }
 
-    .bindHeightDiv {
-      height: auto !important;
-      overflow: visible !important;
+    // PPTX styles override
+    .pptx-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      gap: 20px;
     }
   }
 }

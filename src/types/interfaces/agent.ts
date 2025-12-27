@@ -56,7 +56,7 @@ export interface AgentInfo extends AgentBaseInfo {
   agentId: number;
   spaceId: number;
   // ChatBot、PageApp
-  agentType: 'ChatBot' | 'PageApp' | 'TaskAgent';
+  agentType: 'ChatBot' | 'PageApp';
 }
 
 // 新增智能体输入参数
@@ -921,4 +921,13 @@ export interface ApiAgentConversationChatPageResultParams {
   requestId: string;
   // 结果HTML
   html: string;
+}
+
+
+// 智能体会话、桌面分享参数
+export interface AgentConversationShareParams {
+  conversationId: number;
+  type: string;
+  expireSeconds?: number;
+  content: string;
 }

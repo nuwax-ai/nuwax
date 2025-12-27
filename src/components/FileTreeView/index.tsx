@@ -11,7 +11,6 @@ import {
   processImageContent,
   transformFlatListToTree,
 } from '@/utils/appDevUtils';
-import { isMarkdownFile } from '@/utils/common';
 import {
   downloadFileByUrl,
   updateFileTreeContent,
@@ -67,8 +66,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 是否显示全屏预览，由父组件控制
       isFullscreenPreview = false,
       onFullscreenPreview,
-      onShare,
-      isShowShare = true,
     },
     ref,
   ) => {
@@ -106,8 +103,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       useState<boolean>(false);
     // 是否正在下载文件
     const [isDownloadingFile, setIsDownloadingFile] = useState<boolean>(false);
-    // 是否正在导出 PDF
-    const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
     // 是否正在重命名文件
     const [isRenamingFile, setIsRenamingFile] = useState<boolean>(false);
 
@@ -375,18 +370,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     /**
      * 处理删除操作
      */
-    const handleDelete = async (node: FileNode) => {
-      // 直接调用现有的删除文件功能，等待返回值
-      const isDeleteSuccess = await onDeleteFile?.(node);
-
-      // 成功删除
-      if (isDeleteSuccess) {
-        // 如果删除的是当前选中的文件节点，则清空选中状态
-        if (node.id === selectedFileNode?.id) {
-          setSelectedFileNode(null);
-          setSelectedFileId('');
-        }
-      }
+    const handleDelete = (node: FileNode) => {
+      // 直接调用现有的删除文件功能
+      onDeleteFile?.(node);
     };
 
     /**
@@ -703,18 +689,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // 如果是html、md文件，并且处于预览模式，则使用iframe预览
       if (
-        (fileName?.includes('.htm') || isMarkdownFile(fileName)) &&
+        (fileName?.includes('.htm') || fileName?.includes('.md')) &&
         viewFileType === 'preview' &&
         fileProxyUrl
       ) {
-        return (
-          <iframe
-            src={fileProxyUrl}
-            width="100%"
-            height="100%"
-            style={{ border: 'none' }}
-          />
-        );
+        return <iframe src={fileProxyUrl} width="100%" height="100%" />;
       }
 
       // 代码文件：使用代码查看器
@@ -738,20 +717,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     };
 
     // 处理下载文件操作
-    const handleDownloadFileByUrl = async (
-      node: FileNode,
-      exportAsPdf?: boolean,
-    ) => {
+    const handleDownloadFileByUrl = async (node: FileNode) => {
       setIsDownloadingFile(true);
-      await downloadFileByUrl?.(node, exportAsPdf);
+      await downloadFileByUrl?.(node);
       setIsDownloadingFile(false);
-    };
-
-    // 处理导出 PDF 操作
-    const handleExportPdf = async (node: FileNode) => {
-      setIsExportingPdf(true);
-      await downloadFileByUrl?.(node, true);
-      setIsExportingPdf(false);
     };
 
     /**
@@ -761,6 +730,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       return (
         <FilePathHeader
           className={headerClassName}
+          // 会话ID
+          conversationId={targetId?.toString() || ''}
           // 文件节点
           targetNode={selectedFileNode}
           // 当前视图模式
@@ -797,14 +768,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onDownloadFileByUrl={handleDownloadFileByUrl}
           // 是否正在下载文件
           isDownloadingFile={isDownloadingFile}
-          // 是否显示分享按钮
-          isShowShare={isShowShare}
-          // 分享回调
-          onShare={onShare}
-          // 导出 PDF 回调
-          onExportPdf={handleExportPdf}
-          // 是否正在导出 PDF
-          isExportingPdf={isExportingPdf}
         />
       );
     };

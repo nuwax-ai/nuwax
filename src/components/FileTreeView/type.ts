@@ -39,7 +39,7 @@ export interface FileTreeViewProps {
   /** 创建文件回调 */
   onCreateFileNode?: (node: FileNode, newName: string) => Promise<boolean>;
   /** 删除文件回调 */
-  onDeleteFile?: (node: FileNode) => Promise<boolean>;
+  onDeleteFile?: (node: FileNode) => void;
   /** 视图模式切换回调 */
   onViewModeChange?: (mode: 'preview' | 'desktop') => void;
   /** 保存文件回调 */
@@ -53,8 +53,4 @@ export interface FileTreeViewProps {
   /** 是否显示全屏预览，由父组件控制 */
   isFullscreenPreview?: boolean;
   onFullscreenPreview?: (isFullscreen: boolean) => void;
-  /** 分享回调 */
-  onShare?: () => void;
-  // 是否显示分享按钮
-  isShowShare?: boolean;
 }
