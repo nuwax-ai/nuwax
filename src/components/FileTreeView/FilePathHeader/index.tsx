@@ -122,7 +122,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   // 分享文件
   const onSharePreviewFile = async () => {
     const data: AgentConversationShareParams = {
-      conversationId: Number(conversationId),
+      conversationId,
       type: 'CONVERSATION',
       content: targetNode?.fileProxyUrl || '',
     };
