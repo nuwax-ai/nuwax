@@ -100,7 +100,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
 
       if (code === SUCCESS_CODE) {
         const baseUrl = window?.location?.origin || '';
-        const path = '/desktop-preview.html';
+        const path = '/static/desktop-preview.html';
 
         const query = new URLSearchParams();
         query.set('sk', shareData?.shareKey);

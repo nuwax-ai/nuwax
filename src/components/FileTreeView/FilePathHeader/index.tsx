@@ -130,7 +130,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     const { data: shareData, code } = await apiAgentConversationShare(data);
     if (code === SUCCESS_CODE) {
       const baseUrl = window?.location?.origin || '';
-      const path = '/file-preview.html';
+      const path = '/static/file-preview.html';
 
       const query = new URLSearchParams();
       query.set('sk', shareData?.shareKey);
