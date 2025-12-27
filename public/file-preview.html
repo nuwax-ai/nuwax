@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>文档预览</title>
+
+    <!-- Local library styles -->
+    <link rel="stylesheet" href="/libs/js-preview/docx.css">
+    <link rel="stylesheet" href="/libs/js-preview/excel.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            width: 100%;
+            height: 100%;
+            height: 100vh;
+            height: 100dvh;
+            /* Dynamic viewport height for better mobile support */
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        .preview-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            height: 100vh;
+            height: 100dvh;
+            overflow: auto;
+            background: #fff;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 100;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1890ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            margin-top: 16px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Error Overlay */
+        .error-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 100;
+        }
+
+        .error-icon {
+            font-size: 48px;
+            color: #ff4d4f;
+            margin-bottom: 16px;
+        }
+
+        .error-text {
+            color: #ff4d4f;
+            font-size: 14px;
+            text-align: center;
+            max-width: 80%;
+            margin-bottom: 16px;
+        }
+
+        .retry-btn {
+            padding: 8px 24px;
+            background: #1890ff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .retry-btn:hover {
+            background: #40a9ff;
+        }
+
+        /* PDF Embed */
+        .pdf-embed {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Hidden */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">加载中...</div>
+    </div>
+
+    <!-- Error Overlay -->
+    <div id="errorOverlay" class="error-overlay hidden">
+        <div class="error-icon">⚠️</div>
+        <div id="errorText" class="error-text">加载失败</div>
+        <button class="retry-btn" onclick="retryPreview()">重试</button>
+    </div>
+
+    <!-- Preview Container -->
+    <div id="previewContainer" class="preview-container"></div>
+
+    <script>
+        // ============================================
+        // Global State
+        // ============================================
+        let currentPreviewer = null;
+        let fileUrl = '';
+        let fileType = '';
+
+        // ============================================
+        // URL Parameter Parsing
+        // ============================================
+        function getQueryParams() {
+            const params = {};
+            const search = window.location.search.slice(1);
+            if (!search) return params;
+
+            search.split('&').forEach(pair => {
+                const [key, value] = pair.split('=');
+                if (key) {
+                    params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+                }
+            });
+            return params;
+        }
+
+        // ============================================
+        // UI State Management
+        // ============================================
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('errorOverlay').classList.add('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        function showError(message) {
+            hideLoading();
+            document.getElementById('errorText').textContent = message || '加载失败';
+            document.getElementById('errorOverlay').classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('errorOverlay').classList.add('hidden');
+        }
+
+        // ============================================
+        // Dynamic Script Loading (using local files)
+        // ============================================
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                // Check if already loaded
+                if (document.querySelector(`script[src="${src}"]`)) {
+                    resolve();
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = () => reject(new Error(`Failed to load: ${src}`));
+                document.head.appendChild(script);
+            });
+        }
+
+        // ============================================
+        // Preview Renderers (using local libraries)
+        // ============================================
+        async function renderDocx(url, container) {
+            await loadScript('/libs/js-preview/docx.umd.js');
+
+            if (typeof jsPreviewDocx === 'undefined') {
+                throw new Error('DOCX 预览库加载失败');
+            }
+
+            currentPreviewer = jsPreviewDocx.init(container);
+            await currentPreviewer.preview(url);
+        }
+
+        async function renderXlsx(url, container) {
+            await loadScript('/libs/js-preview/excel.umd.js');
+
+            if (typeof jsPreviewExcel === 'undefined') {
+                throw new Error('Excel 预览库加载失败');
+            }
+
+            currentPreviewer = jsPreviewExcel.init(container);
+            await currentPreviewer.preview(url);
+        }
+
+        async function renderPdf(url, container) {
+            await loadScript('/libs/js-preview/pdf.umd.js');
+
+            if (typeof jsPreviewPdf === 'undefined') {
+                throw new Error('PDF 预览库加载失败');
+            }
+
+            currentPreviewer = jsPreviewPdf.init(container);
+            await currentPreviewer.preview(url);
+        }
+
+        async function renderPptx(url, container) {
+            await loadScript('/libs/js-preview/pptx-preview.umd.js');
+
+            if (typeof PptxPreview === 'undefined' && typeof pptxPreview === 'undefined') {
+                throw new Error('PPTX 预览库加载失败');
+            }
+
+            const PptxLib = typeof PptxPreview !== 'undefined' ? PptxPreview : pptxPreview;
+            currentPreviewer = PptxLib.init(container, {
+                width: container.clientWidth || 800,
+                height: container.clientHeight || 600
+            });
+
+            // Fetch file as ArrayBuffer
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`文件下载失败: ${response.status}`);
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            await currentPreviewer.preview(arrayBuffer);
+        }
+
+
+        // ============================================
+        // Main Preview Function
+        // ============================================
+        async function startPreview() {
+            const params = getQueryParams();
+            const sk = params.sk || '';
+            // 判断是否开发环境
+            const isDev = params.isDev || 'false';
+            const baseUrl = isDev === 'true' ? 'https://testagent.xspaceagi.com' : '';
+            const response = await fetch(`${baseUrl}/api/agent/conversation/share/detail/${sk}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            const {data,code,message} = await response.json();
+            console.log(data,code,message);
+            if(code === '0000'){
+                fileUrl = baseUrl + data.content+'?sk='+sk;
+                fileType = data.content.split('.').pop().toLowerCase();
+            }else{
+                showError(message);
+                return;
+            }
+
+            // fileUrl = params.fileUrl || params.url || params.src || '';
+            // fileType = (params.fileType || params.type || '').toLowerCase();
+
+            // Auto-detect file type from URL if not provided
+            if (!fileType && fileUrl) {
+                const ext = fileUrl.split('.').pop().split('?')[0].toLowerCase();
+                if (['docx', 'xlsx', 'xls', 'pdf', 'pptx', 'ppt'].includes(ext)) {
+                    fileType = ext;
+                }
+            }
+
+            // Normalize file types
+            if (fileType === 'xls') fileType = 'xlsx';
+            if (fileType === 'ppt') fileType = 'pptx';
+
+            console.log('[FilePreview] Starting preview:', { fileUrl, fileType });
+
+            if (!fileUrl) {
+                showError('未提供文件地址 (fileUrl 参数缺失)');
+                return;
+            }
+
+            if (!fileType) {
+                showError('未提供文件类型 (fileType 参数缺失)');
+                return;
+            }
+
+            showLoading();
+            hideError();
+
+            const container = document.getElementById('previewContainer');
+            container.innerHTML = '';
+
+            // Destroy previous previewer
+            if (currentPreviewer && typeof currentPreviewer.destroy === 'function') {
+                try {
+                    currentPreviewer.destroy();
+                } catch (e) { /* ignore */ }
+                currentPreviewer = null;
+            }
+
+            try {
+                switch (fileType) {
+                    case 'docx':
+                        await renderDocx(fileUrl, container);
+                        break;
+                    case 'xlsx':
+                        await renderXlsx(fileUrl, container);
+                        break;
+                    case 'pdf':
+                        await renderPdf(fileUrl, container);
+                        break;
+                    case 'pptx':
+                        await renderPptx(fileUrl, container);
+                        break;
+                    default:
+                        throw new Error(`不支持的文件类型: ${fileType}`);
+                }
+
+                hideLoading();
+                console.log('[FilePreview] Rendered successfully:', fileType);
+
+                // Notify parent (for iframe/webview communication)
+                notifyParent({ type: 'preview_success', fileType });
+
+            } catch (error) {
+                console.error('[FilePreview] Render error:', error);
+                showError(error.message || '文档渲染失败');
+                notifyParent({ type: 'preview_error', error: error.message });
+            }
+        }
+
+        function retryPreview() {
+            startPreview();
+        }
+
+        // ============================================
+        // Parent Communication
+        // ============================================
+        function notifyParent(data) {
+            try {
+                // For iframe
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage(data, '*');
+                }
+
+                // For WeChat Mini Program WebView
+                if (typeof wx !== 'undefined' && wx.miniProgram) {
+                    wx.miniProgram.postMessage({ data });
+                }
+            } catch (e) {
+                console.warn('[FilePreview] Failed to notify parent:', e);
+            }
+        }
+
+        // ============================================
+        // Initialize
+        // ============================================
+        document.addEventListener('DOMContentLoaded', startPreview);
+    </script>
+</body>
+
+</html>

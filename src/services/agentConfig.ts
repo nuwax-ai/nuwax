@@ -15,6 +15,7 @@ import {
   AgentConfigHistoryInfo,
   AgentConfigInfo,
   AgentConfigUpdateParams,
+  AgentConversationShareParams,
   AgentConversationUpdateParams,
   AgentPageUpdateParams,
   AgentPublishApplyParams,
@@ -26,6 +27,7 @@ import type {
   ConversationCreateParams,
   ConversationInfo,
   ConversationListParams,
+  ShareFileInfo,
 } from '@/types/interfaces/conversationInfo';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
@@ -344,6 +346,16 @@ export async function apiAgentComponentPageResultUpdate(
   data: ApiAgentConversationChatPageResultParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/conversation/chat/page/result', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 获取桌面分享详情
+export async function apiAgentConversationShare(
+  data: AgentConversationShareParams,
+): Promise<RequestResponse<ShareFileInfo>> {
+  return request('/api/agent/conversation/share', {
     method: 'POST',
     data,
   });
