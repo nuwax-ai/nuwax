@@ -693,7 +693,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         viewFileType === 'preview' &&
         fileProxyUrl
       ) {
-        return <iframe src={fileProxyUrl} width="100%" height="100%" />;
+        return (
+          <iframe
+            src={fileProxyUrl}
+            width="100%"
+            height="100%"
+            style={{ border: 'none' }}
+          />
+        );
       }
 
       // 代码文件：使用代码查看器
