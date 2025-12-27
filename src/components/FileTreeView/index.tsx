@@ -760,6 +760,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const renderHeader = () => {
       return (
         <FilePathHeader
+          conversationId={targetId?.toString() || ''}
           className={headerClassName}
           // 文件节点
           targetNode={selectedFileNode}
