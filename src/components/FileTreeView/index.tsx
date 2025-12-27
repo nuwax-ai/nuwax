@@ -371,7 +371,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 处理删除操作
      */
     const handleDelete = async (node: FileNode) => {
-      console.log('fileNode删除文件', node, selectedFileNode);
       // 直接调用现有的删除文件功能，等待返回值
       const isDeleteSuccess = await onDeleteFile?.(node);
 
@@ -382,8 +381,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           setSelectedFileNode(null);
           setSelectedFileId('');
         }
-        // 删除成功，可以在这里做一些成功后的处理
-        // 例如：刷新文件树、显示成功提示等
       }
     };
 
