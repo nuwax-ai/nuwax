@@ -67,6 +67,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 是否显示全屏预览，由父组件控制
       isFullscreenPreview = false,
       onFullscreenPreview,
+      onShare,
+      isShowShare = true,
     },
     ref,
   ) => {
@@ -783,6 +785,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onDownloadFileByUrl={handleDownloadFileByUrl}
           // 是否正在下载文件
           isDownloadingFile={isDownloadingFile}
+          // 是否显示分享按钮
+          isShowShare={isShowShare}
+          // 分享回调
+          onShare={onShare}
         />
       );
     };
