@@ -730,6 +730,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       return (
         <FilePathHeader
           className={headerClassName}
+          // 会话ID
+          conversationId={targetId?.toString() || ''}
           // 文件节点
           targetNode={selectedFileNode}
           // 当前视图模式

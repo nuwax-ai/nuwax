@@ -373,3 +373,18 @@ export interface CardInfo {
 export interface ChatSampleBottomProps {
   messageInfo: MessageInfo;
 }
+
+
+// 分享文件信息
+export interface ShareFileInfo {
+  id: number;
+  shareKey: string;
+  tenantId: number;
+  userId: number;
+  type: 'CONVERSATION' | 'DESKTOP' | 'MESSAGE';
+  targetId: string;
+  content: unknown;
+  expire: string;
+  modified: string;
+  created: string;
+}

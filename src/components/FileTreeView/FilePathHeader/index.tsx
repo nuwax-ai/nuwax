@@ -1,25 +1,33 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { USER_INFO } from '@/constants/home.constants';
+import { apiAgentConversationShare } from '@/services/agentConfig';
+import { AgentConversationShareParams } from '@/types/interfaces/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import {
   DesktopOutlined,
   EyeOutlined,
   FullscreenExitOutlined,
+  ShareAltOutlined,
 } from '@ant-design/icons';
-import { Button, Segmented, Tooltip } from 'antd';
+import { Button, message, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ReactComponent as CodeIconSvg } from './code.svg';
 import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
 import pcIcon from './pc.svg';
+import ShareDesktopModal from './ShareDesktopModal';
 
 const cx = classNames.bind(styles);
 
 interface FilePathHeaderProps {
   className?: string;
+  /** 会话ID */
+  conversationId?: string;
   /** 文件节点 */
   targetNode: FileNode | null;
   /** 当前视图模式 */
@@ -64,6 +72,7 @@ interface FilePathHeaderProps {
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
+  conversationId,
   targetNode,
   viewMode = 'preview',
   onViewModeChange,
@@ -95,6 +104,61 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   // 获取用户信息
   const _userInfo = localStorage.getItem(USER_INFO);
   const userInfo = _userInfo ? JSON.parse(_userInfo) : null;
+
+  // 远程桌面分享弹窗显示状态
+  const [shareDesktopModalVisible, setShareDesktopModalVisible] =
+    useState(false);
+
+
+
+  // 分享文件
+  const onSharePreviewFile = async () => {
+    const data: AgentConversationShareParams = {
+      conversationId: Number(conversationId),
+      type: 'CONVERSATION',
+      content: targetNode?.fileProxyUrl || '',
+    };
+
+    const { data: shareData, code } = await apiAgentConversationShare(data);
+    if (code === SUCCESS_CODE) {
+      const baseUrl = window?.location?.origin || '';
+      const path = '/file-preview.html';
+
+      const query = new URLSearchParams();
+      query.set('sk', shareData?.shareKey);
+      query.set(
+        'isDev',
+        process.env.NODE_ENV === 'development' ? 'true' : 'false',
+      );
+      const previewUrl = baseUrl + path + '?' + query.toString();
+
+      // 复制到剪切板
+      copyTextToClipboard(previewUrl);
+      message.success('分享成功，链接已复制到剪切板');
+    }
+  };
+
+  // 分享桌面
+  const onShareDesktop = () => {
+    setShareDesktopModalVisible(true);
+  };
+
+  // 分享
+  const onShare = (mode: 'preview' | 'desktop') => {
+    if (!conversationId) {
+      return;
+    }
+
+    // 分享文件
+    if (mode === 'preview') {
+      onSharePreviewFile();
+    }
+
+    // 分享桌面
+    if (mode === 'desktop') {
+      onShareDesktop();
+    }
+  };
 
   return (
     <div className={cx(styles.filePathHeader, className)}>
@@ -177,6 +241,19 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             className={styles.actionButton}
             loading={isDownloadingFile}
             disabled={isDownloadingFile}
+          />
+        </Tooltip>
+      )}
+
+      {/* 分享 */}
+      {(viewMode === 'desktop' ||
+        (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
+        <Tooltip title="分享">
+          <Button
+            type="text"
+            size="small"
+            icon={<ShareAltOutlined />}
+            onClick={() => onShare(viewMode)}
           />
         </Tooltip>
       )}
@@ -266,6 +343,13 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           />
         </Tooltip>
       </div> */}
+
+      {/* 远程桌面分享弹窗 */}
+      <ShareDesktopModal
+        visible={shareDesktopModalVisible}
+        onClose={() => setShareDesktopModalVisible(false)}
+        conversationId={conversationId || ''}
+      />
     </div>
   );
 };
