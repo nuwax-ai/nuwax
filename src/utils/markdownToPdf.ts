@@ -400,11 +400,11 @@ export const markdownToPdf = async (
       const pageImgWidth = contentWidth;
       const pageImgHeight = (sourceHeight / canvas.width) * contentWidth;
 
-      // 添加到 PDF
-      const pageImgData = pageCanvas.toDataURL('image/png');
+      // 添加到 PDF（使用 JPEG 格式减小文件大小）
+      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.8);
       pdf.addImage(
         pageImgData,
-        'PNG',
+        'JPEG',
         margin.left || 15,
         margin.top || 15,
         pageImgWidth,
