@@ -26,6 +26,8 @@ export interface MarkdownToPdfOptions {
   showFooter?: boolean;
   /** 页脚内容（支持 {{page}} 和 {{pages}} 占位符） */
   footerContent?: string;
+  /** 是否使用浏览器打印方式（支持分页规则，但需用户手动保存） */
+  useBrowserPrint?: boolean;
 }
 
 /**
@@ -39,6 +41,7 @@ const defaultOptions: Required<MarkdownToPdfOptions> = {
   customStyles: '',
   showFooter: false,
   footerContent: '{{page}} / {{pages}}',
+  useBrowserPrint: false,
 };
 
 /**
@@ -166,6 +169,107 @@ const generateFullHtml = (htmlContent: string, customStyles = ''): string => {
 };
 
 /**
+ * 生成用于打印的 HTML（包含分页 CSS 规则）
+ */
+const generatePrintHtml = (
+  htmlContent: string,
+  options: MarkdownToPdfOptions,
+): string => {
+  const {
+    pageSize = 'a4',
+    orientation = 'portrait',
+    margin = { top: 15, right: 15, bottom: 15, left: 15 },
+    customStyles = '',
+  } = options;
+
+  const printStyles = `
+        @page {
+            size: ${pageSize.toUpperCase()} ${orientation};
+            margin: ${margin.top || 15}mm ${margin.right || 15}mm ${
+    margin.bottom || 15
+  }mm ${margin.left || 15}mm;
+        }
+        
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+        
+        pre, blockquote, table, img, figure {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        
+        p {
+            orphans: 3;
+            widows: 3;
+        }
+    `;
+
+  return `
+        <!DOCTYPE html>
+        <html lang="zh-CN">
+        <head>
+            <meta charset="UTF-8">
+            <style>${defaultStyles}${printStyles}${customStyles}</style>
+        </head>
+        <body>${htmlContent}</body>
+        </html>
+    `;
+};
+
+/**
+ * 使用浏览器打印方式导出 PDF（支持分页规则）
+ */
+const markdownToPdfByPrint = async (
+  markdown: string,
+  options: MarkdownToPdfOptions,
+): Promise<void> => {
+  const htmlContent = markdownToHtml(markdown);
+  const fullHtml = generatePrintHtml(htmlContent, options);
+
+  // 创建 iframe
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText =
+    'position:fixed;right:0;bottom:0;width:0;height:0;border:none;';
+  document.body.appendChild(iframe);
+
+  const iframeWindow = iframe.contentWindow;
+  const iframeDoc = iframeWindow?.document;
+
+  if (!iframeDoc || !iframeWindow) {
+    document.body.removeChild(iframe);
+    throw new Error('无法创建打印环境');
+  }
+
+  iframeDoc.open();
+  iframeDoc.write(fullHtml);
+  iframeDoc.close();
+
+  // 等待渲染
+  await new Promise<void>((resolve) => {
+    setTimeout(() => resolve(), 300);
+  });
+
+  // 触发打印
+  iframeWindow.print();
+
+  // 延迟清理
+  setTimeout(() => {
+    if (iframe.parentNode) {
+      document.body.removeChild(iframe);
+    }
+  }, 1000);
+};
+
+/**
  * 将 Markdown 内容转换为 PDF 并下载
  */
 export const markdownToPdf = async (
@@ -173,10 +277,24 @@ export const markdownToPdf = async (
   options: MarkdownToPdfOptions = {},
 ): Promise<void> => {
   const opts = { ...defaultOptions, ...options };
-  const { fileName, pageSize, orientation, margin, showFooter, footerContent } =
-    opts;
+  const {
+    fileName,
+    pageSize,
+    orientation,
+    margin,
+    showFooter,
+    footerContent,
+    useBrowserPrint,
+  } = opts;
 
   const htmlContent = markdownToHtml(markdown);
+
+  // 使用浏览器打印方式
+  if (useBrowserPrint) {
+    await markdownToPdfByPrint(markdown, opts);
+    return;
+  }
+
   const fullHtml = generateFullHtml(htmlContent, opts.customStyles);
 
   // 获取页面尺寸
@@ -222,7 +340,7 @@ export const markdownToPdf = async (
 
     // 使用 html2canvas 将内容转换为 canvas
     const canvas = await html2canvas(renderTarget, {
-      scale: 2,
+      scale: 1,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
@@ -237,30 +355,60 @@ export const markdownToPdf = async (
       format: pageSize,
     });
 
-    const imgData = canvas.toDataURL('image/png');
     const imgWidth = contentWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    // 计算需要的页数
-    const totalPages = Math.ceil(imgHeight / contentHeight);
+    // 每页可显示的内容高度（像素）
+    const pageHeightPx = (contentHeight / imgHeight) * canvas.height;
 
-    // 分页添加内容
+    // 计算总页数
+    const totalPages = Math.ceil(canvas.height / pageHeightPx);
+
+    // 分页添加内容 - 使用裁剪方式
     for (let page = 0; page < totalPages; page++) {
       if (page > 0) {
         pdf.addPage();
       }
 
-      // 计算当前页的 Y 偏移
-      const yOffset = -(page * contentHeight);
+      // 计算当前页在源 canvas 上的区域
+      const sourceY = page * pageHeightPx;
+      const sourceHeight = Math.min(pageHeightPx, canvas.height - sourceY);
 
-      // 添加图片
+      // 创建当前页的 canvas
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = sourceHeight;
+
+      const ctx = pageCanvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        ctx.drawImage(
+          canvas,
+          0,
+          sourceY,
+          canvas.width,
+          sourceHeight,
+          0,
+          0,
+          canvas.width,
+          sourceHeight,
+        );
+      }
+
+      // 当前页图片的 mm 尺寸
+      const pageImgWidth = contentWidth;
+      const pageImgHeight = (sourceHeight / canvas.width) * contentWidth;
+
+      // 添加到 PDF
+      const pageImgData = pageCanvas.toDataURL('image/png');
       pdf.addImage(
-        imgData,
+        pageImgData,
         'PNG',
         margin.left || 15,
-        (margin.top || 15) + yOffset,
-        imgWidth,
-        imgHeight,
+        margin.top || 15,
+        pageImgWidth,
+        pageImgHeight,
       );
 
       // 添加页脚
