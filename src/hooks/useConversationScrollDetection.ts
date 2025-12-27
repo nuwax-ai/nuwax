@@ -21,9 +21,20 @@ export const useConversationScrollDetection = (
   allowAutoScrollRef: React.MutableRefObject<boolean>,
   scrollTimeoutRef: React.MutableRefObject<NodeJS.Timeout | null>,
   setShowScrollBtn: (show: boolean) => void,
+  conversationId?: number | string | null, // 会话 ID，用于检测会话切换
 ) => {
   // 记录上一次滚动位置，用于判断滚动方向
   const lastScrollTopRef = useRef<number>(0);
+  // 记录上一次会话 ID，用于检测会话切换
+  const lastConversationIdRef = useRef<number | string | null | undefined>(
+    null,
+  );
+  // 会话切换冷却期标记，在切换后 500ms 内不检测向上滚动
+  const isConversationSwitchingRef = useRef<boolean>(false);
+  // 冷却期定时器
+  const switchCooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   useEffect(() => {
     const messageView =
@@ -35,8 +46,42 @@ export const useConversationScrollDetection = (
       return;
     }
 
-    // 初始化上一次滚动位置
-    lastScrollTopRef.current = messageView.scrollTop;
+    // 检测会话切换：如果会话 ID 变化，重置 lastScrollTopRef
+    const isConversationSwitched =
+      conversationId !== lastConversationIdRef.current;
+    if (isConversationSwitched) {
+      console.log('[滚动检测调试] 检测到会话切换', {
+        旧会话ID: lastConversationIdRef.current,
+        新会话ID: conversationId,
+        旧滚动位置: lastScrollTopRef.current,
+      });
+      // 重置为 0，避免与旧值比较时被误判为向上滚动
+      lastScrollTopRef.current = 0;
+      lastConversationIdRef.current = conversationId;
+
+      // 设置冷却期标记，500ms 内不检测向上滚动
+      isConversationSwitchingRef.current = true;
+      console.log('[滚动检测调试] 进入冷却期');
+      // 清除之前的定时器
+      if (switchCooldownTimerRef.current) {
+        clearTimeout(switchCooldownTimerRef.current);
+      }
+      switchCooldownTimerRef.current = setTimeout(() => {
+        isConversationSwitchingRef.current = false;
+        // 冷却期结束后，用当前的 scrollTop 初始化
+        lastScrollTopRef.current = messageView.scrollTop;
+        console.log('[滚动检测调试] 冷却期结束', {
+          scrollTop: messageView.scrollTop,
+        });
+      }, 500);
+    } else {
+      // 非会话切换时，初始化上一次滚动位置
+      lastScrollTopRef.current = messageView.scrollTop;
+      console.log('[滚动检测调试] 初始化滚动位置', {
+        conversationId,
+        scrollTop: messageView.scrollTop,
+      });
+    }
 
     // 节流版本（用于向下滚动等非紧急情况）
     const handleScrollThrottled = throttle(() => {
@@ -91,8 +136,19 @@ export const useConversationScrollDetection = (
       // 增加 1px 的阈值补偿，防止微小的抖动误判，同时提高触控板平滑滚动的响应速度
       const isScrollingUp = scrollTop < lastScrollTopRef.current - 1;
 
+      // 在会话切换冷却期内，不检测向上滚动，只更新滚动位置
+      if (isConversationSwitchingRef.current) {
+        lastScrollTopRef.current = scrollTop;
+        return;
+      }
+
       // 最高优先级：用户向上滚动时立即禁用自动滚动，无论距离底部多远
       if (isScrollingUp) {
+        console.log('[滚动检测调试] 检测到向上滚动，禁用自动滚动', {
+          scrollTop,
+          lastScrollTop: lastScrollTopRef.current,
+          差值: scrollTop - lastScrollTopRef.current,
+        });
         // 立即禁用自动滚动
         allowAutoScrollRef.current = false;
         // 清除滚动定时器
@@ -129,5 +185,6 @@ export const useConversationScrollDetection = (
     allowAutoScrollRef,
     scrollTimeoutRef,
     setShowScrollBtn,
+    conversationId,
   ]);
 };

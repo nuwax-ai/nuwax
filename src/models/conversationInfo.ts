@@ -100,6 +100,10 @@ export default () => {
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 初始滚动定时器，用于会话切换时清除之前的滚动定时器
+  const initialScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const abortConnectionRef = useRef<unknown>();
   const [showType, setShowType] = useState<EditAgentShowType>(
     EditAgentShowType.Hide,
@@ -307,13 +311,24 @@ export default () => {
 
   // 滚动到底部
   const messageViewScrollToBottom = () => {
+    console.log('[滚动调试] messageViewScrollToBottom 被调用', {
+      allowAutoScroll: allowAutoScrollRef.current,
+      conversationId: currentConversationId,
+      时间: new Date().toISOString(),
+      调用栈: new Error().stack?.split('\n').slice(1, 4).join('\n'),
+    });
     // 只有在允许自动滚动时才执行滚动
     if (!allowAutoScrollRef.current) {
+      console.log('[滚动调试] allowAutoScrollRef 为 false，跳过滚动');
       return;
     }
     // 滚动到底部
     const element = messageViewRef.current;
     if (element) {
+      console.log('[滚动调试] 执行滚动到底部', {
+        scrollHeight: element.scrollHeight,
+        scrollTop: element.scrollTop,
+      });
       // 标记为程序触发的滚动，避免被误判为用户滚动
       // 通过设置一个临时属性来标记
       (element as any).__isProgrammaticScroll = true;
@@ -331,9 +346,15 @@ export default () => {
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const handleScrollBottom = () => {
     if (allowAutoScrollRef.current) {
+      // 先清除之前的滚动定时器，避免多次滚动
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = null;
+      }
       scrollTimeoutRef.current = setTimeout(() => {
         // 滚动到底部
         messageViewScrollToBottom();
+        scrollTimeoutRef.current = null;
       }, 400);
     }
   };
@@ -464,11 +485,21 @@ export default () => {
       }
 
       // 使用 setTimeout 确保在 DOM 完全渲染后再滚动
-      setTimeout(() => {
+      // 清除之前的初始滚动定时器，避免会话切换时间隔性触发滚动
+      if (initialScrollTimeoutRef.current) {
+        clearTimeout(initialScrollTimeoutRef.current);
+        initialScrollTimeoutRef.current = null;
+      }
+      initialScrollTimeoutRef.current = setTimeout(() => {
+        console.log('[滚动调试] 800ms 定时器触发', {
+          conversationId: data?.id,
+          allowAutoScroll: allowAutoScrollRef.current,
+        });
         // 只有在允许自动滚动时才滚动到底部
         if (allowAutoScrollRef.current) {
           messageViewScrollToBottom();
         }
+        initialScrollTimeoutRef.current = null;
       }, 800);
     },
     onError: () => {
@@ -897,6 +928,12 @@ export default () => {
       //清除会话定时器
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
+    }
+
+    // 清除初始滚动定时器
+    if (initialScrollTimeoutRef.current) {
+      clearTimeout(initialScrollTimeoutRef.current);
+      initialScrollTimeoutRef.current = null;
     }
 
     // 关闭文件树

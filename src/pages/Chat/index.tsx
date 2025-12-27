@@ -135,6 +135,7 @@ const Chat: React.FC = () => {
     showScrollBtn,
     setShowScrollBtn,
     resetInit,
+    handleClearSideEffect,
     requiredNameList,
     setConversationInfo,
     variables,
@@ -327,13 +328,23 @@ const Chat: React.FC = () => {
     allowAutoScrollRef,
     scrollTimeoutRef,
     setShowScrollBtn,
+    id, // 传递会话 ID，用于检测会话切换时重置滚动状态
   );
 
   useEffect(() => {
     if (id) {
+      console.log('[Chat调试] 会话切换开始', {
+        id,
+        时间: new Date().toISOString(),
+      });
       setIsLoadingConversation(false);
+      // 切换会话时，先清除之前会话的副作用（关闭 SSE 连接、清除定时器等）
+      handleClearSideEffect();
+      // 切换会话时，先清空消息列表，避免旧会话和新会话消息渲染过渡导致的滚动问题
+      setMessageList([]);
       // 切换会话时，重置自动滚动标志，确保新会话能够自动滚动到底部
       allowAutoScrollRef.current = true;
+      console.log('[Chat调试] 已重置 allowAutoScrollRef 为 true');
 
       const asyncFun = async () => {
         // 同步查询会话, 此处必须先同步查询会话信息，因为成功后会设置消息列表，如果是异步查询，会导致发送消息时，清空消息列表的bug
