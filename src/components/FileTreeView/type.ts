@@ -53,4 +53,8 @@ export interface FileTreeViewProps {
   /** 是否显示全屏预览，由父组件控制 */
   isFullscreenPreview?: boolean;
   onFullscreenPreview?: (isFullscreen: boolean) => void;
+  /** 分享回调 */
+  onShare?: () => void;
+  // 是否显示分享按钮
+  isShowShare?: boolean;
 }
