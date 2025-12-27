@@ -1,5 +1,4 @@
 import SvgIcon from '@/components/base/SvgIcon';
-import TooltipIcon from '@/components/custom/TooltipIcon';
 import { USER_INFO } from '@/constants/home.constants';
 import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
@@ -58,6 +57,10 @@ interface FilePathHeaderProps {
   onViewFileTypeChange?: (type: 'preview' | 'code') => void;
   /** 通过URL下载文件回调 */
   onDownloadFileByUrl?: (node: FileNode) => void;
+  /** 分享回调 */
+  onShare?: () => void;
+  // 是否显示分享按钮
+  isShowShare?: boolean;
   /** 导出为 PDF 回调（仅 Markdown 文件） */
   onExportPdf?: (node: FileNode) => void;
   /** 是否正在导出 PDF */
@@ -87,6 +90,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   viewFileType = 'preview',
   onViewFileTypeChange,
   onDownloadFileByUrl,
+  onShare,
+  isShowShare = true,
   onExportPdf,
   isExportingPdf = false,
 }) => {
@@ -234,30 +239,24 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         </div>
       )}
 
-      {/* 更多操作菜单 */}
-      {showMoreActions && (
-        <MoreActionsMenu
-          onImportProject={onImportProject}
-          onRestartServer={onRestartServer}
-          onFullscreenPreview={onFullscreen}
-          onExportProject={onExportProject}
-        />
-      )}
-
-      {isFullscreen && (
-        <div className={styles.fullscreenButton}>
-          <TooltipIcon
-            title="退出全屏"
-            icon={<FullscreenExitOutlined />}
-            onClick={onFullscreen}
-          />
-        </div>
-      )}
-
       {/* 右侧：操作按钮 */}
-      {/* <div className={styles.actionButtons}>
-        {onDownload && (
-          <Tooltip title={isDownloading ? '下载中...' : '下载'}>
+      <div className={styles.actionButtons}>
+        {isShowShare && (
+          <Tooltip title="分享">
+            <Button
+              type="text"
+              size="small"
+              icon={
+                <SvgIcon name="icons-chat-share" style={{ fontSize: 16 }} />
+              }
+              onClick={onShare}
+              className={styles.actionButton}
+            />
+          </Tooltip>
+        )}
+        {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
+        {targetNode?.fileProxyUrl && viewMode === 'preview' && (
+          <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
             <Button
               type="text"
               size="small"
@@ -267,13 +266,14 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                   style={{ fontSize: 16 }}
                 />
               }
-              onClick={onDownload}
+              onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
               className={styles.actionButton}
-              loading={isDownloading}
-              disabled={isDownloading}
+              loading={isDownloadingFile}
+              disabled={isDownloadingFile}
             />
           </Tooltip>
         )}
+
         <Tooltip title={isFullscreen ? '退出全屏' : '全屏'}>
           <Button
             type="text"
@@ -292,7 +292,15 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             className={styles.actionButton}
           />
         </Tooltip>
-      </div> */}
+        {/* 更多操作菜单 */}
+        {showMoreActions && (
+          <MoreActionsMenu
+            onImportProject={onImportProject}
+            onRestartServer={onRestartServer}
+            onExportProject={onExportProject}
+          />
+        )}
+      </div>
     </div>
   );
 };
