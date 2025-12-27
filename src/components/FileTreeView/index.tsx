@@ -370,9 +370,21 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     /**
      * 处理删除操作
      */
-    const handleDelete = (node: FileNode) => {
-      // 直接调用现有的删除文件功能
-      onDeleteFile?.(node);
+    const handleDelete = async (node: FileNode) => {
+      console.log('fileNode删除文件', node, selectedFileNode);
+      // 直接调用现有的删除文件功能，等待返回值
+      const isDeleteSuccess = await onDeleteFile?.(node);
+
+      // 成功删除
+      if (isDeleteSuccess) {
+        // 如果删除的是当前选中的文件节点，则清空选中状态
+        if (node.id === selectedFileNode?.id) {
+          setSelectedFileNode(null);
+          setSelectedFileId('');
+        }
+        // 删除成功，可以在这里做一些成功后的处理
+        // 例如：刷新文件树、显示成功提示等
+      }
     };
 
     /**
