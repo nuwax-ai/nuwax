@@ -233,8 +233,6 @@ export const downloadFileByUrl = async (
         fileName: pdfFileName,
         pageSize: 'a4',
         orientation: 'portrait',
-        showFooter: true,
-        footerContent: '{{page}} / {{pages}}',
       });
       message.success('PDF 导出成功');
       return;

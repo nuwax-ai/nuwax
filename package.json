@@ -83,6 +83,7 @@
     "ds-markdown-mermaid-plugin": "^0.0.3",
     "globby": "^14.1.0",
     "html2canvas": "^1.4.1",
+    "html2pdf.js": "^0.12.1",
     "insert-css": "^2.0.0",
     "jspdf": "^3.0.4",
     "lodash": "^4.17.21",
