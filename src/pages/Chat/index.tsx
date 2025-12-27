@@ -487,7 +487,7 @@ const Chat: React.FC = () => {
     newName: string,
   ): Promise<boolean> => {
     if (!id) {
-      message.error('会话ID不存在，无法新建文件');
+      messageAntd.error('会话ID不存在，无法新建文件');
       return false;
     }
 
@@ -544,7 +544,7 @@ const Chat: React.FC = () => {
               (item: StaticFileInfo) => item.fileId === fileNode.id,
             );
             if (!currentFile) {
-              message.error('文件不存在，无法删除');
+              messageAntd.error('文件不存在，无法删除');
               resolve(false);
               return;
             }
@@ -565,14 +565,14 @@ const Chat: React.FC = () => {
             if (code === SUCCESS_CODE) {
               // 重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
               handleRefreshFileList(id);
-              message.success('删除成功');
+              messageAntd.success('删除成功');
               resolve(true);
             } else {
               resolve(false);
             }
           } catch (error) {
             console.error('删除文件失败:', error);
-            message.error('删除文件时发生错误');
+            messageAntd.error('删除文件时发生错误');
             resolve(false);
           }
         },
@@ -642,7 +642,7 @@ const Chat: React.FC = () => {
    */
   const handleUploadMultipleFiles = async (node: FileNode | null) => {
     if (!id) {
-      message.error('会话ID不存在，无法上传文件');
+      messageAntd.error('会话ID不存在，无法上传文件');
       return;
     }
     // 两种情况 第一个是文件夹，第二个是文件
