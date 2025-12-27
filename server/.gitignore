@@ -1,0 +1,34 @@
+/node_modules
+/.env.local
+/.umirc.local.ts
+/config/config.local.ts
+/.umi
+/.umi-production
+/.umi-test
+/dist
+/.mfsu
+.swc
+/.idea
+/.yarn.lock
+package-lock.json
+
+# Ignore DevSpace cache and log folder
+.devspace/
+
+/k8s
+/devspace.yaml
+/devspace_start.sh
+/Dockerfile
+
+# /.husky
+.npm-cache
+
+# Claude local settings
+.claude/settings.local.json
+
+.claude
+.cursor
+.cursorrules
+.DS_Store
+
+/uploads

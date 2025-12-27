@@ -215,6 +215,11 @@ const routes = [
     component: '@/examples/file-preview-demo',
     layout: false,
   },
+  {
+    path: '/examples/onlyoffice-demo',
+    component: '@/examples/onlyoffice-demo',
+    layout: false,
+  },
 ];
 
 export default routes;
