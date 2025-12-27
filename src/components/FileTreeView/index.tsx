@@ -104,6 +104,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       useState<boolean>(false);
     // 是否正在下载文件
     const [isDownloadingFile, setIsDownloadingFile] = useState<boolean>(false);
+    // 是否正在导出 PDF
+    const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
     // 是否正在重命名文件
     const [isRenamingFile, setIsRenamingFile] = useState<boolean>(false);
 
@@ -734,10 +736,20 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     };
 
     // 处理下载文件操作
-    const handleDownloadFileByUrl = async (node: FileNode) => {
+    const handleDownloadFileByUrl = async (
+      node: FileNode,
+      exportAsPdf?: boolean,
+    ) => {
       setIsDownloadingFile(true);
-      await downloadFileByUrl?.(node);
+      await downloadFileByUrl?.(node, exportAsPdf);
       setIsDownloadingFile(false);
+    };
+
+    // 处理导出 PDF 操作
+    const handleExportPdf = async (node: FileNode) => {
+      setIsExportingPdf(true);
+      await downloadFileByUrl?.(node, true);
+      setIsExportingPdf(false);
     };
 
     /**
@@ -783,6 +795,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onDownloadFileByUrl={handleDownloadFileByUrl}
           // 是否正在下载文件
           isDownloadingFile={isDownloadingFile}
+          // 导出 PDF 回调
+          onExportPdf={handleExportPdf}
+          // 是否正在导出 PDF
+          isExportingPdf={isExportingPdf}
         />
       );
     };

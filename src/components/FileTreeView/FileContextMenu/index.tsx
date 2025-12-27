@@ -1,8 +1,10 @@
+import { isMarkdownFile } from '@/utils/common';
 import {
   DeleteOutlined,
   DownloadOutlined,
   EditOutlined,
   FileAddOutlined,
+  FilePdfOutlined,
   FolderAddOutlined,
   ImportOutlined,
   UploadOutlined,
@@ -123,6 +125,17 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
       onDownloadFileByUrl?.(targetNode);
     });
   }, [targetNode, handleMenuItemClick]);
+
+  /**
+   * 处理导出为 PDF 操作（仅 Markdown 文件）
+   */
+  const handleExportPdf = useCallback(() => {
+    if (!targetNode || !targetNode.fileProxyUrl) return;
+
+    handleMenuItemClick(() => {
+      onDownloadFileByUrl?.(targetNode, true);
+    });
+  }, [targetNode, handleMenuItemClick, onDownloadFileByUrl]);
 
   // 菜单 DOM 引用（必须在条件返回之前）
   const menuRef = useRef<HTMLDivElement>(null);
@@ -246,6 +259,17 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
                   icon: <DownloadOutlined />,
                   onClick: handleDownload,
                 },
+                // 如果是 Markdown 文件，显示导出为 PDF 选项
+                ...(isMarkdownFile(targetNode?.name || '')
+                  ? [
+                      {
+                        key: 'exportPdf',
+                        label: '导出为 PDF',
+                        icon: <FilePdfOutlined />,
+                        onClick: handleExportPdf,
+                      },
+                    ]
+                  : []),
               ]
             : []),
           {
