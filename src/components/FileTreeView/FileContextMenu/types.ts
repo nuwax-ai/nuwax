@@ -45,5 +45,5 @@ export interface FileContextMenuProps {
   /** 导入项目回调 */
   onImportProject?: () => void;
   /** 通过URL下载文件回调 */
-  onDownloadFileByUrl?: (node: FileNode) => void;
+  onDownloadFileByUrl?: (node: FileNode, exportAsPdf?: boolean) => void;
 }

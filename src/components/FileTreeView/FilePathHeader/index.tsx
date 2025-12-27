@@ -7,6 +7,7 @@ import { isMarkdownFile } from '@/utils/common';
 import {
   DesktopOutlined,
   EyeOutlined,
+  FilePdfOutlined,
   FullscreenExitOutlined,
 } from '@ant-design/icons';
 import { Button, Segmented, Tooltip } from 'antd';
@@ -57,6 +58,10 @@ interface FilePathHeaderProps {
   onViewFileTypeChange?: (type: 'preview' | 'code') => void;
   /** 通过URL下载文件回调 */
   onDownloadFileByUrl?: (node: FileNode) => void;
+  /** 导出为 PDF 回调（仅 Markdown 文件） */
+  onExportPdf?: (node: FileNode) => void;
+  /** 是否正在导出 PDF */
+  isExportingPdf?: boolean;
 }
 
 /**
@@ -82,6 +87,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   viewFileType = 'preview',
   onViewFileTypeChange,
   onDownloadFileByUrl,
+  onExportPdf,
+  isExportingPdf = false,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -182,6 +189,24 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           />
         </Tooltip>
       )}
+
+      {/* Markdown 文件显示导出 PDF 按钮 */}
+      {targetNode &&
+        fileName &&
+        isMarkdownFile(fileName) &&
+        viewMode === 'preview' && (
+          <Tooltip title={isExportingPdf ? '导出中...' : '导出为 PDF'}>
+            <Button
+              type="text"
+              size="small"
+              icon={<FilePdfOutlined style={{ fontSize: 16 }} />}
+              onClick={() => onExportPdf?.(targetNode as FileNode)}
+              className={styles.actionButton}
+              loading={isExportingPdf}
+              disabled={isExportingPdf}
+            />
+          </Tooltip>
+        )}
 
       {/* 中间：视图模式切换按钮 */}
       {onViewModeChange && (
