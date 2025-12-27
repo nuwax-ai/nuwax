@@ -28,7 +28,7 @@ const HomeSection: React.FC<{
   const handleAgentHome = (agentInfo: AgentInfo) => {
     handleCloseMobileMenu();
     const { agentType, agentId } = agentInfo;
-    if (agentType === 'PageApp') {
+    if (agentType === 'PageApp' || agentType === 'TaskAgent') {
       history.push(`/agent/${agentId}?hideMenu=true`);
       return;
     }
