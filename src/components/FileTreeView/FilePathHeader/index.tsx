@@ -6,6 +6,7 @@ import { isMarkdownFile } from '@/utils/common';
 import {
   DesktopOutlined,
   EyeOutlined,
+  FilePdfOutlined,
   FullscreenExitOutlined,
 } from '@ant-design/icons';
 import { Button, Segmented, Tooltip } from 'antd';
@@ -60,6 +61,10 @@ interface FilePathHeaderProps {
   onShare?: () => void;
   // 是否显示分享按钮
   isShowShare?: boolean;
+  /** 导出为 PDF 回调（仅 Markdown 文件） */
+  onExportPdf?: (node: FileNode) => void;
+  /** 是否正在导出 PDF */
+  isExportingPdf?: boolean;
 }
 
 /**
@@ -87,6 +92,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onDownloadFileByUrl,
   onShare,
   isShowShare = true,
+  onExportPdf,
+  isExportingPdf = false,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -170,6 +177,41 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           </Button>
         </div>
       )}
+
+      {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
+      {targetNode?.fileProxyUrl && viewMode === 'preview' && (
+        <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
+          <Button
+            type="text"
+            size="small"
+            icon={
+              <SvgIcon name="icons-common-download" style={{ fontSize: 16 }} />
+            }
+            onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
+            className={styles.actionButton}
+            loading={isDownloadingFile}
+            disabled={isDownloadingFile}
+          />
+        </Tooltip>
+      )}
+
+      {/* Markdown 文件显示导出 PDF 按钮 */}
+      {targetNode &&
+        fileName &&
+        isMarkdownFile(fileName) &&
+        viewMode === 'preview' && (
+          <Tooltip title={isExportingPdf ? '导出中...' : '导出为 PDF'}>
+            <Button
+              type="text"
+              size="small"
+              icon={<FilePdfOutlined style={{ fontSize: 16 }} />}
+              onClick={() => onExportPdf?.(targetNode as FileNode)}
+              className={styles.actionButton}
+              loading={isExportingPdf}
+              disabled={isExportingPdf}
+            />
+          </Tooltip>
+        )}
 
       {/* 中间：视图模式切换按钮 */}
       {onViewModeChange && (
