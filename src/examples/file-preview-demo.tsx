@@ -18,7 +18,7 @@ const FilePreviewDemo: React.FC = () => {
     pdf: '/金价分析报告_2025.pdf',
     pptx: 'https://501351981.github.io/vue-office/examples/dist/static/test-files/test.pptx',
     // 本地文件 - 如果解析失败会尝试显示缩略图
-    // pptx: '/converted/test.pptx',
+
     // Media - using more reliable image sources
     image:
       'https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=800&h=600&fit=crop',
