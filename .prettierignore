@@ -7,6 +7,3 @@ Dockerfile
 devspace_start.sh
 
 *.yaml
-
-# 忽略 public 目录下的所有文件
-public/**
