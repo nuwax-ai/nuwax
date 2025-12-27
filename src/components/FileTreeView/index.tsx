@@ -11,6 +11,7 @@ import {
   processImageContent,
   transformFlatListToTree,
 } from '@/utils/appDevUtils';
+import { isMarkdownFile } from '@/utils/common';
 import {
   downloadFileByUrl,
   updateFileTreeContent,
@@ -698,7 +699,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // 如果是html、md文件，并且处于预览模式，则使用iframe预览
       if (
-        (fileName?.includes('.htm') || fileName?.includes('.md')) &&
+        (fileName?.includes('.htm') || isMarkdownFile(fileName)) &&
         viewFileType === 'preview' &&
         fileProxyUrl
       ) {

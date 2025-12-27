@@ -3,6 +3,7 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import { USER_INFO } from '@/constants/home.constants';
 import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
+import { isMarkdownFile } from '@/utils/common';
 import {
   DesktopOutlined,
   EyeOutlined,
@@ -110,7 +111,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             </div>
             {/* 只有存在 fileProxyUrl 时，才显示预览和代码视图切换按钮，可以通过 fileProxyUrl 预览和代码视图 */}
             {targetNode?.fileProxyUrl &&
-              (fileName?.includes('.htm') || fileName?.includes('.md')) && (
+              fileName &&
+              (fileName?.includes('.htm') || isMarkdownFile(fileName)) && (
                 <Segmented
                   value={viewFileType}
                   onChange={onViewFileTypeChange}
