@@ -15,6 +15,7 @@ import type { FileNode } from '@/types/interfaces/appDev';
 import { SkillFileInfo } from '@/types/interfaces/skill';
 import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { message } from 'antd';
+import { isMarkdownFile } from './common';
 
 // 获取文件图标
 export const getFileIcon = (name: string) => {
@@ -35,7 +36,7 @@ export const getFileIcon = (name: string) => {
     name.endsWith('.yaml')
   ) {
     return <ICON_JSON />;
-  } else if (name.endsWith('.md')) {
+  } else if (isMarkdownFile(name)) {
     return <ICON_MD />;
   } else if (name.endsWith('.html') || name.endsWith('.htm')) {
     return <ICON_HTML />;
@@ -137,23 +138,6 @@ export const updateFilesListName = (
         isDir: true,
       },
     ];
-    // const folderFiles =
-    //   files?.filter((file: SkillFileInfo) => {
-    //     return file.name?.startsWith(oldPath + '/');
-    //   }) || [];
-
-    // return folderFiles.map((file: SkillFileInfo) => {
-    //   // 计算新路径：将 oldPath 前缀替换为 newPath
-    //   const relativePath = file.name.substring(oldPath.length);
-    //   const newFilePath = newPath + relativePath;
-
-    //   return {
-    //     ...file,
-    //     name: newFilePath, // 更新为新的完整路径
-    //     renameFrom: file.name, // 记录重命名前的名字
-    //     operation, // 操作类型
-    //   };
-    // });
   }
 };
 
