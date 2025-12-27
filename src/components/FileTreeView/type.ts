@@ -39,7 +39,7 @@ export interface FileTreeViewProps {
   /** 创建文件回调 */
   onCreateFileNode?: (node: FileNode, newName: string) => Promise<boolean>;
   /** 删除文件回调 */
-  onDeleteFile?: (node: FileNode) => void;
+  onDeleteFile?: (node: FileNode) => Promise<boolean>;
   /** 视图模式切换回调 */
   onViewModeChange?: (mode: 'preview' | 'desktop') => void;
   /** 保存文件回调 */
