@@ -201,7 +201,7 @@ const FilePreviewDemo: React.FC = () => {
           <Title level={4}>PPTX Preview</Title>
           <FilePreview
             src={testFiles.pptx}
-            height={500}
+            height={400}
             showDownload
             onRendered={() => console.log('PPTX rendered')}
             onError={(e) => console.error('PPTX error:', e)}
@@ -211,7 +211,7 @@ const FilePreviewDemo: React.FC = () => {
           <Title level={4}>PPTX Preview 大学网站编程毕业设计</Title>
           <FilePreview
             src={'/converted/大学网站编程毕业设计.pptx'}
-            height={500}
+            height={300}
             showDownload
             onRendered={() => console.log('PPTX rendered')}
             onError={(e) => console.error('PPTX error:', e)}
@@ -221,7 +221,7 @@ const FilePreviewDemo: React.FC = () => {
           <Title level={4}>PPTX Preview Huawei_Mate80</Title>
           <FilePreview
             src={'/converted/Huawei_Mate80.pptx'}
-            height={500}
+            height={600}
             showDownload
             onRendered={() => console.log('PPTX rendered')}
             onError={(e) => console.error('PPTX error:', e)}
