@@ -708,11 +708,15 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         fileProxyUrl
       ) {
         return (
-          <iframe
+          // <iframe
+          //   src={fileProxyUrl}
+          //   width="100%"
+          //   height="100%"
+          //   style={{ border: 'none' }}
+          // />
+          <FilePreview
             src={fileProxyUrl}
-            width="100%"
-            height="100%"
-            style={{ border: 'none' }}
+            fileType={fileName?.includes('.htm') ? 'html' : 'markdown'}
           />
         );
       }
