@@ -190,7 +190,7 @@ export default () => {
   // 查询文件列表
   const { runAsync: runGetStaticFileList } = useRequest(apiGetStaticFileList, {
     manual: true,
-    debounceWait: 2000,
+    debounceWait: 500,
     onSuccess: (result: RequestResponse<StaticFileListResponse>) => {
       setFileTreeDataLoading(false);
       const files = result?.data?.files || [];
