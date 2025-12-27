@@ -33,7 +33,7 @@ import type {
 import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Button, Form, message, Typography } from 'antd';
+import { Button, Form, message, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -318,40 +318,44 @@ const AgentDetails: React.FC = () => {
             <div>
               {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
               {!isSidebarVisible && !isMobile && (
-                <Button
-                  type="text"
-                  className={cx(styles.sidebarButton)}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-sidebar"
-                      className={cx(styles['icons-nav-sidebar'])}
-                    />
-                  }
-                  onClick={() => {
-                    hidePagePreview();
-                    sidebarRef.current?.open();
-                  }}
-                />
+                <Tooltip title="查看智能体详情">
+                  <Button
+                    type="text"
+                    className={cx(styles.sidebarButton)}
+                    icon={
+                      <SvgIcon
+                        name="icons-nav-sidebar"
+                        className={cx(styles['icons-nav-sidebar'])}
+                      />
+                    }
+                    onClick={() => {
+                      hidePagePreview();
+                      sidebarRef.current?.open();
+                    }}
+                  />
+                </Tooltip>
               )}
 
               {/*打开预览页面*/}
               {!!agentDetail?.expandPageArea &&
                 !!agentDetail?.pageHomeIndex &&
                 !pagePreviewData && (
-                  <Button
-                    type="text"
-                    className={cx(styles.sidebarButton)}
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-ecosystem"
-                        className={cx(styles['icons-nav-sidebar'])}
-                      />
-                    }
-                    onClick={() => {
-                      sidebarRef.current?.close();
-                      handleOpenPreview(agentDetail);
-                    }}
-                  />
+                  <Tooltip title="打开预览页面">
+                    <Button
+                      type="text"
+                      className={cx(styles.sidebarButton)}
+                      icon={
+                        <SvgIcon
+                          name="icons-nav-ecosystem"
+                          className={cx(styles['icons-nav-sidebar'])}
+                        />
+                      }
+                      onClick={() => {
+                        sidebarRef.current?.close();
+                        handleOpenPreview(agentDetail);
+                      }}
+                    />
+                  </Tooltip>
                 )}
             </div>
           </div>
