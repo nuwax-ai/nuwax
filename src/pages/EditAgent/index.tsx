@@ -120,6 +120,7 @@ const EditAgent: React.FC = () => {
     openDesktopView,
     restartVncPod,
     taskAgentSelectedFileId,
+    setIsLoadingOtherInterface,
   } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
   const { agentComponentList } = useModel('spaceAgent');
@@ -156,13 +157,24 @@ const EditAgent: React.FC = () => {
   }, [spaceId]);
 
   // 查询智能体配置信息
-  const { run } = useRequest(apiAgentConfigInfo, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
-      setAgentConfigInfo(result?.data);
+  const { run, loading: loadingAgentConfigInfo } = useRequest(
+    apiAgentConfigInfo,
+    {
+      manual: true,
+      debounceWait: 300,
+      onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
+        setAgentConfigInfo(result?.data);
+      },
     },
-  });
+  );
+
+  useEffect(() => {
+    if (loadingAgentConfigInfo) {
+      setIsLoadingOtherInterface(true);
+    } else {
+      setIsLoadingOtherInterface(false);
+    }
+  }, [loadingAgentConfigInfo]);
 
   // 查询智能体配置信息
   const { run: runUpdateAgent } = useRequest(apiAgentConfigInfo, {

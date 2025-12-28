@@ -54,6 +54,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     disabledConversationActive,
     messageList,
     loadingConversation,
+    isLoadingOtherInterface,
   } = useModel('conversationInfo');
 
   // 文档
@@ -103,7 +104,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 点击发送事件
   const handleSendMessage = () => {
-    if (disabledSend || wholeDisabled || loadingConversation) {
+    if (
+      disabledSend ||
+      wholeDisabled ||
+      loadingConversation ||
+      isLoadingOtherInterface
+    ) {
       return;
     }
     if (messageInfo || files?.length > 0) {
@@ -480,7 +486,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   styles['send-box'],
                   {
                     [styles.disabled]:
-                      disabledSend || wholeDisabled || loadingConversation,
+                      disabledSend ||
+                      wholeDisabled ||
+                      loadingConversation ||
+                      isLoadingOtherInterface,
                   },
                 )}
               >

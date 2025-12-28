@@ -92,6 +92,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     setShowType,
     resetInit,
     setFinalResult,
+    setIsLoadingOtherInterface,
   } = useModel('conversationInfo');
 
   // 获取 chat model 中的页面预览状态
@@ -214,36 +215,43 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     handleClearSideEffect();
     setMessageList([]);
     setIsLoadingConversation(false);
-    // 创建智能体会话(智能体编排页面devMode为true)
-    const { success, data } = await runAsyncConversationCreate({
-      agentId,
-      devMode: true,
-    });
+    try {
+      setIsLoadingOtherInterface(true);
+      // 创建智能体会话(智能体编排页面devMode为true)
+      const { success, data } = await runAsyncConversationCreate({
+        agentId,
+        devMode: true,
+      });
 
-    if (success) {
-      // 点击刷子时,智能体要"重置",默认有打开页面就返回到默认首页,默认没有打开页面,则把页面收起来
-      const agent = data?.agent || {};
-      const expandPageArea = agent.expandPageArea; // 0: 收起, 1: 展开
-      const pageHomeIndex = agent.pageHomeIndex;
-      if (expandPageArea === 0) {
-        hidePagePreview();
-      } else {
-        showPagePreview({
-          uri: pageHomeIndex,
-          params: {},
-        });
-      }
+      if (success) {
+        // 点击刷子时,智能体要"重置",默认有打开页面就返回到默认首页,默认没有打开页面,则把页面收起来
+        const agent = data?.agent || {};
+        const expandPageArea = agent.expandPageArea; // 0: 收起, 1: 展开
+        const pageHomeIndex = agent.pageHomeIndex;
+        if (expandPageArea === 0) {
+          hidePagePreview();
+        } else {
+          showPagePreview({
+            uri: pageHomeIndex,
+            params: {},
+          });
+        }
 
-      const id = data?.id;
-      devConversationIdRef.current = id;
-      if (agentConfigInfo) {
-        // 更新智能体配置信息
-        const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
-        _agentConfigInfo.devConversationId = id;
-        onAgentConfigInfo(_agentConfigInfo);
+        const id = data?.id;
+        devConversationIdRef.current = id;
+        if (agentConfigInfo) {
+          // 更新智能体配置信息
+          const _agentConfigInfo = cloneDeep(
+            agentConfigInfo,
+          ) as AgentConfigInfo;
+          _agentConfigInfo.devConversationId = id;
+          onAgentConfigInfo(_agentConfigInfo);
+        }
+        // 查询会话
+        runQueryConversation(id);
       }
-      // 查询会话
-      runQueryConversation(id);
+    } finally {
+      setIsLoadingOtherInterface(false);
     }
   }, [agentId, agentConfigInfo]);
 
