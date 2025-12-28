@@ -36,6 +36,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
     messageInfo,
     mode = 'chat',
     conversationId = '',
+    showStatusDesc = true,
   }) => {
     const { userInfo } = useModel('userInfo');
     const { data } = useUnifiedTheme();
@@ -105,9 +106,20 @@ const ChatView: React.FC<ChatViewProps> = memo(
               />
               <div className={cx(styles.author)}>{info?.name}</div>
               <ConditionRender condition={!!messageInfo?.status}>
-                <div style={{ display: 'flex', flexDirection: 'row', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <RunOver messageInfo={messageInfo} />
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    gap: 12,
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <RunOver
+                      messageInfo={messageInfo}
+                      showStatusDesc={showStatusDesc}
+                    />
                   </div>
                 </div>
               </ConditionRender>

@@ -356,6 +356,8 @@ export interface ChatViewProps {
   mode?: 'none' | 'home' | 'chat';
   // 会话 id
   conversationId?: string | number;
+  // 是否显示状态描述
+  showStatusDesc?: boolean;
 }
 
 // 卡片信息

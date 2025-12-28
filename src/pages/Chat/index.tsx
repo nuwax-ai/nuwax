@@ -850,6 +850,9 @@ const Chat: React.FC = () => {
                       contentClassName={styles['chat-inner']}
                       mode={'home'}
                       conversationId={id}
+                      showStatusDesc={
+                        agentDetail?.type !== AgentTypeEnum.TaskAgent
+                      }
                     />
                   ))}
                   {/*会话建议*/}
