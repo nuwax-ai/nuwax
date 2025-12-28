@@ -70,6 +70,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onShare,
       isShowShare = true,
       onClose,
+      showFullscreenIcon = true,
     },
     ref,
   ) => {
@@ -714,12 +715,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         fileProxyUrl
       ) {
         return (
-          // <iframe
-          //   src={fileProxyUrl}
-          //   width="100%"
-          //   height="100%"
-          //   style={{ border: 'none' }}
-          // />
           <FilePreview
             src={fileProxyUrl}
             fileType={fileName?.includes('.htm') ? 'html' : 'markdown'}
@@ -790,6 +785,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onFullscreen={handleFullscreen}
           // 是否处于全屏状态
           isFullscreen={isFullscreen}
+          // 是否显示全屏图标
+          showFullscreenIcon={showFullscreenIcon}
           // 保存文件回调
           onSaveFiles={saveFiles}
           // 取消保存文件回调

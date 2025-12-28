@@ -59,4 +59,6 @@ export interface FileTreeViewProps {
   isShowShare?: boolean;
   // 关闭整个面板
   onClose?: () => void;
+  // 是否显示全屏图标
+  showFullscreenIcon?: boolean;
 }
