@@ -662,6 +662,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         );
       }
 
+      // 文档文件：使用FilePreview组件
+      if (selectedFileNode?.name?.includes('.json') && fileProxyUrl) {
+        return <FilePreview src={fileProxyUrl} fileType="text" />;
+      }
+
       // 图片文件：使用图片查看器
       if (isImage) {
         // 如果文件代理URL存在，使用FilePreview组件

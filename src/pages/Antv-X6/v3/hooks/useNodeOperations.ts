@@ -31,6 +31,7 @@ import {
   LOOP_NODE_DEFAULT_WIDTH,
 } from '../constants/loopNodeConstants';
 import { workflowProxy } from '../services/workflowProxyV3';
+import { getEdges } from '../utils/graphV3';
 import {
   getNodeSize,
   getShape,
@@ -453,18 +454,45 @@ export const useNodeOperations = ({
           graphRef.current?.graphDeleteEdge(edgeId);
         }
       } else {
-        // 普通端口：使用 nodeChangeEdge 删除
-        const newNodeIds = await nodeChangeEdge(
-          {
-            type: UpdateEdgeType.deleted,
-            targetId: targetNode.id.toString(),
-            sourceNode,
-          },
-          noop,
+        // 普通端口：删除边
+        // 检测是否是循环节点的内部边（Loop-in -> innerNode）
+        const isLoopInPort =
+          portId.endsWith('-in') && sourceNode.type === NodeTypeEnum.Loop;
+
+        // 使用正确的 source 格式调用 deleteEdge
+        const edgeSource = isLoopInPort ? portId : String(sourceNode.id);
+
+        // 直接调用 workflowProxy.deleteEdge
+        const res = workflowProxy.deleteEdge(
+          edgeSource,
+          targetNode.id.toString(),
         );
-        // 如果数据删除成功，则同步删除画布上的边
-        if (newNodeIds) {
+
+        if (res.success) {
+          // 同步删除画布上的边
           graphRef.current?.graphDeleteEdge(edgeId);
+          // 触发保存
+          debouncedSaveFullWorkflow();
+        } else {
+          // 如果删除失败，尝试使用纯节点 ID 格式（兼容旧数据）
+          const fallbackRes = workflowProxy.deleteEdge(
+            String(sourceNode.id),
+            targetNode.id.toString(),
+          );
+
+          if (fallbackRes.success) {
+            graphRef.current?.graphDeleteEdge(edgeId);
+            debouncedSaveFullWorkflow();
+          } else {
+            console.warn(
+              '[handleTargetNodeConnection] 删除边失败:',
+              res.message,
+              '| source:',
+              edgeSource,
+              '-> target:',
+              targetNode.id,
+            );
+          }
         }
       }
     },
@@ -475,6 +503,7 @@ export const useNodeOperations = ({
       handleNormalNodeConnection,
       nodeChangeEdge,
       changeNode,
+      debouncedSaveFullWorkflow,
     ],
   );
 
@@ -758,6 +787,24 @@ export const useNodeOperations = ({
       const proxyResult = workflowProxy.addNode(_params as ChildNode);
 
       if (proxyResult.success) {
+        // [Fix] Manually add inner nodes and inner edges to proxy
+        // Because addNode only adds the top-level loop node
+        if (_params.type === NodeTypeEnum.Loop && _params.innerNodes) {
+          _params.innerNodes.forEach((innerNode: ChildNode) => {
+            workflowProxy.addNode(innerNode);
+          });
+          // 添加 Loop 节点的边（Loop-in → LoopStart, LoopEnd → Loop-out）
+          const loopEdges = getEdges([_params as ChildNode], false);
+          loopEdges.forEach((edge) => {
+            workflowProxy.addEdge(edge as any);
+          });
+          // 添加 innerNodes 之间的边（如 LoopStart → LoopEnd）
+          const innerEdges = getEdges(_params.innerNodes, false);
+          innerEdges.forEach((edge) => {
+            workflowProxy.addEdge(edge as any);
+          });
+        }
+
         try {
           await handleNodeCreationSuccess(_params as AddNodeResponse);
           debouncedSaveFullWorkflow();

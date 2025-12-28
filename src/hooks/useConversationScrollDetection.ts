@@ -55,7 +55,22 @@ export const useConversationScrollDetection = (
 
     // 使用 scroll 事件替代 wheel 事件，可以捕获所有类型的滚动行为
     const scrollHandler = () => {
-      const { scrollTop } = messageView;
+      const { scrollTop, scrollHeight, clientHeight } = messageView;
+
+      // 如果内容不足以滚动（没有滚动条），确保隐藏按钮并直接返回
+      if (scrollHeight <= clientHeight) {
+        setShowScrollBtn(false);
+        return;
+      }
+
+      // 计算距离底部的距离
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+      // 如果已经在底部（距离小于等于50px），确保隐藏按钮
+      if (distanceFromBottom <= 50) {
+        setShowScrollBtn(false);
+        allowAutoScrollRef.current = true;
+      }
       const isProgrammatic = (messageView as any).__isProgrammaticScroll;
 
       // 如果是程序触发的滚动，忽略（不处理用户滚动逻辑）
