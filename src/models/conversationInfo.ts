@@ -907,6 +907,10 @@ export default () => {
     setFinalResult(null);
     // 重置会话消息ID
     setCurrentConversationRequestId('');
+    // 重置变量参数（防止切换智能体时参数框闪烁）
+    setVariables([]);
+    setRequiredNameList([]);
+    setUserFillVariables(null);
 
     if (timeoutRef.current) {
       //清除会话定时器
