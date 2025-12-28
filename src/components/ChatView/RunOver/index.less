@@ -2,7 +2,8 @@
 @import '@/styles/token';
 
 .run-success {
-  display: inline-block;
+  display: flex;
+  align-items: center;
   line-height: 16px;
   gap: @marginXxs;
   padding: @paddingXxs @paddingXs;
@@ -10,15 +11,28 @@
   font-size: @fontSizeSm;
   // background-color: @colorBgContainerDisabled;
   color: @colorTextDescription;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   .status-name {
     margin-left: @marginXxs;
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    min-width: 0;
+    flex: 1;
   }
 
   .icon {
     color: @colorSuccessText;
     margin-left: @marginXxs;
     font-size: @fontSizeSm;
+    flex-shrink: 0;
   }
 }
 

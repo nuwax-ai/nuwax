@@ -19,12 +19,19 @@
     line-height: 20px;
     font-size: @fontSize;
     color: @colorTextDescription;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+    max-width: 200px;
   }
 
   .agent-title-bar {
     display: flex;
     align-items: center;
     gap: @marginSm;
+    width: 100%;
+    min-width: 0;
   }
 
   .attach-file-container {

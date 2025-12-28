@@ -354,6 +354,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                       messageInfo={item}
                       roleInfo={roleInfo}
                       mode={'chat'}
+                      showStatusDesc={
+                        agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
+                      }
                     />
                   ))}
                   {/*会话建议*/}
