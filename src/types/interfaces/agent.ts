@@ -922,3 +922,13 @@ export interface ApiAgentConversationChatPageResultParams {
   // 结果HTML
   html: string;
 }
+
+/**
+ * 智能体会话、桌面分享参数
+ */
+export interface AgentConversationShareParams {
+  conversationId: number | string;
+  type: string;
+  expireSeconds?: number;
+  content: string;
+}

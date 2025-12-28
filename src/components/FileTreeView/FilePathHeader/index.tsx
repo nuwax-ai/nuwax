@@ -1,6 +1,10 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { USER_INFO } from '@/constants/home.constants';
+import { apiAgentConversationShare } from '@/services/agentConfig';
+import { AgentConversationShareParams } from '@/types/interfaces/agent';
 import { FileNode } from '@/types/interfaces/appDev';
+import { copyTextToClipboard } from '@/utils';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { isMarkdownFile } from '@/utils/common';
 import {
@@ -9,17 +13,20 @@ import {
   FilePdfOutlined,
   FullscreenExitOutlined,
 } from '@ant-design/icons';
-import { Button, Segmented, Tooltip } from 'antd';
+import { Button, message, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ReactComponent as CodeIconSvg } from './code.svg';
 import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
 import pcIcon from './pc.svg';
+import ShareDesktopModal from './ShareDesktopModal';
 
 const cx = classNames.bind(styles);
 
 interface FilePathHeaderProps {
+  /** 会话ID */
+  conversationId: string;
   className?: string;
   /** 文件节点 */
   targetNode: FileNode | null;
@@ -73,6 +80,7 @@ interface FilePathHeaderProps {
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
+  conversationId,
   targetNode,
   viewMode = 'preview',
   onViewModeChange,
@@ -90,7 +98,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   viewFileType = 'preview',
   onViewFileTypeChange,
   onDownloadFileByUrl,
-  onShare,
   isShowShare = true,
   onExportPdf,
   isExportingPdf = false,
@@ -108,6 +115,58 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   // 获取用户信息
   const _userInfo = localStorage.getItem(USER_INFO);
   const userInfo = _userInfo ? JSON.parse(_userInfo) : null;
+  // 远程桌面分享弹窗显示状态
+  const [shareDesktopModalVisible, setShareDesktopModalVisible] =
+    useState(false);
+
+  // 分享文件
+  const onSharePreviewFile = async () => {
+    const data: AgentConversationShareParams = {
+      conversationId,
+      type: 'CONVERSATION',
+      content: targetNode?.fileProxyUrl || '',
+    };
+
+    const { data: shareData, code } = await apiAgentConversationShare(data);
+    if (code === SUCCESS_CODE) {
+      const baseUrl = window?.location?.origin || '';
+      const path = '/static/file-preview.html';
+
+      const query = new URLSearchParams();
+      query.set('sk', shareData?.shareKey);
+      query.set(
+        'isDev',
+        process.env.NODE_ENV === 'development' ? 'true' : 'false',
+      );
+      const previewUrl = baseUrl + path + '?' + query.toString();
+
+      // 复制到剪切板
+      copyTextToClipboard(previewUrl);
+      message.success('分享成功，链接已复制到剪切板');
+    }
+  };
+
+  // 分享桌面
+  const onShareDesktop = () => {
+    setShareDesktopModalVisible(true);
+  };
+
+  // 分享
+  const onShareAction = (mode: 'preview' | 'desktop') => {
+    if (!conversationId) {
+      return;
+    }
+
+    // 分享文件
+    if (mode === 'preview') {
+      onSharePreviewFile();
+    }
+
+    // 分享桌面
+    if (mode === 'desktop') {
+      onShareDesktop();
+    }
+  };
 
   return (
     <div className={cx(styles.filePathHeader, className)}>
@@ -241,19 +300,21 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
       {/* 右侧：操作按钮 */}
       <div className={styles.actionButtons}>
-        {isShowShare && (
-          <Tooltip title="分享">
-            <Button
-              type="text"
-              size="small"
-              icon={
-                <SvgIcon name="icons-chat-share" style={{ fontSize: 16 }} />
-              }
-              onClick={onShare}
-              className={styles.actionButton}
-            />
-          </Tooltip>
-        )}
+        {isShowShare &&
+          (viewMode === 'desktop' ||
+            (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
+            <Tooltip title="分享">
+              <Button
+                type="text"
+                size="small"
+                icon={
+                  <SvgIcon name="icons-chat-share" style={{ fontSize: 16 }} />
+                }
+                onClick={() => onShareAction(viewMode)}
+                className={styles.actionButton}
+              />
+            </Tooltip>
+          )}
         {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
         {targetNode?.fileProxyUrl && viewMode === 'preview' && (
           <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
@@ -301,6 +362,13 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           />
         )}
       </div>
+
+      {/* 远程桌面分享弹窗 */}
+      <ShareDesktopModal
+        visible={shareDesktopModalVisible}
+        onClose={() => setShareDesktopModalVisible(false)}
+        conversationId={conversationId || ''}
+      />
     </div>
   );
 };
