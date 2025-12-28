@@ -15,7 +15,10 @@ const cx = classNames.bind(styles);
 /**
  * 运行状态组件：进行中、运行完毕
  */
-const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
+const RunOver: React.FC<RunOverProps> = ({
+  messageInfo,
+  showStatusDesc = true,
+}) => {
   const { finalResult, processingList } = messageInfo;
 
   // 运行时间
@@ -81,13 +84,13 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
       arrow={false}
       trigger="hover"
     >
-      <span className={cx('cursor-pointer', styles['run-success'])}>
+      <div className={cx('cursor-pointer', styles['run-success'])}>
         {/* 显示loading状态 */}
         {messageInfo?.status === MessageStatusEnum.Loading ||
         messageInfo?.status === MessageStatusEnum.Incomplete ? (
           <>
             <LoadingOutlined className={cx(styles.successColor)} />
-            {lastProcessInfo && (
+            {showStatusDesc && lastProcessInfo && (
               <span className={cx(styles['status-name'])}>
                 {lastProcessInfo.status === ProcessingEnum.EXECUTING
                   ? `正在调用 `
@@ -104,7 +107,7 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
             <DownOutlined className={cx(styles.icon)} />
           </span>
         )}
-      </span>
+      </div>
     </Popover>
   );
 };
