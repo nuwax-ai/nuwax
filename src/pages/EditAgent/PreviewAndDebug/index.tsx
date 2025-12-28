@@ -91,6 +91,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     showType,
     setShowType,
     resetInit,
+    setFinalResult,
   } = useModel('conversationInfo');
 
   // 获取 chat model 中的页面预览状态
@@ -208,6 +209,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
 
   // 清空会话记录，实际上是创建新的会话
   const handleClear = useCallback(async () => {
+    // 清除调试结果
+    setFinalResult(null);
     handleClearSideEffect();
     setMessageList([]);
     setIsLoadingConversation(false);
