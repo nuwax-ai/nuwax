@@ -378,7 +378,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           />
         )}
 
-        {onClose && (
+        {onClose && !isFullscreen && (
           <>
             <div className={styles.divider} />
 
