@@ -47,6 +47,8 @@ interface FilePathHeaderProps {
   onFullscreen?: () => void;
   /** 是否处于全屏状态 */
   isFullscreen?: boolean;
+  /** 是否显示全屏图标 */
+  showFullscreenIcon?: boolean;
   /** 保存回调 */
   onSaveFiles?: () => void;
   /** 取消保存回调 */
@@ -94,6 +96,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onExportProject,
   onFullscreen,
   isFullscreen = false,
+  showFullscreenIcon = true,
   onSaveFiles,
   onCancelSaveFiles,
   hasModifiedFiles = false,
@@ -179,7 +182,13 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   };
 
   return (
-    <div className={cx(styles.filePathHeader, className)}>
+    <div
+      className={cx(
+        styles.filePathHeader,
+        { ['pl-16']: !isFullscreen },
+        className,
+      )}
+    >
       {/* 左侧：文件信息 */}
       <div className={styles.fileInfo}>
         {viewMode === 'preview' ? (
@@ -349,25 +358,27 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           </Tooltip>
         )}
 
-        {/* 全屏 */}
-        <Tooltip title={isFullscreen ? '退出全屏' : '全屏'}>
-          <Button
-            type="text"
-            size="small"
-            icon={
-              isFullscreen ? (
-                <FullscreenExitOutlined style={{ fontSize: 16 }} />
-              ) : (
-                <SvgIcon
-                  name="icons-common-fullscreen"
-                  style={{ fontSize: 16 }}
-                />
-              )
-            }
-            onClick={onFullscreen}
-            className={styles.actionButton}
-          />
-        </Tooltip>
+        {/* 是否显示全屏图标 */}
+        {(showFullscreenIcon || isFullscreen) && (
+          <Tooltip title={isFullscreen ? '退出全屏' : '全屏'}>
+            <Button
+              type="text"
+              size="small"
+              icon={
+                isFullscreen ? (
+                  <FullscreenExitOutlined style={{ fontSize: 16 }} />
+                ) : (
+                  <SvgIcon
+                    name="icons-common-fullscreen"
+                    style={{ fontSize: 16 }}
+                  />
+                )
+              }
+              onClick={onFullscreen}
+              className={styles.actionButton}
+            />
+          </Tooltip>
+        )}
 
         {/* 更多操作菜单 */}
         {showMoreActions && (

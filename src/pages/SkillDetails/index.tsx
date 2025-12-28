@@ -493,7 +493,10 @@ const SkillDetails: React.FC = () => {
           showMoreActions={false}
           // 是否显示全屏预览
           isFullscreenPreview={isFullscreenPreview}
+          // 全屏预览
           onFullscreenPreview={setIsFullscreenPreview}
+          // 是否显示全屏图标
+          showFullscreenIcon={false}
         />
 
         {/*版本历史*/}

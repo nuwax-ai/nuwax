@@ -67,7 +67,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
                   style={{ fontSize: 16 }}
                 />
               ),
-              label: '导出项目',
+              label: '导出结果',
               onClick: onExportProject,
             },
           ]
@@ -85,7 +85,12 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
     <Dropdown menu={{ items: menuItems }} placement="bottomRight">
       <Button
         type="text"
-        icon={<SvgIcon name="icons-common-more" style={{ fontSize: '16px' }} />}
+        icon={
+          <SvgIcon
+            name="icons-common-more"
+            style={{ fontSize: '16px', color: 'rgba(0,0,0,0.65)' }}
+          />
+        }
       />
     </Dropdown>
   );
