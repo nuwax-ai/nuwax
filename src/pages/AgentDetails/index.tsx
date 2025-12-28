@@ -307,7 +307,7 @@ const AgentDetails: React.FC = () => {
             {/* 左侧标题 */}
             <Typography.Title
               level={5}
-              className={cx(styles.title, 'clip-path-animation')}
+              className={cx(styles.title)}
               ellipsis={{ rows: 1, expandable: false, symbol: '...' }}
             >
               {isLoaded &&
