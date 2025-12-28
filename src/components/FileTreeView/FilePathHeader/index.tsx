@@ -22,7 +22,7 @@ import CopyToClipboard from 'react-copy-to-clipboard';
 import { ReactComponent as CodeIconSvg } from './code.svg';
 import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
-import pcIcon from './pc.svg';
+import { ReactComponent as PcIconSvg } from './pc.svg';
 import ShareDesktopModal from './ShareDesktopModal';
 import { FilePathHeaderProps } from './type';
 
@@ -179,7 +179,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           </>
         ) : (
           <div className={styles['pc-box']}>
-            <img src={pcIcon} alt="" />
+            <PcIconSvg />
             <div className={styles.fileName}>
               {userInfo?.nickName || userInfo?.userName || '远程'}的智能体电脑
             </div>
