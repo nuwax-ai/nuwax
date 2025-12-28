@@ -227,6 +227,16 @@ const FilePreviewDemo: React.FC = () => {
             onError={(e) => console.error('PPTX error:', e)}
           />
         </div>
+        <div>
+          <Title level={4}>PPTX Preview Huawei_Mate80</Title>
+          <FilePreview
+            src={'/converted/大学网站编程毕业设计_2.pptx'}
+            height={600}
+            showDownload
+            onRendered={() => console.log('PPTX rendered')}
+            onError={(e) => console.error('PPTX error:', e)}
+          />
+        </div>
 
         <Divider>Special States</Divider>
 
