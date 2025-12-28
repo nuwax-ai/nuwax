@@ -708,11 +708,15 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         fileProxyUrl
       ) {
         return (
-          <iframe
+          // <iframe
+          //   src={fileProxyUrl}
+          //   width="100%"
+          //   height="100%"
+          //   style={{ border: 'none' }}
+          // />
+          <FilePreview
             src={fileProxyUrl}
-            width="100%"
-            height="100%"
-            style={{ border: 'none' }}
+            fileType={fileName?.includes('.htm') ? 'html' : 'markdown'}
           />
         );
       }
@@ -760,6 +764,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const renderHeader = () => {
       return (
         <FilePathHeader
+          conversationId={targetId?.toString() || ''}
           className={headerClassName}
           // 文件节点
           targetNode={selectedFileNode}
