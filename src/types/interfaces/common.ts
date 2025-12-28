@@ -520,6 +520,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
 // 聊天框底部更多操作组件
 export interface ChatBottomMoreProps {
   messageInfo: MessageInfo;
+  // 是否显示状态描述
+  showStatusDesc?: boolean;
 }
 
 // 聊天框底部更多操作组件
