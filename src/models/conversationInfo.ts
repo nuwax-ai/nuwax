@@ -304,11 +304,26 @@ export default () => {
 
   // 关闭预览视图
   const closePreviewView = useCallback(() => {
+    // 关闭文件树
     setIsFileTreeVisible(false);
+    // 更新 ref 值
     isFileTreeVisibleRef.current = false;
 
     // 停止保活
     stopKeepalivePodPolling();
+  }, []);
+
+  // 清除文件面板信息, 并关闭文件面板
+  const clearFilePanelInfo = useCallback(() => {
+    closePreviewView();
+    // 清空文件树数据
+    setFileTreeData([]);
+    // 设置视图模式为预览
+    setViewMode('preview');
+    // 更新 ref 值
+    viewModeRef.current = 'preview';
+    // 设置远程桌面容器信息为空
+    setVncContainerInfo(null);
   }, []);
 
   // 打开预览视图
@@ -941,17 +956,8 @@ export default () => {
       timeoutRef.current = null;
     }
 
-    // 关闭文件树
-    setIsFileTreeVisible(false);
-    setFileTreeData([]);
-    setViewMode('preview');
-    // 更新 ref 值
-    isFileTreeVisibleRef.current = false;
-    viewModeRef.current = 'preview';
-    // 设置远程桌面容器信息为空
-    setVncContainerInfo(null);
-    // 停止保活
-    stopKeepalivePodPolling();
+    // 清除文件面板信息, 并关闭文件面板
+    clearFilePanelInfo();
 
     // 停止当前会话【强制】
     abortController?.abort();
@@ -1120,6 +1126,7 @@ export default () => {
     // 文件树显隐状态
     isFileTreeVisible,
     closePreviewView,
+    clearFilePanelInfo,
     // 文件树数据
     fileTreeData,
     fileTreeDataLoading,
