@@ -119,6 +119,7 @@ const EditAgent: React.FC = () => {
     openPreviewView,
     openDesktopView,
     restartVncPod,
+    restartAgent,
     taskAgentSelectedFileId,
     setIsLoadingOtherInterface,
   } = useModel('conversationInfo');
@@ -1022,6 +1023,8 @@ const EditAgent: React.FC = () => {
               onSaveFiles={handleSaveFiles}
               // 重启容器
               onRestartServer={() => restartVncPod(devConversationId)}
+              // 重启智能体
+              onRestartAgent={() => restartAgent(devConversationId)}
               // 关闭整个面板
               onClose={closePreviewView}
             />

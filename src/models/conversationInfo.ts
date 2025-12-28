@@ -13,6 +13,7 @@ import {
   apiEnsurePod,
   apiGetStaticFileList,
   apiKeepalivePod,
+  apiRestartAgent,
   apiRestartPod,
 } from '@/services/vncDesktop';
 import {
@@ -217,19 +218,36 @@ export default () => {
     },
   });
 
-  // 重启远程电脑
+  // 重启智能体电脑
   const restartVncPod = useCallback(async (cId: number) => {
     try {
       const { code } = await apiRestartPod(cId);
       if (code === SUCCESS_CODE) {
-        message.success('重启远程电脑成功');
+        message.success('重启智能体电脑成功');
       } else {
-        message.error('重启远程电脑失败');
+        message.error('重启智能体电脑失败');
       }
     } catch (error) {
-      console.error('重启远程电脑失败', error);
+      console.error('重启智能体电脑失败', error);
     }
   }, []);
+
+  // 重启智能体
+  const { run: restartAgent, loading: isRestartAgentLoading } = useRequest(
+    apiRestartAgent,
+    {
+      manual: true,
+      debounceWait: 500,
+      onSuccess: (result: RequestResponse<null>) => {
+        const { code } = result;
+        if (code === SUCCESS_CODE) {
+          message.success('重启智能体成功');
+        } else {
+          message.error('重启智能体失败');
+        }
+      },
+    },
+  );
 
   // 处理文件列表刷新事件
   const handleRefreshFileList = useCallback(
@@ -1113,7 +1131,11 @@ export default () => {
     handleRefreshFileList,
     openDesktopView,
     openPreviewView,
+    // 重启智能体电脑
     restartVncPod,
+    // 重启智能体
+    restartAgent,
+    isRestartAgentLoading,
     // 远程桌面容器信息, 暂时未使用
     vncContainerInfo,
     // 任务智能体会话中点击选中的文件ID

@@ -24,62 +24,9 @@ import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
 import pcIcon from './pc.svg';
 import ShareDesktopModal from './ShareDesktopModal';
+import { FilePathHeaderProps } from './type';
 
 const cx = classNames.bind(styles);
-
-interface FilePathHeaderProps {
-  /** 会话ID */
-  conversationId: string;
-  className?: string;
-  /** 文件节点 */
-  targetNode: FileNode | null;
-  /** 当前视图模式 */
-  viewMode?: 'preview' | 'desktop';
-  /** 视图模式切换回调 */
-  onViewModeChange?: (mode: 'preview' | 'desktop') => void;
-  /** 重启服务器回调 */
-  onRestartServer?: () => void;
-  /** 导入项目回调 */
-  onImportProject?: () => void;
-  /** 导出项目回调 */
-  onExportProject?: () => void;
-  /** 全屏回调 */
-  onFullscreen?: () => void;
-  /** 是否处于全屏状态 */
-  isFullscreen?: boolean;
-  /** 是否显示全屏图标 */
-  showFullscreenIcon?: boolean;
-  /** 保存回调 */
-  onSaveFiles?: () => void;
-  /** 取消保存回调 */
-  onCancelSaveFiles?: () => void;
-  /** 是否存在修改过的文件 */
-  hasModifiedFiles?: boolean;
-  /** 是否正在保存文件 */
-  isSavingFiles?: boolean;
-  /** 是否正在导出项目 */
-  isExportingProjecting?: boolean;
-  /** 是否正在下载文件 */
-  isDownloadingFile?: boolean;
-  /** 是否显示更多操作菜单 */
-  showMoreActions?: boolean;
-  /** 文件类型 */
-  viewFileType?: 'preview' | 'code';
-  /** 针对html、md文件，切换预览和代码视图 */
-  onViewFileTypeChange?: (type: 'preview' | 'code') => void;
-  /** 通过URL下载文件回调 */
-  onDownloadFileByUrl?: (node: FileNode) => void;
-  /** 分享回调 */
-  onShare?: () => void;
-  // 是否显示分享按钮
-  isShowShare?: boolean;
-  /** 导出为 PDF 回调（仅 Markdown 文件） */
-  onExportPdf?: (node: FileNode) => void;
-  /** 是否正在导出 PDF */
-  isExportingPdf?: boolean;
-  // 关闭整个面板
-  onClose?: () => void;
-}
 
 /**
  * 文件路径头部组件
@@ -92,6 +39,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   viewMode = 'preview',
   onViewModeChange,
   onRestartServer,
+  onRestartAgent,
   onImportProject,
   onExportProject,
   onFullscreen,
@@ -385,6 +333,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           <MoreActionsMenu
             onImportProject={onImportProject}
             onRestartServer={onRestartServer}
+            onRestartAgent={onRestartAgent}
             onExportProject={onExportProject}
           />
         )}

@@ -127,6 +127,15 @@ export async function apiRestartPod(
   });
 }
 
+// 重启智能体
+export async function apiRestartAgent(
+  cId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/v1/agent/stop/${cId}`, {
+    method: 'POST',
+  });
+}
+
 // 容器保活
 export async function apiKeepalivePod(
   cId: number,

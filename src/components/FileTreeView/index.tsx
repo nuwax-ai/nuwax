@@ -62,6 +62,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onSaveFiles,
       onImportProject,
       onRestartServer,
+      onRestartAgent,
       // 是否显示更多操作菜单
       showMoreActions = true,
       // 是否显示全屏预览，由父组件控制
@@ -779,6 +780,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onImportProject={onImportProject}
           // 重启容器
           onRestartServer={onRestartServer}
+          // 重启智能体
+          onRestartAgent={onRestartAgent}
           // 是否正在导出项目
           isExportingProjecting={isExportingProjecting}
           // 全屏回调

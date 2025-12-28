@@ -153,6 +153,7 @@ const Chat: React.FC = () => {
     openPreviewView,
     openDesktopView,
     restartVncPod,
+    restartAgent,
     // 任务智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
   } = useModel('conversationInfo');
@@ -1041,6 +1042,8 @@ const Chat: React.FC = () => {
             onSaveFiles={handleSaveFiles}
             // 重启容器
             onRestartServer={() => restartVncPod(id)}
+            // 重启智能体
+            onRestartAgent={() => restartAgent(id)}
             // 关闭整个面板
             onClose={closePreviewView}
           />
