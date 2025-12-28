@@ -69,6 +69,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onFullscreenPreview,
       onShare,
       isShowShare = true,
+      onClose,
     },
     ref,
   ) => {
@@ -815,6 +816,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onExportPdf={handleExportPdf}
           // 是否正在导出 PDF
           isExportingPdf={isExportingPdf}
+          // 关闭整个面板
+          onClose={onClose}
         />
       );
     };

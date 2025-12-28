@@ -57,4 +57,6 @@ export interface FileTreeViewProps {
   onShare?: () => void;
   // 是否显示分享按钮
   isShowShare?: boolean;
+  // 关闭整个面板
+  onClose?: () => void;
 }

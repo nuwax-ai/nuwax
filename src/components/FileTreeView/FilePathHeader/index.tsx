@@ -1,3 +1,4 @@
+import copyImage from '@/assets/images/copy.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { USER_INFO } from '@/constants/home.constants';
@@ -8,6 +9,7 @@ import { copyTextToClipboard } from '@/utils';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { isMarkdownFile } from '@/utils/common';
 import {
+  CloseOutlined,
   DesktopOutlined,
   EyeOutlined,
   FilePdfOutlined,
@@ -16,6 +18,7 @@ import {
 import { Button, message, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
+import CopyToClipboard from 'react-copy-to-clipboard';
 import { ReactComponent as CodeIconSvg } from './code.svg';
 import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
@@ -72,6 +75,8 @@ interface FilePathHeaderProps {
   onExportPdf?: (node: FileNode) => void;
   /** 是否正在导出 PDF */
   isExportingPdf?: boolean;
+  // 关闭整个面板
+  onClose?: () => void;
 }
 
 /**
@@ -101,6 +106,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   isShowShare = true,
   onExportPdf,
   isExportingPdf = false,
+  onClose,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -166,6 +172,10 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     if (mode === 'desktop') {
       onShareDesktop();
     }
+  };
+
+  const handleCopy = () => {
+    message.success('复制成功');
   };
 
   return (
@@ -237,41 +247,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         </div>
       )}
 
-      {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
-      {targetNode?.fileProxyUrl && viewMode === 'preview' && (
-        <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
-          <Button
-            type="text"
-            size="small"
-            icon={
-              <SvgIcon name="icons-common-download" style={{ fontSize: 16 }} />
-            }
-            onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
-            className={styles.actionButton}
-            loading={isDownloadingFile}
-            disabled={isDownloadingFile}
-          />
-        </Tooltip>
-      )}
-
-      {/* Markdown 文件显示导出 PDF 按钮 */}
-      {targetNode &&
-        fileName &&
-        isMarkdownFile(fileName) &&
-        viewMode === 'preview' && (
-          <Tooltip title={isExportingPdf ? '导出中...' : '导出为 PDF'}>
-            <Button
-              type="text"
-              size="small"
-              icon={<FilePdfOutlined style={{ fontSize: 16 }} />}
-              onClick={() => onExportPdf?.(targetNode as FileNode)}
-              className={styles.actionButton}
-              loading={isExportingPdf}
-              disabled={isExportingPdf}
-            />
-          </Tooltip>
-        )}
-
       {/* 中间：视图模式切换按钮 */}
       {onViewModeChange && (
         <div className={styles.viewModeButtons}>
@@ -300,6 +275,25 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
       {/* 右侧：操作按钮 */}
       <div className={styles.actionButtons}>
+        {/* Markdown 文件显示导出 PDF 按钮 */}
+        {targetNode &&
+          fileName &&
+          isMarkdownFile(fileName) &&
+          viewMode === 'preview' && (
+            <Tooltip title={isExportingPdf ? '导出中...' : '导出为 PDF'}>
+              <Button
+                type="text"
+                size="small"
+                icon={<FilePdfOutlined style={{ fontSize: 16 }} />}
+                onClick={() => onExportPdf?.(targetNode as FileNode)}
+                className={styles.actionButton}
+                loading={isExportingPdf}
+                disabled={isExportingPdf}
+              />
+            </Tooltip>
+          )}
+
+        {/* 分享 */}
         {isShowShare &&
           (viewMode === 'desktop' ||
             (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
@@ -315,6 +309,26 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               />
             </Tooltip>
           )}
+
+        {/* 复制内容 */}
+        {!!targetNode?.content && (
+          <CopyToClipboard text={targetNode?.content || ''} onCopy={handleCopy}>
+            <Tooltip title="复制">
+              <Button
+                type="text"
+                icon={
+                  <img
+                    className={cx('cursor-pointer', styles.img)}
+                    style={{ width: 22, height: 22 }}
+                    src={copyImage}
+                    alt=""
+                  />
+                }
+              />
+            </Tooltip>
+          </CopyToClipboard>
+        )}
+
         {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
         {targetNode?.fileProxyUrl && viewMode === 'preview' && (
           <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
@@ -335,6 +349,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           </Tooltip>
         )}
 
+        {/* 全屏 */}
         <Tooltip title={isFullscreen ? '退出全屏' : '全屏'}>
           <Button
             type="text"
@@ -353,6 +368,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             className={styles.actionButton}
           />
         </Tooltip>
+
         {/* 更多操作菜单 */}
         {showMoreActions && (
           <MoreActionsMenu
@@ -360,6 +376,23 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             onRestartServer={onRestartServer}
             onExportProject={onExportProject}
           />
+        )}
+
+        {onClose && (
+          <>
+            <div className={styles.divider} />
+
+            {/* 关闭 */}
+            <Tooltip title="关闭">
+              <Button
+                type="text"
+                size="small"
+                icon={<CloseOutlined />}
+                onClick={onClose}
+                className={styles.actionButton}
+              />
+            </Tooltip>
+          </>
         )}
       </div>
 
