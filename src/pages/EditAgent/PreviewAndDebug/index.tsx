@@ -43,7 +43,10 @@ interface PreviewAndDebugProps extends PreviewAndDebugHeaderProps {
   /** 设置智能体配置信息的方法 */
   onAgentConfigInfo: (info: AgentConfigInfo) => void;
   onOpenPreview?: () => void;
-  onToggleFileTree?: () => void;
+  // 打开文件面板
+  onOpenFilePanel?: () => void;
+  // 是否显示文件面板
+  showFilePanel?: boolean;
 }
 
 /**
@@ -55,7 +58,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   onAgentConfigInfo,
   onPressDebug,
   onOpenPreview,
-  onToggleFileTree,
+  onOpenFilePanel,
+  showFilePanel,
 }) => {
   const [form] = Form.useForm();
   // 会话ID
@@ -318,9 +322,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             onShowPreview={() => {
               onOpenPreview?.();
             }}
-            onToggleFileTree={onToggleFileTree}
-            // 是否是任务智能体
-            isTaskAgent={agentConfigInfo?.type === AgentTypeEnum.TaskAgent}
+            // 打开文件面板
+            onOpenFilePanel={onOpenFilePanel}
+            // 是否显示文件面板: 任务智能体
+            showFilePanel={showFilePanel}
           />
           <div
             className={cx(

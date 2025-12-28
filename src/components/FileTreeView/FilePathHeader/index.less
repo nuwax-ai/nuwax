@@ -6,7 +6,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 64px;
+  height: 48px;
   background: @colorBgContainer;
   border-bottom: @lineWidth solid @colorSplit;
   padding: 0 16px;
@@ -100,7 +100,6 @@
   .actionButtons {
     display: flex;
     align-items: center;
-    gap: 8px;
     flex: 0 0 auto;
 
     .actionButton {
@@ -119,5 +118,12 @@
         background: @colorFillTertiary;
       }
     }
+  }
+
+  .divider {
+    width: 1px;
+    height: 14px;
+    margin: 0 8px;
+    background: @colorBorder;
   }
 }
