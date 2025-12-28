@@ -119,6 +119,11 @@ export default () => {
   // 是否正在加载会话
   const [isLoadingConversation, setIsLoadingConversation] =
     useState<boolean>(false);
+
+  // 其它调用接口的情况下判断是否正在加载中用于禁用聊天发送按钮
+  const [isLoadingOtherInterface, setIsLoadingOtherInterface] =
+    useState<boolean>(false);
+
   // 会话是否正在进行中（有消息正在处理）
   const [isConversationActive, setIsConversationActive] =
     useState<boolean>(false);
@@ -1114,5 +1119,7 @@ export default () => {
     // 任务智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
     setTaskAgentSelectedFileId,
+    isLoadingOtherInterface,
+    setIsLoadingOtherInterface,
   };
 };
