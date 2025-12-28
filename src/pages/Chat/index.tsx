@@ -143,6 +143,8 @@ const Chat: React.FC = () => {
     // 文件树显隐状态
     isFileTreeVisible,
     closePreviewView,
+    // 清除文件面板信息
+    clearFilePanelInfo,
     // 文件树数据
     fileTreeData,
     fileTreeDataLoading,
@@ -419,8 +421,9 @@ const Chat: React.FC = () => {
 
   // 清空会话记录，实际上是跳转到智能体详情页面
   const handleClear = () => {
-    // history.push(`/agent/${agentId}`);
     setClearLoading(true);
+    // 清除文件面板信息, 并关闭文件面板
+    clearFilePanelInfo();
     runDetailNew(agentId, true);
   };
 
