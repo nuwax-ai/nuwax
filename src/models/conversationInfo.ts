@@ -59,6 +59,7 @@ import {
   StaticFileListResponse,
   VncDesktopContainerInfo,
 } from '@/types/interfaces/vncDesktop';
+import { extractTaskResult } from '@/utils';
 import { isEmptyObject } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSource';
@@ -722,6 +723,20 @@ export default () => {
             finalResult: data,
             requestId: res.requestId,
           };
+          const taskResult = extractTaskResult(data.outputText);
+          if (
+            params.conversationId &&
+            taskResult.hasTaskResult &&
+            taskResult.file
+          ) {
+            openPreviewView(params.conversationId);
+            const fileId = taskResult.file
+              ?.split(`${params.conversationId}/`)
+              .pop();
+            if (fileId) {
+              setTaskAgentSelectedFileId(fileId);
+            }
+          }
 
           // 调试结果
           setRequestId(res.requestId);
