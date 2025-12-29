@@ -58,6 +58,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onExportPdf,
   isExportingPdf = false,
   onClose,
+  vncConnectStatus,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -178,12 +179,17 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               )}
           </>
         ) : (
-          <div className={styles['pc-box']}>
-            <PcIconSvg />
-            <div className={styles.fileName}>
-              {userInfo?.nickName || userInfo?.userName || '远程'}的智能体电脑
+          <>
+            <div className={styles['pc-box']}>
+              <PcIconSvg />
+              <div className={styles.fileName}>
+                {userInfo?.nickName || userInfo?.userName || '远程'}的智能体电脑
+              </div>
             </div>
-          </div>
+            {vncConnectStatus && (
+              <div className={styles.vncConnectStatus}>{vncConnectStatus}</div>
+            )}
+          </>
         )}
       </div>
 
@@ -268,7 +274,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           )}
 
         {/* 复制内容 */}
-        {!!targetNode?.content && (
+        {!!targetNode?.content && viewMode === 'preview' && (
           <CopyToClipboard text={targetNode?.content || ''} onCopy={handleCopy}>
             <Tooltip title="复制">
               <Button

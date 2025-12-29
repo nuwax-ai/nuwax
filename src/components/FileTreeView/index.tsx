@@ -30,6 +30,7 @@ import React, {
 import AppDevEmptyState from '../business-component/AppDevEmptyState';
 import FilePreview, { FileType } from '../business-component/FilePreview';
 import VncPreview from '../business-component/VncPreview';
+import type { VncPreviewRef } from '../business-component/VncPreview/type';
 import CodeViewer from '../CodeViewer';
 import FileContextMenu from './FileContextMenu';
 import FilePathHeader from './FilePathHeader';
@@ -121,6 +122,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     // 用于记录上次的 taskAgentSelectedFileId，避免 originalFiles 更新时重复触发
     const prevTaskAgentSelectedFileIdRef = useRef<string>('');
+    // VNC 预览组件 ref
+    const vncPreviewRef = useRef<VncPreviewRef>(null);
 
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
@@ -610,6 +613,36 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       setChangeFiles([]);
     };
 
+    // // 连接 VNC 预览
+    // const connectVncPreview = () => {
+    //   if (vncPreviewRef.current) {
+    //     vncPreviewRef.current.connect();
+    //   }
+    // };
+
+    // // 断开 VNC 预览
+    // const disconnectVncPreview = () => {
+    //   if (vncPreviewRef.current) {
+    //     vncPreviewRef.current.disconnect();
+    //   }
+    // };
+
+    // // 获取 VNC 预览状态
+    // const getVncPreviewStatus = () => {
+    //   if (vncPreviewRef.current) {
+    //     return vncPreviewRef.current.getStatus();
+    //   }
+    //   return 'disconnected';
+    // };
+
+    // 渲染 VNC 预览状态标签
+    const renderVncPreviewStatusTag = () => {
+      if (vncPreviewRef.current) {
+        return vncPreviewRef.current.renderStatusTag();
+      }
+      return null;
+    };
+
     /**
      * 渲染内容区域
      * 根据视图模式和文件类型渲染不同的预览组件
@@ -619,6 +652,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       if (viewMode === 'desktop') {
         return (
           <VncPreview
+            ref={vncPreviewRef}
             serviceUrl={process.env.BASE_URL || ''}
             cId={targetId?.toString() || ''}
             readOnly={readOnly}
@@ -818,6 +852,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           isExportingPdf={isExportingPdf}
           // 关闭整个面板
           onClose={onClose}
+          // 连接 VNC 预览状态
+          vncConnectStatus={renderVncPreviewStatusTag()}
         />
       );
     };

@@ -54,4 +54,6 @@ export interface FilePathHeaderProps {
   isExportingPdf?: boolean;
   // 关闭整个面板
   onClose?: () => void;
+  /** VNC 预览连接状态 */
+  vncConnectStatus?: React.ReactNode;
 }
