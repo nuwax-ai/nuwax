@@ -121,13 +121,13 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     const renderStatusTag = useCallback(() => {
       switch (status) {
         case 'connected':
-          return <Tag color="#52c41a">Connected</Tag>;
+          return <Tag color="#52c41a">已连接</Tag>;
         case 'connecting':
-          return <Tag color="#1890ff">Connecting...</Tag>;
+          return <Tag color="#1890ff">连接中...</Tag>;
         case 'disconnected':
-          return <Tag>Disconnected</Tag>;
+          return <Tag>未连接</Tag>;
         case 'error':
-          return <Tag color="#ff4d4f">Error</Tag>;
+          return <Tag color="#ff4d4f">连接失败</Tag>;
         default:
           return null;
       }
