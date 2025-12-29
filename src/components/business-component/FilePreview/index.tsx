@@ -1,3 +1,4 @@
+import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import {
   CloudDownloadOutlined,
   CodeOutlined,
@@ -23,7 +24,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import ReactMarkdown from 'react-markdown';
 import styles from './index.less';
 
 // @ts-ignore
@@ -746,7 +746,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       case 'markdown':
         return (
           <div className={styles.markdownPreview}>
-            <ReactMarkdown>{textContent}</ReactMarkdown>
+            <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>
+              {textContent}
+            </PureMarkdownRenderer>
           </div>
         );
       case 'text':
