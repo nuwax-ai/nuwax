@@ -9,7 +9,11 @@
   height: 48px;
   background: @colorBgContainer;
   border-bottom: @lineWidth solid @colorSplit;
-  gap: 16px;
+  gap: 10px;
+
+  &.pl-8 {
+    padding-left: 8px;
+  }
 
   // 左侧：文件信息
   .fileInfo {
@@ -60,68 +64,60 @@
     }
   }
 
-  // 中间：文件树展开/折叠图标和视图模式切换按钮
-  .centerActions {
+  // 文件树展开/折叠按钮
+  .fileTreeToggleButton {
     display: flex;
     align-items: center;
-    gap: 12px;
-    flex: 0 0 auto;
-    margin-left: auto;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: @borderRadius;
+    color: @colorTextSecondary;
+    transition: all 0.2s;
 
-    // 文件树展开/折叠按钮
-    .fileTreeToggleButton {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      padding: 0;
-      border-radius: @borderRadius;
-      color: @colorTextSecondary;
-      transition: all 0.2s;
-
-      &:hover {
-        color: @colorText;
-        background: @colorFillTertiary;
-      }
-
-      &.fileTreeToggleButtonPinned {
-        color: @colorPrimary;
-        background: @colorPrimaryBg;
-      }
+    &:hover {
+      color: @colorText;
+      background: @colorFillTertiary;
     }
 
-    // 视图模式切换按钮
-    .viewModeButtons {
+    &.fileTreeToggleButtonPinned {
+      color: @colorPrimary;
+      background: @colorPrimaryBg;
+    }
+  }
+
+  // 视图模式切换按钮
+  .viewModeButtons {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex: 0 0 auto;
+    margin-left: auto;
+    border-radius: @borderRadius;
+    overflow: hidden;
+    border: 1px solid @colorBorder;
+
+    .viewModeButton {
       display: flex;
       align-items: center;
-      gap: 0;
-      flex: 0 0 auto;
-      border-radius: @borderRadius;
-      overflow: hidden;
-      border: 1px solid @colorBorder;
+      gap: 6px;
+      height: 32px;
+      padding: 4px 16px;
+      border-radius: 0;
+      font-size: @fontSizeSm;
+      border: none;
+      border-right: 1px solid @colorBorder;
 
-      .viewModeButton {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        height: 32px;
-        padding: 4px 16px;
-        border-radius: 0;
-        font-size: @fontSizeSm;
-        border: none;
-        border-right: 1px solid @colorBorder;
+      &:last-child {
+        border-right: none;
+        border-top-right-radius: @borderRadius;
+        border-bottom-right-radius: @borderRadius;
+      }
 
-        &:last-child {
-          border-right: none;
-          border-top-right-radius: @borderRadius;
-          border-bottom-right-radius: @borderRadius;
-        }
-
-        &:first-child {
-          border-top-left-radius: @borderRadius;
-          border-bottom-left-radius: @borderRadius;
-        }
+      &:first-child {
+        border-top-left-radius: @borderRadius;
+        border-bottom-left-radius: @borderRadius;
       }
     }
   }
