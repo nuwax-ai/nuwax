@@ -36,10 +36,12 @@ const cx = classNames.bind(styles);
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
+  showFileTreeToggleButton = true,
   conversationId,
   targetNode,
   viewMode = 'preview',
   onViewModeChange,
+  showViewModeButtons = true,
   onRestartServer,
   onRestartAgent,
   onImportProject,
@@ -140,10 +142,37 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     <div
       className={cx(
         styles.filePathHeader,
-        { ['pl-16']: !isFullscreen },
+        { [styles['pl-8']]: !isFullscreen },
         className,
       )}
     >
+      {/* 文件树展开/折叠图标 */}
+      {viewMode !== 'desktop' && showFileTreeToggleButton && (
+        <Tooltip
+          title={
+            isFileTreePinned
+              ? '点击取消固定文件树'
+              : '点击固定文件树（鼠标移入展开文件树）'
+          }
+        >
+          <Button
+            type="text"
+            size="small"
+            icon={
+              isFileTreeVisible ? (
+                <MenuFoldOutlined style={{ fontSize: 16 }} />
+              ) : (
+                <MenuUnfoldOutlined style={{ fontSize: 16 }} />
+              )
+            }
+            onClick={onFileTreeToggle}
+            onMouseEnter={onFileTreeMouseEnter}
+            className={cx(styles.fileTreeToggleButton, {
+              [styles.fileTreeToggleButtonPinned]: isFileTreePinned,
+            })}
+          />
+        </Tooltip>
+      )}
       {/* 左侧：文件信息 */}
       <div className={styles.fileInfo}>
         {viewMode === 'preview' ? (
@@ -151,7 +180,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             <div className={styles.fileDetails}>
               <div className={styles.fileName}>{fileName}</div>
               {formattedSize && (
-                <div className={styles.fileMeta}>{formattedSize}</div>
+                <span className={styles.fileMeta}>({formattedSize})</span>
               )}
             </div>
             {/* 只有存在 fileProxyUrl 时，才显示预览和代码视图切换按钮，可以通过 fileProxyUrl 预览和代码视图 */}
@@ -199,116 +228,27 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         )}
       </div>
 
-      {/* 底部：保存和取消按钮 */}
-      {hasModifiedFiles && (
-        <div className="flex items-center content-end gap-4 ml-auto">
-          <Button
-            size="small"
-            type="primary"
-            onClick={onSaveFiles}
-            loading={isSavingFiles}
-          >
-            保存
-          </Button>
-          <Button size="small" type="default" onClick={onCancelSaveFiles}>
-            取消
-          </Button>
-        </div>
-      )}
-
-      {/* 中间：文件树展开/折叠图标和视图模式切换按钮 */}
-      <div className={styles.centerActions}>
-        {/* 文件树展开/折叠图标 */}
-        {viewMode !== 'desktop' && onFileTreeToggle && (
-          <Tooltip
-            title={
-              isFileTreePinned
-                ? '点击取消固定文件树'
-                : '点击固定文件树（鼠标移入展开，移出关闭）'
-            }
-          >
+      {/* 动态图标区域，根据视图模式和文件类型动态显示图标 */}
+      <div className={styles.actionButtons}>
+        {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
+        {targetNode?.fileProxyUrl && viewMode === 'preview' && (
+          <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
             <Button
               type="text"
               size="small"
               icon={
-                isFileTreeVisible ? (
-                  <MenuFoldOutlined style={{ fontSize: 16 }} />
-                ) : (
-                  <MenuUnfoldOutlined style={{ fontSize: 16 }} />
-                )
+                <SvgIcon
+                  name="icons-common-download"
+                  style={{ fontSize: 16 }}
+                />
               }
-              onClick={onFileTreeToggle}
-              onMouseEnter={onFileTreeMouseEnter}
-              className={cx(styles.fileTreeToggleButton, {
-                [styles.fileTreeToggleButtonPinned]: isFileTreePinned,
-              })}
+              onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
+              className={styles.actionButton}
+              loading={isDownloadingFile}
+              disabled={isDownloadingFile}
             />
           </Tooltip>
         )}
-
-        {/* 视图模式切换按钮 */}
-        {onViewModeChange && (
-          <div className={styles.viewModeButtons}>
-            <Button
-              type={viewMode === 'preview' ? 'primary' : 'default'}
-              size="small"
-              icon={
-                <SvgIcon name="icons-common-preview" style={{ fontSize: 14 }} />
-              }
-              onClick={() => onViewModeChange?.('preview')}
-              className={styles.viewModeButton}
-            >
-              文件预览
-            </Button>
-            <Button
-              type={viewMode === 'desktop' ? 'primary' : 'default'}
-              size="small"
-              icon={<DesktopOutlined style={{ fontSize: 14 }} />}
-              onClick={() => onViewModeChange?.('desktop')}
-              className={styles.viewModeButton}
-            >
-              智能体电脑
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* 右侧：操作按钮 */}
-      <div className={styles.actionButtons}>
-        {/* Markdown 文件显示导出 PDF 按钮 */}
-        {targetNode &&
-          fileName &&
-          isMarkdownFile(fileName) &&
-          viewMode === 'preview' && (
-            <Tooltip title={isExportingPdf ? '导出中...' : '导出为 PDF'}>
-              <Button
-                type="text"
-                size="small"
-                icon={<FilePdfOutlined style={{ fontSize: 16 }} />}
-                onClick={() => onExportPdf?.(targetNode as FileNode)}
-                className={styles.actionButton}
-                loading={isExportingPdf}
-                disabled={isExportingPdf}
-              />
-            </Tooltip>
-          )}
-
-        {/* 分享 */}
-        {isShowShare &&
-          (viewMode === 'desktop' ||
-            (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
-            <Tooltip title="分享">
-              <Button
-                type="text"
-                size="small"
-                icon={
-                  <SvgIcon name="icons-chat-share" style={{ fontSize: 16 }} />
-                }
-                onClick={() => onShareAction(viewMode)}
-                className={styles.actionButton}
-              />
-            </Tooltip>
-          )}
 
         {/* 复制内容 */}
         {!!targetNode?.content && viewMode === 'preview' && (
@@ -329,25 +269,86 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           </CopyToClipboard>
         )}
 
-        {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
-        {targetNode?.fileProxyUrl && viewMode === 'preview' && (
-          <Tooltip title={isDownloadingFile ? '下载中...' : '下载'}>
-            <Button
-              type="text"
-              size="small"
-              icon={
-                <SvgIcon
-                  name="icons-common-download"
-                  style={{ fontSize: 16 }}
-                />
-              }
-              onClick={() => onDownloadFileByUrl?.(targetNode as FileNode)}
-              className={styles.actionButton}
-              loading={isDownloadingFile}
-              disabled={isDownloadingFile}
-            />
-          </Tooltip>
-        )}
+        {/* Markdown 文件显示导出 PDF 按钮 */}
+        {targetNode &&
+          fileName &&
+          isMarkdownFile(fileName) &&
+          viewMode === 'preview' && (
+            <Tooltip title={isExportingPdf ? '导出中...' : '导出为 PDF'}>
+              <Button
+                type="text"
+                size="small"
+                icon={<FilePdfOutlined style={{ fontSize: 16 }} />}
+                onClick={() => onExportPdf?.(targetNode as FileNode)}
+                className={styles.actionButton}
+                loading={isExportingPdf}
+                disabled={isExportingPdf}
+              />
+            </Tooltip>
+          )}
+      </div>
+
+      {/* 底部：保存和取消按钮 */}
+      {hasModifiedFiles && (
+        <div className="flex items-center content-end gap-4">
+          <Button
+            size="small"
+            type="primary"
+            onClick={onSaveFiles}
+            loading={isSavingFiles}
+          >
+            保存
+          </Button>
+          <Button size="small" type="default" onClick={onCancelSaveFiles}>
+            取消
+          </Button>
+        </div>
+      )}
+
+      {/* 视图模式切换按钮 */}
+      {showViewModeButtons && (
+        <div className={styles.viewModeButtons}>
+          <Button
+            type={viewMode === 'preview' ? 'primary' : 'default'}
+            size="small"
+            icon={
+              <SvgIcon name="icons-common-preview" style={{ fontSize: 14 }} />
+            }
+            onClick={() => onViewModeChange?.('preview')}
+            className={styles.viewModeButton}
+          >
+            文件预览
+          </Button>
+          <Button
+            type={viewMode === 'desktop' ? 'primary' : 'default'}
+            size="small"
+            icon={<DesktopOutlined style={{ fontSize: 14 }} />}
+            onClick={() => onViewModeChange?.('desktop')}
+            className={styles.viewModeButton}
+          >
+            智能体电脑
+          </Button>
+        </div>
+      )}
+
+      {/* 右侧：操作按钮 */}
+      <div className={styles.actionButtons}>
+        {/* 分享 */}
+        {isShowShare &&
+          (viewMode === 'desktop' ||
+            (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
+            <Tooltip title="分享">
+              <Button
+                type="text"
+                size="small"
+                icon={
+                  <SvgIcon name="icons-chat-share" style={{ fontSize: 16 }} />
+                }
+                onClick={() => onShareAction(viewMode)}
+                className={styles.actionButton}
+              />
+            </Tooltip>
+          )}
 
         {/* 是否显示全屏图标 */}
         {(showFullscreenIcon || isFullscreen) && (
@@ -384,7 +385,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         {onClose && !isFullscreen && (
           <>
             <div className={styles.divider} />
-
             {/* 关闭 */}
             <Tooltip title="关闭">
               <Button

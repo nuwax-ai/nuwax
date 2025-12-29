@@ -3,6 +3,7 @@ import type { FileTreeViewRef } from '@/components/FileTreeView/type';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import {
   apiSkillDetail,
   apiSkillExport,
@@ -25,7 +26,7 @@ import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { message } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 import CreateSkill from '../SpaceSkillManage/CreateSkill';
 import styles from './index.less';
@@ -56,6 +57,56 @@ const SkillDetails: React.FC = () => {
   // 是否显示全屏预览
   const [isFullscreenPreview, setIsFullscreenPreview] =
     useState<boolean>(false);
+
+  // 检查是否有未保存的文件修改
+  const hasUnsavedChanges = useCallback(() => {
+    const changeFiles = fileTreeViewRef.current?.changeFiles;
+    return Array.isArray(changeFiles) && changeFiles.length > 0;
+  }, []);
+
+  // 保存未保存的文件（用于离开保护）
+  const saveUnsavedFiles = useCallback(async () => {
+    const changeFiles = fileTreeViewRef.current?.changeFiles;
+    if (changeFiles && changeFiles.length > 0) {
+      // 更新文件列表(只更新修改过的文件)
+      const updatedFilesList = updateFilesListContent(
+        skillInfo?.files || [],
+        changeFiles,
+        'modify',
+      );
+
+      // 更新技能信息，用于提交更新
+      const newSkillInfo: SkillUpdateParams = {
+        id: skillInfo?.id || 0,
+        files: updatedFilesList,
+      };
+
+      try {
+        const { code } = await apiSkillUpdate(newSkillInfo);
+        if (code === SUCCESS_CODE) {
+          message.success('保存成功');
+          return true;
+        }
+        message.error('保存失败');
+        return false;
+      } catch (error) {
+        console.error('保存文件失败:', error);
+        message.error('保存失败');
+        return false;
+      }
+    }
+    return true;
+  }, [skillInfo]);
+
+  // 导航拦截保护
+  useNavigationGuard({
+    condition: hasUnsavedChanges,
+    onConfirm: saveUnsavedFiles,
+    title: '未保存的文件修改',
+    message: '您有未保存的文件修改，是否保存后离开？',
+    confirmText: '保存并离开',
+    discardText: '不保存离开',
+  });
 
   // 查询技能信息
   const { run: runSkillInfo } = useRequest(apiSkillDetail, {
@@ -472,6 +523,11 @@ const SkillDetails: React.FC = () => {
         {/* 文件树视图 */}
         <FileTreeView
           ref={fileTreeViewRef}
+          // 是否显示视图模式切换按钮
+          showViewModeButtons={false}
+          // 是否显示文件树展开/折叠按钮
+          showFileTreeToggleButton={false}
+          // 文件树数据加载状态
           fileTreeDataLoading={fileTreeDataLoading}
           // 技能文件列表
           originalFiles={skillInfo?.files || []}
@@ -497,6 +553,8 @@ const SkillDetails: React.FC = () => {
           onFullscreenPreview={setIsFullscreenPreview}
           // 是否显示全屏图标
           showFullscreenIcon={false}
+          // 文件树是否固定（用户点击后固定）
+          isFileTreePinned={true}
         />
 
         {/*版本历史*/}

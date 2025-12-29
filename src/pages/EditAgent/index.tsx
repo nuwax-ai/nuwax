@@ -108,6 +108,9 @@ const EditAgent: React.FC = () => {
     runQueryConversation,
     // 文件树显隐状态
     isFileTreeVisible,
+    // 文件树是否固定（用户点击后固定）
+    isFileTreePinned,
+    setIsFileTreePinned,
     closePreviewView,
     // 文件树数据
     fileTreeData,
@@ -1024,6 +1027,10 @@ const EditAgent: React.FC = () => {
                           onRestartAgent={() => restartAgent(devConversationId)}
                           // 关闭整个面板
                           onClose={closePreviewView}
+                          // 文件树是否固定（用户点击后固定）
+                          isFileTreePinned={isFileTreePinned}
+                          // 文件树固定状态变化回调
+                          onFileTreePinnedChange={setIsFileTreePinned}
                         />
                       </div>
                     )
