@@ -193,14 +193,20 @@ export async function createSSEConnection<T = any>(
       },
 
       onclose: () => {
-        if (isAborted) {
-          return;
-        }
         console.log('🔌 [SSE Utils] SSE 连接已关闭');
-        markAborted();
-        lastMessageTimestamp = null;
+        // 标记中止，防止重复处理
+        if (!isAborted) {
+          markAborted();
+          lastMessageTimestamp = null;
+        }
+        // 无论是否已中止，都要触发 onClose 回调，确保前端状态被终止
+        // 即使没有收到 finalresult，连接断开时也要终止状态
+        // safeOnClose 内部有 hasClosed 保护，防止重复触发
         safeOnClose();
-        controller.abort(); // 阻止 fetchEventSource 继续自动重连
+        // 阻止 fetchEventSource 继续自动重连
+        if (!isAborted) {
+          controller.abort();
+        }
       },
 
       onerror: (error) => {
