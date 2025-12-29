@@ -293,27 +293,30 @@
         async function startPreview() {
             const params = getQueryParams();
             const sk = params.sk || '';
-            // 判断是否开发环境
-            const isDev = params.isDev || 'false';
-            const baseUrl = isDev === 'true' ? 'https://testagent.xspaceagi.com' : '';
-            const response = await fetch(`${baseUrl}/api/agent/conversation/share/detail/${sk}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-            const {data,code,message} = await response.json();
-            console.log(data,code,message);
-            if(code === '0000'){
-                fileUrl = baseUrl + data.content+'?sk='+sk;
-                fileType = data.content.split('.').pop().toLowerCase();
-            }else{
-                showError(message);
-                return;
+            // 分享操作获取文件地址和类型
+            if (!!sk) {
+                // 判断是否开发环境
+                const isDev = params?.isDev || 'false';
+                const baseUrl = isDev === 'true' ? 'https://testagent.xspaceagi.com' : '';
+                const response = await fetch(`${baseUrl}/api/agent/conversation/share/detail/${sk}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                const {data,code,message} = await response.json();
+                if(code === '0000'){
+                    fileUrl = baseUrl + data.content+'?sk='+sk;
+                    fileType = data.content.split('.').pop().toLowerCase();
+                }else{
+                    showError(message);
+                    return;
+                }
+            } else {
+                // 正常预览操作获取文件地址和类型
+                fileUrl = params.fileUrl || params.url || params.src || '';
+                fileType = (params.fileType || params.type || '').toLowerCase();
             }
-
-            // fileUrl = params.fileUrl || params.url || params.src || '';
-            // fileType = (params.fileType || params.type || '').toLowerCase();
 
             // Auto-detect file type from URL if not provided
             if (!fileType && fileUrl) {
