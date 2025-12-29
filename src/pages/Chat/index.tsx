@@ -17,6 +17,7 @@ import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
+import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
@@ -142,6 +143,9 @@ const Chat: React.FC = () => {
     setShowType,
     // 文件树显隐状态
     isFileTreeVisible,
+    // 文件树是否固定（用户点击后固定）
+    isFileTreePinned,
+    setIsFileTreePinned,
     closePreviewView,
     // 清除文件面板信息
     clearFilePanelInfo,
@@ -158,6 +162,8 @@ const Chat: React.FC = () => {
     restartAgent,
     // 任务智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
+    // 会话是否正在进行中（有消息正在处理）
+    isConversationActive,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -222,6 +228,14 @@ const Chat: React.FC = () => {
       setVariableParams(firstVariableParams);
     }
   }, [firstVariableParams]);
+
+  // 导航拦截：当会话正在进行时，提示用户离开后会收到通知
+  useNavigationGuard({
+    condition: () => isConversationActive,
+    title: '任务执行中',
+    message: '离开后，执行成功的任务会收到提示消息',
+    discardText: '确定离开',
+  });
 
   // 聊天会话框是否禁用，不能发送消息
   const wholeDisabled = useMemo(() => {
@@ -1041,6 +1055,10 @@ const Chat: React.FC = () => {
                       onRestartAgent={() => restartAgent(id)}
                       // 关闭整个面板
                       onClose={closePreviewView}
+                      // 文件树是否固定（用户点击后固定）
+                      isFileTreePinned={isFileTreePinned}
+                      // 文件树固定状态变化回调
+                      onFileTreePinnedChange={setIsFileTreePinned}
                     />
                   </div>
                 )
