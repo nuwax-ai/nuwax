@@ -9,7 +9,11 @@
   height: 48px;
   background: @colorBgContainer;
   border-bottom: @lineWidth solid @colorSplit;
-  gap: 16px;
+  gap: 10px;
+
+  &.pl-8 {
+    padding-left: 8px;
+  }
 
   // 左侧：文件信息
   .fileInfo {
@@ -60,7 +64,30 @@
     }
   }
 
-  // 中间：视图模式切换按钮
+  // 文件树展开/折叠按钮
+  .fileTreeToggleButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: @borderRadius;
+    color: @colorTextSecondary;
+    transition: all 0.2s;
+
+    &:hover {
+      color: @colorText;
+      background: @colorFillTertiary;
+    }
+
+    &.fileTreeToggleButtonPinned {
+      color: @colorPrimary;
+      background: @colorPrimaryBg;
+    }
+  }
+
+  // 视图模式切换按钮
   .viewModeButtons {
     display: flex;
     align-items: center;
