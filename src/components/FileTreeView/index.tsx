@@ -613,34 +613,46 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       setChangeFiles([]);
     };
 
-    // // 连接 VNC 预览
-    // const connectVncPreview = () => {
-    //   if (vncPreviewRef.current) {
-    //     vncPreviewRef.current.connect();
-    //   }
-    // };
-
-    // // 断开 VNC 预览
-    // const disconnectVncPreview = () => {
-    //   if (vncPreviewRef.current) {
-    //     vncPreviewRef.current.disconnect();
-    //   }
-    // };
-
-    // // 获取 VNC 预览状态
-    // const getVncPreviewStatus = () => {
-    //   if (vncPreviewRef.current) {
-    //     return vncPreviewRef.current.getStatus();
-    //   }
-    //   return 'disconnected';
-    // };
-
     // 渲染 VNC 预览状态标签
     const renderVncPreviewStatusTag = () => {
       if (vncPreviewRef.current) {
         return vncPreviewRef.current.renderStatusTag();
       }
       return null;
+    };
+
+    // 处理视图模式切换
+    const handleChangeViewMode = (mode: 'preview' | 'desktop') => {
+      // 用户点击打开智能体电脑时，自动连接打开（不管之前是否打开过）
+      if (mode === 'desktop') {
+        // 连接 VNC 预览
+        vncPreviewRef.current?.connect();
+      }
+      onViewModeChange?.(mode);
+    };
+
+    // 处理下载项目操作
+    const handleDownloadProject = async () => {
+      setIsExportingProjecting(true);
+      await onExportProject?.();
+      setIsExportingProjecting(false);
+    };
+
+    // 处理下载文件操作
+    const handleDownloadFileByUrl = async (
+      node: FileNode,
+      exportAsPdf?: boolean,
+    ) => {
+      setIsDownloadingFile(true);
+      await downloadFileByUrl?.(node, exportAsPdf);
+      setIsDownloadingFile(false);
+    };
+
+    // 处理导出 PDF 操作
+    const handleExportPdf = async (node: FileNode) => {
+      setIsExportingPdf(true);
+      await downloadFileByUrl?.(node, true);
+      setIsExportingPdf(false);
     };
 
     /**
@@ -770,30 +782,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       );
     };
 
-    // 处理下载项目操作
-    const handleDownloadProject = async () => {
-      setIsExportingProjecting(true);
-      await onExportProject?.();
-      setIsExportingProjecting(false);
-    };
-
-    // 处理下载文件操作
-    const handleDownloadFileByUrl = async (
-      node: FileNode,
-      exportAsPdf?: boolean,
-    ) => {
-      setIsDownloadingFile(true);
-      await downloadFileByUrl?.(node, exportAsPdf);
-      setIsDownloadingFile(false);
-    };
-
-    // 处理导出 PDF 操作
-    const handleExportPdf = async (node: FileNode) => {
-      setIsExportingPdf(true);
-      await downloadFileByUrl?.(node, true);
-      setIsExportingPdf(false);
-    };
-
     /**
      * 渲染头部组件
      */
@@ -807,7 +795,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 当前视图模式
           viewMode={viewMode}
           // 视图模式切换回调
-          onViewModeChange={onViewModeChange}
+          onViewModeChange={handleChangeViewMode}
           // 导出项目回调
           onExportProject={handleDownloadProject}
           // 处理导入项目操作
