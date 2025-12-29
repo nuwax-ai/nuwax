@@ -22,6 +22,7 @@ import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -141,6 +142,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // );
     // VNC 预览组件 ref
     const vncPreviewRef = useRef<VncPreviewRef>(null);
+    // 文件树容器 ref
+    const fileTreeContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
@@ -301,17 +304,58 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     /**
      * 关闭右键菜单
+     * @param e - 鼠标事件（可能是 React.MouseEvent 或原生 Event，可选）
      */
-    const closeContextMenu = () => {
-      setContextMenuVisible(false);
-      setContextMenuTarget(null);
-    };
+    const closeContextMenu = useCallback(
+      (e?: React.MouseEvent | Event) => {
+        setContextMenuVisible(false);
+        setContextMenuTarget(null);
+
+        // 如果文件树未固定，检查点击位置是否在文件树内
+        if (!isFileTreePinned && fileTreeContainerRef.current && e) {
+          // 获取鼠标点击位置
+          const clientX =
+            'clientX' in e ? e.clientX : (e as MouseEvent).clientX || 0;
+          const clientY =
+            'clientY' in e ? e.clientY : (e as MouseEvent).clientY || 0;
+
+          // 获取文件树容器的位置和尺寸
+          const fileTreeRect =
+            fileTreeContainerRef.current.getBoundingClientRect();
+
+          // 判断点击位置是否在文件树区域内
+          const isInsideFileTree =
+            clientX >= fileTreeRect.left &&
+            clientX <= fileTreeRect.right &&
+            clientY >= fileTreeRect.top &&
+            clientY <= fileTreeRect.bottom;
+
+          // 如果点击位置不在文件树内，则隐藏文件树
+          if (!isInsideFileTree) {
+            setIsFileTreeVisible(false);
+          }
+        }
+      },
+      [isFileTreePinned],
+    );
 
     // 点击外部关闭右键菜单
     useEffect(() => {
-      document.addEventListener('click', closeContextMenu);
-      return () => document.removeEventListener('click', closeContextMenu);
-    }, []);
+      // 只在右键菜单显示时才添加点击事件监听器
+      if (!contextMenuVisible) {
+        return;
+      }
+
+      const handleDocumentClick = (e: Event) => {
+        // 只在右键菜单显示时才处理点击事件（双重检查，避免闭包问题）
+        // 注意：这里使用最新的 contextMenuVisible 状态可能会有延迟
+        // 但由于我们在 useEffect 中已经检查了 contextMenuVisible，所以这里应该是安全的
+        closeContextMenu(e);
+      };
+
+      document.addEventListener('click', handleDocumentClick);
+      return () => document.removeEventListener('click', handleDocumentClick);
+    }, [contextMenuVisible, closeContextMenu]);
 
     /**
      * 取消重命名
@@ -704,6 +748,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 处理文件树鼠标移出
      */
     const handleFileTreeMouseLeave = () => {
+      // 如果右键菜单显示，不隐藏文件树（等待鼠标移入菜单或移出菜单区域）
+      if (contextMenuVisible) {
+        return;
+      }
+
       // 如果未固定，则隐藏文件树
       if (!isFileTreePinned) {
         setIsFileTreeVisible(false);
@@ -1015,6 +1064,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           {/* 左边文件树 - 远程桌面模式下隐藏，且未通过外部属性隐藏 */}
           {viewMode !== 'desktop' && !hideFileTree && (
             <div
+              ref={fileTreeContainerRef}
               className={cx(
                 styles['file-tree-view'],
                 'h-full',
@@ -1026,7 +1076,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                   [styles['file-tree-view-hidden']]: !isFileTreeVisible,
                 },
               )}
-              onMouseEnter={handleFileTreeMouseEnter}
               onMouseLeave={handleFileTreeMouseLeave}
             >
               <SearchView
