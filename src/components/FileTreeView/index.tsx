@@ -135,15 +135,18 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isFileTreePinned || false,
     );
 
-    // 用于记录上次的 taskAgentSelectedFileId 和 taskAgentSelectTrigger，避免 originalFiles 更新时重复触发
-    // const prevTaskAgentSelectedFileIdRef = useRef<string>('');
-    // const prevTaskAgentSelectTriggerRef = useRef<number | string | undefined>(
-    //   undefined,
-    // );
     // VNC 预览组件 ref
     const vncPreviewRef = useRef<VncPreviewRef>(null);
     // 文件树容器 ref
     const fileTreeContainerRef = useRef<HTMLDivElement>(null);
+
+    // 用于跟踪用户是否主动选择了文件（通过点击文件树）
+    const userSelectedFileRef = useRef<string | null>(null);
+    // 用于记录上次的 taskAgentSelectedFileId 和 taskAgentSelectTrigger，避免重复选择
+    const prevTaskAgentSelectedFileIdRef = useRef<string>('');
+    const prevTaskAgentSelectTriggerRef = useRef<number | string | undefined>(
+      undefined,
+    );
 
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
@@ -152,86 +155,100 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
     }, [isFullscreenPreview]);
 
-    // 文件选择
-    const handleFileSelect = async (fileId: string) => {
-      // 根据文件ID查找文件节点
-      const fileNode = findFileNode(fileId, files);
-      if (fileNode) {
-        // 如果文件节点是文件夹(folder)，则选择第一个子节点(点击会话中文件名时，如果文件名是文件夹，则选择第一个子节点)
-        if (fileNode.type === 'folder') {
-          // 如果文件节点是文件夹，且有子节点，则选择第一个子节点
-          if (fileNode?.children?.length) {
-            const firstChild = fileNode.children?.[0];
-            if (firstChild) {
-              handleFileSelect(firstChild.id);
+    // 文件选择（内部函数，执行实际的选择逻辑）
+    const handleFileSelectInternal = useCallback(
+      async (fileId: string) => {
+        // 根据文件ID查找文件节点
+        const fileNode = findFileNode(fileId, files);
+        if (fileNode) {
+          // 如果文件节点是文件夹(folder)，则选择第一个子节点(点击会话中文件名时，如果文件名是文件夹，则选择第一个子节点)
+          if (fileNode.type === 'folder') {
+            // 如果文件节点是文件夹，且有子节点，则选择第一个子节点
+            if (fileNode?.children?.length) {
+              const firstChild = fileNode.children?.[0];
+              if (firstChild) {
+                handleFileSelectInternal(firstChild.id);
+              }
             }
-          }
-          return;
-        }
-
-        // 获取文件内容
-        const fileContent = fileNode?.content || '';
-        if (fileContent) {
-          setSelectedFileId(fileId);
-          setViewFileType('preview');
-          setSelectedFileNode(fileNode);
-        } else {
-          if (isRenamingFile) {
-            message.warning('文件正在重命名中，请稍后再试');
             return;
           }
 
-          setSelectedFileId(fileId);
-          setViewFileType('preview');
-          // 判断文件是否为图片类型
-          const isImage = isImageFile(fileNode?.name || '');
-          // 判断文件是否为视频类型
-          const isVideo = isVideoFile(fileNode?.name || '');
-          // 判断文件是否为音频类型
-          const isAudio = isAudioFile(fileNode?.name || '');
-          // 判断文件是否为文档类型
-          const result = isDocumentFile(fileNode?.name || '');
-          // 判断文件是否为office文档类型
-          const isOfficeDocument = result?.isDoc || false;
-          // 获取文件代理URL
-          const fileProxyUrl = fileNode?.fileProxyUrl || '';
-
-          // 如果文件为图片、视频、音频、文档类型，或则没有文件代理URL，则直接设置为选中文件节点
-          if (
-            isImage ||
-            isVideo ||
-            isAudio ||
-            isOfficeDocument ||
-            !fileProxyUrl
-          ) {
+          // 获取文件内容
+          const fileContent = fileNode?.content || '';
+          if (fileContent) {
+            setSelectedFileId(fileId);
+            setViewFileType('preview');
             setSelectedFileNode(fileNode);
-          }
-          // 其他类型文件：使用文件代理URL获取文件内容
-          // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
-          else if (fileProxyUrl) {
-            // 获取文件内容
-            const fileContent = await fetchContentFromUrl(fileProxyUrl);
-            // 设置选中文件节点
-            setSelectedFileNode({
-              ...fileNode,
-              content: fileContent || '',
-            });
+          } else {
+            if (isRenamingFile) {
+              message.warning('文件正在重命名中，请稍后再试');
+              return;
+            }
 
-            // 更新文件树中的文件内容
-            setFiles((prevFiles) => {
-              const updatedFiles: FileNode[] = updateFileTreeContent(
-                fileId,
-                fileContent,
-                prevFiles,
-              );
-              return updatedFiles;
-            });
+            setSelectedFileId(fileId);
+            setViewFileType('preview');
+            // 判断文件是否为图片类型
+            const isImage = isImageFile(fileNode?.name || '');
+            // 判断文件是否为视频类型
+            const isVideo = isVideoFile(fileNode?.name || '');
+            // 判断文件是否为音频类型
+            const isAudio = isAudioFile(fileNode?.name || '');
+            // 判断文件是否为文档类型
+            const result = isDocumentFile(fileNode?.name || '');
+            // 判断文件是否为office文档类型
+            const isOfficeDocument = result?.isDoc || false;
+            // 获取文件代理URL
+            const fileProxyUrl = fileNode?.fileProxyUrl || '';
+
+            // 如果文件为图片、视频、音频、文档类型，或则没有文件代理URL，则直接设置为选中文件节点
+            if (
+              isImage ||
+              isVideo ||
+              isAudio ||
+              isOfficeDocument ||
+              !fileProxyUrl
+            ) {
+              setSelectedFileNode(fileNode);
+            }
+            // 其他类型文件：使用文件代理URL获取文件内容
+            // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
+            else if (fileProxyUrl) {
+              // 获取文件内容
+              const fileContent = await fetchContentFromUrl(fileProxyUrl);
+              // 设置选中文件节点
+              setSelectedFileNode({
+                ...fileNode,
+                content: fileContent || '',
+              });
+
+              // 更新文件树中的文件内容
+              setFiles((prevFiles) => {
+                const updatedFiles: FileNode[] = updateFileTreeContent(
+                  fileId,
+                  fileContent,
+                  prevFiles,
+                );
+                return updatedFiles;
+              });
+            }
           }
+        } else {
+          setSelectedFileNode(null);
         }
-      } else {
-        setSelectedFileNode(null);
-      }
-    };
+      },
+      [files, isRenamingFile],
+    );
+
+    // 文件选择（对外接口，用于用户主动选择）
+    const handleFileSelect = useCallback(
+      async (fileId: string) => {
+        // 记录用户主动选择的文件ID
+        userSelectedFileRef.current = fileId;
+        // 调用内部选择函数
+        await handleFileSelectInternal(fileId);
+      },
+      [handleFileSelectInternal],
+    );
 
     // 通过 ref 暴露 changeFiles 给父组件
     useImperativeHandle(
@@ -242,34 +259,66 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       [changeFiles],
     );
 
+    // 监听 taskAgentSelectedFileId 和 taskAgentSelectTrigger 的变化，执行自动选择
+    // 注意：不依赖 files，避免 files 更新时覆盖用户选择
     useEffect(() => {
       // 如果 taskAgentSelectedFileId 被清空，重置记录的值
       if (!taskAgentSelectedFileId) {
-        // prevTaskAgentSelectedFileIdRef.current = '';
-        // prevTaskAgentSelectTriggerRef.current = undefined;
+        prevTaskAgentSelectedFileIdRef.current = '';
+        prevTaskAgentSelectTriggerRef.current = undefined;
+        userSelectedFileRef.current = null;
         return;
       }
 
-      // 如果任务智能体会话中点击选中了文件，则设置选中文件ID
-      // 注意：依赖 files 而不是 originalFiles，确保在 files 更新后再调用
-      // 如果提供了 taskAgentSelectTrigger，则每次触发标志变化时都执行（即使文件ID相同）
-      // 如果没有提供 taskAgentSelectTrigger，则只在文件ID变化时执行（保持原有逻辑）
-      const shouldSelect = files?.length > 0;
-      // &&
-      // (taskAgentSelectTrigger !== undefined
-      //   ? // 如果提供了触发标志，检查触发标志是否变化
-      //     taskAgentSelectTrigger !== prevTaskAgentSelectTriggerRef.current
-      //   : // 如果没有提供触发标志，检查文件ID是否变化（保持原有逻辑）
-      //     taskAgentSelectedFileId !== prevTaskAgentSelectedFileIdRef.current);
+      // 检查是否需要执行选择（避免重复选择）
+      const hasTriggerChanged =
+        taskAgentSelectTrigger !== undefined
+          ? taskAgentSelectTrigger !== prevTaskAgentSelectTriggerRef.current
+          : taskAgentSelectedFileId !== prevTaskAgentSelectedFileIdRef.current;
 
-      if (shouldSelect) {
-        // prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
-        // if (taskAgentSelectTrigger !== undefined) {
-        //   prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
-        // }
-        handleFileSelect(taskAgentSelectedFileId);
+      // 如果触发标志或文件ID没有变化，不执行选择
+      if (!hasTriggerChanged) {
+        return;
       }
-    }, [taskAgentSelectedFileId, taskAgentSelectTrigger, files]);
+
+      // 如果提供了 taskAgentSelectTrigger 且它变化了，总是执行（允许重复点击同一文件刷新）
+      // 如果没有提供 taskAgentSelectTrigger，则检查用户是否选择了其他文件
+      const isTriggerUpdate =
+        taskAgentSelectTrigger !== undefined &&
+        taskAgentSelectTrigger !== prevTaskAgentSelectTriggerRef.current;
+
+      // 如果不是触发标志更新，且用户主动选择了其他文件，则不执行自动选择
+      // 这样可以避免用户点击文件树后，因为 files 更新而重新触发 taskAgentSelectedFileId 的选择
+      if (
+        !isTriggerUpdate &&
+        userSelectedFileRef.current &&
+        userSelectedFileRef.current !== taskAgentSelectedFileId
+      ) {
+        // 用户主动选择了其他文件，且不是触发标志更新，不清除 userSelectedFileRef，保持用户的选择
+        return;
+      }
+
+      // 检查 files 是否已准备好
+      if (!files || files.length === 0) {
+        // files 还未准备好，等待下次更新
+        return;
+      }
+
+      // 清除用户选择标记，因为这是通过 taskAgentSelectedFileId 触发的
+      userSelectedFileRef.current = null;
+      prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+      if (taskAgentSelectTrigger !== undefined) {
+        prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+      }
+
+      // 使用内部函数，不设置用户选择标记
+      handleFileSelectInternal(taskAgentSelectedFileId);
+    }, [
+      taskAgentSelectedFileId,
+      taskAgentSelectTrigger,
+      handleFileSelectInternal,
+      files,
+    ]);
 
     useEffect(() => {
       // 如果文件列表不为空，则转换为树形结构
