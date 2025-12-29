@@ -49,6 +49,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     {
       headerClassName,
       taskAgentSelectedFileId,
+      taskAgentSelectTrigger,
       originalFiles,
       fileTreeDataLoading,
       readOnly = false,
@@ -133,8 +134,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isFileTreePinned || false,
     );
 
-    // 用于记录上次的 taskAgentSelectedFileId，避免 originalFiles 更新时重复触发
-    const prevTaskAgentSelectedFileIdRef = useRef<string>('');
+    // 用于记录上次的 taskAgentSelectedFileId 和 taskAgentSelectTrigger，避免 originalFiles 更新时重复触发
+    // const prevTaskAgentSelectedFileIdRef = useRef<string>('');
+    // const prevTaskAgentSelectTriggerRef = useRef<number | string | undefined>(
+    //   undefined,
+    // );
     // VNC 预览组件 ref
     const vncPreviewRef = useRef<VncPreviewRef>(null);
 
@@ -231,20 +235,31 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     useEffect(() => {
       // 如果 taskAgentSelectedFileId 被清空，重置记录的值
       if (!taskAgentSelectedFileId) {
-        prevTaskAgentSelectedFileIdRef.current = '';
+        // prevTaskAgentSelectedFileIdRef.current = '';
+        // prevTaskAgentSelectTriggerRef.current = undefined;
         return;
       }
 
-      // 如果任务智能体会话中点击选中了文件，且文件ID发生了变化，则设置选中文件ID
+      // 如果任务智能体会话中点击选中了文件，则设置选中文件ID
       // 注意：依赖 files 而不是 originalFiles，确保在 files 更新后再调用
-      if (
-        files?.length > 0 &&
-        taskAgentSelectedFileId !== prevTaskAgentSelectedFileIdRef.current // 避免重复选择同一个文件
-      ) {
-        prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+      // 如果提供了 taskAgentSelectTrigger，则每次触发标志变化时都执行（即使文件ID相同）
+      // 如果没有提供 taskAgentSelectTrigger，则只在文件ID变化时执行（保持原有逻辑）
+      const shouldSelect = files?.length > 0;
+      // &&
+      // (taskAgentSelectTrigger !== undefined
+      //   ? // 如果提供了触发标志，检查触发标志是否变化
+      //     taskAgentSelectTrigger !== prevTaskAgentSelectTriggerRef.current
+      //   : // 如果没有提供触发标志，检查文件ID是否变化（保持原有逻辑）
+      //     taskAgentSelectedFileId !== prevTaskAgentSelectedFileIdRef.current);
+
+      if (shouldSelect) {
+        // prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+        // if (taskAgentSelectTrigger !== undefined) {
+        //   prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+        // }
         handleFileSelect(taskAgentSelectedFileId);
       }
-    }, [taskAgentSelectedFileId, files]);
+    }, [taskAgentSelectedFileId, taskAgentSelectTrigger, files]);
 
     useEffect(() => {
       // 如果文件列表不为空，则转换为树形结构

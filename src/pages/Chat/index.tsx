@@ -162,6 +162,8 @@ const Chat: React.FC = () => {
     restartAgent,
     // 任务智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
+    // 任务智能体文件选择触发标志
+    taskAgentSelectTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
   } = useModel('conversationInfo');
@@ -1030,6 +1032,7 @@ const Chat: React.FC = () => {
                   >
                     <FileTreeView
                       taskAgentSelectedFileId={taskAgentSelectedFileId}
+                      taskAgentSelectTrigger={taskAgentSelectTrigger}
                       originalFiles={fileTreeData}
                       fileTreeDataLoading={fileTreeDataLoading}
                       targetId={id?.toString() || ''}

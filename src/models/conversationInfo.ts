@@ -182,6 +182,10 @@ export default () => {
   // 任务智能体会话中点击选中的文件ID
   const [taskAgentSelectedFileId, setTaskAgentSelectedFileId] =
     useState<string>('');
+  // 任务智能体文件选择触发标志，每次点击按钮时传入不同的值（如时间戳），用于强制触发文件选择
+  const [taskAgentSelectTrigger, setTaskAgentSelectTrigger] = useState<
+    number | string
+  >(0);
   // 文件树数据
   const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
   // 文件树数据加载状态
@@ -773,6 +777,8 @@ export default () => {
               .pop();
             if (fileId) {
               setTaskAgentSelectedFileId(fileId);
+              // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
+              setTaskAgentSelectTrigger(Date.now());
             }
           }
 
@@ -1151,6 +1157,9 @@ export default () => {
     // 任务智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
     setTaskAgentSelectedFileId,
+    // 任务智能体文件选择触发标志
+    taskAgentSelectTrigger,
+    setTaskAgentSelectTrigger,
     isLoadingOtherInterface,
     setIsLoadingOtherInterface,
   };
