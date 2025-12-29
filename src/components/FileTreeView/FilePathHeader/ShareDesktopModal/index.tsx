@@ -140,7 +140,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
       onFinish={handleFinish}
       modalProps={{
         width: 480,
-        destroyOnClose: true,
+        destroyOnHidden: true,
       }}
       submitTimeout={2000}
       submitter={{
