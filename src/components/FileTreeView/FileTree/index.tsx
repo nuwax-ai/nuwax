@@ -239,6 +239,19 @@ const FileTree: React.FC<FileTreeProps> = ({
       return;
     }
 
+    // 如果选中的文件节点是文件夹
+    if (selectedFileNode.type === 'folder') {
+      // 如果文件夹有子节点，则展开文件夹，并选中第一个子节点
+      if (selectedFileNode?.children?.length) {
+        setExpandedFolders((prev) => {
+          const next = new Set(prev);
+          next.add(selectedFileNode?.id);
+          return next;
+        });
+      }
+      return;
+    }
+
     // 获取所有父级文件夹ID
     // 通过路径分割直接获取所有父级路径，避免重复查找节点
     const getParentFolderIds = (filePath: string): string[] => {
