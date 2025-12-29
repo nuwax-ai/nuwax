@@ -272,7 +272,9 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         {/* Markdown 文件显示导出 PDF 按钮 */}
         {targetNode &&
           fileName &&
-          isMarkdownFile(fileName) &&
+          (isMarkdownFile(fileName) ||
+            fileName.endsWith('.html') ||
+            fileName.endsWith('.htm')) &&
           viewMode === 'preview' && (
             <Tooltip title={isExportingPdf ? '导出中...' : '导出为 PDF'}>
               <Button
