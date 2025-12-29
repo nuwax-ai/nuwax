@@ -1,17 +1,33 @@
 /**
  * 导航拦截 Hook
  *
- * 功能：
- * 1. 拦截路由跳转，弹出确认弹窗
- * 2. 拦截浏览器刷新/关闭
- * 3. 支持"确认"、"放弃"、"取消"三种操作
+ * 用于在用户尝试离开当前页面时进行拦截，弹出确认弹窗。
+ * 适用于表单编辑、文件修改等需要保护未保存数据的场景。
  *
- * 使用示例：
+ * @see 详细文档: docs/ch/useNavigationGuard.md
+ *
+ * 功能：
+ * - 拦截应用内路由跳转
+ * - 拦截浏览器刷新/关闭/前进后退
+ * - 支持"确认"、"放弃"、"取消"三种操作
+ * - 支持异步确认操作（如保存文件）
+ *
+ * @example 基础用法
  * ```tsx
  * useNavigationGuard({
- *   condition: () => changeFiles.length > 0,
- *   onConfirm: async () => await saveFiles(),
- *   message: '您有未保存的文件修改',
+ *   condition: () => isDirty,
+ *   onConfirm: async () => await save(),
+ *   message: '您有未保存的更改',
+ * });
+ * ```
+ *
+ * @example 自定义按钮文案
+ * ```tsx
+ * useNavigationGuard({
+ *   condition: () => hasChanges,
+ *   onConfirm: handleSave,
+ *   confirmText: '保存并离开',
+ *   discardText: '不保存离开',
  * });
  * ```
  */
@@ -22,7 +38,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { history } from 'umi';
 
 export interface UseNavigationGuardOptions {
-  /** 判断是否需要拦截的函数 */
+  /** 判断是否需要拦截的函数，返回 true 时拦截导航 */
   condition: () => boolean;
   /** 确认操作的回调（返回 true 表示成功，可继续导航） */
   onConfirm?: () => Promise<boolean>;
@@ -32,11 +48,11 @@ export interface UseNavigationGuardOptions {
   message?: string;
   /** 是否启用拦截，默认为 true */
   enabled?: boolean;
-  /** "确认"按钮文案 */
+  /** "确认"按钮文案，默认为"确认" */
   confirmText?: string;
-  /** "放弃"按钮文案 */
+  /** "放弃"按钮文案，默认为"放弃" */
   discardText?: string;
-  /** "取消"按钮文案 */
+  /** "取消"按钮文案，默认为"取消" */
   cancelText?: string;
   /** 是否显示取消按钮，默认为 false */
   showCancelButton?: boolean;
@@ -79,21 +95,18 @@ export function useNavigationGuard(
    */
   const doNavigate = useCallback(() => {
     const targetPath = pendingPathRef.current;
-    console.log('[useNavigationGuard] doNavigate, targetPath:', targetPath);
 
     if (targetPath) {
       pendingPathRef.current = null;
 
       // 先移除 blocker（如果存在）
       if (unblockRef.current) {
-        console.log('[useNavigationGuard] 调用 unblock');
         unblockRef.current();
         unblockRef.current = null;
       }
 
       // 使用 setTimeout 确保在 Modal 完全关闭后再跳转
       setTimeout(() => {
-        console.log('[useNavigationGuard] 执行 history.push:', targetPath);
         history.push(targetPath);
       }, 50);
     }
@@ -105,11 +118,6 @@ export function useNavigationGuard(
   const showConfirmModal = useCallback(() => {
     if (isShowingModalRef.current) return;
     isShowingModalRef.current = true;
-
-    console.log(
-      '[useNavigationGuard] showConfirmModal, targetPath:',
-      pendingPathRef.current,
-    );
 
     const modal = Modal.confirm({
       title,
@@ -123,7 +131,6 @@ export function useNavigationGuard(
         <>
           <Button
             onClick={() => {
-              console.log('[useNavigationGuard] 放弃');
               modal.destroy();
               isShowingModalRef.current = false;
               // 放弃确认操作，直接离开
@@ -137,10 +144,8 @@ export function useNavigationGuard(
         </>
       ),
       onOk: async () => {
-        console.log('[useNavigationGuard] 确认');
         if (onConfirm) {
           const success = await onConfirm();
-          console.log('[useNavigationGuard] 确认操作结果:', success);
           isShowingModalRef.current = false;
           if (success) {
             // 确认成功，继续导航
@@ -152,7 +157,6 @@ export function useNavigationGuard(
         }
       },
       onCancel: () => {
-        console.log('[useNavigationGuard] 取消');
         isShowingModalRef.current = false;
         // 取消，清除待跳转路径
         pendingPathRef.current = null;
@@ -212,11 +216,9 @@ export function useNavigationGuard(
     [enabled, title, message, onConfirm, confirmText, cancelText],
   );
 
-  // 注册 blocker（始终注册，在回调中检查 when 条件）
+  // 注册 blocker（始终注册，在回调中检查条件）
   useEffect(() => {
     if (!enabled) return;
-
-    console.log('[useNavigationGuard] 注册 blocker');
 
     // 注册 blocker
     const unblock = history.block(
@@ -229,13 +231,6 @@ export function useNavigationGuard(
         const search = tx.location?.search || '';
         const targetPath = pathname + search;
         const shouldBlock = conditionRef.current();
-
-        console.log('[useNavigationGuard] history.block triggered', {
-          pathname,
-          targetPath,
-          shouldBlock,
-          isShowingModal: isShowingModalRef.current,
-        });
 
         // 如果需要拦截，显示确认弹窗
         if (shouldBlock && !isShowingModalRef.current) {
