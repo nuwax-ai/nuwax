@@ -53,6 +53,7 @@
       align-items: center;
       justify-content: center;
       padding: 16px;
+      position: relative;
     }
 
     .desktop-frame {
@@ -103,6 +104,11 @@
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       max-width: 500px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 100;
     }
 
     .error-icon {
@@ -350,6 +356,12 @@
             expireInfo.textContent = '链接已失效';
             expireInfo.style.backgroundColor = '#fff1f0';
             expireInfo.style.color = '#cf1322';
+          }
+
+          // remove desktopFrame
+          const desktopFrame = document.getElementById('desktopFrame');
+          if (desktopFrame) {
+            desktopFrame.remove();
           }
           showError('分享链接已失效，请重新生成分享链接');
         }
