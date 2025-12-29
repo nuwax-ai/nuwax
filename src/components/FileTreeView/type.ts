@@ -65,4 +65,8 @@ export interface FileTreeViewProps {
   showFullscreenIcon?: boolean;
   /** 是否隐藏文件树（外部控制） */
   hideFileTree?: boolean;
+  /** 文件树是否固定（用户点击后固定） */
+  isFileTreePinned?: boolean;
+  /** 文件树固定状态变化回调 */
+  onFileTreePinnedChange?: (pinned: boolean) => void;
 }

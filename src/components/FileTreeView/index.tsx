@@ -75,6 +75,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       showFullscreenIcon = true,
       // 是否隐藏文件树（外部控制）
       hideFileTree = false,
+      // 文件树是否固定（用户点击后固定）
+      isFileTreePinned = false,
+      // 文件树固定状态变化回调
+      onFileTreePinnedChange,
     },
     ref,
   ) => {
@@ -122,10 +126,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       'preview',
     );
 
-    // 文件树是否可见（默认隐藏）
-    const [isFileTreeVisible, setIsFileTreeVisible] = useState<boolean>(false);
-    // 文件树是否固定（用户点击后固定）
-    const [isFileTreePinned, setIsFileTreePinned] = useState<boolean>(false);
+    // 文件树是否可见（默认隐藏，但如果已固定则显示）
+    const [isFileTreeVisible, setIsFileTreeVisible] = useState<boolean>(
+      isFileTreePinned || false,
+    );
 
     // 用于记录上次的 taskAgentSelectedFileId，避免 originalFiles 更新时重复触发
     const prevTaskAgentSelectedFileIdRef = useRef<string>('');
@@ -240,6 +244,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         setChangeFiles([]);
       };
     }, [originalFiles]);
+
+    // 当 isFileTreePinned 变化时，同步更新 isFileTreeVisible
+    // 确保组件重新挂载或 isFileTreePinned 从外部变化时，文件树能正确显示
+    useEffect(() => {
+      if (isFileTreePinned) {
+        setIsFileTreeVisible(true);
+      }
+    }, [isFileTreePinned]);
 
     /**
      * 处理右键菜单显示
@@ -643,7 +655,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleFileTreeToggle = () => {
       const newPinnedState = !isFileTreePinned;
-      setIsFileTreePinned(newPinnedState);
+      // 通知父组件更新固定状态
+      onFileTreePinnedChange?.(newPinnedState);
       // 如果固定，则显示文件树；如果取消固定，则隐藏文件树
       setIsFileTreeVisible(newPinnedState);
     };
@@ -887,8 +900,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onFileTreeToggle={handleFileTreeToggle}
           // 文件树鼠标移入回调
           onFileTreeMouseEnter={handleFileTreeMouseEnter}
-          // 文件树鼠标移出回调
-          onFileTreeMouseLeave={handleFileTreeMouseLeave}
         />
       );
     };
