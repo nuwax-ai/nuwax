@@ -62,6 +62,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onSaveFiles,
       onImportProject,
       onRestartServer,
+      onRestartAgent,
       // 是否显示更多操作菜单
       showMoreActions = true,
       // 是否显示全屏预览，由父组件控制
@@ -69,6 +70,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onFullscreenPreview,
       onShare,
       isShowShare = true,
+      onClose,
+      showFullscreenIcon = true,
     },
     ref,
   ) => {
@@ -713,12 +716,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         fileProxyUrl
       ) {
         return (
-          // <iframe
-          //   src={fileProxyUrl}
-          //   width="100%"
-          //   height="100%"
-          //   style={{ border: 'none' }}
-          // />
           <FilePreview
             src={fileProxyUrl}
             fileType={fileName?.includes('.htm') ? 'html' : 'markdown'}
@@ -783,12 +780,16 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onImportProject={onImportProject}
           // 重启容器
           onRestartServer={onRestartServer}
+          // 重启智能体
+          onRestartAgent={onRestartAgent}
           // 是否正在导出项目
           isExportingProjecting={isExportingProjecting}
           // 全屏回调
           onFullscreen={handleFullscreen}
           // 是否处于全屏状态
           isFullscreen={isFullscreen}
+          // 是否显示全屏图标
+          showFullscreenIcon={showFullscreenIcon}
           // 保存文件回调
           onSaveFiles={saveFiles}
           // 取消保存文件回调
@@ -815,6 +816,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onExportPdf={handleExportPdf}
           // 是否正在导出 PDF
           isExportingPdf={isExportingPdf}
+          // 关闭整个面板
+          onClose={onClose}
         />
       );
     };

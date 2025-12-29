@@ -6,10 +6,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 64px;
+  height: 48px;
   background: @colorBgContainer;
   border-bottom: @lineWidth solid @colorSplit;
-  padding: 0 16px;
   gap: 16px;
 
   // 左侧：文件信息
@@ -31,7 +30,7 @@
         max-width: 200px;
         font-size: @fontSize;
         font-weight: @fontWeightStrong;
-        color: @colorText;
+        color: @colorTextSecondary;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -100,7 +99,6 @@
   .actionButtons {
     display: flex;
     align-items: center;
-    gap: 8px;
     flex: 0 0 auto;
 
     .actionButton {
@@ -119,5 +117,12 @@
         background: @colorFillTertiary;
       }
     }
+  }
+
+  .divider {
+    width: 1px;
+    height: 14px;
+    margin: 0 8px;
+    background: @colorBorder;
   }
 }

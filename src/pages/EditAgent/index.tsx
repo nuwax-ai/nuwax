@@ -119,6 +119,7 @@ const EditAgent: React.FC = () => {
     openPreviewView,
     openDesktopView,
     restartVncPod,
+    restartAgent,
     taskAgentSelectedFileId,
     setIsLoadingOtherInterface,
   } = useModel('conversationInfo');
@@ -510,13 +511,8 @@ const EditAgent: React.FC = () => {
       return;
     }
 
-    if (isFileTreeVisible) {
-      // 关闭文件树
-      closePreviewView();
-    } else {
-      // 触发文件列表刷新事件
-      openPreviewView(devConversationId);
-    }
+    // 触发文件列表刷新事件
+    openPreviewView(devConversationId);
   };
 
   // 切换视图模式
@@ -969,7 +965,8 @@ const EditAgent: React.FC = () => {
                     }
                     onAgentConfigInfo={setAgentConfigInfo}
                     onOpenPreview={handleOpenPreview}
-                    onToggleFileTree={handleFileTreeVisible}
+                    // 打开文件面板
+                    onOpenFilePanel={handleFileTreeVisible}
                   />
                 )
               }
@@ -1021,6 +1018,10 @@ const EditAgent: React.FC = () => {
               onSaveFiles={handleSaveFiles}
               // 重启容器
               onRestartServer={() => restartVncPod(devConversationId)}
+              // 重启智能体
+              onRestartAgent={() => restartAgent(devConversationId)}
+              // 关闭整个面板
+              onClose={closePreviewView}
             />
           </div>
         )}

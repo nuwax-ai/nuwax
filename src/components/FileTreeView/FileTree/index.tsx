@@ -61,19 +61,46 @@ const FileTree: React.FC<FileTreeProps> = ({
 
   /**
    * 切换文件夹展开状态，用于展开/折叠回调
+   * 当展开文件夹时，如果文件夹下有文件且当前没有选中任何文件，则自动选中第一个文件
    */
-  const onToggleFolder = useCallback((folderId: string) => {
-    setExpandedFolders((prev) => {
-      const newExpanded = new Set(prev);
-      // 如果已展开则删除，否则添加，实现切换效果
-      if (newExpanded.has(folderId)) {
-        newExpanded.delete(folderId);
-      } else {
-        newExpanded.add(folderId);
-      }
-      return newExpanded;
-    });
-  }, []);
+  const onToggleFolder = useCallback(
+    (folderId: string) => {
+      setExpandedFolders((prev) => {
+        const newExpanded = new Set(prev);
+        const wasExpanded = newExpanded.has(folderId);
+        // 如果已展开则删除，否则添加，实现切换效果
+        if (wasExpanded) {
+          newExpanded.delete(folderId);
+        } else {
+          newExpanded.add(folderId);
+          // 当文件夹展开时，检查是否需要自动选中第一个文件
+          // 只有当当前没有选中任何文件时，才自动选中
+          if (!selectedFileId) {
+            // 查找该文件夹节点
+            const folderNode = findFileNode(folderId, files || []);
+            if (
+              folderNode &&
+              folderNode.children &&
+              folderNode.children.length > 0
+            ) {
+              // 查找第一个文件（非隐藏文件，跳过以 . 开头的文件）
+              const firstFile = folderNode.children.find(
+                (child) => child.type === 'file' && !child.name.startsWith('.'),
+              );
+              if (firstFile) {
+                // 使用 setTimeout 确保状态更新后再触发文件选择
+                setTimeout(() => {
+                  onFileSelect(firstFile.id);
+                }, 0);
+              }
+            }
+          }
+        }
+        return newExpanded;
+      });
+    },
+    [files, selectedFileId, onFileSelect],
+  );
 
   /**
    * 取消重命名
