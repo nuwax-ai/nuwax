@@ -150,6 +150,18 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 根据文件ID查找文件节点
       const fileNode = findFileNode(fileId, files);
       if (fileNode) {
+        // 如果文件节点是文件夹(folder)，则选择第一个子节点(点击会话中文件名时，如果文件名是文件夹，则选择第一个子节点)
+        if (fileNode.type === 'folder') {
+          // 如果文件节点是文件夹，且有子节点，则选择第一个子节点
+          if (fileNode?.children?.length) {
+            const firstChild = fileNode.children?.[0];
+            if (firstChild) {
+              handleFileSelect(firstChild.id);
+            }
+          }
+          return;
+        }
+
         // 获取文件内容
         const fileContent = fileNode?.content || '';
         if (fileContent) {
