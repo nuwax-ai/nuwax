@@ -259,8 +259,10 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
                   icon: <DownloadOutlined />,
                   onClick: handleDownload,
                 },
-                // 如果是 Markdown 文件，显示导出为 PDF 选项
-                ...(isMarkdownFile(targetNode?.name || '')
+                // 如果是 Markdown 或 HTML 文件，显示导出为 PDF 选项
+                ...(isMarkdownFile(targetNode?.name || '') ||
+                targetNode?.name?.endsWith('.html') ||
+                targetNode?.name?.endsWith('.htm')
                   ? [
                       {
                         key: 'exportPdf',
