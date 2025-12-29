@@ -56,4 +56,14 @@ export interface FilePathHeaderProps {
   onClose?: () => void;
   /** VNC 预览连接状态 */
   vncConnectStatus?: React.ReactNode;
+  /** 文件树是否可见 */
+  isFileTreeVisible?: boolean;
+  /** 文件树是否固定（用户点击后固定） */
+  isFileTreePinned?: boolean;
+  /** 文件树展开/折叠回调 */
+  onFileTreeToggle?: () => void;
+  /** 文件树鼠标移入回调 */
+  onFileTreeMouseEnter?: () => void;
+  /** 文件树鼠标移出回调 */
+  onFileTreeMouseLeave?: () => void;
 }
