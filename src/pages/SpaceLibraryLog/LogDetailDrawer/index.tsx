@@ -183,7 +183,7 @@ const LogDetailDrawer: React.FC<LogDetailDrawerProps> = ({
       open={open}
       onClose={onClose}
       width={drawerWidth}
-      destroyOnClose
+      destroyOnHidden
       rootStyle={{ overflow: 'hidden' }}
       styles={{
         body: { padding: 0 },
