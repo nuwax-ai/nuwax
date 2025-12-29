@@ -45,6 +45,157 @@ const FilePreviewDemo: React.FC = () => {
       <Divider />
 
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Divider>Download & Share Demos</Divider>
+
+        {/* Static File Preview (iframe) */}
+        <div>
+          <Title level={4}>
+            Static File Preview (iframe with Floating Download)
+          </Title>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+            Demonstrates embedding the static <code>file-preview.html</code>{' '}
+            which supports the floating download button and <code>sk</code>{' '}
+            sharing parameter.
+          </Text>
+          <Title level={5}>PDF</Title>
+          <div
+            style={{
+              height: 500,
+              border: '1px solid #d9d9d9',
+              borderRadius: 8,
+              overflow: 'hidden',
+              marginBottom: 24,
+            }}
+          >
+            <iframe
+              title="Static PDF"
+              src={`/static/file-preview.html?fileUrl=${encodeURIComponent(
+                typeof window !== 'undefined'
+                  ? window.location.origin + '/金价分析报告_2025.pdf'
+                  : '/金价分析报告_2025.pdf',
+              )}&fileName=${encodeURIComponent('金价分析报告_2025.pdf')}`}
+              style={{ width: '100%', height: '100%', border: 'none' }}
+            />
+          </div>
+
+          <Title level={5}>Office Documents (DOCX, XLSX, PPTX)</Title>
+          <Space wrap size="large" style={{ width: '100%' }}>
+            <div
+              style={{
+                width: 400,
+                height: 300,
+                border: '1px solid #d9d9d9',
+                borderRadius: 8,
+                overflow: 'hidden',
+              }}
+            >
+              <iframe
+                title="Static DOCX"
+                src={`/static/file-preview.html?fileUrl=${encodeURIComponent(
+                  testFiles.docx,
+                )}&fileName=test.docx`}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+              />
+            </div>
+            <div
+              style={{
+                width: 400,
+                height: 300,
+                border: '1px solid #d9d9d9',
+                borderRadius: 8,
+                overflow: 'hidden',
+              }}
+            >
+              <iframe
+                title="Static XLSX"
+                src={`/static/file-preview.html?fileUrl=${encodeURIComponent(
+                  testFiles.xlsx,
+                )}&fileName=test.xlsx`}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+              />
+            </div>
+            <div
+              style={{
+                width: 400,
+                height: 300,
+                border: '1px solid #d9d9d9',
+                borderRadius: 8,
+                overflow: 'hidden',
+              }}
+            >
+              <iframe
+                title="Static PPTX"
+                src={`/static/file-preview.html?fileUrl=${encodeURIComponent(
+                  testFiles.pptx,
+                )}&fileName=test.pptx`}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+              />
+            </div>
+          </Space>
+
+          <Title level={5} style={{ marginTop: 24 }}>
+            Code & Text (JSON, Markdown)
+          </Title>
+          <Space wrap size="large" style={{ width: '100%' }}>
+            <div
+              style={{
+                width: 400,
+                height: 300,
+                border: '1px solid #d9d9d9',
+                borderRadius: 8,
+                overflow: 'hidden',
+              }}
+            >
+              {/* JSON usually needs CORS from typicode, but file-preview.html handles fetch errors gracefully if blocked */}
+              <iframe
+                title="Static JSON"
+                src={`/static/file-preview.html?fileUrl=${encodeURIComponent(
+                  testFiles.json,
+                )}&fileName=data.json&fileType=json`}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+              />
+            </div>
+            <div
+              style={{
+                width: 400,
+                height: 300,
+                border: '1px solid #d9d9d9',
+                borderRadius: 8,
+                overflow: 'hidden',
+              }}
+            >
+              <iframe
+                title="Static Markdown"
+                src={`/static/file-preview.html?fileUrl=${encodeURIComponent(
+                  testFiles.markdown,
+                )}&fileName=README.md&fileType=markdown`}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+              />
+            </div>
+          </Space>
+        </div>
+
+        {/* Static Image Preview with Download */}
+        <div style={{ marginTop: 24 }}>
+          <Title level={4}>Static Image Preview (iframe)</Title>
+          <div
+            style={{
+              height: 400,
+              border: '1px solid #d9d9d9',
+              borderRadius: 8,
+              overflow: 'hidden',
+            }}
+          >
+            <iframe
+              title="Static Image"
+              src={`/static/file-preview.html?fileUrl=${encodeURIComponent(
+                testFiles.image,
+              )}&fileType=image`}
+              style={{ width: '100%', height: '100%', border: 'none' }}
+            />
+          </div>
+        </div>
+
         {/* Image Preview - Single */}
         <div>
           <Title level={4}>Image Preview (Single)</Title>

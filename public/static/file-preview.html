@@ -162,6 +162,8 @@
     <!-- Preview Container -->
     <div id="previewContainer" class="preview-container"></div>
 
+
+
     <script>
         // ============================================
         // Global State
@@ -175,13 +177,19 @@
         // ============================================
         function getQueryParams() {
             const params = {};
+            // Use location.search and decode properly
             const search = window.location.search.slice(1);
             if (!search) return params;
 
             search.split('&').forEach(pair => {
                 const [key, value] = pair.split('=');
                 if (key) {
-                    params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+                    try {
+                        params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+                    } catch (e) {
+                        console.warn('Malformed param:', pair);
+                        params[key] = value || '';
+                    }
                 }
             });
             return params;
@@ -286,34 +294,112 @@
             await currentPreviewer.preview(arrayBuffer);
         }
 
+        async function renderImage(url, container) {
+            return new Promise((resolve, reject) => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '100%';
+                img.style.objectFit = 'contain';
+                img.style.display = 'block';
+                img.style.margin = ' auto'; // Center it
+                img.style.position = 'absolute';
+                img.style.top = '50%';
+                img.style.left = '50%';
+                img.style.transform = 'translate(-50%, -50%)';
+
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error('图片加载失败'));
+
+                container.appendChild(img);
+                currentPreviewer = {
+                    destroy: () => {
+                        container.innerHTML = '';
+                    }
+                };
+            });
+        }
+
+
+        // ============================================
+        // Main Preview Function
+        // ============================================
+        async function renderText(url, container) {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`加载失败: ${response.status}`);
+            const text = await response.text();
+            const pre = document.createElement('pre');
+            Object.assign(pre.style, {
+                padding: '20px',
+                whiteSpace: 'pre-wrap',
+                wordWrap: 'break-word',
+                fontSize: '14px',
+                color: '#333',
+                fontFamily: 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace'
+            });
+            pre.textContent = text;
+            container.appendChild(pre);
+        }
+
+        async function renderMarkdown(url, container) {
+            // For now, render as text. If markdown-it is available in future, use it.
+            await renderText(url, container);
+        }
+
+        async function renderHtml(url, container) {
+            const iframe = document.createElement('iframe');
+            iframe.src = url;
+            Object.assign(iframe.style, {
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                backgroundColor: '#fff'
+            });
+            container.appendChild(iframe);
+        }
 
         // ============================================
         // Main Preview Function
         // ============================================
         async function startPreview() {
             const params = getQueryParams();
+            console.log('[FilePreview] Params:', params);
             const sk = params.sk || '';
-            // 判断是否开发环境
-            const isDev = params.isDev || 'false';
-            const baseUrl = isDev === 'true' ? 'https://testagent.xspaceagi.com' : '';
-            const response = await fetch(`${baseUrl}/api/agent/conversation/share/detail/${sk}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-            const {data,code,message} = await response.json();
-            console.log(data,code,message);
-            if(code === '0000'){
-                fileUrl = baseUrl + data.content+'?sk='+sk;
-                fileType = data.content.split('.').pop().toLowerCase();
-            }else{
-                showError(message);
-                return;
-            }
 
-            // fileUrl = params.fileUrl || params.url || params.src || '';
-            // fileType = (params.fileType || params.type || '').toLowerCase();
+            // 分享模式：通过 sk 获取文件信息
+            if (sk) {
+                try {
+                    const isDev = params.isDev === 'true';
+                    const apiBase = isDev ? 'https://testagent.xspaceagi.com' : '';
+                    console.log(`[FilePreview] Fetching share info for sk=${sk}, apiBase=${apiBase}`);
+
+                    const response = await fetch(`${apiBase}/api/agent/conversation/share/detail/${sk}`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    if (!response.ok) throw new Error(`Network response error: ${response.status}`);
+                    const { data, code, message } = await response.json();
+
+                    if (code === '0000' || code === 200) {
+                        const contentUrl = data.content.startsWith('http') ? data.content : (apiBase + data.content);
+                        fileUrl = contentUrl + (contentUrl.includes('?') ? '&' : '?') + 'sk=' + sk;
+                        fileType = data.content.split('.').pop().split('?')[0].toLowerCase();
+                        console.log('[FilePreview] Share info resolved:', { fileUrl, fileType });
+                    } else {
+                        showError(message || '获取分享文件失败');
+                        return;
+                    }
+                } catch (e) {
+                    console.error('[FilePreview] Failed to fetch share detail:', e);
+                    showError('获取分享文件详情失败: ' + e.message);
+                    return;
+                }
+            } else {
+                // 普通模式：通过 url 参数
+                fileUrl = params.fileUrl || params.url || params.src || '';
+                fileType = (params.fileType || params.type || '').toLowerCase();
+            }
 
             // Auto-detect file type from URL if not provided
             if (!fileType && fileUrl) {
@@ -321,11 +407,26 @@
                 if (['docx', 'xlsx', 'xls', 'pdf', 'pptx', 'ppt'].includes(ext)) {
                     fileType = ext;
                 }
+                if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) {
+                    fileType = 'image';
+                }
+                if (['txt', 'json', 'js', 'css', 'xml'].includes(ext)) {
+                    fileType = 'text';
+                }
+                if (['md', 'markdown'].includes(ext)) {
+                    fileType = 'markdown';
+                }
+                if (['html', 'htm'].includes(ext)) {
+                    fileType = 'html';
+                }
             }
 
             // Normalize file types
             if (fileType === 'xls') fileType = 'xlsx';
             if (fileType === 'ppt') fileType = 'pptx';
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(fileType)) fileType = 'image';
+            if (['json', 'js', 'css', 'code'].includes(fileType)) fileType = 'text';
+            if (['md'].includes(fileType)) fileType = 'markdown';
 
             console.log('[FilePreview] Starting preview:', { fileUrl, fileType });
 
@@ -367,6 +468,18 @@
                     case 'pptx':
                         await renderPptx(fileUrl, container);
                         break;
+                    case 'image':
+                        await renderImage(fileUrl, container);
+                        break;
+                    case 'text':
+                        await renderText(fileUrl, container);
+                        break;
+                    case 'markdown':
+                        await renderMarkdown(fileUrl, container);
+                        break;
+                    case 'html':
+                        await renderHtml(fileUrl, container);
+                        break;
                     default:
                         throw new Error(`不支持的文件类型: ${fileType}`);
                 }
@@ -376,6 +489,9 @@
 
                 // Notify parent (for iframe/webview communication)
                 notifyParent({ type: 'preview_success', fileType });
+
+                // Initialize download button
+                initDownloadButton();
 
             } catch (error) {
                 console.error('[FilePreview] Render error:', error);
@@ -410,7 +526,71 @@
         // ============================================
         // Initialize
         // ============================================
-        document.addEventListener('DOMContentLoaded', startPreview);
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('[FilePreview] DOMContentLoaded');
+
+            // Global timeout check
+            setTimeout(() => {
+                const loading = document.getElementById('loadingOverlay');
+                if (loading && !loading.classList.contains('hidden')) {
+                    console.warn('[FilePreview] Global timeout triggered (30s)');
+                    // Only show error if we are still loading and no error shown
+                    const errorOverlay = document.getElementById('errorOverlay');
+                    if (errorOverlay && errorOverlay.classList.contains('hidden')) {
+                        showError('加载超时，请检查网络或刷新重试');
+                    }
+                }
+            }, 30000);
+
+            // Load DownloadManager script first
+            loadScript('./js/download-manager.js').then(() => {
+                console.log('[FilePreview] DownloadManager loaded');
+                // If in WeChat env, load JSSDK
+                const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+                if (isWeChat) {
+                    loadScript('https://res.wx.qq.com/open/js/jweixin-1.6.0.js').then(() => {
+                        console.log('[FilePreview] JSSDK loaded');
+                        startPreview();
+                    }).catch(err => {
+                        console.error('[FilePreview] Failed to load JSSDK', err);
+                        startPreview();
+                    });
+                } else {
+                    startPreview();
+                }
+            }).catch(err => {
+                console.error('[FilePreview] Failed to load download-manager.js', err);
+                // Even if download manager fails, try to start preview
+                startPreview();
+            });
+        });
+
+        // Initialize download button after preview starts
+        function initDownloadButton() {
+            if (typeof DownloadManager !== 'undefined' && fileUrl) {
+                // Get filename from URL or defaulting to 'file'
+                let fileName = 'file';
+                try {
+                    // Try to parse filename from URL
+                    const urlObj = new URL(fileUrl, window.location.origin); // Use full URL parsing
+                    const params = getQueryParams();
+                    if (params.fileName) {
+                        fileName = params.fileName;
+                    } else {
+                        const pathSegments = urlObj.pathname.split('/');
+                        fileName = pathSegments[pathSegments.length - 1] || 'file';
+                    }
+                    fileName = decodeURIComponent(fileName);
+                } catch (e) {
+                    console.warn('[FilePreview] Failed to parse filename', e);
+                }
+
+                new DownloadManager({
+                    url: fileUrl,
+                    fileName: fileName
+                }).init();
+            }
+        }
     </script>
 </body>
 
