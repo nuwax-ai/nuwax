@@ -4,12 +4,16 @@ export interface FilePathHeaderProps {
   /** 会话ID */
   conversationId: string;
   className?: string;
+  // 是否显示文件树展开/折叠按钮
+  showFileTreeToggleButton?: boolean;
   /** 文件节点 */
   targetNode: FileNode | null;
   /** 当前视图模式 */
   viewMode?: 'preview' | 'desktop';
   /** 视图模式切换回调 */
   onViewModeChange?: (mode: 'preview' | 'desktop') => void;
+  // 是否显示视图模式切换按钮
+  showViewModeButtons?: boolean;
   /** 重启服务器回调 */
   onRestartServer?: () => void;
   /** 重启智能体回调 */
@@ -64,6 +68,4 @@ export interface FilePathHeaderProps {
   onFileTreeToggle?: () => void;
   /** 文件树鼠标移入回调 */
   onFileTreeMouseEnter?: () => void;
-  /** 文件树鼠标移出回调 */
-  onFileTreeMouseLeave?: () => void;
 }

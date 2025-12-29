@@ -15,7 +15,14 @@ export interface FileTreeViewRef {
   changeFiles: ChangeFileInfo[];
 }
 
+/**
+ * 文件树视图组件属性
+ */
 export interface FileTreeViewProps {
+  // 是否显示视图模式切换按钮
+  showViewModeButtons?: boolean;
+  // 是否显示文件树展开/折叠按钮
+  showFileTreeToggleButton?: boolean;
   // 文件树头部样式
   headerClassName?: string;
   // 任务智能体会话中点击选中的文件ID
@@ -65,4 +72,8 @@ export interface FileTreeViewProps {
   showFullscreenIcon?: boolean;
   /** 是否隐藏文件树（外部控制） */
   hideFileTree?: boolean;
+  /** 文件树是否固定（用户点击后固定） */
+  isFileTreePinned?: boolean;
+  /** 文件树固定状态变化回调 */
+  onFileTreePinnedChange?: (pinned: boolean) => void;
 }
