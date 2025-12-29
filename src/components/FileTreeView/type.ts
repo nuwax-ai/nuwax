@@ -15,7 +15,14 @@ export interface FileTreeViewRef {
   changeFiles: ChangeFileInfo[];
 }
 
+/**
+ * 文件树视图组件属性
+ */
 export interface FileTreeViewProps {
+  // 是否显示视图模式切换按钮
+  showViewModeButtons?: boolean;
+  // 是否显示文件树展开/折叠按钮
+  showFileTreeToggleButton?: boolean;
   // 文件树头部样式
   headerClassName?: string;
   // 任务智能体会话中点击选中的文件ID
