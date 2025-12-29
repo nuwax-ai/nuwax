@@ -53,6 +53,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     isConversationActive,
     disabledConversationActive,
     messageList,
+    loadingConversation,
+    isLoadingOtherInterface,
   } = useModel('conversationInfo');
 
   // 文档
@@ -102,7 +104,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 点击发送事件
   const handleSendMessage = () => {
-    if (disabledSend || wholeDisabled) {
+    if (
+      disabledSend ||
+      wholeDisabled ||
+      loadingConversation ||
+      isLoadingOtherInterface
+    ) {
       return;
     }
     if (messageInfo || files?.length > 0) {
@@ -477,7 +484,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   'cursor-pointer',
                   styles.box,
                   styles['send-box'],
-                  { [styles.disabled]: disabledSend || wholeDisabled },
+                  {
+                    [styles.disabled]:
+                      disabledSend ||
+                      wholeDisabled ||
+                      loadingConversation ||
+                      isLoadingOtherInterface,
+                  },
                 )}
               >
                 <SvgIcon name="icons-chat-send" style={{ fontSize: '14px' }} />

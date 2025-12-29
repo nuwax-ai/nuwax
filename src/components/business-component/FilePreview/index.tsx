@@ -309,6 +309,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewerRef = useRef<any>(null);
+  const pptxRafIdRef = useRef<number | null>(null); // PPTX zoom 计算的 RAF ID
   const [status, setStatus] = useState<PreviewStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [detectedType, setDetectedType] = useState<FileType | undefined>();
@@ -534,6 +535,33 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             previewSrc = await response.arrayBuffer();
           }
           await previewer.preview(previewSrc);
+
+          // 动态计算 zoom 缩放比例，确保幻灯片完全显示在容器内
+          // 等待 DOM 更新后计算
+          pptxRafIdRef.current = requestAnimationFrame(() => {
+            const wrapper = containerRef.current?.querySelector(
+              '.pptx-preview-wrapper',
+            ) as HTMLElement;
+            if (!wrapper) return;
+
+            const slideWrappers = wrapper.querySelectorAll(
+              '.pptx-preview-slide-wrapper',
+            ) as NodeListOf<HTMLElement>;
+            if (slideWrappers.length === 0) return;
+
+            // 获取容器可用宽度（减去 padding）
+            const availableWidth = wrapper.clientWidth - 40; // 40px for margin
+
+            slideWrappers.forEach((slideWrapper) => {
+              // 获取幻灯片实际渲染宽度
+              const slideScrollWidth = slideWrapper.scrollWidth;
+              if (slideScrollWidth > availableWidth) {
+                // 计算需要的缩放比例
+                const zoomRatio = availableWidth / slideScrollWidth;
+                slideWrapper.style.zoom = String(zoomRatio);
+              }
+            });
+          });
           break;
         }
       }
@@ -560,6 +588,11 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       setStatus('idle');
     }
     return () => {
+      // 取消未执行的 PPTX zoom 计算 RAF
+      if (pptxRafIdRef.current) {
+        cancelAnimationFrame(pptxRafIdRef.current);
+        pptxRafIdRef.current = null;
+      }
       if (previewerRef.current) {
         try {
           previewerRef.current.destroy?.();

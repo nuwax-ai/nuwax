@@ -61,11 +61,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
   );
 
   return (
-    <Dropdown
-      trigger={['click']}
-      menu={{ items: menuItems }}
-      placement="bottomRight"
-    >
+    <Dropdown menu={{ items: menuItems }} placement="bottomRight">
       <Button
         type="text"
         icon={<SvgIcon name="icons-common-more" style={{ fontSize: '16px' }} />}

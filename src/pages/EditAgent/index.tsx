@@ -119,7 +119,9 @@ const EditAgent: React.FC = () => {
     openPreviewView,
     openDesktopView,
     restartVncPod,
+    restartAgent,
     taskAgentSelectedFileId,
+    setIsLoadingOtherInterface,
   } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
   const { agentComponentList } = useModel('spaceAgent');
@@ -156,13 +158,24 @@ const EditAgent: React.FC = () => {
   }, [spaceId]);
 
   // 查询智能体配置信息
-  const { run } = useRequest(apiAgentConfigInfo, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
-      setAgentConfigInfo(result?.data);
+  const { run, loading: loadingAgentConfigInfo } = useRequest(
+    apiAgentConfigInfo,
+    {
+      manual: true,
+      debounceWait: 300,
+      onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
+        setAgentConfigInfo(result?.data);
+      },
     },
-  });
+  );
+
+  useEffect(() => {
+    if (loadingAgentConfigInfo) {
+      setIsLoadingOtherInterface(true);
+    } else {
+      setIsLoadingOtherInterface(false);
+    }
+  }, [loadingAgentConfigInfo]);
 
   // 查询智能体配置信息
   const { run: runUpdateAgent } = useRequest(apiAgentConfigInfo, {
@@ -498,13 +511,8 @@ const EditAgent: React.FC = () => {
       return;
     }
 
-    if (isFileTreeVisible) {
-      // 关闭文件树
-      closePreviewView();
-    } else {
-      // 触发文件列表刷新事件
-      openPreviewView(devConversationId);
-    }
+    // 触发文件列表刷新事件
+    openPreviewView(devConversationId);
   };
 
   // 切换视图模式
@@ -957,7 +965,8 @@ const EditAgent: React.FC = () => {
                     }
                     onAgentConfigInfo={setAgentConfigInfo}
                     onOpenPreview={handleOpenPreview}
-                    onToggleFileTree={handleFileTreeVisible}
+                    // 打开文件面板
+                    onOpenFilePanel={handleFileTreeVisible}
                   />
                 )
               }
@@ -1009,6 +1018,10 @@ const EditAgent: React.FC = () => {
               onSaveFiles={handleSaveFiles}
               // 重启容器
               onRestartServer={() => restartVncPod(devConversationId)}
+              // 重启智能体
+              onRestartAgent={() => restartAgent(devConversationId)}
+              // 关闭整个面板
+              onClose={closePreviewView}
             />
           </div>
         )}

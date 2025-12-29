@@ -43,7 +43,8 @@ interface PreviewAndDebugProps extends PreviewAndDebugHeaderProps {
   /** 设置智能体配置信息的方法 */
   onAgentConfigInfo: (info: AgentConfigInfo) => void;
   onOpenPreview?: () => void;
-  onToggleFileTree?: () => void;
+  // 打开文件面板
+  onOpenFilePanel?: () => void;
 }
 
 /**
@@ -55,7 +56,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   onAgentConfigInfo,
   onPressDebug,
   onOpenPreview,
-  onToggleFileTree,
+  onOpenFilePanel,
 }) => {
   const [form] = Form.useForm();
   // 会话ID
@@ -91,6 +92,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     showType,
     setShowType,
     resetInit,
+    setFinalResult,
+    setIsLoadingOtherInterface,
+    clearFilePanelInfo,
+    isFileTreeVisible,
   } = useModel('conversationInfo');
 
   // 获取 chat model 中的页面预览状态
@@ -208,39 +213,50 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
 
   // 清空会话记录，实际上是创建新的会话
   const handleClear = useCallback(async () => {
+    // 清除调试结果
+    setFinalResult(null);
     handleClearSideEffect();
+    // 清除文件面板信息, 并关闭文件面板
+    clearFilePanelInfo();
     setMessageList([]);
     setIsLoadingConversation(false);
-    // 创建智能体会话(智能体编排页面devMode为true)
-    const { success, data } = await runAsyncConversationCreate({
-      agentId,
-      devMode: true,
-    });
+    try {
+      setIsLoadingOtherInterface(true);
+      // 创建智能体会话(智能体编排页面devMode为true)
+      const { success, data } = await runAsyncConversationCreate({
+        agentId,
+        devMode: true,
+      });
 
-    if (success) {
-      // 点击刷子时,智能体要"重置",默认有打开页面就返回到默认首页,默认没有打开页面,则把页面收起来
-      const agent = data?.agent || {};
-      const expandPageArea = agent.expandPageArea; // 0: 收起, 1: 展开
-      const pageHomeIndex = agent.pageHomeIndex;
-      if (expandPageArea === 0) {
-        hidePagePreview();
-      } else {
-        showPagePreview({
-          uri: pageHomeIndex,
-          params: {},
-        });
-      }
+      if (success) {
+        // 点击刷子时,智能体要"重置",默认有打开页面就返回到默认首页,默认没有打开页面,则把页面收起来
+        const agent = data?.agent || {};
+        const expandPageArea = agent.expandPageArea; // 0: 收起, 1: 展开
+        const pageHomeIndex = agent.pageHomeIndex;
+        if (expandPageArea === 0) {
+          hidePagePreview();
+        } else {
+          showPagePreview({
+            uri: pageHomeIndex,
+            params: {},
+          });
+        }
 
-      const id = data?.id;
-      devConversationIdRef.current = id;
-      if (agentConfigInfo) {
-        // 更新智能体配置信息
-        const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
-        _agentConfigInfo.devConversationId = id;
-        onAgentConfigInfo(_agentConfigInfo);
+        const id = data?.id;
+        devConversationIdRef.current = id;
+        if (agentConfigInfo) {
+          // 更新智能体配置信息
+          const _agentConfigInfo = cloneDeep(
+            agentConfigInfo,
+          ) as AgentConfigInfo;
+          _agentConfigInfo.devConversationId = id;
+          onAgentConfigInfo(_agentConfigInfo);
+        }
+        // 查询会话
+        runQueryConversation(id);
       }
-      // 查询会话
-      runQueryConversation(id);
+    } finally {
+      setIsLoadingOtherInterface(false);
     }
   }, [agentId, agentConfigInfo]);
 
@@ -307,9 +323,13 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             onShowPreview={() => {
               onOpenPreview?.();
             }}
-            onToggleFileTree={onToggleFileTree}
-            // 是否是任务智能体
-            isTaskAgent={agentConfigInfo?.type === AgentTypeEnum.TaskAgent}
+            // 打开文件面板
+            onOpenFilePanel={onOpenFilePanel}
+            // 是否显示文件面板: 任务智能体 + 文件树未打开
+            showFilePanel={
+              !isFileTreeVisible &&
+              agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+            }
           />
           <div
             className={cx(
@@ -354,6 +374,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                       messageInfo={item}
                       roleInfo={roleInfo}
                       mode={'chat'}
+                      showStatusDesc={
+                        agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
+                      }
                     />
                   ))}
                   {/*会话建议*/}

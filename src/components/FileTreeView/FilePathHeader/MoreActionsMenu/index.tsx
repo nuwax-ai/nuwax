@@ -1,4 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import { Button, Dropdown } from 'antd';
 import { useMemo } from 'react';
 
@@ -6,8 +8,10 @@ import { useMemo } from 'react';
 interface MoreActionsProps {
   // 导入项目
   onImportProject?: () => void;
-  // 重启远程电脑
+  // 重启智能体电脑
   onRestartServer?: () => void;
+  // 重启智能体
+  onRestartAgent?: () => void;
   // 导出项目
   onExportProject?: () => void;
 }
@@ -19,6 +23,7 @@ interface MoreActionsProps {
 const MoreActionsMenu: React.FC<MoreActionsProps> = ({
   onImportProject,
   onRestartServer,
+  onRestartAgent,
   onExportProject,
 }) => {
   // 菜单项配置
@@ -48,11 +53,42 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
               icon: (
                 <SvgIcon name="icons-common-restart" style={{ fontSize: 16 }} />
               ),
-              label: '重启远程电脑',
+              label: (
+                <div className="flex items-center">
+                  <span>重启智能体电脑</span>
+                  <TooltipIcon
+                    title="当前用户正在运行的所有智能体将全部被重启；"
+                    icon={<InfoCircleOutlined />}
+                  />
+                </div>
+              ),
               onClick: onRestartServer,
             },
           ]
         : []),
+
+      // 只有当 onRestartAgent 存在时才显示重启智能体选项
+      ...(onRestartAgent
+        ? [
+            {
+              key: 'restart-agent',
+              icon: (
+                <SvgIcon name="icons-common-restart" style={{ fontSize: 16 }} />
+              ),
+              label: (
+                <div className="flex items-center">
+                  <span>重启智能体</span>
+                  <TooltipIcon
+                    title="当前会话对应的智能体将重启；"
+                    icon={<InfoCircleOutlined />}
+                  />
+                </div>
+              ),
+              onClick: onRestartAgent,
+            },
+          ]
+        : []),
+
       // 只有当 onExportProject 存在时才显示导出项目选项和分隔线
       ...(onExportProject
         ? [
@@ -67,7 +103,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
                   style={{ fontSize: 16 }}
                 />
               ),
-              label: '导出项目',
+              label: '导出结果',
               onClick: onExportProject,
             },
           ]
@@ -82,14 +118,15 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
   }
 
   return (
-    <Dropdown
-      trigger={['click']}
-      menu={{ items: menuItems }}
-      placement="bottomRight"
-    >
+    <Dropdown menu={{ items: menuItems }} placement="bottomRight">
       <Button
         type="text"
-        icon={<SvgIcon name="icons-common-more" style={{ fontSize: '16px' }} />}
+        icon={
+          <SvgIcon
+            name="icons-common-more"
+            style={{ fontSize: '16px', color: 'rgba(0,0,0,0.65)' }}
+          />
+        }
       />
     </Dropdown>
   );

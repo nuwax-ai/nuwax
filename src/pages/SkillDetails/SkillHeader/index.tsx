@@ -61,16 +61,20 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
         alt=""
       />
       <div className={cx('flex', 'items-center', styles['header-info'])}>
-        <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
-          {skillInfo?.name}
-        </h3>
+        {!!skillInfo && (
+          <>
+            <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
+              {skillInfo?.name}
+            </h3>
 
-        <Button
-          type="text"
-          icon={<FormOutlined />}
-          className={cx(styles['edit-ico'])}
-          onClick={onEditAgent}
-        />
+            <Button
+              type="text"
+              icon={<FormOutlined />}
+              className={cx(styles['edit-ico'])}
+              onClick={onEditAgent}
+            />
+          </>
+        )}
 
         {skillInfo?.publishStatus === PublishStatusEnum.Published && (
           <TooltipIcon
@@ -106,6 +110,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
           type="primary"
           className={cx(styles['publish-btn'])}
           onClick={onPublish}
+          disabled={!skillInfo}
         >
           发布
         </Button>

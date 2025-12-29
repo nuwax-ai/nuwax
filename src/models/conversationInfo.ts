@@ -13,6 +13,7 @@ import {
   apiEnsurePod,
   apiGetStaticFileList,
   apiKeepalivePod,
+  apiRestartAgent,
   apiRestartPod,
 } from '@/services/vncDesktop';
 import {
@@ -59,6 +60,7 @@ import {
   StaticFileListResponse,
   VncDesktopContainerInfo,
 } from '@/types/interfaces/vncDesktop';
+import { extractTaskResult } from '@/utils';
 import { isEmptyObject } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSource';
@@ -118,6 +120,11 @@ export default () => {
   // 是否正在加载会话
   const [isLoadingConversation, setIsLoadingConversation] =
     useState<boolean>(false);
+
+  // 其它调用接口的情况下判断是否正在加载中用于禁用聊天发送按钮
+  const [isLoadingOtherInterface, setIsLoadingOtherInterface] =
+    useState<boolean>(false);
+
   // 会话是否正在进行中（有消息正在处理）
   const [isConversationActive, setIsConversationActive] =
     useState<boolean>(false);
@@ -211,19 +218,36 @@ export default () => {
     },
   });
 
-  // 重启远程电脑
+  // 重启智能体电脑
   const restartVncPod = useCallback(async (cId: number) => {
     try {
       const { code } = await apiRestartPod(cId);
       if (code === SUCCESS_CODE) {
-        message.success('重启远程电脑成功');
+        message.success('重启智能体电脑成功');
       } else {
-        message.error('重启远程电脑失败');
+        message.error('重启智能体电脑失败');
       }
     } catch (error) {
-      console.error('重启远程电脑失败', error);
+      console.error('重启智能体电脑失败', error);
     }
   }, []);
+
+  // 重启智能体
+  const { run: restartAgent, loading: isRestartAgentLoading } = useRequest(
+    apiRestartAgent,
+    {
+      manual: true,
+      debounceWait: 500,
+      onSuccess: (result: RequestResponse<null>) => {
+        const { code } = result;
+        if (code === SUCCESS_CODE) {
+          message.success('重启智能体成功');
+        } else {
+          message.error('重启智能体失败');
+        }
+      },
+    },
+  );
 
   // 处理文件列表刷新事件
   const handleRefreshFileList = useCallback(
@@ -280,11 +304,26 @@ export default () => {
 
   // 关闭预览视图
   const closePreviewView = useCallback(() => {
+    // 关闭文件树
     setIsFileTreeVisible(false);
+    // 更新 ref 值
     isFileTreeVisibleRef.current = false;
 
     // 停止保活
     stopKeepalivePodPolling();
+  }, []);
+
+  // 清除文件面板信息, 并关闭文件面板
+  const clearFilePanelInfo = useCallback(() => {
+    closePreviewView();
+    // 清空文件树数据
+    setFileTreeData([]);
+    // 设置视图模式为预览
+    setViewMode('preview');
+    // 更新 ref 值
+    viewModeRef.current = 'preview';
+    // 设置远程桌面容器信息为空
+    setVncContainerInfo(null);
   }, []);
 
   // 打开预览视图
@@ -722,6 +761,20 @@ export default () => {
             finalResult: data,
             requestId: res.requestId,
           };
+          const taskResult = extractTaskResult(data.outputText);
+          if (
+            params.conversationId &&
+            taskResult.hasTaskResult &&
+            taskResult.file
+          ) {
+            openPreviewView(params.conversationId);
+            const fileId = taskResult.file
+              ?.split(`${params.conversationId}/`)
+              .pop();
+            if (fileId) {
+              setTaskAgentSelectedFileId(fileId);
+            }
+          }
 
           // 调试结果
           setRequestId(res.requestId);
@@ -892,6 +945,10 @@ export default () => {
     setFinalResult(null);
     // 重置会话消息ID
     setCurrentConversationRequestId('');
+    // 重置变量参数（防止切换智能体时参数框闪烁）
+    setVariables([]);
+    setRequiredNameList([]);
+    setUserFillVariables(null);
 
     if (timeoutRef.current) {
       //清除会话定时器
@@ -899,17 +956,8 @@ export default () => {
       timeoutRef.current = null;
     }
 
-    // 关闭文件树
-    setIsFileTreeVisible(false);
-    setFileTreeData([]);
-    setViewMode('preview');
-    // 更新 ref 值
-    isFileTreeVisibleRef.current = false;
-    viewModeRef.current = 'preview';
-    // 设置远程桌面容器信息为空
-    setVncContainerInfo(null);
-    // 停止保活
-    stopKeepalivePodPolling();
+    // 清除文件面板信息, 并关闭文件面板
+    clearFilePanelInfo();
 
     // 停止当前会话【强制】
     abortController?.abort();
@@ -1078,6 +1126,7 @@ export default () => {
     // 文件树显隐状态
     isFileTreeVisible,
     closePreviewView,
+    clearFilePanelInfo,
     // 文件树数据
     fileTreeData,
     fileTreeDataLoading,
@@ -1089,11 +1138,17 @@ export default () => {
     handleRefreshFileList,
     openDesktopView,
     openPreviewView,
+    // 重启智能体电脑
     restartVncPod,
+    // 重启智能体
+    restartAgent,
+    isRestartAgentLoading,
     // 远程桌面容器信息, 暂时未使用
     vncContainerInfo,
     // 任务智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
     setTaskAgentSelectedFileId,
+    isLoadingOtherInterface,
+    setIsLoadingOtherInterface,
   };
 };
