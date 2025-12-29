@@ -4,7 +4,6 @@
 // 文件路径头部
 .filePathHeader {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   height: 48px;
   background: @colorBgContainer;
@@ -25,7 +24,7 @@
 
     .fileDetails {
       display: flex;
-      flex-direction: column;
+      align-items: center;
       gap: 4px;
       min-width: 0;
       flex: 1;
@@ -43,7 +42,7 @@
       .fileMeta {
         font-size: @fontSizeSm;
         color: @colorTextSecondary;
-        line-height: 1.4;
+        line-height: 0;
       }
     }
 

@@ -54,6 +54,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       readOnly = false,
       targetId,
       viewMode,
+      showViewModeButtons = true,
+      showFileTreeToggleButton = true,
       onUploadFiles,
       onExportProject,
       onRenameFile,
@@ -846,6 +848,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           viewMode={viewMode}
           // 视图模式切换回调
           onViewModeChange={handleChangeViewMode}
+          // 是否显示视图模式切换按钮
+          showViewModeButtons={showViewModeButtons}
+          // 是否显示文件树展开/折叠按钮
+          showFileTreeToggleButton={showFileTreeToggleButton}
           // 导出项目回调
           onExportProject={handleDownloadProject}
           // 处理导入项目操作

@@ -36,10 +36,12 @@ const cx = classNames.bind(styles);
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
+  showFileTreeToggleButton = true,
   conversationId,
   targetNode,
   viewMode = 'preview',
   onViewModeChange,
+  showViewModeButtons = true,
   onRestartServer,
   onRestartAgent,
   onImportProject,
@@ -145,12 +147,12 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       )}
     >
       {/* 文件树展开/折叠图标 */}
-      {viewMode !== 'desktop' && onFileTreeToggle && (
+      {viewMode !== 'desktop' && showFileTreeToggleButton && (
         <Tooltip
           title={
             isFileTreePinned
               ? '点击取消固定文件树'
-              : '点击固定文件树（鼠标移入展开，移出关闭）'
+              : '点击固定文件树（鼠标移入展开文件树）'
           }
         >
           <Button
@@ -178,7 +180,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             <div className={styles.fileDetails}>
               <div className={styles.fileName}>{fileName}</div>
               {formattedSize && (
-                <div className={styles.fileMeta}>{formattedSize}</div>
+                <span className={styles.fileMeta}>({formattedSize})</span>
               )}
             </div>
             {/* 只有存在 fileProxyUrl 时，才显示预览和代码视图切换按钮，可以通过 fileProxyUrl 预览和代码视图 */}
@@ -226,6 +228,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         )}
       </div>
 
+      {/* 动态图标区域，根据视图模式和文件类型动态显示图标 */}
       <div className={styles.actionButtons}>
         {/* 只有存在 fileProxyUrl 时，才显示下载文件按钮，可以通过 fileProxyUrl 下载文件 */}
         {targetNode?.fileProxyUrl && viewMode === 'preview' && (
@@ -287,7 +290,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
       {/* 底部：保存和取消按钮 */}
       {hasModifiedFiles && (
-        <div className="flex items-center content-end gap-4 ml-auto">
+        <div className="flex items-center content-end gap-4">
           <Button
             size="small"
             type="primary"
@@ -303,7 +306,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       )}
 
       {/* 视图模式切换按钮 */}
-      {onViewModeChange && (
+      {showViewModeButtons && (
         <div className={styles.viewModeButtons}>
           <Button
             type={viewMode === 'preview' ? 'primary' : 'default'}

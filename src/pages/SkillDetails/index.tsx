@@ -472,6 +472,11 @@ const SkillDetails: React.FC = () => {
         {/* 文件树视图 */}
         <FileTreeView
           ref={fileTreeViewRef}
+          // 是否显示视图模式切换按钮
+          showViewModeButtons={false}
+          // 是否显示文件树展开/折叠按钮
+          showFileTreeToggleButton={false}
+          // 文件树数据加载状态
           fileTreeDataLoading={fileTreeDataLoading}
           // 技能文件列表
           originalFiles={skillInfo?.files || []}
