@@ -807,18 +807,29 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 获取文件名
       const fileName = selectedFileId?.split('/')?.pop() || '';
 
-      // 如果是html、md文件，并且处于预览模式，则使用iframe预览
+      // 如果是html、md文件，并且处于预览模式
       if (
         (fileName?.includes('.htm') || isMarkdownFile(fileName)) &&
-        viewFileType === 'preview' &&
-        fileProxyUrl
+        viewFileType === 'preview'
       ) {
-        return (
-          <FilePreview
-            src={fileProxyUrl}
-            fileType={fileName?.includes('.htm') ? 'html' : 'markdown'}
-          />
-        );
+        // markdown 文件：优先使用 content，避免不必要的网络请求
+        if (isMarkdownFile(fileName) && fileContent) {
+          return (
+            <FilePreview
+              src={new Blob([fileContent], { type: 'text/markdown' })}
+              fileType="markdown"
+            />
+          );
+        }
+        // html 文件或无 content 的 markdown：使用 fileProxyUrl
+        if (fileProxyUrl) {
+          return (
+            <FilePreview
+              src={fileProxyUrl}
+              fileType={fileName?.includes('.htm') ? 'html' : 'markdown'}
+            />
+          );
+        }
       }
 
       // 代码文件：使用代码查看器
