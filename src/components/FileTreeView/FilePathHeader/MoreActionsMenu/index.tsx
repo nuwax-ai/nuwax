@@ -8,7 +8,7 @@ import { useMemo } from 'react';
 interface MoreActionsProps {
   // 导入项目
   onImportProject?: () => void;
-  // 重启远程电脑
+  // 重启智能体电脑
   onRestartServer?: () => void;
   // 重启智能体
   onRestartAgent?: () => void;
@@ -55,7 +55,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
               ),
               label: (
                 <div className="flex items-center">
-                  <span>重启远程电脑</span>
+                  <span>重启智能体电脑</span>
                   <TooltipIcon
                     title="当前用户正在运行的所有智能体将全部被重启；"
                     icon={<InfoCircleOutlined />}
