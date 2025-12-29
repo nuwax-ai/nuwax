@@ -944,17 +944,20 @@ const EditAgent: React.FC = () => {
           </div>
         </div>
 
-        {(!agentConfigInfo?.hideChatArea || pagePreviewData) && (
+        {(!agentConfigInfo?.hideChatArea ||
+          pagePreviewData ||
+          isFileTreeVisible) && (
           <div
-            className={cx(isFileTreeVisible && 'flex-1')}
+            // className={cx(isFileTreeVisible && 'flex-1')}
             style={{
-              flex: pagePreviewData ? '9 1' : '4 1',
-              minWidth: pagePreviewData ? '1050px' : '350px',
+              flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
+              minWidth:
+                pagePreviewData || isFileTreeVisible ? '1050px' : '350px',
             }}
           >
             {/*预览与调试和预览页面*/}
             <ResizableSplit
-              minRightWidth={350}
+              minRightWidth={700}
               left={
                 agentConfigInfo?.hideChatArea ? null : (
                   <PreviewAndDebug
@@ -971,57 +974,60 @@ const EditAgent: React.FC = () => {
                 )
               }
               right={
-                pagePreviewData && (
-                  <PagePreviewIframe
-                    pagePreviewData={pagePreviewData}
-                    showHeader={true}
-                    onClose={hidePagePreview}
-                    showCloseButton={!agentConfigInfo?.hideChatArea}
-                    titleClassName={cx(styles['title-style'])}
-                  />
-                )
+                agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
+                  ? pagePreviewData && ( // 问答型
+                      <PagePreviewIframe
+                        pagePreviewData={pagePreviewData}
+                        showHeader={true}
+                        onClose={hidePagePreview}
+                        showCloseButton={!agentConfigInfo?.hideChatArea}
+                        titleClassName={cx(styles['title-style'])}
+                      />
+                    )
+                  : isFileTreeVisible && // 文件树侧边栏 - 只在文件树可见时显示
+                    devConversationId && (
+                      <div
+                        className={cx(
+                          styles['file-tree-sidebar'],
+                          styles['flex-2'],
+                          'flex',
+                        )}
+                      >
+                        {/*文件树侧边栏 - 只在文件树可见时显示 */}
+                        <FileTreeView
+                          headerClassName={styles['file-tree-header']}
+                          taskAgentSelectedFileId={taskAgentSelectedFileId}
+                          originalFiles={fileTreeData}
+                          fileTreeDataLoading={fileTreeDataLoading}
+                          targetId={devConversationId.toString()}
+                          viewMode={viewMode}
+                          readOnly={false}
+                          // 切换视图、远程桌面模式
+                          onViewModeChange={onViewModeChange}
+                          // 导出项目
+                          onExportProject={handleExportProject}
+                          // 上传文件
+                          onUploadFiles={handleUploadMultipleFiles}
+                          // 重命名文件
+                          onRenameFile={handleConfirmRenameFile}
+                          // 新建文件、文件夹
+                          onCreateFileNode={handleCreateFileNode}
+                          // 删除文件
+                          onDeleteFile={handleDeleteFile}
+                          // 保存文件
+                          onSaveFiles={handleSaveFiles}
+                          // 重启容器
+                          onRestartServer={() =>
+                            restartVncPod(devConversationId)
+                          }
+                          // 重启智能体
+                          onRestartAgent={() => restartAgent(devConversationId)}
+                          // 关闭整个面板
+                          onClose={closePreviewView}
+                        />
+                      </div>
+                    )
               }
-            />
-          </div>
-        )}
-
-        {/*文件树侧边栏 - 只在文件树可见时显示 */}
-        {isFileTreeVisible && devConversationId && (
-          <div
-            className={cx(
-              styles['file-tree-sidebar'],
-              styles['flex-2'],
-              'flex',
-            )}
-          >
-            <FileTreeView
-              headerClassName={styles['file-tree-header']}
-              taskAgentSelectedFileId={taskAgentSelectedFileId}
-              originalFiles={fileTreeData}
-              fileTreeDataLoading={fileTreeDataLoading}
-              targetId={devConversationId.toString()}
-              viewMode={viewMode}
-              readOnly={false}
-              // 切换视图、远程桌面模式
-              onViewModeChange={onViewModeChange}
-              // 导出项目
-              onExportProject={handleExportProject}
-              // 上传文件
-              onUploadFiles={handleUploadMultipleFiles}
-              // 重命名文件
-              onRenameFile={handleConfirmRenameFile}
-              // 新建文件、文件夹
-              onCreateFileNode={handleCreateFileNode}
-              // 删除文件
-              onDeleteFile={handleDeleteFile}
-              // 保存文件
-              onSaveFiles={handleSaveFiles}
-              // 重启容器
-              onRestartServer={() => restartVncPod(devConversationId)}
-              // 重启智能体
-              onRestartAgent={() => restartAgent(devConversationId)}
-              // 关闭整个面板
-              onClose={closePreviewView}
             />
           </div>
         )}
