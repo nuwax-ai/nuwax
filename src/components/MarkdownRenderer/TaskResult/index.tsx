@@ -24,8 +24,11 @@ const TaskResult: React.FC<TaskResultProps> = ({
   node,
   conversationId,
 }) => {
-  const { openPreviewView, setTaskAgentSelectedFileId } =
-    useModel('conversationInfo');
+  const {
+    openPreviewView,
+    setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
+  } = useModel('conversationInfo');
 
   // 生成唯一 key
   const {
@@ -64,6 +67,8 @@ const TaskResult: React.FC<TaskResultProps> = ({
        */
       const fileId = fileName.split(`${conversationId}/`).pop();
       setTaskAgentSelectedFileId(fileId);
+      // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
+      setTaskAgentSelectTrigger(Date.now());
     };
 
     return (

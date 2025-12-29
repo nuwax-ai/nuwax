@@ -27,6 +27,8 @@ export interface FileTreeViewProps {
   headerClassName?: string;
   // 任务智能体会话中点击选中的文件ID
   taskAgentSelectedFileId?: string;
+  // 任务智能体文件选择触发标志，每次点击按钮时传入不同的值（如时间戳），用于强制触发文件选择
+  taskAgentSelectTrigger?: number | string;
   // 原始文件列表
   originalFiles: any[];
   /** 文件树数据加载状态 */
