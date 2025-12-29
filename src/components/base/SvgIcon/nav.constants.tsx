@@ -16,6 +16,7 @@ import { ReactComponent as SpaceSquareSvgFile } from '@/assets/icons/nav/space_s
 import { ReactComponent as SquareSvgFile } from '@/assets/icons/nav/square.svg';
 import { ReactComponent as StarsSvgFile } from '@/assets/icons/nav/stars.svg';
 import { ReactComponent as TaskSvgFile } from '@/assets/icons/nav/task.svg';
+import { ReactComponent as TaskTimeSvgFile } from '@/assets/icons/nav/task_time.svg';
 import { ReactComponent as TemplateSvgFile } from '@/assets/icons/nav/template.svg';
 import { ReactComponent as UserSvgFile } from '@/assets/icons/nav/user.svg';
 import { ReactComponent as WorkflowSvgFile } from '@/assets/icons/nav/workflow.svg';
@@ -38,6 +39,7 @@ const NotificationSvg = wrapSvg(NotificationSvgFile);
 const McpSvg = wrapSvg(McpSvgFile);
 const SkillSvg = wrapSvg(SkillSvgFile);
 const TaskSvg = wrapSvg(TaskSvgFile);
+const TaskTimeSvg = wrapSvg(TaskTimeSvgFile);
 const ComponentsSvg = wrapSvg(ComponentsSvgFile);
 const SpaceSquareSvg = wrapSvg(SpaceSquareSvgFile);
 const UserSvg = wrapSvg(UserSvgFile);
@@ -61,6 +63,7 @@ export default {
   'icons-nav-mcp': McpSvg,
   'icons-nav-skill': SkillSvg,
   'icons-nav-task': TaskSvg,
+  'icons-nav-task_time': TaskTimeSvg,
   'icons-nav-components': ComponentsSvg,
   'icons-nav-space_square': SpaceSquareSvg,
   'icons-nav-user': UserSvg,
