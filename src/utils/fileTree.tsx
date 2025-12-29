@@ -16,6 +16,7 @@ import { SkillFileInfo } from '@/types/interfaces/skill';
 import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { message } from 'antd';
 import { isMarkdownFile } from './common';
+import { htmlToPdf } from './htmlToPdf';
 import { markdownToPdf } from './markdownToPdf';
 
 // 获取文件图标
@@ -230,6 +231,26 @@ export const downloadFileByUrl = async (
       // 使用静态导入的 markdownToPdf
       const pdfFileName = fileName.replace(/\.(md|markdown)$/i, '');
       await markdownToPdf(markdownContent, {
+        fileName: pdfFileName,
+        pageSize: 'a4',
+        orientation: 'portrait',
+      });
+      message.success('PDF 导出成功');
+      return;
+    }
+
+    // 如果是 HTML 文件且需要导出为 PDF
+    if (
+      exportAsPdf &&
+      (fileName.endsWith('.html') || fileName.endsWith('.htm'))
+    ) {
+      const htmlContent = targetNode.content || '';
+      if (!htmlContent) {
+        message.warning('文件内容为空，无法导出 PDF');
+        return;
+      }
+      const pdfFileName = fileName.replace(/\.(html|htm)$/i, '');
+      await htmlToPdf(htmlContent, {
         fileName: pdfFileName,
         pageSize: 'a4',
         orientation: 'portrait',
