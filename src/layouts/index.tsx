@@ -275,6 +275,7 @@ const Layout: React.FC = () => {
       <div
         className={`${pageContainerClassName} scroll-container`}
         id="page-container-selector"
+        // style={{ scrollbarGutter: 'stable' }}
       >
         <Outlet />
       </div>
