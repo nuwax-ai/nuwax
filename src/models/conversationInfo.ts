@@ -244,8 +244,6 @@ export default () => {
         const { code } = result;
         if (code === SUCCESS_CODE) {
           message.success('重启智能体成功');
-        } else {
-          message.error('重启智能体失败');
         }
       },
     },
