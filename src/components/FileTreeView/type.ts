@@ -48,6 +48,8 @@ export interface FileTreeViewProps {
   onImportProject?: () => void;
   /** 重启容器回调 */
   onRestartServer?: () => void;
+  /** 重启智能体回调 */
+  onRestartAgent?: () => void;
   // 是否显示更多操作菜单
   showMoreActions?: boolean;
   /** 是否显示全屏预览，由父组件控制 */
@@ -57,4 +59,8 @@ export interface FileTreeViewProps {
   onShare?: () => void;
   // 是否显示分享按钮
   isShowShare?: boolean;
+  // 关闭整个面板
+  onClose?: () => void;
+  // 是否显示全屏图标
+  showFullscreenIcon?: boolean;
 }

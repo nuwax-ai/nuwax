@@ -143,6 +143,8 @@ const Chat: React.FC = () => {
     // 文件树显隐状态
     isFileTreeVisible,
     closePreviewView,
+    // 清除文件面板信息
+    clearFilePanelInfo,
     // 文件树数据
     fileTreeData,
     fileTreeDataLoading,
@@ -153,6 +155,7 @@ const Chat: React.FC = () => {
     openPreviewView,
     openDesktopView,
     restartVncPod,
+    restartAgent,
     // 任务智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
   } = useModel('conversationInfo');
@@ -418,8 +421,9 @@ const Chat: React.FC = () => {
 
   // 清空会话记录，实际上是跳转到智能体详情页面
   const handleClear = () => {
-    // history.push(`/agent/${agentId}`);
     setClearLoading(true);
+    // 清除文件面板信息, 并关闭文件面板
+    clearFilePanelInfo();
     runDetailNew(agentId, true);
   };
 
@@ -471,14 +475,10 @@ const Chat: React.FC = () => {
 
   // 显示文件树
   const handleFileTreeVisible = () => {
-    if (isFileTreeVisible) {
-      closePreviewView();
-    } else {
-      // 关闭 AgentSidebar，确保文件树显示时，AgentSidebar 不会显示
-      sidebarRef.current?.close();
-      // 触发文件列表刷新事件
-      openPreviewView(id);
-    }
+    // 关闭 AgentSidebar，确保文件树显示时，AgentSidebar 不会显示
+    sidebarRef.current?.close();
+    // 触发文件列表刷新事件
+    openPreviewView(id);
   };
 
   // 新建文件（空内容）、文件夹
@@ -807,20 +807,21 @@ const Chat: React.FC = () => {
                 )}
 
               {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
-              {agentDetail?.type === AgentTypeEnum.TaskAgent && (
-                <Tooltip title="文件预览或打开智能体电脑">
-                  <Button
-                    type="text"
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-components"
-                        className={cx(styles['icons-nav-sidebar'])}
-                      />
-                    }
-                    onClick={handleFileTreeVisible}
-                  />
-                </Tooltip>
-              )}
+              {agentDetail?.type === AgentTypeEnum.TaskAgent &&
+                !isFileTreeVisible && (
+                  <Tooltip title="文件预览或打开智能体电脑">
+                    <Button
+                      type="text"
+                      icon={
+                        <SvgIcon
+                          name="icons-nav-components"
+                          className={cx(styles['icons-nav-sidebar'])}
+                        />
+                      }
+                      onClick={handleFileTreeVisible}
+                    />
+                  </Tooltip>
+                )}
             </div>
           </div>
         </div>
@@ -1044,6 +1045,10 @@ const Chat: React.FC = () => {
             onSaveFiles={handleSaveFiles}
             // 重启容器
             onRestartServer={() => restartVncPod(id)}
+            // 重启智能体
+            onRestartAgent={() => restartAgent(id)}
+            // 关闭整个面板
+            onClose={closePreviewView}
           />
         </div>
       )}

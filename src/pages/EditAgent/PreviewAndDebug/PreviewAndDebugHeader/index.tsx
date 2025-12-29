@@ -12,16 +12,18 @@ interface PreviewAndDebugHeaderProps {
   isShowPreview?: boolean;
   onShowPreview?: () => void;
   onPressDebug: () => void;
-  onToggleFileTree?: () => void;
-  isTaskAgent?: boolean;
+  // 打开文件面板
+  onOpenFilePanel?: () => void;
+  // 是否显示文件面板
+  showFilePanel?: boolean;
 }
 
 const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
   onPressDebug,
   onShowPreview,
   isShowPreview,
-  onToggleFileTree,
-  isTaskAgent,
+  onOpenFilePanel,
+  showFilePanel,
 }) => {
   const { showType } = useModel('conversationInfo');
 
@@ -70,7 +72,7 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
         )}
 
         {/*文件树切换按钮*/}
-        {isTaskAgent && (
+        {showFilePanel && (
           <Tooltip title="文件预览或打开智能体电脑">
             <Button
               type="text"
@@ -81,7 +83,7 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
                   className={cx(styles.svg)}
                 />
               }
-              onClick={onToggleFileTree}
+              onClick={onOpenFilePanel}
             />
           </Tooltip>
         )}

@@ -43,7 +43,8 @@ interface PreviewAndDebugProps extends PreviewAndDebugHeaderProps {
   /** 设置智能体配置信息的方法 */
   onAgentConfigInfo: (info: AgentConfigInfo) => void;
   onOpenPreview?: () => void;
-  onToggleFileTree?: () => void;
+  // 打开文件面板
+  onOpenFilePanel?: () => void;
 }
 
 /**
@@ -55,7 +56,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   onAgentConfigInfo,
   onPressDebug,
   onOpenPreview,
-  onToggleFileTree,
+  onOpenFilePanel,
 }) => {
   const [form] = Form.useForm();
   // 会话ID
@@ -93,6 +94,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     resetInit,
     setFinalResult,
     setIsLoadingOtherInterface,
+    clearFilePanelInfo,
+    isFileTreeVisible,
   } = useModel('conversationInfo');
 
   // 获取 chat model 中的页面预览状态
@@ -213,6 +216,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     // 清除调试结果
     setFinalResult(null);
     handleClearSideEffect();
+    // 清除文件面板信息, 并关闭文件面板
+    clearFilePanelInfo();
     setMessageList([]);
     setIsLoadingConversation(false);
     try {
@@ -318,9 +323,13 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             onShowPreview={() => {
               onOpenPreview?.();
             }}
-            onToggleFileTree={onToggleFileTree}
-            // 是否是任务智能体
-            isTaskAgent={agentConfigInfo?.type === AgentTypeEnum.TaskAgent}
+            // 打开文件面板
+            onOpenFilePanel={onOpenFilePanel}
+            // 是否显示文件面板: 任务智能体 + 文件树未打开
+            showFilePanel={
+              !isFileTreeVisible &&
+              agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+            }
           />
           <div
             className={cx(
