@@ -73,6 +73,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isShowShare = true,
       onClose,
       showFullscreenIcon = true,
+      // 是否隐藏文件树（外部控制）
+      hideFileTree = false,
+      // 文件树是否固定（用户点击后固定）
+      isFileTreePinned = false,
+      // 文件树固定状态变化回调
+      onFileTreePinnedChange,
     },
     ref,
   ) => {
@@ -118,6 +124,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     /** 当前文件查看类型：预览、代码 */
     const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
       'preview',
+    );
+
+    // 文件树是否可见（默认隐藏，但如果已固定则显示）
+    const [isFileTreeVisible, setIsFileTreeVisible] = useState<boolean>(
+      isFileTreePinned || false,
     );
 
     // 用于记录上次的 taskAgentSelectedFileId，避免 originalFiles 更新时重复触发
@@ -233,6 +244,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         setChangeFiles([]);
       };
     }, [originalFiles]);
+
+    // 当 isFileTreePinned 变化时，同步更新 isFileTreeVisible
+    // 确保组件重新挂载或 isFileTreePinned 从外部变化时，文件树能正确显示
+    useEffect(() => {
+      if (isFileTreePinned) {
+        setIsFileTreeVisible(true);
+      }
+    }, [isFileTreePinned]);
 
     /**
      * 处理右键菜单显示
@@ -631,6 +650,37 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onViewModeChange?.(mode);
     };
 
+    /**
+     * 处理文件树展开/折叠（点击图标）
+     */
+    const handleFileTreeToggle = () => {
+      const newPinnedState = !isFileTreePinned;
+      // 通知父组件更新固定状态
+      onFileTreePinnedChange?.(newPinnedState);
+      // 如果固定，则显示文件树；如果取消固定，则隐藏文件树
+      setIsFileTreeVisible(newPinnedState);
+    };
+
+    /**
+     * 处理文件树鼠标移入
+     */
+    const handleFileTreeMouseEnter = () => {
+      // 如果未固定，则显示文件树
+      if (!isFileTreePinned) {
+        setIsFileTreeVisible(true);
+      }
+    };
+
+    /**
+     * 处理文件树鼠标移出
+     */
+    const handleFileTreeMouseLeave = () => {
+      // 如果未固定，则隐藏文件树
+      if (!isFileTreePinned) {
+        setIsFileTreeVisible(false);
+      }
+    };
+
     // 处理下载项目操作
     const handleDownloadProject = async () => {
       setIsExportingProjecting(true);
@@ -842,6 +892,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onClose={onClose}
           // 连接 VNC 预览状态
           vncConnectStatus={renderVncPreviewStatusTag()}
+          // 文件树是否可见
+          isFileTreeVisible={isFileTreeVisible}
+          // 文件树是否固定
+          isFileTreePinned={isFileTreePinned}
+          // 文件树展开/折叠回调
+          onFileTreeToggle={handleFileTreeToggle}
+          // 文件树鼠标移入回调
+          onFileTreeMouseEnter={handleFileTreeMouseEnter}
         />
       );
     };
@@ -910,8 +968,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             // 处理通过URL下载文件操作
             onDownloadFileByUrl={handleDownloadFileByUrl}
           />
-          {/* 左边文件树 - 远程桌面模式下隐藏 */}
-          {viewMode !== 'desktop' && (
+          {/* 左边文件树 - 远程桌面模式下隐藏，且未通过外部属性隐藏 */}
+          {viewMode !== 'desktop' && !hideFileTree && (
             <div
               className={cx(
                 styles['file-tree-view'],
@@ -919,7 +977,13 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 'flex',
                 'flex-col',
                 'overflow-hide',
+                {
+                  [styles['file-tree-view-visible']]: isFileTreeVisible,
+                  [styles['file-tree-view-hidden']]: !isFileTreeVisible,
+                },
               )}
+              onMouseEnter={handleFileTreeMouseEnter}
+              onMouseLeave={handleFileTreeMouseLeave}
             >
               <SearchView
                 className={headerClassName}

@@ -131,7 +131,7 @@ export async function apiRestartPod(
 export async function apiRestartAgent(
   cId: number,
 ): Promise<RequestResponse<null>> {
-  return request(`/api/v1/agent/stop/${cId}`, {
+  return request(`/api/computer/agent/stop/${cId}`, {
     method: 'POST',
   });
 }
