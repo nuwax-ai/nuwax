@@ -161,34 +161,42 @@ const SearchView: React.FC<SearchViewProps> = ({
       </div>
 
       {/* 搜索结果下拉列表 */}
-      {isDropdownVisible && filteredFiles.length > 0 && (
+      {isDropdownVisible && (
         <div className={cx(styles['search-dropdown'])} ref={dropdownRef}>
-          {filteredFiles.map((file: FileNode, index: number) => {
-            const isSelected = index === selectedIndex;
-            const fileDirPath = getFileDirPath(file.path || file.id);
+          {filteredFiles.length > 0 ? (
+            // 有搜索结果时显示文件列表
+            filteredFiles.map((file: FileNode, index: number) => {
+              const isSelected = index === selectedIndex;
+              const fileDirPath = getFileDirPath(file.path || file.id);
 
-            return (
-              <div
-                key={file.id}
-                className={cx(styles['search-item'], {
-                  [styles['search-item-selected']]: isSelected,
-                })}
-                onClick={() => handleFileClick(file)}
-                onMouseEnter={() => setSelectedIndex(index)}
-              >
-                {/* 文件图标 */}
-                <div className={cx(styles['file-icon'])}>
-                  {getFileIcon(file.name)}
-                </div>
+              return (
+                <div
+                  key={file.id}
+                  className={cx(styles['search-item'], {
+                    [styles['search-item-selected']]: isSelected,
+                  })}
+                  onClick={() => handleFileClick(file)}
+                  onMouseEnter={() => setSelectedIndex(index)}
+                >
+                  {/* 文件图标 */}
+                  <div className={cx(styles['file-icon'])}>
+                    {getFileIcon(file.name)}
+                  </div>
 
-                {/* 文件信息 */}
-                <div className={cx(styles['file-info'])}>
-                  <div className={cx(styles['file-name'])}>{file.name}</div>
-                  <div className={cx(styles['file-path'])}>{fileDirPath}</div>
+                  {/* 文件信息 */}
+                  <div className={cx(styles['file-info'])}>
+                    <div className={cx(styles['file-name'])}>{file.name}</div>
+                    <div className={cx(styles['file-path'])}>{fileDirPath}</div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          ) : (
+            // 没有搜索结果时显示提示
+            <div className={cx(styles['search-empty'])}>
+              <div className={cx(styles['empty-text'])}>暂无匹配文件</div>
+            </div>
+          )}
         </div>
       )}
     </div>
