@@ -43,6 +43,8 @@ const ResizableSplit: React.FC<Props> = ({
   const prevContainerWidthRef = useRef(0);
   // 保存左侧固定像素宽度（当达到最小宽度时）
   const fixedLeftWidthRef = useRef<number | null>(null);
+  // 保存上一次的 defaultLeftWidth，用于检测变化
+  const prevDefaultLeftWidthRef = useRef(defaultLeftWidth);
 
   // 延迟显示分隔线，产生淡入效果
   useEffect(() => {
@@ -52,6 +54,22 @@ const ResizableSplit: React.FC<Props> = ({
 
     return () => clearTimeout(timer);
   }, []);
+
+  // 监听 defaultLeftWidth 变化，更新默认比例
+  useEffect(() => {
+    // 如果 defaultLeftWidth 发生变化
+    if (prevDefaultLeftWidthRef.current !== defaultLeftWidth) {
+      // 如果不在拖拽中，更新比例
+      if (!isDragging) {
+        // 清除固定宽度，恢复百分比模式
+        fixedLeftWidthRef.current = null;
+        // 更新比例
+        setLeftWidthPercent(defaultLeftWidth);
+      }
+      // 更新上一次的值
+      prevDefaultLeftWidthRef.current = defaultLeftWidth;
+    }
+  }, [defaultLeftWidth, isDragging]);
 
   // 监听容器宽度变化
   useEffect(() => {
