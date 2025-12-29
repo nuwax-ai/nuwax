@@ -177,7 +177,7 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
   },
   {
     type: SpaceApplicationListEnum.Task_Center,
-    icon: <SvgIcon name="icons-nav-task" />,
+    icon: <SvgIcon name="icons-nav-task_time" />,
     text: '任务中心',
   },
   {
