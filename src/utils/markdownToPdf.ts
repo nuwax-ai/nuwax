@@ -339,8 +339,10 @@ export const markdownToPdf = async (
     const renderTarget = iframeDoc.body;
 
     // 使用 html2canvas 将内容转换为 canvas
+    // scale 设置为 2 以获得更高清的输出（2x 分辨率）
+    const scale = 2;
     const canvas = await html2canvas(renderTarget, {
-      scale: 1,
+      scale,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
@@ -401,7 +403,7 @@ export const markdownToPdf = async (
       const pageImgHeight = (sourceHeight / canvas.width) * contentWidth;
 
       // 添加到 PDF（使用 JPEG 格式减小文件大小）
-      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.8);
+      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.75);
       pdf.addImage(
         pageImgData,
         'JPEG',
