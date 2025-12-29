@@ -124,6 +124,7 @@ const EditAgent: React.FC = () => {
     restartVncPod,
     restartAgent,
     taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
     setIsLoadingOtherInterface,
   } = useModel('conversationInfo');
   const { setTitle } = useModel('tenantConfigInfo');
@@ -1000,6 +1001,7 @@ const EditAgent: React.FC = () => {
                         <FileTreeView
                           headerClassName={styles['file-tree-header']}
                           taskAgentSelectedFileId={taskAgentSelectedFileId}
+                          taskAgentSelectTrigger={taskAgentSelectTrigger}
                           originalFiles={fileTreeData}
                           fileTreeDataLoading={fileTreeDataLoading}
                           targetId={devConversationId.toString()}

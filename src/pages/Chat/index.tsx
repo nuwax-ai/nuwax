@@ -162,6 +162,8 @@ const Chat: React.FC = () => {
     restartAgent,
     // 任务智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
+    // 任务智能体文件选择触发标志
+    taskAgentSelectTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
   } = useModel('conversationInfo');
@@ -229,9 +231,30 @@ const Chat: React.FC = () => {
     }
   }, [firstVariableParams]);
 
-  // 导航拦截：当会话正在进行时，提示用户离开后会收到通知
+  // 导航拦截：追踪会话是否在本次会话中变为活跃状态
+  // 使用 ref 追踪初始状态，避免在刷新时因历史消息状态触发拦截
+  const wasConversationActiveOnMount = useRef<boolean | null>(null);
+  const shouldBlockNavigation = useRef(false);
+
+  // 在首次获取到 isConversationActive 值时记录
+  useEffect(() => {
+    if (wasConversationActiveOnMount.current === null) {
+      wasConversationActiveOnMount.current = isConversationActive;
+      // 如果初始就是 active，不阻止导航（可能是历史消息状态）
+      shouldBlockNavigation.current = false;
+    } else if (isConversationActive && !wasConversationActiveOnMount.current) {
+      // 如果会话从非活跃变为活跃，说明是本次会话中发送的消息
+      shouldBlockNavigation.current = true;
+    } else if (!isConversationActive) {
+      // 会话结束，重置状态
+      shouldBlockNavigation.current = false;
+      wasConversationActiveOnMount.current = false;
+    }
+  }, [isConversationActive]);
+
   useNavigationGuard({
-    condition: () => isConversationActive,
+    condition: () => shouldBlockNavigation.current,
+    enabled: isConversationActive, // 只在会话活跃时启用
     title: '任务执行中',
     message: '离开后，执行成功的任务会收到提示消息',
     discardText: '确定离开',
@@ -1030,6 +1053,7 @@ const Chat: React.FC = () => {
                   >
                     <FileTreeView
                       taskAgentSelectedFileId={taskAgentSelectedFileId}
+                      taskAgentSelectTrigger={taskAgentSelectTrigger}
                       originalFiles={fileTreeData}
                       fileTreeDataLoading={fileTreeDataLoading}
                       targetId={id?.toString() || ''}
