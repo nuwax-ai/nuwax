@@ -17,6 +17,7 @@ import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
+import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
@@ -161,6 +162,8 @@ const Chat: React.FC = () => {
     restartAgent,
     // 任务智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
+    // 会话是否正在进行中（有消息正在处理）
+    isConversationActive,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -225,6 +228,14 @@ const Chat: React.FC = () => {
       setVariableParams(firstVariableParams);
     }
   }, [firstVariableParams]);
+
+  // 导航拦截：当会话正在进行时，提示用户离开后会收到通知
+  useNavigationGuard({
+    condition: () => isConversationActive,
+    title: '任务执行中',
+    message: '离开后，执行成功的任务会收到提示消息',
+    discardText: '确定离开',
+  });
 
   // 聊天会话框是否禁用，不能发送消息
   const wholeDisabled = useMemo(() => {
