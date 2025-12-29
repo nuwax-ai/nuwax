@@ -60,37 +60,68 @@
     }
   }
 
-  // 中间：视图模式切换按钮
-  .viewModeButtons {
+  // 中间：文件树展开/折叠图标和视图模式切换按钮
+  .centerActions {
     display: flex;
     align-items: center;
-    gap: 0;
+    gap: 12px;
     flex: 0 0 auto;
     margin-left: auto;
-    border-radius: @borderRadius;
-    overflow: hidden;
-    border: 1px solid @colorBorder;
 
-    .viewModeButton {
+    // 文件树展开/折叠按钮
+    .fileTreeToggleButton {
       display: flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
+      width: 32px;
       height: 32px;
-      padding: 4px 16px;
-      border-radius: 0;
-      font-size: @fontSizeSm;
-      border: none;
-      border-right: 1px solid @colorBorder;
+      padding: 0;
+      border-radius: @borderRadius;
+      color: @colorTextSecondary;
+      transition: all 0.2s;
 
-      &:last-child {
-        border-right: none;
-        border-top-right-radius: @borderRadius;
-        border-bottom-right-radius: @borderRadius;
+      &:hover {
+        color: @colorText;
+        background: @colorFillTertiary;
       }
 
-      &:first-child {
-        border-top-left-radius: @borderRadius;
-        border-bottom-left-radius: @borderRadius;
+      &.fileTreeToggleButtonPinned {
+        color: @colorPrimary;
+        background: @colorPrimaryBg;
+      }
+    }
+
+    // 视图模式切换按钮
+    .viewModeButtons {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex: 0 0 auto;
+      border-radius: @borderRadius;
+      overflow: hidden;
+      border: 1px solid @colorBorder;
+
+      .viewModeButton {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 4px 16px;
+        border-radius: 0;
+        font-size: @fontSizeSm;
+        border: none;
+        border-right: 1px solid @colorBorder;
+
+        &:last-child {
+          border-right: none;
+          border-top-right-radius: @borderRadius;
+          border-bottom-right-radius: @borderRadius;
+        }
+
+        &:first-child {
+          border-top-left-radius: @borderRadius;
+          border-bottom-left-radius: @borderRadius;
+        }
       }
     }
   }

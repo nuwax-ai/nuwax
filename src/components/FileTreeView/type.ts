@@ -63,4 +63,6 @@ export interface FileTreeViewProps {
   onClose?: () => void;
   // 是否显示全屏图标
   showFullscreenIcon?: boolean;
+  /** 是否隐藏文件树（外部控制） */
+  hideFileTree?: boolean;
 }

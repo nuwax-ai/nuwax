@@ -14,6 +14,8 @@ import {
   EyeOutlined,
   FilePdfOutlined,
   FullscreenExitOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import { Button, message, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -58,6 +60,11 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onExportPdf,
   isExportingPdf = false,
   onClose,
+  vncConnectStatus,
+  isFileTreeVisible = false,
+  isFileTreePinned = false,
+  onFileTreeToggle,
+  onFileTreeMouseEnter,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -178,12 +185,17 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               )}
           </>
         ) : (
-          <div className={styles['pc-box']}>
-            <PcIconSvg />
-            <div className={styles.fileName}>
-              {userInfo?.nickName || userInfo?.userName || '远程'}的智能体电脑
+          <>
+            <div className={styles['pc-box']}>
+              <PcIconSvg />
+              <div className={styles.fileName}>
+                {userInfo?.nickName || userInfo?.userName || '远程'}的智能体电脑
+              </div>
             </div>
-          </div>
+            {vncConnectStatus && (
+              <div className={styles.vncConnectStatus}>{vncConnectStatus}</div>
+            )}
+          </>
         )}
       </div>
 
@@ -204,31 +216,62 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         </div>
       )}
 
-      {/* 中间：视图模式切换按钮 */}
-      {onViewModeChange && (
-        <div className={styles.viewModeButtons}>
-          <Button
-            type={viewMode === 'preview' ? 'primary' : 'default'}
-            size="small"
-            icon={
-              <SvgIcon name="icons-common-preview" style={{ fontSize: 14 }} />
+      {/* 中间：文件树展开/折叠图标和视图模式切换按钮 */}
+      <div className={styles.centerActions}>
+        {/* 文件树展开/折叠图标 */}
+        {viewMode !== 'desktop' && onFileTreeToggle && (
+          <Tooltip
+            title={
+              isFileTreePinned
+                ? '点击取消固定文件树'
+                : '点击固定文件树（鼠标移入展开，移出关闭）'
             }
-            onClick={() => onViewModeChange?.('preview')}
-            className={styles.viewModeButton}
           >
-            文件预览
-          </Button>
-          <Button
-            type={viewMode === 'desktop' ? 'primary' : 'default'}
-            size="small"
-            icon={<DesktopOutlined style={{ fontSize: 14 }} />}
-            onClick={() => onViewModeChange?.('desktop')}
-            className={styles.viewModeButton}
-          >
-            智能体电脑
-          </Button>
-        </div>
-      )}
+            <Button
+              type="text"
+              size="small"
+              icon={
+                isFileTreeVisible ? (
+                  <MenuFoldOutlined style={{ fontSize: 16 }} />
+                ) : (
+                  <MenuUnfoldOutlined style={{ fontSize: 16 }} />
+                )
+              }
+              onClick={onFileTreeToggle}
+              onMouseEnter={onFileTreeMouseEnter}
+              className={cx(styles.fileTreeToggleButton, {
+                [styles.fileTreeToggleButtonPinned]: isFileTreePinned,
+              })}
+            />
+          </Tooltip>
+        )}
+
+        {/* 视图模式切换按钮 */}
+        {onViewModeChange && (
+          <div className={styles.viewModeButtons}>
+            <Button
+              type={viewMode === 'preview' ? 'primary' : 'default'}
+              size="small"
+              icon={
+                <SvgIcon name="icons-common-preview" style={{ fontSize: 14 }} />
+              }
+              onClick={() => onViewModeChange?.('preview')}
+              className={styles.viewModeButton}
+            >
+              文件预览
+            </Button>
+            <Button
+              type={viewMode === 'desktop' ? 'primary' : 'default'}
+              size="small"
+              icon={<DesktopOutlined style={{ fontSize: 14 }} />}
+              onClick={() => onViewModeChange?.('desktop')}
+              className={styles.viewModeButton}
+            >
+              智能体电脑
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* 右侧：操作按钮 */}
       <div className={styles.actionButtons}>
@@ -268,7 +311,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           )}
 
         {/* 复制内容 */}
-        {!!targetNode?.content && (
+        {!!targetNode?.content && viewMode === 'preview' && (
           <CopyToClipboard text={targetNode?.content || ''} onCopy={handleCopy}>
             <Tooltip title="复制">
               <Button
