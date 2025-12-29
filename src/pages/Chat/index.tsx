@@ -998,7 +998,7 @@ const Chat: React.FC = () => {
         <ResizableSplit
           minLeftWidth={400}
           defaultLeftWidth={
-            agentDetail?.type !== AgentTypeEnum.TaskAgent ? 50 : 33
+            agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
           }
           // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
           // className={cx(isFileTreeVisible && 'flex-1')}
