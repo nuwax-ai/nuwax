@@ -142,6 +142,9 @@ const Chat: React.FC = () => {
     setShowType,
     // 文件树显隐状态
     isFileTreeVisible,
+    // 文件树是否固定（用户点击后固定）
+    isFileTreePinned,
+    setIsFileTreePinned,
     closePreviewView,
     // 清除文件面板信息
     clearFilePanelInfo,
@@ -1049,6 +1052,10 @@ const Chat: React.FC = () => {
             onRestartAgent={() => restartAgent(id)}
             // 关闭整个面板
             onClose={closePreviewView}
+            // 文件树是否固定（用户点击后固定）
+            isFileTreePinned={isFileTreePinned}
+            // 文件树固定状态变化回调
+            onFileTreePinnedChange={setIsFileTreePinned}
           />
         </div>
       )}

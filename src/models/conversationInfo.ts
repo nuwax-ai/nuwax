@@ -177,6 +177,8 @@ export default () => {
 
   // 文件树显隐状态
   const [isFileTreeVisible, setIsFileTreeVisible] = useState<boolean>(false);
+  // 文件树是否固定（用户点击后固定）
+  const [isFileTreePinned, setIsFileTreePinned] = useState<boolean>(false);
   // 任务智能体会话中点击选中的文件ID
   const [taskAgentSelectedFileId, setTaskAgentSelectedFileId] =
     useState<string>('');
@@ -1125,6 +1127,9 @@ export default () => {
     setConversationInfo,
     // 文件树显隐状态
     isFileTreeVisible,
+    // 文件树是否固定（用户点击后固定）
+    isFileTreePinned,
+    setIsFileTreePinned,
     closePreviewView,
     clearFilePanelInfo,
     // 文件树数据

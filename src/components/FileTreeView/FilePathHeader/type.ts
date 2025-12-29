@@ -64,6 +64,4 @@ export interface FilePathHeaderProps {
   onFileTreeToggle?: () => void;
   /** 文件树鼠标移入回调 */
   onFileTreeMouseEnter?: () => void;
-  /** 文件树鼠标移出回调 */
-  onFileTreeMouseLeave?: () => void;
 }

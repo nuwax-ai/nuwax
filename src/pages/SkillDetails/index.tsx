@@ -497,6 +497,8 @@ const SkillDetails: React.FC = () => {
           onFullscreenPreview={setIsFullscreenPreview}
           // 是否显示全屏图标
           showFullscreenIcon={false}
+          // 文件树是否固定（用户点击后固定）
+          isFileTreePinned={true}
         />
 
         {/*版本历史*/}
