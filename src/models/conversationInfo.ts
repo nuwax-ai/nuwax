@@ -285,6 +285,18 @@ export default () => {
       pollingWhenHidden: false,
       // 轮询错误重试次数。如果设置为 -1，则无限次
       pollingErrorRetryCount: -1,
+      // 页面重新可见时，调用 apiEnsurePod 确保容器运行
+      onBefore: async (params) => {
+        // 如果是从不可见状态恢复，先调用 ensurePod
+        if (document.visibilityState === 'visible' && params[0]) {
+          try {
+            console.log('[keepalive] 页面可见，调用 apiEnsurePod 确保容器运行');
+            await apiEnsurePod(params[0]);
+          } catch (error) {
+            console.error('[keepalive] apiEnsurePod 失败:', error);
+          }
+        }
+      },
     });
 
   // 打开远程桌面视图
@@ -856,6 +868,34 @@ export default () => {
       body: params,
       abortController,
       onMessage: (res: ConversationChatResponse) => {
+        const currentInfo = conversationInfo ?? data;
+        if (isSync && currentInfo && currentInfo?.topicUpdated !== 1) {
+          // 第一次发送消息后更新主题
+          // 如果是智能体编排页面不更新
+          runUpdateTopic({
+            id: params.conversationId,
+            firstMessage: params.message,
+          }).then((result: RequestResponse<ConversationInfo>) => {
+            // 更新会话记录
+            setConversationInfo({
+              ...currentInfo,
+              topicUpdated: result.data?.topicUpdated,
+              topic: result.data?.topic,
+            });
+
+            // 如果是会话聊天页（chat页），同步更新会话记录
+            runHistory({
+              agentId: null,
+              limit: 20,
+            });
+
+            // 获取当前智能体的历史记录
+            runHistoryItem({
+              agentId: currentInfo.agentId,
+              limit: 20,
+            });
+          });
+        }
         handleChangeMessageList(params, res, currentMessageId);
         // 滚动到底部
         handleScrollBottom();
@@ -904,7 +944,7 @@ export default () => {
         // 主动关闭连接时，禁用会话
         disabledConversationActive();
 
-        const currentInfo = conversationInfo ?? data;
+        /* const currentInfo = conversationInfo ?? data;
 
         if (isSync && currentInfo && currentInfo?.topicUpdated !== 1) {
           // 第一次发送消息后更新主题
@@ -931,7 +971,7 @@ export default () => {
             agentId: currentInfo.agentId,
             limit: 20,
           });
-        }
+        }*/
       },
       onError: () => {
         message.error('网络超时或服务不可用，请稍后再试');
