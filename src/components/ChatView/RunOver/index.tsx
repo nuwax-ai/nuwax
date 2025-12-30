@@ -57,6 +57,11 @@ const RunOver: React.FC<RunOverProps> = ({
     return null;
   }, [processingList]);
 
+  // 如果最后一个过程信息为空，则显示loading状态
+  if (!lastProcessInfo) {
+    return <LoadingOutlined className={cx(styles.successColor)} />;
+  }
+
   return (
     <Popover
       placement="bottomLeft"
@@ -86,7 +91,14 @@ const RunOver: React.FC<RunOverProps> = ({
               )
             );
           })}
-          <span className={cx(styles.summary)}>{`运行完毕 ${runTime}s`}</span>
+
+          {messageInfo?.status === MessageStatusEnum.Complete && (
+            <span className={cx(styles.summary)}>{`运行完毕 ${runTime}s`}</span>
+          )}
+
+          {messageInfo?.status === MessageStatusEnum.Error && (
+            <span className={cx(styles.error)}>运行错误</span>
+          )}
         </div>
       }
       arrow={false}
