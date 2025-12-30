@@ -555,6 +555,8 @@ const SkillDetails: React.FC = () => {
           showFullscreenIcon={false}
           // 文件树是否固定（用户点击后固定）
           isFileTreePinned={true}
+          // 技能不显示刷新按钮
+          showRefreshButton={false}
         />
 
         {/*版本历史*/}

@@ -16,6 +16,8 @@ export interface StaticFileInfo {
   fileProxyUrl: string;
   // 是否为目录
   isDir: boolean;
+  // 是否为链接文件(针对linux系统中的软链接文件，由会话过程由AI自动生成的文件, 此类型的文件不支持预览)
+  isLink?: boolean;
 }
 
 // 静态文件列表
