@@ -30,6 +30,7 @@
   flex: 1;
   background: @colorBgContainer;
   overflow-y: auto;
+  position: relative;
 }
 
 // 全屏 Modal 样式
@@ -67,4 +68,24 @@
 
 .vnc-preview {
   border: none !important;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 70%);
+  color: #fff;
+  z-index: 10;
+}
+
+.loading-text {
+  margin-top: 16px;
+  font-size: 14px;
 }

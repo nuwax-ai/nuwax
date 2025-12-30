@@ -17,7 +17,7 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
-import { message, Modal } from 'antd';
+import { message, Modal, Spin } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -94,6 +94,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
   ) => {
     // 文件树数据
     const [files, setFiles] = useState<FileNode[]>([]);
+    // 重启状态
+    const [isRestarting, setIsRestarting] = useState(false);
     // 当前选中的文件ID
     const [selectedFileId, setSelectedFileId] = useState<string>('');
     // 选中的文件节点
@@ -1095,6 +1097,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 处理重启服务器并刷新 VNC
     const handleRestartServer = async () => {
       if (onRestartServer) {
+        setIsRestarting(true);
         try {
           // 1. 调用父组件的重启逻辑
           await onRestartServer();
@@ -1110,6 +1113,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           }
         } catch (error) {
           console.error('Restart server failed:', error);
+          message.error('重启失败，请重试');
+        } finally {
+          setIsRestarting(false);
         }
       }
     };
@@ -1317,6 +1323,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             {/* 右边内容 */}
             <div className={cx(styles['content-container'])}>
               {renderContent()}
+              {isRestarting && (
+                <div className={cx(styles['loading-overlay'])}>
+                  <Spin size="large" />
+                  <span className={cx(styles['loading-text'])}>重启中...</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
