@@ -1082,6 +1082,28 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       );
     };
 
+    // 处理重启服务器并刷新 VNC
+    const handleRestartServer = async () => {
+      if (onRestartServer) {
+        try {
+          // 1. 调用父组件的重启逻辑
+          await onRestartServer();
+
+          // 2. 刷新 VNC (如果是桌面模式)
+          if (viewMode === 'desktop' && vncPreviewRef.current) {
+            // 先断开连接
+            vncPreviewRef.current.disconnect();
+            // 稍后重新连接，利用 VncPreview 的重试机制
+            setTimeout(() => {
+              vncPreviewRef.current?.connect();
+            }, 0);
+          }
+        } catch (error) {
+          console.error('Restart server failed:', error);
+        }
+      }
+    };
+
     /**
      * 渲染头部组件
      */
@@ -1105,7 +1127,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 处理导入项目操作
           onImportProject={onImportProject}
           // 重启容器
-          onRestartServer={onRestartServer}
+          onRestartServer={handleRestartServer}
           // 重启智能体
           onRestartAgent={onRestartAgent}
           // 是否正在导出项目
