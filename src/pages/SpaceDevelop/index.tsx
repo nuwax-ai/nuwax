@@ -6,9 +6,9 @@ import CustomPopover from '@/components/CustomPopover';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import UploadImportConfig from '@/components/UploadImportConfig';
 import {
-  AGENT_TYPE_LIST,
   CREATE_LIST,
   FILTER_STATUS,
+  getAgentTypeList,
 } from '@/constants/space.constants';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import {
@@ -109,6 +109,8 @@ const SpaceDevelop: React.FC = () => {
     useModel('devCollectAgent');
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -466,14 +468,31 @@ const SpaceDevelop: React.FC = () => {
               创建智能体
             </Button> */}
 
-            <CustomPopover
-              list={AGENT_TYPE_LIST}
-              onClick={handlerClickAgentType}
-            >
-              <Button type="primary" icon={<PlusOutlined />}>
+            {/* 创建智能体按钮：如果只有一种类型则直接创建，否则显示下拉选择 */}
+            {getAgentTypeList(tenantConfigInfo?.enabledSandbox).length === 1 ? (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  const agentTypes = getAgentTypeList(
+                    tenantConfigInfo?.enabledSandbox,
+                  );
+                  setCurrentAgentType(agentTypes[0].value as AgentTypeEnum);
+                  setOpenCreateAgent(true);
+                }}
+              >
                 创建智能体
               </Button>
-            </CustomPopover>
+            ) : (
+              <CustomPopover
+                list={getAgentTypeList(tenantConfigInfo?.enabledSandbox)}
+                onClick={handlerClickAgentType}
+              >
+                <Button type="primary" icon={<PlusOutlined />}>
+                  创建智能体
+                </Button>
+              </CustomPopover>
+            )}
           </div>
         </Col>
       </Row>
