@@ -47,19 +47,6 @@ const FileTree: React.FC<FileTreeProps> = ({
   );
 
   /**
-   * 根据层级计算节点的最大宽度
-   * @param level 当前层级（0 为根级）
-   * @returns 最大宽度（px）
-   */
-  const calculateMaxWidth = useCallback((level: number): number => {
-    // 文件树容器宽度 260px，减去左右 padding 16px（各 8px），再减去当前层级的缩进
-    const containerWidth = 260;
-    const padding = 16; // 左右各 8px
-    const indentPerLevel = 8;
-    return containerWidth - padding - level * indentPerLevel;
-  }, []);
-
-  /**
    * 切换文件夹展开状态，用于展开/折叠回调
    * 当展开文件夹时，如果文件夹下有文件且当前没有选中任何文件，则自动选中第一个文件
    */
@@ -302,11 +289,7 @@ const FileTree: React.FC<FileTreeProps> = ({
       const isSelected = selectedFileId === node.id;
       const isRenaming = renamingNode?.id === node.id;
 
-      // 为版本模式添加特殊的前缀，避免 key 冲突
       const nodeKey = node.id;
-
-      // 计算当前层级的最大宽度
-      const maxWidth = calculateMaxWidth(level);
 
       // 文件夹节点
       if (node.type === 'folder') {
@@ -314,7 +297,7 @@ const FileTree: React.FC<FileTreeProps> = ({
           <div
             key={nodeKey}
             className={styles.folderItem}
-            style={{ marginLeft: level * 8, maxWidth: `${maxWidth}px` }}
+            style={{ marginLeft: level * 8 }}
           >
             <div
               className={styles.folderHeader}
@@ -355,9 +338,6 @@ const FileTree: React.FC<FileTreeProps> = ({
           </div>
         );
       } else {
-        // 计算当前层级的最大宽度
-        const maxWidth = calculateMaxWidth(level);
-
         return (
           <div
             key={nodeKey}
@@ -372,7 +352,7 @@ const FileTree: React.FC<FileTreeProps> = ({
               onFileSelect(node.id);
             }}
             onContextMenu={(e) => onContextMenu(e, node)}
-            style={{ marginLeft: level * 8, maxWidth: `${maxWidth}px` }}
+            style={{ marginLeft: level * 8 }}
           >
             {/* 文件图标 */}
             {getFileIcon(node.name)}
@@ -412,7 +392,6 @@ const FileTree: React.FC<FileTreeProps> = ({
       onContextMenu,
       handleRenameKeyDown,
       handleRenameBlur,
-      calculateMaxWidth,
     ],
   );
 

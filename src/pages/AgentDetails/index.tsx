@@ -479,6 +479,9 @@ const AgentDetails: React.FC = () => {
       ) : (
         <ResizableSplit
           minLeftWidth={400}
+          defaultLeftWidth={
+            agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
+          }
           left={agentDetail?.hideChatArea ? null : LeftContent()}
           right={
             agentDetail?.type !== AgentTypeEnum.TaskAgent
