@@ -29,7 +29,7 @@ export interface FileContextMenuProps {
   /** 目标文件/文件夹节点 */
   targetNode: FileNode | null;
   /** 是否禁用删除功能（为 true 时隐藏删除菜单项和 divider） */
-  disableDelete?: boolean;
+  disabledDelete?: boolean;
   /** 关闭菜单回调 */
   onClose: () => void;
   /** 删除文件回调 */
