@@ -70,6 +70,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   isRefreshingFileTree = false,
   // 是否显示刷新按钮
   showRefreshButton = true,
+  // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
+  isOnlyShowDesktop = false,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -333,7 +335,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       )}
 
       {/* 视图模式切换按钮 */}
-      {showViewModeButtons && (
+      {showViewModeButtons && !isOnlyShowDesktop && (
         <div className={styles.viewModeButtons}>
           <Button
             type={viewMode === 'preview' ? 'primary' : 'default'}
@@ -359,7 +361,9 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       )}
 
       {/* 右侧：操作按钮 */}
-      <div className={styles.actionButtons}>
+      <div
+        className={cx(styles.actionButtons, { 'ml-auto': isOnlyShowDesktop })}
+      >
         {/* 分享 */}
         {isShowShare &&
           (viewMode === 'desktop' ||
