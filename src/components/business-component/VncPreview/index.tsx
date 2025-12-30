@@ -10,6 +10,7 @@ import {
 } from 'react';
 import styles from './index.less';
 import { ConnectionStatus, VncPreviewProps, VncPreviewRef } from './type';
+import { useUrlRetry } from './useUrlRetry';
 
 const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
   (
@@ -28,12 +29,23 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     const [iframeUrl, setIframeUrl] = useState<string | null>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
+    // 使用 URL 重试 hook
+    // TODO: 后端 API 准备好后，取消下面的 checkFn 注释以启用后端代理检测
+    const { checkWithRetry, resetRetry } = useUrlRetry({
+      retryInterval: 5000, // 5 秒间隔
+      maxRetryDuration: 60000, // 最长重试 1 分钟
+      retryStatusCodes: [404], // 仅对 404 重试
+      // 后端 API 准备好后启用此函数绕过 CORS：
+      // checkFn: async () => {
+      //   const res = await apiCheckVncUrl(Number(cId));
+      //   return { ok: res.data?.available ?? false, status: res.data?.status };
+      // },
+    });
+
     // Helper to build the VNC URL
     const buildVncUrl = useCallback(() => {
       if (!cId) {
-        setErrorMessage(
-          'Missing required configuration (Service URL or Container ID)',
-        );
+        setErrorMessage('缺少必要配置（服务地址或容器 ID）');
         return null;
       }
 
@@ -53,7 +65,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       return `${cleanBaseUrl}/computer/desktop/${cId}/vnc.html?${params.toString()}`;
     }, [serviceUrl, cId, readOnly]);
 
-    const connect = useCallback(() => {
+    const connect = useCallback(async () => {
       const url = buildVncUrl();
       if (!url) {
         setStatus('error');
@@ -62,14 +74,58 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
 
       setStatus('connecting');
       setErrorMessage('');
+
+      const result = await checkWithRetry(url, () => {
+        // 重试回调
+        connect();
+      });
+
+      if (result.shouldRetry) {
+        // 正在重试中，保持 connecting 状态
+        return;
+      }
+
+      if (result.isTimeout) {
+        // 重试超时
+        setStatus('error');
+        setErrorMessage('智能体电脑暂时不可用，请稍后手动刷新重试。');
+        return;
+      }
+
+      // 其他错误状态码
+      if (result.status === 403) {
+        setStatus('error');
+        setErrorMessage('访问被拒绝 (403 Forbidden)，请检查权限配置。');
+        return;
+      }
+      if (result.status === 502 || result.status === 503) {
+        setStatus('error');
+        setErrorMessage(`服务暂时不可用 (${result.status})，请稍后重试。`);
+        return;
+      }
+      if (result.status && result.status >= 400) {
+        setStatus('error');
+        setErrorMessage(`请求失败 (HTTP ${result.status})，请检查服务状态。`);
+        return;
+      }
+
+      // 成功，加载 iframe
       setIframeUrl(url);
-    }, [buildVncUrl]);
+    }, [buildVncUrl, checkWithRetry]);
 
     const disconnect = useCallback(() => {
+      resetRetry();
       setStatus('disconnected');
       setIframeUrl(null);
       setErrorMessage('');
-    }, []);
+    }, [resetRetry]);
+
+    // 组件卸载时清除重试定时器
+    useEffect(() => {
+      return () => {
+        resetRetry();
+      };
+    }, [resetRetry]);
 
     useEffect(() => {
       if (autoConnect) {
@@ -192,39 +248,44 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       </div> */}
 
         <div className={styles.iframeContainer}>
+          {/* 背景占位符（未连接时显示） */}
+          {status !== 'connected' && (
+            <div className={styles.backgroundPlaceholder} />
+          )}
+
           {status === 'disconnected' && (
             <div
               style={{
-                color: '#999',
+                color: '#fff',
                 flexDirection: 'column',
                 display: 'flex',
                 alignItems: 'center',
+                zIndex: 5,
+                textShadow: '0 1px 3px rgba(0,0,0,0.5)',
               }}
             >
               <DesktopOutlined style={{ fontSize: 48, marginBottom: 16 }} />
-              <p>Ready to connect</p>
+              <p>准备连接</p>
             </div>
           )}
 
           {status === 'connecting' ? (
             <div className={styles.loadingOverlay}>
               <Spin size="large" />
-              <span className={styles.loadingText}>
-                Connecting to remote session...
-              </span>
+              <span className={styles.loadingText}>智能体电脑连接中...</span>
             </div>
           ) : null}
 
           {status === 'error' && (
             <div className={styles.errorOverlay}>
               <Alert
-                message="Connection Error"
-                description={errorMessage || 'Unable to establish connection.'}
+                message="连接错误"
+                description={errorMessage || '无法建立连接'}
                 type="error"
                 showIcon
                 action={
                   <Button size="small" type="primary" onClick={connect}>
-                    Retry
+                    重试
                   </Button>
                 }
               />
