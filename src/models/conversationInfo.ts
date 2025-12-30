@@ -861,14 +861,43 @@ export default () => {
         handleScrollBottom();
       },
       onClose: async () => {
-        // 将当前会话的loading状态的消息改为Error状态
+        // 将当前会话的loading状态的消息改为Error状态，并将所有正在执行的 processing 状态更新为 FAILED
         setMessageList((list) => {
           try {
             const copyList = JSON.parse(JSON.stringify(list));
-            copyList[copyList.length - 1].status = MessageStatusEnum.Error;
+
+            // 遍历消息列表，找到最后一条消息并更新其 processingList
+            if (copyList.length > 0) {
+              const lastMessage = copyList[copyList.length - 1];
+
+              // 如果消息有 processingList，将所有 EXECUTING 状态更新为 FAILED
+              if (
+                lastMessage.processingList &&
+                Array.isArray(lastMessage.processingList)
+              ) {
+                const updatedProcessingList = lastMessage.processingList.map(
+                  (item: ProcessingInfo) => {
+                    if (item.status === ProcessingEnum.EXECUTING) {
+                      return {
+                        ...item,
+                        status: ProcessingEnum.FAILED,
+                      };
+                    }
+                    return item;
+                  },
+                );
+
+                lastMessage.processingList = updatedProcessingList;
+                lastMessage.status = MessageStatusEnum.Error;
+
+                // ✨ 关键：同时更新全局的 processingList，这样 MarkdownCustomProcess 组件才能正确更新
+                handleChatProcessingList(updatedProcessingList);
+              }
+            }
+
             return copyList;
           } catch (error) {
-            console.error('ERROR:', error);
+            console.error('[onClose] ERROR:', error);
             return list;
           }
         });
