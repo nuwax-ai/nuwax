@@ -174,3 +174,27 @@ export const extractTaskResult = (text: string): TaskResultData => {
 
   return result;
 };
+
+/**
+ * 提取字符串中最后一个 <task-result> 内的 <file> 内容
+ * @param text 原始字符串
+ * @returns file 内容或 null
+ */
+export const extractLastTaskResultFile = (text: string): string | null => {
+  if (!text) return null;
+
+  // 匹配所有 <task-result>...</task-result>
+  const taskResultMatches = text.match(/<task-result>[\s\S]*?<\/task-result>/g);
+
+  if (!taskResultMatches || taskResultMatches.length === 0) {
+    return null;
+  }
+
+  // 取最后一个 <task-result>
+  const lastTaskResult = taskResultMatches[taskResultMatches.length - 1];
+
+  // 在其中提取 <file> 内容
+  const fileMatch = lastTaskResult.match(/<file>([\s\S]*?)<\/file>/);
+
+  return fileMatch?.[1]?.trim() ?? null;
+};
