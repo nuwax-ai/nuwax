@@ -9,140 +9,9 @@
     <!-- Local library styles -->
     <link rel="stylesheet" href="/libs/js-preview/docx.css">
     <link rel="stylesheet" href="/libs/js-preview/excel.css">
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            width: 100%;
-            height: 100%;
-            height: 100vh;
-            height: 100dvh;
-            /* Dynamic viewport height for better mobile support */
-        }
-
-        body {
-            width: 100%;
-            height: 100%;
-            min-height: 100vh;
-            min-height: 100dvh;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        }
-
-        .preview-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100%;
-            height: 100%;
-            height: 100vh;
-            height: 100dvh;
-            overflow: auto;
-            background: #fff;
-        }
-
-        /* Loading Overlay */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.95);
-            z-index: 100;
-        }
-
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #1890ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .loading-text {
-            margin-top: 16px;
-            color: #666;
-            font-size: 14px;
-        }
-
-        /* Error Overlay */
-        .error-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.95);
-            z-index: 100;
-        }
-
-        .error-icon {
-            font-size: 48px;
-            color: #ff4d4f;
-            margin-bottom: 16px;
-        }
-
-        .error-text {
-            color: #ff4d4f;
-            font-size: 14px;
-            text-align: center;
-            max-width: 80%;
-            margin-bottom: 16px;
-        }
-
-        .retry-btn {
-            padding: 8px 24px;
-            background: #1890ff;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .retry-btn:hover {
-            background: #40a9ff;
-        }
-
-        /* PDF Embed */
-        .pdf-embed {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        /* Hidden */
-        .hidden {
-            display: none !important;
-        }
-    </style>
+    <link rel="stylesheet" href="/libs/js-preview/github.min.css">
+    <!-- 本地样式 -->
+    <link rel="stylesheet" href="/libs/js-preview/file-preview.css">
 </head>
 
 <body>
@@ -286,6 +155,127 @@
             await currentPreviewer.preview(arrayBuffer);
         }
 
+        // ============================================
+        // HTML Preview (render as webpage)
+        // ============================================
+        async function renderHtml(url, container) {
+            container.className = 'preview-container html-preview';
+            
+            const iframe = document.createElement('iframe');
+            iframe.className = 'html-preview-iframe';
+            iframe.src = url;
+            
+            // Handle iframe load error
+            iframe.onerror = () => {
+                throw new Error('HTML 页面加载失败');
+            };
+            
+            // Optional: Add sandbox for security
+            // iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups';
+            
+            container.appendChild(iframe);
+        }
+
+        // ============================================
+        // Image Preview
+        // ============================================
+        async function renderImage(url, container) {
+            container.className = 'preview-container image-preview';
+            
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = '图片预览';
+            
+            // Handle image load error
+            img.onerror = () => {
+                throw new Error('图片加载失败');
+            };
+            
+            container.appendChild(img);
+        }
+
+        // ============================================
+        // Text/Code Preview with Syntax Highlighting
+        // ============================================
+        async function renderText(url, container, language = '') {
+            // Load highlight.js for syntax highlighting (Local)
+            await loadScript('/libs/js-preview/highlight.min.js');
+
+            // Fetch file content
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`文件下载失败: ${response.status}`);
+            }
+            const text = await response.text();
+
+            container.className = 'preview-container text-preview';
+            
+            const pre = document.createElement('pre');
+            const code = document.createElement('code');
+            
+            // Set language class for syntax highlighting
+            if (language) {
+                code.className = `language-${language}`;
+            }
+            
+            code.textContent = text;
+            pre.appendChild(code);
+            container.appendChild(pre);
+
+            // Apply syntax highlighting if hljs is available
+            if (typeof hljs !== 'undefined') {
+                hljs.highlightElement(code);
+            }
+        }
+
+        // ============================================
+        // Markdown Preview
+        // ============================================
+        async function renderMarkdown(url, container) {
+            // Load marked.js for markdown rendering (Local)
+            await loadScript('/libs/js-preview/marked.min.js');
+            // Load highlight.js for code block syntax highlighting (Local)
+            await loadScript('/libs/js-preview/highlight.min.js');
+
+            if (typeof marked === 'undefined') {
+                throw new Error('Markdown 预览库加载失败');
+            }
+
+            // Fetch markdown content
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`文件下载失败: ${response.status}`);
+            }
+            const markdown = await response.text();
+
+            // Configure marked to use highlight.js
+            if (typeof hljs !== 'undefined') {
+                marked.setOptions({
+                    highlight: function(code, lang) {
+                        if (lang && hljs.getLanguage(lang)) {
+                            try {
+                                return hljs.highlight(code, { language: lang }).value;
+                            } catch (e) {
+                                console.error('Highlight error:', e);
+                            }
+                        }
+                        return hljs.highlightAuto(code).value;
+                    },
+                    breaks: true,
+                    gfm: true
+                });
+            }
+
+            // Render markdown to HTML
+            const html = marked.parse(markdown);
+
+            container.className = 'preview-container markdown-preview';
+            const markdownBody = document.createElement('div');
+            markdownBody.className = 'markdown-body';
+            markdownBody.innerHTML = html;
+            container.appendChild(markdownBody);
+        }
+
 
         // ============================================
         // Main Preview Function
@@ -321,7 +311,12 @@
             // Auto-detect file type from URL if not provided
             if (!fileType && fileUrl) {
                 const ext = fileUrl.split('.').pop().split('?')[0].toLowerCase();
-                if (['docx', 'xlsx', 'xls', 'pdf', 'pptx', 'ppt'].includes(ext)) {
+                const supportedTypes = [
+                    'docx', 'xlsx', 'xls', 'pdf', 'pptx', 'ppt',
+                    'md', 'html', 'css', 'js', 'ts', 'txt', 'json',
+                    'png', 'jpg', 'jpeg', 'gif', 'py', 'java'
+                ];
+                if (supportedTypes.includes(ext)) {
                     fileType = ext;
                 }
             }
@@ -329,6 +324,7 @@
             // Normalize file types
             if (fileType === 'xls') fileType = 'xlsx';
             if (fileType === 'ppt') fileType = 'pptx';
+            if (fileType === 'doc') fileType = 'docx';
 
             console.log('[FilePreview] Starting preview:', { fileUrl, fileType });
 
@@ -358,6 +354,7 @@
 
             try {
                 switch (fileType) {
+                    // Office documents
                     case 'docx':
                         await renderDocx(fileUrl, container);
                         break;
@@ -370,6 +367,48 @@
                     case 'pptx':
                         await renderPptx(fileUrl, container);
                         break;
+                    
+                    // Images
+                    case 'png':
+                    case 'jpg':
+                    case 'jpeg':
+                    case 'gif':
+                        await renderImage(fileUrl, container);
+                        break;
+                    
+                    // Markdown
+                    case 'md':
+                        await renderMarkdown(fileUrl, container);
+                        break;
+                    
+                    // HTML (render as webpage)
+                    case 'html':
+                        await renderHtml(fileUrl, container);
+                        break;
+                    
+                    // Code files with syntax highlighting
+                    case 'js':
+                        await renderText(fileUrl, container, 'javascript');
+                        break;
+                    case 'ts':
+                        await renderText(fileUrl, container, 'typescript');
+                        break;
+                    case 'css':
+                        await renderText(fileUrl, container, 'css');
+                        break;
+                    case 'json':
+                        await renderText(fileUrl, container, 'json');
+                        break;
+                    case 'py':
+                        await renderText(fileUrl, container, 'python');
+                        break;
+                    case 'java':
+                        await renderText(fileUrl, container, 'java');
+                        break;
+                    case 'txt':
+                        await renderText(fileUrl, container, 'plaintext');
+                        break;
+                    
                     default:
                         throw new Error(`不支持的文件类型: ${fileType}`);
                 }
