@@ -129,7 +129,12 @@
                 throw new Error('PDF 预览库加载失败');
             }
 
-            currentPreviewer = jsPreviewPdf.init(container);
+            // 使用设备像素比来提高 PDF 渲染清晰度
+            const scale = window.devicePixelRatio || 2;
+            currentPreviewer = jsPreviewPdf.init(container, {
+                width: container.clientWidth * scale,
+                height: container.clientHeight * scale,
+            });
             await currentPreviewer.preview(url);
         }
 
@@ -160,19 +165,19 @@
         // ============================================
         async function renderHtml(url, container) {
             container.className = 'preview-container html-preview';
-            
+
             const iframe = document.createElement('iframe');
             iframe.className = 'html-preview-iframe';
             iframe.src = url;
-            
+
             // Handle iframe load error
             iframe.onerror = () => {
                 throw new Error('HTML 页面加载失败');
             };
-            
+
             // Optional: Add sandbox for security
             // iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups';
-            
+
             container.appendChild(iframe);
         }
 
@@ -181,16 +186,16 @@
         // ============================================
         async function renderImage(url, container) {
             container.className = 'preview-container image-preview';
-            
+
             const img = document.createElement('img');
             img.src = url;
             img.alt = '图片预览';
-            
+
             // Handle image load error
             img.onerror = () => {
                 throw new Error('图片加载失败');
             };
-            
+
             container.appendChild(img);
         }
 
@@ -209,15 +214,15 @@
             const text = await response.text();
 
             container.className = 'preview-container text-preview';
-            
+
             const pre = document.createElement('pre');
             const code = document.createElement('code');
-            
+
             // Set language class for syntax highlighting
             if (language) {
                 code.className = `language-${language}`;
             }
-            
+
             code.textContent = text;
             pre.appendChild(code);
             container.appendChild(pre);
@@ -251,7 +256,7 @@
             // Configure marked to use highlight.js
             if (typeof hljs !== 'undefined') {
                 marked.setOptions({
-                    highlight: function(code, lang) {
+                    highlight: function (code, lang) {
                         if (lang && hljs.getLanguage(lang)) {
                             try {
                                 return hljs.highlight(code, { language: lang }).value;
@@ -294,11 +299,11 @@
                         'Content-Type': 'application/json',
                     },
                 });
-                const {data,code,message} = await response.json();
-                if(code === '0000'){
-                    fileUrl = baseUrl + data.content+'?sk='+sk;
+                const { data, code, message } = await response.json();
+                if (code === '0000') {
+                    fileUrl = baseUrl + data.content + '?sk=' + sk;
                     fileType = data.content.split('.').pop().toLowerCase();
-                }else{
+                } else {
                     showError(message);
                     return;
                 }
@@ -367,7 +372,7 @@
                     case 'pptx':
                         await renderPptx(fileUrl, container);
                         break;
-                    
+
                     // Images
                     case 'png':
                     case 'jpg':
@@ -376,17 +381,17 @@
                     case 'svg':
                         await renderImage(fileUrl, container);
                         break;
-                    
+
                     // Markdown
                     case 'md':
                         await renderMarkdown(fileUrl, container);
                         break;
-                    
+
                     // HTML (render as webpage)
                     case 'html':
                         await renderHtml(fileUrl, container);
                         break;
-                    
+
                     // Code files with syntax highlighting
                     case 'js':
                         await renderText(fileUrl, container, 'javascript');
@@ -409,7 +414,7 @@
                     case 'txt':
                         await renderText(fileUrl, container, 'plaintext');
                         break;
-                    
+
                     default:
                         throw new Error(`不支持的文件类型: ${fileType}`);
                 }
