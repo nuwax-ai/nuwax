@@ -94,14 +94,14 @@ export default function BaseFormItem({
       },
     ],
   };
-  // 处理 Select 类型的初始值：0 表示未选择，应转换为 undefined
+  // 处理 Select 类型的初始值：-1 表示未选择，应转换为 undefined
   const getInitialValue = () => {
-    if (['Select'].includes(props.inputType) && Number(props.value) === 0) {
+    if (['Select'].includes(props.inputType) && Number(props.value) === -1) {
       return undefined;
     }
     if (
       ['MultiSelect'].includes(props.inputType) &&
-      Number(props.value) === 0
+      Number(props.value) === -1
     ) {
       return [];
     }
