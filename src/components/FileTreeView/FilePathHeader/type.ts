@@ -72,4 +72,6 @@ export interface FilePathHeaderProps {
   onRefreshFileTree?: () => void;
   /** 是否正在刷新文件树 */
   isRefreshingFileTree?: boolean;
+  // 是否显示刷新按钮
+  showRefreshButton?: boolean;
 }

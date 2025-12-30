@@ -691,6 +691,8 @@ export interface FileNode {
   sizeExceeded?: boolean;
   /** 文件代理URL */
   fileProxyUrl?: string;
+  /** 是否为链接文件 */
+  isLink?: boolean;
 }
 
 /**

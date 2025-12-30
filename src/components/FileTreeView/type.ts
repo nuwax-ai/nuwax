@@ -82,4 +82,6 @@ export interface FileTreeViewProps {
   isCanDeleteSkillFile?: boolean;
   /** 刷新文件树回调 */
   onRefreshFileTree?: () => void;
+  // 是否显示刷新按钮, 默认显示
+  showRefreshButton?: boolean;
 }

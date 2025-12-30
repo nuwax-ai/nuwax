@@ -68,8 +68,12 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   isFileTreePinned = false,
   onFileTreeToggle,
   onFileTreeMouseEnter,
+  // 刷新文件树
   onRefreshFileTree,
+  // 是否正在刷新文件树
   isRefreshingFileTree = false,
+  // 是否显示刷新按钮
+  showRefreshButton = true,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -273,7 +277,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         )}
 
         {/* 刷新文件树 */}
-        {viewMode === 'preview' && onRefreshFileTree && (
+        {viewMode === 'preview' && showRefreshButton && (
           <Tooltip title={isRefreshingFileTree ? '刷新中...' : '刷新文件树'}>
             <Button
               type="text"
