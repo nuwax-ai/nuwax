@@ -1,3 +1,4 @@
+import { apiCheckVncStatus } from '@/services/vncDesktop';
 import { DesktopOutlined } from '@ant-design/icons';
 import { Alert, Button, Spin, Tag } from 'antd';
 import {
@@ -36,10 +37,12 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       maxRetryDuration: 60000, // 最长重试 1 分钟
       retryStatusCodes: [404], // 仅对 404 重试
       // 后端 API 准备好后启用此函数绕过 CORS：
-      // checkFn: async () => {
-      //   const res = await apiCheckVncUrl(Number(cId));
-      //   return { ok: res.data?.available ?? false, status: res.data?.status };
-      // },
+      checkFn: async () => {
+        const res = await apiCheckVncStatus(Number(cId));
+        const isReady = res.data?.novnc_ready ?? false;
+        // 未就绪返回 404 触发重试，就绪返回 200
+        return { ok: isReady, status: isReady ? 200 : 404 };
+      },
     });
 
     // Helper to build the VNC URL
@@ -109,7 +112,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
         return;
       }
 
-      // 成功，加载 iframe
+      // 成功，加载 iframe 并关闭 loading
+      setStatus('connected');
       setIframeUrl(url);
     }, [buildVncUrl, checkWithRetry]);
 
@@ -127,11 +131,12 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       };
     }, [resetRetry]);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
-      if (autoConnect) {
+      if (autoConnect && status === 'disconnected') {
         connect();
       }
-    }, [autoConnect, connect]);
+    }, [autoConnect]); // 只在 autoConnect 变化时执行，不依赖 connect
 
     // Handle re-connection when configuration changes and we are already connected or connecting
     useEffect(() => {
