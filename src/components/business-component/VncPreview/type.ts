@@ -43,7 +43,7 @@ export type ConnectionStatus =
  */
 export interface VncPreviewRef {
   /**
-   * 连接到 VNC 服务器
+   * 连接到智能体电脑
    */
   connect: () => void;
   /**
