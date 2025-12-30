@@ -1351,9 +1351,16 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             <div className={cx(styles['content-container'])}>
               {renderContent()}
               {isRestarting && (
-                <div className={cx(styles['loading-overlay'])}>
-                  <Spin size="large" />
-                  <span className={cx(styles['loading-text'])}>重启中...</span>
+                <div className={cx(styles['restart-container'])}>
+                  {/* 背景占位符（清晰的背景图，按比例显示） */}
+                  <div className={cx(styles['background-placeholder'])} />
+                  {/* 遮罩层（半透明遮罩 + Loading + Spin） */}
+                  <div className={cx(styles['loading-overlay'])}>
+                    <Spin size="large" className={cx(styles['loading-spin'])} />
+                    <span className={cx(styles['loading-text'])}>
+                      重启中...
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
