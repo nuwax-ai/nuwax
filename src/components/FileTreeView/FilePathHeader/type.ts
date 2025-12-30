@@ -70,4 +70,6 @@ export interface FilePathHeaderProps {
   onFileTreeMouseEnter?: () => void;
   /** 刷新文件树回调 */
   onRefreshFileTree?: () => void;
+  /** 是否正在刷新文件树 */
+  isRefreshingFileTree?: boolean;
 }
