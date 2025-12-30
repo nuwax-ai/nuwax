@@ -149,6 +149,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const prevTaskAgentSelectTriggerRef = useRef<number | string | undefined>(
       undefined,
     );
+    // 用于记录创建成功后需要选择的文件路径
+    const pendingSelectFileRef = useRef<string | null>(null);
 
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
@@ -162,6 +164,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       async (fileId: string) => {
         // 根据文件ID查找文件节点
         const fileNode = findFileNode(fileId, files);
+
+        console.log(files, '文件选择（内部函数，执行实际的选择逻辑', fileId);
+
         if (fileNode) {
           // 如果文件节点是文件夹(folder)，则选择第一个子节点(点击会话中文件名时，如果文件名是文件夹，则选择第一个子节点)
           if (fileNode.type === 'folder') {
@@ -335,6 +340,20 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       };
     }, [originalFiles]);
 
+    // 监听 files 变化，当有待选择的文件时自动选择
+    useEffect(() => {
+      if (pendingSelectFileRef.current && files && files.length > 0) {
+        const filePath = pendingSelectFileRef.current;
+        // 从文件树中查找新文件（通过路径或ID匹配）
+        const newFile = findFileNode(filePath, files);
+        if (newFile) {
+          // 找到新文件，清除待选择标记，使用内部函数选择（不设置用户选择标记）
+          pendingSelectFileRef.current = null;
+          handleFileSelectInternal(filePath);
+        }
+      }
+    }, [files, handleFileSelectInternal]);
+
     // 当 isFileTreePinned 变化时，同步更新 isFileTreeVisible
     // 确保组件重新挂载或 isFileTreePinned 从外部变化时，文件树能正确显示
     useEffect(() => {
@@ -491,7 +510,22 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         // 如果是新建节点（文件或文件夹），走创建逻辑；否则走重命名逻辑
         if (isNewNode) {
           const isCreateSuccess = await onCreateFileNode?.(fileNode, newName);
-          if (!isCreateSuccess) {
+
+          if (isCreateSuccess) {
+            const trimmedName = newName?.trim();
+            if (!trimmedName) {
+              return false;
+            }
+
+            // 计算新文件的完整路径：父路径 + 新文件名
+            const parentPath = fileNode.parentPath || '';
+            const newPath = parentPath
+              ? `${parentPath}/${trimmedName}`
+              : trimmedName;
+
+            // 记录需要选择的文件路径，等待文件树更新后自动选择
+            pendingSelectFileRef.current = newPath;
+          } else {
             setFiles(filesBackup);
           }
         } else {
