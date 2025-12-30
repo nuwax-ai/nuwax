@@ -401,6 +401,69 @@ export default () => {
     },
   });
 
+  /**
+   * 更新会话主题（仅在会话开始时调用一次）
+   * @param params - 会话参数
+   * @param currentInfo - 当前会话信息
+   * @param isSync - 是否同步会话记录
+   * @description 该方法用于在会话开始时更新主题，通过 needUpdateTopicRef 确保只调用一次
+   */
+  const updateTopicOnce = useCallback(
+    async (
+      params: ConversationChatParams,
+      currentInfo: ConversationInfo | null | undefined,
+      isSync: boolean,
+    ) => {
+      // 检查是否需要更新主题：必须满足以下条件
+      // 1. isSync 为 true（需要同步）
+      // 2. conversationInfo 存在
+      // 3. topicUpdated 不等于 1（主题未更新过）
+      // 4. needUpdateTopicRef.current 为 true（允许更新）
+      if (
+        isSync &&
+        currentInfo &&
+        currentInfo?.topicUpdated !== 1 &&
+        needUpdateTopicRef.current
+      ) {
+        // 标记已更新，防止重复调用
+        needUpdateTopicRef.current = false;
+
+        try {
+          // 调用更新主题接口
+          const result: RequestResponse<ConversationInfo> =
+            await runUpdateTopic({
+              id: params.conversationId,
+              firstMessage: params.message,
+            });
+
+          // 更新会话信息
+          setConversationInfo({
+            ...currentInfo,
+            topicUpdated: result.data?.topicUpdated,
+            topic: result.data?.topic,
+          });
+
+          // 如果是会话聊天页（chat页），同步更新会话记录
+          runHistory({
+            agentId: null,
+            limit: 20,
+          });
+
+          // 获取当前智能体的历史记录
+          runHistoryItem({
+            agentId: currentInfo.agentId,
+            limit: 20,
+          });
+        } catch (error) {
+          console.error('更新会话主题失败:', error);
+          // 更新失败时重置标志，允许下次重试
+          needUpdateTopicRef.current = true;
+        }
+      }
+    },
+    [runUpdateTopic, runHistory, runHistoryItem],
+  );
+
   // 处理变量参数
   const handleVariables = (_variables: BindConfigWithSub[]) => {
     setVariables(_variables);
@@ -859,34 +922,9 @@ export default () => {
       body: params,
       abortController,
       onMessage: (res: ConversationChatResponse) => {
-        const currentInfo = conversationInfo ?? data;
-        if (isSync && currentInfo && currentInfo?.topicUpdated !== 1) {
-          // 第一次发送消息后更新主题
-          // 如果是智能体编排页面不更新
-          runUpdateTopic({
-            id: params.conversationId,
-            firstMessage: params.message,
-          }).then((result: RequestResponse<ConversationInfo>) => {
-            // 更新会话记录
-            setConversationInfo({
-              ...currentInfo,
-              topicUpdated: result.data?.topicUpdated,
-              topic: result.data?.topic,
-            });
+        // 第一次收到消息后更新主题（仅调用一次）
+        updateTopicOnce(params, conversationInfo ?? data, isSync);
 
-            // 如果是会话聊天页（chat页），同步更新会话记录
-            runHistory({
-              agentId: null,
-              limit: 20,
-            });
-
-            // 获取当前智能体的历史记录
-            runHistoryItem({
-              agentId: currentInfo.agentId,
-              limit: 20,
-            });
-          });
-        }
         handleChangeMessageList(params, res, currentMessageId);
         // 滚动到底部
         handleScrollBottom();
