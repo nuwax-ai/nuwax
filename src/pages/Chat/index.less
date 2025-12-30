@@ -58,6 +58,37 @@
       flex: 1;
       scrollbar-gutter: stable;
 
+      // 滚动条只在滚动时显示
+      &::-webkit-scrollbar {
+        width: 8px;
+        background: transparent;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: transparent;
+        border-radius: 4px;
+        transition: background 0.3s ease;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      // 滚动时显示滚动条
+      &:hover::-webkit-scrollbar-thumb,
+      &:active::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 20%);
+      }
+
+      // Firefox 滚动条样式
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+
+      &:hover,
+      &:active {
+        scrollbar-color: rgba(0, 0, 0, 20%) transparent;
+      }
+
       .chat-wrapper {
         padding-bottom: 40px - 16px;
         max-width: 800px;
