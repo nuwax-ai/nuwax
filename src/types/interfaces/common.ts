@@ -515,6 +515,10 @@ export interface ChatInputProps extends ManualComponentItemProps {
   // 临时会话停止方法
   onTempChatStop?: (requestId: string) => void;
   loadingStopTempConversation?: boolean;
+  // 任务智能体切换相关
+  showTaskAgentToggle?: boolean;
+  isTaskAgentActive?: boolean;
+  onToggleTaskAgent?: () => void;
 }
 
 // 聊天框底部更多操作组件
