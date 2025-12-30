@@ -285,6 +285,18 @@ export default () => {
       pollingWhenHidden: false,
       // 轮询错误重试次数。如果设置为 -1，则无限次
       pollingErrorRetryCount: -1,
+      // 页面重新可见时，调用 apiEnsurePod 确保容器运行
+      onBefore: async (params) => {
+        // 如果是从不可见状态恢复，先调用 ensurePod
+        if (document.visibilityState === 'visible' && params[0]) {
+          try {
+            console.log('[keepalive] 页面可见，调用 apiEnsurePod 确保容器运行');
+            await apiEnsurePod(params[0]);
+          } catch (error) {
+            console.error('[keepalive] apiEnsurePod 失败:', error);
+          }
+        }
+      },
     });
 
   // 打开远程桌面视图
