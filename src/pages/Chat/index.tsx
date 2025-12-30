@@ -478,6 +478,8 @@ const Chat: React.FC = () => {
   // 清空会话记录，实际上是跳转到智能体详情页面
   const handleClear = () => {
     setClearLoading(true);
+    // 立即清空消息列表，避免跳转时旧数据闪烁
+    setMessageList([]);
     // 清除文件面板信息, 并关闭文件面板
     clearFilePanelInfo();
     runDetailNew(agentId, true);
