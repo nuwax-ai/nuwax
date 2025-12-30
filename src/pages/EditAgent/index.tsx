@@ -962,6 +962,9 @@ const EditAgent: React.FC = () => {
             {/*预览与调试和预览页面*/}
             <ResizableSplit
               minRightWidth={700}
+              defaultLeftWidth={
+                agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? 33 : 50
+              }
               left={
                 agentConfigInfo?.hideChatArea ? null : (
                   <PreviewAndDebug
