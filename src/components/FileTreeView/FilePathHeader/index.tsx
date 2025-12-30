@@ -353,7 +353,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         {isShowShare &&
           (viewMode === 'desktop' ||
             (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
-            <Tooltip title="分享">
+            <Tooltip title="分享" placement="bottom">
               <Button
                 type="text"
                 size="small"
@@ -368,7 +368,11 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
         {/* 是否显示全屏图标 */}
         {(showFullscreenIcon || isFullscreen) && (
-          <Tooltip title={isFullscreen ? '退出全屏' : '全屏'}>
+          <Tooltip
+            title={isFullscreen ? '退出全屏' : '全屏'}
+            placement="bottom"
+            key={isFullscreen ? 'exit' : 'enter'}
+          >
             <Button
               type="text"
               size="small"
