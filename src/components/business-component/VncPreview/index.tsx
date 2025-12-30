@@ -60,6 +60,9 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
 
       // Auto-connect param for the internal VNC client (noVNC usually supports this)
       params.set('autoconnect', 'true');
+      // Enable auto-reconnect
+      params.set('reconnect', 'true');
+      params.set('reconnect_delay', '500');
 
       if (readOnly) {
         params.set('view_only', 'true');
