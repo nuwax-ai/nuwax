@@ -6,7 +6,6 @@ import { isMarkdownFile } from '@/utils/common';
 import {
   CloseOutlined,
   CopyOutlined,
-  DesktopOutlined,
   EyeOutlined,
   FilePdfOutlined,
   FullscreenExitOutlined,
@@ -331,10 +330,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         <div className={styles.viewModeButtons}>
           <Button
             type={viewMode === 'preview' ? 'primary' : 'default'}
-            size="small"
-            icon={
-              <SvgIcon name="icons-common-preview" style={{ fontSize: 14 }} />
-            }
             onClick={() => onViewModeChange?.('preview')}
             className={styles.viewModeButton}
           >
@@ -342,8 +337,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           </Button>
           <Button
             type={viewMode === 'desktop' ? 'primary' : 'default'}
-            size="small"
-            icon={<DesktopOutlined style={{ fontSize: 14 }} />}
             onClick={() => onViewModeChange?.('desktop')}
             className={styles.viewModeButton}
           >
