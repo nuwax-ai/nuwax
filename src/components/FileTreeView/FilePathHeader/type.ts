@@ -74,4 +74,6 @@ export interface FilePathHeaderProps {
   isRefreshingFileTree?: boolean;
   // 是否显示刷新按钮
   showRefreshButton?: boolean;
+  // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
+  isOnlyShowDesktop?: boolean;
 }
