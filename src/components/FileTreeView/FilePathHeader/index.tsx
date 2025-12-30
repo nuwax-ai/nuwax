@@ -1,11 +1,7 @@
 import copyImage from '@/assets/images/copy.png';
 import SvgIcon from '@/components/base/SvgIcon';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { USER_INFO } from '@/constants/home.constants';
-import { apiAgentConversationShare } from '@/services/agentConfig';
-import { AgentConversationShareParams } from '@/types/interfaces/agent';
 import { FileNode } from '@/types/interfaces/appDev';
-import { copyTextToClipboard } from '@/utils';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { isMarkdownFile } from '@/utils/common';
 import {
@@ -85,37 +81,41 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   const [shareDesktopModalVisible, setShareDesktopModalVisible] =
     useState(false);
 
+  // 分享类型
+  const [shareType, setShareType] = useState<'CONVERSATION' | 'DESKTOP'>(
+    'CONVERSATION',
+  );
   // 分享文件
-  const onSharePreviewFile = async () => {
-    const data: AgentConversationShareParams = {
-      conversationId,
-      type: 'CONVERSATION',
-      content: targetNode?.fileProxyUrl || '',
-    };
+  // const onSharePreviewFile = async () => {
+  //   const data: AgentConversationShareParams = {
+  //     conversationId,
+  //     type: 'CONVERSATION',
+  //     content: targetNode?.fileProxyUrl || '',
+  //   };
 
-    const { data: shareData, code } = await apiAgentConversationShare(data);
-    if (code === SUCCESS_CODE) {
-      const baseUrl = window?.location?.origin || '';
-      const path = '/static/file-preview.html';
+  //   const { data: shareData, code } = await apiAgentConversationShare(data);
+  //   if (code === SUCCESS_CODE) {
+  //     const baseUrl = window?.location?.origin || '';
+  //     const path = '/static/file-preview.html';
 
-      const query = new URLSearchParams();
-      query.set('sk', shareData?.shareKey);
-      query.set(
-        'isDev',
-        process.env.NODE_ENV === 'development' ? 'true' : 'false',
-      );
-      const previewUrl = baseUrl + path + '?' + query.toString();
+  //     const query = new URLSearchParams();
+  //     query.set('sk', shareData?.shareKey);
+  //     query.set(
+  //       'isDev',
+  //       process.env.NODE_ENV === 'development' ? 'true' : 'false',
+  //     );
+  //     const previewUrl = baseUrl + path + '?' + query.toString();
 
-      // 复制到剪切板
-      copyTextToClipboard(previewUrl);
-      message.success('分享成功，链接已复制到剪切板');
-    }
-  };
+  //     // 复制到剪切板
+  //     copyTextToClipboard(previewUrl);
+  //     message.success('分享成功，链接已复制到剪切板');
+  //   }
+  // };
 
   // 分享桌面
-  const onShareDesktop = () => {
-    setShareDesktopModalVisible(true);
-  };
+  // const onShareDesktop = () => {
+  //   setShareDesktopModalVisible(true);
+  // };
 
   // 分享
   const onShareAction = (mode: 'preview' | 'desktop') => {
@@ -125,13 +125,16 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
     // 分享文件
     if (mode === 'preview') {
-      onSharePreviewFile();
+      // onSharePreviewFile();
+      setShareType('CONVERSATION');
     }
 
     // 分享桌面
     if (mode === 'desktop') {
-      onShareDesktop();
+      // onShareDesktop();
+      setShareType('DESKTOP');
     }
+    setShareDesktopModalVisible(true);
   };
 
   const handleCopy = () => {
@@ -403,6 +406,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
       {/* 远程桌面分享弹窗 */}
       <ShareDesktopModal
+        fileProxyUrl={targetNode?.fileProxyUrl || null}
+        shareType={shareType}
         visible={shareDesktopModalVisible}
         onClose={() => setShareDesktopModalVisible(false)}
         conversationId={conversationId || ''}

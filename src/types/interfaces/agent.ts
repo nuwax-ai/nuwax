@@ -929,6 +929,6 @@ export interface ApiAgentConversationChatPageResultParams {
 export interface AgentConversationShareParams {
   conversationId: number | string;
   type: string;
-  expireSeconds?: number;
+  expireSeconds?: number | null;
   content: string;
 }
