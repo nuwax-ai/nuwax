@@ -993,8 +993,9 @@ const EditAgent: React.FC = () => {
                       <div
                         className={cx(
                           styles['file-tree-sidebar'],
-                          styles['flex-2'],
+                          // styles['flex-2'],
                           'flex',
+                          'w-full',
                         )}
                       >
                         {/*文件树侧边栏 - 只在文件树可见时显示 */}

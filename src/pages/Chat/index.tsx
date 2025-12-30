@@ -1047,8 +1047,8 @@ const Chat: React.FC = () => {
                   <div
                     className={cx(
                       styles['file-tree-sidebar'],
-                      styles['flex-2'],
                       'flex',
+                      'w-full',
                     )}
                   >
                     <FileTreeView
