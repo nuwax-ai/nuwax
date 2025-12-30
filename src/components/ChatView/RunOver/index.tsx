@@ -32,7 +32,15 @@ const RunOver: React.FC<RunOverProps> = ({
   }, [finalResult]);
 
   const getTime = (endTime: number, startTime: number) => {
+    // Safety check: ensure both timestamps are valid numbers
+    if (!endTime || !startTime || endTime <= 0 || startTime <= 0) {
+      return '';
+    }
     const time = endTime - startTime;
+    // Handle negative time (invalid data)
+    if (time < 0) {
+      return '';
+    }
     if (time < 1000) {
       return `${time}ms`;
     } else {
