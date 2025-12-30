@@ -227,16 +227,7 @@ export default () => {
 
   // 重启智能体电脑
   const restartVncPod = useCallback(async (cId: number) => {
-    try {
-      const { code } = await apiRestartPod(cId);
-      if (code === SUCCESS_CODE) {
-        message.success('重启智能体电脑成功');
-      } else {
-        message.error('重启智能体电脑失败');
-      }
-    } catch (error) {
-      console.error('重启智能体电脑失败', error);
-    }
+    return await apiRestartPod(cId);
   }, []);
 
   // 重启智能体
