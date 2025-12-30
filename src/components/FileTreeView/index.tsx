@@ -171,114 +171,28 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     }, [isFullscreenPreview]);
 
     // 获取文件内容并更新文件树
-    const fetchFileContentUpdateFiles = async (
-      fileProxyUrl: string,
-      fileId: string,
-    ) => {
-      // 获取文件内容
-      const fileContent = await fetchContentFromUrl(fileProxyUrl);
+    const fetchFileContentUpdateFiles = useCallback(
+      async (fileProxyUrl: string, fileId: string) => {
+        // 获取文件内容
+        const fileContent = await fetchContentFromUrl(fileProxyUrl);
 
-      // 更新文件树中的文件内容
-      setFiles((prevFiles) => {
-        const updatedFiles: FileNode[] = updateFileTreeContent(
-          fileId,
-          fileContent,
-          prevFiles,
-        );
-        return updatedFiles;
-      });
+        // 更新文件树中的文件内容
+        setFiles((prevFiles) => {
+          const updatedFiles: FileNode[] = updateFileTreeContent(
+            fileId,
+            fileContent,
+            prevFiles,
+          );
+          return updatedFiles;
+        });
 
-      return fileContent;
-    };
-
-    // 文件选择（内部函数，执行实际的选择逻辑）
-    const handleFileSelectInternal = useCallback(
-      async (fileId: string) => {
-        // 根据文件ID查找文件节点
-        const fileNode = findFileNode(fileId, files);
-
-        if (fileNode) {
-          // 如果文件节点是文件夹(folder)，则选择第一个子节点(点击会话中文件名时，如果文件名是文件夹，则选择第一个子节点)
-          if (fileNode.type === 'folder') {
-            // 如果文件节点是文件夹，且有子节点，则选择第一个子节点
-            if (fileNode?.children?.length) {
-              const firstChild = fileNode.children?.[0];
-              if (firstChild) {
-                handleFileSelectInternal(firstChild.id);
-              }
-            }
-            return;
-          }
-
-          // 如果文件节点是链接文件，则不支持预览
-          if (fileNode?.isLink) {
-            setSelectedFileId(fileId);
-            setViewFileType('preview');
-            setSelectedFileNode(fileNode);
-            return;
-          }
-
-          // 获取文件内容
-          const fileContent = fileNode?.content || '';
-          if (fileContent) {
-            setSelectedFileId(fileId);
-            setViewFileType('preview');
-            setSelectedFileNode(fileNode);
-          } else {
-            if (isRenamingFile) {
-              message.warning('文件正在重命名中，请稍后再试');
-              return;
-            }
-
-            setSelectedFileId(fileId);
-            setViewFileType('preview');
-            // 判断文件是否为图片类型
-            const isImage = isImageFile(fileNode?.name || '');
-            // 判断文件是否为视频类型
-            const isVideo = isVideoFile(fileNode?.name || '');
-            // 判断文件是否为音频类型
-            const isAudio = isAudioFile(fileNode?.name || '');
-            // 判断文件是否为文档类型
-            const result = isDocumentFile(fileNode?.name || '');
-            // 判断文件是否为office文档类型
-            const isOfficeDocument = result?.isDoc || false;
-            // 获取文件代理URL
-            const fileProxyUrl = fileNode?.fileProxyUrl || '';
-
-            // 如果文件为图片、视频、音频、文档类型，或则没有文件代理URL，则直接设置为选中文件节点
-            if (
-              isImage ||
-              isVideo ||
-              isAudio ||
-              isOfficeDocument ||
-              !fileProxyUrl
-            ) {
-              setSelectedFileNode(fileNode);
-            }
-            // 其他类型文件：使用文件代理URL获取文件内容
-            // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
-            else if (fileProxyUrl) {
-              // 获取文件内容并更新文件树
-              const newFileContent = await fetchFileContentUpdateFiles(
-                fileProxyUrl,
-                fileId,
-              );
-              // 设置选中文件节点
-              setSelectedFileNode({
-                ...fileNode,
-                content: newFileContent || '',
-              });
-            }
-          }
-        } else {
-          setSelectedFileNode(null);
-        }
+        return fileContent;
       },
-      [files, isRenamingFile],
+      [],
     );
 
     // 刷新文件树和文件内容
-    const handleRefreshFileList = async () => {
+    const handleRefreshFileList = useCallback(async () => {
       // 如果正在刷新，直接返回，防止重复点击
       if (isRefreshingFileTree) {
         return;
@@ -326,7 +240,112 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       } finally {
         setIsRefreshingFileTree(false);
       }
-    };
+    }, [
+      isRefreshingFileTree,
+      onRefreshFileTree,
+      selectedFileId,
+      selectedFileNode,
+      fetchFileContentUpdateFiles,
+    ]);
+
+    // 文件选择（内部函数，执行实际的选择逻辑）
+    const handleFileSelectInternal = useCallback(
+      async (fileId: string) => {
+        // 根据文件ID查找文件节点
+        const fileNode = findFileNode(fileId, files);
+
+        if (fileNode) {
+          // 如果文件节点是文件夹(folder)，则选择第一个子节点(点击会话中文件名时，如果文件名是文件夹，则选择第一个子节点)
+          if (fileNode.type === 'folder') {
+            // 如果文件节点是文件夹，且有子节点，则选择第一个子节点
+            if (fileNode?.children?.length) {
+              const firstChild = fileNode.children?.[0];
+              if (firstChild) {
+                handleFileSelectInternal(firstChild.id);
+              }
+            }
+            return;
+          }
+
+          // 如果文件节点是链接文件，则不支持预览
+          if (fileNode?.isLink) {
+            setSelectedFileId(fileId);
+            setViewFileType('preview');
+            setSelectedFileNode(fileNode);
+            return;
+          }
+
+          // 检查是否是重复点击同一个文件
+          const isSameFile = selectedFileId === fileId;
+
+          // 如果是重复点击，直接调用刷新逻辑（与 fileHeader 上的刷新按钮逻辑一致）
+          if (isSameFile) {
+            await handleRefreshFileList();
+            return;
+          }
+
+          // 获取文件内容
+          const fileContent = fileNode?.content || '';
+          // 获取文件代理URL
+          const fileProxyUrl = fileNode?.fileProxyUrl || '';
+
+          // 如果文件有内容，直接使用缓存
+          if (fileContent) {
+            setSelectedFileId(fileId);
+            setViewFileType('preview');
+            setSelectedFileNode(fileNode);
+            return;
+          }
+
+          // 文件没有内容或需要重新加载
+          if (isRenamingFile) {
+            message.warning('文件正在重命名中，请稍后再试');
+            return;
+          }
+
+          setSelectedFileId(fileId);
+          setViewFileType('preview');
+          // 判断文件是否为图片类型
+          const isImage = isImageFile(fileNode?.name || '');
+          // 判断文件是否为视频类型
+          const isVideo = isVideoFile(fileNode?.name || '');
+          // 判断文件是否为音频类型
+          const isAudio = isAudioFile(fileNode?.name || '');
+          // 判断文件是否为文档类型
+          const result = isDocumentFile(fileNode?.name || '');
+          // 判断文件是否为office文档类型
+          const isOfficeDocument = result?.isDoc || false;
+
+          // 如果文件为图片、视频、音频、文档类型，或则没有文件代理URL，则直接设置为选中文件节点
+          if (
+            isImage ||
+            isVideo ||
+            isAudio ||
+            isOfficeDocument ||
+            !fileProxyUrl
+          ) {
+            setSelectedFileNode(fileNode);
+          }
+          // 其他类型文件：使用文件代理URL获取文件内容
+          // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
+          else if (fileProxyUrl) {
+            // 获取文件内容并更新文件树
+            const newFileContent = await fetchFileContentUpdateFiles(
+              fileProxyUrl,
+              fileId,
+            );
+            // 设置选中文件节点
+            setSelectedFileNode({
+              ...fileNode,
+              content: newFileContent || '',
+            });
+          }
+        } else {
+          setSelectedFileNode(null);
+        }
+      },
+      [files, isRenamingFile, selectedFileId, handleRefreshFileList],
+    );
 
     // 文件选择（对外接口，用于用户主动选择）
     const handleFileSelect = useCallback(
