@@ -17,10 +17,10 @@ import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Button, Empty, Modal, Segmented, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useParams, useRequest, useSearchParams } from 'umi';
+import { useModel, useParams, useRequest, useSearchParams } from 'umi';
 // 复用广场中的组件
 import { ICON_MORE } from '@/constants/images.constants';
-import { SPACE_SQUARE_TABS } from '@/constants/space.constants';
+import { getSpaceSquareTabs } from '@/constants/space.constants';
 import SingleAgent from '../Square/SingleAgent';
 import SquareComponentInfo from '../Square/SquareComponentInfo';
 import TemplateItem from '../Square/TemplateItem';
@@ -28,13 +28,6 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 type IQuery = 'activeKey';
-
-// 空间广场-分类
-const SPACE_SQUARE_SEGMENTED_LIST =
-  SPACE_SQUARE_TABS?.map((item) => ({
-    label: item.label,
-    value: item.key,
-  })) || [];
 
 // 空间广场
 const SpaceSection: React.FC = () => {
@@ -71,6 +64,15 @@ const SpaceSection: React.FC = () => {
     handleClick,
     handleToggleCollectSuccess,
   } = useSpaceSquare();
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 空间广场-分类（根据enabledSandbox动态获取）
+  const spaceSquareSegmentedList =
+    getSpaceSquareTabs(tenantConfigInfo?.enabledSandbox)?.map((item) => ({
+      label: item?.label,
+      value: item?.key,
+    })) || [];
 
   // 查询列表成功后处理数据
   const handleSuccess = (result: Page<SquarePublishedItemInfo>) => {
@@ -307,7 +309,7 @@ const SpaceSection: React.FC = () => {
         <h3 className={cx(styles.title)}>空间广场</h3>
         <Segmented
           className={cx(styles.segmented)}
-          options={SPACE_SQUARE_SEGMENTED_LIST}
+          options={spaceSquareSegmentedList}
           value={activeKey}
           onChange={handleTabClick}
         />
