@@ -16,6 +16,7 @@ import {
   FullscreenExitOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import { Button, message, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -67,6 +68,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   isFileTreePinned = false,
   onFileTreeToggle,
   onFileTreeMouseEnter,
+  onRefreshFileTree,
 }) => {
   // 文件名
   const fileName = targetNode?.name;
@@ -267,6 +269,19 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               />
             </Tooltip>
           </CopyToClipboard>
+        )}
+
+        {/* 刷新文件树 */}
+        {viewMode === 'preview' && (
+          <Tooltip title="刷新文件树">
+            <Button
+              type="text"
+              size="small"
+              icon={<ReloadOutlined style={{ fontSize: 16 }} />}
+              onClick={onRefreshFileTree}
+              className={styles.actionButton}
+            />
+          </Tooltip>
         )}
 
         {/* Markdown 文件显示导出 PDF 按钮 */}
