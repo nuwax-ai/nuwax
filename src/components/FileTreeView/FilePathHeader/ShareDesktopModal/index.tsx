@@ -17,6 +17,7 @@ import React, { useRef } from 'react';
  * label: 显示文本
  */
 const TIME_OPTIONS = [
+  { label: '永久', value: '' },
   { label: '1分钟', value: 60 },
   { label: '5分钟', value: 5 * 60 },
   { label: '10分钟', value: 10 * 60 },
@@ -40,6 +41,10 @@ interface ShareFormValues {
 }
 
 interface ShareDesktopModalProps {
+  /** 文件代理URL */
+  fileProxyUrl: string | null;
+  /** 分享类型 */
+  shareType: 'CONVERSATION' | 'DESKTOP';
   /** 是否显示弹窗 */
   visible: boolean;
   /** 关闭弹窗回调 */
@@ -57,6 +62,8 @@ interface ShareDesktopModalProps {
  * @param conversationId - 会话ID
  */
 const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
+  fileProxyUrl,
+  shareType,
   visible,
   onClose,
   conversationId,
@@ -74,11 +81,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
     return option?.label || `${seconds}秒`;
   };
 
-  /**
-   * 处理表单提交
-   * 生成分享链接并复制到剪切板
-   */
-  const handleFinish = async (values: ShareFormValues) => {
+  const generateDesktopShareUrl = async (values: ShareFormValues) => {
     if (!conversationId) {
       message.error('会话ID不存在，无法分享');
       return false;
@@ -93,7 +96,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
         conversationId: Number(conversationId),
         type: 'DESKTOP',
         content: desktopUrl,
-        expireSeconds: values.expireSeconds,
+        expireSeconds: values.expireSeconds ? values.expireSeconds : null,
       };
 
       const { data: shareData, code } = await apiAgentConversationShare(data);
@@ -126,10 +129,63 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
       return false;
     }
   };
+  const generateFileShareUrl = async (values: ShareFormValues) => {
+    if (!conversationId) {
+      message.error('会话ID不存在，无法分享');
+      return false;
+    }
+
+    try {
+      const data: AgentConversationShareParams = {
+        conversationId,
+        type: 'CONVERSATION',
+        content: fileProxyUrl || '',
+        expireSeconds: values.expireSeconds ? values.expireSeconds : null,
+      };
+
+      const { data: shareData, code } = await apiAgentConversationShare(data);
+      if (code === SUCCESS_CODE) {
+        const baseUrl = window?.location?.origin || '';
+        const path = '/static/file-preview.html';
+
+        const query = new URLSearchParams();
+        query.set('sk', shareData?.shareKey);
+        query.set(
+          'isDev',
+          process.env.NODE_ENV === 'development' ? 'true' : 'false',
+        );
+        const previewUrl = baseUrl + path + '?' + query.toString();
+
+        // 复制到剪切板
+        copyTextToClipboard(previewUrl);
+        message.success('分享成功，链接已复制到剪切板');
+        return true;
+      } else {
+        message.error('分享失败，请稍后重试');
+        return false;
+      }
+    } catch (error) {
+      console.error('分享文件失败:', error);
+      message.error('分享失败，请稍后重试');
+      return false;
+    }
+  };
+
+  /**
+   * 处理表单提交
+   * 生成分享链接并复制到剪切板
+   */
+  const handleFinish = async (values: ShareFormValues) => {
+    if (shareType === 'DESKTOP') {
+      return generateDesktopShareUrl(values);
+    } else {
+      return generateFileShareUrl(values);
+    }
+  };
 
   return (
     <ModalForm<ShareFormValues>
-      title="分享远程桌面"
+      title={shareType === 'DESKTOP' ? '分享远程桌面' : '分享文件'}
       open={visible}
       formRef={formRef}
       onOpenChange={(open) => {
@@ -150,7 +206,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
         },
       }}
       initialValues={{
-        expireSeconds: 60 * 60, // 默认1小时
+        expireSeconds: '', // 默认永久
       }}
     >
       {/* 有效时间选择 */}
@@ -159,14 +215,16 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
         label="有效时间"
         placeholder="请选择有效时间"
         options={TIME_OPTIONS}
-        rules={[{ required: true, message: '请选择有效时间' }]}
+        // rules={[{ required: true, message: '请选择有效时间' }]}
       />
 
       {/* 实时显示有效时间提示 */}
       <ProFormDependency name={['expireSeconds']}>
         {({ expireSeconds }) => (
           <div style={{ marginTop: -16, marginBottom: 16, color: '#00000073' }}>
-            链接将在 {formatTimeDisplay(expireSeconds || 5 * 60)} 后失效
+            {expireSeconds
+              ? `链接将在 ${formatTimeDisplay(expireSeconds || 5 * 60)} 后失效`
+              : `链接永久有效`}
           </div>
         )}
       </ProFormDependency>
@@ -174,14 +232,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
       {/* 温馨提示 */}
       <Alert
         message="温馨提示："
-        description={
-          <ul style={{ margin: 0, paddingLeft: 0 }}>
-            <li>分享链接生成后将自动复制到剪切板</li>
-            <li>链接在有效期内可多次访问</li>
-            <li>为保障安全，请勿将链接分享给陌生人</li>
-            <li>链接失效后需要重新生成</li>
-          </ul>
-        }
+        description="分享链接生成后将自动复制到剪切板；互联网上得到该分享链接的用户均可访问，请谨慎分享，注意数据风险。"
         type="info"
         showIcon
         style={{ marginTop: 8 }}
