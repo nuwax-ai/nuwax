@@ -128,6 +128,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
     // 是否正在重命名文件
     const [isRenamingFile, setIsRenamingFile] = useState<boolean>(false);
+    // 是否正在刷新文件树
+    const [isRefreshingFileTree, setIsRefreshingFileTree] =
+      useState<boolean>(false);
 
     /** 当前文件查看类型：预览、代码 */
     const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
@@ -262,35 +265,52 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     // 刷新文件树和文件内容
     const handleRefreshFileList = async () => {
-      // 刷新文件树
-      onRefreshFileTree?.();
+      // 如果正在刷新，直接返回，防止重复点击
+      if (isRefreshingFileTree) {
+        return;
+      }
 
-      // 如果存在当前选中文件，则重新通过 fileProxyUrl 更新文件内容
-      if (selectedFileId && selectedFileNode) {
-        const fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
+      try {
+        setIsRefreshingFileTree(true);
 
-        // 如果有 fileProxyUrl，重新获取文件内容
-        if (fileProxyUrl) {
-          try {
-            // 获取文件内容并更新文件树
-            const newFileContent = await fetchFileContentUpdateFiles(
-              fileProxyUrl,
-              selectedFileId,
-            );
+        // 刷新文件树
+        await onRefreshFileTree?.();
 
-            // 更新选中文件节点的内容
-            setSelectedFileNode((prevNode) =>
-              prevNode
-                ? {
-                    ...prevNode,
-                    content: newFileContent || '',
-                  }
-                : prevNode,
-            );
-          } catch (error) {
-            message.error('刷新文件内容失败');
+        // 如果存在当前选中文件，则重新通过 fileProxyUrl 更新文件内容
+        if (selectedFileId && selectedFileNode) {
+          const fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
+
+          // 如果有 fileProxyUrl，重新获取文件内容
+          if (fileProxyUrl) {
+            try {
+              // 获取文件内容并更新文件树
+              const newFileContent = await fetchFileContentUpdateFiles(
+                fileProxyUrl,
+                selectedFileId,
+              );
+
+              // 更新选中文件节点的内容
+              setSelectedFileNode((prevNode) =>
+                prevNode
+                  ? {
+                      ...prevNode,
+                      content: newFileContent || '',
+                    }
+                  : prevNode,
+              );
+            } catch (error) {
+              // message.error('刷新文件内容失败');
+              return;
+            }
           }
         }
+
+        // 刷新成功提示
+        message.success('刷新成功');
+      } catch (error) {
+        // message.error('刷新文件树失败');
+      } finally {
+        setIsRefreshingFileTree(false);
       }
     };
 
@@ -1136,6 +1156,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onFileTreeMouseEnter={handleFileTreeMouseEnter}
           // 刷新文件树回调
           onRefreshFileTree={handleRefreshFileList}
+          // 是否正在刷新文件树
+          isRefreshingFileTree={isRefreshingFileTree}
         />
       );
     };
