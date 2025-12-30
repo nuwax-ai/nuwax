@@ -55,7 +55,7 @@ export const LIBRARY_ALL_RESOURCE = [
 ];
 
 // 智能体类型列表
-export const AGENT_TYPE_LIST = [
+const AGENT_TYPE_LIST_ALL = [
   {
     value: AgentTypeEnum.ChatBot,
     label: '问答型',
@@ -70,6 +70,19 @@ export const AGENT_TYPE_LIST = [
       '为智能体分配独立的执行电脑，适合应用开发、深度调研、数据分析、演示文稿制作等复杂任务场景，比较消耗内存资源且输出结果较慢。',
   },
 ];
+
+// 获取智能体类型列表（根据enabledSandbox过滤）
+export const getAgentTypeList = (enabledSandbox?: boolean) => {
+  if (enabledSandbox === false) {
+    return AGENT_TYPE_LIST_ALL.filter(
+      (item) => item.value !== AgentTypeEnum.TaskAgent,
+    );
+  }
+  return AGENT_TYPE_LIST_ALL;
+};
+
+// 兼容旧代码
+export const AGENT_TYPE_LIST = AGENT_TYPE_LIST_ALL;
 
 // 技能库所有资源类型
 export const SKILL_ALL_RESOURCE = [
@@ -149,7 +162,7 @@ export const APPLICATION_MORE_ACTION_DETAIL = [
 ];
 
 // 工作空间应用列表（layout二级菜单）
-export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
+const SPACE_APPLICATION_LIST_ALL: SpaceApplicationList[] = [
   {
     type: SpaceApplicationListEnum.Application_Develop,
     icon: <SvgIcon name="icons-nav-stars" />,
@@ -196,6 +209,21 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
     text: '成员与设置',
   },
 ];
+
+// 获取工作空间应用列表（根据enabledSandbox过滤）
+export const getSpaceApplicationList = (
+  enabledSandbox?: boolean,
+): SpaceApplicationList[] => {
+  if (enabledSandbox === false) {
+    return SPACE_APPLICATION_LIST_ALL.filter(
+      (item) => item.type !== SpaceApplicationListEnum.Skill_Manage,
+    );
+  }
+  return SPACE_APPLICATION_LIST_ALL;
+};
+
+// 兼容旧代码
+export const SPACE_APPLICATION_LIST = SPACE_APPLICATION_LIST_ALL;
 
 // 创建智能体列表
 export const CREATE_AGENT_LIST = [
@@ -281,7 +309,7 @@ export const PLUGIN_OUTPUT_CONFIG = {
 };
 
 // 空间广场-分类列表
-export const SPACE_SQUARE_TABS: TabsProps['items'] = [
+const SPACE_SQUARE_TABS_ALL: TabsProps['items'] = [
   {
     key: SquareAgentTypeEnum.Agent,
     label: '智能体',
@@ -303,3 +331,18 @@ export const SPACE_SQUARE_TABS: TabsProps['items'] = [
     label: '模板',
   },
 ];
+
+// 获取空间广场分类列表（根据enabledSandbox过滤）
+export const getSpaceSquareTabs = (
+  enabledSandbox?: boolean,
+): TabsProps['items'] => {
+  if (enabledSandbox === false) {
+    return SPACE_SQUARE_TABS_ALL?.filter(
+      (item) => item?.key !== SquareAgentTypeEnum.Skill,
+    );
+  }
+  return SPACE_SQUARE_TABS_ALL;
+};
+
+// 兼容旧代码
+export const SPACE_SQUARE_TABS = SPACE_SQUARE_TABS_ALL;
