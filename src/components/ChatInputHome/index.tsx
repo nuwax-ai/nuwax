@@ -7,7 +7,11 @@ import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { handleUploadFileList } from '@/utils/upload';
-import { ArrowDownOutlined, LoadingOutlined } from '@ant-design/icons';
+import {
+  ArrowDownOutlined,
+  DesktopOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
 import { Input, InputRef, message, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -43,6 +47,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   showAnnouncement = false,
   onTempChatStop,
   loadingStopTempConversation,
+  showTaskAgentToggle = false,
+  isTaskAgentActive = false,
+  onToggleTaskAgent,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -433,6 +440,28 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               </span>
             </Tooltip>
           </Upload>
+          {/*任务智能体切换按钮*/}
+          {showTaskAgentToggle && (
+            <Tooltip
+              title={isTaskAgentActive ? '切换到普通模式' : '切换到任务智能体'}
+            >
+              <span
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'cursor-pointer',
+                  styles.box,
+                  styles['plus-box'],
+                  styles['task-agent-box'],
+                  { [styles['task-agent-active']]: isTaskAgentActive },
+                )}
+                onClick={onToggleTaskAgent}
+              >
+                <DesktopOutlined style={{ fontSize: '14px' }} />
+              </span>
+            </Tooltip>
+          )}
           {/*手动选择组件*/}
           <ManualComponentItem
             manualComponents={manualComponents}

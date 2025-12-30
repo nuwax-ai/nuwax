@@ -78,6 +78,16 @@
         }
       }
 
+      &.task-agent-box {
+        transition: all ease-in-out 0.2s;
+
+        &.task-agent-active {
+          color: @colorPrimary;
+          border-color: @colorPrimary;
+          background-color: @colorPrimaryBg;
+        }
+      }
+
       &.upload-box-disabled {
         cursor: not-allowed;
         color: @colorIcon !important;

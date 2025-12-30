@@ -53,7 +53,10 @@ export default function BaseTab({
     const params: any = {};
     Object.keys(values).forEach((key) => {
       const value = values[key];
-      if (value.file) {
+      // 处理清空的情况，传 -1 给后端
+      if (value === undefined || value === null) {
+        params[key] = -1;
+      } else if (value?.file) {
         params[key] = value.file.response?.data?.url;
       } else {
         params[key] = value as any;
