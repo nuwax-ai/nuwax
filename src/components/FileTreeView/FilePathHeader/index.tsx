@@ -1,4 +1,3 @@
-import copyImage from '@/assets/images/copy.png';
 import SvgIcon from '@/components/base/SvgIcon';
 import { USER_INFO } from '@/constants/home.constants';
 import { FileNode } from '@/types/interfaces/appDev';
@@ -6,7 +5,7 @@ import { formatFileSize } from '@/utils/appDevUtils';
 import { isMarkdownFile } from '@/utils/common';
 import {
   CloseOutlined,
-  DesktopOutlined,
+  CopyOutlined,
   EyeOutlined,
   FilePdfOutlined,
   FullscreenExitOutlined,
@@ -17,7 +16,6 @@ import {
 import { Button, message, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
-import CopyToClipboard from 'react-copy-to-clipboard';
 import { ReactComponent as CodeIconSvg } from './code.svg';
 import styles from './index.less';
 import MoreActionsMenu from './MoreActionsMenu/index';
@@ -146,10 +144,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     setShareDesktopModalVisible(true);
   };
 
-  const handleCopy = () => {
-    message.success('复制成功');
-  };
-
   return (
     <div
       className={cx(
@@ -264,21 +258,18 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
         {/* 复制内容 */}
         {!!targetNode?.content && viewMode === 'preview' && (
-          <CopyToClipboard text={targetNode?.content || ''} onCopy={handleCopy}>
-            <Tooltip title="复制">
-              <Button
-                type="text"
-                icon={
-                  <img
-                    className={cx('cursor-pointer', styles.img)}
-                    style={{ width: 22, height: 22 }}
-                    src={copyImage}
-                    alt=""
-                  />
-                }
-              />
-            </Tooltip>
-          </CopyToClipboard>
+          <Tooltip title="复制">
+            <Button
+              type="text"
+              size="small"
+              icon={<CopyOutlined style={{ fontSize: 16 }} />}
+              onClick={() => {
+                navigator.clipboard.writeText(targetNode?.content || '');
+                message.success('复制成功');
+              }}
+              className={styles.actionButton}
+            />
+          </Tooltip>
         )}
 
         {/* 刷新文件树 */}
@@ -339,10 +330,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         <div className={styles.viewModeButtons}>
           <Button
             type={viewMode === 'preview' ? 'primary' : 'default'}
-            size="small"
-            icon={
-              <SvgIcon name="icons-common-preview" style={{ fontSize: 14 }} />
-            }
             onClick={() => onViewModeChange?.('preview')}
             className={styles.viewModeButton}
           >
@@ -350,8 +337,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
           </Button>
           <Button
             type={viewMode === 'desktop' ? 'primary' : 'default'}
-            size="small"
-            icon={<DesktopOutlined style={{ fontSize: 14 }} />}
             onClick={() => onViewModeChange?.('desktop')}
             className={styles.viewModeButton}
           >
@@ -368,7 +353,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         {isShowShare &&
           (viewMode === 'desktop' ||
             (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
-            <Tooltip title="分享">
+            <Tooltip title="分享" placement="bottom">
               <Button
                 type="text"
                 size="small"
@@ -383,7 +368,11 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
 
         {/* 是否显示全屏图标 */}
         {(showFullscreenIcon || isFullscreen) && (
-          <Tooltip title={isFullscreen ? '退出全屏' : '全屏'}>
+          <Tooltip
+            title={isFullscreen ? '退出全屏' : '全屏'}
+            placement="bottom"
+            key={isFullscreen ? 'exit' : 'enter'}
+          >
             <Button
               type="text"
               size="small"
