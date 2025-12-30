@@ -46,6 +46,7 @@ import {
   StaticFileInfo,
   VncDesktopUpdateFileInfo,
 } from '@/types/interfaces/vncDesktop';
+import { extractLastTaskResultFile } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import {
   addBaseTarget,
@@ -157,6 +158,8 @@ const Chat: React.FC = () => {
     // 处理文件列表刷新事件
     handleRefreshFileList,
     openPreviewView,
+    setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
     openDesktopView,
     restartVncPod,
     restartAgent,
@@ -380,6 +383,22 @@ const Chat: React.FC = () => {
         const { data } = await runAsync(id);
         // 会话消息列表
         const list = data?.messageList || [];
+        const bigText = list
+          .filter(
+            (item: MessageInfo) =>
+              item.messageType === MessageTypeEnum.ASSISTANT,
+          )
+          .map((item: MessageInfo) => item.text)
+          .join('');
+        const lastTaskResultFile = extractLastTaskResultFile(bigText);
+        // 主动预览文件，并选中文件 <task-result> 内的 <file> 内容
+        if (lastTaskResultFile) {
+          openPreviewView(id);
+          setTaskAgentSelectedFileId(lastTaskResultFile);
+          // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
+          setTaskAgentSelectTrigger(Date.now());
+        }
+
         const len = list?.length || 0;
         // 会话消息列表为空或者只有一条消息并且此消息时开场白时，可以发送消息
         const isCanMessage =
