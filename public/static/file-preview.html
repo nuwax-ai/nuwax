@@ -319,7 +319,7 @@
                 const supportedTypes = [
                     'docx', 'xlsx', 'xls', 'pdf', 'pptx', 'ppt',
                     'md', 'html', 'css', 'js', 'ts', 'txt', 'json',
-                    'png', 'jpg', 'jpeg', 'gif', 'py', 'java'
+                    'png', 'jpg', 'jpeg', 'gif', 'svg', 'py', 'java'
                 ];
                 if (supportedTypes.includes(ext)) {
                     fileType = ext;
@@ -378,6 +378,7 @@
                     case 'jpg':
                     case 'jpeg':
                     case 'gif':
+                    case 'svg':
                         await renderImage(fileUrl, container);
                         break;
 
