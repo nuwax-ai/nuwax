@@ -34,6 +34,8 @@ const Home: React.FC = () => {
     useState<HomeAgentCategoryInfo>();
   const currentAgentTypeRef = useRef<string>('');
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
+  // 任务智能体模式状态
+  const [isTaskAgentMode, setIsTaskAgentMode] = useState<boolean>(false);
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
   // 会话输入框已选择组件
@@ -96,9 +98,14 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     if (tenantConfigInfo) {
-      runDetail(tenantConfigInfo?.defaultAgentId);
+      // 根据当前模式选择使用哪个智能体ID
+      const agentId =
+        isTaskAgentMode && tenantConfigInfo.defaultTaskAgentId
+          ? tenantConfigInfo.defaultTaskAgentId
+          : tenantConfigInfo.defaultAgentId;
+      runDetail(agentId);
     }
-  }, [tenantConfigInfo]);
+  }, [tenantConfigInfo, isTaskAgentMode]);
 
   useEffect(() => {
     // 初始化选中的组件列表
@@ -112,13 +119,31 @@ const Home: React.FC = () => {
       return;
     }
 
-    await handleCreateConversation(tenantConfigInfo.defaultAgentId, {
+    // 根据当前模式选择使用哪个智能体ID
+    const agentId =
+      isTaskAgentMode && tenantConfigInfo.defaultTaskAgentId
+        ? tenantConfigInfo.defaultTaskAgentId
+        : tenantConfigInfo.defaultAgentId;
+
+    await handleCreateConversation(agentId, {
       message: _message,
       files,
       infos: selectedComponentList,
       messageSourceType: 'home',
+      hideMenu: isTaskAgentMode,
     });
   };
+
+  // 切换任务智能体模式
+  const handleToggleTaskAgent = () => {
+    setIsTaskAgentMode((prev) => !prev);
+  };
+
+  // 是否显示任务智能体切换按钮
+  const showTaskAgentToggle = !!(
+    tenantConfigInfo?.defaultTaskAgentId &&
+    tenantConfigInfo.defaultTaskAgentId > 0
+  );
 
   // 处理标签点击 - 只更新activeTab状态
   const handleTabClick = (type: string) => {
@@ -189,13 +214,16 @@ const Home: React.FC = () => {
         </div>*/}
 
         <ChatInputHome
-          key={`home-${tenantConfigInfo?.defaultAgentId}`}
+          key={`home-${tenantConfigInfo?.defaultAgentId}-${isTaskAgentMode}`}
           className={cx(styles.textarea)}
           onEnter={handleEnter}
           isClearInput={false}
           manualComponents={agentDetail?.manualComponents || []}
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
+          showTaskAgentToggle={showTaskAgentToggle}
+          isTaskAgentActive={isTaskAgentMode}
+          onToggleTaskAgent={handleToggleTaskAgent}
         />
         <div
           className={cx(
