@@ -131,6 +131,47 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       };
     }, [resetRetry]);
 
+    // 监听来自 noVNC iframe 的消息
+    useEffect(() => {
+      const handleMessage = (event: MessageEvent) => {
+        // 忽略非对象消息
+        if (!event.data || typeof event.data !== 'object') return;
+
+        const { type, msg } = event.data;
+
+        switch (type) {
+          case 'vnc_connected':
+            // 连接成功
+            setStatus('connected');
+            setErrorMessage('');
+            break;
+          case 'vnc_connection_failed':
+            // 连接失败
+            setStatus('error');
+            setErrorMessage(msg || '无法连接到智能体电脑');
+            break;
+          case 'vnc_connection_closed':
+            // 连接断开（之前已连接）
+            setStatus('error');
+            setErrorMessage(msg || '连接已断开');
+            break;
+          case 'vnc_share_expired':
+            // 分享已过期
+            setStatus('error');
+            setErrorMessage('分享已过期');
+            break;
+          default:
+            // 忽略其他消息类型
+            break;
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+      return () => {
+        window.removeEventListener('message', handleMessage);
+      };
+    }, []);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
       if (autoConnect && status === 'disconnected') {

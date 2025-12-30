@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>远程桌面分享</title>
+  <title>智能体电脑分享</title>
   <style>
     * {
       margin: 0;
@@ -169,7 +169,7 @@
   <div class="container">
     <!-- 头部 -->
     <div class="header">
-      <div class="header-title">🖥️ 远程桌面分享</div>
+      <div class="header-title">🖥️ 智能体电脑分享</div>
       <div class="header-info">
         <span class="expire-info" id="expireInfo"></span>
       </div>
@@ -180,7 +180,7 @@
       <!-- 加载中 -->
       <div class="loading-container" id="loading">
         <div class="spinner"></div>
-        <div class="loading-text">正在加载远程桌面...</div>
+        <div class="loading-text">正在加载智能体电脑...</div>
       </div>
 
       <!-- 错误提示 -->
@@ -188,14 +188,14 @@
         <div class="error-icon">⚠️</div>
         <div class="error-title">加载失败</div>
         <div class="error-message" id="errorMessage">
-          无法加载远程桌面，请稍后重试
+          无法加载智能体电脑，请稍后重试
         </div>
         <button class="retry-button" onclick="location.reload()">
           重新加载
         </button>
       </div>
 
-      <!-- 远程桌面 iframe -->
+      <!-- 智能体电脑 iframe -->
       <iframe id="desktopFrame" class="desktop-frame hidden" allowfullscreen></iframe>
     </div>
   </div>
@@ -281,7 +281,7 @@
       updateCountdown();
     }
 
-    // 加载远程桌面
+    // 加载智能体电脑
     async function loadDesktop() {
       try {
         // 获取 URL 参数
@@ -323,7 +323,7 @@
             return;
           }
 
-          // 构造远程桌面 URL
+          // 构造智能体电脑 URL
           // 判断 content 是否已包含查询参数
           const separator = data.content.includes('?') ? '&' : '?';
           const fileUrl = baseUrl + data.content + separator + 'sk=' + sk;
@@ -339,7 +339,7 @@
           showError(message || '获取分享信息失败');
         }
       } catch (error) {
-        console.error('加载远程桌面失败:', error);
+        console.error('加载智能体电脑失败:', error);
         showError('加载失败，请检查网络连接或稍后重试');
       }
     }
