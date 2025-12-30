@@ -147,3 +147,26 @@ export async function apiKeepalivePod(
     },
   });
 }
+
+/**
+ * 检测 VNC 桌面是否就绪
+ * 通过后端代理请求，绕过 CORS 限制
+ */
+export interface VncStatusResponse {
+  vnc_ready: boolean;
+  novnc_ready: boolean;
+  message: string;
+  uptime_seconds?: number;
+  container_id?: string;
+}
+
+export async function apiCheckVncStatus(
+  cId: number,
+): Promise<RequestResponse<VncStatusResponse>> {
+  return request('/api/computer/pod/vnc-status', {
+    method: 'GET',
+    params: {
+      cId,
+    },
+  });
+}
