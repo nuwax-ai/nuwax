@@ -57,7 +57,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
                 <div className="flex items-center">
                   <span>重启智能体电脑</span>
                   <TooltipIcon
-                    title="当前用户正在运行的所有智能体将全部被重启；"
+                    title="当前用户正在运行的所有智能体将全部被重启"
                     icon={<InfoCircleOutlined />}
                   />
                 </div>
@@ -79,7 +79,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
                 <div className="flex items-center">
                   <span>重启智能体</span>
                   <TooltipIcon
-                    title="当前会话对应的智能体将重启；"
+                    title="当前会话对应的智能体将重启"
                     icon={<InfoCircleOutlined />}
                   />
                 </div>
