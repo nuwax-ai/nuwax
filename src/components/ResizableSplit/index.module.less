@@ -4,7 +4,7 @@
   height: 100%;
   position: relative;
   overflow: hidden;
-  min-width: 1000px;
+  // min-width: 1000px;
 
   .left,
   .right {
@@ -39,6 +39,7 @@
     transform: translateX(-1px); // 使分隔线居中
     // 添加 will-change 优化渲染性能
     will-change: transform;
+
     // 添加拖拽手柄
     &::before {
       content: '';
@@ -64,6 +65,7 @@
     &.dragging {
       background-color: var(--divider-dragging-color, #1890ff);
       transition: none; // 拖拽时禁用过渡
+
       &::before {
         background-color: rgba(255, 255, 255, 80%);
         transition: none; // 拖拽时禁用过渡
