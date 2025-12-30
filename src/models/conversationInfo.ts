@@ -856,6 +856,34 @@ export default () => {
       body: params,
       abortController,
       onMessage: (res: ConversationChatResponse) => {
+        const currentInfo = conversationInfo ?? data;
+        if (isSync && currentInfo && currentInfo?.topicUpdated !== 1) {
+          // 第一次发送消息后更新主题
+          // 如果是智能体编排页面不更新
+          runUpdateTopic({
+            id: params.conversationId,
+            firstMessage: params.message,
+          }).then((result: RequestResponse<ConversationInfo>) => {
+            // 更新会话记录
+            setConversationInfo({
+              ...currentInfo,
+              topicUpdated: result.data?.topicUpdated,
+              topic: result.data?.topic,
+            });
+
+            // 如果是会话聊天页（chat页），同步更新会话记录
+            runHistory({
+              agentId: null,
+              limit: 20,
+            });
+
+            // 获取当前智能体的历史记录
+            runHistoryItem({
+              agentId: currentInfo.agentId,
+              limit: 20,
+            });
+          });
+        }
         handleChangeMessageList(params, res, currentMessageId);
         // 滚动到底部
         handleScrollBottom();
@@ -904,7 +932,7 @@ export default () => {
         // 主动关闭连接时，禁用会话
         disabledConversationActive();
 
-        const currentInfo = conversationInfo ?? data;
+        /* const currentInfo = conversationInfo ?? data;
 
         if (isSync && currentInfo && currentInfo?.topicUpdated !== 1) {
           // 第一次发送消息后更新主题
@@ -931,7 +959,7 @@ export default () => {
             agentId: currentInfo.agentId,
             limit: 20,
           });
-        }
+        }*/
       },
       onError: () => {
         message.error('网络超时或服务不可用，请稍后再试');
