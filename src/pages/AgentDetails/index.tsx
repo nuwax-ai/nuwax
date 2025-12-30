@@ -7,6 +7,7 @@ import {
 } from '@/components/business-component';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
+import FileTreeView from '@/components/FileTreeView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
@@ -71,6 +72,14 @@ const AgentDetails: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   // 会话ID
   const [conversationId, setConversationId] = useState<number | null>(null);
+
+  const {
+    isFileTreeVisible,
+    openDesktopView,
+    closePreviewView,
+    restartVncPod,
+    restartAgent,
+  } = useModel('conversationInfo');
 
   // 会话输入框已选择组件
   const {
@@ -299,6 +308,14 @@ const AgentDetails: React.FC = () => {
     pagePreviewData,
   ]);
 
+  // 显示文件树
+  const handleFileTreeVisible = () => {
+    // 关闭 AgentSidebar，确保文件树显示时，AgentSidebar 不会显示
+    sidebarRef.current?.close();
+    // 触发文件列表刷新事件
+    openDesktopView(agentDetail?.conversationId);
+  };
+
   const LeftContent = () => {
     return (
       <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
@@ -354,6 +371,24 @@ const AgentDetails: React.FC = () => {
                         sidebarRef.current?.close();
                         handleOpenPreview(agentDetail);
                       }}
+                    />
+                  </Tooltip>
+                )}
+
+              {/*文件树切换按钮 - 只在 AgentSidebar 隐藏时显示 */}
+              {agentDetail?.type === AgentTypeEnum.TaskAgent &&
+                agentDetail?.conversationId &&
+                !isFileTreeVisible && (
+                  <Tooltip title="文件预览或打开智能体电脑">
+                    <Button
+                      type="text"
+                      icon={
+                        <SvgIcon
+                          name="icons-nav-components"
+                          className={cx(styles['icons-nav-sidebar'])}
+                        />
+                      }
+                      onClick={handleFileTreeVisible}
                     />
                   </Tooltip>
                 )}
@@ -446,40 +481,68 @@ const AgentDetails: React.FC = () => {
           minLeftWidth={400}
           left={agentDetail?.hideChatArea ? null : LeftContent()}
           right={
-            pagePreviewData && (
-              <>
-                <PagePreviewIframe
-                  pagePreviewData={pagePreviewData}
-                  showHeader={true}
-                  onClose={hidePagePreview}
-                  showCloseButton={!agentDetail?.hideChatArea}
-                  titleClassName={cx(styles['title-style'])}
-                  // 复制模板按钮相关 props
-                  showCopyButton={showCopyButton}
-                  allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
-                  onCopyClick={() => setOpenPageCopyModal(true)}
-                  copyButtonText="复制模板"
-                  copyButtonClassName={styles['copy-btn']}
-                />
-                {/* 复制模板弹窗 */}
-                {showCopyButton && agentDetail && pagePreviewData?.uri && (
-                  <CopyToSpaceComponent
-                    spaceId={agentDetail.spaceId}
-                    mode={AgentComponentTypeEnum.Page}
-                    componentId={parsePageAppProjectId(pagePreviewData.uri)}
-                    title={''}
-                    open={openPageCopyModal}
-                    isTemplate={true}
-                    onSuccess={(_: any, targetSpaceId: number) => {
-                      setOpenPageCopyModal(false);
-                      // 跳转
-                      jumpToPageDevelop(targetSpaceId);
-                    }}
-                    onCancel={() => setOpenPageCopyModal(false)}
-                  />
-                )}
-              </>
-            )
+            agentDetail?.type !== AgentTypeEnum.TaskAgent
+              ? pagePreviewData && (
+                  <>
+                    <PagePreviewIframe
+                      pagePreviewData={pagePreviewData}
+                      showHeader={true}
+                      onClose={hidePagePreview}
+                      showCloseButton={!agentDetail?.hideChatArea}
+                      titleClassName={cx(styles['title-style'])}
+                      // 复制模板按钮相关 props
+                      showCopyButton={showCopyButton}
+                      allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
+                      onCopyClick={() => setOpenPageCopyModal(true)}
+                      copyButtonText="复制模板"
+                      copyButtonClassName={styles['copy-btn']}
+                    />
+                    {/* 复制模板弹窗 */}
+                    {showCopyButton && agentDetail && pagePreviewData?.uri && (
+                      <CopyToSpaceComponent
+                        spaceId={agentDetail.spaceId}
+                        mode={AgentComponentTypeEnum.Page}
+                        componentId={parsePageAppProjectId(pagePreviewData.uri)}
+                        title={''}
+                        open={openPageCopyModal}
+                        isTemplate={true}
+                        onSuccess={(_: any, targetSpaceId: number) => {
+                          setOpenPageCopyModal(false);
+                          // 跳转
+                          jumpToPageDevelop(targetSpaceId);
+                        }}
+                        onCancel={() => setOpenPageCopyModal(false)}
+                      />
+                    )}
+                  </>
+                )
+              : // 任务型
+                isFileTreeVisible && (
+                  <div
+                    className={cx(
+                      styles['file-tree-sidebar'],
+                      'flex',
+                      'w-full',
+                    )}
+                  >
+                    <FileTreeView
+                      targetId={agentDetail?.conversationId?.toString() || ''}
+                      viewMode={'desktop'}
+                      // 重启容器
+                      onRestartServer={() =>
+                        restartVncPod(agentDetail?.conversationId)
+                      }
+                      // 重启智能体
+                      onRestartAgent={() =>
+                        restartAgent(agentDetail?.conversationId)
+                      }
+                      // 关闭整个面板
+                      onClose={closePreviewView}
+                      isCanDeleteSkillFile={true}
+                      isOnlyShowDesktop={true}
+                    />
+                  </div>
+                )
           }
         />
       )}
