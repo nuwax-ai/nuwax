@@ -234,7 +234,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         }
 
         // 刷新成功提示
-        message.success('刷新成功');
+        // message.success('刷新成功');
       } catch (error) {
         // message.error('刷新文件树失败');
       } finally {
