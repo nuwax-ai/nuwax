@@ -147,3 +147,18 @@ export async function apiKeepalivePod(
     },
   });
 }
+
+/**
+ * 检测 VNC 桌面 URL 是否可用
+ * 通过后端代理请求，绕过 CORS 限制获取真实的 HTTP 状态码
+ */
+export async function apiCheckVncUrl(
+  cId: number,
+): Promise<RequestResponse<{ status: number; available: boolean }>> {
+  return request('/api/computer/desktop/check', {
+    method: 'GET',
+    params: {
+      cId,
+    },
+  });
+}
