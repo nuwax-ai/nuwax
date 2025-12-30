@@ -123,3 +123,16 @@
     width: 100%;
   }
 }
+
+/* 文件树侧边栏样式 */
+.file-tree-sidebar {
+  position: sticky;
+  height: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  border-left: @lineWidth @lineType @colorBorderSecondary;
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
+}

@@ -30,7 +30,7 @@ export interface FileTreeViewProps {
   // 任务智能体文件选择触发标志，每次点击按钮时传入不同的值（如时间戳），用于强制触发文件选择
   taskAgentSelectTrigger?: number | string;
   // 原始文件列表
-  originalFiles: any[];
+  originalFiles?: any[];
   /** 文件树数据加载状态 */
   fileTreeDataLoading?: boolean;
   /** 是否只读 */
@@ -84,4 +84,6 @@ export interface FileTreeViewProps {
   onRefreshFileTree?: () => void;
   // 是否显示刷新按钮, 默认显示
   showRefreshButton?: boolean;
+  // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
+  isOnlyShowDesktop?: boolean;
 }

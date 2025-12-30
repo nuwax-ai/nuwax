@@ -89,6 +89,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onRefreshFileTree,
       // 是否显示刷新按钮
       showRefreshButton = true,
+      // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
+      isOnlyShowDesktop = false,
     },
     ref,
   ) => {
@@ -408,6 +410,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     ]);
 
     useEffect(() => {
+      if (!originalFiles || originalFiles.length === 0) {
+        setFiles([]);
+        return;
+      }
       // 如果文件列表不为空，则转换为树形结构
       if (Array.isArray(originalFiles) && originalFiles.length > 0) {
         const treeData: FileNode[] = transformFlatListToTree(originalFiles);
@@ -1139,7 +1145,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 是否显示文件树展开/折叠按钮
           showFileTreeToggleButton={showFileTreeToggleButton}
           // 导出项目回调
-          onExportProject={handleDownloadProject}
+          onExportProject={onExportProject ? handleDownloadProject : undefined}
           // 处理导入项目操作
           onImportProject={onImportProject}
           // 重启容器
@@ -1198,6 +1204,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           isRefreshingFileTree={isRefreshingFileTree}
           // 是否显示刷新按钮
           showRefreshButton={showRefreshButton}
+          // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
+          isOnlyShowDesktop={isOnlyShowDesktop}
         />
       );
     };
