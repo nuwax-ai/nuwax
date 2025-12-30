@@ -1103,6 +1103,8 @@ const Chat: React.FC = () => {
                       // 文件树固定状态变化回调
                       onFileTreePinnedChange={setIsFileTreePinned}
                       isCanDeleteSkillFile={true}
+                      // 刷新文件树回调
+                      onRefreshFileTree={() => handleRefreshFileList(id)}
                     />
                   </div>
                 )

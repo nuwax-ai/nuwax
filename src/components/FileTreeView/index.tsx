@@ -85,6 +85,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onFileTreePinnedChange,
       // 是否可以删除技能文件(SKILL.md文件), 默认不可以删除(为false时，则隐藏删除菜单项，为true时，则显示删除菜单项)
       isCanDeleteSkillFile = false,
+      // 刷新文件树回调
+      onRefreshFileTree,
     },
     ref,
   ) => {
@@ -159,13 +161,32 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
     }, [isFullscreenPreview]);
 
+    // 获取文件内容并更新文件树
+    const fetchFileContentUpdateFiles = async (
+      fileProxyUrl: string,
+      fileId: string,
+    ) => {
+      // 获取文件内容
+      const fileContent = await fetchContentFromUrl(fileProxyUrl);
+
+      // 更新文件树中的文件内容
+      setFiles((prevFiles) => {
+        const updatedFiles: FileNode[] = updateFileTreeContent(
+          fileId,
+          fileContent,
+          prevFiles,
+        );
+        return updatedFiles;
+      });
+
+      return fileContent;
+    };
+
     // 文件选择（内部函数，执行实际的选择逻辑）
     const handleFileSelectInternal = useCallback(
       async (fileId: string) => {
         // 根据文件ID查找文件节点
         const fileNode = findFileNode(fileId, files);
-
-        console.log(files, '文件选择（内部函数，执行实际的选择逻辑', fileId);
 
         if (fileNode) {
           // 如果文件节点是文件夹(folder)，则选择第一个子节点(点击会话中文件名时，如果文件名是文件夹，则选择第一个子节点)
@@ -220,22 +241,15 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             // 其他类型文件：使用文件代理URL获取文件内容
             // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
             else if (fileProxyUrl) {
-              // 获取文件内容
-              const fileContent = await fetchContentFromUrl(fileProxyUrl);
+              // 获取文件内容并更新文件树
+              const newFileContent = await fetchFileContentUpdateFiles(
+                fileProxyUrl,
+                fileId,
+              );
               // 设置选中文件节点
               setSelectedFileNode({
                 ...fileNode,
-                content: fileContent || '',
-              });
-
-              // 更新文件树中的文件内容
-              setFiles((prevFiles) => {
-                const updatedFiles: FileNode[] = updateFileTreeContent(
-                  fileId,
-                  fileContent,
-                  prevFiles,
-                );
-                return updatedFiles;
+                content: newFileContent || '',
               });
             }
           }
@@ -245,6 +259,40 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       },
       [files, isRenamingFile],
     );
+
+    // 刷新文件树和文件内容
+    const handleRefreshFileList = async () => {
+      // 刷新文件树
+      onRefreshFileTree?.();
+
+      // 如果存在当前选中文件，则重新通过 fileProxyUrl 更新文件内容
+      if (selectedFileId && selectedFileNode) {
+        const fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
+
+        // 如果有 fileProxyUrl，重新获取文件内容
+        if (fileProxyUrl) {
+          try {
+            // 获取文件内容并更新文件树
+            const newFileContent = await fetchFileContentUpdateFiles(
+              fileProxyUrl,
+              selectedFileId,
+            );
+
+            // 更新选中文件节点的内容
+            setSelectedFileNode((prevNode) =>
+              prevNode
+                ? {
+                    ...prevNode,
+                    content: newFileContent || '',
+                  }
+                : prevNode,
+            );
+          } catch (error) {
+            message.error('刷新文件内容失败');
+          }
+        }
+      }
+    };
 
     // 文件选择（对外接口，用于用户主动选择）
     const handleFileSelect = useCallback(
@@ -1086,6 +1134,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onFileTreeToggle={handleFileTreeToggle}
           // 文件树鼠标移入回调
           onFileTreeMouseEnter={handleFileTreeMouseEnter}
+          // 刷新文件树回调
+          onRefreshFileTree={handleRefreshFileList}
         />
       );
     };
