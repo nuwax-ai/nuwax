@@ -1033,6 +1033,7 @@ const EditAgent: React.FC = () => {
                           isFileTreePinned={isFileTreePinned}
                           // 文件树固定状态变化回调
                           onFileTreePinnedChange={setIsFileTreePinned}
+                          isCanDeleteSkillFile={true}
                         />
                       </div>
                     )

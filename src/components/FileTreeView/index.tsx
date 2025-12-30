@@ -83,6 +83,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isFileTreePinned = false,
       // 文件树固定状态变化回调
       onFileTreePinnedChange,
+      // 是否可以删除技能文件(SKILL.md文件), 默认不可以删除(为false时，则隐藏删除菜单项，为true时，则显示删除菜单项)
+      isCanDeleteSkillFile = false,
     },
     ref,
   ) => {
@@ -946,14 +948,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         viewFileType === 'preview'
       ) {
         // markdown 文件：优先使用 content，避免不必要的网络请求
-        if (isMarkdownFile(fileName) && fileContent) {
-          return (
-            <FilePreview
-              src={new Blob([fileContent], { type: 'text/markdown' })}
-              fileType="markdown"
-            />
-          );
-        }
+        // if (isMarkdownFile(fileName) && fileContent) {
+        //   return (
+        //     <FilePreview
+        //       src={new Blob([fileContent], { type: 'text/markdown' })}
+        //       fileType="markdown"
+        //     />
+        //   );
+        // }
         // html 文件或无 content 的 markdown：使用 fileProxyUrl
         if (fileProxyUrl) {
           return (
@@ -1098,7 +1100,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             // 右键菜单目标节点
             targetNode={contextMenuTarget}
             // 是否禁用删除功能(SKILL.md文件不能删除)
-            disableDelete={
+            disabledDelete={
+              !isCanDeleteSkillFile &&
               contextMenuTarget?.name?.toLowerCase() === 'skill.md'
             }
             // 关闭右键菜单
