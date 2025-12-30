@@ -87,6 +87,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isCanDeleteSkillFile = false,
       // 刷新文件树回调
       onRefreshFileTree,
+      // 是否显示刷新按钮
+      showRefreshButton = true,
     },
     ref,
   ) => {
@@ -201,6 +203,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 handleFileSelectInternal(firstChild.id);
               }
             }
+            return;
+          }
+
+          // 如果文件节点是链接文件，则不支持预览
+          if (fileNode?.isLink) {
+            setSelectedFileId(fileId);
+            setViewFileType('preview');
+            setSelectedFileNode(fileNode);
             return;
           }
 
@@ -1027,7 +1037,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
 
       // 文件类型不支持预览
-      if (!isPreviewable) {
+      if (!isPreviewable || selectedFileNode?.isLink) {
         const fileExtension =
           selectedFileId?.split('.')?.pop() || selectedFileId;
         return (
@@ -1180,6 +1190,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onRefreshFileTree={handleRefreshFileList}
           // 是否正在刷新文件树
           isRefreshingFileTree={isRefreshingFileTree}
+          // 是否显示刷新按钮
+          showRefreshButton={showRefreshButton}
         />
       );
     };
