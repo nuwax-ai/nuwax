@@ -61,6 +61,7 @@ import {
   VncDesktopContainerInfo,
 } from '@/types/interfaces/vncDesktop';
 import { extractTaskResult } from '@/utils';
+import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSource';
@@ -759,6 +760,27 @@ export default () => {
         }
         // FINAL_RESULT事件
         if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
+          /**
+           * "error":"Agent正在执行任务，请等待当前任务完成后再发送新请求"
+           */
+          if (
+            res.error?.includes('正在执行任务') ||
+            (!data?.success && data?.error?.includes('正在执行任务'))
+          ) {
+            modalConfirm(
+              '提示',
+              'Agent正在执行任务中，需要先暂停当前任务后才能发送新请求，是否暂停当前任务？',
+              () => {
+                if (params?.conversationId) {
+                  runStopConversation(params?.conversationId.toString());
+                }
+                return new Promise((resolve) => {
+                  setTimeout(resolve, 2000);
+                });
+              },
+            );
+          }
+
           newMessage = {
             ...currentMessage,
             status: MessageStatusEnum.Complete,
