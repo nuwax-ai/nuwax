@@ -78,4 +78,6 @@ export interface FileTreeViewProps {
   isFileTreePinned?: boolean;
   /** 文件树固定状态变化回调 */
   onFileTreePinnedChange?: (pinned: boolean) => void;
+  // 是否可以删除技能文件, 默认不可以删除
+  isCanDeleteSkillFile?: boolean;
 }

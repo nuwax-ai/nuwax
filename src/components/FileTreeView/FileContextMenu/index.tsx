@@ -30,7 +30,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   // 导入项目
   onImportProject,
   onDownloadFileByUrl,
-  disableDelete = false,
+  disabledDelete = false,
 }) => {
   /**
    * 处理菜单项点击
@@ -334,7 +334,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
       ];
 
   // 如果对于SKILL.md文件禁用删除功能和重命名功能，过滤掉删除菜单项、重命名菜单项和相关 divider
-  const menuItems = disableDelete
+  const menuItems = disabledDelete
     ? allMenuItems.filter(
         (item) =>
           item.key !== 'delete' &&

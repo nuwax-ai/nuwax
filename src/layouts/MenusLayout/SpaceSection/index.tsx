@@ -2,7 +2,7 @@ import MenuListItem from '@/components/base/MenuListItem';
 import SecondMenuItem from '@/components/base/SecondMenuItem';
 import ConditionRender from '@/components/ConditionRender';
 import { SPACE_URL } from '@/constants/home.constants';
-import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
+import { getSpaceApplicationList } from '@/constants/space.constants';
 import { RoleEnum } from '@/types/enums/common';
 import {
   AllowDevelopEnum,
@@ -32,6 +32,8 @@ const SpaceSection: React.FC<{
   const { editAgentList, runEdit, runDevCollect } = useModel('devCollectAgent');
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   const finalSpaceId = useMemo(() => {
     return spaceId ?? getSpaceId();
@@ -165,7 +167,7 @@ const SpaceSection: React.FC<{
         <SpaceTitle name={currentSpaceInfo?.name} />
       </div>
       <div>
-        {SPACE_APPLICATION_LIST.map(
+        {getSpaceApplicationList(tenantConfigInfo?.enabledSandbox).map(
           (item: SpaceApplicationList, index: number) => {
             // 个人空间时，不显示"成员与设置", 普通用户也不显示"成员与设置"
             if (
