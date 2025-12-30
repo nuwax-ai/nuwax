@@ -933,7 +933,10 @@ export default () => {
         // 将当前会话的loading状态的消息改为Error状态，并将所有正在执行的 processing 状态更新为 FAILED
         setMessageList((list) => {
           try {
-            const copyList = JSON.parse(JSON.stringify(list));
+            // 过滤掉空消息，避免页面渲染空内容并拷贝消息列表
+            const copyList = JSON.parse(
+              JSON.stringify(list.filter((item) => item.text?.trim() !== '')),
+            );
 
             // 遍历消息列表，找到最后一条消息并更新其 processingList
             if (copyList.length > 0) {
