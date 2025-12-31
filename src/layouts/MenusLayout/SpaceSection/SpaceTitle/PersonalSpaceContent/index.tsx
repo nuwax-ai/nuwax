@@ -54,7 +54,7 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
       localStorage.setItem('SPACE_URL', defaultUrl);
       history.push(`/space/${spaceId}/${defaultUrl}`);
     }
-    // 应用页面开发
+    // 网页应用开发
     else if (pathname.includes('page-develop')) {
       history.push(`/space/${spaceId}/page-develop`);
     }

@@ -39,6 +39,7 @@ import FileTree from './FileTree';
 import styles from './index.less';
 import SearchView from './SearchView';
 import { ChangeFileInfo, FileTreeViewProps, FileTreeViewRef } from './type';
+// import { apiAgentConversationShare } from '@/services/vncDesktop';
 
 const cx = classNames.bind(styles);
 
@@ -163,6 +164,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 用于记录创建成功后需要选择的文件路径
     const pendingSelectFileRef = useRef<string | null>(null);
 
+    // 用于存储 html 文件的刷新时间戳，确保每次点击时都能刷新 iframe
+    const htmlRefreshTimestampRef = useRef<number>(Date.now());
+
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
       if (isFullscreenPreview) {
@@ -277,11 +281,20 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
           // 检查是否是重复点击同一个文件
           const isSameFile = selectedFileId === fileId;
+          // 检查是否是 html 文件
+          const isHtmlFile = fileNode?.name?.includes('.htm') || false;
 
-          // 如果是重复点击，直接调用刷新逻辑（与 fileHeader 上的刷新按钮逻辑一致）
-          if (isSameFile) {
+          // 如果是重复点击 html 文件，更新刷新时间戳以强制刷新 iframe
+          if (isSameFile && isHtmlFile) {
+            htmlRefreshTimestampRef.current = Date.now();
+            // 仍然调用刷新逻辑以更新文件内容
             await handleRefreshFileList();
             return;
+          }
+
+          // 如果是新选中的 html 文件，更新刷新时间戳
+          if (isHtmlFile) {
+            htmlRefreshTimestampRef.current = Date.now();
           }
 
           // 获取文件内容
@@ -488,38 +501,35 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 关闭右键菜单
      * @param e - 鼠标事件（可能是 React.MouseEvent 或原生 Event，可选）
      */
-    const closeContextMenu = useCallback(
-      (e?: React.MouseEvent | Event) => {
-        setContextMenuVisible(false);
-        setContextMenuTarget(null);
+    const closeContextMenu = useCallback(() => {
+      setContextMenuVisible(false);
+      setContextMenuTarget(null);
 
-        // 如果文件树未固定，检查点击位置是否在文件树内
-        if (!isFileTreePinned && fileTreeContainerRef.current && e) {
-          // 获取鼠标点击位置
-          const clientX =
-            'clientX' in e ? e.clientX : (e as MouseEvent).clientX || 0;
-          const clientY =
-            'clientY' in e ? e.clientY : (e as MouseEvent).clientY || 0;
+      // // 如果文件树未固定，检查点击位置是否在文件树内
+      // if (!isFileTreePinned && fileTreeContainerRef.current && e) {
+      //   // 获取鼠标点击位置
+      //   const clientX =
+      //     'clientX' in e ? e.clientX : (e as MouseEvent).clientX || 0;
+      //   const clientY =
+      //     'clientY' in e ? e.clientY : (e as MouseEvent).clientY || 0;
 
-          // 获取文件树容器的位置和尺寸
-          const fileTreeRect =
-            fileTreeContainerRef.current.getBoundingClientRect();
+      //   // 获取文件树容器的位置和尺寸
+      //   const fileTreeRect =
+      //     fileTreeContainerRef.current.getBoundingClientRect();
 
-          // 判断点击位置是否在文件树区域内
-          const isInsideFileTree =
-            clientX >= fileTreeRect.left &&
-            clientX <= fileTreeRect.right &&
-            clientY >= fileTreeRect.top &&
-            clientY <= fileTreeRect.bottom;
+      //   // 判断点击位置是否在文件树区域内
+      //   const isInsideFileTree =
+      //     clientX >= fileTreeRect.left &&
+      //     clientX <= fileTreeRect.right &&
+      //     clientY >= fileTreeRect.top &&
+      //     clientY <= fileTreeRect.bottom;
 
-          // 如果点击位置不在文件树内，则隐藏文件树
-          if (!isInsideFileTree) {
-            setIsFileTreeVisible(false);
-          }
-        }
-      },
-      [isFileTreePinned],
-    );
+      //   // 如果点击位置不在文件树内，则隐藏文件树
+      //   if (!isInsideFileTree) {
+      //     setIsFileTreeVisible(false);
+      //   }
+      // }
+    }, [isFileTreePinned]);
 
     // 点击外部关闭右键菜单
     useEffect(() => {
@@ -923,39 +933,33 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     /**
      * 处理文件树展开/折叠（点击图标）
+     * 隐藏状态时点击展开文件树，展开时点击隐藏文件树
      */
     const handleFileTreeToggle = () => {
-      const newPinnedState = !isFileTreePinned;
-      // 通知父组件更新固定状态
-      onFileTreePinnedChange?.(newPinnedState);
-      // 如果固定，则显示文件树；如果取消固定，则隐藏文件树
-      setIsFileTreeVisible(newPinnedState);
-    };
-
-    /**
-     * 处理文件树鼠标移入
-     */
-    const handleFileTreeMouseEnter = () => {
-      // 如果未固定，则显示文件树
-      if (!isFileTreePinned) {
-        setIsFileTreeVisible(true);
+      const newVisibleState = !isFileTreeVisible;
+      setIsFileTreeVisible(newVisibleState);
+      // 如果展开文件树，同时固定它；如果隐藏文件树，取消固定
+      if (newVisibleState) {
+        onFileTreePinnedChange?.(true);
+      } else {
+        onFileTreePinnedChange?.(false);
       }
     };
 
     /**
      * 处理文件树鼠标移出
      */
-    const handleFileTreeMouseLeave = () => {
-      // 如果右键菜单显示，不隐藏文件树（等待鼠标移入菜单或移出菜单区域）
-      if (contextMenuVisible) {
-        return;
-      }
+    // const handleFileTreeMouseLeave = () => {
+    //   // 如果右键菜单显示，不隐藏文件树（等待鼠标移入菜单或移出菜单区域）
+    //   if (contextMenuVisible) {
+    //     return;
+    //   }
 
-      // 如果未固定，则隐藏文件树
-      if (!isFileTreePinned) {
-        setIsFileTreeVisible(false);
-      }
-    };
+    //   // 如果未固定，则隐藏文件树
+    //   if (!isFileTreePinned) {
+    //     setIsFileTreeVisible(false);
+    //   }
+    // };
 
     // 处理下载项目操作
     const handleDownloadProject = async () => {
@@ -980,6 +984,16 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       await downloadFileByUrl?.(node, true);
       setIsExportingPdf(false);
     };
+
+    // const userTicketRef = useRef('')
+
+    // useEffect(() => {
+    //   const getUserTicket = async () => {
+    //     const { data } = await apiAgentConversationShare({conversationId: targetId?.toString() || '', type: 'CONVERSATION'});
+    //     userTicketRef.current = data?.shareKey;
+    //   };
+    //   getUserTicket();
+    // }, []);
 
     /**
      * 渲染内容区域
@@ -1097,10 +1111,28 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         // }
         // html 文件或无 content 的 markdown：使用 fileProxyUrl
         if (fileProxyUrl) {
+          // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
+          const isHtml = fileName?.includes('.htm');
+          // const timestampParam = isHtml ? `&t=${htmlRefreshTimestampRef.current}` : '';
+          const timestampParam = isHtml
+            ? `t=${htmlRefreshTimestampRef.current}`
+            : '';
+
+          // 拼接时间戳参数
+          const htmlUrl = timestampParam
+            ? `${fileProxyUrl}?${timestampParam}`
+            : fileProxyUrl;
+
           return (
             <FilePreview
-              src={fileProxyUrl}
-              fileType={fileName?.includes('.htm') ? 'html' : 'markdown'}
+              key={
+                isHtml
+                  ? `html-${selectedFileId}-${htmlRefreshTimestampRef.current}`
+                  : undefined
+              }
+              // src={`${fileProxyUrl}?sk=${userTicketRef.current}${timestampParam}`}
+              src={htmlUrl}
+              fileType={isHtml ? 'html' : 'markdown'}
             />
           );
         }
@@ -1215,8 +1247,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           isFileTreePinned={isFileTreePinned}
           // 文件树展开/折叠回调
           onFileTreeToggle={handleFileTreeToggle}
-          // 文件树鼠标移入回调
-          onFileTreeMouseEnter={handleFileTreeMouseEnter}
           // 刷新文件树回调
           onRefreshFileTree={handleRefreshFileList}
           // 是否正在刷新文件树
@@ -1309,7 +1339,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                   [styles['file-tree-view-hidden']]: !isFileTreeVisible,
                 },
               )}
-              onMouseLeave={handleFileTreeMouseLeave}
+              // onMouseLeave={handleFileTreeMouseLeave}
             >
               <SearchView
                 className={headerClassName}

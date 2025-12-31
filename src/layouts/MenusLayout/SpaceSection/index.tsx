@@ -132,7 +132,7 @@ const SpaceSection: React.FC<{
       // MCP管理
       case SpaceApplicationListEnum.MCP_Manage:
         return ['mcp'].includes(path);
-      // 应用页面开发
+      // 网页应用开发
       case SpaceApplicationListEnum.Page_Develop:
         return ['page-develop'].includes(path);
       // 空间广场

@@ -1,3 +1,4 @@
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { RequestResponse } from '@/types/interfaces/request';
 import type {
   EnsurePodResponse,
@@ -168,5 +169,26 @@ export async function apiCheckVncStatus(
     params: {
       cId,
     },
+  });
+}
+
+// 创建用户临时票据
+export async function apiUserTicketCreate() {
+  return request('/api/user/ticket/create', {
+    method: 'POST',
+    data: {
+      token: localStorage.getItem(ACCESS_TOKEN) || '',
+    },
+  });
+}
+
+// 分享文件
+export async function apiAgentConversationShare(data: {
+  conversationId: string;
+  type?: 'CONVERSATION' | 'FILE';
+}) {
+  return request('/api/agent/conversation/share', {
+    method: 'POST',
+    data,
   });
 }

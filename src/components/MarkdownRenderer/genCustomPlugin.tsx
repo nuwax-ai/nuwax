@@ -32,6 +32,7 @@ export default (conversationId: string | number = '') => {
 
         return (
           <MarkdownCustomProcess
+            conversationId={conversationId}
             key={processKey}
             dataKey={processKey}
             type={type}

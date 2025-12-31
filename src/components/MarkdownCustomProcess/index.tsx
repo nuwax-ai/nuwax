@@ -29,6 +29,7 @@ interface MarkdownCustomProcessProps {
   status: ProcessingEnum;
   type: AgentComponentTypeEnum;
   dataKey: string;
+  conversationId: number | string;
 }
 interface InputProps {
   method: 'browser_open_page' | 'browser_navigate_page';
@@ -47,6 +48,12 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     showPagePreview,
     agentPageConfig,
   } = useModel('chat');
+
+  const {
+    openPreviewView,
+    setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
+  } = useModel('conversationInfo');
 
   const [detailData, setDetailData] = useState<{
     params: Record<string, any>;
@@ -188,7 +195,19 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   }, [innerProcessing.status, detailData]);
 
   const handleSeeDetail = useCallback(() => {
-    console.log('innerProcessing', innerProcessing);
+    const result = innerProcessing.result as any;
+    // 打开文件树
+    if (result?.kind === 'edit') {
+      const conversationId = props.conversationId;
+      const file_path = result?.input?.file_path;
+
+      openPreviewView(conversationId);
+      setTaskAgentSelectedFileId(file_path);
+      // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
+      setTaskAgentSelectTrigger(Date.now());
+      return;
+    }
+
     if (!detailData) {
       message.error('暂无数据');
       return;
@@ -404,6 +423,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 export default memo(MarkdownCustomProcess, (prevProps, nextProps) => {
   return (
     prevProps.executeId === nextProps.executeId &&
-    prevProps.status === nextProps.status
+    prevProps.status === nextProps.status &&
+    prevProps.conversationId === nextProps.conversationId
   );
 });
