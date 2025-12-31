@@ -933,7 +933,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     /**
      * 处理文件树展开/折叠（点击图标）
-     * 隐藏状态时点击展开文件树，展开时点击隐藏文件树
+     * 隐藏状态时点击展开文件树，展开时点击收起文件树
      */
     const handleFileTreeToggle = () => {
       const newVisibleState = !isFileTreeVisible;
@@ -1043,9 +1043,23 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // office文档文件：使用FilePreview组件
       if (isOfficeDocument && fileProxyUrl) {
+        // 当 taskAgentSelectTrigger 更新时，重新加载 office 文件
+        // 使用 taskAgentSelectTrigger 作为 key 的一部分，确保触发时重新渲染
+        const officeKey =
+          taskAgentSelectTrigger !== undefined
+            ? `office-${selectedFileId}-${taskAgentSelectTrigger}`
+            : `office-${selectedFileId}`;
+
+        // 如果 taskAgentSelectTrigger 存在，添加到 URL 参数中以确保刷新
+        const officeUrl =
+          taskAgentSelectTrigger !== undefined
+            ? `${fileProxyUrl}?t=${taskAgentSelectTrigger}`
+            : fileProxyUrl;
+
         return (
           <FilePreview
-            src={fileProxyUrl}
+            key={officeKey}
+            src={officeUrl}
             fileType={documentFileType as FileType}
           />
         );
@@ -1113,10 +1127,29 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         if (fileProxyUrl) {
           // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
           const isHtml = fileName?.includes('.htm');
-          // const timestampParam = isHtml ? `&t=${htmlRefreshTimestampRef.current}` : '';
-          const timestampParam = isHtml
-            ? `t=${htmlRefreshTimestampRef.current}`
-            : '';
+
+          // 构建 URL 参数和 key：同时考虑 taskAgentSelectTrigger 和 htmlRefreshTimestampRef
+          // 只要其中一个变化，都应该刷新
+          let timestampParam = '';
+          let htmlKey: string | undefined = undefined;
+
+          if (isHtml) {
+            // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
+            const triggerPart =
+              taskAgentSelectTrigger !== undefined
+                ? `trigger-${taskAgentSelectTrigger}`
+                : 'trigger-none';
+            const timestampPart = `timestamp-${htmlRefreshTimestampRef.current}`;
+            htmlKey = `html-${selectedFileId}-${triggerPart}-${timestampPart}`;
+
+            // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
+            // 优先使用 taskAgentSelectTrigger，如果不存在则使用 htmlRefreshTimestampRef
+            const triggerValue =
+              taskAgentSelectTrigger !== undefined
+                ? taskAgentSelectTrigger
+                : htmlRefreshTimestampRef.current;
+            timestampParam = `t=${triggerValue}`;
+          }
 
           // 拼接时间戳参数
           const htmlUrl = timestampParam
@@ -1125,12 +1158,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
           return (
             <FilePreview
-              key={
-                isHtml
-                  ? `html-${selectedFileId}-${htmlRefreshTimestampRef.current}`
-                  : undefined
-              }
-              // src={`${fileProxyUrl}?sk=${userTicketRef.current}${timestampParam}`}
+              key={htmlKey}
               src={htmlUrl}
               fileType={isHtml ? 'html' : 'markdown'}
             />
