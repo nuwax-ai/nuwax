@@ -390,7 +390,15 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         {showMoreActions && (
           <MoreActionsMenu
             onImportProject={onImportProject}
-            onRestartServer={onRestartServer}
+            onRestartServer={
+              onRestartServer
+                ? () => {
+                    onRestartServer();
+                    // 切换到智能体电脑 tab
+                    onViewModeChange?.('desktop');
+                  }
+                : undefined
+            }
             onRestartAgent={onRestartAgent}
             onExportProject={onExportProject}
           />
