@@ -77,100 +77,6 @@ const workflowCreatedTabs = CREATED_TABS.filter((item) =>
   ].includes(item.key),
 );
 
-/**
- * 清理 VariableAggregation 节点的表单数据
- * 将扁平化的键（如 'variableGroups,0,inputs'）合并回嵌套结构
- * 并重新生成 inputArgs
- */
-const cleanVariableAggregationFormValues = (values: any): any => {
-  const cleanedValues = { ...values };
-  const variableGroups = [...(cleanedValues.variableGroups || [])];
-
-  // 查找并合并扁平化的 inputs 键
-  const flattenedKeyPattern = /^variableGroups,(\d+),inputs$/;
-  const keysToDelete: string[] = [];
-
-  Object.keys(cleanedValues).forEach((key) => {
-    const match = key.match(flattenedKeyPattern);
-    if (match) {
-      const groupIndex = parseInt(match[1], 10);
-      console.log(
-        `[VariableAggregation] 找到扁平化键: ${key}, groupIndex: ${groupIndex}`,
-      );
-      console.log(
-        `[VariableAggregation] 扁平化数据:`,
-        JSON.stringify(cleanedValues[key], null, 2),
-      );
-      if (variableGroups[groupIndex]) {
-        // 使用扁平化的完整数据替换嵌套结构中的 inputs
-        variableGroups[groupIndex] = {
-          ...variableGroups[groupIndex],
-          inputs: cleanedValues[key],
-        };
-        console.log(
-          `[VariableAggregation] 合并后的分组:`,
-          JSON.stringify(variableGroups[groupIndex], null, 2),
-        );
-      }
-      keysToDelete.push(key);
-    }
-  });
-
-  console.log(
-    `[VariableAggregation] 需要删除的扁平化键: ${keysToDelete.join(', ')}`,
-  );
-
-  // 删除扁平化的键
-  keysToDelete.forEach((key) => {
-    delete cleanedValues[key];
-  });
-
-  // 更新 variableGroups
-  cleanedValues.variableGroups = variableGroups;
-
-  // 重新生成 inputArgs（嵌套结构，每个分组作为一个条目，inputs 作为 subArgs）
-  const inputArgs: any[] = variableGroups.map((group: any) => {
-    const groupEntry: any = {
-      key: group.id || group.name,
-      name: group.name || '',
-      dataType: group.dataType || 'String',
-      description: `${group.name || 'Group'} ${group.dataType || 'String'}`,
-      require: false,
-      systemVariable: false,
-      bindValue: '',
-      bindValueType: '',
-    };
-
-    // 将 inputs 作为 subArgs
-    if (Array.isArray(group.inputs) && group.inputs.length > 0) {
-      groupEntry.subArgs = group.inputs.map((input: any) => ({
-        key: input.key || input.name,
-        name: input.name || '',
-        dataType: input.dataType || 'String',
-        description: input.description || '',
-        require: input.require ?? false,
-        systemVariable: input.systemVariable ?? false,
-        bindValue: input.bindValue || '',
-        bindValueType: input.bindValueType || 'Reference',
-      }));
-    }
-
-    return groupEntry;
-  });
-  cleanedValues.inputArgs = inputArgs;
-
-  console.log(
-    '[VariableAggregation] 清理后的表单值:',
-    JSON.stringify(cleanedValues, null, 2),
-  );
-  console.log(
-    '[VariableAggregation] 生成的 inputArgs:',
-    JSON.stringify(inputArgs, null, 2),
-  );
-
-  return cleanedValues;
-};
-
 const Workflow: React.FC = () => {
   const {
     getWorkflow,
@@ -728,17 +634,13 @@ const Workflow: React.FC = () => {
         activeElement.blur();
       }
 
-      // 等待 blur 事件处理函数执行完成（React 状态更新）
-      await new Promise((resolve) => {
-        setTimeout(resolve, 100);
-      });
-
       // 获取最新表单值
       const currentFormValues = form.getFieldsValue(true);
 
       // 合并表单值到节点数据
       const updatedNode = {
         ...currentNode,
+        ...currentFormValues, // 顶层属性（如 Loop 的 outputArgs）
         nodeConfig: {
           ...currentNode.nodeConfig,
           ...currentFormValues,
