@@ -703,6 +703,52 @@ const Workflow: React.FC = () => {
   // V3: 赋值 doSubmitFormData 到 ref（用于解决循环依赖）
   doSubmitFormDataRef.current = doSubmitFormData;
 
+  /**
+   * 切换节点前保存当前节点数据
+   *
+   * 问题背景：TreeNodeTitle 等组件使用 onBlur 来更新表单值，而不是 onChange。
+   * 当用户在输入框中输入内容后直接点击另一个节点，blur 事件会触发，
+   * 但 React 的状态更新是异步的，可能在 changeDrawer 检查时还没有完成。
+   *
+   * 解决方案：
+   * 1. 手动触发 blur 事件
+   * 2. 等待 React 状态更新完成
+   * 3. 获取最新表单值并更新到 workflowProxy 和画布
+   */
+  const saveCurrentNodeBeforeSwitch = useCallback(
+    async (currentNode: ChildNode): Promise<ChildNode> => {
+      // 触发当前 focus 元素的 blur 事件
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement && typeof activeElement.blur === 'function') {
+        activeElement.blur();
+      }
+
+      // 等待 blur 事件处理函数执行完成（React 状态更新）
+      await new Promise((resolve) => {
+        setTimeout(resolve, 100);
+      });
+
+      // 获取最新表单值
+      const currentFormValues = form.getFieldsValue(true);
+
+      // 合并表单值到节点数据
+      const updatedNode = {
+        ...currentNode,
+        nodeConfig: {
+          ...currentNode.nodeConfig,
+          ...currentFormValues,
+        },
+      };
+
+      // 更新到代理层和画布（这是变量引用查找的数据来源）
+      workflowProxy.updateNode(updatedNode);
+      graphRef.current?.graphUpdateNode(String(currentNode.id), updatedNode);
+
+      return updatedNode;
+    },
+    [form, graphRef],
+  );
+
   // 点击组件，显示抽屉
   const changeDrawer = useCallback(async (child: ChildNode | null) => {
     const _isModified = getWorkflow('isModified');
@@ -725,11 +771,20 @@ const Workflow: React.FC = () => {
       isNodeSwitchingRef.current = false;
     }, 600);
 
-    if (_isModified === true && _drawerForm?.id !== 0) {
-      //如果有修改先保存
-      console.log('[changeDrawer] 检测到修改，触发保存');
+    // 切换节点时保存当前节点数据（包含触发 blur 和等待状态更新）
+    if (_drawerForm?.id !== 0 && _drawerForm?.id !== child?.id) {
+      console.log('[changeDrawer] 切换节点，保存当前节点数据');
+
+      // 使用 helper 函数：触发 blur、等待状态更新、更新本地数据
+      const updatedDrawerForm = await saveCurrentNodeBeforeSwitch(_drawerForm);
+
       setIsModified(false);
-      onSaveWorkflow(_drawerForm);
+      // 保存到后端，完成后刷新新节点的引用参数
+      onSaveWorkflow(updatedDrawerForm).then(() => {
+        if (child && child.id !== 0) {
+          getReference(child.id);
+        }
+      });
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
