@@ -61,6 +61,8 @@ export interface TooltipIconProps {
 
 // 发布智能体、插件、工作流等弹窗组件
 export interface PublishComponentModalProps {
+  // 自定义标题
+  title?: string;
   mode?: AgentComponentTypeEnum;
   spaceId: number;
   // 发布分类，用于回显

@@ -234,7 +234,7 @@ const Created: React.FC<CreatedProp> = ({
         params.dataType = dataTypeRef.current;
       }
 
-      // 如果类型是智能体，则设置targetType和targetSubType，需要过滤掉子类型是应用页面的智能体数据
+      // 如果类型是智能体，则设置targetType和targetSubType，需要过滤掉子类型是网页应用的智能体数据
       if (type === AgentComponentTypeEnum.Agent) {
         params.targetType = AgentComponentTypeEnum.Agent;
         params.targetSubType = 'ChatBot';

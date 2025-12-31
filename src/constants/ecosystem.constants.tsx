@@ -46,7 +46,7 @@ export const ECOSYSTEM_MARKET_LIST = [
         type: AgentComponentTypeEnum.Workflow,
       },
       {
-        text: '应用页面',
+        text: '网页应用',
         type: AgentComponentTypeEnum.Page,
       },
     ],
@@ -102,7 +102,7 @@ export const COMPONENT_LIST: {
   {
     type: AgentComponentTypeEnum.Page,
     defaultImage: pageImage,
-    text: '应用页面',
+    text: '网页应用',
   },
 ];
 

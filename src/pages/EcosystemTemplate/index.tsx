@@ -259,7 +259,7 @@ export default function EcosystemTemplate() {
     if (searchParams) {
       const searchParamsObj = new URLSearchParams(searchParams);
       const targetType = searchParamsObj.get('targetType');
-      // 应用页面
+      // 网页应用
       if (targetType === AgentComponentTypeEnum.Page) {
         selectTargetTypeRef.current['targetType'] =
           AgentComponentTypeEnum.Agent;
@@ -584,7 +584,7 @@ export default function EcosystemTemplate() {
       },
       {
         key: AgentComponentTypeEnum.Page,
-        label: '应用页面',
+        label: '网页应用',
       },
     ],
     onClick: (e: any) => {
