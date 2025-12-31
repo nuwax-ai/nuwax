@@ -529,7 +529,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       //     setIsFileTreeVisible(false);
       //   }
       // }
-    }, [isFileTreePinned]);
+    }, []);
 
     // 点击外部关闭右键菜单
     useEffect(() => {
