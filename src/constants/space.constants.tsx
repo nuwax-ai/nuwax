@@ -190,7 +190,7 @@ const SPACE_APPLICATION_LIST_ALL: SpaceApplicationList[] = [
   },
   {
     type: SpaceApplicationListEnum.Task_Center,
-    icon: <SvgIcon name="icons-nav-task_time" />,
+    icon: <SvgIcon name="icons-nav-task-time" />,
     text: '任务中心',
   },
   {
