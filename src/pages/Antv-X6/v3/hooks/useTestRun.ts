@@ -203,11 +203,21 @@ export const useTestRun = ({
                 });
               }
 
-              setFormItemValue(
-                data.nodeExecuteResultMap[
-                  (info?.startNode?.id as number).toString()
-                ]?.data,
-              );
+              // 修复：只有当前选中的节点是开始节点时，才更新表单值，防止覆盖其他节点（如循环节点）的配置
+              // Fix: Only update form values if the current active node is the Start Node
+              // This prevents overwriting configuration of other nodes (like Loop Node) with Start Node data
+              const currentDrawerNodeId = getWorkflow('drawerForm')?.id;
+              const startNodeId = info?.startNode?.id;
+
+              if (
+                currentDrawerNodeId &&
+                startNodeId &&
+                String(currentDrawerNodeId) === String(startNodeId)
+              ) {
+                setFormItemValue(
+                  data.nodeExecuteResultMap[String(startNodeId)]?.data,
+                );
+              }
               setTestRunResult(JSON.stringify(data.data, null, 2));
               setLoading(false);
             }
