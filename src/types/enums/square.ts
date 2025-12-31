@@ -18,7 +18,7 @@ export enum SquareTemplateTargetTypeEnum {
   Agent = 'Agent',
   // 工作流
   Workflow = 'Workflow',
-  // 应用页面
+  // 网页应用
   Page = 'Page',
   // 技能
   Skill = 'Skill',
