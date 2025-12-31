@@ -1976,6 +1976,7 @@ const AppDev: React.FC = () => {
       />
       {/*发布智能体弹窗*/}
       <PublishComponentModal
+        title="应用"
         targetId={projectInfo.projectInfoState.projectInfo?.devAgentId || 0}
         open={openPublishComponentModal}
         onBeforePublishFn={handleBeforePublish}

@@ -61,7 +61,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   isFileTreeVisible = false,
   isFileTreePinned = false,
   onFileTreeToggle,
-  onFileTreeMouseEnter,
   // 刷新文件树
   onRefreshFileTree,
   // 是否正在刷新文件树
@@ -155,11 +154,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       {/* 文件树展开/折叠图标 */}
       {viewMode !== 'desktop' && showFileTreeToggleButton && (
         <Tooltip
-          title={
-            isFileTreePinned
-              ? '点击取消固定文件树'
-              : '点击固定文件树（鼠标移入展开文件树）'
-          }
+          title={isFileTreeVisible ? '点击隐藏文件树' : '点击展开文件树'}
         >
           <Button
             type="text"
@@ -172,7 +167,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               )
             }
             onClick={onFileTreeToggle}
-            onMouseEnter={onFileTreeMouseEnter}
             className={cx(styles.fileTreeToggleButton, {
               [styles.fileTreeToggleButtonPinned]: isFileTreePinned,
             })}
