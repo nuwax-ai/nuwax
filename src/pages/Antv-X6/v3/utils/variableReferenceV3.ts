@@ -204,9 +204,12 @@ function cloneArg(arg: InputAndOutConfig): InputAndOutConfig {
 
 function ensureVariableSuccessOutput(node: ChildNode): InputAndOutConfig[] {
   const outputs = [...(node.nodeConfig.outputArgs || [])];
+  // 对于 Variable 节点，如果 configType 为空或者是 SET_VARIABLE，都应该添加 isSuccess
+  // 这样可以确保新创建的变量节点（configType 尚未设置）也能被引用
   const isSetVariable =
     node.type === NodeTypeEnum.Variable &&
-    node.nodeConfig.configType === 'SET_VARIABLE';
+    (node.nodeConfig.configType === 'SET_VARIABLE' ||
+      !node.nodeConfig.configType);
   const exists = outputs.some((o) => o.name === 'isSuccess');
   if (isSetVariable && !exists) {
     outputs.push({
@@ -650,20 +653,26 @@ export function calculateNodePreviousArgs(
   if (currentNode.type === NodeTypeEnum.Loop) {
     // 1. 从 LoopEnd 节点开始，递归收集所有内部前驱节点 (Line 112-138)
     if (currentNode.innerNodes) {
+      const currentLoopId = Number(currentNode.id);
+
       // 构建内部节点的反向图
       const innerNodeMap = new Map<number, ChildNode>();
-      currentNode.innerNodes.forEach((n) => innerNodeMap.set(n.id, n));
+      currentNode.innerNodes.forEach((n) => innerNodeMap.set(Number(n.id), n));
       const innerReverseGraph = buildReverseGraph(currentNode.innerNodes);
 
       // 从 LoopEnd 开始递归查找所有前驱
       const endNodeId = currentNode.innerEndNodeId;
+      let validInnerNodes: ChildNode[] = [];
+
       if (endNodeId) {
-        const innerPredIds = findAllPredecessors(endNodeId, innerReverseGraph);
+        const innerPredIds = findAllPredecessors(
+          Number(endNodeId),
+          innerReverseGraph,
+        );
 
         // 过滤：只保留属于当前循环的节点 (loopNodeId === currentNode.id)，排除 LoopStart/LoopEnd
         // 注意：需要使用 Number() 统一类型，因为保存后 currentNode.id 可能变成字符串
-        const currentLoopId = Number(currentNode.id);
-        const validInnerNodes = innerPredIds
+        validInnerNodes = innerPredIds
           .map((id) => innerNodeMap.get(id))
           .filter(
             (n): n is ChildNode =>
@@ -672,93 +681,102 @@ export function calculateNodePreviousArgs(
               n.type !== NodeTypeEnum.LoopStart &&
               n.type !== NodeTypeEnum.LoopEnd,
           );
+      }
 
-        validInnerNodes.forEach((innerNode) => {
-          const outputArgs = getNodeOutputArgs(innerNode, systemVariables);
-          if (outputArgs.length === 0) return;
+      // 如果 BFS 找不到任何有效节点（可能是新节点还没有 nextNodeIds），
+      // 回退到直接遍历所有 innerNodes，确保新添加的节点也能被引用
+      if (validInnerNodes.length === 0) {
+        validInnerNodes = currentNode.innerNodes.filter(
+          (n) =>
+            Number(n.loopNodeId) === currentLoopId &&
+            n.type !== NodeTypeEnum.LoopStart &&
+            n.type !== NodeTypeEnum.LoopEnd,
+        );
+      }
 
-          // 转换类型为 Array_ 前缀，并设置 originDataType (Line 119-138)
-          const transformed = outputArgs.map((arg) => {
-            const newArg = cloneArg(arg);
-            // 记录原始类型
-            newArg.originDataType = newArg.dataType;
+      validInnerNodes.forEach((innerNode) => {
+        const outputArgs = getNodeOutputArgs(innerNode, systemVariables);
+        if (outputArgs.length === 0) return;
 
-            // 转换为 Array 类型
-            if (
-              !newArg.dataType ||
-              (typeof newArg.dataType === 'string' &&
-                !(newArg.dataType as string).startsWith('Array_'))
-            ) {
-              const base =
-                typeof newArg.dataType === 'string' && newArg.dataType
-                  ? newArg.dataType
-                  : 'Object';
-              newArg.dataType = `Array_${base}` as DataTypeEnum;
-            } else {
-              // 已经是 Array 类型，转为 Array_Object
-              newArg.dataType = DataTypeEnum.Array_Object;
-            }
-            return newArg;
-          });
+        // 转换类型为 Array_ 前缀，并设置 originDataType (Line 119-138)
+        const transformed = outputArgs.map((arg) => {
+          const newArg = cloneArg(arg);
+          // 记录原始类型
+          newArg.originDataType = newArg.dataType;
 
-          const prefixedOutputArgs = prefixOutputArgsKeys(
-            innerNode.id,
-            transformed,
-          );
-
-          innerPreviousNodes.push({
-            id: innerNode.id,
-            name: innerNode.name,
-            type: innerNode.type,
-            icon: innerNode.icon as string,
-            outputArgs: prefixedOutputArgs,
-            loopNodeId: innerNode.loopNodeId,
-          });
-
-          Object.assign(argMap, flattenArgsToMap(innerNode.id, transformed));
+          // 转换为 Array 类型
+          if (
+            !newArg.dataType ||
+            (typeof newArg.dataType === 'string' &&
+              !(newArg.dataType as string).startsWith('Array_'))
+          ) {
+            const base =
+              typeof newArg.dataType === 'string' && newArg.dataType
+                ? newArg.dataType
+                : 'Object';
+            newArg.dataType = `Array_${base}` as DataTypeEnum;
+          } else {
+            // 已经是 Array 类型，转为 Array_Object
+            newArg.dataType = DataTypeEnum.Array_Object;
+          }
+          return newArg;
         });
+
+        const prefixedOutputArgs = prefixOutputArgsKeys(
+          innerNode.id,
+          transformed,
+        );
+
+        innerPreviousNodes.push({
+          id: innerNode.id,
+          name: innerNode.name,
+          type: innerNode.type,
+          icon: innerNode.icon as string,
+          outputArgs: prefixedOutputArgs,
+          loopNodeId: innerNode.loopNodeId,
+        });
+
+        Object.assign(argMap, flattenArgsToMap(innerNode.id, transformed));
+      });
+    }
+  }
+
+  // 2. 循环节点自身的变量 - 只添加 variableArgs，不添加 INDEX (Line 140-167)
+  // 注意：后端在此场景只添加 variableArgs，INDEX 是给循环内部节点用的
+  const varBasedOutputs: InputAndOutConfig[] = [];
+  const argMapSnapshot = { ...argMap };
+
+  currentNode.nodeConfig.variableArgs?.forEach((variableArg) => {
+    const outArg = cloneArg(variableArg);
+    if (variableArg.bindValueType === 'Reference') {
+      const refArg = argMapSnapshot[variableArg.bindValue || ''];
+      if (refArg) {
+        outArg.subArgs = refArg.subArgs
+          ? (JSON.parse(JSON.stringify(refArg.subArgs)) as InputAndOutConfig[])
+          : refArg.subArgs;
       }
     }
+    varBasedOutputs.push(outArg);
+  });
 
-    // 2. 循环节点自身的变量 - 只添加 variableArgs，不添加 INDEX (Line 140-167)
-    // 注意：后端在此场景只添加 variableArgs，INDEX 是给循环内部节点用的
-    const varBasedOutputs: InputAndOutConfig[] = [];
-    const argMapSnapshot = { ...argMap };
+  if (varBasedOutputs.length > 0) {
+    const prefixedVars = prefixOutputArgsKeys(
+      `${currentNode.id}-var`,
+      varBasedOutputs,
+    );
 
-    currentNode.nodeConfig.variableArgs?.forEach((variableArg) => {
-      const outArg = cloneArg(variableArg);
-      if (variableArg.bindValueType === 'Reference') {
-        const refArg = argMapSnapshot[variableArg.bindValue || ''];
-        if (refArg) {
-          outArg.subArgs = refArg.subArgs
-            ? (JSON.parse(
-                JSON.stringify(refArg.subArgs),
-              ) as InputAndOutConfig[])
-            : refArg.subArgs;
-        }
-      }
-      varBasedOutputs.push(outArg);
+    innerPreviousNodes.push({
+      id: Number(currentNode.id),
+      name: currentNode.name,
+      type: currentNode.type,
+      icon: currentNode.icon as string,
+      outputArgs: prefixedVars,
     });
 
-    if (varBasedOutputs.length > 0) {
-      const prefixedVars = prefixOutputArgsKeys(
-        `${currentNode.id}-var`,
-        varBasedOutputs,
-      );
-
-      innerPreviousNodes.push({
-        id: Number(currentNode.id),
-        name: currentNode.name,
-        type: currentNode.type,
-        icon: currentNode.icon as string,
-        outputArgs: prefixedVars,
-      });
-
-      Object.assign(
-        argMap,
-        flattenArgsToMap(`${currentNode.id}-var`, varBasedOutputs),
-      );
-    }
+    Object.assign(
+      argMap,
+      flattenArgsToMap(`${currentNode.id}-var`, varBasedOutputs),
+    );
   }
 
   // 按执行流顺序排序 (同步 Java sortPreviousNodes)

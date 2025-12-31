@@ -350,11 +350,11 @@ const LogProTable: React.FC = () => {
         fixed: 'right',
         align: 'center',
         render: (_: any, record: SpaceLogInfo) => {
-          const disabled = !record?.requestId || !(record?.spaceId ?? spaceId);
+          // const disabled = !record?.requestId || !(record?.spaceId ?? spaceId);
           return (
             <Button
               type="link"
-              disabled={disabled}
+              // disabled={disabled}
               onClick={(e) => {
                 e.stopPropagation();
                 handleOpenDetails(record);
