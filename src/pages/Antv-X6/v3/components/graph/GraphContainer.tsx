@@ -211,21 +211,28 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         // 获取刚刚添加的子节点的实例，并设置父子关系
         const childNodeInstance = graphRef.current.getCellById(newNode.id);
         // 直接在graph实例中添加子节点并设置父子关系
-        const parentNode = graphRef.current.getCellById(child.loopNodeId);
-        parentNode.addChild(childNodeInstance);
-        // 更改循环节点的大小
-        adjustParentSize(parentNode);
-        const size = parentNode.getSize();
-        const position = parentNode.getPosition();
-        const _params = parentNode.getData() as ChildNode;
-        _params.nodeConfig.extension = {
-          ..._params.nodeConfig.extension,
-          width: size.width,
-          height: size.height,
-          x: position.x,
-          y: position.y,
-        };
-        changeCondition({ nodeData: _params });
+        // 注意：loopNodeId 可能是数字，而 X6 的 getCellById 需要字符串
+        const parentNode = graphRef.current.getCellById(
+          String(child.loopNodeId),
+        );
+        if (parentNode) {
+          parentNode.addChild(childNodeInstance);
+          // 更改循环节点的大小
+          adjustParentSize(parentNode);
+          const size = parentNode.getSize();
+          const position = parentNode.getPosition();
+          const _params = parentNode.getData() as ChildNode;
+          _params.nodeConfig.extension = {
+            ..._params.nodeConfig.extension,
+            width: size.width,
+            height: size.height,
+            x: position.x,
+            y: position.y,
+          };
+          changeCondition({ nodeData: _params });
+        } else {
+          console.warn('[graphAddNode] 找不到父循环节点，无法建立父子关系');
+        }
       }
     };
 
