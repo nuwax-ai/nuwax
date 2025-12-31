@@ -641,6 +641,7 @@ const Workflow: React.FC = () => {
       const updatedNode = {
         ...currentNode,
         ...currentFormValues, // 顶层属性（如 Loop 的 outputArgs）
+        name: currentNode.name,
         nodeConfig: {
           ...currentNode.nodeConfig,
           ...currentFormValues,
