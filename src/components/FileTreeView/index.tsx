@@ -501,38 +501,35 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 关闭右键菜单
      * @param e - 鼠标事件（可能是 React.MouseEvent 或原生 Event，可选）
      */
-    const closeContextMenu = useCallback(
-      (e?: React.MouseEvent | Event) => {
-        setContextMenuVisible(false);
-        setContextMenuTarget(null);
+    const closeContextMenu = useCallback(() => {
+      setContextMenuVisible(false);
+      setContextMenuTarget(null);
 
-        // 如果文件树未固定，检查点击位置是否在文件树内
-        if (!isFileTreePinned && fileTreeContainerRef.current && e) {
-          // 获取鼠标点击位置
-          const clientX =
-            'clientX' in e ? e.clientX : (e as MouseEvent).clientX || 0;
-          const clientY =
-            'clientY' in e ? e.clientY : (e as MouseEvent).clientY || 0;
+      // // 如果文件树未固定，检查点击位置是否在文件树内
+      // if (!isFileTreePinned && fileTreeContainerRef.current && e) {
+      //   // 获取鼠标点击位置
+      //   const clientX =
+      //     'clientX' in e ? e.clientX : (e as MouseEvent).clientX || 0;
+      //   const clientY =
+      //     'clientY' in e ? e.clientY : (e as MouseEvent).clientY || 0;
 
-          // 获取文件树容器的位置和尺寸
-          const fileTreeRect =
-            fileTreeContainerRef.current.getBoundingClientRect();
+      //   // 获取文件树容器的位置和尺寸
+      //   const fileTreeRect =
+      //     fileTreeContainerRef.current.getBoundingClientRect();
 
-          // 判断点击位置是否在文件树区域内
-          const isInsideFileTree =
-            clientX >= fileTreeRect.left &&
-            clientX <= fileTreeRect.right &&
-            clientY >= fileTreeRect.top &&
-            clientY <= fileTreeRect.bottom;
+      //   // 判断点击位置是否在文件树区域内
+      //   const isInsideFileTree =
+      //     clientX >= fileTreeRect.left &&
+      //     clientX <= fileTreeRect.right &&
+      //     clientY >= fileTreeRect.top &&
+      //     clientY <= fileTreeRect.bottom;
 
-          // 如果点击位置不在文件树内，则隐藏文件树
-          if (!isInsideFileTree) {
-            setIsFileTreeVisible(false);
-          }
-        }
-      },
-      [isFileTreePinned],
-    );
+      //   // 如果点击位置不在文件树内，则隐藏文件树
+      //   if (!isInsideFileTree) {
+      //     setIsFileTreeVisible(false);
+      //   }
+      // }
+    }, [isFileTreePinned]);
 
     // 点击外部关闭右键菜单
     useEffect(() => {
