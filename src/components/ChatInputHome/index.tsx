@@ -443,7 +443,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           {/*任务智能体切换按钮*/}
           {showTaskAgentToggle && (
             <Tooltip
-              title={isTaskAgentActive ? '切换到普通模式' : '切换到任务智能体'}
+              title={
+                isTaskAgentActive
+                  ? '切换到普通模式'
+                  : '使用我的智能体电脑执行任务'
+              }
             >
               <span
                 className={cx(
