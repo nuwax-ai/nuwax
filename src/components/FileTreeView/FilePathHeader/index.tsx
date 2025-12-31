@@ -154,7 +154,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       {/* 文件树展开/折叠图标 */}
       {viewMode !== 'desktop' && showFileTreeToggleButton && (
         <Tooltip
-          title={isFileTreeVisible ? '点击隐藏文件树' : '点击展开文件树'}
+          title={isFileTreeVisible ? '点击收起文件树' : '点击展开文件树'}
         >
           <Button
             type="text"
