@@ -298,18 +298,23 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     // 获取当前会话ID
     const conversationId = getCurrentConversationId();
 
-    if (requestId) {
-      if (onTempChatStop) {
-        onTempChatStop(requestId);
-      } else {
-        // 调用停止会话方法，传递会话ID
-        runStopConversation(conversationId);
-      }
+    // 修复：即使 requestId 为空也应该调用停止接口
+    // 因为在会话刚开始时，requestId 可能还未设置，但会话已经在进行中
+    if (onTempChatStop && requestId) {
+      // 临时聊天需要 requestId
+      onTempChatStop(requestId);
+    } else if (conversationId) {
+      // 正常会话只需要 conversationId 即可停止
+      runStopConversation(conversationId);
+    } else {
+      // 如果连 conversationId 都没有，重置停止状态
+      setIsStoppingConversation(false);
     }
   }, [
     // disabledStop,
     // wholeDisabled,
     getCurrentConversationRequestId,
+    getCurrentConversationId,
     runStopConversation,
     onTempChatStop,
   ]);

@@ -56,10 +56,16 @@ const RunOver: React.FC<RunOverProps> = ({
     }
     return null;
   }, [processingList]);
+  console.log('lastProcessInfo', lastProcessInfo);
 
-  // 如果最后一个过程信息为空，则显示loading状态
-  if (!lastProcessInfo) {
-    return <LoadingOutlined className={cx(styles.successColor)} />;
+  // 优化：只有在任务已完成（Complete 或 Error）且 processingList 为空时才不显示组件
+  // 如果任务还在执行中（Loading 或 Incomplete），即使 processingList 为空也要显示加载状态
+  if (
+    !lastProcessInfo &&
+    (messageInfo?.status === MessageStatusEnum.Complete ||
+      messageInfo?.status === MessageStatusEnum.Error)
+  ) {
+    return null;
   }
 
   return (

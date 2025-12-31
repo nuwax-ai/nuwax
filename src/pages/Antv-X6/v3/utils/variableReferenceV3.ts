@@ -145,18 +145,30 @@ function buildForwardGraph(nodes: ChildNode[]): Map<number, number[]> {
 
 /**
  * 获取逻辑上的“未来节点”（从起始点正向可达的所有节点）
+ * 注意：跳过 Loop → LoopStart 的边，避免循环体内节点被错误标记为"未来节点"
  */
 function getForwardReachableNodes(
   startNodeId: number,
   forwardGraph: Map<number, number[]>,
+  nodeMap?: Map<number, ChildNode>,
 ): Set<number> {
   const reachable = new Set<number>();
   const stack = [startNodeId];
   while (stack.length > 0) {
     const current = stack.pop()!;
+    const currentNode = nodeMap?.get(current);
     const nexts = forwardGraph.get(current) || [];
     nexts.forEach((nextId) => {
       if (!reachable.has(nextId)) {
+        const nextNode = nodeMap?.get(nextId);
+        // 跳过 Loop → LoopStart 边（循环迭代控制边，不应让循环体内节点成为"未来节点"）
+        if (
+          currentNode?.type === NodeTypeEnum.Loop &&
+          nextNode?.type === NodeTypeEnum.LoopStart &&
+          Number(nextNode.loopNodeId) === Number(current)
+        ) {
+          return;
+        }
         reachable.add(nextId);
         stack.push(nextId);
       }
@@ -167,11 +179,13 @@ function getForwardReachableNodes(
 
 /**
  * 使用 BFS 找到所有前驱节点（可达的上级节点）
+ * 注意：跳过 Loop ← LoopEnd 边，避免通过迭代控制边到达其他分支
  */
 function findAllPredecessors(
   nodeId: number,
   reverseGraph: Map<number, number[]>,
   visited: Set<number> = new Set(),
+  nodeMap?: Map<number, ChildNode>,
 ): number[] {
   const predecessors: number[] = [];
   const queue: number[] = [...(reverseGraph.get(nodeId) || [])];
@@ -184,9 +198,19 @@ function findAllPredecessors(
 
     predecessors.push(current);
 
+    const currentNode = nodeMap?.get(current);
     const prevNodes = reverseGraph.get(current) || [];
     prevNodes.forEach((prev) => {
       if (!visited.has(prev)) {
+        const prevNode = nodeMap?.get(prev);
+        // 跳过 Loop ← LoopEnd 边（避免通过迭代控制边到达循环内其他分支）
+        if (
+          currentNode?.type === NodeTypeEnum.Loop &&
+          prevNode?.type === NodeTypeEnum.LoopEnd &&
+          Number(prevNode.loopNodeId) === Number(current)
+        ) {
+          return;
+        }
         queue.push(prev);
       }
     });
@@ -368,13 +392,21 @@ export function calculateNodePreviousArgs(
   // 确保 nodeId 是 number 类型
   const nodeIdNum = Number(nodeId);
 
-  // 1. 获取所有“逻辑未来节点”，这些节点即便连线回来也不能作为前置参数（同步 Java 死循环规避）
-  const futureNodes = getForwardReachableNodes(nodeIdNum, forwardGraph);
+  // 1. 获取所有"逻辑未来节点"，这些节点即便连线回来也不能作为前置参数（同步 Java 死循环规避）
+  // 跳过 Loop → LoopStart 边，避免循环体内节点被错误标记为"未来节点"
+  const futureNodes = getForwardReachableNodes(
+    nodeIdNum,
+    forwardGraph,
+    nodeMap,
+  );
 
   // 2. 找到所有前驱节点，并过滤掉自身和逻辑上的未来节点
-  const predecessorIds = findAllPredecessors(nodeIdNum, reverseGraph).filter(
-    (id) => id !== nodeIdNum && !futureNodes.has(id),
-  );
+  const predecessorIds = findAllPredecessors(
+    nodeIdNum,
+    reverseGraph,
+    new Set(),
+    nodeMap,
+  ).filter((id) => id !== nodeIdNum && !futureNodes.has(id));
 
   // 构建上级节点列表
   const previousNodes: PreviousList[] = [];
@@ -498,6 +530,8 @@ export function calculateNodePreviousArgs(
       const loopPredecessors = findAllPredecessors(
         loopNodeIdNum,
         reverseGraph,
+        new Set(),
+        nodeMap,
       ).filter((id) => id !== loopNodeIdNum && !futureNodes.has(id));
 
       loopPredecessors.forEach((predId) => {
@@ -658,7 +692,22 @@ export function calculateNodePreviousArgs(
       // 构建内部节点的反向图
       const innerNodeMap = new Map<number, ChildNode>();
       currentNode.innerNodes.forEach((n) => innerNodeMap.set(Number(n.id), n));
-      const innerReverseGraph = buildReverseGraph(currentNode.innerNodes);
+
+      // 过滤出仅属于内部节点之间的边（使用最新的 edgeList）
+      const innerNodeIds = new Set(
+        currentNode.innerNodes.map((n) => Number(n.id)),
+      );
+      const innerEdgeList = edgeList.filter(
+        (edge) =>
+          innerNodeIds.has(parseInt(edge.source, 10)) &&
+          innerNodeIds.has(parseInt(edge.target, 10)),
+      );
+
+      // 构建内部反向图，使用最新的边数据
+      const innerReverseGraph = buildReverseGraph(
+        currentNode.innerNodes,
+        innerEdgeList,
+      );
 
       // 从 LoopEnd 开始递归查找所有前驱
       const endNodeId = currentNode.innerEndNodeId;
@@ -668,6 +717,8 @@ export function calculateNodePreviousArgs(
         const innerPredIds = findAllPredecessors(
           Number(endNodeId),
           innerReverseGraph,
+          new Set(),
+          innerNodeMap,
         );
 
         // 过滤：只保留属于当前循环的节点 (loopNodeId === currentNode.id)，排除 LoopStart/LoopEnd
@@ -683,16 +734,8 @@ export function calculateNodePreviousArgs(
           );
       }
 
-      // 如果 BFS 找不到任何有效节点（可能是新节点还没有 nextNodeIds），
-      // 回退到直接遍历所有 innerNodes，确保新添加的节点也能被引用
-      if (validInnerNodes.length === 0) {
-        validInnerNodes = currentNode.innerNodes.filter(
-          (n) =>
-            Number(n.loopNodeId) === currentLoopId &&
-            n.type !== NodeTypeEnum.LoopStart &&
-            n.type !== NodeTypeEnum.LoopEnd,
-        );
-      }
+      // 只展示有完整连线（从 LoopStart 到 LoopEnd）的节点
+      // 未连接完整的节点不应出现在输出变量引用列表中
 
       validInnerNodes.forEach((innerNode) => {
         const outputArgs = getNodeOutputArgs(innerNode, systemVariables);

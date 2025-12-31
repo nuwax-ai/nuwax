@@ -168,6 +168,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const htmlRefreshTimestampRef = useRef<number>(Date.now());
     // 用于存储 office 文件的刷新时间戳，确保每次点击时都能刷新
     const officeRefreshTimestampRef = useRef<number>(Date.now());
+    // 用于存储 json 文件的刷新时间戳，确保每次点击时都能刷新
+    const jsonRefreshTimestampRef = useRef<number>(Date.now());
 
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
@@ -289,6 +291,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           const result = isDocumentFile(fileNode?.name || '');
           // 判断文件是否为office文档类型
           const isOfficeFile = result?.isDoc || false;
+          // 检查是否是 json 文件
+          const isJsonFile = fileNode?.name?.includes('.json') || false;
 
           // 如果是重复点击 html 文件，更新刷新时间戳以强制刷新 iframe
           if (isSameFile && isHtmlFile) {
@@ -306,6 +310,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             return;
           }
 
+          // 如果是重复点击 json 文件，更新刷新时间戳以强制刷新
+          if (isSameFile && isJsonFile) {
+            jsonRefreshTimestampRef.current = Date.now();
+            // 仍然调用刷新逻辑以更新文件内容
+            await handleRefreshFileList();
+            return;
+          }
+
           // 如果是新选中的 html 文件，更新刷新时间戳
           if (isHtmlFile) {
             htmlRefreshTimestampRef.current = Date.now();
@@ -316,13 +328,18 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             officeRefreshTimestampRef.current = Date.now();
           }
 
+          // 如果是新选中的 json 文件，更新刷新时间戳
+          if (isJsonFile) {
+            jsonRefreshTimestampRef.current = Date.now();
+          }
+
           // 获取文件内容
           const fileContent = fileNode?.content || '';
           // 获取文件代理URL
           const fileProxyUrl = fileNode?.fileProxyUrl || '';
 
           // 如果文件有内容，直接使用缓存
-          if (fileContent) {
+          if (fileContent && !fileProxyUrl) {
             setSelectedFileId(fileId);
             setViewFileType('preview');
             setSelectedFileNode(fileNode);
@@ -1090,7 +1107,25 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // 文档文件：使用FilePreview组件
       if (selectedFileNode?.name?.includes('.json') && fileProxyUrl) {
-        return <FilePreview src={fileProxyUrl} fileType="text" />;
+        // 构建 URL 参数和 key：同时考虑 taskAgentSelectTrigger 和 jsonRefreshTimestampRef
+        // 只要其中一个变化，都应该刷新
+        // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
+        const triggerPart =
+          taskAgentSelectTrigger !== undefined
+            ? `trigger-${taskAgentSelectTrigger}`
+            : 'trigger-none';
+        const timestampPart = `timestamp-${jsonRefreshTimestampRef.current}`;
+        const jsonKey = `json-${selectedFileId}-${triggerPart}-${timestampPart}`;
+
+        // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
+        // 优先使用 taskAgentSelectTrigger，如果不存在则使用 jsonRefreshTimestampRef
+        const triggerValue =
+          taskAgentSelectTrigger !== undefined
+            ? taskAgentSelectTrigger
+            : jsonRefreshTimestampRef.current;
+        const jsonUrl = `${fileProxyUrl}?t=${triggerValue}`;
+
+        return <FilePreview key={jsonKey} src={jsonUrl} fileType="text" />;
       }
 
       // 图片文件：使用图片查看器

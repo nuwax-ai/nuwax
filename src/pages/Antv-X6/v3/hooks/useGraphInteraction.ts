@@ -53,7 +53,23 @@ export const useGraphInteraction = ({
 
         if (res.success) {
           changeUpdateTime();
-          await callback(); // Update references
+          await callback(); // Update references for current node
+
+          // 如果源节点在循环内，也刷新父循环节点的引用（更新循环输出变量列表）
+          console.log(
+            '[nodeChangeEdge] sourceNode:',
+            sourceNode.id,
+            'loopNodeId:',
+            sourceNode.loopNodeId,
+          );
+          if (sourceNode.loopNodeId) {
+            console.log(
+              '[nodeChangeEdge] Refreshing parent Loop references:',
+              sourceNode.loopNodeId,
+            );
+            await getReference(Number(sourceNode.loopNodeId));
+            console.log('[nodeChangeEdge] Parent Loop references refreshed');
+          }
 
           const updatedNode = workflowProxy.getNodeById(sourceNode.id);
           const newNodeIds = updatedNode?.nextNodeIds || [];
@@ -78,6 +94,11 @@ export const useGraphInteraction = ({
         if (res.success) {
           changeUpdateTime();
           await callback();
+
+          // 如果源节点在循环内，也刷新父循环节点的引用（更新循环输出变量列表）
+          if (sourceNode.loopNodeId) {
+            await getReference(Number(sourceNode.loopNodeId));
+          }
 
           const updatedNode = workflowProxy.getNodeById(sourceNode.id);
           const newNodeIds = updatedNode?.nextNodeIds || [];
