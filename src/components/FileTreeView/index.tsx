@@ -923,39 +923,33 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     /**
      * 处理文件树展开/折叠（点击图标）
+     * 隐藏状态时点击展开文件树，展开时点击隐藏文件树
      */
     const handleFileTreeToggle = () => {
-      const newPinnedState = !isFileTreePinned;
-      // 通知父组件更新固定状态
-      onFileTreePinnedChange?.(newPinnedState);
-      // 如果固定，则显示文件树；如果取消固定，则隐藏文件树
-      setIsFileTreeVisible(newPinnedState);
-    };
-
-    /**
-     * 处理文件树鼠标移入
-     */
-    const handleFileTreeMouseEnter = () => {
-      // 如果未固定，则显示文件树
-      if (!isFileTreePinned) {
-        setIsFileTreeVisible(true);
+      const newVisibleState = !isFileTreeVisible;
+      setIsFileTreeVisible(newVisibleState);
+      // 如果展开文件树，同时固定它；如果隐藏文件树，取消固定
+      if (newVisibleState) {
+        onFileTreePinnedChange?.(true);
+      } else {
+        onFileTreePinnedChange?.(false);
       }
     };
 
     /**
      * 处理文件树鼠标移出
      */
-    const handleFileTreeMouseLeave = () => {
-      // 如果右键菜单显示，不隐藏文件树（等待鼠标移入菜单或移出菜单区域）
-      if (contextMenuVisible) {
-        return;
-      }
+    // const handleFileTreeMouseLeave = () => {
+    //   // 如果右键菜单显示，不隐藏文件树（等待鼠标移入菜单或移出菜单区域）
+    //   if (contextMenuVisible) {
+    //     return;
+    //   }
 
-      // 如果未固定，则隐藏文件树
-      if (!isFileTreePinned) {
-        setIsFileTreeVisible(false);
-      }
-    };
+    //   // 如果未固定，则隐藏文件树
+    //   if (!isFileTreePinned) {
+    //     setIsFileTreeVisible(false);
+    //   }
+    // };
 
     // 处理下载项目操作
     const handleDownloadProject = async () => {
@@ -1215,8 +1209,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           isFileTreePinned={isFileTreePinned}
           // 文件树展开/折叠回调
           onFileTreeToggle={handleFileTreeToggle}
-          // 文件树鼠标移入回调
-          onFileTreeMouseEnter={handleFileTreeMouseEnter}
           // 刷新文件树回调
           onRefreshFileTree={handleRefreshFileList}
           // 是否正在刷新文件树
@@ -1309,7 +1301,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                   [styles['file-tree-view-hidden']]: !isFileTreeVisible,
                 },
               )}
-              onMouseLeave={handleFileTreeMouseLeave}
+              // onMouseLeave={handleFileTreeMouseLeave}
             >
               <SearchView
                 className={headerClassName}
