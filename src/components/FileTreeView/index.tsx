@@ -339,7 +339,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           const fileProxyUrl = fileNode?.fileProxyUrl || '';
 
           // 如果文件有内容，直接使用缓存
-          if (fileContent) {
+          if (fileContent && !fileProxyUrl) {
             setSelectedFileId(fileId);
             setViewFileType('preview');
             setSelectedFileNode(fileNode);
@@ -377,7 +377,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 其他类型文件：使用文件代理URL获取文件内容
           // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
           else if (fileProxyUrl) {
-            console.log('fileProxyUrl1111111: ', fileProxyUrl);
             // 获取文件内容并更新文件树
             const newFileContent = await fetchFileContentUpdateFiles(
               fileProxyUrl,
