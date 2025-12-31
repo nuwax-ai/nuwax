@@ -73,7 +73,10 @@ export const useWorkflowValidation = ({
       }
     }
 
-    if (getWorkflow('isModified') === true) {
+    // V3 Fix: 即使 isModified 为 false，也强制提交当前表单数据
+    // 因为 throttledHandleGraphUpdate 可能还未执行（有 500ms 延迟），
+    // 如果用户修改后立即点击试运行，需要手动触发同步以确保 graph 数据是最新的
+    if (getWorkflow('visible')) {
       await doSubmitFormData();
     }
 
