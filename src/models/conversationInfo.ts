@@ -626,7 +626,7 @@ export default () => {
           return [];
         }
         // 深拷贝消息列表
-        const list = [...messageList];
+        let list: any[] = [...messageList];
         const index = list.findIndex((item) => item.id === currentMessageId);
         // 数组splice方法的第二个参数表示删除的数量，这里我们只需要删除一个元素，所以设置为1， 如果为0，则表示不删除元素。
         let arraySpliceAction = 1;
@@ -639,7 +639,7 @@ export default () => {
           return messageList;
         }
 
-        let newMessage = null;
+        let newMessage: any = null;
 
         // 更新UI状态...
         if (eventType === ConversationEventTypeEnum.PROCESSING) {
@@ -877,6 +877,17 @@ export default () => {
           if (isSuggest.current) {
             runChatSuggest(params as ConversationChatSuggestParams);
           }
+
+          // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
+          if (!data.outputText) {
+            // 将 newMessage 设置为 null，并保持 arraySpliceAction 为 1
+            // 这样会在后续的 splice 操作中删除当前消息而不是替换
+            newMessage = null;
+            // 确保删除操作生效：直接从列表中移除当前消息
+            list.splice(index, 1);
+            // 标记已处理，跳过后续的 splice 逻辑
+            arraySpliceAction = 0;
+          }
         }
         // ERROR事件
         if (eventType === ConversationEventTypeEnum.ERROR) {
@@ -933,10 +944,7 @@ export default () => {
         // 将当前会话的loading状态的消息改为Error状态，并将所有正在执行的 processing 状态更新为 FAILED
         setMessageList((list) => {
           try {
-            // 过滤掉空消息，避免页面渲染空内容并拷贝消息列表
-            const copyList = JSON.parse(
-              JSON.stringify(list.filter((item) => item.text?.trim() !== '')),
-            );
+            const copyList = JSON.parse(JSON.stringify(list));
 
             // 遍历消息列表，找到最后一条消息并更新其 processingList
             if (copyList.length > 0) {
@@ -966,6 +974,7 @@ export default () => {
                 handleChatProcessingList(updatedProcessingList);
               }
             }
+            console.log('copyList', copyList);
 
             return copyList;
           } catch (error) {
