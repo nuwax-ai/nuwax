@@ -706,9 +706,6 @@ export function calculateNodePreviousArgs(
           innerNodeMap,
         );
 
-        console.log('[Loop innerPreviousNodes] endNodeId:', endNodeId);
-        console.log('[Loop innerPreviousNodes] innerPredIds:', innerPredIds);
-
         // 过滤：只保留属于当前循环的节点 (loopNodeId === currentNode.id)，排除 LoopStart/LoopEnd
         // 注意：需要使用 Number() 统一类型，因为保存后 currentNode.id 可能变成字符串
         validInnerNodes = innerPredIds
@@ -720,26 +717,16 @@ export function calculateNodePreviousArgs(
               n.type !== NodeTypeEnum.LoopStart &&
               n.type !== NodeTypeEnum.LoopEnd,
           );
-
-        console.log(
-          '[Loop innerPreviousNodes] validInnerNodes after filter:',
-          validInnerNodes.map((n) => n.name),
-        );
       }
 
       // 如果 BFS 找不到任何有效节点（可能是新节点还没有 nextNodeIds），
       // 回退到直接遍历所有 innerNodes，确保新添加的节点也能被引用
       if (validInnerNodes.length === 0) {
-        console.log('[Loop innerPreviousNodes] fallback to all innerNodes');
         validInnerNodes = currentNode.innerNodes.filter(
           (n) =>
             Number(n.loopNodeId) === currentLoopId &&
             n.type !== NodeTypeEnum.LoopStart &&
             n.type !== NodeTypeEnum.LoopEnd,
-        );
-        console.log(
-          '[Loop innerPreviousNodes] validInnerNodes after fallback:',
-          validInnerNodes.map((n) => n.name),
         );
       }
 
