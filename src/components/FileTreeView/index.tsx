@@ -538,11 +538,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         return;
       }
 
-      const handleDocumentClick = (e: Event) => {
+      const handleDocumentClick = () => {
         // 只在右键菜单显示时才处理点击事件（双重检查，避免闭包问题）
         // 注意：这里使用最新的 contextMenuVisible 状态可能会有延迟
         // 但由于我们在 useEffect 中已经检查了 contextMenuVisible，所以这里应该是安全的
-        closeContextMenu(e);
+        closeContextMenu();
       };
 
       document.addEventListener('click', handleDocumentClick);
