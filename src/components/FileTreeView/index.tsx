@@ -39,6 +39,7 @@ import FileTree from './FileTree';
 import styles from './index.less';
 import SearchView from './SearchView';
 import { ChangeFileInfo, FileTreeViewProps, FileTreeViewRef } from './type';
+// import { apiAgentConversationShare } from '@/services/vncDesktop';
 
 const cx = classNames.bind(styles);
 
@@ -163,6 +164,13 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 用于记录创建成功后需要选择的文件路径
     const pendingSelectFileRef = useRef<string | null>(null);
 
+    // 用于存储 html 文件的刷新时间戳，确保每次点击时都能刷新 iframe
+    const htmlRefreshTimestampRef = useRef<number>(Date.now());
+    // 用于存储 office 文件的刷新时间戳，确保每次点击时都能刷新
+    const officeRefreshTimestampRef = useRef<number>(Date.now());
+    // 用于存储 json 文件的刷新时间戳，确保每次点击时都能刷新
+    const jsonRefreshTimestampRef = useRef<number>(Date.now());
+
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
       if (isFullscreenPreview) {
@@ -277,11 +285,52 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
           // 检查是否是重复点击同一个文件
           const isSameFile = selectedFileId === fileId;
+          // 检查是否是 html 文件
+          const isHtmlFile = fileNode?.name?.includes('.htm') || false;
+          // 判断文件是否为文档类型
+          const result = isDocumentFile(fileNode?.name || '');
+          // 判断文件是否为office文档类型
+          const isOfficeFile = result?.isDoc || false;
+          // 检查是否是 json 文件
+          const isJsonFile = fileNode?.name?.includes('.json') || false;
 
-          // 如果是重复点击，直接调用刷新逻辑（与 fileHeader 上的刷新按钮逻辑一致）
-          if (isSameFile) {
+          // 如果是重复点击 html 文件，更新刷新时间戳以强制刷新 iframe
+          if (isSameFile && isHtmlFile) {
+            htmlRefreshTimestampRef.current = Date.now();
+            // 仍然调用刷新逻辑以更新文件内容
             await handleRefreshFileList();
             return;
+          }
+
+          // 如果是重复点击 office 文件，更新刷新时间戳以强制刷新
+          if (isSameFile && isOfficeFile) {
+            officeRefreshTimestampRef.current = Date.now();
+            // 仍然调用刷新逻辑以更新文件内容
+            await handleRefreshFileList();
+            return;
+          }
+
+          // 如果是重复点击 json 文件，更新刷新时间戳以强制刷新
+          if (isSameFile && isJsonFile) {
+            jsonRefreshTimestampRef.current = Date.now();
+            // 仍然调用刷新逻辑以更新文件内容
+            await handleRefreshFileList();
+            return;
+          }
+
+          // 如果是新选中的 html 文件，更新刷新时间戳
+          if (isHtmlFile) {
+            htmlRefreshTimestampRef.current = Date.now();
+          }
+
+          // 如果是新选中的 office 文件，更新刷新时间戳
+          if (isOfficeFile) {
+            officeRefreshTimestampRef.current = Date.now();
+          }
+
+          // 如果是新选中的 json 文件，更新刷新时间戳
+          if (isJsonFile) {
+            jsonRefreshTimestampRef.current = Date.now();
           }
 
           // 获取文件内容
@@ -290,7 +339,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           const fileProxyUrl = fileNode?.fileProxyUrl || '';
 
           // 如果文件有内容，直接使用缓存
-          if (fileContent) {
+          if (fileContent && !fileProxyUrl) {
             setSelectedFileId(fileId);
             setViewFileType('preview');
             setSelectedFileNode(fileNode);
@@ -311,10 +360,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           const isVideo = isVideoFile(fileNode?.name || '');
           // 判断文件是否为音频类型
           const isAudio = isAudioFile(fileNode?.name || '');
-          // 判断文件是否为文档类型
-          const result = isDocumentFile(fileNode?.name || '');
+          // 判断文件是否为文档类型（复用之前声明的 result 变量）
           // 判断文件是否为office文档类型
-          const isOfficeDocument = result?.isDoc || false;
+          const isOfficeDocument = isOfficeFile;
 
           // 如果文件为图片、视频、音频、文档类型，或则没有文件代理URL，则直接设置为选中文件节点
           if (
@@ -488,38 +536,35 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 关闭右键菜单
      * @param e - 鼠标事件（可能是 React.MouseEvent 或原生 Event，可选）
      */
-    const closeContextMenu = useCallback(
-      (e?: React.MouseEvent | Event) => {
-        setContextMenuVisible(false);
-        setContextMenuTarget(null);
+    const closeContextMenu = useCallback(() => {
+      setContextMenuVisible(false);
+      setContextMenuTarget(null);
 
-        // 如果文件树未固定，检查点击位置是否在文件树内
-        if (!isFileTreePinned && fileTreeContainerRef.current && e) {
-          // 获取鼠标点击位置
-          const clientX =
-            'clientX' in e ? e.clientX : (e as MouseEvent).clientX || 0;
-          const clientY =
-            'clientY' in e ? e.clientY : (e as MouseEvent).clientY || 0;
+      // // 如果文件树未固定，检查点击位置是否在文件树内
+      // if (!isFileTreePinned && fileTreeContainerRef.current && e) {
+      //   // 获取鼠标点击位置
+      //   const clientX =
+      //     'clientX' in e ? e.clientX : (e as MouseEvent).clientX || 0;
+      //   const clientY =
+      //     'clientY' in e ? e.clientY : (e as MouseEvent).clientY || 0;
 
-          // 获取文件树容器的位置和尺寸
-          const fileTreeRect =
-            fileTreeContainerRef.current.getBoundingClientRect();
+      //   // 获取文件树容器的位置和尺寸
+      //   const fileTreeRect =
+      //     fileTreeContainerRef.current.getBoundingClientRect();
 
-          // 判断点击位置是否在文件树区域内
-          const isInsideFileTree =
-            clientX >= fileTreeRect.left &&
-            clientX <= fileTreeRect.right &&
-            clientY >= fileTreeRect.top &&
-            clientY <= fileTreeRect.bottom;
+      //   // 判断点击位置是否在文件树区域内
+      //   const isInsideFileTree =
+      //     clientX >= fileTreeRect.left &&
+      //     clientX <= fileTreeRect.right &&
+      //     clientY >= fileTreeRect.top &&
+      //     clientY <= fileTreeRect.bottom;
 
-          // 如果点击位置不在文件树内，则隐藏文件树
-          if (!isInsideFileTree) {
-            setIsFileTreeVisible(false);
-          }
-        }
-      },
-      [isFileTreePinned],
-    );
+      //   // 如果点击位置不在文件树内，则隐藏文件树
+      //   if (!isInsideFileTree) {
+      //     setIsFileTreeVisible(false);
+      //   }
+      // }
+    }, []);
 
     // 点击外部关闭右键菜单
     useEffect(() => {
@@ -528,11 +573,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         return;
       }
 
-      const handleDocumentClick = (e: Event) => {
+      const handleDocumentClick = () => {
         // 只在右键菜单显示时才处理点击事件（双重检查，避免闭包问题）
         // 注意：这里使用最新的 contextMenuVisible 状态可能会有延迟
         // 但由于我们在 useEffect 中已经检查了 contextMenuVisible，所以这里应该是安全的
-        closeContextMenu(e);
+        closeContextMenu();
       };
 
       document.addEventListener('click', handleDocumentClick);
@@ -923,7 +968,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     /**
      * 处理文件树展开/折叠（点击图标）
-     * 隐藏状态时点击展开文件树，展开时点击隐藏文件树
+     * 隐藏状态时点击展开文件树，展开时点击收起文件树
      */
     const handleFileTreeToggle = () => {
       const newVisibleState = !isFileTreeVisible;
@@ -975,6 +1020,16 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       setIsExportingPdf(false);
     };
 
+    // const userTicketRef = useRef('')
+
+    // useEffect(() => {
+    //   const getUserTicket = async () => {
+    //     const { data } = await apiAgentConversationShare({conversationId: targetId?.toString() || '', type: 'CONVERSATION'});
+    //     userTicketRef.current = data?.shareKey;
+    //   };
+    //   getUserTicket();
+    // }, []);
+
     /**
      * 渲染内容区域
      * 根据视图模式和文件类型渲染不同的预览组件
@@ -1023,9 +1078,28 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // office文档文件：使用FilePreview组件
       if (isOfficeDocument && fileProxyUrl) {
+        // 构建 URL 参数和 key：同时考虑 taskAgentSelectTrigger 和 officeRefreshTimestampRef
+        // 只要其中一个变化，都应该刷新
+        // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
+        const triggerPart =
+          taskAgentSelectTrigger !== undefined
+            ? `trigger-${taskAgentSelectTrigger}`
+            : 'trigger-none';
+        const timestampPart = `timestamp-${officeRefreshTimestampRef.current}`;
+        const officeKey = `office-${selectedFileId}-${triggerPart}-${timestampPart}`;
+
+        // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
+        // 优先使用 taskAgentSelectTrigger，如果不存在则使用 officeRefreshTimestampRef
+        const triggerValue =
+          taskAgentSelectTrigger !== undefined
+            ? taskAgentSelectTrigger
+            : officeRefreshTimestampRef.current;
+        const officeUrl = `${fileProxyUrl}?t=${triggerValue}`;
+
         return (
           <FilePreview
-            src={fileProxyUrl}
+            key={officeKey}
+            src={officeUrl}
             fileType={documentFileType as FileType}
           />
         );
@@ -1033,7 +1107,25 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // 文档文件：使用FilePreview组件
       if (selectedFileNode?.name?.includes('.json') && fileProxyUrl) {
-        return <FilePreview src={fileProxyUrl} fileType="text" />;
+        // 构建 URL 参数和 key：同时考虑 taskAgentSelectTrigger 和 jsonRefreshTimestampRef
+        // 只要其中一个变化，都应该刷新
+        // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
+        const triggerPart =
+          taskAgentSelectTrigger !== undefined
+            ? `trigger-${taskAgentSelectTrigger}`
+            : 'trigger-none';
+        const timestampPart = `timestamp-${jsonRefreshTimestampRef.current}`;
+        const jsonKey = `json-${selectedFileId}-${triggerPart}-${timestampPart}`;
+
+        // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
+        // 优先使用 taskAgentSelectTrigger，如果不存在则使用 jsonRefreshTimestampRef
+        const triggerValue =
+          taskAgentSelectTrigger !== undefined
+            ? taskAgentSelectTrigger
+            : jsonRefreshTimestampRef.current;
+        const jsonUrl = `${fileProxyUrl}?t=${triggerValue}`;
+
+        return <FilePreview key={jsonKey} src={jsonUrl} fileType="text" />;
       }
 
       // 图片文件：使用图片查看器
@@ -1091,10 +1183,42 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         // }
         // html 文件或无 content 的 markdown：使用 fileProxyUrl
         if (fileProxyUrl) {
+          // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
+          const isHtml = fileName?.includes('.htm');
+
+          // 构建 URL 参数和 key：同时考虑 taskAgentSelectTrigger 和 htmlRefreshTimestampRef
+          // 只要其中一个变化，都应该刷新
+          let timestampParam = '';
+          let htmlKey: string | undefined = undefined;
+
+          if (isHtml) {
+            // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
+            const triggerPart =
+              taskAgentSelectTrigger !== undefined
+                ? `trigger-${taskAgentSelectTrigger}`
+                : 'trigger-none';
+            const timestampPart = `timestamp-${htmlRefreshTimestampRef.current}`;
+            htmlKey = `html-${selectedFileId}-${triggerPart}-${timestampPart}`;
+
+            // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
+            // 优先使用 taskAgentSelectTrigger，如果不存在则使用 htmlRefreshTimestampRef
+            const triggerValue =
+              taskAgentSelectTrigger !== undefined
+                ? taskAgentSelectTrigger
+                : htmlRefreshTimestampRef.current;
+            timestampParam = `t=${triggerValue}`;
+          }
+
+          // 拼接时间戳参数
+          const htmlUrl = timestampParam
+            ? `${fileProxyUrl}?${timestampParam}`
+            : fileProxyUrl;
+
           return (
             <FilePreview
-              src={fileProxyUrl}
-              fileType={fileName?.includes('.htm') ? 'html' : 'markdown'}
+              key={htmlKey}
+              src={htmlUrl}
+              fileType={isHtml ? 'html' : 'markdown'}
             />
           );
         }

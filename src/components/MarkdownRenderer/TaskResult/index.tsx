@@ -64,7 +64,14 @@ const TaskResult: React.FC<TaskResultProps> = ({
        * conversationId: 1465924
        * fileId: workspace/2025-financial-statistics.pptx
        */
-      const fileId = fileName.split(`${conversationId}/`).pop();
+      console.log('点击会话中TaskResult事件处理: ', fileName);
+      let fileId = fileName.split(`${conversationId}/`).pop();
+
+      // 当点击的是文件夹时，如果文件ID以 / 结尾，则去掉 /
+      if (fileId?.endsWith('/')) {
+        fileId = fileId.slice(0, -1);
+      }
+
       openPreviewView(conversationId);
       setTaskAgentSelectedFileId(fileId);
       // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
