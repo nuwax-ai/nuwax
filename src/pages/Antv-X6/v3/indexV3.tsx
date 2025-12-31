@@ -618,17 +618,8 @@ const Workflow: React.FC = () => {
       try {
         let values = form.getFieldsValue(true);
 
-        console.log('[onSaveWorkflow] 节点类型:', currentFoldWrapItem.type);
-        console.log('[onSaveWorkflow] 原始表单值 keys:', Object.keys(values));
-
         // 清理 VariableAggregation 节点的扁平化键
         if (currentFoldWrapItem.type === NodeTypeEnum.VariableAggregation) {
-          console.log('[onSaveWorkflow] 开始清理 VariableAggregation 数据...');
-          values = cleanVariableAggregationFormValues(values);
-          console.log(
-            '[onSaveWorkflow] 清理后表单值 keys:',
-            Object.keys(values),
-          );
         }
 
         let updateFormConfig;
@@ -958,6 +949,15 @@ const Workflow: React.FC = () => {
       node.id === getWorkflow('drawerForm').id
     )
       return;
+
+    // 优先使用 workflowProxy 的最新数据（避免 graphParams 重绘后数据丢失）
+    if (node) {
+      const latestNode = workflowProxy.getNodeById(node.id);
+      if (latestNode) {
+        changeDrawer(latestNode);
+        return;
+      }
+    }
     changeDrawer(node);
   };
 

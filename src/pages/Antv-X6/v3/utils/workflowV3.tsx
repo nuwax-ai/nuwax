@@ -551,6 +551,7 @@ function getRandomPosition(maxWidth = 800, maxHeight = 600) {
 }
 
 // 生成主节点
+// 生成主节点
 export const createBaseNode = (node: ChildNode): NodeMetadata => {
   const extension = node.nodeConfig?.extension || {};
   const isLoopChild = node.loopNodeId;
@@ -560,6 +561,25 @@ export const createBaseNode = (node: ChildNode): NodeMetadata => {
     ports: ports.items,
     type: NodeSizeGetTypeEnum.create,
   });
+
+  // Hoist Loop node properties if they exist in nodeConfig but not at top level
+  const hoistedData = { ...node, parentId: null };
+  if (node.type === NodeTypeEnum.Loop) {
+    const propsToHoist = [
+      'loopType',
+      'loopTimes',
+      'inputArgs',
+      'outputArgs',
+      'variableArgs',
+      'exceptionHandleConfig',
+    ];
+    propsToHoist.forEach((prop) => {
+      if ((node as any)[prop] === undefined && node.nodeConfig?.[prop]) {
+        (hoistedData as any)[prop] = node.nodeConfig[prop];
+      }
+    });
+  }
+
   return {
     id: node.id.toString(),
     shape: getShape(node.type),
@@ -568,7 +588,7 @@ export const createBaseNode = (node: ChildNode): NodeMetadata => {
     width,
     height,
     label: node.name,
-    data: { ...node, parentId: null },
+    data: hoistedData,
     ports: generatePorts(node),
     zIndex: isLoopChild ? 6 : 3,
   };
@@ -600,6 +620,17 @@ export const createChildNode = (
         extension: ext, // 保持扩展属性合并
       },
       parentId, // 最后显式覆盖parentId字段
+      // 同样对子节点做一次清理/提升
+      ...(child.type === NodeTypeEnum.Loop
+        ? {
+            loopType: child.nodeConfig?.loopType,
+            loopTimes: child.nodeConfig?.loopTimes,
+            inputArgs: child.nodeConfig?.inputArgs,
+            outputArgs: child.nodeConfig?.outputArgs,
+            variableArgs: child.nodeConfig?.variableArgs,
+            exceptionHandleConfig: child.nodeConfig?.exceptionHandleConfig,
+          }
+        : {}),
     },
     ports: generatePorts(child),
     zIndex: 6,
