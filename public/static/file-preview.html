@@ -166,6 +166,20 @@
         async function renderHtml(url, container) {
             container.className = 'preview-container html-preview';
 
+            // 尝试获取HTML内容以提取标题
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    const html = await response.text();
+                    const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+                    if (titleMatch && titleMatch[1]) {
+                        document.title = titleMatch[1].trim();
+                    }
+                }
+            } catch (e) {
+                console.warn('Fetch HTML title failed:', e);
+            }
+
             const iframe = document.createElement('iframe');
             iframe.className = 'html-preview-iframe';
             iframe.src = url;
