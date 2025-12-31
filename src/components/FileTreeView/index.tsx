@@ -166,6 +166,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     // 用于存储 html 文件的刷新时间戳，确保每次点击时都能刷新 iframe
     const htmlRefreshTimestampRef = useRef<number>(Date.now());
+    // 用于存储 office 文件的刷新时间戳，确保每次点击时都能刷新
+    const officeRefreshTimestampRef = useRef<number>(Date.now());
 
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
@@ -283,6 +285,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           const isSameFile = selectedFileId === fileId;
           // 检查是否是 html 文件
           const isHtmlFile = fileNode?.name?.includes('.htm') || false;
+          // 判断文件是否为文档类型
+          const result = isDocumentFile(fileNode?.name || '');
+          // 判断文件是否为office文档类型
+          const isOfficeFile = result?.isDoc || false;
 
           // 如果是重复点击 html 文件，更新刷新时间戳以强制刷新 iframe
           if (isSameFile && isHtmlFile) {
@@ -292,9 +298,22 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             return;
           }
 
+          // 如果是重复点击 office 文件，更新刷新时间戳以强制刷新
+          if (isSameFile && isOfficeFile) {
+            officeRefreshTimestampRef.current = Date.now();
+            // 仍然调用刷新逻辑以更新文件内容
+            await handleRefreshFileList();
+            return;
+          }
+
           // 如果是新选中的 html 文件，更新刷新时间戳
           if (isHtmlFile) {
             htmlRefreshTimestampRef.current = Date.now();
+          }
+
+          // 如果是新选中的 office 文件，更新刷新时间戳
+          if (isOfficeFile) {
+            officeRefreshTimestampRef.current = Date.now();
           }
 
           // 获取文件内容
@@ -324,10 +343,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           const isVideo = isVideoFile(fileNode?.name || '');
           // 判断文件是否为音频类型
           const isAudio = isAudioFile(fileNode?.name || '');
-          // 判断文件是否为文档类型
-          const result = isDocumentFile(fileNode?.name || '');
+          // 判断文件是否为文档类型（复用之前声明的 result 变量）
           // 判断文件是否为office文档类型
-          const isOfficeDocument = result?.isDoc || false;
+          const isOfficeDocument = isOfficeFile;
 
           // 如果文件为图片、视频、音频、文档类型，或则没有文件代理URL，则直接设置为选中文件节点
           if (
@@ -1043,18 +1061,23 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // office文档文件：使用FilePreview组件
       if (isOfficeDocument && fileProxyUrl) {
-        // 当 taskAgentSelectTrigger 更新时，重新加载 office 文件
-        // 使用 taskAgentSelectTrigger 作为 key 的一部分，确保触发时重新渲染
-        const officeKey =
+        // 构建 URL 参数和 key：同时考虑 taskAgentSelectTrigger 和 officeRefreshTimestampRef
+        // 只要其中一个变化，都应该刷新
+        // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
+        const triggerPart =
           taskAgentSelectTrigger !== undefined
-            ? `office-${selectedFileId}-${taskAgentSelectTrigger}`
-            : `office-${selectedFileId}`;
+            ? `trigger-${taskAgentSelectTrigger}`
+            : 'trigger-none';
+        const timestampPart = `timestamp-${officeRefreshTimestampRef.current}`;
+        const officeKey = `office-${selectedFileId}-${triggerPart}-${timestampPart}`;
 
-        // 如果 taskAgentSelectTrigger 存在，添加到 URL 参数中以确保刷新
-        const officeUrl =
+        // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
+        // 优先使用 taskAgentSelectTrigger，如果不存在则使用 officeRefreshTimestampRef
+        const triggerValue =
           taskAgentSelectTrigger !== undefined
-            ? `${fileProxyUrl}?t=${taskAgentSelectTrigger}`
-            : fileProxyUrl;
+            ? taskAgentSelectTrigger
+            : officeRefreshTimestampRef.current;
+        const officeUrl = `${fileProxyUrl}?t=${triggerValue}`;
 
         return (
           <FilePreview
