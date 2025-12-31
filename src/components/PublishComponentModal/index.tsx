@@ -41,6 +41,7 @@ const cx = classNames.bind(styles);
  * 发布智能体、插件、工作流等弹窗组件
  */
 const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
+  title: currentTitle,
   mode = AgentComponentTypeEnum.Agent,
   spaceId,
   category,
@@ -184,7 +185,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     switch (mode) {
       case AgentComponentTypeEnum.Agent:
         _classifyList = agentInfoList;
-        setTitle('智能体');
+        setTitle(currentTitle ?? '智能体');
         break;
       case AgentComponentTypeEnum.Plugin:
         _classifyList = pluginInfoList;
