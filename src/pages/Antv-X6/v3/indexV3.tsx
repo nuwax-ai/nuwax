@@ -366,8 +366,22 @@ const Workflow: React.FC = () => {
           // 合并位置信息
           const position = n.getPosition();
           const size = n.getSize();
+
+          // 对于 Loop 节点，从画布子节点动态获取最新的 innerNodes
+          // 这样可以确保循环体内节点的最新变更（如新增输出变量）被正确引用
+          let innerNodes = data.innerNodes;
+          if (data.type === NodeTypeEnum.Loop) {
+            const children = n.getChildren();
+            if (children && children.length > 0) {
+              innerNodes = children
+                .filter((child: any) => child.isNode && child.isNode())
+                .map((child: any) => child.getData());
+            }
+          }
+
           return {
             ...data,
+            innerNodes,
             nodeConfig: {
               ...data.nodeConfig,
               extension: {
