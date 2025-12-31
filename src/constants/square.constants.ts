@@ -16,7 +16,7 @@ const SQUARE_TEMPLATE_SEGMENTED_LIST_ALL = [
   },
   {
     value: SquareTemplateTargetTypeEnum.Page,
-    label: '应用页面',
+    label: '网页应用',
   },
   {
     value: SquareTemplateTargetTypeEnum.Skill,

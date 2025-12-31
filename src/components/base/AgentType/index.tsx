@@ -56,7 +56,7 @@ const AgentTypeMap: Record<
   },
   [AgentComponentTypeEnum.Page]: {
     icon: <ICON_PAGE_APP />,
-    title: '应用页面',
+    title: '网页应用',
     styleClassName: styles.page,
   },
   [AgentComponentTypeEnum.Skill]: {
