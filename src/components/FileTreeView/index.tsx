@@ -1043,9 +1043,23 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // office文档文件：使用FilePreview组件
       if (isOfficeDocument && fileProxyUrl) {
+        // 当 taskAgentSelectTrigger 更新时，重新加载 office 文件
+        // 使用 taskAgentSelectTrigger 作为 key 的一部分，确保触发时重新渲染
+        const officeKey =
+          taskAgentSelectTrigger !== undefined
+            ? `office-${selectedFileId}-${taskAgentSelectTrigger}`
+            : `office-${selectedFileId}`;
+
+        // 如果 taskAgentSelectTrigger 存在，添加到 URL 参数中以确保刷新
+        const officeUrl =
+          taskAgentSelectTrigger !== undefined
+            ? `${fileProxyUrl}?t=${taskAgentSelectTrigger}`
+            : fileProxyUrl;
+
         return (
           <FilePreview
-            src={fileProxyUrl}
+            key={officeKey}
+            src={officeUrl}
             fileType={documentFileType as FileType}
           />
         );
