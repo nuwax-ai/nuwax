@@ -692,7 +692,22 @@ export function calculateNodePreviousArgs(
       // 构建内部节点的反向图
       const innerNodeMap = new Map<number, ChildNode>();
       currentNode.innerNodes.forEach((n) => innerNodeMap.set(Number(n.id), n));
-      const innerReverseGraph = buildReverseGraph(currentNode.innerNodes);
+
+      // 过滤出仅属于内部节点之间的边（使用最新的 edgeList）
+      const innerNodeIds = new Set(
+        currentNode.innerNodes.map((n) => Number(n.id)),
+      );
+      const innerEdgeList = edgeList.filter(
+        (edge) =>
+          innerNodeIds.has(parseInt(edge.source, 10)) &&
+          innerNodeIds.has(parseInt(edge.target, 10)),
+      );
+
+      // 构建内部反向图，使用最新的边数据
+      const innerReverseGraph = buildReverseGraph(
+        currentNode.innerNodes,
+        innerEdgeList,
+      );
 
       // 从 LoopEnd 开始递归查找所有前驱
       const endNodeId = currentNode.innerEndNodeId;
@@ -719,16 +734,8 @@ export function calculateNodePreviousArgs(
           );
       }
 
-      // 如果 BFS 找不到任何有效节点（可能是新节点还没有 nextNodeIds），
-      // 回退到直接遍历所有 innerNodes，确保新添加的节点也能被引用
-      if (validInnerNodes.length === 0) {
-        validInnerNodes = currentNode.innerNodes.filter(
-          (n) =>
-            Number(n.loopNodeId) === currentLoopId &&
-            n.type !== NodeTypeEnum.LoopStart &&
-            n.type !== NodeTypeEnum.LoopEnd,
-        );
-      }
+      // 只展示有完整连线（从 LoopStart 到 LoopEnd）的节点
+      // 未连接完整的节点不应出现在输出变量引用列表中
 
       validInnerNodes.forEach((innerNode) => {
         const outputArgs = getNodeOutputArgs(innerNode, systemVariables);

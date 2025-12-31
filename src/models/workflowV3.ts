@@ -97,8 +97,9 @@ const useWorkflowV3 = () => {
     if (_id.includes('-')) {
       _id = _id.split('-')[0];
     }
+    const numericId = Number(_id);
     const parentNode = referenceList.innerPreviousNodes.find(
-      (item) => item.id === Number(_id),
+      (item) => Number(item.id) === numericId,
     );
     return parentNode?.name;
   };

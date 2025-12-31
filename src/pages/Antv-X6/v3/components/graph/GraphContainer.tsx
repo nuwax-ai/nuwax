@@ -327,11 +327,43 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         {} as Record<string, any>,
       );
 
+      // 分离 top-level 属性和 nodeConfig 属性
+      const topLevelChanges: Record<string, any> = {};
+      const configChanges: Record<string, any> = {};
+
+      Object.keys(fullChangedValues).forEach((key) => {
+        if (key in rest) {
+          topLevelChanges[key] = fullChangedValues[key];
+        } else {
+          configChanges[key] = fullChangedValues[key];
+        }
+      });
+
+      // Special case: Loop node properties are top-level but might not be in 'rest' if they were optional/missing initially
+      // We should explicitly check for known top-level properties for Loop nodes
+      if (oldNodeData.type === 'Loop') {
+        const loopTopLevelProps = [
+          'loopType',
+          'loopTimes',
+          'inputArgs',
+          'outputArgs',
+          'variableArgs',
+          'exceptionHandleConfig',
+        ];
+        loopTopLevelProps.forEach((prop) => {
+          if (prop in fullChangedValues) {
+            topLevelChanges[prop] = fullChangedValues[prop];
+            delete configChanges[prop];
+          }
+        });
+      }
+
       graphUpdateNode(nodeId, {
         ...rest,
+        ...topLevelChanges,
         nodeConfig: mergeObject(
           cloneDeep(nodeConfig),
-          fullChangedValues,
+          configChanges,
         ) as NodeConfig,
       });
 
@@ -667,6 +699,13 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         hasInitialized.current = true;
       }
     }, [graphParams]);
+
+    useEffect(() => {
+      console.log('[GraphContainer] MOUNTED');
+      return () => {
+        console.log('[GraphContainer] UNMOUNTED');
+      };
+    }, []);
 
     return <div ref={containerRef} id={GRAPH_CONTAINER_ID} />;
   },
