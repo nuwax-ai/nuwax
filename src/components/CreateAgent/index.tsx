@@ -120,7 +120,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     if (type) {
       const _type = {
         [AgentTypeEnum.ChatBot]: '问答型',
-        [AgentTypeEnum.TaskAgent]: '长任务型',
+        [AgentTypeEnum.TaskAgent]: '任务型',
       };
       return mode === CreateUpdateModeEnum.Create
         ? `创建${_type[type]}智能体`

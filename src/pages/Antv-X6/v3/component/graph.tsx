@@ -874,6 +874,19 @@ const initGraph = ({
       });
       graph.cleanSelection();
     }
+
+    // 重要：先触发当前 focus 元素的 blur 事件
+    // 这是因为 TreeNodeTitle 等组件使用 onBlur 来更新表单值
+    // 如果不触发 blur，输入框中的值不会被同步到表单
+    const activeElement = document.activeElement as HTMLElement;
+    if (
+      activeElement &&
+      activeElement.tagName === 'INPUT' &&
+      typeof activeElement.blur === 'function'
+    ) {
+      activeElement.blur();
+    }
+
     // 每次 mousedown 都选中节点，解决需要点击两次才能选中的问题
     graph.select(node);
   });

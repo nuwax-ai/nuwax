@@ -79,6 +79,7 @@ const AgentDetails: React.FC = () => {
     closePreviewView,
     restartVncPod,
     restartAgent,
+    clearFilePanelInfo,
   } = useModel('conversationInfo');
 
   // 会话输入框已选择组件
@@ -200,6 +201,8 @@ const AgentDetails: React.FC = () => {
       setAgentDetail(null);
       setSelectedComponentList([]);
       setVariables([]);
+      // 清除文件面板信息
+      clearFilePanelInfo();
     };
   }, [agentId]);
 
