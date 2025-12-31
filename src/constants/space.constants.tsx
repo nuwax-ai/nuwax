@@ -171,7 +171,7 @@ const SPACE_APPLICATION_LIST_ALL: SpaceApplicationList[] = [
   {
     type: SpaceApplicationListEnum.Page_Develop,
     icon: <SvgIcon name="icons-common-console" />,
-    text: '应用页面开发',
+    text: '网页应用开发',
   },
   {
     type: SpaceApplicationListEnum.Component_Library,
