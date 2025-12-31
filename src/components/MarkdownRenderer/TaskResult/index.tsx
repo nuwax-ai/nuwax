@@ -59,13 +59,13 @@ const TaskResult: React.FC<TaskResultProps> = ({
 
     // 点击事件处理
     const handleClick = () => {
-      openPreviewView(conversationId);
       /**
        * fileName: /home/user/1465924/workspace/2025-financial-statistics.pptx
        * conversationId: 1465924
        * fileId: workspace/2025-financial-statistics.pptx
        */
       const fileId = fileName.split(`${conversationId}/`).pop();
+      openPreviewView(conversationId);
       setTaskAgentSelectedFileId(fileId);
       // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
       setTaskAgentSelectTrigger(Date.now());
