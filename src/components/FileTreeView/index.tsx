@@ -39,6 +39,7 @@ import FileTree from './FileTree';
 import styles from './index.less';
 import SearchView from './SearchView';
 import { ChangeFileInfo, FileTreeViewProps, FileTreeViewRef } from './type';
+// import { apiAgentConversationShare } from '@/services/vncDesktop';
 
 const cx = classNames.bind(styles);
 
@@ -163,6 +164,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 用于记录创建成功后需要选择的文件路径
     const pendingSelectFileRef = useRef<string | null>(null);
 
+    // 用于存储 html 文件的刷新时间戳，确保每次点击时都能刷新 iframe
+    const htmlRefreshTimestampRef = useRef<number>(Date.now());
+
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
       if (isFullscreenPreview) {
@@ -277,11 +281,20 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
           // 检查是否是重复点击同一个文件
           const isSameFile = selectedFileId === fileId;
+          // 检查是否是 html 文件
+          const isHtmlFile = fileNode?.name?.includes('.htm') || false;
 
-          // 如果是重复点击，直接调用刷新逻辑（与 fileHeader 上的刷新按钮逻辑一致）
-          if (isSameFile) {
+          // 如果是重复点击 html 文件，更新刷新时间戳以强制刷新 iframe
+          if (isSameFile && isHtmlFile) {
+            htmlRefreshTimestampRef.current = Date.now();
+            // 仍然调用刷新逻辑以更新文件内容
             await handleRefreshFileList();
             return;
+          }
+
+          // 如果是新选中的 html 文件，更新刷新时间戳
+          if (isHtmlFile) {
+            htmlRefreshTimestampRef.current = Date.now();
           }
 
           // 获取文件内容
@@ -975,6 +988,16 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       setIsExportingPdf(false);
     };
 
+    // const userTicketRef = useRef('')
+
+    // useEffect(() => {
+    //   const getUserTicket = async () => {
+    //     const { data } = await apiAgentConversationShare({conversationId: targetId?.toString() || '', type: 'CONVERSATION'});
+    //     userTicketRef.current = data?.shareKey;
+    //   };
+    //   getUserTicket();
+    // }, []);
+
     /**
      * 渲染内容区域
      * 根据视图模式和文件类型渲染不同的预览组件
@@ -1091,10 +1114,28 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         // }
         // html 文件或无 content 的 markdown：使用 fileProxyUrl
         if (fileProxyUrl) {
+          // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
+          const isHtml = fileName?.includes('.htm');
+          // const timestampParam = isHtml ? `&t=${htmlRefreshTimestampRef.current}` : '';
+          const timestampParam = isHtml
+            ? `t=${htmlRefreshTimestampRef.current}`
+            : '';
+
+          // 拼接时间戳参数
+          const htmlUrl = timestampParam
+            ? `${fileProxyUrl}?${timestampParam}`
+            : fileProxyUrl;
+
           return (
             <FilePreview
-              src={fileProxyUrl}
-              fileType={fileName?.includes('.htm') ? 'html' : 'markdown'}
+              key={
+                isHtml
+                  ? `html-${selectedFileId}-${htmlRefreshTimestampRef.current}`
+                  : undefined
+              }
+              // src={`${fileProxyUrl}?sk=${userTicketRef.current}${timestampParam}`}
+              src={htmlUrl}
+              fileType={isHtml ? 'html' : 'markdown'}
             />
           );
         }
