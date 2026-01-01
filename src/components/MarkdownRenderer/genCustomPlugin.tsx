@@ -38,7 +38,14 @@ export default (conversationId: string | number = '') => {
             type={type}
             status={status}
             executeId={executeid}
-            name={decodeURIComponent(name || '')}
+            name={(() => {
+              try {
+                return decodeURIComponent(name || '');
+              } catch {
+                // Handle malformed URI sequences gracefully
+                return name || '';
+              }
+            })()}
           />
         );
       },
