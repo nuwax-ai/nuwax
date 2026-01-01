@@ -131,10 +131,6 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
 
         const query = new URLSearchParams();
         query.set('sk', shareData?.shareKey);
-        query.set(
-          'isDev',
-          process.env.NODE_ENV === 'development' ? 'true' : 'false',
-        );
 
         const shareUrl = baseUrl + path + '?' + query.toString();
 
@@ -174,10 +170,6 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
 
         const query = new URLSearchParams();
         query.set('sk', shareData?.shareKey);
-        query.set(
-          'isDev',
-          process.env.NODE_ENV === 'development' ? 'true' : 'false',
-        );
         const previewUrl = baseUrl + path + '?' + query.toString();
 
         // 复制到剪切板
