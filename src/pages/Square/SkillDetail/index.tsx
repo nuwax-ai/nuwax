@@ -111,8 +111,18 @@ const SkillDetail: React.FC = ({}) => {
         originalFiles={skillInfo?.files || []}
         // 是否只读
         readOnly={true}
+        // 是否显示视图模式切换按钮
+        showViewModeButtons={false}
+        // 是否显示文件树展开/折叠按钮
+        showFileTreeToggleButton={false}
         // 是否显示更多操作菜单
         showMoreActions={false}
+        // 是否显示全屏图标
+        showFullscreenIcon={false}
+        // 文件树是否固定
+        isFileTreePinned={true}
+        // 不显示刷新按钮
+        showRefreshButton={false}
       />
     </div>
   );
