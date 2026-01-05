@@ -257,10 +257,20 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       const noServerUrl = devServerUrl === undefined;
 
       // 确定状态类型
-      let type: 'error' | 'loading' | 'no-data' | 'empty';
+      let type:
+        | 'error'
+        | 'loading'
+        | 'no-data'
+        | 'empty'
+        | 'server-starting'
+        | 'server-restarting';
       if (hasError) {
         type = 'error';
-      } else if (isLoading) {
+      } else if (isRestarting) {
+        type = 'server-restarting';
+      } else if (isStarting || isProjectUploading) {
+        type = 'server-starting';
+      } else if (isDeveloping) {
         type = 'loading';
       } else if (noServerUrl) {
         type = 'no-data';
