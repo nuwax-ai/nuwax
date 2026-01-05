@@ -164,12 +164,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 用于记录创建成功后需要选择的文件路径
     const pendingSelectFileRef = useRef<string | null>(null);
 
-    // 用于存储 html 文件的刷新时间戳，确保每次点击时都能刷新 iframe
-    const htmlRefreshTimestampRef = useRef<number>(Date.now());
-    // 用于存储 office 文件的刷新时间戳，确保每次点击时都能刷新
-    const officeRefreshTimestampRef = useRef<number>(Date.now());
-    // 用于存储 json 文件的刷新时间戳，确保每次点击时都能刷新
-    const jsonRefreshTimestampRef = useRef<number>(Date.now());
+    // 用于存储文件的刷新时间戳，确保每次点击时都能刷新
+    // 统一使用一个时间戳，适用于 html、office、json 等需要刷新的文件类型
+    const fileRefreshTimestampRef = useRef<number>(Date.now());
     // 用于存储视频文件的刷新时间戳，确保每次点击时都能刷新
     const videoRefreshTimestampRef = useRef<number>(Date.now());
     // 用于存储音频文件的刷新时间戳，确保每次点击时都能刷新
@@ -302,25 +299,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 判断文件是否为音频类型
           const isAudioFileType = isAudioFile(fileNode?.name || '');
 
-          // 如果是重复点击 html 文件，更新刷新时间戳以强制刷新 iframe
-          if (isSameFile && isHtmlFile) {
-            htmlRefreshTimestampRef.current = Date.now();
-            // 仍然调用刷新逻辑以更新文件内容
-            await handleRefreshFileList();
-            return;
-          }
-
-          // 如果是重复点击 office 文件，更新刷新时间戳以强制刷新
-          if (isSameFile && isOfficeFile) {
-            officeRefreshTimestampRef.current = Date.now();
-            // 仍然调用刷新逻辑以更新文件内容
-            await handleRefreshFileList();
-            return;
-          }
-
-          // 如果是重复点击 json 文件，更新刷新时间戳以强制刷新
-          if (isSameFile && isJsonFile) {
-            jsonRefreshTimestampRef.current = Date.now();
+          // 如果是重复点击需要刷新的文件（html、office、json），更新刷新时间戳以强制刷新
+          if (isSameFile && (isHtmlFile || isOfficeFile || isJsonFile)) {
+            fileRefreshTimestampRef.current = Date.now();
             // 仍然调用刷新逻辑以更新文件内容
             await handleRefreshFileList();
             return;
@@ -342,19 +323,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             return;
           }
 
-          // 如果是新选中的 html 文件，更新刷新时间戳
-          if (isHtmlFile) {
-            htmlRefreshTimestampRef.current = Date.now();
-          }
-
-          // 如果是新选中的 office 文件，更新刷新时间戳
-          if (isOfficeFile) {
-            officeRefreshTimestampRef.current = Date.now();
-          }
-
-          // 如果是新选中的 json 文件，更新刷新时间戳
-          if (isJsonFile) {
-            jsonRefreshTimestampRef.current = Date.now();
+          // 如果是新选中的需要刷新的文件（html、office、json），更新刷新时间戳
+          if (isHtmlFile || isOfficeFile || isJsonFile) {
+            fileRefreshTimestampRef.current = Date.now();
           }
 
           // 如果是新选中的视频文件，更新刷新时间戳
@@ -1054,6 +1025,42 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       setIsExportingPdf(false);
     };
 
+    /**
+     * 构建文件预览的 URL 和 key，用于强制刷新
+     * @param fileType - 文件类型标识（如 'html', 'office', 'json'）
+     * @param fileProxyUrl - 文件代理 URL
+     * @param selectedFileId - 选中的文件 ID
+     * @returns 包含 key 和 url 的对象
+     */
+    const buildFilePreviewProps = useCallback(
+      (
+        fileType: string,
+        fileProxyUrl: string,
+        selectedFileId: string,
+      ): { key: string; url: string } => {
+        // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
+        const triggerPart =
+          taskAgentSelectTrigger !== undefined
+            ? `trigger-${taskAgentSelectTrigger}`
+            : 'trigger-none';
+        const timestampPart = `timestamp-${fileRefreshTimestampRef.current}`;
+        const fileKey = `${fileType}-${selectedFileId}-${triggerPart}-${timestampPart}`;
+
+        // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
+        // 优先使用 taskAgentSelectTrigger，如果不存在则使用 fileRefreshTimestampRef
+        const triggerValue =
+          taskAgentSelectTrigger !== undefined
+            ? taskAgentSelectTrigger
+            : fileRefreshTimestampRef.current;
+        const fileUrl = triggerValue
+          ? `${fileProxyUrl}?t=${triggerValue}`
+          : fileProxyUrl;
+
+        return { key: fileKey, url: fileUrl };
+      },
+      [taskAgentSelectTrigger],
+    );
+
     // const userTicketRef = useRef('')
 
     // useEffect(() => {
@@ -1148,23 +1155,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // office文档文件：使用FilePreview组件
       if (isOfficeDocument && fileProxyUrl) {
-        // 构建 URL 参数和 key：同时考虑 taskAgentSelectTrigger 和 officeRefreshTimestampRef
-        // 只要其中一个变化，都应该刷新
-        // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
-        const triggerPart =
-          taskAgentSelectTrigger !== undefined
-            ? `trigger-${taskAgentSelectTrigger}`
-            : 'trigger-none';
-        const timestampPart = `timestamp-${officeRefreshTimestampRef.current}`;
-        const officeKey = `office-${selectedFileId}-${triggerPart}-${timestampPart}`;
-
-        // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
-        // 优先使用 taskAgentSelectTrigger，如果不存在则使用 officeRefreshTimestampRef
-        const triggerValue =
-          taskAgentSelectTrigger !== undefined
-            ? taskAgentSelectTrigger
-            : officeRefreshTimestampRef.current;
-        const officeUrl = `${fileProxyUrl}?t=${triggerValue}`;
+        const { key: officeKey, url: officeUrl } = buildFilePreviewProps(
+          'office',
+          fileProxyUrl,
+          selectedFileId,
+        );
 
         return (
           <FilePreview
@@ -1177,23 +1172,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // 文档文件：使用FilePreview组件
       if (selectedFileNode?.name?.includes('.json') && fileProxyUrl) {
-        // 构建 URL 参数和 key：同时考虑 taskAgentSelectTrigger 和 jsonRefreshTimestampRef
-        // 只要其中一个变化，都应该刷新
-        // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
-        const triggerPart =
-          taskAgentSelectTrigger !== undefined
-            ? `trigger-${taskAgentSelectTrigger}`
-            : 'trigger-none';
-        const timestampPart = `timestamp-${jsonRefreshTimestampRef.current}`;
-        const jsonKey = `json-${selectedFileId}-${triggerPart}-${timestampPart}`;
-
-        // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
-        // 优先使用 taskAgentSelectTrigger，如果不存在则使用 jsonRefreshTimestampRef
-        const triggerValue =
-          taskAgentSelectTrigger !== undefined
-            ? taskAgentSelectTrigger
-            : jsonRefreshTimestampRef.current;
-        const jsonUrl = `${fileProxyUrl}?t=${triggerValue}`;
+        const { key: jsonKey, url: jsonUrl } = buildFilePreviewProps(
+          'json',
+          fileProxyUrl,
+          selectedFileId,
+        );
 
         return <FilePreview key={jsonKey} src={jsonUrl} fileType="text" />;
       }
@@ -1240,58 +1223,26 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 如果是html、md文件，并且处于预览模式
       if (
         (fileName?.includes('.htm') || isMarkdownFile(fileName)) &&
-        viewFileType === 'preview'
+        viewFileType === 'preview' &&
+        fileProxyUrl
       ) {
-        // markdown 文件：优先使用 content，避免不必要的网络请求
-        // if (isMarkdownFile(fileName) && fileContent) {
-        //   return (
-        //     <FilePreview
-        //       src={new Blob([fileContent], { type: 'text/markdown' })}
-        //       fileType="markdown"
-        //     />
-        //   );
-        // }
         // html 文件或无 content 的 markdown：使用 fileProxyUrl
-        if (fileProxyUrl) {
-          // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
-          const isHtml = fileName?.includes('.htm');
+        // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
+        const isHtml = fileName?.includes('.htm');
 
-          // 构建 URL 参数和 key：同时考虑 taskAgentSelectTrigger 和 htmlRefreshTimestampRef
-          // 只要其中一个变化，都应该刷新
-          let timestampParam = '';
-          let htmlKey: string | undefined = undefined;
+        const { key: htmlKey, url: htmlUrl } = buildFilePreviewProps(
+          'html',
+          fileProxyUrl,
+          selectedFileId,
+        );
 
-          if (isHtml) {
-            // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
-            const triggerPart =
-              taskAgentSelectTrigger !== undefined
-                ? `trigger-${taskAgentSelectTrigger}`
-                : 'trigger-none';
-            const timestampPart = `timestamp-${htmlRefreshTimestampRef.current}`;
-            htmlKey = `html-${selectedFileId}-${triggerPart}-${timestampPart}`;
-
-            // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
-            // 优先使用 taskAgentSelectTrigger，如果不存在则使用 htmlRefreshTimestampRef
-            const triggerValue =
-              taskAgentSelectTrigger !== undefined
-                ? taskAgentSelectTrigger
-                : htmlRefreshTimestampRef.current;
-            timestampParam = `t=${triggerValue}`;
-          }
-
-          // 拼接时间戳参数
-          const htmlUrl = timestampParam
-            ? `${fileProxyUrl}?${timestampParam}`
-            : fileProxyUrl;
-
-          return (
-            <FilePreview
-              key={htmlKey}
-              src={htmlUrl}
-              fileType={isHtml ? 'html' : 'markdown'}
-            />
-          );
-        }
+        return (
+          <FilePreview
+            key={htmlKey}
+            src={htmlUrl}
+            fileType={isHtml ? 'html' : 'markdown'}
+          />
+        );
       }
 
       // 代码文件：使用代码查看器
