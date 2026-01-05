@@ -46,6 +46,8 @@ export enum McpMoreActionEnum {
   Stop_Service = 'Stop_Service',
   // 服务导出
   Service_Export = 'Service_Export',
+  // 日志
+  Log = 'Log',
   // 删除
   Del = 'Del',
 }

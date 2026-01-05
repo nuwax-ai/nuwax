@@ -9,6 +9,8 @@ export interface ButtonList {
 }
 
 export interface CreatedProp {
+  // 只展示当前空间
+  isSpaceOnly?: boolean;
   // 打开当前的弹窗
   open: boolean;
   onCancel: () => void;

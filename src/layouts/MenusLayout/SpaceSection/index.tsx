@@ -2,7 +2,7 @@ import MenuListItem from '@/components/base/MenuListItem';
 import SecondMenuItem from '@/components/base/SecondMenuItem';
 import ConditionRender from '@/components/ConditionRender';
 import { SPACE_URL } from '@/constants/home.constants';
-import { SPACE_APPLICATION_LIST } from '@/constants/space.constants';
+import { getSpaceApplicationList } from '@/constants/space.constants';
 import { RoleEnum } from '@/types/enums/common';
 import {
   AllowDevelopEnum,
@@ -32,6 +32,8 @@ const SpaceSection: React.FC<{
   const { editAgentList, runEdit, runDevCollect } = useModel('devCollectAgent');
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   const finalSpaceId = useMemo(() => {
     return spaceId ?? getSpaceId();
@@ -58,6 +60,7 @@ const SpaceSection: React.FC<{
 
   const handlerApplication = useCallback(
     (type: SpaceApplicationListEnum) => {
+      console.log('🚀 [handlerApplication] type:', type);
       let url = '';
       switch (type) {
         // 应用开发
@@ -84,6 +87,18 @@ const SpaceSection: React.FC<{
         case SpaceApplicationListEnum.Team_Setting:
           url = 'team';
           break;
+        // 技能管理
+        case SpaceApplicationListEnum.Skill_Manage:
+          url = 'skill-manage';
+          break;
+        // 任务中心
+        case SpaceApplicationListEnum.Task_Center:
+          url = 'task-center';
+          break;
+        // 插件、工作流、MCP日志
+        case SpaceApplicationListEnum.Library_Log:
+          url = 'library-log';
+          break;
         default:
           url = 'develop';
       }
@@ -97,23 +112,47 @@ const SpaceSection: React.FC<{
 
   // 判断是否active
   const handleActive = (type: SpaceApplicationListEnum) => {
-    return (
-      (type === SpaceApplicationListEnum.Application_Develop &&
-        (pathname.includes('/develop') || pathname.includes('log'))) ||
-      (type === SpaceApplicationListEnum.Component_Library &&
-        (pathname.includes('library') ||
-          pathname.includes('knowledge') ||
-          pathname.includes('plugin') ||
-          pathname.includes('table'))) ||
-      (type === SpaceApplicationListEnum.MCP_Manage &&
-        pathname.includes('mcp')) ||
-      (type === SpaceApplicationListEnum.Page_Develop &&
-        pathname.includes('page-develop')) ||
-      (type === SpaceApplicationListEnum.Space_Square &&
-        pathname.includes('space-square')) ||
-      (type === SpaceApplicationListEnum.Team_Setting &&
-        pathname.includes('team'))
-    );
+    // pathname 示例：/space/836/develop?query=123 得到 develop
+    const path = pathname.split('/').pop();
+
+    // /space/publish/skill/74 得到 space/publish
+    const publishPath = pathname.split('/').slice(1, 3).join('/');
+    // 判断是否是空间广场的详情页
+    if (publishPath === 'space/publish') {
+      return type === SpaceApplicationListEnum.Space_Square;
+    }
+
+    switch (type) {
+      // 智能体开发
+      case SpaceApplicationListEnum.Application_Develop:
+        return ['develop', 'log'].includes(path);
+      // 组件库
+      case SpaceApplicationListEnum.Component_Library:
+        return ['library', 'knowledge', 'plugin', 'table'].includes(path);
+      // MCP管理
+      case SpaceApplicationListEnum.MCP_Manage:
+        return ['mcp'].includes(path);
+      // 网页应用开发
+      case SpaceApplicationListEnum.Page_Develop:
+        return ['page-develop'].includes(path);
+      // 空间广场
+      case SpaceApplicationListEnum.Space_Square:
+        return ['space-square'].includes(path);
+      // 成员与设置
+      case SpaceApplicationListEnum.Team_Setting:
+        return ['team'].includes(path);
+      // 技能管理
+      case SpaceApplicationListEnum.Skill_Manage:
+        return ['skill-manage'].includes(path);
+      // 插件、工作流、MCP日志
+      case SpaceApplicationListEnum.Library_Log:
+        return ['library-log'].includes(path);
+      // 任务中心
+      case SpaceApplicationListEnum.Task_Center:
+        return ['task-center'].includes(path);
+      default:
+        return false;
+    }
   };
 
   // 点击进入"工作空间智能体"
@@ -128,7 +167,7 @@ const SpaceSection: React.FC<{
         <SpaceTitle name={currentSpaceInfo?.name} />
       </div>
       <div>
-        {SPACE_APPLICATION_LIST.map(
+        {getSpaceApplicationList(tenantConfigInfo?.enabledSandbox).map(
           (item: SpaceApplicationList, index: number) => {
             // 个人空间时，不显示"成员与设置", 普通用户也不显示"成员与设置"
             if (

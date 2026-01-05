@@ -16,10 +16,21 @@ export default () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: async (result: TenantConfigInfo) => {
+      if (!result) return;
       setLoadEnd(true);
+
+      // 如果 result 为 null，走错误处理逻辑
+      if (!result) {
+        console.warn('租户配置接口返回空数据');
+        await initializeWithFallback('租户配置为空');
+        return;
+      }
+
       setTenantConfigInfo(result);
       localStorage.setItem(TENANT_CONFIG_INFO, JSON.stringify(result));
-      localStorage.setItem('AUTH_TYPE', result.authType.toString());
+      if (result.authType !== null) {
+        localStorage.setItem('AUTH_TYPE', result.authType.toString());
+      }
 
       // 设置页面标题和图标
       const { siteName, siteDescription, faviconUrl } = result;

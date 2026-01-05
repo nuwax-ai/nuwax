@@ -38,12 +38,12 @@
   .main-content-box {
     min-width: 350px;
     padding: @padding @padding 0;
-    overflow-y: auto;
+    overflow-y: hidden;
     height: 100%;
+    flex: 1;
     display: flex;
     flex-direction: column;
     position: relative;
-    justify-content: space-between;
 
     //隐藏滚动条
     &::-webkit-scrollbar {
@@ -53,12 +53,48 @@
     .chat-wrapper-content {
       overflow: auto;
       margin-bottom: 5px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      scrollbar-gutter: stable;
+
+      // 滚动条只在滚动时显示
+      &::-webkit-scrollbar {
+        width: 8px;
+        background: transparent;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: transparent;
+        border-radius: 4px;
+        transition: background 0.3s ease;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      // 滚动时显示滚动条
+      &:hover::-webkit-scrollbar-thumb,
+      &:active::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 20%);
+      }
+
+      // Firefox 滚动条样式
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+
+      &:hover,
+      &:active {
+        scrollbar-color: rgba(0, 0, 0, 20%) transparent;
+      }
 
       .chat-wrapper {
         padding-bottom: 40px - 16px;
         max-width: 800px;
         width: 100%;
         margin: 0 auto;
+        flex: 1;
 
         .loading {
           color: @colorPrimary;
@@ -89,7 +125,33 @@
       border-radius: @borderRadiusLg @borderRadiusLg 0 0;
       padding-bottom: @paddingSm;
       width: 100%;
+
+      // 调整滚动按钮位置，让它显示在会话状态栏的上方
+      :global(.chat-action .to-bottom) {
+        bottom: 100px !important;
+      }
     }
+
+    // 会话状态栏样式
+    .conversation-status-bar {
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto 8px;
+      animation: slide-in-up 0.3s ease-out;
+    }
+  }
+}
+
+// 状态栏滑入动画
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -111,15 +173,32 @@
   min-width: 400px;
 }
 
-@media (max-width: 768px) {
-  .agent-sidebar {
-    display: none;
-  }
-}
+// @media (max-width: 768px) {
+//   .agent-sidebar {
+//     display: none;
+//   }
 
-/* 当屏幕宽度小于等于 720px 时应用的样式 */
-@media screen and (max-width: 720px) {
-  .main-content {
-    width: 100%;
-  }
+//   .file-tree-sidebar {
+//     display: none;
+//   }
+// }
+
+// /* 当屏幕宽度小于等于 720px 时应用的样式 */
+// @media screen and (max-width: 720px) {
+//   .main-content {
+//     width: 100%;
+//   }
+// }
+
+/* 文件树侧边栏样式 */
+.file-tree-sidebar {
+  position: sticky;
+  height: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  border-left: @lineWidth @lineType @colorBorderSecondary;
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
 }

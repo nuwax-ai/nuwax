@@ -49,21 +49,30 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
       info?.allowDevelop === AllowDevelopEnum.Not_Allow;
 
     // 智能体开发页以及子页
-    if (
-      (pathname.includes('develop') && !pathname.includes('page-develop')) ||
-      pathname.includes('log')
-    ) {
+    if (pathname.includes('develop') && !pathname.includes('page-develop')) {
       const defaultUrl = isUser_NotAllowDevelop ? 'space-square' : 'develop';
       localStorage.setItem('SPACE_URL', defaultUrl);
       history.push(`/space/${spaceId}/${defaultUrl}`);
     }
-    // 应用页面开发
+    // 网页应用开发
     else if (pathname.includes('page-develop')) {
       history.push(`/space/${spaceId}/page-develop`);
+    }
+    // 技能管理
+    else if (pathname.includes('skill-manage')) {
+      history.push(`/space/${spaceId}/skill-manage`);
     }
     // mcp管理
     else if (pathname.includes('mcp')) {
       history.push(`/space/${spaceId}/mcp`);
+    }
+    // 任务中心
+    else if (pathname.includes('task-center')) {
+      history.push(`/space/${spaceId}/task-center`);
+    }
+    // 日志查询
+    else if (pathname.includes('library-log')) {
+      history.push(`/space/${spaceId}/library-log`);
     }
     // 空间广场页
     else if (pathname.includes('space-square')) {

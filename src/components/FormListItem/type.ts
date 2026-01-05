@@ -22,6 +22,13 @@ export interface InputOrReferenceProps {
   isLoop?: boolean; // 是否循环
   value?: string; // 注入的值（由 Form.Item 提供）
   onChange?: (value: string) => void; // 注入的变更事件（由 Form.Item 提供）
+  // 用于受控模式的引用选择回调，传递完整的字段更新
+  onReferenceSelect?: (
+    value: string,
+    type: string,
+    dataType: string,
+    name: string,
+  ) => void;
 }
 
 /**

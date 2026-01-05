@@ -1,0 +1,121 @@
+.vncPreviewContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f5f5f5;
+
+  .controlsBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background-color: #fff;
+    border-bottom: 1px solid #f0f0f0;
+
+    .statusArea {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .actionsArea {
+      display: flex;
+      gap: 8px;
+    }
+  }
+
+  .iframeContainer {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+    background-color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+
+    // 模糊背景效果（参考 noVNC）
+    &::before {
+      content: '';
+      position: absolute;
+      top: -20px;
+      left: -20px;
+      width: calc(100% + 40px);
+      height: calc(100% + 40px);
+      background-image: url('~@/assets/images/vnc-bg.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0.6;
+      filter: blur(8px);
+      z-index: 0;
+      pointer-events: none;
+      transform: scale(1.5);
+    }
+
+    // 背景占位符（连接前显示）
+    .backgroundPlaceholder {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      max-width: 100%;
+      aspect-ratio: 1920 / 1080;
+      background-image: url('~@/assets/images/vnc-bg.jpg');
+      background-size: 100% 100%;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 1;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      position: relative;
+      z-index: 2;
+    }
+
+    .loadingOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 70%);
+      color: #fff;
+      z-index: 10;
+
+      .loadingText {
+        margin-top: 16px;
+        font-size: 14px;
+      }
+    }
+
+    .errorOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: #f5f5f5;
+      z-index: 10;
+    }
+  }
+}

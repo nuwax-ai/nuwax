@@ -24,7 +24,6 @@
   }
 
   .section {
-    // gap: 20px;
     overflow-x: auto;
     border-radius: @pageContainerBorderRadius;
     border: @lineWidth solid @colorSplit;
@@ -34,13 +33,23 @@
     .edit-info {
       flex: 6;
       min-width: 680px;
-      // background-color: @WHITE10;
 
       .h-line {
         width: @lineWidth;
         height: calc(100% - 20px);
         margin-top: 10px;
         background-color: @colorSplit;
+      }
+    }
+
+    .file-tree-sidebar {
+      flex: 10;
+      border-right: @lineWidth solid @colorSplit;
+      border-left: @lineWidth solid @colorSplit;
+      background-color: @colorBgContainer;
+
+      .file-tree-header {
+        height: 49px;
       }
     }
   }

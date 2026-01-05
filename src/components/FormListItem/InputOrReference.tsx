@@ -1,9 +1,9 @@
+import { useWorkflowModel } from '@/hooks/useWorkflowModel';
 import { InputAndOutConfig, PreviousList } from '@/types/interfaces/node';
 import { returnImg } from '@/utils/workflow';
 import { InfoCircleOutlined, SettingOutlined } from '@ant-design/icons';
 import { Dropdown, Input, Popover, Tag, Tree } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
 import './index.less';
 import { InputOrReferenceProps } from './type';
 
@@ -72,9 +72,11 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   isLoop,
   value, // 接收注入的 value
   onChange, // 接收注入的 onChange
+  onReferenceSelect, // 受控模式的引用选择回调
 }) => {
   const { referenceList, getValue, getLoopValue, setIsModified } =
-    useModel('workflow');
+    useWorkflowModel();
+
   const [displayValue, setDisplayValue] = useState('');
   const [selectKey, setSelectKey] = useState<React.Key[]>([value || '']);
   // 添加状态来存储 Tree 的最大高度
@@ -135,27 +137,35 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
 
   // 监听表单值变化
   useEffect(() => {
-    if (fieldName && form) {
-      const value = form.getFieldValue(fieldName);
-      const bindValueType = form.getFieldValue([
-        ...fieldName.slice(0, -1),
-        'bindValueType',
-      ]);
+    // 支持受控模式：如果传入了 value prop，优先使用它
+    const currentValue =
+      value !== undefined
+        ? value
+        : fieldName && form
+        ? form.getFieldValue(fieldName)
+        : '';
 
-      if (bindValueType === 'Reference') {
-        const isReferenceKey = value && referenceList.argMap[value];
-        setDisplayValue(
-          isReferenceKey
-            ? isLoop
-              ? getLoopValue(value)
-              : getValue(value)
-            : '',
-        );
-      } else {
-        setDisplayValue(''); // Input类型时不显示Tag
-      }
+    // 获取 bindValueType：先尝试从 form 获取，否则使用 referenceType prop
+    let bindValueType = referenceType;
+    if (fieldName && form && fieldName[0] !== '__temp_ref') {
+      bindValueType =
+        form.getFieldValue([...fieldName.slice(0, -1), 'bindValueType']) ||
+        referenceType;
     }
-  }, [form?.getFieldsValue(), referenceList.argMap]);
+
+    if (bindValueType === 'Reference') {
+      const isReferenceKey = currentValue && referenceList.argMap[currentValue];
+      setDisplayValue(
+        isReferenceKey
+          ? isLoop
+            ? getLoopValue(currentValue)
+            : getValue(currentValue)
+          : '',
+      );
+    } else {
+      setDisplayValue(''); // Input类型时不显示Tag
+    }
+  }, [form?.getFieldsValue(), referenceList.argMap, value, referenceType]);
 
   // 清除引用值
   const handleTagClose = () => {
@@ -180,7 +190,7 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
         <Popover content={nodeData.description || '暂无描述'}>
           <InfoCircleOutlined
             title=""
-            style={{ marginLeft: '4px', fontSize: 12 }}
+            style={{ marginLeft: '4px', fontSize: 12, cursor: 'help' }}
           />
         </Popover>
         <Tag
@@ -200,9 +210,23 @@ const InputOrReference: React.FC<InputOrReferenceProps> = ({
   // 处理 TreeSelect 的选中事件
   const handleTreeSelectChange = (key: React.Key[]) => {
     if (!key || !key.length) return;
-    updateValues(key[0] as string, 'Reference');
+    const selectedValue = key[0] as string;
+    const refDataType =
+      referenceList?.argMap?.[selectedValue]?.dataType || 'String';
+    const refName = referenceList?.argMap?.[selectedValue]?.name || '';
+
+    // 如果提供了 onReferenceSelect 回调，使用它（受控模式）
+    if (onReferenceSelect) {
+      onReferenceSelect(selectedValue, 'Reference', refDataType, refName);
+    } else {
+      // 否则使用传统的 form.setFieldValue 方式
+      updateValues(selectedValue, 'Reference');
+    }
+
+    onChange?.(selectedValue); // 通知 Form.Item 值已更新
     setDisplayValue(getValue(key[0]));
     setSelectKey(key); // 更新 selectKey 状态
+    setIsModified(true);
   };
   // 动态生成 Dropdown 的 items
   const getMenu = (nodes: PreviousList[]) => {

@@ -10,10 +10,10 @@ import {
 import { APPLICATION_MORE_ACTION } from '@/constants/space.constants';
 import { apiDevCollectAgent } from '@/services/agentDev';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
-import { ApplicationMoreActionEnum } from '@/types/enums/space';
+import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ApplicationItemProps } from '@/types/interfaces/space';
-import { Button, message } from 'antd';
+import { Button, message, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
@@ -63,7 +63,10 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
           return hasPermission(PermissionsEnum.Copy);
         // 临时会话
         case ApplicationMoreActionEnum.Temporary_Session:
-          return hasPermission(PermissionsEnum.TempChat);
+          return (
+            hasPermission(PermissionsEnum.TempChat) &&
+            agentConfigInfo.type !== AgentTypeEnum.TaskAgent
+          );
         // 迁移
         case ApplicationMoreActionEnum.Move:
           // 迁移操作：仅创建者和管理员展示
@@ -136,16 +139,28 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
             'content-between',
           )}
         >
-          <span
-            onClick={handlerCollect}
-            className={cx('flex', 'items-center', 'cursor-pointer')}
+          <div
+            className={cx('flex', 'items-center', 'cursor-pointer', 'gap-10')}
           >
-            {agentConfigInfo.devCollected ? <ICON_STAR_FILL /> : <ICON_STAR />}
-          </span>
-          {/*更多操作*/}
-          <CustomPopover onClick={handlerClickMore} list={actionList}>
-            <Button size="small" type="text" icon={<ICON_MORE />}></Button>
-          </CustomPopover>
+            {agentConfigInfo.type === AgentTypeEnum.TaskAgent ? (
+              <Tag color="orange">任务型</Tag>
+            ) : (
+              <Tag color="green">问答型</Tag>
+            )}
+          </div>
+          <div className={cx('flex', 'items-center', 'gap-10')}>
+            <span onClick={handlerCollect}>
+              {agentConfigInfo.devCollected ? (
+                <ICON_STAR_FILL />
+              ) : (
+                <ICON_STAR />
+              )}
+            </span>
+            {/*更多操作*/}
+            <CustomPopover onClick={handlerClickMore} list={actionList}>
+              <Button size="small" type="text" icon={<ICON_MORE />}></Button>
+            </CustomPopover>
+          </div>
         </footer>
       }
     />

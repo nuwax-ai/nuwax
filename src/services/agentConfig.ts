@@ -8,12 +8,14 @@ import {
   AgentComponentMcpUpdateParams,
   AgentComponentModelUpdateParams,
   AgentComponentPluginUpdateParams,
+  AgentComponentSkillUpdateParams,
   AgentComponentTableUpdateParams,
   AgentComponentVariableUpdateParams,
   AgentComponentWorkflowUpdateParams,
   AgentConfigHistoryInfo,
   AgentConfigInfo,
   AgentConfigUpdateParams,
+  AgentConversationShareParams,
   AgentConversationUpdateParams,
   AgentPageUpdateParams,
   AgentPublishApplyParams,
@@ -25,6 +27,7 @@ import type {
   ConversationCreateParams,
   ConversationInfo,
   ConversationListParams,
+  ShareFileInfo,
 } from '@/types/interfaces/conversationInfo';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
@@ -134,6 +137,16 @@ export async function apiAgentComponentMcpUpdate(
   data: AgentComponentMcpUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/mcp/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新技能组件配置
+export async function apiAgentComponentSkillUpdate(
+  data: AgentComponentSkillUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/skill/update', {
     method: 'POST',
     data,
   });
@@ -333,6 +346,16 @@ export async function apiAgentComponentPageResultUpdate(
   data: ApiAgentConversationChatPageResultParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/conversation/chat/page/result', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 获取桌面分享详情
+export async function apiAgentConversationShare(
+  data: AgentConversationShareParams,
+): Promise<RequestResponse<ShareFileInfo>> {
+  return request('/api/agent/conversation/share', {
     method: 'POST',
     data,
   });

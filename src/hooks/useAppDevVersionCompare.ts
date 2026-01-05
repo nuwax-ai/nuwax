@@ -70,6 +70,7 @@ export const useAppDevVersionCompare = ({
         type: 'file',
         path: fileName,
         content: String(file.contents || ''),
+        binary: file.binary,
         lastModified: Date.now(),
         children: [],
       };
@@ -223,7 +224,7 @@ export const useAppDevVersionCompare = ({
             filesToUpdate.push({
               name: node.path,
               contents: node.content,
-              binary: false,
+              binary: node.binary || false,
             });
           }
           if (node.children) {

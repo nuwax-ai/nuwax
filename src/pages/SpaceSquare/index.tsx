@@ -6,6 +6,7 @@ import { apiPublishOffShelf } from '@/services/publish';
 import {
   apiPublishedAgentList,
   apiPublishedPluginList,
+  apiPublishedSkillList,
   apiPublishedTemplateList,
   apiPublishedWorkflowList,
 } from '@/services/square';
@@ -16,10 +17,10 @@ import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Button, Empty, Modal, Segmented, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useParams, useRequest, useSearchParams } from 'umi';
+import { useModel, useParams, useRequest, useSearchParams } from 'umi';
 // 复用广场中的组件
 import { ICON_MORE } from '@/constants/images.constants';
-import { SPACE_SQUARE_TABS } from '@/constants/space.constants';
+import { getSpaceSquareTabs } from '@/constants/space.constants';
 import SingleAgent from '../Square/SingleAgent';
 import SquareComponentInfo from '../Square/SquareComponentInfo';
 import TemplateItem from '../Square/TemplateItem';
@@ -27,13 +28,6 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 type IQuery = 'activeKey';
-
-// 空间广场-分类
-const SPACE_SQUARE_SEGMENTED_LIST =
-  SPACE_SQUARE_TABS?.map((item) => ({
-    label: item.label,
-    value: item.key,
-  })) || [];
 
 // 空间广场
 const SpaceSection: React.FC = () => {
@@ -70,6 +64,15 @@ const SpaceSection: React.FC = () => {
     handleClick,
     handleToggleCollectSuccess,
   } = useSpaceSquare();
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 空间广场-分类（根据enabledSandbox动态获取）
+  const spaceSquareSegmentedList =
+    getSpaceSquareTabs(tenantConfigInfo?.enabledSandbox)?.map((item) => ({
+      label: item?.label,
+      value: item?.key,
+    })) || [];
 
   // 查询列表成功后处理数据
   const handleSuccess = (result: Page<SquarePublishedItemInfo>) => {
@@ -118,6 +121,9 @@ const SpaceSection: React.FC = () => {
     commonConfig,
   );
 
+  // 广场-已发布技能列表接口
+  const { run: runSkillList } = useRequest(apiPublishedSkillList, commonConfig);
+
   // 查询列表
   const handleQuery = (
     targetType: SquareAgentTypeEnum,
@@ -146,10 +152,13 @@ const SpaceSection: React.FC = () => {
       case SquareAgentTypeEnum.Template:
         runTemplateList(params);
         break;
+      case SquareAgentTypeEnum.Skill:
+        runSkillList(params);
+        break;
     }
   };
 
-  // 智能体、插件、工作流下架
+  // 智能体、插件、工作流、技能下架
   const { run: runOffShelf } = useRequest(apiPublishOffShelf, {
     manual: true,
     debounceInterval: 300,
@@ -241,7 +250,9 @@ const SpaceSection: React.FC = () => {
             publishedItemInfo={item}
             extra={getExtra('智能体', item, type)}
             onToggleCollectSuccess={handleToggleCollectSuccess}
-            onClick={() => handleClick(item.targetId, item.targetType, item)}
+            onClick={() =>
+              handleClick(item.targetId, item.targetType, item, 'space')
+            }
           />
         );
       } else if (type === SquareAgentTypeEnum.Template) {
@@ -250,19 +261,37 @@ const SpaceSection: React.FC = () => {
             key={index}
             publishedItemInfo={item}
             extra={getExtra('模板', item, type, true)}
-            onClick={() => handleClick(item.targetId, item.targetType, item)}
+            onClick={() =>
+              handleClick(item.targetId, item.targetType, item, 'space')
+            }
           />
         );
       } else {
-        const componentTypeName =
-          type === SquareAgentTypeEnum.Plugin ? '插件' : '工作流';
+        // 枚举组件类型名称
+        let componentTypeName = '';
+        switch (type) {
+          case SquareAgentTypeEnum.Plugin:
+            componentTypeName = '插件';
+            break;
+          case SquareAgentTypeEnum.Workflow:
+            componentTypeName = '工作流';
+            break;
+          case SquareAgentTypeEnum.Skill:
+            componentTypeName = '技能';
+            break;
+          default:
+            componentTypeName = '';
+            break;
+        }
         return (
           <SquareComponentInfo
             key={index}
             publishedItemInfo={item}
             extra={getExtra(componentTypeName, item, type)}
             onToggleCollectSuccess={handleToggleCollectSuccess}
-            onClick={() => handleClick(item.targetId, item.targetType)}
+            onClick={() =>
+              handleClick(item.targetId, item.targetType, item, 'space')
+            }
           />
         );
       }
@@ -280,7 +309,7 @@ const SpaceSection: React.FC = () => {
         <h3 className={cx(styles.title)}>空间广场</h3>
         <Segmented
           className={cx(styles.segmented)}
-          options={SPACE_SQUARE_SEGMENTED_LIST}
+          options={spaceSquareSegmentedList}
           value={activeKey}
           onChange={handleTabClick}
         />

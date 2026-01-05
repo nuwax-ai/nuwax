@@ -1,0 +1,52 @@
+{
+  "object1": {
+    "a1": "示例字符串",
+    "object1_1": {
+      "object1_1_1": {
+        "a": "字符串值",
+        "b": 100,
+        "c": 3.14,
+        "f": {
+          "name": "test.txt",
+          "url": "https://example.com/files/test.txt",
+          "type": "text/plain"
+        }
+      },
+      "a1": "另一个字符串",
+      "object1_1_2": [
+        {
+          "a": 1,
+          "b": "数组项1",
+          "c": 1.5
+        },
+        {
+          "a": 2,
+          "b": "数组项2",
+          "c": 2.5
+        }
+      ]
+    }
+  },
+  "array_object1": [
+    {
+      "array_object1_1": [
+        {
+          "array_object1_1_1": [
+            {
+              "a": "嵌套字符串",
+              "c": ["value1", "value2"],
+              "d": ["item1", "item2"]
+            }
+          ],
+          "a": "字符串A",
+          "b": 99.99,
+          "c": {
+            "name": "document.pdf",
+            "url": "https://example.com/files/document.pdf",
+            "type": "application/pdf"
+          }
+        }
+      ]
+    }
+  ]
+}

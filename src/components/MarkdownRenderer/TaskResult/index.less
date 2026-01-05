@@ -1,0 +1,57 @@
+@import '@/styles/color';
+@import '@/styles/theme';
+
+.task-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin: 8px 0;
+  border-radius: 8px;
+  color: rgba(0, 0, 0, 65%);
+  background-color: #fafafa;
+  border: 1px solid #f0f0f0;
+  font-size: 14px;
+  line-height: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  min-width: 0;
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+
+  .task-result-icon {
+    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    color: rgba(0, 0, 0, 45%);
+  }
+
+  .task-result-action {
+    flex: 1;
+    flex-shrink: 0;
+    font-weight: 400;
+    // color: rgba(0, 0, 0, 65%);
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .task-result-separator {
+    flex-shrink: 0;
+    color: rgba(0, 0, 0, 25%);
+    margin: 0 4px;
+  }
+
+  .task-result-arrow {
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    color: rgba(0, 0, 0, 25%);
+  }
+}

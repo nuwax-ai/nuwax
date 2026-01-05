@@ -7,7 +7,11 @@ import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { handleUploadFileList } from '@/utils/upload';
-import { ArrowDownOutlined, LoadingOutlined } from '@ant-design/icons';
+import {
+  ArrowDownOutlined,
+  DesktopOutlined,
+  LoadingOutlined,
+} from '@ant-design/icons';
 import { Input, InputRef, message, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -43,15 +47,21 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   showAnnouncement = false,
   onTempChatStop,
   loadingStopTempConversation,
+  showTaskAgentToggle = false,
+  isTaskAgentActive = false,
+  onToggleTaskAgent,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
     runStopConversation,
     loadingStopConversation,
+    getCurrentConversationId,
     getCurrentConversationRequestId,
     isConversationActive,
     disabledConversationActive,
     messageList,
+    loadingConversation,
+    isLoadingOtherInterface,
   } = useModel('conversationInfo');
 
   // 文档
@@ -101,7 +111,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 点击发送事件
   const handleSendMessage = () => {
-    if (disabledSend || wholeDisabled) {
+    if (
+      disabledSend ||
+      wholeDisabled ||
+      loadingConversation ||
+      isLoadingOtherInterface
+    ) {
       return;
     }
     if (messageInfo || files?.length > 0) {
@@ -280,19 +295,26 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
     // 获取当前会话请求ID
     const requestId = getCurrentConversationRequestId();
+    // 获取当前会话ID
+    const conversationId = getCurrentConversationId();
 
-    if (requestId) {
-      if (onTempChatStop) {
-        onTempChatStop(requestId);
-      } else {
-        // 调用停止会话方法
-        runStopConversation(requestId);
-      }
+    // 修复：即使 requestId 为空也应该调用停止接口
+    // 因为在会话刚开始时，requestId 可能还未设置，但会话已经在进行中
+    if (onTempChatStop && requestId) {
+      // 临时聊天需要 requestId
+      onTempChatStop(requestId);
+    } else if (conversationId) {
+      // 正常会话只需要 conversationId 即可停止
+      runStopConversation(conversationId);
+    } else {
+      // 如果连 conversationId 都没有，重置停止状态
+      setIsStoppingConversation(false);
     }
   }, [
     // disabledStop,
     // wholeDisabled,
     getCurrentConversationRequestId,
+    getCurrentConversationId,
     runStopConversation,
     onTempChatStop,
   ]);
@@ -423,6 +445,32 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               </span>
             </Tooltip>
           </Upload>
+          {/*任务智能体切换按钮*/}
+          {showTaskAgentToggle && (
+            <Tooltip
+              title={
+                isTaskAgentActive
+                  ? '切换到普通模式'
+                  : '使用我的智能体电脑执行任务'
+              }
+            >
+              <span
+                className={cx(
+                  'flex',
+                  'items-center',
+                  'content-center',
+                  'cursor-pointer',
+                  styles.box,
+                  styles['plus-box'],
+                  styles['task-agent-box'],
+                  { [styles['task-agent-active']]: isTaskAgentActive },
+                )}
+                onClick={onToggleTaskAgent}
+              >
+                <DesktopOutlined style={{ fontSize: '14px' }} />
+              </span>
+            </Tooltip>
+          )}
           {/*手动选择组件*/}
           <ManualComponentItem
             manualComponents={manualComponents}
@@ -474,7 +522,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   'cursor-pointer',
                   styles.box,
                   styles['send-box'],
-                  { [styles.disabled]: disabledSend || wholeDisabled },
+                  {
+                    [styles.disabled]:
+                      disabledSend ||
+                      wholeDisabled ||
+                      loadingConversation ||
+                      isLoadingOtherInterface,
+                  },
                 )}
               >
                 <SvgIcon name="icons-chat-send" style={{ fontSize: '14px' }} />

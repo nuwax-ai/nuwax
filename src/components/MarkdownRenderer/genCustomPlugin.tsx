@@ -7,11 +7,12 @@ import rehypeStringify from 'rehype-stringify';
 import MarkdownCustomProcess from '../MarkdownCustomProcess';
 import styles from './index.less';
 import OptimizedImage from './OptimizedImage';
+import TaskResult from './TaskResult';
 import { extractTableToMarkdown } from './utils';
 const cx = classNames.bind(styles);
 
 // 用插件机制传递自定义components
-export default () => {
+export default (conversationId: string | number = '') => {
   return createBuildInPlugin({
     rehypePlugin: [rehypeRaw, rehypeStringify],
     components: {
@@ -31,12 +32,20 @@ export default () => {
 
         return (
           <MarkdownCustomProcess
+            conversationId={conversationId}
             key={processKey}
             dataKey={processKey}
             type={type}
             status={status}
             executeId={executeid}
-            name={decodeURIComponent(name || '')}
+            name={(() => {
+              try {
+                return decodeURIComponent(name || '');
+              } catch {
+                // Handle malformed URI sequences gracefully
+                return name || '';
+              }
+            })()}
           />
         );
       },
@@ -95,6 +104,14 @@ export default () => {
             alt={alt}
             title={title}
           />
+        );
+      },
+      // 支持自定义 task-result 标签
+      'task-result': ({ children, node }: any) => {
+        return (
+          <TaskResult node={node} conversationId={conversationId}>
+            {children}
+          </TaskResult>
         );
       },
     },

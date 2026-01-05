@@ -6,16 +6,22 @@ import CollectStar from '@/pages/SpaceDevelop/ApplicationItem/CollectStar';
 import {
   apiPublishedPluginCollect,
   apiPublishedPluginUnCollect,
+} from '@/services/plugin';
+import {
+  apiPublishedSkillCollect,
+  apiPublishedSkillUnCollect,
   apiPublishedWorkflowCollect,
   apiPublishedWorkflowUnCollect,
-} from '@/services/plugin';
+} from '@/services/square';
+
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type {
   PublishPluginInfo,
+  PublishSkillInfo,
   PublishWorkflowInfo,
 } from '@/types/interfaces/plugin';
 import { LeftOutlined } from '@ant-design/icons';
-import { message } from 'antd';
+import { message, Space } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';
@@ -25,8 +31,13 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 // 插件http头部组件
 interface PluginHeaderProps {
-  targetInfo: PublishPluginInfo | PublishWorkflowInfo;
-  targetType: SquareAgentTypeEnum.Workflow | SquareAgentTypeEnum.Plugin;
+  targetInfo: PublishPluginInfo | PublishWorkflowInfo | PublishSkillInfo;
+  targetType:
+    | SquareAgentTypeEnum.Workflow
+    | SquareAgentTypeEnum.Plugin
+    | SquareAgentTypeEnum.Skill;
+  /** 收藏前面的插槽 */
+  extraBeforeCollect?: React.ReactNode;
 }
 
 /**
@@ -35,41 +46,47 @@ interface PluginHeaderProps {
 const PluginHeader: React.FC<PluginHeaderProps> = ({
   targetInfo,
   targetType,
+  extraBeforeCollect,
 }) => {
   const handleBack = () => {
     history.back();
   };
+
   const [collect, setCollect] = useState(targetInfo?.collect);
   const [count, setCount] = useState(targetInfo?.statistics?.collectCount || 0);
 
   const { publishUser } = targetInfo;
 
+  // 枚举 收藏接口
+  const collectApiMap = {
+    [SquareAgentTypeEnum.Plugin]: apiPublishedPluginCollect,
+    [SquareAgentTypeEnum.Workflow]: apiPublishedWorkflowCollect,
+    [SquareAgentTypeEnum.Skill]: apiPublishedSkillCollect,
+  };
+
+  // 枚举 取消收藏接口
+  const unCollectApiMap = {
+    [SquareAgentTypeEnum.Plugin]: apiPublishedPluginUnCollect,
+    [SquareAgentTypeEnum.Workflow]: apiPublishedWorkflowUnCollect,
+    [SquareAgentTypeEnum.Skill]: apiPublishedSkillUnCollect,
+  };
+
   // 开发智能体收藏
-  const { run: runCancelCollect } = useRequest(
-    targetType === SquareAgentTypeEnum.Plugin
-      ? apiPublishedPluginUnCollect
-      : apiPublishedWorkflowUnCollect,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: () => {
-        message.success('取消收藏成功');
-      },
+  const { run: runCancelCollect } = useRequest(unCollectApiMap[targetType], {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success('取消收藏成功');
     },
-  );
+  });
   // 开发智能体收藏
-  const { run: runDevCollect } = useRequest(
-    targetType === SquareAgentTypeEnum.Plugin
-      ? apiPublishedPluginCollect
-      : apiPublishedWorkflowCollect,
-    {
-      manual: true,
-      debounceInterval: 300,
-      onSuccess: () => {
-        message.success('收藏成功');
-      },
+  const { run: runDevCollect } = useRequest(collectApiMap[targetType], {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success('收藏成功');
     },
-  );
+  });
 
   // 收藏、取消收藏事件
   const handlerCollect = async () => {
@@ -136,11 +153,13 @@ const PluginHeader: React.FC<PluginHeaderProps> = ({
       </section>
 
       <div className={cx('flex items-center content-center')}>
-        {/*收藏与取消收藏*/}
-        <CollectStar devCollected={collect} onClick={handlerCollect} />
-        <span className={cx('ml-10', styles['collect'])}>
-          收藏 {`(${count})`}
-        </span>
+        <Space>
+          {/* 收藏前面的插槽 */}
+          {extraBeforeCollect}
+          {/*收藏与取消收藏*/}
+          <CollectStar devCollected={collect} onClick={handlerCollect} />
+          <span className={cx(styles['collect'])}>收藏 {`(${count})`}</span>
+        </Space>
       </div>
     </header>
   );

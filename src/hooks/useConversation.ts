@@ -3,7 +3,10 @@ import {
   AgentDetailDto,
   AgentSelectedComponentInfo,
 } from '@/types/interfaces/agent';
-import type { UploadFileInfo } from '@/types/interfaces/common';
+import type {
+  MessageSourceType,
+  UploadFileInfo,
+} from '@/types/interfaces/common';
 import { useRequest } from 'ahooks';
 import { history } from 'umi';
 
@@ -28,6 +31,10 @@ const useConversation = () => {
       defaultAgentDetail?: AgentDetailDto;
       // 变量参数
       variableParams?: Record<string, string | number> | null;
+      // 消息来源
+      messageSourceType?: MessageSourceType;
+      // 是否隐藏菜单
+      hideMenu?: boolean;
     },
   ) => {
     const variableParams = attach?.variableParams;
@@ -39,7 +46,11 @@ const useConversation = () => {
 
     if (success) {
       const id = data?.id;
-      history.push(`/home/chat/${id}/${agentId}`, attach);
+      // 如果是任务智能体模式，添加 hideMenu 参数
+      const url = attach?.hideMenu
+        ? `/home/chat/${id}/${agentId}?hideMenu=true`
+        : `/home/chat/${id}/${agentId}`;
+      history.push(url, attach);
     }
   };
 

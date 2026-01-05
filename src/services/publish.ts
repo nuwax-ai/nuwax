@@ -3,6 +3,7 @@ import {
   PublishItemInfo,
   PublishItemListParams,
   PublishOffShelfParams,
+  PublishSkillTemplateCopyParams,
   PublishTemplateCopyParams,
 } from '@/types/interfaces/publish';
 import { RequestResponse } from '@/types/interfaces/request';
@@ -18,7 +19,17 @@ export async function apiPublishTemplateCopy(
   });
 }
 
-// 智能体、插件、工作流下架
+// 技能模板复制
+export async function apiPublishSkillTemplateCopy(
+  data: PublishSkillTemplateCopyParams,
+): Promise<RequestResponse<number>> {
+  return request('/api/skill/copy', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 智能体、插件、工作流、技能下架
 export async function apiPublishOffShelf(
   data: PublishOffShelfParams,
 ): Promise<RequestResponse<null>> {
@@ -41,7 +52,7 @@ export async function apiPublishItemList(
 // 智能体、插件、工作流等 - 提交发布申请
 export async function apiPublishApply(
   data: PublishApplyParams,
-): Promise<RequestResponse<number>> {
+): Promise<RequestResponse<string>> {
   return request('/api/publish/apply', {
     method: 'POST',
     data,

@@ -94,11 +94,25 @@ export default function BaseFormItem({
       },
     ],
   };
+  // 处理 Select 类型的初始值：-1 表示未选择，应转换为 undefined
+  const getInitialValue = () => {
+    if (['Select'].includes(props.inputType) && Number(props.value) === -1) {
+      return undefined;
+    }
+    if (
+      ['MultiSelect'].includes(props.inputType) &&
+      Number(props.value) === -1
+    ) {
+      return [];
+    }
+    return props.value;
+  };
+
   return (
     <Form.Item
       key={props.name}
       name={props.name}
-      initialValue={props.value}
+      initialValue={getInitialValue()}
       rules={rules[currentTab]}
       {...(props.inputType === 'MultiInput'
         ? {
@@ -178,7 +192,14 @@ export default function BaseFormItem({
                 return { label, value: +value };
               });
             }
-            return <Select {...attrs} mode={mode} options={options}></Select>;
+            return (
+              <Select
+                {...attrs}
+                mode={mode}
+                options={options}
+                allowClear
+              ></Select>
+            );
           }
           case 'MultiInput':
             return <MultiInput />;

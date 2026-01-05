@@ -6,6 +6,7 @@ import {
   ICON_MODEL,
   ICON_PAGE_APP,
   ICON_PLUGIN,
+  ICON_SKILL,
   ICON_TABLE,
   ICON_WORKFLOW,
 } from './images.constants';
@@ -55,8 +56,13 @@ const AgentTypeMap: Record<
   },
   [AgentComponentTypeEnum.Page]: {
     icon: <ICON_PAGE_APP />,
-    title: '应用页面',
+    title: '网页应用',
     styleClassName: styles.page,
+  },
+  [AgentComponentTypeEnum.Skill]: {
+    icon: <ICON_SKILL />,
+    title: '技能',
+    styleClassName: styles.skill,
   },
 };
 
@@ -66,7 +72,7 @@ const AgentTypeMap: Record<
  * @returns
  */
 const AgentType: React.FC<AgentTypeProps> = ({ type, className }) => {
-  const { icon, title, styleClassName } = AgentTypeMap[type];
+  const { icon, title, styleClassName } = AgentTypeMap?.[type] || {};
 
   return (
     <div

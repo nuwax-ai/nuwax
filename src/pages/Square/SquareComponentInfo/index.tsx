@@ -7,6 +7,8 @@ import {
   apiPublishedPluginUnCollect,
 } from '@/services/plugin';
 import {
+  apiPublishedSkillCollect,
+  apiPublishedSkillUnCollect,
   apiPublishedWorkflowCollect,
   apiPublishedWorkflowUnCollect,
 } from '@/services/square';
@@ -84,6 +86,23 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
     },
   );
 
+  // 收藏技能接口
+  const { run: runSkillCollect } = useRequest(apiPublishedSkillCollect, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      onToggleCollectSuccess(targetId, true);
+    },
+  });
+
+  // 取消收藏技能接口
+  const { run: runSkillUnCollect } = useRequest(apiPublishedSkillUnCollect, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      onToggleCollectSuccess(targetId, false);
+    },
+  });
   // 切换收藏与取消收藏
   const handleToggleCollect = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
@@ -101,6 +120,15 @@ const SquareComponentInfo: React.FC<SquareComponentInfoProps> = ({
         runWorkflowUnCollect(targetId);
       } else {
         runWorkflowCollect(targetId);
+      }
+    }
+
+    // 技能
+    if (targetType === SquareAgentTypeEnum.Skill) {
+      if (collect) {
+        runSkillUnCollect(targetId);
+      } else {
+        runSkillCollect(targetId);
       }
     }
   };

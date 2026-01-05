@@ -33,6 +33,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import React, { MouseEvent } from 'react';
 import { CardBindConfig } from './cardInfo';
+import { ModelConfigInfo } from './model';
 import { PageArgConfig } from './pageDev';
 
 // 智能体header组件
@@ -47,6 +48,8 @@ export interface AgentHeaderProps {
 
 // 编配title组件
 export interface ArrangeTitleProps {
+  originalModelConfigList?: ModelConfigInfo[];
+  agentConfigInfo?: AgentConfigInfo;
   icon?: string;
   modelName?: string;
   onClick: () => void;
@@ -110,12 +113,13 @@ export interface CollapseComponentItemProps {
 
 // 智能体模型设置弹窗组件
 export interface AgentModelSettingProps {
+  agentConfigInfo?: AgentConfigInfo;
   spaceId: number;
   modelComponentConfig: AgentComponentInfo;
   open: boolean;
   devConversationId?: number;
   onCancel: (
-    targetId: number,
+    targetId: number | null,
     name: string,
     data: ComponentModelBindConfig,
   ) => void;
@@ -158,7 +162,10 @@ export interface InvokeTypeSaveParams {
 export interface InvokeTypeProps {
   invokeType: InvokeTypeEnum;
   defaultSelected?: DefaultSelectedEnum;
+  options?: { value: InvokeTypeEnum; label: string }[];
   onSaveSet: (data: InvokeTypeSaveParams) => void;
+  // 调用方式 提示信息
+  tooltip?: React.ReactNode;
 }
 
 // 输出方式保存形参

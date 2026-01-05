@@ -23,6 +23,20 @@ export interface ComponentItemProps {
   onClickMore: (item: CustomPopoverItem) => void;
 }
 
+// 任务库单个任务项
+export interface TaskItemProps {
+  taskInfo: TaskInfo;
+  onClick: () => void;
+  onClickMore: (item: CustomPopoverItem) => void;
+}
+
+// 技能库单个技能项
+export interface SkillItemProps {
+  skillInfo: SkillInfo;
+  onClick: () => void;
+  onClickMore: (item: CustomPopoverItem) => void;
+}
+
 // 工作流基础信息
 export interface WorkflowBaseInfo {
   // 工作流ID
@@ -48,6 +62,12 @@ export interface CreateWorkflowProps {
   open: boolean;
   onCancel: () => void;
   onConfirm?: (info: WorkflowBaseInfo) => void;
+  /**
+   * 外部更新回调（可选）
+   * 如果提供，更新操作将由外部处理（如 V3 的全量保存接口）
+   * 返回 Promise<boolean>，true 表示更新成功
+   */
+  onUpdate?: (info: WorkflowBaseInfo) => Promise<boolean>;
 }
 
 // 新建、更新插件组件
@@ -119,8 +139,82 @@ export interface AddWorkflowParams {
   icon: string;
 }
 
+// 添加定时任务传入参数
+export interface AddTimedTaskParams {
+  spaceId: number;
+  targetType: string;
+  targetId: string;
+  taskName: string;
+  cron: string;
+  params: any;
+}
+
+// 添加技能传入参数
+export interface AddSkillParams {
+  spaceId: number;
+  name: string;
+  description: string;
+  icon: string;
+  files?: SkillFileInfo[];
+}
+
+// 更新技能传入参数
+export interface UpdateSkillParams {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  files?: SkillFileInfo[];
+  // 发布状态,可用值:Developing,Applying,Published,Rejected
+  publishStatus?: PublishStatusEnum;
+}
+
 // 更新工作流传入参数
 export interface UpdateWorkflowParams {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+// 更新定时任务传入参数
+export interface UpdateTimedTaskParams extends AddTimedTaskParams {
+  id: number;
+}
+
+// 技能基础信息
+export interface SkillBaseInfo {
+  id: number;
+  spaceId: number;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+// 更新、创建技能弹窗
+export interface CreateSkillProps {
+  type?: CreateUpdateModeEnum;
+  skillInfo?: SkillInfo;
+  spaceId?: number;
+  id?: number;
+  name?: string;
+  description?: string;
+  icon?: string;
+  open: boolean;
+  onCancel: () => void;
+  onConfirm?: () => void;
+}
+
+// 添加技能传入参数
+export interface AddSkillParams {
+  spaceId: number;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+// 更新技能传入参数
+export interface UpdateSkillParams {
   id: number;
   name: string;
   description: string;
@@ -156,6 +250,127 @@ export interface ComponentInfo {
   ext: any;
   // 权限列表
   permissions?: PermissionsEnum[];
+}
+
+// 任务创建者信息
+export interface TaskCreatorInfo {
+  // 用户ID
+  userId: number;
+  // 用户名称
+  userName: string;
+  // 用户头像
+  avatar: string;
+}
+
+// 任务信息
+export interface TaskInfo {
+  // 是否保持对话,可用值:0,1
+  keepConversation?: 0 | 1;
+  // 任务ID
+  id: number;
+  // 空间ID
+  spaceId: number;
+  // 目标名称
+  targetName: string;
+  // 目标图标
+  targetIcon: string;
+  // 目标类型
+  targetType: string;
+  // 目标ID
+  targetId: string;
+  // 任务名称
+  taskName: string;
+  // 定时任务
+  cron: string;
+  // 参数
+  params: any;
+  // 状态
+  status: string;
+  // 最新执行时间
+  latestExecTime: string;
+  // 锁定时间
+  lockTime: string;
+  // 执行次数
+  execTimes: number;
+  // 错误信息
+  error: string;
+  // 最后修改时间
+  modified: string;
+  // 创建时间
+  created: string;
+  // 创建者
+  creator: TaskCreatorInfo;
+}
+
+// 技能文件信息
+export interface SkillFileInfo {
+  // 文件名称
+  name: string;
+  // 文件内容
+  contents: string;
+  // 重命名前的文件名
+  renameFrom: string;
+  // 操作类型
+  operation: string;
+}
+
+// 技能查询过滤条件
+export interface SkillQueryFilter {
+  // 空间ID
+  spaceId?: number;
+  // 技能名称
+  name?: string;
+  // 发布状态
+  publishStatus?: PublishStatusEnum[];
+}
+
+export enum SkillCopyTypeEnum {
+  // 开发
+  DEVELOP = 'DEVELOP',
+  // 广场
+  SQUARE = 'SQUARE',
+}
+
+// 技能复制到空间传入参数
+export interface SkillCopyToSpaceParams {
+  // 技能ID
+  skillId: number;
+  // 目标空间ID
+  targetSpaceId: number;
+  // 目标空间类型,可用值:DEVELOP,SQUARE
+  copyType: SkillCopyTypeEnum;
+}
+
+// 技能信息
+export interface SkillInfo {
+  // 技能 ID
+  id: number;
+  // 技能名称
+  name: string;
+  // 技能描述
+  description: string;
+  // 技能图标
+  icon: string;
+  // 文件内容列表
+  files: SkillFileInfo[];
+  // 发布状态，可用值：Developing, Applying, Published, Rejected
+  publishStatus: PublishStatusEnum;
+  // 租户 ID
+  tenantId: number;
+  // 空间 ID
+  spaceId: number;
+  // 创建时间
+  created: string;
+  // 创建人 ID
+  creatorId: number;
+  // 创建人名称
+  creatorName: string;
+  // 最后修改时间
+  modified: string;
+  // 最后修改人 ID
+  modifiedId: number;
+  // 最后修改人名称
+  modifiedName: string;
 }
 
 // box组件

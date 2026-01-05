@@ -27,6 +27,10 @@ import {
   ModelTypeEnum,
 } from '@/types/enums/modelConfig';
 import {
+  PageDevelopMoreActionEnum,
+  TaskCenterMoreActionEnum,
+} from '@/types/enums/pageDev';
+import {
   CodeLangEnum,
   PluginCodeModeEnum,
   PluginTypeEnum,
@@ -39,6 +43,70 @@ import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { BarsOutlined } from '@ant-design/icons';
 
 /**
+ * 技能库更多操作
+ * 技能：详情
+ * 技能：删除
+ */
+export const SKILL_MORE_ACTION: CustomPopoverItem[] = [
+  // {
+  //   action: ApplicationMoreActionEnum.Edit,
+  //   label: '编辑',
+  //   type: ComponentTypeEnum.Skill,
+  // },
+  {
+    action: PageDevelopMoreActionEnum.Copy_To_Space,
+    label: '复制到空间',
+    type: PageDevelopMoreActionEnum.Copy_To_Space,
+  },
+  {
+    action: ApplicationMoreActionEnum.Detail,
+    label: '详情',
+    type: ComponentTypeEnum.Skill,
+  },
+  {
+    action: ApplicationMoreActionEnum.Del,
+    label: '删除',
+    isDel: true,
+    type: ComponentTypeEnum.Skill,
+  },
+];
+
+// 任务中心更多操作
+export const TASK_CENTER_MORE_ACTION: CustomPopoverItem[] = [
+  {
+    action: TaskCenterMoreActionEnum.Record,
+    label: '执行记录',
+    type: TaskCenterMoreActionEnum.Record,
+  },
+  {
+    action: TaskCenterMoreActionEnum.Edit,
+    label: '编辑',
+    type: TaskCenterMoreActionEnum.Edit,
+  },
+  {
+    action: TaskCenterMoreActionEnum.Enable,
+    label: '启用',
+    type: TaskCenterMoreActionEnum.Enable,
+  },
+  {
+    action: TaskCenterMoreActionEnum.Disable,
+    label: '停用',
+    type: TaskCenterMoreActionEnum.Disable,
+  },
+  {
+    action: TaskCenterMoreActionEnum.Execute,
+    label: '手动执行',
+    type: TaskCenterMoreActionEnum.Execute,
+  },
+  {
+    action: TaskCenterMoreActionEnum.Delete,
+    label: '删除',
+    isDel: true,
+    type: TaskCenterMoreActionEnum.Delete,
+  },
+];
+
+/**
  * 组件库更多操作
  * 插件： 创建副本、导出配置、删除
  * 模型：删除
@@ -48,29 +116,6 @@ import { BarsOutlined } from '@ant-design/icons';
  * 导出配置接口，支持Agent、Workflow、Plugin、Table
  */
 export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
-  // 插件
-  {
-    action: ApplicationMoreActionEnum.Copy_To_Space,
-    label: '复制到空间',
-    type: ComponentTypeEnum.Plugin,
-  },
-  {
-    action: ApplicationMoreActionEnum.Export_Config,
-    label: '导出配置',
-    type: ComponentTypeEnum.Plugin,
-  },
-  {
-    action: ApplicationMoreActionEnum.Del,
-    label: '删除',
-    isDel: true,
-    type: ComponentTypeEnum.Plugin,
-  },
-  {
-    action: ApplicationMoreActionEnum.Del,
-    label: '删除',
-    isDel: true,
-    type: ComponentTypeEnum.Model,
-  },
   // 工作流
   {
     action: ApplicationMoreActionEnum.Copy_To_Space,
@@ -83,11 +128,39 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
     type: ComponentTypeEnum.Workflow,
   },
   {
+    action: ApplicationMoreActionEnum.Log,
+    label: '日志',
+    type: ComponentTypeEnum.Workflow,
+  },
+  {
     action: ApplicationMoreActionEnum.Del,
     label: '删除',
     isDel: true,
     type: ComponentTypeEnum.Workflow,
   },
+  // 插件
+  {
+    action: ApplicationMoreActionEnum.Copy_To_Space,
+    label: '复制到空间',
+    type: ComponentTypeEnum.Plugin,
+  },
+  {
+    action: ApplicationMoreActionEnum.Export_Config,
+    label: '导出配置',
+    type: ComponentTypeEnum.Plugin,
+  },
+  {
+    action: ApplicationMoreActionEnum.Log,
+    label: '日志',
+    type: ComponentTypeEnum.Plugin,
+  },
+  {
+    action: ApplicationMoreActionEnum.Del,
+    label: '删除',
+    isDel: true,
+    type: ComponentTypeEnum.Plugin,
+  },
+
   // 知识库
   // { type: ApplicationMoreActionEnum.Statistics, label: '统计' },
   {
@@ -112,6 +185,13 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
     label: '删除',
     isDel: true,
     type: ComponentTypeEnum.Table,
+  },
+  // 模型
+  {
+    action: ApplicationMoreActionEnum.Del,
+    label: '删除',
+    isDel: true,
+    type: ComponentTypeEnum.Model,
   },
 ];
 

@@ -11,10 +11,14 @@ import { ReactComponent as PluginsSvgFile } from '@/assets/icons/nav/plugins.svg
 import { ReactComponent as PublishAuditSvgFile } from '@/assets/icons/nav/publish_audit.svg';
 import { ReactComponent as SettingsSvgFile } from '@/assets/icons/nav/settings.svg';
 import { ReactComponent as SidebarSvgFile } from '@/assets/icons/nav/sidebar.svg';
+import { ReactComponent as SkillSvgFile } from '@/assets/icons/nav/skill.svg';
 import { ReactComponent as SpaceSquareSvgFile } from '@/assets/icons/nav/space_square.svg';
 import { ReactComponent as SquareSvgFile } from '@/assets/icons/nav/square.svg';
 import { ReactComponent as StarsSvgFile } from '@/assets/icons/nav/stars.svg';
+import { ReactComponent as TaskTimeSvgFile } from '@/assets/icons/nav/task-time.svg';
+import { ReactComponent as TaskSvgFile } from '@/assets/icons/nav/task.svg';
 import { ReactComponent as TemplateSvgFile } from '@/assets/icons/nav/template.svg';
+import { ReactComponent as TimeSvgFile } from '@/assets/icons/nav/time.svg';
 import { ReactComponent as UserSvgFile } from '@/assets/icons/nav/user.svg';
 import { ReactComponent as WorkflowSvgFile } from '@/assets/icons/nav/workflow.svg';
 import { ReactComponent as WorkspaceSvgFile } from '@/assets/icons/nav/workspace.svg';
@@ -34,6 +38,10 @@ const WorkflowSvg = wrapSvg(WorkflowSvgFile);
 const NewChatSvg = wrapSvg(NewChatSvgFile);
 const NotificationSvg = wrapSvg(NotificationSvgFile);
 const McpSvg = wrapSvg(McpSvgFile);
+const SkillSvg = wrapSvg(SkillSvgFile);
+const TaskSvg = wrapSvg(TaskSvgFile);
+const TaskTimeSvg = wrapSvg(TaskTimeSvgFile);
+const TimeSvg = wrapSvg(TimeSvgFile);
 const ComponentsSvg = wrapSvg(ComponentsSvgFile);
 const SpaceSquareSvg = wrapSvg(SpaceSquareSvgFile);
 const UserSvg = wrapSvg(UserSvgFile);
@@ -55,6 +63,10 @@ export default {
   'icons-nav-new_chat': NewChatSvg,
   'icons-nav-notification': NotificationSvg,
   'icons-nav-mcp': McpSvg,
+  'icons-nav-skill': SkillSvg,
+  'icons-nav-task': TaskSvg,
+  'icons-nav-task-time': TaskTimeSvg,
+  'icons-nav-time': TimeSvg,
   'icons-nav-components': ComponentsSvg,
   'icons-nav-space_square': SpaceSquareSvg,
   'icons-nav-user': UserSvg,

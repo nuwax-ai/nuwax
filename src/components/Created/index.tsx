@@ -61,6 +61,7 @@ const defaultTabs = CREATED_TABS.filter((item) =>
 
 // 创建插件、工作流、知识库、数据库
 const Created: React.FC<CreatedProp> = ({
+  isSpaceOnly = false,
   open,
   onCancel,
   checkTag,
@@ -126,7 +127,7 @@ const Created: React.FC<CreatedProp> = ({
       key: 'collect',
       label: '收藏',
     },
-  ];
+  ].filter((item) => !isSpaceOnly || item.key === 'library');
 
   const pageItem = [
     {
@@ -144,7 +145,7 @@ const Created: React.FC<CreatedProp> = ({
       key: 'library',
       label: '当前空间智能体',
     },
-  ];
+  ].filter((item) => !isSpaceOnly || item.key === 'library');
 
   const knowledgeItem = [
     {
@@ -175,6 +176,13 @@ const Created: React.FC<CreatedProp> = ({
     },
   ];
 
+  const skillItem = [
+    {
+      key: 'all', // 子项也需要唯一的 key
+      label: '全部',
+    },
+  ];
+
   const getItems = () => {
     switch (selected.key) {
       case AgentComponentTypeEnum.Knowledge:
@@ -187,6 +195,8 @@ const Created: React.FC<CreatedProp> = ({
         return pageItem;
       case AgentComponentTypeEnum.Agent:
         return agentItem;
+      case AgentComponentTypeEnum.Skill:
+        return skillItem;
       default:
         return items;
     }
@@ -215,7 +225,7 @@ const Created: React.FC<CreatedProp> = ({
       }
 
       // 如果需要只返回空间数据，则设置justReturnSpaceData为true
-      if (justReturnSpaceDataRef.current) {
+      if (justReturnSpaceDataRef.current || isSpaceOnly) {
         params.justReturnSpaceData = true;
       }
 
@@ -224,12 +234,11 @@ const Created: React.FC<CreatedProp> = ({
         params.dataType = dataTypeRef.current;
       }
 
-      // 如果类型是智能体，则设置targetType和targetSubType，需要过滤掉子类型是应用页面的智能体数据
+      // 如果类型是智能体，则设置targetType和targetSubType，需要过滤掉子类型是网页应用的智能体数据
       if (type === AgentComponentTypeEnum.Agent) {
         params.targetType = AgentComponentTypeEnum.Agent;
         params.targetSubType = 'ChatBot';
       }
-
       const {
         code,
         data,
@@ -250,6 +259,16 @@ const Created: React.FC<CreatedProp> = ({
         page: data.current,
         total: data.total,
       }));
+
+      // 如果statistics为空，则设置为0 避免第一次点击收藏时没有任何效果
+      data?.records?.forEach((item: any) => {
+        if (!item.statistics) {
+          item.statistics = {
+            collectCount: 0,
+          };
+        }
+      });
+
       setList((prev) => {
         const newList =
           params.page === 1 ? [...data.records] : [...prev, ...data.records];
@@ -293,12 +312,14 @@ const Created: React.FC<CreatedProp> = ({
       const newArr = list.map((child) => {
         if (item.targetId === child.targetId) {
           if (child.collect) {
+            // 取消收藏
             child.collect = false;
             if (child.statistics) {
               child.statistics.collectCount =
                 (child.statistics.collectCount || 1) - 1;
             }
           } else {
+            // 收藏
             child.collect = true;
             if (child.statistics) {
               child.statistics.collectCount =
@@ -447,7 +468,7 @@ const Created: React.FC<CreatedProp> = ({
     const _select = val as string;
     const _item = tabs.find((item) => item.key === _select);
     if (_item) {
-      setSelectMenu('all');
+      setSelectMenu(isSpaceOnly ? 'library' : 'all');
       setSearch('');
       SetSelected(_item);
 
@@ -725,6 +746,10 @@ const Created: React.FC<CreatedProp> = ({
     );
   };
 
+  const jumpToSkillCreate = (spaceId: number) => {
+    history.push(`/space/${spaceId}/skill-manage`);
+  };
+
   // 点击创建
   const handleClickCreate = (
     selectedKey: AgentComponentTypeEnum,
@@ -734,6 +759,8 @@ const Created: React.FC<CreatedProp> = ({
       jumpToMcpCreate(spaceId);
     } else if (selectedKey === AgentComponentTypeEnum.Page) {
       jumpToPageDevelop(spaceId);
+    } else if (selectedKey === AgentComponentTypeEnum.Skill) {
+      jumpToSkillCreate(spaceId);
     } else {
       setShowCreate(true);
     }

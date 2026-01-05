@@ -30,7 +30,6 @@ images:
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
   app:
-    namespace: local-agent
     updateImageTags: true
     kubectl:
       manifests:

@@ -10,7 +10,7 @@ import { CoverImgSourceTypeEnum } from '../enums/pageDev';
 
 // 广场 - 已发布列表请求参数
 export interface SquarePublishedListParams {
-  // 目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table
+  // 目标类型，Agent,Plugin,Workflow,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill
   targetType?: AgentComponentTypeEnum;
   // 模板模式下，目标类型
   targetSubType?: 'ChatBot' | 'PageApp';
