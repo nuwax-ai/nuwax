@@ -11,6 +11,9 @@ import { debounce } from 'lodash';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { workflowSaveService } from '../services/WorkflowSaveService';
 
+// 版本冲突错误码
+const VERSION_CONFLICT_CODE = '1001';
+
 interface UseAutoSaveOptions {
   /** 防抖延迟（毫秒） */
   debounceMs?: number;
@@ -43,44 +46,64 @@ export function useAutoSave(
   const isDirtyRef = useRef(false);
 
   // 核心保存函数
-  const doSave = useCallback(async (): Promise<boolean> => {
-    if (!graph) {
-      console.warn('[useAutoSave] Graph 未初始化');
-      return false;
-    }
-
-    if (!workflowSaveService.hasPendingChanges()) {
-      return true;
-    }
-
-    try {
-      onSaveStart?.();
-
-      const payload = workflowSaveService.buildPayload(graph);
-      if (!payload) {
-        console.error('[useAutoSave] 构建保存数据失败');
+  // @param forceCommit 是否强制提交（忽略版本冲突）
+  const doSave = useCallback(
+    async (forceCommit = false): Promise<boolean> => {
+      if (!graph) {
+        console.warn('[useAutoSave] Graph 未初始化');
         return false;
       }
 
-      const result = await service.saveWorkflow(payload);
-
-      if (result.code === Constant.success) {
-        workflowSaveService.clearDirty();
-        isDirtyRef.current = false;
-        onSaveSuccess?.();
-        console.log('[useAutoSave] 保存成功');
+      if (!workflowSaveService.hasPendingChanges()) {
         return true;
-      } else {
-        console.error('[useAutoSave] 保存失败:', result.message);
-        onSaveError?.(new Error(result.message));
+      }
+
+      try {
+        onSaveStart?.();
+
+        const payload = workflowSaveService.buildPayload(graph);
+        if (!payload) {
+          console.error('[useAutoSave] 构建保存数据失败');
+          return false;
+        }
+
+        // 构建保存请求参数，包含版本信息
+        const saveParams = {
+          workflowConfig: payload,
+          editVersion: workflowSaveService.getEditVersion(),
+          forceCommit: forceCommit ? (1 as const) : (0 as const),
+        };
+
+        const result = await service.saveWorkflow(saveParams);
+
+        if (result.code === Constant.success) {
+          // 保存成功，更新版本号
+          if (result.data?.editVersion) {
+            workflowSaveService.setEditVersion(result.data.editVersion);
+          }
+          workflowSaveService.clearDirty();
+          isDirtyRef.current = false;
+          onSaveSuccess?.();
+          console.log('[useAutoSave] 保存成功');
+          return true;
+        } else if (result.code === VERSION_CONFLICT_CODE) {
+          // 自动保存遇到版本冲突时，通知用户但不自动强制提交
+          console.warn('[useAutoSave] 版本冲突，自动保存失败');
+          onSaveError?.(new Error('版本冲突，工作流已在其他窗口修改'));
+          return false;
+        } else {
+          console.error('[useAutoSave] 保存失败:', result.message);
+          onSaveError?.(new Error(result.message));
+          return false;
+        }
+      } catch (error) {
+        console.error('[useAutoSave] 保存异常:', error);
+        onSaveError?.(error);
         return false;
       }
-    } catch (error) {
-      console.error('[useAutoSave] 保存异常:', error);
-      onSaveError?.(error);
-      return false;
-    }
-  }, [graph, onSaveStart, onSaveSuccess, onSaveError]);
+    },
+    [graph, onSaveStart, onSaveSuccess, onSaveError],
+  );
 
   // 防抖保存
   const debouncedSave = useMemo(
