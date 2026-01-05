@@ -13,7 +13,7 @@ import {
   GlobalOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Input, message, Modal, Spin } from 'antd';
+import { Button, Input, message, Modal, Segmented, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -144,28 +144,15 @@ const DomainBindingModal: React.FC<DomainBindingModalProps> = ({
           <div className={cx(styles['cname-title'])}>
             请将域名解析到以下 CNAME 地址（二选一）
           </div>
-          <div className={cx(styles['cname-tabs'])}>
-            <button
-              type="button"
-              className={cx(
-                styles['cname-tab'],
-                cnameType === 'cn' && styles['active'],
-              )}
-              onClick={() => setCnameType('cn')}
-            >
-              中国用户
-            </button>
-            <button
-              type="button"
-              className={cx(
-                styles['cname-tab'],
-                cnameType === 'en' && styles['active'],
-              )}
-              onClick={() => setCnameType('en')}
-            >
-              海外用户
-            </button>
-          </div>
+          <Segmented
+            className={cx(styles['cname-tabs'])}
+            value={cnameType}
+            onChange={(value) => setCnameType(value as 'cn' | 'en')}
+            options={[
+              { label: '中国用户', value: 'cn' },
+              { label: '海外用户', value: 'en' },
+            ]}
+          />
           <div className={cx(styles['cname-content'])}>
             {cnameType === 'cn' ? (
               <>
