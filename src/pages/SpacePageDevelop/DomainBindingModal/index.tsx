@@ -13,7 +13,7 @@ import {
   GlobalOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Input, message, Modal, Segmented, Spin } from 'antd';
+import { Button, Input, message, Modal, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -35,8 +35,6 @@ const DomainBindingModal: React.FC<DomainBindingModalProps> = ({
   const [showAddInput, setShowAddInput] = useState(false);
   const [newDomain, setNewDomain] = useState('');
   const [addLoading, setAddLoading] = useState(false);
-  // CNAME类型切换：cn-中国用户, en-海外用户
-  const [cnameType, setCnameType] = useState<'cn' | 'en'>('cn');
 
   // 查询域名列表
   const { run: runGetDomains } = useRequest(apiPageGetDomains, {
@@ -144,35 +142,31 @@ const DomainBindingModal: React.FC<DomainBindingModalProps> = ({
           <div className={cx(styles['cname-title'])}>
             请将域名解析到以下 CNAME 地址（二选一）
           </div>
-          <Segmented
-            className={cx(styles['cname-tabs'])}
-            value={cnameType}
-            onChange={(value) => setCnameType(value as 'cn' | 'en')}
-            options={[
-              { label: '中国用户', value: 'cn' },
-              { label: '海外用户', value: 'en' },
-            ]}
-          />
-          <div className={cx(styles['cname-content'])}>
-            {cnameType === 'cn' ? (
-              <>
-                <div className={cx(styles['cname-value'])}>
-                  cn-cname.nuwax.com
-                </div>
-                <div className={cx(styles['cname-desc'])}>
-                  对中国用户提供服务，需有 ICP 备案
-                </div>
-              </>
-            ) : (
-              <>
-                <div className={cx(styles['cname-value'])}>
-                  en-cname.nuwax.com
-                </div>
-                <div className={cx(styles['cname-desc'])}>
-                  对海外用户提供服务，请遵守你所服务国家或地区的法律法规
-                </div>
-              </>
-            )}
+          <div className={cx(styles['cname-item'])}>
+            <span className={cx(styles['cname-tag'], styles['cn-tag'])}>
+              中国用户
+            </span>
+            <div className={cx(styles['cname-info'])}>
+              <div className={cx(styles['cname-value'])}>
+                cn-cname.nuwax.com
+              </div>
+              <div className={cx(styles['cname-desc'])}>
+                对中国用户提供服务，需有 ICP 备案
+              </div>
+            </div>
+          </div>
+          <div className={cx(styles['cname-item'])}>
+            <span className={cx(styles['cname-tag'], styles['en-tag'])}>
+              海外用户
+            </span>
+            <div className={cx(styles['cname-info'])}>
+              <div className={cx(styles['cname-value'])}>
+                en-cname.nuwax.com
+              </div>
+              <div className={cx(styles['cname-desc'])}>
+                对海外用户提供服务，请遵守你所服务国家或地区的法律法规
+              </div>
+            </div>
           </div>
         </div>
 
