@@ -6,6 +6,7 @@ import UploadAvatar from '@/components/UploadAvatar';
 // import { CREATE_AGENT_LIST } from '@/constants/space.constants';
 import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type {
   AgentAddParams,
   AgentConfigUpdateParams,
@@ -14,7 +15,7 @@ import type { CreateAgentProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
 // import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 // import styles from './index.less';
 
@@ -23,6 +24,7 @@ import { useRequest } from 'umi';
 // const { TextArea } = Input;
 
 const CreateAgent: React.FC<CreateAgentProps> = ({
+  type,
   spaceId,
   mode = CreateUpdateModeEnum.Create,
   agentConfigInfo,
@@ -90,6 +92,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         ...values,
         icon: imageUrl,
         spaceId,
+        type,
       });
     } else {
       // 更新智能体
@@ -97,6 +100,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         ...values,
         icon: imageUrl,
         id: agentConfigInfo?.id,
+        type,
       });
     }
   };
@@ -111,10 +115,24 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     initForm();
   };
 
+  // 获取标题
+  const getTitle = useCallback(() => {
+    if (type) {
+      const _type = {
+        [AgentTypeEnum.ChatBot]: '问答型',
+        [AgentTypeEnum.TaskAgent]: '任务型',
+      };
+      return mode === CreateUpdateModeEnum.Create
+        ? `创建${_type[type]}智能体`
+        : `更新${_type[type]}智能体`;
+    }
+    return mode === CreateUpdateModeEnum.Create ? '创建智能体' : '更新智能体';
+  }, [type, mode]);
+
   return (
     <CustomFormModal
       form={form}
-      title={mode === CreateUpdateModeEnum.Create ? '创建智能体' : '更新智能体'}
+      title={getTitle()}
       open={open}
       loading={loading}
       // okText={createAgentType === CreateAgentEnum.Standard ? '' : '生成'}

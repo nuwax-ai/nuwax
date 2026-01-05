@@ -1,5 +1,6 @@
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { useWorkflowModel } from '@/hooks/useWorkflowModel';
 import { DataTypeEnum, UploadFileStatus } from '@/types/enums/common';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import { InputAndOutConfig } from '@/types/interfaces/node';
@@ -8,7 +9,6 @@ import { getAccept } from '@/utils';
 import { App, Button, Form, Input, InputNumber, Radio, Upload } from 'antd';
 import { isString } from 'lodash';
 import React, { useCallback, useEffect, useState } from 'react';
-import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import CodeEditor from '../CodeEditor';
 
@@ -22,7 +22,7 @@ const InputBox: React.FC<InputBoxProps> = ({ item, loading, ...restProps }) => {
   const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
   const { message } = App.useApp();
   const form = Form.useFormInstance();
-  const { getWorkflow } = useModel('workflow');
+  const { getWorkflow } = useWorkflowModel();
   const [isMultiple, setIsMultiple] = useState(false);
   const [fileList, setFileList] = useState<FileListItem[] | []>([]);
   useEffect(() => {

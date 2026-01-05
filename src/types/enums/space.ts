@@ -7,6 +7,20 @@ export enum ComponentTypeEnum {
   Knowledge = 'Knowledge',
   Table = 'Table',
   Model = 'Model',
+  // 技能
+  Skill = 'Skill',
+}
+
+// 创建技能方式
+export enum CreateSkillWayEnum {
+  Create = 'Create',
+  Import = 'Import',
+}
+
+// 智能体类型枚举
+export enum AgentTypeEnum {
+  ChatBot = 'ChatBot',
+  TaskAgent = 'TaskAgent',
 }
 
 // 过滤状态枚举
@@ -27,6 +41,10 @@ export enum CreateListEnum {
 
 // 应用开发、组件库等更多操作枚举(自定义枚举)
 export enum ApplicationMoreActionEnum {
+  // 编辑
+  Edit = 'Edit',
+  // 详情
+  Detail = 'Detail',
   // 分析
   Analyze = 'Analyze',
   // 复制
@@ -49,6 +67,8 @@ export enum ApplicationMoreActionEnum {
   Off_Shelf = 'Off_Shelf',
   // 删除
   Del = 'Del',
+  // 插件、工作流、MCP日志
+  Library_Log = 'Library_Log',
 }
 
 // 工作空间应用列表枚举
@@ -65,10 +85,18 @@ export enum SpaceApplicationListEnum {
   Space_Square,
   // 成员与设置
   Team_Setting,
+  // 技能管理
+  Skill_Manage,
+  // 任务中心
+  Task_Center,
+  // 插件、工作流、MCP日志
+  Library_Log,
 }
 
 // 智能体配置 - 编排类型枚举
 export enum AgentArrangeConfigEnum {
+  // 技能
+  Skill = 'Skill',
   // 插件
   Plugin = 'Plugin',
   // 工作流

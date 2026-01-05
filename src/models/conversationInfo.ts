@@ -1,4 +1,6 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CONVERSATION_CONNECTION_URL } from '@/constants/common.constants';
+import { EVENT_TYPE } from '@/constants/event.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
@@ -8,6 +10,14 @@ import {
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import {
+  apiEnsurePod,
+  apiGetStaticFileList,
+  apiKeepalivePod,
+  apiRestartAgent,
+  apiRestartPod,
+} from '@/services/vncDesktop';
+import {
+  AgentComponentTypeEnum,
   AssistantRoleEnum,
   ConversationEventTypeEnum,
   MessageModeEnum,
@@ -45,7 +55,15 @@ import {
   ConversationFinalResult,
 } from '@/types/interfaces/conversationInfo';
 import { RequestResponse } from '@/types/interfaces/request';
+import {
+  StaticFileInfo,
+  StaticFileListResponse,
+  VncDesktopContainerInfo,
+} from '@/types/interfaces/vncDesktop';
+import { extractTaskResult } from '@/utils';
+import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
+import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
@@ -55,11 +73,16 @@ import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 
 export default () => {
-  const { runHistoryItem } = useModel('conversationHistory');
-  const { showPagePreview } = useModel('chat');
+  // 历史记录
+  const { runHistory, runHistoryItem } = useModel('conversationHistory');
+  const { showPagePreview, handleChatProcessingList } = useModel('chat');
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();
+  // 当前会话ID
+  const [currentConversationId, setCurrentConversationId] = useState<
+    number | null
+  >(null);
   // 会话消息ID
   const [currentConversationRequestId, setCurrentConversationRequestId] =
     useState<string>('');
@@ -98,6 +121,11 @@ export default () => {
   // 是否正在加载会话
   const [isLoadingConversation, setIsLoadingConversation] =
     useState<boolean>(false);
+
+  // 其它调用接口的情况下判断是否正在加载中用于禁用聊天发送按钮
+  const [isLoadingOtherInterface, setIsLoadingOtherInterface] =
+    useState<boolean>(false);
+
   // 会话是否正在进行中（有消息正在处理）
   const [isConversationActive, setIsConversationActive] =
     useState<boolean>(false);
@@ -147,9 +175,182 @@ export default () => {
   > | null>(null);
   // 必填变量参数name列表
   const [requiredNameList, setRequiredNameList] = useState<string[]>([]);
-  // 历史记录
-  const { runHistory } = useModel('conversationHistory');
-  const { handleChatProcessingList } = useModel('chat');
+
+  // 文件树显隐状态
+  const [isFileTreeVisible, setIsFileTreeVisible] = useState<boolean>(false);
+  // 文件树是否固定（用户点击后固定）
+  const [isFileTreePinned, setIsFileTreePinned] = useState<boolean>(false);
+  // 任务智能体会话中点击选中的文件ID
+  const [taskAgentSelectedFileId, setTaskAgentSelectedFileId] =
+    useState<string>('');
+  // 任务智能体文件选择触发标志，每次点击按钮时传入不同的值（如时间戳），用于强制触发文件选择
+  const [taskAgentSelectTrigger, setTaskAgentSelectTrigger] = useState<
+    number | string
+  >(0);
+  // 文件树数据
+  const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
+  // 文件树数据加载状态
+  const [fileTreeDataLoading, setFileTreeDataLoading] =
+    useState<boolean>(false);
+  // 文件树视图模式
+  const [viewMode, setViewMode] = useState<'preview' | 'desktop'>('preview');
+  // 使用 ref 跟踪当前视图模式和文件树可见状态，用于避免不必要的刷新
+  const viewModeRef = useRef<'preview' | 'desktop'>('preview');
+  const isFileTreeVisibleRef = useRef<boolean>(false);
+  // 远程桌面容器信息
+  const [vncContainerInfo, setVncContainerInfo] =
+    useState<VncDesktopContainerInfo | null>(null);
+
+  // 查询文件列表
+  const { runAsync: runGetStaticFileList } = useRequest(apiGetStaticFileList, {
+    manual: true,
+    debounceWait: 500,
+    onSuccess: (result: RequestResponse<StaticFileListResponse>) => {
+      setFileTreeDataLoading(false);
+      const files = result?.data?.files || [];
+      if (files?.length) {
+        const _fileTreeData = files.map((item) => ({
+          ...item,
+          fileId: item.name,
+        }));
+        setFileTreeData(_fileTreeData);
+      } else {
+        // 如果文件列表为空，则清空文件树数据(比如：删除所有文件后，文件树数据为空)
+        setFileTreeData([]);
+      }
+    },
+    onError: () => {
+      setFileTreeDataLoading(false);
+      setFileTreeData([]);
+    },
+  });
+
+  // 重启智能体电脑
+  const restartVncPod = useCallback(async (cId: number) => {
+    return await apiRestartPod(cId);
+  }, []);
+
+  // 重启智能体
+  const { run: restartAgent, loading: isRestartAgentLoading } = useRequest(
+    apiRestartAgent,
+    {
+      manual: true,
+      debounceWait: 500,
+      onSuccess: (result: RequestResponse<null>) => {
+        const { code } = result;
+        if (code === SUCCESS_CODE) {
+          message.success('重启智能体成功');
+        }
+      },
+    },
+  );
+
+  // 处理文件列表刷新事件
+  const handleRefreshFileList = useCallback(
+    async (conversationId?: number) => {
+      if (conversationId) {
+        setFileTreeDataLoading(true);
+        await runGetStaticFileList(conversationId);
+      }
+    },
+    [runGetStaticFileList],
+  );
+
+  // 打开预览视图或远程桌面视图时修改状态值
+  const openPreviewChangeState = useCallback((mode: 'preview' | 'desktop') => {
+    setViewMode(mode);
+    setIsFileTreeVisible(true);
+    // 更新 ref 值
+    viewModeRef.current = mode;
+    isFileTreeVisibleRef.current = true;
+  }, []);
+
+  // 远程桌面容器保活轮询
+  const { run: runKeepalivePodPolling, cancel: stopKeepalivePodPolling } =
+    useRequest(apiKeepalivePod, {
+      manual: true,
+      loadingDelay: 30000,
+      debounceWait: 5000,
+      pollingInterval: 60000, // 轮询间隔，单位ms
+      // 在屏幕不可见时，暂时暂停定时任务。
+      pollingWhenHidden: false,
+      // 轮询错误重试次数。如果设置为 -1，则无限次
+      pollingErrorRetryCount: -1,
+      // 页面重新可见时，调用 apiEnsurePod 确保容器运行
+      onBefore: async (params) => {
+        // 如果是从不可见状态恢复，先调用 ensurePod
+        if (document.visibilityState === 'visible' && params[0]) {
+          try {
+            console.log('[keepalive] 页面可见，调用 apiEnsurePod 确保容器运行');
+            await apiEnsurePod(params[0]);
+          } catch (error) {
+            console.error('[keepalive] apiEnsurePod 失败:', error);
+          }
+        }
+      },
+    });
+
+  // 打开远程桌面视图
+  const openDesktopView = useCallback(async (cId: number) => {
+    // 停止保活
+    stopKeepalivePodPolling();
+    // 打开预览视图或远程桌面视图时修改状态值
+    openPreviewChangeState('desktop');
+    try {
+      // 启动容器
+      const { code, data } = await apiEnsurePod(cId);
+      if (code === SUCCESS_CODE) {
+        // 设置远程桌面容器信息
+        setVncContainerInfo(data?.container_info);
+        // 启动保活, 60秒保活一次
+        runKeepalivePodPolling(cId);
+      }
+    } catch (error) {
+      console.error('打开远程桌面视图失败', error);
+    }
+  }, []);
+
+  // 关闭预览视图
+  const closePreviewView = useCallback(() => {
+    // 关闭文件树
+    setIsFileTreeVisible(false);
+    // 更新 ref 值
+    isFileTreeVisibleRef.current = false;
+
+    // 停止保活
+    stopKeepalivePodPolling();
+  }, []);
+
+  // 清除文件面板信息, 并关闭文件面板
+  const clearFilePanelInfo = useCallback(() => {
+    closePreviewView();
+    // 清空文件树数据
+    setFileTreeData([]);
+    // 设置视图模式为预览
+    setViewMode('preview');
+    // 更新 ref 值
+    viewModeRef.current = 'preview';
+    // 设置远程桌面容器信息为空
+    setVncContainerInfo(null);
+  }, []);
+
+  // 打开预览视图
+  const openPreviewView = useCallback(async (cId: number) => {
+    // 停止保活
+    stopKeepalivePodPolling();
+
+    // 检查是否需要刷新文件列表
+    // 只有在模式发生变化（从 desktop 切换到 preview）或首次打开文件树时才刷新
+    const needRefresh =
+      viewModeRef.current !== 'preview' || !isFileTreeVisibleRef.current;
+
+    // 打开预览视图或远程桌面视图时修改状态值
+    openPreviewChangeState('preview');
+    // 只在需要时触发文件列表刷新事件
+    if (needRefresh) {
+      eventBus.emit(EVENT_TYPE.RefreshFileList, cId);
+    }
+  }, []);
 
   // 滚动到底部
   const messageViewScrollToBottom = () => {
@@ -200,6 +401,69 @@ export default () => {
     },
   });
 
+  /**
+   * 更新会话主题（仅在会话开始时调用一次）
+   * @param params - 会话参数
+   * @param currentInfo - 当前会话信息
+   * @param isSync - 是否同步会话记录
+   * @description 该方法用于在会话开始时更新主题，通过 needUpdateTopicRef 确保只调用一次
+   */
+  const updateTopicOnce = useCallback(
+    async (
+      params: ConversationChatParams,
+      currentInfo: ConversationInfo | null | undefined,
+      isSync: boolean,
+    ) => {
+      // 检查是否需要更新主题：必须满足以下条件
+      // 1. isSync 为 true（需要同步）
+      // 2. conversationInfo 存在
+      // 3. topicUpdated 不等于 1（主题未更新过）
+      // 4. needUpdateTopicRef.current 为 true（允许更新）
+      if (
+        isSync &&
+        currentInfo &&
+        currentInfo?.topicUpdated !== 1 &&
+        needUpdateTopicRef.current
+      ) {
+        // 标记已更新，防止重复调用
+        needUpdateTopicRef.current = false;
+
+        try {
+          // 调用更新主题接口
+          const result: RequestResponse<ConversationInfo> =
+            await runUpdateTopic({
+              id: params.conversationId,
+              firstMessage: params.message,
+            });
+
+          // 更新会话信息
+          setConversationInfo({
+            ...currentInfo,
+            topicUpdated: result.data?.topicUpdated,
+            topic: result.data?.topic,
+          });
+
+          // 如果是会话聊天页（chat页），同步更新会话记录
+          runHistory({
+            agentId: null,
+            limit: 20,
+          });
+
+          // 获取当前智能体的历史记录
+          runHistoryItem({
+            agentId: currentInfo.agentId,
+            limit: 20,
+          });
+        } catch (error) {
+          console.error('更新会话主题失败:', error);
+          // 更新失败时重置标志，允许下次重试
+          needUpdateTopicRef.current = true;
+        }
+      }
+    },
+    [runUpdateTopic, runHistory, runHistoryItem],
+  );
+
   // 处理变量参数
   const handleVariables = (_variables: BindConfigWithSub[]) => {
     setVariables(_variables);
@@ -229,6 +493,24 @@ export default () => {
     setIsConversationActive(false);
   };
 
+  // 设置所有的详细信息
+  const setChatProcessingList = (messageList: any[]) => {
+    const list: any[] = [];
+    messageList
+      .filter((item) => item.role === AssistantRoleEnum.ASSISTANT)
+      .forEach((item) => {
+        const componentExecutedList = item?.componentExecutedList || [];
+        // 补充执行ID
+        const _list = componentExecutedList.map((item: any) => ({
+          ...item,
+          executeId: item.result.executeId,
+        }));
+        list.push(..._list);
+      });
+
+    handleChatProcessingList(list);
+  };
+
   // 查询会话
   const {
     run: runQueryConversation,
@@ -240,7 +522,14 @@ export default () => {
     onSuccess: (result: RequestResponse<ConversationInfo>) => {
       setIsLoadingConversation(true);
       const { data } = result;
+      // 设置所有的详细信息
+      setChatProcessingList(data?.messageList || []);
+      // 设置会话信息
       setConversationInfo(data);
+      // 缓存当前会话ID
+      if (data?.id) {
+        setCurrentConversationId(data.id);
+      }
       // 是否开启用户问题建议
       setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
       // 可手动选择的组件列表
@@ -337,7 +626,7 @@ export default () => {
           return [];
         }
         // 深拷贝消息列表
-        const list = [...messageList];
+        let list: any[] = [...messageList];
         const index = list.findIndex((item) => item.id === currentMessageId);
         // 数组splice方法的第二个参数表示删除的数量，这里我们只需要删除一个元素，所以设置为1， 如果为0，则表示不删除元素。
         let arraySpliceAction = 1;
@@ -350,7 +639,7 @@ export default () => {
           return messageList;
         }
 
-        let newMessage = null;
+        let newMessage: any = null;
 
         // 更新UI状态...
         if (eventType === ConversationEventTypeEnum.PROCESSING) {
@@ -454,6 +743,31 @@ export default () => {
             });
           }
 
+          // 长任务型任务处理(打开远程桌面)
+          if (
+            data.type === AgentComponentTypeEnum.Event &&
+            data.subEventType === 'OPEN_DESKTOP' &&
+            // 优先使用本次会话请求携带的 conversationId，避免闭包中拿到的旧会话信息
+            params.conversationId
+          ) {
+            // 打开远程桌面
+            openDesktopView(params.conversationId);
+            console.log('打开远程桌面');
+          }
+
+          // 长任务型任务处理(刷新文件树)
+          if (
+            data.type === AgentComponentTypeEnum.ToolCall &&
+            // isFileTreeVisible && // 是否已经打开文件预览窗口
+            // viewMode === 'preview' && // 文件预览
+            // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
+            params.conversationId
+          ) {
+            // 刷新文件树
+            handleRefreshFileList(params.conversationId);
+            console.log('刷新文件树');
+          }
+
           handleChatProcessingList([
             ...(currentMessage?.processingList || []),
             { ...data },
@@ -512,12 +826,49 @@ export default () => {
         }
         // FINAL_RESULT事件
         if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
+          /**
+           * "error":"Agent正在执行任务，请等待当前任务完成后再发送新请求"
+           */
+          if (
+            res.error?.includes('正在执行任务') ||
+            (!data?.success && data?.error?.includes('正在执行任务'))
+          ) {
+            modalConfirm(
+              '提示',
+              'Agent正在执行任务中，需要先暂停当前任务后才能发送新请求，是否暂停当前任务？',
+              () => {
+                if (params?.conversationId) {
+                  runStopConversation(params?.conversationId.toString());
+                }
+                return new Promise((resolve) => {
+                  setTimeout(resolve, 2000);
+                });
+              },
+            );
+          }
+
           newMessage = {
             ...currentMessage,
             status: MessageStatusEnum.Complete,
             finalResult: data,
             requestId: res.requestId,
           };
+          const taskResult = extractTaskResult(data.outputText);
+          if (
+            params.conversationId &&
+            taskResult.hasTaskResult &&
+            taskResult.file
+          ) {
+            openPreviewView(params.conversationId);
+            const fileId = taskResult.file
+              ?.split(`${params.conversationId}/`)
+              .pop();
+            if (fileId) {
+              setTaskAgentSelectedFileId(fileId);
+              // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
+              setTaskAgentSelectTrigger(Date.now());
+            }
+          }
 
           // 调试结果
           setRequestId(res.requestId);
@@ -525,6 +876,17 @@ export default () => {
           // 是否开启问题建议,可用值:Open,Close
           if (isSuggest.current) {
             runChatSuggest(params as ConversationChatSuggestParams);
+          }
+
+          // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
+          if (!data.outputText) {
+            // 将 newMessage 设置为 null，并保持 arraySpliceAction 为 1
+            // 这样会在后续的 splice 操作中删除当前消息而不是替换
+            newMessage = null;
+            // 确保删除操作生效：直接从列表中移除当前消息
+            list.splice(index, 1);
+            // 标记已处理，跳过后续的 splice 逻辑
+            arraySpliceAction = 0;
           }
         }
         // ERROR事件
@@ -560,31 +922,6 @@ export default () => {
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
-    // //模拟数据 一定删除 ====
-    // let index = 0;
-    // const mockData = mockChatData;
-    // const len = mockData.length;
-    // console.log('mockChatData', mockData);
-
-    // console.time('mockData');
-
-    // const interval = setInterval(() => {
-    //   if (index < len) {
-    //     console.timeLog('mockData', index);
-
-    //     handleChangeMessageList(params, mockData[index], currentMessageId);
-    //     // 滚动到底部
-    //     handleScrollBottom();
-    //   } else {
-    //     clearInterval(interval);
-    //     console.timeEnd('mockData');
-    //   }
-    //   index++;
-    // }, 100);
-
-    // return;
-    // //===== 模拟数据 一定删除 ====
-
     // 启动连接
     abortConnectionRef.current = await createSSEConnection({
       url: CONVERSATION_CONNECTION_URL,
@@ -596,26 +933,59 @@ export default () => {
       body: params,
       abortController,
       onMessage: (res: ConversationChatResponse) => {
+        // 第一次收到消息后更新主题（仅调用一次）
+        updateTopicOnce(params, conversationInfo ?? data, isSync);
+
         handleChangeMessageList(params, res, currentMessageId);
         // 滚动到底部
         handleScrollBottom();
       },
       onClose: async () => {
-        // 将当前会话的loading状态的消息改为Error状态
+        // 将当前会话的loading状态的消息改为Error状态，并将所有正在执行的 processing 状态更新为 FAILED
         setMessageList((list) => {
           try {
             const copyList = JSON.parse(JSON.stringify(list));
-            copyList[copyList.length - 1].status = MessageStatusEnum.Error;
+
+            // 遍历消息列表，找到最后一条消息并更新其 processingList
+            if (copyList.length > 0) {
+              const lastMessage = copyList[copyList.length - 1];
+
+              // 如果消息有 processingList，将所有 EXECUTING 状态更新为 FAILED
+              if (
+                lastMessage.processingList &&
+                Array.isArray(lastMessage.processingList)
+              ) {
+                const updatedProcessingList = lastMessage.processingList.map(
+                  (item: ProcessingInfo) => {
+                    if (item.status === ProcessingEnum.EXECUTING) {
+                      return {
+                        ...item,
+                        status: ProcessingEnum.FAILED,
+                      };
+                    }
+                    return item;
+                  },
+                );
+
+                lastMessage.processingList = updatedProcessingList;
+                lastMessage.status = MessageStatusEnum.Error;
+
+                // ✨ 关键：同时更新全局的 processingList，这样 MarkdownCustomProcess 组件才能正确更新
+                handleChatProcessingList(updatedProcessingList);
+              }
+            }
+            console.log('copyList', copyList);
+
             return copyList;
           } catch (error) {
-            console.error('ERROR:', error);
+            console.error('[onClose] ERROR:', error);
             return list;
           }
         });
         // 主动关闭连接时，禁用会话
         disabledConversationActive();
 
-        const currentInfo = conversationInfo ?? data;
+        /* const currentInfo = conversationInfo ?? data;
 
         if (isSync && currentInfo && currentInfo?.topicUpdated !== 1) {
           // 第一次发送消息后更新主题
@@ -642,7 +1012,7 @@ export default () => {
             agentId: currentInfo.agentId,
             limit: 20,
           });
-        }
+        }*/
       },
       onError: () => {
         message.error('网络超时或服务不可用，请稍后再试');
@@ -703,6 +1073,8 @@ export default () => {
     setMessageList([]);
     // 重置会话信息
     setConversationInfo(null);
+    // 重置当前会话ID
+    setCurrentConversationId(null);
     // 重置问题建议
     setIsSuggest(false);
     // 重置请求ID
@@ -711,12 +1083,19 @@ export default () => {
     setFinalResult(null);
     // 重置会话消息ID
     setCurrentConversationRequestId('');
+    // 重置变量参数（防止切换智能体时参数框闪烁）
+    setVariables([]);
+    setRequiredNameList([]);
+    setUserFillVariables(null);
 
     if (timeoutRef.current) {
       //清除会话定时器
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
+
+    // 清除文件面板信息, 并关闭文件面板
+    clearFilePanelInfo();
 
     // 停止当前会话【强制】
     abortController?.abort();
@@ -816,11 +1195,20 @@ export default () => {
       setFinalResult(result);
     }
     setShowType(EditAgentShowType.Debug_Details);
+    // 关闭文件树
+    setIsFileTreeVisible(false);
+    // 更新 ref 值
+    isFileTreeVisibleRef.current = false;
   }, []);
 
   const getCurrentConversationRequestId = useCallback(() => {
     return currentConversationRequestId;
   }, [currentConversationRequestId]);
+
+  // 获取当前会话ID
+  const getCurrentConversationId = useCallback(() => {
+    return currentConversationId;
+  }, [currentConversationId]);
 
   return {
     setIsSuggest,
@@ -864,6 +1252,7 @@ export default () => {
     disabledConversationActive,
     setCurrentConversationRequestId,
     getCurrentConversationRequestId,
+    getCurrentConversationId,
     isHistoryConversationOpen,
     openHistoryConversation,
     closeHistoryConversation,
@@ -872,5 +1261,38 @@ export default () => {
     openTimedTask,
     closeTimedTask,
     setConversationInfo,
+    // 文件树显隐状态
+    isFileTreeVisible,
+    // 文件树是否固定（用户点击后固定）
+    isFileTreePinned,
+    setIsFileTreePinned,
+    closePreviewView,
+    clearFilePanelInfo,
+    // 文件树数据
+    fileTreeData,
+    fileTreeDataLoading,
+    setFileTreeData,
+    // 文件树视图模式
+    viewMode,
+    setViewMode,
+    // 处理文件列表刷新事件
+    handleRefreshFileList,
+    openDesktopView,
+    openPreviewView,
+    // 重启智能体电脑
+    restartVncPod,
+    // 重启智能体
+    restartAgent,
+    isRestartAgentLoading,
+    // 远程桌面容器信息, 暂时未使用
+    vncContainerInfo,
+    // 任务智能体会话中点击选中的文件ID
+    taskAgentSelectedFileId,
+    setTaskAgentSelectedFileId,
+    // 任务智能体文件选择触发标志
+    taskAgentSelectTrigger,
+    setTaskAgentSelectTrigger,
+    isLoadingOtherInterface,
+    setIsLoadingOtherInterface,
   };
 };

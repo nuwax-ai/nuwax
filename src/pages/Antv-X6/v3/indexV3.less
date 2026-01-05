@@ -1,0 +1,499 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.absolute-box {
+  position: absolute;
+  height: 42px;
+  display: flex;
+  bottom: 12px;
+  left: 12px;
+  z-index: 12;
+
+  .action-section {
+    padding: 0 6px;
+    background: #fff;
+    border: 1px solid @colorBorder;
+    border-radius: @borderRadius;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.spin-workflow-global-style {
+  width: 100%;
+  height: 100%;
+
+  > div {
+    .ant-spin {
+      width: 100%;
+      height: 100%;
+      z-index: 11;
+      max-height: 100%;
+      background-color: #f2f2f2;
+    }
+  }
+
+  .ant-spin-container {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+// 添加节点的样式
+.stencil-content {
+  width: 240px;
+  max-height: calc(100vh - 100px); // 设置最大高度为视口高度减去100px
+  overflow-y: auto; // 内容超出时显示垂直滚动条
+
+  .stencil-title {
+    color: @GRAY07;
+  }
+
+  .stencil-list-style {
+    width: 100%;
+
+    .stencil-list-item {
+      margin: 12px 0;
+
+      .stencil-list-title {
+        margin-bottom: 6px;
+        font-size: 14px;
+        font-weight: normal;
+        line-height: 22px;
+        letter-spacing: 0;
+        color: @GRAY07;
+      }
+
+      .stencil-list-content {
+        display: flex;
+        justify-content: left;
+        flex-wrap: wrap;
+
+        .child-content {
+          width: 50%;
+          // margin-top: 4px;
+          cursor: pointer;
+          letter-spacing: 1px;
+          line-height: 22px;
+          margin: 6px 0;
+
+          .icon-box-style {
+            width: 20px;
+            height: 20px;
+            margin-right: 6px;
+
+            svg {
+              width: 20px;
+              height: 20px;
+              border-radius: 6px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+#container {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  // border: 1px solid #dfe3e8;
+  width: 100%; // 改为视窗单位
+  height: 100%;
+  top: 0;
+  left: 0; // 改为视窗单位
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 600px;
+  min-width: 1200px;
+}
+
+.x6-widget-transform {
+  margin: -1px 0 0 -1px;
+  padding: 0;
+  border: 1px solid #239edd;
+}
+
+.x6-widget-transform > div {
+  border: 1px solid #239edd;
+}
+
+.x6-widget-transform > div:hover {
+  background-color: #3dafe4;
+}
+
+.x6-widget-transform-active-handle {
+  background-color: #3dafe4;
+}
+
+.x6-widget-transform-resize {
+  border-radius: 0;
+}
+
+.x6-widget-selection-inner {
+  border: 1px solid #239edd;
+}
+
+.x6-widget-selection-box {
+  opacity: 0;
+}
+
+.fold-wrap-style {
+  position: absolute;
+  top: 76px;
+  right: 12px;
+  bottom: 12px;
+  width: 370px;
+  z-index: 99;
+  border: 1px solid @WHITE15;
+
+  .ant-input {
+    height: 28px;
+    font-size: 12px;
+    background-color: rgb(252, 252, 252);
+  }
+
+  .ant-select {
+    height: 28px;
+
+    .ant-select-selector {
+      font-size: 12px;
+    }
+  }
+
+  .ant-tag {
+    height: 22px;
+    font-size: 10px;
+    // line-height: 14px;
+  }
+
+  .ant-select-selector {
+    background-color: rgb(252, 252, 252);
+  }
+}
+
+.dispose-node-style {
+  padding: 12px;
+
+  // svg {
+  //   width: 20px;
+  //   height: 20px;
+  // }
+
+  .ant-form-item {
+    margin-bottom: 6px;
+  }
+
+  // 右侧的foldWrap里面的内容
+  .node-title-style {
+    font-size: 14px;
+    font-weight: @fontWeightStrong;
+    line-height: 22px;
+    color: @BLANK04;
+  }
+
+  .node-title-grey-style {
+    font-size: 14px;
+    font-weight: @fontWeightStrong;
+    line-height: 22px;
+    color: @GRAY04;
+    margin-right: 16px;
+  }
+
+  .ant-empty {
+    width: 340px;
+    text-align: center;
+    height: 74px;
+    margin: 0 auto;
+    font-size: 12px;
+
+    .ant-empty-image {
+      height: 30px;
+    }
+
+    svg {
+      width: 50px;
+      height: 30px;
+    }
+  }
+}
+
+.node-item-style {
+  padding-bottom: 8px;
+  border-bottom: 1px solid @WHITE03;
+  margin-bottom: 10px;
+
+  .ant-input-number {
+    width: 100%;
+  }
+}
+
+.margin-bottom {
+  margin-bottom: 10px;
+}
+
+// 开始节点
+.start-node-style {
+  .margin-right {
+    margin-right: 6px;
+  }
+
+  // .height-100 {
+  //   height: 100%;
+  // }
+
+  .right-icon-style {
+    /* 在这里设置你想要的样式 */
+    margin-bottom: -20px;
+  }
+}
+
+// 大模型节点
+.model-dispose-mode-style {
+  display: flex;
+  flex-direction: column;
+
+  .label-style {
+    width: 120px;
+  }
+
+  .slider-style {
+    flex: 1;
+  }
+
+  .input-style {
+    width: 100px;
+    margin-left: 30px;
+  }
+}
+
+.sub-item-title {
+  font-family: 'Alimama Agile VF';
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 22px;
+  letter-spacing: 0;
+}
+
+.fold-header-style {
+  height: 56px;
+  border-bottom: 1px solid @WHITE11;
+  padding: 0 16px;
+  background-color: @WHITE02;
+  box-sizing: border-box;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: 12;
+  min-width: 1200px;
+
+  .back-icon-style {
+    font-size: 16px;
+    color: @BLANK17;
+    cursor: pointer;
+    margin-right: 12px;
+  }
+
+  .header-icon-style {
+    width: 27px;
+    height: 27px;
+    margin-right: 12px;
+    border-radius: 6px;
+  }
+
+  .header-content-style {
+    font-size: 12px;
+    color: @GRAY05;
+
+    .header-name-style {
+      font-size: 14px;
+      color: @BLANK04;
+      font-weight: @fontWeightStrong;
+      margin-right: 6px;
+      line-height: 20px;
+    }
+  }
+
+  .header-tag-style {
+    //margin-top: 2px;
+    //margin-right: -15px;
+
+    .ant-tag {
+      //line-height: 14px;
+      //height: 16px;
+      &:last-child {
+        margin-right: 0 !important;
+      }
+    }
+  }
+}
+
+.condition-node-content-style {
+  padding: 0 20px;
+
+  .condition-item-style {
+    margin-bottom: 4px;
+
+    .condition-title-sytle {
+      font-size: 12px;
+      width: 60px;
+    }
+
+    .condition-right-input {
+      width: 95px;
+    }
+  }
+}
+
+.other-action-style {
+  z-index: 99;
+}
+
+.error-list-style {
+  position: absolute;
+  top: 70%;
+  left: 10px;
+  bottom: 10px;
+  border-radius: 16px;
+  // padding: 10px 0 0;
+  background-color: @WHITE;
+  z-index: 99;
+  overflow: hidden;
+  overflow-y: auto;
+
+  .error-list-header {
+    height: 48px;
+    border-bottom: 1px solid @colorBorder;
+    font-size: 16px;
+    font-weight: @fontWeightStrong;
+    padding: 0 20px;
+  }
+
+  .error-list-content {
+    padding: 10px 20px 0;
+    flex: 1;
+    overflow: auto;
+    //添加滚动加速，使用css变量
+    scroll-behavior: auto;
+
+    .error-list-item {
+      width: 100%;
+      height: 50px;
+      border-radius: 8px;
+      border: 1px solid rgba(82, 100, 154, 15%);
+      padding: 4px 8px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 4%), 0 2px 10px 0 rgba(0, 0, 0, 2%);
+
+      .image-div-style {
+        width: 20px;
+        height: 100%;
+        padding: 8px 0;
+
+        img {
+          width: 32px;
+          height: 32px;
+          margin-right: 8px;
+        }
+      }
+
+      .content-error-item-width {
+        width: calc(100% - 20px);
+        padding-left: 12px;
+
+        .error-node-name {
+          font-size: 14px;
+          font-weight: @fontWeightStrong;
+          line-height: 22px;
+          color: #383743;
+        }
+
+        .error-text {
+          color: #ff441e;
+          font-weight: normal;
+          line-height: 1.2;
+          font-size: 12px;
+          white-space: nowrap; // 不换行
+          overflow: hidden; // 超出隐藏
+          text-overflow: ellipsis; // 显示省略号
+          width: 95%;
+        }
+      }
+    }
+  }
+}
+
+.input-and-out-form {
+  .ant-form-item {
+    margin-bottom: 10px;
+  }
+}
+
+.qa-node-content-style {
+  font-size: 12px;
+  padding: 0 20px;
+
+  div {
+    // padding-bottom: 4px;
+    padding-bottom: 2px;
+    line-height: 22px;
+
+    .qa-title-style {
+      width: 60px;
+      color: #929090;
+      margin-right: 10px;
+    }
+
+    .qa-content-style {
+      width: 160px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .question-content-style {
+    max-width: 180px;
+    text-overflow: ellipsis;
+    white-space: nowrap; // 不换行
+    overflow: hidden; // 超出隐藏
+  }
+}
+
+.knowlegenow-left-title {
+  width: 110px;
+
+  // span {
+  //   margin-right: 10px;
+  // }
+}
+
+.general-node-header-title {
+  color: @BLANK04;
+  max-width: 124px;
+  font-size: 14px;
+  font-weight: @fontWeightStrong;
+}
+
+.border-box {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  height: 28px;
+  line-height: 28px;
+  font-size: 12px;
+  text-indent: 4px;
+  overflow: hidden;
+}
+
+.ico {
+  color: @BLANK09;
+  font-size: 16px;
+}
+
+.gap-20 {
+  gap: 20px;
+}

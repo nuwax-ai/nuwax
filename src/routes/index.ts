@@ -35,8 +35,27 @@ const routes = [
         path: '/space/:spaceId/page-develop',
         component: '@/pages/SpacePageDevelop',
       },
+      // 技能管理
+      {
+        path: '/space/:spaceId/skill-manage',
+        component: '@/pages/SpaceSkillManage',
+      },
+      // 任务中心
+      {
+        path: '/space/:spaceId/task-center',
+        component: '@/pages/SpaceTaskCenter',
+      },
+      {
+        path: '/space/:spaceId/skill-details/:skillId',
+        component: '@/pages/SkillDetails',
+      },
       { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
+      // 插件、工作流、MCP日志
+      {
+        path: '/space/:spaceId/library-log',
+        component: '@/pages/SpaceLibraryLog',
+      },
       { path: '/space/:spaceId/mcp', component: '@/pages/SpaceMcpManage' },
       {
         path: '/space/:spaceId/mcp/create',
@@ -70,13 +89,35 @@ const routes = [
 
       { path: '/square', component: '@/pages/Square' },
       { path: '/system/publish/audit', component: '@/pages/PublishAudit' },
+      // 空间广场-插件详情
+      {
+        path: '/space/publish/plugin/:pluginId',
+        component: '@/pages/Square/PluginDetail',
+      },
+      // 空间广场-工作流详情
+      {
+        path: '/space/publish/workflow/:workflowId',
+        component: '@/pages/Square/WorkflowIdDetail',
+      },
+      // 空间广场-技能详情
+      {
+        path: '/space/publish/skill/:skillId',
+        component: '@/pages/Square/SkillDetail',
+      },
+      // 广场-插件详情
       {
         path: '/square/publish/plugin/:pluginId',
         component: '@/pages/Square/PluginDetail',
       },
+      // 广场-工作流详情
       {
         path: '/square/publish/workflow/:workflowId',
         component: '@/pages/Square/WorkflowIdDetail',
+      },
+      // 广场-技能详情
+      {
+        path: '/square/publish/skill/:skillId',
+        component: '@/pages/Square/SkillDetail',
       },
       {
         path: '/system/published/manage',
@@ -162,6 +203,16 @@ const routes = [
   {
     path: '/examples/tiptap-variable-input-test',
     component: '@/examples/TiptapVariableInputTest/index',
+    layout: false,
+  },
+  {
+    path: '/examples/vnc-preview-demo',
+    component: '@/examples/VncPreviewDemo',
+    layout: false,
+  },
+  {
+    path: '/examples/file-preview-demo',
+    component: '@/examples/file-preview-demo',
     layout: false,
   },
 ];

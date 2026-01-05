@@ -1,7 +1,7 @@
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { ApplicationMoreActionEnum } from '@/types/enums/space';
-import type { AgentConfigInfo } from '@/types/interfaces/agent';
+import type { AgentConfigInfo, SpaceLogInfo } from '@/types/interfaces/agent';
 import type { CollapseProps } from 'antd';
 import type { MouseEventHandler } from 'react';
 import React from 'react';
@@ -61,6 +61,8 @@ export interface TooltipIconProps {
 
 // 发布智能体、插件、工作流等弹窗组件
 export interface PublishComponentModalProps {
+  // 自定义标题
+  title?: string;
   mode?: AgentComponentTypeEnum;
   spaceId: number;
   // 发布分类，用于回显
@@ -102,8 +104,8 @@ export interface LogHeaderProps {
 // 日志详情组件
 export interface LogDetailsProps {
   loading: boolean;
-  requestId?: string;
-  executeResult?: string;
+  requestId: string;
+  executeResult?: SpaceLogInfo;
   visible?: boolean;
   onClose: () => void;
 }

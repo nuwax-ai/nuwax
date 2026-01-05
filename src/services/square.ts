@@ -73,11 +73,39 @@ export async function apiPublishedWorkflowUnCollect(
   });
 }
 
+// 广场-收藏技能接口
+export async function apiPublishedSkillCollect(
+  skillId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/published/skill/collect/${skillId}`, {
+    method: 'POST',
+  });
+}
+
+// 广场-取消收藏技能接口
+export async function apiPublishedSkillUnCollect(
+  skillId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/published/skill/unCollect/${skillId}`, {
+    method: 'POST',
+  });
+}
+
 // 广场-已发布模板列表接口
 export async function apiPublishedTemplateList(
   data: SquarePublishedListParams,
 ): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
   return request('/api/published/template/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 广场-已发布技能列表接口
+export async function apiPublishedSkillList(
+  data: SquarePublishedListParams,
+): Promise<RequestResponse<Page<SquarePublishedItemInfo>>> {
+  return request('/api/published/skill/list', {
     method: 'POST',
     data,
   });

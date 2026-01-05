@@ -1,9 +1,15 @@
 import ParamsSetting from '@/components/ParamsSetting';
+import {
+  CALL_METHOD_OPTIONS,
+  SKILL_METHOD_OPTIONS,
+} from '@/constants/agent.constants';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { COMPONENT_SETTING_ACTIONS } from '@/constants/space.constants';
 import {
   apiAgentCardList,
   apiAgentComponentMcpUpdate,
   apiAgentComponentPluginUpdate,
+  apiAgentComponentSkillUpdate,
   apiAgentComponentTableUpdate,
   apiAgentComponentWorkflowUpdate,
 } from '@/services/agentConfig';
@@ -19,6 +25,7 @@ import {
   AgentComponentInfo,
   AgentComponentMcpUpdateParams,
   AgentComponentPluginUpdateParams,
+  AgentComponentSkillUpdateParams,
   AgentComponentTableUpdateParams,
   AgentComponentWorkflowUpdateParams,
 } from '@/types/interfaces/agent';
@@ -71,7 +78,14 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
   const { runQueryConversation } = useModel('conversationInfo');
 
   useEffect(() => {
-    setAction(ComponentSettingEnum.Params);
+    if (currentComponentInfo?.type === AgentComponentTypeEnum.Skill) {
+      // 技能组件默认展示调用方式
+      setAction(ComponentSettingEnum.Method_Call);
+    } else {
+      // 其他组件默认展示参数设置
+      setAction(ComponentSettingEnum.Params);
+    }
+
     setComponentInfo(currentComponentInfo);
   }, [currentComponentInfo]);
 
@@ -101,6 +115,12 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
   // 更新MCP组件配置
   const { runAsync: runMcpUpdate } = useRequest(
     apiAgentComponentMcpUpdate,
+    apiConfig,
+  );
+
+  // 更新技能组件配置
+  const { runAsync: runSkillUpdate } = useRequest(
+    apiAgentComponentSkillUpdate,
     apiConfig,
   );
 
@@ -138,22 +158,32 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
     exceptionOut?: DefaultSelectedEnum;
     fallbackMsg?: string;
   }) => {
+    let result = null;
     // 插件
     if (componentInfo?.type === AgentComponentTypeEnum.Plugin) {
-      await runPluginUpdate(params as AgentComponentPluginUpdateParams);
+      result = await runPluginUpdate(
+        params as AgentComponentPluginUpdateParams,
+      );
     }
     // 工作流
     if (componentInfo?.type === AgentComponentTypeEnum.Workflow) {
-      await runWorkflowUpdate(params as AgentComponentWorkflowUpdateParams);
+      result = await runWorkflowUpdate(
+        params as AgentComponentWorkflowUpdateParams,
+      );
     }
     // 数据表
     if (componentInfo?.type === AgentComponentTypeEnum.Table) {
-      await runTableUpdate(params as AgentComponentTableUpdateParams);
+      result = await runTableUpdate(params as AgentComponentTableUpdateParams);
     }
     // MCP
     if (componentInfo?.type === AgentComponentTypeEnum.MCP) {
-      await runMcpUpdate(params as AgentComponentMcpUpdateParams);
+      result = await runMcpUpdate(params as AgentComponentMcpUpdateParams);
     }
+    // 技能
+    if (componentInfo?.type === AgentComponentTypeEnum.Skill) {
+      result = await runSkillUpdate(params as AgentComponentSkillUpdateParams);
+    }
+    return result;
   };
 
   // 保存方法调用方式、输出方式或异步运行配置
@@ -179,7 +209,11 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
       },
       ...(exceptionHandingData || {}),
     };
-    await handleSaveAction(params);
+    const result = await handleSaveAction(params);
+
+    if (result?.code !== SUCCESS_CODE) {
+      return;
+    }
 
     // 更新会话输入框可选择组件信息
     if (action === ComponentSettingEnum.Method_Call && devConversationId) {
@@ -221,6 +255,31 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
     message.success('保存成功');
   };
 
+  const getTooltip = () => {
+    if (currentComponentInfo?.type === AgentComponentTypeEnum.Skill) {
+      return (
+        <div>
+          <p>按需调用：由模型根据任务情况决定是否需要调用</p>
+          <p>
+            手动选择：由用户决定是否使用该技能，在用户选择的情况下和按需调用效果一样
+          </p>
+        </div>
+      );
+    }
+    return (
+      <div>
+        <p>自动调用：用户每次发送消息后都会触发调用一次</p>
+        <p>按需调用：由模型根据任务情况决定是否需要调用</p>
+        <p>
+          手动选择：由用户决定是否使用该工具，在用户选择的情况下和自动调用效果一样
+        </p>
+        <p>
+          手动选择+按需调用：用户选择后，由模型根据任务情况选择是否需要调用；用户不选择则不会调用
+        </p>
+      </div>
+    );
+  };
+
   const getContent = () => {
     switch (action) {
       // 参数
@@ -236,8 +295,14 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
       case ComponentSettingEnum.Method_Call:
         return (
           <InvokeType
+            options={
+              currentComponentInfo?.type === AgentComponentTypeEnum.Skill
+                ? SKILL_METHOD_OPTIONS
+                : CALL_METHOD_OPTIONS
+            }
             invokeType={componentInfo?.bindConfig?.invokeType}
             defaultSelected={componentInfo?.bindConfig?.defaultSelected}
+            tooltip={getTooltip()}
             onSaveSet={(data) => handleSaveSetting(data, null, action)}
           />
         );

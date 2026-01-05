@@ -2,9 +2,14 @@ import ButtonToggle from '@/components/ButtonToggle';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
 import SelectList from '@/components/custom/SelectList';
+import CustomPopover from '@/components/CustomPopover';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import UploadImportConfig from '@/components/UploadImportConfig';
-import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
+import {
+  CREATE_LIST,
+  FILTER_STATUS,
+  getAgentTypeList,
+} from '@/constants/space.constants';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import {
   apiAgentConfigList,
@@ -15,12 +20,17 @@ import {
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import {
+  AgentTypeEnum,
   ApplicationMoreActionEnum,
   CreateListEnum,
   FilterStatusEnum,
 } from '@/types/enums/space';
 import { AgentConfigInfo, AgentInfo } from '@/types/interfaces/agent';
-import { AnalyzeStatisticsItem, FileType } from '@/types/interfaces/common';
+import {
+  AnalyzeStatisticsItem,
+  CustomPopoverItem,
+  FileType,
+} from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { jumpToAgent } from '@/utils/router';
@@ -87,7 +97,9 @@ const SpaceDevelop: React.FC = () => {
   // 复制模板loading
   const [transferLoading, setTransferLoading] = useState<boolean>(false);
   const [copyToSpaceLoading, setCopyToSpaceLoading] = useState<boolean>(false);
-
+  const [currentAgentType, setCurrentAgentType] = useState<AgentTypeEnum>(
+    AgentTypeEnum.ChatBot,
+  );
   // 目标智能体ID
   const targetAgentIdRef = useRef<number>(0);
   const currentClickTypeRef = useRef<ApplicationMoreActionEnum>();
@@ -97,6 +109,8 @@ const SpaceDevelop: React.FC = () => {
     useModel('devCollectAgent');
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -348,7 +362,9 @@ const SpaceDevelop: React.FC = () => {
         break;
       // 日志
       case ApplicationMoreActionEnum.Log:
-        history.push(`/space/${spaceId}/${id}/log`);
+        history.push(
+          `/space/${spaceId}/library-log?targetType=${AgentComponentTypeEnum.Agent}&targetId=${id}`,
+        );
         break;
       case ApplicationMoreActionEnum.Del:
         modalConfirm('您确定要删除此智能体吗?', agentInfo?.name, () => {
@@ -380,6 +396,12 @@ const SpaceDevelop: React.FC = () => {
       message.error('请上传.agent类型的文件!');
     }
     return isValidFile || Upload.LIST_IGNORE;
+  };
+
+  // 点击智能体类型
+  const handlerClickAgentType = (item: CustomPopoverItem) => {
+    setOpenCreateAgent(true);
+    setCurrentAgentType(item.value as AgentTypeEnum);
   };
 
   return (
@@ -438,13 +460,39 @@ const SpaceDevelop: React.FC = () => {
               onUploadSuccess={handleImportConfig}
               beforeUpload={beforeUploadDefault}
             />
-            <Button
+            {/* <Button
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => setOpenCreateAgent(true)}
             >
               创建智能体
-            </Button>
+            </Button> */}
+
+            {/* 创建智能体按钮：如果只有一种类型则直接创建，否则显示下拉选择 */}
+            {getAgentTypeList(tenantConfigInfo?.enabledSandbox).length === 1 ? (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  const agentTypes = getAgentTypeList(
+                    tenantConfigInfo?.enabledSandbox,
+                  );
+                  setCurrentAgentType(agentTypes[0].value as AgentTypeEnum);
+                  setOpenCreateAgent(true);
+                }}
+              >
+                创建智能体
+              </Button>
+            ) : (
+              <CustomPopover
+                list={getAgentTypeList(tenantConfigInfo?.enabledSandbox)}
+                onClick={handlerClickAgentType}
+              >
+                <Button type="primary" icon={<PlusOutlined />}>
+                  创建智能体
+                </Button>
+              </CustomPopover>
+            )}
           </div>
         </Col>
       </Row>
@@ -496,6 +544,7 @@ const SpaceDevelop: React.FC = () => {
       />
       {/*创建智能体*/}
       <CreateAgent
+        type={currentAgentType}
         spaceId={spaceId}
         open={openCreateAgent}
         onCancel={() => setOpenCreateAgent(false)}

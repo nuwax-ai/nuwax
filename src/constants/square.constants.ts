@@ -1,7 +1,7 @@
 import { SquareTemplateTargetTypeEnum } from '@/types/enums/square';
 
 // 广场-模板分类列表
-export const SQUARE_TEMPLATE_SEGMENTED_LIST = [
+const SQUARE_TEMPLATE_SEGMENTED_LIST_ALL = [
   {
     value: SquareTemplateTargetTypeEnum.All,
     label: '全部',
@@ -16,6 +16,24 @@ export const SQUARE_TEMPLATE_SEGMENTED_LIST = [
   },
   {
     value: SquareTemplateTargetTypeEnum.Page,
-    label: '应用页面',
+    label: '网页应用',
+  },
+  {
+    value: SquareTemplateTargetTypeEnum.Skill,
+    label: '技能',
   },
 ];
+
+// 获取广场模板分类列表（根据enabledSandbox过滤）
+export const getSquareTemplateSegmentedList = (enabledSandbox?: boolean) => {
+  if (enabledSandbox === false) {
+    return SQUARE_TEMPLATE_SEGMENTED_LIST_ALL.filter(
+      (item) => item.value !== SquareTemplateTargetTypeEnum.Skill,
+    );
+  }
+  return SQUARE_TEMPLATE_SEGMENTED_LIST_ALL;
+};
+
+// 兼容旧代码
+export const SQUARE_TEMPLATE_SEGMENTED_LIST =
+  SQUARE_TEMPLATE_SEGMENTED_LIST_ALL;

@@ -15,7 +15,10 @@ const cx = classNames.bind(styles);
 /**
  * 运行状态组件：进行中、运行完毕
  */
-const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
+const RunOver: React.FC<RunOverProps> = ({
+  messageInfo,
+  showStatusDesc = true,
+}) => {
   const { finalResult, processingList } = messageInfo;
 
   // 运行时间
@@ -29,7 +32,15 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
   }, [finalResult]);
 
   const getTime = (endTime: number, startTime: number) => {
+    // Safety check: ensure both timestamps are valid numbers
+    if (!endTime || !startTime || endTime <= 0 || startTime <= 0) {
+      return '';
+    }
     const time = endTime - startTime;
+    // Handle negative time (invalid data)
+    if (time < 0) {
+      return '';
+    }
     if (time < 1000) {
       return `${time}ms`;
     } else {
@@ -45,6 +56,17 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
     }
     return null;
   }, [processingList]);
+  console.log('lastProcessInfo', lastProcessInfo);
+
+  // 优化：只有在任务已完成（Complete 或 Error）且 processingList 为空时才不显示组件
+  // 如果任务还在执行中（Loading 或 Incomplete），即使 processingList 为空也要显示加载状态
+  if (
+    !lastProcessInfo &&
+    (messageInfo?.status === MessageStatusEnum.Complete ||
+      messageInfo?.status === MessageStatusEnum.Error)
+  ) {
+    return null;
+  }
 
   return (
     <Popover
@@ -75,19 +97,26 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
               )
             );
           })}
-          <span className={cx(styles.summary)}>{`运行完毕 ${runTime}s`}</span>
+
+          {messageInfo?.status === MessageStatusEnum.Complete && (
+            <span className={cx(styles.summary)}>{`运行完毕 ${runTime}s`}</span>
+          )}
+
+          {messageInfo?.status === MessageStatusEnum.Error && (
+            <span className={cx(styles.error)}>运行错误</span>
+          )}
         </div>
       }
       arrow={false}
       trigger="hover"
     >
-      <span className={cx('cursor-pointer', styles['run-success'])}>
+      <div className={cx('cursor-pointer', styles['run-success'])}>
         {/* 显示loading状态 */}
         {messageInfo?.status === MessageStatusEnum.Loading ||
         messageInfo?.status === MessageStatusEnum.Incomplete ? (
           <>
             <LoadingOutlined className={cx(styles.successColor)} />
-            {lastProcessInfo && (
+            {showStatusDesc && lastProcessInfo && (
               <span className={cx(styles['status-name'])}>
                 {lastProcessInfo.status === ProcessingEnum.EXECUTING
                   ? `正在调用 `
@@ -104,7 +133,7 @@ const RunOver: React.FC<RunOverProps> = ({ messageInfo }) => {
             <DownOutlined className={cx(styles.icon)} />
           </span>
         )}
-      </span>
+      </div>
     </Popover>
   );
 };

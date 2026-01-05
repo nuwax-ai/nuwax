@@ -511,16 +511,17 @@ const SpaceTable = () => {
     const _tableDetail = cloneDeep(tableDetail);
     const _fieldList = _tableDetail?.fieldList?.map((item: TableFieldInfo) => {
       if (item.id === id) {
+        // 字段类型
         if (attr === 'fieldType') {
           item.defaultValue = '';
+          // 切换字段类型时，恢复dataLength为String
+          item.dataLength = TableFieldTypeEnum.String;
         }
         // 长文本: 禁止添加默认值, 禁止唯一;
         if (attr === 'dataLength') {
           item.defaultValue = '';
           item.uniqueFlag = false;
         }
-        // 恢复dataLength为String
-        item.dataLength = TableFieldTypeEnum.String;
         // 字段详情描述，最长100个字符, 数据库最长200个字符
         if (
           attr === 'fieldDescription' &&
@@ -529,6 +530,7 @@ const SpaceTable = () => {
         ) {
           return item;
         }
+
         return {
           ...item,
           // 是否必须，取反

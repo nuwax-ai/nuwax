@@ -3,7 +3,7 @@ import SvgIcon from '@/components/base/SvgIcon';
 import ConditionRender from '@/components/ConditionRender';
 import { APPLICATION_MORE_ACTION_DETAIL } from '@/constants/space.constants';
 import { PermissionsEnum } from '@/types/enums/common';
-import { ApplicationMoreActionEnum } from '@/types/enums/space';
+import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { AgentHeaderProps } from '@/types/interfaces/agentConfig';
 // import { jumpBack } from '@/utils/router';
 import { FormOutlined } from '@ant-design/icons';
@@ -51,7 +51,10 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
       switch (type) {
         // 临时会话
         case ApplicationMoreActionEnum.Temporary_Session:
-          return hasPermission(PermissionsEnum.TempChat);
+          return (
+            hasPermission(PermissionsEnum.TempChat) &&
+            agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
+          );
         case ApplicationMoreActionEnum.Export_Config:
           // 导出配置操作：只有空间创建者、空间管理员和智能体本身的创建者可导出
           return hasPermission(PermissionsEnum.Export);

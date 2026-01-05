@@ -689,6 +689,10 @@ export interface FileNode {
   lastModified?: number;
   /** 文件大小是否超限 */
   sizeExceeded?: boolean;
+  /** 文件代理URL */
+  fileProxyUrl?: string;
+  /** 是否为链接文件 */
+  isLink?: boolean;
 }
 
 /**

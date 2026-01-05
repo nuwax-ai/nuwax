@@ -1,0 +1,137 @@
+@import '@/styles/token.less';
+
+.search-view {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 8px;
+  border-bottom: 1px solid @colorSplit;
+
+  // 搜索栏样式
+  .search-bar {
+    width: 100%;
+    position: relative;
+    z-index: 10;
+
+    .search-icon {
+      color: @colorTextPlaceholder;
+      font-size: 14px;
+    }
+  }
+
+  // 搜索结果下拉列表样式
+  .search-dropdown {
+    position: absolute;
+    top: 48px;
+    left: 0;
+    right: 0;
+    margin: 0 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: #2d2d2d;
+    border-radius: 0 0 @borderRadius @borderRadius;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 30%);
+    z-index: 1000;
+    border: 1px solid rgba(255, 255, 255, 10%);
+    border-top: none;
+
+    // 自定义滚动条样式
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 20%);
+      border-radius: 4px;
+
+      &:hover {
+        background: rgba(255, 255, 255, 30%);
+      }
+    }
+  }
+
+  // 搜索结果项样式
+  .search-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 5%);
+
+    &:last-child {
+      border-bottom: none;
+      border-radius: 0 0 @borderRadius @borderRadius;
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 8%);
+    }
+
+    &.search-item-selected {
+      background: rgba(255, 255, 255, 15%);
+    }
+
+    .file-icon {
+      display: flex;
+      align-items: center;
+      margin-right: 12px;
+      flex-shrink: 0;
+
+      :global(svg) {
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    .file-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .file-name {
+      color: #e5e5e5;
+      font-size: @fontSize;
+      font-family: @fontFamilyCode;
+      font-weight: normal;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.5;
+    }
+
+    .file-path {
+      color: #8c8c8c;
+      font-size: @fontSizeSm;
+      font-family: @fontFamilyCode;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.4;
+    }
+  }
+
+  // 暂无数据提示样式
+  .search-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 12px;
+    min-height: 60px;
+
+    .empty-text {
+      color: #8c8c8c;
+      font-size: @fontSize;
+      font-family: @fontFamily;
+      text-align: center;
+    }
+  }
+}

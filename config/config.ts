@@ -36,6 +36,10 @@ export default defineConfig({
   request: {},
   routes,
   npmClient: 'pnpm',
+  // 排除不兼容模块联邦的包
+  mfsu: {
+    exclude: ['jspdf', 'html2canvas'],
+  },
   // 添加阿里云验证码脚本和双向跳转脚本
   headScripts: [
     {
@@ -44,65 +48,83 @@ export default defineConfig({
     },
     {
       content: `
-        (function() {
-          if(typeof window === 'undefined') {
-            return;
-          }
-          // 开发模式检测 - 如果是开发环境则不执行跳转
-          if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
-            console.log('开发模式检测到，跳过双向跳转逻辑');
-            return;
-          }
+        (function () {
+				if (typeof window === 'undefined') {
+					return;
+				}
 
-          const { protocol, host, href, hash } = window.location;
-          const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
-          const baseUrl = protocol + '//' + host;
+				// 开发模式检测 - 如果是开发环境则不执行跳转
+				if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+					console.log('开发模式检测到，跳过双向跳转逻辑');
+					return;
+				}
 
-          // PC 端访问 M 页面 => 跳转 PC
-          if (!isMobile && href.includes('/m/')) {
-            if (hash && hash.indexOf("#/pages/agent-detail/agent-detail") !== -1) {
-              const match = hash.match(/[?&]id=([^&#]+)/);
-              if (match && match[1]) {
-                const agentId = match[1];
-                window.location.replace(baseUrl + '/agent/' + agentId);
-                return;
-              }
-            }
+				const { protocol, host, href, hash } = window.location;
+				const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
+				const baseUrl = protocol + '//' + host;
+				const agentDetailPathMobile = '/pages/agent-detail/agent-detail'; //分包前的页面路径
+				const chatTempPathMobile = '/pages/chat-temp/chat-temp'; //分包前的页面路径
+				const newAgentDetailPathMobile = '/subpackages' + agentDetailPathMobile; //分包后的页面路径
+				const newChatTempPathMobile = '/subpackages' + chatTempPathMobile; //分包后的页面路径
+				//兼容分包前的页面 先转为分包后的页面 然后跳转
+				if (isMobile && href.includes('/m/#/pages/')) {
+					let mHash = hash;
+					if (hash.indexOf(agentDetailPathMobile) !== -1) {
+						mHash = mHash.replace(agentDetailPathMobile, newAgentDetailPathMobile);
+						window.location.replace(baseUrl + '/m/' + mHash);
+						return;
+					}
+					if(hash.indexOf(chatTempPathMobile) !== -1) {
+						mHash = mHash.replace(chatTempPathMobile, newChatTempPathMobile);
+						window.location.replace(baseUrl + '/m/' + mHash);
+						return;
+					}
+				}
 
-            // 临时会话页面: PC 端访问 M 页面 => 跳转 PC
-            if (hash && hash.indexOf("#/pages/chat-temp/chat-temp") !== -1) {
-              const matchChatTemp = hash.match(/[?&]chatKey=([^&#]+)/);
-              if (matchChatTemp && matchChatTemp[1]) {
-                const chatKey = matchChatTemp[1];
-                window.location.replace(baseUrl + '/chat-temp/' + chatKey);
-                return;
-              }
-            }
+				// PC 端访问 M 页面 => 跳转 PC
+				if (!isMobile && href.includes('/m/')) {
+					if (hash && hash.indexOf(agentDetailPathMobile) !== -1) {
+						const match = hash.match(new RegExp('[?&]id=([^&#]+)'));
+						if (match && match[1]) {
+							const agentId = match[1];
+							window.location.replace(baseUrl + '/agent/' + agentId);
+							return;
+						}
+					}
 
-            window.location.replace(baseUrl + '/');
-            return;
-          }
+					// 临时会话页面: PC 端访问 M 页面 => 跳转 PC
+					if (hash && hash.indexOf(chatTempPathMobile) !== -1) {
+						const matchChatTemp = hash.match(new RegExp('[?&]chatKey=([^&#]+)'));
+						if (matchChatTemp && matchChatTemp[1]) {
+							const chatKey = matchChatTemp[1];
+							window.location.replace(baseUrl + '/chat-temp/' + chatKey);
+							return;
+						}
+					}
+					window.location.replace(baseUrl + '/');
+					return;
+				}
 
-          // 移动端访问 PC 页面 => 跳转 M
-          if (isMobile && !href.includes('/m/')) {
-            const match = href.match(/\\/agent\\/([^/?#]+)/);
-            if (match) {
-              const agentId = match[1];
-              window.location.replace(baseUrl + '/m/#/pages/agent-detail/agent-detail?id=' + agentId);
-              return;
-            }
+				// 移动端访问 PC 页面 => 跳转 M
+				if (isMobile && !href.includes('/m/')) {
+					const match = href.match(new RegExp('/agent/([^/?#]+)'));
+					if (match) {
+						const agentId = match[1];
+						window.location.replace(baseUrl + '/m/#' + newAgentDetailPathMobile + '?id=' + agentId);
+						return;
+					}
 
-            // 临时会话页面: 移动端访问 PC 页面 => 跳转 M
-            const matchChatTemp = href.match(/\\/chat-temp\\/([^/?#]+)/);
-            if (matchChatTemp) {
-              const chatKey = matchChatTemp[1];
-              window.location.replace(baseUrl + '/m/#/pages/chat-temp/chat-temp?chatKey=' + chatKey);
-              return;
-            }
-            window.location.replace(baseUrl + '/m/');
-            return;
-          }
-        })();
+					// 临时会话页面: 移动端访问 PC 页面 => 跳转 M
+					const matchChatTemp = href.match(new RegExp('/chat-temp/([^/?#]+)'));
+					if (matchChatTemp) {
+						const chatKey = matchChatTemp[1];
+						window.location.replace(baseUrl + '/m/#' + newChatTempPathMobile + '?chatKey=' + chatKey);
+						return;
+					}
+					window.location.replace(baseUrl + '/m/');
+					return;
+				}
+			})();
       `,
       type: 'text/javascript',
     },

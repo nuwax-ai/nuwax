@@ -13,7 +13,7 @@ import type {
 } from '@/types/enums/common';
 import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
-import { ApplicationMoreActionEnum } from '@/types/enums/space';
+import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
   AgentBaseInfo,
   AgentConfigInfo,
@@ -78,6 +78,7 @@ export interface FoldWrapType {
 // 容器组件
 export interface ToggleWrapProps {
   className?: string;
+  headerClassName?: string;
   title: string;
   visible?: boolean;
   onClose: () => void;
@@ -352,6 +353,7 @@ export interface MCPNodeItem {
 
 // 创建、编辑智能体
 export interface CreateAgentProps {
+  type?: AgentTypeEnum | undefined;
   spaceId: number;
   mode?: CreateUpdateModeEnum;
   agentConfigInfo?: AgentConfigInfo;
@@ -406,6 +408,7 @@ export interface CustomPopoverItem {
   [key: string]: React.Key | React.ReactNode;
   label: string;
   isDel?: boolean;
+  tooltip?: string;
 }
 
 // 自定义popover弹窗组件
@@ -512,11 +515,17 @@ export interface ChatInputProps extends ManualComponentItemProps {
   // 临时会话停止方法
   onTempChatStop?: (requestId: string) => void;
   loadingStopTempConversation?: boolean;
+  // 任务智能体切换相关
+  showTaskAgentToggle?: boolean;
+  isTaskAgentActive?: boolean;
+  onToggleTaskAgent?: () => void;
 }
 
 // 聊天框底部更多操作组件
 export interface ChatBottomMoreProps {
   messageInfo: MessageInfo;
+  // 是否显示状态描述
+  showStatusDesc?: boolean;
 }
 
 // 聊天框底部更多操作组件
@@ -673,3 +682,6 @@ export interface SiteFooterProps {
 
 // 直接继承antd的UploadFile，避免重复定义
 export type NativeUploadFile = UploadFile;
+
+// 消息来源
+export type MessageSourceType = 'home' | 'agent' | 'new_chat';

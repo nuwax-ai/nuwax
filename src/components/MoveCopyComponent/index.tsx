@@ -55,6 +55,9 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
         case AgentComponentTypeEnum.Workflow:
           setComponentType('工作流');
           break;
+        case AgentComponentTypeEnum.Skill:
+          setComponentType('技能');
+          break;
         default:
           setComponentType('组件');
           break;

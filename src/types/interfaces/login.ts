@@ -97,6 +97,8 @@ export type ModalSliderCaptchaType = {
 
 // 租户配置信息
 export interface TenantConfigInfo {
+  /** 是否开启沙箱功能（任务型智能体、技能管理） */
+  enabledSandbox?: boolean;
   workflowPublishAudit?: number;
   /*站点名称 */
   siteName: string;
@@ -145,6 +147,9 @@ export interface TenantConfigInfo {
 
   /*默认站点Agent */
   defaultAgentId: number;
+
+  /*默认任务智能体Agent */
+  defaultTaskAgentId?: number;
 
   /*首页会话框下的推荐问题 */
   homeRecommendQuestions: Record<string, unknown>[];

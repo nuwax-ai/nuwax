@@ -253,6 +253,18 @@ const parsePageAppProjectId = (uri: string): number => {
   return match && match[1] ? Number(match[1]) : -1;
 };
 
+// 判断文件是否为markdown文件
+const isMarkdownFile = (filePath: string, strict = true): boolean => {
+  if (!filePath || typeof filePath !== 'string') return false;
+
+  const ext = filePath.toLowerCase().split('.').pop() || '';
+
+  const common = ['md', 'markdown'];
+  const full = ['mdown', 'mkd', 'mkdn', 'mdtxt', 'mdtext', 'text'];
+
+  return strict ? common.includes(ext) : [...common, ...full].includes(ext);
+};
+
 export {
   addBaseTarget,
   arraysContainSameItems,
@@ -267,6 +279,7 @@ export {
   hasDuplicate,
   isEmptyObject,
   isHttp,
+  isMarkdownFile,
   isNumber,
   isValidEmail,
   isValidJSON,

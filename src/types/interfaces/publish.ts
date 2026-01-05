@@ -7,6 +7,7 @@ import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { HistoryActionTypeEnum } from '@/types/enums/space';
 import { CreatorInfo } from '@/types/interfaces/agent';
+import { SkillCopyTypeEnum } from './library';
 
 // 历史记录数据
 export interface HistoryData {
@@ -29,6 +30,7 @@ export interface HistoryData {
 
 // 版本历史组件
 export interface VersionHistoryProps {
+  headerClassName?: string;
   targetId: number;
   targetName?: string;
   targetType?: AgentComponentTypeEnum;
@@ -49,7 +51,7 @@ export interface CurrentPublishItemProps {
 
 // 查询指定智能体插件或工作流已发布列表请求参数
 export interface PublishItemListParams {
-  // 类型，智能体、插件、工作流可以下架,可用值:Agent,Plugin,Workflow,Knowledge,Table
+  // 类型，智能体、插件、工作流、技能可以下架,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill
   targetType: AgentComponentTypeEnum;
   // 智能体、插件或工作流ID
   targetId: number;
@@ -58,6 +60,13 @@ export interface PublishItemListParams {
 // 智能体、工作流模板复制请求参数
 export interface PublishTemplateCopyParams extends PublishItemListParams {
   targetSpaceId: number;
+}
+
+// 技能模板复制请求参数
+export interface PublishSkillTemplateCopyParams {
+  skillId?: number;
+  targetSpaceId?: number;
+  copyType?: SkillCopyTypeEnum;
 }
 
 // 智能体、插件、工作流下架请求参数
@@ -114,18 +123,18 @@ export interface PublishItem {
 
 // 提交发布申请请求参数
 export interface PublishApplyParams {
-  // 类型，智能体、插件、工作流可以下架,可用值:Agent,Plugin,Workflow,Knowledge,Table
+  // 类型，智能体、插件、工作流、技能可以下架,可用值:Agent,Plugin,Workflow,Knowledge,Table,Skill
   targetType: AgentComponentTypeEnum;
 
-  /*发布目标ID，例如智能体ID；工作流ID；插件ID */
+  /* 发布目标ID，例如智能体ID；工作流ID；插件ID；技能ID */
   targetId?: number;
 
-  /*发布记录 */
+  /* 发布记录 */
   remark?: string;
 
-  /*发布分类 */
+  /* 发布分类 */
   category?: string;
 
-  /*发布项 */
+  /* 发布项 */
   items?: PublishItem[];
 }

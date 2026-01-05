@@ -39,6 +39,18 @@ export const CALL_METHOD_OPTIONS = [
   },
 ];
 
+// 技能调用方式
+export const SKILL_METHOD_OPTIONS = [
+  {
+    value: InvokeTypeEnum.ON_DEMAND,
+    label: '按需调用',
+  },
+  {
+    value: InvokeTypeEnum.MANUAL_ON_DEMAND,
+    label: '手动选择',
+  },
+];
+
 // 调用方式 - 是否默认选中
 export const CALL_DEFAULT_SELECTED = [
   {

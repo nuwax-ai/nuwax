@@ -51,7 +51,10 @@ const MenusLayout: React.FC<{
   const handleCreateChat = useCallback(async () => {
     if (tenantConfigInfo) {
       // 创建智能体会话
-      await handleCreateConversation(tenantConfigInfo.defaultAgentId);
+      await handleCreateConversation(tenantConfigInfo.defaultAgentId, {
+        message: '',
+        messageSourceType: 'new_chat',
+      });
     }
   }, [tenantConfigInfo]);
   // 点击主页

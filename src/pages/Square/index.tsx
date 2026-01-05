@@ -4,7 +4,7 @@ import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import PageCard from '@/components/PageCard';
 import { TENANT_CONFIG_INFO } from '@/constants/home.constants';
-import { SQUARE_TEMPLATE_SEGMENTED_LIST } from '@/constants/square.constants';
+import { getSquareTemplateSegmentedList } from '@/constants/square.constants';
 import useSpaceSquare from '@/hooks/useSpaceSquare';
 import {
   apiPublishedAgentList,
@@ -28,7 +28,7 @@ import { Empty, Input } from 'antd';
 import { SearchProps } from 'antd/es/input';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocation, useRequest } from 'umi';
+import { useLocation, useModel, useRequest } from 'umi';
 import styles from './index.less';
 import SingleAgent from './SingleAgent';
 import SquareComponentInfo from './SquareComponentInfo';
@@ -72,6 +72,8 @@ const Square: React.FC = () => {
     handleClick,
     handleToggleCollectSuccess,
   } = useSpaceSquare();
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 查询列表成功后处理数据
   const handleSuccess = (result: Page<SquarePublishedItemInfo>) => {
@@ -219,6 +221,9 @@ const Square: React.FC = () => {
       case SquareTemplateTargetTypeEnum.Page:
         handleQuery(1, value, AgentComponentTypeEnum.Agent, 'PageApp');
         break;
+      case SquareTemplateTargetTypeEnum.Skill:
+        handleQuery(1, value, AgentComponentTypeEnum.Skill);
+        break;
     }
   };
 
@@ -277,7 +282,9 @@ const Square: React.FC = () => {
           <h6 className={cx(styles['theme-title'])}>{title}</h6>
           {categoryTypeRef.current === SquareAgentTypeEnum.Template && (
             <ButtonToggle
-              options={SQUARE_TEMPLATE_SEGMENTED_LIST}
+              options={getSquareTemplateSegmentedList(
+                tenantConfigInfo?.enabledSandbox,
+              )}
               value={activeKey}
               onChange={(value) => handleTabClick(value as React.Key)}
             />
@@ -349,6 +356,24 @@ const Square: React.FC = () => {
                       />
                     );
                   }
+                } else if (
+                  categoryTypeRef.current === SquareAgentTypeEnum.Skill
+                ) {
+                  return (
+                    <PageCard
+                      key={index}
+                      coverImg={item.coverImg}
+                      name={item.name}
+                      avatar={item.publishUser?.avatar}
+                      userName={
+                        item.publishUser?.nickName || item.publishUser?.userName
+                      }
+                      created={item.created}
+                      onClick={() =>
+                        handleClick(item.targetId, item.targetType, item)
+                      }
+                    />
+                  );
                 } else {
                   return (
                     <SquareComponentInfo

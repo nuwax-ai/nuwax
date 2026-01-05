@@ -1,0 +1,440 @@
+.filePreviewContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-color: #fafafa;
+  border-radius: 8px;
+  height: 100%;
+  width: 100%;
+
+  // 确保文档类型预览时可以滚动
+  &.scrollable {
+    overflow: auto;
+  }
+}
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+.loadingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 95%);
+  z-index: 10;
+  gap: 12px;
+}
+
+.loadingText {
+  margin-top: 8px;
+  color: #666;
+  font-size: 14px;
+}
+
+.errorOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(255, 255, 255, 95%);
+  z-index: 10;
+}
+
+.unsupportedOverlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  color: #999;
+}
+
+.unsupportedText {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #666;
+}
+
+.unsupportedHint {
+  margin: 0 0 16px;
+  font-size: 12px;
+  color: #999;
+}
+
+.toolbar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 20;
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 90%);
+  border-radius: 6px;
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 10%);
+}
+
+.toolbarBtn {
+  &:hover {
+    background: rgba(0, 0, 0, 5%);
+  }
+}
+
+.previewContent {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  flex: 1;
+  min-height: 0; // 确保在 flex 容器中可以正确滚动
+
+  // Docx styles override
+  :global {
+    .docx-wrapper {
+      background: #fff;
+      padding: 20px;
+
+      section.docx {
+        width: 100% !important;
+        min-height: auto !important;
+        padding: 20px !important;
+        margin: 0 auto !important;
+        box-shadow: none !important;
+      }
+    }
+
+    // Excel styles override - 确保高度正确继承
+    // .x-spreadsheet {
+    //   height: 100% !important;
+
+    //   .x-spreadsheet-sheet {
+    //     height: 100% !important;
+    //   }
+
+    //   .x-spreadsheet-scrollbar {
+    //     height: 100% !important;
+    //   }
+    // }
+
+    // PPTX styles override - 修复右侧内容显示不全问题
+    // 问题：pptx-preview 库会以原始 PPT 尺寸渲染幻灯片，可能超出容器宽度
+    // 方案：通过 JavaScript 动态计算 zoom 让幻灯片按比例缩放以适配容器
+    .pptx-preview-wrapper {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 auto !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      background: #f5f5f5 !important;
+
+      // 幻灯片容器 - zoom 值由 JavaScript 动态设置
+      .pptx-preview-slide-wrapper,
+      [class*='pptx-preview-slide-wrapper'] {
+        margin: 20px auto !important;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 12%);
+        border-radius: 4px;
+        overflow: hidden !important;
+        max-width: 100% !important;
+        transform-origin: top center;
+      }
+
+      // 幻灯片内容
+      .slide {
+        transform-origin: top left;
+      }
+
+      // 单个幻灯片包装器
+      .slide-wrapper {
+        overflow: hidden !important;
+      }
+    }
+
+    // PDF styles override - 确保多页可以正确显示和滚动，提高清晰度
+    // .vue-office-pdf-wrapper {
+    //   position: relative !important;
+    //   display: flex !important;
+    //   flex-direction: column !important;
+    //   align-items: center !important;
+    //   gap: 20px !important;
+    //   padding: 20px !important;
+    //   height: auto !important;
+    //   min-height: auto !important;
+    //   box-sizing: border-box !important;
+    //   width: 100% !important;
+
+    //   // 修复 canvas 定位，让页面垂直排列而非重叠
+    //   canvas {
+    //     position: relative !important;
+    //     top: auto !important;
+    //     left: auto !important;
+    //     transform: none !important;
+    //     box-shadow: 0 2px 8px rgba(0, 0, 0, 15%);
+    //     border-radius: 2px;
+    //     // 保持较高的渲染质量
+    //     max-width: calc(100% - 40px) !important;
+    //     height: auto !important;
+    //     // 使用高清渲染
+    //     image-rendering: -webkit-optimize-contrast;
+    //     image-rendering: crisp-edges;
+    //   }
+    // }
+
+    .bindHeightDivSpacing {
+      overflow: visible !important;
+    }
+
+    .bindHeightDiv {
+      height: auto !important;
+      overflow: visible !important;
+    }
+  }
+}
+
+// Image Preview
+.imagePreview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.previewImage {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.imageNavBtn {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background: rgba(0, 0, 0, 50%);
+  color: #fff;
+  border: none;
+
+  &:hover {
+    background: rgba(0, 0, 0, 70%);
+    color: #fff;
+  }
+}
+
+.imageNavRight {
+  left: auto;
+  right: 16px;
+}
+
+.imageCounter {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 60%);
+  color: #fff;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+// Audio Preview
+.audioPreview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 24px;
+  padding: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.audioPlayer {
+  width: 100%;
+  max-width: 400px;
+}
+
+// Video Preview
+.videoPreview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.videoPlayer {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+// HTML Preview
+.htmlPreview {
+  width: 100%;
+  height: 100%;
+}
+
+.htmlFrame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}
+
+// Markdown Preview
+.markdownPreview {
+  width: 100%;
+  height: 100%;
+  padding: 24px;
+  overflow: auto;
+  background: #fff;
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  h1 {
+    font-size: 2em;
+    border-bottom: 1px solid #eaecef;
+    padding-bottom: 0.3em;
+  }
+
+  h2 {
+    font-size: 1.5em;
+    border-bottom: 1px solid #eaecef;
+    padding-bottom: 0.3em;
+  }
+
+  p {
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+
+  code {
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    background-color: rgba(27, 31, 35, 5%);
+    border-radius: 3px;
+    font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+
+  pre {
+    padding: 16px;
+    overflow: auto;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: #f6f8fa;
+    border-radius: 6px;
+
+    code {
+      padding: 0;
+      background: transparent;
+    }
+  }
+
+  blockquote {
+    padding: 0 1em;
+    color: #6a737d;
+    border-left: 0.25em solid #dfe2e5;
+    margin: 0 0 16px;
+  }
+
+  ul,
+  ol {
+    padding-left: 2em;
+    margin-bottom: 16px;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 16px;
+
+    th,
+    td {
+      padding: 6px 13px;
+      border: 1px solid #dfe2e5;
+    }
+
+    th {
+      font-weight: 600;
+      background-color: #f6f8fa;
+    }
+
+    tr:nth-child(2n) {
+      background-color: #f6f8fa;
+    }
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  a {
+    color: #0366d6;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// Text/Code Preview
+.textPreview {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: #1e1e1e;
+}
+
+.codeBlock {
+  margin: 0;
+  padding: 16px;
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #d4d4d4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+
+  code {
+    font-family: inherit;
+  }
+}

@@ -7,13 +7,15 @@ import {
 } from '@/components/base/AgentType/images.constants';
 import SvgIcon from '@/components/base/SvgIcon';
 
-import { InputTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, InputTypeEnum } from '@/types/enums/agent';
 import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
 import {
+  AgentTypeEnum,
   ApplicationMoreActionEnum,
   ComponentSettingEnum,
   ComponentTypeEnum,
   CreateListEnum,
+  CreateSkillWayEnum,
   FilterStatusEnum,
   OpenCloseEnum,
   PageSettingEnum,
@@ -52,6 +54,50 @@ export const LIBRARY_ALL_RESOURCE = [
   },
 ];
 
+// 智能体类型列表
+const AGENT_TYPE_LIST_ALL = [
+  {
+    value: AgentTypeEnum.ChatBot,
+    label: '问答型',
+    // icon: <ICON_AGENT />,
+    tooltip: '适合知识问答、智能客服等快问快答的场景。',
+  },
+  {
+    value: AgentTypeEnum.TaskAgent,
+    label: '任务型',
+    // icon: <ICON_AGENT />,
+    tooltip:
+      '为智能体分配独立的执行电脑，适合应用开发、深度调研、数据分析、演示文稿制作等复杂任务场景，比较消耗内存资源且输出结果较慢。',
+  },
+];
+
+// 获取智能体类型列表（根据enabledSandbox过滤）
+export const getAgentTypeList = (enabledSandbox?: boolean) => {
+  if (enabledSandbox === false) {
+    return AGENT_TYPE_LIST_ALL.filter(
+      (item) => item.value !== AgentTypeEnum.TaskAgent,
+    );
+  }
+  return AGENT_TYPE_LIST_ALL;
+};
+
+// 兼容旧代码
+export const AGENT_TYPE_LIST = AGENT_TYPE_LIST_ALL;
+
+// 技能库所有资源类型
+export const SKILL_ALL_RESOURCE = [
+  {
+    value: CreateSkillWayEnum.Create,
+    label: '创建技能',
+    // icon: <PlusOutlined />,
+  },
+  {
+    value: CreateSkillWayEnum.Import,
+    label: '导入技能',
+    // icon: <ImportOutlined />,
+  },
+];
+
 // 组件库所有类型
 export const LIBRARY_ALL_TYPE = [
   {
@@ -60,6 +106,27 @@ export const LIBRARY_ALL_TYPE = [
     icon: null,
   },
   ...LIBRARY_ALL_RESOURCE,
+];
+
+// 任务库所有类型
+export const TASK_ALL_TYPE = [
+  {
+    value: ComponentTypeEnum.All_Type,
+    label: '所有类型',
+    icon: null,
+  },
+  // 智能体
+  {
+    value: AgentComponentTypeEnum.Agent,
+    label: '智能体',
+    icon: null,
+  },
+  // 工作流
+  {
+    value: AgentComponentTypeEnum.Workflow,
+    label: '工作流',
+    icon: null,
+  },
 ];
 
 // 过滤状态
@@ -95,7 +162,7 @@ export const APPLICATION_MORE_ACTION_DETAIL = [
 ];
 
 // 工作空间应用列表（layout二级菜单）
-export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
+const SPACE_APPLICATION_LIST_ALL: SpaceApplicationList[] = [
   {
     type: SpaceApplicationListEnum.Application_Develop,
     icon: <SvgIcon name="icons-nav-stars" />,
@@ -104,7 +171,7 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
   {
     type: SpaceApplicationListEnum.Page_Develop,
     icon: <SvgIcon name="icons-common-console" />,
-    text: '应用页面开发',
+    text: '网页应用开发',
   },
   {
     type: SpaceApplicationListEnum.Component_Library,
@@ -112,9 +179,24 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
     text: '组件库',
   },
   {
+    type: SpaceApplicationListEnum.Skill_Manage,
+    icon: <SvgIcon name="icons-nav-skill" />,
+    text: '技能管理',
+  },
+  {
     type: SpaceApplicationListEnum.MCP_Manage,
     icon: <SvgIcon name="icons-nav-mcp" />,
     text: 'MCP管理',
+  },
+  {
+    type: SpaceApplicationListEnum.Task_Center,
+    icon: <SvgIcon name="icons-nav-task-time" />,
+    text: '任务中心',
+  },
+  {
+    type: SpaceApplicationListEnum.Library_Log,
+    icon: <SvgIcon name="icons-chat-history" />,
+    text: '日志查询',
   },
   {
     type: SpaceApplicationListEnum.Space_Square,
@@ -127,6 +209,21 @@ export const SPACE_APPLICATION_LIST: SpaceApplicationList[] = [
     text: '成员与设置',
   },
 ];
+
+// 获取工作空间应用列表（根据enabledSandbox过滤）
+export const getSpaceApplicationList = (
+  enabledSandbox?: boolean,
+): SpaceApplicationList[] => {
+  if (enabledSandbox === false) {
+    return SPACE_APPLICATION_LIST_ALL.filter(
+      (item) => item.type !== SpaceApplicationListEnum.Skill_Manage,
+    );
+  }
+  return SPACE_APPLICATION_LIST_ALL;
+};
+
+// 兼容旧代码
+export const SPACE_APPLICATION_LIST = SPACE_APPLICATION_LIST_ALL;
 
 // 创建智能体列表
 export const CREATE_AGENT_LIST = [
@@ -212,7 +309,7 @@ export const PLUGIN_OUTPUT_CONFIG = {
 };
 
 // 空间广场-分类列表
-export const SPACE_SQUARE_TABS: TabsProps['items'] = [
+const SPACE_SQUARE_TABS_ALL: TabsProps['items'] = [
   {
     key: SquareAgentTypeEnum.Agent,
     label: '智能体',
@@ -226,7 +323,26 @@ export const SPACE_SQUARE_TABS: TabsProps['items'] = [
     label: '工作流',
   },
   {
+    key: SquareAgentTypeEnum.Skill,
+    label: '技能',
+  },
+  {
     key: SquareAgentTypeEnum.Template,
     label: '模板',
   },
 ];
+
+// 获取空间广场分类列表（根据enabledSandbox过滤）
+export const getSpaceSquareTabs = (
+  enabledSandbox?: boolean,
+): TabsProps['items'] => {
+  if (enabledSandbox === false) {
+    return SPACE_SQUARE_TABS_ALL?.filter(
+      (item) => item?.key !== SquareAgentTypeEnum.Skill,
+    );
+  }
+  return SPACE_SQUARE_TABS_ALL;
+};
+
+// 兼容旧代码
+export const SPACE_SQUARE_TABS = SPACE_SQUARE_TABS_ALL;

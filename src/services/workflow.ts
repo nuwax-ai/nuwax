@@ -37,6 +37,9 @@ interface IAddNode {
   type: string;
   loopNodeId?: number;
   typeId?: number;
+  name?: string;
+  shape?: string;
+  description?: string;
   extension?: {
     x: number;
     y: number;
@@ -94,7 +97,7 @@ export interface IgetDetails {
   icon: string;
   id: number;
   inputArgs: InputAndOutConfig[];
-  modified: string;
+  modified?: string;
   name: string;
   nodes: ChildNode[];
   outputArgs: InputAndOutConfig[];
@@ -111,6 +114,8 @@ export interface IgetDetails {
   category?: string;
   // 权限列表
   permissions?: PermissionsEnum[];
+  // 系统变量列表（后端返回）
+  systemVariables?: InputAndOutConfig[];
 }
 // 试运行所有节点
 export interface ITestRun {
@@ -200,6 +205,16 @@ export async function apiAddNode(
 ): Promise<RequestResponse<AddNodeResponse>> {
   return request(`/api/workflow/node/add`, {
     method: 'POST',
+    data,
+  });
+}
+// 给工作流添加节点(V3)
+export async function apiAddNodeV3(
+  data: IAddNode,
+): Promise<RequestResponse<AddNodeResponse>> {
+  return request(`/api/workflow/node/add`, {
+    method: 'POST',
+    skipErrorHandler: true, // 跳过错误处理
     data,
   });
 }
@@ -306,12 +321,25 @@ export async function apiRestoreWorkflowVersion(
     method: 'POST',
   });
 }
+
+// 全量保存工作流配置
+export async function saveWorkflow(
+  workflowConfig: IgetDetails,
+): Promise<RequestResponse<null>> {
+  return request(`/api/workflow/save`, {
+    method: 'POST',
+    skipErrorHandler: true, // 跳过错误处理
+    data: { workflowConfig },
+  });
+}
+
 export default {
   apiDeleteNode,
   apiCopyNode,
   apiAddEdge,
   getDetails,
   apiAddNode,
+  apiAddNodeV3,
   updateDetails,
   getNodeList,
   getModelList,
@@ -322,4 +350,5 @@ export default {
   publishWorkflow,
   validWorkflow,
   apiRestoreWorkflowVersion,
+  saveWorkflow,
 };

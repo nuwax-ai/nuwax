@@ -1,9 +1,9 @@
 import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
+import CopyButton from '@/components/base/CopyButton';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
-import CopyButton from '@/components/base/CopyButton';
 import { USER_INFO } from '@/constants/home.constants';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
@@ -21,14 +21,23 @@ import { useModel } from 'umi';
 import ChatBottomDebug from './ChatBottomDebug';
 import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
-import RunOver from './RunOver';
+// import RunOver from './RunOver';
 import styles from './index.less';
+import RunOver from './RunOver';
 
 const cx = classNames.bind(styles);
 
 // 聊天视图组件
 const ChatView: React.FC<ChatViewProps> = memo(
-  ({ className, contentClassName, roleInfo, messageInfo, mode = 'chat' }) => {
+  ({
+    className,
+    contentClassName,
+    roleInfo,
+    messageInfo,
+    mode = 'chat',
+    conversationId = '',
+    showStatusDesc = true,
+  }) => {
     const { userInfo } = useModel('userInfo');
     const { data } = useUnifiedTheme();
     const isDarkMode = data.antdTheme === 'dark';
@@ -97,9 +106,20 @@ const ChatView: React.FC<ChatViewProps> = memo(
               />
               <div className={cx(styles.author)}>{info?.name}</div>
               <ConditionRender condition={!!messageInfo?.status}>
-                <div style={{ display: 'flex', flexDirection: 'row', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <RunOver messageInfo={messageInfo} />
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    gap: 12,
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <RunOver
+                      messageInfo={messageInfo}
+                      showStatusDesc={showStatusDesc}
+                    />
                   </div>
                 </div>
               </ConditionRender>
@@ -168,6 +188,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     key={`${messageIdRef.current}`}
                     id={`${messageIdRef.current}`}
                     markdownRef={markdownRef}
+                    conversationId={conversationId}
                   />
                 </div>
               </div>

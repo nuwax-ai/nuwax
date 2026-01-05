@@ -3,9 +3,15 @@ import { ProcessingEnum } from '@/types/enums/common';
 // import { copyTextToClipboard } from '@/utils/clipboard';
 import { cloneDeep } from '@/utils/common';
 import {
+  BorderOutlined,
   CheckOutlined,
+  CheckSquareOutlined,
+  CloseSquareOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
+  HourglassOutlined,
+  MinusOutlined,
+  PlusOutlined,
   ProfileOutlined,
 } from '@ant-design/icons';
 import { Button, message, Tooltip } from 'antd';
@@ -23,6 +29,7 @@ interface MarkdownCustomProcessProps {
   status: ProcessingEnum;
   type: AgentComponentTypeEnum;
   dataKey: string;
+  conversationId: number | string;
 }
 interface InputProps {
   method: 'browser_open_page' | 'browser_navigate_page';
@@ -42,6 +49,12 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     agentPageConfig,
   } = useModel('chat');
 
+  const {
+    openPreviewView,
+    setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
+  } = useModel('conversationInfo');
+
   const [detailData, setDetailData] = useState<{
     params: Record<string, any>;
     response: Record<string, any>;
@@ -54,6 +67,8 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
   // 添加 WebSearchProModal 的状态管理
   const [openModal, setOpenModal] = useState(false);
+  // Plan 类型展开/收起状态
+  const [isPlanExpanded, setIsPlanExpanded] = useState(true);
 
   useEffect(() => {
     // if (innerProcessing.status !== ProcessingEnum.EXECUTING) {
@@ -77,18 +92,18 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
         return (
           <div className={cx(styles['status-completed'])}>
             <CheckOutlined />
-            已完成
+            {/* 已完成 */}
           </div>
         );
       case ProcessingEnum.EXECUTING:
         return (
           <div className={cx(styles['status-running'])}>
             <div className={cx(styles['loading-spinner'])} />
-            运行中
+            {/* 运行中 */}
           </div>
         );
       case ProcessingEnum.FAILED:
-        return <div className={cx(styles['status-error'])}>❌ 错误</div>;
+        return <div className={cx(styles['status-error'])}>⚠️{/* 错误 */}</div>;
       default:
         return null;
     }
@@ -180,6 +195,19 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   }, [innerProcessing.status, detailData]);
 
   const handleSeeDetail = useCallback(() => {
+    const result = innerProcessing.result as any;
+    // 打开文件树
+    if (result?.kind === 'edit') {
+      const conversationId = props.conversationId;
+      const file_path = result?.input?.file_path;
+
+      openPreviewView(conversationId);
+      setTaskAgentSelectedFileId(file_path);
+      // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
+      setTaskAgentSelectTrigger(Date.now());
+      return;
+    }
+
     if (!detailData) {
       message.error('暂无数据');
       return;
@@ -191,6 +219,55 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   const isPageType = useMemo(() => {
     return innerProcessing.type === AgentComponentTypeEnum.Page;
   }, [innerProcessing.type]);
+
+  // 判断是否为 Plan 类型
+  const isPlanType = useMemo(() => {
+    return innerProcessing.type === AgentComponentTypeEnum.Plan;
+  }, [innerProcessing.type]);
+
+  // 获取 Plan 任务状态图标
+  const getPlanStatusIcon = useCallback((status: string) => {
+    const iconProps = { className: cx(styles['task-icon']) };
+    switch (status) {
+      case 'completed':
+        return <CheckSquareOutlined {...iconProps} />;
+      case 'pending':
+        return <BorderOutlined {...iconProps} />;
+      case 'failed':
+        return <CloseSquareOutlined {...iconProps} />;
+      case 'in_progress':
+        return <HourglassOutlined {...iconProps} />;
+      default:
+        return <BorderOutlined {...iconProps} />;
+    }
+  }, []);
+
+  // 渲染 Plan 任务列表
+  const renderPlanDetails = useCallback(() => {
+    if (
+      !isPlanType ||
+      !isPlanExpanded ||
+      !detailData?.response ||
+      !Array.isArray(detailData.response)
+    ) {
+      return null;
+    }
+
+    return (
+      <div className={cx(styles['plan-details'])}>
+        <div className={cx(styles['plan-task-list'])}>
+          {detailData.response.map((entry: any, index: number) => (
+            <div key={index} className={cx(styles['plan-task-item'])}>
+              {getPlanStatusIcon(entry.status)}
+              <span className={cx(styles['plan-task-text'])}>
+                {entry.content}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }, [isPlanType, isPlanExpanded, detailData?.response, getPlanStatusIcon]);
 
   const [open, setOpen] = useState(false);
 
@@ -258,7 +335,10 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   //   }
   // }, [innerProcessing]);
 
-  if (!innerProcessing.executeId) {
+  if (
+    !innerProcessing.executeId ||
+    innerProcessing.type === AgentComponentTypeEnum.Event // 所有事件都不显示
+  ) {
     return null;
   }
 
@@ -301,6 +381,20 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                 />
               </Tooltip>
             ) : null}
+            {/* 展开/收起 */}
+            {isPlanType && (
+              <Tooltip title={isPlanExpanded ? '收起' : '展开'}>
+                <Button
+                  type="text"
+                  icon={isPlanExpanded ? <MinusOutlined /> : <PlusOutlined />}
+                  onClick={() => setIsPlanExpanded(!isPlanExpanded)}
+                  disabled={
+                    !detailData?.response || !Array.isArray(detailData.response)
+                  }
+                />
+              </Tooltip>
+            )}
+
             {/*<Tooltip title="复制">*/}
             {/*  <Button*/}
             {/*    type="text"*/}
@@ -312,6 +406,8 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
           </div>
         </div>
       </div>
+      {/* Plan 类型展开内容 */}
+      {renderPlanDetails()}
       {/* 使用 SeeDetailModal 组件 */}
       <SeeDetailModal
         key={innerProcessing.executeId}
@@ -327,6 +423,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 export default memo(MarkdownCustomProcess, (prevProps, nextProps) => {
   return (
     prevProps.executeId === nextProps.executeId &&
-    prevProps.status === nextProps.status
+    prevProps.status === nextProps.status &&
+    prevProps.conversationId === nextProps.conversationId
   );
 });

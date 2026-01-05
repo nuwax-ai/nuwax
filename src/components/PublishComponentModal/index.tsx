@@ -1,6 +1,7 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import LabelIcon from '@/components/LabelIcon';
 import SelectList from '@/components/custom/SelectList';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useCategory from '@/hooks/useCategory';
 import { apiPublishApply, apiPublishItemList } from '@/services/publish';
 import { apiSpaceList } from '@/services/workspace';
@@ -14,6 +15,7 @@ import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { ReceivePublishEnum } from '@/types/enums/space';
 import { option, PublishScope } from '@/types/interfaces/common';
 import { PublishItem, PublishItemInfo } from '@/types/interfaces/publish';
+import { RequestResponse } from '@/types/interfaces/request';
 import { PublishComponentModalProps } from '@/types/interfaces/space';
 import { SquareAgentInfo } from '@/types/interfaces/square';
 import { SpaceInfo } from '@/types/interfaces/workspace';
@@ -39,6 +41,7 @@ const cx = classNames.bind(styles);
  * 发布智能体、插件、工作流等弹窗组件
  */
 const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
+  title: currentTitle,
   mode = AgentComponentTypeEnum.Agent,
   spaceId,
   category,
@@ -65,7 +68,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
   // 已发布列表
   const [publishList, setPublishList] = useState<PublishItemInfo[]>([]);
   // 智能体、插件、工作流等信息列表
-  const { agentInfoList, pluginInfoList, workflowInfoList } =
+  const { agentInfoList, pluginInfoList, workflowInfoList, skillInfoList } =
     useModel('squareModel');
   // 查询分类列表信息
   const { runQueryCategory } = useCategory();
@@ -174,7 +177,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
         targetType: mode,
       });
     }
-  }, [open]);
+  }, [open, targetId, mode]);
 
   // 设置title以及分类选择列表
   useEffect(() => {
@@ -182,7 +185,7 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
     switch (mode) {
       case AgentComponentTypeEnum.Agent:
         _classifyList = agentInfoList;
-        setTitle('智能体');
+        setTitle(currentTitle ?? '智能体');
         break;
       case AgentComponentTypeEnum.Plugin:
         _classifyList = pluginInfoList;
@@ -191,6 +194,10 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       case AgentComponentTypeEnum.Workflow:
         _classifyList = workflowInfoList;
         setTitle('工作流');
+        break;
+      case AgentComponentTypeEnum.Skill:
+        _classifyList = skillInfoList;
+        setTitle('技能');
         break;
     }
     // 分类选择列表 - 数据类型转换
@@ -204,12 +211,27 @@ const PublishComponentModal: React.FC<PublishComponentModalProps> = ({
       const initCategory = category || list[0].value;
       form.setFieldValue('category', initCategory);
     }
-  }, [mode, category, agentInfoList, pluginInfoList, workflowInfoList]);
+  }, [
+    mode,
+    category,
+    agentInfoList,
+    pluginInfoList,
+    workflowInfoList,
+    skillInfoList,
+  ]);
 
   // 智能体、插件、工作流等 - 提交发布申请
   const { run, loading } = useRequest(apiPublishApply, {
     manual: true,
     debounceInterval: 300,
+    // 使用 formatResult 返回完整的响应对象，而不是只返回 data 字段
+    // formatResult: (response: RequestResponse<number>) => response,
+    formatResult: (res: RequestResponse<string>) => {
+      if (res.code !== SUCCESS_CODE) {
+        throw new Error(res.message);
+      }
+      return res.data;
+    },
     onSuccess: (data: string) => {
       message.success(data || '发布申请已提交，等待审核中');
       onConfirm();

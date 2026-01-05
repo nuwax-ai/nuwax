@@ -27,6 +27,9 @@ const beSilentRequestList = (url: string): boolean => {
     '/api/custom-page/start-dev', // 开发页面启动
     '/api/custom-page/restart-dev', // 开发页面重启
     '/api/custom-page/get-dev-log', // 开发页面获取日志
+    '/api/computer/pod/keepalive', // 远程桌面容器保活
+    '/api/computer/pod/vnc-status', // 远程桌面容器检查启动状态
+    '/api/computer/pod/ensure', // 远程桌面容器触发重启
     // 可以在此添加其他不需要显示错误消息的API
   ];
   return list.some((api) => url.includes(api));
@@ -112,10 +115,14 @@ const errorHandler = (error: any, opts: any) => {
         default:
           // 只有当请求不在过滤列表中才显示错误消息
           message.warning(errorMessage);
+          break;
       }
 
-      // 返回一个空的Promise.reject以防止错误继续传播
-      return Promise.reject();
+      /**
+       * 统一返回错误信息，方便调用方处理
+       * return Promise.reject() 会立即终止当前函数的执行，并将错误状态传递给接口调用方。所以此处注释掉了
+       */
+      // return Promise.reject();
     }
   } else if (error.response) {
     // 处理HTTP错误
@@ -168,6 +175,14 @@ const responseInterceptors = [
   async (response: any) => {
     // 拦截响应数据，进行错误处理
     const { data = {} as any, config } = response;
+
+    /**
+     * 如果响应数据是字符串，直接返回响应对象(用于直接通过fetchContentFromUrl获取的内容)
+     * 如果响应数据是对象，但是没有code属性，直接返回响应对象(用于直接通过fetchContentFromUrl获取的内容)
+     */
+    if (typeof data !== 'object' || (typeof data === 'object' && !data.code)) {
+      return response;
+    }
 
     // 如果响应类型是blob，直接返回响应对象
     if (config?.responseType === 'blob') {
