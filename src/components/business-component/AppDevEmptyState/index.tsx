@@ -8,6 +8,11 @@ import { Button, Modal } from 'antd';
 import React, { useState } from 'react';
 import styles from './index.less';
 
+// 空状态 SVG 插图
+import emptyStateLaptop from '@/assets/images/empty_state_laptop.svg';
+import emptyStateLoadingGreen from '@/assets/images/empty_state_loading_green.svg';
+import emptyStateLoadingYellow from '@/assets/images/empty_state_loading_yellow.svg';
+
 /**
  * 空状态类型枚举
  */
@@ -17,7 +22,10 @@ export type EmptyStateType =
   | 'empty'
   | 'no-data'
   | 'network-error'
-  | 'permission-denied';
+  | 'permission-denied'
+  | 'server-starting'
+  | 'server-restarting'
+  | 'conversation-empty';
 
 /**
  * 按钮配置接口
@@ -164,6 +172,42 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
       ),
       title: '暂无数据',
       description: '当前没有可用的数据',
+    },
+    'server-starting': {
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.green}>
+            <img src={emptyStateLoadingGreen} alt="" />
+          </div>
+        </div>
+      ),
+      title: '等待开发服务器启动',
+      description: '正在启动开发服务器，请稍候⋯',
+    },
+    'server-restarting': {
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.yellow}>
+            <img src={emptyStateLoadingYellow} alt="" />
+          </div>
+        </div>
+      ),
+      title: '重启中',
+      description: '正在重启开发服务器，请稍候⋯',
+    },
+    'conversation-empty': {
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.green}>
+            <img src={emptyStateLoadingGreen} alt="" />
+          </div>
+        </div>
+      ),
+      title: '开始新对话',
+      description: '向 AI 助手提问，开始您的项目开发',
     },
   };
 
