@@ -430,6 +430,11 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     addBaseTarget();
+
+    return () => {
+      // 组件卸载时重置全局会话状态，防止污染其他页面
+      resetInit();
+    };
   }, []);
 
   useEffect(() => {

@@ -24,6 +24,7 @@ import {
   findFileNode,
   isFileModified as isContentModified,
   isPreviewableFile,
+  // smartReplaceInSource,
   transformFlatListToTree,
   treeToFlatList,
 } from '@/utils/appDevUtils';
@@ -227,6 +228,139 @@ export const useAppDevFileManagement = ({
     },
     [projectId, fileTreeState.data.length, fileContentState.selectedFile],
   );
+
+  /**
+   * 根据文件的 id、行号和列号更新指定元素的 class 属性
+   * @param fileId - 文件 ID
+   * @param className - 要设置的 class 属性值
+   * @param row - 行号（从 0 开始）
+   * @param column - 列号（从 0 开始）
+   */
+  // const updateFileClassName = useCallback(
+  //   async (
+  //     fileName: string,
+  //     className: string,
+  //     lineNumber: number,
+  //     columnNumber: number,
+  //   ) => {
+  //     console.log(
+  //       'updateFileClassName11111111111111111',
+  //       fileName,
+  //       className,
+  //       lineNumber,
+  //       columnNumber,
+  //     );
+  //     // const fileNode = findFileNodeByName(fileName, fileTreeState.data);
+  //     // if (!fileNode || !fileNode.content) {
+  //     //   return;
+  //     // }
+  //     // const fileContent = fileNode.content;
+
+  //     // const updatedContent = await smartReplaceInSource(
+  //     //   fileContent,
+  //     //   {
+  //     //     lineNumber: lineNumber,
+  //     //     columnNumber: columnNumber,
+  //     //     newValue: className,
+  //     //     originalValue: '',
+  //     //     type: 'style',
+  //     //   },
+  //     // );
+
+  //     // const files = updateFileClassNameInTree(fileName, className, lineNumber, columnNumber, fileTreeState.data);
+  //     // const files = fileTreeState.data
+  //     // // 将项目数据转换为扁平列表格式
+  //     // let filesList: any[] = [];
+
+  //     // if (Array.isArray(files) && files.length > 0 && files[0].name) {
+  //     //   // 如果是扁平格式，直接使用
+  //     //   filesList = [...files];
+  //     // } else if (Array.isArray(files)) {
+  //     //   // 如果是树形格式，转换为扁平列表
+  //     //   filesList = treeToFlatList(files as FileNode[]);
+  //     // }
+
+  //     // // 更新要保存的文件内容
+  //     // const updatedFilesList = filesList.map((file) => {
+  //     //   if (file.name === fileName) {
+  //     //     return {
+  //     //       ...file,
+  //     //       contents: updatedContent,
+  //     //       binary: false,
+  //     //       sizeExceeded: false,
+  //     //     }
+  //     //   }
+  //     //   return file;
+  //     // });
+
+  //     // // 保存文件
+  //     // const response = submitFilesUpdate(projectId, filesList);
+  //     // // 查找文件节点
+  //     // const fileNode = findFileNode(fileId, fileTreeState.data);
+  //     // if (!fileNode || !fileNode.content) {
+  //     //   console.warn(`文件 ${fileId} 不存在或内容为空`);
+  //     //   return;
+  //     // }
+
+  //     // // 使用工具函数根据行列号更新元素的 class 属性
+  //     // const updatedContent = updateElementClassNameByPosition(
+  //     //   fileNode.content,
+  //     //   className,
+  //     //   row,
+  //     //   column,
+  //     // );
+
+  //     // // 如果内容没有变化，直接返回
+  //     // if (updatedContent === fileNode.content) {
+  //     //   return;
+  //     // }
+
+  //     // // 更新文件树中对应文件的内容
+  //     // setFileTreeState((prev) => {
+  //     //   const updateFileInTree = (nodes: FileNode[]): FileNode[] => {
+  //     //     return nodes.map((node) => {
+  //     //       if (node.id === fileId) {
+  //     //         return {
+  //     //           ...node,
+  //     //           content: updatedContent,
+  //     //           lastModified: Date.now(),
+  //     //         };
+  //     //       }
+  //     //       if (node.children) {
+  //     //         return { ...node, children: updateFileInTree(node.children) };
+  //     //       }
+  //     //       return node;
+  //     //     });
+  //     //   };
+
+  //     //   return {
+  //     //     ...prev,
+  //     //     data: updateFileInTree(prev.data),
+  //     //   };
+  //     // });
+
+  //     // // 如果当前文件是选中的文件，同时更新文件内容状态
+  //     // if (fileContentState.selectedFile === fileId) {
+  //     //   setFileContentState((prev) => ({
+  //     //     ...prev,
+  //     //     fileContent: updatedContent,
+  //     //     isFileModified: isContentModified(
+  //     //       updatedContent,
+  //     //       prev.originalFileContent,
+  //     //     ),
+  //     //   }));
+
+  //     //   // 触发文件内容变更回调
+  //     //   onFileContentChange?.(fileId, updatedContent);
+  //     // }
+  //   },
+  //   [
+  //     fileTreeState.data,
+  //     fileContentState.selectedFile,
+  //     fileContentState.originalFileContent,
+  //     onFileContentChange,
+  //   ],
+  // );
 
   /**
    * 切换到指定文件

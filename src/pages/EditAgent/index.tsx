@@ -12,6 +12,7 @@ import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import CreateTempChatModal from '@/pages/SpaceDevelop/CreateTempChatModal';
 import {
+  apiAgentComponentList,
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
@@ -269,6 +270,14 @@ const EditAgent: React.FC = () => {
   useEffect(() => {
     addBaseTarget();
   }, []);
+
+  // 绑定的变量信息
+  // const variablesInfo = React.useMemo(() => {
+  //   return agentComponentList?.find(
+  //     (item: AgentComponentInfo) =>
+  //       item.type === AgentComponentTypeEnum.Variable,
+  //   );
+  // }, [agentComponentList]);
 
   // 确认编辑智能体
   const handlerConfirmEditAgent = (info: AgentBaseInfo) => {
