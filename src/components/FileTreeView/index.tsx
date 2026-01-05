@@ -170,6 +170,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const officeRefreshTimestampRef = useRef<number>(Date.now());
     // 用于存储 json 文件的刷新时间戳，确保每次点击时都能刷新
     const jsonRefreshTimestampRef = useRef<number>(Date.now());
+    // 用于存储视频文件的刷新时间戳，确保每次点击时都能刷新
+    const videoRefreshTimestampRef = useRef<number>(Date.now());
+    // 用于存储音频文件的刷新时间戳，确保每次点击时都能刷新
+    const audioRefreshTimestampRef = useRef<number>(Date.now());
 
     useEffect(() => {
       // 如果通过父组件全屏预览模式打开，则设置全屏状态
@@ -293,6 +297,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           const isOfficeFile = result?.isDoc || false;
           // 检查是否是 json 文件
           const isJsonFile = fileNode?.name?.includes('.json') || false;
+          // 判断文件是否为视频类型
+          const isVideoFileType = isVideoFile(fileNode?.name || '');
+          // 判断文件是否为音频类型
+          const isAudioFileType = isAudioFile(fileNode?.name || '');
 
           // 如果是重复点击 html 文件，更新刷新时间戳以强制刷新 iframe
           if (isSameFile && isHtmlFile) {
@@ -318,6 +326,22 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             return;
           }
 
+          // 如果是重复点击视频文件，更新刷新时间戳以强制刷新
+          if (isSameFile && isVideoFileType) {
+            videoRefreshTimestampRef.current = Date.now();
+            // 仍然调用刷新逻辑以更新文件内容
+            // await handleRefreshFileList();
+            return;
+          }
+
+          // 如果是重复点击音频文件，更新刷新时间戳以强制刷新
+          if (isSameFile && isAudioFileType) {
+            audioRefreshTimestampRef.current = Date.now();
+            // 仍然调用刷新逻辑以更新文件内容
+            // await handleRefreshFileList();
+            return;
+          }
+
           // 如果是新选中的 html 文件，更新刷新时间戳
           if (isHtmlFile) {
             htmlRefreshTimestampRef.current = Date.now();
@@ -331,6 +355,16 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 如果是新选中的 json 文件，更新刷新时间戳
           if (isJsonFile) {
             jsonRefreshTimestampRef.current = Date.now();
+          }
+
+          // 如果是新选中的视频文件，更新刷新时间戳
+          if (isVideoFileType) {
+            videoRefreshTimestampRef.current = Date.now();
+          }
+
+          // 如果是新选中的音频文件，更新刷新时间戳
+          if (isAudioFileType) {
+            audioRefreshTimestampRef.current = Date.now();
           }
 
           // 获取文件内容
@@ -1068,12 +1102,48 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // 视频文件：使用FilePreview组件
       if (isVideo && fileProxyUrl) {
-        return <FilePreview src={fileProxyUrl} fileType="video" />;
+        // 构建 URL 参数和 key：同时考虑 taskAgentSelectTrigger 和 videoRefreshTimestampRef
+        // 只要其中一个变化，都应该刷新
+        // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
+        const triggerPart =
+          taskAgentSelectTrigger !== undefined
+            ? `trigger-${taskAgentSelectTrigger}`
+            : 'trigger-none';
+        const timestampPart = `timestamp-${videoRefreshTimestampRef.current}`;
+        const videoKey = `video-${selectedFileId}-${triggerPart}-${timestampPart}`;
+
+        // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
+        // 优先使用 taskAgentSelectTrigger，如果不存在则使用 videoRefreshTimestampRef
+        const triggerValue =
+          taskAgentSelectTrigger !== undefined
+            ? taskAgentSelectTrigger
+            : videoRefreshTimestampRef.current;
+        const videoUrl = `${fileProxyUrl}?t=${triggerValue}`;
+
+        return <FilePreview key={videoKey} src={videoUrl} fileType="video" />;
       }
 
       // 音频文件：使用FilePreview组件
       if (isAudio && fileProxyUrl) {
-        return <FilePreview src={fileProxyUrl} fileType="audio" />;
+        // 构建 URL 参数和 key：同时考虑 taskAgentSelectTrigger 和 audioRefreshTimestampRef
+        // 只要其中一个变化，都应该刷新
+        // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
+        const triggerPart =
+          taskAgentSelectTrigger !== undefined
+            ? `trigger-${taskAgentSelectTrigger}`
+            : 'trigger-none';
+        const timestampPart = `timestamp-${audioRefreshTimestampRef.current}`;
+        const audioKey = `audio-${selectedFileId}-${triggerPart}-${timestampPart}`;
+
+        // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
+        // 优先使用 taskAgentSelectTrigger，如果不存在则使用 audioRefreshTimestampRef
+        const triggerValue =
+          taskAgentSelectTrigger !== undefined
+            ? taskAgentSelectTrigger
+            : audioRefreshTimestampRef.current;
+        const audioUrl = `${fileProxyUrl}?t=${triggerValue}`;
+
+        return <FilePreview key={audioKey} src={audioUrl} fileType="audio" />;
       }
 
       // office文档文件：使用FilePreview组件
