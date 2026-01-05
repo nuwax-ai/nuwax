@@ -297,3 +297,23 @@ export interface AuthConfigModalProps {
   onCancel: () => void;
   onConfirm: (projectId: number, needLogin: boolean) => void;
 }
+
+/**
+ * 域名信息
+ */
+export interface DomainInfo {
+  id: number;
+  domain: string;
+  /** 状态: active-已激活, pending-待验证 */
+  status: 'active' | 'pending';
+}
+
+/**
+ * 域名绑定弹窗Props
+ */
+export interface DomainBindingModalProps {
+  open: boolean;
+  projectId: number;
+  onCancel: () => void;
+  onSuccess?: () => void;
+}

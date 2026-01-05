@@ -50,6 +50,8 @@ export enum PageDevelopMoreActionEnum {
   Path_Params_Config = 'Path_Params_Config',
   // 认证配置
   Auth_Config = 'Auth_Config',
+  // 域名绑定
+  Domain_Binding = 'Domain_Binding',
   // 页面预览
   Page_Preview = 'Page_Preview',
   // 复制到空间

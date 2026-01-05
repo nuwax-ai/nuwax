@@ -144,3 +144,35 @@ export async function apiPageUpdateProject(
     data,
   });
 }
+
+// 查询项目绑定的域名列表
+export async function apiPageGetDomains(
+  projectId: number,
+): Promise<RequestResponse<any[]>> {
+  return request('/api/custom-page/get-domains', {
+    method: 'GET',
+    params: { projectId },
+  });
+}
+
+// 添加域名绑定
+export async function apiPageAddDomain(data: {
+  projectId: number;
+  domain: string;
+}): Promise<RequestResponse<null>> {
+  return request('/api/custom-page/add-domain', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除域名绑定
+export async function apiPageDeleteDomain(data: {
+  projectId: number;
+  domainId: number;
+}): Promise<RequestResponse<null>> {
+  return request('/api/custom-page/delete-domain', {
+    method: 'POST',
+    data,
+  });
+}

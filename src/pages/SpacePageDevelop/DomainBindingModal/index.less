@@ -1,0 +1,162 @@
+.domain-binding-modal {
+  .cname-section {
+    background-color: var(--ant-color-bg-layout);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+
+    .cname-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: var(--ant-color-text);
+    }
+
+    .cname-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 12px;
+
+      .cname-tab {
+        padding: 6px 16px;
+        font-size: 12px;
+        border: 1px solid var(--ant-color-border);
+        background-color: var(--ant-color-bg-container);
+        color: var(--ant-color-text);
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:first-child {
+          border-radius: 4px 0 0 4px;
+        }
+
+        &:last-child {
+          border-radius: 0 4px 4px 0;
+          border-left: none;
+        }
+
+        &.active {
+          background-color: #000;
+          color: #fff;
+          border-color: #000;
+        }
+
+        &:hover:not(.active) {
+          border-color: var(--ant-color-primary);
+          color: var(--ant-color-primary);
+        }
+      }
+    }
+
+    .cname-content {
+      .cname-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ant-color-text);
+        margin-bottom: 4px;
+      }
+
+      .cname-desc {
+        font-size: 12px;
+        color: var(--ant-color-text-secondary);
+      }
+    }
+  }
+
+  .domain-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+
+    .header-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ant-color-text);
+    }
+
+    .domain-count {
+      font-size: 12px;
+      color: var(--ant-color-text-secondary);
+    }
+  }
+
+  .domain-list {
+    max-height: 240px;
+    overflow-y: auto;
+
+    .domain-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border: 1px solid var(--ant-color-border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+
+      .domain-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: var(--ant-color-bg-layout);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+        flex-shrink: 0;
+      }
+
+      .domain-info {
+        flex: 1;
+
+        .domain-name {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--ant-color-text);
+          margin-bottom: 2px;
+        }
+
+        .domain-status {
+          font-size: 12px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+
+          &.active {
+            color: var(--ant-color-success);
+          }
+
+          &.pending {
+            color: var(--ant-color-warning);
+          }
+
+          .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: currentcolor;
+          }
+        }
+      }
+
+      .domain-actions {
+        display: flex;
+        gap: 4px;
+      }
+    }
+  }
+
+  .add-domain-btn {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .add-domain-input {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+
+    .domain-input {
+      flex: 1;
+    }
+  }
+}
