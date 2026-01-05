@@ -17,7 +17,6 @@ import {
 import {
   DownOutlined,
   LoadingOutlined,
-  MessageOutlined,
   RollbackOutlined,
 } from '@ant-design/icons';
 import { Button, Card, message, Spin, Tooltip, Typography } from 'antd';
@@ -699,8 +698,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               />
             ) : !chat.chatMessages || chat.chatMessages.length === 0 ? (
               <AppDevEmptyState
-                type="empty"
-                icon={<MessageOutlined />}
+                type="conversation-empty"
                 title="开始新对话"
                 description="向 AI 助手提问，开始您的项目开发"
               />
