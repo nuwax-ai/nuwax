@@ -1,5 +1,8 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { cancelAgentTask, cancelAiChatAgentTask } from '@/services/appDev';
+
+import SvgIcon from '@/components/base/SvgIcon';
+import DataResourceList from '@/pages/AppDev/components/FileTreePanel/DataResourceList';
 import type {
   AppDevChatMessage,
   Attachment,
@@ -24,8 +27,8 @@ import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import DesignViewer, { type DesignViewerRef } from '../DesignViewer';
-import ToggleDesignBtn from '../ToggleDesignBtn';
 import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
+import ChatAreaTabs from './components/ChatAreaTabs';
 import ChatInputHome, { MentionItem } from './components/ChatInputHome';
 import MessageAttachment from './components/MessageAttachment';
 import ReactScrollToBottomContainer, {
@@ -42,26 +45,16 @@ interface ChatAreaProps {
   onUpdateDataSources: (dataSources: DataResource[]) => void;
   fileContentState: any;
   isSupportDesignMode: boolean;
-  // onSetSelectedFile: (fileId: string) => void; // 暂时未使用，保留以备后续使用
   modelSelector: any;
-  // onRefreshVersionList?: () => void; // 新增：刷新版本列表回调
-  // 自动处理异常相关props
-  // autoHandleError?: boolean;
-  // onAutoHandleErrorChange?: (enabled: boolean) => void;
-  /** 用户手动发送消息回调 */
+  isComparing?: boolean;
   onUserManualSendMessage?: () => void;
-  /** 用户取消Agent任务回调 */
   onUserCancelAgentTask?: () => void;
-  /** 文件树数据 */
   files?: FileNode[];
-  /** DesignViewer 组件的 ref */
   designViewerRef?: React.RefObject<DesignViewerRef>;
+  onDeleteDataResource?: (resourceId: number) => void;
+  onAddDataResource?: () => void;
 }
 
-/**
- * 聊天会话区域组件
- * 包含聊天模式切换、消息显示和输入区域
- */
 const ChatArea: React.FC<ChatAreaProps> = ({
   chat,
   projectId,
@@ -69,21 +62,21 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onUpdateDataSources,
   fileContentState,
   isSupportDesignMode,
-  // onSetSelectedFile, // 暂时未使用，保留以备后续使用
   modelSelector,
-  // onRefreshVersionList, // eslint-disable-line @typescript-eslint/no-unused-vars
-  // autoHandleError = true, // 暂时注释掉，后续可能需要
-  // onAutoHandleErrorChange, // 暂时注释掉，后续可能需要
+  isComparing = false, // Default false
   onUserManualSendMessage,
   onUserCancelAgentTask,
   files = [],
   designViewerRef,
+  onDeleteDataResource,
+  onAddDataResource,
 }) => {
-  const autoErrorRetryCount = useModel('autoErrorHandling').autoRetryCount;
-  // 展开的思考过程消息
-  const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
-    new Set(),
+  const [activeTab, setActiveTab] = useState<'chat' | 'data' | 'design'>(
+    'chat',
   );
+
+  const autoErrorRetryCount = useModel('autoErrorHandling').autoRetryCount;
+  // ...
 
   // 停止按钮 loading 状态
   const [isStoppingTask, setIsStoppingTask] = useState(false);
@@ -105,6 +98,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   // 滚动状态管理
   const [showScrollButton, setShowScrollButton] = useState(false);
+
+  // 思考过程展开状态
+  const [expandedThinking, setExpandedThinking] = useState<Set<string>>(
+    new Set(),
+  );
 
   /**
    * 滚动按钮点击处理
@@ -612,11 +610,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return renderedMessages;
   }, [chat.chatMessages, renderChatMessage, renderConversationDivider]);
 
-  // 计算进度百分比（自动处理次数 / 3，最大100%）
-  // const progressPercent = useMemo(() => {
-  //   return Math.min((autoErrorRetryCount / 3) * 100, 100);
-  // }, [autoErrorRetryCount]);
-
   // 添加到聊天输入框
   const handleAddToChat = (content: string) => {
     chat.setChatInput((prev: string) => prev + content);
@@ -624,93 +617,137 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   return (
     <Card className={styles.chatCard} variant="outlined">
-      {
-        // 是否支持设计模式，则显示聊天模式切换
-        isSupportDesignMode && <ToggleDesignBtn />
-      }
+      <ChatAreaTabs
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isSupportDesignMode={isSupportDesignMode}
+      />
 
-      {/* 内容区域，设计模式区域和聊天消息区域 */}
+      {/* 内容区域 */}
       <div className={'flex-1 flex flex-col relative overflow-hide'}>
-        {
-          // 设计模式区域
-          isSupportDesignMode && (
-            <DesignViewer ref={designViewerRef} onAddToChat={handleAddToChat} />
-          )
-        }
+        {/* 数据 Tab */}
+        {activeTab === 'data' && (
+          <div
+            style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+          >
+            <div className={styles.dataSourceContainer}>
+              <div className={styles.dataSourceHeader}>
+                <span className={styles.dataSourceTitle}>数据资源</span>
+                <Tooltip title="添加数据资源">
+                  <Button
+                    type="text"
+                    className={styles.addButton}
+                    icon={
+                      <SvgIcon
+                        name="icons-common-plus"
+                        style={{ fontSize: 16 }}
+                      />
+                    }
+                    onClick={onAddDataResource}
+                    disabled={chat.isChatLoading || isComparing}
+                  />
+                </Tooltip>
+              </div>
+              <div className={styles.dataSourceContent}>
+                <DataResourceList
+                  resources={selectedDataSources}
+                  projectId={Number(projectId)}
+                  onDelete={onDeleteDataResource}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
-        {/* 聊天消息区域 */}
-        <ReactScrollToBottomContainer
-          ref={scrollContainerRef}
-          messages={chat.chatMessages}
-          isStreaming={chat.isChatLoading}
-          enableAutoScroll={true}
-          className={styles.chatMessagesWrapper}
-          style={{ height: '100%', minHeight: 0 }}
-          onScrollPositionChange={(isAtBottom) => {
-            setShowScrollButton(!isAtBottom);
+        {/* 设计模式区域 */}
+        {activeTab === 'design' && isSupportDesignMode && (
+          <DesignViewer ref={designViewerRef} onAddToChat={handleAddToChat} />
+        )}
+
+        {/* 聊天消息区域 - 使用 display:none 保持状态 */}
+        <div
+          style={{
+            display: activeTab === 'chat' ? 'flex' : 'none',
+            flexDirection: 'column',
+            height: '100%',
           }}
         >
-          <div className={styles.chatMessages}>
-            {chat.hasMoreHistoryRef.current &&
-              !chat.isLoadingMoreHistoryRef.current && (
-                <Button
-                  type="text"
-                  className={styles.loadMoreHistoryButton}
-                  icon={<RollbackOutlined />}
-                  onClick={async () => {
-                    // 1. 先记录当前内容的滚动位置与高度
-                    const scrollContainer =
-                      scrollContainerRef.current?.getScrollContainer();
-                    if (!scrollContainer) {
-                      return;
-                    }
+          <ReactScrollToBottomContainer
+            ref={scrollContainerRef}
+            messages={chat.chatMessages}
+            isStreaming={chat.isChatLoading}
+            enableAutoScroll={true}
+            className={styles.chatMessagesWrapper}
+            style={{ height: '100%', minHeight: 0 }}
+            onScrollPositionChange={(isAtBottom) => {
+              setShowScrollButton(!isAtBottom);
+            }}
+          >
+            <div className={styles.chatMessages}>
+              {chat.hasMoreHistoryRef.current &&
+                !chat.isLoadingMoreHistoryRef.current && (
+                  <Button
+                    type="text"
+                    className={styles.loadMoreHistoryButton}
+                    icon={<RollbackOutlined />}
+                    onClick={async () => {
+                      // 1. 先记录当前内容的滚动位置与高度
+                      const scrollContainer =
+                        scrollContainerRef.current?.getScrollContainer();
+                      if (!scrollContainer) {
+                        return;
+                      }
 
-                    // 记录按钮元素（如果存在），用于计算高度变化
-                    const scrollPosition = scrollContainer.scrollTop;
-                    const scrollHeight = scrollContainer.scrollHeight;
+                      // 记录按钮元素（如果存在），用于计算高度变化
+                      const scrollPosition = scrollContainer.scrollTop;
+                      const scrollHeight = scrollContainer.scrollHeight;
 
-                    // 2. 加载历史会话
-                    await chat.loadHistorySessions(
-                      chat.currentPageRef.current + 1,
-                      true,
-                    );
-
-                    // 3. 加载记录成功后，恢复到上一次历史会话的位置
-                    // 等待 DOM 更新完成，包括按钮状态变化
-                    setTimeout(() => {
-                      scrollContainerRef.current?.handleScrollTo(
-                        scrollPosition,
-                        scrollHeight,
+                      // 2. 加载历史会话
+                      await chat.loadHistorySessions(
+                        chat.currentPageRef.current + 1,
+                        true,
                       );
-                    }, 100);
-                  }}
-                >
-                  点击查看更多历史会话
-                </Button>
+
+                      // 3. 加载记录成功后，恢复到上一次历史会话的位置
+                      // 等待 DOM 更新完成，包括按钮状态变化
+                      setTimeout(() => {
+                        scrollContainerRef.current?.handleScrollTo(
+                          scrollPosition,
+                          scrollHeight,
+                        );
+                      }, 100);
+                    }}
+                  >
+                    点击查看更多历史会话
+                  </Button>
+                )}
+              {chat.isLoadingMoreHistoryRef.current && <Spin size="small" />}
+              {chat.isLoadingHistory ? (
+                <AppDevEmptyState
+                  type="loading"
+                  icon={<LoadingOutlined />}
+                  title="正在加载历史会话"
+                  description="请稍候..."
+                />
+              ) : !chat.chatMessages || chat.chatMessages.length === 0 ? (
+                <AppDevEmptyState
+                  type="conversation-empty"
+                  title="开始新对话"
+                  description="向 AI 助手提问，开始您的项目开发"
+                />
+              ) : (
+                chatMessagesList
               )}
-            {chat.isLoadingMoreHistoryRef.current && <Spin size="small" />}
-            {chat.isLoadingHistory ? (
-              <AppDevEmptyState
-                type="loading"
-                icon={<LoadingOutlined />}
-                title="正在加载历史会话"
-                description="请稍候..."
-              />
-            ) : !chat.chatMessages || chat.chatMessages.length === 0 ? (
-              <AppDevEmptyState
-                type="conversation-empty"
-                title="开始新对话"
-                description="向 AI 助手提问，开始您的项目开发"
-              />
-            ) : (
-              chatMessagesList
-            )}
-          </div>
-        </ReactScrollToBottomContainer>
+            </div>
+          </ReactScrollToBottomContainer>
+        </div>
       </div>
 
       {/* 聊天输入区域 */}
-      <div className={styles.chatInputContainer}>
+      <div
+        className={styles.chatInputContainer}
+        style={{ display: activeTab === 'chat' ? 'block' : 'none' }}
+      >
         <div
           className={`${styles.scrollToBottomButton} ${
             showScrollButton ? styles.visible : ''
@@ -767,6 +804,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           files={files}
         />
       </div>
+
+      {/* 数据资源添加模态框 - 已移除，使用 onAddDataResource 回调父组件处理 */}
+      {/* <PageEditModal ... /> */}
     </Card>
   );
 };

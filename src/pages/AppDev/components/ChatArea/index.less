@@ -21,8 +21,12 @@
 .chatMessagesWrapper {
   flex: 1;
   position: relative;
-  min-height: 0; /* 确保 flex 子元素可以收缩 */
-  height: 100%; /* 明确设置高度 */
+  min-height: 0;
+
+  /* 确保 flex 子元素可以收缩 */
+  height: 100%;
+
+  /* 明确设置高度 */
   overflow: hidden;
 
   /* 确保 StreamMessageScrollContainer 内部滚动容器有正确高度 */
@@ -712,6 +716,77 @@
       100% {
         left: 100%;
       }
+    }
+  }
+}
+
+// DataResource styles migrated from FileTreePanel
+.dataSourceContainer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: @colorBgContainer;
+  // border-top: @lineWidth solid @colorBorderSecondary; // Removed border-top to fit in chat area
+  height: 100%; // Ensure it takes full height of the tab content area
+}
+
+.dataSourceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: @lineWidth solid @colorBorder;
+  background: @colorBgContainer;
+}
+
+.dataSourceTitle {
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  color: @colorTextBase;
+}
+
+.dataSourceContent {
+  flex: 1;
+  overflow: hidden;
+  background: @colorBgContainer;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  color: @colorTextBase;
+  height: 32px;
+  width: 32px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  border: none;
+  background: transparent;
+  justify-content: center; // Ensure icon is centered
+
+  &:hover {
+    color: @colorPrimary;
+    background: @colorPrimaryBg;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Dark mode support
+[data-theme='dark'] {
+  .addButton {
+    color: @colorTextBase;
+
+    &:hover {
+      color: @colorPrimary;
+      background: @colorPrimaryBg;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      color: @colorTextTertiary;
     }
   }
 }
