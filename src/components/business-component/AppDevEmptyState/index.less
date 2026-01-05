@@ -26,6 +26,64 @@
   transition: all 0.3s ease;
 }
 
+// 服务器启动中图标 (绿色主题)
+.serverStartingIcon {
+  color: #52c41a; // Green color per Figma design
+  animation: pulse-animation 2s ease-in-out infinite;
+  font-size: 32px;
+}
+
+// 服务器重启中图标 (黄色主题)
+.serverRestartingIcon {
+  color: #faad14; // Yellow/orange color per Figma design
+  animation: pulse-animation 2s ease-in-out infinite;
+  font-size: 32px;
+}
+
+// 服务器状态图标容器 (新的 SVG 布局)
+.serverStateIcon {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.laptopIcon {
+  width: 92px;
+  height: 69px;
+  position: absolute;
+  left: 14px;
+  top: 25.5px;
+}
+
+.serverStateIndicator {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  right: 8px;
+  bottom: 19px;
+  border-radius: 6px;
+  backdrop-filter: blur(3.6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.green {
+    background: rgba(216, 230, 216, 80%);
+  }
+
+  &.yellow {
+    background: rgba(255, 224, 163, 80%);
+  }
+
+  img {
+    width: 16px;
+    height: 16px;
+  }
+}
+
 .emptyContent {
   text-align: center;
   max-width: 400px;
