@@ -981,9 +981,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     /**
      * 构建文件预览的 URL 和 key，用于强制刷新
-     * @param fileType - 文件类型标识（如 'html', 'office', 'json'）
+     * @param fileType - 文件类型标识（如 'html', 'office', 'json', 'video', 'audio'）
      * @param fileProxyUrl - 文件代理 URL
      * @param selectedFileId - 选中的文件 ID
+     * @param customTimestampRef - 可选的自定义时间戳 ref，如果不提供则使用默认的 fileRefreshTimestampRef
      * @returns 包含 key 和 url 的对象
      */
     const buildFilePreviewProps = useCallback(
@@ -991,21 +992,25 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         fileType: string,
         fileProxyUrl: string,
         selectedFileId: string,
+        customTimestampRef?: React.MutableRefObject<number>,
       ): { key: string; url: string } => {
+        // 使用自定义时间戳 ref 或默认的 fileRefreshTimestampRef
+        const timestampRef = customTimestampRef || fileRefreshTimestampRef;
+
         // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
         const triggerPart =
           taskAgentSelectTrigger !== undefined
             ? `trigger-${taskAgentSelectTrigger}`
             : 'trigger-none';
-        const timestampPart = `timestamp-${fileRefreshTimestampRef.current}`;
+        const timestampPart = `timestamp-${timestampRef.current}`;
         const fileKey = `${fileType}-${selectedFileId}-${triggerPart}-${timestampPart}`;
 
         // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
-        // 优先使用 taskAgentSelectTrigger，如果不存在则使用 fileRefreshTimestampRef
+        // 优先使用 taskAgentSelectTrigger，如果不存在则使用时间戳 ref
         const triggerValue =
           taskAgentSelectTrigger !== undefined
             ? taskAgentSelectTrigger
-            : fileRefreshTimestampRef.current;
+            : timestampRef.current;
         const fileUrl = triggerValue
           ? `${fileProxyUrl}?t=${triggerValue}`
           : fileProxyUrl;
@@ -1053,50 +1058,24 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // 视频文件：使用FilePreview组件
       if (isVideo && fileProxyUrl) {
-        // 构建 URL 参数和 key：同时考虑 taskAgentSelectTrigger 和 videoRefreshTimestampRef
-        // 只要其中一个变化，都应该刷新
-        // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
-        const triggerPart =
-          taskAgentSelectTrigger !== undefined
-            ? `trigger-${taskAgentSelectTrigger}`
-            : 'trigger-none';
-        const timestampPart = `timestamp-${videoRefreshTimestampRef.current}`;
-        const videoKey = `video-${selectedFileId}-${triggerPart}-${timestampPart}`;
-
-        // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
-        // 优先使用 taskAgentSelectTrigger，如果不存在则使用 videoRefreshTimestampRef
-        const triggerValue =
-          taskAgentSelectTrigger !== undefined
-            ? taskAgentSelectTrigger
-            : videoRefreshTimestampRef.current;
-        const videoUrl = triggerValue
-          ? `${fileProxyUrl}?t=${triggerValue}`
-          : fileProxyUrl;
+        const { key: videoKey, url: videoUrl } = buildFilePreviewProps(
+          'video',
+          fileProxyUrl,
+          selectedFileId,
+          videoRefreshTimestampRef,
+        );
 
         return <FilePreview key={videoKey} src={videoUrl} fileType="video" />;
       }
 
       // 音频文件：使用FilePreview组件
       if (isAudio && fileProxyUrl) {
-        // 构建 URL 参数和 key：同时考虑 taskAgentSelectTrigger 和 audioRefreshTimestampRef
-        // 只要其中一个变化，都应该刷新
-        // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
-        const triggerPart =
-          taskAgentSelectTrigger !== undefined
-            ? `trigger-${taskAgentSelectTrigger}`
-            : 'trigger-none';
-        const timestampPart = `timestamp-${audioRefreshTimestampRef.current}`;
-        const audioKey = `audio-${selectedFileId}-${triggerPart}-${timestampPart}`;
-
-        // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
-        // 优先使用 taskAgentSelectTrigger，如果不存在则使用 audioRefreshTimestampRef
-        const triggerValue =
-          taskAgentSelectTrigger !== undefined
-            ? taskAgentSelectTrigger
-            : audioRefreshTimestampRef.current;
-        const audioUrl = triggerValue
-          ? `${fileProxyUrl}?t=${triggerValue}`
-          : fileProxyUrl;
+        const { key: audioKey, url: audioUrl } = buildFilePreviewProps(
+          'audio',
+          fileProxyUrl,
+          selectedFileId,
+          audioRefreshTimestampRef,
+        );
 
         return <FilePreview key={audioKey} src={audioUrl} fileType="audio" />;
       }
