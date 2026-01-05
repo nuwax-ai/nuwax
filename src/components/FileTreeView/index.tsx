@@ -544,31 +544,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const closeContextMenu = useCallback(() => {
       setContextMenuVisible(false);
       setContextMenuTarget(null);
-
-      // // 如果文件树未固定，检查点击位置是否在文件树内
-      // if (!isFileTreePinned && fileTreeContainerRef.current && e) {
-      //   // 获取鼠标点击位置
-      //   const clientX =
-      //     'clientX' in e ? e.clientX : (e as MouseEvent).clientX || 0;
-      //   const clientY =
-      //     'clientY' in e ? e.clientY : (e as MouseEvent).clientY || 0;
-
-      //   // 获取文件树容器的位置和尺寸
-      //   const fileTreeRect =
-      //     fileTreeContainerRef.current.getBoundingClientRect();
-
-      //   // 判断点击位置是否在文件树区域内
-      //   const isInsideFileTree =
-      //     clientX >= fileTreeRect.left &&
-      //     clientX <= fileTreeRect.right &&
-      //     clientY >= fileTreeRect.top &&
-      //     clientY <= fileTreeRect.bottom;
-
-      //   // 如果点击位置不在文件树内，则隐藏文件树
-      //   if (!isInsideFileTree) {
-      //     setIsFileTreeVisible(false);
-      //   }
-      // }
     }, []);
 
     // 点击外部关闭右键菜单
@@ -801,8 +776,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       // 将新建的节点设置为当前重命名目标和选中节点
       if (newNode) {
         setRenamingNode(newNode);
-        // setSelectedFileId(newNode.id);
-        // setSelectedFileNode(newNode);
       }
     };
 
@@ -932,10 +905,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       });
       setFiles(restoredFiles);
 
-      // 从最新的 files 中获取原始内容
-      // const currentFile = findFileNode(selectedFileId, restoredFiles);
-      // const oldContent = currentFile?.content || '';
-
       // 从已修改文件列表中获取原始内容，用于还原当前选中的文件内容
       const changeFile = changeFiles?.find(
         (item) => item.fileId === selectedFileId,
@@ -985,21 +954,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         onFileTreePinnedChange?.(false);
       }
     };
-
-    /**
-     * 处理文件树鼠标移出
-     */
-    // const handleFileTreeMouseLeave = () => {
-    //   // 如果右键菜单显示，不隐藏文件树（等待鼠标移入菜单或移出菜单区域）
-    //   if (contextMenuVisible) {
-    //     return;
-    //   }
-
-    //   // 如果未固定，则隐藏文件树
-    //   if (!isFileTreePinned) {
-    //     setIsFileTreeVisible(false);
-    //   }
-    // };
 
     // 处理下载项目操作
     const handleDownloadProject = async () => {
@@ -1061,16 +1015,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       [taskAgentSelectTrigger],
     );
 
-    // const userTicketRef = useRef('')
-
-    // useEffect(() => {
-    //   const getUserTicket = async () => {
-    //     const { data } = await apiAgentConversationShare({conversationId: targetId?.toString() || '', type: 'CONVERSATION'});
-    //     userTicketRef.current = data?.shareKey;
-    //   };
-    //   getUserTicket();
-    // }, []);
-
     /**
      * 渲染内容区域
      * 根据视图模式和文件类型渲染不同的预览组件
@@ -1125,7 +1069,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           taskAgentSelectTrigger !== undefined
             ? taskAgentSelectTrigger
             : videoRefreshTimestampRef.current;
-        const videoUrl = `${fileProxyUrl}?t=${triggerValue}`;
+        const videoUrl = triggerValue
+          ? `${fileProxyUrl}?t=${triggerValue}`
+          : fileProxyUrl;
 
         return <FilePreview key={videoKey} src={videoUrl} fileType="video" />;
       }
@@ -1148,7 +1094,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           taskAgentSelectTrigger !== undefined
             ? taskAgentSelectTrigger
             : audioRefreshTimestampRef.current;
-        const audioUrl = `${fileProxyUrl}?t=${triggerValue}`;
+        const audioUrl = triggerValue
+          ? `${fileProxyUrl}?t=${triggerValue}`
+          : fileProxyUrl;
 
         return <FilePreview key={audioKey} src={audioUrl} fileType="audio" />;
       }
@@ -1446,7 +1394,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                   [styles['file-tree-view-hidden']]: !isFileTreeVisible,
                 },
               )}
-              // onMouseLeave={handleFileTreeMouseLeave}
             >
               <SearchView
                 className={headerClassName}
