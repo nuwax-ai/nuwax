@@ -64,11 +64,15 @@ import React, {
 import { useModel, useParams, useRequest } from 'umi';
 import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
-import { type DesignViewerRef } from './components/DesignViewer';
+import DesignViewer, { type DesignViewerRef } from './components/DesignViewer';
 import DevLogConsole from './components/DevLogConsole';
 import EditorHeaderRight from './components/EditorHeaderRight';
 import FileOperatingMask from './components/FileOperatingMask';
 import FileTreePanel from './components/FileTreePanel';
+import DataResourceList from './components/FileTreePanel/DataResourceList';
+import LeftPanelTabs, {
+  type LeftPanelTabType,
+} from './components/LeftPanelTabs';
 import PageEditModal from './components/PageEditModal';
 import { type PreviewRef } from './components/Preview';
 import { useDevLogs } from './hooks/useDevLogs';
@@ -131,6 +135,8 @@ const AppDev: React.FC = () => {
   // 组件内部状态
   const [missingProjectId, setMissingProjectId] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
+  // 左侧面板标签状态: 对话 | 设计 | 数据
+  const [leftPanelTab, setLeftPanelTab] = useState<LeftPanelTabType>('chat');
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
@@ -1408,30 +1414,61 @@ const AppDev: React.FC = () => {
           <div className={styles.mainRow}>
             {/* 左侧AI助手面板 */}
             <div className={styles.leftPanel}>
-              <ChatArea
-                // chatMode={chatMode}
-                // setChatMode={setChatMode}
-                chat={chat}
-                projectId={projectId || ''}
-                selectedDataSources={selectedDataResources} // 新增：选中的数据源
-                onUpdateDataSources={handleUpdateDataSources} // 新增：更新数据源回调
-                fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
-                isSupportDesignMode={fileManagement.isSupportDesignMode}
-                // onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
-                modelSelector={modelSelector} // 模型选择器状态
-                files={currentDisplayFiles} // 新增：文件树数据
-                designViewerRef={designViewerRef} // 新增：DesignViewer ref
-                onUserManualSendMessage={() => {
-                  // 用户手动发送消息，重置自动重试计数、会话计数和 requestId
-                  autoErrorHandling.resetAndEnableAutoHandling();
-                  autoErrorHandlingModelInstance.resetSessionCount();
-                  currentRequestIdRef.current = ''; // 重置 requestId，下次自动处理时生成新的
-                }}
-                onUserCancelAgentTask={() => {
-                  // 用户取消Agent任务，重置自动重试计数
-                  autoErrorHandling.handleUserCancelAuto();
-                }}
+              {/* Tab 标签导航 */}
+              <LeftPanelTabs
+                activeTab={leftPanelTab}
+                onTabChange={setLeftPanelTab}
               />
+              {/* 对话 Tab */}
+              {leftPanelTab === 'chat' && (
+                <ChatArea
+                  // chatMode={chatMode}
+                  // setChatMode={setChatMode}
+                  chat={chat}
+                  projectId={projectId || ''}
+                  selectedDataSources={selectedDataResources} // 新增：选中的数据源
+                  onUpdateDataSources={handleUpdateDataSources} // 新增：更新数据源回调
+                  fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
+                  isSupportDesignMode={fileManagement.isSupportDesignMode}
+                  // onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
+                  modelSelector={modelSelector} // 模型选择器状态
+                  files={currentDisplayFiles} // 新增：文件树数据
+                  designViewerRef={designViewerRef} // 新增：DesignViewer ref
+                  onUserManualSendMessage={() => {
+                    // 用户手动发送消息，重置自动重试计数、会话计数和 requestId
+                    autoErrorHandling.resetAndEnableAutoHandling();
+                    autoErrorHandlingModelInstance.resetSessionCount();
+                    currentRequestIdRef.current = ''; // 重置 requestId，下次自动处理时生成新的
+                  }}
+                  onUserCancelAgentTask={() => {
+                    // 用户取消Agent任务，重置自动重试计数
+                    autoErrorHandling.handleUserCancelAuto();
+                  }}
+                />
+              )}
+              {/* 设计 Tab */}
+              {leftPanelTab === 'design' && (
+                <div className={styles.tabContent}>
+                  <DesignViewer
+                    ref={designViewerRef}
+                    onAddToChat={(content: string) => {
+                      chat.setChatInput((prev: string) => prev + content);
+                    }}
+                  />
+                </div>
+              )}
+              {/* 数据 Tab */}
+              {leftPanelTab === 'data' && (
+                <div className={styles.tabContent}>
+                  <DataResourceList
+                    resources={selectedDataResources}
+                    projectId={
+                      projectInfo.projectInfoState?.projectInfo?.projectId
+                    }
+                    onDelete={handleDeleteDataResource}
+                  />
+                </div>
+              )}
             </div>
 
             {/* 右侧代码编辑器区域 */}
@@ -1535,61 +1572,67 @@ const AppDev: React.FC = () => {
               <div className={styles.contentArea}>
                 <div className={styles.contentRow}>
                   {/* FileTreePanel 组件 */}
-                  <FileTreePanel
-                    files={currentDisplayFiles}
-                    isComparing={versionCompare.isComparing}
-                    selectedFileId={
-                      versionCompare.isComparing
-                        ? workspace.activeFile
-                        : fileManagement.fileContentState.selectedFile
-                    }
-                    expandedFolders={
-                      fileManagement.fileTreeState.expandedFolders
-                    }
-                    dataResources={dataResourceManagement.resources}
-                    dataResourcesLoading={dataResourceManagement.loading}
-                    onFileSelect={(fileId) => {
-                      if (versionCompare.isComparing) {
-                        updateWorkspace({ activeFile: fileId });
-                      } else {
-                        fileManagement.switchToFile(fileId);
-                        setActiveTab('code');
+                  {activeTab !== 'preview' && (
+                    <FileTreePanel
+                      files={currentDisplayFiles}
+                      isComparing={versionCompare.isComparing}
+                      selectedFileId={
+                        versionCompare.isComparing
+                          ? workspace.activeFile
+                          : fileManagement.fileContentState.selectedFile
                       }
-                    }}
-                    onToggleFolder={fileManagement.toggleFolder}
-                    onDeleteFile={
-                      isFileOperating ? () => {} : handleDeleteClick
-                    }
-                    onRenameFile={
-                      isFileOperating ? async () => false : handleRenameFile
-                    }
-                    onUploadToFolder={
-                      isFileOperating ? async () => false : handleUploadToFolder
-                    }
-                    onUploadProject={
-                      isFileOperating
-                        ? () => {}
-                        : () => setIsUploadModalVisible(true)
-                    }
-                    onUploadSingleFile={
-                      isFileOperating ? async () => {} : handleRightClickUpload
-                    }
-                    onAddDataResource={
-                      isFileOperating
-                        ? () => {}
-                        : () => setIsAddDataResourceModalVisible(true)
-                    }
-                    onDeleteDataResource={handleDeleteDataResource}
-                    selectedDataResources={selectedDataResources}
-                    // onDataResourceSelectionChange={setSelectedDataResourceIds}
-                    workspace={workspace}
-                    fileManagement={fileManagement}
-                    isChatLoading={chat.isChatLoading}
-                    projectId={projectId ? Number(projectId) : undefined}
-                    isFileTreeInitializing={
-                      fileManagement.isFileTreeInitializing
-                    }
-                  />
+                      expandedFolders={
+                        fileManagement.fileTreeState.expandedFolders
+                      }
+                      dataResources={dataResourceManagement.resources}
+                      dataResourcesLoading={dataResourceManagement.loading}
+                      onFileSelect={(fileId) => {
+                        if (versionCompare.isComparing) {
+                          updateWorkspace({ activeFile: fileId });
+                        } else {
+                          fileManagement.switchToFile(fileId);
+                          setActiveTab('code');
+                        }
+                      }}
+                      onToggleFolder={fileManagement.toggleFolder}
+                      onDeleteFile={
+                        isFileOperating ? () => {} : handleDeleteClick
+                      }
+                      onRenameFile={
+                        isFileOperating ? async () => false : handleRenameFile
+                      }
+                      onUploadToFolder={
+                        isFileOperating
+                          ? async () => false
+                          : handleUploadToFolder
+                      }
+                      onUploadProject={
+                        isFileOperating
+                          ? () => {}
+                          : () => setIsUploadModalVisible(true)
+                      }
+                      onUploadSingleFile={
+                        isFileOperating
+                          ? async () => {}
+                          : handleRightClickUpload
+                      }
+                      onAddDataResource={
+                        isFileOperating
+                          ? () => {}
+                          : () => setIsAddDataResourceModalVisible(true)
+                      }
+                      onDeleteDataResource={handleDeleteDataResource}
+                      selectedDataResources={selectedDataResources}
+                      // onDataResourceSelectionChange={setSelectedDataResourceIds}
+                      workspace={workspace}
+                      fileManagement={fileManagement}
+                      isChatLoading={chat.isChatLoading}
+                      projectId={projectId ? Number(projectId) : undefined}
+                      isFileTreeInitializing={
+                        fileManagement.isFileTreeInitializing
+                      }
+                    />
+                  )}
 
                   {/* 编辑器区域 */}
                   <div className={styles.editorCol}>
