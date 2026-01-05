@@ -64,16 +64,15 @@ import React, {
 import { useModel, useParams, useRequest } from 'umi';
 import { AppDevHeader, ContentViewer } from './components';
 import ChatArea from './components/ChatArea';
-import DesignViewer, { type DesignViewerRef } from './components/DesignViewer';
+import { type DesignViewerRef } from './components/DesignViewer';
 import DevLogConsole from './components/DevLogConsole';
 import EditorHeaderRight from './components/EditorHeaderRight';
 import FileOperatingMask from './components/FileOperatingMask';
 import FileTreePanel from './components/FileTreePanel';
-import DataResourceList from './components/FileTreePanel/DataResourceList';
-import LeftPanelTabs, {
-  type LeftPanelTabType,
-} from './components/LeftPanelTabs';
+// import DataResourceList from './components/FileTreePanel/DataResourceList';
+
 import PageEditModal from './components/PageEditModal';
+
 import { type PreviewRef } from './components/Preview';
 import { useDevLogs } from './hooks/useDevLogs';
 import styles from './index.less';
@@ -136,7 +135,7 @@ const AppDev: React.FC = () => {
   const [missingProjectId, setMissingProjectId] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   // 左侧面板标签状态: 对话 | 设计 | 数据
-  const [leftPanelTab, setLeftPanelTab] = useState<LeftPanelTabType>('chat');
+  // const [leftPanelTab, setLeftPanelTab] = useState<LeftPanelTabType>('chat');
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
@@ -1414,61 +1413,34 @@ const AppDev: React.FC = () => {
           <div className={styles.mainRow}>
             {/* 左侧AI助手面板 */}
             <div className={styles.leftPanel}>
-              {/* Tab 标签导航 */}
-              <LeftPanelTabs
-                activeTab={leftPanelTab}
-                onTabChange={setLeftPanelTab}
-              />
               {/* 对话 Tab */}
-              {leftPanelTab === 'chat' && (
-                <ChatArea
-                  // chatMode={chatMode}
-                  // setChatMode={setChatMode}
-                  chat={chat}
-                  projectId={projectId || ''}
-                  selectedDataSources={selectedDataResources} // 新增：选中的数据源
-                  onUpdateDataSources={handleUpdateDataSources} // 新增：更新数据源回调
-                  fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
-                  isSupportDesignMode={fileManagement.isSupportDesignMode}
-                  // onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
-                  modelSelector={modelSelector} // 模型选择器状态
-                  files={currentDisplayFiles} // 新增：文件树数据
-                  designViewerRef={designViewerRef} // 新增：DesignViewer ref
-                  onUserManualSendMessage={() => {
-                    // 用户手动发送消息，重置自动重试计数、会话计数和 requestId
-                    autoErrorHandling.resetAndEnableAutoHandling();
-                    autoErrorHandlingModelInstance.resetSessionCount();
-                    currentRequestIdRef.current = ''; // 重置 requestId，下次自动处理时生成新的
-                  }}
-                  onUserCancelAgentTask={() => {
-                    // 用户取消Agent任务，重置自动重试计数
-                    autoErrorHandling.handleUserCancelAuto();
-                  }}
-                />
-              )}
-              {/* 设计 Tab */}
-              {leftPanelTab === 'design' && (
-                <div className={styles.tabContent}>
-                  <DesignViewer
-                    ref={designViewerRef}
-                    onAddToChat={(content: string) => {
-                      chat.setChatInput((prev: string) => prev + content);
-                    }}
-                  />
-                </div>
-              )}
-              {/* 数据 Tab */}
-              {leftPanelTab === 'data' && (
-                <div className={styles.tabContent}>
-                  <DataResourceList
-                    resources={selectedDataResources}
-                    projectId={
-                      projectInfo.projectInfoState?.projectInfo?.projectId
-                    }
-                    onDelete={handleDeleteDataResource}
-                  />
-                </div>
-              )}
+              <ChatArea
+                // chatMode={chatMode}
+                // setChatMode={setChatMode}
+                chat={chat}
+                projectId={projectId || ''}
+                selectedDataSources={selectedDataResources} // 新增：选中的数据源
+                onUpdateDataSources={handleUpdateDataSources} // 新增：更新数据源回调
+                fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
+                isSupportDesignMode={fileManagement.isSupportDesignMode}
+                // onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
+                modelSelector={modelSelector} // 模型选择器状态
+                files={currentDisplayFiles} // 新增：文件树数据
+                designViewerRef={designViewerRef} // 新增：DesignViewer ref
+                onDeleteDataResource={handleDeleteDataResource} // 新增：删除数据源回调
+                onAddDataResource={() => setIsAddDataResourceModalVisible(true)} // 新增：添加数据源回调
+                onUserManualSendMessage={() => {
+                  // 用户手动发送消息，重置自动重试计数、会话计数和 requestId
+                  autoErrorHandling.resetAndEnableAutoHandling();
+                  autoErrorHandlingModelInstance.resetSessionCount();
+                  currentRequestIdRef.current = ''; // 重置 requestId，下次自动处理时生成新的
+                }}
+                onUserCancelAgentTask={() => {
+                  // 用户取消Agent任务，重置自动重试计数
+                  autoErrorHandling.handleUserCancelAuto();
+                }}
+                isComparing={versionCompare.isComparing}
+              />
             </div>
 
             {/* 右侧代码编辑器区域 */}
