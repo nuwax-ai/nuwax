@@ -1,0 +1,34 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.tabsContainer {
+  padding: @paddingXs @padding;
+  background: transparent;
+}
+
+.segmented {
+  background: @colorFillTertiary;
+  border-radius: @borderRadius;
+  padding: 2px;
+
+  :global {
+    .ant-segmented-item {
+      min-width: 66px;
+      padding: @paddingXs @paddingSm;
+      border-radius: 6px;
+      font-size: @fontSize;
+      color: @colorTextTertiary;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: @colorTextSecondary;
+      }
+    }
+
+    .ant-segmented-item-selected {
+      background: @colorBgContainer;
+      color: @colorPrimaryText;
+      font-weight: @fontWeightStrong;
+    }
+  }
+}
