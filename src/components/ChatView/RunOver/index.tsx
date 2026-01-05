@@ -56,7 +56,6 @@ const RunOver: React.FC<RunOverProps> = ({
     }
     return null;
   }, [processingList]);
-  console.log('lastProcessInfo', lastProcessInfo);
 
   // 优化：只有在任务已完成（Complete 或 Error）且 processingList 为空时才不显示组件
   // 如果任务还在执行中（Loading 或 Incomplete），即使 processingList 为空也要显示加载状态
