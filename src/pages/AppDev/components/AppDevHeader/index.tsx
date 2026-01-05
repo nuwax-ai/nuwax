@@ -13,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import { Avatar, Button, Popover, Space, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import { type PreviewRef } from '../Preview';
 import styles from './index.less';
@@ -89,6 +90,18 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
     return PAGE_DEVELOP_PUBLISH_TYPE_LIST;
   }, [projectInfo?.publishType]);
 
+  // 获取最后更新时间
+  const lastUpdateTime = useMemo(() => {
+    if (!projectInfo?.versionInfo || projectInfo.versionInfo.length === 0) {
+      return null;
+    }
+    // 获取最新版本的时间（数组第一个元素或按版本号排序取最大）
+    const latestVersion = projectInfo.versionInfo.reduce((latest, current) =>
+      current.version > latest.version ? current : latest,
+    );
+    return dayjs(latestVersion.time).format('HH:mm');
+  }, [projectInfo?.versionInfo]);
+
   // 处理返回按钮点击
   const handleBackClick = () => {
     // 先处理 iframe 内部的回退
@@ -145,19 +158,27 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
               <CheckCircleFilled className={cx(styles.circle)} />
             </Popover>
           )}
-          {/* 已发布，并存在更新 */}
-          {hasUpdates && (
-            <Tag
-              bordered={false}
-              color="volcano"
-              className={cx(styles['volcano'])}
-            >
-              有更新未发布
-            </Tag>
-          )}
         </div>
       </div>
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
+        {/* 最后更新时间显示 */}
+        {lastUpdateTime && (
+          <div className={cx('flex', 'items-center', styles['save-time'])}>
+            <span className={styles['last-update-text']}>
+              最后更新 {lastUpdateTime}
+            </span>
+            {/* 已发布，并存在更新 */}
+            {hasUpdates && (
+              <Tag
+                bordered={false}
+                color="volcano"
+                className={cx(styles['volcano'])}
+              >
+                有更新未发布
+              </Tag>
+            )}
+          </div>
+        )}
         <ConditionRender
           condition={
             projectInfo?.publishType === PageDevelopPublishTypeEnum.AGENT
