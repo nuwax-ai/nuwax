@@ -40,6 +40,7 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import AuthConfigModal from './AuthConfigModal';
+import DomainBindingModal from './DomainBindingModal';
 import styles from './index.less';
 import PageCreateModal from './PageCreateModal';
 import PathParamsConfigModal from './PathParamsConfigModal';
@@ -110,6 +111,11 @@ const SpacePageDevelop: React.FC = () => {
   const [projectId, setProjectId] = useState<number>(0);
   // 获取用户信息
   const { userInfo } = useModel('userInfo');
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  // 打开域名绑定弹窗
+  const [openDomainBindingModal, setOpenDomainBindingModal] =
+    useState<boolean>(false);
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
@@ -321,6 +327,10 @@ const SpacePageDevelop: React.FC = () => {
       case PageDevelopMoreActionEnum.Auth_Config:
         setOpenAuthConfigModal(true);
         break;
+      // 域名绑定
+      case PageDevelopMoreActionEnum.Domain_Binding:
+        setOpenDomainBindingModal(true);
+        break;
       // 页面预览
       case PageDevelopMoreActionEnum.Page_Preview:
         runPageInfo(info.projectId);
@@ -462,6 +472,10 @@ const SpacePageDevelop: React.FC = () => {
                     info.buildRunning === Boolean(BuildRunningEnum.Published))
                 );
               }
+              // 域名绑定（仅当 supportCustomDomain=true 时显示）
+              if (item.value === PageDevelopMoreActionEnum.Domain_Binding) {
+                return tenantConfigInfo?.supportCustomDomain === true;
+              }
               return true;
             });
             return (
@@ -531,6 +545,12 @@ const SpacePageDevelop: React.FC = () => {
         pageInfo={currentPageInfo}
         onCancel={() => setOpenAuthConfigModal(false)}
         onConfirm={handleConfirmAuthConfig}
+      />
+      {/* 域名绑定弹窗 */}
+      <DomainBindingModal
+        open={openDomainBindingModal}
+        projectId={projectId}
+        onCancel={() => setOpenDomainBindingModal(false)}
       />
       {/*复制到空间弹窗*/}
       {currentPageInfo && (
