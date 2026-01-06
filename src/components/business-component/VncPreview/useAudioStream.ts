@@ -36,8 +36,10 @@ interface OpusDecoderConstructor {
 interface UseAudioStreamOptions {
   /** 服务基础URL */
   serviceUrl?: string;
-  /** 容器ID */
-  cId: string;
+  /** 用户ID */
+  userId?: string;
+  /** 项目ID */
+  projectId: string;
   /** 是否启用音频 */
   enabled?: boolean;
   /** 初始音量 (0-1) */
@@ -107,7 +109,8 @@ export function useAudioStream(
 ): UseAudioStreamReturn {
   const {
     serviceUrl,
-    cId,
+    userId,
+    projectId,
     enabled = true,
     initialVolume = 0.8,
     vncStatus,
@@ -128,13 +131,14 @@ export function useAudioStream(
 
   /**
    * 构建音频WebSocket URL
+   * 格式: /computer/audio/{user_id}/{project_id}/ws
    */
   const buildAudioWsUrl = useCallback(() => {
-    if (!serviceUrl || !cId) return null;
+    if (!serviceUrl || !userId || !projectId) return null;
 
     const cleanBaseUrl = serviceUrl.replace(/\/+$/, '').replace(/^http/, 'ws');
-    return `${cleanBaseUrl}/computer/audio/${cId}/ws`;
-  }, [serviceUrl, cId]);
+    return `${cleanBaseUrl}/computer/audio/${userId}/${projectId}/ws`;
+  }, [serviceUrl, userId, projectId]);
 
   /**
    * 播放解码后的音频数据

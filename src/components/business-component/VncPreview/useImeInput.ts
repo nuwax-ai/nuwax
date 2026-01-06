@@ -22,8 +22,10 @@ export type ImeStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 interface UseImeInputOptions {
   /** 服务基础URL */
   serviceUrl?: string;
-  /** 容器ID */
-  cId: string;
+  /** 用户ID */
+  userId?: string;
+  /** 项目ID */
+  projectId: string;
   /** 是否启用输入法透传 */
   enabled?: boolean;
   /** VNC连接状态，只有connected时才尝试连接IME */
@@ -52,7 +54,14 @@ interface UseImeInputReturn {
  * 输入法透传Hook
  */
 export function useImeInput(options: UseImeInputOptions): UseImeInputReturn {
-  const { serviceUrl, cId, enabled = true, vncStatus, iframeRef } = options;
+  const {
+    serviceUrl,
+    userId,
+    projectId,
+    enabled = true,
+    vncStatus,
+    iframeRef,
+  } = options;
 
   // 状态
   const [status, setStatus] = useState<ImeStatus>('disconnected');
@@ -65,13 +74,14 @@ export function useImeInput(options: UseImeInputOptions): UseImeInputReturn {
 
   /**
    * 构建IME WebSocket URL
+   * 格式: /computer/ime/{user_id}/{project_id}/connect
    */
   const buildImeWsUrl = useCallback(() => {
-    if (!serviceUrl || !cId) return null;
+    if (!serviceUrl || !userId || !projectId) return null;
 
     const cleanBaseUrl = serviceUrl.replace(/\/+$/, '').replace(/^http/, 'ws');
-    return `${cleanBaseUrl}/computer/ime/${cId}/connect`;
-  }, [serviceUrl, cId]);
+    return `${cleanBaseUrl}/computer/ime/${userId}/${projectId}/connect`;
+  }, [serviceUrl, userId, projectId]);
 
   /**
    * 发送文本到远程桌面

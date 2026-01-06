@@ -22,6 +22,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     {
       serviceUrl,
       cId,
+      userId,
+      projectId,
       readOnly = false,
       autoConnect = false,
       style,
@@ -38,6 +40,9 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     const [iframeUrl, setIframeUrl] = useState<string | null>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
+    // 实际用于音频/输入法的 projectId（优先使用 projectId，否则使用 cId）
+    const effectiveProjectId = projectId || cId;
+
     // ============ 音频流功能 ============
     const {
       status: audioStatus,
@@ -45,7 +50,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       // setVolume,
     } = useAudioStream({
       serviceUrl,
-      cId,
+      userId,
+      projectId: effectiveProjectId,
       enabled: enableAudio,
       initialVolume,
       vncStatus: status,
@@ -58,7 +64,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       // activateInput,
     } = useImeInput({
       serviceUrl,
-      cId,
+      userId,
+      projectId: effectiveProjectId,
       enabled: enableIme,
       vncStatus: status,
       iframeRef,
