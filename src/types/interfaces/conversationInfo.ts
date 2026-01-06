@@ -81,6 +81,10 @@ export interface ExecuteResultInfo {
   endTime: number;
   success: boolean;
   type: AgentComponentTypeEnum;
+  innerExecuteInfo: unknown;
+  executeId: string;
+  kind: unknown;
+  locations: unknown;
 }
 
 // 会话聊天"FINAL_RESULT", 用于会话底部显示时间
@@ -175,6 +179,14 @@ export interface ProcessingInfo {
   status: ProcessingEnum;
   targetId: number;
   type: AgentComponentTypeEnum;
+  // 执行消息
+  executingMessage?: string;
+  // 卡片数据
+  cardData?: unknown;
+  // 页面参数配置
+  pageArgConfig?: unknown;
+  // 子事件类型
+  subEventType: 'OPEN_DESKTOP' | null;
 }
 
 // 消息问答扩展信息

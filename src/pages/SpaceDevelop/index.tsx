@@ -242,6 +242,18 @@ const SpaceDevelop: React.FC = () => {
     run(spaceId);
   }, [spaceId]);
 
+  // 监听菜单切换，重新加载数据
+  useEffect(() => {
+    if (history.location.state) {
+      // 清空URL搜索参数
+      const newParams = new URLSearchParams();
+      setSearchParams(newParams);
+      // 重新加载智能体列表
+      setLoading(true);
+      run(spaceId);
+    }
+  }, [history.location.state]);
+
   // 切换状态
   const handlerChangeStatus = (value: React.Key) => {
     const _status = value as FilterStatusEnum;
