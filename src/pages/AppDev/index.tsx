@@ -1556,8 +1556,8 @@ const AppDev: React.FC = () => {
                       expandedFolders={
                         fileManagement.fileTreeState.expandedFolders
                       }
-                      dataResources={dataResourceManagement.resources}
-                      dataResourcesLoading={dataResourceManagement.loading}
+                      // dataResources={dataResourceManagement.resources}
+                      // dataResourcesLoading={dataResourceManagement.loading}
                       onFileSelect={(fileId) => {
                         if (versionCompare.isComparing) {
                           updateWorkspace({ activeFile: fileId });
@@ -1588,12 +1588,12 @@ const AppDev: React.FC = () => {
                           ? async () => {}
                           : handleRightClickUpload
                       }
-                      onAddDataResource={
-                        isFileOperating
-                          ? () => {}
-                          : () => setIsAddDataResourceModalVisible(true)
-                      }
-                      onDeleteDataResource={handleDeleteDataResource}
+                      // onAddDataResource={
+                      //   isFileOperating
+                      //     ? () => {}
+                      //     : () => setIsAddDataResourceModalVisible(true)
+                      // }
+                      // onDeleteDataResource={handleDeleteDataResource}
                       selectedDataResources={selectedDataResources}
                       // onDataResourceSelectionChange={setSelectedDataResourceIds}
                       workspace={workspace}

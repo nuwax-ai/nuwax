@@ -1,4 +1,3 @@
-import SvgIcon from '@/components/base/SvgIcon';
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { FileNode } from '@/types/interfaces/appDev';
 import {
@@ -10,7 +9,7 @@ import {
 import { Button, Card, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AppDevFileTree from './AppDevFileTree';
-import DataResourceList from './DataResourceList';
+// import DataResourceList from './DataResourceList';
 import FileContextMenu from './FileContextMenu';
 import styles from './index.less';
 import type { FileTreePanelProps } from './types';
@@ -24,8 +23,9 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   isComparing,
   selectedFileId,
   expandedFolders,
-  dataResources,
-  dataResourcesLoading,
+
+  // dataResources,
+  // dataResourcesLoading,
   onFileSelect,
   onToggleFolder,
   onDeleteFile,
@@ -33,14 +33,14 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   // onUploadToFolder, // 暂时注释掉，后续可能需要
   onUploadProject,
   onUploadSingleFile,
-  onAddDataResource,
-  onDeleteDataResource,
+  // onAddDataResource,
+  // onDeleteDataResource,
   // selectedDataResourceIds,
   // onDataResourceSelectionChange,
   workspace,
   fileManagement,
   isChatLoading = false,
-  projectId,
+  // projectId,
   // 新增：文件树初始化 loading 状态
   isFileTreeInitializing = false,
 }) => {
@@ -251,35 +251,6 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
               </div>
 
               {/* 数据资源管理 - 固定在底部，仅在非版本对比模式显示 */}
-              {!isComparing && (
-                <div className={styles.dataSourceContainer}>
-                  <div className={styles.dataSourceHeader}>
-                    <span className={styles.dataSourceTitle}>数据资源</span>
-                    <Tooltip title="添加数据资源">
-                      <Button
-                        type="text"
-                        className={styles.addButton}
-                        icon={
-                          <SvgIcon
-                            name="icons-common-plus"
-                            style={{ fontSize: 16 }}
-                          />
-                        }
-                        onClick={onAddDataResource}
-                        disabled={isChatLoading || isComparing}
-                      />
-                    </Tooltip>
-                  </div>
-                  <div className={styles.dataSourceContent}>
-                    <DataResourceList
-                      resources={dataResources}
-                      loading={dataResourcesLoading}
-                      onDelete={onDeleteDataResource}
-                      projectId={projectId}
-                    />
-                  </div>
-                </div>
-              )}
             </>
           )}
         </Card>
