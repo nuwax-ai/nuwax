@@ -116,7 +116,19 @@ export interface IgetDetails {
   permissions?: PermissionsEnum[];
   // 系统变量列表（后端返回）
   systemVariables?: InputAndOutConfig[];
+  // 编辑版本号（用于版本冲突检测）
+  editVersion?: number;
+  // 是否强制提交: 0-检测版本冲突, 1-强制提交
+  forceCommit?: 0 | 1;
 }
+
+// 工作流保存请求参数
+export interface ISaveWorkflowParams {
+  workflowConfig: IgetDetails;
+}
+
+// 工作流保存响应 - data 直接返回版本号
+export type ISaveWorkflowResponse = number;
 // 试运行所有节点
 export interface ITestRun {
   workflowId: number | string;
@@ -324,12 +336,12 @@ export async function apiRestoreWorkflowVersion(
 
 // 全量保存工作流配置
 export async function saveWorkflow(
-  workflowConfig: IgetDetails,
-): Promise<RequestResponse<null>> {
+  params: ISaveWorkflowParams,
+): Promise<RequestResponse<ISaveWorkflowResponse | null>> {
   return request(`/api/workflow/save`, {
     method: 'POST',
     skipErrorHandler: true, // 跳过错误处理
-    data: { workflowConfig },
+    data: params,
   });
 }
 
