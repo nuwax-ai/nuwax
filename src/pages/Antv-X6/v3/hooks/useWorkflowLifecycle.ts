@@ -6,6 +6,7 @@ import { useModel } from 'umi';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
 import { getEdges } from '../utils/graphV3';
+import { workflowLogger } from '../utils/logger';
 
 interface UseWorkflowLifecycleProps {
   workflowId: number;
@@ -43,7 +44,7 @@ export const useWorkflowLifecycle = ({
         // V3: 刷新时同步更新版本号
         if (data.editVersion !== undefined) {
           workflowSaveService.setEditVersion(data.editVersion);
-          console.log('[V3] 刷新后版本号已更新:', data.editVersion);
+          workflowLogger.log('刷新后版本号已更新:', data.editVersion);
         }
       }
     } catch (error) {
