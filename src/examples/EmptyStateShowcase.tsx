@@ -14,6 +14,7 @@ const allEmptyStateTypes: Array<{
   type: EmptyStateType;
   label: string;
   category: 'loading' | 'error' | 'empty' | 'server';
+  props?: Partial<React.ComponentProps<typeof AppDevEmptyState>>;
 }> = [
   // 加载状态
   { type: 'loading', label: '加载中', category: 'loading' },
@@ -38,6 +39,23 @@ const allEmptyStateTypes: Array<{
   // 空状态
   { type: 'empty', label: '暂无内容', category: 'empty' },
   { type: 'no-data', label: '暂无数据', category: 'empty' },
+  { type: 'add-data', label: '添加数据资源 (Figma)', category: 'empty' },
+  {
+    type: 'no-data',
+    label: '暂无数据 (带按钮)',
+    category: 'empty',
+    props: {
+      title: '暂无数据资源',
+      description: '当前没有关联的数据资源，点击下方按钮添加',
+      buttons: [
+        {
+          text: '添加数据资源',
+          type: 'primary',
+          onClick: () => console.log('点击添加'),
+        },
+      ],
+    },
+  },
   { type: 'no-file', label: '暂无文件', category: 'empty' },
   { type: 'conversation-empty', label: '开始新对话', category: 'empty' },
 ];
@@ -111,8 +129,9 @@ const EmptyStateShowcase: React.FC = () => {
                   <div className={styles.statePreview}>
                     <AppDevEmptyState
                       type={item.type}
-                      showButtons={false}
+                      showButtons={true}
                       style={{ minHeight: 180, padding: '12px 8px' }}
+                      {...item.props}
                     />
                   </div>
                 </Card>
