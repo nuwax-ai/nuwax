@@ -27,9 +27,14 @@ export interface VncPreviewProps {
    */
   className?: string;
   /**
-   * @deprecated User ID is no longer needed for the URL
+   * 用户ID（用于音频/输入法WebSocket连接）
    */
   userId?: string;
+
+  /**
+   * 项目ID（用于音频/输入法WebSocket连接，默认使用cId）
+   */
+  projectId?: string;
 
   // ============ 音频和输入法功能 ============
 
