@@ -1,4 +1,6 @@
-import Constant from '@/constants/codes.constants';
+import Constant, {
+  WORKFLOW_VERSION_CONFLICT,
+} from '@/constants/codes.constants';
 import { SaveStatusEnum } from '@/models/workflowV3';
 import service from '@/services/workflow';
 import { FoldFormIdEnum } from '@/types/enums/node';
@@ -9,9 +11,6 @@ import { MutableRefObject, useCallback, useMemo } from 'react';
 import { useModel } from 'umi';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
-
-// 版本冲突错误码
-const VERSION_CONFLICT_CODE = '1001';
 
 interface UseWorkflowPersistenceProps {
   graphRef: MutableRefObject<GraphContainerRef | null>;
@@ -62,20 +61,22 @@ export const useWorkflowPersistence = ({
         // 标记保存中状态
         setSaveStatus(SaveStatusEnum.Saving);
 
-        // 构建保存请求参数，包含版本信息
+        // 构建保存请求参数，版本信息放入 workflowConfig
         const saveParams = {
-          workflowConfig: payload,
-          editVersion: workflowSaveService.getEditVersion(),
-          forceCommit: forceCommit ? (1 as const) : (0 as const),
+          workflowConfig: {
+            ...payload,
+            editVersion: workflowSaveService.getEditVersion(),
+            forceCommit: forceCommit ? (1 as const) : (0 as const),
+          },
         };
 
         const _res = await service.saveWorkflow(saveParams);
 
         if (_res.code === Constant.success) {
-          // 保存成功，更新版本号
-          if (_res.data?.editVersion) {
-            workflowSaveService.setEditVersion(_res.data.editVersion);
-            console.log('[V3] 版本号已更新:', _res.data.editVersion);
+          // 保存成功，更新版本号（data 直接是版本号）
+          if (_res.data !== null && _res.data !== undefined) {
+            workflowSaveService.setEditVersion(_res.data);
+            console.log('[V3] 版本号已更新:', _res.data);
           }
           workflowSaveService.clearDirty();
           workflowProxy.clearPendingUpdates();
@@ -86,7 +87,7 @@ export const useWorkflowPersistence = ({
           setSaveError(null);
           console.log('[V3] 保存成功 ✓');
           return true;
-        } else if (_res.code === VERSION_CONFLICT_CODE) {
+        } else if (_res.code === WORKFLOW_VERSION_CONFLICT) {
           // 版本冲突，弹窗询问用户是否强制更新
           console.warn('[V3] 版本冲突，工作流已被其他窗口修改');
           setSaveStatus(SaveStatusEnum.Failed);

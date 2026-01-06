@@ -118,22 +118,17 @@ export interface IgetDetails {
   systemVariables?: InputAndOutConfig[];
   // 编辑版本号（用于版本冲突检测）
   editVersion?: number;
+  // 是否强制提交: 0-检测版本冲突, 1-强制提交
+  forceCommit?: 0 | 1;
 }
 
 // 工作流保存请求参数
 export interface ISaveWorkflowParams {
   workflowConfig: IgetDetails;
-  // 编辑版本号
-  editVersion?: number;
-  // 是否强制提交: 0-检测版本冲突, 1-强制提交
-  forceCommit?: 0 | 1;
 }
 
-// 工作流保存响应
-export interface ISaveWorkflowResponse {
-  // 新版本号
-  editVersion: number;
-}
+// 工作流保存响应 - data 直接返回版本号
+export type ISaveWorkflowResponse = number;
 // 试运行所有节点
 export interface ITestRun {
   workflowId: number | string;
