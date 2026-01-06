@@ -264,7 +264,7 @@ export interface TaskCreatorInfo {
 
 // 任务信息
 export interface TaskInfo {
-  // 是否保持对话,可用值:0,1
+  // 是否保持会话,可用值:0,1
   keepConversation?: 0 | 1;
   // 任务ID
   id: number;
