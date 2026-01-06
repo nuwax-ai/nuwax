@@ -285,7 +285,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       } else if (isDeveloping) {
         icon = <Loading3QuartersOutlined spin />;
       } else if (isProjectUploading || isRestarting || isStarting) {
-        icon = <ThunderboltOutlined />;
+        icon = undefined;
       } else if (hasStartError) {
         icon = <ExclamationCircleOutlined />;
       } else {
@@ -705,7 +705,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      * iframe加载完成处理
      */
     const handleIframeLoad = useCallback(() => {
-      console.log('iframe加载完成:');
       // // 如果设计模式为开启，则发送消息给 iframe 开启设计模式
       // if (iframeDesignMode) {
       //   const iframe = document.querySelector('iframe');
@@ -1120,8 +1119,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             // filesToUpdate.push(file);
           }
         }
-
-        console.log(filesToUpdate, '======', pendingChanges);
 
         // 4. 调用 submitFilesUpdate 接口提交全量列表
         const response = await submitSpecifiedFilesUpdate(

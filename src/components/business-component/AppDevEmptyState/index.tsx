@@ -9,6 +9,7 @@ import React, { useState } from 'react';
 import styles from './index.less';
 
 // 空状态 SVG 插图
+import emptyStateConversation from '@/assets/images/empty_state_conversation.svg';
 import emptyStateLaptop from '@/assets/images/empty_state_laptop.svg';
 import emptyStateLoadingGreen from '@/assets/images/empty_state_loading_green.svg';
 import emptyStateLoadingYellow from '@/assets/images/empty_state_loading_yellow.svg';
@@ -25,7 +26,8 @@ export type EmptyStateType =
   | 'permission-denied'
   | 'server-starting'
   | 'server-restarting'
-  | 'conversation-empty';
+  | 'conversation-empty'
+  | 'no-file';
 
 /**
  * 按钮配置接口
@@ -199,15 +201,25 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
     },
     'conversation-empty': {
       icon: (
-        <div className={styles.serverStateIcon}>
-          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
-          <div className={styles.serverStateIndicator + ' ' + styles.green}>
-            <img src={emptyStateLoadingGreen} alt="" />
-          </div>
+        <div className={styles.conversationIcon}>
+          <img
+            src={emptyStateConversation}
+            alt=""
+            className={styles.conversationImage}
+          />
         </div>
       ),
       title: '开始新对话',
       description: '向 AI 助手提问，开始您的项目开发',
+    },
+    'no-file': {
+      icon: (
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+        </div>
+      ),
+      title: '暂无文件',
+      description: '当前目录下暂无文件',
     },
   };
 

@@ -1,11 +1,6 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { FileNode } from '@/types/interfaces/appDev';
-import {
-  ImportOutlined,
-  InboxOutlined,
-  LeftOutlined,
-  RightOutlined,
-} from '@ant-design/icons';
+import { ImportOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { Button, Card, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AppDevFileTree from './AppDevFileTree';
@@ -213,10 +208,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                   />
                 ) : files.length === 0 ? (
                   <AppDevEmptyState
-                    type="empty"
-                    icon={<InboxOutlined />}
-                    title="暂无文件"
-                    description="请导入项目或创建新文件开始开发"
+                    type="no-file" // 使用新的无文件状态
                     buttons={
                       !isComparing
                         ? [
