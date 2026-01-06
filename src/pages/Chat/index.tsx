@@ -138,6 +138,7 @@ const Chat: React.FC = () => {
     setShowScrollBtn,
     resetInit,
     handleClearSideEffect,
+    setIsLoadingOtherInterface,
     requiredNameList,
     setConversationInfo,
     variables,
@@ -333,6 +334,8 @@ const Chat: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: AgentDetailDto) => {
+      setClearLoading(false);
+      setIsLoadingOtherInterface(false);
       const { agentId, conversationId } = result;
       // 默认跳转地址
       let url = `/home/chat/${conversationId}/${agentId}`;
@@ -347,10 +350,10 @@ const Chat: React.FC = () => {
         defaultAgentDetail,
         firstVariableParams,
       });
-      setClearLoading(false);
     },
     onError: () => {
       setClearLoading(false);
+      setIsLoadingOtherInterface(false);
     },
   });
 
@@ -375,6 +378,8 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     if (id) {
+      console.log('useEffectuseEffectuseEffectid', id);
+
       setIsLoadingConversation(false);
       // 切换会话时，重置自动滚动标志，确保新会话能够自动滚动到底部
       allowAutoScrollRef.current = true;
@@ -484,6 +489,7 @@ const Chat: React.FC = () => {
     setMessageList([]);
     // 清除文件面板信息, 并关闭文件面板
     clearFilePanelInfo();
+    setIsLoadingOtherInterface(true);
     runDetailNew(agentId, true);
   };
 
