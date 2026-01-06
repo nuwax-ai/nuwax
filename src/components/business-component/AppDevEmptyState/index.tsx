@@ -142,8 +142,11 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
   const defaultConfigs: Record<EmptyStateType, DefaultStateConfig> = {
     loading: {
       icon: (
-        <div className={styles.loadingIcon}>
-          <LoadingOutlined />
+        <div className={styles.serverStateIcon}>
+          <img src={emptyStateLaptop} alt="" className={styles.laptopIcon} />
+          <div className={styles.serverStateIndicator + ' ' + styles.blue}>
+            <LoadingOutlined style={{ color: '#1677ff', fontSize: 16 }} />
+          </div>
         </div>
       ),
       title: '加载中...',
