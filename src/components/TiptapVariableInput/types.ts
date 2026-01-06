@@ -106,6 +106,8 @@ export interface TiptapVariableInputProps {
   variableMode?: 'node' | 'mark' | 'text';
   /** 获取编辑器实例 */
   getEditor?: (editor: any) => void;
+  /** 是否启用撤销/重做快捷键（Cmd+Z / Cmd+Shift+Z），默认不启用 */
+  enableHistory?: boolean;
 }
 
 /**
