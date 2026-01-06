@@ -828,6 +828,8 @@ export default () => {
         }
         // FINAL_RESULT事件
         if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
+          // 重置消息ID
+          messageIdRef.current = '';
           /**
            * "error":"Agent正在执行任务，请等待当前任务完成后再发送新请求"
            */
@@ -880,16 +882,19 @@ export default () => {
             runChatSuggest(params as ConversationChatSuggestParams);
           }
 
-          // // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
-          // if (!data.outputText) {
-          //   // 将 newMessage 设置为 null，并保持 arraySpliceAction 为 1
-          //   // 这样会在后续的 splice 操作中删除当前消息而不是替换
-          //   newMessage = null;
-          //   // 确保删除操作生效：直接从列表中移除当前消息
-          //   list.splice(index, 1);
-          //   // 标记已处理，跳过后续的 splice 逻辑
-          //   arraySpliceAction = 0;
-          // }
+          // 用户主动取消任务
+          if (!data?.success && data?.error?.includes('用户主动取消任务')) {
+            // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
+            if (!newMessage?.text && !data.outputText) {
+              // 将 newMessage 设置为 null，并保持 arraySpliceAction 为 1
+              // 这样会在后续的 splice 操作中删除当前消息而不是替换
+              newMessage = null;
+              // 确保删除操作生效：直接从列表中移除当前消息
+              list.splice(index, 1);
+              // 标记已处理，跳过后续的 splice 逻辑
+              // arraySpliceAction = 0;
+            }
+          }
         }
         // ERROR事件
         if (eventType === ConversationEventTypeEnum.ERROR) {
@@ -1041,6 +1046,8 @@ export default () => {
 
   // 清除副作用
   const handleClearSideEffect = () => {
+    // 重置消息ID
+    messageIdRef.current = '';
     setChatSuggestList([]);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -1059,6 +1066,9 @@ export default () => {
       }
       abortConnectionRef.current = null;
     }
+
+    // 停止当前会话【强制】
+    abortController?.abort();
   };
 
   // 重置初始化
@@ -1098,9 +1108,6 @@ export default () => {
 
     // 清除文件面板信息, 并关闭文件面板
     clearFilePanelInfo();
-
-    // 停止当前会话【强制】
-    abortController?.abort();
   };
 
   // 发送消息
