@@ -725,7 +725,7 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: @colorBgContainer;
+  // background: @colorBgContainer;
   // border-top: @lineWidth solid @colorBorderSecondary; // Removed border-top to fit in chat area
   height: 100%; // Ensure it takes full height of the tab content area
 }
@@ -734,9 +734,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 8px 20px;
   // border-bottom: @lineWidth solid @colorBorder;
-  background: @colorBgContainer;
+  // background: @colorBgContainer;
 }
 
 .dataSourceTitle {
@@ -748,7 +748,8 @@
 .dataSourceContent {
   flex: 1;
   overflow: hidden;
-  background: @colorBgContainer;
+  padding: 0 8px;
+  // background: @colorBgContainer;
 }
 
 .addButton {
