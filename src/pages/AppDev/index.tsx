@@ -69,7 +69,6 @@ import DevLogConsole from './components/DevLogConsole';
 import EditorHeaderRight from './components/EditorHeaderRight';
 import FileOperatingMask from './components/FileOperatingMask';
 import FileTreePanel from './components/FileTreePanel';
-// import DataResourceList from './components/FileTreePanel/DataResourceList';
 
 import PageEditModal from './components/PageEditModal';
 
@@ -1556,8 +1555,6 @@ const AppDev: React.FC = () => {
                       expandedFolders={
                         fileManagement.fileTreeState.expandedFolders
                       }
-                      // dataResources={dataResourceManagement.resources}
-                      // dataResourcesLoading={dataResourceManagement.loading}
                       onFileSelect={(fileId) => {
                         if (versionCompare.isComparing) {
                           updateWorkspace({ activeFile: fileId });
@@ -1588,14 +1585,7 @@ const AppDev: React.FC = () => {
                           ? async () => {}
                           : handleRightClickUpload
                       }
-                      // onAddDataResource={
-                      //   isFileOperating
-                      //     ? () => {}
-                      //     : () => setIsAddDataResourceModalVisible(true)
-                      // }
-                      // onDeleteDataResource={handleDeleteDataResource}
                       selectedDataResources={selectedDataResources}
-                      // onDataResourceSelectionChange={setSelectedDataResourceIds}
                       workspace={workspace}
                       fileManagement={fileManagement}
                       isChatLoading={chat.isChatLoading}

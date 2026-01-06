@@ -15,12 +15,6 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
   isSupportDesignMode,
 }) => {
   const { isIframeLoaded, iframeDesignMode } = useModel('appDevDesign');
-  console.log('ChatAreaTabs render:', {
-    activeTab,
-    isIframeLoaded,
-    iframeDesignMode,
-    isSupportDesignMode,
-  });
 
   // 监听 iframeDesignMode 变化，同步 Tab 状态
   useEffect(() => {
