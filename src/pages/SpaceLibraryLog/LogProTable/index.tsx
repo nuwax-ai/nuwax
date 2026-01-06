@@ -15,8 +15,14 @@ import type {
 import { ProTable } from '@ant-design/pro-components';
 import { Button, message } from 'antd';
 import dayjs from 'dayjs';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { useLocation, useParams, useSearchParams } from 'umi';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { history, useLocation, useParams, useSearchParams } from 'umi';
 import LogDetailDrawer from '../LogDetailDrawer';
 
 /**
@@ -239,11 +245,14 @@ const LogProTable: React.FC = () => {
   const isReset = useRef(false);
 
   const request = useCallback(
-    async (tableParams: Record<string, any>) => {
+    async (_tableParams: Record<string, any>) => {
+      let tableParams = _tableParams;
       // 判断是否是点击重置按钮
       if (isReset.current) {
         isReset.current = false;
-        // 设置表单值为空
+        // 重置表单
+        formRef.current?.resetFields();
+        // 设置表单值为空(需要特殊处理)
         formRef.current?.setFieldsValue({
           targetType: undefined,
           targetId: undefined,
@@ -252,10 +261,12 @@ const LogProTable: React.FC = () => {
         // 删除查询参数，防止重复查询
         searchParams.delete('targetType');
         searchParams.delete('targetId');
-        searchParams.delete('from');
-        tableParams.targetId = undefined;
-        tableParams.targetType = undefined;
+        searchParams.delete('from'); // 需要特殊处理（只有特殊情况会用到）
         setSearchParams(searchParams);
+        tableParams = {
+          current: tableParams.current,
+          pageSize: tableParams.pageSize,
+        };
       }
       const current = Number(tableParams.current || 1);
       const pageSize = Number(tableParams.pageSize || 10);
@@ -370,7 +381,16 @@ const LogProTable: React.FC = () => {
 
   const handleReset = () => {
     isReset.current = true;
+    // 手动触发重新加载，因为设置了 manualRequest={true}
+    actionRef.current?.reload();
   };
+
+  useEffect(() => {
+    // 当通过菜单切换页面时（history.location.state 变化），触发重置和重新加载
+    if (history.location.state) {
+      handleReset();
+    }
+  }, [history.location.state]);
 
   return (
     <>

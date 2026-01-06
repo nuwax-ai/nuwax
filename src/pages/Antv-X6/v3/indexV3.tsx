@@ -63,6 +63,7 @@ import { useWorkflowValidation } from './hooks/useWorkflowValidation';
 
 // V3 数据代理层
 import { WorkflowVersionProvider } from '@/contexts/WorkflowVersionContext';
+import { workflowLogger } from '@/utils/logger';
 import { workflowProxy } from './services/workflowProxyV3';
 import { workflowSaveService } from './services/WorkflowSaveService';
 import type { WorkflowDataV3 } from './types';
@@ -662,7 +663,7 @@ const Workflow: React.FC = () => {
     const _isModified = getWorkflow('isModified');
     const _drawerForm = getWorkflow('drawerForm');
 
-    console.log(
+    workflowLogger.log(
       '[changeDrawer] 节点切换, isModified:',
       _isModified,
       'currentNode:',
@@ -681,7 +682,7 @@ const Workflow: React.FC = () => {
 
     // 切换节点时保存当前节点数据（包含触发 blur 和等待状态更新）
     if (_drawerForm?.id !== 0 && _drawerForm?.id !== child?.id) {
-      console.log('[changeDrawer] 切换节点，保存当前节点数据');
+      workflowLogger.log('[changeDrawer] 切换节点，保存当前节点数据');
 
       // 使用 helper 函数：触发 blur、等待状态更新、更新本地数据
       const updatedDrawerForm = await saveCurrentNodeBeforeSwitch(_drawerForm);
