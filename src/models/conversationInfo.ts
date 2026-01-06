@@ -758,14 +758,13 @@ export default () => {
           // 长任务型任务处理(刷新文件树)
           if (
             data.type === AgentComponentTypeEnum.ToolCall &&
-            // isFileTreeVisible && // 是否已经打开文件预览窗口
-            // viewMode === 'preview' && // 文件预览
+            isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
+            viewModeRef.current === 'preview' && // 文件预览
             // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
             params.conversationId
           ) {
             // 刷新文件树
             handleRefreshFileList(params.conversationId);
-            console.log('刷新文件树');
           }
 
           handleChatProcessingList([
@@ -819,7 +818,10 @@ export default () => {
               newMessage = {
                 ...currentMessage,
                 text: `${currentMessage.text}${text}`,
-                status: MessageStatusEnum.Incomplete,
+                // 如果finished为true，则状态为Complete，否则为Incomplete
+                status: finished
+                  ? MessageStatusEnum.Complete
+                  : MessageStatusEnum.Incomplete,
               };
             }
           }
@@ -878,16 +880,16 @@ export default () => {
             runChatSuggest(params as ConversationChatSuggestParams);
           }
 
-          // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
-          if (!data.outputText) {
-            // 将 newMessage 设置为 null，并保持 arraySpliceAction 为 1
-            // 这样会在后续的 splice 操作中删除当前消息而不是替换
-            newMessage = null;
-            // 确保删除操作生效：直接从列表中移除当前消息
-            list.splice(index, 1);
-            // 标记已处理，跳过后续的 splice 逻辑
-            arraySpliceAction = 0;
-          }
+          // // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
+          // if (!data.outputText) {
+          //   // 将 newMessage 设置为 null，并保持 arraySpliceAction 为 1
+          //   // 这样会在后续的 splice 操作中删除当前消息而不是替换
+          //   newMessage = null;
+          //   // 确保删除操作生效：直接从列表中移除当前消息
+          //   list.splice(index, 1);
+          //   // 标记已处理，跳过后续的 splice 逻辑
+          //   arraySpliceAction = 0;
+          // }
         }
         // ERROR事件
         if (eventType === ConversationEventTypeEnum.ERROR) {
@@ -968,7 +970,7 @@ export default () => {
                 );
 
                 lastMessage.processingList = updatedProcessingList;
-                lastMessage.status = MessageStatusEnum.Error;
+                // lastMessage.status = MessageStatusEnum.Error;
 
                 // ✨ 关键：同时更新全局的 processingList，这样 MarkdownCustomProcess 组件才能正确更新
                 handleChatProcessingList(updatedProcessingList);

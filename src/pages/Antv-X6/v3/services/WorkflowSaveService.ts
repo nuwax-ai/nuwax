@@ -57,6 +57,8 @@ class WorkflowSaveService {
   private originalDetails: IgetDetails | null = null;
   private isDirty = false;
   private listeners: (() => void)[] = [];
+  // 编辑版本号（用于版本冲突检测）
+  private editVersion: number | undefined;
 
   // ==================== 初始化 ====================
 
@@ -78,6 +80,8 @@ class WorkflowSaveService {
       category: details.category,
       permissions: details.permissions,
     } as WorkflowMeta;
+    // 保存编辑版本号
+    this.editVersion = details.editVersion;
     this.isDirty = false;
   }
 
@@ -110,6 +114,7 @@ class WorkflowSaveService {
     this.meta = null;
     this.originalDetails = null;
     this.isDirty = false;
+    this.editVersion = undefined;
   }
 
   // ==================== 脏数据标记 ====================
@@ -516,6 +521,20 @@ class WorkflowSaveService {
    */
   getOriginalDetails(): IgetDetails | null {
     return this.originalDetails ? cloneDeep(this.originalDetails) : null;
+  }
+
+  /**
+   * 获取当前编辑版本号
+   */
+  getEditVersion(): number | undefined {
+    return this.editVersion;
+  }
+
+  /**
+   * 设置编辑版本号（保存成功后调用）
+   */
+  setEditVersion(version: number): void {
+    this.editVersion = version;
   }
 }
 

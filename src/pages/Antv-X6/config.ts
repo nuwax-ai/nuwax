@@ -12,6 +12,8 @@
  * V3 优先级高于 V2
  */
 
+import { workflowLogger } from '@/utils/logger';
+
 /**
  * 检查 URL 参数中是否指定了 v1=true
  */
@@ -182,10 +184,7 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     getCurrentVersion,
     config: WORKFLOW_CONFIG,
   };
-  console.log('[Workflow] 当前使用方案:', getCurrentVersion());
-  console.log(
-    '[Workflow] 切换方案方法: window.__workflowConfig.enableV2() / disableV2() / enableV3() / disableV3()',
-  );
+  workflowLogger.log('[Config] 当前使用方案:', getCurrentVersion());
 }
 
 export default WORKFLOW_CONFIG;
