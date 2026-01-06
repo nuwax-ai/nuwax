@@ -1,3 +1,4 @@
+import { SANDBOX } from '@/constants/common.constants';
 import { apiCheckVncStatus } from '@/services/vncDesktop';
 import { DesktopOutlined } from '@ant-design/icons';
 import { Alert, Button, Spin, Tag } from 'antd';
@@ -346,6 +347,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
               ref={iframeRef}
               src={iframeUrl}
               title="VNC Preview"
+              sandbox={SANDBOX}
               scrolling="no"
               onLoad={handleIframeLoad}
               onError={handleIframeError}
