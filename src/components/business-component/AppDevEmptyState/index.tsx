@@ -42,6 +42,7 @@ export type EmptyStateType =
   | 'server-start-failed'
   | 'no-preview-url'
   | 'conversation-empty'
+  | 'add-data'
   | 'no-file';
 
 /**
@@ -306,6 +307,19 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
       ),
       title: '开始新对话',
       description: '向 AI 助手提问，开始您的项目开发',
+    },
+    'add-data': {
+      icon: (
+        <div className={styles.conversationIcon}>
+          <img
+            src={emptyStateNoData}
+            alt=""
+            className={styles.conversationImage}
+          />
+        </div>
+      ),
+      title: '', // Figma 设计中没有标题
+      description: '点击“+“添加数据资源',
     },
     'no-file': {
       icon: (
