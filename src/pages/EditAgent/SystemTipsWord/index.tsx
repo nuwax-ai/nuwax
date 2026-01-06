@@ -176,6 +176,7 @@ const SystemTipsWord = forwardRef<
               style={{ height: '100%', border: 'none' }}
               variables={variables}
               skills={skills}
+              enableHistory={true}
             />
           ) : (
             <TiptapVariableInput
@@ -189,6 +190,7 @@ const SystemTipsWord = forwardRef<
               style={{ height: '100%', border: 'none' }}
               variables={variables}
               skills={skills}
+              enableHistory={true}
             />
           )}
         </div>

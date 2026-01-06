@@ -327,9 +327,9 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
           <>
             <Form.Item
               name="keepConversation"
-              label="保持对话"
+              label="保持会话"
               tooltip="选择“否”时将为每次任务执行创建一个全新的会话）"
-              rules={[{ required: true, message: '请选择是否保持对话' }]}
+              rules={[{ required: true, message: '请选择是否保持会话' }]}
             >
               <Switch checkedChildren="是" unCheckedChildren="否" />
             </Form.Item>

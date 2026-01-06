@@ -1,9 +1,9 @@
 import {
   getProjectContentByVersion,
   keepAlive,
-  submitFilesUpdate,
+  rollbackVersion,
 } from '@/services/appDev';
-import type { FileNode, PageFileInfo } from '@/types/interfaces/appDev';
+import type { FileNode } from '@/types/interfaces/appDev';
 import { message } from 'antd';
 import { useCallback, useState } from 'react';
 
@@ -205,6 +205,7 @@ export const useAppDevVersionCompare = ({
 
   /**
    * 确认切换版本
+   * 使用服务端回滚接口，避免大文件传输导致数据丢失
    */
   const confirmVersionSwitch = useCallback(async () => {
     if (!projectId || !targetVersion) {
@@ -215,28 +216,8 @@ export const useAppDevVersionCompare = ({
     try {
       setIsSwitching(true);
 
-      // 准备要更新的文件 - 扁平化所有文件
-      const filesToUpdate: PageFileInfo[] = [];
-
-      const flattenFiles = (nodes: FileNode[]) => {
-        nodes.forEach((node) => {
-          if (node.type === 'file' && node.content) {
-            filesToUpdate.push({
-              name: node.path,
-              contents: node.content,
-              binary: node.binary || false,
-            });
-          }
-          if (node.children) {
-            flattenFiles(node.children);
-          }
-        });
-      };
-
-      flattenFiles(versionFiles);
-
-      // 调用更新接口
-      const response = await submitFilesUpdate(projectId, filesToUpdate);
+      // 调用服务端回滚接口
+      const response = await rollbackVersion(projectId, targetVersion);
 
       if (response?.code === '0000') {
         // 退出对比模式
@@ -255,13 +236,7 @@ export const useAppDevVersionCompare = ({
     } finally {
       setIsSwitching(false);
     }
-  }, [
-    projectId,
-    targetVersion,
-    versionFiles,
-    cancelCompare,
-    onVersionSwitchSuccess,
-  ]);
+  }, [projectId, targetVersion, cancelCompare, onVersionSwitchSuccess]);
 
   return {
     isComparing,

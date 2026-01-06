@@ -51,6 +51,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
   enableEditableVariables = true, // 默认开启可编辑变量模式
   variableMode = 'text', // 默认使用纯文本模式
   getEditor,
+  enableHistory = false, // 默认禁用撤销/重做快捷键
 }) => {
   const { token } = theme.useToken();
 
@@ -128,7 +129,10 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
   const editor = useEditor(
     {
       extensions: [
-        StarterKit,
+        // StarterKit 配置：根据 enableHistory 控制是否启用撤销/重做
+        StarterKit.configure({
+          history: enableHistory ? {} : false, // 禁用或启用 history 扩展
+        }),
         !disableMentions ? MentionNode : undefined,
         RawNode, // Raw 节点扩展，用于展示 HTML/XML 原始内容
         // 总是包含两种变量类型：Node 用于不可编辑
@@ -185,7 +189,14 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
         }
       },
     },
-    [disableMentions, readonly, disabled, getNormalizedHtml, enableMarkdown],
+    [
+      disableMentions,
+      readonly,
+      disabled,
+      getNormalizedHtml,
+      enableMarkdown,
+      enableHistory,
+    ],
   );
 
   // 监听 variableTree 变化，更新 Suggestion 插件的配置
