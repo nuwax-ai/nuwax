@@ -758,14 +758,13 @@ export default () => {
           // 长任务型任务处理(刷新文件树)
           if (
             data.type === AgentComponentTypeEnum.ToolCall &&
-            // isFileTreeVisible && // 是否已经打开文件预览窗口
-            // viewMode === 'preview' && // 文件预览
+            isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
+            viewModeRef.current === 'preview' && // 文件预览
             // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
             params.conversationId
           ) {
             // 刷新文件树
             handleRefreshFileList(params.conversationId);
-            console.log('刷新文件树');
           }
 
           handleChatProcessingList([
@@ -968,7 +967,7 @@ export default () => {
                 );
 
                 lastMessage.processingList = updatedProcessingList;
-                lastMessage.status = MessageStatusEnum.Error;
+                // lastMessage.status = MessageStatusEnum.Error;
 
                 // ✨ 关键：同时更新全局的 processingList，这样 MarkdownCustomProcess 组件才能正确更新
                 handleChatProcessingList(updatedProcessingList);
