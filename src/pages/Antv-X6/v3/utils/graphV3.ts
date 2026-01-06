@@ -18,6 +18,7 @@ import {
 import { ExceptionHandleConfig, NodeConfig } from '@/types/interfaces/node';
 import { isEmptyObject } from '@/utils/index';
 // import { getWidthAndHeight } from '@/utils/updateNode';
+import { workflowLogger } from '@/utils/logger';
 import { Cell, Edge, Graph, Node } from '@antv/x6';
 import { message } from 'antd';
 import { isEqual, isPlainObject } from 'lodash';
@@ -924,6 +925,6 @@ export const getEdges = (
       resultEdges.push(edge);
     }
   });
-  console.log('getEdges:resultEdges', resultEdges);
+  workflowLogger.log('[getEdges] resultEdges', resultEdges);
   return resultEdges;
 };

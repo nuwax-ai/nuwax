@@ -8,11 +8,11 @@ import Constant, {
   WORKFLOW_VERSION_CONFLICT,
 } from '@/constants/codes.constants';
 import service from '@/services/workflow';
+import { workflowLogger } from '@/utils/logger';
 import { Graph } from '@antv/x6';
 import { debounce } from 'lodash';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { workflowSaveService } from '../services/WorkflowSaveService';
-import { workflowLogger } from '../utils/logger';
 
 interface UseAutoSaveOptions {
   /** 防抖延迟（毫秒） */
