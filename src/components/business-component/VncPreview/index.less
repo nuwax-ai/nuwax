@@ -117,5 +117,18 @@
       background-color: #f5f5f5;
       z-index: 10;
     }
+
+    // 隐藏的输入法输入框
+    // 用于捕获中文输入法的compositionend事件
+    .imeHiddenInput {
+      position: fixed;
+      top: -9999px;
+      left: -9999px;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
   }
 }

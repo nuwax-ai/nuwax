@@ -30,6 +30,28 @@ export interface VncPreviewProps {
    * @deprecated User ID is no longer needed for the URL
    */
   userId?: string;
+
+  // ============ 音频和输入法功能 ============
+
+  /**
+   * 是否启用音频流功能
+   * 启用后会自动连接音频WebSocket并播放远程桌面的声音
+   * @default true
+   */
+  enableAudio?: boolean;
+
+  /**
+   * 是否启用输入法透传功能
+   * 启用后可在本地使用中文输入法，文本会自动发送到远程桌面
+   * @default true
+   */
+  enableIme?: boolean;
+
+  /**
+   * 初始音量 (0-1)
+   * @default 0.8
+   */
+  initialVolume?: number;
 }
 
 export type ConnectionStatus =

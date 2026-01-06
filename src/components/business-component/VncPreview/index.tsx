@@ -1,5 +1,6 @@
 import { SANDBOX } from '@/constants/common.constants';
 import { apiCheckVncStatus } from '@/services/vncDesktop';
+import { vncLogger } from '@/utils/logger';
 import { DesktopOutlined } from '@ant-design/icons';
 import { Alert, Button, Spin, Tag } from 'antd';
 import {
@@ -12,6 +13,8 @@ import {
 } from 'react';
 import styles from './index.less';
 import { ConnectionStatus, VncPreviewProps, VncPreviewRef } from './type';
+import { useAudioStream } from './useAudioStream';
+import { useImeInput } from './useImeInput';
 import { useUrlRetry } from './useUrlRetry';
 
 const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
@@ -23,6 +26,10 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       autoConnect = false,
       style,
       className,
+      // 音频和输入法功能（默认启用）
+      enableAudio = true,
+      enableIme = true,
+      initialVolume = 0.8,
     },
     ref,
   ) => {
@@ -30,6 +37,42 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [iframeUrl, setIframeUrl] = useState<string | null>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    // ============ 音频流功能 ============
+    const {
+      status: audioStatus,
+      // volume,
+      // setVolume,
+    } = useAudioStream({
+      serviceUrl,
+      cId,
+      enabled: enableAudio,
+      initialVolume,
+      vncStatus: status,
+    });
+
+    // ============ 输入法透传功能 ============
+    const {
+      status: imeStatus,
+      inputRef: imeInputRef,
+      // activateInput,
+    } = useImeInput({
+      serviceUrl,
+      cId,
+      enabled: enableIme,
+      vncStatus: status,
+      iframeRef,
+    });
+
+    // 日志输出（仅开发环境）
+    useEffect(() => {
+      if (enableAudio) {
+        vncLogger.log('[Audio] 状态:', audioStatus);
+      }
+      if (enableIme) {
+        vncLogger.log('[IME] 状态:', imeStatus);
+      }
+    }, [audioStatus, imeStatus, enableAudio, enableIme]);
 
     // 使用 URL 重试 hook
     // TODO: 后端 API 准备好后，取消下面的 checkFn 注释以启用后端代理检测
@@ -352,6 +395,17 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
               onLoad={handleIframeLoad}
               onError={handleIframeError}
               style={{ display: status === 'disconnected' ? 'none' : 'block' }}
+            />
+          )}
+
+          {/* 隐藏的输入法输入框 - 用于捕获中文输入 */}
+          {enableIme && (
+            <input
+              ref={imeInputRef}
+              type="text"
+              className={styles.imeHiddenInput}
+              aria-hidden="true"
+              tabIndex={-1}
             />
           )}
         </div>
