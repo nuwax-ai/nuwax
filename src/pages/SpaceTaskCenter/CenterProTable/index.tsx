@@ -14,13 +14,18 @@ import { TaskCenterMoreActionEnum } from '@/types/enums/pageDev';
 import { CustomPopoverItem } from '@/types/interfaces/common';
 import type { TaskInfo } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
-import type { ActionType, ProColumns } from '@ant-design/pro-components';
+import type {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import { Button, Popconfirm, Space, Tag, message } from 'antd';
 import dayjs from 'dayjs';
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -71,6 +76,10 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
 
     // 标记是否需要强制刷新（点击查询按钮时为 true）
     const forceRefreshRef = useRef<boolean>(false);
+    // 标记是否是菜单切换触发的刷新
+    const isMenuRefreshRef = useRef<boolean>(false);
+    // 表单引用
+    const formRef = useRef<FormInstance>();
 
     /**
      * 安全格式化时间：兼容 number/字符串/空值
@@ -193,13 +202,18 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     );
 
     /**
-     * 刷新列表：清空缓存并重新请求接口
+     * 刷新列表：清空缓存并重新请求接口（菜单切换触发）
      */
     const refreshList = useCallback(() => {
       cacheRef.current = null;
       fetchingRef.current = null;
       forceRefreshRef.current = true;
-      actionRef.current?.reload();
+      isMenuRefreshRef.current = true; // 标记为菜单刷新
+      formRef.current?.resetFields();
+      // 延迟执行 reload，确保表单重置完成
+      setTimeout(() => {
+        actionRef.current?.reload();
+      }, 0);
     }, []);
 
     /**
@@ -225,13 +239,26 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         const current = Number(tableParams.current || 1);
         const pageSize = Number(tableParams.pageSize || 10);
 
-        // 搜索表单字段
-        const targetType = tableParams.targetType as string | undefined;
-        const taskName = (tableParams.taskName as string | undefined)?.trim();
-
-        // 检查是否需要强制刷新（点击查询按钮）
+        // 先保存是否需要强制刷新的标志（点击查询按钮时为 true）
         const shouldForceRefresh = forceRefreshRef.current;
-        forceRefreshRef.current = false; // 重置标志
+        const isMenuRefresh = isMenuRefreshRef.current;
+
+        if (shouldForceRefresh) {
+          forceRefreshRef.current = false; // 重置标志
+        }
+        if (isMenuRefresh) {
+          isMenuRefreshRef.current = false; // 重置菜单刷新标志
+        }
+
+        // 搜索表单字段
+        // 如果是菜单切换触发的刷新，忽略 tableParams 中的搜索条件，使用空条件
+        // 如果是用户点击查询按钮，使用 tableParams 中的搜索条件
+        const targetType = isMenuRefresh
+          ? undefined
+          : (tableParams.targetType as string | undefined);
+        const taskName = isMenuRefresh
+          ? undefined
+          : (tableParams.taskName as string | undefined)?.trim();
 
         // 获取任务列表（根据标志决定是否使用缓存）
         const all = await fetchTaskList(sid, shouldForceRefresh);
@@ -536,8 +563,24 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       return params;
     }, []);
 
+    // 重置后也需要强制刷新
+    const handleReset = () => {
+      // isReset.current = true;
+      forceRefreshRef.current = true;
+      // 手动触发重新加载，因为设置了 manualRequest={true}
+      actionRef.current?.reload();
+    };
+
+    useEffect(() => {
+      // 当通过菜单切换页面时（history.location.state 变化），触发刷新
+      if (history.location.state) {
+        refreshList();
+      }
+    }, [history.location.state, refreshList]);
+
     return (
       <ProTable<TaskInfo>
+        formRef={formRef}
         actionRef={actionRef}
         rowKey="id"
         columns={columns}
@@ -567,9 +610,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
         // 表单提交前处理：点击查询按钮时设置强制刷新标志
         beforeSearchSubmit={beforeSearchSubmit}
         // 重置后也需要强制刷新
-        onReset={() => {
-          forceRefreshRef.current = true;
-        }}
+        onReset={handleReset}
       />
     );
   },
