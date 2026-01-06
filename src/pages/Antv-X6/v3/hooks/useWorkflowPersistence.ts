@@ -5,13 +5,13 @@ import { SaveStatusEnum } from '@/models/workflowV3';
 import service from '@/services/workflow';
 import { FoldFormIdEnum } from '@/types/enums/node';
 import { ChildNode, GraphContainerRef } from '@/types/interfaces/graph';
+import { workflowLogger } from '@/utils/logger';
 import { Modal } from 'antd';
 import { debounce } from 'lodash';
 import { MutableRefObject, useCallback, useMemo } from 'react';
 import { useModel } from 'umi';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
-import { workflowLogger } from '../utils/logger';
 
 interface UseWorkflowPersistenceProps {
   graphRef: MutableRefObject<GraphContainerRef | null>;
