@@ -818,7 +818,10 @@ export default () => {
               newMessage = {
                 ...currentMessage,
                 text: `${currentMessage.text}${text}`,
-                status: MessageStatusEnum.Incomplete,
+                // 如果finished为true，则状态为Complete，否则为Incomplete
+                status: finished
+                  ? MessageStatusEnum.Complete
+                  : MessageStatusEnum.Incomplete,
               };
             }
           }
@@ -877,16 +880,16 @@ export default () => {
             runChatSuggest(params as ConversationChatSuggestParams);
           }
 
-          // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
-          if (!data.outputText) {
-            // 将 newMessage 设置为 null，并保持 arraySpliceAction 为 1
-            // 这样会在后续的 splice 操作中删除当前消息而不是替换
-            newMessage = null;
-            // 确保删除操作生效：直接从列表中移除当前消息
-            list.splice(index, 1);
-            // 标记已处理，跳过后续的 splice 逻辑
-            arraySpliceAction = 0;
-          }
+          // // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
+          // if (!data.outputText) {
+          //   // 将 newMessage 设置为 null，并保持 arraySpliceAction 为 1
+          //   // 这样会在后续的 splice 操作中删除当前消息而不是替换
+          //   newMessage = null;
+          //   // 确保删除操作生效：直接从列表中移除当前消息
+          //   list.splice(index, 1);
+          //   // 标记已处理，跳过后续的 splice 逻辑
+          //   arraySpliceAction = 0;
+          // }
         }
         // ERROR事件
         if (eventType === ConversationEventTypeEnum.ERROR) {
