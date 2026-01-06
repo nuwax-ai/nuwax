@@ -73,7 +73,6 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
         }
         options={[
           { label: '对话', value: 'chat' },
-          { label: '数据', value: 'data' },
           ...(isSupportDesignMode
             ? [
                 {
@@ -93,6 +92,7 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
                 },
               ]
             : []),
+          { label: '数据', value: 'data' },
         ]}
         block
       />
