@@ -1,7 +1,6 @@
 import {
   ExclamationCircleOutlined,
   GlobalOutlined,
-  InboxOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
 import { Button, Modal } from 'antd';
@@ -21,6 +20,8 @@ import emptyStateIconCloseCircle from '@/assets/images/empty_state_icon_close_ci
 import emptyStateIconEyeClose from '@/assets/images/empty_state_icon_eye_close.svg';
 import emptyStateIconPreviewError from '@/assets/images/empty_state_icon_preview_error.svg';
 import emptyStateIconServerError from '@/assets/images/empty_state_icon_server_error.svg';
+// 空数据状态图标
+import emptyStateNoData from '@/assets/images/empty_state_no_data.svg';
 
 /**
  * 空状态类型枚举
@@ -173,8 +174,12 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
     },
     empty: {
       icon: (
-        <div className={styles.emptyIcon}>
-          <InboxOutlined />
+        <div className={styles.conversationIcon}>
+          <img
+            src={emptyStateNoData}
+            alt=""
+            className={styles.conversationImage}
+          />
         </div>
       ),
       title: '暂无内容',
@@ -182,8 +187,12 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
     },
     'no-data': {
       icon: (
-        <div className={styles.emptyIcon}>
-          <GlobalOutlined />
+        <div className={styles.conversationIcon}>
+          <img
+            src={emptyStateNoData}
+            alt=""
+            className={styles.conversationImage}
+          />
         </div>
       ),
       title: '暂无数据',
