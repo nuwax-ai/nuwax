@@ -11,6 +11,7 @@ import { MutableRefObject, useCallback, useMemo } from 'react';
 import { useModel } from 'umi';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
+import { workflowLogger } from '../utils/logger';
 
 interface UseWorkflowPersistenceProps {
   graphRef: MutableRefObject<GraphContainerRef | null>;
@@ -38,7 +39,7 @@ export const useWorkflowPersistence = ({
         const graph =
           graphRef.current?.getGraphRef?.() || graphInstanceRef?.current;
         if (!graph) {
-          console.error('[V3] 画布未初始化');
+          workflowLogger.error('画布未初始化');
           return false;
         }
 
@@ -47,15 +48,18 @@ export const useWorkflowPersistence = ({
 
         // 如果画布数据无效（页面离开时画布已清除），回退到使用 workflowProxy 的数据
         if (!payload) {
-          console.warn('[V3] 画布数据无效，尝试使用 workflowProxy 数据');
+          workflowLogger.warn('画布数据无效，尝试使用 workflowProxy 数据');
           payload = workflowProxy.buildFullConfig();
           if (!payload) {
-            console.error('[V3] 构建保存数据失败，无可用数据源');
+            workflowLogger.error('构建保存数据失败，无可用数据源');
             return false;
           }
-          console.log('[V3] 使用 workflowProxy 数据保存');
+          workflowLogger.log('使用 workflowProxy 数据保存');
         } else {
-          console.log('[V3] 使用单一数据源保存, 节点数:', payload.nodes.length);
+          workflowLogger.log(
+            '使用单一数据源保存, 节点数:',
+            payload.nodes.length,
+          );
         }
 
         // 标记保存中状态
@@ -76,7 +80,7 @@ export const useWorkflowPersistence = ({
           // 保存成功，更新版本号（data 直接是版本号）
           if (_res.data !== null && _res.data !== undefined) {
             workflowSaveService.setEditVersion(_res.data);
-            console.log('[V3] 版本号已更新:', _res.data);
+            workflowLogger.log('版本号已更新:', _res.data);
           }
           workflowSaveService.clearDirty();
           workflowProxy.clearPendingUpdates();
@@ -85,11 +89,11 @@ export const useWorkflowPersistence = ({
           setSaveStatus(SaveStatusEnum.Saved);
           setLastSaveTime(new Date());
           setSaveError(null);
-          console.log('[V3] 保存成功 ✓');
+          workflowLogger.log('保存成功 ✓');
           return true;
         } else if (_res.code === WORKFLOW_VERSION_CONFLICT) {
           // 版本冲突，弹窗询问用户是否强制更新
-          console.warn('[V3] 版本冲突，工作流已被其他窗口修改');
+          workflowLogger.warn('版本冲突，工作流已被其他窗口修改');
           setSaveStatus(SaveStatusEnum.Failed);
           setSaveError('版本冲突');
 
@@ -105,7 +109,7 @@ export const useWorkflowPersistence = ({
           });
           return false;
         } else {
-          console.error('[V3] 工作流保存失败:', _res.message);
+          workflowLogger.error('工作流保存失败:', _res.message);
           // 更新保存状态为失败
           setSaveStatus(SaveStatusEnum.Failed);
           setSaveError(_res.message || '保存失败');
