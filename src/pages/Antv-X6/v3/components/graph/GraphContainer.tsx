@@ -11,6 +11,7 @@ import type {
 import { ChangeEdgeProps, ChangeNodeProps } from '@/types/interfaces/graph';
 import { NodeConfig } from '@/types/interfaces/node';
 import { cloneDeep, mergeObject } from '@/utils/common';
+import { workflowLogger } from '@/utils/logger';
 import { Graph, Node } from '@antv/x6';
 import { App } from 'antd';
 import {
@@ -149,7 +150,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           const targetCell = graphRef.current.getCellById(targetId);
 
           if (!sourceCell || !targetCell) {
-            console.warn(
+            workflowLogger.warn(
               `[GraphContainer] 边的源节点(${sourceId})或目标节点(${targetId})不存在，跳过创建边`,
             );
             return null;
@@ -231,7 +232,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
           };
           changeCondition({ nodeData: _params });
         } else {
-          console.warn('[graphAddNode] 找不到父循环节点，无法建立父子关系');
+          workflowLogger.warn(
+            '[GraphContainer] 找不到父循环节点，无法建立父子关系',
+          );
         }
       }
     };
@@ -428,7 +431,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         !graphRef.current.getCellById(sourceId) ||
         !graphRef.current.getCellById(targetId)
       ) {
-        console.warn(
+        workflowLogger.warn(
           `[GraphContainer] 无法创建边：源节点(${sourceId})或目标节点(${targetId})在画布中未找到`,
         );
         return;
@@ -586,7 +589,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         // 备用方案：如果 render:done 没有在 800ms 内触发，强制完成初始化
         setTimeout(() => {
           if (!initCompleted) {
-            console.warn(
+            workflowLogger.warn(
               '[GraphContainer] render:done not fired, forcing init complete',
             );
             completeInit();
@@ -701,9 +704,9 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     }, [graphParams]);
 
     useEffect(() => {
-      console.log('[GraphContainer] MOUNTED');
+      workflowLogger.log('[GraphContainer] MOUNTED');
       return () => {
-        console.log('[GraphContainer] UNMOUNTED');
+        workflowLogger.log('[GraphContainer] UNMOUNTED');
       };
     }, []);
 
