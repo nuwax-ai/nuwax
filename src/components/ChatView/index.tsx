@@ -93,6 +93,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
             [styles.userContainer]: isUser,
           })}
         >
+          {/* ASSISTANT 角色消息 */}
           {!isUser && (
             <div className={cx(styles['agent-title-bar'])}>
               <img
@@ -132,6 +133,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
               />
             </div>
           )}
+          {/* USER 角色消息 */}
           {isUser && !!messageInfo?.text && (
             <div className={cx(styles['user-content'])}>
               <div

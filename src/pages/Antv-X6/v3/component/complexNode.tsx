@@ -18,6 +18,7 @@ import { PromptOptimizeTypeEnum } from '@/types/interfaces/assistant';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { InputAndOutConfig, QANodeOption } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
+import { workflowLogger } from '@/utils/logger';
 import { ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   Button,
@@ -188,7 +189,7 @@ const ModelNode: React.FC<NodeDisposeProps> = ({
   );
 
   // Debug: Check variables and referenceList
-  console.log(
+  workflowLogger.log(
     '[LLMNode] variables:',
     variables?.length,
     'referenceList argMapKeys:',
@@ -439,7 +440,11 @@ const QuestionsNode: React.FC<NodeDisposeProps> = ({
       ];
     }
 
-    console.log('bb', val, form.getFieldValue('answerType'));
+    workflowLogger.log(
+      '[QANode] changeType',
+      val,
+      form.getFieldValue('answerType'),
+    );
     if (val === 'TEXT') {
       options = options?.map((item: QANodeOption) => ({
         ...item,

@@ -35,6 +35,7 @@ import '@js-preview/excel/lib/index.css';
 // @ts-ignore
 import jsPreviewPdf from '@js-preview/pdf';
 // @ts-ignore
+import { SANDBOX } from '@/constants/common.constants';
 import { init as pptxInit } from 'pptx-preview';
 
 // File type categories
@@ -737,7 +738,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             <iframe
               src={htmlUrl || undefined}
               srcDoc={htmlUrl ? undefined : textContent}
-              sandbox="allow-scripts allow-same-origin allow-forms"
+              sandbox={SANDBOX}
               className={styles.htmlFrame}
               title="HTML Preview"
             />

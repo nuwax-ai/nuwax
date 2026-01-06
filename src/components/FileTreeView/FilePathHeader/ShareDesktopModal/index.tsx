@@ -13,11 +13,11 @@ import React, { useRef } from 'react';
 
 /**
  * 时间选项配置
- * value: 秒数
+ * value: 秒数（0表示永久）
  * label: 显示文本
  */
 const TIME_OPTIONS = [
-  { label: '永久', value: '' },
+  { label: '永久', value: 0 },
   { label: '1分钟', value: 60 },
   { label: '5分钟', value: 5 * 60 },
   { label: '10分钟', value: 10 * 60 },
@@ -72,6 +72,30 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
   const formRef = useRef<ProFormInstance>();
 
   /**
+   * 根据分享类型获取时间选项
+   * 远程桌面分享不包含"永久"选项
+   */
+  const getTimeOptions = () => {
+    if (shareType === 'DESKTOP') {
+      // 远程桌面分享：过滤掉"永久"选项（value为0）
+      return TIME_OPTIONS.filter((opt) => opt.value !== 0);
+    }
+    // 文件分享：包含所有选项
+    return TIME_OPTIONS;
+  };
+
+  /**
+   * 获取默认有效时间
+   * 远程桌面分享默认1小时，文件分享默认永久
+   */
+  const getDefaultExpireSeconds = () => {
+    if (shareType === 'DESKTOP') {
+      return 60 * 60; // 1小时
+    }
+    return 0; // 永久
+  };
+
+  /**
    * 格式化时间显示
    * @param seconds 秒数
    * @returns 格式化后的时间文本
@@ -96,7 +120,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
         conversationId: Number(conversationId),
         type: 'DESKTOP',
         content: desktopUrl,
-        expireSeconds: values.expireSeconds ? values.expireSeconds : null,
+        expireSeconds: values.expireSeconds ? values.expireSeconds : null, // 0转换为null表示永久
       };
 
       const { data: shareData, code } = await apiAgentConversationShare(data);
@@ -107,10 +131,6 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
 
         const query = new URLSearchParams();
         query.set('sk', shareData?.shareKey);
-        query.set(
-          'isDev',
-          process.env.NODE_ENV === 'development' ? 'true' : 'false',
-        );
 
         const shareUrl = baseUrl + path + '?' + query.toString();
 
@@ -140,7 +160,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
         conversationId,
         type: 'CONVERSATION',
         content: fileProxyUrl || '',
-        expireSeconds: values.expireSeconds ? values.expireSeconds : null,
+        expireSeconds: values.expireSeconds ? values.expireSeconds : null, // 0转换为null表示永久
       };
 
       const { data: shareData, code } = await apiAgentConversationShare(data);
@@ -150,10 +170,6 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
 
         const query = new URLSearchParams();
         query.set('sk', shareData?.shareKey);
-        query.set(
-          'isDev',
-          process.env.NODE_ENV === 'development' ? 'true' : 'false',
-        );
         const previewUrl = baseUrl + path + '?' + query.toString();
 
         // 复制到剪切板
@@ -206,7 +222,7 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
         },
       }}
       initialValues={{
-        expireSeconds: '', // 默认永久
+        expireSeconds: getDefaultExpireSeconds(), // 远程桌面默认1小时，文件分享默认永久
       }}
     >
       {/* 有效时间选择 */}
@@ -214,8 +230,8 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
         name="expireSeconds"
         label="有效时间"
         placeholder="请选择有效时间"
-        options={TIME_OPTIONS}
-        // rules={[{ required: true, message: '请选择有效时间' }]}
+        options={getTimeOptions()}
+        rules={[{ required: true, message: '请选择有效时间' }]}
       />
 
       {/* 实时显示有效时间提示 */}

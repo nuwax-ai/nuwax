@@ -1,6 +1,7 @@
 import Constant from '@/constants/codes.constants';
 import service, { IgetDetails, IUpdateDetails } from '@/services/workflow';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
+import { workflowLogger } from '@/utils/logger';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { workflowProxy } from '../services/workflowProxyV3';
@@ -35,9 +36,16 @@ export const useWorkflowLifecycle = ({
     try {
       const _res = await service.getDetails(workflowId);
       if (_res.code === Constant.success) {
-        const _nodeList = _res.data.nodes || [];
+        const data = _res.data;
+        const _nodeList = data.nodes || [];
         const _edgeList = getEdges(_nodeList);
         setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
+
+        // V3: 刷新时同步更新版本号
+        if (data.editVersion !== undefined) {
+          workflowSaveService.setEditVersion(data.editVersion);
+          workflowLogger.log('刷新后版本号已更新:', data.editVersion);
+        }
       }
     } catch (error) {
       console.error('Failed to refresh graph data:', error);

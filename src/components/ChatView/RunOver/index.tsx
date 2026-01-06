@@ -56,7 +56,42 @@ const RunOver: React.FC<RunOverProps> = ({
     }
     return null;
   }, [processingList]);
-  console.log('lastProcessInfo', lastProcessInfo);
+
+  // 计算 Popover content：如果 processingList 为空或没有已完成的项，则不显示 content
+  const popoverContent = useMemo(() => {
+    // 过滤出已完成的 processing 项（状态不为执行中）
+    const completedProcesses =
+      processingList?.filter(
+        (info) => info.status !== ProcessingEnum.EXECUTING,
+      ) || [];
+
+    // 如果既没有已完成的 processing 项，则不显示 content
+    if (completedProcesses.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className={cx(styles['pop-content'])}>
+        {completedProcesses.map((info, index) => (
+          <div key={index} className={cx(styles.row, 'flex', 'items-center')}>
+            <SolutionOutlined />
+            <span
+              className={cx('flex-1', 'text-ellipsis')}
+            >{`已调用 ${info.name}`}</span>
+            <span>{getTime(info.result.endTime, info.result.startTime)}</span>
+          </div>
+        ))}
+
+        {messageInfo?.status === MessageStatusEnum.Complete && (
+          <span className={cx(styles.summary)}>{`运行完毕 ${runTime}s`}</span>
+        )}
+
+        {messageInfo?.status === MessageStatusEnum.Error && (
+          <span className={cx(styles.error)}>运行错误</span>
+        )}
+      </div>
+    );
+  }, [processingList, messageInfo?.status, runTime]);
 
   // 优化：只有在任务已完成（Complete 或 Error）且 processingList 为空时才不显示组件
   // 如果任务还在执行中（Loading 或 Incomplete），即使 processingList 为空也要显示加载状态
@@ -76,37 +111,7 @@ const RunOver: React.FC<RunOverProps> = ({
           padding: 0,
         },
       }}
-      content={
-        <div className={cx(styles['pop-content'])}>
-          {processingList?.map((info, index) => {
-            return (
-              // 状态不为执行中时：即完成或者失败状态
-              info.status !== ProcessingEnum.EXECUTING && (
-                <div
-                  key={index}
-                  className={cx(styles.row, 'flex', 'items-center')}
-                >
-                  <SolutionOutlined />
-                  <span
-                    className={cx('flex-1', 'text-ellipsis')}
-                  >{`已调用 ${info.name}`}</span>
-                  <span>
-                    {getTime(info.result.endTime, info.result.startTime)}
-                  </span>
-                </div>
-              )
-            );
-          })}
-
-          {messageInfo?.status === MessageStatusEnum.Complete && (
-            <span className={cx(styles.summary)}>{`运行完毕 ${runTime}s`}</span>
-          )}
-
-          {messageInfo?.status === MessageStatusEnum.Error && (
-            <span className={cx(styles.error)}>运行错误</span>
-          )}
-        </div>
-      }
+      content={popoverContent}
       arrow={false}
       trigger="hover"
     >
