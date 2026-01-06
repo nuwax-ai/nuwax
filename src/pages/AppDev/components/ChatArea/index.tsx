@@ -345,6 +345,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         // 自动发送时会有 requestId，不应该重置状态
         if (!requestId) {
           onUserManualSendMessage?.();
+          // 如果当前在数据Tab，发送消息后自动切换回聊天Tab
+          if (activeTab === 'data') {
+            setActiveTab('chat');
+          }
         }
         // 发送消息后强制滚动到底部并开启自动滚动
         setTimeout(() => {
@@ -746,7 +750,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       {/* 聊天输入区域 */}
       <div
         className={styles.chatInputContainer}
-        style={{ display: activeTab === 'chat' ? 'block' : 'none' }}
+        style={{
+          display:
+            activeTab === 'chat' || activeTab === 'data' ? 'block' : 'none',
+        }}
       >
         <div
           className={`${styles.scrollToBottomButton} ${
