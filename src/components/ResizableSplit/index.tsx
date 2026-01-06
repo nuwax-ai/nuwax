@@ -8,6 +8,8 @@ interface Props {
   minLeftWidth?: number;
   minRightWidth?: number;
   defaultLeftWidth?: number;
+  /** 重置触发器，当值变化时重置为 defaultLeftWidth */
+  resetTrigger?: string | number | boolean;
   /** 分隔线颜色 */
   dividerColor?: string;
   /** 分隔线悬停颜色 */
@@ -26,6 +28,7 @@ const ResizableSplit: React.FC<Props> = ({
   minLeftWidth = 350,
   minRightWidth = 350,
   defaultLeftWidth = 50, // 默认左侧占比50%
+  resetTrigger,
   dividerColor = '#e0e0e0',
   dividerHoverColor = '#bbb',
   dividerDraggingColor = '#1890ff',
@@ -45,6 +48,8 @@ const ResizableSplit: React.FC<Props> = ({
   const fixedLeftWidthRef = useRef<number | null>(null);
   // 保存上一次的 defaultLeftWidth，用于检测变化
   const prevDefaultLeftWidthRef = useRef(defaultLeftWidth);
+  // 保存上一次的 resetTrigger，用于检测变化
+  const prevResetTriggerRef = useRef(resetTrigger);
 
   // 延迟显示分隔线，产生淡入效果
   useEffect(() => {
@@ -70,6 +75,23 @@ const ResizableSplit: React.FC<Props> = ({
       prevDefaultLeftWidthRef.current = defaultLeftWidth;
     }
   }, [defaultLeftWidth, isDragging]);
+
+  // 监听 resetTrigger 变化，触发比例重置
+  useEffect(() => {
+    // 只有当 resetTrigger 真正变化时才重置
+    if (
+      resetTrigger !== undefined &&
+      prevResetTriggerRef.current !== resetTrigger &&
+      !isDragging
+    ) {
+      // 清除固定宽度，恢复百分比模式
+      fixedLeftWidthRef.current = null;
+      // 重置为默认比例
+      setLeftWidthPercent(defaultLeftWidth);
+      // 更新上一次的值
+      prevResetTriggerRef.current = resetTrigger;
+    }
+  }, [resetTrigger, defaultLeftWidth, isDragging]);
 
   // 监听容器宽度变化
   useEffect(() => {
