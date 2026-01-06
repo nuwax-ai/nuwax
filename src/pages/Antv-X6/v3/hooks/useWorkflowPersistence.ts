@@ -1,8 +1,12 @@
-import Constant from '@/constants/codes.constants';
+import Constant, {
+  WORKFLOW_VERSION_CONFLICT,
+} from '@/constants/codes.constants';
 import { SaveStatusEnum } from '@/models/workflowV3';
 import service from '@/services/workflow';
 import { FoldFormIdEnum } from '@/types/enums/node';
 import { ChildNode, GraphContainerRef } from '@/types/interfaces/graph';
+import { workflowLogger } from '@/utils/logger';
+import { Modal } from 'antd';
 import { debounce } from 'lodash';
 import { MutableRefObject, useCallback, useMemo } from 'react';
 import { useModel } from 'umi';
@@ -28,69 +32,108 @@ export const useWorkflowPersistence = ({
     useModel('workflowV3');
 
   // V3: 全量保存工作流配置
-  const saveFullWorkflow = useCallback(async (): Promise<boolean> => {
-    try {
-      const graph =
-        graphRef.current?.getGraphRef?.() || graphInstanceRef?.current;
-      if (!graph) {
-        console.error('[V3] 画布未初始化');
-        return false;
-      }
-
-      // 使用新保存服务从画布构建数据（单一数据源）
-      let payload = workflowSaveService.buildPayload(graph);
-
-      // 如果画布数据无效（页面离开时画布已清除），回退到使用 workflowProxy 的数据
-      if (!payload) {
-        console.warn('[V3] 画布数据无效，尝试使用 workflowProxy 数据');
-        payload = workflowProxy.buildFullConfig();
-        if (!payload) {
-          console.error('[V3] 构建保存数据失败，无可用数据源');
+  // @param forceCommit 是否强制提交（忽略版本冲突）
+  const saveFullWorkflow = useCallback(
+    async (forceCommit = false): Promise<boolean> => {
+      try {
+        const graph =
+          graphRef.current?.getGraphRef?.() || graphInstanceRef?.current;
+        if (!graph) {
+          workflowLogger.error('画布未初始化');
           return false;
         }
-        console.log('[V3] 使用 workflowProxy 数据保存');
-      } else {
-        console.log('[V3] 使用单一数据源保存, 节点数:', payload.nodes.length);
-      }
 
-      // 标记保存中状态
-      setSaveStatus(SaveStatusEnum.Saving);
+        // 使用新保存服务从画布构建数据（单一数据源）
+        let payload = workflowSaveService.buildPayload(graph);
 
-      const _res = await service.saveWorkflow(payload);
+        // 如果画布数据无效（页面离开时画布已清除），回退到使用 workflowProxy 的数据
+        if (!payload) {
+          workflowLogger.warn('画布数据无效，尝试使用 workflowProxy 数据');
+          payload = workflowProxy.buildFullConfig();
+          if (!payload) {
+            workflowLogger.error('构建保存数据失败，无可用数据源');
+            return false;
+          }
+          workflowLogger.log('使用 workflowProxy 数据保存');
+        } else {
+          workflowLogger.log(
+            '使用单一数据源保存, 节点数:',
+            payload.nodes.length,
+          );
+        }
 
-      if (_res.code === Constant.success) {
-        workflowSaveService.clearDirty();
-        workflowProxy.clearPendingUpdates();
-        changeUpdateTime();
-        // 更新保存状态为成功
-        setSaveStatus(SaveStatusEnum.Saved);
-        setLastSaveTime(new Date());
-        setSaveError(null);
-        console.log('[V3] 保存成功 ✓');
-        return true;
-      } else {
-        console.error('[V3] 工作流保存失败:', _res.message);
+        // 标记保存中状态
+        setSaveStatus(SaveStatusEnum.Saving);
+
+        // 构建保存请求参数，版本信息放入 workflowConfig
+        const saveParams = {
+          workflowConfig: {
+            ...payload,
+            editVersion: workflowSaveService.getEditVersion(),
+            forceCommit: forceCommit ? (1 as const) : (0 as const),
+          },
+        };
+
+        const _res = await service.saveWorkflow(saveParams);
+
+        if (_res.code === Constant.success) {
+          // 保存成功，更新版本号（data 直接是版本号）
+          if (_res.data !== null && _res.data !== undefined) {
+            workflowSaveService.setEditVersion(_res.data);
+            workflowLogger.log('版本号已更新:', _res.data);
+          }
+          workflowSaveService.clearDirty();
+          workflowProxy.clearPendingUpdates();
+          changeUpdateTime();
+          // 更新保存状态为成功
+          setSaveStatus(SaveStatusEnum.Saved);
+          setLastSaveTime(new Date());
+          setSaveError(null);
+          workflowLogger.log('保存成功 ✓');
+          return true;
+        } else if (_res.code === WORKFLOW_VERSION_CONFLICT) {
+          // 版本冲突，弹窗询问用户是否强制更新
+          workflowLogger.warn('版本冲突，工作流已被其他窗口修改');
+          setSaveStatus(SaveStatusEnum.Failed);
+          setSaveError('版本冲突');
+
+          Modal.confirm({
+            title: '版本冲突',
+            content: '工作流已在其他窗口修改，是否强制更新？',
+            okText: '强制更新',
+            cancelText: '取消',
+            onOk: () => {
+              // 用户确认强制更新
+              saveFullWorkflow(true);
+            },
+          });
+          return false;
+        } else {
+          workflowLogger.error('工作流保存失败:', _res.message);
+          // 更新保存状态为失败
+          setSaveStatus(SaveStatusEnum.Failed);
+          setSaveError(_res.message || '保存失败');
+          return false;
+        }
+      } catch (error) {
+        console.error('[V3] 工作流保存异常:', error);
         // 更新保存状态为失败
         setSaveStatus(SaveStatusEnum.Failed);
-        setSaveError(_res.message || '保存失败');
+        setSaveError(
+          error instanceof Error ? error.message : '网络异常，保存失败',
+        );
         return false;
       }
-    } catch (error) {
-      console.error('[V3] 工作流保存异常:', error);
-      // 更新保存状态为失败
-      setSaveStatus(SaveStatusEnum.Failed);
-      setSaveError(
-        error instanceof Error ? error.message : '网络异常，保存失败',
-      );
-      return false;
-    }
-  }, [
-    changeUpdateTime,
-    graphRef,
-    setSaveStatus,
-    setLastSaveTime,
-    setSaveError,
-  ]);
+    },
+    [
+      changeUpdateTime,
+      graphRef,
+      graphInstanceRef,
+      setSaveStatus,
+      setLastSaveTime,
+      setSaveError,
+    ],
+  );
 
   // V3: 防抖保存（自动保存用）
   const debouncedSaveFullWorkflow = useMemo(
