@@ -214,7 +214,7 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
       style={{ marginBottom: 0 }}
     >
       {/* 状态标签：复用 ChatView 中的 RunOver 组件，保证与消息列表状态展示一致 */}
-      <div className={cx(styles.statusBadge)}>
+      <div className={cx(styles.statusBadge, 'flex-1')}>
         <RunOver messageInfo={lastAssistantMessage} />
       </div>
 
