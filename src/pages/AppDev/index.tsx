@@ -69,7 +69,9 @@ import DevLogConsole from './components/DevLogConsole';
 import EditorHeaderRight from './components/EditorHeaderRight';
 import FileOperatingMask from './components/FileOperatingMask';
 import FileTreePanel from './components/FileTreePanel';
+
 import PageEditModal from './components/PageEditModal';
+
 import { type PreviewRef } from './components/Preview';
 import { useDevLogs } from './hooks/useDevLogs';
 import styles from './index.less';
@@ -131,6 +133,8 @@ const AppDev: React.FC = () => {
   // 组件内部状态
   const [missingProjectId, setMissingProjectId] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
+  // 左侧面板标签状态: 对话 | 设计 | 数据
+  // const [leftPanelTab, setLeftPanelTab] = useState<LeftPanelTabType>('chat');
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
@@ -1408,6 +1412,7 @@ const AppDev: React.FC = () => {
           <div className={styles.mainRow}>
             {/* 左侧AI助手面板 */}
             <div className={styles.leftPanel}>
+              {/* 对话 Tab */}
               <ChatArea
                 // chatMode={chatMode}
                 // setChatMode={setChatMode}
@@ -1421,6 +1426,8 @@ const AppDev: React.FC = () => {
                 modelSelector={modelSelector} // 模型选择器状态
                 files={currentDisplayFiles} // 新增：文件树数据
                 designViewerRef={designViewerRef} // 新增：DesignViewer ref
+                onDeleteDataResource={handleDeleteDataResource} // 新增：删除数据源回调
+                onAddDataResource={() => setIsAddDataResourceModalVisible(true)} // 新增：添加数据源回调
                 onUserManualSendMessage={() => {
                   // 用户手动发送消息，重置自动重试计数、会话计数和 requestId
                   autoErrorHandling.resetAndEnableAutoHandling();
@@ -1431,6 +1438,7 @@ const AppDev: React.FC = () => {
                   // 用户取消Agent任务，重置自动重试计数
                   autoErrorHandling.handleUserCancelAuto();
                 }}
+                isComparing={versionCompare.isComparing}
               />
             </div>
 
@@ -1535,61 +1543,58 @@ const AppDev: React.FC = () => {
               <div className={styles.contentArea}>
                 <div className={styles.contentRow}>
                   {/* FileTreePanel 组件 */}
-                  <FileTreePanel
-                    files={currentDisplayFiles}
-                    isComparing={versionCompare.isComparing}
-                    selectedFileId={
-                      versionCompare.isComparing
-                        ? workspace.activeFile
-                        : fileManagement.fileContentState.selectedFile
-                    }
-                    expandedFolders={
-                      fileManagement.fileTreeState.expandedFolders
-                    }
-                    dataResources={dataResourceManagement.resources}
-                    dataResourcesLoading={dataResourceManagement.loading}
-                    onFileSelect={(fileId) => {
-                      if (versionCompare.isComparing) {
-                        updateWorkspace({ activeFile: fileId });
-                      } else {
-                        fileManagement.switchToFile(fileId);
-                        setActiveTab('code');
+                  {activeTab !== 'preview' && (
+                    <FileTreePanel
+                      files={currentDisplayFiles}
+                      isComparing={versionCompare.isComparing}
+                      selectedFileId={
+                        versionCompare.isComparing
+                          ? workspace.activeFile
+                          : fileManagement.fileContentState.selectedFile
                       }
-                    }}
-                    onToggleFolder={fileManagement.toggleFolder}
-                    onDeleteFile={
-                      isFileOperating ? () => {} : handleDeleteClick
-                    }
-                    onRenameFile={
-                      isFileOperating ? async () => false : handleRenameFile
-                    }
-                    onUploadToFolder={
-                      isFileOperating ? async () => false : handleUploadToFolder
-                    }
-                    onUploadProject={
-                      isFileOperating
-                        ? () => {}
-                        : () => setIsUploadModalVisible(true)
-                    }
-                    onUploadSingleFile={
-                      isFileOperating ? async () => {} : handleRightClickUpload
-                    }
-                    onAddDataResource={
-                      isFileOperating
-                        ? () => {}
-                        : () => setIsAddDataResourceModalVisible(true)
-                    }
-                    onDeleteDataResource={handleDeleteDataResource}
-                    selectedDataResources={selectedDataResources}
-                    // onDataResourceSelectionChange={setSelectedDataResourceIds}
-                    workspace={workspace}
-                    fileManagement={fileManagement}
-                    isChatLoading={chat.isChatLoading}
-                    projectId={projectId ? Number(projectId) : undefined}
-                    isFileTreeInitializing={
-                      fileManagement.isFileTreeInitializing
-                    }
-                  />
+                      expandedFolders={
+                        fileManagement.fileTreeState.expandedFolders
+                      }
+                      onFileSelect={(fileId) => {
+                        if (versionCompare.isComparing) {
+                          updateWorkspace({ activeFile: fileId });
+                        } else {
+                          fileManagement.switchToFile(fileId);
+                          setActiveTab('code');
+                        }
+                      }}
+                      onToggleFolder={fileManagement.toggleFolder}
+                      onDeleteFile={
+                        isFileOperating ? () => {} : handleDeleteClick
+                      }
+                      onRenameFile={
+                        isFileOperating ? async () => false : handleRenameFile
+                      }
+                      onUploadToFolder={
+                        isFileOperating
+                          ? async () => false
+                          : handleUploadToFolder
+                      }
+                      onUploadProject={
+                        isFileOperating
+                          ? () => {}
+                          : () => setIsUploadModalVisible(true)
+                      }
+                      onUploadSingleFile={
+                        isFileOperating
+                          ? async () => {}
+                          : handleRightClickUpload
+                      }
+                      selectedDataResources={selectedDataResources}
+                      workspace={workspace}
+                      fileManagement={fileManagement}
+                      isChatLoading={chat.isChatLoading}
+                      projectId={projectId ? Number(projectId) : undefined}
+                      isFileTreeInitializing={
+                        fileManagement.isFileTreeInitializing
+                      }
+                    />
+                  )}
 
                   {/* 编辑器区域 */}
                   <div className={styles.editorCol}>
