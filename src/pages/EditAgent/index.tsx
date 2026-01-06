@@ -961,6 +961,13 @@ const EditAgent: React.FC = () => {
           >
             {/*预览与调试和预览页面*/}
             <ResizableSplit
+              resetTrigger={
+                agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
+                  ? pagePreviewData?.uri
+                  : isFileTreeVisible
+                  ? 'visible'
+                  : 'hidden'
+              }
               minRightWidth={700}
               defaultLeftWidth={
                 agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? 33 : 50
