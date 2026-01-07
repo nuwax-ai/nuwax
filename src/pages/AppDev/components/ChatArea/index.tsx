@@ -17,11 +17,7 @@ import {
   convertDataSourceSelectionToAttachment,
   generateAttachmentId,
 } from '@/utils/chatUtils';
-import {
-  DownOutlined,
-  LoadingOutlined,
-  RollbackOutlined,
-} from '@ant-design/icons';
+import { DownOutlined, RollbackOutlined } from '@ant-design/icons';
 import { Button, Card, message, Spin, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -729,7 +725,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               {chat.isLoadingHistory ? (
                 <AppDevEmptyState
                   type="loading"
-                  icon={<LoadingOutlined />}
                   title="正在加载历史会话"
                   description="请稍候..."
                 />

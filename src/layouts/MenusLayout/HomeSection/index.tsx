@@ -1,11 +1,15 @@
 import MenuListItem from '@/components/base/MenuListItem';
 import ConditionRender from '@/components/ConditionRender';
+import { EVENT_TYPE } from '@/constants/event.constants';
+import { TaskStatus } from '@/types/enums/agent';
 import { AgentInfo } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import eventBus from '@/utils/eventBus';
 import { RightOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { history, useModel, useParams } from 'umi';
+import ConversationItem from './ConversationItem';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -23,6 +27,11 @@ const HomeSection: React.FC<{
   );
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
+
+  // 限制会话记录列表为5条
+  const [limitConversationList, setLimitConversationList] = useState<
+    ConversationInfo[]
+  >([]);
 
   // 智能体主页
   const handleAgentHome = (agentInfo: AgentInfo) => {
@@ -50,6 +59,49 @@ const HomeSection: React.FC<{
       limit: 20,
     });
   }, []);
+
+  useEffect(() => {
+    if (conversationList?.length > 0) {
+      // 限制会话记录列表为5条
+      const _limitConversationList = conversationList?.slice(0, 5) || [];
+      setLimitConversationList(_limitConversationList);
+    }
+  }, [conversationList]);
+
+  // 会话状态更新
+  const handleConversationUpdate = (data: { conversationId: string }) => {
+    const { conversationId } = data;
+    const _limitConversationList = limitConversationList.map(
+      (item: ConversationInfo) => {
+        if (
+          item.id?.toString() === conversationId &&
+          item.taskStatus === TaskStatus.EXECUTING
+        ) {
+          return {
+            ...item,
+            taskStatus: TaskStatus.COMPLETE,
+          };
+        }
+        return item;
+      },
+    );
+    setLimitConversationList(_limitConversationList);
+  };
+
+  useEffect(() => {
+    // 如果会话列表中存在执行中的会话，则监听会话状态更新事件
+    const _limitConversationList = limitConversationList.find(
+      (item) => item.taskStatus === TaskStatus.EXECUTING,
+    );
+    if (_limitConversationList) {
+      // 监听会话状态更新事件
+      eventBus.on(EVENT_TYPE.ChatFinished, handleConversationUpdate);
+    }
+
+    return () => {
+      eventBus.off(EVENT_TYPE.ChatFinished, handleConversationUpdate);
+    };
+  }, [limitConversationList]);
 
   return (
     <div style={style}>
@@ -93,18 +145,19 @@ const HomeSection: React.FC<{
           </ConditionRender>
         </div>
         <div>
-          {conversationList?.length ? (
-            conversationList
-              ?.slice(0, 5)
-              ?.map((item: ConversationInfo, index: number) => (
-                <MenuListItem
+          {limitConversationList?.length ? (
+            limitConversationList?.map(
+              (item: ConversationInfo, index: number) => (
+                <ConversationItem
                   key={item.id}
                   isActive={chatId === item.id?.toString()}
                   isFirst={index === 0}
                   onClick={() => handleLink(item.id, item.agentId)}
                   name={item.topic}
+                  taskStatus={item.taskStatus}
                 />
-              ))
+              ),
+            )
           ) : (
             <>
               <div className={cx(styles['no-used'])}>右边看👉</div>
