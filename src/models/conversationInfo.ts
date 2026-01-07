@@ -1132,6 +1132,11 @@ export default () => {
   const handleClearSideEffect = () => {
     // 重置消息ID
     messageIdRef.current = '';
+    // 重置是否还有更多消息
+    setIsMoreMessage(true);
+    // 重置加载更多消息的状态
+    setLoadingMore(false);
+    // 重置问题建议列表
     setChatSuggestList([]);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);

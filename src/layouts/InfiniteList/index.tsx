@@ -57,11 +57,6 @@ function InfiniteList({
     }
   };
 
-  // 首次加载
-  useEffect(() => {
-    // fetchData();
-  }, []);
-
   // 滚动监听
   useEffect(() => {
     const container = containerRef.current;

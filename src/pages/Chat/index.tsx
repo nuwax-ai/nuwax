@@ -924,9 +924,10 @@ const Chat: React.FC = () => {
               )}
               {messageList?.length > 0 ? (
                 <>
-                  {messageList?.map((item: MessageInfo, index: number) => (
+                  {messageList?.map((item: MessageInfo) => (
                     <ChatView
-                      key={item.id || index}
+                      // 后端接口返回的消息列表id存在相同的情况，所以需要使用id和index来唯一标识
+                      key={`${item.id}-${item?.index}`}
                       messageInfo={item}
                       roleInfo={roleInfo}
                       contentClassName={styles['chat-inner']}
