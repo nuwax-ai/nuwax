@@ -490,6 +490,16 @@ export interface AgentConversationUpdateParams {
   topic?: string;
 }
 
+// 查询会话消息列表输入参数
+export interface ConversationMessageListParams {
+  // 会话ID
+  conversationId: number;
+  // 查询游标
+  index: number;
+  // 查询数量
+  size: number;
+}
+
 // 卡片列表参数
 export interface ArgList {
   key: string;
