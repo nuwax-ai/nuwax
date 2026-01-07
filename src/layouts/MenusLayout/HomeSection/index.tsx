@@ -6,6 +6,7 @@ import { RightOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
 import { history, useModel, useParams } from 'umi';
+import ConversationItem from './ConversationItem';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -97,12 +98,13 @@ const HomeSection: React.FC<{
             conversationList
               ?.slice(0, 5)
               ?.map((item: ConversationInfo, index: number) => (
-                <MenuListItem
+                <ConversationItem
                   key={item.id}
                   isActive={chatId === item.id?.toString()}
                   isFirst={index === 0}
                   onClick={() => handleLink(item.id, item.agentId)}
                   name={item.topic}
+                  taskStatus={item.taskStatus}
                 />
               ))
           ) : (
