@@ -1,5 +1,6 @@
 @import '@/styles/color.less';
 @import '@/styles/token.less';
+@import '@/styles/scrollbar.less';
 
 // 聊天卡片
 .chatCard {
@@ -39,6 +40,9 @@
     height: 100%;
     min-height: 0;
     overflow: auto;
+
+    // 使用滚动条自动隐藏 mixin
+    .scrollbar-auto-hide();
   }
 
   // 确保 ReactScrollToBottomContainer 内部滚动容器有正确高度
