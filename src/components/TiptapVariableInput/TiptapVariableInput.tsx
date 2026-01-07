@@ -16,6 +16,7 @@ import { MarkdownHighlight } from './extensions/MarkdownHighlight';
 import { MentionNode } from './extensions/MentionNode';
 import { MentionSuggestion } from './extensions/MentionSuggestion';
 import { RawNode } from './extensions/RawNode';
+import { RedoKeyboardShortcut } from './extensions/RedoKeyboardShortcut';
 import { ToolBlockNode } from './extensions/ToolBlockNode';
 import { VariableCursorPlaceholder } from './extensions/VariableCursorPlaceholder';
 import { VariableNode } from './extensions/VariableNode';
@@ -131,7 +132,13 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
       extensions: [
         // StarterKit 配置：根据 enableHistory 控制是否启用撤销/重做
         StarterKit.configure({
-          history: enableHistory ? {} : false, // 禁用或启用 history 扩展
+          // 禁用或启用 history 扩展
+          // 启用时配置快捷键：Ctrl+Z 撤销，Ctrl+Y 或 Ctrl+Shift+Z 重做
+          history: enableHistory
+            ? {
+                newGroupDelay: 500, // 500ms 内的连续输入合并为一个历史记录
+              }
+            : false,
         }),
         !disableMentions ? MentionNode : undefined,
         RawNode, // Raw 节点扩展，用于展示 HTML/XML 原始内容
@@ -142,6 +149,8 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
         VariableTextDecoration, // 方案C：纯文本装饰
         ToolBlockNode,
         MarkdownHighlight, // 添加 Markdown 语法高亮扩展
+        // 添加 Mod+Y 快捷键支持（Ctrl+Y / Cmd+Y）用于重做
+        enableHistory ? RedoKeyboardShortcut : undefined,
         // VariableCursorPlaceholder 应该在 VariableSuggestion 之前，确保光标可以在变量节点前后停留
         VariableCursorPlaceholder,
         // VariableSuggestion 应该在 AutoCompleteBraces 之前，这样它能够检测到 { 字符
@@ -258,8 +267,18 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
         // 标记正在从外部更新，避免触发 onChange
         isUpdatingFromExternalRef.current = true;
 
-        // 设置内容，不触发历史记录
-        editor.commands.setContent(contentToSet || '', false);
+        // 使用 chain 命令设置内容，并标记不记录历史
+        // 这样初始内容就不会进入历史栈，用户 Ctrl+Z 就不会撤销到空状态
+        editor
+          .chain()
+          .setContent(contentToSet || '', false, {
+            preserveWhitespace: 'full',
+          })
+          .command(({ tr }) => {
+            tr.setMeta('addToHistory', false);
+            return true;
+          })
+          .run();
 
         // 保存当前滚动位置
         const editorElement = editor.view.dom;

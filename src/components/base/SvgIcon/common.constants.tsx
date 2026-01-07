@@ -23,6 +23,8 @@ import { ReactComponent as SketchSvgFile } from '@/assets/icons/common/sketch.sv
 import { ReactComponent as StarsSvgFile } from '@/assets/icons/common/stars.svg';
 import { ReactComponent as StrawSvgFile } from '@/assets/icons/common/straw.svg';
 import { ReactComponent as UploadSvgFile } from '@/assets/icons/common/upload.svg';
+import { ReactComponent as ZoomInSvgFile } from '@/assets/icons/common/zoom_in.svg';
+import { ReactComponent as ZoomOutSvgFile } from '@/assets/icons/common/zoom_out.svg';
 import React from 'react';
 import { wrapSvg } from './utils';
 
@@ -51,6 +53,8 @@ const StarsSvg = wrapSvg(StarsSvgFile);
 const StrawSvg = wrapSvg(StrawSvgFile);
 const UploadSvg = wrapSvg(UploadSvgFile);
 const LinkSvg = wrapSvg(LinkSvgIcon);
+const ZoomInSvg = wrapSvg(ZoomInSvgFile);
+const ZoomOutSvg = wrapSvg(ZoomOutSvgFile);
 export default {
   'icons-common-attachments': AttachmentsSvg,
   'icons-common-book': BookSvg,
@@ -77,4 +81,6 @@ export default {
   'icons-common-straw': StrawSvg,
   'icons-common-upload': UploadSvg,
   'icons-common-link': LinkSvg,
+  'icons-common-zoom_in': ZoomInSvg,
+  'icons-common-zoom_out': ZoomOutSvg,
 } as Record<string, React.FC>;
