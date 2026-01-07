@@ -20,7 +20,7 @@ import type {
 import { arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Form, message } from 'antd';
+import { Button, Form, message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -96,6 +96,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     setIsLoadingOtherInterface,
     clearFilePanelInfo,
     isFileTreeVisible,
+    // 加载更多消息相关
+    isMoreMessage,
+    loadingMore,
+    handleLoadMoreMessage,
   } = useModel('conversationInfo');
 
   // 获取 chat model 中的页面预览状态
@@ -368,9 +372,25 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 </div>
               ) : messageList?.length > 0 ? (
                 <>
+                  {/* 加载更多按钮 */}
+                  {isMoreMessage && messageList?.length > 0 && (
+                    <div className={cx(styles['load-more-container'])}>
+                      <Button
+                        type="link"
+                        loading={loadingMore}
+                        onClick={() =>
+                          handleLoadMoreMessage(devConversationIdRef.current)
+                        }
+                        className={cx(styles['load-more-btn'])}
+                      >
+                        {loadingMore ? '加载中...' : '加载更多消息'}
+                      </Button>
+                    </div>
+                  )}
                   {messageList?.map((item: MessageInfo) => (
                     <ChatView
-                      key={item?.id}
+                      // 后端接口返回的消息列表id存在相同的情况，所以需要使用id和index来唯一标识
+                      key={`${item.id}-${item?.index}`}
                       messageInfo={item}
                       roleInfo={roleInfo}
                       mode={'chat'}
