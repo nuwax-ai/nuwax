@@ -9,6 +9,7 @@ import {
   AgentComponentModelUpdateParams,
   AgentComponentPluginUpdateParams,
   AgentComponentSkillUpdateParams,
+  AgentComponentSubAgentUpdateParams,
   AgentComponentTableUpdateParams,
   AgentComponentVariableUpdateParams,
   AgentComponentWorkflowUpdateParams,
@@ -149,6 +150,16 @@ export async function apiAgentComponentSkillUpdate(
   data: AgentComponentSkillUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/skill/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新组件子智能体配置
+export async function apiAgentComponentSubAgentUpdate(
+  data: AgentComponentSubAgentUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/subagent/update', {
     method: 'POST',
     data,
   });
