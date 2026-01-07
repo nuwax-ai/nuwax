@@ -134,10 +134,12 @@ export enum TaskStatus {
   EXECUTING = 'EXECUTING',
 }
 
-// 可用值:Chat,TASK
+// 可用值:Chat,TempChat,TASK,TaskCenter
 export enum TaskTypeEnum {
   Chat = 'Chat',
+  TempChat = 'TempChat',
   TASK = 'TASK',
+  TaskCenter = 'TaskCenter',
 }
 
 // 是否允许复制,0不允许，1允许
