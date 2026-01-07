@@ -39,7 +39,6 @@ import FileTree from './FileTree';
 import styles from './index.less';
 import SearchView from './SearchView';
 import { ChangeFileInfo, FileTreeViewProps, FileTreeViewRef } from './type';
-// import { apiAgentConversationShare } from '@/services/vncDesktop';
 
 const cx = classNames.bind(styles);
 
