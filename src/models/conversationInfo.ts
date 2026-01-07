@@ -703,9 +703,10 @@ export default () => {
   );
 
   // 停止会话
-  const { run: runStopConversation, loading: loadingStopConversation } =
+  const { runAsync: runStopConversation, loading: loadingStopConversation } =
     useRequest(apiAgentConversationChatStop, {
       manual: true,
+      debounceWait: 300,
     });
 
   // 修改消息列表
