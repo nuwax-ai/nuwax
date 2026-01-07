@@ -153,3 +153,20 @@ export const COMPONENT_TYPE_NAME_MAP = {
  */
 export const SANDBOX =
   'allow-downloads allow-scripts allow-same-origin allow-forms allow-top-navigation allow-popups allow-modals allow-popups-to-escape-sandbox';
+
+/**
+ *  子智能体提示词模板
+ */
+export const SUB_AGENT_PROMPT_TEMPLATE = `---
+name: your-sub-agent-name
+description: Description of when this subagent should be invoked
+model: inherit
+permissionMode: default
+---
+
+Your subagent's system prompt goes here. This can be multiple paragraphs
+and should clearly define the subagent's role, capabilities, and approach
+to solving problems.
+
+Include specific instructions, best practices, and any constraints
+the subagent should follow.`;
