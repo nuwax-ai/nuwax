@@ -1589,7 +1589,7 @@ const AppDev: React.FC = () => {
                       workspace={workspace}
                       fileManagement={fileManagement}
                       isChatLoading={chat.isChatLoading}
-                      projectId={projectId ? Number(projectId) : undefined}
+                      // projectId={projectId ? Number(projectId) : undefined}
                       isFileTreeInitializing={
                         fileManagement.isFileTreeInitializing
                       }
