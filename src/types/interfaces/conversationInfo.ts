@@ -343,12 +343,18 @@ export interface ConversationInfo {
   // 可用值:Chat,TASK
   type: TaskTypeEnum;
   taskId: string;
-  // 可用值:EXECUTING,CANCEL
+  // 任务状态 可用值:EXECUTING,CANCEL (执行中、已完成、失败)
   taskStatus: TaskStatus;
   taskCron: string;
   taskCronDesc: string;
   // 开发模式
   devMode: boolean;
+  // 沙盒服务器ID
+  sandboxServerId: string;
+  // 沙盒会话ID
+  sandboxSessionId: string;
+  // 已分享的URI地址，比对上了则不需要认证
+  sharedUris: string[];
 }
 
 // 查询用户历史会话输入参数

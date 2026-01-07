@@ -551,52 +551,55 @@ export default () => {
 
     setLoadingMore(true);
     try {
-      const { data } = await runQueryConversationMessageList({
+      const { code, data } = await runQueryConversationMessageList({
         conversationId,
         index: currentIndex,
         size: MESSAGE_LIST_SIZE,
       });
 
-      if (data?.length) {
-        // 将新消息追加到消息列表前面
-        setMessageList((messageList: MessageInfo[]) => {
-          return [...data, ...messageList];
-        });
+      if (code === SUCCESS_CODE) {
+        // 如果查询到的消息数量大于0，则表示有更多消息
+        if (!!data?.length) {
+          // 将新消息追加到消息列表前面
+          setMessageList((messageList: MessageInfo[]) => {
+            return [...data, ...messageList];
+          });
 
-        // 如果查询到的消息数量小于20，则表示没有更多消息
-        if (data.length < MESSAGE_LIST_SIZE) {
+          // 如果查询到的消息数量小于20，则表示没有更多消息
+          if (data.length < MESSAGE_LIST_SIZE) {
+            setIsMoreMessage(false);
+          }
+
+          // 使用多重延迟确保 DOM 完全更新和渲染完成
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setTimeout(() => {
+                if (messageView) {
+                  messageView.scrollTop = 0;
+                }
+              }, 0);
+            });
+          });
+
+          // // 根据 scrollToTop 参数决定滚动行为
+          // if (scrollToTop) {
+
+          // } else {
+          //   // 保持滚动位置（加载更多后，滚动位置应该保持在原来的位置）
+          //   // 等待DOM更新后再调整滚动位置
+          //   setTimeout(() => {
+          //     if (messageView) {
+          //       const newScrollHeight = messageView.scrollHeight;
+          //       const scrollDiff = newScrollHeight - oldScrollHeight;
+          //       // 调整滚动位置，保持用户看到的内容不变
+          //       messageView.scrollTop = oldScrollTop + scrollDiff;
+          //     }
+          //   }, 0);
+          // }
+        } else {
+          // 如果查询到的消息数量为0，则表示没有更多消息
           setIsMoreMessage(false);
         }
-
-        // 使用多重延迟确保 DOM 完全更新和渲染完成
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setTimeout(() => {
-              if (messageView) {
-                messageView.scrollTop = 0;
-              }
-            }, 0);
-          });
-        });
-
-        // // 根据 scrollToTop 参数决定滚动行为
-        // if (scrollToTop) {
-
-        // } else {
-        //   // 保持滚动位置（加载更多后，滚动位置应该保持在原来的位置）
-        //   // 等待DOM更新后再调整滚动位置
-        //   setTimeout(() => {
-        //     if (messageView) {
-        //       const newScrollHeight = messageView.scrollHeight;
-        //       const scrollDiff = newScrollHeight - oldScrollHeight;
-        //       // 调整滚动位置，保持用户看到的内容不变
-        //       messageView.scrollTop = oldScrollTop + scrollDiff;
-        //     }
-        //   }, 0);
-        // }
-      } else {
-        // 如果查询到的消息数量为0，则表示没有更多消息
-        setIsMoreMessage(false);
       }
     } catch (error) {
       console.error('加载更多消息失败:', error);
