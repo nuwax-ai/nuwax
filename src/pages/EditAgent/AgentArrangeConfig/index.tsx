@@ -642,7 +642,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
     {
       key: AgentArrangeConfigEnum.SubAgent,
-      label: '子智能体(SubAgent)',
+      label: '子智能体',
       children: (
         <SubAgentConfig
           subAgents={subAgentComponentInfo?.bindConfig?.subAgents}
