@@ -344,7 +344,7 @@ export interface ConversationInfo {
   type: TaskTypeEnum;
   // 任务ID
   taskId: string;
-  // 任务状态 可用值:EXECUTING,CANCEL (执行中、已完成、失败)
+  // 任务状态，只针对 EXECUTING（执行中）做展示,可用值:CREATE,EXECUTING,CANCEL,COMPLETE,FAILED
   taskStatus: TaskStatus;
   taskCron: string;
   taskCronDesc: string;
