@@ -51,7 +51,7 @@ interface ChatAreaProps {
   onUserCancelAgentTask?: () => void;
   files?: FileNode[];
   designViewerRef?: React.RefObject<DesignViewerRef>;
-  onDeleteDataResource?: (resourceId: number) => void;
+  onDeleteDataResource?: (resourceId: number) => Promise<void>;
   onAddDataResource?: () => void;
 }
 
