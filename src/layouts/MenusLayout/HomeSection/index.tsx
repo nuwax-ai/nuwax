@@ -91,10 +91,10 @@ const HomeSection: React.FC<{
 
   useEffect(() => {
     // 监听会话状态更新事件
-    eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
+    eventBus.on(EVENT_TYPE.ChatFinished, handleConversationUpdate);
 
     return () => {
-      eventBus.off(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
+      eventBus.off(EVENT_TYPE.ChatFinished, handleConversationUpdate);
     };
   }, []);
 
