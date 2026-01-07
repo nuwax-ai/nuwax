@@ -158,15 +158,11 @@ export const SANDBOX =
  *  子智能体提示词模板
  */
 export const SUB_AGENT_PROMPT_TEMPLATE = `---
-name: your-sub-agent-name
-description: Description of when this subagent should be invoked
-model: inherit
-permissionMode: default
+name: 您的子智能体名称
+description: 此子智能体应在何时被调用的说明
 ---
 
-Your subagent's system prompt goes here. This can be multiple paragraphs
-and should clearly define the subagent's role, capabilities, and approach
-to solving problems.
+您的子智能体系统提示信息在此处显示。该提示可包含多个段落，
+需明确界定子智能体的角色、功能及解决问题的方法。
 
-Include specific instructions, best practices, and any constraints
-the subagent should follow.`;
+包含具体说明、最佳实践以及子智能体应遵循的任何限制条件。`;
