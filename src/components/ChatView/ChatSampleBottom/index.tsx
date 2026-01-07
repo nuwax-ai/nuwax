@@ -57,10 +57,13 @@ const ChatSampleBottom: React.FC<ChatSampleBottomProps> = ({ messageInfo }) => {
       )}
     >
       <div className={cx('flex', styles['more-action'])}>
-        <CopyButton text={messageInfo?.text || ''} onCopy={handleCopy}>
-          复制
-        </CopyButton>
+        {!!messageInfo?.text && (
+          <CopyButton text={messageInfo?.text} onCopy={handleCopy}>
+            复制
+          </CopyButton>
+        )}
       </div>
+      {/* 消息时间 */}
       <span>{createTime}</span>
     </div>
   );

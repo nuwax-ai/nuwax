@@ -436,6 +436,8 @@ const ChatTemp: React.FC = () => {
         }
         // FINAL_RESULT事件
         if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
+          // 重置消息ID
+          messageIdRef.current = '';
           newMessage = {
             ...currentMessage,
             status: MessageStatusEnum.Complete,
@@ -552,6 +554,8 @@ const ChatTemp: React.FC = () => {
 
   // 清除副作用
   const handleClearSideEffect = () => {
+    // 重置消息ID
+    messageIdRef.current = '';
     setChatSuggestList([]);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);

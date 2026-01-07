@@ -8,7 +8,7 @@ import { ChildNode, GraphContainerRef } from '@/types/interfaces/graph';
 import { workflowLogger } from '@/utils/logger';
 import { Modal } from 'antd';
 import { debounce } from 'lodash';
-import { MutableRefObject, useCallback, useMemo } from 'react';
+import { MutableRefObject, useCallback, useMemo, useRef } from 'react';
 import { useModel } from 'umi';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
@@ -30,6 +30,9 @@ export const useWorkflowPersistence = ({
 }: UseWorkflowPersistenceProps) => {
   const { getWorkflow, setSaveStatus, setLastSaveTime, setSaveError } =
     useModel('workflowV3');
+
+  // 用于防止重复弹出版本冲突弹窗
+  const isVersionConflictModalVisibleRef = useRef(false);
 
   // V3: 全量保存工作流配置
   // @param forceCommit 是否强制提交（忽略版本冲突）
@@ -92,21 +95,29 @@ export const useWorkflowPersistence = ({
           workflowLogger.log('保存成功 ✓');
           return true;
         } else if (_res.code === WORKFLOW_VERSION_CONFLICT) {
-          // 版本冲突，弹窗询问用户是否强制更新
+          // 版本冲突，弹窗询问用户是否强制覆盖
           workflowLogger.warn('版本冲突，工作流已被其他窗口修改');
           setSaveStatus(SaveStatusEnum.Failed);
           setSaveError('版本冲突');
 
-          Modal.confirm({
-            title: '版本冲突',
-            content: '工作流已在其他窗口修改，是否强制更新？',
-            okText: '强制更新',
-            cancelText: '取消',
-            onOk: () => {
-              // 用户确认强制更新
-              saveFullWorkflow(true);
-            },
-          });
+          // 防止重复弹出版本冲突弹窗
+          if (!isVersionConflictModalVisibleRef.current) {
+            isVersionConflictModalVisibleRef.current = true;
+            Modal.confirm({
+              title: '版本冲突',
+              content: '工作流已在其他窗口修改，是否强制覆盖？',
+              okText: '强制覆盖',
+              cancelText: '取消',
+              onOk: () => {
+                // 用户确认强制覆盖
+                isVersionConflictModalVisibleRef.current = false;
+                saveFullWorkflow(true);
+              },
+              onCancel: () => {
+                isVersionConflictModalVisibleRef.current = false;
+              },
+            });
+          }
           return false;
         } else {
           workflowLogger.error('工作流保存失败:', _res.message);

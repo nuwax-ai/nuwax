@@ -7,6 +7,7 @@ import {
   ExperimentOutlined,
   EyeOutlined,
   HeartOutlined,
+  InboxOutlined,
   RocketOutlined,
   StarOutlined,
 } from '@ant-design/icons';
@@ -107,6 +108,24 @@ const ExamplesIndex: React.FC = () => {
       ],
       icon: <DesktopOutlined />,
       path: '/examples/vnc-preview-demo',
+      featured: true,
+    },
+    {
+      id: 'empty-state-showcase',
+      title: isChineseLanguage ? '空状态组件展示' : 'Empty State Showcase',
+      description: isChineseLanguage
+        ? '展示 AppDevEmptyState 组件的所有状态类型，包括加载中、错误、空状态、服务器状态等 16 种状态的 Figma 设计图标。'
+        : 'Showcase all empty state types of AppDevEmptyState component, including loading, error, empty, server states with Figma-designed icons.',
+      tags: [
+        { text: isChineseLanguage ? '空状态' : 'Empty State', color: 'blue' },
+        {
+          text: isChineseLanguage ? 'Figma 图标' : 'Figma Icons',
+          color: 'purple',
+        },
+        { text: isChineseLanguage ? '组件展示' : 'Components', color: 'green' },
+      ],
+      icon: <InboxOutlined />,
+      path: '/examples/empty-state-showcase',
       featured: true,
     },
   ];
