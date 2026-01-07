@@ -546,8 +546,8 @@ export default () => {
 
     // 记录加载前的滚动高度和位置，用于保持滚动位置
     const messageView = messageViewRef.current;
-    // const oldScrollHeight = messageView?.scrollHeight || 0;
-    // const oldScrollTop = messageView?.scrollTop || 0;
+    const oldScrollHeight = messageView?.scrollHeight || 0;
+    const oldScrollTop = messageView?.scrollTop || 0;
 
     setLoadingMore(true);
     try {
@@ -569,33 +569,16 @@ export default () => {
           if (data.length < MESSAGE_LIST_SIZE) {
             setIsMoreMessage(false);
           }
-
-          // 使用多重延迟确保 DOM 完全更新和渲染完成
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              setTimeout(() => {
-                if (messageView) {
-                  messageView.scrollTop = 0;
-                }
-              }, 0);
-            });
-          });
-
-          // // 根据 scrollToTop 参数决定滚动行为
-          // if (scrollToTop) {
-
-          // } else {
-          //   // 保持滚动位置（加载更多后，滚动位置应该保持在原来的位置）
-          //   // 等待DOM更新后再调整滚动位置
-          //   setTimeout(() => {
-          //     if (messageView) {
-          //       const newScrollHeight = messageView.scrollHeight;
-          //       const scrollDiff = newScrollHeight - oldScrollHeight;
-          //       // 调整滚动位置，保持用户看到的内容不变
-          //       messageView.scrollTop = oldScrollTop + scrollDiff;
-          //     }
-          //   }, 0);
-          // }
+          // 保持滚动位置（加载更多后，滚动位置应该保持在原来的位置）
+          // 等待DOM更新后再调整滚动位置
+          setTimeout(() => {
+            if (messageView) {
+              const newScrollHeight = messageView.scrollHeight;
+              const scrollDiff = newScrollHeight - oldScrollHeight;
+              // 调整滚动位置，保持用户看到的内容不变
+              messageView.scrollTop = oldScrollTop + scrollDiff;
+            }
+          }, 0);
         } else {
           // 如果查询到的消息数量为0，则表示没有更多消息
           setIsMoreMessage(false);

@@ -19,7 +19,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
-import { LoadingOutlined } from '@ant-design/icons';
+import { LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
 import { Button, Form, message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
@@ -376,14 +376,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                   {isMoreMessage && messageList?.length > 0 && (
                     <div className={cx(styles['load-more-container'])}>
                       <Button
-                        type="link"
+                        type="text"
                         loading={loadingMore}
+                        icon={<RollbackOutlined />}
                         onClick={() =>
                           handleLoadMoreMessage(devConversationIdRef.current)
                         }
                         className={cx(styles['load-more-btn'])}
                       >
-                        {loadingMore ? '加载中...' : '加载更多消息'}
+                        点击查看更多历史会话
                       </Button>
                     </div>
                   )}
