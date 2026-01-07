@@ -472,16 +472,12 @@ const Chat: React.FC = () => {
     }
   };
 
-  // todo:监听会话状态更新事件
-  const listenConversationStatusUpdate = (data: { cId: number }) => {
-    console.log('会话状态更新:', conversationInfo?.taskStatus);
-    const { cId } = data;
+  // 监听会话状态更新事件
+  const listenConversationStatusUpdate = (data: { conversationId: string }) => {
+    console.log('会话状态更新:', conversationInfo?.taskStatus, data);
+    const { conversationId } = data;
     // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
-    if (
-      cId === conversationInfo?.id &&
-      conversationInfo?.taskStatus === TaskStatus.COMPLETE
-    ) {
-      // messageAntd.success('任务执行完成');
+    if (conversationId === conversationInfo?.id?.toString()) {
       setConversationInfo({
         ...conversationInfo,
         taskStatus: TaskStatus.COMPLETE,

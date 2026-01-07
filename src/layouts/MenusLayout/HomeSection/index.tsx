@@ -68,14 +68,13 @@ const HomeSection: React.FC<{
     }
   }, [conversationList]);
 
-  // todo: 会话状态更新
-  const handleConversationUpdate = (data: { conversationId: number }) => {
+  // 会话状态更新
+  const handleConversationUpdate = (data: { conversationId: string }) => {
     const { conversationId } = data;
-    console.log('会话状态更新:', conversationId);
     const _limitConversationList = limitConversationList.map(
       (item: ConversationInfo) => {
         if (
-          item.id === conversationId &&
+          item.id?.toString() === conversationId &&
           item.taskStatus === TaskStatus.EXECUTING
         ) {
           return {
@@ -90,13 +89,19 @@ const HomeSection: React.FC<{
   };
 
   useEffect(() => {
-    // 监听会话状态更新事件
-    eventBus.on(EVENT_TYPE.ChatFinished, handleConversationUpdate);
+    // 如果会话列表中存在执行中的会话，则监听会话状态更新事件
+    const _limitConversationList = limitConversationList.find(
+      (item) => item.taskStatus === TaskStatus.EXECUTING,
+    );
+    if (_limitConversationList) {
+      // 监听会话状态更新事件
+      eventBus.on(EVENT_TYPE.ChatFinished, handleConversationUpdate);
+    }
 
     return () => {
       eventBus.off(EVENT_TYPE.ChatFinished, handleConversationUpdate);
     };
-  }, []);
+  }, [limitConversationList]);
 
   return (
     <div style={style}>
