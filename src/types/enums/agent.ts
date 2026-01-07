@@ -128,10 +128,13 @@ export enum AgentAddComponentStatusEnum {
   Added = 'Added',
 }
 
-// 任务状态 可用值:EXECUTING,CANCEL
+// 任务状态，只针对 EXECUTING（执行中）做展示,可用值:CREATE,EXECUTING,CANCEL,COMPLETE,FAILED
 export enum TaskStatus {
+  CREATE = 'CREATE',
   CANCEL = 'CANCEL',
   EXECUTING = 'EXECUTING',
+  COMPLETE = 'COMPLETE',
+  FAILED = 'FAILED',
 }
 
 // 可用值:Chat,TempChat,TASK,TaskCenter
