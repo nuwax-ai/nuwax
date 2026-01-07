@@ -18,8 +18,9 @@ interface CaptchaOptions {
   captchaVerifyCallback: (param: any) => {
     captchaResult: boolean;
     bizResult: boolean;
+    captchaVerifyParam?: any;
   };
-  onBizResultCallback: () => void;
+  onBizResultCallback: (param?: any) => void;
   getInstance: (instance: any) => void;
   slideStyle?: {
     width: number;
@@ -58,15 +59,25 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
   const [captchaInited, setCaptchaInited] = useState<boolean>(false);
   // 使用ref记录onReady是否已经调用过，避免重复调用
   const onReadyCalledRef = useRef<boolean>(false);
+  // 使用ref保存验证参数，避免闭包问题
+  const captchaParamRef = useRef<any>(null);
 
   // 使用useCallback缓存回调函数，避免不必要的重新渲染
   const captchaVerifyCallback = (captchaVerifyParam: any) => {
-    doAction(captchaVerifyParam);
+    // 保存验证参数到ref，供业务回调使用
+    captchaParamRef.current = captchaVerifyParam;
+    // 只返回验证结果，不在这里执行业务逻辑
     return {
       captchaResult: true,
       bizResult: true,
     };
   };
+
+  // 业务结果回调 - 在验证成功后执行业务逻辑
+  const onBizResultCallback = useCallback(() => {
+    // 在业务回调中执行登录逻辑，从ref中读取验证参数
+    doAction(captchaParamRef.current);
+  }, [doAction]);
 
   // 清理验证码相关DOM元素
   const cleanupCaptchaElements = useCallback(() => {
@@ -98,8 +109,8 @@ const AliyunCaptcha: FC<AliyunCaptchaProps> = ({
         mode: 'popup', // 验证码模式：弹出式
         element: '#captcha-element', // 渲染验证码的元素
         button: `#${elementId}`, // 触发验证码弹窗的元素
-        captchaVerifyCallback, // 业务请求回调函数
-        onBizResultCallback: () => {}, // 业务请求结果回调函数
+        captchaVerifyCallback, // 验证回调函数
+        onBizResultCallback, // 业务请求结果回调函数
         getInstance, // 绑定验证码实例函数
         slideStyle: {
           width: 360,
