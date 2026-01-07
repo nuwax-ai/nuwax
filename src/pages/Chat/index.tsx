@@ -263,7 +263,9 @@ const Chat: React.FC = () => {
 
   useNavigationGuard({
     condition: () => shouldBlockNavigation.current,
-    enabled: isConversationActive, // 只在会话活跃时启用
+    // 只有任务型智能体在会话活跃时才启用导航拦截，会话型智能体不需要
+    enabled:
+      isConversationActive && agentDetail?.type === AgentTypeEnum.TaskAgent,
     title: '任务执行中',
     message: '离开后，执行成功的任务会收到提示消息',
     discardText: '确定离开',
@@ -924,9 +926,10 @@ const Chat: React.FC = () => {
               )}
               {messageList?.length > 0 ? (
                 <>
-                  {messageList?.map((item: MessageInfo, index: number) => (
+                  {messageList?.map((item: MessageInfo) => (
                     <ChatView
-                      key={item.id || index}
+                      // 后端接口返回的消息列表id存在相同的情况，所以需要使用id和index来唯一标识
+                      key={`${item.id}-${item?.index}`}
                       messageInfo={item}
                       roleInfo={roleInfo}
                       contentClassName={styles['chat-inner']}
