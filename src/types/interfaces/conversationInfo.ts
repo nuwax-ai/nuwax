@@ -340,8 +340,9 @@ export interface ConversationInfo {
   };
   // 会话消息列表，会话列表查询时不会返回该字段值
   messageList: MessageInfo[];
-  // 可用值:Chat,TASK
+  // 任务类型 可用值:Chat,TempChat,TASK,TaskCenter (会话、临时会话、任务、任务中心)
   type: TaskTypeEnum;
+  // 任务ID
   taskId: string;
   // 任务状态 可用值:EXECUTING,CANCEL (执行中、已完成、失败)
   taskStatus: TaskStatus;
