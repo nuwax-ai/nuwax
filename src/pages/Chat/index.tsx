@@ -29,6 +29,7 @@ import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
   MessageTypeEnum,
+  TaskStatus,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import { AgentDetailDto } from '@/types/interfaces/agent';
@@ -175,6 +176,9 @@ const Chat: React.FC = () => {
     isMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
+    // 停止会话
+    runStopConversation,
+    loadingStopConversation,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -468,6 +472,48 @@ const Chat: React.FC = () => {
     }
   };
 
+  // todo:监听会话状态更新事件
+  const listenConversationStatusUpdate = (data: { cId: number }) => {
+    console.log('会话状态更新:', conversationInfo?.taskStatus);
+    const { cId } = data;
+    // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
+    if (
+      cId === conversationInfo?.id &&
+      conversationInfo?.taskStatus === TaskStatus.COMPLETE
+    ) {
+      // messageAntd.success('任务执行完成');
+      setConversationInfo({
+        ...conversationInfo,
+        taskStatus: TaskStatus.COMPLETE,
+      });
+
+      // 重新查询会话信息
+      runAsync(id);
+      // 取消监听会话状态更新事件
+      eventBus.off(
+        EVENT_TYPE.RefreshChatMessage,
+        listenConversationStatusUpdate,
+      );
+    }
+  };
+
+  useEffect(() => {
+    if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
+      // 监听会话状态更新事件
+      eventBus.on(
+        EVENT_TYPE.RefreshChatMessage,
+        listenConversationStatusUpdate,
+      );
+    }
+
+    return () => {
+      eventBus.off(
+        EVENT_TYPE.RefreshChatMessage,
+        listenConversationStatusUpdate,
+      );
+    };
+  }, [conversationInfo?.taskStatus]);
+
   useEffect(() => {
     // 监听新消息事件
     eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
@@ -484,6 +530,21 @@ const Chat: React.FC = () => {
       setSelectedComponentList([]);
     };
   }, [id]);
+
+  // todo: 停止会话功能
+  const handleStopConversation = async () => {
+    // 正常会话只需要 conversationId 即可停止
+    const { code } = await runStopConversation(id);
+    if (code === SUCCESS_CODE) {
+      // 重新查询会话信息
+      runAsync(id);
+      // 取消监听会话状态更新事件
+      eventBus.off(
+        EVENT_TYPE.RefreshChatMessage,
+        listenConversationStatusUpdate,
+      );
+    }
+  };
 
   // 清空会话记录，实际上是跳转到智能体详情页面
   const handleClear = () => {
@@ -947,6 +1008,27 @@ const Chat: React.FC = () => {
                     chatSuggestList={chatSuggestList}
                     onClick={handleMessageSend}
                   />
+                  {/* 任务执行中容器 */}
+                  {conversationInfo?.taskStatus === TaskStatus.EXECUTING && (
+                    <div
+                      className={cx(
+                        styles['task-executing-container'],
+                        'flex',
+                        'items-center',
+                      )}
+                    >
+                      <LoadingOutlined />
+                      <span>Agent正在执行任务中...</span>
+                      <Button
+                        type="primary"
+                        loading={loadingStopConversation}
+                        size="small"
+                        onClick={handleStopConversation}
+                      >
+                        取消任务
+                      </Button>
+                    </div>
+                  )}
                 </>
               ) : (
                 !message &&
@@ -998,7 +1080,6 @@ const Chat: React.FC = () => {
             )}
 
           <ChatInputHome
-            // key={`chat-${id}-${agentId}`}
             key={`agent-details-${agentId}`}
             className={cx(styles['chat-input-container'])}
             onEnter={handleMessageSend}
@@ -1026,18 +1107,11 @@ const Chat: React.FC = () => {
           className={cx(
             'flex',
             'items-center',
-            'justify-center',
+            'content-center',
             'flex-1',
-            'h-full',
             'w-full',
+            'h-full',
           )}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            height: '100%',
-          }}
         >
           <LoadingOutlined />
         </div>
