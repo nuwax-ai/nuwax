@@ -58,7 +58,7 @@ import eventBus from '@/utils/eventBus';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
-import { LoadingOutlined } from '@ant-design/icons';
+import { LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
 import { Button, Form, message as messageAntd, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -976,12 +976,13 @@ const Chat: React.FC = () => {
               {isMoreMessage && messageList?.length > 0 && (
                 <div className={cx(styles['load-more-container'])}>
                   <Button
-                    type="link"
+                    type="text"
                     loading={loadingMore}
+                    icon={<RollbackOutlined />}
                     onClick={() => handleLoadMoreMessage(id)}
                     className={cx(styles['load-more-btn'])}
                   >
-                    {loadingMore ? '加载中...' : '加载更多消息'}
+                    点击查看更多历史会话
                   </Button>
                 </div>
               )}
