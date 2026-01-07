@@ -171,6 +171,10 @@ const Chat: React.FC = () => {
     taskAgentSelectTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
+    // 加载更多消息相关
+    isMoreMessage,
+    loadingMore,
+    handleLoadMoreMessage,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -378,8 +382,6 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      console.log('useEffectuseEffectuseEffectid', id);
-
       setIsLoadingConversation(false);
       // 切换会话时，重置自动滚动标志，确保新会话能够自动滚动到底部
       allowAutoScrollRef.current = true;
@@ -907,6 +909,19 @@ const Chat: React.FC = () => {
                 isFilled={!!variableParams}
                 disabled={!!firstVariableParams || isSendMessageRef.current}
               />
+              {/* 加载更多按钮 */}
+              {isMoreMessage && messageList?.length > 0 && (
+                <div className={cx(styles['load-more-container'])}>
+                  <Button
+                    type="link"
+                    loading={loadingMore}
+                    onClick={() => handleLoadMoreMessage(id)}
+                    className={cx(styles['load-more-btn'])}
+                  >
+                    {loadingMore ? '加载中...' : '加载更多消息'}
+                  </Button>
+                </div>
+              )}
               {messageList?.length > 0 ? (
                 <>
                   {messageList?.map((item: MessageInfo, index: number) => (
