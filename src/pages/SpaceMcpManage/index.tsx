@@ -235,6 +235,18 @@ const SpaceLibrary: React.FC = () => {
     }
   }, [spaceId]);
 
+  // 监听菜单切换，重新加载数据
+  useEffect(() => {
+    if (history.location.state) {
+      setLoading(true);
+      if (segmentedValue === McpManageSegmentedEnum.Custom) {
+        runMcpList(spaceId);
+      } else {
+        runMcpOfficialList();
+      }
+    }
+  }, [history.location.state]);
+
   // 切换创建者
   const handlerChangeCreate = (value: React.Key) => {
     const _value = value as CreateListEnum;

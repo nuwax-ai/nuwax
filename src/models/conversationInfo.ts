@@ -7,6 +7,7 @@ import {
   apiAgentConversation,
   apiAgentConversationChatStop,
   apiAgentConversationChatSuggest,
+  apiAgentConversationMessageList,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import {
@@ -72,6 +73,9 @@ import { useCallback, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 
+// 会话消息列表数量
+const MESSAGE_LIST_SIZE = 20; // 20条
+
 export default () => {
   // 历史记录
   const { runHistory, runHistoryItem } = useModel('conversationHistory');
@@ -92,6 +96,8 @@ export default () => {
   const setIsSuggest = (suggest: boolean) => {
     isSuggest.current = suggest;
   };
+  // 是否还有更多消息
+  const [isMoreMessage, setIsMoreMessage] = useState<boolean>(true);
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
@@ -511,6 +517,32 @@ export default () => {
     handleChatProcessingList(list);
   };
 
+  // 查询会话消息列表
+  const { runAsync: runQueryConversationMessageList } = useRequest(
+    apiAgentConversationMessageList,
+    {
+      manual: true,
+      debounceWait: 300,
+      // onSuccess: (result: RequestResponse<MessageInfo[]>) => {
+      //   console.log('查询会话消息列表', result);
+      //   const { data } = result;
+      //   if (data?.length) {
+      //     setMessageList((messageList) => {
+      //       return [...messageList, ...data];
+      //     });
+
+      //     // 如果查询到的消息数量小于20，则表示没有更多消息
+      //     if (data?.length < MESSAGE_LIST_SIZE) {
+      //       setIsMoreMessage(false);
+      //     }
+      //   } else {
+      //     // 如果查询到的消息数量为0，则表示没有更多消息
+      //     setIsMoreMessage(false);
+      //   }
+      // },
+    },
+  );
+
   // 查询会话
   const {
     run: runQueryConversation,
@@ -563,6 +595,11 @@ export default () => {
           const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
           // 如果存在预置问题，显示预置问题
           setChatSuggestList(guidQuestionDtos);
+        }
+
+        // 如果消息列表数量小于20(此接口后端限制为20条)，则表示没有更多消息
+        if (len < MESSAGE_LIST_SIZE) {
+          setIsMoreMessage(false);
         }
       }
       // 不存在会话消息时，才显示开场白预置问题
@@ -758,14 +795,13 @@ export default () => {
           // 长任务型任务处理(刷新文件树)
           if (
             data.type === AgentComponentTypeEnum.ToolCall &&
-            // isFileTreeVisible && // 是否已经打开文件预览窗口
-            // viewMode === 'preview' && // 文件预览
+            isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
+            viewModeRef.current === 'preview' && // 文件预览
             // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
             params.conversationId
           ) {
             // 刷新文件树
             handleRefreshFileList(params.conversationId);
-            console.log('刷新文件树');
           }
 
           handleChatProcessingList([
@@ -819,13 +855,18 @@ export default () => {
               newMessage = {
                 ...currentMessage,
                 text: `${currentMessage.text}${text}`,
-                status: MessageStatusEnum.Incomplete,
+                // 如果finished为true，则状态为Complete，否则为Incomplete
+                status: finished
+                  ? MessageStatusEnum.Complete
+                  : MessageStatusEnum.Incomplete,
               };
             }
           }
         }
         // FINAL_RESULT事件
         if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
+          // 重置消息ID
+          messageIdRef.current = '';
           /**
            * "error":"Agent正在执行任务，请等待当前任务完成后再发送新请求"
            */
@@ -878,15 +919,18 @@ export default () => {
             runChatSuggest(params as ConversationChatSuggestParams);
           }
 
-          // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
-          if (!data.outputText) {
-            // 将 newMessage 设置为 null，并保持 arraySpliceAction 为 1
-            // 这样会在后续的 splice 操作中删除当前消息而不是替换
-            newMessage = null;
-            // 确保删除操作生效：直接从列表中移除当前消息
-            list.splice(index, 1);
-            // 标记已处理，跳过后续的 splice 逻辑
-            arraySpliceAction = 0;
+          // 用户主动取消任务
+          if (!data?.success && data?.error?.includes('用户主动取消任务')) {
+            // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
+            if (!newMessage?.text && !data.outputText) {
+              // 将 newMessage 设置为 null，并保持 arraySpliceAction 为 1
+              // 这样会在后续的 splice 操作中删除当前消息而不是替换
+              newMessage = null;
+              // 确保删除操作生效：直接从列表中移除当前消息
+              list.splice(index, 1);
+              // 标记已处理，跳过后续的 splice 逻辑
+              // arraySpliceAction = 0;
+            }
           }
         }
         // ERROR事件
@@ -968,7 +1012,7 @@ export default () => {
                 );
 
                 lastMessage.processingList = updatedProcessingList;
-                lastMessage.status = MessageStatusEnum.Error;
+                // lastMessage.status = MessageStatusEnum.Error;
 
                 // ✨ 关键：同时更新全局的 processingList，这样 MarkdownCustomProcess 组件才能正确更新
                 handleChatProcessingList(updatedProcessingList);
@@ -1039,6 +1083,8 @@ export default () => {
 
   // 清除副作用
   const handleClearSideEffect = () => {
+    // 重置消息ID
+    messageIdRef.current = '';
     setChatSuggestList([]);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -1057,6 +1103,9 @@ export default () => {
       }
       abortConnectionRef.current = null;
     }
+
+    // 停止当前会话【强制】
+    abortController?.abort();
   };
 
   // 重置初始化
@@ -1096,9 +1145,6 @@ export default () => {
 
     // 清除文件面板信息, 并关闭文件面板
     clearFilePanelInfo();
-
-    // 停止当前会话【强制】
-    abortController?.abort();
   };
 
   // 发送消息
@@ -1216,6 +1262,9 @@ export default () => {
     manualComponents,
     messageList,
     setMessageList,
+    runQueryConversationMessageList,
+    isMoreMessage,
+    setIsMoreMessage,
     requestId,
     finalResult,
     setFinalResult,

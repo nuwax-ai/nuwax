@@ -30,3 +30,14 @@ export const AGENT_AI_CHAT_ERROR = '9999';
 /**
  * 智能体服务错误状态码 --end
  */
+
+/**
+ * 工作流错误状态码 --start
+ */
+
+// 工作流版本冲突（工作流已在其他窗口被修改）
+export const WORKFLOW_VERSION_CONFLICT = '1011';
+
+/**
+ * 工作流错误状态码 --end
+ */

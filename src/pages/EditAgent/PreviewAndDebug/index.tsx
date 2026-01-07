@@ -253,7 +253,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
           onAgentConfigInfo(_agentConfigInfo);
         }
         // 查询会话
-        runQueryConversation(id);
+        await runQueryConversation(id);
       }
     } finally {
       setIsLoadingOtherInterface(false);
