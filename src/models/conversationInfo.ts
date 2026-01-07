@@ -96,8 +96,8 @@ export default () => {
   const setIsSuggest = (suggest: boolean) => {
     isSuggest.current = suggest;
   };
-  // 是否还有更多消息
-  const [isMoreMessage, setIsMoreMessage] = useState<boolean>(true);
+  // 是否还有更多消息, 默认没有更多消息，这样默认隐藏加载更多按钮
+  const [isMoreMessage, setIsMoreMessage] = useState<boolean>(false);
   // 加载更多消息的状态
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   // 会话信息
@@ -568,6 +568,8 @@ export default () => {
           // 如果查询到的消息数量小于20，则表示没有更多消息
           if (data.length < MESSAGE_LIST_SIZE) {
             setIsMoreMessage(false);
+          } else {
+            setIsMoreMessage(true);
           }
           // 保持滚动位置（加载更多后，滚动位置应该保持在原来的位置）
           // 等待DOM更新后再调整滚动位置
@@ -646,8 +648,8 @@ export default () => {
         }
 
         // 如果消息列表数量小于20(此接口后端限制为20条)，则表示没有更多消息
-        if (len < MESSAGE_LIST_SIZE) {
-          setIsMoreMessage(false);
+        if (len === MESSAGE_LIST_SIZE) {
+          setIsMoreMessage(true);
         }
       }
       // 不存在会话消息时，才显示开场白预置问题
@@ -1105,7 +1107,7 @@ export default () => {
     // 重置消息ID
     messageIdRef.current = '';
     // 重置是否还有更多消息
-    setIsMoreMessage(true);
+    setIsMoreMessage(false);
     // 重置加载更多消息的状态
     setLoadingMore(false);
     // 重置问题建议列表
