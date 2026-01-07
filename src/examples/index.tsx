@@ -128,6 +128,24 @@ const ExamplesIndex: React.FC = () => {
       path: '/examples/empty-state-showcase',
       featured: true,
     },
+    {
+      id: 'sse-streaming-test',
+      title: isChineseLanguage ? 'SSE 流式渲染测试' : 'SSE Streaming Test',
+      description: isChineseLanguage
+        ? '使用真实的 SSE 数据模拟流式渲染，验证消息缓冲区优化效果，监控帧率和渲染性能。'
+        : 'Test streaming rendering with real SSE data, verify message buffer optimization effect, monitor FPS and rendering performance.',
+      tags: [
+        {
+          text: isChineseLanguage ? '性能测试' : 'Performance',
+          color: 'orange',
+        },
+        { text: isChineseLanguage ? '流式渲染' : 'Streaming', color: 'blue' },
+        { text: isChineseLanguage ? 'SSE' : 'SSE', color: 'green' },
+      ],
+      icon: <RocketOutlined />,
+      path: '/examples/sse-streaming-test',
+      featured: true,
+    },
   ];
 
   // 跳转到示例页面

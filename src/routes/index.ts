@@ -220,6 +220,11 @@ const routes = [
     component: '@/examples/EmptyStateShowcase',
     layout: false,
   },
+  {
+    path: '/examples/sse-streaming-test',
+    component: '@/examples/SSEStreamingTest',
+    layout: false,
+  },
 ];
 
 export default routes;
