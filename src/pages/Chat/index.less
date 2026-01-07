@@ -112,6 +112,25 @@
             background-color: @colorBgContainer;
           }
         }
+
+        // 加载更多按钮容器
+        .load-more-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: @paddingSm 0;
+          margin-bottom: @paddingSm;
+
+          .load-more-btn {
+            color: @colorPrimary;
+            font-size: @fontSize;
+            padding: 0 @padding;
+
+            &:hover {
+              color: @colorPrimaryHover;
+            }
+          }
+        }
       }
     }
 
