@@ -16,6 +16,11 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({ messageInfo }) => {
     message.success('复制成功');
   };
 
+  // 如果消息内容为空，则不显示复制按钮
+  if (!text) {
+    return null;
+  }
+
   return (
     <div
       className={cx(
