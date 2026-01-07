@@ -131,6 +131,8 @@ export enum AgentArrangeConfigEnum {
   Hide_Chat_Area = 'Hide_Chat_Area',
   // 界面事件绑定
   Page_Event_Binding = 'Page_Event_Binding',
+  // 子智能体
+  SubAgent = 'SubAgent',
 }
 
 // 是否开启问题建议,可用值:Open,Close
@@ -165,6 +167,8 @@ export enum ComponentSettingEnum {
   Exception_Handling,
   // 卡片绑定
   Card_Bind,
+  // 子智能体
+  SubAgent,
 }
 
 // 智能体页面设置类型

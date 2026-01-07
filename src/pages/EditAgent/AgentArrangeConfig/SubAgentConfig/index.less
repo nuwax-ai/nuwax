@@ -1,0 +1,116 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  padding: 0 @paddingXs;
+}
+
+.empty-text {
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+  margin: 0;
+}
+
+.agent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @marginSm;
+  min-height: 38px;
+  margin-bottom: @marginXxs;
+  padding: @paddingXxs @paddingXs;
+  border-radius: @borderRadius;
+  cursor: default;
+  background-color: @colorFillTertiary;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &:hover {
+    .agent-actions {
+      display: flex;
+    }
+  }
+
+  .agent-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  .icon-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    background-color: @colorFillSecondary;
+    border-radius: @borderRadiusSm;
+    overflow: hidden;
+  }
+
+  .text-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+  }
+
+  .agent-name {
+    display: inline-block;
+    color: @colorText;
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    font-weight: @fontWeightStrong;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+  }
+
+  .agent-desc {
+    color: @colorTextSecondary;
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+  }
+
+  .agent-actions {
+    display: none;
+    gap: @marginXxs;
+    font-size: @fontSize;
+    transition: all 0.3s;
+  }
+}
+
+// Modal styles
+.modal-content {
+  padding: @paddingXs 0;
+
+  .form-item {
+    margin-bottom: @margin;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .form-label {
+    display: block;
+    font-size: @fontSize;
+    color: @colorText;
+    margin-bottom: @marginXs;
+  }
+
+  .form-label-row {
+    margin-bottom: @marginXs;
+  }
+}

@@ -275,6 +275,10 @@ export const COMPONENT_SETTING_ACTIONS = [
     type: ComponentSettingEnum.Card_Bind,
     label: '卡片绑定',
   },
+  {
+    type: ComponentSettingEnum.SubAgent,
+    label: '子智能体',
+  },
 ];
 
 // 智能体编排-组件设置列表

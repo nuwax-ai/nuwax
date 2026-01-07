@@ -13,6 +13,8 @@ export enum AgentComponentTypeEnum {
   Event = 'Event',
   // 技能
   Skill = 'Skill',
+  // 子智能体
+  SubAgent = 'SubAgent',
   // 工具调用
   ToolCall = 'ToolCall',
   // 执行计划
