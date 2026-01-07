@@ -490,27 +490,18 @@ const Chat: React.FC = () => {
       // 重新查询会话信息
       runAsync(id);
       // 取消监听会话状态更新事件
-      eventBus.off(
-        EVENT_TYPE.RefreshChatMessage,
-        listenConversationStatusUpdate,
-      );
+      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
     }
   };
 
   useEffect(() => {
     if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
       // 监听会话状态更新事件
-      eventBus.on(
-        EVENT_TYPE.RefreshChatMessage,
-        listenConversationStatusUpdate,
-      );
+      eventBus.on(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
     }
 
     return () => {
-      eventBus.off(
-        EVENT_TYPE.RefreshChatMessage,
-        listenConversationStatusUpdate,
-      );
+      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
     };
   }, [conversationInfo?.taskStatus]);
 
