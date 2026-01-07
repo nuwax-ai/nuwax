@@ -215,6 +215,11 @@ const routes = [
     component: '@/examples/file-preview-demo',
     layout: false,
   },
+  {
+    path: '/examples/empty-state-showcase',
+    component: '@/examples/EmptyStateShowcase',
+    layout: false,
+  },
 ];
 
 export default routes;
