@@ -17,12 +17,6 @@ export interface FileTreePanelProps {
   /** 已展开的文件夹ID集合 */
   expandedFolders: Set<string>;
 
-  /** 数据资源列表 */
-  dataResources: DataResource[];
-
-  /** 数据资源加载状态 */
-  dataResourcesLoading: boolean;
-
   /** 文件选择回调 */
   onFileSelect: (fileId: string) => void;
 
@@ -44,12 +38,6 @@ export interface FileTreePanelProps {
   /** 上传单个文件回调 */
   onUploadSingleFile: (node: FileNode | null) => void;
 
-  /** 添加数据资源回调 */
-  onAddDataResource: () => void;
-
-  /** 删除数据资源回调 */
-  onDeleteDataResource: (resourceId: number) => Promise<void>;
-
   /** 选中的数据源列表 */
   selectedDataResources?: DataResource[];
 
@@ -67,8 +55,6 @@ export interface FileTreePanelProps {
   };
   /** 是否正在AI聊天加载中 */
   isChatLoading?: boolean;
-  /** 项目ID，用于解绑数据源 */
-  projectId?: number;
 
   /** 文件树初始化 loading 状态 */
   isFileTreeInitializing?: boolean;

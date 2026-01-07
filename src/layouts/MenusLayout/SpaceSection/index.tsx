@@ -60,7 +60,6 @@ const SpaceSection: React.FC<{
 
   const handlerApplication = useCallback(
     (type: SpaceApplicationListEnum) => {
-      console.log('🚀 [handlerApplication] type:', type);
       let url = '';
       switch (type) {
         // 应用开发
@@ -104,7 +103,9 @@ const SpaceSection: React.FC<{
       }
       // 关闭移动端菜单
       handleCloseMobileMenu();
-      history.push(`/space/${finalSpaceId}/${url}`);
+      history.push(`/space/${finalSpaceId}/${url}`, {
+        _t: Date.now(),
+      });
       localStorage.setItem(SPACE_URL, url);
     },
     [handleCloseMobileMenu, finalSpaceId],

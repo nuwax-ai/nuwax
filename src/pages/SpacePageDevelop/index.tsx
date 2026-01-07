@@ -185,6 +185,20 @@ const SpacePageDevelop: React.FC = () => {
     });
   }, [spaceId]);
 
+  // 监听菜单切换，重新加载数据
+  useEffect(() => {
+    if (history.location.state) {
+      // 清空URL搜索参数
+      const newParams = new URLSearchParams();
+      setSearchParams(newParams);
+      // 重新加载页面列表
+      setLoading(true);
+      runPageList({
+        spaceId,
+      });
+    }
+  }, [history.location.state]);
+
   // 切换类型
   const handlerChangeType = (value: React.Key) => {
     const _value = value as PageDevelopSelectTypeEnum;

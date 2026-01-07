@@ -494,7 +494,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       return () => {
         setFiles([]);
-        setChangeFiles([]);
+        // setChangeFiles([]);
       };
     }, [originalFiles]);
 
