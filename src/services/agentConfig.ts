@@ -20,6 +20,7 @@ import {
   AgentPageUpdateParams,
   AgentPublishApplyParams,
   ApiAgentConversationChatPageResultParams,
+  ConversationMessageListParams,
 } from '@/types/interfaces/agent';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import type {
@@ -27,6 +28,7 @@ import type {
   ConversationCreateParams,
   ConversationInfo,
   ConversationListParams,
+  MessageInfo,
   ShareFileInfo,
 } from '@/types/interfaces/conversationInfo';
 import type { RequestResponse } from '@/types/interfaces/request';
@@ -261,6 +263,16 @@ export async function apiAgentConversation(
 ): Promise<RequestResponse<ConversationInfo>> {
   return await request(`/api/agent/conversation/${conversationId}`, {
     method: 'POST',
+  });
+}
+
+// 查询会话消息列表
+export async function apiAgentConversationMessageList(
+  data: ConversationMessageListParams,
+): Promise<RequestResponse<MessageInfo[]>> {
+  return await request('/api/agent/conversation/message/list', {
+    method: 'POST',
+    data,
   });
 }
 
