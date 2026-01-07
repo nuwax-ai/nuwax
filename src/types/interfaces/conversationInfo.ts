@@ -340,15 +340,22 @@ export interface ConversationInfo {
   };
   // 会话消息列表，会话列表查询时不会返回该字段值
   messageList: MessageInfo[];
-  // 可用值:Chat,TASK
+  // 任务类型 可用值:Chat,TempChat,TASK,TaskCenter (会话、临时会话、任务、任务中心)
   type: TaskTypeEnum;
+  // 任务ID
   taskId: string;
-  // 可用值:EXECUTING,CANCEL
+  // 任务状态，只针对 EXECUTING（执行中）做展示,可用值:CREATE,EXECUTING,CANCEL,COMPLETE,FAILED
   taskStatus: TaskStatus;
   taskCron: string;
   taskCronDesc: string;
   // 开发模式
   devMode: boolean;
+  // 沙盒服务器ID
+  sandboxServerId: string;
+  // 沙盒会话ID
+  sandboxSessionId: string;
+  // 已分享的URI地址，比对上了则不需要认证
+  sharedUris: string[];
 }
 
 // 查询用户历史会话输入参数

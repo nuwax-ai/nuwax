@@ -94,14 +94,17 @@
           margin-bottom: @paddingSm;
 
           .load-more-btn {
-            color: @colorPrimary;
             font-size: @fontSize;
             padding: 0 @padding;
-
-            &:hover {
-              color: @colorPrimaryHover;
-            }
           }
+        }
+
+        // 任务执行中容器
+        .task-executing-container {
+          height: 32px;
+          color: @colorTextSecondary;
+          font-size: @fontSizeSm;
+          gap: @paddingSm;
         }
       }
     }

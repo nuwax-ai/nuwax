@@ -974,7 +974,7 @@ export interface ApiAgentConversationChatPageResultParams {
  */
 export interface AgentConversationShareParams {
   conversationId: number | string;
-  type: string;
+  type: 'CONVERSATION' | 'DESKTOP';
   expireSeconds?: number | null;
   content: string;
 }
