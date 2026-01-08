@@ -471,14 +471,29 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               } else {
                 // 如果没有明确的分类，尝试根据 key 判断
                 for (const node of nodes) {
-                  if (node.key.startsWith('tool-')) {
+                  const varType = (node.variable as any)?.type;
+
+                  // 工具判断：前缀 tool- 或类型为 Tool/Plugin/Workflow/Mcp
+                  if (
+                    node.key.startsWith('tool-') ||
+                    varType === 'Tool' ||
+                    varType === 'Plugin' ||
+                    varType === 'Workflow' ||
+                    varType === 'Mcp'
+                  ) {
                     toolVars.push(node);
-                  } else if (node.key.startsWith('skill-')) {
+                  }
+                  // 技能判断：前缀 skill-/subagent- 或类型为 Skill/SubAgent
+                  else if (
+                    node.key.startsWith('skill-') ||
+                    node.key.startsWith('subagent-') ||
+                    varType === 'Skill' ||
+                    varType === 'SubAgent'
+                  ) {
                     skillVars.push(node);
-                  } else if ((node.variable as any)?.type === 'Tool') {
-                    // 如果是 Tool 类型但没有前缀，默认放入工具
-                    toolVars.push(node);
-                  } else {
+                  }
+                  // 其他都归为普通变量
+                  else {
                     regularVars.push(node);
                   }
                 }
