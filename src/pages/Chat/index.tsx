@@ -1018,7 +1018,7 @@ const Chat: React.FC = () => {
                       )}
                     >
                       <LoadingOutlined />
-                      <span>Agent正在执行任务中...</span>
+                      <span>智能体正在执行，请稍等</span>
                     </div>
                   )}
                 </>
