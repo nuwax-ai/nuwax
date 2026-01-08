@@ -75,8 +75,6 @@ const cx = classNames.bind(styles);
 const Chat: React.FC = () => {
   const location = useLocation();
   const params = useParams();
-  const { isMobile } = useModel('layout');
-  const { runHistoryItem } = useModel('conversationHistory');
   // 会话ID
   const id = Number(params.id);
   const agentId = Number(params.agentId);
@@ -185,8 +183,9 @@ const Chat: React.FC = () => {
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
 
+  const { isMobile } = useModel('layout');
   // 会话记录
-  const { runHistory } = useModel('conversationHistory');
+  const { runHistory, runHistoryItem } = useModel('conversationHistory');
 
   // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
   // 支持多种可能的参数名：workflowId, workflow_id, id

@@ -59,13 +59,14 @@ const MenusLayout: React.FC<{
   }, [tenantConfigInfo]);
   // 点击主页
   const handleClickHome = () => {
-    // 最近使用
+    // 最近使用智能体列表
     runUsed({
-      size: 8,
+      size: 5,
     });
-    // 会话记录
+    // 查询会话记录
     runHistory({
       agentId: null,
+      limit: 20,
     });
     history.push('/');
   };

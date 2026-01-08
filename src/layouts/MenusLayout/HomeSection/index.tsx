@@ -51,9 +51,11 @@ const HomeSection: React.FC<{
   };
 
   useEffect(() => {
+    // 最近使用智能体列表
     runUsed({
-      size: 8,
+      size: 5,
     });
+    // 查询会话记录
     runHistory({
       agentId: null,
       limit: 20,
@@ -112,17 +114,15 @@ const HomeSection: React.FC<{
           </h3>
         </div>
         {usedAgentList?.length ? (
-          usedAgentList
-            ?.slice(0, 5)
-            .map((info: AgentInfo, index: number) => (
-              <MenuListItem
-                key={info.id}
-                onClick={() => handleAgentHome(info)}
-                icon={info.icon}
-                name={info.name}
-                isFirst={index === 0}
-              />
-            ))
+          usedAgentList.map((info: AgentInfo, index: number) => (
+            <MenuListItem
+              key={info.id}
+              onClick={() => handleAgentHome(info)}
+              icon={info.icon}
+              name={info.name}
+              isFirst={index === 0}
+            />
+          ))
         ) : (
           <>
             <div className={cx(styles['no-used'])}>你还没有使用任何智能体</div>
@@ -146,7 +146,7 @@ const HomeSection: React.FC<{
         </div>
         <div>
           {limitConversationList?.length ? (
-            limitConversationList?.map(
+            limitConversationList.map(
               (item: ConversationInfo, index: number) => (
                 <ConversationItem
                   key={item.id}
