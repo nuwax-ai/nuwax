@@ -1,18 +1,29 @@
-import { SANDBOX } from '@/constants/common.constants';
+import {
+  IDLE_DETECTION_TIMEOUT_MS,
+  IDLE_WARNING_COUNTDOWN_SECONDS,
+  SANDBOX,
+} from '@/constants/common.constants';
+import { useIdleDetection } from '@/hooks/useIdleDetection';
 import { apiCheckVncStatus } from '@/services/vncDesktop';
+import { createLogger } from '@/utils/logger';
 import { DesktopOutlined } from '@ant-design/icons';
-import { Alert, Button, Spin, Tag } from 'antd';
+import { Alert, Button, message, Spin, Tag } from 'antd';
 import {
   forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from 'react';
+import IdleWarningModal from './components/IdleWarningModal';
 import styles from './index.less';
 import { ConnectionStatus, VncPreviewProps, VncPreviewRef } from './type';
 import { useUrlRetry } from './useUrlRetry';
+
+// 创建 VncPreview 空闲检测专用 logger
+const vncIdleLogger = createLogger('[Idle:VncPreview]');
 
 const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
   (
@@ -23,6 +34,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       autoConnect = false,
       style,
       className,
+      idleDetection,
     },
     ref,
   ) => {
@@ -31,17 +43,26 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     const [iframeUrl, setIframeUrl] = useState<string | null>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
+    // 空闲警告弹窗状态
+    const [showIdleWarning, setShowIdleWarning] = useState<boolean>(false);
+
+    // 解构空闲检测配置
+    const {
+      enabled: idleEnabled = false,
+      idleTimeoutMs = IDLE_DETECTION_TIMEOUT_MS,
+      countdownSeconds = IDLE_WARNING_COUNTDOWN_SECONDS,
+      onIdleTimeout,
+      onIdleCancel,
+    } = idleDetection || {};
+
     // 使用 URL 重试 hook
-    // TODO: 后端 API 准备好后，取消下面的 checkFn 注释以启用后端代理检测
     const { checkWithRetry, resetRetry } = useUrlRetry({
       retryInterval: 5000, // 5 秒间隔
       maxRetryDuration: 60000, // 最长重试 1 分钟
       retryStatusCodes: [404], // 仅对 404 重试
-      // 后端 API 准备好后启用此函数绕过 CORS：
       checkFn: async () => {
         const res = await apiCheckVncStatus(Number(cId));
         const isReady = res.data?.novnc_ready ?? false;
-        // 未就绪返回 404 触发重试，就绪返回 200
         return { ok: isReady, status: isReady ? 200 : 404 };
       },
     });
@@ -56,12 +77,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       const cleanBaseUrl = serviceUrl?.replace(/\/+$/, '');
       const params = new URLSearchParams();
 
-      // Always use scaling
       params.set('resize', 'scale');
-
-      // Auto-connect param for the internal VNC client (noVNC usually supports this)
       params.set('autoconnect', 'true');
-      // Enable auto-reconnect
       params.set('reconnect', 'true');
       params.set('reconnect_delay', '500');
 
@@ -83,23 +100,19 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       setErrorMessage('');
 
       const result = await checkWithRetry(url, () => {
-        // 重试回调
         connect();
       });
 
       if (result.shouldRetry) {
-        // 正在重试中，保持 connecting 状态
         return;
       }
 
       if (result.isTimeout) {
-        // 重试超时
         setStatus('error');
         setErrorMessage('智能体电脑暂时不可用，请稍后手动刷新重试。');
         return;
       }
 
-      // 其他错误状态码
       if (result.status === 403) {
         setStatus('error');
         setErrorMessage('访问被拒绝 (403 Forbidden)，请检查权限配置。');
@@ -116,7 +129,6 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
         return;
       }
 
-      // 成功，加载 iframe 并关闭 loading
       setStatus('connected');
       setIframeUrl(url);
     }, [buildVncUrl, checkWithRetry]);
@@ -138,34 +150,28 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     // 监听来自 noVNC iframe 的消息
     useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
-        // 忽略非对象消息
         if (!event.data || typeof event.data !== 'object') return;
 
         const { type, msg } = event.data;
 
         switch (type) {
           case 'vnc_connected':
-            // 连接成功
             setStatus('connected');
             setErrorMessage('');
             break;
           case 'vnc_connection_failed':
-            // 连接失败
             setStatus('error');
             setErrorMessage(msg || '无法连接到智能体电脑');
             break;
           case 'vnc_connection_closed':
-            // 连接断开（之前已连接）
             setStatus('error');
             setErrorMessage(msg || '连接已断开');
             break;
           case 'vnc_share_expired':
-            // 分享已过期
             setStatus('error');
             setErrorMessage('分享已过期');
             break;
           default:
-            // 忽略其他消息类型
             break;
         }
       };
@@ -181,9 +187,9 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       if (autoConnect && status === 'disconnected') {
         connect();
       }
-    }, [autoConnect]); // 只在 autoConnect 变化时执行，不依赖 connect
+    }, [autoConnect]);
 
-    // Handle re-connection when configuration changes and we are already connected or connecting
+    // Handle re-connection when configuration changes
     useEffect(() => {
       if (status === 'connected' || status === 'connecting') {
         connect();
@@ -192,9 +198,6 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     }, [serviceUrl, cId, readOnly]);
 
     const handleIframeLoad = () => {
-      // If we were connecting, we mark as connected when iframe loads.
-      // Note: VNC might still be negotiating inside the iframe, but from container perspective, it's loaded.
-      // The previous code had specific timeouts, but iframe.onload is a good first step.
       if (status === 'connecting') {
         setStatus('connected');
       }
@@ -205,24 +208,88 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       setErrorMessage('Failed to load VNC client.');
     };
 
-    // Timeout fallback for connection - similar to the original HTML logic
+    // Timeout fallback for connection
     useEffect(() => {
-      let timeoutId: any;
+      let timeoutId: ReturnType<typeof setTimeout>;
 
       if (status === 'connecting') {
         timeoutId = setTimeout(() => {
-          // If still connecting after X seconds, check if iframe really failed or just slow
-          // Since we can't easily access cross-origin iframe content, we assume connected if no error fired
           if (iframeRef.current) {
             setStatus('connected');
           }
-        }, 5000); // 5 seconds timeout
+        }, 5000);
       }
 
       return () => {
         if (timeoutId) clearTimeout(timeoutId);
       };
     }, [status]);
+
+    // ==================== 空闲检测逻辑 ====================
+
+    /**
+     * 空闲检测启用条件：
+     * 1. 配置中启用了空闲检测
+     * 2. VNC 已连接
+     */
+    const shouldEnableIdleDetection = useMemo(() => {
+      const result = idleEnabled && status === 'connected';
+      vncIdleLogger.log('检查空闲检测启用条件', {
+        idleEnabled,
+        status,
+        shouldEnable: result,
+      });
+      return result;
+    }, [idleEnabled, status]);
+
+    /**
+     * 处理空闲超时：显示警告弹窗
+     */
+    const handleIdleTimeout = useCallback(() => {
+      vncIdleLogger.log('⏰ 空闲超时，显示警告弹窗', {
+        countdownSeconds,
+        cId,
+      });
+      setShowIdleWarning(true);
+    }, [countdownSeconds, cId]);
+
+    // 使用空闲检测 Hook
+    const { resetIdleTimer } = useIdleDetection({
+      idleTimeoutMs,
+      enabled: shouldEnableIdleDetection,
+      onIdle: handleIdleTimeout,
+      throttleMs: 2000,
+      // 同时监听 VNC iframe 内的用户活动（同源情况下）
+      iframeSelector: `iframe[data-vnc-id="${cId}"]`,
+    });
+
+    /**
+     * 处理用户取消空闲警告
+     */
+    const handleIdleWarningCancel = useCallback(() => {
+      vncIdleLogger.log('✅ 用户取消空闲警告', '重置空闲计时器');
+      setShowIdleWarning(false);
+      resetIdleTimer();
+      message.success('已取消自动关闭');
+      onIdleCancel?.();
+    }, [resetIdleTimer, onIdleCancel]);
+
+    /**
+     * 处理空闲警告倒计时结束：断开连接
+     */
+    const handleIdleWarningTimeout = useCallback(() => {
+      vncIdleLogger.log('⏱️ 空闲警告倒计时结束', {
+        action: '断开 VNC 连接',
+        cId,
+      });
+      setShowIdleWarning(false);
+      // 断开连接
+      disconnect();
+      message.info('由于长时间未操作，已自动关闭智能体电脑连接');
+      onIdleTimeout?.();
+    }, [cId, disconnect, onIdleTimeout]);
+
+    // ==================== 渲染相关 ====================
 
     const renderStatusTag = useCallback(() => {
       switch (status) {
@@ -247,8 +314,9 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
         disconnect,
         renderStatusTag,
         getStatus: () => status,
+        resetIdleTimer,
       }),
-      [connect, disconnect, renderStatusTag, status],
+      [connect, disconnect, renderStatusTag, status, resetIdleTimer],
     );
 
     return (
@@ -256,47 +324,6 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
         className={`${styles.vncPreviewContainer} ${className || ''}`}
         style={style}
       >
-        {/* <div className={styles.controlsBar}>
-        <div className={styles.statusArea}>
-          <DesktopOutlined />
-          <span style={{ fontWeight: 500 }}>Remote Desktop</span>
-          {renderStatusTag()}
-        </div>
-        <div className={styles.actionsArea}>
-          {status === 'disconnected' || status === 'error' ? (
-            <Button
-              type="primary"
-              icon={<PoweroffOutlined />}
-              onClick={connect}
-              size="small"
-            >
-              Connect
-            </Button>
-          ) : (
-            <>
-              <Button
-                danger
-                icon={<PoweroffOutlined />}
-                onClick={disconnect}
-                size="small"
-              >
-                Disconnect
-              </Button>
-              <Tooltip title="Reconnect">
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={() => {
-                    disconnect();
-                    setTimeout(connect, 100);
-                  }}
-                  size="small"
-                />
-              </Tooltip>
-            </>
-          )}
-        </div>
-      </div> */}
-
         <div className={styles.iframeContainer}>
           {/* 背景占位符（未连接时显示） */}
           {status !== 'connected' && (
@@ -346,6 +373,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
             <iframe
               ref={iframeRef}
               src={iframeUrl}
+              data-vnc-id={cId}
               title="VNC Preview"
               sandbox={SANDBOX}
               scrolling="no"
@@ -355,6 +383,14 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
             />
           )}
         </div>
+
+        {/* 空闲警告弹窗 */}
+        <IdleWarningModal
+          open={showIdleWarning}
+          countdownSeconds={countdownSeconds}
+          onCancel={handleIdleWarningCancel}
+          onTimeout={handleIdleWarningTimeout}
+        />
       </div>
     );
   },
