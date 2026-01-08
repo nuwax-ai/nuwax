@@ -210,10 +210,11 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
       forceRefreshRef.current = true;
       isMenuRefreshRef.current = true; // 标记为菜单刷新
       formRef.current?.resetFields();
-      // 延迟执行 reload，确保表单重置完成
-      setTimeout(() => {
-        actionRef.current?.reload();
-      }, 0);
+      // 重置表格状态
+      actionRef.current?.reset?.();
+      // 设置分页参数:第1页,每页10条
+      actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+      actionRef.current?.reload();
     }, []);
 
     /**
@@ -567,7 +568,11 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     const handleReset = () => {
       // isReset.current = true;
       forceRefreshRef.current = true;
-      // 手动触发重新加载，因为设置了 manualRequest={true}
+      // 重置表格状态
+      actionRef.current?.reset?.();
+      // 设置分页参数:第1页,每页10条
+      actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+      // 重新加载数据
       actionRef.current?.reload();
     };
 
