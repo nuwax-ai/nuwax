@@ -173,7 +173,7 @@ export function useDesktopIdleWarning(
     onIdle: handleIdleTimeout,
     throttleMs: 2000, // 2秒节流，避免高频事件
     // VNC iframe 选择器，用于监听远程桌面内的键鼠操作
-    iframeSelector: 'iframe[title="VNC Preview"]',
+    iframeSelector: `iframe[data-vnc-id="${conversationId}"]`,
   });
 
   /**
