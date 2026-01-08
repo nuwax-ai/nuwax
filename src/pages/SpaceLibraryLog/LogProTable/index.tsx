@@ -258,10 +258,10 @@ const LogProTable: React.FC = () => {
           targetId: undefined,
         });
 
-        // 删除查询参数，防止重复查询
+        // 删除查询参数,防止重复查询
         searchParams.delete('targetType');
         searchParams.delete('targetId');
-        searchParams.delete('from'); // 需要特殊处理（只有特殊情况会用到）
+        searchParams.delete('from'); // 需要特殊处理(只有特殊情况会用到)
         setSearchParams(searchParams);
         tableParams = {
           current: tableParams.current,
@@ -381,7 +381,11 @@ const LogProTable: React.FC = () => {
 
   const handleReset = () => {
     isReset.current = true;
-    // 手动触发重新加载，因为设置了 manualRequest={true}
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 设置分页参数:第1页,每页10条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+    // 延迟一下再重新加载,确保分页参数已设置
     actionRef.current?.reload();
   };
 
