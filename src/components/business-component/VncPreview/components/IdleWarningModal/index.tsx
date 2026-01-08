@@ -33,7 +33,7 @@ export interface IdleWarningModalProps {
   onTimeout: () => void;
   /**
    * 弹窗标题
-   * @default '您已长时间未操作'
+   * @default '你已长时间未操作'
    */
   title?: string;
   /**
@@ -77,7 +77,7 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
   countdownSeconds = 15,
   onCancel,
   onTimeout,
-  title = '您已长时间未操作',
+  title = '你已长时间未操作',
   description = '系统将自动关闭智能体电脑连接，以节省资源。',
   confirmText = '继续使用',
   autoDetectActivity = true,

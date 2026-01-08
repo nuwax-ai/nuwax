@@ -28,7 +28,7 @@ import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 | `condition` | `() => boolean` | _必填_ | 判断是否需要拦截的函数，返回 `true` 时拦截 |
 | `onConfirm` | `() => Promise<boolean>` | - | 确认操作的回调，返回 `true` 表示成功可继续导航 |
 | `title` | `string` | `'确认离开'` | 弹窗标题 |
-| `message` | `string` | `'您确定要离开当前页面吗？'` | 弹窗内容 |
+| `message` | `string` | `'你确定要离开当前页面吗？'` | 弹窗内容 |
 | `enabled` | `boolean` | `true` | 是否启用拦截 |
 | `confirmText` | `string` | `'确认'` | 确认按钮文案 |
 | `discardText` | `string` | `'放弃'` | 放弃按钮文案 |
@@ -56,7 +56,7 @@ function EditPage() {
 
   useNavigationGuard({
     condition: () => isDirty,
-    message: '您有未保存的更改，确定要离开吗？',
+    message: '你有未保存的更改，确定要离开吗？',
   });
 
   return <input onChange={() => setIsDirty(true)} />;
@@ -89,7 +89,7 @@ function EditPage() {
     condition: () => isDirty,
     onConfirm: handleSave,
     title: '未保存的更改',
-    message: '您有未保存的更改，是否保存后离开？',
+    message: '你有未保存的更改，是否保存后离开？',
     confirmText: '保存并离开',
     discardText: '不保存离开',
   });
@@ -114,7 +114,7 @@ function EditPage() {
 useNavigationGuard({
   condition: () => hasChanges,
   enabled: isEditMode, // 仅在编辑模式下启用
-  message: '您有未保存的更改',
+  message: '你有未保存的更改',
 });
 ```
 
