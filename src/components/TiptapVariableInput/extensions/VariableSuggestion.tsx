@@ -111,6 +111,34 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
           //   return false;
           // }
 
+          // 检查光标前的上下文，防止在已闭合的变量后误触发
+          // 获取光标前较长的一段文本（例如50个字符）
+          const longTextBefore = state.doc.textBetween(
+            Math.max(0, $from.pos - 50),
+            $from.pos,
+            '\n',
+            '\n',
+          );
+
+          // 查找最后一个 { 的位置
+          const lastOpenBraceIndex = longTextBefore.lastIndexOf('{');
+
+          if (lastOpenBraceIndex !== -1) {
+            // 获取 { 之后到光标的所有文本
+            const textAfterOpenBrace = longTextBefore.slice(
+              lastOpenBraceIndex + 1,
+            );
+
+            // 如果在 { 之后出现了 }，说明这个 { 已经闭合了，不应该作为本次触发的起点
+            // 除非光标正好在 } 之前（编辑模式）
+            // 例如：{{key}|} -> 允许
+            // {{key}}| -> 不允许
+            // {{key}}/fdsf| -> 不允许
+            if (textAfterOpenBrace.includes('}')) {
+              return false;
+            }
+          }
+
           // 快速检查：如果文档文本末尾是 }}，且距离光标很近（2个字符内），不显示
           // 但是如果 }} 和光标之间有其他内容，应该允许显示（例如：{{xxx}}{|{{yy}}）
           const recentBefore = docTextBefore.slice(-2);
@@ -140,8 +168,6 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                   // 例如：{{xxx}}{|{{yy}}
                 } else {
                   // 其他情况：阻止触发
-                  // 包括：{{xxx}}| (后面不是 {{)
-                  // 包括：{{xxx}}|zzz{{yy}} (后面不是紧跟 {{)
                   return false;
                 }
               }
