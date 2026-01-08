@@ -1079,14 +1079,25 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         return null;
       }
 
+      // 如果文件列表为空，则显示空状态
+      if (!files?.length) {
+        return (
+          <AppDevEmptyState
+            showTitle={false}
+            showIcon={false}
+            description="当前没有可预览的文件"
+          />
+        );
+      }
+
       // 预览模式：根据文件状态和类型渲染不同内容
       // 未选择文件或新建文件时
       if (!selectedFileNode || selectedFileNode?.id?.includes('__new__')) {
         return (
           <AppDevEmptyState
-            type="empty"
-            title="请从左侧文件树选择一个文件进行预览"
-            description="当前没有可预览的文件，请从左侧文件树选择一个文件进行预览"
+            showTitle={false}
+            showIcon={false}
+            description="请从左侧文件树选择一个文件进行预览"
           />
         );
       }
