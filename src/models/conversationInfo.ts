@@ -96,8 +96,8 @@ export default () => {
   const setIsSuggest = (suggest: boolean) => {
     isSuggest.current = suggest;
   };
-  // 是否还有更多消息
-  const [isMoreMessage, setIsMoreMessage] = useState<boolean>(true);
+  // 是否还有更多消息, 默认没有更多消息，这样默认隐藏加载更多按钮
+  const [isMoreMessage, setIsMoreMessage] = useState<boolean>(false);
   // 加载更多消息的状态
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   // 会话信息
@@ -546,57 +546,45 @@ export default () => {
 
     // 记录加载前的滚动高度和位置，用于保持滚动位置
     const messageView = messageViewRef.current;
-    // const oldScrollHeight = messageView?.scrollHeight || 0;
-    // const oldScrollTop = messageView?.scrollTop || 0;
+    const oldScrollHeight = messageView?.scrollHeight || 0;
+    const oldScrollTop = messageView?.scrollTop || 0;
 
     setLoadingMore(true);
     try {
-      const { data } = await runQueryConversationMessageList({
+      const { code, data } = await runQueryConversationMessageList({
         conversationId,
         index: currentIndex,
         size: MESSAGE_LIST_SIZE,
       });
 
-      if (data?.length) {
-        // 将新消息追加到消息列表前面
-        setMessageList((messageList: MessageInfo[]) => {
-          return [...data, ...messageList];
-        });
+      if (code === SUCCESS_CODE) {
+        // 如果查询到的消息数量大于0，则表示有更多消息
+        if (!!data?.length) {
+          // 将新消息追加到消息列表前面
+          setMessageList((messageList: MessageInfo[]) => {
+            return [...data, ...messageList];
+          });
 
-        // 如果查询到的消息数量小于20，则表示没有更多消息
-        if (data.length < MESSAGE_LIST_SIZE) {
+          // 如果查询到的消息数量小于20，则表示没有更多消息
+          if (data.length < MESSAGE_LIST_SIZE) {
+            setIsMoreMessage(false);
+          } else {
+            setIsMoreMessage(true);
+          }
+          // 保持滚动位置（加载更多后，滚动位置应该保持在原来的位置）
+          // 等待DOM更新后再调整滚动位置
+          setTimeout(() => {
+            if (messageView) {
+              const newScrollHeight = messageView.scrollHeight;
+              const scrollDiff = newScrollHeight - oldScrollHeight;
+              // 调整滚动位置，保持用户看到的内容不变
+              messageView.scrollTop = oldScrollTop + scrollDiff;
+            }
+          }, 0);
+        } else {
+          // 如果查询到的消息数量为0，则表示没有更多消息
           setIsMoreMessage(false);
         }
-
-        // 使用多重延迟确保 DOM 完全更新和渲染完成
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setTimeout(() => {
-              if (messageView) {
-                messageView.scrollTop = 0;
-              }
-            }, 0);
-          });
-        });
-
-        // // 根据 scrollToTop 参数决定滚动行为
-        // if (scrollToTop) {
-
-        // } else {
-        //   // 保持滚动位置（加载更多后，滚动位置应该保持在原来的位置）
-        //   // 等待DOM更新后再调整滚动位置
-        //   setTimeout(() => {
-        //     if (messageView) {
-        //       const newScrollHeight = messageView.scrollHeight;
-        //       const scrollDiff = newScrollHeight - oldScrollHeight;
-        //       // 调整滚动位置，保持用户看到的内容不变
-        //       messageView.scrollTop = oldScrollTop + scrollDiff;
-        //     }
-        //   }, 0);
-        // }
-      } else {
-        // 如果查询到的消息数量为0，则表示没有更多消息
-        setIsMoreMessage(false);
       }
     } catch (error) {
       console.error('加载更多消息失败:', error);
@@ -659,10 +647,9 @@ export default () => {
           setChatSuggestList(guidQuestionDtos);
         }
 
-        console.log('len111111111', len);
         // 如果消息列表数量小于20(此接口后端限制为20条)，则表示没有更多消息
-        if (len < MESSAGE_LIST_SIZE) {
-          setIsMoreMessage(false);
+        if (len === MESSAGE_LIST_SIZE) {
+          setIsMoreMessage(true);
         }
       }
       // 不存在会话消息时，才显示开场白预置问题
@@ -701,9 +688,10 @@ export default () => {
   );
 
   // 停止会话
-  const { run: runStopConversation, loading: loadingStopConversation } =
+  const { runAsync: runStopConversation, loading: loadingStopConversation } =
     useRequest(apiAgentConversationChatStop, {
       manual: true,
+      debounceWait: 300,
     });
 
   // 修改消息列表
@@ -1090,35 +1078,6 @@ export default () => {
         });
         // 主动关闭连接时，禁用会话
         disabledConversationActive();
-
-        /* const currentInfo = conversationInfo ?? data;
-
-        if (isSync && currentInfo && currentInfo?.topicUpdated !== 1) {
-          // 第一次发送消息后更新主题
-          // 如果是智能体编排页面不更新
-          const { data } = await runUpdateTopic({
-            id: params.conversationId,
-            firstMessage: params.message,
-          });
-          // 更新会话记录
-          setConversationInfo({
-            ...currentInfo,
-            topicUpdated: data?.topicUpdated,
-            topic: data?.topic,
-          });
-
-          // 如果是会话聊天页（chat页），同步更新会话记录
-          runHistory({
-            agentId: null,
-            limit: 20,
-          });
-
-          // 获取当前智能体的历史记录
-          runHistoryItem({
-            agentId: currentInfo.agentId,
-            limit: 20,
-          });
-        }*/
       },
       onError: () => {
         message.error('网络超时或服务不可用，请稍后再试');
@@ -1148,7 +1107,7 @@ export default () => {
     // 重置消息ID
     messageIdRef.current = '';
     // 重置是否还有更多消息
-    setIsMoreMessage(true);
+    setIsMoreMessage(false);
     // 重置加载更多消息的状态
     setLoadingMore(false);
     // 重置问题建议列表
