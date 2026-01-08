@@ -1,3 +1,32 @@
+/**
+ * 空闲检测配置
+ */
+export interface IdleDetectionConfig {
+  /**
+   * 是否启用空闲检测
+   * @default false
+   */
+  enabled?: boolean;
+  /**
+   * 空闲超时时间（毫秒）
+   * @default 3600000 (60分钟)
+   */
+  idleTimeoutMs?: number;
+  /**
+   * 警告弹窗倒计时秒数
+   * @default 15
+   */
+  countdownSeconds?: number;
+  /**
+   * 空闲超时后的回调（关闭连接前触发）
+   */
+  onIdleTimeout?: () => void;
+  /**
+   * 用户取消空闲警告后的回调
+   */
+  onIdleCancel?: () => void;
+}
+
 export interface VncPreviewProps {
   /**
    * RCoder service base URL
@@ -30,6 +59,11 @@ export interface VncPreviewProps {
    * @deprecated User ID is no longer needed for the URL
    */
   userId?: string;
+  /**
+   * 空闲检测配置
+   * 用于在用户长时间无操作时自动断开连接
+   */
+  idleDetection?: IdleDetectionConfig;
 }
 
 export type ConnectionStatus =
@@ -59,4 +93,8 @@ export interface VncPreviewRef {
    * 获取当前连接状态
    */
   getStatus: () => ConnectionStatus;
+  /**
+   * 重置空闲计时器（手动触发）
+   */
+  resetIdleTimer?: () => void;
 }
