@@ -198,9 +198,14 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     }, [serviceUrl, cId, readOnly]);
 
     const handleIframeLoad = () => {
-      if (status === 'connecting') {
-        setStatus('connected');
-      }
+      // 使用函数式 setState 避免闭包陈旧值问题
+      setStatus((prevStatus) => {
+        if (prevStatus === 'connecting' || prevStatus === 'error') {
+          setErrorMessage('');
+          return 'connected';
+        }
+        return prevStatus;
+      });
     };
 
     const handleIframeError = () => {
@@ -300,7 +305,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
         case 'disconnected':
           return <Tag>未连接</Tag>;
         case 'error':
-          return <Tag color="#ff4d4f">连接失败</Tag>;
+          // 连接失败时不显示标签
+          return null;
         default:
           return null;
       }
