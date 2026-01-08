@@ -112,8 +112,8 @@ const ShareDesktopModal: React.FC<ShareDesktopModalProps> = ({
     }
 
     try {
-      // 构造远程桌面URL
-      const desktopUrl = `/computer/desktop/${conversationId}/vnc.html?resize=scale&autoconnect=true`;
+      // 构造远程桌面URL 仅观看
+      const desktopUrl = `/computer/desktop/${conversationId}/vnc.html?resize=scale&autoconnect=true&view_only=true`;
 
       // 调用分享接口
       const data: AgentConversationShareParams = {

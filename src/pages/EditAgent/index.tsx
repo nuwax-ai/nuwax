@@ -210,7 +210,9 @@ const EditAgent: React.FC = () => {
           (item: AgentComponentInfo) =>
             item.type === AgentComponentTypeEnum.Plugin ||
             item.type === AgentComponentTypeEnum.Workflow ||
-            item.type === AgentComponentTypeEnum.MCP,
+            item.type === AgentComponentTypeEnum.MCP ||
+            item.type === AgentComponentTypeEnum.Skill ||
+            item.type === AgentComponentTypeEnum.SubAgent,
         )
         ?.map((item: AgentComponentInfo) => ({
           ...item,
@@ -242,7 +244,9 @@ const EditAgent: React.FC = () => {
             (item: AgentComponentInfo) =>
               item.type === AgentComponentTypeEnum.Plugin ||
               item.type === AgentComponentTypeEnum.Workflow ||
-              item.type === AgentComponentTypeEnum.MCP,
+              item.type === AgentComponentTypeEnum.MCP ||
+              item.type === AgentComponentTypeEnum.Skill ||
+              item.type === AgentComponentTypeEnum.SubAgent,
           )
           ?.map((item: AgentComponentInfo) => ({
             ...item,

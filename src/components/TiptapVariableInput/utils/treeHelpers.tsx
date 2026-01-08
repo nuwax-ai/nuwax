@@ -40,7 +40,8 @@ export const transformToTreeDataForTree = (
 
   return nodes.map((node) => {
     const variable = node.variable;
-    const type = variable?.type || 'unknown';
+    // 优先使用 displayType，否则使用 type
+    const type = (variable as any)?.displayType || variable?.type || 'unknown';
     // const example =
     //   variable?.example !== undefined
     //     ? variable.example

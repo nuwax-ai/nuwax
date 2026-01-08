@@ -121,12 +121,14 @@ MarkdownHighlight 扩展
 Tiptap HTML 内容
     ↓
 extractTextFromHTML()
+    ├── 保护特殊节点（ToolBlock, Variable, Mention等）→ 替换为占位符
     ├── 转义不支持的 HTML 标签（保留原始格式）
-    ├── 提取变量节点 → {{variableName}}
+    ├── 恢复特殊节点
+    ├── 提取变量节点 → {{variable.key}}
     ├── 提取工具块节点 → {#ToolBlock...#}
-    └── 提取 Raw 节点
+    └── 提取 Mentions / Raw 节点
     ↓
-纯文本输出（保留原始 XML 标签）
+纯文本输出（保留原始 XML 标签，不丢失后续内容）
 ```
 
 ---
