@@ -363,7 +363,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
            * 当重新切换回来这个页面时，会导致已修改的文件内容丢失，所以需要清空修改的文件列表和重置正在保存文件的状态
            */
           if (changeFiles?.length > 0) {
-            message.warning('您有未保存的文件修改，请先保存后再切换文件');
+            message.warning('你有未保存的文件修改，请先保存后再切换文件');
             return;
           }
 
@@ -616,7 +616,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleRenameFromMenu = (node: FileNode) => {
       if (!node?.fileProxyUrl && changeFiles?.length > 0) {
-        message.warning('您有未保存的文件修改，请先保存后再重命名');
+        message.warning('你有未保存的文件修改，请先保存后再重命名');
         return;
       }
       setRenamingNode(node);
@@ -703,7 +703,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleUploadFromMenu = (node: FileNode | null) => {
       if (!node?.fileProxyUrl && changeFiles?.length > 0) {
-        message.warning('您有未保存的文件修改，请先保存后再上传文件');
+        message.warning('你有未保存的文件修改，请先保存后再上传文件');
         return;
       }
       // 直接调用现有的上传多个文件功能
@@ -715,7 +715,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleDelete = async (node: FileNode) => {
       if (!node?.fileProxyUrl && changeFiles?.length > 0) {
-        message.warning('您有未保存的文件修改，请先保存后再删除文件');
+        message.warning('你有未保存的文件修改，请先保存后再删除文件');
         return;
       }
       // 直接调用现有的删除文件功能，等待返回值
@@ -810,7 +810,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleCreateFile = (parentNode: FileNode | null) => {
       if (changeFiles?.length > 0) {
-        message.warning('您有未保存的文件修改，请先保存后再新建文件');
+        message.warning('你有未保存的文件修改，请先保存后再新建文件');
         return;
       }
       createTempNodeAndStartRename(parentNode, 'file');
@@ -821,7 +821,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleCreateFolder = (parentNode: FileNode | null) => {
       if (changeFiles?.length > 0) {
-        message.warning('您有未保存的文件修改，请先保存后再新建文件夹');
+        message.warning('你有未保存的文件修改，请先保存后再新建文件夹');
         return;
       }
       createTempNodeAndStartRename(parentNode, 'folder');
