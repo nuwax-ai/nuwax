@@ -476,7 +476,7 @@ const Chat: React.FC = () => {
 
   // 监听会话状态更新事件
   const listenConversationStatusUpdate = (data: { conversationId: string }) => {
-    console.log('会话状态更新:', conversationInfo?.taskStatus, data);
+    console.log('会话状态更新:', conversationInfo, data);
     const { conversationId } = data;
     // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
     if (conversationId === conversationInfo?.id?.toString()) {
@@ -485,16 +485,8 @@ const Chat: React.FC = () => {
         taskStatus: TaskStatus.COMPLETE,
       });
 
-      // 后台处理有延时，需要等待5秒后，再重新查询会话信息和会话记录
-      setTimeout(() => {
-        // 重新查询会话信息
-        runAsync(id);
-        // 重新查询会话记录
-        runHistory({
-          agentId: null,
-          limit: 20,
-        });
-      }, 5000);
+      // 重新查询会话信息
+      runAsync(id);
 
       // 取消监听会话状态更新事件
       eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
@@ -529,18 +521,24 @@ const Chat: React.FC = () => {
     };
   }, [id]);
 
-  // todo: 停止会话功能
+  // 停止会话功能
   const handleStopConversation = async () => {
     // 正常会话只需要 conversationId 即可停止
     const { code } = await runStopConversation(id);
     if (code === SUCCESS_CODE) {
-      // 重新查询会话信息
-      runAsync(id);
+      // 后台处理有延时，需要等待5秒后，再重新查询会话信息和会话记录
+      setTimeout(() => {
+        // 重新查询会话信息
+        runAsync(id);
+        // 重新查询会话记录
+        runHistory({
+          agentId: null,
+          limit: 20,
+        });
+      }, 5000);
+
       // 取消监听会话状态更新事件
-      eventBus.off(
-        EVENT_TYPE.RefreshChatMessage,
-        listenConversationStatusUpdate,
-      );
+      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
     }
   };
 
