@@ -86,7 +86,7 @@ const SubAgentConfig: React.FC<SubAgentConfigProps> = ({
   }, [subAgents]);
 
   return (
-    <div className={cx(styles.container)}>
+    <div>
       {/* 隐藏的添加按钮，供父组件触发 */}
       <button
         type="button"
