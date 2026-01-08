@@ -1108,10 +1108,6 @@ export default () => {
   const handleClearSideEffect = () => {
     // 重置消息ID
     messageIdRef.current = '';
-    // 重置是否还有更多消息
-    setIsMoreMessage(false);
-    // 重置加载更多消息的状态
-    setLoadingMore(false);
     // 重置问题建议列表
     setChatSuggestList([]);
     if (timeoutRef.current) {
@@ -1139,6 +1135,10 @@ export default () => {
   // 重置初始化
   const resetInit = () => {
     handleClearSideEffect();
+    // 重置是否还有更多消息
+    setIsMoreMessage(false);
+    // 重置加载更多消息的状态
+    setLoadingMore(false);
     setShowType(EditAgentShowType.Hide);
     setManualComponents([]);
     needUpdateTopicRef.current = true;
