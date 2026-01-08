@@ -174,7 +174,7 @@ const ExamplesIndex: React.FC = () => {
         </Title>
         <Paragraph type="secondary">
           {isChineseLanguage
-            ? '这里包含了各种功能演示和组件展示页面，帮助您了解项目的功能特性和使用方法。'
+            ? '这里包含了各种功能演示和组件展示页面，帮助你了解项目的功能特性和使用方法。'
             : 'This contains various feature demonstrations and component showcase pages to help you understand the project features and usage.'}
         </Paragraph>
       </div>
@@ -345,7 +345,7 @@ const ExamplesIndex: React.FC = () => {
                   </Title>
                   <Paragraph>
                     {isChineseLanguage
-                      ? '选择您感兴趣的示例，点击"查看示例"按钮即可访问。每个示例都包含完整的代码实现和详细的功能说明。'
+                      ? '选择你感兴趣的示例，点击"查看示例"按钮即可访问。每个示例都包含完整的代码实现和详细的功能说明。'
                       : 'Choose the example you are interested in and click the "View Example" button to access it. Each example includes complete code implementation and detailed feature descriptions.'}
                   </Paragraph>
                 </div>

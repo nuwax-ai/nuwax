@@ -22,7 +22,7 @@ const BasicLayout: React.FC<PropsWithChildren> = ({ children }) => {
           </ConditionRender>
         </div>
         <div className={cx(styles['left-title-box'])}>
-          {/*<p>轻松构建部署您</p>*/}
+          {/*<p>轻松构建部署你</p>*/}
           {/*<p className={cx(styles.title)}>私有的 Agentic AI 解决方案</p>*/}
           {/*<p className={cx(styles['sub-title'])}>*/}
           {/*  提供完善的工作流、插件开发能力，RAG*/}

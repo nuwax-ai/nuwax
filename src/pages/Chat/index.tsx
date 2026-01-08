@@ -664,7 +664,7 @@ const Chat: React.FC = () => {
   const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
     return new Promise((resolve) => {
       modalConfirm(
-        '您确定要删除此文件吗?',
+        '你确定要删除此文件吗?',
         fileNode.name,
         async () => {
           try {
@@ -1206,6 +1206,11 @@ const Chat: React.FC = () => {
                       isCanDeleteSkillFile={true}
                       // 刷新文件树回调
                       onRefreshFileTree={() => handleRefreshFileList(id)}
+                      // VNC 空闲检测配置（仅任务型智能体启用）
+                      idleDetection={{
+                        enabled: agentDetail?.type === AgentTypeEnum.TaskAgent,
+                        onIdleTimeout: () => openPreviewView(id),
+                      }}
                     />
                   </div>
                 )

@@ -17,7 +17,7 @@
  * useNavigationGuard({
  *   condition: () => isDirty,
  *   onConfirm: async () => await save(),
- *   message: '您有未保存的更改',
+ *   message: '你有未保存的更改',
  * });
  * ```
  *
@@ -73,7 +73,7 @@ export function useNavigationGuard(
     condition,
     onConfirm,
     title = '确认离开',
-    message = '您确定要离开当前页面吗？',
+    message = '你确定要离开当前页面吗？',
     enabled = true,
     confirmText = '确认',
     discardText = '放弃',
