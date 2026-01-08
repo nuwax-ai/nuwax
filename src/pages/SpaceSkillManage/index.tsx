@@ -77,7 +77,7 @@ const SpaceSkillManage: React.FC = () => {
   // 删除技能
   const handleClickDelete = (info: SkillInfo) => {
     // 二次确认
-    modalConfirm('您确定要删除此技能吗?', '', () => {
+    modalConfirm('你确定要删除此技能吗?', '', () => {
       apiDeleteSkill(info.id).then(() => {
         // 提示删除成功
         message.success('技能删除成功');

@@ -437,7 +437,7 @@ const SpaceLibrary: React.FC = () => {
   // 删除组件确认弹窗
   const showDeleteConfirm = (type: ComponentTypeEnum, info: ComponentInfo) => {
     const { id, name } = info;
-    modalConfirm('您确定要删除此组件吗?', name, () => {
+    modalConfirm('你确定要删除此组件吗?', name, () => {
       switch (type) {
         case ComponentTypeEnum.Plugin:
           runPluginDel(id);

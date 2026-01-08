@@ -51,7 +51,7 @@ const TaskList: React.FC<TaskListProps> = ({
   ) => {
     e.stopPropagation();
     confirm({
-      title: '您确定要取消此定时任务吗?',
+      title: '你确定要取消此定时任务吗?',
       icon: <ExclamationCircleFilled />,
       content: info.topic,
       okText: '确定',

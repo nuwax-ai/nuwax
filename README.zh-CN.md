@@ -176,7 +176,7 @@ chmod +x nuwax-cli
 
 > **重要说明：** Docker 和 Docker Compose 是运行本服务的核心依赖，必须正确安装。
 
-如果您的系统中还没有安装 Docker 环境，请参考详细的 **[Docker 环境安装指南](docs/ch/docker-install.md)**。
+如果你的系统中还没有安装 Docker 环境，请参考详细的 **[Docker 环境安装指南](docs/ch/docker-install.md)**。
 
 该安装指南包含以下平台的详细安装步骤：
 
@@ -199,7 +199,7 @@ docker compose version
 docker run hello-world
 ```
 
-如果上述命令都能正常运行，说明您的 Docker 环境已准备就绪，可以继续部署 Nuwax 服务。
+如果上述命令都能正常运行，说明你的 Docker 环境已准备就绪，可以继续部署 Nuwax 服务。
 
 ### Agent Platform Frontend
 

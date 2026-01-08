@@ -732,7 +732,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 <AppDevEmptyState
                   type="conversation-empty"
                   title="开始新对话"
-                  description="向 AI 助手提问，开始您的项目开发"
+                  description="向 AI 助手提问，开始你的项目开发"
                 />
               ) : (
                 chatMessagesList

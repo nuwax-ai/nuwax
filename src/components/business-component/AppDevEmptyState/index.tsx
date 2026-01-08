@@ -186,7 +186,7 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
         </div>
       ),
       title: '权限不足',
-      description: '您没有访问此资源的权限，请联系管理员',
+      description: '你没有访问此资源的权限，请联系管理员',
     },
     empty: {
       icon: (
@@ -321,7 +321,7 @@ const AppDevEmptyState: React.FC<AppDevEmptyStateProps> = ({
         </div>
       ),
       title: '开始新对话',
-      description: '向 AI 助手提问，开始您的项目开发',
+      description: '向 AI 助手提问，开始你的项目开发',
     },
     'add-data': {
       icon: (

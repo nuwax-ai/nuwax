@@ -476,7 +476,7 @@ const TiptapVariableInputTestExample: React.FC = () => {
                       size="small"
                       onClick={() =>
                         insertPresetText(
-                          '<p>您好，<variable data-key="user.name" data-label="user.name" data-is-tool="false">user.name</variable>！</p>',
+                          '<p>你好，<variable data-key="user.name" data-label="user.name" data-is-tool="false">user.name</variable>！</p>',
                         )
                       }
                     >
@@ -666,7 +666,7 @@ const TiptapVariableInputTestExample: React.FC = () => {
                       <Button
                         size="small"
                         block
-                        onClick={() => setFullContent('您好，{{user.name}}！')}
+                        onClick={() => setFullContent('你好，{{user.name}}！')}
                       >
                         测试：纯文本变量初始化
                       </Button>
@@ -697,7 +697,7 @@ const TiptapVariableInputTestExample: React.FC = () => {
                         block
                         onClick={() =>
                           setFullContent(
-                            '您好{{user.name}}，使用{#ToolBlock id="calculator_tool" type="math" name="Calculator"#}计算器{#/ToolBlock#}计算',
+                            '你好{{user.name}}，使用{#ToolBlock id="calculator_tool" type="math" name="Calculator"#}计算器{#/ToolBlock#}计算',
                           )
                         }
                       >
@@ -714,7 +714,7 @@ const TiptapVariableInputTestExample: React.FC = () => {
                         block
                         onClick={() =>
                           setFullContent(
-                            '<p>您好，<span class="variable-block-chip" data-key="user.name" data-label="user.name">user.name</span>！</p>',
+                            '<p>你好，<span class="variable-block-chip" data-key="user.name" data-label="user.name">user.name</span>！</p>',
                           )
                         }
                       >
@@ -725,7 +725,7 @@ const TiptapVariableInputTestExample: React.FC = () => {
                         block
                         onClick={() =>
                           setFullContent(
-                            '<p></p><p>您好，<span class="variable-block-chip" data-key="user.name" data-label="user.name">user.name</span>！</p><p></p>',
+                            '<p></p><p>你好，<span class="variable-block-chip" data-key="user.name" data-label="user.name">user.name</span>！</p><p></p>',
                           )
                         }
                       >
@@ -747,7 +747,7 @@ const TiptapVariableInputTestExample: React.FC = () => {
                         block
                         onClick={() =>
                           setFullContent(
-                            '<p> </p><p>您的邮箱：<span class="variable-block-chip" data-key="user.email" data-label="user.email">user.email</span></p><p> </p>',
+                            '<p> </p><p>你的邮箱：<span class="variable-block-chip" data-key="user.email" data-label="user.email">user.email</span></p><p> </p>',
                           )
                         }
                       >
@@ -1357,7 +1357,7 @@ const TiptapVariableInputTestExample: React.FC = () => {
                   block
                   onClick={() =>
                     insertPresetText(
-                      '<p>您好，<variable data-key="user.name" data-label="user.name" data-is-tool="false">user.name</variable>！</p>',
+                      '<p>你好，<variable data-key="user.name" data-label="user.name" data-is-tool="false">user.name</variable>！</p>',
                     )
                   }
                 >
@@ -1368,7 +1368,7 @@ const TiptapVariableInputTestExample: React.FC = () => {
                   block
                   onClick={() =>
                     insertPresetText(
-                      '<p>您的邮箱是：<variable data-key="user.email" data-label="user.email" data-is-tool="false">user.email</variable></p>',
+                      '<p>你的邮箱是：<variable data-key="user.email" data-label="user.email" data-is-tool="false">user.email</variable></p>',
                     )
                   }
                 >
@@ -1379,7 +1379,7 @@ const TiptapVariableInputTestExample: React.FC = () => {
                   block
                   onClick={() =>
                     insertPresetText(
-                      '<p>您的年龄是：<variable data-key="user.age" data-label="user.age" data-is-tool="false">user.age</variable>岁</p>',
+                      '<p>你的年龄是：<variable data-key="user.age" data-label="user.age" data-is-tool="false">user.age</variable>岁</p>',
                     )
                   }
                 >
@@ -1408,7 +1408,7 @@ const TiptapVariableInputTestExample: React.FC = () => {
                   block
                   onClick={() =>
                     insertPresetText(
-                      '<p>您的偏好语言是：<variable data-key="user.profile.preferences.language" data-label="user.profile.preferences.language" data-is-tool="false">user.profile.preferences.language</variable></p>',
+                      '<p>你的偏好语言是：<variable data-key="user.profile.preferences.language" data-label="user.profile.preferences.language" data-is-tool="false">user.profile.preferences.language</variable></p>',
                     )
                   }
                 >
@@ -1419,7 +1419,7 @@ const TiptapVariableInputTestExample: React.FC = () => {
                   block
                   onClick={() =>
                     insertPresetText(
-                      '<p>您的头像：<variable data-key="user.profile.avatar" data-label="user.profile.avatar" data-is-tool="false">user.profile.avatar</variable></p>',
+                      '<p>你的头像：<variable data-key="user.profile.avatar" data-label="user.profile.avatar" data-is-tool="false">user.profile.avatar</variable></p>',
                     )
                   }
                 >
@@ -1550,7 +1550,7 @@ const TiptapVariableInputTestExample: React.FC = () => {
                   block
                   onClick={() =>
                     insertPresetText(
-                      '<p>尊敬的<variable data-key="user.name" data-label="user.name" data-is-tool="false">user.name</variable>，您的订单<variable data-key="order.id" data-label="order.id" data-is-tool="false">order.id</variable>已创建，总金额¥<variable data-key="order.total" data-label="order.total" data-is-tool="false">order.total</variable>。</p>',
+                      '<p>尊敬的<variable data-key="user.name" data-label="user.name" data-is-tool="false">user.name</variable>，你的订单<variable data-key="order.id" data-label="order.id" data-is-tool="false">order.id</variable>已创建，总金额¥<variable data-key="order.total" data-label="order.total" data-is-tool="false">order.total</variable>。</p>',
                     )
                   }
                 >

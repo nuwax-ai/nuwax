@@ -584,7 +584,7 @@ const EditAgent: React.FC = () => {
   const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
     return new Promise((resolve) => {
       modalConfirm(
-        '您确定要删除此文件吗?',
+        '你确定要删除此文件吗?',
         fileNode.name,
         async () => {
           try {
@@ -1049,6 +1049,13 @@ const EditAgent: React.FC = () => {
                           onRefreshFileTree={() =>
                             handleRefreshFileList(devConversationId)
                           }
+                          // VNC 空闲检测配置（仅任务型智能体启用）
+                          idleDetection={{
+                            enabled:
+                              agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+                            onIdleTimeout: () =>
+                              openPreviewView(devConversationId),
+                          }}
                         />
                       </div>
                     )

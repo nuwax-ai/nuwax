@@ -118,7 +118,7 @@ const SkillDetails: React.FC = () => {
     condition: hasUnsavedChanges,
     onConfirm: saveUnsavedFiles,
     title: '未保存的文件修改',
-    message: '您有未保存的文件修改，是否保存后离开？',
+    message: '你有未保存的文件修改，是否保存后离开？',
     confirmText: '保存并离开',
     discardText: '不保存离开',
   });
@@ -329,7 +329,7 @@ const SkillDetails: React.FC = () => {
   const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
     return new Promise((resolve) => {
       modalConfirm(
-        '您确定要删除此文件吗?',
+        '你确定要删除此文件吗?',
         fileNode.name,
         async () => {
           try {

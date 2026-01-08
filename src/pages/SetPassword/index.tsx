@@ -57,7 +57,7 @@ const SetPassword: React.FC = () => {
           <Form.Item>
             <h3 className={cx(styles.title)}>密码设置</h3>
             <p className={cx(styles['sub-title'])}>
-              请至少使用6个字符。请勿使用您登录其他网站的密码或容易被猜到的密码
+              请至少使用6个字符。请勿使用你登录其他网站的密码或容易被猜到的密码
             </p>
           </Form.Item>
           <Form.Item

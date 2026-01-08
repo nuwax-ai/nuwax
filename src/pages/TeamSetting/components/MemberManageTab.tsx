@@ -79,7 +79,7 @@ const MemberManageTab: React.FC<MemberManageTabProps> = ({ spaceId, role }) => {
   const removeUser = async (userId: number) => {
     Modal.confirm({
       title: '确认删除',
-      content: '您确定要删除该用户吗？',
+      content: '你确定要删除该用户吗？',
       okText: '确定',
       cancelText: '取消',
       onOk: runRemoveUser.bind(null, { userId, spaceId }),

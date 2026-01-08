@@ -379,7 +379,7 @@ const SpaceDevelop: React.FC = () => {
         );
         break;
       case ApplicationMoreActionEnum.Del:
-        modalConfirm('您确定要删除此智能体吗?', agentInfo?.name, () => {
+        modalConfirm('你确定要删除此智能体吗?', agentInfo?.name, () => {
           runDel(id);
           return new Promise((resolve) => {
             setTimeout(resolve, 1000);

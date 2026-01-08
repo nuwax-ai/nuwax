@@ -293,7 +293,7 @@ const SpaceLibrary: React.FC = () => {
       // 停止服务
       case McpMoreActionEnum.Stop_Service:
         confirm({
-          title: '您确定要停止此服务吗?',
+          title: '你确定要停止此服务吗?',
           icon: <ExclamationCircleFilled />,
           content: info.name,
           okText: '确定',
@@ -307,7 +307,7 @@ const SpaceLibrary: React.FC = () => {
       // 删除
       case McpMoreActionEnum.Del:
         confirm({
-          title: '您确定要删除此服务吗?',
+          title: '你确定要删除此服务吗?',
           icon: <ExclamationCircleFilled />,
           content: info.name,
           okText: '确定',

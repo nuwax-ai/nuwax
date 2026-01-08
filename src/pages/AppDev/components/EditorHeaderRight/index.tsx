@@ -271,31 +271,45 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
   // 版本菜单项
   const menuItems = useMemo(
     () =>
-      versionList.map((version: any) => ({
-        key: version.version.toString(),
-        label: (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span>v{version.version}</span>
-            <span style={{ fontSize: '10px', color: '#999', marginLeft: 8 }}>
-              {version.time}
-            </span>
-            <Tag
-              color={getActionColor(version.action)}
-              style={{ marginLeft: 8, fontSize: '10px' }}
+      versionList.map((version: any) => {
+        const isCurrentVersion = parseInt(version.version) === currentVersion;
+        return {
+          key: version.version.toString(),
+          disabled: isCurrentVersion, // 当前版本不可选择
+          label: (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
             >
-              {getActionText(version.action)}
-            </Tag>
-          </div>
-        ),
-        onClick: () => onVersionSelect(parseInt(version.version)),
-      })),
-    [versionList, getActionColor, getActionText, onVersionSelect],
+              <span>v{version.version}</span>
+              <span style={{ fontSize: '10px', color: '#999', marginLeft: 8 }}>
+                {version.time}
+              </span>
+              <Tag
+                color={
+                  isCurrentVersion ? 'default' : getActionColor(version.action)
+                }
+                style={{ marginLeft: 8, fontSize: '10px' }}
+              >
+                {isCurrentVersion ? '当前' : getActionText(version.action)}
+              </Tag>
+            </div>
+          ),
+          onClick: isCurrentVersion
+            ? undefined
+            : () => onVersionSelect(parseInt(version.version)),
+        };
+      }),
+    [
+      versionList,
+      currentVersion,
+      getActionColor,
+      getActionText,
+      onVersionSelect,
+    ],
   );
 
   // 选中的版本

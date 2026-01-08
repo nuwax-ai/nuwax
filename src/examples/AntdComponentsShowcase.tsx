@@ -247,7 +247,7 @@ const AntdComponentsShowcase: React.FC = () => {
   const showNotification = () => {
     message.info(
       isChineseLanguage
-        ? '您有一条新的消息需要查看。'
+        ? '你有一条新的消息需要查看。'
         : 'You have a new message to view.',
     );
   };

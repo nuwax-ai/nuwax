@@ -198,7 +198,7 @@ const SpaceSection: React.FC = () => {
   ) => {
     const { targetId, name, targetType, id: publishId } = info;
     Modal.confirm({
-      title: `您确定要下架此${componentTypeName}吗?`,
+      title: `你确定要下架此${componentTypeName}吗?`,
       icon: <ExclamationCircleFilled />,
       content: name,
       okText: '确定',
