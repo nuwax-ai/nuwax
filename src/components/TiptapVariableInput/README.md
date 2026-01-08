@@ -1037,6 +1037,12 @@ const rawHTML = convertToRawNodeHTML(htmlContent, 'html');
 
 ## 更新日志
 
+### v1.3.0
+
+- 修复 ToolBlock/Variable/Mention 后续内容丢失的问题（优化 `extractTextFromHTML` 的转义逻辑）
+- 增强 HTML 解析安全性，防止特殊节点被错误转义
+- 完善文档和规则说明
+
 ### v1.2.0
 
 - 修复初始内容设置会被计入撤销历史的问题（Ctrl+Z 不再清空初始内容）

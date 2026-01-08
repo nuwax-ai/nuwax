@@ -35,6 +35,7 @@ import {
 import { CurrentNodeRefKey, NodeConfig } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { cloneDeep } from '@/utils/common';
+import { jumpBack } from '@/utils/router';
 import {
   changeNodeConfig,
   updateCurrentNode,
@@ -796,6 +797,14 @@ const Workflow: React.FC = () => {
     [isModified, nodeOperationsHook, testRunHook],
   );
 
+  const handleBack = useCallback(async () => {
+    // 返回前先进行覆盖检查（保存）
+    // 只有保存成功（或确认强制覆盖）后才跳转
+    await saveFullWorkflow(false, () => {
+      jumpBack(`/space/${spaceId}/library`);
+    });
+  }, [saveFullWorkflow, spaceId]);
+
   const handleDrawerClose = useCallback(() => {
     // TODO 排除 Loop 节点 触发空白区域点击事件 清空选择状态
     graphRef.current?.graphTriggerBlankClick();
@@ -1097,6 +1106,7 @@ const Workflow: React.FC = () => {
         spaceId={spaceId}
         showCreateWorkflow={showCreateWorkflow}
         showVersionHistory={showVersionHistory}
+        onBack={handleBack}
       />
     </WorkflowVersionProvider>
   );
