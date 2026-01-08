@@ -1239,7 +1239,12 @@ const AppDev: React.FC = () => {
             nodeToDelete.name
           }`,
         );
-        handleRestartDevServer();
+        // 删除文件时不自动切换tab
+        restartDevServer({
+          shouldSwitchTab: false,
+          delayBeforeRefresh: 500,
+          showMessage: false,
+        });
         // 刷新项目详情(刷新版本列表)
         projectInfo.refreshProjectInfo();
       }
@@ -1248,13 +1253,7 @@ const AppDev: React.FC = () => {
       setNodeToDelete(null);
       setIsFileOperating(false);
     }
-  }, [
-    nodeToDelete,
-    projectId,
-    fileManagement,
-    handleRestartDevServer,
-    projectInfo,
-  ]);
+  }, [nodeToDelete, projectId, fileManagement, restartDevServer, projectInfo]);
 
   /**
    * 取消删除
