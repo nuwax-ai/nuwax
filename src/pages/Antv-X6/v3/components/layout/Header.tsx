@@ -40,6 +40,7 @@ interface HeaderProp {
   onUndo?: () => void;
   onRedo?: () => void;
   onManualSave?: () => Promise<boolean>;
+  onBack?: () => void;
 }
 
 const Header: React.FC<HeaderProp> = ({
@@ -53,6 +54,7 @@ const Header: React.FC<HeaderProp> = ({
   onUndo,
   onRedo,
   onManualSave,
+  onBack,
 }) => {
   const { spaceId } = useParams();
   const { saveStatus, saveError, lastSaveTime } = useModel('workflowV3');
@@ -142,7 +144,11 @@ const Header: React.FC<HeaderProp> = ({
               </Tag>
             </Tooltip>
             {onManualSave && (
-              <Button type="default" onClick={onManualSave} size="small">
+              <Button
+                type="default"
+                onClick={() => onManualSave?.()}
+                size="small"
+              >
                 点击重试保存
               </Button>
             )}
@@ -155,7 +161,11 @@ const Header: React.FC<HeaderProp> = ({
               有未保存的更改
             </Tag>
             {onManualSave && (
-              <Button type="default" onClick={onManualSave} size="small">
+              <Button
+                type="default"
+                onClick={() => onManualSave?.()}
+                size="small"
+              >
                 点击立即保存
               </Button>
             )}
@@ -175,7 +185,13 @@ const Header: React.FC<HeaderProp> = ({
       <div className="dis-left flex-1">
         <LeftOutlined
           className="back-icon-style"
-          onClick={() => jumpBack(`/space/${spaceId}/library`)}
+          onClick={() => {
+            if (onBack) {
+              onBack();
+            } else {
+              jumpBack(`/space/${spaceId}/library`);
+            }
+          }}
         />
         <img
           src={icon || getImg(AgentComponentTypeEnum.Workflow)}
