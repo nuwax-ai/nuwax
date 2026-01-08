@@ -23,6 +23,7 @@ import {
   ConversationEventTypeEnum,
   MessageModeEnum,
   MessageTypeEnum,
+  TaskStatus,
 } from '@/types/enums/agent';
 import {
   CreateUpdateModeEnum,
@@ -609,6 +610,10 @@ export default () => {
       // 缓存当前会话ID
       if (data?.id) {
         setCurrentConversationId(data.id);
+      }
+      // 如果任务状态为执行中，则设置会话状态为进行中
+      if (data?.taskStatus === TaskStatus.EXECUTING) {
+        setIsConversationActive(true);
       }
       // 是否开启用户问题建议
       setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
