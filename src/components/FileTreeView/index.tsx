@@ -1060,6 +1060,25 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const renderContent = () => {
       // 桌面模式：显示 VNC 预览
       if (viewMode === 'desktop') {
+        // 包装 idleDetection 配置，在超时回调前先退出全屏
+        const wrappedIdleDetection = idleDetection
+          ? {
+              ...idleDetection,
+              onIdleTimeout: () => {
+                // 如果当前处于全屏状态，先退出全屏
+                if (isFullscreen) {
+                  setIsFullscreen(false);
+                  onFullscreenPreview?.(false);
+                  document.body.classList.remove(
+                    'file-tree-view-fullscreen-active',
+                  );
+                }
+                // 调用原始的超时回调
+                idleDetection.onIdleTimeout?.();
+              },
+            }
+          : undefined;
+
         return (
           <VncPreview
             ref={vncPreviewRef}
@@ -1068,7 +1087,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             readOnly={readOnly}
             autoConnect={true}
             className={cx(styles['vnc-preview'])}
-            idleDetection={idleDetection}
+            idleDetection={wrappedIdleDetection}
           />
         );
       }
