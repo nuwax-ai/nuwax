@@ -286,7 +286,7 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
         </div>
 
         {/* 提示文字 */}
-        <p className={cx(styles['hint-text'])}>任意键鼠操作将自动取消</p>
+        <p className={cx(styles['hint-text'])}>任意键鼠操作将{confirmText}</p>
       </div>
     </Modal>
   );

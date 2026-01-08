@@ -1,12 +1,19 @@
 /**
  * 空闲警告弹窗样式
+ * 使用项目统一的 token 变量
  */
+@import '@/styles/token.less';
+
 .idle-warning-modal {
   :global {
     .ant-modal-content {
-      border-radius: 12px;
-      padding: 24px;
-      background: linear-gradient(180deg, #fff 0%, #f5f7fa 100%);
+      border-radius: @borderRadiusLg;
+      padding: @paddingLg;
+      background: linear-gradient(
+        180deg,
+        @colorBgContainer 0%,
+        @colorBgLayout 100%
+      );
     }
   }
 }
@@ -19,65 +26,71 @@
 }
 
 .icon-container {
-  margin-bottom: 16px;
+  margin-bottom: @padding;
 }
 
 .warning-icon {
   font-size: 48px;
-  color: #faad14;
+  color: @colorWarning;
 }
 
 .modal-title {
-  margin: 0 0 8px;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
+  margin: 0 0 @paddingSm;
+  font-size: @fontSizeLg;
+  font-weight: @fontWeightStrong;
+  color: @colorTextHeading;
 }
 
 .modal-description {
-  margin: 0 0 24px;
-  font-size: 14px;
-  color: #6b7280;
-  line-height: 1.5;
+  margin: 0 0 @paddingLg;
+  font-size: @fontSize;
+  color: @colorTextSecondary;
+  line-height: @lineHeight;
 }
 
 .countdown-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: @paddingLg;
 }
 
 .countdown-number {
-  font-size: 24px;
-  font-weight: 700;
-  color: #374151;
+  font-size: @fontSizeXl;
+  font-weight: @fontWeightStrong;
+  color: @colorText;
 }
 
 .countdown-text {
-  margin: 12px 0 0;
-  font-size: 14px;
-  color: #9ca3af;
+  margin: @marginSm 0 0;
+  font-size: @fontSize;
+  color: @colorTextTertiary;
 }
 
 .button-container {
   width: 100%;
-  margin-bottom: 16px;
+  margin-bottom: @padding;
 }
 
 .confirm-button {
-  height: 44px;
-  font-size: 16px;
+  height: @controlHeightLg;
+  font-size: @fontSizeLg;
   font-weight: 500;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: @borderRadius;
+  background: linear-gradient(
+    135deg,
+    @colorPrimary 0%,
+    @colorPrimaryActive 100%
+  );
   border: none;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 30%);
-  transition: all 0.3s ease;
+  transition: all @motionDurationMid @motionEaseInOut;
 
   &:hover {
-    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 40%);
+    background: linear-gradient(
+      135deg,
+      @colorPrimaryHover 0%,
+      @colorPrimary 100%
+    );
     transform: translateY(-1px);
   }
 
@@ -88,8 +101,8 @@
 
 .hint-text {
   margin: 0;
-  font-size: 12px;
-  color: #9ca3af;
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
 }
 
 // 动画效果
@@ -108,5 +121,5 @@
 }
 
 .countdown-container :global(.ant-progress-circle) {
-  animation: pulse 2s ease-in-out infinite;
+  animation: pulse 2s @motionEaseInOut infinite;
 }
