@@ -356,7 +356,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
           break;
         case TaskCenterMoreActionEnum.Record:
           history.push(
-            `/space/${spaceId}/library-log?targetType=${
+            `/space/${info.spaceId}/library-log?targetType=${
               info.targetType
             }&targetId=${info.targetId ?? ''}&from=task_center`,
           );
