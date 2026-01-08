@@ -91,6 +91,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       showRefreshButton = true,
       // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
       isOnlyShowDesktop = false,
+      // VNC 空闲检测配置
+      idleDetection,
     },
     ref,
   ) => {
@@ -1034,6 +1036,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             readOnly={readOnly}
             autoConnect={true}
             className={cx(styles['vnc-preview'])}
+            idleDetection={idleDetection}
           />
         );
       }
