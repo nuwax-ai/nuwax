@@ -519,6 +519,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   showTaskAgentToggle?: boolean;
   isTaskAgentActive?: boolean;
   onToggleTaskAgent?: () => void;
+  // 任务停止后的回调函数
+  onTaskStopped?: (conversationId: string) => void;
 }
 
 // 聊天框底部更多操作组件
