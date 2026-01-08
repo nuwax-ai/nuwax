@@ -37,7 +37,7 @@ export const useWorkflowPersistence = ({
   // V3: 全量保存工作流配置
   // @param forceCommit 是否强制提交（忽略版本冲突）
   const saveFullWorkflow = useCallback(
-    async (forceCommit = false): Promise<boolean> => {
+    async (forceCommit = false, onSuccess?: () => void): Promise<boolean> => {
       try {
         const graph =
           graphRef.current?.getGraphRef?.() || graphInstanceRef?.current;
@@ -93,6 +93,9 @@ export const useWorkflowPersistence = ({
           setLastSaveTime(new Date());
           setSaveError(null);
           workflowLogger.log('保存成功 ✓');
+          if (onSuccess) {
+            onSuccess();
+          }
           return true;
         } else if (_res.code === WORKFLOW_VERSION_CONFLICT) {
           // 版本冲突，弹窗询问用户是否强制覆盖
@@ -111,7 +114,7 @@ export const useWorkflowPersistence = ({
               onOk: () => {
                 // 用户确认强制覆盖
                 isVersionConflictModalVisibleRef.current = false;
-                saveFullWorkflow(true);
+                saveFullWorkflow(true, onSuccess);
               },
               onCancel: () => {
                 isVersionConflictModalVisibleRef.current = false;
