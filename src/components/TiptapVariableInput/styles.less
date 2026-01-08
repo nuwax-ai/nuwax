@@ -228,6 +228,15 @@
     user-select: none;
     vertical-align: baseline; // 改为 baseline 对齐
     cursor: default;
+
+    &[data-tool-type='Skill'],
+    &[data-tool-type='skill'],
+    &[data-tool-type='SubAgent'],
+    &[data-tool-type='subagent'],
+    &[data-tool-type='sub-agent'] {
+      background-color: @blue1;
+      color: @blue6;
+    }
   }
 
   // Mention 节点样式

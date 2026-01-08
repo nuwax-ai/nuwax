@@ -87,7 +87,10 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const { token } = theme.useToken();
 
     return (
-      <div className={cx(styles.container, 'flex', className)}>
+      <div
+        className={cx(styles.container, 'flex', className)}
+        data-message-id={messageInfo?.id}
+      >
         <div
           className={cx('flex-1', 'overflow-hide', {
             [styles.userContainer]: isUser,
