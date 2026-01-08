@@ -45,6 +45,8 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
 
     // 空闲警告弹窗状态
     const [showIdleWarning, setShowIdleWarning] = useState<boolean>(false);
+    // 防止重复触发空闲超时弹窗
+    const isIdleWarningActiveRef = useRef<boolean>(false);
 
     // 解构空闲检测配置
     const {
@@ -249,8 +251,15 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
 
     /**
      * 处理空闲超时：显示警告弹窗
+     * 使用 ref 防止重复触发
      */
     const handleIdleTimeout = useCallback(() => {
+      // 如果弹窗已经在显示中，跳过
+      if (isIdleWarningActiveRef.current) {
+        vncIdleLogger.log('⚠️ 弹窗已显示，跳过重复触发');
+        return;
+      }
+      isIdleWarningActiveRef.current = true;
       vncIdleLogger.log('⏰ 空闲超时，显示警告弹窗', {
         countdownSeconds,
         cId,
@@ -274,6 +283,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
     const handleIdleWarningCancel = useCallback(() => {
       vncIdleLogger.log('✅ 用户取消空闲警告', '重置空闲计时器');
       setShowIdleWarning(false);
+      isIdleWarningActiveRef.current = false;
       resetIdleTimer();
       message.success('已取消自动关闭');
       onIdleCancel?.();
@@ -288,6 +298,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
         cId,
       });
       setShowIdleWarning(false);
+      isIdleWarningActiveRef.current = false;
       // 断开连接
       disconnect();
       message.info('由于长时间未操作，已自动关闭智能体电脑连接');
