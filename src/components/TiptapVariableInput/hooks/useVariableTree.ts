@@ -29,7 +29,12 @@ export const useVariableTree = (
       const skillTypes = ['Skill', 'SubAgent'];
 
       const tools = skills.filter((s) => toolTypes.includes(s.type));
-      const skillItems = skills.filter((s) => skillTypes.includes(s.type));
+      const skillItems = skills.filter((s) => {
+        if (s.type === 'SubAgent') {
+          return s.bindConfig?.subAgents?.length > 0;
+        }
+        return skillTypes.includes(s.type);
+      });
 
       // 转换工具为树节点
       const toolNodes: VariableTreeNode[] = tools.map((tool, index) => ({
