@@ -174,7 +174,7 @@ description: 此子智能体应在何时被调用的说明
 // 空闲超时时间（毫秒）：60分钟
 // export const IDLE_DETECTION_TIMEOUT_MS = 60 * 60 * 1000;
 
-export const IDLE_DETECTION_TIMEOUT_MS = 60 * 1000; //TODO 调试用，正式环境改为 60分钟
+export const IDLE_DETECTION_TIMEOUT_MS = 5 * 60 * 1000; //TODO 调试用，正式环境改为 60分钟
 
 // 空闲警告倒计时（秒）：30秒
 export const IDLE_WARNING_COUNTDOWN_SECONDS = 30;
