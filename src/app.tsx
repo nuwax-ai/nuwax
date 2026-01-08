@@ -37,9 +37,66 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     );
   }, []);
 
-  // 全局错误处理，捕获Monaco Editor的CanceledError
+  // 全局错误处理，捕获Monaco Editor的CanceledError和ChunkLoadError
   useEffect(() => {
+    // Chunk 加载错误重试配置
+    const MAX_CHUNK_RETRY_COUNT = 3;
+    const CHUNK_RETRY_DELAY = 2000; // 2秒
+    let chunkRetryCount = 0;
+    let chunkRetryTimer: NodeJS.Timeout | null = null;
+
+    /**
+     * 处理 ChunkLoadError，自动重试加载失败的 chunk
+     */
+    const handleChunkLoadError = (error: Error) => {
+      // 检查是否是 ChunkLoadError
+      const isChunkLoadError =
+        error.name === 'ChunkLoadError' ||
+        error.message?.includes('Loading chunk') ||
+        error.message?.includes('Failed to fetch dynamically imported module');
+
+      if (!isChunkLoadError) {
+        return false;
+      }
+
+      // 限制重试次数
+      if (chunkRetryCount >= MAX_CHUNK_RETRY_COUNT) {
+        console.error('[ChunkLoadError] 已达到最大重试次数，将刷新页面', error);
+        // 达到最大重试次数后，刷新页面
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+        return true;
+      }
+
+      chunkRetryCount++;
+      console.warn(
+        `[ChunkLoadError] 检测到 chunk 加载失败，${CHUNK_RETRY_DELAY}ms 后进行第 ${chunkRetryCount} 次重试`,
+        error,
+      );
+
+      // 清除之前的定时器
+      if (chunkRetryTimer) {
+        clearTimeout(chunkRetryTimer);
+      }
+
+      // 延迟重试
+      chunkRetryTimer = setTimeout(() => {
+        // 尝试重新加载失败的 chunk
+        // 通过刷新页面来重新加载所有 chunk
+        window.location.reload();
+      }, CHUNK_RETRY_DELAY);
+
+      return true;
+    };
+
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      // 检查是否是 ChunkLoadError
+      if (event.reason && handleChunkLoadError(event.reason)) {
+        event.preventDefault();
+        return;
+      }
+
       // 检查是否是Monaco Editor的CanceledError
       if (
         event.reason &&
@@ -63,6 +120,12 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     };
 
     const handleError = (event: ErrorEvent) => {
+      // 检查是否是 ChunkLoadError
+      if (event.error && handleChunkLoadError(event.error)) {
+        event.preventDefault();
+        return;
+      }
+
       // 检查是否是Monaco Editor相关的错误
       if (
         event.error &&
@@ -72,6 +135,23 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
         event.preventDefault();
         return;
       }
+
+      // 检查是否是语法错误（可能是 chunk 加载失败导致的）
+      if (
+        event.error &&
+        event.error.name === 'SyntaxError' &&
+        event.error.message?.includes("Unexpected token '<'")
+      ) {
+        // 这通常意味着服务器返回了 HTML 而不是 JavaScript
+        console.error(
+          '[ChunkLoadError] 检测到语法错误，可能是 chunk 文件加载失败',
+          event.error,
+        );
+        if (handleChunkLoadError(event.error)) {
+          event.preventDefault();
+          return;
+        }
+      }
     };
 
     // 添加全局错误监听器
@@ -79,6 +159,9 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     window.addEventListener('error', handleError);
 
     return () => {
+      if (chunkRetryTimer) {
+        clearTimeout(chunkRetryTimer);
+      }
       window.removeEventListener(
         'unhandledrejection',
         handleUnhandledRejection,
