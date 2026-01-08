@@ -127,4 +127,45 @@
 
 **核心规则**：
 
-1. 只允许在两个**紧邻**的完整变量之间插入新变量允许在普通文本中间触发建议
+## 工具/技能/子智能体补全 (Tool/Skill/SubAgent Completion)
+
+除了普通变量，组件还支持插入工具、技能和子智能体。
+
+### 识别规则 (Identification Rules)
+
+系统会自动识别以下类型的节点为"工具"：
+
+1. **类型标识**：变量类型 (`type`) 为以下之一：
+
+   - `Tool` (工具)
+   - `Skill` (技能)
+   - `SubAgent` (子智能体)
+   - `Plugin` (插件)
+   - `Workflow` (工作流)
+   - `Mcp` (MCP 工具)
+
+2. **Key 前缀**：变量 `key` 以以下前缀开头：
+   - `tool-`
+   - `skill-`
+   - `subagent-`
+
+### 插入行为 (Insertion Behavior)
+
+当选中一个工具类型的建议项时，行为与普通变量不同：
+
+- **普通变量**: 插入 `{{variableName}}`
+- **工具/技能**: 插入工具块节点 `{#ToolBlock id="..." type="..." name="..."#}content{#/ToolBlock#}`
+
+### 详细测试用例 (Tool Test Cases)
+
+| 场景 | 变量类型/Key | 选中后结果 (HTML/Text) | 说明 |
+| --- | --- | --- | --- |
+| **插入技能** | `type: 'Skill'` / `skill-123` | `{#ToolBlock id="123" type="skill" name="search"#}search{#/ToolBlock#}` | 插入完整的工具块结构 |
+| **插入工具** | `type: 'Tool'` / `tool-abc` | `{#ToolBlock id="abc" type="tool" name="calculator"#}calculator{#/ToolBlock#}` | 工具块包含 ID、类型和名称 |
+| **插入子智能体** | `type: 'SubAgent'` | `{#ToolBlock id="sa-001" type="sub-agent" name="writer"#}writer{#/ToolBlock#}` | 子智能体也使用 ToolBlock 渲染 |
+| **混合列表选择** | 混合变量和工具 | 根据选中项类型决定是 `{{...}}` 还是 `{#ToolBlock...#}` | 列表会自动分类显示 Tabs |
+
+### 交互差异
+
+1. **Tabs 分类**: 当同时存在变量和工具时，建议框会自动显示 Tabs (Variables / Tools / Skills) 供切换。
+2. **Tab 切换**: 支持使用 `Tab` 键在不同分类之间循环切换。
