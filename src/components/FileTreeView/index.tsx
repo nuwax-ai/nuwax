@@ -615,7 +615,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleRenameFromMenu = (node: FileNode) => {
       if (changeFiles?.length > 0) {
-        message.warning('您有未保存的文件修改，请先保存文件后再重命名');
+        message.warning('你有未保存的文件修改，请先保存文件后再重命名');
         return;
       }
       setRenamingNode(node);
@@ -702,7 +702,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleUploadFromMenu = (node: FileNode | null) => {
       if (changeFiles?.length > 0) {
-        message.warning('您有未保存的文件修改，请先保存文件后再上传文件');
+        message.warning('你有未保存的文件修改，请先保存文件后再上传文件');
         return;
       }
       // 直接调用现有的上传多个文件功能
@@ -714,7 +714,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleDelete = async (node: FileNode) => {
       if (changeFiles?.length > 0) {
-        message.warning('您有未保存的文件修改，请先保存文件后再删除文件');
+        message.warning('你有未保存的文件修改，请先保存文件后再删除文件');
         return;
       }
       // 直接调用现有的删除文件功能，等待返回值
@@ -805,7 +805,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleCreateFile = (parentNode: FileNode | null) => {
       if (changeFiles?.length > 0) {
-        message.warning('您有未保存的文件修改，请先保存文件后再新建文件');
+        message.warning('你有未保存的文件修改，请先保存文件后再新建文件');
         return;
       }
       createTempNodeAndStartRename(parentNode, 'file');
@@ -816,7 +816,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      */
     const handleCreateFolder = (parentNode: FileNode | null) => {
       if (changeFiles?.length > 0) {
-        message.warning('您有未保存的文件修改，请先保存文件后再新建文件夹');
+        message.warning('你有未保存的文件修改，请先保存文件后再新建文件夹');
         return;
       }
       createTempNodeAndStartRename(parentNode, 'folder');

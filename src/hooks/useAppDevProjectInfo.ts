@@ -96,7 +96,7 @@ export const useAppDevProjectInfo = (
           setProjectInfoState((prev) => ({
             ...prev,
             isLoading: false,
-            error: '您没有权限访问该项目',
+            error: '你没有权限访问该项目',
             hasPermission: false,
           }));
         }
