@@ -4,8 +4,12 @@ import {
 } from '@/constants/common.constants';
 import { useIdleDetection } from '@/hooks/useIdleDetection';
 import { AgentTypeEnum } from '@/types/enums/space';
+import { createLogger } from '@/utils/logger';
 import { message } from 'antd';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+// 创建远程桌面空闲警告专用 logger（统一前缀 [Idle:*] 方便筛选）
+const desktopIdleLogger = createLogger('[Idle:DesktopWarning]');
 
 /**
  * 远程桌面空闲警告 Hook 配置选项
@@ -124,32 +128,59 @@ export function useDesktopIdleWarning(
    * 2. 智能体电脑 tab 是激活状态（viewMode === 'desktop' 且 isFileTreeVisible === true）
    */
   const shouldEnableIdleDetection = useMemo(() => {
-    return (
-      agentType === AgentTypeEnum.TaskAgent &&
-      viewMode === 'desktop' &&
-      isFileTreeVisible
-    );
+    const isTaskAgent = agentType === AgentTypeEnum.TaskAgent;
+    const isDesktopMode = viewMode === 'desktop';
+    const result = isTaskAgent && isDesktopMode && isFileTreeVisible;
+
+    desktopIdleLogger.log('检查启用条件', {
+      isTaskAgent,
+      isDesktopMode,
+      isFileTreeVisible,
+      shouldEnable: result,
+    });
+
+    return result;
   }, [agentType, viewMode, isFileTreeVisible]);
+
+  // 日志记录启用状态变化
+  useEffect(() => {
+    if (shouldEnableIdleDetection) {
+      desktopIdleLogger.log(
+        '✅ 远程桌面空闲检测已启用',
+        `超时时间: ${Math.round(idleTimeoutMs / 1000 / 60)}分钟`,
+      );
+    } else {
+      desktopIdleLogger.log('🚫 远程桌面空闲检测未启用');
+    }
+  }, [shouldEnableIdleDetection, idleTimeoutMs]);
 
   /**
    * 处理空闲超时：显示警告弹窗
    */
   const handleIdleTimeout = useCallback(() => {
+    desktopIdleLogger.log('⏰ 空闲超时，显示警告弹窗', {
+      countdownSeconds,
+      conversationId,
+    });
     setShowIdleWarning(true);
-  }, []);
+  }, [countdownSeconds, conversationId]);
 
   // 使用空闲检测 Hook
+  // 同时监听主文档和 VNC iframe 内的用户活动（同源情况下）
   const { resetIdleTimer } = useIdleDetection({
     idleTimeoutMs,
     enabled: shouldEnableIdleDetection,
     onIdle: handleIdleTimeout,
     throttleMs: 2000, // 2秒节流，避免高频事件
+    // VNC iframe 选择器，用于监听远程桌面内的键鼠操作
+    iframeSelector: 'iframe[title="VNC Preview"]',
   });
 
   /**
    * 处理用户取消空闲警告（点击按钮或有操作）
    */
   const handleIdleWarningCancel = useCallback(() => {
+    desktopIdleLogger.log('✅ 用户取消空闲警告', '重置空闲计时器');
     setShowIdleWarning(false);
     // 重置空闲计时器
     resetIdleTimer();
@@ -160,6 +191,10 @@ export function useDesktopIdleWarning(
    * 处理空闲警告倒计时结束：关闭远程桌面，停止 keepAlive 轮询
    */
   const handleIdleWarningTimeout = useCallback(() => {
+    desktopIdleLogger.log('⏱️ 空闲警告倒计时结束', {
+      action: '关闭远程桌面连接',
+      conversationId,
+    });
     setShowIdleWarning(false);
     // 关闭远程桌面视图，切换到文件预览模式
     // 调用 openPreviewView 会停止 keepAlive 并切换视图模式
