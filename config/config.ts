@@ -137,6 +137,48 @@ export default defineConfig({
     format: 'iife',
   },
   chainWebpack(config: any) {
+    // 修复 chunk 文件名生成，确保不包含空格
+    // UmiJS 在生成 chunk 名称时可能会包含空格（如 "layouts index"），导致 URL 解析失败
+    // 仅在生产环境应用此修复，开发环境使用默认配置
+    const isProduction =
+      process.env.NODE_ENV === 'production' ||
+      process.env.UMI_ENV === 'production';
+
+    if (isProduction) {
+      // 方法：修改 chunk 的名称属性，清理空格，然后使用 webpack 的默认模板
+      config.plugin('fix-chunk-names').use(
+        class {
+          apply(compiler: any) {
+            compiler.hooks.compilation.tap(
+              'FixChunkNames',
+              (compilation: any) => {
+                compilation.hooks.afterOptimizeChunkIds.tap(
+                  'FixChunkNames',
+                  (chunks: any[]) => {
+                    chunks.forEach((chunk: any) => {
+                      if (chunk.name) {
+                        // 清理 chunk 名称中的空格和特殊字符
+                        const sanitizedName = String(chunk.name)
+                          .replace(/\s+/g, '-') // 空格替换为连字符
+                          .replace(/[/\\]/g, '-') // 斜杠替换为连字符
+                          .replace(/[^a-zA-Z0-9\-_]/g, '-') // 其他特殊字符替换为连字符
+                          .replace(/-+/g, '-') // 多个连字符合并为一个
+                          .replace(/^-|-$/g, ''); // 移除开头和结尾的连字符
+                        chunk.name = sanitizedName;
+                      }
+                    });
+                  },
+                );
+              },
+            );
+          }
+        },
+      );
+
+      // 使用标准的 webpack 模板，现在 chunk 名称已经清理过了
+      config.output.chunkFilename('js/[name].[contenthash:8].async.js');
+    }
+
     config.plugin('copy-monaco').use(CopyWebpackPlugin, [
       {
         patterns: [
