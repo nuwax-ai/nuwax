@@ -667,6 +667,8 @@ const text = extractTextFromHTML(html);
 - `Escape`：关闭建议框
 - `ArrowUp/ArrowDown`：在建议列表中导航
 - `Tab`：在变量和工具之间切换（如果有工具）
+- `Mod+Z`：撤销 (Mac: Cmd+Z, Windows: Ctrl+Z)
+- `Mod+Shift+Z` / `Mod+Y`：重做 (Mac: Cmd+Shift+Z / Cmd+Y, Windows: Ctrl+Shift+Z / Ctrl+Y)
 
 > 💡 **提示**：变量建议框的触发规则比较复杂，包括何时触发、何时不触发、以及替换行为等。详细说明请查看 [变量建议触发和替换规则文档](./VARIABLE_SUGGESTION_RULES.md)。
 
@@ -1034,6 +1036,12 @@ const rawHTML = convertToRawNodeHTML(htmlContent, 'html');
 ```
 
 ## 更新日志
+
+### v1.2.0
+
+- 修复初始内容设置会被计入撤销历史的问题（Ctrl+Z 不再清空初始内容）
+- 新增 `Mod+Y` (Ctrl+Y / Cmd+Y) 快捷键支持重做操作
+- 优化历史记录管理，合并短时间内的连续输入
 
 ### v1.1.0
 

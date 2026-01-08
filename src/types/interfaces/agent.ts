@@ -95,6 +95,24 @@ export interface GuidQuestionDto {
   params?: any;
 }
 
+// 子代理
+export interface SubAgent {
+  name: string;
+  description?: string;
+  prompt: string;
+}
+
+// 子代理绑定配置
+export interface SubAgentBindConfigDto {
+  subAgents: SubAgent[];
+}
+
+// 更新组件子代理配置
+export interface AgentComponentSubAgentUpdateParams
+  extends AgentComponentBaseInfo {
+  bindConfig: SubAgentBindConfigDto;
+}
+
 // 更新智能体基础配置信息输入参数
 export interface AgentConfigUpdateParams extends AgentBaseInfo {
   id: number;
@@ -265,6 +283,24 @@ export interface AgentComponentMcpUpdateParams
 export interface AgentComponentSkillUpdateParams
   extends AgentComponentWorkflowUpdateParams {
   toolName: string;
+}
+
+// 子代理
+export interface SubAgent {
+  name: string;
+  description?: string;
+  prompt: string;
+}
+
+// 子代理绑定配置
+export interface SubAgentBindConfigDto {
+  subAgents: SubAgent[];
+}
+
+// 更新组件子代理配置
+export interface AgentComponentSubAgentUpdateParams
+  extends AgentComponentBaseInfo {
+  bindConfig: SubAgentBindConfigDto;
 }
 
 // 智能体组件模型设置
@@ -938,7 +974,7 @@ export interface ApiAgentConversationChatPageResultParams {
  */
 export interface AgentConversationShareParams {
   conversationId: number | string;
-  type: string;
+  type: 'CONVERSATION' | 'DESKTOP';
   expireSeconds?: number | null;
   content: string;
 }

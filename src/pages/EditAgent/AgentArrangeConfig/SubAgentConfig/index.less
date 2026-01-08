@@ -1,0 +1,173 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  padding: 0 @paddingXs;
+}
+
+.empty-text {
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+  margin: 0;
+}
+
+.agent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @marginSm;
+  min-height: 38px;
+  margin-bottom: @marginXxs;
+  padding: @paddingXxs @paddingXs;
+  border-radius: @borderRadius;
+  cursor: default;
+  background-color: @colorFillTertiary;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &:hover {
+    .agent-actions {
+      display: flex;
+    }
+  }
+
+  .agent-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  .icon-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    background-color: @colorFillSecondary;
+    border-radius: @borderRadiusSm;
+    overflow: hidden;
+  }
+
+  .text-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+  }
+
+  .agent-name {
+    display: inline-block;
+    color: @colorText;
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    font-weight: @fontWeightStrong;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+  }
+
+  .agent-desc {
+    color: @colorTextSecondary;
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+  }
+
+  .agent-actions {
+    display: none;
+    gap: @marginXxs;
+    font-size: @fontSize;
+    transition: all 0.3s;
+  }
+}
+
+// Modal styles
+.modal-content {
+  position: relative;
+  padding: @paddingXs 0;
+
+  .form-item {
+    margin-bottom: @margin;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .form-label {
+    display: block;
+    font-size: @fontSize;
+    color: @colorText;
+    margin-bottom: @marginXs;
+  }
+
+  .form-label-row {
+    margin-bottom: @marginXs;
+  }
+}
+
+// 弹窗标题包装器
+.modal-title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+// 文档链接图标
+.doc-link-icon {
+  margin-left: @marginXs;
+  color: @colorTextSecondary;
+  cursor: pointer;
+  font-size: @fontSizeSm;
+  transition: color 0.2s;
+
+  &:hover {
+    color: @colorPrimary;
+  }
+}
+
+// 全屏模式弹窗
+.fullscreen-modal {
+  max-width: 100vw !important;
+  top: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+
+  :global {
+    .ant-modal-content {
+      height: 100vh;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ant-modal-header {
+      flex-shrink: 0;
+    }
+
+    .ant-modal-body {
+      flex: 1;
+      overflow: auto;
+    }
+
+    .ant-modal-footer {
+      flex-shrink: 0;
+    }
+  }
+}
+
+// 全屏模式下的编辑器
+.fullscreen-editor {
+  min-height: calc(100vh - 200px) !important;
+}

@@ -9,6 +9,7 @@ import {
   apiAgentComponentDelete,
   apiAgentComponentEventUpdate,
   apiAgentComponentList,
+  apiAgentComponentSubAgentUpdate,
   apiAgentVariables,
 } from '@/services/agentConfig';
 import {
@@ -62,6 +63,7 @@ import LongMemoryContent from './LongMemoryContent';
 import McpGroupComponentItem from './McpGroupComponentItem';
 import OpenRemarksEdit from './OpenRemarksEdit';
 import PageSettingModal from './PageSettingModal';
+import SubAgentConfig from './SubAgentConfig';
 import VariableList from './VariableList';
 
 const cx = classNames.bind(styles);
@@ -167,6 +169,14 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     );
   }, [agentComponentList]);
 
+  // 子智能体组件信息
+  const subAgentComponentInfo = useMemo(() => {
+    return agentComponentList?.find(
+      (item: AgentComponentInfo) =>
+        item.type === AgentComponentTypeEnum.SubAgent,
+    );
+  }, [agentComponentList]);
+
   // 所有页面组件列表
   const allPageComponentList = useMemo(() => {
     return (
@@ -223,10 +233,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 技能 - 当前激活 tab 面板的 key
   const skillActiveKey = useMemo(() => {
+    const keys: AgentArrangeConfigEnum[] = [AgentArrangeConfigEnum.SubAgent];
     if (isExistComponent(AgentComponentTypeEnum.Skill)) {
-      return [AgentArrangeConfigEnum.Skill];
+      keys.unshift(AgentArrangeConfigEnum.Skill);
     }
-    return [];
+    return keys;
   }, [agentComponentList]);
 
   // 记忆 - 当前激活 tab 面板的 key
@@ -450,6 +461,46 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     setOpenPluginModel(true);
   };
 
+  // 更新子智能体配置
+  const handleSubAgentUpdate = async (subAgents: any[]) => {
+    let componentInfo = subAgentComponentInfo;
+    // 如果没有 SubAgent 组件，先创建一个
+    if (!componentInfo) {
+      try {
+        await apiAgentComponentAdd({
+          agentId,
+          type: AgentComponentTypeEnum.SubAgent,
+          targetId: agentId,
+        });
+        // 重新查询组件列表
+        const { data } = await runAsync(agentId);
+        setAgentComponentList(data);
+        // 从新列表中获取刚创建的 SubAgent 组件
+        componentInfo = data?.find(
+          (item: AgentComponentInfo) =>
+            item.type === AgentComponentTypeEnum.SubAgent,
+        );
+        if (!componentInfo) {
+          message.error('创建子智能体组件失败');
+          return;
+        }
+      } catch (error) {
+        message.error('创建子智能体组件失败');
+        return;
+      }
+    }
+
+    const params = {
+      id: componentInfo.id,
+      bindConfig: {
+        subAgents,
+      },
+    };
+    await apiAgentComponentSubAgentUpdate(params as any);
+    message.success('保存成功');
+    asyncFun(true);
+  };
+
   // 工具列表
   const ToolList: CollapseProps['items'] = [
     {
@@ -582,6 +633,33 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         <TooltipIcon
           title="添加技能"
           onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.Skill)}
+        />
+      ),
+      classNames: {
+        header: 'collapse-header',
+        body: 'collapse-body',
+      },
+    },
+    {
+      key: AgentArrangeConfigEnum.SubAgent,
+      label: '子智能体',
+      children: (
+        <SubAgentConfig
+          subAgents={subAgentComponentInfo?.bindConfig?.subAgents}
+          onUpdate={handleSubAgentUpdate}
+        />
+      ),
+      extra: (
+        <TooltipIcon
+          title="添加子智能体"
+          onClick={(e) => {
+            e.stopPropagation();
+            // 触发 SubAgentConfig 内部的添加弹窗
+            const addBtn = document.querySelector(
+              '[data-subagent-add]',
+            ) as HTMLElement;
+            addBtn?.click();
+          }}
         />
       ),
       classNames: {
