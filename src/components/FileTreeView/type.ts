@@ -1,4 +1,5 @@
 import { FileNode } from '@/types/interfaces/appDev';
+import { IdleDetectionConfig } from '../business-component/VncPreview/type';
 
 // 修改的文件信息
 export interface ChangeFileInfo {
@@ -6,6 +7,9 @@ export interface ChangeFileInfo {
   fileContent: string;
   originalFileContent: string;
 }
+
+// 重新导出 IdleDetectionConfig 方便外部使用
+export type { IdleDetectionConfig };
 
 /**
  * FileTreeView 组件暴露给父组件的方法和属性
@@ -86,4 +90,9 @@ export interface FileTreeViewProps {
   showRefreshButton?: boolean;
   // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
   isOnlyShowDesktop?: boolean;
+  /**
+   * VNC 空闲检测配置
+   * 用于在用户长时间无操作时自动断开连接
+   */
+  idleDetection?: IdleDetectionConfig;
 }

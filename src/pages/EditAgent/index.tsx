@@ -1049,6 +1049,13 @@ const EditAgent: React.FC = () => {
                           onRefreshFileTree={() =>
                             handleRefreshFileList(devConversationId)
                           }
+                          // VNC 空闲检测配置（仅任务型智能体启用）
+                          idleDetection={{
+                            enabled:
+                              agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+                            onIdleTimeout: () =>
+                              openPreviewView(devConversationId),
+                          }}
                         />
                       </div>
                     )
