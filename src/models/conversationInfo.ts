@@ -66,6 +66,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSource';
+import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import dayjs from 'dayjs';
@@ -572,15 +573,12 @@ export default () => {
             setIsMoreMessage(true);
           }
           // 保持滚动位置（加载更多后，滚动位置应该保持在原来的位置）
-          // 等待DOM更新后再调整滚动位置
-          setTimeout(() => {
-            if (messageView) {
-              const newScrollHeight = messageView.scrollHeight;
-              const scrollDiff = newScrollHeight - oldScrollHeight;
-              // 调整滚动位置，保持用户看到的内容不变
-              messageView.scrollTop = oldScrollTop + scrollDiff;
-            }
-          }, 0);
+          // 使用MutationObserver监听DOM变化，确保所有元素都渲染完成后再调整滚动位置
+          adjustScrollPositionAfterDOMUpdate(
+            messageView,
+            oldScrollTop,
+            oldScrollHeight,
+          );
         } else {
           // 如果查询到的消息数量为0，则表示没有更多消息
           setIsMoreMessage(false);
