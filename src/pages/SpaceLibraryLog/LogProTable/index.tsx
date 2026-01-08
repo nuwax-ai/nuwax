@@ -396,6 +396,13 @@ const LogProTable: React.FC = () => {
     }
   }, [history.location.state]);
 
+  // 监听 spaceId 变化，切换空间时刷新数据
+  useEffect(() => {
+    if (spaceId) {
+      handleReset();
+    }
+  }, [spaceId]);
+
   return (
     <>
       <ProTable<SpaceLogInfo>
