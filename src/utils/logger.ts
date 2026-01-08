@@ -18,11 +18,11 @@ const isDev =
 
 // 可通过 localStorage 控制是否启用日志（即使在开发环境）
 const isLogEnabled = (): boolean => {
-  if (!isDev) return false;
   if (typeof window !== 'undefined') {
     const disabled = localStorage.getItem('disableLogger');
     if (disabled === 'true') return false;
   }
+  if (!isDev) return false;
   return true;
 };
 
