@@ -63,7 +63,7 @@ export const useVariableTree = (
           skill.bindConfig.subAgents.forEach(
             (subAgent: any, subIndex: number) => {
               skillNodes.push({
-                key: `subagent-${skill.id}-${subIndex}`,
+                key: `subagent-${skill.id}-${subAgent.name}-${subIndex}`,
                 value: subAgent.name, // 使用子智能体名称作为 value
                 label: subAgent.name,
                 isLeaf: true,

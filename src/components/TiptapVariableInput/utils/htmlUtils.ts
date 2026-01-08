@@ -342,15 +342,34 @@ export const escapeCustomHTMLTags = (text: string): string => {
  */
 const UNSUPPORTED_HTML_TAG_REGEX = /<\/?([a-zA-Z][a-zA-Z0-9]*)(?:\s+[^>]*)?>/g;
 
+/**
+ * 匹配特殊 Tiptap 节点的正则表达式（包括开始标签、内容和结束标签）
+ * 用于在转义过程中保护这些节点不被破坏
+ * 匹配 <span ... class="...tool-block-chip..." ...>...</span>
+ */
+const SPECIAL_NODE_REGEX =
+  /<span(?:\s+[^>]*)?\s+class=(["'])(?:(?!\1)[\s\S])*\b(?:tool-block-chip|variable-block-chip|variable-block-chip-editable|mention-node)\b(?:(?!\1)[\s\S])*\1(?:\s+[^>]*)?>[\s\S]*?<\/span>/gi;
+
 export const extractTextFromHTML = (html: string): string => {
   if (!html) return '';
 
-  // 在使用 innerHTML 解析之前，先转义不被 StarterKit 支持的 HTML 标签
+  // 1. 保护特殊节点（ToolBlock, Variable, Mention等）
+  // 这些节点是 Tiptap 原子节点，但使用 span 标签（不被 StarterKit 支持）
+  // 如果直接进行转义，Closing tag (</span>) 会被转义为 &lt;/span&gt;（因为没有 class 属性），
+  // 导致浏览器解析时将后续内容误判为 span 内部内容，从而丢失后续文本。
+  // 所以需要先将这些完整节点替换为占位符，待转义完成后再恢复。
+  const placeholders: string[] = [];
+  let processedHtml = html.replace(SPECIAL_NODE_REGEX, (match) => {
+    placeholders.push(match);
+    return `###SPECIAL_NODE_${placeholders.length - 1}###`;
+  });
+
+  // 2. 在使用 innerHTML 解析之前，先转义不被 StarterKit 支持的 HTML 标签
   // 参照事件标签的处理逻辑，直接使用正则匹配并转义
   // 这样可以防止浏览器将这些标签（如 <a>、<div>、<span> 等）解析为真正的 HTML 元素
   // 从而避免在提取文本时丢失这些标签
-  // 但保留 Tiptap 节点相关的 span 标签（如 tool-block-chip、variable-block-chip 等）
-  const escapedHtml = html.replace(
+  // 注意：特殊的 span 节点已经被保护并替换为占位符了，所以这里不需要再特殊处理 span
+  processedHtml = processedHtml.replace(
     UNSUPPORTED_HTML_TAG_REGEX,
     (match, tagName) => {
       const lowerTagName = tagName.toLowerCase();
@@ -360,31 +379,22 @@ export const extractTextFromHTML = (html: string): string => {
         return match;
       }
 
-      // 对于 span 标签，检查是否包含 Tiptap 节点相关的 class
-      if (lowerTagName === 'span') {
-        const hasNodeClass = TIPTAP_NODE_CLASSES.some(
-          (cls) =>
-            match.includes(`class="${cls}"`) ||
-            match.includes(`class='${cls}'`),
-        );
-        if (hasNodeClass) {
-          return match; // 保留 Tiptap 节点的 span
-        }
-      }
+      // 转义不被支持的标签
+      return escapeHTML(match);
+    },
+  );
 
-      // 转义不被支持的标签（参照 escapeEventTags 的处理方式）
-      return match
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+  // 3. 恢复特殊节点
+  const finalHtml = processedHtml.replace(
+    /###SPECIAL_NODE_(\d+)###/g,
+    (_, index) => {
+      return placeholders[parseInt(index, 10)];
     },
   );
 
   // 创建临时 DOM 元素
   const temp = document.createElement('div');
-  temp.innerHTML = escapedHtml;
+  temp.innerHTML = finalHtml;
 
   // 处理 tool-blocks（优先处理，因为可能包含其他内容）
   // Tiptap 实际渲染为 span.tool-block-chip（标准 HTML 标签）
