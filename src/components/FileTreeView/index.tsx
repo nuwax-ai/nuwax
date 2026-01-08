@@ -17,7 +17,7 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
-import { message, Modal, Spin } from 'antd';
+import { message, Spin } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -903,16 +903,15 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 处理全屏切换
      */
     const handleFullscreen = () => {
-      setIsFullscreen(!isFullscreen);
-      onFullscreenPreview?.(!isFullscreen);
-    };
-
-    /**
-     * 关闭全屏
-     */
-    const handleCloseFullscreen = () => {
-      setIsFullscreen(false);
-      onFullscreenPreview?.(false);
+      const newFullscreenState = !isFullscreen;
+      setIsFullscreen(newFullscreenState);
+      onFullscreenPreview?.(newFullscreenState);
+      // 切换 body 类，用于隐藏父组件的干扰元素
+      if (newFullscreenState) {
+        document.body.classList.add('file-tree-view-fullscreen-active');
+      } else {
+        document.body.classList.remove('file-tree-view-fullscreen-active');
+      }
     };
 
     // 保存文件
@@ -1346,41 +1345,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     return (
       <>
-        {/* 全屏代码编辑器 Modal */}
-        <Modal
-          open={isFullscreen}
-          onCancel={handleCloseFullscreen}
-          footer={null}
-          closable={false}
-          mask={false}
-          width="100%"
-          style={{
-            top: 0,
-            paddingBottom: 0,
-            maxWidth: '100%',
-          }}
-          styles={{
-            body: {
-              height: '100vh',
-              padding: 0,
-              display: 'flex',
-              flexDirection: 'column',
-            },
-          }}
-          className={cx(styles['fullscreen-modal'])}
-          destroyOnHidden={false}
+        <div
+          className={cx('flex', 'flex-1', 'overflow-hide', {
+            [styles['fullscreen-mode']]: isFullscreen,
+          })}
         >
-          <div className={cx(styles['fullscreen-container'])}>
-            {/* 全屏模式下的头部组件 */}
-            {renderHeader()}
-            {/* 全屏模式下的代码编辑器 */}
-            <div className={cx(styles['fullscreen-content'])}>
-              {renderContent()}
-            </div>
-          </div>
-        </Modal>
-
-        <div className={cx('flex', 'flex-1', 'overflow-hide')}>
           {/* 右键菜单 */}
           <FileContextMenu
             visible={contextMenuVisible}
@@ -1457,6 +1426,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               'flex-col',
               'flex-1',
               'overflow-hide',
+              {
+                [styles['fullscreen-content-wrapper']]: isFullscreen,
+              },
             )}
           >
             {/* 渲染头部组件 */}

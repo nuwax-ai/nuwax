@@ -66,6 +66,55 @@
   overflow-y: auto;
 }
 
+// 全屏模式 - 整体容器（使用 fixed 定位覆盖整个视口）
+.fullscreen-mode {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 99999;
+  background: @colorBgContainer;
+  display: flex !important;
+  flex-direction: row !important;
+}
+
+// 全屏模式 - 内容包装器
+.fullscreen-content-wrapper {
+  width: 100% !important;
+  height: 100vh !important;
+  flex: 1 !important;
+}
+
+// 全局样式：当全屏模式激活时，隐藏父组件中的干扰元素
+// 这个方案不太稳定 先临时过滤一下
+:global {
+  body.file-tree-view-fullscreen-active {
+    // 隐藏左侧边栏折叠按钮
+    [class*='collapse-button'] {
+      display: none !important;
+    }
+
+    // 隐藏聊天输入框容器
+    [class*='chat-input-container'] {
+      display: none !important;
+    }
+
+    // 隐藏可拖动的分隔条
+    .react-draggable,
+    [class*='divider'] {
+      display: none !important;
+    }
+
+    // 隐藏其他可能干扰的元素
+    [class*='agent-sidebar'] {
+      display: none !important;
+    }
+  }
+}
+
 .vnc-preview {
   border: none !important;
 }
