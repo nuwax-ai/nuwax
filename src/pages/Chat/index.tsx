@@ -64,9 +64,7 @@ import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import ConversationStatus from './components/ConversationStatus';
-import IdleWarningModal from './components/IdleWarningModal';
 import DropdownChangeName from './DropdownChangeName';
-import { useDesktopIdleWarning } from './hooks';
 import styles from './index.less';
 import ShowArea from './ShowArea';
 
@@ -188,20 +186,6 @@ const Chat: React.FC = () => {
   const { isMobile } = useModel('layout');
   // 会话记录
   const { runHistory, runHistoryItem } = useModel('conversationHistory');
-
-  // 远程桌面空闲警告 Hook
-  const {
-    showIdleWarning,
-    handleIdleWarningCancel,
-    handleIdleWarningTimeout,
-    countdownSeconds: idleWarningCountdown,
-  } = useDesktopIdleWarning({
-    agentType: agentDetail?.type,
-    viewMode,
-    isFileTreeVisible,
-    conversationId: id,
-    openPreviewView,
-  });
 
   // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
   // 支持多种可能的参数名：workflowId, workflow_id, id
@@ -1222,6 +1206,11 @@ const Chat: React.FC = () => {
                       isCanDeleteSkillFile={true}
                       // 刷新文件树回调
                       onRefreshFileTree={() => handleRefreshFileList(id)}
+                      // VNC 空闲检测配置（仅任务型智能体启用）
+                      idleDetection={{
+                        enabled: agentDetail?.type === AgentTypeEnum.TaskAgent,
+                        onIdleTimeout: () => openPreviewView(id),
+                      }}
                     />
                   </div>
                 )
@@ -1244,16 +1233,6 @@ const Chat: React.FC = () => {
       )}
       {/*展示台区域*/}
       <ShowArea />
-
-      {/* 空闲警告弹窗 - 仅在任务型智能体的远程桌面模式下显示 */}
-      <IdleWarningModal
-        open={showIdleWarning}
-        countdownSeconds={idleWarningCountdown}
-        onCancel={handleIdleWarningCancel}
-        onTimeout={handleIdleWarningTimeout}
-        title="您已长时间未操作"
-        description="系统将自动关闭智能体电脑连接，以节省资源。如需继续使用，请点击下方按钮。"
-      />
     </div>
   );
 };
