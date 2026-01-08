@@ -376,10 +376,19 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 if (!node) continue;
 
                 // 所有节点都可以选择（包括非叶子节点）
-                // 检查是否是工具：工具的 key 以 'skill-' 开头，或者 variable.type 是 'Tool'（通过 as any 设置）
+                // 检查是否是工具：工具的 key 以特定前缀开头，或者 variable.type 是工具类型
+                const variableType = (node.variable as any)?.type;
                 const isTool =
-                  (node.isLeaf && node.key.startsWith('skill-')) ||
-                  (node.isLeaf && (node.variable as any)?.type === 'Tool');
+                  node.isLeaf &&
+                  (node.key.startsWith('skill-') ||
+                    node.key.startsWith('tool-') ||
+                    node.key.startsWith('subagent-') ||
+                    variableType === 'Tool' ||
+                    variableType === 'Skill' ||
+                    variableType === 'SubAgent' ||
+                    variableType === 'Plugin' ||
+                    variableType === 'Workflow' ||
+                    variableType === 'Mcp');
 
                 result.push({
                   key: node.key,
@@ -402,30 +411,46 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               return result;
             };
 
-            // 分离变量和工具
+            // 分离变量、工具和技能
             const separateVariables = (nodes: VariableTreeNode[]) => {
               const regularVars: VariableTreeNode[] = [];
               const toolVars: VariableTreeNode[] = [];
+              const skillVars: VariableTreeNode[] = [];
 
+              // 检查是否有 "category-tools" 节点
+              const toolsCategory = nodes.find(
+                (n) => n.key === 'category-tools',
+              );
               // 检查是否有 "category-skills" 节点
               const skillsCategory = nodes.find(
                 (n) => n.key === 'category-skills',
               );
 
-              if (skillsCategory) {
-                // 如果有技能分类，它的子节点是工具，其他节点是普通变量
-                toolVars.push(...(skillsCategory.children || []));
+              if (toolsCategory || skillsCategory) {
+                // 如果有工具分类，提取其子节点
+                if (toolsCategory) {
+                  toolVars.push(...(toolsCategory.children || []));
+                }
+                // 如果有技能分类，提取其子节点
+                if (skillsCategory) {
+                  skillVars.push(...(skillsCategory.children || []));
+                }
+                // 其他节点是普通变量
                 regularVars.push(
-                  ...nodes.filter((n) => n.key !== 'category-skills'),
+                  ...nodes.filter(
+                    (n) =>
+                      n.key !== 'category-tools' && n.key !== 'category-skills',
+                  ),
                 );
               } else {
-                // 如果没有明确的分类，尝试根据 key 或 type 判断
-                // 检查节点是否是工具（key 以 'skill-' 开头或 type 是 'Tool'）
+                // 如果没有明确的分类，尝试根据 key 判断
                 for (const node of nodes) {
-                  const isTool =
-                    node.key.startsWith('skill-') ||
-                    (node.variable as any)?.type === 'Tool';
-                  if (isTool) {
+                  if (node.key.startsWith('tool-')) {
+                    toolVars.push(node);
+                  } else if (node.key.startsWith('skill-')) {
+                    skillVars.push(node);
+                  } else if ((node.variable as any)?.type === 'Tool') {
+                    // 如果是 Tool 类型但没有前缀，默认放入工具
                     toolVars.push(node);
                   } else {
                     regularVars.push(node);
@@ -433,18 +458,25 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 }
               }
 
-              return { regularVars, toolVars };
+              return { regularVars, toolVars, skillVars };
             };
 
-            const { regularVars, toolVars } = separateVariables(items);
+            const { regularVars, toolVars, skillVars } =
+              separateVariables(items);
             const hasRegular = regularVars.length > 0;
             const hasTools = toolVars.length > 0;
-            const showTabs = hasRegular && hasTools;
+            const hasSkills = skillVars.length > 0;
+            // 显示 tabs：当有变量且有工具或技能时，或者同时有工具和技能时
+            const showTabs =
+              (hasRegular && (hasTools || hasSkills)) ||
+              (hasTools && hasSkills);
 
             // 初始 activeTab
             let activeTab = 'variables';
             if (!hasRegular && hasTools) {
               activeTab = 'tools';
+            } else if (!hasRegular && !hasTools && hasSkills) {
+              activeTab = 'skills';
             }
 
             // 根据 activeTab 获取当前显示的树
@@ -452,16 +484,26 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               tab: string,
               rVars: VariableTreeNode[],
               tVars: VariableTreeNode[],
+              sVars: VariableTreeNode[],
             ) => {
               if (showTabs) {
-                return tab === 'variables' ? rVars : tVars;
+                switch (tab) {
+                  case 'variables':
+                    return rVars;
+                  case 'tools':
+                    return tVars;
+                  case 'skills':
+                    return sVars;
+                  default:
+                    return rVars;
+                }
               }
               return items; // 如果不显示 tab，显示所有
             };
 
             // 初始 flatItems
             let flatItems = flattenTree(
-              getCurrentTree(activeTab, regularVars, toolVars),
+              getCurrentTree(activeTab, regularVars, toolVars, skillVars),
             );
 
             // 先定义 handleKeyDown 的引用，稍后定义
@@ -534,6 +576,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               currentActiveTab: string,
               currentRegularVars: VariableTreeNode[],
               currentToolVars: VariableTreeNode[],
+              currentSkillVars: VariableTreeNode[],
               currentShowTabs: boolean,
               currentSearchText: string,
             ) => {
@@ -565,6 +608,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                               key,
                               currentRegularVars,
                               currentToolVars,
+                              currentSkillVars,
                             );
                             popup.flatItems = flattenTree(newTree);
                             popup.selectedIndex = 0;
@@ -576,6 +620,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                               key,
                               currentRegularVars,
                               currentToolVars,
+                              currentSkillVars,
                               currentShowTabs,
                               currentSearchText,
                             );
@@ -583,6 +628,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                         }}
                         regularVariables={currentRegularVars}
                         toolVariables={currentToolVars}
+                        skillVariables={currentSkillVars}
                         onClose={handleClose}
                         excludeElement={editorDom}
                       />
@@ -601,10 +647,11 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             updateRender(
               0,
               flatItems,
-              getCurrentTree(activeTab, regularVars, toolVars),
+              getCurrentTree(activeTab, regularVars, toolVars, skillVars),
               activeTab,
               regularVars,
               toolVars,
+              skillVars,
               showTabs,
               searchText,
             );
@@ -629,6 +676,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               const currentActiveTab = popup.activeTab;
               const currentRegularVars = popup.regularVars;
               const currentToolVars = popup.toolVars;
+              const currentSkillVars = popup.skillVars;
               const currentShowTabs = popup.showTabs;
               // 注意：这里我们需要最新的 searchText，但它不在 popup 状态中
               // 不过键盘导航不改变 searchText，所以可以使用闭包中的 searchText
@@ -648,10 +696,12 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                     currentActiveTab,
                     currentRegularVars,
                     currentToolVars,
+                    currentSkillVars,
                   ),
                   currentActiveTab,
                   currentRegularVars,
                   currentToolVars,
+                  currentSkillVars,
                   currentShowTabs,
                   currentSearchText,
                 );
@@ -670,10 +720,12 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                     currentActiveTab,
                     currentRegularVars,
                     currentToolVars,
+                    currentSkillVars,
                   ),
                   currentActiveTab,
                   currentRegularVars,
                   currentToolVars,
+                  currentSkillVars,
                   currentShowTabs,
                   currentSearchText,
                 );
@@ -700,16 +752,43 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                 return;
               }
 
-              // 处理 Tab 键切换
+              // 处理 Tab 键切换（在三个 tab 之间循环：variables -> tools -> skills -> variables）
               if (currentShowTabs && event.key === 'Tab') {
                 event.preventDefault();
-                const newTab =
-                  currentActiveTab === 'variables' ? 'tools' : 'variables';
+                // 计算下一个 tab
+                let newTab: string;
+                if (currentActiveTab === 'variables') {
+                  // 如果有工具，切换到工具；否则如果有技能，切换到技能
+                  newTab =
+                    currentToolVars.length > 0
+                      ? 'tools'
+                      : currentSkillVars.length > 0
+                      ? 'skills'
+                      : 'variables';
+                } else if (currentActiveTab === 'tools') {
+                  // 如果有技能，切换到技能；否则如果有变量，切换到变量
+                  newTab =
+                    currentSkillVars.length > 0
+                      ? 'skills'
+                      : currentRegularVars.length > 0
+                      ? 'variables'
+                      : 'tools';
+                } else {
+                  // skills -> variables (如果有变量) 或 tools (如果有工具)
+                  newTab =
+                    currentRegularVars.length > 0
+                      ? 'variables'
+                      : currentToolVars.length > 0
+                      ? 'tools'
+                      : 'skills';
+                }
+
                 popup.activeTab = newTab;
                 const newTree = getCurrentTree(
                   newTab,
                   currentRegularVars,
                   currentToolVars,
+                  currentSkillVars,
                 );
                 popup.flatItems = flattenTree(newTree);
                 popup.selectedIndex = 0;
@@ -721,6 +800,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
                   newTab,
                   currentRegularVars,
                   currentToolVars,
+                  currentSkillVars,
                   currentShowTabs,
                   currentSearchText,
                 );
@@ -877,6 +957,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               activeTab,
               regularVars,
               toolVars,
+              skillVars,
               flatItems,
               showTabs,
               searchText, // 添加 searchText 到状态
@@ -897,28 +978,49 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
             // 重新计算
             const searchText = truncateQuery(query || '');
 
-            const { regularVars, toolVars } = popup.separateVariables(items);
+            const { regularVars, toolVars, skillVars } =
+              popup.separateVariables(items);
             const hasRegular = regularVars.length > 0;
             const hasTools = toolVars.length > 0;
-            const showTabs = hasRegular && hasTools;
+            const hasSkills = skillVars.length > 0;
+            // 显示 tabs：当有变量且有工具或技能时，或者同时有工具和技能时
+            const showTabs =
+              (hasRegular && (hasTools || hasSkills)) ||
+              (hasTools && hasSkills);
 
             // 更新 popup 状态
             popup.regularVars = regularVars;
             popup.toolVars = toolVars;
+            popup.skillVars = skillVars;
             popup.showTabs = showTabs;
             popup.searchText = searchText; // 更新 searchText
 
             // 如果当前 tab 变为空，切换到另一个 tab
-            if (popup.activeTab === 'variables' && !hasRegular && hasTools) {
-              popup.activeTab = 'tools';
-            } else if (popup.activeTab === 'tools' && !hasTools && hasRegular) {
-              popup.activeTab = 'variables';
+            if (popup.activeTab === 'variables' && !hasRegular) {
+              if (hasTools) {
+                popup.activeTab = 'tools';
+              } else if (hasSkills) {
+                popup.activeTab = 'skills';
+              }
+            } else if (popup.activeTab === 'tools' && !hasTools) {
+              if (hasRegular) {
+                popup.activeTab = 'variables';
+              } else if (hasSkills) {
+                popup.activeTab = 'skills';
+              }
+            } else if (popup.activeTab === 'skills' && !hasSkills) {
+              if (hasRegular) {
+                popup.activeTab = 'variables';
+              } else if (hasTools) {
+                popup.activeTab = 'tools';
+              }
             }
 
             const currentTree = popup.getCurrentTree(
               popup.activeTab,
               regularVars,
               toolVars,
+              skillVars,
             );
             popup.flatItems = popup.flattenTree(currentTree);
 
@@ -934,6 +1036,7 @@ export const VariableSuggestion = Extension.create<VariableSuggestionOptions>({
               popup.activeTab,
               regularVars,
               toolVars,
+              skillVars,
               showTabs,
               searchText,
             );
