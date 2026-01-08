@@ -61,7 +61,13 @@ import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
 import { Button, Form, message as messageAntd, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import ConversationStatus from './components/ConversationStatus';
 import DropdownChangeName from './DropdownChangeName';
@@ -174,9 +180,6 @@ const Chat: React.FC = () => {
     isMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
-    // 停止会话
-    runStopConversation,
-    loadingStopConversation,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -476,7 +479,6 @@ const Chat: React.FC = () => {
 
   // 监听会话状态更新事件
   const listenConversationStatusUpdate = (data: { conversationId: string }) => {
-    console.log('会话状态更新:', conversationInfo, data);
     const { conversationId } = data;
     // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
     if (conversationId === conversationInfo?.id?.toString()) {
@@ -487,11 +489,29 @@ const Chat: React.FC = () => {
 
       // 重新查询会话信息
       runAsync(id);
-
-      // 取消监听会话状态更新事件
-      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+      // 重新查询会话记录
+      runHistory({
+        agentId: null,
+        limit: 20,
+      });
     }
   };
+
+  // 处理任务停止后的刷新逻辑
+  const handleTaskStopped = useCallback(
+    (conversationId: string) => {
+      if (Number(conversationId) === Number(id)) {
+        // 重新查询会话信息
+        runAsync(id);
+        // 重新查询会话记录
+        runHistory({
+          agentId: null,
+          limit: 20,
+        });
+      }
+    },
+    [id],
+  );
 
   useEffect(() => {
     if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
@@ -520,27 +540,6 @@ const Chat: React.FC = () => {
       setSelectedComponentList([]);
     };
   }, [id]);
-
-  // 停止会话功能
-  const handleStopConversation = async () => {
-    // 正常会话只需要 conversationId 即可停止
-    const { code } = await runStopConversation(id);
-    if (code === SUCCESS_CODE) {
-      // 后台处理有延时，需要等待5秒后，再重新查询会话信息和会话记录
-      setTimeout(() => {
-        // 重新查询会话信息
-        runAsync(id);
-        // 重新查询会话记录
-        runHistory({
-          agentId: null,
-          limit: 20,
-        });
-      }, 5000);
-
-      // 取消监听会话状态更新事件
-      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
-    }
-  };
 
   // 清空会话记录,实际上是跳转到智能体详情页面
   const handleClear = () => {
@@ -1019,16 +1018,7 @@ const Chat: React.FC = () => {
                       )}
                     >
                       <LoadingOutlined />
-                      <span>Agent正在执行任务中...</span>
-                      <Button
-                        type="primary"
-                        className={cx(styles['stop-task-btn'])}
-                        loading={loadingStopConversation}
-                        size="small"
-                        onClick={handleStopConversation}
-                      >
-                        取消任务
-                      </Button>
+                      <span>智能体正在执行，请稍等</span>
                     </div>
                   )}
                 </>
@@ -1094,6 +1084,7 @@ const Chat: React.FC = () => {
             onSelectComponent={handleSelectComponent}
             onScrollBottom={onScrollBottom}
             showAnnouncement={true}
+            onTaskStopped={handleTaskStopped}
           />
         </div>
       </div>

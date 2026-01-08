@@ -91,6 +91,8 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
   const onTimeoutRef = useRef(onTimeout);
   // 防止重复触发取消操作
   const isCancellingRef = useRef(false);
+  // 防止重复触发超时回调
+  const hasTriggeredTimeoutRef = useRef(false);
 
   // 更新回调函数引用
   useEffect(() => {
@@ -130,8 +132,16 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
 
   /**
    * 处理倒计时结束
+   * 使用 hasTriggeredTimeoutRef 防止重复触发
    */
   const handleTimeout = useCallback(() => {
+    // 防止重复触发
+    if (hasTriggeredTimeoutRef.current) {
+      modalLogger.log('⚠️ 已触发过超时回调，跳过');
+      return;
+    }
+    hasTriggeredTimeoutRef.current = true;
+
     modalLogger.log('⏱️ 倒计时结束', '执行超时回调');
     clearCountdownTimer();
     setCountdown(countdownSeconds);
@@ -148,20 +158,27 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
     }
   }, [autoDetectActivity, open, handleCancel]);
 
+  // 使用 ref 存储 handleTimeout 的稳定引用
+  const handleTimeoutRef = useRef(handleTimeout);
+  useEffect(() => {
+    handleTimeoutRef.current = handleTimeout;
+  }, [handleTimeout]);
+
   // 启动/停止倒计时
   useEffect(() => {
     if (open) {
       modalLogger.log('📢 弹窗打开', `开始 ${countdownSeconds}s 倒计时`);
       // 重置状态
       isCancellingRef.current = false;
+      hasTriggeredTimeoutRef.current = false;
       setCountdown(countdownSeconds);
 
       // 启动倒计时
       timerRef.current = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
-            // 倒计时结束
-            handleTimeout();
+            // 倒计时结束，使用 ref 调用最新的 handleTimeout
+            handleTimeoutRef.current();
             return 0;
           }
           // 每5秒记录一次倒计时状态
@@ -181,7 +198,7 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
     return () => {
       clearCountdownTimer();
     };
-  }, [open, countdownSeconds, handleTimeout, clearCountdownTimer]);
+  }, [open, countdownSeconds, clearCountdownTimer]);
 
   // 监听用户活动事件
   useEffect(() => {

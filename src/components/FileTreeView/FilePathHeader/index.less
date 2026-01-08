@@ -9,6 +9,7 @@
   background: @colorBgContainer;
   border-bottom: @lineWidth solid @colorSplit;
   gap: 10px;
+  overflow-x: auto;
 
   &.pl-8 {
     padding-left: 8px;
@@ -74,6 +75,7 @@
     border-radius: @borderRadius;
     color: @colorTextTertiary;
     transition: all 0.2s;
+    flex-shrink: 0; // 防止在空间不足时被压缩
 
     &:hover {
       color: @colorText;
