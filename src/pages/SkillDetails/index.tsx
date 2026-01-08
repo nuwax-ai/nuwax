@@ -73,7 +73,7 @@ const SkillDetails: React.FC = () => {
     // 检查是否有未保存的文件修改
     const _hasUnsavedChanges = hasUnsavedChanges();
     if (_hasUnsavedChanges) {
-      message.warning(`您有未保存的文件修改，请先保存后再${text}`);
+      message.warning(`你有未保存的文件修改，请先保存后再${text}`);
       return false; // 有未保存更改，阻止执行
     }
     return true; // 没有未保存更改，可以继续执行
