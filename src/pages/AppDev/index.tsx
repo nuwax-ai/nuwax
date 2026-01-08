@@ -40,7 +40,7 @@ import { FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
 import { generateRequestId } from '@/utils/chatUtils';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
-import { SyncOutlined, UploadOutlined } from '@ant-design/icons';
+import { UploadOutlined } from '@ant-design/icons';
 import {
   Alert,
   Button,
@@ -138,6 +138,11 @@ const AppDev: React.FC = () => {
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
+
+  // 空操作函数常量，避免每次渲染创建新函数实例
+  const noop = useCallback(() => {}, []);
+  const asyncNoopFalse = useCallback(async () => false, []);
+  const asyncNoop = useCallback(async () => {}, []);
 
   // 部署相关状态
   const [isDeploying, setIsDeploying] = useState(false);
@@ -648,7 +653,7 @@ const AppDev: React.FC = () => {
       // 检查API响应格式
       if (result?.code === SUCCESS_CODE && result?.data) {
         const { prodServerUrl } = result.data;
-        // 显示部署结果
+        // 显示部署结果 - 垂直居中显示
         Modal.success({
           title: '成功发布成组件',
           content: (
@@ -667,7 +672,7 @@ const AppDev: React.FC = () => {
               )}
             </div>
           ),
-          width: 500,
+          centered: true,
         });
         projectInfo.refreshProjectInfo();
       } else {
@@ -697,6 +702,8 @@ const AppDev: React.FC = () => {
       message.error('项目ID不存在或无效，无法部署');
       return;
     }
+    // 先关闭弹窗，再显示 loading 效果（与发布成组件一致）
+    setOpenPublishComponentModal(false);
     setIsDeploying(true);
     const { code } = await buildProject(
       projectId,
@@ -1357,14 +1364,22 @@ const AppDev: React.FC = () => {
         visible={
           isDeploying || (isFileOperating && shouldShowFileOperatingMask)
         }
-        tip={
-          isDeploying
-            ? '正在发布项目...\n请稍候，发布完成后将自动关闭'
-            : undefined
-        }
+        tip={isDeploying ? '项目发布中…' : undefined}
+        subtitle={isDeploying ? '请稍候，发布完成后将自动关闭' : undefined}
         icon={
           isDeploying ? (
-            <SyncOutlined spin style={{ fontSize: 52, color: '#1677ff' }} />
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 32 32"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M14.6663 29.3333V23.9999C14.6663 23.2635 15.2633 22.6666 15.9997 22.6666C16.7361 22.6666 17.333 23.2635 17.333 23.9999V29.3333C17.333 30.0696 16.7361 30.6666 15.9997 30.6666C15.2633 30.6666 14.6663 30.0696 14.6663 29.3333ZM9.40332 20.7109C9.92402 20.1902 10.768 20.1902 11.2887 20.7109C11.8094 21.2316 11.8094 22.0756 11.2887 22.5963L7.5153 26.3697C6.99457 26.89 6.15044 26.8903 5.62988 26.3697C5.10932 25.8492 5.1096 25.005 5.62988 24.4843L9.40332 20.7109ZM20.7106 20.7109C21.2313 20.1902 22.0753 20.1902 22.596 20.7109L26.3695 24.4843C26.8897 25.005 26.89 25.8492 26.3695 26.3697C25.8489 26.8903 25.0048 26.89 24.4841 26.3697L20.7106 22.5963C20.1899 22.0756 20.1899 21.2316 20.7106 20.7109ZM7.99967 14.6666C8.73605 14.6666 9.33301 15.2635 9.33301 15.9999C9.33301 16.7363 8.73605 17.3333 7.99967 17.3333H2.66634C1.92996 17.3333 1.33301 16.7363 1.33301 15.9999C1.33301 15.2635 1.92996 14.6666 2.66634 14.6666H7.99967ZM29.333 14.6666C30.0694 14.6666 30.6663 15.2635 30.6663 15.9999C30.6663 16.7363 30.0694 17.3333 29.333 17.3333H23.9997C23.2633 17.3333 22.6663 16.7363 22.6663 15.9999C22.6663 15.2635 23.2633 14.6666 23.9997 14.6666H29.333ZM5.62988 5.63013C6.15044 5.10957 6.99457 5.10984 7.5153 5.63013L11.2887 9.40356C11.8094 9.92426 11.8094 10.7683 11.2887 11.289C10.768 11.8097 9.92402 11.8097 9.40332 11.289L5.62988 7.51554C5.1096 6.99481 5.10932 6.15069 5.62988 5.63013ZM24.4841 5.63013C25.0048 5.10984 25.8489 5.10957 26.3695 5.63013C26.89 6.15069 26.8897 6.99481 26.3695 7.51554L22.596 11.289C22.0753 11.8097 21.2313 11.8097 20.7106 11.289C20.1899 10.7683 20.1899 9.92426 20.7106 9.40356L24.4841 5.63013ZM14.6663 7.99992V2.66659C14.6663 1.93021 15.2633 1.33325 15.9997 1.33325C16.7361 1.33325 17.333 1.93021 17.333 2.66659V7.99992C17.333 8.7363 16.7361 9.33325 15.9997 9.33325C15.2633 9.33325 14.6663 8.7363 14.6663 7.99992Z"
+                fill="#FC8800"
+              />
+            </svg>
           ) : undefined
         }
         zIndex={9999}
@@ -1564,32 +1579,26 @@ const AppDev: React.FC = () => {
                         }
                       }}
                       onToggleFolder={fileManagement.toggleFolder}
-                      onDeleteFile={
-                        isFileOperating ? () => {} : handleDeleteClick
-                      }
+                      onDeleteFile={isFileOperating ? noop : handleDeleteClick}
                       onRenameFile={
-                        isFileOperating ? async () => false : handleRenameFile
+                        isFileOperating ? asyncNoopFalse : handleRenameFile
                       }
                       onUploadToFolder={
-                        isFileOperating
-                          ? async () => false
-                          : handleUploadToFolder
+                        isFileOperating ? asyncNoopFalse : handleUploadToFolder
                       }
                       onUploadProject={
                         isFileOperating
-                          ? () => {}
+                          ? noop
                           : () => setIsUploadModalVisible(true)
                       }
                       onUploadSingleFile={
-                        isFileOperating
-                          ? async () => {}
-                          : handleRightClickUpload
+                        isFileOperating ? asyncNoop : handleRightClickUpload
                       }
                       selectedDataResources={selectedDataResources}
                       workspace={workspace}
                       fileManagement={fileManagement}
                       isChatLoading={chat.isChatLoading}
-                      projectId={projectId ? Number(projectId) : undefined}
+                      // projectId={projectId ? Number(projectId) : undefined}
                       isFileTreeInitializing={
                         fileManagement.isFileTreeInitializing
                       }

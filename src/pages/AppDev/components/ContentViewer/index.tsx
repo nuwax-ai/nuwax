@@ -7,7 +7,7 @@ import {
   isPreviewableFile,
   processImageContent,
 } from '@/utils/appDevUtils';
-import { Button, Spin } from 'antd';
+// Button, Spin 已移除，使用 AppDevEmptyState 组件替代
 import React, { useMemo } from 'react';
 import { type DesignViewerRef } from '../DesignViewer';
 import FilePathHeader from '../FilePathHeader';
@@ -173,29 +173,37 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   const codeEditorComponent = useMemo(() => {
     if (isLoadingFileContent) {
       return (
-        <div className={styles.loadingContainer}>
-          <Spin size="large" />
-          <p>正在加载文件内容...</p>
-        </div>
+        <AppDevEmptyState
+          type="loading"
+          title="正在加载文件内容"
+          description="请稍候..."
+        />
       );
     }
 
     if (fileContentError) {
       return (
-        <div className={styles.errorContainer}>
-          <p>{fileContentError}</p>
-          <Button size="small" onClick={onRefreshFile}>
-            重试
-          </Button>
-        </div>
+        <AppDevEmptyState
+          type="error"
+          title="加载文件失败"
+          description={fileContentError}
+          buttons={[
+            {
+              text: '重试',
+              onClick: onRefreshFile,
+            },
+          ]}
+        />
       );
     }
 
     if (!selectedFileId) {
       return (
-        <div className={styles.emptyState}>
-          <p>请从左侧文件树选择一个文件进行预览</p>
-        </div>
+        <AppDevEmptyState
+          type="no-file"
+          title="暂无选中文件"
+          description="请从左侧文件树选择一个文件进行预览"
+        />
       );
     }
 
@@ -299,9 +307,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   const versionCompareCodeComponent = useMemo(() => {
     if (!selectedFileId) {
       return (
-        <div className={styles.emptyState}>
-          <p>请从左侧文件树选择一个文件进行预览</p>
-        </div>
+        <AppDevEmptyState
+          type="no-file"
+          title="暂无选中文件"
+          description="请从左侧文件树选择一个文件进行预览"
+        />
       );
     }
 
@@ -360,9 +370,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
               }}
             />
           ) : (
-            <div className={styles.emptyState}>
-              <p>无法预览此文件类型: {selectedFileId}</p>
-            </div>
+            <AppDevEmptyState
+              type="error"
+              title="无法预览此文件类型"
+              description={`当前不支持预览 ${selectedFileId} 格式的文件`}
+            />
           )}
         </div>
       </>
@@ -372,10 +384,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   // 版本对比模式 + preview标签页：显示禁用提示
   if (isComparing && mode === 'preview') {
     return (
-      <div className={styles.emptyState}>
-        <p>{VERSION_CONSTANTS.PREVIEW_DISABLED_MESSAGE}</p>
-        <p>请恢复或切换到最新版本以查看预览</p>
-      </div>
+      <AppDevEmptyState
+        type="no-preview-url"
+        title={VERSION_CONSTANTS.PREVIEW_DISABLED_MESSAGE}
+        description="请恢复或切换到最新版本以查看预览"
+      />
     );
   }
 

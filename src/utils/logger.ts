@@ -26,50 +26,49 @@ const isLogEnabled = (): boolean => {
   return true;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+const noop = () => {};
+
 /**
  * 创建带自定义前缀的 logger
  * @param prefix 日志前缀，如 '[V3]' 或 '[SaveService]'
+ *
+ * 使用 getter + bind 方式，确保浏览器控制台点击可以正确定位到调用位置
  */
 export const createLogger = (prefix: string) => ({
   /**
    * 普通日志（仅开发环境）
    */
-  log: (...args: any[]): void => {
-    if (isLogEnabled()) {
-      console.log(prefix, ...args);
-    }
+  get log() {
+    return isLogEnabled() ? console.log.bind(console, prefix) : noop;
   },
 
   /**
    * 警告日志（始终输出）
    */
-  warn: (...args: any[]): void => {
-    console.warn(prefix, ...args);
+  get warn() {
+    return console.warn.bind(console, prefix);
   },
 
   /**
    * 错误日志（始终输出）
    */
-  error: (...args: any[]): void => {
-    console.error(prefix, ...args);
+  get error() {
+    return console.error.bind(console, prefix);
   },
 
   /**
    * 信息日志（仅开发环境）
    */
-  info: (...args: any[]): void => {
-    if (isLogEnabled()) {
-      console.info(prefix, ...args);
-    }
+  get info() {
+    return isLogEnabled() ? console.info.bind(console, prefix) : noop;
   },
 
   /**
    * 调试日志（仅开发环境）
    */
-  debug: (...args: any[]): void => {
-    if (isLogEnabled()) {
-      console.debug(prefix, ...args);
-    }
+  get debug() {
+    return isLogEnabled() ? console.debug.bind(console, prefix) : noop;
   },
 });
 

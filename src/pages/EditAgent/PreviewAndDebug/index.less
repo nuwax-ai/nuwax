@@ -26,6 +26,20 @@
       max-width: 800px;
       padding-bottom: 30px;
       mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
+
+      // 加载更多按钮容器
+      .load-more-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: @paddingSm 0;
+        margin-bottom: @paddingSm;
+
+        .load-more-btn {
+          font-size: @fontSize;
+          padding: 0 @padding;
+        }
+      }
     }
 
     // 会话状态栏样式

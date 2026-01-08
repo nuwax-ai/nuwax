@@ -29,6 +29,7 @@ import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
   MessageTypeEnum,
+  TaskStatus,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import { AgentDetailDto } from '@/types/interfaces/agent';
@@ -57,7 +58,7 @@ import eventBus from '@/utils/eventBus';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
-import { LoadingOutlined } from '@ant-design/icons';
+import { LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
 import { Button, Form, message as messageAntd, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -74,8 +75,6 @@ const cx = classNames.bind(styles);
 const Chat: React.FC = () => {
   const location = useLocation();
   const params = useParams();
-  const { isMobile } = useModel('layout');
-  const { runHistoryItem } = useModel('conversationHistory');
   // 会话ID
   const id = Number(params.id);
   const agentId = Number(params.agentId);
@@ -171,11 +170,22 @@ const Chat: React.FC = () => {
     taskAgentSelectTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
+    // 加载更多消息相关
+    isMoreMessage,
+    loadingMore,
+    handleLoadMoreMessage,
+    // 停止会话
+    runStopConversation,
+    loadingStopConversation,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
+
+  const { isMobile } = useModel('layout');
+  // 会话记录
+  const { runHistory, runHistoryItem } = useModel('conversationHistory');
 
   // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
   // 支持多种可能的参数名：workflowId, workflow_id, id
@@ -259,7 +269,9 @@ const Chat: React.FC = () => {
 
   useNavigationGuard({
     condition: () => shouldBlockNavigation.current,
-    enabled: isConversationActive, // 只在会话活跃时启用
+    // 只有任务型智能体在会话活跃时才启用导航拦截，会话型智能体不需要
+    enabled:
+      isConversationActive && agentDetail?.type === AgentTypeEnum.TaskAgent,
     title: '任务执行中',
     message: '离开后，执行成功的任务会收到提示消息',
     discardText: '确定离开',
@@ -378,8 +390,6 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      console.log('useEffectuseEffectuseEffectid', id);
-
       setIsLoadingConversation(false);
       // 切换会话时，重置自动滚动标志，确保新会话能够自动滚动到底部
       allowAutoScrollRef.current = true;
@@ -464,6 +474,44 @@ const Chat: React.FC = () => {
     }
   };
 
+  // 监听会话状态更新事件
+  const listenConversationStatusUpdate = (data: { conversationId: string }) => {
+    console.log('会话状态更新:', conversationInfo?.taskStatus, data);
+    const { conversationId } = data;
+    // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
+    if (conversationId === conversationInfo?.id?.toString()) {
+      setConversationInfo({
+        ...conversationInfo,
+        taskStatus: TaskStatus.COMPLETE,
+      });
+
+      // 后台处理有延时，需要等待5秒后，再重新查询会话信息和会话记录
+      setTimeout(() => {
+        // 重新查询会话信息
+        runAsync(id);
+        // 重新查询会话记录
+        runHistory({
+          agentId: null,
+          limit: 20,
+        });
+      }, 5000);
+
+      // 取消监听会话状态更新事件
+      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+    }
+  };
+
+  useEffect(() => {
+    if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
+      // 监听会话状态更新事件
+      eventBus.on(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+    }
+
+    return () => {
+      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+    };
+  }, [conversationInfo?.taskStatus]);
+
   useEffect(() => {
     // 监听新消息事件
     eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
@@ -480,6 +528,21 @@ const Chat: React.FC = () => {
       setSelectedComponentList([]);
     };
   }, [id]);
+
+  // todo: 停止会话功能
+  const handleStopConversation = async () => {
+    // 正常会话只需要 conversationId 即可停止
+    const { code } = await runStopConversation(id);
+    if (code === SUCCESS_CODE) {
+      // 重新查询会话信息
+      runAsync(id);
+      // 取消监听会话状态更新事件
+      eventBus.off(
+        EVENT_TYPE.RefreshChatMessage,
+        listenConversationStatusUpdate,
+      );
+    }
+  };
 
   // 清空会话记录，实际上是跳转到智能体详情页面
   const handleClear = () => {
@@ -907,11 +970,26 @@ const Chat: React.FC = () => {
                 isFilled={!!variableParams}
                 disabled={!!firstVariableParams || isSendMessageRef.current}
               />
+              {/* 加载更多按钮 */}
+              {isMoreMessage && messageList?.length > 0 && (
+                <div className={cx(styles['load-more-container'])}>
+                  <Button
+                    type="text"
+                    loading={loadingMore}
+                    icon={<RollbackOutlined />}
+                    onClick={() => handleLoadMoreMessage(id)}
+                    className={cx(styles['load-more-btn'])}
+                  >
+                    点击查看更多历史会话
+                  </Button>
+                </div>
+              )}
               {messageList?.length > 0 ? (
                 <>
-                  {messageList?.map((item: MessageInfo, index: number) => (
+                  {messageList?.map((item: MessageInfo) => (
                     <ChatView
-                      key={item.id || index}
+                      // 后端接口返回的消息列表id存在相同的情况，所以需要使用id和index来唯一标识
+                      key={`${item.id}-${item?.index}`}
                       messageInfo={item}
                       roleInfo={roleInfo}
                       contentClassName={styles['chat-inner']}
@@ -929,6 +1007,27 @@ const Chat: React.FC = () => {
                     chatSuggestList={chatSuggestList}
                     onClick={handleMessageSend}
                   />
+                  {/* 任务执行中容器 */}
+                  {conversationInfo?.taskStatus === TaskStatus.EXECUTING && (
+                    <div
+                      className={cx(
+                        styles['task-executing-container'],
+                        'flex',
+                        'items-center',
+                      )}
+                    >
+                      <LoadingOutlined />
+                      <span>Agent正在执行任务中...</span>
+                      <Button
+                        type="primary"
+                        loading={loadingStopConversation}
+                        size="small"
+                        onClick={handleStopConversation}
+                      >
+                        取消任务
+                      </Button>
+                    </div>
+                  )}
                 </>
               ) : (
                 !message &&
@@ -980,7 +1079,6 @@ const Chat: React.FC = () => {
             )}
 
           <ChatInputHome
-            // key={`chat-${id}-${agentId}`}
             key={`agent-details-${agentId}`}
             className={cx(styles['chat-input-container'])}
             onEnter={handleMessageSend}
@@ -1008,18 +1106,11 @@ const Chat: React.FC = () => {
           className={cx(
             'flex',
             'items-center',
-            'justify-center',
+            'content-center',
             'flex-1',
-            'h-full',
             'w-full',
+            'h-full',
           )}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            height: '100%',
-          }}
         >
           <LoadingOutlined />
         </div>
@@ -1115,6 +1206,11 @@ const Chat: React.FC = () => {
                       isCanDeleteSkillFile={true}
                       // 刷新文件树回调
                       onRefreshFileTree={() => handleRefreshFileList(id)}
+                      // VNC 空闲检测配置（仅任务型智能体启用）
+                      idleDetection={{
+                        enabled: agentDetail?.type === AgentTypeEnum.TaskAgent,
+                        onIdleTimeout: () => openPreviewView(id),
+                      }}
                     />
                   </div>
                 )

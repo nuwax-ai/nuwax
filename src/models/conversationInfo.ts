@@ -96,8 +96,10 @@ export default () => {
   const setIsSuggest = (suggest: boolean) => {
     isSuggest.current = suggest;
   };
-  // 是否还有更多消息
-  const [isMoreMessage, setIsMoreMessage] = useState<boolean>(true);
+  // 是否还有更多消息, 默认没有更多消息，这样默认隐藏加载更多按钮
+  const [isMoreMessage, setIsMoreMessage] = useState<boolean>(false);
+  // 加载更多消息的状态
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
@@ -500,7 +502,7 @@ export default () => {
   };
 
   // 设置所有的详细信息
-  const setChatProcessingList = (messageList: any[]) => {
+  const setChatProcessingList = (messageList: MessageInfo[]) => {
     const list: any[] = [];
     messageList
       .filter((item) => item.role === AssistantRoleEnum.ASSISTANT)
@@ -523,25 +525,73 @@ export default () => {
     {
       manual: true,
       debounceWait: 300,
-      // onSuccess: (result: RequestResponse<MessageInfo[]>) => {
-      //   console.log('查询会话消息列表', result);
-      //   const { data } = result;
-      //   if (data?.length) {
-      //     setMessageList((messageList) => {
-      //       return [...messageList, ...data];
-      //     });
-
-      //     // 如果查询到的消息数量小于20，则表示没有更多消息
-      //     if (data?.length < MESSAGE_LIST_SIZE) {
-      //       setIsMoreMessage(false);
-      //     }
-      //   } else {
-      //     // 如果查询到的消息数量为0，则表示没有更多消息
-      //     setIsMoreMessage(false);
-      //   }
-      // },
     },
   );
+
+  // 加载更多消息
+  const handleLoadMoreMessage = async (conversationId: number) => {
+    if (
+      !conversationId ||
+      loadingMore ||
+      !isMoreMessage ||
+      messageList?.length === 0
+    ) {
+      return;
+    }
+
+    // 使用消息列表第一项的 index 属性值作为查询的起始索引
+    // 如果没有第一项或第一项没有 index 属性，则使用 0 作为默认值
+    const firstMessage = messageList?.[0] as MessageInfo;
+    const currentIndex = firstMessage?.index || 0;
+
+    // 记录加载前的滚动高度和位置，用于保持滚动位置
+    const messageView = messageViewRef.current;
+    const oldScrollHeight = messageView?.scrollHeight || 0;
+    const oldScrollTop = messageView?.scrollTop || 0;
+
+    setLoadingMore(true);
+    try {
+      const { code, data } = await runQueryConversationMessageList({
+        conversationId,
+        index: currentIndex,
+        size: MESSAGE_LIST_SIZE,
+      });
+
+      if (code === SUCCESS_CODE) {
+        // 如果查询到的消息数量大于0，则表示有更多消息
+        if (!!data?.length) {
+          // 将新消息追加到消息列表前面
+          setMessageList((messageList: MessageInfo[]) => {
+            return [...data, ...messageList];
+          });
+
+          // 如果查询到的消息数量小于20，则表示没有更多消息
+          if (data.length < MESSAGE_LIST_SIZE) {
+            setIsMoreMessage(false);
+          } else {
+            setIsMoreMessage(true);
+          }
+          // 保持滚动位置（加载更多后，滚动位置应该保持在原来的位置）
+          // 等待DOM更新后再调整滚动位置
+          setTimeout(() => {
+            if (messageView) {
+              const newScrollHeight = messageView.scrollHeight;
+              const scrollDiff = newScrollHeight - oldScrollHeight;
+              // 调整滚动位置，保持用户看到的内容不变
+              messageView.scrollTop = oldScrollTop + scrollDiff;
+            }
+          }, 0);
+        } else {
+          // 如果查询到的消息数量为0，则表示没有更多消息
+          setIsMoreMessage(false);
+        }
+      }
+    } catch (error) {
+      console.error('加载更多消息失败:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   // 查询会话
   const {
@@ -598,8 +648,8 @@ export default () => {
         }
 
         // 如果消息列表数量小于20(此接口后端限制为20条)，则表示没有更多消息
-        if (len < MESSAGE_LIST_SIZE) {
-          setIsMoreMessage(false);
+        if (len === MESSAGE_LIST_SIZE) {
+          setIsMoreMessage(true);
         }
       }
       // 不存在会话消息时，才显示开场白预置问题
@@ -638,9 +688,10 @@ export default () => {
   );
 
   // 停止会话
-  const { run: runStopConversation, loading: loadingStopConversation } =
+  const { runAsync: runStopConversation, loading: loadingStopConversation } =
     useRequest(apiAgentConversationChatStop, {
       manual: true,
+      debounceWait: 300,
     });
 
   // 修改消息列表
@@ -789,7 +840,6 @@ export default () => {
           ) {
             // 打开远程桌面
             openDesktopView(params.conversationId);
-            console.log('打开远程桌面');
           }
 
           // 长任务型任务处理(刷新文件树)
@@ -1028,35 +1078,6 @@ export default () => {
         });
         // 主动关闭连接时，禁用会话
         disabledConversationActive();
-
-        /* const currentInfo = conversationInfo ?? data;
-
-        if (isSync && currentInfo && currentInfo?.topicUpdated !== 1) {
-          // 第一次发送消息后更新主题
-          // 如果是智能体编排页面不更新
-          const { data } = await runUpdateTopic({
-            id: params.conversationId,
-            firstMessage: params.message,
-          });
-          // 更新会话记录
-          setConversationInfo({
-            ...currentInfo,
-            topicUpdated: data?.topicUpdated,
-            topic: data?.topic,
-          });
-
-          // 如果是会话聊天页（chat页），同步更新会话记录
-          runHistory({
-            agentId: null,
-            limit: 20,
-          });
-
-          // 获取当前智能体的历史记录
-          runHistoryItem({
-            agentId: currentInfo.agentId,
-            limit: 20,
-          });
-        }*/
       },
       onError: () => {
         message.error('网络超时或服务不可用，请稍后再试');
@@ -1085,6 +1106,11 @@ export default () => {
   const handleClearSideEffect = () => {
     // 重置消息ID
     messageIdRef.current = '';
+    // 重置是否还有更多消息
+    setIsMoreMessage(false);
+    // 重置加载更多消息的状态
+    setLoadingMore(false);
+    // 重置问题建议列表
     setChatSuggestList([]);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -1203,11 +1229,13 @@ export default () => {
         }
         return item;
       }) || [];
+
     const newMessageList = [
       ...completeMessageList,
       chatMessage,
       currentMessage,
-    ];
+    ] as MessageInfo[];
+
     setMessageList(() => {
       checkConversationActive(newMessageList);
       return newMessageList;
@@ -1262,9 +1290,6 @@ export default () => {
     manualComponents,
     messageList,
     setMessageList,
-    runQueryConversationMessageList,
-    isMoreMessage,
-    setIsMoreMessage,
     requestId,
     finalResult,
     setFinalResult,
@@ -1279,6 +1304,13 @@ export default () => {
     onMessageSend,
     handleDebug,
     messageViewRef,
+    // 是否还有更多消息
+    isMoreMessage,
+    // 加载更多消息的状态
+    loadingMore,
+    // 加载更多消息
+    handleLoadMoreMessage,
+    // 滚动到消息底部
     messageViewScrollToBottom,
     allowAutoScrollRef,
     scrollTimeoutRef,

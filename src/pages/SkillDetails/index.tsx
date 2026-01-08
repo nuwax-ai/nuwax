@@ -64,6 +64,21 @@ const SkillDetails: React.FC = () => {
     return Array.isArray(changeFiles) && changeFiles.length > 0;
   }, []);
 
+  /**
+   * 如果有未保存的文件修改，则提示用户并返回
+   * @param text 操作文本
+   * @returns {boolean} true-可以继续执行，false-有未保存更改，需要阻止执行
+   */
+  const handleCheckUnsavedChanges = (text: string = '发布'): boolean => {
+    // 检查是否有未保存的文件修改
+    const _hasUnsavedChanges = hasUnsavedChanges();
+    if (_hasUnsavedChanges) {
+      message.warning(`您有未保存的文件修改，请先保存文件后再${text}`);
+      return false; // 有未保存更改，阻止执行
+    }
+    return true; // 没有未保存更改，可以继续执行
+  };
+
   // 保存未保存的文件（用于离开保护）
   const saveUnsavedFiles = useCallback(async () => {
     const changeFiles = fileTreeViewRef.current?.changeFiles;
@@ -426,18 +441,6 @@ const SkillDetails: React.FC = () => {
     // 使用文件全量更新逻辑
     const { code } = await apiSkillUpdate(newSkillInfo);
     if (code === SUCCESS_CODE) {
-      // 这里根据fileNode的name，找到skillInfo对象中files数组中对应的文件，然后更新文件名
-      // const updatedFilesList =
-      //   skillInfo?.files?.map((item) => {
-      //     if (item.name === fileNode.name) {
-      //       item.name = newName;
-      //     }
-      //     return item;
-      //   }) || [];
-      // setSkillInfo({
-      //   ...skillInfo,
-      //   files: updatedFilesList,
-      // } as SkillDetailInfo);
       // 重新查询技能信息，因为更新了文件名或文件夹名称，需要刷新文件树
       runSkillInfo(skillId);
     }
@@ -491,12 +494,20 @@ const SkillDetails: React.FC = () => {
 
   // 发布技能
   const handlePublishSkill = () => {
-    const changeFiles = fileTreeViewRef.current?.changeFiles;
-    if (changeFiles && changeFiles.length > 0) {
-      message.warning('请先保存文件后再发布');
+    // 检查是否有未保存的文件修改，如果有则阻止执行
+    if (!handleCheckUnsavedChanges()) {
       return;
     }
     setOpen(true);
+  };
+
+  // 编辑技能信息
+  const handleEditSkill = () => {
+    // 检查是否有未保存的文件修改，如果有则阻止执行
+    if (!handleCheckUnsavedChanges('修改')) {
+      return;
+    }
+    setEditSkillModalOpen(true);
   };
 
   return (
@@ -506,7 +517,7 @@ const SkillDetails: React.FC = () => {
         spaceId={spaceId}
         skillInfo={skillInfo}
         // 编辑技能信息
-        onEditAgent={() => setEditSkillModalOpen(true)}
+        onEditAgent={handleEditSkill}
         onPublish={handlePublishSkill}
         onToggleHistory={() => setVersionHistoryModal(!versionHistoryModal)}
         // 导入项目

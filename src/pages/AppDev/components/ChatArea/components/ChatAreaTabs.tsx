@@ -14,7 +14,25 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
   setActiveTab,
   isSupportDesignMode,
 }) => {
-  const { isIframeLoaded, iframeDesignMode } = useModel('appDevDesign');
+  const { isIframeLoaded, iframeDesignMode, setIframeDesignMode } =
+    useModel('appDevDesign');
+
+  // 监听 iframe 发送的 DESIGN_MODE_CHANGED 消息
+  // 将此监听放在 ChatAreaTabs 中，因为 DesignViewer 在切换到 data tab 时会被卸载
+  // 导致其内部的消息监听器被移除，iframeDesignMode 状态无法正确更新
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const { type, enabled } = event.data;
+      if (type === 'DESIGN_MODE_CHANGED') {
+        setIframeDesignMode(enabled);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [setIframeDesignMode]);
 
   // 监听 iframeDesignMode 变化，同步 Tab 状态
   useEffect(() => {

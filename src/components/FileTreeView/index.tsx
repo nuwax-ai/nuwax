@@ -39,7 +39,6 @@ import FileTree from './FileTree';
 import styles from './index.less';
 import SearchView from './SearchView';
 import { ChangeFileInfo, FileTreeViewProps, FileTreeViewRef } from './type';
-// import { apiAgentConversationShare } from '@/services/vncDesktop';
 
 const cx = classNames.bind(styles);
 
@@ -92,6 +91,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       showRefreshButton = true,
       // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
       isOnlyShowDesktop = false,
+      // VNC 空闲检测配置
+      idleDetection,
     },
     ref,
   ) => {
@@ -382,6 +383,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 其他类型文件：使用文件代理URL获取文件内容
           // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
           else if (fileProxyUrl) {
+            /**
+             * 因为通过文件代理URL获取文件内容时，会重新加载文件内容，
+             * 当重新切换回来这个页面时，会导致已修改的文件内容丢失，所以需要清空修改的文件列表和重置正在保存文件的状态
+             */
+            // 清空修改的文件列表
+            setChangeFiles([]);
+            // 重置正在保存文件的状态
+            setIsSavingFiles(false);
             // 获取文件内容并更新文件树
             const newFileContent = await fetchFileContentUpdateFiles(
               fileProxyUrl,
@@ -605,6 +614,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 处理重命名操作（从右键菜单触发）
      */
     const handleRenameFromMenu = (node: FileNode) => {
+      if (changeFiles?.length > 0) {
+        message.warning('您有未保存的文件修改，请先保存文件后再重命名');
+        return;
+      }
       setRenamingNode(node);
     };
 
@@ -688,6 +701,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 处理上传操作（从右键菜单触发）
      */
     const handleUploadFromMenu = (node: FileNode | null) => {
+      if (changeFiles?.length > 0) {
+        message.warning('您有未保存的文件修改，请先保存文件后再上传文件');
+        return;
+      }
       // 直接调用现有的上传多个文件功能
       onUploadFiles?.(node);
     };
@@ -696,6 +713,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 处理删除操作
      */
     const handleDelete = async (node: FileNode) => {
+      if (changeFiles?.length > 0) {
+        message.warning('您有未保存的文件修改，请先保存文件后再删除文件');
+        return;
+      }
       // 直接调用现有的删除文件功能，等待返回值
       const isDeleteSuccess = await onDeleteFile?.(node);
 
@@ -783,6 +804,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 处理新建文件操作
      */
     const handleCreateFile = (parentNode: FileNode | null) => {
+      if (changeFiles?.length > 0) {
+        message.warning('您有未保存的文件修改，请先保存文件后再新建文件');
+        return;
+      }
       createTempNodeAndStartRename(parentNode, 'file');
     };
 
@@ -790,6 +815,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
      * 处理新建文件夹操作
      */
     const handleCreateFolder = (parentNode: FileNode | null) => {
+      if (changeFiles?.length > 0) {
+        message.warning('您有未保存的文件修改，请先保存文件后再新建文件夹');
+        return;
+      }
       createTempNodeAndStartRename(parentNode, 'folder');
     };
 
@@ -1035,6 +1064,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             readOnly={readOnly}
             autoConnect={true}
             className={cx(styles['vnc-preview'])}
+            idleDetection={idleDetection}
           />
         );
       }
