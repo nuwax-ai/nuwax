@@ -26,7 +26,10 @@ interface UseWorkflowValidationParams {
   setErrorParams: React.Dispatch<React.SetStateAction<ErrorParams>>;
   errorParams: ErrorParams;
   doSubmitFormData: () => Promise<void>;
-  saveFullWorkflow: () => Promise<any>;
+  saveFullWorkflow: (
+    forceCommit?: boolean,
+    onSuccess?: () => void,
+  ) => Promise<any>;
   getDetails: () => Promise<void>;
 }
 
@@ -161,21 +164,69 @@ export const useWorkflowValidation = ({
   /**
    * 显示发布弹窗
    */
+  /*
+   * 显示发布弹窗
+   */
   const handleShowPublish = useCallback(async () => {
-    const timer = setTimeout(() => {
-      setIsValidLoading(true);
-    }, 300);
-    const valid = await validPublishWorkflow();
-    await getDetails();
-    if (valid) {
-      setShowPublish(true);
-      setErrorParams((prev) => ({ ...prev, errorList: [], show: false }));
-    }
-    if (timer) {
-      clearTimeout(timer);
-    }
-    setIsValidLoading(false);
-  }, [validPublishWorkflow, getDetails, setErrorParams]);
+    // 定义发布前的校验和展示逻辑
+    const proceedWithPublish = async () => {
+      const timer = setTimeout(() => {
+        setIsValidLoading(true);
+      }, 300);
+
+      try {
+        if (getWorkflow('isModified') === true) {
+          await doSubmitFormData();
+        }
+
+        const _res = await service.validWorkflow(info?.id as number);
+        let valid = false;
+        if (_res.code === Constant.success) {
+          const _arr = _res.data.filter((item) => !item.success);
+          if (_arr.length === 0) {
+            valid = true;
+          } else {
+            const _errorList = _arr.map((child) => ({
+              nodeId: child.nodeId,
+              error: child.messages.join(','),
+            }));
+            setErrorParams({
+              show: true,
+              errorList: _errorList,
+            });
+            valid = false;
+          }
+        } else {
+          valid = false;
+        }
+
+        await getDetails();
+        if (valid) {
+          setShowPublish(true);
+          setErrorParams((prev) => ({ ...prev, errorList: [], show: false }));
+        }
+      } finally {
+        if (timer) {
+          clearTimeout(timer);
+        }
+        setIsValidLoading(false);
+      }
+    };
+
+    // 优先进行覆盖检查（保存）
+    // 即使没有 pendingChanges，也建议进行检查以确保版本一致性
+    // 或者根据业务逻辑，仅当 hasPendingChanges 时才保存
+    // 但用户要求"先判断是否有覆盖"，implies explicit check.
+    // saveFullWorkflow 会处理版本冲突弹窗，并在成功（或强制覆盖成功）后回调 proceedWithPublish
+    await saveFullWorkflow(false, proceedWithPublish);
+  }, [
+    info,
+    getWorkflow,
+    setErrorParams,
+    doSubmitFormData,
+    saveFullWorkflow,
+    getDetails,
+  ]);
 
   /**
    * 确认发布工作流
