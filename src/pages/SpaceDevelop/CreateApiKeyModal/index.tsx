@@ -128,7 +128,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
 
   // 删除确认
   const handleDelConfirm = (id: number, accessKey: string) => {
-    modalConfirm('您确定要删除此API Key吗?', accessKey, () => {
+    modalConfirm('你确定要删除此API Key吗?', accessKey, () => {
       handleDel(id, accessKey);
       return new Promise((resolve) => {
         setTimeout(resolve, 1000);

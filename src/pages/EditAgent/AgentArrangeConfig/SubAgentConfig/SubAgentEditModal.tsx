@@ -108,7 +108,7 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
     if (hasChanges) {
       Modal.confirm({
         title: '确认取消',
-        content: '您有未保存的修改，确定要取消吗？',
+        content: '你有未保存的修改，确定要取消吗？',
         okText: '确定取消',
         cancelText: '继续编辑',
         onOk: onCancel,

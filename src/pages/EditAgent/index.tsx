@@ -584,7 +584,7 @@ const EditAgent: React.FC = () => {
   const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
     return new Promise((resolve) => {
       modalConfirm(
-        '您确定要删除此文件吗?',
+        '你确定要删除此文件吗?',
         fileNode.name,
         async () => {
           try {

@@ -142,7 +142,7 @@ interface ButtonConfig {
 <AppDevEmptyState
   type="permission-denied"
   title="权限不足"
-  description="您没有访问此资源的权限，请联系管理员"
+  description="你没有访问此资源的权限，请联系管理员"
   buttons={[
     {
       text: '联系管理员',

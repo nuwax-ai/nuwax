@@ -349,7 +349,7 @@ const SpacePageDevelop: React.FC = () => {
         break;
       // 删除页面项目
       case PageDevelopMoreActionEnum.Delete:
-        modalConfirm('您确定要删除此页面吗?', info.name, () => {
+        modalConfirm('你确定要删除此页面吗?', info.name, () => {
           runPageDelete(info.projectId);
           return new Promise((resolve) => {
             setTimeout(resolve, 1000);

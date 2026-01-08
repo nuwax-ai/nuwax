@@ -73,7 +73,7 @@ const SkillDetails: React.FC = () => {
     // 检查是否有未保存的文件修改
     const _hasUnsavedChanges = hasUnsavedChanges();
     if (_hasUnsavedChanges) {
-      message.warning(`您有未保存的文件修改，请先保存文件后再${text}`);
+      message.warning(`你有未保存的文件修改，请先保存文件后再${text}`);
       return false; // 有未保存更改，阻止执行
     }
     return true; // 没有未保存更改，可以继续执行
@@ -118,7 +118,7 @@ const SkillDetails: React.FC = () => {
     condition: hasUnsavedChanges,
     onConfirm: saveUnsavedFiles,
     title: '未保存的文件修改',
-    message: '您有未保存的文件修改，是否保存后离开？',
+    message: '你有未保存的文件修改，是否保存后离开？',
     confirmText: '保存并离开',
     discardText: '不保存离开',
   });
@@ -329,7 +329,7 @@ const SkillDetails: React.FC = () => {
   const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
     return new Promise((resolve) => {
       modalConfirm(
-        '您确定要删除此文件吗?',
+        '你确定要删除此文件吗?',
         fileNode.name,
         async () => {
           try {
