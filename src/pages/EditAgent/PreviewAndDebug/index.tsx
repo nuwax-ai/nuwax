@@ -119,6 +119,16 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
 
   useEffect(() => {
     // 监听form表单值变化
+    // 当表单值为空对象且有必填参数时，应该设置 variableParams 为 null
+    if (
+      values &&
+      Object.keys(values).length === 0 &&
+      requiredNameList?.length > 0
+    ) {
+      setVariableParams(null);
+      return;
+    }
+    // 如果没有必填参数，空对象也是有效的
     if (values && Object.keys(values).length === 0) {
       return;
     }
@@ -126,7 +136,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       .validateFields({ validateOnly: true })
       .then(() => setVariableParams(values))
       .catch(() => setVariableParams(null));
-  }, [form, values]);
+  }, [form, values, requiredNameList]);
 
   useEffect(() => {
     if (!!userFillVariables) {
@@ -217,6 +227,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
 
   // 清空会话记录，实际上是创建新的会话
   const handleClear = useCallback(async () => {
+    // 重置对话设置表单数据
+    form.resetFields();
     // 清除调试结果
     setFinalResult(null);
     handleClearSideEffect();
@@ -262,7 +274,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     } finally {
       setIsLoadingOtherInterface(false);
     }
-  }, [agentId, agentConfigInfo]);
+  }, [agentId, agentConfigInfo, form]);
 
   // 消息发送
   const handleMessageSend = (messageInfo: string, files?: UploadFileInfo[]) => {
