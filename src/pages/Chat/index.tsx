@@ -185,6 +185,9 @@ const Chat: React.FC = () => {
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
 
+  // 会话记录
+  const { runHistory } = useModel('conversationHistory');
+
   // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
   // 支持多种可能的参数名：workflowId, workflow_id, id
   // 也支持从 URI 路径中解析（如 /square/workflow/123）
@@ -483,8 +486,17 @@ const Chat: React.FC = () => {
         taskStatus: TaskStatus.COMPLETE,
       });
 
-      // 重新查询会话信息
-      runAsync(id);
+      // 后台处理有延时，需要等待5秒后，再重新查询会话信息和会话记录
+      setTimeout(() => {
+        // 重新查询会话信息
+        runAsync(id);
+        // 重新查询会话记录
+        runHistory({
+          agentId: null,
+          limit: 20,
+        });
+      }, 5000);
+
       // 取消监听会话状态更新事件
       eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
     }
