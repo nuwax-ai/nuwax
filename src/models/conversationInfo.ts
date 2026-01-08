@@ -610,6 +610,10 @@ export default () => {
       if (data?.id) {
         setCurrentConversationId(data.id);
       }
+      // // 如果任务状态为执行中，则设置会话状态为进行中
+      // if (data?.taskStatus === TaskStatus.EXECUTING) {
+      //   setIsConversationActive(true);
+      // }
       // 是否开启用户问题建议
       setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
       // 可手动选择的组件列表
@@ -1104,10 +1108,6 @@ export default () => {
   const handleClearSideEffect = () => {
     // 重置消息ID
     messageIdRef.current = '';
-    // 重置是否还有更多消息
-    setIsMoreMessage(false);
-    // 重置加载更多消息的状态
-    setLoadingMore(false);
     // 重置问题建议列表
     setChatSuggestList([]);
     if (timeoutRef.current) {
@@ -1135,6 +1135,10 @@ export default () => {
   // 重置初始化
   const resetInit = () => {
     handleClearSideEffect();
+    // 重置是否还有更多消息
+    setIsMoreMessage(false);
+    // 重置加载更多消息的状态
+    setLoadingMore(false);
     setShowType(EditAgentShowType.Hide);
     setManualComponents([]);
     needUpdateTopicRef.current = true;
