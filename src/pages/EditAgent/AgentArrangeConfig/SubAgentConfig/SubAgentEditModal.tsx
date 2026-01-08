@@ -77,13 +77,6 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
   }, [open, initialPromptValue]);
 
   /**
-   * 导入模板
-   */
-  const handleImportTemplate = () => {
-    setPrompt(SUB_AGENT_PROMPT_TEMPLATE);
-  };
-
-  /**
    * 确认保存
    */
   const handleConfirm = () => {
@@ -189,34 +182,16 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
     >
       <div className={cx(styles['modal-content'])}>
         <div className={cx(styles['form-item'])}>
-          <div
-            className={cx(
-              'flex',
-              'content-between',
-              'items-center',
-              styles['form-label-row'],
-            )}
-          >
-            <label className={cx(styles['form-label'])}></label>
-            <Button
-              size="small"
-              icon={
-                <SvgIcon
-                  style={{ fontSize: '12px' }}
-                  name="icons-common-import"
-                />
-              }
-              onClick={handleImportTemplate}
-            >
-              导入模版
-            </Button>
-          </div>
           <TiptapVariableInput
             value={prompt}
             onChange={setPrompt}
             placeholder="请输入子智能体 Prompt"
             enableHistory={true}
-            className={cx(isFullscreen && styles['fullscreen-editor'])}
+            className={cx(
+              isFullscreen
+                ? styles['fullscreen-editor']
+                : styles['editor-wrapper'],
+            )}
           />
         </div>
       </div>
