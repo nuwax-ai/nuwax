@@ -159,7 +159,7 @@ export const SANDBOX =
  */
 export const SUB_AGENT_PROMPT_TEMPLATE = `---
 name: 你的子智能体名称
-description: 此子智能体应在何时被调用的说明
+description: 子智能体应在何时被调用的说明
 ---
 
 你的子智能体系统提示信息在此处显示。该提示可包含多个段落，
