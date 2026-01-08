@@ -136,6 +136,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // enter事件
   const handlePressEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    console.log('isConversationActive:' + isConversationActive);
+    console.log('isStoppingConversation:' + isStoppingConversation);
+
     //如果是输出过程中 或者 中止会话过程中 不能触发enter事件
     if (isConversationActive || isStoppingConversation) {
       return;
@@ -312,6 +315,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         if (code === SUCCESS_CODE && onTaskStopped) {
           // 后台处理有延时，需要等待3秒后，再重新查询会话信息
           setTimeout(() => {
+            setIsStoppingConversation(false);
             // 重新查询会话信息
             // 使用回调函数通知父组件进行查询
             onTaskStopped?.(conversationId);
@@ -321,8 +325,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         // 正常会话只需要 conversationId 即可停止
         runStopConversation(conversationId);
       }
-
-      setIsStoppingConversation(false);
     }
   }, [
     conversationInfo?.taskStatus,
@@ -350,7 +352,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const getStopButtonTooltip = () => {
     // 如果是任务执行状态
     if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
-      if (isStoppingConversation || loadingStopConversation) {
+      if (
+        isStoppingConversation ||
+        loadingStopConversation ||
+        loadingStopTempConversation
+      ) {
         return '正在停止任务...';
       }
       return '点击停止Agent任务';
