@@ -173,6 +173,8 @@ export const useAppDevProjectInfo = (
         return '部署';
       case 'upload':
         return '上传项目';
+      case 'rollback_version':
+        return '版本回滚';
       default:
         return '未知操作';
     }
