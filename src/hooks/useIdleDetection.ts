@@ -1,5 +1,9 @@
+import { createLogger } from '@/utils/logger';
 import { throttle } from 'lodash';
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+// 创建空闲检测专用 logger（统一前缀 [Idle:*] 方便筛选）
+const idleLogger = createLogger('[Idle:Detection]');
 
 /**
  * 空闲检测 Hook 配置选项
@@ -36,6 +40,13 @@ export interface UseIdleDetectionOptions {
    * @default 1000
    */
   throttleMs?: number;
+  /**
+   * 需要监听的 iframe 选择器
+   * 用于监听同源 iframe 内的用户活动
+   * 例如: 'iframe[title="VNC Preview"]' 或 '#vnc-iframe'
+   * 注意: 仅支持同源 iframe，跨域 iframe 会被自动跳过
+   */
+  iframeSelector?: string;
 }
 
 /**
@@ -117,6 +128,7 @@ export function useIdleDetection(
     onIdle,
     onActivity,
     throttleMs = 1000, // 默认1秒节流
+    iframeSelector,
   } = options;
 
   // 空闲状态
@@ -193,6 +205,7 @@ export function useIdleDetection(
    * 暂停空闲检测
    */
   const pause = useCallback(() => {
+    idleLogger.log('⏸️ 暂停空闲检测');
     setIsPaused(true);
     clearIdleTimer();
   }, [clearIdleTimer]);
@@ -201,6 +214,7 @@ export function useIdleDetection(
    * 恢复空闲检测
    */
   const resume = useCallback(() => {
+    idleLogger.log('▶️ 恢复空闲检测');
     setIsPaused(false);
     resetIdleTimer();
   }, [resetIdleTimer]);
@@ -232,19 +246,56 @@ export function useIdleDetection(
   }, [throttleMs, resetIdleTimer]);
 
   /**
+   * 尝试获取同源 iframe 的 contentDocument
+   * 跨域 iframe 会抛出安全错误，返回 null
+   */
+  const getIframeDocument = useCallback(
+    (iframe: HTMLIFrameElement): Document | null => {
+      try {
+        // 尝试访问 contentDocument（同源才能访问）
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (doc) {
+          // 额外检查是否真的可以访问（有些情况下虽然不抛错但返回空）
+          // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+          doc.body; // 尝试访问 body 来确认权限
+          return doc;
+        }
+      } catch (e) {
+        // 跨域 iframe 会抛出 SecurityError
+        idleLogger.log('⚠️ 无法访问 iframe（可能是跨域）', {
+          src: iframe.src,
+          error: (e as Error).message,
+        });
+      }
+      return null;
+    },
+    [],
+  );
+
+  /**
    * 设置和清理事件监听器
    */
   useEffect(() => {
     // 如果未启用或没有目标元素，不设置监听器
     if (!enabled || !targetElement) {
+      idleLogger.log('🚫 空闲检测未启用', {
+        enabled,
+        hasTarget: !!targetElement,
+      });
       clearIdleTimer();
       return;
     }
 
     // 如果暂停中，不设置监听器
     if (isPaused) {
+      idleLogger.log('⏸️ 空闲检测已暂停，跳过事件监听器设置');
       return;
     }
+
+    idleLogger.log(
+      '✅ 空闲检测已启用',
+      `监听事件: ${ACTIVITY_EVENTS.join(', ')}`,
+    );
 
     // 启动初始定时器
     startIdleTimer();
@@ -254,13 +305,14 @@ export function useIdleDetection(
       throttledResetRef.current();
     };
 
-    // 添加事件监听器
+    // 添加事件监听器到主文档
     ACTIVITY_EVENTS.forEach((event) => {
       targetElement.addEventListener(event, handleActivity, { passive: true });
     });
 
     // 清理函数
     return () => {
+      idleLogger.log('🧹 清理空闲检测事件监听器');
       clearIdleTimer();
       throttledResetRef.current.cancel();
       ACTIVITY_EVENTS.forEach((event) => {
@@ -268,6 +320,147 @@ export function useIdleDetection(
       });
     };
   }, [enabled, targetElement, isPaused, startIdleTimer, clearIdleTimer]);
+
+  /**
+   * 监听同源 iframe 内的用户活动
+   * 使用单独的 useEffect 以便在 iframe 加载后动态绑定
+   */
+  useEffect(() => {
+    if (!enabled || isPaused || !iframeSelector) {
+      return;
+    }
+
+    // 存储已绑定的 iframe document，用于清理
+    const boundIframeDocs: Document[] = [];
+
+    // 事件处理函数
+    const handleIframeActivity = () => {
+      idleLogger.log('🖥️ 检测到 iframe 内用户活动');
+      throttledResetRef.current();
+    };
+
+    /**
+     * 为 iframe 绑定事件监听器
+     */
+    const bindIframeEvents = (iframe: HTMLIFrameElement) => {
+      const iframeDoc = getIframeDocument(iframe);
+      if (!iframeDoc) return;
+
+      // 避免重复绑定
+      if (boundIframeDocs.includes(iframeDoc)) return;
+
+      idleLogger.log('🔗 绑定 iframe 事件监听器', { src: iframe.src });
+
+      ACTIVITY_EVENTS.forEach((event) => {
+        iframeDoc.addEventListener(event, handleIframeActivity, {
+          passive: true,
+        });
+      });
+
+      boundIframeDocs.push(iframeDoc);
+    };
+
+    /**
+     * 扫描并绑定所有匹配的 iframe
+     */
+    const scanAndBindIframes = () => {
+      const iframes =
+        document.querySelectorAll<HTMLIFrameElement>(iframeSelector);
+      idleLogger.log('🔍 扫描 iframe', {
+        selector: iframeSelector,
+        count: iframes.length,
+      });
+
+      iframes.forEach((iframe) => {
+        // 如果 iframe 已加载，直接绑定
+        if (iframe.contentDocument?.readyState === 'complete') {
+          bindIframeEvents(iframe);
+        } else {
+          // 否则等待 load 事件
+          iframe.addEventListener('load', () => bindIframeEvents(iframe), {
+            once: true,
+          });
+        }
+      });
+    };
+
+    // 初始扫描
+    scanAndBindIframes();
+
+    // 使用 MutationObserver 监听 DOM 变化，处理动态添加的 iframe
+    const observer = new MutationObserver((mutations) => {
+      let shouldRescan = false;
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (
+            node instanceof HTMLIFrameElement &&
+            node.matches(iframeSelector)
+          ) {
+            shouldRescan = true;
+          } else if (
+            node instanceof Element &&
+            node.querySelector(iframeSelector)
+          ) {
+            shouldRescan = true;
+          }
+        });
+      });
+      if (shouldRescan) {
+        idleLogger.log('🔄 检测到新 iframe，重新扫描');
+        scanAndBindIframes();
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    // 清理函数
+    return () => {
+      observer.disconnect();
+      boundIframeDocs.forEach((iframeDoc) => {
+        ACTIVITY_EVENTS.forEach((event) => {
+          try {
+            iframeDoc.removeEventListener(event, handleIframeActivity);
+          } catch {
+            // iframe 可能已被移除，忽略错误
+          }
+        });
+      });
+      idleLogger.log('🧹 清理 iframe 事件监听器', {
+        count: boundIframeDocs.length,
+      });
+    };
+  }, [enabled, isPaused, iframeSelector, getIframeDocument]);
+
+  /**
+   * 监听页面可见性变化
+   * 页面切出时暂停检测，切回时重置计时器
+   */
+  useEffect(() => {
+    if (!enabled || isPaused) {
+      return;
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // 页面被切出，清除计时器（暂停检测）
+        idleLogger.log('👁️ 页面切出，暂停空闲计时器');
+        clearIdleTimer();
+      } else {
+        // 页面切回，重置计时器（重新开始计时）
+        idleLogger.log('👁️ 页面切回，重置空闲计时器');
+        resetIdleTimer();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [enabled, isPaused, clearIdleTimer, resetIdleTimer]);
 
   // 组件卸载时清理
   useEffect(() => {

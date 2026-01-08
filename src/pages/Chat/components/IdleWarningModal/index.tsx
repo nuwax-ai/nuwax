@@ -1,3 +1,4 @@
+import { createLogger } from '@/utils/logger';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { Button, Modal, Progress } from 'antd';
 import classNames from 'classnames';
@@ -5,6 +6,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+// 创建空闲警告弹窗专用 logger（统一前缀 [Idle:*] 方便筛选）
+const modalLogger = createLogger('[Idle:Modal]');
 
 /**
  * 空闲警告弹窗属性
@@ -85,6 +89,8 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
   // 用于存储回调函数的最新引用
   const onCancelRef = useRef(onCancel);
   const onTimeoutRef = useRef(onTimeout);
+  // 防止重复触发取消操作
+  const isCancellingRef = useRef(false);
 
   // 更新回调函数引用
   useEffect(() => {
@@ -107,8 +113,16 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
 
   /**
    * 处理用户取消操作
+   * 使用 isCancellingRef 防止重复触发
    */
   const handleCancel = useCallback(() => {
+    // 防止重复触发
+    if (isCancellingRef.current) {
+      return;
+    }
+    isCancellingRef.current = true;
+
+    modalLogger.log('✅ 用户取消操作', '关闭弹窗并重置倒计时');
     clearCountdownTimer();
     setCountdown(countdownSeconds);
     onCancelRef.current?.();
@@ -118,6 +132,7 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
    * 处理倒计时结束
    */
   const handleTimeout = useCallback(() => {
+    modalLogger.log('⏱️ 倒计时结束', '执行超时回调');
     clearCountdownTimer();
     setCountdown(countdownSeconds);
     onTimeoutRef.current?.();
@@ -128,6 +143,7 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
    */
   const handleActivity = useCallback(() => {
     if (autoDetectActivity && open) {
+      modalLogger.log('🖱️ 检测到用户活动', '自动取消');
       handleCancel();
     }
   }, [autoDetectActivity, open, handleCancel]);
@@ -135,7 +151,9 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
   // 启动/停止倒计时
   useEffect(() => {
     if (open) {
-      // 重置倒计时
+      modalLogger.log('📢 弹窗打开', `开始 ${countdownSeconds}s 倒计时`);
+      // 重置状态
+      isCancellingRef.current = false;
       setCountdown(countdownSeconds);
 
       // 启动倒计时
@@ -146,11 +164,16 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
             handleTimeout();
             return 0;
           }
+          // 每5秒记录一次倒计时状态
+          if ((prev - 1) % 5 === 0 || prev <= 5) {
+            modalLogger.log('⏳ 倒计时', `剩余 ${prev - 1}s`);
+          }
           return prev - 1;
         });
       }, 1000);
     } else {
       // 弹窗关闭时清除定时器
+      modalLogger.log('📕 弹窗关闭');
       clearCountdownTimer();
       setCountdown(countdownSeconds);
     }
@@ -166,15 +189,30 @@ const IdleWarningModal: React.FC<IdleWarningModalProps> = ({
       return;
     }
 
-    // 监听的事件类型
-    const events = ['mousedown', 'keydown', 'touchstart'] as const;
+    // 监听的事件类型（包含鼠标移动，用户任何操作都可取消）
+    const events = [
+      'mousemove',
+      'mousedown',
+      'keydown',
+      'touchstart',
+      'wheel',
+    ] as const;
 
-    // 添加事件监听器
-    events.forEach((event) => {
-      document.addEventListener(event, handleActivity, { passive: true });
-    });
+    // 延迟 500ms 后再开始监听，避免弹窗打开瞬间的残留事件触发取消
+    const delayTimer = setTimeout(() => {
+      // 如果已经在取消中，不再添加监听器
+      if (isCancellingRef.current) {
+        return;
+      }
+
+      // 添加事件监听器
+      events.forEach((event) => {
+        document.addEventListener(event, handleActivity, { passive: true });
+      });
+    }, 500);
 
     return () => {
+      clearTimeout(delayTimer);
       events.forEach((event) => {
         document.removeEventListener(event, handleActivity);
       });
