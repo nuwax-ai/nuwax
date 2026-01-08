@@ -1020,6 +1020,7 @@ const Chat: React.FC = () => {
                       <span>Agent正在执行任务中...</span>
                       <Button
                         type="primary"
+                        className={cx(styles['stop-task-btn'])}
                         loading={loadingStopConversation}
                         size="small"
                         onClick={handleStopConversation}
