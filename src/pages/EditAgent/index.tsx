@@ -960,7 +960,7 @@ const EditAgent: React.FC = () => {
             style={{
               flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
               minWidth:
-                pagePreviewData || isFileTreeVisible ? '1050px' : '350px',
+                pagePreviewData || isFileTreeVisible ? '1590px' : '530px',
             }}
           >
             {/*预览与调试和预览页面*/}
@@ -972,7 +972,7 @@ const EditAgent: React.FC = () => {
                   ? 'visible'
                   : 'hidden'
               }
-              minRightWidth={700}
+              minRightWidth={530}
               defaultLeftWidth={
                 agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? 33 : 50
               }
