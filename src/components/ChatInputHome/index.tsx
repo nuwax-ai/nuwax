@@ -291,6 +291,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 停止会话功能 - 直接集成到组件内部
   const handleStopConversation = useCallback(async () => {
+    // 防止重复点击
+    if (isStoppingConversation) {
+      return;
+    }
     // 设置停止操作状态
     setIsStoppingConversation(true);
 
@@ -324,6 +328,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       }
     }
   }, [
+    isStoppingConversation,
     conversationInfo?.taskStatus,
     getCurrentConversationRequestId,
     getCurrentConversationId,
