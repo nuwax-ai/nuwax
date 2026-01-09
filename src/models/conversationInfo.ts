@@ -1050,7 +1050,7 @@ export default () => {
         handleScrollBottom();
       },
       onClose: async () => {
-        // 将当前会话的loading状态的消息改为Error状态，并将所有正在执行的 processing 状态更新为 FAILED
+        // 将当前会话的loading状态的消息改为Stopped状态，并将所有正在执行的 processing 状态更新为 FAILED
         setMessageList((list) => {
           try {
             const copyList = JSON.parse(JSON.stringify(list));
@@ -1058,6 +1058,14 @@ export default () => {
             // 遍历消息列表，找到最后一条消息并更新其 processingList
             if (copyList.length > 0) {
               const lastMessage = copyList[copyList.length - 1];
+
+              // ✨ 关键：将 Loading 或 Incomplete 状态更新为 Stopped，确保计时器暂停、加载指示器消失
+              if (
+                lastMessage.status === MessageStatusEnum.Loading ||
+                lastMessage.status === MessageStatusEnum.Incomplete
+              ) {
+                lastMessage.status = MessageStatusEnum.Stopped;
+              }
 
               // 如果消息有 processingList，将所有 EXECUTING 状态更新为 FAILED
               if (
