@@ -317,6 +317,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   const [textContent, setTextContent] = useState<string>('');
   const [htmlUrl, setHtmlUrl] = useState<string | null>(null);
   const [isIframeLoading, setIsIframeLoading] = useState<boolean>(false);
+  const [isMarkdownLoading, setIsMarkdownLoading] = useState<boolean>(false);
+  const prevSrcRef = useRef<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
 
@@ -416,6 +418,20 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
     // Text-based types
     if (['markdown', 'text'].includes(type)) {
+      // 如果内容发生变化，设置加载状态以平滑过渡
+      if (type === 'markdown' && typeof src === 'string') {
+        // 检查是否是新的 URL（通过比较 src 和之前记录的 src）
+        // 如果 src 变化且 textContent 已存在，说明是切换文件，需要显示加载状态
+        if (
+          prevSrcRef.current !== null &&
+          prevSrcRef.current !== src &&
+          textContent &&
+          textContent.trim() !== ''
+        ) {
+          setIsMarkdownLoading(true);
+        }
+        prevSrcRef.current = src;
+      }
       setStatus('loading');
       try {
         let content: string;
@@ -429,9 +445,11 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         }
         setTextContent(content);
         setStatus('success');
+        setIsMarkdownLoading(false);
         onRendered?.();
       } catch (error: any) {
         setStatus('error');
+        setIsMarkdownLoading(false);
         setErrorMessage('文件内容加载失败，请重试');
         onError?.(error);
       }
@@ -593,6 +611,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     } else {
       setStatus('idle');
       setIsIframeLoading(false);
+      setIsMarkdownLoading(false);
+      prevSrcRef.current = null;
     }
     return () => {
       // 取消未执行的 PPTX zoom 计算 RAF
@@ -762,7 +782,13 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         );
       case 'markdown':
         return (
-          <div className={styles.markdownPreview}>
+          <div
+            className={styles.markdownPreview}
+            style={{
+              opacity: isMarkdownLoading ? 0 : 1,
+              transition: 'opacity 0.2s ease-in-out',
+            }}
+          >
             <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>
               {textContent}
             </PureMarkdownRenderer>

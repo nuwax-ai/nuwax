@@ -237,16 +237,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                   : prevNode,
               );
             } catch (error) {
-              // message.error('刷新文件内容失败');
-              return;
+              console.error('刷新文件内容失败: ', error);
             }
           }
         }
-
-        // 刷新成功提示
-        // message.success('刷新成功');
       } catch (error) {
-        // message.error('刷新文件树失败');
+        console.error('刷新文件树失败: ', error);
       } finally {
         setIsRefreshingFileTree(false);
       }
@@ -311,16 +307,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 如果是重复点击视频文件，更新刷新时间戳以强制刷新
           if (isSameFile && isVideoFileType) {
             videoRefreshTimestampRef.current = Date.now();
-            // 仍然调用刷新逻辑以更新文件内容
-            // await handleRefreshFileList();
             return;
           }
 
           // 如果是重复点击音频文件，更新刷新时间戳以强制刷新
           if (isSameFile && isAudioFileType) {
             audioRefreshTimestampRef.current = Date.now();
-            // 仍然调用刷新逻辑以更新文件内容
-            // await handleRefreshFileList();
             return;
           }
 
@@ -453,10 +445,25 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           ? taskAgentSelectTrigger !== prevTaskAgentSelectTriggerRef.current
           : taskAgentSelectedFileId !== prevTaskAgentSelectedFileIdRef.current;
 
+      console.log(
+        'hasTriggerChanged: ',
+        hasTriggerChanged,
+        taskAgentSelectedFileId,
+        prevTaskAgentSelectedFileIdRef.current,
+      );
+
+      console.log('taskAgentSelectTrigger: ', taskAgentSelectTrigger, files);
       // 如果触发标志或文件ID没有变化，不执行选择
       if (!hasTriggerChanged) {
         /**
          * 如果 taskAgentSelectedFileId 存在，且 prevTaskAgentSelectedFileIdRef.current 为空，则表示首次进入技能页面，默认选择该文件
+         *
+         * 注意：必须同时检查 !prevTaskAgentSelectedFileIdRef.current，避免在文件ID没有变化时重复执行
+         * 如果注释掉这个条件，会导致：
+         * 1. handleFileSelectInternal 可能触发 handleRefreshFileList()，更新 files
+         * 2. files 更新导致 useEffect 重新执行
+         * 3. 由于 hasTriggerChanged 仍为 false，又会进入这个分支
+         * 4. 形成无限循环
          */
         if (
           taskAgentSelectedFileId &&
@@ -1242,9 +1249,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         );
 
         // 使用稳定的 key，避免切换文件时组件重新挂载导致闪动
-        // key 只包含文件类型，让组件通过 src 变化来更新内容
-        // 只有在需要强制刷新时（通过 URL 参数中的时间戳）才会更新
-        const stableKey = `html-preview-${isHtml ? 'html' : 'markdown'}`;
+        // HTML 和 Markdown 使用同一个 key，让组件通过 src 和 fileType 变化来更新内容
+        // 这样可以避免从 HTML 切换到 Markdown 时组件重新挂载
+        const stableKey = 'html-markdown-preview';
 
         return (
           <FilePreview
