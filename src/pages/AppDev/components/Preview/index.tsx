@@ -524,54 +524,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
               // 16:9比例
               height: iframeHeight,
               scrollY: 0, // 从顶部开始
-              // 忽略可能导致渐变渲染问题的元素
-              ignoreElements: (element) => {
-                try {
-                  const style = window.getComputedStyle(element);
-                  // 忽略带有动画的元素
-                  if (style.animationName !== 'none') return true;
-                  // 忽略 canvas 元素
-                  if (element.tagName?.toUpperCase() === 'CANVAS') return true;
-                } catch (e) {
-                  // 忽略无法获取样式的元素
-                }
-                return false;
-              },
-              // 在克隆的 DOM 中处理渐变
-              onclone: (clonedDoc) => {
-                try {
-                  const clonedWindow = clonedDoc.defaultView || window;
-                  const allElements = clonedDoc.querySelectorAll('*');
-                  allElements.forEach((el: Element) => {
-                    try {
-                      const htmlEl = el as HTMLElement;
-                      const computedStyle =
-                        clonedWindow.getComputedStyle(htmlEl);
-                      const bgImage = computedStyle.backgroundImage;
-                      // 检查计算样式中是否有渐变
-                      if (bgImage && bgImage.includes('gradient')) {
-                        // 用背景色替代渐变
-                        const bgColor = computedStyle.backgroundColor;
-                        if (
-                          bgColor &&
-                          bgColor !== 'transparent' &&
-                          bgColor !== 'rgba(0, 0, 0, 0)'
-                        ) {
-                          htmlEl.style.backgroundImage = 'none';
-                          htmlEl.style.background = bgColor;
-                        } else {
-                          // 如果没有背景色，移除渐变
-                          htmlEl.style.backgroundImage = 'none';
-                        }
-                      }
-                    } catch (e) {
-                      // 忽略处理失败的元素
-                    }
-                  });
-                } catch (e) {
-                  // 忽略克隆处理错误
-                }
-              },
             });
 
             // 将 canvas 转换为 blob
@@ -669,53 +621,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
             width: iframeWidth,
             height: iframeHeight,
             scrollY: 0, // 从顶部开始
-            // 忽略可能导致渐变渲染问题的元素
-            ignoreElements: (element) => {
-              try {
-                const style = window.getComputedStyle(element);
-                // 忽略带有动画的元素
-                if (style.animationName !== 'none') return true;
-                // 忽略 canvas 元素
-                if (element.tagName?.toUpperCase() === 'CANVAS') return true;
-              } catch (e) {
-                // 忽略无法获取样式的元素
-              }
-              return false;
-            },
-            // 在克隆的 DOM 中处理渐变
-            onclone: (clonedDoc) => {
-              try {
-                const clonedWindow = clonedDoc.defaultView || window;
-                const allElements = clonedDoc.querySelectorAll('*');
-                allElements.forEach((el: Element) => {
-                  try {
-                    const htmlEl = el as HTMLElement;
-                    const computedStyle = clonedWindow.getComputedStyle(htmlEl);
-                    const bgImage = computedStyle.backgroundImage;
-                    // 检查计算样式中是否有渐变
-                    if (bgImage && bgImage.includes('gradient')) {
-                      // 用背景色替代渐变
-                      const bgColor = computedStyle.backgroundColor;
-                      if (
-                        bgColor &&
-                        bgColor !== 'transparent' &&
-                        bgColor !== 'rgba(0, 0, 0, 0)'
-                      ) {
-                        htmlEl.style.backgroundImage = 'none';
-                        htmlEl.style.background = bgColor;
-                      } else {
-                        // 如果没有背景色，移除渐变
-                        htmlEl.style.backgroundImage = 'none';
-                      }
-                    }
-                  } catch (e) {
-                    // 忽略处理失败的元素
-                  }
-                });
-              } catch (e) {
-                // 忽略克隆处理错误
-              }
-            },
           });
 
           // 将 canvas 转换为 blob
