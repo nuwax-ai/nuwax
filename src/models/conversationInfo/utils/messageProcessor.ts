@@ -4,11 +4,8 @@
  */
 
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
-import {
-  MessageModeEnum,
-  MessageStatusEnum,
-  ProcessingEnum,
-} from '@/types/enums/common';
+import { MessageModeEnum } from '@/types/enums/agent';
+import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
   MessageInfo,
   ProcessingInfo,

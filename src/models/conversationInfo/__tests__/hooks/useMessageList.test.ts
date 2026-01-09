@@ -4,7 +4,7 @@
 
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { act, renderHook } from '@testing-library/react-hooks';
+import { act, renderHook } from '@testing-library/react';
 import { useMessageList } from '../../hooks/useMessageList';
 
 describe('useMessageList', () => {
