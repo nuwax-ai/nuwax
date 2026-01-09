@@ -119,6 +119,22 @@ export async function apiSkillExport(skillId: number): Promise<{
   });
 }
 
+// 广场技能下载导出
+export async function apiSkillExportSquare(skillId: number): Promise<{
+  data: Blob;
+  headers: {
+    'content-disposition': string;
+    'content-length': string;
+    'content-type': string;
+  };
+}> {
+  return request(`/api/published/skill/export/${skillId}`, {
+    method: 'GET',
+    responseType: 'blob', // 指定响应类型为blob
+    getResponse: true, // 获取完整响应对象
+  });
+}
+
 // 已发布技能列表接口
 export async function apiPublishedSkillList(
   data: PublishedSkillListParams,

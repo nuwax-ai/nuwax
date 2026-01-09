@@ -3,10 +3,12 @@ import FileTreeView from '@/components/FileTreeView';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import { apiPublishedSkillInfo } from '@/services/plugin';
 import { apiPublishTemplateCopy } from '@/services/publish';
+import { apiSkillExportSquare } from '@/services/skill';
 import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { PublishTemplateCopyParams } from '@/types/interfaces/publish';
+import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { jumpToSkill } from '@/utils/router';
 import { Button, message } from 'antd';
 import classNames from 'classnames';
@@ -69,6 +71,31 @@ const SkillDetail: React.FC = ({}) => {
     });
   };
 
+  // 导出项目
+  const handleExportProject = async () => {
+    // 检查项目ID是否有效
+    if (!skillId) {
+      message.error('技能ID不存在或无效，无法导出');
+      return;
+    }
+
+    try {
+      const result = await apiSkillExportSquare(skillId);
+      const filename = `skill-${skillId}.zip`;
+      // 导出整个项目压缩包
+      exportWholeProjectZip(result, filename);
+      message.success('导出成功！');
+    } catch (error) {
+      // 改进错误处理，兼容不同的错误格式
+      const errorMessage =
+        (error as any)?.message ||
+        (error as any)?.toString() ||
+        '导出过程中发生未知错误';
+
+      message.error(`导出失败: ${errorMessage}`);
+    }
+  };
+
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       {skillInfo?.id && (
@@ -76,35 +103,40 @@ const SkillDetail: React.FC = ({}) => {
           targetInfo={skillInfo}
           targetType={SquareAgentTypeEnum.Skill}
           extraBeforeCollect={
-            <ConditionRender
-              condition={skillInfo?.allowCopy === AllowCopyEnum.Yes}
-            >
-              <Button
-                type="primary"
-                className={cx(styles['copy-btn'])}
-                onClick={() => setOpenMove(true)}
+            <>
+              <ConditionRender
+                condition={skillInfo?.allowCopy === AllowCopyEnum.Yes}
               >
-                复制模板
-              </Button>
-              {/*智能体迁移弹窗*/}
-              <MoveCopyComponent
-                spaceId={skillInfo?.spaceId || 0}
-                loading={loadingCopyTemplate}
-                type={ApplicationMoreActionEnum.Copy_To_Space}
-                mode={AgentComponentTypeEnum.Skill}
-                open={openMove}
-                isTemplate={true}
-                title={skillInfo?.name}
-                onCancel={() => setOpenMove(false)}
-                onConfirm={handlerConfirmCopyTemplate}
-              />
-            </ConditionRender>
+                <Button
+                  type="primary"
+                  className={cx(styles['copy-btn'])}
+                  onClick={() => setOpenMove(true)}
+                >
+                  复制模板
+                </Button>
+                {/*智能体迁移弹窗*/}
+                <MoveCopyComponent
+                  spaceId={skillInfo?.spaceId || 0}
+                  loading={loadingCopyTemplate}
+                  type={ApplicationMoreActionEnum.Copy_To_Space}
+                  mode={AgentComponentTypeEnum.Skill}
+                  open={openMove}
+                  isTemplate={true}
+                  title={skillInfo?.name}
+                  onCancel={() => setOpenMove(false)}
+                  onConfirm={handlerConfirmCopyTemplate}
+                />
+              </ConditionRender>
+              <Button onClick={handleExportProject}>下载导出</Button>
+            </>
           }
         />
       )}
 
       {/* 文件树视图 */}
       <FileTreeView
+        // 任务智能体选中文件ID
+        taskAgentSelectedFileId={'SKILL.md'}
         // 加载状态
         fileTreeDataLoading={loadingSkillInfo}
         // 技能文件列表
