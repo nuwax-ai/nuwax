@@ -6,7 +6,35 @@ import {
 } from '@ant-design/icons';
 import { Form, Input, Select, Tooltip, Upload } from 'antd';
 import { Rule } from 'antd/es/form';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+// Wrapper for Select to handle unmatched values
+const SafeSelect = ({ value, options, ...props }: any) => {
+  const newValue = useMemo(() => {
+    // If no options, return value (or undefined? No, preserve value until options load)
+    // Actually, if we want to hide '0' even when loading, we might want to check length.
+    // unlikely '0' is valid.
+    // But for 'Select', we want unmatched to show placeholder.
+    // If options are empty [], everything is unmatched.
+    // If we assume empty options means "loading" or "no data", hiding value is safer visually?
+    // If I have a valid ID 123, and options are [], hiding it shows placeholder.
+    // When options load, it shows Label.
+    // This seems acceptable.
+
+    // Check strict match
+    if (props.mode !== 'multiple') {
+      const match = options?.find((o: any) => o.value === value);
+      return match ? value : undefined;
+    }
+    // Multiple
+    if (Array.isArray(value)) {
+      return value.filter((v: any) => options?.some((o: any) => o.value === v));
+    }
+    return undefined; // Multiple mode but non-array value?
+  }, [value, options, props.mode]);
+
+  return <Select value={newValue} options={options} {...props} />;
+};
 
 function MultiInput({
   value,
@@ -193,12 +221,12 @@ export default function BaseFormItem({
               });
             }
             return (
-              <Select
+              <SafeSelect
                 {...attrs}
                 mode={mode}
                 options={options}
                 allowClear
-              ></Select>
+              ></SafeSelect>
             );
           }
           case 'MultiInput':
