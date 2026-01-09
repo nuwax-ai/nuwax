@@ -1142,7 +1142,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
               item.key !== AgentComponentTypeEnum.Page
             );
           }
-          return item.key !== AgentComponentTypeEnum.Agent;
+          return (
+            item.key !== AgentComponentTypeEnum.Agent &&
+            item.key !== AgentComponentTypeEnum.Skill
+          );
         })}
       />
       {/*创建变量弹窗*/}
