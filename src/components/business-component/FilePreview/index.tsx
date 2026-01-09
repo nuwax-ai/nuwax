@@ -317,6 +317,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   const [textContent, setTextContent] = useState<string>('');
   const [htmlUrl, setHtmlUrl] = useState<string | null>(null);
   const [isIframeLoading, setIsIframeLoading] = useState<boolean>(false);
+  const [isMarkdownLoading, setIsMarkdownLoading] = useState<boolean>(false);
+  const prevSrcRef = useRef<string | null>(null);
+  const prevTypeRef = useRef<FileType | undefined>(undefined);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
 
@@ -416,7 +419,35 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
     // Text-based types
     if (['markdown', 'text'].includes(type)) {
-      setStatus('loading');
+      // 检测是否是类型切换（从 HTML 切换到 Markdown）
+      const isTypeSwitch =
+        prevTypeRef.current !== undefined &&
+        prevTypeRef.current !== type &&
+        prevTypeRef.current === 'html';
+
+      // 如果内容发生变化，设置加载状态以平滑过渡
+      if (type === 'markdown' && typeof src === 'string') {
+        // 检查是否是新的 URL（通过比较 src 和之前记录的 src）
+        // 如果 src 变化且 textContent 已存在，说明是切换文件，需要显示加载状态
+        // 或者如果是类型切换（从 HTML 到 Markdown），也需要显示加载状态
+        if (
+          (prevSrcRef.current !== null &&
+            prevSrcRef.current !== src &&
+            textContent &&
+            textContent.trim() !== '') ||
+          isTypeSwitch
+        ) {
+          setIsMarkdownLoading(true);
+        }
+        prevSrcRef.current = src;
+      }
+
+      // 如果是类型切换，保持 success 状态，不显示 loading 覆盖层
+      // 这样旧内容会继续显示，直到新内容加载完成
+      if (!isTypeSwitch) {
+        setStatus('loading');
+      }
+
       try {
         let content: string;
         if (typeof src === 'string') {
@@ -429,25 +460,40 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         }
         setTextContent(content);
         setStatus('success');
+        setIsMarkdownLoading(false);
         onRendered?.();
       } catch (error: any) {
         setStatus('error');
+        setIsMarkdownLoading(false);
         setErrorMessage('文件内容加载失败，请重试');
         onError?.(error);
       }
+
+      // 更新类型记录
+      prevTypeRef.current = type;
       return;
     }
 
     // HTML handling
     if (type === 'html') {
+      // 检测是否是类型切换（从 Markdown 切换到 HTML）
+      const isTypeSwitch =
+        prevTypeRef.current !== undefined &&
+        prevTypeRef.current !== type &&
+        prevTypeRef.current === 'markdown';
+
       if (typeof src === 'string') {
         // 如果 URL 发生变化，设置加载状态以平滑过渡
-        if (htmlUrl !== src) {
+        // 或者如果是类型切换（从 Markdown 到 HTML），也需要显示加载状态
+        if (htmlUrl !== src || isTypeSwitch) {
           setIsIframeLoading(true);
         }
         setHtmlUrl(src);
         setTextContent('');
-        setStatus('success');
+        // 如果是类型切换，保持 success 状态，不显示 loading 覆盖层
+        if (!isTypeSwitch) {
+          setStatus('success');
+        }
         onRendered?.();
       } else {
         setStatus('loading');
@@ -468,6 +514,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           onError?.(error);
         }
       }
+      // 更新类型记录
+      prevTypeRef.current = type;
       return;
     }
 
@@ -593,6 +641,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     } else {
       setStatus('idle');
       setIsIframeLoading(false);
+      setIsMarkdownLoading(false);
+      prevSrcRef.current = null;
+      prevTypeRef.current = undefined;
     }
     return () => {
       // 取消未执行的 PPTX zoom 计算 RAF
@@ -762,7 +813,13 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         );
       case 'markdown':
         return (
-          <div className={styles.markdownPreview}>
+          <div
+            className={styles.markdownPreview}
+            style={{
+              opacity: isMarkdownLoading ? 0 : 1,
+              transition: 'opacity 0.2s ease-in-out',
+            }}
+          >
             <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>
               {textContent}
             </PureMarkdownRenderer>
@@ -831,7 +888,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         </div>
       )}
 
-      {status === 'loading' && (
+      {status === 'loading' && !isMarkdownLoading && !isIframeLoading && (
         <div className={styles.loadingOverlay}>
           {resolvedType && getFileIcon(resolvedType)}
           <Spin size="large" />
