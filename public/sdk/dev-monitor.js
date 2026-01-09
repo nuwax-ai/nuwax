@@ -1027,15 +1027,6 @@
       // 跳转类型主要区别是否是系统内部跳转还是分享链接跳转
       const jump_type = getQueryParam(currentUrl, 'jump_type');
 
-      // 检查是否是文件预览页面
-      const isFilePreview = window.location.pathname.includes('/static/file-preview.html');
-
-      // 文件预览页面
-      if (isFilePreview) {
-        addBackToHomeButton('outer');
-        return;
-      }
-
       if (!_ticket || !jump_type) {
         console.warn(
           '[dev-monitor] 未检测到 _ticket 或 jump_type，跳过首页按钮渲染',
