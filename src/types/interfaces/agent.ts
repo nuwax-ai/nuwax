@@ -242,6 +242,8 @@ export interface AgentComponentWorkflowUpdateParams
     directOutput?: OutputDirectlyEnum;
     // 是否默认选中，0-否，1-是
     defaultSelected: DefaultSelectedEnum;
+    // 技能展示别名
+    alias?: string;
     // 卡片参数绑定信息
     cardArgsBindConfigs: CardArgsBindConfigInfo[];
   };
