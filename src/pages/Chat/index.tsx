@@ -494,6 +494,9 @@ const Chat: React.FC = () => {
         agentId: null,
         limit: 20,
       });
+
+      // 取消监听会话状态更新事件
+      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
     }
   };
 
