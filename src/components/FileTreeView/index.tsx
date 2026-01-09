@@ -453,10 +453,25 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           ? taskAgentSelectTrigger !== prevTaskAgentSelectTriggerRef.current
           : taskAgentSelectedFileId !== prevTaskAgentSelectedFileIdRef.current;
 
+      console.log(
+        'hasTriggerChanged: ',
+        hasTriggerChanged,
+        taskAgentSelectedFileId,
+        prevTaskAgentSelectedFileIdRef.current,
+      );
+
+      console.log('taskAgentSelectTrigger: ', taskAgentSelectTrigger, files);
       // 如果触发标志或文件ID没有变化，不执行选择
       if (!hasTriggerChanged) {
         /**
          * 如果 taskAgentSelectedFileId 存在，且 prevTaskAgentSelectedFileIdRef.current 为空，则表示首次进入技能页面，默认选择该文件
+         *
+         * 注意：必须同时检查 !prevTaskAgentSelectedFileIdRef.current，避免在文件ID没有变化时重复执行
+         * 如果注释掉这个条件，会导致：
+         * 1. handleFileSelectInternal 可能触发 handleRefreshFileList()，更新 files
+         * 2. files 更新导致 useEffect 重新执行
+         * 3. 由于 hasTriggerChanged 仍为 false，又会进入这个分支
+         * 4. 形成无限循环
          */
         if (
           taskAgentSelectedFileId &&
