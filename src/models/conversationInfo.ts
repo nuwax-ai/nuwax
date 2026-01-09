@@ -922,17 +922,30 @@ export default () => {
           // 重置消息ID
           messageIdRef.current = '';
 
-          // 会话结束后，如果是长任务型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
-          if (
-            isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
-            viewModeRef.current === 'preview' && // 文件预览
-            // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
-            params.conversationId
-          ) {
-            console.log('FINAL_RESULT--刷新文件树');
-            // 刷新文件树
-            handleRefreshFileList(params.conversationId);
-          }
+          setTimeout(async () => {
+            // 会话结束后，如果是长任务型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
+            if (params.conversationId) {
+              // 刷新文件树
+              await handleRefreshFileList(params.conversationId);
+            }
+
+            const taskResult = extractTaskResult(data.outputText);
+            if (
+              params.conversationId &&
+              taskResult.hasTaskResult &&
+              taskResult.file
+            ) {
+              openPreviewView(params.conversationId);
+              const fileId = taskResult.file
+                ?.split(`${params.conversationId}/`)
+                .pop();
+              if (fileId) {
+                setTaskAgentSelectedFileId(fileId);
+                // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
+                setTaskAgentSelectTrigger(Date.now());
+              }
+            }
+          }, 0);
 
           /**
            * "error":"Agent正在执行任务，请等待当前任务完成后再发送新请求"
@@ -961,28 +974,6 @@ export default () => {
             finalResult: data,
             requestId: res.requestId,
           };
-          const taskResult = extractTaskResult(data.outputText);
-          // 打印日志，记录任务结果
-          console.log(
-            'FINAL_RESULT--taskResult: ',
-            taskResult,
-            data.outputText,
-          );
-          if (
-            params.conversationId &&
-            taskResult.hasTaskResult &&
-            taskResult.file
-          ) {
-            openPreviewView(params.conversationId);
-            const fileId = taskResult.file
-              ?.split(`${params.conversationId}/`)
-              .pop();
-            if (fileId) {
-              setTaskAgentSelectedFileId(fileId);
-              // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
-              setTaskAgentSelectTrigger(Date.now());
-            }
-          }
 
           // 调试结果
           setRequestId(res.requestId);
