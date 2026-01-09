@@ -533,6 +533,8 @@ const SkillDetails: React.FC = () => {
       <div className={cx('flex', 'flex-1', 'overflow-y')}>
         {/* 文件树视图 */}
         <FileTreeView
+          // 任务智能体会话中点击选中的文件ID
+          taskAgentSelectedFileId={'SKILL.md'}
           ref={fileTreeViewRef}
           // 是否显示视图模式切换按钮
           showViewModeButtons={false}
