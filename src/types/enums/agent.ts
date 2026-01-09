@@ -59,9 +59,13 @@ export enum InputTypeEnum {
 
 // 调用方式,可用值:AUTO,ON_DEMAND,MANUAL,MANUAL_ON_DEMAND
 export enum InvokeTypeEnum {
+  // 自动调用
   AUTO = 'AUTO',
+  // 按需调用
   ON_DEMAND = 'ON_DEMAND',
+  // 手动选择
   MANUAL = 'MANUAL',
+  // 手动选择+按需调用 (技能时，代表手动选择)
   MANUAL_ON_DEMAND = 'MANUAL_ON_DEMAND',
 }
 

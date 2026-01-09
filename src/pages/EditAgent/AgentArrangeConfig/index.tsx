@@ -132,12 +132,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     // 遍历列表，构建分组
     mcpList.forEach((item: AgentComponentInfo) => {
       const { targetId, icon, groupName, groupDescription } = item;
-      const _targetId = targetId.toString();
+      const _targetId = targetId?.toString() || '';
 
       // 如果当前 targetId 对应的分组不存在，则创建新分组
       if (!groupMap.has(_targetId)) {
         groupMap.set(_targetId, {
-          targetId,
+          targetId: targetId || 0,
           icon,
           groupName,
           groupDescription,
@@ -381,7 +381,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             toolName,
           };
         }) || [];
-      setAddComponents(list);
+      setAddComponents(list as AgentAddComponentStatusInfo[]);
     }
   };
   useEffect(() => {
@@ -1134,9 +1134,19 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         checkTag={checkTag}
         addComponents={addComponents}
         onAdded={handleAddComponent}
-        tabs={CREATED_TABS.filter(
-          (item) => item.key !== AgentComponentTypeEnum.Agent,
-        )}
+        tabs={CREATED_TABS.filter((item) => {
+          // 如果是任务型智能体，则不显示页面tag
+          if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
+            return (
+              item.key !== AgentComponentTypeEnum.Agent &&
+              item.key !== AgentComponentTypeEnum.Page
+            );
+          }
+          return (
+            item.key !== AgentComponentTypeEnum.Agent &&
+            item.key !== AgentComponentTypeEnum.Skill
+          );
+        })}
       />
       {/*创建变量弹窗*/}
       <CreateVariables

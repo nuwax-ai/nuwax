@@ -441,6 +441,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         return;
       }
 
+      // 检查 files 是否已准备好
+      if (!files || files.length === 0) {
+        // files 还未准备好，等待下次更新
+        return;
+      }
+
       // 检查是否需要执行选择（避免重复选择）
       const hasTriggerChanged =
         taskAgentSelectTrigger !== undefined
@@ -449,6 +455,15 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       // 如果触发标志或文件ID没有变化，不执行选择
       if (!hasTriggerChanged) {
+        /**
+         * 如果 taskAgentSelectedFileId 存在，且 prevTaskAgentSelectedFileIdRef.current 为空，则表示首次进入技能页面，默认选择该文件
+         */
+        if (
+          taskAgentSelectedFileId &&
+          !prevTaskAgentSelectedFileIdRef.current
+        ) {
+          handleFileSelectInternal(taskAgentSelectedFileId);
+        }
         return;
       }
 
@@ -466,12 +481,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         userSelectedFileRef.current !== taskAgentSelectedFileId
       ) {
         // 用户主动选择了其他文件，且不是触发标志更新，不清除 userSelectedFileRef，保持用户的选择
-        return;
-      }
-
-      // 检查 files 是否已准备好
-      if (!files || files.length === 0) {
-        // files 还未准备好，等待下次更新
         return;
       }
 
@@ -1226,15 +1235,20 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
         const isHtml = fileName?.includes('.htm');
 
-        const { key: htmlKey, url: htmlUrl } = buildFilePreviewProps(
+        const { url: htmlUrl } = buildFilePreviewProps(
           'html',
           fileProxyUrl,
           selectedFileId,
         );
 
+        // 使用稳定的 key，避免切换文件时组件重新挂载导致闪动
+        // key 只包含文件类型，让组件通过 src 变化来更新内容
+        // 只有在需要强制刷新时（通过 URL 参数中的时间戳）才会更新
+        const stableKey = `html-preview-${isHtml ? 'html' : 'markdown'}`;
+
         return (
           <FilePreview
-            key={htmlKey}
+            key={stableKey}
             src={htmlUrl}
             fileType={isHtml ? 'html' : 'markdown'}
           />

@@ -316,6 +316,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   const [detectedType, setDetectedType] = useState<FileType | undefined>();
   const [textContent, setTextContent] = useState<string>('');
   const [htmlUrl, setHtmlUrl] = useState<string | null>(null);
+  const [isIframeLoading, setIsIframeLoading] = useState<boolean>(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
 
@@ -440,6 +441,10 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     // HTML handling
     if (type === 'html') {
       if (typeof src === 'string') {
+        // 如果 URL 发生变化，设置加载状态以平滑过渡
+        if (htmlUrl !== src) {
+          setIsIframeLoading(true);
+        }
         setHtmlUrl(src);
         setTextContent('');
         setStatus('success');
@@ -587,6 +592,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       initPreview();
     } else {
       setStatus('idle');
+      setIsIframeLoading(false);
     }
     return () => {
       // 取消未执行的 PPTX zoom 计算 RAF
@@ -741,6 +747,16 @@ const FilePreview: React.FC<FilePreviewProps> = ({
               sandbox={SANDBOX}
               className={styles.htmlFrame}
               title="HTML Preview"
+              style={{
+                opacity: isIframeLoading ? 0 : 1,
+                transition: 'opacity 0.2s ease-in-out',
+              }}
+              onLoad={() => {
+                setIsIframeLoading(false);
+              }}
+              onError={() => {
+                setIsIframeLoading(false);
+              }}
             />
           </div>
         );

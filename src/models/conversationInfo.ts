@@ -66,6 +66,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSource';
+// import { logger } from '@/utils/logger';
 import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
@@ -167,16 +168,6 @@ export default () => {
   const [isTimedTaskOpen, setIsTimedTaskOpen] = useState<boolean>(false);
   const [timedTaskMode, setTimedTaskMode] = useState<CreateUpdateModeEnum>();
 
-  // 打开定时任务弹窗
-  const openTimedTask = useCallback((taskMode: CreateUpdateModeEnum) => {
-    setIsTimedTaskOpen(true);
-    setTimedTaskMode(taskMode);
-  }, []);
-
-  // 关闭定时任务弹窗
-  const closeTimedTask = useCallback(() => {
-    setIsTimedTaskOpen(false);
-  }, []);
   // 用户填写的变量参数
   const [userFillVariables, setUserFillVariables] = useState<Record<
     string,
@@ -209,6 +200,17 @@ export default () => {
   // 远程桌面容器信息
   const [vncContainerInfo, setVncContainerInfo] =
     useState<VncDesktopContainerInfo | null>(null);
+
+  // 打开定时任务弹窗
+  const openTimedTask = useCallback((taskMode: CreateUpdateModeEnum) => {
+    setIsTimedTaskOpen(true);
+    setTimedTaskMode(taskMode);
+  }, []);
+
+  // 关闭定时任务弹窗
+  const closeTimedTask = useCallback(() => {
+    setIsTimedTaskOpen(false);
+  }, []);
 
   // 查询文件列表
   const { runAsync: runGetStaticFileList } = useRequest(apiGetStaticFileList, {
@@ -919,6 +921,19 @@ export default () => {
         if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
           // 重置消息ID
           messageIdRef.current = '';
+
+          // 会话结束后，如果是长任务型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
+          if (
+            isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
+            viewModeRef.current === 'preview' && // 文件预览
+            // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
+            params.conversationId
+          ) {
+            console.log('FINAL_RESULT--刷新文件树');
+            // 刷新文件树
+            handleRefreshFileList(params.conversationId);
+          }
+
           /**
            * "error":"Agent正在执行任务，请等待当前任务完成后再发送新请求"
            */
@@ -947,6 +962,12 @@ export default () => {
             requestId: res.requestId,
           };
           const taskResult = extractTaskResult(data.outputText);
+          // 打印日志，记录任务结果
+          console.log(
+            'FINAL_RESULT--taskResult: ',
+            taskResult,
+            data.outputText,
+          );
           if (
             params.conversationId &&
             taskResult.hasTaskResult &&
@@ -1006,8 +1027,6 @@ export default () => {
     }, 200);
   };
 
-  const abortController = new AbortController();
-
   // 会话处理
   const handleConversation = async (
     params: ConversationChatParams,
@@ -1018,8 +1037,8 @@ export default () => {
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
-    // 启动连接
-    abortConnectionRef.current = await createSSEConnection({
+    // 启动连接（不传 abortController，让 createSSEConnection 内部创建）
+    abortConnectionRef.current = createSSEConnection({
       url: CONVERSATION_CONNECTION_URL,
       method: 'POST',
       headers: {
@@ -1027,7 +1046,7 @@ export default () => {
         Accept: 'application/json, text/plain, */* ',
       },
       body: params,
-      abortController,
+      // 不传 abortController，让函数内部创建新的
       onMessage: (res: ConversationChatResponse) => {
         // 第一次收到消息后更新主题（仅调用一次）
         updateTopicOnce(params, conversationInfo ?? data, isSync);
@@ -1037,7 +1056,7 @@ export default () => {
         handleScrollBottom();
       },
       onClose: async () => {
-        // 将当前会话的loading状态的消息改为Error状态，并将所有正在执行的 processing 状态更新为 FAILED
+        // 将当前会话的loading状态的消息改为Stopped状态，并将所有正在执行的 processing 状态更新为 FAILED
         setMessageList((list) => {
           try {
             const copyList = JSON.parse(JSON.stringify(list));
@@ -1045,6 +1064,14 @@ export default () => {
             // 遍历消息列表，找到最后一条消息并更新其 processingList
             if (copyList.length > 0) {
               const lastMessage = copyList[copyList.length - 1];
+
+              // ✨ 关键：将 Loading 或 Incomplete 状态更新为 Stopped，确保计时器暂停、加载指示器消失
+              if (
+                lastMessage.status === MessageStatusEnum.Loading ||
+                lastMessage.status === MessageStatusEnum.Incomplete
+              ) {
+                lastMessage.status = MessageStatusEnum.Stopped;
+              }
 
               // 如果消息有 processingList，将所有 EXECUTING 状态更新为 FAILED
               if (
@@ -1064,14 +1091,11 @@ export default () => {
                 );
 
                 lastMessage.processingList = updatedProcessingList;
-                // lastMessage.status = MessageStatusEnum.Error;
 
                 // ✨ 关键：同时更新全局的 processingList，这样 MarkdownCustomProcess 组件才能正确更新
                 handleChatProcessingList(updatedProcessingList);
               }
             }
-            console.log('copyList', copyList);
-
             return copyList;
           } catch (error) {
             console.error('[onClose] ERROR:', error);
@@ -1097,11 +1121,6 @@ export default () => {
         });
       },
     });
-    // 主动关闭连接
-    // 确保 abortConnectionRef.current 是一个可调用的函数
-    if (typeof abortConnectionRef.current === 'function') {
-      abortConnectionRef.current();
-    }
   };
 
   // 清除副作用
@@ -1127,9 +1146,6 @@ export default () => {
       }
       abortConnectionRef.current = null;
     }
-
-    // 停止当前会话【强制】
-    abortController?.abort();
   };
 
   // 重置初始化
