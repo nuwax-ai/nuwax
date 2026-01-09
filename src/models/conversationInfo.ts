@@ -66,7 +66,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSource';
-import { logger } from '@/utils/logger';
+// import { logger } from '@/utils/logger';
 import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
@@ -929,6 +929,7 @@ export default () => {
             // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
             params.conversationId
           ) {
+            console.log('FINAL_RESULT--刷新文件树');
             // 刷新文件树
             handleRefreshFileList(params.conversationId);
           }
@@ -962,7 +963,11 @@ export default () => {
           };
           const taskResult = extractTaskResult(data.outputText);
           // 打印日志，记录任务结果
-          logger.log('taskResult: ', taskResult, data.outputText);
+          console.log(
+            'FINAL_RESULT--taskResult: ',
+            taskResult,
+            data.outputText,
+          );
           if (
             params.conversationId &&
             taskResult.hasTaskResult &&
