@@ -1090,6 +1090,26 @@ const Chat: React.FC = () => {
       </div>
     );
   };
+  console.log('showType', showType);
+  useEffect(() => {
+    console.log('pagePreviewData', pagePreviewData);
+    console.log('isFileTreeVisible', isFileTreeVisible);
+
+    // 设置最小宽度-扩展页面/文件树
+    if (pagePreviewData || isFileTreeVisible) {
+      document.documentElement.style.minWidth = '1700px';
+    } else {
+      // 设置最小宽度-调试详情
+      if (isSidebarVisible) {
+        document.documentElement.style.minWidth = '1540px';
+      } else {
+        document.documentElement.style.minWidth = '1200px';
+      }
+    }
+    return () => {
+      document.documentElement.style.minWidth = '1200px';
+    };
+  }, [pagePreviewData, isFileTreeVisible, isSidebarVisible]);
 
   return (
     <div className={cx('flex', 'h-full')}>
@@ -1109,107 +1129,120 @@ const Chat: React.FC = () => {
           <LoadingOutlined />
         </div>
       ) : (
-        <ResizableSplit
-          minLeftWidth={400}
-          defaultLeftWidth={
-            agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
-          }
-          // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
-          // className={cx(isFileTreeVisible && 'flex-1')}
-          left={agentDetail?.hideChatArea ? null : LeftContent()}
-          right={
-            agentDetail?.type !== AgentTypeEnum.TaskAgent
-              ? // 会话型
-                pagePreviewData && (
-                  <>
-                    <PagePreviewIframe
-                      pagePreviewData={pagePreviewData}
-                      showHeader={true}
-                      onClose={hidePagePreview}
-                      showCloseButton={!agentDetail?.hideChatArea}
-                      titleClassName={cx(styles['title-style'])}
-                      // 复制模板按钮相关 props
-                      showCopyButton={showCopyButton}
-                      allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
-                      onCopyClick={() => setOpenCopyModal(true)}
-                      copyButtonText="复制模板"
-                      copyButtonClassName={styles['copy-btn']}
-                    />
-                    {/* 复制模板弹窗 */}
-                    {showCopyButton && agentDetail && pagePreviewData?.uri && (
-                      <CopyToSpaceComponent
-                        spaceId={agentDetail!.spaceId}
-                        mode={AgentComponentTypeEnum.Page}
-                        componentId={parsePageAppProjectId(
-                          pagePreviewData?.uri,
-                        )}
-                        title={''}
-                        open={openCopyModal}
-                        isTemplate={true}
-                        onSuccess={(_: any, targetSpaceId: number) => {
-                          setOpenCopyModal(false);
-                          // 跳转
-                          jumpToPageDevelop(targetSpaceId);
-                        }}
-                        onCancel={() => setOpenCopyModal(false)}
+        <div
+          style={{
+            flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
+            minWidth: pagePreviewData || isFileTreeVisible ? '1200px' : '530px',
+          }}
+        >
+          <ResizableSplit
+            resetTrigger={
+              pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
+            }
+            minLeftWidth={530}
+            defaultLeftWidth={
+              agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
+            }
+            // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
+            // className={cx(isFileTreeVisible && 'flex-1')}
+            left={agentDetail?.hideChatArea ? null : LeftContent()}
+            right={
+              agentDetail?.type !== AgentTypeEnum.TaskAgent
+                ? // 会话型
+                  pagePreviewData && (
+                    <>
+                      <PagePreviewIframe
+                        pagePreviewData={pagePreviewData}
+                        showHeader={true}
+                        onClose={hidePagePreview}
+                        showCloseButton={!agentDetail?.hideChatArea}
+                        titleClassName={cx(styles['title-style'])}
+                        // 复制模板按钮相关 props
+                        showCopyButton={showCopyButton}
+                        allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
+                        onCopyClick={() => setOpenCopyModal(true)}
+                        copyButtonText="复制模板"
+                        copyButtonClassName={styles['copy-btn']}
                       />
-                    )}
-                  </>
-                )
-              : // 任务型
-                isFileTreeVisible && (
-                  <div
-                    className={cx(
-                      styles['file-tree-sidebar'],
-                      'flex',
-                      'w-full',
-                    )}
-                  >
-                    <FileTreeView
-                      taskAgentSelectedFileId={taskAgentSelectedFileId}
-                      taskAgentSelectTrigger={taskAgentSelectTrigger}
-                      originalFiles={fileTreeData}
-                      fileTreeDataLoading={fileTreeDataLoading}
-                      targetId={id?.toString() || ''}
-                      viewMode={viewMode}
-                      readOnly={false}
-                      // 切换视图、远程桌面模式
-                      onViewModeChange={onViewModeChange}
-                      // 导出项目
-                      onExportProject={handleExportProject}
-                      // 上传文件
-                      onUploadFiles={handleUploadMultipleFiles}
-                      // 重命名文件
-                      onRenameFile={handleConfirmRenameFile}
-                      // 新建文件、文件夹
-                      onCreateFileNode={handleCreateFileNode}
-                      // 删除文件
-                      onDeleteFile={handleDeleteFile}
-                      // 保存文件
-                      onSaveFiles={handleSaveFiles}
-                      // 重启容器
-                      onRestartServer={() => restartVncPod(id)}
-                      // 重启智能体
-                      onRestartAgent={() => restartAgent(id)}
-                      // 关闭整个面板
-                      onClose={closePreviewView}
-                      // 文件树是否固定（用户点击后固定）
-                      isFileTreePinned={isFileTreePinned}
-                      // 文件树固定状态变化回调
-                      onFileTreePinnedChange={setIsFileTreePinned}
-                      isCanDeleteSkillFile={true}
-                      // 刷新文件树回调
-                      onRefreshFileTree={() => handleRefreshFileList(id)}
-                      // VNC 空闲检测配置（仅任务型智能体启用）
-                      idleDetection={{
-                        enabled: agentDetail?.type === AgentTypeEnum.TaskAgent,
-                        onIdleTimeout: () => openPreviewView(id),
-                      }}
-                    />
-                  </div>
-                )
-          }
-        />
+                      {/* 复制模板弹窗 */}
+                      {showCopyButton &&
+                        agentDetail &&
+                        pagePreviewData?.uri && (
+                          <CopyToSpaceComponent
+                            spaceId={agentDetail!.spaceId}
+                            mode={AgentComponentTypeEnum.Page}
+                            componentId={parsePageAppProjectId(
+                              pagePreviewData?.uri,
+                            )}
+                            title={''}
+                            open={openCopyModal}
+                            isTemplate={true}
+                            onSuccess={(_: any, targetSpaceId: number) => {
+                              setOpenCopyModal(false);
+                              // 跳转
+                              jumpToPageDevelop(targetSpaceId);
+                            }}
+                            onCancel={() => setOpenCopyModal(false)}
+                          />
+                        )}
+                    </>
+                  )
+                : // 任务型
+                  isFileTreeVisible && (
+                    <div
+                      className={cx(
+                        styles['file-tree-sidebar'],
+                        'flex',
+                        'w-full',
+                      )}
+                    >
+                      <FileTreeView
+                        taskAgentSelectedFileId={taskAgentSelectedFileId}
+                        taskAgentSelectTrigger={taskAgentSelectTrigger}
+                        originalFiles={fileTreeData}
+                        fileTreeDataLoading={fileTreeDataLoading}
+                        targetId={id?.toString() || ''}
+                        viewMode={viewMode}
+                        readOnly={false}
+                        // 切换视图、远程桌面模式
+                        onViewModeChange={onViewModeChange}
+                        // 导出项目
+                        onExportProject={handleExportProject}
+                        // 上传文件
+                        onUploadFiles={handleUploadMultipleFiles}
+                        // 重命名文件
+                        onRenameFile={handleConfirmRenameFile}
+                        // 新建文件、文件夹
+                        onCreateFileNode={handleCreateFileNode}
+                        // 删除文件
+                        onDeleteFile={handleDeleteFile}
+                        // 保存文件
+                        onSaveFiles={handleSaveFiles}
+                        // 重启容器
+                        onRestartServer={() => restartVncPod(id)}
+                        // 重启智能体
+                        onRestartAgent={() => restartAgent(id)}
+                        // 关闭整个面板
+                        onClose={closePreviewView}
+                        // 文件树是否固定（用户点击后固定）
+                        isFileTreePinned={isFileTreePinned}
+                        // 文件树固定状态变化回调
+                        onFileTreePinnedChange={setIsFileTreePinned}
+                        isCanDeleteSkillFile={true}
+                        // 刷新文件树回调
+                        onRefreshFileTree={() => handleRefreshFileList(id)}
+                        // VNC 空闲检测配置（仅任务型智能体启用）
+                        idleDetection={{
+                          enabled:
+                            agentDetail?.type === AgentTypeEnum.TaskAgent,
+                          onIdleTimeout: () => openPreviewView(id),
+                        }}
+                      />
+                    </div>
+                  )
+            }
+          />
+        </div>
       )}
       {/* AgentSidebar - 只在文件树隐藏时显示 */}
       {!isFileTreeVisible && (

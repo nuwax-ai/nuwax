@@ -46,7 +46,7 @@ export const SKILL_METHOD_OPTIONS = [
     label: '按需调用',
   },
   {
-    value: InvokeTypeEnum.MANUAL_ON_DEMAND,
+    value: InvokeTypeEnum.MANUAL_ON_DEMAND, // 手动选择+按需调用 (技能时，代表手动选择)
     label: '手动选择',
   },
 ];

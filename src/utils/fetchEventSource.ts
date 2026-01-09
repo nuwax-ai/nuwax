@@ -35,9 +35,9 @@ export const clearSSESharedTimeout = () => {
   clearSharedTimeout();
 };
 
-export async function createSSEConnection<T = any>(
+export function createSSEConnection<T = any>(
   options: SSEOptions<T>,
-): Promise<() => void> {
+): () => void {
   const controller = options.abortController || new AbortController();
   let isAborted = false;
   // 防止 onClose 被多处路径重复触发（abortFunction / onclose / timeout）
@@ -70,18 +70,15 @@ export async function createSSEConnection<T = any>(
 
   const abortFunction = () => {
     if (!isAborted) {
-      // 防止页面流式数据输出不全问题，延迟1秒关闭连接
+      // 立即清除定时器并中断连接，防止页面切换后继续接收数据
+      console.log('🔌 [SSE Utils] 准备中止 SSE 连接，立即清除定时器并中断连接');
+      markAborted();
+      controller.abort(); // 立即中断连接，停止数据传输
+
+      // 延迟调用 onClose，避免状态更新问题
       setTimeout(() => {
-        // 延迟期间如果已经走了 onclose/onerror/timeout，则不再重复触发关闭逻辑
-        if (isAborted) {
-          return;
-        }
-        console.log('🔌 [SSE Utils] 手动中止 SSE 连接');
-        // 清除共享定时器
-        markAborted();
+        console.log('🔌 [SSE Utils] 执行 onClose 回调');
         safeOnClose();
-        // 中止连接
-        // controller.abort();
       }, 500);
     }
   };
@@ -142,91 +139,95 @@ export async function createSSEConnection<T = any>(
     sharedTimeoutOwner = timerOwner;
   };
 
-  try {
-    await fetchEventSource(options.url, {
-      method: options.method || 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      body:
-        typeof options.body === 'object'
-          ? JSON.stringify(options.body)
-          : options.body,
-      signal: controller.signal,
-      openWhenHidden: true, // 页面不可见时保持连接
+  // 异步执行连接逻辑，但同步返回 abortFunction
+  (async () => {
+    try {
+      await fetchEventSource(options.url, {
+        method: options.method || 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        body:
+          typeof options.body === 'object'
+            ? JSON.stringify(options.body)
+            : options.body,
+        signal: controller.signal,
+        openWhenHidden: true, // 页面不可见时保持连接
 
-      onopen: async (response) => {
-        if (response.status >= 400) {
-          throw new Error(`SSE连接失败: ${response.statusText}`);
-        }
-        console.log('✅ [SSE Utils] SSE 连接已建立');
-        // 连接建立时初始化时间戳并启动超时检查
-        lastMessageTimestamp = Date.now();
-        startTimeoutCheck();
-        options.onOpen?.(response);
-      },
-
-      onmessage: (event) => {
-        try {
-          // 更新最后一次收到消息的时间戳
-          lastMessageTimestamp = Date.now();
-          const data = event.data ? JSON.parse(event.data) : null;
-          const { completed, subType } =
-            (data as { completed?: boolean; subType?: string }) ?? {};
-
-          options.onMessage(data, event);
-
-          // 页面开发结束标志 subType   = 'end_turn'
-          // 聊天对话结束标志 completed = true
-          if (subType === 'end_turn' || completed === true) {
-            console.log(
-              `✅ [SSE Utils] 页面开发结束或聊天对话结束，主动断开连接 subType:${subType} completed:${completed}`,
-            );
-            abortFunction();
+        onopen: async (response) => {
+          if (response.status >= 400) {
+            throw new Error(`SSE连接失败: ${response.statusText}`);
           }
-        } catch (error) {
-          const normalizedError =
-            error instanceof Error ? error : new Error(String(error));
-          options.onError?.(normalizedError);
-        }
-      },
+          console.log('✅ [SSE Utils] SSE 连接已建立');
+          // 连接建立时初始化时间戳并启动超时检查
+          lastMessageTimestamp = Date.now();
+          startTimeoutCheck();
+          options.onOpen?.(response);
+        },
 
-      onclose: () => {
-        console.log('🔌 [SSE Utils] SSE 连接已关闭');
-        // 标记中止，防止重复处理
-        if (!isAborted) {
+        onmessage: (event) => {
+          try {
+            // 更新最后一次收到消息的时间戳
+            lastMessageTimestamp = Date.now();
+            const data = event.data ? JSON.parse(event.data) : null;
+            const { completed, subType } =
+              (data as { completed?: boolean; subType?: string }) ?? {};
+
+            options.onMessage(data, event);
+
+            // 页面开发结束标志 subType   = 'end_turn'
+            // 聊天对话结束标志 completed = true
+            if (subType === 'end_turn' || completed === true) {
+              console.log(
+                `✅ [SSE Utils] 页面开发结束或聊天对话结束，主动断开连接 subType:${subType} completed:${completed}`,
+              );
+              abortFunction();
+            }
+          } catch (error) {
+            const normalizedError =
+              error instanceof Error ? error : new Error(String(error));
+            options.onError?.(normalizedError);
+          }
+        },
+
+        onclose: () => {
+          console.log('🔌 [SSE Utils] SSE 连接已关闭');
+          // 标记中止，防止重复处理
+          if (!isAborted) {
+            markAborted();
+            lastMessageTimestamp = null;
+          }
+          // 无论是否已中止，都要触发 onClose 回调，确保前端状态被终止
+          // 即使没有收到 finalresult，连接断开时也要终止状态
+          // safeOnClose 内部有 hasClosed 保护，防止重复触发
+          safeOnClose();
+          // 阻止 fetchEventSource 继续自动重连
+          if (!isAborted) {
+            controller.abort();
+          }
+        },
+
+        onerror: (error) => {
+          if (isAborted) {
+            return;
+          }
+          console.error('❌ [SSE Utils] SSE 连接错误:', error);
           markAborted();
-          lastMessageTimestamp = null;
-        }
-        // 无论是否已中止，都要触发 onClose 回调，确保前端状态被终止
-        // 即使没有收到 finalresult，连接断开时也要终止状态
-        // safeOnClose 内部有 hasClosed 保护，防止重复触发
-        safeOnClose();
-        // 阻止 fetchEventSource 继续自动重连
-        if (!isAborted) {
+          options.onError?.(error);
           controller.abort();
-        }
-      },
+          throw error; // 停止自动重试
+        },
+      });
+    } catch (error) {
+      const normalized =
+        error instanceof Error ? error : new Error(String(error));
+      console.error('❌ [SSE Utils] SSE 连接异常:', normalized);
+      markAborted();
+      options.onError?.(normalized);
+    }
+  })();
 
-      onerror: (error) => {
-        if (isAborted) {
-          return;
-        }
-        console.error('❌ [SSE Utils] SSE 连接错误:', error);
-        markAborted();
-        options.onError?.(error);
-        controller.abort();
-        throw error; // 停止自动重试
-      },
-    });
-  } catch (error) {
-    const normalized =
-      error instanceof Error ? error : new Error(String(error));
-    console.error('❌ [SSE Utils] SSE 连接异常:', normalized);
-    markAborted();
-    options.onError?.(normalized);
-  }
-
+  // 立即返回 abortFunction，不等待连接完成
   return abortFunction;
 }

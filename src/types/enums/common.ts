@@ -177,6 +177,8 @@ export enum MessageStatusEnum {
   Incomplete = 'incomplete',
   Complete = 'complete',
   Error = 'error',
+  // 已中断（会话中断）
+  Stopped = 'stopped',
 }
 
 // 消息loading时，调用状态
