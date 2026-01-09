@@ -1235,15 +1235,20 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
         const isHtml = fileName?.includes('.htm');
 
-        const { key: htmlKey, url: htmlUrl } = buildFilePreviewProps(
+        const { url: htmlUrl } = buildFilePreviewProps(
           'html',
           fileProxyUrl,
           selectedFileId,
         );
 
+        // 使用稳定的 key，避免切换文件时组件重新挂载导致闪动
+        // key 只包含文件类型，让组件通过 src 变化来更新内容
+        // 只有在需要强制刷新时（通过 URL 参数中的时间戳）才会更新
+        const stableKey = `html-preview-${isHtml ? 'html' : 'markdown'}`;
+
         return (
           <FilePreview
-            key={htmlKey}
+            key={stableKey}
             src={htmlUrl}
             fileType={isHtml ? 'html' : 'markdown'}
           />
