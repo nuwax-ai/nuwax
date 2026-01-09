@@ -928,7 +928,7 @@ export default () => {
           ) {
             modalConfirm(
               '提示',
-              'Agent正在执行任务中，需要先暂停当前任务后才能发送新请求，是否暂停当前任务？',
+              '智能体正在执行任务中，需要先暂停当前任务后才能发送新请求，是否暂停当前任务？',
               () => {
                 if (params?.conversationId) {
                   runStopConversation(params?.conversationId.toString());
