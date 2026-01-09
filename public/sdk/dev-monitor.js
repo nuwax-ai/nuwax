@@ -12,7 +12,7 @@
 
   // 配置
   const config = {
-    version: '1.0.5',
+    version: '1.0.7',
     enabled: true,
     logLevel: 'error', // 只记录错误级别日志
     maxErrors: 10, // 减少存储量
@@ -301,8 +301,7 @@
       // 关键日志：接收错误
       _originalConsoleError.call(
         console,
-        `[DevMonitor] ${isUpdate ? '⟳' : '●'} 接收错误，${
-          ERROR_SEND_DELAY / 1000
+        `[DevMonitor] ${isUpdate ? '⟳' : '●'} 接收错误，${ERROR_SEND_DELAY / 1000
         }s后发送 | ${errorData.message.substring(0, 80)}`,
       );
 
@@ -1027,6 +1026,15 @@
       const _ticket = getQueryParam(currentUrl, '_ticket');
       // 跳转类型主要区别是否是系统内部跳转还是分享链接跳转
       const jump_type = getQueryParam(currentUrl, 'jump_type');
+
+      // 检查是否是文件预览页面
+      const isFilePreview = window.location.pathname.includes('/static/file-preview.html');
+
+      // 文件预览页面
+      if (isFilePreview) {
+        addBackToHomeButton('outer');
+        return;
+      }
 
       if (!_ticket || !jump_type) {
         console.warn(
