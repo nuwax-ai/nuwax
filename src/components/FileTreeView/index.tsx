@@ -237,16 +237,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                   : prevNode,
               );
             } catch (error) {
-              // message.error('刷新文件内容失败');
-              return;
+              console.error('刷新文件内容失败: ', error);
             }
           }
         }
-
-        // 刷新成功提示
-        // message.success('刷新成功');
       } catch (error) {
-        // message.error('刷新文件树失败');
+        console.error('刷新文件树失败: ', error);
       } finally {
         setIsRefreshingFileTree(false);
       }
@@ -311,16 +307,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 如果是重复点击视频文件，更新刷新时间戳以强制刷新
           if (isSameFile && isVideoFileType) {
             videoRefreshTimestampRef.current = Date.now();
-            // 仍然调用刷新逻辑以更新文件内容
-            // await handleRefreshFileList();
             return;
           }
 
           // 如果是重复点击音频文件，更新刷新时间戳以强制刷新
           if (isSameFile && isAudioFileType) {
             audioRefreshTimestampRef.current = Date.now();
-            // 仍然调用刷新逻辑以更新文件内容
-            // await handleRefreshFileList();
             return;
           }
 
@@ -1257,9 +1249,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         );
 
         // 使用稳定的 key，避免切换文件时组件重新挂载导致闪动
-        // key 只包含文件类型，让组件通过 src 变化来更新内容
-        // 只有在需要强制刷新时（通过 URL 参数中的时间戳）才会更新
-        const stableKey = `html-preview-${isHtml ? 'html' : 'markdown'}`;
+        // HTML 和 Markdown 使用同一个 key，让组件通过 src 和 fileType 变化来更新内容
+        // 这样可以避免从 HTML 切换到 Markdown 时组件重新挂载
+        const stableKey = 'html-markdown-preview';
 
         return (
           <FilePreview
