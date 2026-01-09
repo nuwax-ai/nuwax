@@ -1019,8 +1019,6 @@ export default () => {
     }, 200);
   };
 
-  const abortController = new AbortController();
-
   // 会话处理
   const handleConversation = async (
     params: ConversationChatParams,
@@ -1031,8 +1029,8 @@ export default () => {
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
-    // 启动连接
-    abortConnectionRef.current = await createSSEConnection({
+    // 启动连接（不传 abortController，让 createSSEConnection 内部创建）
+    abortConnectionRef.current = createSSEConnection({
       url: CONVERSATION_CONNECTION_URL,
       method: 'POST',
       headers: {
@@ -1040,7 +1038,7 @@ export default () => {
         Accept: 'application/json, text/plain, */* ',
       },
       body: params,
-      abortController,
+      // 不传 abortController，让函数内部创建新的
       onMessage: (res: ConversationChatResponse) => {
         // 第一次收到消息后更新主题（仅调用一次）
         updateTopicOnce(params, conversationInfo ?? data, isSync);
@@ -1107,11 +1105,6 @@ export default () => {
         });
       },
     });
-    // 主动关闭连接
-    // 确保 abortConnectionRef.current 是一个可调用的函数
-    if (typeof abortConnectionRef.current === 'function') {
-      abortConnectionRef.current();
-    }
   };
 
   // 清除副作用
@@ -1137,9 +1130,6 @@ export default () => {
       }
       abortConnectionRef.current = null;
     }
-
-    // 停止当前会话【强制】
-    abortController?.abort();
   };
 
   // 重置初始化
