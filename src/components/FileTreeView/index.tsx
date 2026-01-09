@@ -445,14 +445,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           ? taskAgentSelectTrigger !== prevTaskAgentSelectTriggerRef.current
           : taskAgentSelectedFileId !== prevTaskAgentSelectedFileIdRef.current;
 
-      console.log(
-        'hasTriggerChanged: ',
-        hasTriggerChanged,
-        taskAgentSelectedFileId,
-        prevTaskAgentSelectedFileIdRef.current,
-      );
-
-      console.log('taskAgentSelectTrigger: ', taskAgentSelectTrigger, files);
       // 如果触发标志或文件ID没有变化，不执行选择
       if (!hasTriggerChanged) {
         /**
@@ -520,7 +512,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
       return () => {
         setFiles([]);
-        // setChangeFiles([]);
       };
     }, [originalFiles]);
 
@@ -743,10 +734,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         if (node.id === selectedFileNode?.id) {
           setSelectedFileNode(null);
           setSelectedFileId('');
-
-          // console.log('changeFiles成功删除', changeFiles, node);
-          // const _list = changeFiles?.filter((item) => item.fileId !== node.id);
-          // setChangeFiles(_list);
         }
       }
     };
