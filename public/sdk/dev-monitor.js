@@ -12,7 +12,7 @@
 
   // 配置
   const config = {
-    version: '1.0.6',
+    version: '1.0.7',
     enabled: true,
     logLevel: 'error', // 只记录错误级别日志
     maxErrors: 10, // 减少存储量
@@ -1030,8 +1030,8 @@
       // 检查是否是文件预览页面
       const isFilePreview = window.location.pathname.includes('/static/file-preview.html');
 
-      // 文件预览页面：只需要 _ticket 参数即可显示悬浮按钮
-      if (isFilePreview && _ticket) {
+      // 文件预览页面
+      if (isFilePreview) {
         addBackToHomeButton('outer');
         return;
       }
