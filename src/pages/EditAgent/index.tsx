@@ -882,6 +882,23 @@ const EditAgent: React.FC = () => {
     closePreviewView();
   };
 
+  useEffect(() => {
+    // 设置最小宽度-扩展页面/文件树
+    if (pagePreviewData || isFileTreeVisible) {
+      document.documentElement.style.minWidth = '2300px';
+    } else {
+      // 设置最小宽度-调试详情
+      if (showType === EditAgentShowType.Debug_Details) {
+        document.documentElement.style.minWidth = '1540px';
+      } else {
+        document.documentElement.style.minWidth = '1240px';
+      }
+    }
+    return () => {
+      document.documentElement.style.minWidth = '1200px';
+    };
+  }, [pagePreviewData, isFileTreeVisible, showType]);
+
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
       <AgentHeader
@@ -966,11 +983,7 @@ const EditAgent: React.FC = () => {
             {/*预览与调试和预览页面*/}
             <ResizableSplit
               resetTrigger={
-                agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
-                  ? pagePreviewData?.uri
-                  : isFileTreeVisible
-                  ? 'visible'
-                  : 'hidden'
+                pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
               }
               minRightWidth={530}
               defaultLeftWidth={
