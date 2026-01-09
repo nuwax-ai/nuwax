@@ -2,16 +2,17 @@
  * useScrollBehavior Hook 测试
  */
 
-import { act, renderHook } from '@testing-library/react-hooks';
+import { act, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useScrollBehavior } from '../../hooks/useScrollBehavior';
 
 describe('useScrollBehavior', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('should initialize with correct default values', () => {
@@ -34,7 +35,7 @@ describe('useScrollBehavior', () => {
 
   it('should not scroll when allowAutoScrollRef is false', () => {
     const { result } = renderHook(() => useScrollBehavior());
-    const mockScrollTo = jest.fn();
+    const mockScrollTo = vi.fn();
 
     result.current.messageViewRef.current = {
       scrollTo: mockScrollTo,
@@ -52,7 +53,7 @@ describe('useScrollBehavior', () => {
 
   it('should scroll when allowAutoScrollRef is true', () => {
     const { result } = renderHook(() => useScrollBehavior());
-    const mockScrollTo = jest.fn();
+    const mockScrollTo = vi.fn();
 
     result.current.messageViewRef.current = {
       scrollTo: mockScrollTo,
@@ -71,7 +72,7 @@ describe('useScrollBehavior', () => {
 
   it('should call scroll with delay in handleScrollBottom', () => {
     const { result } = renderHook(() => useScrollBehavior());
-    const mockScrollTo = jest.fn();
+    const mockScrollTo = vi.fn();
 
     result.current.messageViewRef.current = {
       scrollTo: mockScrollTo,
@@ -85,7 +86,7 @@ describe('useScrollBehavior', () => {
     expect(mockScrollTo).not.toHaveBeenCalled();
 
     act(() => {
-      jest.advanceTimersByTime(400);
+      vi.advanceTimersByTime(400);
     });
 
     expect(mockScrollTo).toHaveBeenCalled();
@@ -93,7 +94,7 @@ describe('useScrollBehavior', () => {
 
   it('should not scroll in handleScrollBottom when auto scroll disabled', () => {
     const { result } = renderHook(() => useScrollBehavior());
-    const mockScrollTo = jest.fn();
+    const mockScrollTo = vi.fn();
 
     result.current.messageViewRef.current = {
       scrollTo: mockScrollTo,
@@ -107,7 +108,7 @@ describe('useScrollBehavior', () => {
     });
 
     act(() => {
-      jest.advanceTimersByTime(400);
+      vi.advanceTimersByTime(400);
     });
 
     expect(mockScrollTo).not.toHaveBeenCalled();

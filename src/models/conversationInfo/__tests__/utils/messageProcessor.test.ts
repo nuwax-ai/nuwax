@@ -2,11 +2,8 @@
  * messageProcessor 工具函数测试
  */
 
-import {
-  MessageModeEnum,
-  MessageStatusEnum,
-  ProcessingEnum,
-} from '@/types/enums/common';
+import { MessageModeEnum } from '@/types/enums/agent';
+import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import {
   completeIncompleteMessages,
