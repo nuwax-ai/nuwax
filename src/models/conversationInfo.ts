@@ -66,6 +66,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSource';
+import { logger } from '@/utils/logger';
 import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
@@ -960,6 +961,8 @@ export default () => {
             requestId: res.requestId,
           };
           const taskResult = extractTaskResult(data.outputText);
+          // 打印日志，记录任务结果
+          logger.log('taskResult: ', taskResult, data.outputText);
           if (
             params.conversationId &&
             taskResult.hasTaskResult &&
