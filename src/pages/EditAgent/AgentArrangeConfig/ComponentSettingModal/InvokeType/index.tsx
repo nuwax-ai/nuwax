@@ -9,7 +9,7 @@ import type {
   InvokeTypeSaveParams,
 } from '@/types/interfaces/agentConfig';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
-import { Button, Radio, RadioChangeEvent, Tooltip } from 'antd';
+import { Button, Input, Radio, RadioChangeEvent, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { memo, useEffect, useState } from 'react';
 import styles from './index.less';
@@ -22,6 +22,8 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
   invokeType,
   onSaveSet,
   defaultSelected,
+  defaultAlias,
+  isSkill,
   tooltip = (
     <div>
       <p>自动调用：用户每次发送消息后都会触发调用一次</p>
@@ -40,12 +42,16 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
   const [selected, setSelected] = useState<DefaultSelectedEnum>(
     DefaultSelectedEnum.No,
   );
+
+  // 展示别名
+  const [alias, setAlias] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     setType(invokeType || InvokeTypeEnum.AUTO);
     setSelected(defaultSelected || DefaultSelectedEnum.No);
-  }, [invokeType, defaultSelected]);
+    setAlias(defaultAlias || '');
+  }, [invokeType, defaultSelected, defaultAlias]);
 
   // 切换调用方式
   const handleChangeType = ({ target: { value } }: RadioChangeEvent) => {
@@ -58,6 +64,11 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
       invokeType: type as InvokeTypeEnum,
       defaultSelected: selected,
     };
+
+    // 技能时，展示别名
+    if (isSkill) {
+      data.alias = alias;
+    }
     setLoading(true);
     await onSaveSet(data);
     setLoading(false);
@@ -89,6 +100,24 @@ const InvokeType: React.FC<InvokeTypeProps> = ({
             options={CALL_DEFAULT_SELECTED}
             onChange={(e) => setSelected(e.target.value as DefaultSelectedEnum)}
             value={selected}
+          />
+        </ConditionRender>
+
+        {/* skill手动选择时显示 （技能时，MANUAL_ON_DEMAND代表手动选择, 跟插件、工作流等不同） */}
+        <ConditionRender
+          condition={isSkill && type === InvokeTypeEnum.MANUAL_ON_DEMAND}
+        >
+          <h3 className={cx('gap-6', 'flex', 'items-center', 'mt-16')}>
+            <span>展示别名</span>
+            <Tooltip title="可选，若填写，前端优先展示该名称">
+              <ExclamationCircleOutlined className={cx(styles.icon)} />
+            </Tooltip>
+          </h3>
+          <Input
+            className={cx(styles['alias-input'])}
+            placeholder="请输入展示别名"
+            value={alias}
+            onChange={(e) => setAlias(e.target.value)}
           />
         </ConditionRender>
       </div>
