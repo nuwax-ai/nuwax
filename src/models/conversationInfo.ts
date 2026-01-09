@@ -65,7 +65,7 @@ import { extractTaskResult } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
-import { createSSEConnection } from '@/utils/fetchEventSource';
+import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
 // import { logger } from '@/utils/logger';
 import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
