@@ -22,7 +22,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { history, useLocation, useParams, useSearchParams } from 'umi';
+import { useLocation, useParams, useSearchParams } from 'umi';
 import LogDetailDrawer from '../LogDetailDrawer';
 
 /**
@@ -389,15 +389,27 @@ const LogProTable: React.FC = () => {
     actionRef.current?.reload();
   };
 
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
   useEffect(() => {
-    // 当通过菜单切换页面时（history.location.state 变化），触发重置和重新加载
-    if (history.location.state) {
+    const state = location.state as any;
+    if (state?._t) {
       handleReset();
     }
-  }, [history.location.state]);
+  }, [location.state]);
+
+  // 记录是否是首次加载，避免在初始加载时清空 URL 参数
+  const isFirstLoad = useRef(true);
 
   // 监听 spaceId 变化，切换空间时刷新数据
   useEffect(() => {
+    // 首次加载时不触发重置，保留 URL 参数用于初始化查询
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
+
+    // 只在 spaceId 变化（非首次加载）时才重置
     if (spaceId) {
       handleReset();
     }
