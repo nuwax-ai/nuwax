@@ -1090,11 +1090,7 @@ const Chat: React.FC = () => {
       </div>
     );
   };
-  console.log('showType', showType);
   useEffect(() => {
-    console.log('pagePreviewData', pagePreviewData);
-    console.log('isFileTreeVisible', isFileTreeVisible);
-
     // 设置最小宽度-扩展页面/文件树
     if (pagePreviewData || isFileTreeVisible) {
       document.documentElement.style.minWidth = '1700px';
