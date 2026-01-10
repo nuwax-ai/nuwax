@@ -61,8 +61,9 @@ import {
   exportWholeProjectZip,
 } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
+import { MenuUnfoldOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { message as messageAntd } from 'antd';
+import { message as messageAntd, Tooltip } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
@@ -92,6 +93,8 @@ const EditAgent: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
+  // 是否收起编排配置
+  const [isConfigCollapsed, setIsConfigCollapsed] = useState<boolean>(false);
   const { navigationStyle } = useUnifiedTheme();
   // 智能体配置信息
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
@@ -883,21 +886,32 @@ const EditAgent: React.FC = () => {
   };
 
   useEffect(() => {
+    // 基础宽度
+    let baseWidth = 0;
+
     // 设置最小宽度-扩展页面/文件树
     if (pagePreviewData || isFileTreeVisible) {
-      document.documentElement.style.minWidth = '2300px';
+      baseWidth = 2300;
     } else {
       // 设置最小宽度-调试详情
       if (showType === EditAgentShowType.Debug_Details) {
-        document.documentElement.style.minWidth = '1540px';
+        baseWidth = 1540;
       } else {
-        document.documentElement.style.minWidth = '1240px';
+        baseWidth = 1240;
       }
     }
+
+    // 如果折叠了配置面板，减去相应的宽度 (原宽680 - 折叠后48 = 632)
+    if (isConfigCollapsed) {
+      baseWidth -= 632;
+    }
+
+    document.documentElement.style.minWidth = `${baseWidth}px`;
+
     return () => {
       document.documentElement.style.minWidth = '1200px';
     };
-  }, [pagePreviewData, isFileTreeVisible, showType]);
+  }, [pagePreviewData, isFileTreeVisible, showType, isConfigCollapsed]);
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
@@ -926,47 +940,81 @@ const EditAgent: React.FC = () => {
         {/*编排*/}
         <div
           className={cx('radius-6', 'flex', 'flex-col', styles['edit-info'])}
+          style={
+            isConfigCollapsed
+              ? { flex: '0 0 48px', minWidth: '48px', overflow: 'hidden' }
+              : {}
+          }
         >
-          {/*编排title*/}
-          <ArrangeTitle
-            originalModelConfigList={originalModelConfigList}
-            agentConfigInfo={agentConfigInfo}
-            icon={agentConfigInfo?.modelComponentConfig?.icon}
-            modelName={agentConfigInfo?.modelComponentConfig?.name}
-            onClick={() => setOpenAgentModel(true)}
-          />
-          <div
-            className={cx(
-              'flex-1',
-              'flex',
-              'overflow-y',
-              styles['edit-content'],
-            )}
-          >
-            {/*系统提示词/用户提示词*/}
-            <SystemUserTipsWord
-              ref={systemUserTipsWordRef}
-              agentConfigInfo={agentConfigInfo}
-              valueUser={agentConfigInfo?.userPrompt}
-              valueSystem={agentConfigInfo?.systemPrompt}
-              onChangeUser={(value) => handleChangeAgent(value, 'userPrompt')}
-              onChangeSystem={(value) =>
-                handleChangeAgent(value, 'systemPrompt')
-              }
-              onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
-              variables={promptVariables}
-              skills={promptTools}
-            />
-            {/*配置区域*/}
-            <AgentArrangeConfig
-              agentId={agentId}
-              agentConfigInfo={agentConfigInfo}
-              onChangeAgent={handleChangeAgent}
-              onInsertSystemPrompt={handleInsertSystemPrompt}
-              onVariablesChange={handleVariablesChange}
-              onToolsChange={handleToolsChange}
-            />
-          </div>
+          {isConfigCollapsed ? (
+            <div
+              className="flex flex-col items-center pt-16 cursor-pointer hover:bg-gray-50 h-full transition-colors"
+              onClick={() => setIsConfigCollapsed(false)}
+            >
+              <Tooltip title="展开编排配置" placement="right">
+                <MenuUnfoldOutlined style={{ fontSize: 20, color: '#666' }} />
+              </Tooltip>
+              <div
+                style={{
+                  writingMode: 'vertical-rl',
+                  marginTop: 16,
+                  letterSpacing: 4,
+                  color: '#666',
+                  fontSize: 14,
+                }}
+              >
+                编排配置
+              </div>
+            </div>
+          ) : (
+            <>
+              {/*编排title*/}
+              <ArrangeTitle
+                originalModelConfigList={originalModelConfigList}
+                agentConfigInfo={agentConfigInfo}
+                icon={agentConfigInfo?.modelComponentConfig?.icon}
+                modelName={agentConfigInfo?.modelComponentConfig?.name}
+                onClick={() => setOpenAgentModel(true)}
+                onCollapse={() => setIsConfigCollapsed(true)}
+              />
+              <div
+                className={cx(
+                  'flex-1',
+                  'flex',
+                  'overflow-y',
+                  styles['edit-content'],
+                )}
+              >
+                {/*系统提示词/用户提示词*/}
+                <SystemUserTipsWord
+                  ref={systemUserTipsWordRef}
+                  agentConfigInfo={agentConfigInfo}
+                  valueUser={agentConfigInfo?.userPrompt}
+                  valueSystem={agentConfigInfo?.systemPrompt}
+                  onChangeUser={(value) =>
+                    handleChangeAgent(value, 'userPrompt')
+                  }
+                  onChangeSystem={(value) =>
+                    handleChangeAgent(value, 'systemPrompt')
+                  }
+                  onReplace={(value) =>
+                    handleChangeAgent(value!, 'systemPrompt')
+                  }
+                  variables={promptVariables}
+                  skills={promptTools}
+                />
+                {/*配置区域*/}
+                <AgentArrangeConfig
+                  agentId={agentId}
+                  agentConfigInfo={agentConfigInfo}
+                  onChangeAgent={handleChangeAgent}
+                  onInsertSystemPrompt={handleInsertSystemPrompt}
+                  onVariablesChange={handleVariablesChange}
+                  onToolsChange={handleToolsChange}
+                />
+              </div>
+            </>
+          )}
         </div>
 
         {(!agentConfigInfo?.hideChatArea ||

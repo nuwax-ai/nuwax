@@ -53,6 +53,7 @@ export interface ArrangeTitleProps {
   icon?: string;
   modelName?: string;
   onClick: () => void;
+  onCollapse?: () => void;
 }
 
 // 智能体编排区域配置组件

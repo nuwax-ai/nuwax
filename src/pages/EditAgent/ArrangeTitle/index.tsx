@@ -3,6 +3,8 @@ import ConditionRender from '@/components/ConditionRender';
 import { ModelApiProtocolEnum } from '@/types/enums/modelConfig';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { ArrangeTitleProps } from '@/types/interfaces/agentConfig';
+import { MenuFoldOutlined } from '@ant-design/icons';
+import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
@@ -18,6 +20,7 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
   icon,
   modelName,
   onClick,
+  onCollapse,
 }) => {
   // 是否显示模型名称
   const [showModelName, setShowModelName] = useState<boolean>(false);
@@ -54,7 +57,20 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
         styles['edit-header'],
       )}
     >
-      <h3>编排</h3>
+      <div className="flex items-center">
+        <h3>编排</h3>
+        {onCollapse && (
+          <Tooltip title="收起编排配置">
+            <MenuFoldOutlined
+              className="ml-8 cursor-pointer text-gray-400 hover:text-gray-600"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCollapse();
+              }}
+            />
+          </Tooltip>
+        )}
+      </div>
       <div
         className={cx(
           'flex',
