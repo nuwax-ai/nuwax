@@ -1131,14 +1131,14 @@ const Chat: React.FC = () => {
         <div
           style={{
             flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
-            minWidth: pagePreviewData || isFileTreeVisible ? '900px' : '530px',
+            minWidth: pagePreviewData || isFileTreeVisible ? '900px' : '430px',
           }}
         >
           <ResizableSplit
             resetTrigger={
               pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
             }
-            minLeftWidth={530}
+            minLeftWidth={430}
             defaultLeftWidth={
               agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
             }
