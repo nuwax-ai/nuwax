@@ -325,6 +325,11 @@
   transform: translateZ(0);
   // 优化渲染性能，只在需要时启用
   backface-visibility: hidden;
+  // 防止容器尺寸变化导致父布局重排
+  will-change: auto;
+  // 确保容器不会因为内容变化而导致高度变化
+  // 使用固定的尺寸计算方式
+  // height: 100% 已经设置，但需要确保父容器也有固定高度
 
   // Markdown 样式（仅用于 Markdown 内容）
   h1,
@@ -438,6 +443,14 @@
   // 确保 iframe 不会影响布局
   min-height: 0;
   max-height: 100%;
+  // 防止 iframe 内容变化导致布局重排
+  contain: layout style paint;
+  // 确保 iframe 尺寸固定
+  flex-shrink: 0;
+  // 优化渲染性能
+  transform: translateZ(0);
+  // 防止 iframe 加载导致页面抖动
+  will-change: auto;
 }
 
 // Text/Code Preview
