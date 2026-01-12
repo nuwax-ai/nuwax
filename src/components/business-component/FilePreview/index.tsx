@@ -547,10 +547,11 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                 ? 'opacity'
                 : 'auto',
             visibility:
-              (isMarkdownVisible && (!actualTypeSwitching || !showPrevHtml)) ||
-              (textContent &&
-                resolvedType === 'markdown' &&
-                !actualTypeSwitching)
+              // 关键修复：只有当 resolvedType 是 'markdown' 时才可能显示
+              // 如果 resolvedType 是 'html'，无论其他条件如何，都应该隐藏
+              resolvedType === 'markdown' &&
+              ((isMarkdownVisible && (!actualTypeSwitching || !showPrevHtml)) ||
+                (textContent && !actualTypeSwitching))
                 ? 'visible'
                 : 'hidden',
             overflow: 'auto',
@@ -1020,6 +1021,17 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           setPrevTextContent(textContent);
           setIsTypeSwitching(true);
           setIsIframeLoading(true);
+        }
+
+        // 关键修复：当 fileType 为 'html' 时，立即清空 textContent，确保 markdown 容器不显示
+        if (fileType === 'html' && textContent) {
+          setTextContent('');
+          setIsMarkdownLoading(false);
+        }
+        // 当 fileType 为 'markdown' 时，立即清空 htmlUrl，确保 html 容器不显示
+        if (fileType === 'markdown' && htmlUrl) {
+          setHtmlUrl(null);
+          setIsIframeLoading(false);
         }
       }
 
