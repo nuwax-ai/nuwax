@@ -85,7 +85,7 @@ export interface FileTreeViewProps {
   // 是否可以删除技能文件, 默认不可以删除
   isCanDeleteSkillFile?: boolean;
   /** 刷新文件树回调 */
-  onRefreshFileTree?: () => void;
+  onRefreshFileTree?: () => Promise<void>;
   // 是否显示刷新按钮, 默认显示
   showRefreshButton?: boolean;
   // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
