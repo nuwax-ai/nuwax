@@ -2,7 +2,7 @@ import CodeEditor from '@/components/CodeEditor';
 import CopyIconButton from '@/components/base/CopyIconButton';
 
 import { CodeLangEnum } from '@/types/enums/plugin';
-import { Modal } from 'antd';
+import { Modal, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './SeeDetailModal.less';
@@ -41,7 +41,9 @@ const SeeDetailModal: React.FC<SeeDetailModalProps> = ({
       // 自定义 header 渲染内容
       title={
         <div className={cx(styles['see-detail-header'])}>
-          <div className={cx(styles['see-detail-header-title'])}>{title}</div>
+          <Tooltip title={title} placement="topLeft">
+            <div className={cx(styles['see-detail-header-title'])}>{title}</div>
+          </Tooltip>
           <div className={cx(styles['see-detail-header-actions'])}>
             <CopyIconButton
               data={data}
