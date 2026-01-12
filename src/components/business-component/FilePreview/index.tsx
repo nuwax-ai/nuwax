@@ -326,6 +326,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   const [isTypeSwitching, setIsTypeSwitching] = useState<boolean>(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
+  // 用于在类型切换期间保持稳定的 HTML URL，避免 iframe 重新加载
+  // 使用 state 而不是 ref，确保更新时触发重新渲染
+  const [stableHtmlUrl, setStableHtmlUrl] = useState<string | null>(null);
 
   const resolvedType = fileType || detectedType;
 
@@ -336,21 +339,51 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       return null;
     }
 
+    // 检测类型切换：通过比较当前类型和之前记录的类型
+    // 使用 fileType prop（同步）和 prevTypeRef（在 useEffect 中更新）来判断
+    const detectedTypeSwitch =
+      prevTypeRef.current !== undefined &&
+      prevTypeRef.current !== resolvedType &&
+      ((prevTypeRef.current === 'html' && resolvedType === 'markdown') ||
+        (prevTypeRef.current === 'markdown' && resolvedType === 'html'));
+
+    // 如果检测到类型切换，使用检测到的状态；否则使用 isTypeSwitching 状态
+    // 这样可以避免状态更新的时序问题
+    const actualTypeSwitching = detectedTypeSwitch || isTypeSwitching;
+
     // 计算显示状态
     const isHtmlVisible =
       resolvedType === 'html' && !isIframeLoading && htmlUrl;
     const isMarkdownVisible =
       resolvedType === 'markdown' && !isMarkdownLoading && textContent;
+
+    // 简化逻辑：如果正在从 HTML 切换到 Markdown，使用 htmlUrl 或 prevHtmlUrl 作为旧内容
+    // 关键：优先使用 prevHtmlUrl，如果还没设置，则使用 htmlUrl（因为状态更新可能有延迟）
+    // const prevHtmlUrlToShow =
+    //   actualTypeSwitching && resolvedType === 'markdown'
+    //     ? (prevHtmlUrl || htmlUrl || null)
+    //     : null;
+    const prevTextContentToShow =
+      actualTypeSwitching && resolvedType === 'html'
+        ? prevTextContent || textContent || ''
+        : '';
+
+    // 如果是从 HTML 切换到 Markdown，显示旧的 HTML 内容
+    // 关键修复：在类型切换期间，只要检测到类型切换且 htmlUrl 或 prevHtmlUrl 存在，就应该显示旧 HTML
+    // 直到 Markdown 内容完全加载、渲染并可见
+    // 使用更严格的条件：只有当 Markdown 完全准备好（内容已加载、已渲染、已可见）时，才隐藏旧 HTML
     const showPrevHtml =
-      isTypeSwitching &&
+      actualTypeSwitching &&
       resolvedType === 'markdown' &&
-      prevHtmlUrl &&
-      isMarkdownLoading;
+      (prevHtmlUrl || htmlUrl || stableHtmlUrl) && // htmlUrl 或 prevHtmlUrl 或 stableHtmlUrl 存在
+      (!isMarkdownVisible || isMarkdownLoading || !textContent); // Markdown 还没完全可见、还在加载、或没有内容时，继续显示旧 HTML
+
+    // 如果是从 Markdown 切换到 HTML，显示旧的 Markdown 内容
     const showPrevMarkdown =
-      isTypeSwitching &&
+      actualTypeSwitching &&
       resolvedType === 'html' &&
-      prevTextContent &&
-      isIframeLoading;
+      prevTextContentToShow && // prevTextContent 或 textContent 存在
+      !isHtmlVisible; // 只要 HTML 还没完全显示，就显示旧 Markdown
 
     return (
       <div
@@ -365,74 +398,19 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           overflow: 'hidden',
           // 使用 CSS containment 限制布局影响范围，防止影响父布局导致整页重排
           contain: 'layout style paint',
+          // 确保容器不会因为内容变化而导致高度变化
+          boxSizing: 'border-box',
+          // 使用 transform 来优化渲染性能（GPU 加速），避免布局重排
+          transform: 'translateZ(0)',
+          // 防止容器尺寸变化导致父布局重排
+          flexShrink: 0,
         }}
       >
-        {/* HTML 容器 - 始终渲染，通过 CSS 控制显示 */}
-        {/* 关键：容器始终存在，只改变 src 属性，避免 iframe 重新挂载导致布局重排 */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            opacity: isHtmlVisible ? 1 : 0,
-            transition: 'opacity 0.2s ease-in-out',
-            zIndex: isHtmlVisible ? 2 : showPrevMarkdown ? 1 : 0,
-            pointerEvents: isHtmlVisible ? 'auto' : 'none',
-            visibility:
-              isHtmlVisible || (htmlUrl && resolvedType === 'html')
-                ? 'visible'
-                : 'hidden',
-          }}
-        >
-          {/* 使用稳定的 key，避免 iframe 重新挂载 */}
-          {htmlUrl && (
-            <iframe
-              key="html-iframe-main"
-              src={resolvedType === 'html' ? htmlUrl : undefined}
-              sandbox={SANDBOX}
-              className={styles.htmlFrame}
-              title="HTML Preview"
-              style={{
-                width: '100%',
-                height: '100%',
-                border: 'none',
-                display: resolvedType === 'html' ? 'block' : 'none',
-              }}
-              onLoad={() => {
-                if (resolvedType === 'html') {
-                  // 使用 requestAnimationFrame 确保 DOM 更新后再隐藏加载状态
-                  requestAnimationFrame(() => {
-                    setIsIframeLoading(false);
-                    // 如果是类型切换，在 iframe 加载完成后清除切换状态
-                    if (isTypeSwitching) {
-                      // 使用双重 RAF 确保过渡动画平滑
-                      requestAnimationFrame(() => {
-                        setTimeout(() => {
-                          setIsTypeSwitching(false);
-                          setPrevTextContent('');
-                        }, 250); // 等待过渡动画完成
-                      });
-                    }
-                  });
-                }
-              }}
-              onError={() => {
-                if (resolvedType === 'html') {
-                  setIsIframeLoading(false);
-                  if (isTypeSwitching) {
-                    setIsTypeSwitching(false);
-                    setPrevTextContent('');
-                  }
-                }
-              }}
-            />
-          )}
-        </div>
-
-        {/* 类型切换时显示旧 HTML 内容 - HTML 切换到 Markdown */}
-        {showPrevHtml && (
+        {/* HTML 容器 - 始终渲染，通过 CSS 控制显示，避免 DOM 结构变化导致闪动 */}
+        {/* 关键修复：在类型切换期间，保持 HTML iframe 始终挂载，确保旧内容始终可见 */}
+        {/* 方案：容器始终渲染，通过 opacity 和 visibility 控制显示，不卸载 iframe */}
+        {/* 条件：有 htmlUrl 或 prevHtmlUrl 或 stableHtmlUrl 时渲染 */}
+        {(htmlUrl || prevHtmlUrl || stableHtmlUrl) && (
           <div
             style={{
               position: 'absolute',
@@ -440,29 +418,104 @@ const FilePreview: React.FC<FilePreviewProps> = ({
               left: 0,
               right: 0,
               bottom: 0,
-              opacity: 1,
-              transition: 'opacity 0.2s ease-in-out',
-              zIndex: 1,
-              pointerEvents: 'auto',
+              // 显示逻辑：
+              // 1. 正常显示 HTML 时：显示
+              // 2. 类型切换期间（从 HTML 切换到 Markdown）且有稳定的 URL：显示
+              opacity:
+                (resolvedType === 'html' && isHtmlVisible) ||
+                (actualTypeSwitching &&
+                  resolvedType === 'markdown' &&
+                  (stableHtmlUrl || prevHtmlUrl || htmlUrl) &&
+                  showPrevHtml)
+                  ? 1
+                  : 0,
+              transition: 'opacity 0.3s ease-in-out', // 稍微延长过渡时间，使过渡更平滑
+              willChange: 'opacity',
+              zIndex:
+                actualTypeSwitching &&
+                resolvedType === 'markdown' &&
+                showPrevHtml
+                  ? isMarkdownVisible
+                    ? 1
+                    : 2
+                  : resolvedType === 'html'
+                  ? 2
+                  : 0,
+              pointerEvents:
+                (resolvedType === 'html' && isHtmlVisible) ||
+                (actualTypeSwitching &&
+                  resolvedType === 'markdown' &&
+                  showPrevHtml)
+                  ? 'auto'
+                  : 'none',
+              visibility:
+                (resolvedType === 'html' && (isHtmlVisible || htmlUrl)) ||
+                (actualTypeSwitching &&
+                  resolvedType === 'markdown' &&
+                  (stableHtmlUrl || prevHtmlUrl || htmlUrl) &&
+                  showPrevHtml)
+                  ? 'visible'
+                  : 'hidden',
+              minHeight: 0,
+              maxHeight: '100%',
+              contain: 'layout style paint',
+              // 防止容器尺寸变化导致父布局重排
+              flexShrink: 0,
             }}
           >
+            {/* 关键修复：使用稳定的 key 和 src，确保 iframe 在类型切换期间不会被重新加载 */}
+            {/* 方案：在类型切换期间，使用 stableHtmlUrl 作为 src，确保完全不变 */}
+            {/* 正常显示时，使用 htmlUrl；类型切换期间，使用 stableHtmlUrl（如果已设置）或 htmlUrl */}
             <iframe
-              key={`html-prev-${prevHtmlUrl}`}
-              src={prevHtmlUrl!}
+              key="html-iframe-stable"
+              src={
+                // 关键：在类型切换期间，优先使用 stableHtmlUrl（如果已设置），确保 src 完全不变
+                // 如果 stableHtmlUrl 还没设置，使用 htmlUrl（此时应该还是旧的 HTML URL）
+                actualTypeSwitching &&
+                resolvedType === 'markdown' &&
+                stableHtmlUrl
+                  ? stableHtmlUrl
+                  : actualTypeSwitching && resolvedType === 'markdown'
+                  ? prevHtmlUrl || htmlUrl || ''
+                  : htmlUrl || ''
+              }
               sandbox={SANDBOX}
               className={styles.htmlFrame}
-              title="HTML Preview Old"
+              title="HTML Preview"
               style={{
                 width: '100%',
                 height: '100%',
                 border: 'none',
                 display: 'block',
+                minHeight: 0,
+                maxHeight: '100%',
+              }}
+              onLoad={() => {
+                requestAnimationFrame(() => {
+                  setIsIframeLoading(false);
+                  if (isTypeSwitching && resolvedType === 'html') {
+                    requestAnimationFrame(() => {
+                      setTimeout(() => {
+                        setIsTypeSwitching(false);
+                        setPrevTextContent('');
+                      }, 300); // 稍微延长等待时间，确保过渡完成
+                    });
+                  }
+                });
+              }}
+              onError={() => {
+                setIsIframeLoading(false);
+                if (isTypeSwitching && resolvedType === 'html') {
+                  setIsTypeSwitching(false);
+                  setPrevTextContent('');
+                }
               }}
             />
           </div>
         )}
 
         {/* Markdown 容器 - 始终渲染，通过 CSS 控制显示 */}
+        {/* 关键：确保容器尺寸与 HTML iframe 完全一致，避免高度变化导致抖动 */}
         <div
           style={{
             position: 'absolute',
@@ -470,28 +523,62 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             left: 0,
             right: 0,
             bottom: 0,
-            opacity: isMarkdownVisible ? 1 : 0,
-            transition: 'opacity 0.2s ease-in-out',
-            zIndex: isMarkdownVisible ? 2 : showPrevHtml ? 1 : 0,
-            pointerEvents: isMarkdownVisible ? 'auto' : 'none',
+            // 关键修复：在类型切换期间，只有当旧 HTML 不再显示时，才显示 Markdown
+            // 这样可以避免两个内容同时显示，导致布局变化
+            opacity:
+              isMarkdownVisible && (!actualTypeSwitching || !showPrevHtml)
+                ? 1
+                : 0,
+            // 使用不会导致重排的过渡属性，避免抖动
+            transition: 'opacity 0.3s ease-in-out', // 延长过渡时间，使过渡更平滑
+            zIndex:
+              isMarkdownVisible && (!actualTypeSwitching || !showPrevHtml)
+                ? 2
+                : showPrevHtml
+                ? 1
+                : 0,
+            pointerEvents:
+              isMarkdownVisible && (!actualTypeSwitching || !showPrevHtml)
+                ? 'auto'
+                : 'none',
+            // 确保过渡不会导致布局重排
+            willChange:
+              isMarkdownVisible && (!actualTypeSwitching || !showPrevHtml)
+                ? 'opacity'
+                : 'auto',
             visibility:
-              isMarkdownVisible || (textContent && resolvedType === 'markdown')
+              // 关键修复：只有当 resolvedType 是 'markdown' 时才可能显示
+              // 如果 resolvedType 是 'html'，无论其他条件如何，都应该隐藏
+              resolvedType === 'markdown' &&
+              ((isMarkdownVisible && (!actualTypeSwitching || !showPrevHtml)) ||
+                (textContent && !actualTypeSwitching))
                 ? 'visible'
                 : 'hidden',
             overflow: 'auto',
             padding: '24px',
             boxSizing: 'border-box',
+            // 确保容器尺寸固定，不会因为内容变化而改变
+            minHeight: 0,
+            maxHeight: '100%',
+            // 使用 contain 限制布局影响
+            contain: 'layout style paint',
+            // 防止内容渲染导致布局重排
+            transform: 'translateZ(0)',
+            backfaceVisibility: 'hidden',
           }}
         >
-          {textContent && resolvedType === 'markdown' && (
-            <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>
-              {textContent}
-            </PureMarkdownRenderer>
-          )}
+          {/* 关键修复：在类型切换期间，延迟渲染 Markdown 内容，直到旧 HTML 不再显示，避免布局变化 */}
+          {textContent &&
+            resolvedType === 'markdown' &&
+            (!actualTypeSwitching || !showPrevHtml) && (
+              <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>
+                {textContent}
+              </PureMarkdownRenderer>
+            )}
         </div>
 
         {/* 类型切换时显示旧 Markdown 内容 - Markdown 切换到 HTML */}
-        {showPrevMarkdown && (
+        {showPrevMarkdown && prevTextContentToShow && (
           <div
             style={{
               position: 'absolute',
@@ -510,7 +597,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             }}
           >
             <PureMarkdownRenderer id="file-preview-md-old" disableTyping={true}>
-              {prevTextContent}
+              {prevTextContentToShow}
             </PureMarkdownRenderer>
           </div>
         )}
@@ -518,6 +605,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     );
   }, [
     resolvedType,
+    fileType, // 添加 fileType 作为依赖，确保类型变化时重新计算
     htmlUrl,
     textContent,
     isTypeSwitching,
@@ -525,6 +613,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     prevTextContent,
     isIframeLoading,
     isMarkdownLoading,
+    stableHtmlUrl, // 添加 stableHtmlUrl 作为依赖，确保更新时重新计算
   ]);
 
   const fileName = useMemo(() => {
@@ -629,9 +718,18 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
       // 如果是类型切换，保存旧内容并设置切换状态
       if (isTypeSwitch && htmlUrl) {
+        // 关键修复：先保存 htmlUrl 到 prevHtmlUrl 和 stableHtmlUrl，确保 iframe src 稳定
         setPrevHtmlUrl(htmlUrl);
+        setStableHtmlUrl(htmlUrl); // 保存稳定的 HTML URL，避免 iframe 重新加载
         setIsTypeSwitching(true);
         setIsMarkdownLoading(true);
+        // 不清除 htmlUrl，保持为旧的 HTML URL，直到 Markdown 内容完全准备好
+      } else {
+        // 如果不是类型切换，清除 htmlUrl（如果是 Markdown 文件的话）
+        // 但只有当它不是类型切换时才清除，避免在切换过程中清除旧的 HTML URL
+        if (type === 'markdown' && !isTypeSwitch) {
+          setHtmlUrl(null);
+        }
       }
 
       // 如果内容发生变化，设置加载状态以平滑过渡
@@ -669,25 +767,42 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         setTextContent(content);
         setStatus('success');
         // 使用 requestAnimationFrame 确保 DOM 更新后再显示内容，避免布局重排
-        requestAnimationFrame(() => {
-          setIsMarkdownLoading(false);
-          // 新内容加载完成后，清除切换状态和旧内容
-          if (isTypeSwitch) {
-            // 使用双重 RAF 确保过渡动画平滑
+        if (isTypeSwitch) {
+          // 类型切换时，延迟显示 Markdown 内容，确保旧 HTML 始终可见，避免闪动和抖动
+          // 使用多重延迟确保 Markdown 内容完全渲染且高度稳定后再显示
+          requestAnimationFrame(() => {
             requestAnimationFrame(() => {
+              // 等待 Markdown 内容开始渲染
               setTimeout(() => {
-                setIsTypeSwitching(false);
-                setPrevHtmlUrl(null);
-              }, 250); // 等待过渡动画完成
+                // 再等待一段时间，确保 Markdown 内容的高度已经稳定
+                setTimeout(() => {
+                  setIsMarkdownLoading(false);
+                  // 再等待过渡动画时间，确保旧内容平滑消失
+                  setTimeout(() => {
+                    setIsTypeSwitching(false);
+                    // 在切换完成后清除旧的 htmlUrl，避免它继续影响渲染
+                    setPrevHtmlUrl(null);
+                    setHtmlUrl(null);
+                    setStableHtmlUrl(null); // 清除稳定的 HTML URL
+                  }, 300); // 等待过渡动画完成
+                }, 150); // 等待 Markdown 高度稳定
+              }, 100); // 等待 Markdown 开始渲染
             });
-          }
-        });
+          });
+        } else {
+          // 非类型切换，正常显示
+          requestAnimationFrame(() => {
+            setIsMarkdownLoading(false);
+          });
+        }
         onRendered?.();
       } catch (error: any) {
         setStatus('error');
         setIsMarkdownLoading(false);
         setIsTypeSwitching(false);
         setPrevHtmlUrl(null);
+        setHtmlUrl(null);
+        setStableHtmlUrl(null); // 清除稳定的 HTML URL
         setErrorMessage('文件内容加载失败，请重试');
         onError?.(error);
       }
@@ -721,6 +836,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         setHtmlUrl(src);
         setTextContent('');
         // 如果是类型切换，保持 success 状态，不显示 loading 覆盖层
+        // 这样旧的 Markdown 内容会继续显示，直到新的 HTML iframe 加载完成
+        // 如果不是类型切换，设置 success 状态
         // 使用 requestAnimationFrame 确保状态更新顺序正确，避免布局重排
         if (!isTypeSwitch) {
           requestAnimationFrame(() => {
@@ -870,6 +987,56 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
   useEffect(() => {
     if (src || srcList?.length) {
+      // 在调用 initPreview 之前，先检测并处理类型切换（如果有 fileType prop）
+      // 这样可以确保在 htmlMarkdownContent 重新计算时，切换状态已经设置好
+      // 如果提供了 fileType prop，使用它来检测类型切换；否则在 initPreview 中检测
+      if (fileType) {
+        const isTypeSwitch =
+          prevTypeRef.current !== undefined &&
+          prevTypeRef.current !== fileType &&
+          ((prevTypeRef.current === 'html' && fileType === 'markdown') ||
+            (prevTypeRef.current === 'markdown' && fileType === 'html'));
+
+        // 如果是从 HTML 切换到 Markdown，先保存旧的 htmlUrl
+        if (
+          isTypeSwitch &&
+          prevTypeRef.current === 'html' &&
+          fileType === 'markdown' &&
+          htmlUrl
+        ) {
+          // 关键修复：立即同步设置稳定的 HTML URL，避免 iframe 重新加载
+          setStableHtmlUrl(htmlUrl);
+          setPrevHtmlUrl(htmlUrl);
+          setIsTypeSwitching(true);
+          setIsMarkdownLoading(true);
+        }
+        // 如果是从 Markdown 切换到 HTML，先保存旧的 textContent
+        else if (
+          isTypeSwitch &&
+          prevTypeRef.current === 'markdown' &&
+          fileType === 'html' &&
+          textContent &&
+          textContent.trim() !== ''
+        ) {
+          setPrevTextContent(textContent);
+          setIsTypeSwitching(true);
+          setIsIframeLoading(true);
+        }
+
+        // 关键修复：当 fileType 为 'html' 时，立即清空 textContent，确保 markdown 容器不显示
+        if (fileType === 'html' && textContent) {
+          setTextContent('');
+          setIsMarkdownLoading(false);
+        }
+        // 当 fileType 为 'markdown' 时，立即清空 htmlUrl，确保 html 容器不显示
+        if (fileType === 'markdown' && htmlUrl) {
+          setHtmlUrl(null);
+          setIsIframeLoading(false);
+        }
+      }
+
+      // 然后调用 initPreview 处理新的内容
+      // initPreview 中也会处理类型切换，但如果 fileType prop 已经处理了，这里就是双重保险
       initPreview();
     } else {
       setStatus('idle');
