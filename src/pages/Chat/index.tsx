@@ -1096,7 +1096,7 @@ const Chat: React.FC = () => {
   useEffect(() => {
     // 设置最小宽度-扩展页面/文件树
     if (pagePreviewData || isFileTreeVisible) {
-      document.documentElement.style.minWidth = '1960px';
+      document.documentElement.style.minWidth = '1660px';
     } else {
       // 设置最小宽度-调试详情
       if (isSidebarVisible) {
@@ -1131,7 +1131,7 @@ const Chat: React.FC = () => {
         <div
           style={{
             flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
-            minWidth: pagePreviewData || isFileTreeVisible ? '1200px' : '530px',
+            minWidth: pagePreviewData || isFileTreeVisible ? '900px' : '530px',
           }}
         >
           <ResizableSplit
