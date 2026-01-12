@@ -301,3 +301,67 @@ export const downloadFileByUrl = async (
     message.error('下载文件失败，请重试');
   }
 };
+
+/**
+ * 根据新的文件名，替换 fileProxyUrl 中的文件名部分
+ * @param fileProxyUrl 文件代理 URL，格式: /api/computer/static/{conversationId}/{path}
+ * @param newName 新的文件名
+ * @param parentPath 父路径（可选），如果存在，path 格式为: {parentPath}/{fileName}，否则为: {fileName}
+ * @returns 更新后的文件代理 URL
+ */
+export const updateFileProxyUrl = (
+  fileProxyUrl: string,
+  newName: string,
+  parentPath?: string,
+): string => {
+  if (!fileProxyUrl) {
+    return '';
+  }
+
+  try {
+    const url = fileProxyUrl;
+    // fileProxyUrl 格式: /api/computer/static/{conversationId}/{path}
+    // 如果存在 parentPath，path 格式为: {parentPath}/{fileName}
+    // 如果不存在 parentPath，path 格式为: {fileName}
+
+    if (parentPath) {
+      // 如果有 parentPath，需要找到 parentPath 后面的文件名并替换
+      // 例如: /api/computer/static/1465924/demoSrc/oldName.png
+      // 需要替换为: /api/computer/static/1465924/demoSrc/newName.png
+      const parentPathWithSlash = `${parentPath}/`;
+      const parentPathIndex = url.indexOf(parentPathWithSlash);
+
+      if (parentPathIndex !== -1) {
+        // 找到 parentPath 后面的位置
+        const pathStartIndex = parentPathIndex + parentPathWithSlash.length;
+        // 提取基础路径（包含 /api/computer/static/{conversationId}/{parentPath}/）
+        const basePath = url.substring(0, pathStartIndex);
+        // 构建新的 URL: basePath + newName
+        return `${basePath}${newName}`;
+      } else {
+        // 如果找不到 parentPath，使用最后一部分替换的方式
+        const lastSlashIndex = url.lastIndexOf('/');
+        if (lastSlashIndex !== -1) {
+          const basePath = url.substring(0, lastSlashIndex + 1);
+          return `${basePath}${newName}`;
+        }
+      }
+    } else {
+      // 如果没有 parentPath，直接替换最后一个文件名
+      // 例如: /api/computer/static/1465924/oldName.png
+      // 需要替换为: /api/computer/static/1465924/newName.png
+      const lastSlashIndex = url.lastIndexOf('/');
+      if (lastSlashIndex !== -1) {
+        const basePath = url.substring(0, lastSlashIndex + 1);
+        return `${basePath}${newName}`;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to update fileProxyUrl:', error);
+    // 如果解析失败，保持原值
+    return fileProxyUrl;
+  }
+
+  // 如果所有情况都不匹配，返回原值
+  return fileProxyUrl;
+};
