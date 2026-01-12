@@ -1,4 +1,3 @@
-import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import {
   CloudDownloadOutlined,
   CodeOutlined,
@@ -24,6 +23,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import ReactMarkdown from 'react-markdown';
 import styles from './index.less';
 
 // @ts-ignore
@@ -35,6 +35,7 @@ import '@js-preview/excel/lib/index.css';
 // @ts-ignore
 import jsPreviewPdf from '@js-preview/pdf';
 // @ts-ignore
+import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { SANDBOX } from '@/constants/common.constants';
 import { init as pptxInit } from 'pptx-preview';
 
@@ -310,31 +311,33 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const previewerRef = useRef<any>(null);
-  const pptxRafIdRef = useRef<number | null>(null); // PPTX zoom 计算的 RAF ID
   const [status, setStatus] = useState<PreviewStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [detectedType, setDetectedType] = useState<FileType | undefined>();
   const [textContent, setTextContent] = useState<string>('');
   const [htmlUrl, setHtmlUrl] = useState<string | null>(null);
-  const [isIframeLoading, setIsIframeLoading] = useState<boolean>(false);
-  const [isMarkdownLoading, setIsMarkdownLoading] = useState<boolean>(false);
-  const prevSrcRef = useRef<string | null>(null);
-  const prevTypeRef = useRef<FileType | undefined>(undefined);
-  // 用于在类型切换时保持旧内容显示
-  const [prevHtmlUrl, setPrevHtmlUrl] = useState<string | null>(null);
-  const [prevTextContent, setPrevTextContent] = useState<string>('');
-  const [isTypeSwitching, setIsTypeSwitching] = useState<boolean>(false);
-  // 用于延迟切换显示类型，避免闪动
-  const [displayType, setDisplayType] = useState<FileType | undefined>(
-    undefined,
-  );
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
+  // 关键修复：延迟渲染 Markdown，避免从 HTML 切换到 MD 时的闪动
+  const [shouldRenderMarkdown, setShouldRenderMarkdown] =
+    useState<boolean>(false);
 
   const resolvedType = fileType || detectedType;
-  // 在类型切换时，使用 displayType 来延迟切换显示，避免闪动
-  const effectiveType =
-    isTypeSwitching && displayType ? displayType : resolvedType;
+
+  // 关键修复：当从 HTML 切换到 Markdown 时，延迟渲染 PureMarkdownRenderer
+  // 使用 useEffect 延迟渲染，确保 HTML 容器已完全移除且布局稳定
+  useEffect(() => {
+    if (resolvedType === 'markdown' && textContent) {
+      // 增加延迟时间，确保 HTML 容器完全移除且布局稳定
+      const timer = setTimeout(() => {
+        setShouldRenderMarkdown(true);
+      }, 100); // 增加延迟时间，确保 DOM 更新和布局计算完成
+      return () => clearTimeout(timer);
+    } else if (resolvedType !== 'markdown') {
+      // 切换到其他类型时，立即重置
+      setShouldRenderMarkdown(false);
+    }
+  }, [resolvedType, textContent]);
 
   const fileName = useMemo(() => {
     if (downloadFileName) return downloadFileName;
@@ -430,43 +433,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
     // Text-based types
     if (['markdown', 'text'].includes(type)) {
-      // 检测是否是类型切换（从 HTML 切换到 Markdown）
-      const isTypeSwitch =
-        prevTypeRef.current !== undefined &&
-        prevTypeRef.current !== type &&
-        prevTypeRef.current === 'html';
-
-      // 如果是类型切换，保存旧内容并设置切换状态
-      if (isTypeSwitch && htmlUrl) {
-        setPrevHtmlUrl(htmlUrl);
-        setIsTypeSwitching(true);
-        setIsMarkdownLoading(true);
-        // 保持显示旧类型，直到新内容准备好
-        setDisplayType('html');
-      }
-
-      // 如果内容发生变化，设置加载状态以平滑过渡
-      if (type === 'markdown' && typeof src === 'string') {
-        // 检查是否是新的 URL（通过比较 src 和之前记录的 src）
-        // 如果 src 变化且 textContent 已存在，说明是切换文件，需要显示加载状态
-        if (
-          prevSrcRef.current !== null &&
-          prevSrcRef.current !== src &&
-          textContent &&
-          textContent.trim() !== '' &&
-          !isTypeSwitch
-        ) {
-          setIsMarkdownLoading(true);
-        }
-        prevSrcRef.current = src;
-      }
-
-      // 如果是类型切换，保持 success 状态，不显示 loading 覆盖层
-      // 这样旧内容会继续显示，直到新内容加载完成
-      if (!isTypeSwitch) {
-        setStatus('loading');
-      }
-
+      setStatus('loading');
       try {
         let content: string;
         if (typeof src === 'string') {
@@ -479,69 +446,21 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         }
         setTextContent(content);
         setStatus('success');
-        setIsMarkdownLoading(false);
-        // 新内容加载完成后，延迟切换显示类型，确保平滑过渡
-        if (isTypeSwitch) {
-          // 先让新内容准备好，然后切换显示类型
-          setTimeout(() => {
-            setDisplayType(type);
-            // 再延迟清除切换状态，确保过渡动画完成
-            setTimeout(() => {
-              setIsTypeSwitching(false);
-              setPrevHtmlUrl(null);
-              setDisplayType(undefined);
-            }, 200);
-          }, 50);
-        }
         onRendered?.();
       } catch (error: any) {
         setStatus('error');
-        setIsMarkdownLoading(false);
-        setIsTypeSwitching(false);
-        setPrevHtmlUrl(null);
-        setDisplayType(undefined);
         setErrorMessage('文件内容加载失败，请重试');
         onError?.(error);
       }
-
-      // 更新类型记录
-      prevTypeRef.current = type;
       return;
     }
 
     // HTML handling
     if (type === 'html') {
-      // 检测是否是类型切换（从 Markdown 切换到 HTML）
-      const isTypeSwitch =
-        prevTypeRef.current !== undefined &&
-        prevTypeRef.current !== type &&
-        prevTypeRef.current === 'markdown';
-
-      // 如果是类型切换，保存旧内容并设置切换状态
-      if (isTypeSwitch && textContent && textContent.trim() !== '') {
-        setPrevTextContent(textContent);
-        setIsTypeSwitching(true);
-        setIsIframeLoading(true);
-        // 保持显示旧类型，直到新内容准备好
-        setDisplayType('markdown');
-      }
-
       if (typeof src === 'string') {
-        // 如果 URL 发生变化，设置加载状态以平滑过渡
-        // 或者如果是类型切换（从 Markdown 到 HTML），也需要显示加载状态
-        if (htmlUrl !== src || isTypeSwitch) {
-          setIsIframeLoading(true);
-        }
         setHtmlUrl(src);
         setTextContent('');
-        // 如果是类型切换，保持 success 状态，不显示 loading 覆盖层
-        if (!isTypeSwitch) {
-          setStatus('success');
-        }
-        // iframe 加载完成后，延迟切换显示类型
-        if (isTypeSwitch) {
-          // onLoad 事件会处理切换
-        }
+        setStatus('success');
         onRendered?.();
       } else {
         setStatus('loading');
@@ -562,8 +481,6 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           onError?.(error);
         }
       }
-      // 更新类型记录
-      prevTypeRef.current = type;
       return;
     }
 
@@ -637,33 +554,6 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             previewSrc = await response.arrayBuffer();
           }
           await previewer.preview(previewSrc);
-
-          // 动态计算 zoom 缩放比例，确保幻灯片完全显示在容器内
-          // 等待 DOM 更新后计算
-          pptxRafIdRef.current = requestAnimationFrame(() => {
-            const wrapper = containerRef.current?.querySelector(
-              '.pptx-preview-wrapper',
-            ) as HTMLElement;
-            if (!wrapper) return;
-
-            const slideWrappers = wrapper.querySelectorAll(
-              '.pptx-preview-slide-wrapper',
-            ) as NodeListOf<HTMLElement>;
-            if (slideWrappers.length === 0) return;
-
-            // 获取容器可用宽度（减去 padding）
-            const availableWidth = wrapper.clientWidth - 40; // 40px for margin
-
-            slideWrappers.forEach((slideWrapper) => {
-              // 获取幻灯片实际渲染宽度
-              const slideScrollWidth = slideWrapper.scrollWidth;
-              if (slideScrollWidth > availableWidth) {
-                // 计算需要的缩放比例
-                const zoomRatio = availableWidth / slideScrollWidth;
-                slideWrapper.style.zoom = String(zoomRatio);
-              }
-            });
-          });
           break;
         }
       }
@@ -688,21 +578,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       initPreview();
     } else {
       setStatus('idle');
-      setIsIframeLoading(false);
-      setIsMarkdownLoading(false);
-      setIsTypeSwitching(false);
-      prevSrcRef.current = null;
-      prevTypeRef.current = undefined;
-      setPrevHtmlUrl(null);
-      setPrevTextContent('');
-      setDisplayType(undefined);
     }
     return () => {
-      // 取消未执行的 PPTX zoom 计算 RAF
-      if (pptxRafIdRef.current) {
-        cancelAnimationFrame(pptxRafIdRef.current);
-        pptxRafIdRef.current = null;
-      }
       if (previewerRef.current) {
         try {
           previewerRef.current.destroy?.();
@@ -788,9 +665,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   };
 
   const renderPreviewContent = () => {
-    if (!effectiveType) return null;
+    if (!resolvedType) return null;
 
-    switch (effectiveType) {
+    switch (resolvedType) {
       case 'image':
         return (
           <div className={styles.imagePreview}>
@@ -843,93 +720,47 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         );
       case 'html':
         return (
-          <div
-            className={styles.htmlPreview}
-            style={{
-              position: 'relative',
-              height: '100%',
-              width: '100%',
-            }}
-          >
-            {/* 类型切换时显示旧内容（Markdown） */}
-            {isTypeSwitching &&
-              prevTextContent &&
-              displayType === 'markdown' && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    opacity: isIframeLoading ? 1 : 0,
-                    transition: 'opacity 0.3s ease-in-out',
-                    zIndex: 1,
-                    pointerEvents: isIframeLoading ? 'auto' : 'none',
-                    overflow: 'auto',
-                  }}
-                >
-                  <PureMarkdownRenderer
-                    id="file-preview-md-old"
-                    disableTyping={true}
-                  >
-                    {prevTextContent}
-                  </PureMarkdownRenderer>
-                </div>
-              )}
-            {/* 新内容（HTML iframe） */}
+          <div className={styles.htmlPreview}>
             <iframe
               src={htmlUrl || undefined}
               srcDoc={htmlUrl ? undefined : textContent}
               sandbox={SANDBOX}
               className={styles.htmlFrame}
               title="HTML Preview"
-              style={{
-                opacity: isIframeLoading ? 0 : 1,
-                transition: 'opacity 0.3s ease-in-out',
-                position: 'relative',
-                zIndex: 2,
-                height: '100%',
-                width: '100%',
-              }}
-              onLoad={() => {
-                setIsIframeLoading(false);
-                // 如果是类型切换，在 iframe 加载完成后延迟切换显示类型
-                if (isTypeSwitching) {
-                  setTimeout(() => {
-                    setDisplayType('html');
-                    // 再延迟清除切换状态，确保过渡动画完成
-                    setTimeout(() => {
-                      setIsTypeSwitching(false);
-                      setPrevTextContent('');
-                      setDisplayType(undefined);
-                    }, 200);
-                  }, 50);
-                }
-              }}
-              onError={() => {
-                setIsIframeLoading(false);
-                if (isTypeSwitching) {
-                  setIsTypeSwitching(false);
-                  setPrevTextContent('');
-                  setDisplayType(undefined);
-                }
-              }}
             />
           </div>
         );
       case 'markdown':
         return (
           <div
-            className={styles.markdownPreview}
+            className={`${styles.markdownPreview} ${styles['p-16']}`}
             style={{
-              position: 'relative',
-              height: '100%',
+              // 关键修复：确保容器尺寸稳定，避免 PureMarkdownRenderer 初始化时导致布局重排
               width: '100%',
+              height: '100%',
+              minHeight: 0,
+              maxHeight: '100%',
+              contain: 'layout style paint',
+              boxSizing: 'border-box',
+              position: 'relative',
             }}
           >
-            {/* 类型切换时显示旧内容（HTML iframe） */}
-            {isTypeSwitching && prevHtmlUrl && displayType === 'html' && (
+            {/* 关键修复：延迟渲染 PureMarkdownRenderer，避免从 HTML 切换到 MD 时的闪动 */}
+            {/* 在延迟期间使用 ReactMarkdown 作为占位符，避免空白 */}
+            {!shouldRenderMarkdown && textContent && (
+              <div
+                style={{
+                  padding: '24px',
+                  opacity: 0,
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                }}
+              >
+                <ReactMarkdown>{textContent}</ReactMarkdown>
+              </div>
+            )}
+            {/* PureMarkdownRenderer 延迟渲染，使用绝对定位和隐藏，避免初始化时影响布局 */}
+            {shouldRenderMarkdown && textContent && (
               <div
                 style={{
                   position: 'absolute',
@@ -937,36 +768,37 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  opacity: isMarkdownLoading ? 1 : 0,
-                  transition: 'opacity 0.3s ease-in-out',
-                  zIndex: 1,
-                  pointerEvents: isMarkdownLoading ? 'auto' : 'none',
+                  padding: '24px',
+                  overflow: 'auto',
+                  // 关键修复：初始时完全隐藏，避免 DsMarkdown 初始化时导致布局重排
+                  opacity: 0,
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                }}
+                ref={(node) => {
+                  if (node) {
+                    // 等待 DsMarkdown 初始化完成后再显示，使用更长的延迟确保初始化完成
+                    const timer = setTimeout(() => {
+                      requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                          if (node) {
+                            node.style.opacity = '1';
+                            node.style.visibility = 'visible';
+                            node.style.pointerEvents = 'auto';
+                            node.style.transition = 'opacity 0.3s ease-in-out';
+                          }
+                        });
+                      });
+                    }, 150); // 增加延迟时间，确保 DsMarkdown 初始化完成
+                    return () => clearTimeout(timer);
+                  }
                 }}
               >
-                <iframe
-                  src={prevHtmlUrl}
-                  sandbox={SANDBOX}
-                  className={styles.htmlFrame}
-                  title="HTML Preview Old"
-                  style={{ width: '100%', height: '100%', border: 'none' }}
-                />
+                <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>
+                  {textContent}
+                </PureMarkdownRenderer>
               </div>
             )}
-            {/* 新内容（Markdown） */}
-            <div
-              style={{
-                position: 'relative',
-                zIndex: 2,
-                opacity: isMarkdownLoading ? 0 : 1,
-                transition: 'opacity 0.3s ease-in-out',
-                height: '100%',
-                width: '100%',
-              }}
-            >
-              <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>
-                {textContent}
-              </PureMarkdownRenderer>
-            </div>
           </div>
         );
       case 'text':
@@ -1032,7 +864,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         </div>
       )}
 
-      {status === 'loading' && !isMarkdownLoading && !isIframeLoading && (
+      {status === 'loading' && (
         <div className={styles.loadingOverlay}>
           {resolvedType && getFileIcon(resolvedType)}
           <Spin size="large" />
@@ -1082,7 +914,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
       {status === 'success' &&
         ['image', 'audio', 'video', 'html', 'markdown', 'text'].includes(
-          effectiveType || '',
+          resolvedType || '',
         ) &&
         renderPreviewContent()}
 
@@ -1097,7 +929,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           // 只有在是文档类型时才占据空间（display block），否则隐藏不占据空间
           display: shouldShowContent ? 'block' : 'none',
           // Excel 不需要 overflow，因为它自己处理
-          overflow: effectiveType === 'xlsx' ? 'hidden' : 'auto',
+          overflow: resolvedType === 'xlsx' ? 'hidden' : 'auto',
         }}
       />
     </div>

@@ -177,12 +177,15 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
       <div className={styles.fileInfo}>
         {viewMode === 'preview' ? (
           <>
-            <div className={styles.fileDetails}>
-              <div className={styles.fileName}>{fileName}</div>
-              {formattedSize && (
-                <span className={styles.fileMeta}>({formattedSize})</span>
-              )}
-            </div>
+            {/* 根据文件树列表是否展示来控制显隐：文件树展开时隐藏，文件树隐藏时显示 */}
+            {!isFileTreeVisible && (
+              <div className={styles.fileDetails}>
+                <div className={styles.fileName}>{fileName}</div>
+                {formattedSize && (
+                  <span className={styles.fileMeta}>({formattedSize})</span>
+                )}
+              </div>
+            )}
             {/* 只有存在 fileProxyUrl 时，才显示预览和代码视图切换按钮，可以通过 fileProxyUrl 预览和代码视图 */}
             {targetNode?.fileProxyUrl &&
               fileName &&
