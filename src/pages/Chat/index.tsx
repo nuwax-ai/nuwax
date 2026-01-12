@@ -658,7 +658,7 @@ const Chat: React.FC = () => {
     const { code } = await apiUpdateStaticFile(newSkillInfo);
     if (code === SUCCESS_CODE && id) {
       // 新建成功后，重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
-      handleRefreshFileList(id);
+      await handleRefreshFileList(id);
     }
 
     return code === SUCCESS_CODE;
@@ -821,7 +821,7 @@ const Chat: React.FC = () => {
         if (code === SUCCESS_CODE) {
           messageAntd.success('上传成功');
           // 刷新项目详情
-          handleRefreshFileList(id);
+          await handleRefreshFileList(id);
         }
       } catch (error) {
         console.error('上传失败', error);
@@ -1096,7 +1096,7 @@ const Chat: React.FC = () => {
   useEffect(() => {
     // 设置最小宽度-扩展页面/文件树
     if (pagePreviewData || isFileTreeVisible) {
-      document.documentElement.style.minWidth = '1960px';
+      document.documentElement.style.minWidth = '1660px';
     } else {
       // 设置最小宽度-调试详情
       if (isSidebarVisible) {
@@ -1131,14 +1131,14 @@ const Chat: React.FC = () => {
         <div
           style={{
             flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
-            minWidth: pagePreviewData || isFileTreeVisible ? '1200px' : '530px',
+            minWidth: pagePreviewData || isFileTreeVisible ? '900px' : '430px',
           }}
         >
           <ResizableSplit
             resetTrigger={
               pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
             }
-            minLeftWidth={530}
+            minLeftWidth={430}
             defaultLeftWidth={
               agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
             }

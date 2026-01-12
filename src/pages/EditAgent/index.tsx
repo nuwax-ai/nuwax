@@ -578,7 +578,7 @@ const EditAgent: React.FC = () => {
 
     const { code } = await apiUpdateStaticFile(newSkillInfo);
     if (code === SUCCESS_CODE && devConversationId) {
-      handleRefreshFileList(devConversationId);
+      await handleRefreshFileList(devConversationId);
     }
 
     return code === SUCCESS_CODE;
@@ -668,7 +668,7 @@ const EditAgent: React.FC = () => {
     // 使用文件全量更新逻辑
     const { code } = await apiUpdateStaticFile(newSkillInfo);
     if (code === SUCCESS_CODE) {
-      handleRefreshFileList(devConversationId);
+      await handleRefreshFileList(devConversationId);
     }
     return code === SUCCESS_CODE;
   };
@@ -749,7 +749,7 @@ const EditAgent: React.FC = () => {
         });
         if (code === SUCCESS_CODE && devConversationId) {
           // 上传成功后，重新查询文件树列表
-          handleRefreshFileList(devConversationId);
+          await handleRefreshFileList(devConversationId);
         }
       } catch (error) {
         console.error('上传失败', error);
@@ -885,7 +885,7 @@ const EditAgent: React.FC = () => {
   useEffect(() => {
     // 设置最小宽度-扩展页面/文件树
     if (pagePreviewData || isFileTreeVisible) {
-      document.documentElement.style.minWidth = '2300px';
+      document.documentElement.style.minWidth = '2000px';
     } else {
       // 设置最小宽度-调试详情
       if (showType === EditAgentShowType.Debug_Details) {
@@ -973,11 +973,10 @@ const EditAgent: React.FC = () => {
           pagePreviewData ||
           isFileTreeVisible) && (
           <div
-            // className={cx(isFileTreeVisible && 'flex-1')}
             style={{
               flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
               minWidth:
-                pagePreviewData || isFileTreeVisible ? '1590px' : '530px',
+                pagePreviewData || isFileTreeVisible ? '1290px' : '530px',
             }}
           >
             {/*预览与调试和预览页面*/}
