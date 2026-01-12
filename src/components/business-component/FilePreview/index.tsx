@@ -622,7 +622,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         if (
           status === 'success' &&
           resolvedType &&
-          ['pptx', 'xlsx'].includes(resolvedType)
+          ['pptx', 'xlsx', 'pdf', 'docx'].includes(resolvedType)
         ) {
           lastSizeRef.current = { width, height };
           initPreview();
