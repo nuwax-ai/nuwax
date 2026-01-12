@@ -35,6 +35,7 @@ import '@js-preview/excel/lib/index.css';
 // @ts-ignore
 import jsPreviewPdf from '@js-preview/pdf';
 // @ts-ignore
+import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { SANDBOX } from '@/constants/common.constants';
 import { init as pptxInit } from 'pptx-preview';
 
@@ -317,8 +318,26 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   const [htmlUrl, setHtmlUrl] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
+  // 关键修复：延迟渲染 Markdown，避免从 HTML 切换到 MD 时的闪动
+  const [shouldRenderMarkdown, setShouldRenderMarkdown] =
+    useState<boolean>(false);
 
   const resolvedType = fileType || detectedType;
+
+  // 关键修复：当从 HTML 切换到 Markdown 时，延迟渲染 PureMarkdownRenderer
+  // 使用 useEffect 延迟渲染，确保 HTML 容器已完全移除且布局稳定
+  useEffect(() => {
+    if (resolvedType === 'markdown' && textContent) {
+      // 增加延迟时间，确保 HTML 容器完全移除且布局稳定
+      const timer = setTimeout(() => {
+        setShouldRenderMarkdown(true);
+      }, 100); // 增加延迟时间，确保 DOM 更新和布局计算完成
+      return () => clearTimeout(timer);
+    } else if (resolvedType !== 'markdown') {
+      // 切换到其他类型时，立即重置
+      setShouldRenderMarkdown(false);
+    }
+  }, [resolvedType, textContent]);
 
   const fileName = useMemo(() => {
     if (downloadFileName) return downloadFileName;
@@ -713,8 +732,73 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         );
       case 'markdown':
         return (
-          <div className={`${styles.markdownPreview} ${styles['p-16']}`}>
-            <ReactMarkdown>{textContent}</ReactMarkdown>
+          <div
+            className={`${styles.markdownPreview} ${styles['p-16']}`}
+            style={{
+              // 关键修复：确保容器尺寸稳定，避免 PureMarkdownRenderer 初始化时导致布局重排
+              width: '100%',
+              height: '100%',
+              minHeight: 0,
+              maxHeight: '100%',
+              contain: 'layout style paint',
+              boxSizing: 'border-box',
+              position: 'relative',
+            }}
+          >
+            {/* 关键修复：延迟渲染 PureMarkdownRenderer，避免从 HTML 切换到 MD 时的闪动 */}
+            {/* 在延迟期间使用 ReactMarkdown 作为占位符，避免空白 */}
+            {!shouldRenderMarkdown && textContent && (
+              <div
+                style={{
+                  padding: '24px',
+                  opacity: 0,
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                }}
+              >
+                <ReactMarkdown>{textContent}</ReactMarkdown>
+              </div>
+            )}
+            {/* PureMarkdownRenderer 延迟渲染，使用绝对定位和隐藏，避免初始化时影响布局 */}
+            {shouldRenderMarkdown && textContent && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  padding: '24px',
+                  overflow: 'auto',
+                  // 关键修复：初始时完全隐藏，避免 DsMarkdown 初始化时导致布局重排
+                  opacity: 0,
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                }}
+                ref={(node) => {
+                  if (node) {
+                    // 等待 DsMarkdown 初始化完成后再显示，使用更长的延迟确保初始化完成
+                    const timer = setTimeout(() => {
+                      requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                          if (node) {
+                            node.style.opacity = '1';
+                            node.style.visibility = 'visible';
+                            node.style.pointerEvents = 'auto';
+                            node.style.transition = 'opacity 0.3s ease-in-out';
+                          }
+                        });
+                      });
+                    }, 150); // 增加延迟时间，确保 DsMarkdown 初始化完成
+                    return () => clearTimeout(timer);
+                  }
+                }}
+              >
+                <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>
+                  {textContent}
+                </PureMarkdownRenderer>
+              </div>
+            )}
           </div>
         );
       case 'text':
