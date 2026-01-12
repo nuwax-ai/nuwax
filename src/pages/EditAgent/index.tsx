@@ -885,7 +885,7 @@ const EditAgent: React.FC = () => {
   useEffect(() => {
     // 设置最小宽度-扩展页面/文件树
     if (pagePreviewData || isFileTreeVisible) {
-      document.documentElement.style.minWidth = '2300px';
+      document.documentElement.style.minWidth = '2000px';
     } else {
       // 设置最小宽度-调试详情
       if (showType === EditAgentShowType.Debug_Details) {
@@ -973,11 +973,10 @@ const EditAgent: React.FC = () => {
           pagePreviewData ||
           isFileTreeVisible) && (
           <div
-            // className={cx(isFileTreeVisible && 'flex-1')}
             style={{
               flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
               minWidth:
-                pagePreviewData || isFileTreeVisible ? '1590px' : '530px',
+                pagePreviewData || isFileTreeVisible ? '1290px' : '530px',
             }}
           >
             {/*预览与调试和预览页面*/}
