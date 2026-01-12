@@ -14,6 +14,7 @@ import {
 import { isMarkdownFile } from '@/utils/common';
 import {
   downloadFileByUrl,
+  updateFileProxyUrl,
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
@@ -396,7 +397,24 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             });
           }
         } else {
-          setSelectedFileNode(null);
+          try {
+            // 如果文件ID包含点，则认为是文件名，需要获取文件内容
+            if (fileId && fileId.includes('.')) {
+              // 获取文件名后缀
+              const suffix = fileId.split('.').pop();
+              // 如果文件名后缀为 office 文档类型，则获取文件内容
+              if (suffix && ['doc', 'xls', 'ppt'].includes(suffix)) {
+                const newFileId = fileId + 'x';
+                handleFileSelectInternal(newFileId);
+                return;
+              }
+            }
+
+            setSelectedFileNode(null);
+          } catch (error) {
+            console.error('文件选择失败: ', error);
+            setSelectedFileNode(null);
+          }
         }
       },
       [files, isRenamingFile, selectedFileId, handleRefreshFileList],
@@ -691,9 +709,34 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               (selectedFileNode.id === fileNode.id ||
                 selectedFileNode.name === fileNode.name)
             ) {
+              // 计算新的文件ID: 如果存在父路径，则使用父路径 + 新文件名；否则使用新文件名,
+              const newNodeId = fileNode.parentPath
+                ? `${fileNode.parentPath}/${newName}`
+                : newName;
+
+              // 根据新的文件名，替换 fileProxyUrl 中的文件名部分
+              const newFileProxyUrl = fileNode?.fileProxyUrl
+                ? updateFileProxyUrl(
+                    fileNode.fileProxyUrl,
+                    newName,
+                    fileNode.parentPath || undefined,
+                  )
+                : fileNode?.fileProxyUrl;
+
               setSelectedFileNode((prevNode) =>
-                prevNode ? { ...prevNode, name: newName } : prevNode,
+                prevNode
+                  ? {
+                      ...prevNode,
+                      name: newName,
+                      id: newNodeId,
+                      path: newNodeId,
+                      fullPath: newNodeId,
+                      fileProxyUrl: newFileProxyUrl, // 更新 fileProxyUrl
+                    }
+                  : prevNode,
               );
+
+              setSelectedFileId(newNodeId);
             }
           } else {
             setFiles(filesBackup);
@@ -1191,12 +1234,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <ImageViewer
             imageUrl={processImageContent(selectedFileNode?.content || '')}
             alt={selectedFileId}
-            onRefresh={() => {
-              // 刷新图片预览
-              // if (previewRef.current) {
-              //   previewRef.current.refresh();
-              // }
-            }}
           />
         );
       }
@@ -1229,22 +1266,20 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
         const isHtml = fileName?.includes('.htm');
 
-        const { url: htmlUrl } = buildFilePreviewProps(
-          'html',
-          fileProxyUrl,
-          selectedFileId,
-        );
-
-        // 使用稳定的 key，避免切换文件时组件重新挂载导致闪动
-        // HTML 和 Markdown 使用同一个 key，让组件通过 src 和 fileType 变化来更新内容
-        // 这样可以避免从 HTML 切换到 Markdown 时组件重新挂载
-        const stableKey = 'html-markdown-preview';
+        // 获取文件预览的 key 和 url
+        const fileTypeForPreview = isHtml ? 'html' : 'markdown';
+        const { key: filePreviewKey, url: filePreviewUrl } =
+          buildFilePreviewProps(
+            fileTypeForPreview,
+            fileProxyUrl,
+            selectedFileId,
+          );
 
         return (
           <FilePreview
-            key={stableKey}
-            src={htmlUrl}
-            fileType={isHtml ? 'html' : 'markdown'}
+            key={filePreviewKey}
+            src={filePreviewUrl}
+            fileType={fileTypeForPreview}
           />
         );
       }
