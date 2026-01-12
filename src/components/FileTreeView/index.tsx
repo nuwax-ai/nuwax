@@ -691,9 +691,24 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               (selectedFileNode.id === fileNode.id ||
                 selectedFileNode.name === fileNode.name)
             ) {
+              // 计算新的文件ID: 如果存在父路径，则使用父路径 + 新文件名；否则使用新文件名,
+              const newNodeId = fileNode.parentPath
+                ? `${fileNode.parentPath}/${newName}`
+                : newName;
+
               setSelectedFileNode((prevNode) =>
-                prevNode ? { ...prevNode, name: newName } : prevNode,
+                prevNode
+                  ? {
+                      ...prevNode,
+                      name: newName,
+                      id: newNodeId,
+                      path: newNodeId,
+                      fullPath: newNodeId,
+                    }
+                  : prevNode,
               );
+
+              setSelectedFileId(newNodeId);
             }
           } else {
             setFiles(filesBackup);

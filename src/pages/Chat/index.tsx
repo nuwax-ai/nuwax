@@ -658,7 +658,7 @@ const Chat: React.FC = () => {
     const { code } = await apiUpdateStaticFile(newSkillInfo);
     if (code === SUCCESS_CODE && id) {
       // 新建成功后，重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
-      handleRefreshFileList(id);
+      await handleRefreshFileList(id);
     }
 
     return code === SUCCESS_CODE;
@@ -821,7 +821,7 @@ const Chat: React.FC = () => {
         if (code === SUCCESS_CODE) {
           messageAntd.success('上传成功');
           // 刷新项目详情
-          handleRefreshFileList(id);
+          await handleRefreshFileList(id);
         }
       } catch (error) {
         console.error('上传失败', error);
