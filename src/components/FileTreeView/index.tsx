@@ -397,7 +397,24 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             });
           }
         } else {
-          setSelectedFileNode(null);
+          try {
+            // 如果文件ID包含点，则认为是文件名，需要获取文件内容
+            if (fileId && fileId.includes('.')) {
+              // 获取文件名后缀
+              const suffix = fileId.split('.').pop();
+              // 如果文件名后缀为 office 文档类型，则获取文件内容
+              if (suffix && ['doc', 'xls', 'ppt'].includes(suffix)) {
+                const newFileId = fileId + 'x';
+                handleFileSelectInternal(newFileId);
+                return;
+              }
+            }
+
+            setSelectedFileNode(null);
+          } catch (error) {
+            console.error('文件选择失败: ', error);
+            setSelectedFileNode(null);
+          }
         }
       },
       [files, isRenamingFile, selectedFileId, handleRefreshFileList],
