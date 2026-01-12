@@ -691,9 +691,24 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               (selectedFileNode.id === fileNode.id ||
                 selectedFileNode.name === fileNode.name)
             ) {
+              // 计算新的文件ID: 如果存在父路径，则使用父路径 + 新文件名；否则使用新文件名,
+              const newNodeId = fileNode.parentPath
+                ? `${fileNode.parentPath}/${newName}`
+                : newName;
+
               setSelectedFileNode((prevNode) =>
-                prevNode ? { ...prevNode, name: newName } : prevNode,
+                prevNode
+                  ? {
+                      ...prevNode,
+                      name: newName,
+                      id: newNodeId,
+                      path: newNodeId,
+                      fullPath: newNodeId,
+                    }
+                  : prevNode,
               );
+
+              setSelectedFileId(newNodeId);
             }
           } else {
             setFiles(filesBackup);
@@ -1191,12 +1206,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <ImageViewer
             imageUrl={processImageContent(selectedFileNode?.content || '')}
             alt={selectedFileId}
-            onRefresh={() => {
-              // 刷新图片预览
-              // if (previewRef.current) {
-              //   previewRef.current.refresh();
-              // }
-            }}
           />
         );
       }
@@ -1229,22 +1238,20 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
         const isHtml = fileName?.includes('.htm');
 
-        const { url: htmlUrl } = buildFilePreviewProps(
-          'html',
-          fileProxyUrl,
-          selectedFileId,
-        );
-
-        // 使用稳定的 key，避免切换文件时组件重新挂载导致闪动
-        // HTML 和 Markdown 使用同一个 key，让组件通过 src 和 fileType 变化来更新内容
-        // 这样可以避免从 HTML 切换到 Markdown 时组件重新挂载
-        const stableKey = 'html-markdown-preview';
+        // 获取文件预览的 key 和 url
+        const fileTypeForPreview = isHtml ? 'html' : 'markdown';
+        const { key: filePreviewKey, url: filePreviewUrl } =
+          buildFilePreviewProps(
+            fileTypeForPreview,
+            fileProxyUrl,
+            selectedFileId,
+          );
 
         return (
           <FilePreview
-            key={stableKey}
-            src={htmlUrl}
-            fileType={isHtml ? 'html' : 'markdown'}
+            key={filePreviewKey}
+            src={filePreviewUrl}
+            fileType={fileTypeForPreview}
           />
         );
       }

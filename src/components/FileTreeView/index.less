@@ -31,6 +31,14 @@
   // overflow-y: auto;
   position: relative;
   min-height: 0;
+  // 关键修复：设置宽度相关属性，避免从 HTML 切换到 MD 文件时的抖动
+  // 确保容器宽度稳定，不会因为内容变化而改变
+  width: 100%;
+  min-width: 0; // 允许 flex 子元素收缩
+  max-width: 100%;
+  box-sizing: border-box;
+  // 使用 contain 限制布局影响范围，防止内容变化导致父布局重排
+  contain: layout style;
 }
 
 // 全屏 Modal 样式
