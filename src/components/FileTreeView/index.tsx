@@ -14,6 +14,7 @@ import {
 import { isMarkdownFile } from '@/utils/common';
 import {
   downloadFileByUrl,
+  updateFileProxyUrl,
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
@@ -696,6 +697,15 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 ? `${fileNode.parentPath}/${newName}`
                 : newName;
 
+              // 根据新的文件名，替换 fileProxyUrl 中的文件名部分
+              const newFileProxyUrl = fileNode?.fileProxyUrl
+                ? updateFileProxyUrl(
+                    fileNode.fileProxyUrl,
+                    newName,
+                    fileNode.parentPath || undefined,
+                  )
+                : fileNode?.fileProxyUrl;
+
               setSelectedFileNode((prevNode) =>
                 prevNode
                   ? {
@@ -704,6 +714,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                       id: newNodeId,
                       path: newNodeId,
                       fullPath: newNodeId,
+                      fileProxyUrl: newFileProxyUrl, // 更新 fileProxyUrl
                     }
                   : prevNode,
               );
