@@ -44,7 +44,7 @@ export interface FileTreeViewProps {
   /** 当前视图模式 */
   viewMode?: 'preview' | 'desktop';
   /** 上传多个文件回调 */
-  onUploadFiles?: (node: FileNode | null) => void;
+  onUploadFiles?: (node: FileNode | null) => Promise<void>;
   /** 导出项目回调 */
   onExportProject?: () => Promise<void>;
   /** 重命名文件回调 */
