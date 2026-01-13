@@ -768,17 +768,61 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         message.warning('你有未保存的文件修改，请先保存后再上传文件');
         return;
       }
-      setIsUploadingFiles(true);
-      try {
-        // 直接调用现有的上传多个文件功能
-        await onUploadFiles?.(node);
-        setTimeout(() => {
-          setIsUploadingFiles(false);
-        }, 1000);
-      } catch (error) {
-        console.error('上传文件失败', error);
-        setIsUploadingFiles(false);
+
+      // 两种情况 第一个是文件夹，第二个是文件
+      let relativePath = '';
+
+      if (node) {
+        if (node.type === 'file') {
+          relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
+        } else if (node.type === 'folder') {
+          relativePath = node.path + '/';
+        }
       }
+
+      // 创建一个隐藏的文件输入框
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.style.display = 'none';
+      input.multiple = true;
+      document.body.appendChild(input);
+
+      // 等待用户选择文件
+      input.click();
+
+      input.onchange = async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) {
+          document.body.removeChild(input);
+          return;
+        }
+
+        setIsUploadingFiles(true);
+
+        try {
+          // 获取上传的文件列表
+          const files = Array.from((e.target as HTMLInputElement).files || []);
+          // 获取上传的文件路径列表
+          const filePaths = files.map((file) => relativePath + file.name);
+
+          // 直接调用现有的上传多个文件功能
+          await onUploadFiles?.(files, filePaths);
+
+          setTimeout(() => {
+            setIsUploadingFiles(false);
+          }, 1000);
+        } catch (error) {
+          console.error('上传文件失败', error);
+          setIsUploadingFiles(false);
+        } finally {
+          document.body.removeChild(input);
+        }
+      };
+
+      // 如果用户取消选择，也要清理DOM
+      input.oncancel = () => {
+        document.body.removeChild(input);
+      };
     };
 
     /**
@@ -1488,7 +1532,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               {/* 是否正在下载文件 */}
               <div
                 className={cx(
-                  styles['downloading-box'],
+                  styles['tips-box'],
                   'flex',
                   'content-center',
                   'items-center',
@@ -1506,7 +1550,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               {/* 是否正在上传文件 */}
               <div
                 className={cx(
-                  styles['uploading-box'],
+                  styles['tips-box'],
                   'flex',
                   'content-center',
                   'items-center',
