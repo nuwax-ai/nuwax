@@ -18,6 +18,7 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
+import { LoadingOutlined } from '@ant-design/icons';
 import { message, Spin } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
@@ -1056,7 +1057,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     ) => {
       setIsDownloadingFile(true);
       await downloadFileByUrl?.(node, exportAsPdf);
-      setIsDownloadingFile(false);
+      setTimeout(() => {
+        setIsDownloadingFile(false);
+      }, 1000);
     };
 
     // 处理导出 PDF 操作
@@ -1464,6 +1467,23 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 },
               )}
             >
+              {/* 是否正在下载文件 */}
+              <div
+                className={cx(
+                  styles['downloading-box'],
+                  'flex',
+                  'content-center',
+                  'items-center',
+                  'gap-10',
+                  {
+                    [styles.visible]: isDownloadingFile,
+                    [styles.hidden]: !isDownloadingFile,
+                  },
+                )}
+              >
+                <Spin indicator={<LoadingOutlined spin />} />
+                正在下载
+              </div>
               <SearchView
                 className={headerClassName}
                 files={files}
