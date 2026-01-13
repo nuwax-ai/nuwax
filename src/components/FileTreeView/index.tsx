@@ -210,6 +210,20 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       [],
     );
 
+    // 判断文件是否为图片类型
+    const isImage = isImageFile(selectedFileNode?.name || '');
+    // 判断文件是否为视频类型
+    const isVideo = isVideoFile(selectedFileNode?.name || '');
+    // 判断文件是否为音频类型
+    const isAudio = isAudioFile(selectedFileNode?.name || '');
+    // 判断文件是否为文档类型
+    const result = isDocumentFile(selectedFileNode?.name || '');
+    // 判断文件是否为office文档类型
+    const isOfficeDocument = result?.isDoc || false;
+    const documentFileType = result?.fileType;
+    // 判断文件是否支持预览（白名单方案）
+    const isPreviewable = isPreviewableFile(selectedFileNode?.name || '');
+
     // 刷新文件树和文件内容
     const handleRefreshFileList = useCallback(async () => {
       // 如果正在刷新，直接返回，防止重复点击
@@ -230,12 +244,29 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 如果有 fileProxyUrl，重新获取文件内容
           if (fileProxyUrl) {
             try {
+              const fileName = selectedFileNode?.name || '';
+
               // 判断文件是否支持预览（白名单方案）
-              const isPreviewable = isPreviewableFile(
-                selectedFileNode?.name || '',
-              );
+              const isPreviewable = isPreviewableFile(fileName);
               // 如果文件不支持预览或文件是链接文件，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
               if (!isPreviewable || selectedFileNode?.isLink) {
+                return;
+              }
+
+              // 对于 html 文件，添加时间戳参数以确保每次点击时都能刷新 iframe
+              const isHtml = fileName?.includes('.htm');
+              const isJsonFile = fileName?.includes('.json');
+
+              // 如果文件是视频、音频、文档、图片、html、markdown、json文件，则直接设置选中文件节点
+              if (
+                isVideo ||
+                isAudio ||
+                isOfficeDocument ||
+                isImage ||
+                isHtml ||
+                isMarkdownFile(fileName) ||
+                isJsonFile
+              ) {
                 return;
               }
 
@@ -1008,20 +1039,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         }
       });
     };
-
-    // 判断文件是否为图片类型
-    const isImage = isImageFile(selectedFileNode?.name || '');
-    // 判断文件是否为视频类型
-    const isVideo = isVideoFile(selectedFileNode?.name || '');
-    // 判断文件是否为音频类型
-    const isAudio = isAudioFile(selectedFileNode?.name || '');
-    // 判断文件是否为文档类型
-    const result = isDocumentFile(selectedFileNode?.name || '');
-    // 判断文件是否为office文档类型
-    const isOfficeDocument = result?.isDoc || false;
-    const documentFileType = result?.fileType;
-    // 判断文件是否支持预览（白名单方案）
-    const isPreviewable = isPreviewableFile(selectedFileNode?.name || '');
 
     /**
      * 处理全屏切换
