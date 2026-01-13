@@ -19,6 +19,7 @@ export enum CreateSkillWayEnum {
 
 // 智能体类型枚举
 export enum AgentTypeEnum {
+  All = 'All',
   ChatBot = 'ChatBot',
   TaskAgent = 'TaskAgent',
 }
@@ -29,6 +30,8 @@ export enum FilterStatusEnum {
   All,
   // 已发布
   Published,
+  // 未发布
+  Unpublished,
 }
 
 // 过滤创建者
