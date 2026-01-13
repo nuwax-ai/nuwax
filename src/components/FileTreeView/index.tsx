@@ -142,6 +142,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const [isRefreshingFileTree, setIsRefreshingFileTree] =
       useState<boolean>(false);
 
+    // 是否正在上传文件
+    const [isUploadingFiles, setIsUploadingFiles] = useState<boolean>(false);
+
     /** 当前文件查看类型：预览、代码 */
     const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
       'preview',
@@ -760,13 +763,22 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     /**
      * 处理上传操作（从右键菜单触发）
      */
-    const handleUploadFromMenu = (node: FileNode | null) => {
+    const handleUploadFromMenu = async (node: FileNode | null) => {
       if (!node?.fileProxyUrl && changeFiles?.length > 0) {
         message.warning('你有未保存的文件修改，请先保存后再上传文件');
         return;
       }
-      // 直接调用现有的上传多个文件功能
-      onUploadFiles?.(node);
+      setIsUploadingFiles(true);
+      try {
+        // 直接调用现有的上传多个文件功能
+        await onUploadFiles?.(node);
+        setTimeout(() => {
+          setIsUploadingFiles(false);
+        }, 1000);
+      } catch (error) {
+        console.error('上传文件失败', error);
+        setIsUploadingFiles(false);
+      }
     };
 
     /**
@@ -1056,10 +1068,16 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       exportAsPdf?: boolean,
     ) => {
       setIsDownloadingFile(true);
-      await downloadFileByUrl?.(node, exportAsPdf);
-      setTimeout(() => {
+      try {
+        // 下载文件
+        await downloadFileByUrl?.(node, exportAsPdf);
+        setTimeout(() => {
+          setIsDownloadingFile(false);
+        }, 1000);
+      } catch (error) {
+        console.error('下载文件失败', error);
         setIsDownloadingFile(false);
-      }, 1000);
+      }
     };
 
     // 处理导出 PDF 操作
@@ -1484,11 +1502,32 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 <Spin indicator={<LoadingOutlined spin />} />
                 正在下载
               </div>
+
+              {/* 是否正在上传文件 */}
+              <div
+                className={cx(
+                  styles['uploading-box'],
+                  'flex',
+                  'content-center',
+                  'items-center',
+                  'gap-10',
+                  {
+                    [styles.visible]: isUploadingFiles,
+                    [styles.hidden]: !isUploadingFiles,
+                  },
+                )}
+              >
+                <Spin indicator={<LoadingOutlined spin />} />
+                正在上传
+              </div>
+
+              {/* 搜索框 */}
               <SearchView
                 className={headerClassName}
                 files={files}
                 onFileSelect={handleFileSelect}
               />
+              {/* 文件树 */}
               <FileTree
                 fileTreeDataLoading={fileTreeDataLoading}
                 files={files}
