@@ -57,6 +57,8 @@ const SkillDetails: React.FC = () => {
   // 是否显示全屏预览
   const [isFullscreenPreview, setIsFullscreenPreview] =
     useState<boolean>(false);
+  // 是否正在导入项目
+  const [isImportingProject, setIsImportingProject] = useState<boolean>(false);
 
   // 检查是否有未保存的文件修改
   const hasUnsavedChanges = useCallback(() => {
@@ -208,6 +210,7 @@ const SkillDetails: React.FC = () => {
       }
 
       try {
+        setIsImportingProject(true);
         // 调用导入接口
         const result = await apiSkillImport({
           file,
@@ -215,12 +218,14 @@ const SkillDetails: React.FC = () => {
           targetSpaceId: spaceId,
         });
 
+        setIsImportingProject(false);
         if (result.code === SUCCESS_CODE) {
           message.success('导入成功');
           // 刷新技能信息
           runSkillInfo(skillId);
         }
       } catch (error) {
+        setIsImportingProject(false);
         console.error('导入失败', error);
       } finally {
         // 清理DOM
@@ -519,6 +524,8 @@ const SkillDetails: React.FC = () => {
           onDeleteFile={handleDeleteFile}
           // 导入项目
           onImportProject={handleImportProject}
+          // 是否正在导入项目
+          isImportingProject={isImportingProject}
           // 是否显示更多操作菜单
           showMoreActions={false}
           // 是否显示全屏预览
