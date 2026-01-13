@@ -58,7 +58,9 @@ export interface FileTreeViewProps {
   /** 保存文件回调 */
   onSaveFiles?: (data: ChangeFileInfo[]) => Promise<boolean>;
   // 导入项目
-  onImportProject?: () => void;
+  onImportProject?: () => Promise<void>;
+  // 是否正在导入项目
+  isImportingProject?: boolean;
   /** 重启容器回调 */
   onRestartServer?: () => void;
   /** 重启智能体回调 */
