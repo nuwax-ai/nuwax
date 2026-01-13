@@ -230,6 +230,15 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 如果有 fileProxyUrl，重新获取文件内容
           if (fileProxyUrl) {
             try {
+              // 判断文件是否支持预览（白名单方案）
+              const isPreviewable = isPreviewableFile(
+                selectedFileNode?.name || '',
+              );
+              // 如果文件不支持预览或文件是链接文件，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
+              if (!isPreviewable || selectedFileNode?.isLink) {
+                return;
+              }
+
               // 获取文件内容并更新文件树
               const newFileContent = await fetchFileContentUpdateFiles(
                 fileProxyUrl,
