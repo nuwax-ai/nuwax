@@ -282,13 +282,7 @@ const SkillDetails: React.FC = () => {
       exportWholeProjectZip(result, filename);
       message.success('导出成功！');
     } catch (error) {
-      // 改进错误处理，兼容不同的错误格式
-      const errorMessage =
-        (error as any)?.message ||
-        (error as any)?.toString() ||
-        '导出过程中发生未知错误';
-
-      message.error(`导出失败: ${errorMessage}`);
+      console.error('导出项目失败:', error);
     }
   };
 

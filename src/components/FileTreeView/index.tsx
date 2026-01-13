@@ -1106,7 +1106,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const handleDownloadProject = async () => {
       setIsExportingProjecting(true);
       await onExportProject?.();
-      setIsExportingProjecting(false);
+      setTimeout(() => {
+        setIsExportingProjecting(false);
+      }, 1000);
     };
 
     // 处理下载文件操作
@@ -1573,6 +1575,24 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
               >
                 <Spin indicator={<LoadingOutlined spin />} />
                 正在上传
+              </div>
+
+              {/* 是否正在导出项目 */}
+              <div
+                className={cx(
+                  styles['tips-box'],
+                  'flex',
+                  'content-center',
+                  'items-center',
+                  'gap-10',
+                  {
+                    [styles.visible]: isExportingProjecting,
+                    [styles.hidden]: !isExportingProjecting,
+                  },
+                )}
+              >
+                <Spin indicator={<LoadingOutlined spin />} />
+                正在导出
               </div>
 
               {/* 搜索框 */}

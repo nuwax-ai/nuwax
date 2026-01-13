@@ -749,9 +749,9 @@ const EditAgent: React.FC = () => {
       const filename = `agent-${agentId}-${devConversationId}.zip`;
       // 导出整个项目压缩包
       exportWholeProjectZip(result, filename);
+      messageAntd.success('导出成功！');
     } catch (error) {
       console.error('导出项目失败:', error);
-      messageAntd.error('导出项目失败，请重试');
     }
   };
 
