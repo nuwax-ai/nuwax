@@ -18,7 +18,6 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
-import { LoadingOutlined } from '@ant-design/icons';
 import { message, Spin } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
@@ -40,6 +39,7 @@ import FilePathHeader from './FilePathHeader';
 import FileTree from './FileTree';
 import styles from './index.less';
 import SearchView from './SearchView';
+import TipsBox from './TipsBox';
 import { ChangeFileInfo, FileTreeViewProps, FileTreeViewRef } from './type';
 
 const cx = classNames.bind(styles);
@@ -62,6 +62,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       showFileTreeToggleButton = true,
       onUploadFiles,
       onExportProject,
+      isImportingProject = false,
       onRenameFile,
       onCreateFileNode,
       onDeleteFile,
@@ -1541,59 +1542,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 },
               )}
             >
-              {/* 是否正在下载文件 */}
-              <div
-                className={cx(
-                  styles['tips-box'],
-                  'flex',
-                  'content-center',
-                  'items-center',
-                  'gap-10',
-                  {
-                    [styles.visible]: isDownloadingFile,
-                    [styles.hidden]: !isDownloadingFile,
-                  },
-                )}
-              >
-                <Spin indicator={<LoadingOutlined spin />} />
-                正在下载
-              </div>
-
-              {/* 是否正在上传文件 */}
-              <div
-                className={cx(
-                  styles['tips-box'],
-                  'flex',
-                  'content-center',
-                  'items-center',
-                  'gap-10',
-                  {
-                    [styles.visible]: isUploadingFiles,
-                    [styles.hidden]: !isUploadingFiles,
-                  },
-                )}
-              >
-                <Spin indicator={<LoadingOutlined spin />} />
-                正在上传
-              </div>
-
-              {/* 是否正在导出项目 */}
-              <div
-                className={cx(
-                  styles['tips-box'],
-                  'flex',
-                  'content-center',
-                  'items-center',
-                  'gap-10',
-                  {
-                    [styles.visible]: isExportingProjecting,
-                    [styles.hidden]: !isExportingProjecting,
-                  },
-                )}
-              >
-                <Spin indicator={<LoadingOutlined spin />} />
-                正在导出
-              </div>
+              {/* 操作提示框 */}
+              <TipsBox visible={isDownloadingFile} text="正在下载" />
+              <TipsBox visible={isUploadingFiles} text="正在上传" />
+              <TipsBox visible={isExportingProjecting} text="正在导出" />
+              <TipsBox visible={isImportingProject} text="正在导入" />
 
               {/* 搜索框 */}
               <SearchView
