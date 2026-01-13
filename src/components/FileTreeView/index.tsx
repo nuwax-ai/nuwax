@@ -134,6 +134,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       useState<boolean>(false);
     // 是否正在下载文件
     const [isDownloadingFile, setIsDownloadingFile] = useState<boolean>(false);
+    // 当前下载文件的ID(用于header组件中下载图标是否显示为loading图标的判断标识)
+    const [currentDownloadingFileId, setCurrentDownloadingFileId] =
+      useState<string>('');
     // 是否正在导出 PDF
     const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
     // 是否正在重命名文件
@@ -1112,15 +1115,18 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       exportAsPdf?: boolean,
     ) => {
       setIsDownloadingFile(true);
+      setCurrentDownloadingFileId(node?.id);
       try {
         // 下载文件
         await downloadFileByUrl?.(node, exportAsPdf);
         setTimeout(() => {
           setIsDownloadingFile(false);
+          setCurrentDownloadingFileId('');
         }, 1000);
       } catch (error) {
         console.error('下载文件失败', error);
         setIsDownloadingFile(false);
+        setCurrentDownloadingFileId('');
       }
     };
 
@@ -1447,7 +1453,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 处理通过URL下载文件操作
           onDownloadFileByUrl={handleDownloadFileByUrl}
           // 是否正在下载文件
-          isDownloadingFile={isDownloadingFile}
+          isDownloadingFile={
+            isDownloadingFile &&
+            !!selectedFileId &&
+            currentDownloadingFileId === selectedFileId
+          }
           // 是否显示分享按钮
           isShowShare={isShowShare}
           // 分享回调
