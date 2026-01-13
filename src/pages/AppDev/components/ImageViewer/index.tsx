@@ -13,7 +13,7 @@ interface ImageViewerProps {
   /** 图片alt文本 */
   alt: string;
   /** 刷新回调 */
-  onRefresh: () => void;
+  onRefresh?: () => void;
 }
 
 /**

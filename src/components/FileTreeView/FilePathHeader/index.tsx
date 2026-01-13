@@ -174,59 +174,81 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         </Tooltip>
       )}
       {/* 左侧：文件信息 */}
-      <div className={styles.fileInfo}>
-        {viewMode === 'preview' ? (
-          <>
-            <div className={styles.fileDetails}>
-              <div className={styles.fileName}>{fileName}</div>
-              {formattedSize && (
-                <span className={styles.fileMeta}>({formattedSize})</span>
+      {/* 计算是否有子内容：preview 模式需要检查是否有 fileDetails 或 Segmented，desktop 模式总是有 pc-box */}
+      {(() => {
+        if (viewMode === 'preview') {
+          // preview 模式：检查是否有 fileDetails 或 Segmented
+          const hasFileDetails = !isFileTreeVisible && fileName;
+          const hasSegmented =
+            targetNode?.fileProxyUrl &&
+            fileName &&
+            (fileName?.includes('.htm') || isMarkdownFile(fileName));
+          return hasFileDetails || hasSegmented;
+        } else {
+          // desktop 模式：pc-box 总是显示，所以总是有内容
+          return true;
+        }
+      })() && (
+        <div className={styles.fileInfo}>
+          {viewMode === 'preview' ? (
+            <>
+              {/* 根据文件树列表是否展示来控制显隐：文件树展开时隐藏，文件树隐藏时显示 */}
+              {!isFileTreeVisible && (
+                <div className={styles.fileDetails}>
+                  <div className={styles.fileName}>{fileName}</div>
+                  {formattedSize && (
+                    <span className={styles.fileMeta}>({formattedSize})</span>
+                  )}
+                </div>
               )}
-            </div>
-            {/* 只有存在 fileProxyUrl 时，才显示预览和代码视图切换按钮，可以通过 fileProxyUrl 预览和代码视图 */}
-            {targetNode?.fileProxyUrl &&
-              fileName &&
-              (fileName?.includes('.htm') || isMarkdownFile(fileName)) && (
-                <Segmented
-                  value={viewFileType}
-                  onChange={onViewFileTypeChange}
-                  options={[
-                    {
-                      label: (
-                        <Tooltip title="预览">
-                          <EyeOutlined />
-                        </Tooltip>
-                      ),
-                      value: 'preview',
-                    },
-                    {
-                      label: (
-                        <Tooltip title="源代码">
-                          <span className={styles['svg-box']}>
-                            <CodeIconSvg />
-                          </span>
-                        </Tooltip>
-                      ),
-                      value: 'code',
-                    },
-                  ]}
-                />
-              )}
-          </>
-        ) : (
-          <>
-            <div className={styles['pc-box']}>
-              <PcIconSvg />
-              <div className={styles.fileName}>
-                {userInfo?.nickName || userInfo?.userName || '远程'}的智能体电脑
+              {/* 只有存在 fileProxyUrl 时，才显示预览和代码视图切换按钮，可以通过 fileProxyUrl 预览和代码视图 */}
+              {targetNode?.fileProxyUrl &&
+                fileName &&
+                (fileName?.includes('.htm') || isMarkdownFile(fileName)) && (
+                  <Segmented
+                    value={viewFileType}
+                    onChange={onViewFileTypeChange}
+                    options={[
+                      {
+                        label: (
+                          <Tooltip title="预览">
+                            <EyeOutlined />
+                          </Tooltip>
+                        ),
+                        value: 'preview',
+                      },
+                      {
+                        label: (
+                          <Tooltip title="源代码">
+                            <span className={styles['svg-box']}>
+                              <CodeIconSvg />
+                            </span>
+                          </Tooltip>
+                        ),
+                        value: 'code',
+                      },
+                    ]}
+                  />
+                )}
+            </>
+          ) : (
+            <>
+              <div className={styles['pc-box']}>
+                <PcIconSvg />
+                <div className={styles.fileName}>
+                  {userInfo?.nickName || userInfo?.userName || '远程'}
+                  的智能体电脑
+                </div>
               </div>
-            </div>
-            {vncConnectStatus && (
-              <div className={styles.vncConnectStatus}>{vncConnectStatus}</div>
-            )}
-          </>
-        )}
-      </div>
+              {vncConnectStatus && (
+                <div className={styles.vncConnectStatus}>
+                  {vncConnectStatus}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* 动态图标区域，根据视图模式和文件类型动态显示图标 */}
       <div className={styles.actionButtons}>

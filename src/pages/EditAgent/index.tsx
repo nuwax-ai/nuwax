@@ -578,7 +578,7 @@ const EditAgent: React.FC = () => {
 
     const { code } = await apiUpdateStaticFile(newSkillInfo);
     if (code === SUCCESS_CODE && devConversationId) {
-      handleRefreshFileList(devConversationId);
+      await handleRefreshFileList(devConversationId);
     }
 
     return code === SUCCESS_CODE;
@@ -668,7 +668,7 @@ const EditAgent: React.FC = () => {
     // 使用文件全量更新逻辑
     const { code } = await apiUpdateStaticFile(newSkillInfo);
     if (code === SUCCESS_CODE) {
-      handleRefreshFileList(devConversationId);
+      await handleRefreshFileList(devConversationId);
     }
     return code === SUCCESS_CODE;
   };
@@ -706,63 +706,34 @@ const EditAgent: React.FC = () => {
 
   /**
    * 处理上传多个文件回调
+   * @param files 文件列表
+   * @param filePaths 文件路径列表
+   * @returns Promise<void>
    */
-  const handleUploadMultipleFiles = async (node: FileNode | null) => {
+  const handleUploadMultipleFiles = async (
+    files: File[],
+    filePaths: string[],
+  ) => {
     if (!devConversationId) {
       messageAntd.error('会话ID不存在，无法上传文件');
       return;
     }
-    // 两种情况 第一个是文件夹，第二个是文件
-    let relativePath = '';
 
-    if (node) {
-      if (node.type === 'file') {
-        relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
-      } else {
-        relativePath = node.path + '/';
+    try {
+      // 直接调用上传接口，使用文件名作为路径
+      const { code } = await apiUploadFiles({
+        files,
+        cId: devConversationId,
+        filePaths,
+      });
+      if (code === SUCCESS_CODE && devConversationId) {
+        messageAntd.success('上传成功');
+        // 上传成功后，重新查询文件树列表
+        await handleRefreshFileList(devConversationId);
       }
+    } catch (error) {
+      console.error('上传失败', error);
     }
-
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.style.display = 'none';
-    document.body.appendChild(input);
-
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        document.body.removeChild(input);
-        return;
-      }
-
-      try {
-        // 获取上传的文件列表
-        const files = Array.from((e.target as HTMLInputElement).files || []);
-        // 获取上传的文件路径列表
-        const filePaths = files.map((file) => relativePath + file.name);
-        // 直接调用上传接口，使用文件名作为路径
-        const { code } = await apiUploadFiles({
-          files,
-          cId: devConversationId,
-          filePaths,
-        });
-        if (code === SUCCESS_CODE && devConversationId) {
-          // 上传成功后，重新查询文件树列表
-          handleRefreshFileList(devConversationId);
-        }
-      } catch (error) {
-        console.error('上传失败', error);
-      } finally {
-        document.body.removeChild(input);
-      }
-    };
-
-    input.oncancel = () => {
-      document.body.removeChild(input);
-    };
-
-    input.click();
   };
 
   // 导出项目
@@ -885,7 +856,7 @@ const EditAgent: React.FC = () => {
   useEffect(() => {
     // 设置最小宽度-扩展页面/文件树
     if (pagePreviewData || isFileTreeVisible) {
-      document.documentElement.style.minWidth = '2300px';
+      document.documentElement.style.minWidth = '2000px';
     } else {
       // 设置最小宽度-调试详情
       if (showType === EditAgentShowType.Debug_Details) {
@@ -973,11 +944,10 @@ const EditAgent: React.FC = () => {
           pagePreviewData ||
           isFileTreeVisible) && (
           <div
-            // className={cx(isFileTreeVisible && 'flex-1')}
             style={{
               flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
               minWidth:
-                pagePreviewData || isFileTreeVisible ? '1590px' : '530px',
+                pagePreviewData || isFileTreeVisible ? '1290px' : '530px',
             }}
           >
             {/*预览与调试和预览页面*/}

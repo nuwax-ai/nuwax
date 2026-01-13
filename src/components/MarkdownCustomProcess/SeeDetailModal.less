@@ -7,13 +7,20 @@
 
   .see-detail-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     padding-right: 50px;
-    height: 42px;
+    // height: 42px;
 
     .see-detail-header-title {
       flex: 1;
+      display: box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: break-all;
+      line-height: normal;
     }
 
     .see-detail-header-actions {

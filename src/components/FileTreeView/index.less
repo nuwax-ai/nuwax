@@ -1,14 +1,78 @@
 @import '@/styles/token.less';
 
 .file-tree-view {
+  position: relative;
   width: 260px;
   min-height: 0;
   border-right: 1px solid @colorSplit;
   overflow: auto;
   transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out,
     border-right 0.3s ease-in-out;
-  position: relative;
   flex-shrink: 0;
+
+  // 上传、下载提示框
+  .tips-box {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    color: @colorPrimary;
+    font-size: @fontSize;
+    padding: 6px 12px;
+    margin: 6px auto 0;
+    background: @colorBgBase;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 10%);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out,
+      transform 0.3s ease-in-out;
+    pointer-events: none;
+
+    // 下载提示框显示状态（淡入）
+    &.visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+      animation: fade-in 0.3s ease-in-out;
+    }
+
+    // 下载提示框隐藏状态（淡出）
+    &.hidden {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(-50%) translateY(-10px);
+      pointer-events: none;
+      animation: fade-out 0.3s ease-in-out;
+    }
+  }
+
+  // 淡入动画
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
+  // 淡出动画
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-10px);
+    }
+  }
 }
 
 .file-tree-view-hidden {
@@ -31,6 +95,14 @@
   // overflow-y: auto;
   position: relative;
   min-height: 0;
+  // 关键修复：设置宽度相关属性，避免从 HTML 切换到 MD 文件时的抖动
+  // 确保容器宽度稳定，不会因为内容变化而改变
+  width: 100%;
+  min-width: 0; // 允许 flex 子元素收缩
+  max-width: 100%;
+  box-sizing: border-box;
+  // 使用 contain 限制布局影响范围，防止内容变化导致父布局重排
+  contain: layout style;
 }
 
 // 全屏 Modal 样式
