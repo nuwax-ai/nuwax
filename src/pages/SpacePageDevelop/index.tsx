@@ -10,7 +10,7 @@ import {
   PAGE_DEVELOP_CREATE_TYPE_LIST,
   PAGE_DEVELOP_MORE_ACTIONS,
 } from '@/constants/pageDev.constants';
-import { CREATE_LIST } from '@/constants/space.constants';
+import { CREATE_LIST, FILTER_STATUS_DEV } from '@/constants/space.constants';
 import { exportProject } from '@/services/appDev';
 import {
   apiCustomPageQueryList,
@@ -26,7 +26,7 @@ import {
   PageDevelopSelectTypeEnum,
   PageProjectTypeEnum,
 } from '@/types/enums/pageDev';
-import { CreateListEnum } from '@/types/enums/space';
+import { CreateListEnum, FilterStatusEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import {
   CreateCustomPageInfo,
@@ -46,7 +46,7 @@ import PathParamsConfigModal from './PathParamsConfigModal';
 import ReverseProxyModal from './ReverseProxyModal';
 
 const cx = classNames.bind(styles);
-type IQuery = 'type' | 'create' | 'keyword';
+type IQuery = 'type' | 'status' | 'create' | 'keyword';
 
 /**
  * 工作空间 - 页面开发
@@ -72,6 +72,10 @@ const SpacePageDevelop: React.FC = () => {
   const [pageList, setPageList] = useState<CustomPageDto[]>([]);
   // 所有页面列表
   const pageAllRef = useRef<CustomPageDto[]>([]);
+  // 状态
+  const [status, setStatus] = useState<FilterStatusEnum>(
+    searchParams.get('status') || FilterStatusEnum.All,
+  );
   // 类型
   const [type, setType] = useState<PageDevelopSelectTypeEnum>(
     searchParams.get('type') || PageDevelopSelectTypeEnum.All_Type,
@@ -114,6 +118,7 @@ const SpacePageDevelop: React.FC = () => {
   // 过滤筛选智能体列表数据
   const handleFilterList = (
     filterType: PageDevelopSelectTypeEnum,
+    filterStatus: FilterStatusEnum,
     filterCreate: CreateListEnum,
     filterKeyword: string,
     list = pageAllRef.current,
@@ -127,6 +132,11 @@ const SpacePageDevelop: React.FC = () => {
           (filterType as unknown as PageDevelopPublishTypeEnum),
       );
     }
+    // 过滤发布状态
+    if (filterStatus !== FilterStatusEnum.All) {
+      const buildRunning = filterStatus === FilterStatusEnum.Published;
+      _list = _list.filter((item) => item.buildRunning === buildRunning);
+    }
     if (filterCreate === CreateListEnum.Me) {
       _list = _list.filter((item) => item.creatorId === userInfo.id);
     }
@@ -138,15 +148,17 @@ const SpacePageDevelop: React.FC = () => {
   // 监听 URL 改变（支持浏览器前进/后退）
   useEffect(() => {
     const type = searchParams.get('type') || PageDevelopSelectTypeEnum.All_Type;
+    const status = Number(searchParams.get('status')) || FilterStatusEnum.All;
     const create =
       Number(searchParams.get('create')) || CreateListEnum.All_Person;
     const keyword = searchParams.get('keyword') || '';
 
     setType(type);
+    setStatus(status);
     setCreate(create);
     setKeyword(keyword);
 
-    handleFilterList(type, create, keyword);
+    handleFilterList(type, status, create, keyword);
   }, [searchParams]);
 
   // 查询页面列表接口
@@ -154,7 +166,7 @@ const SpacePageDevelop: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: CustomPageDto[]) => {
-      handleFilterList(type, create, keyword, result);
+      handleFilterList(type, status, create, keyword, result);
       pageAllRef.current = result;
       setLoading(false);
     },
@@ -203,15 +215,22 @@ const SpacePageDevelop: React.FC = () => {
   const handlerChangeType = (value: React.Key) => {
     const _value = value as PageDevelopSelectTypeEnum;
     setType(_value);
-    handleFilterList(_value, create, keyword);
+    handleFilterList(_value, status, create, keyword);
     handleChange('type', _value);
+  };
+  // 切换状态
+  const handlerChangeStatus = (value: React.Key) => {
+    const _value = value as FilterStatusEnum;
+    setStatus(_value);
+    handleFilterList(type, _value, create, keyword);
+    handleChange('status', _value.toString());
   };
 
   // 切换创建者
   const handlerChangeCreate = (value: React.Key) => {
     const _value = value as CreateListEnum;
     setCreate(_value);
-    handleFilterList(type, _value, keyword);
+    handleFilterList(type, status, _value, keyword);
     handleChange('create', _value.toString());
   };
 
@@ -219,14 +238,14 @@ const SpacePageDevelop: React.FC = () => {
   const handleQueryPage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
-    handleFilterList(type, create, _keyword);
+    handleFilterList(type, status, create, _keyword);
     handleChange('keyword', _keyword);
   };
 
   // 清除关键词
   const handleClearKeyword = () => {
     setKeyword('');
-    handleFilterList(type, create, '');
+    handleFilterList(type, status, create, '');
   };
 
   /**
@@ -416,6 +435,11 @@ const SpacePageDevelop: React.FC = () => {
                 onChange={handlerChangeType}
               />
               {/* 单选模式 */}
+              <ButtonToggle
+                options={FILTER_STATUS_DEV}
+                value={status}
+                onChange={(value) => handlerChangeStatus(value as React.Key)}
+              />
               <ButtonToggle
                 options={CREATE_LIST}
                 value={create}
