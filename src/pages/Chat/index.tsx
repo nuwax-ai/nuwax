@@ -772,69 +772,35 @@ const Chat: React.FC = () => {
 
   /**
    * 处理上传多个文件回调
+   * @param files 文件列表
+   * @param filePaths 文件路径列表
+   * @returns Promise<void>
    */
-  const handleUploadMultipleFiles = async (node: FileNode | null) => {
+  const handleUploadMultipleFiles = async (
+    files: File[],
+    filePaths: string[],
+  ) => {
     if (!id) {
       messageAntd.error('会话ID不存在，无法上传文件');
       return;
     }
-    // 两种情况 第一个是文件夹，第二个是文件
-    let relativePath = '';
 
-    if (node) {
-      if (node.type === 'file') {
-        relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
-      } else if (node.type === 'folder') {
-        relativePath = node.path + '/';
+    try {
+      // 直接调用上传接口，使用文件名作为路径
+      const { code } = await apiUploadFiles({
+        files,
+        cId: id,
+        filePaths,
+      });
+
+      if (code === SUCCESS_CODE) {
+        messageAntd.success('上传成功');
+        // 刷新项目详情
+        await handleRefreshFileList(id);
       }
+    } catch (error) {
+      console.error('上传失败', error);
     }
-
-    // 创建一个隐藏的文件输入框
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.style.display = 'none';
-    input.multiple = true;
-    document.body.appendChild(input);
-
-    // 等待用户选择文件
-    input.click();
-
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        document.body.removeChild(input);
-        return;
-      }
-
-      try {
-        // 文件列表
-        const files = Array.from((e.target as HTMLInputElement).files || []);
-        // 文件路径列表
-        const filePaths = files.map((file) => relativePath + file.name);
-        // 直接调用上传接口，使用文件名作为路径
-        const { code } = await apiUploadFiles({
-          files,
-          cId: id,
-          filePaths,
-        });
-
-        if (code === SUCCESS_CODE) {
-          messageAntd.success('上传成功');
-          // 刷新项目详情
-          await handleRefreshFileList(id);
-        }
-      } catch (error) {
-        console.error('上传失败', error);
-      } finally {
-        // 清理加载状态和DOM
-        document.body.removeChild(input);
-      }
-    };
-
-    // 如果用户取消选择，也要清理DOM
-    input.oncancel = () => {
-      document.body.removeChild(input);
-    };
   };
 
   // 导出项目
