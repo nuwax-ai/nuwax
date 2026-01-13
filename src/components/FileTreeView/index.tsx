@@ -18,6 +18,7 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
+import { LoadingOutlined } from '@ant-design/icons';
 import { message, Spin } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
@@ -133,6 +134,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       useState<boolean>(false);
     // 是否正在下载文件
     const [isDownloadingFile, setIsDownloadingFile] = useState<boolean>(false);
+    // 当前下载文件的ID(用于header组件中下载图标是否显示为loading图标的判断标识)
+    const [currentDownloadingFileId, setCurrentDownloadingFileId] =
+      useState<string>('');
     // 是否正在导出 PDF
     const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
     // 是否正在重命名文件
@@ -140,6 +144,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 是否正在刷新文件树
     const [isRefreshingFileTree, setIsRefreshingFileTree] =
       useState<boolean>(false);
+
+    // 是否正在上传文件
+    const [isUploadingFiles, setIsUploadingFiles] = useState<boolean>(false);
 
     /** 当前文件查看类型：预览、代码 */
     const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
@@ -385,6 +392,14 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 其他类型文件：使用文件代理URL获取文件内容
           // "fileProxyUrl": "/api/computer/static/1464425/国际财经分析报告_20241222.md"
           else if (fileProxyUrl) {
+            // 判断文件是否支持预览（白名单方案）
+            const isPreviewable = isPreviewableFile(fileNode?.name || '');
+            // 如果文件不支持预览或文件是链接文件，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
+            if (!isPreviewable || fileNode?.isLink) {
+              setSelectedFileNode(fileNode);
+              return;
+            }
+
             // 获取文件内容并更新文件树
             const newFileContent = await fetchFileContentUpdateFiles(
               fileProxyUrl,
@@ -751,13 +766,66 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     /**
      * 处理上传操作（从右键菜单触发）
      */
-    const handleUploadFromMenu = (node: FileNode | null) => {
+    const handleUploadFromMenu = async (node: FileNode | null) => {
       if (!node?.fileProxyUrl && changeFiles?.length > 0) {
         message.warning('你有未保存的文件修改，请先保存后再上传文件');
         return;
       }
-      // 直接调用现有的上传多个文件功能
-      onUploadFiles?.(node);
+
+      // 两种情况 第一个是文件夹，第二个是文件
+      let relativePath = '';
+
+      if (node) {
+        if (node.type === 'file') {
+          relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
+        } else if (node.type === 'folder') {
+          relativePath = node.path + '/';
+        }
+      }
+
+      // 创建一个隐藏的文件输入框
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.style.display = 'none';
+      input.multiple = true;
+      document.body.appendChild(input);
+
+      // 等待用户选择文件
+      input.click();
+
+      input.onchange = async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) {
+          document.body.removeChild(input);
+          return;
+        }
+
+        setIsUploadingFiles(true);
+
+        try {
+          // 获取上传的文件列表
+          const files = Array.from((e.target as HTMLInputElement).files || []);
+          // 获取上传的文件路径列表
+          const filePaths = files.map((file) => relativePath + file.name);
+
+          // 直接调用现有的上传多个文件功能
+          await onUploadFiles?.(files, filePaths);
+
+          setTimeout(() => {
+            setIsUploadingFiles(false);
+          }, 1000);
+        } catch (error) {
+          console.error('上传文件失败', error);
+          setIsUploadingFiles(false);
+        } finally {
+          document.body.removeChild(input);
+        }
+      };
+
+      // 如果用户取消选择，也要清理DOM
+      input.oncancel = () => {
+        document.body.removeChild(input);
+      };
     };
 
     /**
@@ -1047,8 +1115,19 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       exportAsPdf?: boolean,
     ) => {
       setIsDownloadingFile(true);
-      await downloadFileByUrl?.(node, exportAsPdf);
-      setIsDownloadingFile(false);
+      setCurrentDownloadingFileId(node?.id);
+      try {
+        // 下载文件
+        await downloadFileByUrl?.(node, exportAsPdf);
+        setTimeout(() => {
+          setIsDownloadingFile(false);
+          setCurrentDownloadingFileId('');
+        }, 1000);
+      } catch (error) {
+        console.error('下载文件失败', error);
+        setIsDownloadingFile(false);
+        setCurrentDownloadingFileId('');
+      }
     };
 
     // 处理导出 PDF 操作
@@ -1374,7 +1453,11 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 处理通过URL下载文件操作
           onDownloadFileByUrl={handleDownloadFileByUrl}
           // 是否正在下载文件
-          isDownloadingFile={isDownloadingFile}
+          isDownloadingFile={
+            isDownloadingFile &&
+            !!selectedFileId &&
+            currentDownloadingFileId === selectedFileId
+          }
           // 是否显示分享按钮
           isShowShare={isShowShare}
           // 分享回调
@@ -1456,11 +1539,49 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 },
               )}
             >
+              {/* 是否正在下载文件 */}
+              <div
+                className={cx(
+                  styles['tips-box'],
+                  'flex',
+                  'content-center',
+                  'items-center',
+                  'gap-10',
+                  {
+                    [styles.visible]: isDownloadingFile,
+                    [styles.hidden]: !isDownloadingFile,
+                  },
+                )}
+              >
+                <Spin indicator={<LoadingOutlined spin />} />
+                正在下载
+              </div>
+
+              {/* 是否正在上传文件 */}
+              <div
+                className={cx(
+                  styles['tips-box'],
+                  'flex',
+                  'content-center',
+                  'items-center',
+                  'gap-10',
+                  {
+                    [styles.visible]: isUploadingFiles,
+                    [styles.hidden]: !isUploadingFiles,
+                  },
+                )}
+              >
+                <Spin indicator={<LoadingOutlined spin />} />
+                正在上传
+              </div>
+
+              {/* 搜索框 */}
               <SearchView
                 className={headerClassName}
                 files={files}
                 onFileSelect={handleFileSelect}
               />
+              {/* 文件树 */}
               <FileTree
                 fileTreeDataLoading={fileTreeDataLoading}
                 files={files}
