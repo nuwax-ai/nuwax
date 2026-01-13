@@ -6,6 +6,7 @@ import CustomPopover from '@/components/CustomPopover';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import UploadImportConfig from '@/components/UploadImportConfig';
 import {
+  AGENT_TYPE_LIST_DEV,
   CREATE_LIST,
   FILTER_STATUS,
   getAgentTypeList,
@@ -44,7 +45,7 @@ import CreateApiKeyModal from './CreateApiKeyModal';
 import CreateTempChatModal from './CreateTempChatModal';
 import styles from './index.less';
 
-type IQuery = 'status' | 'create' | 'keyword';
+type IQuery = 'agentType' | 'status' | 'create' | 'keyword';
 
 const cx = classNames.bind(styles);
 
@@ -80,6 +81,9 @@ const SpaceDevelop: React.FC = () => {
   const [currentAgentInfo, setCurrentAgentInfo] =
     useState<AgentConfigInfo | null>(null);
   const [openCreateAgent, setOpenCreateAgent] = useState<boolean>(false);
+  const [agentType, setAgentType] = useState<AgentTypeEnum>(
+    searchParams.get('agentType') || AgentTypeEnum.All,
+  );
   const [status, setStatus] = useState<FilterStatusEnum>(
     Number(searchParams.get('status')) || FilterStatusEnum.All,
   );
@@ -114,12 +118,16 @@ const SpaceDevelop: React.FC = () => {
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
+    filterAgentType: AgentTypeEnum,
     filterStatus: FilterStatusEnum,
     filterCreate: CreateListEnum,
     filterKeyword: string,
     list = agentAllRef.current,
   ) => {
     let _list = list as AgentConfigInfo[];
+    if (filterAgentType !== AgentTypeEnum.All) {
+      _list = _list.filter((item: any) => item.type === filterAgentType);
+    }
     if (filterStatus === FilterStatusEnum.Published) {
       _list = _list.filter(
         (item) => item.publishStatus === PublishStatusEnum.Published,
@@ -136,16 +144,19 @@ const SpaceDevelop: React.FC = () => {
 
   // ✅ 监听 URL 改变（支持浏览器前进/后退）
   useEffect(() => {
+    const agentType = searchParams.get('agentType') || AgentTypeEnum.All;
+
     const status = Number(searchParams.get('status')) || FilterStatusEnum.All;
     const create =
       Number(searchParams.get('create')) || CreateListEnum.All_Person;
     const keyword = searchParams.get('keyword') || '';
 
+    setAgentType(agentType);
     setStatus(status);
     setCreate(create);
     setKeyword(keyword);
 
-    handleFilterList(status, create, keyword);
+    handleFilterList(agentType, status, create, keyword);
   }, [searchParams]);
 
   // 查询空间智能体列表接口
@@ -153,7 +164,7 @@ const SpaceDevelop: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: AgentConfigInfo[]) => {
-      handleFilterList(status, create, keyword, result);
+      handleFilterList(agentType, status, create, keyword, result);
       agentAllRef.current = result;
       setLoading(false);
     },
@@ -254,11 +265,18 @@ const SpaceDevelop: React.FC = () => {
     }
   }, [history.location.state]);
 
+  // 切换智能体类型
+  const handlerChangeAgentType = (value: React.Key) => {
+    const _agentType = value as AgentTypeEnum;
+    setAgentType(_agentType);
+    handleFilterList(_agentType, status, create, keyword);
+    handleChange('agentType', _agentType.toString());
+  };
   // 切换状态
   const handlerChangeStatus = (value: React.Key) => {
     const _status = value as FilterStatusEnum;
     setStatus(_status);
-    handleFilterList(_status, create, keyword);
+    handleFilterList(agentType, _status, create, keyword);
     handleChange('status', _status.toString());
   };
 
@@ -266,7 +284,7 @@ const SpaceDevelop: React.FC = () => {
   const handlerChangeCreate = (value: React.Key) => {
     const _create = value as CreateListEnum;
     setCreate(_create);
-    handleFilterList(status, _create, keyword);
+    handleFilterList(agentType, status, _create, keyword);
     handleChange('create', _create.toString());
   };
 
@@ -274,14 +292,14 @@ const SpaceDevelop: React.FC = () => {
   const handleQueryAgent = (e: React.ChangeEvent<HTMLInputElement>) => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
-    handleFilterList(status, create, _keyword);
+    handleFilterList(agentType, status, create, _keyword);
     handleChange('keyword', _keyword);
   };
 
   // 清除关键词
   const handleClearKeyword = () => {
     setKeyword('');
-    handleFilterList(status, create, '');
+    handleFilterList(agentType, status, create, '');
   };
 
   // 确认迁移智能体
@@ -431,12 +449,17 @@ const SpaceDevelop: React.FC = () => {
             <Space>
               <h3 className={cx(styles.title)}>智能体开发</h3>
               <SelectList
-                value={status}
-                options={FILTER_STATUS}
-                onChange={handlerChangeStatus}
+                value={agentType}
+                options={AGENT_TYPE_LIST_DEV}
+                onChange={handlerChangeAgentType}
                 size="middle"
               />
               {/* 单选模式 */}
+              <ButtonToggle
+                options={FILTER_STATUS}
+                value={status}
+                onChange={(value) => handlerChangeStatus(value as React.Key)}
+              />
               <ButtonToggle
                 options={CREATE_LIST}
                 value={create}

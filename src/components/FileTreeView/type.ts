@@ -44,7 +44,7 @@ export interface FileTreeViewProps {
   /** 当前视图模式 */
   viewMode?: 'preview' | 'desktop';
   /** 上传多个文件回调 */
-  onUploadFiles?: (node: FileNode | null) => void;
+  onUploadFiles?: (files: File[], filePaths: string[]) => Promise<void>;
   /** 导出项目回调 */
   onExportProject?: () => Promise<void>;
   /** 重命名文件回调 */
@@ -85,7 +85,7 @@ export interface FileTreeViewProps {
   // 是否可以删除技能文件, 默认不可以删除
   isCanDeleteSkillFile?: boolean;
   /** 刷新文件树回调 */
-  onRefreshFileTree?: () => void;
+  onRefreshFileTree?: () => Promise<void>;
   // 是否显示刷新按钮, 默认显示
   showRefreshButton?: boolean;
   // 是否仅显示智能体电脑，默认显示所有（文件预览、智能体电脑）
