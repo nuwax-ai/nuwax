@@ -62,12 +62,19 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       showFileTreeToggleButton = true,
       onUploadFiles,
       onExportProject,
+      // 是否正在导入项目
       isImportingProject = false,
+      // 重命名文件回调
       onRenameFile,
+      // 创建文件回调
       onCreateFileNode,
+      // 删除文件回调
       onDeleteFile,
+      // 切换视图模式回调
       onViewModeChange,
+      // 保存文件回调
       onSaveFiles,
+      // 导入项目回调
       onImportProject,
       onRestartServer,
       onRestartAgent,
