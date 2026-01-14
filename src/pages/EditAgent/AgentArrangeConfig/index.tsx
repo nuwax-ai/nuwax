@@ -233,9 +233,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 技能 - 当前激活 tab 面板的 key
   const skillActiveKey = useMemo(() => {
-    const keys: AgentArrangeConfigEnum[] = [AgentArrangeConfigEnum.SubAgent];
+    const keys: AgentArrangeConfigEnum[] = [];
     if (isExistComponent(AgentComponentTypeEnum.Skill)) {
-      keys.unshift(AgentArrangeConfigEnum.Skill);
+      keys.push(AgentArrangeConfigEnum.Skill);
     }
     return keys;
   }, [agentComponentList]);
