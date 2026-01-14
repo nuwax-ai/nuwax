@@ -14,6 +14,7 @@ Nuwax AI - Easily build and deploy your private Agentic AI solutions.
 
 ### 快速开始
 
+
 #### 环境准备
 
 ##### 系统要求
@@ -34,112 +35,25 @@ Nuwax AI - Easily build and deploy your private Agentic AI solutions.
   - 确保 OrbStack 或 Docker Desktop 已启动
   - 首次运行可能需要允许未知开发者：系统偏好设置 → 安全性与隐私
 
-##### 客户端下载
+#### 本地部署服务指南
 
-> 客户端仅作为运维工具，不包含平台软件包
+有2个部署服务:
+- 主体工程服务(必选)
+- 智能体电脑(沙箱)部署指南(可选)。
 
-- [nuwax-cli-linux-amd64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-amd64.tar.gz)
-- [nuwax-cli-linux-arm64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-arm64.tar.gz)
-- [nuwax-cli-macos-universal.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-macos-universal.tar.gz)（amd64&arm64）
+在主体本地服务中，配置一个或多个智能体电脑部署的部署地址等，就可以使用智能体电脑(沙箱)。因 "智能体电脑(沙箱)"有个人电脑(沙箱)可用，所需资源更多，因此支持分开部署多个服务器上。
 
-##### 执行命令完成部署
+#### 部署主体服务
 
-执行以下命令需要有 docker 权限，或者使用 sudo 运行
+[安装文档](https://nuwax.com/deploy.html)
 
-#### Linux / macOS
 
-```bash
-# 示例工作目录
-mkdir nuwax_deploy
-cd nuwax_deploy
+#### 智能体电脑(沙箱)部署指南
+可以在多个不同的服务器部署智能体电脑服务，通过配置实现分布式智能体沙箱能力。
 
-# 下载客户端运维工具
-# Linux下载命令（amd64）
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-amd64.tar.gz
-# Linux下载命令（arm64）
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-linux-arm64.tar.gz
-# macOS下载命令
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.56/nuwax-cli-macos-universal.tar.gz
+> **环境要求**：每台服务器需要安装 Docker 和 Docker Compose 环境，参考 [Docker安装文档](https://nuwax.com/deploy.html#%E6%8E%A8%E8%8D%90%E6%96%B9%E6%A1%88-%E4%B8%80%E9%94%AE%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AE-docker-%E8%84%9A%E6%9C%AC)。
 
-# 将下载的客户端文件解压到工作目录
-tar -xzf nuwax-cli-*.tar.gz
-
-# 添加执行权限
-chmod +x nuwax-cli
-
-# 初始化
-./nuwax-cli init
-
-# 开始部署，如需指定 project name 或访问端口(默认80)，可以使用以下命令：
-# ./nuwax-cli auto-upgrade-deploy run --port 8099 -p nuwax
-./nuwax-cli auto-upgrade-deploy run
-```
-
-> **重要提示：** 建议定期升级命令行工具，在工作目录下执行：
->
-> ```bash
-> ./nuwax-cli check-update install
-> ```
-
-正常情况下，执行完命令后，服务就已经部署好了。
-
-##### 访问服务
-
-部署完成后，在浏览器访问：`http://localhost`
-
-使用默认管理员账号登录：`admin@nuwax.com` 密码：`123456`
-
-> 注：如果 80 端口被占用，可以指定端口部署，比如：`./nuwax-cli auto-upgrade-deploy run --port 8099`
-
-##### 重要配置
-
-登录后请及时修改：
-
-- 管理员密码
-- 站点信息配置
-- 邮件服务配置，用于用户登录注册收取验证码。
-
-```
-#菜单路径
-系统管理 ->系统配置
-```
-
-### 常见问题排查
-
-#### 1. 服务启动失败
-
-- 检查 Docker 是否正常运行
-- 使用 `./nuwax-cli status` 查看详细状态
-- 检查端口是否被占用
-
-#### 2. 无法访问服务
-
-- 确认服务已正常启动，可以执行 `docker ps` 或 `./nuwax-cli ducker` 查看容器状态
-- 检查防火墙设置
-- 确认端口配置正确
-
-#### 3. 权限问题 - Permission denied
-
-- **Linux（Ubuntu 22.04 LTS）**: 确保用户在 docker 组中
-- **macOS**: 允许未知开发者运行，确保 OrbStack 或 Docker Desktop 已启动
-
-使用 `sudo` 来执行命令：`sudo ./nuwax-cli auto-upgrade-deploy run`
-
-#### 4. 解压失败 - Directory not empty(os error 39)
-
-先停止 Docker 服务：`./nuwax-cli docker-service stop`，然后手动删除工作目录下的 `docker` 目录，重新执行部署命令。
-
-#### 5. 进入界面但提示系统异常
-
-查看后台日志：`./docker/logs/agent/app.log`，通常重启服务可解决：
-
-```bash
-./nuwax-cli docker-service restart
-```
-
-#### 6. 下载失败 - error decoding response body
-
-网络问题导致，重新执行部署命令即可，支持断点续传。
+[安装文档](https://nuwax.com/agent-computer-deploy.html)
 
 ### 常用管理命令
 
@@ -180,11 +94,34 @@ chmod +x nuwax-cli
 
 该安装指南包含以下平台的详细安装步骤：
 
-- **Ubuntu 22.04 LTS**（推荐 Linux 发行版）
+- **Ubuntu 24.04.3 LTS**（推荐 Linux 发行版）
 - **macOS**（支持 OrbStack 和 Docker Desktop）
-- **Windows 10/11**（Docker Desktop）
 - **镜像加速配置**（中国大陆用户专用）
-- **安装验证和故障排除**
+
+### 推荐方案：一键安装配置 Docker 脚本
+
+> 社区一键安装配置 Docker 脚本
+
+该脚本支持 13 种 Linux 发行版，包括国产操作系统（openEuler、Anolis OS、OpenCloudOS、Alinux、Kylin Linux），一键安装 docker、docker-compose 并自动配置轩辕镜像加速源。
+```shell
+bash <(wget -qO- https://xuanyuan.cloud/docker.sh)
+```
+
+#### 脚本特性与优势
+
+✅ 支持 13 种主流发行版：openEuler (欧拉)、OpenCloudOS、Anolis OS (龙蜥)、Alinux (阿里云)、Kylin Linux (银河麒麟)、Fedora、Rocky Linux、AlmaLinux、Ubuntu、Debian、CentOS、RHEL、Oracle Linux
+
+✅ 国产操作系统完整支持：深度适配国产操作系统（openEuler、Anolis OS、OpenCloudOS、Alinux、Kylin Linux），支持版本自动识别和最优配置
+
+✅ 多镜像源智能切换：内置阿里云、腾讯云、华为云、中科大、清华等 6+ 国内镜像源，自动检测并选择最快源
+
+✅ 老版本系统特殊处理：支持 Ubuntu 16.04、Debian 9/10 等已过期系统，自动配置兼容的安装方案
+
+✅ 双重安装保障：包管理器安装失败时自动切换到二进制安装，确保安装成功率
+
+✅ macOS/Windows 友好提示：自动检测 macOS 和 Windows 系统，提供适合的 Docker Desktop 安装指引
+
+
 
 **快速验证 Docker 安装：**
 
