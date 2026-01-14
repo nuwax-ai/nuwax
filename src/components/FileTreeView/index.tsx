@@ -2,6 +2,7 @@ import { ImageViewer } from '@/pages/AppDev/components';
 import { fetchContentFromUrl } from '@/services/skill';
 import { FileNode } from '@/types/interfaces/appDev';
 import {
+  findBestMatchingFileNode,
   findFileNode,
   isAudioFile,
   isDocumentFile,
@@ -313,8 +314,13 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 文件选择（内部函数，执行实际的选择逻辑）
     const handleFileSelectInternal = useCallback(
       async (fileId: string) => {
-        // 根据文件ID查找文件节点
-        const fileNode = findFileNode(fileId, files);
+        // 根据文件ID查找文件节点（精确匹配）
+        let fileNode = findFileNode(fileId, files);
+
+        // 如果仍然没有找到，尝试模糊匹配
+        if (!fileNode && fileId && fileId.includes('.')) {
+          fileNode = findBestMatchingFileNode(fileId, files);
+        }
 
         if (fileNode) {
           // 如果文件节点是文件夹(folder)，则选择第一个子节点(点击会话中文件名时，如果文件名是文件夹，则选择第一个子节点)
@@ -331,7 +337,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
           // 如果文件节点是链接文件，则不支持预览
           if (fileNode?.isLink) {
-            setSelectedFileId(fileId);
+            setSelectedFileId(fileNode?.id || fileId);
             setViewFileType('preview');
             setSelectedFileNode(fileNode);
             return;
@@ -394,7 +400,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
           // 如果文件有内容，直接使用缓存
           if (fileContent && !fileProxyUrl) {
-            setSelectedFileId(fileId);
+            setSelectedFileId(fileNode?.id || fileId);
             setViewFileType('preview');
             setSelectedFileNode(fileNode);
             return;
@@ -415,7 +421,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             return;
           }
 
-          setSelectedFileId(fileId);
+          setSelectedFileId(fileNode?.id || fileId);
           setViewFileType('preview');
           // 判断文件是否为图片类型
           const isImage = isImageFile(fileNode?.name || '');
@@ -451,7 +457,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             // 获取文件内容并更新文件树
             const newFileContent = await fetchFileContentUpdateFiles(
               fileProxyUrl,
-              fileId,
+              fileNode?.id || fileId,
             );
             // 设置选中文件节点
             setSelectedFileNode({
@@ -460,24 +466,8 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             });
           }
         } else {
-          try {
-            // 如果文件ID包含点，则认为是文件名，需要获取文件内容
-            if (fileId && fileId.includes('.')) {
-              // 获取文件名后缀
-              const suffix = fileId.split('.').pop();
-              // 如果文件名后缀为 office 文档类型，则获取文件内容
-              if (suffix && ['doc', 'xls', 'ppt'].includes(suffix)) {
-                const newFileId = fileId + 'x';
-                handleFileSelectInternal(newFileId);
-                return;
-              }
-            }
-
-            setSelectedFileNode(null);
-          } catch (error) {
-            console.error('文件选择失败: ', error);
-            setSelectedFileNode(null);
-          }
+          // 所有匹配方式都失败，设置选中文件节点为 null
+          setSelectedFileNode(null);
         }
       },
       [files, isRenamingFile, selectedFileId, handleRefreshFileList],
