@@ -14,6 +14,7 @@ Use the official nuwax-cli command tool to quickly deploy services locally.
 
 ### Quick Start
 
+
 #### Environment Preparation
 
 ##### System Requirements
@@ -34,107 +35,25 @@ Use the official nuwax-cli command tool to quickly deploy services locally.
   - Ensure OrbStack or Docker Desktop is started
   - First-time use may require allowing unknown developers: System Preferences → Security & Privacy
 
-##### Client Download
+#### Local Deployment Service Guide
 
-> The client is only a deployment tool and does not include the platform software package
+There are 2 deployment services:
+- Main project service (required)
+- Agent Computer (Sandbox) deployment guide (optional)
 
-- [nuwax-cli-linux-amd64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-linux-amd64.tar.gz)
-- [nuwax-cli-linux-arm64.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-linux-arm64.tar.gz)
-- [nuwax-cli-macos-universal.tar.gz](https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-macos-universal.tar.gz) (amd64&arm64)
+In the main local service, configure one or more Agent Computer deployment addresses to use the Agent Computer (Sandbox). Since the "Agent Computer (Sandbox)" includes a personal computer (sandbox) which requires more resources, it supports separate deployment across multiple servers.
 
-##### Execute Commands to Complete Deployment
+#### Deploy Main Service
 
-The following commands require Docker permissions or can be run with sudo
+[Installation Documentation](https://nuwax.com/deploy.html)
 
-#### Linux / macOS
 
-```bash
-# Example working directory
-mkdir nuwax_deploy
-cd nuwax_deploy
+#### Agent Computer (Sandbox) Deployment Guide
+You can deploy Agent Computer services on multiple different servers, achieving distributed agent sandbox capabilities through configuration.
 
-# Download client deployment tool
-# Linux download command (amd64)
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-linux-amd64.tar.gz
-# Linux download command (arm64)
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-linux-arm64.tar.gz
-# macOS download command
-wget https://nuwa-packages.oss-rg-china-mainland.aliyuncs.com/duck-client-releases/v1.0.65/nuwax-cli-macos-universal.tar.gz
+> **Environment Requirements**: Each server needs Docker and Docker Compose environment installed, refer to [Docker Installation Documentation](https://nuwax.com/deploy.html#%E6%8E%A8%E8%8D%90%E6%96%B9%E6%A1%88-%E4%B8%80%E9%94%AE%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AE-docker-%E8%84%9A%E6%9C%AC).
 
-# Extract downloaded client files to working directory
-tar -xzf nuwax-cli-*.tar.gz
-
-# Add execute permission
-chmod +x nuwax-cli
-
-# Initialize
-./nuwax-cli init
-
-# Start deployment, if you need to specify project name or access port (default 80), you can use the following command:
-# ./nuwax-cli auto-upgrade-deploy run --port 8099 -p nuwax
-./nuwax-cli auto-upgrade-deploy run
-```
-
-> **Important Note**: It is recommended to regularly upgrade the command line tool by executing in the working directory:
->
-> ```bash
-> ./nuwax-cli check-update install
-> ```
-
-Normally, after executing the commands, the service should be deployed successfully.
-
-##### Access Service
-
-After deployment is complete, access in browser: `http://localhost`
-
-Login with default administrator account: `admin@nuwax.com` password: `123456`
-
-> Note: If port 80 is occupied, you can specify a port for deployment, such as: `./nuwax-cli auto-upgrade-deploy run --port 8099`
-
-##### Important Configuration
-
-Please modify promptly after login:
-
-- Administrator password
-- Site information configuration
-- Email service configuration for user registration and login verification codes.
-
-### Troubleshooting
-
-#### 1. Service Startup Failed
-
-- Check if Docker is running properly
-- Use `./nuwax-cli status` to view detailed status
-- Check if ports are occupied
-
-#### 2. Unable to Access Service
-
-- Confirm service has started properly, you can execute `docker ps` or `./nuwax-cli ducker` to view container status
-- Check firewall settings
-- Confirm port configuration is correct
-
-#### 3. Permission Issues - Permission denied
-
-- **Linux (Ubuntu 22.04 LTS)**: Ensure user is in docker group
-- **macOS**: Allow unknown developers to run, ensure OrbStack or Docker Desktop is started
-
-Use `sudo` to execute commands: `sudo ./nuwax-cli auto-upgrade-deploy run`
-
-#### 4. Extraction Failed - Directory not empty(os error 39)
-
-First stop Docker service: `./nuwax-cli docker-service stop`, then manually delete the `docker` directory in the working directory and re-execute the deployment command.
-
-#### 5. Interface Shows System Exception
-
-Check backend logs: `./docker/logs/agent/app.log`, usually restarting the service can resolve:
-
-```bash
-./nuwax-cli docker-service restart
-```
-
-#### 6. Download Failed - error decoding response body
-
-Network issues cause this, re-executing the deployment command will work, supports resumable downloads.
+[Installation Documentation](https://nuwax.com/agent-computer-deploy.html)
 
 ### Common Management Commands
 
@@ -175,11 +94,34 @@ If your system doesn't have Docker environment installed yet, please refer to th
 
 This installation guide includes detailed installation steps for the following platforms:
 
-- **Ubuntu 22.04 LTS** (recommended Linux distribution)
+- **Ubuntu 24.04.3 LTS** (recommended Linux distribution)
 - **macOS** (supports OrbStack and Docker Desktop)
-- **Windows 10/11** (Docker Desktop)
 - **Mirror acceleration configuration** (for mainland China users)
-- **Installation verification and troubleshooting**
+
+### Recommended: One-Click Docker Installation Script
+
+> Community one-click Docker installation script
+
+This script supports 13 Linux distributions, including domestic operating systems (openEuler, Anolis OS, OpenCloudOS, Alinux, Kylin Linux), one-click installation of docker, docker-compose with automatic configuration of Xuanyuan mirror acceleration.
+```shell
+bash <(wget -qO- https://xuanyuan.cloud/docker.sh)
+```
+
+#### Script Features and Advantages
+
+✅ Supports 13 mainstream distributions: openEuler, OpenCloudOS, Anolis OS, Alinux (Alibaba Cloud), Kylin Linux, Fedora, Rocky Linux, AlmaLinux, Ubuntu, Debian, CentOS, RHEL, Oracle Linux
+
+✅ Complete support for domestic operating systems: Deep adaptation for domestic OS (openEuler, Anolis OS, OpenCloudOS, Alinux, Kylin Linux), supports automatic version detection and optimal configuration
+
+✅ Intelligent multi-mirror source switching: Built-in 6+ domestic mirror sources including Alibaba Cloud, Tencent Cloud, Huawei Cloud, USTC, Tsinghua, etc., automatically detects and selects the fastest source
+
+✅ Special handling for older systems: Supports expired systems like Ubuntu 16.04, Debian 9/10, automatically configures compatible installation solutions
+
+✅ Dual installation guarantee: Automatically switches to binary installation if package manager installation fails, ensuring installation success rate
+
+✅ macOS/Windows friendly prompts: Automatically detects macOS and Windows systems, provides appropriate Docker Desktop installation guidance
+
+
 
 **Quick Docker Installation Verification:**
 
