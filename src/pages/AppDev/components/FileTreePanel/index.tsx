@@ -1,16 +1,10 @@
-import SvgIcon from '@/components/base/SvgIcon';
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import { FileNode } from '@/types/interfaces/appDev';
-import {
-  ImportOutlined,
-  InboxOutlined,
-  LeftOutlined,
-  RightOutlined,
-} from '@ant-design/icons';
+import { ImportOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { Button, Card, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AppDevFileTree from './AppDevFileTree';
-import DataResourceList from './DataResourceList';
+// import DataResourceList from './DataResourceList';
 import FileContextMenu from './FileContextMenu';
 import styles from './index.less';
 import type { FileTreePanelProps } from './types';
@@ -24,8 +18,9 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   isComparing,
   selectedFileId,
   expandedFolders,
-  dataResources,
-  dataResourcesLoading,
+
+  // dataResources,
+  // dataResourcesLoading,
   onFileSelect,
   onToggleFolder,
   onDeleteFile,
@@ -33,14 +28,14 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   // onUploadToFolder, // 暂时注释掉，后续可能需要
   onUploadProject,
   onUploadSingleFile,
-  onAddDataResource,
-  onDeleteDataResource,
+  // onAddDataResource,
+  // onDeleteDataResource,
   // selectedDataResourceIds,
   // onDataResourceSelectionChange,
   workspace,
   fileManagement,
   isChatLoading = false,
-  projectId,
+  // projectId,
   // 新增：文件树初始化 loading 状态
   isFileTreeInitializing = false,
 }) => {
@@ -180,17 +175,15 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
           size="small"
           icon={isFileTreeCollapsed ? <RightOutlined /> : <LeftOutlined />}
           onClick={toggleFileTreeCollapse}
-          className={`${styles.collapseButton} ${
-            isFileTreeCollapsed ? styles.collapsed : styles.expanded
-          }`}
+          className={`${styles.collapseButton} ${isFileTreeCollapsed ? styles.collapsed : styles.expanded
+            }`}
         />
       </Tooltip>
 
       {/* 文件树侧边栏 / 版本对比文件列表 */}
       <div
-        className={`${styles.fileTreeCol} ${
-          isFileTreeCollapsed ? styles.collapsed : ''
-        }`}
+        className={`${styles.fileTreeCol} ${isFileTreeCollapsed ? styles.collapsed : ''
+          }`}
         style={{ transition: 'all 0.3s ease' }}
       >
         <Card className={styles.fileTreeCard} variant="borderless">
@@ -213,20 +206,17 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                   />
                 ) : files.length === 0 ? (
                   <AppDevEmptyState
-                    type="empty"
-                    icon={<InboxOutlined />}
-                    title="暂无文件"
-                    description="请导入项目或创建新文件开始开发"
+                    type="no-file" // 使用新的无文件状态
                     buttons={
                       !isComparing
                         ? [
-                            {
-                              text: '导入项目',
-                              icon: <ImportOutlined />,
-                              onClick: onUploadProject,
-                              disabled: isChatLoading,
-                            },
-                          ]
+                          {
+                            text: '导入项目',
+                            icon: <ImportOutlined />,
+                            onClick: onUploadProject,
+                            disabled: isChatLoading,
+                          },
+                        ]
                         : undefined
                     }
                   />
@@ -251,35 +241,6 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
               </div>
 
               {/* 数据资源管理 - 固定在底部，仅在非版本对比模式显示 */}
-              {!isComparing && (
-                <div className={styles.dataSourceContainer}>
-                  <div className={styles.dataSourceHeader}>
-                    <span className={styles.dataSourceTitle}>数据资源</span>
-                    <Tooltip title="添加数据资源">
-                      <Button
-                        type="text"
-                        className={styles.addButton}
-                        icon={
-                          <SvgIcon
-                            name="icons-common-plus"
-                            style={{ fontSize: 16 }}
-                          />
-                        }
-                        onClick={onAddDataResource}
-                        disabled={isChatLoading || isComparing}
-                      />
-                    </Tooltip>
-                  </div>
-                  <div className={styles.dataSourceContent}>
-                    <DataResourceList
-                      resources={dataResources}
-                      loading={dataResourcesLoading}
-                      onDelete={onDeleteDataResource}
-                      projectId={projectId}
-                    />
-                  </div>
-                </div>
-              )}
             </>
           )}
         </Card>

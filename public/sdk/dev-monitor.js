@@ -12,7 +12,7 @@
 
   // 配置
   const config = {
-    version: '1.0.5',
+    version: '1.0.7',
     enabled: true,
     logLevel: 'error', // 只记录错误级别日志
     maxErrors: 10, // 减少存储量
@@ -301,8 +301,7 @@
       // 关键日志：接收错误
       _originalConsoleError.call(
         console,
-        `[DevMonitor] ${isUpdate ? '⟳' : '●'} 接收错误，${
-          ERROR_SEND_DELAY / 1000
+        `[DevMonitor] ${isUpdate ? '⟳' : '●'} 接收错误，${ERROR_SEND_DELAY / 1000
         }s后发送 | ${errorData.message.substring(0, 80)}`,
       );
 

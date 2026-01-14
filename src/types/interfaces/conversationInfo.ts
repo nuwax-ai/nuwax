@@ -81,6 +81,10 @@ export interface ExecuteResultInfo {
   endTime: number;
   success: boolean;
   type: AgentComponentTypeEnum;
+  innerExecuteInfo: unknown;
+  executeId: string;
+  kind: unknown;
+  locations: unknown;
 }
 
 // 会话聊天"FINAL_RESULT", 用于会话底部显示时间
@@ -175,6 +179,14 @@ export interface ProcessingInfo {
   status: ProcessingEnum;
   targetId: number;
   type: AgentComponentTypeEnum;
+  // 执行消息
+  executingMessage?: string;
+  // 卡片数据
+  cardData?: unknown;
+  // 页面参数配置
+  pageArgConfig?: unknown;
+  // 子事件类型
+  subEventType: 'OPEN_DESKTOP' | null;
 }
 
 // 消息问答扩展信息
@@ -197,6 +209,8 @@ export interface ChatMessageDto {
   text?: string;
   // 思考内容
   think?: string;
+  // 引用消息内容
+  quotedText?: string;
   // 消息时间
   time: string;
   // 消息附件
@@ -204,6 +218,10 @@ export interface ChatMessageDto {
   // 消息问答扩展信息
   ext?: MessageQuestionExtInfo[];
   finished?: boolean;
+  // 完成原因
+  finishReason?: string;
+  // 执行过程输出数据
+  componentExecutedList: any[];
   metadata?: unknown;
   // 可用值:USER,ASSISTANT,SYSTEM,TOOL
   messageType: MessageTypeEnum;
@@ -213,6 +231,17 @@ export interface ChatMessageDto {
 
 // 会话消息信息
 export interface MessageInfo extends ChatMessageDto {
+  index: number;
+  // 租户ID
+  tenantId: number;
+  // 消息发送方类型, User、Agent,可用值:USER,AGENT
+  senderType: string;
+  // 消息发送方ID
+  senderId: string;
+  // 关联用户ID
+  userId: number;
+  // 关联的agentID
+  agentId: number;
   // 消息状态，可选值为 loading | incomplete | complete | error
   status?: MessageStatusEnum;
   // 自定义添加字段：chat 会话结果
@@ -311,15 +340,22 @@ export interface ConversationInfo {
   };
   // 会话消息列表，会话列表查询时不会返回该字段值
   messageList: MessageInfo[];
-  // 可用值:Chat,TASK
+  // 任务类型 可用值:Chat,TempChat,TASK,TaskCenter (会话、临时会话、任务、任务中心)
   type: TaskTypeEnum;
+  // 任务ID
   taskId: string;
-  // 可用值:EXECUTING,CANCEL
+  // 任务状态，只针对 EXECUTING（执行中）做展示,可用值:CREATE,EXECUTING,CANCEL,COMPLETE,FAILED
   taskStatus: TaskStatus;
   taskCron: string;
   taskCronDesc: string;
   // 开发模式
   devMode: boolean;
+  // 沙盒服务器ID
+  sandboxServerId: string;
+  // 沙盒会话ID
+  sandboxSessionId: string;
+  // 已分享的URI地址，比对上了则不需要认证
+  sharedUris: string[];
 }
 
 // 查询用户历史会话输入参数

@@ -55,6 +55,7 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
     hasFinalResult,
     finalStartTime,
     finalEndTime,
+    isStopped,
   } = useMemo(() => {
     if (!messageList || messageList.length === 0) {
       return {
@@ -63,6 +64,7 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
         hasFinalResult: false,
         finalStartTime: null,
         finalEndTime: null,
+        isStopped: false,
       };
     }
 
@@ -78,12 +80,24 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
         hasFinalResult: true,
         finalStartTime: lastAssistant.finalResult.startTime,
         finalEndTime: lastAssistant.finalResult.endTime,
+        isStopped: false,
+      };
+    }
+
+    // 检查是否是已中断状态
+    const lastMessage = messageList[messageList.length - 1];
+    if (lastMessage?.status === MessageStatusEnum.Stopped) {
+      return {
+        isRunning: false,
+        userMessageTime: null,
+        hasFinalResult: false,
+        finalStartTime: null,
+        finalEndTime: null,
+        isStopped: true,
       };
     }
 
     // 检查是否正在运行
-    const lastMessage = messageList[messageList.length - 1];
-
     const running =
       lastMessage?.status === MessageStatusEnum.Loading ||
       lastMessage?.status === MessageStatusEnum.Incomplete;
@@ -100,6 +114,7 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
         hasFinalResult: false,
         finalStartTime: null,
         finalEndTime: null,
+        isStopped: false,
       };
     }
 
@@ -109,6 +124,7 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
       hasFinalResult: false,
       finalStartTime: null,
       finalEndTime: null,
+      isStopped: false,
     };
   }, [messageList]);
 
@@ -136,6 +152,13 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
       // 如果当前显示的时间比最终时间大，保持当前时间
       const displayTime = Math.max(finalElapsed, elapsedTime);
       setFinalElapsedTime(displayTime);
+      return;
+    }
+
+    // 如果是已中断状态，清理 timer，但保留当前已计时的时间
+    if (isStopped) {
+      clearTimer();
+      // 不重置 elapsedTime，保留当前值继续显示
       return;
     }
 
@@ -189,6 +212,7 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
     hasFinalResult,
     finalStartTime,
     finalEndTime,
+    isStopped,
     clearTimer,
   ]);
 
@@ -214,7 +238,7 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
       style={{ marginBottom: 0 }}
     >
       {/* 状态标签：复用 ChatView 中的 RunOver 组件，保证与消息列表状态展示一致 */}
-      <div className={cx(styles.statusBadge)}>
+      <div className={cx(styles.statusBadge, 'flex-1')}>
         <RunOver messageInfo={lastAssistantMessage} />
       </div>
 

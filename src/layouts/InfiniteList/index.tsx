@@ -57,11 +57,6 @@ function InfiniteList({
     }
   };
 
-  // 首次加载
-  useEffect(() => {
-    // fetchData();
-  }, []);
-
   // 滚动监听
   useEffect(() => {
     const container = containerRef.current;
@@ -101,7 +96,7 @@ function InfiniteList({
             onClick={() => handleLink?.(item.id, item.agentId)}
           >
             <span style={{ marginRight: 5, width: 75 }}>
-              {dayjs(item.created).format('MM-DD HH:mm')}
+              {dayjs(item.modified).format('MM-DD HH:mm')}
             </span>
             {item.topic}
           </p>

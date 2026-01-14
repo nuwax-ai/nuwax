@@ -489,66 +489,71 @@ const AgentDetails: React.FC = () => {
           right={
             agentDetail?.type !== AgentTypeEnum.TaskAgent
               ? pagePreviewData && (
-                  <>
-                    <PagePreviewIframe
-                      pagePreviewData={pagePreviewData}
-                      showHeader={true}
-                      onClose={hidePagePreview}
-                      showCloseButton={!agentDetail?.hideChatArea}
-                      titleClassName={cx(styles['title-style'])}
-                      // 复制模板按钮相关 props
-                      showCopyButton={showCopyButton}
-                      allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
-                      onCopyClick={() => setOpenPageCopyModal(true)}
-                      copyButtonText="复制模板"
-                      copyButtonClassName={styles['copy-btn']}
+                <>
+                  <PagePreviewIframe
+                    pagePreviewData={pagePreviewData}
+                    showHeader={true}
+                    onClose={hidePagePreview}
+                    showCloseButton={!agentDetail?.hideChatArea}
+                    titleClassName={cx(styles['title-style'])}
+                    // 复制模板按钮相关 props
+                    showCopyButton={showCopyButton}
+                    allowCopy={agentDetail?.allowCopy === AllowCopyEnum.Yes}
+                    onCopyClick={() => setOpenPageCopyModal(true)}
+                    copyButtonText="复制模板"
+                    copyButtonClassName={styles['copy-btn']}
+                  />
+                  {/* 复制模板弹窗 */}
+                  {showCopyButton && agentDetail && pagePreviewData?.uri && (
+                    <CopyToSpaceComponent
+                      spaceId={agentDetail.spaceId}
+                      mode={AgentComponentTypeEnum.Page}
+                      componentId={parsePageAppProjectId(pagePreviewData.uri)}
+                      title={''}
+                      open={openPageCopyModal}
+                      isTemplate={true}
+                      onSuccess={(_: any, targetSpaceId: number) => {
+                        setOpenPageCopyModal(false);
+                        // 跳转
+                        jumpToPageDevelop(targetSpaceId);
+                      }}
+                      onCancel={() => setOpenPageCopyModal(false)}
                     />
-                    {/* 复制模板弹窗 */}
-                    {showCopyButton && agentDetail && pagePreviewData?.uri && (
-                      <CopyToSpaceComponent
-                        spaceId={agentDetail.spaceId}
-                        mode={AgentComponentTypeEnum.Page}
-                        componentId={parsePageAppProjectId(pagePreviewData.uri)}
-                        title={''}
-                        open={openPageCopyModal}
-                        isTemplate={true}
-                        onSuccess={(_: any, targetSpaceId: number) => {
-                          setOpenPageCopyModal(false);
-                          // 跳转
-                          jumpToPageDevelop(targetSpaceId);
-                        }}
-                        onCancel={() => setOpenPageCopyModal(false)}
-                      />
-                    )}
-                  </>
-                )
+                  )}
+                </>
+              )
               : // 任务型
-                isFileTreeVisible && (
-                  <div
-                    className={cx(
-                      styles['file-tree-sidebar'],
-                      'flex',
-                      'w-full',
-                    )}
-                  >
-                    <FileTreeView
-                      targetId={agentDetail?.conversationId?.toString() || ''}
-                      viewMode={'desktop'}
-                      // 重启容器
-                      onRestartServer={() =>
-                        restartVncPod(agentDetail?.conversationId)
-                      }
-                      // 重启智能体
-                      onRestartAgent={() =>
-                        restartAgent(agentDetail?.conversationId)
-                      }
-                      // 关闭整个面板
-                      onClose={closePreviewView}
-                      isCanDeleteSkillFile={true}
-                      isOnlyShowDesktop={true}
-                    />
-                  </div>
-                )
+              isFileTreeVisible && (
+                <div
+                  className={cx(
+                    styles['file-tree-sidebar'],
+                    'flex',
+                    'w-full',
+                  )}
+                >
+                  <FileTreeView
+                    targetId={agentDetail?.conversationId?.toString() || ''}
+                    viewMode={'desktop'}
+                    // 重启容器
+                    onRestartServer={() =>
+                      restartVncPod(agentDetail?.conversationId)
+                    }
+                    // 重启智能体
+                    onRestartAgent={() =>
+                      restartAgent(agentDetail?.conversationId)
+                    }
+                    // 关闭整个面板
+                    onClose={closePreviewView}
+                    isCanDeleteSkillFile={true}
+                    isOnlyShowDesktop={true}
+                    // VNC 空闲检测配置（仅任务型智能体启用）
+                    idleDetection={{
+                      enabled: agentDetail?.type === AgentTypeEnum.TaskAgent,
+                      onIdleTimeout: closePreviewView,
+                    }}
+                  />
+                </div>
+              )
           }
         />
       )}

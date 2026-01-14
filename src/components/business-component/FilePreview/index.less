@@ -6,6 +6,14 @@
   border-radius: 8px;
   height: 100%;
   width: 100%;
+  // 确保容器尺寸稳定，避免切换时影响父布局
+  min-height: 0;
+  max-height: 100%;
+  // 使用 containment 限制布局影响范围，防止影响父布局导致整页重排
+  contain: layout style paint;
+  overflow: hidden;
+  // 防止容器尺寸变化导致父布局重排
+  flex-shrink: 0;
 
   // 确保文档类型预览时可以滚动
   &.scrollable {
@@ -290,31 +298,45 @@
 }
 
 .videoPlayer {
-  max-width: 100%;
+  width: 100%;
+  min-height: 400px;
   max-height: 100%;
+  object-fit: contain;
 }
 
-// HTML Preview
-.htmlPreview {
-  width: 100%;
-  height: 100%;
-}
-
-.htmlFrame {
-  width: 100%;
-  height: 100%;
-  border: none;
-  background: #fff;
-}
-
-// Markdown Preview
+// HTML Preview 和 Markdown Preview 统一容器
+// 关键：使用相同的容器结构，避免 DOM 替换导致布局重排
+.htmlPreview,
 .markdownPreview {
   width: 100%;
   height: 100%;
-  padding: 24px;
-  overflow: auto;
-  background: #fff;
+  // 确保容器尺寸固定，不会因为内容变化而改变
+  min-height: 0;
+  max-height: 100%;
+  box-sizing: border-box;
+  position: relative;
+  // 使用 containment 限制布局影响范围，防止影响父布局导致整页重排
+  contain: layout style paint;
+  // 防止内容溢出影响布局
+  overflow: hidden;
+  // 确保容器在 flex 布局中正确工作
+  flex-shrink: 0;
+  // 使用 transform 而非 position 来优化渲染性能（GPU 加速）
+  transform: translateZ(0);
+  // 优化渲染性能，只在需要时启用
+  backface-visibility: hidden;
+  // 防止容器尺寸变化导致父布局重排
+  will-change: auto;
+  // 确保容器不会因为内容变化而导致高度变化
+  // 使用固定的尺寸计算方式
+  // height: 100% 已经设置，但需要确保父容器也有固定高度
 
+  &.p-16 {
+    padding: 16px;
+    overflow: auto;
+  }
+
+  // Markdown 样式（仅用于 Markdown 内容）
   h1,
   h2,
   h3,
@@ -414,6 +436,26 @@
       text-decoration: underline;
     }
   }
+}
+
+.htmlFrame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+  box-sizing: border-box;
+  display: block;
+  // 确保 iframe 不会影响布局
+  min-height: 0;
+  max-height: 100%;
+  // 防止 iframe 内容变化导致布局重排
+  contain: layout style paint;
+  // 确保 iframe 尺寸固定
+  flex-shrink: 0;
+  // 优化渲染性能
+  transform: translateZ(0);
+  // 防止 iframe 加载导致页面抖动
+  will-change: auto;
 }
 
 // Text/Code Preview

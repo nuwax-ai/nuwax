@@ -29,6 +29,7 @@ import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
   MessageTypeEnum,
+  TaskStatus,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import { AgentDetailDto } from '@/types/interfaces/agent';
@@ -57,10 +58,16 @@ import eventBus from '@/utils/eventBus';
 import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
-import { LoadingOutlined } from '@ant-design/icons';
+import { LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
 import { Button, Form, message as messageAntd, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import ConversationStatus from './components/ConversationStatus';
 import DropdownChangeName from './DropdownChangeName';
@@ -74,8 +81,6 @@ const cx = classNames.bind(styles);
 const Chat: React.FC = () => {
   const location = useLocation();
   const params = useParams();
-  const { isMobile } = useModel('layout');
-  const { runHistoryItem } = useModel('conversationHistory');
   // 会话ID
   const id = Number(params.id);
   const agentId = Number(params.agentId);
@@ -137,6 +142,8 @@ const Chat: React.FC = () => {
     showScrollBtn,
     setShowScrollBtn,
     resetInit,
+    handleClearSideEffect,
+    setIsLoadingOtherInterface,
     requiredNameList,
     setConversationInfo,
     variables,
@@ -169,11 +176,19 @@ const Chat: React.FC = () => {
     taskAgentSelectTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
+    // 加载更多消息相关
+    isMoreMessage,
+    loadingMore,
+    handleLoadMoreMessage,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
+
+  const { isMobile } = useModel('layout');
+  // 会话记录
+  const { runHistory, runHistoryItem } = useModel('conversationHistory');
 
   // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
   // 支持多种可能的参数名：workflowId, workflow_id, id
@@ -257,7 +272,9 @@ const Chat: React.FC = () => {
 
   useNavigationGuard({
     condition: () => shouldBlockNavigation.current,
-    enabled: isConversationActive, // 只在会话活跃时启用
+    // 只有任务型智能体在会话活跃时才启用导航拦截，会话型智能体不需要
+    enabled:
+      isConversationActive && agentDetail?.type === AgentTypeEnum.TaskAgent,
     title: '任务执行中',
     message: '离开后，执行成功的任务会收到提示消息',
     discardText: '确定离开',
@@ -332,6 +349,8 @@ const Chat: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: AgentDetailDto) => {
+      setClearLoading(false);
+      setIsLoadingOtherInterface(false);
       const { agentId, conversationId } = result;
       // 默认跳转地址
       let url = `/home/chat/${conversationId}/${agentId}`;
@@ -344,12 +363,12 @@ const Chat: React.FC = () => {
         files: [],
         infos,
         defaultAgentDetail,
-        firstVariableParams,
+        firstVariableParams: null, // 清空会话时不保留变量参数,让用户重新填写
       });
-      setClearLoading(false);
     },
     onError: () => {
       setClearLoading(false);
+      setIsLoadingOtherInterface(false);
     },
   });
 
@@ -463,6 +482,56 @@ const Chat: React.FC = () => {
     }
   };
 
+  // 监听会话状态更新事件
+  const listenConversationStatusUpdate = (data: { conversationId: string }) => {
+    const { conversationId } = data;
+    // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
+    if (conversationId === conversationInfo?.id?.toString()) {
+      setConversationInfo({
+        ...conversationInfo,
+        taskStatus: TaskStatus.COMPLETE,
+      });
+
+      // 重新查询会话信息
+      runAsync(id);
+      // 重新查询会话记录
+      runHistory({
+        agentId: null,
+        limit: 20,
+      });
+
+      // 取消监听会话状态更新事件
+      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+    }
+  };
+
+  // 处理任务停止后的刷新逻辑
+  const handleTaskStopped = useCallback(
+    (conversationId: string) => {
+      if (Number(conversationId) === Number(id)) {
+        // 重新查询会话信息
+        runAsync(id);
+        // 重新查询会话记录
+        runHistory({
+          agentId: null,
+          limit: 20,
+        });
+      }
+    },
+    [id],
+  );
+
+  useEffect(() => {
+    if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
+      // 监听会话状态更新事件
+      eventBus.on(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+    }
+
+    return () => {
+      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
+    };
+  }, [conversationInfo?.taskStatus]);
+
   useEffect(() => {
     // 监听新消息事件
     eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
@@ -480,13 +549,19 @@ const Chat: React.FC = () => {
     };
   }, [id]);
 
-  // 清空会话记录，实际上是跳转到智能体详情页面
+  // 清空会话记录,实际上是跳转到智能体详情页面
   const handleClear = () => {
     setClearLoading(true);
-    // 立即清空消息列表，避免跳转时旧数据闪烁
+    handleClearSideEffect();
+    // 立即清空消息列表,避免跳转时旧数据闪烁
     setMessageList([]);
     // 清除文件面板信息, 并关闭文件面板
     clearFilePanelInfo();
+    // 重置表单,清空对话设置中的参数
+    form.resetFields();
+    // 重置变量参数状态
+    setVariableParams(null);
+    setIsLoadingOtherInterface(true);
     runDetailNew(agentId, true);
   };
 
@@ -588,7 +663,7 @@ const Chat: React.FC = () => {
     const { code } = await apiUpdateStaticFile(newSkillInfo);
     if (code === SUCCESS_CODE && id) {
       // 新建成功后，重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
-      handleRefreshFileList(id);
+      await handleRefreshFileList(id);
     }
 
     return code === SUCCESS_CODE;
@@ -598,7 +673,7 @@ const Chat: React.FC = () => {
   const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
     return new Promise((resolve) => {
       modalConfirm(
-        '您确定要删除此文件吗?',
+        '你确定要删除此文件吗?',
         fileNode.name,
         async () => {
           try {
@@ -702,69 +777,35 @@ const Chat: React.FC = () => {
 
   /**
    * 处理上传多个文件回调
+   * @param files 文件列表
+   * @param filePaths 文件路径列表
+   * @returns Promise<void>
    */
-  const handleUploadMultipleFiles = async (node: FileNode | null) => {
+  const handleUploadMultipleFiles = async (
+    files: File[],
+    filePaths: string[],
+  ) => {
     if (!id) {
       messageAntd.error('会话ID不存在，无法上传文件');
       return;
     }
-    // 两种情况 第一个是文件夹，第二个是文件
-    let relativePath = '';
 
-    if (node) {
-      if (node.type === 'file') {
-        relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
-      } else if (node.type === 'folder') {
-        relativePath = node.path + '/';
+    try {
+      // 直接调用上传接口，使用文件名作为路径
+      const { code } = await apiUploadFiles({
+        files,
+        cId: id,
+        filePaths,
+      });
+
+      if (code === SUCCESS_CODE) {
+        messageAntd.success('上传成功');
+        // 刷新项目详情
+        await handleRefreshFileList(id);
       }
+    } catch (error) {
+      console.error('上传失败', error);
     }
-
-    // 创建一个隐藏的文件输入框
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.style.display = 'none';
-    input.multiple = true;
-    document.body.appendChild(input);
-
-    // 等待用户选择文件
-    input.click();
-
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        document.body.removeChild(input);
-        return;
-      }
-
-      try {
-        // 文件列表
-        const files = Array.from((e.target as HTMLInputElement).files || []);
-        // 文件路径列表
-        const filePaths = files.map((file) => relativePath + file.name);
-        // 直接调用上传接口，使用文件名作为路径
-        const { code } = await apiUploadFiles({
-          files,
-          cId: id,
-          filePaths,
-        });
-
-        if (code === SUCCESS_CODE) {
-          messageAntd.success('上传成功');
-          // 刷新项目详情
-          handleRefreshFileList(id);
-        }
-      } catch (error) {
-        console.error('上传失败', error);
-      } finally {
-        // 清理加载状态和DOM
-        document.body.removeChild(input);
-      }
-    };
-
-    // 如果用户取消选择，也要清理DOM
-    input.oncancel = () => {
-      document.body.removeChild(input);
-    };
   };
 
   // 导出项目
@@ -782,10 +823,7 @@ const Chat: React.FC = () => {
       exportWholeProjectZip(result, filename);
       messageAntd.success('导出成功！');
     } catch (error) {
-      // 改进错误处理，兼容不同的错误格式
-      const errorMessage = (error as any)?.message || '导出过程中发生未知错误';
-
-      messageAntd.error(`导出失败: ${errorMessage}`);
+      console.error('导出项目失败:', error);
     }
   };
 
@@ -904,11 +942,26 @@ const Chat: React.FC = () => {
                 isFilled={!!variableParams}
                 disabled={!!firstVariableParams || isSendMessageRef.current}
               />
+              {/* 加载更多按钮 */}
+              {isMoreMessage && messageList?.length > 0 && (
+                <div className={cx(styles['load-more-container'])}>
+                  <Button
+                    type="text"
+                    loading={loadingMore}
+                    icon={<RollbackOutlined />}
+                    onClick={() => handleLoadMoreMessage(id)}
+                    className={cx(styles['load-more-btn'])}
+                  >
+                    点击查看更多历史会话
+                  </Button>
+                </div>
+              )}
               {messageList?.length > 0 ? (
                 <>
-                  {messageList?.map((item: MessageInfo, index: number) => (
+                  {messageList?.map((item: MessageInfo) => (
                     <ChatView
-                      key={item.id || index}
+                      // 后端接口返回的消息列表id存在相同的情况，所以需要使用id和index来唯一标识
+                      key={`${item.id}-${item?.index}`}
                       messageInfo={item}
                       roleInfo={roleInfo}
                       contentClassName={styles['chat-inner']}
@@ -926,6 +979,19 @@ const Chat: React.FC = () => {
                     chatSuggestList={chatSuggestList}
                     onClick={handleMessageSend}
                   />
+                  {/* 任务执行中容器 */}
+                  {conversationInfo?.taskStatus === TaskStatus.EXECUTING && (
+                    <div
+                      className={cx(
+                        styles['task-executing-container'],
+                        'flex',
+                        'items-center',
+                      )}
+                    >
+                      <LoadingOutlined />
+                      <span>智能体正在执行，请稍等</span>
+                    </div>
+                  )}
                 </>
               ) : (
                 !message &&
@@ -977,7 +1043,6 @@ const Chat: React.FC = () => {
             )}
 
           <ChatInputHome
-            // key={`chat-${id}-${agentId}`}
             key={`agent-details-${agentId}`}
             className={cx(styles['chat-input-container'])}
             onEnter={handleMessageSend}
@@ -990,11 +1055,28 @@ const Chat: React.FC = () => {
             onSelectComponent={handleSelectComponent}
             onScrollBottom={onScrollBottom}
             showAnnouncement={true}
+            onTaskStopped={handleTaskStopped}
           />
         </div>
       </div>
     );
   };
+  useEffect(() => {
+    // 设置最小宽度-扩展页面/文件树
+    if (pagePreviewData || isFileTreeVisible) {
+      document.documentElement.style.minWidth = '1660px';
+    } else {
+      // 设置最小宽度-调试详情
+      if (isSidebarVisible) {
+        document.documentElement.style.minWidth = '1540px';
+      } else {
+        document.documentElement.style.minWidth = '1200px';
+      }
+    }
+    return () => {
+      document.documentElement.style.minWidth = '1200px';
+    };
+  }, [pagePreviewData, isFileTreeVisible, isSidebarVisible]);
 
   return (
     <div className={cx('flex', 'h-full')}>
@@ -1005,33 +1087,35 @@ const Chat: React.FC = () => {
           className={cx(
             'flex',
             'items-center',
-            'justify-center',
+            'content-center',
             'flex-1',
-            'h-full',
             'w-full',
+            'h-full',
           )}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            height: '100%',
-          }}
         >
           <LoadingOutlined />
         </div>
       ) : (
-        <ResizableSplit
-          minLeftWidth={400}
-          defaultLeftWidth={
-            agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
-          }
-          // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
-          // className={cx(isFileTreeVisible && 'flex-1')}
-          left={agentDetail?.hideChatArea ? null : LeftContent()}
-          right={
-            agentDetail?.type !== AgentTypeEnum.TaskAgent
-              ? // 会话型
+        <div
+          style={{
+            flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
+            minWidth: pagePreviewData || isFileTreeVisible ? '900px' : '430px',
+          }}
+        >
+          <ResizableSplit
+            resetTrigger={
+              pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
+            }
+            minLeftWidth={430}
+            defaultLeftWidth={
+              agentDetail?.type === AgentTypeEnum.TaskAgent ? 33 : 50
+            }
+            // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
+            // className={cx(isFileTreeVisible && 'flex-1')}
+            left={agentDetail?.hideChatArea ? null : LeftContent()}
+            right={
+              agentDetail?.type !== AgentTypeEnum.TaskAgent
+                ? // 会话型
                 pagePreviewData && (
                   <>
                     <PagePreviewIframe
@@ -1048,27 +1132,29 @@ const Chat: React.FC = () => {
                       copyButtonClassName={styles['copy-btn']}
                     />
                     {/* 复制模板弹窗 */}
-                    {showCopyButton && agentDetail && pagePreviewData?.uri && (
-                      <CopyToSpaceComponent
-                        spaceId={agentDetail!.spaceId}
-                        mode={AgentComponentTypeEnum.Page}
-                        componentId={parsePageAppProjectId(
-                          pagePreviewData?.uri,
-                        )}
-                        title={''}
-                        open={openCopyModal}
-                        isTemplate={true}
-                        onSuccess={(_: any, targetSpaceId: number) => {
-                          setOpenCopyModal(false);
-                          // 跳转
-                          jumpToPageDevelop(targetSpaceId);
-                        }}
-                        onCancel={() => setOpenCopyModal(false)}
-                      />
-                    )}
+                    {showCopyButton &&
+                      agentDetail &&
+                      pagePreviewData?.uri && (
+                        <CopyToSpaceComponent
+                          spaceId={agentDetail!.spaceId}
+                          mode={AgentComponentTypeEnum.Page}
+                          componentId={parsePageAppProjectId(
+                            pagePreviewData?.uri,
+                          )}
+                          title={''}
+                          open={openCopyModal}
+                          isTemplate={true}
+                          onSuccess={(_: any, targetSpaceId: number) => {
+                            setOpenCopyModal(false);
+                            // 跳转
+                            jumpToPageDevelop(targetSpaceId);
+                          }}
+                          onCancel={() => setOpenCopyModal(false)}
+                        />
+                      )}
                   </>
                 )
-              : // 任务型
+                : // 任务型
                 isFileTreeVisible && (
                   <div
                     className={cx(
@@ -1112,11 +1198,18 @@ const Chat: React.FC = () => {
                       isCanDeleteSkillFile={true}
                       // 刷新文件树回调
                       onRefreshFileTree={() => handleRefreshFileList(id)}
+                      // VNC 空闲检测配置（仅任务型智能体启用）
+                      idleDetection={{
+                        enabled:
+                          agentDetail?.type === AgentTypeEnum.TaskAgent,
+                        onIdleTimeout: () => openPreviewView(id),
+                      }}
                     />
                   </div>
                 )
-          }
-        />
+            }
+          />
+        </div>
       )}
       {/* AgentSidebar - 只在文件树隐藏时显示 */}
       {!isFileTreeVisible && (

@@ -15,7 +15,13 @@ import type {
 import { ProTable } from '@ant-design/pro-components';
 import { Button, message } from 'antd';
 import dayjs from 'dayjs';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useLocation, useParams, useSearchParams } from 'umi';
 import LogDetailDrawer from '../LogDetailDrawer';
 
@@ -239,23 +245,28 @@ const LogProTable: React.FC = () => {
   const isReset = useRef(false);
 
   const request = useCallback(
-    async (tableParams: Record<string, any>) => {
+    async (_tableParams: Record<string, any>) => {
+      let tableParams = _tableParams;
       // 判断是否是点击重置按钮
       if (isReset.current) {
         isReset.current = false;
-        // 设置表单值为空
+        // 重置表单
+        formRef.current?.resetFields();
+        // 设置表单值为空(需要特殊处理)
         formRef.current?.setFieldsValue({
           targetType: undefined,
           targetId: undefined,
         });
 
-        // 删除查询参数，防止重复查询
+        // 删除查询参数,防止重复查询
         searchParams.delete('targetType');
         searchParams.delete('targetId');
-        searchParams.delete('from');
-        tableParams.targetId = undefined;
-        tableParams.targetType = undefined;
+        searchParams.delete('from'); // 需要特殊处理(只有特殊情况会用到)
         setSearchParams(searchParams);
+        tableParams = {
+          current: tableParams.current,
+          pageSize: tableParams.pageSize,
+        };
       }
       const current = Number(tableParams.current || 1);
       const pageSize = Number(tableParams.pageSize || 10);
@@ -370,7 +381,39 @@ const LogProTable: React.FC = () => {
 
   const handleReset = () => {
     isReset.current = true;
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 设置分页参数:第1页,每页10条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 10 });
+    // 延迟一下再重新加载,确保分页参数已设置
+    actionRef.current?.reload();
   };
+
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state]);
+
+  // 记录是否是首次加载，避免在初始加载时清空 URL 参数
+  const isFirstLoad = useRef(true);
+
+  // 监听 spaceId 变化，切换空间时刷新数据
+  useEffect(() => {
+    // 首次加载时不触发重置，保留 URL 参数用于初始化查询
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
+
+    // 只在 spaceId 变化（非首次加载）时才重置
+    if (spaceId) {
+      handleReset();
+    }
+  }, [spaceId]);
 
   return (
     <>

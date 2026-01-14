@@ -328,6 +328,18 @@ const SpaceLibrary: React.FC = () => {
     runComponent(spaceId);
   }, [spaceId]);
 
+  // 监听菜单切换，重新加载数据
+  useEffect(() => {
+    if (history.location.state) {
+      // 清空URL搜索参数
+      const newParams = new URLSearchParams();
+      setSearchParams(newParams);
+      // 重新加载组件列表
+      setLoading(true);
+      runComponent(spaceId);
+    }
+  }, [history.location.state]);
+
   // 切换类型
   const handlerChangeType = (value: React.Key) => {
     const _value = value as ComponentTypeEnum;
@@ -425,7 +437,7 @@ const SpaceLibrary: React.FC = () => {
   // 删除组件确认弹窗
   const showDeleteConfirm = (type: ComponentTypeEnum, info: ComponentInfo) => {
     const { id, name } = info;
-    modalConfirm('您确定要删除此组件吗?', name, () => {
+    modalConfirm('你确定要删除此组件吗?', name, () => {
       switch (type) {
         case ComponentTypeEnum.Plugin:
           runPluginDel(id);

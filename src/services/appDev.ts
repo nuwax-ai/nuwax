@@ -467,6 +467,26 @@ export const exportProject = async (
   );
 };
 
+/**
+ * 回滚项目版本
+ * 使用服务端直接回滚，避免大文件传输导致数据丢失
+ * @param projectId 项目ID
+ * @param rollbackTo 回滚到的版本号
+ * @returns Promise<RequestResponse<void>> 回滚结果
+ */
+export const rollbackVersion = async (
+  projectId: string,
+  rollbackTo: number,
+): Promise<RequestResponse<void>> => {
+  return request('/api/custom-page/rollback-version', {
+    method: 'POST',
+    data: {
+      projectId: Number(projectId),
+      rollbackTo,
+    },
+  });
+};
+
 // ==================== 会话管理相关API服务 ====================
 
 /**

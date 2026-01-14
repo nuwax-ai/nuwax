@@ -38,8 +38,8 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
   info,
   mode = CreateUpdateModeEnum.Create,
   open,
-  onCancel = () => {},
-  onConfirm = () => {},
+  onCancel = () => { },
+  onConfirm = () => { },
 }) => {
   const [form] = Form.useForm();
   // 监听 variables 字段变化，用于条件显示参数配置
@@ -261,9 +261,9 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
       ...paramsObj, // 初始化参数对象
       ...(info.targetType === AgentComponentTypeEnum.Agent
         ? {
-            message,
-            keepConversation: keepConversation ? true : false,
-          }
+          message,
+          keepConversation: keepConversation ? true : false,
+        }
         : {}),
     });
   };
@@ -327,9 +327,9 @@ const CreateTimedTask: React.FC<CreateTimedTaskProps> = ({
           <>
             <Form.Item
               name="keepConversation"
-              label="保持对话"
+              label="保持会话"
               tooltip="选择“否”时将为每次任务执行创建一个全新的会话）"
-              rules={[{ required: true, message: '请选择是否保持对话' }]}
+              rules={[{ required: true, message: '请选择是否保持会话' }]}
             >
               <Switch checkedChildren="是" unCheckedChildren="否" />
             </Form.Item>

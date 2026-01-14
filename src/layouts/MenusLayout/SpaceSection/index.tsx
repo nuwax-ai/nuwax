@@ -104,7 +104,9 @@ const SpaceSection: React.FC<{
       }
       // 关闭移动端菜单
       handleCloseMobileMenu();
-      history.push(`/space/${finalSpaceId}/${url}`);
+      history.push(`/space/${finalSpaceId}/${url}`, {
+        _t: Date.now(),
+      });
       localStorage.setItem(SPACE_URL, url);
     },
     [handleCloseMobileMenu, finalSpaceId],

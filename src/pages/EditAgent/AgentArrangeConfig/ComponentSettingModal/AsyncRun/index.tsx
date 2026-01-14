@@ -24,7 +24,7 @@ const AsyncRun: React.FC<AsyncRunProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    setContent(asyncReplyContent || '已经开始为您处理，请耐心等待运行结果');
+    setContent(asyncReplyContent || '已经开始为你处理，请耐心等待运行结果');
     setSelected(async || DefaultSelectedEnum.No);
   }, [async, asyncReplyContent]);
 
@@ -75,7 +75,7 @@ const AsyncRun: React.FC<AsyncRunProps> = ({
             classNames={{
               textarea: cx(styles.textarea),
             }}
-            placeholder="您可以在这里设置消息回复,任务运行时将自动回复,比如: 任务已在进行中,一旦完成我将第一时间向您报告结果,您还有其他需要我协助的事项吗?"
+            placeholder="你可以在这里设置消息回复,任务运行时将自动回复,比如: 任务已在进行中,一旦完成我将第一时间向你报告结果,你还有其他需要我协助的事项吗?"
             autoSize={{ minRows: 5, maxRows: 6 }}
             maxLength={1000}
             showCount

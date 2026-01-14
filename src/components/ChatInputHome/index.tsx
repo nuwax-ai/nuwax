@@ -1,8 +1,10 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { TaskStatus } from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
@@ -50,6 +52,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   showTaskAgentToggle = false,
   isTaskAgentActive = false,
   onToggleTaskAgent,
+  onTaskStopped,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -62,6 +65,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     messageList,
     loadingConversation,
     isLoadingOtherInterface,
+    conversationInfo,
   } = useModel('conversationInfo');
 
   // 文档
@@ -243,14 +247,14 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               prev.map((item) =>
                 item.uid === uploadFile.uid
                   ? {
-                      ...item,
-                      status: UploadFileStatus.done,
-                      percent: 100,
-                      url: result.data?.url || '',
-                      key: result.data?.key || '',
-                      name: result.data?.fileName || item.name,
-                      response: result,
-                    }
+                    ...item,
+                    status: UploadFileStatus.done,
+                    percent: 100,
+                    url: result.data?.url || '',
+                    key: result.data?.key || '',
+                    name: result.data?.fileName || item.name,
+                    response: result,
+                  }
                   : item,
               ),
             );
@@ -263,10 +267,10 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               prev.map((item) =>
                 item.uid === uploadFile.uid
                   ? {
-                      ...item,
-                      status: UploadFileStatus.error,
-                      percent: 0,
-                    }
+                    ...item,
+                    status: UploadFileStatus.error,
+                    percent: 0,
+                  }
                   : item,
               ),
             );
@@ -286,10 +290,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   };
 
   // 停止会话功能 - 直接集成到组件内部
-  const handleStopConversation = useCallback(() => {
-    // if (disabledStop || wholeDisabled) {
-    //   return;
-    // }
+  const handleStopConversation = useCallback(async () => {
+    // 防止重复点击
+    if (isStoppingConversation) {
+      return;
+    }
     // 设置停止操作状态
     setIsStoppingConversation(true);
 
@@ -304,15 +309,27 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       // 临时聊天需要 requestId
       onTempChatStop(requestId);
     } else if (conversationId) {
-      // 正常会话只需要 conversationId 即可停止
-      runStopConversation(conversationId);
-    } else {
-      // 如果连 conversationId 都没有，重置停止状态
-      setIsStoppingConversation(false);
+      // 根据任务状态执行不同的逻辑
+      if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
+        // 正常会话只需要 conversationId 即可停止
+        const { code } = await runStopConversation(conversationId);
+        if (code === SUCCESS_CODE && onTaskStopped) {
+          // 后台处理有延时，需要等待3秒后，再重新查询会话信息
+          setTimeout(() => {
+            setIsStoppingConversation(false);
+            // 重新查询会话信息
+            // 使用回调函数通知父组件进行查询
+            onTaskStopped?.(conversationId);
+          }, 3000);
+        }
+      } else {
+        // 正常会话只需要 conversationId 即可停止
+        runStopConversation(conversationId);
+      }
     }
   }, [
-    // disabledStop,
-    // wholeDisabled,
+    isStoppingConversation,
+    conversationInfo?.taskStatus,
     getCurrentConversationRequestId,
     getCurrentConversationId,
     runStopConversation,
@@ -335,9 +352,19 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 获取停止按钮提示文本
   const getStopButtonTooltip = () => {
-    // if (wholeDisabled) {
-    //   return '会话已禁用';
-    // }
+    // 如果是任务执行状态
+    if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
+      if (
+        isStoppingConversation ||
+        loadingStopConversation ||
+        loadingStopTempConversation
+      ) {
+        return '正在停止任务...';
+      }
+      return '点击停止Agent任务';
+    }
+
+    // 普通会话状态
     if (!isConversationActive) {
       return '当前无进行中的会话';
     }
@@ -478,7 +505,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             onSelectComponent={onSelectComponent}
           />
           {/* 根据会话状态显示发送或停止按钮 */}
-          {isConversationActive ? (
+          {isConversationActive ||
+            conversationInfo?.taskStatus === TaskStatus.EXECUTING ? (
             // 会话进行中，显示停止按钮
             <Tooltip title={getStopButtonTooltip()}>
               <span

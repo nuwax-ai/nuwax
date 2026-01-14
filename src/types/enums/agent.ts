@@ -13,6 +13,8 @@ export enum AgentComponentTypeEnum {
   Event = 'Event',
   // 技能
   Skill = 'Skill',
+  // 子智能体
+  SubAgent = 'SubAgent',
   // 工具调用
   ToolCall = 'ToolCall',
   // 执行计划
@@ -57,9 +59,13 @@ export enum InputTypeEnum {
 
 // 调用方式,可用值:AUTO,ON_DEMAND,MANUAL,MANUAL_ON_DEMAND
 export enum InvokeTypeEnum {
+  // 自动调用
   AUTO = 'AUTO',
+  // 按需调用
   ON_DEMAND = 'ON_DEMAND',
+  // 手动选择
   MANUAL = 'MANUAL',
+  // 手动选择+按需调用 (技能时，代表手动选择)
   MANUAL_ON_DEMAND = 'MANUAL_ON_DEMAND',
 }
 
@@ -126,16 +132,21 @@ export enum AgentAddComponentStatusEnum {
   Added = 'Added',
 }
 
-// 任务状态 可用值:EXECUTING,CANCEL
+// 任务状态，只针对 EXECUTING（执行中）做展示,可用值:CREATE,EXECUTING,CANCEL,COMPLETE,FAILED
 export enum TaskStatus {
+  CREATE = 'CREATE',
   CANCEL = 'CANCEL',
   EXECUTING = 'EXECUTING',
+  COMPLETE = 'COMPLETE',
+  FAILED = 'FAILED',
 }
 
-// 可用值:Chat,TASK
+// 可用值:Chat,TempChat,TASK,TaskCenter
 export enum TaskTypeEnum {
   Chat = 'Chat',
+  TempChat = 'TempChat',
   TASK = 'TASK',
+  TaskCenter = 'TaskCenter',
 }
 
 // 是否允许复制,0不允许，1允许

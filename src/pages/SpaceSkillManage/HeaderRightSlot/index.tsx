@@ -6,7 +6,7 @@ import { CreateSkillWayEnum } from '@/types/enums/space';
 import { CustomPopoverItem } from '@/types/interfaces/common';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Space } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 type IQuery = 'keyword';
 
@@ -17,8 +17,8 @@ interface HeaderRightSlotProps {
   onImport?: () => void;
 }
 const HeaderRightSlot: React.FC<HeaderRightSlotProps> = ({
-  onCreate = () => {},
-  onImport = () => {},
+  onCreate = () => { },
+  onImport = () => { },
 }) => {
   const { searchParams, setSearchParamsCustom } =
     useSearchParamsCustom<IQuery>();
@@ -50,6 +50,12 @@ const HeaderRightSlot: React.FC<HeaderRightSlotProps> = ({
         break;
     }
   };
+
+  // 监听 URL 参数变化，同步更新本地状态
+  useEffect(() => {
+    const urlKeyword = searchParams.get('keyword') || '';
+    setKeyword(urlKeyword);
+  }, [searchParams]);
 
   return (
     <Space>

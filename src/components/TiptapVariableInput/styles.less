@@ -162,7 +162,7 @@
   // 变量节点容器中的大括号样式（真实 DOM 元素）
   // 大括号元素是变量节点的兄弟元素
   span:has(+ .variable-block-chip),
-  .variable-block-chip + span {
+  .variable-block-chip+span {
     color: @colorInfo;
     font-family: @fontFamilyCode;
     font-size: @fontSizeSm;
@@ -228,6 +228,15 @@
     user-select: none;
     vertical-align: baseline; // 改为 baseline 对齐
     cursor: default;
+
+    &[data-tool-type='Skill'],
+    &[data-tool-type='skill'],
+    &[data-tool-type='SubAgent'],
+    &[data-tool-type='subagent'],
+    &[data-tool-type='sub-agent'] {
+      background-color: @blue1;
+      color: @blue6;
+    }
   }
 
   // Mention 节点样式

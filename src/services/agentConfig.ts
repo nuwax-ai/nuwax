@@ -9,6 +9,7 @@ import {
   AgentComponentModelUpdateParams,
   AgentComponentPluginUpdateParams,
   AgentComponentSkillUpdateParams,
+  AgentComponentSubAgentUpdateParams,
   AgentComponentTableUpdateParams,
   AgentComponentVariableUpdateParams,
   AgentComponentWorkflowUpdateParams,
@@ -20,6 +21,7 @@ import {
   AgentPageUpdateParams,
   AgentPublishApplyParams,
   ApiAgentConversationChatPageResultParams,
+  ConversationMessageListParams,
 } from '@/types/interfaces/agent';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import type {
@@ -27,6 +29,7 @@ import type {
   ConversationCreateParams,
   ConversationInfo,
   ConversationListParams,
+  MessageInfo,
   ShareFileInfo,
 } from '@/types/interfaces/conversationInfo';
 import type { RequestResponse } from '@/types/interfaces/request';
@@ -152,6 +155,16 @@ export async function apiAgentComponentSkillUpdate(
   });
 }
 
+// 更新组件子智能体配置
+export async function apiAgentComponentSubAgentUpdate(
+  data: AgentComponentSubAgentUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/subagent/update', {
+    method: 'POST',
+    data,
+  });
+}
+
 // 更新模型组件配置
 export async function apiAgentComponentModelUpdate(
   data: AgentComponentModelUpdateParams,
@@ -261,6 +274,16 @@ export async function apiAgentConversation(
 ): Promise<RequestResponse<ConversationInfo>> {
   return await request(`/api/agent/conversation/${conversationId}`, {
     method: 'POST',
+  });
+}
+
+// 查询会话消息列表
+export async function apiAgentConversationMessageList(
+  data: ConversationMessageListParams,
+): Promise<RequestResponse<MessageInfo[]>> {
+  return await request('/api/agent/conversation/message/list', {
+    method: 'POST',
+    data,
   });
 }
 

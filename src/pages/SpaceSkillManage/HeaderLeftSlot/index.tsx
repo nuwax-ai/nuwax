@@ -3,7 +3,7 @@ import { FILTER_STATUS } from '@/constants/space.constants';
 import useSearchParamsCustom from '@/hooks/useSearchParamsCustom';
 import { FilterStatusEnum } from '@/types/enums/space';
 import { Space } from 'antd';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type IQuery = 'status';
 
@@ -19,6 +19,13 @@ const HeaderLeftSlot: React.FC = () => {
     setStatus(value as FilterStatusEnum);
     setSearchParamsCustom('status', value.toString());
   };
+
+  // 监听 URL 参数变化，同步更新本地状态
+  useEffect(() => {
+    const urlStatus =
+      Number(searchParams.get('status')) || FilterStatusEnum.All;
+    setStatus(urlStatus);
+  }, [searchParams]);
 
   return (
     <Space>

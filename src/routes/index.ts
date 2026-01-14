@@ -215,6 +215,16 @@ const routes = [
     component: '@/examples/file-preview-demo',
     layout: false,
   },
+  {
+    path: '/examples/empty-state-showcase',
+    component: '@/examples/EmptyStateShowcase',
+    layout: false,
+  },
+  {
+    path: '/examples/sse-streaming-test',
+    component: '@/examples/SSEStreamingTest',
+    layout: false,
+  },
 ];
 
 export default routes;

@@ -24,37 +24,146 @@ export const useVariableTree = (
     const tree = buildVariableTree(variables);
 
     if (skills && skills.length > 0) {
-      // 转换技能为树节点
-      const skillNodes: VariableTreeNode[] = skills.map((skill, index) => ({
-        key: `skill-${skill.typeId || skill.id || index}`,
-        value: skill.toolName || skill.name || 'Unknown Tool',
-        label: skill.toolName || skill.name || 'Unknown Tool',
+      // 根据类型分类：工具（Plugin/Workflow/Mcp）和技能（Skill/SubAgent）
+      const toolTypes = ['Plugin', 'Workflow', 'Mcp'];
+      const skillTypes = ['Skill', 'SubAgent'];
+
+      const tools = skills.filter((s) => toolTypes.includes(s.type));
+      const skillItems = skills.filter((s) => {
+        if (s.type === 'SubAgent') {
+          return s.bindConfig?.subAgents?.length > 0;
+        }
+        return skillTypes.includes(s.type);
+      });
+
+      // 转换工具为树节点
+      const toolNodes: VariableTreeNode[] = tools.map((tool, index) => ({
+        key: `tool-${tool.typeId || tool.id || index}`,
+        value: tool.toolName || tool.name || 'Unknown Tool',
+        label: tool.toolName || tool.name || 'Unknown Tool',
         isLeaf: true,
         variable: {
-          name: skill.name,
+          name: tool.name,
           type: 'Tool' as any,
-          value: skill,
+          value: tool,
+          displayType: 'Tool', // 用于显示标签
         } as any,
       }));
 
-      // 只有当有变量时才添加 category-skills 分类节点
-      // 如果只有工具，直接返回工具列表，不创建分类节点
+      // 转换技能为树节点
+      // 转换技能为树节点
+      const skillNodes: VariableTreeNode[] = [];
+
+      skillItems.forEach((skill, index) => {
+        const isSubAgent = skill.type === 'SubAgent';
+        const skillKey = `skill-${skill.typeId || skill.id || index}`;
+        const skillName = skill.toolName || skill.name || 'Unknown Skill';
+
+        if (
+          isSubAgent &&
+          skill.bindConfig?.subAgents &&
+          skill.bindConfig.subAgents.length > 0
+        ) {
+          // 子智能体：平铺展示子项
+          skill.bindConfig.subAgents.forEach(
+            (subAgent: any, subIndex: number) => {
+              skillNodes.push({
+                key: `subagent-${skill.id}-${subAgent.name}-${subIndex}`,
+                value: subAgent.name, // 使用子智能体名称作为 value
+                label: subAgent.name,
+                isLeaf: true,
+                variable: {
+                  name: subAgent.name,
+                  type: 'SubAgent' as any, // 确保 ToolBlock 使用正确的类型
+                  value: {
+                    ...subAgent,
+                    id: skill.id, // 指向父智能体ID
+                    typeId: skill.typeId,
+                    type: 'SubAgent', // 覆盖类型为 SubAgent
+                  },
+                  displayType: 'SubAgent', // 用于显示标签
+                } as any,
+              });
+            },
+          );
+        } else {
+          // 普通技能或无子项的子智能体
+          skillNodes.push({
+            key: skillKey,
+            value: skillName,
+            label: skillName,
+            isLeaf: true,
+            variable: {
+              name: skill.name,
+              type: isSubAgent ? 'SubAgent' : ('Skill' as any), // 使用实际类型
+              value: skill,
+              displayType: isSubAgent ? 'SubAgent' : 'Skill', // 用于显示标签
+            } as any,
+          });
+        }
+      });
+
+      // 有变量时，添加分类节点
       if (tree.length > 0) {
-        // 有变量时，添加技能分类节点
-        tree.push({
-          key: 'category-skills',
-          value: 'Skills',
-          label: 'Skills',
-          isLeaf: false,
-          children: skillNodes,
-          variable: {
-            name: 'Skills',
-            type: 'Category' as any,
-          } as any,
-        });
+        // 添加工具分类节点（如果有工具）
+        if (toolNodes.length > 0) {
+          tree.push({
+            key: 'category-tools',
+            value: 'Tools',
+            label: '工具',
+            isLeaf: false,
+            children: toolNodes,
+            variable: {
+              name: 'Tools',
+              type: 'Category' as any,
+            } as any,
+          });
+        }
+
+        // 添加技能分类节点（如果有技能）
+        if (skillNodes.length > 0) {
+          tree.push({
+            key: 'category-skills',
+            value: 'Skills',
+            label: '技能',
+            isLeaf: false,
+            children: skillNodes,
+            variable: {
+              name: 'Skills',
+              type: 'Category' as any,
+            } as any,
+          });
+        }
       } else {
-        // 只有工具时，直接返回工具列表，不创建分类节点
-        return skillNodes;
+        // 没有变量时，根据内容决定是否创建分类
+        // 如果既有工具又有技能，则创建分类节点
+        if (toolNodes.length > 0 && skillNodes.length > 0) {
+          tree.push({
+            key: 'category-tools',
+            value: 'Tools',
+            label: '工具',
+            isLeaf: false,
+            children: toolNodes,
+            variable: {
+              name: 'Tools',
+              type: 'Category' as any,
+            } as any,
+          });
+          tree.push({
+            key: 'category-skills',
+            value: 'Skills',
+            label: '技能',
+            isLeaf: false,
+            children: skillNodes,
+            variable: {
+              name: 'Skills',
+              type: 'Category' as any,
+            } as any,
+          });
+        } else {
+          // 只有工具或只有技能，直接返回扁平列表
+          return [...toolNodes, ...skillNodes];
+        }
       }
     }
 

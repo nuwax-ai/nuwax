@@ -9,9 +9,6 @@ import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
 import { treeToFlatList } from '@/utils/appDevUtils';
 import { jumpTo } from '@/utils/router';
 import {
-  ExclamationCircleOutlined,
-  GlobalOutlined,
-  Loading3QuartersOutlined,
   ReloadOutlined,
   ThunderboltOutlined,
   WarningOutlined,
@@ -247,100 +244,99 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
     /**
      * 获取空状态配置
      * 根据当前状态返回 AppDevEmptyState 的配置信息
+     * 使用最新的 EmptyStateType 类型映射，依赖组件内置的精美图标
      */
     const getEmptyStateConfig = useCallback(() => {
       // 判断当前状态类型
-      const hasError = loadError || serverMessage;
-      const isLoading =
-        isProjectUploading || isRestarting || isDeveloping || isStarting;
+      const hasLoadError = !!loadError;
+      const hasServerError = !!serverMessage;
       const hasStartError = !!startError;
       const noServerUrl = devServerUrl === undefined;
+      const isLoading =
+        isProjectUploading || isRestarting || isDeveloping || isStarting;
 
-      // 确定状态类型
-      let type: 'error' | 'loading' | 'no-data' | 'empty';
-      if (hasError) {
-        type = 'error';
-      } else if (isLoading) {
-        type = 'loading';
-      } else if (noServerUrl) {
-        type = 'no-data';
-      } else {
-        type = 'empty';
-      }
+      // 确定状态类型 - 使用精确的 EmptyStateType 类型
+      let type:
+        | 'loading'
+        | 'error'
+        | 'server-starting'
+        | 'server-restarting'
+        | 'developing'
+        | 'importing-project'
+        | 'server-error'
+        | 'preview-load-failed'
+        | 'server-start-failed'
+        | 'no-preview-url';
 
-      // 确定图标
-      let icon: React.ReactNode;
-      if (hasError) {
-        icon = <ExclamationCircleOutlined />;
-      } else if (isDeveloping) {
-        icon = <Loading3QuartersOutlined spin />;
-      } else if (isProjectUploading || isRestarting || isStarting) {
-        icon = <ThunderboltOutlined />;
+      // 按优先级判断状态类型
+      if (hasLoadError) {
+        // 预览加载失败
+        type = 'preview-load-failed';
+      } else if (hasServerError) {
+        // 服务器错误
+        type = 'server-error';
       } else if (hasStartError) {
-        icon = <ExclamationCircleOutlined />;
+        // 开发服务器启动失败
+        type = 'server-start-failed';
+      } else if (isProjectUploading) {
+        // 导入项目中
+        type = 'importing-project';
+      } else if (isRestarting) {
+        // 重启中
+        type = 'server-restarting';
+      } else if (isDeveloping) {
+        // 开发中（正在生成）
+        type = 'developing';
+      } else if (isStarting) {
+        // 启动中
+        type = 'server-starting';
+      } else if (noServerUrl) {
+        // 暂无预览地址
+        type = 'no-preview-url';
       } else {
-        icon = <GlobalOutlined />;
+        // 默认等待启动
+        type = 'server-starting';
       }
 
-      // 确定标题
-      let title: string;
-      if (loadError) {
-        title = '预览加载失败';
-      } else if (serverMessage) {
-        title = serverErrorCode
-          ? `服务器错误 (${formatErrorCode(serverErrorCode)})`
-          : '服务器错误';
-      } else if (isProjectUploading) {
-        title = '导入项目中';
-      } else if (isRestarting) {
-        title = '重启中';
+      // 确定标题 - 可自定义覆盖组件默认标题
+      let title: string | undefined;
+      if (hasServerError && serverErrorCode) {
+        title = `服务器错误 (${formatErrorCode(serverErrorCode)})`;
+      } else if (hasStartError && serverErrorCode) {
+        title = `开发服务器启动失败 (${formatErrorCode(serverErrorCode)})`;
       } else if (isStarting) {
         title = '启动中';
-      } else if (isDeveloping) {
-        title = '开发中';
-      } else if (hasStartError) {
-        title = serverErrorCode
-          ? `开发服务器启动失败 (${formatErrorCode(serverErrorCode)})`
-          : '开发服务器启动失败';
-      } else if (noServerUrl) {
-        title = '暂无预览地址';
-      } else {
-        title = '等待开发服务器启动';
       }
+      // 其他情况使用组件默认标题
 
-      // 确定描述
-      let description: string;
-      if (serverMessage) {
+      // 确定描述 - 可自定义覆盖组件默认描述
+      let description: string | undefined;
+      if (hasServerError && serverMessage) {
         description = serverMessage;
-      } else if (loadError) {
-        description = '预览页面加载失败，请检查开发服务器状态或网络连接';
+      } else if (hasStartError && startError) {
+        description = startError;
       } else if (isProjectUploading) {
         description = '正在导入项目并重启开发服务器，请稍候...';
-      } else if (isRestarting) {
-        description = '正在重启开发服务器，请稍候...';
       } else if (isStarting) {
         description = '正在启动开发环境，请稍候...';
       } else if (isDeveloping) {
         description = '正在生成，请稍候...';
-      } else if (hasStartError) {
-        description = startError || '';
-      } else if (noServerUrl) {
-        description = '当前没有可用的预览地址，请先启动开发服务器';
-      } else {
-        description = '正在连接开发服务器，请稍候...';
       }
+      // 其他情况使用组件默认描述
 
       // 确定按钮配置
       let buttons:
         | Array<{
-            text: string;
-            icon: React.ReactNode;
-            onClick: () => void;
-            loading?: boolean;
-            disabled?: boolean;
-            type?: 'primary';
-          }>
+          text: string;
+          icon: React.ReactNode;
+          onClick: () => void;
+          loading?: boolean;
+          disabled?: boolean;
+          type?: 'primary';
+        }>
         | undefined;
+
+      const hasError = hasLoadError || hasServerError || hasStartError;
 
       if (hasError) {
         // 有错误时显示重试按钮
@@ -355,7 +351,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         ];
 
         // 如果是服务器错误且有重启回调，添加重启服务器按钮
-        if (serverMessage && onRestartDev) {
+        if (hasServerError && onRestartDev) {
           buttons.push({
             text: '重启服务器',
             icon: <ThunderboltOutlined />,
@@ -381,9 +377,9 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
         buttons = undefined;
       }
 
+      // 返回配置 - 不传 icon，使用组件内置的精美图标
       return {
         type,
-        icon,
         title,
         description,
         buttons,
@@ -695,7 +691,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
      * iframe加载完成处理
      */
     const handleIframeLoad = useCallback(() => {
-      console.log('iframe加载完成:');
       // // 如果设计模式为开启，则发送消息给 iframe 开启设计模式
       // if (iframeDesignMode) {
       //   const iframe = document.querySelector('iframe');
@@ -733,7 +728,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       if (onWhiteScreenOrIframeError) {
         onWhiteScreenOrIframeError(
           dayjs(Date.now()).format('YYYY/MM/DD HH:mm:ss') +
-            ' 预览加载失败，请检查开发服务器状态或网络连接',
+          ' 预览加载失败，请检查开发服务器状态或网络连接',
           'iframe',
         );
       }
@@ -769,9 +764,8 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           const errorMessages = devMonitorErrorsRef.current
             .slice(-3) // 只取最近3条
             .map((e) => {
-              let msg = `${dayjs(e.timestamp).format('YYYY/MM/DD HH:mm:ss')} ${
-                e.message
-              }`;
+              let msg = `${dayjs(e.timestamp).format('YYYY/MM/DD HH:mm:ss')} ${e.message
+                }`;
               if (e.details) {
                 try {
                   const details = JSON.parse(e.details);
@@ -1111,8 +1105,6 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
           }
         }
 
-        console.log(filesToUpdate, '======', pendingChanges);
-
         // 4. 调用 submitFilesUpdate 接口提交全量列表
         const response = await submitSpecifiedFilesUpdate(
           projectId.toString(),
@@ -1211,12 +1203,12 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
       <div className={cx(`relative ${styles.preview} ${className || ''}`)}>
         <div className={styles.previewContainer}>
           {devServerUrl &&
-          !loadError &&
-          !serverMessage &&
-          !isStarting &&
-          !isRestarting &&
-          !isDeveloping &&
-          !isProjectUploading ? (
+            !loadError &&
+            !serverMessage &&
+            !isStarting &&
+            !isRestarting &&
+            !isDeveloping &&
+            !isProjectUploading ? (
             <iframe
               ref={iframeRef}
               className={styles.previewIframe}

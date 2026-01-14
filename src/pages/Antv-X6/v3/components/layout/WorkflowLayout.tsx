@@ -121,6 +121,7 @@ export interface WorkflowLayoutProps {
 
   // Version History
   showVersionHistory: boolean;
+  onBack?: () => void;
 }
 
 const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
@@ -185,6 +186,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   spaceId,
   showCreateWorkflow,
   showVersionHistory,
+  onBack,
 }) => {
   return (
     <div id="container">
@@ -200,6 +202,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         onUndo={onUndo}
         onRedo={onRedo}
         onManualSave={onManualSave}
+        onBack={onBack}
       />
 
       <Spin
