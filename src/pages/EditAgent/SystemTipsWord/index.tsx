@@ -90,7 +90,7 @@ const SystemTipsWord = forwardRef<
 
         editorRef.current?.replaceText?.(replaceOptions);
         return;
-      } catch {}
+      } catch { }
 
       // 备用方案：追加到末尾
       const currentValue = value || '';
@@ -176,6 +176,7 @@ const SystemTipsWord = forwardRef<
               style={{ height: '100%', border: 'none' }}
               variables={variables}
               skills={skills}
+              enableHistory={true}
             />
           ) : (
             <TiptapVariableInput
@@ -189,6 +190,7 @@ const SystemTipsWord = forwardRef<
               style={{ height: '100%', border: 'none' }}
               variables={variables}
               skills={skills}
+              enableHistory={true}
             />
           )}
         </div>
@@ -201,7 +203,7 @@ const SystemTipsWord = forwardRef<
           defaultValue={
             valueSystem ||
             `${agentConfigInfo?.name || ''}` +
-              `${agentConfigInfo?.description || ''}`
+            `${agentConfigInfo?.description || ''}`
           }
         />
       </div>

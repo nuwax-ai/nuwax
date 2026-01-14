@@ -118,6 +118,83 @@ export const useAppDevChat = ({
   // 存储文件操作和依赖操作相关的 toolCallId
   const fileOperationToolCallIdsRef = useRef<Set<string>>(new Set());
 
+  // ================== SSE 消息缓冲区优化 ==================
+  // 文本累积缓冲区，用于合并连续的 agent_message_chunk
+  const textBufferRef = useRef<{ requestId: string; text: string } | null>(
+    null,
+  );
+  // RAF ID，用于调度刷新
+  const rafIdRef = useRef<number | null>(null);
+
+  /**
+   * 刷新文本缓冲区到 UI
+   * 将累积的文本一次性更新到消息列表中，减少状态更新频率
+   */
+  const flushTextBuffer = useCallback(
+    (isFinal: boolean = false) => {
+      const buffer = textBufferRef.current;
+      if (buffer && buffer.text) {
+        setChatMessages((prev) =>
+          appendTextToStreamingMessage(
+            prev,
+            buffer.requestId,
+            buffer.text,
+            isFinal,
+          ),
+        );
+        // 重置缓冲区（保留 requestId 以便后续追加）
+        textBufferRef.current = { requestId: buffer.requestId, text: '' };
+      }
+      // 清除 RAF ID
+      rafIdRef.current = null;
+    },
+    [setChatMessages],
+  );
+
+  /**
+   * 将文本追加到缓冲区
+   * 使用 requestAnimationFrame 确保每帧最多刷新一次，与浏览器渲染同步
+   */
+  const appendToTextBuffer = useCallback(
+    (requestId: string, text: string, isFinal: boolean = false) => {
+      // 如果是不同的 requestId，先刷新旧的缓冲区
+      if (
+        textBufferRef.current &&
+        textBufferRef.current.requestId !== requestId
+      ) {
+        flushTextBuffer(false);
+      }
+
+      // 初始化或追加到缓冲区
+      if (
+        !textBufferRef.current ||
+        textBufferRef.current.requestId !== requestId
+      ) {
+        textBufferRef.current = { requestId, text };
+      } else {
+        textBufferRef.current.text += text;
+      }
+
+      // 如果是最终消息，立即刷新
+      if (isFinal) {
+        if (rafIdRef.current !== null) {
+          cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+        }
+        flushTextBuffer(true);
+        return;
+      }
+
+      // 使用 RAF 调度刷新，确保每帧最多刷新一次
+      if (rafIdRef.current === null) {
+        rafIdRef.current = requestAnimationFrame(() => {
+          flushTextBuffer(false);
+        });
+      }
+    },
+    [flushTextBuffer],
+  );
+
   // 添加防抖的文件树刷新函数
   const debouncedRefreshFileTree = useCallback(
     debounce(() => {
@@ -176,20 +253,38 @@ export const useAppDevChat = ({
           if (subType === AgentSessionUpdateSubType.AGENT_MESSAGE_CHUNK) {
             const chunkText = data?.content?.text || data?.text || '';
             const isFinal = data?.is_final;
-            // 如果 chunkText 不为空，则追加到消息列表，如果 isFinal 为 true，则标记消息完成
+            // 使用文本缓冲区批量处理高频消息，减少状态更新频率
             if (chunkText) {
-              setChatMessages((prev) =>
-                appendTextToStreamingMessage(
-                  prev,
-                  activeRequestId,
-                  chunkText,
-                  isFinal,
-                ),
-              );
+              // 检查是否包含 Plan 或 ToolCall 标记（需要立即渲染）
+              const hasPlanOrToolCallMarkers =
+                chunkText.includes('<appdev-plan') ||
+                chunkText.includes('<appdev-toolcall');
+
+              if (hasPlanOrToolCallMarkers) {
+                // 包含特殊标记时，先刷新缓冲区，然后直接更新
+                flushTextBuffer(false);
+                setChatMessages((prev) =>
+                  appendTextToStreamingMessage(
+                    prev,
+                    activeRequestId,
+                    chunkText,
+                    isFinal,
+                  ),
+                );
+              } else {
+                // 普通文本使用缓冲区批量处理
+                appendToTextBuffer(activeRequestId, chunkText, isFinal);
+              }
+            }
+            // 如果是最终消息，确保缓冲区被刷新
+            if (isFinal) {
+              flushTextBuffer(true);
             }
           }
 
           if (subType === AgentSessionUpdateSubType.PLAN) {
+            // 插入 Plan 前先刷新文本缓冲区，确保顺序正确
+            flushTextBuffer(false);
             setChatMessages((prev) =>
               prev.map((msg) => {
                 if (
@@ -209,6 +304,8 @@ export const useAppDevChat = ({
             );
           }
           if (subType === AgentSessionUpdateSubType.TOOL_CALL) {
+            // 插入 ToolCall 前先刷新文本缓冲区，确保顺序正确
+            flushTextBuffer(false);
             setChatMessages((prev) =>
               prev.map((msg) => {
                 if (
@@ -238,6 +335,8 @@ export const useAppDevChat = ({
             }
           }
           if (subType === AgentSessionUpdateSubType.TOOL_CALL_UPDATE) {
+            // 更新 ToolCall 前先刷新文本缓冲区，确保顺序正确
+            flushTextBuffer(false);
             setChatMessages((prev) =>
               prev.map((msg) => {
                 if (
@@ -274,6 +373,8 @@ export const useAppDevChat = ({
             }
           }
           if (subType === AgentSessionUpdateSubType.ERROR) {
+            // 错误处理前先刷新文本缓冲区
+            flushTextBuffer(true);
             // 错误处理
             const chunkText = data?.message || '';
             const isFinal = true;
@@ -310,8 +411,7 @@ export const useAppDevChat = ({
                         resolve(true);
                       } else {
                         message.error(
-                          `停止Agent服务失败: ${
-                            stopResponse.message || '未知错误'
+                          `停止Agent服务失败: ${stopResponse.message || '未知错误'
                           }`,
                         );
                         reject();
@@ -329,6 +429,8 @@ export const useAppDevChat = ({
         }
 
         case SessionMessageType.SESSION_PROMPT_END: {
+          // 会话结束前先刷新文本缓冲区，确保所有文本都已更新
+          flushTextBuffer(true);
           // 标记消息完成
           setChatMessages((prev) => {
             const updated = markStreamingMessageComplete(prev, activeRequestId);
@@ -390,6 +492,8 @@ export const useAppDevChat = ({
       handleSaveConversation,
       appDevSseModel,
       debouncedRefreshFileTree,
+      flushTextBuffer,
+      appendToTextBuffer,
     ],
   );
 
@@ -414,12 +518,15 @@ export const useAppDevChat = ({
         abortController: abortConnectionRef.current,
         headers,
         onMessage: (data: UnifiedSessionMessage) => {
-          setTimeout(() => {
-            handleSSEMessage(data, requestId);
-          }, 100);
+          // 移除 100ms 延迟，直接处理消息
+          // 消息缓冲区机制已在 handleSSEMessage 中实现，
+          // 通过 appendToTextBuffer 批量处理高频文本消息
+          handleSSEMessage(data, requestId);
         },
         onError: (error: Error) => {
           // message.error('AI助手连接失败');
+          // 错误时先刷新文本缓冲区
+          flushTextBuffer(true);
           //要把 chatMessages 里 ASSISTANT 当前 isSteaming 修改一下 false 并给出错误消息
           setChatMessages((prev) =>
             markStreamingMessageError(prev, requestId, error.message),
@@ -430,6 +537,8 @@ export const useAppDevChat = ({
           debouncedRefreshFileTree();
         },
         onClose: () => {
+          // 连接关闭时先刷新文本缓冲区
+          flushTextBuffer(true);
           setIsChatLoading(false);
           setChatMessages((prev) =>
             markStreamingMessageComplete(prev, requestId),
@@ -439,7 +548,7 @@ export const useAppDevChat = ({
         },
       });
     },
-    [appDevSseModel, handleSSEMessage],
+    [appDevSseModel, handleSSEMessage, flushTextBuffer],
   );
 
   /**
@@ -449,6 +558,8 @@ export const useAppDevChat = ({
     if (!projectId) {
       return;
     }
+    // 取消时先刷新文本缓冲区
+    flushTextBuffer(true);
     setIsChatLoading(false);
     // 取消前主动清理 SSE 共享定时器，避免残留定时器影响后续请求
     clearSSESharedTimeout();
@@ -466,7 +577,7 @@ export const useAppDevChat = ({
       });
     });
     abortConnectionRef.current?.abort();
-  }, [projectId, appDevSseModel]);
+  }, [projectId, appDevSseModel, flushTextBuffer]);
 
   /**
    * 显示停止Agent服务的确认对话框
@@ -846,7 +957,7 @@ export const useAppDevChat = ({
             });
 
             newMessages.push(...messagesWithSessionInfo);
-          } catch (parseError) {}
+          } catch (parseError) { }
         }
 
         // 按时间戳排序新消息

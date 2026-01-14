@@ -16,8 +16,8 @@ import {
 } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
 import { message } from 'antd';
-import { useRef, useState } from 'react';
-import { history, useParams } from 'umi';
+import { useEffect, useRef, useState } from 'react';
+import { history, useParams, useSearchParams } from 'umi';
 import CreateSkill from './CreateSkill';
 import HeaderLeftSlot from './HeaderLeftSlot';
 import HeaderRightSlot from './HeaderRightSlot';
@@ -26,6 +26,7 @@ import MainContent, { MainContentRef } from './MainContent';
 const SpaceSkillManage: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
+  const [, setSearchParams] = useSearchParams();
 
   // 主要内容区域 ref
   const mainContentRef = useRef<MainContentRef>(null);
@@ -76,7 +77,7 @@ const SpaceSkillManage: React.FC = () => {
   // 删除技能
   const handleClickDelete = (info: SkillInfo) => {
     // 二次确认
-    modalConfirm('您确定要删除此技能吗?', '', () => {
+    modalConfirm('你确定要删除此技能吗?', '', () => {
       apiDeleteSkill(info.id).then(() => {
         // 提示删除成功
         message.success('技能删除成功');
@@ -168,6 +169,17 @@ const SpaceSkillManage: React.FC = () => {
         break;
     }
   };
+
+  // 监听菜单切换，重新加载数据
+  useEffect(() => {
+    if (history.location.state) {
+      // 清空URL搜索参数（status和keyword）
+      const newParams = new URLSearchParams();
+      setSearchParams(newParams);
+      // 重新加载技能列表
+      mainContentRef.current?.exposeQueryComponentList();
+    }
+  }, [history.location.state]);
 
   return (
     <WorkspaceLayout

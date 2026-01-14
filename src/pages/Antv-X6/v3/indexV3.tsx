@@ -35,6 +35,7 @@ import {
 import { CurrentNodeRefKey, NodeConfig } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { cloneDeep } from '@/utils/common';
+import { jumpBack } from '@/utils/router';
 import {
   changeNodeConfig,
   updateCurrentNode,
@@ -63,6 +64,7 @@ import { useWorkflowValidation } from './hooks/useWorkflowValidation';
 
 // V3 数据代理层
 import { WorkflowVersionProvider } from '@/contexts/WorkflowVersionContext';
+import { workflowLogger } from '@/utils/logger';
 import { workflowProxy } from './services/workflowProxyV3';
 import { workflowSaveService } from './services/WorkflowSaveService';
 import type { WorkflowDataV3 } from './types';
@@ -662,7 +664,7 @@ const Workflow: React.FC = () => {
     const _isModified = getWorkflow('isModified');
     const _drawerForm = getWorkflow('drawerForm');
 
-    console.log(
+    workflowLogger.log(
       '[changeDrawer] 节点切换, isModified:',
       _isModified,
       'currentNode:',
@@ -681,7 +683,7 @@ const Workflow: React.FC = () => {
 
     // 切换节点时保存当前节点数据（包含触发 blur 和等待状态更新）
     if (_drawerForm?.id !== 0 && _drawerForm?.id !== child?.id) {
-      console.log('[changeDrawer] 切换节点，保存当前节点数据');
+      workflowLogger.log('[changeDrawer] 切换节点，保存当前节点数据');
 
       // 使用 helper 函数：触发 blur、等待状态更新、更新本地数据
       const updatedDrawerForm = await saveCurrentNodeBeforeSwitch(_drawerForm);
@@ -794,6 +796,14 @@ const Workflow: React.FC = () => {
     },
     [isModified, nodeOperationsHook, testRunHook],
   );
+
+  const handleBack = useCallback(async () => {
+    // 返回前先进行覆盖检查（保存）
+    // 只有保存成功（或确认强制覆盖）后才跳转
+    await saveFullWorkflow(false, () => {
+      jumpBack(`/space/${spaceId}/library`);
+    });
+  }, [saveFullWorkflow, spaceId]);
 
   const handleDrawerClose = useCallback(() => {
     // TODO 排除 Loop 节点 触发空白区域点击事件 清空选择状态
@@ -1096,6 +1106,7 @@ const Workflow: React.FC = () => {
         spaceId={spaceId}
         showCreateWorkflow={showCreateWorkflow}
         showVersionHistory={showVersionHistory}
+        onBack={handleBack}
       />
     </WorkflowVersionProvider>
   );

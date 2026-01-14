@@ -135,6 +135,20 @@ export const FILTER_STATUS = [
   { value: FilterStatusEnum.Published, label: '已发布' },
 ];
 
+// 网页应用开发 - 过滤状态
+export const FILTER_STATUS_DEV = [
+  { value: FilterStatusEnum.All, label: '全部' },
+  { value: FilterStatusEnum.Published, label: '已发布' },
+  { value: FilterStatusEnum.Unpublished, label: '未发布' },
+];
+
+// 智能体开发 - 智能体类型（全部/问答型/任务型）
+export const AGENT_TYPE_LIST_DEV = [
+  { value: AgentTypeEnum.All, label: '全部' },
+  { value: AgentTypeEnum.ChatBot, label: '问答型' },
+  { value: AgentTypeEnum.TaskAgent, label: '任务型' },
+];
+
 // 过滤创建者
 export const CREATE_LIST = [
   { value: CreateListEnum.All_Person, label: '所有人' },
@@ -275,6 +289,10 @@ export const COMPONENT_SETTING_ACTIONS = [
     type: ComponentSettingEnum.Card_Bind,
     label: '卡片绑定',
   },
+  // {
+  //   type: ComponentSettingEnum.SubAgent,
+  //   label: '子智能体',
+  // },
 ];
 
 // 智能体编排-组件设置列表

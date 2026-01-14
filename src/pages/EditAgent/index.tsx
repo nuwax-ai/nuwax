@@ -211,7 +211,9 @@ const EditAgent: React.FC = () => {
           (item: AgentComponentInfo) =>
             item.type === AgentComponentTypeEnum.Plugin ||
             item.type === AgentComponentTypeEnum.Workflow ||
-            item.type === AgentComponentTypeEnum.MCP,
+            item.type === AgentComponentTypeEnum.MCP ||
+            item.type === AgentComponentTypeEnum.Skill ||
+            item.type === AgentComponentTypeEnum.SubAgent,
         )
         ?.map((item: AgentComponentInfo) => ({
           ...item,
@@ -243,7 +245,9 @@ const EditAgent: React.FC = () => {
             (item: AgentComponentInfo) =>
               item.type === AgentComponentTypeEnum.Plugin ||
               item.type === AgentComponentTypeEnum.Workflow ||
-              item.type === AgentComponentTypeEnum.MCP,
+              item.type === AgentComponentTypeEnum.MCP ||
+              item.type === AgentComponentTypeEnum.Skill ||
+              item.type === AgentComponentTypeEnum.SubAgent,
           )
           ?.map((item: AgentComponentInfo) => ({
             ...item,
@@ -583,7 +587,7 @@ const EditAgent: React.FC = () => {
 
     const { code } = await apiUpdateStaticFile(newSkillInfo);
     if (code === SUCCESS_CODE && devConversationId) {
-      handleRefreshFileList(devConversationId);
+      await handleRefreshFileList(devConversationId);
     }
 
     return code === SUCCESS_CODE;
@@ -593,7 +597,7 @@ const EditAgent: React.FC = () => {
   const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
     return new Promise((resolve) => {
       modalConfirm(
-        '您确定要删除此文件吗?',
+        '你确定要删除此文件吗?',
         fileNode.name,
         async () => {
           try {
@@ -673,7 +677,7 @@ const EditAgent: React.FC = () => {
     // 使用文件全量更新逻辑
     const { code } = await apiUpdateStaticFile(newSkillInfo);
     if (code === SUCCESS_CODE) {
-      handleRefreshFileList(devConversationId);
+      await handleRefreshFileList(devConversationId);
     }
     return code === SUCCESS_CODE;
   };
@@ -711,63 +715,34 @@ const EditAgent: React.FC = () => {
 
   /**
    * 处理上传多个文件回调
+   * @param files 文件列表
+   * @param filePaths 文件路径列表
+   * @returns Promise<void>
    */
-  const handleUploadMultipleFiles = async (node: FileNode | null) => {
+  const handleUploadMultipleFiles = async (
+    files: File[],
+    filePaths: string[],
+  ) => {
     if (!devConversationId) {
       messageAntd.error('会话ID不存在，无法上传文件');
       return;
     }
-    // 两种情况 第一个是文件夹，第二个是文件
-    let relativePath = '';
 
-    if (node) {
-      if (node.type === 'file') {
-        relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
-      } else {
-        relativePath = node.path + '/';
+    try {
+      // 直接调用上传接口，使用文件名作为路径
+      const { code } = await apiUploadFiles({
+        files,
+        cId: devConversationId,
+        filePaths,
+      });
+      if (code === SUCCESS_CODE && devConversationId) {
+        messageAntd.success('上传成功');
+        // 上传成功后，重新查询文件树列表
+        await handleRefreshFileList(devConversationId);
       }
+    } catch (error) {
+      console.error('上传失败', error);
     }
-
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.style.display = 'none';
-    document.body.appendChild(input);
-
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        document.body.removeChild(input);
-        return;
-      }
-
-      try {
-        // 获取上传的文件列表
-        const files = Array.from((e.target as HTMLInputElement).files || []);
-        // 获取上传的文件路径列表
-        const filePaths = files.map((file) => relativePath + file.name);
-        // 直接调用上传接口，使用文件名作为路径
-        const { code } = await apiUploadFiles({
-          files,
-          cId: devConversationId,
-          filePaths,
-        });
-        if (code === SUCCESS_CODE && devConversationId) {
-          // 上传成功后，重新查询文件树列表
-          handleRefreshFileList(devConversationId);
-        }
-      } catch (error) {
-        console.error('上传失败', error);
-      } finally {
-        document.body.removeChild(input);
-      }
-    };
-
-    input.oncancel = () => {
-      document.body.removeChild(input);
-    };
-
-    input.click();
   };
 
   // 导出项目
@@ -783,9 +758,9 @@ const EditAgent: React.FC = () => {
       const filename = `agent-${agentId}-${devConversationId}.zip`;
       // 导出整个项目压缩包
       exportWholeProjectZip(result, filename);
+      messageAntd.success('导出成功！');
     } catch (error) {
       console.error('导出项目失败:', error);
-      messageAntd.error('导出项目失败，请重试');
     }
   };
 
@@ -848,8 +823,7 @@ const EditAgent: React.FC = () => {
       // 日志
       case ApplicationMoreActionEnum.Log:
         history.push(
-          `/space/${spaceId}/library-log?targetType=${
-            AgentComponentTypeEnum.Agent
+          `/space/${spaceId}/library-log?targetType=${AgentComponentTypeEnum.Agent
           }&targetId=${agentConfigInfo?.id ?? ''}`,
         );
         break;
@@ -886,6 +860,23 @@ const EditAgent: React.FC = () => {
     // 关闭文件树
     closePreviewView();
   };
+
+  useEffect(() => {
+    // 设置最小宽度-扩展页面/文件树
+    if (pagePreviewData || isFileTreeVisible) {
+      document.documentElement.style.minWidth = '2000px';
+    } else {
+      // 设置最小宽度-调试详情
+      if (showType === EditAgentShowType.Debug_Details) {
+        document.documentElement.style.minWidth = '1540px';
+      } else {
+        document.documentElement.style.minWidth = '1240px';
+      }
+    }
+    return () => {
+      document.documentElement.style.minWidth = '1200px';
+    };
+  }, [pagePreviewData, isFileTreeVisible, showType]);
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
@@ -960,38 +951,41 @@ const EditAgent: React.FC = () => {
         {(!agentConfigInfo?.hideChatArea ||
           pagePreviewData ||
           isFileTreeVisible) && (
-          <div
-            // className={cx(isFileTreeVisible && 'flex-1')}
-            style={{
-              flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
-              minWidth:
-                pagePreviewData || isFileTreeVisible ? '1050px' : '350px',
-            }}
-          >
-            {/*预览与调试和预览页面*/}
-            <ResizableSplit
-              minRightWidth={700}
-              defaultLeftWidth={
-                agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? 33 : 50
-              }
-              left={
-                agentConfigInfo?.hideChatArea ? null : (
-                  <PreviewAndDebug
-                    agentConfigInfo={agentConfigInfo}
-                    agentId={agentId}
-                    onPressDebug={() =>
-                      handleClosePreview(EditAgentShowType.Debug_Details)
-                    }
-                    onAgentConfigInfo={setAgentConfigInfo}
-                    onOpenPreview={handleOpenPreview}
-                    // 打开文件面板
-                    onOpenFilePanel={handleFileTreeVisible}
-                  />
-                )
-              }
-              right={
-                agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
-                  ? pagePreviewData && ( // 问答型
+            <div
+              // className={cx(isFileTreeVisible && 'flex-1')}
+              style={{
+                flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
+                minWidth:
+                  pagePreviewData || isFileTreeVisible ? '1290px' : '530px',
+              }}
+            >
+              {/*预览与调试和预览页面*/}
+              <ResizableSplit
+                resetTrigger={
+                  pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
+                }
+                minRightWidth={530}
+                defaultLeftWidth={
+                  agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? 33 : 50
+                }
+                left={
+                  agentConfigInfo?.hideChatArea ? null : (
+                    <PreviewAndDebug
+                      agentConfigInfo={agentConfigInfo}
+                      agentId={agentId}
+                      onPressDebug={() =>
+                        handleClosePreview(EditAgentShowType.Debug_Details)
+                      }
+                      onAgentConfigInfo={setAgentConfigInfo}
+                      onOpenPreview={handleOpenPreview}
+                      // 打开文件面板
+                      onOpenFilePanel={handleFileTreeVisible}
+                    />
+                  )
+                }
+                right={
+                  agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
+                    ? pagePreviewData && ( // 问答型
                       <PagePreviewIframe
                         pagePreviewData={pagePreviewData}
                         showHeader={true}
@@ -1000,7 +994,7 @@ const EditAgent: React.FC = () => {
                         titleClassName={cx(styles['title-style'])}
                       />
                     )
-                  : isFileTreeVisible && // 文件树侧边栏 - 只在文件树可见时显示
+                    : isFileTreeVisible && // 文件树侧边栏 - 只在文件树可见时显示
                     devConversationId && (
                       <div
                         className={cx(
@@ -1051,13 +1045,20 @@ const EditAgent: React.FC = () => {
                           onRefreshFileTree={() =>
                             handleRefreshFileList(devConversationId)
                           }
+                          // VNC 空闲检测配置（仅任务型智能体启用）
+                          idleDetection={{
+                            enabled:
+                              agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+                            onIdleTimeout: () =>
+                              openPreviewView(devConversationId),
+                          }}
                         />
                       </div>
                     )
-              }
-            />
-          </div>
-        )}
+                }
+              />
+            </div>
+          )}
 
         {/*调试详情*/}
         <DebugDetails

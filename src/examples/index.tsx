@@ -7,6 +7,7 @@ import {
   ExperimentOutlined,
   EyeOutlined,
   HeartOutlined,
+  InboxOutlined,
   RocketOutlined,
   StarOutlined,
 } from '@ant-design/icons';
@@ -109,6 +110,42 @@ const ExamplesIndex: React.FC = () => {
       path: '/examples/vnc-preview-demo',
       featured: true,
     },
+    {
+      id: 'empty-state-showcase',
+      title: isChineseLanguage ? '空状态组件展示' : 'Empty State Showcase',
+      description: isChineseLanguage
+        ? '展示 AppDevEmptyState 组件的所有状态类型，包括加载中、错误、空状态、服务器状态等 16 种状态的 Figma 设计图标。'
+        : 'Showcase all empty state types of AppDevEmptyState component, including loading, error, empty, server states with Figma-designed icons.',
+      tags: [
+        { text: isChineseLanguage ? '空状态' : 'Empty State', color: 'blue' },
+        {
+          text: isChineseLanguage ? 'Figma 图标' : 'Figma Icons',
+          color: 'purple',
+        },
+        { text: isChineseLanguage ? '组件展示' : 'Components', color: 'green' },
+      ],
+      icon: <InboxOutlined />,
+      path: '/examples/empty-state-showcase',
+      featured: true,
+    },
+    {
+      id: 'sse-streaming-test',
+      title: isChineseLanguage ? 'SSE 流式渲染测试' : 'SSE Streaming Test',
+      description: isChineseLanguage
+        ? '使用真实的 SSE 数据模拟流式渲染，验证消息缓冲区优化效果，监控帧率和渲染性能。'
+        : 'Test streaming rendering with real SSE data, verify message buffer optimization effect, monitor FPS and rendering performance.',
+      tags: [
+        {
+          text: isChineseLanguage ? '性能测试' : 'Performance',
+          color: 'orange',
+        },
+        { text: isChineseLanguage ? '流式渲染' : 'Streaming', color: 'blue' },
+        { text: isChineseLanguage ? 'SSE' : 'SSE', color: 'green' },
+      ],
+      icon: <RocketOutlined />,
+      path: '/examples/sse-streaming-test',
+      featured: true,
+    },
   ];
 
   // 跳转到示例页面
@@ -137,7 +174,7 @@ const ExamplesIndex: React.FC = () => {
         </Title>
         <Paragraph type="secondary">
           {isChineseLanguage
-            ? '这里包含了各种功能演示和组件展示页面，帮助您了解项目的功能特性和使用方法。'
+            ? '这里包含了各种功能演示和组件展示页面，帮助你了解项目的功能特性和使用方法。'
             : 'This contains various feature demonstrations and component showcase pages to help you understand the project features and usage.'}
         </Paragraph>
       </div>
@@ -308,7 +345,7 @@ const ExamplesIndex: React.FC = () => {
                   </Title>
                   <Paragraph>
                     {isChineseLanguage
-                      ? '选择您感兴趣的示例，点击"查看示例"按钮即可访问。每个示例都包含完整的代码实现和详细的功能说明。'
+                      ? '选择你感兴趣的示例，点击"查看示例"按钮即可访问。每个示例都包含完整的代码实现和详细的功能说明。'
                       : 'Choose the example you are interested in and click the "View Example" button to access it. Each example includes complete code implementation and detailed feature descriptions.'}
                   </Paragraph>
                 </div>

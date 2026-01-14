@@ -137,7 +137,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
 
   // 删除确认
   const handleDelConfirm = (id: number, agentId: number, chatUrl: string) => {
-    modalConfirm('您确定要删除该链接吗?', chatUrl, () => {
+    modalConfirm('你确定要删除该链接吗?', chatUrl, () => {
       handleDel(id, agentId);
       return new Promise((resolve) => {
         setTimeout(resolve, 1000);

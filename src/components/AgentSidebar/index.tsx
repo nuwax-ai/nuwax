@@ -1,5 +1,5 @@
 import Loading from '@/components/custom/Loading';
-import useDrawerScroll from '@/hooks/useDrawerScroll';
+// import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { EditAgentShowType, OpenCloseEnum } from '@/types/enums/space';
 import { AgentSidebarProps } from '@/types/interfaces/agentTask';
 import classNames from 'classnames';
@@ -76,7 +76,7 @@ const AgentSidebar = forwardRef<AgentSidebarRef, AgentSidebarProps>(
       onVisibleChange?.(visible);
     }, [visible]);
 
-    useDrawerScroll(visible);
+    // useDrawerScroll(visible);
 
     return (
       <>

@@ -1,0 +1,125 @@
+/**
+ * 空闲警告弹窗样式
+ * 使用项目统一的 token 变量
+ */
+@import '@/styles/token.less';
+
+.idle-warning-modal {
+  :global {
+    .ant-modal-content {
+      border-radius: @borderRadiusLg;
+      padding: @paddingLg;
+      background: linear-gradient(
+        180deg,
+        @colorBgContainer 0%,
+        @colorBgLayout 100%
+      );
+    }
+  }
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.icon-container {
+  margin-bottom: @padding;
+}
+
+.warning-icon {
+  font-size: 48px;
+  color: @colorWarning;
+}
+
+.modal-title {
+  margin: 0 0 @paddingSm;
+  font-size: @fontSizeLg;
+  font-weight: @fontWeightStrong;
+  color: @colorTextHeading;
+}
+
+.modal-description {
+  margin: 0 0 @paddingLg;
+  font-size: @fontSize;
+  color: @colorTextSecondary;
+  line-height: @lineHeight;
+}
+
+.countdown-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: @paddingLg;
+}
+
+.countdown-number {
+  font-size: @fontSizeXl;
+  font-weight: @fontWeightStrong;
+  color: @colorText;
+}
+
+.countdown-text {
+  margin: @marginSm 0 0;
+  font-size: @fontSize;
+  color: @colorTextTertiary;
+}
+
+.button-container {
+  width: 100%;
+  margin-bottom: @padding;
+}
+
+.confirm-button {
+  height: @controlHeightLg;
+  font-size: @fontSizeLg;
+  font-weight: 500;
+  border-radius: @borderRadius;
+  background: linear-gradient(
+    135deg,
+    @colorPrimary 0%,
+    @colorPrimaryActive 100%
+  );
+  border: none;
+  transition: all @motionDurationMid @motionEaseInOut;
+
+  &:hover {
+    background: linear-gradient(
+      135deg,
+      @colorPrimaryHover 0%,
+      @colorPrimary 100%
+    );
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.hint-text {
+  margin: 0;
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+}
+
+// 动画效果
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.countdown-container :global(.ant-progress-circle) {
+  animation: pulse 2s @motionEaseInOut infinite;
+}

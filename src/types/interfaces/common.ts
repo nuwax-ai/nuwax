@@ -341,12 +341,12 @@ export interface MCPNodeItem {
     prompts: any[];
     resources: any[];
     tools:
-      | {
-          name: string;
-          inputArgs: InputAndOutConfig[];
-          outputArgs: InputAndOutConfig[];
-        }[]
-      | null;
+    | {
+      name: string;
+      inputArgs: InputAndOutConfig[];
+      outputArgs: InputAndOutConfig[];
+    }[]
+    | null;
   };
   publishUser: CreatorInfo;
 }
@@ -367,10 +367,10 @@ export interface CreateAgentProps {
 export interface CreateKnowledgeProps {
   mode?: CreateUpdateModeEnum;
   type?:
-    | AgentComponentTypeEnum.Table
-    | AgentComponentTypeEnum.Knowledge
-    | AgentComponentTypeEnum.Plugin
-    | AgentComponentTypeEnum.Workflow;
+  | AgentComponentTypeEnum.Table
+  | AgentComponentTypeEnum.Knowledge
+  | AgentComponentTypeEnum.Plugin
+  | AgentComponentTypeEnum.Workflow;
   spaceId: number;
   knowledgeInfo?: KnowledgeInfo;
   open: boolean;
@@ -519,6 +519,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   showTaskAgentToggle?: boolean;
   isTaskAgentActive?: boolean;
   onToggleTaskAgent?: () => void;
+  // 任务停止后的回调函数
+  onTaskStopped?: (conversationId: string) => void;
 }
 
 // 聊天框底部更多操作组件
@@ -543,18 +545,18 @@ export interface EllipsisTooltipProps {
   onClick?: () => void;
   // 气泡框位置，可选
   placement?:
-    | 'top'
-    | 'left'
-    | 'right'
-    | 'bottom'
-    | 'topLeft'
-    | 'topRight'
-    | 'bottomLeft'
-    | 'bottomRight'
-    | 'leftTop'
-    | 'leftBottom'
-    | 'rightTop'
-    | 'rightBottom';
+  | 'top'
+  | 'left'
+  | 'right'
+  | 'bottom'
+  | 'topLeft'
+  | 'topRight'
+  | 'bottomLeft'
+  | 'bottomRight'
+  | 'leftTop'
+  | 'leftBottom'
+  | 'rightTop'
+  | 'rightBottom';
 }
 
 // 参数名称label

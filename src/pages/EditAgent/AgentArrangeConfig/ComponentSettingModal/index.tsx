@@ -149,11 +149,11 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
     id: number;
     bindConfig: {
       [key: string]:
-        | BindConfigWithSub[]
-        | CardArgsBindConfigInfo[]
-        | InvokeTypeEnum
-        | DefaultSelectedEnum
-        | OutputDirectlyEnum;
+      | BindConfigWithSub[]
+      | CardArgsBindConfigInfo[]
+      | InvokeTypeEnum
+      | DefaultSelectedEnum
+      | OutputDirectlyEnum;
     };
     exceptionOut?: DefaultSelectedEnum;
     fallbackMsg?: string;
@@ -261,7 +261,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
         <div>
           <p>按需调用：由模型根据任务情况决定是否需要调用</p>
           <p>
-            手动选择：由用户决定是否使用该技能，在用户选择的情况下和按需调用效果一样
+            手动选择：用户可在会话页面中对该技能进行选择，选中后会让模型优先使用该技能
           </p>
         </div>
       );
@@ -302,6 +302,12 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
             }
             invokeType={componentInfo?.bindConfig?.invokeType}
             defaultSelected={componentInfo?.bindConfig?.defaultSelected}
+            // 默认别名
+            defaultAlias={componentInfo?.bindConfig?.alias}
+            // 是否为技能组件
+            isSkill={
+              currentComponentInfo?.type === AgentComponentTypeEnum.Skill
+            }
             tooltip={getTooltip()}
             onSaveSet={(data) => handleSaveSetting(data, null, action)}
           />
@@ -373,7 +379,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
                 // 非工作流组件不展示输出方式
                 if (
                   currentComponentInfo?.type !==
-                    AgentComponentTypeEnum.Workflow &&
+                  AgentComponentTypeEnum.Workflow &&
                   item.type === ComponentSettingEnum.Output_Way
                 ) {
                   return null;

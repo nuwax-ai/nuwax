@@ -141,7 +141,7 @@ const ThemeDemo: React.FC = () => {
               </Title>
               <Paragraph type="secondary">
                 {isChineseLanguage
-                  ? '这是一个展示全局主题切换、多语言功能和背景图片切换的演示组件。您可以通过右下角的设置按钮进行配置。'
+                  ? '这是一个展示全局主题切换、多语言功能和背景图片切换的演示组件。你可以通过右下角的设置按钮进行配置。'
                   : 'This is a demo component showing global theme switching, multi-language functionality and background image switching. You can configure through the settings button in the bottom right corner.'}
               </Paragraph>
             </Card>

@@ -87,12 +87,16 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const { token } = theme.useToken();
 
     return (
-      <div className={cx(styles.container, 'flex', className)}>
+      <div
+        className={cx(styles.container, 'flex', className)}
+        data-message-id={messageInfo?.id}
+      >
         <div
           className={cx('flex-1', 'overflow-hide', {
             [styles.userContainer]: isUser,
           })}
         >
+          {/* ASSISTANT 角色消息 */}
           {!isUser && (
             <div className={cx(styles['agent-title-bar'])}>
               <img
@@ -125,6 +129,8 @@ const ChatView: React.FC<ChatViewProps> = memo(
               </ConditionRender>
             </div>
           )}
+
+          {/* USER 角色消息附件 */}
           {!!messageInfo?.attachments?.length && (
             <div className={cx(styles['attach-file-container'])}>
               <AttachFile
@@ -132,6 +138,8 @@ const ChatView: React.FC<ChatViewProps> = memo(
               />
             </div>
           )}
+
+          {/* USER 角色消息 */}
           {isUser && !!messageInfo?.text && (
             <div className={cx(styles['user-content'])}>
               <div
@@ -172,9 +180,11 @@ const ChatView: React.FC<ChatViewProps> = memo(
             </div>
           )}
 
+          {/* ASSISTANT 角色会话消息 */}
           <ConditionRender
             condition={messageInfo?.role !== AssistantRoleEnum.USER}
           >
+            {/* 内容区域: 思考内容、会话内容 */}
             {(!!messageInfo?.think || !!messageInfo?.text) && (
               <div className={cx(styles['inner-container'], contentClassName)}>
                 <div
@@ -194,6 +204,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
               </div>
             )}
 
+            {/* 底部区域: 复制按钮、运行时间 */}
             <ConditionRender
               condition={
                 messageInfo &&
@@ -201,6 +212,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                   !messageInfo?.status)
               }
             >
+              {/* 聊天模式 */}
               {mode === 'chat' ? (
                 <div
                   style={{

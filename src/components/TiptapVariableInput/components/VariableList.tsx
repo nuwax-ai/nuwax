@@ -43,6 +43,7 @@ interface VariableListProps {
   onTabChange?: (key: string) => void;
   regularVariables?: VariableTreeNode[];
   toolVariables?: VariableTreeNode[];
+  skillVariables?: VariableTreeNode[];
 
   // 点击外部关闭回调
   onClose?: () => void;
@@ -67,6 +68,7 @@ const VariableList: React.FC<VariableListProps> = ({
   onTabChange,
   regularVariables = [],
   toolVariables = [],
+  skillVariables = [],
   onClose,
   excludeRefs = [],
   excludeElement,
@@ -171,13 +173,16 @@ const VariableList: React.FC<VariableListProps> = ({
             return (
               node.isLeaf &&
               (node.key.startsWith('skill-') ||
+                node.key.startsWith('tool-') ||
                 (node.variable as any)?.type === 'Tool')
             );
           });
           const isToolListMode =
             allAreTools &&
             tree.length > 0 &&
-            !tree.some((n) => n.key === 'category-skills');
+            !tree.some(
+              (n) => n.key === 'category-skills' || n.key === 'category-tools',
+            );
 
           // 查找滚动容器（可能是 Tabs 内容区域或直接容器）
           const scrollContainer =
@@ -272,10 +277,18 @@ const VariableList: React.FC<VariableListProps> = ({
 
     if (treeNode) {
       // 所有节点都可以选择（包括非叶子节点）
-      // 检查是否是工具：工具的 key 以 'skill-' 开头，或者 variable.type 是 'Tool'（通过 as any 设置）
+      // 检查是否是工具：工具的 key 以 特定前缀开头，或者 variable.type 是工具类型
+      const variableType = (treeNode.variable as any)?.type;
       const isTool =
         treeNode.key.startsWith('skill-') ||
-        (treeNode.variable as any)?.type === 'Tool';
+        treeNode.key.startsWith('tool-') ||
+        treeNode.key.startsWith('subagent-') ||
+        variableType === 'Tool' ||
+        variableType === 'Skill' ||
+        variableType === 'SubAgent' ||
+        variableType === 'Plugin' ||
+        variableType === 'Workflow' ||
+        variableType === 'Mcp';
 
       const suggestionItem: VariableSuggestionItem = {
         key: treeNode.key,
@@ -380,21 +393,31 @@ const VariableList: React.FC<VariableListProps> = ({
       );
     }
 
-    // 检查是否所有节点都是工具（扁平列表，没有 category-skills 父节点）
+    // 检查是否所有节点都是工具（扁平列表，没有 category-skills 或 category-tools 父节点）
     // 如果所有节点都是叶子节点且都是工具，使用列表渲染而不是树形
     const allAreTools = tree.every((node) => {
+      const variableType = (node.variable as any)?.type;
       return (
         node.isLeaf &&
         (node.key.startsWith('skill-') ||
-          (node.variable as any)?.type === 'Tool')
+          node.key.startsWith('tool-') ||
+          node.key.startsWith('subagent-') ||
+          variableType === 'Tool' ||
+          variableType === 'Skill' ||
+          variableType === 'SubAgent' ||
+          variableType === 'Plugin' ||
+          variableType === 'Workflow' ||
+          variableType === 'Mcp')
       );
     });
 
-    // 如果所有节点都是工具且是扁平列表（没有 category-skills 父节点），使用简单的列表渲染
+    // 如果所有节点都是工具且是扁平列表（没有 category-skills 或 category-tools 父节点），使用简单的列表渲染
     if (
       allAreTools &&
       tree.length > 0 &&
-      !tree.some((n) => n.key === 'category-skills')
+      !tree.some(
+        (n) => n.key === 'category-skills' || n.key === 'category-tools',
+      )
     ) {
       return (
         <div className="variable-tool-list-container">
@@ -407,15 +430,16 @@ const VariableList: React.FC<VariableListProps> = ({
                 onClick={() => {
                   onSelect(item);
                 }}
-                className={`variable-tool-list-item ${
-                  isSelected ? 'selected' : ''
-                }`}
+                className={`variable-tool-list-item ${isSelected ? 'selected' : ''
+                  }`}
               >
                 <div className="variable-tool-list-item-content">
                   <span className="variable-tool-list-item-label">
                     {item.label}
                   </span>
-                  <span className="variable-tool-list-item-type">Tool</span>
+                  <span className="variable-tool-list-item-type">
+                    {(item.node?.variable as any)?.displayType || 'Tool'}
+                  </span>
                 </div>
               </div>
             );
@@ -446,20 +470,34 @@ const VariableList: React.FC<VariableListProps> = ({
   };
 
   if (showTabs) {
-    const items = [
-      {
+    // 动态生成 tabs，只显示有数据的 tab
+    const items = [];
+
+    if (regularVariables.length > 0) {
+      items.push({
         key: 'variables',
         label: '变量',
         children: renderTree(
           transformToTreeDataForTree(regularVariables, token),
         ),
-      },
-      {
+      });
+    }
+
+    if (toolVariables.length > 0) {
+      items.push({
         key: 'tools',
         label: '工具',
         children: renderTree(transformToTreeDataForTree(toolVariables, token)),
-      },
-    ];
+      });
+    }
+
+    if (skillVariables.length > 0) {
+      items.push({
+        key: 'skills',
+        label: '技能',
+        children: renderTree(transformToTreeDataForTree(skillVariables, token)),
+      });
+    }
 
     return (
       <div ref={containerRef} className="variable-suggestion-tabs css-var-r0">
