@@ -188,7 +188,8 @@ const SkillDetails: React.FC = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.style.display = 'none';
-    input.accept = '.zip'; // 只接受 zip 文件
+    // 支持 .zip、.skill 文件或 SKILL.md 文件
+    input.accept = '.zip,.skill,.md';
     document.body.appendChild(input);
 
     // 等待用户选择文件
@@ -201,10 +202,15 @@ const SkillDetails: React.FC = () => {
         return;
       }
 
-      // 校验文件类型
-      const isZip = file.name?.toLowerCase().endsWith('.zip');
-      if (!isZip) {
-        message.error('仅支持 .zip 压缩文件格式');
+      // 校验文件类型：支持 .zip、.skill 或 SKILL.md 文件
+      const fileName = file.name || '';
+      const fileNameLower = fileName.toLowerCase();
+      const isZip = fileNameLower.endsWith('.zip');
+      const isSkill = fileNameLower.endsWith('.skill');
+      const isSkillMd = fileNameLower === 'skill.md';
+
+      if (!isZip && !isSkill && !isSkillMd) {
+        message.error('仅支持 .zip 压缩文件、.skill 文件或 SKILL.md 文件');
         document.body.removeChild(input);
         return;
       }
