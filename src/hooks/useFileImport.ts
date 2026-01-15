@@ -165,7 +165,6 @@ export const useFileImport = <T = any>(
         }
       } catch (error) {
         onError?.(error);
-        message.error((error as any)?.message || '导入失败，请稍后重试');
       } finally {
         setLoading(false);
         // 清理DOM
