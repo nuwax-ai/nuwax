@@ -62,9 +62,9 @@ export const useFileImport = <T = any>(
     importApi,
     buildApiParams,
     multiple = false,
-    accept = '.zip',
+    accept = '.zip,.skill,.md',
     validateFileType,
-    fileTypeErrorMsg = `仅支持 ${accept} 文件格式`,
+    fileTypeErrorMsg = '仅支持 .zip 压缩文件、.skill 文件或 SKILL.md 文件',
     onSuccess,
     onError,
     successMessage = '导入成功',
@@ -74,15 +74,41 @@ export const useFileImport = <T = any>(
 
   /**
    * 默认文件类型验证函数
+   * 支持 .zip、.skill 文件或 SKILL.md 文件（不区分大小写）
    */
   const defaultValidateFileType = useCallback(
     (file: File): boolean => {
       if (!accept) return true;
+
+      const fileName = file.name || '';
+      const fileNameLower = fileName.toLowerCase();
+
+      // 检查是否为 .zip 文件
+      if (fileNameLower.endsWith('.zip')) {
+        return true;
+      }
+
+      // 检查是否为 .skill 文件
+      if (fileNameLower.endsWith('.skill')) {
+        return true;
+      }
+
+      // 检查是否为 SKILL.md 文件（不区分大小写）
+      if (fileNameLower === 'skill.md') {
+        return true;
+      }
+
+      // 如果 accept 包含其他类型，也进行匹配
       const acceptTypes = accept.split(',').map((type) => type.trim());
       return acceptTypes.some((type) => {
         if (type.startsWith('.')) {
-          // 扩展名匹配，如 .zip
-          return file.name?.toLowerCase().endsWith(type.toLowerCase());
+          const typeLower = type.toLowerCase();
+          // 对于 .md 文件，仅支持 SKILL.md 文件（不区分大小写）
+          if (typeLower === '.md') {
+            return fileNameLower === 'skill.md';
+          }
+          // 其他扩展名匹配，如 .zip
+          return fileNameLower.endsWith(typeLower);
         }
         // MIME 类型匹配，如 application/zip
         return file.type === type;
@@ -138,7 +164,6 @@ export const useFileImport = <T = any>(
           throw new Error(result.message || '导入失败');
         }
       } catch (error) {
-        console.error('导入失败', error);
         onError?.(error);
         message.error((error as any)?.message || '导入失败，请稍后重试');
       } finally {
