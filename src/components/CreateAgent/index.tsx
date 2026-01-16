@@ -118,13 +118,19 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   // 获取标题
   const getTitle = useCallback(() => {
     if (type) {
-      const _type = {
+      const typeMap: Record<
+        AgentTypeEnum.ChatBot | AgentTypeEnum.TaskAgent,
+        string
+      > = {
         [AgentTypeEnum.ChatBot]: '问答型',
-        [AgentTypeEnum.TaskAgent]: '任务型',
+        [AgentTypeEnum.TaskAgent]: '通用型',
       };
+
+      const typeName =
+        typeMap[type as AgentTypeEnum.ChatBot | AgentTypeEnum.TaskAgent];
       return mode === CreateUpdateModeEnum.Create
-        ? `创建${_type[type]}智能体`
-        : `更新${_type[type]}智能体`;
+        ? `创建${typeName}智能体`
+        : `更新${typeName}智能体`;
     }
     return mode === CreateUpdateModeEnum.Create ? '创建智能体' : '更新智能体';
   }, [type, mode]);
