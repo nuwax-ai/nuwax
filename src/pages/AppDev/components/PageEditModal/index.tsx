@@ -60,7 +60,7 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
     }
   }, [open, projectInfo]);
 
-  // 编辑页面
+  // 编辑应用
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
     setLoading(true);
     // 封面图片来源, 如果用户上传了封面图片，则设置封面图片来源为USER, 否则使用项目原有的封面图片来源
@@ -105,7 +105,7 @@ const PageEditModal: React.FC<PageEditModalProps> = ({
     <CustomFormModal
       form={form}
       open={open}
-      title="编辑页面"
+      title="编辑应用"
       loading={loading}
       classNames={{
         content: styles['modal-content'],

@@ -249,7 +249,7 @@ const SpacePageDevelop: React.FC = () => {
   };
 
   /**
-   * 点击创建页面类型
+   * 点击创建应用类型
    * @param 添加项目表单字段：名称、描述、图标、路径（唯一）
    */
   const handleClickPopoverItem = (item: CustomPopoverItem) => {
@@ -258,7 +258,7 @@ const SpacePageDevelop: React.FC = () => {
   };
 
   /**
-   * 确认创建页面
+   * 确认创建应用
    * 导入项目、在线开发、反向代理点击后，都是打开这个表单弹窗
    * 导入项目、在线开发表单弹窗填写后，进入项目之前弹出“调试智能体绑定”框，确认后进入开发界面
    * 反向代理表单填写后，点击不进入开发界面，直接弹出“反向代理配置”框

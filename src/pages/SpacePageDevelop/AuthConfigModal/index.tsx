@@ -43,7 +43,7 @@ const AuthConfigModal: React.FC<AuthConfigModalProps> = ({
     },
   });
 
-  // 创建页面
+  // 创建应用
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
     // 是否允许免登录访问
     const { allowAccessWithoutLogin } = values;

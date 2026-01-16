@@ -343,7 +343,7 @@ const SpaceLibrary: React.FC = () => {
     if (spaceId === -1) {
       return;
     }
-    // 自定义服务，跳转到编辑页面
+    // 自定义服务，跳转到编辑应用
     history.push(`/space/${spaceId}/mcp/edit/${id}`);
   };
 
