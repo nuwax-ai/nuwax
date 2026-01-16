@@ -1,0 +1,132 @@
+/**
+ * 动态菜单项样式
+ * 复用现有设计系统的变量
+ */
+
+.menuItemWrapper {
+  margin-bottom: 2px;
+}
+
+.menuItem {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--xagi-layout-second-menu-text-color, var(--xagi-color-text));
+
+  &:hover {
+    background-color: var(
+      --xagi-layout-second-menu-item-hover-bg,
+      var(--xagi-color-fill-secondary)
+    );
+  }
+
+  &.active {
+    background-color: var(
+      --xagi-layout-second-menu-item-active-bg,
+      var(--xagi-color-primary-bg)
+    );
+    color: var(--xagi-color-primary);
+
+    .iconBox {
+      color: var(--xagi-color-primary);
+    }
+  }
+
+  &.first {
+    margin-top: 0;
+  }
+
+  &.expanded {
+    .arrow {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.iconBox {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  color: var(
+    --xagi-layout-second-menu-text-color-secondary,
+    var(--xagi-color-text-secondary)
+  );
+  flex-shrink: 0;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.name {
+  flex: 1;
+  font-size: 14px;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arrow {
+  width: 16px;
+  height: 16px;
+  margin-left: 8px;
+  color: var(--xagi-color-text-tertiary);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+
+  &.rotated {
+    transform: rotate(180deg);
+  }
+}
+
+// 三级子菜单容器
+.subMenuContainer {
+  padding-left: 30px;
+  margin-top: 4px;
+}
+
+// 三级子菜单项
+.subItem {
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(
+    --xagi-layout-second-menu-text-color-secondary,
+    var(--xagi-color-text-secondary)
+  );
+  font-size: 13px;
+  margin-bottom: 2px;
+
+  &:hover {
+    background-color: var(
+      --xagi-layout-second-menu-item-hover-bg,
+      var(--xagi-color-fill-secondary)
+    );
+    color: var(--xagi-layout-second-menu-text-color, var(--xagi-color-text));
+  }
+
+  &.active {
+    background-color: var(
+      --xagi-layout-second-menu-item-active-bg,
+      var(--xagi-color-primary-bg)
+    );
+    color: var(--xagi-color-primary);
+  }
+}
+
+.subIcon {
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.subName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

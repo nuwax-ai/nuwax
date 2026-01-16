@@ -1,0 +1,98 @@
+/**
+ * 菜单权限演示页面样式
+ */
+
+.container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--xagi-color-bg-layout);
+}
+
+.header {
+  margin-bottom: 16px;
+}
+
+.card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 6%);
+}
+
+.menuTree {
+  max-height: 500px;
+  overflow-y: auto;
+
+  :global {
+    .ant-tree-treenode {
+      padding: 4px 0;
+    }
+  }
+}
+
+.demoRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.codeBlock {
+  background: var(--xagi-color-fill-secondary);
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-family: 'Fira Code', Monaco, Consolas, monospace;
+  font-size: 13px;
+  overflow-x: auto;
+}
+
+.codeSnippet {
+  background: var(--xagi-color-fill-quaternary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+  font-family: 'Fira Code', Monaco, Consolas, monospace;
+  font-size: 12px;
+  color: var(--xagi-color-text-secondary);
+
+  code {
+    white-space: pre-wrap;
+  }
+}
+
+.codeExample {
+  background: var(--xagi-color-fill-secondary);
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.6;
+  font-family: 'Fira Code', Monaco, Consolas, monospace;
+  margin: 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.permissionCheck {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--xagi-color-border-secondary);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+// 响应式
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .demoRow {
+    flex-direction: column;
+  }
+}

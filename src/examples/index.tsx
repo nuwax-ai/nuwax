@@ -8,6 +8,7 @@ import {
   EyeOutlined,
   HeartOutlined,
   InboxOutlined,
+  LockOutlined,
   RocketOutlined,
   StarOutlined,
 } from '@ant-design/icons';
@@ -144,6 +145,24 @@ const ExamplesIndex: React.FC = () => {
       ],
       icon: <RocketOutlined />,
       path: '/examples/sse-streaming-test',
+      featured: true,
+    },
+    {
+      id: 'menu-permission-demo',
+      title: isChineseLanguage ? '菜单权限演示' : 'Menu Permission Demo',
+      description: isChineseLanguage
+        ? '展示动态菜单系统和功能权限控制的使用方式，包括 PermissionWrapper 组件和 usePermission Hook 的使用示例。'
+        : 'Demonstrate dynamic menu system and permission control usage, including PermissionWrapper component and usePermission Hook examples.',
+      tags: [
+        { text: isChineseLanguage ? '权限控制' : 'Permission', color: 'red' },
+        {
+          text: isChineseLanguage ? '动态菜单' : 'Dynamic Menu',
+          color: 'blue',
+        },
+        { text: isChineseLanguage ? 'Hook' : 'Hook', color: 'purple' },
+      ],
+      icon: <LockOutlined />,
+      path: '/examples/menu-permission-demo',
       featured: true,
     },
   ];
