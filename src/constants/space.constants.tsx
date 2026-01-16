@@ -64,7 +64,7 @@ const AGENT_TYPE_LIST_ALL = [
   },
   {
     value: AgentTypeEnum.TaskAgent,
-    label: '任务型',
+    label: '通用型',
     // icon: <ICON_AGENT />,
     tooltip:
       '为智能体分配独立的执行电脑，适合应用开发、深度调研、数据分析、演示文稿制作等复杂任务场景，比较消耗内存资源且输出结果较慢。',
@@ -146,7 +146,7 @@ export const FILTER_STATUS_DEV = [
 export const AGENT_TYPE_LIST_DEV = [
   { value: AgentTypeEnum.All, label: '全部' },
   { value: AgentTypeEnum.ChatBot, label: '问答型' },
-  { value: AgentTypeEnum.TaskAgent, label: '任务型' },
+  { value: AgentTypeEnum.TaskAgent, label: '通用型' },
 ];
 
 // 过滤创建者

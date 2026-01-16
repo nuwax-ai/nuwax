@@ -23,7 +23,7 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
   const [showModelName, setShowModelName] = useState<boolean>(false);
   useEffect(() => {
     if (agentConfigInfo && originalModelConfigList) {
-      // 是否是任务型智能体
+      // 是否是通用型智能体
       const isTaskAgent = agentConfigInfo?.type === AgentTypeEnum.TaskAgent;
 
       if (isTaskAgent) {

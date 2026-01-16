@@ -143,7 +143,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
             className={cx('flex', 'items-center', 'cursor-pointer', 'gap-10')}
           >
             {agentConfigInfo.type === AgentTypeEnum.TaskAgent ? (
-              <Tag color="orange">任务型</Tag>
+              <Tag color="orange">通用型</Tag>
             ) : (
               <Tag color="green">问答型</Tag>
             )}
