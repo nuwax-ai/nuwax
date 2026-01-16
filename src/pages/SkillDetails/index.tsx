@@ -59,6 +59,10 @@ const SkillDetails: React.FC = () => {
     useState<boolean>(false);
   // 是否正在导入项目
   const [isImportingProject, setIsImportingProject] = useState<boolean>(false);
+  // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
+  const [importProjectTrigger, setImportProjectTrigger] = useState<
+    number | string
+  >(0);
 
   // 检查是否有未保存的文件修改
   const hasUnsavedChanges = useCallback(() => {
@@ -229,6 +233,7 @@ const SkillDetails: React.FC = () => {
           message.success('导入成功');
           // 刷新技能信息
           runSkillInfo(skillId);
+          setImportProjectTrigger(Date.now());
         }
       } catch (error) {
         setIsImportingProject(false);
@@ -507,6 +512,8 @@ const SkillDetails: React.FC = () => {
         <FileTreeView
           // 任务智能体会话中点击选中的文件ID
           taskAgentSelectedFileId={'SKILL.md'}
+          // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
+          isImportProjectTrigger={importProjectTrigger}
           ref={fileTreeViewRef}
           // 是否显示视图模式切换按钮
           showViewModeButtons={false}
