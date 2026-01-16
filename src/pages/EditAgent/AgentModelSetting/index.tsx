@@ -106,7 +106,7 @@ const AgentModelSetting: React.FC<
         modelComponentConfig.bindConfig as ComponentModelBindConfig,
       );
 
-      // 任务智能体，需要根据任务智能体配置的模型类型，查询可使用模型列表接口
+      // 通用型智能体，需要根据通用型智能体配置的模型类型，查询可使用模型列表接口
       if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
         const targetId = modelComponentConfig.targetId;
         const targetModelInfo = modelConfigList?.find(

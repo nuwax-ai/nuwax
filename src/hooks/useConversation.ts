@@ -46,7 +46,7 @@ const useConversation = () => {
 
     if (success) {
       const id = data?.id;
-      // 如果是任务智能体模式，添加 hideMenu 参数
+      // 如果是通用型智能体模式，添加 hideMenu 参数
       const url = attach?.hideMenu
         ? `/home/chat/${id}/${agentId}?hideMenu=true`
         : `/home/chat/${id}/${agentId}`;

@@ -56,9 +56,9 @@ const SpaceSkillManage: React.FC = () => {
       // targetSkillId: 0, // 导入新技能时，targetSkillId 为 0
       targetSpaceId: spaceId,
     }),
-    onSuccess: () => {
-      // 刷新技能列表
-      mainContentRef.current?.exposeQueryComponentList();
+    onSuccess: (id: number) => {
+      // 跳转到技能详情页
+      history.push(`/space/${spaceId}/skill-details/${id}`);
     },
   });
 
