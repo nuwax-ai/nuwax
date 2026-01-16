@@ -341,7 +341,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             }}
             // 打开文件面板
             onOpenFilePanel={onOpenFilePanel}
-            // 是否显示文件面板: 任务智能体 + 文件树未打开
+            // 是否显示文件面板: 通用型智能体 + 文件树未打开
             showFilePanel={
               !isFileTreeVisible &&
               agentConfigInfo?.type === AgentTypeEnum.TaskAgent

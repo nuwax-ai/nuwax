@@ -29,9 +29,9 @@ export interface FileTreeViewProps {
   showFileTreeToggleButton?: boolean;
   // 文件树头部样式
   headerClassName?: string;
-  // 任务智能体会话中点击选中的文件ID
+  // 通用型智能体会话中点击选中的文件ID
   taskAgentSelectedFileId?: string;
-  // 任务智能体文件选择触发标志，每次点击按钮时传入不同的值（如时间戳），用于强制触发文件选择
+  // 通用型智能体文件选择触发标志，每次点击按钮时传入不同的值（如时间戳），用于强制触发文件选择
   taskAgentSelectTrigger?: number | string;
   // 是否导入了新的项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
   isImportProjectTrigger?: number | string;

@@ -522,7 +522,7 @@ const AgentDetails: React.FC = () => {
                     )}
                   </>
                 )
-              : // 任务型
+              : // 通用型
                 isFileTreeVisible && (
                   <div
                     className={cx(
