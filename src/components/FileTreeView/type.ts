@@ -33,6 +33,8 @@ export interface FileTreeViewProps {
   taskAgentSelectedFileId?: string;
   // 任务智能体文件选择触发标志，每次点击按钮时传入不同的值（如时间戳），用于强制触发文件选择
   taskAgentSelectTrigger?: number | string;
+  // 是否导入了新的项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
+  isImportProjectTrigger?: number | string;
   // 原始文件列表
   originalFiles?: any[];
   /** 文件树数据加载状态 */
