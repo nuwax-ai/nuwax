@@ -1,12 +1,12 @@
 import MoveCopyComponent from '@/components/MoveCopyComponent';
+import TipsBox from '@/components/TipsBox';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useFileImport } from '@/hooks/useFileImport';
 import { apiDeleteSkill, apiSkillCopyToSpace } from '@/services/library';
-import { apiSkillImport } from '@/services/skill';
+import { apiSkillExport, apiSkillImport } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { PageDevelopMoreActionEnum } from '@/types/enums/pageDev';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import {
@@ -15,6 +15,7 @@ import {
   type SkillInfo,
 } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
+import { exportWholeProjectZip } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { history, useParams, useSearchParams } from 'umi';
@@ -22,6 +23,7 @@ import CreateSkill from './CreateSkill';
 import HeaderLeftSlot from './HeaderLeftSlot';
 import HeaderRightSlot from './HeaderRightSlot';
 import MainContent, { MainContentRef } from './MainContent';
+import { SkillMoreActionEnum } from './type';
 
 const SpaceSkillManage: React.FC = () => {
   const params = useParams();
@@ -36,13 +38,12 @@ const SpaceSkillManage: React.FC = () => {
     CreateUpdateModeEnum.Create,
   );
 
-  // 当前技能信息
-  const [currentSkillInfo, setCurrentSkillInfo] = useState<SkillInfo | null>(
-    null,
-  );
-
   // 创建技能
   const [openCreateSkill, setOpenCreateSkill] = useState(false);
+  // 导出项目加载状态
+  const [loadingExportProject, setLoadingExportProject] =
+    useState<boolean>(false);
+
   const handleCreateSkill = () => {
     setCreateMode(CreateUpdateModeEnum.Create);
     setOpenCreateSkill(true);
@@ -77,7 +78,7 @@ const SpaceSkillManage: React.FC = () => {
   // 删除技能
   const handleClickDelete = (info: SkillInfo) => {
     // 二次确认
-    modalConfirm('你确定要删除此技能吗?', '', () => {
+    modalConfirm('你确定要删除此技能吗?', info.name, () => {
       apiDeleteSkill(info.id).then(() => {
         // 提示删除成功
         message.success('技能删除成功');
@@ -85,18 +86,6 @@ const SpaceSkillManage: React.FC = () => {
         mainContentRef.current?.exposeQueryComponentList();
       });
     });
-  };
-
-  // 详情技能
-  const handleClickDetail = (info: SkillInfo) => {
-    handleClickItem(info);
-  };
-
-  // 编辑技能
-  const handleClickEdit = (info: SkillInfo) => {
-    setCurrentSkillInfo(info);
-    setCreateMode(CreateUpdateModeEnum.Update);
-    setOpenCreateSkill(true);
   };
 
   // 迁移、复制弹窗
@@ -142,27 +131,45 @@ const SpaceSkillManage: React.FC = () => {
     }
   };
 
+  // 导出项目
+  const handleExportProject = async (info: SkillInfo) => {
+    // 检查项目ID是否有效
+    if (!info?.id) {
+      message.error('技能ID不存在或无效，无法导出');
+      return;
+    }
+
+    try {
+      setLoadingExportProject(true);
+      const result = await apiSkillExport(info.id);
+      const filename = `skill-${info.id}.zip`;
+      // 导出整个项目压缩包
+      exportWholeProjectZip(result, filename);
+      setLoadingExportProject(false);
+      message.success('导出成功！');
+    } catch (error) {
+      setLoadingExportProject(false);
+      console.error('导出项目失败:', error);
+    }
+  };
+
   // 点击技能卡片更多操作
   const handleClickMore = (item: CustomPopoverItem, info: SkillInfo) => {
     const { action } = item as unknown as {
-      action: ApplicationMoreActionEnum | PageDevelopMoreActionEnum;
+      action: SkillMoreActionEnum;
     };
 
     switch (action) {
       // 复制到空间
-      case PageDevelopMoreActionEnum.Copy_To_Space:
+      case SkillMoreActionEnum.Copy_To_Space:
         handleClickCopyToSpace(info);
         break;
-      // 编辑
-      case ApplicationMoreActionEnum.Edit:
-        handleClickEdit(info);
-        break;
-      // 详情
-      case ApplicationMoreActionEnum.Detail:
-        handleClickDetail(info);
+      // 导出项目
+      case SkillMoreActionEnum.Export_Project:
+        handleExportProject(info);
         break;
       // 删除
-      case ApplicationMoreActionEnum.Del:
+      case SkillMoreActionEnum.Delete:
         handleClickDelete(info);
         break;
       default:
@@ -192,6 +199,13 @@ const SpaceSkillManage: React.FC = () => {
         />
       }
       hideScroll={true}
+      extraContent={
+        <TipsBox
+          className="mt-0"
+          visible={loadingExportProject}
+          text="正在导出"
+        />
+      }
     >
       {/* 主要内容区域 */}
       <MainContent
@@ -204,7 +218,6 @@ const SpaceSkillManage: React.FC = () => {
         spaceId={spaceId}
         open={openCreateSkill}
         type={createMode}
-        skillInfo={currentSkillInfo as SkillInfo | undefined}
         onCancel={() => setOpenCreateSkill(false)}
         onConfirm={handleCreateSkillConfirm}
       />

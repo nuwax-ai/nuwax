@@ -11,6 +11,7 @@ interface WorkspaceLayoutProps {
   title?: string;
   // 是否隐藏滚动条
   hideScroll?: boolean;
+  extraContent?: React.ReactNode;
 }
 
 const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
@@ -20,6 +21,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   rightSlot,
   title,
   hideScroll = false,
+  extraContent,
 }) => {
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
@@ -49,6 +51,7 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       >
         {children}
       </div>
+      {extraContent}
     </div>
   );
 };
