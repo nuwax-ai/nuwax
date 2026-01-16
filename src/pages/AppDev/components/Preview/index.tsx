@@ -551,8 +551,7 @@ const Preview = React.forwardRef<PreviewRef, PreviewProps>(
                 const result = await response.json();
                 const imageUrl = result.data?.url || result.url || '';
 
-                // console.log('[Preview] 图片上传成功:', imageUrl, result);
-                // 调用编辑页面接口，更新图标
+                // 调用编辑应用接口，更新图标
                 const params = {
                   projectId: projectInfo?.projectId,
                   projectName: projectInfo?.name,

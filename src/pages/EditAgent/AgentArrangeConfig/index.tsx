@@ -938,7 +938,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       },
     },
 
-    // 长任务型智能体不显示 【页面/展开页面区/事件绑定】
+    // 通用型智能体不显示 【页面/展开页面区/事件绑定】
     ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
       ? []
       : [
