@@ -1,15 +1,13 @@
 /**
  * 动态一级菜单组件
- * @description 根据后端返回的菜单数据渲染一级导航
+ * @description 直接复用现有 TabItem 组件，保持样式一致
  */
 import SvgIcon from '@/components/base/SvgIcon';
-import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import type { TabType } from '@/types/interfaces/layouts';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import classNames from 'classnames';
-import React from 'react';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
+import React, { useMemo } from 'react';
+import { useModel } from 'umi';
+import TabItem from '../../MenusLayout/Tabs/TabItem';
 
 export interface DynamicTabsProps {
   /** 一级菜单列表 */
@@ -22,39 +20,48 @@ export interface DynamicTabsProps {
 
 /**
  * 动态一级菜单组件
+ * 复用现有的 TabItem 组件实现，保持 UI 样式一致
  */
 const DynamicTabs: React.FC<DynamicTabsProps> = ({
   menus,
   activeTab,
   onClick,
 }) => {
-  const { navigationStyle } = useUnifiedTheme();
+  const { isSecondMenuCollapsed } = useModel('layout');
+
+  // 将 MenuItemDto 转换为 TabItem 所需的格式
+  const tabItems = useMemo(() => {
+    return menus.map((menu) => ({
+      menu,
+      type: menu.code as TabType,
+      icon: menu.icon ? <SvgIcon name={menu.icon} /> : null,
+      text: menu.name,
+      active: activeTab === menu.code,
+    }));
+  }, [menus, activeTab]);
 
   return (
     <div
-      className={cx(styles.tabs, 'flex', 'flex-col', 'items-center', {
-        [styles.style2]: navigationStyle === 'style2',
-      })}
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        width: '100%',
+        padding: '8px 0',
+        overflowY: 'auto',
+      }}
     >
-      {menus.map((menu) => (
-        <div
-          key={menu.code}
-          className={cx(styles.tabItem, 'flex', 'flex-col', 'items-center', {
-            [styles.active]: activeTab === menu.code,
-          })}
-          onClick={() => onClick(menu)}
-          title={menu.name}
-        >
-          {/* 图标 */}
-          <div className={cx(styles.iconWrapper)}>
-            {menu.icon && <SvgIcon name={menu.icon} />}
-          </div>
-
-          {/* 文字（在 style2 导航风格下显示） */}
-          {navigationStyle === 'style2' && (
-            <span className={cx(styles.text)}>{menu.name}</span>
-          )}
-        </div>
+      {tabItems.map((item) => (
+        <TabItem
+          key={item.type}
+          type={item.type}
+          icon={item.icon}
+          text={item.text}
+          active={item.active}
+          onClick={() => onClick(item.menu)}
+          isSecondMenuCollapsed={isSecondMenuCollapsed}
+        />
       ))}
     </div>
   );

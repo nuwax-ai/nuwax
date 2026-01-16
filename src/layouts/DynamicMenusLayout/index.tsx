@@ -5,8 +5,8 @@
  * 特点：
  * 1. 从 menuModel 获取动态菜单数据
  * 2. 支持一级、二级、三级菜单
- * 3. 复用现有的 Header、User、UserOperateArea 等组件
- * 4. 可通过配置在动态/静态菜单之间切换
+ * 3. 复用现有的 Header、User、UserOperateArea、TabItem、SecondMenuItem 等组件
+ * 4. 样式与原有 MenusLayout 完全一致
  */
 import HoverScrollbar from '@/components/base/HoverScrollbar';
 import ConditionRender from '@/components/ConditionRender';
@@ -26,7 +26,8 @@ import CollapseButton from '../MenusLayout/CollapseButton';
 import Header from '../MenusLayout/Header';
 import User from '../MenusLayout/User';
 import UserOperateArea from '../MenusLayout/UserOperateArea';
-import styles from './index.less';
+// 复用原有样式
+import styles from '../MenusLayout/index.less';
 
 const cx = classNames.bind(styles);
 
@@ -230,7 +231,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           }
           style={{
             width: '100%',
-            padding: `${token.paddingSM} 0`,
+            padding: `${token.paddingSM}px 0`,
           }}
         >
           <div

@@ -1,12 +1,12 @@
 /**
  * 动态二级/三级菜单组件
- * @description 根据当前激活的一级菜单动态渲染二级和三级菜单
+ * @description 直接复用现有 SecondMenuItem 组件，保持样式一致
  */
+import SecondMenuItem from '@/components/base/SecondMenuItem';
+import SvgIcon from '@/components/base/SvgIcon';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import React, { useCallback, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
-import DynamicMenuItem from '../DynamicMenuItem';
-import styles from './index.less';
 
 export interface DynamicSecondMenuProps {
   /** 父级菜单的 code */
@@ -15,6 +15,7 @@ export interface DynamicSecondMenuProps {
 
 /**
  * 动态二级/三级菜单组件
+ * 复用现有的 SecondMenuItem 组件实现，保持 UI 样式一致
  */
 const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   parentCode,
@@ -87,35 +88,48 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   }
 
   return (
-    <div className={styles.secondMenu}>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       {secondMenus.map((menu, index) => {
         const isExpanded = expandedMenus.includes(menu.code);
         const menuActive = isActive(menu.path) || hasActiveChild(menu);
+        const hasChildren = menu.children && menu.children.length > 0;
 
         return (
-          <DynamicMenuItem
-            key={menu.code}
-            menu={menu}
-            isFirst={index === 0}
-            isActive={menuActive}
-            isExpanded={isExpanded}
-            onToggle={() => toggleExpand(menu.code)}
-            onClick={() => handleMenuClick(menu)}
-          >
+          <div key={menu.code}>
+            {/* 二级菜单项 */}
+            <SecondMenuItem
+              icon={menu.icon ? <SvgIcon name={menu.icon} /> : undefined}
+              name={menu.name}
+              isFirst={index === 0}
+              isActive={menuActive}
+              isDown={hasChildren}
+              isOpen={isExpanded}
+              onClick={() => handleMenuClick(menu)}
+              onToggle={() => toggleExpand(menu.code)}
+            />
+
             {/* 三级菜单 */}
-            {menu.children?.map((child) => (
-              <DynamicMenuItem.SubItem
-                key={child.code}
-                menu={child}
-                isActive={isActive(child.path)}
-                onClick={() => {
-                  if (child.path) {
-                    history.push(child.path);
-                  }
-                }}
-              />
-            ))}
-          </DynamicMenuItem>
+            {hasChildren && isExpanded && (
+              <div style={{ marginLeft: 0 }}>
+                {menu.children?.map((child, childIndex) => (
+                  <SecondMenuItem.SubItem
+                    key={child.code}
+                    icon={
+                      child.icon ? <SvgIcon name={child.icon} /> : undefined
+                    }
+                    name={child.name}
+                    isFirst={childIndex === 0}
+                    isActive={isActive(child.path)}
+                    onClick={() => {
+                      if (child.path) {
+                        history.push(child.path);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         );
       })}
     </div>
