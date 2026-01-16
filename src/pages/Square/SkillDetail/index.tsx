@@ -135,7 +135,7 @@ const SkillDetail: React.FC = ({}) => {
 
       {/* 文件树视图 */}
       <FileTreeView
-        // 任务智能体选中文件ID
+        // 通用型智能体选中文件ID
         taskAgentSelectedFileId={'SKILL.md'}
         // 加载状态
         fileTreeDataLoading={loadingSkillInfo}

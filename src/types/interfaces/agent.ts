@@ -622,7 +622,7 @@ export interface AgentDetailDto extends AgentBaseInfo {
   hideChatArea: HideChatAreaEnum;
   // 扩展页面首页
   pageHomeIndex: string;
-  // 智能体类型，ChatBot 问答型；TaskAgent 任务型; PageApp 页面应用智能体
+  // 智能体类型，ChatBot 问答型；TaskAgent 通用型; PageApp 页面应用智能体
   type: AgentTypeEnum;
 }
 

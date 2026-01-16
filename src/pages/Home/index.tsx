@@ -34,7 +34,7 @@ const Home: React.FC = () => {
     useState<HomeAgentCategoryInfo>();
   const currentAgentTypeRef = useRef<string>('');
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
-  // 任务智能体模式状态
+  // 通用型智能体模式状态
   const [isTaskAgentMode, setIsTaskAgentMode] = useState<boolean>(false);
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();

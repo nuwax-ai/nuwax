@@ -54,6 +54,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       headerClassName,
       taskAgentSelectedFileId,
       taskAgentSelectTrigger,
+      isImportProjectTrigger,
       originalFiles,
       fileTreeDataLoading,
       readOnly = false,
@@ -179,7 +180,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const prevTaskAgentSelectTriggerRef = useRef<number | string | undefined>(
       undefined,
     );
-    // 用于记录创建成功后需要选择的文件路径
+    // 用于记录创建文件成功后需要选择的文件路径
     const pendingSelectFileRef = useRef<string | null>(null);
 
     // 用于存储文件的刷新时间戳，确保每次点击时都能刷新
@@ -599,6 +600,26 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         }
       }
     }, [files, handleFileSelectInternal]);
+
+    // 监听 files 变化，同步更新 selectedFileNode 的 content（用于重新导入后更新文件内容）
+    // 特别适用于 SkillDetails 页面，其中 fileProxyUrl 为空，内容直接存储在 content 字段中
+    useEffect(() => {
+      // 如果当前有选中的文件，且 files 已更新，需要同步更新 selectedFileNode 的 content
+      if (
+        files &&
+        files.length > 0 &&
+        isImportProjectTrigger &&
+        taskAgentSelectedFileId
+      ) {
+        // 从新的 files 中查找对应的文件节点
+        const newFileNode = findFileNode(taskAgentSelectedFileId, files);
+
+        if (newFileNode) {
+          setSelectedFileNode(newFileNode);
+          setSelectedFileId(newFileNode?.id);
+        }
+      }
+    }, [files, isImportProjectTrigger, taskAgentSelectedFileId]);
 
     // 当 isFileTreePinned 变化时，同步更新 isFileTreeVisible
     // 确保组件重新挂载或 isFileTreePinned 从外部变化时，文件树能正确显示
@@ -1421,7 +1442,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           }
         } catch (error) {
           console.error('Restart server failed:', error);
-          message.error('重启失败，请重试');
+          // message.error('重启失败，请重试');
         } finally {
           setIsRestarting(false);
         }
