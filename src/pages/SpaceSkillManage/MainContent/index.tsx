@@ -54,7 +54,11 @@ const MainContentCard: React.FC<MainContentCardProps> = ({
 }) => {
   // 加载中
   if (loading) {
-    return <Loading />;
+    return (
+      <div className={cx('flex', 'h-full', 'items-center', 'justify-center')}>
+        <Loading />
+      </div>
+    );
   }
 
   // 没有技能列表
@@ -155,9 +159,14 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
       runSkillList({ spaceId });
     };
 
-    // 查询技能列表
+    // 查询技能列表 - 当 spaceId 变化时重新查询
     useEffect(() => {
+      // 清空旧数据，避免显示上一个空间的数据
+      skillListAllRef.current = [];
+      setSkillList([]);
+      // 重新查询
       exposeQueryComponentList();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [spaceId]);
 
     // 监听 URL 改变（支持浏览器前进/后退）
