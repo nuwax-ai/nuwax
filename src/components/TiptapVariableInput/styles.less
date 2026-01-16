@@ -261,15 +261,17 @@
 }
 
 // Suggestion 弹窗样式
-// .mention-suggestion-popup,
-// .variable-suggestion-popup {
-//   background: @colorBgContainer;
-//   border: @lineWidth solid @colorBorderSecondary;
-//   border-radius: @borderRadius;
-//   width: 300px;
-//   height: calc(@controlHeight * 7.5); // 约 240px，基于 controlHeight
-//   z-index: @zIndexPopupBase;
-// }
+.variable-suggestion-popup {
+  position: fixed;
+  z-index: 2000 !important; // 确保高于工作流面板的 z-index: 99
+  background: @colorBgContainer;
+  border: @lineWidth solid @colorBorderSecondary;
+  border-radius: @borderRadius;
+  width: 300px;
+  height: calc(@controlHeight * 7.5); // 约 240px，基于 controlHeight
+  box-shadow: @boxShadowSecondary;
+  overflow: hidden;
+}
 
 // 变量建议弹窗样式
 .variable-suggestion-popup .ant-tree-node-selected {
