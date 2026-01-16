@@ -225,6 +225,11 @@ const routes = [
     component: '@/examples/SSEStreamingTest',
     layout: false,
   },
+  {
+    path: '/examples/menu-permission-demo',
+    component: '@/examples/MenuPermissionDemo',
+    layout: false,
+  },
 ];
 
 export default routes;
