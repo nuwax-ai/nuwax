@@ -22,6 +22,7 @@ import { history, useParams, useSearchParams } from 'umi';
 import CreateSkill from './CreateSkill';
 import HeaderLeftSlot from './HeaderLeftSlot';
 import HeaderRightSlot from './HeaderRightSlot';
+import ImportSkillProjectModal from './ImportSkillProjectModal';
 import MainContent, { MainContentRef } from './MainContent';
 import { SkillMoreActionEnum } from './type';
 
@@ -42,6 +43,10 @@ const SpaceSkillManage: React.FC = () => {
   const [openCreateSkill, setOpenCreateSkill] = useState(false);
   // 导出项目加载状态
   const [loadingExportProject, setLoadingExportProject] =
+    useState<boolean>(false);
+
+  // 导入技能项目弹窗
+  const [openImportSkillProject, setOpenImportSkillProject] =
     useState<boolean>(false);
 
   const handleCreateSkill = () => {
@@ -188,6 +193,16 @@ const SpaceSkillManage: React.FC = () => {
     }
   }, [history.location.state]);
 
+  // // 导入技能项目
+  // const handleImportSkillProject = () => {
+  //   setOpenImportSkillProject(true);
+  // };
+
+  // 确认导入技能项目
+  const handleImportSkillProjectConfirm = () => {
+    setOpenImportSkillProject(false);
+  };
+
   return (
     <WorkspaceLayout
       title="技能管理"
@@ -232,6 +247,13 @@ const SpaceSkillManage: React.FC = () => {
         title={currentComponentInfo?.name}
         onCancel={() => setOpenMove(false)}
         onConfirm={handlerConfirmCopyToSpace}
+      />
+
+      {/* 导入技能项目弹窗 */}
+      <ImportSkillProjectModal
+        open={openImportSkillProject}
+        onCancel={() => setOpenImportSkillProject(false)}
+        onConfirm={handleImportSkillProjectConfirm}
       />
     </WorkspaceLayout>
   );
