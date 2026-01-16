@@ -65,15 +65,32 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   useEffect(() => {
     if (!firstLevelMenus.length) return;
 
-    // 查找匹配当前路径的菜单
-    const matchedMenu = firstLevelMenus.find((menu) => {
-      if (!menu.path) return false;
-      // 首页特殊处理
-      if (menu.path === '/' || menu.path === '') {
-        return location.pathname === '/' || location.pathname === '';
+    /**
+     * 递归检查菜单是否匹配当前路径
+     */
+    const isMenuMatch = (menu: MenuItemDto, pathname: string): boolean => {
+      // 检查当前菜单路径
+      if (menu.path) {
+        // 首页特殊处理
+        if (menu.path === '/' || menu.path === '') {
+          if (pathname === '/' || pathname === '') return true;
+        } else if (pathname.startsWith(menu.path)) {
+          return true;
+        }
       }
-      return location.pathname.startsWith(menu.path);
-    });
+
+      // 递归检查子菜单
+      if (menu.children?.length) {
+        return menu.children.some((child) => isMenuMatch(child, pathname));
+      }
+
+      return false;
+    };
+
+    // 查找匹配当前路径的菜单
+    const matchedMenu = firstLevelMenus.find((menu) =>
+      isMenuMatch(menu, location.pathname),
+    );
 
     if (matchedMenu) {
       setActiveTab(matchedMenu.code);
