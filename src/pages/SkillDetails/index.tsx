@@ -223,6 +223,13 @@ const SkillDetails: React.FC = () => {
         return;
       }
 
+      // 校验文件大小，限制为20M
+      const maxSize = 20 * 1024 * 1024; // 20MB
+      if (file.size > maxSize) {
+        message.error('文件大小不能超过20MB');
+        return;
+      }
+
       try {
         setIsImportingProject(true);
         // 调用导入接口
