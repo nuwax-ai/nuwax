@@ -74,10 +74,10 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
       return false;
     }
 
-    // 校验文件大小，限制为100M
-    const maxSize = 100 * 1024 * 1024; // 100MB
+    // 校验文件大小，限制为20M
+    const maxSize = 20 * 1024 * 1024; // 20MB
     if (file.size > maxSize) {
-      message.error('文件大小不能超过100MB');
+      message.error('文件大小不能超过20MB');
       return false;
     }
 
