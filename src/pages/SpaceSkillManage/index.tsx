@@ -2,7 +2,6 @@ import MoveCopyComponent from '@/components/MoveCopyComponent';
 import TipsBox from '@/components/TipsBox';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { useFileImport } from '@/hooks/useFileImport';
 import { apiDeleteSkill, apiSkillCopyToSpace } from '@/services/library';
 import { apiSkillExport, apiSkillImport } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -45,6 +44,15 @@ const SpaceSkillManage: React.FC = () => {
   const [loadingExportProject, setLoadingExportProject] =
     useState<boolean>(false);
 
+  // 迁移、复制弹窗
+  const [openMove, setOpenMove] = useState<boolean>(false);
+  // 当前组件信息
+  const [currentComponentInfo, setCurrentComponentInfo] =
+    useState<SkillInfo | null>(null);
+
+  // 加载中
+  const [loadingSkill, setLoadingSkill] = useState<boolean>(false);
+
   // 导入技能项目弹窗
   const [openImportSkillProject, setOpenImportSkillProject] =
     useState<boolean>(false);
@@ -54,20 +62,7 @@ const SpaceSkillManage: React.FC = () => {
     setOpenCreateSkill(true);
   };
 
-  // 导入技能
-  const { triggerImport: handleImportSkill } = useFileImport({
-    importApi: apiSkillImport,
-    buildApiParams: (files) => ({
-      file: files[0],
-      // targetSkillId: 0, // 导入新技能时，targetSkillId 为 0
-      targetSpaceId: spaceId,
-    }),
-    onSuccess: (id: number) => {
-      // 跳转到技能详情页
-      history.push(`/space/${spaceId}/skill-details/${id}`);
-    },
-  });
-
+  // 创建技能确认
   const handleCreateSkillConfirm = () => {
     // 查询技能列表
     mainContentRef.current?.exposeQueryComponentList();
@@ -92,15 +87,6 @@ const SpaceSkillManage: React.FC = () => {
       });
     });
   };
-
-  // 迁移、复制弹窗
-  const [openMove, setOpenMove] = useState<boolean>(false);
-  // 当前组件信息
-  const [currentComponentInfo, setCurrentComponentInfo] =
-    useState<SkillInfo | null>(null);
-
-  // 加载中
-  const [loadingSkill, setLoadingSkill] = useState<boolean>(false);
 
   // 复制到空间
   const handleClickCopyToSpace = (info: SkillInfo) => {
@@ -199,10 +185,24 @@ const SpaceSkillManage: React.FC = () => {
   };
 
   // 确认导入技能项目
-  const handleImportSkillProjectConfirm = (files: File[]) => {
-    console.log('files', files, handleImportSkill);
-    // handleImportSkill(files);
-    // setOpenImportSkillProject(false);
+  const handleImportSkillProjectConfirm = async (file: File) => {
+    const {
+      code,
+      data: id,
+      message: errorMessage,
+    } = await apiSkillImport({
+      file,
+      targetSpaceId: spaceId,
+    });
+
+    if (code === SUCCESS_CODE) {
+      message.success('导入成功');
+      setOpenImportSkillProject(false);
+      // 跳转到技能详情页
+      history.push(`/space/${spaceId}/skill-details/${id}`);
+    } else {
+      message.error(errorMessage || '导入失败');
+    }
   };
 
   return (
@@ -213,7 +213,6 @@ const SpaceSkillManage: React.FC = () => {
         <HeaderRightSlot
           onCreate={handleCreateSkill}
           onImport={handleImportSkillProject}
-          // onImport={handleImportSkill}
         />
       }
       hideScroll={true}
