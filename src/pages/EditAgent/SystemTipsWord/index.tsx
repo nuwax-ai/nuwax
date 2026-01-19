@@ -26,6 +26,7 @@ const SystemTipsWord = forwardRef<
 >(
   (
     {
+      className,
       valueUser,
       valueSystem,
       onChangeUser,
@@ -128,7 +129,15 @@ const SystemTipsWord = forwardRef<
     }));
 
     return (
-      <div className={cx('flex', 'flex-col', 'flex-1', styles.container)}>
+      <div
+        className={cx(
+          'flex',
+          'flex-col',
+          'flex-1',
+          styles.container,
+          className,
+        )}
+      >
         <div
           className={cx(
             'flex',
