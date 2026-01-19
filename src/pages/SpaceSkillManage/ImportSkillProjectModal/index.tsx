@@ -1,16 +1,23 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { UploadOutlined } from '@ant-design/icons';
 import { Form, FormProps, message, Typography, Upload } from 'antd';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface ImportSkillProjectModalProps {
   open: boolean;
   onCancel: () => void;
-  onConfirm: (files: File[]) => void;
+  onConfirm: (file: File) => Promise<void>;
 }
 
 const { Text } = Typography;
 
+/**
+ * 上传技能项目模态框
+ * @param open 是否打开
+ * @param onCancel 取消回调
+ * @param onConfirm 确认回调
+ * @returns
+ */
 const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
   open,
   onCancel,
@@ -20,15 +27,28 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const handleCancel = () => {
-    onCancel();
-  };
+  useEffect(() => {
+    if (open) {
+      form.resetFields();
+      setSelectedFile(null);
+      setLoading(false);
+    }
+  }, [open, form]);
 
   // 处理文件导入
-  const onFinish: FormProps<any>['onFinish'] = (values) => {
+  const onFinish: FormProps['onFinish'] = async (values) => {
     const files = values.files;
+    if (!files || files.length === 0) {
+      message.error('请选择要导入的文件');
+      return;
+    }
+    const file = files[0]?.originFileObj || files[0];
+    if (!file) {
+      message.error('文件获取失败，请重新选择');
+      return;
+    }
     setLoading(true);
-    onConfirm(files);
+    await onConfirm(file);
     setLoading(false);
   };
 
@@ -67,7 +87,9 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
     if (Array.isArray(e)) {
       return e;
     }
-    return e?.fileList;
+    // 只返回单个文件，如果已有文件则替换
+    const fileList = e?.fileList || [];
+    return fileList.slice(-1); // 只保留最后一个文件
   };
 
   return (
@@ -77,7 +99,7 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
       open={open}
       loading={loading}
       okText="确认导入"
-      onCancel={handleCancel}
+      onCancel={onCancel}
       onConfirm={handlerSubmit}
     >
       <Form form={form} name="import-skill-project" onFinish={onFinish}>
@@ -91,7 +113,7 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
             <Upload.Dragger
               accept=".zip,.skill,.md"
               beforeUpload={(file) => handleFileSelect(file)}
-              // disabled={isFileOperating}
+              multiple={false}
               showUploadList={false}
             >
               <p className="ant-upload-drag-icon">
@@ -99,7 +121,7 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
               </p>
               <p className="ant-upload-text">点击或拖拽文件到此区域选择</p>
               <p className="ant-upload-hint">
-                仅支持 .zip,.skill 压缩文件格式或SKILL.md文件
+                仅支持 .zip,.skill 压缩文件格式 或 SKILL.md 文件
               </p>
               <p className="ant-upload-hint">文件大小不超过100MB</p>
             </Upload.Dragger>
