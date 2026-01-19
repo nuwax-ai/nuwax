@@ -1,5 +1,5 @@
 import LimitedTooltip from '@/components/base/LimitedTooltip';
-import { apiSpaceLogList } from '@/services/agentDev';
+import { apiOperationLogList } from '@/services/agentDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type {
   SpaceLogInfo,
@@ -304,7 +304,7 @@ const LogProTable: React.FC = () => {
         const from = searchParams.get('from') || undefined;
         // 额外查询条件
         if (from) queryFilter.from = from;
-        const resp = (await apiSpaceLogList({
+        const resp = (await apiOperationLogList({
           queryFilter,
           current,
           pageSize,
