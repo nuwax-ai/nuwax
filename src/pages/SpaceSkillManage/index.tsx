@@ -133,14 +133,30 @@ const SpaceSkillManage: React.FC = () => {
     try {
       setLoadingExportProject(true);
       const result = await apiSkillExport(info.id);
-      const filename = `skill-${info.id}.zip`;
-      // 导出整个项目压缩包
-      exportWholeProjectZip(result, filename);
-      setLoadingExportProject(false);
-      message.success('导出成功！');
+
+      // 判断是否成功
+      if (!result.success) {
+        // 导出失败，显示错误信息
+        const errorMessage = result.error?.message || '导出失败';
+        message.error(errorMessage);
+        setLoadingExportProject(false);
+        return;
+      }
+
+      // 导出成功，处理文件下载
+      if (result.data) {
+        const filename = `skill-${info.id}.zip`;
+        // 导出整个项目压缩包
+        exportWholeProjectZip(result, filename);
+        message.success('导出成功！');
+      } else {
+        message.error('导出数据异常，请重试');
+      }
     } catch (error) {
-      setLoadingExportProject(false);
       console.error('导出项目失败:', error);
+      message.error('导出失败，请重试');
+    } finally {
+      setLoadingExportProject(false);
     }
   };
 
