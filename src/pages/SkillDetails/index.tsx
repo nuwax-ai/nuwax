@@ -1,6 +1,7 @@
 import FileTreeView from '@/components/FileTreeView';
 import type { FileTreeViewRef } from '@/components/FileTreeView/type';
 import PublishComponentModal from '@/components/PublishComponentModal';
+import TipsBox from '@/components/TipsBox';
 import VersionHistory from '@/components/VersionHistory';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
@@ -63,6 +64,9 @@ const SkillDetails: React.FC = () => {
   const [importProjectTrigger, setImportProjectTrigger] = useState<
     number | string
   >(0);
+  // 导出项目加载状态
+  const [loadingExportProject, setLoadingExportProject] =
+    useState<boolean>(false);
 
   // 检查是否有未保存的文件修改
   const hasUnsavedChanges = useCallback(() => {
@@ -292,13 +296,32 @@ const SkillDetails: React.FC = () => {
     }
 
     try {
+      setLoadingExportProject(true);
       const result = await apiSkillExport(skillId);
-      const filename = `skill-${skillId}.zip`;
-      // 导出整个项目压缩包
-      exportWholeProjectZip(result, filename);
-      message.success('导出成功！');
+
+      // 判断是否成功
+      if (!result.success) {
+        // 导出失败，显示错误信息
+        const errorMessage = result.error?.message || '导出失败';
+        message.error(errorMessage);
+        setLoadingExportProject(false);
+        return;
+      }
+
+      // 导出成功，处理文件下载
+      if (result.data) {
+        const filename = `skill-${skillId}.zip`;
+        // 导出整个项目压缩包
+        exportWholeProjectZip(result, filename);
+        message.success('导出成功！');
+      } else {
+        message.error('导出数据异常，请重试');
+      }
     } catch (error) {
       console.error('导出项目失败:', error);
+      message.error('导出失败，请重试');
+    } finally {
+      setLoadingExportProject(false);
     }
   };
 
@@ -488,7 +511,9 @@ const SkillDetails: React.FC = () => {
   };
 
   return (
-    <div className={cx('flex', 'h-full', 'flex-col', 'overflow-hide')}>
+    <div
+      className={cx('flex', 'h-full', 'flex-col', 'overflow-hide', 'relative')}
+    >
       {/* 技能头部 */}
       <SkillHeader
         spaceId={spaceId}
@@ -501,10 +526,19 @@ const SkillDetails: React.FC = () => {
         onImportProject={handleImportProject}
         // 导出项目
         onExportProject={handleExportProject}
+        // 是否正在导出项目
+        isExportingProject={loadingExportProject}
         // 全屏
         onFullscreen={() => {
           setIsFullscreenPreview(true);
         }}
+      />
+
+      {/* 正在导出项目提示 */}
+      <TipsBox
+        className={cx(styles['mt-12'])}
+        visible={loadingExportProject}
+        text="正在导出"
       />
 
       <div className={cx('flex', 'flex-1', 'overflow-y')}>
