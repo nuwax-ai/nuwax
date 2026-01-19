@@ -31,6 +31,8 @@ export interface SkillHeaderProps {
   onExportProject?: () => void;
   /** 全屏回调 */
   onFullscreen?: () => void;
+  /** 是否正在导出项目 */
+  isExportingProject?: boolean;
 }
 
 /**
@@ -45,6 +47,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
   onImportProject,
   onExportProject,
   onFullscreen,
+  isExportingProject,
 }) => {
   return (
     <header className={cx('flex', 'items-center', 'relative', styles.header)}>
@@ -99,6 +102,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
           onImportProject={onImportProject}
           onFullscreenPreview={onFullscreen}
           onExportProject={onExportProject}
+          isExportingProject={isExportingProject}
         />
         {/* 版本历史 */}
         <Button
