@@ -20,6 +20,26 @@ export enum SystemManageListEnum {
   Operation_Log,
   // 运行日志
   Running_Log,
+  // 内容管理
+  Content,
+  // 空间
+  Content_Space,
+  // 智能体
+  Content_Agent,
+  // 网页应用
+  Content_WebApplication,
+  // 知识库
+  Content_KnowledgeBase,
+  // 数据表
+  Content_DataTable,
+  // 工作流
+  Content_Workflow,
+  // 插件
+  Content_Plugin,
+  // MCP
+  Content_Mcp,
+  // 技能
+  Content_Skill,
 }
 
 // 系统管理-用户管理-角色枚举

@@ -142,6 +142,64 @@ const routes = [
         path: '/system/log-query/running-log',
         component: '@/pages/SystemManagement/LogQuery/RunningLog',
       },
+      // 系统管理
+      {
+        path: '/system',
+        name: '系统管理',
+        routes: [
+          {
+            path: 'content',
+            name: '内容管理',
+            routes: [
+              {
+                path: 'content-space',
+                name: '空间',
+                component: '@/pages/SystemManagement/Content/Space',
+              },
+              {
+                path: 'content-agent',
+                name: '智能体',
+                component: '@/pages/SystemManagement/Content/Agent',
+              },
+              {
+                path: 'content-web-application',
+                name: '网页应用',
+                component: '@/pages/SystemManagement/Content/WebApplication',
+              },
+              {
+                path: 'content-knowledge-base',
+                name: '知识库',
+                component: '@/pages/SystemManagement/Content/KnowledgeBase',
+              },
+              {
+                path: 'content-data-table',
+                name: '数据表',
+                component: '@/pages/SystemManagement/Content/DataTable',
+              },
+              {
+                path: 'content-workflow',
+                name: '工作流',
+                component: '@/pages/SystemManagement/Content/Workflow',
+              },
+              {
+                path: 'content-plugin',
+                name: '插件',
+                component: '@/pages/SystemManagement/Content/Plugin',
+              },
+              {
+                path: 'content-mcp',
+                name: 'MCP',
+                component: '@/pages/SystemManagement/Content/Mcp',
+              },
+              {
+                path: 'content-skill',
+                name: '技能',
+                component: '@/pages/SystemManagement/Content/Skill',
+              },
+            ],
+          },
+        ],
+      },
       // 生态市场
       {
         path: '/ecosystem',
