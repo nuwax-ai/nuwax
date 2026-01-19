@@ -11,6 +11,111 @@ import {
 import { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { request } from 'umi';
 
+/**
+ * 导出接口返回类型
+ */
+export interface SkillExportResponse {
+  success: boolean;
+  data?: Blob;
+  headers?: {
+    'content-disposition': string;
+    'content-length': string;
+    'content-type': string;
+  };
+  error?: {
+    code: string;
+    displayCode: string;
+    message: string;
+    data: null;
+    success: boolean;
+    tid: string;
+  };
+}
+
+/**
+ * 处理 blob 响应，检测并解析错误信息
+ * @param response 请求响应对象
+ * @param defaultErrorMessage 默认错误消息
+ * @returns 处理后的响应结果
+ */
+async function handleBlobResponse(
+  response: any,
+  defaultErrorMessage: string = '导出失败',
+): Promise<SkillExportResponse> {
+  const { data, headers } = response;
+  const contentType = headers?.['content-type'] || '';
+
+  // 检查响应是否为JSON错误（通常错误响应的content-type是application/json）
+  if (
+    contentType.includes('application/json') ||
+    contentType.includes('text/json')
+  ) {
+    // 尝试将Blob转换为文本并解析为JSON
+    try {
+      const text = await (data as Blob).text();
+      const errorData = JSON.parse(text);
+
+      // 如果解析成功且包含错误信息，返回错误
+      if (errorData && !errorData.success) {
+        return {
+          success: false,
+          error: {
+            code: errorData.code || '',
+            displayCode: errorData.displayCode || '',
+            message: errorData.message || defaultErrorMessage,
+            data: errorData.data || null,
+            success: errorData.success || false,
+            tid: errorData.tid || '',
+          },
+        };
+      }
+    } catch (parseError) {
+      // 如果解析失败，返回通用错误
+      return {
+        success: false,
+        error: {
+          code: 'PARSE_ERROR',
+          displayCode: 'PARSE_ERROR',
+          message: '无法解析服务器响应',
+          data: null,
+          success: false,
+          tid: '',
+        },
+      };
+    }
+  }
+
+  // 成功返回文件数据
+  return {
+    success: true,
+    data: data as Blob,
+    headers: headers as {
+      'content-disposition': string;
+      'content-length': string;
+      'content-type': string;
+    },
+  };
+}
+
+/**
+ * 处理导出请求的错误
+ * @param error 错误对象
+ * @returns 错误响应结果
+ */
+function handleExportError(error: any): SkillExportResponse {
+  return {
+    success: false,
+    error: {
+      code: error?.info?.code || 'NETWORK_ERROR',
+      displayCode: error?.info?.displayCode || 'NETWORK_ERROR',
+      message: error?.info?.message || error?.message || '网络请求失败',
+      data: null,
+      success: false,
+      tid: error?.info?.tid || '',
+    },
+  };
+}
+
 // 查询技能详情
 export async function apiSkillDetail(
   skillId: number,
@@ -104,35 +209,39 @@ export async function apiSkillUploadFiles(
 }
 
 // 导出技能
-export async function apiSkillExport(skillId: number): Promise<{
-  data: Blob;
-  headers: {
-    'content-disposition': string;
-    'content-length': string;
-    'content-type': string;
-  };
-}> {
-  return request(`/api/skill/export/${skillId}`, {
-    method: 'GET',
-    responseType: 'blob', // 指定响应类型为blob
-    getResponse: true, // 获取完整响应对象
-  });
+export async function apiSkillExport(
+  skillId: number,
+): Promise<SkillExportResponse> {
+  try {
+    const response = await request(`/api/skill/export/${skillId}`, {
+      method: 'GET',
+      responseType: 'blob', // 指定响应类型为blob
+      getResponse: true, // 获取完整响应对象
+      skipErrorHandler: true, // 跳过全局错误处理，手动处理错误
+    });
+
+    return await handleBlobResponse(response);
+  } catch (error: any) {
+    return handleExportError(error);
+  }
 }
 
 // 广场技能下载导出
-export async function apiSkillExportSquare(skillId: number): Promise<{
-  data: Blob;
-  headers: {
-    'content-disposition': string;
-    'content-length': string;
-    'content-type': string;
-  };
-}> {
-  return request(`/api/published/skill/export/${skillId}`, {
-    method: 'GET',
-    responseType: 'blob', // 指定响应类型为blob
-    getResponse: true, // 获取完整响应对象
-  });
+export async function apiSkillExportSquare(
+  skillId: number,
+): Promise<SkillExportResponse> {
+  try {
+    const response = await request(`/api/published/skill/export/${skillId}`, {
+      method: 'GET',
+      responseType: 'blob', // 指定响应类型为blob
+      getResponse: true, // 获取完整响应对象
+      skipErrorHandler: true, // 跳过全局错误处理，手动处理错误
+    });
+
+    return await handleBlobResponse(response);
+  } catch (error: any) {
+    return handleExportError(error);
+  }
 }
 
 // 已发布技能列表接口
