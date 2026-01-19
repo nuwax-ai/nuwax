@@ -168,6 +168,16 @@ export async function apiSpaceLogList(
   });
 }
 
+// 日志查询-操作日志
+export async function apiOperationLogList(
+  data: apiSpaceLogListParams,
+): Promise<RequestResponse<Page<logInfo>>> {
+  return request('/api/system/requestLogs/list', {
+    method: 'POST',
+    data,
+  });
+}
+
 /**
  * 工作空间日志详情
  */
