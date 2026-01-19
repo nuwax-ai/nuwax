@@ -130,6 +130,18 @@ const routes = [
         path: '/system/model/manage',
         component: '@/pages/GlobalModelManage',
       },
+      {
+        path: '/system/dashboard',
+        component: '@/pages/SystemManagement/Dashboard',
+      },
+      {
+        path: '/system/log-query/operation-log',
+        component: '@/pages/SystemManagement/LogQuery/OperationLog',
+      },
+      {
+        path: '/system/log-query/running-log',
+        component: '@/pages/SystemManagement/LogQuery/RunningLog',
+      },
       // 生态市场
       {
         path: '/ecosystem',
