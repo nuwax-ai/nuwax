@@ -193,14 +193,16 @@ const SpaceSkillManage: React.FC = () => {
     }
   }, [history.location.state]);
 
-  // // 导入技能项目
-  // const handleImportSkillProject = () => {
-  //   setOpenImportSkillProject(true);
-  // };
+  // 导入技能项目
+  const handleImportSkillProject = () => {
+    setOpenImportSkillProject(true);
+  };
 
   // 确认导入技能项目
-  const handleImportSkillProjectConfirm = () => {
-    setOpenImportSkillProject(false);
+  const handleImportSkillProjectConfirm = (files: File[]) => {
+    console.log('files', files, handleImportSkill);
+    // handleImportSkill(files);
+    // setOpenImportSkillProject(false);
   };
 
   return (
@@ -210,7 +212,8 @@ const SpaceSkillManage: React.FC = () => {
       rightSlot={
         <HeaderRightSlot
           onCreate={handleCreateSkill}
-          onImport={handleImportSkill}
+          onImport={handleImportSkillProject}
+          // onImport={handleImportSkill}
         />
       }
       hideScroll={true}
