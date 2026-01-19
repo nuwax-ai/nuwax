@@ -471,7 +471,13 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           setSelectedFileNode(null);
         }
       },
-      [files, isRenamingFile, selectedFileId, handleRefreshFileList],
+      [
+        files,
+        isRenamingFile,
+        selectedFileId,
+        handleRefreshFileList,
+        changeFiles,
+      ],
     );
 
     // 文件选择（对外接口，用于用户主动选择）
