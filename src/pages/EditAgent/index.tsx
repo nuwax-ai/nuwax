@@ -896,7 +896,10 @@ const EditAgent: React.FC = () => {
       >
         {/*编排*/}
         <div
-          className={cx('radius-6', 'flex', 'flex-col', styles['edit-info'])}
+          className={cx('radius-6', 'flex', 'flex-col', styles['edit-info'], {
+            [styles['chat-bot-edit-info']]:
+              agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+          })}
         >
           {/*编排title*/}
           <ArrangeTitle
@@ -914,22 +917,47 @@ const EditAgent: React.FC = () => {
               styles['edit-content'],
             )}
           >
-            {/*系统提示词/用户提示词*/}
-            <SystemUserTipsWord
-              ref={systemUserTipsWordRef}
-              agentConfigInfo={agentConfigInfo}
-              valueUser={agentConfigInfo?.userPrompt}
-              valueSystem={agentConfigInfo?.systemPrompt}
-              onChangeUser={(value) => handleChangeAgent(value, 'userPrompt')}
-              onChangeSystem={(value) =>
-                handleChangeAgent(value, 'systemPrompt')
-              }
-              onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
-              variables={promptVariables}
-              skills={promptTools}
-            />
+            {agentConfigInfo?.type === AgentTypeEnum.ChatBot && (
+              // 系统提示词/用户提示词
+              <SystemUserTipsWord
+                ref={systemUserTipsWordRef}
+                agentConfigInfo={agentConfigInfo}
+                valueUser={agentConfigInfo?.userPrompt}
+                valueSystem={agentConfigInfo?.systemPrompt}
+                onChangeUser={(value) => handleChangeAgent(value, 'userPrompt')}
+                onChangeSystem={(value) =>
+                  handleChangeAgent(value, 'systemPrompt')
+                }
+                onReplace={(value) => handleChangeAgent(value!, 'systemPrompt')}
+                variables={promptVariables}
+                skills={promptTools}
+              />
+            )}
+
             {/*配置区域*/}
             <AgentArrangeConfig
+              extraComponent={
+                agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+                  <SystemUserTipsWord
+                    className={cx(styles['prompt-wrapper'], 'w-full')}
+                    ref={systemUserTipsWordRef}
+                    agentConfigInfo={agentConfigInfo}
+                    valueUser={agentConfigInfo?.userPrompt}
+                    valueSystem={agentConfigInfo?.systemPrompt}
+                    onChangeUser={(value) =>
+                      handleChangeAgent(value, 'userPrompt')
+                    }
+                    onChangeSystem={(value) =>
+                      handleChangeAgent(value, 'systemPrompt')
+                    }
+                    onReplace={(value) =>
+                      handleChangeAgent(value!, 'systemPrompt')
+                    }
+                    variables={promptVariables}
+                    skills={promptTools}
+                  />
+                )
+              }
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onChangeAgent={handleChangeAgent}
@@ -961,6 +989,7 @@ const EditAgent: React.FC = () => {
               }
               left={
                 agentConfigInfo?.hideChatArea ? null : (
+                  // 预览与调试
                   <PreviewAndDebug
                     agentConfigInfo={agentConfigInfo}
                     agentId={agentId}
@@ -990,7 +1019,6 @@ const EditAgent: React.FC = () => {
                       <div
                         className={cx(
                           styles['file-tree-sidebar'],
-                          // styles['flex-2'],
                           'flex',
                           'w-full',
                         )}
