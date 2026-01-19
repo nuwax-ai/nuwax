@@ -74,10 +74,10 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
       return false;
     }
 
-    // 校验文件大小，限制为100M
-    const maxSize = 100 * 1024 * 1024; // 100MB
+    // 校验文件大小，限制为20M
+    const maxSize = 20 * 1024 * 1024; // 20MB
     if (file.size > maxSize) {
-      message.error('文件大小不能超过100MB');
+      message.error('文件大小不能超过20MB');
       return false;
     }
 
@@ -125,7 +125,7 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
               <p className="ant-upload-hint">
                 仅支持 .zip,.skill 压缩文件格式 或 SKILL.md 文件
               </p>
-              <p className="ant-upload-hint">文件大小不超过100MB</p>
+              <p className="ant-upload-hint">文件大小不超过20MB</p>
             </Upload.Dragger>
           </Form.Item>
           <Form.Item name="file" noStyle>
