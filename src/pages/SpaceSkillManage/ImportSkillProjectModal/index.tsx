@@ -125,7 +125,7 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
               <p className="ant-upload-hint">
                 仅支持 .zip,.skill 压缩文件格式 或 SKILL.md 文件
               </p>
-              <p className="ant-upload-hint">文件大小不超过100MB</p>
+              <p className="ant-upload-hint">文件大小不超过20MB</p>
             </Upload.Dragger>
           </Form.Item>
           <Form.Item name="file" noStyle>
