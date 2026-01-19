@@ -1,8 +1,12 @@
 import SecondMenuItem from '@/components/base/SecondMenuItem';
+import ConditionRender from '@/components/ConditionRender';
 import { SYSTEM_MANAGE_LIST } from '@/constants/system.constants';
 import { SystemManageListEnum } from '@/types/enums/systemManage';
-import React from 'react';
+import classNames from 'classnames';
+import React, { useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
+import styles from './index.less';
+const cx = classNames.bind(styles);
 
 /**
  * 主页二级菜单栏
@@ -15,10 +19,12 @@ const SystemSection: React.FC<{
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
 
+  // 模板menu显隐，默认打开模板menu
+  const [visibleMenu, setVisibleMenu] = useState<boolean>(true);
+
   const handlerApplication = (type: SystemManageListEnum | string) => {
     // 关闭移动端菜单
     handleCloseMobileMenu();
-
     switch (type) {
       // 用户管理
       case SystemManageListEnum.User_Manage:
@@ -48,6 +54,25 @@ const SystemSection: React.FC<{
       case 'markdown-test':
         history.push('/markdown-test');
         break;
+      // 系统概览
+      case SystemManageListEnum.Dashboard:
+        history.push('/system/dashboard');
+        break;
+    }
+  };
+
+  // 点击模板列表项
+  const handlerSubApplication = (type: SystemManageListEnum | number) => {
+    // 关闭移动端菜单
+    handleCloseMobileMenu();
+
+    switch (type) {
+      case SystemManageListEnum.Operation_Log:
+        history.push('/system/log-query/operation-log');
+        break;
+      case SystemManageListEnum.Running_Log:
+        history.push('/system/log-query/running-log');
+        break;
     }
   };
 
@@ -67,24 +92,54 @@ const SystemSection: React.FC<{
         !pathname.includes('theme')) ||
       (type === SystemManageListEnum.Theme_Config &&
         pathname.includes('theme/config')) ||
-      (type === 'markdown-test' && pathname.includes('markdown-test'))
+      (type === 'markdown-test' && pathname.includes('markdown-test')) ||
+      (type === SystemManageListEnum.Dashboard &&
+        pathname.includes('dashboard'))
+    );
+  };
+  // 判断是否sub active
+  const handleSubActive = (type: SystemManageListEnum | string) => {
+    return (
+      (type === SystemManageListEnum.Operation_Log &&
+        pathname.includes('operation-log')) ||
+      (type === SystemManageListEnum.Running_Log &&
+        pathname.includes('running-log'))
     );
   };
 
   return (
     <div style={style}>
-      <div>
-        {SYSTEM_MANAGE_LIST.map((item, index) => (
+      {SYSTEM_MANAGE_LIST.map((info, index) => (
+        <React.Fragment key={info.type}>
           <SecondMenuItem
-            key={item.type}
-            onClick={() => handlerApplication(item.type)}
-            name={item.text}
-            isActive={handleActive(item.type)}
+            name={info.text}
+            isDown={!!info.list?.length}
+            isActive={handleActive(info.type)}
+            isOpen={visibleMenu}
+            icon={info.icon}
+            onClick={() => handlerApplication(info.type)}
+            onToggle={() => setVisibleMenu(!visibleMenu)}
             isFirst={index === 0}
-            icon={item.icon}
           />
-        ))}
-      </div>
+          {/* 模板列表项 */}
+          <ConditionRender condition={!!info.list?.length}>
+            <div
+              className={cx(styles['box-hidden'], {
+                [styles.visible]: visibleMenu,
+              })}
+            >
+              {info.list?.map((item: any) => (
+                <SecondMenuItem.SubItem
+                  key={item.type}
+                  name={item.text}
+                  isActive={handleSubActive(item.type)}
+                  onClick={() => handlerSubApplication(item.type)}
+                />
+              ))}
+            </div>
+          </ConditionRender>
+        </React.Fragment>
+      ))}
     </div>
   );
 };

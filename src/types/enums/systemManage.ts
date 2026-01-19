@@ -12,6 +12,14 @@ export enum SystemManageListEnum {
   System_Config,
   // 主题配置
   Theme_Config,
+  // 系统概览
+  Dashboard,
+  // 日志查询
+  Log_Query,
+  // 操作日志
+  Operation_Log,
+  // 运行日志
+  Running_Log,
 }
 
 // 系统管理-用户管理-角色枚举
