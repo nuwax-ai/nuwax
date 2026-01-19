@@ -73,6 +73,33 @@ const SystemSection: React.FC<{
       case SystemManageListEnum.Running_Log:
         history.push('/system/log-query/running-log');
         break;
+      case SystemManageListEnum.Content_Space:
+        history.push('/system/content/content-space');
+        break;
+      case SystemManageListEnum.Content_Agent:
+        history.push('/system/content/content-agent');
+        break;
+      case SystemManageListEnum.Content_WebApplication:
+        history.push('/system/content/content-web-application');
+        break;
+      case SystemManageListEnum.Content_KnowledgeBase:
+        history.push('/system/content/content-knowledge-base');
+        break;
+      case SystemManageListEnum.Content_DataTable:
+        history.push('/system/content/content-data-table');
+        break;
+      case SystemManageListEnum.Content_Workflow:
+        history.push('/system/content/content-workflow');
+        break;
+      case SystemManageListEnum.Content_Plugin:
+        history.push('/system/content/content-plugin');
+        break;
+      case SystemManageListEnum.Content_Mcp:
+        history.push('/system/content/content-mcp');
+        break;
+      case SystemManageListEnum.Content_Skill:
+        history.push('/system/content/content-skill');
+        break;
     }
   };
 
@@ -94,7 +121,10 @@ const SystemSection: React.FC<{
         pathname.includes('theme/config')) ||
       (type === 'markdown-test' && pathname.includes('markdown-test')) ||
       (type === SystemManageListEnum.Dashboard &&
-        pathname.includes('dashboard'))
+        pathname.includes('dashboard')) ||
+      (type === SystemManageListEnum.Log_Query &&
+        pathname.includes('log-query')) ||
+      (type === SystemManageListEnum.Content && pathname.includes('content'))
     );
   };
   // 判断是否sub active
@@ -103,7 +133,25 @@ const SystemSection: React.FC<{
       (type === SystemManageListEnum.Operation_Log &&
         pathname.includes('operation-log')) ||
       (type === SystemManageListEnum.Running_Log &&
-        pathname.includes('running-log'))
+        pathname.includes('running-log')) ||
+      (type === SystemManageListEnum.Content_Space &&
+        pathname.includes('content-space')) ||
+      (type === SystemManageListEnum.Content_Agent &&
+        pathname.includes('content-agent')) ||
+      (type === SystemManageListEnum.Content_WebApplication &&
+        pathname.includes('content-web-application')) ||
+      (type === SystemManageListEnum.Content_KnowledgeBase &&
+        pathname.includes('content-knowledge-base')) ||
+      (type === SystemManageListEnum.Content_DataTable &&
+        pathname.includes('content-data-table')) ||
+      (type === SystemManageListEnum.Content_Workflow &&
+        pathname.includes('content-workflow')) ||
+      (type === SystemManageListEnum.Content_Plugin &&
+        pathname.includes('content-plugin')) ||
+      (type === SystemManageListEnum.Content_Mcp &&
+        pathname.includes('content-mcp')) ||
+      (type === SystemManageListEnum.Content_Skill &&
+        pathname.includes('content-skill'))
     );
   };
 
