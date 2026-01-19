@@ -49,8 +49,8 @@ export interface MainContentCardProps {
 const MainContentCard: React.FC<MainContentCardProps> = ({
   loading,
   skillList,
-  onClickItem = () => {},
-  onClickMore = () => {},
+  onClickItem,
+  onClickMore,
 }) => {
   // 加载中
   if (loading) {
@@ -83,8 +83,8 @@ const MainContentCard: React.FC<MainContentCardProps> = ({
         <ComponentItem
           key={`${info.id}${info.publishStatus}`}
           skillInfo={info}
-          onClick={() => onClickItem(info)}
-          onClickMore={(item) => onClickMore(item, info)}
+          onClick={() => onClickItem?.(info)}
+          onClickMore={(item) => onClickMore?.(item, info)}
         />
       ))}
     </div>
@@ -166,7 +166,6 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
       setSkillList([]);
       // 重新查询
       exposeQueryComponentList();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [spaceId]);
 
     // 监听 URL 改变（支持浏览器前进/后退）

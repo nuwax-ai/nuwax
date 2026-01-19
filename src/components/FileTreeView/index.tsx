@@ -35,12 +35,12 @@ import FilePreview, { FileType } from '../business-component/FilePreview';
 import VncPreview from '../business-component/VncPreview';
 import type { VncPreviewRef } from '../business-component/VncPreview/type';
 import CodeViewer from '../CodeViewer';
+import TipsBox from '../TipsBox';
 import FileContextMenu from './FileContextMenu';
 import FilePathHeader from './FilePathHeader';
 import FileTree from './FileTree';
 import styles from './index.less';
 import SearchView from './SearchView';
-import TipsBox from './TipsBox';
 import { ChangeFileInfo, FileTreeViewProps, FileTreeViewRef } from './type';
 
 const cx = classNames.bind(styles);
@@ -471,7 +471,13 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           setSelectedFileNode(null);
         }
       },
-      [files, isRenamingFile, selectedFileId, handleRefreshFileList],
+      [
+        files,
+        isRenamingFile,
+        selectedFileId,
+        handleRefreshFileList,
+        changeFiles,
+      ],
     );
 
     // 文件选择（对外接口，用于用户主动选择）
