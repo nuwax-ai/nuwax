@@ -8,7 +8,13 @@ import { ChildNode, GraphContainerRef } from '@/types/interfaces/graph';
 import { workflowLogger } from '@/utils/logger';
 import { Modal } from 'antd';
 import { debounce } from 'lodash';
-import { MutableRefObject, useCallback, useMemo, useRef } from 'react';
+import {
+  MutableRefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { useModel } from 'umi';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
@@ -33,6 +39,14 @@ export const useWorkflowPersistence = ({
 
   // 用于防止重复弹出版本冲突弹窗
   const isVersionConflictModalVisibleRef = useRef(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // V3: 全量保存工作流配置
   // @param forceCommit 是否强制提交（忽略版本冲突）
@@ -109,8 +123,11 @@ export const useWorkflowPersistence = ({
           setSaveStatus(SaveStatusEnum.Failed);
           setSaveError('版本冲突');
 
-          // 防止重复弹出版本冲突弹窗
-          if (!isVersionConflictModalVisibleRef.current) {
+          // 防止重复弹出版本冲突弹窗，且组件必须处于挂载状态
+          if (
+            !isVersionConflictModalVisibleRef.current &&
+            isMountedRef.current
+          ) {
             isVersionConflictModalVisibleRef.current = true;
             Modal.confirm({
               title: '版本冲突',
