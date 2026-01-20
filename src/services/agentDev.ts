@@ -209,6 +209,15 @@ export async function apiOperationLogDetail(
   });
 }
 
+// 日志查询-操作日志系统类型选项
+export async function apiOperationLogSystemCodeOptions(): Promise<
+  RequestResponse<{ value: string; label: string }[]>
+> {
+  return request('/api/sys/operator/log/systemCode/options', {
+    method: 'GET',
+  });
+}
+
 /**
  * 工作空间日志详情
  */
