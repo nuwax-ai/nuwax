@@ -28,6 +28,7 @@ import type {
   AgentComponentEventConfig,
   AgentComponentEventUpdateParams,
   AgentComponentInfo,
+  SubAgent,
 } from '@/types/interfaces/agent';
 import type {
   AgentAddComponentBaseInfo,
@@ -64,6 +65,7 @@ import McpGroupComponentItem from './McpGroupComponentItem';
 import OpenRemarksEdit from './OpenRemarksEdit';
 import PageSettingModal from './PageSettingModal';
 import SubAgentConfig from './SubAgentConfig';
+import SubAgentEditModal from './SubAgentConfig/SubAgentEditModal';
 import VariableList from './VariableList';
 
 const cx = classNames.bind(styles);
@@ -112,6 +114,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 点击的当前事件配置
   const [currentEventConfig, setCurrentEventConfig] =
     useState<AgentComponentEventConfig>();
+
+  // 打开子智能体编辑弹窗
+  const [openSubAgentModel, setOpenSubAgentModel] = useState<boolean>(false);
 
   // 根据组件类型，过滤组件
   const filterList = (type: AgentComponentTypeEnum) => {
@@ -655,11 +660,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           title="添加子智能体"
           onClick={(e) => {
             e.stopPropagation();
-            // 触发 SubAgentConfig 内部的添加弹窗
-            const addBtn = document.querySelector(
-              '[data-subagent-add]',
-            ) as HTMLElement;
-            addBtn?.click();
+            setOpenSubAgentModel(true);
           }}
         />
       ),
@@ -1089,6 +1090,15 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     asyncFun(true);
   };
 
+  // 确认子智能体
+  const handleConfirmSubAgent = (subAgent: SubAgent) => {
+    const newAgents = [...(subAgentComponentInfo?.bindConfig?.subAgents || [])];
+    // 新建模式
+    newAgents.push(subAgent);
+    handleSubAgentUpdate(newAgents);
+    setOpenSubAgentModel(false);
+  };
+
   return (
     <div className={classNames('overflow-y', 'flex-1', styles.container)}>
       {extraComponent}
@@ -1182,6 +1192,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         currentComponentInfo={currentComponentInfo}
         allPageComponentList={allPageComponentList}
         onCancel={handleCancelPageModel}
+      />
+      {/* 子智能体编辑弹窗 */}
+      <SubAgentEditModal
+        open={openSubAgentModel}
+        onConfirm={handleConfirmSubAgent}
+        onCancel={() => setOpenSubAgentModel(false)}
       />
     </div>
   );
