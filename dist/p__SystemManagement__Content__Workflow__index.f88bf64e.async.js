@@ -1,0 +1,1 @@
+"use strict";(()=>{(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[6175],{38918:function(f,n,u){u.r(n);var r=u(52676),e=function(){return(0,r.jsx)("div",{children:"Workflow"})};n.default=e}}]);})();
