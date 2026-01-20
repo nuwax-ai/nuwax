@@ -276,6 +276,16 @@ const SkillDetails: React.FC = () => {
       return;
     }
 
+    // 上传文件总大小
+    const totalSize = files?.reduce((acc, file) => acc + file.size, 0);
+
+    // 上传文件总大小限制为20MB
+    const maxSize = 20 * 1024 * 1024; // 20MB
+    if (totalSize > maxSize) {
+      message.error('上传文件总大小不能超过20MB');
+      return;
+    }
+
     try {
       // 直接调用上传接口，使用文件名作为路径
       const { code } = await apiSkillUploadFiles({
