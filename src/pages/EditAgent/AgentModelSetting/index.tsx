@@ -271,7 +271,6 @@ const AgentModelSetting: React.FC<
   if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
     return (
       <Modal
-        title="模型设置"
         classNames={{
           content: cx(styles['modal-wrapper']),
         }}
@@ -279,7 +278,7 @@ const AgentModelSetting: React.FC<
         footer={null}
         onCancel={handleCancel}
       >
-        <Flex gap={20}>
+        <Flex gap={20} className="mt-16">
           {/* Agent引擎选择 */}
           <div className="flex-1">
             <h3 className={cx(styles.title)}>Agent引擎</h3>
