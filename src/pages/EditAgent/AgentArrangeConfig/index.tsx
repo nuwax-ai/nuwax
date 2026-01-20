@@ -209,6 +209,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 是否存在组件
   const isExistComponent = (type: AgentComponentTypeEnum) => {
+    // 子智能体组件需要判断是否存在子智能体(因为后台接口无论是否新增了子智能体，都会返回type为SubAgent的组件)
+    if (type === AgentComponentTypeEnum.SubAgent) {
+      return agentComponentList?.some(
+        (item: AgentComponentInfo) =>
+          item.type === type && item.bindConfig?.subAgents?.length,
+      );
+    }
     return agentComponentList?.some(
       (item: AgentComponentInfo) => item.type === type,
     );
@@ -242,6 +249,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     const keys: AgentArrangeConfigEnum[] = [];
     if (isExistComponent(AgentComponentTypeEnum.Skill)) {
       keys.push(AgentArrangeConfigEnum.Skill);
+    }
+    if (isExistComponent(AgentComponentTypeEnum.SubAgent)) {
+      keys.push(AgentArrangeConfigEnum.SubAgent);
     }
     return keys;
   }, [agentComponentList]);
