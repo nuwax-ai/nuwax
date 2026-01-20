@@ -11,6 +11,9 @@ interface ImportSkillProjectModalProps {
 
 const { Text } = Typography;
 
+// 技能项目文件大小限制
+const SKILL_MAX_FILE_SIZE = 20 * 1024 * 1024; // 最大文件大小20MB
+
 /**
  * 上传技能项目模态框
  * @param open 是否打开
@@ -47,6 +50,15 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
       message.error('文件获取失败，请重新选择');
       return;
     }
+
+    /**
+     * 在Upload.Dragger的beforeUpload中已经校验了文件大小，但是即使return false 阻止了自动上传，但是form表单中也存在该文件，所以需要再次校验
+     */
+    // 校验文件大小，限制为20M
+    if (file.size > SKILL_MAX_FILE_SIZE) {
+      return;
+    }
+
     try {
       setLoading(true);
       await onConfirm(file);
@@ -80,8 +92,7 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
     }
 
     // 校验文件大小，限制为20M
-    const maxSize = 20 * 1024 * 1024; // 20MB
-    if (file.size > maxSize) {
+    if (file.size > SKILL_MAX_FILE_SIZE) {
       message.error('文件大小不能超过20MB');
       return false;
     }
