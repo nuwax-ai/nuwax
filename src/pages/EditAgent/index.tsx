@@ -21,7 +21,7 @@ import {
   apiUpdateStaticFile,
   apiUploadFiles,
 } from '@/services/vncDesktop';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, AgentEngineEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import {
@@ -303,6 +303,27 @@ const EditAgent: React.FC = () => {
     _agentConfigInfo.modelComponentConfig.targetId = targetId;
     _agentConfigInfo.modelComponentConfig.name = name;
     setAgentConfigInfo(_agentConfigInfo);
+  };
+
+  /**
+   * 处理Agent引擎变更（仅通用型智能体有效）
+   * @param engine 新的引擎类型
+   */
+  const handleAgentEngineChange = async (engine: AgentEngineEnum) => {
+    if (!agentConfigInfo) return;
+
+    // 更新本地状态
+    const _agentConfigInfo = {
+      ...agentConfigInfo,
+      agentEngine: engine,
+    } as AgentConfigInfo;
+    setAgentConfigInfo(_agentConfigInfo);
+
+    // TODO: 后端接口实现后取消注释以下代码
+    // await runUpdate({
+    //   ...基础参数,
+    //   agentEngine: engine,
+    // });
   };
 
   // 更新智能体配置信息
@@ -1144,6 +1165,7 @@ const EditAgent: React.FC = () => {
         open={openAgentModel}
         devConversationId={agentConfigInfo?.devConversationId}
         onCancel={handleSetModel}
+        onAgentEngineChange={handleAgentEngineChange}
       />
       {/*分析统计弹窗*/}
       <AnalyzeStatistics
