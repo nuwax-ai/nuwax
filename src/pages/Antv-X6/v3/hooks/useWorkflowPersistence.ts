@@ -8,7 +8,13 @@ import { ChildNode, GraphContainerRef } from '@/types/interfaces/graph';
 import { workflowLogger } from '@/utils/logger';
 import { Modal } from 'antd';
 import { debounce } from 'lodash';
-import { MutableRefObject, useCallback, useMemo, useRef } from 'react';
+import {
+  MutableRefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { useModel } from 'umi';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
@@ -33,11 +39,25 @@ export const useWorkflowPersistence = ({
 
   // 用于防止重复弹出版本冲突弹窗
   const isVersionConflictModalVisibleRef = useRef(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // V3: 全量保存工作流配置
   // @param forceCommit 是否强制提交（忽略版本冲突）
+  // @param onSuccess 保存成功后的回调
+  // @param onCancel 版本冲突时用户点击取消的回调（用于放弃修改直接返回等场景）
   const saveFullWorkflow = useCallback(
-    async (forceCommit = false, onSuccess?: () => void): Promise<boolean> => {
+    async (
+      forceCommit = false,
+      onSuccess?: () => void,
+      onCancel?: () => void,
+    ): Promise<boolean> => {
       try {
         const graph =
           graphRef.current?.getGraphRef?.() || graphInstanceRef?.current;
@@ -103,8 +123,11 @@ export const useWorkflowPersistence = ({
           setSaveStatus(SaveStatusEnum.Failed);
           setSaveError('版本冲突');
 
-          // 防止重复弹出版本冲突弹窗
-          if (!isVersionConflictModalVisibleRef.current) {
+          // 防止重复弹出版本冲突弹窗，且组件必须处于挂载状态
+          if (
+            !isVersionConflictModalVisibleRef.current &&
+            isMountedRef.current
+          ) {
             isVersionConflictModalVisibleRef.current = true;
             Modal.confirm({
               title: '版本冲突',
@@ -114,10 +137,14 @@ export const useWorkflowPersistence = ({
               onOk: () => {
                 // 用户确认强制覆盖
                 isVersionConflictModalVisibleRef.current = false;
-                saveFullWorkflow(true, onSuccess);
+                saveFullWorkflow(true, onSuccess, onCancel);
               },
               onCancel: () => {
                 isVersionConflictModalVisibleRef.current = false;
+                // 用户取消强制覆盖，调用 onCancel 回调（放弃修改直接返回等）
+                if (onCancel) {
+                  onCancel();
+                }
               },
             });
           }

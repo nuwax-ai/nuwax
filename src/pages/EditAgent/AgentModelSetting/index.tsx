@@ -3,13 +3,18 @@ import SliderNumber from '@/components/SliderNumber';
 import SelectList from '@/components/custom/SelectList';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
+  AGENT_ENGINE_OPTIONS,
   GENERATE_DIVERSITY_OPTION_VALUE,
   GENERATE_DIVERSITY_OPTIONS,
 } from '@/constants/agent.constants';
 import { apiAgentComponentModelUpdate } from '@/services/agentConfig';
+import { AgentEngineEnum } from '@/types/enums/agent';
 import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import { UpdateModeComponentEnum } from '@/types/enums/library';
-import { ModelApiProtocolEnum } from '@/types/enums/modelConfig';
+import {
+  ModelApiProtocolEnum,
+  ModelFunctionCallEnum,
+} from '@/types/enums/modelConfig';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { ComponentModelBindConfig } from '@/types/interfaces/agent';
 import type { AgentModelSettingProps } from '@/types/interfaces/agentConfig';
@@ -18,7 +23,13 @@ import type { ModelConfigInfo } from '@/types/interfaces/model';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Flex, Modal, Segmented } from 'antd';
 import classnames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 
@@ -40,6 +51,11 @@ const AgentModelSetting: React.FC<
   onCancel,
 }) => {
   const [targetId, setTargetId] = useState<number | null>(null);
+  // Agent引擎类型 - 从 ComponentModelBindConfig 初始化
+  const [agentEngine, setAgentEngine] = useState<AgentEngineEnum>(
+    (modelComponentConfig?.bindConfig as ComponentModelBindConfig)
+      ?.agentEngine || AgentEngineEnum.Default,
+  );
   // 模型列表
   const [modelConfigList, setModelConfigList] = useState<option[]>([]);
   // 原始模型列表
@@ -75,19 +91,50 @@ const AgentModelSetting: React.FC<
   //   },
   // });
 
+  // 获取过滤后的模型列表
+  const getFilteredModels = useCallback(
+    (engine: AgentEngineEnum) => {
+      if (!originalModelConfigList?.length) return [];
+
+      // 基础过滤：仅支持 API 协议为 Anthropic 或 OpenAI，且支持函数调用的模型
+      const baseSupportedModels = originalModelConfigList.filter(
+        (item) =>
+          (item.apiProtocol === ModelApiProtocolEnum.Anthropic ||
+            item.apiProtocol === ModelApiProtocolEnum.OpenAI) &&
+          item.functionCall !== ModelFunctionCallEnum.Unsupported,
+      );
+
+      // 根据引擎类型二次过滤
+      if (engine === AgentEngineEnum.Default) {
+        // 默认引擎：仅展示Anthropic协议模型
+        return baseSupportedModels.filter(
+          (item) => item.apiProtocol === ModelApiProtocolEnum.Anthropic,
+        );
+      } else {
+        // NuwaxCli引擎：展示所有符合基础条件的模型（OpenAI和Anthropic）
+        return baseSupportedModels;
+      }
+    },
+    [originalModelConfigList],
+  );
+
   useEffect(() => {
     if (originalModelConfigList?.length && agentConfigInfo) {
       if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
+        // 根据引擎类型过滤模型
+        const filteredModels = getFilteredModels(agentEngine);
+
         const list: option[] =
-          originalModelConfigList
-            ?.filter(
-              (item) => item.apiProtocol === ModelApiProtocolEnum.Anthropic, // 只能使用Anthropic模型
-            )
-            ?.map((item) => ({
-              label: item.name,
-              value: item.id,
-            })) || [];
+          filteredModels?.map((item) => ({
+            label: item.name,
+            value: item.id,
+          })) || [];
         setModelConfigList(list);
+
+        // 数据联动：如果当前选中的模型不在新的列表里，清空选中
+        if (targetId && !filteredModels.some((item) => item.id === targetId)) {
+          setTargetId(null);
+        }
       } else {
         const list: option[] =
           originalModelConfigList?.map((item) => ({
@@ -97,14 +144,23 @@ const AgentModelSetting: React.FC<
         setModelConfigList(list);
       }
     }
-  }, [originalModelConfigList, agentConfigInfo]);
+  }, [
+    originalModelConfigList,
+    agentConfigInfo,
+    agentEngine,
+    getFilteredModels,
+    targetId,
+  ]);
 
   useEffect(() => {
     if (open && modelComponentConfig) {
       componentIdRef.current = modelComponentConfig.id;
-      setComponentBindConfig(
-        modelComponentConfig.bindConfig as ComponentModelBindConfig,
-      );
+      setComponentBindConfig({
+        ...(modelComponentConfig.bindConfig as ComponentModelBindConfig),
+        agentEngine:
+          (modelComponentConfig.bindConfig as ComponentModelBindConfig)
+            ?.agentEngine || AgentEngineEnum.Default,
+      });
 
       // 通用型智能体，需要根据通用型智能体配置的模型类型，查询可使用模型列表接口
       if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
@@ -231,20 +287,53 @@ const AgentModelSetting: React.FC<
     // 更新智能体 - 绑定的模型名称
     const info = modelConfigList?.find((item) => item.value === targetId);
     const name = String(info?.label) || '';
-    onCancel(targetId, name, componentBindConfig);
+    onCancel(targetId, name, {
+      ...componentBindConfig,
+      agentEngine,
+    });
   };
   if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
     return (
       <Modal
-        title="模型设置"
         classNames={{
-          content: cx(styles['task-agent-model-setting']),
+          content: cx(styles['modal-wrapper']),
         }}
         open={open}
         footer={null}
         onCancel={handleCancel}
       >
-        <Flex gap={20}>
+        <Flex gap={20} className="mt-16">
+          {/* Agent引擎选择 */}
+          <div className="flex-1">
+            <h3 className={cx(styles.title)}>Agent引擎</h3>
+            <Segmented
+              options={AGENT_ENGINE_OPTIONS}
+              value={agentEngine}
+              onChange={(value) => {
+                const newEngine = value as AgentEngineEnum;
+                setAgentEngine(newEngine);
+                const newBindConfig = {
+                  ...componentBindConfig,
+                  agentEngine: newEngine,
+                };
+                setComponentBindConfig(newBindConfig);
+                // 校验：如果当前选中的模型不支持新引擎，则重置 targetId
+                const filteredModels = getFilteredModels(newEngine);
+                let newTargetId = targetId;
+                if (
+                  targetId &&
+                  !filteredModels.some((item) => item.id === targetId)
+                ) {
+                  newTargetId = null;
+                  setTargetId(null);
+                }
+
+                handleChangeModel(newBindConfig, newTargetId);
+              }}
+              block
+            />
+          </div>
+          {/* 会话模型选择 */}
           <div className="flex-1">
             <h3 className={cx(styles.title)}>会话模型</h3>
             <SelectList
@@ -256,7 +345,6 @@ const AgentModelSetting: React.FC<
             />
           </div>
         </Flex>
-        <br />
       </Modal>
     );
   }

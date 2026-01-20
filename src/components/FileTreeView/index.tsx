@@ -1270,20 +1270,21 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         );
       }
 
-      // 如果 taskAgentSelectedFileId 存在，但没有选中文件，则不渲染内容
-      if (taskAgentSelectedFileId && !selectedFileNode) {
-        return null;
-      }
-
       // 如果文件列表为空，则显示空状态
       if (!files?.length) {
         return (
           <AppDevEmptyState
             showTitle={false}
             showIcon={false}
+            showButtons={false}
             description="当前没有可预览的文件"
           />
         );
+      }
+
+      // 如果 taskAgentSelectedFileId 存在，但没有选中文件，则不渲染内容
+      if (taskAgentSelectedFileId && !selectedFileNode) {
+        return null;
       }
 
       // 预览模式：根据文件状态和类型渲染不同内容
@@ -1293,6 +1294,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <AppDevEmptyState
             showTitle={false}
             showIcon={false}
+            showButtons={false}
             description="请从左侧文件树选择一个文件进行预览"
           />
         );
@@ -1378,6 +1380,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <AppDevEmptyState
             type="error"
             title="无法预览此文件类型"
+            showButtons={false}
             description={`当前不支持预览【${fileExtension}】格式的文件。`}
           />
         );
