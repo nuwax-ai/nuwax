@@ -111,7 +111,7 @@ const AgentModelSetting: React.FC<
           (item) => item.apiProtocol === ModelApiProtocolEnum.Anthropic,
         );
       } else {
-        // nuwax_cli引擎：展示所有符合基础条件的模型（OpenAI和Anthropic）
+        // NuwaxCli引擎：展示所有符合基础条件的模型（OpenAI和Anthropic）
         return baseSupportedModels;
       }
     },
