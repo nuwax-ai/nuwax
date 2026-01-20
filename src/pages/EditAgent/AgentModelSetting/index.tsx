@@ -43,12 +43,12 @@ const AgentModelSetting: React.FC<
   devConversationId,
   open,
   onCancel,
-  onAgentEngineChange,
 }) => {
   const [targetId, setTargetId] = useState<number | null>(null);
-  // Agent引擎类型 - 从 agentConfigInfo 初始化
+  // Agent引擎类型 - 从 ComponentModelBindConfig 初始化
   const [agentEngine, setAgentEngine] = useState<AgentEngineEnum>(
-    agentConfigInfo?.agentEngine || AgentEngineEnum.Default,
+    (modelComponentConfig?.bindConfig as ComponentModelBindConfig)
+      ?.agentEngine || AgentEngineEnum.Default,
   );
   // 模型列表
   const [modelConfigList, setModelConfigList] = useState<option[]>([]);
@@ -266,7 +266,10 @@ const AgentModelSetting: React.FC<
     // 更新智能体 - 绑定的模型名称
     const info = modelConfigList?.find((item) => item.value === targetId);
     const name = String(info?.label) || '';
-    onCancel(targetId, name, componentBindConfig);
+    onCancel(targetId, name, {
+      ...componentBindConfig,
+      agentEngine,
+    });
   };
   if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
     return (
@@ -288,8 +291,6 @@ const AgentModelSetting: React.FC<
               onChange={(value) => {
                 const newEngine = value as AgentEngineEnum;
                 setAgentEngine(newEngine);
-                // 通知父组件引擎变更
-                onAgentEngineChange?.(newEngine);
               }}
               block
             />

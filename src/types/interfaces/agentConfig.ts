@@ -1,7 +1,6 @@
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
-  AgentEngineEnum,
   DefaultSelectedEnum,
   EventListEnum,
   HomeIndexEnum,
@@ -125,8 +124,6 @@ export interface AgentModelSettingProps {
     name: string,
     data: ComponentModelBindConfig,
   ) => void;
-  // Agent引擎变更回调（仅通用型智能体有效）
-  onAgentEngineChange?: (engine: AgentEngineEnum) => void;
 }
 
 // 卡片设置组件

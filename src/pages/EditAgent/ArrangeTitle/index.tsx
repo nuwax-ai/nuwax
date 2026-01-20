@@ -33,7 +33,8 @@ const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
       if (isTaskAgent) {
         // 默认模型id
         const agentEngine =
-          agentConfigInfo?.agentEngine || AgentEngineEnum.Default;
+          agentConfigInfo?.modelComponentConfig?.bindConfig?.agentEngine ||
+          AgentEngineEnum.Default;
         // 获取模型组件配置中的 targetId
         const targetId = agentConfigInfo?.modelComponentConfig?.targetId;
 

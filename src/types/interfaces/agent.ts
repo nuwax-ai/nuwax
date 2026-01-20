@@ -139,8 +139,6 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
   expandPageArea: ExpandPageAreaEnum;
   // 是否隐藏聊天区域，1 隐藏；0 不隐藏
   hideChatArea: HideChatAreaEnum;
-  // 智能体引擎类型（仅通用型智能体有效）
-  agentEngine?: AgentEngineEnum;
 }
 
 // 更新智能体页面配置输入参数
@@ -322,6 +320,8 @@ export interface ComponentModelBindConfig {
   contextRounds: number;
   // 推理模型ID
   reasoningModelId: number | null;
+  // 智能体引擎类型
+  agentEngine?: AgentEngineEnum;
 }
 
 // 更新模型组件配置输入参数
@@ -466,8 +466,6 @@ export interface AgentConfigInfo {
   pageHomeIndex: string;
   // 智能体类型
   type: AgentTypeEnum;
-  // 智能体引擎类型（仅通用型智能体有效）
-  agentEngine?: AgentEngineEnum;
 }
 
 // 智能体历史配置信息
