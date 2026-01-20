@@ -294,10 +294,12 @@ const AgentModelSetting: React.FC<
               onChange={(value) => {
                 const newEngine = value as AgentEngineEnum;
                 setAgentEngine(newEngine);
-                setComponentBindConfig((prev) => ({
-                  ...prev,
+                const newBindConfig = {
+                  ...componentBindConfig,
                   agentEngine: newEngine,
-                }));
+                };
+                setComponentBindConfig(newBindConfig);
+                handleChangeModel(newBindConfig);
               }}
               block
             />
