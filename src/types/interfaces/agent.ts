@@ -11,8 +11,10 @@ import type {
   HomeIndexEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
+  OperationActionType,
   OutputDirectlyEnum,
   SearchStrategyEnum,
+  SystemEnum,
   VisibleToLLMEnum,
 } from '@/types/enums/agent';
 import type {
@@ -709,6 +711,26 @@ export interface SpaceLogQueryFilter {
   createTimeLt?: number;
 }
 
+// 日志查询-操作日志
+export interface OperationLogQueryFilter {
+  // 类型
+  systemCode?: SystemEnum[];
+  // 操作方式
+  actionType?: OperationActionType;
+  // 对象名称
+  object?: string;
+  // 对象子类
+  operateContent?: string;
+  // 请求参数
+  extraContent?: string;
+  // 创建人
+  creator?: string;
+  // 创建时间（开始时间）
+  createTimeGt?: number;
+  // 创建时间（结束时间）
+  createTimeLt?: number;
+}
+
 // 日志查询请求参数-工作空间
 export interface apiSpaceLogListParams {
   /*分页查询过滤条件 */
@@ -783,6 +805,23 @@ export interface SpaceLogInfo {
 
   /** 日志产生时间（时间戳） */
   createTime?: number;
+}
+
+// 日志查询-操作日志
+export interface OperationLogInfo {
+  id: number;
+  operateType?: number;
+  systemCode?: string;
+  systemName?: string;
+  object?: string;
+  action?: string;
+  operateContent?: string;
+  extraContent?: string;
+  orgId?: number;
+  orgName?: string;
+  creatorId?: number;
+  creator?: string;
+  created?: string;
 }
 
 // 日志查询详情响应-工作空间

@@ -68,10 +68,10 @@ const SystemSection: React.FC<{
 
     switch (type) {
       case SystemManageListEnum.Operation_Log:
-        history.push('/system/log-query/operation-log');
+        history.push('/system/log-query/operation-log', { _t: Date.now() });
         break;
       case SystemManageListEnum.Running_Log:
-        history.push('/system/log-query/running-log');
+        history.push('/system/log-query/running-log', { _t: Date.now() });
         break;
       case SystemManageListEnum.Content_Space:
         history.push('/system/content/content-space');
