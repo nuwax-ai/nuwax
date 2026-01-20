@@ -273,7 +273,7 @@ const AgentModelSetting: React.FC<
       <Modal
         title="模型设置"
         classNames={{
-          content: cx(styles['task-agent-model-setting']),
+          content: cx(styles['modal-wrapper']),
         }}
         open={open}
         footer={null}
@@ -305,8 +305,109 @@ const AgentModelSetting: React.FC<
               value={targetId}
             />
           </div>
+          <div className="flex-1">
+            <h3 className={cx(styles.title)}>推理模型(可选)</h3>
+            <SelectList
+              placeholder="请选择推理模型"
+              className={cx(styles.select)}
+              onChange={(value) => handleChange(value, 'reasoningModelId')}
+              options={reasonModelList}
+              value={componentBindConfig.reasoningModelId}
+              allowClear
+            />
+          </div>
         </Flex>
-        <br />
+        <h3 className={cx(styles.title, 'flex', 'items-center')}>
+          生成多样性
+          <TooltipIcon
+            title={
+              <>
+                <h4 className={cx(styles['generate-name'])}>精确模式:</h4>
+                <p>严格遵循指令生成内容</p>
+                <p>适用于需准确无误的场合，如正式文档、代码等</p>
+                <h4 className={cx(styles['generate-name'])}>平衡模式:</h4>
+                <p>在创新和精确之间寻求平衡</p>
+                <p>适用于大多数日常应用场景，生成有趣但不失严谨的内容</p>
+                <h4 className={cx(styles['generate-name'])}>创意模式:</h4>
+                <p>激发创意，提供新颖独特的想法</p>
+                <p>适合需要灵感和独特观点的场景，如头脑风暴、创意写作等</p>
+                <h4 className={cx(styles['generate-name'])}>自定义模式:</h4>
+                <p>通过高级设置，自定义生成方式</p>
+                <p>根据需求，进行精细调整，实现个性化优化</p>
+              </>
+            }
+            icon={<InfoCircleOutlined />}
+            type={TooltipTitleTypeEnum.White}
+          />
+        </h3>
+        <Segmented<UpdateModeComponentEnum>
+          options={GENERATE_DIVERSITY_OPTIONS}
+          rootClassName={cx('mb-16')}
+          value={componentBindConfig?.mode}
+          onChange={handleChangeGenerateDiversity}
+          block
+        />
+        {/*生成随机性;0-1*/}
+        <div className={cx('flex', 'mb-16')}>
+          <LabelIcon
+            label="生成随机性"
+            title={
+              'temperature: 调高温度会使得模型的输出更多样性和创新性，反之，降低温度会使输出内容更加遵循指令要求但减少多样性。建议不要与 "Top p" 同时调整'
+            }
+          />
+          <SliderNumber
+            min={0}
+            max={1}
+            step={0.1}
+            value={String(componentBindConfig?.temperature) || '0'}
+            onChange={(value) => handleChange(value, 'temperature')}
+          />
+        </div>
+        {/*累计概率: 模型在生成输出时会从概率最高的词汇开始选择;0-1*/}
+        <div className={cx('flex', 'mb-16')}>
+          <LabelIcon
+            label="Top p"
+            title={
+              'Top p 为累计概率: 模型在生成输出时会从概率最高的词汇开始选择，直到这些词汇的总概率累积达到 Top p 值。这样可以限制模型只选择这些高概率的词汇，从而控制输出内容的多样性。建议不要与 "生成随机性" 同时调整。'
+            }
+          />
+          <SliderNumber
+            min={0}
+            max={1}
+            step={0.1}
+            value={String(componentBindConfig?.topP) || '0'}
+            onChange={(value) => handleChange(value, 'topP')}
+          />
+        </div>
+        <h3 className={cx(styles.title)}>输入及输出设置</h3>
+        {/*上下文轮数*/}
+        <div className={cx('flex', 'mb-16')}>
+          <LabelIcon
+            label="携带上下文轮数"
+            title="设置带入模型上下文的对话历史轮数。轮数越多，多轮对话的相关性越高，但消耗的 Token 也越多"
+          />
+          <SliderNumber
+            min={0}
+            max={100}
+            step={1}
+            value={String(componentBindConfig?.contextRounds) || '0'}
+            onChange={(value) => handleChange(value, 'contextRounds')}
+          />
+        </div>
+        {/*最大生成长度*/}
+        <div className={cx('flex', 'mb-16')}>
+          <LabelIcon
+            label="最大回复长度"
+            title="控制模型输出的 Tokens 长度上限。通常 100 Tokens 约等于 150 个中文汉字。"
+          />
+          <SliderNumber
+            min={1}
+            max={currentModelInfo?.maxTokens || 4096}
+            step={1}
+            value={String(componentBindConfig?.maxTokens) || '0'}
+            onChange={(value) => handleChange(value, 'maxTokens')}
+          />
+        </div>
       </Modal>
     );
   }
