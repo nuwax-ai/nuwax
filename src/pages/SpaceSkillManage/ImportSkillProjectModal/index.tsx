@@ -47,9 +47,14 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
       message.error('文件获取失败，请重新选择');
       return;
     }
-    setLoading(true);
-    await onConfirm(file);
-    setLoading(false);
+    try {
+      setLoading(true);
+      await onConfirm(file);
+    } catch (error) {
+      console.error('处理文件导入失败', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 处理表单提交
