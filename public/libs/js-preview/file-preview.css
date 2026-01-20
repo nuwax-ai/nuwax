@@ -116,7 +116,15 @@ body {
     margin-bottom: 16px;
 }
 
-.retry-btn {
+.error-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+}
+
+.retry-btn,
+.download-action-btn {
     padding: 8px 24px;
     background: #1890ff;
     color: #fff;
@@ -124,10 +132,20 @@ body {
     border-radius: 4px;
     font-size: 14px;
     cursor: pointer;
+    transition: background 0.3s;
 }
 
-.retry-btn:hover {
+.retry-btn:hover,
+.download-action-btn:hover {
     background: #40a9ff;
+}
+
+.download-action-btn {
+    background: #52c41a;
+}
+
+.download-action-btn:hover {
+    background: #73d13d;
 }
 
 /* ============================================
