@@ -38,9 +38,9 @@ export const AGENT_ENGINE_OPTIONS = [
     value: AgentEngineEnum.NuwaxCli,
     label: (
       <span className={'flex items-center'}>
-        <span>nuwax_cli</span>
+        <span>NuwaxCli引擎</span>
         <TooltipIcon
-          title="nuwax_cli引擎在快速迭代阶段，部分场景可能有待提升，但支持几乎所有厂商模型"
+          title="NuwaxCli引擎在快速迭代阶段，部分场景可能有待提升，但支持几乎所有厂商模型"
           icon={<InfoCircleOutlined />}
         />
       </span>
