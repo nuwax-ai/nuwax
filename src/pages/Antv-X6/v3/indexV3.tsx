@@ -800,9 +800,17 @@ const Workflow: React.FC = () => {
   const handleBack = useCallback(async () => {
     // 返回前先进行覆盖检查（保存）
     // 只有保存成功（或确认强制覆盖）后才跳转
-    await saveFullWorkflow(false, () => {
-      jumpBack(`/space/${spaceId}/library`);
-    });
+    // 版本冲突时用户点击"取消"也可以放弃修改直接返回
+    await saveFullWorkflow(
+      false,
+      () => {
+        jumpBack(`/space/${spaceId}/library`);
+      },
+      () => {
+        // 用户选择取消（放弃修改），直接返回
+        jumpBack(`/space/${spaceId}/library`);
+      },
+    );
   }, [saveFullWorkflow, spaceId]);
 
   const handleDrawerClose = useCallback(() => {
