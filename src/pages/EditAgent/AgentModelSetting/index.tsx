@@ -324,8 +324,18 @@ const AgentModelSetting: React.FC<
                   targetId &&
                   !filteredModels.some((item) => item.id === targetId)
                 ) {
-                  newTargetId = null;
-                  setTargetId(null);
+                  // 如果当前选中的模型不支持新引擎，则重置 targetId 为列表中的第一个模型
+                  if (filteredModels.length > 0) {
+                    newTargetId = filteredModels[0].id;
+                    setTargetId(newTargetId);
+                  } else {
+                    newTargetId = null;
+                    setTargetId(null);
+                  }
+                } else if (!targetId && filteredModels.length > 0) {
+                  // 如果当前没有选中模型，且列表不为空，则默认选中第一个
+                  newTargetId = filteredModels[0].id;
+                  setTargetId(newTargetId);
                 }
 
                 handleChangeModel(newBindConfig, newTargetId);
