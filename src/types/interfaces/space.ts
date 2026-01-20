@@ -27,6 +27,7 @@ export interface CollectStarProps {
 
 // 系统提示词组件属性
 export interface SystemUserTipsWordProps {
+  className?: string; // 类名
   valueUser?: string;
   valueSystem?: string;
   onChangeUser: (value: string) => void;

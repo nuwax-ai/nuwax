@@ -74,6 +74,7 @@ const cx = classNames.bind(styles);
 const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   agentId,
   agentConfigInfo,
+  extraComponent,
   onChangeAgent,
   onInsertSystemPrompt,
   onVariablesChange,
@@ -1090,6 +1091,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   return (
     <div className={classNames('overflow-y', 'flex-1', styles.container)}>
+      {extraComponent}
       <ConfigOptionsHeader title="工具" />
       <ConfigOptionCollapse items={ToolList} defaultActiveKey={toolActiveKey} />
 

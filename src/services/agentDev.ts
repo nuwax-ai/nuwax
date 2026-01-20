@@ -8,6 +8,7 @@ import type {
   apiAgentLogListParams,
   apiSpaceLogListParams,
   logInfo,
+  OperationLogInfo,
   SpaceLogDetailParams,
   SpaceLogInfo,
   SpaceLogInfoDetail,
@@ -165,6 +166,46 @@ export async function apiSpaceLogList(
   return request('/api/requestLogs/list', {
     method: 'POST',
     data,
+  });
+}
+
+// 日志查询-运行日志（列表）
+export async function apiRunningLogList(
+  data: apiSpaceLogListParams,
+): Promise<RequestResponse<Page<logInfo>>> {
+  return request('/api/system/requestLogs/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 日志查询-运行日志（详情）
+export async function apiRunningLogDetail(
+  data: SpaceLogDetailParams,
+): Promise<RequestResponse<SpaceLogInfoDetail>> {
+  return request('/api/system/requestLogs/detail', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 日志查询-操作日志（列表）
+export async function apiOperationLogList(
+  data: apiSpaceLogListParams,
+): Promise<RequestResponse<Page<logInfo>>> {
+  return request('/api/sys/operator/log/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 日志查询-操作日志（详情）
+export async function apiOperationLogDetail(
+  data: SpaceLogDetailParams,
+): Promise<RequestResponse<OperationLogInfo>> {
+  return request('/api/sys/operator/log/queryById', {
+    method: 'GET',
+    params: data,
   });
 }
 

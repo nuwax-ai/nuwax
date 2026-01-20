@@ -197,6 +197,37 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
           cursorPositionRef.current = from;
         }
       },
+      // 当编辑器失焦时，关闭所有变量建议弹窗
+      onBlur: () => {
+        // 使用 setTimeout 确保在其他事件处理完成后执行
+        // 避免在点击弹窗内部元素时误关闭
+        setTimeout(() => {
+          // 检查焦点是否移动到了弹窗内部
+          const activeElement = document.activeElement;
+          const popups = document.querySelectorAll(
+            '.variable-suggestion-popup',
+          );
+
+          // 如果焦点在某个弹窗内部，不关闭
+          let focusInPopup = false;
+          popups.forEach((popup) => {
+            if (popup.contains(activeElement)) {
+              focusInPopup = true;
+            }
+          });
+
+          if (focusInPopup) {
+            return;
+          }
+
+          // 关闭所有不包含焦点的弹窗
+          popups.forEach((popup) => {
+            if (document.body.contains(popup)) {
+              document.body.removeChild(popup);
+            }
+          });
+        }, 150);
+      },
     },
     [
       disableMentions,

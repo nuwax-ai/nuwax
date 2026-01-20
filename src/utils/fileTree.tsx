@@ -123,6 +123,8 @@ export const updateFilesListName = (
           name: newPath, // 更新为新的完整路径
           renameFrom: oldPath, // 记录重命名前的路径
           operation: 'rename', // 操作类型
+          // 重命名时，设置文件内容为空，避免上传内容导致更新文件名时长太久
+          contents: '',
         },
       ];
     }
