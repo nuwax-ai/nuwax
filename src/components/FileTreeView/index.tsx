@@ -1276,6 +1276,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <AppDevEmptyState
             showTitle={false}
             showIcon={false}
+            showButtons={false}
             description="当前没有可预览的文件"
           />
         );
@@ -1293,6 +1294,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <AppDevEmptyState
             showTitle={false}
             showIcon={false}
+            showButtons={false}
             description="请从左侧文件树选择一个文件进行预览"
           />
         );
@@ -1378,6 +1380,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           <AppDevEmptyState
             type="error"
             title="无法预览此文件类型"
+            showButtons={false}
             description={`当前不支持预览【${fileExtension}】格式的文件。`}
           />
         );
