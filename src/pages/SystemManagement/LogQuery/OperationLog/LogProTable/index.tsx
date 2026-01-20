@@ -1,6 +1,10 @@
 import LimitedTooltip from '@/components/base/LimitedTooltip';
-import { apiOperationLogList } from '@/services/agentDev';
-import { OperationActionType, SystemEnum } from '@/types/enums/agent';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  apiOperationLogList,
+  apiOperationLogSystemCodeOptions,
+} from '@/services/agentDev';
+import { OperationActionType } from '@/types/enums/agent';
 import type {
   OperationLogInfo,
   OperationLogQueryFilter,
@@ -49,14 +53,17 @@ const LogProTable: React.FC = () => {
         dataIndex: 'systemCode',
         width: 140,
         valueType: 'select',
-        valueEnum: {
-          [SystemEnum.KNOWLEDGE_CONFIG]: { text: '知识库基础配置' },
-          [SystemEnum.AGENT]: { text: '智能体' },
-          [SystemEnum.REPORT]: { text: '评估配置' },
-          [SystemEnum.SYSTEM]: { text: '系统配置' },
-          [SystemEnum.LOG_PLATFORM]: { text: '日志平台' },
-          [SystemEnum.ECO_MARKET]: { text: '生态市场' },
-          [SystemEnum.DB_TABLE]: { text: '数据表' },
+        request: async () => {
+          try {
+            const { code, data } = await apiOperationLogSystemCodeOptions();
+            if (code === SUCCESS_CODE && data) {
+              return data;
+            }
+            return [];
+          } catch (error) {
+            console.error('获取系统类型选项失败', error);
+            return [];
+          }
         },
         hideInTable: false,
         fieldProps: {
