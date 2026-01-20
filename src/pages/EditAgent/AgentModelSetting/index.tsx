@@ -23,7 +23,13 @@ import type { ModelConfigInfo } from '@/types/interfaces/model';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { Flex, Modal, Segmented } from 'antd';
 import classnames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 
