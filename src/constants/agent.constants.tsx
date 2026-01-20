@@ -1,5 +1,6 @@
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
+  AgentEngineEnum,
   DefaultSelectedEnum,
   EventBindResponseActionEnum,
   EventListEnum,
@@ -18,6 +19,34 @@ import {
   PluginPublishScopeEnum,
 } from '@/types/enums/plugin';
 import { InfoCircleOutlined } from '@ant-design/icons';
+
+// Agent引擎选项
+export const AGENT_ENGINE_OPTIONS = [
+  {
+    value: AgentEngineEnum.Default,
+    label: (
+      <span className={'flex items-center'}>
+        <span>默认引擎</span>
+        <TooltipIcon
+          title="默认引擎比较成熟，效果最佳，仅支持部分指定厂商模型"
+          icon={<InfoCircleOutlined />}
+        />
+      </span>
+    ),
+  },
+  {
+    value: AgentEngineEnum.NuwaxCli,
+    label: (
+      <span className={'flex items-center'}>
+        <span>NuwaxCli引擎</span>
+        <TooltipIcon
+          title="NuwaxCli引擎在快速迭代阶段，部分场景可能有待提升，但支持几乎所有厂商模型"
+          icon={<InfoCircleOutlined />}
+        />
+      </span>
+    ),
+  },
+];
 
 // 调用方式
 export const CALL_METHOD_OPTIONS = [

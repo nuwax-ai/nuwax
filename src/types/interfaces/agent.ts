@@ -1,6 +1,7 @@
 import type {
   AgentApiKeyTargetEnum,
   AgentComponentTypeEnum,
+  AgentEngineEnum,
   AllowCopyEnum,
   DefaultSelectedEnum,
   DevModeEnum,
@@ -321,6 +322,8 @@ export interface ComponentModelBindConfig {
   contextRounds: number;
   // 推理模型ID
   reasoningModelId: number | null;
+  // 智能体引擎类型
+  agentEngine?: AgentEngineEnum;
 }
 
 // 更新模型组件配置输入参数
