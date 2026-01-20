@@ -273,7 +273,7 @@ const AgentModelSetting: React.FC<
       <Modal
         title="模型设置"
         classNames={{
-          content: cx(styles['task-agent-model-setting']),
+          content: cx(styles['modal-wrapper']),
         }}
         open={open}
         footer={null}
