@@ -34,6 +34,10 @@ import styles from './index.less';
 import SkillHeader from './SkillHeader';
 
 const cx = classNames.bind(styles);
+
+// 技能项目文件大小限制
+const SKILL_MAX_FILE_SIZE = 20 * 1024 * 1024; // 最大文件大小20MB
+
 /**
  * 技能详情页面
  */
@@ -224,8 +228,7 @@ const SkillDetails: React.FC = () => {
       }
 
       // 校验文件大小，限制为20M
-      const maxSize = 20 * 1024 * 1024; // 20MB
-      if (file.size > maxSize) {
+      if (file.size > SKILL_MAX_FILE_SIZE) {
         message.error('文件大小不能超过20MB');
         return;
       }
@@ -280,8 +283,7 @@ const SkillDetails: React.FC = () => {
     const totalSize = files?.reduce((acc, file) => acc + file.size, 0);
 
     // 上传文件总大小限制为20MB
-    const maxSize = 20 * 1024 * 1024; // 20MB
-    if (totalSize > maxSize) {
+    if (totalSize > SKILL_MAX_FILE_SIZE) {
       message.error('上传文件总大小不能超过20MB');
       return;
     }
