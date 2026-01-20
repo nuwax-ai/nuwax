@@ -270,7 +270,7 @@ const EditAgent: React.FC = () => {
       manual: true,
       onSuccess: (res: RequestResponse<null>) => {
         if (res.code === SUCCESS_CODE) {
-          message.success('模型设置已更新');
+          messageAntd.success('模型设置已更新');
         }
       },
     },
