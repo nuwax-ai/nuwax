@@ -85,30 +85,38 @@ const AgentModelSetting: React.FC<
   //   },
   // });
 
+  // 获取过滤后的模型列表
+  const getFilteredModels = useCallback(
+    (engine: AgentEngineEnum) => {
+      if (!originalModelConfigList?.length) return [];
+
+      // 基础过滤：仅支持 API 协议为 Anthropic 或 OpenAI，且支持函数调用的模型
+      const baseSupportedModels = originalModelConfigList.filter(
+        (item) =>
+          (item.apiProtocol === ModelApiProtocolEnum.Anthropic ||
+            item.apiProtocol === ModelApiProtocolEnum.OpenAI) &&
+          item.functionCall !== ModelFunctionCallEnum.Unsupported,
+      );
+
+      // 根据引擎类型二次过滤
+      if (engine === AgentEngineEnum.Default) {
+        // 默认引擎：仅展示Anthropic协议模型
+        return baseSupportedModels.filter(
+          (item) => item.apiProtocol === ModelApiProtocolEnum.Anthropic,
+        );
+      } else {
+        // nuwax_cli引擎：展示所有符合基础条件的模型（OpenAI和Anthropic）
+        return baseSupportedModels;
+      }
+    },
+    [originalModelConfigList],
+  );
+
   useEffect(() => {
     if (originalModelConfigList?.length && agentConfigInfo) {
       if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
         // 根据引擎类型过滤模型
-        let filteredModels = originalModelConfigList;
-
-        // 基础过滤：仅支持 API 协议为 Anthropic 或 OpenAI，且支持函数调用的模型
-        const baseSupportedModels = originalModelConfigList.filter(
-          (item) =>
-            (item.apiProtocol === ModelApiProtocolEnum.Anthropic ||
-              item.apiProtocol === ModelApiProtocolEnum.OpenAI) &&
-            item.functionCall !== ModelFunctionCallEnum.Unsupported,
-        );
-
-        // 根据引擎类型二次过滤
-        if (agentEngine === AgentEngineEnum.Default) {
-          // 默认引擎：仅展示Anthropic协议模型
-          filteredModels = baseSupportedModels.filter(
-            (item) => item.apiProtocol === ModelApiProtocolEnum.Anthropic,
-          );
-        } else {
-          // nuwax_cli引擎：展示所有符合基础条件的模型（OpenAI和Anthropic）
-          filteredModels = baseSupportedModels;
-        }
+        const filteredModels = getFilteredModels(agentEngine);
 
         const list: option[] =
           filteredModels?.map((item) => ({
@@ -120,8 +128,6 @@ const AgentModelSetting: React.FC<
         // 数据联动：如果当前选中的模型不在新的列表里，清空选中
         if (targetId && !filteredModels.some((item) => item.id === targetId)) {
           setTargetId(null);
-          // 可以选择是否此时也触发后端更新，或者等待用户重新选择
-          // 这里仅清空前端状态，等待用户重新选择
         }
       } else {
         const list: option[] =
@@ -132,7 +138,13 @@ const AgentModelSetting: React.FC<
         setModelConfigList(list);
       }
     }
-  }, [originalModelConfigList, agentConfigInfo, agentEngine]);
+  }, [
+    originalModelConfigList,
+    agentConfigInfo,
+    agentEngine,
+    getFilteredModels,
+    targetId,
+  ]);
 
   useEffect(() => {
     if (open && modelComponentConfig) {
@@ -299,7 +311,18 @@ const AgentModelSetting: React.FC<
                   agentEngine: newEngine,
                 };
                 setComponentBindConfig(newBindConfig);
-                handleChangeModel(newBindConfig);
+                // 校验：如果当前选中的模型不支持新引擎，则重置 targetId
+                const filteredModels = getFilteredModels(newEngine);
+                let newTargetId = targetId;
+                if (
+                  targetId &&
+                  !filteredModels.some((item) => item.id === targetId)
+                ) {
+                  newTargetId = null;
+                  setTargetId(null);
+                }
+
+                handleChangeModel(newBindConfig, newTargetId);
               }}
               block
             />
