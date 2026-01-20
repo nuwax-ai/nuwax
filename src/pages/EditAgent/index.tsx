@@ -12,6 +12,7 @@ import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import CreateTempChatModal from '@/pages/SpaceDevelop/CreateTempChatModal';
 import {
+  apiAgentComponentModelUpdate,
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
@@ -257,11 +258,23 @@ const EditAgent: React.FC = () => {
     [],
   );
 
-  // 更新智能体基础配置信息
   const { runAsync: runUpdate } = useRequest(apiAgentConfigUpdate, {
     manual: true,
     debounceWait: 600,
   });
+
+  // 更新模型配置
+  const { runAsync: runUpdateModel } = useRequest(
+    apiAgentComponentModelUpdate,
+    {
+      manual: true,
+      onSuccess: (res: RequestResponse<null>) => {
+        if (res.code === SUCCESS_CODE) {
+          message.success('模型设置已更新');
+        }
+      },
+    },
+  );
 
   useEffect(() => {
     run(agentId);
@@ -290,7 +303,7 @@ const EditAgent: React.FC = () => {
    * @param name: 会话模型名称
    * @param config: 模型配置信息
    */
-  const handleSetModel = (
+  const handleSetModel = async (
     targetId: number | null,
     name: string,
     config: ComponentModelBindConfig,
@@ -303,27 +316,21 @@ const EditAgent: React.FC = () => {
     _agentConfigInfo.modelComponentConfig.targetId = targetId;
     _agentConfigInfo.modelComponentConfig.name = name;
     setAgentConfigInfo(_agentConfigInfo);
-  };
 
-  /**
-   * 处理Agent引擎变更（仅通用型智能体有效）
-   * @param engine 新的引擎类型
-   */
-  const handleAgentEngineChange = async (engine: AgentEngineEnum) => {
-    if (!agentConfigInfo) return;
-
-    // 更新本地状态
-    const _agentConfigInfo = {
-      ...agentConfigInfo,
-      agentEngine: engine,
-    } as AgentConfigInfo;
-    setAgentConfigInfo(_agentConfigInfo);
-
-    // TODO: 后端接口实现后取消注释以下代码
-    // await runUpdate({
-    //   ...基础参数,
-    //   agentEngine: engine,
-    // });
+    // 调用接口更新模型配置
+    if (agentConfigInfo?.modelComponentConfig?.id) {
+      await runUpdateModel({
+        id: agentConfigInfo.modelComponentConfig.id,
+        targetId: targetId!,
+        agentId,
+        type: AgentComponentTypeEnum.Model,
+        bindConfig: {
+          ...config,
+          // 兼容历史数据，如果没有 agentEngine 则默认为 Default
+          agentEngine: config.agentEngine || AgentEngineEnum.Default,
+        },
+      });
+    }
   };
 
   // 更新智能体配置信息
@@ -1165,7 +1172,6 @@ const EditAgent: React.FC = () => {
         open={openAgentModel}
         devConversationId={agentConfigInfo?.devConversationId}
         onCancel={handleSetModel}
-        onAgentEngineChange={handleAgentEngineChange}
       />
       {/*分析统计弹窗*/}
       <AnalyzeStatistics
