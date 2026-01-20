@@ -12,7 +12,6 @@ import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import CreateTempChatModal from '@/pages/SpaceDevelop/CreateTempChatModal';
 import {
-  apiAgentComponentModelUpdate,
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
@@ -22,7 +21,7 @@ import {
   apiUpdateStaticFile,
   apiUploadFiles,
 } from '@/services/vncDesktop';
-import { AgentComponentTypeEnum, AgentEngineEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import {
@@ -263,19 +262,6 @@ const EditAgent: React.FC = () => {
     debounceWait: 600,
   });
 
-  // 更新模型配置
-  const { runAsync: runUpdateModel } = useRequest(
-    apiAgentComponentModelUpdate,
-    {
-      manual: true,
-      onSuccess: (res: RequestResponse<null>) => {
-        if (res.code === SUCCESS_CODE) {
-          messageAntd.success('模型设置已更新');
-        }
-      },
-    },
-  );
-
   useEffect(() => {
     run(agentId);
     // runComponentList(agentId);
@@ -316,21 +302,6 @@ const EditAgent: React.FC = () => {
     _agentConfigInfo.modelComponentConfig.targetId = targetId;
     _agentConfigInfo.modelComponentConfig.name = name;
     setAgentConfigInfo(_agentConfigInfo);
-
-    // 调用接口更新模型配置
-    if (agentConfigInfo?.modelComponentConfig?.id) {
-      await runUpdateModel({
-        id: agentConfigInfo.modelComponentConfig.id,
-        targetId: targetId!,
-        agentId,
-        type: AgentComponentTypeEnum.Model,
-        bindConfig: {
-          ...config,
-          // 兼容历史数据，如果没有 agentEngine 则默认为 Default
-          agentEngine: config.agentEngine || AgentEngineEnum.Default,
-        },
-      });
-    }
   };
 
   // 更新智能体配置信息
