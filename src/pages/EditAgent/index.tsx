@@ -610,6 +610,8 @@ const EditAgent: React.FC = () => {
 
             // 更新文件操作
             currentFile.operation = 'delete';
+            // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
+            currentFile.contents = '';
             // 更新文件列表
             const updatedFilesList = [
               currentFile,
