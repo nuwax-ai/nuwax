@@ -854,21 +854,34 @@ const EditAgent: React.FC = () => {
   };
 
   useEffect(() => {
-    // 设置最小宽度-扩展页面/文件树
-    if (pagePreviewData || isFileTreeVisible) {
-      document.documentElement.style.minWidth = '2000px';
-    } else {
-      // 设置最小宽度-调试详情
-      if (showType === EditAgentShowType.Debug_Details) {
-        document.documentElement.style.minWidth = '1540px';
+    /**
+     * 设置最小宽度
+     */
+    if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
+      // 任务智能体才会存在文件树，当文件树可见时，设置最小宽度为1700px
+      if (isFileTreeVisible) {
+        document.documentElement.style.minWidth = '1700px';
       } else {
         document.documentElement.style.minWidth = '1240px';
       }
+    } else {
+      // 问答智能体才会存在扩展页面，当扩展页面可见时，设置最小宽度为2000px
+      if (pagePreviewData) {
+        document.documentElement.style.minWidth = '2000px';
+      } else {
+        // 设置最小宽度-调试详情
+        if (showType === EditAgentShowType.Debug_Details) {
+          document.documentElement.style.minWidth = '1540px';
+        } else {
+          document.documentElement.style.minWidth = '1240px';
+        }
+      }
     }
+
     return () => {
       document.documentElement.style.minWidth = '1200px';
     };
-  }, [pagePreviewData, isFileTreeVisible, showType]);
+  }, [pagePreviewData, isFileTreeVisible, showType, agentConfigInfo?.type]);
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
