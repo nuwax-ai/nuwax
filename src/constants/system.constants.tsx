@@ -37,11 +37,11 @@ export const SYSTEM_MANAGE_LIST = [
     icon: <SvgIcon name="icons-nav-palette" />,
     text: '主题配置',
   },
-  {
-    type: SystemManageListEnum.Dashboard,
-    icon: <SvgIcon name="icons-nav-palette" />,
-    text: '系统概览',
-  },
+  // {
+  //   type: SystemManageListEnum.Dashboard,
+  //   icon: <SvgIcon name="icons-nav-palette" />,
+  //   text: '系统概览',
+  // },
   {
     type: SystemManageListEnum.Log_Query,
     icon: <SvgIcon name="icons-chat-history" />,
@@ -57,49 +57,49 @@ export const SYSTEM_MANAGE_LIST = [
       },
     ],
   },
-  {
-    type: SystemManageListEnum.Content,
-    icon: <SvgIcon name="icons-chat-history" />,
-    text: '内容管理',
-    list: [
-      {
-        text: '空间',
-        type: SystemManageListEnum.Content_Space,
-      },
-      {
-        text: '智能体',
-        type: SystemManageListEnum.Content_Agent,
-      },
-      {
-        text: '网页应用',
-        type: SystemManageListEnum.Content_WebApplication,
-      },
-      {
-        text: '知识库',
-        type: SystemManageListEnum.Content_KnowledgeBase,
-      },
-      {
-        text: '数据表',
-        type: SystemManageListEnum.Content_DataTable,
-      },
-      {
-        text: '工作流',
-        type: SystemManageListEnum.Content_Workflow,
-      },
-      {
-        text: '插件',
-        type: SystemManageListEnum.Content_Plugin,
-      },
-      {
-        text: 'MCP',
-        type: SystemManageListEnum.Content_Mcp,
-      },
-      {
-        text: '技能',
-        type: SystemManageListEnum.Content_Skill,
-      },
-    ],
-  },
+  // {
+  //   type: SystemManageListEnum.Content,
+  //   icon: <SvgIcon name="icons-chat-history" />,
+  //   text: '内容管理',
+  //   list: [
+  //     {
+  //       text: '空间',
+  //       type: SystemManageListEnum.Content_Space,
+  //     },
+  //     {
+  //       text: '智能体',
+  //       type: SystemManageListEnum.Content_Agent,
+  //     },
+  //     {
+  //       text: '网页应用',
+  //       type: SystemManageListEnum.Content_WebApplication,
+  //     },
+  //     {
+  //       text: '知识库',
+  //       type: SystemManageListEnum.Content_KnowledgeBase,
+  //     },
+  //     {
+  //       text: '数据表',
+  //       type: SystemManageListEnum.Content_DataTable,
+  //     },
+  //     {
+  //       text: '工作流',
+  //       type: SystemManageListEnum.Content_Workflow,
+  //     },
+  //     {
+  //       text: '插件',
+  //       type: SystemManageListEnum.Content_Plugin,
+  //     },
+  //     {
+  //       text: 'MCP',
+  //       type: SystemManageListEnum.Content_Mcp,
+  //     },
+  //     {
+  //       text: '技能',
+  //       type: SystemManageListEnum.Content_Skill,
+  //     },
+  //   ],
+  // },
 ];
 
 // 消息类型, Broadcast时可以不传userIds,可用值:Broadcast,Private,System
