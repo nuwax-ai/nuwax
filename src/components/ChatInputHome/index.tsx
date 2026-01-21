@@ -1,7 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { TaskStatus } from '@/types/enums/agent';
@@ -52,7 +51,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   showTaskAgentToggle = false,
   isTaskAgentActive = false,
   onToggleTaskAgent,
-  onTaskStopped,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -97,21 +95,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const disabledSend = useMemo(() => {
     return !messageInfo && !files?.length;
   }, [messageInfo, files]);
-
-  // 停止按钮disabled - 只有在会话进行中时才可停止，与输入框内容无关
-  // const disabledStop = useMemo(() => {
-  //   return (
-  //     !isConversationActive ||
-  //     isStoppingConversation ||
-  //     loadingStopConversation ||
-  //     loadingStopTempConversation
-  //   );
-  // }, [
-  //   isConversationActive,
-  //   isStoppingConversation,
-  //   loadingStopConversation,
-  //   loadingStopTempConversation,
-  // ]);
 
   // 点击发送事件
   const handleSendMessage = () => {
@@ -309,27 +292,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       // 临时聊天需要 requestId
       onTempChatStop(requestId);
     } else if (conversationId) {
-      // 根据任务状态执行不同的逻辑
-      if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
-        // 正常会话只需要 conversationId 即可停止
-        const { code } = await runStopConversation(conversationId);
-        if (code === SUCCESS_CODE && onTaskStopped) {
-          // 后台处理有延时，需要等待3秒后，再重新查询会话信息
-          setTimeout(() => {
-            setIsStoppingConversation(false);
-            // 重新查询会话信息
-            // 使用回调函数通知父组件进行查询
-            onTaskStopped?.(conversationId);
-          }, 3000);
-        }
-      } else {
-        // 正常会话只需要 conversationId 即可停止
-        runStopConversation(conversationId);
-      }
+      // 正常会话只需要 conversationId 即可停止
+      runStopConversation(conversationId);
     }
   }, [
     isStoppingConversation,
-    conversationInfo?.taskStatus,
     getCurrentConversationRequestId,
     getCurrentConversationId,
     runStopConversation,
