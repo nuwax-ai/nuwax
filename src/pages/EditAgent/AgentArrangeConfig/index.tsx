@@ -50,6 +50,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { useModel } from 'umi';
@@ -117,6 +118,80 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 打开子智能体编辑弹窗
   const [openSubAgentModel, setOpenSubAgentModel] = useState<boolean>(false);
+
+  // 各配置块 DOM 引用，用于滚动定位
+  const planSectionRef = useRef<HTMLDivElement | null>(null);
+  const toolSectionRef = useRef<HTMLDivElement | null>(null);
+  const skillSectionRef = useRef<HTMLDivElement | null>(null);
+  const knowledgeSectionRef = useRef<HTMLDivElement | null>(null);
+  const memorySectionRef = useRef<HTMLDivElement | null>(null);
+  const experienceSectionRef = useRef<HTMLDivElement | null>(null);
+  const pageSectionRef = useRef<HTMLDivElement | null>(null);
+
+  // 左侧锚点菜单配置
+  const anchorItems = useMemo(
+    () => [
+      {
+        key: 'plan',
+        label: '规划',
+        ref: planSectionRef,
+        show: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+      },
+      {
+        key: 'tool',
+        label: '工具',
+        ref: toolSectionRef,
+        show: true,
+      },
+      {
+        key: 'skill',
+        label: '技能',
+        ref: skillSectionRef,
+        // 仅长任务型智能体展示技能块
+        show: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+      },
+      {
+        key: 'knowledge',
+        label: '知识',
+        ref: knowledgeSectionRef,
+        show: true,
+      },
+      {
+        key: 'memory',
+        label: '记忆',
+        ref: memorySectionRef,
+        show: true,
+      },
+      {
+        key: 'experience',
+        label: '对话体验',
+        ref: experienceSectionRef,
+        show: true,
+      },
+      {
+        key: 'page',
+        label: '界面配置',
+        ref: pageSectionRef,
+        show: true,
+      },
+    ],
+    [agentConfigInfo?.type],
+  );
+
+  /**
+   * 点击左侧锚点，滚动到对应配置块
+   */
+  const handleAnchorClick = (
+    key: string,
+    ref: React.RefObject<HTMLDivElement>,
+  ) => {
+    if (ref.current) {
+      ref.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  };
 
   // 根据组件类型，过滤组件
   const filterList = (type: AgentComponentTypeEnum) => {
@@ -1110,45 +1185,89 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   };
 
   return (
-    <div className={classNames('overflow-y', 'flex-1', styles.container)}>
-      {extraComponent}
-      <ConfigOptionsHeader title="工具" />
-      <ConfigOptionCollapse items={ToolList} defaultActiveKey={toolActiveKey} />
+    <div className={cx('h-full', 'flex-1', 'overflow-hide')}>
+      <div className={styles['config-layout']}>
+        {/* 左侧锚点菜单 */}
+        {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+          <div className={styles['anchor-sidebar']}>
+            {anchorItems
+              .filter((item) => item.show)
+              .map((item) => (
+                <div
+                  key={item.key}
+                  className={cx(styles['anchor-item'])}
+                  onClick={() => handleAnchorClick(item.key, item.ref)}
+                >
+                  <span className={styles['anchor-item-label']}>
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+          </div>
+        )}
 
-      {/* 长任务型智能体显示技能 */}
-      {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
-        <>
-          <ConfigOptionsHeader title="技能" />
-          <ConfigOptionCollapse
-            items={SkillList}
-            defaultActiveKey={skillActiveKey}
-          />
-        </>
-      )}
+        {/* 右侧配置内容区域 */}
+        <div className={cx('overflow-y', 'flex-1', styles.container)}>
+          {/* 任务型智能体显示系统提示词部分 */}
+          {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+            <div ref={planSectionRef}>{extraComponent}</div>
+          )}
 
-      <ConfigOptionsHeader title="知识" />
-      <ConfigOptionCollapse
-        items={KnowledgeList}
-        defaultActiveKey={knowledgeActiveKey}
-      />
-      <ConfigOptionsHeader title="记忆" />
-      <ConfigOptionCollapse
-        items={MemoryList}
-        defaultActiveKey={memoryActiveKey}
-      />
-      <ConfigOptionsHeader title="对话体验" />
-      <ConfigOptionCollapse
-        items={ConversationalExperienceList}
-        onChangeCollapse={(key) =>
-          setExperienceActiveKey(key as AgentArrangeConfigEnum[])
-        }
-        defaultActiveKey={experienceActiveKey}
-      />
-      <ConfigOptionsHeader title="界面配置" />
-      <ConfigOptionCollapse
-        items={PageConfigList}
-        defaultActiveKey={pageActiveKey}
-      />
+          <div ref={toolSectionRef}>
+            <ConfigOptionsHeader title="工具" />
+            <ConfigOptionCollapse
+              items={ToolList}
+              defaultActiveKey={toolActiveKey}
+            />
+          </div>
+
+          {/* 长任务型智能体显示技能 */}
+          {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
+            <div ref={skillSectionRef}>
+              <ConfigOptionsHeader title="技能" />
+              <ConfigOptionCollapse
+                items={SkillList}
+                defaultActiveKey={skillActiveKey}
+              />
+            </div>
+          )}
+
+          <div ref={knowledgeSectionRef}>
+            <ConfigOptionsHeader title="知识" />
+            <ConfigOptionCollapse
+              items={KnowledgeList}
+              defaultActiveKey={knowledgeActiveKey}
+            />
+          </div>
+
+          <div ref={memorySectionRef}>
+            <ConfigOptionsHeader title="记忆" />
+            <ConfigOptionCollapse
+              items={MemoryList}
+              defaultActiveKey={memoryActiveKey}
+            />
+          </div>
+
+          <div ref={experienceSectionRef}>
+            <ConfigOptionsHeader title="对话体验" />
+            <ConfigOptionCollapse
+              items={ConversationalExperienceList}
+              onChangeCollapse={(key) =>
+                setExperienceActiveKey(key as AgentArrangeConfigEnum[])
+              }
+              defaultActiveKey={experienceActiveKey}
+            />
+          </div>
+
+          <div ref={pageSectionRef}>
+            <ConfigOptionsHeader title="界面配置" />
+            <ConfigOptionCollapse
+              items={PageConfigList}
+              defaultActiveKey={pageActiveKey}
+            />
+          </div>
+        </div>
+      </div>
       {/*添加插件、工作流、知识库、数据库弹窗*/}
       <Created
         open={show}
