@@ -27,7 +27,6 @@
         <div class="error-icon">⚠️</div>
         <div id="errorText" class="error-text">加载失败</div>
         <div class="error-actions">
-            <button class="retry-btn" onclick="retryPreview()">重试</button>
             <button id="errorDownloadBtn" class="download-action-btn hidden" onclick="downloadFile()">下载</button>
         </div>
     </div>
@@ -544,9 +543,6 @@
             }
         }
 
-        function retryPreview() {
-            startPreview();
-        }
 
         // ============================================
         // Download Function

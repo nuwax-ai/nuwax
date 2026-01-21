@@ -1,15 +1,15 @@
 import LimitedTooltip from '@/components/base/LimitedTooltip';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
+  apiOperationLogActionTypeOptions,
   apiOperationLogList,
   apiOperationLogSystemCodeOptions,
 } from '@/services/agentDev';
-import { OperationActionType } from '@/types/enums/agent';
 import type {
   OperationLogInfo,
   OperationLogQueryFilter,
 } from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { createOptionsRequest } from '@/utils/procomponents';
 import type {
   ActionType,
   FormInstance,
@@ -53,18 +53,7 @@ const LogProTable: React.FC = () => {
         dataIndex: 'systemCode',
         width: 140,
         valueType: 'select',
-        request: async () => {
-          try {
-            const { code, data } = await apiOperationLogSystemCodeOptions();
-            if (code === SUCCESS_CODE && data) {
-              return data;
-            }
-            return [];
-          } catch (error) {
-            console.error('获取系统类型选项失败', error);
-            return [];
-          }
-        },
+        request: createOptionsRequest(apiOperationLogSystemCodeOptions),
         hideInTable: false,
         fieldProps: {
           placeholder: '请选择类型',
@@ -73,32 +62,18 @@ const LogProTable: React.FC = () => {
       },
       {
         title: '操作方式',
-        dataIndex: 'actionType',
+        dataIndex: 'action',
         width: 140,
         valueType: 'select',
-        valueEnum: {
-          [OperationActionType.ADD]: { text: '新增' },
-          [OperationActionType.MODIFY]: { text: '修改' },
-          [OperationActionType.DELETE]: { text: '删除' },
-          [OperationActionType.QUERY]: { text: '查询' },
-          [OperationActionType.AUDIT]: { text: '审批' },
-          [OperationActionType.ENABLE]: { text: '启用' },
-          [OperationActionType.DISABLED]: { text: '禁用' },
-        },
-        hideInTable: true,
-        hideInSearch: false,
+        request: createOptionsRequest(
+          apiOperationLogActionTypeOptions,
+          (data) =>
+            data.map((item) => ({ label: item.label, value: item.label })),
+        ),
         fieldProps: {
           placeholder: '请选择操作方式',
           allowClear: true,
         },
-      },
-      {
-        title: '操作方式',
-        dataIndex: 'action',
-        width: 140,
-        valueType: 'text',
-        hideInTable: false,
-        hideInSearch: true,
       },
       {
         title: '对象名称',
@@ -186,7 +161,7 @@ const LogProTable: React.FC = () => {
       // 类型
       systemCode: tableParams.systemCode ? [tableParams.systemCode] : undefined,
       // 操作方式
-      actionType: tableParams.actionType || undefined,
+      action: tableParams.action ? [tableParams.action] : undefined,
       // 对象名称
       object: tableParams.object || undefined,
       // 对象子类
