@@ -123,29 +123,21 @@ body {
     justify-content: center;
 }
 
-.retry-btn,
 .download-action-btn {
     padding: 8px 24px;
-    background: #1890ff;
-    color: #fff;
-    border: none;
+    background: #fff;
+    color: #333;
+    border: 1px solid #d9d9d9;
     border-radius: 4px;
     font-size: 14px;
     cursor: pointer;
-    transition: background 0.3s;
-}
-
-.retry-btn:hover,
-.download-action-btn:hover {
-    background: #40a9ff;
-}
-
-.download-action-btn {
-    background: #52c41a;
+    transition: all 0.3s;
 }
 
 .download-action-btn:hover {
-    background: #73d13d;
+    background: #f5f5f5;
+    border-color: #40a9ff;
+    color: #40a9ff;
 }
 
 /* ============================================
