@@ -45,8 +45,8 @@
         let fileName = ''; // 文件名
         const params = getQueryParams();
         // 判断是否开发环境
-        const isDev = params?.isDev || 'false';
-        const baseUrl = isDev === 'true' ? 'https://testagent.xspaceagi.com' : '';
+        // const baseUrl = 'https://testagent.xspaceagi.com';
+        const baseUrl = '';
 
         // ============================================
         // URL Parameter Parsing
@@ -388,19 +388,24 @@
                 const { data, code, message } = await response.json();
                 if (code === '0000') {
                     fileUrl = baseUrl + data.content + '?sk=' + sk;
+                    // 从路径中提取文件名
+                    fileName = data.content.split('/').pop();
                     fileType = data.content.split('.').pop().toLowerCase();
                     // 设置下载地址
                     downloadUrl = baseUrl + data.content;
-                    // 从路径中提取文件名
-                    fileName = data.content.split('/').pop();
+                    
                 } else {
                     showError(message);
                     return;
                 }
             } else {
                 // 正常预览操作获取文件地址和类型
-                fileUrl = params.fileUrl || params.url || params.src || '';
-                fileType = (params.fileType || params.type || '').toLowerCase();
+                fileUrl = baseUrl + params.fileUrl + "?_ticket=" + params._ticket;
+                // 从路径中提取文件名
+                fileName = params.fileUrl.split('/').pop();
+                fileType = params.fileUrl.split('.').pop().toLowerCase();
+                // 设置下载地址
+                downloadUrl = baseUrl + params.fileUrl;
             }
 
             // Auto-detect file type from URL if not provided
@@ -423,7 +428,6 @@
             if (fileType === 'ppt') fileType = 'pptx';
             if (fileType === 'doc') fileType = 'docx';
 
-            console.log('[FilePreview] Starting preview:', { fileUrl, fileType });
 
             if (!fileUrl) {
                 showError('未提供文件地址 (fileUrl 参数缺失)');
@@ -531,7 +535,6 @@
                 }
 
                 hideLoading();
-                console.log('[FilePreview] Rendered successfully:', fileType);
 
                 // Notify parent (for iframe/webview communication)
                 notifyParent({ type: 'preview_success', fileType });
@@ -550,6 +553,42 @@
         async function downloadFile() {
             if (!downloadUrl) {
                 showError('下载地址不存在');
+                return;
+            }
+
+            // 检测是否在微信小程序 web-view 环境中
+            const isInMiniProgram = window.__wxjs_environment === 'miniprogram' || 
+                                    (typeof wx !== 'undefined' && wx.miniProgram);
+            
+            if (isInMiniProgram) {
+                // 小程序环境：复制下载链接到剪切板
+                try {
+                    // 尝试使用现代 Clipboard API
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(downloadUrl);
+                        alert('小程序暂不支持直接下载文件\n\n下载链接已复制到剪切板，请在浏览器中打开下载');
+                    } else {
+                        // 降级方案：创建临时输入框
+                        const textArea = document.createElement('textarea');
+                        textArea.value = downloadUrl;
+                        textArea.style.cssText = 'position: fixed; top: -9999px; left: -9999px;';
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        textArea.setSelectionRange(0, 99999); // 兼容移动端
+                        
+                        const successful = document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        
+                        if (successful) {
+                            alert('小程序暂不支持直接下载文件\n\n下载链接已复制到剪切板，请在浏览器中打开下载');
+                        } else {
+                            alert('小程序暂不支持直接下载文件\n\n请长按复制以下链接：\n' + downloadUrl);
+                        }
+                    }
+                } catch (err) {
+                    console.error('[FilePreview] Copy to clipboard failed:', err);
+                    alert('小程序暂不支持直接下载文件\n\n请长按复制以下链接：\n' + downloadUrl);
+                }
                 return;
             }
 
@@ -602,7 +641,6 @@
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
                 
-                console.log('[FilePreview] File downloaded successfully:', downloadFileName);
             } catch (error) {
                 console.error('[FilePreview] Download error:', error);
                 showError(error.message || '下载失败');
