@@ -61,13 +61,7 @@ import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined, RollbackOutlined } from '@ant-design/icons';
 import { Button, Form, message as messageAntd, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import ConversationStatus from './components/ConversationStatus';
 import DropdownChangeName from './DropdownChangeName';
@@ -482,11 +476,6 @@ const Chat: React.FC = () => {
     const { conversationId } = data;
     // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
     if (conversationId === conversationInfo?.id?.toString()) {
-      setConversationInfo({
-        ...conversationInfo,
-        taskStatus: TaskStatus.COMPLETE,
-      });
-
       // 重新查询会话信息
       runAsync(id);
       // 重新查询会话记录
@@ -499,22 +488,6 @@ const Chat: React.FC = () => {
       eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
     }
   };
-
-  // 处理任务停止后的刷新逻辑
-  const handleTaskStopped = useCallback(
-    (conversationId: string) => {
-      if (Number(conversationId) === Number(id)) {
-        // 重新查询会话信息
-        runAsync(id);
-        // 重新查询会话记录
-        runHistory({
-          agentId: null,
-          limit: 20,
-        });
-      }
-    },
-    [id],
-  );
 
   useEffect(() => {
     if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
@@ -672,24 +645,35 @@ const Chat: React.FC = () => {
         fileNode.name,
         async () => {
           try {
-            // 找到要删除的文件
-            const currentFile = fileTreeData?.find(
-              (item: StaticFileInfo) => item.fileId === fileNode.id,
-            );
-            if (!currentFile) {
-              messageAntd.error('文件不存在，无法删除');
-              resolve(false);
-              return;
-            }
-
-            // 更新文件操作
-            currentFile.operation = 'delete';
-            // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
-            currentFile.contents = '';
             // 更新文件列表
-            const updatedFilesList = [
-              currentFile,
-            ] as VncDesktopUpdateFileInfo[];
+            let updatedFilesList: VncDesktopUpdateFileInfo[] = [];
+            if (fileNode.type === 'folder') {
+              updatedFilesList = [
+                {
+                  contents: '',
+                  name: fileNode.id,
+                  operation: 'delete', // 操作类型
+                  isDir: true,
+                },
+              ];
+            } else {
+              // 找到要删除的文件
+              const currentFile = fileTreeData?.find(
+                (item: StaticFileInfo) => item.fileId === fileNode.id,
+              );
+              if (!currentFile) {
+                messageAntd.error('文件不存在，无法删除');
+                resolve(false);
+                return;
+              }
+
+              // 更新文件操作
+              currentFile.operation = 'delete';
+              // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
+              currentFile.contents = '';
+              // 更新文件列表
+              updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
+            }
 
             // 更新技能信息
             const newSkillInfo: IUpdateStaticFileParams = {
@@ -1052,7 +1036,6 @@ const Chat: React.FC = () => {
             onSelectComponent={handleSelectComponent}
             onScrollBottom={onScrollBottom}
             showAnnouncement={true}
-            onTaskStopped={handleTaskStopped}
           />
         </div>
       </div>
