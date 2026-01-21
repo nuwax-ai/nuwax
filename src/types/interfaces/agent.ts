@@ -12,10 +12,8 @@ import type {
   HomeIndexEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
-  OperationActionType,
   OutputDirectlyEnum,
   SearchStrategyEnum,
-  SystemEnum,
   VisibleToLLMEnum,
 } from '@/types/enums/agent';
 import type {
@@ -717,9 +715,9 @@ export interface SpaceLogQueryFilter {
 // 日志查询-操作日志
 export interface OperationLogQueryFilter {
   // 类型
-  systemCode?: SystemEnum[];
+  systemCode?: string[];
   // 操作方式
-  actionType?: OperationActionType;
+  action?: string[];
   // 对象名称
   object?: string;
   // 对象子类

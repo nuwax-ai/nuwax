@@ -1,4 +1,5 @@
 import CreateAgent from '@/components/CreateAgent';
+import Loading from '@/components/custom/Loading';
 import FileTreeView from '@/components/FileTreeView';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import ResizableSplit from '@/components/ResizableSplit';
@@ -147,6 +148,10 @@ const EditAgent: React.FC = () => {
     ModelConfigInfo[]
   >([]);
 
+  // 获取智能体配置信息是否加载中
+  const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] =
+    useState<boolean>(false);
+
   // 查询可使用模型列表接口
   const runMode = async (params: ModelListParams) => {
     const result = await apiModelList(params);
@@ -162,23 +167,20 @@ const EditAgent: React.FC = () => {
   }, [spaceId]);
 
   // 查询智能体配置信息
-  const { run, loading: loadingAgentConfigInfo } = useRequest(
-    apiAgentConfigInfo,
-    {
-      manual: true,
-      debounceWait: 300,
-      onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
-        setAgentConfigInfo(result?.data);
-      },
+  const { run } = useRequest(apiAgentConfigInfo, {
+    manual: true,
+    debounceWait: 300,
+    onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
+      setLoadingAgentConfigInfo(false);
+      setAgentConfigInfo(result?.data);
     },
-  );
+    onError: () => {
+      setLoadingAgentConfigInfo(false);
+    },
+  });
 
   useEffect(() => {
-    if (loadingAgentConfigInfo) {
-      setIsLoadingOtherInterface(true);
-    } else {
-      setIsLoadingOtherInterface(false);
-    }
+    setIsLoadingOtherInterface(loadingAgentConfigInfo);
   }, [loadingAgentConfigInfo]);
 
   // 查询智能体配置信息
@@ -263,8 +265,8 @@ const EditAgent: React.FC = () => {
   });
 
   useEffect(() => {
+    setLoadingAgentConfigInfo(true);
     run(agentId);
-    // runComponentList(agentId);
     // 设置页面title
     setTitle();
   }, [agentId]);
@@ -597,24 +599,35 @@ const EditAgent: React.FC = () => {
               return;
             }
 
-            // 找到要删除的文件
-            const currentFile = fileTreeData?.find(
-              (item: StaticFileInfo) => item.fileId === fileNode.id,
-            );
-            if (!currentFile) {
-              messageAntd.error('文件不存在，无法删除');
-              resolve(false);
-              return;
-            }
-
-            // 更新文件操作
-            currentFile.operation = 'delete';
-            // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
-            currentFile.contents = '';
             // 更新文件列表
-            const updatedFilesList = [
-              currentFile,
-            ] as VncDesktopUpdateFileInfo[];
+            let updatedFilesList: VncDesktopUpdateFileInfo[] = [];
+            if (fileNode.type === 'folder') {
+              updatedFilesList = [
+                {
+                  contents: '',
+                  name: fileNode.id,
+                  operation: 'delete', // 操作类型
+                  isDir: true,
+                },
+              ];
+            } else {
+              // 找到要删除的文件
+              const currentFile = fileTreeData?.find(
+                (item: StaticFileInfo) => item.fileId === fileNode.id,
+              );
+              if (!currentFile) {
+                messageAntd.error('文件不存在，无法删除');
+                resolve(false);
+                return;
+              }
+
+              // 更新文件操作
+              currentFile.operation = 'delete';
+              // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
+              currentFile.contents = '';
+              // 更新文件列表
+              updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
+            }
 
             // 更新技能信息
             const newSkillInfo: IUpdateStaticFileParams = {
@@ -883,6 +896,25 @@ const EditAgent: React.FC = () => {
       document.documentElement.style.minWidth = '1200px';
     };
   }, [pagePreviewData, isFileTreeVisible, showType, agentConfigInfo?.type]);
+
+  /**
+   * 加载中
+   */
+  if (loadingAgentConfigInfo) {
+    return (
+      <div
+        className={cx(
+          'h-full',
+          'flex',
+          'flex-1',
+          'items-center',
+          'justify-center',
+        )}
+      >
+        <Loading />
+      </div>
+    );
+  }
 
   return (
     <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>

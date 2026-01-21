@@ -38,12 +38,6 @@ const SubAgentConfig: React.FC<SubAgentConfigProps> = ({
   const [modalOpen, setModalOpen] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
 
-  // 打开新建弹窗
-  const handleAdd = () => {
-    setEditIndex(null);
-    setModalOpen(true);
-  };
-
   // 打开编辑弹窗
   const handleEdit = (index: number) => {
     setEditIndex(index);
@@ -87,14 +81,6 @@ const SubAgentConfig: React.FC<SubAgentConfigProps> = ({
 
   return (
     <div>
-      {/* 隐藏的添加按钮，供父组件触发 */}
-      <button
-        type="button"
-        data-subagent-add
-        style={{ display: 'none' }}
-        onClick={handleAdd}
-      />
-
       {/* 空状态 */}
       {!processedAgents?.length && (
         <p className={cx(styles['empty-text'])}>
