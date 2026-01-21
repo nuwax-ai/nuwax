@@ -672,24 +672,35 @@ const Chat: React.FC = () => {
         fileNode.name,
         async () => {
           try {
-            // 找到要删除的文件
-            const currentFile = fileTreeData?.find(
-              (item: StaticFileInfo) => item.fileId === fileNode.id,
-            );
-            if (!currentFile) {
-              messageAntd.error('文件不存在，无法删除');
-              resolve(false);
-              return;
-            }
-
-            // 更新文件操作
-            currentFile.operation = 'delete';
-            // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
-            currentFile.contents = '';
             // 更新文件列表
-            const updatedFilesList = [
-              currentFile,
-            ] as VncDesktopUpdateFileInfo[];
+            let updatedFilesList: VncDesktopUpdateFileInfo[] = [];
+            if (fileNode.type === 'folder') {
+              updatedFilesList = [
+                {
+                  contents: '',
+                  name: fileNode.id,
+                  operation: 'delete', // 操作类型
+                  isDir: true,
+                },
+              ];
+            } else {
+              // 找到要删除的文件
+              const currentFile = fileTreeData?.find(
+                (item: StaticFileInfo) => item.fileId === fileNode.id,
+              );
+              if (!currentFile) {
+                messageAntd.error('文件不存在，无法删除');
+                resolve(false);
+                return;
+              }
+
+              // 更新文件操作
+              currentFile.operation = 'delete';
+              // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
+              currentFile.contents = '';
+              // 更新文件列表
+              updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
+            }
 
             // 更新技能信息
             const newSkillInfo: IUpdateStaticFileParams = {

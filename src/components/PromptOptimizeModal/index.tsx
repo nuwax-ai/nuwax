@@ -16,6 +16,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 自动优化弹窗
+ */
 const PromptOptimizeModal: React.FC<
   ModalProps & {
     title?: string;
