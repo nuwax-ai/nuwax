@@ -71,6 +71,9 @@ const Login: React.FC = () => {
         history.replace('/');
       }
     },
+    onError: (error: any) => {
+      console.error('[Login] Request Error:', error);
+    },
   });
 
   useEffect(() => {
@@ -126,6 +129,12 @@ const Login: React.FC = () => {
       areaCode = '86',
       password,
     } = form.getFieldsValue() || {};
+    console.log('[Login] API Request Params:', {
+      phoneOrEmail,
+      areaCode,
+      password,
+      captchaVerifyParam,
+    });
     run({ phoneOrEmail, areaCode, password, captchaVerifyParam });
   };
 
