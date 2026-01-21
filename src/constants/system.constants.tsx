@@ -42,21 +42,21 @@ export const SYSTEM_MANAGE_LIST = [
   //   icon: <SvgIcon name="icons-nav-palette" />,
   //   text: '系统概览',
   // },
-  {
-    type: SystemManageListEnum.Log_Query,
-    icon: <SvgIcon name="icons-chat-history" />,
-    text: '日志查询',
-    list: [
-      {
-        text: '操作日志',
-        type: SystemManageListEnum.Operation_Log,
-      },
-      {
-        text: '运行日志',
-        type: SystemManageListEnum.Running_Log,
-      },
-    ],
-  },
+  // {
+  //   type: SystemManageListEnum.Log_Query,
+  //   icon: <SvgIcon name="icons-chat-history" />,
+  //   text: '日志查询',
+  //   list: [
+  //     {
+  //       text: '操作日志',
+  //       type: SystemManageListEnum.Operation_Log,
+  //     },
+  //     {
+  //       text: '运行日志',
+  //       type: SystemManageListEnum.Running_Log,
+  //     },
+  //   ],
+  // },
   // {
   //   type: SystemManageListEnum.Content,
   //   icon: <SvgIcon name="icons-chat-history" />,
