@@ -65,10 +65,8 @@ const LogProTable: React.FC = () => {
         dataIndex: 'action',
         width: 140,
         valueType: 'select',
-        request: createOptionsRequest(
-          apiOperationLogActionTypeOptions,
-          (data) =>
-            data.map((item) => ({ label: item.label, value: item.label })),
+        request: createOptionsRequest(apiOperationLogActionTypeOptions, (d) =>
+          d.map((i) => ({ label: i.label, value: i.label })),
         ),
         fieldProps: {
           placeholder: '请选择操作方式',
