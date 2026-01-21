@@ -37,6 +37,47 @@ export interface MenuItemDto {
   children?: MenuItemDto[];
   /** 页面功能权限列表 */
   permissions?: PermissionDto[];
+  /** 描述 */
+  description?: string;
+  /** 来源 1:系统内置 2:用户自定义 */
+  source?: number;
+  /** 父级ID */
+  parentId?: number;
+  /** 是否显示 1:显示 0:隐藏 */
+  visible?: number;
+  /** 创建人 */
+  creator?: string;
+  /** 创建时间 */
+  created?: string;
+  /** 修改人ID */
+  modifierId?: number;
+  /** 修改人 */
+  modifier?: string;
+  /** 修改时间 */
+  modified?: string;
+}
+
+/**
+ * 后端返回的菜单数据结构
+ */
+export interface SysMenuDto {
+  id: number;
+  code: string;
+  name: string;
+  description: string;
+  source: number;
+  parentId: number;
+  path: string;
+  icon: string;
+  sortIndex: number;
+  status: number;
+  visible: number;
+  creator: string;
+  created: string;
+  modifierId: number;
+  modifier: string;
+  modified: string;
+  children: SysMenuDto[];
 }
 
 /**
@@ -44,7 +85,7 @@ export interface MenuItemDto {
  */
 export interface MenuQueryResponse {
   /** 菜单树列表 */
-  menus: MenuItemDto[];
+  menus: MenuItemDto[] | SysMenuDto[];
 }
 
 /**
