@@ -31,13 +31,13 @@ export interface VncDesktopUpdateFileInfo {
   // 文件名称
   name: string;
   // 是否为二进制文件
-  binary: boolean;
+  binary?: boolean;
   // 文件大小是否超过限制
-  sizeExceeded: boolean;
+  sizeExceeded?: boolean;
   // 文件内容
   contents: string;
   // 重命名之前的文件名
-  renameFrom: string;
+  renameFrom?: string;
   // 操作类型
   operation: string;
   // 是否目录
