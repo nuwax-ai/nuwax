@@ -183,6 +183,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 用于记录创建文件成功后需要选择的文件路径
     const pendingSelectFileRef = useRef<string | null>(null);
 
+    // 备份文件列表，用于判断文件列表是否发生变化
+    const filesRef = useRef<FileNode[]>([]);
+
     // 用于存储文件的刷新时间戳，确保每次点击时都能刷新
     // 统一使用一个时间戳，适用于 html、office、json 等需要刷新的文件类型
     const fileRefreshTimestampRef = useRef<number>(Date.now());
@@ -336,8 +339,16 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             return;
           }
 
-          // 如果文件节点是链接文件，则不支持预览
-          if (fileNode?.isLink) {
+          // 获取文件内容
+          const fileContent = fileNode?.content || '';
+          // 获取文件代理URL
+          const fileProxyUrl = fileNode?.fileProxyUrl || '';
+
+          /**
+           * 如果文件有内容，直接使用缓存 （skill技能页面时，文件有内容，但是没有文件代理URL）
+           * 如果文件节点是链接文件，则不支持预览
+           */
+          if ((fileContent && !fileProxyUrl) || fileNode?.isLink) {
             setSelectedFileId(fileNode?.id || fileId);
             setViewFileType('preview');
             setSelectedFileNode(fileNode);
@@ -362,8 +373,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 如果是重复点击需要刷新的文件（html、office、json），更新刷新时间戳以强制刷新
           if (isSameFile && (isHtmlFile || isOfficeFile || isJsonFile)) {
             fileRefreshTimestampRef.current = Date.now();
-            // 仍然调用刷新逻辑以更新文件内容
-            await handleRefreshFileList();
             return;
           }
 
@@ -392,19 +401,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           // 如果是新选中的音频文件，更新刷新时间戳
           if (isAudioFileType) {
             audioRefreshTimestampRef.current = Date.now();
-          }
-
-          // 获取文件内容
-          const fileContent = fileNode?.content || '';
-          // 获取文件代理URL
-          const fileProxyUrl = fileNode?.fileProxyUrl || '';
-
-          // 如果文件有内容，直接使用缓存
-          if (fileContent && !fileProxyUrl) {
-            setSelectedFileId(fileNode?.id || fileId);
-            setViewFileType('preview');
-            setSelectedFileNode(fileNode);
-            return;
           }
 
           // 文件没有内容或需要重新加载
@@ -472,13 +468,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           setSelectedFileId('');
         }
       },
-      [
-        files,
-        isRenamingFile,
-        selectedFileId,
-        handleRefreshFileList,
-        changeFiles,
-      ],
+      [files, isRenamingFile, selectedFileId, changeFiles],
     );
 
     // 文件选择（对外接口，用于用户主动选择）
@@ -531,15 +521,20 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
          *
          * 注意：必须同时检查 !prevTaskAgentSelectedFileIdRef.current，避免在文件ID没有变化时重复执行
          * 如果注释掉这个条件，会导致：
-         * 1. handleFileSelectInternal 可能触发 handleRefreshFileList()，更新 files
+         * 1. handleFileSelectInternal 可能触发 handleRefreshFileList()，更新 files， 此逻辑已删除
          * 2. files 更新导致 useEffect 重新执行
          * 3. 由于 hasTriggerChanged 仍为 false，又会进入这个分支
          * 4. 形成无限循环
+         * 5、（很重要）存在这样一种情况，先更新了taskAgentSelectTrigger，但是此时文件树数据还未更新，导致此处直接return，导致文件树数据更新后，无法自动选择文件
+         * 而且只能通过判断长度来判断文件列表是否发生变化，因为文件列表中的文件节点可能发生变化，但是文件列表的长度不会发生变化
          */
         if (
-          taskAgentSelectedFileId &&
-          !prevTaskAgentSelectedFileIdRef.current
+          (taskAgentSelectedFileId &&
+            !prevTaskAgentSelectedFileIdRef.current) ||
+          filesRef.current?.length !== files?.length
         ) {
+          prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+          filesRef.current = files;
           handleFileSelectInternal(taskAgentSelectedFileId);
         }
         return;
@@ -568,6 +563,9 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       if (taskAgentSelectTrigger !== undefined) {
         prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
       }
+
+      // 备份文件列表，用于判断文件列表是否发生变化
+      filesRef.current = files;
 
       // 使用内部函数，不设置用户选择标记
       handleFileSelectInternal(taskAgentSelectedFileId);
