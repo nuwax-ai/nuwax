@@ -175,6 +175,7 @@ export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
     case NodeTypeEnum.IntentRecognition:
       return <ICON_WORKFLOW_INTENT_RECOGNITION />;
     case NodeTypeEnum.Knowledge:
+    case NodeTypeEnum.KnowledgeWrite:
       return <ICON_WORKFLOW_KNOWLEDGE_BASE />;
     case NodeTypeEnum.LLM:
       return <ICON_WORKFLOW_LLM />;
@@ -228,6 +229,7 @@ export const returnBackgroundColor = (type: NodeTypeEnum) => {
     case NodeTypeEnum.IntentRecognition:
       return '#ebf9f9';
     case NodeTypeEnum.Knowledge:
+    case NodeTypeEnum.KnowledgeWrite:
     // case 'Database':
     case NodeTypeEnum.Variable:
     case NodeTypeEnum.VariableAggregation:

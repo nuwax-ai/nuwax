@@ -5,6 +5,7 @@ import React from 'react';
 import ComplexNode from '../component/complexNode';
 import ConditionNode from '../component/condition';
 import Database from '../component/database';
+import KnowledgeWriteNode from '../component/knowledgeWriteNode';
 import Library from '../component/library';
 import NodeItem from '../component/nodeItem';
 import ReferenceNode from '../component/pluginNode';
@@ -74,6 +75,7 @@ export const getNodeComponent = (params: ChildNode, form: FormInstance) => {
     [NodeTypeEnum.QA]: <QuestionsNode {...commonProps} />,
     [NodeTypeEnum.HTTPRequest]: <HttpToolNode {...commonProps} />,
     [NodeTypeEnum.Knowledge]: <KnowledgeNode {...commonProps} />,
+    [NodeTypeEnum.KnowledgeWrite]: <KnowledgeWriteNode {...commonProps} />,
     [NodeTypeEnum.Condition]: <ConditionNode {...commonProps} />,
     [NodeTypeEnum.IntentRecognition]: <IntentionNode {...commonProps} />,
     [NodeTypeEnum.LoopBreak]: <LoopBreak />,

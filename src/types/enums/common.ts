@@ -87,6 +87,8 @@ export enum NodeTypeEnum {
   TableSQL = 'TableSQL',
   // mcp
   MCP = 'Mcp',
+  // 知识库写入
+  KnowledgeWrite = 'KnowledgeWrite',
 }
 
 export enum DataTypeEnum {

@@ -56,6 +56,7 @@ export const NODE_DEFAULT_NAMES: Partial<Record<NodeTypeEnum, string>> = {
   [NodeTypeEnum.LoopCondition]: '循环条件',
   [NodeTypeEnum.Interval]: '间隔',
   [NodeTypeEnum.TextProcessing]: '文本处理',
+  [NodeTypeEnum.KnowledgeWrite]: '知识库写入',
 };
 
 /**
@@ -358,6 +359,50 @@ export function createDefaultNodeConfig(
             name: 'result',
             dataType: DataTypeEnum.Array_String,
             description: '召回的知识内容',
+            require: true,
+            systemVariable: true,
+          }),
+        ],
+      };
+
+    case NodeTypeEnum.KnowledgeWrite:
+      return {
+        ...baseConfig,
+        knowledgeBaseId: undefined,
+        parsingStrategy: 'FAST', // FAST | PRECISE
+        segmentationStrategy: 'AUTO', // AUTO | CUSTOM
+        inputArgs: [
+          createDefaultArg({
+            key: 'knowledge',
+            name: 'knowledge',
+            dataType: DataTypeEnum.File_Doc,
+            description: '知识库文件',
+            require: true,
+            systemVariable: false,
+          }),
+        ],
+        outputArgs: [
+          createDefaultArg({
+            key: 'documentId',
+            name: 'documentId',
+            dataType: DataTypeEnum.String,
+            description: '文档ID',
+            require: true,
+            systemVariable: true,
+          }),
+          createDefaultArg({
+            key: 'fileName',
+            name: 'fileName',
+            dataType: DataTypeEnum.String,
+            description: '文件名',
+            require: true,
+            systemVariable: true,
+          }),
+          createDefaultArg({
+            key: 'fileUrl',
+            name: 'fileUrl',
+            dataType: DataTypeEnum.String,
+            description: '文件地址',
             require: true,
             systemVariable: true,
           }),

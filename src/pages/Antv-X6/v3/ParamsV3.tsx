@@ -164,6 +164,14 @@ export const asideList: StencilList[] = [
         shape: NodeShapeEnum.General,
         description: '在选定的知识中，根据输入变量召回最匹配的信息',
       },
+      {
+        name: '知识库写入',
+        icon: <ICON_WORKFLOW_KNOWLEDGE_BASE />,
+        bgIcon: BG_ICON_WORKFLOW_KNOWLEDGE_BASE,
+        type: NodeTypeEnum.KnowledgeWrite,
+        shape: NodeShapeEnum.General,
+        description: '写入节点可以添加 文本类型 的知识库，仅可以添加一个知识库',
+      },
       // {
       //   name: '数据库',
       //   icon: <ICON_WORKFLOW_DATABASE />,

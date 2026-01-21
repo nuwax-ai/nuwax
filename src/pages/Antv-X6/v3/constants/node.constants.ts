@@ -24,6 +24,7 @@ export const testRunList = [
   'TableDataUpdate',
   'TableDataDelete',
   'TableDataAdd',
+  'KnowledgeWrite',
 ];
 
 export const branchTypeMap = {
@@ -66,6 +67,7 @@ export const EXCEPTION_NODES_TYPE = [
   NodeTypeEnum.QA,
   NodeTypeEnum.DocumentExtraction,
   NodeTypeEnum.HTTPRequest,
+  NodeTypeEnum.KnowledgeWrite,
 ];
 
 export const RETRY_COUNT_OPTIONS = [
