@@ -21,41 +21,6 @@ export enum AgentComponentTypeEnum {
   Plan = 'Plan',
 }
 
-// 操作日志-类型
-export enum SystemEnum {
-  // 知识库基础配置
-  KNOWLEDGE_CONFIG = 'KNOWLEDGE_CONFIG',
-  // 智能体
-  AGENT = 'AGENT',
-  // 评估配置
-  REPORT = 'REPORT',
-  // 系统配置
-  SYSTEM = 'SYSTEM',
-  // 日志平台
-  LOG_PLATFORM = 'LOG_PLATFORM',
-  // 生态市场
-  ECO_MARKET = 'ECO_MARKET',
-  // 数据表
-  DB_TABLE = 'DB_TABLE',
-}
-// 操作日志-操作类型
-export enum OperationActionType {
-  // 新增
-  ADD = 'ADD',
-  // 修改
-  MODIFY = 'MODIFY',
-  // 删除
-  DELETE = 'DELETE',
-  // 查询
-  QUERY = 'QUERY',
-  // 审批
-  AUDIT = 'AUDIT',
-  // 启用
-  ENABLE = 'ENABLE',
-  // 禁用
-  DISABLED = 'DISABLED',
-}
-
 // 用户APIKEY目标类型,可用值:Agent,Mcp,TempChat
 export enum AgentApiKeyTargetEnum {
   Agent = 'Agent',

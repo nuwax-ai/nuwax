@@ -3,9 +3,15 @@ import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
 import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
 import type { SystemUserTipsWordProps } from '@/types/interfaces/space';
-import { Button, Segmented, Tooltip } from 'antd';
+import { Button, Modal, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -128,51 +134,21 @@ const SystemTipsWord = forwardRef<
       },
     }));
 
-    return (
-      <div
-        className={cx(
-          'flex',
-          'flex-col',
-          'flex-1',
-          styles.container,
-          className,
-        )}
-      >
-        <div
-          className={cx(
-            'flex',
-            'items-center',
-            'content-between',
-            styles['system-tips-wrapper'],
-          )}
-        >
-          <Segmented
-            value={valueSegmented}
-            onChange={setValueSegmented}
-            options={[
-              { label: '系统提示词', value: 'systemPrompt' },
-              { label: '用户提示词', value: 'userPrompt' },
-            ]}
-          />
-          {valueSegmented === 'systemPrompt' && (
-            <Tooltip title="自动优化提示词" placement="top">
-              <Button
-                color="primary"
-                variant="filled"
-                size="small"
-                className={cx(styles['optimize-btn'])}
-                icon={
-                  <SvgIcon name="icons-common-stars" style={{ fontSize: 16 }} />
-                }
-                onClick={() => setOpen(true)}
-              >
-                优化
-              </Button>
-            </Tooltip>
-          )}
-        </div>
+    const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
-        <div className={'flex-1 scroll-container'}>
+    /**
+     * 切换全屏模式
+     */
+    const toggleFullscreen = () => {
+      setIsFullscreen((prev) => !prev);
+    };
+
+    /**
+     * 提示词输入区域
+     */
+    const promptInput = useMemo(() => {
+      return (
+        <div className={'flex-1 scroll-container h-full'}>
           {valueSegmented === 'systemPrompt' ? (
             <TiptapVariableInput
               key={'systemPrompt'}
@@ -203,7 +179,105 @@ const SystemTipsWord = forwardRef<
             />
           )}
         </div>
+      );
+    }, [
+      valueSegmented,
+      valueSystem,
+      valueUser,
+      variables,
+      skills,
+      onChangeSystem,
+      onChangeUser,
+    ]);
 
+    /**
+     * 标题：包含全屏切换按钮
+     */
+    const modalTitle = (
+      <div className={cx('flex', 'items-center', 'content-between')}>
+        <span>
+          {valueSegmented === 'systemPrompt' ? '系统提示词' : '用户提示词'}
+        </span>
+        <Tooltip title="退出全屏">
+          <Button
+            type="text"
+            icon={
+              <SvgIcon
+                name="icons-common-zoom_out"
+                style={{ fontSize: '14px' }}
+              />
+            }
+            onClick={toggleFullscreen}
+          />
+        </Tooltip>
+      </div>
+    );
+
+    return (
+      <div
+        className={cx(
+          'flex',
+          'flex-col',
+          'flex-1',
+          styles.container,
+          className,
+        )}
+      >
+        <div
+          className={cx(
+            'flex',
+            'items-center',
+            'content-between',
+            styles['system-tips-wrapper'],
+          )}
+        >
+          <Segmented
+            value={valueSegmented}
+            onChange={setValueSegmented}
+            options={[
+              { label: '系统提示词', value: 'systemPrompt' },
+              { label: '用户提示词', value: 'userPrompt' },
+            ]}
+          />
+          <div className="flex items-center gap-6">
+            <Tooltip title="全屏编辑">
+              <Button
+                type="text"
+                icon={
+                  <SvgIcon
+                    name="icons-common-zoom_in"
+                    style={{ fontSize: '14px' }}
+                  />
+                }
+                onClick={toggleFullscreen}
+              />
+            </Tooltip>
+            {valueSegmented === 'systemPrompt' && (
+              <Tooltip title="自动优化提示词" placement="top">
+                <Button
+                  color="primary"
+                  variant="filled"
+                  size="small"
+                  className={cx(styles['optimize-btn'])}
+                  icon={
+                    <SvgIcon
+                      name="icons-common-stars"
+                      style={{ fontSize: 16 }}
+                    />
+                  }
+                  onClick={() => setOpen(true)}
+                >
+                  优化
+                </Button>
+              </Tooltip>
+            )}
+          </div>
+        </div>
+
+        {/* 提示词输入区域 */}
+        {promptInput}
+
+        {/* 自动优化弹窗 */}
         <PromptOptimizeModal
           open={open}
           onCancel={() => setOpen(false)}
@@ -215,11 +289,44 @@ const SystemTipsWord = forwardRef<
               `${agentConfigInfo?.description || ''}`
           }
         />
+
+        {/* 提示词全屏弹窗 */}
+        <Modal
+          title={modalTitle}
+          open={isFullscreen}
+          footer={null}
+          closable={false}
+          width="100vw"
+          style={{
+            top: 0,
+            paddingBottom: 0,
+            maxWidth: '100vw',
+          }}
+          styles={{
+            body: {
+              height: 'calc(100vh - 57px)',
+              overflow: 'auto',
+              padding: 0,
+            },
+            content: {
+              padding: 0,
+              height: '100vh',
+            },
+            header: {
+              height: '57px',
+              borderRadius: 0,
+              marginBottom: 0,
+              padding: '16px 24px',
+              borderBottom: '1px solid #f0f0f0',
+            },
+          }}
+        >
+          {/* 提示词输入区域 */}
+          {promptInput}
+        </Modal>
       </div>
     );
   },
 );
-
-SystemTipsWord.displayName = 'SystemTipsWord';
 
 export default SystemTipsWord;
