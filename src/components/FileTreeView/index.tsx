@@ -469,6 +469,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         } else {
           // 所有匹配方式都失败，设置选中文件节点为 null
           setSelectedFileNode(null);
+          setSelectedFileId('');
         }
       },
       [
@@ -1283,8 +1284,15 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
 
       // 如果 taskAgentSelectedFileId 存在，但没有选中文件，则不渲染内容
-      if (taskAgentSelectedFileId && !selectedFileNode) {
-        return null;
+      if (taskAgentSelectedFileId && !selectedFileNode && !selectedFileId) {
+        return (
+          <AppDevEmptyState
+            showTitle={false}
+            showIcon={false}
+            showButtons={false}
+            description="没有匹配到对应的文件，请从左侧文件树选择一个文件进行预览"
+          />
+        );
       }
 
       // 预览模式：根据文件状态和类型渲染不同内容
