@@ -157,12 +157,14 @@ body {
     height: 100%;
     border: none;
     background: #fff;
+    overflow: hidden; /* 禁止容器滚动，由 iframe 内部控制 */
 }
 
 .html-preview-iframe {
     width: 100%;
     height: 100%;
     border: none;
+    display: block;
 }
 
 /* ============================================
