@@ -48,9 +48,6 @@
 
         // 获取文件的 origin
         function getBaseUrl(url) {
-            if (!url || url.startsWith('/')) {
-                return window.location.origin;
-            }
             try {
                 return new URL(url).origin;
             } catch (e) {
