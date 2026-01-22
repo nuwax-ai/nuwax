@@ -5,11 +5,11 @@
 // ==================== 枚举定义 ====================
 
 /**
- * 角色状态枚举
+ * 角色状态枚举 1:启动 0:禁用
  */
 export enum RoleStatusEnum {
-  Enabled = 'Enabled', // 启用
-  Disabled = 'Disabled', // 禁用
+  Enabled = 1, // 启用
+  Disabled = 0, // 禁用
 }
 
 // 子菜单绑定类型 0:未绑定 1:全部绑定 2:部分绑定
