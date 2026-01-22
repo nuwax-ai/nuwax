@@ -161,7 +161,9 @@ const SystemTipsWord = forwardRef<
                 editorSystemRef.current = editor;
               }}
               style={
-                agentConfigInfo?.type === AgentTypeEnum.ChatBot
+                isFullscreen
+                  ? {}
+                  : agentConfigInfo?.type === AgentTypeEnum.ChatBot
                   ? { height: '100%', border: 'none' }
                   : {}
               }
@@ -179,7 +181,9 @@ const SystemTipsWord = forwardRef<
                 editorUserRef.current = editor;
               }}
               style={
-                agentConfigInfo?.type === AgentTypeEnum.ChatBot
+                isFullscreen
+                  ? {}
+                  : agentConfigInfo?.type === AgentTypeEnum.ChatBot
                   ? { height: '100%', border: 'none' }
                   : {}
               }
@@ -191,6 +195,7 @@ const SystemTipsWord = forwardRef<
         </div>
       );
     }, [
+      isFullscreen,
       valueSegmented,
       valueSystem,
       valueUser,
@@ -318,28 +323,11 @@ const SystemTipsWord = forwardRef<
           closable={false}
           onCancel={toggleFullscreen}
           width="100vw"
+          className={cx(isFullscreen && styles['fullscreen-modal'])}
           style={{
             top: 0,
             paddingBottom: 0,
             maxWidth: '100vw',
-          }}
-          styles={{
-            body: {
-              height: 'calc(100vh - 57px)',
-              overflow: 'auto',
-              padding: 0,
-            },
-            content: {
-              padding: 0,
-              height: '100vh',
-            },
-            header: {
-              height: '57px',
-              borderRadius: 0,
-              marginBottom: 0,
-              padding: '16px 24px',
-              borderBottom: '1px solid #f0f0f0',
-            },
           }}
         >
           {/* 提示词输入区域 */}
