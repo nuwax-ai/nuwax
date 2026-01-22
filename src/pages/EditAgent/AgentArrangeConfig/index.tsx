@@ -135,47 +135,39 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         key: 'plan',
         label: '规划',
         ref: planSectionRef,
-        show: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
       },
       {
         key: 'tool',
         label: '工具',
         ref: toolSectionRef,
-        show: true,
       },
       {
         key: 'skill',
         label: '技能',
         ref: skillSectionRef,
-        // 仅长任务型智能体展示技能块
-        show: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
       },
       {
         key: 'knowledge',
         label: '知识',
         ref: knowledgeSectionRef,
-        show: true,
       },
       {
         key: 'memory',
         label: '记忆',
         ref: memorySectionRef,
-        show: true,
       },
       {
         key: 'experience',
         label: '对话',
         ref: experienceSectionRef,
-        show: true,
       },
       {
         key: 'page',
         label: '界面',
         ref: pageSectionRef,
-        show: true,
       },
     ],
-    [agentConfigInfo?.type],
+    [],
   );
 
   /**
@@ -1195,19 +1187,17 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         {/* 左侧锚点菜单 */}
         {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
           <div className={styles['anchor-sidebar']}>
-            {anchorItems
-              .filter((item) => item.show)
-              .map((item) => (
-                <div
-                  key={item.key}
-                  className={cx(styles['anchor-item'])}
-                  onClick={() => handleAnchorClick(item.key, item.ref)}
-                >
-                  <span className={styles['anchor-item-label']}>
-                    {item.label}
-                  </span>
-                </div>
-              ))}
+            {anchorItems.map((item) => (
+              <div
+                key={item.key}
+                className={cx(styles['anchor-item'])}
+                onClick={() => handleAnchorClick(item.key, item.ref)}
+              >
+                <span className={styles['anchor-item-label']}>
+                  {item.label}
+                </span>
+              </div>
+            ))}
           </div>
         )}
 
