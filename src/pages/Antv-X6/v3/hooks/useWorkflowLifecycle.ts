@@ -41,6 +41,17 @@ export const useWorkflowLifecycle = ({
         const _edgeList = getEdges(_nodeList);
         setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
 
+        // V3: 刷新时同步更新代理层数据（修复还原版本后节点操作报错问题）
+        workflowProxy.initialize({
+          workflowId: workflowId,
+          nodes: _nodeList,
+          edges: _edgeList,
+          systemVariables: data.systemVariables,
+          modified: data.modified || new Date().toISOString(),
+        });
+        workflowProxy.setWorkflowInfo(data);
+        workflowSaveService.initialize(data);
+
         // V3: 刷新时同步更新版本号
         if (data.editVersion !== undefined) {
           workflowSaveService.setEditVersion(data.editVersion);
