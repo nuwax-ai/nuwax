@@ -46,4 +46,6 @@ export interface FileContextMenuProps {
   onImportProject?: () => void;
   /** 通过URL下载文件回调 */
   onDownloadFileByUrl?: (node: FileNode, exportAsPdf?: boolean) => void;
+  /** 是否使用相对定位（相对于父容器），默认为 false（使用 fixed 定位） */
+  useRelativePosition?: boolean;
 }

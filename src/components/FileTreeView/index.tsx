@@ -647,7 +647,20 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       e.stopPropagation();
 
       setContextMenuTarget(node);
-      setContextMenuPosition({ x: e.clientX, y: e.clientY });
+
+      // 计算相对于文件树容器的坐标
+      // 如果文件树容器存在，使用相对于容器的坐标；否则使用视口坐标
+      if (fileTreeContainerRef.current) {
+        const containerRect =
+          fileTreeContainerRef.current.getBoundingClientRect();
+        const relativeX = e.clientX - containerRect.left;
+        const relativeY = e.clientY - containerRect.top;
+        setContextMenuPosition({ x: relativeX, y: relativeY });
+      } else {
+        // 如果容器不存在，使用视口坐标作为后备方案
+        setContextMenuPosition({ x: e.clientX, y: e.clientY });
+      }
+
       setContextMenuVisible(true);
     };
 
@@ -1557,34 +1570,6 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             [styles['fullscreen-mode']]: isFullscreen,
           })}
         >
-          {/* 右键菜单 */}
-          <FileContextMenu
-            visible={contextMenuVisible}
-            position={contextMenuPosition}
-            // 右键菜单目标节点
-            targetNode={contextMenuTarget}
-            // 是否禁用删除功能(SKILL.md文件不能删除)
-            disabledDelete={
-              !isCanDeleteSkillFile &&
-              contextMenuTarget?.name?.toLowerCase() === 'skill.md'
-            }
-            // 关闭右键菜单
-            onClose={closeContextMenu}
-            // 处理删除操作
-            onDelete={handleDelete}
-            // 处理重命名操作
-            onRename={handleRenameFromMenu}
-            // 处理上传文件操作
-            onUploadFiles={handleUploadFromMenu}
-            // 处理新建文件操作
-            onCreateFile={handleCreateFile}
-            // 处理新建文件夹操作
-            onCreateFolder={handleCreateFolder}
-            // 处理导入项目操作
-            onImportProject={onImportProject}
-            // 处理通过URL下载文件操作
-            onDownloadFileByUrl={handleDownloadFileByUrl}
-          />
           {/* 左边文件树 - 远程桌面模式下隐藏，且未通过外部属性隐藏 */}
           {viewMode !== 'desktop' && !hideFileTree && (
             <div
@@ -1601,6 +1586,36 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                 },
               )}
             >
+              {/* 右键菜单 - 放在文件树容器内部，使用相对定位 */}
+              <FileContextMenu
+                visible={contextMenuVisible}
+                position={contextMenuPosition}
+                // 右键菜单目标节点
+                targetNode={contextMenuTarget}
+                // 是否禁用删除功能(SKILL.md文件不能删除)
+                disabledDelete={
+                  !isCanDeleteSkillFile &&
+                  contextMenuTarget?.name?.toLowerCase() === 'skill.md'
+                }
+                // 关闭右键菜单
+                onClose={closeContextMenu}
+                // 处理删除操作
+                onDelete={handleDelete}
+                // 处理重命名操作
+                onRename={handleRenameFromMenu}
+                // 处理上传文件操作
+                onUploadFiles={handleUploadFromMenu}
+                // 处理新建文件操作
+                onCreateFile={handleCreateFile}
+                // 处理新建文件夹操作
+                onCreateFolder={handleCreateFolder}
+                // 处理导入项目操作
+                onImportProject={onImportProject}
+                // 处理通过URL下载文件操作
+                onDownloadFileByUrl={handleDownloadFileByUrl}
+                // 使用相对定位（相对于文件树容器）
+                useRelativePosition={true}
+              />
               {/* 操作提示框 */}
               <TipsBox visible={isDownloadingFile} text="正在下载" />
               <TipsBox visible={isUploadingFiles} text="正在上传" />
