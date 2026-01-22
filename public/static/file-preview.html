@@ -400,7 +400,7 @@
                     fileName = data.content.split('/').pop();
                     fileType = data.content.split('.').pop().toLowerCase();
                     // 设置下载地址
-                    downloadUrl = baseUrl + data.content;
+                    downloadUrl = baseUrl + data.content + '?sk=' + sk;
                     
                 } else {
                     showError(message);
@@ -413,7 +413,7 @@
                 fileName = params.fileUrl.split('/').pop();
                 fileType = params.fileUrl.split('.').pop().toLowerCase();
                 // 设置下载地址
-                downloadUrl = params.fileUrl;
+                downloadUrl = params.fileUrl + "?sk=" + params._sk;
             }
 
             // Auto-detect file type from URL if not provided
