@@ -1,0 +1,155 @@
+@import '@/styles/token.less';
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-radius: 12px;
+  border: 0.5px solid var(--color-border-02, #e4e6eb);
+  background-color: var(--color-background-default, #fff);
+  box-shadow: var(--sds-size-depth-0) 1px 2px 0 rgba(12, 12, 13, 4%),
+    0 1px 3px 0 rgba(0, 0, 0, 4%);
+  transition: all 0.3s ease-in-out;
+  min-height: 280px;
+
+  &:hover {
+    border: 0.5px solid var(--color-border-primary, #5147ff);
+    box-shadow: 0 0 8px -2px rgba(0, 0, 0, 4%),
+      var(--sds-size-depth-0) 4px 16px -2px rgba(12, 12, 13, 4%),
+      0 8px 24px -2px rgba(0, 0, 0, 4%);
+  }
+}
+
+.statusTag {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  flex-shrink: 0;
+}
+
+.icon {
+  font-size: 24px;
+  color: #fff;
+}
+
+.titleSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: @fontWeightStrong;
+  line-height: 20px;
+  color: var(--color-font-primary, #15171f);
+}
+
+.code {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-font-tertiary, #5e6470);
+}
+
+.description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-font-secondary, #5e6470);
+  flex: 1;
+}
+
+.rolesSection {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.rolesLabel {
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--color-font-tertiary, #5e6470);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rolesTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.infoSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.infoIcon {
+  font-size: 14px;
+  color: var(--color-font-tertiary, #5e6470);
+}
+
+.infoLabel {
+  color: var(--color-font-tertiary, #5e6470);
+}
+
+.infoValue {
+  color: var(--color-font-primary, #15171f);
+  font-weight: @fontWeightStrong;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--color-border-02, #e4e6eb);
+  margin-top: 12px;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+}

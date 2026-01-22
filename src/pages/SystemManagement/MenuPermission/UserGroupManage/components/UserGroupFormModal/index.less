@@ -1,0 +1,43 @@
+@import '@/styles/token.less';
+
+.modalBody {
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden; // 禁止水平滚动
+  padding: 0 !important;
+}
+
+.form {
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden; // 禁止水平滚动
+
+  .section {
+    margin-bottom: 24px;
+    width: 100%;
+    box-sizing: border-box;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .sectionTitle {
+    font-size: 16px;
+    font-weight: @fontWeightStrong;
+    color: var(--color-font-primary, #15171f);
+    margin-bottom: 12px;
+  }
+
+  .sectionDesc {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .infoIcon {
+    color: var(--color-font-tertiary, #5e6470);
+    font-size: 14px;
+  }
+}
