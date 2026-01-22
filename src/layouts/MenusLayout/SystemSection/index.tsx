@@ -100,6 +100,22 @@ const SystemSection: React.FC<{
       case SystemManageListEnum.Content_Skill:
         history.push('/system/content/content-skill');
         break;
+      // 权限资源
+      case SystemManageListEnum.Permission_Resources:
+        history.push('/system/menu-permission/permission-resources');
+        break;
+      // 菜单管理
+      case SystemManageListEnum.Menu_Manage:
+        history.push('/system/menu-permission/menu-manage');
+        break;
+      // 角色管理
+      case SystemManageListEnum.Role_Manage:
+        history.push('/system/menu-permission/role-manage');
+        break;
+      // 用户组管理
+      case SystemManageListEnum.User_Group_Manage:
+        history.push('/system/menu-permission/user-group-manage');
+        break;
     }
   };
 
