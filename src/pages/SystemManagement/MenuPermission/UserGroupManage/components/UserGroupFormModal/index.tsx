@@ -42,7 +42,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
   const [form] = Form.useForm();
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
 
-  // 新增/更新用户组
+  // 新增
   const { run: runAddUserGroup, loading: addLoading } = useRequest(
     apiAddUserGroup,
     {
@@ -53,6 +53,7 @@ const UserGroupFormModal: React.FC<UserGroupFormModalProps> = ({
     },
   );
 
+  // 更新用户组
   const { run: runUpdateUserGroup, loading: updateLoading } = useRequest(
     apiUpdateUserGroup,
     {
