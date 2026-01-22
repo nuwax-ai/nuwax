@@ -13,6 +13,20 @@
 
 .system-tips-wrapper {
   padding: @paddingXs;
+
+  .border-none {
+    border: none;
+    outline: none;
+    box-shadow: none;
+
+    &:focus,
+    &:focus-visible,
+    &:active {
+      border: none;
+      outline: none;
+      box-shadow: none;
+    }
+  }
 }
 
 .system-tips {

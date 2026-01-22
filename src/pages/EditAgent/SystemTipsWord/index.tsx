@@ -243,6 +243,7 @@ const SystemTipsWord = forwardRef<
             <Tooltip title="全屏编辑">
               <Button
                 type="text"
+                className={cx(styles['border-none'])}
                 icon={
                   <SvgIcon
                     name="icons-common-zoom_in"
@@ -296,6 +297,7 @@ const SystemTipsWord = forwardRef<
           open={isFullscreen}
           footer={null}
           closable={false}
+          onCancel={toggleFullscreen}
           width="100vw"
           style={{
             top: 0,
