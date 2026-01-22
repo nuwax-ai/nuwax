@@ -140,6 +140,22 @@ body {
     color: #40a9ff;
 }
 
+.retry-action-btn {
+    padding: 8px 24px;
+    background: #1890ff;
+    color: #fff;
+    border: 1px solid #1890ff;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.retry-action-btn:hover {
+    background: #40a9ff;
+    border-color: #40a9ff;
+}
+
 /* ============================================
    PDF 预览 / PDF Embed
    ============================================ */
