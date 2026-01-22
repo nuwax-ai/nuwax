@@ -12,15 +12,6 @@ export enum RoleStatusEnum {
   Disabled = 'Disabled', // 禁用
 }
 
-/**
- * 数据范围枚举
- */
-export enum DataScopeEnum {
-  All = 'All', // 全部数据
-  Department = 'Department', // 本部门数据
-  Self = 'Self', // 仅本人数据
-}
-
 // 子菜单绑定类型 0:未绑定 1:全部绑定 2:部分绑定
 export enum MenuBindTypeEnum {
   Unbound = 0, // 未绑定

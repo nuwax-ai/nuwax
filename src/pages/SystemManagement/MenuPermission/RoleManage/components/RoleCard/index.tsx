@@ -8,7 +8,7 @@ import { Button, Popconfirm, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import type { RoleInfo } from '../../type';
-import { DataScopeEnum, RoleStatusEnum } from '../../type';
+import { RoleStatusEnum } from '../../type';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -34,20 +34,6 @@ const RoleCard: React.FC<RoleCardProps> = ({
   onDelete,
   deleteLoading = false,
 }) => {
-  // 获取数据范围显示文本
-  const getDataScopeText = (scope: DataScopeEnum): string => {
-    switch (scope) {
-      case DataScopeEnum.All:
-        return '全部数据';
-      case DataScopeEnum.Department:
-        return '本部门数据';
-      case DataScopeEnum.Self:
-        return '仅本人数据';
-      default:
-        return '未知';
-    }
-  };
-
   // 处理编辑点击
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -91,9 +77,9 @@ const RoleCard: React.FC<RoleCardProps> = ({
           {/* 数据范围 */}
           <div className={cx(styles.infoItem)}>
             <TeamOutlined className={cx(styles.infoIcon)} />
-            <span className={cx(styles.infoLabel)}>数据范围:</span>
+            <span className={cx(styles.infoLabel)}>token限制:</span>
             <span className={cx(styles.infoValue)}>
-              {getDataScopeText(role.dataScope)}
+              {role.tokenLimit?.limitPerDay}
             </span>
           </div>
 
@@ -101,7 +87,7 @@ const RoleCard: React.FC<RoleCardProps> = ({
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>菜单权限:</span>
             <span className={cx(styles.infoValue)}>
-              {role.menuPermissionCount}项
+              {/* {role.modelIds.length}项 */}
             </span>
           </div>
         </div>
