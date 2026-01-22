@@ -3,7 +3,7 @@ import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
 import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
 import type { SystemUserTipsWordProps } from '@/types/interfaces/space';
-import { Button, Modal, Segmented, Tooltip } from 'antd';
+import { Button, Modal, Segmented, theme, Tooltip } from 'antd';
 import classNames from 'classnames';
 import {
   forwardRef,
@@ -50,6 +50,7 @@ const SystemTipsWord = forwardRef<
     const [valueSegmented, setValueSegmented] = useState<
       'systemPrompt' | 'userPrompt'
     >('systemPrompt');
+    const { token } = theme.useToken();
 
     /**
      * 在光标位置插入文本
@@ -158,7 +159,6 @@ const SystemTipsWord = forwardRef<
               getEditor={(editor: any) => {
                 editorSystemRef.current = editor;
               }}
-              style={{ height: '100%', border: 'none' }}
               variables={variables}
               skills={skills}
               enableHistory={true}
@@ -172,7 +172,6 @@ const SystemTipsWord = forwardRef<
               getEditor={(editor: any) => {
                 editorUserRef.current = editor;
               }}
-              style={{ height: '100%', border: 'none' }}
               variables={variables}
               skills={skills}
               enableHistory={true}
@@ -274,9 +273,10 @@ const SystemTipsWord = forwardRef<
             )}
           </div>
         </div>
-
-        {/* 提示词输入区域 */}
-        {promptInput}
+        <div style={{ height: 150, paddingLeft: token.paddingSM }}>
+          {/* 提示词输入区域 */}
+          {promptInput}
+        </div>
 
         {/* 自动优化弹窗 */}
         <PromptOptimizeModal
