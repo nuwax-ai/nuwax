@@ -113,7 +113,7 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
   return (
     <CustomFormModal
       form={form}
-      title="导入项目"
+      title="导入技能"
       open={open}
       loading={loading}
       okText="确认导入"

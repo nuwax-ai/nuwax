@@ -309,12 +309,12 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
           onClick: handleCreateFolder,
           disabled: !onCreateFolder,
         },
-        // 只有当 onImportProject 存在时才显示导入项目选项
+        // 只有当 onImportProject 存在时才显示导入技能选项 （用于技能详情页导入技能）
         ...(onImportProject
           ? [
               {
                 key: 'importProject',
-                label: '导入项目',
+                label: '导入技能',
                 icon: <ImportOutlined />,
                 onClick: onImportProject,
               },

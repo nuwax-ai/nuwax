@@ -89,12 +89,10 @@ export const SKILL_ALL_RESOURCE = [
   {
     value: CreateSkillWayEnum.Create,
     label: '创建技能',
-    // icon: <PlusOutlined />,
   },
   {
     value: CreateSkillWayEnum.Import,
     label: '导入技能',
-    // icon: <ImportOutlined />,
   },
 ];
 
