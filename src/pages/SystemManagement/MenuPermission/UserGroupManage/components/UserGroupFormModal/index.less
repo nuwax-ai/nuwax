@@ -23,11 +23,10 @@
   }
 
   .sectionTitle {
-    // margin: 0 0 12px;
     font-size: 16px;
     font-weight: @fontWeightStrong;
-    // line-height: 24px;
     color: var(--color-font-primary, #15171f);
+    margin-bottom: 12px;
   }
 
   .sectionDesc {
@@ -37,20 +36,8 @@
     line-height: 18px;
   }
 
-  .systemFields {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 12px;
-    width: 100%;
-    box-sizing: border-box;
-
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .fieldItem {
-    margin-bottom: 0;
+  .infoIcon {
+    color: var(--color-font-tertiary, #5e6470);
+    font-size: 14px;
   }
 }

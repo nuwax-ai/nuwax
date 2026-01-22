@@ -91,8 +91,8 @@ export async function apiGetRoleById(
  * @returns Promise<RequestResponse<RoleInfo>>
  */
 export async function apiGetRoleList(
-  data: GetRoleListParams,
-): Promise<RequestResponse<RoleInfo>> {
+  data?: GetRoleListParams,
+): Promise<RequestResponse<RoleInfo[]>> {
   return request(`/api/system/role/list`, {
     method: 'GET',
     params: data,
@@ -115,7 +115,7 @@ export async function apiGetRoleBoundUserList(
 /**
  * 查询角色已绑定的菜单（树形结构）
  * @param roleId 角色ID
- * @returns Promise<RequestResponse<MenuNodeInfo>>
+ * @returns Promise<RequestResponse<MenuNodeInfo[]>>
  */
 export async function apiGetRoleBoundMenuList(
   roleId: number,
