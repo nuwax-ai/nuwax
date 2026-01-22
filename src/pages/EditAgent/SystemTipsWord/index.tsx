@@ -273,7 +273,7 @@ const SystemTipsWord = forwardRef<
             )}
           </div>
         </div>
-        <div style={{ height: 150, paddingLeft: token.paddingSM }}>
+        <div style={{ height: 150, paddingLeft: token.paddingXS }}>
           {/* 提示词输入区域 */}
           {promptInput}
         </div>
