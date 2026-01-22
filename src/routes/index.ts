@@ -198,6 +198,34 @@ const routes = [
               },
             ],
           },
+          {
+            path: 'menu-permission',
+            name: '菜单权限',
+            routes: [
+              {
+                path: 'permission-resources',
+                name: '权限资源',
+                component:
+                  '@/pages/SystemManagement/MenuPermission/PermissionResources',
+              },
+              {
+                path: 'menu-manage',
+                name: '菜单管理',
+                component: '@/pages/SystemManagement/MenuPermission/MenuManage',
+              },
+              {
+                path: 'role-manage',
+                name: '角色管理',
+                component: '@/pages/SystemManagement/MenuPermission/RoleManage',
+              },
+              {
+                path: 'user-group-manage',
+                name: '用户组管理',
+                component:
+                  '@/pages/SystemManagement/MenuPermission/UserGroupManage',
+              },
+            ],
+          },
         ],
       },
       // 生态市场
