@@ -5,20 +5,11 @@
 // ==================== 枚举定义 ====================
 
 /**
- * 角色状态枚举
+ * 角色状态枚举 1:启动 0:禁用
  */
 export enum RoleStatusEnum {
-  Enabled = 'Enabled', // 启用
-  Disabled = 'Disabled', // 禁用
-}
-
-/**
- * 数据范围枚举
- */
-export enum DataScopeEnum {
-  All = 'All', // 全部数据
-  Department = 'Department', // 本部门数据
-  Self = 'Self', // 仅本人数据
+  Enabled = 1, // 启用
+  Disabled = 0, // 禁用
 }
 
 // 子菜单绑定类型 0:未绑定 1:全部绑定 2:部分绑定
@@ -255,31 +246,60 @@ export interface UserInfo {
 }
 
 /**
- * 数据模型信息
- */
-export interface DataModelInfo {
-  /** 模型ID */
-  id: number;
-  /** 模型名称 */
-  name: string;
-  /** 模型描述 */
-  description: string;
-  /** 模型图标 */
-  icon?: string;
-}
-
-/**
  * 菜单节点信息
  */
 export interface MenuNodeInfo {
-  /** 菜单ID */
+  /* 菜单ID */
   id: number;
-  /** 菜单名称 */
-  name: string;
-  /** 菜单代码 */
+
+  /*资源码 */
   code?: string;
-  /** 父菜单ID */
+
+  /*名称 */
+  name?: string;
+
+  /*描述 */
+  description?: string;
+
+  /*来源 1:系统内置 2:用户自定义 */
+  source?: ResourceSourceEnum;
+
+  /*父级ID */
   parentId?: number;
-  /** 子菜单列表 */
+
+  /*访问路径 */
+  path?: string;
+
+  /*图标 */
+  icon?: string;
+
+  /*排序 */
+  sortIndex?: number;
+
+  /*状态 1:启用 0:禁用 */
+  status?: ResourceStatusEnum;
+
+  /*是否显示 1:显示 0:隐藏 */
+  visible?: ResourceVisibleEnum;
+
+  // 创建人
+  creator: string;
+
+  // 创建时间
+  created: string;
+
+  // 修改人ID
+  modifierId: string;
+
+  // 修改人
+  modifier: string;
+
+  // 修改时间
+  modified: string;
+
+  /*	子菜单列表 */
   children?: MenuNodeInfo[];
+
+  // 资源树节点
+  resourceTree?: ResourceTreeNode[];
 }

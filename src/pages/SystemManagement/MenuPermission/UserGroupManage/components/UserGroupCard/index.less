@@ -11,7 +11,7 @@
   box-shadow: var(--sds-size-depth-0) 1px 2px 0 rgba(12, 12, 13, 4%),
     0 1px 3px 0 rgba(0, 0, 0, 4%);
   transition: all 0.3s ease-in-out;
-  min-height: 240px;
+  min-height: 280px;
 
   &:hover {
     border: 0.5px solid var(--color-border-primary, #5147ff);
@@ -86,6 +86,28 @@
   flex: 1;
 }
 
+.rolesSection {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.rolesLabel {
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--color-font-tertiary, #5e6470);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rolesTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
 .infoSection {
   display: flex;
   flex-direction: column;
@@ -101,6 +123,11 @@
   line-height: 16px;
 }
 
+.infoIcon {
+  font-size: 14px;
+  color: var(--color-font-tertiary, #5e6470);
+}
+
 .infoLabel {
   color: var(--color-font-tertiary, #5e6470);
 }
@@ -111,7 +138,6 @@
 }
 
 .footer {
-  height: 43px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -119,7 +145,6 @@
   padding-top: 12px;
   border-top: 0.5px solid var(--color-border-02, #e4e6eb);
   margin-top: 12px;
-  box-sizing: border-box;
 }
 
 .actionButton {

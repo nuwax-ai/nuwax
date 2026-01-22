@@ -1,20 +1,24 @@
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import CustomFormModal from '@/components/CustomFormModal';
+import { apiSystemModelList } from '@/services/systemManage';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { useRequest } from 'ahooks';
-import { Col, Form, Input, Row, Select, Switch, Typography } from 'antd';
-import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
-import { apiAddRole, apiUpdateRole } from '../../api';
 import {
-  DataScopeEnum,
-  RoleStatusEnum,
-  type DataModelInfo,
-  type MenuNodeInfo,
-  type RoleInfo,
-} from '../../type';
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  message,
+  Row,
+  Switch,
+  Typography,
+} from 'antd';
+import classNames from 'classnames';
+import React, { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
+import { apiAddRole, apiUpdateRole } from '../../api';
+import { RoleStatusEnum, type RoleInfo } from '../../type';
 import DataModelSelector from '../DataModelSelector';
-import MenuPermissionTree from '../MenuPermissionTree';
 import styles from './index.less';
 
 const { TextArea } = Input;
@@ -46,51 +50,33 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   onSuccess,
 }) => {
   const [form] = Form.useForm();
+  // 模型ID列表 全部模型传[0],未选中任何模型不传值
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
-  const [selectedMenuIds, setSelectedMenuIds] = useState<React.Key[]>([]);
-  const [expandedMenuKeys, setExpandedMenuKeys] = useState<React.Key[]>([]);
+  // const [selectedMenuIds, setSelectedMenuIds] = useState<React.Key[]>([]);
+  // const [expandedMenuKeys, setExpandedMenuKeys] = useState<React.Key[]>([]);
 
-  // TODO: 从API获取数据模型列表
-  const mockDataModels: DataModelInfo[] = [
-    { id: 1, name: '用户模型', description: '用户数据表' },
-    { id: 2, name: '订单模型', description: '订单数据表' },
-    { id: 3, name: '产品模型', description: '产品数据表' },
-    { id: 4, name: '合同模型', description: '合同数据表' },
-    { id: 5, name: '财务模型', description: '财务数据表' },
-    { id: 6, name: '库存模型', description: '库存数据表' },
-    { id: 7, name: '报表模型', description: '报表数据表' },
-  ];
-
-  // TODO: 从API获取菜单树数据
-  const mockMenuTree: MenuNodeInfo[] = [
-    {
-      id: 1,
-      name: '系统管理',
-      children: [
-        { id: 11, name: '用户管理', parentId: 1 },
-        { id: 12, name: '角色管理', parentId: 1 },
-      ],
-    },
-    {
-      id: 2,
-      name: '业务管理',
-      children: [{ id: 21, name: '订单管理', parentId: 2 }],
-    },
-  ];
-
-  // 数据范围选项
-  const dataScopeOptions = [
-    { label: '全部数据', value: DataScopeEnum.All },
-    { label: '本部门数据', value: DataScopeEnum.Department },
-    { label: '仅本人数据', value: DataScopeEnum.Self },
-  ];
+  // const mockMenuTree: MenuNodeInfo[] = [
+  //   {
+  //     id: 1,
+  //     name: '系统管理',
+  //     children: [
+  //       { id: 11, name: '用户管理', parentId: 1 },
+  //       { id: 12, name: '角色管理', parentId: 1 },
+  //     ],
+  //   },
+  //   {
+  //     id: 2,
+  //     name: '业务管理',
+  //     children: [{ id: 21, name: '订单管理', parentId: 2 }],
+  //   },
+  // ];
 
   // 新增/更新角色
   const { run: runAddRole, loading: addLoading } = useRequest(apiAddRole, {
     manual: true,
     onSuccess: () => {
+      message.success('角色创建成功');
       onSuccess();
-      // handleCancel();
     },
   });
 
@@ -99,11 +85,26 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     {
       manual: true,
       onSuccess: () => {
+        message.success('角色编辑成功');
         onSuccess();
-        // handleCancel();
       },
     },
   );
+
+  // 查询模型列表
+  const { run: runModelList, data: modelList } = useRequest(
+    apiSystemModelList,
+    {
+      manual: true,
+    },
+  );
+
+  useEffect(() => {
+    if (open) {
+      // 查询模型列表
+      runModelList();
+    }
+  }, [open]);
 
   const loading = addLoading || updateLoading;
 
@@ -116,18 +117,19 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
           code: roleData.code,
           name: roleData.name,
           description: roleData.description,
-          dataScope: roleData.dataScope,
+          tokenLimit: {
+            limitPerDay: roleData.tokenLimit?.limitPerDay || 0,
+          },
           status: roleData.status === RoleStatusEnum.Enabled,
         });
         // TODO: 从API获取已选中的数据模型和菜单
         setSelectedModelIds([]);
-        setSelectedMenuIds([]);
+        // setSelectedMenuIds([]);
       } else {
         // 新增模式：重置表单
         form.resetFields();
         setSelectedModelIds([]);
-        setSelectedMenuIds([]);
-        setExpandedMenuKeys([]);
+        // setSelectedMenuIds([]);
       }
     }
   }, [open, isEdit, roleData, form]);
@@ -136,8 +138,6 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   const handleCancel = () => {
     form.resetFields();
     setSelectedModelIds([]);
-    setSelectedMenuIds([]);
-    setExpandedMenuKeys([]);
     onCancel();
   };
 
@@ -145,12 +145,22 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+
+      // 处理模型ID：全部模型传[0],未选中任何模型不传值
+      let modelIds: number[] | undefined;
+      if (selectedModelIds.length > 0) {
+        // 检查是否选中了全部模型
+        const isAllSelected =
+          modelList?.length > 0 && selectedModelIds.length === modelList.length;
+        modelIds = isAllSelected ? [0] : selectedModelIds;
+      }
+
       const formData = {
-        code: values.code,
-        name: values.name,
-        description: values.description || '',
-        dataScope: values.dataScope,
-        menuPermissionIds: selectedMenuIds.map((id) => Number(id)),
+        ...values,
+        status: values.status
+          ? RoleStatusEnum.Enabled
+          : RoleStatusEnum.Disabled,
+        modelIds,
       };
 
       if (isEdit && roleData) {
@@ -167,21 +177,21 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   };
 
   // 计算菜单树展开的keys（默认展开所有父节点）
-  const defaultExpandedKeys = useMemo(() => {
-    const getParentKeys = (menus: MenuNodeInfo[]): React.Key[] => {
-      const keys: React.Key[] = [];
-      menus.forEach((menu) => {
-        if (menu.children && menu.children.length > 0) {
-          keys.push(menu.id);
-          keys.push(...getParentKeys(menu.children));
-        }
-      });
-      return keys;
-    };
-    return expandedMenuKeys.length > 0
-      ? expandedMenuKeys
-      : getParentKeys(mockMenuTree);
-  }, [mockMenuTree, expandedMenuKeys]);
+  // const defaultExpandedKeys = useMemo(() => {
+  //   const getParentKeys = (menus: MenuNodeInfo[]): React.Key[] => {
+  //     const keys: React.Key[] = [];
+  //     menus.forEach((menu) => {
+  //       if (menu.children && menu.children.length > 0) {
+  //         keys.push(menu.id);
+  //         keys.push(...getParentKeys(menu.children));
+  //       }
+  //     });
+  //     return keys;
+  //   };
+  //   return expandedMenuKeys.length > 0
+  //     ? expandedMenuKeys
+  //     : getParentKeys(mockMenuTree);
+  // }, [mockMenuTree, expandedMenuKeys]);
 
   return (
     <CustomFormModal
@@ -237,30 +247,41 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
           </Form.Item>
         </div>
 
-        {/* 数据权限配置 */}
-        <div className={cx(styles.section)}>
-          <h3 className={cx(styles.sectionTitle)}>数据权限配置</h3>
-          <Text type="secondary" className={cx(styles.sectionDesc)}>
-            选择该角色可以访问的数据模型,支持选择&ldquo;全部&rdquo;或具体模型
-          </Text>
-          <DataModelSelector
-            models={mockDataModels}
-            selectedIds={selectedModelIds}
-            onChange={setSelectedModelIds}
-          />
-        </div>
-
         {/* 系统字段配置 */}
         <div className={cx(styles.section)}>
-          <h3 className={cx(styles.sectionTitle)}>系统字段配置</h3>
+          <div className={cx('flex', 'items-center', 'gap-4', 'mb-12')}>
+            <h3 className={cx(styles.sectionTitle)}>系统字段配置</h3>
+            <TooltipIcon
+              title="系统字段配置用于控制角色的token限制和启用状态"
+              icon={<InfoCircleOutlined />}
+            />
+          </div>
           <div className={cx(styles.systemFields)}>
             <Form.Item
-              label="数据范围"
-              name="dataScope"
-              rules={[{ required: true, message: '请选择数据范围' }]}
+              label="token限制"
+              name={['tokenLimit', 'limitPerDay']}
+              initialValue={0}
+              rules={[{ required: true, message: '请输入token限制数量' }]}
               className={cx(styles.fieldItem)}
             >
-              <Select placeholder="请选择数据范围" options={dataScopeOptions} />
+              <InputNumber
+                placeholder="请输入token限制"
+                className={cx('w-full')}
+                min={0}
+              />
+            </Form.Item>
+            <Form.Item
+              label="排序"
+              name="sortIndex"
+              valuePropName="checked"
+              initialValue={0}
+              className={cx(styles.fieldItem)}
+            >
+              <InputNumber
+                placeholder="请输入排序"
+                className={cx('w-full')}
+                min={0}
+              />
             </Form.Item>
             <Form.Item
               label="状态"
@@ -272,16 +293,23 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
               <Switch checkedChildren="启用" unCheckedChildren="禁用" />
             </Form.Item>
           </div>
-          <div className={cx(styles.tip)}>
-            <InfoCircleOutlined className={cx(styles.tipIcon)} />
-            <Text type="secondary" className={cx(styles.tipText)}>
-              系统字段配置用于控制角色的数据访问范围和启用状态
-            </Text>
-          </div>
+        </div>
+
+        {/* 数据权限配置 */}
+        <div className={cx(styles.section)}>
+          <h3 className={cx(styles.sectionTitle)}>数据权限配置</h3>
+          <Text type="secondary" className={cx(styles.sectionDesc)}>
+            选择该角色可以访问的数据模型,支持选择&ldquo;全部&rdquo;或具体模型
+          </Text>
+          <DataModelSelector
+            models={modelList}
+            selectedIds={selectedModelIds}
+            onChange={setSelectedModelIds}
+          />
         </div>
 
         {/* 菜单权限 */}
-        <div className={cx(styles.section)}>
+        {/* <div className={cx(styles.section)}>
           <h3 className={cx(styles.sectionTitle)}>菜单权限</h3>
           <Text type="secondary" className={cx(styles.sectionDesc)}>
             选择该角色可以访问的菜单,支持多选和父子级联选择
@@ -293,7 +321,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
             expandedKeys={defaultExpandedKeys}
             onExpand={setExpandedMenuKeys}
           />
-        </div>
+        </div> */}
       </Form>
     </CustomFormModal>
   );
