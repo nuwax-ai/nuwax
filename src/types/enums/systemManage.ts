@@ -40,6 +40,16 @@ export enum SystemManageListEnum {
   Content_Mcp,
   // 技能
   Content_Skill,
+  // 菜单权限
+  MenuPermission,
+  // 权限资源
+  Permission_Resources,
+  // 菜单管理
+  Menu_Manage,
+  // 角色管理
+  Role_Manage,
+  // 用户组管理
+  User_Group_Manage,
 }
 
 // 系统管理-用户管理-角色枚举

@@ -43,6 +43,29 @@ export const SYSTEM_MANAGE_LIST = [
     text: '系统概览',
   },
   {
+    type: SystemManageListEnum.MenuPermission,
+    icon: <SvgIcon name="icons-chat-history" />,
+    text: '菜单权限',
+    list: [
+      {
+        text: '权限资源',
+        type: SystemManageListEnum.Permission_Resources,
+      },
+      {
+        text: '菜单管理',
+        type: SystemManageListEnum.Menu_Manage,
+      },
+      {
+        text: '角色管理',
+        type: SystemManageListEnum.Role_Manage,
+      },
+      {
+        text: '用户组管理',
+        type: SystemManageListEnum.User_Group_Manage,
+      },
+    ],
+  },
+  {
     type: SystemManageListEnum.Log_Query,
     icon: <SvgIcon name="icons-chat-history" />,
     text: '日志查询',
