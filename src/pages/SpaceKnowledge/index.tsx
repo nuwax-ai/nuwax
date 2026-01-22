@@ -138,7 +138,7 @@ const SpaceKnowledge: React.FC = () => {
         name: docName,
       },
       current,
-      pageSize: 30,
+      pageSize: 50,
     });
   };
 

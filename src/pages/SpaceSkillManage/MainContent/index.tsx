@@ -188,14 +188,12 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(
     }));
 
     return (
-      <>
-        <MainContentCard
-          loading={loading}
-          skillList={skillList ?? []}
-          onClickItem={onClickItem}
-          onClickMore={onClickMore}
-        />
-      </>
+      <MainContentCard
+        loading={loading}
+        skillList={skillList ?? []}
+        onClickItem={onClickItem}
+        onClickMore={onClickMore}
+      />
     );
   },
 );
