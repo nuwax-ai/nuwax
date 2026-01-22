@@ -3,7 +3,16 @@ import CustomFormModal from '@/components/CustomFormModal';
 import { apiSystemModelList } from '@/services/systemManage';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { Col, Form, Input, InputNumber, Row, Switch, Typography } from 'antd';
+import {
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  message,
+  Row,
+  Switch,
+  Typography,
+} from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -43,7 +52,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   const [form] = Form.useForm();
   // 模型ID列表 全部模型传[0],未选中任何模型不传值
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
-  const [selectedMenuIds, setSelectedMenuIds] = useState<React.Key[]>([]);
+  // const [selectedMenuIds, setSelectedMenuIds] = useState<React.Key[]>([]);
   // const [expandedMenuKeys, setExpandedMenuKeys] = useState<React.Key[]>([]);
 
   // const mockMenuTree: MenuNodeInfo[] = [
@@ -66,6 +75,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   const { run: runAddRole, loading: addLoading } = useRequest(apiAddRole, {
     manual: true,
     onSuccess: () => {
+      message.success('角色创建成功');
       onSuccess();
     },
   });
@@ -75,6 +85,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     {
       manual: true,
       onSuccess: () => {
+        message.success('角色编辑成功');
         onSuccess();
       },
     },
@@ -106,17 +117,19 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
           code: roleData.code,
           name: roleData.name,
           description: roleData.description,
-          limitPerDay: roleData.tokenLimit?.limitPerDay,
+          tokenLimit: {
+            limitPerDay: roleData.tokenLimit?.limitPerDay || 0,
+          },
           status: roleData.status === RoleStatusEnum.Enabled,
         });
         // TODO: 从API获取已选中的数据模型和菜单
         setSelectedModelIds([]);
-        setSelectedMenuIds([]);
+        // setSelectedMenuIds([]);
       } else {
         // 新增模式：重置表单
         form.resetFields();
         setSelectedModelIds([]);
-        setSelectedMenuIds([]);
+        // setSelectedMenuIds([]);
       }
     }
   }, [open, isEdit, roleData, form]);
@@ -125,7 +138,6 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   const handleCancel = () => {
     form.resetFields();
     setSelectedModelIds([]);
-    setSelectedMenuIds([]);
     onCancel();
   };
 
@@ -133,12 +145,22 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+
+      // 处理模型ID：全部模型传[0],未选中任何模型不传值
+      let modelIds: number[] | undefined;
+      if (selectedModelIds.length > 0) {
+        // 检查是否选中了全部模型
+        const isAllSelected =
+          modelList?.length > 0 && selectedModelIds.length === modelList.length;
+        modelIds = isAllSelected ? [0] : selectedModelIds;
+      }
+
       const formData = {
-        code: values.code,
-        name: values.name,
-        description: values.description || '',
-        dataScope: values.dataScope,
-        menuPermissionIds: selectedMenuIds.map((id) => Number(id)),
+        ...values,
+        status: values.status
+          ? RoleStatusEnum.Enabled
+          : RoleStatusEnum.Disabled,
+        modelIds,
       };
 
       if (isEdit && roleData) {
@@ -237,8 +259,8 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
           <div className={cx(styles.systemFields)}>
             <Form.Item
               label="token限制"
+              name={['tokenLimit', 'limitPerDay']}
               initialValue={0}
-              name="limitPerDay"
               rules={[{ required: true, message: '请输入token限制数量' }]}
               className={cx(styles.fieldItem)}
             >

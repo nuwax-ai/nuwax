@@ -84,8 +84,8 @@ const RoleManage: React.FC = () => {
 
   // 处理Modal成功
   const handleModalSuccess = () => {
+    setModalOpen(false);
     runGetRoleList();
-    message.success(isEdit ? '编辑成功' : '创建成功');
   };
 
   // 计算每行显示的列数（响应式）
