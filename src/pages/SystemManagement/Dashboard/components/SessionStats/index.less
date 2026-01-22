@@ -1,0 +1,58 @@
+.session-stats {
+  // 会话统计容器
+}
+
+.session-chart {
+  margin-top: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 6%);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 12%);
+    transform: translateY(-2px);
+  }
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.chart-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 85%);
+  margin: 0;
+}
+
+.period-selector {
+  :global {
+    .ant-radio-button-wrapper {
+      border: none;
+      background: transparent;
+      padding: 4px 12px;
+      height: auto;
+      line-height: 1.5;
+      font-size: 13px;
+      color: rgba(0, 0, 0, 65%);
+
+      &::before {
+        display: none;
+      }
+
+      &:hover {
+        color: #1890ff;
+      }
+
+      &.ant-radio-button-wrapper-checked {
+        background: #f0f5ff;
+        border-radius: 4px;
+        color: #1890ff;
+        font-weight: 500;
+      }
+    }
+  }
+}
