@@ -255,20 +255,6 @@ export interface UserInfo {
 }
 
 /**
- * 数据模型信息
- */
-export interface DataModelInfo {
-  /** 模型ID */
-  id: number;
-  /** 模型名称 */
-  name: string;
-  /** 模型描述 */
-  description: string;
-  /** 模型图标 */
-  icon?: string;
-}
-
-/**
  * 菜单节点信息
  */
 export interface MenuNodeInfo {

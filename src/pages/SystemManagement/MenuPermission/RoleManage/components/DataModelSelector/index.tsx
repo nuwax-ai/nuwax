@@ -1,15 +1,15 @@
-import { DatabaseOutlined } from '@ant-design/icons';
+// import { DatabaseOutlined } from '@ant-design/icons';
+import { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { Checkbox } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import type { DataModelInfo } from '../../type';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 interface DataModelSelectorProps {
   /** 数据模型列表 */
-  models: DataModelInfo[];
+  models: ModelConfigDto[];
   /** 选中的模型ID列表 */
   selectedIds: number[];
   /** 选择变化回调 */
@@ -47,7 +47,7 @@ const DataModelSelector: React.FC<DataModelSelectorProps> = ({
 
   // 检查是否选中了全部模型
   const isAllSelected =
-    models.length > 0 && selectedIds.length === models.length;
+    models?.length > 0 && selectedIds?.length === models.length;
 
   return (
     <div className={cx(styles.container)}>
@@ -58,9 +58,9 @@ const DataModelSelector: React.FC<DataModelSelectorProps> = ({
         })}
         onClick={() => handleAllModelsToggle(!isAllSelected)}
       >
-        <div className={cx(styles.modelIcon)}>
+        {/* <div className={cx(styles.modelIcon)}>
           <DatabaseOutlined />
-        </div>
+        </div> */}
         <div className={cx(styles.modelContent)}>
           <div className={cx(styles.modelName)}>全部模型</div>
           <div className={cx(styles.modelDesc)}>拥有所有模型的数据权限</div>
@@ -77,7 +77,7 @@ const DataModelSelector: React.FC<DataModelSelectorProps> = ({
 
       {/* 具体模型列表 - 2列布局 */}
       <div className={cx(styles.modelGrid)}>
-        {models.map((model) => {
+        {models?.map((model: ModelConfigDto) => {
           const isSelected = selectedIds.includes(model.id);
           return (
             <div
@@ -87,9 +87,9 @@ const DataModelSelector: React.FC<DataModelSelectorProps> = ({
               })}
               onClick={() => handleModelToggle(model.id, !isSelected)}
             >
-              <div className={cx(styles.modelIcon)}>
+              {/* <div className={cx(styles.modelIcon)}>
                 <DatabaseOutlined />
-              </div>
+              </div> */}
               <div className={cx(styles.modelContent)}>
                 <div className={cx(styles.modelName)}>{model.name}</div>
                 <div className={cx(styles.modelDesc)}>{model.description}</div>
