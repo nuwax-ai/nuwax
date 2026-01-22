@@ -1,1 +1,0 @@
-"use strict";(()=>{(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[9386],{34133:function(t,n,u){u.r(n);var l=u(52676),e=function(){return(0,l.jsx)("div",{children:"Skill"})};n.default=e}}]);})();
