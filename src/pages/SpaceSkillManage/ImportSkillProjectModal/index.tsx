@@ -84,7 +84,7 @@ const ImportSkillProjectModal: React.FC<ImportSkillProjectModalProps> = ({
     const isZip = lowerFileName.endsWith('.zip');
     const isSkill = lowerFileName.endsWith('.skill');
     // 只允许文件名严格为 SKILL.md，其他任意 md 文件名都不允许
-    const isSkillMd = fileName === 'SKILL.md';
+    const isSkillMd = lowerFileName === 'skill.md';
 
     if (!isZip && !isSkill && !isSkillMd) {
       message.error('仅支持 .zip,.skill 压缩文件格式或SKILL.md文件');
