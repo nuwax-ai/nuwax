@@ -27,6 +27,7 @@
         <div class="error-icon">⚠️</div>
         <div id="errorText" class="error-text">加载失败</div>
         <div class="error-actions">
+            <button class="retry-action-btn" onclick="startPreview()">重试</button>
             <button id="errorDownloadBtn" class="download-action-btn hidden" onclick="downloadFile()">下载</button>
         </div>
     </div>
@@ -44,9 +45,16 @@
         let downloadUrl = ''; // 下载接口地址
         let fileName = ''; // 文件名
         const params = getQueryParams();
-        // 判断是否开发环境
-        // const baseUrl = 'https://testagent.xspaceagi.com';
-        const baseUrl = '';
+
+        // 获取文件的 origin
+        function getBaseUrl(url) {
+            try {
+                return new URL(url).origin;
+            } catch (e) {
+                return window.location.origin;
+            }
+        }
+        const baseUrl = getBaseUrl(params.fileUrl);
 
         // ============================================
         // URL Parameter Parsing
@@ -400,12 +408,12 @@
                 }
             } else {
                 // 正常预览操作获取文件地址和类型
-                fileUrl = baseUrl + params.fileUrl + "?_ticket=" + params._ticket;
+                fileUrl = params.fileUrl + "?_ticket=" + params._ticket;
                 // 从路径中提取文件名
                 fileName = params.fileUrl.split('/').pop();
                 fileType = params.fileUrl.split('.').pop().toLowerCase();
                 // 设置下载地址
-                downloadUrl = baseUrl + params.fileUrl;
+                downloadUrl = params.fileUrl;
             }
 
             // Auto-detect file type from URL if not provided
