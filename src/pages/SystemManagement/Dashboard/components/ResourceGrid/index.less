@@ -1,0 +1,59 @@
+.resource-grid {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 6%);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 12%);
+    transform: translateY(-2px);
+  }
+
+  :global {
+    .ant-card-head-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+  }
+}
+
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+.resource-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.resource-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.resource-name {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 55%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-count {
+  font-size: 24px;
+  font-weight: 700;
+  color: #314659;
+}
