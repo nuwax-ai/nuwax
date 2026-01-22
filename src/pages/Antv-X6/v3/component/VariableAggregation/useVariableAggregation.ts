@@ -78,9 +78,9 @@ export const useVariableAggregation = ({
       return;
     }
 
-    // 如果 inputArgsFromForm 为空，等待数据加载
-    // 注意：不要在这里清空 variableGroups，否则会导致数据丢失
-    if (!inputArgsFromForm?.length) {
+    // 如果 inputArgsFromForm 为空，可能是数据还没加载，也可能是新节点（空数组）
+    // 我们只在 undefined 或 null 时等待
+    if (inputArgsFromForm === undefined || inputArgsFromForm === null) {
       return;
     }
 
@@ -131,9 +131,10 @@ export const useVariableAggregation = ({
       }),
     );
 
+    isInitialized.current = true;
+    forceReinitRef.current = false; // 重置强制初始化标记
+
     if (initialGroups.length > 0) {
-      isInitialized.current = true;
-      forceReinitRef.current = false; // 重置强制初始化标记
       form.setFieldsValue({ variableGroups: initialGroups });
     }
   }, [inputArgsFromForm, form, referenceList]);
