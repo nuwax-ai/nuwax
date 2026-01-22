@@ -1,26 +1,67 @@
-import type { Page, RequestResponse } from '@/types/interfaces/request';
+import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 import type {
   AddRoleParams,
+  GetRoleListParams,
+  MenuNodeInfo,
+  RoleBindMenuParams,
+  RoleBindUserParams,
   RoleInfo,
-  RoleListParams,
   UpdateRoleParams,
+  UserInfo,
 } from './type';
 
 /**
- * 查询角色列表
+ * 更新角色
  */
-export async function apiRoleList(
-  data?: RoleListParams,
-): Promise<RequestResponse<Page<RoleInfo>>> {
-  return request('/api/system/role/list', {
+export async function apiUpdateRole(
+  data: UpdateRoleParams,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/role/updateRole`, {
     method: 'POST',
-    data: data || {},
+    data,
   });
 }
 
 /**
- * 新增角色
+ * 删除角色
+ */
+export async function apiDeleteRole(
+  roleId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/role/delete/${roleId}`, {
+    method: 'POST',
+  });
+}
+
+/**
+ * 角色绑定用户（全量覆盖）
+ */
+export async function apiRoleBindUser(
+  data: RoleBindUserParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/role/bind-user', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 角色绑定菜单（全量覆盖）
+ */
+export async function apiRoleBindMenu(
+  data: RoleBindMenuParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/role/bind-menu', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 添加角色
+ * @param data
+ * @returns Promise<RequestResponse<null>>
  */
 export async function apiAddRole(
   data: AddRoleParams,
@@ -32,46 +73,67 @@ export async function apiAddRole(
 }
 
 /**
- * 更新角色
+ * 根据ID查询角色
+ * @param roleId 角色ID
+ * @returns Promise<RequestResponse<RoleInfo>>
  */
-export async function apiUpdateRole(
-  data: UpdateRoleParams,
-): Promise<RequestResponse<null>> {
-  return request(`/api/system/role/update/${data.id}`, {
-    method: 'POST',
-    data,
+export async function apiGetRoleById(
+  roleId: number,
+): Promise<RequestResponse<RoleInfo>> {
+  return request(`/api/system/role/${roleId}`, {
+    method: 'GET',
   });
 }
 
 /**
- * 删除角色
+ * 根据条件查询角色
+ * @param data 查询条件
+ * @returns Promise<RequestResponse<RoleInfo>>
  */
-export async function apiDeleteRole(data: {
-  id: number;
-}): Promise<RequestResponse<null>> {
-  return request(`/api/system/role/delete/${data.id}`, {
-    method: 'POST',
+export async function apiGetRoleList(
+  data: GetRoleListParams,
+): Promise<RequestResponse<RoleInfo>> {
+  return request(`/api/system/role/list`, {
+    method: 'GET',
+    params: data,
   });
 }
 
 /**
- * 启用角色
+ * 查询角色已绑定的用户
+ * @param roleId 角色ID
+ * @returns Promise<RequestResponse<UserInfo>>
  */
-export async function apiEnableRole(data: {
-  id: number;
-}): Promise<RequestResponse<null>> {
-  return request(`/api/system/role/enable/${data.id}`, {
-    method: 'POST',
+export async function apiGetRoleBoundUserList(
+  roleId: number,
+): Promise<RequestResponse<UserInfo[]>> {
+  return request(`/api/system/role/list-user/${roleId}`, {
+    method: 'GET',
   });
 }
 
 /**
- * 禁用角色
+ * 查询角色已绑定的菜单（树形结构）
+ * @param roleId 角色ID
+ * @returns Promise<RequestResponse<MenuNodeInfo>>
  */
-export async function apiDisableRole(data: {
-  id: number;
-}): Promise<RequestResponse<null>> {
-  return request(`/api/system/role/disable/${data.id}`, {
-    method: 'POST',
+export async function apiGetRoleBoundMenuList(
+  roleId: number,
+): Promise<RequestResponse<MenuNodeInfo[]>> {
+  return request(`/api/system/role/list-menu/${roleId}`, {
+    method: 'GET',
+  });
+}
+
+/**
+ * 根据编码查询角色
+ * @param roleCode 角色编码
+ * @returns Promise<RequestResponse<RoleInfo>>
+ */
+export async function apiGetRoleCode(
+  roleCode: string,
+): Promise<RequestResponse<RoleInfo>> {
+  return request(`/api/system/role/code/${roleCode}`, {
+    method: 'GET',
   });
 }

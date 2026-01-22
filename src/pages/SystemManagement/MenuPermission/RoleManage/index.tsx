@@ -3,7 +3,7 @@ import { useRequest } from 'ahooks';
 import { Button, Empty, Grid, message, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { apiDeleteRole, apiRoleList } from './api';
+import { apiDeleteRole, apiGetRoleList } from './api';
 import RoleCard from './components/RoleCard';
 import RoleFormModal from './components/RoleFormModal';
 import styles from './index.less';
@@ -30,7 +30,7 @@ const RoleManage: React.FC = () => {
     data: roleListData,
     loading,
     refresh,
-  } = useRequest(apiRoleList, {
+  } = useRequest(apiGetRoleList, {
     defaultParams: [{}],
   });
 
@@ -39,7 +39,7 @@ const RoleManage: React.FC = () => {
     manual: true,
     loadingDelay: 300,
     onBefore: (params) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [params[0].id]: true }));
+      setDeleteLoadingMap((prev) => ({ ...prev, [params[0]?.id]: true }));
     },
     onSuccess: () => {
       message.success('删除成功');
@@ -49,7 +49,7 @@ const RoleManage: React.FC = () => {
       message.error('删除失败');
     },
     onFinally: (params) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [params[0].id]: false }));
+      setDeleteLoadingMap((prev) => ({ ...prev, [params[0]?.id]: false }));
     },
   });
 
@@ -62,7 +62,7 @@ const RoleManage: React.FC = () => {
 
   // 处理删除
   const handleDelete = (role: RoleInfo) => {
-    runDelete({ id: role.id });
+    runDelete({ id: role?.id });
   };
 
   // 处理新增
