@@ -291,7 +291,13 @@ const SystemTipsWord = forwardRef<
         </div>
 
         {agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? (
-          <div style={{ height: '300px', paddingLeft: token.paddingXS }}>
+          <div
+            style={{
+              height: '300px',
+              paddingLeft: token.paddingXS,
+              marginTop: 4,
+            }}
+          >
             {/* 提示词输入区域 */}
             {promptInput}
           </div>
