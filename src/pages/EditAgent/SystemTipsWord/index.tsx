@@ -295,7 +295,7 @@ const SystemTipsWord = forwardRef<
             style={{
               height: '300px',
               paddingLeft: token.paddingXS,
-              marginTop: 4,
+              marginTop: 6,
             }}
           >
             {/* 提示词输入区域 */}
