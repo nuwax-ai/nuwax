@@ -44,9 +44,19 @@
         let downloadUrl = ''; // 下载接口地址
         let fileName = ''; // 文件名
         const params = getQueryParams();
-        // 判断是否开发环境
-        // const baseUrl = 'https://testagent.xspaceagi.com';
-        const baseUrl = '';
+
+        // 获取文件的 origin
+        const baseUrl = getBaseUrl(params.fileUrl);
+
+        function getBaseUrl(url) {
+            if (!url || url.startsWith('/')) {
+                // 如果 url 为空或者以 / 开头，返回当前页面的 origin
+                return window.location.origin;
+            } else {
+                // 否则返回 url 的 origin
+                return new URL(url).origin;
+            }
+        }
 
         // ============================================
         // URL Parameter Parsing

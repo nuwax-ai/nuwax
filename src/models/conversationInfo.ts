@@ -753,10 +753,6 @@ export default () => {
               const input = processingResult.input;
               // 添加页面类型 后的未返回默认 Page
               input.uri_type = processingResult.input.uri_type ?? 'Page';
-              // if (!input?.uri) {
-              //   message.error('页面路径不存在');
-              //   return;
-              // }
 
               // 显示页面预览
               if (!input.uri_type || input.uri_type === 'Page') {
