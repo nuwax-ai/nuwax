@@ -305,7 +305,7 @@ const AgentModelSetting: React.FC<
         <Flex gap={20} className="mt-16">
           {/* Agent引擎选择 */}
           <div className="flex-1">
-            <h3 className={cx(styles.title)}>Agent引擎</h3>
+            <h3 className={cx(styles.title)}>智能体引擎</h3>
             <Segmented
               options={AGENT_ENGINE_OPTIONS}
               value={agentEngine}
