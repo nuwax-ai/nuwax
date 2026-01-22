@@ -91,8 +91,8 @@ export async function apiGetRoleById(
  * @returns Promise<RequestResponse<RoleInfo>>
  */
 export async function apiGetRoleList(
-  data: GetRoleListParams,
-): Promise<RequestResponse<RoleInfo>> {
+  data?: GetRoleListParams,
+): Promise<RequestResponse<RoleInfo[]>> {
   return request(`/api/system/role/list`, {
     method: 'GET',
     params: data,

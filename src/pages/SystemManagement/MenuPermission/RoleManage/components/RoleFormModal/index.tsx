@@ -1,15 +1,15 @@
 import CustomFormModal from '@/components/CustomFormModal';
+import { apiSystemModelList } from '@/services/systemManage';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { useRequest } from 'ahooks';
 import { Col, Form, Input, Row, Select, Switch, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useRequest } from 'umi';
 import { apiAddRole, apiUpdateRole } from '../../api';
 import {
   DataScopeEnum,
   RoleStatusEnum,
-  type DataModelInfo,
   type MenuNodeInfo,
   type RoleInfo,
 } from '../../type';
@@ -46,20 +46,10 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
   onSuccess,
 }) => {
   const [form] = Form.useForm();
+  // 模型ID列表 全部模型传[0],未选中任何模型不传值
   const [selectedModelIds, setSelectedModelIds] = useState<number[]>([]);
   const [selectedMenuIds, setSelectedMenuIds] = useState<React.Key[]>([]);
   const [expandedMenuKeys, setExpandedMenuKeys] = useState<React.Key[]>([]);
-
-  // TODO: 从API获取数据模型列表
-  const mockDataModels: DataModelInfo[] = [
-    { id: 1, name: '用户模型', description: '用户数据表' },
-    { id: 2, name: '订单模型', description: '订单数据表' },
-    { id: 3, name: '产品模型', description: '产品数据表' },
-    { id: 4, name: '合同模型', description: '合同数据表' },
-    { id: 5, name: '财务模型', description: '财务数据表' },
-    { id: 6, name: '库存模型', description: '库存数据表' },
-    { id: 7, name: '报表模型', description: '报表数据表' },
-  ];
 
   // TODO: 从API获取菜单树数据
   const mockMenuTree: MenuNodeInfo[] = [
@@ -90,7 +80,6 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
     manual: true,
     onSuccess: () => {
       onSuccess();
-      // handleCancel();
     },
   });
 
@@ -100,10 +89,24 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
       manual: true,
       onSuccess: () => {
         onSuccess();
-        // handleCancel();
       },
     },
   );
+
+  // 查询模型列表
+  const { run: runModelList, data: modelList } = useRequest(
+    apiSystemModelList,
+    {
+      manual: true,
+    },
+  );
+
+  useEffect(() => {
+    if (open) {
+      // 查询模型列表
+      runModelList();
+    }
+  }, [open]);
 
   const loading = addLoading || updateLoading;
 
@@ -244,7 +247,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({
             选择该角色可以访问的数据模型,支持选择&ldquo;全部&rdquo;或具体模型
           </Text>
           <DataModelSelector
-            models={mockDataModels}
+            models={modelList}
             selectedIds={selectedModelIds}
             onChange={setSelectedModelIds}
           />

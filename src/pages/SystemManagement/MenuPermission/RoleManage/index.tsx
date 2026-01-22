@@ -1,8 +1,8 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { useRequest } from 'ahooks';
 import { Button, Empty, Grid, message, Spin } from 'antd';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRequest } from 'umi';
 import { apiDeleteRole, apiGetRoleList } from './api';
 import RoleCard from './components/RoleCard';
 import RoleFormModal from './components/RoleFormModal';
@@ -23,33 +23,37 @@ const RoleManage: React.FC = () => {
   >({});
   const [modalOpen, setModalOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [editingRole, setEditingRole] = useState<RoleInfo | undefined>();
+  const [editingRole, setEditingRole] = useState<RoleInfo>();
 
   // 查询角色列表
   const {
-    data: roleListData,
+    run: runGetRoleList,
+    data: roleList,
     loading,
-    refresh,
   } = useRequest(apiGetRoleList, {
-    defaultParams: [{}],
+    manual: true,
   });
+
+  useEffect(() => {
+    runGetRoleList();
+  }, []);
 
   // 删除角色
   const { run: runDelete } = useRequest(apiDeleteRole, {
     manual: true,
     loadingDelay: 300,
-    onBefore: (params) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [params[0]?.id]: true }));
+    onBefore: (params: number[]) => {
+      setDeleteLoadingMap((prev) => ({ ...prev, [params[0]]: true }));
     },
     onSuccess: () => {
       message.success('删除成功');
-      refresh();
+      runGetRoleList();
     },
     onError: () => {
       message.error('删除失败');
     },
-    onFinally: (params) => {
-      setDeleteLoadingMap((prev) => ({ ...prev, [params[0]?.id]: false }));
+    onFinally: (params: number[]) => {
+      setDeleteLoadingMap((prev) => ({ ...prev, [params[0]]: false }));
     },
   });
 
@@ -62,7 +66,7 @@ const RoleManage: React.FC = () => {
 
   // 处理删除
   const handleDelete = (role: RoleInfo) => {
-    runDelete({ id: role?.id });
+    runDelete(role?.id);
   };
 
   // 处理新增
@@ -80,7 +84,7 @@ const RoleManage: React.FC = () => {
 
   // 处理Modal成功
   const handleModalSuccess = () => {
-    refresh();
+    runGetRoleList();
     message.success(isEdit ? '编辑成功' : '创建成功');
   };
 
@@ -93,8 +97,6 @@ const RoleManage: React.FC = () => {
     if (screens.sm) return 2;
     return 1;
   };
-
-  const roleList = roleListData?.data?.records || [];
 
   return (
     <div className={cx(styles.container)}>
@@ -119,7 +121,7 @@ const RoleManage: React.FC = () => {
       {/* 角色列表 */}
       <div className={cx(styles.content)}>
         <Spin spinning={loading}>
-          {roleList.length === 0 ? (
+          {!roleList?.length ? (
             <Empty
               description="暂无角色数据"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -132,7 +134,7 @@ const RoleManage: React.FC = () => {
                 gridTemplateColumns: `repeat(${getCols()}, 1fr)`,
               }}
             >
-              {roleList.map((role) => (
+              {roleList?.map((role: RoleInfo) => (
                 <RoleCard
                   key={role.id}
                   role={role}
