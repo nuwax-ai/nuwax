@@ -2,13 +2,12 @@ import {
   DeleteOutlined,
   EditOutlined,
   SafetyOutlined,
-  TeamOutlined,
 } from '@ant-design/icons';
 import { Button, Popconfirm, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import type { RoleInfo } from '../../type';
-import { RoleStatusEnum } from '../../type';
+import { ResourceSourceEnum, RoleStatusEnum } from '../../type';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -76,7 +75,6 @@ const RoleCard: React.FC<RoleCardProps> = ({
         <div className={cx(styles.infoSection)}>
           {/* 数据范围 */}
           <div className={cx(styles.infoItem)}>
-            <TeamOutlined className={cx(styles.infoIcon)} />
             <span className={cx(styles.infoLabel)}>token限制:</span>
             <span className={cx(styles.infoValue)}>
               {role.tokenLimit?.limitPerDay}
@@ -95,31 +93,35 @@ const RoleCard: React.FC<RoleCardProps> = ({
 
       {/* 底部操作按钮 */}
       <div className={cx(styles.footer)}>
-        <Button
-          type="text"
-          icon={<EditOutlined />}
-          onClick={handleEdit}
-          className={cx(styles.actionButton)}
-        >
-          编辑
-        </Button>
-        <Popconfirm
-          title="删除角色"
-          description={`确认删除角色 "${role.name}" 吗？`}
-          onConfirm={handleDelete}
-          okText="确定"
-          cancelText="取消"
-          okButtonProps={{ loading: deleteLoading }}
-        >
-          <Button
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            className={cx(styles.actionButton)}
-          >
-            删除
-          </Button>
-        </Popconfirm>
+        {role.source === ResourceSourceEnum.UserDefined && (
+          <>
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              onClick={handleEdit}
+              className={cx(styles.actionButton)}
+            >
+              编辑
+            </Button>
+            <Popconfirm
+              title="删除角色"
+              description={`确认删除角色 "${role.name}" 吗？`}
+              onConfirm={handleDelete}
+              okText="确定"
+              cancelText="取消"
+              okButtonProps={{ loading: deleteLoading }}
+            >
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+                className={cx(styles.actionButton)}
+              >
+                删除
+              </Button>
+            </Popconfirm>
+          </>
+        )}
       </div>
     </div>
   );
