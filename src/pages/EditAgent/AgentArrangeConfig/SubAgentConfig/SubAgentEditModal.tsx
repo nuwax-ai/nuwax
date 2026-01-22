@@ -58,6 +58,9 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
 }) => {
   const [prompt, setPrompt] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  // 控制全屏按钮 Tooltip 的显示状态
+  const [fullscreenTooltipOpen, setFullscreenTooltipOpen] =
+    useState<boolean>(false);
 
   // 判断是否为编辑模式
   const isEdit = !!initialValue;
@@ -73,6 +76,8 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
       // 新建模式默认填充模板，编辑模式使用原有内容
       setPrompt(initialPromptValue);
       setIsFullscreen(false);
+      // 重置 Tooltip 状态
+      setFullscreenTooltipOpen(false);
     }
   }, [open, initialPromptValue]);
 
@@ -113,8 +118,12 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
 
   /**
    * 切换全屏模式
+   * 点击时先关闭 Tooltip，避免 Tooltip 残留显示
    */
   const toggleFullscreen = () => {
+    // 先关闭 Tooltip
+    setFullscreenTooltipOpen(false);
+    // 然后切换全屏状态
     setIsFullscreen((prev) => !prev);
   };
 
@@ -139,7 +148,11 @@ const SubAgentEditModal: React.FC<SubAgentEditModalProps> = ({
           />
         </Tooltip>
       </div>
-      <Tooltip title={isFullscreen ? '退出全屏' : '全屏编辑'}>
+      <Tooltip
+        title={isFullscreen ? '退出全屏' : '全屏编辑'}
+        open={fullscreenTooltipOpen}
+        onOpenChange={setFullscreenTooltipOpen}
+      >
         <Button
           type="text"
           size="small"

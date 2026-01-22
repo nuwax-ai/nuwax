@@ -295,6 +295,7 @@ const AgentModelSetting: React.FC<
   if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
     return (
       <Modal
+        title="模型设置"
         classNames={{
           content: cx(styles['modal-wrapper']),
         }}
