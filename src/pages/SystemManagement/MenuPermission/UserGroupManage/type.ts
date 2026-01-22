@@ -2,23 +2,17 @@
  * 用户组管理相关的类型定义和枚举
  */
 
+import { MenuTreeNode } from '../RoleManage/type';
+
 // ==================== 枚举定义 ====================
 
 /**
  * 用户组状态枚举
+ * 状态,1:启用 0:禁用
  */
 export enum UserGroupStatusEnum {
-  Enabled = 'Enabled', // 启用
-  Disabled = 'Disabled', // 禁用
-}
-
-/**
- * 数据范围枚举
- */
-export enum DataScopeEnum {
-  All = 'All', // 全部数据
-  Department = 'Department', // 本部门数据
-  Self = 'Self', // 仅本人数据
+  Enabled = 1, // 启用
+  Disabled = 0, // 禁用
 }
 
 // ==================== 接口定义 ====================
@@ -35,21 +29,12 @@ export interface UserGroupInfo {
   code: string;
   /** 用户组描述 */
   description: string;
-  /** 状态 */
+  /** 来源 1:系统内置 2:用户自定义 */
+  source: number;
+  /** 状态,1:启用 0:禁用 */
   status: UserGroupStatusEnum;
-  /** 数据范围 */
-  dataScope: DataScopeEnum;
   /** 最大用户数，0表示不限制 */
   maxUsers: number;
-  /** 关联的角色ID列表 */
-  roleIds: number[];
-  /** 关联的角色信息列表 */
-  roles?: Array<{
-    id: number;
-    name: string;
-  }>;
-  /** 菜单权限数量 */
-  menuPermissionCount?: number;
   /** 排序 */
   sortIndex: number;
   /** 创建人ID */
@@ -76,14 +61,10 @@ export interface AddUserGroupParams {
   name?: string;
   /** 描述 */
   description?: string;
-  /** 状态 */
+  /* 状态,1:启用 0:禁用 */
   status?: UserGroupStatusEnum;
-  /** 数据范围 */
-  dataScope?: DataScopeEnum;
   /** 最大用户数，0表示不限制 */
   maxUsers?: number;
-  /** 关联的角色ID列表 */
-  roleIds?: number[];
   /** 数据模型ID列表，全部模型传[0],未选中任何模型不传值 */
   modelIds?: number[];
   /** 排序 */
@@ -99,6 +80,26 @@ export interface UpdateUserGroupParams extends AddUserGroupParams {
 }
 
 /**
+ * 组绑定用户参数
+ */
+export interface GroupBindUserParams {
+  /** 用户组ID */
+  groupId: number;
+  /** 用户ID列表 */
+  userIds: number[];
+}
+
+/**
+ * 组绑定菜单权限参数
+ */
+export interface GroupBindMenuParams {
+  /** 用户组ID */
+  groupId: number;
+  /** 菜单树节点 */
+  menuTree: MenuTreeNode[];
+}
+
+/**
  * 根据条件查询用户组参数
  */
 export interface GetUserGroupListParams {
@@ -106,6 +107,8 @@ export interface GetUserGroupListParams {
   name?: string;
   /** 用户组编码 */
   code?: string;
-  /** 状态 */
-  status?: UserGroupStatusEnum;
+  /** 来源 1:系统内置 2:用户自定义 */
+  source: number;
+  /** 状态,1:启用 0:禁用 */
+  status: UserGroupStatusEnum;
 }

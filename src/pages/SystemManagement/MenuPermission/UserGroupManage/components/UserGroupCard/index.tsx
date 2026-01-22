@@ -1,14 +1,9 @@
-import {
-  DatabaseOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  TeamOutlined,
-} from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, TeamOutlined } from '@ant-design/icons';
 import { Button, Popconfirm, Tag } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import type { UserGroupInfo } from '../../type';
-import { DataScopeEnum, UserGroupStatusEnum } from '../../type';
+import { UserGroupStatusEnum } from '../../type';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -45,20 +40,6 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
     onDelete(userGroup);
   };
 
-  // 获取数据范围显示文本
-  const getDataScopeText = (scope: DataScopeEnum) => {
-    switch (scope) {
-      case DataScopeEnum.All:
-        return '全部数据';
-      case DataScopeEnum.Department:
-        return '本部门数据';
-      case DataScopeEnum.Self:
-        return '仅本人数据';
-      default:
-        return '未知';
-    }
-  };
-
   return (
     <div className={cx(styles.card)}>
       {/* 状态标签 */}
@@ -91,7 +72,7 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
         <p className={cx(styles.description)}>{userGroup.description}</p>
 
         {/* 关联角色 */}
-        {userGroup.roles && userGroup.roles.length > 0 && (
+        {/* {userGroup.roles && userGroup.roles.length > 0 && (
           <div className={cx(styles.rolesSection)}>
             <span className={cx(styles.rolesLabel)}>关联角色:</span>
             <div className={cx(styles.rolesTags)}>
@@ -102,18 +83,18 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
               ))}
             </div>
           </div>
-        )}
+        )} */}
 
         {/* 信息项 */}
         <div className={cx(styles.infoSection)}>
           {/* 数据范围 */}
-          <div className={cx(styles.infoItem)}>
+          {/* <div className={cx(styles.infoItem)}>
             <DatabaseOutlined className={cx(styles.infoIcon)} />
             <span className={cx(styles.infoLabel)}>数据范围:</span>
             <span className={cx(styles.infoValue)}>
               {getDataScopeText(userGroup.dataScope)}
             </span>
-          </div>
+          </div> */}
 
           {/* 最大用户数 */}
           <div className={cx(styles.infoItem)}>
@@ -127,7 +108,7 @@ const UserGroupCard: React.FC<UserGroupCardProps> = ({
           <div className={cx(styles.infoItem)}>
             <span className={cx(styles.infoLabel)}>菜单权限:</span>
             <span className={cx(styles.infoValue)}>
-              {userGroup.menuPermissionCount || 0}项
+              {/* {userGroup.menuPermissionCount || 0}项 */}
             </span>
           </div>
         </div>
