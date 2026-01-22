@@ -2,6 +2,7 @@ import { SvgIcon } from '@/components/base';
 import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
 import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type { SystemUserTipsWordProps } from '@/types/interfaces/space';
 import { Button, Modal, Segmented, theme, Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -159,6 +160,11 @@ const SystemTipsWord = forwardRef<
               getEditor={(editor: any) => {
                 editorSystemRef.current = editor;
               }}
+              style={
+                agentConfigInfo?.type === AgentTypeEnum.ChatBot
+                  ? { height: '100%', border: 'none' }
+                  : {}
+              }
               variables={variables}
               skills={skills}
               enableHistory={true}
@@ -172,6 +178,11 @@ const SystemTipsWord = forwardRef<
               getEditor={(editor: any) => {
                 editorUserRef.current = editor;
               }}
+              style={
+                agentConfigInfo?.type === AgentTypeEnum.ChatBot
+                  ? { height: '100%', border: 'none' }
+                  : {}
+              }
               variables={variables}
               skills={skills}
               enableHistory={true}
@@ -273,10 +284,18 @@ const SystemTipsWord = forwardRef<
             )}
           </div>
         </div>
-        <div style={{ height: 150, paddingLeft: token.paddingXS }}>
-          {/* 提示词输入区域 */}
-          {promptInput}
-        </div>
+
+        {agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? (
+          <div style={{ height: '300px', paddingLeft: token.paddingXS }}>
+            {/* 提示词输入区域 */}
+            {promptInput}
+          </div>
+        ) : (
+          <>
+            {/* 提示词输入区域 */}
+            {promptInput}
+          </>
+        )}
 
         {/* 自动优化弹窗 */}
         <PromptOptimizeModal
