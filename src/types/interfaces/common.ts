@@ -176,6 +176,8 @@ export interface CustomFormModalProps {
   // 确定按钮文本
   okText?: string;
   centered?: boolean;
+  // Modal宽度
+  width?: number | string;
   onCancel: () => void;
   onConfirm: () => void;
 }
