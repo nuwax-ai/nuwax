@@ -33,7 +33,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       {
         key: 'import',
         icon: <SvgIcon name="icons-common-import" style={{ fontSize: 16 }} />,
-        label: '导入项目',
+        label: '导入技能',
         onClick: onImportProject,
         disabled: isLoading,
       },
@@ -54,7 +54,7 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
       {
         key: 'export',
         icon: <SvgIcon name="icons-common-download" style={{ fontSize: 16 }} />,
-        label: '导出项目',
+        label: '导出技能',
         onClick: onExportProject,
         disabled: isExportingProject,
       },
